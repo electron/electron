@@ -35,6 +35,7 @@ In sandboxed renderers the `process` object contains only a subset of the APIs:
 * `versions`
 * `mas`
 * `windowsStore`
+* `contextId`
 
 ## Events
 
@@ -132,6 +133,11 @@ A `String` representing Electron's version string.
 
 A `Boolean`. If the app is running as a Windows Store app (appx), this property is `true`,
 for otherwise it is `undefined`.
+
+### `process.contextId` _Readonly_
+
+A `String` (optional) representing a globally unique ID of the current JavaScript context.
+This property is only available in the renderer process.
 
 ## Methods
 

@@ -89,6 +89,10 @@ Object.defineProperty(preloadProcess, 'noDeprecation', {
   }
 });
 
+// Expose process.contextId
+const contextId = v8Util.getHiddenValue<string>(global, 'contextId');
+Object.defineProperty(preloadProcess, 'contextId', { enumerable: true, value: contextId });
+
 process.on('loaded', () => (preloadProcess as events.EventEmitter).emit('loaded'));
 process.on('exit', () => (preloadProcess as events.EventEmitter).emit('exit'));
 (process as events.EventEmitter).on('document-start', () => (preloadProcess as events.EventEmitter).emit('document-start'));

@@ -2623,6 +2623,7 @@ describe('BrowserWindow module', () => {
         expect(test.type).to.equal('renderer');
         expect(test.version).to.equal(process.version);
         expect(test.versions).to.deep.equal(process.versions);
+        expect(test.contextId).to.be.a('string');
 
         if (process.platform === 'linux' && test.osSandbox) {
           expect(test.creationTime).to.be.null('creation time');
