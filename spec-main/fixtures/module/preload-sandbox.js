@@ -42,7 +42,8 @@
         sandboxed: process.sandboxed,
         type: process.type,
         version: process.version,
-        versions: process.versions
+        versions: process.versions,
+        contextId: process.contextId
       };
     }
   } else if (location.href !== 'about:blank') {
