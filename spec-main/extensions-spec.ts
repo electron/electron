@@ -152,13 +152,15 @@ describe('chrome extensions', () => {
     const [, loadedExtension] = await loadedPromise;
     const [, readyExtension] = await emittedOnce(customSession, 'extension-ready');
 
-    expect(loadedExtension).to.deep.equal(extension);
-    expect(readyExtension).to.deep.equal(extension);
+    // Compare JSON string to print more information if failed.
+    const expected = JSON.stringify(extension);
+    expect(JSON.stringify(loadedExtension)).to.equal(expected);
+    expect(JSON.stringify(readyExtension)).to.equal(expected);
 
     const unloadedPromise = emittedOnce(customSession, 'extension-unloaded');
     await customSession.removeExtension(extension.id);
     const [, unloadedExtension] = await unloadedPromise;
-    expect(unloadedExtension).to.deep.equal(extension);
+    expect(JSON.stringify(unloadedExtension)).to.equal(expected);
   });
 
   it('lists loaded extensions in getAllExtensions', async () => {
