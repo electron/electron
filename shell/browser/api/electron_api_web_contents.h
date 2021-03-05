@@ -338,7 +338,7 @@ class WebContents : public gin::Wrappable<WebContents>,
   }
   void RemoveObserver(ExtendedWebContentsObserver* obs) {
     // Trying to remove from an empty collection leads to an access violation
-    if (observers_.might_have_observers())
+    if (!observers_.empty())
       observers_.RemoveObserver(obs);
   }
 
