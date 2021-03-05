@@ -46,6 +46,7 @@
 #include "content/public/common/content_paths.h"
 #include "content/public/common/content_switches.h"
 #include "content/public/common/url_constants.h"
+#include "content/browser/site_instance_impl.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/grit/electron_resources.h"
 #include "electron/shell/common/api/api.mojom.h"
@@ -195,6 +196,11 @@ namespace {
 // Next navigation should not restart renderer process.
 bool g_suppress_renderer_process_restart = false;
 
+// c.f. https://chromium-review.googlesource.com/c/chromium/src/+/2680274
+content::SiteInfo GetSiteForURL(content::BrowserContext* browser_context, const GURL& url) {
+  return content::SiteInfo::Create(content::IsolationContext(browser_context), content::UrlInfo(url, false), content::CoopCoepCrossOriginIsolatedInfo::CreateNonIsolated());
+}
+
 bool IsSameWebSite(content::BrowserContext* browser_context,
                    content::SiteInstance* site_instance,
                    const GURL& dest_url) {
@@ -202,7 +208,7 @@ bool IsSameWebSite(content::BrowserContext* browser_context,
          // `IsSameSiteWithURL` doesn't seem to work for some URIs such as
          // `file:`, handle these scenarios by comparing only the site as
          // defined by `GetSiteForURL`.
-         (content::SiteInstance::GetSiteForURL(browser_context, dest_url) ==
+         (GetSiteForURL(browser_context, dest_url).site_url() ==
           site_instance->GetSiteURL());
 }
 
@@ -499,7 +505,7 @@ content::SiteInstance* ElectronBrowserClient::GetSiteInstanceFromAffinity(
   std::string affinity = GetAffinityPreference(rfh);
   if (!affinity.empty()) {
     auto iter = site_per_affinities_.find(affinity);
-    GURL dest_site = content::SiteInstance::GetSiteForURL(browser_context, url);
+    GURL dest_site = GetSiteForURL(browser_context, url).site_url();
     if (iter != site_per_affinities_.end() &&
         IsSameWebSite(browser_context, iter->second, dest_site)) {
       return iter->second;
