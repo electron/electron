@@ -1776,4 +1776,12 @@ content::BluetoothDelegate* ElectronBrowserClient::GetBluetoothDelegate() {
   return bluetooth_delegate_.get();
 }
 
+void ElectronBrowserClient::BindBadgeServiceReceiverFromServiceWorker(
+    content::RenderProcessHost* service_worker_process_host,
+    const GURL& service_worker_scope,
+    mojo::PendingReceiver<blink::mojom::BadgeService> receiver) {
+  badging::BadgeManager::BindServiceWorkerReceiver(
+      service_worker_process_host, service_worker_scope, std::move(receiver));
+}
+
 }  // namespace electron
