@@ -82,7 +82,7 @@ index ce483753dff0130c5ac20258c0cf7e399c0d1c51..dea741c526f10616c3779f76a6d9cf8a
      OnAuthCredentials(base::nullopt);
      return;
    }
-@@ -1201,10 +1207,21 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
+@@ -1201,10 +1207,22 @@ void URLLoader::OnAuthRequired(net::URLRequest* url_request,
  
    DCHECK(!auth_challenge_responder_receiver_.is_bound());
  
@@ -96,8 +96,9 @@ index ce483753dff0130c5ac20258c0cf7e399c0d1c51..dea741c526f10616c3779f76a6d9cf8a
 +  head->auth_challenge_info = auth_info;
 +  if (auth_client_) {
 +    auth_client_->OnAuthRequired(
-+        fetch_window_id_, request_id_, url_request_->url(), first_auth_attempt_,
-+        auth_info, url_request->response_headers(),
++        fetch_window_id_, factory_params_->process_id, render_frame_id_,
++        request_id_, url_request_->url(), first_auth_attempt_, auth_info,
++        std::move(head),
 +        auth_challenge_responder_receiver_.BindNewPipeAndPassRemote());
 +  } else {
 +    auth_cert_observer_->OnAuthRequired(
