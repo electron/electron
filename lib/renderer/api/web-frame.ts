@@ -49,7 +49,7 @@ class WebFrame extends EventEmitter {
 }
 
 const { hasSwitch } = process._linkedBinding('electron_common_command_line');
-const worldSafeJS = hasSwitch('world-safe-execute-javascript') && hasSwitch('context-isolation');
+const worldSafeJS = hasSwitch('world-safe-execute-javascript') || !hasSwitch('context-isolation');
 
 // Populate the methods.
 for (const name in binding) {
