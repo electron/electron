@@ -11,7 +11,6 @@
 #include "content/public/common/referrer.h"
 #include "content/public/common/stop_find_action.h"
 #include "gin/converter.h"
-#include "third_party/blink/public/common/context_menu_data/menu_item.h"
 #include "third_party/blink/public/mojom/permissions/permission_status.mojom.h"
 
 namespace content {
@@ -26,9 +25,9 @@ using ContextMenuParamsWithWebContents =
 namespace gin {
 
 template <>
-struct Converter<blink::MenuItem::Type> {
+struct Converter<blink::mojom::MenuItem::Type> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const blink::MenuItem::Type& val);
+                                   const blink::mojom::MenuItem::Type& val);
 };
 
 template <>

@@ -110,19 +110,19 @@ struct Converter<ui::MenuSourceType> {
 };
 
 // static
-v8::Local<v8::Value> Converter<blink::MenuItem::Type>::ToV8(
+v8::Local<v8::Value> Converter<blink::mojom::MenuItem::Type>::ToV8(
     v8::Isolate* isolate,
-    const blink::MenuItem::Type& val) {
+    const blink::mojom::MenuItem::Type& val) {
   switch (val) {
-    case blink::MenuItem::CHECKABLE_OPTION:
+    case blink::mojom::MenuItem::Type::kCheckableOption:
       return StringToV8(isolate, "checkbox");
-    case blink::MenuItem::GROUP:
+    case blink::mojom::MenuItem::Type::kGroup:
       return StringToV8(isolate, "radio");
-    case blink::MenuItem::SEPARATOR:
+    case blink::mojom::MenuItem::Type::kSeparator:
       return StringToV8(isolate, "separator");
-    case blink::MenuItem::SUBMENU:
+    case blink::mojom::MenuItem::Type::kSubMenu:
       return StringToV8(isolate, "submenu");
-    case blink::MenuItem::OPTION:
+    case blink::mojom::MenuItem::Type::kOption:
     default:
       return StringToV8(isolate, "normal");
   }
