@@ -591,7 +591,7 @@ bool IsDevToolsFileSystemAdded(content::WebContents* web_contents,
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 
-WebContents::Type GetTypeFromViewType(extensions::ViewType view_type) {
+WebContents::Type GetTypeFromViewType(extensions::mojom::ViewType view_type) {
   switch (view_type) {
     case extensions::VIEW_TYPE_EXTENSION_BACKGROUND_PAGE:
       return WebContents::Type::kBackgroundPage;
@@ -625,7 +625,7 @@ WebContents::WebContents(v8::Isolate* isolate,
 {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   // WebContents created by extension host will have valid ViewType set.
-  extensions::ViewType view_type = extensions::GetViewType(web_contents);
+  extensions::mojom::ViewType view_type = extensions::GetViewType(web_contents);
   if (view_type != extensions::VIEW_TYPE_INVALID) {
     InitWithExtensionView(isolate, web_contents, view_type);
   }
@@ -865,7 +865,7 @@ void WebContents::InitWithSessionAndOptions(
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 void WebContents::InitWithExtensionView(v8::Isolate* isolate,
                                         content::WebContents* web_contents,
-                                        extensions::ViewType view_type) {
+                                        extensions::mojom::ViewType view_type) {
   // Must reassign type prior to calling `Init`.
   type_ = GetTypeFromViewType(view_type);
   if (GetType() == Type::kRemote)
