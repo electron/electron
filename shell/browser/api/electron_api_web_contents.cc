@@ -157,6 +157,7 @@
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "extensions/browser/script_executor.h"
 #include "extensions/browser/view_type_utils.h"
+#include "extensions/common/mojom/view_type.mojom.h"
 #include "shell/browser/extensions/electron_extension_web_contents_observer.h"
 #endif
 
@@ -593,17 +594,17 @@ bool IsDevToolsFileSystemAdded(content::WebContents* web_contents,
 
 WebContents::Type GetTypeFromViewType(extensions::mojom::ViewType view_type) {
   switch (view_type) {
-    case extensions::VIEW_TYPE_EXTENSION_BACKGROUND_PAGE:
+    case extensions::mojom::ViewType::kExtensionBackgroundPage:
       return WebContents::Type::kBackgroundPage;
 
-    case extensions::VIEW_TYPE_APP_WINDOW:
-    case extensions::VIEW_TYPE_COMPONENT:
-    case extensions::VIEW_TYPE_EXTENSION_DIALOG:
-    case extensions::VIEW_TYPE_EXTENSION_POPUP:
-    case extensions::VIEW_TYPE_BACKGROUND_CONTENTS:
-    case extensions::VIEW_TYPE_EXTENSION_GUEST:
-    case extensions::VIEW_TYPE_TAB_CONTENTS:
-    case extensions::VIEW_TYPE_INVALID:
+    case extensions::mojom::ViewType::kAppWindow:
+    case extensions::mojom::ViewType::kComponent:
+    case extensions::mojom::ViewType::kExtensionDialog:
+    case extensions::mojom::ViewType::kExtensionPopup:
+    case extensions::mojom::ViewType::kBackgroundContents:
+    case extensions::mojom::ViewType::kExtensionGuest:
+    case extensions::mojom::ViewType::kTabContents:
+    case extensions::mojom::ViewType::kInvalid:
       return WebContents::Type::kRemote;
   }
 }
@@ -626,7 +627,7 @@ WebContents::WebContents(v8::Isolate* isolate,
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   // WebContents created by extension host will have valid ViewType set.
   extensions::mojom::ViewType view_type = extensions::GetViewType(web_contents);
-  if (view_type != extensions::VIEW_TYPE_INVALID) {
+  if (view_type != extensions::mojom::ViewType::kInvalid) {
     InitWithExtensionView(isolate, web_contents, view_type);
   }
 
