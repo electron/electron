@@ -24,7 +24,6 @@
 #include "electron/buildflags/buildflags.h"
 #include "extensions/browser/api/app_runtime/app_runtime_api.h"
 #include "extensions/browser/extension_registry.h"
-#include "extensions/browser/extension_user_script_manager.h"
 #include "extensions/browser/info_map.h"
 #include "extensions/browser/management_policy.h"
 #include "extensions/browser/notification_types.h"
@@ -32,6 +31,7 @@
 #include "extensions/browser/quota_service.h"
 #include "extensions/browser/runtime_data.h"
 #include "extensions/browser/service_worker_manager.h"
+#include "extensions/browser/user_script_manager.h"
 #include "extensions/browser/value_store/value_store_factory_impl.h"
 #include "extensions/common/constants.h"
 #include "extensions/common/file_util.h"
@@ -84,8 +84,8 @@ void ElectronExtensionSystem::InitForRegularProfile(bool extensions_enabled) {
   runtime_data_ =
       std::make_unique<RuntimeData>(ExtensionRegistry::Get(browser_context_));
   quota_service_ = std::make_unique<QuotaService>();
-  extension_user_script_manager_ =
-      std::make_unique<ExtensionUserScriptManager>(browser_context_);
+  user_script_manager_ =
+      std::make_unique<UserScriptManager>(browser_context_);
   app_sorting_ = std::make_unique<NullAppSorting>();
   extension_loader_ =
       std::make_unique<ElectronExtensionLoader>(browser_context_);
@@ -140,9 +140,9 @@ ServiceWorkerManager* ElectronExtensionSystem::service_worker_manager() {
   return service_worker_manager_.get();
 }
 
-ExtensionUserScriptManager*
-ElectronExtensionSystem::extension_user_script_manager() {
-  return new ExtensionUserScriptManager(browser_context_);
+UserScriptManager*
+ElectronExtensionSystem::user_script_manager() {
+  return new UserScriptManager(browser_context_);
 }
 
 StateStore* ElectronExtensionSystem::state_store() {
