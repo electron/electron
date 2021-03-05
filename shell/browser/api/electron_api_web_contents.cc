@@ -2006,7 +2006,7 @@ void WebContents::LoadURL(const GURL& url,
   // For transparent windows, set the background color of RenderWidgetHostView.
   // We need to set this color after LoadURL, because the RenderViewHost is only
   // created after loading a page; a default white color is rendered otherwise.
-  auto* const view = weak_this->web_contents()->GetRenderWidgetHostView();
+  auto* const view = this->web_contents()->GetRenderWidgetHostView();
   if (view) {
     auto* web_preferences = WebContentsPreferences::From(web_contents());
     std::string color_name;
