@@ -48,7 +48,7 @@
 #endif
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-#include "extensions/common/view_type.h"
+#include "extensions/common/mojom/view_type.mojom.h"
 
 namespace extensions {
 class ScriptExecutor;
@@ -453,7 +453,7 @@ class WebContents : public gin::Wrappable<WebContents>,
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   void InitWithExtensionView(v8::Isolate* isolate,
                              content::WebContents* web_contents,
-                             extensions::ViewType view_type);
+                             extensions::mojom::ViewType view_type);
 #endif
 
   // content::WebContentsDelegate:
