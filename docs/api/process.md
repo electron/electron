@@ -137,6 +137,8 @@ for otherwise it is `undefined`.
 ### `process.contextId` _Readonly_
 
 A `String` (optional) representing a globally unique ID of the current JavaScript context.
+Each frame has its own JavaScript context. When contextIsolation is enabled, the isolated
+world also has a separate JavaScript context.
 This property is only available in the renderer process.
 
 ## Methods
