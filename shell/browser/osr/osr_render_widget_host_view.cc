@@ -144,7 +144,8 @@ class ElectronDelegatedFrameHostClient
     return *view_->GetBackgroundColor();
   }
 
-  void OnFrameTokenChanged(uint32_t frame_token, base::TimeTicks activation_time) override {
+  void OnFrameTokenChanged(uint32_t frame_token,
+                           base::TimeTicks activation_time) override {
     view_->render_widget_host()->DidProcessFrame(frame_token, activation_time);
   }
 

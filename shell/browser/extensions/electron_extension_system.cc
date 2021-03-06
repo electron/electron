@@ -84,8 +84,7 @@ void ElectronExtensionSystem::InitForRegularProfile(bool extensions_enabled) {
   runtime_data_ =
       std::make_unique<RuntimeData>(ExtensionRegistry::Get(browser_context_));
   quota_service_ = std::make_unique<QuotaService>();
-  user_script_manager_ =
-      std::make_unique<UserScriptManager>(browser_context_);
+  user_script_manager_ = std::make_unique<UserScriptManager>(browser_context_);
   app_sorting_ = std::make_unique<NullAppSorting>();
   extension_loader_ =
       std::make_unique<ElectronExtensionLoader>(browser_context_);
@@ -140,8 +139,7 @@ ServiceWorkerManager* ElectronExtensionSystem::service_worker_manager() {
   return service_worker_manager_.get();
 }
 
-UserScriptManager*
-ElectronExtensionSystem::user_script_manager() {
+UserScriptManager* ElectronExtensionSystem::user_script_manager() {
   return new UserScriptManager(browser_context_);
 }
 

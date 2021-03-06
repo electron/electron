@@ -30,6 +30,7 @@
 #include "chrome/common/chrome_version.h"
 #include "components/net_log/chrome_net_log.h"
 #include "components/network_hints/common/network_hints.mojom.h"
+#include "content/browser/site_instance_impl.h"
 #include "content/public/browser/browser_main_runner.h"
 #include "content/public/browser/browser_ppapi_host.h"
 #include "content/public/browser/browser_task_traits.h"
@@ -46,7 +47,6 @@
 #include "content/public/common/content_paths.h"
 #include "content/public/common/content_switches.h"
 #include "content/public/common/url_constants.h"
-#include "content/browser/site_instance_impl.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/grit/electron_resources.h"
 #include "electron/shell/common/api/api.mojom.h"
@@ -197,8 +197,11 @@ namespace {
 bool g_suppress_renderer_process_restart = false;
 
 // c.f. https://chromium-review.googlesource.com/c/chromium/src/+/2680274
-content::SiteInfo GetSiteForURL(content::BrowserContext* browser_context, const GURL& url) {
-  return content::SiteInfo::Create(content::IsolationContext(browser_context), content::UrlInfo(url, false), content::CoopCoepCrossOriginIsolatedInfo::CreateNonIsolated());
+content::SiteInfo GetSiteForURL(content::BrowserContext* browser_context,
+                                const GURL& url) {
+  return content::SiteInfo::Create(
+      content::IsolationContext(browser_context), content::UrlInfo(url, false),
+      content::CoopCoepCrossOriginIsolatedInfo::CreateNonIsolated());
 }
 
 bool IsSameWebSite(content::BrowserContext* browser_context,
@@ -1074,7 +1077,8 @@ void ElectronBrowserClient::ConfigureNetworkContextParams(
     bool in_memory,
     const base::FilePath& relative_partition_path,
     network::mojom::NetworkContextParams* network_context_params,
-    cert_verifier::mojom::CertVerifierCreationParams* cert_verifier_creation_params) {
+    cert_verifier::mojom::CertVerifierCreationParams*
+        cert_verifier_creation_params) {
   DCHECK(browser_context);
   return NetworkContextServiceFactory::GetForContext(browser_context)
       ->ConfigureNetworkContextParams(network_context_params,
