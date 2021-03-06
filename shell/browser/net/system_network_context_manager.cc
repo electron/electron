@@ -158,8 +158,9 @@ SystemNetworkContextManager::CreateDefaultNetworkContextParams() {
 
   ConfigureDefaultNetworkContextParams(network_context_params.get());
 
-  cert_verifier::mojom::CertVerifierCreationParamsPtr cert_verifier_creation_params =
-      cert_verifier::mojom::CertVerifierCreationParams::New();
+  cert_verifier::mojom::CertVerifierCreationParamsPtr
+      cert_verifier_creation_params =
+          cert_verifier::mojom::CertVerifierCreationParams::New();
   network_context_params->cert_verifier_params =
       content::GetCertVerifierParams(std::move(cert_verifier_creation_params));
   return network_context_params;

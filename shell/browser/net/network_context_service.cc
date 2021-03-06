@@ -26,7 +26,8 @@ NetworkContextService::~NetworkContextService() = default;
 
 void NetworkContextService::ConfigureNetworkContextParams(
     network::mojom::NetworkContextParams* network_context_params,
-    cert_verifier::mojom::CertVerifierCreationParams* cert_verifier_creation_params) {
+    cert_verifier::mojom::CertVerifierCreationParams*
+        cert_verifier_creation_params) {
   bool in_memory = browser_context_->IsOffTheRecord();
   const base::FilePath& path = browser_context_->GetPath();
 

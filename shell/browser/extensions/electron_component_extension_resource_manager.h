@@ -33,7 +33,8 @@ class ElectronComponentExtensionResourceManager
       const std::string& extension_id) const override;
 
  private:
-  void AddComponentResourceEntries(const webui::ResourcePath* entries, size_t size);
+  void AddComponentResourceEntries(const webui::ResourcePath* entries,
+                                   size_t size);
 
   // A map from a resource path to the resource ID.  Used by
   // IsComponentExtensionResource.
