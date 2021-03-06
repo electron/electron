@@ -11,6 +11,7 @@
 #include "content/public/common/referrer.h"
 #include "content/public/common/stop_find_action.h"
 #include "gin/converter.h"
+#include "third_party/blink/public/mojom/choosers/popup_menu.mojom.h"
 #include "third_party/blink/public/mojom/permissions/permission_status.mojom.h"
 
 namespace content {
