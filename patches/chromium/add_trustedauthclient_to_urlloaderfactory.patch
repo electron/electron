@@ -50,7 +50,7 @@ index cfa9d0c197ca9851f13b088ecae4aba614c7ac55..d93a6ce481630535b75d858e5b7b04e5
    // cookies) and to shard network resources, like the cache. If set, takes
    // precedence over ResourceRequest::TrustedParams::IsolationInfo field
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index ce483753dff0130c5ac20258c0cf7e399c0d1c51..dea741c526f10616c3779f76a6d9cf8aece4210a 100644
+index ce483753dff0130c5ac20258c0cf7e399c0d1c51..0e31b92419e124136447efc6a1642ade5eaa0a5e 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
 @@ -463,6 +463,7 @@ URLLoader::URLLoader(
