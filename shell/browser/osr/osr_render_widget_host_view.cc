@@ -144,8 +144,8 @@ class ElectronDelegatedFrameHostClient
     return *view_->GetBackgroundColor();
   }
 
-  void OnFrameTokenChanged(uint32_t frame_token) override {
-    view_->render_widget_host()->DidProcessFrame(frame_token);
+  void OnFrameTokenChanged(uint32_t frame_token, base::TimeTicks activation_time) override {
+    view_->render_widget_host()->DidProcessFrame(frame_token, activation_time);
   }
 
   float GetDeviceScaleFactor() const override {
