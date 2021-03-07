@@ -295,9 +295,9 @@ describe('app module', () => {
       const child = cp.spawn(process.execPath, [appPath]);
       child.stdout.on('data', (c) => console.log(c.toString()));
       child.stderr.on('data', (c) => console.log(c.toString()));
-      child.on('exit', (code) => {
+      child.on('exit', (code, signal) => {
         if (code !== 0) {
-          done(`Process exited with code ${code}`);
+          console.log(`Process exited with code "${code}" signal "${signal}"`);
         }
       });
     });
