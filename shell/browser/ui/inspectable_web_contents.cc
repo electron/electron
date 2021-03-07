@@ -371,13 +371,8 @@ InspectableWebContents::InspectableWebContents(
 InspectableWebContents::~InspectableWebContents() {
   g_web_contents_instances_.remove(this);
   // Unsubscribe from devtools and Clean up resources.
-  if (GetDevToolsWebContents()) {
-    if (managed_devtools_web_contents_)
-      managed_devtools_web_contents_->SetDelegate(nullptr);
-    // Calling this also unsubscribes the observer, so WebContentsDestroyed
-    // won't be called again.
+  if (GetDevToolsWebContents())
     WebContentsDestroyed();
-  }
   // Let destructor destroy managed_devtools_web_contents_.
 }
 
@@ -416,6 +411,8 @@ bool InspectableWebContents::IsGuest() const {
 
 void InspectableWebContents::ReleaseWebContents() {
   web_contents_.release();
+  WebContentsDestroyed();
+  view_.reset();
 }
 
 void InspectableWebContents::SetDockState(const std::string& state) {
@@ -936,6 +933,9 @@ void InspectableWebContents::RenderFrameHostChanged(
 }
 
 void InspectableWebContents::WebContentsDestroyed() {
+  if (managed_devtools_web_contents_)
+    managed_devtools_web_contents_->SetDelegate(nullptr);
+
   frontend_loaded_ = false;
   external_devtools_web_contents_ = nullptr;
   Observe(nullptr);
