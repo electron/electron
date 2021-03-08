@@ -35,6 +35,16 @@ body:
       - Other (specify below)
   validations:
     required: true
+- type: dropdown
+  attributes:
+    label: What arch are you using?
+    options:
+      - x64
+      - ia32
+      - arm64 (including Apple Silicon)
+      - Other (specify below)
+  validations:
+    required: true
 - type: input
   attributes:
     label: Last Known Working Electron version
@@ -52,28 +62,12 @@ body:
     description: A clear description of what actually happens.
   validations:
     required: true
-- type: textarea
+- type: input
   attributes:
-    label: To Reproduce
-    description: Your best chance of getting this bug looked at quickly is to provide an example.
-    placeholder: |
-      For bugs that can be encapsulated in a small experiment, you can use Electron Fiddle (https://github.com/electron/fiddle) to publish your example to a GitHub Gist and link it your bug report.
-
-      If Fiddle is insufficient to produce an example, please provide an example REPOSITORY that can be cloned and run. You can fork electron-quick-start (https://github.com/electron/electron-quick-start) and include a link to the branch with your changes.
-
-      If you provide a URL, please list the commands required to clone/setup/run your repo e.g.
-      ```sh
-      $ git clone $YOUR_URL -b $BRANCH
-      $ npm install
-      $ npm start || electron .
-      ```
-  validations:
-    required: true
-- type: textarea
-  attributes:
-    label: Screenshots
-    description: If applicable, add screenshots to help explain your problem.
+    label: Testcase Gist URL
+    description: If you can reproduce the issue in a standalone test case, please use [Electron Fiddle](https://github.com/electron/fiddle) to create one and to publish it as a [GitHub gist](https://gist.github.com) and put the gist URL here. This is **the best way** to ensure this issue is triaged quickly.
+    placeholder: https://gist.github.com/...
 - type: textarea
   attributes:
     label: Additional Information
-    description: Add any other context about the problem here.
+    description: If your problem needs further explanation, or if the issue you're seeing cannot be reproduced in a gist, please add more information here.
