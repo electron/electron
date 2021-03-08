@@ -318,8 +318,14 @@ describe('command line switches', () => {
 
       let output = '';
       appProcess.stdout.on('data', (data) => { output += data; });
+      let stderr = '';
+      appProcess.stderr.on('data', (data) => { stderr += data; });
 
-      await emittedOnce(appProcess.stdout, 'end');
+      const [code, signal] = await emittedOnce(appProcess, 'exit');
+      if (code !== 0) {
+        throw new Error(`Process exited with code "${code}" signal "${signal}" output "${output}" stderr "${stderr}"`);
+      }
+
       output = output.replace(/(\r\n|\n|\r)/gm, '');
       expect(output).to.equal(result);
     };
