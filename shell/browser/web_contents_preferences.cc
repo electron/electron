@@ -408,10 +408,12 @@ void WebContentsPreferences::OverrideWebkitPrefs(
 
   // --background-color.
   std::string color;
-  if (GetAsString(&preference_, options::kBackgroundColor, &color)) {
-    prefs->background_color = color;
-  } else if (!IsEnabled(options::kOffscreen)) {
-    prefs->background_color = "#fff";
+  if (!IsEnabled(options::kTransparent, false)) {
+    if (GetAsString(&preference_, options::kBackgroundColor, &color)) {
+      prefs->background_color = color;
+    } else if (!IsEnabled(options::kOffscreen)) {
+      prefs->background_color = "#fff";
+    }
   }
 
   // Pass the opener's window id.
