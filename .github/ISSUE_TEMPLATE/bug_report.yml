@@ -22,19 +22,22 @@ body:
     required: true
 - type: dropdown
   attributes:
-    label: What platform are you using?
+    label: What operating system are you using?
     options:
-      - Windows 10
-      - Windows 8
-      - Windows on Arm
-      - macOS Big Sur
-      - macOS Catalina
-      - macOS Mojave
+      - Windows
+      - macOS
       - Ubuntu
       - Other Linux
       - Other (specify below)
   validations:
     required: true
+- type: input
+  attributes:
+    label: Operating System Version
+    description: What operating system version are you using?
+    validations:
+    required: true
+
 - type: dropdown
   attributes:
     label: What arch are you using?
