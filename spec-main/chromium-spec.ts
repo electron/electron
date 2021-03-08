@@ -1576,12 +1576,6 @@ describe('navigator.clipboard', () => {
 
 ifdescribe((process.platform !== 'linux' || app.isUnityRunning()))('navigator.setAppBadge/clearAppBadge', () => {
   let w: BrowserWindow;
-  before(async () => {
-    w = new BrowserWindow({
-      show: false
-    });
-    await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
-  });
 
   const expectedBadgeCount = 42;
 
@@ -1601,30 +1595,96 @@ ifdescribe((process.platform !== 'linux' || app.isUnityRunning()))('navigator.se
     return badgeCount;
   }
 
-  after(() => {
-    app.badgeCount = 0;
-    closeAllWindows();
+  describe('in the renderer', () => {
+    before(async () => {
+      w = new BrowserWindow({
+        show: false
+      });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+    });
+
+    after(() => {
+      app.badgeCount = 0;
+      closeAllWindows();
+    });
+
+    it('setAppBadge can set a numerical value', async () => {
+      const result = await fireAppBadgeAction('set', expectedBadgeCount);
+      expect(result).to.equal('success');
+      expect(waitForBadgeCount(expectedBadgeCount)).to.eventually.equal(expectedBadgeCount);
+    });
+
+    it('setAppBadge can set an empty(dot) value', async () => {
+      const result = await fireAppBadgeAction('set');
+      expect(result).to.equal('success');
+      expect(waitForBadgeCount(0)).to.eventually.equal(0);
+    });
+
+    it('clearAppBadge can clear a value', async () => {
+      let result = await fireAppBadgeAction('set', expectedBadgeCount);
+      expect(result).to.equal('success');
+      expect(waitForBadgeCount(expectedBadgeCount)).to.eventually.equal(expectedBadgeCount);
+      result = await fireAppBadgeAction('clear');
+      expect(result).to.equal('success');
+      expect(waitForBadgeCount(0)).to.eventually.equal(0);
+    });
   });
 
-  it('setAppBadge can set a numerical value', async () => {
-    const result = await fireAppBadgeAction('set', expectedBadgeCount);
-    expect(result).to.equal('success');
-    expect(waitForBadgeCount(expectedBadgeCount)).to.eventually.equal(expectedBadgeCount);
-  });
+  describe('in a service worker', () => {
+    beforeEach(async () => {
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true,
+          partition: 'sw-file-scheme-spec',
+          contextIsolation: false
+        }
+      });
+    });
 
-  it('setAppBadge can set an empty(dot) value', async () => {
-    const result = await fireAppBadgeAction('set');
-    expect(result).to.equal('success');
-    expect(waitForBadgeCount(0)).to.eventually.equal(0);
-  });
+    afterEach(() => {
+      app.badgeCount = 0;
+      closeAllWindows();
+    });
 
-  it('clearAppBadge can clear a value', async () => {
-    let result = await fireAppBadgeAction('set', expectedBadgeCount);
-    expect(result).to.equal('success');
-    expect(waitForBadgeCount(expectedBadgeCount)).to.eventually.equal(expectedBadgeCount);
-    result = await fireAppBadgeAction('clear');
-    expect(result).to.equal('success');
-    expect(waitForBadgeCount(0)).to.eventually.equal(0);
+    it('setAppBadge can be called in a ServiceWorker', (done) => {
+      w.webContents.on('ipc-message', (event, channel, message) => {
+        if (channel === 'reload') {
+          w.webContents.reload();
+        } else if (channel === 'error') {
+          done(message);
+        } else if (channel === 'response') {
+          expect(message).to.equal('SUCCESS setting app badge');
+          expect(waitForBadgeCount(expectedBadgeCount)).to.eventually.equal(expectedBadgeCount);
+          session.fromPartition('sw-file-scheme-spec').clearStorageData({
+            storages: ['serviceworkers']
+          }).then(() => done());
+        }
+      });
+      w.webContents.on('crashed', () => done(new Error('WebContents crashed.')));
+      w.loadFile(path.join(fixturesPath, 'pages', 'service-worker', 'badge-index.html'), { search: '?setBadge' });
+    });
+
+    it('clearAppBadge can be called in a ServiceWorker', (done) => {
+      w.webContents.on('ipc-message', (event, channel, message) => {
+        if (channel === 'reload') {
+          w.webContents.reload();
+        } else if (channel === 'setAppBadge') {
+          expect(message).to.equal('SUCCESS setting app badge');
+          expect(waitForBadgeCount(expectedBadgeCount)).to.eventually.equal(expectedBadgeCount);
+        } else if (channel === 'error') {
+          done(message);
+        } else if (channel === 'response') {
+          expect(message).to.equal('SUCCESS clearing app badge');
+          expect(waitForBadgeCount(expectedBadgeCount)).to.eventually.equal(expectedBadgeCount);
+          session.fromPartition('sw-file-scheme-spec').clearStorageData({
+            storages: ['serviceworkers']
+          }).then(() => done());
+        }
+      });
+      w.webContents.on('crashed', () => done(new Error('WebContents crashed.')));
+      w.loadFile(path.join(fixturesPath, 'pages', 'service-worker', 'badge-index.html'), { search: '?clearBadge' });
+    });
   });
 });
 

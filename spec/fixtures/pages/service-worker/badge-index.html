@@ -1,0 +1,31 @@
+<script>
+  const ipcRenderer = require('electron').ipcRenderer;
+  let search = (new URL(document.location)).search;  
+
+  async function testIt() {
+    if (search === '?clearBadge') {
+      try {
+        await navigator.setAppBadge(42);
+        ipcRenderer.send('setAppBadge','SUCCESS setting app badge');
+      } catch (error) {
+        ipcRenderer.send('error', `${error.message}\n${error.stack}`);
+      }
+    }
+    navigator.serviceWorker.register('service-worker-badge.js', {scope: './'}).then(function() {
+      if (navigator.serviceWorker.controller) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', 'http://dummy/echo'+search);
+        xhr.setRequestHeader('X-Mock-Response', 'yes');
+        xhr.addEventListener('load', function() {
+          ipcRenderer.send('response', xhr.responseText);
+        });
+        xhr.send();
+      } else {
+        ipcRenderer.send('reload');
+      }
+    }).catch(function(error) {
+      ipcRenderer.send('error', `${error.message}\n${error.stack}`);
+    })
+  }
+  testIt();
+</script>
