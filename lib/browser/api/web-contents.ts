@@ -94,6 +94,7 @@ const defaultPrintingSetting = {
   pagesPerSheet: 1,
   isFirstRequest: false,
   previewUIID: 0,
+  // True, if the document source is modifiable. e.g. HTML and not PDF.
   previewModifiable: true,
   printToPDF: true,
   deviceName: 'Save as PDF',
