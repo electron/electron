@@ -1366,6 +1366,8 @@ void WebContents::RenderViewCreated(content::RenderViewHost* render_view_host) {
     if (web_preferences->GetPreference(options::kBackgroundColor,
                                        &color_name)) {
       view->SetBackgroundColor(ParseHexColor(color_name));
+    } else {
+      view->SetBackgroundColor(SK_ColorTRANSPARENT);
     }
   }
 }
