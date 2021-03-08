@@ -1,7 +1,7 @@
-From 7e0e52df283cdf56d2f68946b78359e4dab2bcd6 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Marijn Kruisselbrink <mek@chromium.org>
 Date: Tue, 23 Feb 2021 22:17:17 +0000
-Subject: [PATCH] [Blobs] Don't store BlobStorageLimits as a reference in transport strategy.
+Subject: Don't store BlobStorageLimits as a reference in transport strategy.
 
 Rather than storing a const reference to something of unclear lifetime,
 just make a copy. We could just copy the specific limits we need, but
@@ -29,13 +29,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2713958
 Commit-Queue: Krishna Govind <govind@chromium.org>
 Cr-Commit-Position: refs/branch-heads/4389@{#1327}
 Cr-Branched-From: 9251c5db2b6d5a59fe4eac7aafa5fed37c139bb7-refs/heads/master@{#843830}
----
 
 diff --git a/storage/browser/blob/blob_transport_strategy.cc b/storage/browser/blob/blob_transport_strategy.cc
-index eb660147..5ae4163 100644
+index eb66014792246254db1c825b61bd18e3190970de..5ae41639f149f8ff3ead9633d3aa834ac05a8e5f 100644
 --- a/storage/browser/blob/blob_transport_strategy.cc
 +++ b/storage/browser/blob/blob_transport_strategy.cc
-@@ -239,7 +239,7 @@
+@@ -239,7 +239,7 @@ class DataPipeTransportStrategy : public BlobTransportStrategy {
      }
    }
  
@@ -44,7 +43,7 @@ index eb660147..5ae4163 100644
    base::circular_deque<base::OnceClosure> requests_;
  
    mojo::ScopedDataPipeConsumerHandle consumer_handle_;
-@@ -336,7 +336,7 @@
+@@ -336,7 +336,7 @@ class FileTransportStrategy : public BlobTransportStrategy {
        std::move(result_callback_).Run(BlobStatus::DONE);
    }
  
