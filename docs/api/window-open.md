@@ -83,9 +83,9 @@ const mainWindow = new BrowserWindow()
 
 mainWindow.webContents.setWindowOpenHandler(({ url }) => {
   if (url.startsWith('https://github.com/')) {
-    return { action: "allow" }
+    return { action: 'allow' }
   }
-  return { action: "deny" }
+  return { action: 'deny' }
 })
 
 mainWindow.webContents.on('did-create-window', (childWindow) => {
