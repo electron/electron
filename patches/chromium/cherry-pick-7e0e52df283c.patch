@@ -1,0 +1,54 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Marijn Kruisselbrink <mek@chromium.org>
+Date: Tue, 23 Feb 2021 22:17:17 +0000
+Subject: Don't store BlobStorageLimits as a reference in transport strategy.
+
+Rather than storing a const reference to something of unclear lifetime,
+just make a copy. We could just copy the specific limits we need, but
+there shouldn't be many TransportStrategy instances alive at the same
+time anyway, so the cost of duplicating shouldn't be too high.
+
+(cherry picked from commit 9a10c68a381d78088532953aa8e0de0a5ff47316)
+
+(cherry picked from commit 7b51cb5e4e2c6cf9dcf19bd9d7599735efd48110)
+
+Bug: 1180871
+Change-Id: Ie1e31728b18f02c5d35df0ac0f285eb8f70cb268
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2713912
+Reviewed-by: Olivier Yiptong <oyiptong@chromium.org>
+Reviewed-by: Darwin Huang <huangdarwin@chromium.org>
+Reviewed-by: Victor Costan <pwnall@chromium.org>
+Commit-Queue: Marijn Kruisselbrink <mek@chromium.org>
+Cr-Original-Original-Commit-Position: refs/heads/master@{#856503}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2713891
+Reviewed-by: Krishna Govind <govind@chromium.org>
+Reviewed-by: Srinivas Sista <srinivassista@chromium.org>
+Cr-Original-Commit-Position: refs/branch-heads/4425@{#2}
+Cr-Original-Branched-From: 4a7d24ec28ccb96c5a1cfd7b4b40b17070f2c396-refs/heads/master@{#856252}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2713958
+Commit-Queue: Krishna Govind <govind@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4389@{#1327}
+Cr-Branched-From: 9251c5db2b6d5a59fe4eac7aafa5fed37c139bb7-refs/heads/master@{#843830}
+
+diff --git a/storage/browser/blob/blob_transport_strategy.cc b/storage/browser/blob/blob_transport_strategy.cc
+index eb66014792246254db1c825b61bd18e3190970de..5ae41639f149f8ff3ead9633d3aa834ac05a8e5f 100644
+--- a/storage/browser/blob/blob_transport_strategy.cc
++++ b/storage/browser/blob/blob_transport_strategy.cc
+@@ -239,7 +239,7 @@ class DataPipeTransportStrategy : public BlobTransportStrategy {
+     }
+   }
+ 
+-  const BlobStorageLimits& limits_;
++  const BlobStorageLimits limits_;
+   base::circular_deque<base::OnceClosure> requests_;
+ 
+   mojo::ScopedDataPipeConsumerHandle consumer_handle_;
+@@ -336,7 +336,7 @@ class FileTransportStrategy : public BlobTransportStrategy {
+       std::move(result_callback_).Run(BlobStatus::DONE);
+   }
+ 
+-  const BlobStorageLimits& limits_;
++  const BlobStorageLimits limits_;
+ 
+   // State used to assign bytes elements to individual files.
+   // The index of the first file that still has available space.
