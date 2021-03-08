@@ -116,10 +116,12 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', () => {
       const callWebFrameFn = (expr: string) => w.webContents.executeJavaScript('require("electron").webFrame.' + expr);
 
       w.webContents.session.spellCheckerEnabled = false;
+      await delay(500);
       expect(w.webContents.session.spellCheckerEnabled).to.be.false();
       expect(await callWebFrameFn('isWordMisspelled("testt")')).to.equal(false);
 
       w.webContents.session.spellCheckerEnabled = true;
+      await delay(500);
       expect(w.webContents.session.spellCheckerEnabled).to.be.true();
       expect(await callWebFrameFn('isWordMisspelled("testt")')).to.equal(true);
     });
