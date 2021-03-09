@@ -1363,29 +1363,44 @@ void WebContents::BeforeUnloadFired(bool proceed,
   // there are two virtual functions named BeforeUnloadFired.
 }
 
-void WebContents::RenderViewCreated(content::RenderViewHost* render_view_host) {
-  if (!background_throttling_)
-    render_view_host->SetSchedulerThrottling(false);
+// void WebContents::RenderViewCreated(content::RenderViewHost* render_view_host) {
+//   if (!background_throttling_)
+//     render_view_host->SetSchedulerThrottling(false);
 
-  // Set the background color of RenderWidgetHostView.
-  auto* const view = web_contents()->GetRenderWidgetHostView();
-  auto* web_preferences = WebContentsPreferences::From(web_contents());
-  if (view && web_preferences) {
-    std::string color_name;
-    if (web_preferences->GetPreference(options::kBackgroundColor,
-                                       &color_name)) {
-      view->SetBackgroundColor(ParseHexColor(color_name));
-    } else {
-      view->SetBackgroundColor(SK_ColorTRANSPARENT);
-    }
-  }
-}
+//   // Set the background color of RenderWidgetHostView.
+//   auto* const view = web_contents()->GetRenderWidgetHostView();
+//   auto* web_preferences = WebContentsPreferences::From(web_contents());
+//   if (view && web_preferences) {
+//     std::string color_name;
+//     if (web_preferences->GetPreference(options::kBackgroundColor,
+//                                        &color_name)) {
+//       view->SetBackgroundColor(ParseHexColor(color_name));
+//     } else {
+//       view->SetBackgroundColor(SK_ColorTRANSPARENT);
+//     }
+//   }
+// }
 
 void WebContents::RenderFrameCreated(
     content::RenderFrameHost* render_frame_host) {
   auto* rwhv = render_frame_host->GetView();
   if (!rwhv)
     return;
+
+  // Set the background color of RenderWidgetHostView.
+  auto* web_preferences = WebContentsPreferences::From(web_contents());
+  if (web_preferences) {
+    std::string color_name;
+    if (web_preferences->GetPreference(options::kBackgroundColor,
+                                       &color_name)) {
+      rwhv->SetBackgroundColor(ParseHexColor(color_name));
+    } else {
+      rwhv->SetBackgroundColor(SK_ColorTRANSPARENT);
+    }
+  }
+
+  if (!background_throttling_)
+    render_frame_host->GetRenderViewHost()->SetSchedulerThrottling(false);
 
   auto* rwh_impl =
       static_cast<content::RenderWidgetHostImpl*>(rwhv->GetRenderWidgetHost());
