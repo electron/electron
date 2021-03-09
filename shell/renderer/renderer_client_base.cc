@@ -137,9 +137,13 @@ void RendererClientBase::DidCreateScriptContext(
   global.SetHidden("contextId", context_id);
 }
 
-void RendererClientBase::AddRenderBindings(
-    v8::Isolate* isolate,
-    v8::Local<v8::Object> binding_object) {}
+void RendererClientBase::BindProcess(v8::Isolate* isolate,
+                                     gin_helper::Dictionary* process,
+                                     content::RenderFrame* render_frame) {
+  process->SetReadOnly("isMainFrame", render_frame->IsMainFrame());
+  process->SetReadOnly("contextIsolation",
+                       render_frame->GetBlinkPreferences().context_isolation);
+}
 
 void RendererClientBase::RenderThreadStarted() {
   auto* command_line = base::CommandLine::ForCurrentProcess();
