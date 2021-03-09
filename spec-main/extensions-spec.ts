@@ -154,15 +154,13 @@ describe('chrome extensions', () => {
       return extension.name !== 'Chromium PDF Viewer';
     });
 
-    // Compare JSON string to print more information if failed.
-    const expected = JSON.stringify(extension);
-    expect(JSON.stringify(loadedExtension)).to.equal(expected);
-    expect(JSON.stringify(readyExtension)).to.equal(expected);
+    expect(loadedExtension).to.deep.equal(extension);
+    expect(readyExtension).to.deep.equal(extension);
 
     const unloadedPromise = emittedOnce(customSession, 'extension-unloaded');
     await customSession.removeExtension(extension.id);
     const [, unloadedExtension] = await unloadedPromise;
-    expect(JSON.stringify(unloadedExtension)).to.equal(expected);
+    expect(unloadedExtension).to.deep.equal(extension);
   });
 
   it('lists loaded extensions in getAllExtensions', async () => {
