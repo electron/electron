@@ -35,9 +35,8 @@ body:
   attributes:
     label: Operating System Version
     description: What operating system version are you using?
-    validations:
+  validations:
     required: true
-
 - type: dropdown
   attributes:
     label: What arch are you using?
