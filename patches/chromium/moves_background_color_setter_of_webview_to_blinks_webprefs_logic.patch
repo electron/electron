@@ -1,0 +1,43 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sattard@slack-corp.com>
+Date: Mon, 8 Mar 2021 16:27:39 -0800
+Subject: moves background_color setter of WebView to blinks webprefs logic
+
+background_color can be updated at runtime, as such we need to apply the
+new background color to the WebView in the ApplyPreferences method.
+There is no current way to attach an observer to these prefs so patching
+is our only option.
+
+Ideally we could add an embedder observer pattern here but that can be
+done in future work.
+
+diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
+index fb994344ea53e17df84f176ad7d8722793b72cfd..2845e5ecbb1d331fd6f5a3f13554bc21e83a6de9 100644
+--- a/third_party/blink/renderer/core/exported/web_view_impl.cc
++++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
+@@ -154,6 +154,7 @@
+ #include "third_party/blink/renderer/core/timing/dom_window_performance.h"
+ #include "third_party/blink/renderer/core/timing/window_performance.h"
+ #include "third_party/blink/renderer/platform/fonts/font_cache.h"
++#include "third_party/blink/renderer/platform/graphics/color.h"
+ #include "third_party/blink/renderer/platform/graphics/image.h"
+ #include "third_party/blink/renderer/platform/graphics/paint/cull_rect.h"
+ #include "third_party/blink/renderer/platform/graphics/paint/paint_record_builder.h"
+@@ -1763,6 +1764,17 @@ void WebView::ApplyWebPreferences(const web_pref::WebPreferences& prefs,
+ 
+   RuntimeEnabledFeatures::SetTranslateServiceEnabled(
+       prefs.translate_service_available);
++
++  if (prefs.guest_instance_id) {  // webview.
++    web_view->SetBaseBackgroundColor(SK_ColorTRANSPARENT);
++  } else {  // normal window.
++    std::string color_str = prefs.background_color;
++    Color blink_color;
++    bool success = blink_color.SetFromString(WebString::FromASCII(color_str));
++    SkColor color =
++        !success || color_str.empty() ? SK_ColorTRANSPARENT : static_cast<SkColor>(blink_color);
++    web_view->SetBaseBackgroundColor(color);
++  }
+ }
+ 
+ void WebViewImpl::ThemeChanged() {
