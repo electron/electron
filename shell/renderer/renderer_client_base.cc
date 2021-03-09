@@ -265,22 +265,6 @@ void RendererClientBase::RenderFrameCreated(
   // service_impl_.reset(new ElectronApiServiceImpl(render_frame, this));
   new ElectronApiServiceImpl(render_frame, this);
 
-  content::RenderView* render_view = render_frame->GetRenderView();
-  if (render_frame->IsMainFrame() && render_view) {
-    blink::WebView* webview = render_view->GetWebView();
-    if (webview) {
-      auto prefs = render_frame->GetBlinkPreferences();
-      if (prefs.guest_instance_id) {  // webview.
-        webview->SetBaseBackgroundColor(SK_ColorTRANSPARENT);
-      } else {  // normal window.
-        std::string name = prefs.background_color;
-        SkColor color =
-            name.empty() ? SK_ColorTRANSPARENT : ParseHexColor(name);
-        webview->SetBaseBackgroundColor(color);
-      }
-    }
-  }
-
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   auto* dispatcher = extensions_renderer_client_->GetDispatcher();
   // ExtensionFrameHelper destroys itself when the RenderFrame is destroyed.
