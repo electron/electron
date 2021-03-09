@@ -92,9 +92,6 @@ class RendererClientBase : public content::ContentRendererClient
 #endif
 
  protected:
-  void AddRenderBindings(v8::Isolate* isolate,
-                         v8::Local<v8::Object> binding_object);
-
   // content::ContentRendererClient:
   void RenderThreadStarted() override;
   void ExposeInterfacesToBrowser(mojo::BinderMap* binders) override;

@@ -137,10 +137,6 @@ void RendererClientBase::DidCreateScriptContext(
   global.SetHidden("contextId", context_id);
 }
 
-void RendererClientBase::AddRenderBindings(
-    v8::Isolate* isolate,
-    v8::Local<v8::Object> binding_object) {}
-
 void RendererClientBase::RenderThreadStarted() {
   auto* command_line = base::CommandLine::ForCurrentProcess();
 

@@ -219,7 +219,6 @@ void ElectronSandboxedRendererClient::DidCreateScriptContext(
   auto* isolate = context->GetIsolate();
   auto binding = v8::Object::New(isolate);
   InitializeBindings(binding, context, render_frame->IsMainFrame());
-  AddRenderBindings(isolate, binding);
 
   std::vector<v8::Local<v8::String>> sandbox_preload_bundle_params = {
       node::FIXED_ONE_BYTE_STRING(isolate, "binding")};
