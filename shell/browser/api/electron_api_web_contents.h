@@ -692,6 +692,10 @@ class WebContents : public gin::Wrappable<WebContents>,
   // Set fullscreen mode triggered by html api.
   void SetHtmlApiFullscreen(bool enter_fullscreen);
 
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  v8::Local<v8::Value> GetChromeTabDetails(gin::Arguments* args);
+#endif
+
   v8::Global<v8::Value> session_;
   v8::Global<v8::Value> devtools_web_contents_;
   v8::Global<v8::Value> debugger_;

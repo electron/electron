@@ -61,6 +61,7 @@
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/referrer_type_converters.h"
 #include "content/public/common/webplugininfo.h"
+#include "content/public/renderer/v8_value_converter.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/shell/common/api/api.mojom.h"
 #include "gin/arguments.h"
@@ -88,6 +89,7 @@
 #include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/electron_javascript_dialog_manager.h"
 #include "shell/browser/electron_navigation_throttle.h"
+#include "shell/browser/extensions/extension_tab_util.h"
 #include "shell/browser/lib/bluetooth_chooser.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/session_preferences.h"
@@ -3535,6 +3537,20 @@ void WebContents::SetHtmlApiFullscreen(bool enter_fullscreen) {
   native_fullscreen_ = false;
 }
 
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+v8::Local<v8::Value> WebContents::GetChromeTabDetails(gin::Arguments* args) {
+  auto tab = extensions::ExtensionTabUtil::GetTabDetailsFromWebContents(this);
+
+  if (!tab)
+    return v8::Null(args->isolate());
+
+  return gin::ConvertToV8(
+      args->isolate(), std::move(*extensions::ExtensionTabUtil::CreateTabObject(
+                                      web_contents(), *tab, (*tab).index)
+                                      ->ToValue()));
+}
+#endif
+
 // static
 v8::Local<v8::ObjectTemplate> WebContents::FillObjectTemplate(
     v8::Isolate* isolate,
@@ -3641,6 +3657,9 @@ v8::Local<v8::ObjectTemplate> WebContents::FillObjectTemplate(
 #if BUILDFLAG(ENABLE_PRINTING)
       .SetMethod("_print", &WebContents::Print)
       .SetMethod("_printToPDF", &WebContents::PrintToPDF)
+#endif
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+      .SetMethod("getChromeTabDetails", &WebContents::GetChromeTabDetails)
 #endif
       .SetMethod("_setNextChildWebPreferences",
                  &WebContents::SetNextChildWebPreferences)

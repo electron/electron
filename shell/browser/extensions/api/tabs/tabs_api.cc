@@ -91,11 +91,17 @@ bool GetTabById(int tab_id,
                 electron::api::WebContents** contents,
                 std::unique_ptr<electron::api::ChromeTabDetails>* out_tab,
                 std::string* error_message) {
-  if (ExtensionTabUtil::GetTabById(tab_id, function->browser_context(),
-                                   function->include_incognito_information(),
-                                   contents, out_tab)) {
+  auto* web_contents = ExtensionTabUtil::GetWebContentsById(tab_id);
+
+  if (contents)
+    *contents = web_contents;
+
+  auto tab = ExtensionTabUtil::GetTabDetailsFromWebContents(web_contents);
+  if (out_tab)
+    *out_tab = std::move(tab);
+
+  if (tab)
     return true;
-  }
 
   if (error_message) {
     *error_message = ErrorUtils::FormatErrorMessage(

@@ -279,6 +279,27 @@ describe('webContents module', () => {
     });
   });
 
+  describe('webContents.getChromeTabDetails', () => {
+    let w: BrowserWindow;
+
+    before(async () => {
+      w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: true, sandbox: true } });
+      await w.loadURL('about:blank');
+    });
+
+    it('returns correct chrome tab details', async () => {
+      w.webContents.session.setChromeAPIHandlers({
+        getTab: () => {
+          return {
+            windowId: w.id
+          };
+        }
+      });
+      const details = w.webContents.getChromeTabDetails();
+      expect(details.url).to.equal('about:blank');
+    });
+  });
+
   describe('loadURL() promise API', () => {
     let w: BrowserWindow;
     beforeEach(async () => {

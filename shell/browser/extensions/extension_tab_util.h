@@ -61,19 +61,6 @@ class ExtensionTabUtil {
     ScrubTabBehaviorType pending_info;
   };
 
-  struct OpenTabParams {
-    OpenTabParams();
-    ~OpenTabParams();
-
-    bool create_browser_if_needed;
-    std::unique_ptr<int> window_id;
-    std::unique_ptr<int> opener_tab_id;
-    std::unique_ptr<std::string> url;
-    std::unique_ptr<bool> active;
-    std::unique_ptr<bool> pinned;
-    std::unique_ptr<int> index;
-  };
-
   static int GetTabId(content::WebContents* web_contents);
 
   // Gets the level of scrubbing of tab data that needs to happen for a given
@@ -91,18 +78,10 @@ class ExtensionTabUtil {
                                    api::tabs::Tab* tab,
                                    ScrubTabBehavior scrub_tab_behavior);
 
-  // Any out parameter (|browser|, |tab_strip|, |contents|, & |tab_index|) may
-  // be NULL and will not be set within the function.
-  static bool GetTabById(
-      int tab_id,
-      content::BrowserContext* context,
-      bool include_incognito,
-      electron::api::WebContents** contents,
-      std::unique_ptr<electron::api::ChromeTabDetails>* out_tab);
-  static bool GetTabById(int tab_id,
-                         content::BrowserContext* context,
-                         bool include_incognito,
-                         electron::api::WebContents** contents);
+  static electron::api::WebContents* GetWebContentsById(int tab_id);
+
+  static std::unique_ptr<electron::api::ChromeTabDetails>
+  GetTabDetailsFromWebContents(electron::api::WebContents* contents);
 
   static std::unique_ptr<api::tabs::Tab> CreateTabObject(
       content::WebContents* contents,

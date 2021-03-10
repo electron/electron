@@ -128,38 +128,16 @@ void ExtensionTabUtil::ScrubTabForExtension(
   }
 }
 
-bool ExtensionTabUtil::GetTabById(
-    int tab_id,
-    content::BrowserContext* context,
-    bool include_incognito,
-    electron::api::WebContents** contents,
-    std::unique_ptr<electron::api::ChromeTabDetails>* out_tab) {
-  if (tab_id == api::tabs::TAB_ID_NONE)
-    return false;
-
-  auto* wc = electron::api::WebContents::FromID(tab_id);
-  if (!wc)
-    return false;
-
-  auto tab =
-      electron::api::Session::FromBrowserContext(context)->GetChromeTabDetails(
-          wc);
-  if (!tab)
-    return false;
-
-  if (out_tab)
-    *out_tab = std::move(tab);
-  if (contents)
-    *contents = wc;
-
-  return true;
+electron::api::WebContents* ExtensionTabUtil::GetWebContentsById(int tab_id) {
+  return electron::api::WebContents::FromID(tab_id);
 }
 
-bool ExtensionTabUtil::GetTabById(int tab_id,
-                                  content::BrowserContext* context,
-                                  bool include_incognito,
-                                  electron::api::WebContents** contents) {
-  return GetTabById(tab_id, context, include_incognito, contents, nullptr);
+std::unique_ptr<electron::api::ChromeTabDetails>
+ExtensionTabUtil::GetTabDetailsFromWebContents(
+    electron::api::WebContents* contents) {
+  return electron::api::Session::FromBrowserContext(
+             contents->web_contents()->GetBrowserContext())
+      ->GetChromeTabDetails(contents);
 }
 
 int ExtensionTabUtil::GetTabId(WebContents* web_contents) {
