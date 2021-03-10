@@ -1,7 +1,7 @@
-From eb0c0353bf245885797d8ce0d1b864d88a381fbb Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Raymond Toy <rtoy@chromium.org>
 Date: Wed, 10 Feb 2021 05:34:49 +0000
-Subject: [PATCH] Convert AudioParam NaN values to the default value
+Subject: Convert AudioParam NaN values to the default value
 
 If any output value of an AudioParam (including the intrinsic values
 and any inputs to the AudioParam), should be NaN, replace the NaN
@@ -31,10 +31,9 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2686369
 Reviewed-by: Raymond Toy <rtoy@chromium.org>
 Cr-Commit-Position: refs/branch-heads/4389@{#880}
 Cr-Branched-From: 9251c5db2b6d5a59fe4eac7aafa5fed37c139bb7-refs/heads/master@{#843830}
----
 
 diff --git a/third_party/blink/renderer/modules/webaudio/audio_param.cc b/third_party/blink/renderer/modules/webaudio/audio_param.cc
-index c5d3294..135588f5 100644
+index c5d329479a412d52ee39167ff841b1cea417a217..135588f56ebceabd3e0a12f9f506955bb58b20ca 100644
 --- a/third_party/blink/renderer/modules/webaudio/audio_param.cc
 +++ b/third_party/blink/renderer/modules/webaudio/audio_param.cc
 @@ -25,6 +25,7 @@
@@ -45,7 +44,7 @@ index c5d3294..135588f5 100644
  #include "third_party/blink/renderer/core/inspector/console_message.h"
  #include "third_party/blink/renderer/modules/webaudio/audio_graph_tracer.h"
  #include "third_party/blink/renderer/modules/webaudio/audio_node.h"
-@@ -235,6 +236,49 @@
+@@ -235,6 +236,49 @@ void AudioParamHandler::CalculateSampleAccurateValues(
    CalculateFinalValues(values, number_of_values, IsAudioRate());
  }
  
@@ -95,7 +94,7 @@ index c5d3294..135588f5 100644
  void AudioParamHandler::CalculateFinalValues(float* values,
                                               unsigned number_of_values,
                                               bool sample_accurate) {
-@@ -297,10 +341,21 @@
+@@ -297,10 +341,21 @@ void AudioParamHandler::CalculateFinalValues(float* values,
        }
      }
  
@@ -120,7 +119,7 @@ index c5d3294..135588f5 100644
    }
 diff --git a/third_party/blink/web_tests/external/wpt/webaudio/the-audio-api/the-audioparam-interface/nan-param.html b/third_party/blink/web_tests/external/wpt/webaudio/the-audio-api/the-audioparam-interface/nan-param.html
 new file mode 100644
-index 0000000..e9b8f0a
+index 0000000000000000000000000000000000000000..e9b8f0accbd1b0359275615f3ef12bd7e9317c4f
 --- /dev/null
 +++ b/third_party/blink/web_tests/external/wpt/webaudio/the-audio-api/the-audioparam-interface/nan-param.html
 @@ -0,0 +1,92 @@
