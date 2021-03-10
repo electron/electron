@@ -26,7 +26,6 @@ InspectableWebContentsViewMac::InspectableWebContentsViewMac(
           initWithInspectableWebContentsViewMac:this]) {}
 
 InspectableWebContentsViewMac::~InspectableWebContentsViewMac() {
-  [view_ removeObservers];
   CloseDevTools();
 }
 

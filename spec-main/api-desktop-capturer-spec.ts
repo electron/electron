@@ -17,7 +17,7 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
   let w: BrowserWindow;
 
   before(async () => {
-    w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+    w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
     await w.loadURL('about:blank');
   });
 
@@ -96,7 +96,7 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
   });
 
   it('disabling thumbnail should return empty images', async () => {
-    const w2 = new BrowserWindow({ show: false, width: 200, height: 200 });
+    const w2 = new BrowserWindow({ show: false, width: 200, height: 200, webPreferences: { contextIsolation: false } });
     const wShown = emittedOnce(w2, 'show');
     w2.show();
     await wShown;
@@ -116,7 +116,7 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
   });
 
   it('getMediaSourceId should match DesktopCapturerSource.id', async () => {
-    const w = new BrowserWindow({ show: false, width: 100, height: 100 });
+    const w = new BrowserWindow({ show: false, width: 100, height: 100, webPreferences: { contextIsolation: false } });
     const wShown = emittedOnce(w, 'show');
     const wFocused = emittedOnce(w, 'focus');
     w.show();

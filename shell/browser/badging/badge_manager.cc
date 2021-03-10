@@ -47,6 +47,27 @@ void BadgeManager::BindFrameReceiver(
                                 std::move(context));
 }
 
+void BadgeManager::BindServiceWorkerReceiver(
+    content::RenderProcessHost* service_worker_process_host,
+    const GURL& service_worker_scope,
+    mojo::PendingReceiver<blink::mojom::BadgeService> receiver) {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+
+  auto* browser_context = service_worker_process_host->GetBrowserContext();
+
+  auto* badge_manager =
+      badging::BadgeManagerFactory::GetInstance()->GetForBrowserContext(
+          browser_context);
+  if (!badge_manager)
+    return;
+
+  auto context = std::make_unique<BadgeManager::ServiceWorkerBindingContext>(
+      service_worker_process_host->GetID(), service_worker_scope);
+
+  badge_manager->receivers_.Add(badge_manager, std::move(receiver),
+                                std::move(context));
+}
+
 std::string BadgeManager::GetBadgeString(base::Optional<int> badge_content) {
   if (!badge_content)
     return "•";

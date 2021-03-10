@@ -86,17 +86,6 @@ In the browser window some HTML APIs like `requestFullScreen` can only be
 invoked by a gesture from the user. Setting `userGesture` to `true` will remove
 this limitation.
 
-#### `frame.executeJavaScriptInIsolatedWorld(worldId, code[, userGesture])`
-
-* `worldId` Integer - The ID of the world to run the javascript in, `0` is the default world, `999` is the world used by Electron's `contextIsolation` feature.  You can provide any integer here.
-* `code` String
-* `userGesture` Boolean (optional) - Default is `false`.
-
-Returns `Promise<unknown>` - A promise that resolves with the result of the executed
-code or is rejected if execution throws or results in a rejected promise.
-
-Works like `executeJavaScript` but evaluates `scripts` in an isolated context.
-
 #### `frame.reload()`
 
 Returns `boolean` - Whether the reload was initiated successfully. Only results in `false` when the frame has no history.

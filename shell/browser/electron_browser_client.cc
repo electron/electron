@@ -35,7 +35,6 @@
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/client_certificate_delegate.h"
 #include "content/public/browser/login_delegate.h"
-#include "content/public/browser/non_network_url_loader_factory_base.h"
 #include "content/public/browser/overlay_window.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
@@ -59,6 +58,7 @@
 #include "services/device/public/cpp/geolocation/location_provider.h"
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/resource_request_body.h"
+#include "services/network/public/cpp/self_deleting_url_loader_factory.h"
 #include "shell/app/electron_crash_reporter_client.h"
 #include "shell/browser/api/electron_api_app.h"
 #include "shell/browser/api/electron_api_crash_reporter.h"
@@ -1295,7 +1295,7 @@ namespace {
 
 // The FileURLLoaderFactory provided to the extension background pages.
 // Checks with the ChildProcessSecurityPolicy to validate the file access.
-class FileURLLoaderFactory : public content::NonNetworkURLLoaderFactoryBase {
+class FileURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
  public:
   static mojo::PendingRemote<network::mojom::URLLoaderFactory> Create(
       int child_id) {
@@ -1313,7 +1313,7 @@ class FileURLLoaderFactory : public content::NonNetworkURLLoaderFactoryBase {
   explicit FileURLLoaderFactory(
       int child_id,
       mojo::PendingReceiver<network::mojom::URLLoaderFactory> factory_receiver)
-      : content::NonNetworkURLLoaderFactoryBase(std::move(factory_receiver)),
+      : network::SelfDeletingURLLoaderFactory(std::move(factory_receiver)),
         child_id_(child_id) {}
   ~FileURLLoaderFactory() override = default;
 
@@ -1768,6 +1768,20 @@ content::SerialDelegate* ElectronBrowserClient::GetSerialDelegate() {
   if (!serial_delegate_)
     serial_delegate_ = std::make_unique<ElectronSerialDelegate>();
   return serial_delegate_.get();
+}
+
+content::BluetoothDelegate* ElectronBrowserClient::GetBluetoothDelegate() {
+  if (!bluetooth_delegate_)
+    bluetooth_delegate_ = std::make_unique<ElectronBluetoothDelegate>();
+  return bluetooth_delegate_.get();
+}
+
+void ElectronBrowserClient::BindBadgeServiceReceiverFromServiceWorker(
+    content::RenderProcessHost* service_worker_process_host,
+    const GURL& service_worker_scope,
+    mojo::PendingReceiver<blink::mojom::BadgeService> receiver) {
+  badging::BadgeManager::BindServiceWorkerReceiver(
+      service_worker_process_host, service_worker_scope, std::move(receiver));
 }
 
 }  // namespace electron

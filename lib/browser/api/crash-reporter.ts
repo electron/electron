@@ -18,7 +18,7 @@ class CrashReporter {
 
     if (submitURL == null) throw new Error('submitURL is a required option to crashReporter.start');
 
-    if (!compress) {
+    if (!compress && uploadToServer) {
       deprecate.log('Sending uncompressed crash reports is deprecated and will be removed in a future version of Electron. Set { compress: true } to opt-in to the new behavior. Crash reports will be uploaded gzipped, which most crash reporting servers support.');
     }
 

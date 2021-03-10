@@ -125,11 +125,11 @@ base::FilePath ElectronCrashReporterClient::GetReporterLogFilename() {
 
 #if defined(OS_WIN)
 void ElectronCrashReporterClient::GetProductNameAndVersion(
-    const base::string16& exe_path,
-    base::string16* product_name,
-    base::string16* version,
-    base::string16* special_build,
-    base::string16* channel_name) {
+    const std::wstring& exe_path,
+    std::wstring* product_name,
+    std::wstring* version,
+    std::wstring* special_build,
+    std::wstring* channel_name) {
   *product_name = base::UTF8ToUTF16(ELECTRON_PRODUCT_NAME);
   *version = base::UTF8ToUTF16(ELECTRON_VERSION_STRING);
 }
@@ -137,7 +137,7 @@ void ElectronCrashReporterClient::GetProductNameAndVersion(
 
 #if defined(OS_WIN)
 bool ElectronCrashReporterClient::GetCrashDumpLocation(
-    base::string16* crash_dir_str) {
+    std::wstring* crash_dir_str) {
   base::FilePath crash_dir;
   if (!base::PathService::Get(electron::DIR_CRASH_DUMPS, &crash_dir))
     return false;

@@ -108,8 +108,8 @@ app.whenReady().then(async function () {
     webPreferences: {
       backgroundThrottling: false,
       nodeIntegration: true,
-      enableRemoteModule: false,
-      webviewTag: true
+      webviewTag: true,
+      contextIsolation: false
     }
   });
   window.loadFile('static/index.html', {

@@ -427,10 +427,6 @@ v8::Local<v8::Value> GetWebPreference(v8::Isolate* isolate,
     return gin::ConvertToV8(isolate, prefs.opener_id);
   } else if (pref_name == options::kContextIsolation) {
     return gin::ConvertToV8(isolate, prefs.context_isolation);
-#if BUILDFLAG(ENABLE_REMOTE_MODULE)
-  } else if (pref_name == options::kEnableRemoteModule) {
-    return gin::ConvertToV8(isolate, prefs.enable_remote_module);
-#endif
   } else if (pref_name == options::kWorldSafeExecuteJavaScript) {
     return gin::ConvertToV8(isolate, prefs.world_safe_execute_javascript);
   } else if (pref_name == options::kGuestInstanceID) {

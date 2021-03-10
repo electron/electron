@@ -46,10 +46,10 @@ index e1c49f5cd9bd249398a14905a6fb41d54238e1ec..ad1c76e77e029d759547f6aded492ae6
  
  }  // namespace
 diff --git a/content/browser/media/media_keys_listener_manager_impl.cc b/content/browser/media/media_keys_listener_manager_impl.cc
-index 87e716364fbd154b139cf6818b0113fef9b319e0..7d3e95cad07354ec71ae9643b2af5820e8807c9a 100644
+index 4145418210c2b1033390ec8a2e657cb1fcd048f8..5938f75742b793868638e693a9a8c8dc686dfc46 100644
 --- a/content/browser/media/media_keys_listener_manager_impl.cc
 +++ b/content/browser/media/media_keys_listener_manager_impl.cc
-@@ -286,6 +286,11 @@ void MediaKeysListenerManagerImpl::UpdateSystemMediaControlsEnabledControls() {
+@@ -290,6 +290,11 @@ void MediaKeysListenerManagerImpl::UpdateSystemMediaControlsEnabledControls() {
        case ui::VKEY_MEDIA_STOP:
          system_media_controls_->SetIsStopEnabled(should_enable);
          break;

@@ -131,6 +131,10 @@ app.whenReady().then(async () => {
   chai.use(require('chai-as-promised'));
   chai.use(require('dirty-chai'));
 
+  // Show full object diff
+  // https://github.com/chaijs/chai/issues/469
+  chai.config.truncateThreshold = 0;
+
   const runner = mocha.run(cb);
 }).catch((err) => {
   console.error('An error occurred while running the spec-main spec runner');

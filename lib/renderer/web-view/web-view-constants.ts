@@ -6,7 +6,6 @@ export const enum WEB_VIEW_CONSTANTS {
   ATTRIBUTE_HTTPREFERRER = 'httpreferrer',
   ATTRIBUTE_NODEINTEGRATION = 'nodeintegration',
   ATTRIBUTE_NODEINTEGRATIONINSUBFRAMES = 'nodeintegrationinsubframes',
-  ATTRIBUTE_ENABLEREMOTEMODULE = 'enableremotemodule',
   ATTRIBUTE_PLUGINS = 'plugins',
   ATTRIBUTE_DISABLEWEBSECURITY = 'disablewebsecurity',
   ATTRIBUTE_ALLOWPOPUPS = 'allowpopups',

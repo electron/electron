@@ -112,6 +112,7 @@ describe('<webview> tag', function () {
     it('inserts node symbols when set', async () => {
       const message = await startLoadingWebViewAndWaitForMessage(webview, {
         nodeintegration: 'on',
+        webpreferences: 'contextIsolation=no',
         src: `file://${fixtures}/pages/d.html`
       });
 
@@ -132,6 +133,7 @@ describe('<webview> tag', function () {
 
       const message = await startLoadingWebViewAndWaitForMessage(webview, {
         nodeintegration: 'on',
+        webpreferences: 'contextIsolation=no',
         src: `file://${fixtures}/pages/post.html`
       });
 
@@ -154,6 +156,7 @@ describe('<webview> tag', function () {
       });
       loadWebView(webview, {
         allowpopups: 'on',
+        webpreferences: 'contextIsolation=no',
         src
       });
       const { message } = await waitForEvent(webview, 'console-message');
@@ -163,6 +166,7 @@ describe('<webview> tag', function () {
     (nativeModulesEnabled ? it : it.skip)('loads native modules when navigation happens', async function () {
       await loadWebView(webview, {
         nodeintegration: 'on',
+        webpreferences: 'contextIsolation=no',
         src: `file://${fixtures}/pages/native-module.html`
       });
 
@@ -177,7 +181,8 @@ describe('<webview> tag', function () {
     it('loads the script before other scripts in window', async () => {
       const message = await startLoadingWebViewAndWaitForMessage(webview, {
         preload: `${fixtures}/module/preload.js`,
-        src: `file://${fixtures}/pages/e.html`
+        src: `file://${fixtures}/pages/e.html`,
+        contextIsolation: false
       });
 
       expect(message).to.be.a('string');
@@ -343,6 +348,7 @@ describe('<webview> tag', function () {
       const message = await startLoadingWebViewAndWaitForMessage(webview, {
         disablewebsecurity: '',
         nodeintegration: 'on',
+        webpreferences: 'contextIsolation=no',
         src: `file://${fixtures}/pages/d.html`
       });
 
@@ -391,6 +397,7 @@ describe('<webview> tag', function () {
       const message = await startLoadingWebViewAndWaitForMessage(webview, {
         nodeintegration: 'on',
         partition: 'test2',
+        webpreferences: 'contextIsolation=no',
         src: `file://${fixtures}/pages/d.html`
       });
 
@@ -464,7 +471,7 @@ describe('<webview> tag', function () {
     it('can enable nodeintegration', async () => {
       const message = await startLoadingWebViewAndWaitForMessage(webview, {
         src: `file://${fixtures}/pages/d.html`,
-        webpreferences: 'nodeIntegration'
+        webpreferences: 'nodeIntegration,contextIsolation=no'
       });
 
       const types = JSON.parse(message);
@@ -475,17 +482,6 @@ describe('<webview> tag', function () {
       });
     });
 
-    ifit(features.isRemoteModuleEnabled())('can disable the remote module', async () => {
-      const message = await startLoadingWebViewAndWaitForMessage(webview, {
-        preload: `${fixtures}/module/preload-disable-remote.js`,
-        src: `file://${fixtures}/api/blank.html`,
-        webpreferences: 'enableRemoteModule=no'
-      });
-
-      const typeOfRemote = JSON.parse(message);
-      expect(typeOfRemote).to.equal('undefined');
-    });
-
     it('can disables web security and enable nodeintegration', async () => {
       const jqueryPath = path.join(__dirname, '/static/jquery-2.0.3.min.js');
       const src = `<script src='file://${jqueryPath}'></script> <script>console.log(typeof require);</script>`;
@@ -493,7 +489,7 @@ describe('<webview> tag', function () {
 
       const message = await startLoadingWebViewAndWaitForMessage(webview, {
         src: `data:text/html;base64,${encoded}`,
-        webpreferences: 'webSecurity=no, nodeIntegration=yes'
+        webpreferences: 'webSecurity=no, nodeIntegration=yes, contextIsolation=no'
       });
 
       expect(message).to.equal('function');
@@ -526,6 +522,7 @@ describe('<webview> tag', function () {
     it('emits when guest sends an ipc message to browser', async () => {
       loadWebView(webview, {
         nodeintegration: 'on',
+        webpreferences: 'contextIsolation=no',
         src: `file://${fixtures}/pages/ipc-message.html`
       });
       const { channel, args } = await waitForEvent(webview, 'ipc-message');
@@ -710,6 +707,7 @@ describe('<webview> tag', function () {
     it('should emit beforeunload handler', async () => {
       await loadWebView(webview, {
         nodeintegration: 'on',
+        webpreferences: 'contextIsolation=no',
         src: `file://${fixtures}/pages/beforeunload-false.html`
       });
 
@@ -821,6 +819,7 @@ describe('<webview> tag', function () {
         });
         loadWebView(webview, {
           nodeintegration: 'on',
+          webpreferences: 'contextIsolation=no',
           src: `file://${fixtures}/pages/basic-auth.html?port=${port}`
         });
       });
@@ -896,6 +895,7 @@ describe('<webview> tag', function () {
     it('can send keyboard event', async () => {
       loadWebView(webview, {
         nodeintegration: 'on',
+        webpreferences: 'contextIsolation=no',
         src: `file://${fixtures}/pages/onkeyup.html`
       });
       await waitForEvent(webview, 'dom-ready');
@@ -915,6 +915,7 @@ describe('<webview> tag', function () {
     it('can send mouse event', async () => {
       loadWebView(webview, {
         nodeintegration: 'on',
+        webpreferences: 'contextIsolation=no',
         src: `file://${fixtures}/pages/onmouseup.html`
       });
       await waitForEvent(webview, 'dom-ready');

@@ -130,15 +130,6 @@ inside the `webview`. All your preloads will load for every iframe, you can
 use `process.isMainFrame` to determine if you are in the main frame or not.
 This option is disabled by default in the guest page.
 
-### `enableremotemodule`
-
-```html
-<webview src="http://www.google.com/" enableremotemodule="false"></webview>
-```
-
-A `Boolean`. When this attribute is `false` the guest page in `webview` will not have access
-to the [`remote`](remote.md) module. The remote module is unavailable by default.
-
 ### `plugins`
 
 ```html

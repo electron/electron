@@ -194,7 +194,7 @@ describe('webContents module', () => {
       let w: BrowserWindow;
 
       before(async () => {
-        w = new BrowserWindow({ show: false });
+        w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: false } });
         await w.loadURL('about:blank');
       });
       after(closeAllWindows);
@@ -537,7 +537,7 @@ describe('webContents module', () => {
   describe('before-input-event event', () => {
     afterEach(closeAllWindows);
     it('can prevent document keyboard events', async () => {
-      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
       await w.loadFile(path.join(fixturesPath, 'pages', 'key-events.html'));
       const keyDown = new Promise(resolve => {
         ipcMain.once('keydown', (event, key) => resolve(key));
@@ -678,7 +678,7 @@ describe('webContents module', () => {
   describe('sendInputEvent(event)', () => {
     let w: BrowserWindow;
     beforeEach(async () => {
-      w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+      w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
       await w.loadFile(path.join(fixturesPath, 'pages', 'key-events.html'));
     });
     afterEach(closeAllWindows);
@@ -971,7 +971,7 @@ describe('webContents module', () => {
     });
 
     it('can persist zoom level across navigation', (done) => {
-      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
       let finalNavigation = false;
       ipcMain.on('set-zoom', (e, host) => {
         const zoomLevel = hostZoomMap[host];
@@ -1091,7 +1091,7 @@ describe('webContents module', () => {
     });
 
     it('cannot propagate when used with webframe', async () => {
-      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
       const w2 = new BrowserWindow({ show: false });
 
       const temporaryZoomSet = emittedOnce(ipcMain, 'temporary-zoom-set');
@@ -1132,7 +1132,7 @@ describe('webContents module', () => {
       });
 
       it('cannot persist zoom level after navigation with webFrame', async () => {
-        const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+        const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
         const source = `
           const {ipcRenderer, webFrame} = require('electron')
           webFrame.setZoomLevel(0.6)
@@ -1444,7 +1444,7 @@ describe('webContents module', () => {
   describe('ipc-message event', () => {
     afterEach(closeAllWindows);
     it('emits when the renderer process sends an asynchronous message', async () => {
-      const w = new BrowserWindow({ show: true, webPreferences: { nodeIntegration: true } });
+      const w = new BrowserWindow({ show: true, webPreferences: { nodeIntegration: true, contextIsolation: false } });
       await w.webContents.loadURL('about:blank');
       w.webContents.executeJavaScript(`
         require('electron').ipcRenderer.send('message', 'Hello World!')
@@ -1459,7 +1459,7 @@ describe('webContents module', () => {
   describe('ipc-message-sync event', () => {
     afterEach(closeAllWindows);
     it('emits when the renderer process sends a synchronous message', async () => {
-      const w = new BrowserWindow({ show: true, webPreferences: { nodeIntegration: true } });
+      const w = new BrowserWindow({ show: true, webPreferences: { nodeIntegration: true, contextIsolation: false } });
       await w.webContents.loadURL('about:blank');
       const promise: Promise<[string, string]> = new Promise(resolve => {
         w.webContents.once('ipc-message-sync', (event, channel, arg) => {
@@ -1886,7 +1886,7 @@ describe('webContents module', () => {
     afterEach(closeAllWindows);
 
     it('can get multiple shared workers', async () => {
-      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
 
       const ready = emittedOnce(ipcMain, 'ready');
       w.loadFile(path.join(fixturesPath, 'api', 'shared-worker', 'shared-worker.html'));
@@ -1900,7 +1900,7 @@ describe('webContents module', () => {
     });
 
     it('can inspect a specific shared worker', async () => {
-      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
 
       const ready = emittedOnce(ipcMain, 'ready');
       w.loadFile(path.join(fixturesPath, 'api', 'shared-worker', 'shared-worker.html'));
@@ -2036,6 +2036,13 @@ describe('webContents module', () => {
         done();
       });
       contents.loadURL('about:blank').then(() => contents.forcefullyCrashRenderer());
+    });
+
+    it('does not crash main process when quiting in it', async () => {
+      const appPath = path.join(mainFixturesPath, 'apps', 'quit', 'main.js');
+      const appProcess = ChildProcess.spawn(process.execPath, [appPath]);
+      const [code] = await emittedOnce(appProcess, 'close');
+      expect(code).to.equal(0);
     });
   });
 

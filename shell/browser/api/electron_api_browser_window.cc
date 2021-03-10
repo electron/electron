@@ -104,13 +104,16 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
 }
 
 BrowserWindow::~BrowserWindow() {
-  // FIXME This is a hack rather than a proper fix preventing shutdown crashes.
-  if (api_web_contents_)
+  if (api_web_contents_) {
+    // Cleanup the observers if user destroyed this instance directly instead of
+    // gracefully closing content::WebContents.
+    auto* host = web_contents()->GetRenderViewHost();
+    if (host)
+      host->GetWidget()->RemoveInputEventObserver(this);
     api_web_contents_->RemoveObserver(this);
-  // Note that the OnWindowClosed will not be called after the destructor runs,
-  // since the window object is managed by the BaseWindow class.
-  if (web_contents())
-    Cleanup();
+    // Destroy the WebContents.
+    OnCloseContents();
+  }
 }
 
 void BrowserWindow::OnInputEvent(const blink::WebInputEvent& event) {
@@ -133,14 +136,14 @@ void BrowserWindow::RenderViewHostChanged(content::RenderViewHost* old_host,
     new_host->GetWidget()->AddInputEventObserver(this);
 }
 
-void BrowserWindow::RenderViewCreated(
-    content::RenderViewHost* render_view_host) {
+void BrowserWindow::RenderFrameCreated(
+    content::RenderFrameHost* render_frame_host) {
   if (!window()->transparent())
     return;
 
   content::RenderWidgetHostImpl* impl = content::RenderWidgetHostImpl::FromID(
-      render_view_host->GetProcess()->GetID(),
-      render_view_host->GetRoutingID());
+      render_frame_host->GetProcess()->GetID(),
+      render_frame_host->GetRoutingID());
   if (impl)
     impl->owner_delegate()->SetBackgroundOpaque(false);
 }
@@ -173,34 +176,14 @@ void BrowserWindow::OnRendererUnresponsive(content::RenderProcessHost*) {
   ScheduleUnresponsiveEvent(50);
 }
 
+void BrowserWindow::WebContentsDestroyed() {
+  api_web_contents_ = nullptr;
+  CloseImmediately();
+}
+
 void BrowserWindow::OnCloseContents() {
-  // On some machines it may happen that the window gets destroyed for twice,
-  // checking web_contents() can effectively guard against that.
-  // https://github.com/electron/electron/issues/16202.
-  //
-  // TODO(zcbenz): We should find out the root cause and improve the closing
-  // procedure of BrowserWindow.
-  if (!web_contents())
-    return;
-
-  // Close all child windows before closing current window.
-  v8::Locker locker(isolate());
-  v8::HandleScope handle_scope(isolate());
-  for (v8::Local<v8::Value> value : child_windows_.Values(isolate())) {
-    gin::Handle<BrowserWindow> child;
-    if (gin::ConvertFromV8(isolate(), value, &child) && !child.IsEmpty())
-      child->window()->CloseImmediately();
-  }
-
-  // When the web contents is gone, close the window immediately, but the
-  // memory will not be freed until you call delete.
-  // In this way, it would be safe to manage windows via smart pointers. If you
-  // want to free memory when the window is closed, you can do deleting by
-  // overriding the OnWindowClosed method in the observer.
-  window()->CloseImmediately();
-
-  // Do not sent "unresponsive" event after window is closed.
-  window_unresponsive_closure_.Cancel();
+  BaseWindow::ResetBrowserViews();
+  api_web_contents_->Destroy();
 }
 
 void BrowserWindow::OnRendererResponsive(content::RenderProcessHost*) {
@@ -268,30 +251,22 @@ void BrowserWindow::OnCloseButtonClicked(bool* prevent_default) {
     web_contents()->Close();
 }
 
-void BrowserWindow::OnWindowClosed() {
-  // We need to reset the browser views before we call Cleanup, because the
-  // browser views are child views of the main web contents view, which will be
-  // deleted by Cleanup.
-  BaseWindow::ResetBrowserViews();
-  Cleanup();
-  // See BaseWindow::OnWindowClosed on why calling InvalidateWeakPtrs.
-  weak_factory_.InvalidateWeakPtrs();
-  BaseWindow::OnWindowClosed();
-}
-
 void BrowserWindow::OnWindowBlur() {
-  web_contents()->StoreFocus();
+  if (api_web_contents_)
+    web_contents()->StoreFocus();
 
   BaseWindow::OnWindowBlur();
 }
 
 void BrowserWindow::OnWindowFocus() {
-  web_contents()->RestoreFocus();
-
+  // focus/blur events might be emitted while closing window.
+  if (api_web_contents_) {
+    web_contents()->RestoreFocus();
 #if !defined(OS_MAC)
-  if (!api_web_contents_->IsDevToolsOpened())
-    web_contents()->Focus();
+    if (!api_web_contents_->IsDevToolsOpened())
+      web_contents()->Focus();
 #endif
+  }
 
   BaseWindow::OnWindowFocus();
 }
@@ -323,6 +298,22 @@ void BrowserWindow::OnWindowLeaveFullScreen() {
     web_contents()->ExitFullscreen(true);
 #endif
   BaseWindow::OnWindowLeaveFullScreen();
+}
+
+void BrowserWindow::CloseImmediately() {
+  // Close all child windows before closing current window.
+  v8::Locker locker(isolate());
+  v8::HandleScope handle_scope(isolate());
+  for (v8::Local<v8::Value> value : child_windows_.Values(isolate())) {
+    gin::Handle<BrowserWindow> child;
+    if (gin::ConvertFromV8(isolate(), value, &child) && !child.IsEmpty())
+      child->window()->CloseImmediately();
+  }
+
+  BaseWindow::CloseImmediately();
+
+  // Do not sent "unresponsive" event after window is closed.
+  window_unresponsive_closure_.Cancel();
 }
 
 void BrowserWindow::Focus() {
@@ -446,17 +437,6 @@ void BrowserWindow::NotifyWindowUnresponsive() {
       !IsUnresponsiveEventSuppressed()) {
     Emit("unresponsive");
   }
-}
-
-void BrowserWindow::Cleanup() {
-  auto* host = web_contents()->GetRenderViewHost();
-  if (host)
-    host->GetWidget()->RemoveInputEventObserver(this);
-
-  // Destroy WebContents asynchronously unless app is shutting down,
-  // because destroy() might be called inside WebContents's event handler.
-  api_web_contents_->DestroyWebContents(!Browser::Get()->is_shutting_down());
-  Observe(nullptr);
 }
 
 void BrowserWindow::OnWindowShow() {

@@ -69,7 +69,7 @@ parameters:
 # Build machines configs.
 docker-image: &docker-image
   docker:
-    - image: electron.azurecr.io/build:4cec2c5ab66765caa724e37bae2bffb9b29722a5
+    - image: electron.azurecr.io/build:6555a80939fb4c3ddf9343b3f140e573f40de225
 
 machine-linux-medium: &machine-linux-medium
   <<: *docker-image
@@ -313,7 +313,7 @@ step-setup-goma-for-build: &step-setup-goma-for-build
       npm install
       mkdir third_party
       node -e "require('./src/utils/goma.js').downloadAndPrepare({ gomaOneForAll: true })"
-      node -e "require('./src/utils/goma.js').ensure()"
+      third_party/goma/goma_ctl.py ensure_start
       echo 'export GN_GOMA_FILE='`node -e "console.log(require('./src/utils/goma.js').gnFilePath)"` >> $BASH_ENV
       echo 'export LOCAL_GOMA_DIR='`node -e "console.log(require('./src/utils/goma.js').dir)"` >> $BASH_ENV
       cd ..
@@ -1018,7 +1018,7 @@ step-minimize-workspace-size-from-checkout: &step-minimize-workspace-size-from-c
     name: Remove some unused data to avoid storing it in the workspace/cache
     command: |
       rm -rf src/android_webview
-      rm -rf src/ios
+      rm -rf src/ios/chrome
       rm -rf src/third_party/blink/web_tests
       rm -rf src/third_party/blink/perf_tests
       rm -rf src/third_party/WebKit/LayoutTests

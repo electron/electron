@@ -148,19 +148,6 @@ describe('webFrameMain module', () => {
     });
   });
 
-  describe('WebFrame.executeJavaScriptInIsolatedWorld', () => {
-    it('can inject code into any subframe', async () => {
-      const w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: true } });
-      await w.loadFile(path.join(subframesPath, 'frame-with-frame-container.html'));
-      const webFrame = w.webContents.mainFrame;
-
-      const getUrl = (frame: WebFrameMain) => frame.executeJavaScriptInIsolatedWorld(999, 'location.href');
-      expect(await getUrl(webFrame)).to.equal(fileUrl('frame-with-frame-container.html'));
-      expect(await getUrl(webFrame.frames[0])).to.equal(fileUrl('frame-with-frame.html'));
-      expect(await getUrl(webFrame.frames[0].frames[0])).to.equal(fileUrl('frame.html'));
-    });
-  });
-
   describe('WebFrame.reload', () => {
     it('reloads a frame', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: true } });

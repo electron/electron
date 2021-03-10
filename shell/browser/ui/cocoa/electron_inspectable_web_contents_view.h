@@ -34,13 +34,13 @@ using electron::InspectableWebContentsViewMac;
   BOOL devtools_visible_;
   BOOL devtools_docked_;
   BOOL devtools_is_first_responder_;
+  BOOL attached_to_window_;
 
   DevToolsContentsResizingStrategy strategy_;
 }
 
 - (instancetype)initWithInspectableWebContentsViewMac:
     (InspectableWebContentsViewMac*)view;
-- (void)removeObservers;
 - (void)notifyDevToolsFocused;
 - (void)setDevToolsVisible:(BOOL)visible activate:(BOOL)activate;
 - (BOOL)isDevToolsVisible;
