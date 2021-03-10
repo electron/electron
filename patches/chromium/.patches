@@ -128,3 +128,4 @@ merge_to_m88_avoid_spinning_a_nested_message_loop_for_x11_clipboard.patch
 merge_to_m88_xproto_switch_event_queue_from_a_std_list_to_a.patch
 websocket_don_t_clear_event_queue_on_destruction.patch
 cherry-pick-7e0e52df283c.patch
+cherry-pick-6ed1c0c425e0.patch
