@@ -612,6 +612,10 @@ void OffScreenRenderWidgetHostView::ProxyViewDestroyed(
   Invalidate();
 }
 
+bool OffScreenRenderWidgetHostView::IsOffscreen() const {
+  return true;
+}
+
 std::unique_ptr<viz::HostDisplayClient>
 OffScreenRenderWidgetHostView::CreateHostDisplayClient(
     ui::Compositor* compositor) {
