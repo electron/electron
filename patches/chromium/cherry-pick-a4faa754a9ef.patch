@@ -1,7 +1,7 @@
-From a4faa754a9ef3f63d0c2d5f2a34859029b748833 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Harald Alvestrand <hta@chromium.org>
-Date: Tue, 02 Mar 2021 17:33:49 +0000
-Subject: [PATCH] [Merge to M86-LTS] Fix GetP2PSocketManager ownership
+Date: Tue, 2 Mar 2021 17:33:49 +0000
+Subject: Fix GetP2PSocketManager ownership
 
 Let it return a mojo::SharedRemote<> instead of a raw pointer - this is
 a decoration around a shared_refptr.
@@ -25,13 +25,12 @@ Reviewed-by: Victor-Gabriel Savu <vsavu@google.com>
 Commit-Queue: Artem Sumaneev <asumaneev@google.com>
 Cr-Commit-Position: refs/branch-heads/4240@{#1555}
 Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
----
 
 diff --git a/third_party/blink/renderer/platform/p2p/socket_dispatcher.cc b/third_party/blink/renderer/platform/p2p/socket_dispatcher.cc
-index 29884a2..72ec477 100644
+index 29884a255f24556f4dc8b41b22304938a4f0d775..72ec477f57871b460adf83ea9e1a4bd217d5eebe 100644
 --- a/third_party/blink/renderer/platform/p2p/socket_dispatcher.cc
 +++ b/third_party/blink/renderer/platform/p2p/socket_dispatcher.cc
-@@ -36,7 +36,7 @@
+@@ -36,7 +36,7 @@ void P2PSocketDispatcher::RemoveNetworkListObserver(
    network_list_observers_->RemoveObserver(network_list_observer);
  }
  
@@ -40,7 +39,7 @@ index 29884a2..72ec477 100644
  P2PSocketDispatcher::GetP2PSocketManager() {
    base::AutoLock lock(p2p_socket_manager_lock_);
    if (!p2p_socket_manager_) {
-@@ -56,7 +56,7 @@
+@@ -56,7 +56,7 @@ P2PSocketDispatcher::GetP2PSocketManager() {
        *main_task_runner_.get(), FROM_HERE,
        CrossThreadBindOnce(&P2PSocketDispatcher::RequestInterfaceIfNecessary,
                            scoped_refptr<P2PSocketDispatcher>(this)));
@@ -50,10 +49,10 @@ index 29884a2..72ec477 100644
  
  void P2PSocketDispatcher::NetworkListChanged(
 diff --git a/third_party/blink/renderer/platform/p2p/socket_dispatcher.h b/third_party/blink/renderer/platform/p2p/socket_dispatcher.h
-index b626856..7d75ef8 100644
+index c250d2af99d5291f34a7e3bfdb63fcbb70a5bd73..84e9c34c0896db5039d9cf8f51167d69ceec9be2 100644
 --- a/third_party/blink/renderer/platform/p2p/socket_dispatcher.h
 +++ b/third_party/blink/renderer/platform/p2p/socket_dispatcher.h
-@@ -65,7 +65,8 @@
+@@ -66,7 +66,8 @@ class PLATFORM_EXPORT P2PSocketDispatcher
    void RemoveNetworkListObserver(
        blink::NetworkListObserver* network_list_observer) override;
  
@@ -63,7 +62,7 @@ index b626856..7d75ef8 100644
  
   private:
    friend class base::RefCountedThreadSafe<P2PSocketDispatcher>;
-@@ -94,7 +95,7 @@
+@@ -95,7 +96,7 @@ class PLATFORM_EXPORT P2PSocketDispatcher
    mojo::PendingReceiver<network::mojom::blink::P2PSocketManager>
        p2p_socket_manager_receiver_;
    mojo::SharedRemote<network::mojom::blink::P2PSocketManager>
