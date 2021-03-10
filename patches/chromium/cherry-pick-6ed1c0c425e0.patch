@@ -1,0 +1,66 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Harald Alvestrand <hta@chromium.org>
+Date: Mon, 22 Feb 2021 13:13:58 +0000
+Subject: Fix GetP2PSocketManager ownership
+
+Let it return a mojo::SharedRemote<> instead of a raw pointer - this is
+a decoration around a shared_refptr.
+
+(cherry picked from commit 82cdc0781ceb4c22ef5903cf3115bea518a5523b)
+
+Bug: chromium:1172054
+Change-Id: I49bd22a0dc949bf869744d2ad25c1afcaea7fdbc
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2692532
+Reviewed-by: Guido Urdaneta <guidou@chromium.org>
+Commit-Queue: Harald Alvestrand <hta@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#854050}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2709590
+Reviewed-by: Harald Alvestrand <hta@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4389@{#1280}
+Cr-Branched-From: 9251c5db2b6d5a59fe4eac7aafa5fed37c139bb7-refs/heads/master@{#843830}
+
+diff --git a/third_party/blink/renderer/platform/p2p/socket_dispatcher.cc b/third_party/blink/renderer/platform/p2p/socket_dispatcher.cc
+index 29884a255f24556f4dc8b41b22304938a4f0d775..72ec477f57871b460adf83ea9e1a4bd217d5eebe 100644
+--- a/third_party/blink/renderer/platform/p2p/socket_dispatcher.cc
++++ b/third_party/blink/renderer/platform/p2p/socket_dispatcher.cc
+@@ -36,7 +36,7 @@ void P2PSocketDispatcher::RemoveNetworkListObserver(
+   network_list_observers_->RemoveObserver(network_list_observer);
+ }
+ 
+-network::mojom::blink::P2PSocketManager*
++mojo::SharedRemote<network::mojom::blink::P2PSocketManager>
+ P2PSocketDispatcher::GetP2PSocketManager() {
+   base::AutoLock lock(p2p_socket_manager_lock_);
+   if (!p2p_socket_manager_) {
+@@ -56,7 +56,7 @@ P2PSocketDispatcher::GetP2PSocketManager() {
+       *main_task_runner_.get(), FROM_HERE,
+       CrossThreadBindOnce(&P2PSocketDispatcher::RequestInterfaceIfNecessary,
+                           scoped_refptr<P2PSocketDispatcher>(this)));
+-  return p2p_socket_manager_.get();
++  return p2p_socket_manager_;
+ }
+ 
+ void P2PSocketDispatcher::NetworkListChanged(
+diff --git a/third_party/blink/renderer/platform/p2p/socket_dispatcher.h b/third_party/blink/renderer/platform/p2p/socket_dispatcher.h
+index b6268562b1b120429a0c9a17bbca5f279bdc5b75..7d75ef814e127a8743a86dfb8d362459fbe32f99 100644
+--- a/third_party/blink/renderer/platform/p2p/socket_dispatcher.h
++++ b/third_party/blink/renderer/platform/p2p/socket_dispatcher.h
+@@ -65,7 +65,8 @@ class PLATFORM_EXPORT P2PSocketDispatcher
+   void RemoveNetworkListObserver(
+       blink::NetworkListObserver* network_list_observer) override;
+ 
+-  network::mojom::blink::P2PSocketManager* GetP2PSocketManager();
++  mojo::SharedRemote<network::mojom::blink::P2PSocketManager>
++  GetP2PSocketManager();
+ 
+  private:
+   friend class base::RefCountedThreadSafe<P2PSocketDispatcher>;
+@@ -94,7 +95,7 @@ class PLATFORM_EXPORT P2PSocketDispatcher
+   mojo::PendingReceiver<network::mojom::blink::P2PSocketManager>
+       p2p_socket_manager_receiver_;
+   mojo::SharedRemote<network::mojom::blink::P2PSocketManager>
+-      p2p_socket_manager_;
++      p2p_socket_manager_ GUARDED_BY(p2p_socket_manager_lock_);
+   base::Lock p2p_socket_manager_lock_;
+ 
+   // Cached from last |NetworkListChanged| call.
