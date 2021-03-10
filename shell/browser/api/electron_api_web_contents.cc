@@ -1062,7 +1062,7 @@ void WebContents::AddNewContents(
   // "kBackgroundColor" will not be applied.
   auto* frame = api_web_contents->MainFrame();
   if (frame) {
-    api_web_contents->RenderFrameCreated(frame);
+    api_web_contents->HandleNewRenderFrame(frame);
   }
 
   if (Emit("-add-new-contents", api_web_contents, disposition, user_gesture,
@@ -1363,25 +1363,7 @@ void WebContents::BeforeUnloadFired(bool proceed,
   // there are two virtual functions named BeforeUnloadFired.
 }
 
-// void WebContents::RenderViewCreated(content::RenderViewHost* render_view_host) {
-//   if (!background_throttling_)
-//     render_view_host->SetSchedulerThrottling(false);
-
-//   // Set the background color of RenderWidgetHostView.
-//   auto* const view = web_contents()->GetRenderWidgetHostView();
-//   auto* web_preferences = WebContentsPreferences::From(web_contents());
-//   if (view && web_preferences) {
-//     std::string color_name;
-//     if (web_preferences->GetPreference(options::kBackgroundColor,
-//                                        &color_name)) {
-//       view->SetBackgroundColor(ParseHexColor(color_name));
-//     } else {
-//       view->SetBackgroundColor(SK_ColorTRANSPARENT);
-//     }
-//   }
-// }
-
-void WebContents::RenderFrameCreated(
+void WebContents::HandleNewRenderFrame(
     content::RenderFrameHost* render_frame_host) {
   auto* rwhv = render_frame_host->GetView();
   if (!rwhv)
@@ -1408,6 +1390,11 @@ void WebContents::RenderFrameCreated(
     rwh_impl->disable_hidden_ = !background_throttling_;
 
   WebFrameMain::RenderFrameCreated(render_frame_host);
+}
+
+void WebContents::RenderFrameCreated(
+    content::RenderFrameHost* render_frame_host) {
+  HandleNewRenderFrame(render_frame_host);
 }
 
 void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
