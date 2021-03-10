@@ -1,7 +1,10 @@
-From 18d3f86206e88156e2eb20c1f691b3b40a779150 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Christoph Schwering <schwering@google.com>
 Date: Tue, 24 Nov 2020 23:39:39 +0000
-Subject: [PATCH] [Autofill] Limit preview and filling only for non-state fields.
+Subject: Limit preview and filling only for non-state fields.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
 The number of times a value is filled into different fields is limited.
 The exception are state fields because websites sometimes have one
@@ -20,10 +23,9 @@ Commit-Queue: Matthias Körber <koerber@google.com>
 Reviewed-by: Matthias Körber <koerber@google.com>
 Auto-Submit: Christoph Schwering <schwering@google.com>
 Cr-Commit-Position: refs/heads/master@{#830778}
----
 
 diff --git a/components/autofill/core/browser/autofill_manager.cc b/components/autofill/core/browser/autofill_manager.cc
-index df1d12d..1015ea9 100644
+index a9dd2e727ddb68331e684716055af42166d69986..0b72ac3b8a0d3bb3294be995d2b9a4bc52b81a8f 100644
 --- a/components/autofill/core/browser/autofill_manager.cc
 +++ b/components/autofill/core/browser/autofill_manager.cc
 @@ -20,6 +20,7 @@
@@ -34,7 +36,7 @@ index df1d12d..1015ea9 100644
  #include "base/feature_list.h"
  #include "base/files/file_util.h"
  #include "base/guid.h"
-@@ -432,9 +433,15 @@
+@@ -432,9 +433,15 @@ const char* SubmissionSourceToString(SubmissionSource source) {
  
  // Returns how many fields with type |field_type| may be filled in a form at
  // maximum.
@@ -53,7 +55,7 @@ index df1d12d..1015ea9 100644
  }
  
  }  // namespace
-@@ -1763,7 +1770,8 @@
+@@ -1760,7 +1767,8 @@ void AutofillManager::FillOrPreviewDataModelForm(
  
    // Count the number of times the value of a specific type was filled into the
    // form.
@@ -63,7 +65,7 @@ index df1d12d..1015ea9 100644
  
    for (size_t i = 0; i < form_structure->field_count(); ++i) {
      std::string field_number = base::StringPrintf("Field %zu", i);
-@@ -1853,7 +1861,7 @@
+@@ -1852,7 +1860,7 @@ void AutofillManager::FillOrPreviewDataModelForm(
  
      // A field with a specific type is only allowed to be filled a limited
      // number of times given by |TypeValueFormFillingLimit(field_type)|.
@@ -72,7 +74,7 @@ index df1d12d..1015ea9 100644
          TypeValueFormFillingLimit(field_type)) {
        buffer << Tr{} << field_number
               << "Skipped: field-type filling-limit reached";
-@@ -1888,10 +1896,6 @@
+@@ -1887,10 +1895,6 @@ void AutofillManager::FillOrPreviewDataModelForm(
      bool has_value_after = !result.fields[i].value.empty();
      bool is_autofilled_after = result.fields[i].is_autofilled;
  
@@ -84,10 +86,10 @@ index df1d12d..1015ea9 100644
             << base::StringPrintf(
                    "Fillable - has value: %d->%d; autofilled: %d->%d. %s",
 diff --git a/components/autofill/core/browser/autofill_manager_unittest.cc b/components/autofill/core/browser/autofill_manager_unittest.cc
-index 188058d..2cd3b31 100644
+index 7d296d95b25f126cb9176af3292687965987c123..26573cfa9f71e45a8087a4a0e76f3ddfa3f4f81c 100644
 --- a/components/autofill/core/browser/autofill_manager_unittest.cc
 +++ b/components/autofill/core/browser/autofill_manager_unittest.cc
-@@ -2936,6 +2936,14 @@
+@@ -2947,6 +2947,14 @@ TEST_P(AutofillManagerStructuredProfileTest,
      form.fields.push_back(field);
    }
  
@@ -102,7 +104,7 @@ index 188058d..2cd3b31 100644
    std::vector<FormData> forms(1, form);
    FormsSeen(forms);
  
-@@ -2972,17 +2980,18 @@
+@@ -2983,17 +2991,18 @@ TEST_P(AutofillManagerStructuredProfileTest,
                        response_data.fields[4 + i]);
    }
  
@@ -129,10 +131,10 @@ index 188058d..2cd3b31 100644
  }
  
 diff --git a/components/autofill/core/common/autofill_constants.h b/components/autofill/core/common/autofill_constants.h
-index 0742881..6e1efcc 100644
+index 84c5b916b0330ab8305db7b1831b42fa42843708..2d6ade5e6bea81ec4383d0345863514e1b551ea8 100644
 --- a/components/autofill/core/common/autofill_constants.h
 +++ b/components/autofill/core/common/autofill_constants.h
-@@ -68,12 +68,14 @@
+@@ -68,12 +68,14 @@ const int64_t kAutocompleteRetentionPolicyPeriodInDays = 14 * 31;
  
  // Limits the number of times the value of a specific type can be filled into a
  // form.
