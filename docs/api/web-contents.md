@@ -1908,9 +1908,9 @@ when the page becomes backgrounded. This also affects the Page Visibility API.
 
 Returns `String` - the type of the webContent. Can be `backgroundPage`, `window`, `browserView`, `remote`, `webview` or `offscreen`.
 
-#### `contents.getChromeTabDetails()`
+#### `contents.getExtensionTabDetails()`
 
-Returns `Record<string, any> | null` - The Chrome API [`Tab`](https://developer.chrome.com/docs/extensions/reference/tabs/#type-Tab) object.
+Returns `Record<string, any> | null` - Information about the WebContents formatted like the Chrome Extension API [`Tab`](https://developer.chrome.com/docs/extensions/reference/tabs/#type-Tab) object.
 
 ### Instance Properties
 

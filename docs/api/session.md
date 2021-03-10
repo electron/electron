@@ -822,7 +822,7 @@ Returns `Extension[]` - A list of all loaded extensions.
 **Note:** This API cannot be called before the `ready` event of the `app` module
 is emitted.
 
-#### `ses.setChromeAPIHandlers(handlers)`
+#### `ses.setExtensionAPIHandlers(handlers)`
 
 * `handlers` Object
   * `getTab` Function<[TabDetails](structures/tab-details.md) | null> (optional)
