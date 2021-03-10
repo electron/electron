@@ -52,8 +52,7 @@ async function createWindow () {
     webPreferences: {
       preload: path.resolve(__dirname, 'preload.js'),
       contextIsolation: true,
-      sandbox: true,
-      enableRemoteModule: false
+      sandbox: true
     },
     useContentSize: true,
     show: false

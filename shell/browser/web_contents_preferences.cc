@@ -422,11 +422,6 @@ void WebContentsPreferences::OverrideWebkitPrefs(
   // Run Electron APIs and preload script in isolated world
   prefs->context_isolation = IsEnabled(options::kContextIsolation, true);
 
-#if BUILDFLAG(ENABLE_REMOTE_MODULE)
-  // Whether to enable the remote module
-  prefs->enable_remote_module = IsEnabled(options::kEnableRemoteModule, false);
-#endif
-
   prefs->world_safe_execute_javascript =
       IsEnabled(options::kWorldSafeExecuteJavaScript, true);
 

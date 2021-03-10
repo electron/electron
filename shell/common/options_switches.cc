@@ -193,10 +193,6 @@ const char kHiddenPage[] = "hiddenPage";
 const char kSpellcheck[] = "spellcheck";
 #endif
 
-#if BUILDFLAG(ENABLE_REMOTE_MODULE)
-const char kEnableRemoteModule[] = "enableRemoteModule";
-#endif
-
 const char kEnableWebSQL[] = "enableWebSQL";
 
 const char kEnablePreferredSizeMode[] = "enablePreferredSizeMode";
