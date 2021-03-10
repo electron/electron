@@ -130,3 +130,4 @@ websocket_don_t_clear_event_queue_on_destruction.patch
 cherry-pick-7e0e52df283c.patch
 cherry-pick-6ed1c0c425e0.patch
 cherry-pick-aeb6bc551b60.patch
+cherry-pick-eb0c0353bf24.patch
