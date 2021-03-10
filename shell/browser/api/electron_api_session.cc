@@ -195,8 +195,6 @@ struct Converter<electron::api::ChromeTabDetails> {
     *out = electron::api::ChromeTabDetails();
     auto tmp = electron::api::ChromeTabDetails();
 
-    if (options.Get("id", &tmp.id))
-      out->id = tmp.id;
     if (options.Get("windowId", &tmp.window_id))
       out->window_id = tmp.window_id;
     if (options.Get("active", &tmp.active))
@@ -960,14 +958,14 @@ std::unique_ptr<ChromeTabDetails> Session::GetChromeTabDetails(
   ChromeTabDetails details;
 
   if (!get_tab_handler_) {
-    EmitWarning(
-        node::Environment::GetCurrent(isolate),
-        "No handler has been registered for `chrome.tabs.get`. Please use "
-        "`session.setChromeAPIHandlers`.",
-        "electron");
-
-    // Fallback to the previous behavior in Electron.
-    details.id = tab_contents->ID();
+    if (!has_emitted_chrome_tabs_get_warning_) {
+      EmitWarning(
+          node::Environment::GetCurrent(isolate),
+          "No handler has been registered for `chrome.tabs.get`. Please use "
+          "`session.setChromeAPIHandlers`.",
+          "electron");
+      has_emitted_chrome_tabs_get_warning_ = true;
+    }
 
     return std::make_unique<ChromeTabDetails>(details);
   }
@@ -987,11 +985,15 @@ WebContents* Session::GetActiveTab(WebContents* sender_contents) {
   v8::HandleScope scope(isolate);
 
   if (!get_active_tab_handler_) {
-    EmitWarning(node::Environment::GetCurrent(isolate),
-                "Active tab has been requested by an extension, but no handler "
-                "has been registered. Please use "
-                "`session.setChromeAPIHandlers`.",
-                "electron");
+    if (!has_emitted_active_tab_warning_) {
+      EmitWarning(
+          node::Environment::GetCurrent(isolate),
+          "Active tab has been requested by an extension, but no handler "
+          "has been registered. Please use "
+          "`session.setChromeAPIHandlers`.",
+          "electron");
+      has_emitted_active_tab_warning_ = true;
+    }
     return nullptr;
   }
 

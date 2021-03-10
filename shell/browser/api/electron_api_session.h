@@ -64,7 +64,6 @@ class ChromeTabDetails {
   ChromeTabDetails(const ChromeTabDetails& other);
   ~ChromeTabDetails();
 
-  int id = -1;
   int window_id = 0;
   int index = -1;
   int group_id = -1;
@@ -207,6 +206,9 @@ class Session : public gin::Wrappable<Session>,
   v8::Global<v8::Value> net_log_;
   v8::Global<v8::Value> service_worker_context_;
   v8::Global<v8::Value> web_request_;
+
+  bool has_emitted_chrome_tabs_get_warning_ = false;
+  bool has_emitted_active_tab_warning_ = false;
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   using GetTabHandler =

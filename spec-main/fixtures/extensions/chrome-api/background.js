@@ -13,7 +13,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     case 'executeScript': {
       const [code] = args;
-      chrome.tabs.executeScript(tabId, { code }, ([result]) => sendResponse(result));
+      chrome.tabs.executeScript({ code }, ([result]) => sendResponse(result));
       break;
     }
 

@@ -339,6 +339,15 @@ describe('chrome extensions', () => {
       const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } });
       await w.loadURL(url);
 
+      (customSession as any).setChromeAPIHandlers({
+        getTab: () => {
+          return {};
+        },
+        getActiveTab: () => {
+          return w.webContents;
+        }
+      });
+
       const message = { method: 'executeScript', args: ['1 + 2'] };
       w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
 
@@ -378,6 +387,42 @@ describe('chrome extensions', () => {
 
       expect(response.message).to.equal('Hello World!');
       expect(response.tabId).to.equal(w.webContents.id);
+    });
+
+    it('get returns correct details', async () => {
+      const customSession = session.fromPartition(`persist:${uuid.v4()}`);
+      const extension = await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-api'));
+      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } });
+      await w.loadURL(`${extension.url}/index.html`);
+
+      (customSession as any).setChromeAPIHandlers({
+        getTab: () => {
+          return {
+            groupId: 2
+          };
+        }
+      });
+
+      const tab = await w.webContents.executeJavaScript(`(() => { return new Promise((resolve) => {chrome.tabs.get(${w.webContents.id}, resolve) })})()`);
+
+      expect(tab.groupId).to.equal(2);
+    });
+
+    it('get does not return a tab even if it exists', async () => {
+      const customSession = session.fromPartition(`persist:${uuid.v4()}`);
+      const extension = await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-api'));
+      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } });
+      await w.loadURL(`${extension.url}/index.html`);
+
+      (customSession as any).setChromeAPIHandlers({
+        getTab: () => {
+          return null;
+        }
+      });
+
+      const tab = await w.webContents.executeJavaScript(`(() => { return new Promise((resolve) => {chrome.tabs.get(${w.webContents.id}, resolve) })})()`);
+
+      expect(tab).to.be.undefined();
     });
   });
 

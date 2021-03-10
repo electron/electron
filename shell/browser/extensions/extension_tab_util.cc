@@ -207,7 +207,7 @@ std::unique_ptr<api::tabs::Tab> ExtensionTabUtil::CreateTabObject(
     electron::api::ChromeTabDetails tab,
     int tab_index) {
   auto tab_object = std::make_unique<api::tabs::Tab>();
-  tab_object->id = std::make_unique<int>(tab.id);
+  tab_object->id = std::make_unique<int>(GetTabId(contents));
   tab_object->index = tab_index;
   tab_object->window_id = tab.window_id;
   tab_object->active = tab.active;
