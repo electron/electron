@@ -211,6 +211,7 @@ class WebContents : public gin::Wrappable<WebContents>,
   void IncrementCapturerCount(gin::Arguments* args);
   void DecrementCapturerCount(gin::Arguments* args);
   bool IsBeingCaptured();
+  void HandleNewRenderFrame(content::RenderFrameHost* render_frame_host);
 
 #if BUILDFLAG(ENABLE_PRINTING)
   void OnGetDefaultPrinter(base::Value print_settings,
@@ -550,7 +551,6 @@ class WebContents : public gin::Wrappable<WebContents>,
   // content::WebContentsObserver:
   void BeforeUnloadFired(bool proceed,
                          const base::TimeTicks& proceed_time) override;
-  void RenderViewCreated(content::RenderViewHost* render_view_host) override;
   void RenderFrameCreated(content::RenderFrameHost* render_frame_host) override;
   void RenderViewDeleted(content::RenderViewHost*) override;
   void RenderProcessGone(base::TerminationStatus status) override;

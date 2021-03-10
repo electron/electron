@@ -1055,6 +1055,16 @@ void WebContents::AddNewContents(
   v8::HandleScope handle_scope(isolate);
   auto api_web_contents =
       CreateAndTake(isolate, std::move(new_contents), Type::kBrowserWindow);
+
+  // We call RenderFrameCreated here as at this point the empty "about:blank"
+  // render frame has already been created.  If the window never navigates again
+  // RenderFrameCreated won't be called and certain prefs like
+  // "kBackgroundColor" will not be applied.
+  auto* frame = api_web_contents->MainFrame();
+  if (frame) {
+    api_web_contents->HandleNewRenderFrame(frame);
+  }
+
   if (Emit("-add-new-contents", api_web_contents, disposition, user_gesture,
            initial_rect.x(), initial_rect.y(), initial_rect.width(),
            initial_rect.height(), tracker->url, tracker->frame_name,
@@ -1353,29 +1363,26 @@ void WebContents::BeforeUnloadFired(bool proceed,
   // there are two virtual functions named BeforeUnloadFired.
 }
 
-void WebContents::RenderViewCreated(content::RenderViewHost* render_view_host) {
-  if (!background_throttling_)
-    render_view_host->SetSchedulerThrottling(false);
-
-  // Set the background color of RenderWidgetHostView.
-  auto* const view = web_contents()->GetRenderWidgetHostView();
-  auto* web_preferences = WebContentsPreferences::From(web_contents());
-  if (view && web_preferences) {
-    std::string color_name;
-    if (web_preferences->GetPreference(options::kBackgroundColor,
-                                       &color_name)) {
-      view->SetBackgroundColor(ParseHexColor(color_name));
-    } else {
-      view->SetBackgroundColor(SK_ColorTRANSPARENT);
-    }
-  }
-}
-
-void WebContents::RenderFrameCreated(
+void WebContents::HandleNewRenderFrame(
     content::RenderFrameHost* render_frame_host) {
   auto* rwhv = render_frame_host->GetView();
   if (!rwhv)
     return;
+
+  // Set the background color of RenderWidgetHostView.
+  auto* web_preferences = WebContentsPreferences::From(web_contents());
+  if (web_preferences) {
+    std::string color_name;
+    if (web_preferences->GetPreference(options::kBackgroundColor,
+                                       &color_name)) {
+      rwhv->SetBackgroundColor(ParseHexColor(color_name));
+    } else {
+      rwhv->SetBackgroundColor(SK_ColorTRANSPARENT);
+    }
+  }
+
+  if (!background_throttling_)
+    render_frame_host->GetRenderViewHost()->SetSchedulerThrottling(false);
 
   auto* rwh_impl =
       static_cast<content::RenderWidgetHostImpl*>(rwhv->GetRenderWidgetHost());
@@ -1383,6 +1390,11 @@ void WebContents::RenderFrameCreated(
     rwh_impl->disable_hidden_ = !background_throttling_;
 
   WebFrameMain::RenderFrameCreated(render_frame_host);
+}
+
+void WebContents::RenderFrameCreated(
+    content::RenderFrameHost* render_frame_host) {
+  HandleNewRenderFrame(render_frame_host);
 }
 
 void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
