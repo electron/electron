@@ -1,0 +1,30 @@
+name: Report Mac App Store Private API Rejection
+description: Your app was rejected from the Mac App Store for using private API's
+title: "[MAS Rejection]: "
+body:
+- type: checkboxes
+  attributes:
+    label: Preflight Checklist
+    description: Please ensure you've completed all of the following.
+    options:
+      - label: I have read the [Contributing Guidelines](https://github.com/electron/electron/blob/master/CONTRIBUTING.md) for this project.
+        required: true
+      - label: I agree to follow the [Code of Conduct](https://github.com/electron/electron/blob/master/CODE_OF_CONDUCT.md) that this project adheres to.
+        required: true
+- type: input
+  attributes:
+    label: Electron Version
+    description: What version of Electron are you using?
+    placeholder: 12.0.0
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Rejection Email
+    description: Paste the contents of your rejection email here, censoring any private information such as app names.
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Additional Information
+    description: Add any other context about the problem here.
