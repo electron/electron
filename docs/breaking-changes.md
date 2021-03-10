@@ -160,6 +160,9 @@ the previous behavior, `contextIsolation: false` must be specified in WebPrefere
 
 We [recommend having contextIsolation enabled](https://github.com/electron/electron/blob/master/docs/tutorial/security.md#3-enable-context-isolation-for-remote-content) for the security of your application.
 
+Another implication is that `require()` cannot be used in the renderer process unless
+`nodeIntegration` is true and `contextIsolation` is `false`.
+
 For more details see: https://github.com/electron/electron/issues/23506
 
 ### Removed: `crashReporter.getCrashesDirectory()`
