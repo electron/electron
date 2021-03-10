@@ -43,6 +43,7 @@ declare namespace NodeJS {
     weaklyTrackValue(value: any): void;
     clearWeaklyTrackedValues(): void;
     getWeaklyTrackedValues(): any[];
+    runUntilIdle(): void;
     isSameOrigin(a: string, b: string): boolean;
     triggerFatalErrorForTesting(): void;
   }
