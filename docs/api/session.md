@@ -822,6 +822,38 @@ Returns `Extension[]` - A list of all loaded extensions.
 **Note:** This API cannot be called before the `ready` event of the `app` module
 is emitted.
 
+#### `ses.setChromeAPIHandlers(handlers)`
+
+* `handlers` Object
+  * `getTab` Function<[TabDetails](structures/tab-details.md) | null> (optional)
+    * `webContents` [WebContents](web-contents.md) - the `webContents` of a tab that has been requested.
+  * `getActiveTab` Function<[WebContents](web-contents.md) | null> (optional)
+    * `sender` [WebContents](web-contents.md) - the `webContents` from which the active tab request originated.
+
+Tells the Chrome API what to do when an extension requests a tab via i.e. `chrome.tabs.get` and how to handle "active" tab requests (i.e. `chrome.tabs.executeScript` without `tabId` parameter defaults to the active tab).
+
+```javascript
+const { session, webContents } = require('electron')
+
+app.whenReady().then(async () => {
+  const ses = session.fromPartition('some-partition')
+
+  ses.setChromeAPIHandlers({
+    getTab: (webContents) => {
+      return {
+        groupId: 1,
+        windowId: 1,
+        pinned: false,
+        active: true
+      }
+    },
+    getActiveTab: (sender) => {
+      return webContents.fromId(1)
+    }
+  })
+})
+```
+
 ### Instance Properties
 
 The following properties are available on instances of `Session`:

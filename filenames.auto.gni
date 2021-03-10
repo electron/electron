@@ -123,6 +123,7 @@ auto_filenames = {
     "docs/api/structures/sharing-item.md",
     "docs/api/structures/shortcut-details.md",
     "docs/api/structures/size.md",
+    "docs/api/structures/tab-details.md",
     "docs/api/structures/task.md",
     "docs/api/structures/thumbar-button.md",
     "docs/api/structures/trace-categories-and-options.md",
