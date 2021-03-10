@@ -212,9 +212,8 @@ class Session : public gin::Wrappable<Session>,
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   using GetTabHandler =
-      base::RepeatingCallback<v8::Local<v8::Value>(gin::Handle<WebContents>)>;
-  using GetActiveTabHandler = base::RepeatingCallback<gin::Handle<WebContents>(
-      gin::Handle<WebContents>)>;
+      base::RepeatingCallback<v8::Local<v8::Value>(WebContents*)>;
+  using GetActiveTabHandler = base::RepeatingCallback<WebContents*(WebContents*)>;
 
   std::unique_ptr<GetTabHandler> get_tab_handler_;
   std::unique_ptr<GetActiveTabHandler> get_active_tab_handler_;
