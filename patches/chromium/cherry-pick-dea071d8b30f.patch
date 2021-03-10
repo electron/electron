@@ -1,7 +1,7 @@
-From dea071d8b30fde63954eef55fd2c685ff3b3f083 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Hongchan Choi <hongchan@chromium.org>
-Date: Tue, 02 Mar 2021 15:15:59 +0000
-Subject: [PATCH] Prevent accessing shared buffers from audio rendering thread
+Date: Tue, 2 Mar 2021 15:15:59 +0000
+Subject: Prevent accessing shared buffers from audio rendering thread
 
 The shared buffer in ScriptProcessorNode can be accessed by the
 audio rendering thread when it is held by the main thread.
@@ -33,13 +33,12 @@ Reviewed-by: Victor-Gabriel Savu <vsavu@google.com>
 Commit-Queue: Artem Sumaneev <asumaneev@google.com>
 Cr-Commit-Position: refs/branch-heads/4240@{#1552}
 Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
----
 
 diff --git a/third_party/blink/renderer/modules/webaudio/script_processor_node.cc b/third_party/blink/renderer/modules/webaudio/script_processor_node.cc
-index b1ca691..6e80b23 100644
+index b1ca691b07b53b927a92753906f7f25edebac919..6e80b23a32dd1895a0d51d08ee16c8cb2d44fc55 100644
 --- a/third_party/blink/renderer/modules/webaudio/script_processor_node.cc
 +++ b/third_party/blink/renderer/modules/webaudio/script_processor_node.cc
-@@ -110,6 +110,14 @@
+@@ -110,6 +110,14 @@ void ScriptProcessorHandler::Initialize() {
  }
  
  void ScriptProcessorHandler::Process(uint32_t frames_to_process) {
@@ -54,7 +53,7 @@ index b1ca691..6e80b23 100644
    // Discussion about inputs and outputs:
    // As in other AudioNodes, ScriptProcessorNode uses an AudioBus for its input
    // and output (see inputBus and outputBus below).  Additionally, there is a
-@@ -181,47 +189,26 @@
+@@ -181,47 +189,26 @@ void ScriptProcessorHandler::Process(uint32_t frames_to_process) {
    buffer_read_write_index_ =
        (buffer_read_write_index_ + frames_to_process) % BufferSize();
  
