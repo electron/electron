@@ -117,7 +117,7 @@ index 055d28d8c6f6cc6826db1f888b1ea0f535c3c716..1eedb217a700ffdc73d30c5daadf003d
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index e811980fc5798e668163adafce4e72a7188d94fe..cd45e6c19505e553a4632dd478d33f3ee2cce0de 100644
+index 2b1574aa1669b0b5c9e7a38aba3f0345602bc440..bfa99980776b9aa216644ea146fbb1d1a085a85d 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -234,8 +234,10 @@
@@ -154,7 +154,7 @@ index e811980fc5798e668163adafce4e72a7188d94fe..cd45e6c19505e553a4632dd478d33f3e
  }
  
  bool RenderWidgetHostViewMac::SyncIsWidgetForMainFrame(
-@@ -1905,12 +1911,14 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1906,12 +1912,14 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  
  void RenderWidgetHostViewMac::SetRemoteAccessibilityWindowToken(
      const std::vector<uint8_t>& window_token) {
@@ -170,10 +170,10 @@ index e811980fc5798e668163adafce4e72a7188d94fe..cd45e6c19505e553a4632dd478d33f3e
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index abb7355a2f5bf8475d902aafd153115d51b703cb..f0d596e4021b44f13ec399b1dcfbdd5a77a1971f 100644
+index 8987ed3c59a3b482cae14f2cce71a6febfd41a73..dc646e919475198d332004d59cde25d2a3044988 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
-@@ -312,6 +312,13 @@ component("base") {
+@@ -314,6 +314,13 @@ component("base") {
      ]
    }
  

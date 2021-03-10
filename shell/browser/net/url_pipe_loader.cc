@@ -15,12 +15,12 @@ namespace electron {
 URLPipeLoader::URLPipeLoader(
     scoped_refptr<network::SharedURLLoaderFactory> factory,
     std::unique_ptr<network::ResourceRequest> request,
-    network::mojom::URLLoaderRequest loader,
+    mojo::PendingReceiver<network::mojom::URLLoader> loader,
     mojo::PendingRemote<network::mojom::URLLoaderClient> client,
     const net::NetworkTrafficAnnotationTag& annotation,
     base::DictionaryValue upload_data)
-    : binding_(this, std::move(loader)), client_(std::move(client)) {
-  binding_.set_connection_error_handler(base::BindOnce(
+    : url_loader_(this, std::move(loader)), client_(std::move(client)) {
+  url_loader_.set_disconnect_handler(base::BindOnce(
       &URLPipeLoader::NotifyComplete, base::Unretained(this), net::ERR_FAILED));
 
   // PostTask since it might destruct.

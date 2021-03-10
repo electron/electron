@@ -188,7 +188,7 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
   DCHECK(render_widget_host_);
   DCHECK(!render_widget_host_->GetView());
 
-  current_device_scale_factor_ = kDefaultScaleFactor;
+  set_current_device_scale_factor(kDefaultScaleFactor);
 
   delegated_frame_host_allocator_.GenerateId();
   delegated_frame_host_surface_id_ =
@@ -474,7 +474,7 @@ void OffScreenRenderWidgetHostView::GetScreenInfo(
   screen_info->depth = 24;
   screen_info->depth_per_component = 8;
   screen_info->orientation_angle = 0;
-  screen_info->device_scale_factor = current_device_scale_factor_;
+  screen_info->device_scale_factor = current_device_scale_factor();
   screen_info->orientation_type =
       blink::mojom::ScreenOrientation::kLandscapePrimary;
   screen_info->rect = gfx::Rect(size_);
@@ -514,7 +514,7 @@ void OffScreenRenderWidgetHostView::ImeCompositionRangeChanged(
 
 gfx::Size OffScreenRenderWidgetHostView::GetCompositorViewportPixelSize() {
   return gfx::ScaleToCeiledSize(GetRequestedRendererSize(),
-                                current_device_scale_factor_);
+                                current_device_scale_factor());
 }
 
 content::RenderWidgetHostViewBase*
@@ -665,10 +665,10 @@ void OffScreenRenderWidgetHostView::OnPaint(const gfx::Rect& damage_rect,
 gfx::Size OffScreenRenderWidgetHostView::SizeInPixels() {
   if (IsPopupWidget()) {
     return gfx::ToFlooredSize(gfx::ConvertSizeToPixels(
-        popup_position_.size(), current_device_scale_factor_));
+        popup_position_.size(), current_device_scale_factor()));
   } else {
     return gfx::ToFlooredSize(gfx::ConvertSizeToPixels(
-        GetViewBounds().size(), current_device_scale_factor_));
+        GetViewBounds().size(), current_device_scale_factor()));
   }
 }
 
@@ -694,7 +694,7 @@ void OffScreenRenderWidgetHostView::CompositeFrame(
         gfx::Rect rect = popup_host_view_->popup_position_;
         gfx::Point origin_in_pixels =
             gfx::ToFlooredPoint(gfx::ConvertPointToPixels(
-                rect.origin(), current_device_scale_factor_));
+                rect.origin(), current_device_scale_factor()));
         canvas.writePixels(popup_host_view_->GetBacking(), origin_in_pixels.x(),
                            origin_in_pixels.y());
       }
@@ -703,7 +703,7 @@ void OffScreenRenderWidgetHostView::CompositeFrame(
         gfx::Rect rect = proxy_view->GetBounds();
         gfx::Point origin_in_pixels =
             gfx::ToFlooredPoint(gfx::ConvertPointToPixels(
-                rect.origin(), current_device_scale_factor_));
+                rect.origin(), current_device_scale_factor()));
         canvas.writePixels(*proxy_view->GetBitmap(), origin_in_pixels.x(),
                            origin_in_pixels.y());
       }
@@ -720,13 +720,13 @@ void OffScreenRenderWidgetHostView::CompositeFrame(
 
 void OffScreenRenderWidgetHostView::OnPopupPaint(const gfx::Rect& damage_rect) {
   InvalidateBounds(gfx::ToEnclosingRect(
-      gfx::ConvertRectToPixels(damage_rect, current_device_scale_factor_)));
+      gfx::ConvertRectToPixels(damage_rect, current_device_scale_factor())));
 }
 
 void OffScreenRenderWidgetHostView::OnProxyViewPaint(
     const gfx::Rect& damage_rect) {
   InvalidateBounds(gfx::ToEnclosingRect(
-      gfx::ConvertRectToPixels(damage_rect, current_device_scale_factor_)));
+      gfx::ConvertRectToPixels(damage_rect, current_device_scale_factor())));
 }
 
 void OffScreenRenderWidgetHostView::HoldResize() {
@@ -976,9 +976,9 @@ void OffScreenRenderWidgetHostView::ResizeRootLayer(bool force) {
       display::Screen::GetScreen()->GetDisplayNearestView(GetNativeView());
   const float scaleFactor = display.device_scale_factor();
   const bool scaleFactorDidChange =
-      (scaleFactor != current_device_scale_factor_);
+      (scaleFactor != current_device_scale_factor());
 
-  current_device_scale_factor_ = scaleFactor;
+  set_current_device_scale_factor(scaleFactor);
 
   gfx::Size size;
   if (!IsPopupWidget())
@@ -993,12 +993,12 @@ void OffScreenRenderWidgetHostView::ResizeRootLayer(bool force) {
   GetRootLayer()->SetBounds(gfx::Rect(size));
 
   const gfx::Size& size_in_pixels = gfx::ToFlooredSize(
-      gfx::ConvertSizeToPixels(size, current_device_scale_factor_));
+      gfx::ConvertSizeToPixels(size, current_device_scale_factor()));
 
   if (compositor_) {
     compositor_allocator_.GenerateId();
     compositor_surface_id_ = compositor_allocator_.GetCurrentLocalSurfaceId();
-    compositor_->SetScaleAndSize(current_device_scale_factor_, size_in_pixels,
+    compositor_->SetScaleAndSize(current_device_scale_factor(), size_in_pixels,
                                  compositor_surface_id_);
   }
 
