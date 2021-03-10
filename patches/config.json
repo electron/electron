@@ -19,5 +19,7 @@
   
   "src/electron/patches/skia": "src/third_party/skia",
 
-  "src/electron/patches/usrsctp": "src/third_party/usrsctp/usrsctplib"
+  "src/electron/patches/usrsctp": "src/third_party/usrsctp/usrsctplib",
+
+  "src/electron/patches/pdfium": "src/third_party/pdfium"
 }
