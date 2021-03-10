@@ -138,6 +138,10 @@ void TriggerFatalErrorForTesting(v8::Isolate* isolate) {
   v8::ExtensionConfiguration config(1, bDeps);
   v8::Context::New(isolate, &config);
 }
+
+void RunUntilIdle() {
+  base::RunLoop().RunUntilIdle();
+}
 #endif
 
 void Initialize(v8::Local<v8::Object> exports,
@@ -158,6 +162,7 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("getWeaklyTrackedValues", &GetWeaklyTrackedValues);
   dict.SetMethod("clearWeaklyTrackedValues", &ClearWeaklyTrackedValues);
   dict.SetMethod("weaklyTrackValue", &WeaklyTrackValue);
+  dict.SetMethod("runUntilIdle", &RunUntilIdle);
 #endif
 }
 
