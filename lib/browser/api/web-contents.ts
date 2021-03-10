@@ -588,6 +588,7 @@ WebContents.prototype._init = function () {
           // it's technically a BrowserWindowConstructorOptions option because
           // we need to access it in the renderer at init time.
           backgroundColor: windowOpenOverriddenOptions.backgroundColor,
+          transparent: windowOpenOverriddenOptions.transparent,
           ...windowOpenOverriddenOptions.webPreferences
         } : undefined;
         this._setNextChildWebPreferences(
