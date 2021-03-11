@@ -1290,7 +1290,7 @@ bool WebContents::OnGoToEntryOffset(int offset) {
 }
 
 void WebContents::FindReply(content::WebContents* web_contents,
-                            content::RenderFrameHost* render_frame_host,
+                            content::RenderFrameHost* active_frame,
                             int request_id,
                             int number_of_matches,
                             const gfx::Rect& selection_rect,
@@ -1302,14 +1302,14 @@ void WebContents::FindReply(content::WebContents* web_contents,
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
-  auto frame = api::WebFrameMain::From(isolate, render_frame_host);
+  auto active_frame_handle = api::WebFrameMain::From(isolate, active_frame);
   gin_helper::Dictionary result = gin::Dictionary::CreateEmpty(isolate);
   result.Set("requestId", request_id);
   result.Set("matches", number_of_matches);
   result.Set("selectionArea", selection_rect);
   result.Set("activeMatchOrdinal", active_match_ordinal);
   result.Set("finalUpdate", final_update);  // Deprecate after 2.0
-  result.Set("frame", frame);
+  result.Set("activeFrame", active_frame_handle);
   Emit("found-in-page", result.GetHandle());
 }
 
@@ -2597,13 +2597,13 @@ uint32_t WebContents::FindInPage(gin::Arguments* args) {
     dict.Get("forward", &options->forward);
     dict.Get("matchCase", &options->match_case);
     dict.Get("findNext", &options->new_session);
-    dict.Get("frame", &options->frame);
+    dict.Get("frame", &frame);
   }
 
   content::RenderFrameHost* render_frame_host = nullptr;
   if (frame) {
-    render_frame_host =
-        content::RenderFrameHost::From(frame->ProcessId(), frame->RoutingId());
+    render_frame_host = content::RenderFrameHost::FromID(frame->ProcessID(),
+                                                         frame->RoutingID());
   }
   web_contents()->Find(request_id, search_text, std::move(options),
                        render_frame_host);

@@ -66,6 +66,8 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
       v8::Isolate*,
       v8::Local<v8::ObjectTemplate>);
   const char* GetTypeName() override;
+  int ProcessID() const;
+  int RoutingID() const;
 
  protected:
   explicit WebFrameMain(content::RenderFrameHost* render_frame);
@@ -92,8 +94,6 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
   int FrameTreeNodeID() const;
   std::string Name() const;
   base::ProcessId OSProcessID() const;
-  int ProcessID() const;
-  int RoutingID() const;
   GURL URL() const;
 
   content::RenderFrameHost* Top() const;
