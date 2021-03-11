@@ -1,5 +1,5 @@
 name: Bug Report
-about: Report an Electron bug
+description: Report an Electron bug
 title: "[Bug]: "
 body:
 - type: checkboxes
