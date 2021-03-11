@@ -510,6 +510,7 @@ class WebContents : public gin::Wrappable<WebContents>,
                          const content::ContextMenuParams& params) override;
   bool OnGoToEntryOffset(int offset) override;
   void FindReply(content::WebContents* web_contents,
+                 content::RenderFrameHost* render_frame_host,
                  int request_id,
                  int number_of_matches,
                  const gfx::Rect& selection_rect,

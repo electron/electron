@@ -510,6 +510,8 @@ Inserts `text` to the focused element.
     defaults to `false`.
   * `matchCase` Boolean (optional) - Whether search should be case-sensitive,
     defaults to `false`.
+  * `frame` Object (optional) - Search only within this [webFrameMain](web-frame-main.md)
+    and its subframes, if not `null`. Otherwise, searches the entire page. Defaults to `null`.
 
 Returns `Integer` - The request id used for the request.
 

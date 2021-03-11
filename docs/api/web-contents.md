@@ -559,6 +559,7 @@ Returns:
   * `matches` Integer - Number of Matches.
   * `selectionArea` Rectangle - Coordinates of first match region.
   * `finalUpdate` Boolean
+  * `frame` Object - [`webFrameMain`](web-frame-main.md) containing the active match.
 
 Emitted when a result is available for
 [`webContents.findInPage`] request.
@@ -1271,6 +1272,8 @@ Inserts `text` to the focused element.
     defaults to `false`.
   * `matchCase` Boolean (optional) - Whether search should be case-sensitive,
     defaults to `false`.
+  * `frame` Object (optional) - Search only within this [webFrameMain](web-frame-main.md)
+    and its subframes, if not `null`. Otherwise, searches the entire page. Defaults to `null`.
 
 Returns `Integer` - The request id used for the request.
 
