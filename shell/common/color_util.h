@@ -17,6 +17,8 @@ SkColor ParseHexColor(const std::string& name);
 // Convert color to RGB hex value like "#ABCDEF"
 std::string ToRGBHex(SkColor color);
 
+std::string ToRGBAHex(SkColor color, bool include_hash = true);
+
 }  // namespace electron
 
 #endif  // SHELL_COMMON_COLOR_UTIL_H_
