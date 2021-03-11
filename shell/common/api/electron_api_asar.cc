@@ -4,7 +4,6 @@
 
 #include <vector>
 
-#include "base/numerics/safe_math.h"
 #include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "gin/wrappable.h"
@@ -13,9 +12,6 @@
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/gin_helper/error_thrower.h"
-#include "shell/common/gin_helper/function_template_extensions.h"
-#include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
 
@@ -42,8 +38,7 @@ class Archive : public gin::Wrappable<Archive> {
         .SetMethod("readdir", &Archive::Readdir)
         .SetMethod("realpath", &Archive::Realpath)
         .SetMethod("copyFileOut", &Archive::CopyFileOut)
-        .SetMethod("read", &Archive::Read)
-        .SetMethod("readSync", &Archive::ReadSync);
+        .SetMethod("getFd", &Archive::GetFD);
   }
 
   const char* GetTypeName() override { return "Archive"; }
@@ -109,68 +104,15 @@ class Archive : public gin::Wrappable<Archive> {
     return gin::ConvertToV8(isolate, new_path);
   }
 
-  v8::Local<v8::ArrayBuffer> ReadSync(gin_helper::ErrorThrower thrower,
-                                      uint64_t offset,
-                                      uint64_t length) {
-    base::CheckedNumeric<uint64_t> safe_offset(offset);
-    base::CheckedNumeric<uint64_t> safe_end = safe_offset + length;
-    if (!safe_end.IsValid() ||
-        safe_end.ValueOrDie() > archive_->file()->length()) {
-      thrower.ThrowError("Out of bounds read");
-      return v8::Local<v8::ArrayBuffer>();
-    }
-    auto array_buffer = v8::ArrayBuffer::New(thrower.isolate(), length);
-    auto backing_store = array_buffer->GetBackingStore();
-    memcpy(backing_store->Data(), archive_->file()->data() + offset, length);
-    return array_buffer;
-  }
-
-  v8::Local<v8::Promise> Read(v8::Isolate* isolate,
-                              uint64_t offset,
-                              uint64_t length) {
-    gin_helper::Promise<v8::Local<v8::ArrayBuffer>> promise(isolate);
-    v8::Local<v8::Promise> handle = promise.GetHandle();
-
-    base::CheckedNumeric<uint64_t> safe_offset(offset);
-    base::CheckedNumeric<uint64_t> safe_end = safe_offset + length;
-    if (!safe_end.IsValid() ||
-        safe_end.ValueOrDie() > archive_->file()->length()) {
-      promise.RejectWithErrorMessage("Out of bounds read");
-      return handle;
-    }
-
-    auto backing_store = v8::ArrayBuffer::NewBackingStore(isolate, length);
-    base::ThreadPool::PostTaskAndReplyWithResult(
-        FROM_HERE, {base::MayBlock(), base::TaskPriority::USER_VISIBLE},
-        base::BindOnce(&Archive::ReadOnIO, isolate, archive_,
-                       std::move(backing_store), offset, length),
-        base::BindOnce(&Archive::ResolveReadOnUI, std::move(promise)));
-
-    return handle;
+  // Return the file descriptor.
+  int GetFD() const {
+    if (!archive_)
+      return -1;
+    return archive_->GetFD();
   }
 
  private:
-  static std::unique_ptr<v8::BackingStore> ReadOnIO(
-      v8::Isolate* isolate,
-      std::shared_ptr<asar::Archive> archive,
-      std::unique_ptr<v8::BackingStore> backing_store,
-      uint64_t offset,
-      uint64_t length) {
-    memcpy(backing_store->Data(), archive->file()->data() + offset, length);
-    return backing_store;
-  }
-
-  static void ResolveReadOnUI(
-      gin_helper::Promise<v8::Local<v8::ArrayBuffer>> promise,
-      std::unique_ptr<v8::BackingStore> backing_store) {
-    v8::HandleScope scope(promise.isolate());
-    v8::Context::Scope context_scope(promise.GetContext());
-    auto array_buffer =
-        v8::ArrayBuffer::New(promise.isolate(), std::move(backing_store));
-    promise.Resolve(array_buffer);
-  }
-
-  std::shared_ptr<asar::Archive> archive_;
+  std::unique_ptr<asar::Archive> archive_;
 
   DISALLOW_COPY_AND_ASSIGN(Archive);
 };
