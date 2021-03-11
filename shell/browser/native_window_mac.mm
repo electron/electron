@@ -996,8 +996,10 @@ void NativeWindowMac::SetBackgroundColor(SkColor color) {
 }
 
 SkColor NativeWindowMac::GetBackgroundColor() {
-  return skia::CGColorRefToSkColor(
-      [[[window_ contentView] layer] backgroundColor]);
+  CGColorRef color = [[[window_ contentView] layer] backgroundColor];
+  if (!color)
+    return SK_ColorTRANSPARENT;
+  return skia::CGColorRefToSkColor(color);
 }
 
 void NativeWindowMac::SetHasShadow(bool has_shadow) {
