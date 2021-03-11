@@ -1,7 +1,7 @@
-From b3dc4c4b349dfddec0295be708010e27fb0884f4 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Hongchan Choi <hongchan@chromium.org>
-Date: Tue, 02 Mar 2021 15:17:19 +0000
-Subject: [PATCH] Introduce AudioBuffers for user access in ScriptProcessorNode
+Date: Tue, 2 Mar 2021 15:17:19 +0000
+Subject: Introduce AudioBuffers for user access in ScriptProcessorNode
 
 This CL adds new AudioBuffers for the access from the user code.
 
@@ -33,10 +33,9 @@ Reviewed-by: Victor-Gabriel Savu <vsavu@google.com>
 Commit-Queue: Artem Sumaneev <asumaneev@google.com>
 Cr-Commit-Position: refs/branch-heads/4240@{#1553}
 Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
----
 
 diff --git a/third_party/blink/renderer/modules/webaudio/script_processor_node.cc b/third_party/blink/renderer/modules/webaudio/script_processor_node.cc
-index 6e80b23..d46e174 100644
+index 6e80b23a32dd1895a0d51d08ee16c8cb2d44fc55..d46e17440a9f3c2de488432bf3efdba5ac01f193 100644
 --- a/third_party/blink/renderer/modules/webaudio/script_processor_node.cc
 +++ b/third_party/blink/renderer/modules/webaudio/script_processor_node.cc
 @@ -42,6 +42,28 @@
@@ -68,7 +67,7 @@ index 6e80b23..d46e174 100644
  ScriptProcessorHandler::ScriptProcessorHandler(
      AudioNode& node,
      float sample_rate,
-@@ -335,6 +357,12 @@
+@@ -335,6 +357,12 @@ ScriptProcessorNode::ScriptProcessorNode(BaseAudioContext& context,
      input_buffers_.push_back(input_buffer);
      output_buffers_.push_back(output_buffer);
    }
@@ -81,7 +80,7 @@ index 6e80b23..d46e174 100644
    SetHandler(ScriptProcessorHandler::Create(
        *this, sample_rate, buffer_size, number_of_input_channels,
        number_of_output_channels, input_buffers_, output_buffers_));
-@@ -476,11 +504,62 @@
+@@ -476,11 +504,62 @@ uint32_t ScriptProcessorNode::bufferSize() const {
  
  void ScriptProcessorNode::DispatchEvent(double playback_time,
                                          uint32_t double_buffer_index) {
@@ -148,7 +147,7 @@ index 6e80b23..d46e174 100644
  }
  
  bool ScriptProcessorNode::HasPendingActivity() const {
-@@ -499,6 +578,8 @@
+@@ -499,6 +578,8 @@ bool ScriptProcessorNode::HasPendingActivity() const {
  void ScriptProcessorNode::Trace(Visitor* visitor) const {
    visitor->Trace(input_buffers_);
    visitor->Trace(output_buffers_);
@@ -158,10 +157,10 @@ index 6e80b23..d46e174 100644
  }
  
 diff --git a/third_party/blink/renderer/modules/webaudio/script_processor_node.h b/third_party/blink/renderer/modules/webaudio/script_processor_node.h
-index b166a04..9ae1789 100644
+index a93dbacc70709c063b452be3e5fe4b56fcaf7c4a..ea5ad1c326d6eb202ba6b8eba0ac5b5d0f1f61b1 100644
 --- a/third_party/blink/renderer/modules/webaudio/script_processor_node.h
 +++ b/third_party/blink/renderer/modules/webaudio/script_processor_node.h
-@@ -168,6 +168,8 @@
+@@ -169,6 +169,8 @@ class ScriptProcessorNode final
   private:
    HeapVector<Member<AudioBuffer>> input_buffers_;
    HeapVector<Member<AudioBuffer>> output_buffers_;
