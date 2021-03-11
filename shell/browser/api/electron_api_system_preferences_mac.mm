@@ -26,9 +26,11 @@
 #include "shell/browser/mac/dict_util.h"
 #include "shell/browser/mac/electron_application.h"
 #include "shell/browser/ui/cocoa/NSColor+Hex.h"
+#include "shell/common/color_util.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/process_util.h"
+#include "skia/ext/skia_utils_mac.h"
 #include "ui/native_theme/native_theme.h"
 
 namespace gin {
@@ -384,7 +386,8 @@ std::string SystemPreferences::GetAccentColor() {
   if (@available(macOS 10.14, *))
     sysColor = [NSColor controlAccentColor];
 
-  return base::SysNSStringToUTF8([sysColor RGBAValue]);
+  return ToRGBAHex(skia::NSSystemColorToSkColor(sysColor),
+                   false /* include_hash */);
 }
 
 std::string SystemPreferences::GetSystemColor(gin_helper::ErrorThrower thrower,
@@ -413,7 +416,7 @@ std::string SystemPreferences::GetSystemColor(gin_helper::ErrorThrower thrower,
     return "";
   }
 
-  return base::SysNSStringToUTF8([sysColor hexadecimalValue]);
+  return ToRGBHex(skia::NSSystemColorToSkColor(sysColor));
 }
 
 bool SystemPreferences::CanPromptTouchID() {
@@ -571,7 +574,7 @@ std::string SystemPreferences::GetColor(gin_helper::ErrorThrower thrower,
   }
 
   if (sysColor)
-    return base::SysNSStringToUTF8([sysColor hexadecimalValue]);
+    return ToRGBHex(skia::NSSystemColorToSkColor(sysColor));
   return "";
 }
 
