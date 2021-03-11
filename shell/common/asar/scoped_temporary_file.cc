@@ -48,4 +48,27 @@ bool ScopedTemporaryFile::Init(const base::FilePath::StringType& ext) {
   return true;
 }
 
+bool ScopedTemporaryFile::InitFromFile(base::File* src,
+                                       const base::FilePath::StringType& ext,
+                                       uint64_t offset,
+                                       uint64_t size) {
+  if (!src->IsValid())
+    return false;
+
+  if (!Init(ext))
+    return false;
+
+  std::vector<char> buf(size);
+  int len = src->Read(offset, buf.data(), buf.size());
+  if (len != static_cast<int>(size))
+    return false;
+
+  base::File dest(path_, base::File::FLAG_OPEN | base::File::FLAG_WRITE);
+  if (!dest.IsValid())
+    return false;
+
+  return dest.WriteAtCurrentPos(buf.data(), buf.size()) ==
+         static_cast<int>(size);
+}
+
 }  // namespace asar
