@@ -208,7 +208,7 @@ app.commandLine.appendSwitch('enable-features', 'ElectronSerialChooser')
 app.whenReady().then(() => {
   win = new BrowserWindow({
     width: 800,
-    height: 600,
+    height: 600
   })
   win.webContents.session.on('select-serial-port', (event, portList, webContents, callback) => {
     event.preventDefault()
