@@ -1,7 +1,7 @@
-From 6e8856624cbbcae0934975a4cbb0b994bc95bc7a Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Koji Ishii <kojii@chromium.org>
 Date: Thu, 11 Mar 2021 17:45:46 +0000
-Subject: [PATCH] Mark additional RootInlineBox dirty when culled inline box is removed
+Subject: Mark additional RootInlineBox dirty when culled inline box is removed
 
 When a |LayoutInline| is removed, |LineBoxList::
 DirtyLinesFromChangedChild| tries to mark affected
@@ -29,13 +29,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2749769
 Commit-Queue: Krishna Govind <govind@chromium.org>
 Cr-Commit-Position: refs/branch-heads/4389@{#1518}
 Cr-Branched-From: 9251c5db2b6d5a59fe4eac7aafa5fed37c139bb7-refs/heads/master@{#843830}
----
 
 diff --git a/third_party/blink/renderer/core/layout/line/line_box_list.cc b/third_party/blink/renderer/core/layout/line/line_box_list.cc
-index 9d9d861..ed92984 100644
+index 9d9d861f00cb9784041796acb91604d64dab1cb7..ed929849f721fbae25fd8c1106c95e563aca289b 100644
 --- a/third_party/blink/renderer/core/layout/line/line_box_list.cc
 +++ b/third_party/blink/renderer/core/layout/line/line_box_list.cc
-@@ -359,14 +359,32 @@
+@@ -359,14 +359,32 @@ void LineBoxList::DirtyLinesFromChangedChild(LineLayoutItem container,
      // findNextLineBreak. findNextLineBreak, despite the name, actually returns
      // the first LayoutObject after the BR. <rdar://problem/3849947> "Typing
      // after pasting line does not appear until after window resize."
