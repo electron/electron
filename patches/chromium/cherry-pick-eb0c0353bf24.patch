@@ -1,0 +1,217 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Raymond Toy <rtoy@chromium.org>
+Date: Wed, 10 Feb 2021 05:34:49 +0000
+Subject: Convert AudioParam NaN values to the default value
+
+If any output value of an AudioParam (including the intrinsic values
+and any inputs to the AudioParam), should be NaN, replace the NaN
+value with the associated defaultValue.
+
+This causes some slowdowns so SIMD/NEON code was added to mitigate the
+degradation.  There is still some slowdown, but the worst case is now
+about 7% slower on x86 and 10% on arm. Generally, the slowdown is less
+than 2% and 5%, respectively.  (Perversely, some results got faster,
+and the differences are statistically significant.)
+
+Full details can be found at
+https://docs.google.com/spreadsheets/d/1EhbLHm-9cUoEO5aj1vYemVBLQ3Dh4dCJPPLTfZPrZt4/edit?usp=sharing
+
+Manually tested the test case from the bug and the issue no longer
+occurs.
+
+(cherry picked from commit ab1862017b5717271a28376659944dddc602195c)
+
+Bug: 1170531
+Change-Id: I00d902b40a9ef9da990c6d68b664b1dcfc31b091
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2658724
+Commit-Queue: Raymond Toy <rtoy@chromium.org>
+Reviewed-by: Hongchan Choi <hongchan@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#851733}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2686369
+Reviewed-by: Raymond Toy <rtoy@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4389@{#880}
+Cr-Branched-From: 9251c5db2b6d5a59fe4eac7aafa5fed37c139bb7-refs/heads/master@{#843830}
+
+diff --git a/third_party/blink/renderer/modules/webaudio/audio_param.cc b/third_party/blink/renderer/modules/webaudio/audio_param.cc
+index c5d329479a412d52ee39167ff841b1cea417a217..135588f56ebceabd3e0a12f9f506955bb58b20ca 100644
+--- a/third_party/blink/renderer/modules/webaudio/audio_param.cc
++++ b/third_party/blink/renderer/modules/webaudio/audio_param.cc
+@@ -25,6 +25,7 @@
+ 
+ #include "third_party/blink/renderer/modules/webaudio/audio_param.h"
+ 
++#include "build/build_config.h"
+ #include "third_party/blink/renderer/core/inspector/console_message.h"
+ #include "third_party/blink/renderer/modules/webaudio/audio_graph_tracer.h"
+ #include "third_party/blink/renderer/modules/webaudio/audio_node.h"
+@@ -235,6 +236,49 @@ void AudioParamHandler::CalculateSampleAccurateValues(
+   CalculateFinalValues(values, number_of_values, IsAudioRate());
+ }
+ 
++// Replace NaN values in |values| with |default_value|.
++static void HandleNaNValues(float* values,
++                            unsigned number_of_values,
++                            float default_value) {
++  unsigned k = 0;
++#if defined(ARCH_CPU_X86_FAMILY)
++  if (number_of_values >= 4) {
++    __m128 defaults = _mm_set1_ps(default_value);
++    for (k = 0; k < number_of_values; k += 4) {
++      __m128 v = _mm_loadu_ps(values + k);
++      // cmpuord returns all 1's if v is NaN for each elmeent of v.
++      __m128 isnan = _mm_cmpunord_ps(v, v);
++      // Replace NaN parts with default.
++      __m128 result = _mm_and_ps(isnan, defaults);
++      // Merge in the parts that aren't NaN
++      result = _mm_or_ps(_mm_andnot_ps(isnan, v), result);
++      _mm_storeu_ps(values + k, result);
++    }
++  }
++#elif defined(CPU_ARM_NEON)
++  if (number_of_values >= 4) {
++    uint32x4_t defaults = static_cast<uint32x4_t>(vdupq_n_f32(default_value));
++    for (k = 0; k < number_of_values; k += 4) {
++      float32x4_t v = vld1q_f32(values + k);
++      // Returns true (all ones) if v is not NaN
++      uint32x4_t is_not_nan = vceqq_f32(v, v);
++      // Get the parts that are not NaN
++      uint32x4_t result = vandq_u32(is_not_nan, v);
++      // Replace the parts that are NaN with the default and merge with previous
++      // result.  (Note: vbic_u32(x, y) = x and not y)
++      result = vorrq_u32(result, vbicq_u32(defaults, is_not_nan));
++      vst1q_f32(values + k, static_cast<float32x4_t>(result));
++    }
++  }
++#endif
++
++  for (; k < number_of_values; ++k) {
++    if (std::isnan(values[k])) {
++      values[k] = default_value;
++    }
++  }
++}
++
+ void AudioParamHandler::CalculateFinalValues(float* values,
+                                              unsigned number_of_values,
+                                              bool sample_accurate) {
+@@ -297,10 +341,21 @@ void AudioParamHandler::CalculateFinalValues(float* values,
+       }
+     }
+ 
+-    // Clamp the values now to the nominal range
+     float min_value = MinValue();
+     float max_value = MaxValue();
+ 
++    if (NumberOfRenderingConnections() > 0) {
++      // AudioParams by themselves don't produce NaN because of the finite min
++      // and max values.  But an input to an AudioParam could have NaNs.
++      //
++      // NaN values in AudioParams must be replaced by the AudioParam's
++      // defaultValue.  Then these values must be clamped to lie in the nominal
++      // range between the AudioParam's minValue and maxValue.
++      //
++      // See https://webaudio.github.io/web-audio-api/#computation-of-value.
++      HandleNaNValues(values, number_of_values, DefaultValue());
++    }
++
+     vector_math::Vclip(values, 1, &min_value, &max_value, values, 1,
+                        number_of_values);
+   }
+diff --git a/third_party/blink/web_tests/external/wpt/webaudio/the-audio-api/the-audioparam-interface/nan-param.html b/third_party/blink/web_tests/external/wpt/webaudio/the-audio-api/the-audioparam-interface/nan-param.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..e9b8f0accbd1b0359275615f3ef12bd7e9317c4f
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/webaudio/the-audio-api/the-audioparam-interface/nan-param.html
+@@ -0,0 +1,92 @@
++<!doctype html>
++<html>
++  <head>
++    <title>Test Flushing of NaN to Zero in AudioParams</title>
++    <script src="/resources/testharness.js"></script>
++    <script src="/resources/testharnessreport.js"></script>
++    <script src="/webaudio/resources/audit-util.js"></script>
++    <script src="/webaudio/resources/audit.js"></script>
++  </head>
++
++  <body>
++    <script>
++      let audit = Audit.createTaskRunner();
++
++      // See
++      // https://webaudio.github.io/web-audio-api/#computation-of-value.
++      //
++      // The computed value must replace NaN values in the output with
++      // the default value of the param.
++      audit.define('AudioParam NaN', async (task, should) => {
++        // For testing, we only need a small number of frames; and
++        // a low sample rate is perfectly fine.  Use two channels.
++        // The first channel is for the AudioParam output.  The
++        // second channel is for the AudioParam input.
++        let context = new OfflineAudioContext(
++            {numberOfChannels: 2, length: 256, sampleRate: 8192});
++        let merger = new ChannelMergerNode(
++            context, {numberOfInputs: context.destination.channelCount});
++        merger.connect(context.destination);
++
++        // A constant source with a huge value.
++        let mod = new ConstantSourceNode(context, {offset: 1e30});
++
++        // Gain nodes with a huge positive gain and huge negative
++        // gain.  Combined with the huge offset in |mod|, the
++        // output of the gain nodes are +Infinity and -Infinity.
++        let gainPos = new GainNode(context, {gain: 1e30});
++        let gainNeg = new GainNode(context, {gain: -1e30});
++
++        mod.connect(gainPos);
++        mod.connect(gainNeg);
++
++        // Connect these to the second merger channel. This is a
++        // sanity check that the AudioParam input really is NaN.
++        gainPos.connect(merger, 0, 1);
++        gainNeg.connect(merger, 0, 1);
++
++        // Source whose AudioParam is connected to the graph
++        // that produces NaN values.  Use a non-default value offset
++        // just in case something is wrong we get default for some
++        // other reason.
++        let src = new ConstantSourceNode(context, {offset: 100});
++
++        gainPos.connect(src.offset);
++        gainNeg.connect(src.offset);
++
++        // AudioParam output goes to channel 1 of the destination.
++        src.connect(merger, 0, 0);
++
++        // Let's go!
++        mod.start();
++        src.start();
++
++        let buffer = await context.startRendering();
++
++        let input = buffer.getChannelData(1);
++        let output = buffer.getChannelData(0);
++
++        // Have to test manually for NaN values in the input because
++        // NaN fails all comparisons.
++        let isNaN = true;
++        for (let k = 0; k < input.length; ++k) {
++          if (!Number.isNaN(input[k])) {
++            isNaN = false;
++            break;
++          }
++        }
++
++        should(isNaN, 'AudioParam input contains only NaN').beTrue();
++
++        // Output of the AudioParam should have all NaN values
++        // replaced by the default.
++        should(output, 'AudioParam output')
++            .beConstantValueOf(src.offset.defaultValue);
++
++        task.done();
++      });
++
++      audit.run();
++    </script>
++  </body>
++</html>
