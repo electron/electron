@@ -1059,6 +1059,16 @@ void WebContents::AddNewContents(
   v8::HandleScope handle_scope(isolate);
   auto api_web_contents =
       CreateAndTake(isolate, std::move(new_contents), Type::kBrowserWindow);
+
+  // We call RenderFrameCreated here as at this point the empty "about:blank"
+  // render frame has already been created.  If the window never navigates again
+  // RenderFrameCreated won't be called and certain prefs like
+  // "kBackgroundColor" will not be applied.
+  auto* frame = api_web_contents->MainFrame();
+  if (frame) {
+    api_web_contents->HandleNewRenderFrame(frame);
+  }
+
   if (Emit("-add-new-contents", api_web_contents, disposition, user_gesture,
            initial_rect.x(), initial_rect.y(), initial_rect.width(),
            initial_rect.height(), tracker->url, tracker->frame_name,
@@ -1350,7 +1360,7 @@ void WebContents::BeforeUnloadFired(bool proceed,
   // there are two virtual functions named BeforeUnloadFired.
 }
 
-void WebContents::RenderFrameCreated(
+void WebContents::HandleNewRenderFrame(
     content::RenderFrameHost* render_frame_host) {
   auto* rwhv = render_frame_host->GetView();
   if (!rwhv)
@@ -1377,6 +1387,11 @@ void WebContents::RenderFrameCreated(
     rwh_impl->disable_hidden_ = !background_throttling_;
 
   WebFrameMain::RenderFrameCreated(render_frame_host);
+}
+
+void WebContents::RenderFrameCreated(
+    content::RenderFrameHost* render_frame_host) {
+  HandleNewRenderFrame(render_frame_host);
 }
 
 void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
