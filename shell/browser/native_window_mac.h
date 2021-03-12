@@ -89,6 +89,7 @@ class NativeWindowMac : public NativeWindow,
   bool IsExcludedFromShownWindowsMenu() override;
   void SetSimpleFullScreen(bool simple_fullscreen) override;
   bool IsSimpleFullScreen() override;
+  void UpdateFrame() override;
   void SetKiosk(bool kiosk) override;
   bool IsKiosk() override;
   void SetBackgroundColor(SkColor color) override;
