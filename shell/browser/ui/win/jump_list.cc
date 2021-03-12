@@ -25,7 +25,7 @@ bool AppendTask(const JumpListItem& item, IObjectCollection* collection) {
       FAILED(link->SetPath(item.path.value().c_str())) ||
       FAILED(link->SetArguments(item.arguments.c_str())) ||
       FAILED(link->SetWorkingDirectory(item.working_dir.value().c_str())) ||
-      FAILED(link->SetDescription(item.description.c_str())))
+      FAILED(link->SetDescription(item.description.c_str()))
     return false;
 
   if (!item.icon_path.empty() &&
