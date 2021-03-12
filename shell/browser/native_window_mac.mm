@@ -239,12 +239,6 @@ void SetFrameSize(NSView* self, SEL _cmd, NSSize size) {
   super_impl(self, _cmd, size);
 }
 
-// In simpleFullScreen mode, update the frame for new bounds.
-void UpdateFrame(NSWindow* window) {
-  NSRect fullscreenFrame = [window.screen frame];
-  [window setFrame:fullscreenFrame display:YES animate:YES];
-}
-
 // The contentView gets moved around during certain full-screen operations.
 // This is less than ideal, and should eventually be removed.
 void ViewDidMoveToSuperview(NSView* self, SEL _cmd) {
@@ -892,6 +886,13 @@ void NativeWindowMac::SetExcludedFromShownWindowsMenu(bool excluded) {
   [window setExcludedFromWindowsMenu:excluded];
 }
 
+// In simpleFullScreen mode, update the frame for new bounds.
+void NativeWindowMac::UpdateFrame() {
+  NSWindow* window = GetNativeWindow().GetNativeNSWindow();
+  NSRect fullscreenFrame = [window.screen frame];
+  [window setFrame:fullscreenFrame display:YES animate:YES];
+}
+
 void NativeWindowMac::OnDisplayMetricsChanged(const display::Display& display,
                                               uint32_t changed_metrics) {
   // We only want to force screen recalibration if we're in simpleFullscreen
@@ -899,9 +900,8 @@ void NativeWindowMac::OnDisplayMetricsChanged(const display::Display& display,
   if (!is_simple_fullscreen_)
     return;
 
-  NSWindow* window = GetNativeWindow().GetNativeNSWindow();
-  base::ThreadTaskRunnerHandle::Get()->PostNonNestableTask(
-      FROM_HERE, base::BindOnce(&UpdateFrame, window));
+  base::PostTask(FROM_HERE, {content::BrowserThread::UI},
+                 base::BindOnce(&NativeWindow::UpdateFrame, GetWeakPtr()));
 }
 
 void NativeWindowMac::SetSimpleFullScreen(bool simple_fullscreen) {
