@@ -14,6 +14,7 @@
 
 #include "base/mac/scoped_nsobject.h"
 #include "shell/browser/native_window.h"
+#include "ui/display/display_observer.h"
 #include "ui/native_theme/native_theme_observer.h"
 #include "ui/views/controls/native/native_view_host.h"
 
@@ -27,7 +28,9 @@ namespace electron {
 
 class RootViewMac;
 
-class NativeWindowMac : public NativeWindow, public ui::NativeThemeObserver {
+class NativeWindowMac : public NativeWindow,
+                        public ui::NativeThemeObserver,
+                        public display::DisplayObserver {
  public:
   NativeWindowMac(const gin_helper::Dictionary& options, NativeWindow* parent);
   ~NativeWindowMac() override;
@@ -187,6 +190,10 @@ class NativeWindowMac : public NativeWindow, public ui::NativeThemeObserver {
 
   // ui::NativeThemeObserver:
   void OnNativeThemeUpdated(ui::NativeTheme* observed_theme) override;
+
+  // display::DisplayObserver:
+  void OnDisplayMetricsChanged(const display::Display& display,
+                               uint32_t changed_metrics) override;
 
  private:
   // Add custom layers to the content view.

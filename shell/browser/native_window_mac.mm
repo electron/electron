@@ -39,6 +39,7 @@
 #include "shell/common/process_util.h"
 #include "skia/ext/skia_utils_mac.h"
 #include "third_party/webrtc/modules/desktop_capture/mac/window_list_utils.h"
+#include "ui/display/screen.h"
 #include "ui/gfx/skia_util.h"
 #include "ui/gl/gpu_switching_manager.h"
 #include "ui/views/background.h"
@@ -238,6 +239,12 @@ void SetFrameSize(NSView* self, SEL _cmd, NSSize size) {
   super_impl(self, _cmd, size);
 }
 
+// In simpleFullScreen mode, update the frame for new bounds.
+void UpdateFrame(NSWindow* window) {
+  NSRect fullscreenFrame = [window.screen frame];
+  [window setFrame:fullscreenFrame display:YES animate:YES];
+}
+
 // The contentView gets moved around during certain full-screen operations.
 // This is less than ideal, and should eventually be removed.
 void ViewDidMoveToSuperview(NSView* self, SEL _cmd) {
@@ -258,6 +265,7 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
                                  NativeWindow* parent)
     : NativeWindow(options, parent), root_view_(new RootViewMac(this)) {
   ui::NativeTheme::GetInstanceForNativeUi()->AddObserver(this);
+  display::Screen::GetScreen()->AddObserver(this);
 
   int width = 800, height = 600;
   options.Get(options::kWidth, &width);
@@ -442,7 +450,9 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   original_level_ = [window_ level];
 }
 
-NativeWindowMac::~NativeWindowMac() {}
+NativeWindowMac::~NativeWindowMac() {
+  display::Screen::GetScreen()->RemoveObserver(this);
+}
 
 void NativeWindowMac::SetContentView(views::View* view) {
   views::View* root_view = GetContentsView();
@@ -880,6 +890,18 @@ bool NativeWindowMac::IsExcludedFromShownWindowsMenu() {
 void NativeWindowMac::SetExcludedFromShownWindowsMenu(bool excluded) {
   NSWindow* window = GetNativeWindow().GetNativeNSWindow();
   [window setExcludedFromWindowsMenu:excluded];
+}
+
+void NativeWindowMac::OnDisplayMetricsChanged(const display::Display& display,
+                                              uint32_t changed_metrics) {
+  // We only want to force screen recalibration if we're in simpleFullscreen
+  // mode.
+  if (!is_simple_fullscreen_)
+    return;
+
+  NSWindow* window = GetNativeWindow().GetNativeNSWindow();
+  base::ThreadTaskRunnerHandle::Get()->PostNonNestableTask(
+      FROM_HERE, base::BindOnce(&UpdateFrame, window));
 }
 
 void NativeWindowMac::SetSimpleFullScreen(bool simple_fullscreen) {
