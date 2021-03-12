@@ -1,0 +1,152 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Markus Handell <handellm@google.com>
+Date: Tue, 23 Feb 2021 18:45:55 +0000
+Subject: MediaRecorder: tolerate non-GMB NV12 frames for H264.
+
+The VPX video track recorders were updated to tolerate non-GMB NV12
+input in crrev/c/2425748, but the H264 encoder was left neglected,
+which hurts Mac users that have disabled hardware acceleration. This
+change adds that support to it.
+
+[TBR landing because mcasas@chromium.org is OOO]
+
+TBR=mcasas@chromium.org
+(cherry picked from commit de865890bf6a12c74ae9943ede6132d25c7a33dd)
+
+Bug: 1177593
+Change-Id: I608c76b1de8261dcc44463fe896e3b63d5fd329e
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2694407
+Reviewed-by: ccameron <ccameron@chromium.org>
+Reviewed-by: Evan Shrubsole <eshr@google.com>
+Reviewed-by: Miguel Casas <mcasas@chromium.org>
+Commit-Queue: Markus Handell <handellm@google.com>
+Cr-Original-Commit-Position: refs/heads/master@{#854709}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2715222
+Cr-Commit-Position: refs/branch-heads/4389@{#1320}
+Cr-Branched-From: 9251c5db2b6d5a59fe4eac7aafa5fed37c139bb7-refs/heads/master@{#843830}
+
+diff --git a/media/base/video_util.cc b/media/base/video_util.cc
+index 3daa1cb27d5705d56d0075e82a9ecd0bfb86c366..d5a0f1b578e22822089d704fcd7b98cbb26bb405 100644
+--- a/media/base/video_util.cc
++++ b/media/base/video_util.cc
+@@ -13,6 +13,7 @@
+ #include "base/numerics/safe_math.h"
+ #include "media/base/video_frame.h"
+ #include "third_party/libyuv/include/libyuv.h"
++#include "ui/gfx/gpu_memory_buffer.h"
+ 
+ namespace media {
+ 
+@@ -424,6 +425,38 @@ void CopyRGBToVideoFrame(const uint8_t* source,
+                      region_in_frame.width(), region_in_frame.height());
+ }
+ 
++scoped_refptr<VideoFrame> ConvertToMemoryMappedFrame(
++    scoped_refptr<VideoFrame> video_frame) {
++  DCHECK(video_frame);
++  DCHECK(video_frame->HasGpuMemoryBuffer());
++  auto* gmb = video_frame->GetGpuMemoryBuffer();
++  if (!gmb->Map())
++    return nullptr;
++  const size_t num_planes = VideoFrame::NumPlanes(video_frame->format());
++  uint8_t* plane_addrs[VideoFrame::kMaxPlanes] = {};
++  for (size_t i = 0; i < num_planes; i++)
++    plane_addrs[i] = static_cast<uint8_t*>(gmb->memory(i));
++  auto mapped_frame = VideoFrame::WrapExternalYuvDataWithLayout(
++      video_frame->layout(), video_frame->visible_rect(),
++      video_frame->natural_size(), plane_addrs[0], plane_addrs[1],
++      plane_addrs[2], video_frame->timestamp());
++  if (!mapped_frame) {
++    gmb->Unmap();
++    return nullptr;
++  }
++  mapped_frame->set_color_space(video_frame->ColorSpace());
++  mapped_frame->metadata()->MergeMetadataFrom(video_frame->metadata());
++  // Pass |video_frame| so that it outlives |mapped_frame| and the mapped buffer
++  // is unmapped on destruction.
++  mapped_frame->AddDestructionObserver(base::BindOnce(
++      [](scoped_refptr<VideoFrame> frame) {
++        DCHECK(frame->HasGpuMemoryBuffer());
++        frame->GetGpuMemoryBuffer()->Unmap();
++      },
++      std::move(video_frame)));
++  return mapped_frame;
++}
++
+ scoped_refptr<VideoFrame> WrapAsI420VideoFrame(
+     scoped_refptr<VideoFrame> frame) {
+   DCHECK_EQ(VideoFrame::STORAGE_OWNED_MEMORY, frame->storage_type());
+diff --git a/media/base/video_util.h b/media/base/video_util.h
+index 42e060a25b711fca8bba3cef8ade9bbaa2092c55..2681163c55618ae8738d91987bb46a4e8bcc541b 100644
+--- a/media/base/video_util.h
++++ b/media/base/video_util.h
+@@ -134,6 +134,12 @@ MEDIA_EXPORT gfx::Size GetRectSizeFromOrigin(const gfx::Rect& rect);
+ MEDIA_EXPORT gfx::Size PadToMatchAspectRatio(const gfx::Size& size,
+                                              const gfx::Size& target);
+ 
++// A helper function to map GpuMemoryBuffer-based VideoFrame. This function
++// maps the given GpuMemoryBuffer of |frame| as-is without converting pixel
++// format. The returned VideoFrame owns the |frame|.
++MEDIA_EXPORT scoped_refptr<VideoFrame> ConvertToMemoryMappedFrame(
++    scoped_refptr<VideoFrame> frame);
++
+ // Copy an RGB bitmap into the specified |region_in_frame| of a YUV video frame.
+ // Fills the regions outside |region_in_frame| with black.
+ MEDIA_EXPORT void CopyRGBToVideoFrame(const uint8_t* source,
+diff --git a/third_party/blink/renderer/modules/mediarecorder/h264_encoder.cc b/third_party/blink/renderer/modules/mediarecorder/h264_encoder.cc
+index 401e696e886f68fc4a9bb9ac0614959f0a8673a8..c323faab804ad421b1c8f8d7789222304c4d44e6 100644
+--- a/third_party/blink/renderer/modules/mediarecorder/h264_encoder.cc
++++ b/third_party/blink/renderer/modules/mediarecorder/h264_encoder.cc
+@@ -54,9 +54,13 @@ void H264Encoder::EncodeOnEncodingTaskRunner(
+     base::TimeTicks capture_timestamp) {
+   TRACE_EVENT0("media", "H264Encoder::EncodeOnEncodingTaskRunner");
+   DCHECK(encoding_task_runner_->BelongsToCurrentThread());
++  DCHECK(frame->format() == media::VideoPixelFormat::PIXEL_FORMAT_NV12 ||
++         frame->format() == media::VideoPixelFormat::PIXEL_FORMAT_I420 ||
++         frame->format() == media::VideoPixelFormat::PIXEL_FORMAT_I420A);
+ 
+-  if (frame->storage_type() == media::VideoFrame::STORAGE_GPU_MEMORY_BUFFER)
++  if (frame->format() == media::PIXEL_FORMAT_NV12)
+     frame = ConvertToI420ForSoftwareEncoder(frame);
++  DCHECK(frame->IsMappable());
+ 
+   const gfx::Size frame_size = frame->visible_rect().size();
+   if (!openh264_encoder_ || configured_size_ != frame_size) {
+diff --git a/third_party/blink/renderer/modules/mediarecorder/video_track_recorder.cc b/third_party/blink/renderer/modules/mediarecorder/video_track_recorder.cc
+index 8f69cc61257cbe2c4c349912cfb4647ceaf771f7..1ace9b3f6ed14a96af7b8e8779a3929675be9a0a 100644
+--- a/third_party/blink/renderer/modules/mediarecorder/video_track_recorder.cc
++++ b/third_party/blink/renderer/modules/mediarecorder/video_track_recorder.cc
+@@ -415,20 +415,17 @@ bool VideoTrackRecorderImpl::Encoder::CanEncodeAlphaChannel() {
+ scoped_refptr<media::VideoFrame>
+ VideoTrackRecorderImpl::Encoder::ConvertToI420ForSoftwareEncoder(
+     scoped_refptr<media::VideoFrame> frame) {
+-  DCHECK_EQ(frame->storage_type(),
+-            media::VideoFrame::STORAGE_GPU_MEMORY_BUFFER);
+-  // NV12 is currently the only supported pixel format for GpuMemoryBuffer.
+   DCHECK_EQ(frame->format(), media::VideoPixelFormat::PIXEL_FORMAT_NV12);
+ 
+-  auto* gmb = frame->GetGpuMemoryBuffer();
+-  if (!gmb->Map())
+-    return frame;
++  if (frame->GetGpuMemoryBuffer())
++    frame = media::ConvertToMemoryMappedFrame(frame);
++
+   scoped_refptr<media::VideoFrame> i420_frame = media::VideoFrame::CreateFrame(
+       media::VideoPixelFormat::PIXEL_FORMAT_I420, frame->coded_size(),
+       frame->visible_rect(), frame->natural_size(), frame->timestamp());
+   auto ret = libyuv::NV12ToI420(
+-      static_cast<const uint8_t*>(gmb->memory(0)), gmb->stride(0),
+-      static_cast<const uint8_t*>(gmb->memory(1)), gmb->stride(1),
++      static_cast<const uint8_t*>(frame->data(0)), frame->stride(0),
++      static_cast<const uint8_t*>(frame->data(1)), frame->stride(1),
+       i420_frame->data(media::VideoFrame::kYPlane),
+       i420_frame->stride(media::VideoFrame::kYPlane),
+       i420_frame->data(media::VideoFrame::kUPlane),
+@@ -436,7 +433,6 @@ VideoTrackRecorderImpl::Encoder::ConvertToI420ForSoftwareEncoder(
+       i420_frame->data(media::VideoFrame::kVPlane),
+       i420_frame->stride(media::VideoFrame::kVPlane),
+       frame->coded_size().width(), frame->coded_size().height());
+-  gmb->Unmap();
+   if (ret)
+     return frame;
+   return i420_frame;
