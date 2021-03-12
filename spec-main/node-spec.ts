@@ -123,11 +123,12 @@ describe('node feature', () => {
     });
   });
 
-  describe('Node.js cli flags', () => {
+  // Running child app under ASan might receive SIGKILL because of OOM.
+  ifdescribe(features.isRunAsNodeEnabled() && !process.env.IS_ASAN)('Node.js cli flags', () => {
     let child: childProcess.ChildProcessWithoutNullStreams;
     let exitPromise: Promise<any[]>;
 
-    ifit(features.isRunAsNodeEnabled())('Prohibits crypto-related flags in ELECTRON_RUN_AS_NODE mode', (done) => {
+    it('Prohibits crypto-related flags in ELECTRON_RUN_AS_NODE mode', (done) => {
       after(async () => {
         const [code, signal] = await exitPromise;
         expect(signal).to.equal(null);
@@ -165,7 +166,8 @@ describe('node feature', () => {
     });
   });
 
-  ifdescribe(features.isRunAsNodeEnabled())('inspector', () => {
+  // Running child app under ASan might receive SIGKILL because of OOM.
+  ifdescribe(features.isRunAsNodeEnabled() && !process.env.IS_ASAN)('inspector', () => {
     let child: childProcess.ChildProcessWithoutNullStreams;
     let exitPromise: Promise<any[]>;
 
@@ -242,9 +244,8 @@ describe('node feature', () => {
       }
     });
 
-    // IPC Electron child process not supported on Windows
-    // TODO(jeremy): figure out why this times out under ASan
-    ifit(process.platform !== 'win32' && !process.env.IS_ASAN)('does not crash when quitting with the inspector connected', function (done) {
+    // IPC Electron child process not supported on Windows.
+    ifit(process.platform !== 'win32')('does not crash when quitting with the inspector connected', function (done) {
       child = childProcess.spawn(process.execPath, [path.join(fixtures, 'module', 'delay-exit'), '--inspect=0'], {
         stdio: ['ipc']
       }) as childProcess.ChildProcessWithoutNullStreams;
@@ -304,7 +305,8 @@ describe('node feature', () => {
     });
   });
 
-  it('Can find a module using a package.json main field', () => {
+  // Running child app under ASan might receive SIGKILL because of OOM.
+  ifit(!process.env.IS_ASAN)('Can find a module using a package.json main field', () => {
     const result = childProcess.spawnSync(process.execPath, [path.resolve(fixtures, 'api', 'electron-main-module', 'app.asar')]);
     expect(result.status).to.equal(0);
   });

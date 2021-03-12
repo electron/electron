@@ -143,7 +143,8 @@ describe('app module', () => {
     });
   });
 
-  describe('app.exit(exitCode)', () => {
+  // Running child app under ASan might receive SIGKILL because of OOM.
+  ifdescribe(!process.env.IS_ASAN)('app.exit(exitCode)', () => {
     let appProcess: cp.ChildProcess | null = null;
 
     afterEach(() => {
@@ -209,7 +210,7 @@ describe('app module', () => {
     });
   });
 
-  // TODO(jeremy): figure out why these tests time out under ASan
+  // Running child app under ASan might receive SIGKILL because of OOM.
   ifdescribe(!process.env.IS_ASAN)('app.requestSingleInstanceLock', () => {
     it('prevents the second launch of app', async function () {
       this.timeout(120000);
@@ -252,7 +253,8 @@ describe('app module', () => {
     });
   });
 
-  describe('app.relaunch', () => {
+  // Running child app under ASan might receive SIGKILL because of OOM.
+  ifdescribe(!process.env.IS_ASAN)('app.relaunch', () => {
     let server: net.Server | null = null;
     const socketPath = process.platform === 'win32' ? '\\\\.\\pipe\\electron-app-relaunch' : '/tmp/electron-app-relaunch';
 
@@ -852,7 +854,8 @@ describe('app module', () => {
     });
   });
 
-  describe('getAppPath', () => {
+  // Running child app under ASan might receive SIGKILL because of OOM.
+  ifdescribe(!process.env.IS_ASAN)('getAppPath', () => {
     it('works for directories with package.json', async () => {
       const { appPath } = await runTestApp('app-path');
       expect(appPath).to.equal(path.resolve(fixturesPath, 'api/app-path'));
@@ -1128,13 +1131,7 @@ describe('app module', () => {
     });
   });
 
-  describe('app launch through uri', () => {
-    before(function () {
-      if (process.platform !== 'win32') {
-        this.skip();
-      }
-    });
-
+  ifdescribe(process.platform === 'win32')('app launch through uri', () => {
     it('does not launch for argument following a URL', async () => {
       const appPath = path.join(fixturesPath, 'api', 'quit-app');
       // App should exit with non 123 code.
@@ -1334,7 +1331,8 @@ describe('app module', () => {
     });
   });
 
-  describe('sandbox options', () => {
+  // Running child app under ASan might receive SIGKILL because of OOM.
+  ifdescribe(!process.env.IS_ASAN)('sandbox options', () => {
     let appProcess: cp.ChildProcess = null as any;
     let server: net.Server = null as any;
     const socketPath = process.platform === 'win32' ? '\\\\.\\pipe\\electron-mixed-sandbox' : '/tmp/electron-mixed-sandbox';
@@ -1375,8 +1373,7 @@ describe('app module', () => {
     });
 
     describe('when app.enableSandbox() is called', () => {
-      // TODO(jeremy): figure out why this times out under ASan
-      ifit(!process.env.IS_ASAN)('adds --enable-sandbox to all renderer processes', done => {
+      it('adds --enable-sandbox to all renderer processes', done => {
         const appPath = path.join(fixturesPath, 'api', 'mixed-sandbox-app');
         appProcess = cp.spawn(process.execPath, [appPath, '--app-enable-sandbox']);
 
@@ -1401,8 +1398,7 @@ describe('app module', () => {
     });
 
     describe('when the app is launched with --enable-sandbox', () => {
-      // TODO(jeremy): figure out why this times out under ASan
-      ifit(!process.env.IS_ASAN)('adds --enable-sandbox to all renderer processes', done => {
+      it('adds --enable-sandbox to all renderer processes', done => {
         const appPath = path.join(fixturesPath, 'api', 'mixed-sandbox-app');
         appProcess = cp.spawn(process.execPath, [appPath, '--enable-sandbox']);
 
@@ -1561,7 +1557,8 @@ describe('app module', () => {
     });
   });
 
-  describe('commandLine.hasSwitch (existing argv)', () => {
+  // Running child app under ASan might receive SIGKILL because of OOM.
+  ifdescribe(!process.env.IS_ASAN)('commandLine.hasSwitch (existing argv)', () => {
     it('returns true when present', async () => {
       const { hasSwitch } = await runTestApp('command-line', '--foobar');
       expect(hasSwitch).to.equal(true);
@@ -1589,7 +1586,8 @@ describe('app module', () => {
     });
   });
 
-  describe('commandLine.getSwitchValue (existing argv)', () => {
+  // Running child app under ASan might receive SIGKILL because of OOM.
+  ifdescribe(!process.env.IS_ASAN)('commandLine.getSwitchValue (existing argv)', () => {
     it('returns the value when present', async () => {
       const { getSwitchValue } = await runTestApp('command-line', '--foobar=test');
       expect(getSwitchValue).to.equal('test');
@@ -1616,7 +1614,8 @@ describe('app module', () => {
   });
 });
 
-describe('default behavior', () => {
+// Running child app under ASan might receive SIGKILL because of OOM.
+ifdescribe(!process.env.IS_ASAN)('default behavior', () => {
   describe('application menu', () => {
     it('creates the default menu if the app does not set it', async () => {
       const result = await runTestApp('default-menu');
