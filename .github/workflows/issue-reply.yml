@@ -22,7 +22,7 @@ jobs:
 
             Stand-alone test cases make fixing issues go more smoothly: it ensure everyone's looking at the same issue, it removes all unnecessary variables from the equation, and it can also provide the basis for automated regression tests.
 
-            I'm adding the blocked/need-repro label for this reason. After you make a test case, please link to it in a followup comment. This issue will be closed 10 days from now if there is no response.
+            I'm adding the `blocked/need-repro` label for this reason. After you make a test case, please link to it in a followup comment. This issue will be closed 10 days from now if there is no response.
 
             Thanks in advance! Your help is appreciated.
 
