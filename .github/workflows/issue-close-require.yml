@@ -1,0 +1,31 @@
+name: Issue Close Require
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+
+jobs:
+  close:
+    runs-on: ubuntu-latest
+    steps:
+      - name: need-repro
+        uses: actions-cool/issues-helper@v2.1.2
+        with:
+          actions: 'close-issues'
+          labels: 'blocked/need-repro'
+          inactive-day: 10
+          body: |
+            Thank you for your issue!
+
+            We haven't gotten a response to our questions in our comment above. With only the information that is currently in the issue, we don't have enough information to take action. I'm going to close this but don't hesitate to reach out if you have or find the answers we need, we'll be happy to reopen the issue.
+
+      - name: need-info
+        uses: actions-cool/issues-helper@v2.1.2
+        with:
+          actions: 'close-issues'
+          labels: 'blocked/need-info ❌'
+          inactive-day: 10
+          body: |
+            Thank you for your issue!
+
+            We haven't gotten a response to our questions in our comment above. With only the information that is currently in the issue, we don't have enough information to take action. I'm going to close this but don't hesitate to reach out if you have or find the answers we need, we'll be happy to reopen the issue.
