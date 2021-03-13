@@ -150,5 +150,7 @@ disable_gpu_acceleration_on_all_mesa_software_rasterizers.patch
 websocket_don_t_clear_event_queue_on_destruction.patch
 cherry-pick-7e0e52df283c.patch
 cherry-pick-dea071d8b30f.patch
+cherry-pick-a4faa754a9ef.patch
 mediarecorder_tolerate_non-gmb_nv12_frames_for_h264.patch
 cherry-pick-b772b48067c4.patch
+cherry-pick-3910c9f5cde6.patch
