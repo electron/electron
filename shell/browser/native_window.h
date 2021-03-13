@@ -147,7 +147,6 @@ class NativeWindow : public base::SupportsUserData,
   virtual bool IsExcludedFromShownWindowsMenu() = 0;
   virtual void SetSimpleFullScreen(bool simple_fullscreen) = 0;
   virtual bool IsSimpleFullScreen() = 0;
-  virtual void UpdateFrame() = 0;
   virtual void SetKiosk(bool kiosk) = 0;
   virtual bool IsKiosk() = 0;
   virtual bool IsTabletMode() const;
@@ -208,6 +207,7 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetTrafficLightPosition(base::Optional<gfx::Point> position) = 0;
   virtual base::Optional<gfx::Point> GetTrafficLightPosition() const = 0;
   virtual void RedrawTrafficLights() = 0;
+  virtual void UpdateFrame() = 0;
 #endif
 
   // Touchbar API
