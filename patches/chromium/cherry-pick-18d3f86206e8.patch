@@ -1,0 +1,156 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Christoph Schwering <schwering@google.com>
+Date: Tue, 24 Nov 2020 23:39:39 +0000
+Subject: Limit preview and filling only for non-state fields.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The number of times a value is filled into different fields is limited.
+The exception are state fields because websites sometimes have one
+state select box for each country and display the relevant select
+box once the respective country has been selected.
+
+This CL simplifies this mechanism and makes it more explicit by
+encoding the type-dependent limits in TypeValueFormFillingLimit().
+As a side effect, the limits apply not just to filled fields but also
+unfilled fields of the same type.
+
+Bug: 1075734, 1084903
+Change-Id: Icc5e8e082850ed44d9c7fbbc911d03a95033d81f
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2557977
+Commit-Queue: Matthias Körber <koerber@google.com>
+Reviewed-by: Matthias Körber <koerber@google.com>
+Auto-Submit: Christoph Schwering <schwering@google.com>
+Cr-Commit-Position: refs/heads/master@{#830778}
+
+diff --git a/components/autofill/core/browser/autofill_manager.cc b/components/autofill/core/browser/autofill_manager.cc
+index a9dd2e727ddb68331e684716055af42166d69986..0b72ac3b8a0d3bb3294be995d2b9a4bc52b81a8f 100644
+--- a/components/autofill/core/browser/autofill_manager.cc
++++ b/components/autofill/core/browser/autofill_manager.cc
+@@ -20,6 +20,7 @@
+ #include "base/check_op.h"
+ #include "base/command_line.h"
+ #include "base/containers/adapters.h"
++#include "base/containers/flat_map.h"
+ #include "base/feature_list.h"
+ #include "base/files/file_util.h"
+ #include "base/guid.h"
+@@ -432,9 +433,15 @@ const char* SubmissionSourceToString(SubmissionSource source) {
+ 
+ // Returns how many fields with type |field_type| may be filled in a form at
+ // maximum.
+-int TypeValueFormFillingLimit(ServerFieldType field_type) {
+-  return field_type == CREDIT_CARD_NUMBER ? kCreditCardTypeValueFormFillingLimit
+-                                          : kTypeValueFormFillingLimit;
++size_t TypeValueFormFillingLimit(ServerFieldType field_type) {
++  switch (field_type) {
++    case CREDIT_CARD_NUMBER:
++      return kCreditCardTypeValueFormFillingLimit;
++    case ADDRESS_HOME_STATE:
++      return kStateTypeValueFormFillingLimit;
++    default:
++      return kTypeValueFormFillingLimit;
++  }
+ }
+ 
+ }  // namespace
+@@ -1760,7 +1767,8 @@ void AutofillManager::FillOrPreviewDataModelForm(
+ 
+   // Count the number of times the value of a specific type was filled into the
+   // form.
+-  std::map<ServerFieldType, int> type_filling_count;
++  base::flat_map<ServerFieldType, size_t> type_filling_count;
++  type_filling_count.reserve(form_structure->field_count());
+ 
+   for (size_t i = 0; i < form_structure->field_count(); ++i) {
+     std::string field_number = base::StringPrintf("Field %zu", i);
+@@ -1852,7 +1860,7 @@ void AutofillManager::FillOrPreviewDataModelForm(
+ 
+     // A field with a specific type is only allowed to be filled a limited
+     // number of times given by |TypeValueFormFillingLimit(field_type)|.
+-    if (type_filling_count[field_type] >=
++    if (++type_filling_count[field_type] >
+         TypeValueFormFillingLimit(field_type)) {
+       buffer << Tr{} << field_number
+              << "Skipped: field-type filling-limit reached";
+@@ -1887,10 +1895,6 @@ void AutofillManager::FillOrPreviewDataModelForm(
+     bool has_value_after = !result.fields[i].value.empty();
+     bool is_autofilled_after = result.fields[i].is_autofilled;
+ 
+-    // If the field was actually filled, increment the filling counter.
+-    if (is_autofilled_after)
+-      type_filling_count[field_type]++;
+-
+     buffer << Tr{} << field_number
+            << base::StringPrintf(
+                   "Fillable - has value: %d->%d; autofilled: %d->%d. %s",
+diff --git a/components/autofill/core/browser/autofill_manager_unittest.cc b/components/autofill/core/browser/autofill_manager_unittest.cc
+index 7d296d95b25f126cb9176af3292687965987c123..26573cfa9f71e45a8087a4a0e76f3ddfa3f4f81c 100644
+--- a/components/autofill/core/browser/autofill_manager_unittest.cc
++++ b/components/autofill/core/browser/autofill_manager_unittest.cc
+@@ -2947,6 +2947,14 @@ TEST_P(AutofillManagerStructuredProfileTest,
+     form.fields.push_back(field);
+   }
+ 
++  // Create a selection box for the state that hat the correct entry to be
++  // filled with user data. Note, TN is the official abbreviation for Tennessee.
++  for (int i = 0; i < 20; ++i) {
++    test::CreateTestSelectField("Country", "country", "", {"DE", "FR", "US"},
++                                {"DE", "FR", "US"}, 3, &field);
++    form.fields.push_back(field);
++  }
++
+   std::vector<FormData> forms(1, form);
+   FormsSeen(forms);
+ 
+@@ -2983,17 +2991,18 @@ TEST_P(AutofillManagerStructuredProfileTest,
+                       response_data.fields[4 + i]);
+   }
+ 
+-  // Verify that the next 8 selection boxes are correctly filled again.
+-  for (int i = 0; i < 8; i++) {
++  // Verify that the remaining selection boxes are correctly filled again
++  // because there's no limit on filling ADDRESS_HOME_STATE fields.
++  for (int i = 0; i < 20; i++) {
+     ExpectFilledField("State", "state", "TN", "select-one",
+                       response_data.fields[24 + i]);
+   }
+ 
+-  // Verify that the last 12 boxes are not filled because the filling limit for
+-  // the state type is already reached.
+-  for (int i = 0; i < 12; i++) {
+-    ExpectFilledField("State", "state", "", "select-one",
+-                      response_data.fields[32 + i]);
++  // Verify that only the first 9 of the remaining selection boxes are
++  // correctly filled due to the limit on filling ADDRESS_HOME_COUNTRY fields.
++  for (int i = 0; i < 20; i++) {
++    ExpectFilledField("Country", "country", i < 9 ? "US" : "", "select-one",
++                      response_data.fields[44 + i]);
+   }
+ }
+ 
+diff --git a/components/autofill/core/common/autofill_constants.h b/components/autofill/core/common/autofill_constants.h
+index 84c5b916b0330ab8305db7b1831b42fa42843708..2d6ade5e6bea81ec4383d0345863514e1b551ea8 100644
+--- a/components/autofill/core/common/autofill_constants.h
++++ b/components/autofill/core/common/autofill_constants.h
+@@ -68,12 +68,14 @@ const int64_t kAutocompleteRetentionPolicyPeriodInDays = 14 * 31;
+ 
+ // Limits the number of times the value of a specific type can be filled into a
+ // form.
+-constexpr int kTypeValueFormFillingLimit = 9;
+-
+ // Credit card numbers are sometimes distributed between up to 19 individual
+-// fields. Therefore, credit cards need a higher limit compared to
+-// |kTypeValueFormFillingLimit|.
+-constexpr int kCreditCardTypeValueFormFillingLimit = 19;
++// fields. Therefore, credit cards need a higher limit.
++// State fields are effecectively unlimited because there are sometimes hidden
++// fields select boxes, each with a list of states for one specific countries,
++// which are displayed only upon country selection.
++constexpr size_t kTypeValueFormFillingLimit = 9;
++constexpr size_t kCreditCardTypeValueFormFillingLimit = 19;
++constexpr size_t kStateTypeValueFormFillingLimit = 1000;
+ 
+ }  // namespace autofill
+ 
