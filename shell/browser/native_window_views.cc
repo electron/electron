@@ -916,7 +916,8 @@ bool NativeWindowViews::IsKiosk() {
 
 SkColor NativeWindowViews::GetBackgroundColor() {
   auto* background = root_view_->background();
-  if (!background) return SK_ColorTRANSPARENT;
+  if (!background)
+    return SK_ColorTRANSPARENT;
   return background->get_color();
 }
 
