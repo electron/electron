@@ -1,0 +1,71 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Koji Ishii <kojii@chromium.org>
+Date: Thu, 11 Mar 2021 17:45:46 +0000
+Subject: Mark additional RootInlineBox dirty when culled inline box is removed
+
+When a |LayoutInline| is removed, |LineBoxList::
+DirtyLinesFromChangedChild| tries to mark affected
+|RootInlineBox| dirty.
+
+When the |LayoutInline| to be removed is culled, it tries to
+find the |RootInlineBox| from its previous siblings, then look
+for its previous and next |RootInlineBox|es.
+
+Occasionally, the next next line of the previous sibling is
+wrapped at the |LayoutInline|, and that its |LineBreakObj()|
+holds the reference to the |LayoutInline|. This patch marks
+such |RootInlineBox| dirty.
+
+(cherry picked from commit 2dbdabb28d647c8ee20cbe36e3c957e74aff663b)
+
+Bug: 1186287
+Change-Id: I8ca73ebb4f5e4f13e997662fffd803d6a74ef49a
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2748756
+Auto-Submit: Koji Ishii <kojii@chromium.org>
+Reviewed-by: Ian Kilpatrick <ikilpatrick@chromium.org>
+Commit-Queue: Ian Kilpatrick <ikilpatrick@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#861724}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2749769
+Commit-Queue: Krishna Govind <govind@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4389@{#1518}
+Cr-Branched-From: 9251c5db2b6d5a59fe4eac7aafa5fed37c139bb7-refs/heads/master@{#843830}
+
+diff --git a/third_party/blink/renderer/core/layout/line/line_box_list.cc b/third_party/blink/renderer/core/layout/line/line_box_list.cc
+index 9d9d861f00cb9784041796acb91604d64dab1cb7..ed929849f721fbae25fd8c1106c95e563aca289b 100644
+--- a/third_party/blink/renderer/core/layout/line/line_box_list.cc
++++ b/third_party/blink/renderer/core/layout/line/line_box_list.cc
+@@ -359,14 +359,32 @@ void LineBoxList::DirtyLinesFromChangedChild(LineLayoutItem container,
+     // findNextLineBreak. findNextLineBreak, despite the name, actually returns
+     // the first LayoutObject after the BR. <rdar://problem/3849947> "Typing
+     // after pasting line does not appear until after window resize."
+-    if (RootInlineBox* prev_root_box = box->PrevRootBox())
++    if (RootInlineBox* prev_root_box = box->PrevRootBox()) {
+       prev_root_box->MarkDirty();
++#if DCHECK_IS_ON()
++      for (; prev_root_box; prev_root_box = prev_root_box->PrevRootBox()) {
++        DCHECK(prev_root_box->IsDirty() ||
++               prev_root_box->LineBreakObj() != child);
++      }
++#endif
++    }
+     // If |child| or any of its immediately previous siblings with culled
+     // lineboxes is the object after a line-break in |box| or the linebox after
+     // it then that means |child| actually sits on the linebox after |box| (or
+     // is its line-break object) and so we need to dirty it as well.
+-    if (RootInlineBox* next_root_box = box->NextRootBox())
++    if (RootInlineBox* next_root_box = box->NextRootBox()) {
+       next_root_box->MarkDirty();
++
++      next_root_box = next_root_box->NextRootBox();
++      if (next_root_box && next_root_box->LineBreakObj() == child)
++        next_root_box->MarkDirty();
++#if DCHECK_IS_ON()
++      for (; next_root_box; next_root_box = next_root_box->NextRootBox()) {
++        DCHECK(next_root_box->IsDirty() ||
++               next_root_box->LineBreakObj() != child);
++      }
++#endif
++    }
+   }
+ }
+ 
