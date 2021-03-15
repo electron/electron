@@ -89,7 +89,6 @@ class NativeWindowMac : public NativeWindow,
   bool IsExcludedFromShownWindowsMenu() override;
   void SetSimpleFullScreen(bool simple_fullscreen) override;
   bool IsSimpleFullScreen() override;
-  void UpdateFrame() override;
   void SetKiosk(bool kiosk) override;
   bool IsKiosk() override;
   void SetBackgroundColor(SkColor color) override;
@@ -128,6 +127,7 @@ class NativeWindowMac : public NativeWindow,
   void SetTrafficLightPosition(base::Optional<gfx::Point> position) override;
   base::Optional<gfx::Point> GetTrafficLightPosition() const override;
   void RedrawTrafficLights() override;
+  void UpdateFrame() override;
   void SetTouchBar(
       std::vector<gin_helper::PersistentDictionary> items) override;
   void RefreshTouchBarItem(const std::string& item_id) override;
