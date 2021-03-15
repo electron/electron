@@ -8,13 +8,13 @@
 #include <memory>
 #include <utility>
 
+#include "chrome/browser/extensions/api/tabs/tabs_constants.h"
 #include "extensions/browser/extension_api_frame_id_map.h"
 #include "extensions/common/error_utils.h"
 #include "extensions/common/manifest_constants.h"
 #include "extensions/common/permissions/permissions_data.h"
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/api/electron_api_web_contents.h"
-#include "shell/browser/extensions/api/tabs/tabs_constants.h"
 #include "shell/browser/extensions/extension_tab_util.h"
 #include "shell/browser/web_contents_zoom_controller.h"
 #include "shell/common/extensions/api/tabs.h"
@@ -58,38 +58,30 @@ void ZoomModeToZoomSettings(WebContentsZoomController::ZoomMode zoom_mode,
 }
 }  // namespace
 
-bool GetActiveTab(ExtensionFunction* function,
-                  electron::api::WebContents** contents,
-                  electron::api::ChromeTabDetails* out_tab) {
+electron::api::WebContents* GetActiveTab(ExtensionFunction* function) {
   auto* session =
       electron::api::Session::FromBrowserContext(function->browser_context());
 
   auto* sender_wc =
       electron::api::WebContents::From(function->GetSenderWebContents());
   if (!sender_wc)
-    return false;
+    return nullptr;
 
   auto* web_contents = session->GetActiveTab(sender_wc);
   if (!web_contents)
-    return false;
+    return nullptr;
 
-  auto tab = session->GetChromeTabDetails(web_contents);
+  auto tab = session->GetExtensionTabDetails(web_contents);
   if (!tab)
-    return false;
+    return nullptr;
 
-  if (contents)
-    *contents = web_contents;
-
-  if (out_tab)
-    *out_tab = *tab;
-
-  return true;
+  return web_contents;
 }
 
 bool GetTabById(int tab_id,
                 ExtensionFunction* function,
                 electron::api::WebContents** contents,
-                std::unique_ptr<electron::api::ChromeTabDetails>* out_tab,
+                std::unique_ptr<electron::api::ExtensionTabDetails>* out_tab,
                 std::string* error_message) {
   auto* web_contents = ExtensionTabUtil::GetWebContentsById(tab_id);
 
@@ -123,7 +115,8 @@ electron::api::WebContents* GetTabsAPIDefaultWebContents(
     // We assume this call leaves web_contents unchanged if it is unsuccessful.
     GetTabById(tab_id, function, &web_contents, nullptr, error);
   } else {
-    if (!GetActiveTab(function, &web_contents, nullptr))
+    web_contents = GetActiveTab(function);
+    if (!web_contents)
       *error = tabs_constants::kNoSelectedTabError;
   }
   return web_contents;
@@ -131,7 +124,7 @@ electron::api::WebContents* GetTabsAPIDefaultWebContents(
 
 std::unique_ptr<api::tabs::Tab> CreateTabObjectHelper(
     electron::api::WebContents* contents,
-    electron::api::ChromeTabDetails tab,
+    electron::api::ExtensionTabDetails tab,
     const Extension* extension,
     Feature::Context context,
     int tab_index) {
@@ -164,8 +157,8 @@ ExecuteCodeFunction::InitResult ExecuteCodeInTabFunction::Init() {
     return set_init_result(VALIDATION_FAILURE);
 
   if (tab_id == -1) {
-    electron::api::WebContents* web_contents = nullptr;
-    if (!GetActiveTab(this, &web_contents, nullptr))
+    electron::api::WebContents* web_contents = GetActiveTab(this);
+    if (!web_contents)
       return set_init_result_error(tabs_constants::kNoTabInBrowserWindowError);
 
     tab_id = web_contents->ID();
@@ -275,7 +268,7 @@ ExtensionFunction::ResponseAction TabsGetFunction::Run() {
   int tab_id = params->tab_id;
 
   electron::api::WebContents* contents = nullptr;
-  std::unique_ptr<electron::api::ChromeTabDetails> tab;
+  std::unique_ptr<electron::api::ExtensionTabDetails> tab;
   std::string error;
   if (!GetTabById(tab_id, this, &contents, &tab, &error)) {
     return RespondNow(Error(std::move(error)));

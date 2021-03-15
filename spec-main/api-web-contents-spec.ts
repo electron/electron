@@ -279,7 +279,7 @@ describe('webContents module', () => {
     });
   });
 
-  describe('webContents.getChromeTabDetails', () => {
+  describe('webContents.getExtensionTabDetails', () => {
     let w: BrowserWindow;
 
     before(async () => {
@@ -295,7 +295,7 @@ describe('webContents module', () => {
           };
         }
       });
-      const details = w.webContents.getChromeTabDetails();
+      const details = w.webContents.getExtensionTabDetails();
       expect(details.url).to.equal('about:blank');
     });
   });

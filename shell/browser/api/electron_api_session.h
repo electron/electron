@@ -58,11 +58,11 @@ namespace api {
 class WebContents;
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-class ChromeTabDetails {
+class ExtensionTabDetails {
  public:
-  ChromeTabDetails();
-  ChromeTabDetails(const ChromeTabDetails& other);
-  ~ChromeTabDetails();
+  ExtensionTabDetails();
+  ExtensionTabDetails(const ExtensionTabDetails& other);
+  ~ExtensionTabDetails();
 
   int window_id = 0;
   int index = -1;
@@ -174,9 +174,9 @@ class Session : public gin::Wrappable<Session>,
                            const extensions::Extension* extension,
                            extensions::UnloadedExtensionReason reason) override;
 
-  void SetChromeAPIHandlers(const gin_helper::Dictionary& api,
-                            gin::Arguments* args);
-  std::unique_ptr<ChromeTabDetails> GetChromeTabDetails(
+  void SetExtensionAPIHandlers(const gin_helper::Dictionary& api,
+                               gin::Arguments* args);
+  std::unique_ptr<ExtensionTabDetails> GetExtensionTabDetails(
       WebContents* tab_contents);
   WebContents* GetActiveTab(WebContents* sender_contents);
 #endif
@@ -212,8 +212,9 @@ class Session : public gin::Wrappable<Session>,
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   using GetTabHandler =
-      base::RepeatingCallback<v8::Local<v8::Value>(WebContents*)>;
-  using GetActiveTabHandler = base::RepeatingCallback<WebContents*(WebContents*)>;
+      base::RepeatingCallback<v8::Local<v8::Value>(gin::Handle<WebContents>)>;
+  using GetActiveTabHandler = base::RepeatingCallback<gin::Handle<WebContents>(
+      gin::Handle<WebContents>)>;
 
   std::unique_ptr<GetTabHandler> get_tab_handler_;
   std::unique_ptr<GetActiveTabHandler> get_active_tab_handler_;

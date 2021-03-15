@@ -678,8 +678,6 @@ filenames = {
     "shell/browser/extensions/extension_tab_util.h",
     "shell/browser/extensions/api/tabs/tabs_api.cc",
     "shell/browser/extensions/api/tabs/tabs_api.h",
-    "shell/browser/extensions/api/tabs/tabs_constants.cc",
-    "shell/browser/extensions/api/tabs/tabs_constants.h",
     "shell/browser/extensions/electron_browser_context_keyed_service_factories.cc",
     "shell/browser/extensions/electron_browser_context_keyed_service_factories.h",
     "shell/browser/extensions/electron_component_extension_resource_manager.cc",

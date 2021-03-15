@@ -832,6 +832,8 @@ is emitted.
 
 Tells the Chrome API what to do when an extension requests a tab via i.e. `chrome.tabs.get` and how to handle "active" tab requests (i.e. `chrome.tabs.executeScript` without `tabId` parameter defaults to the active tab).
 
+Successive calls will only overwrite specified handlers. Passing `null` will reset a handler.
+
 ```javascript
 const { session, webContents } = require('electron')
 
@@ -846,10 +848,19 @@ app.whenReady().then(async () => {
         pinned: false,
         active: true
       }
-    },
+    }
+  })
+
+  // |getTab| does not get replaced.
+  ses.setChromeAPIHandlers({
     getActiveTab: (sender) => {
       return webContents.fromId(1)
     }
+  })
+
+  // Unregisters |getTab|.
+  ses.setChromeAPIHandlers({
+    getTab: null
   })
 })
 ```

@@ -64,7 +64,7 @@ ElectronMessagingDelegate::MaybeGetTabInfo(content::WebContents* web_contents) {
     if (!session)
       return nullptr;
 
-    auto tab = session->GetChromeTabDetails(contents);
+    auto tab = session->GetExtensionTabDetails(contents);
     if (!tab)
       return nullptr;
 

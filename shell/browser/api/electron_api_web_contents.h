@@ -673,7 +673,7 @@ class WebContents : public gin::Wrappable<WebContents>,
   void SetHtmlApiFullscreen(bool enter_fullscreen);
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  v8::Local<v8::Value> GetChromeTabDetails(gin::Arguments* args);
+  v8::Local<v8::Value> GetExtensionTabDetails(gin::Arguments* args);
 #endif
 
   v8::Global<v8::Value> session_;

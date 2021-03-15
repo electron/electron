@@ -6,9 +6,10 @@
 
 #include "base/stl_util.h"
 #include "base/strings/pattern.h"
-#include "chrome/browser/profiles/profile.h"
+#include "chrome/browser/extensions/api/tabs/tabs_constants.h"
 #include "chrome/common/webui_url_constants.h"
 #include "components/url_formatter/url_fixer.h"
+#include "content/public/browser/browser_context.h"
 #include "content/public/browser/favicon_status.h"
 #include "content/public/browser/navigation_controller.h"
 #include "content/public/browser/navigation_entry.h"
@@ -24,7 +25,6 @@
 #include "extensions/common/permissions/permissions_data.h"
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/api/electron_api_web_contents.h"
-#include "shell/browser/extensions/api/tabs/tabs_constants.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/web_contents_zoom_controller.h"
 #include "shell/browser/window_list.h"
@@ -132,12 +132,12 @@ electron::api::WebContents* ExtensionTabUtil::GetWebContentsById(int tab_id) {
   return electron::api::WebContents::FromID(tab_id);
 }
 
-std::unique_ptr<electron::api::ChromeTabDetails>
+std::unique_ptr<electron::api::ExtensionTabDetails>
 ExtensionTabUtil::GetTabDetailsFromWebContents(
     electron::api::WebContents* contents) {
   return electron::api::Session::FromBrowserContext(
              contents->web_contents()->GetBrowserContext())
-      ->GetChromeTabDetails(contents);
+      ->GetExtensionTabDetails(contents);
 }
 
 int ExtensionTabUtil::GetTabId(WebContents* web_contents) {
@@ -182,7 +182,7 @@ api::tabs::TabStatus GetLoadingStatus(WebContents* contents) {
 
 std::unique_ptr<api::tabs::Tab> ExtensionTabUtil::CreateTabObject(
     content::WebContents* contents,
-    electron::api::ChromeTabDetails tab,
+    electron::api::ExtensionTabDetails tab,
     int tab_index) {
   auto tab_object = std::make_unique<api::tabs::Tab>();
   tab_object->id = std::make_unique<int>(GetTabId(contents));
@@ -230,7 +230,7 @@ std::unique_ptr<api::tabs::Tab> ExtensionTabUtil::CreateTabObject(
 
 std::unique_ptr<api::tabs::Tab> ExtensionTabUtil::CreateTabObject(
     content::WebContents* contents,
-    electron::api::ChromeTabDetails tab,
+    electron::api::ExtensionTabDetails tab,
     ScrubTabBehavior scrub_tab_behavior,
     const Extension* extension,
     int tab_index) {

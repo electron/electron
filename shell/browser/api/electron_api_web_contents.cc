@@ -3480,16 +3480,16 @@ void WebContents::SetHtmlApiFullscreen(bool enter_fullscreen) {
 }
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-v8::Local<v8::Value> WebContents::GetChromeTabDetails(gin::Arguments* args) {
+v8::Local<v8::Value> WebContents::GetExtensionTabDetails(gin::Arguments* args) {
   auto tab = extensions::ExtensionTabUtil::GetTabDetailsFromWebContents(this);
 
   if (!tab)
     return v8::Null(args->isolate());
 
-  return gin::ConvertToV8(
-      args->isolate(), std::move(*extensions::ExtensionTabUtil::CreateTabObject(
-                                      web_contents(), *tab, (*tab).index)
-                                      ->ToValue()));
+  return gin::ConvertToV8(args->isolate(),
+                          *extensions::ExtensionTabUtil::CreateTabObject(
+                               web_contents(), *tab, (*tab).index)
+                               ->ToValue());
 }
 #endif
 
@@ -3595,7 +3595,7 @@ v8::Local<v8::ObjectTemplate> WebContents::FillObjectTemplate(
       .SetMethod("_printToPDF", &WebContents::PrintToPDF)
 #endif
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-      .SetMethod("getChromeTabDetails", &WebContents::GetChromeTabDetails)
+      .SetMethod("getExtensionTabDetails", &WebContents::GetExtensionTabDetails)
 #endif
       .SetMethod("_setNextChildWebPreferences",
                  &WebContents::SetNextChildWebPreferences)

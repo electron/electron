@@ -273,6 +273,8 @@ static_library("chrome") {
 
   if (enable_electron_extensions) {
     sources += [
+      "//chrome/browser/extensions/api/tabs/tabs_constants.cc",
+      "//chrome/browser/extensions/api/tabs/tabs_constants.h",
       "//chrome/browser/extensions/chrome_url_request_util.cc",
       "//chrome/browser/extensions/chrome_url_request_util.h",
       "//chrome/browser/plugins/plugin_response_interceptor_url_loader_throttle.cc",

@@ -382,7 +382,7 @@ void ElectronExtensionsBrowserClient::GetTabAndWindowIdForWebContents(
   api::WebContents* api_wc = api::WebContents::From(web_contents);
   auto* session =
       api::Session::FromBrowserContext(web_contents->GetBrowserContext());
-  auto tab = api_wc ? session->GetChromeTabDetails(api_wc) : nullptr;
+  auto tab = api_wc ? session->GetExtensionTabDetails(api_wc) : nullptr;
 
   *tab_id = tab ? api_wc->ID() : -1;
   *window_id = tab ? tab->window_id : -1;

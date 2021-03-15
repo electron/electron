@@ -184,16 +184,16 @@ struct Converter<ClearStorageDataOptions> {
 };
 
 template <>
-struct Converter<electron::api::ChromeTabDetails> {
+struct Converter<electron::api::ExtensionTabDetails> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
-                     electron::api::ChromeTabDetails* out) {
+                     electron::api::ExtensionTabDetails* out) {
     gin_helper::Dictionary options;
     if (!ConvertFromV8(isolate, val, &options))
       return false;
 
-    *out = electron::api::ChromeTabDetails();
-    auto tmp = electron::api::ChromeTabDetails();
+    *out = electron::api::ExtensionTabDetails();
+    auto tmp = electron::api::ExtensionTabDetails();
 
     if (options.Get("windowId", &tmp.window_id))
       out->window_id = tmp.window_id;
@@ -296,9 +296,10 @@ namespace electron {
 
 namespace api {
 
-ChromeTabDetails::ChromeTabDetails() {}
-ChromeTabDetails::ChromeTabDetails(const ChromeTabDetails& other) = default;
-ChromeTabDetails::~ChromeTabDetails() {}
+ExtensionTabDetails::ExtensionTabDetails() {}
+ExtensionTabDetails::ExtensionTabDetails(const ExtensionTabDetails& other) =
+    default;
+ExtensionTabDetails::~ExtensionTabDetails() {}
 
 namespace {
 
@@ -935,27 +936,42 @@ void Session::OnExtensionReady(content::BrowserContext* browser_context,
   Emit("extension-ready", extension);
 }
 
-void Session::SetChromeAPIHandlers(const gin_helper::Dictionary& api,
-                                   gin::Arguments* args) {
-  GetTabHandler get_tab;
-  GetActiveTabHandler get_active_tab;
+void Session::SetExtensionAPIHandlers(const gin_helper::Dictionary& api,
+                                      gin::Arguments* args) {
+  v8::Local<v8::Value> value;
 
-  if (api.Get("getTab", &get_tab)) {
-    get_tab_handler_ = std::make_unique<GetTabHandler>(get_tab);
+  if (api.Get("getTab", &value)) {
+    if (value->IsNull()) {
+      get_tab_handler_ = nullptr;
+    } else {
+      GetTabHandler handler;
+      if (gin::ConvertFromV8(args->isolate(), value, &handler)) {
+        get_tab_handler_ = std::make_unique<GetTabHandler>(handler);
+      }
+    }
   }
 
-  if (api.Get("getActiveTab", &get_active_tab)) {
-    get_active_tab_handler_ =
-        std::make_unique<GetActiveTabHandler>(get_active_tab);
+  if (api.Get("getActiveTab", &value)) {
+    if (api.Get("getTab", &value)) {
+      if (value->IsNull()) {
+        get_active_tab_handler_ = nullptr;
+      } else {
+        GetActiveTabHandler handler;
+        if (gin::ConvertFromV8(args->isolate(), value, &handler)) {
+          get_active_tab_handler_ =
+              std::make_unique<GetActiveTabHandler>(handler);
+        }
+      }
+    }
   }
 }
 
-std::unique_ptr<ChromeTabDetails> Session::GetChromeTabDetails(
+std::unique_ptr<ExtensionTabDetails> Session::GetExtensionTabDetails(
     WebContents* tab_contents) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
 
-  ChromeTabDetails details;
+  ExtensionTabDetails details;
 
   if (!get_tab_handler_) {
     if (!has_emitted_chrome_tabs_get_warning_) {
@@ -967,14 +983,14 @@ std::unique_ptr<ChromeTabDetails> Session::GetChromeTabDetails(
       has_emitted_chrome_tabs_get_warning_ = true;
     }
 
-    return std::make_unique<ChromeTabDetails>(details);
+    return std::make_unique<ExtensionTabDetails>(details);
   }
 
   v8::Local<v8::Value> value =
-      get_tab_handler_->Run(tab_contents);
+      get_tab_handler_->Run(gin::CreateHandle(isolate, tab_contents));
 
   if (value->IsObject() && gin::ConvertFromV8(isolate, value, &details)) {
-    return std::make_unique<ChromeTabDetails>(details);
+    return std::make_unique<ExtensionTabDetails>(details);
   }
 
   return nullptr;
@@ -997,7 +1013,9 @@ WebContents* Session::GetActiveTab(WebContents* sender_contents) {
     return nullptr;
   }
 
-  return get_active_tab_handler_->Run(sender_contents);
+  return get_active_tab_handler_
+      ->Run(gin::CreateHandle(isolate, sender_contents))
+      .get();
 }
 #endif
 
@@ -1119,7 +1137,8 @@ void SetSpellCheckerDictionaryDownloadURL(gin_helper::ErrorThrower thrower,
                                           const GURL& url) {
   if (!url.is_valid()) {
     thrower.ThrowError(
-        "The URL you provided to setSpellCheckerDictionaryDownloadURL is not a "
+        "The URL you provided to setSpellCheckerDictionaryDownloadURL is not "
+        "a "
         "valid URL");
     return;
   }
@@ -1224,8 +1243,9 @@ gin::Handle<Session> Session::CreateFrom(
   auto handle =
       gin::CreateHandle(isolate, new Session(isolate, browser_context));
 
-  // The Sessions should never be garbage collected, since the common pattern is
-  // to use partition strings, instead of using the Session object directly.
+  // The Sessions should never be garbage collected, since the common pattern
+  // is to use partition strings, instead of using the Session object
+  // directly.
   handle->Pin(isolate);
 
   App::Get()->EmitCustomEvent("session-created",
@@ -1292,7 +1312,7 @@ gin::ObjectTemplateBuilder Session::GetObjectTemplateBuilder(
       .SetMethod("removeExtension", &Session::RemoveExtension)
       .SetMethod("getExtension", &Session::GetExtension)
       .SetMethod("getAllExtensions", &Session::GetAllExtensions)
-      .SetMethod("setChromeAPIHandlers", &Session::SetChromeAPIHandlers)
+      .SetMethod("setExtensionAPIHandlers", &Session::SetExtensionAPIHandlers)
 #endif
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
       .SetMethod("getSpellCheckerLanguages", &Session::GetSpellCheckerLanguages)
