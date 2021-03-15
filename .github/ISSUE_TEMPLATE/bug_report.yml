@@ -35,7 +35,8 @@ body:
 - type: input
   attributes:
     label: Operating System Version
-    description: What operating system version are you using?
+    description: What operating system version are you using? On Windows, click Start button > Settings > System > About. On macOS, click the Apple Menu > About This Mac. On Linux, use lsb_release or uname -a.
+    placeholder: "e.g. Windows 10 version 1909, macOS Catalina 10.15.7, or Ubuntu 20.04"
   validations:
     required: true
 - type: dropdown
