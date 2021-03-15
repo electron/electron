@@ -11,10 +11,10 @@ Reviewed-By: Rich Trott <rtrott@gmail.com>
 Reviewed-By: James M Snell <jasnell@gmail.com>
 
 diff --git a/src/api/hooks.cc b/src/api/hooks.cc
-index a719a861dbe9d8d9ca67c3bb5920b14b0df16d83..8f191aad7e2dcfbedddeaeb88f47ed721ef51cf1 100644
+index 3b16c0350d8a8494202144407664af41d338fe04..8b6f209cc8f167173a957049dec96dbec7ccc8d1 100644
 --- a/src/api/hooks.cc
 +++ b/src/api/hooks.cc
-@@ -133,7 +133,7 @@ static void RunAsyncCleanupHook(void* arg) {
+@@ -131,7 +131,7 @@ static void RunAsyncCleanupHook(void* arg) {
    info->fun(info->arg, FinishAsyncCleanupHook, info);
  }
  
@@ -23,7 +23,7 @@ index a719a861dbe9d8d9ca67c3bb5920b14b0df16d83..8f191aad7e2dcfbedddeaeb88f47ed72
      Isolate* isolate,
      AsyncCleanupHook fun,
      void* arg) {
-@@ -145,11 +145,11 @@ AsyncCleanupHookHandle AddEnvironmentCleanupHook(
+@@ -143,11 +143,11 @@ AsyncCleanupHookHandle AddEnvironmentCleanupHook(
    info->arg = arg;
    info->self = info;
    env->AddCleanupHook(RunAsyncCleanupHook, info.get());
@@ -39,10 +39,10 @@ index a719a861dbe9d8d9ca67c3bb5920b14b0df16d83..8f191aad7e2dcfbedddeaeb88f47ed72
    handle->info->self.reset();
    handle->info->env->RemoveCleanupHook(RunAsyncCleanupHook, handle->info.get());
 diff --git a/src/node.h b/src/node.h
-index f150725b54ee1315476d202797963369490d5152..7ab2ed9345c83cb4c1f51c0cc3050abc6571e3fa 100644
+index 0917daec298229a942c1790becfbefd19d01fb8d..8e52f9e8065750b48ddb36f447e4af54f993acfa 100644
 --- a/src/node.h
 +++ b/src/node.h
-@@ -905,12 +905,26 @@ struct ACHHandle;
+@@ -747,12 +747,26 @@ struct ACHHandle;
  struct NODE_EXTERN DeleteACHHandle { void operator()(ACHHandle*) const; };
  typedef std::unique_ptr<ACHHandle, DeleteACHHandle> AsyncCleanupHookHandle;
  
