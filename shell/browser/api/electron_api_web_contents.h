@@ -144,22 +144,8 @@ class WebContents : public gin::Wrappable<WebContents>,
       v8::Local<v8::ObjectTemplate>);
   const char* GetTypeName() override;
 
+  void Destroy();
   base::WeakPtr<WebContents> GetWeakPtr() { return weak_factory_.GetWeakPtr(); }
-
-  // Destroy the managed content::WebContents instance.
-  //
-  // Note: The |async| should only be |true| when users are expecting to use the
-  // webContents immediately after the call. Always pass |false| if you are not
-  // sure.
-  // See https://github.com/electron/electron/issues/8930.
-  //
-  // Note: When destroying a webContents member inside a destructor, the |async|
-  // should always be |false|, otherwise the destroy task might be delayed after
-  // normal shutdown procedure, resulting in an assertion.
-  // The normal pattern for calling this method in destructor is:
-  // api_web_contents_->DestroyWebContents(!Browser::Get()->is_shutting_down())
-  // See https://github.com/electron/electron/issues/15133.
-  void DestroyWebContents(bool async);
 
   bool GetBackgroundThrottling() const;
   void SetBackgroundThrottling(bool allowed);
@@ -210,6 +196,7 @@ class WebContents : public gin::Wrappable<WebContents>,
   void IncrementCapturerCount(gin::Arguments* args);
   void DecrementCapturerCount(gin::Arguments* args);
   bool IsBeingCaptured();
+  void HandleNewRenderFrame(content::RenderFrameHost* render_frame_host);
 
 #if BUILDFLAG(ENABLE_PRINTING)
   void OnGetDefaultPrinter(base::Value print_settings,
@@ -361,8 +348,6 @@ class WebContents : public gin::Wrappable<WebContents>,
         isolate, wrapper, sender, std::move(callback));
     return EmitCustomEvent(name, event, std::forward<Args>(args)...);
   }
-
-  void MarkDestroyed();
 
   WebContents* embedder() { return embedder_; }
 
@@ -672,9 +657,6 @@ class WebContents : public gin::Wrappable<WebContents>,
                                 std::string* class_name) override;
 #endif
 
-  // Destroy the managed InspectableWebContents object.
-  void ResetManagedWebContents(bool async);
-
   // DevTools index event callbacks.
   void OnDevToolsIndexingWorkCalculated(int request_id,
                                         const std::string& file_system_path,
@@ -705,6 +687,9 @@ class WebContents : public gin::Wrappable<WebContents>,
 
   // The host webcontents that may contain this webcontents.
   WebContents* embedder_ = nullptr;
+
+  // Whether the guest view has been attached.
+  bool attached_ = false;
 
   // The zoom controller for this webContents.
   WebContentsZoomController* zoom_controller_ = nullptr;

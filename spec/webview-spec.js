@@ -482,17 +482,6 @@ describe('<webview> tag', function () {
       });
     });
 
-    ifit(features.isRemoteModuleEnabled())('can disable the remote module', async () => {
-      const message = await startLoadingWebViewAndWaitForMessage(webview, {
-        preload: `${fixtures}/module/preload-disable-remote.js`,
-        src: `file://${fixtures}/api/blank.html`,
-        webpreferences: 'enableRemoteModule=no'
-      });
-
-      const typeOfRemote = JSON.parse(message);
-      expect(typeOfRemote).to.equal('undefined');
-    });
-
     it('can disables web security and enable nodeintegration', async () => {
       const jqueryPath = path.join(__dirname, '/static/jquery-2.0.3.min.js');
       const src = `<script src='file://${jqueryPath}'></script> <script>console.log(typeof require);</script>`;

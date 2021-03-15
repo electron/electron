@@ -35,18 +35,7 @@
   devtools_visible_ = NO;
   devtools_docked_ = NO;
   devtools_is_first_responder_ = NO;
-
-  [[NSNotificationCenter defaultCenter]
-      addObserver:self
-         selector:@selector(viewDidBecomeFirstResponder:)
-             name:kViewDidBecomeFirstResponder
-           object:nil];
-
-  [[NSNotificationCenter defaultCenter]
-      addObserver:self
-         selector:@selector(parentWindowBecameMain:)
-             name:NSWindowDidBecomeMainNotification
-           object:nil];
+  attached_to_window_ = NO;
 
   if (inspectableWebContentsView_->inspectable_web_contents()->IsGuest()) {
     fake_view_.reset([[NSView alloc] init]);
@@ -69,12 +58,32 @@
   return self;
 }
 
-- (void)removeObservers {
+- (void)dealloc {
   [[NSNotificationCenter defaultCenter] removeObserver:self];
+  [super dealloc];
 }
 
 - (void)resizeSubviewsWithOldSize:(NSSize)oldBoundsSize {
   [self adjustSubviews];
+}
+
+- (void)viewDidMoveToWindow {
+  if (attached_to_window_ && !self.window) {
+    attached_to_window_ = NO;
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+  } else if (!attached_to_window_ && self.window) {
+    attached_to_window_ = YES;
+    [[NSNotificationCenter defaultCenter]
+        addObserver:self
+           selector:@selector(viewDidBecomeFirstResponder:)
+               name:kViewDidBecomeFirstResponder
+             object:nil];
+    [[NSNotificationCenter defaultCenter]
+        addObserver:self
+           selector:@selector(parentWindowBecameMain:)
+               name:NSWindowDidBecomeMainNotification
+             object:nil];
+  }
 }
 
 - (IBAction)showDevTools:(id)sender {
@@ -253,8 +262,7 @@
 - (void)viewDidBecomeFirstResponder:(NSNotification*)notification {
   auto* inspectable_web_contents =
       inspectableWebContentsView_->inspectable_web_contents();
-  if (!inspectable_web_contents || inspectable_web_contents->IsGuest())
-    return;
+  DCHECK(inspectable_web_contents);
   auto* webContents = inspectable_web_contents->GetWebContents();
   auto* webContentsView = webContents->GetNativeView().GetNativeNSView();
 
