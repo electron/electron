@@ -444,9 +444,7 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   original_level_ = [window_ level];
 }
 
-NativeWindowMac::~NativeWindowMac() {
-  display::Screen::GetScreen()->RemoveObserver(this);
-}
+NativeWindowMac::~NativeWindowMac() {}
 
 void NativeWindowMac::SetContentView(views::View* view) {
   views::View* root_view = GetContentsView();
@@ -884,13 +882,6 @@ bool NativeWindowMac::IsExcludedFromShownWindowsMenu() {
 void NativeWindowMac::SetExcludedFromShownWindowsMenu(bool excluded) {
   NSWindow* window = GetNativeWindow().GetNativeNSWindow();
   [window setExcludedFromWindowsMenu:excluded];
-}
-
-// In simpleFullScreen mode, update the frame for new bounds.
-void NativeWindowMac::UpdateFrame() {
-  NSWindow* window = GetNativeWindow().GetNativeNSWindow();
-  NSRect fullscreenFrame = [window.screen frame];
-  [window setFrame:fullscreenFrame display:YES animate:YES];
 }
 
 void NativeWindowMac::OnDisplayMetricsChanged(const display::Display& display,
@@ -1418,6 +1409,13 @@ void NativeWindowMac::RedrawTrafficLights() {
     [buttons_view_ setNeedsDisplayForButtons];
 }
 
+// In simpleFullScreen mode, update the frame for new bounds.
+void NativeWindowMac::UpdateFrame() {
+  NSWindow* window = GetNativeWindow().GetNativeNSWindow();
+  NSRect fullscreenFrame = [window.screen frame];
+  [window setFrame:fullscreenFrame display:YES animate:YES];
+}
+
 void NativeWindowMac::SetTouchBar(
     std::vector<gin_helper::PersistentDictionary> items) {
   if (@available(macOS 10.12.2, *)) {
@@ -1573,6 +1571,7 @@ void NativeWindowMac::NotifyWindowWillLeaveFullScreen() {
 void NativeWindowMac::Cleanup() {
   DCHECK(!IsClosed());
   ui::NativeTheme::GetInstanceForNativeUi()->RemoveObserver(this);
+  display::Screen::GetScreen()->RemoveObserver(this);
   [NSEvent removeMonitor:wheel_event_monitor_];
 }
 
