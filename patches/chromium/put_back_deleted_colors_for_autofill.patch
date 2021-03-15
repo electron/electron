@@ -8,10 +8,10 @@ needed in chromium but our autofill implementation uses them.  This patch can be
 our autofill implementation to work like Chromium's.
 
 diff --git a/ui/gtk/native_theme_gtk.cc b/ui/gtk/native_theme_gtk.cc
-index cc8966c3cb5d81f337932d45d89ca51047224116..e1fea89d33f7362b50aa8da04a622becf60660ff 100644
+index 5882e183ffd353890c367e3ff44937bb6226ff84..3f1b45f5b2e54ffaf1e47e93389b4a945867523f 100644
 --- a/ui/gtk/native_theme_gtk.cc
 +++ b/ui/gtk/native_theme_gtk.cc
-@@ -362,6 +362,29 @@ base::Optional<SkColor> SkColorFromColorId(
+@@ -364,6 +364,29 @@ base::Optional<SkColor> SkColorFromColorId(
      case ui::NativeTheme::kColorId_TableHeaderSeparator:
        return GetBorderColor("GtkTreeView#treeview.view GtkButton#button");
  
@@ -42,7 +42,7 @@ index cc8966c3cb5d81f337932d45d89ca51047224116..e1fea89d33f7362b50aa8da04a622bec
      // TODO(thomasanderson): Render GtkSpinner directly.
      case ui::NativeTheme::kColorId_ThrobberSpinningColor:
 diff --git a/ui/native_theme/common_theme.cc b/ui/native_theme/common_theme.cc
-index a585d34fdb68c39f8f663de6c497359d7f0abfd0..34bc98d26cbfec2cd62d3bf89417c077ce828f06 100644
+index 082e12fcabd16d3db77ee9c5e47f7e383245aa45..fc1d7a814c52fa09bea550039763b1c83fffc530 100644
 --- a/ui/native_theme/common_theme.cc
 +++ b/ui/native_theme/common_theme.cc
 @@ -52,7 +52,8 @@ base::Optional<SkColor> GetHighContrastColor(
@@ -70,7 +70,7 @@ index a585d34fdb68c39f8f663de6c497359d7f0abfd0..34bc98d26cbfec2cd62d3bf89417c077
      // Button
      case NativeTheme::kColorId_ProminentButtonColor:
        return gfx::kGoogleBlue300;
-@@ -511,6 +520,18 @@ SkColor GetDefaultColor(NativeTheme::ColorId color_id,
+@@ -512,6 +521,18 @@ SkColor GetDefaultColor(NativeTheme::ColorId color_id,
      case NativeTheme::kColorId_WindowBackground:
        return SK_ColorWHITE;
  
@@ -89,7 +89,7 @@ index a585d34fdb68c39f8f663de6c497359d7f0abfd0..34bc98d26cbfec2cd62d3bf89417c077
      case NativeTheme::kColorId_NumColors:
        // Keeping the kColorId_NumColors case instead of using the default case
        // allows ColorId additions to trigger compile error for an incomplete
-@@ -555,7 +576,7 @@ SkColor GetAuraColor(NativeTheme::ColorId color_id,
+@@ -556,7 +577,7 @@ SkColor GetAuraColor(NativeTheme::ColorId color_id,
    }
  
    if (color_scheme == NativeTheme::ColorScheme::kDark) {
@@ -99,10 +99,10 @@ index a585d34fdb68c39f8f663de6c497359d7f0abfd0..34bc98d26cbfec2cd62d3bf89417c077
        DVLOG(2) << "GetDarkSchemeColor: "
                 << "NativeTheme::ColorId: " << NativeThemeColorIdName(color_id)
 diff --git a/ui/native_theme/native_theme_color_id.h b/ui/native_theme/native_theme_color_id.h
-index 8f89aa16c66d4447a8e91bb95eb76f4bde024224..495b345d06de2e10ae14cff7c4af2d85563e80f8 100644
+index efb0f8658db38b99aadb92334b4c0948d289d224..a424ceaef8979084ca7dd514849a38dfe9e5b252 100644
 --- a/ui/native_theme/native_theme_color_id.h
 +++ b/ui/native_theme/native_theme_color_id.h
-@@ -147,6 +147,11 @@
+@@ -146,6 +146,11 @@
    OP(kColorId_TableHeaderText),                                                \
    OP(kColorId_TableHeaderBackground),                                          \
    OP(kColorId_TableHeaderSeparator),                                           \
@@ -115,10 +115,10 @@ index 8f89aa16c66d4447a8e91bb95eb76f4bde024224..495b345d06de2e10ae14cff7c4af2d85
    OP(kColorId_ThrobberSpinningColor),                                          \
    OP(kColorId_ThrobberWaitingColor),                                           \
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index 0726b178dc73dcb0728510486d07b46df464ace9..e3962d04553dcdf27bbb878f39a47e279dc4959f 100644
+index 46eab8ff45a3bb874cd8b16076dd9fa918ffbd45..90e3b67bd5c78be3ea0d0f0e4ef94bc95ea375a2 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
-@@ -651,6 +651,18 @@ base::Optional<SkColor> NativeThemeWin::GetPlatformHighContrastColor(
+@@ -659,6 +659,18 @@ base::Optional<SkColor> NativeThemeWin::GetPlatformHighContrastColor(
      case kColorId_ThrobberWaitingColor:
        return system_colors_[SystemThemeColor::kGrayText];
  

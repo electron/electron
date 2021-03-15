@@ -10,7 +10,7 @@ This patch makes three changes to Accelerator::GetShortcutText to improve shortc
 3. Ctrl-Shift-= should show as Ctrl-+
 
 diff --git a/ui/base/accelerators/accelerator.cc b/ui/base/accelerators/accelerator.cc
-index 17e1739c12ee38864e735130792321adadb43f08..7b0bfec6f18e883eb7ad7e3bfe564163592f584e 100644
+index 1a2a154b743cd4ecccf1be9971f36896e982dc6e..cbd5ce0929b956456424c4e6a159418f7eb91638 100644
 --- a/ui/base/accelerators/accelerator.cc
 +++ b/ui/base/accelerators/accelerator.cc
 @@ -12,6 +12,7 @@
@@ -31,7 +31,7 @@ index 17e1739c12ee38864e735130792321adadb43f08..7b0bfec6f18e883eb7ad7e3bfe564163
  
  #if BUILDFLAG(IS_CHROMEOS_ASH)
  #include "ui/base/ui_base_features.h"
-@@ -205,7 +204,15 @@ base::string16 Accelerator::GetShortcutText() const {
+@@ -205,7 +204,15 @@ std::u16string Accelerator::GetShortcutText() const {
    shortcut = KeyCodeToName();
  #endif
  
@@ -47,7 +47,7 @@ index 17e1739c12ee38864e735130792321adadb43f08..7b0bfec6f18e883eb7ad7e3bfe564163
  #if defined(OS_WIN)
      // Our fallback is to try translate the key code to a regular character
      // unless it is one of digits (VK_0 to VK_9). Some keyboard
-@@ -214,21 +221,14 @@ base::string16 Accelerator::GetShortcutText() const {
+@@ -214,21 +221,14 @@ std::u16string Accelerator::GetShortcutText() const {
      // accent' for '0'). For display in the menu (e.g. Ctrl-0 for the
      // default zoom level), we leave VK_[0-9] alone without translation.
      wchar_t key;
@@ -65,7 +65,7 @@ index 17e1739c12ee38864e735130792321adadb43f08..7b0bfec6f18e883eb7ad7e3bfe564163
 -        UsLayoutKeyboardCodeToDomCode(key_code_), false);
 -    if (c != 0)
 -      shortcut +=
--          static_cast<base::string16::value_type>(base::ToUpperASCII(c));
+-          static_cast<std::u16string::value_type>(base::ToUpperASCII(c));
 +      shortcut = key;
 +    }
  #endif
@@ -75,7 +75,7 @@ index 17e1739c12ee38864e735130792321adadb43f08..7b0bfec6f18e883eb7ad7e3bfe564163
    }
  
  #if defined(OS_APPLE)
-@@ -411,7 +411,7 @@ base::string16 Accelerator::ApplyLongFormModifiers(
+@@ -411,7 +411,7 @@ std::u16string Accelerator::ApplyLongFormModifiers(
    // more information.
    if (IsCtrlDown())
      shortcut = ApplyModifierToAcceleratorString(shortcut, IDS_APP_CTRL_KEY);
