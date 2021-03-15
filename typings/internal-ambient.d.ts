@@ -46,6 +46,7 @@ declare namespace NodeJS {
     clearWeaklyTrackedValues(): void;
     getWeaklyTrackedValues(): any[];
     addRemoteObjectRef(contextId: string, id: number): void;
+    runUntilIdle(): void;
     isSameOrigin(a: string, b: string): boolean;
     triggerFatalErrorForTesting(): void;
   }
