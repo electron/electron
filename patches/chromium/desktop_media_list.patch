@@ -7,10 +7,10 @@ Subject: desktop_media_list.patch
 * Free the one-time use capturer after thumbnails are fetched
 
 diff --git a/chrome/browser/media/webrtc/desktop_media_list.h b/chrome/browser/media/webrtc/desktop_media_list.h
-index cf7deb678217727e7fe0deed1663b5174164f040..d947051b1cdb36e20a3d9ed29b2172b83eaedf9d 100644
+index cb383b8d095f3fe82a88d811068d98f09d6c508c..dd05d1928ccfe10deb5f96bbcb35eb63b8a3672c 100644
 --- a/chrome/browser/media/webrtc/desktop_media_list.h
 +++ b/chrome/browser/media/webrtc/desktop_media_list.h
-@@ -52,6 +52,9 @@ class DesktopMediaList {
+@@ -53,6 +53,9 @@ class DesktopMediaList {
  
    virtual ~DesktopMediaList() {}
  
@@ -20,7 +20,7 @@ index cf7deb678217727e7fe0deed1663b5174164f040..d947051b1cdb36e20a3d9ed29b2172b8
    // Sets time interval between updates. By default list of sources and their
    // thumbnail are updated once per second. If called after StartUpdating() then
    // it will take effect only after the next update.
-@@ -83,6 +86,7 @@ class DesktopMediaList {
+@@ -84,6 +87,7 @@ class DesktopMediaList {
  
    virtual int GetSourceCount() const = 0;
    virtual const Source& GetSource(int index) const = 0;
@@ -29,7 +29,7 @@ index cf7deb678217727e7fe0deed1663b5174164f040..d947051b1cdb36e20a3d9ed29b2172b8
    virtual Type GetMediaListType() const = 0;
  };
 diff --git a/chrome/browser/media/webrtc/desktop_media_list_base.cc b/chrome/browser/media/webrtc/desktop_media_list_base.cc
-index bce801e2538ec1391e067822f7fda1248cd7c516..4efcf50745b27e66c8f544072993c9bd4490782e 100644
+index a3e1de40e843b5450f417a0455e0e7d7dee1d1bd..2f7f96a5d56d503fc231ca3c96be243cf7cbb389 100644
 --- a/chrome/browser/media/webrtc/desktop_media_list_base.cc
 +++ b/chrome/browser/media/webrtc/desktop_media_list_base.cc
 @@ -24,6 +24,11 @@ DesktopMediaListBase::DesktopMediaListBase(base::TimeDelta update_period,
@@ -79,7 +79,7 @@ index bce801e2538ec1391e067822f7fda1248cd7c516..4efcf50745b27e66c8f544072993c9bd
    SourceSet new_source_set;
    for (size_t i = 0; i < new_sources.size(); ++i) {
 diff --git a/chrome/browser/media/webrtc/desktop_media_list_base.h b/chrome/browser/media/webrtc/desktop_media_list_base.h
-index 0c2b98182a8397d2fb0334ea9619f65222c59467..3340c0060ee7475a8c64de3a1cee9dba24d4a732 100644
+index a1038183d5b44ca760576bff55534b5841e2e9d2..d036a4e630e9ba8311cf7670a53b12ac33fdd2ef 100644
 --- a/chrome/browser/media/webrtc/desktop_media_list_base.h
 +++ b/chrome/browser/media/webrtc/desktop_media_list_base.h
 @@ -27,6 +27,7 @@ class DesktopMediaListBase : public DesktopMediaList {
@@ -111,10 +111,10 @@ index ad7f766a36b1b6b2a8bc0f96369f1aaadf6681f7..f6c6c14a0937430df62c9b9c1132c591
   protected:
    virtual ~DesktopMediaListObserver() {}
 diff --git a/chrome/browser/media/webrtc/native_desktop_media_list.cc b/chrome/browser/media/webrtc/native_desktop_media_list.cc
-index 8958de11bc10fc50929a552e9a454b6c143d5713..c2d223f527014ecdcccee78194577a31514fc0c9 100644
+index f0efd4af8b7dde2c13d9e63d64249589f14ac24c..6c8c91f7d9574517da6faebe9c73fe3ed03310e3 100644
 --- a/chrome/browser/media/webrtc/native_desktop_media_list.cc
 +++ b/chrome/browser/media/webrtc/native_desktop_media_list.cc
-@@ -10,14 +10,15 @@
+@@ -10,15 +10,16 @@
  #include "base/hash/hash.h"
  #include "base/message_loop/message_pump_type.h"
  #include "base/single_thread_task_runner.h"
@@ -127,11 +127,12 @@ index 8958de11bc10fc50929a552e9a454b6c143d5713..c2d223f527014ecdcccee78194577a31
 -#include "chrome/grit/generated_resources.h"
  #include "content/public/browser/browser_task_traits.h"
  #include "content/public/browser/browser_thread.h"
+ #include "content/public/common/content_features.h"
 +#include "electron/grit/electron_resources.h"
  #include "media/base/video_util.h"
  #include "third_party/libyuv/include/libyuv/scale_argb.h"
  #include "third_party/skia/include/core/SkBitmap.h"
-@@ -259,6 +260,8 @@ void NativeDesktopMediaList::Worker::RefreshNextThumbnail() {
+@@ -265,6 +266,8 @@ void NativeDesktopMediaList::Worker::RefreshNextThumbnail() {
        FROM_HERE,
        base::BindOnce(&NativeDesktopMediaList::UpdateNativeThumbnailsFinished,
                       media_list_));

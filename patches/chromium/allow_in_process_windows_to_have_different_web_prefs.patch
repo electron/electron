@@ -86,7 +86,7 @@ index ba1ba323ec45296c33b5931652a001d6bd24dbe0..663d47894592499531ff924c78b51832
    out->accelerated_video_decode_enabled =
        data.accelerated_video_decode_enabled();
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences.h b/third_party/blink/public/common/web_preferences/web_preferences.h
-index ab727750abcb0253463e83c984bf1afd9e296021..cd4598e022b144c728990b47957baa031097dfc9 100644
+index e1fb30cfba2656989141f0a53ec3e6202c9b0409..ff9da0f6e66ed6565a64c33cc60f39510075c1f4 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences.h
 @@ -9,6 +9,7 @@
@@ -128,7 +128,7 @@ index ab727750abcb0253463e83c984bf1afd9e296021..cd4598e022b144c728990b47957baa03
    // only controls whether or not the "document.cookie" field is properly
    // connected to the backing store, for instance if you wanted to be able to
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
-index 68d33ca3be294fc79f6d5d1a6ae6a8dfd427f4b1..9663462132151638ad480f8431a0ea428c6f0563 100644
+index ae180b30284c17c7319925531440161f66b873c7..2857c7fdcb18b6f9d858c038ee2a9784c141766b 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
 @@ -6,6 +6,7 @@
