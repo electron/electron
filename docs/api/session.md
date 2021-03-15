@@ -840,7 +840,7 @@ const { session, webContents } = require('electron')
 app.whenReady().then(async () => {
   const ses = session.fromPartition('some-partition')
 
-  ses.setChromeAPIHandlers({
+  ses.setExtensionAPIHandlers({
     getTab: (webContents) => {
       return {
         groupId: 1,
@@ -852,14 +852,14 @@ app.whenReady().then(async () => {
   })
 
   // |getTab| does not get replaced.
-  ses.setChromeAPIHandlers({
+  ses.setExtensionAPIHandlers({
     getActiveTab: (sender) => {
       return webContents.fromId(1)
     }
   })
 
   // Unregisters |getTab|.
-  ses.setChromeAPIHandlers({
+  ses.setExtensionAPIHandlers({
     getTab: null
   })
 })
