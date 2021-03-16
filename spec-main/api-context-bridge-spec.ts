@@ -746,6 +746,24 @@ describe('contextBridge', () => {
             expect(result).to.equal('hi there');
           });
 
+          it('should work with nested getters', async () => {
+            await makeBindingWindow(() => {
+              contextBridge.internalContextBridge!.overrideGlobalValueWithDynamicPropsFromIsolatedWorld(['thing'], {
+                get foo () {
+                  return {
+                    get bar () {
+                      return 'hi there';
+                    }
+                  };
+                }
+              });
+            });
+            const result = await callWithBindings(async (root: any) => {
+              return root.thing.foo.bar;
+            });
+            expect(result).to.equal('hi there');
+          });
+
           it('should work with setters', async () => {
             await makeBindingWindow(() => {
               let a: any = null;
@@ -761,6 +779,29 @@ describe('contextBridge', () => {
             const result = await callWithBindings(async (root: any) => {
               root.thing.foo = 123;
               return root.thing.foo;
+            });
+            expect(result).to.equal(124);
+          });
+
+          it('should work with nested getter / setter combos', async () => {
+            await makeBindingWindow(() => {
+              let a: any = null;
+              contextBridge.internalContextBridge!.overrideGlobalValueWithDynamicPropsFromIsolatedWorld(['thing'], {
+                get thingy () {
+                  return {
+                    get foo () {
+                      return a;
+                    },
+                    set foo (arg: any) {
+                      a = arg + 1;
+                    }
+                  };
+                }
+              });
+            });
+            const result = await callWithBindings(async (root: any) => {
+              root.thing.thingy.foo = 123;
+              return root.thing.thingy.foo;
             });
             expect(result).to.equal(124);
           });

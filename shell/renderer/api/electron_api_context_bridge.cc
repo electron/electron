@@ -479,13 +479,15 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
             v8::Local<v8::Value> setter_proxy;
             if (!getter.IsEmpty()) {
               if (!PassValueToOtherContext(source_context, destination_context,
-                                           getter, object_cache, false, 1)
+                                           getter, object_cache,
+                                           support_dynamic_properties, 1)
                        .ToLocal(&getter_proxy))
                 continue;
             }
             if (!setter.IsEmpty()) {
               if (!PassValueToOtherContext(source_context, destination_context,
-                                           setter, object_cache, false, 1)
+                                           setter, object_cache,
+                                           support_dynamic_properties, 1)
                        .ToLocal(&setter_proxy))
                 continue;
             }
