@@ -44,7 +44,7 @@ void NetworkContextService::ConfigureNetworkContextParams(
   network_context_params->user_agent = browser_context_->GetUserAgent();
 
   network_context_params->cors_origin_access_list =
-      browser_context_->GetSharedCorsOriginAccessList()
+      content::BrowserContext::GetSharedCorsOriginAccessList(browser_context_)
           ->GetOriginAccessList()
           .CreateCorsOriginAccessPatternsList();
 

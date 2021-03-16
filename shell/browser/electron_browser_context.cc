@@ -108,9 +108,7 @@ ElectronBrowserContext::ElectronBrowserContext(const std::string& partition,
     : storage_policy_(new SpecialStoragePolicy),
       protocol_registry_(new ProtocolRegistry),
       in_memory_(in_memory),
-      ssl_config_(network::mojom::SSLConfig::New()),
-      shared_cors_origin_access_list_(
-          content::SharedCorsOriginAccessList::Create()) {
+      ssl_config_(network::mojom::SSLConfig::New())) {
   user_agent_ = ElectronBrowserClient::Get()->GetUserAgent();
 
   // Read options.
