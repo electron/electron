@@ -8,7 +8,6 @@
 #include <string>
 
 #include "base/observer_list_types.h"
-#include "base/strings/string16.h"
 #include "base/values.h"
 #include "ui/base/window_open_disposition.h"
 #include "url/gurl.h"

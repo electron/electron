@@ -8,7 +8,6 @@
 #include <glib-object.h>
 
 #include "base/logging.h"
-#include "base/strings/string16.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/ui/views/frame/global_menu_bar_registrar_x11.h"

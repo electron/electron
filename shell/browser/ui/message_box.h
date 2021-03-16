@@ -10,7 +10,6 @@
 #include <vector>
 
 #include "base/callback_forward.h"
-#include "base/strings/string16.h"
 #include "ui/gfx/image/image_skia.h"
 
 namespace electron {

@@ -8,7 +8,6 @@
 #include <vector>
 
 #include "base/observer_list.h"
-#include "base/strings/string16.h"
 #include "electron/shell/common/api/api.mojom.h"
 #include "ui/gfx/geometry/rect.h"
 
