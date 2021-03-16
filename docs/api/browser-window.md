@@ -1316,6 +1316,8 @@ The native type of the handle is `HWND` on Windows, `NSView*` on macOS, and
 
 * `message` Integer
 * `callback` Function
+  * `wParam` any - The `wParam` provided to the WndProc
+  * `lParam` any - The `lParam` provided to the WndProc
 
 Hooks a windows message. The `callback` is called when
 the message is received in the WndProc.
