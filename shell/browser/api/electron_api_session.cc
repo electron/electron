@@ -949,8 +949,7 @@ void Session::SetExtensionAPIHandlers(const gin_helper::Dictionary& api,
         gin::ConvertFromV8(args->isolate(), value, &get_tab_handler)) {
       set_get_tab_handler = true;
     } else {
-      isolate->ThrowException(v8::Exception::Error(
-          gin::StringToV8(isolate, "getTab must be a function or null.")));
+      args->ThrowTypeError("getTab must be a function or null.");
       return;
     }
   }
@@ -960,8 +959,7 @@ void Session::SetExtensionAPIHandlers(const gin_helper::Dictionary& api,
         gin::ConvertFromV8(args->isolate(), value, &get_active_tab_handler)) {
       set_get_active_tab_handler = true;
     } else {
-      isolate->ThrowException(v8::Exception::Error(gin::StringToV8(
-          isolate, "getActiveTab must be a function or null.")));
+      args->ThrowTypeError("getActiveTab must be a function or null.");
       return;
     }
   }
