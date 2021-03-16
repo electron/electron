@@ -134,4 +134,5 @@ cherry-pick-eb0c0353bf24.patch
 mediarecorder_tolerate_non-gmb_nv12_frames_for_h264.patch
 cherry-pick-18d3f86206e8.patch
 cherry-pick-6e8856624cbb.patch
+cherry-pick-5651fb858b75.patch
 cherry-pick-33861dcf6d15.patch

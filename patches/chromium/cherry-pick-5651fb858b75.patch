@@ -1,0 +1,45 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Harald Alvestrand <hta@chromium.org>
+Date: Thu, 11 Mar 2021 18:54:23 +0000
+Subject: Iterate more carefully over DTLS transports at close
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Ensure that even if the set of DTLS transports is modified during
+callbacks called from close, the process will be well-defined.
+
+(cherry picked from commit 4f62c7bb28b0ce77b773a611c6ba02b361db1c85)
+
+Bug: chromium:1167357
+Change-Id: I712280e7382a647027912178156127831b437f75
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2639893
+Reviewed-by: Henrik Boström <hbos@chromium.org>
+Commit-Queue: Harald Alvestrand <hta@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#845122}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2752880
+Reviewed-by: Adrian Taylor <adetaylor@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4389@{#1521}
+Cr-Branched-From: 9251c5db2b6d5a59fe4eac7aafa5fed37c139bb7-refs/heads/master@{#843830}
+
+diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection.cc b/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection.cc
+index 47a1fa272e0f077998241c771c307704fac2425a..451be645fc92dee9cae2e4caf67fda80ad69acb3 100644
+--- a/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection.cc
++++ b/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection.cc
+@@ -3519,8 +3519,14 @@ void RTCPeerConnection::CloseInternal() {
+   if (sctp_transport_) {
+     sctp_transport_->Close();
+   }
+-  for (auto& dtls_transport_iter : dtls_transports_by_native_transport_) {
+-    dtls_transport_iter.value->Close();
++  // Since Close() can trigger JS-level callbacks, iterate over a copy
++  // of the transports list.
++  auto dtls_transports_copy = dtls_transports_by_native_transport_;
++  for (auto& dtls_transport_iter : dtls_transports_copy) {
++    // Since "value" is a WeakPtr, check if it's still valid.
++    if (dtls_transport_iter.value) {
++      dtls_transport_iter.value->Close();
++    }
+   }
+ 
+   feature_handle_for_scheduler_.reset();
