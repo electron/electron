@@ -9,7 +9,7 @@ is needed for OSR.
 Originally landed in https://github.com/electron/libchromiumcontent/pull/226.
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 53f48964e6dfd0fb9b91762760b59a006ac7cc0c..ce9d64d9770e53e501d561af25094dd8f79bf331 100644
+index 3311b6110666851b3946ebf8071f210752425695..b5750a26185df8deed608e5d1bda8479d4a54aac 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -2764,6 +2764,12 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
@@ -34,10 +34,10 @@ index 53f48964e6dfd0fb9b91762760b59a006ac7cc0c..ce9d64d9770e53e501d561af25094dd8
    CHECK(view_.get());
  
 diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
-index 7c81ae0070db8d4ed8712efc56a6af7d3f6261cf..b46afaac2bfbf349e759522498a1cfd6f53091c5 100644
+index b48367e41a8d4f0fa73dd33103e5eb796d8880a9..d6833aeaa09af7d0ec6937db7a1cca051aebe43e 100644
 --- a/content/public/browser/web_contents.h
 +++ b/content/public/browser/web_contents.h
-@@ -88,8 +88,11 @@ class BrowserContext;
+@@ -87,8 +87,11 @@ class BrowserContext;
  class BrowserPluginGuestDelegate;
  class RenderFrameHost;
  class RenderViewHost;
@@ -49,7 +49,7 @@ index 7c81ae0070db8d4ed8712efc56a6af7d3f6261cf..b46afaac2bfbf349e759522498a1cfd6
  class WebUI;
  struct DropData;
  struct MHTMLGenerationParams;
-@@ -229,6 +232,10 @@ class WebContents : public PageNavigator,
+@@ -228,6 +231,10 @@ class WebContents : public PageNavigator,
      // Sandboxing flags set on the new WebContents.
      network::mojom::WebSandboxFlags starting_sandbox_flags;
  

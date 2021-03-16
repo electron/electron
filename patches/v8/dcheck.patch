@@ -6,10 +6,10 @@ Subject: dcheck.patch
 https://github.com/auchenberg/volkswagen
 
 diff --git a/src/api/api.cc b/src/api/api.cc
-index 2ee0731218f8565e48af4e37745ad95e914dfdf0..26b4aa9b364524664d78d6ceaa0d342887bcfa27 100644
+index 37a112d52ddf96dabd581a6053bc33082458a3fc..2c12f19b287cf5e3c5aaa04d339f2301e1e57c47 100644
 --- a/src/api/api.cc
 +++ b/src/api/api.cc
-@@ -8917,7 +8917,7 @@ void Isolate::SetPromiseRejectCallback(PromiseRejectCallback callback) {
+@@ -8615,7 +8615,7 @@ void Isolate::SetPromiseRejectCallback(PromiseRejectCallback callback) {
  }
  
  void Isolate::PerformMicrotaskCheckpoint() {

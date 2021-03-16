@@ -159,10 +159,10 @@ index 19ca9ee265876d2d33ced262be84cda1d056372c..b41c489a683995c3aa582d7eccbabe67
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index 32f9f251d2c3f8c5443f2284d6f70769848df532..a3729cf13b57607dabc6278634f6ff0c2a030097 100644
+index f1c66751bff73836e58c6550f16dba060b88bd8d..94550c33ac0c84cbc37e30a4a569098af20520ab 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
-@@ -796,8 +796,7 @@ class Browser : public TabStripModelObserver,
+@@ -795,8 +795,7 @@ class Browser : public TabStripModelObserver,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -264,7 +264,7 @@ index c5c5a7b63b5b3b62a9517cbef3ae23ce57a3c89c..4f1b7e88d6d2ae89a60311c8aeb1fcee
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index cd90a347277d1375251e4e4b9025ca1726010324..53f48964e6dfd0fb9b91762760b59a006ac7cc0c 100644
+index cee5507c240fb859420eb74326e67c444c3a127c..3311b6110666851b3946ebf8071f210752425695 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -3589,8 +3589,7 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
@@ -292,10 +292,10 @@ index 412fa31a6fb853eb757e19e64efb0829753faed9..1378593a48932b8272bafbe70c4797be
  }
  
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index dd7968c1eacc79eadd9b068e0cfb10a03c6ac311..6ce899d5eab1d643d71e33a85653f8802122614c 100644
+index 4982f8d2641c3d3162db4f553f3b6726d1bc3593..87e11c21bd4a6f07f2897e0027b47f3e74d6e192 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
-@@ -320,8 +320,7 @@ class CONTENT_EXPORT WebContentsDelegate {
+@@ -319,8 +319,7 @@ class CONTENT_EXPORT WebContentsDelegate {
        SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,

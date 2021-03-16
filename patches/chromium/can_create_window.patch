@@ -21,7 +21,7 @@ index f2d027d32e3cff2d1f0f03ed6c47ee689524ca1d..82dac3411b63e541d92b486f5e2108cc
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index dfb04614aa0244934798870317f500751869b7ea..703f847c844fda3b9efbbd7ce28743c5a9d991a4 100644
+index 4094a543f7cedb290658b63c1c2f6c91517b6020..18564b3c0adbc8ecb5c930609204be207edfd3ea 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -3637,6 +3637,14 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
@@ -124,18 +124,18 @@ index ba416aebd7936d5cf7f890d071acf503765b47f6..412fa31a6fb853eb757e19e64efb0829
                                                   const OpenURLParams& params) {
    return nullptr;
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 164d5d1d4d401ba2ff9a6d233d11d43346526f2e..dd7968c1eacc79eadd9b068e0cfb10a03c6ac311 100644
+index 96c3b9e9b7e10af7103c5ac85422ffcd10bbe5db..4982f8d2641c3d3162db4f553f3b6726d1bc3593 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
-@@ -17,6 +17,7 @@
- #include "base/strings/string16.h"
+@@ -16,6 +16,7 @@
+ #include "base/memory/scoped_refptr.h"
  #include "build/build_config.h"
  #include "content/common/content_export.h"
 +#include "content/common/frame.mojom.h"
  #include "content/public/browser/eye_dropper.h"
  #include "content/public/browser/invalidate_type.h"
  #include "content/public/browser/media_stream_request.h"
-@@ -341,6 +342,13 @@ class CONTENT_EXPORT WebContentsDelegate {
+@@ -340,6 +341,13 @@ class CONTENT_EXPORT WebContentsDelegate {
        const StoragePartitionId& partition_id,
        SessionStorageNamespace* session_storage_namespace);
  

@@ -39,10 +39,10 @@ index 08dda0d5779cefcc0aa2d7d691d8f84137975b5e..d3439ac00ea7e58c2eee210831d38bb8
      WebLocalFrame* frame,
      ui::PageTransition transition_type,
 diff --git a/chrome/renderer/chrome_content_renderer_client.h b/chrome/renderer/chrome_content_renderer_client.h
-index 0340221d15b589505065c287012a9aa8367d7301..e68ca8f3978a339e4deef2d91794b139e20c6907 100644
+index 4fb3926576c80881a9230bb91bfe7655fec12df1..988769f833354d16b68dd9ace603d17e157a666a 100644
 --- a/chrome/renderer/chrome_content_renderer_client.h
 +++ b/chrome/renderer/chrome_content_renderer_client.h
-@@ -122,6 +122,11 @@ class ChromeContentRendererClient
+@@ -121,6 +121,11 @@ class ChromeContentRendererClient
        base::SingleThreadTaskRunner* compositor_thread_task_runner) override;
    bool RunIdleHandlerWhenWidgetsHidden() override;
    bool AllowPopup() override;
@@ -74,10 +74,10 @@ index 9745f3208baaf1654c8386c11067958c0e47fd28..8ebebd91eb1216d5ccb4dd31dad0b977
      blink::WebLocalFrame* frame,
      ui::PageTransition transition_type,
 diff --git a/content/public/renderer/content_renderer_client.h b/content/public/renderer/content_renderer_client.h
-index 04ef16a04e8597d49e1730b9ea11191e350d63d1..5735c09a753c5aaffe4bb75efe2a5bb7b0672ed6 100644
+index f259835ef4cabb8923f8b0fe9b3f6ae8f2b2b79f..205685f200d54e53829ddc29de3bc07e24ea13b1 100644
 --- a/content/public/renderer/content_renderer_client.h
 +++ b/content/public/renderer/content_renderer_client.h
-@@ -208,6 +208,13 @@ class CONTENT_EXPORT ContentRendererClient {
+@@ -207,6 +207,13 @@ class CONTENT_EXPORT ContentRendererClient {
                                  bool is_redirect);
  #endif
  
@@ -92,10 +92,10 @@ index 04ef16a04e8597d49e1730b9ea11191e350d63d1..5735c09a753c5aaffe4bb75efe2a5bb7
    // |url|. If the function returns a valid |new_url|, the request must be
    // updated to use it.
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 2d6f936ade9cb1baceeea038df48e92f4ab3783a..43e20435b41c2d682a361ff4f0681081bcf4eab0 100644
+index be3779de84dbda14c3425c5115da78ab703e9cfb..6dfa89f3117cb7b0165c352feb79e95b4a315061 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -5347,6 +5347,23 @@ void RenderFrameImpl::BeginNavigation(
+@@ -5346,6 +5346,23 @@ void RenderFrameImpl::BeginNavigation(
      // we can do a per-frame check here rather than a process-wide check.
      bool should_fork = HasWebUIScheme(url) || HasWebUIScheme(old_url) ||
                         (enabled_bindings_ & kWebUIBindingsPolicyMask);

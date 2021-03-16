@@ -20,7 +20,7 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index 973eeeb28dfe7260144cd2026aa936dc6a15750c..6d2b701848f0b53ec9701b2a14d67b24ba5763cf 100644
+index 6423a98c5bc951446b88051de15df45ade308349..c1ef0256347ea5bc4fa9c90c91c6322ce4cc60fd 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
 @@ -1785,6 +1785,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
@@ -229,7 +229,7 @@ index a0fc635ce92491cc3df706e3e52bd8b0cacb2f15..32c497ca0b40517d70639cb16829a628
 +
 +#undef PATCH_CS
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index 25a5780a488191d970b780c1af6712187a5e9cde..2030f3857edfea997a7ff615b3882ec478b9512d 100644
+index 2425c2b99a949c3181e2b69ea8d607f103442e34..86c91453231ca4762f50387b9be51393176b9cb8 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
 @@ -223,6 +223,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
@@ -241,7 +241,7 @@ index 25a5780a488191d970b780c1af6712187a5e9cde..2030f3857edfea997a7ff615b3882ec4
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 24c3f7991246985947e567d90779ecb9416c8686..273b86362eb9eb801ef828f7073ee5c86ca97bd8 100644
+index ae1aed1f26ae6202b4709a1931c48c55e3fae956..5629dd09ca564100bb1eb592f1176c5987eb0b71 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -214,6 +214,7 @@

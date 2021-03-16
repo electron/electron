@@ -49,10 +49,10 @@ index 0cf04f6ee625d5d8b58c68f100a599e51ff65927..e92d9cd727d1347db2d455811cc9d4c7
  // HWNDMessageHandler, gfx::WindowImpl overrides:
  
 diff --git a/ui/views/win/hwnd_message_handler.h b/ui/views/win/hwnd_message_handler.h
-index 3c2cfa7fec2c37fa4a57261e694fb071ab237791..8f7c1b6d383740f3ae825c08c3f929e4fee80ac9 100644
+index 56b25183faca61754617ac38dbd2972aa8d30759..40f9b694fcce86dd56233541b58055cb77d9e615 100644
 --- a/ui/views/win/hwnd_message_handler.h
 +++ b/ui/views/win/hwnd_message_handler.h
-@@ -202,6 +202,8 @@ class VIEWS_EXPORT HWNDMessageHandler : public gfx::WindowImpl,
+@@ -201,6 +201,8 @@ class VIEWS_EXPORT HWNDMessageHandler : public gfx::WindowImpl,
    using TouchIDs = std::set<DWORD>;
    enum class DwmFrameState { kOff, kOn };
  
