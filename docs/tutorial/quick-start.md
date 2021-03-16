@@ -98,7 +98,7 @@ app.on('window-all-closed', () => {
 
 #### Create a web page
 
-This is the web page you want to display once the application is initialized. This web page represents the Renderer process. You can create multiple browser windows, where each window uses its own independent Renderer. You can optionally grant access to additional Node.js APIs by exposing them from your `preload`.
+This is the web page you want to display once the application is initialized. This web page represents the Renderer process. You can create multiple browser windows, where each window uses its own independent Renderer. You can optionally grant access to additional Node.js APIs by exposing them from your preload script.
 
 The `index.html` page looks as follows:
 
