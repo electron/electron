@@ -7,7 +7,6 @@
 
 #include <string>
 
-#include "base/strings/string16.h"
 #include "ui/events/keycodes/keyboard_codes.h"
 
 namespace electron {

@@ -8,8 +8,6 @@
 #include <string>
 #include <vector>
 
-#include "base/strings/string16.h"
-
 namespace electron {
 
 // Return a list of user preferred languages from OS. The list doesn't include
