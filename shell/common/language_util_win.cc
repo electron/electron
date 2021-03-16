@@ -17,7 +17,7 @@
 namespace electron {
 
 std::vector<std::string> GetPreferredLanguages() {
-  std::vector<base::string16> languages16;
+  std::vector<std::u16string> languages16;
 
   // Attempt to use API available on Windows 10 or later, which
   // returns the full list of language preferences.
@@ -33,7 +33,7 @@ std::vector<std::string> GetPreferredLanguages() {
 }
 
 bool GetPreferredLanguagesUsingGlobalization(
-    std::vector<base::string16>* languages) {
+    std::vector<std::u16string>* languages) {
   if (base::win::GetVersion() < base::win::Version::WIN10)
     return false;
   if (!base::win::ResolveCoreWinRTDelayload() ||

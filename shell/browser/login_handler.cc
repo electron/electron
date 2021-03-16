@@ -83,7 +83,7 @@ LoginHandler::~LoginHandler() = default;
 
 void LoginHandler::CallbackFromJS(gin::Arguments* args) {
   if (auth_required_callback_) {
-    base::string16 username, password;
+    std::u16string username, password;
     if (!args->GetNext(&username) || !args->GetNext(&password)) {
       std::move(auth_required_callback_).Run(base::nullopt);
       return;

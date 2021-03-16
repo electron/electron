@@ -88,7 +88,7 @@ void Browser::AddRecentDocument(const base::FilePath& path) {}
 
 void Browser::ClearRecentDocuments() {}
 
-void Browser::SetAppUserModelID(const base::string16& name) {}
+void Browser::SetAppUserModelID(const std::u16string& name) {}
 
 bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
                                          gin::Arguments* args) {
@@ -122,7 +122,7 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
   return false;
 }
 
-base::string16 Browser::GetApplicationNameForProtocol(const GURL& url) {
+std::u16string Browser::GetApplicationNameForProtocol(const GURL& url) {
   const std::vector<std::string> argv = {
       "xdg-mime", "query", "default",
       std::string("x-scheme-handler/") + url.scheme()};

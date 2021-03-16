@@ -28,7 +28,7 @@ std::string GetApplicationUserAgent();
 #if defined(OS_WIN)
 PCWSTR GetRawAppUserModelID();
 bool GetAppUserModelID(ScopedHString* app_id);
-void SetAppUserModelID(const base::string16& name);
+void SetAppUserModelID(const std::u16string& name);
 bool IsRunningInDesktopBridge();
 #endif
 

@@ -23,7 +23,7 @@ namespace electron {
 
 namespace {
 
-base::string16 g_app_user_model_id;
+std::u16string g_app_user_model_id;
 }
 
 const wchar_t kAppUserModelIDFormat[] = L"electron.app.$1";
@@ -42,7 +42,7 @@ std::string GetApplicationVersion() {
   return base::UTF16ToUTF8(info->product_version());
 }
 
-void SetAppUserModelID(const base::string16& name) {
+void SetAppUserModelID(const std::u16string& name) {
   g_app_user_model_id = name;
   SetCurrentProcessExplicitAppUserModelID(g_app_user_model_id.c_str());
 }
@@ -54,7 +54,7 @@ PCWSTR GetRawAppUserModelID() {
       g_app_user_model_id = current_app_id;
     } else {
       std::string name = GetApplicationName();
-      base::string16 generated_app_id = base::ReplaceStringPlaceholders(
+      std::u16string generated_app_id = base::ReplaceStringPlaceholders(
           kAppUserModelIDFormat, base::UTF8ToUTF16(name), nullptr);
       SetAppUserModelID(generated_app_id);
     }

@@ -18,7 +18,7 @@ std::vector<std::string> GetPreferredLanguages();
 
 #if defined(OS_WIN)
 bool GetPreferredLanguagesUsingGlobalization(
-    std::vector<base::string16>* languages);
+    std::vector<std::u16string>* languages);
 #endif
 
 }  // namespace electron

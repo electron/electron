@@ -50,7 +50,7 @@ bool GetAsString(const base::Value* val,
 
 bool GetAsString(const base::Value* val,
                  base::StringPiece path,
-                 base::string16* out) {
+                 std::u16string* out) {
   if (val) {
     auto* found = val->FindKeyOfType(path, base::Value::Type::STRING);
     if (found) {
@@ -380,7 +380,7 @@ void WebContentsPreferences::OverrideWebkitPrefs(
   auto* fonts_dict = preference_.FindKeyOfType("defaultFontFamily",
                                                base::Value::Type::DICTIONARY);
   if (fonts_dict) {
-    base::string16 font;
+    std::u16string font;
     if (GetAsString(fonts_dict, "standard", &font))
       prefs->standard_font_family_map[blink::web_pref::kCommonScript] = font;
     if (GetAsString(fonts_dict, "serif", &font))

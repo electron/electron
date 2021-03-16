@@ -51,7 +51,7 @@ class InspectableWebContentsView {
   virtual void SetIsDocked(bool docked, bool activate) = 0;
   virtual void SetContentsResizingStrategy(
       const DevToolsContentsResizingStrategy& strategy) = 0;
-  virtual void SetTitle(const base::string16& title) = 0;
+  virtual void SetTitle(const std::u16string& title) = 0;
 
  private:
   InspectableWebContentsViewDelegate* delegate_ = nullptr;  // weak references.

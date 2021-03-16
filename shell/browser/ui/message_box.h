@@ -56,7 +56,7 @@ void ShowMessageBox(const MessageBoxSettings& settings,
 
 // Like ShowMessageBox with simplest settings, but safe to call at very early
 // stage of application.
-void ShowErrorBox(const base::string16& title, const base::string16& content);
+void ShowErrorBox(const std::u16string& title, const std::u16string& content);
 
 }  // namespace electron
 

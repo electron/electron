@@ -1085,11 +1085,11 @@ bool BaseWindow::SetThumbnailToolTip(const std::string& tooltip) {
 }
 
 void BaseWindow::SetAppDetails(const gin_helper::Dictionary& options) {
-  base::string16 app_id;
+  std::u16string app_id;
   base::FilePath app_icon_path;
   int app_icon_index = 0;
-  base::string16 relaunch_command;
-  base::string16 relaunch_display_name;
+  std::u16string relaunch_command;
+  std::u16string relaunch_display_name;
 
   options.Get("appId", &app_id);
   options.Get("appIconPath", &app_icon_path);

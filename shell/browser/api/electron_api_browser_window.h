@@ -61,7 +61,7 @@ class BrowserWindow : public BaseWindow,
       const std::vector<mojom::DraggableRegionPtr>& regions) override;
   void OnSetContentBounds(const gfx::Rect& rect) override;
   void OnActivateContents() override;
-  void OnPageTitleUpdated(const base::string16& title,
+  void OnPageTitleUpdated(const std::u16string& title,
                           bool explicit_set) override;
 #if defined(OS_MAC)
   void OnDevToolsResized() override;

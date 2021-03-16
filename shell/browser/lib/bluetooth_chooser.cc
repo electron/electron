@@ -104,7 +104,7 @@ void BluetoothChooser::ShowDiscoveryState(DiscoveryState state) {
 
 void BluetoothChooser::AddOrUpdateDevice(const std::string& device_id,
                                          bool should_update_name,
-                                         const base::string16& device_name,
+                                         const std::u16string& device_name,
                                          bool is_gatt_connected,
                                          bool is_paired,
                                          int signal_strength_level) {
