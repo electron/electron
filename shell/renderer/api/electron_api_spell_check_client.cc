@@ -29,7 +29,7 @@ namespace api {
 namespace {
 
 bool HasWordCharacters(const base::string16& text, int index) {
-  const base::char16* data = text.data();
+  const char16_t* data = text.data();
   int length = text.length();
   while (index < length) {
     uint32_t code = 0;
