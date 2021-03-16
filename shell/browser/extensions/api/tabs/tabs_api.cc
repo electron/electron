@@ -86,7 +86,7 @@ ExecuteCodeFunction::InitResult ExecuteCodeInTabFunction::Init() {
   execute_tab_id_ = tab_id;
   details_ = std::move(details);
   set_host_id(
-      mojom::HostID(mojom::HostID::HostType::kExtensions, extension->id()));
+      mojom::HostID(mojom::HostID::HostType::kExtensions, extension()->id()));
   return set_init_result(SUCCESS);
 }
 
