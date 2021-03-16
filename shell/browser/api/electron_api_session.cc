@@ -945,9 +945,8 @@ void Session::SetExtensionAPIHandlers(const gin_helper::Dictionary& api,
   bool set_get_active_tab_handler = false;
 
   if (api.Get("getTab", &value)) {
-    if (value->IsNull()) {
-      set_get_tab_handler = true;
-    } else if (gin::ConvertFromV8(args->isolate(), value, &get_tab_handler)) {
+    if (value->IsNull() ||
+        gin::ConvertFromV8(args->isolate(), value, &get_tab_handler)) {
       set_get_tab_handler = true;
     } else {
       isolate->ThrowException(v8::Exception::Error(
@@ -957,10 +956,8 @@ void Session::SetExtensionAPIHandlers(const gin_helper::Dictionary& api,
   }
 
   if (api.Get("getActiveTab", &value)) {
-    if (value->IsNull()) {
-      set_get_active_tab_handler = true;
-    } else if (gin::ConvertFromV8(args->isolate(), value,
-                                  &get_active_tab_handler)) {
+    if (value->IsNull() ||
+        gin::ConvertFromV8(args->isolate(), value, &get_active_tab_handler)) {
       set_get_active_tab_handler = true;
     } else {
       isolate->ThrowException(v8::Exception::Error(gin::StringToV8(
