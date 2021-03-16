@@ -24,7 +24,7 @@ class SubmenuButton : public views::MenuButton {
   void SetAcceleratorVisibility(bool visible);
   void SetUnderlineColor(SkColor color);
 
-  base::char16 accelerator() const { return accelerator_; }
+  char16_t accelerator() const { return accelerator_; }
 
   void GetAccessibleNodeData(ui::AXNodeData* node_data) override;
 
@@ -37,14 +37,14 @@ class SubmenuButton : public views::MenuButton {
 
  private:
   bool GetUnderlinePosition(const base::string16& text,
-                            base::char16* accelerator,
+                            char16_t* accelerator,
                             int* start,
                             int* end) const;
   void GetCharacterPosition(const base::string16& text,
                             int index,
                             int* pos) const;
 
-  base::char16 accelerator_ = 0;
+  char16_t accelerator_ = 0;
 
   bool show_underline_ = false;
 

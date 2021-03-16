@@ -14,7 +14,7 @@ namespace electron {
 
 // Return key code of the char, and also determine whether the SHIFT key is
 // pressed.
-ui::KeyboardCode KeyboardCodeFromCharCode(base::char16 c, bool* shifted);
+ui::KeyboardCode KeyboardCodeFromCharCode(char16_t c, bool* shifted);
 
 // Return key code of the |str|, and also determine whether the SHIFT key is
 // pressed.

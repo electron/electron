@@ -44,10 +44,10 @@ int VectorToBitArray(const std::vector<T>& vec) {
 namespace gin {
 
 template <>
-struct Converter<base::char16> {
+struct Converter<char16_t> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Handle<v8::Value> val,
-                     base::char16* out) {
+                     char16_t* out) {
     base::string16 code = base::UTF8ToUTF16(gin::V8ToString(isolate, val));
     if (code.length() != 1)
       return false;

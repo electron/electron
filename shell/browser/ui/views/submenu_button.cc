@@ -90,7 +90,7 @@ void SubmenuButton::PaintButtonContents(gfx::Canvas* canvas) {
 }
 
 bool SubmenuButton::GetUnderlinePosition(const base::string16& text,
-                                         base::char16* accelerator,
+                                         char16_t* accelerator,
                                          int* start,
                                          int* end) const {
   int pos, span;
