@@ -6,6 +6,8 @@
 #ifndef SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_VIEW_H_
 #define SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_VIEW_H_
 
+#include <string>
+
 #include "ui/gfx/native_widget_types.h"
 
 class DevToolsContentsResizingStrategy;
