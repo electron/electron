@@ -210,7 +210,7 @@ void BrowserWindow::OnActivateContents() {
 #endif
 }
 
-void BrowserWindow::OnPageTitleUpdated(const base::string16& title,
+void BrowserWindow::OnPageTitleUpdated(const std::u16string& title,
                                        bool explicit_set) {
   // Change window title to page title.
   auto self = GetWeakPtr();

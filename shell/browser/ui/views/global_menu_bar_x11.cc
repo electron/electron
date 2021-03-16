@@ -297,7 +297,7 @@ void GlobalMenuBarX11::RegisterAccelerator(DbusmenuMenuitem* item,
     NOTIMPLEMENTED();
     return;
   }
-  std::string name = base::UTF16ToUTF8(base::string16(1, keysym));
+  std::string name = base::UTF16ToUTF8(std::u16string(1, keysym));
   g_variant_builder_add(&builder, "s", name.c_str());
 
   GVariant* inside_array = g_variant_builder_end(&builder);

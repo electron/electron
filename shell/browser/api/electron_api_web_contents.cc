@@ -408,7 +408,7 @@ base::Optional<base::TimeDelta> GetCursorBlinkInterval() {
 // This will return false if no printer with the provided device_name can be
 // found on the network. We need to check this because Chromium does not do
 // sanity checking of device_name validity and so will crash on invalid names.
-bool IsDeviceNameValid(const base::string16& device_name) {
+bool IsDeviceNameValid(const std::u16string& device_name) {
 #if defined(OS_MAC)
   base::ScopedCFTypeRef<CFStringRef> new_printer_id(
       base::SysUTF16ToCFStringRef(device_name));
@@ -423,7 +423,7 @@ bool IsDeviceNameValid(const base::string16& device_name) {
   return true;
 }
 
-base::string16 GetDefaultPrinterAsync() {
+std::u16string GetDefaultPrinterAsync() {
 #if defined(OS_WIN)
   // Blocking is needed here because Windows printer drivers are oftentimes
   // not thread-safe and have to be accessed on the UI thread.
@@ -958,9 +958,9 @@ void WebContents::Destroy() {
 bool WebContents::DidAddMessageToConsole(
     content::WebContents* source,
     blink::mojom::ConsoleMessageLevel level,
-    const base::string16& message,
+    const std::u16string& message,
     int32_t line_no,
-    const base::string16& source_id) {
+    const std::u16string& source_id) {
   return Emit("console-message", static_cast<int32_t>(level), message, line_no,
               source_id);
 }
@@ -1717,7 +1717,7 @@ void WebContents::DidFinishNavigation(
 }
 
 void WebContents::TitleWasSet(content::NavigationEntry* entry) {
-  base::string16 final_title;
+  std::u16string final_title;
   bool explicit_set = true;
   if (entry) {
     auto title = entry->GetTitle();
@@ -1983,7 +1983,7 @@ GURL WebContents::GetURL() const {
   return web_contents()->GetURL();
 }
 
-base::string16 WebContents::GetTitle() const {
+std::u16string WebContents::GetTitle() const {
   return web_contents()->GetTitle();
 }
 
@@ -2292,9 +2292,9 @@ bool WebContents::IsCurrentlyAudible() {
 void WebContents::OnGetDefaultPrinter(
     base::Value print_settings,
     printing::CompletionCallback print_callback,
-    base::string16 device_name,
+    std::u16string device_name,
     bool silent,
-    base::string16 default_printer) {
+    std::u16string default_printer) {
   // The content::WebContents might be already deleted at this point, and the
   // PrintViewManagerBasic class does not do null check.
   if (!web_contents()) {
@@ -2303,7 +2303,7 @@ void WebContents::OnGetDefaultPrinter(
     return;
   }
 
-  base::string16 printer_name =
+  std::u16string printer_name =
       device_name.empty() ? default_printer : device_name;
 
   // If there are no valid printers available on the network, we bail.
@@ -2401,7 +2401,7 @@ void WebContents::Print(gin::Arguments* args) {
   // We set the default to the system's default printer and only update
   // if at the Chromium level if the user overrides.
   // Printer device name as opened by the OS.
-  base::string16 device_name;
+  std::u16string device_name;
   options.Get("deviceName", &device_name);
   if (!device_name.empty() && !IsDeviceNameValid(device_name)) {
     gin_helper::ErrorThrower(args->isolate())
@@ -2570,16 +2570,16 @@ void WebContents::Unselect() {
   web_contents()->CollapseSelection();
 }
 
-void WebContents::Replace(const base::string16& word) {
+void WebContents::Replace(const std::u16string& word) {
   web_contents()->Replace(word);
 }
 
-void WebContents::ReplaceMisspelling(const base::string16& word) {
+void WebContents::ReplaceMisspelling(const std::u16string& word) {
   web_contents()->ReplaceMisspelling(word);
 }
 
 uint32_t WebContents::FindInPage(gin::Arguments* args) {
-  base::string16 search_text;
+  std::u16string search_text;
   if (!args->GetNext(&search_text) || search_text.empty()) {
     gin_helper::ErrorThrower(args->isolate())
         .ThrowError("Must provide a non-empty search content");

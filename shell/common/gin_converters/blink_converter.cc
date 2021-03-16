@@ -47,7 +47,7 @@ struct Converter<char16_t> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Handle<v8::Value> val,
                      char16_t* out) {
-    base::string16 code = base::UTF8ToUTF16(gin::V8ToString(isolate, val));
+    std::u16string code = base::UTF8ToUTF16(gin::V8ToString(isolate, val));
     if (code.length() != 1)
       return false;
     *out = code[0];
@@ -206,7 +206,7 @@ bool Converter<blink::WebKeyboardEvent>::FromV8(v8::Isolate* isolate,
     // Make sure to not read beyond the buffer in case some bad code doesn't
     // NULL-terminate it (this is called from plugins).
     size_t text_length_cap = blink::WebKeyboardEvent::kTextLengthCap;
-    base::string16 text16 = base::UTF8ToUTF16(str);
+    std::u16string text16 = base::UTF8ToUTF16(str);
 
     std::fill_n(out->text, text_length_cap, 0);
     std::fill_n(out->unmodified_text, text_length_cap, 0);
@@ -365,7 +365,7 @@ v8::Local<v8::Value> EditFlagsToV8(v8::Isolate* isolate, int editFlags) {
 
   bool pasteFlag = false;
   if (editFlags & blink::ContextMenuDataEditFlags::kCanPaste) {
-    std::vector<base::string16> types;
+    std::vector<std::u16string> types;
     ui::Clipboard::GetForCurrentThread()->ReadAvailableTypes(
         ui::ClipboardBuffer::kCopyPaste, /* data_dst = */ nullptr, &types);
     pasteFlag = !types.empty();

@@ -47,7 +47,7 @@ const gfx::ImageSkia& TrayIconGtk::GetImage() const {
   return image_;
 }
 
-const base::string16& TrayIconGtk::GetToolTip() const {
+const std::u16string& TrayIconGtk::GetToolTip() const {
   return tool_tip_;
 }
 

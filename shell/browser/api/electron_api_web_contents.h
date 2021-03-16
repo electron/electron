@@ -156,7 +156,7 @@ class WebContents : public gin::Wrappable<WebContents>,
   void LoadURL(const GURL& url, const gin_helper::Dictionary& options);
   void DownloadURL(const GURL& url);
   GURL GetURL() const;
-  base::string16 GetTitle() const;
+  std::u16string GetTitle() const;
   bool IsLoading() const;
   bool IsLoadingMainFrame() const;
   bool IsWaitingForResponse() const;
@@ -201,9 +201,9 @@ class WebContents : public gin::Wrappable<WebContents>,
 #if BUILDFLAG(ENABLE_PRINTING)
   void OnGetDefaultPrinter(base::Value print_settings,
                            printing::CompletionCallback print_callback,
-                           base::string16 device_name,
+                           std::u16string device_name,
                            bool silent,
-                           base::string16 default_printer);
+                           std::u16string default_printer);
   void Print(gin::Arguments* args);
   // Print current page as PDF.
   v8::Local<v8::Promise> PrintToPDF(base::DictionaryValue settings);
@@ -225,8 +225,8 @@ class WebContents : public gin::Wrappable<WebContents>,
   void Delete();
   void SelectAll();
   void Unselect();
-  void Replace(const base::string16& word);
-  void ReplaceMisspelling(const base::string16& word);
+  void Replace(const std::u16string& word);
+  void ReplaceMisspelling(const std::u16string& word);
   uint32_t FindInPage(gin::Arguments* args);
   void StopFindInPage(content::StopFindAction action);
   void ShowDefinitionForSelection();
@@ -444,9 +444,9 @@ class WebContents : public gin::Wrappable<WebContents>,
   // content::WebContentsDelegate:
   bool DidAddMessageToConsole(content::WebContents* source,
                               blink::mojom::ConsoleMessageLevel level,
-                              const base::string16& message,
+                              const std::u16string& message,
                               int32_t line_no,
-                              const base::string16& source_id) override;
+                              const std::u16string& source_id) override;
   bool IsWebContentsCreationOverridden(
       content::SiteInstance* source_site_instance,
       content::mojom::WindowContainerType window_container_type,

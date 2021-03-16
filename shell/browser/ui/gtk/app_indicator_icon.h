@@ -41,7 +41,7 @@ class AppIndicatorIcon : public views::StatusIconLinux {
   // icons.
   AppIndicatorIcon(std::string id,
                    const gfx::ImageSkia& image,
-                   const base::string16& tool_tip);
+                   const std::u16string& tool_tip);
   ~AppIndicatorIcon() override;
 
   // Indicates whether libappindicator so could be opened.
@@ -49,7 +49,7 @@ class AppIndicatorIcon : public views::StatusIconLinux {
 
   // Overridden from views::StatusIconLinux:
   void SetIcon(const gfx::ImageSkia& image) override;
-  void SetToolTip(const base::string16& tool_tip) override;
+  void SetToolTip(const std::u16string& tool_tip) override;
   void UpdatePlatformContextMenu(ui::MenuModel* menu) override;
   void RefreshPlatformContextMenu() override;
 

@@ -72,7 +72,7 @@ bool NotificationPresenterWin::Init() {
   return temp_dir_.CreateUniqueTempDir();
 }
 
-base::string16 NotificationPresenterWin::SaveIconToFilesystem(
+std::u16string NotificationPresenterWin::SaveIconToFilesystem(
     const SkBitmap& icon,
     const GURL& origin) {
   std::string filename;

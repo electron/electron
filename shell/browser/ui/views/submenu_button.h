@@ -17,7 +17,7 @@ namespace electron {
 class SubmenuButton : public views::MenuButton {
  public:
   SubmenuButton(PressedCallback callback,
-                const base::string16& title,
+                const std::u16string& title,
                 const SkColor& background_color);
   ~SubmenuButton() override;
 
@@ -36,11 +36,11 @@ class SubmenuButton : public views::MenuButton {
   std::unique_ptr<views::InkDrop> CreateInkDrop() override;
 
  private:
-  bool GetUnderlinePosition(const base::string16& text,
+  bool GetUnderlinePosition(const std::u16string& text,
                             char16_t* accelerator,
                             int* start,
                             int* end) const;
-  void GetCharacterPosition(const base::string16& text,
+  void GetCharacterPosition(const std::u16string& text,
                             int index,
                             int* pos) const;
 

@@ -325,7 +325,7 @@ class NativeWindow : public base::SupportsUserData,
   // views::WidgetDelegate:
   views::Widget* GetWidget() override;
   const views::Widget* GetWidget() const override;
-  base::string16 GetAccessibleWindowTitle() const override;
+  std::u16string GetAccessibleWindowTitle() const override;
 
   void set_content_view(views::View* view) { content_view_ = view; }
 
@@ -383,7 +383,7 @@ class NativeWindow : public base::SupportsUserData,
   base::ObserverList<NativeWindowObserver> observers_;
 
   // Accessible title.
-  base::string16 accessible_title_;
+  std::u16string accessible_title_;
 
   base::WeakPtrFactory<NativeWindow> weak_factory_{this};
 

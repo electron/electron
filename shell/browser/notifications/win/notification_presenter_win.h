@@ -39,7 +39,7 @@ class NotificationPresenterWin : public NotificationPresenter {
 
   bool Init();
 
-  base::string16 SaveIconToFilesystem(const SkBitmap& icon, const GURL& origin);
+  std::u16string SaveIconToFilesystem(const SkBitmap& icon, const GURL& origin);
 
  private:
   Notification* CreateNotificationObject(

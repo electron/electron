@@ -28,7 +28,7 @@ class NativeWindowObserver : public base::CheckedObserver {
   ~NativeWindowObserver() override {}
 
   // Called when the web page in window wants to create a popup window.
-  virtual void WillCreatePopupWindow(const base::string16& frame_name,
+  virtual void WillCreatePopupWindow(const std::u16string& frame_name,
                                      const GURL& target_url,
                                      const std::string& partition_id,
                                      WindowOpenDisposition disposition) {}

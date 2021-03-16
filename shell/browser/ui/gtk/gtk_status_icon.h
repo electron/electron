@@ -32,12 +32,12 @@ class AppIndicatorIconMenu;
 // GtkStatusIcon).
 class GtkStatusIcon : public views::StatusIconLinux {
  public:
-  GtkStatusIcon(const gfx::ImageSkia& image, const base::string16& tool_tip);
+  GtkStatusIcon(const gfx::ImageSkia& image, const std::u16string& tool_tip);
   ~GtkStatusIcon() override;
 
   // Overridden from views::StatusIconLinux:
   void SetIcon(const gfx::ImageSkia& image) override;
-  void SetToolTip(const base::string16& tool_tip) override;
+  void SetToolTip(const std::u16string& tool_tip) override;
   void UpdatePlatformContextMenu(ui::MenuModel* menu) override;
   void RefreshPlatformContextMenu() override;
 

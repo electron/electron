@@ -142,7 +142,7 @@ int GetMinimumFontSize() {
 }
 #endif
 
-base::string16 MediaStringProvider(media::MessageId id) {
+std::u16string MediaStringProvider(media::MessageId id) {
   switch (id) {
     case media::DEFAULT_AUDIO_DEVICE_NAME:
       return base::ASCIIToUTF16("Default");
@@ -151,7 +151,7 @@ base::string16 MediaStringProvider(media::MessageId id) {
       return base::ASCIIToUTF16("Communications");
 #endif
     default:
-      return base::string16();
+      return std::u16string();
   }
 }
 

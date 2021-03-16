@@ -549,7 +549,7 @@ void OnClientCertificateSelected(
 #if defined(USE_NSS_CERTS)
 int ImportIntoCertStore(CertificateManagerModel* model, base::Value options) {
   std::string file_data, cert_path;
-  base::string16 password;
+  std::u16string password;
   net::ScopedCERTCertificateList imported_certs;
   int rv = -1;
 

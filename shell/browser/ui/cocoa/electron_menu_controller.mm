@@ -197,7 +197,7 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
 
   // Locate & retain the recent documents menu item
   if (!recentDocumentsMenuItem_) {
-    base::string16 title = base::ASCIIToUTF16("Open Recent");
+    std::u16string title = base::ASCIIToUTF16("Open Recent");
     NSString* openTitle = l10n_util::FixUpWindowsStyleLabel(title);
 
     recentDocumentsMenuItem_.reset([[[[[NSApp mainMenu]
@@ -320,7 +320,7 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
 - (void)addItemToMenu:(NSMenu*)menu
               atIndex:(NSInteger)index
             fromModel:(electron::ElectronMenuModel*)model {
-  base::string16 label16 = model->GetLabelAt(index);
+  std::u16string label16 = model->GetLabelAt(index);
   NSString* label = l10n_util::FixUpWindowsStyleLabel(label16);
 
   base::scoped_nsobject<NSMenuItem> item([[NSMenuItem alloc]
@@ -333,14 +333,14 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
   if (icon.IsImage())
     [item setImage:icon.GetImage().ToNSImage()];
 
-  base::string16 toolTip = model->GetToolTipAt(index);
+  std::u16string toolTip = model->GetToolTipAt(index);
   [item setToolTip:base::SysUTF16ToNSString(toolTip)];
 
-  base::string16 role = model->GetRoleAt(index);
+  std::u16string role = model->GetRoleAt(index);
   electron::ElectronMenuModel::ItemType type = model->GetTypeAt(index);
 
   if (role == base::ASCIIToUTF16("services")) {
-    base::string16 title = base::ASCIIToUTF16("Services");
+    std::u16string title = base::ASCIIToUTF16("Services");
     NSString* label = l10n_util::FixUpWindowsStyleLabel(title);
 
     [item setTarget:nil];
