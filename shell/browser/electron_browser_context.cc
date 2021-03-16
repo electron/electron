@@ -433,34 +433,6 @@ ElectronBrowserContext::GetStorageNotificationService() {
   return nullptr;
 }
 
-void ElectronBrowserContext::SetCorsOriginAccessListForOrigin(
-    TargetBrowserContexts target_mode,
-    const url::Origin& source_origin,
-    std::vector<network::mojom::CorsOriginPatternPtr> allow_patterns,
-    std::vector<network::mojom::CorsOriginPatternPtr> block_patterns,
-    base::OnceClosure closure) {
-  using content::CorsOriginPatternSetter;
-  // We ignore target_mode because we don't support extensions in in-memory
-  // sessions.
-  auto barrier_closure = BarrierClosure(2, std::move(closure));
-  base::MakeRefCounted<CorsOriginPatternSetter>(
-      source_origin, CorsOriginPatternSetter::ClonePatterns(allow_patterns),
-      CorsOriginPatternSetter::ClonePatterns(block_patterns), barrier_closure)
-      ->ApplyToEachStoragePartition(this);
-
-  // Keep the per-profile access list up to date so that we can use this to
-  // restore NetworkContext settings at anytime, e.g. on restarting the
-  // network service.
-  shared_cors_origin_access_list_->SetForOrigin(
-      source_origin, std::move(allow_patterns), std::move(block_patterns),
-      barrier_closure);
-}
-
-content::SharedCorsOriginAccessList*
-ElectronBrowserContext::GetSharedCorsOriginAccessList() {
-  return shared_cors_origin_access_list_.get();
-}
-
 ResolveProxyHelper* ElectronBrowserContext::GetResolveProxyHelper() {
   if (!resolve_proxy_helper_) {
     resolve_proxy_helper_ = base::MakeRefCounted<ResolveProxyHelper>(this);
