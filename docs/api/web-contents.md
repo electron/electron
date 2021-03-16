@@ -1272,7 +1272,7 @@ Inserts `text` to the focused element.
     defaults to `false`.
   * `matchCase` Boolean (optional) - Whether search should be case-sensitive,
     defaults to `false`.
-  * `frame` Object (optional) - Search only within this [webFrameMain](web-frame-main.md)
+  * `frame` WebFrameMain (optional) - Search only within this frame
     and its subframes, if not `null`. Otherwise, searches the entire page. Defaults to `null`.
 
 Returns `Integer` - The request id used for the request.
@@ -1280,13 +1280,16 @@ Returns `Integer` - The request id used for the request.
 Starts a request to find all matches for the `text` in the web page. The result of the request
 can be obtained by subscribing to [`found-in-page`](web-contents.md#event-found-in-page) event.
 
-#### `contents.stopFindInPage(action)`
+#### `contents.stopFindInPage(action[, frame])`
 
 * `action` String - Specifies the action to take place when ending
   [`webContents.findInPage`] request.
   * `clearSelection` - Clear the selection.
   * `keepSelection` - Translate the selection into a normal selection.
   * `activateSelection` - Focus and click the selection node.
+* `frame` WebFrameMain (optional) -- Stop the find session corresponding to this frame
+  and its subframes, if not `null`. Otherwise, stops the find
+  session for the entire page. Defaults to `null`.
 
 Stops any `findInPage` request for the `webContents` with the provided `action`.
 

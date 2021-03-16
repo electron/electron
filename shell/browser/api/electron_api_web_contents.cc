@@ -2589,7 +2589,6 @@ uint32_t WebContents::FindInPage(gin::Arguments* args) {
   }
 
   uint32_t request_id = ++find_in_page_request_id_;
-
   gin_helper::Dictionary dict;
   auto options = blink::mojom::FindOptions::New();
   api::WebFrameMain* frame = nullptr;
