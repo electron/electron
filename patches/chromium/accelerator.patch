@@ -10,7 +10,7 @@ This patch makes three changes to Accelerator::GetShortcutText to improve shortc
 3. Ctrl-Shift-= should show as Ctrl-+
 
 diff --git a/ui/base/accelerators/accelerator.cc b/ui/base/accelerators/accelerator.cc
-index 1a2a154b743cd4ecccf1be9971f36896e982dc6e..cbd5ce0929b956456424c4e6a159418f7eb91638 100644
+index 1a2a154b743cd4ecccf1be9971f36896e982dc6e..b5cec83c479dfa584f496f1f73a81e8b9f64d08c 100644
 --- a/ui/base/accelerators/accelerator.cc
 +++ b/ui/base/accelerators/accelerator.cc
 @@ -12,6 +12,7 @@
@@ -42,7 +42,7 @@ index 1a2a154b743cd4ecccf1be9971f36896e982dc6e..cbd5ce0929b956456424c4e6a159418f
 +    if (c != 0) {
 +      shortcut =
 +          static_cast<base::string16::value_type>(
-+              base::ToUpperASCII(static_cast<base::char16>(c)));
++              base::ToUpperASCII(static_cast<char16_t>(c)));
 +    }
  #if defined(OS_WIN)
      // Our fallback is to try translate the key code to a regular character
