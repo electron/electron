@@ -939,29 +939,40 @@ void Session::OnExtensionReady(content::BrowserContext* browser_context,
 void Session::SetExtensionAPIHandlers(const gin_helper::Dictionary& api,
                                       gin::Arguments* args) {
   v8::Local<v8::Value> value;
+  GetTabHandler get_tab_handler;
+  bool set_get_tab_handler = false;
+  GetActiveTabHandler get_active_tab_handler;
+  bool set_get_active_tab_handler = false;
 
   if (api.Get("getTab", &value)) {
     if (value->IsNull()) {
-      get_tab_handler_.Reset();
+      set_get_tab_handler = true;
+    } else if (gin::ConvertFromV8(args->isolate(), value, &get_tab_handler)) {
+      set_get_tab_handler = true;
     } else {
-      if (!gin::ConvertFromV8(args->isolate(), value, &get_tab_handler_)) {
-        // TODO: throw exception
-      }
+      isolate->ThrowException(v8::Exception::Error(
+          gin::StringToV8(isolate, "getTab must be a function or null.")));
+      return;
     }
   }
 
   if (api.Get("getActiveTab", &value)) {
-    if (api.Get("getTab", &value)) {
-      if (value->IsNull()) {
-        get_active_tab_handler_.Reset();
-      } else {
-        if (!gin::ConvertFromV8(args->isolate(), value,
-                                &get_active_tab_handler_)) {
-          // TODO: throw exception
-        }
-      }
+    if (value->IsNull()) {
+      set_get_active_tab_handler = true;
+    } else if (gin::ConvertFromV8(args->isolate(), value,
+                                  &get_active_tab_handler)) {
+      set_get_active_tab_handler = true;
+    } else {
+      isolate->ThrowException(v8::Exception::Error(gin::StringToV8(
+          isolate, "getActiveTab must be a function or null.")));
+      return;
     }
   }
+
+  if (set_get_tab_handler)
+    get_tab_handler_ = std::move(get_tab_handler);
+  if (set_get_active_tab_handler)
+    get_active_tab_handler_ = std::move(get_active_tab_handler);
 }
 
 std::unique_ptr<ExtensionTabDetails> Session::GetExtensionTabDetails(
