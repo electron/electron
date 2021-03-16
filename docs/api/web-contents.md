@@ -559,7 +559,7 @@ Returns:
   * `matches` Integer - Number of Matches.
   * `selectionArea` Rectangle - Coordinates of first match region.
   * `finalUpdate` Boolean
-  * `frame` Object - [`webFrameMain`](web-frame-main.md) containing the active match.
+  * `frame` WebFrameMain - The root frame of the find session emitting this event.
 
 Emitted when a result is available for
 [`webContents.findInPage`] request.
