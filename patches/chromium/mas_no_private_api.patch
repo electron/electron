@@ -7,10 +7,10 @@ Guard usages in blink of private Mac APIs by MAS_BUILD, so they can be
 excluded for people who want to submit their apps to the Mac App store.
 
 diff --git a/content/browser/accessibility/accessibility_tree_formatter_mac.mm b/content/browser/accessibility/accessibility_tree_formatter_mac.mm
-index f0824ada891710245f5ff8278f27613165a5f6bf..b4a70a2cfc41957846d26bdeb586bf086cd315ca 100644
+index 1659e070cae733cf2213d752fcc262fb2bce2b54..57a3a34365f723b6e75a5f90d50533a45773e395 100644
 --- a/content/browser/accessibility/accessibility_tree_formatter_mac.mm
 +++ b/content/browser/accessibility/accessibility_tree_formatter_mac.mm
-@@ -238,7 +238,7 @@
+@@ -261,7 +261,7 @@
        return PopulateSize([value sizeValue]);
      }
    }
@@ -19,7 +19,7 @@ index f0824ada891710245f5ff8278f27613165a5f6bf..b4a70a2cfc41957846d26bdeb586bf08
    // AXTextMarker
    if (content::IsAXTextMarker(value)) {
      return PopulateTextPosition(content::AXTextMarkerToAXPosition(value),
-@@ -249,6 +249,7 @@
+@@ -272,6 +272,7 @@
    if (content::IsAXTextMarkerRange(value)) {
      return PopulateTextMarkerRange(value, line_indexer);
    }
@@ -27,7 +27,7 @@ index f0824ada891710245f5ff8278f27613165a5f6bf..b4a70a2cfc41957846d26bdeb586bf08
  
    // AXValue
    if (CFGetTypeID(value) == AXValueGetTypeID()) {
-@@ -361,7 +362,7 @@
+@@ -384,7 +385,7 @@
                      kConstValuePrefix + affinity);
    return set;
  }
@@ -36,7 +36,7 @@ index f0824ada891710245f5ff8278f27613165a5f6bf..b4a70a2cfc41957846d26bdeb586bf08
  base::Value AccessibilityTreeFormatterMac::PopulateTextMarkerRange(
      id marker_range,
      const LineIndexer* line_indexer) const {
-@@ -377,7 +378,7 @@
+@@ -400,7 +401,7 @@
                 PopulateTextPosition(ax_range.focus()->Clone(), line_indexer));
    return dict;
  }
@@ -82,10 +82,10 @@ index 88f339d1669436db9c1e4d048a46fc28038c83fe..2e194c5174c24552eb684faa339ad92b
  OptionalNSObject MakePairArray(const OptionalNSObject& obj1,
                                 const OptionalNSObject& obj2) {
 diff --git a/content/browser/accessibility/browser_accessibility_cocoa.h b/content/browser/accessibility/browser_accessibility_cocoa.h
-index eff8d3fe2d47c519952e74ca2d6238ad39429d74..ef74a8983171bb720e4be7b1efa0b1350550727d 100644
+index a7d6351854d08926c4e9c43c95e9075bd4d4c728..9c89595cb6c37527b96b4afde387133349ec5999 100644
 --- a/content/browser/accessibility/browser_accessibility_cocoa.h
 +++ b/content/browser/accessibility/browser_accessibility_cocoa.h
-@@ -157,7 +157,9 @@ id AXTextMarkerRangeFrom(id anchor_text_marker, id focus_text_marker);
+@@ -156,7 +156,9 @@ id AXTextMarkerRangeFrom(id anchor_text_marker, id focus_text_marker);
  @property(nonatomic, readonly) NSNumber* enabled;
  // Returns a text marker that points to the last character in the document that
  // can be selected with Voiceover.
@@ -95,7 +95,7 @@ index eff8d3fe2d47c519952e74ca2d6238ad39429d74..ef74a8983171bb720e4be7b1efa0b135
  @property(nonatomic, readonly) NSNumber* expanded;
  @property(nonatomic, readonly) NSNumber* focused;
  @property(nonatomic, readonly) NSNumber* grabbed;
-@@ -169,7 +171,9 @@ id AXTextMarkerRangeFrom(id anchor_text_marker, id focus_text_marker);
+@@ -168,7 +170,9 @@ id AXTextMarkerRangeFrom(id anchor_text_marker, id focus_text_marker);
  // Index of a row, column, or tree item.
  @property(nonatomic, readonly) NSNumber* index;
  @property(nonatomic, readonly) NSNumber* treeItemRowIndex;
@@ -105,7 +105,7 @@ index eff8d3fe2d47c519952e74ca2d6238ad39429d74..ef74a8983171bb720e4be7b1efa0b135
  @property(nonatomic, readonly) NSString* invalid;
  @property(nonatomic, readonly) NSNumber* isMultiSelectable;
  @property(nonatomic, readonly) NSString* placeholderValue;
-@@ -192,14 +196,18 @@ id AXTextMarkerRangeFrom(id anchor_text_marker, id focus_text_marker);
+@@ -191,14 +195,18 @@ id AXTextMarkerRangeFrom(id anchor_text_marker, id focus_text_marker);
  // The object is selected as a whole.
  @property(nonatomic, readonly) NSNumber* selected;
  @property(nonatomic, readonly) NSArray* selectedChildren;

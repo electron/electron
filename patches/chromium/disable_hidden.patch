@@ -20,10 +20,10 @@ index 20c2816765f639ce6ecab16db124f885702064dd..d98336a4b552290aff88a0c14321a588
        blink::mojom::PointerLockResult::kWrongDocument);
  
 diff --git a/content/browser/renderer_host/render_widget_host_impl.h b/content/browser/renderer_host/render_widget_host_impl.h
-index 36994e352ee697fe445f9b7f20bbb0db0d728cd4..a21adfbc22ed2199520121b8fe36244a735f0653 100644
+index c0ab310d13e3f567aebdb9bcf1824897dba6b637..84c0d0943007adca3ce3a9c61f123a50aa67bf37 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.h
 +++ b/content/browser/renderer_host/render_widget_host_impl.h
-@@ -834,6 +834,9 @@ class CONTENT_EXPORT RenderWidgetHostImpl
+@@ -833,6 +833,9 @@ class CONTENT_EXPORT RenderWidgetHostImpl
    mojom::CreateFrameWidgetParamsPtr
    BindAndGenerateCreateFrameWidgetParamsForNewWindow();
  

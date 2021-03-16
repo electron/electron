@@ -333,10 +333,10 @@ index 9aa99b764ad8620ca82c511ac22a981141cdf15c..3b6e1d2609af952fa825688833387518
  
    if (!cookie) {
 diff --git a/chrome/browser/printing/print_view_manager_base.h b/chrome/browser/printing/print_view_manager_base.h
-index 17d25f0008699ce41158424a9d266d22952ab631..d22f7f8c16ffbc90db57004f7fb09aab7034e2bf 100644
+index a96e5a33643e4f1b214bea6143d9e2744bb4e5c3..ccb9808bdb334a78ed7b64dd3030caff52055ad6 100644
 --- a/chrome/browser/printing/print_view_manager_base.h
 +++ b/chrome/browser/printing/print_view_manager_base.h
-@@ -39,6 +39,8 @@ class PrintJob;
+@@ -38,6 +38,8 @@ class PrintJob;
  class PrintQueriesQueue;
  class PrinterQuery;
  
@@ -345,7 +345,7 @@ index 17d25f0008699ce41158424a9d266d22952ab631..d22f7f8c16ffbc90db57004f7fb09aab
  // Base class for managing the print commands for a WebContents.
  class PrintViewManagerBase : public content::NotificationObserver,
                               public PrintManager {
-@@ -48,7 +50,10 @@ class PrintViewManagerBase : public content::NotificationObserver,
+@@ -47,7 +49,10 @@ class PrintViewManagerBase : public content::NotificationObserver,
    // Prints the current document immediately. Since the rendering is
    // asynchronous, the actual printing will not be completed on the return of
    // this function. Returns false if printing is impossible at the moment.
@@ -357,7 +357,7 @@ index 17d25f0008699ce41158424a9d266d22952ab631..d22f7f8c16ffbc90db57004f7fb09aab
  
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Prints the document in |print_data| with settings specified in
-@@ -215,9 +220,15 @@ class PrintViewManagerBase : public content::NotificationObserver,
+@@ -214,9 +219,15 @@ class PrintViewManagerBase : public content::NotificationObserver,
    // The current RFH that is printing with a system printing dialog.
    content::RenderFrameHost* printing_rfh_ = nullptr;
  
@@ -622,10 +622,10 @@ index 92561ff7c6bce6febd8cd2f39f59e3df707f8bdb..241686fa8bdc346f073b5fb92f57c72c
      std::unique_ptr<PrintSettings> settings =
          PrintSettingsFromJobSettings(job_settings);
 diff --git a/printing/printing_context.h b/printing/printing_context.h
-index de7861c6c620f573c72f4bd5fd877b4e919dd97d..337dcddcf611fcf0238de26c4981c8e34d3f6eeb 100644
+index 0a9bf2b3a6c1f2417c550bb0f523491eccccb56b..a322f1897a69a8a8ca7c4bcb7a46b34726ff8127 100644
 --- a/printing/printing_context.h
 +++ b/printing/printing_context.h
-@@ -134,12 +134,12 @@ class PRINTING_EXPORT PrintingContext {
+@@ -133,12 +133,12 @@ class PRINTING_EXPORT PrintingContext {
  
    int job_id() const { return job_id_; }
  

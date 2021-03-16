@@ -7,10 +7,10 @@ Subject: desktop_media_list.patch
 * Free the one-time use capturer after thumbnails are fetched
 
 diff --git a/chrome/browser/media/webrtc/desktop_media_list.h b/chrome/browser/media/webrtc/desktop_media_list.h
-index cb383b8d095f3fe82a88d811068d98f09d6c508c..dd05d1928ccfe10deb5f96bbcb35eb63b8a3672c 100644
+index d7b52b0d1b8cfb823513303ec0f6322d8dc8d153..f2dbf39f81abfc6fde4064345ab0d222ee98438c 100644
 --- a/chrome/browser/media/webrtc/desktop_media_list.h
 +++ b/chrome/browser/media/webrtc/desktop_media_list.h
-@@ -53,6 +53,9 @@ class DesktopMediaList {
+@@ -52,6 +52,9 @@ class DesktopMediaList {
  
    virtual ~DesktopMediaList() {}
  
@@ -20,7 +20,7 @@ index cb383b8d095f3fe82a88d811068d98f09d6c508c..dd05d1928ccfe10deb5f96bbcb35eb63
    // Sets time interval between updates. By default list of sources and their
    // thumbnail are updated once per second. If called after StartUpdating() then
    // it will take effect only after the next update.
-@@ -84,6 +87,7 @@ class DesktopMediaList {
+@@ -83,6 +86,7 @@ class DesktopMediaList {
  
    virtual int GetSourceCount() const = 0;
    virtual const Source& GetSource(int index) const = 0;
