@@ -17,7 +17,6 @@
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/url_constants.h"
 #include "electron/shell/common/extensions/api/tabs.h"
-#include "electron/shell/common/extensions/api/windows.h"
 #include "extensions/browser/extension_api_frame_id_map.h"
 #include "extensions/common/error_utils.h"
 #include "extensions/common/manifest_constants.h"
