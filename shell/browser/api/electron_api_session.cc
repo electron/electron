@@ -942,11 +942,10 @@ void Session::SetExtensionAPIHandlers(const gin_helper::Dictionary& api,
 
   if (api.Get("getTab", &value)) {
     if (value->IsNull()) {
-      get_tab_handler_ = nullptr;
+      get_tab_handler_.Reset();
     } else {
-      GetTabHandler handler;
-      if (gin::ConvertFromV8(args->isolate(), value, &handler)) {
-        get_tab_handler_ = std::make_unique<GetTabHandler>(handler);
+      if (!gin::ConvertFromV8(args->isolate(), value, &get_tab_handler_)) {
+        // TODO: throw exception
       }
     }
   }
@@ -954,12 +953,11 @@ void Session::SetExtensionAPIHandlers(const gin_helper::Dictionary& api,
   if (api.Get("getActiveTab", &value)) {
     if (api.Get("getTab", &value)) {
       if (value->IsNull()) {
-        get_active_tab_handler_ = nullptr;
+        get_active_tab_handler_.Reset();
       } else {
-        GetActiveTabHandler handler;
-        if (gin::ConvertFromV8(args->isolate(), value, &handler)) {
-          get_active_tab_handler_ =
-              std::make_unique<GetActiveTabHandler>(handler);
+        if (!gin::ConvertFromV8(args->isolate(), value,
+                                &get_active_tab_handler_)) {
+          // TODO: throw exception
         }
       }
     }
@@ -986,7 +984,7 @@ std::unique_ptr<ExtensionTabDetails> Session::GetExtensionTabDetails(
     return std::make_unique<ExtensionTabDetails>(details);
   }
 
-  v8::Local<v8::Value> value = get_tab_handler_->Run(tab_contents);
+  v8::Local<v8::Value> value = get_tab_handler_.Run(tab_contents);
 
   if (value->IsObject() && gin::ConvertFromV8(isolate, value, &details)) {
     return std::make_unique<ExtensionTabDetails>(details);
@@ -1012,7 +1010,7 @@ WebContents* Session::GetActiveTab(WebContents* sender_contents) {
     return nullptr;
   }
 
-  return get_active_tab_handler_->Run(sender_contents);
+  return get_active_tab_handler_.Run(sender_contents);
 }
 #endif
 

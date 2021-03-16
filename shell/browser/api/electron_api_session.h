@@ -216,8 +216,8 @@ class Session : public gin::Wrappable<Session>,
   using GetActiveTabHandler =
       base::RepeatingCallback<WebContents*(WebContents*)>;
 
-  std::unique_ptr<GetTabHandler> get_tab_handler_;
-  std::unique_ptr<GetActiveTabHandler> get_active_tab_handler_;
+  GetTabHandler get_tab_handler_;
+  GetActiveTabHandler get_active_tab_handler_;
 #endif
 
   // The client id to enable the network throttler.
