@@ -15,7 +15,11 @@ namespace gin {
 
 // Make it possible to convert move-only types.
 template <typename T>
-v8::Local<v8::Value> ConvertToV8(v8::Isolate* isolate, T&& input) {
+std::conditional_t<
+    ToV8ReturnsMaybe<typename std::remove_reference<T>::type>::value,
+    v8::MaybeLocal<v8::Value>,
+    v8::Local<v8::Value>>
+ConvertToV8(v8::Isolate* isolate, T&& input) {
   return Converter<typename std::remove_reference<T>::type>::ToV8(
       isolate, std::move(input));
 }

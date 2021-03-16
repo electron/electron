@@ -986,8 +986,7 @@ std::unique_ptr<ExtensionTabDetails> Session::GetExtensionTabDetails(
     return std::make_unique<ExtensionTabDetails>(details);
   }
 
-  v8::Local<v8::Value> value =
-      get_tab_handler_->Run(gin::CreateHandle(isolate, tab_contents));
+  v8::Local<v8::Value> value = get_tab_handler_->Run(tab_contents);
 
   if (value->IsObject() && gin::ConvertFromV8(isolate, value, &details)) {
     return std::make_unique<ExtensionTabDetails>(details);
@@ -1013,9 +1012,7 @@ WebContents* Session::GetActiveTab(WebContents* sender_contents) {
     return nullptr;
   }
 
-  return get_active_tab_handler_
-      ->Run(gin::CreateHandle(isolate, sender_contents))
-      .get();
+  return get_active_tab_handler_->Run(sender_contents);
 }
 #endif
 

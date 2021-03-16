@@ -52,8 +52,13 @@ struct V8FunctionInvoker<v8::Local<v8::Value>(ArgTypes...)> {
     v8::Local<v8::Function> holder = function.NewHandle(isolate);
     v8::Local<v8::Context> context = holder->CreationContext();
     v8::Context::Scope context_scope(context);
-    std::vector<v8::Local<v8::Value>> args{
+    std::vector<v8::MaybeLocal<v8::Value>> maybe_args{
         gin::ConvertToV8(isolate, std::forward<ArgTypes>(raw))...};
+    std::vector<v8::Local<v8::Value>> args(maybe_args.size());
+    for (size_t i = 0; i < maybe_args.size(); i++) {
+      if (!maybe_args[i].ToLocal(&args[i]))
+        args[i] = v8::Null(isolate);
+    }
     v8::MaybeLocal<v8::Value> ret = holder->Call(
         context, holder, args.size(), args.empty() ? nullptr : &args.front());
     if (ret.IsEmpty())
@@ -99,8 +104,13 @@ struct V8FunctionInvoker<ReturnType(ArgTypes...)> {
     v8::Local<v8::Function> holder = function.NewHandle(isolate);
     v8::Local<v8::Context> context = holder->CreationContext();
     v8::Context::Scope context_scope(context);
-    std::vector<v8::Local<v8::Value>> args{
+    std::vector<v8::MaybeLocal<v8::Value>> maybe_args{
         gin::ConvertToV8(isolate, std::forward<ArgTypes>(raw))...};
+    std::vector<v8::Local<v8::Value>> args(maybe_args.size());
+    for (size_t i = 0; i < maybe_args.size(); i++) {
+      if (!maybe_args[i].ToLocal(&args[i]))
+        args[i] = v8::Null(isolate);
+    }
     v8::Local<v8::Value> result;
     auto maybe_result = holder->Call(context, holder, args.size(),
                                      args.empty() ? nullptr : &args.front());
