@@ -240,7 +240,8 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnReceiveResponse(
   }
 }
 
-void OnReceiveEarlyHints(network::mojom::EarlyHintsPtr early_hints) {
+void ProxyingURLLoaderFactory::InProgressRequest::OnReceiveEarlyHints(
+    network::mojom::EarlyHintsPtr early_hints) {
   target_client_->OnReceiveEarlyHints(std::move(early_hints));
 }
 
