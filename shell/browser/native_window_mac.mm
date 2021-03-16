@@ -38,6 +38,7 @@
 #include "shell/common/process_util.h"
 #include "skia/ext/skia_utils_mac.h"
 #include "third_party/webrtc/modules/desktop_capture/mac/window_list_utils.h"
+#include "ui/display/screen.h"
 #include "ui/gfx/skia_util.h"
 #include "ui/gl/gpu_switching_manager.h"
 #include "ui/views/background.h"
@@ -350,6 +351,7 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
                                  NativeWindow* parent)
     : NativeWindow(options, parent), root_view_(new RootViewMac(this)) {
   ui::NativeTheme::GetInstanceForNativeUi()->AddObserver(this);
+  display::Screen::GetScreen()->AddObserver(this);
 
   int width = 800, height = 600;
   options.Get(options::kWidth, &width);
@@ -536,6 +538,7 @@ NativeWindowMac::~NativeWindowMac() {}
 void NativeWindowMac::Cleanup() {
   DCHECK(!IsClosed());
   ui::NativeTheme::GetInstanceForNativeUi()->RemoveObserver(this);
+  display::Screen::GetScreen()->RemoveObserver(this);
   [NSEvent removeMonitor:wheel_event_monitor_];
 }
 
@@ -1111,6 +1114,17 @@ void NativeWindowMac::SetExcludedFromShownWindowsMenu(bool excluded) {
   [window setExcludedFromWindowsMenu:excluded];
 }
 
+void NativeWindowMac::OnDisplayMetricsChanged(const display::Display& display,
+                                              uint32_t changed_metrics) {
+  // We only want to force screen recalibration if we're in simpleFullscreen
+  // mode.
+  if (!is_simple_fullscreen_)
+    return;
+
+  base::PostTask(FROM_HERE, {content::BrowserThread::UI},
+                 base::BindOnce(&NativeWindow::UpdateFrame, GetWeakPtr()));
+}
+
 void NativeWindowMac::SetSimpleFullScreen(bool simple_fullscreen) {
   NSWindow* window = GetNativeWindow().GetNativeNSWindow();
 
@@ -1660,6 +1674,13 @@ void NativeWindowMac::SetTrafficLightPosition(const gfx::Point& position) {
 
 gfx::Point NativeWindowMac::GetTrafficLightPosition() const {
   return traffic_light_position_;
+}
+
+// In simpleFullScreen mode, update the frame for new bounds.
+void NativeWindowMac::UpdateFrame() {
+  NSWindow* window = GetNativeWindow().GetNativeNSWindow();
+  NSRect fullscreenFrame = [window.screen frame];
+  [window setFrame:fullscreenFrame display:YES animate:YES];
 }
 
 void NativeWindowMac::SetTouchBar(
