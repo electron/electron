@@ -228,7 +228,7 @@ class WebContents : public gin::Wrappable<WebContents>,
   void Replace(const base::string16& word);
   void ReplaceMisspelling(const base::string16& word);
   uint32_t FindInPage(gin::Arguments* args);
-  void StopFindInPage(content::StopFindAction action);
+  void StopFindInPage(gin::Arguments* args);
   void ShowDefinitionForSelection();
   void CopyImageAt(int x, int y);
 

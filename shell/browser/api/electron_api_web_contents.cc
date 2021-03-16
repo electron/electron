@@ -2600,18 +2600,31 @@ uint32_t WebContents::FindInPage(gin::Arguments* args) {
     dict.Get("frame", &frame);
   }
 
-  content::RenderFrameHost* render_frame_host = nullptr;
+  content::RenderFrameHost* rfh = nullptr;
   if (frame) {
-    render_frame_host = content::RenderFrameHost::FromID(frame->ProcessID(),
-                                                         frame->RoutingID());
+    rfh = content::RenderFrameHost::FromID(frame->ProcessID(),
+                                           frame->RoutingID());
   }
-  web_contents()->Find(request_id, search_text, std::move(options),
-                       render_frame_host);
+  web_contents()->Find(request_id, search_text, std::move(options), rfh);
   return request_id;
 }
 
-void WebContents::StopFindInPage(content::StopFindAction action) {
-  web_contents()->StopFinding(action);
+void WebContents::StopFindInPage(gin::Arguments* args) {
+  content::StopFindAction action;
+  if (!args->GetNext(&action)) {
+    gin_helper::ErrorThrower(args->isolate())
+        .ThrowError("Must provide a StopFindAction");
+    return;
+  }
+
+  api::WebFrameMain* frame = nullptr;
+  args->GetNext(&frame);
+  content::RenderFrameHost* rfh = nullptr;
+  if (frame) {
+    rfh = content::RenderFrameHost::FromID(frame->ProcessID(),
+                                           frame->RoutingID());
+  }
+  web_contents()->StopFinding(action, rfh);
 }
 
 void WebContents::ShowDefinitionForSelection() {
