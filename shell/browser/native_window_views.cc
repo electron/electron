@@ -540,10 +540,9 @@ void NativeWindowViews::Unmaximize() {
 }
 
 bool NativeWindowViews::IsMaximized() {
-  if (widget()->IsMaximized())
+  if (widget()->IsMaximized()) {
     return true;
-
-  else {
+  } else {
     // For window without WS_THICKFRAME style, IsMaximized() will not correctly
     // check the window state. This path will be used for transparent windows as
     // well.
