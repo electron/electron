@@ -23,7 +23,6 @@
 #include "third_party/blink/public/common/input/web_mouse_event.h"
 #include "third_party/blink/public/common/input/web_mouse_wheel_event.h"
 #include "third_party/blink/public/common/widget/device_emulation_params.h"
-#include "third_party/blink/public/platform/web_size.h"
 #include "ui/base/clipboard/clipboard.h"
 #include "ui/events/blink/blink_event_util.h"
 #include "ui/events/keycodes/dom/keycode_converter.h"
@@ -283,15 +282,6 @@ bool Converter<blink::WebMouseWheelEvent>::FromV8(
   }
 #endif
   return true;
-}
-
-bool Converter<blink::WebSize>::FromV8(v8::Isolate* isolate,
-                                       v8::Local<v8::Value> val,
-                                       blink::WebSize* out) {
-  gin_helper::Dictionary dict;
-  if (!ConvertFromV8(isolate, val, &dict))
-    return false;
-  return dict.Get("width", &out->width) && dict.Get("height", &out->height);
 }
 
 bool Converter<blink::DeviceEmulationParams>::FromV8(
