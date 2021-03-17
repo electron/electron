@@ -2636,7 +2636,7 @@ describe('BrowserWindow module', () => {
         expect(test.env).to.deep.equal(process.env);
         expect(test.execPath).to.equal(process.helperExecPath);
         expect(test.sandboxed).to.be.true('sandboxed');
-        expect(test.contextIsolation).to.be.false('contextIsolation');
+        expect(test.contextIsolated).to.be.false('contextIsolated');
         expect(test.type).to.equal('renderer');
         expect(test.version).to.equal(process.version);
         expect(test.versions).to.deep.equal(process.versions);
