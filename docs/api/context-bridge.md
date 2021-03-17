@@ -113,8 +113,8 @@ If the type you care about is not in the above table, it is probably not support
 
 ### Exposing Node Global Symbols
 
-The `contextBridge` can be used by the preload script to give your renderer access to Node global symbols.
-The table of supported types described above also applies to Node globals that you expose through `contextBridge`.
+The `contextBridge` can be used by the preload script to give your renderer access to Node APIs.
+The table of supported types described above also applies to Node APIs that you expose through `contextBridge`.
 Please note that many Node APIs grant access to local system resources.
 Be very cautious about which globals and APIs you expose to untrusted remote content.
 
