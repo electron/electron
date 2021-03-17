@@ -1,8 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Patrick Thier <pthier@chromium.org>
 Date: Thu, 21 Jan 2021 10:37:10 +0000
-Subject: [regexp] Throw when length of text nodes in alternatives is too
- large.
+Subject: Throw when length of text nodes in alternatives is too large.
 
 Offsets in regular expressions are limited to 16 bits.
 It was possible to exceed this limit when emitting greedy loops where
