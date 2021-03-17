@@ -1,0 +1,140 @@
+From 93ce5606cd9a9597993ba70670b4092ab6722281 Mon Sep 17 00:00:00 2001
+From: Antonio Sartori <antoniosartori@chromium.org>
+Date: Wed, 18 Nov 2020 09:33:55 +0000
+Subject: [PATCH] Strip url to origin in X-Frame-Options violation messages
+
+X-Frame-Options violations are logged via a console message in the
+parent frame. To avoid leaking sensitive data to the parent frame,
+let's report as "blocked url" just the origin of the blocked frame's
+url, as we are already doing for the frame-ancestors CSP directive.
+
+Bug: 1146651
+Change-Id: If5e5ac62f7e44e714b109e6adc389f11999e0f8b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2534851
+Commit-Queue: Antonio Sartori <antoniosartori@chromium.org>
+Reviewed-by: Charlie Reis <creis@chromium.org>
+Reviewed-by: Arthur Sonzogni <arthursonzogni@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#828651}
+---
+
+diff --git a/android_webview/javatests/src/org/chromium/android_webview/test/ConsoleMessagesForBlockedLoadsTest.java b/android_webview/javatests/src/org/chromium/android_webview/test/ConsoleMessagesForBlockedLoadsTest.java
+index 7394abb..c746763 100644
+--- a/android_webview/javatests/src/org/chromium/android_webview/test/ConsoleMessagesForBlockedLoadsTest.java
++++ b/android_webview/javatests/src/org/chromium/android_webview/test/ConsoleMessagesForBlockedLoadsTest.java
+@@ -94,7 +94,7 @@
+         mActivityTestRule.loadUrlSync(
+                 mAwContents, mContentsClient.getOnPageFinishedHelper(), pageUrl);
+         AwConsoleMessage errorMessage = getSingleErrorMessage();
+-        assertNotEquals(errorMessage.message().indexOf(iframeUrl), -1);
++        assertNotEquals(errorMessage.message().indexOf(mWebServer.getBaseUrl()), -1);
+     }
+ 
+     @Test
+diff --git a/content/browser/renderer_host/ancestor_throttle.cc b/content/browser/renderer_host/ancestor_throttle.cc
+index c0de55b..878d0287 100644
+--- a/content/browser/renderer_host/ancestor_throttle.cc
++++ b/content/browser/renderer_host/ancestor_throttle.cc
+@@ -271,12 +271,20 @@
+         "Refused to display '%s' in a frame because it set multiple "
+         "'X-Frame-Options' headers with conflicting values "
+         "('%s'). Falling back to 'deny'.",
+-        navigation_handle()->GetURL().spec().c_str(), value.c_str());
++        url::Origin::Create(navigation_handle()->GetURL())
++            .GetURL()
++            .spec()
++            .c_str(),
++        value.c_str());
+   } else {
+     message = base::StringPrintf(
+         "Invalid 'X-Frame-Options' header encountered when loading '%s': "
+         "'%s' is not a recognized directive. The header will be ignored.",
+-        navigation_handle()->GetURL().spec().c_str(), value.c_str());
++        url::Origin::Create(navigation_handle()->GetURL())
++            .GetURL()
++            .spec()
++            .c_str(),
++        value.c_str());
+   }
+ 
+   // Log a console error in the parent of the current RenderFrameHost (as
+@@ -297,11 +305,19 @@
+   std::string message = base::StringPrintf(
+       "Refused to display '%s' in a frame because it set 'X-Frame-Options' "
+       "to '%s'.",
+-      navigation_handle()->GetURL().spec().c_str(),
++      url::Origin::Create(navigation_handle()->GetURL())
++          .GetURL()
++          .spec()
++          .c_str(),
+       disposition == HeaderDisposition::DENY ? "deny" : "sameorigin");
+ 
+   // Log a console error in the parent of the current RenderFrameHost (as
+   // the current RenderFrameHost itself doesn't yet have a document).
++  //
++  // TODO(https://crbug.com/1146651): We should not leak any information at all
++  // to the parent frame. Send a message directly to Devtools instead (without
++  // passing through a renderer): that can also contain more information (like
++  // the full blocked url).
+   auto* frame = static_cast<RenderFrameHostImpl*>(
+       navigation_handle()->GetRenderFrameHost());
+   ParentOrOuterDelegate(frame)->AddMessageToConsole(
+diff --git a/content/browser/site_per_process_browsertest.cc b/content/browser/site_per_process_browsertest.cc
+index cfdcb32..9d7cc8e 100644
+--- a/content/browser/site_per_process_browsertest.cc
++++ b/content/browser/site_per_process_browsertest.cc
+@@ -7238,12 +7238,26 @@
+                             "document.querySelector('iframe').onload = "
+                             "    function() { document.title = 'loaded'; };"));
+ 
++  // The blocked url reported in the console message should only contain the
++  // origin, in order to avoid sensitive data being leaked to the parent frame.
++  //
++  // TODO(https://crbug.com/1146651): We should not leak any information at all
++  // to the parent frame. Instead, we should send a message directly to Devtools
++  // (without passing through a renderer): that can also contain more
++  // information (like the full blocked url).
++  GURL reported_blocked_url = embedded_test_server()->GetURL("b.com", "/");
+   const struct {
+     const char* url;
+     bool use_error_page;
++    std::string expected_console_message;
+   } kTestCases[] = {
+-      {"/frame-ancestors-none.html", false},
+-      {"/x-frame-options-deny.html", true},
++      {"/frame-ancestors-none.html", false,
++       "Refused to frame '" + reported_blocked_url.spec() +
++           "' because an ancestor violates the following Content Security "
++           "Policy directive: \"frame-ancestors 'none'\".\n"},
++      {"/x-frame-options-deny.html", true,
++       "Refused to display '" + reported_blocked_url.spec() +
++           "' in a frame because it set 'X-Frame-Options' to 'deny'."},
+   };
+ 
+   for (const auto& test : kTestCases) {
+@@ -7252,6 +7266,9 @@
+     base::string16 expected_title(base::UTF8ToUTF16("loaded"));
+     TitleWatcher title_watcher(shell()->web_contents(), expected_title);
+ 
++    WebContentsConsoleObserver console_observer(shell()->web_contents());
++    console_observer.SetPattern("Refused to*");
++
+     // Navigate the subframe to a blocked URL.
+     TestNavigationObserver load_observer(shell()->web_contents());
+     EXPECT_TRUE(ExecuteScript(
+@@ -7279,6 +7296,8 @@
+     // The blocked frame should still fire a load event in its parent's process.
+     EXPECT_EQ(expected_title, title_watcher.WaitAndGetTitle());
+ 
++    EXPECT_EQ(console_observer.GetMessageAt(0u), test.expected_console_message);
++
+     // Check that the current RenderFrameHost has stopped loading.
+     EXPECT_FALSE(root->child_at(0)->current_frame_host()->is_loading());
+ 
+diff --git a/third_party/blink/web_tests/http/tests/security/XFrameOptions/x-frame-options-deny-delete-frame-in-load-event-expected.txt b/third_party/blink/web_tests/http/tests/security/XFrameOptions/x-frame-options-deny-delete-frame-in-load-event-expected.txt
+index f2e5b68..f7eea4a 100644
+--- a/third_party/blink/web_tests/http/tests/security/XFrameOptions/x-frame-options-deny-delete-frame-in-load-event-expected.txt
++++ b/third_party/blink/web_tests/http/tests/security/XFrameOptions/x-frame-options-deny-delete-frame-in-load-event-expected.txt
+@@ -1,2 +1,2 @@
+-CONSOLE ERROR: Refused to display 'http://127.0.0.1:8000/security/XFrameOptions/resources/x-frame-options-deny.cgi' in a frame because it set 'X-Frame-Options' to 'deny'.
++CONSOLE ERROR: Refused to display 'http://127.0.0.1:8000/' in a frame because it set 'X-Frame-Options' to 'deny'.
+ Test that if an iframe is denied, we don't crash if the load event detaches the frame.
