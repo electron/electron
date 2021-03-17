@@ -1,7 +1,7 @@
-From 93ce5606cd9a9597993ba70670b4092ab6722281 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Antonio Sartori <antoniosartori@chromium.org>
 Date: Wed, 18 Nov 2020 09:33:55 +0000
-Subject: [PATCH] Strip url to origin in X-Frame-Options violation messages
+Subject: Strip url to origin in X-Frame-Options violation messages
 
 X-Frame-Options violations are logged via a console message in the
 parent frame. To avoid leaking sensitive data to the parent frame,
@@ -15,13 +15,12 @@ Commit-Queue: Antonio Sartori <antoniosartori@chromium.org>
 Reviewed-by: Charlie Reis <creis@chromium.org>
 Reviewed-by: Arthur Sonzogni <arthursonzogni@chromium.org>
 Cr-Commit-Position: refs/heads/master@{#828651}
----
 
 diff --git a/android_webview/javatests/src/org/chromium/android_webview/test/ConsoleMessagesForBlockedLoadsTest.java b/android_webview/javatests/src/org/chromium/android_webview/test/ConsoleMessagesForBlockedLoadsTest.java
-index 7394abb..c746763 100644
+index 7394abb2e639a8f3b25cca0a568135cd4e8bd0d8..c746763be2a77a87a52e9ef31bbbd25de7ba03ae 100644
 --- a/android_webview/javatests/src/org/chromium/android_webview/test/ConsoleMessagesForBlockedLoadsTest.java
 +++ b/android_webview/javatests/src/org/chromium/android_webview/test/ConsoleMessagesForBlockedLoadsTest.java
-@@ -94,7 +94,7 @@
+@@ -94,7 +94,7 @@ public class ConsoleMessagesForBlockedLoadsTest {
          mActivityTestRule.loadUrlSync(
                  mAwContents, mContentsClient.getOnPageFinishedHelper(), pageUrl);
          AwConsoleMessage errorMessage = getSingleErrorMessage();
@@ -31,10 +30,10 @@ index 7394abb..c746763 100644
  
      @Test
 diff --git a/content/browser/renderer_host/ancestor_throttle.cc b/content/browser/renderer_host/ancestor_throttle.cc
-index c0de55b..878d0287 100644
+index 13778c6000b93bfff921b717643b96e0c92518fb..27984c6219cadafd4b5e46daf23a34cc8ee8d698 100644
 --- a/content/browser/renderer_host/ancestor_throttle.cc
 +++ b/content/browser/renderer_host/ancestor_throttle.cc
-@@ -271,12 +271,20 @@
+@@ -275,12 +275,20 @@ void AncestorThrottle::ParseXFrameOptionsError(const std::string& value,
          "Refused to display '%s' in a frame because it set multiple "
          "'X-Frame-Options' headers with conflicting values "
          "('%s'). Falling back to 'deny'.",
@@ -57,7 +56,7 @@ index c0de55b..878d0287 100644
    }
  
    // Log a console error in the parent of the current RenderFrameHost (as
-@@ -297,11 +305,19 @@
+@@ -301,11 +309,19 @@ void AncestorThrottle::ConsoleErrorXFrameOptions(
    std::string message = base::StringPrintf(
        "Refused to display '%s' in a frame because it set 'X-Frame-Options' "
        "to '%s'.",
@@ -79,10 +78,10 @@ index c0de55b..878d0287 100644
        navigation_handle()->GetRenderFrameHost());
    ParentOrOuterDelegate(frame)->AddMessageToConsole(
 diff --git a/content/browser/site_per_process_browsertest.cc b/content/browser/site_per_process_browsertest.cc
-index cfdcb32..9d7cc8e 100644
+index a74382f01612d53d39b8972bd21a49e26bac980a..732ea48c6d7b62d2fcc715a33dec009ee1f41fa3 100644
 --- a/content/browser/site_per_process_browsertest.cc
 +++ b/content/browser/site_per_process_browsertest.cc
-@@ -7238,12 +7238,26 @@
+@@ -7225,12 +7225,26 @@ IN_PROC_BROWSER_TEST_P(SitePerProcessBrowserTest,
                              "document.querySelector('iframe').onload = "
                              "    function() { document.title = 'loaded'; };"));
  
@@ -111,7 +110,7 @@ index cfdcb32..9d7cc8e 100644
    };
  
    for (const auto& test : kTestCases) {
-@@ -7252,6 +7266,9 @@
+@@ -7239,6 +7253,9 @@ IN_PROC_BROWSER_TEST_P(SitePerProcessBrowserTest,
      base::string16 expected_title(base::UTF8ToUTF16("loaded"));
      TitleWatcher title_watcher(shell()->web_contents(), expected_title);
  
@@ -121,7 +120,7 @@ index cfdcb32..9d7cc8e 100644
      // Navigate the subframe to a blocked URL.
      TestNavigationObserver load_observer(shell()->web_contents());
      EXPECT_TRUE(ExecuteScript(
-@@ -7279,6 +7296,8 @@
+@@ -7266,6 +7283,8 @@ IN_PROC_BROWSER_TEST_P(SitePerProcessBrowserTest,
      // The blocked frame should still fire a load event in its parent's process.
      EXPECT_EQ(expected_title, title_watcher.WaitAndGetTitle());
  
@@ -131,7 +130,7 @@ index cfdcb32..9d7cc8e 100644
      EXPECT_FALSE(root->child_at(0)->current_frame_host()->is_loading());
  
 diff --git a/third_party/blink/web_tests/http/tests/security/XFrameOptions/x-frame-options-deny-delete-frame-in-load-event-expected.txt b/third_party/blink/web_tests/http/tests/security/XFrameOptions/x-frame-options-deny-delete-frame-in-load-event-expected.txt
-index f2e5b68..f7eea4a 100644
+index f2e5b68c997ca33da841aa7ba5795ef3b96fa02f..f7eea4a189ae8913921444428e26389dfd4de4da 100644
 --- a/third_party/blink/web_tests/http/tests/security/XFrameOptions/x-frame-options-deny-delete-frame-in-load-event-expected.txt
 +++ b/third_party/blink/web_tests/http/tests/security/XFrameOptions/x-frame-options-deny-delete-frame-in-load-event-expected.txt
 @@ -1,2 +1,2 @@
