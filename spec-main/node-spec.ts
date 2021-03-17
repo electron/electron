@@ -7,6 +7,7 @@ import { ifdescribe, ifit } from './spec-helpers';
 import { webContents, WebContents } from 'electron/main';
 
 const features = process._linkedBinding('electron_common_features');
+const mainFixturesPath = path.resolve(__dirname, 'fixtures');
 
 describe('node feature', () => {
   const fixtures = path.join(__dirname, '..', 'spec', 'fixtures');
@@ -20,6 +21,16 @@ describe('node feature', () => {
         expect(msg).to.equal('message');
       });
     });
+  });
+
+  it('does not hang when using the fs module in the renderer process', async () => {
+    const appPath = path.join(mainFixturesPath, 'apps', 'libuv-hang', 'main.js');
+    const appProcess = childProcess.spawn(process.execPath, [appPath], {
+      cwd: path.join(mainFixturesPath, 'apps', 'libuv-hang'),
+      stdio: 'inherit'
+    });
+    const [code] = await emittedOnce(appProcess, 'close');
+    expect(code).to.equal(0);
   });
 
   describe('contexts', () => {
