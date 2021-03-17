@@ -10,7 +10,7 @@ const features = process._linkedBinding('electron_common_features');
 const v8Util = process._linkedBinding('electron_common_v8_util');
 
 ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () {
-  this.timeout(200 * 1000);
+  this.timeout((process.env.IS_ASAN ? 700 : 20) * 1000);
 
   let w: BrowserWindow;
 
@@ -30,7 +30,7 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () 
   // to detect spellchecker is to keep checking with a busy loop.
   async function rightClickUntil (fn: (params: Electron.ContextMenuParams) => boolean) {
     const now = Date.now();
-    const timeout = (process.env.IS_ASAN ? 180 : 10) * 1000;
+    const timeout = (process.env.IS_ASAN ? 600 : 10) * 1000;
     let contextMenuParams = await rightClick();
     while (!fn(contextMenuParams) && (Date.now() - now < timeout)) {
       await delay(100);
