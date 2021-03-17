@@ -1,7 +1,11 @@
-From c6d6f7aee733b2a21378e3d1b2990b50d68eb457 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Lukasz Anforowicz <lukasza@chromium.org>
-Date: Thu, 04 Mar 2021 17:07:16 +0000
-Subject: [PATCH] M86-LTS: Destroy `url_loader_factories_` before other NetworkContext fields
+Date: Thu, 4 Mar 2021 17:07:16 +0000
+Subject: M86-LTS: Destroy `url_loader_factories_` before other NetworkContext
+ fields
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
 [M86 Merge]: Fixed conflict in network_context.h.
 
@@ -25,13 +29,12 @@ Commit-Queue: Victor-Gabriel Savu <vsavu@google.com>
 Reviewed-by: Achuith Bhandarkar <achuith@chromium.org>
 Cr-Commit-Position: refs/branch-heads/4240@{#1559}
 Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
----
 
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 2025d29..0f8349f 100644
+index 0e2c067837cd180ad9b99c082487199d72e5a0ed..b6a1b819bd742e47902faa59d3cd11d28b5ddf60 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
-@@ -619,13 +619,6 @@
+@@ -622,13 +622,6 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    std::set<std::unique_ptr<ProxyLookupRequest>, base::UniquePtrComparator>
        proxy_lookup_requests_;
  
@@ -45,7 +48,7 @@ index 2025d29..0f8349f 100644
    std::set<std::unique_ptr<QuicTransport>, base::UniquePtrComparator>
        quic_transports_;
  
-@@ -736,6 +729,19 @@
+@@ -738,6 +731,19 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    // HttpAuthHandle via |NetworkContext::CreateHttpAuthHandlerFactory|.
    net::HttpAuthPreferences http_auth_merged_preferences_;
  
