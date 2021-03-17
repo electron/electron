@@ -122,7 +122,7 @@ Be very cautious about which globals and APIs you expose to untrusted remote con
 const { contextBridge } = require('electron')
 const crypto = require('crypto')
 contextBridge.exposeInMainWorld('nodeCrypto', {
-  sha256sum(data) {
+  sha256sum (data) {
     const hash = crypto.createHash('sha256')
     hash.update(data)
     return hash.digest('hex')
