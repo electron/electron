@@ -212,6 +212,70 @@ describe('renderer nodeIntegrationInSubFrames', () => {
   });
 });
 
+describe('findinpage subframes', () => {
+  let w: BrowserWindow;
+
+  beforeEach(async () => {
+    await closeWindow(w);
+    w = new BrowserWindow({
+      show: true,
+      width: 400,
+      height: 400
+    });
+  });
+
+  afterEach(async () => {
+    await closeWindow(w);
+    w = null as unknown as BrowserWindow;
+  });
+
+  it('searches over whole page', async () => {
+    await w.loadFile(path.resolve(__dirname, 'fixtures/sub-frames/frame-container.html'));
+    const contents = w.webContents;
+    contents.on('found-in-page', () => {
+      console.log('got it again');
+    });
+    contents.findInPage('This', { findNext: true });
+    contents.findInPage('This', { findNext: false });
+    contents.stopFindInPage('clearSelection');
+  });
+
+  it('searches over one frame', async () => {
+    await w.loadFile(path.resolve(__dirname, 'fixtures/sub-frames/frame-container.html'));
+    const contents = w.webContents;
+    const frame = contents.mainFrame.framesInSubtree[1];
+    contents.on('found-in-page', (e, result) => {
+      expect(result.matches).to.equal(1);
+      contents.stopFindInPage('clearSelection');
+    });
+    contents.findInPage('This', { findNext: true, frame });
+  });
+
+  it('searches concurrently over both frames', async () => {
+    await w.loadFile(path.resolve(__dirname, 'fixtures/sub-frames/frame-with-frames.html'));
+    const contents = w.webContents;
+    const childFrameFirst = contents.mainFrame.framesInSubtree[1];
+    const childFrameSecond = contents.mainFrame.framesInSubtree[2];
+    contents.on('found-in-page', (e, result) => {
+      console.log('another try');
+      expect([childFrameFirst, childFrameSecond]).includes(result.frame);
+      if (result.frame === childFrameFirst) {
+        expect(result.matches).to.equal(4);
+      } else if (result.frame === childFrameSecond) {
+        expect(result.matches).to.equal(3);
+      }
+    });
+    contents.findInPage('i', { findNext: true, frame: childFrameFirst });
+    contents.findInPage('a', { findNext: true, frame: childFrameSecond });
+    contents.findInPage('i', { findNext: false, frame: childFrameFirst });
+    contents.findInPage('a', { findNext: false, frame: childFrameSecond });
+    contents.stopFindInPage('clearSelection', childFrameFirst);
+    contents.stopFindInPage('keepSelection', childFrameSecond);
+    contents.findInPage('i', { findNext: true, frame: childFrameFirst });
+    contents.findInPage('a', { findNext: true, frame: childFrameSecond });
+  });
+});
+
 // app.getAppMetrics() does not return sandbox information on Linux.
 ifdescribe(process.platform !== 'linux')('cross-site frame sandboxing', () => {
   let server: http.Server;

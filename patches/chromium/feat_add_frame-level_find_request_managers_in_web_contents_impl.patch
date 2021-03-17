@@ -156,7 +156,7 @@ index 8c85cbbcc39e93ebb751bd6a30aadd09b557a7d1..a059fe6e83ef4b2bf870106558d6b648
    // session, which uniquely identifies this session. Request IDs are included
    // in all find-related IPCs, which allows reply IPCs containing results from
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index cefe0bab7ab42c8b0697cb64fc687545251f7410..6c331b7fd20c94b5f38a16128beb4e7d16cdb8be 100644
+index cefe0bab7ab42c8b0697cb64fc687545251f7410..a64de2d1c4b2f7d7fbc577089885d47e148894cd 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -941,6 +941,7 @@ WebContentsImpl::~WebContentsImpl() {
@@ -233,7 +233,7 @@ index cefe0bab7ab42c8b0697cb64fc687545251f7410..6c331b7fd20c94b5f38a16128beb4e7d
  
    // Concurrent find sessions must not overlap, so destroy any existing
    // FindRequestManagers in any inner WebContentses.
-@@ -7964,20 +7977,38 @@ FindRequestManager* WebContentsImpl::GetOrCreateFindRequestManager() {
+@@ -7964,6 +7977,26 @@ FindRequestManager* WebContentsImpl::GetOrCreateFindRequestManager() {
            STOP_FIND_ACTION_CLEAR_SELECTION);
        web_contents_impl->find_request_manager_.release();
      }
@@ -243,24 +243,24 @@ index cefe0bab7ab42c8b0697cb64fc687545251f7410..6c331b7fd20c94b5f38a16128beb4e7d
 +    }
 +    web_contents_impl->frame_find_request_managers_.clear();
 +  }
-+  for (RenderFrameHost* frame : root_frame->GetFramesInSubtree()) {
-+    if (frame == root_frame) {
-+      continue;
++  if (root_frame) {
++    for (RenderFrameHost* frame : root_frame->GetFramesInSubtree()) {
++      if (frame == root_frame) {
++        continue;
++      }
++      auto find_request_manager_it = frame_find_request_managers_.find(frame);
++      if (find_request_manager_it != frame_find_request_managers_.end()) {
++        auto* find_request_manager = find_request_manager_it->second.get();
++        find_request_manager->StopFinding(
++            STOP_FIND_ACTION_CLEAR_SELECTION);
++        frame_find_request_managers_.erase(find_request_manager_it);
++      }
 +    }
-+    auto find_request_manager_it = frame_find_request_managers_.find(frame);
-+    if (find_request_manager_it != frame_find_request_managers_.end()) {
-+      auto* find_request_manager = find_request_manager_it->second.get();
-+      find_request_manager->StopFinding(
-+          STOP_FIND_ACTION_CLEAR_SELECTION);
-+      frame_find_request_managers_.erase(find_request_manager_it);
-+    }
++    return frame_find_request_managers_[root_frame].get();
    }
  
--  return find_request_manager_.get();
-+  return root_frame ? frame_find_request_managers_[root_frame].get() : find_request_manager_.get();
- }
- 
- void WebContentsImpl::NotifyFindReply(int request_id,
+   return find_request_manager_.get();
+@@ -7973,11 +8006,12 @@ void WebContentsImpl::NotifyFindReply(int request_id,
                                        int number_of_matches,
                                        const gfx::Rect& selection_rect,
                                        int active_match_ordinal,

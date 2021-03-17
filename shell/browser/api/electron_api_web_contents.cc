@@ -1302,14 +1302,13 @@ void WebContents::FindReply(content::WebContents* web_contents,
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
-  auto active_frame_handle = api::WebFrameMain::From(isolate, active_frame);
   gin_helper::Dictionary result = gin::Dictionary::CreateEmpty(isolate);
   result.Set("requestId", request_id);
   result.Set("matches", number_of_matches);
   result.Set("selectionArea", selection_rect);
   result.Set("activeMatchOrdinal", active_match_ordinal);
   result.Set("finalUpdate", final_update);  // Deprecate after 2.0
-  result.Set("activeFrame", active_frame_handle);
+  result.Set("frame", active_frame);
   Emit("found-in-page", result.GetHandle());
 }
 
