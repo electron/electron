@@ -160,3 +160,4 @@ cherry-pick-b3dc4c4b349d.patch
 cherry-pick-c6d6f7aee733.patch
 cherry-pick-37210e5ab006.patch
 reland_reland_fsa_add_issafepathcomponent_checks_to.patch
+css_make_fetches_from_inline_css_use_the_document_s_url_as_referrer.patch
