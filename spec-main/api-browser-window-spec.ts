@@ -2487,6 +2487,7 @@ describe('BrowserWindow module', () => {
         expect(test.env).to.deep.equal(process.env);
         expect(test.execPath).to.equal(process.helperExecPath);
         expect(test.sandboxed).to.be.true('sandboxed');
+        expect(test.contextIsolation).to.be.false('contextIsolation');
         expect(test.type).to.equal('renderer');
         expect(test.version).to.equal(process.version);
         expect(test.versions).to.deep.equal(process.versions);
@@ -4304,6 +4305,19 @@ describe('BrowserWindow module', () => {
       `);
       const [, data] = await p;
       expect(data.pageContext.openedLocation).to.equal('about:blank');
+    });
+    it('reports process.contextIsolation', async () => {
+      const iw = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          contextIsolation: true,
+          preload: path.join(fixtures, 'api', 'isolated-process.js')
+        }
+      });
+      const p = emittedOnce(ipcMain, 'context-isolation');
+      iw.loadURL('about:blank');
+      const [, contextIsolation] = await p;
+      expect(contextIsolation).to.be.true('contextIsolation');
     });
   });
 

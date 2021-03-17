@@ -131,7 +131,7 @@ ElectronSandboxedRendererClient::~ElectronSandboxedRendererClient() = default;
 void ElectronSandboxedRendererClient::InitializeBindings(
     v8::Local<v8::Object> binding,
     v8::Local<v8::Context> context,
-    bool is_main_frame) {
+    content::RenderFrame* render_frame) {
   auto* isolate = context->GetIsolate();
   gin_helper::Dictionary b(isolate, binding);
   b.SetMethod("get", GetBinding);
@@ -141,13 +141,13 @@ void ElectronSandboxedRendererClient::InitializeBindings(
   b.Set("process", process);
 
   ElectronBindings::BindProcess(isolate, &process, metrics_.get());
+  BindProcess(isolate, &process, render_frame);
 
   process.SetMethod("uptime", Uptime);
   process.Set("argv", base::CommandLine::ForCurrentProcess()->argv());
   process.SetReadOnly("pid", base::GetCurrentProcId());
   process.SetReadOnly("sandboxed", true);
   process.SetReadOnly("type", "renderer");
-  process.SetReadOnly("isMainFrame", is_main_frame);
 }
 
 void ElectronSandboxedRendererClient::RenderFrameCreated(
@@ -218,8 +218,7 @@ void ElectronSandboxedRendererClient::DidCreateScriptContext(
   // argument.
   auto* isolate = context->GetIsolate();
   auto binding = v8::Object::New(isolate);
-  InitializeBindings(binding, context, render_frame->IsMainFrame());
-  AddRenderBindings(isolate, binding);
+  InitializeBindings(binding, context, render_frame);
 
   std::vector<v8::Local<v8::String>> sandbox_preload_bundle_params = {
       node::FIXED_ONE_BYTE_STRING(isolate, "binding")};
