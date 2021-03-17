@@ -1,7 +1,7 @@
-From e1505713dc313c6666b65b073bc7da9cfa1bf765 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: David Van Cleve <davidvc@chromium.org>
-Date: Thu, 04 Mar 2021 16:50:46 +0000
-Subject: [PATCH] css: Make fetches from inline CSS use the document's URL as referrer
+Date: Thu, 4 Mar 2021 16:50:46 +0000
+Subject: css: Make fetches from inline CSS use the document's URL as referrer
 
 Right now, fetches from inline CSS use the inline CSS's base URL
 instead of the URL from the context that embeds the inline CSS: for
@@ -43,10 +43,9 @@ Reviewed-by: Achuith Bhandarkar <achuith@chromium.org>
 Commit-Queue: Victor-Gabriel Savu <vsavu@google.com>
 Cr-Commit-Position: refs/branch-heads/4240@{#1558}
 Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
----
 
 diff --git a/third_party/blink/renderer/core/css/css_style_sheet.cc b/third_party/blink/renderer/core/css/css_style_sheet.cc
-index 7e34aea..d9024fb 100644
+index bdf00ae71b6d2362468f4bf6b437b3e008915bad..6fe597879f3208b5f9c40b0cb2eecdb8dd8d3ad8 100644
 --- a/third_party/blink/renderer/core/css/css_style_sheet.cc
 +++ b/third_party/blink/renderer/core/css/css_style_sheet.cc
 @@ -37,6 +37,7 @@
@@ -57,7 +56,7 @@ index 7e34aea..d9024fb 100644
  #include "third_party/blink/renderer/core/html/html_link_element.h"
  #include "third_party/blink/renderer/core/html/html_style_element.h"
  #include "third_party/blink/renderer/core/html_names.h"
-@@ -137,9 +138,15 @@
+@@ -137,9 +138,15 @@ CSSStyleSheet* CSSStyleSheet::CreateInline(Node& owner_node,
                                             const KURL& base_url,
                                             const TextPosition& start_position,
                                             const WTF::TextEncoding& encoding) {
@@ -76,10 +75,10 @@ index 7e34aea..d9024fb 100644
    if (AdTracker::IsAdScriptExecutingInDocument(&owner_node.GetDocument()))
      parser_context->SetIsAdRelated();
 diff --git a/third_party/blink/renderer/core/css/parser/css_parser_context.cc b/third_party/blink/renderer/core/css/parser/css_parser_context.cc
-index c0ad6ec..83989c9 100644
+index c0ad6ec150ea90c390dd9169044f7c7bb43a5251..83989c9cfd5bbd69293c2579031e17ea25ebd98e 100644
 --- a/third_party/blink/renderer/core/css/parser/css_parser_context.cc
 +++ b/third_party/blink/renderer/core/css/parser/css_parser_context.cc
-@@ -53,27 +53,25 @@
+@@ -53,27 +53,25 @@ CSSParserContext::CSSParserContext(const CSSParserContext* other,
    is_ad_related_ = other->is_ad_related_;
  }
  
@@ -126,7 +125,7 @@ index c0ad6ec..83989c9 100644
    is_ad_related_ = other->is_ad_related_;
  }
  
-@@ -96,18 +94,23 @@
+@@ -96,18 +94,23 @@ CSSParserContext::CSSParserContext(CSSParserMode mode,
                         ResourceFetchRestriction::kNone) {}
  
  CSSParserContext::CSSParserContext(const Document& document)
@@ -157,7 +156,7 @@ index c0ad6ec..83989c9 100644
      const WTF::TextEncoding& charset,
      SelectorProfile profile,
      enum ResourceFetchRestriction resource_fetch_restriction)
-@@ -122,8 +125,7 @@
+@@ -122,8 +125,7 @@ CSSParserContext::CSSParserContext(
                       : kHTMLStandardMode)
                : document.InQuirksMode() ? kHTMLQuirksMode : kHTMLStandardMode,
            profile,
@@ -168,10 +167,10 @@ index c0ad6ec..83989c9 100644
            document.GetSettings()
                ? document.GetSettings()
 diff --git a/third_party/blink/renderer/core/css/parser/css_parser_context.h b/third_party/blink/renderer/core/css/parser/css_parser_context.h
-index 92f24b2f5..716673a 100644
+index 92f24b2f5b5843664523a182bf40b4436d098656..716673a82b349a9f2c316fde52ca84907b3aeb50 100644
 --- a/third_party/blink/renderer/core/css/parser/css_parser_context.h
 +++ b/third_party/blink/renderer/core/css/parser/css_parser_context.h
-@@ -42,10 +42,15 @@
+@@ -42,10 +42,15 @@ class CORE_EXPORT CSSParserContext final
    explicit CSSParserContext(const CSSParserContext* other,
                              const Document* use_counter_document = nullptr);
  
@@ -188,7 +187,7 @@ index 92f24b2f5..716673a 100644
                     const WTF::TextEncoding& charset_override,
                     const Document* use_counter_document);
    CSSParserContext(CSSParserMode,
-@@ -56,7 +61,7 @@
+@@ -56,7 +61,7 @@ class CORE_EXPORT CSSParserContext final
    CSSParserContext(const Document&,
                     const KURL& base_url_override,
                     bool origin_clean,
@@ -197,7 +196,7 @@ index 92f24b2f5..716673a 100644
                     const WTF::TextEncoding& charset = WTF::TextEncoding(),
                     SelectorProfile = kLiveProfile,
                     ResourceFetchRestriction resource_fetch_restriction =
-@@ -71,7 +76,7 @@
+@@ -71,7 +76,7 @@ class CORE_EXPORT CSSParserContext final
                     CSSParserMode,
                     CSSParserMode match_mode,
                     SelectorProfile,
@@ -207,10 +206,10 @@ index 92f24b2f5..716673a 100644
                     bool use_legacy_background_size_shorthand_behavior,
                     SecureContextMode,
 diff --git a/third_party/blink/renderer/core/css/selector_query.cc b/third_party/blink/renderer/core/css/selector_query.cc
-index 722b751..35d9d92 100644
+index 722b751f19207b070664d79c5a9cc758f1c044f4..35d9d926f2e1ac0c2d032817b87c1079af9408ec 100644
 --- a/third_party/blink/renderer/core/css/selector_query.cc
 +++ b/third_party/blink/renderer/core/css/selector_query.cc
-@@ -535,9 +535,8 @@
+@@ -535,9 +535,8 @@ SelectorQuery* SelectorQueryCache::Add(const AtomicString& selectors,
  
    CSSSelectorList selector_list = CSSParser::ParseSelector(
        MakeGarbageCollected<CSSParserContext>(
@@ -223,10 +222,10 @@ index 722b751..35d9d92 100644
  
    if (!selector_list.First()) {
 diff --git a/third_party/blink/renderer/core/css/selector_query_test.cc b/third_party/blink/renderer/core/css/selector_query_test.cc
-index 8d701d9..bf14850 100644
+index 8d701d91372e5c2fb4b1a30f190f629f95e1b0b2..bf14850baf8dd2e92f74b89b78963a367440a704 100644
 --- a/third_party/blink/renderer/core/css/selector_query_test.cc
 +++ b/third_party/blink/renderer/core/css/selector_query_test.cc
-@@ -72,9 +72,8 @@
+@@ -72,9 +72,8 @@ TEST(SelectorQueryTest, NotMatchingPseudoElement) {
  
    CSSSelectorList selector_list = CSSParser::ParseSelector(
        MakeGarbageCollected<CSSParserContext>(
@@ -238,7 +237,7 @@ index 8d701d9..bf14850 100644
        nullptr, "span::before");
    std::unique_ptr<SelectorQuery> query =
        SelectorQuery::Adopt(std::move(selector_list));
-@@ -83,9 +82,8 @@
+@@ -83,9 +82,8 @@ TEST(SelectorQueryTest, NotMatchingPseudoElement) {
  
    selector_list = CSSParser::ParseSelector(
        MakeGarbageCollected<CSSParserContext>(
@@ -250,7 +249,7 @@ index 8d701d9..bf14850 100644
        nullptr, "span");
    query = SelectorQuery::Adopt(std::move(selector_list));
    elm = query->QueryFirst(*document);
-@@ -103,9 +101,8 @@
+@@ -103,9 +101,8 @@ TEST(SelectorQueryTest, LastOfTypeNotFinishedParsing) {
  
    CSSSelectorList selector_list = CSSParser::ParseSelector(
        MakeGarbageCollected<CSSParserContext>(
@@ -263,10 +262,10 @@ index 8d701d9..bf14850 100644
    std::unique_ptr<SelectorQuery> query =
        SelectorQuery::Adopt(std::move(selector_list));
 diff --git a/third_party/blink/renderer/core/css/style_rule_import.cc b/third_party/blink/renderer/core/css/style_rule_import.cc
-index 60c3dd5..92f57b3 100644
+index 60c3dd50eedec2dc8554ffbf8a19fa8e33968919..92f57b33c339fa4818e26f5b883c1b125c482f94 100644
 --- a/third_party/blink/renderer/core/css/style_rule_import.cc
 +++ b/third_party/blink/renderer/core/css/style_rule_import.cc
-@@ -83,8 +83,9 @@
+@@ -83,8 +83,9 @@ void StyleRuleImport::NotifyFinished(Resource* resource) {
    CSSParserContext* context = MakeGarbageCollected<CSSParserContext>(
        parent_context, cached_style_sheet->GetResponse().ResponseUrl(),
        cached_style_sheet->GetResponse().IsCorsSameOrigin(),
@@ -279,10 +278,10 @@ index 60c3dd5..92f57b3 100644
      context->SetIsAdRelated();
  
 diff --git a/third_party/blink/renderer/core/dom/processing_instruction.cc b/third_party/blink/renderer/core/dom/processing_instruction.cc
-index 40c84b5..b5c782b 100644
+index 40c84b5a26d361e0bde6ff5d809590bc30b9e03a..b5c782b103aaea764e60204c4b2e35e8bc6afb5a 100644
 --- a/third_party/blink/renderer/core/dom/processing_instruction.cc
 +++ b/third_party/blink/renderer/core/dom/processing_instruction.cc
-@@ -206,7 +206,9 @@
+@@ -206,7 +206,9 @@ void ProcessingInstruction::NotifyFinished(Resource* resource) {
      auto* parser_context = MakeGarbageCollected<CSSParserContext>(
          GetDocument(), style_resource->GetResponse().ResponseUrl(),
          style_resource->GetResponse().IsCorsSameOrigin(),
@@ -294,10 +293,10 @@ index 40c84b5..b5c782b 100644
        parser_context->SetIsAdRelated();
  
 diff --git a/third_party/blink/renderer/core/html/link_style.cc b/third_party/blink/renderer/core/html/link_style.cc
-index 6b8e0ff..ec627a1 100644
+index 6b8e0ff1c305ccbbaf1046937443250955afe330..ec627a196a4b9471b738319677de5903156d45eb 100644
 --- a/third_party/blink/renderer/core/html/link_style.cc
 +++ b/third_party/blink/renderer/core/html/link_style.cc
-@@ -88,7 +88,9 @@
+@@ -88,7 +88,9 @@ void LinkStyle::NotifyFinished(Resource* resource) {
    auto* parser_context = MakeGarbageCollected<CSSParserContext>(
        GetDocument(), cached_style_sheet->GetResponse().ResponseUrl(),
        cached_style_sheet->GetResponse().IsCorsSameOrigin(),
@@ -309,10 +308,10 @@ index 6b8e0ff..ec627a1 100644
      parser_context->SetIsAdRelated();
    }
 diff --git a/third_party/blink/renderer/core/html/track/vtt/vtt_parser.cc b/third_party/blink/renderer/core/html/track/vtt/vtt_parser.cc
-index 727caa1..351917d 100644
+index 727caa18bacb3b35a8b97e418bb173ae7ac4fd03..351917da34031171175c0e961b79d2a6ac5a16fa 100644
 --- a/third_party/blink/renderer/core/html/track/vtt/vtt_parser.cc
 +++ b/third_party/blink/renderer/core/html/track/vtt/vtt_parser.cc
-@@ -244,9 +244,8 @@
+@@ -244,9 +244,8 @@ VTTParser::ParseState VTTParser::CollectRegionSettings(const String& line) {
  VTTParser::ParseState VTTParser::CollectStyleSheet(const String& line) {
    if (line.IsEmpty() || line.Contains("-->")) {
      auto* parser_context = MakeGarbageCollected<CSSParserContext>(
@@ -325,10 +324,10 @@ index 727caa1..351917d 100644
      auto* style_sheet_contents =
          MakeGarbageCollected<StyleSheetContents>(parser_context);
 diff --git a/third_party/blink/web_tests/TestExpectations b/third_party/blink/web_tests/TestExpectations
-index abf46da..2ba7022 100644
+index d2e5595ab8e78ff08c18adeb13911877482cde7b..d7b198add4ffb021613109a0f42afa50a7916b3a 100644
 --- a/third_party/blink/web_tests/TestExpectations
 +++ b/third_party/blink/web_tests/TestExpectations
-@@ -3143,6 +3143,7 @@
+@@ -2978,6 +2978,7 @@ crbug.com/1131471 external/wpt/web-locks/clientids.tentative.https.html [ Failur
  # See also crbug.com/920100 (sheriff 2019-01-09).
  crbug.com/626703 external/wpt/referrer-policy/css-integration/svg/external-stylesheet.html [ Timeout Failure ]
  crbug.com/626703 external/wpt/referrer-policy/css-integration/svg/inline-style.html [ Timeout Failure ]
@@ -338,7 +337,7 @@ index abf46da..2ba7022 100644
  crbug.com/626703 external/wpt/referrer-policy/css-integration/svg/processing-instruction.html [ Timeout Failure ]
 diff --git a/third_party/blink/web_tests/external/wpt/referrer-policy/css-integration/image/inline-style-with-differentorigin-base-tag.tentative.html b/third_party/blink/web_tests/external/wpt/referrer-policy/css-integration/image/inline-style-with-differentorigin-base-tag.tentative.html
 new file mode 100644
-index 0000000..091afd83
+index 0000000000000000000000000000000000000000..091afd832ab35a76136b4242df1c1ec73aee109d
 --- /dev/null
 +++ b/third_party/blink/web_tests/external/wpt/referrer-policy/css-integration/image/inline-style-with-differentorigin-base-tag.tentative.html
 @@ -0,0 +1,45 @@
@@ -389,7 +388,7 @@ index 0000000..091afd83
 +</html>
 diff --git a/third_party/blink/web_tests/external/wpt/referrer-policy/css-integration/svg/inline-style-with-differentorigin-base-tag.tentative.html b/third_party/blink/web_tests/external/wpt/referrer-policy/css-integration/svg/inline-style-with-differentorigin-base-tag.tentative.html
 new file mode 100644
-index 0000000..9a8bc6d
+index 0000000000000000000000000000000000000000..9a8bc6da418bc7302138daba8cf06cb449bd2dfe
 --- /dev/null
 +++ b/third_party/blink/web_tests/external/wpt/referrer-policy/css-integration/svg/inline-style-with-differentorigin-base-tag.tentative.html
 @@ -0,0 +1,40 @@
@@ -434,10 +433,10 @@ index 0000000..9a8bc6d
 +
 +</html>
 diff --git a/third_party/blink/web_tests/http/tests/css/resources/referrer-check.php b/third_party/blink/web_tests/http/tests/css/resources/referrer-check.php
-index 69483e0..7a517de 100644
+index 69483e01544c842f56a51d00d1b2ee5dc24b4162..7a517de692f418c3c8b365d0f7aefb9e585c9da0 100644
 --- a/third_party/blink/web_tests/http/tests/css/resources/referrer-check.php
 +++ b/third_party/blink/web_tests/http/tests/css/resources/referrer-check.php
-@@ -31,7 +31,7 @@
+@@ -31,7 +31,7 @@ $expectedReferrerPaths = array(
      "document" => "/css/css-resources-referrer.html",
      "sheet" => "/css/resources/css-resources-referrer.css",
      "importedSheet" => "/css/resources/css-resources-referrer-import.css",
