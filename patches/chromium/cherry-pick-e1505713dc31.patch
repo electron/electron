@@ -1,0 +1,447 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Van Cleve <davidvc@chromium.org>
+Date: Thu, 4 Mar 2021 16:50:46 +0000
+Subject: css: Make fetches from inline CSS use the document's URL as referrer
+
+Right now, fetches from inline CSS use the inline CSS's base URL
+instead of the URL from the context that embeds the inline CSS: for
+instance, loading a source-site.com page with the following code
+  <base href="https://other-site.com">
+  <style type=text/css> @import('best-sheet.com') </style>
+should lead to the best-sheet.com sheet getting fetched with a
+source-site.com referrer, but it will currently provide an
+other-site.com referrer. However, if the imported sheet from
+best-sheet.com makes more nested fetches, those nested requests should
+use best-sheet.com as the basis for their referrers (as they do
+currently).
+
+This CL updates CSSParserContext's referrer setting logic to roughly do
+the following:
+- inline CSS: use the embedding document's URL as the referrer, or, for
+srcdoc iframes, walk up the frame tree until hitting a non-srcdoc frame
+- requests from fetched stylesheets: just as currently, use the fetched
+sheet's URL as the basis for constructing the referrer
+
+This seemed like it required refactoring CSSParserContext slightly
+because there are constructors that take both a Document and a base URL,
+and it's not obvious from the constructor signature whether the
+Document or the base URL should be the one that provides the referrer.
+To resolve this ambiguity, the refactor updates these CSSParserContext
+constructors to take caller-provided Referrer objects.
+
+(cherry picked from commit 0b1539fcb923056624d4adc84b88140d367d92da)
+
+Change-Id: If5a99d8057dff5e771e821d0e1f605566e28ff1d
+Fixed: 1158645, 1158010
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2592447
+Reviewed-by: Rune Lillesveen <futhark@chromium.org>
+Reviewed-by: Matt Falkenhagen <falken@chromium.org>
+Commit-Queue: David Van Cleve <davidvc@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#841509}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2731576
+Reviewed-by: Achuith Bhandarkar <achuith@chromium.org>
+Commit-Queue: Victor-Gabriel Savu <vsavu@google.com>
+Cr-Commit-Position: refs/branch-heads/4240@{#1558}
+Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
+
+diff --git a/third_party/blink/renderer/core/css/css_style_sheet.cc b/third_party/blink/renderer/core/css/css_style_sheet.cc
+index bdf00ae71b6d2362468f4bf6b437b3e008915bad..6fe597879f3208b5f9c40b0cb2eecdb8dd8d3ad8 100644
+--- a/third_party/blink/renderer/core/css/css_style_sheet.cc
++++ b/third_party/blink/renderer/core/css/css_style_sheet.cc
+@@ -37,6 +37,7 @@
+ #include "third_party/blink/renderer/core/dom/document.h"
+ #include "third_party/blink/renderer/core/dom/node.h"
+ #include "third_party/blink/renderer/core/frame/deprecation.h"
++#include "third_party/blink/renderer/core/frame/local_dom_window.h"
+ #include "third_party/blink/renderer/core/html/html_link_element.h"
+ #include "third_party/blink/renderer/core/html/html_style_element.h"
+ #include "third_party/blink/renderer/core/html_names.h"
+@@ -137,9 +138,15 @@ CSSStyleSheet* CSSStyleSheet::CreateInline(Node& owner_node,
+                                            const KURL& base_url,
+                                            const TextPosition& start_position,
+                                            const WTF::TextEncoding& encoding) {
++  Document& owner_node_document = owner_node.GetDocument();
+   auto* parser_context = MakeGarbageCollected<CSSParserContext>(
+-      owner_node.GetDocument(), owner_node.GetDocument().BaseURL(),
+-      true /* origin_clean */, owner_node.GetDocument().GetReferrerPolicy(),
++      owner_node_document, owner_node_document.BaseURL(),
++      true /* origin_clean */,
++      Referrer(
++          owner_node_document.GetExecutionContext()
++              ? owner_node_document.GetExecutionContext()->OutgoingReferrer()
++              : String(),  // GetExecutionContext() only returns null in tests.
++          owner_node.GetDocument().GetReferrerPolicy()),
+       encoding);
+   if (AdTracker::IsAdScriptExecutingInDocument(&owner_node.GetDocument()))
+     parser_context->SetIsAdRelated();
+diff --git a/third_party/blink/renderer/core/css/parser/css_parser_context.cc b/third_party/blink/renderer/core/css/parser/css_parser_context.cc
+index c0ad6ec150ea90c390dd9169044f7c7bb43a5251..83989c9cfd5bbd69293c2579031e17ea25ebd98e 100644
+--- a/third_party/blink/renderer/core/css/parser/css_parser_context.cc
++++ b/third_party/blink/renderer/core/css/parser/css_parser_context.cc
+@@ -53,27 +53,25 @@ CSSParserContext::CSSParserContext(const CSSParserContext* other,
+   is_ad_related_ = other->is_ad_related_;
+ }
+ 
+-CSSParserContext::CSSParserContext(
+-    const CSSParserContext* other,
+-    const KURL& base_url,
+-    bool origin_clean,
+-    network::mojom::ReferrerPolicy referrer_policy,
+-    const WTF::TextEncoding& charset,
+-    const Document* use_counter_document)
+-    : CSSParserContext(
+-          base_url,
+-          origin_clean,
+-          charset,
+-          other->mode_,
+-          other->match_mode_,
+-          other->profile_,
+-          Referrer(base_url.StrippedForUseAsReferrer(), referrer_policy),
+-          other->is_html_document_,
+-          other->use_legacy_background_size_shorthand_behavior_,
+-          other->secure_context_mode_,
+-          other->world_,
+-          use_counter_document,
+-          other->resource_fetch_restriction_) {
++CSSParserContext::CSSParserContext(const CSSParserContext* other,
++                                   const KURL& base_url,
++                                   bool origin_clean,
++                                   const Referrer& referrer,
++                                   const WTF::TextEncoding& charset,
++                                   const Document* use_counter_document)
++    : CSSParserContext(base_url,
++                       origin_clean,
++                       charset,
++                       other->mode_,
++                       other->match_mode_,
++                       other->profile_,
++                       referrer,
++                       other->is_html_document_,
++                       other->use_legacy_background_size_shorthand_behavior_,
++                       other->secure_context_mode_,
++                       other->world_,
++                       use_counter_document,
++                       other->resource_fetch_restriction_) {
+   is_ad_related_ = other->is_ad_related_;
+ }
+ 
+@@ -96,18 +94,23 @@ CSSParserContext::CSSParserContext(CSSParserMode mode,
+                        ResourceFetchRestriction::kNone) {}
+ 
+ CSSParserContext::CSSParserContext(const Document& document)
+-    : CSSParserContext(document,
+-                       document.BaseURL(),
+-                       true /* origin_clean */,
+-                       document.GetReferrerPolicy(),
+-                       WTF::TextEncoding(),
+-                       kLiveProfile) {}
++    : CSSParserContext(
++          document,
++          document.BaseURL(),
++          true /* origin_clean */,
++          Referrer(document.GetExecutionContext()
++                       ? document.GetExecutionContext()->OutgoingReferrer()
++                       : String(),  // GetExecutionContext() only returns null
++                                    // in tests.
++                   document.GetReferrerPolicy()),
++          WTF::TextEncoding(),
++          kLiveProfile) {}
+ 
+ CSSParserContext::CSSParserContext(
+     const Document& document,
+     const KURL& base_url_override,
+     bool origin_clean,
+-    network::mojom::ReferrerPolicy referrer_policy_override,
++    const Referrer& referrer,
+     const WTF::TextEncoding& charset,
+     SelectorProfile profile,
+     enum ResourceFetchRestriction resource_fetch_restriction)
+@@ -122,8 +125,7 @@ CSSParserContext::CSSParserContext(
+                      : kHTMLStandardMode)
+               : document.InQuirksMode() ? kHTMLQuirksMode : kHTMLStandardMode,
+           profile,
+-          Referrer(base_url_override.StrippedForUseAsReferrer(),
+-                   referrer_policy_override),
++          referrer,
+           IsA<HTMLDocument>(document),
+           document.GetSettings()
+               ? document.GetSettings()
+diff --git a/third_party/blink/renderer/core/css/parser/css_parser_context.h b/third_party/blink/renderer/core/css/parser/css_parser_context.h
+index 92f24b2f5b5843664523a182bf40b4436d098656..716673a82b349a9f2c316fde52ca84907b3aeb50 100644
+--- a/third_party/blink/renderer/core/css/parser/css_parser_context.h
++++ b/third_party/blink/renderer/core/css/parser/css_parser_context.h
+@@ -42,10 +42,15 @@ class CORE_EXPORT CSSParserContext final
+   explicit CSSParserContext(const CSSParserContext* other,
+                             const Document* use_counter_document = nullptr);
+ 
++  // Creates a context with most of its constructor attributes provided by
++  // copying from |other|, except that the remaining constructor arguments take
++  // precedence over the corresponding characteristics of |other|. This is
++  // useful for initializing @imported sheets' contexts, which inherit most of
++  // their characteristics from their parents.
+   CSSParserContext(const CSSParserContext* other,
+                    const KURL& base_url_override,
+                    bool origin_clean,
+-                   network::mojom::ReferrerPolicy referrer_policy_override,
++                   const Referrer& referrer,
+                    const WTF::TextEncoding& charset_override,
+                    const Document* use_counter_document);
+   CSSParserContext(CSSParserMode,
+@@ -56,7 +61,7 @@ class CORE_EXPORT CSSParserContext final
+   CSSParserContext(const Document&,
+                    const KURL& base_url_override,
+                    bool origin_clean,
+-                   network::mojom::ReferrerPolicy referrer_policy_override,
++                   const Referrer& referrer,
+                    const WTF::TextEncoding& charset = WTF::TextEncoding(),
+                    SelectorProfile = kLiveProfile,
+                    ResourceFetchRestriction resource_fetch_restriction =
+@@ -71,7 +76,7 @@ class CORE_EXPORT CSSParserContext final
+                    CSSParserMode,
+                    CSSParserMode match_mode,
+                    SelectorProfile,
+-                   const Referrer&,
++                   const Referrer& referrer,
+                    bool is_html_document,
+                    bool use_legacy_background_size_shorthand_behavior,
+                    SecureContextMode,
+diff --git a/third_party/blink/renderer/core/css/selector_query.cc b/third_party/blink/renderer/core/css/selector_query.cc
+index 722b751f19207b070664d79c5a9cc758f1c044f4..35d9d926f2e1ac0c2d032817b87c1079af9408ec 100644
+--- a/third_party/blink/renderer/core/css/selector_query.cc
++++ b/third_party/blink/renderer/core/css/selector_query.cc
+@@ -535,9 +535,8 @@ SelectorQuery* SelectorQueryCache::Add(const AtomicString& selectors,
+ 
+   CSSSelectorList selector_list = CSSParser::ParseSelector(
+       MakeGarbageCollected<CSSParserContext>(
+-          document, document.BaseURL(), true /* origin_clean */,
+-          document.GetReferrerPolicy(), WTF::TextEncoding(),
+-          CSSParserContext::kSnapshotProfile),
++          document, document.BaseURL(), true /* origin_clean */, Referrer(),
++          WTF::TextEncoding(), CSSParserContext::kSnapshotProfile),
+       nullptr, selectors);
+ 
+   if (!selector_list.First()) {
+diff --git a/third_party/blink/renderer/core/css/selector_query_test.cc b/third_party/blink/renderer/core/css/selector_query_test.cc
+index 8d701d91372e5c2fb4b1a30f190f629f95e1b0b2..bf14850baf8dd2e92f74b89b78963a367440a704 100644
+--- a/third_party/blink/renderer/core/css/selector_query_test.cc
++++ b/third_party/blink/renderer/core/css/selector_query_test.cc
+@@ -72,9 +72,8 @@ TEST(SelectorQueryTest, NotMatchingPseudoElement) {
+ 
+   CSSSelectorList selector_list = CSSParser::ParseSelector(
+       MakeGarbageCollected<CSSParserContext>(
+-          *document, NullURL(), true /* origin_clean */,
+-          network::mojom::ReferrerPolicy::kDefault, WTF::TextEncoding(),
+-          CSSParserContext::kSnapshotProfile),
++          *document, NullURL(), true /* origin_clean */, Referrer(),
++          WTF::TextEncoding(), CSSParserContext::kSnapshotProfile),
+       nullptr, "span::before");
+   std::unique_ptr<SelectorQuery> query =
+       SelectorQuery::Adopt(std::move(selector_list));
+@@ -83,9 +82,8 @@ TEST(SelectorQueryTest, NotMatchingPseudoElement) {
+ 
+   selector_list = CSSParser::ParseSelector(
+       MakeGarbageCollected<CSSParserContext>(
+-          *document, NullURL(), true /* origin_clean */,
+-          network::mojom::ReferrerPolicy::kDefault, WTF::TextEncoding(),
+-          CSSParserContext::kSnapshotProfile),
++          *document, NullURL(), true /* origin_clean */, Referrer(),
++          WTF::TextEncoding(), CSSParserContext::kSnapshotProfile),
+       nullptr, "span");
+   query = SelectorQuery::Adopt(std::move(selector_list));
+   elm = query->QueryFirst(*document);
+@@ -103,9 +101,8 @@ TEST(SelectorQueryTest, LastOfTypeNotFinishedParsing) {
+ 
+   CSSSelectorList selector_list = CSSParser::ParseSelector(
+       MakeGarbageCollected<CSSParserContext>(
+-          *document, NullURL(), true /* origin_clean */,
+-          network::mojom::ReferrerPolicy::kDefault, WTF::TextEncoding(),
+-          CSSParserContext::kSnapshotProfile),
++          *document, NullURL(), true /* origin_clean */, Referrer(),
++          WTF::TextEncoding(), CSSParserContext::kSnapshotProfile),
+       nullptr, "p:last-of-type");
+   std::unique_ptr<SelectorQuery> query =
+       SelectorQuery::Adopt(std::move(selector_list));
+diff --git a/third_party/blink/renderer/core/css/style_rule_import.cc b/third_party/blink/renderer/core/css/style_rule_import.cc
+index 60c3dd50eedec2dc8554ffbf8a19fa8e33968919..92f57b33c339fa4818e26f5b883c1b125c482f94 100644
+--- a/third_party/blink/renderer/core/css/style_rule_import.cc
++++ b/third_party/blink/renderer/core/css/style_rule_import.cc
+@@ -83,8 +83,9 @@ void StyleRuleImport::NotifyFinished(Resource* resource) {
+   CSSParserContext* context = MakeGarbageCollected<CSSParserContext>(
+       parent_context, cached_style_sheet->GetResponse().ResponseUrl(),
+       cached_style_sheet->GetResponse().IsCorsSameOrigin(),
+-      cached_style_sheet->GetReferrerPolicy(), cached_style_sheet->Encoding(),
+-      document);
++      Referrer(cached_style_sheet->GetResponse().ResponseUrl(),
++               cached_style_sheet->GetReferrerPolicy()),
++      cached_style_sheet->Encoding(), document);
+   if (cached_style_sheet->GetResourceRequest().IsAdResource())
+     context->SetIsAdRelated();
+ 
+diff --git a/third_party/blink/renderer/core/dom/processing_instruction.cc b/third_party/blink/renderer/core/dom/processing_instruction.cc
+index 40c84b5a26d361e0bde6ff5d809590bc30b9e03a..b5c782b103aaea764e60204c4b2e35e8bc6afb5a 100644
+--- a/third_party/blink/renderer/core/dom/processing_instruction.cc
++++ b/third_party/blink/renderer/core/dom/processing_instruction.cc
+@@ -206,7 +206,9 @@ void ProcessingInstruction::NotifyFinished(Resource* resource) {
+     auto* parser_context = MakeGarbageCollected<CSSParserContext>(
+         GetDocument(), style_resource->GetResponse().ResponseUrl(),
+         style_resource->GetResponse().IsCorsSameOrigin(),
+-        style_resource->GetReferrerPolicy(), style_resource->Encoding());
++        Referrer(style_resource->GetResponse().ResponseUrl(),
++                 style_resource->GetReferrerPolicy()),
++        style_resource->Encoding());
+     if (style_resource->GetResourceRequest().IsAdResource())
+       parser_context->SetIsAdRelated();
+ 
+diff --git a/third_party/blink/renderer/core/html/link_style.cc b/third_party/blink/renderer/core/html/link_style.cc
+index 6b8e0ff1c305ccbbaf1046937443250955afe330..ec627a196a4b9471b738319677de5903156d45eb 100644
+--- a/third_party/blink/renderer/core/html/link_style.cc
++++ b/third_party/blink/renderer/core/html/link_style.cc
+@@ -88,7 +88,9 @@ void LinkStyle::NotifyFinished(Resource* resource) {
+   auto* parser_context = MakeGarbageCollected<CSSParserContext>(
+       GetDocument(), cached_style_sheet->GetResponse().ResponseUrl(),
+       cached_style_sheet->GetResponse().IsCorsSameOrigin(),
+-      cached_style_sheet->GetReferrerPolicy(), cached_style_sheet->Encoding());
++      Referrer(cached_style_sheet->GetResponse().ResponseUrl(),
++               cached_style_sheet->GetReferrerPolicy()),
++      cached_style_sheet->Encoding());
+   if (cached_style_sheet->GetResourceRequest().IsAdResource()) {
+     parser_context->SetIsAdRelated();
+   }
+diff --git a/third_party/blink/renderer/core/html/track/vtt/vtt_parser.cc b/third_party/blink/renderer/core/html/track/vtt/vtt_parser.cc
+index 727caa18bacb3b35a8b97e418bb173ae7ac4fd03..351917da34031171175c0e961b79d2a6ac5a16fa 100644
+--- a/third_party/blink/renderer/core/html/track/vtt/vtt_parser.cc
++++ b/third_party/blink/renderer/core/html/track/vtt/vtt_parser.cc
+@@ -244,9 +244,8 @@ VTTParser::ParseState VTTParser::CollectRegionSettings(const String& line) {
+ VTTParser::ParseState VTTParser::CollectStyleSheet(const String& line) {
+   if (line.IsEmpty() || line.Contains("-->")) {
+     auto* parser_context = MakeGarbageCollected<CSSParserContext>(
+-        *document_, NullURL(), true /* origin_clean */,
+-        document_->GetReferrerPolicy(), UTF8Encoding(),
+-        CSSParserContext::kLiveProfile,
++        *document_, NullURL(), true /* origin_clean */, Referrer(),
++        UTF8Encoding(), CSSParserContext::kLiveProfile,
+         ResourceFetchRestriction::kOnlyDataUrls);
+     auto* style_sheet_contents =
+         MakeGarbageCollected<StyleSheetContents>(parser_context);
+diff --git a/third_party/blink/web_tests/TestExpectations b/third_party/blink/web_tests/TestExpectations
+index d2e5595ab8e78ff08c18adeb13911877482cde7b..d7b198add4ffb021613109a0f42afa50a7916b3a 100644
+--- a/third_party/blink/web_tests/TestExpectations
++++ b/third_party/blink/web_tests/TestExpectations
+@@ -2978,6 +2978,7 @@ crbug.com/1131471 external/wpt/web-locks/clientids.tentative.https.html [ Failur
+ # See also crbug.com/920100 (sheriff 2019-01-09).
+ crbug.com/626703 external/wpt/referrer-policy/css-integration/svg/external-stylesheet.html [ Timeout Failure ]
+ crbug.com/626703 external/wpt/referrer-policy/css-integration/svg/inline-style.html [ Timeout Failure ]
++crbug.com/626703 external/wpt/referrer-policy/css-integration/svg/inline-style-with-differentorigin-base-tag.tentative.html [ Timeout Failure ]
+ crbug.com/626703 external/wpt/referrer-policy/css-integration/svg/internal-stylesheet.html [ Timeout Failure ]
+ crbug.com/626703 external/wpt/referrer-policy/css-integration/svg/presentation-attribute.html [ Timeout Failure ]
+ crbug.com/626703 external/wpt/referrer-policy/css-integration/svg/processing-instruction.html [ Timeout Failure ]
+diff --git a/third_party/blink/web_tests/external/wpt/referrer-policy/css-integration/image/inline-style-with-differentorigin-base-tag.tentative.html b/third_party/blink/web_tests/external/wpt/referrer-policy/css-integration/image/inline-style-with-differentorigin-base-tag.tentative.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..091afd832ab35a76136b4242df1c1ec73aee109d
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/referrer-policy/css-integration/image/inline-style-with-differentorigin-base-tag.tentative.html
+@@ -0,0 +1,45 @@
++<!DOCTYPE html>
++<title>CSS integration - image from inline style from document with base tag</title>
++<link rel="help" href="https://crbug.com/1158645" />
++
++<head>
++  <meta name="referrer" content="origin">
++</head>
++
++<script src="/resources/testharness.js"></script>
++<script src="/resources/testharnessreport.js"></script>
++<script src="/common/utils.js"></script>
++<!-- Common global functions for referrer-policy tests. -->
++<script src="/common/security-features/resources/common.sub.js"></script>
++
++<!-- This has to follow the <script> tags, or it will make the js files fail to load. -->
++<base href="http://other-site.example" />
++
++<p>Check that resources from inline styles are loaded with
++  the referrer and referrer policy from the document and, in
++  particular, not with the different base URL set in the base tag.</p>
++
++<div class="styled"></div>
++
++<script>
++  'use strict';
++  promise_test(function(css_test) {
++    var id = token();
++    var css_url = location.protocol + "//www1." + location.hostname + ":" + location.port + "/common/security-features/subresource/image.py" + "?id=" + id;
++    var img_url = css_url + "&report-headers";
++
++    var div = document.querySelector("div.styled");
++    div.style = "content:url(" + css_url + ")";
++    return timeoutPromise(css_test, 1000)
++      .then(() => requestViaXhr(img_url))
++      .then(function(message) {
++        assert_own_property(message, "headers");
++        assert_own_property(message, "referrer");
++        assert_equals(message.referrer, location.origin + "/");
++      });
++  }, "Image from inline styles.");
++</script>
++
++<div id="log"></div>
++
++</html>
+diff --git a/third_party/blink/web_tests/external/wpt/referrer-policy/css-integration/svg/inline-style-with-differentorigin-base-tag.tentative.html b/third_party/blink/web_tests/external/wpt/referrer-policy/css-integration/svg/inline-style-with-differentorigin-base-tag.tentative.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..9a8bc6da418bc7302138daba8cf06cb449bd2dfe
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/referrer-policy/css-integration/svg/inline-style-with-differentorigin-base-tag.tentative.html
+@@ -0,0 +1,40 @@
++<!DOCTYPE html>
++<html>
++
++<head>
++  <title>CSS integration - styling SVG from inline style on page with different-origin base tag</title>
++  <script src="/resources/testharness.js"></script>
++  <script src="/resources/testharnessreport.js"></script>
++  <script src="/common/utils.js"></script>
++  <!-- Common global functions for referrer-policy tests. -->
++  <script src="/common/security-features/resources/common.sub.js"></script>
++  <!-- Helper functions for referrer-policy css tests. -->
++  <script src="/referrer-policy/css-integration/css-test-helper.js"></script>
++  <meta name="referrer" content="origin">
++</head>
++
++<base href="http://other-page.example/" />
++
++<body>
++  <p>Check that resources from inline styles are loaded with
++    the referrer and referrer policy from the document and, in
++    particular, not from the document's overridden base URL.</p>
++  <script>
++    function setInlineStyle(test) {
++      test.expected = location.origin + "/";
++      let svg = createSvg();
++      document.body.appendChild(svg);
++      let element = svg.getElementsByTagName('path')[0];
++      element.style = test.property + ": url(" + url_prefix + "svg.py?id=" +
++        test.id + "#invalidFragment);";
++    }
++
++    runSvgTests(svg_test_properties,
++      "Styling SVG from inline styles",
++      setInlineStyle);
++  </script>
++
++  <div id="log"></div>
++</body>
++
++</html>
+diff --git a/third_party/blink/web_tests/http/tests/css/resources/referrer-check.php b/third_party/blink/web_tests/http/tests/css/resources/referrer-check.php
+index 69483e01544c842f56a51d00d1b2ee5dc24b4162..7a517de692f418c3c8b365d0f7aefb9e585c9da0 100644
+--- a/third_party/blink/web_tests/http/tests/css/resources/referrer-check.php
++++ b/third_party/blink/web_tests/http/tests/css/resources/referrer-check.php
+@@ -31,7 +31,7 @@ $expectedReferrerPaths = array(
+     "document" => "/css/css-resources-referrer.html",
+     "sheet" => "/css/resources/css-resources-referrer.css",
+     "importedSheet" => "/css/resources/css-resources-referrer-import.css",
+-    "iframe" => "/from/iframe.html"
++    "iframe" => "/css/css-resources-referrer-srcdoc.html"
+ );
+ 
+ $from = $_GET["from"];
