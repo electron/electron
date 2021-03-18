@@ -418,7 +418,7 @@ bool IsDeviceNameValid(const std::u16string& device_name) {
   return printer_exists;
 #elif defined(OS_WIN)
   printing::ScopedPrinterHandle printer;
-  return printer.OpenPrinterWithName(device_name.c_str());
+  return printer.OpenPrinterWithName(base::UTF16ToWide(device_name).c_str());
 #endif
   return true;
 }

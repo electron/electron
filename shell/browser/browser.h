@@ -112,10 +112,10 @@ class Browser : public WindowListObserver {
 
 #if defined(OS_WIN)
   struct LaunchItem {
-    std::u16string name;
-    std::u16string path;
-    std::u16string scope;
-    std::vector<std::u16string> args;
+    std::wstring name;
+    std::wstring path;
+    std::wstring scope;
+    std::vector<std::wstring> args;
     bool enabled = true;
 
     LaunchItem();
@@ -137,7 +137,7 @@ class Browser : public WindowListObserver {
 #if defined(OS_WIN)
     // used in browser::setLoginItemSettings
     bool enabled = true;
-    std::u16string name = std::u16string();
+    std::wstring name = std::wstring();
 
     // used in browser::getLoginItemSettings
     bool executable_will_launch_at_login = false;
@@ -237,9 +237,9 @@ class Browser : public WindowListObserver {
 #if defined(OS_WIN)
   struct UserTask {
     base::FilePath program;
-    std::u16string arguments;
-    std::u16string title;
-    std::u16string description;
+    std::wstring arguments;
+    std::wstring title;
+    std::wstring description;
     base::FilePath working_dir;
     base::FilePath icon_path;
     int icon_index;

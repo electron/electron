@@ -920,7 +920,7 @@ ElectronBrowserClient::CreateWindowForPictureInPicture(
     content::PictureInPictureWindowController* controller) {
   auto overlay_window = content::OverlayWindow::Create(controller);
 #if defined(OS_WIN)
-  std::u16string app_user_model_id = Browser::Get()->GetAppUserModelID();
+  std::wstring app_user_model_id = Browser::Get()->GetAppUserModelID();
   if (!app_user_model_id.empty()) {
     auto* overlay_window_view =
         static_cast<OverlayWindowViews*>(overlay_window.get());
