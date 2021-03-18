@@ -1,0 +1,126 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jakob Gruber <jgruber@chromium.org>
+Date: Thu, 14 Jan 2021 07:55:05 +0100
+Subject: Reland "[regexp] Hard-crash on invalid offsets in
+ AdvanceCurrentPosition"
+
+This is a reland of 164cf80bbb0a6e091300bfc4cbbe70a6e6bd3e49
+
+The reland fixes UB (left-shift of negative integer type) with a
+static_cast<uint32_t>.
+
+Original change's description:
+> [regexp] Hard-crash on invalid offsets in AdvanceCurrentPosition
+>
+> Drive-by: Range checks in `Emit(byte, twenty_four_bits)` to ensure the
+> given packed bits actually fit into 24 bits.
+>
+> Bug: chromium:1166138
+> Change-Id: I2e711e6466bb48d7b9897f68dfe621d12bd92508
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2625877
+> Commit-Queue: Jakob Gruber <jgruber@chromium.org>
+> Commit-Queue: Leszek Swirski <leszeks@chromium.org>
+> Auto-Submit: Jakob Gruber <jgruber@chromium.org>
+> Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+> Cr-Commit-Position: refs/heads/master@{#72064}
+
+(cherry picked from commit ff8d0f92d423774cf773b5b4fb48b6744971e27a)
+
+No-Try: true
+No-Presubmit: true
+No-Tree-Checks: true
+Tbr: leszeks@chromium.org
+Bug: chromium:1166138
+Change-Id: I514495e14bb99dfc9588fdb4a9f35d67d8d64acb
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2626663
+Reviewed-by: Jakob Gruber <jgruber@chromium.org>
+Commit-Queue: Jakob Gruber <jgruber@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#72088}
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2742954
+Reviewed-by: Jana Grill <janagrill@chromium.org>
+Commit-Queue: Victor-Gabriel Savu <vsavu@google.com>
+Cr-Commit-Position: refs/branch-heads/8.6@{#64}
+Cr-Branched-From: a64aed2333abf49e494d2a5ce24bbd14fff19f60-refs/heads/8.6.395@{#1}
+Cr-Branched-From: a626bc036236c9bf92ac7b87dc40c9e538b087e3-refs/heads/master@{#69472}
+
+diff --git a/src/regexp/regexp-bytecode-generator-inl.h b/src/regexp/regexp-bytecode-generator-inl.h
+index bd906fea153a21ef34b9d8b885130311599070d0..2a6ffec9297f320daced0afae6e908a17d965cc4 100644
+--- a/src/regexp/regexp-bytecode-generator-inl.h
++++ b/src/regexp/regexp-bytecode-generator-inl.h
+@@ -14,13 +14,13 @@ namespace v8 {
+ namespace internal {
+ 
+ void RegExpBytecodeGenerator::Emit(uint32_t byte, uint32_t twenty_four_bits) {
+-  uint32_t word = ((twenty_four_bits << BYTECODE_SHIFT) | byte);
+-  DCHECK(pc_ <= buffer_.length());
+-  if (pc_ + 3 >= buffer_.length()) {
+-    Expand();
+-  }
+-  *reinterpret_cast<uint32_t*>(buffer_.begin() + pc_) = word;
+-  pc_ += 4;
++  DCHECK(is_uint24(twenty_four_bits));
++  Emit32((twenty_four_bits << BYTECODE_SHIFT) | byte);
++}
++
++void RegExpBytecodeGenerator::Emit(uint32_t byte, int32_t twenty_four_bits) {
++  DCHECK(is_int24(twenty_four_bits));
++  Emit32((static_cast<uint32_t>(twenty_four_bits) << BYTECODE_SHIFT) | byte);
+ }
+ 
+ void RegExpBytecodeGenerator::Emit16(uint32_t word) {
+diff --git a/src/regexp/regexp-bytecode-generator.cc b/src/regexp/regexp-bytecode-generator.cc
+index 8abd15384e7399323f6681fbadded1c173b3b9d7..638f6afb2d80723ab41fd3790bc381f4c5289861 100644
+--- a/src/regexp/regexp-bytecode-generator.cc
++++ b/src/regexp/regexp-bytecode-generator.cc
+@@ -161,8 +161,10 @@ bool RegExpBytecodeGenerator::Succeed() {
+ void RegExpBytecodeGenerator::Fail() { Emit(BC_FAIL, 0); }
+ 
+ void RegExpBytecodeGenerator::AdvanceCurrentPosition(int by) {
+-  DCHECK_LE(kMinCPOffset, by);
+-  DCHECK_GE(kMaxCPOffset, by);
++  // TODO(chromium:1166138): Turn back into DCHECKs once the underlying issue
++  // is fixed.
++  CHECK_LE(kMinCPOffset, by);
++  CHECK_GE(kMaxCPOffset, by);
+   advance_current_start_ = pc_;
+   advance_current_offset_ = by;
+   Emit(BC_ADVANCE_CP, by);
+diff --git a/src/regexp/regexp-bytecode-generator.h b/src/regexp/regexp-bytecode-generator.h
+index 9c4b6057c23d318e78278cd1dd550bd51f20ca09..6307a802d9408309fe6e04e94a2409199d5e639f 100644
+--- a/src/regexp/regexp-bytecode-generator.h
++++ b/src/regexp/regexp-bytecode-generator.h
+@@ -86,6 +86,7 @@ class V8_EXPORT_PRIVATE RegExpBytecodeGenerator : public RegExpMacroAssembler {
+   inline void Emit16(uint32_t x);
+   inline void Emit8(uint32_t x);
+   inline void Emit(uint32_t bc, uint32_t arg);
++  inline void Emit(uint32_t bc, int32_t arg);
+   // Bytecode buffer.
+   int length();
+   void Copy(byte* a);
+diff --git a/test/mjsunit/mjsunit.status b/test/mjsunit/mjsunit.status
+index 277b48fc66c4024d9bea8c8dc1e6c2e36669f55c..75628071ba68b696eafb5398215439519870b354 100644
+--- a/test/mjsunit/mjsunit.status
++++ b/test/mjsunit/mjsunit.status
+@@ -78,6 +78,9 @@
+   'wasm/shared-memory-worker-explicit-gc-stress': [PASS, SLOW],
+   'wasm/shared-memory-worker-gc-stress': [PASS, SLOW],
+ 
++  # https://crbug.com/1166138
++  'regress/regress-1166138': SKIP,
++
+   # https://crbug.com/1129854
+   'tools/log': ['arch == arm or arch == arm64', SKIP],
+ 
+diff --git a/test/mjsunit/regress/regress-1166138.js b/test/mjsunit/regress/regress-1166138.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..b1a5d6b7bb8651cce349fd1685ff76d6379e10e3
+--- /dev/null
++++ b/test/mjsunit/regress/regress-1166138.js
+@@ -0,0 +1,7 @@
++// Copyright 2020 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++let badregexp =  "(?:" +  " ".repeat(32768*2)+  ")*";
++reg = RegExp(badregexp);
++reg.test()
