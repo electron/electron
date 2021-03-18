@@ -4306,7 +4306,7 @@ describe('BrowserWindow module', () => {
       const [, data] = await p;
       expect(data.pageContext.openedLocation).to.equal('about:blank');
     });
-    it('reports process.contextIsolation', async () => {
+    it('reports process.contextIsolated', async () => {
       const iw = new BrowserWindow({
         show: false,
         webPreferences: {
