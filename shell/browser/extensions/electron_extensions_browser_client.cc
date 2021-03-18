@@ -50,6 +50,7 @@
 #include "shell/browser/extensions/electron_kiosk_delegate.h"
 #include "shell/browser/extensions/electron_navigation_ui_data.h"
 #include "shell/browser/extensions/electron_process_manager_delegate.h"
+#include "shell/browser/extensions/extension_tab_util.h"
 #include "ui/base/resource/resource_bundle.h"
 
 using content::BrowserContext;
@@ -380,12 +381,20 @@ void ElectronExtensionsBrowserClient::GetTabAndWindowIdForWebContents(
     int* tab_id,
     int* window_id) {
   api::WebContents* api_wc = api::WebContents::From(web_contents);
-  auto* session =
-      api::Session::FromBrowserContext(web_contents->GetBrowserContext());
-  auto tab = api_wc ? session->GetExtensionTabDetails(api_wc) : nullptr;
-
-  *tab_id = tab ? api_wc->ID() : -1;
-  *window_id = tab ? tab->window_id : -1;
+  if (api_wc) {
+    int32_t wc_id = api_wc->ID();
+    // NB. the following line can invoke JS, which could destroy the
+    // WebContents.
+    std::unique_ptr<api::ExtensionTabDetails> tab =
+        extensions::ExtensionTabUtil::GetTabDetailsFromWebContents(api_wc);
+    if (tab) {
+      *tab_id = wc_id;
+      *window_id = tab->window_id;
+      return;
+    }
+  }
+  *tab_id = -1;
+  *window_id = -1;
 }
 
 }  // namespace electron
