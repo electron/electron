@@ -1,0 +1,70 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Lukasz Anforowicz <lukasza@chromium.org>
+Date: Thu, 4 Mar 2021 17:07:16 +0000
+Subject: M86-LTS: Destroy `url_loader_factories_` before other NetworkContext
+ fields
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+[M86 Merge]: Fixed conflict in network_context.h.
+
+(cherry picked from commit f2b091f02593c67fd67db936452f363102b8d035)
+
+(cherry picked from commit ffeb0731f83f8c4fa72776b658df45f0e6da041c)
+
+Bug: 1174943
+Change-Id: I7488c7779f51a3f0d82ecad3d65446032c065b26
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2679230
+Commit-Queue: Łukasz Anforowicz <lukasza@chromium.org>
+Reviewed-by: Matt Menke <mmenke@chromium.org>
+Cr-Original-Original-Commit-Position: refs/heads/master@{#852311}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2692489
+Reviewed-by: Łukasz Anforowicz <lukasza@chromium.org>
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Original-Commit-Position: refs/branch-heads/4389@{#986}
+Cr-Original-Branched-From: 9251c5db2b6d5a59fe4eac7aafa5fed37c139bb7-refs/heads/master@{#843830}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2731372
+Commit-Queue: Victor-Gabriel Savu <vsavu@google.com>
+Reviewed-by: Achuith Bhandarkar <achuith@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4240@{#1559}
+Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
+
+diff --git a/services/network/network_context.h b/services/network/network_context.h
+index 0e2c067837cd180ad9b99c082487199d72e5a0ed..b6a1b819bd742e47902faa59d3cd11d28b5ddf60 100644
+--- a/services/network/network_context.h
++++ b/services/network/network_context.h
+@@ -622,13 +622,6 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+   std::set<std::unique_ptr<ProxyLookupRequest>, base::UniquePtrComparator>
+       proxy_lookup_requests_;
+ 
+-  // This must be below |url_request_context_| so that the URLRequestContext
+-  // outlives all the URLLoaderFactories and URLLoaders that depend on it;
+-  // for the same reason, it must also be below |network_context_|.
+-  std::set<std::unique_ptr<cors::CorsURLLoaderFactory>,
+-           base::UniquePtrComparator>
+-      url_loader_factories_;
+-
+   std::set<std::unique_ptr<QuicTransport>, base::UniquePtrComparator>
+       quic_transports_;
+ 
+@@ -738,6 +731,19 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+   // HttpAuthHandle via |NetworkContext::CreateHttpAuthHandlerFactory|.
+   net::HttpAuthPreferences http_auth_merged_preferences_;
+ 
++  // CorsURLLoaderFactory assumes that fields owned by the NetworkContext always
++  // live longer than the factory.  Therefore we want the factories to be
++  // destroyed before other fields above.  In particular:
++  // - This must be below |url_request_context_| so that the URLRequestContext
++  //   outlives all the URLLoaderFactories and URLLoaders that depend on it;
++  //   for the same reason, it must also be below |network_context_|.
++  // - This must be below |loader_count_per_process_| that is touched by
++  //   CorsURLLoaderFactory::DestroyURLLoader (see also
++  //   https://crbug.com/1174943).
++  std::set<std::unique_ptr<cors::CorsURLLoaderFactory>,
++           base::UniquePtrComparator>
++      url_loader_factories_;
++
+   base::WeakPtrFactory<NetworkContext> weak_factory_{this};
+ 
+   DISALLOW_COPY_AND_ASSIGN(NetworkContext);
