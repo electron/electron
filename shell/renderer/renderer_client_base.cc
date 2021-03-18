@@ -141,7 +141,7 @@ void RendererClientBase::BindProcess(v8::Isolate* isolate,
                                      gin_helper::Dictionary* process,
                                      content::RenderFrame* render_frame) {
   process->SetReadOnly("isMainFrame", render_frame->IsMainFrame());
-  process->SetReadOnly("contextIsolation",
+  process->SetReadOnly("contextIsolated",
                        render_frame->GetBlinkPreferences().context_isolation);
 }
 
