@@ -23,3 +23,5 @@ cherry-pick-ffd6ff5a61b9.patch
 merged_wasm_liftoff_fix_register_usage_for_i64_addi.patch
 cherry-pick-36abafa0a316.patch
 merged_interpreter_store_accumulator_to_callee_after_optional.patch
+reland_regexp_hard-crash_on_invalid_offsets_in.patch
+regexp_throw_when_length_of_text_nodes_in_alternatives_is_too.patch
