@@ -341,7 +341,7 @@ describe('chrome extensions', () => {
       const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } });
       await w.loadURL(url);
 
-      (customSession as any).setChromeAPIHandlers({
+      customSession.setExtensionAPIHandlers({
         getTab: () => {
           return {};
         },
@@ -397,7 +397,7 @@ describe('chrome extensions', () => {
       const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } });
       await w.loadURL(`${extension.url}/index.html`);
 
-      (customSession as any).setChromeAPIHandlers({
+      customSession.setExtensionAPIHandlers({
         getTab: () => {
           return {
             groupId: 2
@@ -406,6 +406,8 @@ describe('chrome extensions', () => {
       });
 
       const tab = await w.webContents.executeJavaScript(`(() => { return new Promise((resolve) => {chrome.tabs.get(${w.webContents.id}, resolve) })})()`);
+
+      console.log(tab);
 
       expect(tab.groupId).to.equal(2);
     });
@@ -416,7 +418,7 @@ describe('chrome extensions', () => {
       const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } });
       await w.loadURL(`${extension.url}/index.html`);
 
-      (customSession as any).setChromeAPIHandlers({
+      customSession.setExtensionAPIHandlers({
         getTab: () => {
           return null;
         }

@@ -288,7 +288,7 @@ describe('webContents module', () => {
     });
 
     it('returns correct chrome tab details', async () => {
-      w.webContents.session.setChromeAPIHandlers({
+      w.webContents.session.setExtensionAPIHandlers({
         getTab: () => {
           return {
             windowId: w.id
@@ -296,7 +296,7 @@ describe('webContents module', () => {
         }
       });
       const details = w.webContents.getExtensionTabDetails();
-      expect(details.url).to.equal('about:blank');
+      expect(details?.url).to.equal('about:blank');
     });
   });
 

@@ -982,7 +982,7 @@ std::unique_ptr<ExtensionTabDetails> Session::GetExtensionTabDetails(
       EmitWarning(
           node::Environment::GetCurrent(isolate),
           "No handler has been registered for `chrome.tabs.get`. Please use "
-          "`session.setChromeAPIHandlers`.",
+          "`session.setExtensionAPIHandlers`.",
           "electron");
       has_emitted_chrome_tabs_get_warning_ = true;
     }
@@ -1009,7 +1009,7 @@ WebContents* Session::GetActiveTab(WebContents* sender_contents) {
           node::Environment::GetCurrent(isolate),
           "Active tab has been requested by an extension, but no handler "
           "has been registered. Please use "
-          "`session.setChromeAPIHandlers`.",
+          "`session.setExtensionAPIHandlers`.",
           "electron");
       has_emitted_active_tab_warning_ = true;
     }
