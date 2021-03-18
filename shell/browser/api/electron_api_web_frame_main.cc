@@ -135,6 +135,9 @@ uint32_t WebFrameMain::FindInFrame(gin::Arguments* args) {
     return 0;
   }
 
+  if (!CheckRenderFrame())
+    return 0;
+
   uint32_t request_id = ++find_in_frame_request_id_;
   gin_helper::Dictionary dict;
   auto options = blink::mojom::FindOptions::New();
@@ -150,7 +153,7 @@ uint32_t WebFrameMain::FindInFrame(gin::Arguments* args) {
 }
 
 void WebFrameMain::StopFindInFrame(content::StopFindAction action) {
-  if (find_request_manager_)
+  if (CheckRenderFrame() && find_request_manager_)
     find_request_manager_->StopFinding(action);
 }
 
@@ -359,7 +362,8 @@ content::FindRequestManager* WebFrameMain::GetOrCreateFindRequestManager() {
   }
   // Concurrent find sessions must not overlap, so destroy any existing
   // FindRequestManagers in any inner WebFrameMain.
-  for (content::RenderFrameHost* rfh : render_frame_->GetFramesInSubtree()) {
+  for (content::RenderFrameHost* rfh :
+       render_frame_->GetMainFrame()->GetFramesInSubtree()) {
     if (rfh == render_frame_)
       continue;
     auto* web_frame_main = FromRenderFrameHost(rfh);
