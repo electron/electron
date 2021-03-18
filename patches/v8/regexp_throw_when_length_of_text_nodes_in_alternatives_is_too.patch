@@ -1,0 +1,66 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Patrick Thier <pthier@chromium.org>
+Date: Thu, 21 Jan 2021 10:37:10 +0000
+Subject: Throw when length of text nodes in alternatives is too large.
+
+Offsets in regular expressions are limited to 16 bits.
+It was possible to exceed this limit when emitting greedy loops where
+the length of text nodes exceeded 16 bits, resulting in overflowing
+offsets.
+With this CL we throw a SyntaxError "Regular expression too large" to
+prevent this overflow.
+
+Merge of CL reviewed at https://crrev.com/c/2629286
+
+(cherry picked from commit c9b71fac463dacde93fcc5ad77f56ba6ad7eeae6)
+
+No-Try: true
+No-Presubmit: true
+No-Tree-Checks: true
+Bug: chromium:1166138
+Change-Id: Ica624a243bf9827083ff883d9a976f13c8da02e5
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2642244
+Reviewed-by: Jakob Gruber <jgruber@chromium.org>
+Commit-Queue: Patrick Thier <pthier@chromium.org>
+Cr-Original-Commit-Position: refs/branch-heads/8.9@{#16}
+Cr-Original-Branched-From: 16b9bbbd581c25391981aa03180b76aa60463a3e-refs/heads/8.9.255@{#1}
+Cr-Original-Branched-From: d16a2a688498bd1c3e6a49edb25d8c4ca56232dc-refs/heads/master@{#72039}
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2731531
+Commit-Queue: Victor-Gabriel Savu <vsavu@google.com>
+Reviewed-by: Jana Grill <janagrill@chromium.org>
+Cr-Commit-Position: refs/branch-heads/8.6@{#68}
+Cr-Branched-From: a64aed2333abf49e494d2a5ce24bbd14fff19f60-refs/heads/8.6.395@{#1}
+Cr-Branched-From: a626bc036236c9bf92ac7b87dc40c9e538b087e3-refs/heads/master@{#69472}
+
+diff --git a/src/regexp/regexp-compiler.cc b/src/regexp/regexp-compiler.cc
+index ce1197a55bc4c9f360423c246e906a92ca60afcc..acf24b9f60a9fbd78bb8397e3b9eee864e14b2dc 100644
+--- a/src/regexp/regexp-compiler.cc
++++ b/src/regexp/regexp-compiler.cc
+@@ -2535,7 +2535,16 @@ int ChoiceNode::GreedyLoopTextLengthForAlternative(
+     SeqRegExpNode* seq_node = static_cast<SeqRegExpNode*>(node);
+     node = seq_node->on_success();
+   }
+-  return read_backward() ? -length : length;
++  if (read_backward()) {
++    length = -length;
++  }
++  // Check that we can jump by the whole text length. If not, return sentinel
++  // to indicate the we can't construct a greedy loop.
++  if (length < RegExpMacroAssembler::kMinCPOffset ||
++      length > RegExpMacroAssembler::kMaxCPOffset) {
++    return kNodeIsTooComplexForGreedyLoops;
++  }
++  return length;
+ }
+ 
+ void LoopChoiceNode::AddLoopAlternative(GuardedAlternative alt) {
+diff --git a/test/mjsunit/regress/regress-1166138.js b/test/mjsunit/regress/regress-1166138.js
+index b1a5d6b7bb8651cce349fd1685ff76d6379e10e3..f3e4bde83e2769666512d6eda34aca46fbbf17d8 100644
+--- a/test/mjsunit/regress/regress-1166138.js
++++ b/test/mjsunit/regress/regress-1166138.js
+@@ -4,4 +4,4 @@
+ 
+ let badregexp =  "(?:" +  " ".repeat(32768*2)+  ")*";
+ reg = RegExp(badregexp);
+-reg.test()
++assertThrows(() => reg.test(), SyntaxError);
