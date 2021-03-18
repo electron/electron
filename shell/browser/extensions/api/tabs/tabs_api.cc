@@ -89,11 +89,13 @@ bool GetTabById(int tab_id,
     *contents = web_contents;
 
   auto tab = ExtensionTabUtil::GetTabDetailsFromWebContents(web_contents);
-  if (out_tab)
-    *out_tab = std::move(tab);
 
-  if (tab)
+  if (tab) {
+    if (out_tab)
+      *out_tab = std::move(tab);
+
     return true;
+  }
 
   if (error_message) {
     *error_message = ErrorUtils::FormatErrorMessage(
