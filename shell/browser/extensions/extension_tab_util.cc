@@ -138,6 +138,8 @@ electron::api::WebContents* ExtensionTabUtil::GetWebContentsById(int tab_id) {
 std::unique_ptr<electron::api::ExtensionTabDetails>
 ExtensionTabUtil::GetTabDetailsFromWebContents(
     electron::api::WebContents* contents) {
+  if (!contents)
+    return nullptr;
   return electron::api::Session::FromBrowserContext(
              contents->web_contents()->GetBrowserContext())
       ->GetExtensionTabDetails(contents);
