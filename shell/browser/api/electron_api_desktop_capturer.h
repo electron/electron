@@ -13,12 +13,14 @@
 #include "chrome/browser/media/webrtc/native_desktop_media_list.h"
 #include "gin/handle.h"
 #include "gin/wrappable.h"
+#include "shell/common/gin_helper/pinnable.h"
 
 namespace electron {
 
 namespace api {
 
 class DesktopCapturer : public gin::Wrappable<DesktopCapturer>,
+                        public gin_helper::Pinnable<DesktopCapturer>,
                         public DesktopMediaListObserver {
  public:
   struct Source {
