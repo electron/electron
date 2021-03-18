@@ -78,7 +78,11 @@ describe('webFrameMain module', () => {
           if (params.has('frameSrc')) {
             res.end(`<iframe src="${params.get('frameSrc')}"></iframe>`);
           } else {
-            res.end('');
+            if (params.has('frameContent')) {
+              res.end(params.get('frameContent'));
+            } else {
+              res.end('');
+            }
           }
         });
         server.listen(0, '127.0.0.1', () => {
@@ -105,6 +109,20 @@ describe('webFrameMain module', () => {
         webFrame = w.webContents.mainFrame;
         expect(webFrame.url.startsWith(serverA.url)).to.be.true();
         expect(webFrame.frames[0].url).to.equal(serverB.url);
+      });
+
+      it('searches over frame and its cross site children', async () => {
+        const frameSrc = `${serverB.url}?frameContent=children`;
+        await w.loadURL(`${serverA.url}?frameSrc=${frameSrc}`);
+        const frame = w.webContents.mainFrame;
+        {
+          const foundInFrame = emittedOnce(frame, 'found-in-frame');
+          frame.findInFrame('children', { findNext: true });
+          const [, result] = await foundInFrame;
+          expect(result.matches).equal(1);
+          expect(result.activeMatchOrdinal).equal(1);
+        }
+        frame.stopFindInFrame('clearSelection');
       });
     });
   });
@@ -216,6 +234,95 @@ describe('webFrameMain module', () => {
         expect(frame?.routingId).to.be.equal(frameRoutingId);
         expect(frame?.top === frame).to.be.equal(isMainFrame);
       }
+    });
+  });
+
+  describe('webFrameMain.FindInFrame', () => {
+    let w: BrowserWindow;
+    let webFrame: WebFrameMain;
+
+    beforeEach(async () => {
+      w = new BrowserWindow({
+        show: false,
+        width: 400,
+        height: 400
+      });
+    });
+
+    it('searches over frame and its same site children', async () => {
+      await w.loadFile(path.resolve(__dirname, 'fixtures/sub-frames/frame-container.html'));
+      webFrame = w.webContents.mainFrame;
+      {
+        const foundInFrame = emittedOnce(webFrame, 'found-in-frame');
+        webFrame.findInFrame('This', { findNext: true });
+        const [, result] = await foundInFrame;
+        expect(result.matches).equal(2);
+        expect(result.activeMatchOrdinal).equal(1);
+      }
+      {
+        const foundInFrame = emittedOnce(webFrame, 'found-in-frame');
+        webFrame.findInFrame('This', { findNext: false });
+        const [, result] = await foundInFrame;
+        expect(result.matches).equal(2);
+        expect(result.activeMatchOrdinal).equal(2);
+      }
+      webFrame.stopFindInFrame('clearSelection');
+    });
+
+    it('searches concurrently from frames at same depth', async () => {
+      const didFrameFinishLoad = emittedNTimes(w.webContents, 'did-frame-finish-load', 3);
+      w.loadFile(path.resolve(__dirname, 'fixtures/sub-frames/multiple-frame-container.html'));
+      await didFrameFinishLoad;
+      const firstFrame = w.webContents.mainFrame.framesInSubtree[1];
+      const secondFrame = w.webContents.mainFrame.framesInSubtree[2];
+      {
+        const foundInFirstFrame = emittedOnce(firstFrame, 'found-in-frame');
+        const foundInSecondFrame = emittedOnce(secondFrame, 'found-in-frame');
+        firstFrame.findInFrame('is', { findNext: true });
+        secondFrame.findInFrame('is', { findNext: true });
+        {
+          const [, { matches, activeMatchOrdinal }] = await foundInFirstFrame;
+          expect(matches).equal(5);
+          expect(activeMatchOrdinal).equal(1);
+        }
+        {
+          const [, { matches, activeMatchOrdinal }] = await foundInSecondFrame;
+          expect(matches).equal(2);
+          expect(activeMatchOrdinal).equal(1);
+        }
+      }
+      {
+        const foundInFirstFrame = emittedOnce(firstFrame, 'found-in-frame');
+        const foundInSecondFrame = emittedOnce(secondFrame, 'found-in-frame');
+        firstFrame.findInFrame('is', { findNext: false });
+        secondFrame.findInFrame('is', { findNext: false });
+        {
+          const [, { activeMatchOrdinal }] = await foundInFirstFrame;
+          expect(activeMatchOrdinal).equal(2);
+        }
+        {
+          const [, { activeMatchOrdinal }] = await foundInSecondFrame;
+          expect(activeMatchOrdinal).equal(2);
+        }
+      }
+      firstFrame.stopFindInFrame('clearSelection');
+      secondFrame.stopFindInFrame('keepSelection');
+      {
+        const foundInFirstFrame = emittedOnce(firstFrame, 'found-in-frame');
+        const foundInSecondFrame = emittedOnce(secondFrame, 'found-in-frame');
+        firstFrame.findInFrame('is', { findNext: true });
+        secondFrame.findInFrame('is', { findNext: true });
+        {
+          const [, { activeMatchOrdinal }] = await foundInFirstFrame;
+          expect(activeMatchOrdinal).equal(1);
+        }
+        {
+          const [, { activeMatchOrdinal }] = await foundInSecondFrame;
+          expect(activeMatchOrdinal).equal(1);
+        }
+      }
+      firstFrame.stopFindInFrame('clearSelection');
+      secondFrame.stopFindInFrame('keepSelection');
     });
   });
 });

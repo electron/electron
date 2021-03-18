@@ -11,8 +11,11 @@
 
 #include "base/lazy_instance.h"
 #include "base/logging.h"
-#include "content/browser/renderer_host/frame_tree_node.h"  // nogncheck
+#include "content/browser/find_request_manager.h"            // nogncheck
+#include "content/browser/renderer_host/frame_tree_node.h"   // nogncheck
+#include "content/browser/web_contents/web_contents_impl.h"  // nogncheck
 #include "content/public/browser/render_frame_host.h"
+#include "content/public/browser/web_contents.h"
 #include "electron/shell/common/api/api.mojom.h"
 #include "gin/object_template_builder.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
@@ -20,6 +23,7 @@
 #include "shell/browser/browser.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/blink_converter.h"
+#include "shell/common/gin_converters/content_converter.h"
 #include "shell/common/gin_converters/frame_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
@@ -29,6 +33,7 @@
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/v8_value_serializer.h"
+#include "third_party/blink/public/mojom/frame/find_in_page.mojom.h"
 
 namespace electron {
 
@@ -120,6 +125,33 @@ bool WebFrameMain::Reload() {
   if (!CheckRenderFrame())
     return false;
   return render_frame_->Reload();
+}
+
+uint32_t WebFrameMain::FindInFrame(gin::Arguments* args) {
+  base::string16 search_text;
+  if (!args->GetNext(&search_text) || search_text.empty()) {
+    gin_helper::ErrorThrower(args->isolate())
+        .ThrowError("Must provide a non-empty search content");
+    return 0;
+  }
+
+  uint32_t request_id = ++find_in_frame_request_id_;
+  gin_helper::Dictionary dict;
+  auto options = blink::mojom::FindOptions::New();
+  if (args->GetNext(&dict)) {
+    dict.Get("forward", &options->forward);
+    dict.Get("matchCase", &options->match_case);
+    dict.Get("findNext", &options->new_session);
+  }
+
+  GetOrCreateFindRequestManager()->Find(request_id, search_text,
+                                        std::move(options));
+  return request_id;
+}
+
+void WebFrameMain::StopFindInFrame(content::StopFindAction action) {
+  if (find_request_manager_)
+    find_request_manager_->StopFinding(action);
 }
 
 void WebFrameMain::Send(v8::Isolate* isolate,
@@ -316,6 +348,30 @@ void WebFrameMain::Connect() {
   }
 }
 
+content::FindRequestManager* WebFrameMain::GetOrCreateFindRequestManager() {
+  if (!find_request_manager_.get()) {
+    // No existing FindRequestManager found, so one must be created.
+    auto* web_contents = static_cast<content::WebContentsImpl*>(
+        content::WebContents::FromRenderFrameHost(render_frame_));
+    find_request_manager_ = std::make_unique<content::FindRequestManager>(
+        web_contents,
+        static_cast<content::RenderFrameHostImpl*>(render_frame_));
+  }
+  // Concurrent find sessions must not overlap, so destroy any existing
+  // FindRequestManagers in any inner WebFrameMain.
+  for (content::RenderFrameHost* rfh : render_frame_->GetFramesInSubtree()) {
+    if (rfh == render_frame_)
+      continue;
+    auto* web_frame_main = FromRenderFrameHost(rfh);
+    if (web_frame_main && web_frame_main->find_request_manager_) {
+      web_frame_main->find_request_manager_->StopFinding(
+          content::STOP_FIND_ACTION_CLEAR_SELECTION);
+      web_frame_main->find_request_manager_.release();
+    }
+  }
+  return find_request_manager_.get();
+}
+
 // static
 v8::Local<v8::ObjectTemplate> WebFrameMain::FillObjectTemplate(
     v8::Isolate* isolate,
@@ -323,6 +379,8 @@ v8::Local<v8::ObjectTemplate> WebFrameMain::FillObjectTemplate(
   return gin_helper::ObjectTemplateBuilder(isolate, templ)
       .SetMethod("executeJavaScript", &WebFrameMain::ExecuteJavaScript)
       .SetMethod("reload", &WebFrameMain::Reload)
+      .SetMethod("findInFrame", &WebFrameMain::FindInFrame)
+      .SetMethod("stopFindInFrame", &WebFrameMain::StopFindInFrame)
       .SetMethod("_send", &WebFrameMain::Send)
       .SetMethod("_postMessage", &WebFrameMain::PostMessage)
       .SetProperty("frameTreeNodeId", &WebFrameMain::FrameTreeNodeID)

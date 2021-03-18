@@ -131,6 +131,46 @@ ipcRenderer.on('port', (e, msg) => {
 })
 ```
 
+#### `frame.findInFrame(text[, options])`
+
+* `text` String - Content to be searched, must not be empty.
+* `options` Object (optional)
+  * `forward` Boolean (optional) - Whether to search forward or backward, defaults to `true`.
+  * `findNext` Boolean (optional) - Whether the operation is first request or a follow up,
+    defaults to `false`.
+  * `matchCase` Boolean (optional) - Whether search should be case-sensitive,
+    defaults to `false`.
+
+Returns `Integer` - The request id used for the request.
+
+Starts a request to find all matches for the `text` in the frame and all its children.
+The result of the request can be obtained by subscribing to [`found-in-frame`](web-frame-main.md#event-found-in-frame) event.
+
+#### `frame.stopFindInFrame(action)`
+
+* `action` String - Specifies the action to take place when ending
+  [`webFrameMain.findInFrame`] request.
+  * `clearSelection` - Clear the selection.
+  * `keepSelection` - Translate the selection into a normal selection.
+  * `activateSelection` - Focus and click the selection node.
+
+Stops any `findInFrame` request for the `webFrameMain` with the provided `action`.
+
+```javascript
+const { ipcMain } = require('electron')
+
+ipcMain.on('search-in-frame', (event, ...args) => {
+  const [searchText, frameName] = args
+  const frame = win.webContents.mainFrame.framesInSubtree.find(frame => {
+    return frame.name === frameName
+  })
+  frame.on('found-in-frame', (event, result) => {
+    if (result.finalUpdate) frame.stopFindInFrame('clearSelection')
+  })
+  frame.findInFrame('sometext')
+})
+```
+
 ### Instance Properties
 
 #### `frame.url` _Readonly_
@@ -182,3 +222,20 @@ This is not the same as the OS process ID; to read that use `frame.osProcessId`.
 An `Integer` representing the unique frame id in the current renderer process.
 Distinct `WebFrameMain` instances that refer to the same underlying frame will
 have the same `routingId`.
+
+### Instance Events
+
+#### Event: 'found-in-frame'
+
+Returns:
+
+* `event` Event
+* `result` Object
+  * `requestId` Integer
+  * `activeMatchOrdinal` Integer - Position of the active match.
+  * `matches` Integer - Number of Matches.
+  * `selectionArea` Rectangle - Coordinates of first match region.
+  * `finalUpdate` Boolean
+
+Emitted when a result is available for
+[`webFrameMain.findInFrame`] request.

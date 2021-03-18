@@ -1,0 +1,238 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Wed, 17 Mar 2021 23:49:04 -0700
+Subject: feat: Optionally make FindRequestManager to start search from a RFH
+
+This patch adds the ability to search within a subtree of frames,
+rather than always starting from the top-level WebContents.
+
+diff --git a/content/browser/find_request_manager.cc b/content/browser/find_request_manager.cc
+index 09eb4d6b45669f98ac649b24cd440159f2b043c5..9972dc92a0eedf172ac843ae14510657dfbf7144 100644
+--- a/content/browser/find_request_manager.cc
++++ b/content/browser/find_request_manager.cc
+@@ -175,25 +175,35 @@ FrameTreeNode* TraverseNode(FrameTreeNode* node, bool forward, bool wrap) {
+ // creation, and navigation.
+ class FindRequestManager::FrameObserver : public WebContentsObserver {
+  public:
+-  FrameObserver(WebContentsImpl* web_contents, FindRequestManager* manager)
+-      : WebContentsObserver(web_contents), manager_(manager) {}
++  FrameObserver(
++      WebContentsImpl* web_contents,
++      RenderFrameHost* target_rfh,
++      FindRequestManager* manager)
++      : WebContentsObserver(web_contents),
++        target_rfh_(target_rfh),
++        manager_(manager) {}
+ 
+   ~FrameObserver() override = default;
+ 
+   void DidFinishLoad(RenderFrameHost* rfh, const GURL& validated_url) override {
+     if (manager_->current_session_id_ == kInvalidId)
+       return;
+-
++    if (target_rfh_ && !rfh->IsDescendantOf(target_rfh_))
++      return;
+     manager_->RemoveFrame(rfh);
+     manager_->AddFrame(rfh, true /* force */);
+   }
+ 
+   void RenderFrameDeleted(RenderFrameHost* rfh) override {
++    if (target_rfh_ && !rfh->IsDescendantOf(target_rfh_))
++      return;
+     manager_->RemoveFrame(rfh);
+   }
+ 
+   void RenderFrameHostChanged(RenderFrameHost* old_host,
+                               RenderFrameHost* new_host) override {
++    if (target_rfh_ && !old_host->IsDescendantOf(target_rfh_))
++      return;
+     // The |old_host| and its children are now pending deletion. Find-in-page
+     // must not interact with them anymore.
+     if (old_host)
+@@ -201,6 +211,8 @@ class FindRequestManager::FrameObserver : public WebContentsObserver {
+   }
+ 
+   void FrameDeleted(RenderFrameHost* rfh) override {
++    if (target_rfh_ && !rfh->IsDescendantOf(target_rfh_))
++      return;
+     manager_->RemoveFrame(rfh);
+   }
+ 
+@@ -211,6 +223,7 @@ class FindRequestManager::FrameObserver : public WebContentsObserver {
+     manager_->RemoveFrame(rfh);
+   }
+ 
++  RenderFrameHost* const target_rfh_;
+   // The FindRequestManager that owns this FrameObserver.
+   FindRequestManager* const manager_;
+ 
+@@ -265,6 +278,12 @@ const int FindRequestManager::kInvalidId = -1;
+ FindRequestManager::FindRequestManager(WebContentsImpl* web_contents)
+     : contents_(web_contents) {}
+ 
++FindRequestManager::FindRequestManager(
++    WebContentsImpl* web_contents,
++    RenderFrameHostImpl* rfh)
++    : contents_(web_contents),
++      target_rfh_(rfh) {}
++
+ FindRequestManager::~FindRequestManager() = default;
+ 
+ void FindRequestManager::Find(int request_id,
+@@ -413,7 +432,7 @@ void FindRequestManager::RemoveFrame(RenderFrameHost* rfh) {
+   // removed, we can target any queued requests to the focused frame or main
+   // frame. However, if the main frame is removed we will not have a valid
+   // RenderFrameHost to target for the request queue.
+-  if (!rfh->GetParent())
++  if (!rfh->GetParent() || target_rfh_ == rfh)
+     find_request_queue_ = base::queue<FindRequest>();
+ 
+   // Update the active match ordinal, since it may have changed.
+@@ -607,14 +626,22 @@ void FindRequestManager::FindInternal(const FindRequest& request) {
+ 
+   // This is an initial find operation.
+   Reset(request);
+-  for (WebContentsImpl* contents : contents_->GetWebContentsAndAllInner()) {
+-    // Portals can't receive keyboard events or be focused, so we don't return
+-    // find results inside a portal.
+-    if (!contents->IsPortal()) {
+-      frame_observers_.push_back(
+-          std::make_unique<FrameObserver>(contents, this));
+-      for (FrameTreeNode* node : contents->GetFrameTree()->Nodes()) {
+-        AddFrame(node->current_frame_host(), false /* force */);
++  if (target_rfh_) {
++    frame_observers_.push_back(
++        std::make_unique<FrameObserver>(contents_, target_rfh_, this));
++    for (RenderFrameHost* current_frame_host : target_rfh_->GetFramesInSubtree()) {
++      AddFrame(current_frame_host, false /* force */);
++    }
++  } else {
++    for (WebContentsImpl* contents : contents_->GetWebContentsAndAllInner()) {
++      // Portals can't receive keyboard events or be focused, so we don't return
++      // find results inside a portal.
++      if (!contents->IsPortal()) {
++        frame_observers_.push_back(
++            std::make_unique<FrameObserver>(contents, nullptr, this));
++        for (FrameTreeNode* node : contents->GetFrameTree()->Nodes()) {
++          AddFrame(node->current_frame_host(), false /* force */);
++        }
+       }
+     }
+   }
+@@ -660,11 +687,11 @@ void FindRequestManager::NotifyFindReply(int request_id, bool final_update) {
+     last_reported_id_ = request_id;
+ 
+   contents_->NotifyFindReply(request_id, number_of_matches_, selection_rect_,
+-                             active_match_ordinal_, final_update);
++                             active_match_ordinal_, final_update, target_rfh_);
+ }
+ 
+ RenderFrameHost* FindRequestManager::GetInitialFrame(bool forward) const {
+-  RenderFrameHost* rfh = contents_->GetMainFrame();
++  RenderFrameHost* rfh = target_rfh_ ? target_rfh_ : contents_->GetMainFrame();
+ 
+   if (!forward)
+     rfh = GetDeepestLastChild(rfh);
+diff --git a/content/browser/find_request_manager.h b/content/browser/find_request_manager.h
+index 8c85cbbcc39e93ebb751bd6a30aadd09b557a7d1..e50c227b328a942b8e797980bef795f59a2eb090 100644
+--- a/content/browser/find_request_manager.h
++++ b/content/browser/find_request_manager.h
+@@ -34,6 +34,8 @@ class WebContentsImpl;
+ class CONTENT_EXPORT FindRequestManager {
+  public:
+   explicit FindRequestManager(WebContentsImpl* web_contents);
++  FindRequestManager(WebContentsImpl* web_contents,
++                     RenderFrameHostImpl* target_rfh);
+   ~FindRequestManager();
+ 
+   // Initiates a find operation for |search_text| with the options specified in
+@@ -272,6 +274,9 @@ class CONTENT_EXPORT FindRequestManager {
+   // WebContentses within it will be searched.
+   WebContentsImpl* const contents_;
+ 
++  // When provided only frames in |target_rfh_| will be searched.
++  RenderFrameHostImpl* const target_rfh_ = nullptr;
++
+   // The request ID of the initial find request in the current find-in-page
+   // session, which uniquely identifies this session. Request IDs are included
+   // in all find-related IPCs, which allows reply IPCs containing results from
+diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
+index cefe0bab7ab42c8b0697cb64fc687545251f7410..8fd1105cbe637824ed292e3927bd99fd9a1521ff 100644
+--- a/content/browser/web_contents/web_contents_impl.cc
++++ b/content/browser/web_contents/web_contents_impl.cc
+@@ -7973,12 +7973,13 @@ void WebContentsImpl::NotifyFindReply(int request_id,
+                                       int number_of_matches,
+                                       const gfx::Rect& selection_rect,
+                                       int active_match_ordinal,
+-                                      bool final_update) {
++                                      bool final_update,
++                                      RenderFrameHost* target_rfh) {
+   OPTIONAL_TRACE_EVENT0("content", "WebContentsImpl::NotifyFindReply");
+   if (delegate_ && !is_being_destroyed_ &&
+       !GetMainFrame()->GetProcess()->FastShutdownStarted()) {
+     delegate_->FindReply(this, request_id, number_of_matches, selection_rect,
+-                         active_match_ordinal, final_update);
++                         active_match_ordinal, final_update, target_rfh);
+   }
+ }
+ 
+diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
+index f9fd8ebc471af32ad7158a0054f1b2dc6098026d..f884d3f8fa043391955f519f6d4c5afb8e104621 100644
+--- a/content/browser/web_contents/web_contents_impl.h
++++ b/content/browser/web_contents/web_contents_impl.h
+@@ -1071,7 +1071,8 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
+                        int number_of_matches,
+                        const gfx::Rect& selection_rect,
+                        int active_match_ordinal,
+-                       bool final_update);
++                       bool final_update,
++                       RenderFrameHost* target_rfh);
+ 
+   // Modify the counter of connected devices for this WebContents.
+   void IncrementBluetoothConnectedDeviceCount();
+diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
+index d19b7ba1cbb686f72ce6989052e5f91d54a086e6..4e377e0867a6bd87c8ad4aa63a92d302d9837789 100644
+--- a/content/public/browser/web_contents_delegate.h
++++ b/content/public/browser/web_contents_delegate.h
+@@ -493,7 +493,8 @@ class CONTENT_EXPORT WebContentsDelegate {
+                          int number_of_matches,
+                          const gfx::Rect& selection_rect,
+                          int active_match_ordinal,
+-                         bool final_update) {}
++                         bool final_update,
++                         RenderFrameHost* target_rfh) {}
+ 
+ #if defined(OS_ANDROID)
+   // Provides the rects of the current find-in-page matches.
+diff --git a/extensions/browser/guest_view/web_view/web_view_guest.cc b/extensions/browser/guest_view/web_view/web_view_guest.cc
+index b1a48537daee7ceb5b790b09fa330e0ba12a5ecd..5b64ca514980acd4149f5c9de874fa6f7407af2e 100644
+--- a/extensions/browser/guest_view/web_view/web_view_guest.cc
++++ b/extensions/browser/guest_view/web_view/web_view_guest.cc
+@@ -649,9 +649,11 @@ void WebViewGuest::FindReply(WebContents* source,
+                              int number_of_matches,
+                              const gfx::Rect& selection_rect,
+                              int active_match_ordinal,
+-                             bool final_update) {
++                             bool final_update,
++                             content::RenderFrameHost* target_rfh) {
+   GuestViewBase::FindReply(source, request_id, number_of_matches,
+-                           selection_rect, active_match_ordinal, final_update);
++                           selection_rect, active_match_ordinal, final_update,
++                           target_rfh);
+   find_helper_.FindReply(request_id, number_of_matches, selection_rect,
+                          active_match_ordinal, final_update);
+ }
+diff --git a/extensions/browser/guest_view/web_view/web_view_guest.h b/extensions/browser/guest_view/web_view/web_view_guest.h
+index 83ae752376204a76ff0e213f12505d656bce5480..e3b3dba9b58b8b996f05d6f8202ca788321ff8e2 100644
+--- a/extensions/browser/guest_view/web_view/web_view_guest.h
++++ b/extensions/browser/guest_view/web_view/web_view_guest.h
+@@ -197,7 +197,8 @@ class WebViewGuest : public guest_view::GuestView<WebViewGuest> {
+                  int number_of_matches,
+                  const gfx::Rect& selection_rect,
+                  int active_match_ordinal,
+-                 bool final_update) final;
++                 bool final_update,
++                 content::RenderFrameHost* target_rfh) final;
+   bool ZoomPropagatesFromEmbedderToGuest() const final;
+   const char* GetAPINamespace() const final;
+   int GetTaskPrefix() const final;

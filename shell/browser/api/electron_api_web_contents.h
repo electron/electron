@@ -514,7 +514,8 @@ class WebContents : public gin::Wrappable<WebContents>,
                  int number_of_matches,
                  const gfx::Rect& selection_rect,
                  int active_match_ordinal,
-                 bool final_update) override;
+                 bool final_update,
+                 content::RenderFrameHost* target_rfh) override;
   bool CheckMediaAccessPermission(content::RenderFrameHost* render_frame_host,
                                   const GURL& security_origin,
                                   blink::mojom::MediaStreamType type) override;

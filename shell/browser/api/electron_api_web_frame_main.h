@@ -11,6 +11,7 @@
 
 #include "base/memory/weak_ptr.h"
 #include "base/process/process.h"
+#include "content/public/common/stop_find_action.h"
 #include "gin/handle.h"
 #include "gin/wrappable.h"
 #include "shell/common/gin_helper/constructible.h"
@@ -19,8 +20,9 @@
 class GURL;
 
 namespace content {
+class FindRequestManager;
 class RenderFrameHost;
-}
+}  // namespace content
 
 namespace gin {
 class Arguments;
@@ -37,7 +39,8 @@ namespace api {
 // Bindings for accessing frames from the main process.
 class WebFrameMain : public gin::Wrappable<WebFrameMain>,
                      public gin_helper::Pinnable<WebFrameMain>,
-                     public gin_helper::Constructible<WebFrameMain> {
+                     public gin_helper::Constructible<WebFrameMain>,
+                     public gin_helper::EventEmitterMixin<WebFrameMain> {
  public:
   // Create a new WebFrameMain and return the V8 wrapper of it.
   static gin::Handle<WebFrameMain> New(v8::Isolate* isolate);
@@ -60,6 +63,9 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
 
   const mojo::Remote<mojom::ElectronRenderer>& GetRendererApi();
 
+  uint32_t FindInFrame(gin::Arguments* args);
+  void StopFindInFrame(content::StopFindAction action);
+
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
   static v8::Local<v8::ObjectTemplate> FillObjectTemplate(
@@ -76,6 +82,7 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
   // whether its been disposed of prior to accessing it.
   bool CheckRenderFrame() const;
   void Connect();
+  content::FindRequestManager* GetOrCreateFindRequestManager();
 
   v8::Local<v8::Promise> ExecuteJavaScript(gin::Arguments* args,
                                            const base::string16& code);
@@ -102,6 +109,11 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
   std::vector<content::RenderFrameHost*> FramesInSubtree() const;
 
   void OnRendererConnectionError();
+
+  // Request id used for findInPage request.
+  uint32_t find_in_frame_request_id_ = 0;
+  // Manages/coordinates multi-process findInPage requests. Created lazily.
+  std::unique_ptr<content::FindRequestManager> find_request_manager_;
 
   mojo::Remote<mojom::ElectronRenderer> renderer_api_;
   mojo::PendingReceiver<mojom::ElectronRenderer> pending_receiver_;
