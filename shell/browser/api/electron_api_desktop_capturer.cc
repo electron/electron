@@ -162,6 +162,9 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
         v8::Locker locker(isolate);
         v8::HandleScope scope(isolate);
         gin_helper::CallMethod(this, "_onerror", "Failed to get sources.");
+
+        Unpin();
+
         return;
       }
 
@@ -195,12 +198,19 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
     v8::Locker locker(isolate);
     v8::HandleScope scope(isolate);
     gin_helper::CallMethod(this, "_onfinished", captured_sources_);
+
+    Unpin();
   }
 }
 
 // static
 gin::Handle<DesktopCapturer> DesktopCapturer::Create(v8::Isolate* isolate) {
-  return gin::CreateHandle(isolate, new DesktopCapturer(isolate));
+  auto handle = gin::CreateHandle(isolate, new DesktopCapturer(isolate));
+
+  // Keep reference alive until capturing has finished.
+  handle->Pin(isolate);
+
+  return handle;
 }
 
 gin::ObjectTemplateBuilder DesktopCapturer::GetObjectTemplateBuilder(
