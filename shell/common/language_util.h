@@ -14,11 +14,6 @@ namespace electron {
 // overrides from command line arguments.
 std::vector<std::string> GetPreferredLanguages();
 
-#if defined(OS_WIN)
-bool GetPreferredLanguagesUsingGlobalization(
-    std::vector<std::u16string>* languages);
-#endif
-
 }  // namespace electron
 
 #endif  // SHELL_COMMON_LANGUAGE_UTIL_H_

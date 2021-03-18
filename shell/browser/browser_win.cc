@@ -48,7 +48,7 @@ namespace electron {
 
 namespace {
 
-bool GetProcessExecPath(std::u16string* exe) {
+bool GetProcessExecPath(std::wstring* exe) {
   base::FilePath path;
   if (!base::PathService::Get(base::FILE_EXE, &path)) {
     return false;
@@ -57,13 +57,13 @@ bool GetProcessExecPath(std::u16string* exe) {
   return true;
 }
 
-bool GetProtocolLaunchPath(gin::Arguments* args, std::u16string* exe) {
+bool GetProtocolLaunchPath(gin::Arguments* args, std::wstring* exe) {
   if (!args->GetNext(exe) && !GetProcessExecPath(exe)) {
     return false;
   }
 
   // Read in optional args arg
-  std::vector<std::u16string> launch_args;
+  std::vector<std::wstring> launch_args;
   if (args->GetNext(&launch_args) && !launch_args.empty())
     *exe = base::StringPrintf(L"\"%ls\" %ls \"%%1\"", exe->c_str(),
                               base::JoinString(launch_args, L" ").c_str());
@@ -75,7 +75,7 @@ bool GetProtocolLaunchPath(gin::Arguments* args, std::u16string* exe) {
 // Windows treats a given scheme as an Internet scheme only if its registry
 // entry has a "URL Protocol" key. Check this, otherwise we allow ProgIDs to be
 // used as custom protocols which leads to security bugs.
-bool IsValidCustomProtocol(const std::u16string& scheme) {
+bool IsValidCustomProtocol(const std::wstring& scheme) {
   if (scheme.empty())
     return false;
   base::win::RegKey cmd_key(HKEY_CLASSES_ROOT, scheme.c_str(), KEY_QUERY_VALUE);
@@ -90,11 +90,10 @@ bool IsValidCustomProtocol(const std::u16string& scheme) {
 // Windows 8 introduced a new protocol->executable binding system which cannot
 // be retrieved in the HKCR registry subkey method implemented below. We call
 // AssocQueryString with the new Win8-only flag ASSOCF_IS_PROTOCOL instead.
-std::u16string GetAppInfoHelperForProtocol(ASSOCSTR assoc_str,
-                                           const GURL& url) {
-  const std::u16string url_scheme = base::ASCIIToUTF16(url.scheme());
+std::wstring GetAppInfoHelperForProtocol(ASSOCSTR assoc_str, const GURL& url) {
+  const std::wstring url_scheme = base::ASCIIToWide(url.scheme());
   if (!IsValidCustomProtocol(url_scheme))
-    return std::u16string();
+    return std::wstring();
 
   wchar_t out_buffer[1024];
   DWORD buffer_size = base::size(out_buffer);
@@ -103,13 +102,13 @@ std::u16string GetAppInfoHelperForProtocol(ASSOCSTR assoc_str,
                        out_buffer, &buffer_size);
   if (FAILED(hr)) {
     DLOG(WARNING) << "AssocQueryString failed!";
-    return std::u16string();
+    return std::wstring();
   }
-  return std::u16string(out_buffer);
+  return std::wstring(out_buffer);
 }
 
 void OnIconDataAvailable(const base::FilePath& app_path,
-                         const std::u16string& app_display_name,
+                         const std::wstring& app_display_name,
                          gin_helper::Promise<gin_helper::Dictionary> promise,
                          gfx::Image icon) {
   if (!icon.IsEmpty()) {
@@ -126,21 +125,21 @@ void OnIconDataAvailable(const base::FilePath& app_path,
   }
 }
 
-std::u16string GetAppDisplayNameForProtocol(const GURL& url) {
+std::wstring GetAppDisplayNameForProtocol(const GURL& url) {
   return GetAppInfoHelperForProtocol(ASSOCSTR_FRIENDLYAPPNAME, url);
 }
 
-std::u16string GetAppPathForProtocol(const GURL& url) {
+std::wstring GetAppPathForProtocol(const GURL& url) {
   return GetAppInfoHelperForProtocol(ASSOCSTR_EXECUTABLE, url);
 }
 
-std::u16string GetAppForProtocolUsingRegistry(const GURL& url) {
-  const std::u16string url_scheme = base::ASCIIToUTF16(url.scheme());
+std::wstring GetAppForProtocolUsingRegistry(const GURL& url) {
+  const std::wstring url_scheme = base::ASCIIToWide(url.scheme());
   if (!IsValidCustomProtocol(url_scheme))
-    return std::u16string();
+    return std::wstring();
 
   // First, try and extract the application's display name.
-  std::u16string command_to_launch;
+  std::wstring command_to_launch;
   base::win::RegKey cmd_key_name(HKEY_CLASSES_ROOT, url_scheme.c_str(),
                                  KEY_READ);
   if (cmd_key_name.ReadValue(NULL, &command_to_launch) == ERROR_SUCCESS &&
@@ -150,7 +149,7 @@ std::u16string GetAppForProtocolUsingRegistry(const GURL& url) {
 
   // Otherwise, parse the command line in the registry, and return the basename
   // of the program path if it exists.
-  const std::u16string cmd_key_path = url_scheme + L"\\shell\\open\\command";
+  const std::wstring cmd_key_path = url_scheme + L"\\shell\\open\\command";
   base::win::RegKey cmd_key_exe(HKEY_CLASSES_ROOT, cmd_key_path.c_str(),
                                 KEY_READ);
   if (cmd_key_exe.ReadValue(NULL, &command_to_launch) == ERROR_SUCCESS) {
@@ -159,18 +158,20 @@ std::u16string GetAppForProtocolUsingRegistry(const GURL& url) {
     return command_line.GetProgram().BaseName().value();
   }
 
-  return std::u16string();
+  return std::wstring();
 }
 
-bool FormatCommandLineString(std::u16string* exe,
+bool FormatCommandLineString(std::wstring* exe,
                              const std::vector<std::u16string>& launch_args) {
   if (exe->empty() && !GetProcessExecPath(exe)) {
     return false;
   }
 
   if (!launch_args.empty()) {
+    std::u16string joined_launch_args =
+        base::JoinString(launch_args, base::UTF8ToUTF16(" "));
     *exe = base::StringPrintf(L"%ls %ls", exe->c_str(),
-                              base::JoinString(launch_args, L" ").c_str());
+                              base::UTF16ToWide(joined_launch_args).c_str());
   }
 
   return true;
@@ -184,18 +185,20 @@ bool FormatCommandLineString(std::u16string* exe,
 std::vector<Browser::LaunchItem> GetLoginItemSettingsHelper(
     base::win::RegistryValueIterator* it,
     boolean* executable_will_launch_at_login,
-    std::u16string scope,
+    std::wstring scope,
     const Browser::LoginItemSettings& options) {
   std::vector<Browser::LaunchItem> launch_items;
 
   base::FilePath lookup_exe_path;
   if (options.path.empty()) {
-    std::u16string process_exe_path;
+    std::wstring process_exe_path;
     GetProcessExecPath(&process_exe_path);
     lookup_exe_path =
         base::CommandLine::FromString(process_exe_path).GetProgram();
   } else {
-    lookup_exe_path = base::CommandLine::FromString(options.path).GetProgram();
+    lookup_exe_path =
+        base::CommandLine::FromString(base::UTF16ToWide(options.path))
+            .GetProgram();
   }
 
   if (!lookup_exe_path.empty()) {
@@ -287,7 +290,7 @@ Browser::UserTask::~UserTask() = default;
 void GetFileIcon(const base::FilePath& path,
                  v8::Isolate* isolate,
                  base::CancelableTaskTracker* cancelable_task_tracker_,
-                 const std::u16string app_display_name,
+                 const std::wstring app_display_name,
                  gin_helper::Promise<gin_helper::Dictionary> promise) {
   base::FilePath normalized_path = path.NormalizePathSeparators();
   IconLoader::IconSize icon_size = IconLoader::IconSize::LARGE;
@@ -316,13 +319,13 @@ void GetApplicationInfoForProtocolUsingRegistry(
     base::CancelableTaskTracker* cancelable_task_tracker_) {
   base::FilePath app_path;
 
-  const std::u16string url_scheme = base::ASCIIToUTF16(url.scheme());
+  const std::wstring url_scheme = base::ASCIIToWide(url.scheme());
   if (!IsValidCustomProtocol(url_scheme)) {
     promise.RejectWithErrorMessage("invalid url_scheme");
     return;
   }
-  std::u16string command_to_launch;
-  const std::u16string cmd_key_path = url_scheme + L"\\shell\\open\\command";
+  std::wstring command_to_launch;
+  const std::wstring cmd_key_path = url_scheme + L"\\shell\\open\\command";
   base::win::RegKey cmd_key_exe(HKEY_CLASSES_ROOT, cmd_key_path.c_str(),
                                 KEY_READ);
   if (cmd_key_exe.ReadValue(NULL, &command_to_launch) == ERROR_SUCCESS) {
@@ -334,7 +337,7 @@ void GetApplicationInfoForProtocolUsingRegistry(
         "Unable to retrieve installation path to app");
     return;
   }
-  const std::u16string app_display_name = GetAppForProtocolUsingRegistry(url);
+  const std::wstring app_display_name = GetAppForProtocolUsingRegistry(url);
 
   if (app_display_name.empty()) {
     promise.RejectWithErrorMessage(
@@ -354,7 +357,7 @@ void GetApplicationInfoForProtocolUsingAssocQuery(
     const GURL& url,
     gin_helper::Promise<gin_helper::Dictionary> promise,
     base::CancelableTaskTracker* cancelable_task_tracker_) {
-  std::u16string app_path = GetAppPathForProtocol(url);
+  std::wstring app_path = GetAppPathForProtocol(url);
 
   if (app_path.empty()) {
     promise.RejectWithErrorMessage(
@@ -362,7 +365,7 @@ void GetApplicationInfoForProtocolUsingAssocQuery(
     return;
   }
 
-  std::u16string app_display_name = GetAppDisplayNameForProtocol(url);
+  std::wstring app_display_name = GetAppDisplayNameForProtocol(url);
 
   if (app_display_name.empty()) {
     promise.RejectWithErrorMessage("Unable to retrieve display name of app");
@@ -426,12 +429,12 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
 
   // Main Registry Key
   HKEY root = HKEY_CURRENT_USER;
-  std::u16string keyPath = L"Software\\Classes\\";
+  std::wstring keyPath = L"Software\\Classes\\";
 
   // Command Key
-  std::u16string wprotocol = base::UTF8ToUTF16(protocol);
-  std::u16string shellPath = wprotocol + L"\\shell";
-  std::u16string cmdPath = keyPath + shellPath + L"\\open\\command";
+  std::wstring wprotocol = base::UTF8ToWide(protocol);
+  std::wstring shellPath = wprotocol + L"\\shell";
+  std::wstring cmdPath = keyPath + shellPath + L"\\open\\command";
 
   base::win::RegKey classesKey;
   base::win::RegKey commandKey;
@@ -445,12 +448,12 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
     // Key doesn't even exist, we can confirm that it is not set
     return true;
 
-  std::u16string keyVal;
+  std::wstring keyVal;
   if (FAILED(commandKey.ReadValue(L"", &keyVal)))
     // Default value not set, we can confirm that it is not set
     return true;
 
-  std::u16string exe;
+  std::wstring exe;
   if (!GetProtocolLaunchPath(args, &exe))
     return false;
 
@@ -461,7 +464,7 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
 
     // Let's clean up after ourselves
     base::win::RegKey protocolKey;
-    std::u16string protocolPath = keyPath + wprotocol;
+    std::wstring protocolPath = keyPath + wprotocol;
 
     if (SUCCEEDED(
             protocolKey.Open(root, protocolPath.c_str(), KEY_ALL_ACCESS))) {
@@ -500,17 +503,17 @@ bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
   if (protocol.empty())
     return false;
 
-  std::u16string exe;
+  std::wstring exe;
   if (!GetProtocolLaunchPath(args, &exe))
     return false;
 
   // Main Registry Key
   HKEY root = HKEY_CURRENT_USER;
-  std::u16string keyPath = base::UTF8ToUTF16("Software\\Classes\\" + protocol);
-  std::u16string urlDecl = base::UTF8ToUTF16("URL:" + protocol);
+  std::wstring keyPath = base::UTF8ToWide("Software\\Classes\\" + protocol);
+  std::wstring urlDecl = base::UTF8ToWide("URL:" + protocol);
 
   // Command Key
-  std::u16string cmdPath = keyPath + L"\\shell\\open\\command";
+  std::wstring cmdPath = keyPath + L"\\shell\\open\\command";
 
   // Write information to registry
   base::win::RegKey key(root, keyPath.c_str(), KEY_ALL_ACCESS);
@@ -530,16 +533,16 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
   if (protocol.empty())
     return false;
 
-  std::u16string exe;
+  std::wstring exe;
   if (!GetProtocolLaunchPath(args, &exe))
     return false;
 
   // Main Registry Key
   HKEY root = HKEY_CURRENT_USER;
-  std::u16string keyPath = base::UTF8ToUTF16("Software\\Classes\\" + protocol);
+  std::wstring keyPath = base::UTF8ToWide("Software\\Classes\\" + protocol);
 
   // Command Key
-  std::u16string cmdPath = keyPath + L"\\shell\\open\\command";
+  std::wstring cmdPath = keyPath + L"\\shell\\open\\command";
 
   base::win::RegKey key;
   base::win::RegKey commandKey;
@@ -551,7 +554,7 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
     // Key doesn't exist, we can confirm that it is not set
     return false;
 
-  std::u16string keyVal;
+  std::wstring keyVal;
   if (FAILED(commandKey.ReadValue(L"", &keyVal)))
     // Default value not set, we can confirm that it is not set
     return false;
@@ -563,12 +566,12 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
 std::u16string Browser::GetApplicationNameForProtocol(const GURL& url) {
   // Windows 8 or above has a new protocol association query.
   if (base::win::GetVersion() >= base::win::Version::WIN8) {
-    std::u16string application_name = GetAppDisplayNameForProtocol(url);
+    std::wstring application_name = GetAppDisplayNameForProtocol(url);
     if (!application_name.empty())
-      return application_name;
+      return base::WideToUTF16(application_name);
   }
 
-  return GetAppForProtocolUsingRegistry(url);
+  return base::WideToUTF16(GetAppForProtocolUsingRegistry(url));
 }
 
 v8::Local<v8::Promise> Browser::GetApplicationInfoForProtocol(
@@ -686,11 +689,10 @@ void Browser::UpdateBadgeContents(
 }
 
 void Browser::SetLoginItemSettings(LoginItemSettings settings) {
-  std::u16string key_path =
-      L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
+  std::wstring key_path = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
   base::win::RegKey key(HKEY_CURRENT_USER, key_path.c_str(), KEY_ALL_ACCESS);
 
-  std::u16string startup_approved_key_path =
+  std::wstring startup_approved_key_path =
       L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApproved"
       L"\\Run";
   base::win::RegKey startup_approved_key(
@@ -699,7 +701,7 @@ void Browser::SetLoginItemSettings(LoginItemSettings settings) {
       !settings.name.empty() ? settings.name.c_str() : GetAppUserModelID();
 
   if (settings.open_at_login) {
-    std::u16string exe = settings.path;
+    std::wstring exe = base::UTF16ToWide(settings.path);
     if (FormatCommandLineString(&exe, settings.args)) {
       key.WriteValue(key_name, exe.c_str());
 
@@ -732,13 +734,13 @@ void Browser::SetLoginItemSettings(LoginItemSettings settings) {
 Browser::LoginItemSettings Browser::GetLoginItemSettings(
     const LoginItemSettings& options) {
   LoginItemSettings settings;
-  std::u16string keyPath = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
+  std::wstring keyPath = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
   base::win::RegKey key(HKEY_CURRENT_USER, keyPath.c_str(), KEY_ALL_ACCESS);
-  std::u16string keyVal;
+  std::wstring keyVal;
 
   // keep old openAtLogin behaviour
   if (!FAILED(key.ReadValue(GetAppUserModelID(), &keyVal))) {
-    std::u16string exe = options.path;
+    std::wstring exe = base::UTF16ToWide(options.path);
     if (FormatCommandLineString(&exe, options.args)) {
       settings.open_at_login = keyVal == exe;
     }

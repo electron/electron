@@ -222,7 +222,7 @@ void RendererClientBase::RenderThreadStarted() {
 
 #if defined(OS_WIN)
   // Set ApplicationUserModelID in renderer process.
-  std::u16string app_id =
+  std::wstring app_id =
       command_line->GetSwitchValueNative(switches::kAppUserModelId);
   if (!app_id.empty()) {
     SetCurrentProcessExplicitAppUserModelID(app_id.c_str());

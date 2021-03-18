@@ -72,7 +72,7 @@ bool NotificationPresenterWin::Init() {
   return temp_dir_.CreateUniqueTempDir();
 }
 
-std::u16string NotificationPresenterWin::SaveIconToFilesystem(
+std::wstring NotificationPresenterWin::SaveIconToFilesystem(
     const SkBitmap& icon,
     const GURL& origin) {
   std::string filename;
@@ -85,12 +85,12 @@ std::u16string NotificationPresenterWin::SaveIconToFilesystem(
   }
 
   base::ThreadRestrictions::ScopedAllowIO allow_io;
-  base::FilePath path = temp_dir_.GetPath().Append(base::UTF8ToUTF16(filename));
+  base::FilePath path = temp_dir_.GetPath().Append(base::UTF8ToWide(filename));
   if (base::PathExists(path))
     return path.value();
   if (SaveIconToPath(icon, path))
     return path.value();
-  return base::UTF8ToUTF16(origin.spec());
+  return base::UTF8ToWide(origin.spec());
 }
 
 Notification* NotificationPresenterWin::CreateNotificationObject(

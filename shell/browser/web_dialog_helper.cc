@@ -86,7 +86,7 @@ file_dialog::Filters GetFileTypesFromAcceptType(
 
   for (const auto& extension : extensions) {
 #if defined(OS_WIN)
-    filters[0].second.push_back(base::UTF16ToASCII(extension));
+    filters[0].second.push_back(base::WideToASCII(extension));
 #else
     filters[0].second.push_back(extension);
 #endif

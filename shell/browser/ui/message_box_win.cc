@@ -39,8 +39,8 @@ struct CommonButtonID {
   int button;
   int id;
 };
-CommonButtonID GetCommonID(const std::u16string& button) {
-  std::u16string lower = base::ToLowerASCII(button);
+CommonButtonID GetCommonID(const std::wstring& button) {
+  std::wstring lower = base::ToLowerASCII(button);
   if (lower == L"ok")
     return {TDCBF_OK_BUTTON, IDOK};
   else if (lower == L"yes")
@@ -63,15 +63,15 @@ void MapToCommonID(const std::vector<std::u16string>& buttons,
                    TASKDIALOG_COMMON_BUTTON_FLAGS* button_flags,
                    std::vector<TASKDIALOG_BUTTON>* dialog_buttons) {
   for (size_t i = 0; i < buttons.size(); ++i) {
-    auto common = GetCommonID(buttons[i]);
+    auto common = GetCommonID(base::UTF16ToWide(buttons[i]));
     if (common.button != -1) {
       // It is a common button.
       (*id_map)[common.id] = i;
       (*button_flags) |= common.button;
     } else {
       // It is a custom button.
-      dialog_buttons->push_back(
-          {static_cast<int>(i + kIDStart), buttons[i].c_str()});
+      dialog_buttons->push_back({static_cast<int>(i + kIDStart),
+                                 base::UTF16ToWide(buttons[i]).c_str()});
     }
   }
 }
@@ -107,11 +107,11 @@ DialogResult ShowTaskDialogUTF16(NativeWindow* parent,
 
   // TaskDialogIndirect doesn't allow empty name, if we set empty title it
   // will show "electron.exe" in title.
-  std::u16string app_name = base::UTF8ToUTF16(Browser::Get()->GetName());
+  std::wstring app_name = base::UTF8ToWide(Browser::Get()->GetName());
   if (title.empty())
     config.pszWindowTitle = app_name.c_str();
   else
-    config.pszWindowTitle = title.c_str();
+    config.pszWindowTitle = base::UTF16ToWide(title).c_str();
 
   base::win::ScopedHICON hicon;
   if (!icon.isNull()) {
@@ -138,14 +138,14 @@ DialogResult ShowTaskDialogUTF16(NativeWindow* parent,
 
   // If "detail" is empty then don't make message highlighted.
   if (detail.empty()) {
-    config.pszContent = message.c_str();
+    config.pszContent = base::UTF16ToWide(message).c_str();
   } else {
-    config.pszMainInstruction = message.c_str();
-    config.pszContent = detail.c_str();
+    config.pszMainInstruction = base::UTF16ToWide(message).c_str();
+    config.pszContent = base::UTF16ToWide(detail).c_str();
   }
 
   if (!checkbox_label.empty()) {
-    config.pszVerificationText = checkbox_label.c_str();
+    config.pszVerificationText = base::UTF16ToWide(checkbox_label).c_str();
     if (checkbox_checked)
       config.dwFlags |= TDF_VERIFICATION_FLAG_CHECKED;
   }
@@ -156,8 +156,8 @@ DialogResult ShowTaskDialogUTF16(NativeWindow* parent,
   std::vector<TASKDIALOG_BUTTON> dialog_buttons;
   if (no_link) {
     for (size_t i = 0; i < buttons.size(); ++i)
-      dialog_buttons.push_back(
-          {static_cast<int>(i + kIDStart), buttons[i].c_str()});
+      dialog_buttons.push_back({static_cast<int>(i + kIDStart),
+                                base::UTF16ToWide(buttons[i]).c_str()});
   } else {
     MapToCommonID(buttons, &id_map, &config.dwCommonButtons, &dialog_buttons);
   }
@@ -222,7 +222,8 @@ void ShowMessageBox(const MessageBoxSettings& settings,
 void ShowErrorBox(const std::u16string& title, const std::u16string& content) {
   electron::UnresponsiveSuppressor suppressor;
   ShowTaskDialogUTF16(nullptr, MessageBoxType::kError, {}, -1, 0, false,
-                      L"Error", title, content, L"", false, gfx::ImageSkia());
+                      base::UTF8ToUTF16("Error"), title, content,
+                      base::UTF8ToUTF16(""), false, gfx::ImageSkia());
 }
 
 }  // namespace electron

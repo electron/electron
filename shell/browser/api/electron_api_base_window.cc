@@ -1097,8 +1097,10 @@ void BaseWindow::SetAppDetails(const gin_helper::Dictionary& options) {
   options.Get("relaunchCommand", &relaunch_command);
   options.Get("relaunchDisplayName", &relaunch_display_name);
 
-  ui::win::SetAppDetailsForWindow(app_id, app_icon_path, app_icon_index,
-                                  relaunch_command, relaunch_display_name,
+  ui::win::SetAppDetailsForWindow(base::UTF16ToWide(app_id), app_icon_path,
+                                  app_icon_index,
+                                  base::UTF16ToWide(relaunch_command),
+                                  base::UTF16ToWide(relaunch_display_name),
                                   window_->GetAcceleratedWidget());
 }
 #endif

@@ -235,18 +235,24 @@ bool WebContentsPreferences::GetPreference(base::StringPiece name,
 bool WebContentsPreferences::GetPreloadPath(base::FilePath* path) const {
   DCHECK(path);
   base::FilePath::StringType preload_path;
-  if (GetAsString(&preference_, options::kPreloadScript, &preload_path)) {
-    base::FilePath preload(preload_path);
+  std::u16string preload_path_str;
+  if (GetAsString(&preference_, options::kPreloadScript, &preload_path_str)) {
+#if defined(OS_WIN)
+    base::FilePath preload(base::UTF16ToWide(preload_path_str));
+#else
+    base::FilePath preload(preload_path_str);
+#endif
     if (preload.IsAbsolute()) {
       *path = std::move(preload);
       return true;
     } else {
       LOG(ERROR) << "preload script must have absolute path.";
     }
-  } else if (GetAsString(&preference_, options::kPreloadURL, &preload_path)) {
+  } else if (GetAsString(&preference_, options::kPreloadURL,
+                         &preload_path_str)) {
     // Translate to file path if there is "preload-url" option.
     base::FilePath preload;
-    if (net::FileURLToFilePath(GURL(preload_path), &preload)) {
+    if (net::FileURLToFilePath(GURL(preload_path_str), &preload)) {
       *path = std::move(preload);
       return true;
     } else {
