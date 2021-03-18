@@ -40,6 +40,7 @@
         arch: process.arch,
         platform: process.platform,
         sandboxed: process.sandboxed,
+        contextIsolated: process.contextIsolated,
         type: process.type,
         version: process.version,
         versions: process.versions,

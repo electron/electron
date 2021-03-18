@@ -30,6 +30,7 @@ In sandboxed renderers the `process` object contains only a subset of the APIs:
 * `arch`
 * `platform`
 * `sandboxed`
+* `contextIsolated`
 * `type`
 * `version`
 * `versions`
@@ -93,6 +94,11 @@ A `String` representing the path to the resources directory.
 
 A `Boolean`. When the renderer process is sandboxed, this property is `true`,
 otherwise it is `undefined`.
+
+### `process.contextIsolated` _Readonly_
+
+A `Boolean` that indicates whether the current renderer context has `contextIsolation` enabled.
+It is `undefined` in the main process.
 
 ### `process.throwDeprecation`
 
