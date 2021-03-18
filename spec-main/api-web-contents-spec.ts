@@ -287,8 +287,16 @@ describe('webContents module', () => {
       await w.loadURL('about:blank');
     });
 
+    after(() => {
+      session.defaultSession.setExtensionAPIHandlers({
+        getTab: null
+      });
+    });
+
+    after(closeAllWindows);
+
     it('returns correct chrome tab details', async () => {
-      w.webContents.session.setExtensionAPIHandlers({
+      session.defaultSession.setExtensionAPIHandlers({
         getTab: () => {
           return {
             windowId: w.id

@@ -405,9 +405,7 @@ describe('chrome extensions', () => {
         }
       });
 
-      const tab = await w.webContents.executeJavaScript(`(() => { return new Promise((resolve) => {chrome.tabs.get(${w.webContents.id}, resolve) })})()`);
-
-      console.log(tab);
+      const tab = await w.webContents.executeJavaScript(`new Promise((resolve) => { chrome.tabs.get(${w.webContents.id}, resolve) })`);
 
       expect(tab.groupId).to.equal(2);
     });
@@ -424,9 +422,29 @@ describe('chrome extensions', () => {
         }
       });
 
-      const tab = await w.webContents.executeJavaScript(`(() => { return new Promise((resolve) => {chrome.tabs.get(${w.webContents.id}, resolve) })})()`);
+      const tab = await w.webContents.executeJavaScript(`new Promise((resolve) => { chrome.tabs.get(${w.webContents.id}, resolve) })`);
 
       expect(tab).to.be.undefined();
+    });
+
+    it('copes with the webcontents being destroyed', async () => {
+      const customSession = session.fromPartition(`persist:${uuid.v4()}`);
+      const extension = await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-api'));
+      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } });
+      await w.loadURL(`${extension.url}/index.html`);
+
+      const p = new Promise(resolve => {
+        customSession.setExtensionAPIHandlers({
+          getTab: (wc) => {
+            setTimeout(resolve);
+            wc.destroy();
+            return null;
+          }
+        });
+      });
+
+      w.webContents.executeJavaScript(`new Promise((resolve) => { chrome.tabs.get(${w.webContents.id}, resolve) })`);
+      await p;
     });
   });
 
