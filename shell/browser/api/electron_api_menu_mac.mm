@@ -88,7 +88,7 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
   }
 
   // If no preferred item is specified, try to show all of the menu items.
-  if (!positioning_item) {
+  if (!item) {
     CGFloat windowBottom = CGRectGetMinY([view window].frame);
     CGFloat lowestMenuPoint = windowBottom + position.y - [menu size].height;
     CGFloat screenBottom = CGRectGetMinY([view window].screen.frame);
