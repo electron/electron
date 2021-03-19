@@ -1,6 +1,6 @@
 {
   "name": "electron",
-  "version": "14.0.0-nightly.20210318",
+  "version": "14.0.0-nightly.20210319",
   "repository": "https://github.com/electron/electron",
   "description": "Build cross platform desktop apps with JavaScript, HTML, and CSS",
   "devDependencies": {
@@ -46,6 +46,7 @@
     "express": "^4.16.4",
     "folder-hash": "^2.1.1",
     "fs-extra": "^9.0.1",
+    "globby": "^11.0.2",
     "got": "^6.3.0",
     "husky": "^2.2.0",
     "klaw": "^3.0.0",
@@ -87,7 +88,8 @@
     "lint:objc": "node ./script/lint.js --objc",
     "lint:py": "node ./script/lint.js --py",
     "lint:gn": "node ./script/lint.js --gn",
-    "lint:docs": "remark docs -qf && npm run lint:js-in-markdown && npm run create-typescript-definitions && npm run lint:docs-relative-links && npm run lint:markdownlint",
+    "lint:docs": "remark docs -qf && npm run lint:js-in-markdown && npm run create-typescript-definitions && npm run lint:frontmatter && npm run lint:docs-relative-links && npm run lint:markdownlint",
+    "lint:frontmatter": "node script/frontmatter.js --check",
     "lint:docs-relative-links": "python ./script/check-relative-doc-links.py",
     "lint:markdownlint": "markdownlint \"*.md\" \"docs/**/*.md\"",
     "lint:js-in-markdown": "standard-markdown docs",
