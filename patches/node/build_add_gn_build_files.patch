@@ -7,10 +7,10 @@ This adds GN build files for Node, so we don't have to build with GYP.
 
 diff --git a/BUILD.gn b/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..446119163d1f7bad577cb0b7b217ecf24b994526
+index 0000000000000000000000000000000000000000..864a8572e70bf71c39876b19a15397ab867cbf7d
 --- /dev/null
 +++ b/BUILD.gn
-@@ -0,0 +1,360 @@
+@@ -0,0 +1,377 @@
 +import("//electron/build/asar.gni")
 +import("//v8/gni/v8.gni")
 +
@@ -307,6 +307,22 @@ index 0000000000000000000000000000000000000000..446119163d1f7bad577cb0b7b217ecf2
 +  header_group_index += 1
 +}
 +
++import("//third_party/boringssl/BUILD.generated.gni")
++
++all_boringssl_headers = crypto_headers + ssl_headers
++boringssl_header_index = 0
++foreach(header, all_boringssl_headers) {
++  all_boringssl_headers[boringssl_header_index] = "../boringssl/$header"
++  boringssl_header_index += 1
++}
++
++copy("boringssl_headers") {
++  sources = all_boringssl_headers
++  outputs = [
++    "$node_headers_dir/include/node/boringssl/{{source_file_part}}",
++  ]
++}
++
 +copy("zlib_headers") {
 +  sources = [
 +    "deps/zlib/zconf.h",
@@ -363,6 +379,7 @@ index 0000000000000000000000000000000000000000..446119163d1f7bad577cb0b7b217ecf2
 +                  ":zlib_headers",
 +                  ":node_gypi_headers",
 +                  ":node_version_header",
++                  ":boringssl_headers",
 +                ]
 +}
 +
