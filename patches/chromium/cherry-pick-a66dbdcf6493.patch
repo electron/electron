@@ -1,7 +1,8 @@
-From a66dbdcf64938c63674aec4dea09ffcb918e456b Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Marijn Kruisselbrink <mek@chromium.org>
-Date: Tue, 08 Dec 2020 07:20:47 +0000
-Subject: [PATCH] Reland "Reland "[FSA] Add IsSafePathComponent checks to GetFile/GetDirectoryHandle.""
+Date: Tue, 8 Dec 2020 07:20:47 +0000
+Subject: Reland "Reland "[FSA] Add IsSafePathComponent checks to
+ GetFile/GetDirectoryHandle.""
 
 This is a reland of 2d41c3952d2851948a09ddcf3e97bae6c419b024
 
@@ -51,10 +52,9 @@ Commit-Queue: Marijn Kruisselbrink <mek@chromium.org>
 Auto-Submit: Marijn Kruisselbrink <mek@chromium.org>
 Reviewed-by: Victor Costan <pwnall@chromium.org>
 Cr-Commit-Position: refs/heads/master@{#834598}
----
 
 diff --git a/content/browser/file_system_access/native_file_system_directory_handle_impl.cc b/content/browser/file_system_access/native_file_system_directory_handle_impl.cc
-index de58fb9b..2472c89 100644
+index de58fb9b60e78e68ea807de0f800266f71408cc2..2472c899621dab33c61a30d24058cd5dffe83e8b 100644
 --- a/content/browser/file_system_access/native_file_system_directory_handle_impl.cc
 +++ b/content/browser/file_system_access/native_file_system_directory_handle_impl.cc
 @@ -4,6 +4,7 @@
@@ -73,7 +73,7 @@ index de58fb9b..2472c89 100644
  #include "storage/browser/file_system/file_system_context.h"
  #include "storage/browser/file_system/file_system_operation_runner.h"
  #include "storage/common/file_system/file_system_util.h"
-@@ -30,27 +32,6 @@
+@@ -30,27 +32,6 @@ namespace content {
  
  using HandleType = NativeFileSystemPermissionContext::HandleType;
  
@@ -101,7 +101,7 @@ index de58fb9b..2472c89 100644
  NativeFileSystemDirectoryHandleImpl::NativeFileSystemDirectoryHandleImpl(
      NativeFileSystemManagerImpl* manager,
      const BindingContext& context,
-@@ -379,9 +360,10 @@
+@@ -379,9 +360,10 @@ void NativeFileSystemDirectoryHandleImpl::DidReadDirectory(
      blink::mojom::NativeFileSystemErrorPtr get_child_url_result =
          GetChildURL(basename, &child_url);
  
@@ -115,7 +115,7 @@ index de58fb9b..2472c89 100644
  
      entries.push_back(
          CreateEntry(basename, child_url,
-@@ -412,25 +394,97 @@
+@@ -412,25 +394,97 @@ void NativeFileSystemDirectoryHandleImpl::RemoveEntryImpl(
        url, recurse);
  }
  
@@ -211,8 +211,7 @@ index de58fb9b..2472c89 100644
 -  // have a way to get a child FileSystemURL directly from its parent.
 -
 -  if (basename.empty()) {
-+  if (!IsSafePathComponent(basename)) {
-     return native_file_system_error::FromStatus(
+-    return native_file_system_error::FromStatus(
 -        NativeFileSystemStatus::kInvalidArgument,
 -        "Name can't be an empty string.");
 -  }
@@ -220,7 +219,8 @@ index de58fb9b..2472c89 100644
 -  if (ContainsPathSeparator(basename) || IsCurrentOrParentDirectory(basename)) {
 -    // |basename| must refer to a entry that exists in this directory as a
 -    // direct child.
--    return native_file_system_error::FromStatus(
++  if (!IsSafePathComponent(basename)) {
+     return native_file_system_error::FromStatus(
 -        NativeFileSystemStatus::kInvalidArgument,
 -        "Name contains invalid characters.");
 +        NativeFileSystemStatus::kInvalidArgument, "Name is not allowed.");
@@ -228,10 +228,10 @@ index de58fb9b..2472c89 100644
  
    const storage::FileSystemURL parent = url();
 diff --git a/content/browser/file_system_access/native_file_system_directory_handle_impl.h b/content/browser/file_system_access/native_file_system_directory_handle_impl.h
-index 360fdbc..537b2a6 100644
+index 360fdbc5851f804121ec6d4fbb069c1cd9429fd2..537b2a68511523c01853a95b304765c88d52ed3a 100644
 --- a/content/browser/file_system_access/native_file_system_directory_handle_impl.h
 +++ b/content/browser/file_system_access/native_file_system_directory_handle_impl.h
-@@ -57,6 +57,14 @@
+@@ -57,6 +57,14 @@ class CONTENT_EXPORT NativeFileSystemDirectoryHandleImpl
        mojo::PendingReceiver<blink::mojom::NativeFileSystemTransferToken> token)
        override;
  
@@ -248,7 +248,7 @@ index 360fdbc..537b2a6 100644
    // the implementation for passing create=true to GetFile.
 diff --git a/content/browser/file_system_access/native_file_system_directory_handle_impl_unittest.cc b/content/browser/file_system_access/native_file_system_directory_handle_impl_unittest.cc
 new file mode 100644
-index 0000000..2601bc9
+index 0000000000000000000000000000000000000000..2601bc93d2561292b3972c53699d65d40356dc39
 --- /dev/null
 +++ b/content/browser/file_system_access/native_file_system_directory_handle_impl_unittest.cc
 @@ -0,0 +1,196 @@
@@ -449,7 +449,7 @@ index 0000000..2601bc9
 +
 +}  // namespace content
 diff --git a/content/browser/file_system_access/native_file_system_file_handle_impl_unittest.cc b/content/browser/file_system_access/native_file_system_file_handle_impl_unittest.cc
-index 193e241..43eb0c9c 100644
+index c8f3ec61d9d90aecb978506bac364c386574c780..444cbe9bde90280993388d96782abaeb87c0c6b6 100644
 --- a/content/browser/file_system_access/native_file_system_file_handle_impl_unittest.cc
 +++ b/content/browser/file_system_access/native_file_system_file_handle_impl_unittest.cc
 @@ -28,8 +28,6 @@
@@ -462,10 +462,10 @@ index 193e241..43eb0c9c 100644
  
  using blink::mojom::PermissionStatus;
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index d96c9ce..a5014fd 100644
+index 003f7fe21194b1aeae1db33238016749f3d2b835..4814b6599240d21166e7c9432643c02b3104d2ef 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -1801,6 +1801,7 @@
+@@ -1745,6 +1745,7 @@ test("content_unittests") {
      "../browser/file_system/browser_file_system_helper_unittest.cc",
      "../browser/file_system/file_system_operation_runner_unittest.cc",
      "../browser/file_system_access/file_system_chooser_unittest.cc",
