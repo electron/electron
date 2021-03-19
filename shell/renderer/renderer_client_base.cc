@@ -361,11 +361,20 @@ bool RendererClientBase::IsPluginHandledExternally(
 
 bool RendererClientBase::IsOriginIsolatedPepperPlugin(
     const base::FilePath& plugin_path) {
-#if BUILDFLAG(ENABLE_PDF_VIEWER)
-  return plugin_path.value() == kPdfPluginPath;
-#else
-  return false;
-#endif
+  // Taken from chrome's own implementation of this method.
+
+  // Hosting plugins in-process is inherently incompatible with attempting to
+  // process-isolate plugins from different origins.
+  auto* cmdline = base::CommandLine::ForCurrentProcess();
+  if (cmdline->HasSwitch(::switches::kPpapiInProcess)) {
+    // The kPpapiInProcess switch should only be used by tests.
+    CHECK_NE(kPdfPluginPath, plugin_path.value());
+
+    return false;
+  }
+
+  // Isolate all the other plugins (including the PDF plugin + test plugins).
+  return true;
 }
 
 std::unique_ptr<blink::WebPrescientNetworking>
