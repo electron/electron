@@ -10,6 +10,8 @@ const features = process._linkedBinding('electron_common_features');
 const v8Util = process._linkedBinding('electron_common_v8_util');
 
 ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () {
+  // TODO(zcbenz): Spellchecker loads really slow on ASan, we should provide
+  // a small testing dictionary to make the tests load faster.
   this.timeout((process.env.IS_ASAN ? 700 : 20) * 1000);
 
   let w: BrowserWindow;
