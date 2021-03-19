@@ -1,0 +1,93 @@
+From 85f9996fd1423ac923c774441a52e41e10ef98a0 Mon Sep 17 00:00:00 2001
+From: Julien Isorce <jisorce@oblong.com>
+Date: Wed, 28 Aug 2019 13:59:37 -0700
+Subject: [PATCH] Implement SetSkipCursor
+
+Useful for the client to skip capturing the cursor while the source
+is being streamed.
+---
+ modules/desktop_capture/desktop_and_cursor_composer.cc | 9 +++++++--
+ modules/desktop_capture/desktop_and_cursor_composer.h  | 3 +++
+ modules/desktop_capture/desktop_capturer.cc            | 2 ++
+ modules/desktop_capture/desktop_capturer.h             | 2 ++
+ 4 files changed, 14 insertions(+), 2 deletions(-)
+
+diff --git a/modules/desktop_capture/desktop_and_cursor_composer.cc b/modules/desktop_capture/desktop_and_cursor_composer.cc
+index f282c1d500..b9b1e34e18 100644
+--- a/modules/desktop_capture/desktop_and_cursor_composer.cc
++++ b/modules/desktop_capture/desktop_and_cursor_composer.cc
+@@ -152,7 +152,8 @@ DesktopAndCursorComposer::DesktopAndCursorComposer(
+ DesktopAndCursorComposer::DesktopAndCursorComposer(
+     DesktopCapturer* desktop_capturer,
+     MouseCursorMonitor* mouse_monitor)
+-    : desktop_capturer_(desktop_capturer), mouse_monitor_(mouse_monitor) {
++    : desktop_capturer_(desktop_capturer),
++      mouse_monitor_(mouse_monitor) {
+   RTC_DCHECK(desktop_capturer_);
+ }
+ 
+@@ -203,10 +204,14 @@ bool DesktopAndCursorComposer::IsOccluded(const DesktopVector& pos) {
+   return desktop_capturer_->IsOccluded(pos);
+ }
+ 
++void DesktopAndCursorComposer::SetSkipCursor(bool skip_cursor) {
++  skip_cursor_ = skip_cursor;
++}
++
+ void DesktopAndCursorComposer::OnCaptureResult(
+     DesktopCapturer::Result result,
+     std::unique_ptr<DesktopFrame> frame) {
+-  if (frame && cursor_) {
++  if (frame && !skip_cursor_ && cursor_) {
+     if (frame->rect().Contains(cursor_position_) &&
+         !desktop_capturer_->IsOccluded(cursor_position_)) {
+       DesktopVector relative_position =
+diff --git a/modules/desktop_capture/desktop_and_cursor_composer.h b/modules/desktop_capture/desktop_and_cursor_composer.h
+index 8f95721ec2..fc47b0b268 100644
+--- a/modules/desktop_capture/desktop_and_cursor_composer.h
++++ b/modules/desktop_capture/desktop_and_cursor_composer.h
+@@ -57,6 +57,7 @@ class RTC_EXPORT DesktopAndCursorComposer
+   bool SelectSource(SourceId id) override;
+   bool FocusOnSelectedSource() override;
+   bool IsOccluded(const DesktopVector& pos) override;
++  void SetSkipCursor(bool skip_cursor) override;
+ 
+   // MouseCursorMonitor::Callback interface.
+   void OnMouseCursor(MouseCursor* cursor) override;
+@@ -85,6 +86,8 @@ class RTC_EXPORT DesktopAndCursorComposer
+   DesktopRect previous_cursor_rect_;
+   bool cursor_changed_ = false;
+ 
++  bool skip_cursor_ = false;
++
+   RTC_DISALLOW_COPY_AND_ASSIGN(DesktopAndCursorComposer);
+ };
+ 
+diff --git a/modules/desktop_capture/desktop_capturer.cc b/modules/desktop_capture/desktop_capturer.cc
+index 61926a6023..eee4450fcc 100644
+--- a/modules/desktop_capture/desktop_capturer.cc
++++ b/modules/desktop_capture/desktop_capturer.cc
+@@ -45,6 +45,8 @@ bool DesktopCapturer::IsOccluded(const DesktopVector& pos) {
+   return false;
+ }
+ 
++void DesktopCapturer::SetSkipCursor(bool skip_cursor) {}
++
+ // static
+ std::unique_ptr<DesktopCapturer> DesktopCapturer::CreateWindowCapturer(
+     const DesktopCaptureOptions& options) {
+diff --git a/modules/desktop_capture/desktop_capturer.h b/modules/desktop_capture/desktop_capturer.h
+index 64339c0ca6..c705d0489d 100644
+--- a/modules/desktop_capture/desktop_capturer.h
++++ b/modules/desktop_capture/desktop_capturer.h
+@@ -127,6 +127,8 @@ class RTC_EXPORT DesktopCapturer {
+   // The return value if |pos| is out of the scope of the source is undefined.
+   virtual bool IsOccluded(const DesktopVector& pos);
+ 
++  virtual void SetSkipCursor(bool skip_cursor);
++
+   // Creates a DesktopCapturer instance which targets to capture windows.
+   static std::unique_ptr<DesktopCapturer> CreateWindowCapturer(
+       const DesktopCaptureOptions& options);
+-- 
+2.25.1

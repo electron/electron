@@ -80,3 +80,11 @@ export const getSourcesImpl = (event: Electron.IpcMainEvent | null, args: Electr
 
   return getSources;
 };
+
+export const setSkipCursor = (event: Electron.IpcMainEvent, sourceId: string, skipCursor: boolean) => {
+  const capturer: ElectronInternal.DesktopCapturer | null = createDesktopCapturer();
+
+  if (capturer) {
+    capturer.setSkipCursor(sourceId, skipCursor);
+  }
+};

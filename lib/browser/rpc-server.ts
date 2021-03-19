@@ -71,6 +71,18 @@ if (BUILDFLAG(ENABLE_DESKTOP_CAPTURER)) {
 
     return typeUtils.serialize(await desktopCapturer.getSourcesImpl(event, options));
   });
+
+  ipcMainInternal.handle(IPC_MESSAGES.DESKTOP_CAPTURER_SET_SKIP_CURSOR, function (event, sourceId, skipCursor, stack) {
+    logStack(event.sender, 'desktopCapturer.setSkipCursor()', stack);
+    const customEvent = emitCustomEvent(event.sender, 'desktop-capturer-set-skip-cursor');
+
+    if (customEvent.defaultPrevented) {
+      console.error('Blocked desktopCapturer.setSkipCursor()');
+      return;
+    }
+
+    desktopCapturer.setSkipCursor(event, sourceId, skipCursor);
+  });
 }
 
 const getPreloadScript = async function (preloadPath: string) {

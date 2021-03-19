@@ -45,6 +45,8 @@ class DesktopCapturer : public gin::Wrappable<DesktopCapturer>,
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
 
+  void SetSkipCursor(const std::string& device_id, bool skip_cursor);
+
  protected:
   explicit DesktopCapturer(v8::Isolate* isolate);
   ~DesktopCapturer() override;

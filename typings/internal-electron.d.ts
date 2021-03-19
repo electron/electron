@@ -224,6 +224,7 @@ declare namespace ElectronInternal {
 
   interface DesktopCapturer {
     startHandling(captureWindow: boolean, captureScreen: boolean, thumbnailSize: Electron.Size, fetchWindowIcons: boolean): void;
+    setSkipCursor(sourceId: string, skipCursor: boolean): void;
     _onerror?: (error: string) => void;
     _onfinished?: (sources: Electron.DesktopCapturerSource[], fetchWindowIcons: boolean) => void;
   }

@@ -97,6 +97,13 @@ which can detected by [`systemPreferences.getMediaAccessStatus`].
 [`navigator.mediaDevices.getUserMedia`]: https://developer.mozilla.org/en/docs/Web/API/MediaDevices/getUserMedia
 [`systemPreferences.getMediaAccessStatus`]: system-preferences.md#systempreferencesgetmediaaccessstatusmediatype-windows-macos
 
+### `desktopCapturer.setSkipCursor(sourceId, skip)`
+
+* `sourceId` String - Device id in the format of [`DesktopCapturerSource`](structures/desktop-capturer-source.md) 's id.
+* `skip` Boolean
+
+By default the cursor is captured. Useful to dynamically show or stop cursor capture when sharing content.
+
 ## Caveats
 
 `navigator.mediaDevices.getUserMedia` does not work on macOS for audio capture due to a fundamental limitation whereby apps that want to access the system's audio require a [signed kernel extension](https://developer.apple.com/library/archive/documentation/Security/Conceptual/System_Integrity_Protection_Guide/KernelExtensions/KernelExtensions.html). Chromium, and by extension Electron, does not provide this.

@@ -1,0 +1,281 @@
+From fe6a134585bf99d59e0d16dfdef72917d2ae0b2a Mon Sep 17 00:00:00 2001
+From: Julien Isorce <jisorce@oblong.com>
+Date: Wed, 28 Aug 2019 12:54:54 -0700
+Subject: [PATCH] Implement dynamic SetSkipCursor feature
+
+Useful to skip the cursor capture within the stream while
+the source is being shared.
+
+https://mezzanine.tpondemand.com/entity/22733-while-sharing-my-entire-screen-if
+---
+ .../media/capture/desktop_capture_device.cc   | 15 ++++++++++
+ .../media/capture/desktop_capture_device.h    |  2 ++
+ ...n_process_launched_video_capture_device.cc | 29 +++++++++++++++++++
+ ...in_process_launched_video_capture_device.h |  6 ++++
+ .../service_launched_video_capture_device.cc  |  9 ++++++
+ .../service_launched_video_capture_device.h   |  2 ++
+ .../media/video_capture_controller.cc         |  9 ++++++
+ .../media/video_capture_controller.h          |  2 ++
+ .../media/video_capture_manager.cc            | 29 +++++++++++++++++++
+ .../media/video_capture_manager.h             |  3 ++
+ .../browser/video_capture_device_launcher.h   |  3 ++
+ 11 files changed, 109 insertions(+)
+
+diff --git a/content/browser/media/capture/desktop_capture_device.cc b/content/browser/media/capture/desktop_capture_device.cc
+index ddbd972ff04a..ccfb6f851e82 100644
+--- a/content/browser/media/capture/desktop_capture_device.cc
++++ b/content/browser/media/capture/desktop_capture_device.cc
+@@ -112,6 +112,7 @@ class DesktopCaptureDevice::Core : public webrtc::DesktopCapturer::Callback {
+                         std::unique_ptr<Client> client);
+ 
+   void SetNotificationWindowId(gfx::NativeViewId window_id);
++  void SetSkipCursor(bool skip_cursor);
+ 
+   void SetMockTimeForTesting(
+       scoped_refptr<base::SingleThreadTaskRunner> task_runner,
+@@ -263,6 +264,11 @@ void DesktopCaptureDevice::Core::SetNotificationWindowId(
+   desktop_capturer_->SetExcludedWindow(window_id);
+ }
+ 
++void DesktopCaptureDevice::Core::SetSkipCursor(bool skip_cursor) {
++  DCHECK(task_runner_->BelongsToCurrentThread());
++  desktop_capturer_->SetSkipCursor(skip_cursor);
++}
++
+ void DesktopCaptureDevice::Core::SetMockTimeForTesting(
+     scoped_refptr<base::SingleThreadTaskRunner> task_runner,
+     const base::TickClock* tick_clock) {
+@@ -576,6 +582,15 @@ void DesktopCaptureDevice::SetNotificationWindowId(
+                                 base::Unretained(core_.get()), window_id));
+ }
+ 
++void DesktopCaptureDevice::SetSkipCursor(bool skip_cursor) {
++  // This may be called after the capturer has been stopped.
++  if (!core_)
++    return;
++  thread_.task_runner()->PostTask(
++      FROM_HERE, base::BindOnce(&Core::SetSkipCursor,
++                                base::Unretained(core_.get()), skip_cursor));
++}
++
+ DesktopCaptureDevice::DesktopCaptureDevice(
+     std::unique_ptr<webrtc::DesktopCapturer> capturer,
+     DesktopMediaID::Type type)
+diff --git a/content/browser/media/capture/desktop_capture_device.h b/content/browser/media/capture/desktop_capture_device.h
+index 58f14fb67276..3a1afc62e040 100644
+--- a/content/browser/media/capture/desktop_capture_device.h
++++ b/content/browser/media/capture/desktop_capture_device.h
+@@ -51,6 +51,8 @@ class CONTENT_EXPORT DesktopCaptureDevice : public media::VideoCaptureDevice {
+   // Set the platform-dependent window id for the notification window.
+   void SetNotificationWindowId(gfx::NativeViewId window_id);
+ 
++  void SetSkipCursor(bool skip_cursor);
++
+  private:
+   friend class DesktopCaptureDeviceTest;
+   friend class DesktopCaptureDeviceThrottledTest;
+diff --git a/content/browser/renderer_host/media/in_process_launched_video_capture_device.cc b/content/browser/renderer_host/media/in_process_launched_video_capture_device.cc
+index a9c0ad67795d..6fba59084889 100644
+--- a/content/browser/renderer_host/media/in_process_launched_video_capture_device.cc
++++ b/content/browser/renderer_host/media/in_process_launched_video_capture_device.cc
+@@ -137,6 +137,21 @@ void InProcessLaunchedVideoCaptureDevice::SetDesktopCaptureWindowIdAsync(
+                                 window_id, std::move(done_cb)));
+ }
+ 
++void InProcessLaunchedVideoCaptureDevice::SetDesktopCaptureSkipCursorAsync(
++    bool skip_cursor,
++    base::OnceClosure done_cb) {
++  DCHECK_CURRENTLY_ON(BrowserThread::IO);
++  // Post |device_| to the the device_task_runner_. This is safe since the
++  // device is destroyed on the device_task_runner_ and |done_cb|
++  // guarantees that |this| stays alive.
++  device_task_runner_->PostTask(
++      FROM_HERE, base::BindOnce(&InProcessLaunchedVideoCaptureDevice::
++                                    SetDesktopCaptureSkipCursorOnDeviceThread,
++                                base::Unretained(this), device_.get(),
++                                skip_cursor, std::move(done_cb)));
++}
++
++
+ void InProcessLaunchedVideoCaptureDevice::OnUtilizationReport(
+     int frame_feedback_id,
+     double utilization) {
+@@ -164,4 +179,18 @@ void InProcessLaunchedVideoCaptureDevice::
+   std::move(done_cb).Run();
+ }
+ 
++void InProcessLaunchedVideoCaptureDevice::
++    SetDesktopCaptureSkipCursorOnDeviceThread(media::VideoCaptureDevice* device,
++                                              bool skip_cursor,
++                                              base::OnceClosure done_cb) {
++  DCHECK(device_task_runner_->BelongsToCurrentThread());
++#if defined(ENABLE_SCREEN_CAPTURE) && !defined(OS_ANDROID)
++  DesktopCaptureDevice* desktop_device =
++      static_cast<DesktopCaptureDevice*>(device);
++  desktop_device->SetSkipCursor(skip_cursor);
++  VLOG(2) << "Screen capture notification window passed on device thread.";
++#endif
++  std::move(done_cb).Run();
++}
++
+ }  // namespace content
+diff --git a/content/browser/renderer_host/media/in_process_launched_video_capture_device.h b/content/browser/renderer_host/media/in_process_launched_video_capture_device.h
+index f25a1bac0c39..3d0599beb4b1 100644
+--- a/content/browser/renderer_host/media/in_process_launched_video_capture_device.h
++++ b/content/browser/renderer_host/media/in_process_launched_video_capture_device.h
+@@ -32,6 +32,8 @@ class InProcessLaunchedVideoCaptureDevice : public LaunchedVideoCaptureDevice {
+ 
+   void SetDesktopCaptureWindowIdAsync(gfx::NativeViewId window_id,
+                                       base::OnceClosure done_cb) override;
++  void SetDesktopCaptureSkipCursorAsync(bool skip_cursor,
++                                        base::OnceClosure done_cb) override;
+ 
+   void OnUtilizationReport(int frame_feedback_id, double utilization) override;
+ 
+@@ -40,6 +42,10 @@ class InProcessLaunchedVideoCaptureDevice : public LaunchedVideoCaptureDevice {
+       media::VideoCaptureDevice* device,
+       gfx::NativeViewId window_id,
+       base::OnceClosure done_cb);
++  void SetDesktopCaptureSkipCursorOnDeviceThread(
++      media::VideoCaptureDevice* device,
++      bool skip_cursor,
++      base::OnceClosure done_cb);
+ 
+   std::unique_ptr<media::VideoCaptureDevice> device_;
+   const scoped_refptr<base::SingleThreadTaskRunner> device_task_runner_;
+diff --git a/content/browser/renderer_host/media/service_launched_video_capture_device.cc b/content/browser/renderer_host/media/service_launched_video_capture_device.cc
+index 4f785f10f928..0c3133617a11 100644
+--- a/content/browser/renderer_host/media/service_launched_video_capture_device.cc
++++ b/content/browser/renderer_host/media/service_launched_video_capture_device.cc
+@@ -90,6 +90,15 @@ void ServiceLaunchedVideoCaptureDevice::SetDesktopCaptureWindowIdAsync(
+   NOTREACHED();
+ }
+ 
++void ServiceLaunchedVideoCaptureDevice::SetDesktopCaptureSkipCursorAsync(
++    bool skip_cursor,
++    base::OnceClosure done_cb) {
++  // This method should only be called for desktop capture devices.
++  // The video_capture Mojo service does not support desktop capture devices
++  // (yet) and should not be used for it.
++  NOTREACHED();
++}
++
+ void ServiceLaunchedVideoCaptureDevice::OnUtilizationReport(
+     int frame_feedback_id,
+     double utilization) {
+diff --git a/content/browser/renderer_host/media/service_launched_video_capture_device.h b/content/browser/renderer_host/media/service_launched_video_capture_device.h
+index b0fdca692b33..4e837fbd25a1 100644
+--- a/content/browser/renderer_host/media/service_launched_video_capture_device.h
++++ b/content/browser/renderer_host/media/service_launched_video_capture_device.h
+@@ -37,6 +37,8 @@ class ServiceLaunchedVideoCaptureDevice : public LaunchedVideoCaptureDevice {
+ 
+   void SetDesktopCaptureWindowIdAsync(gfx::NativeViewId window_id,
+                                       base::OnceClosure done_cb) override;
++  void SetDesktopCaptureSkipCursorAsync(bool skip_cursor,
++                                        base::OnceClosure done_cb) override;
+ 
+   void OnUtilizationReport(int frame_feedback_id, double utilization) override;
+ 
+diff --git a/content/browser/renderer_host/media/video_capture_controller.cc b/content/browser/renderer_host/media/video_capture_controller.cc
+index a4fe0a297a04..3485ccee24ec 100644
+--- a/content/browser/renderer_host/media/video_capture_controller.cc
++++ b/content/browser/renderer_host/media/video_capture_controller.cc
+@@ -768,6 +768,15 @@ void VideoCaptureController::SetDesktopCaptureWindowIdAsync(
+                                                    std::move(done_cb));
+ }
+ 
++void VideoCaptureController::SetDesktopCaptureSkipCursorAsync(
++    bool skip_cursor,
++    base::OnceClosure done_cb) {
++  DCHECK_CURRENTLY_ON(BrowserThread::IO);
++  DCHECK(launched_device_);
++  launched_device_->SetDesktopCaptureSkipCursorAsync(skip_cursor,
++                                                     std::move(done_cb));
++}
++
+ VideoCaptureController::ControllerClient* VideoCaptureController::FindClient(
+     const VideoCaptureControllerID& id,
+     VideoCaptureControllerEventHandler* handler,
+diff --git a/content/browser/renderer_host/media/video_capture_controller.h b/content/browser/renderer_host/media/video_capture_controller.h
+index 0b248bc4fd67..93c61d3815d6 100644
+--- a/content/browser/renderer_host/media/video_capture_controller.h
++++ b/content/browser/renderer_host/media/video_capture_controller.h
+@@ -153,6 +153,8 @@ class CONTENT_EXPORT VideoCaptureController
+   void RequestRefreshFrame();
+   void SetDesktopCaptureWindowIdAsync(gfx::NativeViewId window_id,
+                                       base::OnceClosure done_cb);
++  void SetDesktopCaptureSkipCursorAsync(bool skip_cursor,
++                                        base::OnceClosure done_cb);
+   int serial_id() const { return serial_id_; }
+   const std::string& device_id() const { return device_id_; }
+   blink::mojom::MediaStreamType stream_type() const { return stream_type_; }
+diff --git a/content/browser/renderer_host/media/video_capture_manager.cc b/content/browser/renderer_host/media/video_capture_manager.cc
+index 1f723364ab51..d4aa08620d77 100644
+--- a/content/browser/renderer_host/media/video_capture_manager.cc
++++ b/content/browser/renderer_host/media/video_capture_manager.cc
+@@ -641,6 +641,35 @@ void VideoCaptureManager::MaybePostDesktopCaptureWindowId(
+   notification_window_ids_.erase(window_id_it);
+ }
+ 
++void VideoCaptureManager::SetDesktopCaptureSkipCursor(
++    const std::string& device_id,
++    bool skip_cursor) {
++  DCHECK_CURRENTLY_ON(BrowserThread::IO);
++  VideoCaptureController* const existing_device =
++      LookupControllerByMediaTypeAndDeviceId(
++          blink::mojom::MediaStreamType::GUM_DESKTOP_VIDEO_CAPTURE,
++          device_id);
++  if (!existing_device) {
++    DVLOG(2) << "Failed to find an existing screen capture device.";
++    return;
++  }
++
++  if (!existing_device->IsDeviceAlive()) {
++    DVLOG(2) << "Screen capture device not yet started.";
++    return;
++  }
++
++  DCHECK_EQ(blink::mojom::MediaStreamType::GUM_DESKTOP_VIDEO_CAPTURE,
++            existing_device->stream_type());
++  DesktopMediaID id = DesktopMediaID::Parse(existing_device->device_id());
++  if (id.is_null())
++    return;
++
++  existing_device->SetDesktopCaptureSkipCursorAsync(
++      skip_cursor, base::BindOnce([](scoped_refptr<VideoCaptureManager>) {},
++                                  scoped_refptr<VideoCaptureManager>(this)));
++}
++
+ void VideoCaptureManager::GetPhotoState(
+     const base::UnguessableToken& session_id,
+     media::VideoCaptureDevice::GetPhotoStateCallback callback) {
+diff --git a/content/browser/renderer_host/media/video_capture_manager.h b/content/browser/renderer_host/media/video_capture_manager.h
+index 0e09398324dc..a13e87db62a8 100644
+--- a/content/browser/renderer_host/media/video_capture_manager.h
++++ b/content/browser/renderer_host/media/video_capture_manager.h
+@@ -157,6 +157,9 @@ class CONTENT_EXPORT VideoCaptureManager
+       blink::mojom::MediaStreamType stream_type,
+       const std::string& device_id);
+ 
++  void SetDesktopCaptureSkipCursor(const std::string& device_id,
++                                   bool skip_cursor);
++
+   // Sets the platform-dependent window ID for the desktop capture notification
+   // UI for the given session.
+   void SetDesktopCaptureWindowId(const media::VideoCaptureSessionId& session_id,
+diff --git a/content/public/browser/video_capture_device_launcher.h b/content/public/browser/video_capture_device_launcher.h
+index 3d58cfef2e98..ccc88dced80c 100644
+--- a/content/public/browser/video_capture_device_launcher.h
++++ b/content/public/browser/video_capture_device_launcher.h
+@@ -73,6 +73,9 @@ class CONTENT_EXPORT LaunchedVideoCaptureDevice
+   // Methods for specific types of devices.
+   virtual void SetDesktopCaptureWindowIdAsync(gfx::NativeViewId window_id,
+                                               base::OnceClosure done_cb) = 0;
++
++  virtual void SetDesktopCaptureSkipCursorAsync(bool skip_cursor,
++                                                base::OnceClosure done_cb) = 0;
+ };
+ 
+ }  // namespace content
+-- 
+2.25.1
