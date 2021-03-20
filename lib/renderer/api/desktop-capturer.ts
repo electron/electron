@@ -19,5 +19,5 @@ export async function getSources (options: Electron.SourcesOptions) {
 }
 
 export function setSkipCursor (sourceId: string, skipCursor: boolean) {
-  ipcRendererInternal.invoke<any>(IPC_MESSAGES.DESKTOP_CAPTURER_SET_SKIP_CURSOR, sourceId, skipCursor, getCurrentStack());
+  ipcRendererInternal.invoke(IPC_MESSAGES.DESKTOP_CAPTURER_SET_SKIP_CURSOR, sourceId, skipCursor, getCurrentStack());
 }

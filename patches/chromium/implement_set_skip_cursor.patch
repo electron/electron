@@ -1,31 +1,34 @@
-From fe6a134585bf99d59e0d16dfdef72917d2ae0b2a Mon Sep 17 00:00:00 2001
-From: Julien Isorce <jisorce@oblong.com>
-Date: Wed, 28 Aug 2019 12:54:54 -0700
-Subject: [PATCH] Implement dynamic SetSkipCursor feature
+From cb8fdb3942765919b0c6ab86c97517317f66dd49 Mon Sep 17 00:00:00 2001
+From: "aditya.k" <adityak368@gmail.com>
+Date: Sun, 21 Mar 2021 18:42:48 +0100
+Subject: [PATCH] feat: implement dynamic setSkipCursor feature
 
-Useful to skip the cursor capture within the stream while
-the source is being shared.
-
-https://mezzanine.tpondemand.com/entity/22733-while-sharing-my-entire-screen-if
+useful to skip the cursor capture within the stream while
+the source is being shared
 ---
- .../media/capture/desktop_capture_device.cc   | 15 ++++++++++
- .../media/capture/desktop_capture_device.h    |  2 ++
- ...n_process_launched_video_capture_device.cc | 29 +++++++++++++++++++
- ...in_process_launched_video_capture_device.h |  6 ++++
- .../service_launched_video_capture_device.cc  |  9 ++++++
- .../service_launched_video_capture_device.h   |  2 ++
- .../media/video_capture_controller.cc         |  9 ++++++
- .../media/video_capture_controller.h          |  2 ++
- .../media/video_capture_manager.cc            | 29 +++++++++++++++++++
- .../media/video_capture_manager.h             |  3 ++
+ .../media/capture/desktop_capture_device.cc   | 15 +++++++
+ .../media/capture/desktop_capture_device.h    |  1 +
+ ...n_process_launched_video_capture_device.cc | 28 ++++++++++++
+ ...in_process_launched_video_capture_device.h |  7 +++
+ .../service_launched_video_capture_device.cc  |  9 ++++
+ .../service_launched_video_capture_device.h   |  2 +
+ .../media/video_capture_controller.cc         |  9 ++++
+ .../media/video_capture_controller.h          |  2 +
+ .../media/video_capture_manager.cc            | 30 +++++++++++++
+ .../media/video_capture_manager.h             |  4 ++
+ content/public/browser/BUILD.gn               |  2 +
+ .../public/browser/media_device_request.cc    | 44 +++++++++++++++++++
+ content/public/browser/media_device_request.h | 17 +++++++
  .../browser/video_capture_device_launcher.h   |  3 ++
- 11 files changed, 109 insertions(+)
+ 14 files changed, 173 insertions(+)
+ create mode 100644 content/public/browser/media_device_request.cc
+ create mode 100644 content/public/browser/media_device_request.h
 
 diff --git a/content/browser/media/capture/desktop_capture_device.cc b/content/browser/media/capture/desktop_capture_device.cc
-index ddbd972ff04a..ccfb6f851e82 100644
+index e6c609f1880d..f811a5e81c13 100644
 --- a/content/browser/media/capture/desktop_capture_device.cc
 +++ b/content/browser/media/capture/desktop_capture_device.cc
-@@ -112,6 +112,7 @@ class DesktopCaptureDevice::Core : public webrtc::DesktopCapturer::Callback {
+@@ -117,6 +117,7 @@ class DesktopCaptureDevice::Core : public webrtc::DesktopCapturer::Callback {
                          std::unique_ptr<Client> client);
  
    void SetNotificationWindowId(gfx::NativeViewId window_id);
@@ -33,7 +36,7 @@ index ddbd972ff04a..ccfb6f851e82 100644
  
    void SetMockTimeForTesting(
        scoped_refptr<base::SingleThreadTaskRunner> task_runner,
-@@ -263,6 +264,11 @@ void DesktopCaptureDevice::Core::SetNotificationWindowId(
+@@ -273,6 +274,11 @@ void DesktopCaptureDevice::Core::SetNotificationWindowId(
    desktop_capturer_->SetExcludedWindow(window_id);
  }
  
@@ -45,8 +48,8 @@ index ddbd972ff04a..ccfb6f851e82 100644
  void DesktopCaptureDevice::Core::SetMockTimeForTesting(
      scoped_refptr<base::SingleThreadTaskRunner> task_runner,
      const base::TickClock* tick_clock) {
-@@ -576,6 +582,15 @@ void DesktopCaptureDevice::SetNotificationWindowId(
-                                 base::Unretained(core_.get()), window_id));
+@@ -625,4 +631,13 @@ void DesktopCaptureDevice::SetMockTimeForTesting(
+   core_->SetMockTimeForTesting(task_runner, tick_clock);
  }
  
 +void DesktopCaptureDevice::SetSkipCursor(bool skip_cursor) {
@@ -58,27 +61,24 @@ index ddbd972ff04a..ccfb6f851e82 100644
 +                                base::Unretained(core_.get()), skip_cursor));
 +}
 +
- DesktopCaptureDevice::DesktopCaptureDevice(
-     std::unique_ptr<webrtc::DesktopCapturer> capturer,
-     DesktopMediaID::Type type)
+ }  // namespace content
 diff --git a/content/browser/media/capture/desktop_capture_device.h b/content/browser/media/capture/desktop_capture_device.h
-index 58f14fb67276..3a1afc62e040 100644
+index 58f14fb67276..ebc3711f7467 100644
 --- a/content/browser/media/capture/desktop_capture_device.h
 +++ b/content/browser/media/capture/desktop_capture_device.h
-@@ -51,6 +51,8 @@ class CONTENT_EXPORT DesktopCaptureDevice : public media::VideoCaptureDevice {
+@@ -50,6 +50,7 @@ class CONTENT_EXPORT DesktopCaptureDevice : public media::VideoCaptureDevice {
+ 
    // Set the platform-dependent window id for the notification window.
    void SetNotificationWindowId(gfx::NativeViewId window_id);
- 
 +  void SetSkipCursor(bool skip_cursor);
-+
+ 
   private:
    friend class DesktopCaptureDeviceTest;
-   friend class DesktopCaptureDeviceThrottledTest;
 diff --git a/content/browser/renderer_host/media/in_process_launched_video_capture_device.cc b/content/browser/renderer_host/media/in_process_launched_video_capture_device.cc
-index a9c0ad67795d..6fba59084889 100644
+index 68442765f9ce..9512efb98809 100644
 --- a/content/browser/renderer_host/media/in_process_launched_video_capture_device.cc
 +++ b/content/browser/renderer_host/media/in_process_launched_video_capture_device.cc
-@@ -137,6 +137,21 @@ void InProcessLaunchedVideoCaptureDevice::SetDesktopCaptureWindowIdAsync(
+@@ -137,6 +137,20 @@ void InProcessLaunchedVideoCaptureDevice::SetDesktopCaptureWindowIdAsync(
                                  window_id, std::move(done_cb)));
  }
  
@@ -96,12 +96,11 @@ index a9c0ad67795d..6fba59084889 100644
 +                                skip_cursor, std::move(done_cb)));
 +}
 +
-+
  void InProcessLaunchedVideoCaptureDevice::OnUtilizationReport(
      int frame_feedback_id,
-     double utilization) {
-@@ -164,4 +179,18 @@ void InProcessLaunchedVideoCaptureDevice::
-   std::move(done_cb).Run();
+     media::VideoFrameFeedback feedback) {
+@@ -150,6 +164,20 @@ void InProcessLaunchedVideoCaptureDevice::OnUtilizationReport(
+                                 frame_feedback_id, feedback));
  }
  
 +void InProcessLaunchedVideoCaptureDevice::
@@ -109,7 +108,7 @@ index a9c0ad67795d..6fba59084889 100644
 +                                              bool skip_cursor,
 +                                              base::OnceClosure done_cb) {
 +  DCHECK(device_task_runner_->BelongsToCurrentThread());
-+#if defined(ENABLE_SCREEN_CAPTURE) && !defined(OS_ANDROID)
++#if BUILDFLAG(ENABLE_SCREEN_CAPTURE) && !defined(OS_ANDROID)
 +  DesktopCaptureDevice* desktop_device =
 +      static_cast<DesktopCaptureDevice*>(device);
 +  desktop_device->SetSkipCursor(skip_cursor);
@@ -118,21 +117,24 @@ index a9c0ad67795d..6fba59084889 100644
 +  std::move(done_cb).Run();
 +}
 +
- }  // namespace content
+ void InProcessLaunchedVideoCaptureDevice::
+     SetDesktopCaptureWindowIdOnDeviceThread(media::VideoCaptureDevice* device,
+                                             gfx::NativeViewId window_id,
 diff --git a/content/browser/renderer_host/media/in_process_launched_video_capture_device.h b/content/browser/renderer_host/media/in_process_launched_video_capture_device.h
-index f25a1bac0c39..3d0599beb4b1 100644
+index 8f82de471599..57019287a3a6 100644
 --- a/content/browser/renderer_host/media/in_process_launched_video_capture_device.h
 +++ b/content/browser/renderer_host/media/in_process_launched_video_capture_device.h
-@@ -32,6 +32,8 @@ class InProcessLaunchedVideoCaptureDevice : public LaunchedVideoCaptureDevice {
- 
+@@ -33,6 +33,9 @@ class InProcessLaunchedVideoCaptureDevice : public LaunchedVideoCaptureDevice {
    void SetDesktopCaptureWindowIdAsync(gfx::NativeViewId window_id,
                                        base::OnceClosure done_cb) override;
+ 
 +  void SetDesktopCaptureSkipCursorAsync(bool skip_cursor,
 +                                        base::OnceClosure done_cb) override;
++
+   void OnUtilizationReport(int frame_feedback_id,
+                            media::VideoFrameFeedback feedback) override;
  
-   void OnUtilizationReport(int frame_feedback_id, double utilization) override;
- 
-@@ -40,6 +42,10 @@ class InProcessLaunchedVideoCaptureDevice : public LaunchedVideoCaptureDevice {
+@@ -41,6 +44,10 @@ class InProcessLaunchedVideoCaptureDevice : public LaunchedVideoCaptureDevice {
        media::VideoCaptureDevice* device,
        gfx::NativeViewId window_id,
        base::OnceClosure done_cb);
@@ -144,11 +146,11 @@ index f25a1bac0c39..3d0599beb4b1 100644
    std::unique_ptr<media::VideoCaptureDevice> device_;
    const scoped_refptr<base::SingleThreadTaskRunner> device_task_runner_;
 diff --git a/content/browser/renderer_host/media/service_launched_video_capture_device.cc b/content/browser/renderer_host/media/service_launched_video_capture_device.cc
-index 4f785f10f928..0c3133617a11 100644
+index e0e04740dd03..b56314727edc 100644
 --- a/content/browser/renderer_host/media/service_launched_video_capture_device.cc
 +++ b/content/browser/renderer_host/media/service_launched_video_capture_device.cc
-@@ -90,6 +90,15 @@ void ServiceLaunchedVideoCaptureDevice::SetDesktopCaptureWindowIdAsync(
-   NOTREACHED();
+@@ -81,6 +81,15 @@ void ServiceLaunchedVideoCaptureDevice::RequestRefreshFrame() {
+   // frames.
  }
  
 +void ServiceLaunchedVideoCaptureDevice::SetDesktopCaptureSkipCursorAsync(
@@ -160,27 +162,27 @@ index 4f785f10f928..0c3133617a11 100644
 +  NOTREACHED();
 +}
 +
- void ServiceLaunchedVideoCaptureDevice::OnUtilizationReport(
-     int frame_feedback_id,
-     double utilization) {
+ void ServiceLaunchedVideoCaptureDevice::SetDesktopCaptureWindowIdAsync(
+     gfx::NativeViewId window_id,
+     base::OnceClosure done_cb) {
 diff --git a/content/browser/renderer_host/media/service_launched_video_capture_device.h b/content/browser/renderer_host/media/service_launched_video_capture_device.h
-index b0fdca692b33..4e837fbd25a1 100644
+index faabd6b9a950..54dbc4e89384 100644
 --- a/content/browser/renderer_host/media/service_launched_video_capture_device.h
 +++ b/content/browser/renderer_host/media/service_launched_video_capture_device.h
-@@ -37,6 +37,8 @@ class ServiceLaunchedVideoCaptureDevice : public LaunchedVideoCaptureDevice {
- 
-   void SetDesktopCaptureWindowIdAsync(gfx::NativeViewId window_id,
-                                       base::OnceClosure done_cb) override;
+@@ -34,6 +34,8 @@ class ServiceLaunchedVideoCaptureDevice : public LaunchedVideoCaptureDevice {
+   void MaybeSuspendDevice() override;
+   void ResumeDevice() override;
+   void RequestRefreshFrame() override;
 +  void SetDesktopCaptureSkipCursorAsync(bool skip_cursor,
 +                                        base::OnceClosure done_cb) override;
  
-   void OnUtilizationReport(int frame_feedback_id, double utilization) override;
- 
+   void SetDesktopCaptureWindowIdAsync(gfx::NativeViewId window_id,
+                                       base::OnceClosure done_cb) override;
 diff --git a/content/browser/renderer_host/media/video_capture_controller.cc b/content/browser/renderer_host/media/video_capture_controller.cc
-index a4fe0a297a04..3485ccee24ec 100644
+index aa37a1a0adb1..ebb0d2e2156e 100644
 --- a/content/browser/renderer_host/media/video_capture_controller.cc
 +++ b/content/browser/renderer_host/media/video_capture_controller.cc
-@@ -768,6 +768,15 @@ void VideoCaptureController::SetDesktopCaptureWindowIdAsync(
+@@ -822,6 +822,15 @@ void VideoCaptureController::SetDesktopCaptureWindowIdAsync(
                                                     std::move(done_cb));
  }
  
@@ -197,10 +199,10 @@ index a4fe0a297a04..3485ccee24ec 100644
      const VideoCaptureControllerID& id,
      VideoCaptureControllerEventHandler* handler,
 diff --git a/content/browser/renderer_host/media/video_capture_controller.h b/content/browser/renderer_host/media/video_capture_controller.h
-index 0b248bc4fd67..93c61d3815d6 100644
+index f1c707bc17df..1a8851b5fccc 100644
 --- a/content/browser/renderer_host/media/video_capture_controller.h
 +++ b/content/browser/renderer_host/media/video_capture_controller.h
-@@ -153,6 +153,8 @@ class CONTENT_EXPORT VideoCaptureController
+@@ -150,6 +150,8 @@ class CONTENT_EXPORT VideoCaptureController
    void RequestRefreshFrame();
    void SetDesktopCaptureWindowIdAsync(gfx::NativeViewId window_id,
                                        base::OnceClosure done_cb);
@@ -210,10 +212,10 @@ index 0b248bc4fd67..93c61d3815d6 100644
    const std::string& device_id() const { return device_id_; }
    blink::mojom::MediaStreamType stream_type() const { return stream_type_; }
 diff --git a/content/browser/renderer_host/media/video_capture_manager.cc b/content/browser/renderer_host/media/video_capture_manager.cc
-index 1f723364ab51..d4aa08620d77 100644
+index bbf39213260e..c2027d29d268 100644
 --- a/content/browser/renderer_host/media/video_capture_manager.cc
 +++ b/content/browser/renderer_host/media/video_capture_manager.cc
-@@ -641,6 +641,35 @@ void VideoCaptureManager::MaybePostDesktopCaptureWindowId(
+@@ -621,6 +621,36 @@ void VideoCaptureManager::MaybePostDesktopCaptureWindowId(
    notification_window_ids_.erase(window_id_it);
  }
  
@@ -225,6 +227,7 @@ index 1f723364ab51..d4aa08620d77 100644
 +      LookupControllerByMediaTypeAndDeviceId(
 +          blink::mojom::MediaStreamType::GUM_DESKTOP_VIDEO_CAPTURE,
 +          device_id);
++
 +  if (!existing_device) {
 +    DVLOG(2) << "Failed to find an existing screen capture device.";
 +    return;
@@ -250,19 +253,107 @@ index 1f723364ab51..d4aa08620d77 100644
      const base::UnguessableToken& session_id,
      media::VideoCaptureDevice::GetPhotoStateCallback callback) {
 diff --git a/content/browser/renderer_host/media/video_capture_manager.h b/content/browser/renderer_host/media/video_capture_manager.h
-index 0e09398324dc..a13e87db62a8 100644
+index 3f28001da833..4800ffa7328f 100644
 --- a/content/browser/renderer_host/media/video_capture_manager.h
 +++ b/content/browser/renderer_host/media/video_capture_manager.h
-@@ -157,6 +157,9 @@ class CONTENT_EXPORT VideoCaptureManager
-       blink::mojom::MediaStreamType stream_type,
-       const std::string& device_id);
+@@ -163,6 +163,10 @@ class CONTENT_EXPORT VideoCaptureManager
+   void SetDesktopCaptureWindowId(const media::VideoCaptureSessionId& session_id,
+                                  gfx::NativeViewId window_id);
  
++  // Sets the flag to enable/disable cursor capture
 +  void SetDesktopCaptureSkipCursor(const std::string& device_id,
 +                                   bool skip_cursor);
 +
-   // Sets the platform-dependent window ID for the desktop capture notification
-   // UI for the given session.
-   void SetDesktopCaptureWindowId(const media::VideoCaptureSessionId& session_id,
+   void GetPhotoState(const base::UnguessableToken& session_id,
+                      VideoCaptureDevice::GetPhotoStateCallback callback);
+   void SetPhotoOptions(const base::UnguessableToken& session_id,
+diff --git a/content/public/browser/BUILD.gn b/content/public/browser/BUILD.gn
+index 6155a91c6f3e..e9a87e8e0f67 100644
+--- a/content/public/browser/BUILD.gn
++++ b/content/public/browser/BUILD.gn
+@@ -201,6 +201,8 @@ source_set("browser_sources") {
+     "login_delegate.h",
+     "manifest_icon_downloader.h",
+     "media_capture_devices.h",
++    "media_device_request.cc",
++    "media_device_request.h",
+     "media_device_id.cc",
+     "media_device_id.h",
+     "media_keys_listener_manager.cc",
+diff --git a/content/public/browser/media_device_request.cc b/content/public/browser/media_device_request.cc
+new file mode 100644
+index 000000000000..387987a020a0
+--- /dev/null
++++ b/content/public/browser/media_device_request.cc
+@@ -0,0 +1,44 @@
++// Copyright 2020 The Chromium Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "content/public/browser/media_device_request.h"
++
++#include "base/task/post_task.h"
++#include "content/browser/browser_main_loop.h"
++#include "content/browser/renderer_host/media/media_stream_manager.h"
++#include "content/browser/renderer_host/media/video_capture_manager.h"
++#include "content/public/browser/browser_task_traits.h"
++
++namespace {
++
++void SkipCursorOnIOThread(content::MediaStreamManager* media_stream_manager, const std::string& device_id, bool skip_cursor) {
++  content::VideoCaptureManager* video_capture_manager =
++      media_stream_manager->video_capture_manager();
++
++  if (!video_capture_manager) {
++    return;
++  }
++
++  video_capture_manager->SetDesktopCaptureSkipCursor(device_id, skip_cursor);
++}
++
++} // namespace
++
++namespace content {
++
++void MediaDeviceRequest::SetSkipCursor(const std::string& device_id, bool skip_cursor) {
++  content::MediaStreamManager* media_stream_manager =
++      content::BrowserMainLoop::GetInstance()->media_stream_manager();
++
++  if (!media_stream_manager) {
++    return;
++  }
++
++  base::PostTask(
++      FROM_HERE, {content::BrowserThread::IO},
++      base::BindOnce(&SkipCursorOnIOThread, base::Unretained(media_stream_manager), device_id, skip_cursor));
++
++}
++
++}  // namespace content
+\ No newline at end of file
+diff --git a/content/public/browser/media_device_request.h b/content/public/browser/media_device_request.h
+new file mode 100644
+index 000000000000..2ffcedb0576f
+--- /dev/null
++++ b/content/public/browser/media_device_request.h
+@@ -0,0 +1,17 @@
++// Copyright 2020 The Chromium Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#ifndef CONTENT_PUBLIC_BROWSER_MEDIA_DEVICE_REQUEST_H_
++#define CONTENT_PUBLIC_BROWSER_MEDIA_DEVICE_REQUEST_H_
++
++namespace content {
++
++class MediaDeviceRequest {
++ public:
++    static void SetSkipCursor(const std::string& device_id, bool skip_cursor);
++};
++
++}  // namespace content
++
++#endif  // CONTENT_PUBLIC_BROWSER_MEDIA_DEVICE_REQUEST_H_
 diff --git a/content/public/browser/video_capture_device_launcher.h b/content/public/browser/video_capture_device_launcher.h
 index 3d58cfef2e98..ccc88dced80c 100644
 --- a/content/public/browser/video_capture_device_launcher.h
@@ -278,4 +369,5 @@ index 3d58cfef2e98..ccc88dced80c 100644
  
  }  // namespace content
 -- 
-2.25.1
+2.22.0.windows.1
+

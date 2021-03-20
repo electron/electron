@@ -10,14 +10,12 @@
 
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
-#include "base/task/post_task.h"
 #include "base/threading/thread_restrictions.h"
+#include "base/task/post_task.h"
 #include "chrome/browser/media/webrtc/desktop_media_list.h"
 #include "chrome/browser/media/webrtc/window_icon_util.h"
-#include "content/browser/browser_main_loop.h"
-#include "content/browser/renderer_host/media/media_stream_manager.h"
-#include "content/browser/renderer_host/media/video_capture_manager.h"
 #include "content/public/browser/browser_task_traits.h"
+#include "content/public/browser/media_device_request.h"
 #include "content/public/browser/desktop_capture.h"
 #include "gin/object_template_builder.h"
 #include "shell/browser/javascript_environment.h"
@@ -65,28 +63,6 @@ struct Converter<electron::api::DesktopCapturer::Source> {
 }  // namespace gin
 
 namespace electron {
-
-namespace {
-
-void SetSkipCursorOnIOThread(const std::string& device_id, bool skip_cursor) {
-  content::MediaStreamManager* media_stream_manager =
-      content::BrowserMainLoop::GetInstance()->media_stream_manager();
-
-  if (!media_stream_manager) {
-    return;
-  }
-
-  content::VideoCaptureManager* video_capture_manager =
-      media_stream_manager->video_capture_manager();
-
-  if (!video_capture_manager) {
-    return;
-  }
-
-  video_capture_manager->SetDesktopCaptureSkipCursor(device_id, skip_cursor);
-}
-
-}  // namespace
 
 namespace api {
 
@@ -151,9 +127,7 @@ void DesktopCapturer::OnSourceUnchanged(DesktopMediaList* list) {
 
 void DesktopCapturer::SetSkipCursor(const std::string& device_id,
                                     bool skip_cursor) {
-  base::PostTask(
-      FROM_HERE, {content::BrowserThread::IO},
-      base::BindOnce(SetSkipCursorOnIOThread, device_id, skip_cursor));
+  content::MediaDeviceRequest::SetSkipCursor(device_id, skip_cursor);
 }
 
 void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {

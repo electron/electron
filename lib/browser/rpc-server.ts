@@ -81,7 +81,7 @@ if (BUILDFLAG(ENABLE_DESKTOP_CAPTURER)) {
       return;
     }
 
-    desktopCapturer.setSkipCursor(event, sourceId, skipCursor);
+    desktopCapturer.setSkipCursorImpl(event, sourceId, skipCursor);
   });
 }
 
