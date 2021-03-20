@@ -9,6 +9,7 @@
 #include "base/base_switches.h"
 #include "base/command_line.h"
 #include "base/feature_list.h"
+#include "base/metrics/field_trial.h"
 #include "content/public/common/content_features.h"
 #include "electron/buildflags/buildflags.h"
 #include "media/base/media_switches.h"
@@ -46,6 +47,14 @@ void InitializeFeatureList() {
   disable_features += std::string(",") + media::kPictureInPicture.name;
 #endif
   base::FeatureList::InitializeInstance(enable_features, disable_features);
+}
+
+void InitializeFieldTrials() {
+  auto* cmd_line = base::CommandLine::ForCurrentProcess();
+  auto force_fieldtrials =
+      cmd_line->GetSwitchValueASCII(::switches::kForceFieldTrials);
+
+  base::FieldTrialList::CreateTrialsFromString(force_fieldtrials);
 }
 
 }  // namespace electron
