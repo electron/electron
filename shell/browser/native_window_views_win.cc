@@ -150,7 +150,7 @@ HHOOK NativeWindowViews::mouse_hook_ = NULL;
 
 void NativeWindowViews::Maximize() {
   // Only use Maximize() when window has WS_THICKFRAME style
-  if (::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE) & WS_THICKFRAME) {
+  if (!transparent()) {
     if (IsVisible())
       widget()->Maximize();
     else
@@ -323,6 +323,12 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
       NotifyWindowSystemContextMenu(GET_X_LPARAM(l_param),
                                     GET_Y_LPARAM(l_param), &prevent_default);
       return prevent_default;
+    }
+    case WM_SYSCOMMAND: {
+      if (transparent() && w_param == SC_MAXIMIZE) {
+        return true;
+      }
+      return false;
     }
     default:
       return false;
