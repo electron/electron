@@ -1,4 +1,5 @@
 import { expect } from 'chai';
+import { v4 } from 'uuid';
 import { protocol, webContents, WebContents, session, BrowserWindow, ipcMain } from 'electron/main';
 import { AddressInfo } from 'net';
 import * as ChildProcess from 'child_process';
@@ -721,6 +722,36 @@ describe('protocol module', () => {
       expect(code).to.equal(0);
       expect(stdout).to.not.contain('VALIDATION_ERROR_DESERIALIZATION_FAILED');
       expect(stderr).to.not.contain('VALIDATION_ERROR_DESERIALIZATION_FAILED');
+    });
+  });
+
+  describe('protocol.registerSchemesAsPrivileged allowServiceWorkers', () => {
+    const { serviceWorkerScheme } = global as any;
+    protocol.registerStringProtocol(serviceWorkerScheme, (request, cb) => {
+      if (request.url.endsWith('.js')) {
+        cb({
+          mimeType: 'text/javascript',
+          charset: 'utf-8',
+          data: 'console.log("Loaded")'
+        });
+      } else {
+        cb({
+          mimeType: 'text/html',
+          charset: 'utf-8',
+          data: '<!DOCTYPE html>'
+        });
+      }
+    });
+    after(() => protocol.unregisterProtocol(serviceWorkerScheme));
+
+    it('should fail when registering invalid service worker', async () => {
+      await contents.loadURL(`${serviceWorkerScheme}://${v4()}.com`);
+      await expect(contents.executeJavaScript(`navigator.serviceWorker.register('${v4()}.notjs', {scope: './'})`)).to.be.rejected();
+    });
+
+    it('should be able to register service worker for custom scheme', async () => {
+      await contents.loadURL(`${serviceWorkerScheme}://${v4()}.com`);
+      await contents.executeJavaScript(`navigator.serviceWorker.register('${v4()}.js', {scope: './'})`);
     });
   });
 
