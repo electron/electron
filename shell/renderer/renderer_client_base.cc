@@ -383,7 +383,10 @@ bool RendererClientBase::IsPluginHandledExternally(
 
 bool RendererClientBase::IsOriginIsolatedPepperPlugin(
     const base::FilePath& plugin_path) {
-  // Taken from chrome's own implementation of this method.
+  // Taken from Chrome's own implementation of this same method:
+  // https://source.chromium.org/chromium/chromium/src/+/37893bf803b256be100b1bd1805abcd069c33140:chrome/renderer/chrome_content_renderer_client.cc;l=1341-1363
+  //
+  // NOTE: the logic for NaCl is excluded here as we don't currently support it.
 
   // Hosting plugins in-process is inherently incompatible with attempting to
   // process-isolate plugins from different origins.
