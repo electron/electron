@@ -10,6 +10,7 @@
 
 #include <shlobj.h>
 #include <shobjidl.h>
+#include "base/win/shlwapi.h"  // NOLINT(build/include_order)
 
 #include "base/files/file_util.h"
 #include "base/i18n/case_conversion.h"
