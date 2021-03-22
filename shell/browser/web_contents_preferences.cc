@@ -63,8 +63,8 @@ bool GetAsString(const base::Value* val,
 
 #if defined(OS_WIN)
 bool GetAsString(const base::Value* val,
-                 base::FilePath::StringPieceType path,
-                 std::u16string* out) {
+                 base::StringPiece path,
+                 std::wstring* out) {
   if (val) {
     auto* found = val->FindKeyOfType(path, base::Value::Type::STRING);
     if (found) {
