@@ -267,7 +267,7 @@ bool WebContentsPreferences::GetPreloadPath(base::FilePath* path) const {
 #else
     preload_url = GURL(preload_path);
 #endif
-    if (net::FileURLToFilePath(GURL(preload_path), &preload)) {
+    if (net::FileURLToFilePath(preload_url, &preload)) {
       *path = std::move(preload);
       return true;
     } else {
