@@ -68,6 +68,96 @@ describe('webFrameMain module', () => {
       ]);
     });
 
+    it('searches over subframe with find next', async () => {
+      const frame = w.webContents.mainFrame.framesInSubtree[2];
+      {
+        const foundInFrame = emittedOnce(frame, 'found-in-frame');
+        frame.findInFrame('i', { findNext: true });
+        const [, result] = await foundInFrame;
+        expect(result.matches).equal(4);
+        expect(result.activeMatchOrdinal).equal(1);
+      }
+      {
+        const foundInFrame = emittedOnce(frame, 'found-in-frame');
+        frame.findInFrame('i', { findNext: false });
+        const [, result] = await foundInFrame;
+        expect(result.matches).equal(4);
+        expect(result.activeMatchOrdinal).equal(2);
+      }
+      frame.stopFindInFrame('clearSelection');
+    });
+
+    it('searches over subframe with find next from top frame', async () => {
+      const frame = w.webContents.mainFrame.framesInSubtree[0];
+      {
+        const foundInFrame = emittedOnce(frame, 'found-in-frame');
+        frame.findInFrame('This', { findNext: true });
+        const [, result] = await foundInFrame;
+        expect(result.matches).equal(3);
+        expect(result.activeMatchOrdinal).equal(1);
+      }
+      {
+        const foundInFrame = emittedOnce(frame, 'found-in-frame');
+        frame.findInFrame('This', { findNext: false });
+        const [, result] = await foundInFrame;
+        expect(result.matches).equal(3);
+        expect(result.activeMatchOrdinal).equal(2);
+      }
+    });
+
+    it('searches over subframes multiple times', async () => {
+      const frame = w.webContents.mainFrame.framesInSubtree[2];
+      for (let i = 0; i < 3; i++) {
+        {
+          const foundInFrame = emittedOnce(frame, 'found-in-frame');
+          frame.findInFrame('i', { findNext: true });
+          const [, result] = await foundInFrame;
+          expect(result.matches).equal(4);
+          expect(result.activeMatchOrdinal).equal(1);
+          frame.stopFindInFrame('keepSelection');
+        }
+        {
+          const extraFind = emittedOnce(frame, 'found-in-frame');
+          frame.findInFrame('i', { findNext: true });
+          await extraFind;
+          const foundInFrame = emittedOnce(frame, 'found-in-frame');
+          frame.findInFrame('i', { findNext: false });
+          const [, result] = await foundInFrame;
+          expect(result.matches).equal(4);
+          expect(result.activeMatchOrdinal).equal(3);
+          frame.stopFindInFrame('clearSelection');
+        }
+      }
+    });
+
+    it('searches over two frames concurrently', async () => {
+      await w.loadFile(path.join(subframesPath, 'frame-with-frames.html'));
+      const firstFrame = w.webContents.mainFrame.framesInSubtree[1];
+      const secondFrame = w.webContents.mainFrame.framesInSubtree[2];
+      {
+        const firstSearch = emittedOnce(firstFrame, 'found-in-frame');
+        firstFrame.findInFrame('i', { findNext: true });
+        await firstSearch;
+        const secondSearch = emittedOnce(secondFrame, 'found-in-frame');
+        secondFrame.findInFrame('a', { findNext: true });
+        await secondSearch;
+      }
+      {
+        const firstSearch = emittedOnce(firstFrame, 'found-in-frame');
+        secondFrame.findInFrame('a', { findNext: false });
+        const secondSearch = emittedOnce(secondFrame, 'found-in-frame');
+        firstFrame.findInFrame('i', { findNext: false });
+        const [, firstResult] = await firstSearch;
+        const [, secondResult] = await secondSearch;
+        expect(firstResult.matches).equal(4);
+        expect(firstResult.activeMatchOrdinal).equal(2);
+        expect(secondResult.matches).equal(3);
+        expect(secondResult.activeMatchOrdinal).equal(2);
+        firstFrame.stopFindInFrame('clearSelection');
+        secondFrame.stopFindInFrame('clearSelection');
+      }
+    });
+
     describe('cross-origin', () => {
       type Server = { server: http.Server, url: string }
 

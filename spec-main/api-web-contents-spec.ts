@@ -12,6 +12,7 @@ import { ifdescribe, ifit, delay, defer } from './spec-helpers';
 const pdfjs = require('pdfjs-dist');
 const fixturesPath = path.resolve(__dirname, '..', 'spec', 'fixtures');
 const mainFixturesPath = path.resolve(__dirname, 'fixtures');
+const subframesPath = path.resolve(mainFixturesPath, 'sub-frames');
 const features = process._linkedBinding('electron_common_features');
 
 describe('webContents module', () => {
@@ -2027,5 +2028,67 @@ describe('webContents module', () => {
     await new Promise((resolve) => { process.nextTick(resolve); });
     expect(wasCalled).to.equal(false);
     await closeAllWindows();
+  });
+
+  describe('findInPage', () => {
+    let w: BrowserWindow;
+
+    beforeEach(async () => {
+      w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: true } });
+      await w.loadFile(path.join(subframesPath, 'frame-with-frame-container.html'));
+    });
+
+    it('searches over whole page with find next', async () => {
+      const contents = w.webContents;
+      {
+        const foundInPage = emittedOnce(contents, 'found-in-page');
+        contents.findInPage('This', { findNext: true });
+        const [, result] = await foundInPage;
+        expect(result.matches).equal(3);
+        expect(result.activeMatchOrdinal).equal(1);
+      }
+      for (let i = 0; i < 2; i++) {
+        const foundInPage = emittedOnce(contents, 'found-in-page');
+        contents.findInPage('This', { findNext: false });
+        const [, result] = await foundInPage;
+        expect(result.matches).equal(3);
+        expect(result.activeMatchOrdinal).equal(i + 2);
+      }
+      {
+        const foundInPage = emittedOnce(contents, 'found-in-page');
+        contents.findInPage('This', { findNext: false });
+        const [, result] = await foundInPage;
+        expect(result.matches).equal(3);
+        expect(result.activeMatchOrdinal).equal(1);
+      }
+    });
+
+    it('searches over whole page with clears in between', async () => {
+      const contents = w.webContents;
+      {
+        const ev = emittedOnce(contents, 'found-in-page');
+        contents.findInPage('is', { findNext: true });
+        const [, result] = await ev;
+        expect(result.matches).equal(7);
+        expect(result.activeMatchOrdinal).equal(1);
+        contents.stopFindInPage('keepSelection');
+      }
+      {
+        const ev = emittedOnce(contents, 'found-in-page');
+        contents.findInPage('is', { findNext: true });
+        const [, result] = await ev;
+        expect(result.matches).equal(7);
+        expect(result.activeMatchOrdinal).equal(2);
+        contents.stopFindInPage('clearSelection');
+      }
+      {
+        const ev = emittedOnce(contents, 'found-in-page');
+        contents.findInPage('is', { findNext: true });
+        const [, result] = await ev;
+        expect(result.matches).equal(7);
+        expect(result.activeMatchOrdinal).equal(1);
+        contents.stopFindInPage('clearSelection');
+      }
+    });
   });
 });
