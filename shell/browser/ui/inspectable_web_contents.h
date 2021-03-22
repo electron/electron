@@ -201,12 +201,6 @@ class InspectableWebContents
   void AddDevToolsExtensionsToClient();
 #endif
 
-  bool frontend_loaded_ = false;
-  scoped_refptr<content::DevToolsAgentHost> agent_host_;
-  std::unique_ptr<content::DevToolsFrontendHost> frontend_host_;
-  std::unique_ptr<DevToolsEmbedderMessageDispatcher>
-      embedder_message_dispatcher_;
-
   DevToolsContentsResizingStrategy contents_resizing_strategy_;
   gfx::Rect devtools_bounds_;
   bool can_dock_ = true;
@@ -227,6 +221,12 @@ class InspectableWebContents
 
   bool is_guest_;
   std::unique_ptr<InspectableWebContentsView> view_;
+
+  bool frontend_loaded_ = false;
+  scoped_refptr<content::DevToolsAgentHost> agent_host_;
+  std::unique_ptr<content::DevToolsFrontendHost> frontend_host_;
+  std::unique_ptr<DevToolsEmbedderMessageDispatcher>
+      embedder_message_dispatcher_;
 
   class NetworkResourceLoader;
   std::set<std::unique_ptr<NetworkResourceLoader>, base::UniquePtrComparator>
