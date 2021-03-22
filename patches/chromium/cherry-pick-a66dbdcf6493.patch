@@ -1,0 +1,475 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Marijn Kruisselbrink <mek@chromium.org>
+Date: Tue, 8 Dec 2020 07:20:47 +0000
+Subject: Reland "Reland "[FSA] Add IsSafePathComponent checks to
+ GetFile/GetDirectoryHandle.""
+
+This is a reland of 2d41c3952d2851948a09ddcf3e97bae6c419b024
+
+The added test was modified to no longer assert that all unsafe files
+were written to disk successfully. This should make the test pass (albeit
+with less stringent checks) on file systems/platforms that don't allow
+all unsafe file names.
+
+Original change's description:
+> Reland "[FSA] Add IsSafePathComponent checks to GetFile/GetDirectoryHandle."
+>
+> This is a reland of 004377929febd7cf7392932b01df7f4a0a362679
+>
+> The main difference is to make sure iterating over a directory doesn't
+> return files we don't want to expose either (and not CHECK failing if
+> such files are found when iterating).
+>
+> Original change's description:
+> > [FSA] Add IsSafePathComponent checks to GetFile/GetDirectoryHandle.
+> >
+> > This isn't directly using net::IsSafePortablePathComponent since what
+> > is safe for the File System Access API is not the same as what is safe
+> > for Downloads. As such currently this duplicates a lot of the
+> > implementation of this method, but in a followup we should attempt to
+> > unify these two implementations as much as possible.
+> >
+> > Bug: 1150810, 1154757
+> > Change-Id: Iba4c92ef5f1cd924aa22b9dd201762d48b4bbc3b
+> > Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2568383
+> > Commit-Queue: Marijn Kruisselbrink <mek@chromium.org>
+> > Reviewed-by: Victor Costan <pwnall@chromium.org>
+> > Cr-Commit-Position: refs/heads/master@{#833042}
+>
+> Bug: 1150810
+> Bug: 1154757
+> Change-Id: I3341b9824a1ac4cbd6f100355960ad55b01f0753
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2575370
+> Commit-Queue: Victor Costan <pwnall@chromium.org>
+> Reviewed-by: Victor Costan <pwnall@chromium.org>
+> Cr-Commit-Position: refs/heads/master@{#834118}
+
+Bug: 1150810
+Bug: 1154757
+Change-Id: Ie5cad9a7b2383c89b96e8a7be6cfe75ad2555fa6
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2577614
+Commit-Queue: Marijn Kruisselbrink <mek@chromium.org>
+Auto-Submit: Marijn Kruisselbrink <mek@chromium.org>
+Reviewed-by: Victor Costan <pwnall@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#834598}
+
+diff --git a/content/browser/file_system_access/native_file_system_directory_handle_impl.cc b/content/browser/file_system_access/native_file_system_directory_handle_impl.cc
+index de58fb9b60e78e68ea807de0f800266f71408cc2..2472c899621dab33c61a30d24058cd5dffe83e8b 100644
+--- a/content/browser/file_system_access/native_file_system_directory_handle_impl.cc
++++ b/content/browser/file_system_access/native_file_system_directory_handle_impl.cc
+@@ -4,6 +4,7 @@
+ 
+ #include "content/browser/file_system_access/native_file_system_directory_handle_impl.h"
+ 
++#include "base/i18n/file_util_icu.h"
+ #include "base/strings/strcat.h"
+ #include "base/strings/string_util.h"
+ #include "base/strings/utf_string_conversions.h"
+@@ -12,6 +13,7 @@
+ #include "content/browser/file_system_access/native_file_system_transfer_token_impl.h"
+ #include "mojo/public/cpp/bindings/pending_remote.h"
+ #include "net/base/escape.h"
++#include "net/base/filename_util.h"
+ #include "storage/browser/file_system/file_system_context.h"
+ #include "storage/browser/file_system/file_system_operation_runner.h"
+ #include "storage/common/file_system/file_system_util.h"
+@@ -30,27 +32,6 @@ namespace content {
+ 
+ using HandleType = NativeFileSystemPermissionContext::HandleType;
+ 
+-namespace {
+-
+-// Returns true when |name| contains a path separator like "/".
+-bool ContainsPathSeparator(const std::string& name) {
+-  const base::FilePath filepath_name = storage::StringToFilePath(name);
+-
+-  const size_t separator_position =
+-      filepath_name.value().find_first_of(base::FilePath::kSeparators);
+-
+-  return separator_position != base::FilePath::StringType::npos;
+-}
+-
+-// Returns true when |name| is "." or "..".
+-bool IsCurrentOrParentDirectory(const std::string& name) {
+-  const base::FilePath filepath_name = storage::StringToFilePath(name);
+-  return filepath_name.value() == base::FilePath::kCurrentDirectory ||
+-         filepath_name.value() == base::FilePath::kParentDirectory;
+-}
+-
+-}  // namespace
+-
+ NativeFileSystemDirectoryHandleImpl::NativeFileSystemDirectoryHandleImpl(
+     NativeFileSystemManagerImpl* manager,
+     const BindingContext& context,
+@@ -379,9 +360,10 @@ void NativeFileSystemDirectoryHandleImpl::DidReadDirectory(
+     blink::mojom::NativeFileSystemErrorPtr get_child_url_result =
+         GetChildURL(basename, &child_url);
+ 
+-    // All entries must exist in this directory as a direct child with a valid
+-    // |basename|.
+-    CHECK_EQ(get_child_url_result->status, NativeFileSystemStatus::kOk);
++    // Skip any entries with names that aren't allowed to be accessed by
++    // this API, such as files with disallowed characters in their names.
++    if (get_child_url_result->status != NativeFileSystemStatus::kOk)
++      continue;
+ 
+     entries.push_back(
+         CreateEntry(basename, child_url,
+@@ -412,25 +394,97 @@ void NativeFileSystemDirectoryHandleImpl::RemoveEntryImpl(
+       url, recurse);
+ }
+ 
++namespace {
++
++// Returns whether the specified extension receives special handling by the
++// Windows shell.
++bool IsShellIntegratedExtension(const base::FilePath::StringType& extension) {
++  base::FilePath::StringType extension_lower = base::ToLowerASCII(extension);
++
++  // .lnk files may be used to execute arbitrary code (see
++  // https://nvd.nist.gov/vuln/detail/CVE-2010-2568).
++  if (extension_lower == FILE_PATH_LITERAL("lnk"))
++    return true;
++
++  // Setting a file's extension to a CLSID may conceal its actual file type on
++  // some Windows versions (see https://nvd.nist.gov/vuln/detail/CVE-2004-0420).
++  if (!extension_lower.empty() &&
++      (extension_lower.front() == FILE_PATH_LITERAL('{')) &&
++      (extension_lower.back() == FILE_PATH_LITERAL('}')))
++    return true;
++  return false;
++}
++
++}  // namespace
++
++// static
++bool NativeFileSystemDirectoryHandleImpl::IsSafePathComponent(
++    const std::string& name) {
++  // This method is similar to net::IsSafePortablePathComponent, with a few
++  // notable differences where the net version does not consider names safe
++  // while here we do want to allow them. These cases are:
++  //  - Names starting with a '.'. These would be hidden files in most file
++  //    managers, but are something we explicitly want to support for the
++  //    File System Access API, for names like .git.
++  //  - Names that end in '.local'. For downloads writing to such files is
++  //    dangerous since it might modify what code is executed when an executable
++  //    is ran from the same directory. For the File System Access API this
++  //    isn't really a problem though, since if a website can write to a .local
++  //    file via a FileSystemDirectoryHandle they can also just modify the
++  //    executables in the directory directly.
++  //
++  // TODO(https://crbug.com/1154757): Unify this with
++  // net::IsSafePortablePathComponent, with the result probably ending up in
++  // base/i18n/file_util_icu.h.
++
++  const base::FilePath component = storage::StringToFilePath(name);
++  // Empty names, or names that contain path separators are invalid.
++  if (component.empty() || component != component.BaseName() ||
++      component != component.StripTrailingSeparators()) {
++    return false;
++  }
++
++  base::string16 component16;
++#if defined(OS_WIN)
++  component16.assign(component.value().begin(), component.value().end());
++#else
++  std::string component8 = component.AsUTF8Unsafe();
++  if (!base::UTF8ToUTF16(component8.c_str(), component8.size(), &component16))
++    return false;
++#endif
++  // base::i18n::IsFilenameLegal blocks names that start with '.', so strip out
++  // a leading '.' before passing it to that method.
++  // TODO(mek): Consider making IsFilenameLegal more flexible to support this
++  // use case.
++  if (component16[0] == '.')
++    component16 = component16.substr(1);
++  if (!base::i18n::IsFilenameLegal(component16))
++    return false;
++
++  base::FilePath::StringType extension = component.Extension();
++  if (!extension.empty())
++    extension.erase(extension.begin());  // Erase preceding '.'.
++  if (IsShellIntegratedExtension(extension))
++    return false;
++
++  if (base::TrimString(component.value(), FILE_PATH_LITERAL("."),
++                       base::TRIM_TRAILING) != component.value()) {
++    return false;
++  }
++
++  if (net::IsReservedNameOnWindows(component.value()))
++    return false;
++
++  return true;
++}
++
+ blink::mojom::NativeFileSystemErrorPtr
+ NativeFileSystemDirectoryHandleImpl::GetChildURL(
+     const std::string& basename,
+     storage::FileSystemURL* result) {
+-  // TODO(mek): Rather than doing URL serialization and parsing we should just
+-  // have a way to get a child FileSystemURL directly from its parent.
+-
+-  if (basename.empty()) {
+-    return native_file_system_error::FromStatus(
+-        NativeFileSystemStatus::kInvalidArgument,
+-        "Name can't be an empty string.");
+-  }
+-
+-  if (ContainsPathSeparator(basename) || IsCurrentOrParentDirectory(basename)) {
+-    // |basename| must refer to a entry that exists in this directory as a
+-    // direct child.
++  if (!IsSafePathComponent(basename)) {
+     return native_file_system_error::FromStatus(
+-        NativeFileSystemStatus::kInvalidArgument,
+-        "Name contains invalid characters.");
++        NativeFileSystemStatus::kInvalidArgument, "Name is not allowed.");
+   }
+ 
+   const storage::FileSystemURL parent = url();
+diff --git a/content/browser/file_system_access/native_file_system_directory_handle_impl.h b/content/browser/file_system_access/native_file_system_directory_handle_impl.h
+index 360fdbc5851f804121ec6d4fbb069c1cd9429fd2..537b2a68511523c01853a95b304765c88d52ed3a 100644
+--- a/content/browser/file_system_access/native_file_system_directory_handle_impl.h
++++ b/content/browser/file_system_access/native_file_system_directory_handle_impl.h
+@@ -57,6 +57,14 @@ class CONTENT_EXPORT NativeFileSystemDirectoryHandleImpl
+       mojo::PendingReceiver<blink::mojom::NativeFileSystemTransferToken> token)
+       override;
+ 
++  // The File System Access API should not give access to files that might
++  // trigger special handling from the operating system. This method is used to
++  // validate that all paths passed to GetFileHandle/GetDirectoryHandle are safe
++  // to be exposed to the web.
++  // TODO(https://crbug.com/1154757): Merge this with
++  // net::IsSafePortablePathComponent.
++  static bool IsSafePathComponent(const std::string& name);
++
+  private:
+   // This method creates the file if it does not currently exists. I.e. it is
+   // the implementation for passing create=true to GetFile.
+diff --git a/content/browser/file_system_access/native_file_system_directory_handle_impl_unittest.cc b/content/browser/file_system_access/native_file_system_directory_handle_impl_unittest.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..2601bc93d2561292b3972c53699d65d40356dc39
+--- /dev/null
++++ b/content/browser/file_system_access/native_file_system_directory_handle_impl_unittest.cc
+@@ -0,0 +1,196 @@
++// Copyright 2020 The Chromium Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "content/browser/file_system_access/native_file_system_directory_handle_impl.h"
++
++#include <iterator>
++#include <string>
++
++#include "base/bind.h"
++#include "base/files/file_util.h"
++#include "base/files/scoped_temp_dir.h"
++#include "base/macros.h"
++#include "base/run_loop.h"
++#include "base/test/bind.h"
++#include "base/test/task_environment.h"
++#include "build/build_config.h"
++#include "content/browser/file_system_access/fixed_native_file_system_permission_grant.h"
++#include "content/public/test/browser_task_environment.h"
++#include "storage/browser/test/test_file_system_context.h"
++#include "testing/gmock/include/gmock/gmock.h"
++#include "testing/gtest/include/gtest/gtest.h"
++
++namespace content {
++
++using storage::FileSystemURL;
++
++class NativeFileSystemDirectoryHandleImplTest : public testing::Test {
++ public:
++  NativeFileSystemDirectoryHandleImplTest()
++      : task_environment_(base::test::TaskEnvironment::MainThreadType::IO) {}
++
++  void SetUp() override {
++    ASSERT_TRUE(dir_.CreateUniqueTempDir());
++
++    file_system_context_ = storage::CreateFileSystemContextForTesting(
++        /*quota_manager_proxy=*/nullptr, dir_.GetPath());
++
++    chrome_blob_context_ = base::MakeRefCounted<ChromeBlobStorageContext>();
++    chrome_blob_context_->InitializeOnIOThread(base::FilePath(),
++                                               base::FilePath(), nullptr);
++
++    manager_ = base::MakeRefCounted<NativeFileSystemManagerImpl>(
++        file_system_context_, chrome_blob_context_,
++        /*permission_context=*/nullptr,
++        /*off_the_record=*/false);
++
++    auto url_and_fs = manager_->CreateFileSystemURLFromPath(
++        test_src_origin_, NativeFileSystemEntryFactory::PathType::kLocal,
++        dir_.GetPath());
++
++    handle_ = std::make_unique<NativeFileSystemDirectoryHandleImpl>(
++        manager_.get(),
++        NativeFileSystemManagerImpl::BindingContext(
++            test_src_origin_, test_src_url_, /*worker_process_id=*/1),
++        url_and_fs.url,
++        NativeFileSystemManagerImpl::SharedHandleState(
++            allow_grant_, allow_grant_, std::move(url_and_fs.file_system)));
++  }
++
++  void TearDown() override { task_environment_.RunUntilIdle(); }
++
++ protected:
++  const GURL test_src_url_ = GURL("http://example.com/foo");
++  const url::Origin test_src_origin_ = url::Origin::Create(test_src_url_);
++
++  BrowserTaskEnvironment task_environment_;
++
++  base::ScopedTempDir dir_;
++  scoped_refptr<storage::FileSystemContext> file_system_context_;
++  scoped_refptr<ChromeBlobStorageContext> chrome_blob_context_;
++  scoped_refptr<NativeFileSystemManagerImpl> manager_;
++
++  scoped_refptr<FixedNativeFileSystemPermissionGrant> allow_grant_ =
++      base::MakeRefCounted<FixedNativeFileSystemPermissionGrant>(
++          FixedNativeFileSystemPermissionGrant::PermissionStatus::GRANTED,
++          base::FilePath());
++  std::unique_ptr<NativeFileSystemDirectoryHandleImpl> handle_;
++};
++
++TEST_F(NativeFileSystemDirectoryHandleImplTest, IsSafePathComponent) {
++  constexpr const char* kSafePathComponents[] = {
++      "a", "a.txt", "a b.txt", "My Computer", ".a", "lnk.zip", "lnk", "a.local",
++  };
++
++  constexpr const char* kUnsafePathComponents[] = {
++      "",
++      ".",
++      "..",
++      "...",
++      "con",
++      "con.zip",
++      "NUL",
++      "NUL.zip",
++      "a.",
++      "a\"a",
++      "a<a",
++      "a>a",
++      "a?a",
++      "a/",
++      "a\\",
++      "a ",
++      "a . .",
++      " Computer",
++      "My Computer.{a}",
++      "My Computer.{20D04FE0-3AEA-1069-A2D8-08002B30309D}",
++      "a\\a",
++      "a.lnk",
++      "a/a",
++      "C:\\",
++      "C:/",
++      "C:",
++  };
++
++  for (const char* component : kSafePathComponents) {
++    EXPECT_TRUE(
++        NativeFileSystemDirectoryHandleImpl::IsSafePathComponent(component))
++        << component;
++  }
++  for (const char* component : kUnsafePathComponents) {
++    EXPECT_FALSE(
++        NativeFileSystemDirectoryHandleImpl::IsSafePathComponent(component))
++        << component;
++  }
++}
++
++namespace {
++class TestNativeFileSystemDirectoryEntriesListener
++    : public blink::mojom::NativeFileSystemDirectoryEntriesListener {
++ public:
++  TestNativeFileSystemDirectoryEntriesListener(
++      std::vector<blink::mojom::NativeFileSystemEntryPtr>* entries,
++      base::OnceClosure done)
++      : entries_(entries), done_(std::move(done)) {}
++
++  void DidReadDirectory(
++      blink::mojom::NativeFileSystemErrorPtr result,
++      std::vector<blink::mojom::NativeFileSystemEntryPtr> entries,
++      bool has_more_entries) override {
++    EXPECT_EQ(result->status, blink::mojom::NativeFileSystemStatus::kOk);
++    entries_->insert(entries_->end(), std::make_move_iterator(entries.begin()),
++                     std::make_move_iterator(entries.end()));
++    if (!has_more_entries) {
++      std::move(done_).Run();
++    }
++  }
++
++ private:
++  std::vector<blink::mojom::NativeFileSystemEntryPtr>* entries_;
++  base::OnceClosure done_;
++};
++}  // namespace
++
++TEST_F(NativeFileSystemDirectoryHandleImplTest, GetEntries) {
++  constexpr const char* kSafeNames[] = {"a", "a.txt", "My Computer", "lnk.txt",
++                                        "a.local"};
++  constexpr const char* kUnsafeNames[] = {
++      "con",  "con.zip", "NUL",   "a.",
++      "a\"a", "a . .",   "a.lnk", "My Computer.{a}",
++  };
++  for (const char* name : kSafeNames) {
++    ASSERT_TRUE(base::WriteFile(dir_.GetPath().AppendASCII(name), "data"))
++        << name;
++  }
++  for (const char* name : kUnsafeNames) {
++    base::FilePath file_path = dir_.GetPath().AppendASCII(name);
++    bool success = base::WriteFile(file_path, "data");
++#if !defined(OS_WIN)
++    // Some of the unsafe names are not legal file names on Windows. This is
++    // okay, and doesn't materially effect the outcome of the test, so just
++    // ignore any failures writing these files to disk.
++    EXPECT_TRUE(success) << "Failed to create file " << file_path;
++#else
++    ignore_result(success);
++#endif
++  }
++
++  std::vector<blink::mojom::NativeFileSystemEntryPtr> entries;
++  base::RunLoop loop;
++  mojo::PendingRemote<blink::mojom::NativeFileSystemDirectoryEntriesListener>
++      listener;
++  mojo::MakeSelfOwnedReceiver(
++      std::make_unique<TestNativeFileSystemDirectoryEntriesListener>(
++          &entries, loop.QuitClosure()),
++      listener.InitWithNewPipeAndPassReceiver());
++  handle_->GetEntries(std::move(listener));
++  loop.Run();
++
++  std::vector<std::string> names;
++  for (const auto& entry : entries) {
++    names.push_back(entry->name);
++  }
++  EXPECT_THAT(names, testing::UnorderedElementsAreArray(kSafeNames));
++}
++
++}  // namespace content
+diff --git a/content/browser/file_system_access/native_file_system_file_handle_impl_unittest.cc b/content/browser/file_system_access/native_file_system_file_handle_impl_unittest.cc
+index c8f3ec61d9d90aecb978506bac364c386574c780..444cbe9bde90280993388d96782abaeb87c0c6b6 100644
+--- a/content/browser/file_system_access/native_file_system_file_handle_impl_unittest.cc
++++ b/content/browser/file_system_access/native_file_system_file_handle_impl_unittest.cc
+@@ -28,8 +28,6 @@
+ #include "storage/browser/test/test_file_system_context.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+ 
+-using storage::FileSystemURL;
+-
+ namespace content {
+ 
+ using blink::mojom::PermissionStatus;
+diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
+index 003f7fe21194b1aeae1db33238016749f3d2b835..4814b6599240d21166e7c9432643c02b3104d2ef 100644
+--- a/content/test/BUILD.gn
++++ b/content/test/BUILD.gn
+@@ -1745,6 +1745,7 @@ test("content_unittests") {
+     "../browser/file_system/browser_file_system_helper_unittest.cc",
+     "../browser/file_system/file_system_operation_runner_unittest.cc",
+     "../browser/file_system_access/file_system_chooser_unittest.cc",
++    "../browser/file_system_access/native_file_system_directory_handle_impl_unittest.cc",
+     "../browser/file_system_access/native_file_system_file_handle_impl_unittest.cc",
+     "../browser/file_system_access/native_file_system_file_writer_impl_unittest.cc",
+     "../browser/file_system_access/native_file_system_handle_base_unittest.cc",
