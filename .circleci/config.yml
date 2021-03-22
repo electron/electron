@@ -230,6 +230,18 @@ step-maybe-notify-slack-success: &step-maybe-notify-slack-success
       fi
     when: on_success
 
+step-maybe-cleanup-arm64-mac: &step-maybe-cleanup-arm64-mac
+  run:
+    name: Cleanup after testing
+    command: |
+      if  [ "$TARGET_ARCH" == "arm64" ] &&[ "`uname`" == "Darwin" ]; then
+        killall Electron || echo "No Electron processes left running"
+        killall Safari || echo "No Safari processes left running"
+        rm -rf ~/Library/Application\ Support/Electron*
+        rm -rf ~/Library/Application\ Support/electron*
+      fi
+    when: always
+
 step-checkout-electron: &step-checkout-electron
   checkout:
     path: src/electron
@@ -1339,6 +1351,8 @@ steps-tests: &steps-tests
     - *step-verify-chromedriver
 
     - *step-maybe-notify-slack-failure
+
+    - *step-maybe-cleanup-arm64-mac
 
 steps-test-nan: &steps-test-nan
   steps:
