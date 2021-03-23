@@ -235,9 +235,13 @@ void ElectronContentClient::AddAdditionalSchemes(Schemes* schemes) {
   auto* command_line = base::CommandLine::ForCurrentProcess();
   std::string process_type =
       command_line->GetSwitchValueASCII(::switches::kProcessType);
-  // Register schemes for browser process and network utility process, the
-  // registration for renderer process happens in `RendererClientBase`.
-  if (process_type.empty() || process_type == ::switches::kUtilityProcess) {
+  // Browser Process registration happens in
+  // `api::Protocol::RegisterSchemesAsPrivileged`
+  //
+  // Renderer Process registration happens in `RendererClientBase`
+  //
+  // We use this for registration to network utility process
+  if (process_type == ::switches::kUtilityProcess) {
     AppendDelimitedSwitchToVector(switches::kServiceWorkerSchemes,
                                   &schemes->service_worker_schemes);
     AppendDelimitedSwitchToVector(switches::kStandardSchemes,

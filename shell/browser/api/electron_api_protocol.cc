@@ -10,7 +10,6 @@
 
 #include "base/command_line.h"
 #include "base/stl_util.h"
-#include "content/common/url_schemes.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "gin/object_template_builder.h"
 #include "shell/browser/browser.h"
@@ -150,14 +149,6 @@ void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
                          g_standard_schemes);
   AppendSchemesToCmdLine(electron::switches::kStreamingSchemes,
                          g_streaming_schemes);
-
-  // The scheme registration happens before user's main script is executed, so
-  // we have to explicitly do a re-registration to make the new scheme
-  // effective.
-  // Note that while the API is marked as ForTests, it is safe to call in this
-  // use case, and it has DCHECK to ensure we are not making changes to schemes
-  // _after_ any code has read the scheme registry.
-  content::ReRegisterContentSchemesForTests();
 }
 
 namespace {
