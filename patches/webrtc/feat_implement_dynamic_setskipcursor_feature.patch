@@ -1,19 +1,13 @@
-From 7a6324463302b9f48891765c28f7631a9ee9f2c2 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: "aditya.k" <adityak368@gmail.com>
-Date: Sat, 20 Mar 2021 10:18:31 +0100
-Subject: [PATCH] feat: implement dynamic setSkipCursor feature
+Date: Tue, 23 Mar 2021 17:15:56 +0100
+Subject: feat: implement dynamic setSkipCursor feature
 
 useful to skip the cursor capture within the stream while
 the source is being shared
----
- modules/desktop_capture/desktop_and_cursor_composer.cc | 6 +++++-
- modules/desktop_capture/desktop_and_cursor_composer.h  | 2 ++
- modules/desktop_capture/desktop_capturer.cc            | 2 ++
- modules/desktop_capture/desktop_capturer.h             | 6 ++++++
- 4 files changed, 15 insertions(+), 1 deletion(-)
 
 diff --git a/modules/desktop_capture/desktop_and_cursor_composer.cc b/modules/desktop_capture/desktop_and_cursor_composer.cc
-index f282c1d500..9568c01d6d 100644
+index f282c1d500ae8f5087d72a041dbe621508949f74..9568c01d6db34d201d9328ba6f24247d1e24b612 100644
 --- a/modules/desktop_capture/desktop_and_cursor_composer.cc
 +++ b/modules/desktop_capture/desktop_and_cursor_composer.cc
 @@ -203,10 +203,14 @@ bool DesktopAndCursorComposer::IsOccluded(const DesktopVector& pos) {
@@ -33,7 +27,7 @@ index f282c1d500..9568c01d6d 100644
          !desktop_capturer_->IsOccluded(cursor_position_)) {
        DesktopVector relative_position =
 diff --git a/modules/desktop_capture/desktop_and_cursor_composer.h b/modules/desktop_capture/desktop_and_cursor_composer.h
-index 8f95721ec2..faf32c3a97 100644
+index 8f95721ec295e9496654e81f240cf8543b236456..faf32c3a9718525c40724004c8b26e9ac725f8fa 100644
 --- a/modules/desktop_capture/desktop_and_cursor_composer.h
 +++ b/modules/desktop_capture/desktop_and_cursor_composer.h
 @@ -57,6 +57,7 @@ class RTC_EXPORT DesktopAndCursorComposer
@@ -53,7 +47,7 @@ index 8f95721ec2..faf32c3a97 100644
    RTC_DISALLOW_COPY_AND_ASSIGN(DesktopAndCursorComposer);
  };
 diff --git a/modules/desktop_capture/desktop_capturer.cc b/modules/desktop_capture/desktop_capturer.cc
-index 8d8bdd5835..05b1646d4a 100644
+index 8d8bdd5835d9b8c6db980dff64c10827a7aa2438..05b1646d4afbef4a277020d9890e76b72593b924 100644
 --- a/modules/desktop_capture/desktop_capturer.cc
 +++ b/modules/desktop_capture/desktop_capturer.cc
 @@ -50,6 +50,8 @@ bool DesktopCapturer::IsOccluded(const DesktopVector& pos) {
@@ -66,7 +60,7 @@ index 8d8bdd5835..05b1646d4a 100644
  std::unique_ptr<DesktopCapturer> DesktopCapturer::CreateWindowCapturer(
      const DesktopCaptureOptions& options) {
 diff --git a/modules/desktop_capture/desktop_capturer.h b/modules/desktop_capture/desktop_capturer.h
-index 64339c0ca6..ac011aeef1 100644
+index 64339c0ca623b57f0b3367403986fde5aef1ed02..ac011aeef11c5e12d677a1c84ff62de1561bef46 100644
 --- a/modules/desktop_capture/desktop_capturer.h
 +++ b/modules/desktop_capture/desktop_capturer.h
 @@ -127,6 +127,12 @@ class RTC_EXPORT DesktopCapturer {
@@ -82,6 +76,3 @@ index 64339c0ca6..ac011aeef1 100644
    // Creates a DesktopCapturer instance which targets to capture windows.
    static std::unique_ptr<DesktopCapturer> CreateWindowCapturer(
        const DesktopCaptureOptions& options);
--- 
-2.22.0.windows.1
-
