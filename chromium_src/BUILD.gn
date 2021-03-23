@@ -18,8 +18,6 @@ static_library("chrome") {
     "//chrome/browser/accessibility/accessibility_ui.h",
     "//chrome/browser/browser_process.cc",
     "//chrome/browser/browser_process.h",
-    "//chrome/browser/crash_upload_list/crash_upload_list_crashpad.cc",
-    "//chrome/browser/crash_upload_list/crash_upload_list_crashpad.h",
     "//chrome/browser/devtools/devtools_contents_resizing_strategy.cc",
     "//chrome/browser/devtools/devtools_contents_resizing_strategy.h",
     "//chrome/browser/devtools/devtools_embedder_message_dispatcher.cc",

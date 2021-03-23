@@ -112,9 +112,8 @@ void ElectronRendererClient::DidCreateScriptContext(
   bool should_load_node =
       (is_main_frame || is_devtools || allow_node_in_subframes) &&
       !IsWebViewFrame(renderer_context, render_frame);
-  if (!should_load_node) {
+  if (!should_load_node)
     return;
-  }
 
   injected_frames_.insert(render_frame);
 
@@ -147,9 +146,8 @@ void ElectronRendererClient::DidCreateScriptContext(
 
   // Add Electron extended APIs.
   electron_bindings_->BindTo(env->isolate(), env->process_object());
-  AddRenderBindings(env->isolate(), env->process_object());
   gin_helper::Dictionary process_dict(env->isolate(), env->process_object());
-  process_dict.SetReadOnly("isMainFrame", render_frame->IsMainFrame());
+  BindProcess(env->isolate(), &process_dict, render_frame);
 
   // Load everything.
   node_bindings_->LoadEnvironment(env);

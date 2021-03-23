@@ -121,7 +121,7 @@ describe('renderer nodeIntegrationInSubFrames', () => {
         const senders = details.map(event => event[0].sender);
         const isolatedGlobals = await Promise.all(senders.map(sender => sender.executeJavaScript('window.isolatedGlobal')));
         for (const result of isolatedGlobals) {
-          if (webPreferences.contextIsolation) {
+          if (webPreferences.contextIsolation === undefined || webPreferences.contextIsolation) {
             expect(result).to.be.undefined();
           } else {
             expect(result).to.equal(true);
@@ -167,8 +167,8 @@ describe('renderer nodeIntegrationInSubFrames', () => {
       webPreferences: { sandbox: true }
     },
     {
-      name: 'context isolation',
-      webPreferences: { contextIsolation: true }
+      name: 'context isolation disabled',
+      webPreferences: { contextIsolation: false }
     },
     {
       name: 'webview',
@@ -190,7 +190,8 @@ describe('renderer nodeIntegrationInSubFrames', () => {
         webPreferences: {
           preload: path.resolve(__dirname, 'fixtures/sub-frames/webview-iframe-preload.js'),
           nodeIntegrationInSubFrames: true,
-          webviewTag: true
+          webviewTag: true,
+          contextIsolation: false
         }
       });
     });

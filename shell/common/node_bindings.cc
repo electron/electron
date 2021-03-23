@@ -363,21 +363,22 @@ void NodeBindings::Initialize() {
   // Parse and set Node.js cli flags.
   SetNodeCliFlags();
 
-  // pass non-null program name to argv so it doesn't crash
-  // trying to index into a nullptr
-  int argc = 1;
-  int exec_argc = 0;
-  const char* prog_name = "electron";
-  const char** argv = &prog_name;
-  const char** exec_argv = nullptr;
-
   std::unique_ptr<base::Environment> env(base::Environment::Create());
   SetNodeOptions(env.get());
 
-  // TODO(codebytere): this is going to be deprecated in the near future
-  // in favor of Init(std::vector<std::string>* argv,
-  //        std::vector<std::string>* exec_argv)
-  node::Init(&argc, argv, &exec_argc, &exec_argv);
+  std::vector<std::string> argv = {"electron"};
+  std::vector<std::string> exec_argv;
+  std::vector<std::string> errors;
+
+  int exit_code = node::InitializeNodeWithArgs(&argv, &exec_argv, &errors);
+
+  for (const std::string& error : errors) {
+    fprintf(stderr, "%s: %s\n", argv[0].c_str(), error.c_str());
+  }
+
+  if (exit_code != 0) {
+    exit(exit_code);
+  }
 
 #if defined(OS_WIN)
   // uv_init overrides error mode to suppress the default crash dialog, bring
@@ -531,6 +532,16 @@ void NodeBindings::LoadEnvironment(node::Environment* env) {
 }
 
 void NodeBindings::PrepareMessageLoop() {
+#if !defined(OS_WIN)
+  int handle = uv_backend_fd(uv_loop_);
+
+  // If the backend fd hasn't changed, don't proceed.
+  if (handle == handle_)
+    return;
+
+  handle_ = handle;
+#endif
+
   // Add dummy handle for libuv, otherwise libuv would quit when there is
   // nothing to do.
   uv_async_init(uv_loop_, dummy_uv_handle_.get(), nullptr);

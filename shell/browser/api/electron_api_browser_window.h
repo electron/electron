@@ -48,12 +48,13 @@ class BrowserWindow : public BaseWindow,
   // content::WebContentsObserver:
   void RenderViewHostChanged(content::RenderViewHost* old_host,
                              content::RenderViewHost* new_host) override;
-  void RenderViewCreated(content::RenderViewHost* render_view_host) override;
+  void RenderFrameCreated(content::RenderFrameHost* render_frame_host) override;
   void DidFirstVisuallyNonEmptyPaint() override;
   void BeforeUnloadDialogCancelled() override;
   void OnRendererUnresponsive(content::RenderProcessHost*) override;
   void OnRendererResponsive(
       content::RenderProcessHost* render_process_host) override;
+  void WebContentsDestroyed() override;
 
   // ExtendedWebContentsObserver:
   void OnCloseContents() override;
@@ -73,11 +74,11 @@ class BrowserWindow : public BaseWindow,
   void OnWindowIsKeyChanged(bool is_key) override;
 
   // BaseWindow:
-  void OnWindowClosed() override;
   void OnWindowBlur() override;
   void OnWindowFocus() override;
   void OnWindowResize() override;
   void OnWindowLeaveFullScreen() override;
+  void CloseImmediately() override;
   void Focus() override;
   void Blur() override;
   void SetBackgroundColor(const std::string& color_name) override;
@@ -113,9 +114,6 @@ class BrowserWindow : public BaseWindow,
 
   // Dispatch unresponsive event to observers.
   void NotifyWindowUnresponsive();
-
-  // Cleanup our WebContents observers.
-  void Cleanup();
 
   // Closure that would be called when window is unresponsive when closing,
   // it should be cancelled when we can prove that the window is responsive.

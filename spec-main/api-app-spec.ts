@@ -143,7 +143,8 @@ describe('app module', () => {
     });
   });
 
-  describe('app.exit(exitCode)', () => {
+  // Running child app under ASan might receive SIGKILL because of OOM.
+  ifdescribe(!process.env.IS_ASAN)('app.exit(exitCode)', () => {
     let appProcess: cp.ChildProcess | null = null;
 
     afterEach(() => {
@@ -209,7 +210,8 @@ describe('app module', () => {
     });
   });
 
-  describe('app.requestSingleInstanceLock', () => {
+  // Running child app under ASan might receive SIGKILL because of OOM.
+  ifdescribe(!process.env.IS_ASAN)('app.requestSingleInstanceLock', () => {
     it('prevents the second launch of app', async function () {
       this.timeout(120000);
       const appPath = path.join(fixturesPath, 'api', 'singleton');
@@ -251,7 +253,8 @@ describe('app module', () => {
     });
   });
 
-  describe('app.relaunch', () => {
+  // Running child app under ASan might receive SIGKILL because of OOM.
+  ifdescribe(!process.env.IS_ASAN)('app.relaunch', () => {
     let server: net.Server | null = null;
     const socketPath = process.platform === 'win32' ? '\\\\.\\pipe\\electron-app-relaunch' : '/tmp/electron-app-relaunch';
 
@@ -285,13 +288,20 @@ describe('app module', () => {
           } else if (String(data) === 'true' && state === 'first-launch') {
             done();
           } else {
-            done(`Unexpected state: ${state}`);
+            done(`Unexpected state: "${state}", data: "${data}"`);
           }
         });
       });
 
       const appPath = path.join(fixturesPath, 'api', 'relaunch');
-      cp.spawn(process.execPath, [appPath]);
+      const child = cp.spawn(process.execPath, [appPath]);
+      child.stdout.on('data', (c) => console.log(c.toString()));
+      child.stderr.on('data', (c) => console.log(c.toString()));
+      child.on('exit', (code, signal) => {
+        if (code !== 0) {
+          console.log(`Process exited with code "${code}" signal "${signal}"`);
+        }
+      });
     });
   });
 
@@ -408,7 +418,8 @@ describe('app module', () => {
       w = new BrowserWindow({
         show: false,
         webPreferences: {
-          nodeIntegration: true
+          nodeIntegration: true,
+          contextIsolation: false
         }
       });
       await w.loadURL('about:blank');
@@ -425,7 +436,8 @@ describe('app module', () => {
       w = new BrowserWindow({
         show: false,
         webPreferences: {
-          nodeIntegration: true
+          nodeIntegration: true,
+          contextIsolation: false
         }
       });
       await w.loadURL('about:blank');
@@ -443,103 +455,14 @@ describe('app module', () => {
         w = new BrowserWindow({
           show: false,
           webPreferences: {
-            nodeIntegration: true
+            nodeIntegration: true,
+            contextIsolation: false
           }
         });
         await w.loadURL('about:blank');
 
         const promise = emittedOnce(app, 'desktop-capturer-get-sources');
         w.webContents.executeJavaScript('require(\'electron\').desktopCapturer.getSources({ types: [\'screen\'] })');
-
-        const [, webContents] = await promise;
-        expect(webContents).to.equal(w.webContents);
-      });
-    });
-
-    ifdescribe(features.isRemoteModuleEnabled())('remote module filtering', () => {
-      it('should emit remote-require event when remote.require() is invoked', async () => {
-        w = new BrowserWindow({
-          show: false,
-          webPreferences: {
-            nodeIntegration: true,
-            enableRemoteModule: true
-          }
-        });
-        await w.loadURL('about:blank');
-
-        const promise = emittedOnce(app, 'remote-require');
-        w.webContents.executeJavaScript('require(\'electron\').remote.require(\'test\')');
-
-        const [, webContents, moduleName] = await promise;
-        expect(webContents).to.equal(w.webContents);
-        expect(moduleName).to.equal('test');
-      });
-
-      it('should emit remote-get-global event when remote.getGlobal() is invoked', async () => {
-        w = new BrowserWindow({
-          show: false,
-          webPreferences: {
-            nodeIntegration: true,
-            enableRemoteModule: true
-          }
-        });
-        await w.loadURL('about:blank');
-
-        const promise = emittedOnce(app, 'remote-get-global');
-        w.webContents.executeJavaScript('require(\'electron\').remote.getGlobal(\'test\')');
-
-        const [, webContents, globalName] = await promise;
-        expect(webContents).to.equal(w.webContents);
-        expect(globalName).to.equal('test');
-      });
-
-      it('should emit remote-get-builtin event when remote.getBuiltin() is invoked', async () => {
-        w = new BrowserWindow({
-          show: false,
-          webPreferences: {
-            nodeIntegration: true,
-            enableRemoteModule: true
-          }
-        });
-        await w.loadURL('about:blank');
-
-        const promise = emittedOnce(app, 'remote-get-builtin');
-        w.webContents.executeJavaScript('require(\'electron\').remote.app');
-
-        const [, webContents, moduleName] = await promise;
-        expect(webContents).to.equal(w.webContents);
-        expect(moduleName).to.equal('app');
-      });
-
-      it('should emit remote-get-current-window event when remote.getCurrentWindow() is invoked', async () => {
-        w = new BrowserWindow({
-          show: false,
-          webPreferences: {
-            nodeIntegration: true,
-            enableRemoteModule: true
-          }
-        });
-        await w.loadURL('about:blank');
-
-        const promise = emittedOnce(app, 'remote-get-current-window');
-        w.webContents.executeJavaScript('{ require(\'electron\').remote.getCurrentWindow() }');
-
-        const [, webContents] = await promise;
-        expect(webContents).to.equal(w.webContents);
-      });
-
-      it('should emit remote-get-current-web-contents event when remote.getCurrentWebContents() is invoked', async () => {
-        w = new BrowserWindow({
-          show: false,
-          webPreferences: {
-            nodeIntegration: true,
-            enableRemoteModule: true
-          }
-        });
-        await w.loadURL('about:blank');
-
-        const promise = emittedOnce(app, 'remote-get-current-web-contents');
-        w.webContents.executeJavaScript('{ require(\'electron\').remote.getCurrentWebContents() }');
 
         const [, webContents] = await promise;
         expect(webContents).to.equal(w.webContents);
@@ -931,7 +854,8 @@ describe('app module', () => {
     });
   });
 
-  describe('getAppPath', () => {
+  // Running child app under ASan might receive SIGKILL because of OOM.
+  ifdescribe(!process.env.IS_ASAN)('getAppPath', () => {
     it('works for directories with package.json', async () => {
       const { appPath } = await runTestApp('app-path');
       expect(appPath).to.equal(path.resolve(fixturesPath, 'api/app-path'));
@@ -1207,13 +1131,7 @@ describe('app module', () => {
     });
   });
 
-  describe('app launch through uri', () => {
-    before(function () {
-      if (process.platform !== 'win32') {
-        this.skip();
-      }
-    });
-
+  ifdescribe(process.platform === 'win32')('app launch through uri', () => {
     it('does not launch for argument following a URL', async () => {
       const appPath = path.join(fixturesPath, 'api', 'quit-app');
       // App should exit with non 123 code.
@@ -1413,7 +1331,8 @@ describe('app module', () => {
     });
   });
 
-  describe('sandbox options', () => {
+  // Running child app under ASan might receive SIGKILL because of OOM.
+  ifdescribe(!process.env.IS_ASAN)('sandbox options', () => {
     let appProcess: cp.ChildProcess = null as any;
     let server: net.Server = null as any;
     const socketPath = process.platform === 'win32' ? '\\\\.\\pipe\\electron-mixed-sandbox' : '/tmp/electron-mixed-sandbox';
@@ -1638,7 +1557,8 @@ describe('app module', () => {
     });
   });
 
-  describe('commandLine.hasSwitch (existing argv)', () => {
+  // Running child app under ASan might receive SIGKILL because of OOM.
+  ifdescribe(!process.env.IS_ASAN)('commandLine.hasSwitch (existing argv)', () => {
     it('returns true when present', async () => {
       const { hasSwitch } = await runTestApp('command-line', '--foobar');
       expect(hasSwitch).to.equal(true);
@@ -1666,7 +1586,8 @@ describe('app module', () => {
     });
   });
 
-  describe('commandLine.getSwitchValue (existing argv)', () => {
+  // Running child app under ASan might receive SIGKILL because of OOM.
+  ifdescribe(!process.env.IS_ASAN)('commandLine.getSwitchValue (existing argv)', () => {
     it('returns the value when present', async () => {
       const { getSwitchValue } = await runTestApp('command-line', '--foobar=test');
       expect(getSwitchValue).to.equal('test');
@@ -1693,7 +1614,8 @@ describe('app module', () => {
   });
 });
 
-describe('default behavior', () => {
+// Running child app under ASan might receive SIGKILL because of OOM.
+ifdescribe(!process.env.IS_ASAN)('default behavior', () => {
   describe('application menu', () => {
     it('creates the default menu if the app does not set it', async () => {
       const result = await runTestApp('default-menu');

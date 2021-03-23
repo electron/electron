@@ -1,11 +1,10 @@
 import * as path from 'path';
+import * as url from 'url';
 import { BrowserWindow, session, ipcMain, app, WebContents } from 'electron/main';
 import { closeAllWindows } from './window-helpers';
 import { emittedOnce, emittedUntil } from './events-helpers';
 import { ifdescribe } from './spec-helpers';
 import { expect } from 'chai';
-
-const features = process._linkedBinding('electron_common_features');
 
 async function loadWebView (w: WebContents, attributes: Record<string, string>, openDevTools: boolean = false): Promise<void> {
   await w.executeJavaScript(`
@@ -27,7 +26,8 @@ async function loadWebView (w: WebContents, attributes: Record<string, string>, 
   `);
 }
 
-describe('<webview> tag', function () {
+// The render process of webview might receive SIGKILL because of OOM.
+ifdescribe(!process.env.IS_ASAN)('<webview> tag', function () {
   const fixtures = path.join(__dirname, '..', 'spec', 'fixtures');
 
   afterEach(closeAllWindows);
@@ -51,7 +51,8 @@ describe('<webview> tag', function () {
       show: false,
       webPreferences: {
         webviewTag: true,
-        nodeIntegration: true
+        nodeIntegration: true,
+        contextIsolation: false
       }
     });
     w.loadFile(path.join(fixtures, 'pages', 'webview-no-script.html'));
@@ -168,7 +169,8 @@ describe('<webview> tag', function () {
         show: false,
         webPreferences: {
           webviewTag: true,
-          nodeIntegration: true
+          nodeIntegration: true,
+          contextIsolation: false
         }
       });
       const didAttachWebview = emittedOnce(w.webContents, 'did-attach-webview');
@@ -181,12 +183,38 @@ describe('<webview> tag', function () {
     });
   });
 
+  describe('did-change-theme-color event', () => {
+    it('emits when theme color changes', async () => {
+      const w = new BrowserWindow({
+        webPreferences: {
+          webviewTag: true
+        }
+      });
+      await w.loadURL('about:blank');
+      const src = url.format({
+        pathname: `${fixtures.replace(/\\/g, '/')}/pages/theme-color.html`,
+        protocol: 'file',
+        slashes: true
+      });
+      const message = await w.webContents.executeJavaScript(`new Promise((resolve, reject) => {
+        const webview = new WebView()
+        webview.setAttribute('src', '${src}')
+        webview.addEventListener('did-change-theme-color', (e) => {
+          resolve('ok')
+        })
+        document.body.appendChild(webview)
+      })`);
+      expect(message).to.equal('ok');
+    });
+  });
+
   it('loads devtools extensions registered on the parent window', async () => {
     const w = new BrowserWindow({
       show: false,
       webPreferences: {
         webviewTag: true,
-        nodeIntegration: true
+        nodeIntegration: true,
+        contextIsolation: false
       }
     });
     w.webContents.session.removeExtension('foo');
@@ -197,6 +225,7 @@ describe('<webview> tag', function () {
     w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'webview-devtools.html'));
     loadWebView(w.webContents, {
       nodeintegration: 'on',
+      webpreferences: 'contextIsolation=no',
       src: `file://${path.join(__dirname, 'fixtures', 'blank.html')}`
     }, true);
     let childWebContentsId = 0;
@@ -245,7 +274,8 @@ describe('<webview> tag', function () {
         webPreferences: {
           webviewTag: true,
           nodeIntegration: true,
-          zoomFactor: 1.2
+          zoomFactor: 1.2,
+          contextIsolation: false
         }
       });
       const zoomEventPromise = emittedOnce(ipcMain, 'webview-parent-zoom-level');
@@ -262,7 +292,8 @@ describe('<webview> tag', function () {
         webPreferences: {
           webviewTag: true,
           nodeIntegration: true,
-          zoomFactor: 1.2
+          zoomFactor: 1.2,
+          contextIsolation: false
         }
       });
       const promise = new Promise<void>((resolve) => {
@@ -292,7 +323,8 @@ describe('<webview> tag', function () {
         webPreferences: {
           webviewTag: true,
           nodeIntegration: true,
-          zoomFactor: 1.2
+          zoomFactor: 1.2,
+          contextIsolation: false
         }
       });
       const promise = new Promise<void>((resolve) => {
@@ -317,7 +349,8 @@ describe('<webview> tag', function () {
         webPreferences: {
           webviewTag: true,
           nodeIntegration: true,
-          zoomFactor: 1.2
+          zoomFactor: 1.2,
+          contextIsolation: false
         }
       });
       w.loadFile(path.join(fixtures, 'pages', 'webview-origin-zoom-level.html'));
@@ -333,7 +366,8 @@ describe('<webview> tag', function () {
           webviewTag: true,
           nodeIntegration: true,
           zoomFactor: 1.2,
-          session: webviewSession
+          session: webviewSession,
+          contextIsolation: false
         }
       });
       const attachPromise = emittedOnce(w.webContents, 'did-attach-webview');
@@ -349,7 +383,7 @@ describe('<webview> tag', function () {
   describe('nativeWindowOpen option', () => {
     let w: BrowserWindow;
     beforeEach(async () => {
-      w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, webviewTag: true } });
+      w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, webviewTag: true, contextIsolation: false } });
       await w.loadURL('about:blank');
     });
     afterEach(closeAllWindows);
@@ -359,7 +393,7 @@ describe('<webview> tag', function () {
       loadWebView(w.webContents, {
         allowpopups: 'on',
         nodeintegration: 'on',
-        webpreferences: 'nativeWindowOpen=1',
+        webpreferences: 'nativeWindowOpen=1,contextIsolation=no',
         src: `file://${path.join(fixtures, 'api', 'native-window-open-blank.html')}`
       });
 
@@ -372,7 +406,7 @@ describe('<webview> tag', function () {
       loadWebView(w.webContents, {
         allowpopups: 'on',
         nodeintegration: 'on',
-        webpreferences: 'nativeWindowOpen=1',
+        webpreferences: 'nativeWindowOpen=1,contextIsolation=no',
         src: `file://${path.join(fixtures, 'api', 'native-window-open-file.html')}`
       });
 
@@ -384,7 +418,7 @@ describe('<webview> tag', function () {
       // Don't wait for loading to finish.
       loadWebView(w.webContents, {
         nodeintegration: 'on',
-        webpreferences: 'nativeWindowOpen=1',
+        webpreferences: 'nativeWindowOpen=1,contextIsolation=no',
         src: `file://${path.join(fixtures, 'api', 'native-window-open-no-allowpopups.html')}`
       });
 
@@ -397,7 +431,7 @@ describe('<webview> tag', function () {
       loadWebView(w.webContents, {
         allowpopups: 'on',
         nodeintegration: 'on',
-        webpreferences: 'nativeWindowOpen=1',
+        webpreferences: 'nativeWindowOpen=1,contextIsolation=no',
         src: `file://${path.join(fixtures, 'api', 'native-window-open-cross-origin.html')}`
       });
 
@@ -413,7 +447,7 @@ describe('<webview> tag', function () {
       const attributes = {
         allowpopups: 'on',
         nodeintegration: 'on',
-        webpreferences: 'nativeWindowOpen=1',
+        webpreferences: 'nativeWindowOpen=1,contextIsolation=no',
         src: `file://${fixtures}/pages/window-open.html`
       };
       const { url, frameName } = await w.webContents.executeJavaScript(`
@@ -437,7 +471,7 @@ describe('<webview> tag', function () {
       // Don't wait for loading to finish.
       loadWebView(w.webContents, {
         allowpopups: 'on',
-        webpreferences: 'nativeWindowOpen=1',
+        webpreferences: 'nativeWindowOpen=1,contextIsolation=no',
         src: `file://${fixtures}/pages/window-open.html`
       });
 
@@ -450,7 +484,7 @@ describe('<webview> tag', function () {
 
       loadWebView(w.webContents, {
         allowpopups: 'on',
-        webpreferences: 'nativeWindowOpen=1',
+        webpreferences: 'nativeWindowOpen=1,contextIsolation=no',
         src: `file://${fixtures}/pages/window-open.html`
       });
 
@@ -502,7 +536,7 @@ describe('<webview> tag', function () {
   describe('permission request handlers', () => {
     let w: BrowserWindow;
     beforeEach(async () => {
-      w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, webviewTag: true } });
+      w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, webviewTag: true, contextIsolation: false } });
       await w.loadURL('about:blank');
     });
     afterEach(closeAllWindows);
@@ -556,7 +590,8 @@ describe('<webview> tag', function () {
       loadWebView(w.webContents, {
         src: `file://${fixtures}/pages/permissions/geolocation.html`,
         partition,
-        nodeintegration: 'on'
+        nodeintegration: 'on',
+        webpreferences: 'contextIsolation=no'
       });
       const [, webViewContents] = await emittedOnce(app, 'web-contents-created');
       setUpRequestHandler(webViewContents.id, 'geolocation');
@@ -569,7 +604,8 @@ describe('<webview> tag', function () {
       loadWebView(w.webContents, {
         src: `file://${fixtures}/pages/permissions/midi.html`,
         partition,
-        nodeintegration: 'on'
+        nodeintegration: 'on',
+        webpreferences: 'contextIsolation=no'
       });
       const [, webViewContents] = await emittedOnce(app, 'web-contents-created');
       setUpRequestHandler(webViewContents.id, 'midi');
@@ -582,7 +618,8 @@ describe('<webview> tag', function () {
       loadWebView(w.webContents, {
         src: `file://${fixtures}/pages/permissions/midi-sysex.html`,
         partition,
-        nodeintegration: 'on'
+        nodeintegration: 'on',
+        webpreferences: 'contextIsolation=no'
       });
       const [, webViewContents] = await emittedOnce(app, 'web-contents-created');
       setUpRequestHandler(webViewContents.id, 'midiSysex');
@@ -604,7 +641,8 @@ describe('<webview> tag', function () {
       loadWebView(w.webContents, {
         src: `file://${fixtures}/pages/permissions/notification.html`,
         partition,
-        nodeintegration: 'on'
+        nodeintegration: 'on',
+        webpreferences: 'contextIsolation=no'
       });
       const [, webViewContents] = await emittedOnce(app, 'web-contents-created');
 
@@ -613,52 +651,6 @@ describe('<webview> tag', function () {
       const [, error] = await errorFromRenderer;
       expect(error).to.equal('denied');
     });
-  });
-
-  ifdescribe(features.isRemoteModuleEnabled())('enableremotemodule attribute', () => {
-    let w: BrowserWindow;
-    beforeEach(async () => {
-      w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, webviewTag: true } });
-      await w.loadURL('about:blank');
-    });
-    afterEach(closeAllWindows);
-
-    const generateSpecs = (description: string, sandbox: boolean) => {
-      describe(description, () => {
-        const preload = `file://${fixtures}/module/preload-disable-remote.js`;
-        const src = `file://${fixtures}/api/blank.html`;
-
-        it('enables the remote module by default', async () => {
-          loadWebView(w.webContents, {
-            preload,
-            src,
-            sandbox: sandbox.toString()
-          });
-          const [, webViewContents] = await emittedOnce(app, 'web-contents-created');
-          const [, , message] = await emittedUntil(webViewContents, 'console-message', (event: any, level: any, message: string) => !/deprecated/.test(message));
-
-          const typeOfRemote = JSON.parse(message);
-          expect(typeOfRemote).to.equal('object');
-        });
-
-        it('disables the remote module when false', async () => {
-          loadWebView(w.webContents, {
-            preload,
-            src,
-            sandbox: sandbox.toString(),
-            enableremotemodule: 'false'
-          });
-          const [, webViewContents] = await emittedOnce(app, 'web-contents-created');
-          const [, , message] = await emittedOnce(webViewContents, 'console-message');
-
-          const typeOfRemote = JSON.parse(message);
-          expect(typeOfRemote).to.equal('undefined');
-        });
-      });
-    };
-
-    generateSpecs('without sandbox', false);
-    generateSpecs('with sandbox', true);
   });
 
   describe('DOM events', () => {

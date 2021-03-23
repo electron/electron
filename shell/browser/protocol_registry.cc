@@ -5,7 +5,7 @@
 #include <memory>
 #include <utility>
 
-#include "content/public/browser/non_network_url_loader_factory_base.h"
+#include "services/network/public/cpp/self_deleting_url_loader_factory.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/net/asar/asar_url_loader.h"
 #include "shell/browser/protocol_registry.h"
@@ -15,13 +15,13 @@ namespace electron {
 namespace {
 
 // Provide support for accessing asar archives in file:// protocol.
-class AsarURLLoaderFactory : public content::NonNetworkURLLoaderFactoryBase {
+class AsarURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
  public:
   static mojo::PendingRemote<network::mojom::URLLoaderFactory> Create() {
     mojo::PendingRemote<network::mojom::URLLoaderFactory> pending_remote;
 
     // The AsarURLLoaderFactory will delete itself when there are no more
-    // receivers - see the NonNetworkURLLoaderFactoryBase::OnDisconnect method.
+    // receivers - see the SelfDeletingURLLoaderFactory::OnDisconnect method.
     new AsarURLLoaderFactory(pending_remote.InitWithNewPipeAndPassReceiver());
 
     return pending_remote;
@@ -30,7 +30,7 @@ class AsarURLLoaderFactory : public content::NonNetworkURLLoaderFactoryBase {
  private:
   AsarURLLoaderFactory(
       mojo::PendingReceiver<network::mojom::URLLoaderFactory> factory_receiver)
-      : content::NonNetworkURLLoaderFactoryBase(std::move(factory_receiver)) {}
+      : network::SelfDeletingURLLoaderFactory(std::move(factory_receiver)) {}
   ~AsarURLLoaderFactory() override = default;
 
   // network::mojom::URLLoaderFactory:

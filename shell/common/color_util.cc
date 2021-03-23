@@ -51,4 +51,14 @@ std::string ToRGBHex(SkColor color) {
                             SkColorGetG(color), SkColorGetB(color));
 }
 
+std::string ToRGBAHex(SkColor color, bool include_hash) {
+  std::string color_str = base::StringPrintf(
+      "%02X%02X%02X%02X", SkColorGetR(color), SkColorGetG(color),
+      SkColorGetB(color), SkColorGetA(color));
+  if (include_hash) {
+    return "#" + color_str;
+  }
+  return color_str;
+}
+
 }  // namespace electron

@@ -114,8 +114,7 @@ BaseWindow::BaseWindow(gin_helper::Arguments* args,
 }
 
 BaseWindow::~BaseWindow() {
-  if (!window_->IsClosed())
-    window_->CloseImmediately();
+  CloseImmediately();
 
   // Destroy the native window in next tick because the native code might be
   // iterating all windows.
@@ -316,6 +315,11 @@ void BaseWindow::SetContentView(gin::Handle<View> view) {
   ResetBrowserViews();
   content_view_.Reset(isolate(), view.ToV8());
   window_->SetContentView(view->view());
+}
+
+void BaseWindow::CloseImmediately() {
+  if (!window_->IsClosed())
+    window_->CloseImmediately();
 }
 
 void BaseWindow::Close() {
@@ -1108,6 +1112,8 @@ int32_t BaseWindow::GetID() const {
 }
 
 void BaseWindow::ResetBrowserViews() {
+  v8::HandleScope scope(isolate());
+
   for (auto& item : browser_views_) {
     gin::Handle<BrowserView> browser_view;
     if (gin::ConvertFromV8(isolate(),
@@ -1118,7 +1124,7 @@ void BaseWindow::ResetBrowserViews() {
       // reset if the owner window is *this* window.
       if (browser_view->web_contents()) {
         auto* owner_window = browser_view->web_contents()->owner_window();
-        if (owner_window == window_.get()) {
+        if (owner_window && owner_window == window_.get()) {
           browser_view->web_contents()->SetOwnerWindow(nullptr);
           owner_window->RemoveBrowserView(browser_view->view());
         }

@@ -383,10 +383,10 @@ index b5940319ae17bfaf43daf18feb42722bf3705bdd..d997cfaa6275a570686d0c1703c30f21
  
  - (id)accessibilityFocusedUIElement {
 diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-index d67fba3acaa02aaa6f5ee4a5004c378007b353a3..4b8b4e5e07d5e7c591903cf4a67c258cde9ce9e2 100644
+index 03eb8ace47bc9262a05ac82747e1e67ffb1d5c97..ef39544bbf418099621784362660f5004934835d 100644
 --- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
 +++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-@@ -484,7 +484,7 @@ void PostAnnouncementNotification(NSString* announcement) {
+@@ -483,7 +483,7 @@ void PostAnnouncementNotification(NSString* announcement) {
    if (native_focus_object && [native_focus_object instanceActive]) {
      [user_info setObject:native_focus_object
                    forKey:ui::NSAccessibilityTextChangeElement];
@@ -395,7 +395,7 @@ index d67fba3acaa02aaa6f5ee4a5004c378007b353a3..4b8b4e5e07d5e7c591903cf4a67c258c
      id selected_text = [native_focus_object selectedTextMarkerRange];
      if (selected_text) {
        NSString* const NSAccessibilitySelectedTextMarkerRangeAttribute =
-@@ -492,6 +492,7 @@ void PostAnnouncementNotification(NSString* announcement) {
+@@ -491,6 +491,7 @@ void PostAnnouncementNotification(NSString* announcement) {
        [user_info setObject:selected_text
                      forKey:NSAccessibilitySelectedTextMarkerRangeAttribute];
      }
@@ -548,10 +548,10 @@ index a994f74bb68d1e57ffa787e159f0a6c69e7b6953..1d84f84b59b2bae75c10c00da730022e
  }
  
 diff --git a/net/dns/dns_config_service_posix.cc b/net/dns/dns_config_service_posix.cc
-index 3ab9e10949db76a31fdea78ba02945b7fdf73bf1..67d1808fc77fe4aa685b2a99a3df2fb999a28887 100644
+index dddd4a98a99fdea4c32d9c5b33a8fc661c75f590..a210069a9576d4aca436cdc8a2cd4322714aa24c 100644
 --- a/net/dns/dns_config_service_posix.cc
 +++ b/net/dns/dns_config_service_posix.cc
-@@ -242,8 +242,8 @@ class DnsConfigServicePosix::Watcher : public DnsConfigService::Watcher {
+@@ -136,8 +136,8 @@ class DnsConfigServicePosix::Watcher : public DnsConfigService::Watcher {
  
    bool Watch() override {
      CheckOnCorrectSequence();
@@ -561,10 +561,10 @@ index 3ab9e10949db76a31fdea78ba02945b7fdf73bf1..67d1808fc77fe4aa685b2a99a3df2fb9
      if (!config_watcher_.Watch(base::BindRepeating(&Watcher::OnConfigChanged,
                                                     base::Unretained(this)))) {
        LOG(ERROR) << "DNS config watch failed to start.";
-@@ -261,6 +261,7 @@ class DnsConfigServicePosix::Watcher : public DnsConfigService::Watcher {
+@@ -154,6 +154,7 @@ class DnsConfigServicePosix::Watcher : public DnsConfigService::Watcher {
        success = false;
      }
- #endif  // !defined(OS_ANDROID) && !defined(OS_IOS)
+ #endif  // !defined(OS_IOS)
 +#endif
      return success;
    }

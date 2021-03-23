@@ -89,7 +89,7 @@
 #endif
 
 #if defined(OS_WIN)
-#include "ui/base/cursor/cursor_loader_win.h"
+#include "ui/base/cursor/win/win_cursor_factory.h"
 #include "ui/base/l10n/l10n_util_win.h"
 #include "ui/display/win/dpi.h"
 #include "ui/gfx/system_fonts_win.h"
@@ -414,7 +414,7 @@ void ElectronBrowserMainParts::ToolkitInitialized() {
 
   wchar_t module_name[MAX_PATH] = {0};
   if (GetModuleFileName(NULL, module_name, base::size(module_name)))
-    ui::CursorLoaderWin::SetCursorResourceModule(module_name);
+    ui::SetCursorResourceModule(module_name);
 #endif
 
 #if defined(OS_MAC)

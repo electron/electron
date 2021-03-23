@@ -93,6 +93,6 @@ steps:
   condition: always()
 
 - powershell: |
-    Remove-Item -path $env:APPDATA/Electron* -Recurse
+    Remove-Item -path $env:APPDATA/Electron* -Recurse -Force -ErrorAction Ignore
   displayName: 'Delete user app data directories'
   condition: always()

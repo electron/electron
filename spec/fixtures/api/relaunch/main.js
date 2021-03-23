@@ -14,10 +14,9 @@ app.whenReady().then(() => {
     client.end(String(lastArg === '--second'));
   });
   client.once('end', () => {
+    if (lastArg !== '--second') {
+      app.relaunch({ args: process.argv.slice(1).concat('--second') });
+    }
     app.exit(0);
   });
-
-  if (lastArg !== '--second') {
-    app.relaunch({ args: process.argv.slice(1).concat('--second') });
-  }
 });

@@ -5,6 +5,7 @@ import * as fs from 'fs-extra';
 import * as http from 'http';
 import * as os from 'os';
 import * as path from 'path';
+import * as cp from 'child_process';
 
 import { closeWindow } from './window-helpers';
 import { emittedOnce } from './events-helpers';
@@ -1082,6 +1083,24 @@ describe('contextBridge', () => {
             expect(result).to.equal('hi there');
           });
 
+          it('should work with nested getters', async () => {
+            await makeBindingWindow(() => {
+              contextBridge.internalContextBridge!.overrideGlobalValueWithDynamicPropsFromIsolatedWorld(['thing'], {
+                get foo () {
+                  return {
+                    get bar () {
+                      return 'hi there';
+                    }
+                  };
+                }
+              });
+            });
+            const result = await callWithBindings(async (root: any) => {
+              return root.thing.foo.bar;
+            });
+            expect(result).to.equal('hi there');
+          });
+
           it('should work with setters', async () => {
             await makeBindingWindow(() => {
               let a: any = null;
@@ -1097,6 +1116,29 @@ describe('contextBridge', () => {
             const result = await callWithBindings(async (root: any) => {
               root.thing.foo = 123;
               return root.thing.foo;
+            });
+            expect(result).to.equal(124);
+          });
+
+          it('should work with nested getter / setter combos', async () => {
+            await makeBindingWindow(() => {
+              let a: any = null;
+              contextBridge.internalContextBridge!.overrideGlobalValueWithDynamicPropsFromIsolatedWorld(['thing'], {
+                get thingy () {
+                  return {
+                    get foo () {
+                      return a;
+                    },
+                    set foo (arg: any) {
+                      a = arg + 1;
+                    }
+                  };
+                }
+              });
+            });
+            const result = await callWithBindings(async (root: any) => {
+              root.thing.thingy.foo = 123;
+              return root.thing.thingy.foo;
             });
             expect(result).to.equal(124);
           });
@@ -1123,4 +1165,32 @@ describe('contextBridge', () => {
 
   generateTests(true);
   generateTests(false);
+});
+
+describe('ContextBridgeMutability', () => {
+  it('should not make properties unwriteable and read-only if ContextBridgeMutability is on', async () => {
+    const appPath = path.join(fixturesPath, 'context-bridge-mutability');
+    const appProcess = cp.spawn(process.execPath, ['--enable-logging', '--enable-features=ContextBridgeMutability', appPath]);
+
+    let output = '';
+    appProcess.stdout.on('data', data => { output += data; });
+    await emittedOnce(appProcess, 'exit');
+
+    expect(output).to.include('some-modified-text');
+    expect(output).to.include('obj-modified-prop');
+    expect(output).to.include('1,2,5,3,4');
+  });
+
+  it('should make properties unwriteable and read-only if ContextBridgeMutability is off', async () => {
+    const appPath = path.join(fixturesPath, 'context-bridge-mutability');
+    const appProcess = cp.spawn(process.execPath, ['--enable-logging', appPath]);
+
+    let output = '';
+    appProcess.stdout.on('data', data => { output += data; });
+    await emittedOnce(appProcess, 'exit');
+
+    expect(output).to.include('some-text');
+    expect(output).to.include('obj-prop');
+    expect(output).to.include('1,2,3,4');
+  });
 });

@@ -13,6 +13,7 @@
 #include "content/public/renderer/content_renderer_client.h"
 #include "electron/buildflags/buildflags.h"
 #include "printing/buildflags/buildflags.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 // In SHARED_INTERMEDIATE_DIR.
 #include "widevine_cdm_version.h"  // NOLINT(build/include_directory)
@@ -92,8 +93,9 @@ class RendererClientBase : public content::ContentRendererClient
 #endif
 
  protected:
-  void AddRenderBindings(v8::Isolate* isolate,
-                         v8::Local<v8::Object> binding_object);
+  void BindProcess(v8::Isolate* isolate,
+                   gin_helper::Dictionary* process,
+                   content::RenderFrame* render_frame);
 
   // content::ContentRendererClient:
   void RenderThreadStarted() override;
@@ -116,6 +118,28 @@ class RendererClientBase : public content::ContentRendererClient
   void RunScriptsAtDocumentStart(content::RenderFrame* render_frame) override;
   void RunScriptsAtDocumentEnd(content::RenderFrame* render_frame) override;
   void RunScriptsAtDocumentIdle(content::RenderFrame* render_frame) override;
+
+  bool AllowScriptExtensionForServiceWorker(
+      const url::Origin& script_origin) override;
+  void DidInitializeServiceWorkerContextOnWorkerThread(
+      blink::WebServiceWorkerContextProxy* context_proxy,
+      const GURL& service_worker_scope,
+      const GURL& script_url) override;
+  void WillEvaluateServiceWorkerOnWorkerThread(
+      blink::WebServiceWorkerContextProxy* context_proxy,
+      v8::Local<v8::Context> v8_context,
+      int64_t service_worker_version_id,
+      const GURL& service_worker_scope,
+      const GURL& script_url) override;
+  void DidStartServiceWorkerContextOnWorkerThread(
+      int64_t service_worker_version_id,
+      const GURL& service_worker_scope,
+      const GURL& script_url) override;
+  void WillDestroyServiceWorkerContextOnWorkerThread(
+      v8::Local<v8::Context> context,
+      int64_t service_worker_version_id,
+      const GURL& service_worker_scope,
+      const GURL& script_url) override;
 
  protected:
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
