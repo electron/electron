@@ -26,6 +26,10 @@
 
 class SkRegion;
 
+namespace web_modal {
+class WebContentsModalDialogHost;
+}
+
 namespace content {
 struct NativeWebKeyboardEvent;
 }
@@ -45,6 +49,7 @@ class PersistentDictionary;
 
 namespace electron {
 
+class WebContentsModalDialogHostViews;
 class ElectronMenuModel;
 class NativeBrowserView;
 
@@ -303,6 +308,8 @@ class NativeWindow : public base::SupportsUserData,
     observers_.RemoveObserver(obs);
   }
 
+  web_modal::WebContentsModalDialogHost* GetWebContentsModalDialogHost();
+
   views::Widget* widget() const { return widget_.get(); }
   views::View* content_view() const { return content_view_; }
 
@@ -384,6 +391,9 @@ class NativeWindow : public base::SupportsUserData,
 
   // Accessible title.
   base::string16 accessible_title_;
+
+  // The host for use in positioning the web contents modal dialog.
+  std::unique_ptr<WebContentsModalDialogHostViews> dialog_host_;
 
   base::WeakPtrFactory<NativeWindow> weak_factory_{this};
 

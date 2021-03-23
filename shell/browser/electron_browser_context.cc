@@ -17,6 +17,7 @@
 #include "base/task/post_task.h"
 #include "base/threading/sequenced_task_runner_handle.h"
 #include "base/threading/thread_restrictions.h"
+#include "chrome/browser/webauthn/chrome_authenticator_request_delegate.h"
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/pref_names.h"
 #include "components/keyed_service/content/browser_context_dependency_manager.h"
@@ -204,6 +205,7 @@ void ElectronBrowserContext::InitPrefs() {
   MediaDeviceIDSalt::RegisterPrefs(registry.get());
   ZoomLevelDelegate::RegisterPrefs(registry.get());
   PrefProxyConfigTrackerImpl::RegisterPrefs(registry.get());
+  ChromeAuthenticatorRequestDelegate::RegisterProfilePrefs(registry.get());
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   if (!in_memory_)
     extensions::ExtensionPrefs::RegisterProfilePrefs(registry.get());
@@ -503,6 +505,15 @@ ElectronBrowserContext* ElectronBrowserContext::From(
   browser_context_map()[key] =
       std::unique_ptr<ElectronBrowserContext>(new_context);
   return new_context;
+}
+
+// static
+ElectronBrowserContext* ElectronBrowserContext::FromBrowserContext(
+    content::BrowserContext* browser_context) {
+  if (!browser_context)
+    return nullptr;
+
+  return static_cast<ElectronBrowserContext*>(browser_context);
 }
 
 }  // namespace electron

@@ -11,7 +11,9 @@
 
 #include "base/memory/ptr_util.h"
 #include "base/strings/utf_string_conversions.h"
+#include "components/web_modal/web_contents_modal_dialog_host.h"
 #include "shell/browser/browser.h"
+#include "shell/browser/ui/web_contents_modal_dialog_host_views.cc"
 #include "shell/browser/window_list.h"
 #include "shell/common/color_util.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -48,7 +50,9 @@ gfx::Size GetExpandedWindowSize(const NativeWindow* window, gfx::Size size) {
 
 NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
                            NativeWindow* parent)
-    : widget_(new views::Widget), parent_(parent) {
+    : widget_(new views::Widget),
+      parent_(parent),
+      dialog_host_(std::make_unique<WebContentsModalDialogHostViews>(this)) {
   ++next_id_;
 
   options.Get(options::kFrame, &has_frame_);
@@ -618,6 +622,11 @@ void NativeWindow::SetAccessibleTitle(const std::string& title) {
 
 std::string NativeWindow::GetAccessibleTitle() {
   return base::UTF16ToUTF8(accessible_title_);
+}
+
+web_modal::WebContentsModalDialogHost*
+NativeWindow::GetWebContentsModalDialogHost() {
+  return dialog_host_.get();
 }
 
 // static

@@ -41,6 +41,7 @@ filenames = {
     "shell/common/node_bindings_linux.cc",
     "shell/common/node_bindings_linux.h",
     "shell/common/platform_util_linux.cc",
+    "shell/common/platform_util_aura.cc",
   ]
 
   lib_sources_linux_x11 = [
@@ -112,6 +113,7 @@ filenames = {
     "shell/common/node_bindings_win.cc",
     "shell/common/node_bindings_win.h",
     "shell/common/platform_util_win.cc",
+    "shell/common/platform_util_aura.cc",
   ]
 
   lib_sources_mac = [
@@ -233,6 +235,11 @@ filenames = {
 
   lib_sources = [
     "chromium_src/chrome/browser/process_singleton.h",
+    "shell/browser/ui/web_contents_modal_dialog_host_views.cc",
+    "shell/browser/ui/electron_web_modal_dialog_manager_delegate.h",
+    "shell/browser/ui/electron_web_modal_dialog_manager_delegate.cc",
+    "shell/browser/ui/views/electron_constrained_window_views_client.cc",
+    "shell/browser/ui/views/electron_constrained_window_views_client.h",
     "shell/app/command_line_args.cc",
     "shell/app/command_line_args.h",
     "shell/app/electron_content_client.cc",

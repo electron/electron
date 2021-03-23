@@ -22,6 +22,7 @@
 #include "base/strings/sys_string_conversions.h"
 #include "net/base/mac/url_conversions.h"
 #include "url/gurl.h"
+#include "ui/views/widget/widget.h"
 
 namespace {
 
@@ -151,6 +152,26 @@ bool MoveItemToTrashWithError(const base::FilePath& full_path,
   }
 
   return did_trash;
+}
+
+gfx::NativeView GetViewForWindow(gfx::NativeWindow native_window) {
+  NSWindow* window = native_window.GetNativeNSWindow();
+  DCHECK(window);
+  DCHECK([window contentView]);
+  return gfx::NativeView([window contentView]);
+}
+
+bool IsVisible(gfx::NativeView native_view) {
+  views::Widget* widget = views::Widget::GetWidgetForNativeView(native_view);
+  if (widget)
+    return widget->IsVisible();
+
+  // A reasonable approximation of how you'd expect this to behave.
+  NSView* view = native_view.GetNativeNSView();
+  return (view &&
+          ![view isHiddenOrHasHiddenAncestor] &&
+          [view window] &&
+          [[view window] isVisible]);
 }
 
 namespace internal {

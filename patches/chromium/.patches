@@ -106,3 +106,4 @@ don_t_use_potentially_null_getwebframe_-_view_when_get_blink.patch
 web_contents.patch
 add_trustedauthclient_to_urlloaderfactory.patch
 fix_route_mouse_event_navigations_through_the_web_contents_delegate.patch
+fix_patches_for_webauthn.patch

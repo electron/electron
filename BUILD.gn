@@ -382,6 +382,8 @@ source_set("electron_lib") {
     "//base",
     "//base:i18n",
     "//content/public/app",
+    "//components/constrained_window",
+    "//components/web_modal",
   ]
 
   include_dirs = [
