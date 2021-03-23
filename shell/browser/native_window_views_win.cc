@@ -326,8 +326,27 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
     }
     case WM_SYSCOMMAND: {
       if (transparent() && w_param == SC_MAXIMIZE) {
+        LOG(INFO)
+            << "NativeWindowViews::PreHandleMSG - SYSTEM MAXIMIZE CALLED - "
+            << __LINE__;
         return true;
       }
+      return false;
+    }
+    case WM_INITMENU: {
+#if defined(OS_WIN)
+      // This is handling the scenario where the menu might get triggered by the
+      // user doing "alt + space" resultin in system maximization and restore
+      // being used on transparent windows when that does not work
+      HMENU menu = GetSystemMenu(GetAcceleratedWidget(), false);
+      if (transparent()) {
+        EnableMenuItem(menu, SC_MAXIMIZE,
+                       MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
+        EnableMenuItem(menu, SC_RESTORE,
+                       MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
+        return true;
+      }
+#endif
       return false;
     }
     default:
