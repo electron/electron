@@ -438,17 +438,22 @@ void ProxyFunctionWrapper(const v8::FunctionCallbackInfo<v8::Value>& info) {
         did_error = true;
         v8::Local<v8::Value> exception = try_catch.Exception();
 
-        v8::MaybeLocal<v8::Value> maybe_message =
-            exception.As<v8::Object>()->Get(
-                func_owning_context,
-                gin::ConvertToV8(args.isolate(), "message"));
+        const char* err_msg =
+            "An unknown exception occurred in the isolated context, an error "
+            "occurred but a valid exception was not thrown.";
 
-        if (!maybe_message.ToLocal(&error_message) ||
-            !error_message->IsString()) {
-          error_message = gin::StringToV8(
-              args.isolate(),
-              "An unknown exception occurred in the isolated context, an error "
-              "occurred but a valid exception was not thrown.");
+        if (!exception->IsNull() && exception->IsObject()) {
+          v8::MaybeLocal<v8::Value> maybe_message =
+              exception.As<v8::Object>()->Get(
+                  func_owning_context,
+                  gin::ConvertToV8(args.isolate(), "message"));
+
+          if (!maybe_message.ToLocal(&error_message) ||
+              !error_message->IsString()) {
+            error_message = gin::StringToV8(args.isolate(), err_msg);
+          }
+        } else {
+          error_message = gin::StringToV8(args.isolate(), err_msg);
         }
       }
     }
