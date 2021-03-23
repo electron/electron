@@ -32,6 +32,7 @@
 #include "base/win/windows_version.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
+#include "net/base/escape.h"
 #include "shell/common/electron_paths.h"
 #include "ui/base/win/shell.h"
 #include "url/gurl.h"
@@ -241,7 +242,8 @@ std::string OpenExternalOnWorkerThread(
   // Quote the input scheme to be sure that the command does not have
   // parameters unexpected by the external program. This url should already
   // have been escaped.
-  std::wstring escaped_url = L"\"" + base::UTF8ToWide(url.spec()) + L"\"";
+  std::wstring escaped_url =
+      L"\"" + base::UTF8ToWide(net::EscapeExternalHandlerValue(url.spec())) +
   std::wstring working_dir = options.working_dir.value();
 
   if (reinterpret_cast<ULONG_PTR>(

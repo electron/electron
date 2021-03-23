@@ -9,7 +9,11 @@ import { ifit, ifdescribe, delay } from './spec-helpers';
 const features = process._linkedBinding('electron_common_features');
 const v8Util = process._linkedBinding('electron_common_v8_util');
 
-ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', () => {
+ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () {
+  // TODO(zcbenz): Spellchecker loads really slow on ASan, we should provide
+  // a small testing dictionary to make the tests load faster.
+  this.timeout((process.env.IS_ASAN ? 700 : 20) * 1000);
+
   let w: BrowserWindow;
 
   async function rightClick () {
@@ -28,7 +32,7 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', () => {
   // to detect spellchecker is to keep checking with a busy loop.
   async function rightClickUntil (fn: (params: Electron.ContextMenuParams) => boolean) {
     const now = Date.now();
-    const timeout = 10 * 1000;
+    const timeout = (process.env.IS_ASAN ? 600 : 10) * 1000;
     let contextMenuParams = await rightClick();
     while (!fn(contextMenuParams) && (Date.now() - now < timeout)) {
       await delay(100);

@@ -1114,6 +1114,8 @@ int32_t BaseWindow::GetID() const {
 }
 
 void BaseWindow::ResetBrowserViews() {
+  v8::HandleScope scope(isolate());
+
   for (auto& item : browser_views_) {
     gin::Handle<BrowserView> browser_view;
     if (gin::ConvertFromV8(isolate(),

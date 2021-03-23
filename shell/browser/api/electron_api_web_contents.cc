@@ -915,6 +915,7 @@ WebContents::~WebContents() {
     return;
   }
 
+  inspectable_web_contents_->GetView()->SetDelegate(nullptr);
   if (guest_delegate_)
     guest_delegate_->WillDestroy();
 
@@ -1761,6 +1762,7 @@ void WebContents::DevToolsOpened() {
   v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
   DCHECK(inspectable_web_contents_);
+  DCHECK(inspectable_web_contents_->GetDevToolsWebContents());
   auto handle = FromOrCreate(
       isolate, inspectable_web_contents_->GetDevToolsWebContents());
   devtools_web_contents_.Reset(isolate, handle.ToV8());

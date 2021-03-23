@@ -361,7 +361,13 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
     it('requires that the submitURL option be specified', () => {
       expect(() => {
         crashReporter.start({} as any);
-      }).to.throw('submitURL is a required option to crashReporter.start');
+      }).to.throw('submitURL must be specified when uploadToServer is true');
+    });
+
+    it('allows the submitURL option to be omitted when uploadToServer is false', () => {
+      expect(() => {
+        crashReporter.start({ uploadToServer: false } as any);
+      }).not.to.throw();
     });
 
     it('can be called twice', async () => {
