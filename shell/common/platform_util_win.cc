@@ -244,7 +244,7 @@ std::string OpenExternalOnWorkerThread(
   // have been escaped.
   std::wstring escaped_url =
       L"\"" + base::UTF8ToWide(net::EscapeExternalHandlerValue(url.spec())) +
-  std::wstring working_dir = options.working_dir.value();
+      std::wstring working_dir = options.working_dir.value();
 
   if (reinterpret_cast<ULONG_PTR>(
           ShellExecuteW(nullptr, L"open", escaped_url.c_str(), nullptr,
