@@ -393,7 +393,7 @@ void Browser::ClearRecentDocuments() {
   SHAddToRecentDocs(SHARD_APPIDINFO, nullptr);
 }
 
-void Browser::SetAppUserModelID(const std::u16string& name) {
+void Browser::SetAppUserModelID(const std::wstring& name) {
   electron::SetAppUserModelID(name);
 }
 
