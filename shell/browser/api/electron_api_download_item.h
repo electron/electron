@@ -66,7 +66,7 @@ class DownloadItem : public gin::Wrappable<DownloadItem>,
   std::string GetFilename() const;
   std::string GetContentDisposition() const;
   const GURL& GetURL() const;
-  v8::Local<v8::Value> GetURLChain(v8::Isolate*) const;
+  v8::Local<v8::Value> GetURLChain() const;
   download::DownloadItem::DownloadState GetState() const;
   bool IsDone() const;
   void SetSaveDialogOptions(const file_dialog::DialogSettings& options);
@@ -77,6 +77,8 @@ class DownloadItem : public gin::Wrappable<DownloadItem>,
   base::FilePath save_path_;
   file_dialog::DialogSettings dialog_options_;
   download::DownloadItem* download_item_;
+
+  v8::Isolate* isolate_;
 
   base::WeakPtrFactory<DownloadItem> weak_factory_{this};
 
