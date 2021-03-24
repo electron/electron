@@ -41,6 +41,8 @@ namespace context_bridge {
 const char* const kProxyFunctionPrivateKey = "electron_contextBridge_proxy_fn";
 const char* const kSupportsDynamicPropertiesPrivateKey =
     "electron_contextBridge_supportsDynamicProperties";
+const char* const kOriginalFunctionPrivateKey =
+    "electron_contextBridge_original_fn";
 
 }  // namespace context_bridge
 
@@ -179,9 +181,26 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
   // the global handle at the right time.
   if (value->IsFunction()) {
     auto func = v8::Local<v8::Function>::Cast(value);
+    v8::MaybeLocal<v8::Value> maybe_original_fn = GetPrivate(
+        source_context, func, context_bridge::kOriginalFunctionPrivateKey);
 
     {
       v8::Context::Scope destination_scope(destination_context);
+      v8::Local<v8::Value> proxy_func;
+
+      // If this function has already been sent over the bridge,
+      // then it is being sent _back_ over the bridge and we can
+      // simply return the original method here for performance reasons
+
+      // For safety reasons we check if the destination context is the
+      // creation context of the original method.  If it's not we proceed
+      // with the proxy logic
+      if (maybe_original_fn.ToLocal(&proxy_func) && proxy_func->IsFunction() &&
+          proxy_func.As<v8::Object>()->CreationContext() ==
+              destination_context) {
+        return v8::MaybeLocal<v8::Value>(proxy_func);
+      }
+
       v8::Local<v8::Object> state =
           v8::Object::New(destination_context->GetIsolate());
       SetPrivate(destination_context, state,
@@ -190,10 +209,12 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
                  context_bridge::kSupportsDynamicPropertiesPrivateKey,
                  gin::ConvertToV8(destination_context->GetIsolate(),
                                   support_dynamic_properties));
-      v8::Local<v8::Value> proxy_func;
+
       if (!v8::Function::New(destination_context, ProxyFunctionWrapper, state)
                .ToLocal(&proxy_func))
         return v8::MaybeLocal<v8::Value>();
+      SetPrivate(destination_context, proxy_func.As<v8::Object>(),
+                 context_bridge::kOriginalFunctionPrivateKey, func);
       object_cache->CacheProxiedObject(value, proxy_func);
       return v8::MaybeLocal<v8::Value>(proxy_func);
     }
