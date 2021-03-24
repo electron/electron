@@ -725,12 +725,18 @@ describe('protocol module', () => {
 
     it('should fail when registering invalid service worker', async () => {
       await contents.loadURL(`${serviceWorkerScheme}://${v4()}.com`);
-      await expect(contents.executeJavaScript(`navigator.serviceWorker.register('${v4()}.notjs', {scope: './'})`)).to.be.rejected();
+      const wait = emittedOnce(contents, 'console-message');
+      await contents.executeJavaScript(`navigator.serviceWorker.register('${v4()}.notjs', {scope: './'}).then(() => console.log('ok')).catch(() => console.log('error'))`);
+      const [,, msg] = await wait;
+      expect(msg).to.equal('error');
     });
 
     it('should be able to register service worker for custom scheme', async () => {
       await contents.loadURL(`${serviceWorkerScheme}://${v4()}.com`);
-      await contents.executeJavaScript(`navigator.serviceWorker.register('${v4()}.js', {scope: './'})`);
+      const wait = emittedOnce(contents, 'console-message');
+      await contents.executeJavaScript(`navigator.serviceWorker.register('${v4()}.js', {scope: './'}).then(() => console.log('ok')).catch(() => console.log('error'))`);
+      const [,, msg] = await wait;
+      expect(msg).to.equal('ok');
     });
   });
 
