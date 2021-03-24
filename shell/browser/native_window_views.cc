@@ -442,6 +442,10 @@ void NativeWindowViews::Hide() {
   if (!features::IsUsingOzonePlatform() && global_menu_bar_)
     global_menu_bar_->OnWindowUnmapped();
 #endif
+
+#if defined(OS_WIN)
+  taskbar_host_.SetThumbarButtonsAdded(false);
+#endif
 }
 
 bool NativeWindowViews::IsVisible() {
