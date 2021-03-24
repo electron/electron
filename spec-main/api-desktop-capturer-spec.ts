@@ -237,4 +237,20 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
       });
     }
   });
+
+  it('setSkipCursor does not crash', async () => {
+    // test for unknownid
+    expect(() => desktopCapturer.setSkipCursor('unknownid', true)).to.not.throw();
+    // test for empty id
+    expect(() => desktopCapturer.setSkipCursor('', false)).to.not.throw();
+    // test for valid id
+    expect(async () => {
+      const sources = await getSources({
+        types: ['screen']
+      });
+      if (sources.length > 0) {
+        desktopCapturer.setSkipCursor(sources[0].id, true);
+      }
+    }).to.not.throw();
+  });
 });
