@@ -186,7 +186,6 @@ struct Converter<std::map<K, V>> {
   }
 };
 
-#if defined(OS_WIN)
 template <>
 struct Converter<std::wstring> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
@@ -208,7 +207,6 @@ struct Converter<std::wstring> {
     }
   }
 };
-#endif
 
 }  // namespace gin
 
