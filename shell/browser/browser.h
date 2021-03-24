@@ -84,7 +84,7 @@ class Browser : public WindowListObserver {
   void ClearRecentDocuments();
 
   // Set the application user model ID.
-  void SetAppUserModelID(const std::u16string& name);
+  void SetAppUserModelID(const std::wstring& name);
 
   // Remove the default protocol handler registry key
   bool RemoveAsDefaultProtocolClient(const std::string& protocol,

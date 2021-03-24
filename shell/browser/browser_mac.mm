@@ -218,7 +218,7 @@ std::u16string Browser::GetApplicationNameForProtocol(const GURL& url) {
   return app_display_name;
 }
 
-void Browser::SetAppUserModelID(const std::u16string& name) {}
+void Browser::SetAppUserModelID(const std::wstring& name) {}
 
 bool Browser::SetBadgeCount(base::Optional<int> count) {
   DockSetBadgeText(!count.has_value() || count.value() != 0

@@ -88,7 +88,7 @@ void Browser::AddRecentDocument(const base::FilePath& path) {}
 
 void Browser::ClearRecentDocuments() {}
 
-void Browser::SetAppUserModelID(const std::u16string& name) {}
+void Browser::SetAppUserModelID(const std::wstring& name) {}
 
 bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
                                          gin::Arguments* args) {
