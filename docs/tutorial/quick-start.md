@@ -28,7 +28,7 @@ If both commands succeeded, you are ready to install Electron.
 
 From a development perspective, an Electron application is essentially a Node.js application. This means that the starting point of your Electron application will be a `package.json` file like in any other Node.js application. A minimal Electron application has the following structure:
 
-```plain
+```plaintext
 my-electron-app/
 ├── package.json
 ├── main.js
@@ -54,7 +54,7 @@ The main script specifies the entry point of your Electron application (in our c
 
 The main script may look as follows:
 
-```js
+```javascript fiddle='docs/fiddles/quick-start'
 const { app, BrowserWindow } = require('electron')
 const path = require('path')
 
@@ -68,7 +68,6 @@ function createWindow () {
   })
 
   win.loadFile('index.html')
-  win.webContents.openDevTools()
 }
 
 app.whenReady().then(() => {
@@ -103,7 +102,7 @@ This is the web page you want to display once the application is initialized. Th
 
 The `index.html` page looks as follows:
 
-```html
+```html fiddle='docs/fiddles/quick-start'
 <!DOCTYPE html>
 <html>
 <head>
@@ -113,9 +112,11 @@ The `index.html` page looks as follows:
 </head>
 <body style="background: white;">
     <h1>Hello World!</h1>
-    We are using node <span id="node-version"></span>,
-    Chrome <span id="chrome-version"></span>,
-    and Electron <span id="electron-version"></span>.
+    <p>
+        We are using Node.js <span id="node-version"></span>,
+        Chromium <span id="chrome-version"></span>,
+        and Electron <span id="electron-version"></span>.
+    </p>
 </body>
 </html>
 ```
@@ -152,11 +153,15 @@ Your Electron application uses the `package.json` file as the main entry point (
 {
     "name": "my-electron-app",
     "version": "0.1.0",
+    "author": "your name",
+    "description": "My Electron app",
     "main": "main.js"
 }
 ```
 
 > NOTE: If the `main` field is omitted, Electron will attempt to load an `index.js` file from the directory containing `package.json`.
+
+> NOTE: The `author` and `description` fields are required for packaging, otherwise error will occur when running `npm run make`.
 
 By default, the `npm start` command will run the main script with Node.js. To run the script with Electron, you need to change it as such:
 
@@ -164,6 +169,8 @@ By default, the `npm start` command will run the main script with Node.js. To ru
 {
     "name": "my-electron-app",
     "version": "0.1.0",
+    "author": "your name",
+    "description": "My Electron app",
     "main": "main.js",
     "scripts": {
         "start": "electron ."
@@ -189,7 +196,8 @@ The simplest and the fastest way to distribute your newly created app is using
 1. Import Electron Forge to your app folder:
 
     ```sh
-    npx @electron-forge/cli import
+    npm install --save-dev @electron-forge/cli
+    npx electron-forge import
 
     ✔ Checking your system
     ✔ Initializing Git Repository

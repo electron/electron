@@ -32,6 +32,7 @@ Using the [React Developer Tools][react-devtools] as an example:
    * on macOS it is `~/Library/Application Support/Google/Chrome/Default/Extensions`.
 1. Pass the location of the extension to the [`ses.loadExtension`][load-extension]
    API. For React Developer Tools `v4.9.0`, it looks something like:
+
    ```javascript
     const { app, session } = require('electron')
     const path = require('path')

@@ -6,13 +6,19 @@ Breaking changes will be documented here, and deprecation warnings added to JS c
 
 This document uses the following convention to categorize breaking changes:
 
-- **API Changed:** An API was changed in such a way that code that has not been updated is guaranteed to throw an exception.
-- **Behavior Changed:** The behavior of Electron has changed, but not in such a way that an exception will necessarily be thrown.
-- **Default Changed:** Code depending on the old default may break, not necessarily throwing an exception. The old behavior can be restored by explicitly specifying the value.
-- **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
-- **Removed:** An API or feature was removed, and is no longer supported by Electron.
+* **API Changed:** An API was changed in such a way that code that has not been updated is guaranteed to throw an exception.
+* **Behavior Changed:** The behavior of Electron has changed, but not in such a way that an exception will necessarily be thrown.
+* **Default Changed:** Code depending on the old default may break, not necessarily throwing an exception. The old behavior can be restored by explicitly specifying the value.
+* **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
+* **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
 ## Planned Breaking API Changes (14.0)
+
+### API Changed: `window.(open)`
+
+The optional parameter `frameName` will no longer set the title of the window. This now follows the specification described by the [native documentation](https://developer.mozilla.org/en-US/docs/Web/API/Window/open#parameters) under the corresponding parameter `windowName`.
+
+If you were using this parameter to set the title of a window, you can instead use [win.setTitle(title)](https://www.electronjs.org/docs/api/browser-window#winsettitletitle).
 
 ### Removed: `worldSafeExecuteJavaScript`
 
@@ -24,6 +30,28 @@ You will be affected by this change if you use either `webFrame.executeJavaScrip
 
 ## Planned Breaking API Changes (13.0)
 
+### API Changed: `session.setPermissionCheckHandler(handler)`
+
+The `handler` methods first parameter was previously always a `webContents`, it can now sometimes be `null`.  You should use the `requestingOrigin`, `embeddingOrigin` and `securityOrigin` properties to respond to the permission check correctly.  As the `webContents` can be `null` it can no longer be relied on.
+
+```js
+// Old code
+session.setPermissionCheckHandler((webContents, permission) => {
+  if (webContents.getURL().startsWith('https://google.com/') && permission === 'notification') {
+    return true
+  }
+  return false
+})
+
+// Replace with
+session.setPermissionCheckHandler((webContents, permission, requestingOrigin) => {
+  if (new URL(requestingOrigin).hostname === 'google.com' && permission === 'notification') {
+    return true
+  }
+  return false
+})
+```
+
 ### Removed: `shell.moveItemToTrash()`
 
 The deprecated synchronous `shell.moveItemToTrash()` API has been removed. Use
@@ -34,6 +62,78 @@ the asynchronous `shell.trashItem()` instead.
 shell.moveItemToTrash(path)
 // Replace with
 shell.trashItem(path).then(/* ... */)
+```
+
+### Removed: `BrowserWindow` extension APIs
+
+The deprecated extension APIs have been removed:
+
+* `BrowserWindow.addExtension(path)`
+* `BrowserWindow.addDevToolsExtension(path)`
+* `BrowserWindow.removeExtension(name)`
+* `BrowserWindow.removeDevToolsExtension(name)`
+* `BrowserWindow.getExtensions()`
+* `BrowserWindow.getDevToolsExtensions()`
+
+Use the session APIs instead:
+
+* `ses.loadExtension(path)`
+* `ses.removeExtension(extension_id)`
+* `ses.getAllExtensions()`
+
+```js
+// Removed in Electron 13
+BrowserWindow.addExtension(path)
+BrowserWindow.addDevToolsExtension(path)
+// Replace with
+session.defaultSession.loadExtension(path)
+```
+
+```js
+// Removed in Electron 13
+BrowserWindow.removeExtension(name)
+BrowserWindow.removeDevToolsExtension(name)
+// Replace with
+session.defaultSession.removeExtension(extension_id)
+```
+
+```js
+// Removed in Electron 13
+BrowserWindow.getExtensions()
+BrowserWindow.getDevToolsExtensions()
+// Replace with
+session.defaultSession.getAllExtensions()
+```
+
+### Removed: methods in `systemPreferences`
+
+The following `systemPreferences` methods have been deprecated:
+
+* `systemPreferences.isDarkMode()`
+* `systemPreferences.isInvertedColorScheme()`
+* `systemPreferences.isHighContrastColorScheme()`
+
+Use the following `nativeTheme` properties instead:
+
+* `nativeTheme.shouldUseDarkColors`
+* `nativeTheme.shouldUseInvertedColorScheme`
+* `nativeTheme.shouldUseHighContrastColors`
+
+```js
+// Removed in Electron 13
+systemPreferences.isDarkMode()
+// Replace with
+nativeTheme.shouldUseDarkColors
+
+// Removed in Electron 13
+systemPreferences.isInvertedColorScheme()
+// Replace with
+nativeTheme.shouldUseInvertedColorScheme
+
+// Removed in Electron 13
+systemPreferences.isHighContrastColorScheme()
+// Replace with
+nativeTheme.shouldUseHighContrastColors
 ```
 
 ## Planned Breaking API Changes (12.0)
@@ -60,6 +160,9 @@ the previous behavior, `contextIsolation: false` must be specified in WebPrefere
 
 We [recommend having contextIsolation enabled](https://github.com/electron/electron/blob/master/docs/tutorial/security.md#3-enable-context-isolation-for-remote-content) for the security of your application.
 
+Another implication is that `require()` cannot be used in the renderer process unless
+`nodeIntegration` is `true` and `contextIsolation` is `false`.
+
 For more details see: https://github.com/electron/electron/issues/23506
 
 ### Removed: `crashReporter.getCrashesDirectory()`
@@ -79,12 +182,12 @@ app.getPath('crashDumps')
 The following `crashReporter` methods are no longer available in the renderer
 process:
 
-- `crashReporter.start`
-- `crashReporter.getLastCrashReport`
-- `crashReporter.getUploadedReports`
-- `crashReporter.getUploadToServer`
-- `crashReporter.setUploadToServer`
-- `crashReporter.getCrashesDirectory`
+* `crashReporter.start`
+* `crashReporter.getLastCrashReport`
+* `crashReporter.getUploadedReports`
+* `crashReporter.getUploadToServer`
+* `crashReporter.setUploadToServer`
+* `crashReporter.getCrashesDirectory`
 
 They should be called only from the main process.
 
@@ -135,6 +238,7 @@ shell.trashItem(path).then(/* ... */)
 ## Planned Breaking API Changes (11.0)
 
 ### Removed: `BrowserView.{destroy, fromId, fromWebContents, getAllViews}` and `id` property of `BrowserView`
+
 The experimental APIs `BrowserView.{destroy, fromId, fromWebContents, getAllViews}`
 have now been removed. Additionally, the `id` property of `BrowserView`
 has also been removed.
@@ -174,12 +278,12 @@ app.getPath('crashDumps')
 Calling the following `crashReporter` methods from the renderer process is
 deprecated:
 
-- `crashReporter.start`
-- `crashReporter.getLastCrashReport`
-- `crashReporter.getUploadedReports`
-- `crashReporter.getUploadToServer`
-- `crashReporter.setUploadToServer`
-- `crashReporter.getCrashesDirectory`
+* `crashReporter.start`
+* `crashReporter.getLastCrashReport`
+* `crashReporter.getUploadedReports`
+* `crashReporter.getUploadToServer`
+* `crashReporter.setUploadToServer`
+* `crashReporter.getCrashesDirectory`
 
 The only non-deprecated methods remaining in the `crashReporter` module in the
 renderer are `addExtraParameter`, `removeExtraParameter` and `getParameters`.
@@ -221,6 +325,7 @@ We [recommend moving away from the remote
 module](https://medium.com/@nornagon/electrons-remote-module-considered-harmful-70d69500f31).
 
 ### `protocol.unregisterProtocol`
+
 ### `protocol.uninterceptProtocol`
 
 The APIs are now synchronous and the optional callback is no longer needed.
@@ -233,14 +338,23 @@ protocol.unregisterProtocol(scheme)
 ```
 
 ### `protocol.registerFileProtocol`
+
 ### `protocol.registerBufferProtocol`
+
 ### `protocol.registerStringProtocol`
+
 ### `protocol.registerHttpProtocol`
+
 ### `protocol.registerStreamProtocol`
+
 ### `protocol.interceptFileProtocol`
+
 ### `protocol.interceptStringProtocol`
+
 ### `protocol.interceptBufferProtocol`
+
 ### `protocol.interceptHttpProtocol`
+
 ### `protocol.interceptStreamProtocol`
 
 The APIs are now synchronous and the optional callback is no longer needed.
@@ -285,6 +399,7 @@ For more detailed information see [#18397](https://github.com/electron/electron/
 ### Deprecated: `BrowserWindow` extension APIs
 
 The following extension APIs have been deprecated:
+
 * `BrowserWindow.addExtension(path)`
 * `BrowserWindow.addDevToolsExtension(path)`
 * `BrowserWindow.removeExtension(name)`
@@ -293,6 +408,7 @@ The following extension APIs have been deprecated:
 * `BrowserWindow.getDevToolsExtensions()`
 
 Use the session APIs instead:
+
 * `ses.loadExtension(path)`
 * `ses.removeExtension(extension_id)`
 * `ses.getAllExtensions()`
@@ -373,7 +489,7 @@ Clone Algorithm][SCA], the same algorithm used to serialize messages for
 `postMessage`. This brings about a 2x performance improvement for large
 messages, but also brings some breaking changes in behavior.
 
-- Sending Functions, Promises, WeakMaps, WeakSets, or objects containing any
+* Sending Functions, Promises, WeakMaps, WeakSets, or objects containing any
   such values, over IPC will now throw an exception, instead of silently
   converting the functions to `undefined`.
 
@@ -387,21 +503,21 @@ ipcRenderer.send('channel', { value: 3, someFunction: () => {} })
 // => throws Error("() => {} could not be cloned.")
 ```
 
-- `NaN`, `Infinity` and `-Infinity` will now be correctly serialized, instead
+* `NaN`, `Infinity` and `-Infinity` will now be correctly serialized, instead
   of being converted to `null`.
-- Objects containing cyclic references will now be correctly serialized,
+* Objects containing cyclic references will now be correctly serialized,
   instead of being converted to `null`.
-- `Set`, `Map`, `Error` and `RegExp` values will be correctly serialized,
+* `Set`, `Map`, `Error` and `RegExp` values will be correctly serialized,
   instead of being converted to `{}`.
-- `BigInt` values will be correctly serialized, instead of being converted to
+* `BigInt` values will be correctly serialized, instead of being converted to
   `null`.
-- Sparse arrays will be serialized as such, instead of being converted to dense
+* Sparse arrays will be serialized as such, instead of being converted to dense
   arrays with `null`s.
-- `Date` objects will be transferred as `Date` objects, instead of being
+* `Date` objects will be transferred as `Date` objects, instead of being
   converted to their ISO string representation.
-- Typed Arrays (such as `Uint8Array`, `Uint16Array`, `Uint32Array` and so on)
+* Typed Arrays (such as `Uint8Array`, `Uint16Array`, `Uint32Array` and so on)
   will be transferred as such, instead of being converted to Node.js `Buffer`.
-- Node.js `Buffer` objects will be transferred as `Uint8Array`s. You can
+* Node.js `Buffer` objects will be transferred as `Uint8Array`s. You can
   convert a `Uint8Array` back to a Node.js `Buffer` by wrapping the underlying
   `ArrayBuffer`:
 
@@ -470,6 +586,7 @@ limits are now fixed at a minimum of 0.25 and a maximum of 5.0, as defined
 ### Deprecated events in `systemPreferences`
 
 The following `systemPreferences` events have been deprecated:
+
 * `inverted-color-scheme-changed`
 * `high-contrast-color-scheme-changed`
 
@@ -487,11 +604,13 @@ nativeTheme.on('updated', () => { /* ... */ })
 ### Deprecated: methods in `systemPreferences`
 
 The following `systemPreferences` methods have been deprecated:
+
 * `systemPreferences.isDarkMode()`
 * `systemPreferences.isInvertedColorScheme()`
 * `systemPreferences.isHighContrastColorScheme()`
 
 Use the following `nativeTheme` properties instead:
+
 * `nativeTheme.shouldUseDarkColors`
 * `nativeTheme.shouldUseInvertedColorScheme`
 * `nativeTheme.shouldUseHighContrastColors`

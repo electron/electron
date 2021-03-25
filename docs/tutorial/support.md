@@ -10,21 +10,21 @@ for answers to questions,
 or to join in discussion with other developers who use Electron,
 you can interact with the community in these locations:
 
-- [`Electron's Discord`](https://discord.com/invite/electron) has channels for:
-  - Getting help
-  - Ecosystem apps like [Electron Forge](https://github.com/electron-userland/electron-forge) and [Electron Fiddle](https://github.com/electron/fiddle)
-  - Sharing ideas with other Electron app developers
-  - And more!
-- [`electron`](https://discuss.atom.io/c/electron) category on the Atom forums
-- `#atom-shell` channel on Freenode
-- `#electron` channel on [Atom's Slack](https://discuss.atom.io/t/join-us-on-slack/16638?source_topic_id=25406)
-- [`electron-ru`](https://telegram.me/electron_ru) *(Russian)*
-- [`electron-br`](https://electron-br.slack.com) *(Brazilian Portuguese)*
-- [`electron-kr`](https://electron-kr.github.io/electron-kr) *(Korean)*
-- [`electron-jp`](https://electron-jp.slack.com) *(Japanese)*
-- [`electron-tr`](https://electron-tr.herokuapp.com) *(Turkish)*
-- [`electron-id`](https://electron-id.slack.com) *(Indonesia)*
-- [`electron-pl`](https://electronpl.github.io) *(Poland)*
+* [`Electron's Discord`](https://discord.com/invite/electron) has channels for:
+  * Getting help
+  * Ecosystem apps like [Electron Forge](https://github.com/electron-userland/electron-forge) and [Electron Fiddle](https://github.com/electron/fiddle)
+  * Sharing ideas with other Electron app developers
+  * And more!
+* [`electron`](https://discuss.atom.io/c/electron) category on the Atom forums
+* `#atom-shell` channel on Freenode
+* `#electron` channel on [Atom's Slack](https://discuss.atom.io/t/join-us-on-slack/16638?source_topic_id=25406)
+* [`electron-ru`](https://telegram.me/electron_ru) *(Russian)*
+* [`electron-br`](https://electron-br.slack.com) *(Brazilian Portuguese)*
+* [`electron-kr`](https://electron-kr.github.io/electron-kr) *(Korean)*
+* [`electron-jp`](https://electron-jp.slack.com) *(Japanese)*
+* [`electron-tr`](https://electron-tr.herokuapp.com) *(Turkish)*
+* [`electron-id`](https://electron-id.slack.com) *(Indonesia)*
+* [`electron-pl`](https://electronpl.github.io) *(Poland)*
 
 If you'd like to contribute to Electron,
 see the [contributing document](https://github.com/electron/electron/blob/master/CONTRIBUTING.md).
@@ -64,9 +64,9 @@ until the maintainers feel the maintenance burden is too high to continue doing 
 
 ### Currently supported versions
 
-- 11.x.y
-- 10.x.y
-- 9.x.y
+* 12.x.y
+* 11.x.y
+* 10.x.y
 
 ### End-of-life
 
@@ -96,13 +96,15 @@ Following platforms are supported by Electron:
 Only 64bit binaries are provided for macOS, and the minimum macOS version
 supported is macOS 10.10 (Yosemite).
 
+Native support for Apple Silicon (`arm64`) devices was added in Electron 11.0.0.
+
 ### Windows
 
 Windows 7 and later are supported, older operating systems are not supported
 (and do not work).
 
 Both `ia32` (`x86`) and `x64` (`amd64`) binaries are provided for Windows.
-[Electron 6.0.8 and later add native support for Windows on Arm (`arm64`) devices](windows-arm.md).
+[Native support for Windows on Arm (`arm64`) devices was added in Electron 6.0.8.](windows-arm.md).
 Running apps packaged with previous versions is possible using the ia32 binary.
 
 ### Linux
