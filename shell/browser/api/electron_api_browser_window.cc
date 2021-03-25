@@ -262,10 +262,20 @@ void BrowserWindow::OnCloseButtonClicked(bool* prevent_default) {
   // Required to make beforeunload handler work.
   api_web_contents_->NotifyUserActivation();
 
-  if (web_contents()->NeedToFireBeforeUnloadOrUnloadEvents())
+  if (web_contents()->NeedToFireBeforeUnloadOrUnloadEvents()) {
     web_contents()->DispatchBeforeUnload(false /* auto_cancel */);
-  else
-    web_contents()->Close();
+  } else {
+    bool should_close = true;
+    for (NativeBrowserView* view : window_->browser_views()) {
+      if (view->web_contents()->NeedToFireBeforeUnloadOrUnloadEvents()) {
+        view->web_contents()->DispatchBeforeUnload(false /* auto_cancel */);
+        should_close = false;
+      }
+    }
+
+    if (should_close)
+      web_contents()->Close();
+  }
 }
 
 void BrowserWindow::OnWindowClosed() {
