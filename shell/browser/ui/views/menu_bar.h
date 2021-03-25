@@ -73,6 +73,7 @@ class MenuBar : public views::AccessiblePaneView,
   bool SetPaneFocus(views::View* initial_focus) override;
   void RemovePaneFocus() override;
   void OnThemeChanged() override;
+  void GetAccessibleNodeData(ui::AXNodeData* node_data) override;
 
  private:
   friend class MenuBarColorUpdater;

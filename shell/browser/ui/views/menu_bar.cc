@@ -25,6 +25,10 @@
 #include "ui/gfx/color_utils.h"
 #endif
 
+#include "components/strings/grit/components_strings.h"
+#include "ui/accessibility/ax_enums.mojom-shared.h"
+#include "ui/base/l10n/l10n_util.h"
+
 namespace electron {
 
 namespace {
@@ -308,6 +312,11 @@ void MenuBar::OnThemeChanged() {
   views::AccessiblePaneView::OnThemeChanged();
   RefreshColorCache();
   UpdateViewColors();
+}
+
+void MenuBar::GetAccessibleNodeData(ui::AXNodeData* node_data) {
+  node_data->role = ax::mojom::Role::kMenuBar;
+  node_data->SetName(l10n_util::GetStringUTF8(IDS_MENU));
 }
 
 void MenuBar::RebuildChildren() {
