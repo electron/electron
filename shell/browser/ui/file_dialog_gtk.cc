@@ -209,7 +209,7 @@ class FileChooserDialog {
     if (!*supports_gtk_file_chooser_native) {
       preview_ = gtk_image_new();
       g_signal_connect(dialog_, "update-preview",
-                      G_CALLBACK(OnUpdatePreviewThunk), this);
+                       G_CALLBACK(OnUpdatePreviewThunk), this);
       gtk_file_chooser_set_preview_widget(dialog_, preview_);
     }
   }
