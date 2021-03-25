@@ -4,6 +4,8 @@
 
 #include <gmodule.h>
 
+#include <algorithm>
+#include <cctype>
 #include <memory>
 
 #include "base/callback.h"
@@ -57,21 +59,6 @@ namespace {
 
 static const int kPreviewWidth = 256;
 static const int kPreviewHeight = 512;
-
-// Makes sure that .jpg also shows .JPG.
-gboolean FileFilterCaseInsensitive(const GtkFileFilterInfo* file_info,
-                                   std::string* file_extension) {
-  // Makes .* file extension matches all file types.
-  if (*file_extension == ".*")
-    return true;
-  return base::EndsWith(file_info->filename, *file_extension,
-                        base::CompareCase::INSENSITIVE_ASCII);
-}
-
-// Deletes |data| when gtk_file_filter_add_custom() is done with it.
-void OnFileFilterDataDestroyed(std::string* file_extension) {
-  delete file_extension;
-}
 
 void InitGtkFileChooserNativeSupport() {
   // Return early if we have already setup the native functions or we have tried
@@ -368,12 +355,16 @@ void FileChooserDialog::AddFilters(const Filters& filters) {
     GtkFileFilter* gtk_filter = gtk_file_filter_new();
 
     for (const auto& extension : filter.second) {
-      auto file_extension = std::make_unique<std::string>("." + extension);
-      gtk_file_filter_add_custom(
-          gtk_filter, GTK_FILE_FILTER_FILENAME,
-          reinterpret_cast<GtkFileFilterFunc>(FileFilterCaseInsensitive),
-          file_extension.release(),
-          reinterpret_cast<GDestroyNotify>(OnFileFilterDataDestroyed));
+      std::string file_extension{"*." + extension};
+      std::string lower_file_extension =
+          std::transform(extension.begin(), extension.end(),
+                         [](unsigned char c) { return std::tolower(c); });
+      std::string lower_file_extension =
+          std::transform(extension.begin(), extension.end(),
+                         [](unsigned char c) { return std::toupper(c); });
+
+      gtk_file_filter_add_pattern(gtk_filter, lower_file_extension.c_str());
+      gtk_file_filter_add_pattern(gtk_filter, upper_file_extension.c_str());
     }
 
     gtk_file_filter_set_name(gtk_filter, filter.first.c_str());
