@@ -207,7 +207,7 @@ const LINTERS = [{
         console.warn(`Patch file '${f}' has no description. Every patch must contain a justification for why the patch exists and the plan for its removal.`);
         return false;
       }
-      const trailingWhitespace = patchText.split('\n').filter(line => line.startsWith('+')).some(line => /\s+$/.test(line));
+      const trailingWhitespace = patchText.split(/\r?\n/).some(line => line.startsWith('+') && /\s+$/.test(line));
       if (trailingWhitespace) {
         console.warn(`Patch file '${f}' has trailing whitespace on some lines.`);
         return false;
