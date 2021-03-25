@@ -206,10 +206,12 @@ class FileChooserDialog {
     // org.freedesktop.portal.FileChooser portal. In the case of running through
     // the org.freedesktop.portal.FileChooser portal, anything having to do with
     // the update-preview signal or the preview widget will just be ignored.
-    preview_ = gtk_image_new();
-    g_signal_connect(dialog_, "update-preview",
-                     G_CALLBACK(OnUpdatePreviewThunk), this);
-    gtk_file_chooser_set_preview_widget(dialog_, preview_);
+    if (!*supports_gtk_file_chooser_native) {
+      preview_ = gtk_image_new();
+      g_signal_connect(dialog_, "update-preview",
+                      G_CALLBACK(OnUpdatePreviewThunk), this);
+      gtk_file_chooser_set_preview_widget(dialog_, preview_);
+    }
   }
 
   ~FileChooserDialog() {
@@ -380,6 +382,7 @@ void FileChooserDialog::AddFilters(const Filters& filters) {
 }
 
 void FileChooserDialog::OnUpdatePreview(GtkFileChooser* chooser) {
+  assert(!*supports_gtk_file_chooser_native);
   gchar* filename = gtk_file_chooser_get_preview_filename(chooser);
   if (!filename) {
     gtk_file_chooser_set_preview_widget_active(chooser, FALSE);
@@ -457,6 +460,7 @@ void ShowOpenDialog(const DialogSettings& settings,
 
 bool ShowSaveDialogSync(const DialogSettings& settings, base::FilePath* path) {
   FileChooserDialog save_dialog(GTK_FILE_CHOOSER_ACTION_SAVE, settings);
+  save_dialog.SetupSaveProperties(settings.properties);
 
   ShowFileDialog(save_dialog);
 
