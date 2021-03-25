@@ -44,7 +44,7 @@ Chromium shared library and Node.js. Vulnerabilities affecting these components
 may impact the security of your application. By updating Electron to the latest
 version, you ensure that critical vulnerabilities (such as *nodeIntegration bypasses*)
 are already patched and cannot be exploited in your application. For more information,
-see "[Use a current version of Electron](#17-use-a-current-version-of-electron)".
+see "[Use a current version of Electron](#15-use-a-current-version-of-electron)".
 
 * **Evaluate your dependencies.** While NPM provides half a million reusable packages,
 it is your responsibility to choose trusted 3rd-party libraries. If you use outdated
@@ -99,9 +99,7 @@ You should at least follow these steps to improve the security of your applicati
 12. [Disable or limit navigation](#12-disable-or-limit-navigation)
 13. [Disable or limit creation of new windows](#13-disable-or-limit-creation-of-new-windows)
 14. [Do not use `openExternal` with untrusted content](#14-do-not-use-openexternal-with-untrusted-content)
-15. [Disable the `remote` module](#15-disable-the-remote-module)
-16. [Filter the `remote` module](#16-filter-the-remote-module)
-17. [Use a current version of Electron](#17-use-a-current-version-of-electron)
+15. [Use a current version of Electron](#15-use-a-current-version-of-electron)
 
 To automate the detection of misconfigurations and insecure patterns, it is
 possible to use
@@ -665,134 +663,7 @@ const { shell } = require('electron')
 shell.openExternal('https://example.com/index.html')
 ```
 
-## 15) Disable the `remote` module
-
-The `remote` module provides a way for the renderer processes to
-access APIs normally only available in the main process. Using it, a
-renderer can invoke methods of a main process object without explicitly sending
-inter-process messages. If your desktop application does not run untrusted
-content, this can be a useful way to have your renderer processes access and
-work with modules that are only available to the main process, such as
-GUI-related modules (dialogs, menus, etc.).
-
-However, if your app can run untrusted content and even if you
-[sandbox][sandbox] your renderer processes accordingly, the `remote` module
-makes it easy for malicious code to escape the sandbox and have access to
-system resources via the higher privileges of the main process. Therefore,
-it should be disabled in such circumstances.
-
-### Why?
-
-`remote` uses an internal IPC channel to communicate with the main process.
-"Prototype pollution" attacks can grant malicious code access to the internal
-IPC channel, which can then be used to escape the sandbox by mimicking `remote`
-IPC messages and getting access to main process modules running with higher
-privileges.
-
-Additionally, it's possible for preload scripts to accidentally leak modules to a
-sandboxed renderer. Leaking `remote` arms malicious code with a multitude
-of main process modules with which to perform an attack.
-
-Disabling the `remote` module eliminates these attack vectors. Enabling
-context isolation also prevents the "prototype pollution" attacks from
-succeeding.
-
-### How?
-
-```js
-// Bad if the renderer can run untrusted content
-const mainWindow = new BrowserWindow({
-  webPreferences: {
-    enableRemoteModule: true
-  }
-})
-```
-
-```js
-// Good
-const mainWindow = new BrowserWindow({
-  webPreferences: {
-    enableRemoteModule: false
-  }
-})
-```
-
-```html
-<!-- Bad if the renderer can run untrusted content  -->
-<webview enableremotemodule="true" src="page.html"></webview>
-
-<!-- Good -->
-<webview enableremotemodule="false" src="page.html"></webview>
-```
-
-> **Note:** The default value of `enableRemoteModule` is `false` starting
-> from Electron 10. For prior versions, you need to explicitly disable
-> the `remote` module by the means above.
-
-## 16) Filter the `remote` module
-
-If you cannot disable the `remote` module, you should filter the globals,
-Node, and Electron modules (so-called built-ins) accessible via `remote`
-that your application does not require. This can be done by blocking
-certain modules entirely and by replacing others with proxies that
-expose only the functionality that your app needs.
-
-### Why?
-
-Due to the system access privileges of the main process, functionality
-provided by the main process modules may be dangerous in the hands of
-malicious code running in a compromised renderer process. By limiting
-the set of accessible modules to the minimum that your app needs and
-filtering out the others, you reduce the toolset that malicious code
-can use to attack the system.
-
-Note that the safest option is to
-[fully disable the remote module](#15-disable-the-remote-module). If
-you choose to filter access rather than completely disable the module,
-you must be very careful to ensure that no escalation of privilege is
-possible through the modules you allow past the filter.
-
-### How?
-
-```js
-const readOnlyFsProxy = require(/* ... */) // exposes only file read functionality
-
-const allowedModules = new Set(['crypto'])
-const proxiedModules = new Map([['fs', readOnlyFsProxy]])
-const allowedElectronModules = new Set(['shell'])
-const allowedGlobals = new Set()
-
-app.on('remote-require', (event, webContents, moduleName) => {
-  if (proxiedModules.has(moduleName)) {
-    event.returnValue = proxiedModules.get(moduleName)
-  }
-  if (!allowedModules.has(moduleName)) {
-    event.preventDefault()
-  }
-})
-
-app.on('remote-get-builtin', (event, webContents, moduleName) => {
-  if (!allowedElectronModules.has(moduleName)) {
-    event.preventDefault()
-  }
-})
-
-app.on('remote-get-global', (event, webContents, globalName) => {
-  if (!allowedGlobals.has(globalName)) {
-    event.preventDefault()
-  }
-})
-
-app.on('remote-get-current-window', (event, webContents) => {
-  event.preventDefault()
-})
-
-app.on('remote-get-current-web-contents', (event, webContents) => {
-  event.preventDefault()
-})
-```
-
-## 17) Use a current version of Electron
+## 15) Use a current version of Electron
 
 You should strive for always using the latest available version of Electron.
 Whenever a new major version is released, you should attempt to update your
