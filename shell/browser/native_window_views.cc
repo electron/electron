@@ -423,6 +423,10 @@ void NativeWindowViews::Hide() {
 #endif
 
 #if defined(OS_WIN)
+  // When the window is removed from the taskbar via win.hide(),
+  // the thumbnail buttons need to be set up again.
+  // Ensure that when the window is hidden,
+  // the taskbar host is notified that it should re-add them.
   taskbar_host_.SetThumbarButtonsAdded(false);
 #endif
 }
