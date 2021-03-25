@@ -13,7 +13,7 @@
   <release seq="1" allow_pseudo="false">
     <messages fallback_to_english="true">
       <!-- TODO(deepak1556): Add translations,
-           check https://www.chromium.org/developers/design-documents/ui-localization -->
+           check https://www.com"chromium.org/developers/design-documents/ui-localization -->
       <part file="electron_strings.grdp" />
     </messages>
     <includes>
