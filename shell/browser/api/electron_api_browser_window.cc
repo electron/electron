@@ -255,12 +255,19 @@ void BrowserWindow::OnCloseButtonClicked(bool* prevent_default) {
   if (window_unresponsive_closure_.IsCancelled())
     ScheduleUnresponsiveEvent(5000);
 
-  if (!web_contents())
-    // Already closed by renderer
+  if (!web_contents()) {
+    // Already closed by renderer.
     return;
+  }
 
   // Required to make beforeunload handler work.
   api_web_contents_->NotifyUserActivation();
+
+  for (NativeBrowserView* view : window_->browser_views()) {
+    auto* api_web_contents = api::WebContents::From(view->web_contents());
+    if (api_web_contents)
+      api_web_contents->NotifyUserActivation();
+  }
 
   if (web_contents()->NeedToFireBeforeUnloadOrUnloadEvents()) {
     web_contents()->DispatchBeforeUnload(false /* auto_cancel */);
