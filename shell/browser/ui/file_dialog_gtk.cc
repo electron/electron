@@ -357,12 +357,12 @@ void FileChooserDialog::AddFilters(const Filters& filters) {
     for (const auto& extension : filter.second) {
       std::string file_extension{"*." + extension};
       // guarantee a pure lowercase variant
-      std::transform(file_extension.begin(), file_extension.end(),
-                     [](unsigned char c) { return std::tolower(c); });
+      for (auto& c : file_extension)
+        c = std::tolower(c);
       gtk_file_filter_add_pattern(gtk_filter, file_extension.c_str());
       // guarantee a pure uppercase variant
-      std::transform(file_extension.begin(), file_extension.end(),
-                     [](unsigned char c) { return std::toupper(c); });
+      for (auto& c : file_extension)
+        c = std::toupper(c);
       gtk_file_filter_add_pattern(gtk_filter, file_extension.c_str());
     }
 
