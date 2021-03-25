@@ -102,20 +102,6 @@ describe('webContents module', () => {
       w.close();
       await wait;
     });
-
-    it('supports calling preventDefault on will-prevent-unload events in a BrowserView', async () => {
-      const w = new BrowserWindow({ show: false });
-      const view = new BrowserView();
-      w.setBrowserView(view);
-      view.setBounds(w.getBounds());
-
-      view.webContents.once('will-prevent-unload', event => event.preventDefault());
-      await view.webContents.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false.html'));
-
-      const wait = emittedOnce(w, 'closed');
-      w.close();
-      await wait;
-    });
   });
 
   describe('webContents.send(channel, args...)', () => {
