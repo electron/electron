@@ -2,6 +2,9 @@ import { BrowserWindow, Session, session } from 'electron/main';
 
 import { expect } from 'chai';
 import * as path from 'path';
+import * as fs from 'fs';
+import * as http from 'http';
+import { AddressInfo } from 'net';
 import { closeWindow } from './window-helpers';
 import { emittedOnce } from './events-helpers';
 import { ifit, ifdescribe, delay } from './spec-helpers';
@@ -10,9 +13,7 @@ const features = process._linkedBinding('electron_common_features');
 const v8Util = process._linkedBinding('electron_common_v8_util');
 
 ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () {
-  // TODO(zcbenz): Spellchecker loads really slow on ASan, we should provide
-  // a small testing dictionary to make the tests load faster.
-  this.timeout((process.env.IS_ASAN ? 700 : 20) * 1000);
+  this.timeout((process.env.IS_ASAN ? 100 : 20) * 1000);
 
   let w: BrowserWindow;
 
@@ -32,7 +33,7 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () 
   // to detect spellchecker is to keep checking with a busy loop.
   async function rightClickUntil (fn: (params: Electron.ContextMenuParams) => boolean) {
     const now = Date.now();
-    const timeout = (process.env.IS_ASAN ? 600 : 10) * 1000;
+    const timeout = 10 * 1000;
     let contextMenuParams = await rightClick();
     while (!fn(contextMenuParams) && (Date.now() - now < timeout)) {
       await delay(100);
@@ -40,6 +41,26 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () 
     }
     return contextMenuParams;
   }
+
+  // Setup a server to download hunspell dictionary.
+  const server = http.createServer((req, res) => {
+    // The provided is minimal dict for testing only, full list of words can
+    // be found at src/third_party/hunspell_dictionaries/xx_XX.dic.
+    fs.readFile(path.join(__dirname, '/../../third_party/hunspell_dictionaries/xx-XX-3-0.bdic'), function (err, data) {
+      if (err) {
+        console.error('Failed to read dictionary file');
+        res.writeHead(404);
+        res.end(JSON.stringify(err));
+        return;
+      }
+      res.writeHead(200);
+      res.end(data);
+    });
+  });
+  before((done) => {
+    server.listen(0, '127.0.0.1', () => done());
+  });
+  after(() => server.close());
 
   beforeEach(async () => {
     w = new BrowserWindow({
@@ -50,6 +71,7 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () 
         contextIsolation: false
       }
     });
+    w.webContents.session.setSpellCheckerDictionaryDownloadURL(`http://127.0.0.1:${(server.address() as AddressInfo).port}/`);
     w.webContents.session.setSpellCheckerLanguages(['en-US']);
     await w.loadFile(path.resolve(__dirname, './fixtures/chromium/spellchecker.html'));
   });
@@ -62,7 +84,7 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () 
   const shouldRun = process.platform !== 'win32';
 
   ifit(shouldRun)('should detect correctly spelled words as correct', async () => {
-    await w.webContents.executeJavaScript('document.body.querySelector("textarea").value = "Beautiful and lovely"');
+    await w.webContents.executeJavaScript('document.body.querySelector("textarea").value = "typography"');
     await w.webContents.executeJavaScript('document.body.querySelector("textarea").focus()');
     const contextMenuParams = await rightClickUntil((contextMenuParams) => contextMenuParams.selectionText.length > 0);
     expect(contextMenuParams.misspelledWord).to.eq('');
@@ -70,10 +92,10 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () 
   });
 
   ifit(shouldRun)('should detect incorrectly spelled words as incorrect', async () => {
-    await w.webContents.executeJavaScript('document.body.querySelector("textarea").value = "Beautifulllll asd asd"');
+    await w.webContents.executeJavaScript('document.body.querySelector("textarea").value = "typograpy"');
     await w.webContents.executeJavaScript('document.body.querySelector("textarea").focus()');
     const contextMenuParams = await rightClickUntil((contextMenuParams) => contextMenuParams.misspelledWord.length > 0);
-    expect(contextMenuParams.misspelledWord).to.eq('Beautifulllll');
+    expect(contextMenuParams.misspelledWord).to.eq('typograpy');
     expect(contextMenuParams.dictionarySuggestions).to.have.length.of.at.least(1);
   });
 
@@ -81,24 +103,24 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () 
     w.webContents.session.setSpellCheckerLanguages([]);
     await delay(500);
     w.webContents.session.setSpellCheckerLanguages(['en-US']);
-    await w.webContents.executeJavaScript('document.body.querySelector("textarea").value = "Beautifulllll asd asd"');
+    await w.webContents.executeJavaScript('document.body.querySelector("textarea").value = "typograpy"');
     await w.webContents.executeJavaScript('document.body.querySelector("textarea").focus()');
     const contextMenuParams = await rightClickUntil((contextMenuParams) => contextMenuParams.misspelledWord.length > 0);
-    expect(contextMenuParams.misspelledWord).to.eq('Beautifulllll');
+    expect(contextMenuParams.misspelledWord).to.eq('typograpy');
     expect(contextMenuParams.dictionarySuggestions).to.have.length.of.at.least(1);
   });
 
   ifit(shouldRun)('should expose webFrame spellchecker correctly', async () => {
-    await w.webContents.executeJavaScript('document.body.querySelector("textarea").value = "Beautifulllll asd asd"');
+    await w.webContents.executeJavaScript('document.body.querySelector("textarea").value = "typograpy"');
     await w.webContents.executeJavaScript('document.body.querySelector("textarea").focus()');
     await rightClickUntil((contextMenuParams) => contextMenuParams.misspelledWord.length > 0);
 
     const callWebFrameFn = (expr: string) => w.webContents.executeJavaScript('require("electron").webFrame.' + expr);
 
-    expect(await callWebFrameFn('isWordMisspelled("test")')).to.equal(false);
-    expect(await callWebFrameFn('isWordMisspelled("testt")')).to.equal(true);
-    expect(await callWebFrameFn('getWordSuggestions("test")')).to.be.empty();
-    expect(await callWebFrameFn('getWordSuggestions("testt")')).to.not.be.empty();
+    expect(await callWebFrameFn('isWordMisspelled("typography")')).to.equal(false);
+    expect(await callWebFrameFn('isWordMisspelled("typograpy")')).to.equal(true);
+    expect(await callWebFrameFn('getWordSuggestions("typography")')).to.be.empty();
+    expect(await callWebFrameFn('getWordSuggestions("typograpy")')).to.not.be.empty();
   });
 
   describe('spellCheckerEnabled', () => {
@@ -107,7 +129,7 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () 
     });
 
     ifit(shouldRun)('can be dynamically changed', async () => {
-      await w.webContents.executeJavaScript('document.body.querySelector("textarea").value = "Beautifulllll asd asd"');
+      await w.webContents.executeJavaScript('document.body.querySelector("textarea").value = "typograpy"');
       await w.webContents.executeJavaScript('document.body.querySelector("textarea").focus()');
       await rightClickUntil((contextMenuParams) => contextMenuParams.misspelledWord.length > 0);
 
@@ -116,12 +138,17 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () 
       w.webContents.session.spellCheckerEnabled = false;
       v8Util.runUntilIdle();
       expect(w.webContents.session.spellCheckerEnabled).to.be.false();
-      expect(await callWebFrameFn('isWordMisspelled("testt")')).to.equal(false);
+      // spellCheckerEnabled is sent to renderer asynchronously and there is
+      // no event notifying when it is finished, so wait a little while to
+      // ensure the setting has been changed in renderer.
+      await delay(500);
+      expect(await callWebFrameFn('isWordMisspelled("typograpy")')).to.equal(false);
 
       w.webContents.session.spellCheckerEnabled = true;
       v8Util.runUntilIdle();
       expect(w.webContents.session.spellCheckerEnabled).to.be.true();
-      expect(await callWebFrameFn('isWordMisspelled("testt")')).to.equal(true);
+      await delay(500);
+      expect(await callWebFrameFn('isWordMisspelled("typograpy")')).to.equal(true);
     });
   });
 
