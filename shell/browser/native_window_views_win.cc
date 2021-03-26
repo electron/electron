@@ -149,7 +149,7 @@ std::set<NativeWindowViews*> NativeWindowViews::forwarding_windows_;
 HHOOK NativeWindowViews::mouse_hook_ = NULL;
 
 void NativeWindowViews::Maximize() {
-  // Only use Maximize() when window has WS_THICKFRAME style
+  // Only use Maximize() when window is NOT transparent style
   if (!transparent()) {
     if (IsVisible())
       widget()->Maximize();
@@ -325,19 +325,17 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
       return prevent_default;
     }
     case WM_SYSCOMMAND: {
-      if (transparent() && w_param == SC_MAXIMIZE) {
-        LOG(INFO)
-            << "NativeWindowViews::PreHandleMSG - SYSTEM MAXIMIZE CALLED - "
-            << __LINE__;
+      // Mask is needed to account for double clicking title bar to maximize
+      WPARAM max_mask = 0xFFF0;
+      if (transparent() && ((w_param & max_mask) == SC_MAXIMIZE)) {
         return true;
       }
       return false;
     }
     case WM_INITMENU: {
-#if defined(OS_WIN)
       // This is handling the scenario where the menu might get triggered by the
-      // user doing "alt + space" resultin in system maximization and restore
-      // being used on transparent windows when that does not work
+      // user doing "alt + space" resulting in system maximization and restore
+      // being used on transparent windows when that does not work.
       HMENU menu = GetSystemMenu(GetAcceleratedWidget(), false);
       if (transparent()) {
         EnableMenuItem(menu, SC_MAXIMIZE,
@@ -346,11 +344,11 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
                        MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
         return true;
       }
-#endif
       return false;
     }
-    default:
+    default: {
       return false;
+    }
   }
 }
 
