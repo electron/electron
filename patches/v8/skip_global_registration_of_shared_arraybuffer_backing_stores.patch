@@ -1,0 +1,137 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ulan Degenbaev <ulan@chromium.org>
+Date: Tue, 16 Mar 2021 12:18:36 +0100
+Subject: Skip global registration of [Shared]ArrayBuffer backing stores
+
+Previously we needed to register the backing stores globally because
+the embedder could create them from a raw pointer. This is no longer
+possible after the removal of the old API.
+
+The global backing store registry now keeps track only of wasm memory
+backing stores.
+
+Bug: v8:9380
+Change-Id: Iffefbf14dcafc1f9ce0dc3613335c754c9cb649a
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2763874
+Reviewed-by: Andreas Haas <ahaas@chromium.org>
+Commit-Queue: Ulan Degenbaev <ulan@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#73493}
+
+diff --git a/src/api/api.cc b/src/api/api.cc
+index 2c12f19b287cf5e3c5aaa04d339f2301e1e57c47..703720b2fea123b118a187f407e846781d62249f 100644
+--- a/src/api/api.cc
++++ b/src/api/api.cc
+@@ -3786,7 +3786,6 @@ std::shared_ptr<v8::BackingStore> v8::ArrayBuffer::GetBackingStore() {
+     backing_store =
+         i::BackingStore::EmptyBackingStore(i::SharedFlag::kNotShared);
+   }
+-  i::GlobalBackingStoreRegistry::Register(backing_store);
+   std::shared_ptr<i::BackingStoreBase> bs_base = backing_store;
+   return std::static_pointer_cast<v8::BackingStore>(bs_base);
+ }
+@@ -3797,7 +3796,6 @@ std::shared_ptr<v8::BackingStore> v8::SharedArrayBuffer::GetBackingStore() {
+   if (!backing_store) {
+     backing_store = i::BackingStore::EmptyBackingStore(i::SharedFlag::kShared);
+   }
+-  i::GlobalBackingStoreRegistry::Register(backing_store);
+   std::shared_ptr<i::BackingStoreBase> bs_base = backing_store;
+   return std::static_pointer_cast<v8::BackingStore>(bs_base);
+ }
+diff --git a/src/objects/backing-store.cc b/src/objects/backing-store.cc
+index 7931fbf13ddecc49969e23c57a51513d2e605039..08288ef62c0b930483004a154967925e2ed14d8a 100644
+--- a/src/objects/backing-store.cc
++++ b/src/objects/backing-store.cc
+@@ -685,17 +685,8 @@ inline GlobalBackingStoreRegistryImpl* impl() {
+ void GlobalBackingStoreRegistry::Register(
+     std::shared_ptr<BackingStore> backing_store) {
+   if (!backing_store || !backing_store->buffer_start()) return;
+-
+-  if (!backing_store->free_on_destruct()) {
+-    // If the backing store buffer is managed by the embedder,
+-    // then we don't have to guarantee that there is single unique
+-    // BackingStore per buffer_start() because the destructor of
+-    // of the BackingStore will be a no-op in that case.
+-
+-    // All Wasm memory has to be registered.
+-    CHECK(!backing_store->is_wasm_memory());
+-    return;
+-  }
++  // Only wasm memory backing stores need to be registered globally.
++  CHECK(backing_store->is_wasm_memory());
+ 
+   base::MutexGuard scope_lock(&impl()->mutex_);
+   if (backing_store->globally_registered_) return;
+@@ -711,6 +702,8 @@ void GlobalBackingStoreRegistry::Register(
+ void GlobalBackingStoreRegistry::Unregister(BackingStore* backing_store) {
+   if (!backing_store->globally_registered_) return;
+ 
++  CHECK(backing_store->is_wasm_memory());
++
+   DCHECK_NOT_NULL(backing_store->buffer_start());
+ 
+   base::MutexGuard scope_lock(&impl()->mutex_);
+@@ -722,26 +715,6 @@ void GlobalBackingStoreRegistry::Unregister(BackingStore* backing_store) {
+   backing_store->globally_registered_ = false;
+ }
+ 
+-std::shared_ptr<BackingStore> GlobalBackingStoreRegistry::Lookup(
+-    void* buffer_start, size_t length) {
+-  base::MutexGuard scope_lock(&impl()->mutex_);
+-  TRACE_BS("BS:lookup   mem=%p (%zu bytes)\n", buffer_start, length);
+-  const auto& result = impl()->map_.find(buffer_start);
+-  if (result == impl()->map_.end()) {
+-    return std::shared_ptr<BackingStore>();
+-  }
+-  auto backing_store = result->second.lock();
+-  CHECK_EQ(buffer_start, backing_store->buffer_start());
+-  if (backing_store->is_wasm_memory()) {
+-    // Grow calls to shared WebAssembly threads can be triggered from different
+-    // workers, length equality cannot be guaranteed here.
+-    CHECK_LE(length, backing_store->byte_length());
+-  } else {
+-    CHECK_EQ(length, backing_store->byte_length());
+-  }
+-  return backing_store;
+-}
+-
+ void GlobalBackingStoreRegistry::Purge(Isolate* isolate) {
+   // We need to keep a reference to all backing stores that are inspected
+   // in the purging loop below. Otherwise, we might get a deadlock
+@@ -755,7 +728,7 @@ void GlobalBackingStoreRegistry::Purge(Isolate* isolate) {
+     auto backing_store = entry.second.lock();
+     prevent_destruction_under_lock.emplace_back(backing_store);
+     if (!backing_store) continue;  // skip entries where weak ptr is null
+-    if (!backing_store->is_wasm_memory()) continue;  // skip non-wasm memory
++    CHECK(backing_store->is_wasm_memory());
+     if (!backing_store->is_shared()) continue;       // skip non-shared memory
+     SharedWasmMemoryData* shared_data =
+         backing_store->get_shared_wasm_memory_data();
+diff --git a/src/objects/backing-store.h b/src/objects/backing-store.h
+index 4d20109676e8c955b2dfb40a882b5f27783a4ac6..eb879d5e8adf5a9a7d727dd571a77f01289f3be3 100644
+--- a/src/objects/backing-store.h
++++ b/src/objects/backing-store.h
+@@ -219,21 +219,16 @@ class V8_EXPORT_PRIVATE BackingStore : public BackingStoreBase {
+ #endif  // V8_ENABLE_WEBASSEMBLY
+ };
+ 
+-// A global, per-process mapping from buffer addresses to backing stores.
+-// This is generally only used for dealing with an embedder that has not
+-// migrated to the new API which should use proper pointers to manage
+-// backing stores.
++// A global, per-process mapping from buffer addresses to backing stores
++// of wasm memory objects.
+ class GlobalBackingStoreRegistry {
+  public:
+   // Register a backing store in the global registry. A mapping from the
+   // {buffer_start} to the backing store object will be added. The backing
+   // store will automatically unregister itself upon destruction.
++  // Only wasm memory backing stores are supported.
+   static void Register(std::shared_ptr<BackingStore> backing_store);
+ 
+-  // Look up a backing store based on the {buffer_start} pointer.
+-  static std::shared_ptr<BackingStore> Lookup(void* buffer_start,
+-                                              size_t length);
+-
+  private:
+   friend class BackingStore;
+   // Unregister a backing store in the global registry.
