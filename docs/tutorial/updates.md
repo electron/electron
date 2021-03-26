@@ -99,6 +99,21 @@ it will receive an update for each new
 publish.
 
 ## Applying Updates
+1> Autoupdater
+An autoUpdater is an automated deployment system that regularly updates your users with the latest version of your application. The advantages of using an auto updater include:
+
+Automating the update of your user applications,
+Removing the need to download a new setup file for each update
+
+2> why should we use autoupdater & its advantages:
+The main pro of keeping your automatic update functions enabled is that any newly-discovered security or performance issues are, well, automatically updated.
+
+There’s no action required on your part; once a software developer has made a change, you can take advantage of that change right away.
+
+IT solutions vary by industry, but regardless of your field of business, security threats can wreak havoc.
+
+With automatic updates, once a security vulnerability has been addressed by the developer, the problem is fixed and you can go about your day.
+
 
 Now that you've configured the basic update mechanism for your application, you
 need to ensure that the user will get notified when there's an update. This
