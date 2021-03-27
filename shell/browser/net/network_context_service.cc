@@ -79,7 +79,7 @@ void NetworkContextService::ConfigureNetworkContextParams(
     network_context_params->persist_session_cookies = false;
 
     // TODO(MarshallOfSound): Make it possible to enable cookie encryption on
-    // non-macOS platforms
+    // linux
 #if defined(OS_MAC) || defined(OS_WIN)
     network_context_params->enable_encrypted_cookies =
         electron::fuses::IsCookieEncryptionEnabled();
