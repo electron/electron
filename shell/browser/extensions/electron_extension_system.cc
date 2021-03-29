@@ -115,13 +115,16 @@ void ElectronExtensionSystem::LoadComponentExtensions() {
   std::string pdf_manifest_string = pdf_extension_util::GetManifest();
   std::unique_ptr<base::DictionaryValue> pdf_manifest =
       ParseManifest(pdf_manifest_string);
-  base::FilePath root_directory;
-  CHECK(base::PathService::Get(chrome::DIR_RESOURCES, &root_directory));
-  root_directory = root_directory.Append(FILE_PATH_LITERAL("pdf"));
-  scoped_refptr<const Extension> pdf_extension = extensions::Extension::Create(
-      root_directory, extensions::Manifest::COMPONENT, *pdf_manifest,
-      extensions::Extension::REQUIRE_KEY, &utf8_error);
-  extension_loader_->registrar()->AddExtension(pdf_extension);
+  if (pdf_manifest) {
+    base::FilePath root_directory;
+    CHECK(base::PathService::Get(chrome::DIR_RESOURCES, &root_directory));
+    root_directory = root_directory.Append(FILE_PATH_LITERAL("pdf"));
+    scoped_refptr<const Extension> pdf_extension =
+        extensions::Extension::Create(
+            root_directory, extensions::Manifest::COMPONENT, *pdf_manifest,
+            extensions::Extension::REQUIRE_KEY, &utf8_error);
+    extension_loader_->registrar()->AddExtension(pdf_extension);
+  }
 #endif
 }
 
