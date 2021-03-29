@@ -56,3 +56,5 @@ the item from the BrowserWindow onto your desktop. In this guide,
 the item is a Markdown file located in the root of the project:
 
 ![Drag and drop](../images/drag-and-drop.gif)
+
+## How to drag and drop a file or Folder from the FileExplorer?
