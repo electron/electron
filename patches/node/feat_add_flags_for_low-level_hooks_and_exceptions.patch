@@ -24,7 +24,7 @@ Environment on the V8 context of blink, so no new V8 context is created.
 As a result, a renderer process may have multiple Node Environments in it.
 
 diff --git a/src/node.cc b/src/node.cc
-index 298f46e77a61159a8232fda69c614fe39c84e5d8..2e2a037253f7ffb5722a7f663614c3be1aa43052 100644
+index 905afd8c235b7b1a7b45823db486384935a2a52b..102847cd32d03addeb40c9539eafc92ba49c8ec4 100644
 --- a/src/node.cc
 +++ b/src/node.cc
 @@ -134,6 +134,8 @@ using v8::Undefined;
@@ -62,8 +62,8 @@ index 298f46e77a61159a8232fda69c614fe39c84e5d8..2e2a037253f7ffb5722a7f663614c3be
  #endif
 +  }  // g_upstream_node_mode
  
-   // InitializeCodeCache is instead called in electron::JavascriptEnvironment
-   // during the constructor call so that the code cache is ready for our
+   NativeModuleEnv::InitializeCodeCache();
+ 
 diff --git a/src/node.h b/src/node.h
 index 38e0ef50f9b283b1d7ca8f54412d99b8cd38e524..34a16feaed229a59181e1b2e48b0e111d5b0b2a6 100644
 --- a/src/node.h

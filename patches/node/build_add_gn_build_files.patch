@@ -7,12 +7,11 @@ This adds GN build files for Node, so we don't have to build with GYP.
 
 diff --git a/BUILD.gn b/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..27d62c3e7288816fc9a41127180f18cc982525f8
+index 0000000000000000000000000000000000000000..7309cff109e094df0aeed1ae606a996b1c09d2a2
 --- /dev/null
 +++ b/BUILD.gn
-@@ -0,0 +1,415 @@
+@@ -0,0 +1,340 @@
 +import("//electron/build/asar.gni")
-+import("//tools/v8_context_snapshot/v8_context_snapshot.gni")
 +import("//v8/gni/v8.gni")
 +
 +declare_args() {
@@ -54,9 +53,6 @@ index 0000000000000000000000000000000000000000..27d62c3e7288816fc9a41127180f18cc
 +
 +  # Allows embedders to override the NODE_MODULE_VERSION define
 +  node_module_version = ""
-+
-+  # Pre-compile internal node scripts into V8 compile caches
-+  node_use_node_code_cache = is_win || host_cpu == target_cpu
 +}
 +
 +assert(!node_use_dtrace, "node_use_dtrace not supported in GN")
@@ -198,164 +194,93 @@ index 0000000000000000000000000000000000000000..27d62c3e7288816fc9a41127180f18cc
 +  }
 +}
 +
-+node_cflags_cc = [
-+  "-Wno-deprecated-declarations",
-+  "-Wno-implicit-fallthrough",
-+  "-Wno-return-type",
-+  "-Wno-sometimes-uninitialized",
-+  "-Wno-string-plus-int",
-+  "-Wno-unused-function",
-+  "-Wno-unused-label",
-+  "-Wno-unused-private-field",
-+  "-Wno-unused-variable",
-+]
++component("node_lib") {
++  deps = [
++    ":node_js2c",
++    "deps/cares",
++    "deps/histogram",
++    "deps/llhttp",
++    "deps/nghttp2",
++    "deps/uvwasi",
++    "//third_party/brotli:dec",
++    "//third_party/brotli:enc",
++    "//third_party/zlib",
++    "//v8:v8_libplatform",
++  ]
++  public_deps = [
++    "deps/uv",
++    "//electron:electron_js2c",
++    "//v8",
++  ]
++  configs += [ ":node_internal_config" ]
++  public_configs = [ ":node_lib_config" ]
++  include_dirs = [ "src" ]
++  libs = []
++  frameworks = []
++  cflags_cc = [
++    "-Wno-deprecated-declarations",
++    "-Wno-implicit-fallthrough",
++    "-Wno-return-type",
++    "-Wno-sometimes-uninitialized",
++    "-Wno-string-plus-int",
++    "-Wno-unused-function",
++    "-Wno-unused-label",
++    "-Wno-unused-private-field",
++    "-Wno-unused-variable",
++  ]
 +
-+template("node_lib_component") {
-+  assert(defined(invoker.stub_code_cache),
-+         "Must define stub_code_cache as a boolean")
++  if (v8_enable_i18n_support) {
++    deps += [ "//third_party/icu" ]
++  }
 +
-+  component("$target_name") {
-+    deps = [
-+      ":node_js2c",
-+      "deps/cares",
-+      "deps/histogram",
-+      "deps/llhttp",
-+      "deps/nghttp2",
-+      "deps/uvwasi",
-+      "//third_party/brotli:dec",
-+      "//third_party/brotli:enc",
-+      "//third_party/zlib",
-+      "//v8:v8_libplatform",
-+    ]
-+    public_deps = [
-+      "deps/uv",
-+      "//electron:electron_js2c",
-+      "//v8",
-+    ]
-+    configs += [ ":node_internal_config" ]
-+    public_configs = [ ":node_lib_config" ]
-+    include_dirs = [ "src" ]
-+    libs = []
-+    frameworks = []
-+    cflags_cc = node_cflags_cc
++  sources = node_files.node_sources
++  sources += [
++    "$root_gen_dir/electron_natives.cc",
++    "$target_gen_dir/node_javascript.cc",
++    "src/node_code_cache_stub.cc",
++    "src/node_snapshot_stub.cc",
++  ]
 +
-+    if (v8_enable_i18n_support) {
-+      deps += [ "//third_party/icu" ]
-+    }
++  if (is_win) {
++    libs += [ "psapi.lib" ]
++  }
++  if (is_mac) {
++    frameworks += [ "CoreFoundation.framework" ]
++  }
 +
-+    sources = node_files.node_sources
++  if (node_enable_inspector) {
 +    sources += [
-+      "$root_gen_dir/electron_natives.cc",
-+      "$target_gen_dir/node_javascript.cc",
-+      "src/node_snapshot_stub.cc",
++      "src/inspector_agent.cc",
++      "src/inspector_agent.h",
++      "src/inspector_io.cc",
++      "src/inspector_io.h",
++      "src/inspector_js_api.cc",
++      "src/inspector_profiler.cc",
++      "src/inspector_socket.cc",
++      "src/inspector_socket.h",
++      "src/inspector_socket_server.cc",
++      "src/inspector_socket_server.h",
 +    ]
-+
-+    if (invoker.stub_code_cache) {
-+      sources += [ "src/node_code_cache_stub.cc" ]
-+    } else {
-+      deps += [ ":node_codecache" ]
-+      sources += [ "$target_gen_dir/node_code_cache.cc" ]
-+    }
-+
-+    if (is_win) {
-+      libs += [ "psapi.lib" ]
-+    }
-+    if (is_mac) {
-+      frameworks += [ "CoreFoundation.framework" ]
-+    }
-+
-+    if (node_enable_inspector) {
-+      sources += [
-+        "src/inspector_agent.cc",
-+        "src/inspector_agent.h",
-+        "src/inspector_io.cc",
-+        "src/inspector_io.h",
-+        "src/inspector_js_api.cc",
-+        "src/inspector_profiler.cc",
-+        "src/inspector_socket.cc",
-+        "src/inspector_socket.h",
-+        "src/inspector_socket_server.cc",
-+        "src/inspector_socket_server.h",
-+      ]
-+      deps += [ "src/inspector" ]
-+    }
-+
-+    if (node_use_openssl) {
-+      deps += [ "//third_party/boringssl" ]
-+      sources += [
-+        "src/node_crypto.cc",
-+        "src/node_crypto.h",
-+        "src/node_crypto_bio.cc",
-+        "src/node_crypto_bio.h",
-+        "src/node_crypto_clienthello-inl.h",
-+        "src/node_crypto_clienthello.cc",
-+        "src/node_crypto_clienthello.h",
-+        "src/node_crypto_common.cc",
-+        "src/node_crypto_common.h",
-+        "src/node_crypto_groups.h",
-+        "src/tls_wrap.cc",
-+        "src/tls_wrap.h",
-+      ]
-+      cflags_cc += [ "-Wno-sign-compare" ]
-+    }
-+  }
-+}
-+
-+if (node_use_node_code_cache) {
-+  node_lib_component("node_lib_no_code_cache") {
-+    stub_code_cache = true
++    deps += [ "src/inspector" ]
 +  }
 +
-+  node_lib_component("node_lib") {
-+    stub_code_cache = false
-+  }
-+} else {
-+  node_lib_component("node_lib") {
-+    stub_code_cache = true
-+  }
-+}
-+
-+##### node_mkcodecache
-+
-+if (node_use_node_code_cache) {
-+  executable("node_mkcodecache") {
-+    output_name = "node_mkcodecache"
-+    sources = [
-+      "src/node_code_cache_stub.cc",
-+      "src/node_snapshot_stub.cc",
-+      "tools/code_cache/cache_builder.cc",
-+      "tools/code_cache/cache_builder.h",
-+      "tools/code_cache/mkcodecache.cc",
++  if (node_use_openssl) {
++    deps += [ "//third_party/boringssl" ]
++    sources += [
++      "src/node_crypto.cc",
++      "src/node_crypto.h",
++      "src/node_crypto_bio.cc",
++      "src/node_crypto_bio.h",
++      "src/node_crypto_clienthello-inl.h",
++      "src/node_crypto_clienthello.cc",
++      "src/node_crypto_clienthello.h",
++      "src/node_crypto_common.cc",
++      "src/node_crypto_common.h",
++      "src/node_crypto_groups.h",
++      "src/tls_wrap.cc",
++      "src/tls_wrap.h",
 +    ]
-+
-+    configs += [ ":node_internal_config" ]
-+    public_configs = [ ":node_lib_config" ]
-+    include_dirs = [ "src" ]
-+
-+    deps = [
-+      ":node_lib_no_code_cache",
-+      "//gin",
-+    ]
-+
-+    if (use_v8_context_snapshot) {
-+      public_deps = [ "//tools/v8_context_snapshot:v8_context_snapshot" ]
-+      configs += [ "//v8:external_startup_data" ]
-+    }
-+
-+    cflags_cc = node_cflags_cc
-+  }
-+
-+  action("node_codecache") {
-+    script = "tools/mkcodecache.py"
-+
-+    deps = [ ":node_mkcodecache" ]
-+
-+    outputs = [ "$target_gen_dir/node_code_cache.cc" ]
-+
-+    args = [
-+      rebase_path("$root_out_dir/node_mkcodecache"),
-+      rebase_path(outputs[0]),
-+    ]
++    cflags_cc += [ "-Wno-sign-compare" ]
 +  }
 +}
 +
@@ -1685,22 +1610,6 @@ index 0000000000000000000000000000000000000000..f3c5c798c0aefcb8cf9b1570a7b4817c
 +  script = "../../tools/compress_json.py"
 +  args = rebase_path(inputs + outputs, root_build_dir)
 +}
-diff --git a/src/node.cc b/src/node.cc
-index 905afd8c235b7b1a7b45823db486384935a2a52b..298f46e77a61159a8232fda69c614fe39c84e5d8 100644
---- a/src/node.cc
-+++ b/src/node.cc
-@@ -916,7 +916,10 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
-   per_process::metadata.versions.InitializeIntlVersions();
- #endif
- 
--  NativeModuleEnv::InitializeCodeCache();
-+  // InitializeCodeCache is instead called in electron::JavascriptEnvironment
-+  // during the constructor call so that the code cache is ready for our
-+  // early-created v8::Context
-+  // NativeModuleEnv::InitializeCodeCache();
- 
-   // We should set node_is_initialized here instead of in node::Start,
-   // otherwise embedders using node::Init to initialize everything will not be
 diff --git a/src/node_version.h b/src/node_version.h
 index 0f72abc0bf0302e1f535f71803f5aa063424f8b9..c6a76e408312d8fcfc4849082727331948e710b3 100644
 --- a/src/node_version.h
@@ -1716,97 +1625,6 @@ index 0f72abc0bf0302e1f535f71803f5aa063424f8b9..c6a76e408312d8fcfc48490827273319
  
  // The NAPI_VERSION provided by this version of the runtime. This is the version
  // which the Node binary being built supports.
-diff --git a/tools/code_cache/mkcodecache.cc b/tools/code_cache/mkcodecache.cc
-index c314e07fd78b224033c05de90ed56bc07a8aa41f..a0444cb4808511b631ab6140bc59a180f053720f 100644
---- a/tools/code_cache/mkcodecache.cc
-+++ b/tools/code_cache/mkcodecache.cc
-@@ -9,6 +9,69 @@
- #include "libplatform/libplatform.h"
- #include "v8.h"
- 
-+#pragma push_macro("ASSERT")
-+#pragma push_macro("CHECK")
-+#pragma push_macro("CHECK_EQ")
-+#pragma push_macro("CHECK_GE")
-+#pragma push_macro("CHECK_GT")
-+#pragma push_macro("CHECK_LE")
-+#pragma push_macro("CHECK_LT")
-+#pragma push_macro("CHECK_NE")
-+#pragma push_macro("DCHECK")
-+#pragma push_macro("DCHECK_EQ")
-+#pragma push_macro("DCHECK_GE")
-+#pragma push_macro("DCHECK_GT")
-+#pragma push_macro("DCHECK_LE")
-+#pragma push_macro("DCHECK_LT")
-+#pragma push_macro("DCHECK_NE")
-+#pragma push_macro("DISALLOW_COPY_AND_ASSIGN")
-+#pragma push_macro("LIKELY")
-+#pragma push_macro("NO_RETURN")
-+#pragma push_macro("UNLIKELY")
-+
-+#undef ASSERT
-+#undef CHECK
-+#undef CHECK_EQ
-+#undef CHECK_GE
-+#undef CHECK_GT
-+#undef CHECK_LE
-+#undef CHECK_LT
-+#undef CHECK_NE
-+#undef DCHECK
-+#undef DCHECK_EQ
-+#undef DCHECK_GE
-+#undef DCHECK_GT
-+#undef DCHECK_LE
-+#undef DCHECK_LT
-+#undef DCHECK_NE
-+#undef DISALLOW_COPY_AND_ASSIGN
-+#undef LIKELY
-+#undef NO_RETURN
-+#undef UNLIKELY
-+
-+#include "gin/array_buffer.h"
-+#include "gin/v8_initializer.h"
-+
-+#pragma pop_macro("ASSERT")
-+#pragma pop_macro("CHECK")
-+#pragma pop_macro("CHECK_EQ")
-+#pragma pop_macro("CHECK_GE")
-+#pragma pop_macro("CHECK_GT")
-+#pragma pop_macro("CHECK_LE")
-+#pragma pop_macro("CHECK_LT")
-+#pragma pop_macro("CHECK_NE")
-+#pragma pop_macro("DCHECK")
-+#pragma pop_macro("DCHECK_EQ")
-+#pragma pop_macro("DCHECK_GE")
-+#pragma pop_macro("DCHECK_GT")
-+#pragma pop_macro("DCHECK_LE")
-+#pragma pop_macro("DCHECK_LT")
-+#pragma pop_macro("DCHECK_NE")
-+#pragma pop_macro("DISALLOW_COPY_AND_ASSIGN")
-+#pragma pop_macro("LIKELY")
-+#pragma pop_macro("NO_RETURN")
-+#pragma pop_macro("UNLIKELY")
-+
- using node::native_module::CodeCacheBuilder;
- using v8::ArrayBuffer;
- using v8::Context;
-@@ -43,9 +106,15 @@ int main(int argc, char* argv[]) {
- 
-   node::per_process::enabled_debug_list.Parse(nullptr);
- 
-+  gin::V8Initializer::LoadV8Snapshot(
-+        gin::V8Initializer::V8SnapshotFileType::kWithAdditionalContext);
-+
-   std::unique_ptr<v8::Platform> platform = v8::platform::NewDefaultPlatform();
-   v8::V8::InitializePlatform(platform.get());
--  v8::V8::Initialize();
-+  gin::IsolateHolder::Initialize(gin::IsolateHolder::kNonStrictMode,
-+                                gin::ArrayBufferAllocator::SharedInstance(),
-+                                nullptr /* external_reference_table */,
-+                                false /* create_v8_platform */);
- 
-   // Create a new Isolate and make it the current one.
-   Isolate::CreateParams create_params;
 diff --git a/tools/generate_config_gypi.py b/tools/generate_config_gypi.py
 new file mode 100644
 index 0000000000000000000000000000000000000000..d8b279f590c115108d5dca879747de7b0c9f1934
@@ -1974,23 +1792,6 @@ index 0f073e182bdb2858957e4b28ae15b366d7933dbe..93e9474297fd9032981786ae9d4e005f
    return os.path.splitext(filename)[0]
  
  
-diff --git a/tools/mkcodecache.py b/tools/mkcodecache.py
-new file mode 100644
-index 0000000000000000000000000000000000000000..63423c1b598bb96e59b0fa163ef882a9697ae0db
---- /dev/null
-+++ b/tools/mkcodecache.py
-@@ -0,0 +1,11 @@
-+import subprocess
-+import sys
-+
-+
-+def mkcodecache(*mkcodecache_args):
-+    call_args = list(mkcodecache_args)
-+    subprocess.check_call(call_args)
-+
-+
-+if __name__ == '__main__':
-+    mkcodecache(*sys.argv[1:])
 diff --git a/tools/tar.py b/tools/tar.py
 new file mode 100644
 index 0000000000000000000000000000000000000000..eb697be25779db62c829aac45a509804e9fff331
