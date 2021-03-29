@@ -1809,7 +1809,7 @@ index c314e07fd78b224033c05de90ed56bc07a8aa41f..a0444cb4808511b631ab6140bc59a180
    Isolate::CreateParams create_params;
 diff --git a/tools/generate_config_gypi.py b/tools/generate_config_gypi.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..01f62d4ae6e3b9d539444e3dff069f0011353caa
+index 0000000000000000000000000000000000000000..d8b279f590c115108d5dca879747de7b0c9f1934
 --- /dev/null
 +++ b/tools/generate_config_gypi.py
 @@ -0,0 +1,11 @@
@@ -1820,7 +1820,7 @@ index 0000000000000000000000000000000000000000..01f62d4ae6e3b9d539444e3dff069f00
 +def main(args):
 +  out = args[0]
 +  with open(out, 'w') as f:
-+    f.write("{'variables':{}}\n")
++    f.write("{'variables':{'built_with_electron': 1}}\n")
 +
 +if __name__ == '__main__':
 +  main(sys.argv[1:])
