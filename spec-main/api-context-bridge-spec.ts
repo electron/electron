@@ -352,6 +352,20 @@ describe('contextBridge', () => {
         expect(result).equal('return-value');
       });
 
+      it('should properly handle errors thrown in proxied functions', async () => {
+        await makeBindingWindow(() => {
+          contextBridge.exposeInMainWorld('example', () => { throw new Error('oh no'); });
+        });
+        const result = await callWithBindings(async (root: any) => {
+          try {
+            root.example();
+          } catch (e) {
+            return e.message;
+          }
+        });
+        expect(result).equal('oh no');
+      });
+
       it('should proxy methods that are callable multiple times', async () => {
         await makeBindingWindow(() => {
           contextBridge.exposeInMainWorld('example', {
