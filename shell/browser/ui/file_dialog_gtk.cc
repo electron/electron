@@ -354,14 +354,11 @@ void FileChooserDialog::AddFilters(const Filters& filters) {
     GtkFileFilter* gtk_filter = gtk_file_filter_new();
 
     for (const auto& extension : filter.second) {
-      std::string file_extension{"*." + extension};
       // guarantee a pure lowercase variant
-      for (auto& c : file_extension)
-        c = std::tolower(c);
+      std::string file_extension = base::ToLowerASCII("*." + extension);
       gtk_file_filter_add_pattern(gtk_filter, file_extension.c_str());
       // guarantee a pure uppercase variant
-      for (auto& c : file_extension)
-        c = std::toupper(c);
+      file_extension = base::ToUpperASCII("*." + extension);
       gtk_file_filter_add_pattern(gtk_filter, file_extension.c_str());
     }
 
@@ -371,7 +368,7 @@ void FileChooserDialog::AddFilters(const Filters& filters) {
 }
 
 void FileChooserDialog::OnUpdatePreview(GtkFileChooser* chooser) {
-  assert(!*supports_gtk_file_chooser_native);
+  CHECK(!*supports_gtk_file_chooser_native);
   gchar* filename = gtk_file_chooser_get_preview_filename(chooser);
   if (!filename) {
     gtk_file_chooser_set_preview_widget_active(chooser, FALSE);
