@@ -7,10 +7,10 @@ This adds GN build files for Node, so we don't have to build with GYP.
 
 diff --git a/BUILD.gn b/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..27d62c3e7288816fc9a41127180f18cc982525f8
+index 0000000000000000000000000000000000000000..6819eb055f5c6b8f8872621e27a809227cb4a7ab
 --- /dev/null
 +++ b/BUILD.gn
-@@ -0,0 +1,415 @@
+@@ -0,0 +1,414 @@
 +import("//electron/build/asar.gni")
 +import("//tools/v8_context_snapshot/v8_context_snapshot.gni")
 +import("//v8/gni/v8.gni")
@@ -56,7 +56,7 @@ index 0000000000000000000000000000000000000000..27d62c3e7288816fc9a41127180f18cc
 +  node_module_version = ""
 +
 +  # Pre-compile internal node scripts into V8 compile caches
-+  node_use_node_code_cache = is_win || host_cpu == target_cpu
++  node_use_node_code_cache = host_cpu == target_cpu || (is_win && host_cpu == "x64" && target_cpu == "x86")
 +}
 +
 +assert(!node_use_dtrace, "node_use_dtrace not supported in GN")
@@ -198,17 +198,19 @@ index 0000000000000000000000000000000000000000..27d62c3e7288816fc9a41127180f18cc
 +  }
 +}
 +
-+node_cflags_cc = [
-+  "-Wno-deprecated-declarations",
-+  "-Wno-implicit-fallthrough",
-+  "-Wno-return-type",
-+  "-Wno-sometimes-uninitialized",
-+  "-Wno-string-plus-int",
-+  "-Wno-unused-function",
-+  "-Wno-unused-label",
-+  "-Wno-unused-private-field",
-+  "-Wno-unused-variable",
-+]
++config("node_cflags_config") {
++  cflags_cc = [
++    "-Wno-deprecated-declarations",
++    "-Wno-implicit-fallthrough",
++    "-Wno-return-type",
++    "-Wno-sometimes-uninitialized",
++    "-Wno-string-plus-int",
++    "-Wno-unused-function",
++    "-Wno-unused-label",
++    "-Wno-unused-private-field",
++    "-Wno-unused-variable",
++  ]
++}
 +
 +template("node_lib_component") {
 +  assert(defined(invoker.stub_code_cache),
@@ -232,12 +234,11 @@ index 0000000000000000000000000000000000000000..27d62c3e7288816fc9a41127180f18cc
 +      "//electron:electron_js2c",
 +      "//v8",
 +    ]
-+    configs += [ ":node_internal_config" ]
++    configs += [ ":node_internal_config", ":node_cflags_config" ]
 +    public_configs = [ ":node_lib_config" ]
 +    include_dirs = [ "src" ]
 +    libs = []
 +    frameworks = []
-+    cflags_cc = node_cflags_cc
 +
 +    if (v8_enable_i18n_support) {
 +      deps += [ "//third_party/icu" ]
@@ -328,7 +329,7 @@ index 0000000000000000000000000000000000000000..27d62c3e7288816fc9a41127180f18cc
 +      "tools/code_cache/mkcodecache.cc",
 +    ]
 +
-+    configs += [ ":node_internal_config" ]
++    configs += [ ":node_internal_config", ":node_cflags_config" ]
 +    public_configs = [ ":node_lib_config" ]
 +    include_dirs = [ "src" ]
 +
@@ -341,8 +342,6 @@ index 0000000000000000000000000000000000000000..27d62c3e7288816fc9a41127180f18cc
 +      public_deps = [ "//tools/v8_context_snapshot:v8_context_snapshot" ]
 +      configs += [ "//v8:external_startup_data" ]
 +    }
-+
-+    cflags_cc = node_cflags_cc
 +  }
 +
 +  action("node_codecache") {
