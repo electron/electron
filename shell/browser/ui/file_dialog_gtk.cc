@@ -4,7 +4,6 @@
 
 #include <gmodule.h>
 
-#include <cctype>
 #include <memory>
 
 #include "base/callback.h"
