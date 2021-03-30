@@ -196,7 +196,8 @@ The simplest and the fastest way to distribute your newly created app is using
 1. Import Electron Forge to your app folder:
 
     ```sh
-    npx @electron-forge/cli import
+    npm install --save-dev @electron-forge/cli
+    npx electron-forge import
 
     ✔ Checking your system
     ✔ Initializing Git Repository
