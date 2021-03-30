@@ -27,7 +27,7 @@ export const setDefaultApplicationMenu = () => {
       {
         label: 'Community Discussions',
         click: async () => {
-          await shell.openExternal('https://discuss.atom.io/c/electron');
+          await shell.openExternal('https://discord.gg/electron');
         }
       },
       {
