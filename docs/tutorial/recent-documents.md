@@ -24,7 +24,7 @@ Starting with a working application from the
 [Quick Start Guide](quick-start.md), add the following lines to the
 `main.js` file:
 
-```javascript
+```javascript fiddle='docs/fiddles/features/recent-documents'
 const { app } = require('electron')
 
 app.addRecentDocument('/Users/USERNAME/Desktop/work.type')

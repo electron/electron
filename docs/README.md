@@ -91,11 +91,6 @@ These individual tutorials expand on topics discussed in the guide above.
 * Electron Releases & Developer Feedback
   * [Versioning Policy](tutorial/electron-versioning.md)
   * [Release Timelines](tutorial/electron-timelines.md)
-* [Packaging App Source Code with asar](tutorial/application-packaging.md)
-  * [Generating asar Archives](tutorial/application-packaging.md#generating-asar-archives)
-  * [Using asar Archives](tutorial/application-packaging.md#using-asar-archives)
-  * [Limitations](tutorial/application-packaging.md#limitations-of-the-node-api)
-  * [Adding Unpacked Files to asar Archives](tutorial/application-packaging.md#adding-unpacked-files-to-asar-archives)
 * [Testing Widevine CDM](tutorial/testing-widevine-cdm.md)
 
 ---
@@ -150,7 +145,6 @@ These individual tutorials expand on topics discussed in the guide above.
 
 * [contextBridge](api/context-bridge.md)
 * [ipcRenderer](api/ipc-renderer.md)
-* [remote](api/remote.md)
 * [webFrame](api/web-frame.md)
 
 ### Modules for Both Processes:
