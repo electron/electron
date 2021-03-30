@@ -307,17 +307,19 @@ def export_patches(repo, out_dir, patch_range=None, dry_run=False):
     # exported patch differs from what exists. Report number of mismatched
     # patches and fail if there's more than one.
     patch_count = 0
+    bad_patches = []
     for patch in patches:
       filename = get_file_name(patch)
       filepath = posixpath.join(out_dir, filename)
-      existing_patch = io.open(filepath, 'rb').read()
+      existing_patch = unicode(io.open(filepath, 'rb').read(), "utf-8")
       formatted_patch = join_patch(patch)
       if formatted_patch != existing_patch:
         patch_count += 1
+        bad_patches.append(filename)
     if patch_count > 0:
       sys.stderr.write(
-        "Patches in {} not up to date: {} patches need update\n".format(
-          out_dir, patch_count
+        "Patches in {} not up to date: {} patches need update\n-- {}\n".format(
+          out_dir, patch_count, "\n-- ".join(bad_patches)
         )
       )
       exit(1)
