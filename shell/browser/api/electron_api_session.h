@@ -178,6 +178,8 @@ class Session : public gin::Wrappable<Session>,
   v8::Global<v8::Value> service_worker_context_;
   v8::Global<v8::Value> web_request_;
 
+  v8::Isolate* isolate_;
+
   // The client id to enable the network throttler.
   base::UnguessableToken network_emulation_token_;
 

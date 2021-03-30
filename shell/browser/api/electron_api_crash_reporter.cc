@@ -190,8 +190,9 @@ namespace {
 
 #if defined(MAS_BUILD)
 void GetUploadedReports(
+    v8::Isolate* isolate,
     base::OnceCallback<void(v8::Local<v8::Value>)> callback) {
-  std::move(callback).Run(v8::Array::New(v8::Isolate::GetCurrent()));
+  std::move(callback).Run(v8::Array::New(isolate));
 }
 #else
 scoped_refptr<UploadList> CreateCrashUploadList() {

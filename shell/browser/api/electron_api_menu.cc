@@ -264,7 +264,7 @@ void Menu::OnMenuWillClose() {
 }
 
 void Menu::OnMenuWillShow() {
-  Pin(v8::Isolate::GetCurrent());
+  Pin(JavascriptEnvironment::GetIsolate());
   Emit("menu-will-show");
 }
 

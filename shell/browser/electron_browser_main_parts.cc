@@ -278,6 +278,9 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
   base::FeatureList::ClearInstanceForTesting();
   InitializeFeatureList();
 
+  // Initialize field trials.
+  InitializeFieldTrials();
+
   // Initialize after user script environment creation.
   fake_browser_process_->PostEarlyInitialization();
 }

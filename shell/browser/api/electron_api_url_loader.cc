@@ -312,7 +312,8 @@ void SimpleURLLoaderWrapper::Pin() {
 }
 
 void SimpleURLLoaderWrapper::PinBodyGetter(v8::Local<v8::Value> body_getter) {
-  pinned_chunk_pipe_getter_.Reset(v8::Isolate::GetCurrent(), body_getter);
+  pinned_chunk_pipe_getter_.Reset(JavascriptEnvironment::GetIsolate(),
+                                  body_getter);
 }
 
 SimpleURLLoaderWrapper::~SimpleURLLoaderWrapper() {

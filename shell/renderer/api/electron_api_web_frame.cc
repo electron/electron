@@ -205,7 +205,7 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
 
   void Completed(
       const blink::WebVector<v8::Local<v8::Value>>& result) override {
-    v8::Isolate* isolate = v8::Isolate::GetCurrent();
+    v8::Isolate* isolate = promise_.isolate();
     if (!result.empty()) {
       if (!result[0].IsEmpty()) {
         v8::Local<v8::Value> value = result[0];
