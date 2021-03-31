@@ -281,8 +281,6 @@ void JavascriptEnvironment::OnMessageLoopDestroying() {
     gin_helper::CleanedUpAtExit::DoCleanup();
   }
   base::CurrentThread::Get()->RemoveTaskObserver(microtasks_runner_.get());
-  platform_->DrainTasks(isolate_);
-  platform_->UnregisterIsolate(isolate_);
 }
 
 NodeEnvironment::NodeEnvironment(node::Environment* env) : env_(env) {}

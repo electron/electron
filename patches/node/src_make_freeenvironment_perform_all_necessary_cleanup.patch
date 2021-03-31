@@ -1,0 +1,191 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Anna Henningsen <anna@addaleax.net>
+Date: Sun, 10 Nov 2019 19:47:03 +0000
+Subject: src: make `FreeEnvironment()` perform all necessary cleanup
+
+Make the calls `stop_sub_worker_contexts()`, `RunCleanup()`
+part of the public API for easier embedding.
+
+(Note that calling `RunAtExit()` is idempotent because the
+at-exit callback queue is cleared after each call.)
+
+PR-URL: https://github.com/nodejs/node/pull/30467
+Reviewed-By: James M Snell <jasnell@gmail.com>
+Reviewed-By: Gireesh Punathil <gpunathi@in.ibm.com>
+
+diff --git a/src/api/environment.cc b/src/api/environment.cc
+index adf033f2e1855ad1c9738f9746677566aabedd87..38e8b0927884316991239cb74496156510e8a91e 100644
+--- a/src/api/environment.cc
++++ b/src/api/environment.cc
+@@ -332,7 +332,23 @@ Environment* CreateEnvironment(IsolateData* isolate_data,
+ }
+ 
+ void FreeEnvironment(Environment* env) {
+-  env->RunCleanup();
++  {
++    // TODO(addaleax): This should maybe rather be in a SealHandleScope.
++    HandleScope handle_scope(env->isolate());
++    Context::Scope context_scope(env->context());
++    env->set_stopping(true);
++    env->stop_sub_worker_contexts();
++    env->RunCleanup();
++    RunAtExit(env);
++  }
++
++  // This call needs to be made while the `Environment` is still alive
++  // because we assume that it is available for async tracking in the
++  // NodePlatform implementation.
++  MultiIsolatePlatform* platform = env->isolate_data()->platform();
++  if (platform != nullptr)
++    platform->DrainTasks(env->isolate());
++
+   delete env;
+ }
+ 
+diff --git a/src/node_main_instance.cc b/src/node_main_instance.cc
+index 91bb30cb4e3ee67786f2d50a335db8b714f82203..c6533321bd6b6498980978fd78e8ff89214bd86c 100644
+--- a/src/node_main_instance.cc
++++ b/src/node_main_instance.cc
+@@ -110,7 +110,8 @@ int NodeMainInstance::Run() {
+   HandleScope handle_scope(isolate_);
+ 
+   int exit_code = 0;
+-  std::unique_ptr<Environment> env = CreateMainEnvironment(&exit_code);
++  DeleteFnPtr<Environment, FreeEnvironment> env =
++      CreateMainEnvironment(&exit_code);
+ 
+   CHECK_NOT_NULL(env);
+   Context::Scope context_scope(env->context());
+@@ -149,10 +150,7 @@ int NodeMainInstance::Run() {
+     exit_code = EmitExit(env.get());
+   }
+ 
+-  env->set_can_call_into_js(false);
+-  env->stop_sub_worker_contexts();
+   ResetStdio();
+-  env->RunCleanup();
+ 
+   // TODO(addaleax): Neither NODE_SHARED_MODE nor HAVE_INSPECTOR really
+   // make sense here.
+@@ -167,10 +165,6 @@ int NodeMainInstance::Run() {
+   }
+ #endif
+ 
+-  RunAtExit(env.get());
+-
+-  per_process::v8_platform.DrainVMTasks(isolate_);
+-
+ #if defined(LEAK_SANITIZER)
+   __lsan_do_leak_check();
+ #endif
+@@ -180,8 +174,8 @@ int NodeMainInstance::Run() {
+ 
+ // TODO(joyeecheung): align this with the CreateEnvironment exposed in node.h
+ // and the environment creation routine in workers somehow.
+-std::unique_ptr<Environment> NodeMainInstance::CreateMainEnvironment(
+-    int* exit_code) {
++DeleteFnPtr<Environment, FreeEnvironment>
++NodeMainInstance::CreateMainEnvironment(int* exit_code) {
+   *exit_code = 0;  // Reset the exit code to 0
+ 
+   HandleScope handle_scope(isolate_);
+@@ -205,14 +199,14 @@ std::unique_ptr<Environment> NodeMainInstance::CreateMainEnvironment(
+   CHECK(!context.IsEmpty());
+   Context::Scope context_scope(context);
+ 
+-  std::unique_ptr<Environment> env = std::make_unique<Environment>(
++  DeleteFnPtr<Environment, FreeEnvironment> env { new Environment(
+       isolate_data_.get(),
+       context,
+       args_,
+       exec_args_,
+       static_cast<Environment::Flags>(Environment::kIsMainThread |
+                                       Environment::kOwnsProcessState |
+-                                      Environment::kOwnsInspector));
++                                      Environment::kOwnsInspector)) };
+   env->InitializeLibuv(per_process::v8_is_profiling);
+   env->InitializeDiagnostics();
+ 
+diff --git a/src/node_main_instance.h b/src/node_main_instance.h
+index 5bc18cb3de63c02256ef7a5980166e75e60c1608..cc9f50b9222de33b52322254c4088f26145e1a93 100644
+--- a/src/node_main_instance.h
++++ b/src/node_main_instance.h
+@@ -61,7 +61,8 @@ class NodeMainInstance {
+ 
+   // TODO(joyeecheung): align this with the CreateEnvironment exposed in node.h
+   // and the environment creation routine in workers somehow.
+-  std::unique_ptr<Environment> CreateMainEnvironment(int* exit_code);
++  DeleteFnPtr<Environment, FreeEnvironment> CreateMainEnvironment(
++      int* exit_code);
+ 
+   // If nullptr is returned, the binary is not built with embedded
+   // snapshot.
+diff --git a/src/node_platform.cc b/src/node_platform.cc
+index a0ea118861867277d8f5f15625227d49505d1c6a..0225678be331109465264c655ff1029436945f54 100644
+--- a/src/node_platform.cc
++++ b/src/node_platform.cc
+@@ -402,6 +402,7 @@ void PerIsolatePlatformData::RunForegroundTask(uv_timer_t* handle) {
+ 
+ void NodePlatform::DrainTasks(Isolate* isolate) {
+   std::shared_ptr<PerIsolatePlatformData> per_isolate = ForIsolate(isolate);
++  if (!per_isolate) return;
+ 
+   do {
+     // Worker tasks aren't associated with an Isolate.
+@@ -463,12 +464,14 @@ std::shared_ptr<PerIsolatePlatformData>
+ NodePlatform::ForIsolate(Isolate* isolate) {
+   Mutex::ScopedLock lock(per_isolate_mutex_);
+   std::shared_ptr<PerIsolatePlatformData> data = per_isolate_[isolate];
+-  CHECK(data);
++  CHECK_NOT_NULL(data);
+   return data;
+ }
+ 
+ bool NodePlatform::FlushForegroundTasks(Isolate* isolate) {
+-  return ForIsolate(isolate)->FlushForegroundTasksInternal();
++  std::shared_ptr<PerIsolatePlatformData> per_isolate = ForIsolate(isolate);
++  if (!per_isolate) return false;
++  return per_isolate->FlushForegroundTasksInternal();
+ }
+ 
+ bool NodePlatform::IdleTasksEnabled(Isolate* isolate) { return false; }
+diff --git a/src/node_worker.cc b/src/node_worker.cc
+index 367541bea6aa0f66203466ff60e25f15e28608db..bd405e20ae6c8118c86ad7f3c12c07f3d6adc4f2 100644
+--- a/src/node_worker.cc
++++ b/src/node_worker.cc
+@@ -279,26 +279,18 @@ void Worker::Run() {
+ 
+       if (!env_) return;
+       env_->set_can_call_into_js(false);
+-      Isolate::DisallowJavascriptExecutionScope disallow_js(isolate_,
+-          Isolate::DisallowJavascriptExecutionScope::THROW_ON_FAILURE);
+ 
+       {
+-        Context::Scope context_scope(env_->context());
+-        {
+-          Mutex::ScopedLock lock(mutex_);
+-          stopped_ = true;
+-          this->env_ = nullptr;
+-        }
+-        env_->set_stopping(true);
+-        env_->stop_sub_worker_contexts();
+-        env_->RunCleanup();
+-        RunAtExit(env_.get());
+-
+-        // This call needs to be made while the `Environment` is still alive
+-        // because we assume that it is available for async tracking in the
+-        // NodePlatform implementation.
+-        platform_->DrainTasks(isolate_);
++        Mutex::ScopedLock lock(mutex_);
++        stopped_ = true;
++        this->env_ = nullptr;
+       }
++
++      // TODO(addaleax): Try moving DisallowJavascriptExecutionScope into
++      // FreeEnvironment().
++      Isolate::DisallowJavascriptExecutionScope disallow_js(isolate_,
++          Isolate::DisallowJavascriptExecutionScope::THROW_ON_FAILURE);
++      env_.reset();
+     });
+ 
+     if (is_stopped()) return;

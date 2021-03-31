@@ -177,7 +177,6 @@ void ElectronRendererClient::WillReleaseScriptContext(
   if (command_line->HasSwitch(switches::kNodeIntegrationInSubFrames) ||
       command_line->HasSwitch(
           switches::kDisableElectronSiteInstanceOverrides)) {
-    node::RunAtExit(env);
     node::FreeEnvironment(env);
     if (env == node_bindings_->uv_env())
       node::FreeIsolateData(node_bindings_->isolate_data());

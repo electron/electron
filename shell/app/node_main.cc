@@ -279,10 +279,6 @@ int NodeMain(int argc, char* argv[]) {
     node::ResetStdio();
 
     node::Stop(env);
-    env->stop_sub_worker_contexts();
-    env->RunCleanup();
-
-    node::RunAtExit(env);
     node::FreeEnvironment(env);
     node::FreeIsolateData(isolate_data);
 
