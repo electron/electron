@@ -77,12 +77,12 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
   void AddObserver(Observer* obs) { observers_.AddObserver(obs); }
   void RemoveObserver(Observer* obs) { observers_.RemoveObserver(obs); }
 
-  void SetToolTip(int index, const base::string16& toolTip);
-  base::string16 GetToolTipAt(int index);
-  void SetRole(int index, const base::string16& role);
-  base::string16 GetRoleAt(int index);
-  void SetSecondaryLabel(int index, const base::string16& sublabel);
-  base::string16 GetSecondaryLabelAt(int index) const override;
+  void SetToolTip(int index, const std::u16string& toolTip);
+  std::u16string GetToolTipAt(int index);
+  void SetRole(int index, const std::u16string& role);
+  std::u16string GetRoleAt(int index);
+  void SetSecondaryLabel(int index, const std::u16string& sublabel);
+  std::u16string GetSecondaryLabelAt(int index) const override;
   bool GetAcceleratorAtWithParams(int index,
                                   bool use_default_accelerator,
                                   ui::Accelerator* accelerator) const;
@@ -114,9 +114,9 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
   base::Optional<SharingItem> sharing_item_;
 #endif
 
-  std::map<int, base::string16> toolTips_;   // command id -> tooltip
-  std::map<int, base::string16> roles_;      // command id -> role
-  std::map<int, base::string16> sublabels_;  // command id -> sublabel
+  std::map<int, std::u16string> toolTips_;   // command id -> tooltip
+  std::map<int, std::u16string> roles_;      // command id -> role
+  std::map<int, std::u16string> sublabels_;  // command id -> sublabel
   base::ObserverList<Observer> observers_;
 
   base::WeakPtrFactory<ElectronMenuModel> weak_factory_{this};

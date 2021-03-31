@@ -85,17 +85,17 @@ machine-linux-2xlarge: &machine-linux-2xlarge
 
 machine-mac: &machine-mac
   macos:
-    xcode: "12.2.0"
+    xcode: "12.4.0"
 
 machine-mac-large: &machine-mac-large
   resource_class: large
   macos:
-    xcode: "12.2.0"
+    xcode: "12.4.0"
 
 machine-mac-large-arm: &machine-mac-large-arm
   resource_class: large
   macos:
-    xcode: "12.2.0"
+    xcode: "12.4.0"
 
 machine-mac-arm64: &machine-mac-arm64
   resource_class: electronjs/macos-arm64

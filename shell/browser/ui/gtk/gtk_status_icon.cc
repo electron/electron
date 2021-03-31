@@ -20,7 +20,7 @@ namespace electron {
 namespace gtkui {
 
 GtkStatusIcon::GtkStatusIcon(const gfx::ImageSkia& image,
-                             const base::string16& tool_tip) {
+                             const std::u16string& tool_tip) {
   GdkPixbuf* pixbuf = gtk_util::GdkPixbufFromSkBitmap(*image.bitmap());
   {
     // GTK has a bug that leaks 384 bytes when creating a GtkStatusIcon.  It
@@ -50,7 +50,7 @@ void GtkStatusIcon::SetIcon(const gfx::ImageSkia& image) {
   g_object_unref(pixbuf);
 }
 
-void GtkStatusIcon::SetToolTip(const base::string16& tool_tip) {
+void GtkStatusIcon::SetToolTip(const std::u16string& tool_tip) {
   gtk_status_icon_set_tooltip_text(gtk_status_icon_,
                                    base::UTF16ToUTF8(tool_tip).c_str());
 }

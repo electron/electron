@@ -33,3 +33,15 @@ index bc8e27894732a6d3e834d6b21f00441eca02dd63..f7381c1d5b5842521e0c35476ae468ab
  
  if (use_atk) {
    assert(use_glib, "use_atk=true requires that use_glib=true")
+diff --git a/build/config/linux/atspi2/BUILD.gn b/build/config/linux/atspi2/BUILD.gn
+index 988a9956813617456ee1945de8e857d43543e411..e6e17e9e8f5ff99404b52c0a42d508f97c61e7fc 100644
+--- a/build/config/linux/atspi2/BUILD.gn
++++ b/build/config/linux/atspi2/BUILD.gn
+@@ -6,7 +6,6 @@ import("//build/config/linux/pkg_config.gni")
+ import("//build/config/ui.gni")
+ 
+ # These packages should _only_ be expected when building for a target.
+-assert(current_toolchain == default_toolchain)
+ 
+ if (use_atk) {
+   pkg_config("atspi2") {
