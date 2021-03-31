@@ -93,8 +93,8 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
   int PreCreateThreads() override;
   void ToolkitInitialized() override;
   int PreMainMessageLoopRun() override;
-  void WillRunMainMessageLoop(std::unique_ptr<base::RunLoop>& run_loop) override;
-  void PreDefaultMainMessageLoopRun(base::OnceClosure quit_closure) override;
+  void WillRunMainMessageLoop(
+      std::unique_ptr<base::RunLoop>& run_loop) override;
   void PostMainMessageLoopStart() override;
   void PostMainMessageLoopRun() override;
   void PreMainMessageLoopStart() override;
