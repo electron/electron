@@ -78,14 +78,8 @@ void NetworkContextService::ConfigureNetworkContextParams(
     network_context_params->restore_old_session_cookies = false;
     network_context_params->persist_session_cookies = false;
 
-    // TODO(MarshallOfSound): Make it possible to enable cookie encryption on
-    // linux
-#if defined(OS_MAC) || defined(OS_WIN)
     network_context_params->enable_encrypted_cookies =
         electron::fuses::IsCookieEncryptionEnabled();
-#else
-    network_context_params->enable_encrypted_cookies = false;
-#endif
 
     network_context_params->transport_security_persister_path = path;
   }

@@ -8,9 +8,9 @@
 #include <utility>
 
 #include "base/command_line.h"
+#include "base/path_service.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/net/chrome_mojo_proxy_resolver_factory.h"
-#include "components/os_crypt/keychain_password_mac.h"
 #include "components/os_crypt/os_crypt.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/network_service_instance.h"
@@ -28,8 +28,18 @@
 #include "shell/browser/browser.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/common/application_info.h"
+#include "shell/common/electron_paths.h"
 #include "shell/common/options_switches.h"
 #include "url/gurl.h"
+
+#if defined(OS_MAC)
+#include "components/os_crypt/keychain_password_mac.h"
+#endif
+
+#if defined(OS_LINUX)
+#include "components/os_crypt/key_storage_keyring.h"
+#include "components/os_crypt/key_storage_libsecret.h"
+#endif
 
 namespace {
 
@@ -225,18 +235,38 @@ void SystemNetworkContextManager::OnNetworkServiceCreated(
       CreateNetworkContextParams());
 
   if (electron::fuses::IsCookieEncryptionEnabled()) {
-#if defined(OS_WIN) || defined(OS_MAC)
+    std::string app_name = electron::Browser::Get()->GetName();
 #if defined(OS_MAC)
-    KeychainPassword::service_name =
-        electron::Browser::Get()->GetName() + " Safe Storage";
-    KeychainPassword::account_name = electron::Browser::Get()->GetName();
+    KeychainPassword::service_name = app_name + " Safe Storage";
+    KeychainPassword::account_name = app_name;
+#endif
+#if defined(OS_LINUX)
+    KeyStorageKeyring::kApplicationName = app_name;
+    KeyStorageLibsecret::kApplicationName = app_name;
 #endif
     // The OSCrypt keys are process bound, so if network service is out of
     // process, send it the required key.
     if (content::IsOutOfProcessNetworkService()) {
+#if defined(OS_LINUX)
+      // c.f.
+      // https://source.chromium.org/chromium/chromium/src/+/master:chrome/browser/net/system_network_context_manager.cc;l=515;drc=9d82515060b9b75fa941986f5db7390299669ef1;bpv=1;bpt=1
+      const base::CommandLine& command_line =
+          *base::CommandLine::ForCurrentProcess();
+
+      network::mojom::CryptConfigPtr config =
+          network::mojom::CryptConfig::New();
+      config->product_name = app_name;
+      // c.f.
+      // https://source.chromium.org/chromium/chromium/src/+/master:chrome/common/chrome_switches.cc;l=689;drc=9d82515060b9b75fa941986f5db7390299669ef1
+      config->store = command_line.GetSwitchValueASCII("password-store");
+      config->should_use_preference =
+          command_line.HasSwitch("enable-encryption-selection");
+      base::PathService::Get(electron::DIR_USER_DATA, &config->user_data_path);
+      network_service->SetCryptConfig(std::move(config));
+#else
       network_service->SetEncryptionKey(OSCrypt::GetRawEncryptionKey());
-    }
 #endif
+    }
   }
 }
 
