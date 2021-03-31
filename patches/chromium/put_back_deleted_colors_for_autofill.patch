@@ -18,22 +18,22 @@ index c08edc56c3b5592e7f5df2754808a81c69622315..f4241756f9774a430922994549f2eaf0
 +    // Results Table
 +    case ui::NativeTheme::kColorId_ResultsTableNormalBackground:
 +      return SkColorFromColorId(
-+          ui::NativeTheme::kColorId_TextfieldDefaultBackground, base_theme, color_scheme);
++          ui::NativeTheme::kColorId_TextfieldDefaultBackground);
 +    case ui::NativeTheme::kColorId_ResultsTableHoveredBackground: {
 +      auto default_background = SkColorFromColorId(
-+              ui::NativeTheme::kColorId_TextfieldDefaultBackground, base_theme, color_scheme);
++              ui::NativeTheme::kColorId_TextfieldDefaultBackground);
 +      auto selection_background = SkColorFromColorId(
-+              ui::NativeTheme::kColorId_TextfieldSelectionBackgroundFocused, base_theme, color_scheme);
++              ui::NativeTheme::kColorId_TextfieldSelectionBackgroundFocused);
 +      if (!default_background || !selection_background) return base::nullopt;
 +      return color_utils::AlphaBlend(default_background.value(), selection_background.value(), 0.5f);
 +    }
 +    case ui::NativeTheme::kColorId_ResultsTableNormalText:
 +      return SkColorFromColorId(
-+          ui::NativeTheme::kColorId_TextfieldDefaultColor, base_theme, color_scheme);
++          ui::NativeTheme::kColorId_TextfieldDefaultColor);
 +    case ui::NativeTheme::kColorId_ResultsTableDimmedText: {
-+      auto default_textfield_color = SkColorFromColorId(ui::NativeTheme::kColorId_TextfieldDefaultColor, base_theme, color_scheme);
++      auto default_textfield_color = SkColorFromColorId(ui::NativeTheme::kColorId_TextfieldDefaultColor);
 +      auto default_textfield_background = SkColorFromColorId(
-+              ui::NativeTheme::kColorId_TextfieldDefaultBackground, base_theme, color_scheme);
++              ui::NativeTheme::kColorId_TextfieldDefaultBackground);
 +      if (!default_textfield_color || !default_textfield_background) return base::nullopt;
 +      return color_utils::AlphaBlend(default_textfield_color.value(), default_textfield_background.value(), 0.5f);
 +    }
