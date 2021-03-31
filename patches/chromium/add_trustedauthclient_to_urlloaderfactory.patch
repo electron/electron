@@ -50,7 +50,7 @@ index 69e8d361c9e14f325fc897dad2819b2a57819e75..94a4f5cb735c69d47015a2035761b20a
    // cookies) and to shard network resources, like the cache. If set, takes
    // precedence over ResourceRequest::TrustedParams::IsolationInfo field
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 5b35cc21830c5a59ceddea64e5e3c7dd68cb62be..98f12c6bc227d43018868efa6e7074e8b1f82b56 100644
+index 5b35cc21830c5a59ceddea64e5e3c7dd68cb62be..7d50e66c5dc14f62fec5ddaf2fc4813b5f868b8a 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
 @@ -461,6 +461,7 @@ URLLoader::URLLoader(
@@ -96,7 +96,7 @@ index 5b35cc21830c5a59ceddea64e5e3c7dd68cb62be..98f12c6bc227d43018868efa6e7074e8
 +  head->auth_challenge_info = auth_info;
 +  if (auth_client_) {
 +    auth_client_->OnAuthRequired(
-+        fetch_window_id_, factory_params_->process_id, render_frame_id_,
++        fetch_window_id_, factory_params_->process_id,
 +        request_id_, url_request_->url(), first_auth_attempt_, auth_info,
 +        std::move(head),
 +        auth_challenge_responder_receiver_.BindNewPipeAndPassRemote());
