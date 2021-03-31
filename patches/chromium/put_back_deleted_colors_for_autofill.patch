@@ -8,7 +8,7 @@ needed in chromium but our autofill implementation uses them.  This patch can be
 our autofill implementation to work like Chromium's.
 
 diff --git a/ui/gtk/native_theme_gtk.cc b/ui/gtk/native_theme_gtk.cc
-index c08edc56c3b5592e7f5df2754808a81c69622315..f4241756f9774a430922994549f2eaf00585a7b6 100644
+index c08edc56c3b5592e7f5df2754808a81c69622315..e80075e89642dd6b3a37985b1c6e533bfb3a0e50 100644
 --- a/ui/gtk/native_theme_gtk.cc
 +++ b/ui/gtk/native_theme_gtk.cc
 @@ -369,6 +369,29 @@ base::Optional<SkColor> SkColorFromColorId(ui::NativeTheme::ColorId color_id) {
@@ -42,7 +42,7 @@ index c08edc56c3b5592e7f5df2754808a81c69622315..f4241756f9774a430922994549f2eaf0
      // TODO(thomasanderson): Render GtkSpinner directly.
      case ui::NativeTheme::kColorId_ThrobberSpinningColor:
 diff --git a/ui/native_theme/common_theme.cc b/ui/native_theme/common_theme.cc
-index f0caeb52a1ca5fbd56b3a85af6d009a33b493fd7..884adbe869dbb8ca9469c1b1b8558dbfa80c9bdb 100644
+index f0caeb52a1ca5fbd56b3a85af6d009a33b493fd7..aa48e3de05117b94cb77c81a338486cdce942012 100644
 --- a/ui/native_theme/common_theme.cc
 +++ b/ui/native_theme/common_theme.cc
 @@ -52,7 +52,8 @@ base::Optional<SkColor> GetHighContrastColor(
@@ -70,6 +70,27 @@ index f0caeb52a1ca5fbd56b3a85af6d009a33b493fd7..884adbe869dbb8ca9469c1b1b8558dbf
      // Button
      case NativeTheme::kColorId_ProminentButtonColor:
        return gfx::kGoogleBlue300;
+@@ -87,16 +96,16 @@ base::Optional<SkColor> GetDarkSchemeColor(NativeTheme::ColorId color_id) {
+     // Toggle button
+     case ui::NativeTheme::kColorId_ToggleButtonThumbColorOff: {
+       const SkColor enabled =
+-          *GetDarkSchemeColor(NativeTheme::kColorId_LabelEnabledColor);
++          *GetDarkSchemeColor(base_theme, NativeTheme::kColorId_LabelEnabledColor);
+       const SkColor secondary =
+-          *GetDarkSchemeColor(NativeTheme::kColorId_LabelSecondaryColor);
++          *GetDarkSchemeColor(base_theme, NativeTheme::kColorId_LabelSecondaryColor);
+       return color_utils::AlphaBlend(enabled, secondary, 0.05f);
+     }
+     case ui::NativeTheme::kColorId_ToggleButtonThumbColorOn: {
+       const SkColor enabled =
+-          *GetDarkSchemeColor(NativeTheme::kColorId_LabelEnabledColor);
++          *GetDarkSchemeColor(base_theme, NativeTheme::kColorId_LabelEnabledColor);
+       const SkColor prominent =
+-          *GetDarkSchemeColor(NativeTheme::kColorId_ProminentButtonColor);
++          *GetDarkSchemeColor(base_theme, NativeTheme::kColorId_ProminentButtonColor);
+       return color_utils::AlphaBlend(enabled, prominent, 0.05f);
+     }
+     case ui::NativeTheme::kColorId_ToggleButtonTrackColorOff:
 @@ -540,6 +549,18 @@ SkColor GetDefaultColor(NativeTheme::ColorId color_id,
      case NativeTheme::kColorId_WindowBackground:
        return SK_ColorWHITE;
