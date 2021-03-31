@@ -26,7 +26,8 @@ NetworkContextService::~NetworkContextService() = default;
 
 void NetworkContextService::ConfigureNetworkContextParams(
     network::mojom::NetworkContextParams* network_context_params,
-    network::mojom::CertVerifierCreationParams* cert_verifier_creation_params) {
+    cert_verifier::mojom::CertVerifierCreationParams*
+        cert_verifier_creation_params) {
   bool in_memory = browser_context_->IsOffTheRecord();
   const base::FilePath& path = browser_context_->GetPath();
 
@@ -43,7 +44,7 @@ void NetworkContextService::ConfigureNetworkContextParams(
   network_context_params->user_agent = browser_context_->GetUserAgent();
 
   network_context_params->cors_origin_access_list =
-      browser_context_->GetSharedCorsOriginAccessList()
+      content::BrowserContext::GetSharedCorsOriginAccessList(browser_context_)
           ->GetOriginAccessList()
           .CreateCorsOriginAccessPatternsList();
 

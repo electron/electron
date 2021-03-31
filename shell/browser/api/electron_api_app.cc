@@ -549,7 +549,7 @@ void OnClientCertificateSelected(
 #if defined(USE_NSS_CERTS)
 int ImportIntoCertStore(CertificateManagerModel* model, base::Value options) {
   std::string file_data, cert_path;
-  base::string16 password;
+  std::u16string password;
   net::ScopedCERTCertificateList imported_certs;
   int rv = -1;
 
@@ -1553,8 +1553,10 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
                  base::BindRepeating(&Browser::AddRecentDocument, browser))
       .SetMethod("clearRecentDocuments",
                  base::BindRepeating(&Browser::ClearRecentDocuments, browser))
+#if defined(OS_WIN)
       .SetMethod("setAppUserModelId",
                  base::BindRepeating(&Browser::SetAppUserModelID, browser))
+#endif
       .SetMethod(
           "isDefaultProtocolClient",
           base::BindRepeating(&Browser::IsDefaultProtocolClient, browser))

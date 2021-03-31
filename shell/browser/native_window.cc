@@ -604,7 +604,7 @@ const views::Widget* NativeWindow::GetWidget() const {
   return widget();
 }
 
-base::string16 NativeWindow::GetAccessibleWindowTitle() const {
+std::u16string NativeWindow::GetAccessibleWindowTitle() const {
   if (accessible_title_.empty()) {
     return views::WidgetDelegate::GetAccessibleWindowTitle();
   }

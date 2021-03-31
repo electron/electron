@@ -6,7 +6,7 @@ Subject: remove some deps that do not work on arm64
 Once these deps have been fixed upstream we can remove this patch.
 
 diff --git a/.vpython b/.vpython
-index e76e966921da472fdf713eabe25235fb5951d0fc..031725b7b0417e456df5dab514382beb3e720226 100644
+index 827327374782363bd8db87681e864943d3bb97e7..c0588809b730997929ed1d78b3481612b6ba42f5 100644
 --- a/.vpython
 +++ b/.vpython
 @@ -53,10 +53,10 @@ wheel: <
@@ -24,7 +24,7 @@ index e76e966921da472fdf713eabe25235fb5951d0fc..031725b7b0417e456df5dab514382beb
  
  # Used by:
  #   build/lacros/test_runner.py
-@@ -74,37 +74,37 @@ wheel: <
+@@ -74,27 +74,27 @@ wheel: <
  # This version must also be compatible with the "numpy" version, as "cv2"
  # depends on "numpy". In this case, OpenCV@2.4.13.2 has been built against
  # numpy@1.11.3.
@@ -69,20 +69,6 @@ index e76e966921da472fdf713eabe25235fb5951d0fc..031725b7b0417e456df5dab514382beb
 +#  match_tag: <
 +#    platform: "macosx_10_6_intel"
 +#  >
-+#>
- 
- # Used by:
- #   third_party/catapult
- #
- # This version must be compatible with the version range specified by
- # //third_party/catapult/telemetry/telemetry/internal/util/external_modules.py
--wheel: <
--  name: "infra/python/wheels/numpy/${vpython_platform}"
--  version: "version:1.11.3"
-->
-+#wheel: <
-+#  name: "infra/python/wheels/numpy/${vpython_platform}"
-+#  version: "version:1.11.3"
 +#>
  
  # Used by:

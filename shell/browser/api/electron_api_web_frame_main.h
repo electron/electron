@@ -78,7 +78,7 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
   void Connect();
 
   v8::Local<v8::Promise> ExecuteJavaScript(gin::Arguments* args,
-                                           const base::string16& code);
+                                           const std::u16string& code);
   bool Reload();
   void Send(v8::Isolate* isolate,
             bool internal,

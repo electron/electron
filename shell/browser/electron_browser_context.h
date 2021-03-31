@@ -113,15 +113,6 @@ class ElectronBrowserContext
       override;
   content::StorageNotificationService* GetStorageNotificationService() override;
 
-  // extensions deps
-  void SetCorsOriginAccessListForOrigin(
-      TargetBrowserContexts target_mode,
-      const url::Origin& source_origin,
-      std::vector<network::mojom::CorsOriginPatternPtr> allow_patterns,
-      std::vector<network::mojom::CorsOriginPatternPtr> block_patterns,
-      base::OnceClosure closure) override;
-  content::SharedCorsOriginAccessList* GetSharedCorsOriginAccessList() override;
-
   CookieChangeNotifier* cookie_change_notifier() const {
     return cookie_change_notifier_.get();
   }
@@ -198,9 +189,6 @@ class ElectronBrowserContext
 
   network::mojom::SSLConfigPtr ssl_config_;
   mojo::Remote<network::mojom::SSLConfigClient> ssl_config_client_;
-
-  scoped_refptr<content::SharedCorsOriginAccessList>
-      shared_cors_origin_access_list_;
 
   base::WeakPtrFactory<ElectronBrowserContext> weak_factory_{this};
 
