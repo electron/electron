@@ -11,6 +11,7 @@
 
 #include "base/callback.h"
 #include "base/metrics/field_trial.h"
+#include "base/optional.h"
 #include "base/timer/timer.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_main_parts.h"
@@ -73,7 +74,7 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
   bool SetExitCode(int code);
 
   // Gets the exit code
-  int GetExitCode();
+  int GetExitCode() const;
 
   // Returns the connection to GeolocationControl which can be
   // used to enable the location services once per client.
@@ -92,7 +93,7 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
   int PreCreateThreads() override;
   void ToolkitInitialized() override;
   int PreMainMessageLoopRun() override;
-  bool MainMessageLoopRun(int* result_code) override;
+  void WillRunMainMessageLoop(std::unique_ptr<base::RunLoop>& run_loop) override;
   void PreDefaultMainMessageLoopRun(base::OnceClosure quit_closure) override;
   void PostMainMessageLoopStart() override;
   void PostMainMessageLoopRun() override;
@@ -141,8 +142,9 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
   // A fake BrowserProcess object that used to feed the source code from chrome.
   std::unique_ptr<BrowserProcessImpl> fake_browser_process_;
 
-  // Pointer to exit code.
-  int* exit_code_ = nullptr;
+  // A place to remember the exit code once the message loop is ready.
+  // Before then, we just exit() without any intermediate steps.
+  base::Optional<int> exit_code_;
 
   std::unique_ptr<JavascriptEnvironment> js_env_;
   std::unique_ptr<Browser> browser_;

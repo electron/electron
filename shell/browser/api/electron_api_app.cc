@@ -627,7 +627,7 @@ void App::OnWindowAllClosed() {
 }
 
 void App::OnQuit() {
-  int exitCode = ElectronBrowserMainParts::Get()->GetExitCode();
+  const int exitCode = ElectronBrowserMainParts::Get()->GetExitCode();
   Emit("quit", exitCode);
 
   if (process_singleton_) {
