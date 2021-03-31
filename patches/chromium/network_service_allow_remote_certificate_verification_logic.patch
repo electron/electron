@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index db667e13f2e4d9e96e9ac28f17c61412d6279ec7..103958bba8a41b217bbaf4d8899fec3ad562aa70 100644
+index db667e13f2e4d9e96e9ac28f17c61412d6279ec7..258fc7463f81e58bdeb22c6eea465c9e97242fb0 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -118,6 +118,11 @@
@@ -116,70 +116,17 @@ index db667e13f2e4d9e96e9ac28f17c61412d6279ec7..103958bba8a41b217bbaf4d8899fec3a
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -1878,8 +1963,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
-          "NetworkContext should pass CertVerifierServiceRemoteParams.";
- 
-   std::unique_ptr<net::CertVerifier> cert_verifier;
-+  std::unique_ptr<net::CertVerifier> temp_verifier;
-   if (g_cert_verifier_for_testing) {
--    cert_verifier = std::make_unique<WrappedTestingCertVerifier>();
-+    temp_verifier = std::make_unique<WrappedTestingCertVerifier>();
-   } else {
-     if (params_->cert_verifier_params &&
-         params_->cert_verifier_params->is_remote_params()) {
-@@ -1907,7 +1993,7 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
-         cert_net_fetcher_ =
-             base::MakeRefCounted<net::CertNetFetcherURLRequest>();
- 
--      cert_verifier = CreateCertVerifier(creation_params, cert_net_fetcher_);
-+      temp_verifier = CreateCertVerifier(creation_params, cert_net_fetcher_);
+@@ -1929,6 +2014,10 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
      }
+ #endif  // BUILDFLAG(IS_CT_SUPPORTED)
  
- #if BUILDFLAG(IS_CT_SUPPORTED)
-@@ -1931,9 +2017,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
- 
++    auto remote_cert_verifier = std::make_unique<RemoteCertVerifier>(std::move(cert_verifier));
++    remote_cert_verifier_ = remote_cert_verifier.get();
++    cert_verifier = std::move(remote_cert_verifier);
++
      // Whether the cert verifier is remote or in-process, we should wrap it in
      // caching and coalescing layers to avoid extra verifications and IPCs.
--    cert_verifier = std::make_unique<net::CachingCertVerifier>(
-+    temp_verifier = std::make_unique<net::CachingCertVerifier>(
-         std::make_unique<net::CoalescingCertVerifier>(
--            std::move(cert_verifier)));
-+            std::move(temp_verifier)));
- 
- #if BUILDFLAG(IS_CHROMEOS_ASH)
-     cert_verifier_with_trust_anchors_ =
-@@ -1942,13 +2028,27 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
-     UpdateAdditionalCertificates(
-         std::move(params_->initial_additional_certificates));
-     cert_verifier_with_trust_anchors_->InitializeOnIOThread(
--        std::move(cert_verifier));
--    cert_verifier = base::WrapUnique(cert_verifier_with_trust_anchors_);
-+        std::move(temp_verifier));
-+    temp_verifier = base::WrapUnique(cert_verifier_with_trust_anchors_);
- #endif  // BUILDFLAG(IS_CHROMEOS_ASH)
-+    if (!temp_verifier) {
-+#if !defined(OS_LINUX)
-+      temp_verifier = std::make_unique<net::MultiThreadedCertVerifier>(
-+          net::CertVerifyProc::CreateSystemVerifyProc(std::move(cert_net_fetcher_)));
-+#else
-+      temp_verifier = std::make_unique<net::MultiThreadedCertVerifier>(
-+          net::CertVerifyProc::CreateBuiltinVerifyProc(std::move(cert_net_fetcher_)));
-+#endif
-+    }
-+    auto remote_cert_verifier = std::make_unique<RemoteCertVerifier>(std::move(temp_verifier));
-+    remote_cert_verifier_ = remote_cert_verifier.get();
-+    cert_verifier = std::make_unique<net::CachingCertVerifier>(std::move(remote_cert_verifier));
-   }
- 
--  builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
--      *command_line, nullptr, std::move(cert_verifier)));
-+  cert_verifier = IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
-+      *command_line, nullptr, std::move(cert_verifier));
-+
-+  builder.SetCertVerifier(std::move(cert_verifier));
- 
- #if BUILDFLAG(IS_CT_SUPPORTED)
-   if (params_->enforce_chrome_ct_policy) {
+     cert_verifier = std::make_unique<net::CachingCertVerifier>(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
 index 707cf9a7db7b81da9affef0c9ab4a934f5fd69c9..494d68d7f399152a08dd74ee4aa2d17baec81dd8 100644
 --- a/services/network/network_context.h
