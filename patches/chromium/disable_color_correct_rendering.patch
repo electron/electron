@@ -20,7 +20,7 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index edf67be0faa5..18e48ce625f2 100644
+index edf67be0faa5af403f33af99e273d50f6d5d0a3f..18e48ce625f258f60044a87e95ce3c3f1982bf0b 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
 @@ -1788,6 +1788,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
@@ -35,7 +35,7 @@ index edf67be0faa5..18e48ce625f2 100644
  
    // If we are likely to software composite the resource, we use sRGB because
 diff --git a/cc/trees/layer_tree_settings.h b/cc/trees/layer_tree_settings.h
-index c02eb016dc3f..317275b63152 100644
+index c02eb016dc3f772ccafcd8099b41a4aca4d8236a..317275b6315253f5f317a09b478b566536522f82 100644
 --- a/cc/trees/layer_tree_settings.h
 +++ b/cc/trees/layer_tree_settings.h
 @@ -97,6 +97,8 @@ class CC_EXPORT LayerTreeSettings {
@@ -48,7 +48,7 @@ index c02eb016dc3f..317275b63152 100644
    // Image Decode Service and raster tiles without images until the decode is
    // ready.
 diff --git a/components/viz/common/display/renderer_settings.h b/components/viz/common/display/renderer_settings.h
-index 2e32385af86c..350f56238e1c 100644
+index 2e32385af86c6156c4197393248d70c470cdd4b5..350f56238e1c01cc6073555933f57df8cafca050 100644
 --- a/components/viz/common/display/renderer_settings.h
 +++ b/components/viz/common/display/renderer_settings.h
 @@ -23,6 +23,7 @@ class VIZ_COMMON_EXPORT RendererSettings {
@@ -60,7 +60,7 @@ index 2e32385af86c..350f56238e1c 100644
    bool force_antialiasing = false;
    bool force_blending_with_shaders = false;
 diff --git a/components/viz/host/renderer_settings_creation.cc b/components/viz/host/renderer_settings_creation.cc
-index 4dbfd138a467..cc7c95bb0f4e 100644
+index 4dbfd138a467462bae4ff062d9a8062b76ecaa4c..cc7c95bb0f4e6ec6b3579ced90a0f1035f27bef6 100644
 --- a/components/viz/host/renderer_settings_creation.cc
 +++ b/components/viz/host/renderer_settings_creation.cc
 @@ -17,6 +17,7 @@
@@ -81,7 +81,7 @@ index 4dbfd138a467..cc7c95bb0f4e 100644
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  #if defined(OS_APPLE)
 diff --git a/components/viz/service/display/gl_renderer.cc b/components/viz/service/display/gl_renderer.cc
-index a0fc635ce924..32c497ca0b40 100644
+index a0fc635ce92491cc3df706e3e52bd8b0cacb2f15..32c497ca0b40517d70639cb16829a6283363e85a 100644
 --- a/components/viz/service/display/gl_renderer.cc
 +++ b/components/viz/service/display/gl_renderer.cc
 @@ -88,6 +88,9 @@
@@ -229,7 +229,7 @@ index a0fc635ce924..32c497ca0b40 100644
 +
 +#undef PATCH_CS
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index 2425c2b99a94..86c91453231c 100644
+index 2425c2b99a949c3181e2b69ea8d607f103442e34..86c91453231ca4762f50387b9be51393176b9cb8 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
 @@ -223,6 +223,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
@@ -241,7 +241,7 @@ index 2425c2b99a94..86c91453231c 100644
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index ab2f82e651fb..f94166d8cf95 100644
+index ab2f82e651fb35c360765b5f1b8db143eb78b1e5..f94166d8cf95b9f6fcba7da2f0bc494a7cff0d6c 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -213,6 +213,7 @@
@@ -261,7 +261,7 @@ index ab2f82e651fb..f94166d8cf95 100644
      switches::kDisableInProcessStackTraces,
      sandbox::policy::switches::kDisableSeccompFilterSandbox,
 diff --git a/third_party/blink/renderer/platform/graphics/canvas_color_params.cc b/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
-index 9bd988562466..ff5842db80d8 100644
+index 9bd9885624666a8d65b0b1bb710c79077321c451..ff5842db80d81adc8f17d2eef36e82d37dbdbe47 100644
 --- a/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
 +++ b/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
 @@ -4,6 +4,7 @@
@@ -293,7 +293,7 @@ index 9bd988562466..ff5842db80d8 100644
  }
  
 diff --git a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
-index 2c8e7445e922..6cabd21b8dd9 100644
+index 2c8e7445e9226f4860a0d36284e0cf770dbaa233..6cabd21b8dd996578d9aa02a553d4e3bca5fde04 100644
 --- a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 +++ b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 @@ -24,6 +24,7 @@
@@ -315,7 +315,7 @@ index 2c8e7445e922..6cabd21b8dd9 100644
    // is what the renderer uses if its not threaded.
    settings.enable_checker_imaging =
 diff --git a/ui/gfx/mac/io_surface.cc b/ui/gfx/mac/io_surface.cc
-index e5fd0a36f83e..f75d17d9506e 100644
+index e5fd0a36f83e14f13ad37525266076d791829900..f75d17d9506e7f9aad9f95a9a2026db4dda2706e 100644
 --- a/ui/gfx/mac/io_surface.cc
 +++ b/ui/gfx/mac/io_surface.cc
 @@ -20,6 +20,7 @@
@@ -358,7 +358,7 @@ index e5fd0a36f83e..f75d17d9506e 100644
    if (__builtin_available(macos 10.12, *)) {
      IOSurfaceSetValue(surface, CFSTR("IOSurfaceColorSpace"), kCGColorSpaceSRGB);
 diff --git a/ui/gfx/switches.cc b/ui/gfx/switches.cc
-index 0f746ead72a2..a9cc7b6d93cd 100644
+index 0f746ead72a2c195321384c9c4ced96d0608fb7b..a9cc7b6d93cdb42c5a9a177e8a09edeb36db8122 100644
 --- a/ui/gfx/switches.cc
 +++ b/ui/gfx/switches.cc
 @@ -10,6 +10,7 @@ namespace switches {
@@ -370,7 +370,7 @@ index 0f746ead72a2..a9cc7b6d93cd 100644
  // Force disables font subpixel positioning. This affects the character glyph
  // sharpness, kerning, hinting and layout.
 diff --git a/ui/gfx/switches.h b/ui/gfx/switches.h
-index f8fc7fe6a54f..82ba30640458 100644
+index f8fc7fe6a54f844dbb9eea201b2487177e6c6912..82ba306404581d61f805502b56dcfb1a555b2e05 100644
 --- a/ui/gfx/switches.h
 +++ b/ui/gfx/switches.h
 @@ -11,6 +11,8 @@

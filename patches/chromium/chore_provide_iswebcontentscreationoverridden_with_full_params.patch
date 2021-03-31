@@ -140,10 +140,10 @@ index 33f1168f834d138aefb190b7718271d6962b3532..aeb30a22349e0682586bd1bad20dc5e2
    }
  
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 19ca9ee265876d2d33ced262be84cda1d056372c..b41c489a683995c3aa582d7eccbabe679b5cbb46 100644
+index e854ea87eb6b1e5509e09997aefc6b5889b25b16..932e31e40765b2715b34ac4460dba29197759d11 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -1769,12 +1769,11 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -1770,12 +1770,11 @@ bool Browser::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -264,10 +264,10 @@ index c5c5a7b63b5b3b62a9517cbef3ae23ce57a3c89c..4f1b7e88d6d2ae89a60311c8aeb1fcee
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index cee5507c240fb859420eb74326e67c444c3a127c..3311b6110666851b3946ebf8071f210752425695 100644
+index 5aa4123de68da549f665970168f431a3a994d42f..468562a2060fee9c57f864da1b3e9f92a544c8b2 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3589,8 +3589,7 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
+@@ -3545,8 +3545,7 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
  
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,
@@ -376,10 +376,10 @@ index f50f4343ed5a487538ef9ce819cd19300623a3dd..282bca34f82e5a3b27bc66f0cab494e3
    // can catch bad client behavior while not interfering with normal operation.
    constexpr size_t kMaxPendingWebContentsCount = 10;
 diff --git a/fuchsia/engine/browser/frame_impl.h b/fuchsia/engine/browser/frame_impl.h
-index 429c3b508ea698dc286676a84b6a3817eb14b553..03a610610cbb120e4a9c367bbb074050365cc04f 100644
+index fea7e90aa11231009c442e8a449478f63a6d98eb..7b8802fcec4a2fff3b3d147e1bbd97e54a9b18c6 100644
 --- a/fuchsia/engine/browser/frame_impl.h
 +++ b/fuchsia/engine/browser/frame_impl.h
-@@ -234,8 +234,7 @@ class FrameImpl : public fuchsia::web::Frame,
+@@ -237,8 +237,7 @@ class FrameImpl : public fuchsia::web::Frame,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -404,10 +404,10 @@ index 4fdbf1c7030bb2b3765780d1e8c5a502679745de..5b59ce27eaa03897e5cbb3115b485a3e
          ->options()
          ->block_new_web_contents();
 diff --git a/ui/views/controls/webview/web_dialog_view.cc b/ui/views/controls/webview/web_dialog_view.cc
-index 2315e34e4c9cb60fee248c71e44984f68f1462d3..49a165ac686f611d8a982bf0b5481504e824b5a6 100644
+index 9b312a0604c38ea95f03b0ef9885ebaf08ed896c..87d57b3be4609dd1847620d58cb8b61a29114b89 100644
 --- a/ui/views/controls/webview/web_dialog_view.cc
 +++ b/ui/views/controls/webview/web_dialog_view.cc
-@@ -431,8 +431,7 @@ bool WebDialogView::IsWebContentsCreationOverridden(
+@@ -429,8 +429,7 @@ bool WebDialogView::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -418,10 +418,10 @@ index 2315e34e4c9cb60fee248c71e44984f68f1462d3..49a165ac686f611d8a982bf0b5481504
      return delegate_->HandleShouldOverrideWebContentsCreation();
    return false;
 diff --git a/ui/views/controls/webview/web_dialog_view.h b/ui/views/controls/webview/web_dialog_view.h
-index dadead3378af8b756b37b4efc58bee0aa121751f..62ac39757774de85e3ab2ec62c929e70993ebcf2 100644
+index 8c5edd6b46b828bba2422ae11e451625ee4e6894..cc4a53e149fab62a72b321c9a3ec994fb9d87622 100644
 --- a/ui/views/controls/webview/web_dialog_view.h
 +++ b/ui/views/controls/webview/web_dialog_view.h
-@@ -160,8 +160,7 @@ class WEBVIEW_EXPORT WebDialogView : public ClientView,
+@@ -159,8 +159,7 @@ class WEBVIEW_EXPORT WebDialogView : public ClientView,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,

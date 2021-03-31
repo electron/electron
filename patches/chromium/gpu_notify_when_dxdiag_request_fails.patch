@@ -12,7 +12,7 @@ rendering and there is no signal from browser process on this event
 to identify it.
 
 diff --git a/content/browser/gpu/gpu_data_manager_impl.cc b/content/browser/gpu/gpu_data_manager_impl.cc
-index 2b70aa2406a9..cf420ceda62f 100644
+index 2b70aa2406a9edf1af9eaafcf2833935a2089c03..cf420ceda62facea9c871d2754d0d86a22ed2434 100644
 --- a/content/browser/gpu/gpu_data_manager_impl.cc
 +++ b/content/browser/gpu/gpu_data_manager_impl.cc
 @@ -234,6 +234,11 @@ void GpuDataManagerImpl::TerminateInfoCollectionGpuProcess() {
@@ -28,7 +28,7 @@ index 2b70aa2406a9..cf420ceda62f 100644
  
  void GpuDataManagerImpl::UpdateGpuFeatureInfo(
 diff --git a/content/browser/gpu/gpu_data_manager_impl.h b/content/browser/gpu/gpu_data_manager_impl.h
-index 15ee11b33aca..273566875784 100644
+index 15ee11b33aca857edf44d799004f4424214ecf2e..2735668757843639ca30aa7e270abbdb8f4acbdf 100644
 --- a/content/browser/gpu/gpu_data_manager_impl.h
 +++ b/content/browser/gpu/gpu_data_manager_impl.h
 @@ -105,6 +105,7 @@ class CONTENT_EXPORT GpuDataManagerImpl : public GpuDataManager,
@@ -40,7 +40,7 @@ index 15ee11b33aca..273566875784 100644
    // Update the GPU feature info. This updates the blocklist and enabled status
    // of GPU rasterization. In the future this will be used for more features.
 diff --git a/content/browser/gpu/gpu_data_manager_impl_private.cc b/content/browser/gpu/gpu_data_manager_impl_private.cc
-index 782c4e276e80..295555d03b9d 100644
+index 782c4e276e808fe5c830e1c952eef05f1e175069..295555d03b9d62ff855c6acc57c80e1f386bf716 100644
 --- a/content/browser/gpu/gpu_data_manager_impl_private.cc
 +++ b/content/browser/gpu/gpu_data_manager_impl_private.cc
 @@ -1075,6 +1075,11 @@ void GpuDataManagerImplPrivate::TerminateInfoCollectionGpuProcess() {
@@ -56,7 +56,7 @@ index 782c4e276e80..295555d03b9d 100644
  
  void GpuDataManagerImplPrivate::UpdateGpuFeatureInfo(
 diff --git a/content/browser/gpu/gpu_data_manager_impl_private.h b/content/browser/gpu/gpu_data_manager_impl_private.h
-index 40b736989347..90c561e1fc0d 100644
+index 40b736989347b13e0ec0393bd02d67d2cae5ef96..90c561e1fc0d9b6ebf7c6dde6912c55505cc7c56 100644
 --- a/content/browser/gpu/gpu_data_manager_impl_private.h
 +++ b/content/browser/gpu/gpu_data_manager_impl_private.h
 @@ -77,6 +77,7 @@ class CONTENT_EXPORT GpuDataManagerImplPrivate {

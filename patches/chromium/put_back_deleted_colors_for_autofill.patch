@@ -8,7 +8,7 @@ needed in chromium but our autofill implementation uses them.  This patch can be
 our autofill implementation to work like Chromium's.
 
 diff --git a/ui/gtk/native_theme_gtk.cc b/ui/gtk/native_theme_gtk.cc
-index c08edc56c3b5..f4241756f977 100644
+index c08edc56c3b5592e7f5df2754808a81c69622315..f4241756f9774a430922994549f2eaf00585a7b6 100644
 --- a/ui/gtk/native_theme_gtk.cc
 +++ b/ui/gtk/native_theme_gtk.cc
 @@ -369,6 +369,29 @@ base::Optional<SkColor> SkColorFromColorId(ui::NativeTheme::ColorId color_id) {
@@ -42,7 +42,7 @@ index c08edc56c3b5..f4241756f977 100644
      // TODO(thomasanderson): Render GtkSpinner directly.
      case ui::NativeTheme::kColorId_ThrobberSpinningColor:
 diff --git a/ui/native_theme/common_theme.cc b/ui/native_theme/common_theme.cc
-index f0caeb52a1ca..884adbe869db 100644
+index f0caeb52a1ca5fbd56b3a85af6d009a33b493fd7..884adbe869dbb8ca9469c1b1b8558dbfa80c9bdb 100644
 --- a/ui/native_theme/common_theme.cc
 +++ b/ui/native_theme/common_theme.cc
 @@ -52,7 +52,8 @@ base::Optional<SkColor> GetHighContrastColor(
@@ -99,7 +99,7 @@ index f0caeb52a1ca..884adbe869db 100644
        DVLOG(2) << "GetDarkSchemeColor: "
                 << "NativeTheme::ColorId: " << NativeThemeColorIdName(color_id)
 diff --git a/ui/native_theme/native_theme_color_id.h b/ui/native_theme/native_theme_color_id.h
-index 60197576c71e..426504eec69d 100644
+index 60197576c71e86cd3ad17e83bfc699509c365d6c..426504eec69da7100c6484271fb35f1a69f84a43 100644
 --- a/ui/native_theme/native_theme_color_id.h
 +++ b/ui/native_theme/native_theme_color_id.h
 @@ -151,6 +151,11 @@
@@ -115,7 +115,7 @@ index 60197576c71e..426504eec69d 100644
    OP(kColorId_ThrobberSpinningColor),                                          \
    OP(kColorId_ThrobberWaitingColor),                                           \
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index 74357892f7a7..9ef5d287bb61 100644
+index 74357892f7a732de2c8dd6ed018569892c60fd4b..9ef5d287bb612e8f93f87eb569a6226847e72bc2 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
 @@ -659,6 +659,18 @@ base::Optional<SkColor> NativeThemeWin::GetPlatformHighContrastColor(
