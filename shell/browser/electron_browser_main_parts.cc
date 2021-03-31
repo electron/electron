@@ -226,8 +226,8 @@ bool ElectronBrowserMainParts::SetExitCode(int code) {
   return true;
 }
 
-int ElectronBrowserMainParts::GetExitCode() {
-  return exit_code_ != nullptr ? *exit_code_ : 0;
+int ElectronBrowserMainParts::GetExitCode() const {
+  return exit_code_ ? *exit_code_ : 0;
 }
 
 int ElectronBrowserMainParts::PreEarlyInitialization() {
@@ -476,10 +476,10 @@ int ElectronBrowserMainParts::PreMainMessageLoopRun() {
   return content::RESULT_CODE_NORMAL_EXIT;
 }
 
-bool ElectronBrowserMainParts::MainMessageLoopRun(int* result_code) {
+void ElectronBrowserMainParts::WillRunMainMessageLoop(
+    std::unique_ptr<base::RunLoop>& run_loop) {
   js_env_->OnMessageLoopCreated();
-  exit_code_ = result_code;
-  return content::BrowserMainParts::MainMessageLoopRun(result_code);
+  exit_code_ = content::RESULT_CODE_NORMAL_EXIT;
 }
 
 void ElectronBrowserMainParts::PreDefaultMainMessageLoopRun(
