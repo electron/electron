@@ -131,7 +131,7 @@ class Browser : public WindowListObserver {
     bool restore_state = false;
     bool opened_at_login = false;
     bool opened_as_hidden = false;
-    std::wstring path;
+    std::u16string path;
     std::vector<std::u16string> args;
 
 #if defined(OS_WIN)

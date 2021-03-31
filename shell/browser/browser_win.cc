@@ -196,7 +196,9 @@ std::vector<Browser::LaunchItem> GetLoginItemSettingsHelper(
     lookup_exe_path =
         base::CommandLine::FromString(process_exe_path).GetProgram();
   } else {
-    lookup_exe_path = base::CommandLine::FromString(options.path).GetProgram();
+    lookup_exe_path =
+        base::CommandLine::FromString(base::UTF16ToWide(options.path))
+            .GetProgram();
   }
 
   if (!lookup_exe_path.empty()) {
@@ -699,7 +701,7 @@ void Browser::SetLoginItemSettings(LoginItemSettings settings) {
       !settings.name.empty() ? settings.name.c_str() : GetAppUserModelID();
 
   if (settings.open_at_login) {
-    std::wstring exe = settings.path;
+    std::wstring exe = base::UTF16ToWide(settings.path);
     if (FormatCommandLineString(&exe, settings.args)) {
       key.WriteValue(key_name, exe.c_str());
 
@@ -738,7 +740,7 @@ Browser::LoginItemSettings Browser::GetLoginItemSettings(
 
   // keep old openAtLogin behaviour
   if (!FAILED(key.ReadValue(GetAppUserModelID(), &keyVal))) {
-    std::wstring exe = options.path;
+    std::wstring exe = base::UTF16ToWide(options.path);
     if (FormatCommandLineString(&exe, options.args)) {
       settings.open_at_login = keyVal == exe;
     }
