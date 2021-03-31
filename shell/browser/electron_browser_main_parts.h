@@ -91,7 +91,7 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
   void PostEarlyInitialization() override;
   int PreCreateThreads() override;
   void ToolkitInitialized() override;
-  void PreMainMessageLoopRun() override;
+  int PreMainMessageLoopRun() override;
   bool MainMessageLoopRun(int* result_code) override;
   void PreDefaultMainMessageLoopRun(base::OnceClosure quit_closure) override;
   void PostMainMessageLoopStart() override;

@@ -416,7 +416,7 @@ void ElectronBrowserMainParts::ToolkitInitialized() {
 #endif
 }
 
-void ElectronBrowserMainParts::PreMainMessageLoopRun() {
+int ElectronBrowserMainParts::PreMainMessageLoopRun() {
   // Run user's main script before most things get initialized, so we can have
   // a chance to setup everything.
   node_bindings_->PrepareMessageLoop();
@@ -472,6 +472,8 @@ void ElectronBrowserMainParts::PreMainMessageLoopRun() {
 
   // Notify observers that main thread message loop was initialized.
   Browser::Get()->PreMainMessageLoopRun();
+
+  return content::RESULT_CODE_NORMAL_EXIT;
 }
 
 bool ElectronBrowserMainParts::MainMessageLoopRun(int* result_code) {
