@@ -10,10 +10,10 @@ WebContents, and cancels the authentication if there's no WebContents
 available, which there isn't in the case of the 'net' module.
 
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 69e8d361c9e14f325fc897dad2819b2a57819e75..94a4f5cb735c69d47015a2035761b20acefdaac7 100644
+index 69e8d361c9e14f325fc897dad2819b2a57819e75..66ab57629fb07baa52e7a3f64dde4a9619143993 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
-@@ -192,6 +192,26 @@ struct CTPolicy {
+@@ -192,6 +192,25 @@ struct CTPolicy {
    array<string> excluded_legacy_spkis;
  };
  
@@ -21,7 +21,6 @@ index 69e8d361c9e14f325fc897dad2819b2a57819e75..94a4f5cb735c69d47015a2035761b20a
 +  OnAuthRequired(
 +      mojo_base.mojom.UnguessableToken? window_id,
 +      uint32 process_id,
-+      uint32 routing_id,
 +      uint32 request_id,
 +      url.mojom.Url url,
 +      bool first_auth_attempt,
@@ -40,7 +39,7 @@ index 69e8d361c9e14f325fc897dad2819b2a57819e75..94a4f5cb735c69d47015a2035761b20a
  interface CertVerifierClient {
    Verify(
      int32 default_error,
-@@ -606,6 +626,8 @@ struct URLLoaderFactoryParams {
+@@ -606,6 +625,8 @@ struct URLLoaderFactoryParams {
    // impact because of the extra process hops, so use should be minimized.
    pending_remote<TrustedURLLoaderHeaderClient>? header_client;
  
