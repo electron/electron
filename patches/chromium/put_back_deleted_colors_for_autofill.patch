@@ -8,10 +8,10 @@ needed in chromium but our autofill implementation uses them.  This patch can be
 our autofill implementation to work like Chromium's.
 
 diff --git a/ui/gtk/native_theme_gtk.cc b/ui/gtk/native_theme_gtk.cc
-index 8bcc5c175f63ea29d513d47dfea09ca3ac423545..d8b40ab1e35a93bc1a31c4735de29bb06ee40c8f 100644
+index c08edc56c3b5..f4241756f977 100644
 --- a/ui/gtk/native_theme_gtk.cc
 +++ b/ui/gtk/native_theme_gtk.cc
-@@ -364,6 +364,29 @@ base::Optional<SkColor> SkColorFromColorId(
+@@ -369,6 +369,29 @@ base::Optional<SkColor> SkColorFromColorId(ui::NativeTheme::ColorId color_id) {
      case ui::NativeTheme::kColorId_TableHeaderSeparator:
        return GetBorderColor("GtkTreeView#treeview.view GtkButton#button");
  
@@ -42,7 +42,7 @@ index 8bcc5c175f63ea29d513d47dfea09ca3ac423545..d8b40ab1e35a93bc1a31c4735de29bb0
      // TODO(thomasanderson): Render GtkSpinner directly.
      case ui::NativeTheme::kColorId_ThrobberSpinningColor:
 diff --git a/ui/native_theme/common_theme.cc b/ui/native_theme/common_theme.cc
-index 082e12fcabd16d3db77ee9c5e47f7e383245aa45..fc1d7a814c52fa09bea550039763b1c83fffc530 100644
+index f0caeb52a1ca..884adbe869db 100644
 --- a/ui/native_theme/common_theme.cc
 +++ b/ui/native_theme/common_theme.cc
 @@ -52,7 +52,8 @@ base::Optional<SkColor> GetHighContrastColor(
@@ -56,8 +56,8 @@ index 082e12fcabd16d3db77ee9c5e47f7e383245aa45..fc1d7a814c52fa09bea550039763b1c8
      // Alert
      case NativeTheme::kColorId_AlertSeverityLow:
 @@ -64,6 +65,14 @@ base::Optional<SkColor> GetDarkSchemeColor(NativeTheme::ColorId color_id) {
-     case NativeTheme::kColorId_FootnoteContainerBorder:
-       return gfx::kGoogleGrey900;
+     case NativeTheme::kColorId_FocusedBorderColor:
+       return gfx::kGoogleBlue400;
  
 +    // Results Tables
 +    case NativeTheme::kColorId_ResultsTableNormalBackground:
@@ -70,7 +70,7 @@ index 082e12fcabd16d3db77ee9c5e47f7e383245aa45..fc1d7a814c52fa09bea550039763b1c8
      // Button
      case NativeTheme::kColorId_ProminentButtonColor:
        return gfx::kGoogleBlue300;
-@@ -512,6 +521,18 @@ SkColor GetDefaultColor(NativeTheme::ColorId color_id,
+@@ -540,6 +549,18 @@ SkColor GetDefaultColor(NativeTheme::ColorId color_id,
      case NativeTheme::kColorId_WindowBackground:
        return SK_ColorWHITE;
  
@@ -89,7 +89,7 @@ index 082e12fcabd16d3db77ee9c5e47f7e383245aa45..fc1d7a814c52fa09bea550039763b1c8
      case NativeTheme::kColorId_NumColors:
        // Keeping the kColorId_NumColors case instead of using the default case
        // allows ColorId additions to trigger compile error for an incomplete
-@@ -556,7 +577,7 @@ SkColor GetAuraColor(NativeTheme::ColorId color_id,
+@@ -584,7 +605,7 @@ SkColor GetAuraColor(NativeTheme::ColorId color_id,
    }
  
    if (color_scheme == NativeTheme::ColorScheme::kDark) {
@@ -99,10 +99,10 @@ index 082e12fcabd16d3db77ee9c5e47f7e383245aa45..fc1d7a814c52fa09bea550039763b1c8
        DVLOG(2) << "GetDarkSchemeColor: "
                 << "NativeTheme::ColorId: " << NativeThemeColorIdName(color_id)
 diff --git a/ui/native_theme/native_theme_color_id.h b/ui/native_theme/native_theme_color_id.h
-index efb0f8658db38b99aadb92334b4c0948d289d224..a424ceaef8979084ca7dd514849a38dfe9e5b252 100644
+index 60197576c71e..426504eec69d 100644
 --- a/ui/native_theme/native_theme_color_id.h
 +++ b/ui/native_theme/native_theme_color_id.h
-@@ -146,6 +146,11 @@
+@@ -151,6 +151,11 @@
    OP(kColorId_TableHeaderText),                                                \
    OP(kColorId_TableHeaderBackground),                                          \
    OP(kColorId_TableHeaderSeparator),                                           \
@@ -115,7 +115,7 @@ index efb0f8658db38b99aadb92334b4c0948d289d224..a424ceaef8979084ca7dd514849a38df
    OP(kColorId_ThrobberSpinningColor),                                          \
    OP(kColorId_ThrobberWaitingColor),                                           \
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index 46eab8ff45a3bb874cd8b16076dd9fa918ffbd45..90e3b67bd5c78be3ea0d0f0e4ef94bc95ea375a2 100644
+index 74357892f7a7..9ef5d287bb61 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
 @@ -659,6 +659,18 @@ base::Optional<SkColor> NativeThemeWin::GetPlatformHighContrastColor(
