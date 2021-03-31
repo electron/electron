@@ -239,8 +239,7 @@ void SystemNetworkContextManager::OnNetworkServiceCreated(
 #if defined(OS_MAC)
     KeychainPassword::service_name = app_name + " Safe Storage";
     KeychainPassword::account_name = app_name;
-#endif
-#if defined(OS_LINUX)
+#elif defined(OS_LINUX)
     KeyStorageKeyring::kApplicationName = app_name;
     KeyStorageLibsecret::kApplicationName = app_name;
 #endif
