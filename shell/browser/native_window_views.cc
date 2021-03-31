@@ -1484,7 +1484,7 @@ bool NativeWindowViews::CanMinimize() const {
 #endif
 }
 
-std::u16string NativeWindowViews::GetWindowTitle() const {
+base::string16 NativeWindowViews::GetWindowTitle() const {
   return base::UTF8ToUTF16(title_);
 }
 

@@ -53,6 +53,13 @@ struct Converter<blink::WebMouseWheelEvent> {
 };
 
 template <>
+struct Converter<blink::WebSize> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     blink::WebSize* out);
+};
+
+template <>
 struct Converter<blink::DeviceEmulationParams> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,

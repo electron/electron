@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "base/memory/weak_ptr.h"
+#include "base/strings/string16.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "url/gurl.h"
 
@@ -18,26 +19,26 @@ class NotificationDelegate;
 class NotificationPresenter;
 
 struct NotificationAction {
-  std::u16string type;
-  std::u16string text;
+  base::string16 type;
+  base::string16 text;
 };
 
 struct NotificationOptions {
-  std::u16string title;
-  std::u16string subtitle;
-  std::u16string msg;
+  base::string16 title;
+  base::string16 subtitle;
+  base::string16 msg;
   std::string tag;
   bool silent;
   GURL icon_url;
   SkBitmap icon;
   bool has_reply;
-  std::u16string timeout_type;
-  std::u16string reply_placeholder;
-  std::u16string sound;
-  std::u16string urgency;  // Linux
+  base::string16 timeout_type;
+  base::string16 reply_placeholder;
+  base::string16 sound;
+  base::string16 urgency;  // Linux
   std::vector<NotificationAction> actions;
-  std::u16string close_button_text;
-  std::u16string toast_xml;
+  base::string16 close_button_text;
+  base::string16 toast_xml;
 
   NotificationOptions();
   ~NotificationOptions();

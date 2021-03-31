@@ -11,6 +11,7 @@
 #include "base/callback.h"
 #include "base/mac/scoped_nsobject.h"
 #include "base/memory/weak_ptr.h"
+#include "base/strings/string16.h"
 
 namespace electron {
 class ElectronMenuModel;

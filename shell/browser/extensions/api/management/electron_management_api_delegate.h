@@ -73,7 +73,7 @@ class ElectronManagementAPIDelegate : public extensions::ManagementAPIDelegate {
   bool UninstallExtension(content::BrowserContext* context,
                           const std::string& transient_extension_id,
                           extensions::UninstallReason reason,
-                          std::u16string* error) const override;
+                          base::string16* error) const override;
   void SetLaunchType(content::BrowserContext* context,
                      const std::string& extension_id,
                      extensions::LaunchType launch_type) const override;

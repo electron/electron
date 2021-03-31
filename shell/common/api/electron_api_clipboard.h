@@ -24,7 +24,7 @@ namespace api {
 class Clipboard {
  public:
   static ui::ClipboardBuffer GetClipboardBuffer(gin_helper::Arguments* args);
-  static std::vector<std::u16string> AvailableFormats(
+  static std::vector<base::string16> AvailableFormats(
       gin_helper::Arguments* args);
   static bool Has(const std::string& format_string,
                   gin_helper::Arguments* args);
@@ -34,27 +34,27 @@ class Clipboard {
   static void Write(const gin_helper::Dictionary& data,
                     gin_helper::Arguments* args);
 
-  static std::u16string ReadText(gin_helper::Arguments* args);
-  static void WriteText(const std::u16string& text,
+  static base::string16 ReadText(gin_helper::Arguments* args);
+  static void WriteText(const base::string16& text,
                         gin_helper::Arguments* args);
 
-  static std::u16string ReadRTF(gin_helper::Arguments* args);
+  static base::string16 ReadRTF(gin_helper::Arguments* args);
   static void WriteRTF(const std::string& text, gin_helper::Arguments* args);
 
-  static std::u16string ReadHTML(gin_helper::Arguments* args);
-  static void WriteHTML(const std::u16string& html,
+  static base::string16 ReadHTML(gin_helper::Arguments* args);
+  static void WriteHTML(const base::string16& html,
                         gin_helper::Arguments* args);
 
   static v8::Local<v8::Value> ReadBookmark(gin_helper::Arguments* args);
-  static void WriteBookmark(const std::u16string& title,
+  static void WriteBookmark(const base::string16& title,
                             const std::string& url,
                             gin_helper::Arguments* args);
 
   static gfx::Image ReadImage(gin_helper::Arguments* args);
   static void WriteImage(const gfx::Image& image, gin_helper::Arguments* args);
 
-  static std::u16string ReadFindText();
-  static void WriteFindText(const std::u16string& text);
+  static base::string16 ReadFindText();
+  static void WriteFindText(const base::string16& text);
 
   static v8::Local<v8::Value> ReadBuffer(const std::string& format_string,
                                          gin_helper::Arguments* args);

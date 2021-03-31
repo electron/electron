@@ -65,49 +65,49 @@ class Notification : public gin::Wrappable<Notification>,
   void Close();
 
   // Prop Getters
-  std::u16string GetTitle() const;
-  std::u16string GetSubtitle() const;
-  std::u16string GetBody() const;
+  base::string16 GetTitle() const;
+  base::string16 GetSubtitle() const;
+  base::string16 GetBody() const;
   bool GetSilent() const;
   bool GetHasReply() const;
-  std::u16string GetTimeoutType() const;
-  std::u16string GetReplyPlaceholder() const;
-  std::u16string GetUrgency() const;
-  std::u16string GetSound() const;
+  base::string16 GetTimeoutType() const;
+  base::string16 GetReplyPlaceholder() const;
+  base::string16 GetUrgency() const;
+  base::string16 GetSound() const;
   std::vector<electron::NotificationAction> GetActions() const;
-  std::u16string GetCloseButtonText() const;
-  std::u16string GetToastXml() const;
+  base::string16 GetCloseButtonText() const;
+  base::string16 GetToastXml() const;
 
   // Prop Setters
-  void SetTitle(const std::u16string& new_title);
-  void SetSubtitle(const std::u16string& new_subtitle);
-  void SetBody(const std::u16string& new_body);
+  void SetTitle(const base::string16& new_title);
+  void SetSubtitle(const base::string16& new_subtitle);
+  void SetBody(const base::string16& new_body);
   void SetSilent(bool new_silent);
   void SetHasReply(bool new_has_reply);
-  void SetUrgency(const std::u16string& new_urgency);
-  void SetTimeoutType(const std::u16string& new_timeout_type);
-  void SetReplyPlaceholder(const std::u16string& new_reply_placeholder);
-  void SetSound(const std::u16string& sound);
+  void SetUrgency(const base::string16& new_urgency);
+  void SetTimeoutType(const base::string16& new_timeout_type);
+  void SetReplyPlaceholder(const base::string16& new_reply_placeholder);
+  void SetSound(const base::string16& sound);
   void SetActions(const std::vector<electron::NotificationAction>& actions);
-  void SetCloseButtonText(const std::u16string& text);
-  void SetToastXml(const std::u16string& new_toast_xml);
+  void SetCloseButtonText(const base::string16& text);
+  void SetToastXml(const base::string16& new_toast_xml);
 
  private:
-  std::u16string title_;
-  std::u16string subtitle_;
-  std::u16string body_;
+  base::string16 title_;
+  base::string16 subtitle_;
+  base::string16 body_;
   gfx::Image icon_;
-  std::u16string icon_path_;
+  base::string16 icon_path_;
   bool has_icon_ = false;
   bool silent_ = false;
   bool has_reply_ = false;
-  std::u16string timeout_type_;
-  std::u16string reply_placeholder_;
-  std::u16string sound_;
-  std::u16string urgency_;
+  base::string16 timeout_type_;
+  base::string16 reply_placeholder_;
+  base::string16 sound_;
+  base::string16 urgency_;
   std::vector<electron::NotificationAction> actions_;
-  std::u16string close_button_text_;
-  std::u16string toast_xml_;
+  base::string16 close_button_text_;
+  base::string16 toast_xml_;
 
   electron::NotificationPresenter* presenter_;
 

@@ -220,7 +220,7 @@ void ShowMessageBox(const MessageBoxSettings& settings,
   (new GtkMessageBox(settings))->RunAsynchronous(std::move(callback));
 }
 
-void ShowErrorBox(const std::u16string& title, const std::u16string& content) {
+void ShowErrorBox(const base::string16& title, const base::string16& content) {
   if (Browser::Get()->is_ready()) {
     electron::MessageBoxSettings settings;
     settings.type = electron::MessageBoxType::kError;

@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "base/callback_forward.h"
+#include "base/strings/string16.h"
 #include "ui/gfx/image/image_skia.h"
 
 namespace electron {
@@ -55,7 +56,7 @@ void ShowMessageBox(const MessageBoxSettings& settings,
 
 // Like ShowMessageBox with simplest settings, but safe to call at very early
 // stage of application.
-void ShowErrorBox(const std::u16string& title, const std::u16string& content);
+void ShowErrorBox(const base::string16& title, const base::string16& content);
 
 }  // namespace electron
 

@@ -138,7 +138,7 @@ ui::KeyboardCode KeyboardCodeFromKeyIdentifier(const std::string& s,
 
 }  // namespace
 
-ui::KeyboardCode KeyboardCodeFromCharCode(char16_t c, bool* shifted) {
+ui::KeyboardCode KeyboardCodeFromCharCode(base::char16 c, bool* shifted) {
   c = base::ToLowerASCII(c);
   *shifted = false;
   switch (c) {

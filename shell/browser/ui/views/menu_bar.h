@@ -51,10 +51,10 @@ class MenuBar : public views::AccessiblePaneView,
   void SetAcceleratorVisibility(bool visible);
 
   // Returns true if the submenu has accelerator |key|
-  bool HasAccelerator(char16_t key);
+  bool HasAccelerator(base::char16 key);
 
   // Shows the submenu whose accelerator is |key|.
-  void ActivateAccelerator(char16_t key);
+  void ActivateAccelerator(base::char16 key);
 
   // Returns there are how many items in the root menu.
   int GetItemCount() const;
@@ -95,7 +95,7 @@ class MenuBar : public views::AccessiblePaneView,
   RootView* window_ = nullptr;
   ElectronMenuModel* menu_model_ = nullptr;
 
-  View* FindAccelChild(char16_t key);
+  View* FindAccelChild(base::char16 key);
 
   bool has_focus_ = true;
 

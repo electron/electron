@@ -11,6 +11,10 @@
 #include "base/files/file_path.h"
 #include "build/build_config.h"
 
+#if defined(OS_WIN)
+#include "base/strings/string16.h"
+#endif
+
 class GURL;
 
 namespace platform_util {

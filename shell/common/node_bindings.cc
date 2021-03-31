@@ -214,7 +214,7 @@ void SetNodeCliFlags() {
 
   for (const auto& arg : argv) {
 #if defined(OS_WIN)
-    const auto& option = base::WideToUTF8(arg);
+    const auto& option = base::UTF16ToUTF8(arg);
 #else
     const auto& option = arg;
 #endif

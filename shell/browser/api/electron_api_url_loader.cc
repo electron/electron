@@ -344,7 +344,7 @@ void SimpleURLLoaderWrapper::OnAuthRequired(
   auto cb = base::BindOnce(
       [](mojo::Remote<network::mojom::AuthChallengeResponder> auth_responder,
          gin::Arguments* args) {
-        std::u16string username_str, password_str;
+        base::string16 username_str, password_str;
         if (!args->GetNext(&username_str) || !args->GetNext(&password_str)) {
           auth_responder->OnAuthCredentials(base::nullopt);
           return;

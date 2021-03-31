@@ -82,7 +82,7 @@ ElectronComponentExtensionResourceManager::GetTemplateReplacementsForExtension(
 }
 
 void ElectronComponentExtensionResourceManager::AddComponentResourceEntries(
-    const webui::ResourcePath* entries,
+    const GritResourceMap* entries,
     size_t size) {
   base::FilePath gen_folder_path = base::FilePath().AppendASCII(
       "@out_folder@/gen/chrome/browser/resources/");
@@ -90,12 +90,12 @@ void ElectronComponentExtensionResourceManager::AddComponentResourceEntries(
 
   for (size_t i = 0; i < size; ++i) {
     base::FilePath resource_path =
-        base::FilePath().AppendASCII(entries[i].path);
+        base::FilePath().AppendASCII(entries[i].name);
     resource_path = resource_path.NormalizePathSeparators();
 
     if (!gen_folder_path.IsParent(resource_path)) {
       DCHECK(!base::Contains(path_to_resource_id_, resource_path));
-      path_to_resource_id_[resource_path] = entries[i].id;
+      path_to_resource_id_[resource_path] = entries[i].value;
     } else {
       // If the resource is a generated file, strip the generated folder's path,
       // so that it can be served from a normal URL (as if it were not
@@ -104,7 +104,7 @@ void ElectronComponentExtensionResourceManager::AddComponentResourceEntries(
           base::FilePath().AppendASCII(resource_path.AsUTF8Unsafe().substr(
               gen_folder_path.value().length()));
       DCHECK(!base::Contains(path_to_resource_id_, effective_path));
-      path_to_resource_id_[effective_path] = entries[i].id;
+      path_to_resource_id_[effective_path] = entries[i].value;
     }
   }
 }

@@ -21,7 +21,7 @@ class ElectronContentClient : public content::ContentClient {
 
  protected:
   // content::ContentClient:
-  std::u16string GetLocalizedString(int message_id) override;
+  base::string16 GetLocalizedString(int message_id) override;
   base::StringPiece GetDataResource(int resource_id, ui::ScaleFactor) override;
   gfx::Image& GetNativeImageNamed(int resource_id) override;
   base::RefCountedMemory* GetDataResourceBytes(int resource_id) override;

@@ -61,7 +61,7 @@ void URLPipeLoader::OnResponseStarted(
     const network::mojom::URLResponseHead& response_head) {
   mojo::ScopedDataPipeProducerHandle producer;
   mojo::ScopedDataPipeConsumerHandle consumer;
-  MojoResult rv = mojo::CreateDataPipe(nullptr, producer, consumer);
+  MojoResult rv = mojo::CreateDataPipe(nullptr, &producer, &consumer);
   if (rv != MOJO_RESULT_OK) {
     NotifyComplete(net::ERR_INSUFFICIENT_RESOURCES);
     return;

@@ -6,6 +6,7 @@
 #define SHELL_COMMON_APPLICATION_INFO_H_
 
 #if defined(OS_WIN)
+#include "base/strings/string16.h"
 #include "shell/browser/win/scoped_hstring.h"
 #endif
 
@@ -27,7 +28,7 @@ std::string GetApplicationUserAgent();
 #if defined(OS_WIN)
 PCWSTR GetRawAppUserModelID();
 bool GetAppUserModelID(ScopedHString* app_id);
-void SetAppUserModelID(const std::wstring& name);
+void SetAppUserModelID(const base::string16& name);
 bool IsRunningInDesktopBridge();
 #endif
 

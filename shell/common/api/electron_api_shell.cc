@@ -117,7 +117,7 @@ bool WriteShortcutLink(const base::FilePath& shortcut_path,
 
   base::win::ShortcutProperties properties;
   base::FilePath path;
-  std::wstring str;
+  base::string16 str;
   UUID toastActivatorClsid;
   int index;
   if (options.Get("target", &path))

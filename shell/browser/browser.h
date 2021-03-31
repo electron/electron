@@ -12,6 +12,7 @@
 #include "base/compiler_specific.h"
 #include "base/macros.h"
 #include "base/observer_list.h"
+#include "base/strings/string16.h"
 #include "base/task/cancelable_task_tracker.h"
 #include "base/values.h"
 #include "gin/dictionary.h"
@@ -84,7 +85,7 @@ class Browser : public WindowListObserver {
   void ClearRecentDocuments();
 
   // Set the application user model ID.
-  void SetAppUserModelID(const std::wstring& name);
+  void SetAppUserModelID(const base::string16& name);
 
   // Remove the default protocol handler registry key
   bool RemoveAsDefaultProtocolClient(const std::string& protocol,
@@ -98,7 +99,7 @@ class Browser : public WindowListObserver {
   bool IsDefaultProtocolClient(const std::string& protocol,
                                gin::Arguments* args);
 
-  std::u16string GetApplicationNameForProtocol(const GURL& url);
+  base::string16 GetApplicationNameForProtocol(const GURL& url);
 
 #if !defined(OS_LINUX)
   // get the name, icon and path for an application
@@ -112,10 +113,10 @@ class Browser : public WindowListObserver {
 
 #if defined(OS_WIN)
   struct LaunchItem {
-    std::wstring name;
-    std::wstring path;
-    std::wstring scope;
-    std::vector<std::wstring> args;
+    base::string16 name;
+    base::string16 path;
+    base::string16 scope;
+    std::vector<base::string16> args;
     bool enabled = true;
 
     LaunchItem();
@@ -131,13 +132,13 @@ class Browser : public WindowListObserver {
     bool restore_state = false;
     bool opened_at_login = false;
     bool opened_as_hidden = false;
-    std::u16string path;
-    std::vector<std::u16string> args;
+    base::string16 path;
+    std::vector<base::string16> args;
 
 #if defined(OS_WIN)
     // used in browser::setLoginItemSettings
     bool enabled = true;
-    std::wstring name;
+    base::string16 name = base::string16();
 
     // used in browser::getLoginItemSettings
     bool executable_will_launch_at_login = false;
@@ -237,9 +238,9 @@ class Browser : public WindowListObserver {
 #if defined(OS_WIN)
   struct UserTask {
     base::FilePath program;
-    std::wstring arguments;
-    std::wstring title;
-    std::wstring description;
+    base::string16 arguments;
+    base::string16 title;
+    base::string16 description;
     base::FilePath working_dir;
     base::FilePath icon_path;
     int icon_index;

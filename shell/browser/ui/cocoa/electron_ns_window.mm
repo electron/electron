@@ -35,7 +35,7 @@ bool ScopedDisableResize::disable_resize_ = false;
   if ((self = [super initWithContentRect:ui::kWindowSizeDeterminedLater
                                styleMask:styleMask
                                  backing:NSBackingStoreBuffered
-                                   defer:NO])) {
+                                   defer:YES])) {
     shell_ = shell;
   }
   return self;

@@ -9,7 +9,6 @@
 #include "chrome/browser/net/proxy_config_monitor.h"
 #include "components/keyed_service/core/keyed_service.h"
 #include "mojo/public/cpp/bindings/remote.h"
-#include "services/cert_verifier/public/mojom/cert_verifier_service_factory.mojom.h"
 #include "services/network/public/mojom/network_context.mojom.h"
 #include "shell/browser/electron_browser_context.h"
 
@@ -27,7 +26,7 @@ class NetworkContextService : public KeyedService {
 
   void ConfigureNetworkContextParams(
       network::mojom::NetworkContextParams* network_context_params,
-      cert_verifier::mojom::CertVerifierCreationParams*
+      network::mojom::CertVerifierCreationParams*
           cert_verifier_creation_params);
 
  private:

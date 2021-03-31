@@ -37,7 +37,7 @@ bool IsStatusIconSupported() {
 
 std::unique_ptr<views::StatusIconLinux> CreateLinuxStatusIcon(
     const gfx::ImageSkia& image,
-    const std::u16string& tool_tip,
+    const base::string16& tool_tip,
     const char* id_prefix) {
 #if GTK_CHECK_VERSION(3, 90, 0)
   NOTIMPLEMENTED();

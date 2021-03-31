@@ -17,14 +17,14 @@ namespace electron {
 class SubmenuButton : public views::MenuButton {
  public:
   SubmenuButton(PressedCallback callback,
-                const std::u16string& title,
+                const base::string16& title,
                 const SkColor& background_color);
   ~SubmenuButton() override;
 
   void SetAcceleratorVisibility(bool visible);
   void SetUnderlineColor(SkColor color);
 
-  char16_t accelerator() const { return accelerator_; }
+  base::char16 accelerator() const { return accelerator_; }
 
   void GetAccessibleNodeData(ui::AXNodeData* node_data) override;
 
@@ -36,15 +36,15 @@ class SubmenuButton : public views::MenuButton {
   std::unique_ptr<views::InkDrop> CreateInkDrop() override;
 
  private:
-  bool GetUnderlinePosition(const std::u16string& text,
-                            char16_t* accelerator,
+  bool GetUnderlinePosition(const base::string16& text,
+                            base::char16* accelerator,
                             int* start,
                             int* end) const;
-  void GetCharacterPosition(const std::u16string& text,
+  void GetCharacterPosition(const base::string16& text,
                             int index,
                             int* pos) const;
 
-  char16_t accelerator_ = 0;
+  base::char16 accelerator_ = 0;
 
   bool show_underline_ = false;
 

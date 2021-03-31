@@ -22,7 +22,7 @@ namespace gtkui {
 bool IsStatusIconSupported();
 std::unique_ptr<views::StatusIconLinux> CreateLinuxStatusIcon(
     const gfx::ImageSkia& image,
-    const std::u16string& tool_tip,
+    const base::string16& tool_tip,
     const char* id_prefix);
 
 }  // namespace gtkui

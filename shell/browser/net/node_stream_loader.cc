@@ -52,7 +52,7 @@ NodeStreamLoader::~NodeStreamLoader() {
 void NodeStreamLoader::Start(network::mojom::URLResponseHeadPtr head) {
   mojo::ScopedDataPipeProducerHandle producer;
   mojo::ScopedDataPipeConsumerHandle consumer;
-  MojoResult rv = mojo::CreateDataPipe(nullptr, producer, consumer);
+  MojoResult rv = mojo::CreateDataPipe(nullptr, &producer, &consumer);
   if (rv != MOJO_RESULT_OK) {
     NotifyComplete(net::ERR_INSUFFICIENT_RESOURCES);
     return;

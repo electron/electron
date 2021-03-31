@@ -27,38 +27,38 @@ ElectronMenuModel::ElectronMenuModel(Delegate* delegate)
 
 ElectronMenuModel::~ElectronMenuModel() = default;
 
-void ElectronMenuModel::SetToolTip(int index, const std::u16string& toolTip) {
+void ElectronMenuModel::SetToolTip(int index, const base::string16& toolTip) {
   int command_id = GetCommandIdAt(index);
   toolTips_[command_id] = toolTip;
 }
 
-std::u16string ElectronMenuModel::GetToolTipAt(int index) {
+base::string16 ElectronMenuModel::GetToolTipAt(int index) {
   const int command_id = GetCommandIdAt(index);
   const auto iter = toolTips_.find(command_id);
-  return iter == std::end(toolTips_) ? std::u16string() : iter->second;
+  return iter == std::end(toolTips_) ? base::string16() : iter->second;
 }
 
-void ElectronMenuModel::SetRole(int index, const std::u16string& role) {
+void ElectronMenuModel::SetRole(int index, const base::string16& role) {
   int command_id = GetCommandIdAt(index);
   roles_[command_id] = role;
 }
 
-std::u16string ElectronMenuModel::GetRoleAt(int index) {
+base::string16 ElectronMenuModel::GetRoleAt(int index) {
   const int command_id = GetCommandIdAt(index);
   const auto iter = roles_.find(command_id);
-  return iter == std::end(roles_) ? std::u16string() : iter->second;
+  return iter == std::end(roles_) ? base::string16() : iter->second;
 }
 
 void ElectronMenuModel::SetSecondaryLabel(int index,
-                                          const std::u16string& sublabel) {
+                                          const base::string16& sublabel) {
   int command_id = GetCommandIdAt(index);
   sublabels_[command_id] = sublabel;
 }
 
-std::u16string ElectronMenuModel::GetSecondaryLabelAt(int index) const {
+base::string16 ElectronMenuModel::GetSecondaryLabelAt(int index) const {
   int command_id = GetCommandIdAt(index);
   const auto iter = sublabels_.find(command_id);
-  return iter == std::end(sublabels_) ? std::u16string() : iter->second;
+  return iter == std::end(sublabels_) ? base::string16() : iter->second;
 }
 
 bool ElectronMenuModel::GetAcceleratorAtWithParams(

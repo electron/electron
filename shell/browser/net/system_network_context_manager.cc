@@ -15,7 +15,6 @@
 #include "content/public/common/content_features.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "net/net_buildflags.h"
-#include "services/cert_verifier/public/mojom/cert_verifier_service_factory.mojom.h"
 #include "services/network/network_service.h"
 #include "services/network/public/cpp/cross_thread_pending_shared_url_loader_factory.h"
 #include "services/network/public/cpp/features.h"
@@ -158,9 +157,8 @@ SystemNetworkContextManager::CreateDefaultNetworkContextParams() {
 
   ConfigureDefaultNetworkContextParams(network_context_params.get());
 
-  cert_verifier::mojom::CertVerifierCreationParamsPtr
-      cert_verifier_creation_params =
-          cert_verifier::mojom::CertVerifierCreationParams::New();
+  network::mojom::CertVerifierCreationParamsPtr cert_verifier_creation_params =
+      network::mojom::CertVerifierCreationParams::New();
   network_context_params->cert_verifier_params =
       content::GetCertVerifierParams(std::move(cert_verifier_creation_params));
   return network_context_params;

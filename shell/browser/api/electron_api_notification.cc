@@ -92,15 +92,15 @@ gin::Handle<Notification> Notification::New(gin_helper::ErrorThrower thrower,
 }
 
 // Getters
-std::u16string Notification::GetTitle() const {
+base::string16 Notification::GetTitle() const {
   return title_;
 }
 
-std::u16string Notification::GetSubtitle() const {
+base::string16 Notification::GetSubtitle() const {
   return subtitle_;
 }
 
-std::u16string Notification::GetBody() const {
+base::string16 Notification::GetBody() const {
   return body_;
 }
 
@@ -112,19 +112,19 @@ bool Notification::GetHasReply() const {
   return has_reply_;
 }
 
-std::u16string Notification::GetTimeoutType() const {
+base::string16 Notification::GetTimeoutType() const {
   return timeout_type_;
 }
 
-std::u16string Notification::GetReplyPlaceholder() const {
+base::string16 Notification::GetReplyPlaceholder() const {
   return reply_placeholder_;
 }
 
-std::u16string Notification::GetSound() const {
+base::string16 Notification::GetSound() const {
   return sound_;
 }
 
-std::u16string Notification::GetUrgency() const {
+base::string16 Notification::GetUrgency() const {
   return urgency_;
 }
 
@@ -132,24 +132,24 @@ std::vector<electron::NotificationAction> Notification::GetActions() const {
   return actions_;
 }
 
-std::u16string Notification::GetCloseButtonText() const {
+base::string16 Notification::GetCloseButtonText() const {
   return close_button_text_;
 }
 
-std::u16string Notification::GetToastXml() const {
+base::string16 Notification::GetToastXml() const {
   return toast_xml_;
 }
 
 // Setters
-void Notification::SetTitle(const std::u16string& new_title) {
+void Notification::SetTitle(const base::string16& new_title) {
   title_ = new_title;
 }
 
-void Notification::SetSubtitle(const std::u16string& new_subtitle) {
+void Notification::SetSubtitle(const base::string16& new_subtitle) {
   subtitle_ = new_subtitle;
 }
 
-void Notification::SetBody(const std::u16string& new_body) {
+void Notification::SetBody(const base::string16& new_body) {
   body_ = new_body;
 }
 
@@ -161,19 +161,19 @@ void Notification::SetHasReply(bool new_has_reply) {
   has_reply_ = new_has_reply;
 }
 
-void Notification::SetTimeoutType(const std::u16string& new_timeout_type) {
+void Notification::SetTimeoutType(const base::string16& new_timeout_type) {
   timeout_type_ = new_timeout_type;
 }
 
-void Notification::SetReplyPlaceholder(const std::u16string& new_placeholder) {
+void Notification::SetReplyPlaceholder(const base::string16& new_placeholder) {
   reply_placeholder_ = new_placeholder;
 }
 
-void Notification::SetSound(const std::u16string& new_sound) {
+void Notification::SetSound(const base::string16& new_sound) {
   sound_ = new_sound;
 }
 
-void Notification::SetUrgency(const std::u16string& new_urgency) {
+void Notification::SetUrgency(const base::string16& new_urgency) {
   urgency_ = new_urgency;
 }
 
@@ -182,11 +182,11 @@ void Notification::SetActions(
   actions_ = actions;
 }
 
-void Notification::SetCloseButtonText(const std::u16string& text) {
+void Notification::SetCloseButtonText(const base::string16& text) {
   close_button_text_ = text;
 }
 
-void Notification::SetToastXml(const std::u16string& new_toast_xml) {
+void Notification::SetToastXml(const base::string16& new_toast_xml) {
   toast_xml_ = new_toast_xml;
 }
 

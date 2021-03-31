@@ -46,7 +46,7 @@ class DevToolsWindowDelegate : public views::ClientView,
   bool CanResize() const override { return true; }
   bool CanMaximize() const override { return true; }
   bool CanMinimize() const override { return true; }
-  std::u16string GetWindowTitle() const override { return shell_->GetTitle(); }
+  base::string16 GetWindowTitle() const override { return shell_->GetTitle(); }
   gfx::ImageSkia GetWindowAppIcon() override { return GetWindowIcon(); }
   gfx::ImageSkia GetWindowIcon() override { return icon_; }
   views::Widget* GetWidget() override { return widget_; }
@@ -202,7 +202,7 @@ void InspectableWebContentsViewViews::SetContentsResizingStrategy(
   Layout();
 }
 
-void InspectableWebContentsViewViews::SetTitle(const std::u16string& title) {
+void InspectableWebContentsViewViews::SetTitle(const base::string16& title) {
   if (devtools_window_) {
     title_ = title;
     devtools_window_->UpdateWindowTitle();

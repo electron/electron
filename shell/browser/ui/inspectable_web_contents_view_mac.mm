@@ -58,7 +58,7 @@ void InspectableWebContentsViewMac::SetContentsResizingStrategy(
   [view_ setContentsResizingStrategy:strategy];
 }
 
-void InspectableWebContentsViewMac::SetTitle(const std::u16string& title) {
+void InspectableWebContentsViewMac::SetTitle(const base::string16& title) {
   [view_ setTitle:base::SysUTF16ToNSString(title)];
 }
 

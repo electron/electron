@@ -18,7 +18,7 @@ class BluetoothChooser : public content::BluetoothChooser {
  public:
   struct DeviceInfo {
     std::string device_id;
-    std::u16string device_name;
+    base::string16 device_name;
   };
 
   explicit BluetoothChooser(api::WebContents* contents,
@@ -30,14 +30,14 @@ class BluetoothChooser : public content::BluetoothChooser {
   void ShowDiscoveryState(DiscoveryState state) override;
   void AddOrUpdateDevice(const std::string& device_id,
                          bool should_update_name,
-                         const std::u16string& device_name,
+                         const base::string16& device_name,
                          bool is_gatt_connected,
                          bool is_paired,
                          int signal_strength_level) override;
   std::vector<DeviceInfo> GetDeviceList();
 
  private:
-  std::map<std::string, std::u16string> device_map_;
+  std::map<std::string, base::string16> device_map_;
   api::WebContents* api_web_contents_;
   EventHandler event_handler_;
   int num_retries_ = 0;

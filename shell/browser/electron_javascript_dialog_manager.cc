@@ -34,8 +34,8 @@ void ElectronJavaScriptDialogManager::RunJavaScriptDialog(
     content::WebContents* web_contents,
     content::RenderFrameHost* rfh,
     JavaScriptDialogType dialog_type,
-    const std::u16string& message_text,
-    const std::u16string& default_prompt_text,
+    const base::string16& message_text,
+    const base::string16& default_prompt_text,
     DialogClosedCallback callback,
     bool* did_suppress_message) {
   auto origin_url = rfh->GetLastCommittedURL();
@@ -50,19 +50,19 @@ void ElectronJavaScriptDialogManager::RunJavaScriptDialog(
   }
 
   if (origin_counts_[origin] == kUserWantsNoMoreDialogs) {
-    return std::move(callback).Run(false, std::u16string());
+    return std::move(callback).Run(false, base::string16());
   }
 
   if (dialog_type != JavaScriptDialogType::JAVASCRIPT_DIALOG_TYPE_ALERT &&
       dialog_type != JavaScriptDialogType::JAVASCRIPT_DIALOG_TYPE_CONFIRM) {
-    std::move(callback).Run(false, std::u16string());
+    std::move(callback).Run(false, base::string16());
     return;
   }
 
   auto* web_preferences = WebContentsPreferences::From(web_contents);
 
   if (web_preferences && web_preferences->IsEnabled("disableDialogs")) {
-    return std::move(callback).Run(false, std::u16string());
+    return std::move(callback).Run(false, base::string16());
   }
 
   // No default button
@@ -116,7 +116,7 @@ void ElectronJavaScriptDialogManager::RunBeforeUnloadDialog(
   auto* api_web_contents = api::WebContents::From(web_contents);
   if (api_web_contents) {
     bool default_prevented = api_web_contents->Emit("will-prevent-unload");
-    std::move(callback).Run(default_prevented, std::u16string());
+    std::move(callback).Run(default_prevented, base::string16());
   }
 }
 
@@ -131,7 +131,7 @@ void ElectronJavaScriptDialogManager::OnMessageBoxCallback(
     bool checkbox_checked) {
   if (checkbox_checked)
     origin_counts_[origin] = kUserWantsNoMoreDialogs;
-  std::move(callback).Run(code == 0, std::u16string());
+  std::move(callback).Run(code == 0, base::string16());
 }
 
 }  // namespace electron

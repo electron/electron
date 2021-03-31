@@ -8,6 +8,7 @@
 #include <glib-object.h>
 
 #include "base/logging.h"
+#include "base/strings/string16.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/ui/views/frame/global_menu_bar_registrar_x11.h"
@@ -296,7 +297,7 @@ void GlobalMenuBarX11::RegisterAccelerator(DbusmenuMenuitem* item,
     NOTIMPLEMENTED();
     return;
   }
-  std::string name = base::UTF16ToUTF8(std::u16string(1, keysym));
+  std::string name = base::UTF16ToUTF8(base::string16(1, keysym));
   g_variant_builder_add(&builder, "s", name.c_str());
 
   GVariant* inside_array = g_variant_builder_end(&builder);

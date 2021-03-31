@@ -23,6 +23,7 @@
 #include "third_party/blink/public/common/input/web_mouse_event.h"
 #include "third_party/blink/public/common/input/web_mouse_wheel_event.h"
 #include "third_party/blink/public/common/widget/device_emulation_params.h"
+#include "third_party/blink/public/platform/web_size.h"
 #include "ui/base/clipboard/clipboard.h"
 #include "ui/events/blink/blink_event_util.h"
 #include "ui/events/keycodes/dom/keycode_converter.h"
@@ -43,11 +44,11 @@ int VectorToBitArray(const std::vector<T>& vec) {
 namespace gin {
 
 template <>
-struct Converter<char16_t> {
+struct Converter<base::char16> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Handle<v8::Value> val,
-                     char16_t* out) {
-    std::u16string code = base::UTF8ToUTF16(gin::V8ToString(isolate, val));
+                     base::char16* out) {
+    base::string16 code = base::UTF8ToUTF16(gin::V8ToString(isolate, val));
     if (code.length() != 1)
       return false;
     *out = code[0];
@@ -206,7 +207,7 @@ bool Converter<blink::WebKeyboardEvent>::FromV8(v8::Isolate* isolate,
     // Make sure to not read beyond the buffer in case some bad code doesn't
     // NULL-terminate it (this is called from plugins).
     size_t text_length_cap = blink::WebKeyboardEvent::kTextLengthCap;
-    std::u16string text16 = base::UTF8ToUTF16(str);
+    base::string16 text16 = base::UTF8ToUTF16(str);
 
     std::fill_n(out->text, text_length_cap, 0);
     std::fill_n(out->unmodified_text, text_length_cap, 0);
@@ -282,6 +283,15 @@ bool Converter<blink::WebMouseWheelEvent>::FromV8(
   }
 #endif
   return true;
+}
+
+bool Converter<blink::WebSize>::FromV8(v8::Isolate* isolate,
+                                       v8::Local<v8::Value> val,
+                                       blink::WebSize* out) {
+  gin_helper::Dictionary dict;
+  if (!ConvertFromV8(isolate, val, &dict))
+    return false;
+  return dict.Get("width", &out->width) && dict.Get("height", &out->height);
 }
 
 bool Converter<blink::DeviceEmulationParams>::FromV8(
@@ -365,7 +375,7 @@ v8::Local<v8::Value> EditFlagsToV8(v8::Isolate* isolate, int editFlags) {
 
   bool pasteFlag = false;
   if (editFlags & blink::ContextMenuDataEditFlags::kCanPaste) {
-    std::vector<std::u16string> types;
+    std::vector<base::string16> types;
     ui::Clipboard::GetForCurrentThread()->ReadAvailableTypes(
         ui::ClipboardBuffer::kCopyPaste, /* data_dst = */ nullptr, &types);
     pasteFlag = !types.empty();

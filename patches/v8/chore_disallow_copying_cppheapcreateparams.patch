@@ -1,0 +1,43 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Charles Kerr <charles@charleskerr.com>
+Date: Thu, 19 Nov 2020 13:12:56 -0600
+Subject: chore: disallow copying CppHeapCreateParams
+
+Experimental commit to resolve FTBS https://ci.appveyor.com/project/electron-bot/electron-ljo26/builds/36405680#L25345
+which introduces a new struct CppHeapCreateParams that aggregates a
+vector of unique_ptrs. Our Windows CI is unhappy that this struct
+implicitly deletes its copy ctor, so this commit makes it explicit.
+
+Xref: https://chromium-review.googlesource.com/c/v8/v8/+/2536642
+
+diff --git a/include/v8-cppgc.h b/include/v8-cppgc.h
+index 8860ea8a78de67ab9e9ac453ec1774c8c6b17b8a..1ae9c485bbf083449d7e812696975ffef5e37573 100644
+--- a/include/v8-cppgc.h
++++ b/include/v8-cppgc.h
+@@ -26,8 +26,13 @@ namespace internal {
+ class CppHeap;
+ }  // namespace internal
+ 
+-struct V8_EXPORT CppHeapCreateParams {
++class V8_EXPORT CppHeapCreateParams {
++ public:
+   std::vector<std::unique_ptr<cppgc::CustomSpaceBase>> custom_spaces;
++
++ private:
++  CppHeapCreateParams (const CppHeapCreateParams&) =delete;
++  CppHeapCreateParams& operator=(const CppHeapCreateParams&) =delete;
+ };
+ 
+ /**
+diff --git a/include/v8.h b/include/v8.h
+index 0d79c72077d05c69312d527b0e23b68f85a7cfd7..5e03f54a918191650d5dd6768a6e8c3a31de4300 100644
+--- a/include/v8.h
++++ b/include/v8.h
+@@ -93,6 +93,7 @@ class Utils;
+ class Value;
+ class WasmMemoryObject;
+ class WasmModuleObject;
++class CppHeapCreateParams;
+ template <class K, class V, class T>
+ class GlobalValueMap;
+ template <class K, class V, class T>

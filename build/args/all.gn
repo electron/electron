@@ -19,7 +19,4 @@ enable_basic_printing = true
 angle_enable_vulkan_validation_layers = false
 dawn_enable_vulkan_validation_layers = false
 
-# This breaks native node modules
-libcxx_abi_unstable = false
-
 is_cfi = false

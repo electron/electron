@@ -21,7 +21,7 @@
 namespace electron {
 
 SubmenuButton::SubmenuButton(PressedCallback callback,
-                             const std::u16string& title,
+                             const base::string16& title,
                              const SkColor& background_color)
     : views::MenuButton(callback, gfx::RemoveAccelerator(title)),
       background_color_(background_color) {
@@ -89,12 +89,12 @@ void SubmenuButton::PaintButtonContents(gfx::Canvas* canvas) {
   }
 }
 
-bool SubmenuButton::GetUnderlinePosition(const std::u16string& text,
-                                         char16_t* accelerator,
+bool SubmenuButton::GetUnderlinePosition(const base::string16& text,
+                                         base::char16* accelerator,
                                          int* start,
                                          int* end) const {
   int pos, span;
-  std::u16string trimmed =
+  base::string16 trimmed =
       gfx::LocateAndRemoveAcceleratorChar(text, &pos, &span);
   if (pos > -1 && span != 0) {
     *accelerator = base::ToUpperASCII(trimmed[pos]);
@@ -106,7 +106,7 @@ bool SubmenuButton::GetUnderlinePosition(const std::u16string& text,
   return false;
 }
 
-void SubmenuButton::GetCharacterPosition(const std::u16string& text,
+void SubmenuButton::GetCharacterPosition(const base::string16& text,
                                          int index,
                                          int* pos) const {
   int height = 0;

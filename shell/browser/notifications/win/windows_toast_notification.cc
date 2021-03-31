@@ -21,7 +21,7 @@
 #include "shell/browser/notifications/win/notification_presenter_win.h"
 #include "shell/browser/win/scoped_hstring.h"
 #include "shell/common/application_info.h"
-#include "ui/base/l10n/l10n_util_win.h"
+#include "ui/base/l10n/l10n_util.h"
 #include "ui/strings/grit/ui_strings.h"
 
 using ABI::Windows::Data::Xml::Dom::IXmlAttribute;
@@ -132,18 +132,15 @@ HRESULT WindowsToastNotification::ShowInternal(
   // The custom xml takes priority over the preset template.
   if (!options.toast_xml.empty()) {
     REPORT_AND_RETURN_IF_FAILED(
-        XmlDocumentFromString(base::UTF16ToWide(options.toast_xml).c_str(),
-                              &toast_xml),
+        XmlDocumentFromString(options.toast_xml.c_str(), &toast_xml),
         "XML: Invalid XML");
   } else {
     auto* presenter_win = static_cast<NotificationPresenterWin*>(presenter());
     std::wstring icon_path =
         presenter_win->SaveIconToFilesystem(options.icon, options.icon_url);
     REPORT_AND_RETURN_IF_FAILED(
-        GetToastXml(toast_manager_.Get(), base::UTF16ToWide(options.title),
-                    base::UTF16ToWide(options.msg), icon_path,
-                    base::UTF16ToWide(options.timeout_type), options.silent,
-                    &toast_xml),
+        GetToastXml(toast_manager_.Get(), options.title, options.msg, icon_path,
+                    options.timeout_type, options.silent, &toast_xml),
         "XML: Failed to create XML document");
   }
 
@@ -214,7 +211,7 @@ HRESULT WindowsToastNotification::GetToastXml(
   }
 
   // Configure the toast's timeout settings
-  if (timeout_type == base::ASCIIToWide("never")) {
+  if (timeout_type == base::ASCIIToUTF16("never")) {
     REPORT_AND_RETURN_IF_FAILED(
         (SetXmlScenarioReminder(*toast_xml)),
         "XML: Setting \"scenario\" option on notification failed");
@@ -382,7 +379,7 @@ HRESULT WindowsToastNotification::SetXmlScenarioReminder(IXmlDocument* doc) {
   RETURN_IF_FAILED(content_attribute.As(&content_attribute_node));
 
   // Set content attribute to Dismiss
-  ScopedHString content_value(l10n_util::GetWideString(IDS_APP_CLOSE));
+  ScopedHString content_value(l10n_util::GetStringUTF16(IDS_APP_CLOSE));
   if (!content_value.success())
     return E_FAIL;
 

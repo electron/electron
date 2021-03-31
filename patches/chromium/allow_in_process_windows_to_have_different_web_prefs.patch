@@ -84,7 +84,7 @@ index ba1ba323ec45296c33b5931652a001d6bd24dbe0..178cae9c389e48733fde982f4906d974
    out->accelerated_video_decode_enabled =
        data.accelerated_video_decode_enabled();
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences.h b/third_party/blink/public/common/web_preferences/web_preferences.h
-index 74ed4b91cdd4c0cc0244491dfbbdf8e69e54e6f5..6795a5307ff49bbe366041e28c54dd2d9976c7f8 100644
+index ab727750abcb0253463e83c984bf1afd9e296021..fd2a58f20e0a725fb441dc8607e862717537bcf6 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences.h
 @@ -9,6 +9,7 @@
@@ -92,10 +92,10 @@ index 74ed4b91cdd4c0cc0244491dfbbdf8e69e54e6f5..6795a5307ff49bbe366041e28c54dd2d
  #include <vector>
  
 +#include "base/files/file_path.h"
+ #include "base/strings/string16.h"
  #include "base/time/time.h"
  #include "build/build_config.h"
- #include "net/nqe/effective_connection_type.h"
-@@ -160,6 +161,28 @@ struct BLINK_COMMON_EXPORT WebPreferences {
+@@ -161,6 +162,28 @@ struct BLINK_COMMON_EXPORT WebPreferences {
    blink::mojom::V8CacheOptions v8_cache_options;
    bool record_whole_document;
  
@@ -125,7 +125,7 @@ index 74ed4b91cdd4c0cc0244491dfbbdf8e69e54e6f5..6795a5307ff49bbe366041e28c54dd2d
    // only controls whether or not the "document.cookie" field is properly
    // connected to the backing store, for instance if you wanted to be able to
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
-index ae180b30284c17c7319925531440161f66b873c7..6ba055814a8385052d7798be56de53691dbe3343 100644
+index 68d33ca3be294fc79f6d5d1a6ae6a8dfd427f4b1..e8a2c0f48f61f31a96290c02489378795a9e9f6a 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
 @@ -6,6 +6,7 @@

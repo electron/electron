@@ -27,8 +27,8 @@ class AutofillDriver : public mojom::ElectronAutofillDriver {
   ~AutofillDriver() override;
 
   void ShowAutofillPopup(const gfx::RectF& bounds,
-                         const std::vector<std::u16string>& values,
-                         const std::vector<std::u16string>& labels) override;
+                         const std::vector<base::string16>& values,
+                         const std::vector<base::string16>& labels) override;
   void HideAutofillPopup() override;
 
  private:

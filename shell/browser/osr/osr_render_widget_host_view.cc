@@ -144,9 +144,8 @@ class ElectronDelegatedFrameHostClient
     return *view_->GetBackgroundColor();
   }
 
-  void OnFrameTokenChanged(uint32_t frame_token,
-                           base::TimeTicks activation_time) override {
-    view_->render_widget_host()->DidProcessFrame(frame_token, activation_time);
+  void OnFrameTokenChanged(uint32_t frame_token) override {
+    view_->render_widget_host()->DidProcessFrame(frame_token);
   }
 
   float GetDeviceScaleFactor() const override {
@@ -456,7 +455,7 @@ void OffScreenRenderWidgetHostView::Destroy() {
   delete this;
 }
 
-void OffScreenRenderWidgetHostView::SetTooltipText(const std::u16string&) {}
+void OffScreenRenderWidgetHostView::SetTooltipText(const base::string16&) {}
 
 uint32_t OffScreenRenderWidgetHostView::GetCaptureSequenceNumber() const {
   return latest_capture_sequence_number_;

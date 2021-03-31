@@ -8,6 +8,7 @@
 #include <memory>
 
 #include "base/macros.h"
+#include "base/strings/string16.h"
 #include "ui/base/glib/glib_integers.h"
 #include "ui/base/glib/glib_signal.h"
 #include "ui/views/linux_ui/status_icon_linux.h"
@@ -31,12 +32,12 @@ class AppIndicatorIconMenu;
 // GtkStatusIcon).
 class GtkStatusIcon : public views::StatusIconLinux {
  public:
-  GtkStatusIcon(const gfx::ImageSkia& image, const std::u16string& tool_tip);
+  GtkStatusIcon(const gfx::ImageSkia& image, const base::string16& tool_tip);
   ~GtkStatusIcon() override;
 
   // Overridden from views::StatusIconLinux:
   void SetIcon(const gfx::ImageSkia& image) override;
-  void SetToolTip(const std::u16string& tool_tip) override;
+  void SetToolTip(const base::string16& tool_tip) override;
   void UpdatePlatformContextMenu(ui::MenuModel* menu) override;
   void RefreshPlatformContextMenu() override;
 

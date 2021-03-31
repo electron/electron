@@ -184,7 +184,7 @@ class NativeWindowViews : public NativeWindow,
   bool CanResize() const override;
   bool CanMaximize() const override;
   bool CanMinimize() const override;
-  std::u16string GetWindowTitle() const override;
+  base::string16 GetWindowTitle() const override;
   views::View* GetContentsView() override;
   bool ShouldDescendIntoChildForEventHandling(
       gfx::NativeView child,

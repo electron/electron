@@ -64,8 +64,8 @@ class TrayIcon {
 #else
     gfx::Image icon;
 #endif
-    std::u16string title;
-    std::u16string content;
+    base::string16 title;
+    base::string16 content;
     bool large_icon = true;
     bool no_sound = false;
     bool respect_quiet_time = false;

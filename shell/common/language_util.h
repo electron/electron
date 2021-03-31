@@ -8,11 +8,18 @@
 #include <string>
 #include <vector>
 
+#include "base/strings/string16.h"
+
 namespace electron {
 
 // Return a list of user preferred languages from OS. The list doesn't include
 // overrides from command line arguments.
 std::vector<std::string> GetPreferredLanguages();
+
+#if defined(OS_WIN)
+bool GetPreferredLanguagesUsingGlobalization(
+    std::vector<base::string16>* languages);
+#endif
 
 }  // namespace electron
 

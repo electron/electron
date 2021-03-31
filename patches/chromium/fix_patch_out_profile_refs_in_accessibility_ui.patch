@@ -7,7 +7,7 @@ This tweaks Chrome's Accessibility support at chrome://accessibility
 to make it usable from Electron by removing Profile references.
 
 diff --git a/chrome/browser/accessibility/accessibility_ui.cc b/chrome/browser/accessibility/accessibility_ui.cc
-index eed11ee2d85b655073f3e5c704a5d5349a935cb6..c36379a17d564ea96de8172fbdf057f0d85b66fc 100644
+index 4453990236f07a58932f50701f31fab961d0fb9e..6193689e879f5e147ca1e6514fb2061423d31400 100644
 --- a/chrome/browser/accessibility/accessibility_ui.cc
 +++ b/chrome/browser/accessibility/accessibility_ui.cc
 @@ -20,7 +20,10 @@
@@ -97,7 +97,7 @@ index eed11ee2d85b655073f3e5c704a5d5349a935cb6..c36379a17d564ea96de8172fbdf057f0
      return;
    }
  
-@@ -614,10 +621,12 @@ void AccessibilityUIMessageHandler::RequestWebContentsTree(
+@@ -615,10 +622,12 @@ void AccessibilityUIMessageHandler::RequestWebContentsTree(
                       AXPropertyFilter::ALLOW_EMPTY);
    AddPropertyFilters(property_filters, deny, AXPropertyFilter::DENY);
  
@@ -111,7 +111,7 @@ index eed11ee2d85b655073f3e5c704a5d5349a935cb6..c36379a17d564ea96de8172fbdf057f0
    result->SetString(kTreeField, accessibility_contents);
    FireWebUIListener(request_type, *(result.get()));
  }
-@@ -641,6 +650,7 @@ void AccessibilityUIMessageHandler::RequestNativeUITree(
+@@ -642,6 +651,7 @@ void AccessibilityUIMessageHandler::RequestNativeUITree(
                       AXPropertyFilter::ALLOW_EMPTY);
    AddPropertyFilters(property_filters, deny, AXPropertyFilter::DENY);
  
@@ -119,7 +119,7 @@ index eed11ee2d85b655073f3e5c704a5d5349a935cb6..c36379a17d564ea96de8172fbdf057f0
    for (Browser* browser : *BrowserList::GetInstance()) {
      if (browser->session_id().id() == session_id) {
        std::unique_ptr<base::DictionaryValue> result(
-@@ -655,6 +665,7 @@ void AccessibilityUIMessageHandler::RequestNativeUITree(
+@@ -656,6 +666,7 @@ void AccessibilityUIMessageHandler::RequestNativeUITree(
        return;
      }
    }
@@ -127,7 +127,7 @@ index eed11ee2d85b655073f3e5c704a5d5349a935cb6..c36379a17d564ea96de8172fbdf057f0
  #endif  // !defined(OS_ANDROID)
    // No browser with the specified |session_id| was found.
    std::unique_ptr<base::DictionaryValue> result(new base::DictionaryValue());
-@@ -770,5 +781,7 @@ void AccessibilityUIMessageHandler::RequestAccessibilityEvents(
+@@ -771,5 +782,7 @@ void AccessibilityUIMessageHandler::RequestAccessibilityEvents(
  // static
  void AccessibilityUIMessageHandler::RegisterProfilePrefs(
      user_prefs::PrefRegistrySyncable* registry) {

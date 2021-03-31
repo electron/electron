@@ -33,10 +33,6 @@
 #include "base/debug/dump_without_crashing.h"
 #endif
 
-#if defined(OS_WIN)
-#include "base/strings/string_util_win.h"
-#endif
-
 namespace {
 
 ElectronCrashReporterClient* Instance() {
@@ -134,8 +130,8 @@ void ElectronCrashReporterClient::GetProductNameAndVersion(
     std::wstring* version,
     std::wstring* special_build,
     std::wstring* channel_name) {
-  *product_name = base::UTF8ToWide(ELECTRON_PRODUCT_NAME);
-  *version = base::UTF8ToWide(ELECTRON_VERSION_STRING);
+  *product_name = base::UTF8ToUTF16(ELECTRON_PRODUCT_NAME);
+  *version = base::UTF8ToUTF16(ELECTRON_VERSION_STRING);
 }
 #endif
 

@@ -10,12 +10,12 @@ namespace electron {
 
 namespace api {
 
-void Clipboard::WriteFindText(const std::u16string& text) {
+void Clipboard::WriteFindText(const base::string16& text) {
   NSString* text_ns = base::SysUTF16ToNSString(text);
   [[FindPasteboard sharedInstance] setFindText:text_ns];
 }
 
-std::u16string Clipboard::ReadFindText() {
+base::string16 Clipboard::ReadFindText() {
   return GetFindPboardText();
 }
 

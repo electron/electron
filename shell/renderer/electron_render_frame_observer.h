@@ -7,6 +7,7 @@
 
 #include <string>
 
+#include "base/strings/string16.h"
 #include "content/public/renderer/render_frame_observer.h"
 #include "ipc/ipc_platform_file.h"
 #include "shell/renderer/renderer_client_base.h"

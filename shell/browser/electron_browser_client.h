@@ -167,8 +167,8 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       bool in_memory,
       const base::FilePath& relative_partition_path,
       network::mojom::NetworkContextParams* network_context_params,
-      cert_verifier::mojom::CertVerifierCreationParams*
-          cert_verifier_creation_params) override;
+      network::mojom::CertVerifierCreationParams* cert_verifier_creation_params)
+      override;
   network::mojom::NetworkContext* GetSystemNetworkContext() override;
   content::MediaObserver* GetMediaObserver() override;
   content::DevToolsManagerDelegate* GetDevToolsManagerDelegate() override;
@@ -239,7 +239,6 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       const GURL& url,
       content::WebContents::OnceGetter web_contents_getter,
       int child_id,
-      int frame_tree_node_id,
       content::NavigationUIData* navigation_data,
       bool is_main_frame,
       ui::PageTransition page_transition,

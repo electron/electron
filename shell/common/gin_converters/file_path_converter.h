@@ -7,7 +7,6 @@
 
 #include "base/files/file_path.h"
 #include "gin/converter.h"
-#include "shell/common/gin_converters/std_converter.h"
 
 namespace gin {
 

@@ -9,7 +9,6 @@
 #include <unordered_set>
 #include <utility>
 
-#include "base/allocator/partition_allocator/partition_alloc.h"
 #include "base/command_line.h"
 #include "base/task/current_thread.h"
 #include "base/task/thread_pool/initialization_util.h"
@@ -65,83 +64,6 @@ struct base::trace_event::TraceValue::Helper<
 };
 
 namespace electron {
-
-class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
- public:
-  enum InitializationPolicy { kZeroInitialize, kDontInitialize };
-
-  ArrayBufferAllocator() {
-    // Ref.
-    // https://source.chromium.org/chromium/chromium/src/+/master:third_party/blink/renderer/platform/wtf/allocator/partitions.cc;l=94;drc=062c315a858a87f834e16a144c2c8e9591af2beb
-    allocator_->init({base::PartitionOptions::Alignment::kRegular,
-                      base::PartitionOptions::ThreadCache::kDisabled,
-                      base::PartitionOptions::Quarantine::kAllowed,
-                      base::PartitionOptions::RefCount::kDisabled});
-  }
-
-  // Allocate() methods return null to signal allocation failure to V8, which
-  // should respond by throwing a RangeError, per
-  // http://www.ecma-international.org/ecma-262/6.0/#sec-createbytedatablock.
-  void* Allocate(size_t size) override {
-    void* result = AllocateMemoryOrNull(size, kZeroInitialize);
-    return result;
-  }
-
-  void* AllocateUninitialized(size_t size) override {
-    void* result = AllocateMemoryOrNull(size, kDontInitialize);
-    return result;
-  }
-
-  void* Realloc(void* data, size_t size) override {
-    return allocator_->root()->Realloc(data, size, "Electron");
-  }
-
-  void Free(void* data, size_t size) override {
-    allocator_->root()->Free(data);
-  }
-
- private:
-  static void* AllocateMemoryOrNull(size_t size, InitializationPolicy policy) {
-    return AllocateMemoryWithFlags(size, policy,
-                                   base::PartitionAllocReturnNull);
-  }
-
-  static void* AllocateMemoryWithFlags(size_t size,
-                                       InitializationPolicy policy,
-                                       int flags) {
-    // The array buffer contents are sometimes expected to be 16-byte aligned in
-    // order to get the best optimization of SSE, especially in case of audio
-    // and video buffers.  Hence, align the given size up to 16-byte boundary.
-    // Technically speaking, 16-byte aligned size doesn't mean 16-byte aligned
-    // address, but this heuristics works with the current implementation of
-    // PartitionAlloc (and PartitionAlloc doesn't support a better way for now).
-    if (base::kAlignment <
-        16) {  // base::kAlignment is a compile-time constant.
-      size_t aligned_size = base::bits::AlignUp(size, 16);
-      if (size == 0) {
-        aligned_size = 16;
-      }
-      if (aligned_size >= size) {  // Only when no overflow
-        size = aligned_size;
-      }
-    }
-
-    if (policy == kZeroInitialize) {
-      flags |= base::PartitionAllocZeroFill;
-    }
-    void* data = allocator_->root()->AllocFlags(flags, size, "Electron");
-    if (base::kAlignment < 16) {
-      char* ptr = reinterpret_cast<char*>(data);
-      DCHECK_EQ(base::bits::AlignUp(ptr, 16), ptr)
-          << "Pointer " << ptr << " not 16B aligned for size " << size;
-    }
-    return data;
-  }
-
-  static base::NoDestructor<base::PartitionAllocator> allocator_;
-};
-
-base::NoDestructor<base::PartitionAllocator> ArrayBufferAllocator::allocator_{};
 
 JavascriptEnvironment::JavascriptEnvironment(uv_loop_t* event_loop)
     : isolate_(Initialize(event_loop)),
@@ -327,9 +249,10 @@ v8::Isolate* JavascriptEnvironment::Initialize(uv_loop_t* event_loop) {
       tracing_controller, gin::V8Platform::PageAllocator());
 
   v8::V8::InitializePlatform(platform_);
-  gin::IsolateHolder::Initialize(
-      gin::IsolateHolder::kNonStrictMode, new ArrayBufferAllocator(),
-      nullptr /* external_reference_table */, false /* create_v8_platform */);
+  gin::IsolateHolder::Initialize(gin::IsolateHolder::kNonStrictMode,
+                                 gin::ArrayBufferAllocator::SharedInstance(),
+                                 nullptr /* external_reference_table */,
+                                 false /* create_v8_platform */);
 
   v8::Isolate* isolate = v8::Isolate::Allocate();
   platform_->RegisterIsolate(isolate, event_loop);

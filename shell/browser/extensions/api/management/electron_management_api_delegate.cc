@@ -204,7 +204,7 @@ bool ElectronManagementAPIDelegate::UninstallExtension(
     content::BrowserContext* context,
     const std::string& transient_extension_id,
     extensions::UninstallReason reason,
-    std::u16string* error) const {
+    base::string16* error) const {
   // TODO(sentialx): we don't have ExtensionService
   // return extensions::ExtensionSystem::Get(context)
   //     ->extension_service()

@@ -90,7 +90,7 @@ CertificateManagerModel::~CertificateManagerModel() = default;
 int CertificateManagerModel::ImportFromPKCS12(
     PK11SlotInfo* slot_info,
     const std::string& data,
-    const std::u16string& password,
+    const base::string16& password,
     bool is_extractable,
     net::ScopedCERTCertificateList* imported_certs) {
   return cert_db_->ImportFromPKCS12(slot_info, data, password, is_extractable,

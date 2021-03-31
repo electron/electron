@@ -96,7 +96,7 @@ void DesktopCapturer::StartHandling(bool capture_window,
     // Apply the new thumbnail size and restart capture.
     if (capture_window) {
       window_capturer_ = std::make_unique<NativeDesktopMediaList>(
-          DesktopMediaList::Type::kWindow,
+          content::DesktopMediaID::TYPE_WINDOW,
           content::desktop_capture::CreateWindowCapturer());
       window_capturer_->SetThumbnailSize(thumbnail_size);
       window_capturer_->AddObserver(this);
@@ -107,7 +107,7 @@ void DesktopCapturer::StartHandling(bool capture_window,
 
     if (capture_screen) {
       screen_capturer_ = std::make_unique<NativeDesktopMediaList>(
-          DesktopMediaList::Type::kScreen,
+          content::DesktopMediaID::TYPE_SCREEN,
           content::desktop_capture::CreateScreenCapturer());
       screen_capturer_->SetThumbnailSize(thumbnail_size);
       screen_capturer_->AddObserver(this);
@@ -124,7 +124,7 @@ void DesktopCapturer::OnSourceUnchanged(DesktopMediaList* list) {
 
 void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
   if (capture_window_ &&
-      list->GetMediaListType() == DesktopMediaList::Type::kWindow) {
+      list->GetMediaListType() == content::DesktopMediaID::TYPE_WINDOW) {
     capture_window_ = false;
     const auto& media_list_sources = list->GetSources();
     std::vector<DesktopCapturer::Source> window_sources;
@@ -138,7 +138,7 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
   }
 
   if (capture_screen_ &&
-      list->GetMediaListType() == DesktopMediaList::Type::kScreen) {
+      list->GetMediaListType() == content::DesktopMediaID::TYPE_SCREEN) {
     capture_screen_ = false;
     const auto& media_list_sources = list->GetSources();
     std::vector<DesktopCapturer::Source> screen_sources;

@@ -161,7 +161,7 @@ ElectronContentClient::ElectronContentClient() = default;
 
 ElectronContentClient::~ElectronContentClient() = default;
 
-std::u16string ElectronContentClient::GetLocalizedString(int message_id) {
+base::string16 ElectronContentClient::GetLocalizedString(int message_id) {
   return l10n_util::GetStringUTF16(message_id);
 }
 

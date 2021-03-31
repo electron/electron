@@ -257,9 +257,7 @@ v8::Local<v8::Value> V8ValueConverter::ToArrayBuffer(
   }
   auto context = isolate->GetCurrentContext();
   auto array_buffer = v8::ArrayBuffer::New(isolate, length);
-  std::shared_ptr<v8::BackingStore> backing_store =
-      array_buffer->GetBackingStore();
-  memcpy(backing_store->Data(), data, length);
+  memcpy(array_buffer->GetContents().Data(), data, length);
   // From this point, if something goes wrong(can't find Buffer class for
   // example) we'll simply return a Uint8Array based on the created ArrayBuffer.
   // This can happen if no preload script was specified to the renderer.

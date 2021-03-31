@@ -39,13 +39,13 @@ class InspectableWebContentsViewViews : public InspectableWebContentsView,
   void SetIsDocked(bool docked, bool activate) override;
   void SetContentsResizingStrategy(
       const DevToolsContentsResizingStrategy& strategy) override;
-  void SetTitle(const std::u16string& title) override;
+  void SetTitle(const base::string16& title) override;
 
   InspectableWebContents* inspectable_web_contents() {
     return inspectable_web_contents_;
   }
 
-  const std::u16string& GetTitle() const { return title_; }
+  const base::string16& GetTitle() const { return title_; }
 
  private:
   // views::View:
@@ -62,7 +62,7 @@ class InspectableWebContentsViewViews : public InspectableWebContentsView,
   DevToolsContentsResizingStrategy strategy_;
   bool devtools_visible_ = false;
   views::WidgetDelegate* devtools_window_delegate_ = nullptr;
-  std::u16string title_;
+  base::string16 title_;
 
   DISALLOW_COPY_AND_ASSIGN(InspectableWebContentsViewViews);
 };

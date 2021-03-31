@@ -157,7 +157,7 @@ namespace gtkui {
 
 AppIndicatorIcon::AppIndicatorIcon(std::string id,
                                    const gfx::ImageSkia& image,
-                                   const std::u16string& tool_tip)
+                                   const base::string16& tool_tip)
     : id_(id) {
   std::unique_ptr<base::Environment> env(base::Environment::Create());
   desktop_env_ = base::nix::GetDesktopEnvironment(env.get());
@@ -215,7 +215,7 @@ void AppIndicatorIcon::SetIcon(const gfx::ImageSkia& image) {
   }
 }
 
-void AppIndicatorIcon::SetToolTip(const std::u16string& tool_tip) {
+void AppIndicatorIcon::SetToolTip(const base::string16& tool_tip) {
   DCHECK(!tool_tip_.empty());
   tool_tip_ = base::UTF16ToUTF8(tool_tip);
   UpdateClickActionReplacementMenuItem();
