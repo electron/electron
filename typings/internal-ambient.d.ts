@@ -101,6 +101,20 @@ declare namespace NodeJS {
     removeGuest(embedder: Electron.WebContents, guestInstanceId: number): void;
   }
 
+  interface InternalWebPreferences {
+    contextIsolation: boolean;
+    disableElectronSiteInstanceOverrides: boolean;
+    guestInstanceId: number;
+    hiddenPage: boolean;
+    nativeWindowOpen: boolean;
+    nodeIntegration: boolean;
+    openerId: number;
+    preload: string
+    preloadScripts: string[];
+    webviewTag: boolean;
+    worldSafeExecuteJavaScript: boolean;
+  }
+
   interface WebFrameBinding {
     _findFrameByRoutingId(window: Window, routingId: number): Window;
     _getFrameForSelector(window: Window, selector: string): Window;
@@ -111,17 +125,7 @@ declare namespace NodeJS {
     _getFirstChild(window: Window): Window;
     _getNextSibling(window: Window): Window;
     _getRoutingId(window: Window): number;
-    getWebPreference(window: Window, name: 'contextIsolation'): boolean;
-    getWebPreference(window: Window, name: 'disableElectronSiteInstanceOverrides'): boolean;
-    getWebPreference(window: Window, name: 'guestInstanceId'): number;
-    getWebPreference(window: Window, name: 'hiddenPage'): boolean;
-    getWebPreference(window: Window, name: 'nativeWindowOpen'): boolean;
-    getWebPreference(window: Window, name: 'nodeIntegration'): boolean;
-    getWebPreference(window: Window, name: 'openerId'): number;
-    getWebPreference(window: Window, name: 'preload'): string;
-    getWebPreference(window: Window, name: 'preloadScripts'): string[];
-    getWebPreference(window: Window, name: 'webviewTag'): boolean;
-    getWebPreference(window: Window, name: 'worldSafeExecuteJavaScript'): boolean;
+    getWebPreference<K extends keyof InternalWebPreferences>(window: Window, name: K): InternalWebPreferences[K];
   }
 
   type DataPipe = {
