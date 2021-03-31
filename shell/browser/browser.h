@@ -137,7 +137,7 @@ class Browser : public WindowListObserver {
 #if defined(OS_WIN)
     // used in browser::setLoginItemSettings
     bool enabled = true;
-    std::wstring name = std::wstring();
+    std::wstring name;
 
     // used in browser::getLoginItemSettings
     bool executable_will_launch_at_login = false;

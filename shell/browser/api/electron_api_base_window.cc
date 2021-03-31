@@ -1085,11 +1085,11 @@ bool BaseWindow::SetThumbnailToolTip(const std::string& tooltip) {
 }
 
 void BaseWindow::SetAppDetails(const gin_helper::Dictionary& options) {
-  std::u16string app_id;
+  std::wstring app_id;
   base::FilePath app_icon_path;
   int app_icon_index = 0;
-  std::u16string relaunch_command;
-  std::u16string relaunch_display_name;
+  std::wstring relaunch_command;
+  std::wstring relaunch_display_name;
 
   options.Get("appId", &app_id);
   options.Get("appIconPath", &app_icon_path);
@@ -1097,10 +1097,8 @@ void BaseWindow::SetAppDetails(const gin_helper::Dictionary& options) {
   options.Get("relaunchCommand", &relaunch_command);
   options.Get("relaunchDisplayName", &relaunch_display_name);
 
-  ui::win::SetAppDetailsForWindow(base::UTF16ToWide(app_id), app_icon_path,
-                                  app_icon_index,
-                                  base::UTF16ToWide(relaunch_command),
-                                  base::UTF16ToWide(relaunch_display_name),
+  ui::win::SetAppDetailsForWindow(app_id, app_icon_path, app_icon_index,
+                                  relaunch_command, relaunch_display_name,
                                   window_->GetAcceleratedWidget());
 }
 #endif
