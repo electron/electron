@@ -1,5 +1,4 @@
 import { EventEmitter } from 'events';
-import deprecate from '@electron/internal/common/api/deprecate';
 
 const binding = process._linkedBinding('electron_renderer_web_frame');
 
@@ -48,28 +47,14 @@ class WebFrame extends EventEmitter {
   }
 }
 
-const contextIsolation = binding.getWebPreference(window, 'contextIsolation');
-const worldSafeExecuteJavaScript = binding.getWebPreference(window, 'worldSafeExecuteJavaScript');
-
-const worldSafeJS = worldSafeExecuteJavaScript || !contextIsolation;
-
 // Populate the methods.
 for (const name in binding) {
   if (!name.startsWith('_')) { // some methods are manually populated above
     // TODO(felixrieseberg): Once we can type web_frame natives, we could
     // use a neat `keyof` here
     (WebFrame as any).prototype[name] = function (...args: Array<any>) {
-      if (!worldSafeJS && name.startsWith('executeJavaScript')) {
-        deprecate.log(`Security Warning: webFrame.${name} was called without worldSafeExecuteJavaScript enabled. This is considered unsafe. worldSafeExecuteJavaScript will be enabled by default in Electron 12.`);
-      }
       return (binding as any)[name](this.context, ...args);
     };
-    // TODO(MarshallOfSound): Remove once the above deprecation is removed
-    if (name.startsWith('executeJavaScript')) {
-      (WebFrame as any).prototype[`_${name}`] = function (...args: Array<any>) {
-        return (binding as any)[name](this.context, ...args);
-      };
-    }
   }
 }
 

@@ -348,8 +348,6 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       [Chrome Content Scripts][chrome-content-scripts].  You can access this
       context in the dev tools by selecting the 'Electron Isolated Context'
       entry in the combo box at the top of the Console tab.
-    * `worldSafeExecuteJavaScript` Boolean (optional) - If true, values returned from `webFrame.executeJavaScript` will be sanitized to ensure JS values
-      can't unsafely cross between worlds when using `contextIsolation`. Defaults to `true`. _Deprecated_
     * `nativeWindowOpen` Boolean (optional) - Whether to use native
       `window.open()`. Defaults to `false`. Child windows will always have node
       integration disabled unless `nodeIntegrationInSubFrames` is true. **Note:** This option is currently

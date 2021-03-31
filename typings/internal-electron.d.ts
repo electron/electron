@@ -92,7 +92,6 @@ declare namespace Electron {
   }
 
   interface WebFrame {
-    _executeJavaScript(code: string, userGesture?: boolean): Promise<any>;
     getWebFrameId(window: Window): number;
     allowGuestViewElementDefinition(window: Window, context: any): void;
   }

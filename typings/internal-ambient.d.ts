@@ -112,7 +112,6 @@ declare namespace NodeJS {
     preload: string
     preloadScripts: string[];
     webviewTag: boolean;
-    worldSafeExecuteJavaScript: boolean;
   }
 
   interface WebFrameBinding {
