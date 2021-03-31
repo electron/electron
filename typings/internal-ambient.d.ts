@@ -101,6 +101,29 @@ declare namespace NodeJS {
     removeGuest(embedder: Electron.WebContents, guestInstanceId: number): void;
   }
 
+  interface WebFrameBinding {
+    _findFrameByRoutingId(window: Window, routingId: number): Window;
+    _getFrameForSelector(window: Window, selector: string): Window;
+    _findFrameByName(window: Window, name: string): Window;
+    _getOpener(window: Window): Window;
+    _getParent(window: Window): Window;
+    _getTop(window: Window): Window;
+    _getFirstChild(window: Window): Window;
+    _getNextSibling(window: Window): Window;
+    _getRoutingId(window: Window): number;
+    getWebPreference(window: Window, name: 'contextIsolation'): boolean;
+    getWebPreference(window: Window, name: 'disableElectronSiteInstanceOverrides'): boolean;
+    getWebPreference(window: Window, name: 'guestInstanceId'): number;
+    getWebPreference(window: Window, name: 'hiddenPage'): boolean;
+    getWebPreference(window: Window, name: 'nativeWindowOpen'): boolean;
+    getWebPreference(window: Window, name: 'nodeIntegration'): boolean;
+    getWebPreference(window: Window, name: 'openerId'): number;
+    getWebPreference(window: Window, name: 'preload'): string;
+    getWebPreference(window: Window, name: 'preloadScripts'): string[];
+    getWebPreference(window: Window, name: 'webviewTag'): boolean;
+    getWebPreference(window: Window, name: 'worldSafeExecuteJavaScript'): boolean;
+  }
+
   type DataPipe = {
     write: (buf: Uint8Array) => Promise<void>;
     done: () => void;
@@ -218,6 +241,7 @@ declare namespace NodeJS {
     }
     _linkedBinding(name: 'electron_renderer_crash_reporter'): Electron.CrashReporter;
     _linkedBinding(name: 'electron_renderer_ipc'): { ipc: IpcRendererBinding };
+    _linkedBinding(name: 'electron_renderer_web_frame'): WebFrameBinding;
     log: NodeJS.WriteStream['write'];
     activateUvLoop(): void;
 
