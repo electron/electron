@@ -41,7 +41,6 @@ proxy_config_monitor.patch
 gritsettings_resource_ids.patch
 isolate_holder.patch
 notification_provenance.patch
-content_browser_main_loop.patch
 dump_syms.patch
 command-ismediakey.patch
 printing.patch
