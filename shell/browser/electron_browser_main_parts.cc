@@ -523,9 +523,9 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
   // Destroy node platform after all destructors_ are executed, as they may
   // invoke Node/V8 APIs inside them.
   node_env_->env()->set_trace_sync_io(false);
-  js_env_->OnMessageLoopDestroying();
   node::Stop(node_env_->env());
   node_env_.reset();
+  js_env_->OnMessageLoopDestroying();
 
   auto default_context_key = ElectronBrowserContext::PartitionKey("", false);
   std::unique_ptr<ElectronBrowserContext> default_context = std::move(
