@@ -197,7 +197,6 @@ void ElectronRendererClient::WillReleaseScriptContext(
 bool ElectronRendererClient::ShouldFork(blink::WebLocalFrame* frame,
                                         const GURL& url,
                                         const std::string& http_method,
-                                        bool is_initial_navigation,
                                         bool is_server_redirect) {
   // Handle all the navigations and reloads in browser.
   // FIXME We only support GET here because http method will be ignored when
