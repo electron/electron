@@ -53,9 +53,9 @@ void ElectronBindings::BindProcess(v8::Isolate* isolate,
   process->SetMethod("getBlinkMemoryInfo", &GetBlinkMemoryInfo);
   process->SetMethod("getProcessMemoryInfo", &GetProcessMemoryInfo);
   process->SetMethod("getSystemMemoryInfo", &GetSystemMemoryInfo);
+  process->SetMethod("getSystemProductType", &GetSystemProductType);
   process->SetMethod("getSystemVersion",
                      &base::SysInfo::OperatingSystemVersion);
-  process->SetMethod("getSystemProductType", &GetSystemProductType);
   process->SetMethod("getIOCounters", &GetIOCounters);
   process->SetMethod("getCPUUsage",
                      base::BindRepeating(&ElectronBindings::GetCPUUsage,
@@ -165,22 +165,6 @@ v8::Local<v8::Value> ElectronBindings::GetHeapStatistics(v8::Isolate* isolate) {
 }
 
 // static
-v8::Local<v8::Value> ElectronBindings::GetSystemProductType(
-    v8::Isolate* isolate) {
-  std::string type = "desktop";
-
-// TODO: implement the equivalent API in Linux
-#if defined(OS_WIN)
-  auto* os_info = base::win::OSInfo::GetInstance();
-  if (os_info->version_type() == base::win::SUITE_SERVER) {
-    type = "server";
-  }
-#endif
-
-  return v8::String::NewFromUtf8(isolate, type.c_str()).ToLocalChecked();
-}
-
-// static
 v8::Local<v8::Value> ElectronBindings::GetCreationTime(v8::Isolate* isolate) {
   auto timeValue = base::Process::Current().CreationTime();
   if (timeValue.is_null()) {
@@ -220,6 +204,22 @@ v8::Local<v8::Value> ElectronBindings::GetSystemMemoryInfo(
 #endif
 
   return dict.GetHandle();
+}
+
+// static
+v8::Local<v8::Value> ElectronBindings::GetSystemProductType(
+    v8::Isolate* isolate) {
+  std::string type = "desktop";
+
+// TODO: implement the equivalent API in Linux
+#if defined(OS_WIN)
+  auto* os_info = base::win::OSInfo::GetInstance();
+  if (os_info->version_type() == base::win::SUITE_SERVER) {
+    type = "server";
+  }
+#endif
+
+  return v8::String::NewFromUtf8(isolate, type.c_str()).ToLocalChecked();
 }
 
 // static
