@@ -1571,7 +1571,7 @@ index 0000000000000000000000000000000000000000..f3c5c798c0aefcb8cf9b1570a7b4817c
 +    ]
 +    sources = copied_pdl
 +    outputs = invoker.outputs
-+    script = "//v8/third_party/inspector_protocol/convert_protocol_to_json.py"
++    script = "$inspector_protocol_dir/convert_protocol_to_json.py"
 +    args = rebase_path(sources + outputs, root_build_dir)
 +  }
 +}
