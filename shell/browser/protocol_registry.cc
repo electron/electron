@@ -13,6 +13,46 @@
 
 namespace electron {
 
+<<<<<<< HEAD
+=======
+namespace {
+
+// Provide support for accessing asar archives in file:// protocol.
+class AsarURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
+ public:
+  static mojo::PendingRemote<network::mojom::URLLoaderFactory> Create() {
+    mojo::PendingRemote<network::mojom::URLLoaderFactory> pending_remote;
+
+    // The AsarURLLoaderFactory will delete itself when there are no more
+    // receivers - see the SelfDeletingURLLoaderFactory::OnDisconnect method.
+    new AsarURLLoaderFactory(pending_remote.InitWithNewPipeAndPassReceiver());
+
+    return pending_remote;
+  }
+
+ private:
+  AsarURLLoaderFactory(
+      mojo::PendingReceiver<network::mojom::URLLoaderFactory> factory_receiver)
+      : network::SelfDeletingURLLoaderFactory(std::move(factory_receiver)) {}
+  ~AsarURLLoaderFactory() override = default;
+
+  // network::mojom::URLLoaderFactory:
+  void CreateLoaderAndStart(
+      mojo::PendingReceiver<network::mojom::URLLoader> loader,
+      int32_t request_id,
+      uint32_t options,
+      const network::ResourceRequest& request,
+      mojo::PendingRemote<network::mojom::URLLoaderClient> client,
+      const net::MutableNetworkTrafficAnnotationTag& traffic_annotation)
+      override {
+    asar::CreateAsarURLLoader(request, std::move(loader), std::move(client),
+                              new net::HttpResponseHeaders(""));
+  }
+};
+
+}  // namespace
+
+>>>>>>> refactor: remove routing_id from CreateLoaderAndStart
 // static
 ProtocolRegistry* ProtocolRegistry::FromBrowserContext(
     content::BrowserContext* context) {
