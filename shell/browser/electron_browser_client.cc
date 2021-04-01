@@ -200,7 +200,8 @@ bool g_suppress_renderer_process_restart = false;
 content::SiteInfo GetSiteForURL(content::BrowserContext* browser_context,
                                 const GURL& url) {
   return content::SiteInfo::Create(
-      content::IsolationContext(browser_context), content::UrlInfo(url, false),
+      content::IsolationContext(browser_context),
+      content::UrlInfo(url, content::UrlInfo::OriginIsolationRequest::kNone),
       content::CoopCoepCrossOriginIsolatedInfo::CreateNonIsolated());
 }
 
