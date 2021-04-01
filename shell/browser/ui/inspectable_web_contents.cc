@@ -613,9 +613,10 @@ void InspectableWebContents::AddDevToolsExtensionsToClient() {
         new base::DictionaryValue());
     extension_info->SetString("startPage", devtools_page_url.spec());
     extension_info->SetString("name", extension->name());
-    extension_info->SetBoolean("exposeExperimentalAPIs",
-                               extension->permissions_data()->HasAPIPermission(
-                                   extensions::APIPermission::kExperimental));
+    extension_info->SetBoolean(
+        "exposeExperimentalAPIs",
+        extension->permissions_data()->HasAPIPermission(
+            extensions::mojom::APIPermissionID::kExperimental));
     results.Append(std::move(extension_info));
   }
 
