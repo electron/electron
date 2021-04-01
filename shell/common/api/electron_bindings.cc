@@ -211,7 +211,7 @@ v8::Local<v8::Value> ElectronBindings::GetSystemProductType(
     v8::Isolate* isolate) {
   std::string type = "desktop";
 
-// TODO: implement the equivalent API in Linux
+// TODO(erickzhao): implement the equivalent API in Linux
 #if defined(OS_WIN)
   auto* os_info = base::win::OSInfo::GetInstance();
   if (os_info->version_type() == base::win::SUITE_SERVER) {
