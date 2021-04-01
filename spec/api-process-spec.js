@@ -73,6 +73,12 @@ describe('process module', () => {
     });
   });
 
+  describe('process.getSystemProductType()', () => {
+    it('returns a string', () => {
+      expect(process.getSystemProductType()).to.be.a('string');
+    });
+  });
+
   describe('process.getHeapStatistics()', () => {
     it('returns heap statistics object', () => {
       const heapStats = process.getHeapStatistics();

@@ -55,6 +55,7 @@ class ElectronBindings {
   static v8::Local<v8::Value> GetCreationTime(v8::Isolate* isolate);
   static v8::Local<v8::Value> GetSystemMemoryInfo(v8::Isolate* isolate,
                                                   gin_helper::Arguments* args);
+  static v8::Local<v8::Value> GetSystemProductType(v8::Isolate* isolate);
   static v8::Local<v8::Promise> GetProcessMemoryInfo(v8::Isolate* isolate);
   static v8::Local<v8::Value> GetBlinkMemoryInfo(v8::Isolate* isolate);
   static v8::Local<v8::Value> GetCPUUsage(base::ProcessMetrics* metrics,

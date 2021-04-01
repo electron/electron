@@ -55,11 +55,11 @@ void ElectronBindings::BindProcess(v8::Isolate* isolate,
   process->SetMethod("getSystemMemoryInfo", &GetSystemMemoryInfo);
   process->SetMethod("getSystemVersion",
                      &base::SysInfo::OperatingSystemVersion);
+  process->SetMethod("getSystemProductType", &GetSystemProductType);
   process->SetMethod("getIOCounters", &GetIOCounters);
   process->SetMethod("getCPUUsage",
                      base::BindRepeating(&ElectronBindings::GetCPUUsage,
                                          base::Unretained(metrics)));
-  process->SetMethod("erick", &Erick);
 
 #if defined(MAS_BUILD)
   process->SetReadOnly("mas", true);
@@ -162,6 +162,22 @@ v8::Local<v8::Value> ElectronBindings::GetHeapStatistics(v8::Isolate* isolate) {
            static_cast<bool>(v8_heap_stats.does_zap_garbage()));
 
   return dict.GetHandle();
+}
+
+// static
+v8::Local<v8::Value> ElectronBindings::GetSystemProductType(
+    v8::Isolate* isolate) {
+  std::string type = "desktop";
+
+// TODO: implement the equivalent API in Linux
+#if defined(OS_WIN)
+  auto* os_info = base::win::OSInfo::GetInstance();
+  if (os_info->version_type() == base::win::SUITE_SERVER) {
+    type = "server";
+  }
+#endif
+
+  return v8::String::NewFromUtf8(isolate, type.c_str()).ToLocalChecked();
 }
 
 // static
@@ -329,11 +345,6 @@ bool ElectronBindings::TakeHeapSnapshot(v8::Isolate* isolate,
                   base::File::FLAG_CREATE_ALWAYS | base::File::FLAG_WRITE);
 
   return electron::TakeHeapSnapshot(isolate, &file);
-}
-
-// static
-void ElectronBindings::Erick() {
-  LOG(INFO) << "ERICK WAS HERE";
 }
 
 }  // namespace electron
