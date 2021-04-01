@@ -59,7 +59,7 @@ void ElectronBindings::BindProcess(v8::Isolate* isolate,
   process->SetMethod("getCPUUsage",
                      base::BindRepeating(&ElectronBindings::GetCPUUsage,
                                          base::Unretained(metrics)));
-  process->SetMethod("erick", &base::win::version_type());
+  process->SetMethod("erick", &Erick);
 
 #if defined(MAS_BUILD)
   process->SetReadOnly("mas", true);
@@ -329,6 +329,11 @@ bool ElectronBindings::TakeHeapSnapshot(v8::Isolate* isolate,
                   base::File::FLAG_CREATE_ALWAYS | base::File::FLAG_WRITE);
 
   return electron::TakeHeapSnapshot(isolate, &file);
+}
+
+// static
+void ElectronBindings::Erick() {
+  LOG(INFO) << "ERICK WAS HERE";
 }
 
 }  // namespace electron
