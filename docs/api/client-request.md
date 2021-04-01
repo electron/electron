@@ -135,6 +135,9 @@ Emitted when the `net` module fails to issue a network request. Typically when
 the `request` object emits an `error` event, a `close` event will subsequently
 follow and no response object will be provided.
 
+Note that the response object may also emit an `error`. To avoid uncaught
+exceptions, attach an `error` handler to both `request` and `response`.
+
 #### Event: 'close'
 
 Emitted as the last event in the HTTP request-response transaction. The `close`
