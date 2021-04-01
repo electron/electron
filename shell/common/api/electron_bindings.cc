@@ -15,6 +15,7 @@
 #include "base/process/process_metrics_iocounters.h"
 #include "base/system/sys_info.h"
 #include "base/threading/thread_restrictions.h"
+#include "base/win/windows_version.h"
 #include "chrome/common/chrome_version.h"
 #include "electron/electron_version.h"
 #include "services/resource_coordinator/public/cpp/memory_instrumentation/global_memory_dump.h"
@@ -58,6 +59,7 @@ void ElectronBindings::BindProcess(v8::Isolate* isolate,
   process->SetMethod("getCPUUsage",
                      base::BindRepeating(&ElectronBindings::GetCPUUsage,
                                          base::Unretained(metrics)));
+  process->SetMethod("erick", &base::win::version_type());
 
 #if defined(MAS_BUILD)
   process->SetReadOnly("mas", true);
