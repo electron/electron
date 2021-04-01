@@ -76,6 +76,7 @@ class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
     allocator_->init({base::PartitionOptions::AlignedAlloc::kDisallowed,
                       base::PartitionOptions::ThreadCache::kDisabled,
                       base::PartitionOptions::Quarantine::kAllowed,
+                      base::PartitionOptions::Cookies::kAllowed,
                       base::PartitionOptions::RefCount::kDisallowed});
   }
 
