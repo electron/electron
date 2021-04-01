@@ -336,8 +336,8 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
       // This is handling the scenario where the menu might get triggered by the
       // user doing "alt + space" resulting in system maximization and restore
       // being used on transparent windows when that does not work.
-      HMENU menu = GetSystemMenu(GetAcceleratedWidget(), false);
       if (transparent()) {
+        HMENU menu = GetSystemMenu(GetAcceleratedWidget(), false);
         EnableMenuItem(menu, SC_MAXIMIZE,
                        MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
         EnableMenuItem(menu, SC_RESTORE,
