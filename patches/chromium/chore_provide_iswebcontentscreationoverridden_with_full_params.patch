@@ -264,10 +264,10 @@ index c5c5a7b63b5b3b62a9517cbef3ae23ce57a3c89c..4f1b7e88d6d2ae89a60311c8aeb1fcee
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 5aa4123de68da549f665970168f431a3a994d42f..468562a2060fee9c57f864da1b3e9f92a544c8b2 100644
+index a0e7bcfa3f31ffe4142d80708df255cb6bcb8629..3411741da5d4a703f9b8b98dca817a2646d4c3df 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3545,8 +3545,7 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
+@@ -3548,8 +3548,7 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
  
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,
@@ -334,10 +334,10 @@ index 9b293d0df6c634bf44a69d607c4eee839a74b4a1..7e5b9cbdcc232c5e20eae0130d800f50
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
-index f3b8095088310c0811d33904bc400a4ff8c60323..c5398f93dedef93b71e64af3a2d9f2c011245b8d 100644
+index e2b5240255bfdd77ed7513b26ec404f2ec244151..8e45bb4e1817e5bce6465f895026bbf953920339 100644
 --- a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
 +++ b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
-@@ -379,8 +379,7 @@ bool MimeHandlerViewGuest::IsWebContentsCreationOverridden(
+@@ -380,8 +380,7 @@ bool MimeHandlerViewGuest::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -348,10 +348,10 @@ index f3b8095088310c0811d33904bc400a4ff8c60323..c5398f93dedef93b71e64af3a2d9f2c0
  }
  
 diff --git a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h
-index 17f911eef902bd5f30c852c1f517f4c1dd22c5b0..be333612ef35a8f43e66f3ca181bd573dd40791b 100644
+index 7d27e12c4e9a7f32af8a26f672359057a643dd67..7a30ac31f79871f2a9afa0345e0e88affe7fe72f 100644
 --- a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h
 +++ b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h
-@@ -157,8 +157,7 @@ class MimeHandlerViewGuest
+@@ -158,8 +158,7 @@ class MimeHandlerViewGuest
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,

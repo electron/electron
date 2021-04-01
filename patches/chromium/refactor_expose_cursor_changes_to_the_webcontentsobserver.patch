@@ -43,10 +43,10 @@ index f06e0502ef1ae948a14462328369b2b4b7843a6a..8589d0d04456af39fadc2d7fb393625a
  
  void RenderWidgetHostImpl::ShowContextMenuAtPoint(
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 1175f2a74089990b1929f38a706fd46b491ccc7e..5aa4123de68da549f665970168f431a3a994d42f 100644
+index 24979412cf08fdec93d256bcf16d7dd1abdf4ff6..a0e7bcfa3f31ffe4142d80708df255cb6bcb8629 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4141,6 +4141,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
+@@ -4144,6 +4144,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
    return text_input_manager_.get();
  }
  
@@ -71,7 +71,7 @@ index a45ad650fa97fead42b2c2eb527514a8f50295af..82e145e6a571727d907e85c7edc0e41c
    bool IsShowingContextMenuOnPage() const override;
    void DidChangeScreenOrientation() override;
 diff --git a/content/public/browser/web_contents_observer.h b/content/public/browser/web_contents_observer.h
-index ada26a7d33b79596cc161aa3a73e3698bd76de81..a65f15f0f5788faf44213d484989a2cb112b1e30 100644
+index 3f30fc5b98e7c49580af585ec02b37d408002930..e1c233f1ba8f31b37396a0aa9ca967067beb7b17 100644
 --- a/content/public/browser/web_contents_observer.h
 +++ b/content/public/browser/web_contents_observer.h
 @@ -14,6 +14,7 @@
@@ -82,7 +82,7 @@ index ada26a7d33b79596cc161aa3a73e3698bd76de81..a65f15f0f5788faf44213d484989a2cb
  #include "content/public/browser/allow_service_worker_result.h"
  #include "content/public/browser/cookie_access_details.h"
  #include "content/public/browser/navigation_controller.h"
-@@ -369,6 +370,9 @@ class CONTENT_EXPORT WebContentsObserver : public IPC::Listener {
+@@ -370,6 +371,9 @@ class CONTENT_EXPORT WebContentsObserver : public IPC::Listener {
    // Invoked every time the WebContents changes visibility.
    virtual void OnVisibilityChanged(Visibility visibility) {}
  
