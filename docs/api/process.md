@@ -218,7 +218,7 @@ that all statistics are reported in Kilobytes.
 
 ### `process.getSystemProductType()`
 
-Returns `String` - Returns `server` if operating system is Windows Server. Otherwise, returns `desktop`.
+Returns `String` - Can be `server` or `desktop`. Returns `server` if operating system is Windows Server. Otherwise, returns `desktop`.
 
 ### `process.getSystemVersion()`
 
