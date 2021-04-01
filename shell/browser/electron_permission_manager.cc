@@ -232,16 +232,17 @@ blink::mojom::PermissionStatus ElectronPermissionManager::GetPermissionStatus(
                  : blink::mojom::PermissionStatus::DENIED;
 }
 
-int ElectronPermissionManager::SubscribePermissionStatusChange(
+ElectronPermissionManager::SubscriptionId
+ElectronPermissionManager::SubscribePermissionStatusChange(
     content::PermissionType permission,
     content::RenderFrameHost* render_frame_host,
     const GURL& requesting_origin,
     base::RepeatingCallback<void(blink::mojom::PermissionStatus)> callback) {
-  return -1;
+  return SubscriptionId(-1);
 }
 
 void ElectronPermissionManager::UnsubscribePermissionStatusChange(
-    int subscription_id) {}
+    SubscriptionId id) {}
 
 bool ElectronPermissionManager::CheckPermissionWithDetails(
     content::PermissionType permission,
