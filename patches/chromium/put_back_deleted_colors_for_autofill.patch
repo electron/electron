@@ -8,7 +8,7 @@ needed in chromium but our autofill implementation uses them.  This patch can be
 our autofill implementation to work like Chromium's.
 
 diff --git a/ui/gtk/native_theme_gtk.cc b/ui/gtk/native_theme_gtk.cc
-index c08edc56c3b5592e7f5df2754808a81c69622315..e80075e89642dd6b3a37985b1c6e533bfb3a0e50 100644
+index 0fede8f4c2823e5bd07f507d89249a2119dcb858..d361cc4114ab0deb91885b08b7792cdb0e7d005b 100644
 --- a/ui/gtk/native_theme_gtk.cc
 +++ b/ui/gtk/native_theme_gtk.cc
 @@ -369,6 +369,29 @@ base::Optional<SkColor> SkColorFromColorId(ui::NativeTheme::ColorId color_id) {
@@ -136,7 +136,7 @@ index 60197576c71e86cd3ad17e83bfc699509c365d6c..426504eec69da7100c6484271fb35f1a
    OP(kColorId_ThrobberSpinningColor),                                          \
    OP(kColorId_ThrobberWaitingColor),                                           \
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index 74357892f7a732de2c8dd6ed018569892c60fd4b..9ef5d287bb612e8f93f87eb569a6226847e72bc2 100644
+index 68b798fc755a3ec3130e43254b6ec306d30a19fa..13a1f3763d137667220325237c419257e9868a8d 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
 @@ -659,6 +659,18 @@ base::Optional<SkColor> NativeThemeWin::GetPlatformHighContrastColor(

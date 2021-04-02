@@ -236,7 +236,7 @@ index 69d612b69a91228c55bd71ed15244dc7d19ea4b7..a3078e7372bf1e928dcd8c0f023ae8e5
    // Used to force the NSApplication's focused accessibility element to be the
    // views::Views accessibility tree when the NSView for this is focused.
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index 6f0bb3f3cb02b75616af2328a36f306999aac18f..29dbe20924c588d1645d973c6338af971dbf7816 100644
+index e99153231711896214b238c4af48cf55e4183da9..d8caf59f2493ed6563b65015893381aa53f61b42 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 @@ -284,14 +284,22 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
