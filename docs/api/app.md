@@ -929,6 +929,10 @@ re-add a removed item to a custom category earlier than that will result in the
 entire custom category being omitted from the Jump List. The list of removed
 items can be obtained using `app.getJumpListSettings()`.
 
+**Note:** The maximum length of a Jump List item's `description` property is
+260 characters. Beyond this limit, the item will not be added to the Jump
+List, nor will it be displayed.
+
 Here's a very simple example of creating a custom Jump List:
 
 ```javascript
