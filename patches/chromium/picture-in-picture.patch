@@ -9,7 +9,7 @@ don't get errors for Chrome's generated resources, which are non-existent
 because we don't generate them in our build.
 
 diff --git a/chrome/browser/ui/views/overlay/back_to_tab_image_button.cc b/chrome/browser/ui/views/overlay/back_to_tab_image_button.cc
-index 9c861140fec4..f9dd34d2ad34 100644
+index 9c861140fec428cd6d3f0375e81d91d94b0444b6..f9dd34d2ad342b507e2b40298fbd8221fbbf14e3 100644
 --- a/chrome/browser/ui/views/overlay/back_to_tab_image_button.cc
 +++ b/chrome/browser/ui/views/overlay/back_to_tab_image_button.cc
 @@ -5,7 +5,7 @@
@@ -22,7 +22,7 @@ index 9c861140fec4..f9dd34d2ad34 100644
  #include "ui/gfx/color_palette.h"
  #include "ui/gfx/paint_vector_icon.h"
 diff --git a/chrome/browser/ui/views/overlay/close_image_button.cc b/chrome/browser/ui/views/overlay/close_image_button.cc
-index 28c00fd4f326..98e77d49684a 100644
+index 28c00fd4f326dd7d5efa839cd7540e2f9f824904..98e77d49684ab6a267cf80122c9a9a79cea377ac 100644
 --- a/chrome/browser/ui/views/overlay/close_image_button.cc
 +++ b/chrome/browser/ui/views/overlay/close_image_button.cc
 @@ -6,7 +6,7 @@
@@ -35,7 +35,7 @@ index 28c00fd4f326..98e77d49684a 100644
  #include "ui/gfx/color_palette.h"
  #include "ui/gfx/paint_vector_icon.h"
 diff --git a/chrome/browser/ui/views/overlay/overlay_window_views.cc b/chrome/browser/ui/views/overlay/overlay_window_views.cc
-index 2acb4062aa4b..b2c01e88d75a 100644
+index 2acb4062aa4bb39dd6bdeb1b0758ea089740636a..b2c01e88d75a1f2e8d21be5579f986be04502e8a 100644
 --- a/chrome/browser/ui/views/overlay/overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/overlay_window_views.cc
 @@ -15,9 +15,11 @@
@@ -78,7 +78,7 @@ index 2acb4062aa4b..b2c01e88d75a 100644
    Browser* browser =
        chrome::FindBrowserWithWebContents(controller->GetWebContents());
 diff --git a/chrome/browser/ui/views/overlay/playback_image_button.cc b/chrome/browser/ui/views/overlay/playback_image_button.cc
-index b146450f115c..df0443d82ad9 100644
+index b146450f115cec9717fdb9280ed894963a11c667..df0443d82ad9a42f6965387630ac3eb7231c4994 100644
 --- a/chrome/browser/ui/views/overlay/playback_image_button.cc
 +++ b/chrome/browser/ui/views/overlay/playback_image_button.cc
 @@ -6,7 +6,7 @@
@@ -91,7 +91,7 @@ index b146450f115c..df0443d82ad9 100644
  #include "ui/base/l10n/l10n_util.h"
  #include "ui/gfx/paint_vector_icon.h"
 diff --git a/chrome/browser/ui/views/overlay/resize_handle_button.cc b/chrome/browser/ui/views/overlay/resize_handle_button.cc
-index a3236fd87a09..0237ed5903ab 100644
+index a3236fd87a096bebcd66a3d9c2525ba7ef8f15bf..0237ed5903abe4577d0a5a1850bb6e27a8d99010 100644
 --- a/chrome/browser/ui/views/overlay/resize_handle_button.cc
 +++ b/chrome/browser/ui/views/overlay/resize_handle_button.cc
 @@ -6,7 +6,7 @@
@@ -104,7 +104,7 @@ index a3236fd87a09..0237ed5903ab 100644
  #include "ui/base/l10n/l10n_util.h"
  #include "ui/gfx/color_palette.h"
 diff --git a/chrome/browser/ui/views/overlay/skip_ad_label_button.cc b/chrome/browser/ui/views/overlay/skip_ad_label_button.cc
-index e2f0491e511d..5f2509a09f94 100644
+index e2f0491e511d9873b1e0c15f3d5ce8770dc7d941..5f2509a09f94c756d7af3474da2c1d85bbee67d4 100644
 --- a/chrome/browser/ui/views/overlay/skip_ad_label_button.cc
 +++ b/chrome/browser/ui/views/overlay/skip_ad_label_button.cc
 @@ -5,7 +5,7 @@
@@ -117,7 +117,7 @@ index e2f0491e511d..5f2509a09f94 100644
  #include "ui/gfx/color_palette.h"
  #include "ui/views/background.h"
 diff --git a/chrome/browser/ui/views/overlay/track_image_button.cc b/chrome/browser/ui/views/overlay/track_image_button.cc
-index 8b9911c9819f..e8eb76a94a45 100644
+index 8b9911c9819f334c9c634e986e6809ed6e1140c5..e8eb76a94a459bc293f47ad08099bc707527dd7b 100644
 --- a/chrome/browser/ui/views/overlay/track_image_button.cc
 +++ b/chrome/browser/ui/views/overlay/track_image_button.cc
 @@ -6,7 +6,7 @@

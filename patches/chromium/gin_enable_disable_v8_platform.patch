@@ -38,10 +38,10 @@ index f23af2d9738f3aa76e3a49301e1c3216ee4a64b4..ede178acabc63c3c33d6ce93efd5632b
    v8::Isolate* isolate() { return isolate_; }
  
 diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
-index 2a171b00426968443d931007316f79055689a323..633f6d71c1f765c9fd5e956564399fdd8c6afefb 100644
+index b84759c06734b55a3ba8fd27674accdb956006c5..05befd073932e665ab261102fac4b677d557a84b 100644
 --- a/gin/v8_initializer.cc
 +++ b/gin/v8_initializer.cc
-@@ -198,12 +198,14 @@ enum LoadV8FileResult {
+@@ -217,12 +217,14 @@ void SetV8FlagsFormatted(const char* format, ...) {
  }  // namespace
  
  // static
