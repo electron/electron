@@ -5,10 +5,12 @@
 #include <memory>
 #include <utility>
 
+#include "content/public/browser/web_contents.h"
 #include "services/network/public/cpp/self_deleting_url_loader_factory.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/net/asar/asar_url_loader.h"
 #include "shell/browser/protocol_registry.h"
+#include "third_party/blink/public/common/web_preferences/web_preferences.h"
 
 namespace electron {
 
@@ -62,7 +64,8 @@ ProtocolRegistry::~ProtocolRegistry() = default;
 
 void ProtocolRegistry::RegisterURLLoaderFactories(
     URLLoaderFactoryType type,
-    content::ContentBrowserClient::NonNetworkURLLoaderFactoryMap* factories) {
+    content::ContentBrowserClient::NonNetworkURLLoaderFactoryMap* factories,
+    content::WebContents* web_contents) {
   // Override the default FileURLLoaderFactory to support asar archives.
   if (type == URLLoaderFactoryType::kNavigation) {
     // Always allow navigating to file:// URLs.
@@ -72,11 +75,18 @@ void ProtocolRegistry::RegisterURLLoaderFactories(
     DCHECK(!base::Contains(*factories, url::kFileScheme));
     factories->emplace(url::kFileScheme, AsarURLLoaderFactory::Create());
   } else if (type == URLLoaderFactoryType::kDocumentSubResource) {
-    // Only support requesting file:// subresource URLs when Chromium does so,
-    // it is usually supported under file:// or about:blank documents.
+    // Only support requesting file:// subresource URLs when:
+    // 1. it is supported by Chromium browser, such as under file:// or
+    //    about:blank documents;
+    // 2. web security is turned off.
     auto file_factory = factories->find(url::kFileScheme);
-    if (file_factory != factories->end())
+    if (file_factory != factories->end()) {
       file_factory->second = AsarURLLoaderFactory::Create();
+    } else if (web_contents) {
+      const auto& web_preferences = web_contents->GetOrCreateWebPreferences();
+      if (!web_preferences.web_security_enabled)
+        factories->emplace(url::kFileScheme, AsarURLLoaderFactory::Create());
+    }
   }
 
   for (const auto& it : handlers_) {
