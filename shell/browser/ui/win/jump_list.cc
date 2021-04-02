@@ -28,7 +28,7 @@ bool AppendTask(const JumpListItem& item, IObjectCollection* collection) {
       FAILED(link->SetDescription(item.description.c_str())))
     return false;
 
-  if (wcslen(item.description.c_str()) > 260)
+  if (item.description.size() > 260)
     return false;
 
   if (!item.icon_path.empty() &&
