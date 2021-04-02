@@ -140,7 +140,8 @@ WebContentsPreferences::WebContentsPreferences(
   SetDefaultBoolIfUndefined(options::kNodeIntegrationInWorker, false);
   SetDefaultBoolIfUndefined(options::kDisableHtmlFullscreenWindowResize, false);
   SetDefaultBoolIfUndefined(options::kWebviewTag, false);
-  SetDefaultBoolIfUndefined(options::kSandbox, false);
+  bool sandbox_enabled_by_default = !IsEnabled(options::kNodeIntegration);
+  SetDefaultBoolIfUndefined(options::kSandbox, sandbox_enabled_by_default);
   SetDefaultBoolIfUndefined(options::kNativeWindowOpen, false);
   SetDefaultBoolIfUndefined(options::kContextIsolation, true);
   SetDefaultBoolIfUndefined(options::kWorldSafeExecuteJavaScript, true);
