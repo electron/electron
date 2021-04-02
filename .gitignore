@@ -1,71 +1,13 @@
-.DS_Store
-.env
-.gclient_done
-**/.npmrc
-.tags*
-.vs/
-.vscode/
-*.log
-*.pyc
-*.sln
-*.swp
-*.VC.db
-*.VC.VC.opendb
-*.vcxproj
-*.vcxproj.filters
-*.vcxproj.user
-*.xcodeproj
-/.idea/
-/dist/
-/external_binaries/
-/out/
-/vendor/.gclient
-/vendor/debian_jessie_mips64-sysroot/
-/vendor/debian_stretch_amd64-sysroot/
-/vendor/debian_stretch_arm-sysroot/
-/vendor/debian_stretch_arm64-sysroot/
-/vendor/debian_stretch_i386-sysroot/
-/vendor/gcc-4.8.3-d197-n64-loongson/
-/vendor/readme-gcc483-loongson.txt
-/vendor/download/
-/vendor/llvm-build/
-/vendor/llvm/
-/vendor/npm/
-/vendor/python_26/
-/vendor/native_mksnapshot
-/vendor/LICENSES.chromium.html
-/vendor/pyyaml
-node_modules/
-SHASUMS256.txt
-**/package-lock.json
-compile_commands.json
-.envrc
-
-# npm package
-/npm/dist
-/npm/path.txt
-
-.npmrc
-
-# Generated API definitions
-electron-api.json
-electron.d.ts
-
-# Spec hash calculation
-spec/.hash
-
-# Eslint Cache
-.eslintcache*
-
-# Generated native addon files
-/spec-main/fixtures/native-addon/echo/build/
-
-# If someone runs tsc this is where stuff will end up
-ts-gen
-
-# Used to accelerate CI builds
-.depshash
-.depshash-target
-
-# Used to accelerate builds after sync
-patches/mtime-cache.json
+*.bak
+*.db
+*.avi
+*.pdf
+*.ps
+*.mid
+*.midi
+*.mp3
+*.aif
+*.wav
+# Some versions of Finale have a bug and randomly save extra copies of
+# the music source as "<Filename> copy.mus"
+*copy.mus
