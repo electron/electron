@@ -26,7 +26,7 @@ index 63baac7dfc28f34193493f287208990bb00f0f51..5497bb92f408323e853451faea34fee8
  }
  
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
-index b4f22b9e71887f904471e73a99d91e41d0465550..0384c43462ba009c87509555ec9aa01cf75ba47c 100644
+index b4f22b9e71887f904471e73a99d91e41d0465550..fe8bc52219a80db009983df3ce4db0a3177146cf 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
 @@ -403,6 +403,22 @@ class NATIVE_THEME_EXPORT NativeTheme {
@@ -46,7 +46,7 @@ index b4f22b9e71887f904471e73a99d91e41d0465550..0384c43462ba009c87509555ec9aa01c
 +  void set_theme_source(ThemeSource theme_source) {
 +    bool original = ShouldUseDarkColors();
 +    theme_source_ = theme_source;
-+    if (ShouldUseDarkColors() != original) NotifyObservers();
++    if (ShouldUseDarkColors() != original) NotifyOnNativeThemeUpdated();
 +  }
 +
    // Returns a shared instance of the native theme that should be used for web
