@@ -82,6 +82,7 @@ JavascriptEnvironment::JavascriptEnvironment(uv_loop_t* event_loop)
 }
 
 JavascriptEnvironment::~JavascriptEnvironment() {
+  DCHECK_NE(platform_, nullptr);
   platform_->DrainTasks(isolate_);
 
   {
@@ -92,7 +93,6 @@ JavascriptEnvironment::~JavascriptEnvironment() {
   isolate_->Exit();
   g_isolate = nullptr;
 
-  DCHECK_NE(platform_, nullptr);
   platform_->CancelPendingDelayedTasks(isolate_);
   platform_->UnregisterIsolate(isolate_);
 }
