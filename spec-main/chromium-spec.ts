@@ -287,6 +287,39 @@ describe('web security', () => {
     expect(response).to.equal('passed');
   });
 
+  describe('accessing file://', () => {
+    async function load (w: BrowserWindow) {
+      const thisFile = url.format({
+        pathname: __filename.replace(/\\/g, '/'),
+        protocol: 'file',
+        slashes: true
+      });
+      await w.loadURL(`data:text/html,<script>
+          function loadFile() {
+            return new Promise((resolve) => {
+              fetch('${thisFile}').then(
+                () => resolve('loaded'),
+                () => resolve('failed')
+              )
+            });
+          }
+        </script>`);
+      return await w.webContents.executeJavaScript('loadFile()');
+    }
+
+    it('is forbidden when web security is enabled', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { webSecurity: true, nodeIntegration: true, contextIsolation: false } });
+      const result = await load(w);
+      expect(result).to.equal('failed');
+    });
+
+    it('is forbidden when web security is disabled', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { webSecurity: false, nodeIntegration: true, contextIsolation: false } });
+      const result = await load(w);
+      expect(result).to.equal('loaded');
+    });
+  });
+
   it('does not crash when multiple WebContent are created with web security disabled', () => {
     const options = { show: false, webPreferences: { webSecurity: false } };
     const w1 = new BrowserWindow(options);

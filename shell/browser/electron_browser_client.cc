@@ -1369,9 +1369,14 @@ void ElectronBrowserClient::RegisterNonNetworkSubresourceURLLoaderFactories(
   if (!render_process_host || !render_process_host->GetBrowserContext())
     return;
 
+  content::RenderFrameHost* frame_host =
+      content::RenderFrameHost::FromID(render_process_id, render_frame_id);
+  content::WebContents* web_contents =
+      content::WebContents::FromRenderFrameHost(frame_host);
+
   ProtocolRegistry::FromBrowserContext(render_process_host->GetBrowserContext())
       ->RegisterURLLoaderFactories(URLLoaderFactoryType::kDocumentSubResource,
-                                   factories);
+                                   factories, web_contents);
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   auto factory = extensions::CreateExtensionURLLoaderFactory(render_process_id,
@@ -1379,10 +1384,6 @@ void ElectronBrowserClient::RegisterNonNetworkSubresourceURLLoaderFactories(
   if (factory)
     factories->emplace(extensions::kExtensionScheme, std::move(factory));
 
-  content::RenderFrameHost* frame_host =
-      content::RenderFrameHost::FromID(render_process_id, render_frame_id);
-  content::WebContents* web_contents =
-      content::WebContents::FromRenderFrameHost(frame_host);
   if (!web_contents)
     return;
 
