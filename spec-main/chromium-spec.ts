@@ -288,7 +288,7 @@ describe('web security', () => {
   });
 
   describe('accessing file://', () => {
-    async function load (w: BrowserWindow) {
+    async function loadFile (w: BrowserWindow) {
       const thisFile = url.format({
         pathname: __filename.replace(/\\/g, '/'),
         protocol: 'file',
@@ -308,14 +308,14 @@ describe('web security', () => {
     }
 
     it('is forbidden when web security is enabled', async () => {
-      const w = new BrowserWindow({ show: false, webPreferences: { webSecurity: true, nodeIntegration: true, contextIsolation: false } });
-      const result = await load(w);
+      const w = new BrowserWindow({ show: false, webPreferences: { webSecurity: true } });
+      const result = await loadFile(w);
       expect(result).to.equal('failed');
     });
 
     it('is forbidden when web security is disabled', async () => {
-      const w = new BrowserWindow({ show: false, webPreferences: { webSecurity: false, nodeIntegration: true, contextIsolation: false } });
-      const result = await load(w);
+      const w = new BrowserWindow({ show: false, webPreferences: { webSecurity: false } });
+      const result = await loadFile(w);
       expect(result).to.equal('loaded');
     });
   });
