@@ -10,28 +10,28 @@ This patch makes three changes to Accelerator::GetShortcutText to improve shortc
 3. Ctrl-Shift-= should show as Ctrl-+
 
 diff --git a/ui/base/accelerators/accelerator.cc b/ui/base/accelerators/accelerator.cc
-index e2552612659304c70a80b2d1e9432a302139ddd9..6eda3772b82f3021128d9a414c7445d47dc8ef89 100644
+index c44f3d375202..8e0c14463158 100644
 --- a/ui/base/accelerators/accelerator.cc
 +++ b/ui/base/accelerators/accelerator.cc
-@@ -12,6 +12,7 @@
+@@ -11,6 +11,7 @@
+ #include "base/i18n/rtl.h"
  #include "base/notreached.h"
- #include "base/strings/strcat.h"
  #include "base/strings/string_util.h"
 +#include "base/strings/stringprintf.h"
  #include "base/strings/utf_string_conversions.h"
  #include "build/build_config.h"
  #include "build/chromeos_buildflags.h"
-@@ -24,9 +25,7 @@
+@@ -27,9 +28,7 @@
  #include <windows.h>
  #endif
  
--#if !defined(OS_WIN) && (defined(USE_AURA) || defined(OS_APPLE))
+-#if !defined(OS_WIN) && (defined(USE_AURA) || defined(OS_MAC))
  #include "ui/events/keycodes/keyboard_code_conversion.h"
 -#endif
  
  #if BUILDFLAG(IS_CHROMEOS_ASH)
  #include "ui/base/ui_base_features.h"
-@@ -205,7 +204,15 @@ std::u16string Accelerator::GetShortcutText() const {
+@@ -208,7 +207,15 @@ std::u16string Accelerator::GetShortcutText() const {
    shortcut = KeyCodeToName();
  #endif
  
@@ -47,7 +47,7 @@ index e2552612659304c70a80b2d1e9432a302139ddd9..6eda3772b82f3021128d9a414c7445d4
  #if defined(OS_WIN)
      // Our fallback is to try translate the key code to a regular character
      // unless it is one of digits (VK_0 to VK_9). Some keyboard
-@@ -214,21 +221,14 @@ std::u16string Accelerator::GetShortcutText() const {
+@@ -217,21 +224,14 @@ std::u16string Accelerator::GetShortcutText() const {
      // accent' for '0'). For display in the menu (e.g. Ctrl-0 for the
      // default zoom level), we leave VK_[0-9] alone without translation.
      wchar_t key;
@@ -60,7 +60,7 @@ index e2552612659304c70a80b2d1e9432a302139ddd9..6eda3772b82f3021128d9a414c7445d4
 -    // VKEY_UNKNOWN), |::MapVirtualKeyW| returns 0.
 -    if (key != 0)
 -      shortcut += key;
--#elif defined(USE_AURA) || defined(OS_APPLE) || defined(OS_ANDROID)
+-#elif defined(USE_AURA) || defined(OS_MAC) || defined(OS_ANDROID)
 -    const uint16_t c = DomCodeToUsLayoutCharacter(
 -        UsLayoutKeyboardCodeToDomCode(key_code_), false);
 -    if (c != 0)
@@ -74,13 +74,13 @@ index e2552612659304c70a80b2d1e9432a302139ddd9..6eda3772b82f3021128d9a414c7445d4
 +          base::StringPrintf("F%d", key_code_ - VKEY_F1 + 1));
    }
  
- #if defined(OS_APPLE)
-@@ -411,7 +411,7 @@ std::u16string Accelerator::ApplyLongFormModifiers(
+ #if defined(OS_MAC)
+@@ -427,7 +427,7 @@ std::u16string Accelerator::ApplyLongFormModifiers(
    // more information.
    if (IsCtrlDown())
-     shortcut = ApplyModifierToAcceleratorString(shortcut, IDS_APP_CTRL_KEY);
+     result = ApplyModifierToAcceleratorString(result, IDS_APP_CTRL_KEY);
 -  else if (IsAltDown())
 +  if (IsAltDown())
-     shortcut = ApplyModifierToAcceleratorString(shortcut, IDS_APP_ALT_KEY);
+     result = ApplyModifierToAcceleratorString(result, IDS_APP_ALT_KEY);
  
    if (IsCmdDown()) {
