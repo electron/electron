@@ -1275,9 +1275,10 @@ void ElectronBrowserClient::RegisterNonNetworkNavigationURLLoaderFactories(
           context, ukm_source_id,
           false /* we don't support extensions::WebViewGuest */));
 #endif
+  // Always allow navigating to file:// URLs.
   auto* protocol_registry = ProtocolRegistry::FromBrowserContext(context);
-  protocol_registry->RegisterURLLoaderFactories(
-      URLLoaderFactoryType::kNavigation, factories);
+  protocol_registry->RegisterURLLoaderFactories(factories,
+                                                true /* allow_file_access */);
 }
 
 void ElectronBrowserClient::
@@ -1286,8 +1287,10 @@ void ElectronBrowserClient::
         NonNetworkURLLoaderFactoryMap* factories) {
   auto* protocol_registry =
       ProtocolRegistry::FromBrowserContext(browser_context);
-  protocol_registry->RegisterURLLoaderFactories(
-      URLLoaderFactoryType::kWorkerMainResource, factories);
+  // Workers are not allowed to request file:// URLs, there is no particular
+  // reason for it, and we could consider supporting it in future.
+  protocol_registry->RegisterURLLoaderFactories(factories,
+                                                false /* allow_file_access */);
 }
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -1363,9 +1366,17 @@ void ElectronBrowserClient::RegisterNonNetworkSubresourceURLLoaderFactories(
   content::WebContents* web_contents =
       content::WebContents::FromRenderFrameHost(frame_host);
 
+  // Allow accessing file:// subresources from non-file protocols if web
+  // security is disabled.
+  bool allow_file_access = false;
+  if (web_contents) {
+    const auto& web_preferences = web_contents->GetOrCreateWebPreferences();
+    if (!web_preferences.web_security_enabled)
+      allow_file_access = true;
+  }
+
   ProtocolRegistry::FromBrowserContext(render_process_host->GetBrowserContext())
-      ->RegisterURLLoaderFactories(URLLoaderFactoryType::kDocumentSubResource,
-                                   factories, web_contents);
+      ->RegisterURLLoaderFactories(factories, allow_file_access);
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   auto factory = extensions::CreateExtensionURLLoaderFactory(render_process_id,

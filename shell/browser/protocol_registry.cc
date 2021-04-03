@@ -10,7 +10,6 @@
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/net/asar/asar_url_loader.h"
 #include "shell/browser/protocol_registry.h"
-#include "third_party/blink/public/common/web_preferences/web_preferences.h"
 
 namespace electron {
 
@@ -63,30 +62,20 @@ ProtocolRegistry::ProtocolRegistry() {}
 ProtocolRegistry::~ProtocolRegistry() = default;
 
 void ProtocolRegistry::RegisterURLLoaderFactories(
-    URLLoaderFactoryType type,
     content::ContentBrowserClient::NonNetworkURLLoaderFactoryMap* factories,
-    content::WebContents* web_contents) {
-  // Override the default FileURLLoaderFactory to support asar archives.
-  if (type == URLLoaderFactoryType::kNavigation) {
-    // Always allow navigating to file:// URLs.
+    bool allow_file_access) {
+  auto file_factory = factories->find(url::kFileScheme);
+  if (file_factory != factories->end()) {
+    // If Chromium already allows file access then replace the url factory to
+    // also loading asar files.
+    file_factory->second = AsarURLLoaderFactory::Create();
+  } else if (allow_file_access) {
+    // Otherwise only allow file access when it is explicitly allowed.
     //
-    // Note that Chromium calls |emplace| to create the default file factory
-    // after this call, so it won't override our asar factory.
-    DCHECK(!base::Contains(*factories, url::kFileScheme));
+    // Note that Chromium may call |emplace| to create the default file factory
+    // after this call, it won't override our asar factory, but if asar support
+    // breaks in future, please check if Chromium has changed the call.
     factories->emplace(url::kFileScheme, AsarURLLoaderFactory::Create());
-  } else if (type == URLLoaderFactoryType::kDocumentSubResource) {
-    // Only support requesting file:// subresource URLs when:
-    // 1. it is supported by Chromium browser, such as under file:// or
-    //    about:blank documents;
-    // 2. web security is turned off.
-    auto file_factory = factories->find(url::kFileScheme);
-    if (file_factory != factories->end()) {
-      file_factory->second = AsarURLLoaderFactory::Create();
-    } else if (web_contents) {
-      const auto& web_preferences = web_contents->GetOrCreateWebPreferences();
-      if (!web_preferences.web_security_enabled)
-        factories->emplace(url::kFileScheme, AsarURLLoaderFactory::Create());
-    }
   }
 
   for (const auto& it : handlers_) {

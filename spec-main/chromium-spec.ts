@@ -313,7 +313,7 @@ describe('web security', () => {
       expect(result).to.equal('failed');
     });
 
-    it('is forbidden when web security is disabled', async () => {
+    it('is allowed when web security is disabled', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { webSecurity: false } });
       const result = await loadFile(w);
       expect(result).to.equal('loaded');
