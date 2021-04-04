@@ -1204,9 +1204,9 @@ content::MediaObserver* ElectronBrowserClient::GetMediaObserver() {
   return MediaCaptureDevicesDispatcher::GetInstance();
 }
 
-content::DevToolsManagerDelegate*
-ElectronBrowserClient::GetDevToolsManagerDelegate() {
-  return new DevToolsManagerDelegate;
+std::unique_ptr<content::DevToolsManagerDelegate>
+ElectronBrowserClient::CreateDevToolsManagerDelegate() {
+  return std::make_unique<DevToolsManagerDelegate>();
 }
 
 NotificationPresenter* ElectronBrowserClient::GetNotificationPresenter() {
