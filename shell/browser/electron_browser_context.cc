@@ -371,7 +371,6 @@ class AuthResponder : public network::mojom::TrustedAuthClient {
   void OnAuthRequired(
       const base::Optional<::base::UnguessableToken>& window_id,
       uint32_t process_id,
-      uint32_t routing_id,
       uint32_t request_id,
       const ::GURL& url,
       bool first_auth_attempt,
