@@ -46,6 +46,7 @@ declare namespace NodeJS {
     clearWeaklyTrackedValues(): void;
     getWeaklyTrackedValues(): any[];
     addRemoteObjectRef(contextId: string, id: number): void;
+    runUntilIdle(): void;
     isSameOrigin(a: string, b: string): boolean;
     triggerFatalErrorForTesting(): void;
   }
@@ -78,8 +79,7 @@ declare namespace NodeJS {
     readdir(path: string): string[] | false;
     realpath(path: string): string | false;
     copyFileOut(path: string): string | false;
-    read(offset: number, size: number): Promise<ArrayBuffer>;
-    readSync(offset: number, size: number): ArrayBuffer;
+    getFd(): number | -1;
   }
 
   interface AsarBinding {

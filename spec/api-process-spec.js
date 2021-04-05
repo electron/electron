@@ -115,4 +115,10 @@ describe('process module', () => {
       expect(success).to.be.false();
     });
   });
+
+  describe('process.contextId', () => {
+    it('is a string', () => {
+      expect(process.contextId).to.be.a('string');
+    });
+  });
 });

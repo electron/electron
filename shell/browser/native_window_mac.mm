@@ -22,6 +22,7 @@
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/desktop_media_id.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_browser_view_mac.h"
 #include "shell/browser/ui/cocoa/electron_native_widget_mac.h"
 #include "shell/browser/ui/cocoa/electron_ns_window.h"
@@ -39,6 +40,7 @@
 #include "shell/common/process_util.h"
 #include "skia/ext/skia_utils_mac.h"
 #include "third_party/webrtc/modules/desktop_capture/mac/window_list_utils.h"
+#include "ui/display/screen.h"
 #include "ui/gfx/skia_util.h"
 #include "ui/gl/gpu_switching_manager.h"
 #include "ui/views/background.h"
@@ -258,6 +260,7 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
                                  NativeWindow* parent)
     : NativeWindow(options, parent), root_view_(new RootViewMac(this)) {
   ui::NativeTheme::GetInstanceForNativeUi()->AddObserver(this);
+  display::Screen::GetScreen()->AddObserver(this);
 
   int width = 800, height = 600;
   options.Get(options::kWidth, &width);
@@ -276,10 +279,11 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   options.Get(options::kVisualEffectState, &visual_effect_state_);
 
   if (options.Has(options::kFullscreenWindowTitle)) {
-    EmitWarning(node::Environment::GetCurrent(v8::Isolate::GetCurrent()),
-                "\"fullscreenWindowTitle\" option has been deprecated and is "
-                "no-op now.",
-                "electron");
+    EmitWarning(
+        node::Environment::GetCurrent(JavascriptEnvironment::GetIsolate()),
+        "\"fullscreenWindowTitle\" option has been deprecated and is "
+        "no-op now.",
+        "electron");
   }
 
   bool minimizable = true;
@@ -882,6 +886,17 @@ void NativeWindowMac::SetExcludedFromShownWindowsMenu(bool excluded) {
   [window setExcludedFromWindowsMenu:excluded];
 }
 
+void NativeWindowMac::OnDisplayMetricsChanged(const display::Display& display,
+                                              uint32_t changed_metrics) {
+  // We only want to force screen recalibration if we're in simpleFullscreen
+  // mode.
+  if (!is_simple_fullscreen_)
+    return;
+
+  base::PostTask(FROM_HERE, {content::BrowserThread::UI},
+                 base::BindOnce(&NativeWindow::UpdateFrame, GetWeakPtr()));
+}
+
 void NativeWindowMac::SetSimpleFullScreen(bool simple_fullscreen) {
   NSWindow* window = GetNativeWindow().GetNativeNSWindow();
 
@@ -996,8 +1011,10 @@ void NativeWindowMac::SetBackgroundColor(SkColor color) {
 }
 
 SkColor NativeWindowMac::GetBackgroundColor() {
-  return skia::CGColorRefToSkColor(
-      [[[window_ contentView] layer] backgroundColor]);
+  CGColorRef color = [[[window_ contentView] layer] backgroundColor];
+  if (!color)
+    return SK_ColorTRANSPARENT;
+  return skia::CGColorRefToSkColor(color);
 }
 
 void NativeWindowMac::SetHasShadow(bool has_shadow) {
@@ -1298,7 +1315,7 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
 
   std::string dep_warn = " has been deprecated and removed as of macOS 10.15.";
   node::Environment* env =
-      node::Environment::GetCurrent(v8::Isolate::GetCurrent());
+      node::Environment::GetCurrent(JavascriptEnvironment::GetIsolate());
 
   NSVisualEffectMaterial vibrancyType;
 
@@ -1392,6 +1409,13 @@ base::Optional<gfx::Point> NativeWindowMac::GetTrafficLightPosition() const {
 void NativeWindowMac::RedrawTrafficLights() {
   if (buttons_view_)
     [buttons_view_ setNeedsDisplayForButtons];
+}
+
+// In simpleFullScreen mode, update the frame for new bounds.
+void NativeWindowMac::UpdateFrame() {
+  NSWindow* window = GetNativeWindow().GetNativeNSWindow();
+  NSRect fullscreenFrame = [window.screen frame];
+  [window setFrame:fullscreenFrame display:YES animate:YES];
 }
 
 void NativeWindowMac::SetTouchBar(
@@ -1549,6 +1573,7 @@ void NativeWindowMac::NotifyWindowWillLeaveFullScreen() {
 void NativeWindowMac::Cleanup() {
   DCHECK(!IsClosed());
   ui::NativeTheme::GetInstanceForNativeUi()->RemoveObserver(this);
+  display::Screen::GetScreen()->RemoveObserver(this);
   [NSEvent removeMonitor:wheel_event_monitor_];
 }
 

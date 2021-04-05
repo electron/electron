@@ -114,11 +114,12 @@ bool TaskbarHost::SetThumbarButtons(HWND window,
 
   // Finally add them to taskbar.
   HRESULT r;
-  if (thumbar_buttons_added_)
+  if (thumbar_buttons_added_) {
     r = taskbar_->ThumbBarUpdateButtons(window, kMaxButtonsCount,
                                         thumb_buttons);
-  else
+  } else {
     r = taskbar_->ThumbBarAddButtons(window, kMaxButtonsCount, thumb_buttons);
+  }
 
   thumbar_buttons_added_ = true;
   last_buttons_ = buttons;

@@ -144,15 +144,14 @@ These individual tutorials expand on topics discussed in the guide above.
 ### Modules for the Renderer Process (Web Page):
 
 * [contextBridge](api/context-bridge.md)
-* [desktopCapturer](api/desktop-capturer.md)
 * [ipcRenderer](api/ipc-renderer.md)
-* [remote](api/remote.md)
 * [webFrame](api/web-frame.md)
 
 ### Modules for Both Processes:
 
 * [clipboard](api/clipboard.md)
 * [crashReporter](api/crash-reporter.md)
+* [desktopCapturer](api/desktop-capturer.md)
 * [nativeImage](api/native-image.md)
 * [shell](api/shell.md)
 

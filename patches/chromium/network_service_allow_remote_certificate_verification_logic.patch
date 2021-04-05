@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 8e53d65ddca7b54a6effd1767257a4d8239251d8..8a00bf59c728217069000b1f1ece72e1540baf85 100644
+index dc1d135df68e8f11619faffb57dfd38b41bc06d1..1e220456a91ce81a994c611d9ef8efed88846bc0 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -116,6 +116,11 @@
@@ -116,16 +116,16 @@ index 8e53d65ddca7b54a6effd1767257a4d8239251d8..8a00bf59c728217069000b1f1ece72e1
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -1930,6 +2015,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
-         std::move(cert_verifier));
-     cert_verifier = base::WrapUnique(cert_verifier_with_trust_anchors_);
- #endif  // BUILDFLAG(IS_CHROMEOS_ASH)
+@@ -1900,6 +1985,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+           std::move(cert_verifier), std::move(ct_verifier));
+     }
+ #endif  // BUILDFLAG(IS_CT_SUPPORTED)
 +    auto remote_cert_verifier = std::make_unique<RemoteCertVerifier>(std::move(cert_verifier));
 +    remote_cert_verifier_ = remote_cert_verifier.get();
-+    cert_verifier = std::make_unique<net::CachingCertVerifier>(std::move(remote_cert_verifier));
-   }
++    cert_verifier = std::move(remote_cert_verifier);
  
-   builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
+     // Whether the cert verifier is remote or in-process, we should wrap it in
+     // caching and coalescing layers to avoid extra verifications and IPCs.
 diff --git a/services/network/network_context.h b/services/network/network_context.h
 index 72885bc1d20a4da5ad4df3fb8185f05bcf6fbfba..06b1a0d550de946aa41efca2be4efde694cc24c7 100644
 --- a/services/network/network_context.h

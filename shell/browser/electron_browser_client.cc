@@ -1362,22 +1362,26 @@ void ElectronBrowserClient::RegisterNonNetworkSubresourceURLLoaderFactories(
     int render_process_id,
     int render_frame_id,
     NonNetworkURLLoaderFactoryMap* factories) {
-  content::RenderFrameHost* frame_host =
-      content::RenderFrameHost::FromID(render_process_id, render_frame_id);
-  content::WebContents* web_contents =
-      content::WebContents::FromRenderFrameHost(frame_host);
+  auto* render_process_host =
+      content::RenderProcessHost::FromID(render_process_id);
+  DCHECK(render_process_host);
+  if (!render_process_host || !render_process_host->GetBrowserContext())
+    return;
 
-  if (web_contents) {
-    ProtocolRegistry::FromBrowserContext(web_contents->GetBrowserContext())
-        ->RegisterURLLoaderFactories(URLLoaderFactoryType::kDocumentSubResource,
-                                     factories);
-  }
+  ProtocolRegistry::FromBrowserContext(render_process_host->GetBrowserContext())
+      ->RegisterURLLoaderFactories(URLLoaderFactoryType::kDocumentSubResource,
+                                   factories);
+
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   auto factory = extensions::CreateExtensionURLLoaderFactory(render_process_id,
                                                              render_frame_id);
   if (factory)
     factories->emplace(extensions::kExtensionScheme, std::move(factory));
 
+  content::RenderFrameHost* frame_host =
+      content::RenderFrameHost::FromID(render_process_id, render_frame_id);
+  content::WebContents* web_contents =
+      content::WebContents::FromRenderFrameHost(frame_host);
   if (!web_contents)
     return;
 

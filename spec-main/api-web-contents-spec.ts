@@ -3,7 +3,6 @@ import { AddressInfo } from 'net';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as http from 'http';
-import * as ChildProcess from 'child_process';
 import { BrowserWindow, ipcMain, webContents, session, WebContents, app } from 'electron/main';
 import { clipboard } from 'electron/common';
 import { emittedOnce } from './events-helpers';
@@ -1268,16 +1267,6 @@ describe('webContents module', () => {
     });
   });
 
-  describe('create()', () => {
-    it('does not crash on exit', async () => {
-      const appPath = path.join(fixturesPath, 'api', 'leak-exit-webcontents.js');
-      const electronPath = process.execPath;
-      const appProcess = ChildProcess.spawn(electronPath, [appPath]);
-      const [code] = await emittedOnce(appProcess, 'close');
-      expect(code).to.equal(0);
-    });
-  });
-
   const crashPrefs = [
     {
       nodeIntegration: true
@@ -2015,13 +2004,6 @@ describe('webContents module', () => {
         done();
       });
       contents.loadURL('about:blank').then(() => contents.forcefullyCrashRenderer());
-    });
-
-    it('does not crash main process when quiting in it', async () => {
-      const appPath = path.join(mainFixturesPath, 'apps', 'quit', 'main.js');
-      const appProcess = ChildProcess.spawn(process.execPath, [appPath]);
-      const [code] = await emittedOnce(appProcess, 'close');
-      expect(code).to.equal(0);
     });
   });
 

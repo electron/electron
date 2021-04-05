@@ -94,6 +94,7 @@ const defaultPrintingSetting = {
   pagesPerSheet: 1,
   isFirstRequest: false,
   previewUIID: 0,
+  // True, if the document source is modifiable. e.g. HTML and not PDF.
   previewModifiable: true,
   printToPDF: true,
   deviceName: 'Save as PDF',
@@ -592,6 +593,7 @@ WebContents.prototype._init = function () {
           // it's technically a BrowserWindowConstructorOptions option because
           // we need to access it in the renderer at init time.
           backgroundColor: windowOpenOverriddenOptions.backgroundColor,
+          transparent: windowOpenOverriddenOptions.transparent,
           ...windowOpenOverriddenOptions.webPreferences
         } : undefined;
         this._setNextChildWebPreferences(

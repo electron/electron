@@ -21,7 +21,7 @@ class ElectronSandboxedRendererClient : public RendererClientBase {
 
   void InitializeBindings(v8::Local<v8::Object> binding,
                           v8::Local<v8::Context> context,
-                          bool is_main_frame);
+                          content::RenderFrame* render_frame);
   // electron::RendererClientBase:
   void DidCreateScriptContext(v8::Handle<v8::Context> context,
                               content::RenderFrame* render_frame) override;

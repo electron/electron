@@ -137,9 +137,13 @@ void RendererClientBase::DidCreateScriptContext(
   global.SetHidden("contextId", context_id);
 }
 
-void RendererClientBase::AddRenderBindings(
-    v8::Isolate* isolate,
-    v8::Local<v8::Object> binding_object) {}
+void RendererClientBase::BindProcess(v8::Isolate* isolate,
+                                     gin_helper::Dictionary* process,
+                                     content::RenderFrame* render_frame) {
+  process->SetReadOnly("isMainFrame", render_frame->IsMainFrame());
+  process->SetReadOnly("contextIsolated",
+                       render_frame->GetBlinkPreferences().context_isolation);
+}
 
 void RendererClientBase::RenderThreadStarted() {
   auto* command_line = base::CommandLine::ForCurrentProcess();
@@ -253,22 +257,6 @@ void RendererClientBase::RenderFrameCreated(
   // DidCreateDocumentElement event.
   new ElectronApiServiceImpl(render_frame, this);
 
-  content::RenderView* render_view = render_frame->GetRenderView();
-  if (render_frame->IsMainFrame() && render_view) {
-    blink::WebView* webview = render_view->GetWebView();
-    if (webview) {
-      auto prefs = render_frame->GetBlinkPreferences();
-      if (prefs.guest_instance_id) {  // webview.
-        webview->SetBaseBackgroundColor(SK_ColorTRANSPARENT);
-      } else {  // normal window.
-        std::string name = prefs.background_color;
-        SkColor color =
-            name.empty() ? SK_ColorTRANSPARENT : ParseHexColor(name);
-        webview->SetBaseBackgroundColor(color);
-      }
-    }
-  }
-
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   auto* dispatcher = extensions_renderer_client_->GetDispatcher();
   // ExtensionFrameHelper destroys itself when the RenderFrame is destroyed.
@@ -373,11 +361,8 @@ bool RendererClientBase::IsPluginHandledExternally(
 
 bool RendererClientBase::IsOriginIsolatedPepperPlugin(
     const base::FilePath& plugin_path) {
-#if BUILDFLAG(ENABLE_PDF_VIEWER)
-  return plugin_path.value() == kPdfPluginPath;
-#else
-  return false;
-#endif
+  // Isolate all Pepper plugins, including the PDF plugin.
+  return true;
 }
 
 std::unique_ptr<blink::WebPrescientNetworking>
