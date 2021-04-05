@@ -101,6 +101,33 @@ declare namespace NodeJS {
     removeGuest(embedder: Electron.WebContents, guestInstanceId: number): void;
   }
 
+  interface InternalWebPreferences {
+    contextIsolation: boolean;
+    disableElectronSiteInstanceOverrides: boolean;
+    guestInstanceId: number;
+    hiddenPage: boolean;
+    nativeWindowOpen: boolean;
+    nodeIntegration: boolean;
+    openerId: number;
+    preload: string
+    preloadScripts: string[];
+    webviewTag: boolean;
+    worldSafeExecuteJavaScript: boolean;
+  }
+
+  interface WebFrameBinding {
+    _findFrameByRoutingId(window: Window, routingId: number): Window;
+    _getFrameForSelector(window: Window, selector: string): Window;
+    _findFrameByName(window: Window, name: string): Window;
+    _getOpener(window: Window): Window;
+    _getParent(window: Window): Window;
+    _getTop(window: Window): Window;
+    _getFirstChild(window: Window): Window;
+    _getNextSibling(window: Window): Window;
+    _getRoutingId(window: Window): number;
+    getWebPreference<K extends keyof InternalWebPreferences>(window: Window, name: K): InternalWebPreferences[K];
+  }
+
   type DataPipe = {
     write: (buf: Uint8Array) => Promise<void>;
     done: () => void;
@@ -218,6 +245,7 @@ declare namespace NodeJS {
     }
     _linkedBinding(name: 'electron_renderer_crash_reporter'): Electron.CrashReporter;
     _linkedBinding(name: 'electron_renderer_ipc'): { ipc: IpcRendererBinding };
+    _linkedBinding(name: 'electron_renderer_web_frame'): WebFrameBinding;
     log: NodeJS.WriteStream['write'];
     activateUvLoop(): void;
 
