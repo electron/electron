@@ -3685,6 +3685,26 @@ describe('BrowserWindow module', () => {
       });
     });
 
+    ifdescribe(process.platform === 'darwin')('visibleOnFullScreen state', () => {
+      it('with properties', () => {
+        it('can be changed', () => {
+          const w = new BrowserWindow({ show: false });
+          expect(w.visibleOnFullScreen).to.be.false();
+          w.visibleOnFullScreen = true;
+          expect(w.visibleOnFullScreen).to.be.true();
+        });
+      });
+
+      it('with functions', () => {
+        it('can be changed', () => {
+          const w = new BrowserWindow({ show: false });
+          expect(w.isVisibleOnFullScreen()).to.be.false();
+          w.setVisibleOnFullScreen(true);
+          expect(w.isVisibleOnFullScreen()).to.be.true();
+        });
+      });
+    });
+
     ifdescribe(process.platform === 'darwin')('documentEdited state', () => {
       it('with properties', () => {
         it('can be changed', () => {

@@ -188,6 +188,10 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
                       const std::string& description);
   void SetVisibleOnAllWorkspaces(bool visible, gin_helper::Arguments* args);
   bool IsVisibleOnAllWorkspaces();
+#if defined(OS_MAC)
+  void SetVisibleOnFullScreen(bool visible, gin_helper::Arguments* args);
+  bool IsVisibleOnFullScreen();
+#endif
   void SetAutoHideCursor(bool auto_hide);
   virtual void SetVibrancy(v8::Isolate* isolate, v8::Local<v8::Value> value);
 

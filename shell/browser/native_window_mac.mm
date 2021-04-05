@@ -1209,9 +1209,17 @@ void NativeWindowMac::SetProgressBar(double progress,
 void NativeWindowMac::SetOverlayIcon(const gfx::Image& overlay,
                                      const std::string& description) {}
 
-void NativeWindowMac::SetVisibleOnAllWorkspaces(bool visible,
-                                                bool visibleOnFullScreen,
-                                                bool skipTransformProcessType) {
+void NativeWindowMac::SetVisibleOnAllWorkspaces(bool visible) {
+  SetCollectionBehavior(visible, NSWindowCollectionBehaviorCanJoinAllSpaces);
+}
+
+bool NativeWindowMac::IsVisibleOnAllWorkspaces() {
+  NSUInteger collectionBehavior = [window_ collectionBehavior];
+  return collectionBehavior & NSWindowCollectionBehaviorCanJoinAllSpaces;
+}
+
+void NativeWindowMac::SetVisibleOnFullScreen(bool visibleOnFullScreen,
+                                             bool skipTransformProcessType) {
   // In order for NSWindows to be visible on fullscreen we need to functionally
   // mimic app.dock.hide() since Apple changed the underlying functionality of
   // NSWindows starting with 10.14 to disallow NSWindows from floating on top of
@@ -1227,14 +1235,13 @@ void NativeWindowMac::SetVisibleOnAllWorkspaces(bool visible,
     }
   }
 
-  SetCollectionBehavior(visible, NSWindowCollectionBehaviorCanJoinAllSpaces);
   SetCollectionBehavior(visibleOnFullScreen,
                         NSWindowCollectionBehaviorFullScreenAuxiliary);
 }
 
-bool NativeWindowMac::IsVisibleOnAllWorkspaces() {
+bool NativeWindowMac::IsVisibleOnFullScreen() {
   NSUInteger collectionBehavior = [window_ collectionBehavior];
-  return collectionBehavior & NSWindowCollectionBehaviorCanJoinAllSpaces;
+  return collectionBehavior & NSWindowCollectionBehaviorFullScreenAuxiliary;
 }
 
 void NativeWindowMac::SetAutoHideCursor(bool auto_hide) {

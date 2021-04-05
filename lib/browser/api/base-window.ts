@@ -27,6 +27,13 @@ Object.defineProperty(BaseWindow.prototype, 'visibleOnAllWorkspaces', {
   set: function (visible) { this.setVisibleOnAllWorkspaces(visible); }
 });
 
+if (process.platform === 'darwin') {
+  Object.defineProperty(BaseWindow.prototype, 'visibleOnFullScreen', {
+    get: function () { return this.isVisibleOnFullScreen(); },
+    set: function (visible) { this.setVisibleOnFullScreen(visible); }
+  });
+}
+
 Object.defineProperty(BaseWindow.prototype, 'fullScreen', {
   get: function () { return this.isFullScreen(); },
   set: function (full) { this.setFullScreen(full); }

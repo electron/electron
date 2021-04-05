@@ -766,6 +766,14 @@ A `Boolean` property that determines whether the window is visible on all worksp
 
 **Note:** Always returns false on Windows.
 
+#### `win.visibleOnFullScreen` _macOS_
+
+A `Boolean` property that determines whether the window is visible on full
+screen app workspaces.
+
+**Note:** Requires `win.visibleOnAllWorkspaces` to be enabled for the window
+to move into app workspaces.
+
 #### `win.shadow`
 
 A `Boolean` property that determines whether the window has a shadow.
@@ -1623,10 +1631,10 @@ Returns `Boolean` - Whether the menu bar is visible.
 #### `win.setVisibleOnAllWorkspaces(visible[, options])`
 
 * `visible` Boolean
-* `options` Object (optional)
-  * `visibleOnFullScreen` Boolean (optional) _macOS_ - Sets whether
+* `options` Object (optional) _Deprecated_
+  * `visibleOnFullScreen` Boolean (optional) _Deprecated_ _macOS_ - Sets whether
     the window should be visible above fullscreen windows.
-  * `skipTransformProcessType` Boolean (optional) _macOS_ - Calling
+  * `skipTransformProcessType` Boolean (optional) _Deprecated_ _macOS_ - Calling
     setVisibleOnAllWorkspaces will by default transform the process
     type between UIElementApplication and ForegroundApplication to
     ensure the correct behavior. However, this will hide the window
@@ -1637,12 +1645,33 @@ Returns `Boolean` - Whether the menu bar is visible.
 Sets whether the window should be visible on all workspaces.
 
 **Note:** This API does nothing on Windows.
+**Note:** The `visibleOnFullScreen` and `skipTransformProcessType` options have
+been deprecated in favor of `win.setVisibleOnFullScreen()`.
 
 #### `win.isVisibleOnAllWorkspaces()`
 
 Returns `Boolean` - Whether the window is visible on all workspaces.
 
 **Note:** This API always returns false on Windows.
+
+#### `win.setVisibleOnFullScreen(visible[, options])` _macOS_
+
+* `visible` Boolean - Sets whether the window should be visible above
+  fullscreen windows.
+* `options` Object (optional)
+  * `skipTransformProcessType` Boolean (optional) - Calling
+    setVisibleOnFullScreen will by default transform the process
+    type between UIElementApplication and ForegroundApplication to
+    ensure the correct behavior. However, this will hide the window
+    and dock for a short time every time it is called. If your window
+    is already of type UIElementApplication, you can bypass this
+    transformation by passing true to skipTransformProcessType.
+
+Sets whether the window should be visible above full screen app workspaces.
+
+#### `win.isVisibleOnFullScreen()` _macOS_
+
+Returns `Boolean` - Whether the window is visible above full screen app workspaces.
 
 #### `win.setIgnoreMouseEvents(ignore[, options])`
 

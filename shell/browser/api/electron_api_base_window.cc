@@ -846,20 +846,42 @@ void BaseWindow::SetOverlayIcon(const gfx::Image& overlay,
 
 void BaseWindow::SetVisibleOnAllWorkspaces(bool visible,
                                            gin_helper::Arguments* args) {
+#if defined(OS_MAC)
   gin_helper::Dictionary options;
-  bool visibleOnFullScreen = false;
-  bool skipTransformProcessType = false;
-  args->GetNext(&options) &&
-      options.Get("visibleOnFullScreen", &visibleOnFullScreen);
-  args->GetNext(&options) &&
-      options.Get("skipTransformProcessType", &skipTransformProcessType);
-  return window_->SetVisibleOnAllWorkspaces(visible, visibleOnFullScreen,
-                                            skipTransformProcessType);
+
+  if (args->GetNext(&options)) {
+    bool visibleOnFullScreen = false;
+    bool skipTransformProcessType = false;
+    options.Get("visibleOnFullScreen", &visibleOnFullScreen);
+    options.Get("skipTransformProcessType", &skipTransformProcessType);
+    window_->SetVisibleOnFullScreen(visibleOnFullScreen,
+                                    skipTransformProcessType);
+  }
+#endif
+
+  window_->SetVisibleOnAllWorkspaces(visible);
 }
 
 bool BaseWindow::IsVisibleOnAllWorkspaces() {
   return window_->IsVisibleOnAllWorkspaces();
 }
+
+#if defined(OS_MAC)
+void BaseWindow::SetVisibleOnFullScreen(bool visible,
+                                        gin_helper::Arguments* args) {
+  gin_helper::Dictionary options;
+  bool skipTransformProcessType = false;
+
+  if (args->GetNext(&options))
+    options.Get("skipTransformProcessType", &skipTransformProcessType);
+
+  window_->SetVisibleOnFullScreen(visible, skipTransformProcessType);
+}
+
+bool BaseWindow::IsVisibleOnFullScreen() {
+  return window_->IsVisibleOnFullScreen();
+}
+#endif
 
 void BaseWindow::SetAutoHideCursor(bool auto_hide) {
   window_->SetAutoHideCursor(auto_hide);
@@ -1259,6 +1281,8 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isVisibleOnAllWorkspaces",
                  &BaseWindow::IsVisibleOnAllWorkspaces)
 #if defined(OS_MAC)
+      .SetMethod("setVisibleOnFullScreen", &BaseWindow::SetVisibleOnFullScreen)
+      .SetMethod("isVisibleOnFullScreen", &BaseWindow::IsVisibleOnFullScreen)
       .SetMethod("setAutoHideCursor", &BaseWindow::SetAutoHideCursor)
 #endif
       .SetMethod("setVibrancy", &BaseWindow::SetVibrancy)

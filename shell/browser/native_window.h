@@ -188,12 +188,17 @@ class NativeWindow : public base::SupportsUserData,
                               const std::string& description) = 0;
 
   // Workspace APIs.
-  virtual void SetVisibleOnAllWorkspaces(
-      bool visible,
-      bool visibleOnFullScreen = false,
-      bool skipTransformProcessType = false) = 0;
+  virtual void SetVisibleOnAllWorkspaces(bool visible) = 0;
 
   virtual bool IsVisibleOnAllWorkspaces() = 0;
+
+#if defined(OS_MAC)
+  virtual void SetVisibleOnFullScreen(
+      bool visible,
+      bool skipTransformProcessType = false) = 0;
+
+  virtual bool IsVisibleOnFullScreen() = 0;
+#endif
 
   virtual void SetAutoHideCursor(bool auto_hide);
 
