@@ -435,25 +435,6 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
     return true;
   }
 
-  static int GetWebFrameId(v8::Local<v8::Value> content_window) {
-    // Get the WebLocalFrame before (possibly) executing any user-space JS while
-    // getting the |params|. We track the status of the RenderFrame via an
-    // observer in case it is deleted during user code execution.
-    content::RenderFrame* render_frame = GetRenderFrame(content_window);
-    RenderFrameStatus render_frame_status(render_frame);
-
-    if (!render_frame_status.is_ok())
-      return -1;
-
-    blink::WebLocalFrame* frame = render_frame->GetWebFrame();
-    // Parent must exist.
-    blink::WebFrame* parent_frame = frame->Parent();
-    DCHECK(parent_frame);
-    DCHECK(parent_frame->IsWebLocalFrame());
-
-    return render_frame->GetRoutingID();
-  }
-
   void SetName(gin_helper::ErrorThrower thrower, const std::string& name) {
     content::RenderFrame* render_frame;
     if (!MaybeGetRenderFrame(thrower, "setName", &render_frame))
@@ -556,29 +537,6 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
     return v8::Null(isolate);
   }
 
-#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-  bool IsWordMisspelled(gin_helper::ErrorThrower thrower,
-                        const std::string& word) {
-    content::RenderFrame* render_frame;
-    if (!MaybeGetRenderFrame(thrower, "isWordMisspelled", &render_frame))
-      return false;
-
-    return !SpellCheckWord(render_frame, word, nullptr);
-  }
-
-  std::vector<std::u16string> GetWordSuggestions(
-      gin_helper::ErrorThrower thrower,
-      const std::string& word) {
-    content::RenderFrame* render_frame;
-    std::vector<std::u16string> suggestions;
-    if (!MaybeGetRenderFrame(thrower, "getWordSuggestions", &render_frame))
-      return suggestions;
-
-    SpellCheckWord(render_frame, word, &suggestions);
-    return suggestions;
-  }
-#endif
-
   void SetVisualZoomLevelLimits(gin_helper::ErrorThrower thrower,
                                 double min_level,
                                 double max_level) {
@@ -606,6 +564,55 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
     render_frame->GetWebFrame()->RequestExecuteV8Function(
         context->CreationContext(), register_cb, v8::Null(thrower.isolate()), 0,
         nullptr, nullptr);
+  }
+
+  static int GetWebFrameId(v8::Local<v8::Value> content_window) {
+    // Get the WebLocalFrame before (possibly) executing any user-space JS while
+    // getting the |params|. We track the status of the RenderFrame via an
+    // observer in case it is deleted during user code execution.
+    content::RenderFrame* render_frame = GetRenderFrame(content_window);
+    RenderFrameStatus render_frame_status(render_frame);
+
+    if (!render_frame_status.is_ok())
+      return -1;
+
+    blink::WebLocalFrame* frame = render_frame->GetWebFrame();
+    // Parent must exist.
+    blink::WebFrame* parent_frame = frame->Parent();
+    DCHECK(parent_frame);
+    DCHECK(parent_frame->IsWebLocalFrame());
+
+    return render_frame->GetRoutingID();
+  }
+
+  void SetSpellCheckProvider(gin_helper::ErrorThrower thrower,
+                             v8::Isolate* isolate,
+                             const std::string& language,
+                             v8::Local<v8::Object> provider) {
+    auto context = isolate->GetCurrentContext();
+    if (!provider->Has(context, gin::StringToV8(isolate, "spellCheck"))
+             .ToChecked()) {
+      thrower.ThrowError("\"spellCheck\" has to be defined");
+      return;
+    }
+
+    // Remove the old client.
+    content::RenderFrame* render_frame;
+    if (!MaybeGetRenderFrame(thrower, "setSpellCheckProvider", &render_frame))
+      return;
+
+    auto* existing = SpellCheckerHolder::FromRenderFrame(render_frame);
+    if (existing)
+      existing->UnsetAndDestroy();
+
+    // Set spellchecker for all live frames in the same process or
+    // in the sandbox mode for all live sub frames to this WebFrame.
+    auto spell_check_client =
+        std::make_unique<SpellCheckClient>(language, isolate, provider);
+    FrameSetSpellChecker spell_checker(spell_check_client.get(), render_frame);
+
+    // Attach the spell checker to RenderFrame.
+    new SpellCheckerHolder(render_frame, std::move(spell_check_client));
   }
 
   void InsertText(gin_helper::ErrorThrower thrower, const std::string& text) {
@@ -792,6 +799,29 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
     return stats;
   }
 
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+  bool IsWordMisspelled(gin_helper::ErrorThrower thrower,
+                        const std::string& word) {
+    content::RenderFrame* render_frame;
+    if (!MaybeGetRenderFrame(thrower, "isWordMisspelled", &render_frame))
+      return false;
+
+    return !SpellCheckWord(render_frame, word, nullptr);
+  }
+
+  std::vector<std::u16string> GetWordSuggestions(
+      gin_helper::ErrorThrower thrower,
+      const std::string& word) {
+    content::RenderFrame* render_frame;
+    std::vector<std::u16string> suggestions;
+    if (!MaybeGetRenderFrame(thrower, "getWordSuggestions", &render_frame))
+      return suggestions;
+
+    SpellCheckWord(render_frame, word, &suggestions);
+    return suggestions;
+  }
+#endif
+
   void ClearCache(v8::Isolate* isolate) {
     isolate->IdleNotificationDeadline(0.5);
     blink::WebCache::Clear();
@@ -805,47 +835,6 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
         content::RenderFrame::FromRoutingID(routing_id);
     if (render_frame)
       return WebFrameRenderer::Create(isolate, render_frame).ToV8();
-    else
-      return v8::Null(isolate);
-  }
-
-  v8::Local<v8::Value> GetFrameForSelector(gin_helper::ErrorThrower thrower,
-                                           v8::Isolate* isolate,
-                                           const std::string& selector) {
-    content::RenderFrame* render_frame;
-    if (!MaybeGetRenderFrame(thrower, "getFrameForSelector", &render_frame))
-      return v8::Null(isolate);
-
-    blink::WebElement element =
-        render_frame->GetWebFrame()->GetDocument().QuerySelector(
-            blink::WebString::FromUTF8(selector));
-    if (element.IsNull())  // not found
-      return v8::Null(isolate);
-
-    blink::WebFrame* frame = blink::WebFrame::FromFrameOwnerElement(element);
-    if (frame && frame->IsWebLocalFrame())
-      return WebFrameRenderer::Create(
-                 isolate,
-                 content::RenderFrame::FromWebFrame(frame->ToWebLocalFrame()))
-          .ToV8();
-    else
-      return v8::Null(isolate);
-  }
-
-  v8::Local<v8::Value> FindFrameByName(gin_helper::ErrorThrower thrower,
-                                       v8::Isolate* isolate,
-                                       const std::string& name) {
-    content::RenderFrame* render_frame;
-    if (!MaybeGetRenderFrame(thrower, "getFrameForSelector", &render_frame))
-      return v8::Null(isolate);
-
-    blink::WebFrame* frame = render_frame->GetWebFrame()->FindFrameByName(
-        blink::WebString::FromUTF8(name));
-    if (frame && frame->IsWebLocalFrame())
-      return WebFrameRenderer::Create(
-                 isolate,
-                 content::RenderFrame::FromWebFrame(frame->ToWebLocalFrame()))
-          .ToV8();
     else
       return v8::Null(isolate);
   }
@@ -931,42 +920,53 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
       return v8::Null(isolate);
   }
 
+  v8::Local<v8::Value> GetFrameForSelector(gin_helper::ErrorThrower thrower,
+                                           v8::Isolate* isolate,
+                                           const std::string& selector) {
+    content::RenderFrame* render_frame;
+    if (!MaybeGetRenderFrame(thrower, "getFrameForSelector", &render_frame))
+      return v8::Null(isolate);
+
+    blink::WebElement element =
+        render_frame->GetWebFrame()->GetDocument().QuerySelector(
+            blink::WebString::FromUTF8(selector));
+    if (element.IsNull())  // not found
+      return v8::Null(isolate);
+
+    blink::WebFrame* frame = blink::WebFrame::FromFrameOwnerElement(element);
+    if (frame && frame->IsWebLocalFrame())
+      return WebFrameRenderer::Create(
+                 isolate,
+                 content::RenderFrame::FromWebFrame(frame->ToWebLocalFrame()))
+          .ToV8();
+    else
+      return v8::Null(isolate);
+  }
+
+  v8::Local<v8::Value> FindFrameByName(gin_helper::ErrorThrower thrower,
+                                       v8::Isolate* isolate,
+                                       const std::string& name) {
+    content::RenderFrame* render_frame;
+    if (!MaybeGetRenderFrame(thrower, "getFrameForSelector", &render_frame))
+      return v8::Null(isolate);
+
+    blink::WebFrame* frame = render_frame->GetWebFrame()->FindFrameByName(
+        blink::WebString::FromUTF8(name));
+    if (frame && frame->IsWebLocalFrame())
+      return WebFrameRenderer::Create(
+                 isolate,
+                 content::RenderFrame::FromWebFrame(frame->ToWebLocalFrame()))
+          .ToV8();
+    else
+      return v8::Null(isolate);
+  }
+
   int GetRoutingId(gin_helper::ErrorThrower thrower) {
     content::RenderFrame* render_frame;
     if (!MaybeGetRenderFrame(thrower, "routingId", &render_frame))
       return 0;
 
     return render_frame->GetRoutingID();
-  }
-
-  void SetSpellCheckProvider(gin_helper::ErrorThrower thrower,
-                             v8::Isolate* isolate,
-                             const std::string& language,
-                             v8::Local<v8::Object> provider) {
-    auto context = isolate->GetCurrentContext();
-    if (!provider->Has(context, gin::StringToV8(isolate, "spellCheck"))
-             .ToChecked()) {
-      thrower.ThrowError("\"spellCheck\" has to be defined");
-      return;
-    }
-
-    // Remove the old client.
-    content::RenderFrame* render_frame;
-    if (!MaybeGetRenderFrame(thrower, "setSpellCheckProvider", &render_frame))
-      return;
-
-    auto* existing = SpellCheckerHolder::FromRenderFrame(render_frame);
-    if (existing)
-      existing->UnsetAndDestroy();
-
-    // Set spellchecker for all live frames in the same process or
-    // in the sandbox mode for all live sub frames to this WebFrame.
-    auto spell_check_client =
-        std::make_unique<SpellCheckClient>(language, isolate, provider);
-    FrameSetSpellChecker spell_checker(spell_check_client.get(), render_frame);
-
-    // Attach the spell checker to RenderFrame.
-    new SpellCheckerHolder(render_frame, std::move(spell_check_client));
   }
 };
 
