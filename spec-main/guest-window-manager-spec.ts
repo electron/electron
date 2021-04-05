@@ -112,16 +112,21 @@ describe('webContents.setWindowOpenHandler', () => {
     const { browserWindowOptions } = testConfig[testName];
 
     describe(testName, () => {
-      beforeEach((done) => {
+      beforeEach(async () => {
         browserWindow = new BrowserWindow(browserWindowOptions);
-        browserWindow.loadURL('about:blank');
-        browserWindow.on('ready-to-show', () => { browserWindow.show(); done(); });
+        await browserWindow.loadURL('about:blank');
+        browserWindow.show();
       });
 
       afterEach(closeAllWindows);
 
-      it('does not fire window creation events if an override returns action: deny', (done) => {
-        browserWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+      it('does not fire window creation events if an override returns action: deny', async () => {
+        const denied = new Promise((resolve) => {
+          browserWindow.webContents.setWindowOpenHandler(() => {
+            setTimeout(resolve);
+            return { action: 'deny' };
+          });
+        });
         browserWindow.webContents.on('new-window', () => {
           assert.fail('new-window should not to be called with an overridden window.open');
         });
@@ -132,9 +137,51 @@ describe('webContents.setWindowOpenHandler', () => {
 
         browserWindow.webContents.executeJavaScript("window.open('about:blank') && true");
 
-        setTimeout(() => {
-          done();
-        }, 500);
+        await denied;
+      });
+
+      it('is called when clicking on a target=_blank link', async () => {
+        const denied = new Promise((resolve) => {
+          browserWindow.webContents.setWindowOpenHandler(() => {
+            setTimeout(resolve);
+            return { action: 'deny' };
+          });
+        });
+        browserWindow.webContents.on('new-window', () => {
+          assert.fail('new-window should not to be called with an overridden window.open');
+        });
+
+        browserWindow.webContents.on('did-create-window', () => {
+          assert.fail('did-create-window should not to be called with an overridden window.open');
+        });
+
+        await browserWindow.webContents.loadURL('data:text/html,<a target="_blank" href="http://example.com" style="display: block; width: 100%; height: 100%; position: fixed; left: 0; top: 0;">link</a>');
+        browserWindow.webContents.sendInputEvent({ type: 'mouseDown', x: 10, y: 10, button: 'left', clickCount: 1 });
+        browserWindow.webContents.sendInputEvent({ type: 'mouseUp', x: 10, y: 10, button: 'left', clickCount: 1 });
+
+        await denied;
+      });
+
+      it('is called when shift-clicking on a link', async () => {
+        const denied = new Promise((resolve) => {
+          browserWindow.webContents.setWindowOpenHandler(() => {
+            setTimeout(resolve);
+            return { action: 'deny' };
+          });
+        });
+        browserWindow.webContents.on('new-window', () => {
+          assert.fail('new-window should not to be called with an overridden window.open');
+        });
+
+        browserWindow.webContents.on('did-create-window', () => {
+          assert.fail('did-create-window should not to be called with an overridden window.open');
+        });
+
+        await browserWindow.webContents.loadURL('data:text/html,<a href="http://example.com" style="display: block; width: 100%; height: 100%; position: fixed; left: 0; top: 0;">link</a>');
+        browserWindow.webContents.sendInputEvent({ type: 'mouseDown', x: 10, y: 10, button: 'left', clickCount: 1, modifiers: ['shift'] });
+        browserWindow.webContents.sendInputEvent({ type: 'mouseUp', x: 10, y: 10, button: 'left', clickCount: 1, modifiers: ['shift'] });
+
+        await denied;
       });
 
       it('fires handler with correct params', (done) => {
