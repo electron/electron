@@ -57,6 +57,7 @@ export function openGuestWindow ({ event, embedder, guest, referrer, disposition
     windowOpenArgs,
     additionalFeatures,
     disposition,
+    postData,
     referrer
   });
   if (didCancelEvent) return;
