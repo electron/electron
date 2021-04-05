@@ -472,6 +472,7 @@ void NativeWindowMac::Close() {
   }
 
   [window_ performClose:nil];
+  window_ = nil;
 
   // Closing a sheet doesn't trigger windowShouldClose,
   // so we need to manually call it ourselves here.
@@ -487,6 +488,7 @@ void NativeWindowMac::CloseImmediately() {
   base::scoped_nsobject<NSWindow> child_window(window_,
                                                base::scoped_policy::RETAIN);
   [window_ close];
+  window_ = nil;
 }
 
 void NativeWindowMac::Focus(bool focus) {
@@ -549,7 +551,7 @@ void NativeWindowMac::Hide() {
 }
 
 bool NativeWindowMac::IsVisible() {
-  bool occluded = [window_ occlusionState] == NSWindowOcclusionStateVisible;
+  bool occluded = [window_ occlusionState] & NSWindowOcclusionStateVisible;
 
   // For a window to be visible, it must be visible to the user in the
   // foreground of the app, which means that it should not be minimized or
