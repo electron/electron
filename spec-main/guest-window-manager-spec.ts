@@ -148,11 +148,47 @@ describe('webContents.setWindowOpenHandler', () => {
 
           browserWindow.webContents.executeJavaScript(`window.open('${testUrl}', '${testFrameName}', '${testFeatures}') && true`);
         });
-        const { url, frameName, features, disposition } = details;
+        const { url, frameName, features, disposition, referrer } = details;
         expect(url).to.equal(testUrl);
         expect(frameName).to.equal(testFrameName);
         expect(features).to.equal(testFeatures);
         expect(disposition).to.equal('new-window');
+        expect(referrer).to.deep.equal({
+          policy: 'strict-origin-when-cross-origin',
+          url: ''
+        });
+      });
+
+      it('includes post body', async () => {
+        const details = await new Promise<Electron.HandlerDetails>(resolve => {
+          browserWindow.webContents.setWindowOpenHandler((details) => {
+            setTimeout(() => resolve(details));
+            return { action: 'deny' };
+          });
+
+          browserWindow.webContents.loadURL(`data:text/html,${encodeURIComponent(`
+            <form action="http://example.com" target="_blank" method="POST" id="form">
+              <input name="key" value="value"></input>
+            </form>
+            <script>form.submit()</script>
+          `)}`);
+        });
+        const { url, frameName, features, disposition, referrer, postBody } = details;
+        expect(url).to.equal('http://example.com/');
+        expect(frameName).to.equal('');
+        expect(features).to.deep.equal('');
+        expect(disposition).to.equal('foreground-tab');
+        expect(referrer).to.deep.equal({
+          policy: 'strict-origin-when-cross-origin',
+          url: ''
+        });
+        expect(postBody).to.deep.equal({
+          contentType: 'application/x-www-form-urlencoded',
+          data: [{
+            type: 'rawData',
+            bytes: Buffer.from('key=value')
+          }]
+        });
       });
 
       it('does fire window creation events if an override returns action: allow', async () => {

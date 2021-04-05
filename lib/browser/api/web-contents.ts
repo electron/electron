@@ -3,7 +3,7 @@ import type { BrowserWindowConstructorOptions, LoadURLOptions } from 'electron/m
 
 import * as url from 'url';
 import * as path from 'path';
-import { openGuestWindow, makeWebPreferences } from '@electron/internal/browser/guest-window-manager';
+import { openGuestWindow, makeWebPreferences, parseContentTypeFormat } from '@electron/internal/browser/guest-window-manager';
 import { NavigationController } from '@electron/internal/browser/navigation-controller';
 import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
 import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-utils';
@@ -569,10 +569,16 @@ WebContents.prototype._init = function () {
     // Make new windows requested by links behave like "window.open".
     this.on('-new-window' as any, (event: ElectronInternal.Event, url: string, frameName: string, disposition: Electron.HandlerDetails['disposition'],
       rawFeatures: string, referrer: Electron.Referrer, postData: PostData) => {
+      const postBody = postData ? {
+        data: postData,
+        ...parseContentTypeFormat(postData)
+      } : undefined;
       const details: Electron.HandlerDetails = {
         url,
         frameName,
         features: rawFeatures,
+        referrer,
+        postBody,
         disposition
       };
       const options = this._callWindowOpenHandler(event, details);
@@ -590,12 +596,18 @@ WebContents.prototype._init = function () {
     });
 
     let windowOpenOverriddenOptions: BrowserWindowConstructorOptions | null = null;
-    this.on('-will-add-new-contents' as any, (event: ElectronInternal.Event, url: string, frameName: string, rawFeatures: string, disposition: Electron.HandlerDetails['disposition']) => {
+    this.on('-will-add-new-contents' as any, (event: ElectronInternal.Event, url: string, frameName: string, rawFeatures: string, disposition: Electron.HandlerDetails['disposition'], referrer: Electron.Referrer, postData: PostData) => {
+      const postBody = postData ? {
+        data: postData,
+        ...parseContentTypeFormat(postData)
+      } : undefined;
       const details: Electron.HandlerDetails = {
         url,
         frameName,
         features: rawFeatures,
-        disposition
+        disposition,
+        referrer,
+        postBody
       };
       windowOpenOverriddenOptions = this._callWindowOpenHandler(event, details);
       if (!event.defaultPrevented) {
