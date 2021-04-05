@@ -62,7 +62,7 @@ export function parseCommaSeparatedKeyValue (source: string, useSoonToBeDeprecat
   for (const keyValuePair of source.split(',')) {
     const [key, value] = keyValuePair.split('=').map(str => str.trim());
     if (useSoonToBeDeprecatedBehaviorForBareKeys && value === undefined) {
-      bareKeys.push(key);
+      if (key) { bareKeys.push(key); }
       continue;
     }
     parsed[key] = coerce(key, value);
