@@ -112,10 +112,9 @@ describe('webContents.setWindowOpenHandler', () => {
     const { browserWindowOptions } = testConfig[testName];
 
     describe(testName, () => {
-      beforeEach((done) => {
+      beforeEach(async () => {
         browserWindow = new BrowserWindow(browserWindowOptions);
-        browserWindow.loadURL('about:blank');
-        browserWindow.on('ready-to-show', () => { browserWindow.show(); done(); });
+        await browserWindow.loadURL('about:blank');
       });
 
       afterEach(closeAllWindows);
@@ -130,33 +129,37 @@ describe('webContents.setWindowOpenHandler', () => {
           assert.fail('did-create-window should not to be called with an overridden window.open');
         });
 
-        browserWindow.webContents.executeJavaScript("window.open('about:blank') && true");
+        browserWindow.webContents.executeJavaScript("window.open('about:blank', '', 'show=no') && true");
 
         setTimeout(() => {
           done();
         }, 500);
       });
 
-      it('fires handler with correct params', (done) => {
+      it('fires handler with correct params', async () => {
         const testFrameName = 'test-frame-name';
-        const testFeatures = 'top=10&left=10&something-unknown';
+        const testFeatures = 'top=10&left=10&something-unknown&show=no';
         const testUrl = 'app://does-not-exist/';
-        browserWindow.webContents.setWindowOpenHandler(({ url, frameName, features }) => {
-          expect(url).to.equal(testUrl);
-          expect(frameName).to.equal(testFrameName);
-          expect(features).to.equal(testFeatures);
-          done();
-          return { action: 'deny' };
-        });
+        const details = await new Promise<Electron.HandlerDetails>(resolve => {
+          browserWindow.webContents.setWindowOpenHandler((details) => {
+            setTimeout(() => resolve(details));
+            return { action: 'deny' };
+          });
 
-        browserWindow.webContents.executeJavaScript(`window.open('${testUrl}', '${testFrameName}', '${testFeatures}') && true`);
+          browserWindow.webContents.executeJavaScript(`window.open('${testUrl}', '${testFrameName}', '${testFeatures}') && true`);
+        });
+        const { url, frameName, features, disposition } = details;
+        expect(url).to.equal(testUrl);
+        expect(frameName).to.equal(testFrameName);
+        expect(features).to.equal(testFeatures);
+        expect(disposition).to.equal('new-window');
       });
 
       it('does fire window creation events if an override returns action: allow', async () => {
         browserWindow.webContents.setWindowOpenHandler(() => ({ action: 'allow' }));
 
         setImmediate(() => {
-          browserWindow.webContents.executeJavaScript("window.open('about:blank') && true");
+          browserWindow.webContents.executeJavaScript("window.open('about:blank', '', 'show=no') && true");
         });
 
         await Promise.all([
@@ -175,7 +178,7 @@ describe('webContents.setWindowOpenHandler', () => {
           done();
         });
 
-        browserWindow.webContents.executeJavaScript("window.open('about:blank') && true");
+        browserWindow.webContents.executeJavaScript("window.open('about:blank', '', 'show=no') && true");
       });
     });
   }

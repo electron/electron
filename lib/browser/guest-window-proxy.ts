@@ -73,7 +73,7 @@ ipcMainInternal.on(
       );
     }
 
-    const browserWindowOptions = event.sender._callWindowOpenHandler(event, url, frameName, features);
+    const browserWindowOptions = event.sender._callWindowOpenHandler(event, { url, frameName, features, disposition: 'new-window' });
     if (event.defaultPrevented) {
       return;
     }

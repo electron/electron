@@ -1012,8 +1012,9 @@ bool WebContents::IsWebContentsCreationOverridden(
     content::mojom::WindowContainerType window_container_type,
     const GURL& opener_url,
     const content::mojom::CreateNewWindowParams& params) {
-  bool default_prevented = Emit("-will-add-new-contents", params.target_url,
-                                params.frame_name, params.raw_features);
+  bool default_prevented =
+      Emit("-will-add-new-contents", params.target_url, params.frame_name,
+           params.raw_features, params.disposition);
   // If the app prevented the default, redirect to CreateCustomWebContents,
   // which always returns nullptr, which will result in the window open being
   // prevented (window.open() will return null in the renderer).
