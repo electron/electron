@@ -100,6 +100,12 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   void ShowDefinitionForSelection() override;
   void SpeakSelection() override;
   void SetWindowFrameInScreen(const gfx::Rect& rect) override;
+  void ShowSharePicker(
+      const std::string& title,
+      const std::string& text,
+      const std::string& url,
+      const std::vector<std::string>& file_paths,
+      blink::mojom::ShareService::ShareCallback callback) override;
   bool UpdateNSViewAndDisplay();
 #endif  // defined(OS_MAC)
 
