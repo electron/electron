@@ -81,7 +81,7 @@ index 4dbfd138a467462bae4ff062d9a8062b76ecaa4c..cc7c95bb0f4e6ec6b3579ced90a0f103
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  #if defined(OS_APPLE)
 diff --git a/components/viz/service/display/gl_renderer.cc b/components/viz/service/display/gl_renderer.cc
-index a0fc635ce92491cc3df706e3e52bd8b0cacb2f15..32c497ca0b40517d70639cb16829a6283363e85a 100644
+index 74ff0db39229e2a85feebf3f753ad9073adca142..0da3f016948b87dab9f55e7b836bdec8073627b7 100644
 --- a/components/viz/service/display/gl_renderer.cc
 +++ b/components/viz/service/display/gl_renderer.cc
 @@ -88,6 +88,9 @@
@@ -229,10 +229,10 @@ index a0fc635ce92491cc3df706e3e52bd8b0cacb2f15..32c497ca0b40517d70639cb16829a628
 +
 +#undef PATCH_CS
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index 2425c2b99a949c3181e2b69ea8d607f103442e34..86c91453231ca4762f50387b9be51393176b9cb8 100644
+index cfdcd88441ea797a3fd48d2754113a89db21daf6..cb5203f4684c83f0e419ec10fdb9960e822023a4 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
-@@ -223,6 +223,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
+@@ -224,6 +224,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
  
  // Command-line switches to propagate to the GPU process.
  static const char* const kSwitchNames[] = {
@@ -241,10 +241,10 @@ index 2425c2b99a949c3181e2b69ea8d607f103442e34..86c91453231ca4762f50387b9be51393
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 89ff474b56e58af071c9401a76e8c4b33c4ef308..dfd44f817ca7fdcea7efd889c2d77131a3849c5a 100644
+index 26db3958ef5a7f475eefe07476690839b1f6224f..29f9d639496a6ef5e24520f9abf8231c24786b1c 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -213,6 +213,7 @@
+@@ -212,6 +212,7 @@
  #include "ui/accessibility/accessibility_switches.h"
  #include "ui/base/ui_base_switches.h"
  #include "ui/display/display_switches.h"
@@ -252,7 +252,7 @@ index 89ff474b56e58af071c9401a76e8c4b33c4ef308..dfd44f817ca7fdcea7efd889c2d77131
  #include "ui/gl/gl_switches.h"
  #include "ui/native_theme/native_theme_features.h"
  #include "url/origin.h"
-@@ -3160,6 +3161,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3157,6 +3158,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {

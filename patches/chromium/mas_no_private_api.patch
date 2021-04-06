@@ -532,10 +532,10 @@ index c68099d5baa0fec203313e8734d2d659578d687d..4a724e0f744722a4ba30ff6e22b56997
        "AudioToolbox.framework",
        "AudioUnit.framework",
 diff --git a/media/audio/mac/audio_manager_mac.cc b/media/audio/mac/audio_manager_mac.cc
-index 526250e78a5f2aad1fe075faff3b2561a7e82bad..90ab4a2ad9e83b02cc4031cc5e79c91991a5214e 100644
+index 29f12e9928ed23605f4f2d0f443a6d79a71cfc71..8a9bff20664922ceb0c4f657755e3c3ac6121215 100644
 --- a/media/audio/mac/audio_manager_mac.cc
 +++ b/media/audio/mac/audio_manager_mac.cc
-@@ -882,7 +882,7 @@ AudioParameters AudioManagerMac::GetPreferredOutputStreamParameters(
+@@ -883,7 +883,7 @@ AudioParameters AudioManagerMac::GetPreferredOutputStreamParameters(
  
  void AudioManagerMac::InitializeOnAudioThread() {
    DCHECK(GetTaskRunner()->BelongsToCurrentThread());
@@ -545,7 +545,7 @@ index 526250e78a5f2aad1fe075faff3b2561a7e82bad..90ab4a2ad9e83b02cc4031cc5e79c919
  }
  
 diff --git a/net/dns/dns_config_service_posix.cc b/net/dns/dns_config_service_posix.cc
-index 3b42db7adf99da38c3a4f86444bec21706b836bd..073240b23103300b69b8d5e47cd4ccc64b0dd86d 100644
+index 0bb9da11b80dc00c9c47a4c90c1e764152d25cfa..57617b93425d7c9cd7662da5771cfc8bb47944d2 100644
 --- a/net/dns/dns_config_service_posix.cc
 +++ b/net/dns/dns_config_service_posix.cc
 @@ -136,8 +136,8 @@ class DnsConfigServicePosix::Watcher : public DnsConfigService::Watcher {
