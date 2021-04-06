@@ -21,8 +21,8 @@ index 9443a165bc5d88e307c8bdb0199799aa0130ba5e..6adc5e645c3b851387365299c4678f45
  
    friend = [ ":gtk_unittests" ]
  
-@@ -64,7 +67,6 @@ component("gtk") {
-     "gtk_compat.h",
+@@ -66,7 +66,6 @@ component("gtk") {
+     "gtk_key_bindings_handler.h",
      "gtk_ui.cc",
      "gtk_util.cc",
 -    "gtk_util.h",
