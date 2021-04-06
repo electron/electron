@@ -31,8 +31,8 @@ index 9ded78a8fd05bf4278c9800fcd0cdea6cefa2ac8..f25c4bc7aa0e13ef772294afec7d94c0
 +  } else {
 +    isolate_ = isolate;
 +  }
-   isolate_data_.reset(
-       new PerIsolateData(isolate_, allocator, access_mode_, task_runner));
+   isolate_data_ = std::make_unique<PerIsolateData>(isolate_, allocator,
+                                                    access_mode_, task_runner);
    if (isolate_creation_mode == IsolateCreationMode::kCreateSnapshot) {
 diff --git a/gin/public/isolate_holder.h b/gin/public/isolate_holder.h
 index ede178acabc63c3c33d6ce93efd5632bec50ba89..ffe7331cf1806417a32e66970f81b7797b9b80fc 100644
