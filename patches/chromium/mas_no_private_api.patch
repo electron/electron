@@ -541,7 +541,7 @@ index 526250e78a5f2aad1fe075faff3b2561a7e82bad..90ab4a2ad9e83b02cc4031cc5e79c919
    DCHECK(GetTaskRunner()->BelongsToCurrentThread());
 -  InitializeCoreAudioDispatchOverride();
 +  // InitializeCoreAudioDispatchOverride();
-   power_observer_.reset(new AudioPowerObserver());
+   power_observer_ = std::make_unique<AudioPowerObserver>();
  }
  
 diff --git a/net/dns/dns_config_service_posix.cc b/net/dns/dns_config_service_posix.cc
