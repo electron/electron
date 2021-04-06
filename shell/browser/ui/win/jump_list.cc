@@ -28,6 +28,13 @@ bool AppendTask(const JumpListItem& item, IObjectCollection* collection) {
       FAILED(link->SetDescription(item.description.c_str())))
     return false;
 
+  // SetDescription limits the size of the parameter to INFOTIPSIZE (1024),
+  // which suggests rejection when exceeding that limit, but experimentation
+  // has shown that descriptions longer than 260 characters cause a silent
+  // failure, despite SetDescription returning the success code S_OK.
+  if (item.description.size() > 260)
+    return false;
+
   if (!item.icon_path.empty() &&
       FAILED(link->SetIconLocation(item.icon_path.value().c_str(),
                                    item.icon_index)))
