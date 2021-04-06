@@ -56,23 +56,18 @@ function coerce (key: string, value: string): CoercedValue {
   }
 }
 
-export function parseCommaSeparatedKeyValue (source: string, useSoonToBeDeprecatedBehaviorForBareKeys: boolean) {
-  const bareKeys = [] as string[];
+export function parseCommaSeparatedKeyValue (source: string) {
   const parsed = {} as { [key: string]: any };
   for (const keyValuePair of source.split(',')) {
     const [key, value] = keyValuePair.split('=').map(str => str.trim());
-    if (useSoonToBeDeprecatedBehaviorForBareKeys && value === undefined) {
-      if (key) { bareKeys.push(key); }
-      continue;
-    }
     parsed[key] = coerce(key, value);
   }
 
-  return { parsed, bareKeys };
+  return parsed;
 }
 
 export function parseWebViewWebPreferences (preferences: string) {
-  return parseCommaSeparatedKeyValue(preferences, false).parsed;
+  return parseCommaSeparatedKeyValue(preferences).parsed;
 }
 
 const allowedWebPreferences = ['zoomFactor', 'nodeIntegration', 'javascript', 'contextIsolation', 'webviewTag'] as const;
@@ -80,17 +75,9 @@ type AllowedWebPreference = (typeof allowedWebPreferences)[number];
 
 /**
  * Parses a feature string that has the format used in window.open().
- *
- * `useSoonToBeDeprecatedBehaviorForBareKeys` - In the html spec, windowFeatures keys
- * without values are interpreted as `true`. Previous versions of Electron did
- * not respect this. In order to not break any applications, this will be
- * flipped in the next major version.
  */
-export function parseFeatures (
-  features: string,
-  useSoonToBeDeprecatedBehaviorForBareKeys: boolean = true
-) {
-  const { parsed, bareKeys } = parseCommaSeparatedKeyValue(features, useSoonToBeDeprecatedBehaviorForBareKeys);
+export function parseFeatures (features: string) {
+  const parsed = parseCommaSeparatedKeyValue(features);
 
   const webPreferences: { [K in AllowedWebPreference]?: any } = {};
   allowedWebPreferences.forEach((key) => {
@@ -104,7 +91,6 @@ export function parseFeatures (
 
   return {
     options: parsed as Omit<BrowserWindowConstructorOptions, 'webPreferences'>,
-    webPreferences,
-    additionalFeatures: bareKeys
+    webPreferences
   };
 }
