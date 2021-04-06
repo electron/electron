@@ -46,8 +46,8 @@ index cd73f9e5669adf0ab94c12eadd3c1e66d57c9d12..c2e4c709d48111177d89f9ba0c2e7590
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 @@ -51,7 +51,7 @@
  
-   ca_layer_tree_coordinator_.reset(new ui::CALayerTreeCoordinator(
-       use_remote_layer_api_, allow_av_sample_buffer_display_layer));
+   ca_layer_tree_coordinator_ = std::make_unique<ui::CALayerTreeCoordinator>(
+       use_remote_layer_api_, allow_av_sample_buffer_display_layer);
 -
 +#ifndef MAS_BUILD
    // Create the CAContext to send this to the GPU process, and the layer for
