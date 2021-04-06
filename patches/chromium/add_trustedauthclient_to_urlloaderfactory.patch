@@ -140,14 +140,14 @@ index 0c17c1a6935a7d3d74b6916295b0b687af4c513b..c0814e3a31b794c852bf90dad8ac2d57
        cors_url_loader_factory_(cors_url_loader_factory),
        cookie_observer_(std::move(params_->cookie_observer)),
        url_loader_network_service_observer_(
-@@ -283,6 +284,7 @@ void URLLoaderFactory::CreateLoaderAndStart(
+@@ -291,6 +291,7 @@ void URLLoaderFactory::CreateLoaderAndStart(
        context_->require_network_isolation_key(), resource_scheduler_client_,
        std::move(keepalive_statistics_recorder),
        header_client_.is_bound() ? header_client_.get() : nullptr,
 +      auth_client_.is_bound() ? auth_client_.get() : nullptr,
        context_->origin_policy_manager(), std::move(trust_token_factory),
        context_->cors_origin_access_list(), std::move(cookie_observer),
-       std::move(url_loader_network_observer), std::move(devtools_observer));
+       std::move(url_loader_network_observer), std::move(devtools_observer),
 diff --git a/services/network/url_loader_factory.h b/services/network/url_loader_factory.h
 index f7f4f075ee5252a43282464bbfbb141be39b8b3e..06d82007ec3ec60b0afcbb7f6722ed44664b4e09 100644
 --- a/services/network/url_loader_factory.h
