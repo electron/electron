@@ -138,7 +138,7 @@ nativeTheme.shouldUseHighContrastColors
 
 ### Deprecated: WebContents `new-window` event
 
-The `new-window` event of WebContents has been deprecated. It is replaced by [`webContents.setWindowOpenHandler()`](/docs/api/web-contents#contentssetwindowopenhandlerhandler).
+The `new-window` event of WebContents has been deprecated. It is replaced by [`webContents.setWindowOpenHandler()`](api/web-contents#contentssetwindowopenhandlerhandler).
 
 ```js
 // Deprecated in Electron 13
