@@ -14,7 +14,7 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (14.0)
 
-### API Changed: `window.(open)`
+### API Changed: `window.open()`
 
 The optional parameter `frameName` will no longer set the title of the window. This now follows the specification described by the [native documentation](https://developer.mozilla.org/en-US/docs/Web/API/Window/open#parameters) under the corresponding parameter `windowName`.
 
