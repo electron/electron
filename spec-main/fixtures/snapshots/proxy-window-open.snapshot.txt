@@ -30,7 +30,7 @@
     [],
     {
       "url": "",
-      "policy": "default"
+      "policy": "strict-origin-when-cross-origin"
     },
     null
   ],
@@ -64,7 +64,7 @@
     [],
     {
       "url": "",
-      "policy": "default"
+      "policy": "strict-origin-when-cross-origin"
     },
     null
   ],
@@ -98,7 +98,7 @@
     [],
     {
       "url": "",
-      "policy": "default"
+      "policy": "strict-origin-when-cross-origin"
     },
     null
   ],
@@ -131,7 +131,7 @@
     [],
     {
       "url": "",
-      "policy": "default"
+      "policy": "strict-origin-when-cross-origin"
     },
     null
   ],
@@ -165,7 +165,7 @@
     [],
     {
       "url": "",
-      "policy": "default"
+      "policy": "strict-origin-when-cross-origin"
     },
     null
   ]
