@@ -112,43 +112,43 @@ void ElectronPermissionManager::SetPermissionCheckHandler(
   check_handler_ = handler;
 }
 
-int ElectronPermissionManager::RequestPermission(
+void ElectronPermissionManager::RequestPermission(
     content::PermissionType permission,
     content::RenderFrameHost* render_frame_host,
     const GURL& requesting_origin,
     bool user_gesture,
     StatusCallback response_callback) {
-  return RequestPermissionWithDetails(permission, render_frame_host,
-                                      requesting_origin, user_gesture, nullptr,
-                                      std::move(response_callback));
+  RequestPermissionWithDetails(permission, render_frame_host, requesting_origin,
+                               user_gesture, nullptr,
+                               std::move(response_callback));
 }
 
-int ElectronPermissionManager::RequestPermissionWithDetails(
+void ElectronPermissionManager::RequestPermissionWithDetails(
     content::PermissionType permission,
     content::RenderFrameHost* render_frame_host,
     const GURL& requesting_origin,
     bool user_gesture,
     const base::DictionaryValue* details,
     StatusCallback response_callback) {
-  return RequestPermissionsWithDetails(
+  RequestPermissionsWithDetails(
       std::vector<content::PermissionType>(1, permission), render_frame_host,
       requesting_origin, user_gesture, details,
       base::BindOnce(PermissionRequestResponseCallbackWrapper,
                      std::move(response_callback)));
 }
 
-int ElectronPermissionManager::RequestPermissions(
+void ElectronPermissionManager::RequestPermissions(
     const std::vector<content::PermissionType>& permissions,
     content::RenderFrameHost* render_frame_host,
     const GURL& requesting_origin,
     bool user_gesture,
     StatusesCallback response_callback) {
-  return RequestPermissionsWithDetails(permissions, render_frame_host,
-                                       requesting_origin, user_gesture, nullptr,
-                                       std::move(response_callback));
+  RequestPermissionsWithDetails(permissions, render_frame_host,
+                                requesting_origin, user_gesture, nullptr,
+                                std::move(response_callback));
 }
 
-int ElectronPermissionManager::RequestPermissionsWithDetails(
+void ElectronPermissionManager::RequestPermissionsWithDetails(
     const std::vector<content::PermissionType>& permissions,
     content::RenderFrameHost* render_frame_host,
     const GURL& requesting_origin,
@@ -157,7 +157,7 @@ int ElectronPermissionManager::RequestPermissionsWithDetails(
     StatusesCallback response_callback) {
   if (permissions.empty()) {
     std::move(response_callback).Run({});
-    return content::PermissionController::kNoPendingOperation;
+    return;
   }
 
   if (request_handler_.is_null()) {
@@ -175,7 +175,6 @@ int ElectronPermissionManager::RequestPermissionsWithDetails(
       statuses.push_back(blink::mojom::PermissionStatus::GRANTED);
     }
     std::move(response_callback).Run(statuses);
-    return content::PermissionController::kNoPendingOperation;
   }
 
   auto* web_contents =
@@ -196,8 +195,6 @@ int ElectronPermissionManager::RequestPermissionsWithDetails(
                                render_frame_host->GetParent() == nullptr);
     request_handler_.Run(web_contents, permission, callback, mutable_details);
   }
-
-  return request_id;
 }
 
 void ElectronPermissionManager::OnPermissionResponse(
