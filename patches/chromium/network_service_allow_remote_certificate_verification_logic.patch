@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 1e9e1d93cb783c104c2672189df7c8410a3dfbed..3dc5c6d6027be44c1e799bb8e0b509a03bae963a 100644
+index 1e9e1d93cb783c104c2672189df7c8410a3dfbed..e36e5f9306bda8d9523d14d46dd71ea2f3bb8530 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -115,6 +115,11 @@
@@ -116,67 +116,17 @@ index 1e9e1d93cb783c104c2672189df7c8410a3dfbed..3dc5c6d6027be44c1e799bb8e0b509a0
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -1820,8 +1905,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
-          "NetworkContext should pass CertVerifierServiceRemoteParams.";
- 
-   std::unique_ptr<net::CertVerifier> cert_verifier;
-+  std::unique_ptr<net::CertVerifier> temp_verifier;
-   if (g_cert_verifier_for_testing) {
--    cert_verifier = std::make_unique<WrappedTestingCertVerifier>();
-+    temp_verifier = std::make_unique<WrappedTestingCertVerifier>();
-   } else {
-     if (params_->cert_verifier_params &&
-         params_->cert_verifier_params->is_remote_params()) {
-@@ -1849,14 +1935,14 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
-         cert_net_fetcher_ =
-             base::MakeRefCounted<net::CertNetFetcherURLRequest>();
- 
--      cert_verifier = CreateCertVerifier(creation_params, cert_net_fetcher_);
-+      temp_verifier = CreateCertVerifier(creation_params, cert_net_fetcher_);
+@@ -1852,6 +1937,10 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+       cert_verifier = CreateCertVerifier(creation_params, cert_net_fetcher_);
      }
  
++    auto remote_cert_verifier = std::make_unique<RemoteCertVerifier>(std::move(cert_verifier));
++    remote_cert_verifier_ = remote_cert_verifier.get();
++    cert_verifier = std::move(remote_cert_verifier);
++
      // Whether the cert verifier is remote or in-process, we should wrap it in
      // caching and coalescing layers to avoid extra verifications and IPCs.
--    cert_verifier = std::make_unique<net::CachingCertVerifier>(
-+    temp_verifier = std::make_unique<net::CachingCertVerifier>(
-         std::make_unique<net::CoalescingCertVerifier>(
--            std::move(cert_verifier)));
-+            std::move(temp_verifier)));
- 
- #if defined(OS_CHROMEOS)
-     cert_verifier_with_trust_anchors_ =
-@@ -1865,13 +1951,27 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
-     UpdateAdditionalCertificates(
-         std::move(params_->initial_additional_certificates));
-     cert_verifier_with_trust_anchors_->InitializeOnIOThread(
--        std::move(cert_verifier));
--    cert_verifier = base::WrapUnique(cert_verifier_with_trust_anchors_);
-+        std::move(temp_verifier));
-+    temp_verifier = base::WrapUnique(cert_verifier_with_trust_anchors_);
- #endif  // defined(OS_CHROMEOS)
-+    if (!temp_verifier) {
-+#if !defined(OS_LINUX)
-+      temp_verifier = std::make_unique<net::MultiThreadedCertVerifier>(
-+          net::CertVerifyProc::CreateSystemVerifyProc(std::move(cert_net_fetcher_)));
-+#else
-+      temp_verifier = std::make_unique<net::MultiThreadedCertVerifier>(
-+          net::CertVerifyProc::CreateBuiltinVerifyProc(std::move(cert_net_fetcher_)));
-+#endif
-+    }
-+    auto remote_cert_verifier = std::make_unique<RemoteCertVerifier>(std::move(temp_verifier));
-+    remote_cert_verifier_ = remote_cert_verifier.get();
-+    cert_verifier = std::make_unique<net::CachingCertVerifier>(std::move(remote_cert_verifier));
-   }
- 
--  builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
--      *command_line, nullptr, std::move(cert_verifier)));
-+  cert_verifier = IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
-+      *command_line, nullptr, std::move(cert_verifier));
-+
-+  builder.SetCertVerifier(std::move(cert_verifier));
- 
-   std::unique_ptr<NetworkServiceNetworkDelegate> network_delegate =
-       std::make_unique<NetworkServiceNetworkDelegate>(
+     cert_verifier = std::make_unique<net::CachingCertVerifier>(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
 index e1a8746bcdaf61c181566369b380af5ead3a7796..1372f6f6ca4899cc7b230a3cd1b26db4c16325b5 100644
 --- a/services/network/network_context.h
