@@ -202,9 +202,9 @@ Returns:
   * `frameName` String - Name given to the created window in the
      `window.open()` call.
   * `options` BrowserWindowConstructorOptions - The options used to create the
-    BrowserWindow. They are merged in increasing precedence: options inherited
-    from the parent, parsed options from the `features` string from
-    `window.open()`, and options given by
+    BrowserWindow. They are merged in increasing precedence: parsed options
+    from the `features` string from `window.open()`, security-related
+    webPreferences inherited from the parent, and options given by
     [`webContents.setWindowOpenHandler`](web-contents.md#contentssetwindowopenhandlerhandler).
     Unrecognized options are not filtered out.
   * `additionalFeatures` String[] - The non-standard features (features not
@@ -1138,8 +1138,11 @@ Ignore application menu shortcuts while this web contents is focused.
   without a recognized 'action' value will result in a console error and have
   the same effect as returning `{action: 'deny'}`.
 
-Called before creating a window when `window.open()` is called from the
-renderer. See [`window.open()`](window-open.md) for more details and how to use this in conjunction with `did-create-window`.
+Called before creating a window a new window is requested by the renderer, e.g.
+by `window.open()`, a link with `target="_blank"`, shift+clicking on a link, or
+submitting a form with `<form target="_blank">`. See
+[`window.open()`](window-open.md) for more details and how to use this in
+conjunction with `did-create-window`.
 
 #### `contents.setAudioMuted(muted)`
 

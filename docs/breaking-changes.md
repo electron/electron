@@ -28,6 +28,27 @@ ensure your code works with this property enabled.  It has been enabled by defau
 
 You will be affected by this change if you use either `webFrame.executeJavaScript` or `webFrame.executeJavaScriptInIsolatedWorld`. You will need to ensure that values returned by either of those methods are supported by the [Context Bridge API](api/context-bridge.md#parameter--error--return-type-support) as these methods use the same value passing semantics.
 
+### Removed: BrowserWindowConstructorOptions inheriting from parent windows
+
+Prior to Electron 14, windows opened with `window.open` would inherit
+BrowserWindow constructor options such as `transparent` and `resizable` from
+their parent window. Beginning with Electron 14, this behavior is removed, and
+windows will not inherit any BrowserWindow constructor options from their
+parents.
+
+Instead, explicitly set options for the new window with `setWindowOpenHandler`:
+
+```js
+webContents.setWindowOpenHandler((details) => {
+  return {
+    action: 'allow',
+    overrideBrowserWindowOptions: {
+      // ...
+    }
+  }
+})
+```
+
 ## Planned Breaking API Changes (13.0)
 
 ### API Changed: `session.setPermissionCheckHandler(handler)`
