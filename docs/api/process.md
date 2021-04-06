@@ -14,6 +14,7 @@ In sandboxed renderers the `process` object contains only a subset of the APIs:
 
 * `crash()`
 * `hang()`
+* `setWasmCodegenAllowed()`
 * `getCreationTime()`
 * `getHeapStatistics()`
 * `getBlinkMemoryInfo()`
@@ -242,6 +243,12 @@ Takes a V8 heap snapshot and saves it to `filePath`.
 ### `process.hang()`
 
 Causes the main thread of the current process hang.
+
+### `process.setWasmCodegenAllowed(allowed)`
+
+* `allowed` Boolean
+
+Override the default check routine to force enabling/disabling wasm code generation.
 
 ### `process.setFdLimit(maxDescriptors)` _macOS_ _Linux_
 

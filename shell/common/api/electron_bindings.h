@@ -51,6 +51,7 @@ class ElectronBindings {
 
  private:
   static void Hang();
+  static void SetWasmCodegenAllowed(v8::Isolate* isolate, bool allowed);
   static v8::Local<v8::Value> GetHeapStatistics(v8::Isolate* isolate);
   static v8::Local<v8::Value> GetCreationTime(v8::Isolate* isolate);
   static v8::Local<v8::Value> GetSystemMemoryInfo(v8::Isolate* isolate,

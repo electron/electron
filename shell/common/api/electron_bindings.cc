@@ -32,6 +32,15 @@
 
 namespace electron {
 
+namespace {
+
+template <bool B>
+bool Return(v8::Local<v8::Context>, v8::Local<v8::String>) {
+  return B;
+}
+
+}  // namespace
+
 ElectronBindings::ElectronBindings(uv_loop_t* loop) {
   uv_async_init(loop, call_next_tick_async_.get(), OnCallNextTick);
   call_next_tick_async_.get()->data = this;
@@ -47,6 +56,7 @@ void ElectronBindings::BindProcess(v8::Isolate* isolate,
   // These bindings are shared between sandboxed & unsandboxed renderers
   process->SetMethod("crash", &Crash);
   process->SetMethod("hang", &Hang);
+  process->SetMethod("setWasmCodegenAllowed", &SetWasmCodegenAllowed);
   process->SetMethod("getCreationTime", &GetCreationTime);
   process->SetMethod("getHeapStatistics", &GetHeapStatistics);
   process->SetMethod("getBlinkMemoryInfo", &GetBlinkMemoryInfo);
@@ -130,6 +140,20 @@ void ElectronBindings::Crash() {
 void ElectronBindings::Hang() {
   for (;;)
     base::PlatformThread::Sleep(base::TimeDelta::FromSeconds(1));
+}
+
+// static
+void ElectronBindings::SetWasmCodegenAllowed(v8::Isolate* isolate,
+                                             bool allowed) {
+  // Note that while the V8 SetAllowWasmCodeGenerationCallback API accepts a
+  // callback, it does not explicitly allow executing JavaScript script in it,
+  // so we should not make the Electorn API accept callback otherwise V8 might
+  // crash randomly.
+  //
+  // Also note that while the callback accepts a |source| parameter, currently
+  // V8 always passes empty string to it.
+  isolate->SetAllowWasmCodeGenerationCallback(allowed ? &Return<true>
+                                                      : &Return<false>);
 }
 
 // static

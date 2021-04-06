@@ -287,6 +287,40 @@ describe('web security', () => {
     expect(response).to.equal('passed');
   });
 
+  describe('wasm codegen without unsafe-eval', () => {
+    async function loadWasm (w: BrowserWindow) {
+      await w.loadURL(`data:text/html,<head>
+          <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'">
+        </head>
+        <script>
+          function loadWasm() {
+            const wasmBin = new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0])
+            return new Promise((resolve) => {
+              WebAssembly.instantiate(wasmBin).then(() => {
+                resolve('loaded')
+              }).catch((error) => {
+                resolve(error.message)
+              })
+            });
+          }
+        </script>`);
+      return await w.webContents.executeJavaScript('loadWasm()');
+    }
+
+    it('is disallowed by default', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
+      const r = await loadWasm(w);
+      expect(r).to.equal('WebAssembly.instantiate(): Wasm code generation disallowed by embedder');
+    });
+
+    it('can be allowed by calling process.setWasmCodegenAllowed', async () => {
+      const preload = path.join(fixturesPath, 'module', 'preload-setWasmCodegenAllowed.js');
+      const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true, preload } });
+      const r = await loadWasm(w);
+      expect(r).to.equal('loaded');
+    });
+  });
+
   it('does not crash when multiple WebContent are created with web security disabled', () => {
     const options = { show: false, webPreferences: { webSecurity: false } };
     const w1 = new BrowserWindow(options);

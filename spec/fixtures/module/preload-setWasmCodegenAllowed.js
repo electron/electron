@@ -1,0 +1,1 @@
+process.setWasmCodegenAllowed(true);
