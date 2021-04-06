@@ -127,15 +127,6 @@ index 1e9e1d93cb783c104c2672189df7c8410a3dfbed..d664ad5844eeeb5cbaa19e1f9da33722
      // Whether the cert verifier is remote or in-process, we should wrap it in
      // caching and coalescing layers to avoid extra verifications and IPCs.
      cert_verifier = std::make_unique<net::CachingCertVerifier>(
-@@ -1871,7 +1960,7 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
-   }
- 
-   builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
--      *command_line, nullptr, std::move(cert_verifier)));
-+      *command_line, nullptr, std::move(cert_verifier));
- 
-   std::unique_ptr<NetworkServiceNetworkDelegate> network_delegate =
-       std::make_unique<NetworkServiceNetworkDelegate>(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
 index e1a8746bcdaf61c181566369b380af5ead3a7796..1372f6f6ca4899cc7b230a3cd1b26db4c16325b5 100644
 --- a/services/network/network_context.h
