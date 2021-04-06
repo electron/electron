@@ -169,6 +169,7 @@ class FileChooserDialog {
       gtk_file_chooser_set_create_folders(dialog_, TRUE);
 
     if (!settings.default_path.empty()) {
+      base::ThreadRestrictions::ScopedAllowIO allow_io;
       if (base::DirectoryExists(settings.default_path)) {
         gtk_file_chooser_set_current_folder(
             dialog_, settings.default_path.value().c_str());
