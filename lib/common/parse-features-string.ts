@@ -60,14 +60,14 @@ export function parseCommaSeparatedKeyValue (source: string) {
   const parsed = {} as { [key: string]: any };
   for (const keyValuePair of source.split(',')) {
     const [key, value] = keyValuePair.split('=').map(str => str.trim());
-    parsed[key] = coerce(key, value);
+    if (key) { parsed[key] = coerce(key, value); }
   }
 
   return parsed;
 }
 
 export function parseWebViewWebPreferences (preferences: string) {
-  return parseCommaSeparatedKeyValue(preferences).parsed;
+  return parseCommaSeparatedKeyValue(preferences);
 }
 
 const allowedWebPreferences = ['zoomFactor', 'nodeIntegration', 'javascript', 'contextIsolation', 'webviewTag'] as const;
