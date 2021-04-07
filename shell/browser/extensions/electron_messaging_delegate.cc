@@ -56,15 +56,7 @@ ElectronMessagingDelegate::MaybeGetTabInfo(content::WebContents* web_contents) {
     // the last committed URL, but do scrub the pending URL based on
     // permissions.
     auto* contents = electron::api::WebContents::From(web_contents);
-    if (!contents)
-      return nullptr;
-
-    auto* session = electron::api::Session::FromBrowserContext(
-        web_contents->GetBrowserContext());
-    if (!session)
-      return nullptr;
-
-    auto tab = session->GetExtensionTabDetails(contents);
+    auto tab = ExtensionTabUtil::GetTabDetailsFromWebContents(contents);
     if (!tab)
       return nullptr;
 
