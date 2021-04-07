@@ -472,7 +472,6 @@ void NativeWindowMac::Close() {
   }
 
   [window_ performClose:nil];
-  window_ = nil;
 
   // Closing a sheet doesn't trigger windowShouldClose,
   // so we need to manually call it ourselves here.
