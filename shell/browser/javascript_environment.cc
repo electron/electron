@@ -82,6 +82,9 @@ JavascriptEnvironment::JavascriptEnvironment(uv_loop_t* event_loop)
 }
 
 JavascriptEnvironment::~JavascriptEnvironment() {
+  DCHECK_NE(platform_, nullptr);
+  platform_->DrainTasks(isolate_);
+
   {
     v8::Locker locker(isolate_);
     v8::HandleScope scope(isolate_);
@@ -89,6 +92,9 @@ JavascriptEnvironment::~JavascriptEnvironment() {
   }
   isolate_->Exit();
   g_isolate = nullptr;
+
+  platform_->CancelPendingDelayedTasks(isolate_);
+  platform_->UnregisterIsolate(isolate_);
 }
 
 class EnabledStateObserverImpl final
