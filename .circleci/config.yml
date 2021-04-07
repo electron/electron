@@ -2326,7 +2326,7 @@ jobs:
     <<: *steps-tests
 
   linux-x64-testing-asan-tests:
-    <<: *machine-linux-medium
+    <<: *machine-linux-xlarge
     environment:
       <<: *env-linux-medium
       <<: *env-headless-testing
