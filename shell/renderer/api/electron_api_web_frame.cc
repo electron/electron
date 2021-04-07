@@ -410,12 +410,12 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
   void OnDestruct() override {}
 
  private:
-  bool MaybeGetRenderFrame(const gin_helper::ErrorThrower& thrower,
+  bool MaybeGetRenderFrame(v8::Isolate* isolate,
                            const std::string& method_name,
                            content::RenderFrame** render_frame_ptr) {
     std::string error_msg;
     if (!MaybeGetRenderFrame(&error_msg, method_name, render_frame_ptr)) {
-      thrower.ThrowError(error_msg);
+      gin_helper::ErrorThrower(isolate).ThrowError(error_msg);
       return false;
     }
     return true;
@@ -435,17 +435,17 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
     return true;
   }
 
-  void SetName(gin_helper::ErrorThrower thrower, const std::string& name) {
+  void SetName(v8::Isolate* isolate, const std::string& name) {
     content::RenderFrame* render_frame;
-    if (!MaybeGetRenderFrame(thrower, "setName", &render_frame))
+    if (!MaybeGetRenderFrame(isolate, "setName", &render_frame))
       return;
 
     render_frame->GetWebFrame()->SetName(blink::WebString::FromUTF8(name));
   }
 
-  void SetZoomLevel(gin_helper::ErrorThrower thrower, double level) {
+  void SetZoomLevel(v8::Isolate* isolate, double level) {
     content::RenderFrame* render_frame;
-    if (!MaybeGetRenderFrame(thrower, "setZoomLevel", &render_frame))
+    if (!MaybeGetRenderFrame(isolate, "setZoomLevel", &render_frame))
       return;
 
     mojo::Remote<mojom::ElectronBrowser> browser_remote;
@@ -454,10 +454,10 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
     browser_remote->SetTemporaryZoomLevel(level);
   }
 
-  double GetZoomLevel(gin_helper::ErrorThrower thrower) {
+  double GetZoomLevel(v8::Isolate* isolate) {
     double result = 0.0;
     content::RenderFrame* render_frame;
-    if (!MaybeGetRenderFrame(thrower, "getZoomLevel", &render_frame))
+    if (!MaybeGetRenderFrame(isolate, "getZoomLevel", &render_frame))
       return result;
 
     mojo::Remote<mojom::ElectronBrowser> browser_remote;
@@ -473,19 +473,18 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
       return;
     }
 
-    SetZoomLevel(thrower, blink::PageZoomFactorToZoomLevel(factor));
+    SetZoomLevel(thrower.isolate(), blink::PageZoomFactorToZoomLevel(factor));
   }
 
-  double GetZoomFactor(gin_helper::ErrorThrower thrower) {
-    double zoom_level = GetZoomLevel(thrower);
+  double GetZoomFactor(v8::Isolate* isolate) {
+    double zoom_level = GetZoomLevel(isolate);
     return blink::PageZoomLevelToZoomFactor(zoom_level);
   }
 
   v8::Local<v8::Value> GetWebPreference(v8::Isolate* isolate,
-                                        gin_helper::ErrorThrower thrower,
                                         std::string pref_name) {
     content::RenderFrame* render_frame;
-    if (!MaybeGetRenderFrame(thrower, "getWebPreference", &render_frame))
+    if (!MaybeGetRenderFrame(isolate, "getWebPreference", &render_frame))
       return v8::Undefined(isolate);
 
     const auto& prefs = render_frame->GetBlinkPreferences();
@@ -537,11 +536,11 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
     return v8::Null(isolate);
   }
 
-  void SetVisualZoomLevelLimits(gin_helper::ErrorThrower thrower,
+  void SetVisualZoomLevelLimits(v8::Isolate* isolate,
                                 double min_level,
                                 double max_level) {
     content::RenderFrame* render_frame;
-    if (!MaybeGetRenderFrame(thrower, "setVisualZoomLevelLimits",
+    if (!MaybeGetRenderFrame(isolate, "setVisualZoomLevelLimits",
                              &render_frame))
       return;
 
@@ -549,21 +548,21 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
     web_frame->View()->SetDefaultPageScaleLimits(min_level, max_level);
   }
 
-  void AllowGuestViewElementDefinition(gin_helper::ErrorThrower thrower,
+  void AllowGuestViewElementDefinition(v8::Isolate* isolate,
                                        v8::Local<v8::Object> context,
                                        v8::Local<v8::Function> register_cb) {
-    v8::HandleScope handle_scope(thrower.isolate());
+    v8::HandleScope handle_scope(isolate);
     v8::Context::Scope context_scope(context->CreationContext());
     blink::WebCustomElement::EmbedderNamesAllowedScope embedder_names_scope;
 
     content::RenderFrame* render_frame;
-    if (!MaybeGetRenderFrame(thrower, "allowGuestViewElementDefinition",
+    if (!MaybeGetRenderFrame(isolate, "allowGuestViewElementDefinition",
                              &render_frame))
       return;
 
     render_frame->GetWebFrame()->RequestExecuteV8Function(
-        context->CreationContext(), register_cb, v8::Null(thrower.isolate()), 0,
-        nullptr, nullptr);
+        context->CreationContext(), register_cb, v8::Null(isolate), 0, nullptr,
+        nullptr);
   }
 
   static int GetWebFrameId(v8::Local<v8::Value> content_window) {
@@ -598,7 +597,7 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
 
     // Remove the old client.
     content::RenderFrame* render_frame;
-    if (!MaybeGetRenderFrame(thrower, "setSpellCheckProvider", &render_frame))
+    if (!MaybeGetRenderFrame(isolate, "setSpellCheckProvider", &render_frame))
       return;
 
     auto* existing = SpellCheckerHolder::FromRenderFrame(render_frame);
@@ -615,9 +614,9 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
     new SpellCheckerHolder(render_frame, std::move(spell_check_client));
   }
 
-  void InsertText(gin_helper::ErrorThrower thrower, const std::string& text) {
+  void InsertText(v8::Isolate* isolate, const std::string& text) {
     content::RenderFrame* render_frame;
-    if (!MaybeGetRenderFrame(thrower, "insertText", &render_frame))
+    if (!MaybeGetRenderFrame(isolate, "insertText", &render_frame))
       return;
 
     blink::WebFrame* web_frame = render_frame->GetWebFrame();
@@ -631,7 +630,7 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
     }
   }
 
-  std::u16string InsertCSS(gin_helper::ErrorThrower thrower,
+  std::u16string InsertCSS(v8::Isolate* isolate,
                            const std::string& css,
                            gin::Arguments* args) {
     blink::WebDocument::CSSOrigin css_origin =
@@ -642,7 +641,7 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
       options.Get("cssOrigin", &css_origin);
 
     content::RenderFrame* render_frame;
-    if (!MaybeGetRenderFrame(thrower, "insertCSS", &render_frame))
+    if (!MaybeGetRenderFrame(isolate, "insertCSS", &render_frame))
       return std::u16string();
 
     blink::WebFrame* web_frame = render_frame->GetWebFrame();
@@ -656,10 +655,9 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
     return std::u16string();
   }
 
-  void RemoveInsertedCSS(gin_helper::ErrorThrower thrower,
-                         const std::u16string& key) {
+  void RemoveInsertedCSS(v8::Isolate* isolate, const std::u16string& key) {
     content::RenderFrame* render_frame;
-    if (!MaybeGetRenderFrame(thrower, "removeInsertedCSS", &render_frame))
+    if (!MaybeGetRenderFrame(isolate, "removeInsertedCSS", &render_frame))
       return;
 
     blink::WebFrame* web_frame = render_frame->GetWebFrame();
@@ -767,11 +765,11 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
     return handle;
   }
 
-  void SetIsolatedWorldInfo(gin_helper::ErrorThrower thrower,
+  void SetIsolatedWorldInfo(v8::Isolate* isolate,
                             int world_id,
                             const gin_helper::Dictionary& options) {
     content::RenderFrame* render_frame;
-    if (!MaybeGetRenderFrame(thrower, "setIsolatedWorldInfo", &render_frame))
+    if (!MaybeGetRenderFrame(isolate, "setIsolatedWorldInfo", &render_frame))
       return;
 
     std::string origin_url, security_policy, name;
@@ -780,7 +778,7 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
     options.Get("name", &name);
 
     if (!security_policy.empty() && origin_url.empty()) {
-      thrower.ThrowError(
+      gin_helper::ErrorThrower(isolate).ThrowError(
           "If csp is specified, securityOrigin should also be specified");
       return;
     }
@@ -800,21 +798,19 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
   }
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-  bool IsWordMisspelled(gin_helper::ErrorThrower thrower,
-                        const std::string& word) {
+  bool IsWordMisspelled(v8::Isolate* isolate, const std::string& word) {
     content::RenderFrame* render_frame;
-    if (!MaybeGetRenderFrame(thrower, "isWordMisspelled", &render_frame))
+    if (!MaybeGetRenderFrame(isolate, "isWordMisspelled", &render_frame))
       return false;
 
     return !SpellCheckWord(render_frame, word, nullptr);
   }
 
-  std::vector<std::u16string> GetWordSuggestions(
-      gin_helper::ErrorThrower thrower,
-      const std::string& word) {
+  std::vector<std::u16string> GetWordSuggestions(v8::Isolate* isolate,
+                                                 const std::string& word) {
     content::RenderFrame* render_frame;
     std::vector<std::u16string> suggestions;
-    if (!MaybeGetRenderFrame(thrower, "getWordSuggestions", &render_frame))
+    if (!MaybeGetRenderFrame(isolate, "getWordSuggestions", &render_frame))
       return suggestions;
 
     SpellCheckWord(render_frame, word, &suggestions);
@@ -839,10 +835,9 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
       return v8::Null(isolate);
   }
 
-  v8::Local<v8::Value> GetOpener(gin_helper::ErrorThrower thrower,
-                                 v8::Isolate* isolate) {
+  v8::Local<v8::Value> GetOpener(v8::Isolate* isolate) {
     content::RenderFrame* render_frame;
-    if (!MaybeGetRenderFrame(thrower, "opener", &render_frame))
+    if (!MaybeGetRenderFrame(isolate, "opener", &render_frame))
       return v8::Null(isolate);
 
     blink::WebFrame* frame = render_frame->GetWebFrame()->Opener();
@@ -856,10 +851,9 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
   }
 
   // Don't name it as GetParent, Windows has API with same name.
-  v8::Local<v8::Value> GetFrameParent(gin_helper::ErrorThrower thrower,
-                                      v8::Isolate* isolate) {
+  v8::Local<v8::Value> GetFrameParent(v8::Isolate* isolate) {
     content::RenderFrame* render_frame;
-    if (!MaybeGetRenderFrame(thrower, "parent", &render_frame))
+    if (!MaybeGetRenderFrame(isolate, "parent", &render_frame))
       return v8::Null(isolate);
 
     blink::WebFrame* frame = render_frame->GetWebFrame()->Parent();
@@ -872,10 +866,9 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
       return v8::Null(isolate);
   }
 
-  v8::Local<v8::Value> GetTop(gin_helper::ErrorThrower thrower,
-                              v8::Isolate* isolate) {
+  v8::Local<v8::Value> GetTop(v8::Isolate* isolate) {
     content::RenderFrame* render_frame;
-    if (!MaybeGetRenderFrame(thrower, "top", &render_frame))
+    if (!MaybeGetRenderFrame(isolate, "top", &render_frame))
       return v8::Null(isolate);
 
     blink::WebFrame* frame = render_frame->GetWebFrame()->Top();
@@ -888,10 +881,9 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
       return v8::Null(isolate);
   }
 
-  v8::Local<v8::Value> GetFirstChild(gin_helper::ErrorThrower thrower,
-                                     v8::Isolate* isolate) {
+  v8::Local<v8::Value> GetFirstChild(v8::Isolate* isolate) {
     content::RenderFrame* render_frame;
-    if (!MaybeGetRenderFrame(thrower, "firstChild", &render_frame))
+    if (!MaybeGetRenderFrame(isolate, "firstChild", &render_frame))
       return v8::Null(isolate);
 
     blink::WebFrame* frame = render_frame->GetWebFrame()->FirstChild();
@@ -904,10 +896,9 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
       return v8::Null(isolate);
   }
 
-  v8::Local<v8::Value> GetNextSibling(gin_helper::ErrorThrower thrower,
-                                      v8::Isolate* isolate) {
+  v8::Local<v8::Value> GetNextSibling(v8::Isolate* isolate) {
     content::RenderFrame* render_frame;
-    if (!MaybeGetRenderFrame(thrower, "nextSibling", &render_frame))
+    if (!MaybeGetRenderFrame(isolate, "nextSibling", &render_frame))
       return v8::Null(isolate);
 
     blink::WebFrame* frame = render_frame->GetWebFrame()->NextSibling();
@@ -920,11 +911,10 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
       return v8::Null(isolate);
   }
 
-  v8::Local<v8::Value> GetFrameForSelector(gin_helper::ErrorThrower thrower,
-                                           v8::Isolate* isolate,
+  v8::Local<v8::Value> GetFrameForSelector(v8::Isolate* isolate,
                                            const std::string& selector) {
     content::RenderFrame* render_frame;
-    if (!MaybeGetRenderFrame(thrower, "getFrameForSelector", &render_frame))
+    if (!MaybeGetRenderFrame(isolate, "getFrameForSelector", &render_frame))
       return v8::Null(isolate);
 
     blink::WebElement element =
@@ -943,11 +933,10 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
       return v8::Null(isolate);
   }
 
-  v8::Local<v8::Value> FindFrameByName(gin_helper::ErrorThrower thrower,
-                                       v8::Isolate* isolate,
+  v8::Local<v8::Value> FindFrameByName(v8::Isolate* isolate,
                                        const std::string& name) {
     content::RenderFrame* render_frame;
-    if (!MaybeGetRenderFrame(thrower, "getFrameForSelector", &render_frame))
+    if (!MaybeGetRenderFrame(isolate, "getFrameForSelector", &render_frame))
       return v8::Null(isolate);
 
     blink::WebFrame* frame = render_frame->GetWebFrame()->FindFrameByName(
@@ -961,9 +950,9 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
       return v8::Null(isolate);
   }
 
-  int GetRoutingId(gin_helper::ErrorThrower thrower) {
+  int GetRoutingId(v8::Isolate* isolate) {
     content::RenderFrame* render_frame;
-    if (!MaybeGetRenderFrame(thrower, "routingId", &render_frame))
+    if (!MaybeGetRenderFrame(isolate, "routingId", &render_frame))
       return 0;
 
     return render_frame->GetRoutingID();
