@@ -6,7 +6,7 @@ import * as os from 'os';
 import * as qs from 'querystring';
 import * as http from 'http';
 import { AddressInfo } from 'net';
-import { app, BrowserWindow, BrowserView, ipcMain, OnBeforeSendHeadersListenerDetails, protocol, screen, webContents, session, WebContents } from 'electron/main';
+import { app, BrowserWindow, BrowserView, ipcMain, OnBeforeSendHeadersListenerDetails, protocol, screen, webContents, session, WebContents, BrowserWindowConstructorOptions } from 'electron/main';
 
 import { emittedOnce, emittedUntil } from './events-helpers';
 import { ifit, ifdescribe, defer, delay } from './spec-helpers';
@@ -3195,6 +3195,55 @@ describe('BrowserWindow module', () => {
         }
       });
       w.loadFile(path.join(fixtures, 'pages', 'target-name.html'));
+    });
+
+    it('includes all properties', async () => {
+      const w = new BrowserWindow({ show: false });
+
+      const p = new Promise<{
+        url: string,
+        frameName: string,
+        disposition: string,
+        options: BrowserWindowConstructorOptions,
+        additionalFeatures: string[],
+        referrer: Electron.Referrer,
+        postBody: Electron.PostBody
+      }>((resolve) => {
+        w.webContents.once('new-window', (e, url, frameName, disposition, options, additionalFeatures, referrer, postBody) => {
+          e.preventDefault();
+          resolve({ url, frameName, disposition, options, additionalFeatures, referrer, postBody });
+        });
+      });
+      w.loadURL(`data:text/html,${encodeURIComponent(`
+        <form target="_blank" method="POST" id="form" action="http://example.com/test">
+          <input type="text" name="post-test-key" value="post-test-value"></input>
+        </form>
+        <script>form.submit()</script>
+      `)}`);
+      const { url, frameName, disposition, options, additionalFeatures, referrer, postBody } = await p;
+      expect(url).to.equal('http://example.com/test');
+      expect(frameName).to.equal('');
+      expect(disposition).to.equal('foreground-tab');
+      expect(options).to.deep.equal({
+        show: true,
+        width: 800,
+        height: 600,
+        webPreferences: {
+          contextIsolation: true,
+          nodeIntegration: false,
+          webviewTag: false,
+          nodeIntegrationInSubFrames: false,
+          openerId: options.webPreferences!.openerId
+        },
+        webContents: undefined
+      });
+      expect(referrer.policy).to.equal('strict-origin-when-cross-origin');
+      expect(referrer.url).to.equal('');
+      expect(additionalFeatures).to.deep.equal([]);
+      expect(postBody.data).to.have.length(1);
+      expect(postBody.data[0].type).to.equal('rawData');
+      expect(postBody.data[0].bytes).to.deep.equal(Buffer.from('post-test-key=post-test-value'));
+      expect(postBody.contentType).to.equal('application/x-www-form-urlencoded');
     });
   });
 
