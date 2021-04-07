@@ -201,10 +201,10 @@ index af497e6916d72bfbd40fe9f131be6022482ef810..74f9fe3a0a0de20d48bc8b2d39710938
  }
  
 diff --git a/content/browser/site_instance_impl.cc b/content/browser/site_instance_impl.cc
-index 1b0740a7853d28a54eef476f9b79f19d39e42ba0..196a02af49b4abb37c8ea213e09a233358bf90cb 100644
+index 4dc300404357e74a6e13aed107611ccad9293a30..31aa723b8e23e3802dcb096c651241939a9ce362 100644
 --- a/content/browser/site_instance_impl.cc
 +++ b/content/browser/site_instance_impl.cc
-@@ -1131,6 +1131,10 @@ bool SiteInstanceImpl::HasRelatedSiteInstance(const SiteInfo& site_info) {
+@@ -1159,6 +1159,10 @@ bool SiteInstanceImpl::HasRelatedSiteInstance(const SiteInfo& site_info) {
    return browsing_instance_->HasSiteInstance(site_info);
  }
  
@@ -216,10 +216,10 @@ index 1b0740a7853d28a54eef476f9b79f19d39e42ba0..196a02af49b4abb37c8ea213e09a2333
      const GURL& url) {
    return GetRelatedSiteInstanceImpl(
 diff --git a/content/browser/site_instance_impl.h b/content/browser/site_instance_impl.h
-index ccfa849d290ff7ab80cd631c5049643e2c81c884..eff14e7b4e09f888b1c93f855e02841de5c3158a 100644
+index ef8b504b762d28537a75ef35f86839a75768c0e3..82a92741e04e42e41e223db146d173c6ea65fda8 100644
 --- a/content/browser/site_instance_impl.h
 +++ b/content/browser/site_instance_impl.h
-@@ -497,6 +497,7 @@ class CONTENT_EXPORT SiteInstanceImpl final : public SiteInstance,
+@@ -501,6 +501,7 @@ class CONTENT_EXPORT SiteInstanceImpl final : public SiteInstance,
    BrowserContext* GetBrowserContext() override;
    const GURL& GetSiteURL() override;
    scoped_refptr<SiteInstance> GetRelatedSiteInstance(const GURL& url) override;
