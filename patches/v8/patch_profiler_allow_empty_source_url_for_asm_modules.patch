@@ -1,0 +1,40 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Clemens Backes <clemensb@chromium.org>
+Date: Mon, 5 Apr 2021 20:39:37 -0700
+Subject: Allow empty source URL for asm modules
+
+In contrast to wasm modules, asm.js modules have an empty source URL.
+Thus loosen a DCHECK and handle the nullptr source_url correctly.
+Also add regression tests that check that we don't crash. Those can
+later be extended to check that the profile looks as expected; for now
+they only check that we terminate.
+
+R=bmeurer@chromium.org
+
+Bug: chromium:1185919
+Change-Id: I6b879f540a2c3647920ad2970efcf7c94712d8c7
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2745895
+Reviewed-by: Benedikt Meurer <bmeurer@chromium.org>
+Commit-Queue: Clemens Backes <clemensb@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#73313}# Please enter the commit message for your changes. Lines starting
+
+diff --git a/src/profiler/profiler-listener.cc b/src/profiler/profiler-listener.cc
+index bf76b541930bbcb01186652f80f47f55d073cdf0..1342a9317541b685e16f6590b3cc0bbbd967775c 100644
+--- a/src/profiler/profiler-listener.cc
++++ b/src/profiler/profiler-listener.cc
+@@ -204,11 +204,13 @@ void ProfilerListener::CodeCreateEvent(LogEventsAndTags tag,
+                                        wasm::WasmName name,
+                                        const char* source_url, int code_offset,
+                                        int script_id) {
+-  DCHECK_NOT_NULL(source_url);
+   CodeEventsContainer evt_rec(CodeEventRecord::CODE_CREATION);
+   CodeCreateEventRecord* rec = &evt_rec.CodeCreateEventRecord_;
+   rec->instruction_start = code->instruction_start();
+-  rec->entry = new CodeEntry(tag, GetName(name), GetName(source_url), 1,
++  // Wasm modules always have a source URL. Asm.js modules never have one.
++  DCHECK_EQ(code->native_module()->module()->origin == wasm::kWasmOrigin,
++            source_url != nullptr);
++  rec->entry = new CodeEntry(tag, GetName(name), source_url ? GetName(source_url) : CodeEntry::kEmptyResourceName, 1,
+                              code_offset + 1, nullptr, true);
+   rec->entry->set_script_id(script_id);
+   rec->entry->set_position(code_offset);
