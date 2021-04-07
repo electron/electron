@@ -238,18 +238,35 @@ void BrowserWindow::OnCloseButtonClicked(bool* prevent_default) {
   if (window_unresponsive_closure_.IsCancelled())
     ScheduleUnresponsiveEvent(5000);
 
+  // Already closed by renderer.
   if (!web_contents())
-    // Already closed by renderer
     return;
 
   // Required to make beforeunload handler work.
   api_web_contents_->NotifyUserActivation();
 
-  if (web_contents()->NeedToFireBeforeUnloadOrUnloadEvents())
+  // Trigger beforeunload events for associated BrowserViews.
+  for (NativeBrowserView* view : window_->browser_views()) {
+    auto* vwc = view->web_contents();
+    auto* api_web_contents = api::WebContents::From(vwc);
+
+    // Required to make beforeunload handler work.
+    if (api_web_contents)
+      api_web_contents->NotifyUserActivation();
+
+    if (vwc) {
+      if (vwc->NeedToFireBeforeUnloadOrUnloadEvents()) {
+        vwc->DispatchBeforeUnload(false /* auto_cancel */);
+      }
+    }
+  }
+
+  if (web_contents()->NeedToFireBeforeUnloadOrUnloadEvents()) {
     web_contents()->DispatchBeforeUnload(false /* auto_cancel */);
-  else
+  } else {
     web_contents()->Close();
-}
+  }
+}  // namespace api
 
 void BrowserWindow::OnWindowBlur() {
   if (api_web_contents_)
