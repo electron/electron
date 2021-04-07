@@ -487,6 +487,10 @@ void NativeWindowMac::CloseImmediately() {
   base::scoped_nsobject<NSWindow> child_window(window_,
                                                base::scoped_policy::RETAIN);
   [window_ close];
+}
+
+void NativeWindowMac::NotifyWindowClosed() {
+  NativeWindow::NotifyWindowClosed();
   window_ = nil;
 }
 
