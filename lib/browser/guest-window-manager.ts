@@ -244,7 +244,7 @@ export function makeWebPreferences ({ embedder, secureOverrideWebPreferences = {
   const openerId = parentWebPreferences.nativeWindowOpen ? null : embedder.id;
 
   return {
-    ...parentWebPreferences,
+    ...(embedder.getOwnerBrowserWindow() ? null : parentWebPreferences),
     ...parsedWebPreferences,
     // Note that order is key here, we want to disallow the renderer's
     // ability to change important security options but allow main (via
