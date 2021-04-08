@@ -121,9 +121,6 @@ const char kNodeIntegration[] = "nodeIntegration";
 // Enable context isolation of Electron APIs and preload script
 const char kContextIsolation[] = "contextIsolation";
 
-// Enable world safe passing of values when using "executeJavaScript"
-const char kWorldSafeExecuteJavaScript[] = "worldSafeExecuteJavaScript";
-
 // Instance ID of guest WebContents.
 const char kGuestInstanceID[] = "guestInstanceId";
 
