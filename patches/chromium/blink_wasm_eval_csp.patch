@@ -62,7 +62,7 @@ index 5aec2cab35a7a615e2689b298f18487183c047c7..e76b7a2d99feaf0d7d0992ce79f322ab
    }
    return IsReportOnly() ||
 diff --git a/third_party/blink/renderer/core/frame/csp/source_list_directive.cc b/third_party/blink/renderer/core/frame/csp/source_list_directive.cc
-index 063158759fbfdff4be9821aa4da30c6c6a094c57..68599fbf101c0fbbf2100d4d49657e623e1ed938 100644
+index 063158759fbfdff4be9821aa4da30c6c6a094c57..68d159c98a3ad4de11fab330a190824f06209bb4 100644
 --- a/third_party/blink/renderer/core/frame/csp/source_list_directive.cc
 +++ b/third_party/blink/renderer/core/frame/csp/source_list_directive.cc
 @@ -233,10 +233,15 @@ bool SourceListDirective::ParseSource(
