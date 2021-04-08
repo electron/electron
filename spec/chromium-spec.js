@@ -91,7 +91,7 @@ describe('chromium feature', () => {
         slashes: true
       });
       const message = waitForEvent(window, 'message');
-      const b = window.open(windowUrl, '', 'nodeIntegration=no,show=no');
+      const b = window.open(windowUrl, '', 'nodeIntegration=no,contextIsolation=no,show=no');
       const event = await message;
       b.close();
       expect(event.data.isProcessGlobalUndefined).to.be.true();
@@ -107,7 +107,7 @@ describe('chromium feature', () => {
         slashes: true
       });
       const message = waitForEvent(window, 'message');
-      const b = window.open(windowUrl, '', 'webviewTag=no,nodeIntegration=yes,show=no');
+      const b = window.open(windowUrl, '', 'webviewTag=no,contextIsolation=no,nodeIntegration=yes,show=no');
       const event = await message;
       b.close();
       expect(event.data.isWebViewGlobalUndefined).to.be.true();
