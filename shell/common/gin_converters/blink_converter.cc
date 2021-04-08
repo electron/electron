@@ -23,7 +23,6 @@
 #include "third_party/blink/public/common/input/web_mouse_event.h"
 #include "third_party/blink/public/common/input/web_mouse_wheel_event.h"
 #include "third_party/blink/public/common/widget/device_emulation_params.h"
-#include "third_party/blink/public/platform/web_size.h"
 #include "ui/base/clipboard/clipboard.h"
 #include "ui/events/blink/blink_event_util.h"
 #include "ui/events/keycodes/dom/keycode_converter.h"
@@ -44,11 +43,11 @@ int VectorToBitArray(const std::vector<T>& vec) {
 namespace gin {
 
 template <>
-struct Converter<base::char16> {
+struct Converter<char16_t> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Handle<v8::Value> val,
-                     base::char16* out) {
-    base::string16 code = base::UTF8ToUTF16(gin::V8ToString(isolate, val));
+                     char16_t* out) {
+    std::u16string code = base::UTF8ToUTF16(gin::V8ToString(isolate, val));
     if (code.length() != 1)
       return false;
     *out = code[0];
@@ -207,11 +206,11 @@ bool Converter<blink::WebKeyboardEvent>::FromV8(v8::Isolate* isolate,
     // Make sure to not read beyond the buffer in case some bad code doesn't
     // NULL-terminate it (this is called from plugins).
     size_t text_length_cap = blink::WebKeyboardEvent::kTextLengthCap;
-    base::string16 text16 = base::UTF8ToUTF16(str);
+    std::u16string text16 = base::UTF8ToUTF16(str);
 
-    memset(out->text, 0, text_length_cap);
-    memset(out->unmodified_text, 0, text_length_cap);
-    for (size_t i = 0; i < std::min(text_length_cap, text16.size()); ++i) {
+    std::fill_n(out->text, text_length_cap, 0);
+    std::fill_n(out->unmodified_text, text_length_cap, 0);
+    for (size_t i = 0; i < std::min(text_length_cap - 1, text16.size()); ++i) {
       out->text[i] = text16[i];
       out->unmodified_text[i] = text16[i];
     }
@@ -285,15 +284,6 @@ bool Converter<blink::WebMouseWheelEvent>::FromV8(
   return true;
 }
 
-bool Converter<blink::WebSize>::FromV8(v8::Isolate* isolate,
-                                       v8::Local<v8::Value> val,
-                                       blink::WebSize* out) {
-  gin_helper::Dictionary dict;
-  if (!ConvertFromV8(isolate, val, &dict))
-    return false;
-  return dict.Get("width", &out->width) && dict.Get("height", &out->height);
-}
-
 bool Converter<blink::DeviceEmulationParams>::FromV8(
     v8::Isolate* isolate,
     v8::Local<v8::Value> val,
@@ -325,21 +315,21 @@ bool Converter<blink::DeviceEmulationParams>::FromV8(
 }
 
 // static
-v8::Local<v8::Value> Converter<blink::ContextMenuDataMediaType>::ToV8(
+v8::Local<v8::Value> Converter<blink::mojom::ContextMenuDataMediaType>::ToV8(
     v8::Isolate* isolate,
-    const blink::ContextMenuDataMediaType& in) {
+    const blink::mojom::ContextMenuDataMediaType& in) {
   switch (in) {
-    case blink::ContextMenuDataMediaType::kImage:
+    case blink::mojom::ContextMenuDataMediaType::kImage:
       return StringToV8(isolate, "image");
-    case blink::ContextMenuDataMediaType::kVideo:
+    case blink::mojom::ContextMenuDataMediaType::kVideo:
       return StringToV8(isolate, "video");
-    case blink::ContextMenuDataMediaType::kAudio:
+    case blink::mojom::ContextMenuDataMediaType::kAudio:
       return StringToV8(isolate, "audio");
-    case blink::ContextMenuDataMediaType::kCanvas:
+    case blink::mojom::ContextMenuDataMediaType::kCanvas:
       return StringToV8(isolate, "canvas");
-    case blink::ContextMenuDataMediaType::kFile:
+    case blink::mojom::ContextMenuDataMediaType::kFile:
       return StringToV8(isolate, "file");
-    case blink::ContextMenuDataMediaType::kPlugin:
+    case blink::mojom::ContextMenuDataMediaType::kPlugin:
       return StringToV8(isolate, "plugin");
     default:
       return StringToV8(isolate, "none");
@@ -347,15 +337,16 @@ v8::Local<v8::Value> Converter<blink::ContextMenuDataMediaType>::ToV8(
 }
 
 // static
-v8::Local<v8::Value> Converter<blink::ContextMenuDataInputFieldType>::ToV8(
+v8::Local<v8::Value>
+Converter<blink::mojom::ContextMenuDataInputFieldType>::ToV8(
     v8::Isolate* isolate,
-    const blink::ContextMenuDataInputFieldType& in) {
+    const blink::mojom::ContextMenuDataInputFieldType& in) {
   switch (in) {
-    case blink::ContextMenuDataInputFieldType::kPlainText:
+    case blink::mojom::ContextMenuDataInputFieldType::kPlainText:
       return StringToV8(isolate, "plainText");
-    case blink::ContextMenuDataInputFieldType::kPassword:
+    case blink::mojom::ContextMenuDataInputFieldType::kPassword:
       return StringToV8(isolate, "password");
-    case blink::ContextMenuDataInputFieldType::kOther:
+    case blink::mojom::ContextMenuDataInputFieldType::kOther:
       return StringToV8(isolate, "other");
     default:
       return StringToV8(isolate, "none");
@@ -374,7 +365,7 @@ v8::Local<v8::Value> EditFlagsToV8(v8::Isolate* isolate, int editFlags) {
 
   bool pasteFlag = false;
   if (editFlags & blink::ContextMenuDataEditFlags::kCanPaste) {
-    std::vector<base::string16> types;
+    std::vector<std::u16string> types;
     ui::Clipboard::GetForCurrentThread()->ReadAvailableTypes(
         ui::ClipboardBuffer::kCopyPaste, /* data_dst = */ nullptr, &types);
     pasteFlag = !types.empty();
@@ -385,27 +376,32 @@ v8::Local<v8::Value> EditFlagsToV8(v8::Isolate* isolate, int editFlags) {
            !!(editFlags & blink::ContextMenuDataEditFlags::kCanDelete));
   dict.Set("canSelectAll",
            !!(editFlags & blink::ContextMenuDataEditFlags::kCanSelectAll));
+  dict.Set("canEditRichly",
+           !!(editFlags & blink::ContextMenuDataEditFlags::kCanEditRichly));
 
   return ConvertToV8(isolate, dict);
 }
 
 v8::Local<v8::Value> MediaFlagsToV8(v8::Isolate* isolate, int mediaFlags) {
   gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
-  dict.Set("inError",
-           !!(mediaFlags & blink::WebContextMenuData::kMediaInError));
-  dict.Set("isPaused",
-           !!(mediaFlags & blink::WebContextMenuData::kMediaPaused));
-  dict.Set("isMuted", !!(mediaFlags & blink::WebContextMenuData::kMediaMuted));
-  dict.Set("hasAudio",
-           !!(mediaFlags & blink::WebContextMenuData::kMediaHasAudio));
-  dict.Set("isLooping",
-           (mediaFlags & blink::WebContextMenuData::kMediaLoop) != 0);
+  dict.Set("inError", !!(mediaFlags & blink::ContextMenuData::kMediaInError));
+  dict.Set("isPaused", !!(mediaFlags & blink::ContextMenuData::kMediaPaused));
+  dict.Set("isMuted", !!(mediaFlags & blink::ContextMenuData::kMediaMuted));
+  dict.Set("canSave", !!(mediaFlags & blink::ContextMenuData::kMediaCanSave));
+  dict.Set("hasAudio", !!(mediaFlags & blink::ContextMenuData::kMediaHasAudio));
+  dict.Set("isLooping", !!(mediaFlags & blink::ContextMenuData::kMediaLoop));
   dict.Set("isControlsVisible",
-           (mediaFlags & blink::WebContextMenuData::kMediaControls) != 0);
+           !!(mediaFlags & blink::ContextMenuData::kMediaControls));
   dict.Set("canToggleControls",
-           !!(mediaFlags & blink::WebContextMenuData::kMediaCanToggleControls));
+           !!(mediaFlags & blink::ContextMenuData::kMediaCanToggleControls));
+  dict.Set("canPrint", !!(mediaFlags & blink::ContextMenuData::kMediaCanPrint));
   dict.Set("canRotate",
-           !!(mediaFlags & blink::WebContextMenuData::kMediaCanRotate));
+           !!(mediaFlags & blink::ContextMenuData::kMediaCanRotate));
+  dict.Set("canShowPictureInPicture",
+           !!(mediaFlags & blink::ContextMenuData::kMediaCanPictureInPicture));
+  dict.Set("isShowingPictureInPicture",
+           !!(mediaFlags & blink::ContextMenuData::kMediaPictureInPicture));
+  dict.Set("canLoop", !!(mediaFlags & blink::ContextMenuData::kMediaCanLoop));
   return ConvertToV8(isolate, dict);
 }
 

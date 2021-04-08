@@ -59,7 +59,7 @@ class WebContentsPreferences
   bool GetPreference(base::StringPiece name, std::string* value) const;
 
   // Returns the preload script path.
-  bool GetPreloadPath(base::FilePath::StringType* path) const;
+  bool GetPreloadPath(base::FilePath* path) const;
 
   // Returns the web preferences.
   base::Value* preference() { return &preference_; }

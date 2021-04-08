@@ -23,16 +23,7 @@ Object.setPrototypeOf(process, EventEmitter.prototype);
 const { ipcRendererInternal } = require('@electron/internal/renderer/ipc-renderer-internal');
 const ipcRendererUtils = require('@electron/internal/renderer/ipc-renderer-internal-utils');
 
-const {
-  preloadScripts,
-  isRemoteModuleEnabled,
-  isWebViewTagEnabled,
-  guestInstanceId,
-  openerId,
-  process: processProps
-} = ipcRendererUtils.invokeSync(IPC_MESSAGES.BROWSER_SANDBOX_LOAD);
-
-process.isRemoteModuleEnabled = isRemoteModuleEnabled;
+const { preloadScripts, process: processProps } = ipcRendererUtils.invokeSync(IPC_MESSAGES.BROWSER_SANDBOX_LOAD);
 
 const electron = require('electron');
 
@@ -52,6 +43,10 @@ const loadableModules = new Map<string, Function>([
 // invoking the 'onMessage' callback.
 v8Util.setHiddenValue(global, 'ipcNative', {
   onMessage (internal: boolean, channel: string, ports: MessagePort[], args: any[], senderId: number) {
+    if (internal && senderId !== 0) {
+      console.error(`Message ${channel} sent by unexpected WebContents (${senderId})`);
+      return;
+    }
     const sender = internal ? ipcRendererInternal : electron.ipcRenderer;
     sender.emit(channel, { sender, senderId, ports }, ...args);
   }
@@ -94,6 +89,10 @@ Object.defineProperty(preloadProcess, 'noDeprecation', {
   }
 });
 
+// Expose process.contextId
+const contextId = v8Util.getHiddenValue<string>(global, 'contextId');
+Object.defineProperty(preloadProcess, 'contextId', { enumerable: true, value: contextId });
+
 process.on('loaded', () => (preloadProcess as events.EventEmitter).emit('loaded'));
 process.on('exit', () => (preloadProcess as events.EventEmitter).emit('exit'));
 (process as events.EventEmitter).on('document-start', () => (preloadProcess as events.EventEmitter).emit('document-start'));
@@ -114,6 +113,7 @@ function preloadRequire (module: string) {
 
 // Process command line arguments.
 const { hasSwitch } = process._linkedBinding('electron_common_command_line');
+const { getWebPreference } = process._linkedBinding('electron_renderer_web_frame');
 
 // Similar to nodes --expose-internals flag, this exposes _linkedBinding so
 // that tests can call it to get access to some test only bindings
@@ -121,10 +121,13 @@ if (hasSwitch('unsafely-expose-electron-internals-for-testing')) {
   preloadProcess._linkedBinding = process._linkedBinding;
 }
 
-const contextIsolation = hasSwitch('context-isolation');
-const isHiddenPage = hasSwitch('hidden-page');
-const rendererProcessReuseEnabled = hasSwitch('disable-electron-site-instance-overrides');
+const contextIsolation = getWebPreference(window, 'contextIsolation');
+const webviewTag = getWebPreference(window, 'webviewTag');
+const isHiddenPage = getWebPreference(window, 'hiddenPage');
+const rendererProcessReuseEnabled = getWebPreference(window, 'disableElectronSiteInstanceOverrides');
 const usesNativeWindowOpen = true;
+const guestInstanceId = getWebPreference(window, 'guestInstanceId') || null;
+const openerId = getWebPreference(window, 'openerId') || null;
 
 switch (window.location.protocol) {
   case 'devtools:': {
@@ -135,7 +138,7 @@ switch (window.location.protocol) {
   case 'chrome-extension:': {
     break;
   }
-  case 'chrome': {
+  case 'chrome:': {
     break;
   }
   default: {
@@ -148,7 +151,7 @@ switch (window.location.protocol) {
 // Load webview tag implementation.
 if (process.isMainFrame) {
   const { webViewInit } = require('@electron/internal/renderer/web-view/web-view-init');
-  webViewInit(contextIsolation, isWebViewTagEnabled, guestInstanceId);
+  webViewInit(contextIsolation, webviewTag, guestInstanceId);
 }
 
 // Wrap the script into a function executed in global scope. It won't have

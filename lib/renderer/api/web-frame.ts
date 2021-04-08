@@ -11,16 +11,16 @@ class WebFrame extends EventEmitter {
     this.setMaxListeners(0);
   }
 
-  findFrameByRoutingId (...args: Array<any>) {
-    return getWebFrame(binding._findFrameByRoutingId(this.context, ...args));
+  findFrameByRoutingId (routingId: number) {
+    return getWebFrame(binding._findFrameByRoutingId(this.context, routingId));
   }
 
-  getFrameForSelector (...args: Array<any>) {
-    return getWebFrame(binding._getFrameForSelector(this.context, ...args));
+  getFrameForSelector (selector: string) {
+    return getWebFrame(binding._getFrameForSelector(this.context, selector));
   }
 
-  findFrameByName (...args: Array<any>) {
-    return getWebFrame(binding._findFrameByName(this.context, ...args));
+  findFrameByName (name: string) {
+    return getWebFrame(binding._findFrameByName(this.context, name));
   }
 
   get opener () {
@@ -48,8 +48,10 @@ class WebFrame extends EventEmitter {
   }
 }
 
-const { hasSwitch } = process._linkedBinding('electron_common_command_line');
-const worldSafeJS = hasSwitch('world-safe-execute-javascript') && hasSwitch('context-isolation');
+const contextIsolation = binding.getWebPreference(window, 'contextIsolation');
+const worldSafeExecuteJavaScript = binding.getWebPreference(window, 'worldSafeExecuteJavaScript');
+
+const worldSafeJS = worldSafeExecuteJavaScript || !contextIsolation;
 
 // Populate the methods.
 for (const name in binding) {
@@ -60,12 +62,12 @@ for (const name in binding) {
       if (!worldSafeJS && name.startsWith('executeJavaScript')) {
         deprecate.log(`Security Warning: webFrame.${name} was called without worldSafeExecuteJavaScript enabled. This is considered unsafe. worldSafeExecuteJavaScript will be enabled by default in Electron 12.`);
       }
-      return binding[name](this.context, ...args);
+      return (binding as any)[name](this.context, ...args);
     };
     // TODO(MarshallOfSound): Remove once the above deprecation is removed
     if (name.startsWith('executeJavaScript')) {
       (WebFrame as any).prototype[`_${name}`] = function (...args: Array<any>) {
-        return binding[name](this.context, ...args);
+        return (binding as any)[name](this.context, ...args);
       };
     }
   }

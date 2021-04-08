@@ -47,7 +47,7 @@ formatted correctly.
 
 ## JavaScript
 
-* Write [standard](https://npm.im/standard) JavaScript style.
+* Write [standard](https://www.npmjs.com/package/standard) JavaScript style.
 * File names should be concatenated with `-` instead of `_`, e.g.
   `file-name.js` rather than `file_name.js`, because in
   [github/atom](https://github.com/github/atom) module names are usually in
@@ -66,11 +66,11 @@ formatted correctly.
 
 Electron APIs uses the same capitalization scheme as Node.js:
 
-- When the module itself is a class like `BrowserWindow`, use `PascalCase`.
-- When the module is a set of APIs, like `globalShortcut`, use `camelCase`.
-- When the API is a property of object, and it is complex enough to be in a
+* When the module itself is a class like `BrowserWindow`, use `PascalCase`.
+* When the module is a set of APIs, like `globalShortcut`, use `camelCase`.
+* When the API is a property of object, and it is complex enough to be in a
   separate chapter like `win.webContents`, use `mixedCase`.
-- For other non-module APIs, use natural titles, like `<webview> Tag` or
+* For other non-module APIs, use natural titles, like `<webview> Tag` or
   `Process Object`.
 
 When creating a new API, it is preferred to use getters and setters instead of

@@ -185,6 +185,7 @@ v8::Local<v8::Promise> Debugger::SendCommand(gin::Arguments* args) {
 void Debugger::ClearPendingRequests() {
   for (auto& it : pending_requests_)
     it.second.RejectWithErrorMessage("target closed while handling command");
+  pending_requests_.clear();
 }
 
 // static

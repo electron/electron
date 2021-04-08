@@ -79,7 +79,7 @@ namespace api {
 gin::WrapperInfo NetLog::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 NetLog::NetLog(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
-    : browser_context_(browser_context), weak_ptr_factory_(this) {
+    : browser_context_(browser_context) {
   file_task_runner_ = CreateFileTaskRunner();
 }
 
@@ -136,8 +136,8 @@ v8::Local<v8::Promise> NetLog::StartLogging(base::FilePath log_path,
           ->GetNetworkContext();
 
   network_context->CreateNetLogExporter(mojo::MakeRequest(&net_log_exporter_));
-  net_log_exporter_.set_connection_error_handler(
-      base::BindOnce(&NetLog::OnConnectionError, base::Unretained(this)));
+  net_log_exporter_.set_connection_error_handler(base::BindOnce(
+      &NetLog::OnConnectionError, weak_ptr_factory_.GetWeakPtr()));
 
   base::PostTaskAndReplyWithResult(
       file_task_runner_.get(), FROM_HERE,

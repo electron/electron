@@ -77,7 +77,8 @@ The `crashReporter` module has the following methods:
 ### `crashReporter.start(options)`
 
 * `options` Object
-  * `submitURL` String - URL that crash reports will be sent to as POST.
+  * `submitURL` String (optional) - URL that crash reports will be sent to as
+    POST. Required unless `uploadToServer` is `false`.
   * `productName` String (optional) - Defaults to `app.name`.
   * `companyName` String (optional) _Deprecated_ - Deprecated alias for
     `{ globalExtra: { _companyName: ... } }`.
@@ -128,7 +129,7 @@ must be at most 39 bytes long, and values must be no longer than 127 bytes.
 Keys with names longer than the maximum will be silently ignored. Key values
 longer than the maximum length will be truncated.
 
-**Note:** Calling this method from the renderer process is deprecated.
+**Note:** This method is only available in the main process.
 
 ### `crashReporter.getLastCrashReport()`
 
@@ -137,7 +138,7 @@ last crash report. Only crash reports that have been uploaded will be returned;
 even if a crash report is present on disk it will not be returned until it is
 uploaded. In the case that there are no uploaded reports, `null` is returned.
 
-**Note:** Calling this method from the renderer process is deprecated.
+**Note:** This method is only available in the main process.
 
 ### `crashReporter.getUploadedReports()`
 
@@ -146,14 +147,14 @@ Returns [`CrashReport[]`](structures/crash-report.md):
 Returns all uploaded crash reports. Each report contains the date and uploaded
 ID.
 
-**Note:** Calling this method from the renderer process is deprecated.
+**Note:** This method is only available in the main process.
 
 ### `crashReporter.getUploadToServer()`
 
 Returns `Boolean` - Whether reports should be submitted to the server. Set through
 the `start` method or `setUploadToServer`.
 
-**Note:** Calling this method from the renderer process is deprecated.
+**Note:** This method is only available in the main process.
 
 ### `crashReporter.setUploadToServer(uploadToServer)`
 
@@ -162,13 +163,7 @@ the `start` method or `setUploadToServer`.
 This would normally be controlled by user preferences. This has no effect if
 called before `start` is called.
 
-**Note:** Calling this method from the renderer process is deprecated.
-
-### `crashReporter.getCrashesDirectory()` _Deprecated_
-
-Returns `String` - The directory where crashes are temporarily stored before being uploaded.
-
-**Note:** This method is deprecated, use `app.getPath('crashDumps')` instead.
+**Note:** This method is only available in the main process.
 
 ### `crashReporter.addExtraParameter(key, value)`
 

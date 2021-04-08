@@ -12,7 +12,6 @@
 #include "base/compiler_specific.h"
 #include "base/macros.h"
 #include "base/observer_list.h"
-#include "base/strings/string16.h"
 #include "base/task/cancelable_task_tracker.h"
 #include "base/values.h"
 #include "gin/dictionary.h"
@@ -23,6 +22,7 @@
 #if defined(OS_WIN)
 #include <windows.h>
 #include "base/files/file_path.h"
+#include "shell/browser/ui/win/taskbar_host.h"
 #endif
 
 #if defined(OS_MAC)
@@ -84,7 +84,7 @@ class Browser : public WindowListObserver {
   void ClearRecentDocuments();
 
   // Set the application user model ID.
-  void SetAppUserModelID(const base::string16& name);
+  void SetAppUserModelID(const std::wstring& name);
 
   // Remove the default protocol handler registry key
   bool RemoveAsDefaultProtocolClient(const std::string& protocol,
@@ -98,7 +98,7 @@ class Browser : public WindowListObserver {
   bool IsDefaultProtocolClient(const std::string& protocol,
                                gin::Arguments* args);
 
-  base::string16 GetApplicationNameForProtocol(const GURL& url);
+  std::u16string GetApplicationNameForProtocol(const GURL& url);
 
 #if !defined(OS_LINUX)
   // get the name, icon and path for an application
@@ -107,15 +107,15 @@ class Browser : public WindowListObserver {
 #endif
 
   // Set/Get the badge count.
-  bool SetBadgeCount(int count);
+  bool SetBadgeCount(base::Optional<int> count);
   int GetBadgeCount();
 
 #if defined(OS_WIN)
   struct LaunchItem {
-    base::string16 name;
-    base::string16 path;
-    base::string16 scope;
-    std::vector<base::string16> args;
+    std::wstring name;
+    std::wstring path;
+    std::wstring scope;
+    std::vector<std::wstring> args;
     bool enabled = true;
 
     LaunchItem();
@@ -131,13 +131,13 @@ class Browser : public WindowListObserver {
     bool restore_state = false;
     bool opened_at_login = false;
     bool opened_as_hidden = false;
-    base::string16 path;
-    std::vector<base::string16> args;
+    std::u16string path;
+    std::vector<std::u16string> args;
 
 #if defined(OS_WIN)
     // used in browser::setLoginItemSettings
     bool enabled = true;
-    base::string16 name = base::string16();
+    std::wstring name;
 
     // used in browser::getLoginItemSettings
     bool executable_will_launch_at_login = false;
@@ -223,7 +223,7 @@ class Browser : public WindowListObserver {
   void DockSetMenu(ElectronMenuModel* model);
 
   // Set docks' icon.
-  void DockSetIcon(const gfx::Image& image);
+  void DockSetIcon(v8::Isolate* isolate, v8::Local<v8::Value> icon);
 
 #endif  // defined(OS_MAC)
 
@@ -237,9 +237,9 @@ class Browser : public WindowListObserver {
 #if defined(OS_WIN)
   struct UserTask {
     base::FilePath program;
-    base::string16 arguments;
-    base::string16 title;
-    base::string16 description;
+    std::wstring arguments;
+    std::wstring title;
+    std::wstring description;
     base::FilePath working_dir;
     base::FilePath icon_path;
     int icon_index;
@@ -362,6 +362,15 @@ class Browser : public WindowListObserver {
   base::Value about_panel_options_;
 #elif defined(OS_MAC)
   base::DictionaryValue about_panel_options_;
+#endif
+
+#if defined(OS_WIN)
+  void UpdateBadgeContents(HWND hwnd,
+                           const base::Optional<std::string>& badge_content,
+                           const std::string& badge_alt_string);
+
+  // In charge of running taskbar related APIs.
+  TaskbarHost taskbar_host_;
 #endif
 
   DISALLOW_COPY_AND_ASSIGN(Browser);

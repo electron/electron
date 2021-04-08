@@ -26,9 +26,11 @@
 #include "shell/browser/mac/dict_util.h"
 #include "shell/browser/mac/electron_application.h"
 #include "shell/browser/ui/cocoa/NSColor+Hex.h"
+#include "shell/common/color_util.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/process_util.h"
+#include "skia/ext/skia_utils_mac.h"
 #include "ui/native_theme/native_theme.h"
 
 namespace gin {
@@ -140,12 +142,13 @@ void SystemPreferences::PostNotification(const std::string& name,
 int SystemPreferences::SubscribeNotification(
     const std::string& name,
     const NotificationCallback& callback) {
-  return DoSubscribeNotification(name, callback,
-                                 kNSDistributedNotificationCenter);
+  return DoSubscribeNotification(
+      name, callback, NotificationCenterKind::kNSDistributedNotificationCenter);
 }
 
 void SystemPreferences::UnsubscribeNotification(int request_id) {
-  DoUnsubscribeNotification(request_id, kNSDistributedNotificationCenter);
+  DoUnsubscribeNotification(
+      request_id, NotificationCenterKind::kNSDistributedNotificationCenter);
 }
 
 void SystemPreferences::PostLocalNotification(const std::string& name,
@@ -159,11 +162,13 @@ void SystemPreferences::PostLocalNotification(const std::string& name,
 int SystemPreferences::SubscribeLocalNotification(
     const std::string& name,
     const NotificationCallback& callback) {
-  return DoSubscribeNotification(name, callback, kNSNotificationCenter);
+  return DoSubscribeNotification(name, callback,
+                                 NotificationCenterKind::kNSNotificationCenter);
 }
 
 void SystemPreferences::UnsubscribeLocalNotification(int request_id) {
-  DoUnsubscribeNotification(request_id, kNSNotificationCenter);
+  DoUnsubscribeNotification(request_id,
+                            NotificationCenterKind::kNSNotificationCenter);
 }
 
 void SystemPreferences::PostWorkspaceNotification(
@@ -179,12 +184,13 @@ void SystemPreferences::PostWorkspaceNotification(
 int SystemPreferences::SubscribeWorkspaceNotification(
     const std::string& name,
     const NotificationCallback& callback) {
-  return DoSubscribeNotification(name, callback,
-                                 kNSWorkspaceNotificationCenter);
+  return DoSubscribeNotification(
+      name, callback, NotificationCenterKind::kNSWorkspaceNotificationCenter);
 }
 
 void SystemPreferences::UnsubscribeWorkspaceNotification(int request_id) {
-  DoUnsubscribeNotification(request_id, kNSWorkspaceNotificationCenter);
+  DoUnsubscribeNotification(
+      request_id, NotificationCenterKind::kNSWorkspaceNotificationCenter);
 }
 
 int SystemPreferences::DoSubscribeNotification(
@@ -195,13 +201,13 @@ int SystemPreferences::DoSubscribeNotification(
   __block NotificationCallback copied_callback = callback;
   NSNotificationCenter* center;
   switch (kind) {
-    case kNSDistributedNotificationCenter:
+    case NotificationCenterKind::kNSDistributedNotificationCenter:
       center = [NSDistributedNotificationCenter defaultCenter];
       break;
-    case kNSNotificationCenter:
+    case NotificationCenterKind::kNSNotificationCenter:
       center = [NSNotificationCenter defaultCenter];
       break;
-    case kNSWorkspaceNotificationCenter:
+    case NotificationCenterKind::kNSWorkspaceNotificationCenter:
       center = [[NSWorkspace sharedWorkspace] notificationCenter];
       break;
     default:
@@ -239,13 +245,13 @@ void SystemPreferences::DoUnsubscribeNotification(int request_id,
     id observer = iter->second;
     NSNotificationCenter* center;
     switch (kind) {
-      case kNSDistributedNotificationCenter:
+      case NotificationCenterKind::kNSDistributedNotificationCenter:
         center = [NSDistributedNotificationCenter defaultCenter];
         break;
-      case kNSNotificationCenter:
+      case NotificationCenterKind::kNSNotificationCenter:
         center = [NSNotificationCenter defaultCenter];
         break;
-      case kNSWorkspaceNotificationCenter:
+      case NotificationCenterKind::kNSWorkspaceNotificationCenter:
         center = [[NSWorkspace sharedWorkspace] notificationCenter];
         break;
       default:
@@ -384,7 +390,8 @@ std::string SystemPreferences::GetAccentColor() {
   if (@available(macOS 10.14, *))
     sysColor = [NSColor controlAccentColor];
 
-  return base::SysNSStringToUTF8([sysColor RGBAValue]);
+  return ToRGBAHex(skia::NSSystemColorToSkColor(sysColor),
+                   false /* include_hash */);
 }
 
 std::string SystemPreferences::GetSystemColor(gin_helper::ErrorThrower thrower,
@@ -413,7 +420,7 @@ std::string SystemPreferences::GetSystemColor(gin_helper::ErrorThrower thrower,
     return "";
   }
 
-  return base::SysNSStringToUTF8([sysColor hexadecimalValue]);
+  return ToRGBHex(skia::NSSystemColorToSkColor(sysColor));
 }
 
 bool SystemPreferences::CanPromptTouchID() {
@@ -571,7 +578,7 @@ std::string SystemPreferences::GetColor(gin_helper::ErrorThrower thrower,
   }
 
   if (sysColor)
-    return base::SysNSStringToUTF8([sysColor hexadecimalValue]);
+    return ToRGBHex(skia::NSSystemColorToSkColor(sysColor));
   return "";
 }
 
@@ -622,15 +629,6 @@ v8::Local<v8::Promise> SystemPreferences::AskForMediaAccess(
 void SystemPreferences::RemoveUserDefault(const std::string& name) {
   NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
   [defaults removeObjectForKey:base::SysUTF8ToNSString(name)];
-}
-
-bool SystemPreferences::IsDarkMode() {
-  if (@available(macOS 10.14, *)) {
-    return ui::NativeTheme::GetInstanceForNativeUi()->ShouldUseDarkColors();
-  }
-  NSString* mode = [[NSUserDefaults standardUserDefaults]
-      stringForKey:@"AppleInterfaceStyle"];
-  return [mode isEqualToString:@"Dark"];
 }
 
 bool SystemPreferences::IsSwipeTrackingFromScrollEventsEnabled() {

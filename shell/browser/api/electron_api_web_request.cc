@@ -10,15 +10,18 @@
 
 #include "base/stl_util.h"
 #include "base/values.h"
+#include "extensions/browser/api/web_request/web_request_resource_type.h"
 #include "gin/converter.h"
 #include "gin/dictionary.h"
 #include "gin/object_template_builder.h"
 #include "net/http/http_content_disposition.h"
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/api/electron_api_web_contents.h"
+#include "shell/browser/api/electron_api_web_frame_main.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_converters/frame_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_converters/std_converter.h"
@@ -40,30 +43,30 @@ struct Converter<URLPattern> {
 };
 
 template <>
-struct Converter<blink::mojom::ResourceType> {
+struct Converter<extensions::WebRequestResourceType> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   blink::mojom::ResourceType type) {
+                                   extensions::WebRequestResourceType type) {
     const char* result;
     switch (type) {
-      case blink::mojom::ResourceType::kMainFrame:
+      case extensions::WebRequestResourceType::MAIN_FRAME:
         result = "mainFrame";
         break;
-      case blink::mojom::ResourceType::kSubFrame:
+      case extensions::WebRequestResourceType::SUB_FRAME:
         result = "subFrame";
         break;
-      case blink::mojom::ResourceType::kStylesheet:
+      case extensions::WebRequestResourceType::STYLESHEET:
         result = "stylesheet";
         break;
-      case blink::mojom::ResourceType::kScript:
+      case extensions::WebRequestResourceType::SCRIPT:
         result = "script";
         break;
-      case blink::mojom::ResourceType::kImage:
+      case extensions::WebRequestResourceType::IMAGE:
         result = "image";
         break;
-      case blink::mojom::ResourceType::kObject:
+      case extensions::WebRequestResourceType::OBJECT:
         result = "object";
         break;
-      case blink::mojom::ResourceType::kXhr:
+      case extensions::WebRequestResourceType::XHR:
         result = "xhr";
         break;
       default:
@@ -144,7 +147,7 @@ void ToDictionary(gin::Dictionary* details, extensions::WebRequestInfo* info) {
   details->Set("url", info->url);
   details->Set("method", info->method);
   details->Set("timestamp", base::Time::Now().ToDoubleT() * 1000);
-  details->Set("resourceType", info->type);
+  details->Set("resourceType", info->web_request_type);
   if (!info->response_ip.empty())
     details->Set("ip", info->response_ip);
   if (info->response_headers) {
@@ -155,12 +158,18 @@ void ToDictionary(gin::Dictionary* details, extensions::WebRequestInfo* info) {
                  HttpResponseHeadersToV8(info->response_headers.get()));
   }
 
-  auto* web_contents = content::WebContents::FromRenderFrameHost(
-      content::RenderFrameHost::FromID(info->render_process_id,
-                                       info->frame_id));
-  auto* api_web_contents = WebContents::From(web_contents);
-  if (api_web_contents)
-    details->Set("webContentsId", api_web_contents->ID());
+  auto* render_frame_host =
+      content::RenderFrameHost::FromID(info->render_process_id, info->frame_id);
+  if (render_frame_host) {
+    details->Set("frame", render_frame_host);
+    auto* web_contents =
+        content::WebContents::FromRenderFrameHost(render_frame_host);
+    auto* api_web_contents = WebContents::From(web_contents);
+    if (api_web_contents) {
+      details->Set("webContents", api_web_contents);
+      details->Set("webContentsId", api_web_contents->ID());
+    }
+  }
 }
 
 void ToDictionary(gin::Dictionary* details,
@@ -256,21 +265,26 @@ WebRequest::~WebRequest() {
 gin::ObjectTemplateBuilder WebRequest::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   return gin::Wrappable<WebRequest>::GetObjectTemplateBuilder(isolate)
-      .SetMethod("onBeforeRequest",
-                 &WebRequest::SetResponseListener<kOnBeforeRequest>)
-      .SetMethod("onBeforeSendHeaders",
-                 &WebRequest::SetResponseListener<kOnBeforeSendHeaders>)
-      .SetMethod("onHeadersReceived",
-                 &WebRequest::SetResponseListener<kOnHeadersReceived>)
+      .SetMethod(
+          "onBeforeRequest",
+          &WebRequest::SetResponseListener<ResponseEvent::kOnBeforeRequest>)
+      .SetMethod(
+          "onBeforeSendHeaders",
+          &WebRequest::SetResponseListener<ResponseEvent::kOnBeforeSendHeaders>)
+      .SetMethod(
+          "onHeadersReceived",
+          &WebRequest::SetResponseListener<ResponseEvent::kOnHeadersReceived>)
       .SetMethod("onSendHeaders",
-                 &WebRequest::SetSimpleListener<kOnSendHeaders>)
+                 &WebRequest::SetSimpleListener<SimpleEvent::kOnSendHeaders>)
       .SetMethod("onBeforeRedirect",
-                 &WebRequest::SetSimpleListener<kOnBeforeRedirect>)
-      .SetMethod("onResponseStarted",
-                 &WebRequest::SetSimpleListener<kOnResponseStarted>)
+                 &WebRequest::SetSimpleListener<SimpleEvent::kOnBeforeRedirect>)
+      .SetMethod(
+          "onResponseStarted",
+          &WebRequest::SetSimpleListener<SimpleEvent::kOnResponseStarted>)
       .SetMethod("onErrorOccurred",
-                 &WebRequest::SetSimpleListener<kOnErrorOccurred>)
-      .SetMethod("onCompleted", &WebRequest::SetSimpleListener<kOnCompleted>);
+                 &WebRequest::SetSimpleListener<SimpleEvent::kOnErrorOccurred>)
+      .SetMethod("onCompleted",
+                 &WebRequest::SetSimpleListener<SimpleEvent::kOnCompleted>);
 }
 
 const char* WebRequest::GetTypeName() {
@@ -285,8 +299,8 @@ int WebRequest::OnBeforeRequest(extensions::WebRequestInfo* info,
                                 const network::ResourceRequest& request,
                                 net::CompletionOnceCallback callback,
                                 GURL* new_url) {
-  return HandleResponseEvent(kOnBeforeRequest, info, std::move(callback),
-                             new_url, request);
+  return HandleResponseEvent(ResponseEvent::kOnBeforeRequest, info,
+                             std::move(callback), new_url, request);
 }
 
 int WebRequest::OnBeforeSendHeaders(extensions::WebRequestInfo* info,
@@ -294,7 +308,7 @@ int WebRequest::OnBeforeSendHeaders(extensions::WebRequestInfo* info,
                                     BeforeSendHeadersCallback callback,
                                     net::HttpRequestHeaders* headers) {
   return HandleResponseEvent(
-      kOnBeforeSendHeaders, info,
+      ResponseEvent::kOnBeforeSendHeaders, info,
       base::BindOnce(std::move(callback), std::set<std::string>(),
                      std::set<std::string>()),
       headers, request, *headers);
@@ -311,25 +325,26 @@ int WebRequest::OnHeadersReceived(
       original_response_headers ? original_response_headers->GetStatusLine()
                                 : std::string();
   return HandleResponseEvent(
-      kOnHeadersReceived, info, std::move(callback),
+      ResponseEvent::kOnHeadersReceived, info, std::move(callback),
       std::make_pair(override_response_headers, status_line), request);
 }
 
 void WebRequest::OnSendHeaders(extensions::WebRequestInfo* info,
                                const network::ResourceRequest& request,
                                const net::HttpRequestHeaders& headers) {
-  HandleSimpleEvent(kOnSendHeaders, info, request, headers);
+  HandleSimpleEvent(SimpleEvent::kOnSendHeaders, info, request, headers);
 }
 
 void WebRequest::OnBeforeRedirect(extensions::WebRequestInfo* info,
                                   const network::ResourceRequest& request,
                                   const GURL& new_location) {
-  HandleSimpleEvent(kOnBeforeRedirect, info, request, new_location);
+  HandleSimpleEvent(SimpleEvent::kOnBeforeRedirect, info, request,
+                    new_location);
 }
 
 void WebRequest::OnResponseStarted(extensions::WebRequestInfo* info,
                                    const network::ResourceRequest& request) {
-  HandleSimpleEvent(kOnResponseStarted, info, request);
+  HandleSimpleEvent(SimpleEvent::kOnResponseStarted, info, request);
 }
 
 void WebRequest::OnErrorOccurred(extensions::WebRequestInfo* info,
@@ -337,7 +352,7 @@ void WebRequest::OnErrorOccurred(extensions::WebRequestInfo* info,
                                  int net_error) {
   callbacks_.erase(info->id);
 
-  HandleSimpleEvent(kOnErrorOccurred, info, request, net_error);
+  HandleSimpleEvent(SimpleEvent::kOnErrorOccurred, info, request, net_error);
 }
 
 void WebRequest::OnCompleted(extensions::WebRequestInfo* info,
@@ -345,7 +360,7 @@ void WebRequest::OnCompleted(extensions::WebRequestInfo* info,
                              int net_error) {
   callbacks_.erase(info->id);
 
-  HandleSimpleEvent(kOnCompleted, info, request, net_error);
+  HandleSimpleEvent(SimpleEvent::kOnCompleted, info, request, net_error);
 }
 
 void WebRequest::OnRequestWillBeDestroyed(extensions::WebRequestInfo* info) {

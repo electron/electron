@@ -8,12 +8,12 @@ once we stop warning and begin to unilaterally prevent non-context aware modules
 from being loaded.
 
 diff --git a/lib/internal/bootstrap/pre_execution.js b/lib/internal/bootstrap/pre_execution.js
-index 1b781fb8193002e111d8904e44ca66dbec9daaac..3f80a6e4c03a51d40c25717baab5c690c53abccd 100644
+index af69dfc9e71b54a9d7eda0daa498396008aba610..f52e8a09f689bafcfdca39e71822ff3cbf898349 100644
 --- a/lib/internal/bootstrap/pre_execution.js
 +++ b/lib/internal/bootstrap/pre_execution.js
-@@ -93,10 +93,12 @@ function patchProcessObject(expandArgv1) {
- 
-   if (expandArgv1 && process.argv[1] && !process.argv[1].startsWith('-')) {
+@@ -95,10 +95,12 @@ function patchProcessObject(expandArgv1) {
+   if (expandArgv1 && process.argv[1] &&
+       !StringPrototypeStartsWith(process.argv[1], '-')) {
      // Expand process.argv[1] into a full path.
 -    const path = require('path');
 -    try {
@@ -79,7 +79,7 @@ index f89365a1aa7ffacbb423e01a68f484992751f76f..38d17f4e18aa38fde2c2f59a9816c8fb
    // This stores whether the --abort-on-uncaught-exception flag was passed
    // to Node.
 diff --git a/src/node_binding.cc b/src/node_binding.cc
-index ca5a01f925a2ae69ba4295d82316e546f45c60cd..928afa04f4312db23ef4de8c32e0705784ccee7f 100644
+index ca5a01f925a2ae69ba4295d82316e546f45c60cd..f85ab2332a1c0267bd50d5f979d90e55c84a2990 100644
 --- a/src/node_binding.cc
 +++ b/src/node_binding.cc
 @@ -3,6 +3,7 @@
@@ -90,18 +90,18 @@ index ca5a01f925a2ae69ba4295d82316e546f45c60cd..928afa04f4312db23ef4de8c32e07057
  #include "util.h"
  
  #if HAVE_OPENSSL
-@@ -463,8 +464,19 @@ void DLOpen(const FunctionCallbackInfo<Value>& args) {
+@@ -463,8 +464,20 @@ void DLOpen(const FunctionCallbackInfo<Value>& args) {
        if (mp->nm_context_register_func == nullptr) {
          if (env->force_context_aware()) {
            dlib->Close();
 -          THROW_ERR_NON_CONTEXT_AWARE_DISABLED(env);
--          return false;
 +          char errmsg[1024];
 +          snprintf(errmsg,
 +                   sizeof(errmsg),
 +                   "Loading non-context-aware native module in renderer: '%s', but app.allowRendererProcessReuse is true. See https://github.com/electron/electron/issues/18397.",
 +                   *filename);
 +          env->ThrowError(errmsg);
+           return false;
 +        } else if (env->warn_context_aware()) {
 +          char errmsg[1024];
 +          snprintf(errmsg,
@@ -113,7 +113,7 @@ index ca5a01f925a2ae69ba4295d82316e546f45c60cd..928afa04f4312db23ef4de8c32e07057
        }
        mp->nm_dso_handle = dlib->handle_;
 diff --git a/src/node_options.cc b/src/node_options.cc
-index 87f547da1de1c4b0d5913f0af461ee229b18aa02..c12ec1d13864b1aca227aa06b75339c14ebc5b4e 100644
+index e7dc220f5c3fcab40c9a669a79b3a41b7e9f8cbf..01143e122387db8220d6e0cd0124ae08e082d0c8 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
 @@ -371,6 +371,10 @@ EnvironmentOptionsParser::EnvironmentOptionsParser() {

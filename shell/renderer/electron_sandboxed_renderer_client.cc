@@ -19,6 +19,7 @@
 #include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
 #include "shell/renderer/electron_render_frame_observer.h"
+#include "third_party/blink/public/common/web_preferences/web_preferences.h"
 #include "third_party/blink/public/web/blink.h"
 #include "third_party/blink/public/web/web_document.h"
 #include "third_party/electron_node/src/node_binding.h"
@@ -89,6 +90,11 @@ v8::Local<v8::Value> CreatePreloadScript(v8::Isolate* isolate,
                                        preloadSrc);
 }
 
+double Uptime() {
+  return (base::Time::Now() - base::Process::Current().CreationTime())
+      .InSecondsF();
+}
+
 void InvokeHiddenCallback(v8::Handle<v8::Context> context,
                           const std::string& hidden_key,
                           const std::string& callback_name) {
@@ -125,7 +131,7 @@ ElectronSandboxedRendererClient::~ElectronSandboxedRendererClient() = default;
 void ElectronSandboxedRendererClient::InitializeBindings(
     v8::Local<v8::Object> binding,
     v8::Local<v8::Context> context,
-    bool is_main_frame) {
+    content::RenderFrame* render_frame) {
   auto* isolate = context->GetIsolate();
   gin_helper::Dictionary b(isolate, binding);
   b.SetMethod("get", GetBinding);
@@ -135,12 +141,13 @@ void ElectronSandboxedRendererClient::InitializeBindings(
   b.Set("process", process);
 
   ElectronBindings::BindProcess(isolate, &process, metrics_.get());
+  BindProcess(isolate, &process, render_frame);
 
+  process.SetMethod("uptime", Uptime);
   process.Set("argv", base::CommandLine::ForCurrentProcess()->argv());
   process.SetReadOnly("pid", base::GetCurrentProcId());
   process.SetReadOnly("sandboxed", true);
   process.SetReadOnly("type", "renderer");
-  process.SetReadOnly("isMainFrame", is_main_frame);
 }
 
 void ElectronSandboxedRendererClient::RenderFrameCreated(
@@ -198,8 +205,7 @@ void ElectronSandboxedRendererClient::DidCreateScriptContext(
   bool is_devtools =
       IsDevTools(render_frame) || IsDevToolsExtension(render_frame);
   bool allow_node_in_sub_frames =
-      base::CommandLine::ForCurrentProcess()->HasSwitch(
-          switches::kNodeIntegrationInSubFrames);
+      render_frame->GetBlinkPreferences().node_integration_in_sub_frames;
   bool should_load_preload =
       (is_main_frame || is_devtools || allow_node_in_sub_frames) &&
       !IsWebViewFrame(context, render_frame);
@@ -212,8 +218,7 @@ void ElectronSandboxedRendererClient::DidCreateScriptContext(
   // argument.
   auto* isolate = context->GetIsolate();
   auto binding = v8::Object::New(isolate);
-  InitializeBindings(binding, context, render_frame->IsMainFrame());
-  AddRenderBindings(isolate, binding);
+  InitializeBindings(binding, context, render_frame);
 
   std::vector<v8::Local<v8::String>> sandbox_preload_bundle_params = {
       node::FIXED_ONE_BYTE_STRING(isolate, "binding")};
@@ -232,8 +237,9 @@ void ElectronSandboxedRendererClient::DidCreateScriptContext(
 void ElectronSandboxedRendererClient::SetupMainWorldOverrides(
     v8::Handle<v8::Context> context,
     content::RenderFrame* render_frame) {
+  auto prefs = render_frame->GetBlinkPreferences();
   // We only need to run the isolated bundle if webview is enabled
-  if (!base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kWebviewTag))
+  if (!prefs.webview_tag)
     return;
 
   // Setup window overrides in the main world context
@@ -254,33 +260,6 @@ void ElectronSandboxedRendererClient::SetupMainWorldOverrides(
 
   util::CompileAndCall(context, "electron/js2c/isolated_bundle",
                        &isolated_bundle_params, &isolated_bundle_args, nullptr);
-}
-
-void ElectronSandboxedRendererClient::SetupExtensionWorldOverrides(
-    v8::Handle<v8::Context> context,
-    content::RenderFrame* render_frame,
-    int world_id) {
-#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  NOTREACHED();
-#else
-  auto* isolate = context->GetIsolate();
-
-  gin_helper::Dictionary process = gin::Dictionary::CreateEmpty(isolate);
-  process.SetMethod("_linkedBinding", GetBinding);
-
-  std::vector<v8::Local<v8::String>> isolated_bundle_params = {
-      node::FIXED_ONE_BYTE_STRING(isolate, "nodeProcess"),
-      node::FIXED_ONE_BYTE_STRING(isolate, "isolatedWorld"),
-      node::FIXED_ONE_BYTE_STRING(isolate, "worldId")};
-
-  std::vector<v8::Local<v8::Value>> isolated_bundle_args = {
-      process.GetHandle(),
-      GetContext(render_frame->GetWebFrame(), isolate)->Global(),
-      v8::Integer::New(isolate, world_id)};
-
-  util::CompileAndCall(context, "electron/js2c/content_script_bundle",
-                       &isolated_bundle_params, &isolated_bundle_args, nullptr);
-#endif
 }
 
 void ElectronSandboxedRendererClient::WillReleaseScriptContext(

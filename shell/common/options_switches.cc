@@ -29,6 +29,7 @@ const char kFullScreenable[] = "fullscreenable";
 const char kClosable[] = "closable";
 const char kFullscreen[] = "fullscreen";
 const char kTrafficLightPosition[] = "trafficLightPosition";
+const char kRoundedCorners[] = "roundedCorners";
 
 // Whether the window should show in taskbar.
 const char kSkipTaskbar[] = "skipTaskbar";
@@ -109,6 +110,8 @@ const char kZoomFactor[] = "zoomFactor";
 // Script that will be loaded by guest WebContents before other scripts.
 const char kPreloadScript[] = "preload";
 
+const char kPreloadScripts[] = "preloadScripts";
+
 // Like --preload, but the passed argument is an URL.
 const char kPreloadURL[] = "preloadURL";
 
@@ -181,12 +184,13 @@ const char kWebGL[] = "webgl";
 // navigation.
 const char kNavigateOnDragDrop[] = "navigateOnDragDrop";
 
+const char kDisableElectronSiteInstanceOverrides[] =
+    "disableElectronSiteInstanceOverrides";
+const char kEnableNodeLeakageInRenderers[] = "enableNodeLeakageInRenderers";
+const char kHiddenPage[] = "hiddenPage";
+
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 const char kSpellcheck[] = "spellcheck";
-#endif
-
-#if BUILDFLAG(ENABLE_REMOTE_MODULE)
-const char kEnableRemoteModule[] = "enableRemoteModule";
 #endif
 
 const char kEnableWebSQL[] = "enableWebSQL";
@@ -199,9 +203,6 @@ namespace switches {
 
 // Enable chromium sandbox.
 const char kEnableSandbox[] = "enable-sandbox";
-
-// Enable plugins.
-const char kEnablePlugins[] = "enable-plugins";
 
 // Ppapi Flash path.
 const char kPpapiFlashPath[] = "ppapi-flash-path";
@@ -242,32 +243,10 @@ const char kAppPath[] = "app-path";
 const char kEnableApiFilteringLogging[] = "enable-api-filtering-logging";
 
 // The command line switch versions of the options.
-const char kBackgroundColor[] = "background-color";
-const char kPreloadScript[] = "preload";
-const char kPreloadScripts[] = "preload-scripts";
-const char kNodeIntegration[] = "node-integration";
-const char kContextIsolation[] = "context-isolation";
-const char kWorldSafeExecuteJavaScript[] = "world-safe-execute-javascript";
-const char kGuestInstanceID[] = "guest-instance-id";
-const char kOpenerID[] = "opener-id";
 const char kScrollBounce[] = "scroll-bounce";
-const char kHiddenPage[] = "hidden-page";
-const char kNativeWindowOpen[] = "native-window-open";
-const char kWebviewTag[] = "webview-tag";
-const char kDisableElectronSiteInstanceOverrides[] =
-    "disable-electron-site-instance-overrides";
-const char kEnableNodeLeakageInRenderers[] = "enable-node-leakage-in-renderers";
 
 // Command switch passed to renderer process to control nodeIntegration.
 const char kNodeIntegrationInWorker[] = "node-integration-in-worker";
-
-// Command switch passed to renderer process to control whether node
-// environments will be created in sub-frames.
-const char kNodeIntegrationInSubFrames[] = "node-integration-in-subframes";
-
-// Command switch passed to render process to control whether WebSQL api
-// is allowed.
-const char kEnableWebSQL[] = "enable-websql";
 
 // Widevine options
 // Path to Widevine CDM binaries.
@@ -294,15 +273,9 @@ const char kEnableAuthNegotiatePort[] = "enable-auth-negotiate-port";
 // If set, NTLM v2 is disabled for POSIX platforms.
 const char kDisableNTLMv2[] = "disable-ntlm-v2";
 
-#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-const char kEnableSpellcheck[] = "enable-spellcheck";
-#endif
-
-#if BUILDFLAG(ENABLE_REMOTE_MODULE)
-const char kEnableRemoteModule[] = "enable-remote-module";
-#endif
-
 const char kGlobalCrashKeys[] = "global-crash-keys";
+
+const char kEnableWebSQL[] = "enable-websql";
 
 }  // namespace switches
 

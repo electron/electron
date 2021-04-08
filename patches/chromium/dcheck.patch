@@ -17,14 +17,14 @@ only one or two specific checks fail. Then it's better to simply comment out the
 failing checks and allow the rest of the target to have them enabled.
 
 diff --git a/content/browser/renderer_host/navigation_controller_impl.cc b/content/browser/renderer_host/navigation_controller_impl.cc
-index b3b86c8a6a11712a12632a1a35f4eb836995c4d4..4aa744fb25f2c859f4dbcb9d0ead6d8d9cddf6ef 100644
+index 21601429c56fc374da8826cb68361ff0de56ac55..9b27a4ff1abac2b104f0ac16c9ed2e3518279d84 100644
 --- a/content/browser/renderer_host/navigation_controller_impl.cc
 +++ b/content/browser/renderer_host/navigation_controller_impl.cc
-@@ -1269,8 +1269,10 @@ NavigationType NavigationControllerImpl::ClassifyNavigation(
+@@ -1336,8 +1336,10 @@ NavigationType NavigationControllerImpl::ClassifyNavigation(
      return NAVIGATION_TYPE_NEW_SUBFRAME;
    }
  
--  // We only clear the session history when navigating to a new page.
+-  // We only clear the session history in tests when navigating to a new entry.
 -  DCHECK(!params.history_list_was_cleared);
 +  // Electron does its own book keeping of navigation entries and we
 +  // expect content to not track any, by clearing history list for
@@ -33,7 +33,7 @@ index b3b86c8a6a11712a12632a1a35f4eb836995c4d4..4aa744fb25f2c859f4dbcb9d0ead6d8d
  
    if (rfh->GetParent()) {
      // All manual subframes would be did_create_new_entry and handled above, so
-@@ -1545,7 +1547,10 @@ void NavigationControllerImpl::RendererDidNavigateToNewPage(
+@@ -1629,7 +1631,10 @@ void NavigationControllerImpl::RendererDidNavigateToNewEntry(
      new_entry->GetFavicon() = GetLastCommittedEntry()->GetFavicon();
    }
  
@@ -46,10 +46,10 @@ index b3b86c8a6a11712a12632a1a35f4eb836995c4d4..4aa744fb25f2c859f4dbcb9d0ead6d8d
    // navigation. Now we know that the renderer has updated its state accordingly
    // and it is safe to also clear the browser side history.
 diff --git a/ui/base/clipboard/clipboard_win.cc b/ui/base/clipboard/clipboard_win.cc
-index d9e0b1e5820dc1d847cd1e74338476bf22f5cb12..ca75b9b34fe191c430e524bb9828a051cdeab157 100644
+index 0763e37f028a708c6e739458ec4c87c406e79b46..2d238fde0a1eb3f22fd52cbad3b12d704af2e8ae 100644
 --- a/ui/base/clipboard/clipboard_win.cc
 +++ b/ui/base/clipboard/clipboard_win.cc
-@@ -850,10 +850,10 @@ SkBitmap ClipboardWin::ReadImageInternal(ClipboardBuffer buffer) const {
+@@ -924,10 +924,10 @@ SkBitmap ClipboardWin::ReadImageInternal(ClipboardBuffer buffer) const {
  
  void ClipboardWin::WriteToClipboard(ClipboardFormatType format, HANDLE handle) {
    UINT cf_format = format.ToFormatEtc().cfFormat;

@@ -7,7 +7,7 @@
 #include <utility>
 
 #include "base/bind.h"
-#include "base/bind_helpers.h"
+#include "base/callback_helpers.h"
 #include "base/command_line.h"
 #include "base/json/json_writer.h"
 #include "base/optional.h"
@@ -22,8 +22,8 @@
 #include "chrome/grit/dev_ui_browser_resources.h"  // nogncheck
 #include "components/pref_registry/pref_registry_syncable.h"
 #include "components/prefs/pref_service.h"
-#include "content/public/browser/accessibility_tree_formatter.h"
 #include "content/public/browser/ax_event_notification_details.h"
+#include "content/public/browser/ax_inspect_factory.h"
 #include "content/public/browser/browser_accessibility_state.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/favicon_status.h"
@@ -164,6 +164,7 @@ bool MatchesPropertyFilters(
     if (base::MatchPattern(text, filter.match_str)) {
       switch (filter.type) {
         case ui::AXPropertyFilter::ALLOW_EMPTY:
+        case ui::AXPropertyFilter::SCRIPT:
           allow = true;
           break;
         case ui::AXPropertyFilter::ALLOW:

@@ -9,7 +9,7 @@ describe('ipcRenderer module', () => {
 
   let w: BrowserWindow;
   before(async () => {
-    w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, nativeWindowOpen: true } });
+    w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, nativeWindowOpen: true, contextIsolation: false } });
     await w.loadURL('about:blank');
   });
   after(async () => {

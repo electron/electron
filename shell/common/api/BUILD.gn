@@ -10,8 +10,8 @@ mojom("mojo") {
     "//ui/gfx/geometry/mojom",
   ]
 
-  enabled_features = []
-  if (enable_remote_module) {
-    enabled_features += [ "enable_remote_module" ]
-  }
+  # Needed for component build or we'll get duplicate symbols for many mojom
+  # interfaces aready included in blink_common.dll
+  overridden_deps = [ "//third_party/blink/public/mojom:mojom_core" ]
+  component_deps = [ "//third_party/blink/public/common" ]
 }

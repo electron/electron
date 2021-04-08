@@ -8,6 +8,7 @@
 
 #include <utility>
 
+#include "base/barrier_closure.h"
 #include "base/command_line.h"
 #include "base/files/file_path.h"
 #include "base/no_destructor.h"
@@ -28,6 +29,8 @@
 #include "components/proxy_config/proxy_config_pref_names.h"
 #include "content/browser/blob_storage/chrome_blob_storage_context.h"  // nogncheck
 #include "content/public/browser/browser_thread.h"
+#include "content/public/browser/cors_origin_pattern_setter.h"
+#include "content/public/browser/shared_cors_origin_access_list.h"
 #include "content/public/browser/storage_partition.h"
 #include "mojo/public/cpp/bindings/self_owned_receiver.h"
 #include "net/base/escape.h"
@@ -102,14 +105,10 @@ ElectronBrowserContext::browser_context_map() {
 ElectronBrowserContext::ElectronBrowserContext(const std::string& partition,
                                                bool in_memory,
                                                base::DictionaryValue options)
-    : in_memory_pref_store_(nullptr),
-      storage_policy_(new SpecialStoragePolicy),
+    : storage_policy_(new SpecialStoragePolicy),
       protocol_registry_(new ProtocolRegistry),
       in_memory_(in_memory),
-      ssl_config_(network::mojom::SSLConfig::New()),
-      weak_factory_(this) {
-  // TODO(nornagon): remove once https://crbug.com/1048822 is fixed.
-  base::ScopedAllowBlockingForTesting allow_blocking;
+      ssl_config_(network::mojom::SSLConfig::New()) {
   user_agent_ = ElectronBrowserClient::Get()->GetUserAgent();
 
   // Read options.
@@ -353,6 +352,8 @@ ElectronBrowserContext::GetURLLoaderFactory() {
 
   auto* storage_partition =
       content::BrowserContext::GetDefaultStoragePartition(this);
+  params->url_loader_network_observer =
+      storage_partition->CreateURLLoaderNetworkObserverForNavigationRequest(-1);
   storage_partition->GetNetworkContext()->CreateURLLoaderFactory(
       std::move(factory_receiver), std::move(params));
   url_loader_factory_ =
@@ -428,16 +429,6 @@ ElectronBrowserContext::GetClientHintsControllerDelegate() {
 content::StorageNotificationService*
 ElectronBrowserContext::GetStorageNotificationService() {
   return nullptr;
-}
-
-void ElectronBrowserContext::SetCorsOriginAccessListForOrigin(
-    const url::Origin& source_origin,
-    std::vector<network::mojom::CorsOriginPatternPtr> allow_patterns,
-    std::vector<network::mojom::CorsOriginPatternPtr> block_patterns,
-    base::OnceClosure closure) {
-  // TODO(nornagon): actually set the CORS access lists. This is called from
-  // extensions/browser/renderer_startup_helper.cc.
-  base::ThreadTaskRunnerHandle::Get()->PostTask(FROM_HERE, std::move(closure));
 }
 
 ResolveProxyHelper* ElectronBrowserContext::GetResolveProxyHelper() {

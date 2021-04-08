@@ -57,7 +57,7 @@ class OffScreenWebContentsView : public content::WebContentsView,
       content::RenderWidgetHost* render_widget_host) override;
   content::RenderWidgetHostViewBase* CreateViewForChildWidget(
       content::RenderWidgetHost* render_widget_host) override;
-  void SetPageTitle(const base::string16& title) override;
+  void SetPageTitle(const std::u16string& title) override;
   void RenderViewReady() override;
   void RenderViewHostChanged(content::RenderViewHost* old_host,
                              content::RenderViewHost* new_host) override;
@@ -74,7 +74,7 @@ class OffScreenWebContentsView : public content::WebContentsView,
                      const gfx::Vector2d& image_offset,
                      const blink::mojom::DragEventSourceInfo& event_info,
                      content::RenderWidgetHostImpl* source_rwh) override;
-  void UpdateDragCursor(blink::DragOperation operation) override;
+  void UpdateDragCursor(ui::mojom::DragOperation operation) override;
   void SetPainting(bool painting);
   bool IsPainting() const;
   void SetFrameRate(int frame_rate);
@@ -88,7 +88,7 @@ class OffScreenWebContentsView : public content::WebContentsView,
 
   OffScreenRenderWidgetHostView* GetView() const;
 
-  NativeWindow* native_window_;
+  NativeWindow* native_window_ = nullptr;
 
   const bool transparent_;
   bool painting_ = true;

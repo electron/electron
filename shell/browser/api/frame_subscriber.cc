@@ -26,8 +26,7 @@ FrameSubscriber::FrameSubscriber(content::WebContents* web_contents,
                                  bool only_dirty)
     : content::WebContentsObserver(web_contents),
       callback_(callback),
-      only_dirty_(only_dirty),
-      weak_ptr_factory_(this) {
+      only_dirty_(only_dirty) {
   content::RenderViewHost* rvh = web_contents->GetRenderViewHost();
   if (rvh)
     AttachToHost(rvh->GetWidget());
@@ -63,9 +62,10 @@ void FrameSubscriber::DetachFromHost() {
   host_ = nullptr;
 }
 
-void FrameSubscriber::RenderViewCreated(content::RenderViewHost* host) {
+void FrameSubscriber::RenderFrameCreated(
+    content::RenderFrameHost* render_frame_host) {
   if (!host_)
-    AttachToHost(host->GetWidget());
+    AttachToHost(render_frame_host->GetRenderWidgetHost());
 }
 
 void FrameSubscriber::RenderViewDeleted(content::RenderViewHost* host) {
@@ -161,8 +161,7 @@ void FrameSubscriber::Done(const gfx::Rect& damage, const SkBitmap& frame) {
   // frame is modified.
   SkBitmap copy;
   copy.allocPixels(SkImageInfo::Make(bitmap.width(), bitmap.height(),
-                                     kRGBA_8888_SkColorType,
-                                     kPremul_SkAlphaType));
+                                     kN32_SkColorType, kPremul_SkAlphaType));
   SkPixmap pixmap;
   bool success = bitmap.peekPixels(&pixmap) && copy.writePixels(pixmap, 0, 0);
   CHECK(success);

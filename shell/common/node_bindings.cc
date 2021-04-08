@@ -56,6 +56,7 @@
   V(electron_browser_power_monitor)      \
   V(electron_browser_power_save_blocker) \
   V(electron_browser_protocol)           \
+  V(electron_browser_printing)           \
   V(electron_browser_session)            \
   V(electron_browser_system_preferences) \
   V(electron_browser_base_window)        \
@@ -170,6 +171,27 @@ bool AllowWasmCodeGenerationCallback(v8::Local<v8::Context> context,
                                                v8::String::Empty(isolate));
 }
 
+void ErrorMessageListener(v8::Local<v8::Message> message,
+                          v8::Local<v8::Value> data) {
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  node::Environment* env = node::Environment::GetCurrent(isolate);
+
+  if (env) {
+    // Emit the after() hooks now that the exception has been handled.
+    // Analogous to node/lib/internal/process/execution.js#L176-L180
+    if (env->async_hooks()->fields()[node::AsyncHooks::kAfter]) {
+      while (env->async_hooks()->fields()[node::AsyncHooks::kStackLength]) {
+        node::AsyncWrap::EmitAfter(env, env->execution_async_id());
+        env->async_hooks()->pop_async_context(env->execution_async_id());
+      }
+    }
+
+    // Ensure that the async id stack is properly cleared so the async
+    // hook stack does not become corrupted.
+    env->async_hooks()->clear_async_id_stack();
+  }
+}
+
 // Initialize Node.js cli options to pass to Node.js
 // See https://nodejs.org/api/cli.html#cli_options
 void SetNodeCliFlags() {
@@ -192,7 +214,7 @@ void SetNodeCliFlags() {
 
   for (const auto& arg : argv) {
 #if defined(OS_WIN)
-    const auto& option = base::UTF16ToUTF8(arg);
+    const auto& option = base::WideToUTF8(arg);
 #else
     const auto& option = arg;
 #endif
@@ -280,7 +302,7 @@ base::FilePath GetResourcesPath() {
 }  // namespace
 
 NodeBindings::NodeBindings(BrowserEnvironment browser_env)
-    : browser_env_(browser_env), weak_factory_(this) {
+    : browser_env_(browser_env) {
   if (browser_env == BrowserEnvironment::kWorker) {
     uv_loop_init(&worker_loop_);
     uv_loop_ = &worker_loop_;
@@ -341,21 +363,22 @@ void NodeBindings::Initialize() {
   // Parse and set Node.js cli flags.
   SetNodeCliFlags();
 
-  // pass non-null program name to argv so it doesn't crash
-  // trying to index into a nullptr
-  int argc = 1;
-  int exec_argc = 0;
-  const char* prog_name = "electron";
-  const char** argv = &prog_name;
-  const char** exec_argv = nullptr;
-
   std::unique_ptr<base::Environment> env(base::Environment::Create());
   SetNodeOptions(env.get());
 
-  // TODO(codebytere): this is going to be deprecated in the near future
-  // in favor of Init(std::vector<std::string>* argv,
-  //        std::vector<std::string>* exec_argv)
-  node::Init(&argc, argv, &exec_argc, &exec_argv);
+  std::vector<std::string> argv = {"electron"};
+  std::vector<std::string> exec_argv;
+  std::vector<std::string> errors;
+
+  int exit_code = node::InitializeNodeWithArgs(&argv, &exec_argv, &errors);
+
+  for (const std::string& error : errors) {
+    fprintf(stderr, "%s: %s\n", argv[0].c_str(), error.c_str());
+  }
+
+  if (exit_code != 0) {
+    exit(exit_code);
+  }
 
 #if defined(OS_WIN)
   // uv_init overrides error mode to suppress the default crash dialog, bring
@@ -470,11 +493,24 @@ node::Environment* NodeBindings::CreateEnvironment(
     // Blink's.
     is.flags &= ~node::IsolateSettingsFlags::MESSAGE_LISTENER_WITH_ERROR_LEVEL;
 
+    // Isolate message listeners are additive (you can add multiple), so instead
+    // we add an extra one here to ensure that the async hook stack is properly
+    // cleared when errors are thrown.
+    context->GetIsolate()->AddMessageListenerWithErrorLevel(
+        ErrorMessageListener, v8::Isolate::kMessageError);
+
     // We do not want to use the promise rejection callback that Node.js uses,
     // because it does not send PromiseRejectionEvents to the global script
     // context. We need to use the one Blink already provides.
     is.flags |=
         node::IsolateSettingsFlags::SHOULD_NOT_SET_PROMISE_REJECTION_CALLBACK;
+
+    // We do not want to use the stack trace callback that Node.js uses,
+    // because it relies on Node.js being aware of the current Context and
+    // that's not always the case. We need to use the one Blink already
+    // provides.
+    is.flags |=
+        node::IsolateSettingsFlags::SHOULD_NOT_SET_PREPARE_STACK_TRACE_CALLBACK;
   }
 
   node::SetIsolateUpForNode(context->GetIsolate(), is);
@@ -496,6 +532,16 @@ void NodeBindings::LoadEnvironment(node::Environment* env) {
 }
 
 void NodeBindings::PrepareMessageLoop() {
+#if !defined(OS_WIN)
+  int handle = uv_backend_fd(uv_loop_);
+
+  // If the backend fd hasn't changed, don't proceed.
+  if (handle == handle_)
+    return;
+
+  handle_ = handle;
+#endif
+
   // Add dummy handle for libuv, otherwise libuv would quit when there is
   // nothing to do.
   uv_async_init(uv_loop_, dummy_uv_handle_.get(), nullptr);

@@ -17,7 +17,7 @@ Starting with a working application from the
 [Quick Start Guide](quick-start.md), update the `main.js` file with the
 following lines:
 
-```js
+```javascript fiddle='docs/fiddles/features/keyboard-shortcuts/local'
 const { Menu, MenuItem } = require('electron')
 
 const menu = new Menu()
@@ -56,7 +56,7 @@ Starting with a working application from the
 [Quick Start Guide](quick-start.md), update the `main.js` file with the
 following lines:
 
-```js
+```javascript fiddle='docs/fiddles/features/keyboard-shortcuts/global'
 const { app, globalShortcut } = require('electron')
 
 app.whenReady().then(() => {
@@ -101,7 +101,7 @@ Starting with a working application from the
 [Quick Start Guide](quick-start.md), update the `main.js` file with the
 following lines:
 
-```js
+```javascript fiddle='docs/fiddles/features/keyboard-shortcuts/interception-from-main'
 const { app, BrowserWindow } = require('electron')
 
 app.whenReady().then(() => {

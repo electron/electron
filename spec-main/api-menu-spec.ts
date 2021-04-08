@@ -868,7 +868,7 @@ describe('Menu module', function () {
 
       // Keep a weak reference to the menu.
       // eslint-disable-next-line no-undef
-      const wr = new (globalThis as any).WeakRef(menu);
+      const wr = new WeakRef(menu);
 
       await delay();
 
@@ -881,7 +881,7 @@ describe('Menu module', function () {
 
       // Try to receive menu from weak reference.
       if (wr.deref()) {
-        wr.deref().closePopup();
+        wr.deref()!.closePopup();
       } else {
         throw new Error('Menu is garbage-collected while popuping');
       }
@@ -910,7 +910,7 @@ describe('Menu module', function () {
       const appProcess = cp.spawn(process.execPath, [appPath]);
 
       let output = '';
-      await new Promise((resolve) => {
+      await new Promise<void>((resolve) => {
         appProcess.stdout.on('data', data => {
           output += data;
           if (data.indexOf('Window has') > -1) {

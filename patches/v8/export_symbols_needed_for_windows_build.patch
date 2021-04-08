@@ -6,10 +6,10 @@ Subject: Export symbols needed for Windows build
 These symbols are required to build v8 with BUILD_V8_SHARED on Windows.
 
 diff --git a/src/objects/objects.h b/src/objects/objects.h
-index 70efa0136023b47bcf054c3414170dff32be01dd..f967a2b62fe19d5f729bece878e0d93f2c4c0aea 100644
+index c68445597f562d043953bd38baf25d818646de68..60f519ad45da2680d24ea2012446f5d62fd8e981 100644
 --- a/src/objects/objects.h
 +++ b/src/objects/objects.h
-@@ -823,7 +823,7 @@ enum class KeyCollectionMode {
+@@ -824,7 +824,7 @@ enum class KeyCollectionMode {
  // Utility superclass for stack-allocated objects that must be updated
  // on gc.  It provides two ways for the gc to update instances, either
  // iterating or updating after gc.
@@ -19,12 +19,12 @@ index 70efa0136023b47bcf054c3414170dff32be01dd..f967a2b62fe19d5f729bece878e0d93f
    explicit inline Relocatable(Isolate* isolate);
    inline virtual ~Relocatable();
 diff --git a/src/objects/ordered-hash-table.h b/src/objects/ordered-hash-table.h
-index 0dfc50d7e0484c3f9fb170ac28027d642f64ce13..f81b0e3e2cf9b368522916de643b416d2e0a5999 100644
+index 1746e2dc89625a00c6cae0b249142a11de7072c3..cd076405a17f99f77d51b6c146223becf4fb4587 100644
 --- a/src/objects/ordered-hash-table.h
 +++ b/src/objects/ordered-hash-table.h
-@@ -60,7 +60,7 @@ namespace internal {
- //                      of the removed holes.
- //   [kPrefixSize + 3 + NumberOfRemovedHoles()..length]: Not used
+@@ -63,7 +63,7 @@ namespace internal {
+ //                      deleted elements count.
+ //   [kPrefixSize + 3 + NumberOfDeletedElements()..length]: Not used
  template <class Derived, int entrysize>
 -class OrderedHashTable : public FixedArray {
 +class V8_EXPORT_PRIVATE OrderedHashTable : public FixedArray {

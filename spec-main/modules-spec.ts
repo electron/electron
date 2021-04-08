@@ -19,7 +19,7 @@ describe('modules support', () => {
     ifdescribe(nativeModulesEnabled)('echo', () => {
       afterEach(closeAllWindows);
       it('can be required in renderer', async () => {
-        const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+        const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
         w.loadURL('about:blank');
         await expect(w.webContents.executeJavaScript('{ require(\'echo\'); null }')).to.be.fulfilled();
       });
@@ -51,14 +51,14 @@ describe('modules support', () => {
     ];
     ifdescribe(nativeModulesEnabled && enablePlatforms.includes(process.platform))('module that use uv_dlopen', () => {
       it('can be required in renderer', async () => {
-        const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+        const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
         w.loadURL('about:blank');
         await expect(w.webContents.executeJavaScript('{ require(\'uv-dlopen\'); null }')).to.be.fulfilled();
       });
 
       ifit(features.isRunAsNodeEnabled())('can be required in node binary', async function () {
         const child = childProcess.fork(path.join(fixtures, 'module', 'uv-dlopen.js'));
-        await new Promise(resolve => child.once('exit', (exitCode) => {
+        await new Promise<void>(resolve => child.once('exit', (exitCode) => {
           expect(exitCode).to.equal(0);
           resolve();
         }));
@@ -163,7 +163,7 @@ describe('modules support', () => {
     describe('when loaded URL is not file: protocol', () => {
       afterEach(closeAllWindows);
       it('searches for module under app directory', async () => {
-        const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+        const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
         w.loadURL('about:blank');
         const result = await w.webContents.executeJavaScript('typeof require("q").when');
         expect(result).to.equal('function');

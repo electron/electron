@@ -11,6 +11,7 @@
 #include "base/base_switches.h"
 #include "base/command_line.h"
 #include "base/feature_list.h"
+#include "base/optional.h"
 #include "base/path_service.h"
 #include "base/run_loop.h"
 #include "base/strings/string_number_conversions.h"
@@ -73,7 +74,7 @@
 #include "ui/base/x/x11_util.h"
 #include "ui/events/devices/x11/touch_factory_x11.h"
 #include "ui/gfx/color_utils.h"
-#include "ui/gfx/x/x11_types.h"
+#include "ui/gfx/x/connection.h"
 #include "ui/gfx/x/xproto_util.h"
 #include "ui/gtk/x/gtk_ui_delegate_x11.h"
 #endif
@@ -85,7 +86,6 @@
 #endif
 
 #if defined(OS_WIN)
-#include "ui/base/cursor/cursor_loader_win.h"
 #include "ui/base/l10n/l10n_util_win.h"
 #include "ui/display/win/dpi.h"
 #include "ui/gfx/system_fonts_win.h"
@@ -141,7 +141,7 @@ int GetMinimumFontSize() {
 }
 #endif
 
-base::string16 MediaStringProvider(media::MessageId id) {
+std::u16string MediaStringProvider(media::MessageId id) {
   switch (id) {
     case media::DEFAULT_AUDIO_DEVICE_NAME:
       return base::ASCIIToUTF16("Default");
@@ -150,7 +150,7 @@ base::string16 MediaStringProvider(media::MessageId id) {
       return base::ASCIIToUTF16("Communications");
 #endif
     default:
-      return base::string16();
+      return std::u16string();
   }
 }
 
@@ -230,14 +230,6 @@ int ElectronBrowserMainParts::GetExitCode() {
   return exit_code_ != nullptr ? *exit_code_ : 0;
 }
 
-void ElectronBrowserMainParts::RegisterDestructionCallback(
-    base::OnceClosure callback) {
-  // The destructors should be called in reversed order, so dependencies between
-  // JavaScript objects can be correctly resolved.
-  // For example WebContentsView => WebContents => Session.
-  destructors_.insert(destructors_.begin(), std::move(callback));
-}
-
 int ElectronBrowserMainParts::PreEarlyInitialization() {
   field_trial_list_ = std::make_unique<base::FieldTrialList>(nullptr);
 #if defined(OS_LINUX)
@@ -286,6 +278,9 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
   base::FeatureList::ClearInstanceForTesting();
   InitializeFeatureList();
 
+  // Initialize field trials.
+  InitializeFieldTrials();
+
   // Initialize after user script environment creation.
   fake_browser_process_->PostEarlyInitialization();
 }
@@ -316,22 +311,33 @@ int ElectronBrowserMainParts::PreCreateThreads() {
   // which keys off of getenv("LC_ALL").
   // We must set this env first to make ui::ResourceBundle accept the custom
   // locale.
-  g_setenv("LC_ALL", locale.c_str(), TRUE);
+  std::unique_ptr<base::Environment> env(base::Environment::Create());
+  base::Optional<std::string> lc_all;
+  if (!locale.empty()) {
+    std::string str;
+    if (env->GetVar("LC_ALL", &str))
+      lc_all.emplace(std::move(str));
+    env->SetVar("LC_ALL", locale.c_str());
+  }
 #endif
 
   // Load resources bundle according to locale.
   std::string loaded_locale = LoadResourceBundle(locale);
 
-#if defined(OS_LINUX)
-  // Reset to the loaded locale if the custom locale is invalid.
-  if (loaded_locale != locale)
-    g_setenv("LC_ALL", loaded_locale.c_str(), TRUE);
-#endif
-
   // Initialize the app locale.
   std::string app_locale = l10n_util::GetApplicationLocale(loaded_locale);
   ElectronBrowserClient::SetApplicationLocale(app_locale);
   fake_browser_process_->SetApplicationLocale(app_locale);
+
+#if defined(OS_LINUX)
+  // Reset to the original LC_ALL since we should not be changing it.
+  if (!locale.empty()) {
+    if (lc_all)
+      env->SetVar("LC_ALL", *lc_all);
+    else
+      env->UnSetVar("LC_ALL");
+  }
+#endif
 
   // Force MediaCaptureDevicesDispatcher to be created on UI thread.
   MediaCaptureDevicesDispatcher::GetInstance();
@@ -401,10 +407,6 @@ void ElectronBrowserMainParts::ToolkitInitialized() {
 #if defined(OS_WIN)
   gfx::win::SetAdjustFontCallback(&AdjustUIFont);
   gfx::win::SetGetMinimumFontSizeCallback(&GetMinimumFontSize);
-
-  wchar_t module_name[MAX_PATH] = {0};
-  if (GetModuleFileName(NULL, module_name, base::size(module_name)))
-    ui::CursorLoaderWin::SetCursorResourceModule(module_name);
 #endif
 
 #if defined(OS_MAC)
@@ -451,7 +453,12 @@ void ElectronBrowserMainParts::PreMainMessageLoopRun() {
   auto* command_line = base::CommandLine::ForCurrentProcess();
   if (command_line->HasSwitch(switches::kRemoteDebuggingPipe)) {
     // --remote-debugging-pipe
-    content::DevToolsAgentHost::StartRemoteDebuggingPipeHandler();
+    auto on_disconnect = base::BindOnce([]() {
+      base::PostTask(FROM_HERE, {content::BrowserThread::UI},
+                     base::BindOnce([]() { Browser::Get()->Quit(); }));
+    });
+    content::DevToolsAgentHost::StartRemoteDebuggingPipeHandler(
+        std::move(on_disconnect));
   } else if (command_line->HasSwitch(switches::kRemoteDebuggingPort)) {
     // --remote-debugging-port
     DevToolsManagerDelegate::StartHttpHandler();
@@ -491,7 +498,10 @@ void ElectronBrowserMainParts::PostMainMessageLoopStart() {
   bluez::DBusBluezManagerWrapperLinux::Initialize();
 #endif
 #if defined(OS_POSIX)
-  HandleShutdownSignals();
+  // Exit in response to SIGINT, SIGTERM, etc.
+  InstallShutdownSignalHandlers(
+      base::BindOnce(&Browser::Quit, base::Unretained(Browser::Get())),
+      content::GetUIThreadTaskRunner({}));
 #endif
 }
 
@@ -500,16 +510,14 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
   FreeAppDelegate();
 #endif
 
-  // Make sure destruction callbacks are called before message loop is
-  // destroyed, otherwise some objects that need to be deleted on IO thread
-  // won't be freed.
-  // We don't use ranged for loop because iterators are getting invalided when
-  // the callback runs.
-  for (auto iter = destructors_.begin(); iter != destructors_.end();) {
-    base::OnceClosure callback = std::move(*iter);
-    if (!callback.is_null())
-      std::move(callback).Run();
-    ++iter;
+  // Shutdown the DownloadManager before destroying Node to prevent
+  // DownloadItem callbacks from crashing.
+  for (auto& iter : ElectronBrowserContext::browser_context_map()) {
+    auto* download_manager =
+        content::BrowserContext::GetDownloadManager(iter.second.get());
+    if (download_manager) {
+      download_manager->Shutdown();
+    }
   }
 
   // Destroy node platform after all destructors_ are executed, as they may
@@ -519,7 +527,11 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
   node::Stop(node_env_->env());
   node_env_.reset();
 
+  auto default_context_key = ElectronBrowserContext::PartitionKey("", false);
+  std::unique_ptr<ElectronBrowserContext> default_context = std::move(
+      ElectronBrowserContext::browser_context_map()[default_context_key]);
   ElectronBrowserContext::browser_context_map().clear();
+  default_context.reset();
 
   fake_browser_process_->PostMainMessageLoopRun();
   content::DevToolsAgentHost::StopRemoteDebuggingPipeHandler();

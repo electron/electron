@@ -48,7 +48,7 @@ class OffScreenVideoConsumer : public viz::mojom::FrameSinkVideoConsumer {
   OffScreenRenderWidgetHostView* view_;
   std::unique_ptr<viz::ClientFrameSinkVideoCapturer> video_capturer_;
 
-  base::WeakPtrFactory<OffScreenVideoConsumer> weak_ptr_factory_;
+  base::WeakPtrFactory<OffScreenVideoConsumer> weak_ptr_factory_{this};
 
   DISALLOW_COPY_AND_ASSIGN(OffScreenVideoConsumer);
 };

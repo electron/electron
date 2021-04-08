@@ -20,12 +20,10 @@
 
 namespace electron {
 
-SubmenuButton::SubmenuButton(views::ButtonListener* button_listener,
-                             const base::string16& title,
+SubmenuButton::SubmenuButton(PressedCallback callback,
+                             const std::u16string& title,
                              const SkColor& background_color)
-    : views::MenuButton(
-          views::Button::PressedCallback(button_listener, this),
-          gfx::RemoveAcceleratorChar(title, '&', nullptr, nullptr)),
+    : views::MenuButton(callback, gfx::RemoveAccelerator(title)),
       background_color_(background_color) {
 #if defined(OS_LINUX)
   // Dont' use native style border.
@@ -91,12 +89,13 @@ void SubmenuButton::PaintButtonContents(gfx::Canvas* canvas) {
   }
 }
 
-bool SubmenuButton::GetUnderlinePosition(const base::string16& text,
-                                         base::char16* accelerator,
+bool SubmenuButton::GetUnderlinePosition(const std::u16string& text,
+                                         char16_t* accelerator,
                                          int* start,
                                          int* end) const {
   int pos, span;
-  base::string16 trimmed = gfx::RemoveAcceleratorChar(text, '&', &pos, &span);
+  std::u16string trimmed =
+      gfx::LocateAndRemoveAcceleratorChar(text, &pos, &span);
   if (pos > -1 && span != 0) {
     *accelerator = base::ToUpperASCII(trimmed[pos]);
     GetCharacterPosition(trimmed, pos, start);
@@ -107,7 +106,7 @@ bool SubmenuButton::GetUnderlinePosition(const base::string16& text,
   return false;
 }
 
-void SubmenuButton::GetCharacterPosition(const base::string16& text,
+void SubmenuButton::GetCharacterPosition(const std::u16string& text,
                                          int index,
                                          int* pos) const {
   int height = 0;

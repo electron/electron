@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<body>
+    <script>
+        try {
+            window.str = 'some-modified-text';
+            window.obj.prop = 'obj-modified-prop';
+            window.arr.splice(2, 0, 5);
+        } catch (e) { }
+        console.log(window.str);
+        console.log(window.obj.prop);
+        console.log(window.arr);
+    </script>
+</body>
+
+</html>

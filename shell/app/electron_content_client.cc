@@ -161,7 +161,7 @@ ElectronContentClient::ElectronContentClient() = default;
 
 ElectronContentClient::~ElectronContentClient() = default;
 
-base::string16 ElectronContentClient::GetLocalizedString(int message_id) {
+std::u16string ElectronContentClient::GetLocalizedString(int message_id) {
   return l10n_util::GetStringUTF16(message_id);
 }
 
@@ -207,7 +207,15 @@ void ElectronContentClient::AddAdditionalSchemes(Schemes* schemes) {
   }
 
   schemes->service_worker_schemes.emplace_back(url::kFileScheme);
-  schemes->standard_schemes.emplace_back(extensions::kExtensionScheme);
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  schemes->standard_schemes.push_back(extensions::kExtensionScheme);
+  schemes->savable_schemes.push_back(extensions::kExtensionScheme);
+  schemes->secure_schemes.push_back(extensions::kExtensionScheme);
+  schemes->service_worker_schemes.push_back(extensions::kExtensionScheme);
+  schemes->cors_enabled_schemes.push_back(extensions::kExtensionScheme);
+  schemes->csp_bypassing_schemes.push_back(extensions::kExtensionScheme);
+#endif
 }
 
 void ElectronContentClient::AddPepperPlugins(

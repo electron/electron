@@ -3,27 +3,29 @@
     "top=5,left=10,resizable=no",
     {
       "sender": "[WebContents]",
-      "frameId": 1
+      "frameId": 1,
+      "processId": "placeholder-process-id"
     },
     "about:blank",
-    "frame name",
+    "frame-name",
     "new-window",
     {
+      "show": true,
+      "width": 800,
+      "height": 600,
       "top": 5,
       "left": 10,
       "resizable": false,
       "x": 10,
       "y": 5,
-      "title": "frame name",
       "webPreferences": {
+        "contextIsolation": true,
         "nodeIntegration": false,
         "webviewTag": false,
         "nodeIntegrationInSubFrames": false,
         "openerId": "placeholder-opener-id"
       },
-      "width": 800,
-      "height": 600,
-      "show": false
+      "webContents": "[WebContents]"
     },
     [],
     {
@@ -36,26 +38,28 @@
     "zoomFactor=2,resizable=0,x=0,y=10",
     {
       "sender": "[WebContents]",
-      "frameId": 1
+      "frameId": 1,
+      "processId": "placeholder-process-id"
     },
     "about:blank",
-    "frame name",
+    "frame-name",
     "new-window",
     {
+      "show": true,
+      "width": 800,
+      "height": 600,
       "resizable": false,
       "x": 0,
       "y": 10,
-      "title": "frame name",
       "webPreferences": {
         "zoomFactor": "2",
+        "contextIsolation": true,
         "nodeIntegration": false,
         "webviewTag": false,
         "nodeIntegrationInSubFrames": false,
         "openerId": "placeholder-opener-id"
       },
-      "width": 800,
-      "height": 600,
-      "show": false
+      "webContents": "[WebContents]"
     },
     [],
     {
@@ -68,14 +72,19 @@
     "backgroundColor=gray,webPreferences=0,x=100,y=100",
     {
       "sender": "[WebContents]",
-      "frameId": 1
+      "frameId": 1,
+      "processId": "placeholder-process-id"
     },
     "about:blank",
-    "frame name",
+    "frame-name",
     "new-window",
     {
+      "show": true,
+      "width": 800,
+      "height": 600,
       "backgroundColor": "gray",
       "webPreferences": {
+        "contextIsolation": true,
         "nodeIntegration": false,
         "webviewTag": false,
         "nodeIntegrationInSubFrames": false,
@@ -84,10 +93,7 @@
       },
       "x": 100,
       "y": 100,
-      "title": "frame name",
-      "width": 800,
-      "height": 600,
-      "show": false
+      "webContents": "[WebContents]"
     },
     [],
     {
@@ -100,24 +106,27 @@
     "x=50,y=20,title=sup",
     {
       "sender": "[WebContents]",
-      "frameId": 1
+      "frameId": 1,
+      "processId": "placeholder-process-id"
     },
     "about:blank",
-    "frame name",
+    "frame-name",
     "new-window",
     {
+      "show": true,
+      "width": 800,
+      "height": 600,
       "x": 50,
       "y": 20,
       "title": "sup",
       "webPreferences": {
+        "contextIsolation": true,
         "nodeIntegration": false,
         "webviewTag": false,
         "nodeIntegrationInSubFrames": false,
         "openerId": "placeholder-opener-id"
       },
-      "width": 800,
-      "height": 600,
-      "show": false
+      "webContents": "[WebContents]"
     },
     [],
     {
@@ -130,26 +139,28 @@
     "show=false,top=1,left=1",
     {
       "sender": "[WebContents]",
-      "frameId": 1
+      "frameId": 1,
+      "processId": "placeholder-process-id"
     },
     "about:blank",
-    "frame name",
+    "frame-name",
     "new-window",
     {
       "show": false,
+      "width": 800,
+      "height": 600,
       "top": 1,
       "left": 1,
       "x": 1,
       "y": 1,
-      "title": "frame name",
       "webPreferences": {
+        "contextIsolation": true,
         "nodeIntegration": false,
         "webviewTag": false,
         "nodeIntegrationInSubFrames": false,
         "openerId": "placeholder-opener-id"
       },
-      "width": 800,
-      "height": 600
+      "webContents": "[WebContents]"
     },
     [],
     {

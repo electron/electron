@@ -3,6 +3,7 @@ import * as path from 'path';
 
 import { ipcMain, BrowserWindow, WebPreferences, app } from 'electron/main';
 import { closeWindow } from './window-helpers';
+import { emittedOnce } from './events-helpers';
 
 describe('BrowserWindow with affinity module', () => {
   const fixtures = path.resolve(__dirname, '..', 'spec', 'fixtures');
@@ -88,19 +89,15 @@ describe('BrowserWindow with affinity module', () => {
     const affinityWithNodeTrue = 'affinityWithNodeTrue';
     const affinityWithNodeFalse = 'affinityWithNodeFalse';
 
-    function testNodeIntegration (present: boolean) {
-      return new Promise<void>((resolve) => {
-        ipcMain.once('answer', (event, typeofProcess, typeofBuffer) => {
-          if (present) {
-            expect(typeofProcess).to.not.equal('undefined');
-            expect(typeofBuffer).to.not.equal('undefined');
-          } else {
-            expect(typeofProcess).to.equal('undefined');
-            expect(typeofBuffer).to.equal('undefined');
-          }
-          resolve();
-        });
-      });
+    async function testNodeIntegration (present: boolean) {
+      const [, typeofProcess, typeofBuffer] = await emittedOnce(ipcMain, 'answer');
+      if (present) {
+        expect(typeofProcess).to.not.equal('undefined');
+        expect(typeofBuffer).to.not.equal('undefined');
+      } else {
+        expect(typeofProcess).to.equal('undefined');
+        expect(typeofBuffer).to.equal('undefined');
+      }
     }
 
     it('disables node integration when specified to false', async () => {
@@ -109,26 +106,29 @@ describe('BrowserWindow with affinity module', () => {
         createWindowWithWebPrefs({
           affinity: affinityWithNodeTrue,
           preload,
-          nodeIntegration: false
+          nodeIntegration: false,
+          contextIsolation: false
         })
       ]);
       await closeWindow(w, { assertNotWindows: false });
     });
-    it('disables node integration when first window is false', async () => {
+    it('allows nodeIntegration to enable in second window with the same affinity', async () => {
       const [, w1] = await Promise.all([
         testNodeIntegration(false),
         createWindowWithWebPrefs({
           affinity: affinityWithNodeTrue,
           preload,
-          nodeIntegration: false
+          nodeIntegration: false,
+          contextIsolation: false
         })
       ]);
       const [, w2] = await Promise.all([
-        testNodeIntegration(false),
+        testNodeIntegration(true),
         createWindowWithWebPrefs({
           affinity: affinityWithNodeTrue,
           preload,
-          nodeIntegration: true
+          nodeIntegration: true,
+          contextIsolation: false
         })
       ]);
       await Promise.all([
@@ -143,27 +143,30 @@ describe('BrowserWindow with affinity module', () => {
         createWindowWithWebPrefs({
           affinity: affinityWithNodeFalse,
           preload,
-          nodeIntegration: true
+          nodeIntegration: true,
+          contextIsolation: false
         })
       ]);
       await closeWindow(w, { assertNotWindows: false });
     });
 
-    it('enables node integration when first window is true', async () => {
+    it('allows nodeIntegration to disable in second window with the same affinity', async () => {
       const [, w1] = await Promise.all([
         testNodeIntegration(true),
         createWindowWithWebPrefs({
           affinity: affinityWithNodeFalse,
           preload,
-          nodeIntegration: true
+          nodeIntegration: true,
+          contextIsolation: false
         })
       ]);
       const [, w2] = await Promise.all([
-        testNodeIntegration(true),
+        testNodeIntegration(false),
         createWindowWithWebPrefs({
           affinity: affinityWithNodeFalse,
           preload,
-          nodeIntegration: false
+          nodeIntegration: false,
+          contextIsolation: false
         })
       ]);
       await Promise.all([

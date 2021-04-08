@@ -19,6 +19,7 @@
 #include "electron/buildflags/buildflags.h"
 #include "net/ssl/client_cert_identity.h"
 #include "services/metrics/public/cpp/ukm_source_id.h"
+#include "shell/browser/bluetooth/electron_bluetooth_delegate.h"
 #include "shell/browser/serial/electron_serial_delegate.h"
 
 namespace content {
@@ -72,6 +73,10 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   void RegisterBrowserInterfaceBindersForFrame(
       content::RenderFrameHost* render_frame_host,
       mojo::BinderMapWithContext<content::RenderFrameHost*>* map) override;
+  void BindBadgeServiceReceiverFromServiceWorker(
+      content::RenderProcessHost* service_worker_process_host,
+      const GURL& service_worker_scope,
+      mojo::PendingReceiver<blink::mojom::BadgeService> receiver) override;
 #if defined(OS_LINUX)
   void GetAdditionalMappedFilesForChildProcess(
       const base::CommandLine& command_line,
@@ -86,13 +91,15 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   bool CanUseCustomSiteInstance() override;
   content::SerialDelegate* GetSerialDelegate() override;
 
+  content::BluetoothDelegate* GetBluetoothDelegate() override;
+
  protected:
   void RenderProcessWillLaunch(content::RenderProcessHost* host) override;
   content::SpeechRecognitionManagerDelegate*
   CreateSpeechRecognitionManagerDelegate() override;
   content::TtsPlatform* GetTtsPlatform() override;
 
-  void OverrideWebkitPrefs(content::RenderViewHost* render_view_host,
+  void OverrideWebkitPrefs(content::WebContents* web_contents,
                            blink::web_pref::WebPreferences* prefs) override;
   SiteInstanceForNavigationType ShouldOverrideSiteInstanceForNavigation(
       content::RenderFrameHost* current_rfh,
@@ -160,11 +167,9 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       bool in_memory,
       const base::FilePath& relative_partition_path,
       network::mojom::NetworkContextParams* network_context_params,
-      network::mojom::CertVerifierCreationParams* cert_verifier_creation_params)
-      override;
+      cert_verifier::mojom::CertVerifierCreationParams*
+          cert_verifier_creation_params) override;
   network::mojom::NetworkContext* GetSystemNetworkContext() override;
-  base::Optional<service_manager::Manifest> GetServiceManifestOverlay(
-      base::StringPiece name) override;
   content::MediaObserver* GetMediaObserver() override;
   content::DevToolsManagerDelegate* GetDevToolsManagerDelegate() override;
   content::PlatformNotificationService* GetPlatformNotificationService(
@@ -221,8 +226,9 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       bool is_for_isolated_world,
       network::mojom::URLLoaderFactoryParams* factory_params) override;
 #if defined(OS_WIN)
-  bool PreSpawnRenderer(sandbox::TargetPolicy* policy,
-                        RendererSpawnFlags flags) override;
+  bool PreSpawnChild(sandbox::TargetPolicy* policy,
+                     sandbox::policy::SandboxType sandbox_type,
+                     ChildSpawnFlags flags) override;
 #endif
   bool BindAssociatedReceiverFromFrame(
       content::RenderFrameHost* render_frame_host,
@@ -233,6 +239,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       const GURL& url,
       content::WebContents::OnceGetter web_contents_getter,
       int child_id,
+      int frame_tree_node_id,
       content::NavigationUIData* navigation_data,
       bool is_main_frame,
       ui::PageTransition page_transition,
@@ -315,8 +322,6 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   // pending_render_process => web contents.
   std::map<int, content::WebContents*> pending_processes_;
 
-  std::map<int, base::ProcessId> render_process_host_pids_;
-
   std::set<int> renderer_is_subframe_;
 
   // list of site per affinity. weak_ptr to prevent instance locking
@@ -338,6 +343,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   uint64_t next_id_ = 0;
 
   std::unique_ptr<ElectronSerialDelegate> serial_delegate_;
+  std::unique_ptr<ElectronBluetoothDelegate> bluetooth_delegate_;
 
   DISALLOW_COPY_AND_ASSIGN(ElectronBrowserClient);
 };

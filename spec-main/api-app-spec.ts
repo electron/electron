@@ -143,7 +143,8 @@ describe('app module', () => {
     });
   });
 
-  describe('app.exit(exitCode)', () => {
+  // Running child app under ASan might receive SIGKILL because of OOM.
+  ifdescribe(!process.env.IS_ASAN)('app.exit(exitCode)', () => {
     let appProcess: cp.ChildProcess | null = null;
 
     afterEach(() => {
@@ -209,7 +210,8 @@ describe('app module', () => {
     });
   });
 
-  describe('app.requestSingleInstanceLock', () => {
+  // Running child app under ASan might receive SIGKILL because of OOM.
+  ifdescribe(!process.env.IS_ASAN)('app.requestSingleInstanceLock', () => {
     it('prevents the second launch of app', async function () {
       this.timeout(120000);
       const appPath = path.join(fixturesPath, 'api', 'singleton');
@@ -251,7 +253,8 @@ describe('app module', () => {
     });
   });
 
-  describe('app.relaunch', () => {
+  // Running child app under ASan might receive SIGKILL because of OOM.
+  ifdescribe(!process.env.IS_ASAN)('app.relaunch', () => {
     let server: net.Server | null = null;
     const socketPath = process.platform === 'win32' ? '\\\\.\\pipe\\electron-app-relaunch' : '/tmp/electron-app-relaunch';
 
@@ -285,13 +288,20 @@ describe('app module', () => {
           } else if (String(data) === 'true' && state === 'first-launch') {
             done();
           } else {
-            done(`Unexpected state: ${state}`);
+            done(`Unexpected state: "${state}", data: "${data}"`);
           }
         });
       });
 
       const appPath = path.join(fixturesPath, 'api', 'relaunch');
-      cp.spawn(process.execPath, [appPath]);
+      const child = cp.spawn(process.execPath, [appPath]);
+      child.stdout.on('data', (c) => console.log(c.toString()));
+      child.stderr.on('data', (c) => console.log(c.toString()));
+      child.on('exit', (code, signal) => {
+        if (code !== 0) {
+          console.log(`Process exited with code "${code}" signal "${signal}"`);
+        }
+      });
     });
   });
 
@@ -408,7 +418,8 @@ describe('app module', () => {
       w = new BrowserWindow({
         show: false,
         webPreferences: {
-          nodeIntegration: true
+          nodeIntegration: true,
+          contextIsolation: false
         }
       });
       await w.loadURL('about:blank');
@@ -425,7 +436,8 @@ describe('app module', () => {
       w = new BrowserWindow({
         show: false,
         webPreferences: {
-          nodeIntegration: true
+          nodeIntegration: true,
+          contextIsolation: false
         }
       });
       await w.loadURL('about:blank');
@@ -443,7 +455,8 @@ describe('app module', () => {
         w = new BrowserWindow({
           show: false,
           webPreferences: {
-            nodeIntegration: true
+            nodeIntegration: true,
+            contextIsolation: false
           }
         });
         await w.loadURL('about:blank');
@@ -455,142 +468,48 @@ describe('app module', () => {
         expect(webContents).to.equal(w.webContents);
       });
     });
-
-    ifdescribe(features.isRemoteModuleEnabled())('remote module filtering', () => {
-      it('should emit remote-require event when remote.require() is invoked', async () => {
-        w = new BrowserWindow({
-          show: false,
-          webPreferences: {
-            nodeIntegration: true,
-            enableRemoteModule: true
-          }
-        });
-        await w.loadURL('about:blank');
-
-        const promise = emittedOnce(app, 'remote-require');
-        w.webContents.executeJavaScript('require(\'electron\').remote.require(\'test\')');
-
-        const [, webContents, moduleName] = await promise;
-        expect(webContents).to.equal(w.webContents);
-        expect(moduleName).to.equal('test');
-      });
-
-      it('should emit remote-get-global event when remote.getGlobal() is invoked', async () => {
-        w = new BrowserWindow({
-          show: false,
-          webPreferences: {
-            nodeIntegration: true,
-            enableRemoteModule: true
-          }
-        });
-        await w.loadURL('about:blank');
-
-        const promise = emittedOnce(app, 'remote-get-global');
-        w.webContents.executeJavaScript('require(\'electron\').remote.getGlobal(\'test\')');
-
-        const [, webContents, globalName] = await promise;
-        expect(webContents).to.equal(w.webContents);
-        expect(globalName).to.equal('test');
-      });
-
-      it('should emit remote-get-builtin event when remote.getBuiltin() is invoked', async () => {
-        w = new BrowserWindow({
-          show: false,
-          webPreferences: {
-            nodeIntegration: true,
-            enableRemoteModule: true
-          }
-        });
-        await w.loadURL('about:blank');
-
-        const promise = emittedOnce(app, 'remote-get-builtin');
-        w.webContents.executeJavaScript('require(\'electron\').remote.app');
-
-        const [, webContents, moduleName] = await promise;
-        expect(webContents).to.equal(w.webContents);
-        expect(moduleName).to.equal('app');
-      });
-
-      it('should emit remote-get-current-window event when remote.getCurrentWindow() is invoked', async () => {
-        w = new BrowserWindow({
-          show: false,
-          webPreferences: {
-            nodeIntegration: true,
-            enableRemoteModule: true
-          }
-        });
-        await w.loadURL('about:blank');
-
-        const promise = emittedOnce(app, 'remote-get-current-window');
-        w.webContents.executeJavaScript('{ require(\'electron\').remote.getCurrentWindow() }');
-
-        const [, webContents] = await promise;
-        expect(webContents).to.equal(w.webContents);
-      });
-
-      it('should emit remote-get-current-web-contents event when remote.getCurrentWebContents() is invoked', async () => {
-        w = new BrowserWindow({
-          show: false,
-          webPreferences: {
-            nodeIntegration: true,
-            enableRemoteModule: true
-          }
-        });
-        await w.loadURL('about:blank');
-
-        const promise = emittedOnce(app, 'remote-get-current-web-contents');
-        w.webContents.executeJavaScript('{ require(\'electron\').remote.getCurrentWebContents() }');
-
-        const [, webContents] = await promise;
-        expect(webContents).to.equal(w.webContents);
-      });
-    });
   });
 
   describe('app.badgeCount', () => {
     const platformIsNotSupported =
         (process.platform === 'win32') ||
         (process.platform === 'linux' && !app.isUnityRunning());
-    const platformIsSupported = !platformIsNotSupported;
 
     const expectedBadgeCount = 42;
 
     after(() => { app.badgeCount = 0; });
 
-    describe('on supported platform', () => {
-      it('with properties', () => {
+    ifdescribe(!platformIsNotSupported)('on supported platform', () => {
+      describe('with properties', () => {
         it('sets a badge count', function () {
-          if (platformIsNotSupported) return this.skip();
-
           app.badgeCount = expectedBadgeCount;
           expect(app.badgeCount).to.equal(expectedBadgeCount);
         });
       });
 
-      it('with functions', () => {
-        it('sets a badge count', function () {
-          if (platformIsNotSupported) return this.skip();
-
+      describe('with functions', () => {
+        it('sets a numerical badge count', function () {
           app.setBadgeCount(expectedBadgeCount);
           expect(app.getBadgeCount()).to.equal(expectedBadgeCount);
+        });
+        it('sets an non numeric (dot) badge count', function () {
+          app.setBadgeCount();
+          // Badge count should be zero when non numeric (dot) is requested
+          expect(app.getBadgeCount()).to.equal(0);
         });
       });
     });
 
-    describe('on unsupported platform', () => {
-      it('with properties', () => {
+    ifdescribe(process.platform !== 'win32' && platformIsNotSupported)('on unsupported platform', () => {
+      describe('with properties', () => {
         it('does not set a badge count', function () {
-          if (platformIsSupported) return this.skip();
-
           app.badgeCount = 9999;
           expect(app.badgeCount).to.equal(0);
         });
       });
 
-      it('with functions', () => {
+      describe('with functions', () => {
         it('does not set a badge count)', function () {
-          if (platformIsSupported) return this.skip();
-
           app.setBadgeCount(9999);
           expect(app.getBadgeCount()).to.equal(0);
         });
@@ -598,25 +517,33 @@ describe('app module', () => {
     });
   });
 
-  describe('app.get/setLoginItemSettings API', function () {
+  ifdescribe(process.platform !== 'linux' && !process.mas)('app.get/setLoginItemSettings API', function () {
     const updateExe = path.resolve(path.dirname(process.execPath), '..', 'Update.exe');
     const processStartArgs = [
       '--processStart', `"${path.basename(process.execPath)}"`,
       '--process-start-args', '"--hidden"'
     ];
-
-    before(function () {
-      if (process.platform === 'linux' || process.mas) this.skip();
-    });
+    const regAddArgs = [
+      'ADD',
+      'HKCU\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApproved\\Run',
+      '/v',
+      'additionalEntry',
+      '/t',
+      'REG_BINARY',
+      '/f',
+      '/d'
+    ];
 
     beforeEach(() => {
       app.setLoginItemSettings({ openAtLogin: false });
       app.setLoginItemSettings({ openAtLogin: false, path: updateExe, args: processStartArgs });
+      app.setLoginItemSettings({ name: 'additionalEntry', openAtLogin: false });
     });
 
     afterEach(() => {
       app.setLoginItemSettings({ openAtLogin: false });
       app.setLoginItemSettings({ openAtLogin: false, path: updateExe, args: processStartArgs });
+      app.setLoginItemSettings({ name: 'additionalEntry', openAtLogin: false });
     });
 
     ifit(process.platform !== 'win32')('sets and returns the app as a login item', function () {
@@ -631,7 +558,7 @@ describe('app module', () => {
     });
 
     ifit(process.platform === 'win32')('sets and returns the app as a login item (windows)', function () {
-      app.setLoginItemSettings({ openAtLogin: true });
+      app.setLoginItemSettings({ openAtLogin: true, enabled: true });
       expect(app.getLoginItemSettings()).to.deep.equal({
         openAtLogin: true,
         openAsHidden: false,
@@ -645,6 +572,24 @@ describe('app module', () => {
           args: [],
           scope: 'user',
           enabled: true
+        }]
+      });
+
+      app.setLoginItemSettings({ openAtLogin: false });
+      app.setLoginItemSettings({ openAtLogin: true, enabled: false });
+      expect(app.getLoginItemSettings()).to.deep.equal({
+        openAtLogin: true,
+        openAsHidden: false,
+        wasOpenedAtLogin: false,
+        wasOpenedAsHidden: false,
+        restoreState: false,
+        executableWillLaunchAtLogin: false,
+        launchItems: [{
+          name: 'electron.app.Electron',
+          path: process.execPath,
+          args: [],
+          scope: 'user',
+          enabled: false
         }]
       });
     });
@@ -776,6 +721,117 @@ describe('app module', () => {
         }]
       });
     });
+
+    ifit(process.platform === 'win32')('finds launch items independent of args', function () {
+      app.setLoginItemSettings({ openAtLogin: true, args: ['arg1'] });
+      app.setLoginItemSettings({ openAtLogin: true, name: 'additionalEntry', enabled: false, args: ['arg2'] });
+      expect(app.getLoginItemSettings()).to.deep.equal({
+        openAtLogin: false,
+        openAsHidden: false,
+        wasOpenedAtLogin: false,
+        wasOpenedAsHidden: false,
+        restoreState: false,
+        executableWillLaunchAtLogin: true,
+        launchItems: [{
+          name: 'additionalEntry',
+          path: process.execPath,
+          args: ['arg2'],
+          scope: 'user',
+          enabled: false
+        }, {
+          name: 'electron.app.Electron',
+          path: process.execPath,
+          args: ['arg1'],
+          scope: 'user',
+          enabled: true
+        }]
+      });
+    });
+
+    ifit(process.platform === 'win32')('finds launch items independent of path quotation or casing', function () {
+      const expectation = {
+        openAtLogin: false,
+        openAsHidden: false,
+        wasOpenedAtLogin: false,
+        wasOpenedAsHidden: false,
+        restoreState: false,
+        executableWillLaunchAtLogin: true,
+        launchItems: [{
+          name: 'additionalEntry',
+          path: 'C:\\electron\\myapp.exe',
+          args: ['arg1'],
+          scope: 'user',
+          enabled: true
+        }]
+      };
+
+      app.setLoginItemSettings({ openAtLogin: true, name: 'additionalEntry', enabled: true, path: 'C:\\electron\\myapp.exe', args: ['arg1'] });
+      expect(app.getLoginItemSettings({ path: '"C:\\electron\\MYAPP.exe"' })).to.deep.equal(expectation);
+
+      app.setLoginItemSettings({ openAtLogin: false, name: 'additionalEntry' });
+      app.setLoginItemSettings({ openAtLogin: true, name: 'additionalEntry', enabled: true, path: '"C:\\electron\\MYAPP.exe"', args: ['arg1'] });
+      expect(app.getLoginItemSettings({ path: 'C:\\electron\\myapp.exe' })).to.deep.equal({
+        ...expectation,
+        launchItems: [
+          {
+            name: 'additionalEntry',
+            path: 'C:\\electron\\MYAPP.exe',
+            args: ['arg1'],
+            scope: 'user',
+            enabled: true
+          }
+        ]
+      });
+    });
+
+    ifit(process.platform === 'win32')('detects disabled by TaskManager', async function () {
+      app.setLoginItemSettings({ openAtLogin: true, name: 'additionalEntry', enabled: true, args: ['arg1'] });
+      const appProcess = cp.spawn('reg', [...regAddArgs, '030000000000000000000000']);
+      await emittedOnce(appProcess, 'exit');
+      expect(app.getLoginItemSettings()).to.deep.equal({
+        openAtLogin: false,
+        openAsHidden: false,
+        wasOpenedAtLogin: false,
+        wasOpenedAsHidden: false,
+        restoreState: false,
+        executableWillLaunchAtLogin: false,
+        launchItems: [{
+          name: 'additionalEntry',
+          path: process.execPath,
+          args: ['arg1'],
+          scope: 'user',
+          enabled: false
+        }]
+      });
+    });
+
+    ifit(process.platform === 'win32')('detects enabled by TaskManager', async function () {
+      const expectation = {
+        openAtLogin: false,
+        openAsHidden: false,
+        wasOpenedAtLogin: false,
+        wasOpenedAsHidden: false,
+        restoreState: false,
+        executableWillLaunchAtLogin: true,
+        launchItems: [{
+          name: 'additionalEntry',
+          path: process.execPath,
+          args: ['arg1'],
+          scope: 'user',
+          enabled: true
+        }]
+      };
+
+      app.setLoginItemSettings({ openAtLogin: true, name: 'additionalEntry', enabled: false, args: ['arg1'] });
+      let appProcess = cp.spawn('reg', [...regAddArgs, '020000000000000000000000']);
+      await emittedOnce(appProcess, 'exit');
+      expect(app.getLoginItemSettings()).to.deep.equal(expectation);
+
+      app.setLoginItemSettings({ openAtLogin: true, name: 'additionalEntry', enabled: false, args: ['arg1'] });
+      appProcess = cp.spawn('reg', [...regAddArgs, '000000000000000000000000']);
+      await emittedOnce(appProcess, 'exit');
+      expect(app.getLoginItemSettings()).to.deep.equal(expectation);
+    });
   });
 
   ifdescribe(process.platform !== 'linux')('accessibilitySupportEnabled property', () => {
@@ -798,7 +854,8 @@ describe('app module', () => {
     });
   });
 
-  describe('getAppPath', () => {
+  // Running child app under ASan might receive SIGKILL because of OOM.
+  ifdescribe(!process.env.IS_ASAN)('getAppPath', () => {
     it('works for directories with package.json', async () => {
       const { appPath } = await runTestApp('app-path');
       expect(appPath).to.equal(path.resolve(fixturesPath, 'api/app-path'));
@@ -1074,13 +1131,7 @@ describe('app module', () => {
     });
   });
 
-  describe('app launch through uri', () => {
-    before(function () {
-      if (process.platform !== 'win32') {
-        this.skip();
-      }
-    });
-
+  ifdescribe(process.platform === 'win32')('app launch through uri', () => {
     it('does not launch for argument following a URL', async () => {
       const appPath = path.join(fixturesPath, 'api', 'quit-app');
       // App should exit with non 123 code.
@@ -1280,7 +1331,8 @@ describe('app module', () => {
     });
   });
 
-  describe('sandbox options', () => {
+  // Running child app under ASan might receive SIGKILL because of OOM.
+  ifdescribe(!process.env.IS_ASAN)('sandbox options', () => {
     let appProcess: cp.ChildProcess = null as any;
     let server: net.Server = null as any;
     const socketPath = process.platform === 'win32' ? '\\\\.\\pipe\\electron-mixed-sandbox' : '/tmp/electron-mixed-sandbox';
@@ -1400,6 +1452,15 @@ describe('app module', () => {
       });
     });
 
+    describe('dock.setIcon', () => {
+      it('throws a descriptive error for a bad icon path', () => {
+        const badPath = path.resolve('I', 'Do', 'Not', 'Exist');
+        expect(() => {
+          app.dock.setIcon(badPath);
+        }).to.throw(/Failed to load image from path (.+)/);
+      });
+    });
+
     describe('dock.bounce', () => {
       it('should return -1 for unknown bounce type', () => {
         expect(app.dock.bounce('bad type' as any)).to.equal(-1);
@@ -1496,7 +1557,8 @@ describe('app module', () => {
     });
   });
 
-  describe('commandLine.hasSwitch (existing argv)', () => {
+  // Running child app under ASan might receive SIGKILL because of OOM.
+  ifdescribe(!process.env.IS_ASAN)('commandLine.hasSwitch (existing argv)', () => {
     it('returns true when present', async () => {
       const { hasSwitch } = await runTestApp('command-line', '--foobar');
       expect(hasSwitch).to.equal(true);
@@ -1524,7 +1586,8 @@ describe('app module', () => {
     });
   });
 
-  describe('commandLine.getSwitchValue (existing argv)', () => {
+  // Running child app under ASan might receive SIGKILL because of OOM.
+  ifdescribe(!process.env.IS_ASAN)('commandLine.getSwitchValue (existing argv)', () => {
     it('returns the value when present', async () => {
       const { getSwitchValue } = await runTestApp('command-line', '--foobar=test');
       expect(getSwitchValue).to.equal('test');
@@ -1551,7 +1614,8 @@ describe('app module', () => {
   });
 });
 
-describe('default behavior', () => {
+// Running child app under ASan might receive SIGKILL because of OOM.
+ifdescribe(!process.env.IS_ASAN)('default behavior', () => {
   describe('application menu', () => {
     it('creates the default menu if the app does not set it', async () => {
       const result = await runTestApp('default-menu');

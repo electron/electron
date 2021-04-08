@@ -33,10 +33,3 @@ if (BUILDFLAG(ENABLE_DESKTOP_CAPTURER)) {
     loader: () => require('@electron/internal/renderer/api/desktop-capturer')
   });
 }
-
-if (BUILDFLAG(ENABLE_REMOTE_MODULE) && process.isRemoteModuleEnabled) {
-  moduleList.push({
-    name: 'remote',
-    loader: () => require('@electron/internal/renderer/api/remote')
-  });
-}

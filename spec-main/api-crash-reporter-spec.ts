@@ -89,7 +89,7 @@ const startServer = async () => {
     req.pipe(busboy);
   });
 
-  await new Promise(resolve => {
+  await new Promise<void>(resolve => {
     server.listen(0, '127.0.0.1', () => { resolve(); });
   });
 
@@ -239,7 +239,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
 
         remotely(() => {
           const { BrowserWindow } = require('electron');
-          const bw = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+          const bw = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
           bw.loadURL('about:blank');
           bw.webContents.executeJavaScript('process._linkedBinding(\'electron_common_v8_util\').triggerFatalErrorForTesting()');
         });
@@ -361,7 +361,13 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
     it('requires that the submitURL option be specified', () => {
       expect(() => {
         crashReporter.start({} as any);
-      }).to.throw('submitURL is a required option to crashReporter.start');
+      }).to.throw('submitURL must be specified when uploadToServer is true');
+    });
+
+    it('allows the submitURL option to be omitted when uploadToServer is false', () => {
+      expect(() => {
+        crashReporter.start({ uploadToServer: false } as any);
+      }).not.to.throw();
     });
 
     it('can be called twice', async () => {
@@ -409,7 +415,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
       // 2. generate a crash in the renderer.
       remotely(() => {
         const { BrowserWindow } = require('electron');
-        const bw = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+        const bw = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
         bw.loadURL('about:blank');
         bw.webContents.executeJavaScript('process.crash()');
       });
@@ -485,7 +491,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
       const rendererParameters = await remotely(async () => {
         const { crashReporter, BrowserWindow } = require('electron');
         crashReporter.start({ submitURL: 'http://' });
-        const bw = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+        const bw = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
         bw.loadURL('about:blank');
         await bw.webContents.executeJavaScript('require(\'electron\').crashReporter.addExtraParameter(\'hello\', \'world\')');
         return bw.webContents.executeJavaScript('require(\'electron\').crashReporter.getParameters()');
@@ -523,10 +529,6 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
       expect(app.getPath('crashDumps')).to.include(app.getPath('userData'));
     });
 
-    it('matches getCrashesDirectory', async () => {
-      expect(app.getPath('crashDumps')).to.equal(require('electron').crashReporter.getCrashesDirectory());
-    });
-
     function crash (processType: string, remotely: Function) {
       if (processType === 'main') {
         return remotely(() => {
@@ -535,7 +537,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
       } else if (processType === 'renderer') {
         return remotely(() => {
           const { BrowserWindow } = require('electron');
-          const bw = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+          const bw = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
           bw.loadURL('about:blank');
           bw.webContents.executeJavaScript('process.crash()');
         });
@@ -543,7 +545,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
         const preloadPath = path.join(__dirname, 'fixtures', 'apps', 'crash', 'sandbox-preload.js');
         return remotely((preload: string) => {
           const { BrowserWindow } = require('electron');
-          const bw = new BrowserWindow({ show: false, webPreferences: { sandbox: true, preload } });
+          const bw = new BrowserWindow({ show: false, webPreferences: { sandbox: true, preload, contextIsolation: false } });
           bw.loadURL('about:blank');
         }, preloadPath);
       } else if (processType === 'node') {
@@ -565,9 +567,9 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
         it('stores crashes in the crash dump directory when uploadToServer: false', async () => {
           const { remotely } = await startRemoteControlApp();
           const crashesDir = await remotely(() => {
-            const { crashReporter } = require('electron');
+            const { crashReporter, app } = require('electron');
             crashReporter.start({ submitURL: 'http://127.0.0.1', uploadToServer: false, ignoreSystemCrashHandler: true });
-            return crashReporter.getCrashesDirectory();
+            return app.getPath('crashDumps');
           });
           let reportsDir = crashesDir;
           if (process.platform === 'darwin') {
@@ -599,7 +601,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
             const { crashReporter, app } = require('electron');
             app.setPath('crashDumps', crashesDir);
             crashReporter.start({ submitURL: 'http://127.0.0.1', uploadToServer: false, ignoreSystemCrashHandler: true });
-            return crashReporter.getCrashesDirectory();
+            return app.getPath('crashDumps');
           }, crashesDir);
           expect(remoteCrashesDir).to.equal(crashesDir);
 

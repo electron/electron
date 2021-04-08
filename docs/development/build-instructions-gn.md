@@ -6,9 +6,9 @@ Follow the guidelines below for building Electron.
 
 Check the build prerequisites for your platform before proceeding
 
-  * [macOS](build-instructions-macos.md#prerequisites)
-  * [Linux](build-instructions-linux.md#prerequisites)
-  * [Windows](build-instructions-windows.md#prerequisites)
+* [macOS](build-instructions-macos.md#prerequisites)
+* [Linux](build-instructions-linux.md#prerequisites)
+* [Windows](build-instructions-windows.md#prerequisites)
 
 ## Build Tools
 
@@ -26,7 +26,7 @@ Security` → `System` → `Advanced system settings` and add a system variable
 your locally installed version of Visual Studio (by default, `depot_tools` will
 try to download a Google-internal version that only Googlers have access to).
 
-[depot-tools]: http://commondatastorage.googleapis.com/chrome-infra-docs/flat/depot_tools/docs/html/depot_tools_tutorial.html#_setting_up
+[depot-tools]: https://commondatastorage.googleapis.com/chrome-infra-docs/flat/depot_tools/docs/html/depot_tools_tutorial.html#_setting_up
 
 ### Setting up the git cache
 
@@ -53,7 +53,7 @@ $ gclient sync --with_branch_heads --with_tags
 > Instead of `https://github.com/electron/electron`, you can use your own fork
 > here (something like `https://github.com/<username>/electron`).
 
-#### A note on pulling/pushing
+### A note on pulling/pushing
 
 If you intend to `git pull` or `git push` from the official `electron`
 repository in the future, you now need to update the respective folder's
@@ -74,6 +74,7 @@ Running `gclient sync -f` ensures that all dependencies required
 to build Electron match that file.
 
 So, in order to pull, you'd run the following commands:
+
 ```sh
 $ cd src/electron
 $ git pull
@@ -85,12 +86,11 @@ $ gclient sync -f
 ```sh
 $ cd src
 $ export CHROMIUM_BUILDTOOLS_PATH=`pwd`/buildtools
-# this next line is needed only if building with sccache
-$ export GN_EXTRA_ARGS="${GN_EXTRA_ARGS} cc_wrapper=\"${PWD}/electron/external_binaries/sccache\""
 $ gn gen out/Testing --args="import(\"//electron/build/args/testing.gn\") $GN_EXTRA_ARGS"
 ```
 
 Or on Windows (without the optional argument):
+
 ```sh
 $ cd src
 $ set CHROMIUM_BUILDTOOLS_PATH=%cd%\buildtools
@@ -124,11 +124,13 @@ $ gn gen out/Release --args="import(\"//electron/build/args/release.gn\") $GN_EX
 Nota Bene: This will also take a while and probably heat up your lap.
 
 For the testing configuration:
+
 ```sh
 $ ninja -C out/Testing electron
 ```
 
 For the release configuration:
+
 ```sh
 $ ninja -C out/Release electron
 ```
@@ -136,12 +138,6 @@ $ ninja -C out/Release electron
 This will build all of what was previously 'libchromiumcontent' (i.e. the
 `content/` directory of `chromium` and its dependencies, incl. WebKit and V8),
 so it will take a while.
-
-To speed up subsequent builds, you can use [sccache][sccache]. Add the GN arg
-`cc_wrapper = "sccache"` by running `gn args out/Testing` to bring up an
-editor and adding a line to the end of the file.
-
-[sccache]: https://github.com/mozilla/sccache
 
 The built executable will be under `./out/Testing`:
 
@@ -156,11 +152,13 @@ $ ./out/Testing/electron
 ### Packaging
 
 On linux, first strip the debugging and symbol information:
+
 ```sh
 electron/script/strip-binaries.py -d out/Release
 ```
 
 To package the electron build as a distributable zip file:
+
 ```sh
 ninja -C out/Release electron:electron_dist_zip
 ```
@@ -177,12 +175,11 @@ $ gn gen out/Testing-x86 --args='... target_cpu = "x86"'
 
 Not all combinations of source and target CPU/OS are supported by Chromium.
 
-<table>
-<tr><th>Host</th><th>Target</th><th>Status</th></tr>
-<tr><td>Windows x64</td><td>Windows arm64</td><td>Experimental</td>
-<tr><td>Windows x64</td><td>Windows x86</td><td>Automatically tested</td></tr>
-<tr><td>Linux x64</td><td>Linux x86</td><td>Automatically tested</td></tr>
-</table>
+| Host        | Target        | Status               |
+|-------------|---------------|----------------------|
+| Windows x64 | Windows arm64 | Experimental         |
+| Windows x64 | Windows x86   | Automatically tested |
+| Linux x64   | Linux x86     | Automatically tested |
 
 If you test other combinations and find them to work, please update this document :)
 
@@ -193,6 +190,7 @@ and [`target_cpu`][target_cpu values].
 [target_cpu values]: https://gn.googlesource.com/gn/+/master/docs/reference.md#built_in-predefined-variables-target_cpu_the-desired-cpu-architecture-for-the-build-possible-values
 
 #### Windows on Arm (experimental)
+
 To cross-compile for Windows on Arm, [follow Chromium's guide](https://chromium.googlesource.com/chromium/src/+/refs/heads/master/docs/windows_build_instructions.md#Visual-Studio) to get the necessary dependencies, SDK and libraries, then build with `ELECTRON_BUILDING_WOA=1` in your environment before running `gclient sync`.
 
 ```bat
@@ -201,13 +199,13 @@ gclient sync -f --with_branch_heads --with_tags
 ```
 
 Or (if using PowerShell):
+
 ```powershell
 $env:ELECTRON_BUILDING_WOA=1
 gclient sync -f --with_branch_heads --with_tags
 ```
 
 Next, run `gn gen` as above with `target_cpu="arm64"`.
-
 
 ## Tests
 
@@ -274,6 +272,7 @@ $ gclient sync -f
 ```
 
 ### I'm being asked for a username/password for chromium-internal.googlesource.com
+
 If you see a prompt for `Username for 'https://chrome-internal.googlesource.com':` when running `gclient sync` on Windows, it's probably because the `DEPOT_TOOLS_WIN_TOOLCHAIN` environment variable is not set to 0. Open `Control Panel` → `System and Security` → `System` → `Advanced system settings` and add a system variable
 `DEPOT_TOOLS_WIN_TOOLCHAIN` with value `0`.  This tells `depot_tools` to use
 your locally installed version of Visual Studio (by default, `depot_tools` will

@@ -13,10 +13,10 @@ Ultimately we should remove the option to disable compression, and
 subsequently remove this patch.
 
 diff --git a/components/crash/core/app/breakpad_linux.cc b/components/crash/core/app/breakpad_linux.cc
-index 7d23a5732b47bef04cadc707f58e50b423393605..f85395cd64db22f8d530b070e1929de7d1f59db3 100644
+index 7b38b3bc102448b1c6f0663875ce305bc6e986ff..8f40e774bdb39b2e943e4ba56f012df0d4fd943d 100644
 --- a/components/crash/core/app/breakpad_linux.cc
 +++ b/components/crash/core/app/breakpad_linux.cc
-@@ -108,6 +108,8 @@ void SetUploadURL(const std::string& url) {
+@@ -109,6 +109,8 @@ void SetUploadURL(const std::string& url) {
    DCHECK(!g_upload_url);
    g_upload_url = strdup(url.c_str());
  }
@@ -25,9 +25,9 @@ index 7d23a5732b47bef04cadc707f58e50b423393605..f85395cd64db22f8d530b070e1929de7
  #endif
  
  bool g_is_node = false;
-@@ -1319,56 +1321,60 @@ void ExecUploadProcessOrTerminate(const BreakpadInfo& info,
+@@ -1320,56 +1322,60 @@ void ExecUploadProcessOrTerminate(const BreakpadInfo& info,
  
- #else  // defined(OS_CHROMEOS)
+ #else   // BUILDFLAG(IS_CHROMEOS_ASH)
  
 -  // Compress |dumpfile| with gzip.
 -  const pid_t gzip_child = sys_fork();
@@ -127,7 +127,7 @@ index 7d23a5732b47bef04cadc707f58e50b423393605..f85395cd64db22f8d530b070e1929de7
    static const char header_msg[] =
        "--header=Content-Type: multipart/form-data; boundary=";
    const size_t header_content_type_size =
-@@ -1395,7 +1401,8 @@ void ExecUploadProcessOrTerminate(const BreakpadInfo& info,
+@@ -1396,7 +1402,8 @@ void ExecUploadProcessOrTerminate(const BreakpadInfo& info,
    static const char kWgetBinary[] = "/usr/bin/wget";
    const char* args[] = {
        kWgetBinary,
@@ -137,9 +137,9 @@ index 7d23a5732b47bef04cadc707f58e50b423393605..f85395cd64db22f8d530b070e1929de7
        header_content_type,
        post_file,
        g_upload_url,
-@@ -2036,6 +2043,7 @@ void InitCrashReporter(const std::string& process_type) {
+@@ -2037,6 +2044,7 @@ void InitCrashReporter(const std::string& process_type) {
  
- #if !defined(OS_CHROMEOS)
+ #if !BUILDFLAG(IS_CHROMEOS_ASH)
    SetUploadURL(GetCrashReporterClient()->GetUploadUrl());
 +  g_compress_uploads = GetCrashReporterClient()->GetShouldCompressUploads();
  #endif

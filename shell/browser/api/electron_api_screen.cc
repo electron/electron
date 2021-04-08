@@ -33,15 +33,6 @@ gin::WrapperInfo Screen::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 namespace {
 
-// Find an item in container according to its ID.
-template <class T>
-typename T::iterator FindById(T* container, int id) {
-  auto predicate = [id](const typename T::value_type& item) -> bool {
-    return item.id() == id;
-  };
-  return std::find_if(container->begin(), container->end(), predicate);
-}
-
 // Convert the changed_metrics bitmask to string array.
 std::vector<std::string> MetricsToArray(uint32_t metrics) {
   std::vector<std::string> array;
@@ -118,22 +109,22 @@ static gfx::Rect DIPToScreenRect(electron::NativeWindow* window,
 
 void Screen::OnDisplayAdded(const display::Display& new_display) {
   base::ThreadTaskRunnerHandle::Get()->PostNonNestableTask(
-      FROM_HERE, base::Bind(&DelayEmit, base::Unretained(this), "display-added",
-                            new_display));
+      FROM_HERE, base::BindOnce(&DelayEmit, base::Unretained(this),
+                                "display-added", new_display));
 }
 
 void Screen::OnDisplayRemoved(const display::Display& old_display) {
   base::ThreadTaskRunnerHandle::Get()->PostNonNestableTask(
-      FROM_HERE, base::Bind(&DelayEmit, base::Unretained(this),
-                            "display-removed", old_display));
+      FROM_HERE, base::BindOnce(&DelayEmit, base::Unretained(this),
+                                "display-removed", old_display));
 }
 
 void Screen::OnDisplayMetricsChanged(const display::Display& display,
                                      uint32_t changed_metrics) {
   base::ThreadTaskRunnerHandle::Get()->PostNonNestableTask(
-      FROM_HERE, base::Bind(&DelayEmitWithMetrics, base::Unretained(this),
-                            "display-metrics-changed", display,
-                            MetricsToArray(changed_metrics)));
+      FROM_HERE, base::BindOnce(&DelayEmitWithMetrics, base::Unretained(this),
+                                "display-metrics-changed", display,
+                                MetricsToArray(changed_metrics)));
 }
 
 // static

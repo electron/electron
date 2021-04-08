@@ -31,6 +31,7 @@
 #include "shell/renderer/electron_api_service_impl.h"
 #include "shell/renderer/electron_autofill_agent.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_registry.h"
+#include "third_party/blink/public/common/web_preferences/web_preferences.h"
 #include "third_party/blink/public/web/blink.h"
 #include "third_party/blink/public/web/web_custom_element.h"  // NOLINT(build/include_alpha)
 #include "third_party/blink/public/web/web_frame_widget.h"
@@ -74,9 +75,7 @@
 #include "extensions/common/extensions_client.h"
 #include "extensions/renderer/dispatcher.h"
 #include "extensions/renderer/extension_frame_helper.h"
-#include "extensions/renderer/guest_view/extensions_guest_view_container.h"
 #include "extensions/renderer/guest_view/extensions_guest_view_container_dispatcher.h"
-#include "extensions/renderer/guest_view/mime_handler_view/mime_handler_view_container.h"
 #include "extensions/renderer/guest_view/mime_handler_view/mime_handler_view_container_manager.h"
 #include "shell/common/extensions/electron_extensions_client.h"
 #include "shell/renderer/extensions/electron_extensions_renderer_client.h"
@@ -112,8 +111,11 @@ RendererClientBase::RendererClientBase() {
       ParseSchemesCLISwitch(command_line, switches::kStreamingSchemes);
   for (const std::string& scheme : streaming_schemes_list)
     media::AddStreamingScheme(scheme.c_str());
-  isolated_world_ = base::CommandLine::ForCurrentProcess()->HasSwitch(
-      switches::kContextIsolation);
+  // Parse --secure-schemes=scheme1,scheme2
+  std::vector<std::string> secure_schemes_list =
+      ParseSchemesCLISwitch(command_line, switches::kSecureSchemes);
+  for (const std::string& scheme : secure_schemes_list)
+    url::AddSecureScheme(scheme.data());
   // We rely on the unique process host id which is notified to the
   // renderer process via command line switch from the content layer,
   // if this switch is removed from the content layer for some reason,
@@ -133,18 +135,15 @@ void RendererClientBase::DidCreateScriptContext(
       "%s-%" PRId64, renderer_client_id_.c_str(), ++next_context_id_);
   gin_helper::Dictionary global(context->GetIsolate(), context->Global());
   global.SetHidden("contextId", context_id);
-
-#if BUILDFLAG(ENABLE_REMOTE_MODULE)
-  auto* command_line = base::CommandLine::ForCurrentProcess();
-  bool enableRemoteModule =
-      command_line->HasSwitch(switches::kEnableRemoteModule);
-  global.SetHidden("enableRemoteModule", enableRemoteModule);
-#endif
 }
 
-void RendererClientBase::AddRenderBindings(
-    v8::Isolate* isolate,
-    v8::Local<v8::Object> binding_object) {}
+void RendererClientBase::BindProcess(v8::Isolate* isolate,
+                                     gin_helper::Dictionary* process,
+                                     content::RenderFrame* render_frame) {
+  process->SetReadOnly("isMainFrame", render_frame->IsMainFrame());
+  process->SetReadOnly("contextIsolated",
+                       render_frame->GetBlinkPreferences().context_isolation);
+}
 
 void RendererClientBase::RenderThreadStarted() {
   auto* command_line = base::CommandLine::ForCurrentProcess();
@@ -153,6 +152,8 @@ void RendererClientBase::RenderThreadStarted() {
   // On macOS, popup menus are rendered by the main process by default.
   // This causes problems in OSR, since when the popup is rendered separately,
   // it won't be captured in the rendered image.
+  // TODO(loc): This will be wrong for in-process child windows, as this
+  // function won't run again for them.
   if (command_line->HasSwitch(options::kOffscreen)) {
     blink::WebView::SetUseExternalPopupMenus(false);
   }
@@ -177,14 +178,13 @@ void RendererClientBase::RenderThreadStarted() {
 #endif
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-  if (command_line->HasSwitch(switches::kEnableSpellcheck))
-    spellcheck_ = std::make_unique<SpellCheck>(this);
+  spellcheck_ = std::make_unique<SpellCheck>(this);
 #endif
 
   blink::WebCustomElement::AddEmbedderCustomElementName("webview");
   blink::WebCustomElement::AddEmbedderCustomElementName("browserplugin");
 
-  WTF::String extension_scheme("chrome-extension");
+  WTF::String extension_scheme(extensions::kExtensionScheme);
   // Extension resources are HTTP-like and safe to expose to the fetch API. The
   // rules for the fetch API are consistent with XHR.
   blink::SchemeRegistry::RegisterURLSchemeAsSupportingFetchAPI(
@@ -193,18 +193,8 @@ void RendererClientBase::RenderThreadStarted() {
   // Blink's strict first-party origin checks.
   blink::SchemeRegistry::RegisterURLSchemeAsFirstPartyWhenTopLevel(
       extension_scheme);
-  // In Chrome we should set extension's origins to match the pages they can
-  // work on, but in Electron currently we just let extensions do anything.
-  blink::SchemeRegistry::RegisterURLSchemeAsSecure(extension_scheme);
   blink::SchemeRegistry::RegisterURLSchemeAsBypassingContentSecurityPolicy(
       extension_scheme);
-
-  // Parse --secure-schemes=scheme1,scheme2
-  std::vector<std::string> secure_schemes_list =
-      ParseSchemesCLISwitch(command_line, switches::kSecureSchemes);
-  for (const std::string& scheme : secure_schemes_list)
-    blink::SchemeRegistry::RegisterURLSchemeAsSecure(
-        WTF::String::FromUTF8(scheme.data(), scheme.length()));
 
   std::vector<std::string> fetch_enabled_schemes =
       ParseSchemesCLISwitch(command_line, switches::kFetchSchemes);
@@ -232,7 +222,7 @@ void RendererClientBase::RenderThreadStarted() {
 
 #if defined(OS_WIN)
   // Set ApplicationUserModelID in renderer process.
-  base::string16 app_id =
+  std::wstring app_id =
       command_line->GetSwitchValueNative(switches::kAppUserModelId);
   if (!app_id.empty()) {
     SetCurrentProcessExplicitAppUserModelID(app_id.c_str());
@@ -265,26 +255,7 @@ void RendererClientBase::RenderFrameCreated(
 
   // Note: ElectronApiServiceImpl has to be created now to capture the
   // DidCreateDocumentElement event.
-  auto* service = new ElectronApiServiceImpl(render_frame, this);
-  render_frame->GetAssociatedInterfaceRegistry()->AddInterface(
-      base::BindRepeating(&ElectronApiServiceImpl::BindTo,
-                          service->GetWeakPtr()));
-
-  content::RenderView* render_view = render_frame->GetRenderView();
-  if (render_frame->IsMainFrame() && render_view) {
-    blink::WebView* webview = render_view->GetWebView();
-    if (webview) {
-      base::CommandLine* cmd = base::CommandLine::ForCurrentProcess();
-      if (cmd->HasSwitch(switches::kGuestInstanceID)) {  // webview.
-        webview->SetBaseBackgroundColor(SK_ColorTRANSPARENT);
-      } else {  // normal window.
-        std::string name = cmd->GetSwitchValueASCII(switches::kBackgroundColor);
-        SkColor color =
-            name.empty() ? SK_ColorTRANSPARENT : ParseHexColor(name);
-        webview->SetBaseBackgroundColor(color);
-      }
-    }
-  }
+  new ElectronApiServiceImpl(render_frame, this);
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   auto* dispatcher = extensions_renderer_client_->GetDispatcher();
@@ -300,8 +271,7 @@ void RendererClientBase::RenderFrameCreated(
 #endif
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-  auto* command_line = base::CommandLine::ForCurrentProcess();
-  if (command_line->HasSwitch(switches::kEnableSpellcheck))
+  if (render_frame->GetBlinkPreferences().enable_spellcheck)
     new SpellCheckProvider(render_frame, spellcheck_.get(), this);
 #endif
 }
@@ -330,12 +300,11 @@ bool RendererClientBase::OverrideCreatePlugin(
     content::RenderFrame* render_frame,
     const blink::WebPluginParams& params,
     blink::WebPlugin** plugin) {
-  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
   if (params.mime_type.Utf8() == content::kBrowserPluginMimeType ||
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
       params.mime_type.Utf8() == kPdfPluginMimeType ||
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
-      command_line->HasSwitch(switches::kEnablePlugins))
+      render_frame->GetBlinkPreferences().enable_plugins)
     return false;
 
   *plugin = nullptr;
@@ -360,20 +329,6 @@ bool RendererClientBase::IsKeySystemsUpdateNeeded() {
 void RendererClientBase::DidSetUserAgent(const std::string& user_agent) {
 #if BUILDFLAG(ENABLE_PRINTING)
   printing::SetAgent(user_agent);
-#endif
-}
-
-guest_view::GuestViewContainer* RendererClientBase::CreateBrowserPluginDelegate(
-    content::RenderFrame* render_frame,
-    const content::WebPluginInfo& info,
-    const std::string& mime_type,
-    const GURL& original_url) {
-#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  // TODO(nornagon): check the mime type isn't content::kBrowserPluginMimeType?
-  return new extensions::MimeHandlerViewContainer(render_frame, info, mime_type,
-                                                  original_url);
-#else
-  return nullptr;
 #endif
 }
 
@@ -406,11 +361,8 @@ bool RendererClientBase::IsPluginHandledExternally(
 
 bool RendererClientBase::IsOriginIsolatedPepperPlugin(
     const base::FilePath& plugin_path) {
-#if BUILDFLAG(ENABLE_PDF_VIEWER)
-  return plugin_path.value() == kPdfPluginPath;
-#else
-  return false;
-#endif
+  // Isolate all Pepper plugins, including the PDF plugin.
+  return true;
 }
 
 std::unique_ptr<blink::WebPrescientNetworking>
@@ -441,10 +393,69 @@ void RendererClientBase::RunScriptsAtDocumentEnd(
 #endif
 }
 
+bool RendererClientBase::AllowScriptExtensionForServiceWorker(
+    const url::Origin& script_origin) {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  return script_origin.scheme() == extensions::kExtensionScheme;
+#else
+  return false;
+#endif
+}
+
+void RendererClientBase::DidInitializeServiceWorkerContextOnWorkerThread(
+    blink::WebServiceWorkerContextProxy* context_proxy,
+    const GURL& service_worker_scope,
+    const GURL& script_url) {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  extensions_renderer_client_->GetDispatcher()
+      ->DidInitializeServiceWorkerContextOnWorkerThread(
+          context_proxy, service_worker_scope, script_url);
+#endif
+}
+
+void RendererClientBase::WillEvaluateServiceWorkerOnWorkerThread(
+    blink::WebServiceWorkerContextProxy* context_proxy,
+    v8::Local<v8::Context> v8_context,
+    int64_t service_worker_version_id,
+    const GURL& service_worker_scope,
+    const GURL& script_url) {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  extensions_renderer_client_->GetDispatcher()
+      ->WillEvaluateServiceWorkerOnWorkerThread(
+          context_proxy, v8_context, service_worker_version_id,
+          service_worker_scope, script_url);
+#endif
+}
+
+void RendererClientBase::DidStartServiceWorkerContextOnWorkerThread(
+    int64_t service_worker_version_id,
+    const GURL& service_worker_scope,
+    const GURL& script_url) {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  extensions_renderer_client_->GetDispatcher()
+      ->DidStartServiceWorkerContextOnWorkerThread(
+          service_worker_version_id, service_worker_scope, script_url);
+#endif
+}
+
+void RendererClientBase::WillDestroyServiceWorkerContextOnWorkerThread(
+    v8::Local<v8::Context> context,
+    int64_t service_worker_version_id,
+    const GURL& service_worker_scope,
+    const GURL& script_url) {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  extensions_renderer_client_->GetDispatcher()
+      ->WillDestroyServiceWorkerContextOnWorkerThread(
+          context, service_worker_version_id, service_worker_scope, script_url);
+#endif
+}
+
 v8::Local<v8::Context> RendererClientBase::GetContext(
     blink::WebLocalFrame* frame,
     v8::Isolate* isolate) const {
-  if (isolated_world())
+  auto* render_frame = content::RenderFrame::FromWebFrame(frame);
+  DCHECK(render_frame);
+  if (render_frame && render_frame->GetBlinkPreferences().context_isolation)
     return frame->WorldScriptContext(isolate, WorldIDs::ISOLATED_WORLD_ID);
   else
     return frame->MainWorldScriptContext();

@@ -44,7 +44,7 @@ Chromium shared library and Node.js. Vulnerabilities affecting these components
 may impact the security of your application. By updating Electron to the latest
 version, you ensure that critical vulnerabilities (such as *nodeIntegration bypasses*)
 are already patched and cannot be exploited in your application. For more information,
-see "[Use a current version of Electron](#17-use-a-current-version-of-electron)".
+see "[Use a current version of Electron](#15-use-a-current-version-of-electron)".
 
 * **Evaluate your dependencies.** While NPM provides half a million reusable packages,
 it is your responsibility to choose trusted 3rd-party libraries. If you use outdated
@@ -55,7 +55,6 @@ your application security could be in jeopardy.
 is your own code. Common web vulnerabilities, such as Cross-Site Scripting (XSS),
 have a higher security impact on Electron applications hence it is highly recommended
 to adopt secure software development best practices and perform security testing.
-
 
 ## Isolation For Untrusted Content
 
@@ -100,9 +99,7 @@ You should at least follow these steps to improve the security of your applicati
 12. [Disable or limit navigation](#12-disable-or-limit-navigation)
 13. [Disable or limit creation of new windows](#13-disable-or-limit-creation-of-new-windows)
 14. [Do not use `openExternal` with untrusted content](#14-do-not-use-openexternal-with-untrusted-content)
-15. [Disable the `remote` module](#15-disable-the-remote-module)
-16. [Filter the `remote` module](#16-filter-the-remote-module)
-17. [Use a current version of Electron](#17-use-a-current-version-of-electron)
+15. [Use a current version of Electron](#15-use-a-current-version-of-electron)
 
 To automate the detection of misconfigurations and insecure patterns, it is
 possible to use
@@ -149,7 +146,6 @@ browserWindow.loadURL('https://example.com')
 <script crossorigin src="https://example.com/react.js"></script>
 <link rel="stylesheet" href="https://example.com/style.css">
 ```
-
 
 ## 2) Do not enable Node.js Integration for Remote Content
 
@@ -225,7 +221,6 @@ window.readConfig = function () {
 }
 ```
 
-
 ## 3) Enable Context Isolation for Remote Content
 
 Context isolation is an Electron feature that allows developers to run code
@@ -236,14 +231,13 @@ practice, that means that global objects like `Array.prototype.push` or
 Electron uses the same technology as Chromium's [Content Scripts](https://developer.chrome.com/extensions/content_scripts#execution-environment)
 to enable this behavior.
 
-Even when you use `nodeIntegration: false` to enforce strong isolation and
-prevent the use of Node primitives, `contextIsolation` must also be used.
+Even when `nodeIntegration: false` is used, to truly enforce strong isolation
+and prevent the use of Node primitives `contextIsolation` **must** also be used.
 
 ### Why & How?
 
 For more information on what `contextIsolation` is and how to enable it please
 see our dedicated [Context Isolation](context-isolation.md) document.
-
 
 ## 4) Handle Session Permission Requests From Remote Content
 
@@ -283,7 +277,6 @@ session
   })
 ```
 
-
 ## 5) Do Not Disable WebSecurity
 
 _Recommendation is Electron's default_
@@ -302,6 +295,7 @@ Disabling `webSecurity` will disable the same-origin policy and set
 the execution of insecure code from different domains.
 
 ### How?
+
 ```js
 // Bad
 const mainWindow = new BrowserWindow({
@@ -323,7 +317,6 @@ const mainWindow = new BrowserWindow()
 <!-- Good -->
 <webview src="page.html"></webview>
 ```
-
 
 ## 6) Define a Content Security Policy
 
@@ -381,7 +374,6 @@ on a page directly in the markup using a `<meta>` tag:
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'">
 ```
 
-
 ## 7) Do Not Set `allowRunningInsecureContent` to `true`
 
 _Recommendation is Electron's default_
@@ -415,7 +407,6 @@ const mainWindow = new BrowserWindow({
 const mainWindow = new BrowserWindow({})
 ```
 
-
 ## 8) Do Not Enable Experimental Features
 
 _Recommendation is Electron's default_
@@ -448,7 +439,6 @@ const mainWindow = new BrowserWindow({
 const mainWindow = new BrowserWindow({})
 ```
 
-
 ## 9) Do Not Use `enableBlinkFeatures`
 
 _Recommendation is Electron's default_
@@ -466,6 +456,7 @@ ramifications are, and how it impacts the security of your application. Under
 no circumstances should you enable features speculatively.
 
 ### How?
+
 ```js
 // Bad
 const mainWindow = new BrowserWindow({
@@ -479,7 +470,6 @@ const mainWindow = new BrowserWindow({
 // Good
 const mainWindow = new BrowserWindow()
 ```
-
 
 ## 10) Do Not Use `allowpopups`
 
@@ -507,7 +497,6 @@ you know it needs that feature.
 <!-- Good -->
 <webview src="page.html"></webview>
 ```
-
 
 ## 11) Verify WebView Options Before Creation
 
@@ -620,22 +609,29 @@ windows at runtime.
 
 ### How?
 
-[`webContents`][web-contents] will emit the [`new-window`][new-window] event
-before creating new windows. That event will be passed, amongst other
-parameters, the `url` the window was requested to open and the options used to
-create it. We recommend that you use the event to scrutinize the creation of
-windows, limiting it to only what you need.
+[`webContents`][web-contents] will delegate to its [window open
+handler][window-open-handler] before creating new windows. The handler will
+receive, amongst other parameters, the `url` the window was requested to open
+and the options used to create it. We recommend that you register a handler to
+monitor the creation of windows, and deny any unexpected window creation.
 
 ```js
 const { shell } = require('electron')
 
 app.on('web-contents-created', (event, contents) => {
-  contents.on('new-window', async (event, navigationUrl) => {
+  contents.setWindowOpenHandler(({ url }) => {
     // In this example, we'll ask the operating system
     // to open this event's url in the default browser.
-    event.preventDefault()
+    //
+    // See the following item for considerations regarding what
+    // URLs should be allowed through to shell.openExternal.
+    if (isSafeForExternalOpen(url)) {
+      setImmediate(() => {
+        shell.openExternal(url)
+      })
+    }
 
-    await shell.openExternal(navigationUrl)
+    return { action: 'deny' }
   })
 })
 ```
@@ -660,141 +656,14 @@ leveraged to execute arbitrary commands.
 const { shell } = require('electron')
 shell.openExternal(USER_CONTROLLED_DATA_HERE)
 ```
+
 ```js
 //  Good
 const { shell } = require('electron')
 shell.openExternal('https://example.com/index.html')
 ```
 
-## 15) Disable the `remote` module
-
-The `remote` module provides a way for the renderer processes to
-access APIs normally only available in the main process. Using it, a
-renderer can invoke methods of a main process object without explicitly sending
-inter-process messages. If your desktop application does not run untrusted
-content, this can be a useful way to have your renderer processes access and
-work with modules that are only available to the main process, such as
-GUI-related modules (dialogs, menus, etc.).
-
-However, if your app can run untrusted content and even if you
-[sandbox][sandbox] your renderer processes accordingly, the `remote` module
-makes it easy for malicious code to escape the sandbox and have access to
-system resources via the higher privileges of the main process. Therefore,
-it should be disabled in such circumstances.
-
-### Why?
-
-`remote` uses an internal IPC channel to communicate with the main process.
-"Prototype pollution" attacks can grant malicious code access to the internal
-IPC channel, which can then be used to escape the sandbox by mimicking `remote`
-IPC messages and getting access to main process modules running with higher
-privileges.
-
-Additionally, it's possible for preload scripts to accidentally leak modules to a
-sandboxed renderer. Leaking `remote` arms malicious code with a multitude
-of main process modules with which to perform an attack.
-
-Disabling the `remote` module eliminates these attack vectors. Enabling
-context isolation also prevents the "prototype pollution" attacks from
-succeeding.
-
-### How?
-
-```js
-// Bad if the renderer can run untrusted content
-const mainWindow = new BrowserWindow({
-  webPreferences: {
-    enableRemoteModule: true
-  }
-})
-```
-
-```js
-// Good
-const mainWindow = new BrowserWindow({
-  webPreferences: {
-    enableRemoteModule: false
-  }
-})
-```
-
-```html
-<!-- Bad if the renderer can run untrusted content  -->
-<webview enableremotemodule="true" src="page.html"></webview>
-
-<!-- Good -->
-<webview enableremotemodule="false" src="page.html"></webview>
-```
-
-> **Note:** The default value of `enableRemoteModule` is `false` starting
-> from Electron 10. For prior versions, you need to explicitly disable
-> the `remote` module by the means above.
-
-
-## 16) Filter the `remote` module
-
-If you cannot disable the `remote` module, you should filter the globals,
-Node, and Electron modules (so-called built-ins) accessible via `remote`
-that your application does not require. This can be done by blocking
-certain modules entirely and by replacing others with proxies that
-expose only the functionality that your app needs.
-
-### Why?
-
-Due to the system access privileges of the main process, functionality
-provided by the main process modules may be dangerous in the hands of
-malicious code running in a compromised renderer process. By limiting
-the set of accessible modules to the minimum that your app needs and
-filtering out the others, you reduce the toolset that malicious code
-can use to attack the system.
-
-Note that the safest option is to
-[fully disable the remote module](#15-disable-the-remote-module). If
-you choose to filter access rather than completely disable the module,
-you must be very careful to ensure that no escalation of privilege is
-possible through the modules you allow past the filter.
-
-### How?
-
-```js
-const readOnlyFsProxy = require(/* ... */) // exposes only file read functionality
-
-const allowedModules = new Set(['crypto'])
-const proxiedModules = new Map(['fs', readOnlyFsProxy])
-const allowedElectronModules = new Set(['shell'])
-const allowedGlobals = new Set()
-
-app.on('remote-require', (event, webContents, moduleName) => {
-  if (proxiedModules.has(moduleName)) {
-    event.returnValue = proxiedModules.get(moduleName)
-  }
-  if (!allowedModules.has(moduleName)) {
-    event.preventDefault()
-  }
-})
-
-app.on('remote-get-builtin', (event, webContents, moduleName) => {
-  if (!allowedElectronModules.has(moduleName)) {
-    event.preventDefault()
-  }
-})
-
-app.on('remote-get-global', (event, webContents, globalName) => {
-  if (!allowedGlobals.has(globalName)) {
-    event.preventDefault()
-  }
-})
-
-app.on('remote-get-current-window', (event, webContents) => {
-  event.preventDefault()
-})
-
-app.on('remote-get-current-web-contents', (event, webContents) => {
-  event.preventDefault()
-})
-```
-
-## 17) Use a current version of Electron
+## 15) Use a current version of Electron
 
 You should strive for always using the latest available version of Electron.
 Whenever a new major version is released, you should attempt to update your
@@ -816,12 +685,11 @@ to fix issues before publishing them. Your application will be more secure if
 it is running a recent version of Electron (and thus, Chromium and Node.js) for
 which potential security issues are not as widely known.
 
-
 [browser-window]: ../api/browser-window.md
 [browser-view]: ../api/browser-view.md
 [webview-tag]: ../api/webview-tag.md
 [web-contents]: ../api/web-contents.md
-[new-window]: ../api/web-contents.md#event-new-window
+[window-open-handler]: ../api/web-contents.md#contentssetwindowopenhandlerhandler
 [will-navigate]: ../api/web-contents.md#event-will-navigate
 [open-external]: ../api/shell.md#shellopenexternalurl-options
 [sandbox]: ../api/sandbox-option.md

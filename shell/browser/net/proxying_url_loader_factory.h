@@ -14,7 +14,6 @@
 #include "base/optional.h"
 #include "content/public/browser/content_browser_client.h"
 #include "extensions/browser/api/web_request/web_request_info.h"
-#include "mojo/public/cpp/bindings/binding.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "mojo/public/cpp/bindings/receiver_set.h"
@@ -73,6 +72,8 @@ class ProxyingURLLoaderFactory
 
     // network::mojom::URLLoaderClient:
     void OnReceiveResponse(network::mojom::URLResponseHeadPtr head) override;
+    void OnReceiveEarlyHints(
+        network::mojom::EarlyHintsPtr early_hints) override;
     void OnReceiveRedirect(const net::RedirectInfo& redirect_info,
                            network::mojom::URLResponseHeadPtr head) override;
     void OnUploadProgress(int64_t current_position,

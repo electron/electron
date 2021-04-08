@@ -5,7 +5,7 @@
 #ifndef SHELL_COMMON_WORLD_IDS_H_
 #define SHELL_COMMON_WORLD_IDS_H_
 
-#include "third_party/blink/public/platform/web_isolated_world_ids.h"
+#include "third_party/blink/renderer/platform/bindings/dom_wrapper_world.h"  // nogncheck
 
 namespace electron {
 

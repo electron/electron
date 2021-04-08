@@ -64,12 +64,8 @@ Forces the maximum disk space to be used by the disk cache, in bytes.
 ### --enable-api-filtering-logging
 
 Enables caller stack logging for the following APIs (filtering events):
-- `desktopCapturer.getSources()` / `desktop-capturer-get-sources`
-- `remote.require()` / `remote-require`
-- `remote.getGlobal()` / `remote-get-builtin`
-- `remote.getBuiltin()` / `remote-get-global`
-- `remote.getCurrentWindow()` / `remote-get-current-window`
-- `remote.getCurrentWebContents()` / `remote-get-current-web-contents`
+
+* `desktopCapturer.getSources()` / `desktop-capturer-get-sources`
 
 ### --enable-logging
 
@@ -78,6 +74,12 @@ Prints Chromium's logging into console.
 This switch can not be used in `app.commandLine.appendSwitch` since it is parsed
 earlier than user's app is loaded, but you can set the `ELECTRON_ENABLE_LOGGING`
 environment variable to achieve the same effect.
+
+## --force-fieldtrials=`trials`
+
+Field trials to be forcefully enabled or disabled.
+
+For example: `WebRTC-Audio-Red-For-Opus/Enabled/`
 
 ### --host-rules=`rules`
 
@@ -227,6 +229,7 @@ See the [Debugging the Main Process][debugging-main-process] guide for more deta
 Aliased to `--debug[=[host:]port`.
 
 ### --inspect-publish-uid=stderr,http
+
 Specify ways of the inspector web socket url exposure.
 
 By default inspector websocket url is available in stderr and under /json/list endpoint on http://host:port/json/list.

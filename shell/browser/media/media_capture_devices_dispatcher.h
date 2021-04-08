@@ -80,7 +80,7 @@ class MediaCaptureDevicesDispatcher : public content::MediaObserver {
   blink::MediaStreamDevices test_video_devices_;
 
   // Flag used by unittests to disable device enumeration.
-  bool is_device_enumeration_disabled_;
+  bool is_device_enumeration_disabled_ = false;
 
   DISALLOW_COPY_AND_ASSIGN(MediaCaptureDevicesDispatcher);
 };

@@ -17,7 +17,7 @@
 * `title` String (optional) - The text to be displayed for the item in the Jump List.
   Should only be set if `type` is `task`.
 * `description` String (optional) - Description of the task (displayed in a tooltip).
-  Should only be set if `type` is `task`.
+  Should only be set if `type` is `task`. Maximum length 260 characters.
 * `iconPath` String (optional) - The absolute path to an icon to be displayed in a
   Jump List, which can be an arbitrary resource file that contains an icon
   (e.g. `.ico`, `.exe`, `.dll`). You can usually specify `process.execPath` to

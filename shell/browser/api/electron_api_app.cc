@@ -45,6 +45,7 @@
 #include "shell/common/application_info.h"
 #include "shell/common/electron_command_line.h"
 #include "shell/common/electron_paths.h"
+#include "shell/common/gin_converters/base_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
@@ -473,8 +474,6 @@ int GetPathConstant(const std::string& name) {
   else if (name == "recent")
     return electron::DIR_RECENT;
 #endif
-  else if (name == "pepperFlashSystemPlugin")
-    return chrome::FILE_PEPPER_FLASH_SYSTEM_PLUGIN;
   else
     return -1;
 }
@@ -550,7 +549,7 @@ void OnClientCertificateSelected(
 #if defined(USE_NSS_CERTS)
 int ImportIntoCertStore(CertificateManagerModel* model, base::Value options) {
   std::string file_data, cert_path;
-  base::string16 password;
+  std::u16string password;
   net::ScopedCERTCertificateList imported_certs;
   int rv = -1;
 
@@ -596,7 +595,7 @@ App::App() {
       ->set_delegate(this);
   Browser::Get()->AddObserver(this);
 
-  base::ProcessId pid = base::GetCurrentProcId();
+  auto pid = content::ChildProcessHost::kInvalidUniqueID;
   auto process_metric = std::make_unique<electron::ProcessMetric>(
       content::PROCESS_TYPE_BROWSER, base::GetCurrentProcessHandle(),
       base::ProcessMetrics::CreateCurrentProcessMetrics());
@@ -836,26 +835,26 @@ void App::OnGpuProcessCrashed(base::TerminationStatus status) {
 
 void App::BrowserChildProcessLaunchedAndConnected(
     const content::ChildProcessData& data) {
-  ChildProcessLaunched(data.process_type, data.GetProcess().Handle(),
+  ChildProcessLaunched(data.process_type, data.id, data.GetProcess().Handle(),
                        data.metrics_name, base::UTF16ToUTF8(data.name));
 }
 
 void App::BrowserChildProcessHostDisconnected(
     const content::ChildProcessData& data) {
-  ChildProcessDisconnected(base::GetProcId(data.GetProcess().Handle()));
+  ChildProcessDisconnected(data.id);
 }
 
 void App::BrowserChildProcessCrashed(
     const content::ChildProcessData& data,
     const content::ChildProcessTerminationInfo& info) {
-  ChildProcessDisconnected(base::GetProcId(data.GetProcess().Handle()));
+  ChildProcessDisconnected(data.id);
   BrowserChildProcessCrashedOrKilled(data, info);
 }
 
 void App::BrowserChildProcessKilled(
     const content::ChildProcessData& data,
     const content::ChildProcessTerminationInfo& info) {
-  ChildProcessDisconnected(base::GetProcId(data.GetProcess().Handle()));
+  ChildProcessDisconnected(data.id);
   BrowserChildProcessCrashedOrKilled(data, info);
 }
 
@@ -876,7 +875,7 @@ void App::BrowserChildProcessCrashedOrKilled(
 }
 
 void App::RenderProcessReady(content::RenderProcessHost* host) {
-  ChildProcessLaunched(content::PROCESS_TYPE_RENDERER,
+  ChildProcessLaunched(content::PROCESS_TYPE_RENDERER, host->GetID(),
                        host->GetProcess().Handle());
 
   // TODO(jeremy): this isn't really the right place to be creating
@@ -891,16 +890,15 @@ void App::RenderProcessReady(content::RenderProcessHost* host) {
   }
 }
 
-void App::RenderProcessDisconnected(base::ProcessId host_pid) {
-  ChildProcessDisconnected(host_pid);
+void App::RenderProcessExited(content::RenderProcessHost* host) {
+  ChildProcessDisconnected(host->GetID());
 }
 
 void App::ChildProcessLaunched(int process_type,
+                               int pid,
                                base::ProcessHandle handle,
                                const std::string& service_name,
                                const std::string& name) {
-  auto pid = base::GetProcId(handle);
-
 #if defined(OS_MAC)
   auto metrics = base::ProcessMetrics::CreateProcessMetrics(
       handle, content::BrowserChildProcessHost::GetPortProvider());
@@ -911,7 +909,7 @@ void App::ChildProcessLaunched(int process_type,
       process_type, handle, std::move(metrics), service_name, name);
 }
 
-void App::ChildProcessDisconnected(base::ProcessId pid) {
+void App::ChildProcessDisconnected(int pid) {
   app_metrics_.erase(pid);
 }
 
@@ -1323,12 +1321,8 @@ std::vector<gin_helper::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
     gin_helper::Dictionary pid_dict = gin::Dictionary::CreateEmpty(isolate);
     gin_helper::Dictionary cpu_dict = gin::Dictionary::CreateEmpty(isolate);
 
-    // TODO(zcbenz): Just call SetHidden when this file is converted to gin.
-    gin_helper::Dictionary(isolate, pid_dict.GetHandle())
-        .SetHidden("simple", true);
-    gin_helper::Dictionary(isolate, cpu_dict.GetHandle())
-        .SetHidden("simple", true);
-
+    pid_dict.SetHidden("simple", true);
+    cpu_dict.SetHidden("simple", true);
     cpu_dict.Set(
         "percentCPUUsage",
         process_metric.second->metrics->GetPlatformIndependentCPUUsage() /
@@ -1363,9 +1357,7 @@ std::vector<gin_helper::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
     auto memory_info = process_metric.second->GetMemoryInfo();
 
     gin_helper::Dictionary memory_dict = gin::Dictionary::CreateEmpty(isolate);
-    // TODO(zcbenz): Just call SetHidden when this file is converted to gin.
-    gin_helper::Dictionary(isolate, memory_dict.GetHandle())
-        .SetHidden("simple", true);
+    memory_dict.SetHidden("simple", true);
     memory_dict.Set("workingSetSize",
                     static_cast<double>(memory_info.working_set_size >> 10));
     memory_dict.Set(
@@ -1561,8 +1553,10 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
                  base::BindRepeating(&Browser::AddRecentDocument, browser))
       .SetMethod("clearRecentDocuments",
                  base::BindRepeating(&Browser::ClearRecentDocuments, browser))
+#if defined(OS_WIN)
       .SetMethod("setAppUserModelId",
                  base::BindRepeating(&Browser::SetAppUserModelID, browser))
+#endif
       .SetMethod(
           "isDefaultProtocolClient",
           base::BindRepeating(&Browser::IsDefaultProtocolClient, browser))
@@ -1666,6 +1660,8 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
 #endif
 #if defined(OS_MAC)
       .SetProperty("dock", &App::GetDockAPI)
+      .SetProperty("runningUnderRosettaTranslation",
+                   &App::IsRunningUnderRosettaTranslation)
 #endif
       .SetProperty("userAgentFallback", &App::GetUserAgentFallback,
                    &App::SetUserAgentFallback)

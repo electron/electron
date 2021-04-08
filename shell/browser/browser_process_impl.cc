@@ -128,10 +128,6 @@ metrics::MetricsService* BrowserProcessImpl::metrics_service() {
   return nullptr;
 }
 
-rappor::RapporServiceImpl* BrowserProcessImpl::rappor_service() {
-  return nullptr;
-}
-
 ProfileManager* BrowserProcessImpl::profile_manager() {
   return nullptr;
 }
@@ -240,11 +236,6 @@ BrowserProcessImpl::subresource_filter_ruleset_service() {
 
 federated_learning::FlocSortingLshClustersService*
 BrowserProcessImpl::floc_sorting_lsh_clusters_service() {
-  return nullptr;
-}
-
-optimization_guide::OptimizationGuideService*
-BrowserProcessImpl::optimization_guide_service() {
   return nullptr;
 }
 

@@ -51,7 +51,7 @@ describe('session module', () => {
         res.end('finished');
         server.close();
       });
-      await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
       const { port } = server.address() as AddressInfo;
       const w = new BrowserWindow({ show: false });
       await w.loadURL(`${url}:${port}`);
@@ -274,7 +274,7 @@ describe('session module', () => {
         res.end(mockFile);
         downloadServer.close();
       });
-      await new Promise(resolve => downloadServer.listen(0, '127.0.0.1', resolve));
+      await new Promise<void>(resolve => downloadServer.listen(0, '127.0.0.1', resolve));
 
       const port = (downloadServer.address() as AddressInfo).port;
       const url = `http://127.0.0.1:${port}/`;
@@ -290,7 +290,7 @@ describe('session module', () => {
       expect(itemUrl).to.equal(url);
       expect(itemFilename).to.equal('mockFile.txt');
       // Delay till the next tick.
-      await new Promise(resolve => setImmediate(() => resolve()));
+      await new Promise<void>(resolve => setImmediate(() => resolve()));
       expect(() => item.getURL()).to.throw('DownloadItem used after being destroyed');
     });
   });
@@ -328,7 +328,8 @@ describe('session module', () => {
         show: false,
         webPreferences: {
           partition: partitionName,
-          nodeIntegration: true
+          nodeIntegration: true,
+          contextIsolation: false
         }
       });
       customSession = session.fromPartition(partitionName);
@@ -390,7 +391,7 @@ describe('session module', () => {
         });
         res.end(pac);
       });
-      await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
       {
         const config = { pacScript: `http://127.0.0.1:${(server.address() as AddressInfo).port}` };
         await customSession.setProxy(config);
@@ -464,7 +465,7 @@ describe('session module', () => {
         });
         res.end(pac);
       });
-      await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
       const config = { mode: 'pac_script' as any, pacScript: `http://127.0.0.1:${(server.address() as AddressInfo).port}` };
       await customSession.setProxy(config);
       {
@@ -539,7 +540,6 @@ describe('session module', () => {
           fs.readFileSync(path.join(certPath, 'rootCA.pem')),
           fs.readFileSync(path.join(certPath, 'intermediateCA.pem'))
         ],
-        requestCert: true,
         rejectUnauthorized: false
       };
 
@@ -551,25 +551,26 @@ describe('session module', () => {
     });
 
     afterEach((done) => {
-      session.defaultSession.setCertificateVerifyProc(null);
       server.close(done);
     });
     afterEach(closeAllWindows);
 
     it('accepts the request when the callback is called with 0', async () => {
-      session.defaultSession.setCertificateVerifyProc(({ verificationResult, errorCode }, callback) => {
+      const ses = session.fromPartition(`${Math.random()}`);
+      ses.setCertificateVerifyProc(({ verificationResult, errorCode }, callback) => {
         expect(['net::ERR_CERT_AUTHORITY_INVALID', 'net::ERR_CERT_COMMON_NAME_INVALID'].includes(verificationResult)).to.be.true();
         expect([-202, -200].includes(errorCode)).to.be.true();
         callback(0);
       });
 
-      const w = new BrowserWindow({ show: false });
+      const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
       await w.loadURL(`https://127.0.0.1:${(server.address() as AddressInfo).port}`);
       expect(w.webContents.getTitle()).to.equal('hello');
     });
 
     it('rejects the request when the callback is called with -2', async () => {
-      session.defaultSession.setCertificateVerifyProc(({ hostname, certificate, verificationResult }, callback) => {
+      const ses = session.fromPartition(`${Math.random()}`);
+      ses.setCertificateVerifyProc(({ hostname, certificate, verificationResult }, callback) => {
         expect(hostname).to.equal('127.0.0.1');
         expect(certificate.issuerName).to.equal('Intermediate CA');
         expect(certificate.subjectName).to.equal('localhost');
@@ -585,25 +586,47 @@ describe('session module', () => {
       });
 
       const url = `https://127.0.0.1:${(server.address() as AddressInfo).port}`;
-      const w = new BrowserWindow({ show: false });
+      const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
       await expect(w.loadURL(url)).to.eventually.be.rejectedWith(/ERR_FAILED/);
       expect(w.webContents.getTitle()).to.equal(url);
     });
 
     it('saves cached results', async () => {
+      const ses = session.fromPartition(`${Math.random()}`);
       let numVerificationRequests = 0;
-      session.defaultSession.setCertificateVerifyProc((e, callback) => {
+      ses.setCertificateVerifyProc((e, callback) => {
         numVerificationRequests++;
         callback(-2);
       });
 
       const url = `https://127.0.0.1:${(server.address() as AddressInfo).port}`;
-      const w = new BrowserWindow({ show: false });
+      const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
       await expect(w.loadURL(url), 'first load').to.eventually.be.rejectedWith(/ERR_FAILED/);
       await emittedOnce(w.webContents, 'did-stop-loading');
       await expect(w.loadURL(url + '/test'), 'second load').to.eventually.be.rejectedWith(/ERR_FAILED/);
       expect(w.webContents.getTitle()).to.equal(url + '/test');
       expect(numVerificationRequests).to.equal(1);
+    });
+
+    it('does not cancel requests in other sessions', async () => {
+      const ses1 = session.fromPartition(`${Math.random()}`);
+      ses1.setCertificateVerifyProc((opts, cb) => cb(0));
+      const ses2 = session.fromPartition(`${Math.random()}`);
+
+      const url = `https://127.0.0.1:${(server.address() as AddressInfo).port}`;
+      const req = net.request({ url, session: ses1, credentials: 'include' });
+      req.end();
+      setTimeout(() => {
+        ses2.setCertificateVerifyProc((opts, callback) => callback(0));
+      });
+      await expect(new Promise<void>((resolve, reject) => {
+        req.on('error', (err) => {
+          reject(err);
+        });
+        req.on('response', () => {
+          resolve();
+        });
+      })).to.eventually.be.fulfilled();
     });
   });
 
@@ -620,7 +643,7 @@ describe('session module', () => {
           res.end('authenticated');
         }
       });
-      await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
       const port = (server.address() as AddressInfo).port;
       const fetch = (url: string) => new Promise((resolve, reject) => {
         const request = net.request({ url, session: ses });
@@ -672,7 +695,7 @@ describe('session module', () => {
         });
         res.end(mockPDF);
       });
-      await new Promise(resolve => downloadServer.listen(0, '127.0.0.1', resolve));
+      await new Promise<void>(resolve => downloadServer.listen(0, '127.0.0.1', resolve));
       address = downloadServer.address() as AddressInfo;
     });
     after(async () => {
@@ -918,7 +941,7 @@ describe('session module', () => {
           .on('error', (error: any) => { throw error; }).pipe(res);
       });
       try {
-        await new Promise(resolve => rangeServer.listen(0, '127.0.0.1', resolve));
+        await new Promise<void>(resolve => rangeServer.listen(0, '127.0.0.1', resolve));
         const port = (rangeServer.address() as AddressInfo).port;
         const w = new BrowserWindow({ show: false });
         const downloadCancelled: Promise<Electron.DownloadItem> = new Promise((resolve) => {
@@ -977,7 +1000,8 @@ describe('session module', () => {
         show: false,
         webPreferences: {
           partition: 'very-temp-permision-handler',
-          nodeIntegration: true
+          nodeIntegration: true,
+          contextIsolation: false
         }
       });
 
@@ -1050,7 +1074,7 @@ describe('session module', () => {
         res.end();
         server.close();
       });
-      await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
       await w.loadURL(`http://127.0.0.1:${(server.address() as AddressInfo).port}`);
       expect(headers!['user-agent']).to.equal(userAgent);
       expect(headers!['accept-language']).to.equal('en-US,fr;q=0.9,de;q=0.8');
@@ -1084,7 +1108,7 @@ describe('session module', () => {
       }, (req, res) => {
         res.end('hi');
       });
-      await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
       defer(() => server.close());
       const { port } = server.address() as AddressInfo;
 

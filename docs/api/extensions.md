@@ -15,7 +15,7 @@ extension capabilities.
 
 Electron only supports loading unpacked extensions (i.e., `.crx` files do not
 work). Extensions are installed per-`session`. To load an extension, call
-[`ses.loadExtension`](session.md#sesloadextensionpath):
+[`ses.loadExtension`](session.md#sesloadextensionpath-options):
 
 ```js
 const { session } = require('electron')
@@ -115,3 +115,9 @@ The following methods of `chrome.management` are supported:
 - `chrome.management.getPermissionWarningsByManifest`
 - `chrome.management.onEnabled`
 - `chrome.management.onDisabled`
+
+### `chrome.webRequest`
+
+All features of this API are supported.
+
+> **NOTE:** Electron's [`webRequest`](web-request.md) module takes precedence over `chrome.webRequest` if there are conflicting handlers.

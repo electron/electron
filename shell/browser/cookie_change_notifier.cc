@@ -24,8 +24,7 @@ CookieChangeNotifier::CookieChangeNotifier(
 
 CookieChangeNotifier::~CookieChangeNotifier() = default;
 
-std::unique_ptr<
-    base::CallbackList<void(const net::CookieChangeInfo& change)>::Subscription>
+base::CallbackListSubscription
 CookieChangeNotifier::RegisterCookieChangeCallback(
     const base::Callback<void(const net::CookieChangeInfo& change)>& cb) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);

@@ -16,7 +16,7 @@ const { app, contentTracing } = require('electron')
 app.whenReady().then(() => {
   (async () => {
     await contentTracing.startRecording({
-      include_categories: ['*']
+      included_categories: ['*']
     })
     console.log('Tracing started')
     await new Promise(resolve => setTimeout(resolve, 5000))

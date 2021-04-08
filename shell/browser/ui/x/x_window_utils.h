@@ -7,7 +7,7 @@
 
 #include <string>
 
-#include "ui/gfx/x/x11.h"
+#include "ui/gfx/x/xproto.h"
 
 namespace electron {
 

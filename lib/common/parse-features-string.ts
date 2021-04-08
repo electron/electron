@@ -38,7 +38,7 @@ const keysOfTypeNumber = ['top', 'left', ...Object.keys(keysOfTypeNumberCompileT
 type CoercedValue = string | number | boolean;
 function coerce (key: string, value: string): CoercedValue {
   if (keysOfTypeNumber.includes(key)) {
-    return Number(value);
+    return parseInt(value, 10);
   }
 
   switch (value) {
@@ -62,7 +62,7 @@ export function parseCommaSeparatedKeyValue (source: string, useSoonToBeDeprecat
   for (const keyValuePair of source.split(',')) {
     const [key, value] = keyValuePair.split('=').map(str => str.trim());
     if (useSoonToBeDeprecatedBehaviorForBareKeys && value === undefined) {
-      bareKeys.push(key);
+      if (key) { bareKeys.push(key); }
       continue;
     }
     parsed[key] = coerce(key, value);
@@ -75,13 +75,13 @@ export function parseWebViewWebPreferences (preferences: string) {
   return parseCommaSeparatedKeyValue(preferences, false).parsed;
 }
 
-const allowedWebPreferences = ['zoomFactor', 'nodeIntegration', 'enableRemoteModule', 'javascript', 'contextIsolation', 'webviewTag'] as const;
+const allowedWebPreferences = ['zoomFactor', 'nodeIntegration', 'javascript', 'contextIsolation', 'webviewTag'] as const;
 type AllowedWebPreference = (typeof allowedWebPreferences)[number];
 
 /**
  * Parses a feature string that has the format used in window.open().
  *
- * `useSoonToBeDeprecatedBehaviorForBareKeys` — In the html spec, windowFeatures keys
+ * `useSoonToBeDeprecatedBehaviorForBareKeys` - In the html spec, windowFeatures keys
  * without values are interpreted as `true`. Previous versions of Electron did
  * not respect this. In order to not break any applications, this will be
  * flipped in the next major version.
@@ -103,7 +103,7 @@ export function parseFeatures (
   if (parsed.top !== undefined) parsed.y = parsed.top;
 
   return {
-    options: parsed as Omit<BrowserWindowConstructorOptions, 'webPreferences'> & { [key: string]: CoercedValue },
+    options: parsed as Omit<BrowserWindowConstructorOptions, 'webPreferences'>,
     webPreferences,
     additionalFeatures: bareKeys
   };

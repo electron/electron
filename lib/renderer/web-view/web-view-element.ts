@@ -10,6 +10,7 @@
 
 import { WEB_VIEW_CONSTANTS } from '@electron/internal/renderer/web-view/web-view-constants';
 import { WebViewImpl as IWebViewImpl, webViewImplModule } from '@electron/internal/renderer/web-view/web-view-impl';
+import type { SrcAttribute } from '@electron/internal/renderer/web-view/web-view-attributes';
 
 // Return a WebViewElement class that is defined in this context.
 const defineWebViewElement = (v8Util: NodeJS.V8UtilBinding, webViewImpl: typeof webViewImplModule) => {
@@ -28,7 +29,6 @@ const defineWebViewElement = (v8Util: NodeJS.V8UtilBinding, webViewImpl: typeof 
         WEB_VIEW_CONSTANTS.ATTRIBUTE_PLUGINS,
         WEB_VIEW_CONSTANTS.ATTRIBUTE_DISABLEWEBSECURITY,
         WEB_VIEW_CONSTANTS.ATTRIBUTE_ALLOWPOPUPS,
-        WEB_VIEW_CONSTANTS.ATTRIBUTE_ENABLEREMOTEMODULE,
         WEB_VIEW_CONSTANTS.ATTRIBUTE_PRELOAD,
         WEB_VIEW_CONSTANTS.ATTRIBUTE_BLINKFEATURES,
         WEB_VIEW_CONSTANTS.ATTRIBUTE_DISABLEBLINKFEATURES,
@@ -38,7 +38,13 @@ const defineWebViewElement = (v8Util: NodeJS.V8UtilBinding, webViewImpl: typeof 
 
     constructor () {
       super();
-      v8Util.setHiddenValue(this, 'internal', new WebViewImpl(this));
+      const internal = new WebViewImpl(this);
+      internal.dispatchEventInMainWorld = (eventName, props) => {
+        const event = new Event(eventName);
+        Object.assign(event, props);
+        return internal.webviewNode.dispatchEvent(event);
+      };
+      v8Util.setHiddenValue(this, 'internal', internal);
     }
 
     connectedCallback () {
@@ -49,7 +55,7 @@ const defineWebViewElement = (v8Util: NodeJS.V8UtilBinding, webViewImpl: typeof 
       if (!internal.elementAttached) {
         guestViewInternal.registerEvents(internal, internal.viewInstanceId);
         internal.elementAttached = true;
-        internal.attributes[WEB_VIEW_CONSTANTS.ATTRIBUTE_SRC].parse();
+        (internal.attributes.get(WEB_VIEW_CONSTANTS.ATTRIBUTE_SRC) as SrcAttribute).parse();
       }
     }
 
@@ -87,7 +93,7 @@ const registerWebViewElement = (v8Util: NodeJS.V8UtilBinding, webViewImpl: typeo
   // The customElements.define has to be called in a special scope.
   webViewImpl.webFrame.allowGuestViewElementDefinition(window, () => {
     window.customElements.define('webview', WebViewElement);
-    (window as any).WebView = WebViewElement;
+    window.WebView = WebViewElement;
 
     // Delete the callbacks so developers cannot call them and produce unexpected
     // behavior.

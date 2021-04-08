@@ -25,18 +25,18 @@ const size_t kMaxDataLength = 1024;
 const size_t kMaxListSize = 512;
 
 void GetDataListSuggestions(const blink::WebInputElement& element,
-                            std::vector<base::string16>* values,
-                            std::vector<base::string16>* labels) {
+                            std::vector<std::u16string>* values,
+                            std::vector<std::u16string>* labels) {
   for (const auto& option : element.FilteredDataListOptions()) {
     values->push_back(option.Value().Utf16());
     if (option.Value() != option.Label())
       labels->push_back(option.Label().Utf16());
     else
-      labels->push_back(base::string16());
+      labels->push_back(std::u16string());
   }
 }
 
-void TrimStringVectorForIPC(std::vector<base::string16>* strings) {
+void TrimStringVectorForIPC(std::vector<std::u16string>* strings) {
   // Limit the size of the vector.
   if (strings->size() > kMaxListSize)
     strings->resize(kMaxListSize);
@@ -51,10 +51,10 @@ void TrimStringVectorForIPC(std::vector<base::string16>* strings) {
 
 AutofillAgent::AutofillAgent(content::RenderFrame* frame,
                              blink::AssociatedInterfaceRegistry* registry)
-    : content::RenderFrameObserver(frame), weak_ptr_factory_(this) {
+    : content::RenderFrameObserver(frame) {
   render_frame()->GetWebFrame()->SetAutofillClient(this);
-  registry->AddInterface(
-      base::Bind(&AutofillAgent::BindReceiver, base::Unretained(this)));
+  registry->AddInterface(base::BindRepeating(&AutofillAgent::BindReceiver,
+                                             base::Unretained(this)));
 }
 
 AutofillAgent::~AutofillAgent() = default;
@@ -152,8 +152,8 @@ void AutofillAgent::ShowSuggestions(const blink::WebFormControlElement& element,
     return;
   }
 
-  std::vector<base::string16> data_list_values;
-  std::vector<base::string16> data_list_labels;
+  std::vector<std::u16string> data_list_values;
+  std::vector<std::u16string> data_list_labels;
   if (input_element) {
     GetDataListSuggestions(*input_element, &data_list_values,
                            &data_list_labels);
@@ -182,13 +182,13 @@ void AutofillAgent::HidePopup() {
 }
 
 void AutofillAgent::ShowPopup(const blink::WebFormControlElement& element,
-                              const std::vector<base::string16>& values,
-                              const std::vector<base::string16>& labels) {
+                              const std::vector<std::u16string>& values,
+                              const std::vector<std::u16string>& labels) {
   gfx::RectF bounds = render_frame()->ElementBoundsInWindow(element);
   GetAutofillDriver()->ShowAutofillPopup(bounds, values, labels);
 }
 
-void AutofillAgent::AcceptDataListSuggestion(const base::string16& suggestion) {
+void AutofillAgent::AcceptDataListSuggestion(const std::u16string& suggestion) {
   auto element = render_frame()->GetWebFrame()->GetDocument().FocusedElement();
   if (element.IsFormControlElement()) {
     ToWebInputElement(&element)->SetAutofillValue(

@@ -151,6 +151,7 @@ v8::Local<v8::Value> Converter<display::Display>::ToV8(
   dict.Set("colorSpace", val.color_spaces().GetRasterColorSpace().ToString());
   dict.Set("depthPerComponent", val.depth_per_component());
   dict.Set("size", val.size());
+  dict.Set("displayFrequency", val.display_frequency());
   dict.Set("workAreaSize", val.work_area_size());
   dict.Set("scaleFactor", val.device_scale_factor());
   dict.Set("rotation", val.RotationAsDegree());

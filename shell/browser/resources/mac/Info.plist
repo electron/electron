@@ -23,11 +23,16 @@
     <key>LSApplicationCategoryType</key>
     <string>public.app-category.developer-tools</string>
     <key>LSMinimumSystemVersion</key>
-    <string>10.10.0</string>
+    <string>${MACOSX_DEPLOYMENT_TARGET}</string>
     <key>NSMainNibFile</key>
     <string>MainMenu</string>
     <key>NSPrincipalClass</key>
     <string>AtomApplication</string>
+    <key>NSAppTransportSecurity</key>    
+    <dict>
+      <key>NSAllowsArbitraryLoads</key>
+      <true/>
+    </dict>
     <key>NSSupportsAutomaticGraphicsSwitching</key>
     <true/>
     <key>NSHighResolutionCapable</key>
@@ -40,7 +45,9 @@
     <string>This app needs access to the microphone</string>
     <key>NSCameraUsageDescription</key>
     <string>This app needs access to the camera</string>
-    <key>LSRequiresNativeExecution</key>
-    <true/>
+    <key>NSBluetoothAlwaysUsageDescription</key>
+    <string>This app needs access to Bluetooth</string>
+    <key>NSBluetoothPeripheralUsageDescription</key>
+    <string>This app needs access to Bluetooth</string>
   </dict>
 </plist>

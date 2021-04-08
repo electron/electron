@@ -17,7 +17,9 @@ Menu.prototype._init = function () {
 };
 
 Menu.prototype._isCommandIdChecked = function (id) {
-  return this.commandsMap[id] ? this.commandsMap[id].checked : false;
+  const item = this.commandsMap[id];
+  if (!item) return false;
+  return item.getCheckStatus();
 };
 
 Menu.prototype._isCommandIdEnabled = function (id) {
@@ -229,12 +231,12 @@ function sortTemplate (template: (MenuItemConstructorOptions | MenuItem)[]) {
 function generateGroupId (items: (MenuItemConstructorOptions | MenuItem)[], pos: number) {
   if (pos > 0) {
     for (let idx = pos - 1; idx >= 0; idx--) {
-      if (items[idx].type === 'radio') return (items[idx] as any).groupId;
+      if (items[idx].type === 'radio') return (items[idx] as MenuItem).groupId;
       if (items[idx].type === 'separator') break;
     }
   } else if (pos < items.length) {
     for (let idx = pos; idx <= items.length - 1; idx++) {
-      if (items[idx].type === 'radio') return (items[idx] as any).groupId;
+      if (items[idx].type === 'radio') return (items[idx] as MenuItem).groupId;
       if (items[idx].type === 'separator') break;
     }
   }

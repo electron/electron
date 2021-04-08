@@ -20,15 +20,20 @@
 #include "shell/common/api/api.mojom.h"
 #include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
+#include "shell/renderer/api/context_bridge/object_cache.h"
+#include "shell/renderer/api/electron_api_context_bridge.h"
 #include "shell/renderer/api/electron_api_spell_check_client.h"
 #include "shell/renderer/electron_renderer_client.h"
+#include "third_party/blink/public/common/browser_interface_broker_proxy.h"
 #include "third_party/blink/public/common/page/page_zoom.h"
 #include "third_party/blink/public/common/web_cache/web_cache_resource_type_stats.h"
+#include "third_party/blink/public/common/web_preferences/web_preferences.h"
 #include "third_party/blink/public/platform/web_cache.h"
 #include "third_party/blink/public/platform/web_isolated_world_info.h"
 #include "third_party/blink/public/web/web_custom_element.h"
@@ -104,10 +109,12 @@ content::RenderFrame* GetRenderFrame(v8::Local<v8::Value> value) {
   return content::RenderFrame::FromWebFrame(frame);
 }
 
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+
 bool SpellCheckWord(v8::Isolate* isolate,
                     v8::Local<v8::Value> window,
                     const std::string& word,
-                    std::vector<base::string16>* optional_suggestions) {
+                    std::vector<std::u16string>* optional_suggestions) {
   size_t start;
   size_t length;
 
@@ -116,11 +123,13 @@ bool SpellCheckWord(v8::Isolate* isolate,
   if (!render_frame)
     return true;
 
-  base::string16 w = base::UTF8ToUTF16(word);
+  std::u16string w = base::UTF8ToUTF16(word);
   int id = render_frame->GetRoutingID();
   return client->GetSpellCheck()->SpellCheckWord(
       w.c_str(), 0, word.size(), id, &start, &length, optional_suggestions);
 }
+
+#endif
 
 class RenderFrameStatus final : public content::RenderFrameObserver {
  public:
@@ -153,21 +162,25 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
 
   void CopyResultToCallingContextAndFinalize(
       v8::Isolate* isolate,
-      const v8::Local<v8::Value>& result) {
-    blink::CloneableMessage ret;
-    bool success;
-    std::string error_message;
+      const v8::Local<v8::Object>& result) {
+    v8::MaybeLocal<v8::Value> maybe_result;
+    bool success = true;
+    std::string error_message =
+        "An unknown exception occurred while getting the result of the script";
     {
       v8::TryCatch try_catch(isolate);
-      success = gin::ConvertFromV8(isolate, result, &ret);
+      context_bridge::ObjectCache object_cache;
+      maybe_result = PassValueToOtherContext(result->CreationContext(),
+                                             promise_.GetContext(), result,
+                                             &object_cache, false, 0);
+      if (maybe_result.IsEmpty() || try_catch.HasCaught()) {
+        success = false;
+      }
       if (try_catch.HasCaught()) {
         auto message = try_catch.Message();
 
-        if (message.IsEmpty() ||
-            !gin::ConvertFromV8(isolate, message->Get(), &error_message)) {
-          error_message =
-              "An unknown exception occurred while getting the result of "
-              "the script";
+        if (!message.IsEmpty()) {
+          gin::ConvertFromV8(isolate, message->Get(), &error_message);
         }
       }
     }
@@ -183,7 +196,7 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
     } else {
       v8::Local<v8::Context> context = promise_.GetContext();
       v8::Context::Scope context_scope(context);
-      v8::Local<v8::Value> cloned_value = gin::ConvertToV8(isolate, ret);
+      v8::Local<v8::Value> cloned_value = maybe_result.ToLocalChecked();
       if (callback_)
         std::move(callback_).Run(cloned_value, v8::Undefined(isolate));
       promise_.Resolve(cloned_value);
@@ -192,7 +205,7 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
 
   void Completed(
       const blink::WebVector<v8::Local<v8::Value>>& result) override {
-    v8::Isolate* isolate = v8::Isolate::GetCurrent();
+    v8::Isolate* isolate = promise_.isolate();
     if (!result.empty()) {
       if (!result[0].IsEmpty()) {
         v8::Local<v8::Value> value = result[0];
@@ -206,7 +219,8 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
                   value.As<v8::Object>()->CreationContext()) &&
             value->IsObject();
         if (should_clone_value) {
-          CopyResultToCallingContextAndFinalize(isolate, value);
+          CopyResultToCallingContextAndFinalize(isolate,
+                                                value.As<v8::Object>());
         } else {
           // Right now only single results per frame is supported.
           if (callback_)
@@ -355,7 +369,7 @@ void SetZoomLevel(gin_helper::ErrorThrower thrower,
   }
 
   mojo::Remote<mojom::ElectronBrowser> browser_remote;
-  render_frame->GetRemoteInterfaces()->GetInterface(
+  render_frame->GetBrowserInterfaceBroker()->GetInterface(
       browser_remote.BindNewPipeAndPassReceiver());
   browser_remote->SetTemporaryZoomLevel(level);
 }
@@ -372,7 +386,7 @@ double GetZoomLevel(gin_helper::ErrorThrower thrower,
   }
 
   mojo::Remote<mojom::ElectronBrowser> browser_remote;
-  render_frame->GetRemoteInterfaces()->GetInterface(
+  render_frame->GetBrowserInterfaceBroker()->GetInterface(
       browser_remote.BindNewPipeAndPassReceiver());
   browser_remote->DoGetZoomLevel(&result);
   return result;
@@ -393,6 +407,61 @@ double GetZoomFactor(gin_helper::ErrorThrower thrower,
                      v8::Local<v8::Value> window) {
   double zoom_level = GetZoomLevel(thrower, window);
   return blink::PageZoomLevelToZoomFactor(zoom_level);
+}
+
+v8::Local<v8::Value> GetWebPreference(v8::Isolate* isolate,
+                                      v8::Local<v8::Value> window,
+                                      std::string pref_name) {
+  content::RenderFrame* render_frame = GetRenderFrame(window);
+  const auto& prefs = render_frame->GetBlinkPreferences();
+
+  if (pref_name == options::kPreloadScripts) {
+    return gin::ConvertToV8(isolate, prefs.preloads);
+  } else if (pref_name == options::kDisableElectronSiteInstanceOverrides) {
+    return gin::ConvertToV8(isolate,
+                            prefs.disable_electron_site_instance_overrides);
+  } else if (pref_name == options::kBackgroundColor) {
+    return gin::ConvertToV8(isolate, prefs.background_color);
+  } else if (pref_name == options::kOpenerID) {
+    // NOTE: openerId is internal-only.
+    return gin::ConvertToV8(isolate, prefs.opener_id);
+  } else if (pref_name == options::kContextIsolation) {
+    return gin::ConvertToV8(isolate, prefs.context_isolation);
+  } else if (pref_name == options::kWorldSafeExecuteJavaScript) {
+    return gin::ConvertToV8(isolate, prefs.world_safe_execute_javascript);
+  } else if (pref_name == options::kGuestInstanceID) {
+    // NOTE: guestInstanceId is internal-only.
+    return gin::ConvertToV8(isolate, prefs.guest_instance_id);
+  } else if (pref_name == options::kHiddenPage) {
+    // NOTE: hiddenPage is internal-only.
+    return gin::ConvertToV8(isolate, prefs.hidden_page);
+  } else if (pref_name == options::kOffscreen) {
+    return gin::ConvertToV8(isolate, prefs.offscreen);
+  } else if (pref_name == options::kPreloadScript) {
+    return gin::ConvertToV8(isolate, prefs.preload.value());
+  } else if (pref_name == options::kNativeWindowOpen) {
+    return gin::ConvertToV8(isolate, prefs.native_window_open);
+  } else if (pref_name == options::kNodeIntegration) {
+    return gin::ConvertToV8(isolate, prefs.node_integration);
+  } else if (pref_name == options::kNodeIntegrationInWorker) {
+    return gin::ConvertToV8(isolate, prefs.node_integration_in_worker);
+  } else if (pref_name == options::kEnableNodeLeakageInRenderers) {
+    // NOTE: enableNodeLeakageInRenderers is internal-only.
+    return gin::ConvertToV8(isolate, prefs.node_leakage_in_renderers);
+  } else if (pref_name == options::kNodeIntegrationInSubFrames) {
+    return gin::ConvertToV8(isolate, true);
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+  } else if (pref_name == options::kSpellcheck) {
+    return gin::ConvertToV8(isolate, prefs.enable_spellcheck);
+#endif
+  } else if (pref_name == options::kPlugins) {
+    return gin::ConvertToV8(isolate, prefs.enable_plugins);
+  } else if (pref_name == options::kEnableWebSQL) {
+    return gin::ConvertToV8(isolate, prefs.enable_websql);
+  } else if (pref_name == options::kWebviewTag) {
+    return gin::ConvertToV8(isolate, prefs.webview_tag);
+  }
+  return v8::Null(isolate);
 }
 
 void SetVisualZoomLevelLimits(gin_helper::ErrorThrower thrower,
@@ -507,7 +576,7 @@ void InsertText(gin_helper::ErrorThrower thrower,
   }
 }
 
-base::string16 InsertCSS(v8::Local<v8::Value> window,
+std::u16string InsertCSS(v8::Local<v8::Value> window,
                          const std::string& css,
                          gin_helper::Arguments* args) {
   blink::WebDocument::CSSOrigin css_origin =
@@ -522,7 +591,7 @@ base::string16 InsertCSS(v8::Local<v8::Value> window,
     args->ThrowError(
         "Render frame was torn down before webFrame.insertCSS could be "
         "executed");
-    return base::string16();
+    return std::u16string();
   }
 
   blink::WebFrame* web_frame = render_frame->GetWebFrame();
@@ -532,12 +601,12 @@ base::string16 InsertCSS(v8::Local<v8::Value> window,
         .InsertStyleSheet(blink::WebString::FromUTF8(css), nullptr, css_origin)
         .Utf16();
   }
-  return base::string16();
+  return std::u16string();
 }
 
 void RemoveInsertedCSS(gin_helper::ErrorThrower thrower,
                        v8::Local<v8::Value> window,
-                       const base::string16& key) {
+                       const std::u16string& key) {
   auto* render_frame = GetRenderFrame(window);
   if (!render_frame) {
     thrower.ThrowError(
@@ -555,7 +624,7 @@ void RemoveInsertedCSS(gin_helper::ErrorThrower thrower,
 
 v8::Local<v8::Promise> ExecuteJavaScript(gin_helper::Arguments* args,
                                          v8::Local<v8::Value> window,
-                                         const base::string16& code) {
+                                         const std::u16string& code) {
   v8::Isolate* isolate = args->isolate();
   gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
@@ -574,13 +643,13 @@ v8::Local<v8::Promise> ExecuteJavaScript(gin_helper::Arguments* args,
   ScriptExecutionCallback::CompletionCallback completion_callback;
   args->GetNext(&completion_callback);
 
-  bool world_safe_exec_js = base::CommandLine::ForCurrentProcess()->HasSwitch(
-      switches::kWorldSafeExecuteJavaScript);
+  auto& prefs = render_frame->GetBlinkPreferences();
 
   render_frame->GetWebFrame()->RequestExecuteScriptAndReturnValue(
       blink::WebScriptSource(blink::WebString::FromUTF16(code)),
       has_user_gesture,
-      new ScriptExecutionCallback(std::move(promise), world_safe_exec_js,
+      new ScriptExecutionCallback(std::move(promise),
+                                  prefs.world_safe_execute_javascript,
                                   std::move(completion_callback)));
 
   return handle;
@@ -616,8 +685,8 @@ v8::Local<v8::Promise> ExecuteJavaScriptInIsolatedWorld(
   std::vector<blink::WebScriptSource> sources;
 
   for (const auto& script : scripts) {
-    base::string16 code;
-    base::string16 url;
+    std::u16string code;
+    std::u16string url;
     int start_line = 1;
     script.Get("url", &url);
     script.Get("startLine", &start_line);
@@ -640,16 +709,13 @@ v8::Local<v8::Promise> ExecuteJavaScriptInIsolatedWorld(
                                blink::WebURL(GURL(url)), start_line));
   }
 
-  bool world_safe_exec_js = base::CommandLine::ForCurrentProcess()->HasSwitch(
-      switches::kWorldSafeExecuteJavaScript);
+  auto& prefs = render_frame->GetBlinkPreferences();
 
-  // Debugging tip: if you see a crash stack trace beginning from this call,
-  // then it is very likely that some exception happened when executing the
-  // "content_script/init.js" script.
   render_frame->GetWebFrame()->RequestExecuteScriptInIsolatedWorld(
       world_id, &sources.front(), sources.size(), has_user_gesture,
       scriptExecutionType,
-      new ScriptExecutionCallback(std::move(promise), world_safe_exec_js,
+      new ScriptExecutionCallback(std::move(promise),
+                                  prefs.world_safe_execute_javascript,
                                   std::move(completion_callback)));
 
   return handle;
@@ -692,19 +758,23 @@ blink::WebCacheResourceTypeStats GetResourceUsage(v8::Isolate* isolate) {
   return stats;
 }
 
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+
 bool IsWordMisspelled(v8::Isolate* isolate,
                       v8::Local<v8::Value> window,
                       const std::string& word) {
   return !SpellCheckWord(isolate, window, word, nullptr);
 }
 
-std::vector<base::string16> GetWordSuggestions(v8::Isolate* isolate,
+std::vector<std::u16string> GetWordSuggestions(v8::Isolate* isolate,
                                                v8::Local<v8::Value> window,
                                                const std::string& word) {
-  std::vector<base::string16> suggestions;
+  std::vector<std::u16string> suggestions;
   SpellCheckWord(isolate, window, word, &suggestions);
   return suggestions;
 }
+
+#endif
 
 void ClearCache(v8::Isolate* isolate) {
   isolate->IdleNotificationDeadline(0.5);
@@ -852,6 +922,7 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("allowGuestViewElementDefinition",
                  &AllowGuestViewElementDefinition);
   dict.SetMethod("getWebFrameId", &GetWebFrameId);
+  dict.SetMethod("getWebPreference", &GetWebPreference);
   dict.SetMethod("setSpellCheckProvider", &SetSpellCheckProvider);
   dict.SetMethod("insertText", &InsertText);
   dict.SetMethod("insertCSS", &InsertCSS);

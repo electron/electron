@@ -90,6 +90,9 @@ describe('webRequest module', () => {
         expect(details.id).to.be.a('number');
         expect(details.timestamp).to.be.a('number');
         expect(details.webContentsId).to.be.a('number');
+        expect(details.webContents).to.be.an('object');
+        expect(details.webContents!.id).to.equal(details.webContentsId);
+        expect(details.frame).to.be.an('object');
         expect(details.url).to.be.a('string').that.is.equal(defaultURL);
         expect(details.method).to.be.a('string').that.is.equal('GET');
         expect(details.resourceType).to.be.a('string').that.is.equal('xhr');
@@ -449,7 +452,7 @@ describe('webRequest module', () => {
       });
 
       // Start server.
-      await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
       const port = String((server.address() as AddressInfo).port);
 
       // Use a separate session for testing.
@@ -492,7 +495,8 @@ describe('webRequest module', () => {
       const contents = (webContents as any).create({
         session: ses,
         nodeIntegration: true,
-        webSecurity: false
+        webSecurity: false,
+        contextIsolation: false
       });
 
       // Cleanup.

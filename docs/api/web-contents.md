@@ -42,7 +42,8 @@ returns `null`.
 
 * `id` Integer
 
-Returns `WebContents` - A WebContents instance with the given ID.
+Returns `WebContents` | undefined - A WebContents instance with the given ID, or
+`undefined` if there is no WebContents associated with the given ID.
 
 ## Class: WebContents
 
@@ -134,7 +135,7 @@ Returns:
 
 Emitted when page receives favicon urls.
 
-#### Event: 'new-window'
+#### Event: 'new-window' _Deprecated_
 
 Returns:
 
@@ -154,6 +155,8 @@ Returns:
   will be sent to the new window, along with the appropriate headers that will
   be set. If no post data is to be sent, the value will be `null`. Only defined
   when the window is being created by a form that set `target=_blank`.
+
+Deprecated in favor of [`webContents.setWindowOpenHandler`](web-contents.md#contentssetwindowopenhandlerhandler).
 
 Emitted when the page requests to open a new window for a `url`. It could be
 requested by `window.open` or an external link like `<a target='_blank'>`.
@@ -188,6 +191,40 @@ myBrowserWindow.webContents.on('new-window', (event, url, frameName, disposition
   event.newGuest = win
 })
 ```
+
+#### Event: 'did-create-window'
+
+Returns:
+
+* `window` BrowserWindow
+* `details` Object
+  * `url` String - URL for the created window.
+  * `frameName` String - Name given to the created window in the
+     `window.open()` call.
+  * `options` BrowserWindowConstructorOptions - The options used to create the
+    BrowserWindow. They are merged in increasing precedence: options inherited
+    from the parent, parsed options from the `features` string from
+    `window.open()`, and options given by
+    [`webContents.setWindowOpenHandler`](web-contents.md#contentssetwindowopenhandlerhandler).
+    Unrecognized options are not filtered out.
+  * `additionalFeatures` String[] - The non-standard features (features not
+    handled Chromium or Electron) _Deprecated_
+  * `referrer` [Referrer](structures/referrer.md) - The referrer that will be
+    passed to the new window. May or may not result in the `Referer` header
+    being sent, depending on the referrer policy.
+  * `postBody` [PostBody](structures/post-body.md) (optional) - The post data
+    that will be sent to the new window, along with the appropriate headers
+    that will be set. If no post data is to be sent, the value will be `null`.
+    Only defined when the window is being created by a form that set
+    `target=_blank`.
+  * `disposition` String - Can be `default`, `foreground-tab`,
+    `background-tab`, `new-window`, `save-to-disk` and `other`.
+
+Emitted _after_ successful creation of a window via `window.open` in the renderer.
+Not emitted if the creation of the window is canceled from
+[`webContents.setWindowOpenHandler`](web-contents.md#contentssetwindowopenhandlerhandler).
+
+See [`window.open()`](window-open.md) for more details and how to use this in conjunction with `webContents.setWindowOpenHandler`.
 
 #### Event: 'will-navigate'
 
@@ -338,6 +375,8 @@ win.webContents.on('will-prevent-unload', (event) => {
 })
 ```
 
+**Note:** This will be emitted for `BrowserViews` but will _not_ be respected - this is because we have chosen not to tie the `BrowserView` lifecycle to its owning BrowserWindow should one exist per the [specification](https://developer.mozilla.org/en-US/docs/Web/API/Window/beforeunload_event).
+
 #### Event: 'crashed' _Deprecated_
 
 Returns:
@@ -366,6 +405,9 @@ Returns:
     * `oom` - Process ran out of memory
     * `launch-failed` - Process never successfully launched
     * `integrity-failure` - Windows code integrity checks failed
+  * `exitCode` Integer - The exit code of the process, unless `reason` is
+    `launch-failed`, in which case `exitCode` will be a platform-specific
+    launch failure error code.
 
 Emitted when the renderer process unexpectedly disappears.  This is normally
 because it was crashed or killed.
@@ -438,6 +480,7 @@ Emitted when the window leaves a full-screen state triggered by HTML API.
 #### Event: 'zoom-changed'
 
 Returns:
+
 * `event` Event
 * `zoomDirection` String - Can be `in` or `out`.
 
@@ -602,8 +645,15 @@ Returns:
   * `isEditable` Boolean - Whether the context is editable.
   * `selectionText` String - Text of the selection that the context menu was
     invoked on.
-  * `titleText` String - Title or alt text of the selection that the context
-    was invoked on.
+  * `titleText` String - Title text of the selection that the context menu was
+    invoked on.
+  * `altText` String - Alt text of the selection that the context menu was
+    invoked on.
+  * `suggestedFilename` String - Suggested filename to be used when saving file through 'Save
+    Link As' option of context menu.
+  * `selectionRect` [Rectangle](structures/rectangle.md) - Rect representing the coordinates in the document space of the selection.
+  * `selectionStartOffset` Number - Start position of the selection text.
+  * `referrerPolicy` [Referrer](structures/referrer.md) - The referrer policy of the frame on which the menu is invoked.
   * `misspelledWord` String - The misspelled word under the cursor, if any.
   * `dictionarySuggestions` String[] - An array of suggested words to show the
     user to replace the `misspelledWord`.  Only available if there is a misspelled
@@ -613,8 +663,9 @@ Returns:
   * `inputFieldType` String - If the context menu was invoked on an input
     field, the type of that field. Possible values are `none`, `plainText`,
     `password`, `other`.
+  * `spellcheckEnabled` Boolean - If the context is editable, whether or not spellchecking is enabled.
   * `menuSourceType` String - Input source that invoked the context menu.
-    Can be `none`, `mouse`, `keyboard`, `touch` or `touchMenu`.
+    Can be `none`, `mouse`, `keyboard`, `touch`, `touchMenu`, `longPress`, `longTap`, `touchHandle`, `stylus`, `adjustSelection`, or `adjustSelectionReset`.
   * `mediaFlags` Object - The flags for the media element the context menu was
     invoked on.
     * `inError` Boolean - Whether the media element has crashed.
@@ -626,16 +677,22 @@ Returns:
       visible.
     * `canToggleControls` Boolean - Whether the media element's controls are
       toggleable.
+    * `canPrint` Boolean - Whether the media element can be printed.
+    * `canSave` Boolean - Whether or not the media element can be downloaded.
+    * `canShowPictureInPicture` Boolean - Whether the media element can show picture-in-picture.
+    * `isShowingPictureInPicture` Boolean - Whether the media element is currently showing picture-in-picture.
     * `canRotate` Boolean - Whether the media element can be rotated.
+    * `canLoop` Boolean - Whether the media element can be looped.
   * `editFlags` Object - These flags indicate whether the renderer believes it
     is able to perform the corresponding action.
     * `canUndo` Boolean - Whether the renderer believes it can undo.
     * `canRedo` Boolean - Whether the renderer believes it can redo.
     * `canCut` Boolean - Whether the renderer believes it can cut.
-    * `canCopy` Boolean - Whether the renderer believes it can copy
+    * `canCopy` Boolean - Whether the renderer believes it can copy.
     * `canPaste` Boolean - Whether the renderer believes it can paste.
     * `canDelete` Boolean - Whether the renderer believes it can delete.
     * `canSelectAll` Boolean - Whether the renderer believes it can select all.
+    * `canEditRichly` Boolean - Whether the renderer believes it can edit text richly.
 
 Emitted when there is a new context menu that needs to be handled.
 
@@ -783,59 +840,6 @@ Returns:
 
 Emitted when `desktopCapturer.getSources()` is called in the renderer process.
 Calling `event.preventDefault()` will make it return empty sources.
-
-#### Event: 'remote-require' _Deprecated_
-
-Returns:
-
-* `event` IpcMainEvent
-* `moduleName` String
-
-Emitted when `remote.require()` is called in the renderer process.
-Calling `event.preventDefault()` will prevent the module from being returned.
-Custom value can be returned by setting `event.returnValue`.
-
-#### Event: 'remote-get-global' _Deprecated_
-
-Returns:
-
-* `event` IpcMainEvent
-* `globalName` String
-
-Emitted when `remote.getGlobal()` is called in the renderer process.
-Calling `event.preventDefault()` will prevent the global from being returned.
-Custom value can be returned by setting `event.returnValue`.
-
-#### Event: 'remote-get-builtin' _Deprecated_
-
-Returns:
-
-* `event` IpcMainEvent
-* `moduleName` String
-
-Emitted when `remote.getBuiltin()` is called in the renderer process.
-Calling `event.preventDefault()` will prevent the module from being returned.
-Custom value can be returned by setting `event.returnValue`.
-
-#### Event: 'remote-get-current-window' _Deprecated_
-
-Returns:
-
-* `event` IpcMainEvent
-
-Emitted when `remote.getCurrentWindow()` is called in the renderer process.
-Calling `event.preventDefault()` will prevent the object from being returned.
-Custom value can be returned by setting `event.returnValue`.
-
-#### Event: 'remote-get-current-web-contents' _Deprecated_
-
-Returns:
-
-* `event` IpcMainEvent
-
-Emitted when `remote.getCurrentWebContents()` is called in the renderer process.
-Calling `event.preventDefault()` will prevent the object from being returned.
-Custom value can be returned by setting `event.returnValue`.
 
 #### Event: 'preferred-size-changed'
 
@@ -1121,6 +1125,23 @@ Works like `executeJavaScript` but evaluates `scripts` in an isolated context.
 * `ignore` Boolean
 
 Ignore application menu shortcuts while this web contents is focused.
+
+#### `contents.setWindowOpenHandler(handler)`
+
+* `handler` Function<{action: 'deny'} | {action: 'allow', overrideBrowserWindowOptions?: BrowserWindowConstructorOptions}>
+  * `details` Object
+    * `url` String - The _resolved_ version of the URL passed to `window.open()`. e.g. opening a window with `window.open('foo')` will yield something like `https://the-origin/the/current/path/foo`.
+    * `frameName` String - Name of the window provided in `window.open()`
+    * `features` String - Comma separated list of window features provided to `window.open()`.
+
+  Returns `{action: 'deny'} | {action: 'allow', overrideBrowserWindowOptions?: BrowserWindowConstructorOptions}` - `deny` cancels the creation of the new
+  window. `allow` will allow the new window to be created. Specifying `overrideBrowserWindowOptions` allows customization of the created window.
+  Returning an unrecognized value such as a null, undefined, or an object
+  without a recognized 'action' value will result in a console error and have
+  the same effect as returning `{action: 'deny'}`.
+
+Called before creating a window when `window.open()` is called from the
+renderer. See [`window.open()`](window-open.md) for more details and how to use this in conjunction with `did-create-window`.
 
 #### `contents.setAudioMuted(muted)`
 
@@ -1411,7 +1432,7 @@ By default, an empty `options` will be regarded as:
 }
 ```
 
-Use `page-break-before: always; ` CSS style to force to print to a new page.
+Use `page-break-before: always;` CSS style to force to print to a new page.
 
 An example of `webContents.printToPDF`:
 
@@ -1605,8 +1626,7 @@ included. Sending Functions, Promises, Symbols, WeakMaps, or WeakSets will
 throw an exception.
 
 > **NOTE**: Sending non-standard JavaScript types such as DOM objects or
-> special Electron objects is deprecated, and will begin throwing an exception
-> starting with Electron 9.
+> special Electron objects will throw an exception.
 
 The renderer process can handle the message by listening to `channel` with the
 [`ipcRenderer`](ipc-renderer.md) module.
@@ -1642,7 +1662,9 @@ app.whenReady().then(() => {
 
 #### `contents.sendToFrame(frameId, channel, ...args)`
 
-* `frameId` Integer
+* `frameId` Integer | [number, number] - the ID of the frame to send to, or a
+  pair of `[processId, frameId]` if the frame is in a different process to the
+  main frame.
 * `channel` String
 * `...args` any[]
 
@@ -1652,9 +1674,8 @@ Send an asynchronous message to a specific frame in a renderer process via
 chains will not be included. Sending Functions, Promises, Symbols, WeakMaps, or
 WeakSets will throw an exception.
 
-> **NOTE**: Sending non-standard JavaScript types such as DOM objects or
-> special Electron objects is deprecated, and will begin throwing an exception
-> starting with Electron 9.
+> **NOTE:** Sending non-standard JavaScript types such as DOM objects or
+> special Electron objects will throw an exception.
 
 The renderer process can handle the message by listening to `channel` with the
 [`ipcRenderer`](ipc-renderer.md) module.
@@ -1690,6 +1711,7 @@ process by accessing the `ports` property of the emitted event. When they
 arrive in the renderer, they will be native DOM `MessagePort` objects.
 
 For example:
+
 ```js
 // Main process
 const { port1, port2 } = new MessageChannelMain()
@@ -1816,7 +1838,7 @@ Returns `Boolean` - If *offscreen rendering* is enabled returns whether it is cu
 * `fps` Integer
 
 If *offscreen rendering* is enabled sets the frame rate to the specified number.
-Only values between 1 and 60 are accepted.
+Only values between 1 and 240 are accepted.
 
 #### `contents.getFrameRate()`
 
@@ -1914,7 +1936,7 @@ The zoom factor is the zoom percent divided by 100, so 300% = 3.0.
 #### `contents.frameRate`
 
 An `Integer` property that sets the frame rate of the web contents to the specified number.
-Only values between 1 and 60 are accepted.
+Only values between 1 and 240 are accepted.
 
 Only applicable if *offscreen rendering* is enabled.
 

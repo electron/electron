@@ -32,6 +32,10 @@ if (is_mac) {
   import("//ui/gl/features.gni")
   import("//v8/gni/v8.gni")
   import("build/rules.gni")
+
+  assert(
+      mac_deployment_target == "10.11.0",
+      "Chromium has updated the mac_deployment_target, please update this assert, update the supported versions documentation (docs/tutorial/support.md) and flag this as a breaking change")
 }
 
 if (is_linux) {
@@ -265,21 +269,6 @@ if (is_linux) {
   }
 }
 
-source_set("manifests") {
-  sources = [
-    "//electron/shell/app/manifests.cc",
-    "//electron/shell/app/manifests.h",
-  ]
-
-  include_dirs = [ "//electron" ]
-
-  deps = [
-    "//electron/shell/common/api:mojo",
-    "//printing/buildflags",
-    "//services/service_manager/public/cpp",
-  ]
-}
-
 npm_action("electron_version_args") {
   script = "generate-version-json"
 
@@ -328,7 +317,6 @@ source_set("electron_lib") {
     ":electron_fuses",
     ":electron_js2c",
     ":electron_version_header",
-    ":manifests",
     ":resources",
     "buildflags",
     "chromium_src:chrome",
@@ -353,7 +341,6 @@ source_set("electron_lib") {
     "//components/viz/service",
     "//content/public/browser",
     "//content/public/child",
-    "//content/public/common:service_names",
     "//content/public/gpu",
     "//content/public/renderer",
     "//content/public/utility",
@@ -419,7 +406,10 @@ source_set("electron_lib") {
   }
 
   if (!is_mas_build) {
-    deps += [ "//components/crash/core/app" ]
+    deps += [
+      "//components/crash/core/app",
+      "//components/crash/core/browser",
+    ]
   }
 
   sources = filenames.lib_sources
@@ -508,6 +498,7 @@ source_set("electron_lib") {
     }
   }
   if (is_linux) {
+    libs = [ "xshmfence" ]
     deps += [
       ":libnotify_loader",
       "//build/config/linux/gtk",
@@ -635,6 +626,9 @@ source_set("electron_lib") {
       "//chrome/services/printing/public/mojom",
       "//components/printing/common:mojo_interfaces",
     ]
+    if (is_mac) {
+      deps += [ "//chrome/services/mac_notifications/public/mojom" ]
+    }
   }
 
   if (enable_electron_extensions) {
@@ -648,6 +642,7 @@ source_set("electron_lib") {
       "//components/zoom",
       "//extensions/browser",
       "//extensions/browser:core_api_provider",
+      "//extensions/browser/updater",
       "//extensions/common",
       "//extensions/common:core_api_provider",
       "//extensions/renderer",
@@ -664,6 +659,7 @@ source_set("electron_lib") {
   }
   if (enable_pdf_viewer) {
     deps += [
+      "//chrome/browser/resources/pdf:resources",
       "//components/pdf/browser",
       "//components/pdf/renderer",
       "//pdf:pdf_ppapi",
@@ -1007,6 +1003,9 @@ if (is_mac) {
     deps = [
       ":electron_app_framework_bundle_data",
       ":electron_app_resources",
+      ":electron_fuses",
+      "//base",
+      "//electron/buildflags",
     ]
     if (is_mas_build) {
       deps += [ ":electron_login_helper_app" ]
@@ -1168,6 +1167,19 @@ if (is_mac) {
       if (target_cpu == "arm64") {
         configs -= [ "//build/config/win:cfi_linker" ]
         ldflags += [ "/guard:cf,nolongjmp" ]
+      }
+
+      if (current_cpu == "x86") {
+        # Set the initial stack size to 0.5MiB, instead of the 1.5MiB needed by
+        # Chrome's main thread. This saves significant memory on threads (like
+        # those in the Windows thread pool, and others) whose stack size we can
+        # only control through this setting. Because Chrome's main thread needs
+        # a minimum 1.5 MiB stack, the main thread (in 32-bit builds only) uses
+        # fibers to switch to a 1.5 MiB stack before running any other code.
+        ldflags += [ "/STACK:0x80000" ]
+      } else {
+        # Increase the initial stack size. The default is 1MB, this is 8MB.
+        ldflags += [ "/STACK:0x800000" ]
       }
 
       # This is to support renaming of electron.exe. node-gyp has hard-coded

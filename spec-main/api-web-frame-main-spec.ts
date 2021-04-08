@@ -2,9 +2,9 @@ import { expect } from 'chai';
 import * as http from 'http';
 import * as path from 'path';
 import * as url from 'url';
-import { BrowserWindow, WebFrameMain, webFrameMain } from 'electron/main';
+import { BrowserWindow, WebFrameMain, webFrameMain, ipcMain } from 'electron/main';
 import { closeAllWindows } from './window-helpers';
-import { emittedOnce } from './events-helpers';
+import { emittedOnce, emittedNTimes } from './events-helpers';
 import { AddressInfo } from 'net';
 
 describe('webFrameMain module', () => {
@@ -126,11 +126,12 @@ describe('webFrameMain module', () => {
       const w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: true } });
       await w.loadFile(path.join(subframesPath, 'frame.html'));
       const webFrame = w.webContents.mainFrame;
-      expect(webFrame).to.haveOwnProperty('frameTreeNodeId');
-      expect(webFrame).to.haveOwnProperty('name');
-      expect(webFrame).to.haveOwnProperty('osProcessId');
-      expect(webFrame).to.haveOwnProperty('processId');
-      expect(webFrame).to.haveOwnProperty('routingId');
+      expect(webFrame).to.have.ownProperty('url').that.is.a('string');
+      expect(webFrame).to.have.ownProperty('frameTreeNodeId').that.is.a('number');
+      expect(webFrame).to.have.ownProperty('name').that.is.a('string');
+      expect(webFrame).to.have.ownProperty('osProcessId').that.is.a('number');
+      expect(webFrame).to.have.ownProperty('processId').that.is.a('number');
+      expect(webFrame).to.have.ownProperty('routingId').that.is.a('number');
     });
   });
 
@@ -160,6 +161,24 @@ describe('webFrameMain module', () => {
     });
   });
 
+  describe('WebFrame.send', () => {
+    it('works', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          preload: path.join(subframesPath, 'preload.js'),
+          nodeIntegrationInSubFrames: true
+        }
+      });
+      await w.loadURL('about:blank');
+      const webFrame = w.webContents.mainFrame;
+      const pongPromise = emittedOnce(ipcMain, 'preload-pong');
+      webFrame.send('preload-ping');
+      const [, routingId] = await pongPromise;
+      expect(routingId).to.equal(webFrame.routingId);
+    });
+  });
+
   describe('disposed WebFrames', () => {
     let w: BrowserWindow;
     let webFrame: WebFrameMain;
@@ -178,24 +197,24 @@ describe('webFrameMain module', () => {
     });
   });
 
-  it('webFrameMain.fromId can find each frame from navigation events', (done) => {
-    const w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: true } });
+  describe('webFrameMain.fromId', () => {
+    it('returns undefined for unknown IDs', () => {
+      expect(webFrameMain.fromId(0, 0)).to.be.undefined();
+    });
 
-    w.loadFile(path.join(subframesPath, 'frame-with-frame-container.html'));
-
-    let eventCount = 0;
-    w.webContents.on('did-frame-finish-load', (event, isMainFrame, frameProcessId, frameRoutingId) => {
-      const frame = webFrameMain.fromId(frameProcessId, frameRoutingId);
-      expect(frame).not.to.be.null();
-      expect(frame?.processId).to.be.equal(frameProcessId);
-      expect(frame?.routingId).to.be.equal(frameRoutingId);
-      expect(frame?.top === frame).to.be.equal(isMainFrame);
-
-      eventCount++;
+    it('can find each frame from navigation events', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: true } });
 
       // frame-with-frame-container.html, frame-with-frame.html, frame.html
-      if (eventCount === 3) {
-        done();
+      const didFrameFinishLoad = emittedNTimes(w.webContents, 'did-frame-finish-load', 3);
+      w.loadFile(path.join(subframesPath, 'frame-with-frame-container.html'));
+
+      for (const [, isMainFrame, frameProcessId, frameRoutingId] of await didFrameFinishLoad) {
+        const frame = webFrameMain.fromId(frameProcessId, frameRoutingId);
+        expect(frame).not.to.be.null();
+        expect(frame?.processId).to.be.equal(frameProcessId);
+        expect(frame?.routingId).to.be.equal(frameRoutingId);
+        expect(frame?.top === frame).to.be.equal(isMainFrame);
       }
     });
   });

@@ -6,10 +6,10 @@ Subject: disable_hidden.patch
 Electron uses this to disable background throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index e8fb8793645821940bc41ced7cc14af404a1e229..ffe62ea1114943d1535a806fa515122c47072372 100644
+index 20c2816765f639ce6ecab16db124f885702064dd..d98336a4b552290aff88a0c14321a58807c7eb05 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -689,6 +689,9 @@ void RenderWidgetHostImpl::WasHidden() {
+@@ -709,6 +709,9 @@ void RenderWidgetHostImpl::WasHidden() {
    if (is_hidden_)
      return;
  
@@ -20,24 +20,24 @@ index e8fb8793645821940bc41ced7cc14af404a1e229..ffe62ea1114943d1535a806fa515122c
        blink::mojom::PointerLockResult::kWrongDocument);
  
 diff --git a/content/browser/renderer_host/render_widget_host_impl.h b/content/browser/renderer_host/render_widget_host_impl.h
-index 111ffbd4ee5d6a7093c32f9c1b1f827dc802f4fa..af5d67ff3ebc74c022800fd8ae3c139fc5806639 100644
+index c0ab310d13e3f567aebdb9bcf1824897dba6b637..84c0d0943007adca3ce3a9c61f123a50aa67bf37 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.h
 +++ b/content/browser/renderer_host/render_widget_host_impl.h
-@@ -174,6 +174,9 @@ class CONTENT_EXPORT RenderWidgetHostImpl
-   // RenderWidgetHostImpl.
-   static RenderWidgetHostImpl* From(RenderWidgetHost* rwh);
+@@ -833,6 +833,9 @@ class CONTENT_EXPORT RenderWidgetHostImpl
+   mojom::CreateFrameWidgetParamsPtr
+   BindAndGenerateCreateFrameWidgetParamsForNewWindow();
  
 +  // Electron: Prevents the widget from getting hidden.
 +  bool disable_hidden_ = false;
 +
-   void set_new_content_rendering_delay_for_testing(
-       const base::TimeDelta& delay) {
-     new_content_rendering_delay_ = delay;
+  protected:
+   // |routing_id| must not be MSG_ROUTING_NONE.
+   // If this object outlives |delegate|, DetachDelegate() must be called when
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index f32ba1d31ddb1ca68e889f0ae0cc7a5b3357f58c..08122746971e88792481af96b9270c5ff503c3b2 100644
+index 624f7f5aa5314bd810074f354073ff98bb66b3d2..6417bef874d990535a610c78e547ecba57b78369 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
-@@ -625,7 +625,7 @@ void RenderWidgetHostViewAura::HideImpl() {
+@@ -597,7 +597,7 @@ void RenderWidgetHostViewAura::HideImpl() {
    DCHECK(visibility_ == Visibility::HIDDEN ||
           visibility_ == Visibility::OCCLUDED);
  
@@ -45,4 +45,4 @@ index f32ba1d31ddb1ca68e889f0ae0cc7a5b3357f58c..08122746971e88792481af96b9270c5f
 +  if (!host()->is_hidden() && !host()->disable_hidden_) {
      host()->WasHidden();
      aura::WindowTreeHost* host = window_->GetHost();
-     if (delegated_frame_host_) {
+       aura::Window* parent = window_->parent();

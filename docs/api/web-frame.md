@@ -175,6 +175,7 @@ reject and the `result` would be `undefined`. This is because Chromium does not
 dispatch errors of isolated worlds to foreign worlds.
 
 ### `webFrame.setIsolatedWorldInfo(worldId, info)`
+
 * `worldId` Integer - The ID of the world to run the javascript in, `0` is the default world, `999` is the world used by Electrons `contextIsolation` feature. Chrome extensions reserve the range of IDs in `[1 << 20, 1 << 29)`. You can provide any integer here.
 * `info` Object
   * `securityOrigin` String (optional) - Security origin for the isolated world.

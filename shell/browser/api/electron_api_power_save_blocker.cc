@@ -6,7 +6,7 @@
 
 #include <string>
 
-#include "base/bind_helpers.h"
+#include "base/callback_helpers.h"
 #include "base/task/post_task.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "content/public/browser/device_service.h"
@@ -45,8 +45,7 @@ namespace api {
 gin::WrapperInfo PowerSaveBlocker::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 PowerSaveBlocker::PowerSaveBlocker(v8::Isolate* isolate)
-    : current_lock_type_(device::mojom::WakeLockType::kPreventAppSuspension),
-      is_wake_lock_active_(false) {}
+    : current_lock_type_(device::mojom::WakeLockType::kPreventAppSuspension) {}
 
 PowerSaveBlocker::~PowerSaveBlocker() = default;
 

@@ -76,7 +76,7 @@ require('@electron/internal/browser/rpc-server');
 
 // Load the guest view manager.
 require('@electron/internal/browser/guest-view-manager');
-require('@electron/internal/browser/guest-window-manager');
+require('@electron/internal/browser/guest-window-proxy');
 
 // Now we try to load app's package.json.
 let packagePath = null;
@@ -132,18 +132,14 @@ app._setDefaultAppPaths(packagePath);
 // Load the chrome devtools support.
 require('@electron/internal/browser/devtools');
 
-// Load the chrome extension support.
-require('@electron/internal/browser/chrome-extension-shim');
-
-if (BUILDFLAG(ENABLE_REMOTE_MODULE)) {
-  require('@electron/internal/browser/remote/server');
-}
-
 // Load protocol module to ensure it is populated on app ready
 require('@electron/internal/browser/api/protocol');
 
 // Load web-contents module to ensure it is populated on app ready
 require('@electron/internal/browser/api/web-contents');
+
+// Load web-frame-main module to ensure it is populated on app ready
+require('@electron/internal/browser/api/web-frame-main');
 
 // Set main startup script of the app.
 const mainStartupScript = packageJson.main || 'index.js';

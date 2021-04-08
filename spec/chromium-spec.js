@@ -22,6 +22,13 @@ describe('chromium feature', () => {
       expect(() => {
         navigator.setAppBadge(42);
       }).to.not.throw();
+      expect(() => {
+        // setAppBadge with no argument should show dot
+        navigator.setAppBadge();
+      }).to.not.throw();
+      expect(() => {
+        navigator.clearAppBadge();
+      }).to.not.throw();
     });
   });
 
@@ -174,6 +181,7 @@ describe('chromium feature', () => {
       const webview = new WebView();
       const consoleMessage = waitForEvent(webview, 'console-message');
       webview.allowpopups = true;
+      webview.setAttribute('webpreferences', 'contextIsolation=no');
       webview.src = url.format({
         pathname: `${fixtures}/pages/webview-opener-postMessage.html`,
         protocol: 'file',
@@ -259,7 +267,7 @@ describe('chromium feature', () => {
       const webview = new WebView();
       const eventPromise = waitForEvent(webview, 'ipc-message');
       webview.src = `file://${fixtures}/pages/worker.html`;
-      webview.setAttribute('webpreferences', 'nodeIntegration, nodeIntegrationInWorker');
+      webview.setAttribute('webpreferences', 'nodeIntegration, nodeIntegrationInWorker, contextIsolation=no');
       document.body.appendChild(webview);
       const event = await eventPromise;
       webview.remove();

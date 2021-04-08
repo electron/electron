@@ -84,7 +84,7 @@ DownloadItem* DownloadItem::FromDownloadItem(
 
 DownloadItem::DownloadItem(v8::Isolate* isolate,
                            download::DownloadItem* download_item)
-    : download_item_(download_item) {
+    : download_item_(download_item), isolate_(isolate) {
   download_item_->AddObserver(this);
   download_item_->SetUserData(
       kElectronApiDownloadItemKey,
@@ -101,8 +101,8 @@ DownloadItem::~DownloadItem() {
 
 bool DownloadItem::CheckAlive() const {
   if (!download_item_) {
-    gin_helper::ErrorThrower(v8::Isolate::GetCurrent())
-        .ThrowError("DownloadItem used after being destroyed");
+    gin_helper::ErrorThrower(isolate_).ThrowError(
+        "DownloadItem used after being destroyed");
     return false;
   }
   return true;
@@ -200,10 +200,10 @@ const GURL& DownloadItem::GetURL() const {
   return download_item_->GetURL();
 }
 
-v8::Local<v8::Value> DownloadItem::GetURLChain(v8::Isolate* isolate) const {
+v8::Local<v8::Value> DownloadItem::GetURLChain() const {
   if (!CheckAlive())
     return v8::Local<v8::Value>();
-  return gin::ConvertToV8(isolate, download_item_->GetUrlChain());
+  return gin::ConvertToV8(isolate_, download_item_->GetUrlChain());
 }
 
 download::DownloadItem::DownloadState DownloadItem::GetState() const {

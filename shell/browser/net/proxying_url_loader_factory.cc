@@ -9,7 +9,6 @@
 #include "base/strings/string_util.h"
 #include "content/public/browser/browser_context.h"
 #include "extensions/browser/extension_navigation_ui_data.h"
-#include "mojo/public/cpp/bindings/binding.h"
 #include "net/base/completion_repeating_callback.h"
 #include "net/base/load_flags.h"
 #include "net/http/http_util.h"
@@ -236,6 +235,11 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnReceiveResponse(
         base::BindOnce(&InProgressRequest::ContinueToResponseStarted,
                        weak_factory_.GetWeakPtr()));
   }
+}
+
+void ProxyingURLLoaderFactory::InProgressRequest::OnReceiveEarlyHints(
+    network::mojom::EarlyHintsPtr early_hints) {
+  target_client_->OnReceiveEarlyHints(std::move(early_hints));
 }
 
 void ProxyingURLLoaderFactory::InProgressRequest::OnReceiveRedirect(

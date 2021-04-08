@@ -5,9 +5,9 @@
 #ifndef SHELL_BROWSER_API_ELECTRON_API_APP_H_
 #define SHELL_BROWSER_API_ELECTRON_API_APP_H_
 
+#include <map>
 #include <memory>
 #include <string>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -74,7 +74,7 @@ class App : public ElectronBrowserClient::Delegate,
 
   base::FilePath GetAppPath() const;
   void RenderProcessReady(content::RenderProcessHost* host);
-  void RenderProcessDisconnected(base::ProcessId host_pid);
+  void RenderProcessExited(content::RenderProcessHost* host);
 
   App();
 
@@ -167,10 +167,11 @@ class App : public ElectronBrowserClient::Delegate,
 
   void SetAppPath(const base::FilePath& app_path);
   void ChildProcessLaunched(int process_type,
+                            int pid,
                             base::ProcessHandle handle,
                             const std::string& service_name = std::string(),
                             const std::string& name = std::string());
-  void ChildProcessDisconnected(base::ProcessId pid);
+  void ChildProcessDisconnected(int pid);
 
   void SetAppLogsPath(gin_helper::ErrorThrower thrower,
                       base::Optional<base::FilePath> custom_path);
@@ -221,6 +222,7 @@ class App : public ElectronBrowserClient::Delegate,
   bool MoveToApplicationsFolder(gin_helper::ErrorThrower, gin::Arguments* args);
   bool IsInApplicationsFolder();
   v8::Local<v8::Value> GetDockAPI(v8::Isolate* isolate);
+  bool IsRunningUnderRosettaTranslation() const;
   v8::Global<v8::Value> dock_;
 #endif
 
@@ -249,8 +251,7 @@ class App : public ElectronBrowserClient::Delegate,
   base::FilePath app_path_;
 
   using ProcessMetricMap =
-      std::unordered_map<base::ProcessId,
-                         std::unique_ptr<electron::ProcessMetric>>;
+      std::map<int, std::unique_ptr<electron::ProcessMetric>>;
   ProcessMetricMap app_metrics_;
 
   bool disable_hw_acceleration_ = false;

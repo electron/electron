@@ -12,11 +12,11 @@
 #include "base/strings/string_number_conversions.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/storage_partition.h"
-#include "mojo/public/cpp/bindings/binding.h"
 #include "mojo/public/cpp/system/data_pipe_producer.h"
 #include "mojo/public/cpp/system/string_data_source.h"
 #include "net/base/filename_util.h"
 #include "net/http/http_status_code.h"
+#include "net/url_request/redirect_util.h"
 #include "services/network/public/cpp/url_loader_completion_status.h"
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
 #include "shell/browser/api/electron_api_session.h"
@@ -29,6 +29,7 @@
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
+#include "third_party/blink/public/mojom/loader/resource_load_info.mojom-shared.h"
 
 #include "shell/common/node_includes.h"
 
@@ -153,15 +154,13 @@ struct WriteData {
 };
 
 void OnWrite(std::unique_ptr<WriteData> write_data, MojoResult result) {
-  if (result != MOJO_RESULT_OK) {
-    network::URLLoaderCompletionStatus status(net::ERR_FAILED);
-    return;
+  network::URLLoaderCompletionStatus status(net::ERR_FAILED);
+  if (result == MOJO_RESULT_OK) {
+    status = network::URLLoaderCompletionStatus(net::OK);
+    status.encoded_data_length = write_data->data.size();
+    status.encoded_body_length = write_data->data.size();
+    status.decoded_body_length = write_data->data.size();
   }
-
-  network::URLLoaderCompletionStatus status(net::OK);
-  status.encoded_data_length = write_data->data.size();
-  status.encoded_body_length = write_data->data.size();
-  status.decoded_body_length = write_data->data.size();
   write_data->client->OnComplete(status);
 }
 
@@ -185,7 +184,7 @@ ElectronURLLoaderFactory::ElectronURLLoaderFactory(
     ProtocolType type,
     const ProtocolHandler& handler,
     mojo::PendingReceiver<network::mojom::URLLoaderFactory> factory_receiver)
-    : content::NonNetworkURLLoaderFactoryBase(std::move(factory_receiver)),
+    : network::SelfDeletingURLLoaderFactory(std::move(factory_receiver)),
       type_(type),
       handler_(handler) {}
 
@@ -264,18 +263,30 @@ void ElectronURLLoaderFactory::StartLoading(
   // API in WebRequestProxyingURLLoaderFactory.
   std::string location;
   if (head->headers->IsRedirect(&location)) {
-    GURL new_location = GURL(location);
-    net::SiteForCookies new_site_for_cookies =
-        net::SiteForCookies::FromUrl(new_location);
-    network::ResourceRequest new_request = request;
-    new_request.url = new_location;
-    new_request.site_for_cookies = new_site_for_cookies;
+    // If the request is a MAIN_FRAME request, the first-party URL gets
+    // updated on redirects.
+    const net::RedirectInfo::FirstPartyURLPolicy first_party_url_policy =
+        request.resource_type ==
+                static_cast<int>(blink::mojom::ResourceType::kMainFrame)
+            ? net::RedirectInfo::FirstPartyURLPolicy::UPDATE_URL_ON_REDIRECT
+            : net::RedirectInfo::FirstPartyURLPolicy::NEVER_CHANGE_URL;
 
-    net::RedirectInfo redirect_info;
-    redirect_info.status_code = head->headers->response_code();
-    redirect_info.new_method = request.method;
-    redirect_info.new_url = new_location;
-    redirect_info.new_site_for_cookies = new_site_for_cookies;
+    net::RedirectInfo redirect_info = net::RedirectInfo::ComputeRedirectInfo(
+        request.method, request.url, request.site_for_cookies,
+        first_party_url_policy, request.referrer_policy,
+        request.referrer.GetAsReferrer().spec(), head->headers->response_code(),
+        request.url.Resolve(location),
+        net::RedirectUtil::GetReferrerPolicyHeader(head->headers.get()), false);
+
+    network::ResourceRequest new_request = request;
+    new_request.method = redirect_info.new_method;
+    new_request.url = redirect_info.new_url;
+    new_request.site_for_cookies = redirect_info.new_site_for_cookies;
+    new_request.referrer = GURL(redirect_info.new_referrer);
+    new_request.referrer_policy = redirect_info.new_referrer_policy;
+
+    DCHECK(client.is_valid());
+
     mojo::Remote<network::mojom::URLLoaderClient> client_remote(
         std::move(client));
 
@@ -490,7 +501,7 @@ void ElectronURLLoaderFactory::StartLoadingStream(
     client_remote->OnReceiveResponse(std::move(head));
     mojo::ScopedDataPipeProducerHandle producer;
     mojo::ScopedDataPipeConsumerHandle consumer;
-    if (mojo::CreateDataPipe(nullptr, &producer, &consumer) != MOJO_RESULT_OK) {
+    if (mojo::CreateDataPipe(nullptr, producer, consumer) != MOJO_RESULT_OK) {
       client_remote->OnComplete(
           network::URLLoaderCompletionStatus(net::ERR_INSUFFICIENT_RESOURCES));
       return;
@@ -537,7 +548,7 @@ void ElectronURLLoaderFactory::SendContents(
   // Code bellow follows the pattern of data_url_loader_factory.cc.
   mojo::ScopedDataPipeProducerHandle producer;
   mojo::ScopedDataPipeConsumerHandle consumer;
-  if (mojo::CreateDataPipe(nullptr, &producer, &consumer) != MOJO_RESULT_OK) {
+  if (mojo::CreateDataPipe(nullptr, producer, consumer) != MOJO_RESULT_OK) {
     client_remote->OnComplete(
         network::URLLoaderCompletionStatus(net::ERR_INSUFFICIENT_RESOURCES));
     return;

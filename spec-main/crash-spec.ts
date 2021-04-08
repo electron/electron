@@ -2,6 +2,7 @@ import { expect } from 'chai';
 import * as cp from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
+import { ifdescribe } from './spec-helpers';
 
 const fixturePath = path.resolve(__dirname, 'fixtures', 'crash-cases');
 
@@ -17,7 +18,7 @@ const runFixtureAndEnsureCleanExit = (args: string[]) => {
   child.stderr.on('data', (chunk: Buffer) => {
     out += chunk.toString();
   });
-  return new Promise((resolve) => {
+  return new Promise<void>((resolve) => {
     child.on('exit', (code, signal) => {
       if (code !== 0 || signal !== null) {
         console.error(out);
@@ -30,7 +31,8 @@ const runFixtureAndEnsureCleanExit = (args: string[]) => {
   });
 };
 
-describe('crash cases', () => {
+// Running child app under ASan might receive SIGKILL because of OOM.
+ifdescribe(!process.env.IS_ASAN)('crash cases', () => {
   afterEach(() => {
     for (const child of children) {
       child.kill();

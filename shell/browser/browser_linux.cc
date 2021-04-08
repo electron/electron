@@ -84,21 +84,11 @@ bool SetDefaultWebClient(const std::string& protocol) {
   return ran_ok && exit_code == EXIT_SUCCESS;
 }
 
-void Browser::Focus(gin::Arguments* args) {
-  // Focus on the first visible window.
-  for (auto* const window : WindowList::GetWindows()) {
-    if (window->IsVisible()) {
-      window->Focus(true);
-      break;
-    }
-  }
-}
-
 void Browser::AddRecentDocument(const base::FilePath& path) {}
 
 void Browser::ClearRecentDocuments() {}
 
-void Browser::SetAppUserModelID(const base::string16& name) {}
+void Browser::SetAppUserModelID(const std::wstring& name) {}
 
 bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
                                          gin::Arguments* args) {
@@ -132,7 +122,7 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
   return false;
 }
 
-base::string16 Browser::GetApplicationNameForProtocol(const GURL& url) {
+std::u16string Browser::GetApplicationNameForProtocol(const GURL& url) {
   const std::vector<std::string> argv = {
       "xdg-mime", "query", "default",
       std::string("x-scheme-handler/") + url.scheme()};
@@ -140,10 +130,10 @@ base::string16 Browser::GetApplicationNameForProtocol(const GURL& url) {
   return base::ASCIIToUTF16(GetXdgAppOutput(argv).value_or(std::string()));
 }
 
-bool Browser::SetBadgeCount(int count) {
-  if (IsUnityRunning()) {
-    unity::SetDownloadCount(count);
-    badge_count_ = count;
+bool Browser::SetBadgeCount(base::Optional<int> count) {
+  if (IsUnityRunning() && count.has_value()) {
+    unity::SetDownloadCount(count.value());
+    badge_count_ = count.value();
     return true;
   } else {
     return false;

@@ -115,6 +115,7 @@ class NativeWindowViews : public NativeWindow,
   void SetMenu(ElectronMenuModel* menu_model) override;
   void AddBrowserView(NativeBrowserView* browser_view) override;
   void RemoveBrowserView(NativeBrowserView* browser_view) override;
+  void SetTopBrowserView(NativeBrowserView* browser_view) override;
   void SetParentWindow(NativeWindow* parent) override;
   gfx::NativeView GetNativeView() const override;
   gfx::NativeWindow GetNativeWindow() const override;
@@ -127,7 +128,8 @@ class NativeWindowViews : public NativeWindow,
   bool IsMenuBarVisible() override;
 
   void SetVisibleOnAllWorkspaces(bool visible,
-                                 bool visibleOnFullScreen) override;
+                                 bool visibleOnFullScreen,
+                                 bool skipTransformProcessType) override;
 
   bool IsVisibleOnAllWorkspaces() override;
 
@@ -174,6 +176,7 @@ class NativeWindowViews : public NativeWindow,
   void OnWidgetBoundsChanged(views::Widget* widget,
                              const gfx::Rect& bounds) override;
   void OnWidgetDestroying(views::Widget* widget) override;
+  void OnWidgetDestroyed(views::Widget* widget) override;
 
   // views::WidgetDelegate:
   void DeleteDelegate() override;
@@ -181,7 +184,7 @@ class NativeWindowViews : public NativeWindow,
   bool CanResize() const override;
   bool CanMaximize() const override;
   bool CanMinimize() const override;
-  base::string16 GetWindowTitle() const override;
+  std::u16string GetWindowTitle() const override;
   views::View* GetContentsView() override;
   bool ShouldDescendIntoChildForEventHandling(
       gfx::NativeView child,
@@ -283,6 +286,12 @@ class NativeWindowViews : public NativeWindow,
 
   // Whether we want to set window placement without side effect.
   bool is_setting_window_placement_ = false;
+
+  // Whether the window is currently being resized.
+  bool is_resizing_ = false;
+
+  // Whether the window is currently being moved.
+  bool is_moving_ = false;
 #endif
 
   // Handles unhandled keyboard messages coming back from the renderer process.
@@ -307,6 +316,7 @@ class NativeWindowViews : public NativeWindow,
   std::string title_;
   gfx::Size widget_size_;
   double opacity_ = 1.0;
+  bool widget_destroyed_ = false;
 
   DISALLOW_COPY_AND_ASSIGN(NativeWindowViews);
 };

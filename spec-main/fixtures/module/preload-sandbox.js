@@ -33,15 +33,18 @@
         systemVersion: invoke(() => process.getSystemVersion()),
         cpuUsage: invoke(() => process.getCPUUsage()),
         ioCounters: invoke(() => process.getIOCounters()),
+        uptime: invoke(() => process.uptime()),
         env: process.env,
         execPath: process.execPath,
         pid: process.pid,
         arch: process.arch,
         platform: process.platform,
         sandboxed: process.sandboxed,
+        contextIsolated: process.contextIsolated,
         type: process.type,
         version: process.version,
-        versions: process.versions
+        versions: process.versions,
+        contextId: process.contextId
       };
     }
   } else if (location.href !== 'about:blank') {

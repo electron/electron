@@ -78,7 +78,7 @@ void MenuBar::SetAcceleratorVisibility(bool visible) {
     static_cast<SubmenuButton*>(child)->SetAcceleratorVisibility(visible);
 }
 
-MenuBar::View* MenuBar::FindAccelChild(base::char16 key) {
+MenuBar::View* MenuBar::FindAccelChild(char16_t key) {
   for (auto* child : GetChildrenInZOrder()) {
     if (static_cast<SubmenuButton*>(child)->accelerator() == key)
       return child;
@@ -86,11 +86,11 @@ MenuBar::View* MenuBar::FindAccelChild(base::char16 key) {
   return nullptr;
 }
 
-bool MenuBar::HasAccelerator(base::char16 key) {
+bool MenuBar::HasAccelerator(char16_t key) {
   return FindAccelChild(key) != nullptr;
 }
 
-void MenuBar::ActivateAccelerator(base::char16 key) {
+void MenuBar::ActivateAccelerator(char16_t key) {
   auto* child = FindAccelChild(key);
   if (child)
     static_cast<SubmenuButton*>(child)->Activate(nullptr);
@@ -167,7 +167,7 @@ bool MenuBar::AcceleratorPressed(const ui::Accelerator& accelerator) {
 
         if (keycode == accelerator.key_code()) {
           auto event = accelerator.ToKeyEvent();
-          ButtonPressed(button, event);
+          ButtonPressed(button->tag(), event);
           return true;
         }
       }
@@ -254,7 +254,7 @@ const char* MenuBar::GetClassName() const {
   return kViewClassName;
 }
 
-void MenuBar::ButtonPressed(views::Button* source, const ui::Event& event) {
+void MenuBar::ButtonPressed(int id, const ui::Event& event) {
   // Hide the accelerator when a submenu is activated.
   SetAcceleratorVisibility(false);
 
@@ -264,12 +264,21 @@ void MenuBar::ButtonPressed(views::Button* source, const ui::Event& event) {
   if (!window_->HasFocus())
     window_->RequestFocus();
 
-  int id = source->tag();
   ElectronMenuModel::ItemType type = menu_model_->GetTypeAt(id);
   if (type != ElectronMenuModel::TYPE_SUBMENU) {
     menu_model_->ActivatedAt(id, 0);
     return;
   }
+
+  SubmenuButton* source = nullptr;
+  for (auto* child : children()) {
+    auto* button = static_cast<SubmenuButton*>(child);
+    if (button->tag() == id) {
+      source = button;
+      break;
+    }
+  }
+  DCHECK(source);
 
   // Deleted in MenuDelegate::OnMenuClosed
   auto* menu_delegate = new MenuDelegate(this);
@@ -304,8 +313,9 @@ void MenuBar::OnThemeChanged() {
 void MenuBar::RebuildChildren() {
   RemoveAllChildViews(true);
   for (int i = 0, n = GetItemCount(); i < n; ++i) {
-    auto* button =
-        new SubmenuButton(this, menu_model_->GetLabelAt(i), background_color_);
+    auto* button = new SubmenuButton(
+        base::BindRepeating(&MenuBar::ButtonPressed, base::Unretained(this), i),
+        menu_model_->GetLabelAt(i), background_color_);
     button->set_tag(i);
     AddChildView(button);
   }

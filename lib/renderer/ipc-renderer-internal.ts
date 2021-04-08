@@ -14,11 +14,7 @@ ipcRendererInternal.sendSync = function (channel, ...args) {
 };
 
 ipcRendererInternal.sendTo = function (webContentsId, channel, ...args) {
-  return ipc.sendTo(internal, false, webContentsId, channel, args);
-};
-
-ipcRendererInternal.sendToAll = function (webContentsId, channel, ...args) {
-  return ipc.sendTo(internal, true, webContentsId, channel, args);
+  return ipc.sendTo(internal, webContentsId, channel, args);
 };
 
 ipcRendererInternal.invoke = async function<T> (channel: string, ...args: any[]) {

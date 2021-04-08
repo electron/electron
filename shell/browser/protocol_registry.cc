@@ -5,7 +5,8 @@
 #include <memory>
 #include <utility>
 
-#include "content/public/browser/non_network_url_loader_factory_base.h"
+#include "content/public/browser/web_contents.h"
+#include "services/network/public/cpp/self_deleting_url_loader_factory.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/net/asar/asar_url_loader.h"
 #include "shell/browser/protocol_registry.h"
@@ -15,13 +16,13 @@ namespace electron {
 namespace {
 
 // Provide support for accessing asar archives in file:// protocol.
-class AsarURLLoaderFactory : public content::NonNetworkURLLoaderFactoryBase {
+class AsarURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
  public:
   static mojo::PendingRemote<network::mojom::URLLoaderFactory> Create() {
     mojo::PendingRemote<network::mojom::URLLoaderFactory> pending_remote;
 
     // The AsarURLLoaderFactory will delete itself when there are no more
-    // receivers - see the NonNetworkURLLoaderFactoryBase::OnDisconnect method.
+    // receivers - see the SelfDeletingURLLoaderFactory::OnDisconnect method.
     new AsarURLLoaderFactory(pending_remote.InitWithNewPipeAndPassReceiver());
 
     return pending_remote;
@@ -30,7 +31,7 @@ class AsarURLLoaderFactory : public content::NonNetworkURLLoaderFactoryBase {
  private:
   AsarURLLoaderFactory(
       mojo::PendingReceiver<network::mojom::URLLoaderFactory> factory_receiver)
-      : content::NonNetworkURLLoaderFactoryBase(std::move(factory_receiver)) {}
+      : network::SelfDeletingURLLoaderFactory(std::move(factory_receiver)) {}
   ~AsarURLLoaderFactory() override = default;
 
   // network::mojom::URLLoaderFactory:
@@ -61,22 +62,20 @@ ProtocolRegistry::ProtocolRegistry() {}
 ProtocolRegistry::~ProtocolRegistry() = default;
 
 void ProtocolRegistry::RegisterURLLoaderFactories(
-    URLLoaderFactoryType type,
-    content::ContentBrowserClient::NonNetworkURLLoaderFactoryMap* factories) {
-  // Override the default FileURLLoaderFactory to support asar archives.
-  if (type == URLLoaderFactoryType::kNavigation) {
-    // Always allow navigating to file:// URLs.
+    content::ContentBrowserClient::NonNetworkURLLoaderFactoryMap* factories,
+    bool allow_file_access) {
+  auto file_factory = factories->find(url::kFileScheme);
+  if (file_factory != factories->end()) {
+    // If Chromium already allows file access then replace the url factory to
+    // also loading asar files.
+    file_factory->second = AsarURLLoaderFactory::Create();
+  } else if (allow_file_access) {
+    // Otherwise only allow file access when it is explicitly allowed.
     //
-    // Note that Chromium calls |emplace| to create the default file factory
-    // after this call, so it won't override our asar factory.
-    DCHECK(!base::Contains(*factories, url::kFileScheme));
+    // Note that Chromium may call |emplace| to create the default file factory
+    // after this call, it won't override our asar factory, but if asar support
+    // breaks in future, please check if Chromium has changed the call.
     factories->emplace(url::kFileScheme, AsarURLLoaderFactory::Create());
-  } else if (type == URLLoaderFactoryType::kDocumentSubResource) {
-    // Only support requesting file:// subresource URLs when Chromium does so,
-    // it is usually supported under file:// or about:blank documents.
-    auto file_factory = factories->find(url::kFileScheme);
-    if (file_factory != factories->end())
-      file_factory->second = AsarURLLoaderFactory::Create();
   }
 
   for (const auto& it : handlers_) {

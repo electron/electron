@@ -48,7 +48,7 @@ gfx::Size GetExpandedWindowSize(const NativeWindow* window, gfx::Size size) {
 
 NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
                            NativeWindow* parent)
-    : widget_(new views::Widget), parent_(parent), weak_factory_(this) {
+    : widget_(new views::Widget), parent_(parent) {
   ++next_id_;
 
   options.Get(options::kFrame, &has_frame_);
@@ -372,10 +372,6 @@ bool NativeWindow::IsMenuBarVisible() {
   return true;
 }
 
-bool NativeWindow::SetWindowButtonVisibility(bool visible) {
-  return false;
-}
-
 double NativeWindow::GetAspectRatio() {
   return aspect_ratio_;
 }
@@ -497,6 +493,11 @@ void NativeWindow::NotifyWindowResize() {
     observer.OnWindowResize();
 }
 
+void NativeWindow::NotifyWindowResized() {
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowResized();
+}
+
 void NativeWindow::NotifyWindowMove() {
   for (NativeWindowObserver& observer : observers_)
     observer.OnWindowMove();
@@ -603,7 +604,7 @@ const views::Widget* NativeWindow::GetWidget() const {
   return widget();
 }
 
-base::string16 NativeWindow::GetAccessibleWindowTitle() const {
+std::u16string NativeWindow::GetAccessibleWindowTitle() const {
   if (accessible_title_.empty()) {
     return views::WidgetDelegate::GetAccessibleWindowTitle();
   }

@@ -20,11 +20,12 @@ PATHS_TO_SKIP = [
   './libVkICD_mock_',
   # Skip because these are outputs that we don't need.
   './VkICD_mock_',
-  # Skip because its an output of create_bundle from //build/config/mac/rules.gni
-  # that we don't need
+  # Skip because its an output of create_bundle from
+  # //build/config/mac/rules.gni that we don't need
   'Electron.dSYM',
   # Refs https://chromium-review.googlesource.com/c/angle/angle/+/2425197.
-  # Remove this when Angle themselves remove the file: https://issuetracker.google.com/issues/168736059
+  # Remove this when Angle themselves remove the file:
+  # https://issuetracker.google.com/issues/168736059
   'gen/angle/angle_commit.h',
   # //chrome/browser:resources depends on this via
   # //chrome/browser/resources/ssl/ssl_error_assistant, but we don't need to
@@ -38,6 +39,7 @@ PATHS_TO_SKIP = [
   './crashpad_handler',
   # Skip because these are outputs that we don't need.
   'resources/inspector',
+  'gen/third_party/devtools-frontend/src'
 ]
 
 def skip_path(dep, dist_zip, target_cpu):
@@ -50,7 +52,12 @@ def skip_path(dep, dist_zip, target_cpu):
   should_skip = (
     any(dep.startswith(path) for path in PATHS_TO_SKIP) or
     any(dep.endswith(ext) for ext in EXTENSIONS_TO_SKIP) or
-    ('arm' in target_cpu and dist_zip == 'mksnapshot.zip' and dep == 'snapshot_blob.bin'))
+    (
+      "arm" in target_cpu
+      and dist_zip == "mksnapshot.zip"
+      and dep == "snapshot_blob.bin"
+    )
+  )
   if should_skip:
     print("Skipping {}".format(dep))
   return should_skip
@@ -64,7 +71,7 @@ def execute(argv):
     raise e
 
 def main(argv):
-  dist_zip, runtime_deps, target_cpu, target_os, flatten_val = argv
+  dist_zip, runtime_deps, target_cpu, _, flatten_val = argv
   should_flatten = flatten_val == "true"
   dist_files = set()
   with open(runtime_deps) as f:
@@ -75,17 +82,28 @@ def main(argv):
   if sys.platform == 'darwin' and not should_flatten:
     execute(['zip', '-r', '-y', dist_zip] + list(dist_files))
   else:
-    with zipfile.ZipFile(dist_zip, 'w', zipfile.ZIP_DEFLATED, allowZip64=True) as z:
+    with zipfile.ZipFile(
+      dist_zip, 'w', zipfile.ZIP_DEFLATED, allowZip64=True
+    ) as z:
       for dep in dist_files:
         if os.path.isdir(dep):
-          for root, dirs, files in os.walk(dep):
-            for file in files:
-              z.write(os.path.join(root, file))
+          for root, _, files in os.walk(dep):
+            for filename in files:
+              z.write(os.path.join(root, filename))
         else:
           basename = os.path.basename(dep)
           dirname = os.path.dirname(dep)
-          arcname = os.path.join(dirname, 'chrome-sandbox') if basename == 'chrome_sandbox' else dep
-          z.write(dep, os.path.basename(arcname) if should_flatten else arcname)
+          arcname = (
+            os.path.join(dirname, 'chrome-sandbox')
+            if basename == 'chrome_sandbox'
+            else dep
+          )
+          z.write(
+            dep,
+            os.path.basename(arcname)
+            if should_flatten
+            else arcname,
+          )
 
 if __name__ == '__main__':
   sys.exit(main(sys.argv[1:]))

@@ -9,12 +9,12 @@
 #include <string>
 #include <utility>
 
-#include "content/public/browser/non_network_url_loader_factory_base.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "mojo/public/cpp/bindings/receiver_set.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "net/url_request/url_request_job_factory.h"
+#include "services/network/public/cpp/self_deleting_url_loader_factory.h"
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
 #include "services/network/public/mojom/url_response_head.mojom.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -47,8 +47,7 @@ using InterceptHandlersMap =
     std::map<std::string, std::pair<ProtocolType, InterceptProtocolHandler>>;
 
 // Implementation of URLLoaderFactory.
-class ElectronURLLoaderFactory
-    : public content::NonNetworkURLLoaderFactoryBase {
+class ElectronURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
  public:
   static mojo::PendingRemote<network::mojom::URLLoaderFactory> Create(
       ProtocolType type,

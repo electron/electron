@@ -35,7 +35,7 @@ using blink::mojom::NativeFileInfo;
 namespace {
 
 file_dialog::Filters GetFileTypesFromAcceptType(
-    const std::vector<base::string16>& accept_types) {
+    const std::vector<std::u16string>& accept_types) {
   file_dialog::Filters filters;
   if (accept_types.empty())
     return filters;
@@ -86,7 +86,7 @@ file_dialog::Filters GetFileTypesFromAcceptType(
 
   for (const auto& extension : extensions) {
 #if defined(OS_WIN)
-    filters[0].second.push_back(base::UTF16ToASCII(extension));
+    filters[0].second.push_back(base::WideToASCII(extension));
 #else
     filters[0].second.push_back(extension);
 #endif
@@ -105,7 +105,7 @@ file_dialog::Filters GetFileTypesFromAcceptType(
 namespace electron {
 
 WebDialogHelper::WebDialogHelper(NativeWindow* window, bool offscreen)
-    : window_(window), offscreen_(offscreen), weak_factory_(this) {}
+    : window_(window), offscreen_(offscreen) {}
 
 WebDialogHelper::~WebDialogHelper() = default;
 
@@ -163,7 +163,7 @@ void WebDialogHelper::EnumerateDirectory(
   std::vector<FileChooserFileInfoPtr> file_info;
   while (!(path = file_enum.Next()).empty()) {
     file_info.push_back(FileChooserFileInfo::NewNativeFile(
-        NativeFileInfo::New(path, base::string16())));
+        NativeFileInfo::New(path, std::u16string())));
   }
 
   listener->FileSelected(std::move(file_info), dir,

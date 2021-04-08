@@ -1,0 +1,93 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 4 Oct 2018 14:57:02 -0700
+Subject: feat: support wasm-eval csp behind WebAssemblyCSP flag
+
+This is a minimal backport of
+https://chromium.googlesource.com/chromium/src/+/83913676803db53648b6a47d159102a7cf1dac36
+
+The tracking issue in Chromium is
+https://bugs.chromium.org/p/chromium/issues/detail?id=948834
+
+diff --git a/third_party/blink/renderer/core/frame/csp/content_security_policy.cc b/third_party/blink/renderer/core/frame/csp/content_security_policy.cc
+index 8b7360ea023691c9da089fe781410f82c55ed37e..c96f57f6ae5f0c4b0d9326ca43517cb778422251 100644
+--- a/third_party/blink/renderer/core/frame/csp/content_security_policy.cc
++++ b/third_party/blink/renderer/core/frame/csp/content_security_policy.cc
+@@ -293,7 +293,8 @@ ContentSecurityPolicy::DidReceiveHeaders(
+     const ContentSecurityPolicyResponseHeaders& headers) {
+   scoped_refptr<SecurityOrigin> self_origin =
+       SecurityOrigin::Create(headers.ResponseUrl());
+-  if (headers.ShouldParseWasmEval())
++  if (RuntimeEnabledFeatures::WebAssemblyCSPEnabled() ||
++      headers.ShouldParseWasmEval())
+     supports_wasm_eval_ = true;
+ 
+   Vector<network::mojom::blink::ContentSecurityPolicyPtr> parsed_policies;
+diff --git a/third_party/blink/renderer/core/frame/csp/csp_directive_list.cc b/third_party/blink/renderer/core/frame/csp/csp_directive_list.cc
+index 0312872536aca8ec4c2f57754b6d6836b00e75df..d34331b948f7d1252f8eb26f731c4b20fce6c582 100644
+--- a/third_party/blink/renderer/core/frame/csp/csp_directive_list.cc
++++ b/third_party/blink/renderer/core/frame/csp/csp_directive_list.cc
+@@ -625,10 +625,15 @@ bool CheckEval(const network::mojom::blink::CSPSourceList* directive) {
+   return !directive || directive->allow_eval;
+ }
+ 
++bool SupportsWasmEval(const ContentSecurityPolicy* policy) {
++  return RuntimeEnabledFeatures::WebAssemblyCSPEnabled() ||
++         policy->SupportsWasmEval();
++}
++
+ bool CheckWasmEval(const network::mojom::blink::CSPSourceList* directive,
+                    const ContentSecurityPolicy* policy) {
+   return !directive || directive->allow_eval ||
+-         (policy->SupportsWasmEval() && directive->allow_wasm_eval);
++         (SupportsWasmEval(policy) && directive->allow_wasm_eval);
+ }
+ 
+ bool CheckHash(const network::mojom::blink::CSPSourceList* directive,
+@@ -1091,7 +1096,7 @@ bool CSPDirectiveListAllowWasmCodeGeneration(
+     ContentSecurityPolicy::ExceptionStatus exception_status,
+     const String& content) {
+   if (reporting_disposition == ReportingDisposition::kReport) {
+-    String infix = policy->SupportsWasmEval()
++    String infix = SupportsWasmEval(policy)
+                        ? "neither 'wasm-eval' nor 'unsafe-eval' is"
+                        : "'unsafe-eval' is not";
+     return CheckWasmEvalAndReportViolation(
+diff --git a/third_party/blink/renderer/core/frame/csp/source_list_directive.cc b/third_party/blink/renderer/core/frame/csp/source_list_directive.cc
+index 17ae1426ef9662f6f640c36d8ae8bca8e443a15a..de93eb3cf7321e00351f5cfe1d7cde6635ce2b4d 100644
+--- a/third_party/blink/renderer/core/frame/csp/source_list_directive.cc
++++ b/third_party/blink/renderer/core/frame/csp/source_list_directive.cc
+@@ -403,10 +403,15 @@ bool ParseSource(const UChar* begin,
+     return true;
+   }
+ 
+-  if (policy->SupportsWasmEval() &&
+-      EqualIgnoringASCIICase("'wasm-eval'", token)) {
+-    source_list.allow_wasm_eval = true;
+-    return true;
++  // Temporarily behind a runtime feature
++  if (EqualIgnoringASCIICase("'wasm-eval'", token)) {
++    if (RuntimeEnabledFeatures::WebAssemblyCSPEnabled() ||
++        policy->SupportsWasmEval()) {
++      source_list.allow_wasm_eval = true;
++      return true;
++    } else {
++      return false;
++    }
+   }
+ 
+   if (EqualIgnoringASCIICase("'strict-dynamic'", token)) {
+diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
+index 2447c80eece6fa84f01d4d84b136a7c6a799c696..6680e614b5985b6774e47472957a9b4ac2d50354 100644
+--- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
++++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
+@@ -2146,6 +2146,9 @@
+     {
+       name: "WebAppWindowControlsOverlay",
+     },
++    {
++      name: "WebAssemblyCSP",
++    },
+     {
+       name: "WebAssemblyExceptions",
+       origin_trial_feature_name: "WebAssemblyExceptions",

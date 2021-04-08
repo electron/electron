@@ -14,21 +14,19 @@ gclient_gn_args = [
 
 vars = {
   'chromium_version':
-    '2a55c4f55b99b2191ea59cba1e2f6da4dbb7dee0',
+    '91.0.4448.0',
   'node_version':
-    'v14.15.0',
+    'v14.16.1',
   'nan_version':
-    '2c4ee8a32a299eada3cd6e468bbd0a473bfea96d',
+    'v2.14.2',
   'squirrel.mac_version':
-    'a3a5b3f03b824441c014893b18f99a103b2603e9',
+    'cdc0729c8bf8576bfef18629186e1e9ecf1b0d9f',
 
   'pyyaml_version': '3.12',
-  'requests_version': 'e4d59bedfd3c7f4f254f4f5d036587bcd8152458',
 
   'chromium_git': 'https://chromium.googlesource.com',
   'electron_git': 'https://github.com/electron',
   'nodejs_git': 'https://github.com/nodejs',
-  'requests_git': 'https://github.com/kennethreitz',
   'yaml_git': 'https://github.com/yaml',
   'squirrel_git': 'https://github.com/Squirrel',
 
@@ -50,17 +48,12 @@ vars = {
   # It's only needed to parse the native tests configurations.
   'checkout_pyyaml': False,
 
-  # Python "requests" module is used for releases only.
-  'checkout_requests': False,
+  'use_rts': False,
 
   'mac_xcode_version': 'default',
 
   # To allow running hooks without parsing the DEPS tree
   'process_deps': True,
-
-  # It is always needed for normal Electron builds,
-  # but might be impossible for custom in-house builds.
-  'download_external_binaries': True,
 
   'checkout_nacl':
     False,
@@ -78,6 +71,8 @@ vars = {
     False,
   'checkout_google_benchmark':
     False,
+  'checkout_clang_tidy':
+    True,
 }
 
 deps = {
@@ -96,10 +91,6 @@ deps = {
   'src/electron/vendor/pyyaml': {
     'url': (Var("yaml_git")) + '/pyyaml.git@' + (Var("pyyaml_version")),
     'condition': 'checkout_pyyaml and process_deps',
-  },
-  'src/electron/vendor/requests': {
-    'url': Var('requests_git') + '/requests.git' + '@' +  Var('requests_version'),
-    'condition': 'checkout_requests and process_deps',
   },
   'src/third_party/squirrel.mac': {
     'url': Var("squirrel_git") + '/Squirrel.Mac.git@' + Var("squirrel.mac_version"),
@@ -156,31 +147,12 @@ hooks = [
     ],
   },
   {
-    'name': 'electron_external_binaries',
-    'pattern': 'src/electron/script/update-external-binaries.py',
-    'condition': 'download_external_binaries',
-    'action': [
-      'python3',
-      'src/electron/script/update-external-binaries.py',
-    ],
-  },
-  {
     'name': 'electron_npm_deps',
     'pattern': 'src/electron/package.json',
     'action': [
       'python3',
       '-c',
-      'import os, subprocess; os.chdir(os.path.join("src", "electron")); subprocess.check_call(["python", "script/lib/npx.py", "yarn@' + (Var("yarn_version")) + '", "install", "--frozen-lockfile"]);',
-    ],
-  },
-  {
-    'name': 'setup_requests',
-    'pattern': 'src/electron',
-    'condition': 'checkout_requests and process_deps',
-    'action': [
-      'python3',
-      '-c',
-      'import os, subprocess; os.chdir(os.path.join("src", "electron", "vendor", "requests")); subprocess.check_call(["python", "setup.py", "build"]);',
+      'import os, subprocess; os.chdir(os.path.join("src", "electron")); subprocess.check_call(["python3", "script/lib/npx.py", "yarn@' + (Var("yarn_version")) + '", "install", "--frozen-lockfile"]);',
     ],
   },
 ]

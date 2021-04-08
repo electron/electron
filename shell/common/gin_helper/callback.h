@@ -142,7 +142,8 @@ template <typename Sig>
 v8::Local<v8::Value> CallbackToV8Leaked(
     v8::Isolate* isolate,
     const base::RepeatingCallback<Sig>& val) {
-  Translater translater = base::Bind(&NativeFunctionInvoker<Sig>::Go, val);
+  Translater translater =
+      base::BindRepeating(&NativeFunctionInvoker<Sig>::Go, val);
   return CreateFunctionFromTranslater(isolate, translater, false);
 }
 

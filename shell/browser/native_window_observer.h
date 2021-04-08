@@ -8,7 +8,6 @@
 #include <string>
 
 #include "base/observer_list_types.h"
-#include "base/strings/string16.h"
 #include "base/values.h"
 #include "ui/base/window_open_disposition.h"
 #include "url/gurl.h"
@@ -28,7 +27,7 @@ class NativeWindowObserver : public base::CheckedObserver {
   ~NativeWindowObserver() override {}
 
   // Called when the web page in window wants to create a popup window.
-  virtual void WillCreatePopupWindow(const base::string16& frame_name,
+  virtual void WillCreatePopupWindow(const std::u16string& frame_name,
                                      const GURL& target_url,
                                      const std::string& partition_id,
                                      WindowOpenDisposition disposition) {}
@@ -74,6 +73,7 @@ class NativeWindowObserver : public base::CheckedObserver {
   virtual void OnWindowWillResize(const gfx::Rect& new_bounds,
                                   bool* prevent_default) {}
   virtual void OnWindowResize() {}
+  virtual void OnWindowResized() {}
   virtual void OnWindowWillMove(const gfx::Rect& new_bounds,
                                 bool* prevent_default) {}
   virtual void OnWindowMove() {}

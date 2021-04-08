@@ -11,10 +11,6 @@
 #include "base/files/file_path.h"
 #include "build/build_config.h"
 
-#if defined(OS_WIN)
-#include "base/strings/string16.h"
-#endif
-
 class GURL;
 
 namespace platform_util {
@@ -39,9 +35,6 @@ struct OpenExternalOptions {
 void OpenExternal(const GURL& url,
                   const OpenExternalOptions& options,
                   OpenCallback callback);
-
-// Move a file to trash. (Deprecated.)
-bool MoveItemToTrash(const base::FilePath& full_path, bool delete_on_fail);
 
 // Move a file to trash, asynchronously.
 void TrashItem(const base::FilePath& full_path,

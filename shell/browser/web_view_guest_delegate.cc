@@ -40,6 +40,10 @@ void WebViewGuestDelegate::AttachToIframe(
 
   content::WebContents* guest_web_contents = api_web_contents_->web_contents();
 
+  // Force a refresh of the webPreferences so that OverrideWebkitPrefs runs on
+  // the new web contents before the renderer process initializes.
+  // guest_web_contents->NotifyPreferencesChanged();
+
   // Attach this inner WebContents |guest_web_contents| to the outer
   // WebContents |embedder_web_contents|. The outer WebContents's
   // frame |embedder_frame| hosts the inner WebContents.

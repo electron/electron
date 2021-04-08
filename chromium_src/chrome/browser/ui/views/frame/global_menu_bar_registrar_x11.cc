@@ -38,8 +38,7 @@ void GlobalMenuBarRegistrarX11::OnWindowUnmapped(x11::Window window) {
   live_windows_.erase(window);
 }
 
-GlobalMenuBarRegistrarX11::GlobalMenuBarRegistrarX11()
-    : registrar_proxy_(nullptr) {
+GlobalMenuBarRegistrarX11::GlobalMenuBarRegistrarX11() {
   // libdbusmenu uses the gio version of dbus; I tried using the code in dbus/,
   // but it looks like that's isn't sharing the bus name with the gio version,
   // even when |connection_type| is set to SHARED.

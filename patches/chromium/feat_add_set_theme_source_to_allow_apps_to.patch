@@ -13,11 +13,11 @@ uses internally for things like menus and devtools.
 We can remove this patch once it has in some shape been upstreamed.
 
 diff --git a/ui/native_theme/native_theme.cc b/ui/native_theme/native_theme.cc
-index 87e2cd7398a8cee32f76e80ffa29c4addbf8ba4a..b315eab3c482b1517b61153e1d64fc08a99cb548 100644
+index 3ee65184e31e7851a5f192f12318b813a5d3949a..7bc2abc443eaae2860b9178cd6d04b07fe2dbfac 100644
 --- a/ui/native_theme/native_theme.cc
 +++ b/ui/native_theme/native_theme.cc
-@@ -256,6 +256,8 @@ NativeTheme::NativeTheme(bool should_use_dark_colors)
- NativeTheme::~NativeTheme() = default;
+@@ -243,6 +243,8 @@ base::Optional<SkColor> NativeTheme::GetColorProviderColor(
+ }
  
  bool NativeTheme::ShouldUseDarkColors() const {
 +  if (theme_source() == ThemeSource::kForcedLight) return false;
@@ -26,12 +26,12 @@ index 87e2cd7398a8cee32f76e80ffa29c4addbf8ba4a..b315eab3c482b1517b61153e1d64fc08
  }
  
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
-index e2ca7dd198390ebc923facd690904faeb8300e62..f2f53775abb0ba2954cbb3ec431d84c3e03ad6f8 100644
+index 0196aa21e880a517461001e7bbb1f3399bbc3b37..9375f55b6ab4a897d4e837e681eedf0145af9302 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
-@@ -392,6 +392,22 @@ class NATIVE_THEME_EXPORT NativeTheme {
-       ColorId color_id,
-       ColorScheme color_scheme = ColorScheme::kDefault) const;
+@@ -402,6 +402,22 @@ class NATIVE_THEME_EXPORT NativeTheme {
+   SkColor GetUnprocessedSystemColor(ColorId color_id,
+                                     ColorScheme color_scheme) const;
  
 +  enum ThemeSource {
 +    kSystem,
@@ -52,22 +52,21 @@ index e2ca7dd198390ebc923facd690904faeb8300e62..f2f53775abb0ba2954cbb3ec431d84c3
    // Returns a shared instance of the native theme that should be used for web
    // rendering. Do not use it in a normal application context (i.e. browser).
    // The returned object should not be deleted by the caller. This function is
-@@ -530,6 +546,8 @@ class NATIVE_THEME_EXPORT NativeTheme {
-   bool is_high_contrast_ = false;
+@@ -568,6 +584,7 @@ class NATIVE_THEME_EXPORT NativeTheme {
+   bool forced_colors_ = false;
    PreferredColorScheme preferred_color_scheme_ = PreferredColorScheme::kLight;
- 
+   PreferredContrast preferred_contrast_ = PreferredContrast::kNoPreference;
 +  ThemeSource theme_source_ = ThemeSource::kSystem;
-+
+ 
    DISALLOW_COPY_AND_ASSIGN(NativeTheme);
  };
- 
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index 255723ec8874920c8b45dbda2a1a5714b60e38be..31e3a345a79c6d228d7c2c501dcd69708de7fd52 100644
+index 90e3b67bd5c78be3ea0d0f0e4ef94bc95ea375a2..510791b29b6b16f92eecb804912992fd843c4d9c 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
-@@ -738,6 +738,8 @@ bool NativeThemeWin::ShouldUseDarkColors() const {
+@@ -748,6 +748,8 @@ bool NativeThemeWin::ShouldUseDarkColors() const {
    // ...unless --force-dark-mode was specified in which case caveat emptor.
-   if (UsesHighContrastColors() && !IsForcedDarkMode())
+   if (InForcedColorsMode() && !IsForcedDarkMode())
      return false;
 +  if (theme_source() == ThemeSource::kForcedLight) return false;
 +  if (theme_source() == ThemeSource::kForcedDark) return true;

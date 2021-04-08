@@ -2,182 +2,187 @@
   [
     "top=5,left=10,resizable=no",
     {
-      "sender": "[WebContents]",
-      "returnValue": "placeholder-guest-contents-id"
+      "sender": "[WebContents]"
     },
     "about:blank",
-    "frame name",
+    "frame-name",
     "new-window",
     {
-      "show": true,
       "width": 800,
-      "height": 600,
-      "webContents": "[WebContents]",
-      "title": "frame name",
+      "title": "cool",
+      "backgroundColor": "blue",
+      "focusable": false,
       "webPreferences": {
         "nativeWindowOpen": true,
         "sandbox": true,
         "backgroundColor": "blue",
+        "contextIsolation": true,
         "nodeIntegration": false,
         "webviewTag": false,
-        "nodeIntegrationInSubFrames": false
+        "nodeIntegrationInSubFrames": false,
+        "openerId": null
       },
+      "show": true,
+      "height": 600,
       "top": 5,
       "left": 10,
       "resizable": false,
       "x": 10,
       "y": 5,
-      "backgroundColor": "blue",
-      "focusable": false
+      "webContents": "[WebContents]"
     },
     [],
     {
       "url": "",
-      "policy": "no-referrer-when-downgrade"
+      "policy": "strict-origin-when-cross-origin"
     },
     null
   ],
   [
     "zoomFactor=2,resizable=0,x=0,y=10",
     {
-      "sender": "[WebContents]",
-      "returnValue": "placeholder-guest-contents-id"
+      "sender": "[WebContents]"
     },
     "about:blank",
-    "frame name",
+    "frame-name",
     "new-window",
     {
-      "show": true,
       "width": 800,
-      "height": 600,
-      "webContents": "[WebContents]",
-      "title": "frame name",
+      "title": "cool",
+      "backgroundColor": "blue",
+      "focusable": false,
       "webPreferences": {
-        "zoomFactor": "2",
         "nativeWindowOpen": true,
         "sandbox": true,
         "backgroundColor": "blue",
+        "zoomFactor": "2",
+        "contextIsolation": true,
         "nodeIntegration": false,
         "webviewTag": false,
-        "nodeIntegrationInSubFrames": false
+        "nodeIntegrationInSubFrames": false,
+        "openerId": null
       },
+      "show": true,
+      "height": 600,
       "resizable": false,
       "x": 0,
       "y": 10,
-      "backgroundColor": "blue",
-      "focusable": false
+      "webContents": "[WebContents]"
     },
     [],
     {
       "url": "",
-      "policy": "no-referrer-when-downgrade"
+      "policy": "strict-origin-when-cross-origin"
     },
     null
   ],
   [
     "backgroundColor=gray,webPreferences=0,x=100,y=100",
     {
-      "sender": "[WebContents]",
-      "returnValue": "placeholder-guest-contents-id"
+      "sender": "[WebContents]"
     },
     "about:blank",
-    "frame name",
+    "frame-name",
     "new-window",
     {
-      "show": true,
       "width": 800,
-      "height": 600,
-      "webContents": "[WebContents]",
-      "title": "frame name",
+      "title": "cool",
+      "backgroundColor": "gray",
+      "focusable": false,
       "webPreferences": {
         "nativeWindowOpen": true,
         "sandbox": true,
         "backgroundColor": "gray",
+        "contextIsolation": true,
         "nodeIntegration": false,
         "webviewTag": false,
-        "nodeIntegrationInSubFrames": false
+        "nodeIntegrationInSubFrames": false,
+        "openerId": null
       },
-      "backgroundColor": "gray",
+      "show": true,
+      "height": 600,
       "x": 100,
       "y": 100,
-      "focusable": false
+      "webContents": "[WebContents]"
     },
     [],
     {
       "url": "",
-      "policy": "no-referrer-when-downgrade"
+      "policy": "strict-origin-when-cross-origin"
     },
     null
   ],
   [
     "x=50,y=20,title=sup",
     {
-      "sender": "[WebContents]",
-      "returnValue": "placeholder-guest-contents-id"
+      "sender": "[WebContents]"
     },
     "about:blank",
-    "frame name",
+    "frame-name",
     "new-window",
     {
-      "show": true,
       "width": 800,
-      "height": 600,
-      "webContents": "[WebContents]",
       "title": "sup",
+      "backgroundColor": "blue",
+      "focusable": false,
       "webPreferences": {
         "nativeWindowOpen": true,
         "sandbox": true,
         "backgroundColor": "blue",
+        "contextIsolation": true,
         "nodeIntegration": false,
         "webviewTag": false,
-        "nodeIntegrationInSubFrames": false
+        "nodeIntegrationInSubFrames": false,
+        "openerId": null
       },
+      "show": true,
+      "height": 600,
       "x": 50,
       "y": 20,
-      "backgroundColor": "blue",
-      "focusable": false
+      "webContents": "[WebContents]"
     },
     [],
     {
       "url": "",
-      "policy": "no-referrer-when-downgrade"
+      "policy": "strict-origin-when-cross-origin"
     },
     null
   ],
   [
     "show=false,top=1,left=1",
     {
-      "sender": "[WebContents]",
-      "returnValue": "placeholder-guest-contents-id"
+      "sender": "[WebContents]"
     },
     "about:blank",
-    "frame name",
+    "frame-name",
     "new-window",
     {
-      "show": false,
       "width": 800,
-      "height": 600,
-      "webContents": "[WebContents]",
-      "title": "frame name",
+      "title": "cool",
+      "backgroundColor": "blue",
+      "focusable": false,
       "webPreferences": {
         "nativeWindowOpen": true,
         "sandbox": true,
         "backgroundColor": "blue",
+        "contextIsolation": true,
         "nodeIntegration": false,
         "webviewTag": false,
-        "nodeIntegrationInSubFrames": false
+        "nodeIntegrationInSubFrames": false,
+        "openerId": null
       },
+      "show": false,
+      "height": 600,
       "top": 1,
       "left": 1,
       "x": 1,
       "y": 1,
-      "backgroundColor": "blue",
-      "focusable": false
+      "webContents": "[WebContents]"
     },
     [],
     {
       "url": "",
-      "policy": "no-referrer-when-downgrade"
+      "policy": "strict-origin-when-cross-origin"
     },
     null
   ]

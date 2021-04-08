@@ -8,8 +8,10 @@
 
 #include "chrome/common/chrome_constants.h"
 #include "content/public/browser/network_service_instance.h"
+#include "content/public/browser/shared_cors_origin_access_list.h"
 #include "net/net_buildflags.h"
 #include "services/network/network_service.h"
+#include "services/network/public/cpp/cors/origin_access_list.h"
 #include "shell/browser/browser_process_impl.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/browser/net/system_network_context_manager.h"
@@ -24,7 +26,8 @@ NetworkContextService::~NetworkContextService() = default;
 
 void NetworkContextService::ConfigureNetworkContextParams(
     network::mojom::NetworkContextParams* network_context_params,
-    network::mojom::CertVerifierCreationParams* cert_verifier_creation_params) {
+    cert_verifier::mojom::CertVerifierCreationParams*
+        cert_verifier_creation_params) {
   bool in_memory = browser_context_->IsOffTheRecord();
   const base::FilePath& path = browser_context_->GetPath();
 
@@ -39,6 +42,11 @@ void NetworkContextService::ConfigureNetworkContextParams(
   network_context_params->initial_ssl_config = browser_context_->GetSSLConfig();
 
   network_context_params->user_agent = browser_context_->GetUserAgent();
+
+  network_context_params->cors_origin_access_list =
+      content::BrowserContext::GetSharedCorsOriginAccessList(browser_context_)
+          ->GetOriginAccessList()
+          .CreateCorsOriginAccessPatternsList();
 
   network_context_params->accept_language =
       net::HttpUtil::GenerateAcceptLanguageHeader(

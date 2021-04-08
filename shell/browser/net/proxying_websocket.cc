@@ -9,7 +9,6 @@
 #include "base/bind.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
-#include "components/keyed_service/content/browser_context_keyed_service_shutdown_notifier_factory.h"
 #include "content/public/browser/browser_thread.h"
 #include "extensions/browser/extension_navigation_ui_data.h"
 #include "net/base/ip_endpoint.h"
@@ -116,6 +115,10 @@ void ProxyingWebSocket::ContinueToHeadersReceived() {
   DCHECK_EQ(net::OK, result);
   OnHeadersReceivedComplete(net::OK);
 }
+
+void ProxyingWebSocket::OnFailure(const std::string& message,
+                                  int32_t net_error,
+                                  int32_t response_code) {}
 
 void ProxyingWebSocket::OnConnectionEstablished(
     mojo::PendingRemote<network::mojom::WebSocket> websocket,

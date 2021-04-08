@@ -25,13 +25,13 @@ SessionPreferences* SessionPreferences::FromBrowserContext(
 }
 
 // static
-std::vector<base::FilePath::StringType> SessionPreferences::GetValidPreloads(
+std::vector<base::FilePath> SessionPreferences::GetValidPreloads(
     content::BrowserContext* context) {
-  std::vector<base::FilePath::StringType> result;
+  std::vector<base::FilePath> result;
 
   if (auto* self = FromBrowserContext(context)) {
     for (const auto& preload : self->preloads()) {
-      if (base::FilePath(preload).IsAbsolute()) {
+      if (preload.IsAbsolute()) {
         result.emplace_back(preload);
       } else {
         LOG(ERROR) << "preload script must have absolute path: " << preload;

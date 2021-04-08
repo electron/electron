@@ -11,7 +11,6 @@
 #include <vector>
 
 #include "base/optional.h"
-#include "components/keyed_service/core/keyed_service_shutdown_notifier.h"
 #include "content/public/browser/content_browser_client.h"
 #include "extensions/browser/api/web_request/web_request_info.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
@@ -32,7 +31,7 @@ namespace electron {
 // The code is referenced from the
 // extensions::WebRequestProxyingWebSocket class.
 class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
-                          public network::mojom::AuthenticationHandler,
+                          public network::mojom::WebSocketAuthenticationHandler,
                           public network::mojom::TrustedHeaderClient {
  public:
   using WebSocketFactory = content::ContentBrowserClient::WebSocketFactory;
@@ -70,6 +69,9 @@ class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
   // network::mojom::WebSocketHandshakeClient methods:
   void OnOpeningHandshakeStarted(
       network::mojom::WebSocketHandshakeRequestPtr request) override;
+  void OnFailure(const std::string& message,
+                 int32_t net_error,
+                 int32_t response_code) override;
   void OnConnectionEstablished(
       mojo::PendingRemote<network::mojom::WebSocket> websocket,
       mojo::PendingReceiver<network::mojom::WebSocketClient> client_receiver,
@@ -77,7 +79,7 @@ class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
       mojo::ScopedDataPipeConsumerHandle readable,
       mojo::ScopedDataPipeProducerHandle writable) override;
 
-  // network::mojom::AuthenticationHandler method:
+  // network::mojom::WebSocketAuthenticationHandler method:
   void OnAuthRequired(const net::AuthChallengeInfo& auth_info,
                       const scoped_refptr<net::HttpResponseHeaders>& headers,
                       const net::IPEndPoint& remote_endpoint,
@@ -142,7 +144,7 @@ class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
       forwarding_handshake_client_;
   mojo::Receiver<network::mojom::WebSocketHandshakeClient>
       receiver_as_handshake_client_{this};
-  mojo::Receiver<network::mojom::AuthenticationHandler>
+  mojo::Receiver<network::mojom::WebSocketAuthenticationHandler>
       receiver_as_auth_handler_{this};
   mojo::Receiver<network::mojom::TrustedHeaderClient>
       receiver_as_header_client_{this};
@@ -167,10 +169,6 @@ class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
   mojo::ScopedDataPipeProducerHandle writable_;
 
   extensions::WebRequestInfo info_;
-
-  // Notifies the proxy that the browser context has been shutdown.
-  std::unique_ptr<KeyedServiceShutdownNotifier::Subscription>
-      shutdown_notifier_;
 
   base::WeakPtrFactory<ProxyingWebSocket> weak_factory_{this};
   DISALLOW_COPY_AND_ASSIGN(ProxyingWebSocket);

@@ -32,7 +32,7 @@ class GuestViewContainer {
 
   ResizeCallback element_resize_callback_;
 
-  base::WeakPtrFactory<GuestViewContainer> weak_ptr_factory_;
+  base::WeakPtrFactory<GuestViewContainer> weak_ptr_factory_{this};
 
   DISALLOW_COPY_AND_ASSIGN(GuestViewContainer);
 };

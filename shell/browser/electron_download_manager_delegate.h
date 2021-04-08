@@ -52,8 +52,10 @@ class ElectronDownloadManagerDelegate
       content::DownloadTargetCallback download_callback,
       gin_helper::Dictionary result);
 
+  base::FilePath last_saved_directory_;
+
   content::DownloadManager* download_manager_;
-  base::WeakPtrFactory<ElectronDownloadManagerDelegate> weak_ptr_factory_;
+  base::WeakPtrFactory<ElectronDownloadManagerDelegate> weak_ptr_factory_{this};
 
   DISALLOW_COPY_AND_ASSIGN(ElectronDownloadManagerDelegate);
 };

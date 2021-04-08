@@ -46,9 +46,9 @@ struct JumpListItem {
   // For tasks this is the path to the program executable, for file links this
   // is the full filename.
   base::FilePath path;
-  base::string16 arguments;
-  base::string16 title;
-  base::string16 description;
+  std::wstring arguments;
+  std::wstring title;
+  std::wstring description;
   base::FilePath working_dir;
   base::FilePath icon_path;
   int icon_index = 0;
@@ -73,7 +73,7 @@ struct JumpListCategory {
   };
 
   Type type = Type::kTasks;
-  base::string16 name;
+  std::wstring name;
   std::vector<JumpListItem> items;
 
   JumpListCategory();
@@ -88,7 +88,7 @@ class JumpList {
   // |app_id| must be the Application User Model ID of the app for which the
   // custom Jump List should be created/removed, it's usually obtained by
   // calling GetCurrentProcessExplicitAppUserModelID().
-  explicit JumpList(const base::string16& app_id);
+  explicit JumpList(const std::wstring& app_id);
   ~JumpList();
 
   // Starts a new transaction, must be called before appending any categories,
@@ -111,7 +111,7 @@ class JumpList {
       const std::vector<JumpListCategory>& categories);
 
  private:
-  base::string16 app_id_;
+  std::wstring app_id_;
   CComPtr<ICustomDestinationList> destinations_;
 
   DISALLOW_COPY_AND_ASSIGN(JumpList);

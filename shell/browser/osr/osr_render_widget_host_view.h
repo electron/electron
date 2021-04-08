@@ -68,10 +68,6 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
                                 gfx::Size initial_size);
   ~OffScreenRenderWidgetHostView() override;
 
-  content::BrowserAccessibilityManager* CreateBrowserAccessibilityManager(
-      content::BrowserAccessibilityDelegate*,
-      bool) override;
-
   // content::RenderWidgetHostView:
   void InitAsChild(gfx::NativeView) override;
   void SetSize(const gfx::Size&) override;
@@ -112,14 +108,13 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   void ResetFallbackToFirstNavigationSurface() override;
   void InitAsPopup(content::RenderWidgetHostView* rwhv,
                    const gfx::Rect& rect) override;
-  void InitAsFullscreen(content::RenderWidgetHostView*) override;
   void UpdateCursor(const content::WebCursor&) override;
   void SetIsLoading(bool is_loading) override;
   void TextInputStateChanged(const ui::mojom::TextInputState& params) override;
   void ImeCancelComposition(void) override;
   void RenderProcessGone() override;
   void Destroy(void) override;
-  void SetTooltipText(const base::string16&) override;
+  void SetTooltipText(const std::u16string&) override;
   content::CursorManager* GetCursorManager() override;
   void CopyFromSurface(
       const gfx::Rect& src_rect,
@@ -128,6 +123,9 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   void GetScreenInfo(blink::ScreenInfo* results) override;
   void TransformPointToRootSurface(gfx::PointF* point) override;
   gfx::Rect GetBoundsInRootWindow(void) override;
+  base::Optional<content::DisplayFeature> GetDisplayFeature() override;
+  void SetDisplayFeatureForTesting(
+      const content::DisplayFeature* display_feature) override;
   viz::SurfaceId GetCurrentSurfaceId() const override;
   std::unique_ptr<content::SyntheticGestureTarget>
   CreateSyntheticGestureTarget() override;
@@ -151,6 +149,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
       gfx::PointF* transformed_point) override;
 
   // ui::CompositorDelegate:
+  bool IsOffscreen() const override;
   std::unique_ptr<viz::HostDisplayClient> CreateHostDisplayClient(
       ui::Compositor* compositor) override;
 
@@ -282,7 +281,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
 
   std::unique_ptr<SkBitmap> backing_;
 
-  base::WeakPtrFactory<OffScreenRenderWidgetHostView> weak_ptr_factory_;
+  base::WeakPtrFactory<OffScreenRenderWidgetHostView> weak_ptr_factory_{this};
 
   DISALLOW_COPY_AND_ASSIGN(OffScreenRenderWidgetHostView);
 };

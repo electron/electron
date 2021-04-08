@@ -36,6 +36,7 @@ environment:
   ELECTRON_ENABLE_STACK_DUMPING: 1
   MOCHA_REPORTER: mocha-multi-reporters
   MOCHA_MULTI_REPORTERS: mocha-appveyor-reporter, tap
+  GOMA_FALLBACK_ON_AUTH_FAILURE: true
 notifications:
   - provider: Webhook
     url: https://electron-mission-control.herokuapp.com/rest/appveyor-hook
@@ -66,11 +67,8 @@ build_script:
   - update_depot_tools.bat
   - ps: Move-Item $env:APPVEYOR_BUILD_FOLDER -Destination src\electron
   - ps: $env:CHROMIUM_BUILDTOOLS_PATH="$pwd\src\buildtools"
-  - ps: $env:SCCACHE_PATH="$pwd\src\electron\external_binaries\sccache.exe"
   - ps: >-
-      if ($env:GN_CONFIG -eq 'release') {
-        $env:GCLIENT_EXTRA_ARGS="$env:GCLIENT_EXTRA_ARGS --custom-var=checkout_requests=True"
-      } else {
+      if ($env:GN_CONFIG -ne 'release') {
         $env:NINJA_STATUS="[%r processes, %f/%t @ %o/s : %es] "
       }
   - >-
@@ -99,8 +97,6 @@ build_script:
               $env:SAVE_GCLIENT_SRC="true"
             }
           } else {
-            # update external binaries
-            python src/electron/script/update-external-binaries.py
             # update angle
             cd src\third_party\angle
             git remote set-url origin  https://chromium.googlesource.com/angle/angle.git
@@ -134,27 +130,25 @@ build_script:
         }
       }
   - ps: >-
-      if ($env:GN_CONFIG -ne 'release') {
-        if (Test-Path 'env:RAW_GOMA_AUTH') {
-          $env:GOMA_OAUTH2_CONFIG_FILE = "$pwd\.goma_oauth2_config"
-          $env:RAW_GOMA_AUTH | Set-Content $env:GOMA_OAUTH2_CONFIG_FILE      
-        }
-        git clone https://github.com/electron/build-tools.git
-        cd build-tools
-        npm install
-        mkdir third_party
-        node -e "require('./src/utils/goma.js').downloadAndPrepare()"
-        $env:GN_GOMA_FILE = node -e "console.log(require('./src/utils/goma.js').gnFilePath)"
-        $env:LOCAL_GOMA_DIR = node -e "console.log(require('./src/utils/goma.js').dir)"
-        cd ..
-        .\src\electron\script\start-goma.ps1 -gomaDir $env:LOCAL_GOMA_DIR
+      if (Test-Path 'env:RAW_GOMA_AUTH') {
+        $env:GOMA_OAUTH2_CONFIG_FILE = "$pwd\.goma_oauth2_config"
+        $env:RAW_GOMA_AUTH | Set-Content $env:GOMA_OAUTH2_CONFIG_FILE
       }
+  - git clone https://github.com/electron/build-tools.git
+  - cd build-tools
+  - npm install
+  - mkdir third_party
+  - ps: >-
+      node -e "require('./src/utils/goma.js').downloadAndPrepare({ gomaOneForAll: true })"
+  - ps: $env:GN_GOMA_FILE = node -e "console.log(require('./src/utils/goma.js').gnFilePath)"
+  - ps: $env:LOCAL_GOMA_DIR = node -e "console.log(require('./src/utils/goma.js').dir)"
+  - cd ..
+  - ps: .\src\electron\script\start-goma.ps1 -gomaDir $env:LOCAL_GOMA_DIR
   - cd src
   - set BUILD_CONFIG_PATH=//electron/build/args/%GN_CONFIG%.gn 
-  - if DEFINED GN_GOMA_FILE (gn gen out/Default "--args=import(\"%BUILD_CONFIG_PATH%\") import(\"%GN_GOMA_FILE%\") %GN_EXTRA_ARGS% ") else (gn gen out/Default "--args=import(\"%BUILD_CONFIG_PATH%\") %GN_EXTRA_ARGS% cc_wrapper=\"%SCCACHE_PATH%\"")
+  - gn gen out/Default "--args=import(\"%BUILD_CONFIG_PATH%\") import(\"%GN_GOMA_FILE%\") %GN_EXTRA_ARGS% "
   - gn check out/Default //electron:electron_lib
   - gn check out/Default //electron:electron_app
-  - gn check out/Default //electron:manifests
   - gn check out/Default //electron/shell/common/api:mojo
   - if DEFINED GN_GOMA_FILE (ninja -j 300 -C out/Default electron:electron_app) else (ninja -C out/Default electron:electron_app)
   - if "%GN_CONFIG%"=="testing" ( python C:\depot_tools\post_build_ninja_summary.py -C out\Default )
@@ -170,7 +164,7 @@ build_script:
   - ninja -C out/Default electron:hunspell_dictionaries_zip
   - ninja -C out/Default electron:electron_chromedriver_zip
   - ninja -C out/Default third_party/electron_node:headers
-  - if "%GN_CONFIG%"=="testing" ( python %LOCAL_GOMA_DIR%\goma_ctl.py stat )
+  - python %LOCAL_GOMA_DIR%\goma_ctl.py stat
   - python electron/build/profile_toolchain.py --output-json=out/Default/windows_toolchain_profile.json
   - appveyor PushArtifact out/Default/windows_toolchain_profile.json
   - appveyor PushArtifact out/Default/dist.zip
@@ -229,10 +223,10 @@ deploy_script:
       if (Test-Path Env:\ELECTRON_RELEASE) {
         if (Test-Path Env:\UPLOAD_TO_S3) {
           Write-Output "Uploading Electron release distribution to s3"
-          & python script\release\uploaders\upload.py --upload_to_s3
+          & python script\release\uploaders\upload.py --verbose --upload_to_s3
         } else {
           Write-Output "Uploading Electron release distribution to github releases"
-          & python script\release\uploaders\upload.py
+          & python script\release\uploaders\upload.py --verbose
         }
       } elseif (Test-Path Env:\TEST_WOA) {
         node script/release/ci-release-build.js --job=electron-woa-testing --ci=VSTS --armTest --appveyorJobId=$env:APPVEYOR_JOB_ID $env:APPVEYOR_REPO_BRANCH

@@ -39,11 +39,19 @@ require('@electron/internal/common/init');
 // The global variable will be used by ipc for event dispatching
 const v8Util = process._linkedBinding('electron_common_v8_util');
 
+// Expose process.contextId
+const contextId = v8Util.getHiddenValue<string>(global, 'contextId');
+Object.defineProperty(process, 'contextId', { enumerable: true, value: contextId });
+
 const { ipcRendererInternal } = require('@electron/internal/renderer/ipc-renderer-internal');
 const ipcRenderer = require('@electron/internal/renderer/api/ipc-renderer').default;
 
 v8Util.setHiddenValue(global, 'ipcNative', {
   onMessage (internal: boolean, channel: string, ports: any[], args: any[], senderId: number) {
+    if (internal && senderId !== 0) {
+      console.error(`Message ${channel} sent by unexpected WebContents (${senderId})`);
+      return;
+    }
     const sender = internal ? ipcRendererInternal : ipcRenderer;
     sender.emit(channel, { sender, senderId, ports }, ...args);
   }
@@ -55,31 +63,19 @@ webFrameInit();
 
 // Process command line arguments.
 const { hasSwitch, getSwitchValue } = process._linkedBinding('electron_common_command_line');
+const { getWebPreference } = process._linkedBinding('electron_renderer_web_frame');
 
-const parseOption = function<T> (
-  name: string, defaultValue: T, converter?: (value: string) => T
-) {
-  return hasSwitch(name)
-    ? (
-      converter
-        ? converter(getSwitchValue(name))
-        : getSwitchValue(name)
-    )
-    : defaultValue;
-};
-
-const contextIsolation = hasSwitch('context-isolation');
-const nodeIntegration = hasSwitch('node-integration');
-const webviewTag = hasSwitch('webview-tag');
-const isHiddenPage = hasSwitch('hidden-page');
-const usesNativeWindowOpen = hasSwitch('native-window-open');
-const rendererProcessReuseEnabled = hasSwitch('disable-electron-site-instance-overrides');
-
-const preloadScript = parseOption('preload', null);
-const preloadScripts = parseOption('preload-scripts', [], value => value.split(path.delimiter)) as string[];
-const appPath = parseOption('app-path', null);
-const guestInstanceId = parseOption('guest-instance-id', null, value => parseInt(value));
-const openerId = parseOption('opener-id', null, value => parseInt(value));
+const contextIsolation = getWebPreference(window, 'contextIsolation');
+const nodeIntegration = getWebPreference(window, 'nodeIntegration');
+const webviewTag = getWebPreference(window, 'webviewTag');
+const isHiddenPage = getWebPreference(window, 'hiddenPage');
+const usesNativeWindowOpen = getWebPreference(window, 'nativeWindowOpen');
+const rendererProcessReuseEnabled = getWebPreference(window, 'disableElectronSiteInstanceOverrides');
+const preloadScript = getWebPreference(window, 'preload');
+const preloadScripts = getWebPreference(window, 'preloadScripts');
+const guestInstanceId = getWebPreference(window, 'guestInstanceId') || null;
+const openerId = getWebPreference(window, 'openerId') || null;
+const appPath = hasSwitch('app-path') ? getSwitchValue('app-path') : null;
 
 // The webContents preload script is loaded after the session preload scripts.
 if (preloadScript) {
@@ -95,8 +91,9 @@ switch (window.location.protocol) {
   case 'chrome-extension:': {
     break;
   }
-  case 'chrome:':
+  case 'chrome:': {
     break;
+  }
   default: {
     // Override default web functions.
     const { windowSetup } = require('@electron/internal/renderer/window-setup');
@@ -155,7 +152,7 @@ if (nodeIntegration) {
       // We do not want to add `uncaughtException` to our definitions
       // because we don't want anyone else (anywhere) to throw that kind
       // of error.
-      global.process.emit('uncaughtException' as any, error as any);
+      global.process.emit('uncaughtException', error as any);
       return true;
     } else {
       return false;

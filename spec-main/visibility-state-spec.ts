@@ -25,7 +25,8 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
         paintWhenInitiallyHidden: false,
         webPreferences: {
           ...(options.webPreferences || {}),
-          nodeIntegration: true
+          nodeIntegration: true,
+          contextIsolation: false
         }
       });
       await Promise.resolve(fn.apply(this, args));
@@ -69,7 +70,7 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
     // TODO(MarshallOfSound): Figure out if we can work around this 1 tick issue for users
     if (process.platform === 'darwin') {
       // Wait for a tick, the window being "shown" takes 1 tick on macOS
-      await delay(0);
+      await delay(10000);
     }
     w.hide();
     load();
@@ -114,7 +115,7 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
 
     const makeOtherWindow = (opts: { x: number; y: number; width: number; height: number; }) => {
       child = cp.spawn(process.execPath, [path.resolve(__dirname, 'fixtures', 'chromium', 'other-window.js'), `${opts.x}`, `${opts.y}`, `${opts.width}`, `${opts.height}`]);
-      return new Promise(resolve => {
+      return new Promise<void>(resolve => {
         child.stdout!.on('data', (chunk) => {
           if (chunk.toString().includes('__ready__')) resolve();
         });
