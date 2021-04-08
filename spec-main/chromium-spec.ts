@@ -319,7 +319,7 @@ describe('web security', () => {
       expect(result).to.equal('loaded');
     });
   });
-  
+
   describe('wasm-eval csp', () => {
     async function loadWasm (csp: string) {
       const w = new BrowserWindow({
