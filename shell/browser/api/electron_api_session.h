@@ -73,8 +73,8 @@ struct ExtensionTabDetails {
   bool pinned = false;
   bool discarded = false;
   bool auto_discardable = false;
-  std::string muted_reason = "";
-  std::string muted_extension_id = "";
+  std::string muted_reason;
+  std::string muted_extension_id;
 };
 #endif
 

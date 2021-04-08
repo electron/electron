@@ -195,28 +195,17 @@ struct Converter<electron::api::ExtensionTabDetails> {
     *out = electron::api::ExtensionTabDetails();
     auto tmp = electron::api::ExtensionTabDetails();
 
-    if (options.Get("windowId", &tmp.window_id))
-      out->window_id = tmp.window_id;
-    if (options.Get("active", &tmp.active))
-      out->active = tmp.active;
-    if (options.Get("highlighted", &tmp.highlighted))
-      out->highlighted = tmp.highlighted;
-    if (options.Get("pinned", &tmp.pinned))
-      out->pinned = tmp.pinned;
-    if (options.Get("groupId", &tmp.group_id))
-      out->group_id = tmp.group_id;
-    if (options.Get("index", &tmp.index))
-      out->index = tmp.index;
-    if (options.Get("discarded", &tmp.discarded))
-      out->discarded = tmp.discarded;
-    if (options.Get("autoDiscardable", &tmp.auto_discardable))
-      out->auto_discardable = tmp.auto_discardable;
-    if (options.Get("openerTabId", &tmp.opener_tab_id))
-      out->opener_tab_id = tmp.opener_tab_id;
-    if (options.Get("mutedReason", &tmp.muted_reason))
-      out->muted_reason = tmp.muted_reason;
-    if (options.Get("mutedExtensionId", &tmp.muted_extension_id))
-      out->muted_extension_id = tmp.muted_extension_id;
+    options.Get("windowId", &out->window_id);
+    options.Get("active", &out->active);
+    options.Get("highlighted", &out->highlighted);
+    options.Get("pinned", &out->pinned);
+    options.Get("groupId", &out->group_id);
+    options.Get("index", &out->index);
+    options.Get("discarded", &out->discarded);
+    options.Get("autoDiscardable", &out->auto_discardable);
+    options.Get("openerTabId", &out->opener_tab_id);
+    options.Get("mutedReason", &out->muted_reason);
+    options.Get("mutedExtensionId", &out->muted_extension_id);
 
     return true;
   }
@@ -1138,8 +1127,7 @@ void SetSpellCheckerDictionaryDownloadURL(gin_helper::ErrorThrower thrower,
                                           const GURL& url) {
   if (!url.is_valid()) {
     thrower.ThrowError(
-        "The URL you provided to setSpellCheckerDictionaryDownloadURL is not "
-        "a "
+        "The URL you provided to setSpellCheckerDictionaryDownloadURL is not a "
         "valid URL");
     return;
   }
