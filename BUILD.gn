@@ -32,6 +32,10 @@ if (is_mac) {
   import("//ui/gl/features.gni")
   import("//v8/gni/v8.gni")
   import("build/rules.gni")
+
+  assert(
+      mac_deployment_target == "10.11.0",
+      "Chromium has updated the mac_deployment_target, please update this assert, update the supported versions documentation (docs/tutorial/support.md) and flag this as a breaking change")
 }
 
 if (is_linux) {
