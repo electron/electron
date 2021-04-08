@@ -59,8 +59,7 @@ namespace api {
 class WebContents;
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-class ExtensionTabDetails {
- public:
+struct ExtensionTabDetails {
   ExtensionTabDetails();
   ExtensionTabDetails(const ExtensionTabDetails& other);
   ~ExtensionTabDetails();
@@ -177,7 +176,7 @@ class Session : public gin::Wrappable<Session>,
 
   void SetExtensionAPIHandlers(const gin_helper::Dictionary& api,
                                gin::Arguments* args);
-  std::unique_ptr<ExtensionTabDetails> GetExtensionTabDetails(
+  base::Optional<ExtensionTabDetails> GetExtensionTabDetails(
       WebContents* tab_contents);
   WebContents* GetActiveTab(WebContents* sender_contents);
 #endif

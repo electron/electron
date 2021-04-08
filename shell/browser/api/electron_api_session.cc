@@ -970,7 +970,7 @@ void Session::SetExtensionAPIHandlers(const gin_helper::Dictionary& api,
     get_active_tab_handler_ = std::move(get_active_tab_handler);
 }
 
-std::unique_ptr<ExtensionTabDetails> Session::GetExtensionTabDetails(
+base::Optional<ExtensionTabDetails> Session::GetExtensionTabDetails(
     WebContents* tab_contents) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
@@ -987,16 +987,16 @@ std::unique_ptr<ExtensionTabDetails> Session::GetExtensionTabDetails(
       has_emitted_chrome_tabs_get_warning_ = true;
     }
 
-    return std::make_unique<ExtensionTabDetails>(details);
+    return base::make_optional<ExtensionTabDetails>(details);
   }
 
   v8::Local<v8::Value> value = get_tab_handler_.Run(tab_contents);
 
   if (value->IsObject() && gin::ConvertFromV8(isolate, value, &details)) {
-    return std::make_unique<ExtensionTabDetails>(details);
+    return base::make_optional<ExtensionTabDetails>(details);
   }
 
-  return nullptr;
+  return base::nullopt;
 }
 
 WebContents* Session::GetActiveTab(WebContents* sender_contents) {

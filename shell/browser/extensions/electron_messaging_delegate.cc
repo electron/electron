@@ -62,7 +62,7 @@ ElectronMessagingDelegate::MaybeGetTabInfo(content::WebContents* web_contents) {
 
     ExtensionTabUtil::ScrubTabBehavior scrub_tab_behavior = {
         ExtensionTabUtil::kDontScrubTab, ExtensionTabUtil::kDontScrubTab};
-    return ExtensionTabUtil::CreateTabObject(web_contents, *tab.get(),
+    return ExtensionTabUtil::CreateTabObject(web_contents, tab.value(),
                                              scrub_tab_behavior, nullptr, -1)
         ->ToValue();
   }

@@ -19,7 +19,7 @@ class ExtensionFunction;
 
 namespace electron {
 namespace api {
-class ExtensionTabDetails;
+struct ExtensionTabDetails;
 class WebContents;
 }  // namespace api
 
@@ -80,7 +80,7 @@ class ExtensionTabUtil {
 
   static electron::api::WebContents* GetWebContentsById(int tab_id);
 
-  static std::unique_ptr<electron::api::ExtensionTabDetails>
+  static base::Optional<electron::api::ExtensionTabDetails>
   GetTabDetailsFromWebContents(electron::api::WebContents* contents);
 
   static std::unique_ptr<api::tabs::Tab> CreateTabObject(

@@ -385,7 +385,7 @@ void ElectronExtensionsBrowserClient::GetTabAndWindowIdForWebContents(
     int32_t wc_id = api_wc->ID();
     // NB. the following line can invoke JS, which could destroy the
     // WebContents.
-    std::unique_ptr<api::ExtensionTabDetails> tab =
+    base::Optional<api::ExtensionTabDetails> tab =
         extensions::ExtensionTabUtil::GetTabDetailsFromWebContents(api_wc);
     if (tab) {
       *tab_id = wc_id;

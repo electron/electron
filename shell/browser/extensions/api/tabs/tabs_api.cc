@@ -81,7 +81,7 @@ electron::api::WebContents* GetActiveTab(ExtensionFunction* function) {
 bool GetTabById(int tab_id,
                 ExtensionFunction* function,
                 electron::api::WebContents** contents,
-                std::unique_ptr<electron::api::ExtensionTabDetails>* out_tab,
+                electron::api::ExtensionTabDetails* out_tab,
                 std::string* error_message) {
   auto* web_contents = ExtensionTabUtil::GetWebContentsById(tab_id);
 
@@ -92,7 +92,7 @@ bool GetTabById(int tab_id,
 
   if (tab) {
     if (out_tab)
-      *out_tab = std::move(tab);
+      *out_tab = tab.value();
 
     return true;
   }
@@ -270,7 +270,7 @@ ExtensionFunction::ResponseAction TabsGetFunction::Run() {
   int tab_id = params->tab_id;
 
   electron::api::WebContents* contents = nullptr;
-  std::unique_ptr<electron::api::ExtensionTabDetails> tab;
+  electron::api::ExtensionTabDetails tab;
   std::string error;
   if (!GetTabById(tab_id, this, &contents, &tab, &error)) {
     return RespondNow(Error(std::move(error)));
@@ -278,7 +278,7 @@ ExtensionFunction::ResponseAction TabsGetFunction::Run() {
 
   return RespondNow(
       ArgumentList(tabs::Get::Results::Create(*CreateTabObjectHelper(
-          contents, *tab, extension(), source_context_type(), 0))));
+          contents, tab, extension(), source_context_type(), 0))));
 }
 
 ExtensionFunction::ResponseAction TabsSetZoomFunction::Run() {
