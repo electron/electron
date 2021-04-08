@@ -478,7 +478,7 @@ void WebContentsPreferences::OverrideWebkitPrefs(
   GetPreloadPath(&prefs->preload);
 
   // Check if nativeWindowOpen is enabled.
-  prefs->native_window_open = IsEnabled(options::kNativeWindowOpen);
+  prefs->native_window_open = IsEnabled(options::kNativeWindowOpen, true);
 
   // Check if we have node integration specified.
   prefs->node_integration = IsEnabled(options::kNodeIntegration);
