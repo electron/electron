@@ -6,10 +6,13 @@
 
 #include <windows.h>  // windows.h must be included first
 
-#include <atlbase.h>  // atlbase.h for CComPtr
+#include "base/win/shlwapi.h"  // NOLINT(build/include_order)
 
-#include <shlobj.h>
-#include <shobjidl.h>
+// atlbase.h for CComPtr
+#include <atlbase.h>  // NOLINT(build/include_order)
+
+#include <shlobj.h>    // NOLINT(build/include_order)
+#include <shobjidl.h>  // NOLINT(build/include_order)
 
 #include "base/files/file_util.h"
 #include "base/i18n/case_conversion.h"
@@ -118,10 +121,10 @@ static void ApplySettings(IFileDialog* dialog, const DialogSettings& settings) {
   dialog->SetFileName(file_part.c_str());
 
   if (!settings.title.empty())
-    dialog->SetTitle(base::UTF8ToUTF16(settings.title).c_str());
+    dialog->SetTitle(base::UTF8ToWide(settings.title).c_str());
 
   if (!settings.button_label.empty())
-    dialog->SetOkButtonLabel(base::UTF8ToUTF16(settings.button_label).c_str());
+    dialog->SetOkButtonLabel(base::UTF8ToWide(settings.button_label).c_str());
 
   std::vector<std::wstring> buffer;
   std::vector<COMDLG_FILTERSPEC> filterspec;

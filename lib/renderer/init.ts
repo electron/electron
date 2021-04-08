@@ -39,6 +39,10 @@ require('@electron/internal/common/init');
 // The global variable will be used by ipc for event dispatching
 const v8Util = process._linkedBinding('electron_common_v8_util');
 
+// Expose process.contextId
+const contextId = v8Util.getHiddenValue<string>(global, 'contextId');
+Object.defineProperty(process, 'contextId', { enumerable: true, value: contextId });
+
 const { ipcRendererInternal } = require('@electron/internal/renderer/ipc-renderer-internal');
 const ipcRenderer = require('@electron/internal/renderer/api/ipc-renderer').default;
 

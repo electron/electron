@@ -57,7 +57,7 @@ index 53cb9d2dc8f1962a70dc12b648d27c32be8aca4b..84af06fc56e4aa72d4d48801d7c037ad
    callback(EVP_aes_192_ctr(), "aes-192-ctr", NULL, arg);
    callback(EVP_aes_256_ctr(), "aes-256-ctr", NULL, arg);
 diff --git a/include/openssl/cipher.h b/include/openssl/cipher.h
-index c6bec489b51ca2e71b7f81e64a8e59b534e2e91a..512a9003164e65bd4ab896ef75b173dab3a8d1db 100644
+index badd496293fb9748adacff10478ea702d1155c5f..8565934bac9a810281b04946cb9f38d7623320f7 100644
 --- a/include/openssl/cipher.h
 +++ b/include/openssl/cipher.h
 @@ -430,6 +430,7 @@ OPENSSL_EXPORT const EVP_CIPHER *EVP_des_ede3_ecb(void);

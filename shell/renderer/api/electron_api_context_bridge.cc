@@ -11,6 +11,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/feature_list.h"
 #include "base/no_destructor.h"
 #include "base/strings/string_number_conversions.h"
 #include "content/public/renderer/render_frame.h"
@@ -25,6 +26,12 @@
 #include "third_party/blink/public/web/web_element.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 
+namespace features {
+
+const base::Feature kContextBridgeMutability{"ContextBridgeMutability",
+                                             base::FEATURE_DISABLED_BY_DEFAULT};
+}
+
 namespace electron {
 
 namespace api {
@@ -34,6 +41,8 @@ namespace context_bridge {
 const char* const kProxyFunctionPrivateKey = "electron_contextBridge_proxy_fn";
 const char* const kSupportsDynamicPropertiesPrivateKey =
     "electron_contextBridge_supportsDynamicProperties";
+const char* const kOriginalFunctionPrivateKey =
+    "electron_contextBridge_original_fn";
 
 }  // namespace context_bridge
 
@@ -172,9 +181,26 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
   // the global handle at the right time.
   if (value->IsFunction()) {
     auto func = v8::Local<v8::Function>::Cast(value);
+    v8::MaybeLocal<v8::Value> maybe_original_fn = GetPrivate(
+        source_context, func, context_bridge::kOriginalFunctionPrivateKey);
 
     {
       v8::Context::Scope destination_scope(destination_context);
+      v8::Local<v8::Value> proxy_func;
+
+      // If this function has already been sent over the bridge,
+      // then it is being sent _back_ over the bridge and we can
+      // simply return the original method here for performance reasons
+
+      // For safety reasons we check if the destination context is the
+      // creation context of the original method.  If it's not we proceed
+      // with the proxy logic
+      if (maybe_original_fn.ToLocal(&proxy_func) && proxy_func->IsFunction() &&
+          proxy_func.As<v8::Object>()->CreationContext() ==
+              destination_context) {
+        return v8::MaybeLocal<v8::Value>(proxy_func);
+      }
+
       v8::Local<v8::Object> state =
           v8::Object::New(destination_context->GetIsolate());
       SetPrivate(destination_context, state,
@@ -183,10 +209,12 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
                  context_bridge::kSupportsDynamicPropertiesPrivateKey,
                  gin::ConvertToV8(destination_context->GetIsolate(),
                                   support_dynamic_properties));
-      v8::Local<v8::Value> proxy_func;
+
       if (!v8::Function::New(destination_context, ProxyFunctionWrapper, state)
                .ToLocal(&proxy_func))
         return v8::MaybeLocal<v8::Value>();
+      SetPrivate(destination_context, proxy_func.As<v8::Object>(),
+                 context_bridge::kOriginalFunctionPrivateKey, func);
       object_cache->CacheProxiedObject(value, proxy_func);
       return v8::MaybeLocal<v8::Value>(proxy_func);
     }
@@ -401,21 +429,31 @@ void ProxyFunctionWrapper(const v8::FunctionCallbackInfo<v8::Value>& info) {
 
     v8::MaybeLocal<v8::Value> maybe_return_value;
     bool did_error = false;
-    std::string error_message;
+    v8::Local<v8::Value> error_message;
     {
       v8::TryCatch try_catch(args.isolate());
       maybe_return_value = func->Call(func_owning_context, func,
                                       proxied_args.size(), proxied_args.data());
       if (try_catch.HasCaught()) {
         did_error = true;
-        auto message = try_catch.Message();
+        v8::Local<v8::Value> exception = try_catch.Exception();
 
-        if (message.IsEmpty() ||
-            !gin::ConvertFromV8(args.isolate(), message->Get(),
-                                &error_message)) {
-          error_message =
-              "An unknown exception occurred in the isolated context, an error "
-              "occurred but a valid exception was not thrown.";
+        const char* err_msg =
+            "An unknown exception occurred in the isolated context, an error "
+            "occurred but a valid exception was not thrown.";
+
+        if (!exception->IsNull() && exception->IsObject()) {
+          v8::MaybeLocal<v8::Value> maybe_message =
+              exception.As<v8::Object>()->Get(
+                  func_owning_context,
+                  gin::ConvertToV8(args.isolate(), "message"));
+
+          if (!maybe_message.ToLocal(&error_message) ||
+              !error_message->IsString()) {
+            error_message = gin::StringToV8(args.isolate(), err_msg);
+          }
+        } else {
+          error_message = gin::StringToV8(args.isolate(), err_msg);
         }
       }
     }
@@ -423,7 +461,7 @@ void ProxyFunctionWrapper(const v8::FunctionCallbackInfo<v8::Value>& info) {
     if (did_error) {
       v8::Context::Scope calling_context_scope(calling_context);
       args.isolate()->ThrowException(
-          v8::Exception::Error(gin::StringToV8(args.isolate(), error_message)));
+          v8::Exception::Error(error_message.As<v8::String>()));
       return;
     }
 
@@ -554,6 +592,12 @@ void ExposeAPIInMainWorld(v8::Isolate* isolate,
     if (maybe_proxy.IsEmpty())
       return;
     auto proxy = maybe_proxy.ToLocalChecked();
+
+    if (base::FeatureList::IsEnabled(features::kContextBridgeMutability)) {
+      global.Set(key, proxy);
+      return;
+    }
+
     if (proxy->IsObject() && !proxy->IsTypedArray() &&
         !DeepFreeze(v8::Local<v8::Object>::Cast(proxy), main_context))
       return;

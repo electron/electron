@@ -1,6 +1,7 @@
 name: Bug Report
-about: Report an Electron bug
+description: Report an Electron bug
 title: "[Bug]: "
+labels: "bug :beetle:"
 body:
 - type: checkboxes
   attributes:
@@ -34,7 +35,8 @@ body:
 - type: input
   attributes:
     label: Operating System Version
-    description: What operating system version are you using?
+    description: What operating system version are you using? On Windows, click Start button > Settings > System > About. On macOS, click the Apple Menu > About This Mac. On Linux, use lsb_release or uname -a.
+    placeholder: "e.g. Windows 10 version 1909, macOS Catalina 10.15.7, or Ubuntu 20.04"
   validations:
     required: true
 - type: dropdown
@@ -69,7 +71,3 @@ body:
     label: Testcase Gist URL
     description: If you can reproduce the issue in a standalone test case, please use [Electron Fiddle](https://github.com/electron/fiddle) to create one and to publish it as a [GitHub gist](https://gist.github.com) and put the gist URL here. This is **the best way** to ensure this issue is triaged quickly.
     placeholder: https://gist.github.com/...
-- type: textarea
-  attributes:
-    label: Additional Information
-    description: If your problem needs further explanation, or if the issue you're seeing cannot be reproduced in a gist, please add more information here.

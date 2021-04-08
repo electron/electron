@@ -197,9 +197,7 @@ be managed by using [ses.setPermissionCheckHandler(handler)](#sessetpermissionch
 with the `serial` permission.
 
 Because this is an experimental feature it is disabled by default.  To enable this feature, you
-will need to use the `--enable-features=ElectronSerialChooser` command line switch.  Additionally
-because this is an experimental Chromium feature you will need to set `enableBlinkFeatures: 'Serial'`
-on the `webPreferences` property when opening a BrowserWindow.
+will need to use the `--enable-features=ElectronSerialChooser` command line switch.
 
 ```javascript
 const { app, BrowserWindow } = require('electron')
@@ -210,10 +208,7 @@ app.commandLine.appendSwitch('enable-features', 'ElectronSerialChooser')
 app.whenReady().then(() => {
   win = new BrowserWindow({
     width: 800,
-    height: 600,
-    webPreferences: {
-      enableBlinkFeatures: 'Serial'
-    }
+    height: 600
   })
   win.webContents.session.on('select-serial-port', (event, portList, webContents, callback) => {
     event.preventDefault()

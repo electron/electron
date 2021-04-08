@@ -156,7 +156,7 @@ bool NativeImage::TryConvertNativeImage(v8::Isolate* isolate,
     *native_image = NativeImage::CreateFromPath(isolate, icon_path).get();
     if ((*native_image)->image().IsEmpty()) {
 #if defined(OS_WIN)
-      const auto img_path = base::UTF16ToUTF8(icon_path.value());
+      const auto img_path = base::WideToUTF8(icon_path.value());
 #else
       const auto img_path = icon_path.value();
 #endif

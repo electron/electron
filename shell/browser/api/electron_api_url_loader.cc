@@ -312,7 +312,8 @@ void SimpleURLLoaderWrapper::Pin() {
 }
 
 void SimpleURLLoaderWrapper::PinBodyGetter(v8::Local<v8::Value> body_getter) {
-  pinned_chunk_pipe_getter_.Reset(v8::Isolate::GetCurrent(), body_getter);
+  pinned_chunk_pipe_getter_.Reset(JavascriptEnvironment::GetIsolate(),
+                                  body_getter);
 }
 
 SimpleURLLoaderWrapper::~SimpleURLLoaderWrapper() {
@@ -343,7 +344,7 @@ void SimpleURLLoaderWrapper::OnAuthRequired(
   auto cb = base::BindOnce(
       [](mojo::Remote<network::mojom::AuthChallengeResponder> auth_responder,
          gin::Arguments* args) {
-        base::string16 username_str, password_str;
+        std::u16string username_str, password_str;
         if (!args->GetNext(&username_str) || !args->GetNext(&password_str)) {
           auth_responder->OnAuthCredentials(base::nullopt);
           return;

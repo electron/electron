@@ -43,6 +43,7 @@ declare namespace NodeJS {
     weaklyTrackValue(value: any): void;
     clearWeaklyTrackedValues(): void;
     getWeaklyTrackedValues(): any[];
+    runUntilIdle(): void;
     isSameOrigin(a: string, b: string): boolean;
     triggerFatalErrorForTesting(): void;
   }
@@ -75,8 +76,7 @@ declare namespace NodeJS {
     readdir(path: string): string[] | false;
     realpath(path: string): string | false;
     copyFileOut(path: string): string | false;
-    read(offset: number, size: number): Promise<ArrayBuffer>;
-    readSync(offset: number, size: number): ArrayBuffer;
+    getFd(): number | -1;
   }
 
   interface AsarBinding {
@@ -99,6 +99,33 @@ declare namespace NodeJS {
   interface WebViewManagerBinding {
     addGuest(guestInstanceId: number, elementInstanceId: number, embedder: Electron.WebContents, guest: Electron.WebContents, webPreferences: Electron.WebPreferences): void;
     removeGuest(embedder: Electron.WebContents, guestInstanceId: number): void;
+  }
+
+  interface InternalWebPreferences {
+    contextIsolation: boolean;
+    disableElectronSiteInstanceOverrides: boolean;
+    guestInstanceId: number;
+    hiddenPage: boolean;
+    nativeWindowOpen: boolean;
+    nodeIntegration: boolean;
+    openerId: number;
+    preload: string
+    preloadScripts: string[];
+    webviewTag: boolean;
+    worldSafeExecuteJavaScript: boolean;
+  }
+
+  interface WebFrameBinding {
+    _findFrameByRoutingId(window: Window, routingId: number): Window;
+    _getFrameForSelector(window: Window, selector: string): Window;
+    _findFrameByName(window: Window, name: string): Window;
+    _getOpener(window: Window): Window;
+    _getParent(window: Window): Window;
+    _getTop(window: Window): Window;
+    _getFirstChild(window: Window): Window;
+    _getNextSibling(window: Window): Window;
+    _getRoutingId(window: Window): number;
+    getWebPreference<K extends keyof InternalWebPreferences>(window: Window, name: K): InternalWebPreferences[K];
   }
 
   type DataPipe = {
@@ -218,6 +245,7 @@ declare namespace NodeJS {
     }
     _linkedBinding(name: 'electron_renderer_crash_reporter'): Electron.CrashReporter;
     _linkedBinding(name: 'electron_renderer_ipc'): { ipc: IpcRendererBinding };
+    _linkedBinding(name: 'electron_renderer_web_frame'): WebFrameBinding;
     log: NodeJS.WriteStream['write'];
     activateUvLoop(): void;
 

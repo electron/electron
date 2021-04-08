@@ -37,7 +37,7 @@ class AutofillPopup;
 // by |AutofillPopupViewViews|.
 class AutofillPopupChildView : public views::View {
  public:
-  explicit AutofillPopupChildView(const base::string16& suggestion)
+  explicit AutofillPopupChildView(const std::u16string& suggestion)
       : suggestion_(suggestion) {
     SetFocusBehavior(FocusBehavior::ALWAYS);
   }
@@ -48,7 +48,7 @@ class AutofillPopupChildView : public views::View {
   // views::Views implementation
   void GetAccessibleNodeData(ui::AXNodeData* node_data) override;
 
-  base::string16 suggestion_;
+  std::u16string suggestion_;
 
   DISALLOW_COPY_AND_ASSIGN(AutofillPopupChildView);
 };

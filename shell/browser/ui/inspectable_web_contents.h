@@ -177,9 +177,9 @@ class InspectableWebContents
   // content::WebContentsDelegate:
   bool DidAddMessageToConsole(content::WebContents* source,
                               blink::mojom::ConsoleMessageLevel level,
-                              const base::string16& message,
+                              const std::u16string& message,
                               int32_t line_no,
-                              const base::string16& source_id) override;
+                              const std::u16string& source_id) override;
   bool HandleKeyboardEvent(content::WebContents*,
                            const content::NativeWebKeyboardEvent&) override;
   void CloseContents(content::WebContents* source) override;
@@ -201,12 +201,6 @@ class InspectableWebContents
   void AddDevToolsExtensionsToClient();
 #endif
 
-  bool frontend_loaded_ = false;
-  scoped_refptr<content::DevToolsAgentHost> agent_host_;
-  std::unique_ptr<content::DevToolsFrontendHost> frontend_host_;
-  std::unique_ptr<DevToolsEmbedderMessageDispatcher>
-      embedder_message_dispatcher_;
-
   DevToolsContentsResizingStrategy contents_resizing_strategy_;
   gfx::Rect devtools_bounds_;
   bool can_dock_ = true;
@@ -227,6 +221,12 @@ class InspectableWebContents
 
   bool is_guest_;
   std::unique_ptr<InspectableWebContentsView> view_;
+
+  bool frontend_loaded_ = false;
+  scoped_refptr<content::DevToolsAgentHost> agent_host_;
+  std::unique_ptr<content::DevToolsFrontendHost> frontend_host_;
+  std::unique_ptr<DevToolsEmbedderMessageDispatcher>
+      embedder_message_dispatcher_;
 
   class NetworkResourceLoader;
   std::set<std::unique_ptr<NetworkResourceLoader>, base::UniquePtrComparator>

@@ -159,6 +159,7 @@
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "extensions/browser/script_executor.h"
 #include "extensions/browser/view_type_utils.h"
+#include "extensions/common/mojom/view_type.mojom.h"
 #include "shell/browser/extensions/electron_extension_web_contents_observer.h"
 #endif
 
@@ -409,7 +410,7 @@ base::Optional<base::TimeDelta> GetCursorBlinkInterval() {
 // This will return false if no printer with the provided device_name can be
 // found on the network. We need to check this because Chromium does not do
 // sanity checking of device_name validity and so will crash on invalid names.
-bool IsDeviceNameValid(const base::string16& device_name) {
+bool IsDeviceNameValid(const std::u16string& device_name) {
 #if defined(OS_MAC)
   base::ScopedCFTypeRef<CFStringRef> new_printer_id(
       base::SysUTF16ToCFStringRef(device_name));
@@ -419,12 +420,12 @@ bool IsDeviceNameValid(const base::string16& device_name) {
   return printer_exists;
 #elif defined(OS_WIN)
   printing::ScopedPrinterHandle printer;
-  return printer.OpenPrinterWithName(device_name.c_str());
+  return printer.OpenPrinterWithName(base::UTF16ToWide(device_name).c_str());
 #endif
   return true;
 }
 
-base::string16 GetDefaultPrinterAsync() {
+std::u16string GetDefaultPrinterAsync() {
 #if defined(OS_WIN)
   // Blocking is needed here because Windows printer drivers are oftentimes
   // not thread-safe and have to be accessed on the UI thread.
@@ -593,19 +594,19 @@ bool IsDevToolsFileSystemAdded(content::WebContents* web_contents,
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 
-WebContents::Type GetTypeFromViewType(extensions::ViewType view_type) {
+WebContents::Type GetTypeFromViewType(extensions::mojom::ViewType view_type) {
   switch (view_type) {
-    case extensions::VIEW_TYPE_EXTENSION_BACKGROUND_PAGE:
+    case extensions::mojom::ViewType::kExtensionBackgroundPage:
       return WebContents::Type::kBackgroundPage;
 
-    case extensions::VIEW_TYPE_APP_WINDOW:
-    case extensions::VIEW_TYPE_COMPONENT:
-    case extensions::VIEW_TYPE_EXTENSION_DIALOG:
-    case extensions::VIEW_TYPE_EXTENSION_POPUP:
-    case extensions::VIEW_TYPE_BACKGROUND_CONTENTS:
-    case extensions::VIEW_TYPE_EXTENSION_GUEST:
-    case extensions::VIEW_TYPE_TAB_CONTENTS:
-    case extensions::VIEW_TYPE_INVALID:
+    case extensions::mojom::ViewType::kAppWindow:
+    case extensions::mojom::ViewType::kComponent:
+    case extensions::mojom::ViewType::kExtensionDialog:
+    case extensions::mojom::ViewType::kExtensionPopup:
+    case extensions::mojom::ViewType::kBackgroundContents:
+    case extensions::mojom::ViewType::kExtensionGuest:
+    case extensions::mojom::ViewType::kTabContents:
+    case extensions::mojom::ViewType::kInvalid:
       return WebContents::Type::kRemote;
   }
 }
@@ -627,8 +628,8 @@ WebContents::WebContents(v8::Isolate* isolate,
 {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   // WebContents created by extension host will have valid ViewType set.
-  extensions::ViewType view_type = extensions::GetViewType(web_contents);
-  if (view_type != extensions::VIEW_TYPE_INVALID) {
+  extensions::mojom::ViewType view_type = extensions::GetViewType(web_contents);
+  if (view_type != extensions::mojom::ViewType::kInvalid) {
     InitWithExtensionView(isolate, web_contents, view_type);
   }
 
@@ -867,7 +868,7 @@ void WebContents::InitWithSessionAndOptions(
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 void WebContents::InitWithExtensionView(v8::Isolate* isolate,
                                         content::WebContents* web_contents,
-                                        extensions::ViewType view_type) {
+                                        extensions::mojom::ViewType view_type) {
   // Must reassign type prior to calling `Init`.
   type_ = GetTypeFromViewType(view_type);
   if (GetType() == Type::kRemote)
@@ -916,6 +917,7 @@ WebContents::~WebContents() {
     return;
   }
 
+  inspectable_web_contents_->GetView()->SetDelegate(nullptr);
   if (guest_delegate_)
     guest_delegate_->WillDestroy();
 
@@ -959,9 +961,9 @@ void WebContents::Destroy() {
 bool WebContents::DidAddMessageToConsole(
     content::WebContents* source,
     blink::mojom::ConsoleMessageLevel level,
-    const base::string16& message,
+    const std::u16string& message,
     int32_t line_no,
-    const base::string16& source_id) {
+    const std::u16string& source_id) {
   return Emit("console-message", static_cast<int32_t>(level), message, line_no,
               source_id);
 }
@@ -1037,7 +1039,7 @@ content::WebContents* WebContents::CreateCustomWebContents(
     const GURL& opener_url,
     const std::string& frame_name,
     const GURL& target_url,
-    const std::string& partition_id,
+    const content::StoragePartitionId& partition_id,
     content::SessionStorageNamespace* session_storage_namespace) {
   return nullptr;
 }
@@ -1059,6 +1061,16 @@ void WebContents::AddNewContents(
   v8::HandleScope handle_scope(isolate);
   auto api_web_contents =
       CreateAndTake(isolate, std::move(new_contents), Type::kBrowserWindow);
+
+  // We call RenderFrameCreated here as at this point the empty "about:blank"
+  // render frame has already been created.  If the window never navigates again
+  // RenderFrameCreated won't be called and certain prefs like
+  // "kBackgroundColor" will not be applied.
+  auto* frame = api_web_contents->MainFrame();
+  if (frame) {
+    api_web_contents->HandleNewRenderFrame(frame);
+  }
+
   if (Emit("-add-new-contents", api_web_contents, disposition, user_gesture,
            initial_rect.x(), initial_rect.y(), initial_rect.width(),
            initial_rect.height(), tracker->url, tracker->frame_name,
@@ -1110,7 +1122,8 @@ content::WebContents* WebContents::OpenURLFromTab(
 void WebContents::BeforeUnloadFired(content::WebContents* tab,
                                     bool proceed,
                                     bool* proceed_to_fire_unload) {
-  if (type_ == Type::kBrowserWindow || type_ == Type::kOffScreen)
+  if (type_ == Type::kBrowserWindow || type_ == Type::kOffScreen ||
+      type_ == Type::kBrowserView)
     *proceed_to_fire_unload = proceed;
   else
     *proceed_to_fire_unload = true;
@@ -1348,7 +1361,7 @@ void WebContents::BeforeUnloadFired(bool proceed,
   // there are two virtual functions named BeforeUnloadFired.
 }
 
-void WebContents::RenderFrameCreated(
+void WebContents::HandleNewRenderFrame(
     content::RenderFrameHost* render_frame_host) {
   auto* rwhv = render_frame_host->GetView();
   if (!rwhv)
@@ -1375,6 +1388,11 @@ void WebContents::RenderFrameCreated(
     rwh_impl->disable_hidden_ = !background_throttling_;
 
   WebFrameMain::RenderFrameCreated(render_frame_host);
+}
+
+void WebContents::RenderFrameCreated(
+    content::RenderFrameHost* render_frame_host) {
+  HandleNewRenderFrame(render_frame_host);
 }
 
 void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
@@ -1703,7 +1721,7 @@ void WebContents::DidFinishNavigation(
 }
 
 void WebContents::TitleWasSet(content::NavigationEntry* entry) {
-  base::string16 final_title;
+  std::u16string final_title;
   bool explicit_set = true;
   if (entry) {
     auto title = entry->GetTitle();
@@ -1747,6 +1765,7 @@ void WebContents::DevToolsOpened() {
   v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
   DCHECK(inspectable_web_contents_);
+  DCHECK(inspectable_web_contents_->GetDevToolsWebContents());
   auto handle = FromOrCreate(
       isolate, inspectable_web_contents_->GetDevToolsWebContents());
   devtools_web_contents_.Reset(isolate, handle.ToV8());
@@ -1969,7 +1988,7 @@ GURL WebContents::GetURL() const {
   return web_contents()->GetURL();
 }
 
-base::string16 WebContents::GetTitle() const {
+std::u16string WebContents::GetTitle() const {
   return web_contents()->GetTitle();
 }
 
@@ -2278,9 +2297,9 @@ bool WebContents::IsCurrentlyAudible() {
 void WebContents::OnGetDefaultPrinter(
     base::Value print_settings,
     printing::CompletionCallback print_callback,
-    base::string16 device_name,
+    std::u16string device_name,
     bool silent,
-    base::string16 default_printer) {
+    std::u16string default_printer) {
   // The content::WebContents might be already deleted at this point, and the
   // PrintViewManagerBasic class does not do null check.
   if (!web_contents()) {
@@ -2289,7 +2308,7 @@ void WebContents::OnGetDefaultPrinter(
     return;
   }
 
-  base::string16 printer_name =
+  std::u16string printer_name =
       device_name.empty() ? default_printer : device_name;
 
   // If there are no valid printers available on the network, we bail.
@@ -2387,7 +2406,7 @@ void WebContents::Print(gin::Arguments* args) {
   // We set the default to the system's default printer and only update
   // if at the Chromium level if the user overrides.
   // Printer device name as opened by the OS.
-  base::string16 device_name;
+  std::u16string device_name;
   options.Get("deviceName", &device_name);
   if (!device_name.empty() && !IsDeviceNameValid(device_name)) {
     gin_helper::ErrorThrower(args->isolate())
@@ -2556,16 +2575,16 @@ void WebContents::Unselect() {
   web_contents()->CollapseSelection();
 }
 
-void WebContents::Replace(const base::string16& word) {
+void WebContents::Replace(const std::u16string& word) {
   web_contents()->Replace(word);
 }
 
-void WebContents::ReplaceMisspelling(const base::string16& word) {
+void WebContents::ReplaceMisspelling(const std::u16string& word) {
   web_contents()->ReplaceMisspelling(word);
 }
 
 uint32_t WebContents::FindInPage(gin::Arguments* args) {
-  base::string16 search_text;
+  std::u16string search_text;
   if (!args->GetNext(&search_text) || search_text.empty()) {
     gin_helper::ErrorThrower(args->isolate())
         .ThrowError("Must provide a non-empty search content");

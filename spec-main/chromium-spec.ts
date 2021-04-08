@@ -18,8 +18,6 @@ const features = process._linkedBinding('electron_common_features');
 
 const fixturesPath = path.resolve(__dirname, '..', 'spec', 'fixtures');
 
-const isAsan = process.env.IS_ASAN;
-
 describe('reporting api', () => {
   // TODO(nornagon): this started failing a lot on CI. Figure out why and fix
   // it.
@@ -289,6 +287,77 @@ describe('web security', () => {
     expect(response).to.equal('passed');
   });
 
+  describe('accessing file://', () => {
+    async function loadFile (w: BrowserWindow) {
+      const thisFile = url.format({
+        pathname: __filename.replace(/\\/g, '/'),
+        protocol: 'file',
+        slashes: true
+      });
+      await w.loadURL(`data:text/html,<script>
+          function loadFile() {
+            return new Promise((resolve) => {
+              fetch('${thisFile}').then(
+                () => resolve('loaded'),
+                () => resolve('failed')
+              )
+            });
+          }
+        </script>`);
+      return await w.webContents.executeJavaScript('loadFile()');
+    }
+
+    it('is forbidden when web security is enabled', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { webSecurity: true } });
+      const result = await loadFile(w);
+      expect(result).to.equal('failed');
+    });
+
+    it('is allowed when web security is disabled', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { webSecurity: false } });
+      const result = await loadFile(w);
+      expect(result).to.equal('loaded');
+    });
+  });
+
+  describe('wasm-eval csp', () => {
+    async function loadWasm (csp: string) {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          sandbox: true,
+          enableBlinkFeatures: 'WebAssemblyCSP'
+        }
+      });
+      await w.loadURL(`data:text/html,<head>
+          <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' ${csp}">
+        </head>
+        <script>
+          function loadWasm() {
+            const wasmBin = new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0])
+            return new Promise((resolve) => {
+              WebAssembly.instantiate(wasmBin).then(() => {
+                resolve('loaded')
+              }).catch((error) => {
+                resolve(error.message)
+              })
+            });
+          }
+        </script>`);
+      return await w.webContents.executeJavaScript('loadWasm()');
+    }
+
+    it('wasm codegen is disallowed by default', async () => {
+      const r = await loadWasm('');
+      expect(r).to.equal('WebAssembly.instantiate(): Wasm code generation disallowed by embedder');
+    });
+
+    it('wasm codegen is allowed with "wasm-eval" csp', async () => {
+      const r = await loadWasm("'wasm-eval'");
+      expect(r).to.equal('loaded');
+    });
+  });
+
   it('does not crash when multiple WebContent are created with web security disabled', () => {
     const options = { show: false, webPreferences: { webSecurity: false } };
     const w1 = new BrowserWindow(options);
@@ -298,7 +367,8 @@ describe('web security', () => {
   });
 });
 
-describe('command line switches', () => {
+// Running child app under ASan might receive SIGKILL because of OOM.
+ifdescribe(!process.env.IS_ASAN)('command line switches', () => {
   let appProcess: ChildProcess.ChildProcessWithoutNullStreams | undefined;
   afterEach(() => {
     if (appProcess && !appProcess.killed) {
@@ -343,8 +413,7 @@ describe('command line switches', () => {
     ifit(process.platform === 'linux')('should not change LC_ALL when --lang is not set', async () => testLocale('', lcAll, true));
   });
 
-  // TODO(nornagon): figure out why these tests fail under ASan.
-  ifdescribe(!isAsan)('--remote-debugging-pipe switch', () => {
+  describe('--remote-debugging-pipe switch', () => {
     it('should expose CDP via pipe', async () => {
       const electronPath = process.execPath;
       appProcess = ChildProcess.spawn(electronPath, ['--remote-debugging-pipe'], {
@@ -386,8 +455,7 @@ describe('command line switches', () => {
     });
   });
 
-  // TODO(nornagon): figure out why these tests fail under ASan.
-  ifdescribe(!isAsan)('--remote-debugging-port switch', () => {
+  describe('--remote-debugging-port switch', () => {
     it('should display the discovery page', (done) => {
       const electronPath = process.execPath;
       let output = '';

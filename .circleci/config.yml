@@ -85,17 +85,17 @@ machine-linux-2xlarge: &machine-linux-2xlarge
 
 machine-mac: &machine-mac
   macos:
-    xcode: "12.2.0"
+    xcode: "12.4.0"
 
 machine-mac-large: &machine-mac-large
   resource_class: large
   macos:
-    xcode: "12.2.0"
+    xcode: "12.4.0"
 
 machine-mac-large-arm: &machine-mac-large-arm
   resource_class: large
   macos:
-    xcode: "12.2.0"
+    xcode: "12.4.0"
 
 machine-mac-arm64: &machine-mac-arm64
   resource_class: electronjs/macos-arm64
@@ -230,6 +230,18 @@ step-maybe-notify-slack-success: &step-maybe-notify-slack-success
       fi
     when: on_success
 
+step-maybe-cleanup-arm64-mac: &step-maybe-cleanup-arm64-mac
+  run:
+    name: Cleanup after testing
+    command: |
+      if  [ "$TARGET_ARCH" == "arm64" ] &&[ "`uname`" == "Darwin" ]; then
+        killall Electron || echo "No Electron processes left running"
+        killall Safari || echo "No Safari processes left running"
+        rm -rf ~/Library/Application\ Support/Electron*
+        rm -rf ~/Library/Application\ Support/electron*
+      fi
+    when: always
+
 step-checkout-electron: &step-checkout-electron
   checkout:
     path: src/electron
@@ -316,6 +328,7 @@ step-setup-goma-for-build: &step-setup-goma-for-build
       third_party/goma/goma_ctl.py ensure_start
       echo 'export GN_GOMA_FILE='`node -e "console.log(require('./src/utils/goma.js').gnFilePath)"` >> $BASH_ENV
       echo 'export LOCAL_GOMA_DIR='`node -e "console.log(require('./src/utils/goma.js').dir)"` >> $BASH_ENV
+      echo 'export GOMA_FALLBACK_ON_AUTH_FAILURE=true' >> $BASH_ENV
       cd ..
 
 step-restore-brew-cache: &step-restore-brew-cache
@@ -920,7 +933,7 @@ step-ninja-summary: &step-ninja-summary
     command: |
       set +e
       set +o pipefail
-      python depot_tools/post_build_ninja_summary.py -C src/out/Default
+      python depot_tools/post_build_ninja_summary.py -C src/out/Default || echo Ninja Summary Failed
 
 step-ninja-report: &step-ninja-report
   store_artifacts:
@@ -1339,6 +1352,8 @@ steps-tests: &steps-tests
     - *step-verify-chromedriver
 
     - *step-maybe-notify-slack-failure
+
+    - *step-maybe-cleanup-arm64-mac
 
 steps-test-nan: &steps-test-nan
   steps:

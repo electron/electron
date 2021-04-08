@@ -8,7 +8,6 @@
 #include <vector>
 
 #include "base/observer_list.h"
-#include "base/strings/string16.h"
 #include "electron/shell/common/api/api.mojom.h"
 #include "ui/gfx/geometry/rect.h"
 
@@ -23,7 +22,7 @@ class ExtendedWebContentsObserver : public base::CheckedObserver {
       const std::vector<mojom::DraggableRegionPtr>& regions) {}
   virtual void OnSetContentBounds(const gfx::Rect& rect) {}
   virtual void OnActivateContents() {}
-  virtual void OnPageTitleUpdated(const base::string16& title,
+  virtual void OnPageTitleUpdated(const std::u16string& title,
                                   bool explicit_set) {}
   virtual void OnDevToolsResized() {}
 

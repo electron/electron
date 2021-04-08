@@ -146,9 +146,8 @@ void ElectronRendererClient::DidCreateScriptContext(
 
   // Add Electron extended APIs.
   electron_bindings_->BindTo(env->isolate(), env->process_object());
-  AddRenderBindings(env->isolate(), env->process_object());
   gin_helper::Dictionary process_dict(env->isolate(), env->process_object());
-  process_dict.SetReadOnly("isMainFrame", render_frame->IsMainFrame());
+  BindProcess(env->isolate(), &process_dict, render_frame);
 
   // Load everything.
   node_bindings_->LoadEnvironment(env);

@@ -14,7 +14,7 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (14.0)
 
-### API Changed: `window.(open)`
+### API Changed: `window.open()`
 
 The optional parameter `frameName` will no longer set the title of the window. This now follows the specification described by the [native documentation](https://developer.mozilla.org/en-US/docs/Web/API/Window/open#parameters) under the corresponding parameter `windowName`.
 
@@ -159,6 +159,9 @@ In Electron 12, `contextIsolation` will be enabled by default.  To restore
 the previous behavior, `contextIsolation: false` must be specified in WebPreferences.
 
 We [recommend having contextIsolation enabled](https://github.com/electron/electron/blob/master/docs/tutorial/security.md#3-enable-context-isolation-for-remote-content) for the security of your application.
+
+Another implication is that `require()` cannot be used in the renderer process unless
+`nodeIntegration` is `true` and `contextIsolation` is `false`.
 
 For more details see: https://github.com/electron/electron/issues/23506
 

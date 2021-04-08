@@ -33,7 +33,7 @@ page you load in your renderer executes code in this world.
 
 ### Isolated World
 
-When `contextIsolation` is enabled in your `webPreferences`, your `preload` scripts run in an
+When `contextIsolation` is enabled in your `webPreferences` (this is the default behavior since Electron 12.0.0), your `preload` scripts run in an
 "Isolated World".  You can read more about context isolation and what it affects in the
 [security](../tutorial/security.md#3-enable-context-isolation-for-remote-content) docs.
 
@@ -110,3 +110,22 @@ has been included below for completeness:
 | `Symbol` | N/A | ❌ | ❌ | Symbols cannot be copied across contexts so they are dropped |
 
 If the type you care about is not in the above table, it is probably not supported.
+
+### Exposing Node Global Symbols
+
+The `contextBridge` can be used by the preload script to give your renderer access to Node APIs.
+The table of supported types described above also applies to Node APIs that you expose through `contextBridge`.
+Please note that many Node APIs grant access to local system resources.
+Be very cautious about which globals and APIs you expose to untrusted remote content.
+
+```javascript
+const { contextBridge } = require('electron')
+const crypto = require('crypto')
+contextBridge.exposeInMainWorld('nodeCrypto', {
+  sha256sum (data) {
+    const hash = crypto.createHash('sha256')
+    hash.update(data)
+    return hash.digest('hex')
+  }
+})
+```

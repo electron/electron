@@ -48,7 +48,7 @@
 #endif
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-#include "extensions/common/view_type.h"
+#include "extensions/common/mojom/view_type.mojom.h"
 
 namespace extensions {
 class ScriptExecutor;
@@ -156,7 +156,7 @@ class WebContents : public gin::Wrappable<WebContents>,
   void LoadURL(const GURL& url, const gin_helper::Dictionary& options);
   void DownloadURL(const GURL& url);
   GURL GetURL() const;
-  base::string16 GetTitle() const;
+  std::u16string GetTitle() const;
   bool IsLoading() const;
   bool IsLoadingMainFrame() const;
   bool IsWaitingForResponse() const;
@@ -196,13 +196,14 @@ class WebContents : public gin::Wrappable<WebContents>,
   void IncrementCapturerCount(gin::Arguments* args);
   void DecrementCapturerCount(gin::Arguments* args);
   bool IsBeingCaptured();
+  void HandleNewRenderFrame(content::RenderFrameHost* render_frame_host);
 
 #if BUILDFLAG(ENABLE_PRINTING)
   void OnGetDefaultPrinter(base::Value print_settings,
                            printing::CompletionCallback print_callback,
-                           base::string16 device_name,
+                           std::u16string device_name,
                            bool silent,
-                           base::string16 default_printer);
+                           std::u16string default_printer);
   void Print(gin::Arguments* args);
   // Print current page as PDF.
   v8::Local<v8::Promise> PrintToPDF(base::DictionaryValue settings);
@@ -224,8 +225,8 @@ class WebContents : public gin::Wrappable<WebContents>,
   void Delete();
   void SelectAll();
   void Unselect();
-  void Replace(const base::string16& word);
-  void ReplaceMisspelling(const base::string16& word);
+  void Replace(const std::u16string& word);
+  void ReplaceMisspelling(const std::u16string& word);
   uint32_t FindInPage(gin::Arguments* args);
   void StopFindInPage(content::StopFindAction action);
   void ShowDefinitionForSelection();
@@ -324,7 +325,7 @@ class WebContents : public gin::Wrappable<WebContents>,
   }
   void RemoveObserver(ExtendedWebContentsObserver* obs) {
     // Trying to remove from an empty collection leads to an access violation
-    if (observers_.might_have_observers())
+    if (!observers_.empty())
       observers_.RemoveObserver(obs);
   }
 
@@ -437,15 +438,15 @@ class WebContents : public gin::Wrappable<WebContents>,
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   void InitWithExtensionView(v8::Isolate* isolate,
                              content::WebContents* web_contents,
-                             extensions::ViewType view_type);
+                             extensions::mojom::ViewType view_type);
 #endif
 
   // content::WebContentsDelegate:
   bool DidAddMessageToConsole(content::WebContents* source,
                               blink::mojom::ConsoleMessageLevel level,
-                              const base::string16& message,
+                              const std::u16string& message,
                               int32_t line_no,
-                              const base::string16& source_id) override;
+                              const std::u16string& source_id) override;
   bool IsWebContentsCreationOverridden(
       content::SiteInstance* source_site_instance,
       content::mojom::WindowContainerType window_container_type,
@@ -458,7 +459,7 @@ class WebContents : public gin::Wrappable<WebContents>,
       const GURL& opener_url,
       const std::string& frame_name,
       const GURL& target_url,
-      const std::string& partition_id,
+      const content::StoragePartitionId& partition_id,
       content::SessionStorageNamespace* session_storage_namespace) override;
   void WebContentsCreatedWithFullParams(
       content::WebContents* source_contents,

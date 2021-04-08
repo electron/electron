@@ -30,6 +30,7 @@
 #include "chrome/common/chrome_version.h"
 #include "components/net_log/chrome_net_log.h"
 #include "components/network_hints/common/network_hints.mojom.h"
+#include "content/browser/site_instance_impl.h"  // nogncheck
 #include "content/public/browser/browser_main_runner.h"
 #include "content/public/browser/browser_ppapi_host.h"
 #include "content/public/browser/browser_task_traits.h"
@@ -195,6 +196,14 @@ namespace {
 // Next navigation should not restart renderer process.
 bool g_suppress_renderer_process_restart = false;
 
+// c.f. https://chromium-review.googlesource.com/c/chromium/src/+/2680274
+content::SiteInfo GetSiteForURL(content::BrowserContext* browser_context,
+                                const GURL& url) {
+  return content::SiteInfo::Create(
+      content::IsolationContext(browser_context), content::UrlInfo(url, false),
+      content::CoopCoepCrossOriginIsolatedInfo::CreateNonIsolated());
+}
+
 bool IsSameWebSite(content::BrowserContext* browser_context,
                    content::SiteInstance* site_instance,
                    const GURL& dest_url) {
@@ -202,7 +211,7 @@ bool IsSameWebSite(content::BrowserContext* browser_context,
          // `IsSameSiteWithURL` doesn't seem to work for some URIs such as
          // `file:`, handle these scenarios by comparing only the site as
          // defined by `GetSiteForURL`.
-         (content::SiteInstance::GetSiteForURL(browser_context, dest_url) ==
+         (GetSiteForURL(browser_context, dest_url).site_url() ==
           site_instance->GetSiteURL());
 }
 
@@ -499,7 +508,7 @@ content::SiteInstance* ElectronBrowserClient::GetSiteInstanceFromAffinity(
   std::string affinity = GetAffinityPreference(rfh);
   if (!affinity.empty()) {
     auto iter = site_per_affinities_.find(affinity);
-    GURL dest_site = content::SiteInstance::GetSiteForURL(browser_context, url);
+    GURL dest_site = GetSiteForURL(browser_context, url).site_url();
     if (iter != site_per_affinities_.end() &&
         IsSameWebSite(browser_context, iter->second, dest_site)) {
       return iter->second;
@@ -911,7 +920,7 @@ ElectronBrowserClient::CreateWindowForPictureInPicture(
     content::PictureInPictureWindowController* controller) {
   auto overlay_window = content::OverlayWindow::Create(controller);
 #if defined(OS_WIN)
-  base::string16 app_user_model_id = Browser::Get()->GetAppUserModelID();
+  std::wstring app_user_model_id = Browser::Get()->GetAppUserModelID();
   if (!app_user_model_id.empty()) {
     auto* overlay_window_view =
         static_cast<OverlayWindowViews*>(overlay_window.get());
@@ -1068,7 +1077,8 @@ void ElectronBrowserClient::ConfigureNetworkContextParams(
     bool in_memory,
     const base::FilePath& relative_partition_path,
     network::mojom::NetworkContextParams* network_context_params,
-    network::mojom::CertVerifierCreationParams* cert_verifier_creation_params) {
+    cert_verifier::mojom::CertVerifierCreationParams*
+        cert_verifier_creation_params) {
   DCHECK(browser_context);
   return NetworkContextServiceFactory::GetForContext(browser_context)
       ->ConfigureNetworkContextParams(network_context_params,
@@ -1161,6 +1171,7 @@ bool ElectronBrowserClient::HandleExternalProtocol(
     const GURL& url,
     content::WebContents::OnceGetter web_contents_getter,
     int child_id,
+    int frame_tree_node_id,
     content::NavigationUIData* navigation_data,
     bool is_main_frame,
     ui::PageTransition page_transition,
@@ -1275,9 +1286,10 @@ void ElectronBrowserClient::RegisterNonNetworkNavigationURLLoaderFactories(
           context, ukm_source_id,
           false /* we don't support extensions::WebViewGuest */));
 #endif
+  // Always allow navigating to file:// URLs.
   auto* protocol_registry = ProtocolRegistry::FromBrowserContext(context);
-  protocol_registry->RegisterURLLoaderFactories(
-      URLLoaderFactoryType::kNavigation, factories);
+  protocol_registry->RegisterURLLoaderFactories(factories,
+                                                true /* allow_file_access */);
 }
 
 void ElectronBrowserClient::
@@ -1286,8 +1298,10 @@ void ElectronBrowserClient::
         NonNetworkURLLoaderFactoryMap* factories) {
   auto* protocol_registry =
       ProtocolRegistry::FromBrowserContext(browser_context);
-  protocol_registry->RegisterURLLoaderFactories(
-      URLLoaderFactoryType::kWorkerMainResource, factories);
+  // Workers are not allowed to request file:// URLs, there is no particular
+  // reason for it, and we could consider supporting it in future.
+  protocol_registry->RegisterURLLoaderFactories(factories,
+                                                false /* allow_file_access */);
 }
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -1352,16 +1366,29 @@ void ElectronBrowserClient::RegisterNonNetworkSubresourceURLLoaderFactories(
     int render_process_id,
     int render_frame_id,
     NonNetworkURLLoaderFactoryMap* factories) {
+  auto* render_process_host =
+      content::RenderProcessHost::FromID(render_process_id);
+  DCHECK(render_process_host);
+  if (!render_process_host || !render_process_host->GetBrowserContext())
+    return;
+
   content::RenderFrameHost* frame_host =
       content::RenderFrameHost::FromID(render_process_id, render_frame_id);
   content::WebContents* web_contents =
       content::WebContents::FromRenderFrameHost(frame_host);
 
+  // Allow accessing file:// subresources from non-file protocols if web
+  // security is disabled.
+  bool allow_file_access = false;
   if (web_contents) {
-    ProtocolRegistry::FromBrowserContext(web_contents->GetBrowserContext())
-        ->RegisterURLLoaderFactories(URLLoaderFactoryType::kDocumentSubResource,
-                                     factories);
+    const auto& web_preferences = web_contents->GetOrCreateWebPreferences();
+    if (!web_preferences.web_security_enabled)
+      allow_file_access = true;
   }
+
+  ProtocolRegistry::FromBrowserContext(render_process_host->GetBrowserContext())
+      ->RegisterURLLoaderFactories(factories, allow_file_access);
+
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   auto factory = extensions::CreateExtensionURLLoaderFactory(render_process_id,
                                                              render_frame_id);

@@ -220,6 +220,8 @@ class Session : public gin::Wrappable<Session>,
   GetActiveTabHandler get_active_tab_handler_;
 #endif
 
+  v8::Isolate* isolate_;
+
   // The client id to enable the network throttler.
   base::UnguessableToken network_emulation_token_;
 
