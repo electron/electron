@@ -10,7 +10,7 @@ The tracking issue in Chromium is
 https://bugs.chromium.org/p/chromium/issues/detail?id=948834
 
 diff --git a/third_party/blink/renderer/core/frame/csp/content_security_policy.cc b/third_party/blink/renderer/core/frame/csp/content_security_policy.cc
-index d720aac224e8..d78cc8725ec8 100644
+index d720aac224e80a924121eb0a98e1ad5636a2e929..d78cc8725ec8d61b3cab7a15529dc6cf7d881fe4 100644
 --- a/third_party/blink/renderer/core/frame/csp/content_security_policy.cc
 +++ b/third_party/blink/renderer/core/frame/csp/content_security_policy.cc
 @@ -294,7 +294,8 @@ void ContentSecurityPolicy::DidReceiveHeaders(
@@ -24,7 +24,7 @@ index d720aac224e8..d78cc8725ec8 100644
  
    Vector<network::mojom::blink::ContentSecurityPolicyPtr> parsed_policies;
 diff --git a/third_party/blink/renderer/core/frame/csp/csp_directive_list.cc b/third_party/blink/renderer/core/frame/csp/csp_directive_list.cc
-index 76590740ee60..9fd518d00ab3 100644
+index 76590740ee6000f9b5bfe67f8ffc3432351b66a2..9fd518d00ab33bf4ca379eed92e277f30c39adc4 100644
 --- a/third_party/blink/renderer/core/frame/csp/csp_directive_list.cc
 +++ b/third_party/blink/renderer/core/frame/csp/csp_directive_list.cc
 @@ -625,8 +625,14 @@ bool CheckEval(const network::mojom::blink::CSPSourceList* directive) {
@@ -80,7 +80,7 @@ index 76590740ee60..9fd518d00ab3 100644
  
  bool CSPDirectiveListShouldDisableEval(
 diff --git a/third_party/blink/renderer/core/frame/csp/source_list_directive.cc b/third_party/blink/renderer/core/frame/csp/source_list_directive.cc
-index 17ae1426ef96..de93eb3cf732 100644
+index 17ae1426ef9662f6f640c36d8ae8bca8e443a15a..de93eb3cf7321e00351f5cfe1d7cde6635ce2b4d 100644
 --- a/third_party/blink/renderer/core/frame/csp/source_list_directive.cc
 +++ b/third_party/blink/renderer/core/frame/csp/source_list_directive.cc
 @@ -403,10 +403,15 @@ bool ParseSource(const UChar* begin,
@@ -104,7 +104,7 @@ index 17ae1426ef96..de93eb3cf732 100644
  
    if (EqualIgnoringASCIICase("'strict-dynamic'", token)) {
 diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-index a76f001440d2..95b404a3d371 100644
+index a76f001440d21ee34ffa1a98c9dbc87961fcaff0..95b404a3d371304f9569f66615b4e016bb4d88cb 100644
 --- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
 +++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
 @@ -2128,6 +2128,9 @@
