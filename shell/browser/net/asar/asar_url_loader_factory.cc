@@ -4,6 +4,8 @@
 
 #include "shell/browser/net/asar/asar_url_loader_factory.h"
 
+#include <utility>
+
 #include "shell/browser/net/asar/asar_url_loader.h"
 
 namespace electron {
