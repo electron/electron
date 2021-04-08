@@ -1,0 +1,101 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 4 Oct 2018 14:57:02 -0700
+Subject: feat: support wasm-eval csp behind WebAssemblyCSP flag
+
+This is a minimal backport of
+https://chromium.googlesource.com/chromium/src/+/83913676803db53648b6a47d159102a7cf1dac36
+
+The tracking issue in Chromium is
+https://bugs.chromium.org/p/chromium/issues/detail?id=948834
+
+diff --git a/third_party/blink/renderer/core/frame/csp/content_security_policy.cc b/third_party/blink/renderer/core/frame/csp/content_security_policy.cc
+index 5e9aef4ef6398035c7a4704667d250d3fd54b25e..f8cf4b30c6ca02883b1c792bdb562c8550e8e17c 100644
+--- a/third_party/blink/renderer/core/frame/csp/content_security_policy.cc
++++ b/third_party/blink/renderer/core/frame/csp/content_security_policy.cc
+@@ -313,7 +313,8 @@ void ContentSecurityPolicy::CopyPluginTypesFrom(
+ 
+ void ContentSecurityPolicy::DidReceiveHeaders(
+     const ContentSecurityPolicyResponseHeaders& headers) {
+-  if (headers.ShouldParseWasmEval())
++  if (RuntimeEnabledFeatures::WebAssemblyCSPEnabled() ||
++      headers.ShouldParseWasmEval())
+     supports_wasm_eval_ = true;
+   if (!headers.ContentSecurityPolicy().IsEmpty()) {
+     AddAndReportPolicyFromHeaderValue(headers.ContentSecurityPolicy(),
+diff --git a/third_party/blink/renderer/core/frame/csp/csp_directive_list.cc b/third_party/blink/renderer/core/frame/csp/csp_directive_list.cc
+index 0411a75ca40371e1a309efba7b89e32f0edc917e..07b01fc682a172f5ed59c22285f9c968a9992307 100644
+--- a/third_party/blink/renderer/core/frame/csp/csp_directive_list.cc
++++ b/third_party/blink/renderer/core/frame/csp/csp_directive_list.cc
+@@ -314,9 +314,14 @@ bool CSPDirectiveList::CheckEval(
+   return !directive || directive->allow_eval;
+ }
+ 
++bool SupportsWasmEval(const ContentSecurityPolicy* policy) {
++  return RuntimeEnabledFeatures::WebAssemblyCSPEnabled() ||
++         policy->SupportsWasmEval();
++}
++
+ bool CSPDirectiveList::CheckWasmEval(
+     const network::mojom::blink::CSPSourceList* directive) const {
+-  return !directive || directive->allow_wasm_eval;
++  return !directive || (SupportsWasmEval(policy_.Get()) && directive->allow_wasm_eval);
+ }
+ 
+ bool CSPDirectiveList::IsMatchingNoncePresent(
+@@ -736,10 +741,14 @@ bool CSPDirectiveList::AllowWasmEval(
+     ContentSecurityPolicy::ExceptionStatus exception_status,
+     const String& content) const {
+   if (reporting_disposition == ReportingDisposition::kReport) {
++    String infix = SupportsWasmEval(policy_.Get())
++                   ? "neither 'wasm-eval' nor 'unsafe-eval' is"
++                   : "'unsafe-eval' is not";
+     return CheckWasmEvalAndReportViolation(
+-        "Refused to compile or instantiate WebAssembly module because "
+-        "'wasm-eval' is not an allowed source of script in the following "
+-        "Content Security Policy directive: ",
++        "Refused to compile or instantiate WebAssembly module because " +
++            infix +
++            " an allowed source of script in the following "
++            "Content Security Policy directive: ",
+         exception_status, content);
+   }
+   return IsReportOnly() ||
+diff --git a/third_party/blink/renderer/core/frame/csp/source_list_directive.cc b/third_party/blink/renderer/core/frame/csp/source_list_directive.cc
+index d28ab719440cde74e82d7d0f557987e50ef7f531..5b44cb7f0203e4cbe8898d1e25cd5c4c080ef5f6 100644
+--- a/third_party/blink/renderer/core/frame/csp/source_list_directive.cc
++++ b/third_party/blink/renderer/core/frame/csp/source_list_directive.cc
+@@ -403,10 +403,15 @@ bool ParseSource(const UChar* begin,
+     return true;
+   }
+ 
+-  if (policy->SupportsWasmEval() &&
+-      EqualIgnoringASCIICase("'wasm-eval'", token)) {
+-    source_list.allow_wasm_eval = true;
+-    return true;
++  // Temporarily behind a runtime feature
++  if (EqualIgnoringASCIICase("'wasm-eval'", token)) {
++    if (RuntimeEnabledFeatures::WebAssemblyCSPEnabled() ||
++        policy->SupportsWasmEval()) {
++      source_list.allow_wasm_eval = true;
++      return true;
++    } else {
++      return false;
++    }
+   }
+ 
+   if (EqualIgnoringASCIICase("'strict-dynamic'", token)) {
+diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
+index c81216f07beb0fc363b0eb0d6b104031ca2c1992..2aba9f6528569c19461e0084f4a0495dfd6b59ea 100644
+--- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
++++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
+@@ -2099,6 +2099,9 @@
+     {
+       name: "WebAppWindowControlsOverlay",
+     },
++    {
++      name: "WebAssemblyCSP",
++    },
+     {
+       name: "WebAssemblySimd",
+       origin_trial_feature_name: "WebAssemblySimd",
