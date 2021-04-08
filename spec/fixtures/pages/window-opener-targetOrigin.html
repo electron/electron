@@ -13,7 +13,7 @@
     window.opener.postMessage('do not deliver empty', '')
     window.opener.postMessage('deliver', window.location.origin)
   } else {
-    const opened = window.open(`${window.location.href}?opened=true`, '', 'show=no')
+    const opened = window.open(`${window.location.href}?opened=true`, '', 'show=no,contextIsolation=no,nodeIntegration=yes')
     window.addEventListener('message', function (event) {
       window.opener.postMessage(event.data, '*')
       opened.close()

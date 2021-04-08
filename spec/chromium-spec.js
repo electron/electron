@@ -218,7 +218,7 @@ describe('chromium feature', () => {
 
       it('delivers messages that match the origin', async () => {
         const message = waitForEvent(window, 'message');
-        const b = window.open(serverURL, '', 'show=no');
+        const b = window.open(serverURL, '', 'show=no,contextIsolation=no,nodeIntegration=yes');
         const event = await message;
         b.close();
         expect(event.data).to.equal('deliver');

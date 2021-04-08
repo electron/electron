@@ -2372,7 +2372,7 @@ describe('BrowserWindow module', () => {
           }
         });
         let childWc: WebContents | null = null;
-        w.webContents.setWindowOpenHandler(() => ({ action: 'allow', overrideBrowserWindowOptions: { webPreferences: { preload } } }));
+        w.webContents.setWindowOpenHandler(() => ({ action: 'allow', overrideBrowserWindowOptions: { webPreferences: { preload, contextIsolation: false } } }));
 
         w.webContents.on('did-create-window', (win) => {
           childWc = win.webContents;
@@ -2587,6 +2587,10 @@ describe('BrowserWindow module', () => {
             preload
           }
         });
+        w.webContents.setWindowOpenHandler(() => ({
+          action: 'allow',
+          overrideBrowserWindowOptions: { show: false, webPreferences: { contextIsolation: false, webviewTag: true, nativeWindowOpen: true, nodeIntegrationInSubFrames: true } }
+        }));
         w.webContents.once('new-window', (event, url, frameName, disposition, options) => {
           options.show = false;
         });
@@ -2665,7 +2669,9 @@ describe('BrowserWindow module', () => {
             action: 'allow',
             overrideBrowserWindowOptions: {
               webPreferences: {
-                preload: path.join(fixtures, 'api', 'window-open-preload.js')
+                preload: path.join(fixtures, 'api', 'window-open-preload.js'),
+                contextIsolation: false,
+                nodeIntegrationInSubFrames: true
               }
             }
           }));
