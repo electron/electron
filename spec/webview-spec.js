@@ -510,7 +510,8 @@ describe('<webview> tag', function () {
 
     it('emits when link with target is called', async () => {
       loadWebView(webview, {
-        src: `file://${fixtures}/pages/target-name.html`
+        src: `file://${fixtures}/pages/target-name.html`,
+        allowpopups: true
       });
       const { url, frameName } = await waitForEvent(webview, 'new-window');
 
