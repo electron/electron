@@ -10,27 +10,6 @@ Also apply electron/electron@0f67b1866a9f00b852370e721affa4efda623f3a
 and electron/electron@d2368d2d3b3de9eec4cc32b6aaf035cc89921bf1 as
 patches.
 
-diff --git a/chrome/browser/extensions/global_shortcut_listener_win.cc b/chrome/browser/extensions/global_shortcut_listener_win.cc
-index 0f344ee352a48497e77a72bb298146c61e7fcf2a..3bad4263ea552fc63445bf5613f8add746a3a374 100644
---- a/chrome/browser/extensions/global_shortcut_listener_win.cc
-+++ b/chrome/browser/extensions/global_shortcut_listener_win.cc
-@@ -62,6 +62,8 @@ void GlobalShortcutListenerWin::OnWndProc(HWND hwnd,
-   modifiers |= (LOWORD(lparam) & MOD_SHIFT) ? ui::EF_SHIFT_DOWN : 0;
-   modifiers |= (LOWORD(lparam) & MOD_ALT) ? ui::EF_ALT_DOWN : 0;
-   modifiers |= (LOWORD(lparam) & MOD_CONTROL) ? ui::EF_CONTROL_DOWN : 0;
-+  modifiers |= (LOWORD(lparam) & MOD_WIN) ? ui::EF_COMMAND_DOWN : 0;
-+
-   ui::Accelerator accelerator(
-       ui::KeyboardCodeForWindowsKeyCode(key_code), modifiers);
- 
-@@ -92,6 +94,7 @@ bool GlobalShortcutListenerWin::RegisterAcceleratorImpl(
-   modifiers |= accelerator.IsShiftDown() ? MOD_SHIFT : 0;
-   modifiers |= accelerator.IsCtrlDown() ? MOD_CONTROL : 0;
-   modifiers |= accelerator.IsAltDown() ? MOD_ALT : 0;
-+  modifiers |= accelerator.IsCmdDown() ? MOD_WIN : 0;
- 
-   // Create an observer that registers a hot key for |accelerator|.
-   std::unique_ptr<gfx::SingletonHwndHotKeyObserver> observer =
 diff --git a/chrome/browser/extensions/global_shortcut_listener_ozone.cc b/chrome/browser/extensions/global_shortcut_listener_ozone.cc
 index d6d896b87bb327bd7387335bd5bbac4616316f1e..ec0293ba8b66df5c9a34435cb2a0c9a333ebdf7a 100644
 --- a/chrome/browser/extensions/global_shortcut_listener_ozone.cc
@@ -86,6 +65,27 @@ index 27655641551afe9763cd76afe366f04e56efbbc6..14ff891a057464a1bd570cb14e127ce8
    void OnPlatformListenerDestroyed() override;
  
    bool is_listening_ = false;
+diff --git a/chrome/browser/extensions/global_shortcut_listener_win.cc b/chrome/browser/extensions/global_shortcut_listener_win.cc
+index 0f344ee352a48497e77a72bb298146c61e7fcf2a..3bad4263ea552fc63445bf5613f8add746a3a374 100644
+--- a/chrome/browser/extensions/global_shortcut_listener_win.cc
++++ b/chrome/browser/extensions/global_shortcut_listener_win.cc
+@@ -62,6 +62,8 @@ void GlobalShortcutListenerWin::OnWndProc(HWND hwnd,
+   modifiers |= (LOWORD(lparam) & MOD_SHIFT) ? ui::EF_SHIFT_DOWN : 0;
+   modifiers |= (LOWORD(lparam) & MOD_ALT) ? ui::EF_ALT_DOWN : 0;
+   modifiers |= (LOWORD(lparam) & MOD_CONTROL) ? ui::EF_CONTROL_DOWN : 0;
++  modifiers |= (LOWORD(lparam) & MOD_WIN) ? ui::EF_COMMAND_DOWN : 0;
++
+   ui::Accelerator accelerator(
+       ui::KeyboardCodeForWindowsKeyCode(key_code), modifiers);
+ 
+@@ -92,6 +94,7 @@ bool GlobalShortcutListenerWin::RegisterAcceleratorImpl(
+   modifiers |= accelerator.IsShiftDown() ? MOD_SHIFT : 0;
+   modifiers |= accelerator.IsCtrlDown() ? MOD_CONTROL : 0;
+   modifiers |= accelerator.IsAltDown() ? MOD_ALT : 0;
++  modifiers |= accelerator.IsCmdDown() ? MOD_WIN : 0;
+ 
+   // Create an observer that registers a hot key for |accelerator|.
+   std::unique_ptr<gfx::SingletonHwndHotKeyObserver> observer =
 diff --git a/chrome/browser/extensions/global_shortcut_listener_x11.cc b/chrome/browser/extensions/global_shortcut_listener_x11.cc
 index ab719d290288a0cd35851f4e952b39180f4f3a22..882bd38d886d3b499fa8a6403c409fcee1374953 100644
 --- a/chrome/browser/extensions/global_shortcut_listener_x11.cc
@@ -141,6 +141,65 @@ index 49d1c3224fdab07526a6150318d7603bf4a3f27c..3aab0d9033554035ca2b0909f219592d
  
    std::set<ui::Accelerator> registered_hot_keys_;
  };
+diff --git a/content/browser/media/media_keys_listener_manager_impl.cc b/content/browser/media/media_keys_listener_manager_impl.cc
+index 4145418210c2b1033390ec8a2e657cb1fcd048f8..5938f75742b793868638e693a9a8c8dc686dfc46 100644
+--- a/content/browser/media/media_keys_listener_manager_impl.cc
++++ b/content/browser/media/media_keys_listener_manager_impl.cc
+@@ -290,6 +290,11 @@ void MediaKeysListenerManagerImpl::UpdateSystemMediaControlsEnabledControls() {
+       case ui::VKEY_MEDIA_STOP:
+         system_media_controls_->SetIsStopEnabled(should_enable);
+         break;
++      case ui::VKEY_VOLUME_DOWN:
++      case ui::VKEY_VOLUME_UP:
++      case ui::VKEY_VOLUME_MUTE:
++        // Do nothing.
++        break;
+       default:
+         NOTREACHED();
+     }
+diff --git a/ui/base/accelerators/media_keys_listener.cc b/ui/base/accelerators/media_keys_listener.cc
+index 1145e1f3d79482b5bb468c3128431ac674310e5f..e9f595045e0c076e0735f27dfc38bfbc7951d372 100644
+--- a/ui/base/accelerators/media_keys_listener.cc
++++ b/ui/base/accelerators/media_keys_listener.cc
+@@ -13,7 +13,8 @@ MediaKeysListener::~MediaKeysListener() = default;
+ // static
+ bool MediaKeysListener::IsMediaKeycode(KeyboardCode key_code) {
+   return key_code == VKEY_MEDIA_PLAY_PAUSE || key_code == VKEY_MEDIA_STOP ||
+-         key_code == VKEY_MEDIA_PREV_TRACK || key_code == VKEY_MEDIA_NEXT_TRACK;
++         key_code == VKEY_MEDIA_PREV_TRACK || key_code == VKEY_MEDIA_NEXT_TRACK ||
++         key_code == VKEY_VOLUME_UP || key_code == VKEY_VOLUME_DOWN || key_code == VKEY_VOLUME_MUTE;
+ }
+ 
+ }  // namespace ui
+diff --git a/ui/base/accelerators/media_keys_listener_mac.mm b/ui/base/accelerators/media_keys_listener_mac.mm
+index 60f7ad6ffb28fa6554e02a7e031408f4d1124d86..0e8325e993178443d926249c427957bb16991861 100644
+--- a/ui/base/accelerators/media_keys_listener_mac.mm
++++ b/ui/base/accelerators/media_keys_listener_mac.mm
+@@ -32,6 +32,12 @@ KeyboardCode MediaKeyCodeToKeyboardCode(int key_code) {
+     case NX_KEYTYPE_NEXT:
+     case NX_KEYTYPE_FAST:
+       return VKEY_MEDIA_NEXT_TRACK;
++    case NX_KEYTYPE_SOUND_UP:
++      return VKEY_VOLUME_UP;
++    case NX_KEYTYPE_SOUND_DOWN:
++      return VKEY_VOLUME_DOWN;
++    case NX_KEYTYPE_MUTE:
++      return VKEY_VOLUME_MUTE;
+   }
+   return VKEY_UNKNOWN;
+ }
+@@ -191,7 +197,10 @@ static CGEventRef EventTapCallback(CGEventTapProxy proxy,
+   int key_code = (data1 & 0xFFFF0000) >> 16;
+   if (key_code != NX_KEYTYPE_PLAY && key_code != NX_KEYTYPE_NEXT &&
+       key_code != NX_KEYTYPE_PREVIOUS && key_code != NX_KEYTYPE_FAST &&
+-      key_code != NX_KEYTYPE_REWIND) {
++      key_code != NX_KEYTYPE_REWIND &&
++      key_code != NX_KEYTYPE_SOUND_UP &&
++      key_code != NX_KEYTYPE_SOUND_DOWN &&
++      key_code != NX_KEYTYPE_MUTE) {
+     return event;
+   }
+ 
 diff --git a/ui/base/x/x11_global_shortcut_listener.cc b/ui/base/x/x11_global_shortcut_listener.cc
 index 658c04c865f0e0f17501fc97965adc3bd56c709a..8c693eecbca10cd8b287fdd504d498e6a5e72e96 100644
 --- a/ui/base/x/x11_global_shortcut_listener.cc
@@ -250,63 +309,3 @@ index 9e472d76423a748cbf6257c6656d8fd69853dd93..87ee1a5f8c6cd3587f96258ed548690c
  
   private:
    // Due to how system key grabbing works on X11, we have to be a bit greedy and
-
-diff --git a/content/browser/media/media_keys_listener_manager_impl.cc b/content/browser/media/media_keys_listener_manager_impl.cc
-index 4145418210c2b1033390ec8a2e657cb1fcd048f8..5938f75742b793868638e693a9a8c8dc686dfc46 100644
---- a/content/browser/media/media_keys_listener_manager_impl.cc
-+++ b/content/browser/media/media_keys_listener_manager_impl.cc
-@@ -290,6 +290,11 @@ void MediaKeysListenerManagerImpl::UpdateSystemMediaControlsEnabledControls() {
-       case ui::VKEY_MEDIA_STOP:
-         system_media_controls_->SetIsStopEnabled(should_enable);
-         break;
-+      case ui::VKEY_VOLUME_DOWN:
-+      case ui::VKEY_VOLUME_UP:
-+      case ui::VKEY_VOLUME_MUTE:
-+        // Do nothing.
-+        break;
-       default:
-         NOTREACHED();
-     }
-diff --git a/ui/base/accelerators/media_keys_listener.cc b/ui/base/accelerators/media_keys_listener.cc
-index 1145e1f3d79482b5bb468c3128431ac674310e5f..e9f595045e0c076e0735f27dfc38bfbc7951d372 100644
---- a/ui/base/accelerators/media_keys_listener.cc
-+++ b/ui/base/accelerators/media_keys_listener.cc
-@@ -13,7 +13,8 @@ MediaKeysListener::~MediaKeysListener() = default;
- // static
- bool MediaKeysListener::IsMediaKeycode(KeyboardCode key_code) {
-   return key_code == VKEY_MEDIA_PLAY_PAUSE || key_code == VKEY_MEDIA_STOP ||
--         key_code == VKEY_MEDIA_PREV_TRACK || key_code == VKEY_MEDIA_NEXT_TRACK;
-+         key_code == VKEY_MEDIA_PREV_TRACK || key_code == VKEY_MEDIA_NEXT_TRACK ||
-+         key_code == VKEY_VOLUME_UP || key_code == VKEY_VOLUME_DOWN || key_code == VKEY_VOLUME_MUTE;
- }
- 
- }  // namespace ui
-diff --git a/ui/base/accelerators/media_keys_listener_mac.mm b/ui/base/accelerators/media_keys_listener_mac.mm
-index 60f7ad6ffb28fa6554e02a7e031408f4d1124d86..0e8325e993178443d926249c427957bb16991861 100644
---- a/ui/base/accelerators/media_keys_listener_mac.mm
-+++ b/ui/base/accelerators/media_keys_listener_mac.mm
-@@ -32,6 +32,12 @@ KeyboardCode MediaKeyCodeToKeyboardCode(int key_code) {
-     case NX_KEYTYPE_NEXT:
-     case NX_KEYTYPE_FAST:
-       return VKEY_MEDIA_NEXT_TRACK;
-+    case NX_KEYTYPE_SOUND_UP:
-+      return VKEY_VOLUME_UP;
-+    case NX_KEYTYPE_SOUND_DOWN:
-+      return VKEY_VOLUME_DOWN;
-+    case NX_KEYTYPE_MUTE:
-+      return VKEY_VOLUME_MUTE;
-   }
-   return VKEY_UNKNOWN;
- }
-@@ -191,7 +197,10 @@ static CGEventRef EventTapCallback(CGEventTapProxy proxy,
-   int key_code = (data1 & 0xFFFF0000) >> 16;
-   if (key_code != NX_KEYTYPE_PLAY && key_code != NX_KEYTYPE_NEXT &&
-       key_code != NX_KEYTYPE_PREVIOUS && key_code != NX_KEYTYPE_FAST &&
--      key_code != NX_KEYTYPE_REWIND) {
-+      key_code != NX_KEYTYPE_REWIND &&
-+      key_code != NX_KEYTYPE_SOUND_UP &&
-+      key_code != NX_KEYTYPE_SOUND_DOWN &&
-+      key_code != NX_KEYTYPE_MUTE) {
-     return event;
-   }
- 
