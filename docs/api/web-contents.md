@@ -1364,19 +1364,21 @@ Captures a snapshot of the page within `rect`. Omitting `rect` will capture the 
 Returns `Boolean` - Whether this page is being captured. It returns true when the capturer count
 is large then 0.
 
-#### `contents.incrementCapturerCount([size, stayHidden])`
+#### `contents.incrementCapturerCount([size, stayHidden, stayAwake])`
 
 * `size` [Size](structures/size.md) (optional) - The preferred size for the capturer.
 * `stayHidden` Boolean (optional) -  Keep the page hidden instead of visible.
+* `stayAwake` Boolean (optional) -  Keep the system awake instead of allowing it to sleep.
 
 Increase the capturer count by one. The page is considered visible when its browser window is
 hidden and the capturer count is non-zero. If you would like the page to stay hidden, you should ensure that `stayHidden` is set to true.
 
 This also affects the Page Visibility API.
 
-#### `contents.decrementCapturerCount([stayHidden])`
+#### `contents.decrementCapturerCount([stayHidden, stayAwake])`
 
 * `stayHidden` Boolean (optional) -  Keep the page in hidden state instead of visible.
+* `stayAwake` Boolean (optional) -  Keep the system awake instead of allowing it to sleep.
 
 Decrease the capturer count by one. The page will be set to hidden or occluded state when its
 browser window is hidden or occluded and the capturer count reaches zero. If you want to
