@@ -1573,10 +1573,13 @@ bool ElectronBrowserClient::WillCreateURLLoaderFactory(
       ProtocolRegistry::FromBrowserContext(browser_context);
   new ProxyingURLLoaderFactory(
       web_request.get(), protocol_registry->intercept_handlers(),
-      render_process_id, &next_id_, std::move(navigation_ui_data),
-      std::move(navigation_id), std::move(proxied_receiver),
-      std::move(target_factory_remote), std::move(header_client_receiver),
-      type);
+      render_process_id,
+      frame_host ? frame_host->GetRoutingID() : MSG_ROUTING_NONE,
+      frame_host ? frame_host->GetRenderViewHost()->GetRoutingID()
+                 : MSG_ROUTING_NONE,
+      &next_id_, std::move(navigation_ui_data), std::move(navigation_id),
+      std::move(proxied_receiver), std::move(target_factory_remote),
+      std::move(header_client_receiver), type);
 
   if (bypass_redirect_checks)
     *bypass_redirect_checks = true;
