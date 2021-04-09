@@ -28,8 +28,7 @@ async function loadWebView (w: WebContents, attributes: Record<string, string>, 
   `);
 }
 
-// The render process of webview might receive SIGKILL because of OOM.
-ifdescribe(!process.env.IS_ASAN)('<webview> tag', function () {
+describe('<webview> tag', function () {
   const fixtures = path.join(__dirname, '..', 'spec', 'fixtures');
 
   afterEach(closeAllWindows);
