@@ -234,7 +234,6 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
 
 - (void)windowWillClose:(NSNotification*)notification {
   shell_->Cleanup();
-  shell_->NotifyWindowClosed();
 
   // Something called -[NSWindow close] on a sheet rather than calling
   // -[NSWindow endSheet:] on its parent. If the modal session is not ended
@@ -256,6 +255,7 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
       shell_->GetNativeWindow());
   auto* bridged_view = bridge_host->GetInProcessNSWindowBridge();
   bridged_view->OnWindowWillClose();
+  shell_->NotifyWindowClosed();
 }
 
 - (BOOL)windowShouldClose:(id)window {
