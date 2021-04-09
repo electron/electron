@@ -3,13 +3,8 @@ import { WebViewImpl } from '@electron/internal/renderer/web-view/web-view-impl'
 import { WEB_VIEW_CONSTANTS } from '@electron/internal/renderer/web-view/web-view-constants';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
-// Helper function to resolve url set in attribute.
-const a = document.createElement('a');
-
 const resolveURL = function (url?: string | null) {
-  if (!url) return '';
-  a.href = url;
-  return a.href;
+  return url ? new URL(url, location.href).href : '';
 };
 
 interface MutationHandler {
