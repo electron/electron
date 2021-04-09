@@ -367,8 +367,7 @@ describe('web security', () => {
   });
 });
 
-// Running child app under ASan might receive SIGKILL because of OOM.
-ifdescribe(!process.env.IS_ASAN)('command line switches', () => {
+describe('command line switches', () => {
   let appProcess: ChildProcess.ChildProcessWithoutNullStreams | undefined;
   afterEach(() => {
     if (appProcess && !appProcess.killed) {
