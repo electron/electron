@@ -11,10 +11,12 @@
 
 #include "base/memory/weak_ptr.h"
 #include "gin/wrappable.h"
+#include "mojo/public/cpp/bindings/receiver_set.h"
 #include "net/base/auth.h"
 #include "services/network/public/cpp/simple_url_loader_stream_consumer.h"
 #include "services/network/public/mojom/network_context.mojom.h"
 #include "services/network/public/mojom/url_loader_factory.mojom-forward.h"
+#include "services/network/public/mojom/url_loader_network_service_observer.mojom.h"
 #include "services/network/public/mojom/url_response_head.mojom.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "url/gurl.h"
@@ -39,20 +41,11 @@ namespace api {
 class SimpleURLLoaderWrapper
     : public gin::Wrappable<SimpleURLLoaderWrapper>,
       public gin_helper::EventEmitterMixin<SimpleURLLoaderWrapper>,
-      public network::SimpleURLLoaderStreamConsumer {
+      public network::SimpleURLLoaderStreamConsumer,
+      public network::mojom::URLLoaderNetworkServiceObserver {
  public:
   ~SimpleURLLoaderWrapper() override;
   static gin::Handle<SimpleURLLoaderWrapper> Create(gin::Arguments* args);
-
-  static SimpleURLLoaderWrapper* FromID(uint32_t id);
-
-  void OnAuthRequired(
-      const GURL& url,
-      bool first_auth_attempt,
-      net::AuthChallengeInfo auth_info,
-      network::mojom::URLResponseHeadPtr head,
-      mojo::PendingRemote<network::mojom::AuthChallengeResponder>
-          auth_challenge_responder);
 
   void Cancel();
 
@@ -73,6 +66,39 @@ class SimpleURLLoaderWrapper
   void OnComplete(bool success) override;
   void OnRetry(base::OnceClosure start_retry) override;
 
+  // network::mojom::URLLoaderNetworkServiceObserver:
+  void OnAuthRequired(
+      const base::Optional<base::UnguessableToken>& window_id,
+      uint32_t request_id,
+      const GURL& url,
+      bool first_auth_attempt,
+      const net::AuthChallengeInfo& auth_info,
+      const scoped_refptr<net::HttpResponseHeaders>& head_headers,
+      mojo::PendingRemote<network::mojom::AuthChallengeResponder>
+          auth_challenge_responder) override;
+  void OnSSLCertificateError(const GURL& url,
+                             int net_error,
+                             const net::SSLInfo& ssl_info,
+                             bool fatal,
+                             OnSSLCertificateErrorCallback response) override {}
+  void OnCertificateRequested(
+      const base::Optional<base::UnguessableToken>& window_id,
+      const scoped_refptr<net::SSLCertRequestInfo>& cert_info,
+      mojo::PendingRemote<network::mojom::ClientCertificateResponder>
+          client_cert_responder) override {}
+  void OnClearSiteData(const GURL& url,
+                       const std::string& header_value,
+                       int32_t load_flags,
+                       OnClearSiteDataCallback callback) override {}
+  void OnLoadingStateUpdate(network::mojom::LoadInfoPtr info,
+                            OnLoadingStateUpdateCallback callback) override {}
+  void OnDataUseUpdate(int32_t network_traffic_annotation_id_hash,
+                       int64_t recv_bytes,
+                       int64_t sent_bytes) override {}
+  void Clone(
+      mojo::PendingReceiver<network::mojom::URLLoaderNetworkServiceObserver>
+          listener) override;
+
   // SimpleURLLoader callbacks
   void OnResponseStarted(const GURL& final_url,
                          const network::mojom::URLResponseHead& response_head);
@@ -86,11 +112,12 @@ class SimpleURLLoaderWrapper
   void Pin();
   void PinBodyGetter(v8::Local<v8::Value>);
 
-  uint32_t id_;
   std::unique_ptr<network::SimpleURLLoader> loader_;
   v8::Global<v8::Value> pinned_wrapper_;
   v8::Global<v8::Value> pinned_chunk_pipe_getter_;
 
+  mojo::ReceiverSet<network::mojom::URLLoaderNetworkServiceObserver>
+      url_loader_network_observer_receivers_;
   base::WeakPtrFactory<SimpleURLLoaderWrapper> weak_factory_{this};
 };
 
