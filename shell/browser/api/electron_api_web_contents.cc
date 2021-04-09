@@ -2812,22 +2812,29 @@ v8::Local<v8::Promise> WebContents::CapturePage(gin::Arguments* args) {
 void WebContents::IncrementCapturerCount(gin::Arguments* args) {
   gfx::Size size;
   bool stay_hidden = false;
+  bool stay_awake = false;
 
   // get size arguments if they exist
   args->GetNext(&size);
   // get stayHidden arguments if they exist
   args->GetNext(&stay_hidden);
+  // get stayAwake arguments if they exist
+  args->GetNext(&stay_awake);
 
-  web_contents()->IncrementCapturerCount(size, stay_hidden);
+  ignore_result(
+      web_contents()->IncrementCapturerCount(size, stay_hidden, stay_awake));
 }
 
 void WebContents::DecrementCapturerCount(gin::Arguments* args) {
   bool stay_hidden = false;
+  bool stay_awake = false;
 
   // get stayHidden arguments if they exist
   args->GetNext(&stay_hidden);
+  // get stayAwake arguments if they exist
+  args->GetNext(&stay_awake);
 
-  web_contents()->DecrementCapturerCount(stay_hidden);
+  web_contents()->DecrementCapturerCount(stay_hidden, stay_awake);
 }
 
 bool WebContents::IsBeingCaptured() {
