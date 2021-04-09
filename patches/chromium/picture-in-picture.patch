@@ -34,6 +34,19 @@ index 28c00fd4f326dd7d5efa839cd7540e2f9f824904..98e77d49684ab6a267cf80122c9a9a79
  #include "ui/base/l10n/l10n_util.h"
  #include "ui/gfx/color_palette.h"
  #include "ui/gfx/paint_vector_icon.h"
+diff --git a/chrome/browser/ui/views/overlay/hang_up_button.cc b/chrome/browser/ui/views/overlay/hang_up_button.cc
+index 4b741d67c4c20766e248f0799825103ba4f2a1ce..adf85811da98e1666e8e93e5b339e176ecfe64e3 100644
+--- a/chrome/browser/ui/views/overlay/hang_up_button.cc
++++ b/chrome/browser/ui/views/overlay/hang_up_button.cc
+@@ -5,7 +5,7 @@
+ #include "chrome/browser/ui/views/overlay/hang_up_button.h"
+ 
+ #include "chrome/browser/ui/views/overlay/constants.h"
+-#include "chrome/grit/generated_resources.h"
++#include "electron/grit/electron_resources.h"
+ #include "components/vector_icons/vector_icons.h"
+ #include "ui/base/l10n/l10n_util.h"
+ #include "ui/gfx/paint_vector_icon.h"
 diff --git a/chrome/browser/ui/views/overlay/overlay_window_views.cc b/chrome/browser/ui/views/overlay/overlay_window_views.cc
 index 2acb4062aa4bb39dd6bdeb1b0758ea089740636a..b2c01e88d75a1f2e8d21be5579f986be04502e8a 100644
 --- a/chrome/browser/ui/views/overlay/overlay_window_views.cc
@@ -116,6 +129,32 @@ index e2f0491e511d9873b1e0c15f3d5ce8770dc7d941..5f2509a09f94c756d7af3474da2c1d85
  #include "ui/base/l10n/l10n_util.h"
  #include "ui/gfx/color_palette.h"
  #include "ui/views/background.h"
+diff --git a/chrome/browser/ui/views/overlay/toggle_camera_button.cc b/chrome/browser/ui/views/overlay/toggle_camera_button.cc
+index a3cff2dfa906aa469abd5f12f3f70f0acea0adfe..93ad732afe209a9f51756112a5aa4f7dcd6a8b2e 100644
+--- a/chrome/browser/ui/views/overlay/toggle_camera_button.cc
++++ b/chrome/browser/ui/views/overlay/toggle_camera_button.cc
+@@ -5,7 +5,7 @@
+ #include "chrome/browser/ui/views/overlay/toggle_camera_button.h"
+ 
+ #include "chrome/browser/ui/views/overlay/constants.h"
+-#include "chrome/grit/generated_resources.h"
++#include "electron/grit/electron_resources.h"
+ #include "components/vector_icons/vector_icons.h"
+ #include "ui/base/l10n/l10n_util.h"
+ #include "ui/gfx/paint_vector_icon.h"
+diff --git a/chrome/browser/ui/views/overlay/toggle_microphone_button.cc b/chrome/browser/ui/views/overlay/toggle_microphone_button.cc
+index a681ba4ed2de3226b20c5e89361c4bec47dfb8ea..5cd85706018fe163d1e0a9e48e3b8a4be5dec7e9 100644
+--- a/chrome/browser/ui/views/overlay/toggle_microphone_button.cc
++++ b/chrome/browser/ui/views/overlay/toggle_microphone_button.cc
+@@ -5,7 +5,7 @@
+ #include "chrome/browser/ui/views/overlay/toggle_microphone_button.h"
+ 
+ #include "chrome/browser/ui/views/overlay/constants.h"
+-#include "chrome/grit/generated_resources.h"
++#include "electron/grit/electron_resources.h"
+ #include "components/vector_icons/vector_icons.h"
+ #include "ui/base/l10n/l10n_util.h"
+ #include "ui/gfx/paint_vector_icon.h"
 diff --git a/chrome/browser/ui/views/overlay/track_image_button.cc b/chrome/browser/ui/views/overlay/track_image_button.cc
 index 8b9911c9819f334c9c634e986e6809ed6e1140c5..e8eb76a94a459bc293f47ad08099bc707527dd7b 100644
 --- a/chrome/browser/ui/views/overlay/track_image_button.cc
