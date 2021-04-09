@@ -287,6 +287,39 @@ describe('web security', () => {
     expect(response).to.equal('passed');
   });
 
+  describe('accessing file://', () => {
+    async function loadFile (w: BrowserWindow) {
+      const thisFile = url.format({
+        pathname: __filename.replace(/\\/g, '/'),
+        protocol: 'file',
+        slashes: true
+      });
+      await w.loadURL(`data:text/html,<script>
+          function loadFile() {
+            return new Promise((resolve) => {
+              fetch('${thisFile}').then(
+                () => resolve('loaded'),
+                () => resolve('failed')
+              )
+            });
+          }
+        </script>`);
+      return await w.webContents.executeJavaScript('loadFile()');
+    }
+
+    it('is forbidden when web security is enabled', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { webSecurity: true } });
+      const result = await loadFile(w);
+      expect(result).to.equal('failed');
+    });
+
+    it('is allowed when web security is disabled', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { webSecurity: false } });
+      const result = await loadFile(w);
+      expect(result).to.equal('loaded');
+    });
+  });
+
   describe('wasm-eval csp', () => {
     async function loadWasm (csp: string) {
       const w = new BrowserWindow({
