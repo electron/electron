@@ -32,12 +32,10 @@
 #include "content/public/browser/cors_origin_pattern_setter.h"
 #include "content/public/browser/shared_cors_origin_access_list.h"
 #include "content/public/browser/storage_partition.h"
-#include "mojo/public/cpp/bindings/self_owned_receiver.h"
 #include "net/base/escape.h"
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
 #include "services/network/public/mojom/network_context.mojom.h"
-#include "shell/browser/api/electron_api_url_loader.h"
 #include "shell/browser/cookie_change_notifier.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/browser/electron_browser_main_parts.h"
@@ -342,7 +340,6 @@ ElectronBrowserContext::GetURLLoaderFactory() {
   network::mojom::URLLoaderFactoryParamsPtr params =
       network::mojom::URLLoaderFactoryParams::New();
   params->header_client = std::move(header_client);
-  params->auth_client = auth_client_.BindNewPipeAndPassRemote();
   params->process_id = network::mojom::kBrowserProcessId;
   params->is_trusted = true;
   params->is_corb_enabled = false;
@@ -360,39 +357,6 @@ ElectronBrowserContext::GetURLLoaderFactory() {
       base::MakeRefCounted<network::WrapperSharedURLLoaderFactory>(
           std::move(network_factory_remote));
   return url_loader_factory_;
-}
-
-class AuthResponder : public network::mojom::TrustedAuthClient {
- public:
-  AuthResponder() {}
-  ~AuthResponder() override = default;
-
- private:
-  void OnAuthRequired(
-      const base::Optional<::base::UnguessableToken>& window_id,
-      uint32_t process_id,
-      uint32_t request_id,
-      const ::GURL& url,
-      bool first_auth_attempt,
-      const ::net::AuthChallengeInfo& auth_info,
-      ::network::mojom::URLResponseHeadPtr head,
-      mojo::PendingRemote<network::mojom::AuthChallengeResponder>
-          auth_challenge_responder) override {
-    api::SimpleURLLoaderWrapper* url_loader =
-        api::SimpleURLLoaderWrapper::FromID(routing_id);
-    if (url_loader) {
-      url_loader->OnAuthRequired(url, first_auth_attempt, auth_info,
-                                 std::move(head),
-                                 std::move(auth_challenge_responder));
-    }
-  }
-};
-
-void ElectronBrowserContext::OnLoaderCreated(
-    int32_t request_id,
-    mojo::PendingReceiver<network::mojom::TrustedAuthClient> auth_client) {
-  mojo::MakeSelfOwnedReceiver(std::make_unique<AuthResponder>(),
-                              std::move(auth_client));
 }
 
 content::PushMessagingService*
