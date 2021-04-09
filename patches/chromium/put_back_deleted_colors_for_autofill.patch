@@ -7,12 +7,12 @@ https://chromium-review.googlesource.com/c/chromium/src/+/1652925 removed colors
 needed in chromium but our autofill implementation uses them.  This patch can be removed if we refactor
 our autofill implementation to work like Chromium's.
 
-diff --git a/ui/gtk/native_theme_gtk.cc b/ui/gtk/native_theme_gtk.cc
-index 0fede8f4c2823e5bd07f507d89249a2119dcb858..d361cc4114ab0deb91885b08b7792cdb0e7d005b 100644
---- a/ui/gtk/native_theme_gtk.cc
-+++ b/ui/gtk/native_theme_gtk.cc
-@@ -369,6 +369,29 @@ base::Optional<SkColor> SkColorFromColorId(ui::NativeTheme::ColorId color_id) {
-     case ui::NativeTheme::kColorId_TableHeaderSeparator:
+diff --git a/ui/gtk/gtk_util.cc b/ui/gtk/gtk_util.cc
+index 4f72827700dc76f090e8dafd7bb5ff862a610cd7..29d1606e873f9674354b586fbf0d1445028afed8 100644
+--- a/ui/gtk/gtk_util.cc
++++ b/ui/gtk/gtk_util.cc
+@@ -1078,6 +1078,29 @@ base::Optional<SkColor> SkColorFromColorId(ui::ColorId color_id) {
+     case ui::kColorTableHeaderSeparator:
        return GetBorderColor("GtkTreeView#treeview.view GtkButton#button");
  
 +    // Results Table
@@ -40,22 +40,12 @@ index 0fede8f4c2823e5bd07f507d89249a2119dcb858..d361cc4114ab0deb91885b08b7792cdb
 +
      // Throbber
      // TODO(thomasanderson): Render GtkSpinner directly.
-     case ui::NativeTheme::kColorId_ThrobberSpinningColor:
+     case ui::kColorThrobber:
 diff --git a/ui/native_theme/common_theme.cc b/ui/native_theme/common_theme.cc
-index f0caeb52a1ca5fbd56b3a85af6d009a33b493fd7..aa48e3de05117b94cb77c81a338486cdce942012 100644
+index cdd49c092b611176f27fd581cb56c153b6583eeb..91141ded0d83ccb1b31f7555e8579843b2c5eb33 100644
 --- a/ui/native_theme/common_theme.cc
 +++ b/ui/native_theme/common_theme.cc
-@@ -52,7 +52,8 @@ base::Optional<SkColor> GetHighContrastColor(
-   }
- }
- 
--base::Optional<SkColor> GetDarkSchemeColor(NativeTheme::ColorId color_id) {
-+base::Optional<SkColor> GetDarkSchemeColor(const NativeTheme* base_theme,
-+                                           NativeTheme::ColorId color_id) {
-   switch (color_id) {
-     // Alert
-     case NativeTheme::kColorId_AlertSeverityLow:
-@@ -64,6 +65,14 @@ base::Optional<SkColor> GetDarkSchemeColor(NativeTheme::ColorId color_id) {
+@@ -68,6 +68,14 @@ base::Optional<SkColor> GetDarkSchemeColor(NativeTheme::ColorId color_id,
      case NativeTheme::kColorId_FocusedBorderColor:
        return gfx::kGoogleBlue400;
  
@@ -70,27 +60,6 @@ index f0caeb52a1ca5fbd56b3a85af6d009a33b493fd7..aa48e3de05117b94cb77c81a338486cd
      // Button
      case NativeTheme::kColorId_ProminentButtonColor:
        return gfx::kGoogleBlue300;
-@@ -87,16 +96,16 @@ base::Optional<SkColor> GetDarkSchemeColor(NativeTheme::ColorId color_id) {
-     // Toggle button
-     case ui::NativeTheme::kColorId_ToggleButtonThumbColorOff: {
-       const SkColor enabled =
--          *GetDarkSchemeColor(NativeTheme::kColorId_LabelEnabledColor);
-+          *GetDarkSchemeColor(base_theme, NativeTheme::kColorId_LabelEnabledColor);
-       const SkColor secondary =
--          *GetDarkSchemeColor(NativeTheme::kColorId_LabelSecondaryColor);
-+          *GetDarkSchemeColor(base_theme, NativeTheme::kColorId_LabelSecondaryColor);
-       return color_utils::AlphaBlend(enabled, secondary, 0.05f);
-     }
-     case ui::NativeTheme::kColorId_ToggleButtonThumbColorOn: {
-       const SkColor enabled =
--          *GetDarkSchemeColor(NativeTheme::kColorId_LabelEnabledColor);
-+          *GetDarkSchemeColor(base_theme, NativeTheme::kColorId_LabelEnabledColor);
-       const SkColor prominent =
--          *GetDarkSchemeColor(NativeTheme::kColorId_ProminentButtonColor);
-+          *GetDarkSchemeColor(base_theme, NativeTheme::kColorId_ProminentButtonColor);
-       return color_utils::AlphaBlend(enabled, prominent, 0.05f);
-     }
-     case ui::NativeTheme::kColorId_ToggleButtonTrackColorOff:
 @@ -540,6 +549,18 @@ SkColor GetDefaultColor(NativeTheme::ColorId color_id,
      case NativeTheme::kColorId_WindowBackground:
        return SK_ColorWHITE;
@@ -110,15 +79,6 @@ index f0caeb52a1ca5fbd56b3a85af6d009a33b493fd7..aa48e3de05117b94cb77c81a338486cd
      case NativeTheme::kColorId_NumColors:
        // Keeping the kColorId_NumColors case instead of using the default case
        // allows ColorId additions to trigger compile error for an incomplete
-@@ -584,7 +605,7 @@ SkColor GetAuraColor(NativeTheme::ColorId color_id,
-   }
- 
-   if (color_scheme == NativeTheme::ColorScheme::kDark) {
--    base::Optional<SkColor> color = GetDarkSchemeColor(color_id);
-+    base::Optional<SkColor> color = GetDarkSchemeColor(base_theme, color_id);
-     if (color.has_value()) {
-       DVLOG(2) << "GetDarkSchemeColor: "
-                << "NativeTheme::ColorId: " << NativeThemeColorIdName(color_id)
 diff --git a/ui/native_theme/native_theme_color_id.h b/ui/native_theme/native_theme_color_id.h
 index 60197576c71e86cd3ad17e83bfc699509c365d6c..426504eec69da7100c6484271fb35f1a69f84a43 100644
 --- a/ui/native_theme/native_theme_color_id.h
