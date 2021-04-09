@@ -259,7 +259,7 @@ class NativeWindow : public base::SupportsUserData,
   // related notifications.
   void NotifyWindowRequestPreferredWith(int* width);
   void NotifyWindowCloseButtonClicked();
-  void NotifyWindowClosed();
+  virtual void NotifyWindowClosed();
   void NotifyWindowEndSession();
   void NotifyWindowBlur();
   void NotifyWindowFocus();
