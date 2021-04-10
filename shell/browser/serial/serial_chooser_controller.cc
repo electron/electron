@@ -124,9 +124,13 @@ void SerialChooserController::OnDeviceChosen(const std::string& port_id) {
         std::find_if(ports_.begin(), ports_.end(), [&port_id](const auto& ptr) {
           return ptr->token.ToString() == port_id;
         });
-    chooser_context_->GrantPortPermission(requesting_origin_, embedding_origin_,
-                                          *it->get());
-    RunCallback(it->Clone());
+    if (it != ports_.end()) {
+      chooser_context_->GrantPortPermission(requesting_origin_,
+                                            embedding_origin_, *it->get());
+      RunCallback(it->Clone());
+    } else {
+      RunCallback(/*port=*/nullptr);
+    }
   }
 }
 
