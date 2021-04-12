@@ -7,40 +7,6 @@ https://chromium-review.googlesource.com/c/chromium/src/+/1652925 removed colors
 needed in chromium but our autofill implementation uses them.  This patch can be removed if we refactor
 our autofill implementation to work like Chromium's.
 
-diff --git a/ui/gtk/gtk_util.cc b/ui/gtk/gtk_util.cc
-index 4f72827700dc76f090e8dafd7bb5ff862a610cd7..29d1606e873f9674354b586fbf0d1445028afed8 100644
---- a/ui/gtk/gtk_util.cc
-+++ b/ui/gtk/gtk_util.cc
-@@ -1078,6 +1078,29 @@ base::Optional<SkColor> SkColorFromColorId(ui::ColorId color_id) {
-     case ui::kColorTableHeaderSeparator:
-       return GetBorderColor("GtkTreeView#treeview.view GtkButton#button");
- 
-+    // Results Table
-+    case ui::NativeTheme::kColorId_ResultsTableNormalBackground:
-+      return SkColorFromColorId(
-+          ui::NativeTheme::kColorId_TextfieldDefaultBackground);
-+    case ui::NativeTheme::kColorId_ResultsTableHoveredBackground: {
-+      auto default_background = SkColorFromColorId(
-+              ui::NativeTheme::kColorId_TextfieldDefaultBackground);
-+      auto selection_background = SkColorFromColorId(
-+              ui::NativeTheme::kColorId_TextfieldSelectionBackgroundFocused);
-+      if (!default_background || !selection_background) return base::nullopt;
-+      return color_utils::AlphaBlend(default_background.value(), selection_background.value(), 0.5f);
-+    }
-+    case ui::NativeTheme::kColorId_ResultsTableNormalText:
-+      return SkColorFromColorId(
-+          ui::NativeTheme::kColorId_TextfieldDefaultColor);
-+    case ui::NativeTheme::kColorId_ResultsTableDimmedText: {
-+      auto default_textfield_color = SkColorFromColorId(ui::NativeTheme::kColorId_TextfieldDefaultColor);
-+      auto default_textfield_background = SkColorFromColorId(
-+              ui::NativeTheme::kColorId_TextfieldDefaultBackground);
-+      if (!default_textfield_color || !default_textfield_background) return base::nullopt;
-+      return color_utils::AlphaBlend(default_textfield_color.value(), default_textfield_background.value(), 0.5f);
-+    }
-+
-     // Throbber
-     // TODO(thomasanderson): Render GtkSpinner directly.
-     case ui::kColorThrobber:
 diff --git a/ui/native_theme/common_theme.cc b/ui/native_theme/common_theme.cc
 index cdd49c092b611176f27fd581cb56c153b6583eeb..384e639e1b6739536bb10fcabe2c3f895d7bd635 100644
 --- a/ui/native_theme/common_theme.cc
