@@ -132,6 +132,8 @@ This is necessary for events such as `NSUserDefaultsDidChangeNotification`.
   * `userInfo` Record<String, unknown>
   * `object` String
 
+Returns `Number` - The ID of this subscription
+
 Same as `subscribeNotification`, but uses `NSWorkspace.sharedWorkspace.notificationCenter`.
 This is necessary for events such as `NSWorkspaceDidActivateApplicationNotification`.
 
