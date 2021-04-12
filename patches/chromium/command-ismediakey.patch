@@ -281,7 +281,7 @@ index 658c04c865f0e0f17501fc97965adc3bd56c709a..8c693eecbca10cd8b287fdd504d498e6
  
  }  // namespace ui
 diff --git a/ui/base/x/x11_global_shortcut_listener.h b/ui/base/x/x11_global_shortcut_listener.h
-index 9e472d76423a748cbf6257c6656d8fd69853dd93..87ee1a5f8c6cd3587f96258ed548690cdc073c52 100644
+index 9e472d76423a748cbf6257c6656d8fd69853dd93..404a294b9cf3dd6744ece0b5c1e611bbab207e78 100644
 --- a/ui/base/x/x11_global_shortcut_listener.h
 +++ b/ui/base/x/x11_global_shortcut_listener.h
 @@ -40,18 +40,21 @@ class COMPONENT_EXPORT(UI_BASE_X) XGlobalShortcutListener
@@ -309,3 +309,111 @@ index 9e472d76423a748cbf6257c6656d8fd69853dd93..87ee1a5f8c6cd3587f96258ed548690c
  
   private:
    // Due to how system key grabbing works on X11, we have to be a bit greedy and
+@@ -60,7 +63,7 @@ class COMPONENT_EXPORT(UI_BASE_X) XGlobalShortcutListener
+   // and filter the incoming events against that registry before notifying the
+   // observer.  This tuple describes the meaningful parts of the event; booleans
+   // 1, 2, and 3 hold states of Alt, Control, and Shift keys, respectively.
+-  using Accelerator = std::tuple<KeyboardCode, bool, bool, bool>;
++  using Accelerator = std::tuple<KeyboardCode, bool, bool, bool, bool>;
+ 
+   // Invoked when a global shortcut is pressed.
+   void OnKeyPressEvent(const KeyEvent& event);
+diff --git a/ui/ozone/platform/x11/x11_global_shortcut_listener_ozone.cc b/ui/ozone/platform/x11/x11_global_shortcut_listener_ozone.cc
+index 760dfc340601b7c1807fa750b008bcc79780c583..54f9817017c9fc0ebcd2f5825fb20b2fb8412b02 100644
+--- a/ui/ozone/platform/x11/x11_global_shortcut_listener_ozone.cc
++++ b/ui/ozone/platform/x11/x11_global_shortcut_listener_ozone.cc
+@@ -26,27 +26,30 @@ void X11GlobalShortcutListenerOzone::StopListening() {
+ bool X11GlobalShortcutListenerOzone::RegisterAccelerator(KeyboardCode key_code,
+                                                          bool is_alt_down,
+                                                          bool is_ctrl_down,
+-                                                         bool is_shift_down) {
++                                                         bool is_shift_down,
++                                                         bool is_cmd_down) {
+   return XGlobalShortcutListener::RegisterAccelerator(
+-      key_code, is_alt_down, is_ctrl_down, is_shift_down);
++      key_code, is_alt_down, is_ctrl_down, is_shift_down, is_cmd_down);
+ }
+ 
+ void X11GlobalShortcutListenerOzone::UnregisterAccelerator(
+     KeyboardCode key_code,
+     bool is_alt_down,
+     bool is_ctrl_down,
+-    bool is_shift_down) {
++    bool is_shift_down,
++    bool is_cmd_down) {
+   return XGlobalShortcutListener::UnregisterAccelerator(
+-      key_code, is_alt_down, is_ctrl_down, is_shift_down);
++      key_code, is_alt_down, is_ctrl_down, is_shift_down, is_cmd_down);
+ }
+ 
+ void X11GlobalShortcutListenerOzone::OnKeyPressed(KeyboardCode key_code,
+                                                   bool is_alt_down,
+                                                   bool is_ctrl_down,
+-                                                  bool is_shift_down) {
++                                                  bool is_shift_down,
++                                                  bool is_cmd_down) {
+   if (delegate()) {
+     delegate()->OnKeyPressed(key_code, is_alt_down, is_ctrl_down,
+-                             is_shift_down);
++                             is_shift_down, is_cmd_down);
+   }
+ }
+ 
+diff --git a/ui/ozone/platform/x11/x11_global_shortcut_listener_ozone.h b/ui/ozone/platform/x11/x11_global_shortcut_listener_ozone.h
+index 0f1980abdcaf30e23f580b937ecb2c422bf2a357..112967622cb8a6263c7a88dd8d09f48f52448a45 100644
+--- a/ui/ozone/platform/x11/x11_global_shortcut_listener_ozone.h
++++ b/ui/ozone/platform/x11/x11_global_shortcut_listener_ozone.h
+@@ -28,17 +28,20 @@ class X11GlobalShortcutListenerOzone : public PlatformGlobalShortcutListener,
+   bool RegisterAccelerator(KeyboardCode key_code,
+                            bool is_alt_down,
+                            bool is_ctrl_down,
+-                           bool is_shift_down) override;
++                           bool is_shift_down,
++                           bool is_cmd_down) override;
+   void UnregisterAccelerator(KeyboardCode key_code,
+                              bool is_alt_down,
+                              bool is_ctrl_down,
+-                             bool is_shift_down) override;
++                             bool is_shift_down,
++                             bool is_cmd_down) override;
+ 
+   // ui::XGlobalShortcutListener:
+   void OnKeyPressed(KeyboardCode key_code,
+                     bool is_alt_down,
+                     bool is_ctrl_down,
+-                    bool is_shift_down) override;
++                    bool is_shift_down,
++                    bool is_cmd_down) override;
+ };
+ 
+ }  // namespace ui
+diff --git a/ui/ozone/public/platform_global_shortcut_listener.h b/ui/ozone/public/platform_global_shortcut_listener.h
+index a5b539d4e7461c4ca9faa08fef086fc28a4ebd3a..f3aacc605f07807a5b83b496bd8a87933981d4f3 100644
+--- a/ui/ozone/public/platform_global_shortcut_listener.h
++++ b/ui/ozone/public/platform_global_shortcut_listener.h
+@@ -19,7 +19,8 @@ class COMPONENT_EXPORT(OZONE_BASE) PlatformGlobalShortcutListenerDelegate {
+   virtual void OnKeyPressed(KeyboardCode key_code,
+                             bool is_alt_down,
+                             bool is_ctrl_down,
+-                            bool is_shift_down) = 0;
++                            bool is_shift_down,
++                            bool is_cmd_down) = 0;
+   // Called back when the platform implementation is destroyed.
+   virtual void OnPlatformListenerDestroyed() = 0;
+ 
+@@ -51,11 +52,13 @@ class COMPONENT_EXPORT(OZONE_BASE) PlatformGlobalShortcutListener {
+   virtual bool RegisterAccelerator(KeyboardCode key_code,
+                                    bool is_alt_down,
+                                    bool is_ctrl_down,
+-                                   bool is_shift_down) = 0;
++                                   bool is_shift_down,
++                                   bool is_cmd_down) = 0;
+   virtual void UnregisterAccelerator(KeyboardCode key_code,
+                                      bool is_alt_down,
+                                      bool is_ctrl_down,
+-                                     bool is_shift_down) = 0;
++                                     bool is_shift_down,
++                                     bool is_cmd_down) = 0;
+ 
+  protected:
+   PlatformGlobalShortcutListenerDelegate* delegate() { return delegate_; }
