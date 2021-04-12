@@ -42,7 +42,6 @@ export function openGuestWindow ({ event, embedder, guest, referrer, disposition
   windowOpenArgs: WindowOpenArgs,
 }): BrowserWindow | undefined {
   const { url, frameName, features } = windowOpenArgs;
-  const isNativeWindowOpen = !!guest;
   const { options: browserWindowOptions, additionalFeatures } = makeBrowserWindowOptions({
     embedder,
     features,
@@ -57,6 +56,7 @@ export function openGuestWindow ({ event, embedder, guest, referrer, disposition
     windowOpenArgs,
     additionalFeatures,
     disposition,
+    postData,
     referrer
   });
   if (didCancelEvent) return;
@@ -74,11 +74,14 @@ export function openGuestWindow ({ event, embedder, guest, referrer, disposition
     webContents: guest,
     ...browserWindowOptions
   });
-  if (!isNativeWindowOpen) {
+  if (!guest) {
     // We should only call `loadURL` if the webContents was constructed by us in
     // the case of BrowserWindowProxy (non-sandboxed, nativeWindowOpen: false),
     // as navigating to the url when creating the window from an existing
     // webContents is not necessary (it will navigate there anyway).
+    // This can also happen if we enter this function from OpenURLFromTab, in
+    // which case the browser process is responsible for initiating navigation
+    // in the new window.
     window.loadURL(url, {
       httpReferrer: referrer,
       ...(postData && {
@@ -146,7 +149,7 @@ function emitDeprecatedNewWindowEvent ({ event, embedder, guest, windowOpenArgs,
   const isWebViewWithPopupsDisabled = embedder.getType() === 'webview' && embedder.getLastWebPreferences().disablePopups;
   const postBody = postData ? {
     data: postData,
-    headers: formatPostDataHeaders(postData as Electron.UploadRawData[])
+    ...parseContentTypeFormat(postData)
   } : null;
 
   embedder.emit(
@@ -276,22 +279,40 @@ function getDeprecatedInheritedOptions (embedder: WebContents) {
   return inheritableOptions;
 }
 
-function formatPostDataHeaders (postData: Electron.UploadRawData[]) {
+function formatPostDataHeaders (postData: PostData) {
   if (!postData) return;
 
-  let extraHeaders = 'content-type: application/x-www-form-urlencoded';
+  const { contentType, boundary } = parseContentTypeFormat(postData);
+  if (boundary != null) { return `content-type: ${contentType}; boundary=${boundary}`; }
 
-  if (postData.length > 0) {
-    const postDataFront = postData[0].bytes.toString();
-    const boundary = /^--.*[^-\r\n]/.exec(
-      postDataFront
-    );
-    if (boundary != null) {
-      extraHeaders = `content-type: multipart/form-data; boundary=${boundary[0].substr(
-        2
-      )}`;
+  return `content-type: ${contentType}`;
+}
+
+const MULTIPART_CONTENT_TYPE = 'multipart/form-data';
+const URL_ENCODED_CONTENT_TYPE = 'application/x-www-form-urlencoded';
+
+// Figure out appropriate headers for post data.
+const parseContentTypeFormat = function (postData: Exclude<PostData, undefined>) {
+  if (postData.length) {
+    if (postData[0].type === 'rawData') {
+      // For multipart forms, the first element will start with the boundary
+      // notice, which looks something like `------WebKitFormBoundary12345678`
+      // Note, this regex would fail when submitting a urlencoded form with an
+      // input attribute of name="--theKey", but, uhh, don't do that?
+      const postDataFront = postData[0].bytes.toString();
+      const boundary = /^--.*[^-\r\n]/.exec(postDataFront);
+      if (boundary) {
+        return {
+          boundary: boundary[0].substr(2),
+          contentType: MULTIPART_CONTENT_TYPE
+        };
+      }
     }
   }
-
-  return extraHeaders;
-}
+  // Either the form submission didn't contain any inputs (the postData array
+  // was empty), or we couldn't find the boundary and thus we can assume this is
+  // a key=value style form.
+  return {
+    contentType: URL_ENCODED_CONTENT_TYPE
+  };
+};
