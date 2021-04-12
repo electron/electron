@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index e5b9d4722ff48101cd3476b74076958f0baa54b2..0af3a69dff5d2509c4187f127da11c74b486fc28 100644
+index cfdd4b282c0fbf7b68c1592ab21cd16d2ba01067..dc9e606b0aacf503f0446ffd4f91b51dbd9fe9cb 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -5440,6 +5440,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -5469,6 +5469,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -53,10 +53,10 @@ index b7e32f44573be28d975b00c7ebc9bd377cae9ff2..3a307ea6a66109e09faae4849426f916
                               new_contents_impl, opener, params.target_url,
                               params.referrer.To<Referrer>(), params.disposition,
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index 32d021e049b34a72ab6cf8d86ba0c46a0046d069..f94644667683872fdb2ce3c7a66aef99faf04fdb 100644
+index 5c59e987b171f83c7da766e8b0cc30a1699b6940..04a7945304830a496738dd76340f85ce31bfda33 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
-@@ -521,6 +521,10 @@ struct CreateNewWindowParams {
+@@ -511,6 +511,10 @@ struct CreateNewWindowParams {
    // The impression associated with the navigation in the new window, if
    // one is specified.
    Impression? impression;
