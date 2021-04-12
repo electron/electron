@@ -688,8 +688,6 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
     ScriptExecutionCallback::CompletionCallback completion_callback;
     args->GetNext(&completion_callback);
 
-    auto& prefs = render_frame->GetBlinkPreferences();
-
     render_frame->GetWebFrame()->RequestExecuteScriptAndReturnValue(
         blink::WebScriptSource(blink::WebString::FromUTF16(code)),
         has_user_gesture,
@@ -753,8 +751,6 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
           blink::WebScriptSource(blink::WebString::FromUTF16(code),
                                  blink::WebURL(GURL(url)), start_line));
     }
-
-    auto& prefs = render_frame->GetBlinkPreferences();
 
     render_frame->GetWebFrame()->RequestExecuteScriptInIsolatedWorld(
         world_id, &sources.front(), sources.size(), has_user_gesture,
