@@ -188,7 +188,7 @@ static_library("chrome") {
     }
 
     if (is_linux) {
-      sources += [ "//chrome/browser/media/webrtc/window_icon_util_x11.cc" ]
+      sources += [ "//chrome/browser/media/webrtc/window_icon_util_linux.cc" ]
     }
   }
 
