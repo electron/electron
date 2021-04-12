@@ -114,17 +114,12 @@ declare namespace NodeJS {
     webviewTag: boolean;
   }
 
+  interface InternalWebFrame extends Electron.WebFrame {
+    getWebPreference<K extends keyof InternalWebPreferences>(name: K): InternalWebPreferences[K];
+  }
+
   interface WebFrameBinding {
-    _findFrameByRoutingId(window: Window, routingId: number): Window;
-    _getFrameForSelector(window: Window, selector: string): Window;
-    _findFrameByName(window: Window, name: string): Window;
-    _getOpener(window: Window): Window;
-    _getParent(window: Window): Window;
-    _getTop(window: Window): Window;
-    _getFirstChild(window: Window): Window;
-    _getNextSibling(window: Window): Window;
-    _getRoutingId(window: Window): number;
-    getWebPreference<K extends keyof InternalWebPreferences>(window: Window, name: K): InternalWebPreferences[K];
+    mainFrame: InternalWebFrame;
   }
 
   type DataPipe = {
