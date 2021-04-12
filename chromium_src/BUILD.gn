@@ -2,6 +2,7 @@
 # Use of this source code is governed by the MIT license that can be
 # found in the LICENSE file.
 
+import("//build/config/ozone.gni")
 import("//build/config/ui.gni")
 import("//components/spellcheck/spellcheck_build_features.gni")
 import("//electron/buildflags/buildflags.gni")
@@ -92,12 +93,18 @@ static_library("chrome") {
 
   if (is_linux) {
     sources += [ "//chrome/browser/icon_loader_auralinux.cc" ]
+    if (use_x11 || use_ozone) {
+      sources +=
+          [ "//chrome/browser/extensions/global_shortcut_listener_linux.cc" ]
+    }
     if (use_x11) {
       sources += [
         "//chrome/browser/extensions/global_shortcut_listener_x11.cc",
         "//chrome/browser/extensions/global_shortcut_listener_x11.h",
       ]
-    } else if (use_ozone) {
+    }
+    if (use_ozone) {
+      deps += [ "//ui/ozone" ]
       sources += [
         "//chrome/browser/extensions/global_shortcut_listener_ozone.cc",
         "//chrome/browser/extensions/global_shortcut_listener_ozone.h",
@@ -113,6 +120,8 @@ static_library("chrome") {
       "//components/dbus/menu",
       "//components/dbus/thread_linux",
     ]
+    sources +=
+        [ "//chrome/browser/ui/views/overlay/back_to_tab_label_button.cc" ]
   }
 
   if (is_win) {
