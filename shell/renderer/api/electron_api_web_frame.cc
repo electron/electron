@@ -693,7 +693,7 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
     render_frame->GetWebFrame()->RequestExecuteScriptAndReturnValue(
         blink::WebScriptSource(blink::WebString::FromUTF16(code)),
         has_user_gesture,
-        new ScriptExecutionCallback(std::move(promise),,
+        new ScriptExecutionCallback(std::move(promise),
                                     std::move(completion_callback)));
 
     return handle;
