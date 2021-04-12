@@ -120,8 +120,6 @@ static_library("chrome") {
       "//components/dbus/menu",
       "//components/dbus/thread_linux",
     ]
-    sources +=
-        [ "//chrome/browser/ui/views/overlay/back_to_tab_label_button.cc" ]
   }
 
   if (is_win) {
@@ -259,6 +257,7 @@ static_library("chrome") {
       "//chrome/browser/picture_in_picture/picture_in_picture_window_manager.h",
       "//chrome/browser/ui/views/overlay/back_to_tab_image_button.cc",
       "//chrome/browser/ui/views/overlay/back_to_tab_image_button.h",
+      "//chrome/browser/ui/views/overlay/back_to_tab_label_button.cc",
       "//chrome/browser/ui/views/overlay/close_image_button.cc",
       "//chrome/browser/ui/views/overlay/close_image_button.h",
       "//chrome/browser/ui/views/overlay/constants.h",
