@@ -1583,6 +1583,14 @@ describe('navigator.serial', () => {
     expect(port).to.equal('NotFoundError: No port selected by the user.');
   });
 
+  it('does not crash when select-serial-port is called with an invalid port', async () => {
+    w.webContents.session.on('select-serial-port', (event, portList, webContents, callback) => {
+      callback('i-do-not-exist');
+    });
+    const port = await getPorts();
+    expect(port).to.equal('NotFoundError: No port selected by the user.');
+  });
+
   it('returns a port when select-serial-port event is defined', async () => {
     w.webContents.session.on('select-serial-port', (event, portList, webContents, callback) => {
       callback(portList[0].portId);
