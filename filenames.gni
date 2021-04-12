@@ -402,6 +402,8 @@ filenames = {
     "shell/browser/native_window_observer.h",
     "shell/browser/net/asar/asar_url_loader.cc",
     "shell/browser/net/asar/asar_url_loader.h",
+    "shell/browser/net/asar/asar_url_loader_factory.cc",
+    "shell/browser/net/asar/asar_url_loader_factory.h",
     "shell/browser/net/cert_verifier_client.cc",
     "shell/browser/net/cert_verifier_client.h",
     "shell/browser/net/electron_url_loader_factory.cc",
