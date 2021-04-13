@@ -12,7 +12,6 @@
 #include "base/callback.h"
 #include "base/macros.h"
 #include "base/memory/ref_counted.h"
-#include "base/strings/string16.h"
 #include "net/cert/nss_cert_database.h"
 
 namespace content {
@@ -46,7 +45,7 @@ class CertificateManagerModel {
   // Returns a net error code on failure.
   int ImportFromPKCS12(PK11SlotInfo* slot_info,
                        const std::string& data,
-                       const base::string16& password,
+                       const std::u16string& password,
                        bool is_extractable,
                        net::ScopedCERTCertificateList* imported_certs);
 

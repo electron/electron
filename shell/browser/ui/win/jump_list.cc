@@ -165,7 +165,7 @@ JumpListCategory::JumpListCategory() = default;
 JumpListCategory::JumpListCategory(const JumpListCategory&) = default;
 JumpListCategory::~JumpListCategory() = default;
 
-JumpList::JumpList(const base::string16& app_id) : app_id_(app_id) {
+JumpList::JumpList(const std::wstring& app_id) : app_id_(app_id) {
   destinations_.CoCreateInstance(CLSID_DestinationList);
 }
 

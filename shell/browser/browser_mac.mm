@@ -58,7 +58,7 @@ gfx::Image GetApplicationIconForProtocol(NSString* _Nonnull app_path) {
   return icon;
 }
 
-base::string16 GetAppDisplayNameForProtocol(NSString* app_path) {
+std::u16string GetAppDisplayNameForProtocol(NSString* app_path) {
   NSString* app_display_name =
       [[NSFileManager defaultManager] displayNameAtPath:app_path];
   return base::SysNSStringToUTF16(app_display_name);
@@ -81,8 +81,8 @@ v8::Local<v8::Promise> Browser::GetApplicationInfoForProtocol(
     return handle;
   }
 
-  base::string16 app_path = base::SysNSStringToUTF16(ns_app_path);
-  base::string16 app_display_name = GetAppDisplayNameForProtocol(ns_app_path);
+  std::u16string app_path = base::SysNSStringToUTF16(ns_app_path);
+  std::u16string app_display_name = GetAppDisplayNameForProtocol(ns_app_path);
   gfx::Image app_icon = GetApplicationIconForProtocol(ns_app_path);
 
   dict.Set("name", app_display_name);
@@ -209,16 +209,16 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
   return result == NSOrderedSame;
 }
 
-base::string16 Browser::GetApplicationNameForProtocol(const GURL& url) {
+std::u16string Browser::GetApplicationNameForProtocol(const GURL& url) {
   NSString* app_path = GetAppPathForProtocol(url);
   if (!app_path) {
-    return base::string16();
+    return std::u16string();
   }
-  base::string16 app_display_name = GetAppDisplayNameForProtocol(app_path);
+  std::u16string app_display_name = GetAppDisplayNameForProtocol(app_path);
   return app_display_name;
 }
 
-void Browser::SetAppUserModelID(const base::string16& name) {}
+void Browser::SetAppUserModelID(const std::wstring& name) {}
 
 bool Browser::SetBadgeCount(base::Optional<int> count) {
   DockSetBadgeText(!count.has_value() || count.value() != 0

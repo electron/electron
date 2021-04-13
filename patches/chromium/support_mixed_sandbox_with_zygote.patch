@@ -22,12 +22,12 @@ However, the patch would need to be reviewed by the security team, as it
 does touch a security-sensitive class.
 
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index df3ff59008839c786217661e8862ba54580590ed..cddd153328e3e1e4154aa61e9786b3eaef3f4a05 100644
+index 8c7c5e9b0ee97e2471718cd50d1b0e1eab718df9..ae1aed1f26ae6202b4709a1931c48c55e3fae956 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -405,6 +405,11 @@ class RendererSandboxedProcessLauncherDelegate
-   {
-   }
+@@ -392,10 +392,18 @@ class RendererSandboxedProcessLauncherDelegate
+  public:
+   RendererSandboxedProcessLauncherDelegate() = default;
  
 +#if BUILDFLAG(USE_ZYGOTE_HANDLE)
 +  RendererSandboxedProcessLauncherDelegate(bool use_zygote):
@@ -35,9 +35,6 @@ index df3ff59008839c786217661e8862ba54580590ed..cddd153328e3e1e4154aa61e9786b3ea
 +#endif
 +
    ~RendererSandboxedProcessLauncherDelegate() override = default;
- 
- #if defined(OS_WIN)
-@@ -433,6 +438,9 @@ class RendererSandboxedProcessLauncherDelegate
  
  #if BUILDFLAG(USE_ZYGOTE_HANDLE)
    ZygoteHandle GetZygote() override {
@@ -47,38 +44,41 @@ index df3ff59008839c786217661e8862ba54580590ed..cddd153328e3e1e4154aa61e9786b3ea
      const base::CommandLine& browser_command_line =
          *base::CommandLine::ForCurrentProcess();
      base::CommandLine::StringType renderer_prefix =
-@@ -447,10 +455,13 @@ class RendererSandboxedProcessLauncherDelegate
+@@ -413,6 +421,11 @@ class RendererSandboxedProcessLauncherDelegate
+   sandbox::policy::SandboxType GetSandboxType() override {
      return sandbox::policy::SandboxType::kRenderer;
    }
- 
--#if defined(OS_WIN)
-  private:
-+#if defined(OS_WIN)
-   const bool renderer_code_integrity_enabled_;
- #endif
++
++ private:
 +#if BUILDFLAG(USE_ZYGOTE_HANDLE)
 +  bool use_zygote_ = true;
 +#endif
  };
  
- const char kSessionStorageHolderKey[] = "kSessionStorageHolderKey";
-@@ -1909,11 +1920,18 @@ bool RenderProcessHostImpl::Init() {
-       cmd_line->PrependWrapper(renderer_prefix);
-     AppendRendererCommandLine(cmd_line.get());
- 
+ #if defined(OS_WIN)
+@@ -423,6 +436,9 @@ class RendererSandboxedProcessLauncherDelegateWin
+   RendererSandboxedProcessLauncherDelegateWin(base::CommandLine* cmd_line)
+       : renderer_code_integrity_enabled_(
+             GetContentClient()->browser()->IsRendererCodeIntegrityEnabled()) {
++#if BUILDFLAG(USE_ZYGOTE_HANDLE)
++    use_zygote_ = !cmd_line->HasSwitch(switches::kNoZygote);
++#endif
+     if (cmd_line->HasSwitch(switches::kJavaScriptFlags)) {
+       std::string js_flags =
+           cmd_line->GetSwitchValueASCII(switches::kJavaScriptFlags);
+@@ -1832,9 +1848,15 @@ bool RenderProcessHostImpl::Init() {
+     std::unique_ptr<SandboxedProcessLauncherDelegate> sandbox_delegate =
+         std::make_unique<RendererSandboxedProcessLauncherDelegateWin>(
+             cmd_line.get());
++#else
 +#if BUILDFLAG(USE_ZYGOTE_HANDLE)
 +    bool use_zygote = !cmd_line->HasSwitch(switches::kNoZygote);
-+    auto delegate = std::make_unique<RendererSandboxedProcessLauncherDelegate>(use_zygote);
-+#else
-+    auto delegate = std::make_unique<RendererSandboxedProcessLauncherDelegate>();
++    std::unique_ptr<SandboxedProcessLauncherDelegate> sandbox_delegate =
++        std::make_unique<RendererSandboxedProcessLauncherDelegate>(use_zygote);
+ #else
+     std::unique_ptr<SandboxedProcessLauncherDelegate> sandbox_delegate =
+         std::make_unique<RendererSandboxedProcessLauncherDelegate>();
 +#endif
-+
+ #endif
      // Spawn the child process asynchronously to avoid blocking the UI thread.
      // As long as there's no renderer prefix, we can use the zygote process
-     // at this stage.
-     child_process_launcher_ = std::make_unique<ChildProcessLauncher>(
--        std::make_unique<RendererSandboxedProcessLauncherDelegate>(),
-+        std::move(delegate),
-         std::move(cmd_line), GetID(), this, std::move(mojo_invitation_),
-         base::BindRepeating(&RenderProcessHostImpl::OnMojoError, id_),
-         GetV8SnapshotFilesToPreload());

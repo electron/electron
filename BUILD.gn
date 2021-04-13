@@ -622,6 +622,9 @@ source_set("electron_lib") {
       "//chrome/services/printing/public/mojom",
       "//components/printing/common:mojo_interfaces",
     ]
+    if (is_mac) {
+      deps += [ "//chrome/services/mac_notifications/public/mojom" ]
+    }
   }
 
   if (enable_electron_extensions) {

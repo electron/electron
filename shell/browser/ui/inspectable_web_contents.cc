@@ -572,7 +572,7 @@ void InspectableWebContents::LoadCompleted() {
       prefs->GetString("currentDockState", &current_dock_state);
       base::RemoveChars(current_dock_state, "\"", &dock_state_);
     }
-    base::string16 javascript = base::UTF8ToUTF16(
+    std::u16string javascript = base::UTF8ToUTF16(
         "UI.DockController.instance().setDockSide(\"" + dock_state_ + "\");");
     GetDevToolsWebContents()->GetMainFrame()->ExecuteJavaScript(
         javascript, base::NullCallback());
@@ -915,7 +915,7 @@ void InspectableWebContents::DispatchProtocolMessage(
   if (str_message.size() < kMaxMessageChunkSize) {
     std::string param;
     base::EscapeJSONString(str_message, true, &param);
-    base::string16 javascript =
+    std::u16string javascript =
         base::UTF8ToUTF16("DevToolsAPI.dispatchMessage(" + param + ");");
     GetDevToolsWebContents()->GetMainFrame()->ExecuteJavaScript(
         javascript, base::NullCallback());
@@ -959,9 +959,9 @@ void InspectableWebContents::WebContentsDestroyed() {
 bool InspectableWebContents::DidAddMessageToConsole(
     content::WebContents* source,
     blink::mojom::ConsoleMessageLevel level,
-    const base::string16& message,
+    const std::u16string& message,
     int32_t line_no,
-    const base::string16& source_id) {
+    const std::u16string& source_id) {
   logging::LogMessage("CONSOLE", line_no,
                       blink::ConsoleMessageLevelToLogSeverity(level))
           .stream()

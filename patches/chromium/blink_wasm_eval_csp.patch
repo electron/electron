@@ -10,10 +10,10 @@ The tracking issue in Chromium is
 https://bugs.chromium.org/p/chromium/issues/detail?id=948834
 
 diff --git a/third_party/blink/renderer/core/frame/csp/content_security_policy.cc b/third_party/blink/renderer/core/frame/csp/content_security_policy.cc
-index d720aac224e80a924121eb0a98e1ad5636a2e929..d78cc8725ec8d61b3cab7a15529dc6cf7d881fe4 100644
+index 8b7360ea023691c9da089fe781410f82c55ed37e..c96f57f6ae5f0c4b0d9326ca43517cb778422251 100644
 --- a/third_party/blink/renderer/core/frame/csp/content_security_policy.cc
 +++ b/third_party/blink/renderer/core/frame/csp/content_security_policy.cc
-@@ -294,7 +294,8 @@ void ContentSecurityPolicy::DidReceiveHeaders(
+@@ -293,7 +293,8 @@ ContentSecurityPolicy::DidReceiveHeaders(
      const ContentSecurityPolicyResponseHeaders& headers) {
    scoped_refptr<SecurityOrigin> self_origin =
        SecurityOrigin::Create(headers.ResponseUrl());
@@ -24,61 +24,39 @@ index d720aac224e80a924121eb0a98e1ad5636a2e929..d78cc8725ec8d61b3cab7a15529dc6cf
  
    Vector<network::mojom::blink::ContentSecurityPolicyPtr> parsed_policies;
 diff --git a/third_party/blink/renderer/core/frame/csp/csp_directive_list.cc b/third_party/blink/renderer/core/frame/csp/csp_directive_list.cc
-index 76590740ee6000f9b5bfe67f8ffc3432351b66a2..9fd518d00ab33bf4ca379eed92e277f30c39adc4 100644
+index 0312872536aca8ec4c2f57754b6d6836b00e75df..2a0fe27c2a2cc6a9bf5a56cedf129d98fa637957 100644
 --- a/third_party/blink/renderer/core/frame/csp/csp_directive_list.cc
 +++ b/third_party/blink/renderer/core/frame/csp/csp_directive_list.cc
-@@ -625,8 +625,14 @@ bool CheckEval(const network::mojom::blink::CSPSourceList* directive) {
+@@ -625,10 +625,14 @@ bool CheckEval(const network::mojom::blink::CSPSourceList* directive) {
    return !directive || directive->allow_eval;
  }
  
--bool CheckWasmEval(const network::mojom::blink::CSPSourceList* directive) {
--  return !directive || directive->allow_wasm_eval;
 +bool SupportsWasmEval(const ContentSecurityPolicy* policy) {
 +  return RuntimeEnabledFeatures::WebAssemblyCSPEnabled() ||
 +         policy->SupportsWasmEval();
 +}
 +
-+bool CheckWasmEval(const network::mojom::blink::CSPSourceList* directive,
-+                   const ContentSecurityPolicy* policy) {
+ bool CheckWasmEval(const network::mojom::blink::CSPSourceList* directive,
+                    const ContentSecurityPolicy* policy) {
+-  return !directive || directive->allow_eval ||
+-         (policy->SupportsWasmEval() && directive->allow_wasm_eval);
 +  return !directive || (SupportsWasmEval(policy) && directive->allow_wasm_eval);
  }
  
  bool CheckHash(const network::mojom::blink::CSPSourceList* directive,
-@@ -732,7 +738,7 @@ bool CheckWasmEvalAndReportViolation(
-     const String& content) {
-   CSPOperativeDirective directive =
-       OperativeDirective(csp, CSPDirectiveName::ScriptSrc);
--  if (CheckWasmEval(directive.source_list))
-+  if (CheckWasmEval(directive.source_list, policy))
-     return true;
- 
-   String suffix = String();
-@@ -1065,16 +1071,21 @@ bool CSPDirectiveListAllowWasmEval(
+@@ -1091,9 +1095,9 @@ bool CSPDirectiveListAllowWasmCodeGeneration(
      ContentSecurityPolicy::ExceptionStatus exception_status,
      const String& content) {
    if (reporting_disposition == ReportingDisposition::kReport) {
+-    String infix = policy->SupportsWasmEval()
+-                       ? "neither 'wasm-eval' nor 'unsafe-eval' is"
+-                       : "'unsafe-eval' is not";
 +    String infix = SupportsWasmEval(policy)
 +                   ? "neither 'wasm-eval' nor 'unsafe-eval' is"
 +                   : "'unsafe-eval' is not";
      return CheckWasmEvalAndReportViolation(
          csp, policy,
--        "Refused to compile or instantiate WebAssembly module because "
--        "'wasm-eval' is not an allowed source of script in the following "
--        "Content Security Policy directive: ",
-+        "Refused to compile or instantiate WebAssembly module because " +
-+            infix +
-+            " an allowed source of script in the following "
-+            "Content Security Policy directive: ",
-         exception_status, content);
-   }
-   return CSPDirectiveListIsReportOnly(csp) ||
-          CheckWasmEval(
--             OperativeDirective(csp, CSPDirectiveName::ScriptSrc).source_list);
-+             OperativeDirective(csp, CSPDirectiveName::ScriptSrc).source_list,
-+             policy);
- }
- 
- bool CSPDirectiveListShouldDisableEval(
+         "Refused to compile or instantiate WebAssembly module because " +
 diff --git a/third_party/blink/renderer/core/frame/csp/source_list_directive.cc b/third_party/blink/renderer/core/frame/csp/source_list_directive.cc
 index 17ae1426ef9662f6f640c36d8ae8bca8e443a15a..de93eb3cf7321e00351f5cfe1d7cde6635ce2b4d 100644
 --- a/third_party/blink/renderer/core/frame/csp/source_list_directive.cc
@@ -104,10 +82,10 @@ index 17ae1426ef9662f6f640c36d8ae8bca8e443a15a..de93eb3cf7321e00351f5cfe1d7cde66
  
    if (EqualIgnoringASCIICase("'strict-dynamic'", token)) {
 diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-index a76f001440d21ee34ffa1a98c9dbc87961fcaff0..95b404a3d371304f9569f66615b4e016bb4d88cb 100644
+index 2447c80eece6fa84f01d4d84b136a7c6a799c696..6680e614b5985b6774e47472957a9b4ac2d50354 100644
 --- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
 +++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-@@ -2128,6 +2128,9 @@
+@@ -2146,6 +2146,9 @@
      {
        name: "WebAppWindowControlsOverlay",
      },
@@ -115,5 +93,5 @@ index a76f001440d21ee34ffa1a98c9dbc87961fcaff0..95b404a3d371304f9569f66615b4e016
 +      name: "WebAssemblyCSP",
 +    },
      {
-       name: "WebAssemblySimd",
-       origin_trial_feature_name: "WebAssemblySimd",
+       name: "WebAssemblyExceptions",
+       origin_trial_feature_name: "WebAssemblyExceptions",

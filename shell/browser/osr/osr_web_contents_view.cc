@@ -139,7 +139,7 @@ OffScreenWebContentsView::CreateViewForChildWidget(
                                            render_widget_host, view, GetSize());
 }
 
-void OffScreenWebContentsView::SetPageTitle(const base::string16& title) {}
+void OffScreenWebContentsView::SetPageTitle(const std::u16string& title) {}
 
 void OffScreenWebContentsView::RenderViewReady() {
   if (GetView())

@@ -6,7 +6,7 @@ Subject: remove some deps that do not work on arm64
 Once these deps have newly built arm64 versions we can remove this patch.
 
 diff --git a/gsutil.vpython b/gsutil.vpython
-index b0a646271eae7426988bbef47a4162f47872c1d1..d9465adeb29f1c696d8ef442a753e6737627bd6f 100644
+index a9b6ec9ef6794dd980f3fa90780dcf20cb20ac15..7dd97f2e41789e640d508c584e4d510e62fe3616 100644
 --- a/gsutil.vpython
 +++ b/gsutil.vpython
 @@ -25,19 +25,19 @@ wheel <
@@ -27,26 +27,26 @@ index b0a646271eae7426988bbef47a4162f47872c1d1..d9465adeb29f1c696d8ef442a753e673
  ##
  
 -wheel: <
--  name: "infra/python/wheels/cryptography/${platform}_${py_python}_${py_abi}"
--  version: "version:2.0.3"
+-  name: "infra/python/wheels/cryptography/${vpython_platform}"
+-  version: "version:2.9.2"
 ->
 +#wheel: <
-+#  name: "infra/python/wheels/cryptography/${platform}_${py_python}_${py_abi}"
-+#  version: "version:2.0.3"
++#  name: "infra/python/wheels/cryptography/${vpython_platform}"
++#  version: "version:2.9.2"
 +#>
  
  wheel: <
    name: "infra/python/wheels/appdirs-py2_py3"
-@@ -54,10 +54,10 @@ wheel: <
+@@ -49,10 +49,10 @@ wheel: <
    version: "version:1.1.6"
  >
  
 -wheel: <
--  name: "infra/python/wheels/cffi/${platform}_${py_python}_${py_abi}"
+-  name: "infra/python/wheels/cffi/${vpython_platform}"
 -  version: "version:1.10.0"
 ->
 +#wheel: <
-+#  name: "infra/python/wheels/cffi/${platform}_${py_python}_${py_abi}"
++#  name: "infra/python/wheels/cffi/${vpython_platform}"
 +#  version: "version:1.10.0"
 +#>
  

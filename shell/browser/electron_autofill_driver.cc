@@ -27,8 +27,8 @@ AutofillDriver::~AutofillDriver() = default;
 
 void AutofillDriver::ShowAutofillPopup(
     const gfx::RectF& bounds,
-    const std::vector<base::string16>& values,
-    const std::vector<base::string16>& labels) {
+    const std::vector<std::u16string>& values,
+    const std::vector<std::u16string>& labels) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
   auto* web_contents = api::WebContents::From(

@@ -24,7 +24,6 @@
 #define SHELL_BROWSER_NOTIFICATIONS_WIN_NOTIFICATION_PRESENTER_WIN_H_
 
 #include "base/files/scoped_temp_dir.h"
-#include "base/strings/string16.h"
 #include "shell/browser/notifications/notification_presenter.h"
 
 class GURL;
@@ -39,7 +38,7 @@ class NotificationPresenterWin : public NotificationPresenter {
 
   bool Init();
 
-  base::string16 SaveIconToFilesystem(const SkBitmap& icon, const GURL& origin);
+  std::wstring SaveIconToFilesystem(const SkBitmap& icon, const GURL& origin);
 
  private:
   Notification* CreateNotificationObject(

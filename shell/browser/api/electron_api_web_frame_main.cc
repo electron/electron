@@ -78,7 +78,7 @@ bool WebFrameMain::CheckRenderFrame() const {
 
 v8::Local<v8::Promise> WebFrameMain::ExecuteJavaScript(
     gin::Arguments* args,
-    const base::string16& code) {
+    const std::u16string& code) {
   gin_helper::Promise<base::Value> promise(args->isolate());
   v8::Local<v8::Promise> handle = promise.GetHandle();
 

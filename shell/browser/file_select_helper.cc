@@ -125,7 +125,7 @@ void FileSelectHelper::OnListDone(int error) {
   std::vector<FileChooserFileInfoPtr> file_info;
   for (const auto& path : lister_paths_)
     file_info.push_back(FileChooserFileInfo::NewNativeFile(
-        NativeFileInfo::New(path, base::string16())));
+        NativeFileInfo::New(path, std::u16string())));
 
   OnFilesSelected(std::move(file_info), lister_base_dir_);
 }
