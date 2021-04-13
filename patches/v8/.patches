@@ -7,3 +7,4 @@ workaround_an_undefined_symbol_error.patch
 do_not_export_private_v8_symbols_on_windows.patch
 fix_build_deprecated_attirbute_for_older_msvc_versions.patch
 skip_global_registration_of_shared_arraybuffer_backing_stores.patch
+cherry-pick-02f84c745fc0.patch
