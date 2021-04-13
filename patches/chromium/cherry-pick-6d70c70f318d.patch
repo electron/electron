@@ -1,0 +1,31 @@
+From 6d70c70f318d04dff5e474b74cc5d496a4a75821 Mon Sep 17 00:00:00 2001
+From: chromium-autoroll <chromium-autoroll@skia-public.iam.gserviceaccount.com>
+Date: Tue, 13 Apr 2021 22:06:02 +0000
+Subject: [PATCH] Roll Chrome Win32 PGO Profile
+
+Roll Chrome Win32 PGO profile from chrome-win32-master-1618325764-a12db6f7ca2b0029970a7eefa29dd62239c09926.profdata to chrome-win32-master-1618347462-e7c9f00f1fb68ff7edfd83bfd2c49888ee1d5086.profdata
+
+If this roll has caused a breakage, revert this CL and stop the roller
+using the controls here:
+https://autoroll.skia.org/r/pgo-win32-chromium
+Please CC pgo-profile-sheriffs@google.com on the revert to ensure that a human
+is aware of the problem.
+
+To report a problem with the AutoRoller itself, please file a bug:
+https://bugs.chromium.org/p/skia/issues/entry?template=Autoroller+Bug
+
+Documentation for the AutoRoller is here:
+https://skia.googlesource.com/buildbot/+doc/master/autoroll/README.md
+
+Cq-Include-Trybots: luci.chrome.try:win-chrome
+Tbr: pgo-profile-sheriffs@google.com
+Change-Id: I3f78ed504cf8e313baaeb38a1c5ca7c84ca636bd
+---
+
+diff --git a/chrome/build/win32.pgo.txt b/chrome/build/win32.pgo.txt
+index 4c712a5..cee3ef2 100644
+--- a/chrome/build/win32.pgo.txt
++++ b/chrome/build/win32.pgo.txt
+@@ -1 +1 @@
+-chrome-win32-master-1618325764-a12db6f7ca2b0029970a7eefa29dd62239c09926.profdata
++chrome-win32-master-1618347462-e7c9f00f1fb68ff7edfd83bfd2c49888ee1d5086.profdata
