@@ -270,11 +270,13 @@ async function buildVSTS (targetBranch, options) {
     }
   }
 
+  const vstsToken = process.env.VSTS_TOKEN;
+  assert(vstsToken, `${options.ci} requires the $VSTS_TOKEN environment variable to be provided`);
   const requestOpts = {
     url: `${VSTS_URL}/definitions?api-version=4.1`,
     auth: {
       user: '',
-      password: process.env.VSTS_TOKEN
+      password: vstsToken
     },
     headers: {
       'Content-Type': 'application/json'
