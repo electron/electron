@@ -1,0 +1,89 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Georg Neis <neis@chromium.org>
+Date: Mon, 12 Apr 2021 09:42:03 +0200
+Subject: Fix bug in InstructionSelector::ChangeInt32ToInt64
+
+Bug: chromium:1196683
+Change-Id: Ib4ea738b47b64edc81450583be4c80a41698c3d1
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2820971
+Commit-Queue: Georg Neis <neis@chromium.org>
+Reviewed-by: Nico Hartmann <nicohartmann@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#73903}
+
+diff --git a/src/compiler/backend/x64/instruction-selector-x64.cc b/src/compiler/backend/x64/instruction-selector-x64.cc
+index db212677ea889a5027e5bf74cbe1fb7974a4984d..11c78a9d72ad5c4c2d59277b70caafefb7495083 100644
+--- a/src/compiler/backend/x64/instruction-selector-x64.cc
++++ b/src/compiler/backend/x64/instruction-selector-x64.cc
+@@ -1279,7 +1279,9 @@ void InstructionSelector::VisitChangeInt32ToInt64(Node* node) {
+         opcode = load_rep.IsSigned() ? kX64Movsxwq : kX64Movzxwq;
+         break;
+       case MachineRepresentation::kWord32:
+-        opcode = load_rep.IsSigned() ? kX64Movsxlq : kX64Movl;
++        // ChangeInt32ToInt64 must interpret its input as a _signed_ 32-bit
++        // integer, so here we must sign-extend the loaded value in any case.
++        opcode = kX64Movsxlq;
+         break;
+       default:
+         UNREACHABLE();
+diff --git a/test/mjsunit/compiler/regress-1196683.js b/test/mjsunit/compiler/regress-1196683.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..abd7d6b2f8da45991e1e3b6c72582bc716d63efb
+--- /dev/null
++++ b/test/mjsunit/compiler/regress-1196683.js
+@@ -0,0 +1,56 @@
++// Copyright 2021 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax
++
++
++(function() {
++  const arr = new Uint32Array([2**31]);
++  function foo() {
++    return (arr[0] ^ 0) + 1;
++  }
++  %PrepareFunctionForOptimization(foo);
++  assertEquals(-(2**31) + 1, foo());
++  %OptimizeFunctionOnNextCall(foo);
++  assertEquals(-(2**31) + 1, foo());
++});
++
++
++// The remaining tests already passed without the bugfix.
++
++
++(function() {
++  const arr = new Uint16Array([2**15]);
++  function foo() {
++    return (arr[0] ^ 0) + 1;
++  }
++  %PrepareFunctionForOptimization(foo);
++  assertEquals(2**15 + 1, foo());
++  %OptimizeFunctionOnNextCall(foo);
++  assertEquals(2**15 + 1, foo());
++})();
++
++
++(function() {
++  const arr = new Uint8Array([2**7]);
++  function foo() {
++    return (arr[0] ^ 0) + 1;
++  }
++  %PrepareFunctionForOptimization(foo);
++  assertEquals(2**7 + 1, foo());
++  %OptimizeFunctionOnNextCall(foo);
++  assertEquals(2**7 + 1, foo());
++})();
++
++
++(function() {
++  const arr = new Int32Array([-(2**31)]);
++  function foo() {
++    return (arr[0] >>> 0) + 1;
++  }
++  %PrepareFunctionForOptimization(foo);
++  assertEquals(2**31 + 1, foo());
++  %OptimizeFunctionOnNextCall(foo);
++  assertEquals(2**31 + 1, foo());
++})();
