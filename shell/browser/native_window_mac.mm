@@ -1072,6 +1072,10 @@ void NativeWindowMac::SetFocusable(bool focusable) {
   [window_ setDisableKeyOrMainWindow:!focusable];
 }
 
+bool NativeWindowMac::IsFocusable() {
+  return ![window_ disableKeyOrMainWindow];
+}
+
 void NativeWindowMac::AddBrowserView(NativeBrowserView* view) {
   [CATransaction begin];
   [CATransaction setDisableActions:YES];

@@ -838,6 +838,17 @@ describe('BrowserWindow module', () => {
         await closeWindow(w2, { assertNotWindows: false });
       });
     });
+
+    describe('BrowserWindow.isFocusable()', () => {
+      it('correctly returns whether a window is focusable', async () => {
+        const w2 = new BrowserWindow({ focusable: false });
+        expect(w2.isFocusable()).to.be.false();
+
+        w2.setFocusable(true);
+        expect(w2.isFocusable()).to.be.true();
+        await closeWindow(w2, { assertNotWindows: false });
+      });
+    });
   });
 
   describe('sizing', () => {
