@@ -1,7 +1,7 @@
-From 02f84c745fc0cae5927a66dc4a3e81334e8f60a6 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Georg Neis <neis@chromium.org>
 Date: Mon, 12 Apr 2021 09:42:03 +0200
-Subject: [PATCH] [compiler][x64] Fix bug in InstructionSelector::ChangeInt32ToInt64
+Subject: Fix bug in InstructionSelector::ChangeInt32ToInt64
 
 Bug: chromium:1196683
 Change-Id: Ib4ea738b47b64edc81450583be4c80a41698c3d1
@@ -9,13 +9,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2820971
 Commit-Queue: Georg Neis <neis@chromium.org>
 Reviewed-by: Nico Hartmann <nicohartmann@chromium.org>
 Cr-Commit-Position: refs/heads/master@{#73903}
----
 
 diff --git a/src/compiler/backend/x64/instruction-selector-x64.cc b/src/compiler/backend/x64/instruction-selector-x64.cc
-index 39cd9b1..d17dd28 100644
+index 2ee0618f3ed43b5cacc5a6edf7a9d9df081b4770..2dbf34a0009eeeef41d4de4b402b99aa4ddba941 100644
 --- a/src/compiler/backend/x64/instruction-selector-x64.cc
 +++ b/src/compiler/backend/x64/instruction-selector-x64.cc
-@@ -1376,7 +1376,9 @@
+@@ -1399,7 +1399,9 @@ void InstructionSelector::VisitChangeInt32ToInt64(Node* node) {
          opcode = load_rep.IsSigned() ? kX64Movsxwq : kX64Movzxwq;
          break;
        case MachineRepresentation::kWord32:
@@ -28,7 +27,7 @@ index 39cd9b1..d17dd28 100644
          UNREACHABLE();
 diff --git a/test/mjsunit/compiler/regress-1196683.js b/test/mjsunit/compiler/regress-1196683.js
 new file mode 100644
-index 0000000..abd7d6b
+index 0000000000000000000000000000000000000000..abd7d6b2f8da45991e1e3b6c72582bc716d63efb
 --- /dev/null
 +++ b/test/mjsunit/compiler/regress-1196683.js
 @@ -0,0 +1,56 @@
