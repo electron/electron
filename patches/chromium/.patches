@@ -109,3 +109,4 @@ disable_unload_metrics.patch
 fix_add_check_for_sandbox_then_result.patch
 moves_background_color_setter_of_webview_to_blinks_webprefs_logic.patch
 blink_wasm_eval_csp.patch
+cherry-pick-6d70c70f318d.patch
