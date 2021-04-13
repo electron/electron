@@ -1,0 +1,65 @@
+From 29e907c83b1985d14b31aec20e46d5f686d64036 Mon Sep 17 00:00:00 2001
+From: Jack Rosenthal <jrosenth@chromium.org>
+Date: Tue, 13 Apr 2021 21:45:05 +0000
+Subject: [PATCH] Reland "hatch: enable "zephyr" USE flag"
+
+This reverts commit 406a3f1f51ab48682d5c717bae4d0008c0b09434.
+
+Reason for revert: chromeos-config build issues fixed
+
+Original change's description:
+> Revert "hatch: enable "zephyr" USE flag"
+>
+> This reverts commit 6b522a4cf141e98f7aa0a74a4575aee8d87efc99.
+>
+> Reason for revert: potentially responsible for crbug.com/1194814
+>
+> BUG=chromium:1194814
+> TEST=CQ+1 and see if the issues go away?
+>      I am not able to reproduce any failures locally.
+>
+> Original change's description:
+> > hatch: enable "zephyr" USE flag
+> >
+> > Enable the "zephyr" USE flag, which will toggle the dependency on
+> > chromeos-base/chromeos-zephyr, installing firmware under
+> > /firmware/${MODEL}/zephyr.bin.
+> >
+> > Note that this USE flag doesn't actually cause the firmware to be
+> > enabled in the updater or for EC software sync.  That's a separate USE
+> > flag (potentially "has_zephyr").  You can see the linked bug for
+> > further discussion.
+> >
+> > BUG=b:181337770
+> > TEST="portageq-hatch envvar USE" contains "zephyr"
+> >
+> > Change-Id: Iec24ab8689a678e728580c2fad13d7bf4297f6b5
+> > Reviewed-on: https://chromium-review.googlesource.com/c/chromiumos/overlays/board-overlays/+/2795070
+> > Tested-by: Jack Rosenthal <jrosenth@chromium.org>
+> > Auto-Submit: Jack Rosenthal <jrosenth@chromium.org>
+> > Commit-Queue: Keith Short <keithshort@chromium.org>
+> > Reviewed-by: Keith Short <keithshort@chromium.org>
+>
+> Bug: b:181337770
+> Change-Id: Id209beb989982858e3f47d3d9b5631f50489deb5
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromiumos/overlays/board-overlays/+/2800013
+> Commit-Queue: Jack Rosenthal <jrosenth@chromium.org>
+> Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+
+Bug: chromium:1194814
+Bug: b:181337770
+Change-Id: I8e9f161e6afbd3dff08fc176904fe07d0df43739
+---
+
+diff --git a/overlay-hatch/profiles/base/make.defaults b/overlay-hatch/profiles/base/make.defaults
+index 9227ac2..41c6e7c 100644
+--- a/overlay-hatch/profiles/base/make.defaults
++++ b/overlay-hatch/profiles/base/make.defaults
+@@ -61,3 +61,7 @@
+ 
+ # Bring in Runtime AVL Compliance Check (RACC) packages
+ USE="${USE} racc"
++
++# Enable building chromeos-base/chromeos-zephyr (currently builds an
++# experimental EC for kohaku)
++USE="${USE} zephyr"
