@@ -73,14 +73,15 @@ ipcMainInternal.on(
       );
     }
 
-    const browserWindowOptions = event.sender._callWindowOpenHandler(event, url, frameName, features);
+    const referrer: Electron.Referrer = { url: '', policy: 'strict-origin-when-cross-origin' };
+    const browserWindowOptions = event.sender._callWindowOpenHandler(event, { url, frameName, features, disposition: 'new-window', referrer });
     if (event.defaultPrevented) {
       return;
     }
     const guest = openGuestWindow({
       event,
       embedder: event.sender,
-      referrer: { url: '', policy: 'default' },
+      referrer,
       disposition: 'new-window',
       overrideBrowserWindowOptions: browserWindowOptions!,
       windowOpenArgs: {
