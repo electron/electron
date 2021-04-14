@@ -269,6 +269,7 @@ async function buildVSTS (targetBranch, options) {
 
   let vstsURL = VSTS_URL;
   let vstsToken = process.env.VSTS_TOKEN;
+  assert(vstsToken, `${options.ci} requires the $VSTS_TOKEN environment variable to be provided`);
   if (options.ci === 'DevOps') {
     vstsURL = DEVOPS_URL;
     vstsToken = process.env.DEVOPS_TOKEN;
