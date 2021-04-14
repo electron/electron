@@ -175,6 +175,7 @@ void ElectronPermissionManager::RequestPermissionsWithDetails(
       statuses.push_back(blink::mojom::PermissionStatus::GRANTED);
     }
     std::move(response_callback).Run(statuses);
+    return;
   }
 
   auto* web_contents =
