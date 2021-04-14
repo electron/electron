@@ -11,10 +11,10 @@ Reviewed-by: Nico Hartmann <nicohartmann@chromium.org>
 Cr-Commit-Position: refs/heads/master@{#73903}
 
 diff --git a/src/compiler/backend/x64/instruction-selector-x64.cc b/src/compiler/backend/x64/instruction-selector-x64.cc
-index 2ee0618f3ed43b5cacc5a6edf7a9d9df081b4770..2dbf34a0009eeeef41d4de4b402b99aa4ddba941 100644
+index 39cd9b1d23b487c00defbeb250eafc64f4a341d2..d17dd28825512081b5ccc07bae73ec36b43bbe8e 100644
 --- a/src/compiler/backend/x64/instruction-selector-x64.cc
 +++ b/src/compiler/backend/x64/instruction-selector-x64.cc
-@@ -1399,7 +1399,9 @@ void InstructionSelector::VisitChangeInt32ToInt64(Node* node) {
+@@ -1376,7 +1376,9 @@ void InstructionSelector::VisitChangeInt32ToInt64(Node* node) {
          opcode = load_rep.IsSigned() ? kX64Movsxwq : kX64Movzxwq;
          break;
        case MachineRepresentation::kWord32:
