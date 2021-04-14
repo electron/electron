@@ -33,6 +33,7 @@ document.getElementById('drag').ondragstart = (event) => {
   ipcRenderer.send('ondragstart', '/absolute/path/to/the/item')
 }
 ```
+Note: electronic 12 + needs to set contextisolation to false
 
 The code above instructs the Renderer process to handle the `ondragstart` event
 and forward the information to the Main process.
