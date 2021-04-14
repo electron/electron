@@ -227,7 +227,7 @@ bool ElectronBrowserMainParts::SetExitCode(int code) {
 }
 
 int ElectronBrowserMainParts::GetExitCode() const {
-  return exit_code_ ? *exit_code_ : 0;
+  return exit_code_.value_or(content::RESULT_CODE_NORMAL_EXIT);
 }
 
 int ElectronBrowserMainParts::PreEarlyInitialization() {
@@ -240,7 +240,7 @@ int ElectronBrowserMainParts::PreEarlyInitialization() {
   HandleSIGCHLD();
 #endif
 
-  return content::RESULT_CODE_NORMAL_EXIT;
+  return GetExitCode();
 }
 
 void ElectronBrowserMainParts::PostEarlyInitialization() {
@@ -473,7 +473,7 @@ int ElectronBrowserMainParts::PreMainMessageLoopRun() {
   // Notify observers that main thread message loop was initialized.
   Browser::Get()->PreMainMessageLoopRun();
 
-  return content::RESULT_CODE_NORMAL_EXIT;
+  return GetExitCode();
 }
 
 void ElectronBrowserMainParts::WillRunMainMessageLoop(
