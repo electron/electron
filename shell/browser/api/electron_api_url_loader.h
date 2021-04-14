@@ -80,7 +80,7 @@ class SimpleURLLoaderWrapper
                              int net_error,
                              const net::SSLInfo& ssl_info,
                              bool fatal,
-                             OnSSLCertificateErrorCallback response) override {}
+                             OnSSLCertificateErrorCallback response) override;
   void OnCertificateRequested(
       const base::Optional<base::UnguessableToken>& window_id,
       const scoped_refptr<net::SSLCertRequestInfo>& cert_info,
@@ -89,9 +89,9 @@ class SimpleURLLoaderWrapper
   void OnClearSiteData(const GURL& url,
                        const std::string& header_value,
                        int32_t load_flags,
-                       OnClearSiteDataCallback callback) override {}
+                       OnClearSiteDataCallback callback) override;
   void OnLoadingStateUpdate(network::mojom::LoadInfoPtr info,
-                            OnLoadingStateUpdateCallback callback) override {}
+                            OnLoadingStateUpdateCallback callback) override;
   void OnDataUseUpdate(int32_t network_traffic_annotation_id_hash,
                        int64_t recv_bytes,
                        int64_t sent_bytes) override {}
