@@ -7,6 +7,7 @@
 #include <propkey.h>  // for PKEY_* constants
 
 #include "base/logging.h"
+#include "base/stl_util.h"
 #include "base/win/scoped_co_mem.h"
 #include "base/win/scoped_propvariant.h"
 #include "base/win/win_util.h"
