@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index ffcf8c6c749f933cbf15f2c34801d1d8207fc9ca..2dc386167f53cfac925dfb7f6719a27c6fa94821 100644
+index 929f3b3450ff6eda94d8bb36a0f3632c57c49ae0..f30e63504304d94a7af7155a09780881de1f4c7f 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -5351,6 +5351,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -5368,6 +5368,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,10 +21,10 @@ index ffcf8c6c749f933cbf15f2c34801d1d8207fc9ca..2dc386167f53cfac925dfb7f6719a27c
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 3d08c2e95e3694f58c4ea0eec839f0f3debbb1cb..1175f2a74089990b1929f38a706fd46b491ccc7e 100644
+index 0321d0f6d9bc399887fffab4b8a46a40a9017289..24979412cf08fdec93d256bcf16d7dd1abdf4ff6 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3593,6 +3593,14 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
+@@ -3596,6 +3596,14 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
    }
    auto* new_contents_impl = new_contents.get();
  
@@ -39,7 +39,7 @@ index 3d08c2e95e3694f58c4ea0eec839f0f3debbb1cb..1175f2a74089990b1929f38a706fd46b
    new_contents_impl->GetController().SetSessionStorageNamespace(
        partition_id, session_storage_namespace);
  
-@@ -3635,12 +3643,6 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
+@@ -3638,12 +3646,6 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
@@ -68,10 +68,10 @@ index fb71337543f3c967a50e8e6031c8f2f2a997ebe2..54c53188a78d1011dc6a6758f0c515c2
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index bb56b322b0817302d8526790c2893927dcfba76e..db80cb9d15af7f59a312d1030aee6682b3ef86c1 100644
+index af88b54f9208cb067d83f04f379b0911b15403f0..59c747a6f63a53eff7e2ca8d46a859f615638e3f 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -554,6 +554,8 @@ bool ContentBrowserClient::CanCreateWindow(
+@@ -559,6 +559,8 @@ bool ContentBrowserClient::CanCreateWindow(
      const std::string& frame_name,
      WindowOpenDisposition disposition,
      const blink::mojom::WindowFeatures& features,
@@ -81,10 +81,10 @@ index bb56b322b0817302d8526790c2893927dcfba76e..db80cb9d15af7f59a312d1030aee6682
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 38d5ec2a45ad10dae17000a696ff913224fe78e9..31214ab14f3643d8f6ab38673195322c5e33f757 100644
+index 89ae0bdd201df11f92318cce98e8d8254e183903..584a98da0ccde8b87171c6b6343b484b48f2e289 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -159,6 +159,7 @@ class NetworkService;
+@@ -160,6 +160,7 @@ class NetworkService;
  class TrustedURLLoaderHeaderClient;
  }  // namespace mojom
  struct ResourceRequest;
@@ -92,7 +92,7 @@ index 38d5ec2a45ad10dae17000a696ff913224fe78e9..31214ab14f3643d8f6ab38673195322c
  }  // namespace network
  
  namespace sandbox {
-@@ -912,6 +913,8 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -914,6 +915,8 @@ class CONTENT_EXPORT ContentBrowserClient {
        const std::string& frame_name,
        WindowOpenDisposition disposition,
        const blink::mojom::WindowFeatures& features,
