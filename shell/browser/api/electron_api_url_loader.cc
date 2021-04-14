@@ -347,6 +347,27 @@ void SimpleURLLoaderWrapper::OnAuthRequired(
   Emit("login", auth_info, base::AdaptCallbackForRepeating(std::move(cb)));
 }
 
+void SimpleURLLoaderWrapper::OnSSLCertificateError(
+    const GURL& url,
+    int net_error,
+    const net::SSLInfo& ssl_info,
+    bool fatal,
+    OnSSLCertificateErrorCallback response) {
+  std::move(response).Run(net_error);
+}
+
+void SimpleURLLoaderWrapper::OnClearSiteData(const GURL& url,
+                                             const std::string& header_value,
+                                             int32_t load_flags,
+                                             OnClearSiteDataCallback callback) {
+  std::move(callback).Run();
+}
+void SimpleURLLoaderWrapper::OnLoadingStateUpdate(
+    network::mojom::LoadInfoPtr info,
+    OnLoadingStateUpdateCallback callback) {
+  std::move(callback).Run();
+}
+
 void SimpleURLLoaderWrapper::Clone(
     mojo::PendingReceiver<network::mojom::URLLoaderNetworkServiceObserver>
         observer) {
