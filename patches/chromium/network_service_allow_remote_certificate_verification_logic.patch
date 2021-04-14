@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 8e53d65ddca7b54a6effd1767257a4d8239251d8..8a00bf59c728217069000b1f1ece72e1540baf85 100644
+index cf80083060e6a12e2d893d5fb3117970bd9f2b10..306f854c06c29901b191df0b34f8c48495b13676 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -116,6 +116,11 @@
@@ -157,7 +157,7 @@ index 72885bc1d20a4da5ad4df3fb8185f05bcf6fbfba..06b1a0d550de946aa41efca2be4efde6
    // CertNetFetcher is not used by the current platform, or if the actual
    // net::CertVerifier is instantiated outside of the network service.
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 49aefdb660cf522e44ce22bb7d183481d0948e85..7a62dfd110555d2bf6ed4be075967ce6396855ef 100644
+index ee27133a56df40e79e01c232239faa7f6ef6b461..1304a9189c1c12024847ef973ab0ed426496e6b3 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -192,6 +192,17 @@ struct CTPolicy {
@@ -178,7 +178,7 @@ index 49aefdb660cf522e44ce22bb7d183481d0948e85..7a62dfd110555d2bf6ed4be075967ce6
  // Parameters for constructing a network context.
  struct NetworkContextParams {
    // Name used by memory tools to identify the context.
-@@ -728,6 +739,9 @@ interface NetworkContext {
+@@ -732,6 +743,9 @@ interface NetworkContext {
    // Sets a client for this network context.
    SetClient(pending_remote<NetworkContextClient> client);
  

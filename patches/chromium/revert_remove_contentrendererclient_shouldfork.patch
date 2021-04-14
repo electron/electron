@@ -9,10 +9,10 @@ for every navigation to keep Node.js working properly. Once Native Modules in th
 are required to be NAPI or context aware (Electron v11), this patch can be removed.
 
 diff --git a/chrome/renderer/chrome_content_renderer_client.cc b/chrome/renderer/chrome_content_renderer_client.cc
-index 08dda0d5779cefcc0aa2d7d691d8f84137975b5e..d3439ac00ea7e58c2eee210831d38bb8745468cc 100644
+index 1125d64d872b0c4aa22dd63b51e41313f7f5fe5d..e109c26c0be89906060c1b0d4a2837c1cad05149 100644
 --- a/chrome/renderer/chrome_content_renderer_client.cc
 +++ b/chrome/renderer/chrome_content_renderer_client.cc
-@@ -1282,6 +1282,25 @@ ChromeContentRendererClient::GetProtocolHandlerSecurityLevel() {
+@@ -1281,6 +1281,25 @@ ChromeContentRendererClient::GetProtocolHandlerSecurityLevel() {
  #endif
  }
  
@@ -92,10 +92,10 @@ index f259835ef4cabb8923f8b0fe9b3f6ae8f2b2b79f..205685f200d54e53829ddc29de3bc07e
    // |url|. If the function returns a valid |new_url|, the request must be
    // updated to use it.
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index be3779de84dbda14c3425c5115da78ab703e9cfb..6dfa89f3117cb7b0165c352feb79e95b4a315061 100644
+index ae77e7566d47aa86513dc9671dd9a67c684e74f1..0a4280ca5a9eed2cb58b817bcea4e735db5c2238 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -5346,6 +5346,23 @@ void RenderFrameImpl::BeginNavigation(
+@@ -5318,6 +5318,23 @@ void RenderFrameImpl::BeginNavigation(
      // we can do a per-frame check here rather than a process-wide check.
      bool should_fork = HasWebUIScheme(url) || HasWebUIScheme(old_url) ||
                         (enabled_bindings_ & kWebUIBindingsPolicyMask);
