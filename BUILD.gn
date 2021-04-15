@@ -447,6 +447,7 @@ source_set("electron_lib") {
   if (is_mac) {
     deps += [
       "//components/remote_cocoa/app_shim",
+      "//components/remote_cocoa/browser",
       "//content/common:mac_helpers",
       "//ui/accelerated_widget_mac",
     ]
