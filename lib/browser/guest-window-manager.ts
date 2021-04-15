@@ -269,7 +269,7 @@ const MULTIPART_CONTENT_TYPE = 'multipart/form-data';
 const URL_ENCODED_CONTENT_TYPE = 'application/x-www-form-urlencoded';
 
 // Figure out appropriate headers for post data.
-const parseContentTypeFormat = function (postData: Exclude<PostData, undefined>) {
+export const parseContentTypeFormat = function (postData: Exclude<PostData, undefined>) {
   if (postData.length) {
     if (postData[0].type === 'rawData') {
       // For multipart forms, the first element will start with the boundary

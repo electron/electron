@@ -3087,7 +3087,7 @@ describe('BrowserWindow module', () => {
       expect(additionalFeatures).to.deep.equal([]);
       expect(postBody.data).to.have.length(1);
       expect(postBody.data[0].type).to.equal('rawData');
-      expect(postBody.data[0].bytes).to.deep.equal(Buffer.from('post-test-key=post-test-value'));
+      expect((postBody.data[0] as any).bytes).to.deep.equal(Buffer.from('post-test-key=post-test-value'));
       expect(postBody.contentType).to.equal('application/x-www-form-urlencoded');
     });
   });

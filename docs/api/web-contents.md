@@ -375,6 +375,8 @@ win.webContents.on('will-prevent-unload', (event) => {
 })
 ```
 
+**Note:** This will be emitted for `BrowserViews` but will _not_ be respected - this is because we have chosen not to tie the `BrowserView` lifecycle to its owning BrowserWindow should one exist per the [specification](https://developer.mozilla.org/en-US/docs/Web/API/Window/beforeunload_event).
+
 #### Event: 'crashed' _Deprecated_
 
 Returns:
@@ -861,7 +863,7 @@ in `webPreferences`.
   * `httpReferrer` (String | [Referrer](structures/referrer.md)) (optional) - An HTTP Referrer url.
   * `userAgent` String (optional) - A user agent originating the request.
   * `extraHeaders` String (optional) - Extra headers separated by "\n".
-  * `postData` ([UploadRawData[]](structures/upload-raw-data.md) | [UploadFile[]](structures/upload-file.md)) (optional)
+  * `postData` ([UploadRawData](structures/upload-raw-data.md) | [UploadFile](structures/upload-file.md))[] (optional)
   * `baseURLForDataURL` String (optional) - Base url (with trailing path separator) for files to be loaded by the data url. This is needed only if the specified `url` is a data url and needs to load other files.
 
 Returns `Promise<void>` - the promise will resolve when the page has finished loading
@@ -1131,6 +1133,15 @@ Ignore application menu shortcuts while this web contents is focused.
     * `url` String - The _resolved_ version of the URL passed to `window.open()`. e.g. opening a window with `window.open('foo')` will yield something like `https://the-origin/the/current/path/foo`.
     * `frameName` String - Name of the window provided in `window.open()`
     * `features` String - Comma separated list of window features provided to `window.open()`.
+    * `disposition` String - Can be `default`, `foreground-tab`, `background-tab`,
+      `new-window`, `save-to-disk` or `other`.
+    * `referrer` [Referrer](structures/referrer.md) - The referrer that will be
+      passed to the new window. May or may not result in the `Referer` header being
+      sent, depending on the referrer policy.
+    * `postBody` [PostBody](structures/post-body.md) (optional) - The post data that
+      will be sent to the new window, along with the appropriate headers that will
+      be set. If no post data is to be sent, the value will be `null`. Only defined
+      when the window is being created by a form that set `target=_blank`.
 
   Returns `{action: 'deny'} | {action: 'allow', overrideBrowserWindowOptions?: BrowserWindowConstructorOptions}` - `deny` cancels the creation of the new
   window. `allow` will allow the new window to be created. Specifying `overrideBrowserWindowOptions` allows customization of the created window.
@@ -1314,19 +1325,21 @@ Captures a snapshot of the page within `rect`. Omitting `rect` will capture the 
 Returns `Boolean` - Whether this page is being captured. It returns true when the capturer count
 is large then 0.
 
-#### `contents.incrementCapturerCount([size, stayHidden])`
+#### `contents.incrementCapturerCount([size, stayHidden, stayAwake])`
 
 * `size` [Size](structures/size.md) (optional) - The preferred size for the capturer.
 * `stayHidden` Boolean (optional) -  Keep the page hidden instead of visible.
+* `stayAwake` Boolean (optional) -  Keep the system awake instead of allowing it to sleep.
 
 Increase the capturer count by one. The page is considered visible when its browser window is
 hidden and the capturer count is non-zero. If you would like the page to stay hidden, you should ensure that `stayHidden` is set to true.
 
 This also affects the Page Visibility API.
 
-#### `contents.decrementCapturerCount([stayHidden])`
+#### `contents.decrementCapturerCount([stayHidden, stayAwake])`
 
 * `stayHidden` Boolean (optional) -  Keep the page in hidden state instead of visible.
+* `stayAwake` Boolean (optional) -  Keep the system awake instead of allowing it to sleep.
 
 Decrease the capturer count by one. The page will be set to hidden or occluded state when its
 browser window is hidden or occluded and the capturer count reaches zero. If you want to

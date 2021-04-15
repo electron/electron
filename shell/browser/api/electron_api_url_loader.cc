@@ -11,7 +11,6 @@
 #include <utility>
 #include <vector>
 
-#include "base/containers/id_map.h"
 #include "base/no_destructor.h"
 #include "gin/handle.h"
 #include "gin/object_template_builder.h"
@@ -209,7 +208,8 @@ class JSChunkedDataPipeGetter : public gin::Wrappable<JSChunkedDataPipeGetter>,
     if (result == MOJO_RESULT_OK) {
       promise.Resolve();
     } else {
-      promise.RejectWithErrorMessage("mojo result not ok");
+      promise.RejectWithErrorMessage("mojo result not ok: " +
+                                     std::to_string(result));
       Finished();
     }
   }
@@ -260,12 +260,6 @@ const net::NetworkTrafficAnnotationTag kTrafficAnnotation =
           setting: "This feature cannot be disabled."
         })");
 
-base::IDMap<SimpleURLLoaderWrapper*>& GetAllRequests() {
-  static base::NoDestructor<base::IDMap<SimpleURLLoaderWrapper*>>
-      s_all_requests;
-  return *s_all_requests;
-}
-
 }  // namespace
 
 gin::WrapperInfo SimpleURLLoaderWrapper::kWrapperInfo = {
@@ -274,12 +268,16 @@ gin::WrapperInfo SimpleURLLoaderWrapper::kWrapperInfo = {
 SimpleURLLoaderWrapper::SimpleURLLoaderWrapper(
     std::unique_ptr<network::ResourceRequest> request,
     network::mojom::URLLoaderFactory* url_loader_factory,
-    int options)
-    : id_(GetAllRequests().Add(this)) {
-  // We slightly abuse the |render_frame_id| field in ResourceRequest so that
-  // we can correlate any authentication events that arrive with this request.
-  request->render_frame_id = id_;
-
+    int options) {
+  if (!request->trusted_params)
+    request->trusted_params = network::ResourceRequest::TrustedParams();
+  mojo::PendingRemote<network::mojom::URLLoaderNetworkServiceObserver>
+      url_loader_network_observer_remote;
+  url_loader_network_observer_receivers_.Add(
+      this,
+      url_loader_network_observer_remote.InitWithNewPipeAndPassReceiver());
+  request->trusted_params->url_loader_network_observer =
+      std::move(url_loader_network_observer_remote);
   // SimpleURLLoader wants to control the request body itself. We have other
   // ideas.
   auto request_body = std::move(request->request_body);
@@ -316,21 +314,15 @@ void SimpleURLLoaderWrapper::PinBodyGetter(v8::Local<v8::Value> body_getter) {
                                   body_getter);
 }
 
-SimpleURLLoaderWrapper::~SimpleURLLoaderWrapper() {
-  GetAllRequests().Remove(id_);
-}
-
-// static
-SimpleURLLoaderWrapper* SimpleURLLoaderWrapper::FromID(uint32_t id) {
-  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-  return GetAllRequests().Lookup(id);
-}
+SimpleURLLoaderWrapper::~SimpleURLLoaderWrapper() = default;
 
 void SimpleURLLoaderWrapper::OnAuthRequired(
+    const base::Optional<base::UnguessableToken>& window_id,
+    uint32_t request_id,
     const GURL& url,
     bool first_auth_attempt,
-    net::AuthChallengeInfo auth_info,
-    network::mojom::URLResponseHeadPtr head,
+    const net::AuthChallengeInfo& auth_info,
+    const scoped_refptr<net::HttpResponseHeaders>& head_headers,
     mojo::PendingRemote<network::mojom::AuthChallengeResponder>
         auth_challenge_responder) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
@@ -354,6 +346,33 @@ void SimpleURLLoaderWrapper::OnAuthRequired(
       },
       std::move(auth_responder));
   Emit("login", auth_info, base::AdaptCallbackForRepeating(std::move(cb)));
+}
+
+void SimpleURLLoaderWrapper::OnSSLCertificateError(
+    const GURL& url,
+    int net_error,
+    const net::SSLInfo& ssl_info,
+    bool fatal,
+    OnSSLCertificateErrorCallback response) {
+  std::move(response).Run(net_error);
+}
+
+void SimpleURLLoaderWrapper::OnClearSiteData(const GURL& url,
+                                             const std::string& header_value,
+                                             int32_t load_flags,
+                                             OnClearSiteDataCallback callback) {
+  std::move(callback).Run();
+}
+void SimpleURLLoaderWrapper::OnLoadingStateUpdate(
+    network::mojom::LoadInfoPtr info,
+    OnLoadingStateUpdateCallback callback) {
+  std::move(callback).Run();
+}
+
+void SimpleURLLoaderWrapper::Clone(
+    mojo::PendingReceiver<network::mojom::URLLoaderNetworkServiceObserver>
+        observer) {
+  url_loader_network_observer_receivers_.Add(this, std::move(observer));
 }
 
 void SimpleURLLoaderWrapper::Cancel() {

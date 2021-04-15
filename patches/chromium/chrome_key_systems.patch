@@ -7,7 +7,7 @@ Disable persiste licence support check for widevine cdm,
 as its not supported in the current version of chrome.
 
 diff --git a/chrome/renderer/media/chrome_key_systems.cc b/chrome/renderer/media/chrome_key_systems.cc
-index 11ab5f846976418badb6ad062588b781aa6142dd..aa372535b7342a01e2b0732148b56ca4d1b846de 100644
+index d1b62beedb1a9ae378af132cae54ba2417ca64bf..7d4f73ffe6f601110ba46e7537211bb341a765f8 100644
 --- a/chrome/renderer/media/chrome_key_systems.cc
 +++ b/chrome/renderer/media/chrome_key_systems.cc
 @@ -15,7 +15,9 @@
@@ -20,7 +20,7 @@ index 11ab5f846976418badb6ad062588b781aa6142dd..aa372535b7342a01e2b0732148b56ca4
  #include "components/cdm/renderer/external_clear_key_key_system_properties.h"
  #include "components/cdm/renderer/widevine_key_system_properties.h"
  #include "content/public/renderer/render_thread.h"
-@@ -202,12 +204,14 @@ static SupportedCodecs GetSupportedCodecs(
+@@ -200,12 +202,14 @@ static SupportedCodecs GetSupportedCodecs(
  // Returns persistent-license session support.
  static EmeSessionTypeSupport GetPersistentLicenseSupport(
      bool supported_by_the_cdm) {

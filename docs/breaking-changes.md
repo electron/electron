@@ -14,7 +14,7 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (14.0)
 
-### API Changed: `window.(open)`
+### API Changed: `window.open()`
 
 The optional parameter `frameName` will no longer set the title of the window. This now follows the specification described by the [native documentation](https://developer.mozilla.org/en-US/docs/Web/API/Window/open#parameters) under the corresponding parameter `windowName`.
 
@@ -27,6 +27,16 @@ ensure your code works with this property enabled.  It has been enabled by defau
 12.
 
 You will be affected by this change if you use either `webFrame.executeJavaScript` or `webFrame.executeJavaScriptInIsolatedWorld`. You will need to ensure that values returned by either of those methods are supported by the [Context Bridge API](api/context-bridge.md#parameter--error--return-type-support) as these methods use the same value passing semantics.
+
+### Default Changed: `nativeWindowOpen` defaults to `true`
+
+Prior to Electron 14, `window.open` was by default shimmed to use
+`BrowserWindowProxy`. This meant that `window.open('about:blank')` did not work
+to open synchronously scriptable child windows, among other incompatibilities.
+`nativeWindowOpen` is no longer experimental, and is now the default.
+
+See the documentation for [window.open in Electron](api/window-open.md)
+for more details.
 
 ### Removed: BrowserWindowConstructorOptions inheriting from parent windows
 
@@ -155,6 +165,22 @@ nativeTheme.shouldUseInvertedColorScheme
 systemPreferences.isHighContrastColorScheme()
 // Replace with
 nativeTheme.shouldUseHighContrastColors
+```
+
+### Deprecated: WebContents `new-window` event
+
+The `new-window` event of WebContents has been deprecated. It is replaced by [`webContents.setWindowOpenHandler()`](api/web-contents.md#contentssetwindowopenhandlerhandler).
+
+```js
+// Deprecated in Electron 13
+webContents.on('new-window', (event) => {
+  event.preventDefault()
+})
+
+// Replace with
+webContents.setWindowOpenHandler((details) => {
+  return { action: 'deny' }
+})
 ```
 
 ## Planned Breaking API Changes (12.0)

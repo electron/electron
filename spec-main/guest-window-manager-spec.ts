@@ -115,7 +115,6 @@ describe('webContents.setWindowOpenHandler', () => {
       beforeEach(async () => {
         browserWindow = new BrowserWindow(browserWindowOptions);
         await browserWindow.loadURL('about:blank');
-        browserWindow.show();
       });
 
       afterEach(closeAllWindows);
@@ -135,7 +134,7 @@ describe('webContents.setWindowOpenHandler', () => {
           assert.fail('did-create-window should not to be called with an overridden window.open');
         });
 
-        browserWindow.webContents.executeJavaScript("window.open('about:blank') && true");
+        browserWindow.webContents.executeJavaScript("window.open('about:blank', '', 'show=no') && true");
 
         await denied;
       });
@@ -184,26 +183,66 @@ describe('webContents.setWindowOpenHandler', () => {
         await denied;
       });
 
-      it('fires handler with correct params', (done) => {
+      it('fires handler with correct params', async () => {
         const testFrameName = 'test-frame-name';
-        const testFeatures = 'top=10&left=10&something-unknown';
+        const testFeatures = 'top=10&left=10&something-unknown&show=no';
         const testUrl = 'app://does-not-exist/';
-        browserWindow.webContents.setWindowOpenHandler(({ url, frameName, features }) => {
-          expect(url).to.equal(testUrl);
-          expect(frameName).to.equal(testFrameName);
-          expect(features).to.equal(testFeatures);
-          done();
-          return { action: 'deny' };
-        });
+        const details = await new Promise<Electron.HandlerDetails>(resolve => {
+          browserWindow.webContents.setWindowOpenHandler((details) => {
+            setTimeout(() => resolve(details));
+            return { action: 'deny' };
+          });
 
-        browserWindow.webContents.executeJavaScript(`window.open('${testUrl}', '${testFrameName}', '${testFeatures}') && true`);
+          browserWindow.webContents.executeJavaScript(`window.open('${testUrl}', '${testFrameName}', '${testFeatures}') && true`);
+        });
+        const { url, frameName, features, disposition, referrer } = details;
+        expect(url).to.equal(testUrl);
+        expect(frameName).to.equal(testFrameName);
+        expect(features).to.equal(testFeatures);
+        expect(disposition).to.equal('new-window');
+        expect(referrer).to.deep.equal({
+          policy: 'strict-origin-when-cross-origin',
+          url: ''
+        });
+      });
+
+      it('includes post body', async () => {
+        const details = await new Promise<Electron.HandlerDetails>(resolve => {
+          browserWindow.webContents.setWindowOpenHandler((details) => {
+            setTimeout(() => resolve(details));
+            return { action: 'deny' };
+          });
+
+          browserWindow.webContents.loadURL(`data:text/html,${encodeURIComponent(`
+            <form action="http://example.com" target="_blank" method="POST" id="form">
+              <input name="key" value="value"></input>
+            </form>
+            <script>form.submit()</script>
+          `)}`);
+        });
+        const { url, frameName, features, disposition, referrer, postBody } = details;
+        expect(url).to.equal('http://example.com/');
+        expect(frameName).to.equal('');
+        expect(features).to.deep.equal('');
+        expect(disposition).to.equal('foreground-tab');
+        expect(referrer).to.deep.equal({
+          policy: 'strict-origin-when-cross-origin',
+          url: ''
+        });
+        expect(postBody).to.deep.equal({
+          contentType: 'application/x-www-form-urlencoded',
+          data: [{
+            type: 'rawData',
+            bytes: Buffer.from('key=value')
+          }]
+        });
       });
 
       it('does fire window creation events if an override returns action: allow', async () => {
         browserWindow.webContents.setWindowOpenHandler(() => ({ action: 'allow' }));
 
         setImmediate(() => {
-          browserWindow.webContents.executeJavaScript("window.open('about:blank') && true");
+          browserWindow.webContents.executeJavaScript("window.open('about:blank', '', 'show=no') && true");
         });
 
         await Promise.all([
@@ -222,7 +261,7 @@ describe('webContents.setWindowOpenHandler', () => {
           done();
         });
 
-        browserWindow.webContents.executeJavaScript("window.open('about:blank') && true");
+        browserWindow.webContents.executeJavaScript("window.open('about:blank', '', 'show=no') && true");
       });
     });
   }

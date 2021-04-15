@@ -14,6 +14,7 @@
 #include "base/files/file_enumerator.h"
 #include "base/files/file_util.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/task/thread_pool.h"
 #include "chrome/common/pref_names.h"
 #include "components/prefs/pref_service.h"
 #include "shell/browser/electron_browser_context.h"

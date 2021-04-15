@@ -233,10 +233,6 @@ expanding and collapsing the dialog.
     be selected by default when the message box opens.
   * `title` String (optional) - Title of the message box, some platforms will not show it.
   * `detail` String (optional) - Extra information of the message.
-  * `checkboxLabel` String (optional) - If provided, the message box will
-    include a checkbox with the given label.
-  * `checkboxChecked` Boolean (optional) - Initial checked state of the
-    checkbox. `false` by default.
   * `icon` ([NativeImage](native-image.md) | String) (optional)
   * `cancelId` Integer (optional) - The index of the button to be used to cancel the dialog, via
     the `Esc` key. By default this is assigned to the first button with "cancel" or "no" as the

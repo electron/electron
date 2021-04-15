@@ -171,7 +171,8 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
           cert_verifier_creation_params) override;
   network::mojom::NetworkContext* GetSystemNetworkContext() override;
   content::MediaObserver* GetMediaObserver() override;
-  content::DevToolsManagerDelegate* GetDevToolsManagerDelegate() override;
+  std::unique_ptr<content::DevToolsManagerDelegate>
+  CreateDevToolsManagerDelegate() override;
   content::PlatformNotificationService* GetPlatformNotificationService(
       content::BrowserContext* browser_context) override;
   std::unique_ptr<content::BrowserMainParts> CreateBrowserMainParts(
