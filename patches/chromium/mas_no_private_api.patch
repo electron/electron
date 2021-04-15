@@ -46,10 +46,10 @@ index 1659e070cae733cf2213d752fcc262fb2bce2b54..57a3a34365f723b6e75a5f90d50533a4
      NSArray* node_array,
      const LineIndexer* line_indexer) const {
 diff --git a/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm b/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm
-index 32b687fd92b73328e01cddd73d0c87f8d999519a..c58dcb76eede2b3671bc043f4ca5adc35749f2d6 100644
+index 0210ba27e7c738303edde35235d0e44cf827c501..1e1b7ec5b63f2fe582f77154dd32a1e0b921d2c7 100644
 --- a/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm
 +++ b/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm
-@@ -237,6 +237,7 @@
+@@ -177,6 +177,7 @@
    if (property_name == "AXIndexForChildUIElement") {  // UIElement
      return OptionalNSObject::NotNilOrError(PropertyNodeToUIElement(arg_node));
    }
@@ -57,7 +57,7 @@ index 32b687fd92b73328e01cddd73d0c87f8d999519a..c58dcb76eede2b3671bc043f4ca5adc3
    if (property_name == "AXIndexForTextMarker") {  // TextMarker
      return OptionalNSObject::NotNilOrError(PropertyNodeToTextMarker(arg_node));
    }
-@@ -244,6 +245,7 @@
+@@ -184,6 +185,7 @@
      return OptionalNSObject::NotNilOrError(
          PropertyNodeToTextMarkerRange(arg_node));
    }
@@ -65,7 +65,7 @@ index 32b687fd92b73328e01cddd73d0c87f8d999519a..c58dcb76eede2b3671bc043f4ca5adc3
  
    return OptionalNSObject::NotApplicable();
  }
-@@ -309,6 +311,7 @@
+@@ -249,6 +251,7 @@
    return uielement;
  }
  
@@ -73,7 +73,7 @@ index 32b687fd92b73328e01cddd73d0c87f8d999519a..c58dcb76eede2b3671bc043f4ca5adc3
  id AttributeInvoker::DictNodeToTextMarker(
      const AXPropertyNode& dictnode) const {
    if (!dictnode.IsDict()) {
-@@ -416,6 +419,7 @@ OptionalNSObject TextMarkerRangeGetEndMarker(const OptionalNSObject& obj) {
+@@ -356,6 +359,7 @@ OptionalNSObject TextMarkerRangeGetEndMarker(const OptionalNSObject& obj) {
    return OptionalNSObject::NotNilOrError(content::AXTextMarkerFrom(
        cocoa_node, range.focus()->text_offset(), range.focus()->affinity()));
  }
@@ -380,10 +380,10 @@ index c4121877602e09ec5aa86441d5910fbc7dab8c0b..49ecdf4974deb712ae710828e93b10d2
  
  - (id)accessibilityFocusedUIElement {
 diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-index 31e4c6e0a47e5dc018a68c6096f17c52b429a611..e1211a9e366963af6f44ae63dab47467ccafce17 100644
+index 96cceee74f1f15edf4b951ef182c63bfff313dff..57b3a1b78e9556ea52c283add53c3c169a70820c 100644
 --- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
 +++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-@@ -503,7 +503,7 @@ void PostAnnouncementNotification(NSString* announcement) {
+@@ -480,7 +480,7 @@ void PostAnnouncementNotification(NSString* announcement) {
    if (native_focus_object && [native_focus_object instanceActive]) {
      [user_info setObject:native_focus_object
                    forKey:ui::NSAccessibilityTextChangeElement];
@@ -392,7 +392,7 @@ index 31e4c6e0a47e5dc018a68c6096f17c52b429a611..e1211a9e366963af6f44ae63dab47467
      id selected_text = [native_focus_object selectedTextMarkerRange];
      if (selected_text) {
        NSString* const NSAccessibilitySelectedTextMarkerRangeAttribute =
-@@ -511,6 +511,7 @@ void PostAnnouncementNotification(NSString* announcement) {
+@@ -488,6 +488,7 @@ void PostAnnouncementNotification(NSString* announcement) {
        [user_info setObject:selected_text
                      forKey:NSAccessibilitySelectedTextMarkerRangeAttribute];
      }

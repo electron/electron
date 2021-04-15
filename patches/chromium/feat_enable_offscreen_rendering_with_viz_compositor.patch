@@ -108,7 +108,7 @@ index 77d463e683d8b8d3a202681a6884eacaab79d70d..05d51cb2637d34c073cd0025e3658036
  
  }  // namespace viz
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.cc b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-index 79c800e77a160cc0b10a29dd560d37e19c9d05fd..a9b1b267c97ed513890ba8466f66c3eafcbd5d5b 100644
+index 4c05fcdcff374fe4d44df8ddfd7901e7d166e10a..2abfb35d62e18fcc5f0f051386ac86371fdf9f6f 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.cc
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.cc
 @@ -25,6 +25,7 @@
@@ -127,7 +127,7 @@ index 79c800e77a160cc0b10a29dd560d37e19c9d05fd..a9b1b267c97ed513890ba8466f66c3ea
  #include "ui/base/ui_base_switches.h"
  #include "ui/gl/gl_context.h"
  #include "ui/gl/init/gl_factory.h"
-@@ -130,7 +132,8 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
+@@ -131,7 +133,8 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
      mojom::DisplayClient* display_client,
      DisplayCompositorMemoryAndTaskController* gpu_dependency,
      const RendererSettings& renderer_settings,
@@ -137,7 +137,7 @@ index 79c800e77a160cc0b10a29dd560d37e19c9d05fd..a9b1b267c97ed513890ba8466f66c3ea
  #if BUILDFLAG(IS_CHROMEOS_ASH)
    if (surface_handle == gpu::kNullSurfaceHandle)
      return std::make_unique<OutputSurfaceUnified>();
-@@ -142,7 +145,7 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
+@@ -143,7 +146,7 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
  
    if (!gpu_compositing) {
      output_surface = std::make_unique<SoftwareOutputSurface>(
@@ -146,7 +146,7 @@ index 79c800e77a160cc0b10a29dd560d37e19c9d05fd..a9b1b267c97ed513890ba8466f66c3ea
    } else if (renderer_settings.use_skia_renderer) {
      DCHECK(gpu_dependency);
      {
-@@ -241,10 +244,22 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
+@@ -242,10 +245,22 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
  std::unique_ptr<SoftwareOutputDevice>
  OutputSurfaceProviderImpl::CreateSoftwareOutputDeviceForPlatform(
      gpu::SurfaceHandle surface_handle,
@@ -511,7 +511,7 @@ index d9c17ae8fabbd12e4919d2dc06af232063e57741..f323af6e6811a858f96106d51e518dea
    // Creating output surface failed. The host can send a new request, possibly
    // with a different compositing mode.
 diff --git a/content/browser/compositor/viz_process_transport_factory.cc b/content/browser/compositor/viz_process_transport_factory.cc
-index 2d80f84280b5a636d5e06958582c7aa931a2eadc..ca49f59d4795c49a57fdbe0548b8d254e71ab757 100644
+index b1d4cf3b353a5937b575960739d9aa2ad70961f4..5d5a0e3904d3528d11a58568d4fd09c96e48471d 100644
 --- a/content/browser/compositor/viz_process_transport_factory.cc
 +++ b/content/browser/compositor/viz_process_transport_factory.cc
 @@ -418,8 +418,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
@@ -567,7 +567,7 @@ index 6b7fbb6cf13dc8ee6ade0878a9a2c1efc5d4d3f1..e2af75168cb914a7b3b4a6c9b6a28549
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index 65467f7796b80b147d6581ced1f08a23605c09e1..fd7e33f39236ce8530e8287a46698634a5ff9c1f 100644
+index fe4e33a62087ce5714c897d75373c061f9a1d3f9..35daaf212772863b6b5def361ad5d467af7dabd2 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -80,6 +80,7 @@ class DisplayPrivate;

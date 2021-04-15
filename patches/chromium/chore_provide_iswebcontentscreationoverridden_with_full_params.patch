@@ -67,10 +67,10 @@ index 8642c20123ec62fd6c90c8945d78bc3e04116c5b..f33ad843cc4b602c0e3312be426b81a0
    return extension && extension->id() == app_id_;
  }
 diff --git a/chrome/browser/media/offscreen_tab.cc b/chrome/browser/media/offscreen_tab.cc
-index e6caf513b77c8f59627ba090a6f1bcd97a213c83..1fda47d0397c44792da895055a06e4ef60bfa43b 100644
+index 4499d9df3723b1c721aef919cbe376166985ddab..c641a8e3dc64f98aacc09567cc5fc9edcc6c9ff5 100644
 --- a/chrome/browser/media/offscreen_tab.cc
 +++ b/chrome/browser/media/offscreen_tab.cc
-@@ -282,8 +282,7 @@ bool OffscreenTab::IsWebContentsCreationOverridden(
+@@ -283,8 +283,7 @@ bool OffscreenTab::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -140,10 +140,10 @@ index 33f1168f834d138aefb190b7718271d6962b3532..aeb30a22349e0682586bd1bad20dc5e2
    }
  
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 37b121e2b667d2f3f3fca2de20cc78c1d473fcab..87b76090dd396b529b7e42fc9df88389cc4ccfed 100644
+index c5c8d6543912429795602cfc80c6618852411a29..4b33fc7dfb58c10bac35bc543d47fb0574620c11 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -1776,12 +1776,11 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -1788,12 +1788,11 @@ bool Browser::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -173,10 +173,10 @@ index f1c66751bff73836e58c6550f16dba060b88bd8d..94550c33ac0c84cbc37e30a4a569098a
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/chrome/browser/ui/media_router/presentation_receiver_window_controller.cc b/chrome/browser/ui/media_router/presentation_receiver_window_controller.cc
-index 03e8c4f0a78567e487603f1f6a686d489c9f8ffc..27223fce30c9de33fde3fd2bdcf7ce866452d35b 100644
+index ff97ac6e97c688d677053a5f01546a4c2d91ff1d..1da6a9c32b883a17975e61d60363918251c78ffd 100644
 --- a/chrome/browser/ui/media_router/presentation_receiver_window_controller.cc
 +++ b/chrome/browser/ui/media_router/presentation_receiver_window_controller.cc
-@@ -200,8 +200,7 @@ bool PresentationReceiverWindowController::IsWebContentsCreationOverridden(
+@@ -201,8 +201,7 @@ bool PresentationReceiverWindowController::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -264,10 +264,10 @@ index c5c5a7b63b5b3b62a9517cbef3ae23ce57a3c89c..4f1b7e88d6d2ae89a60311c8aeb1fcee
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 0f8ab5c4eeb78b3997e4af2ef2bd9a0902803887..e91e0f35fe3ec98d299da675acfad996a0801faf 100644
+index 0dfc7706bf6ae30a7161d272ba5afbe14cd5e740..cd53c698b74a8edd2da1b6ee19353881f638e31d 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3560,8 +3560,7 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
+@@ -3561,8 +3561,7 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
  
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,
