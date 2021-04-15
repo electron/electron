@@ -37,9 +37,8 @@ class WebContentsModalDialogHostViews : public WebContentsModalDialogHost {
   }
 
   bool ShouldActivateDialog() const override {
-    // The browser Widget may be inactive if showing a bubble so instead check
-    // against the last active browser window when determining whether to
-    // activate the dialog.
+    // The browser Widget may be inactive if showing the dialog so instead check
+    // if the window is active before activating the dialog.
     return native_window_->IsFocused();
   }
 

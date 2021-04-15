@@ -296,6 +296,8 @@ int ElectronBrowserMainParts::PreCreateThreads() {
 #endif
 
   if (!views::LayoutProvider::Get())
+    // We need to use ChromeLayoutProvider as it's being used by the WebAuthn
+    // dialog, specifically by AuthenticatorRequestSheetView.
     layout_provider_ = std::make_unique<ChromeLayoutProvider>();
 
   constrained_window::SetConstrainedWindowViewsClient(

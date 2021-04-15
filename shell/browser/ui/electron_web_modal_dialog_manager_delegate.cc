@@ -3,11 +3,11 @@
 #include "content/public/browser/web_contents.h"
 #include "shell/common/platform_util.h"
 
-ElectronWebModalDialogManagerDelegate::ElectronWebModalDialogManagerDelegate() {
-}
+ElectronWebModalDialogManagerDelegate::ElectronWebModalDialogManagerDelegate() =
+    default;
 
 ElectronWebModalDialogManagerDelegate::
-    ~ElectronWebModalDialogManagerDelegate() {}
+    ~ElectronWebModalDialogManagerDelegate() = default;
 
 bool ElectronWebModalDialogManagerDelegate::IsWebContentsVisible(
     content::WebContents* web_contents) {
