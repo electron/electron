@@ -17,6 +17,7 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/icon_manager.h"
+#include "content/browser/browser_main_loop.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/device_service.h"
@@ -222,6 +223,7 @@ bool ElectronBrowserMainParts::SetExitCode(int code) {
   if (!exit_code_)
     return false;
 
+  content::BrowserMainLoop::GetInstance()->SetResultCode(code);
   *exit_code_ = code;
   return true;
 }
