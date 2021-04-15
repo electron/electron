@@ -208,7 +208,8 @@ class JSChunkedDataPipeGetter : public gin::Wrappable<JSChunkedDataPipeGetter>,
     if (result == MOJO_RESULT_OK) {
       promise.Resolve();
     } else {
-      promise.RejectWithErrorMessage("mojo result not ok");
+      promise.RejectWithErrorMessage("mojo result not ok: " +
+                                     std::to_string(result));
       Finished();
     }
   }
