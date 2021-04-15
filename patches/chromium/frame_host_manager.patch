@@ -228,24 +228,6 @@ index 40c314243ae5aa8540ce6528273ee2f0b7f0aca1..dce5cf6cde036d35c1b78b8fa7686176
    bool IsRelatedSiteInstance(const SiteInstance* instance) override;
    size_t GetRelatedActiveContentsCount() override;
    bool RequiresDedicatedProcess() override;
-diff --git a/content/common/view_messages.h.rej b/content/common/view_messages.h.rej
-new file mode 100644
-index 0000000000000000000000000000000000000000..4d0cd2cf5d050a392c7328a3535fe03a9f8041e0
---- /dev/null
-+++ b/content/common/view_messages.h.rej
-@@ -0,0 +1,12 @@
-+--- content/common/view_messages.h
-++++ content/common/view_messages.h
-+@@ -94,6 +94,9 @@ IPC_STRUCT_TRAITS_END()
-+
-+ // Messages sent from the browser to the renderer.
-+
-++// Whether to enable the Renderer scheduler background throttling.
-++IPC_MESSAGE_ROUTED1(ViewMsg_SetSchedulerThrottling, bool /* allowed */)
-++
-+ // This passes a set of webkit preferences down to the renderer.
-+ IPC_MESSAGE_ROUTED1(ViewMsg_UpdateWebPreferences,
-+                     blink::web_pref::WebPreferences)
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
 index 0d2eba4321ece3e9cfb2b16dead343dd51672714..45fe96cb01e4d6e2772f1304eb1c5ac274c4f713 100644
 --- a/content/public/browser/content_browser_client.cc
@@ -338,33 +320,3 @@ index 9b90d52cac2b6a0d15e1ec1f562f0e376ce6be7c..5bc69adfab68c45528ba8d5e81b03b3f
    // Gets a SiteInstance for the given URL that shares the current
    // BrowsingInstance, creating a new SiteInstance if necessary.  This ensures
    // that a BrowsingInstance only has one SiteInstance per site, so that pages
-diff --git a/content/renderer/render_view_impl.cc.rej b/content/renderer/render_view_impl.cc.rej
-new file mode 100644
-index 0000000000000000000000000000000000000000..8f5460ca5737b9369b06e9115b0e674b085b28ba
---- /dev/null
-+++ b/content/renderer/render_view_impl.cc.rej
-@@ -0,0 +1,24 @@
-+--- content/renderer/render_view_impl.cc
-++++ content/renderer/render_view_impl.cc
-+@@ -575,6 +575,8 @@ bool RenderViewImpl::OnMessageReceived(const IPC::Message& message) {
-+
-+   bool handled = true;
-+   IPC_BEGIN_MESSAGE_MAP(RenderViewImpl, message)
-++    IPC_MESSAGE_HANDLER(ViewMsg_SetSchedulerThrottling,
-++                        OnSetSchedulerThrottling)
-+     IPC_MESSAGE_HANDLER(ViewMsg_UpdateWebPreferences, OnUpdateWebPreferences)
-+     IPC_MESSAGE_HANDLER(ViewMsg_MoveOrResizeStarted, OnMoveOrResizeStarted)
-+
-+@@ -976,6 +978,12 @@ bool RenderViewImpl::GetContentStateImmediately() {
-+   return send_content_state_immediately_;
-+ }
-+
-++void RenderViewImpl::OnSetSchedulerThrottling(bool allowed) {
-++  if (!GetWebView())
-++    return;
-++  GetWebView()->SetSchedulerThrottling(allowed);
-++}
-++
-+ void RenderViewImpl::OnUpdateWebPreferences(
-+     const blink::web_pref::WebPreferences& prefs) {
-+   webview_->SetWebPreferences(prefs);
