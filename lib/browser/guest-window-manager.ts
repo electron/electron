@@ -77,11 +77,14 @@ export function openGuestWindow ({ event, embedder, guest, referrer, disposition
     webContents: guest,
     ...browserWindowOptions
   });
-  if (!isNativeWindowOpen) {
+  if (!guest) {
     // We should only call `loadURL` if the webContents was constructed by us in
     // the case of BrowserWindowProxy (non-sandboxed, nativeWindowOpen: false),
     // as navigating to the url when creating the window from an existing
     // webContents is not necessary (it will navigate there anyway).
+    // This can also happen if we enter this function from OpenURLFromTab, in
+    // which case the browser process is responsible for initiating navigation
+    // in the new window.
     window.loadURL(url, {
       httpReferrer: referrer,
       ...(postData && {

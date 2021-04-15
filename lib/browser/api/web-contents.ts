@@ -443,7 +443,11 @@ WebContents.prototype._callWindowOpenHandler = function (event: any, url: string
     event.preventDefault();
     return null;
   } else if (response.action === 'allow') {
-    if (typeof response.overrideBrowserWindowOptions === 'object' && response.overrideBrowserWindowOptions !== null) { return response.overrideBrowserWindowOptions; } else { return {}; }
+    if (typeof response.overrideBrowserWindowOptions === 'object' && response.overrideBrowserWindowOptions !== null) {
+      return response.overrideBrowserWindowOptions;
+    } else {
+      return {};
+    }
   } else {
     event.preventDefault();
     console.error('The window open handler response must be an object with an \'action\' property of \'allow\' or \'deny\'.');
@@ -602,20 +606,23 @@ WebContents.prototype._init = function () {
   if (this.getType() !== 'remote') {
     // Make new windows requested by links behave like "window.open".
     this.on('-new-window' as any, (event: any, url: string, frameName: string, disposition: string,
-      rawFeatures: string, referrer: any, postData: PostData) => {
-      openGuestWindow({
-        event,
-        embedder: event.sender,
-        disposition,
-        referrer,
-        postData,
-        overrideBrowserWindowOptions: {},
-        windowOpenArgs: {
-          url,
-          frameName,
-          features: rawFeatures
-        }
-      });
+      rawFeatures: string, referrer: Electron.Referrer, postData: PostData) => {
+      const options = this._callWindowOpenHandler(event, url, frameName, rawFeatures);
+      if (!event.defaultPrevented) {
+        openGuestWindow({
+          event,
+          embedder: event.sender,
+          disposition,
+          referrer,
+          postData,
+          overrideBrowserWindowOptions: options || {},
+          windowOpenArgs: {
+            url,
+            frameName,
+            features: rawFeatures
+          }
+        });
+      }
     });
 
     let windowOpenOverriddenOptions: BrowserWindowConstructorOptions | null = null;
