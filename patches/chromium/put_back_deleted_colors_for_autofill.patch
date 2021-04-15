@@ -7,57 +7,13 @@ https://chromium-review.googlesource.com/c/chromium/src/+/1652925 removed colors
 needed in chromium but our autofill implementation uses them.  This patch can be removed if we refactor
 our autofill implementation to work like Chromium's.
 
-diff --git a/ui/gtk/native_theme_gtk.cc b/ui/gtk/native_theme_gtk.cc
-index 8bcc5c175f63ea29d513d47dfea09ca3ac423545..d8b40ab1e35a93bc1a31c4735de29bb06ee40c8f 100644
---- a/ui/gtk/native_theme_gtk.cc
-+++ b/ui/gtk/native_theme_gtk.cc
-@@ -364,6 +364,29 @@ base::Optional<SkColor> SkColorFromColorId(
-     case ui::NativeTheme::kColorId_TableHeaderSeparator:
-       return GetBorderColor("GtkTreeView#treeview.view GtkButton#button");
- 
-+    // Results Table
-+    case ui::NativeTheme::kColorId_ResultsTableNormalBackground:
-+      return SkColorFromColorId(
-+          ui::NativeTheme::kColorId_TextfieldDefaultBackground, base_theme, color_scheme);
-+    case ui::NativeTheme::kColorId_ResultsTableHoveredBackground: {
-+      auto default_background = SkColorFromColorId(
-+              ui::NativeTheme::kColorId_TextfieldDefaultBackground, base_theme, color_scheme);
-+      auto selection_background = SkColorFromColorId(
-+              ui::NativeTheme::kColorId_TextfieldSelectionBackgroundFocused, base_theme, color_scheme);
-+      if (!default_background || !selection_background) return base::nullopt;
-+      return color_utils::AlphaBlend(default_background.value(), selection_background.value(), 0.5f);
-+    }
-+    case ui::NativeTheme::kColorId_ResultsTableNormalText:
-+      return SkColorFromColorId(
-+          ui::NativeTheme::kColorId_TextfieldDefaultColor, base_theme, color_scheme);
-+    case ui::NativeTheme::kColorId_ResultsTableDimmedText: {
-+      auto default_textfield_color = SkColorFromColorId(ui::NativeTheme::kColorId_TextfieldDefaultColor, base_theme, color_scheme);
-+      auto default_textfield_background = SkColorFromColorId(
-+              ui::NativeTheme::kColorId_TextfieldDefaultBackground, base_theme, color_scheme);
-+      if (!default_textfield_color || !default_textfield_background) return base::nullopt;
-+      return color_utils::AlphaBlend(default_textfield_color.value(), default_textfield_background.value(), 0.5f);
-+    }
-+
-     // Throbber
-     // TODO(thomasanderson): Render GtkSpinner directly.
-     case ui::NativeTheme::kColorId_ThrobberSpinningColor:
 diff --git a/ui/native_theme/common_theme.cc b/ui/native_theme/common_theme.cc
-index 082e12fcabd16d3db77ee9c5e47f7e383245aa45..fc1d7a814c52fa09bea550039763b1c83fffc530 100644
+index cdd49c092b611176f27fd581cb56c153b6583eeb..384e639e1b6739536bb10fcabe2c3f895d7bd635 100644
 --- a/ui/native_theme/common_theme.cc
 +++ b/ui/native_theme/common_theme.cc
-@@ -52,7 +52,8 @@ base::Optional<SkColor> GetHighContrastColor(
-   }
- }
- 
--base::Optional<SkColor> GetDarkSchemeColor(NativeTheme::ColorId color_id) {
-+base::Optional<SkColor> GetDarkSchemeColor(const NativeTheme* base_theme,
-+                                           NativeTheme::ColorId color_id) {
-   switch (color_id) {
-     // Alert
-     case NativeTheme::kColorId_AlertSeverityLow:
-@@ -64,6 +65,14 @@ base::Optional<SkColor> GetDarkSchemeColor(NativeTheme::ColorId color_id) {
-     case NativeTheme::kColorId_FootnoteContainerBorder:
-       return gfx::kGoogleGrey900;
+@@ -68,6 +68,14 @@ base::Optional<SkColor> GetDarkSchemeColor(NativeTheme::ColorId color_id,
+     case NativeTheme::kColorId_FocusedBorderColor:
+       return gfx::kGoogleBlue400;
  
 +    // Results Tables
 +    case NativeTheme::kColorId_ResultsTableNormalBackground:
@@ -70,7 +26,7 @@ index 082e12fcabd16d3db77ee9c5e47f7e383245aa45..fc1d7a814c52fa09bea550039763b1c8
      // Button
      case NativeTheme::kColorId_ProminentButtonColor:
        return gfx::kGoogleBlue300;
-@@ -512,6 +521,18 @@ SkColor GetDefaultColor(NativeTheme::ColorId color_id,
+@@ -551,6 +559,18 @@ SkColor GetDefaultColor(NativeTheme::ColorId color_id,
      case NativeTheme::kColorId_WindowBackground:
        return SK_ColorWHITE;
  
@@ -89,20 +45,11 @@ index 082e12fcabd16d3db77ee9c5e47f7e383245aa45..fc1d7a814c52fa09bea550039763b1c8
      case NativeTheme::kColorId_NumColors:
        // Keeping the kColorId_NumColors case instead of using the default case
        // allows ColorId additions to trigger compile error for an incomplete
-@@ -556,7 +577,7 @@ SkColor GetAuraColor(NativeTheme::ColorId color_id,
-   }
- 
-   if (color_scheme == NativeTheme::ColorScheme::kDark) {
--    base::Optional<SkColor> color = GetDarkSchemeColor(color_id);
-+    base::Optional<SkColor> color = GetDarkSchemeColor(base_theme, color_id);
-     if (color.has_value()) {
-       DVLOG(2) << "GetDarkSchemeColor: "
-                << "NativeTheme::ColorId: " << NativeThemeColorIdName(color_id)
 diff --git a/ui/native_theme/native_theme_color_id.h b/ui/native_theme/native_theme_color_id.h
-index efb0f8658db38b99aadb92334b4c0948d289d224..a424ceaef8979084ca7dd514849a38dfe9e5b252 100644
+index 60197576c71e86cd3ad17e83bfc699509c365d6c..426504eec69da7100c6484271fb35f1a69f84a43 100644
 --- a/ui/native_theme/native_theme_color_id.h
 +++ b/ui/native_theme/native_theme_color_id.h
-@@ -146,6 +146,11 @@
+@@ -151,6 +151,11 @@
    OP(kColorId_TableHeaderText),                                                \
    OP(kColorId_TableHeaderBackground),                                          \
    OP(kColorId_TableHeaderSeparator),                                           \
@@ -115,7 +62,7 @@ index efb0f8658db38b99aadb92334b4c0948d289d224..a424ceaef8979084ca7dd514849a38df
    OP(kColorId_ThrobberSpinningColor),                                          \
    OP(kColorId_ThrobberWaitingColor),                                           \
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index 46eab8ff45a3bb874cd8b16076dd9fa918ffbd45..90e3b67bd5c78be3ea0d0f0e4ef94bc95ea375a2 100644
+index 68b798fc755a3ec3130e43254b6ec306d30a19fa..13a1f3763d137667220325237c419257e9868a8d 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
 @@ -659,6 +659,18 @@ base::Optional<SkColor> NativeThemeWin::GetPlatformHighContrastColor(

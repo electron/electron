@@ -23,6 +23,8 @@ Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resourc
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/am.lproj/locale.pak
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/ar.lproj/
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/ar.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/ar_XB.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/ar_XB.lproj/locale.pak
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/bg.lproj/
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/bg.lproj/locale.pak
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/bn.lproj/
@@ -43,6 +45,8 @@ Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resourc
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/en.lproj/locale.pak
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/en_GB.lproj/
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/en_GB.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/en_XA.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/en_XA.lproj/locale.pak
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/es.lproj/
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/es.lproj/locale.pak
 Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/es_419.lproj/
@@ -170,6 +174,7 @@ Electron.app/Contents/PkgInfo
 Electron.app/Contents/Resources/
 Electron.app/Contents/Resources/am.lproj/
 Electron.app/Contents/Resources/ar.lproj/
+Electron.app/Contents/Resources/ar_XB.lproj/
 Electron.app/Contents/Resources/bg.lproj/
 Electron.app/Contents/Resources/bn.lproj/
 Electron.app/Contents/Resources/ca.lproj/
@@ -181,6 +186,7 @@ Electron.app/Contents/Resources/el.lproj/
 Electron.app/Contents/Resources/electron.icns
 Electron.app/Contents/Resources/en.lproj/
 Electron.app/Contents/Resources/en_GB.lproj/
+Electron.app/Contents/Resources/en_XA.lproj/
 Electron.app/Contents/Resources/es.lproj/
 Electron.app/Contents/Resources/es_419.lproj/
 Electron.app/Contents/Resources/et.lproj/

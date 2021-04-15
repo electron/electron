@@ -17,10 +17,10 @@ only one or two specific checks fail. Then it's better to simply comment out the
 failing checks and allow the rest of the target to have them enabled.
 
 diff --git a/content/browser/renderer_host/navigation_controller_impl.cc b/content/browser/renderer_host/navigation_controller_impl.cc
-index 21601429c56fc374da8826cb68361ff0de56ac55..9b27a4ff1abac2b104f0ac16c9ed2e3518279d84 100644
+index 8f9e7a62b33bd18e0841e42165c0fdf0a92f06b8..e8e7358bceac92da42e6d7fe6bd035078dfb2bb0 100644
 --- a/content/browser/renderer_host/navigation_controller_impl.cc
 +++ b/content/browser/renderer_host/navigation_controller_impl.cc
-@@ -1336,8 +1336,10 @@ NavigationType NavigationControllerImpl::ClassifyNavigation(
+@@ -1394,8 +1394,10 @@ NavigationType NavigationControllerImpl::ClassifyNavigation(
      return NAVIGATION_TYPE_NEW_SUBFRAME;
    }
  
@@ -33,8 +33,8 @@ index 21601429c56fc374da8826cb68361ff0de56ac55..9b27a4ff1abac2b104f0ac16c9ed2e35
  
    if (rfh->GetParent()) {
      // All manual subframes would be did_create_new_entry and handled above, so
-@@ -1629,7 +1631,10 @@ void NavigationControllerImpl::RendererDidNavigateToNewEntry(
-     new_entry->GetFavicon() = GetLastCommittedEntry()->GetFavicon();
+@@ -1706,7 +1708,10 @@ void NavigationControllerImpl::RendererDidNavigateToNewEntry(
+     }
    }
  
 -  DCHECK(!params.history_list_was_cleared || !replace_entry);
@@ -46,10 +46,10 @@ index 21601429c56fc374da8826cb68361ff0de56ac55..9b27a4ff1abac2b104f0ac16c9ed2e35
    // navigation. Now we know that the renderer has updated its state accordingly
    // and it is safe to also clear the browser side history.
 diff --git a/ui/base/clipboard/clipboard_win.cc b/ui/base/clipboard/clipboard_win.cc
-index 0763e37f028a708c6e739458ec4c87c406e79b46..2d238fde0a1eb3f22fd52cbad3b12d704af2e8ae 100644
+index 619b5be9df9e97dc130cbdac82c64e1c413db0f3..8b51d6fc4c7bded2b215bfdd74b18ed723c38c94 100644
 --- a/ui/base/clipboard/clipboard_win.cc
 +++ b/ui/base/clipboard/clipboard_win.cc
-@@ -924,10 +924,10 @@ SkBitmap ClipboardWin::ReadImageInternal(ClipboardBuffer buffer) const {
+@@ -880,10 +880,10 @@ SkBitmap ClipboardWin::ReadImageInternal(ClipboardBuffer buffer) const {
  
  void ClipboardWin::WriteToClipboard(ClipboardFormatType format, HANDLE handle) {
    UINT cf_format = format.ToFormatEtc().cfFormat;
@@ -60,6 +60,6 @@ index 0763e37f028a708c6e739458ec4c87c406e79b46..2d238fde0a1eb3f22fd52cbad3b12d70
 -              static_cast<unsigned long>(ERROR_CLIPBOARD_NOT_OPEN));
 +    // DCHECK_NE(GetLastError(),
 +              // static_cast<unsigned long>(ERROR_CLIPBOARD_NOT_OPEN));
-     FreeData(cf_format, handle);
+     ::GlobalFree(handle);
    }
  }

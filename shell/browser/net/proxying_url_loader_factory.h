@@ -13,6 +13,7 @@
 
 #include "base/optional.h"
 #include "content/public/browser/content_browser_client.h"
+#include "content/public/browser/render_frame_host.h"
 #include "extensions/browser/api/web_request/web_request_info.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
@@ -46,7 +47,8 @@ class ProxyingURLLoaderFactory
     InProgressRequest(
         ProxyingURLLoaderFactory* factory,
         int64_t web_request_id,
-        int32_t routing_id,
+        int32_t view_routing_id,
+        int32_t frame_routing_id,
         int32_t network_service_request_id,
         uint32_t options,
         const network::ResourceRequest& request,
@@ -56,6 +58,7 @@ class ProxyingURLLoaderFactory
     // For CORS preflights.
     InProgressRequest(ProxyingURLLoaderFactory* factory,
                       uint64_t request_id,
+                      int32_t frame_routing_id,
                       const network::ResourceRequest& request);
     ~InProgressRequest() override;
 
@@ -120,7 +123,8 @@ class ProxyingURLLoaderFactory
     network::ResourceRequest request_;
     const base::Optional<url::Origin> original_initiator_;
     const uint64_t request_id_ = 0;
-    const int32_t routing_id_ = 0;
+    const int32_t view_routing_id_ = MSG_ROUTING_NONE;
+    const int32_t frame_routing_id_ = MSG_ROUTING_NONE;
     const int32_t network_service_request_id_ = 0;
     const uint32_t options_ = 0;
     const net::MutableNetworkTrafficAnnotationTag traffic_annotation_;
@@ -177,6 +181,8 @@ class ProxyingURLLoaderFactory
       WebRequestAPI* web_request_api,
       const HandlersMap& intercepted_handlers,
       int render_process_id,
+      int frame_routing_id,
+      int view_routing_id,
       uint64_t* request_id_generator,
       std::unique_ptr<extensions::ExtensionNavigationUIData> navigation_ui_data,
       base::Optional<int64_t> navigation_id,
@@ -191,7 +197,6 @@ class ProxyingURLLoaderFactory
   // network::mojom::URLLoaderFactory:
   void CreateLoaderAndStart(
       mojo::PendingReceiver<network::mojom::URLLoader> loader,
-      int32_t routing_id,
       int32_t request_id,
       uint32_t options,
       const network::ResourceRequest& request,
@@ -236,6 +241,8 @@ class ProxyingURLLoaderFactory
   const HandlersMap& intercepted_handlers_;
 
   const int render_process_id_;
+  const int frame_routing_id_;
+  const int view_routing_id_;
   uint64_t* request_id_generator_;  // managed by ElectronBrowserClient
   std::unique_ptr<extensions::ExtensionNavigationUIData> navigation_ui_data_;
   base::Optional<int64_t> navigation_id_;
