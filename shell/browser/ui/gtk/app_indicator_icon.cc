@@ -20,6 +20,7 @@
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/post_task.h"
+#include "base/task/thread_pool.h"
 #include "content/public/browser/browser_thread.h"
 #include "shell/browser/ui/gtk/app_indicator_icon_menu.h"
 #include "third_party/skia/include/core/SkBitmap.h"
@@ -170,9 +171,9 @@ AppIndicatorIcon::~AppIndicatorIcon() {
   if (icon_) {
     app_indicator_set_status(icon_, APP_INDICATOR_STATUS_PASSIVE);
     g_object_unref(icon_);
-    base::PostTask(FROM_HERE,
-                   {base::MayBlock(), base::TaskPriority::BEST_EFFORT},
-                   base::BindOnce(&DeleteTempDirectory, temp_dir_));
+    base::ThreadPool::PostTask(
+        FROM_HERE, {base::MayBlock(), base::TaskPriority::BEST_EFFORT},
+        base::BindOnce(&DeleteTempDirectory, temp_dir_));
   }
 }
 
@@ -198,14 +199,14 @@ void AppIndicatorIcon::SetIcon(const gfx::ImageSkia& image) {
 
   if (desktop_env_ == base::nix::DESKTOP_ENVIRONMENT_KDE4 ||
       desktop_env_ == base::nix::DESKTOP_ENVIRONMENT_KDE5) {
-    base::PostTaskAndReplyWithResult(
+    base::ThreadPool::PostTaskAndReplyWithResult(
         FROM_HERE, kTraits,
         base::BindOnce(AppIndicatorIcon::WriteKDE4TempImageOnWorkerThread,
                        safe_bitmap, temp_dir_),
         base::BindOnce(&AppIndicatorIcon::SetImageFromFile,
                        weak_factory_.GetWeakPtr()));
   } else {
-    base::PostTaskAndReplyWithResult(
+    base::ThreadPool::PostTaskAndReplyWithResult(
         FROM_HERE, kTraits,
         base::BindOnce(AppIndicatorIcon::WriteUnityTempImageOnWorkerThread,
                        safe_bitmap, icon_change_count_, id_),
@@ -340,9 +341,9 @@ void AppIndicatorIcon::SetImageFromFile(const SetImageFromFileParams& params) {
   }
 
   if (temp_dir_ != params.parent_temp_dir) {
-    base::PostTask(FROM_HERE,
-                   {base::MayBlock(), base::TaskPriority::BEST_EFFORT},
-                   base::BindOnce(&DeleteTempDirectory, temp_dir_));
+    base::ThreadPool::PostTask(
+        FROM_HERE, {base::MayBlock(), base::TaskPriority::BEST_EFFORT},
+        base::BindOnce(&DeleteTempDirectory, temp_dir_));
     temp_dir_ = params.parent_temp_dir;
   }
 }
