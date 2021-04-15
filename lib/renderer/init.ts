@@ -63,18 +63,18 @@ webFrameInit();
 
 // Process command line arguments.
 const { hasSwitch, getSwitchValue } = process._linkedBinding('electron_common_command_line');
-const { getWebPreference } = process._linkedBinding('electron_renderer_web_frame');
+const { mainFrame } = process._linkedBinding('electron_renderer_web_frame');
 
-const contextIsolation = getWebPreference(window, 'contextIsolation');
-const nodeIntegration = getWebPreference(window, 'nodeIntegration');
-const webviewTag = getWebPreference(window, 'webviewTag');
-const isHiddenPage = getWebPreference(window, 'hiddenPage');
-const usesNativeWindowOpen = getWebPreference(window, 'nativeWindowOpen');
-const rendererProcessReuseEnabled = getWebPreference(window, 'disableElectronSiteInstanceOverrides');
-const preloadScript = getWebPreference(window, 'preload');
-const preloadScripts = getWebPreference(window, 'preloadScripts');
-const guestInstanceId = getWebPreference(window, 'guestInstanceId') || null;
-const openerId = getWebPreference(window, 'openerId') || null;
+const contextIsolation = mainFrame.getWebPreference('contextIsolation');
+const nodeIntegration = mainFrame.getWebPreference('nodeIntegration');
+const webviewTag = mainFrame.getWebPreference('webviewTag');
+const isHiddenPage = mainFrame.getWebPreference('hiddenPage');
+const usesNativeWindowOpen = mainFrame.getWebPreference('nativeWindowOpen');
+const rendererProcessReuseEnabled = mainFrame.getWebPreference('disableElectronSiteInstanceOverrides');
+const preloadScript = mainFrame.getWebPreference('preload');
+const preloadScripts = mainFrame.getWebPreference('preloadScripts');
+const guestInstanceId = mainFrame.getWebPreference('guestInstanceId') || null;
+const openerId = mainFrame.getWebPreference('openerId') || null;
 const appPath = hasSwitch('app-path') ? getSwitchValue('app-path') : null;
 
 // The webContents preload script is loaded after the session preload scripts.

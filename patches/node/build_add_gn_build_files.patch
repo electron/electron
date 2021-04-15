@@ -1429,7 +1429,7 @@ index f18a0d58a84c798abc946d2b389987009f80fa2d..4f13c5b2d4e9e22f37dab47cd44b475f
        'deps/node-inspect/lib/internal/inspect_repl.js',
 diff --git a/src/inspector/BUILD.gn b/src/inspector/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..f3c5c798c0aefcb8cf9b1570a7b4817c477aecf6
+index 0000000000000000000000000000000000000000..d1d6b51e8c0c5bc6a5d09e217eb3048361d9d591
 --- /dev/null
 +++ b/src/inspector/BUILD.gn
 @@ -0,0 +1,199 @@
@@ -1571,7 +1571,7 @@ index 0000000000000000000000000000000000000000..f3c5c798c0aefcb8cf9b1570a7b4817c
 +    ]
 +    sources = copied_pdl
 +    outputs = invoker.outputs
-+    script = "//v8/third_party/inspector_protocol/convert_protocol_to_json.py"
++    script = "$inspector_protocol_dir/convert_protocol_to_json.py"
 +    args = rebase_path(sources + outputs, root_build_dir)
 +  }
 +}
@@ -1633,7 +1633,7 @@ index 0000000000000000000000000000000000000000..f3c5c798c0aefcb8cf9b1570a7b4817c
 +  args = rebase_path(inputs + outputs, root_build_dir)
 +}
 diff --git a/src/node_version.h b/src/node_version.h
-index 0f72abc0bf0302e1f535f71803f5aa063424f8b9..c6a76e408312d8fcfc4849082727331948e710b3 100644
+index 15dae3ef318d8afd33ea2e8ced41bbdf80724b83..e3856f950cc68bd34966acf8f181eec38fe40691 100644
 --- a/src/node_version.h
 +++ b/src/node_version.h
 @@ -89,7 +89,10 @@

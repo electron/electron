@@ -69,8 +69,8 @@ declare namespace Electron {
     equal(other: WebContents): boolean;
     _initiallyShown: boolean;
     browserWindowOptions: BrowserWindowConstructorOptions;
-    _windowOpenHandler: ((opts: {url: string, frameName: string, features: string}) => any) | null;
-    _callWindowOpenHandler(event: any, url: string, frameName: string, rawFeatures: string): Electron.BrowserWindowConstructorOptions | null;
+    _windowOpenHandler: ((details: Electron.HandlerDetails) => any) | null;
+    _callWindowOpenHandler(event: any, details: Electron.HandlerDetails): Electron.BrowserWindowConstructorOptions | null;
     _setNextChildWebPreferences(prefs: Partial<Electron.BrowserWindowConstructorOptions['webPreferences']> & Pick<Electron.BrowserWindowConstructorOptions, 'backgroundColor'>): void;
     _send(internal: boolean, channel: string, args: any): boolean;
     _sendToFrameInternal(frameId: number | [number, number], channel: string, ...args: any[]): boolean;
@@ -92,7 +92,6 @@ declare namespace Electron {
   }
 
   interface WebFrame {
-    _executeJavaScript(code: string, userGesture?: boolean): Promise<any>;
     getWebFrameId(window: Window): number;
     allowGuestViewElementDefinition(window: Window, context: any): void;
   }

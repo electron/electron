@@ -12,7 +12,7 @@ import { EventEmitter } from 'events';
 import { closeWindow } from './window-helpers';
 import { emittedOnce } from './events-helpers';
 import { WebmGenerator } from './video-helpers';
-import { delay, ifit } from './spec-helpers';
+import { delay } from './spec-helpers';
 
 const fixturesPath = path.resolve(__dirname, '..', 'spec', 'fixtures');
 
@@ -705,8 +705,7 @@ describe('protocol module', () => {
   });
 
   describe('protocol.registerSchemeAsPrivileged', () => {
-    // Running child app under ASan might receive SIGKILL because of OOM.
-    ifit(!process.env.IS_ASAN)('does not crash on exit', async () => {
+    it('does not crash on exit', async () => {
       const appPath = path.join(__dirname, 'fixtures', 'api', 'custom-protocol-shutdown.js');
       const appProcess = ChildProcess.spawn(process.execPath, ['--enable-logging', appPath]);
       let stdout = '';

@@ -18,10 +18,12 @@
 #include "base/strings/sys_string_conversions.h"
 #include "base/task/post_task.h"
 #include "components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h"
+#include "components/remote_cocoa/browser/scoped_cg_window_id.h"
 #include "content/public/browser/browser_accessibility_state.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/desktop_media_id.h"
+#include "content/public/common/content_features.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_browser_view_mac.h"
 #include "shell/browser/ui/cocoa/electron_native_widget_mac.h"
@@ -1153,8 +1155,16 @@ gfx::AcceleratedWidget NativeWindowMac::GetAcceleratedWidget() const {
 }
 
 content::DesktopMediaID NativeWindowMac::GetDesktopMediaID() const {
-  return content::DesktopMediaID(content::DesktopMediaID::TYPE_WINDOW,
-                                 GetAcceleratedWidget());
+  auto desktop_media_id = content::DesktopMediaID(
+      content::DesktopMediaID::TYPE_WINDOW, GetAcceleratedWidget());
+  // c.f.
+  // https://source.chromium.org/chromium/chromium/src/+/master:chrome/browser/media/webrtc/native_desktop_media_list.cc;l=372?q=kWindowCaptureMacV2&ss=chromium
+  if (base::FeatureList::IsEnabled(features::kWindowCaptureMacV2)) {
+    if (remote_cocoa::ScopedCGWindowID::Get(desktop_media_id.id)) {
+      desktop_media_id.window_id = desktop_media_id.id;
+    }
+  }
+  return desktop_media_id;
 }
 
 NativeWindowHandle NativeWindowMac::GetNativeWindowHandle() const {
@@ -1288,7 +1298,12 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
     const bool no_rounded_corner =
         [window_ styleMask] & NSWindowStyleMaskFullSizeContentView;
     if (!has_frame() && !is_modal() && !no_rounded_corner) {
-      CGFloat radius = 5.0f;  // default corner radius
+      CGFloat radius;
+      if (@available(macOS 11.0, *)) {
+        radius = 9.0f;
+      } else {
+        radius = 5.0f;  // smaller corner radius on older versions
+      }
       CGFloat dimension = 2 * radius + 1;
       NSSize size = NSMakeSize(dimension, dimension);
       NSImage* maskImage = [NSImage imageWithSize:size

@@ -9,6 +9,7 @@ libEGL.dll
 libGLESv2.dll
 locales/am.pak
 locales/ar.pak
+locales/ar-XB.pak
 locales/bg.pak
 locales/bn.pak
 locales/ca.pak
@@ -18,6 +19,7 @@ locales/de.pak
 locales/el.pak
 locales/en-GB.pak
 locales/en-US.pak
+locales/en-XA.pak
 locales/es-419.pak
 locales/es.pak
 locales/et.pak

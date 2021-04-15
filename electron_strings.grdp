@@ -51,6 +51,21 @@
   <message name="IDS_PICTURE_IN_PICTURE_SKIP_AD_CONTROL_TEXT" desc="Text label of the skip ad control button. The button appears when the user hovers over the Picture-in-Picture window.">
     Skip Ad
   </message>
+  <message name="IDS_PICTURE_IN_PICTURE_MUTE_MICROPHONE_TEXT" desc="Text label of the mute microphone control button. The button appears when the user hovers over the Picture-in-Picture window.">
+    Mute microphone
+  </message>
+  <message name="IDS_PICTURE_IN_PICTURE_UNMUTE_MICROPHONE_TEXT" desc="Text label of the unmute microphone control button. The button appears when the user hovers over the Picture-in-Picture window.">
+    Unmute microphone
+  </message>
+  <message name="IDS_PICTURE_IN_PICTURE_TURN_ON_CAMERA_TEXT" desc="Text label of the turn on camera control button. The button appears when the user hovers over the Picture-in-Picture window.">
+    Turn on camera
+  </message>
+  <message name="IDS_PICTURE_IN_PICTURE_TURN_OFF_CAMERA_TEXT" desc="Text label of the turn off camera control button. The button appears when the user hovers over the Picture-in-Picture window.">
+    Turn off camera
+  </message>
+  <message name="IDS_PICTURE_IN_PICTURE_HANG_UP_TEXT" desc="Text label of the hang up control button. The button appears when the user hovers over the Picture-in-Picture window.">
+    Hang up
+  </message>
   <message name="IDS_PICTURE_IN_PICTURE_CLOSE_CONTROL_TEXT" desc="Text label of the close control button. The button appears when the user hovers over the Picture-in-Picture window.">
     Close
   </message>

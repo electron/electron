@@ -26,10 +26,11 @@ class ProtocolRegistry {
       content::ContentBrowserClient::URLLoaderFactoryType;
 
   void RegisterURLLoaderFactories(
-      URLLoaderFactoryType type,
-      content::ContentBrowserClient::NonNetworkURLLoaderFactoryMap* factories);
+      content::ContentBrowserClient::NonNetworkURLLoaderFactoryMap* factories,
+      bool allow_file_access);
 
   const HandlersMap& intercept_handlers() const { return intercept_handlers_; }
+  const HandlersMap& handlers() const { return handlers_; }
 
   bool RegisterProtocol(ProtocolType type,
                         const std::string& scheme,
