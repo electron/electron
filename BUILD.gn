@@ -441,7 +441,10 @@ source_set("electron_lib") {
   }
 
   if (is_linux) {
-    deps += [ "//components/crash/content/browser" ]
+    deps += [
+      "//build/config/linux/gtk:gtkprint",
+      "//components/crash/content/browser",
+    ]
   }
 
   if (is_mac) {
