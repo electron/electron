@@ -1,7 +1,7 @@
-From 8c3eb9d1c4095ff42184f1e5261e6e5e704672dd Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Scott Violet <sky@chromium.org>
 Date: Wed, 31 Mar 2021 13:28:05 +0000
-Subject: [PATCH] [M86-LTS merge] x11/ozone: fix two edge cases
+Subject: x11/ozone: fix two edge cases
 
 WindowTreeHost::OnHostMovedInPixels() may trigger a nested message
 loop (tab dragging), which when the stack unravels means this may
@@ -31,13 +31,12 @@ Reviewed-by: Victor-Gabriel Savu <vsavu@google.com>
 Commit-Queue: Artem Sumaneev <asumaneev@google.com>
 Cr-Commit-Position: refs/branch-heads/4240@{#1583}
 Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
----
 
 diff --git a/ui/aura/window_tree_host_platform.cc b/ui/aura/window_tree_host_platform.cc
-index 01843f4..e59d3c6 100644
+index 01843f47b17164201d406c8821f3d1a4f0c0010a..e59d3c6f3bb7b665cdbb6034ccc13376d9272933 100644
 --- a/ui/aura/window_tree_host_platform.cc
 +++ b/ui/aura/window_tree_host_platform.cc
-@@ -214,13 +214,21 @@
+@@ -214,13 +214,21 @@ void WindowTreeHostPlatform::OnBoundsChanged(const gfx::Rect& new_bounds) {
    float current_scale = compositor()->device_scale_factor();
    float new_scale = ui::GetScaleFactorForNativeView(window());
    gfx::Rect old_bounds = bounds_in_pixels_;
@@ -61,10 +60,10 @@ index 01843f4..e59d3c6 100644
    DCHECK_GT(on_bounds_changed_recursion_depth_, 0);
    if (--on_bounds_changed_recursion_depth_ == 0) {
 diff --git a/ui/aura/window_tree_host_platform_unittest.cc b/ui/aura/window_tree_host_platform_unittest.cc
-index eda14e2..4de039c 100644
+index eda14e2f0cdf5015f366aa70ea68ae2a2c2b431e..4de039c88af8a6f0ac03df2f772cfea2dfe3514f 100644
 --- a/ui/aura/window_tree_host_platform_unittest.cc
 +++ b/ui/aura/window_tree_host_platform_unittest.cc
-@@ -34,7 +34,7 @@
+@@ -34,7 +34,7 @@ class TestWindowTreeHost : public WindowTreeHostPlatform {
  // OnHostWill/DidProcessBoundsChange. Additionally, this triggers a bounds
  // change from within OnHostResized(). Such a scenario happens in production
  // code.
@@ -73,7 +72,7 @@ index eda14e2..4de039c 100644
   public:
    TestWindowTreeHostObserver(WindowTreeHostPlatform* host,
                               ui::PlatformWindow* platform_window)
-@@ -51,7 +51,7 @@
+@@ -51,7 +51,7 @@ class TestWindowTreeHostObserver : public aura::WindowTreeHostObserver {
      return on_host_will_process_bounds_change_count_;
    }
  
@@ -82,7 +81,7 @@ index eda14e2..4de039c 100644
    void OnHostResized(WindowTreeHost* host) override {
      if (!should_change_bounds_in_on_resized_)
        return;
-@@ -92,5 +92,41 @@
+@@ -92,5 +92,41 @@ TEST_F(WindowTreeHostPlatformTest, HostWillProcessBoundsChangeRecursion) {
    EXPECT_EQ(1, observer.on_host_will_process_bounds_change_count());
  }
  
@@ -125,10 +124,10 @@ index eda14e2..4de039c 100644
  }  // namespace
  }  // namespace aura
 diff --git a/ui/base/x/x11_whole_screen_move_loop.cc b/ui/base/x/x11_whole_screen_move_loop.cc
-index 4237030..8f3ea946 100644
+index e26532b8403ea198641b0a09f32083ae945b0082..a168057a52c564bea8cb8b610c77726598036d4d 100644
 --- a/ui/base/x/x11_whole_screen_move_loop.cc
 +++ b/ui/base/x/x11_whole_screen_move_loop.cc
-@@ -64,9 +64,13 @@
+@@ -64,9 +64,13 @@ X11WholeScreenMoveLoop::~X11WholeScreenMoveLoop() {
  void X11WholeScreenMoveLoop::DispatchMouseMovement() {
    if (!last_motion_in_screen_)
      return;
