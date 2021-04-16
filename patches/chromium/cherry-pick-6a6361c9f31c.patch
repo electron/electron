@@ -1,7 +1,7 @@
-From 6a6361c9f31c11880bdd26cc0ea232da81c7b7d9 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Palak Agarwal <agpalak@chromium.org>
 Date: Wed, 31 Mar 2021 16:10:26 +0000
-Subject: [PATCH] WebContents bug fix: Device capture only if web contents is valid
+Subject: WebContents bug fix: Device capture only if web contents is valid
 
 (cherry picked from commit a462be0883486431086c5f07cdafbd3607005a59)
 
@@ -26,13 +26,12 @@ Auto-Submit: Artem Sumaneev <asumaneev@google.com>
 Commit-Queue: Guido Urdaneta <guidou@chromium.org>
 Cr-Commit-Position: refs/branch-heads/4240@{#1585}
 Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
----
 
 diff --git a/chrome/browser/media/webrtc/desktop_capture_access_handler.cc b/chrome/browser/media/webrtc/desktop_capture_access_handler.cc
-index 2df0eac..fae40e1 100644
+index e561093253bc0bd49797991a7610393ac91a809e..c3fa03081b2fde6b0e2932107863ddedc7cf49ae 100644
 --- a/chrome/browser/media/webrtc/desktop_capture_access_handler.cc
 +++ b/chrome/browser/media/webrtc/desktop_capture_access_handler.cc
-@@ -248,6 +248,14 @@
+@@ -249,6 +249,14 @@ void DesktopCaptureAccessHandler::ProcessScreenCaptureAccessRequest(
        const bool display_notification =
            display_notification_ && ShouldDisplayNotification(extension);
  
