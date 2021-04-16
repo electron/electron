@@ -135,6 +135,18 @@ describe('webFrameMain module', () => {
     });
   });
 
+  describe('WebFrame.visibilityState', () => {
+    it('should match window state', async () => {
+      const w = new BrowserWindow({ show: true });
+      await w.loadURL('about:blank');
+      const webFrame = w.webContents.mainFrame;
+
+      expect(webFrame.visibilityState).to.equal('visible');
+      w.hide();
+      expect(webFrame.visibilityState).to.equal('hidden');
+    });
+  });
+
   describe('WebFrame.executeJavaScript', () => {
     it('can inject code into any subframe', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: true } });

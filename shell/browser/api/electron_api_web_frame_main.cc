@@ -30,6 +30,28 @@
 #include "shell/common/node_includes.h"
 #include "shell/common/v8_value_serializer.h"
 
+namespace gin {
+
+template <>
+struct Converter<blink::mojom::PageVisibilityState> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   blink::mojom::PageVisibilityState val) {
+    std::string visibility;
+    switch (val) {
+      case blink::mojom::PageVisibilityState::kVisible:
+        visibility = "visible";
+        break;
+      case blink::mojom::PageVisibilityState::kHidden:
+      case blink::mojom::PageVisibilityState::kHiddenButPainting:
+        visibility = "hidden";
+        break;
+    }
+    return gin::ConvertToV8(isolate, visibility);
+  }
+};
+
+}  // namespace gin
+
 namespace electron {
 
 namespace api {
@@ -228,6 +250,12 @@ GURL WebFrameMain::URL() const {
   return render_frame_->GetLastCommittedURL();
 }
 
+blink::mojom::PageVisibilityState WebFrameMain::VisibilityState() const {
+  if (!CheckRenderFrame())
+    return blink::mojom::PageVisibilityState::kHidden;
+  return render_frame_->GetVisibilityState();
+}
+
 content::RenderFrameHost* WebFrameMain::Top() const {
   if (!CheckRenderFrame())
     return nullptr;
@@ -331,6 +359,7 @@ v8::Local<v8::ObjectTemplate> WebFrameMain::FillObjectTemplate(
       .SetProperty("processId", &WebFrameMain::ProcessID)
       .SetProperty("routingId", &WebFrameMain::RoutingID)
       .SetProperty("url", &WebFrameMain::URL)
+      .SetProperty("visibilityState", &WebFrameMain::VisibilityState)
       .SetProperty("top", &WebFrameMain::Top)
       .SetProperty("parent", &WebFrameMain::Parent)
       .SetProperty("frames", &WebFrameMain::Frames)
