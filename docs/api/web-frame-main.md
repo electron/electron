@@ -185,4 +185,6 @@ have the same `routingId`.
 
 #### `frame.visibilityState` _Readonly_
 
-A `string` representing the [visibility state](https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API) of the frame.
+A `string` representing the [visibility state](https://developer.mozilla.org/en-US/docs/Web/API/Document/visibilityState) of the frame.
+
+See also how the [Page Visibility API](browser-window.md#page-visibility) is affected by other Electron APIs.
