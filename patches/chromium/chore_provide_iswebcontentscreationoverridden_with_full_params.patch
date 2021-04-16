@@ -35,10 +35,10 @@ index 5b4d70991e19edcdfee731c56251932bf43e535f..fe1977c5e6ce0f5b30e8be529b9efa51
  
  #endif  // CHROME_BROWSER_ANDROID_DOCUMENT_DOCUMENT_WEB_CONTENTS_DELEGATE_H_
 diff --git a/chrome/browser/chromeos/first_run/drive_first_run_controller.cc b/chrome/browser/chromeos/first_run/drive_first_run_controller.cc
-index 8642c20123ec62fd6c90c8945d78bc3e04116c5b..f33ad843cc4b602c0e3312be426b81a0332afe66 100644
+index e9901861cefeb446f7f7b2fab19ae4e9c4dd0b61..935d92812006789f941b0f14fe5547857c6ce41f 100644
 --- a/chrome/browser/chromeos/first_run/drive_first_run_controller.cc
 +++ b/chrome/browser/chromeos/first_run/drive_first_run_controller.cc
-@@ -123,8 +123,7 @@ class DriveWebContentsManager : public content::WebContentsObserver,
+@@ -124,8 +124,7 @@ class DriveWebContentsManager : public content::WebContentsObserver,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -48,7 +48,7 @@ index 8642c20123ec62fd6c90c8945d78bc3e04116c5b..f33ad843cc4b602c0e3312be426b81a0
    content::WebContents* CreateCustomWebContents(
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
-@@ -234,15 +233,14 @@ bool DriveWebContentsManager::IsWebContentsCreationOverridden(
+@@ -235,15 +234,14 @@ bool DriveWebContentsManager::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -264,7 +264,7 @@ index c5c5a7b63b5b3b62a9517cbef3ae23ce57a3c89c..4f1b7e88d6d2ae89a60311c8aeb1fcee
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 0dfc7706bf6ae30a7161d272ba5afbe14cd5e740..cd53c698b74a8edd2da1b6ee19353881f638e31d 100644
+index ea0cd5b3d2867cbcdc28f0b68652756938633746..1b36667b040fe2870c81583a68bf4a064bc0e3aa 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -3561,8 +3561,7 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(

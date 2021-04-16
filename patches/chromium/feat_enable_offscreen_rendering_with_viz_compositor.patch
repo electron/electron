@@ -108,7 +108,7 @@ index 77d463e683d8b8d3a202681a6884eacaab79d70d..05d51cb2637d34c073cd0025e3658036
  
  }  // namespace viz
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.cc b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-index 4c05fcdcff374fe4d44df8ddfd7901e7d166e10a..2abfb35d62e18fcc5f0f051386ac86371fdf9f6f 100644
+index 79c800e77a160cc0b10a29dd560d37e19c9d05fd..a9b1b267c97ed513890ba8466f66c3eafcbd5d5b 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.cc
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.cc
 @@ -25,6 +25,7 @@
@@ -127,7 +127,7 @@ index 4c05fcdcff374fe4d44df8ddfd7901e7d166e10a..2abfb35d62e18fcc5f0f051386ac8637
  #include "ui/base/ui_base_switches.h"
  #include "ui/gl/gl_context.h"
  #include "ui/gl/init/gl_factory.h"
-@@ -131,7 +133,8 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
+@@ -130,7 +132,8 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
      mojom::DisplayClient* display_client,
      DisplayCompositorMemoryAndTaskController* gpu_dependency,
      const RendererSettings& renderer_settings,
@@ -137,7 +137,7 @@ index 4c05fcdcff374fe4d44df8ddfd7901e7d166e10a..2abfb35d62e18fcc5f0f051386ac8637
  #if BUILDFLAG(IS_CHROMEOS_ASH)
    if (surface_handle == gpu::kNullSurfaceHandle)
      return std::make_unique<OutputSurfaceUnified>();
-@@ -143,7 +146,7 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
+@@ -142,7 +145,7 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
  
    if (!gpu_compositing) {
      output_surface = std::make_unique<SoftwareOutputSurface>(
@@ -146,7 +146,7 @@ index 4c05fcdcff374fe4d44df8ddfd7901e7d166e10a..2abfb35d62e18fcc5f0f051386ac8637
    } else if (renderer_settings.use_skia_renderer) {
      DCHECK(gpu_dependency);
      {
-@@ -242,10 +245,22 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
+@@ -241,10 +244,22 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
  std::unique_ptr<SoftwareOutputDevice>
  OutputSurfaceProviderImpl::CreateSoftwareOutputDeviceForPlatform(
      gpu::SurfaceHandle surface_handle,

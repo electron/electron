@@ -157,7 +157,7 @@ index 72885bc1d20a4da5ad4df3fb8185f05bcf6fbfba..06b1a0d550de946aa41efca2be4efde6
    // CertNetFetcher is not used by the current platform, or if the actual
    // net::CertVerifier is instantiated outside of the network service.
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index ee27133a56df40e79e01c232239faa7f6ef6b461..1304a9189c1c12024847ef973ab0ed426496e6b3 100644
+index c89e5ae1d90db787190f67d1497217981b806abc..78e3e6f03ef771e2a29bf017538c8f92f9a296cf 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -192,6 +192,17 @@ struct CTPolicy {

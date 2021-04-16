@@ -9,7 +9,7 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index f4c94c33d0916e91bdb987aab2e77d27f53c2879..f94c66eba8db0e1c9f6b4e73f43afead08d33fd2 100644
+index fd3181cf8a12329b48e1d932f00103e8cdbdcf24..95f93be33abe4fe0290e8e530d27fdc3f7991603 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
 @@ -5504,6 +5504,7 @@ void RenderFrameHostImpl::CreateNewWindow(
@@ -21,7 +21,7 @@ index f4c94c33d0916e91bdb987aab2e77d27f53c2879..f94c66eba8db0e1c9f6b4e73f43afead
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 1cd7e1cc2ecdfd691b7b0cce6875f3cc1f04a0d9..c5e35499e73a6439748a8837511179426efd0963 100644
+index d721f6b379b07a96359932fbec15e796bf612293..1225dbe93db0aa6fd94d36443aaff84c1234a6c3 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -3609,6 +3609,14 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
@@ -221,10 +221,10 @@ index 4f735ad0d97eaac9a57dad137e479f8a7ec33a36..0a3c5821962c85609b64b3625fa6b8d6
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index 928e484d073d60e19d7ddfe84d1e363407b92017..6c08982927222d00d2c7e546cb5d3a4bd697cd2b 100644
+index 65976802c98738bfee49e1efb156b90d51ba2288..d56b5a5bcb200290fe6dcc26c471ee1c142cef8b 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
-@@ -1991,6 +1991,7 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
+@@ -1993,6 +1993,7 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
    }
  
    WebWindowFeatures window_features = GetWindowFeaturesFromString(features);
