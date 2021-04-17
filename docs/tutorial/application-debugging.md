@@ -35,7 +35,7 @@ For more information, see the [Debugging the Main Process documentation][main-de
 
 [node-inspect]: https://nodejs.org/en/docs/inspector/
 [devtools]: https://developer.chrome.com/devtools
-[main-debug]: ./debugging-main-process.md
+[main-debug]: ./debugging-main-process
 
 ## V8 Crashes
 
