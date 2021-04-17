@@ -103,12 +103,27 @@ window.addEventListener('online', updateOnlineStatus)
 window.addEventListener('offline', updateOnlineStatus)
 
 updateOnlineStatus()
-```
-
+``` 
 After launching the Electron application, you should see the notification in the
 Console:
 
+An example of how to continue checking for changes in 'online status', you can can add this to `renderer.js` file
+
+```javascript
+ let indicator = document.querySelector('.offline-indicator');
+
+    setInterval(() => {
+        if (navigator.onLine) {
+            indicator.classList.add('online');
+            indicator.classList.remove('offline');
+        } else {
+            indicator.classList.add('offline');
+            indicator.classList.remove('online');
+        }
+    }, 1000);
+    ```
 ```sh
+
 npm start
 
 > electron@1.0.0 start /electron
