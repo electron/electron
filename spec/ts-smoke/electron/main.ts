@@ -373,6 +373,12 @@ if (process.platform === 'win32') {
   console.log('Color for menu is', systemPreferences.getColor('menu'))
 }
 
+if (process.platform === 'darwin') {
+  const value: string = systemPreferences.getUserDefault('Foo', 'string');
+  // @ts-expect-error
+  const value2: number = systemPreferences.getUserDefault('Foo', 'boolean');
+}
+
 // Create the window.
 const win1 = new BrowserWindow(browserOptions)
 
