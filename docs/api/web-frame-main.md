@@ -2,7 +2,7 @@
 
 > Control web pages and iframes.
 
-Process: [Main](../glossary.md#main-process)
+Exported in: [Main](../glossary.md#main-process)
 
 The `webFrameMain` module can be used to lookup frames across existing
 [`WebContents`](web-contents.md) instances. Navigation events are the common

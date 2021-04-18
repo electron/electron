@@ -11,7 +11,7 @@ For including the share menu as a submenu of other menus, please use the
 
 > Create share menu on macOS.
 
-Process: [Main](../glossary.md#main-process)
+Exported in: [Main](../glossary.md#main-process)
 
 ### `new ShareMenu(sharingItem)`
 

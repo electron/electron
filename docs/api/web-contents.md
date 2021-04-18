@@ -2,7 +2,7 @@
 
 > Render and control web pages.
 
-Process: [Main](../glossary.md#main-process)
+Exported in: [Main](../glossary.md#main-process)
 
 `webContents` is an [EventEmitter][event-emitter].
 It is responsible for rendering and controlling a web page and is a property of

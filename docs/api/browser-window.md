@@ -126,7 +126,7 @@ state is `hidden` in order to minimize power consumption.
 
 > Create and control browser windows.
 
-Process: [Main](../glossary.md#main-process)
+Exported in: [Main](../glossary.md#main-process)
 
 `BrowserWindow` is an [EventEmitter][event-emitter].
 

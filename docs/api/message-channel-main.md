@@ -11,7 +11,7 @@ channel messaging.
 
 > Channel interface for channel messaging in the main process.
 
-Process: [Main](../glossary.md#main-process)
+Exported in: [Main](../glossary.md#main-process)
 
 Example:
 

@@ -4,7 +4,7 @@
 
 > Add icons and context menus to the system's notification area.
 
-Process: [Main](../glossary.md#main-process)
+Exported in: [Main](../glossary.md#main-process)
 
 `Tray` is an [EventEmitter][event-emitter].
 

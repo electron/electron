@@ -4,8 +4,8 @@
   "repository": "https://github.com/electron/electron",
   "description": "Build cross platform desktop apps with JavaScript, HTML, and CSS",
   "devDependencies": {
-    "@electron/docs-parser": "^0.11.0",
-    "@electron/typescript-definitions": "^8.9.0",
+    "@electron/docs-parser": "^0.12.0",
+    "@electron/typescript-definitions": "^8.9.2",
     "@octokit/auth-app": "^2.10.0",
     "@octokit/rest": "^18.0.3",
     "@primer/octicons": "^10.0.0",

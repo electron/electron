@@ -2,7 +2,7 @@
 
 > In-app purchases on Mac App Store.
 
-Process: [Main](../glossary.md#main-process)
+Exported in: [Main](../glossary.md#main-process)
 
 ## Events
 
