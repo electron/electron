@@ -1,7 +1,7 @@
-From a152ce495f8f69bbf473d56bcbc205c94c57406b Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Guido Urdaneta <guidou@chromium.org>
 Date: Tue, 13 Apr 2021 16:04:59 +0000
-Subject: [PATCH] Make request IDs 64 bit in PermissionBubbleMediaAccessHandler
+Subject: Make request IDs 64 bit in PermissionBubbleMediaAccessHandler
 
 This is expected to prevent potential overflows.
 
@@ -21,13 +21,12 @@ Reviewed-by: Victor-Gabriel Savu <vsavu@google.com>
 Commit-Queue: Jana Grill <janagrill@chromium.org>
 Cr-Commit-Position: refs/branch-heads/4240@{#1599}
 Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
----
 
 diff --git a/chrome/browser/media/webrtc/permission_bubble_media_access_handler.cc b/chrome/browser/media/webrtc/permission_bubble_media_access_handler.cc
-index fe81c15..5a39005 100644
+index fe81c1597d53c23c7a4e9e32ffc4722defc3f33f..5a390057a86e2040fa4e7f4e04e0dca0f92d97b2 100644
 --- a/chrome/browser/media/webrtc/permission_bubble_media_access_handler.cc
 +++ b/chrome/browser/media/webrtc/permission_bubble_media_access_handler.cc
-@@ -229,7 +229,7 @@
+@@ -229,7 +229,7 @@ void PermissionBubbleMediaAccessHandler::ProcessQueuedAccessRequest(
  
    DCHECK(!it->second.empty());
  
@@ -36,7 +35,7 @@ index fe81c15..5a39005 100644
    const content::MediaStreamRequest& request =
        it->second.begin()->second.request;
  #if defined(OS_ANDROID)
-@@ -290,7 +290,7 @@
+@@ -290,7 +290,7 @@ void PermissionBubbleMediaAccessHandler::RegisterProfilePrefs(
  
  void PermissionBubbleMediaAccessHandler::OnMediaStreamRequestResponse(
      content::WebContents* web_contents,
@@ -45,7 +44,7 @@ index fe81c15..5a39005 100644
      content::MediaStreamRequest request,
      const blink::MediaStreamDevices& devices,
      blink::mojom::MediaStreamRequestResult result,
-@@ -322,7 +322,7 @@
+@@ -322,7 +322,7 @@ void PermissionBubbleMediaAccessHandler::OnMediaStreamRequestResponse(
  
  void PermissionBubbleMediaAccessHandler::OnAccessRequestResponse(
      content::WebContents* web_contents,
@@ -55,7 +54,7 @@ index fe81c15..5a39005 100644
      blink::mojom::MediaStreamRequestResult result,
      std::unique_ptr<content::MediaStreamUI> ui) {
 diff --git a/chrome/browser/media/webrtc/permission_bubble_media_access_handler.h b/chrome/browser/media/webrtc/permission_bubble_media_access_handler.h
-index dabea7e..01dbbec 100644
+index dabea7e16a4395a08d1e71030b7d2c0bd882415c..01dbbeccbcd891891d2908aad84f22c22d580d60 100644
 --- a/chrome/browser/media/webrtc/permission_bubble_media_access_handler.h
 +++ b/chrome/browser/media/webrtc/permission_bubble_media_access_handler.h
 @@ -5,6 +5,8 @@
@@ -67,7 +66,7 @@ index dabea7e..01dbbec 100644
  #include <map>
  
  #include "base/memory/weak_ptr.h"
-@@ -50,13 +52,13 @@
+@@ -50,13 +52,13 @@ class PermissionBubbleMediaAccessHandler
  
   private:
    struct PendingAccessRequest;
@@ -83,7 +82,7 @@ index dabea7e..01dbbec 100644
        content::MediaStreamRequest request,
        const blink::MediaStreamDevices& devices,
        blink::mojom::MediaStreamRequestResult result,
-@@ -64,7 +66,7 @@
+@@ -64,7 +66,7 @@ class PermissionBubbleMediaAccessHandler
        ContentSetting audio_setting,
        ContentSetting video_setting);
    void OnAccessRequestResponse(content::WebContents* web_contents,
@@ -92,7 +91,7 @@ index dabea7e..01dbbec 100644
                                 const blink::MediaStreamDevices& devices,
                                 blink::mojom::MediaStreamRequestResult result,
                                 std::unique_ptr<content::MediaStreamUI> ui);
-@@ -74,7 +76,7 @@
+@@ -74,7 +76,7 @@ class PermissionBubbleMediaAccessHandler
                 const content::NotificationSource& source,
                 const content::NotificationDetails& details) override;
  
