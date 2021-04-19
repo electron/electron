@@ -1,0 +1,103 @@
+From a152ce495f8f69bbf473d56bcbc205c94c57406b Mon Sep 17 00:00:00 2001
+From: Guido Urdaneta <guidou@chromium.org>
+Date: Tue, 13 Apr 2021 16:04:59 +0000
+Subject: [PATCH] Make request IDs 64 bit in PermissionBubbleMediaAccessHandler
+
+This is expected to prevent potential overflows.
+
+(cherry picked from commit b29987b9d50e085a5aefc8d48ad3e4446aaee51e)
+
+Bug: 1178032
+Change-Id: I7422958f66b26f99b2dcfe9f8d3ba0fe796cd8a2
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2797413
+Auto-Submit: Guido Urdaneta <guidou@chromium.org>
+Reviewed-by: Elad Alon <eladalon@chromium.org>
+Commit-Queue: Guido Urdaneta <guidou@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#868216}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2822148
+Reviewed-by: Guido Urdaneta <guidou@chromium.org>
+Reviewed-by: Achuith Bhandarkar <achuith@chromium.org>
+Reviewed-by: Victor-Gabriel Savu <vsavu@google.com>
+Commit-Queue: Jana Grill <janagrill@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4240@{#1599}
+Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
+---
+
+diff --git a/chrome/browser/media/webrtc/permission_bubble_media_access_handler.cc b/chrome/browser/media/webrtc/permission_bubble_media_access_handler.cc
+index fe81c15..5a39005 100644
+--- a/chrome/browser/media/webrtc/permission_bubble_media_access_handler.cc
++++ b/chrome/browser/media/webrtc/permission_bubble_media_access_handler.cc
+@@ -229,7 +229,7 @@
+ 
+   DCHECK(!it->second.empty());
+ 
+-  const int request_id = it->second.begin()->first;
++  const int64_t request_id = it->second.begin()->first;
+   const content::MediaStreamRequest& request =
+       it->second.begin()->second.request;
+ #if defined(OS_ANDROID)
+@@ -290,7 +290,7 @@
+ 
+ void PermissionBubbleMediaAccessHandler::OnMediaStreamRequestResponse(
+     content::WebContents* web_contents,
+-    int request_id,
++    int64_t request_id,
+     content::MediaStreamRequest request,
+     const blink::MediaStreamDevices& devices,
+     blink::mojom::MediaStreamRequestResult result,
+@@ -322,7 +322,7 @@
+ 
+ void PermissionBubbleMediaAccessHandler::OnAccessRequestResponse(
+     content::WebContents* web_contents,
+-    int request_id,
++    int64_t request_id,
+     const blink::MediaStreamDevices& devices,
+     blink::mojom::MediaStreamRequestResult result,
+     std::unique_ptr<content::MediaStreamUI> ui) {
+diff --git a/chrome/browser/media/webrtc/permission_bubble_media_access_handler.h b/chrome/browser/media/webrtc/permission_bubble_media_access_handler.h
+index dabea7e..01dbbec 100644
+--- a/chrome/browser/media/webrtc/permission_bubble_media_access_handler.h
++++ b/chrome/browser/media/webrtc/permission_bubble_media_access_handler.h
+@@ -5,6 +5,8 @@
+ #ifndef CHROME_BROWSER_MEDIA_WEBRTC_PERMISSION_BUBBLE_MEDIA_ACCESS_HANDLER_H_
+ #define CHROME_BROWSER_MEDIA_WEBRTC_PERMISSION_BUBBLE_MEDIA_ACCESS_HANDLER_H_
+ 
++#include <stdint.h>
++
+ #include <map>
+ 
+ #include "base/memory/weak_ptr.h"
+@@ -50,13 +52,13 @@
+ 
+  private:
+   struct PendingAccessRequest;
+-  using RequestsMap = std::map<int, PendingAccessRequest>;
++  using RequestsMap = std::map<int64_t, PendingAccessRequest>;
+   using RequestsMaps = std::map<content::WebContents*, RequestsMap>;
+ 
+   void ProcessQueuedAccessRequest(content::WebContents* web_contents);
+   void OnMediaStreamRequestResponse(
+       content::WebContents* web_contents,
+-      int request_id,
++      int64_t request_id,
+       content::MediaStreamRequest request,
+       const blink::MediaStreamDevices& devices,
+       blink::mojom::MediaStreamRequestResult result,
+@@ -64,7 +66,7 @@
+       ContentSetting audio_setting,
+       ContentSetting video_setting);
+   void OnAccessRequestResponse(content::WebContents* web_contents,
+-                               int request_id,
++                               int64_t request_id,
+                                const blink::MediaStreamDevices& devices,
+                                blink::mojom::MediaStreamRequestResult result,
+                                std::unique_ptr<content::MediaStreamUI> ui);
+@@ -74,7 +76,7 @@
+                const content::NotificationSource& source,
+                const content::NotificationDetails& details) override;
+ 
+-  int next_request_id_ = 0;
++  int64_t next_request_id_ = 0;
+   RequestsMaps pending_requests_;
+   content::NotificationRegistrar notifications_registrar_;
+ 
