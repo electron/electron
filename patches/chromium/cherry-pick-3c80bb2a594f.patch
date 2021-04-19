@@ -1,0 +1,46 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jana Grill <janagrill@google.com>
+Date: Wed, 14 Apr 2021 08:40:10 +0000
+Subject: Forbid script execution while updating the paint lifecycle.
+
+(cherry picked from commit 5425d3b100fab533ea9ddc2ed8fbfc4870db0587)
+
+Bug: 1196781
+Change-Id: Idc8d24792d5c413691977b09ca821de4e13887ad
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2812000
+Commit-Queue: Adrian Taylor <adetaylor@chromium.org>
+Commit-Queue: Robert Flack <flackr@chromium.org>
+Reviewed-by: Xianzhu Wang <wangxianzhu@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#870275}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2821879
+Reviewed-by: Robert Flack <flackr@chromium.org>
+Reviewed-by: Achuith Bhandarkar <achuith@chromium.org>
+Reviewed-by: Victor-Gabriel Savu <vsavu@google.com>
+Commit-Queue: Jana Grill <janagrill@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4240@{#1601}
+Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
+
+diff --git a/third_party/blink/renderer/core/frame/local_frame_view.cc b/third_party/blink/renderer/core/frame/local_frame_view.cc
+index 60288427035e864861af48d8066d49da6cfc68df..d470bd94093970b486ce723339a8daa0658433cb 100644
+--- a/third_party/blink/renderer/core/frame/local_frame_view.cc
++++ b/third_party/blink/renderer/core/frame/local_frame_view.cc
+@@ -2766,11 +2766,14 @@ void LocalFrameView::RunPaintLifecyclePhase() {
+         for (PaintLayerScrollableArea* area : *animating_scrollable_areas)
+           area->UpdateCompositorScrollAnimations();
+       }
+-      frame_view.GetLayoutView()
+-          ->GetDocument()
+-          .GetDocumentAnimations()
+-          .UpdateAnimations(DocumentLifecycle::kPaintClean,
+-                            paint_artifact_compositor_.get());
++      {
++        ScriptForbiddenScope forbid_script;
++        frame_view.GetLayoutView()
++            ->GetDocument()
++            .GetDocumentAnimations()
++            .UpdateAnimations(DocumentLifecycle::kPaintClean,
++                              paint_artifact_compositor_.get());
++      }
+     });
+ 
+     // Initialize animation properties in the newly created paint property
