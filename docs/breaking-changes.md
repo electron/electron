@@ -38,6 +38,32 @@ to open synchronously scriptable child windows, among other incompatibilities.
 See the documentation for [window.open in Electron](api/window-open.md)
 for more details.
 
+### Removed: `additionalFeatures`
+
+The deprecated `additionalFeatures` property in the `new-window` and
+`did-create-window` events of WebContents has been removed. Since `new-window`
+uses positional arguments, the argument is still present, but will always be
+the empty array `[]`. (Though note, the `new-window` event itself is
+deprecated, and is replaced by `setWindowOpenHandler`.) Bare keys in window
+features will now present as keys with the value `true` in the options object.
+
+```js
+// Removed in Electron 14
+// Triggered by window.open('...', '', 'my-key')
+webContents.on('did-create-window', (window, details) => {
+  if (details.additionalFeatures.includes('my-key')) {
+    // ...
+  }
+})
+
+// Replace with
+webContents.on('did-create-window', (window, details) => {
+  if (details.options['my-key']) {
+    // ...
+  }
+})
+```
+
 ## Planned Breaking API Changes (13.0)
 
 ### API Changed: `session.setPermissionCheckHandler(handler)`

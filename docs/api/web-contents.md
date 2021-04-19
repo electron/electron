@@ -147,7 +147,8 @@ Returns:
 * `options` BrowserWindowConstructorOptions - The options which will be used for creating the new
   [`BrowserWindow`](browser-window.md).
 * `additionalFeatures` String[] - The non-standard features (features not handled
-  by Chromium or Electron) given to `window.open()`.
+  by Chromium or Electron) given to `window.open()`. Deprecated, and will now
+  always be the empty array `[]`.
 * `referrer` [Referrer](structures/referrer.md) - The referrer that will be
   passed to the new window. May or may not result in the `Referer` header being
   sent, depending on the referrer policy.
@@ -207,8 +208,6 @@ Returns:
     `window.open()`, and options given by
     [`webContents.setWindowOpenHandler`](web-contents.md#contentssetwindowopenhandlerhandler).
     Unrecognized options are not filtered out.
-  * `additionalFeatures` String[] - The non-standard features (features not
-    handled Chromium or Electron) _Deprecated_
   * `referrer` [Referrer](structures/referrer.md) - The referrer that will be
     passed to the new window. May or may not result in the `Referer` header
     being sent, depending on the referrer policy.
