@@ -18,12 +18,12 @@
     esutils "^2.0.2"
     js-tokens "^4.0.0"
 
-"@electron/docs-parser@^0.10.1":
-  version "0.10.1"
-  resolved "https://registry.yarnpkg.com/@electron/docs-parser/-/docs-parser-0.10.1.tgz#aa5911c4ef2ec237d7a126111019ec45058088db"
-  integrity sha512-gDKGfc4ilPsKGCCyCCU20iJnHRV3QPYthOocgfAnzm5lOANssxLjl4KeN/DO8nTmKX/BmFsf+XGNa4Penq0L8A==
+"@electron/docs-parser@^0.11.0":
+  version "0.11.0"
+  resolved "https://registry.yarnpkg.com/@electron/docs-parser/-/docs-parser-0.11.0.tgz#182a9732d2fc7b40e3f506d3ab1a06270cdae6e4"
+  integrity sha512-i+OSWXXchoKVorR6cANqPKYJ1ccLAp+YCPTB+IJVWZ+Xtp6V2VXqLsjoy4mD32ss4CdX/6MLX62pb2sjGmmR6w==
   dependencies:
-    "@types/markdown-it" "^0.0.9"
+    "@types/markdown-it" "^10.0.0"
     chai "^4.2.0"
     chalk "^3.0.0"
     fs-extra "^8.1.0"
@@ -33,10 +33,10 @@
     ora "^4.0.3"
     pretty-ms "^5.1.0"
 
-"@electron/typescript-definitions@^8.8.0":
-  version "8.8.0"
-  resolved "https://registry.yarnpkg.com/@electron/typescript-definitions/-/typescript-definitions-8.8.0.tgz#3af8989507af50b3b06b23833a45a5631ab31d3f"
-  integrity sha512-HXcLOzI6zNFTzye3R/aSuqBAiVkUWVnogHwRe4mEdS4nodOqKZQxaB5tzPU2qZ4mS5cpVykBW4s6qAItuptoCA==
+"@electron/typescript-definitions@^8.9.0":
+  version "8.9.0"
+  resolved "https://registry.yarnpkg.com/@electron/typescript-definitions/-/typescript-definitions-8.9.0.tgz#4a446ef875b55f6d3736df2a33bb19257b8146aa"
+  integrity sha512-26ze33/Ip2ivpCMHGRMLR+Dcm7DLNzPJL0iLJNonqPu2ikqnwJce1d2vkTDBBLzAiqUV3litVNTpnNS2Zg42MA==
   dependencies:
     "@types/node" "^11.13.7"
     chalk "^2.4.2"
@@ -299,6 +299,11 @@
     "@types/minimatch" "*"
     "@types/node" "*"
 
+"@types/highlight.js@^9.7.0":
+  version "9.12.4"
+  resolved "https://registry.yarnpkg.com/@types/highlight.js/-/highlight.js-9.12.4.tgz#8c3496bd1b50cc04aeefd691140aa571d4dbfa34"
+  integrity sha512-t2szdkwmg2JJyuCM20e8kR2X59WCE5Zkl4bzm1u1Oukjm79zpbiAv+QjnwLnuuV0WHEcX2NgUItu0pAMKuOPww==
+
 "@types/json-schema@^7.0.3":
   version "7.0.3"
   resolved "https://registry.yarnpkg.com/@types/json-schema/-/json-schema-7.0.3.tgz#bdfd69d61e464dcc81b25159c270d75a73c1a636"
@@ -338,12 +343,20 @@
   resolved "https://registry.yarnpkg.com/@types/lru-cache/-/lru-cache-5.1.0.tgz#57f228f2b80c046b4a1bd5cac031f81f207f4f03"
   integrity sha512-RaE0B+14ToE4l6UqdarKPnXwVDuigfFv+5j9Dze/Nqr23yyuqdNvzcZi3xB+3Agvi5R4EOgAksfv3lXX4vBt9w==
 
-"@types/markdown-it@^0.0.9":
-  version "0.0.9"
-  resolved "https://registry.yarnpkg.com/@types/markdown-it/-/markdown-it-0.0.9.tgz#a5d552f95216c478e0a27a5acc1b28dcffd989ce"
-  integrity sha512-IFSepyZXbF4dgSvsk8EsgaQ/8Msv1I5eTL0BZ0X3iGO9jw6tCVtPG8HchIPm3wrkmGdqZOD42kE0zplVi1gYDA==
+"@types/markdown-it@^10.0.0":
+  version "10.0.3"
+  resolved "https://registry.yarnpkg.com/@types/markdown-it/-/markdown-it-10.0.3.tgz#a9800d14b112c17f1de76ec33eff864a4815eec7"
+  integrity sha512-daHJk22isOUvNssVGF2zDnnSyxHhFYhtjeX4oQaKD6QzL3ZR1QSgiD1g+Q6/WSWYVogNXYDXODtbgW/WiFCtyw==
   dependencies:
+    "@types/highlight.js" "^9.7.0"
     "@types/linkify-it" "*"
+    "@types/mdurl" "*"
+    highlight.js "^9.7.0"
+
+"@types/mdurl@*":
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/@types/mdurl/-/mdurl-1.0.2.tgz#e2ce9d83a613bacf284c7be7d491945e39e1f8e9"
+  integrity sha512-eC4U9MlIcu2q0KQmXszyn5Akca/0jrQmwDRgpAMJai7qBWq4amIQhZyNau4VYGtCeALvW1/NtjzJJ567aZxfKA==
 
 "@types/mime@*":
   version "2.0.1"
@@ -3558,6 +3571,11 @@ hash.js@^1.0.0, hash.js@^1.0.3:
   dependencies:
     inherits "^2.0.3"
     minimalistic-assert "^1.0.1"
+
+highlight.js@^9.7.0:
+  version "9.18.5"
+  resolved "https://registry.yarnpkg.com/highlight.js/-/highlight.js-9.18.5.tgz#d18a359867f378c138d6819edfc2a8acd5f29825"
+  integrity sha512-a5bFyofd/BHCX52/8i8uJkjr9DYwXIPnM/plwI6W7ezItLGqzt7X2G2nXuYSfsIJdkwwj/g9DG1LkcGJI/dDoA==
 
 hmac-drbg@^1.0.0:
   version "1.0.1"

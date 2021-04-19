@@ -537,6 +537,12 @@ void NativeWindowMac::ShowInactive() {
 }
 
 void NativeWindowMac::Hide() {
+  // If a sheet is attached to the window when we call [window_ orderOut:nil],
+  // the sheet won't be able to show again on the same window.
+  // Ensure it's closed before calling [window_ orderOut:nil].
+  if ([window_ attachedSheet])
+    [window_ endSheet:[window_ attachedSheet]];
+
   if (is_modal() && parent()) {
     [window_ orderOut:nil];
     [parent()->GetNativeWindow().GetNativeNSWindow() endSheet:window_];

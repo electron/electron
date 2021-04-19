@@ -92,11 +92,6 @@ machine-mac-large: &machine-mac-large
   macos:
     xcode: "12.4.0"
 
-machine-mac-large-arm: &machine-mac-large-arm
-  resource_class: large
-  macos:
-    xcode: "12.4.0"
-
 machine-mac-arm64: &machine-mac-arm64
   resource_class: electronjs/macos-arm64
   machine: true
@@ -2119,7 +2114,7 @@ jobs:
           checkout: true
 
   osx-publish-arm64:
-    <<: *machine-mac-large-arm
+    <<: *machine-mac-large
     environment:
       <<: *env-mac-large-release
       <<: *env-release-build
@@ -2144,7 +2139,7 @@ jobs:
           checkout: false
 
   osx-publish-arm64-skip-checkout:
-    <<: *machine-mac-large-arm
+    <<: *machine-mac-large
     environment:
       <<: *env-mac-large-release
       <<: *env-release-build
@@ -2157,7 +2152,7 @@ jobs:
           checkout: false
 
   osx-testing-arm64:
-    <<: *machine-mac-large-arm
+    <<: *machine-mac-large
     environment:
       <<: *env-mac-large
       <<: *env-testing-build
@@ -2226,7 +2221,7 @@ jobs:
           checkout: true
 
   mas-publish-arm64:
-    <<: *machine-mac-large-arm
+    <<: *machine-mac-large
     environment:
       <<: *env-mac-large-release
       <<: *env-mas-apple-silicon
@@ -2251,7 +2246,7 @@ jobs:
           checkout: false
 
   mas-publish-arm64-skip-checkout:
-    <<: *machine-mac-large-arm
+    <<: *machine-mac-large
     environment:
       <<: *env-mac-large-release
       <<: *env-mas-apple-silicon
@@ -2264,7 +2259,7 @@ jobs:
           checkout: false
 
   mas-testing-arm64:
-    <<: *machine-mac-large-arm
+    <<: *machine-mac-large
     environment:
       <<: *env-mac-large
       <<: *env-testing-build

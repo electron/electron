@@ -62,7 +62,7 @@ window.open('https://github.com', '_blank', 'top=500,left=200,frame=false,nodeIn
   the parent window.
 * Non-standard features (that are not handled by Chromium or Electron) given in
   `features` will be passed to any registered `webContents`'s
-  `did-create-window` event handler in the `additionalFeatures` argument.
+  `did-create-window` event handler in the `options` argument.
 * `frameName` follows the specification of `windowName` located in the [native documentation](https://developer.mozilla.org/en-US/docs/Web/API/Window/open#parameters).
 
 To customize or cancel the creation of the window, you can optionally set an

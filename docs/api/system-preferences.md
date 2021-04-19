@@ -159,13 +159,13 @@ Same as `unsubscribeNotification`, but removes the subscriber from `NSWorkspace.
 
 Add the specified defaults to your application's `NSUserDefaults`.
 
-### `systemPreferences.getUserDefault(key, type)` _macOS_
+### `systemPreferences.getUserDefault<Type extends keyof UserDefaultTypes>(key, type)` _macOS_
 
 * `key` String
-* `type` String - Can be `string`, `boolean`, `integer`, `float`, `double`,
+* `type` Type - Can be `string`, `boolean`, `integer`, `float`, `double`,
   `url`, `array` or `dictionary`.
 
-Returns `any` - The value of `key` in `NSUserDefaults`.
+Returns [`UserDefaultTypes[Type]`](structures/user-default-types.md) - The value of `key` in `NSUserDefaults`.
 
 Some popular `key` and `type`s are:
 

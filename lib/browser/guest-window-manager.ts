@@ -42,7 +42,7 @@ export function openGuestWindow ({ event, embedder, guest, referrer, disposition
   windowOpenArgs: WindowOpenArgs,
 }): BrowserWindow | undefined {
   const { url, frameName, features } = windowOpenArgs;
-  const { options: browserWindowOptions, additionalFeatures } = makeBrowserWindowOptions({
+  const { options: browserWindowOptions } = makeBrowserWindowOptions({
     embedder,
     features,
     overrideOptions: overrideBrowserWindowOptions
@@ -54,7 +54,6 @@ export function openGuestWindow ({ event, embedder, guest, referrer, disposition
     guest,
     browserWindowOptions,
     windowOpenArgs,
-    additionalFeatures,
     disposition,
     postData,
     referrer
@@ -93,7 +92,7 @@ export function openGuestWindow ({ event, embedder, guest, referrer, disposition
 
   handleWindowLifecycleEvents({ embedder, frameName, guest: window });
 
-  embedder.emit('did-create-window', window, { url, frameName, options: browserWindowOptions, disposition, additionalFeatures, referrer, postData });
+  embedder.emit('did-create-window', window, { url, frameName, options: browserWindowOptions, disposition, referrer, postData });
 
   return window;
 }
@@ -134,13 +133,12 @@ const handleWindowLifecycleEvents = function ({ embedder, guest, frameName }: {
  * Deprecated in favor of `webContents.setWindowOpenHandler` and
  * `did-create-window` in 11.0.0. Will be removed in 12.0.0.
  */
-function emitDeprecatedNewWindowEvent ({ event, embedder, guest, windowOpenArgs, browserWindowOptions, additionalFeatures, disposition, referrer, postData }: {
+function emitDeprecatedNewWindowEvent ({ event, embedder, guest, windowOpenArgs, browserWindowOptions, disposition, referrer, postData }: {
   event: { sender: WebContents, defaultPrevented: boolean, newGuest?: BrowserWindow },
   embedder: WebContents,
   guest?: WebContents,
   windowOpenArgs: WindowOpenArgs,
   browserWindowOptions: BrowserWindowConstructorOptions,
-  additionalFeatures: string[]
   disposition: string,
   referrer: Referrer,
   postData?: PostData,
@@ -162,7 +160,7 @@ function emitDeprecatedNewWindowEvent ({ event, embedder, guest, windowOpenArgs,
       ...browserWindowOptions,
       webContents: guest
     },
-    additionalFeatures,
+    [], // additionalFeatures
     referrer,
     postBody
   );
@@ -200,16 +198,14 @@ const securityWebPreferences: { [key: string]: boolean } = {
   enableWebSQL: false
 };
 
-function makeBrowserWindowOptions ({ embedder, features, overrideOptions, useDeprecatedBehaviorForBareValues = true }: {
+function makeBrowserWindowOptions ({ embedder, features, overrideOptions }: {
   embedder: WebContents,
   features: string,
   overrideOptions?: BrowserWindowConstructorOptions,
-  useDeprecatedBehaviorForBareValues?: boolean
 }) {
-  const { options: parsedOptions, webPreferences: parsedWebPreferences, additionalFeatures } = parseFeatures(features, useDeprecatedBehaviorForBareValues);
+  const { options: parsedOptions, webPreferences: parsedWebPreferences } = parseFeatures(features);
 
   return {
-    additionalFeatures,
     options: {
       show: true,
       width: 800,
@@ -232,7 +228,6 @@ export function makeWebPreferences ({ embedder, secureOverrideWebPreferences = {
   // sourced from the main process, as they override security defaults. If you
   // have unvetted prefs, use parsedWebPreferences.
   secureOverrideWebPreferences?: BrowserWindowConstructorOptions['webPreferences'],
-  useDeprecatedBehaviorForBareValues?: boolean
 }) {
   const parentWebPreferences = embedder.getLastWebPreferences();
   const securityWebPreferencesFromParent = (Object.keys(securityWebPreferences).reduce((map, key) => {

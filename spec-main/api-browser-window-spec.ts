@@ -3009,12 +3009,12 @@ describe('BrowserWindow module', () => {
 
     it('emits when window.open is called', (done) => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
-      w.webContents.once('new-window', (e, url, frameName, disposition, options, additionalFeatures) => {
+      w.webContents.once('new-window', (e, url, frameName, disposition, options) => {
         e.preventDefault();
         try {
           expect(url).to.equal('http://host/');
           expect(frameName).to.equal('host');
-          expect(additionalFeatures[0]).to.equal('this-is-not-a-standard-feature');
+          expect((options as any)['this-is-not-a-standard-feature']).to.equal(true);
           done();
         } catch (e) {
           done(e);
@@ -3025,12 +3025,12 @@ describe('BrowserWindow module', () => {
 
     it('emits when window.open is called with no webPreferences', (done) => {
       const w = new BrowserWindow({ show: false });
-      w.webContents.once('new-window', function (e, url, frameName, disposition, options, additionalFeatures) {
+      w.webContents.once('new-window', function (e, url, frameName, disposition, options) {
         e.preventDefault();
         try {
           expect(url).to.equal('http://host/');
           expect(frameName).to.equal('host');
-          expect(additionalFeatures[0]).to.equal('this-is-not-a-standard-feature');
+          expect((options as any)['this-is-not-a-standard-feature']).to.equal(true);
           done();
         } catch (e) {
           done(e);
