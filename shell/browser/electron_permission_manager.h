@@ -90,13 +90,14 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
       content::PermissionType permission,
       const GURL& requesting_origin,
       const GURL& embedding_origin) override;
-  int SubscribePermissionStatusChange(
+  SubscriptionId SubscribePermissionStatusChange(
       content::PermissionType permission,
       content::RenderFrameHost* render_frame_host,
       const GURL& requesting_origin,
       base::RepeatingCallback<void(blink::mojom::PermissionStatus)> callback)
       override;
-  void UnsubscribePermissionStatusChange(int subscription_id) override;
+  void UnsubscribePermissionStatusChange(
+      SubscriptionId subscription_id) override;
 
  private:
   class PendingRequest;
