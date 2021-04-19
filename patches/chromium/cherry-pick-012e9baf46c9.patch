@@ -1,7 +1,7 @@
-From 012e9baf46c9867c139f595b073be642743d933a Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jana Grill <janagrill@google.com>
 Date: Thu, 15 Apr 2021 20:49:42 +0000
-Subject: [PATCH] Mojo: Remove some inappropriate DCHECKs
+Subject: Mojo: Remove some inappropriate DCHECKs
 
 There are a few places where we DCHECK conditions that cannot be
 reliably asserted since they depend on untrusted inputs. These are
@@ -23,13 +23,12 @@ Commit-Queue: Achuith Bhandarkar <achuith@chromium.org>
 Owners-Override: Achuith Bhandarkar <achuith@chromium.org>
 Cr-Commit-Position: refs/branch-heads/4240@{#1608}
 Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
----
 
 diff --git a/mojo/core/node_controller.cc b/mojo/core/node_controller.cc
-index f9319c2..8b11ae5 100644
+index c7646fa4dc5c5062e8a8a620e55839301af51bed..c333ed64f71f0dfe5d0012b07bcedccfd94cd5e9 100644
 --- a/mojo/core/node_controller.cc
 +++ b/mojo/core/node_controller.cc
-@@ -942,7 +942,11 @@
+@@ -942,7 +942,11 @@ void NodeController::OnBrokerClientAdded(const ports::NodeName& from_node,
  void NodeController::OnAcceptBrokerClient(const ports::NodeName& from_node,
                                            const ports::NodeName& broker_name,
                                            PlatformHandle broker_channel) {
@@ -42,7 +41,7 @@ index f9319c2..8b11ae5 100644
  
    // This node should already have an inviter in bootstrap mode.
    ports::NodeName inviter_name;
-@@ -953,8 +957,13 @@
+@@ -953,8 +957,13 @@ void NodeController::OnAcceptBrokerClient(const ports::NodeName& from_node,
      inviter = bootstrap_inviter_channel_;
      bootstrap_inviter_channel_ = nullptr;
    }
@@ -58,7 +57,7 @@ index f9319c2..8b11ae5 100644
  
    base::queue<ports::NodeName> pending_broker_clients;
    std::unordered_map<ports::NodeName, OutgoingMessageQueue>
-@@ -965,22 +974,22 @@
+@@ -965,22 +974,22 @@ void NodeController::OnAcceptBrokerClient(const ports::NodeName& from_node,
      std::swap(pending_broker_clients, pending_broker_clients_);
      std::swap(pending_relay_messages, pending_relay_messages_);
    }
