@@ -135,7 +135,7 @@ handleMessage(
 
     if (!windowMethods.has(method)) {
       console.error(
-        `Blocked ${event.sender.getURL()} from calling method: ${method}`
+        `Blocked ${event.senderFrame.url} from calling method: ${method}`
       );
       throw new Error(`Invalid method: ${method}`);
     }
