@@ -7,7 +7,7 @@ Backport of
 https://chromium.googlesource.com/chromium/src/+/162efe98330e8d243d472889db81dd78b691156f
 
 diff --git a/base/message_loop/message_pump_kqueue.cc b/base/message_loop/message_pump_kqueue.cc
-index 9a0be64d50a8..4a01b36db138 100644
+index 9a0be64d50a8460bd80615f83e6d41d71c65e586..4a01b36db138a43c39196206b8dd015c9700c8c3 100644
 --- a/base/message_loop/message_pump_kqueue.cc
 +++ b/base/message_loop/message_pump_kqueue.cc
 @@ -12,6 +12,7 @@
@@ -150,7 +150,7 @@ index 9a0be64d50a8..4a01b36db138 100644
 +
  }  // namespace base
 diff --git a/base/message_loop/message_pump_kqueue.h b/base/message_loop/message_pump_kqueue.h
-index 9acfcf22c3e0..824d90fe2ab3 100644
+index 9acfcf22c3e0643000938ae1804eaeb4bbf7bd69..824d90fe2ab3083b094bb1a3ab1a0840f98b89f1 100644
 --- a/base/message_loop/message_pump_kqueue.h
 +++ b/base/message_loop/message_pump_kqueue.h
 @@ -136,6 +136,10 @@ class BASE_EXPORT MessagePumpKqueue : public MessagePump,
