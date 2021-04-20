@@ -1,0 +1,86 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jana Grill <janagrill@google.com>
+Date: Thu, 15 Apr 2021 20:49:42 +0000
+Subject: Mojo: Remove some inappropriate DCHECKs
+
+There are a few places where we DCHECK conditions that cannot be
+reliably asserted since they depend on untrusted inputs. These are
+replaced with logic to conditionally terminate the connection to the
+offending peer process.
+
+(cherry picked from commit a32b061fc92cc3864d036ffb8c22c12b05202589)
+
+Fixed: 1195333
+Change-Id: I0c6873bf55d6b0b1d0cbb3c2e5b256e1a57ff696
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2808893
+Reviewed-by: Robert Sesek <rsesek@chromium.org>
+Commit-Queue: Ken Rockot <rockot@google.com>
+Cr-Original-Commit-Position: refs/heads/master@{#870007}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2821958
+Reviewed-by: Achuith Bhandarkar <achuith@chromium.org>
+Reviewed-by: Victor-Gabriel Savu <vsavu@google.com>
+Commit-Queue: Achuith Bhandarkar <achuith@chromium.org>
+Owners-Override: Achuith Bhandarkar <achuith@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4240@{#1608}
+Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
+
+diff --git a/mojo/core/node_controller.cc b/mojo/core/node_controller.cc
+index 823a4619efa0886401c0a46283a5782992b0c8a0..a297c500215a58aa5b86157e765a64671ca91188 100644
+--- a/mojo/core/node_controller.cc
++++ b/mojo/core/node_controller.cc
+@@ -943,7 +943,11 @@ void NodeController::OnBrokerClientAdded(const ports::NodeName& from_node,
+ void NodeController::OnAcceptBrokerClient(const ports::NodeName& from_node,
+                                           const ports::NodeName& broker_name,
+                                           PlatformHandle broker_channel) {
+-  DCHECK(!GetConfiguration().is_broker_process);
++  if (GetConfiguration().is_broker_process) {
++    // The broker should never receive this message from anyone.
++    DropPeer(from_node, nullptr);
++    return;
++  }
+ 
+   // This node should already have an inviter in bootstrap mode.
+   ports::NodeName inviter_name;
+@@ -954,8 +958,13 @@ void NodeController::OnAcceptBrokerClient(const ports::NodeName& from_node,
+     inviter = bootstrap_inviter_channel_;
+     bootstrap_inviter_channel_ = nullptr;
+   }
+-  DCHECK(inviter_name == from_node);
+-  DCHECK(inviter);
++
++  if (inviter_name != from_node || !inviter ||
++      broker_name == ports::kInvalidNodeName) {
++    // We are not expecting this message. Assume the source is hostile.
++    DropPeer(from_node, nullptr);
++    return;
++  }
+ 
+   base::queue<ports::NodeName> pending_broker_clients;
+   std::unordered_map<ports::NodeName, OutgoingMessageQueue>
+@@ -966,22 +975,22 @@ void NodeController::OnAcceptBrokerClient(const ports::NodeName& from_node,
+     std::swap(pending_broker_clients, pending_broker_clients_);
+     std::swap(pending_relay_messages, pending_relay_messages_);
+   }
+-  DCHECK(broker_name != ports::kInvalidNodeName);
+ 
+   // It's now possible to add both the broker and the inviter as peers.
+   // Note that the broker and inviter may be the same node.
+   scoped_refptr<NodeChannel> broker;
+   if (broker_name == inviter_name) {
+-    DCHECK(!broker_channel.is_valid());
+     broker = inviter;
+-  } else {
+-    DCHECK(broker_channel.is_valid());
++  } else if (broker_channel.is_valid()) {
+     broker = NodeChannel::Create(
+         this,
+         ConnectionParams(PlatformChannelEndpoint(std::move(broker_channel))),
+         Channel::HandlePolicy::kAcceptHandles, io_task_runner_,
+         ProcessErrorCallback());
+     AddPeer(broker_name, broker, true /* start_channel */);
++  } else {
++    DropPeer(from_node, nullptr);
++    return;
+   }
+ 
+   AddPeer(inviter_name, inviter, false /* start_channel */);
