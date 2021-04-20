@@ -24,10 +24,10 @@ index 08815f12ad8088353a2bd704c513263876c39856..9fd05f22c4f6d484c5cedfa1f38a1471
    g_reference_table = reference_table;
  }
 diff --git a/gin/public/isolate_holder.h b/gin/public/isolate_holder.h
-index f23af2d9738f3aa76e3a49301e1c3216ee4a64b4..ede178acabc63c3c33d6ce93efd5632bec50ba89 100644
+index eaf06bd895f3ed390d1b206b2dc5adcca5c87e72..6bd634c4a66999648c51b8867c0d9b0ccbda78f1 100644
 --- a/gin/public/isolate_holder.h
 +++ b/gin/public/isolate_holder.h
-@@ -88,7 +88,8 @@ class GIN_EXPORT IsolateHolder {
+@@ -89,7 +89,8 @@ class GIN_EXPORT IsolateHolder {
    // reference pointers. Otherwise, it can be nullptr.
    static void Initialize(ScriptMode mode,
                           v8::ArrayBuffer::Allocator* allocator,

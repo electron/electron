@@ -24,10 +24,10 @@ This patch temporarily disables the metrics so we can have green CI, and we
 should continue seeking for a real fix.
 
 diff --git a/content/browser/renderer_host/navigator.cc b/content/browser/renderer_host/navigator.cc
-index fa454c13dd1b45f128d9ba6a8d140eb9370f4722..b378ff6167199a7140fbbd58e6b8b8c7a4d79b16 100644
+index 6286996d9607f30cd5eb54e5d26a98d1e8ce6fa4..1f473429430dc3ac2b005a95f0cc61cbdd2067bb 100644
 --- a/content/browser/renderer_host/navigator.cc
 +++ b/content/browser/renderer_host/navigator.cc
-@@ -1060,6 +1060,7 @@ void Navigator::RecordNavigationMetrics(
+@@ -1069,6 +1069,7 @@ void Navigator::RecordNavigationMetrics(
              .InMilliseconds());
    }
  
@@ -35,7 +35,7 @@ index fa454c13dd1b45f128d9ba6a8d140eb9370f4722..b378ff6167199a7140fbbd58e6b8b8c7
    // If this is a same-process navigation and we have timestamps for unload
    // durations, fill those metrics out as well.
    if (params.unload_start && params.unload_end &&
-@@ -1106,6 +1107,7 @@ void Navigator::RecordNavigationMetrics(
+@@ -1115,6 +1116,7 @@ void Navigator::RecordNavigationMetrics(
           first_before_unload_start_time)
              .InMilliseconds());
    }

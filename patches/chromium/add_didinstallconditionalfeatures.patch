@@ -23,10 +23,10 @@ index 5a733f2086ec10d3010da52a2758e1748d1178e1..d8c7ef2e3c03f5275c1ed58849ec892f
                                          int32_t world_id) {}
    virtual void DidClearWindowObject() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 1c05950d8d76f40f426152af5118c65ee653a8a5..32f5f67cf37766137f47731ff3a86731c50d4522 100644
+index e75bdb5eebe37a0c0be99c13ec26d7bf5b11d535..b4eda6d54e3b3c537730927e80aa6baf8f05f1c7 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -4358,6 +4358,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
+@@ -4253,6 +4253,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
      observer.DidCreateScriptContext(context, world_id);
  }
  
@@ -40,7 +40,7 @@ index 1c05950d8d76f40f426152af5118c65ee653a8a5..32f5f67cf37766137f47731ff3a86731
                                                 int world_id) {
    for (auto& observer : observers_)
 diff --git a/content/renderer/render_frame_impl.h b/content/renderer/render_frame_impl.h
-index 093c0bf96c29cdd36f1bc00131b91a3e1b2dca1b..2ebdc0ed6ea5bf53428dd893f4ad7c61e2684f39 100644
+index 921be850c1e359d81c535dcbaef7b5efd2308b22..493ac77a73ffa58ef2de6d4586289475b33073b3 100644
 --- a/content/renderer/render_frame_impl.h
 +++ b/content/renderer/render_frame_impl.h
 @@ -579,6 +579,8 @@ class CONTENT_EXPORT RenderFrameImpl
@@ -123,7 +123,7 @@ index 92f875eafc84a46aff388a1164d45c6acee707c0..11845b9e14ccff6ef565f4bdc3af8924
                                  int32_t world_id) override;
  
 diff --git a/third_party/blink/renderer/core/loader/empty_clients.h b/third_party/blink/renderer/core/loader/empty_clients.h
-index 9f9e6c6188d1f108f584b1117a91fc3e9a5e38ab..05330ea84dc1555bcc9dd6fbbd63e97348b5664d 100644
+index 45bb8e1a2e70b557f5365b2950c640a54467938f..30b28c215df9022a1dff11164bf722cf63eca6d4 100644
 --- a/third_party/blink/renderer/core/loader/empty_clients.h
 +++ b/third_party/blink/renderer/core/loader/empty_clients.h
 @@ -343,6 +343,8 @@ class CORE_EXPORT EmptyLocalFrameClient : public LocalFrameClient {

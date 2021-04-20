@@ -22,7 +22,7 @@ However, the patch would need to be reviewed by the security team, as it
 does touch a security-sensitive class.
 
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 81f5ce2f14283115fe42911498156c06f78cb7ca..0f4f5f51d6d19851322b40e2591ca15bf23c2c0c 100644
+index 950f482e3ebb59fc461be93c2c6b007a5aab6a3d..905e469f32a0da286682a64a09a896e18d22e6bb 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -389,10 +389,18 @@ class RendererSandboxedProcessLauncherDelegate
@@ -66,7 +66,7 @@ index 81f5ce2f14283115fe42911498156c06f78cb7ca..0f4f5f51d6d19851322b40e2591ca15b
      if (cmd_line->HasSwitch(switches::kJavaScriptFlags)) {
        std::string js_flags =
            cmd_line->GetSwitchValueASCII(switches::kJavaScriptFlags);
-@@ -1848,9 +1864,15 @@ bool RenderProcessHostImpl::Init() {
+@@ -1840,9 +1856,15 @@ bool RenderProcessHostImpl::Init() {
      std::unique_ptr<SandboxedProcessLauncherDelegate> sandbox_delegate =
          std::make_unique<RendererSandboxedProcessLauncherDelegateWin>(
              cmd_line.get());
