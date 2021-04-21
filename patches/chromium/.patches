@@ -164,3 +164,4 @@ css_make_fetches_from_inline_css_use_the_document_s_url_as_referrer.patch
 cherry-pick-3c80bb2a594f.patch
 cherry-pick-6a6361c9f31c.patch
 cherry-pick-012e9baf46c9.patch
+cherry-pick-8c3eb9d1c409.patch
