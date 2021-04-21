@@ -3,9 +3,7 @@ From: deepak1556 <hop2deep@gmail.com>
 Date: Mon, 3 Jun 2019 14:20:05 -0700
 Subject: frame_host_manager.patch
 
-Allows embedder to intercept site instances chosen by chromium
-and respond with custom instance. Also allows for us to at-runtime
-enable or disable this patch.
+Allows embedder to intercept site instances created by chromium.
 
 diff --git a/content/browser/renderer_host/render_frame_host_manager.cc b/content/browser/renderer_host/render_frame_host_manager.cc
 index af497e6916d72bfbd40fe9f131be6022482ef810..a5411ead9c465dab2814ebb25836d10e2e8cd494 100644
