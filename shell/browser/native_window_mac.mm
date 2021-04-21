@@ -565,6 +565,11 @@ bool NativeWindowMac::IsVisible() {
   return [window_ isVisible] && !occluded && !IsMinimized();
 }
 
+void NativeWindowMac::SetFullScreenTransitionState(
+    FullScreenTransitionState state) {
+  fullscreen_transition_state_ = state;
+}
+
 bool NativeWindowMac::IsEnabled() {
   return [window_ attachedSheet] == nil;
 }
@@ -629,13 +634,48 @@ bool NativeWindowMac::IsMinimized() {
   return [window_ isMiniaturized];
 }
 
+void NativeWindowMac::HandlePendingFullscreenTransitions() {
+  if (pending_transitions_.empty())
+    return;
+
+  bool next_transition = pending_transitions_.front();
+  pending_transitions_.pop();
+  SetFullScreen(next_transition);
+}
+
 void NativeWindowMac::SetFullScreen(bool fullscreen) {
+  // [NSWindow -toggleFullScreen] is an asynchronous operation, which means
+  // that it's possible to call it while a fullscreen transition is currently
+  // in process. This can create weird behavior (incl. phantom windows),
+  // so we want to schedule a transition for when the current one has completed.
+  if (fullscreen_transition_state() != FullScreenTransitionState::NONE) {
+    if (!pending_transitions_.empty()) {
+      bool last_pending = pending_transitions_.back();
+      // Only push new transitions if they're different than the last transition
+      // in the queue.
+      if (last_pending != fullscreen)
+        pending_transitions_.push(fullscreen);
+    } else {
+      pending_transitions_.push(fullscreen);
+    }
+    return;
+  }
+
   if (fullscreen == IsFullscreen())
     return;
 
   // Take note of the current window size
   if (IsNormal())
     original_frame_ = [window_ frame];
+
+  // This needs to be set here because it can be the case that
+  // SetFullScreen is called by a user before windowWillEnterFullScreen
+  // or windowWillExitFullScreen are invoked, and so a potential transition
+  // could be dropped.
+  fullscreen_transition_state_ = fullscreen
+                                     ? FullScreenTransitionState::ENTERING
+                                     : FullScreenTransitionState::EXITING;
+
   [window_ toggleFullScreenMode:nil];
 }
 
@@ -997,14 +1037,11 @@ void NativeWindowMac::SetKiosk(bool kiosk) {
         NSApplicationPresentationDisableHideApplication;
     [NSApp setPresentationOptions:options];
     is_kiosk_ = true;
-    was_fullscreen_ = IsFullscreen();
-    if (!was_fullscreen_)
-      SetFullScreen(true);
+    SetFullScreen(true);
   } else if (!kiosk && is_kiosk_) {
-    is_kiosk_ = false;
-    if (!was_fullscreen_)
-      SetFullScreen(false);
     [NSApp setPresentationOptions:kiosk_options_];
+    is_kiosk_ = false;
+    SetFullScreen(false);
   }
 }
 
@@ -1572,7 +1609,6 @@ void NativeWindowMac::NotifyWindowEnterFullScreen() {
 
 void NativeWindowMac::NotifyWindowLeaveFullScreen() {
   NativeWindow::NotifyWindowLeaveFullScreen();
-  exiting_fullscreen_ = false;
 }
 
 void NativeWindowMac::NotifyWindowWillEnterFullScreen() {
@@ -1591,7 +1627,7 @@ void NativeWindowMac::NotifyWindowWillLeaveFullScreen() {
     InternalSetStandardButtonsVisibility(false);
     [[window_ contentView] addSubview:buttons_view_];
   }
-  exiting_fullscreen_ = true;
+
   RedrawTrafficLights();
 }
 

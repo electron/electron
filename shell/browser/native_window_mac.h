@@ -8,6 +8,7 @@
 #import <Cocoa/Cocoa.h>
 
 #include <memory>
+#include <queue>
 #include <string>
 #include <tuple>
 #include <vector>
@@ -165,6 +166,12 @@ class NativeWindowMac : public NativeWindow,
   void SetCollectionBehavior(bool on, NSUInteger flag);
   void SetWindowLevel(int level);
 
+  enum class FullScreenTransitionState { ENTERING, EXITING, NONE };
+
+  // Handle fullscreen transitions.
+  void SetFullScreenTransitionState(FullScreenTransitionState state);
+  void HandlePendingFullscreenTransitions();
+
   enum class VisualEffectState {
     kFollowWindow,
     kActive,
@@ -183,7 +190,6 @@ class NativeWindowMac : public NativeWindow,
   ElectronTouchBar* touch_bar() const { return touch_bar_.get(); }
   bool zoom_to_page_width() const { return zoom_to_page_width_; }
   bool always_simple_fullscreen() const { return always_simple_fullscreen_; }
-  bool exiting_fullscreen() const { return exiting_fullscreen_; }
 
  protected:
   // views::WidgetDelegate:
@@ -225,11 +231,16 @@ class NativeWindowMac : public NativeWindow,
   std::unique_ptr<RootViewMac> root_view_;
 
   bool is_kiosk_ = false;
-  bool was_fullscreen_ = false;
   bool zoom_to_page_width_ = false;
   bool resizable_ = true;
-  bool exiting_fullscreen_ = false;
   base::Optional<gfx::Point> traffic_light_position_;
+
+  std::queue<bool> pending_transitions_;
+  FullScreenTransitionState fullscreen_transition_state() const {
+    return fullscreen_transition_state_;
+  }
+  FullScreenTransitionState fullscreen_transition_state_ =
+      FullScreenTransitionState::NONE;
 
   NSInteger attention_request_id_ = 0;  // identifier from requestUserAttention
 
