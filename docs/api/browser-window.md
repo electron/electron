@@ -757,6 +757,10 @@ A `Boolean` property that determines whether the window is in simple (pre-Lion) 
 
 A `Boolean` property that determines whether the window is in fullscreen mode.
 
+#### `win.focusable` _Windows_ _macOS_
+
+A `Boolean` property that determines whether the window is focusable.
+
 #### `win.visibleOnAllWorkspaces`
 
 A `Boolean` property that determines whether the window is visible on all workspaces.
@@ -1674,6 +1678,10 @@ older Windows versions behave as if `WDA_MONITOR` is applied capturing a black w
 Changes whether the window can be focused.
 
 On macOS it does not remove the focus from the window.
+
+#### `win.isFocusable()` _macOS_ _Windows_
+
+Returns whether the window can be focused.
 
 #### `win.setParentWindow(parent)`
 

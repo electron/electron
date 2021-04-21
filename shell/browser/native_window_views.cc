@@ -1087,6 +1087,17 @@ void NativeWindowViews::SetFocusable(bool focusable) {
 #endif
 }
 
+bool NativeWindowViews::IsFocusable() {
+  bool can_activate = widget()->widget_delegate()->CanActivate();
+#if defined(OS_WIN)
+  LONG ex_style = ::GetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE);
+  bool no_activate = ex_style & WS_EX_NOACTIVATE;
+  return !no_activate && can_activate;
+#else
+  return can_activate;
+#endif
+}
+
 void NativeWindowViews::SetMenu(ElectronMenuModel* menu_model) {
 #if defined(USE_X11)
   if (!features::IsUsingOzonePlatform()) {
