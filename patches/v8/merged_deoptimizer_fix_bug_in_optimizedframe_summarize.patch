@@ -1,0 +1,209 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Georg Neis <neis@chromium.org>
+Date: Tue, 23 Mar 2021 17:37:21 +0100
+Subject: Merged: [deoptimizer] Fix bug in OptimizedFrame::Summarize
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Revision: 3353a7d0b017146d543434be4036a81aaf7d25ae
+
+BUG=chromium:1182647
+NOTRY=true
+NOPRESUBMIT=true
+NOTREECHECKS=true
+R=​bmeurer@chromium.org
+
+(cherry picked from commit c0c96b768a7d3463b11403874549e6496529740d)
+
+Change-Id: I86abd6a3f34169be5f99aa9f54bb7bb3706fa85a
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2780300
+Reviewed-by: Georg Neis <neis@chromium.org>
+Reviewed-by: Benedikt Meurer <bmeurer@chromium.org>
+Commit-Queue: Georg Neis <neis@chromium.org>
+Cr-Original-Commit-Position: refs/branch-heads/8.9@{#49}
+Cr-Original-Branched-From: 16b9bbbd581c25391981aa03180b76aa60463a3e-refs/heads/8.9.255@{#1}
+Cr-Original-Branched-From: d16a2a688498bd1c3e6a49edb25d8c4ca56232dc-refs/heads/master@{#72039}
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2794427
+Reviewed-by: Victor-Gabriel Savu <vsavu@google.com>
+Commit-Queue: Artem Sumaneev <asumaneev@google.com>
+Cr-Commit-Position: refs/branch-heads/8.6@{#72}
+Cr-Branched-From: a64aed2333abf49e494d2a5ce24bbd14fff19f60-refs/heads/8.6.395@{#1}
+Cr-Branched-From: a626bc036236c9bf92ac7b87dc40c9e538b087e3-refs/heads/master@{#69472}
+
+diff --git a/src/deoptimizer/deoptimizer.cc b/src/deoptimizer/deoptimizer.cc
+index a225bac2b73f3fe61e611aaca19c129374b64a44..f90f9f6cbc87db38082724342791b172fe8d4321 100644
+--- a/src/deoptimizer/deoptimizer.cc
++++ b/src/deoptimizer/deoptimizer.cc
+@@ -3549,7 +3549,8 @@ Address TranslatedState::DecompressIfNeeded(intptr_t value) {
+   }
+ }
+ 
+-TranslatedState::TranslatedState(const JavaScriptFrame* frame) {
++TranslatedState::TranslatedState(const JavaScriptFrame* frame)
++    : purpose_(kFrameInspection) {
+   int deopt_index = Safepoint::kNoDeoptimizationIndex;
+   DeoptimizationData data =
+       static_cast<const OptimizedFrame*>(frame)->GetDeoptimizationData(
+@@ -3946,25 +3947,63 @@ void TranslatedState::EnsureCapturedObjectAllocatedAt(
+     }
+ 
+     default:
+-      CHECK(map->IsJSObjectMap());
+       EnsureJSObjectAllocated(slot, map);
+-      TranslatedValue* properties_slot = &(frame->values_[value_index]);
+-      value_index++;
++      int remaining_children_count = slot->GetChildrenCount() - 1;
++
++      TranslatedValue* properties_slot = frame->ValueAt(value_index);
++      value_index++, remaining_children_count--;
+       if (properties_slot->kind() == TranslatedValue::kCapturedObject) {
+-        // If we are materializing the property array, make sure we put
+-        // the mutable heap numbers at the right places.
++        // We are materializing the property array, so make sure we put the
++        // mutable heap numbers at the right places.
+         EnsurePropertiesAllocatedAndMarked(properties_slot, map);
+         EnsureChildrenAllocated(properties_slot->GetChildrenCount(), frame,
+                                 &value_index, worklist);
++      } else {
++        CHECK_EQ(properties_slot->kind(), TranslatedValue::kTagged);
+       }
+-      // Make sure all the remaining children (after the map and properties) are
+-      // allocated.
+-      return EnsureChildrenAllocated(slot->GetChildrenCount() - 2, frame,
++
++      TranslatedValue* elements_slot = frame->ValueAt(value_index);
++      value_index++, remaining_children_count--;
++      if (elements_slot->kind() == TranslatedValue::kCapturedObject ||
++          !map->IsJSArrayMap()) {
++        // Handle this case with the other remaining children below.
++        value_index--, remaining_children_count++;
++      } else {
++        CHECK_EQ(elements_slot->kind(), TranslatedValue::kTagged);
++        elements_slot->GetValue();
++        if (purpose_ == kFrameInspection) {
++          // We are materializing a JSArray for the purpose of frame inspection.
++          // If we were to construct it with the above elements value then an
++          // actual deopt later on might create another JSArray instance with
++          // the same elements store. That would violate the key assumption
++          // behind left-trimming.
++          elements_slot->ReplaceElementsArrayWithCopy();
++        }
++      }
++
++      // Make sure all the remaining children (after the map, properties store,
++      // and possibly elements store) are allocated.
++      return EnsureChildrenAllocated(remaining_children_count, frame,
+                                      &value_index, worklist);
+   }
+   UNREACHABLE();
+ }
+ 
++void TranslatedValue::ReplaceElementsArrayWithCopy() {
++  DCHECK_EQ(kind(), TranslatedValue::kTagged);
++  DCHECK_EQ(materialization_state(), TranslatedValue::kFinished);
++  auto elements = Handle<FixedArrayBase>::cast(GetValue());
++  DCHECK(elements->IsFixedArray() || elements->IsFixedDoubleArray());
++  if (elements->IsFixedDoubleArray()) {
++    DCHECK(!elements->IsCowArray());
++    set_storage(isolate()->factory()->CopyFixedDoubleArray(
++        Handle<FixedDoubleArray>::cast(elements)));
++  } else if (!elements->IsCowArray()) {
++    set_storage(isolate()->factory()->CopyFixedArray(
++        Handle<FixedArray>::cast(elements)));
++  }
++}
++
+ void TranslatedState::EnsureChildrenAllocated(int count, TranslatedFrame* frame,
+                                               int* value_index,
+                                               std::stack<int>* worklist) {
+@@ -4029,6 +4068,7 @@ Handle<ByteArray> TranslatedState::AllocateStorageFor(TranslatedValue* slot) {
+ 
+ void TranslatedState::EnsureJSObjectAllocated(TranslatedValue* slot,
+                                               Handle<Map> map) {
++  CHECK(map->IsJSObjectMap());
+   CHECK_EQ(map->instance_size(), slot->GetChildrenCount() * kTaggedSize);
+ 
+   Handle<ByteArray> object_storage = AllocateStorageFor(slot);
+diff --git a/src/deoptimizer/deoptimizer.h b/src/deoptimizer/deoptimizer.h
+index 1adc3f1eeb856ca5cee9acc4723e9003d069fe3a..3050819431eed8a04b9371c1008c44b700f26404 100644
+--- a/src/deoptimizer/deoptimizer.h
++++ b/src/deoptimizer/deoptimizer.h
+@@ -121,6 +121,8 @@ class TranslatedValue {
+     return storage_;
+   }
+ 
++  void ReplaceElementsArrayWithCopy();
++
+   Kind kind_;
+   MaterializationState materialization_state_ = kUninitialized;
+   TranslatedState* container_;  // This is only needed for materialization of
+@@ -317,7 +319,15 @@ class TranslatedFrame {
+ 
+ class TranslatedState {
+  public:
+-  TranslatedState() = default;
++  // There are two constructors, each for a different purpose:
++
++  // The default constructor is for the purpose of deoptimizing an optimized
++  // frame (replacing it with one or several unoptimized frames). It is used by
++  // the Deoptimizer.
++  TranslatedState() : purpose_(kDeoptimization) {}
++
++  // This constructor is for the purpose of merely inspecting an optimized
++  // frame. It is used by stack trace generation and various debugging features.
+   explicit TranslatedState(const JavaScriptFrame* frame);
+ 
+   void Prepare(Address stack_frame_pointer);
+@@ -352,6 +362,12 @@ class TranslatedState {
+  private:
+   friend TranslatedValue;
+ 
++  // See the description of the constructors for an explanation of the two
++  // purposes. The only actual difference is that in the kFrameInspection case
++  // extra work is needed to not violate assumptions made by left-trimming.  For
++  // details, see the code around ReplaceElementsArrayWithCopy.
++  enum Purpose { kDeoptimization, kFrameInspection };
++
+   TranslatedFrame CreateNextTranslatedFrame(TranslationIterator* iterator,
+                                             FixedArray literal_array,
+                                             Address fp, FILE* trace_file);
+@@ -408,6 +424,7 @@ class TranslatedState {
+   static Float32 GetFloatSlot(Address fp, int slot_index);
+   static Float64 GetDoubleSlot(Address fp, int slot_index);
+ 
++  Purpose const purpose_;
+   std::vector<TranslatedFrame> frames_;
+   Isolate* isolate_ = nullptr;
+   Address stack_frame_pointer_ = kNullAddress;
+diff --git a/test/mjsunit/compiler/regress-1182647.js b/test/mjsunit/compiler/regress-1182647.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..e0582f7cbfb4f1e5d081443374248c1b5eb30a2e
+--- /dev/null
++++ b/test/mjsunit/compiler/regress-1182647.js
+@@ -0,0 +1,25 @@
++// Copyright 2021 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax --verify-heap
++
++function foo() {
++  const arr = Array(1000);
++
++  function bar() {
++    try { ({a: p4nda, b: arr.length}); } catch(e) {}
++  }
++
++  for (var i = 0; i < 25; i++) bar();
++
++  /p4nda/.test({});  // Deopt here.
++
++  arr.shift();
++}
++
++%PrepareFunctionForOptimization(foo);
++foo();
++foo();
++%OptimizeFunctionOnNextCall(foo);
++foo();
