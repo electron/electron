@@ -1,0 +1,48 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Palak Agarwal <agpalak@chromium.org>
+Date: Wed, 31 Mar 2021 16:10:26 +0000
+Subject: WebContents bug fix: Device capture only if web contents is valid
+
+(cherry picked from commit a462be0883486431086c5f07cdafbd3607005a59)
+
+(cherry picked from commit e6f11cafde08981e47ba77e71abf99a271f7a042)
+
+Bug: 1181228
+Change-Id: I0a4c9718a3c0ccb52cefa4565b9787e6912554c9
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2752235
+Reviewed-by: Guido Urdaneta <guidou@chromium.org>
+Commit-Queue: Palak Agarwal <agpalak@chromium.org>
+Cr-Original-Original-Commit-Position: refs/heads/master@{#863828}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2782122
+Auto-Submit: Guido Urdaneta <guidou@chromium.org>
+Commit-Queue: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Original-Commit-Position: refs/branch-heads/4389@{#1586}
+Cr-Original-Branched-From: 9251c5db2b6d5a59fe4eac7aafa5fed37c139bb7-refs/heads/master@{#843830}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2795101
+Reviewed-by: Victor-Gabriel Savu <vsavu@google.com>
+Reviewed-by: Artem Sumaneev <asumaneev@google.com>
+Auto-Submit: Artem Sumaneev <asumaneev@google.com>
+Commit-Queue: Guido Urdaneta <guidou@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4240@{#1585}
+Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
+
+diff --git a/chrome/browser/media/webrtc/desktop_capture_access_handler.cc b/chrome/browser/media/webrtc/desktop_capture_access_handler.cc
+index e561093253bc0bd49797991a7610393ac91a809e..c3fa03081b2fde6b0e2932107863ddedc7cf49ae 100644
+--- a/chrome/browser/media/webrtc/desktop_capture_access_handler.cc
++++ b/chrome/browser/media/webrtc/desktop_capture_access_handler.cc
+@@ -249,6 +249,14 @@ void DesktopCaptureAccessHandler::ProcessScreenCaptureAccessRequest(
+       const bool display_notification =
+           display_notification_ && ShouldDisplayNotification(extension);
+ 
++      if (!content::WebContents::FromRenderFrameHost(
++              content::RenderFrameHost::FromID(request.render_process_id,
++                                               request.render_frame_id))) {
++        std::move(callback).Run(
++            devices, blink::mojom::MediaStreamRequestResult::INVALID_STATE,
++            std::move(ui));
++        return;
++      }
+       ui = GetDevicesForDesktopCapture(
+           web_contents, &devices, screen_id,
+           blink::mojom::MediaStreamType::GUM_DESKTOP_VIDEO_CAPTURE,
