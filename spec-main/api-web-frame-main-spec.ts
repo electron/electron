@@ -6,6 +6,7 @@ import { BrowserWindow, WebFrameMain, webFrameMain, ipcMain } from 'electron/mai
 import { closeAllWindows } from './window-helpers';
 import { emittedOnce, emittedNTimes } from './events-helpers';
 import { AddressInfo } from 'net';
+import { waitForTrue } from './spec-helpers';
 
 describe('webFrameMain module', () => {
   const fixtures = path.resolve(__dirname, '..', 'spec-main', 'fixtures');
@@ -143,12 +144,9 @@ describe('webFrameMain module', () => {
 
       expect(webFrame.visibilityState).to.equal('visible');
       w.hide();
-
-      // Wait for visibility to propagate. If this ends up being flaky, we can
-      // look into binding WebContentsObserver::OnVisibilityChanged.
-      await new Promise(resolve => setTimeout(resolve, 10));
-
-      expect(webFrame.visibilityState).to.equal('hidden');
+      await expect(
+        waitForTrue(() => webFrame.visibilityState === 'hidden')
+      ).to.eventually.be.fulfilled();
     });
   });
 

@@ -86,3 +86,49 @@ export async function startRemoteControlApp () {
   defer(() => { appProcess.kill('SIGINT'); });
   return new RemoteControlApp(appProcess, port);
 }
+
+export function waitForTrue (
+  callback: () => boolean,
+  opts: { rate?: number, timeout?: number } = {}
+) {
+  const { rate = 10, timeout = 10000 } = opts;
+  return new Promise<void>((resolve, reject) => {
+    let intervalId: NodeJS.Timeout | undefined; // eslint-disable-line prefer-const
+    let timeoutId: NodeJS.Timeout | undefined;
+
+    const cleanup = () => {
+      if (intervalId) clearInterval(intervalId);
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+
+    const check = () => {
+      let result;
+
+      try {
+        result = callback();
+      } catch (e) {
+        cleanup();
+        reject(e);
+        return;
+      }
+
+      if (result === true) {
+        cleanup();
+        resolve();
+      }
+      return result;
+    };
+
+    if (check()) {
+      return;
+    }
+
+    intervalId = setInterval(check, rate);
+
+    timeoutId = setTimeout(() => {
+      timeoutId = undefined;
+      cleanup();
+      reject(new Error(`waitForTrue timed out after ${timeout}ms`));
+    }, timeout);
+  });
+}
