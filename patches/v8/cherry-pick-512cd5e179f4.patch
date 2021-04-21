@@ -1,7 +1,8 @@
-From 512cd5e179f455f2c0c73c115cb5271951458f1e Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Georg Neis <neis@chromium.org>
 Date: Wed, 14 Apr 2021 13:19:44 +0200
-Subject: [PATCH] Merged: [compiler] Fix bug in RepresentationChanger::GetWord32RepresentationFor
+Subject: Merged: [compiler] Fix bug in
+ RepresentationChanger::GetWord32RepresentationFor
 
 Revision: fd29e246f65a7cee130e72cd10f618f3b82af232
 
@@ -18,13 +19,12 @@ Reviewed-by: Nico Hartmann <nicohartmann@chromium.org>
 Cr-Commit-Position: refs/branch-heads/9.0@{#34}
 Cr-Branched-From: bd0108b4c88e0d6f2350cb79b5f363fbd02f3eb7-refs/heads/9.0.257@{#1}
 Cr-Branched-From: 349bcc6a075411f1a7ce2d866c3dfeefc2efa39d-refs/heads/master@{#73001}
----
 
 diff --git a/src/compiler/representation-change.cc b/src/compiler/representation-change.cc
-index 64b274c..3d937ad 100644
+index 64b274cdccddf4db63fdf5d80c0527405906ee75..3d937ada1e7e505bfc5cf2307ad4a8a5efef5a19 100644
 --- a/src/compiler/representation-change.cc
 +++ b/src/compiler/representation-change.cc
-@@ -949,10 +949,10 @@
+@@ -949,10 +949,10 @@ Node* RepresentationChanger::GetWord32RepresentationFor(
      return node;
    } else if (output_rep == MachineRepresentation::kWord64) {
      if (output_type.Is(Type::Signed32()) ||
@@ -41,7 +41,7 @@ index 64b274c..3d937ad 100644
                 use_info.type_check() == TypeCheckKind::kSigned32 ||
 diff --git a/test/mjsunit/compiler/regress-1195777.js b/test/mjsunit/compiler/regress-1195777.js
 new file mode 100644
-index 0000000..b122f4f
+index 0000000000000000000000000000000000000000..b122f4f0169af573723d4318b9f1127c857c9e35
 --- /dev/null
 +++ b/test/mjsunit/compiler/regress-1195777.js
 @@ -0,0 +1,62 @@
