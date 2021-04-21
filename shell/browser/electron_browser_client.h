@@ -85,7 +85,6 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   void SetUserAgent(const std::string& user_agent);
 
   content::SerialDelegate* GetSerialDelegate() override;
-  bool CanUseCustomSiteInstance() override;
 
   content::BluetoothDelegate* GetBluetoothDelegate() override;
 

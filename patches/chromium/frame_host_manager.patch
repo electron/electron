@@ -107,7 +107,7 @@ index 304de734c34efd3c4f6ab561d66ecf7d655387f8..6817bfd0ea8934b2b1a1d62415b5475d
      READY_TO_COMMIT,
  
 diff --git a/content/browser/renderer_host/render_frame_host_manager.cc b/content/browser/renderer_host/render_frame_host_manager.cc
-index af497e6916d72bfbd40fe9f131be6022482ef810..74f9fe3a0a0de20d48bc8b2d397109381ea66481 100644
+index af497e6916d72bfbd40fe9f131be6022482ef810..6b241fad6ef19250ef2fe47403c5edcb402c70ca 100644
 --- a/content/browser/renderer_host/render_frame_host_manager.cc
 +++ b/content/browser/renderer_host/render_frame_host_manager.cc
 @@ -2859,6 +2859,16 @@ scoped_refptr<SiteInstance>
@@ -127,71 +127,7 @@ index af497e6916d72bfbd40fe9f131be6022482ef810..74f9fe3a0a0de20d48bc8b2d39710938
    SiteInstance* current_site_instance = render_frame_host_->GetSiteInstance();
  
    // All children of MHTML documents must be MHTML documents. They all live in
-@@ -2886,10 +2896,59 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
-   //
-   // TODO(clamy): We should also consider as a candidate SiteInstance the
-   // speculative SiteInstance that was computed on redirects.
--  SiteInstanceImpl* candidate_site_instance =
--      speculative_render_frame_host_
--          ? speculative_render_frame_host_->GetSiteInstance()
--          : nullptr;
-+  if (!GetContentClient()->browser()->CanUseCustomSiteInstance() &&
-+      frame_tree_node_->IsMainFrame()) {
-+    BrowserContext* browser_context = GetNavigationController().GetBrowserContext();
-+    bool has_navigation_started = request->state() != NavigationRequest::NOT_STARTED;
-+    bool has_response_started =
-+        (request->state() >= NavigationRequest::WILL_PROCESS_RESPONSE &&
-+         !speculative_render_frame_host_);
-+    // Gives user a chance to choose a custom site instance.
-+    SiteInstance* affinity_site_instance = nullptr;
-+    scoped_refptr<SiteInstance> overriden_site_instance;
-+    bool should_register_site_instance = false;
-+    ContentBrowserClient::SiteInstanceForNavigationType siteInstanceType =
-+        GetContentClient()->browser()->ShouldOverrideSiteInstanceForNavigation(
-+            current_frame_host(), speculative_frame_host(), browser_context,
-+            request->common_params().url, has_navigation_started,
-+            has_response_started, &affinity_site_instance);
-+    switch (siteInstanceType) {
-+      case ContentBrowserClient::SiteInstanceForNavigationType::
-+          FORCE_CANDIDATE_OR_NEW:
-+        overriden_site_instance =
-+            candidate_site_instance
-+                ? candidate_site_instance
-+                : current_site_instance->CreateRelatedSiteInstance(
-+                                            request->common_params().url);
-+        should_register_site_instance = true;
-+        break;
-+      case ContentBrowserClient::SiteInstanceForNavigationType::FORCE_NEW:
-+        overriden_site_instance = current_site_instance->CreateRelatedSiteInstance(
-+            request->common_params().url);
-+        should_register_site_instance = true;
-+        break;
-+      case ContentBrowserClient::SiteInstanceForNavigationType::FORCE_CURRENT:
-+        overriden_site_instance = render_frame_host_->GetSiteInstance();
-+        break;
-+      case ContentBrowserClient::SiteInstanceForNavigationType::FORCE_AFFINITY:
-+        DCHECK(affinity_site_instance);
-+        overriden_site_instance =
-+            scoped_refptr<SiteInstance>(affinity_site_instance);
-+        break;
-+      case ContentBrowserClient::SiteInstanceForNavigationType::ASK_CHROMIUM:
-+        DCHECK(!affinity_site_instance);
-+        break;
-+      default:
-+        break;
-+    }
-+    if (overriden_site_instance) {
-+      if (should_register_site_instance) {
-+        GetContentClient()->browser()->RegisterPendingSiteInstance(
-+            render_frame_host_.get(), overriden_site_instance.get());
-+      }
-+      return overriden_site_instance;
-+    }
-+  }
- 
-   // Account for renderer-initiated reload as well.
-   // Needed as a workaround for https://crbug.com/1045524, remove it when it is
-@@ -2922,6 +2981,9 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2922,6 +2932,9 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
      request->ResetStateForSiteInstanceChange();
    }
  
@@ -229,17 +165,13 @@ index 40c314243ae5aa8540ce6528273ee2f0b7f0aca1..dce5cf6cde036d35c1b78b8fa7686176
    size_t GetRelatedActiveContentsCount() override;
    bool RequiresDedicatedProcess() override;
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 0d2eba4321ece3e9cfb2b16dead343dd51672714..45fe96cb01e4d6e2772f1304eb1c5ac274c4f713 100644
+index 0d2eba4321ece3e9cfb2b16dead343dd51672714..b99f24f36656ef91942e3299c3541f8c3ade6b3b 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -72,6 +72,21 @@
+@@ -72,6 +72,17 @@
  
  namespace content {
  
-+bool ContentBrowserClient::CanUseCustomSiteInstance() {
-+  return false;
-+}
-+
 +ContentBrowserClient::SiteInstanceForNavigationType ContentBrowserClient::ShouldOverrideSiteInstanceForNavigation(
 +    content::RenderFrameHost* current_rfh,
 +    content::RenderFrameHost* speculative_rfh,
@@ -255,10 +187,10 @@ index 0d2eba4321ece3e9cfb2b16dead343dd51672714..45fe96cb01e4d6e2772f1304eb1c5ac2
      const MainFunctionParams& parameters) {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 47befa844ca54f463b627864827aa670454dfed4..010a63958d094f65b0f1838888991ecd6679b086 100644
+index 47befa844ca54f463b627864827aa670454dfed4..49b104767ab99fde25ccb1de3404bcc18710b3d2 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -261,8 +261,45 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -261,8 +261,42 @@ class CONTENT_EXPORT ContentBrowserClient {
    using IsClipboardPasteContentAllowedCallback =
        base::OnceCallback<void(ClipboardPasteContentAllowed)>;
  
@@ -283,9 +215,6 @@ index 47befa844ca54f463b627864827aa670454dfed4..010a63958d094f65b0f1838888991ecd
 +
    virtual ~ContentBrowserClient() = default;
  
-+  // Electron: Allows disabling the below ShouldOverride patch
-+  virtual bool CanUseCustomSiteInstance();
-+
 +  // Electron: Allows overriding the SiteInstance when navigating.
 +  virtual SiteInstanceForNavigationType ShouldOverrideSiteInstanceForNavigation(
 +      content::RenderFrameHost* current_rfh,

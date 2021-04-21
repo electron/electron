@@ -1735,10 +1735,6 @@ ElectronBrowserClient::GetPluginMimeTypesWithExternalHandlers(
   return mime_types;
 }
 
-bool ElectronBrowserClient::CanUseCustomSiteInstance() {
-  return true;
-}
-
 content::SerialDelegate* ElectronBrowserClient::GetSerialDelegate() {
   if (!serial_delegate_)
     serial_delegate_ = std::make_unique<ElectronSerialDelegate>();
