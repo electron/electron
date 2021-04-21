@@ -8,27 +8,10 @@ and respond with custom instance. Also allows for us to at-runtime
 enable or disable this patch.
 
 diff --git a/content/browser/renderer_host/render_frame_host_manager.cc b/content/browser/renderer_host/render_frame_host_manager.cc
-index af497e6916d72bfbd40fe9f131be6022482ef810..6b241fad6ef19250ef2fe47403c5edcb402c70ca 100644
+index af497e6916d72bfbd40fe9f131be6022482ef810..a5411ead9c465dab2814ebb25836d10e2e8cd494 100644
 --- a/content/browser/renderer_host/render_frame_host_manager.cc
 +++ b/content/browser/renderer_host/render_frame_host_manager.cc
-@@ -2859,6 +2859,16 @@ scoped_refptr<SiteInstance>
- RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
-     NavigationRequest* request,
-     std::string* reason) {
-+  // Compute the SiteInstance that the navigation should use, which will be
-+  // either the current SiteInstance or a new one.
-+  //
-+  // TODO(clamy): We should also consider as a candidate SiteInstance the
-+  // speculative SiteInstance that was computed on redirects.
-+  SiteInstanceImpl* candidate_site_instance =
-+      speculative_render_frame_host_
-+          ? speculative_render_frame_host_->GetSiteInstance()
-+          : nullptr;
-+
-   SiteInstance* current_site_instance = render_frame_host_->GetSiteInstance();
- 
-   // All children of MHTML documents must be MHTML documents. They all live in
-@@ -2922,6 +2932,9 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
+@@ -2922,6 +2922,9 @@ RenderFrameHostManager::GetSiteInstanceForNavigationRequest(
      request->ResetStateForSiteInstanceChange();
    }
  
