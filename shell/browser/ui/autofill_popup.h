@@ -30,8 +30,8 @@ class AutofillPopup : public views::ViewObserver {
                   const gfx::RectF& bounds);
   void Hide();
 
-  void SetItems(const std::vector<base::string16>& values,
-                const std::vector<base::string16>& labels);
+  void SetItems(const std::vector<std::u16string>& values,
+                const std::vector<std::u16string>& labels);
   void UpdatePopupBounds();
 
   gfx::Rect popup_bounds_in_view();
@@ -53,8 +53,8 @@ class AutofillPopup : public views::ViewObserver {
   ui::NativeTheme::ColorId GetBackgroundColorIDForRow(int index) const;
 
   int GetLineCount();
-  base::string16 GetValueAt(int i);
-  base::string16 GetLabelAt(int i);
+  std::u16string GetValueAt(int i);
+  std::u16string GetLabelAt(int i);
   int LineFromY(int y) const;
 
   int selected_index_;
@@ -66,8 +66,8 @@ class AutofillPopup : public views::ViewObserver {
   gfx::Rect element_bounds_;
 
   // Datalist suggestions
-  std::vector<base::string16> values_;
-  std::vector<base::string16> labels_;
+  std::vector<std::u16string> values_;
+  std::vector<std::u16string> labels_;
 
   // Font lists for the suggestions
   gfx::FontList smaller_font_list_;

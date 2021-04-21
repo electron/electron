@@ -332,6 +332,10 @@ bool NativeWindow::IsDocumentEdited() {
 
 void NativeWindow::SetFocusable(bool focusable) {}
 
+bool NativeWindow::IsFocusable() {
+  return false;
+}
+
 void NativeWindow::SetMenu(ElectronMenuModel* menu) {}
 
 void NativeWindow::SetParentWindow(NativeWindow* parent) {
@@ -608,7 +612,7 @@ const views::Widget* NativeWindow::GetWidget() const {
   return widget();
 }
 
-base::string16 NativeWindow::GetAccessibleWindowTitle() const {
+std::u16string NativeWindow::GetAccessibleWindowTitle() const {
   if (accessible_title_.empty()) {
     return views::WidgetDelegate::GetAccessibleWindowTitle();
   }

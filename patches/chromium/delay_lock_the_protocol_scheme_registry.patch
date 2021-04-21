@@ -19,10 +19,10 @@ https://chromium-review.googlesource.com/c/chromium/src/+/1901591, we should try
 re-submitting the patch.
 
 diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
-index fc2b90e1f7230049e0e0bb5ff753f1fab0630bd3..33ab8ce6fc56ec6fccaa4588b16c7d37c0e2350c 100644
+index 81e48e33cad43875634d4ab6a5625c16d4c37891..230f9348128d2630e80f1c0f346be23b15446dd7 100644
 --- a/content/app/content_main_runner_impl.cc
 +++ b/content/app/content_main_runner_impl.cc
-@@ -651,7 +651,7 @@ int ContentMainRunnerImpl::Initialize(const ContentMainParams& params) {
+@@ -738,7 +738,7 @@ int ContentMainRunnerImpl::Initialize(const ContentMainParams& params) {
    }
  #endif
  
@@ -68,12 +68,12 @@ index 3038f9d25798f36811b6398f8cc0e7d83ecc41b0..68189c36c47ef85b345b0ccc40c456f8
  // Re-initializes schemes for tests.
  CONTENT_EXPORT void ReRegisterContentSchemesForTests();
 diff --git a/content/public/app/content_main_delegate.cc b/content/public/app/content_main_delegate.cc
-index e6379748886956da819523200aa35f8f95d523ee..46110a92ba9849112889f3e93c1dccbbd4911dda 100644
+index 17d256b852b6e7615cf4e52e4a2d7fa326a4df44..bd0512902df4484e8714cda9ab1352b1c672a1cd 100644
 --- a/content/public/app/content_main_delegate.cc
 +++ b/content/public/app/content_main_delegate.cc
-@@ -36,6 +36,10 @@ int ContentMainDelegate::TerminateForFatalInitializationError() {
-   return 0;
+@@ -42,6 +42,10 @@ bool ContentMainDelegate::ShouldHandleConsoleControlEvents() {
  }
+ #endif
  
 +bool ContentMainDelegate::ShouldLockSchemeRegistry() {
 +  return true;
@@ -83,7 +83,7 @@ index e6379748886956da819523200aa35f8f95d523ee..46110a92ba9849112889f3e93c1dccbb
    return true;
  }
 diff --git a/content/public/app/content_main_delegate.h b/content/public/app/content_main_delegate.h
-index abb46995385fccddf8363296fb0253624a4111c7..715d0818c03cfa7e5b9877b3ab83d1488f2f040f 100644
+index 4162083f789b6cf5e29e52e4bd498c377cab1a20..d6010bc0e4dba560d10c3ed4729d77b5a60eddcd 100644
 --- a/content/public/app/content_main_delegate.h
 +++ b/content/public/app/content_main_delegate.h
 @@ -65,6 +65,20 @@ class CONTENT_EXPORT ContentMainDelegate {

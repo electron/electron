@@ -156,7 +156,7 @@ if ((globalThis.process || binding.process).argv.includes("--profile-electron-in
         setImmediate: false
       },
       optimization: {
-        minimize: true,
+        minimize: env.mode === 'production',
         minimizer: [
           new TerserPlugin({
             terserOptions: {

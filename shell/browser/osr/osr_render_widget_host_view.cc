@@ -144,8 +144,9 @@ class ElectronDelegatedFrameHostClient
     return *view_->GetBackgroundColor();
   }
 
-  void OnFrameTokenChanged(uint32_t frame_token) override {
-    view_->render_widget_host()->DidProcessFrame(frame_token);
+  void OnFrameTokenChanged(uint32_t frame_token,
+                           base::TimeTicks activation_time) override {
+    view_->render_widget_host()->DidProcessFrame(frame_token, activation_time);
   }
 
   float GetDeviceScaleFactor() const override {
@@ -455,7 +456,7 @@ void OffScreenRenderWidgetHostView::Destroy() {
   delete this;
 }
 
-void OffScreenRenderWidgetHostView::SetTooltipText(const base::string16&) {}
+void OffScreenRenderWidgetHostView::SetTooltipText(const std::u16string&) {}
 
 uint32_t OffScreenRenderWidgetHostView::GetCaptureSequenceNumber() const {
   return latest_capture_sequence_number_;
@@ -643,6 +644,13 @@ void OffScreenRenderWidgetHostView::SpeakSelection() {}
 
 void OffScreenRenderWidgetHostView::SetWindowFrameInScreen(
     const gfx::Rect& rect) {}
+
+void OffScreenRenderWidgetHostView::ShowSharePicker(
+    const std::string& title,
+    const std::string& text,
+    const std::string& url,
+    const std::vector<std::string>& file_paths,
+    blink::mojom::ShareService::ShareCallback callback) {}
 
 bool OffScreenRenderWidgetHostView::UpdateNSViewAndDisplay() {
   return false;

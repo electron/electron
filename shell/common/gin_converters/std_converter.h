@@ -11,6 +11,10 @@
 
 #include "gin/converter.h"
 
+#if defined(OS_WIN)
+#include "base/strings/string_util_win.h"
+#endif
+
 namespace gin {
 
 // Make it possible to convert move-only types.
@@ -181,6 +185,30 @@ struct Converter<std::map<K, V>> {
     return obj;
   }
 };
+
+#if defined(OS_WIN)
+template <>
+struct Converter<std::wstring> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const std::wstring& val) {
+    return Converter<std::u16string>::ToV8(isolate, base::AsString16(val));
+  }
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     std::wstring* out) {
+    if (!val->IsString())
+      return false;
+
+    std::u16string str;
+    if (Converter<std::u16string>::FromV8(isolate, val, &str)) {
+      *out = base::AsWString(str);
+      return true;
+    } else {
+      return false;
+    }
+  }
+};
+#endif
 
 }  // namespace gin
 

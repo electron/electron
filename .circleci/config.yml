@@ -85,17 +85,12 @@ machine-linux-2xlarge: &machine-linux-2xlarge
 
 machine-mac: &machine-mac
   macos:
-    xcode: "12.2.0"
+    xcode: "12.4.0"
 
 machine-mac-large: &machine-mac-large
   resource_class: large
   macos:
-    xcode: "12.2.0"
-
-machine-mac-large-arm: &machine-mac-large-arm
-  resource_class: large
-  macos:
-    xcode: "12.2.0"
+    xcode: "12.4.0"
 
 machine-mac-arm64: &machine-mac-arm64
   resource_class: electronjs/macos-arm64
@@ -328,6 +323,7 @@ step-setup-goma-for-build: &step-setup-goma-for-build
       third_party/goma/goma_ctl.py ensure_start
       echo 'export GN_GOMA_FILE='`node -e "console.log(require('./src/utils/goma.js').gnFilePath)"` >> $BASH_ENV
       echo 'export LOCAL_GOMA_DIR='`node -e "console.log(require('./src/utils/goma.js').dir)"` >> $BASH_ENV
+      echo 'export GOMA_FALLBACK_ON_AUTH_FAILURE=true' >> $BASH_ENV
       cd ..
 
 step-restore-brew-cache: &step-restore-brew-cache
@@ -932,7 +928,7 @@ step-ninja-summary: &step-ninja-summary
     command: |
       set +e
       set +o pipefail
-      python depot_tools/post_build_ninja_summary.py -C src/out/Default
+      python depot_tools/post_build_ninja_summary.py -C src/out/Default || echo Ninja Summary Failed
 
 step-ninja-report: &step-ninja-report
   store_artifacts:
@@ -2118,7 +2114,7 @@ jobs:
           checkout: true
 
   osx-publish-arm64:
-    <<: *machine-mac-large-arm
+    <<: *machine-mac-large
     environment:
       <<: *env-mac-large-release
       <<: *env-release-build
@@ -2143,7 +2139,7 @@ jobs:
           checkout: false
 
   osx-publish-arm64-skip-checkout:
-    <<: *machine-mac-large-arm
+    <<: *machine-mac-large
     environment:
       <<: *env-mac-large-release
       <<: *env-release-build
@@ -2156,7 +2152,7 @@ jobs:
           checkout: false
 
   osx-testing-arm64:
-    <<: *machine-mac-large-arm
+    <<: *machine-mac-large
     environment:
       <<: *env-mac-large
       <<: *env-testing-build
@@ -2225,7 +2221,7 @@ jobs:
           checkout: true
 
   mas-publish-arm64:
-    <<: *machine-mac-large-arm
+    <<: *machine-mac-large
     environment:
       <<: *env-mac-large-release
       <<: *env-mas-apple-silicon
@@ -2250,7 +2246,7 @@ jobs:
           checkout: false
 
   mas-publish-arm64-skip-checkout:
-    <<: *machine-mac-large-arm
+    <<: *machine-mac-large
     environment:
       <<: *env-mac-large-release
       <<: *env-mas-apple-silicon
@@ -2263,7 +2259,7 @@ jobs:
           checkout: false
 
   mas-testing-arm64:
-    <<: *machine-mac-large-arm
+    <<: *machine-mac-large
     environment:
       <<: *env-mac-large
       <<: *env-testing-build
@@ -2325,7 +2321,7 @@ jobs:
     <<: *steps-tests
 
   linux-x64-testing-asan-tests:
-    <<: *machine-linux-medium
+    <<: *machine-linux-xlarge
     environment:
       <<: *env-linux-medium
       <<: *env-headless-testing

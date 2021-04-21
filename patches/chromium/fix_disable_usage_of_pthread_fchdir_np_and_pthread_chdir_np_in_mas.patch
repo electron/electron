@@ -7,10 +7,10 @@ Subject:
 Disable usage of pthread_fchdir_np and pthread_chdir_np in MAS builds.
 
 diff --git a/base/process/launch_mac.cc b/base/process/launch_mac.cc
-index d3396d984086717e69d99cff3107ab09506b2b02..237e310b12eb9814f7da9103cf61d69e423b2920 100644
+index a8713e15329431de6445e7935710d727872fd134..8874c300fd1b556a6eab5c6f20f00e5b2db9f3bc 100644
 --- a/base/process/launch_mac.cc
 +++ b/base/process/launch_mac.cc
-@@ -27,8 +27,10 @@ extern "C" {
+@@ -26,8 +26,10 @@ extern "C" {
  // descriptor. libpthread only exposes a syscall wrapper starting in
  // macOS 10.12, but the system call dates back to macOS 10.5. On older OSes,
  // the syscall is issued directly.
@@ -21,7 +21,7 @@ index d3396d984086717e69d99cff3107ab09506b2b02..237e310b12eb9814f7da9103cf61d69e
  
  int responsibility_spawnattrs_setdisclaim(posix_spawnattr_t attrs, int disclaim)
      API_AVAILABLE(macosx(10.14));
-@@ -96,21 +98,29 @@ class PosixSpawnFileActions {
+@@ -95,21 +97,29 @@ class PosixSpawnFileActions {
  };
  
  int ChangeCurrentThreadDirectory(const char* path) {
@@ -51,7 +51,7 @@ index d3396d984086717e69d99cff3107ab09506b2b02..237e310b12eb9814f7da9103cf61d69e
  }
  
  struct GetAppOutputOptions {
-@@ -230,11 +240,13 @@ Process LaunchProcess(const std::vector<std::string>& argv,
+@@ -229,11 +239,13 @@ Process LaunchProcess(const std::vector<std::string>& argv,
      file_actions.Inherit(STDERR_FILENO);
    }
  

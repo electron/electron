@@ -42,8 +42,7 @@ export function openGuestWindow ({ event, embedder, guest, referrer, disposition
   windowOpenArgs: WindowOpenArgs,
 }): BrowserWindow | undefined {
   const { url, frameName, features } = windowOpenArgs;
-  const isNativeWindowOpen = !!guest;
-  const { options: browserWindowOptions, additionalFeatures } = makeBrowserWindowOptions({
+  const { options: browserWindowOptions } = makeBrowserWindowOptions({
     embedder,
     features,
     overrideOptions: overrideBrowserWindowOptions
@@ -55,8 +54,8 @@ export function openGuestWindow ({ event, embedder, guest, referrer, disposition
     guest,
     browserWindowOptions,
     windowOpenArgs,
-    additionalFeatures,
     disposition,
+    postData,
     referrer
   });
   if (didCancelEvent) return;
@@ -74,11 +73,14 @@ export function openGuestWindow ({ event, embedder, guest, referrer, disposition
     webContents: guest,
     ...browserWindowOptions
   });
-  if (!isNativeWindowOpen) {
+  if (!guest) {
     // We should only call `loadURL` if the webContents was constructed by us in
     // the case of BrowserWindowProxy (non-sandboxed, nativeWindowOpen: false),
     // as navigating to the url when creating the window from an existing
     // webContents is not necessary (it will navigate there anyway).
+    // This can also happen if we enter this function from OpenURLFromTab, in
+    // which case the browser process is responsible for initiating navigation
+    // in the new window.
     window.loadURL(url, {
       httpReferrer: referrer,
       ...(postData && {
@@ -90,7 +92,7 @@ export function openGuestWindow ({ event, embedder, guest, referrer, disposition
 
   handleWindowLifecycleEvents({ embedder, frameName, guest: window });
 
-  embedder.emit('did-create-window', window, { url, frameName, options: browserWindowOptions, disposition, additionalFeatures, referrer, postData });
+  embedder.emit('did-create-window', window, { url, frameName, options: browserWindowOptions, disposition, referrer, postData });
 
   return window;
 }
@@ -131,13 +133,12 @@ const handleWindowLifecycleEvents = function ({ embedder, guest, frameName }: {
  * Deprecated in favor of `webContents.setWindowOpenHandler` and
  * `did-create-window` in 11.0.0. Will be removed in 12.0.0.
  */
-function emitDeprecatedNewWindowEvent ({ event, embedder, guest, windowOpenArgs, browserWindowOptions, additionalFeatures, disposition, referrer, postData }: {
+function emitDeprecatedNewWindowEvent ({ event, embedder, guest, windowOpenArgs, browserWindowOptions, disposition, referrer, postData }: {
   event: { sender: WebContents, defaultPrevented: boolean, newGuest?: BrowserWindow },
   embedder: WebContents,
   guest?: WebContents,
   windowOpenArgs: WindowOpenArgs,
   browserWindowOptions: BrowserWindowConstructorOptions,
-  additionalFeatures: string[]
   disposition: string,
   referrer: Referrer,
   postData?: PostData,
@@ -146,7 +147,7 @@ function emitDeprecatedNewWindowEvent ({ event, embedder, guest, windowOpenArgs,
   const isWebViewWithPopupsDisabled = embedder.getType() === 'webview' && embedder.getLastWebPreferences().disablePopups;
   const postBody = postData ? {
     data: postData,
-    headers: formatPostDataHeaders(postData as Electron.UploadRawData[])
+    ...parseContentTypeFormat(postData)
   } : null;
 
   embedder.emit(
@@ -159,7 +160,7 @@ function emitDeprecatedNewWindowEvent ({ event, embedder, guest, windowOpenArgs,
       ...browserWindowOptions,
       webContents: guest
     },
-    additionalFeatures,
+    [], // additionalFeatures
     referrer,
     postBody
   );
@@ -197,19 +198,17 @@ const securityWebPreferences: { [key: string]: boolean } = {
   enableWebSQL: false
 };
 
-function makeBrowserWindowOptions ({ embedder, features, overrideOptions, useDeprecatedBehaviorForBareValues = true, useDeprecatedBehaviorForOptionInheritance = true }: {
+function makeBrowserWindowOptions ({ embedder, features, overrideOptions, useDeprecatedBehaviorForOptionInheritance = true }: {
   embedder: WebContents,
   features: string,
   overrideOptions?: BrowserWindowConstructorOptions,
-  useDeprecatedBehaviorForBareValues?: boolean
   useDeprecatedBehaviorForOptionInheritance?: boolean
 }) {
-  const { options: parsedOptions, webPreferences: parsedWebPreferences, additionalFeatures } = parseFeatures(features, useDeprecatedBehaviorForBareValues);
+  const { options: parsedOptions, webPreferences: parsedWebPreferences } = parseFeatures(features);
 
   const deprecatedInheritedOptions = getDeprecatedInheritedOptions(embedder);
 
   return {
-    additionalFeatures,
     options: {
       ...(useDeprecatedBehaviorForOptionInheritance && deprecatedInheritedOptions),
       show: true,
@@ -229,7 +228,6 @@ export function makeWebPreferences ({ embedder, secureOverrideWebPreferences = {
   // sourced from the main process, as they override security defaults. If you
   // have unvetted prefs, use parsedWebPreferences.
   secureOverrideWebPreferences?: BrowserWindowConstructorOptions['webPreferences'],
-  useDeprecatedBehaviorForBareValues?: boolean
   useDeprecatedBehaviorForOptionInheritance?: boolean
 }) {
   const deprecatedInheritedOptions = getDeprecatedInheritedOptions(embedder);
@@ -275,22 +273,40 @@ function getDeprecatedInheritedOptions (embedder: WebContents) {
   return inheritableOptions;
 }
 
-function formatPostDataHeaders (postData: Electron.UploadRawData[]) {
+function formatPostDataHeaders (postData: PostData) {
   if (!postData) return;
 
-  let extraHeaders = 'content-type: application/x-www-form-urlencoded';
+  const { contentType, boundary } = parseContentTypeFormat(postData);
+  if (boundary != null) { return `content-type: ${contentType}; boundary=${boundary}`; }
 
-  if (postData.length > 0) {
-    const postDataFront = postData[0].bytes.toString();
-    const boundary = /^--.*[^-\r\n]/.exec(
-      postDataFront
-    );
-    if (boundary != null) {
-      extraHeaders = `content-type: multipart/form-data; boundary=${boundary[0].substr(
-        2
-      )}`;
+  return `content-type: ${contentType}`;
+}
+
+const MULTIPART_CONTENT_TYPE = 'multipart/form-data';
+const URL_ENCODED_CONTENT_TYPE = 'application/x-www-form-urlencoded';
+
+// Figure out appropriate headers for post data.
+export const parseContentTypeFormat = function (postData: Exclude<PostData, undefined>) {
+  if (postData.length) {
+    if (postData[0].type === 'rawData') {
+      // For multipart forms, the first element will start with the boundary
+      // notice, which looks something like `------WebKitFormBoundary12345678`
+      // Note, this regex would fail when submitting a urlencoded form with an
+      // input attribute of name="--theKey", but, uhh, don't do that?
+      const postDataFront = postData[0].bytes.toString();
+      const boundary = /^--.*[^-\r\n]/.exec(postDataFront);
+      if (boundary) {
+        return {
+          boundary: boundary[0].substr(2),
+          contentType: MULTIPART_CONTENT_TYPE
+        };
+      }
     }
   }
-
-  return extraHeaders;
-}
+  // Either the form submission didn't contain any inputs (the postData array
+  // was empty), or we couldn't find the boundary and thus we can assume this is
+  // a key=value style form.
+  return {
+    contentType: URL_ENCODED_CONTENT_TYPE
+  };
+};

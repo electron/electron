@@ -134,8 +134,7 @@ describe('node feature', () => {
     });
   });
 
-  // Running child app under ASan might receive SIGKILL because of OOM.
-  ifdescribe(features.isRunAsNodeEnabled() && !process.env.IS_ASAN)('Node.js cli flags', () => {
+  ifdescribe(features.isRunAsNodeEnabled())('Node.js cli flags', () => {
     let child: childProcess.ChildProcessWithoutNullStreams;
     let exitPromise: Promise<any[]>;
 
@@ -177,8 +176,7 @@ describe('node feature', () => {
     });
   });
 
-  // Running child app under ASan might receive SIGKILL because of OOM.
-  ifdescribe(features.isRunAsNodeEnabled() && !process.env.IS_ASAN)('inspector', () => {
+  ifdescribe(features.isRunAsNodeEnabled())('inspector', () => {
     let child: childProcess.ChildProcessWithoutNullStreams;
     let exitPromise: Promise<any[]>;
 
@@ -316,8 +314,7 @@ describe('node feature', () => {
     });
   });
 
-  // Running child app under ASan might receive SIGKILL because of OOM.
-  ifit(!process.env.IS_ASAN)('Can find a module using a package.json main field', () => {
+  it('Can find a module using a package.json main field', () => {
     const result = childProcess.spawnSync(process.execPath, [path.resolve(fixtures, 'api', 'electron-main-module', 'app.asar')]);
     expect(result.status).to.equal(0);
   });

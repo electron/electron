@@ -175,7 +175,7 @@ void Start(const std::string& submit_url,
   base::PathService::Get(DIR_USER_DATA, &user_data_dir);
   ::crash_reporter::InitializeCrashpadWithEmbeddedHandler(
       process_type.empty(), process_type,
-      base::UTF16ToUTF8(user_data_dir.value()), base::FilePath());
+      base::WideToUTF8(user_data_dir.value()), base::FilePath());
 #endif
 #endif
 }
@@ -190,8 +190,9 @@ namespace {
 
 #if defined(MAS_BUILD)
 void GetUploadedReports(
+    v8::Isolate* isolate,
     base::OnceCallback<void(v8::Local<v8::Value>)> callback) {
-  std::move(callback).Run(v8::Array::New(v8::Isolate::GetCurrent()));
+  std::move(callback).Run(v8::Array::New(isolate));
 }
 #else
 scoped_refptr<UploadList> CreateCrashUploadList() {

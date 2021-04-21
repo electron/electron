@@ -10,7 +10,7 @@ them should they exist.
 This will be upstreamed.
 
 diff --git a/printing/printing_context_mac.h b/printing/printing_context_mac.h
-index f63f7f2674d9562f57dea4f9c9f473aa595a0c5f..78a46dbea7ff31209748ef47d541725397d80616 100644
+index 00c78a7446480a15a4dfa360ccdc438eaf1215c1..5b0db3e754ac6c9e335365173800d2e1a5ca629d 100644
 --- a/printing/printing_context_mac.h
 +++ b/printing/printing_context_mac.h
 @@ -82,6 +82,10 @@ class PRINTING_EXPORT PrintingContextMac : public PrintingContext {
@@ -25,7 +25,7 @@ index f63f7f2674d9562f57dea4f9c9f473aa595a0c5f..78a46dbea7ff31209748ef47d5417253
    // Returns true if duplex mode is set.
    bool SetDuplexModeInPrintSettings(mojom::DuplexMode mode);
 diff --git a/printing/printing_context_mac.mm b/printing/printing_context_mac.mm
-index aa950b59390fdae9a5152affb7a7438cb78eb6f4..9b5307bda7b73cb502fe185be2a7c02e23a7722c 100644
+index ff9b3e08d49cb0daec83df36257729ff2636fe66..20031e220903f0882bef091ed048f47c4c5dc61c 100644
 --- a/printing/printing_context_mac.mm
 +++ b/printing/printing_context_mac.mm
 @@ -189,7 +189,8 @@ PMPaper MatchPaper(CFArrayRef paper_list,
@@ -100,7 +100,7 @@ index fe7fc797504dcc7097a3d79a2dab2c18de737048..20c63b1f657f2969850b31eaafdff7e5
    } else {
      // No need to bother, we don't know how many pages are available.
 diff --git a/ui/gtk/printing/print_dialog_gtk.cc b/ui/gtk/printing/print_dialog_gtk.cc
-index f2ed36e1258f4f3ef1bfce972e215e3d5d7335b6..5b38bf1369a68546f0aeea8948abba995c65e7f7 100644
+index 7363dc208232ab83532988d23a3847f2841dd84e..63ba2741e1e036a87921ddf5ccd805d3781b554c 100644
 --- a/ui/gtk/printing/print_dialog_gtk.cc
 +++ b/ui/gtk/printing/print_dialog_gtk.cc
 @@ -239,6 +239,24 @@ void PrintDialogGtk::UpdateSettings(

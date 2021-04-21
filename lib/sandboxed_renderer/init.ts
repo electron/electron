@@ -113,7 +113,7 @@ function preloadRequire (module: string) {
 
 // Process command line arguments.
 const { hasSwitch } = process._linkedBinding('electron_common_command_line');
-const { getWebPreference } = process._linkedBinding('electron_renderer_web_frame');
+const { mainFrame } = process._linkedBinding('electron_renderer_web_frame');
 
 // Similar to nodes --expose-internals flag, this exposes _linkedBinding so
 // that tests can call it to get access to some test only bindings
@@ -121,13 +121,13 @@ if (hasSwitch('unsafely-expose-electron-internals-for-testing')) {
   preloadProcess._linkedBinding = process._linkedBinding;
 }
 
-const contextIsolation = getWebPreference(window, 'contextIsolation');
-const webviewTag = getWebPreference(window, 'webviewTag');
-const isHiddenPage = getWebPreference(window, 'hiddenPage');
-const rendererProcessReuseEnabled = getWebPreference(window, 'disableElectronSiteInstanceOverrides');
+const contextIsolation = mainFrame.getWebPreference('contextIsolation');
+const webviewTag = mainFrame.getWebPreference('webviewTag');
+const isHiddenPage = mainFrame.getWebPreference('hiddenPage');
+const rendererProcessReuseEnabled = mainFrame.getWebPreference('disableElectronSiteInstanceOverrides');
 const usesNativeWindowOpen = true;
-const guestInstanceId = getWebPreference(window, 'guestInstanceId') || null;
-const openerId = getWebPreference(window, 'openerId') || null;
+const guestInstanceId = mainFrame.getWebPreference('guestInstanceId') || null;
+const openerId = mainFrame.getWebPreference('openerId') || null;
 
 switch (window.location.protocol) {
   case 'devtools:': {

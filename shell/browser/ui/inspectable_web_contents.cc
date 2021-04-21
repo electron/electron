@@ -41,6 +41,8 @@
 #include "services/network/public/cpp/simple_url_loader.h"
 #include "services/network/public/cpp/simple_url_loader_stream_consumer.h"
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
+#include "shell/browser/net/asar/asar_url_loader_factory.h"
+#include "shell/browser/protocol_registry.h"
 #include "shell/browser/ui/inspectable_web_contents_delegate.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
@@ -567,7 +569,7 @@ void InspectableWebContents::LoadCompleted() {
       prefs->GetString("currentDockState", &current_dock_state);
       base::RemoveChars(current_dock_state, "\"", &dock_state_);
     }
-    base::string16 javascript = base::UTF8ToUTF16(
+    std::u16string javascript = base::UTF8ToUTF16(
         "UI.DockController.instance().setDockSide(\"" + dock_state_ + "\");");
     GetDevToolsWebContents()->GetMainFrame()->ExecuteJavaScript(
         javascript, base::NullCallback());
@@ -608,9 +610,10 @@ void InspectableWebContents::AddDevToolsExtensionsToClient() {
         new base::DictionaryValue());
     extension_info->SetString("startPage", devtools_page_url.spec());
     extension_info->SetString("name", extension->name());
-    extension_info->SetBoolean("exposeExperimentalAPIs",
-                               extension->permissions_data()->HasAPIPermission(
-                                   extensions::APIPermission::kExperimental));
+    extension_info->SetBoolean(
+        "exposeExperimentalAPIs",
+        extension->permissions_data()->HasAPIPermission(
+            extensions::mojom::APIPermissionID::kExperimental));
     results.Append(std::move(extension_info));
   }
 
@@ -673,12 +676,20 @@ void InspectableWebContents::LoadNetworkResource(DispatchCallback callback,
   resource_request.site_for_cookies = net::SiteForCookies::FromUrl(gurl);
   resource_request.headers.AddHeadersFromString(headers);
 
+  auto* protocol_registry = ProtocolRegistry::FromBrowserContext(
+      GetDevToolsWebContents()->GetBrowserContext());
   NetworkResourceLoader::URLLoaderFactoryHolder url_loader_factory;
   if (gurl.SchemeIsFile()) {
     mojo::PendingRemote<network::mojom::URLLoaderFactory> pending_remote =
-        content::CreateFileURLLoaderFactory(
-            base::FilePath() /* profile_path */,
-            nullptr /* shared_cors_origin_access_list */);
+        AsarURLLoaderFactory::Create();
+    url_loader_factory = network::SharedURLLoaderFactory::Create(
+        std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
+            std::move(pending_remote)));
+  } else if (protocol_registry->IsProtocolRegistered(gurl.scheme())) {
+    auto& protocol_handler = protocol_registry->handlers().at(gurl.scheme());
+    mojo::PendingRemote<network::mojom::URLLoaderFactory> pending_remote =
+        ElectronURLLoaderFactory::Create(protocol_handler.first,
+                                         protocol_handler.second);
     url_loader_factory = network::SharedURLLoaderFactory::Create(
         std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
             std::move(pending_remote)));
@@ -902,7 +913,7 @@ void InspectableWebContents::DispatchProtocolMessage(
   if (str_message.size() < kMaxMessageChunkSize) {
     std::string param;
     base::EscapeJSONString(str_message, true, &param);
-    base::string16 javascript =
+    std::u16string javascript =
         base::UTF8ToUTF16("DevToolsAPI.dispatchMessage(" + param + ");");
     GetDevToolsWebContents()->GetMainFrame()->ExecuteJavaScript(
         javascript, base::NullCallback());
@@ -949,9 +960,9 @@ void InspectableWebContents::WebContentsDestroyed() {
 bool InspectableWebContents::DidAddMessageToConsole(
     content::WebContents* source,
     blink::mojom::ConsoleMessageLevel level,
-    const base::string16& message,
+    const std::u16string& message,
     int32_t line_no,
-    const base::string16& source_id) {
+    const std::u16string& source_id) {
   logging::LogMessage("CONSOLE", line_no,
                       blink::ConsoleMessageLevelToLogSeverity(level))
           .stream()

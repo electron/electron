@@ -37,7 +37,6 @@ class ElectronSandboxedRendererClient : public RendererClientBase {
   bool ShouldFork(blink::WebLocalFrame* frame,
                   const GURL& url,
                   const std::string& http_method,
-                  bool is_initial_navigation,
                   bool is_server_redirect) override;
 
  private:

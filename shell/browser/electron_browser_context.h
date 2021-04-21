@@ -48,9 +48,7 @@ class SpecialStoragePolicy;
 class WebViewManager;
 class ProtocolRegistry;
 
-class ElectronBrowserContext
-    : public content::BrowserContext,
-      public network::mojom::TrustedURLLoaderAuthClient {
+class ElectronBrowserContext : public content::BrowserContext {
  public:
   // partition_id => browser_context
   struct PartitionKey {
@@ -116,15 +114,6 @@ class ElectronBrowserContext
       override;
   content::StorageNotificationService* GetStorageNotificationService() override;
 
-  // extensions deps
-  void SetCorsOriginAccessListForOrigin(
-      TargetBrowserContexts target_mode,
-      const url::Origin& source_origin,
-      std::vector<network::mojom::CorsOriginPatternPtr> allow_patterns,
-      std::vector<network::mojom::CorsOriginPatternPtr> block_patterns,
-      base::OnceClosure closure) override;
-  content::SharedCorsOriginAccessList* GetSharedCorsOriginAccessList() override;
-
   CookieChangeNotifier* cookie_change_notifier() const {
     return cookie_change_notifier_.get();
   }
@@ -163,10 +152,6 @@ class ElectronBrowserContext
                          bool in_memory,
                          base::DictionaryValue options);
 
-  void OnLoaderCreated(int32_t request_id,
-                       mojo::PendingReceiver<network::mojom::TrustedAuthClient>
-                           header_client) override;
-
   // Initialize pref registry.
   void InitPrefs();
 
@@ -197,13 +182,9 @@ class ElectronBrowserContext
 
   // Shared URLLoaderFactory.
   scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory_;
-  mojo::Receiver<network::mojom::TrustedURLLoaderAuthClient> auth_client_{this};
 
   network::mojom::SSLConfigPtr ssl_config_;
   mojo::Remote<network::mojom::SSLConfigClient> ssl_config_client_;
-
-  scoped_refptr<content::SharedCorsOriginAccessList>
-      shared_cors_origin_access_list_;
 
   base::WeakPtrFactory<ElectronBrowserContext> weak_factory_{this};
 

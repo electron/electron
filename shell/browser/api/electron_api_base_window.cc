@@ -696,6 +696,10 @@ void BaseWindow::SetFocusable(bool focusable) {
   return window_->SetFocusable(focusable);
 }
 
+bool BaseWindow::IsFocusable() {
+  return window_->IsFocusable();
+}
+
 void BaseWindow::SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> value) {
   auto context = isolate->GetCurrentContext();
   gin::Handle<Menu> menu;
@@ -1089,11 +1093,11 @@ bool BaseWindow::SetThumbnailToolTip(const std::string& tooltip) {
 }
 
 void BaseWindow::SetAppDetails(const gin_helper::Dictionary& options) {
-  base::string16 app_id;
+  std::wstring app_id;
   base::FilePath app_icon_path;
   int app_icon_index = 0;
-  base::string16 relaunch_command;
-  base::string16 relaunch_display_name;
+  std::wstring relaunch_command;
+  std::wstring relaunch_display_name;
 
   options.Get("appId", &app_id);
   options.Get("appIconPath", &app_icon_path);
@@ -1250,6 +1254,7 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setIgnoreMouseEvents", &BaseWindow::SetIgnoreMouseEvents)
       .SetMethod("setContentProtection", &BaseWindow::SetContentProtection)
       .SetMethod("setFocusable", &BaseWindow::SetFocusable)
+      .SetMethod("isFocusable", &BaseWindow::IsFocusable)
       .SetMethod("setMenu", &BaseWindow::SetMenu)
       .SetMethod("removeMenu", &BaseWindow::RemoveMenu)
       .SetMethod("setParentWindow", &BaseWindow::SetParentWindow)

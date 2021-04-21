@@ -66,7 +66,7 @@ void SetNodeCliFlags() {
 
   for (const auto& arg : argv) {
 #if defined(OS_WIN)
-    const auto& option = base::UTF16ToUTF8(arg);
+    const auto& option = base::WideToUTF8(arg);
 #else
     const auto& option = arg;
 #endif
@@ -279,10 +279,6 @@ int NodeMain(int argc, char* argv[]) {
     node::Stop(env);
     node::FreeEnvironment(env);
     node::FreeIsolateData(isolate_data);
-
-    gin_env.platform()->DrainTasks(isolate);
-    gin_env.platform()->CancelPendingDelayedTasks(isolate);
-    gin_env.platform()->UnregisterIsolate(isolate);
   }
 
   // According to "src/gin/shell/gin_main.cc":

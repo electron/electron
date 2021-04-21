@@ -222,7 +222,7 @@ void RendererClientBase::RenderThreadStarted() {
 
 #if defined(OS_WIN)
   // Set ApplicationUserModelID in renderer process.
-  base::string16 app_id =
+  std::wstring app_id =
       command_line->GetSwitchValueNative(switches::kAppUserModelId);
   if (!app_id.empty()) {
     SetCurrentProcessExplicitAppUserModelID(app_id.c_str());
@@ -361,11 +361,8 @@ bool RendererClientBase::IsPluginHandledExternally(
 
 bool RendererClientBase::IsOriginIsolatedPepperPlugin(
     const base::FilePath& plugin_path) {
-#if BUILDFLAG(ENABLE_PDF_VIEWER)
-  return plugin_path.value() == kPdfPluginPath;
-#else
-  return false;
-#endif
+  // Isolate all Pepper plugins, including the PDF plugin.
+  return true;
 }
 
 std::unique_ptr<blink::WebPrescientNetworking>

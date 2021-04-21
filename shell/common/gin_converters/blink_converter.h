@@ -10,6 +10,7 @@
 #include "third_party/blink/public/common/input/web_input_event.h"
 #include "third_party/blink/public/common/messaging/cloneable_message.h"
 #include "third_party/blink/public/common/web_cache/web_cache_resource_type_stats.h"
+#include "third_party/blink/public/mojom/loader/referrer.mojom-forward.h"
 
 namespace blink {
 class WebMouseEvent;
@@ -53,13 +54,6 @@ struct Converter<blink::WebMouseWheelEvent> {
 };
 
 template <>
-struct Converter<blink::WebSize> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     blink::WebSize* out);
-};
-
-template <>
 struct Converter<blink::DeviceEmulationParams> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
@@ -100,6 +94,15 @@ struct Converter<network::mojom::ReferrerPolicy> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      network::mojom::ReferrerPolicy* out);
+};
+
+template <>
+struct Converter<blink::mojom::Referrer> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const blink::mojom::Referrer& val);
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     blink::mojom::Referrer* out);
 };
 
 template <>

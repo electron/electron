@@ -50,7 +50,7 @@ bool GetAsString(const base::Value* val,
 
 bool GetAsString(const base::Value* val,
                  base::StringPiece path,
-                 base::string16* out) {
+                 std::u16string* out) {
   if (val) {
     auto* found = val->FindKeyOfType(path, base::Value::Type::STRING);
     if (found) {
@@ -60,6 +60,21 @@ bool GetAsString(const base::Value* val,
   }
   return false;
 }
+
+#if defined(OS_WIN)
+bool GetAsString(const base::Value* val,
+                 base::StringPiece path,
+                 std::wstring* out) {
+  if (val) {
+    auto* found = val->FindKeyOfType(path, base::Value::Type::STRING);
+    if (found) {
+      *out = base::UTF8ToWide(found->GetString());
+      return true;
+    }
+  }
+  return false;
+}
+#endif
 
 bool GetAsInteger(const base::Value* val, base::StringPiece path, int* out) {
   if (val) {
@@ -126,9 +141,8 @@ WebContentsPreferences::WebContentsPreferences(
   SetDefaultBoolIfUndefined(options::kDisableHtmlFullscreenWindowResize, false);
   SetDefaultBoolIfUndefined(options::kWebviewTag, false);
   SetDefaultBoolIfUndefined(options::kSandbox, false);
-  SetDefaultBoolIfUndefined(options::kNativeWindowOpen, false);
+  SetDefaultBoolIfUndefined(options::kNativeWindowOpen, true);
   SetDefaultBoolIfUndefined(options::kContextIsolation, true);
-  SetDefaultBoolIfUndefined(options::kWorldSafeExecuteJavaScript, true);
   SetDefaultBoolIfUndefined(options::kJavaScript, true);
   SetDefaultBoolIfUndefined(options::kImages, true);
   SetDefaultBoolIfUndefined(options::kTextAreasAreResizable, true);
@@ -246,7 +260,13 @@ bool WebContentsPreferences::GetPreloadPath(base::FilePath* path) const {
   } else if (GetAsString(&preference_, options::kPreloadURL, &preload_path)) {
     // Translate to file path if there is "preload-url" option.
     base::FilePath preload;
-    if (net::FileURLToFilePath(GURL(preload_path), &preload)) {
+    GURL preload_url;
+#if defined(OS_WIN)
+    preload_url = GURL(base::WideToUTF8(preload_path));
+#else
+    preload_url = GURL(preload_path);
+#endif
+    if (net::FileURLToFilePath(preload_url, &preload)) {
       *path = std::move(preload);
       return true;
     } else {
@@ -380,7 +400,7 @@ void WebContentsPreferences::OverrideWebkitPrefs(
   auto* fonts_dict = preference_.FindKeyOfType("defaultFontFamily",
                                                base::Value::Type::DICTIONARY);
   if (fonts_dict) {
-    base::string16 font;
+    std::u16string font;
     if (GetAsString(fonts_dict, "standard", &font))
       prefs->standard_font_family_map[blink::web_pref::kCommonScript] = font;
     if (GetAsString(fonts_dict, "serif", &font))
@@ -422,9 +442,6 @@ void WebContentsPreferences::OverrideWebkitPrefs(
   // Run Electron APIs and preload script in isolated world
   prefs->context_isolation = IsEnabled(options::kContextIsolation, true);
 
-  prefs->world_safe_execute_javascript =
-      IsEnabled(options::kWorldSafeExecuteJavaScript, true);
-
   int guest_instance_id = 0;
   if (GetAsInteger(&preference_, options::kGuestInstanceID, &guest_instance_id))
     prefs->guest_instance_id = guest_instance_id;
@@ -457,7 +474,7 @@ void WebContentsPreferences::OverrideWebkitPrefs(
   GetPreloadPath(&prefs->preload);
 
   // Check if nativeWindowOpen is enabled.
-  prefs->native_window_open = IsEnabled(options::kNativeWindowOpen);
+  prefs->native_window_open = IsEnabled(options::kNativeWindowOpen, true);
 
   // Check if we have node integration specified.
   prefs->node_integration = IsEnabled(options::kNodeIntegration);

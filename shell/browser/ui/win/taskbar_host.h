@@ -60,6 +60,8 @@ class TaskbarHost {
   // Called by the window that there is a button in thumbar clicked.
   bool HandleThumbarButtonEvent(int button_id);
 
+  void SetThumbarButtonsAdded(bool added) { thumbar_buttons_added_ = added; }
+
  private:
   // Initialize the taskbar object.
   bool InitializeTaskbar();

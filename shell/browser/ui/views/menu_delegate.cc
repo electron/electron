@@ -70,7 +70,7 @@ bool MenuDelegate::GetAccelerator(int id, ui::Accelerator* accelerator) const {
   return adapter_->GetAccelerator(id, accelerator);
 }
 
-base::string16 MenuDelegate::GetLabel(int id) const {
+std::u16string MenuDelegate::GetLabel(int id) const {
   return adapter_->GetLabel(id);
 }
 

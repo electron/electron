@@ -17,18 +17,18 @@ class ErrorThrower {
 
   ~ErrorThrower();
 
-  void ThrowError(base::StringPiece err_msg);
-  void ThrowTypeError(base::StringPiece err_msg);
-  void ThrowRangeError(base::StringPiece err_msg);
-  void ThrowReferenceError(base::StringPiece err_msg);
-  void ThrowSyntaxError(base::StringPiece err_msg);
+  void ThrowError(base::StringPiece err_msg) const;
+  void ThrowTypeError(base::StringPiece err_msg) const;
+  void ThrowRangeError(base::StringPiece err_msg) const;
+  void ThrowReferenceError(base::StringPiece err_msg) const;
+  void ThrowSyntaxError(base::StringPiece err_msg) const;
 
   v8::Isolate* isolate() const { return isolate_; }
 
  private:
   using ErrorGenerator =
       v8::Local<v8::Value> (*)(v8::Local<v8::String> err_msg);
-  void Throw(ErrorGenerator gen, base::StringPiece err_msg);
+  void Throw(ErrorGenerator gen, base::StringPiece err_msg) const;
 
   v8::Isolate* isolate_;
 };

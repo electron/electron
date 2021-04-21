@@ -12,10 +12,6 @@
 #include "build/build_config.h"
 #include "ui/gfx/native_widget_types.h"
 
-#if defined(OS_WIN)
-#include "base/strings/string16.h"
-#endif
-
 class GURL;
 
 namespace platform_util {
