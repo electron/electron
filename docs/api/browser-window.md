@@ -1301,7 +1301,7 @@ can be be used to listen to changes to tablet mode.
 
 #### `win.getMediaSourceId()`
 
-Returns `String` - Window id in the format of DesktopCapturerSource's id. For example "window:1234:0".
+Returns `String` - Window id in the format of DesktopCapturerSource's id. For example "window:1324:0".
 
 More precisely the format is `window:id:other_id` where `id` is `HWND` on
 Windows, `CGWindowID` (`uint64_t`) on macOS and `Window` (`unsigned long`) on
