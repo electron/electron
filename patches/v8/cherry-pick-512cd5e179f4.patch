@@ -1,0 +1,109 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Georg Neis <neis@chromium.org>
+Date: Wed, 14 Apr 2021 13:19:44 +0200
+Subject: Merged: [compiler] Fix bug in
+ RepresentationChanger::GetWord32RepresentationFor
+
+Revision: fd29e246f65a7cee130e72cd10f618f3b82af232
+
+BUG=chromium:1195777
+NOTRY=true
+NOPRESUBMIT=true
+NOTREECHECKS=true
+R=nicohartmann@chromium.org
+
+Change-Id: I0400b3ae5736ef86dbeae558d15bfcca2e9f351a
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2826114
+Commit-Queue: Georg Neis <neis@chromium.org>
+Reviewed-by: Nico Hartmann <nicohartmann@chromium.org>
+Cr-Commit-Position: refs/branch-heads/9.0@{#34}
+Cr-Branched-From: bd0108b4c88e0d6f2350cb79b5f363fbd02f3eb7-refs/heads/9.0.257@{#1}
+Cr-Branched-From: 349bcc6a075411f1a7ce2d866c3dfeefc2efa39d-refs/heads/master@{#73001}
+
+diff --git a/src/compiler/representation-change.cc b/src/compiler/representation-change.cc
+index 46207a8b4ed496f1e6f752ecd35e19c7c0cd6a4d..7e7940f780a7ab4ecfde416888c47da68531f771 100644
+--- a/src/compiler/representation-change.cc
++++ b/src/compiler/representation-change.cc
+@@ -949,10 +949,10 @@ Node* RepresentationChanger::GetWord32RepresentationFor(
+     return node;
+   } else if (output_rep == MachineRepresentation::kWord64) {
+     if (output_type.Is(Type::Signed32()) ||
+-        output_type.Is(Type::Unsigned32())) {
+-      op = machine()->TruncateInt64ToInt32();
+-    } else if (output_type.Is(cache_->kSafeInteger) &&
+-               use_info.truncation().IsUsedAsWord32()) {
++        (output_type.Is(Type::Unsigned32()) &&
++         use_info.type_check() == TypeCheckKind::kNone) ||
++        (output_type.Is(cache_->kSafeInteger) &&
++         use_info.truncation().IsUsedAsWord32())) {
+       op = machine()->TruncateInt64ToInt32();
+     } else if (use_info.type_check() == TypeCheckKind::kSignedSmall ||
+                use_info.type_check() == TypeCheckKind::kSigned32 ||
+diff --git a/test/mjsunit/compiler/regress-1195777.js b/test/mjsunit/compiler/regress-1195777.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..b122f4f0169af573723d4318b9f1127c857c9e35
+--- /dev/null
++++ b/test/mjsunit/compiler/regress-1195777.js
+@@ -0,0 +1,62 @@
++// Copyright 2021 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax
++
++
++(function() {
++  function foo(b) {
++    let y = (new Date(42)).getMilliseconds();
++    let x = -1;
++    if (b) x = 0xFFFF_FFFF;
++    return y < Math.max(1 << y, x, 1 + y);
++  }
++  assertTrue(foo(true));
++  %PrepareFunctionForOptimization(foo);
++  assertTrue(foo(false));
++  %OptimizeFunctionOnNextCall(foo);
++  assertTrue(foo(true));
++})();
++
++
++(function() {
++  function foo(b) {
++    let x = 0;
++    if (b) x = -1;
++    return x == Math.max(-1, x >>> Infinity);
++  }
++  assertFalse(foo(true));
++  %PrepareFunctionForOptimization(foo);
++  assertTrue(foo(false));
++  %OptimizeFunctionOnNextCall(foo);
++  assertFalse(foo(true));
++})();
++
++
++(function() {
++  function foo(b) {
++    let x = -1;
++    if (b) x = 0xFFFF_FFFF;
++    return -1 < Math.max(0, x, -1);
++  }
++  assertTrue(foo(true));
++  %PrepareFunctionForOptimization(foo);
++  assertTrue(foo(false));
++  %OptimizeFunctionOnNextCall(foo);
++  assertTrue(foo(true));
++})();
++
++
++(function() {
++  function foo(b) {
++    let x = 0x7FFF_FFFF;
++    if (b) x = 0;
++    return 0 < (Math.max(-5 >>> x, -5) % -5);
++  }
++  assertTrue(foo(true));
++  %PrepareFunctionForOptimization(foo);
++  assertTrue(foo(false));
++  %OptimizeFunctionOnNextCall(foo);
++  assertTrue(foo(true));
++})();
