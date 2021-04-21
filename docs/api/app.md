@@ -1426,19 +1426,6 @@ This is the user agent that will be used when no user agent is set at the
 app has the same user agent.  Set to a custom value as early as possible
 in your app's initialization to ensure that your overridden value is used.
 
-### `app.allowRendererProcessReuse`
-
-A `Boolean` which when `true` disables the overrides that Electron has in place
-to ensure renderer processes are restarted on every navigation.  The current
-default value for this property is `true`.
-
-The intention is for these overrides to become disabled by default and then at
-some point in the future this property will be removed.  This property impacts
-which native modules you can use in the renderer process.  For more information
-on the direction Electron is going with renderer process restarts and usage of
-native modules in the renderer process please check out this
-[Tracking Issue](https://github.com/electron/electron/issues/18397).
-
 ### `app.runningUnderRosettaTranslation` _macOS_ _Readonly_
 
 A `Boolean` which when `true` indicates that the app is currently running

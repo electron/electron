@@ -353,10 +353,6 @@ int GetCrashSignalFD(const base::CommandLine& command_line) {
 }  // namespace
 
 // static
-void ElectronBrowserClient::SuppressRendererProcessRestartForOnce() {
-  g_suppress_renderer_process_restart = true;
-}
-
 ElectronBrowserClient* ElectronBrowserClient::Get() {
   return g_browser_client;
 }
@@ -488,44 +484,11 @@ bool ElectronBrowserClient::RendererDisablesPopups(int process_id) const {
   return it != process_preferences_.end() && it->second.disable_popups;
 }
 
-std::string ElectronBrowserClient::GetAffinityPreference(
-    content::RenderFrameHost* rfh) const {
-  auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
-  auto* web_preferences = WebContentsPreferences::From(web_contents);
-  std::string affinity;
-  if (web_preferences &&
-      web_preferences->GetPreference("affinity", &affinity) &&
-      !affinity.empty()) {
-    affinity = base::ToLowerASCII(affinity);
-  }
-
-  return affinity;
-}
-
 content::SiteInstance* ElectronBrowserClient::GetSiteInstanceFromAffinity(
     content::BrowserContext* browser_context,
     const GURL& url,
     content::RenderFrameHost* rfh) const {
-  std::string affinity = GetAffinityPreference(rfh);
-  if (!affinity.empty()) {
-    auto iter = site_per_affinities_.find(affinity);
-    GURL dest_site = GetSiteForURL(browser_context, url).site_url();
-    if (iter != site_per_affinities_.end() &&
-        IsSameWebSite(browser_context, iter->second, dest_site)) {
-      return iter->second;
-    }
-  }
-
   return nullptr;
-}
-
-void ElectronBrowserClient::ConsiderSiteInstanceForAffinity(
-    content::RenderFrameHost* rfh,
-    content::SiteInstance* site_instance) {
-  std::string affinity = GetAffinityPreference(rfh);
-  if (!affinity.empty()) {
-    site_per_affinities_[affinity] = site_instance;
-  }
 }
 
 bool ElectronBrowserClient::IsRendererSubFrame(int process_id) const {
@@ -612,8 +575,7 @@ void ElectronBrowserClient::OverrideWebkitPrefs(
       SessionPreferences::GetValidPreloads(web_contents->GetBrowserContext());
   if (!preloads.empty())
     prefs->preloads = preloads;
-  if (CanUseCustomSiteInstance())
-    prefs->disable_electron_site_instance_overrides = true;
+  prefs->disable_electron_site_instance_overrides = true;
 
   SetFontDefaults(prefs);
 
@@ -622,14 +584,6 @@ void ElectronBrowserClient::OverrideWebkitPrefs(
   if (web_preferences) {
     web_preferences->OverrideWebkitPrefs(prefs);
   }
-}
-
-void ElectronBrowserClient::SetCanUseCustomSiteInstance(bool should_disable) {
-  disable_process_restart_tricks_ = should_disable;
-}
-
-bool ElectronBrowserClient::CanUseCustomSiteInstance() {
-  return disable_process_restart_tricks_;
 }
 
 content::ContentBrowserClient::SiteInstanceForNavigationType
@@ -686,9 +640,6 @@ ElectronBrowserClient::ShouldOverrideSiteInstanceForNavigation(
 void ElectronBrowserClient::RegisterPendingSiteInstance(
     content::RenderFrameHost* rfh,
     content::SiteInstance* pending_site_instance) {
-  // Do we have an affinity site to manage?
-  ConsiderSiteInstanceForAffinity(rfh, pending_site_instance);
-
   // Remember the original web contents for the pending renderer process.
   auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
   auto* pending_process = pending_site_instance->GetProcess();
@@ -1015,16 +966,6 @@ bool ElectronBrowserClient::ArePersistentMediaDeviceIDsAllowed(
 
 void ElectronBrowserClient::SiteInstanceDeleting(
     content::SiteInstance* site_instance) {
-  // We are storing weak_ptr, is it fundamental to maintain the map up-to-date
-  // when an instance is destroyed.
-  for (auto iter = site_per_affinities_.begin();
-       iter != site_per_affinities_.end(); ++iter) {
-    if (iter->second == site_instance) {
-      site_per_affinities_.erase(iter);
-      break;
-    }
-  }
-
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   // Don't do anything if we're shutting down.
   if (content::BrowserMainRunner::ExitedMainMessageLoop())
@@ -1792,6 +1733,10 @@ ElectronBrowserClient::GetPluginMimeTypesWithExternalHandlers(
     mime_types.insert(pair.first);
 #endif
   return mime_types;
+}
+
+bool ElectronBrowserClient::CanUseCustomSiteInstance() {
+  return true;
 }
 
 content::SerialDelegate* ElectronBrowserClient::GetSerialDelegate() {
