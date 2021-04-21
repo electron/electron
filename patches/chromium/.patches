@@ -110,3 +110,4 @@ fix_patches_for_webauthn.patch
 disable_unload_metrics.patch
 fix_add_check_for_sandbox_then_result.patch
 moves_background_color_setter_of_webview_to_blinks_webprefs_logic.patch
+fix_webauthn_patches.patch

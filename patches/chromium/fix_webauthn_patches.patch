@@ -1,0 +1,172 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: sentialx <sentialx@gmail.com>
+Date: Wed, 21 Apr 2021 15:54:30 +0200
+Subject: fix: webauthn patches
+
+This commit removes references to LocationBarView and Profile.
+
+diff --git a/chrome/browser/ui/views/chrome_typography.cc b/chrome/browser/ui/views/chrome_typography.cc
+index de00af3356d6a7bc7f8373d56cab005b262555b3..6b6ef8abde82af93698bfabc2dc577854b8d604d 100644
+--- a/chrome/browser/ui/views/chrome_typography.cc
++++ b/chrome/browser/ui/views/chrome_typography.cc
+@@ -5,7 +5,6 @@
+ #include "chrome/browser/ui/views/chrome_typography.h"
+ 
+ #include "build/build_config.h"
+-#include "chrome/browser/ui/views/location_bar/location_bar_view.h"
+ #include "ui/base/default_style.h"
+ #include "ui/base/pointer/touch_ui_controller.h"
+ #include "ui/base/resource/resource_bundle.h"
+@@ -75,7 +74,8 @@ void ApplyCommonFontStyles(int context,
+     case CONTEXT_OMNIBOX_DEEMPHASIZED: {
+       const int omnibox_primary_delta =
+           GetFontSizeDeltaBoundedByAvailableHeight(
+-              LocationBarView::GetAvailableTextHeight(),
++              // LocationBarView::GetAvailableTextHeight(),
++              ui::TouchUiController::Get()->touch_ui() ? 15 : 14,
+               ui::TouchUiController::Get()->touch_ui() ? 15 : 14);
+       details.size_delta = omnibox_primary_delta;
+       if (context == CONTEXT_OMNIBOX_DEEMPHASIZED)
+@@ -90,7 +90,8 @@ void ApplyCommonFontStyles(int context,
+       // so don't bother starting at 14.
+       const int omnibox_decoration_delta =
+           GetFontSizeDeltaBoundedByAvailableHeight(
+-              LocationBarView::GetAvailableDecorationTextHeight(), 11);
++              // LocationBarView::GetAvailableDecorationTextHeight()
++              11, 11);
+       details.size_delta = omnibox_decoration_delta;
+       break;
+     }
+diff --git a/chrome/browser/webauthn/chrome_authenticator_request_delegate.cc b/chrome/browser/webauthn/chrome_authenticator_request_delegate.cc
+index a6fb57957734dd6a05df3a1e072cb679f61b6d1e..c136b05cc6ae0518c52a013ac430cbcb2ce629cc 100644
+--- a/chrome/browser/webauthn/chrome_authenticator_request_delegate.cc
++++ b/chrome/browser/webauthn/chrome_authenticator_request_delegate.cc
+@@ -20,7 +20,6 @@
+ #include "build/build_config.h"
+ #include "build/chromeos_buildflags.h"
+ #include "chrome/browser/net/system_network_context_manager.h"
+-#include "chrome/browser/profiles/profile.h"
+ #include "chrome/browser/ui/webauthn/authenticator_request_dialog.h"
+ #include "chrome/browser/webauthn/authenticator_request_dialog_model.h"
+ #include "chrome/common/chrome_switches.h"
+@@ -37,6 +36,7 @@
+ #include "device/fido/features.h"
+ #include "device/fido/fido_authenticator.h"
+ #include "device/fido/fido_discovery_factory.h"
++#include "electron/shell/browser/electron_browser_context.h"
+ 
+ #if defined(OS_MAC)
+ #include "device/fido/mac/authenticator.h"
+@@ -59,8 +59,8 @@ namespace {
+ bool IsWebauthnRPIDListedInEnterprisePolicy(
+     content::BrowserContext* browser_context,
+     const std::string& relying_party_id) {
+-  const Profile* profile = Profile::FromBrowserContext(browser_context);
+-  const PrefService* prefs = profile->GetPrefs();
++  const electron::ElectronBrowserContext* profile = electron::ElectronBrowserContext::FromBrowserContext(browser_context);
++  const PrefService* prefs = profile->prefs();
+   const base::ListValue* permit_attestation =
+       prefs->GetList(prefs::kSecurityKeyPermitAttestation);
+   return std::any_of(permit_attestation->begin(), permit_attestation->end(),
+@@ -436,12 +436,6 @@ bool ChromeAuthenticatorRequestDelegate::IsFocused() {
+ 
+ base::Optional<bool> ChromeAuthenticatorRequestDelegate::
+     IsUserVerifyingPlatformAuthenticatorAvailableOverride() {
+-  Profile* profile = Profile::FromBrowserContext(browser_context());
+-  // Platform authenticators are never available in Guest sessions. They may be
+-  // available (behind an additional interstitial) in Incognito mode.
+-  if (profile->IsGuestSession() || profile->IsEphemeralGuestProfile()) {
+-    return false;
+-  }
+   return base::nullopt;
+ }
+ 
+@@ -451,8 +445,8 @@ static constexpr char kTouchIdKeychainAccessGroup[] =
+ 
+ namespace {
+ 
+-std::string TouchIdMetadataSecret(Profile* profile) {
+-  PrefService* prefs = profile->GetPrefs();
++std::string TouchIdMetadataSecret(electron::ElectronBrowserContext* profile) {
++  PrefService* prefs = profile->prefs();
+   std::string key = prefs->GetString(kWebAuthnTouchIdMetadataSecretPrefName);
+   if (key.empty() || !base::Base64Decode(key, &key)) {
+     key = device::fido::mac::GenerateCredentialMetadataSecret();
+@@ -468,7 +462,7 @@ std::string TouchIdMetadataSecret(Profile* profile) {
+ // static
+ ChromeAuthenticatorRequestDelegate::TouchIdAuthenticatorConfig
+ ChromeAuthenticatorRequestDelegate::TouchIdAuthenticatorConfigForProfile(
+-    Profile* profile) {
++    electron::ElectronBrowserContext* profile) {
+   return TouchIdAuthenticatorConfig{kTouchIdKeychainAccessGroup,
+                                     TouchIdMetadataSecret(profile)};
+ }
+@@ -487,7 +481,7 @@ ChromeAuthenticatorRequestDelegate::GetGenerateRequestIdCallback(
+ void ChromeAuthenticatorRequestDelegate::UpdateLastTransportUsed(
+     device::FidoTransportProtocol transport) {
+   PrefService* prefs =
+-      Profile::FromBrowserContext(browser_context())->GetPrefs();
++      electron::ElectronBrowserContext::FromBrowserContext(browser_context())->prefs();
+   prefs->SetString(kWebAuthnLastTransportUsedPrefName,
+                    device::ToString(transport));
+ }
+@@ -509,7 +503,7 @@ bool ChromeAuthenticatorRequestDelegate::IsWebAuthnUIEnabled() {
+ base::Optional<ChromeAuthenticatorRequestDelegate::TouchIdAuthenticatorConfig>
+ ChromeAuthenticatorRequestDelegate::GetTouchIdAuthenticatorConfig() {
+   return TouchIdAuthenticatorConfigForProfile(
+-      Profile::FromBrowserContext(browser_context()));
++      electron::ElectronBrowserContext::FromBrowserContext(browser_context()));
+ }
+ #endif  // defined(OS_MAC)
+ 
+@@ -644,7 +638,7 @@ void ChromeAuthenticatorRequestDelegate::OnCancelRequest() {
+ base::Optional<device::FidoTransportProtocol>
+ ChromeAuthenticatorRequestDelegate::GetLastTransportUsed() const {
+   PrefService* prefs =
+-      Profile::FromBrowserContext(browser_context())->GetPrefs();
++      electron::ElectronBrowserContext::FromBrowserContext(browser_context())->prefs();
+   return device::ConvertToFidoTransportProtocol(
+       prefs->GetString(kWebAuthnLastTransportUsedPrefName));
+ }
+@@ -677,7 +671,7 @@ ChromeAuthenticatorRequestDelegate::GetCablePairings() {
+   }
+ 
+   PrefService* prefs =
+-      Profile::FromBrowserContext(browser_context())->GetPrefs();
++      electron::ElectronBrowserContext::FromBrowserContext(browser_context())->prefs();
+   const base::ListValue* pref_pairings =
+       prefs->GetList(kWebAuthnCablePairingsPrefName);
+ 
+@@ -720,7 +714,7 @@ void ChromeAuthenticatorRequestDelegate::HandleCablePairingEvent(
+   // that session. While an argument could be made that it's safe to persist
+   // such pairing for longer, this seems like the safe option initially.
+   ListPrefUpdate update(
+-      Profile::FromBrowserContext(browser_context())->GetPrefs(),
++      electron::ElectronBrowserContext::FromBrowserContext(browser_context())->prefs(),
+       kWebAuthnCablePairingsPrefName);
+ 
+   if (auto* disabled_public_key =
+diff --git a/chrome/browser/webauthn/chrome_authenticator_request_delegate.h b/chrome/browser/webauthn/chrome_authenticator_request_delegate.h
+index 49bbabf3d1c3ef01d05164a64dc088d3164fd903..07a88aca44f64d890d48f8545e95449f3b833901 100644
+--- a/chrome/browser/webauthn/chrome_authenticator_request_delegate.h
++++ b/chrome/browser/webauthn/chrome_authenticator_request_delegate.h
+@@ -22,7 +22,9 @@
+ #include "device/fido/fido_request_handler_base.h"
+ #include "device/fido/fido_transport_protocol.h"
+ 
+-class Profile;
++namespace electron {
++class ElectronBrowserContext;
++}
+ 
+ namespace content {
+ class BrowserContext;
+@@ -45,7 +47,7 @@ class ChromeAuthenticatorRequestDelegate
+   static void RegisterProfilePrefs(user_prefs::PrefRegistrySyncable* registry);
+ #if defined(OS_MAC)
+   static TouchIdAuthenticatorConfig TouchIdAuthenticatorConfigForProfile(
+-      Profile* profile);
++      electron::ElectronBrowserContext* profile);
+ #endif  // defined(OS_MAC)
+ 
+   // The |render_frame_host| must outlive this instance.
