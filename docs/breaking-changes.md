@@ -38,6 +38,27 @@ to open synchronously scriptable child windows, among other incompatibilities.
 See the documentation for [window.open in Electron](api/window-open.md)
 for more details.
 
+### Removed: BrowserWindowConstructorOptions inheriting from parent windows
+
+Prior to Electron 14, windows opened with `window.open` would inherit
+BrowserWindow constructor options such as `transparent` and `resizable` from
+their parent window. Beginning with Electron 14, this behavior is removed, and
+windows will not inherit any BrowserWindow constructor options from their
+parents.
+
+Instead, explicitly set options for the new window with `setWindowOpenHandler`:
+
+```js
+webContents.setWindowOpenHandler((details) => {
+  return {
+    action: 'allow',
+    overrideBrowserWindowOptions: {
+      // ...
+    }
+  }
+})
+```
+
 ### Removed: `additionalFeatures`
 
 The deprecated `additionalFeatures` property in the `new-window` and

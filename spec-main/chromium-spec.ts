@@ -1042,7 +1042,7 @@ describe('chromium features', () => {
 
           const parentCode = `new Promise((resolve) => {
             // This is context (3), a child window of the WebView.
-            const child = window.open(${JSON.stringify(child)}, "", "show=no")
+            const child = window.open(${JSON.stringify(child)}, "", "show=no,contextIsolation=no,nodeIntegration=yes")
             window.addEventListener("message", e => {
               resolve(e.data)
             })

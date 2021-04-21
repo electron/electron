@@ -2,18 +2,25 @@
 <body>
 <script type="text/javascript" charset="utf-8">
   const url = require('url')
+  function tryPostMessage(...args) {
+    try {
+      window.opener.postMessage(...args)
+    } catch (e) {
+      console.error(e)
+    }
+  }
   if (url.parse(window.location.href, true).query.opened != null) {
     // Ensure origins are properly checked by removing a single character from the end
-    window.opener.postMessage('do not deliver substring origin', window.location.origin.substring(0, window.location.origin.length - 1))
-    window.opener.postMessage('do not deliver file://', 'file://')
-    window.opener.postMessage('do not deliver http without port', 'http://127.0.0.1')
-    window.opener.postMessage('do not deliver atom', 'atom://')
-    window.opener.postMessage('do not deliver null', 'null')
-    window.opener.postMessage('do not deliver \\:/', '\\:/')
-    window.opener.postMessage('do not deliver empty', '')
+    tryPostMessage('do not deliver substring origin', window.location.origin.substring(0, window.location.origin.length - 1))
+    tryPostMessage('do not deliver file://', 'file://')
+    tryPostMessage('do not deliver http without port', 'http://127.0.0.1')
+    tryPostMessage('do not deliver atom', 'atom://')
+    tryPostMessage('do not deliver null', 'null')
+    tryPostMessage('do not deliver \\:/', '\\:/')
+    tryPostMessage('do not deliver empty', '')
     window.opener.postMessage('deliver', window.location.origin)
   } else {
-    const opened = window.open(`${window.location.href}?opened=true`, '', 'show=no')
+    const opened = window.open(`${window.location.href}?opened=true`, '', 'show=no,contextIsolation=no,nodeIntegration=yes')
     window.addEventListener('message', function (event) {
       window.opener.postMessage(event.data, '*')
       opened.close()
