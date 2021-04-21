@@ -1502,8 +1502,8 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
   });
 
   afterEach(async () => {
-    await closeAllWindows()
-    ;(w as any) = null;
+    await closeAllWindows();
+    (w as any) = null;
     server.close();
   });
 

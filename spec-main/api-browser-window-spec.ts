@@ -4062,6 +4062,8 @@ describe('BrowserWindow module', () => {
       it('handles several transitions starting with fullscreen', async () => {
         const w = new BrowserWindow({ fullscreen: true, show: true });
 
+        expect(w.isFullScreen()).to.be.true('not fullscreen');
+
         w.setFullScreen(false);
         w.setFullScreen(true);
 
@@ -4080,6 +4082,8 @@ describe('BrowserWindow module', () => {
 
       it('handles several transitions in close proximity', async () => {
         const w = new BrowserWindow();
+
+        expect(w.isFullScreen()).to.be.false('is fullscreen');
 
         w.setFullScreen(true);
         w.setFullScreen(false);

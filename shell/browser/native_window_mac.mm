@@ -668,15 +668,7 @@ void NativeWindowMac::SetFullScreen(bool fullscreen) {
                                      ? FullScreenTransitionState::ENTERING
                                      : FullScreenTransitionState::EXITING;
 
-  // Until 10.13, AppKit would obey a call to -toggleFullScreen: made inside
-  // windowDidEnterFullScreen & windowDidExitFullScreen. Starting in 10.13,
-  // it behaves as though the transition is still in progress and just emits
-  // "not in a fullscreen state" when trying to exit fullscreen in the same
-  // runloop that entered it. To handle this, invoke -toggleFullScreen:
-  // asynchronously.
-  [window_ performSelector:@selector(toggleFullScreen:)
-                withObject:nil
-                afterDelay:0];
+  [window_ toggleFullScreenMode:nil];
 }
 
 bool NativeWindowMac::IsFullscreen() const {
