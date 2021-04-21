@@ -7,40 +7,6 @@ Allows embedder to intercept site instances chosen by chromium
 and respond with custom instance. Also allows for us to at-runtime
 enable or disable this patch.
 
-diff --git a/content/browser/browsing_instance.cc b/content/browser/browsing_instance.cc
-index 30e374aeba7aceacdb58add9c79cb46c6b93af4d..3e34643c4e1d5561c6c7b01e3de8cdd46910afb0 100644
---- a/content/browser/browsing_instance.cc
-+++ b/content/browser/browsing_instance.cc
-@@ -61,6 +61,13 @@ scoped_refptr<SiteInstanceImpl> BrowsingInstance::GetSiteInstanceForURL(
-   return instance;
- }
- 
-+scoped_refptr<SiteInstanceImpl> BrowsingInstance::CreateSiteInstanceForURL(
-+    const GURL& url) {
-+  scoped_refptr<SiteInstanceImpl> instance = new SiteInstanceImpl(this);
-+  instance->SetSite(UrlInfo(url, UrlInfo::OriginIsolationRequest::kNone));
-+  return instance;
-+}
-+
- SiteInfo BrowsingInstance::GetSiteInfoForURL(const UrlInfo& url_info,
-                                              bool allow_default_instance) {
-   scoped_refptr<SiteInstanceImpl> site_instance =
-diff --git a/content/browser/browsing_instance.h b/content/browser/browsing_instance.h
-index f426d1ebdaa9d13c7e47f22ce617e2b61a862854..26907541dd4268e3f8c82676bdda892bd1ed04e7 100644
---- a/content/browser/browsing_instance.h
-+++ b/content/browser/browsing_instance.h
-@@ -151,6 +151,11 @@ class CONTENT_EXPORT BrowsingInstance final
-       const UrlInfo& url_info,
-       bool allow_default_instance);
- 
-+  // Create a new SiteInstance for the given URL bound the current
-+  // BrowsingInstance.
-+  scoped_refptr<SiteInstanceImpl> CreateSiteInstanceForURL(
-+      const GURL& url);
-+
-   // Adds the given SiteInstance to our map, to ensure that we do not create
-   // another SiteInstance for the same site.
-   void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
 index 1f0b01cbf17267bd8c03deb4a28938566f7033ef..5ccf84c2b847e9d2cbc97f4b2390220324a807c3 100644
 --- a/content/browser/renderer_host/navigation_request.cc
