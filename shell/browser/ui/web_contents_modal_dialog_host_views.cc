@@ -10,8 +10,6 @@ using views::View;
 using web_modal::ModalDialogHostObserver;
 using web_modal::WebContentsModalDialogHost;
 
-constexpr int kDialogTop = 64;
-
 namespace electron {
 class WebContentsModalDialogHostViews : public WebContentsModalDialogHost {
  public:
@@ -32,7 +30,7 @@ class WebContentsModalDialogHostViews : public WebContentsModalDialogHost {
     views::View* view = native_window_->content_view();
     gfx::Rect content_area = view->ConvertRectToWidget(view->GetLocalBounds());
     const int middle_x = content_area.x() + content_area.width() / 2;
-    const int top = kDialogTop;
+    const int top = margin_top_;
     return gfx::Point(middle_x - size.width() / 2, top);
   }
 
@@ -45,9 +43,11 @@ class WebContentsModalDialogHostViews : public WebContentsModalDialogHost {
   gfx::Size GetMaximumDialogSize() override {
     views::View* view = native_window_->content_view();
     gfx::Rect content_area = view->ConvertRectToWidget(view->GetLocalBounds());
-    const int top = kDialogTop;
+    const int top = margin_top_;
     return gfx::Size(content_area.width(), content_area.bottom() - top);
   }
+
+  void SetMarginTop(int top) { margin_top_ = top; }
 
  private:
   gfx::NativeView GetHostView() const override {
@@ -63,6 +63,8 @@ class WebContentsModalDialogHostViews : public WebContentsModalDialogHost {
   }
 
   NativeWindow* native_window_;
+
+  int margin_top_ = 0;
 
   base::ObserverList<ModalDialogHostObserver>::Unchecked observer_list_;
 

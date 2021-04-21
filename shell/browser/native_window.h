@@ -300,6 +300,8 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyNewWindowForTab();
   void NotifyWindowSystemContextMenu(int x, int y, bool* prevent_default);
 
+  void SetModalDialogMarginTop(int top);
+
 #if defined(OS_WIN)
   void NotifyWindowMessage(UINT message, WPARAM w_param, LPARAM l_param);
 #endif

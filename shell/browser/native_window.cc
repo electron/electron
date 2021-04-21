@@ -629,6 +629,10 @@ NativeWindow::GetWebContentsModalDialogHost() {
   return dialog_host_.get();
 }
 
+void NativeWindow::SetModalDialogMarginTop(int top) {
+  dialog_host_->SetMarginTop(top);
+}
+
 // static
 int32_t NativeWindow::next_id_ = 0;
 
