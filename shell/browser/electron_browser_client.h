@@ -96,14 +96,6 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
 
   void OverrideWebkitPrefs(content::WebContents* web_contents,
                            blink::web_pref::WebPreferences* prefs) override;
-  SiteInstanceForNavigationType ShouldOverrideSiteInstanceForNavigation(
-      content::RenderFrameHost* current_rfh,
-      content::RenderFrameHost* speculative_rfh,
-      content::BrowserContext* browser_context,
-      const GURL& url,
-      bool has_navigation_started,
-      bool has_response_started,
-      content::SiteInstance** affinity_site_instance) const override;
   void RegisterPendingSiteInstance(
       content::RenderFrameHost* render_frame_host,
       content::SiteInstance* pending_site_instance) override;

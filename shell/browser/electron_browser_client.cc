@@ -193,9 +193,6 @@ namespace electron {
 
 namespace {
 
-// Next navigation should not restart renderer process.
-bool g_suppress_renderer_process_restart = false;
-
 // c.f. https://chromium-review.googlesource.com/c/chromium/src/+/2680274
 content::SiteInfo GetSiteForURL(content::BrowserContext* browser_context,
                                 const GURL& url) {
@@ -584,57 +581,6 @@ void ElectronBrowserClient::OverrideWebkitPrefs(
   if (web_preferences) {
     web_preferences->OverrideWebkitPrefs(prefs);
   }
-}
-
-content::ContentBrowserClient::SiteInstanceForNavigationType
-ElectronBrowserClient::ShouldOverrideSiteInstanceForNavigation(
-    content::RenderFrameHost* current_rfh,
-    content::RenderFrameHost* speculative_rfh,
-    content::BrowserContext* browser_context,
-    const GURL& url,
-    bool has_navigation_started,
-    bool has_response_started,
-    content::SiteInstance** affinity_site_instance) const {
-  if (g_suppress_renderer_process_restart) {
-    g_suppress_renderer_process_restart = false;
-    return SiteInstanceForNavigationType::ASK_CHROMIUM;
-  }
-
-  // Do we have an affinity site to manage ?
-  content::SiteInstance* site_instance_from_affinity =
-      GetSiteInstanceFromAffinity(browser_context, url, current_rfh);
-  if (site_instance_from_affinity) {
-    *affinity_site_instance = site_instance_from_affinity;
-    return SiteInstanceForNavigationType::FORCE_AFFINITY;
-  }
-
-  if (!ShouldForceNewSiteInstance(current_rfh, speculative_rfh, browser_context,
-                                  url, has_response_started)) {
-    return SiteInstanceForNavigationType::ASK_CHROMIUM;
-  }
-
-  // ShouldOverrideSiteInstanceForNavigation will be called more than once
-  // during a navigation (currently twice, on request and when it's about
-  // to commit in the renderer), look at
-  // RenderFrameHostManager::GetFrameHostForNavigation.
-  // In the default mode we should reuse the same site instance until the
-  // request commits otherwise it will get destroyed. Currently there is no
-  // unique lifetime tracker for a navigation request during site instance
-  // creation. We check for the state of the request, which should be one of
-  // (WAITING_FOR_RENDERER_RESPONSE, STARTED, RESPONSE_STARTED, FAILED) along
-  // with the availability of a speculative render frame host.
-  if (has_response_started) {
-    return SiteInstanceForNavigationType::FORCE_CURRENT;
-  }
-
-  if (!has_navigation_started) {
-    // If the navigation didn't start yet, ignore any candidate site instance.
-    // If such instance exists, it belongs to a previous navigation still
-    // taking place. Fixes https://github.com/electron/electron/issues/17576.
-    return SiteInstanceForNavigationType::FORCE_NEW;
-  }
-
-  return SiteInstanceForNavigationType::FORCE_CANDIDATE_OR_NEW;
 }
 
 void ElectronBrowserClient::RegisterPendingSiteInstance(

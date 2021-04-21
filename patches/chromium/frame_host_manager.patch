@@ -164,67 +164,14 @@ index 40c314243ae5aa8540ce6528273ee2f0b7f0aca1..dce5cf6cde036d35c1b78b8fa7686176
    bool IsRelatedSiteInstance(const SiteInstance* instance) override;
    size_t GetRelatedActiveContentsCount() override;
    bool RequiresDedicatedProcess() override;
-diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 0d2eba4321ece3e9cfb2b16dead343dd51672714..b99f24f36656ef91942e3299c3541f8c3ade6b3b 100644
---- a/content/public/browser/content_browser_client.cc
-+++ b/content/public/browser/content_browser_client.cc
-@@ -72,6 +72,17 @@
- 
- namespace content {
- 
-+ContentBrowserClient::SiteInstanceForNavigationType ContentBrowserClient::ShouldOverrideSiteInstanceForNavigation(
-+    content::RenderFrameHost* current_rfh,
-+    content::RenderFrameHost* speculative_rfh,
-+    content::BrowserContext* browser_context,
-+    const GURL& url,
-+    bool has_navigation_started,
-+    bool has_request_started,
-+    content::SiteInstance** affinity_site_instance) const {
-+  return SiteInstanceForNavigationType::ASK_CHROMIUM;
-+}
-+
- std::unique_ptr<BrowserMainParts> ContentBrowserClient::CreateBrowserMainParts(
-     const MainFunctionParams& parameters) {
-   return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 47befa844ca54f463b627864827aa670454dfed4..49b104767ab99fde25ccb1de3404bcc18710b3d2 100644
+index 47befa844ca54f463b627864827aa670454dfed4..1a27f50e5922c3886816e7523dda98e1d7a87bda 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -261,8 +261,42 @@ class CONTENT_EXPORT ContentBrowserClient {
-   using IsClipboardPasteContentAllowedCallback =
-       base::OnceCallback<void(ClipboardPasteContentAllowed)>;
+@@ -263,6 +263,11 @@ class CONTENT_EXPORT ContentBrowserClient {
  
-+  // Identifies the type of site instance to use for a navigation.
-+  enum SiteInstanceForNavigationType {
-+    // Use either the candidate site instance or, if it doesn't exist
-+    // a new, unrelated site instance for the navigation.
-+    FORCE_CANDIDATE_OR_NEW = 0,
-+
-+    // Use the current site instance for the navigation.
-+    FORCE_CURRENT,
-+
-+    // Use a new, unrelated site instance.
-+    FORCE_NEW,
-+
-+    // Use the provided affinity site instance for the navigation.
-+    FORCE_AFFINITY,
-+
-+    // Delegate the site instance creation to Chromium.
-+    ASK_CHROMIUM
-+  };
-+
    virtual ~ContentBrowserClient() = default;
  
-+  // Electron: Allows overriding the SiteInstance when navigating.
-+  virtual SiteInstanceForNavigationType ShouldOverrideSiteInstanceForNavigation(
-+      content::RenderFrameHost* current_rfh,
-+      content::RenderFrameHost* speculative_rfh,
-+      content::BrowserContext* browser_context,
-+      const GURL& url,
-+      bool has_navigation_started,
-+      bool has_request_started,
-+      content::SiteInstance** affinity_site_instance) const;
-+
 +  // Electron: Registers a pending site instance during a navigation.
 +  virtual void RegisterPendingSiteInstance(
 +      content::RenderFrameHost* rfh,
