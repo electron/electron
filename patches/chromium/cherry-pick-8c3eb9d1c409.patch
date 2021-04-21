@@ -1,0 +1,143 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Scott Violet <sky@chromium.org>
+Date: Wed, 31 Mar 2021 13:28:05 +0000
+Subject: x11/ozone: fix two edge cases
+
+WindowTreeHost::OnHostMovedInPixels() may trigger a nested message
+loop (tab dragging), which when the stack unravels means this may
+be deleted. This adds an early out if this happens.
+
+X11WholeScreenMoveLoop has a similar issue, in so far as notifying
+the delegate may delete this.
+
+BUG=1185482
+TEST=WindowTreeHostPlatform.DeleteHostFromOnHostMovedInPixels
+
+(cherry picked from commit 5e3a738b1204941aab9f15c0eb3d06e20fefd96e)
+
+(cherry picked from commit 8ad84a8e7882275fb32f938fd0adc04d1a2a5773)
+
+Change-Id: Ieca1c90b3e4358da50b332abe2941fdbb50c5c25
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2743555
+Reviewed-by: Thomas Anderson <thomasanderson@chromium.org>
+Commit-Queue: Scott Violet <sky@chromium.org>
+Cr-Original-Original-Commit-Position: refs/heads/master@{#860852}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2779886
+Cr-Original-Commit-Position: refs/branch-heads/4389@{#1583}
+Cr-Original-Branched-From: 9251c5db2b6d5a59fe4eac7aafa5fed37c139bb7-refs/heads/master@{#843830}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2794391
+Reviewed-by: Scott Violet <sky@chromium.org>
+Reviewed-by: Victor-Gabriel Savu <vsavu@google.com>
+Commit-Queue: Artem Sumaneev <asumaneev@google.com>
+Cr-Commit-Position: refs/branch-heads/4240@{#1583}
+Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
+
+diff --git a/ui/aura/window_tree_host_platform.cc b/ui/aura/window_tree_host_platform.cc
+index 01843f47b17164201d406c8821f3d1a4f0c0010a..e59d3c6f3bb7b665cdbb6034ccc13376d9272933 100644
+--- a/ui/aura/window_tree_host_platform.cc
++++ b/ui/aura/window_tree_host_platform.cc
+@@ -214,13 +214,21 @@ void WindowTreeHostPlatform::OnBoundsChanged(const gfx::Rect& new_bounds) {
+   float current_scale = compositor()->device_scale_factor();
+   float new_scale = ui::GetScaleFactorForNativeView(window());
+   gfx::Rect old_bounds = bounds_in_pixels_;
++  auto weak_ref = GetWeakPtr();
+   bounds_in_pixels_ = new_bounds;
+-  if (bounds_in_pixels_.origin() != old_bounds.origin())
++  if (bounds_in_pixels_.origin() != old_bounds.origin()) {
+     OnHostMovedInPixels(bounds_in_pixels_.origin());
++    // Changing the bounds may destroy this.
++    if (!weak_ref)
++      return;
++  }
+   if (bounds_in_pixels_.size() != old_bounds.size() ||
+       current_scale != new_scale) {
+     pending_size_ = gfx::Size();
+     OnHostResizedInPixels(bounds_in_pixels_.size());
++    // Changing the size may destroy this.
++    if (!weak_ref)
++      return;
+   }
+   DCHECK_GT(on_bounds_changed_recursion_depth_, 0);
+   if (--on_bounds_changed_recursion_depth_ == 0) {
+diff --git a/ui/aura/window_tree_host_platform_unittest.cc b/ui/aura/window_tree_host_platform_unittest.cc
+index eda14e2f0cdf5015f366aa70ea68ae2a2c2b431e..4de039c88af8a6f0ac03df2f772cfea2dfe3514f 100644
+--- a/ui/aura/window_tree_host_platform_unittest.cc
++++ b/ui/aura/window_tree_host_platform_unittest.cc
+@@ -34,7 +34,7 @@ class TestWindowTreeHost : public WindowTreeHostPlatform {
+ // OnHostWill/DidProcessBoundsChange. Additionally, this triggers a bounds
+ // change from within OnHostResized(). Such a scenario happens in production
+ // code.
+-class TestWindowTreeHostObserver : public aura::WindowTreeHostObserver {
++class TestWindowTreeHostObserver : public WindowTreeHostObserver {
+  public:
+   TestWindowTreeHostObserver(WindowTreeHostPlatform* host,
+                              ui::PlatformWindow* platform_window)
+@@ -51,7 +51,7 @@ class TestWindowTreeHostObserver : public aura::WindowTreeHostObserver {
+     return on_host_will_process_bounds_change_count_;
+   }
+ 
+-  // aura::WindowTreeHostObserver:
++  // WindowTreeHostObserver:
+   void OnHostResized(WindowTreeHost* host) override {
+     if (!should_change_bounds_in_on_resized_)
+       return;
+@@ -92,5 +92,41 @@ TEST_F(WindowTreeHostPlatformTest, HostWillProcessBoundsChangeRecursion) {
+   EXPECT_EQ(1, observer.on_host_will_process_bounds_change_count());
+ }
+ 
++// Deletes WindowTreeHostPlatform from OnHostMovedInPixels().
++class DeleteHostWindowTreeHostObserver : public WindowTreeHostObserver {
++ public:
++  explicit DeleteHostWindowTreeHostObserver(
++      std::unique_ptr<TestWindowTreeHost> host)
++      : host_(std::move(host)) {
++    host_->AddObserver(this);
++  }
++  ~DeleteHostWindowTreeHostObserver() override = default;
++
++  TestWindowTreeHost* host() { return host_.get(); }
++
++  // WindowTreeHostObserver:
++  void OnHostMovedInPixels(WindowTreeHost* host,
++                           const gfx::Point& new_origin_in_pixels) override {
++    host_->RemoveObserver(this);
++    host_.reset();
++  }
++
++ private:
++  std::unique_ptr<TestWindowTreeHost> host_;
++
++  DISALLOW_COPY_AND_ASSIGN(DeleteHostWindowTreeHostObserver);
++};
++
++// Verifies WindowTreeHostPlatform can be safely deleted when calling
++// OnHostMovedInPixels().
++// Regression test for https://crbug.com/1185482
++TEST_F(WindowTreeHostPlatformTest, DeleteHostFromOnHostMovedInPixels) {
++  std::unique_ptr<TestWindowTreeHost> host =
++      std::make_unique<TestWindowTreeHost>();
++  DeleteHostWindowTreeHostObserver observer(std::move(host));
++  observer.host()->SetBoundsInPixels(gfx::Rect(1, 2, 3, 4));
++  EXPECT_EQ(nullptr, observer.host());
++}
++
+ }  // namespace
+ }  // namespace aura
+diff --git a/ui/base/x/x11_whole_screen_move_loop.cc b/ui/base/x/x11_whole_screen_move_loop.cc
+index e26532b8403ea198641b0a09f32083ae945b0082..a168057a52c564bea8cb8b610c77726598036d4d 100644
+--- a/ui/base/x/x11_whole_screen_move_loop.cc
++++ b/ui/base/x/x11_whole_screen_move_loop.cc
+@@ -64,9 +64,13 @@ X11WholeScreenMoveLoop::~X11WholeScreenMoveLoop() {
+ void X11WholeScreenMoveLoop::DispatchMouseMovement() {
+   if (!last_motion_in_screen_)
+     return;
++  auto weak_ref = weak_factory_.GetWeakPtr();
+   delegate_->OnMouseMovement(last_motion_in_screen_->root_location(),
+                              last_motion_in_screen_->flags(),
+                              last_motion_in_screen_->time_stamp());
++  // The delegate may delete this during dispatch.
++  if (!weak_ref)
++    return;
+   last_motion_in_screen_.reset();
+ }
+ 
