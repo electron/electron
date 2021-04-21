@@ -143,6 +143,11 @@ describe('webFrameMain module', () => {
 
       expect(webFrame.visibilityState).to.equal('visible');
       w.hide();
+
+      // Wait for visibility to propagate. If this ends up being flaky, we can
+      // look into binding WebContentsObserver::OnVisibilityChanged.
+      await new Promise(resolve => setTimeout(resolve, 10));
+
       expect(webFrame.visibilityState).to.equal('hidden');
     });
   });
