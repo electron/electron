@@ -101,6 +101,27 @@ declare namespace NodeJS {
     removeGuest(embedder: Electron.WebContents, guestInstanceId: number): void;
   }
 
+  interface InternalWebPreferences {
+    contextIsolation: boolean;
+    disableElectronSiteInstanceOverrides: boolean;
+    guestInstanceId: number;
+    hiddenPage: boolean;
+    nativeWindowOpen: boolean;
+    nodeIntegration: boolean;
+    openerId: number;
+    preload: string
+    preloadScripts: string[];
+    webviewTag: boolean;
+  }
+
+  interface InternalWebFrame extends Electron.WebFrame {
+    getWebPreference<K extends keyof InternalWebPreferences>(name: K): InternalWebPreferences[K];
+  }
+
+  interface WebFrameBinding {
+    mainFrame: InternalWebFrame;
+  }
+
   type DataPipe = {
     write: (buf: Uint8Array) => Promise<void>;
     done: () => void;
@@ -218,6 +239,7 @@ declare namespace NodeJS {
     }
     _linkedBinding(name: 'electron_renderer_crash_reporter'): Electron.CrashReporter;
     _linkedBinding(name: 'electron_renderer_ipc'): { ipc: IpcRendererBinding };
+    _linkedBinding(name: 'electron_renderer_web_frame'): WebFrameBinding;
     log: NodeJS.WriteStream['write'];
     activateUvLoop(): void;
 

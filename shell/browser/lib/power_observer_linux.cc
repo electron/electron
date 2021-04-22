@@ -31,8 +31,10 @@ base::FilePath::StringType GetExecutableBaseName() {
 
 namespace electron {
 
-PowerObserverLinux::PowerObserverLinux(base::PowerObserver* observer)
-    : observer_(observer), lock_owner_name_(GetExecutableBaseName()) {
+PowerObserverLinux::PowerObserverLinux(
+    base::PowerSuspendObserver* suspend_observer)
+    : suspend_observer_(suspend_observer),
+      lock_owner_name_(GetExecutableBaseName()) {
   auto* bus = bluez::BluezDBusThreadManager::Get()->GetSystemBus();
   if (!bus) {
     LOG(WARNING) << "Failed to get system bus connection";
@@ -142,13 +144,13 @@ void PowerObserverLinux::OnPrepareForSleep(dbus::Signal* signal) {
     return;
   }
   if (suspending) {
-    observer_->OnSuspend();
+    suspend_observer_->OnSuspend();
 
     UnblockSleep();
   } else {
     BlockSleep();
 
-    observer_->OnResume();
+    suspend_observer_->OnResume();
   }
 }
 

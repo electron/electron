@@ -6,7 +6,7 @@ Subject: Export symbols needed for Windows build
 These symbols are required to build v8 with BUILD_V8_SHARED on Windows.
 
 diff --git a/src/objects/objects.h b/src/objects/objects.h
-index c68445597f562d043953bd38baf25d818646de68..60f519ad45da2680d24ea2012446f5d62fd8e981 100644
+index 6afb5d70155e87a1707a50baa3e16c12eee60eb9..9ae71ee7b9caa08c01d95a5305aabd3740e29058 100644
 --- a/src/objects/objects.h
 +++ b/src/objects/objects.h
 @@ -824,7 +824,7 @@ enum class KeyCollectionMode {

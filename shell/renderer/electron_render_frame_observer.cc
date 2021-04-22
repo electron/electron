@@ -142,7 +142,9 @@ void ElectronRenderFrameObserver::CreateIsolatedWorldContext() {
 
   // Create initial script context in isolated world
   blink::WebScriptSource source("void 0");
-  frame->ExecuteScriptInIsolatedWorld(WorldIDs::ISOLATED_WORLD_ID, source);
+  frame->ExecuteScriptInIsolatedWorld(
+      WorldIDs::ISOLATED_WORLD_ID, source,
+      blink::BackForwardCacheAware::kPossiblyDisallow);
 }
 
 bool ElectronRenderFrameObserver::IsMainWorld(int world_id) {

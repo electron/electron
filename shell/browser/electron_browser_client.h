@@ -51,9 +51,6 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   // Returns the WebContents for pending render processes.
   content::WebContents* GetWebContentsFromProcessID(int process_id);
 
-  // Don't force renderer process to restart for once.
-  static void SuppressRendererProcessRestartForOnce();
-
   NotificationPresenter* GetNotificationPresenter();
 
   void WebNotificationAllowed(int render_process_id,
@@ -87,8 +84,6 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   std::string GetUserAgent() override;
   void SetUserAgent(const std::string& user_agent);
 
-  void SetCanUseCustomSiteInstance(bool should_disable);
-  bool CanUseCustomSiteInstance() override;
   content::SerialDelegate* GetSerialDelegate() override;
 
   content::BluetoothDelegate* GetBluetoothDelegate() override;
@@ -101,14 +96,6 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
 
   void OverrideWebkitPrefs(content::WebContents* web_contents,
                            blink::web_pref::WebPreferences* prefs) override;
-  SiteInstanceForNavigationType ShouldOverrideSiteInstanceForNavigation(
-      content::RenderFrameHost* current_rfh,
-      content::RenderFrameHost* speculative_rfh,
-      content::BrowserContext* browser_context,
-      const GURL& url,
-      bool has_navigation_started,
-      bool has_response_started,
-      content::SiteInstance** affinity_site_instance) const override;
   void RegisterPendingSiteInstance(
       content::RenderFrameHost* render_frame_host,
       content::SiteInstance* pending_site_instance) override;
@@ -171,7 +158,8 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
           cert_verifier_creation_params) override;
   network::mojom::NetworkContext* GetSystemNetworkContext() override;
   content::MediaObserver* GetMediaObserver() override;
-  content::DevToolsManagerDelegate* GetDevToolsManagerDelegate() override;
+  std::unique_ptr<content::DevToolsManagerDelegate>
+  CreateDevToolsManagerDelegate() override;
   content::PlatformNotificationService* GetPlatformNotificationService(
       content::BrowserContext* browser_context) override;
   std::unique_ptr<content::BrowserMainParts> CreateBrowserMainParts(
@@ -292,30 +280,15 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
     content::BrowserContext* browser_context = nullptr;
   };
 
-  bool ShouldForceNewSiteInstance(content::RenderFrameHost* current_rfh,
-                                  content::RenderFrameHost* speculative_rfh,
-                                  content::BrowserContext* browser_context,
-                                  const GURL& dest_url,
-                                  bool has_response_started) const;
-  bool NavigationWasRedirectedCrossSite(
-      content::BrowserContext* browser_context,
-      content::SiteInstance* current_instance,
-      content::SiteInstance* speculative_instance,
-      const GURL& dest_url,
-      bool has_response_started) const;
   void AddProcessPreferences(int process_id, ProcessPreferences prefs);
   void RemoveProcessPreferences(int process_id);
   bool IsProcessObserved(int process_id) const;
-  bool IsRendererSandboxed(int process_id) const;
   bool RendererUsesNativeWindowOpen(int process_id) const;
   bool RendererDisablesPopups(int process_id) const;
-  std::string GetAffinityPreference(content::RenderFrameHost* rfh) const;
   content::SiteInstance* GetSiteInstanceFromAffinity(
       content::BrowserContext* browser_context,
       const GURL& url,
       content::RenderFrameHost* rfh) const;
-  void ConsiderSiteInstanceForAffinity(content::RenderFrameHost* rfh,
-                                       content::SiteInstance* site_instance);
 
   bool IsRendererSubFrame(int process_id) const;
 
@@ -323,9 +296,6 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   std::map<int, content::WebContents*> pending_processes_;
 
   std::set<int> renderer_is_subframe_;
-
-  // list of site per affinity. weak_ptr to prevent instance locking
-  std::map<std::string, content::SiteInstance*> site_per_affinities_;
 
   std::unique_ptr<PlatformNotificationService> notification_service_;
   std::unique_ptr<NotificationPresenter> notification_presenter_;
@@ -335,8 +305,6 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   std::map<int, ProcessPreferences> process_preferences_;
 
   std::string user_agent_override_ = "";
-
-  bool disable_process_restart_tricks_ = true;
 
   // Simple shared ID generator, used by ProxyingURLLoaderFactory and
   // ProxyingWebSocket classes.

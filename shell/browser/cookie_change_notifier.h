@@ -35,7 +35,7 @@ class CookieChangeNotifier : public network::mojom::CookieChangeListener {
   void OnCookieChange(const net::CookieChangeInfo& change) override;
 
   ElectronBrowserContext* browser_context_;
-  base::CallbackList<void(const net::CookieChangeInfo& change)>
+  base::RepeatingCallbackList<void(const net::CookieChangeInfo& change)>
       cookie_change_sub_list_;
 
   mojo::Receiver<network::mojom::CookieChangeListener> receiver_;

@@ -871,6 +871,10 @@ re-add a removed item to a custom category earlier than that will result in the
 entire custom category being omitted from the Jump List. The list of removed
 items can be obtained using `app.getJumpListSettings()`.
 
+**Note:** The maximum length of a Jump List item's `description` property is
+260 characters. Beyond this limit, the item will not be added to the Jump
+List, nor will it be displayed.
+
 Here's a very simple example of creating a custom Jump List:
 
 ```javascript
@@ -1421,19 +1425,6 @@ This is the user agent that will be used when no user agent is set at the
 `webContents` or `session` level.  It is useful for ensuring that your entire
 app has the same user agent.  Set to a custom value as early as possible
 in your app's initialization to ensure that your overridden value is used.
-
-### `app.allowRendererProcessReuse`
-
-A `Boolean` which when `true` disables the overrides that Electron has in place
-to ensure renderer processes are restarted on every navigation.  The current
-default value for this property is `true`.
-
-The intention is for these overrides to become disabled by default and then at
-some point in the future this property will be removed.  This property impacts
-which native modules you can use in the renderer process.  For more information
-on the direction Electron is going with renderer process restarts and usage of
-native modules in the renderer process please check out this
-[Tracking Issue](https://github.com/electron/electron/issues/18397).
 
 ### `app.runningUnderRosettaTranslation` _macOS_ _Readonly_
 

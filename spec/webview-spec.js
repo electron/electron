@@ -33,6 +33,28 @@ describe('<webview> tag', function () {
     return event.message;
   };
 
+  async function loadFileInWebView (webview, attributes = {}) {
+    const thisFile = url.format({
+      pathname: __filename.replace(/\\/g, '/'),
+      protocol: 'file',
+      slashes: true
+    });
+    const src = `<script>
+      function loadFile() {
+        return new Promise((resolve) => {
+          fetch('${thisFile}').then(
+            () => resolve('loaded'),
+            () => resolve('failed')
+          )
+        });
+      }
+      console.log('ok');
+    </script>`;
+    attributes.src = `data:text/html;base64,${btoa(unescape(encodeURIComponent(src)))}`;
+    await startLoadingWebViewAndWaitForMessage(webview, attributes);
+    return await webview.executeJavaScript('loadFile()');
+  }
+
   beforeEach(() => {
     webview = new WebView();
   });
@@ -321,27 +343,13 @@ describe('<webview> tag', function () {
 
   describe('disablewebsecurity attribute', () => {
     it('does not disable web security when not set', async () => {
-      const jqueryPath = path.join(__dirname, '/static/jquery-2.0.3.min.js');
-      const src = `<script src='file://${jqueryPath}'></script> <script>console.log('ok');</script>`;
-      const encoded = btoa(unescape(encodeURIComponent(src)));
-
-      const message = await startLoadingWebViewAndWaitForMessage(webview, {
-        src: `data:text/html;base64,${encoded}`
-      });
-      expect(message).to.be.a('string');
-      expect(message).to.contain('Not allowed to load local resource');
+      const result = await loadFileInWebView(webview);
+      expect(result).to.equal('failed');
     });
 
     it('disables web security when set', async () => {
-      const jqueryPath = path.join(__dirname, '/static/jquery-2.0.3.min.js');
-      const src = `<script src='file://${jqueryPath}'></script> <script>console.log('ok');</script>`;
-      const encoded = btoa(unescape(encodeURIComponent(src)));
-
-      const message = await startLoadingWebViewAndWaitForMessage(webview, {
-        disablewebsecurity: '',
-        src: `data:text/html;base64,${encoded}`
-      });
-      expect(message).to.equal('ok');
+      const result = await loadFileInWebView(webview, { disablewebsecurity: '' });
+      expect(result).to.equal('loaded');
     });
 
     it('does not break node integration', async () => {
@@ -483,23 +491,18 @@ describe('<webview> tag', function () {
     });
 
     it('can disables web security and enable nodeintegration', async () => {
-      const jqueryPath = path.join(__dirname, '/static/jquery-2.0.3.min.js');
-      const src = `<script src='file://${jqueryPath}'></script> <script>console.log(typeof require);</script>`;
-      const encoded = btoa(unescape(encodeURIComponent(src)));
-
-      const message = await startLoadingWebViewAndWaitForMessage(webview, {
-        src: `data:text/html;base64,${encoded}`,
-        webpreferences: 'webSecurity=no, nodeIntegration=yes, contextIsolation=no'
-      });
-
-      expect(message).to.equal('function');
+      const result = await loadFileInWebView(webview, { webpreferences: 'webSecurity=no, nodeIntegration=yes, contextIsolation=no' });
+      expect(result).to.equal('loaded');
+      const type = await webview.executeJavaScript('typeof require');
+      expect(type).to.equal('function');
     });
   });
 
   describe('new-window event', () => {
     it('emits when window.open is called', async () => {
       loadWebView(webview, {
-        src: `file://${fixtures}/pages/window-open.html`
+        src: `file://${fixtures}/pages/window-open.html`,
+        allowpopups: true
       });
       const { url, frameName } = await waitForEvent(webview, 'new-window');
 
@@ -509,7 +512,8 @@ describe('<webview> tag', function () {
 
     it('emits when link with target is called', async () => {
       loadWebView(webview, {
-        src: `file://${fixtures}/pages/target-name.html`
+        src: `file://${fixtures}/pages/target-name.html`,
+        allowpopups: true
       });
       const { url, frameName } = await waitForEvent(webview, 'new-window');
 

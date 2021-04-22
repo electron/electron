@@ -111,10 +111,10 @@ index ad7f766a36b1b6b2a8bc0f96369f1aaadf6681f7..f6c6c14a0937430df62c9b9c1132c591
   protected:
    virtual ~DesktopMediaListObserver() {}
 diff --git a/chrome/browser/media/webrtc/native_desktop_media_list.cc b/chrome/browser/media/webrtc/native_desktop_media_list.cc
-index f0efd4af8b7dde2c13d9e63d64249589f14ac24c..6c8c91f7d9574517da6faebe9c73fe3ed03310e3 100644
+index 0d38b92ccb7ef1ada0d2165d714d80a844c999b8..d1254c8e1acbadb3a1976097031889f19a02554d 100644
 --- a/chrome/browser/media/webrtc/native_desktop_media_list.cc
 +++ b/chrome/browser/media/webrtc/native_desktop_media_list.cc
-@@ -10,15 +10,16 @@
+@@ -11,15 +11,16 @@
  #include "base/hash/hash.h"
  #include "base/message_loop/message_pump_type.h"
  #include "base/single_thread_task_runner.h"
@@ -132,7 +132,7 @@ index f0efd4af8b7dde2c13d9e63d64249589f14ac24c..6c8c91f7d9574517da6faebe9c73fe3e
  #include "media/base/video_util.h"
  #include "third_party/libyuv/include/libyuv/scale_argb.h"
  #include "third_party/skia/include/core/SkBitmap.h"
-@@ -265,6 +266,8 @@ void NativeDesktopMediaList::Worker::RefreshNextThumbnail() {
+@@ -266,6 +267,8 @@ void NativeDesktopMediaList::Worker::RefreshNextThumbnail() {
        FROM_HERE,
        base::BindOnce(&NativeDesktopMediaList::UpdateNativeThumbnailsFinished,
                       media_list_));
