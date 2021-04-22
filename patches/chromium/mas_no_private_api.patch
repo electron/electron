@@ -125,7 +125,7 @@ index a7d6351854d08926c4e9c43c95e9075bd4d4c728..9c89595cb6c37527b96b4afde3871333
  // is concerned.
  @property(nonatomic, readonly) NSString* subrole;
 diff --git a/content/browser/accessibility/browser_accessibility_cocoa.mm b/content/browser/accessibility/browser_accessibility_cocoa.mm
-index c4121877602e09ec5aa86441d5910fbc7dab8c0b..49ecdf4974deb712ae710828e93b10d207de396c 100644
+index 156866e197e1228ba0fc3947e0addeeac1e515ae..cef3272eea8ec5477a623f60782d7554b8c6a41d 100644
 --- a/content/browser/accessibility/browser_accessibility_cocoa.mm
 +++ b/content/browser/accessibility/browser_accessibility_cocoa.mm
 @@ -203,6 +203,7 @@
@@ -260,7 +260,7 @@ index c4121877602e09ec5aa86441d5910fbc7dab8c0b..49ecdf4974deb712ae710828e93b10d2
  }
  
  - (BOOL)instanceActive {
-@@ -2287,6 +2309,7 @@ - (NSArray*)selectedChildren {
+@@ -2283,6 +2305,7 @@ - (NSArray*)selectedChildren {
    return ret;
  }
  
@@ -268,7 +268,7 @@ index c4121877602e09ec5aa86441d5910fbc7dab8c0b..49ecdf4974deb712ae710828e93b10d2
  - (NSString*)selectedText {
    if (![self instanceActive])
      return nil;
-@@ -2298,11 +2321,13 @@ - (NSString*)selectedText {
+@@ -2294,11 +2317,13 @@ - (NSString*)selectedText {
      return nil;
    return base::SysUTF16ToNSString(range.GetText());
  }
@@ -282,7 +282,7 @@ index c4121877602e09ec5aa86441d5910fbc7dab8c0b..49ecdf4974deb712ae710828e93b10d2
  - (NSValue*)selectedTextRange {
    if (![self instanceActive])
      return nil;
-@@ -2327,7 +2352,9 @@ - (NSValue*)selectedTextRange {
+@@ -2323,7 +2348,9 @@ - (NSValue*)selectedTextRange {
    int selLength = range.GetText().length();
    return [NSValue valueWithRange:NSMakeRange(selStart, selLength)];
  }
@@ -292,7 +292,7 @@ index c4121877602e09ec5aa86441d5910fbc7dab8c0b..49ecdf4974deb712ae710828e93b10d2
  - (id)selectedTextMarkerRange {
    if (![self instanceActive])
      return nil;
-@@ -2339,6 +2366,7 @@ - (id)selectedTextMarkerRange {
+@@ -2335,6 +2362,7 @@ - (id)selectedTextMarkerRange {
    // words correctly.
    return CreateTextMarkerRange(ax_range.AsBackwardRange());
  }
@@ -300,7 +300,7 @@ index c4121877602e09ec5aa86441d5910fbc7dab8c0b..49ecdf4974deb712ae710828e93b10d2
  
  - (NSValue*)size {
    if (![self instanceActive])
-@@ -2371,6 +2399,7 @@ - (NSString*)sortDirection {
+@@ -2367,6 +2395,7 @@ - (NSString*)sortDirection {
    return nil;
  }
  
@@ -308,7 +308,7 @@ index c4121877602e09ec5aa86441d5910fbc7dab8c0b..49ecdf4974deb712ae710828e93b10d2
  // Returns a text marker that points to the first character in the document that
  // can be selected with VoiceOver.
  - (id)startTextMarker {
-@@ -2379,6 +2408,7 @@ - (id)startTextMarker {
+@@ -2375,6 +2404,7 @@ - (id)startTextMarker {
    BrowserAccessibility::AXPosition position = _owner->CreatePositionAt(0);
    return CreateTextMarker(position->CreatePositionAtStartOfContent());
  }
@@ -316,7 +316,7 @@ index c4121877602e09ec5aa86441d5910fbc7dab8c0b..49ecdf4974deb712ae710828e93b10d2
  
  // Returns a subrole based upon the role.
  - (NSString*)subrole {
-@@ -2708,12 +2738,14 @@ - (NSAttributedString*)attributedValueForRange:(NSRange)range {
+@@ -2704,12 +2734,14 @@ - (NSAttributedString*)attributedValueForRange:(NSRange)range {
    NSMutableAttributedString* attributedInnerText =
        [[[NSMutableAttributedString alloc]
            initWithString:base::SysUTF16ToNSString(innerText)] autorelease];
@@ -331,7 +331,7 @@ index c4121877602e09ec5aa86441d5910fbc7dab8c0b..49ecdf4974deb712ae710828e93b10d2
  
    return [attributedInnerText attributedSubstringFromRange:range];
  }
-@@ -2826,6 +2858,7 @@ - (id)accessibilityAttributeValue:(NSString*)attribute
+@@ -2822,6 +2854,7 @@ - (id)accessibilityAttributeValue:(NSString*)attribute
        return ToBrowserAccessibilityCocoa(cell);
    }
  
@@ -339,7 +339,7 @@ index c4121877602e09ec5aa86441d5910fbc7dab8c0b..49ecdf4974deb712ae710828e93b10d2
    if ([attribute
            isEqualToString:
                NSAccessibilityUIElementForTextMarkerParameterizedAttribute]) {
-@@ -3149,6 +3182,7 @@ - (id)accessibilityAttributeValue:(NSString*)attribute
+@@ -3145,6 +3178,7 @@ - (id)accessibilityAttributeValue:(NSString*)attribute
  
      return CreateTextMarker(root->CreatePositionAt(index));
    }
@@ -347,7 +347,7 @@ index c4121877602e09ec5aa86441d5910fbc7dab8c0b..49ecdf4974deb712ae710828e93b10d2
  
    if ([attribute isEqualToString:
                       NSAccessibilityBoundsForRangeParameterizedAttribute]) {
-@@ -3179,6 +3213,7 @@ - (id)accessibilityAttributeValue:(NSString*)attribute
+@@ -3175,6 +3209,7 @@ - (id)accessibilityAttributeValue:(NSString*)attribute
      return nil;
    }
  
@@ -355,7 +355,7 @@ index c4121877602e09ec5aa86441d5910fbc7dab8c0b..49ecdf4974deb712ae710828e93b10d2
    if ([attribute
            isEqualToString:
                NSAccessibilityLineTextMarkerRangeForTextMarkerParameterizedAttribute]) {
-@@ -3298,6 +3333,7 @@ - (id)accessibilityAttributeValue:(NSString*)attribute
+@@ -3294,6 +3329,7 @@ - (id)accessibilityAttributeValue:(NSString*)attribute
  
      return @(child->GetIndexInParent());
    }
@@ -363,7 +363,7 @@ index c4121877602e09ec5aa86441d5910fbc7dab8c0b..49ecdf4974deb712ae710828e93b10d2
  
    return nil;
  }
-@@ -3827,6 +3863,7 @@ - (void)accessibilitySetValue:(id)value forAttribute:(NSString*)attribute {
+@@ -3823,6 +3859,7 @@ - (void)accessibilitySetValue:(id)value forAttribute:(NSString*)attribute {
          _owner->CreatePositionAt(range.location),
          _owner->CreatePositionAt(NSMaxRange(range))));
    }
@@ -371,7 +371,7 @@ index c4121877602e09ec5aa86441d5910fbc7dab8c0b..49ecdf4974deb712ae710828e93b10d2
    if ([attribute
            isEqualToString:NSAccessibilitySelectedTextMarkerRangeAttribute]) {
      BrowserAccessibility::AXRange range = CreateRangeFromTextMarkerRange(value);
-@@ -3837,6 +3874,7 @@ - (void)accessibilitySetValue:(id)value forAttribute:(NSString*)attribute {
+@@ -3833,6 +3870,7 @@ - (void)accessibilitySetValue:(id)value forAttribute:(NSString*)attribute {
          BrowserAccessibility::AXRange(range.anchor()->AsLeafTextPosition(),
                                        range.focus()->AsLeafTextPosition()));
    }

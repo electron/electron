@@ -20,7 +20,7 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index 967a159aa52d79e114ecb0e408af93214a4ab6be..00ee76fb7d3bdab31799d909d817daee639386f7 100644
+index 0da11300be1a324bc4c54feaa9d5ec1ad5815391..5048f643f2b4ef060b2ae9160deccd46f92fa62a 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
 @@ -1789,6 +1789,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
@@ -48,19 +48,19 @@ index c02eb016dc3f772ccafcd8099b41a4aca4d8236a..317275b6315253f5f317a09b478b5665
    // Image Decode Service and raster tiles without images until the decode is
    // ready.
 diff --git a/components/viz/common/display/renderer_settings.h b/components/viz/common/display/renderer_settings.h
-index 2e32385af86c6156c4197393248d70c470cdd4b5..350f56238e1c01cc6073555933f57df8cafca050 100644
+index b7c9b29c0888fa77c0ab7b4701d7ed1f1d91352e..a6684ff01cb36ce0a58f1c3c9473066e4807e0e2 100644
 --- a/components/viz/common/display/renderer_settings.h
 +++ b/components/viz/common/display/renderer_settings.h
-@@ -23,6 +23,7 @@ class VIZ_COMMON_EXPORT RendererSettings {
-   RendererSettings(const RendererSettings& other);
+@@ -24,6 +24,7 @@ class VIZ_COMMON_EXPORT RendererSettings {
    ~RendererSettings();
  
+   bool apply_simple_frame_rate_throttling = false;
 +  bool enable_color_correct_rendering = true;
    bool allow_antialiasing = true;
    bool force_antialiasing = false;
    bool force_blending_with_shaders = false;
 diff --git a/components/viz/host/renderer_settings_creation.cc b/components/viz/host/renderer_settings_creation.cc
-index 4dbfd138a467462bae4ff062d9a8062b76ecaa4c..cc7c95bb0f4e6ec6b3579ced90a0f1035f27bef6 100644
+index f919df4d79a1168269c1538ac13a2a944586cf4e..fc34cf5d7dab95e7b6fc0576674b3e2be1792c65 100644
 --- a/components/viz/host/renderer_settings_creation.cc
 +++ b/components/viz/host/renderer_settings_creation.cc
 @@ -17,6 +17,7 @@
@@ -79,7 +79,7 @@ index 4dbfd138a467462bae4ff062d9a8062b76ecaa4c..cc7c95bb0f4e6ec6b3579ced90a0f103
 +      !command_line->HasSwitch(switches::kDisableColorCorrectRendering);
    renderer_settings.partial_swap_enabled =
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
- #if defined(OS_APPLE)
+ 
 diff --git a/components/viz/service/display/gl_renderer.cc b/components/viz/service/display/gl_renderer.cc
 index 8a94e6c42c5ee7c6c3f17979713eb5e4d46a5e13..04723a0c3fe20d0ae6c90d27bdb0a5d574bc27a2 100644
 --- a/components/viz/service/display/gl_renderer.cc
@@ -241,7 +241,7 @@ index ed098dec8efc5e5c72dbdbc8e17f1cb5da9f1b1f..a831cd8c40be9f6ac8b63ee702ec2baa
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 905e469f32a0da286682a64a09a896e18d22e6bb..158df3c367443b01455ca70285e1e52463decfb8 100644
+index 142b706b1b3a5d4eb00a507d06dd4dc67554fc93..ca5fb7568237b56f317845f36d18b49a7a9a4565 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -212,6 +212,7 @@
@@ -252,7 +252,7 @@ index 905e469f32a0da286682a64a09a896e18d22e6bb..158df3c367443b01455ca70285e1e524
  #include "ui/gl/gl_switches.h"
  #include "ui/native_theme/native_theme_features.h"
  #include "url/origin.h"
-@@ -3168,6 +3169,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3164,6 +3165,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {

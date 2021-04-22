@@ -8,32 +8,23 @@ we invoke it in order to expose contents.decrementCapturerCount([stayHidden, sta
 to users. We should try to upstream this.
 
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index bc88e09ffa163e0c90d4487c12480bdec56f73bd..1b1d4585248267c7c62fb7dc111c61d61275ce2e 100644
+index 31264194b338fe6f3d81e8650941db27c924d71b..0d9d46e47ada06769d98d2a12810a6ef7101fe54 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -394,6 +394,9 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
-       const gfx::Size& capture_size,
-       bool stay_hidden,
-       bool stay_awake) override WARN_UNUSED_RESULT;
-+  // Called when the base::ScopedClosureRunner returned by
-+  // IncrementCapturerCount() is destructed.
-+  void DecrementCapturerCount(bool stay_hidden, bool stay_awake) override;
-   bool IsBeingCaptured() override;
-   bool IsBeingVisiblyCaptured() override;
-   bool IsAudioMuted() override;
-@@ -1722,10 +1725,6 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
+@@ -1726,9 +1726,11 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
    // shown in the address bar), as opposed to one in for example a Prerender.
    bool IsPrimaryFrameTree(const FrameTree& frame_tree) const;
  
--  // Called when the base::ScopedClosureRunner returned by
--  // IncrementCapturerCount() is destructed.
--  void DecrementCapturerCount(bool stay_hidden, bool stay_awake);
--
-   // Data for core operation ---------------------------------------------------
++ public:
+   // Called when the base::ScopedClosureRunner returned by
+   // IncrementCapturerCount() is destructed.
+   void DecrementCapturerCount(bool stay_hidden, bool stay_awake);
++ private:
  
-   // Delegate for notifying our owner about stuff. Not owned by us.
+   // Calculates the PageVisibilityState for |visibility|, taking the capturing
+   // state into account.
 diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
-index 9d089057f886c7b6b10ded3c2b37f5580f3b67f7..517d5e18e064f23aebd3eed0e6c0a5e41a32c863 100644
+index ceca0729b42ffd4381f7f17281f6a5d55a846563..252790eee378bbb3633aad07bdcf4da66e3e50a3 100644
 --- a/content/public/browser/web_contents.h
 +++ b/content/public/browser/web_contents.h
 @@ -570,6 +570,7 @@ class WebContents : public PageNavigator,
