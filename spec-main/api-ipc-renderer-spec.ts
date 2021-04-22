@@ -150,9 +150,14 @@ describe('ipcRenderer module', () => {
 
         it('sends message to WebContents', async () => {
           const data = await w.webContents.executeJavaScript(`new Promise(resolve => {
-            const { ipcRenderer } = require('electron')
-            ipcRenderer.sendTo(${contents.id}, 'ping', ${JSON.stringify(payload)})
-            ipcRenderer.once('pong', (event, data) => resolve(data))
+            const { ipcRenderer } = require('electron') 
+            try  {
+              ipcRenderer.sendTo(${contents.id}, 'ping', ${JSON.stringify(payload)})
+              ipcRenderer.once('pong', (event, data) => resolve(data))
+            } catch (ex) {
+              console.log('Exception sending message', ex);
+              reject();
+            }
           })`);
           expect(data).to.equal(payload);
         });

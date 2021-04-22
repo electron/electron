@@ -1279,10 +1279,15 @@ describe('chromium features', () => {
             contextIsolation: false
           }
         });
+        console.log(`About to loadUrl ${origin}`);
+        const loadResult = emittedOnce(ipcMain, 'web-sql-response');
         w.webContents.loadURL(origin);
-        const [, error] = await emittedOnce(ipcMain, 'web-sql-response');
+        console.log('About to wait for web-sql-response');
+        const [, error] = await loadResult;
+        console.log('Got web-sql-response');
         expect(error).to.be.null();
         const webviewResult = emittedOnce(ipcMain, 'web-sql-response');
+        console.log('About to wait for w.webContents.executeJavaScript');
         await w.webContents.executeJavaScript(`
           new Promise((resolve, reject) => {
             const webview = new WebView();
@@ -1294,6 +1299,7 @@ describe('chromium features', () => {
             webview.addEventListener('dom-ready', () => resolve());
           });
         `);
+        console.log('About to wait for second web-sql-response');
         const [, childError] = await webviewResult;
         expect(childError).to.equal(securityError);
       });
