@@ -333,6 +333,10 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   aura::Window* window = GetNativeWindow();
   if (window)
     window->AddPreTargetHandler(this);
+
+  // On linux after the widget is initialized we might have to force set the
+  // bounds if the bounds are smaller than the current display
+  SetBounds(gfx::Rect(GetPosition(), bounds.size()), false);
 #endif
 }
 
@@ -1080,6 +1084,17 @@ void NativeWindowViews::SetFocusable(bool focusable) {
   ::SetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE, ex_style);
   SetSkipTaskbar(!focusable);
   Focus(false);
+#endif
+}
+
+bool NativeWindowViews::IsFocusable() {
+  bool can_activate = widget()->widget_delegate()->CanActivate();
+#if defined(OS_WIN)
+  LONG ex_style = ::GetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE);
+  bool no_activate = ex_style & WS_EX_NOACTIVATE;
+  return !no_activate && can_activate;
+#else
+  return can_activate;
 #endif
 }
 

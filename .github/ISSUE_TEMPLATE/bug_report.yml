@@ -71,3 +71,7 @@ body:
     label: Testcase Gist URL
     description: If you can reproduce the issue in a standalone test case, please use [Electron Fiddle](https://github.com/electron/fiddle) to create one and to publish it as a [GitHub gist](https://gist.github.com) and put the gist URL here. This is **the best way** to ensure this issue is triaged quickly.
     placeholder: https://gist.github.com/...
+- type: textarea
+  attributes:
+    label: Additional Information
+    description: If your problem needs further explanation, or if the issue you're seeing cannot be reproduced in a gist, please add more information here.

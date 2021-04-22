@@ -198,39 +198,37 @@ const securityWebPreferences: { [key: string]: boolean } = {
   enableWebSQL: false
 };
 
-function makeBrowserWindowOptions ({ embedder, features, overrideOptions, useDeprecatedBehaviorForOptionInheritance = true }: {
+function makeBrowserWindowOptions ({ embedder, features, overrideOptions }: {
   embedder: WebContents,
   features: string,
   overrideOptions?: BrowserWindowConstructorOptions,
-  useDeprecatedBehaviorForOptionInheritance?: boolean
 }) {
   const { options: parsedOptions, webPreferences: parsedWebPreferences } = parseFeatures(features);
 
-  const deprecatedInheritedOptions = getDeprecatedInheritedOptions(embedder);
-
   return {
     options: {
-      ...(useDeprecatedBehaviorForOptionInheritance && deprecatedInheritedOptions),
       show: true,
       width: 800,
       height: 600,
       ...parsedOptions,
       ...overrideOptions,
-      webPreferences: makeWebPreferences({ embedder, insecureParsedWebPreferences: parsedWebPreferences, secureOverrideWebPreferences: overrideOptions && overrideOptions.webPreferences, useDeprecatedBehaviorForOptionInheritance: true })
+      webPreferences: makeWebPreferences({
+        embedder,
+        insecureParsedWebPreferences: parsedWebPreferences,
+        secureOverrideWebPreferences: overrideOptions && overrideOptions.webPreferences
+      })
     } as Electron.BrowserViewConstructorOptions
   };
 }
 
-export function makeWebPreferences ({ embedder, secureOverrideWebPreferences = {}, insecureParsedWebPreferences: parsedWebPreferences = {}, useDeprecatedBehaviorForOptionInheritance = true }: {
+export function makeWebPreferences ({ embedder, secureOverrideWebPreferences = {}, insecureParsedWebPreferences: parsedWebPreferences = {} }: {
   embedder: WebContents,
   insecureParsedWebPreferences?: ReturnType<typeof parseFeatures>['webPreferences'],
   // Note that override preferences are considered elevated, and should only be
   // sourced from the main process, as they override security defaults. If you
   // have unvetted prefs, use parsedWebPreferences.
   secureOverrideWebPreferences?: BrowserWindowConstructorOptions['webPreferences'],
-  useDeprecatedBehaviorForOptionInheritance?: boolean
 }) {
-  const deprecatedInheritedOptions = getDeprecatedInheritedOptions(embedder);
   const parentWebPreferences = embedder.getLastWebPreferences();
   const securityWebPreferencesFromParent = (Object.keys(securityWebPreferences).reduce((map, key) => {
     if (securityWebPreferences[key] === parentWebPreferences[key as keyof Electron.WebPreferences]) {
@@ -241,7 +239,6 @@ export function makeWebPreferences ({ embedder, secureOverrideWebPreferences = {
   const openerId = parentWebPreferences.nativeWindowOpen ? null : embedder.id;
 
   return {
-    ...(useDeprecatedBehaviorForOptionInheritance && deprecatedInheritedOptions ? deprecatedInheritedOptions.webPreferences : null),
     ...parsedWebPreferences,
     // Note that order is key here, we want to disallow the renderer's
     // ability to change important security options but allow main (via
@@ -252,25 +249,6 @@ export function makeWebPreferences ({ embedder, secureOverrideWebPreferences = {
     // TODO: Figure out another way to pass this?
     openerId
   };
-}
-
-/**
- * Current Electron behavior is to inherit all options from the parent window.
- * In practical use, this is kind of annoying because consumers have to know
- * about the parent window's preferences in order to unset them and makes child
- * windows even more of an anomaly. In 11.0.0 we will remove this behavior and
- * only critical security preferences will be inherited by default.
- */
-function getDeprecatedInheritedOptions (embedder: WebContents) {
-  if (!embedder.browserWindowOptions) {
-    // If it's a webview, return just the webPreferences.
-    return {
-      webPreferences: embedder.getLastWebPreferences()
-    };
-  }
-
-  const { type, show, ...inheritableOptions } = embedder.browserWindowOptions;
-  return inheritableOptions;
 }
 
 function formatPostDataHeaders (postData: PostData) {
