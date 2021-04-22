@@ -85,7 +85,6 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   void SetUserAgent(const std::string& user_agent);
 
   content::SerialDelegate* GetSerialDelegate() override;
-  bool CanUseCustomSiteInstance() override;
 
   content::BluetoothDelegate* GetBluetoothDelegate() override;
 
@@ -97,14 +96,6 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
 
   void OverrideWebkitPrefs(content::WebContents* web_contents,
                            blink::web_pref::WebPreferences* prefs) override;
-  SiteInstanceForNavigationType ShouldOverrideSiteInstanceForNavigation(
-      content::RenderFrameHost* current_rfh,
-      content::RenderFrameHost* speculative_rfh,
-      content::BrowserContext* browser_context,
-      const GURL& url,
-      bool has_navigation_started,
-      bool has_response_started,
-      content::SiteInstance** affinity_site_instance) const override;
   void RegisterPendingSiteInstance(
       content::RenderFrameHost* render_frame_host,
       content::SiteInstance* pending_site_instance) override;
@@ -289,21 +280,9 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
     content::BrowserContext* browser_context = nullptr;
   };
 
-  bool ShouldForceNewSiteInstance(content::RenderFrameHost* current_rfh,
-                                  content::RenderFrameHost* speculative_rfh,
-                                  content::BrowserContext* browser_context,
-                                  const GURL& dest_url,
-                                  bool has_response_started) const;
-  bool NavigationWasRedirectedCrossSite(
-      content::BrowserContext* browser_context,
-      content::SiteInstance* current_instance,
-      content::SiteInstance* speculative_instance,
-      const GURL& dest_url,
-      bool has_response_started) const;
   void AddProcessPreferences(int process_id, ProcessPreferences prefs);
   void RemoveProcessPreferences(int process_id);
   bool IsProcessObserved(int process_id) const;
-  bool IsRendererSandboxed(int process_id) const;
   bool RendererUsesNativeWindowOpen(int process_id) const;
   bool RendererDisablesPopups(int process_id) const;
   content::SiteInstance* GetSiteInstanceFromAffinity(

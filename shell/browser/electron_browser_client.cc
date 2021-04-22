@@ -193,29 +193,6 @@ namespace electron {
 
 namespace {
 
-// Next navigation should not restart renderer process.
-bool g_suppress_renderer_process_restart = false;
-
-// c.f. https://chromium-review.googlesource.com/c/chromium/src/+/2680274
-content::SiteInfo GetSiteForURL(content::BrowserContext* browser_context,
-                                const GURL& url) {
-  return content::SiteInfo::Create(
-      content::IsolationContext(browser_context),
-      content::UrlInfo(url, content::UrlInfo::OriginIsolationRequest::kNone),
-      content::CoopCoepCrossOriginIsolatedInfo::CreateNonIsolated());
-}
-
-bool IsSameWebSite(content::BrowserContext* browser_context,
-                   content::SiteInstance* site_instance,
-                   const GURL& dest_url) {
-  return site_instance->IsSameSiteWithURL(dest_url) ||
-         // `IsSameSiteWithURL` doesn't seem to work for some URIs such as
-         // `file:`, handle these scenarios by comparing only the site as
-         // defined by `GetSiteForURL`.
-         (GetSiteForURL(browser_context, dest_url).site_url() ==
-          site_instance->GetSiteURL());
-}
-
 ElectronBrowserClient* g_browser_client = nullptr;
 
 base::LazyInstance<std::string>::DestructorAtExit
@@ -391,70 +368,6 @@ content::WebContents* ElectronBrowserClient::GetWebContentsFromProcessID(
   return WebContentsPreferences::GetWebContentsFromProcessID(process_id);
 }
 
-bool ElectronBrowserClient::ShouldForceNewSiteInstance(
-    content::RenderFrameHost* current_rfh,
-    content::RenderFrameHost* speculative_rfh,
-    content::BrowserContext* browser_context,
-    const GURL& url,
-    bool has_response_started) const {
-  if (url.SchemeIs(url::kJavaScriptScheme))
-    // "javascript:" scheme should always use same SiteInstance
-    return false;
-  if (url.SchemeIs(extensions::kExtensionScheme))
-    return false;
-
-  content::SiteInstance* current_instance = current_rfh->GetSiteInstance();
-  content::SiteInstance* speculative_instance =
-      speculative_rfh ? speculative_rfh->GetSiteInstance() : nullptr;
-  int process_id = current_instance->GetProcess()->GetID();
-  if (NavigationWasRedirectedCrossSite(browser_context, current_instance,
-                                       speculative_instance, url,
-                                       has_response_started)) {
-    // Navigation was redirected. We can't force the current, speculative or a
-    // new unrelated site instance to be used. Delegate to the content layer.
-    return false;
-  } else if (IsRendererSandboxed(process_id)) {
-    // Renderer is sandboxed, delegate the decision to the content layer for all
-    // origins.
-    return false;
-  } else if (!RendererUsesNativeWindowOpen(process_id)) {
-    // non-sandboxed renderers without native window.open should always create
-    // a new SiteInstance
-    return true;
-  } else {
-    auto* web_contents = content::WebContents::FromRenderFrameHost(current_rfh);
-    if (!ChildWebContentsTracker::FromWebContents(web_contents)) {
-      // Root WebContents should always create new process to make sure
-      // native addons are loaded correctly after reload / navigation.
-      // (Non-root WebContents opened by window.open() should try to
-      //  reuse process to allow synchronous cross-window scripting.)
-      return true;
-    }
-  }
-
-  // Create new a SiteInstance if navigating to a different site.
-  return !IsSameWebSite(browser_context, current_instance, url);
-}
-
-bool ElectronBrowserClient::NavigationWasRedirectedCrossSite(
-    content::BrowserContext* browser_context,
-    content::SiteInstance* current_instance,
-    content::SiteInstance* speculative_instance,
-    const GURL& dest_url,
-    bool has_response_started) const {
-  bool navigation_was_redirected = false;
-  if (has_response_started) {
-    navigation_was_redirected =
-        !IsSameWebSite(browser_context, current_instance, dest_url);
-  } else {
-    navigation_was_redirected =
-        speculative_instance &&
-        !IsSameWebSite(browser_context, speculative_instance, dest_url);
-  }
-
-  return navigation_was_redirected;
-}
-
 void ElectronBrowserClient::AddProcessPreferences(
     int process_id,
     ElectronBrowserClient::ProcessPreferences prefs) {
@@ -467,11 +380,6 @@ void ElectronBrowserClient::RemoveProcessPreferences(int process_id) {
 
 bool ElectronBrowserClient::IsProcessObserved(int process_id) const {
   return process_preferences_.find(process_id) != process_preferences_.end();
-}
-
-bool ElectronBrowserClient::IsRendererSandboxed(int process_id) const {
-  auto it = process_preferences_.find(process_id);
-  return it != process_preferences_.end() && it->second.sandbox;
 }
 
 bool ElectronBrowserClient::RendererUsesNativeWindowOpen(int process_id) const {
@@ -584,57 +492,6 @@ void ElectronBrowserClient::OverrideWebkitPrefs(
   if (web_preferences) {
     web_preferences->OverrideWebkitPrefs(prefs);
   }
-}
-
-content::ContentBrowserClient::SiteInstanceForNavigationType
-ElectronBrowserClient::ShouldOverrideSiteInstanceForNavigation(
-    content::RenderFrameHost* current_rfh,
-    content::RenderFrameHost* speculative_rfh,
-    content::BrowserContext* browser_context,
-    const GURL& url,
-    bool has_navigation_started,
-    bool has_response_started,
-    content::SiteInstance** affinity_site_instance) const {
-  if (g_suppress_renderer_process_restart) {
-    g_suppress_renderer_process_restart = false;
-    return SiteInstanceForNavigationType::ASK_CHROMIUM;
-  }
-
-  // Do we have an affinity site to manage ?
-  content::SiteInstance* site_instance_from_affinity =
-      GetSiteInstanceFromAffinity(browser_context, url, current_rfh);
-  if (site_instance_from_affinity) {
-    *affinity_site_instance = site_instance_from_affinity;
-    return SiteInstanceForNavigationType::FORCE_AFFINITY;
-  }
-
-  if (!ShouldForceNewSiteInstance(current_rfh, speculative_rfh, browser_context,
-                                  url, has_response_started)) {
-    return SiteInstanceForNavigationType::ASK_CHROMIUM;
-  }
-
-  // ShouldOverrideSiteInstanceForNavigation will be called more than once
-  // during a navigation (currently twice, on request and when it's about
-  // to commit in the renderer), look at
-  // RenderFrameHostManager::GetFrameHostForNavigation.
-  // In the default mode we should reuse the same site instance until the
-  // request commits otherwise it will get destroyed. Currently there is no
-  // unique lifetime tracker for a navigation request during site instance
-  // creation. We check for the state of the request, which should be one of
-  // (WAITING_FOR_RENDERER_RESPONSE, STARTED, RESPONSE_STARTED, FAILED) along
-  // with the availability of a speculative render frame host.
-  if (has_response_started) {
-    return SiteInstanceForNavigationType::FORCE_CURRENT;
-  }
-
-  if (!has_navigation_started) {
-    // If the navigation didn't start yet, ignore any candidate site instance.
-    // If such instance exists, it belongs to a previous navigation still
-    // taking place. Fixes https://github.com/electron/electron/issues/17576.
-    return SiteInstanceForNavigationType::FORCE_NEW;
-  }
-
-  return SiteInstanceForNavigationType::FORCE_CANDIDATE_OR_NEW;
 }
 
 void ElectronBrowserClient::RegisterPendingSiteInstance(
@@ -1733,10 +1590,6 @@ ElectronBrowserClient::GetPluginMimeTypesWithExternalHandlers(
     mime_types.insert(pair.first);
 #endif
   return mime_types;
-}
-
-bool ElectronBrowserClient::CanUseCustomSiteInstance() {
-  return true;
 }
 
 content::SerialDelegate* ElectronBrowserClient::GetSerialDelegate() {
