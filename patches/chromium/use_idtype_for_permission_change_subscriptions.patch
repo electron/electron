@@ -1,0 +1,951 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jana Grill <janagrill@google.com>
+Date: Thu, 15 Apr 2021 19:35:42 +0000
+Subject: Use IDType for permission change subscriptions.
+
+(cherry picked from commit ad1489b7c3ed705fc623cdffdc292324be9fcbfa)
+
+Bug: 1025683
+Change-Id: I3b44ba7833138e8a657a4192e1a36c978695db32
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2791431
+Reviewed-by: Richard Coles <torne@chromium.org>
+Reviewed-by: Yuchen Liu <yucliu@chromium.org>
+Reviewed-by: Nasko Oskov <nasko@chromium.org>
+Reviewed-by: Andrey Kosyakov <caseq@chromium.org>
+Reviewed-by: Fabrice de Gans-Riberi <fdegans@chromium.org>
+Reviewed-by: Arthur Sonzogni <arthursonzogni@chromium.org>
+Reviewed-by: Illia Klimov <elklm@google.com>
+Auto-Submit: Balazs Engedy <engedy@chromium.org>
+Commit-Queue: Balazs Engedy <engedy@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#867999}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2817980
+Reviewed-by: Victor-Gabriel Savu <vsavu@google.com>
+Reviewed-by: Achuith Bhandarkar <achuith@chromium.org>
+Commit-Queue: Achuith Bhandarkar <achuith@chromium.org>
+Owners-Override: Achuith Bhandarkar <achuith@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4240@{#1607}
+Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
+
+diff --git a/android_webview/browser/aw_permission_manager.cc b/android_webview/browser/aw_permission_manager.cc
+index bedb16b046d45b257e28e29e410afe43f5c8817c..c020e9668cbd2de9d36d2e160a07e324a2510d6b 100644
+--- a/android_webview/browser/aw_permission_manager.cc
++++ b/android_webview/browser/aw_permission_manager.cc
+@@ -469,16 +469,17 @@ PermissionStatus AwPermissionManager::GetPermissionStatusForFrame(
+           .GetOrigin());
+ }
+ 
+-int AwPermissionManager::SubscribePermissionStatusChange(
++AwPermissionManager::SubscriptionId
++AwPermissionManager::SubscribePermissionStatusChange(
+     PermissionType permission,
+     content::RenderFrameHost* render_frame_host,
+     const GURL& requesting_origin,
+     base::RepeatingCallback<void(PermissionStatus)> callback) {
+-  return content::PermissionController::kNoPendingOperation;
++  return SubscriptionId();
+ }
+ 
+ void AwPermissionManager::UnsubscribePermissionStatusChange(
+-    int subscription_id) {}
++    SubscriptionId subscription_id) {}
+ 
+ void AwPermissionManager::CancelPermissionRequest(int request_id) {
+   PendingRequest* pending_request = pending_requests_.Lookup(request_id);
+diff --git a/android_webview/browser/aw_permission_manager.h b/android_webview/browser/aw_permission_manager.h
+index d9670cac33b84016568e9693b62e83c5e7ee0969..7439e78199783b8ebe2c303ebebf0e1cf62dc718 100644
+--- a/android_webview/browser/aw_permission_manager.h
++++ b/android_webview/browser/aw_permission_manager.h
+@@ -49,13 +49,14 @@ class AwPermissionManager : public content::PermissionControllerDelegate {
+       content::PermissionType permission,
+       content::RenderFrameHost* render_frame_host,
+       const GURL& requesting_origin) override;
+-  int SubscribePermissionStatusChange(
++  SubscriptionId SubscribePermissionStatusChange(
+       content::PermissionType permission,
+       content::RenderFrameHost* render_frame_host,
+       const GURL& requesting_origin,
+       base::RepeatingCallback<void(blink::mojom::PermissionStatus)> callback)
+       override;
+-  void UnsubscribePermissionStatusChange(int subscription_id) override;
++  void UnsubscribePermissionStatusChange(
++      SubscriptionId subscription_id) override;
+ 
+  protected:
+   void CancelPermissionRequest(int request_id);
+diff --git a/chrome/browser/permissions/permission_manager_browsertest.cc b/chrome/browser/permissions/permission_manager_browsertest.cc
+index 440203ce6eca40070e09eae8bafe2a50bea75060..d48e6d85611b2ea4560f56d5e09fafa3a3453e7a 100644
+--- a/chrome/browser/permissions/permission_manager_browsertest.cc
++++ b/chrome/browser/permissions/permission_manager_browsertest.cc
+@@ -49,13 +49,13 @@ class SubscriptionInterceptingPermissionManager
+     callback_ = std::move(callback);
+   }
+ 
+-  int SubscribePermissionStatusChange(
++  SubscriptionId SubscribePermissionStatusChange(
+       content::PermissionType permission,
+       content::RenderFrameHost* render_frame_host,
+       const GURL& requesting_origin,
+       base::RepeatingCallback<void(blink::mojom::PermissionStatus)> callback)
+       override {
+-    int result =
++    SubscriptionId result =
+         permissions::PermissionManager::SubscribePermissionStatusChange(
+             permission, render_frame_host, requesting_origin, callback);
+     std::move(callback_).Run();
+diff --git a/chromecast/browser/cast_permission_manager.cc b/chromecast/browser/cast_permission_manager.cc
+index b358fc3bdb5c6af93a1e6568a667049574367741..b3a226dabff062e591fee38682409dec5e38a213 100644
+--- a/chromecast/browser/cast_permission_manager.cc
++++ b/chromecast/browser/cast_permission_manager.cc
+@@ -63,17 +63,17 @@ CastPermissionManager::GetPermissionStatusForFrame(
+   return blink::mojom::PermissionStatus::GRANTED;
+ }
+ 
+-int CastPermissionManager::SubscribePermissionStatusChange(
++CastPermissionManager::SubscriptionId
++CastPermissionManager::SubscribePermissionStatusChange(
+     content::PermissionType permission,
+     content::RenderFrameHost* render_frame_host,
+     const GURL& requesting_origin,
+     base::RepeatingCallback<void(blink::mojom::PermissionStatus)> callback) {
+-  return content::PermissionController::kNoPendingOperation;
++  return SubscriptionId();
+ }
+ 
+ void CastPermissionManager::UnsubscribePermissionStatusChange(
+-    int subscription_id) {
+-}
++    SubscriptionId subscription_id) {}
+ 
+ }  // namespace shell
+ }  // namespace chromecast
+diff --git a/chromecast/browser/cast_permission_manager.h b/chromecast/browser/cast_permission_manager.h
+index 564ac2b304596027cf7096892dfaf9796500419c..f9da64c6110307cf9912e897f87fcbb2ca123d75 100644
+--- a/chromecast/browser/cast_permission_manager.h
++++ b/chromecast/browser/cast_permission_manager.h
+@@ -43,13 +43,14 @@ class CastPermissionManager : public content::PermissionControllerDelegate {
+       content::PermissionType permission,
+       content::RenderFrameHost* render_frame_host,
+       const GURL& requesting_origin) override;
+-  int SubscribePermissionStatusChange(
++  SubscriptionId SubscribePermissionStatusChange(
+       content::PermissionType permission,
+       content::RenderFrameHost* render_frame_host,
+       const GURL& requesting_origin,
+       base::RepeatingCallback<void(blink::mojom::PermissionStatus)> callback)
+       override;
+-  void UnsubscribePermissionStatusChange(int subscription_id) override;
++  void UnsubscribePermissionStatusChange(
++      SubscriptionId subscription_id) override;
+ 
+  private:
+   DISALLOW_COPY_AND_ASSIGN(CastPermissionManager);
+diff --git a/components/permissions/permission_manager.cc b/components/permissions/permission_manager.cc
+index a9566441647f0e8527a6b9603f663f66e49b2abb..bdf639f49a987eb2d7ae31346dc01b85dac57eaa 100644
+--- a/components/permissions/permission_manager.cc
++++ b/components/permissions/permission_manager.cc
+@@ -542,14 +542,15 @@ bool PermissionManager::IsPermissionOverridableByDevTools(
+                                                             origin->GetURL());
+ }
+ 
+-int PermissionManager::SubscribePermissionStatusChange(
++PermissionManager::SubscriptionId
++PermissionManager::SubscribePermissionStatusChange(
+     PermissionType permission,
+     content::RenderFrameHost* render_frame_host,
+     const GURL& requesting_origin,
+     base::RepeatingCallback<void(PermissionStatus)> callback) {
+   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+   if (is_shutting_down_)
+-    return 0;
++    return SubscriptionId();
+ 
+   if (subscriptions_.IsEmpty())
+     PermissionsClient::Get()
+@@ -586,16 +587,20 @@ int PermissionManager::SubscribePermissionStatusChange(
+   subscription->callback =
+       base::BindRepeating(&SubscriptionCallbackWrapper, std::move(callback));
+ 
+-  return subscriptions_.Add(std::move(subscription));
++  auto id = subscription_id_generator_.GenerateNextId();
++  subscriptions_.AddWithID(std::move(subscription), id);
++  return id;
+ }
+ 
+-void PermissionManager::UnsubscribePermissionStatusChange(int subscription_id) {
++void PermissionManager::UnsubscribePermissionStatusChange(
++    SubscriptionId subscription_id) {
+   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+   if (is_shutting_down_)
+     return;
+ 
+-  // Whether |subscription_id| is known will be checked by the Remove() call.
+-  subscriptions_.Remove(subscription_id);
++  if (subscriptions_.Lookup(subscription_id)) {
++    subscriptions_.Remove(subscription_id);
++  }
+ 
+   if (subscriptions_.IsEmpty()) {
+     PermissionsClient::Get()
+diff --git a/components/permissions/permission_manager.h b/components/permissions/permission_manager.h
+index d11fb4b2c4a1a360ae01154995091439e13bd9a0..19d29dde0392adff318e82bd1c3091c4e1dcd926 100644
+--- a/components/permissions/permission_manager.h
++++ b/components/permissions/permission_manager.h
+@@ -114,13 +114,14 @@ class PermissionManager : public KeyedService,
+   bool IsPermissionOverridableByDevTools(
+       content::PermissionType permission,
+       const base::Optional<url::Origin>& origin) override;
+-  int SubscribePermissionStatusChange(
++  SubscriptionId SubscribePermissionStatusChange(
+       content::PermissionType permission,
+       content::RenderFrameHost* render_frame_host,
+       const GURL& requesting_origin,
+       base::RepeatingCallback<void(blink::mojom::PermissionStatus)> callback)
+       override;
+-  void UnsubscribePermissionStatusChange(int subscription_id) override;
++  void UnsubscribePermissionStatusChange(
++      SubscriptionId subscription_id) override;
+ 
+   // TODO(raymes): Rather than exposing this, use the denial reason from
+   // GetPermissionStatus in callers to determine whether a permission is
+@@ -153,7 +154,8 @@ class PermissionManager : public KeyedService,
+   class PermissionResponseCallback;
+ 
+   struct Subscription;
+-  using SubscriptionsMap = base::IDMap<std::unique_ptr<Subscription>>;
++  using SubscriptionsMap =
++      base::IDMap<std::unique_ptr<Subscription>, SubscriptionId>;
+ 
+   PermissionContextBase* GetPermissionContext(ContentSettingsType type);
+ 
+@@ -186,6 +188,7 @@ class PermissionManager : public KeyedService,
+   content::BrowserContext* browser_context_;
+   PendingRequestsMap pending_requests_;
+   SubscriptionsMap subscriptions_;
++  SubscriptionId::Generator subscription_id_generator_;
+ 
+   PermissionContextMap permission_contexts_;
+   using ContentSettingsTypeOverrides =
+diff --git a/components/permissions/permission_manager_unittest.cc b/components/permissions/permission_manager_unittest.cc
+index ff5793acc907134fc486fcd5b9c20bf0cf2d960c..0070768b4a41e2890b89aba817fe24f6268272c1 100644
+--- a/components/permissions/permission_manager_unittest.cc
++++ b/components/permissions/permission_manager_unittest.cc
+@@ -325,7 +325,7 @@ TEST_F(PermissionManagerTest, SubscriptionDestroyedCleanlyWithoutUnsubscribe) {
+ }
+ 
+ TEST_F(PermissionManagerTest, SubscribeUnsubscribeAfterShutdown) {
+-  int subscription_id =
++  content::PermissionControllerDelegate::SubscriptionId subscription_id =
+       GetPermissionControllerDelegate()->SubscribePermissionStatusChange(
+           PermissionType::GEOLOCATION, main_rfh(), url(),
+           base::Bind(&PermissionManagerTest::OnPermissionChange,
+@@ -340,7 +340,7 @@ TEST_F(PermissionManagerTest, SubscribeUnsubscribeAfterShutdown) {
+       subscription_id);
+ 
+   // Check that subscribe/unsubscribe after shutdown don't crash.
+-  int subscription2_id =
++  content::PermissionControllerDelegate::SubscriptionId subscription2_id =
+       GetPermissionControllerDelegate()->SubscribePermissionStatusChange(
+           PermissionType::GEOLOCATION, main_rfh(), url(),
+           base::Bind(&PermissionManagerTest::OnPermissionChange,
+@@ -351,7 +351,7 @@ TEST_F(PermissionManagerTest, SubscribeUnsubscribeAfterShutdown) {
+ }
+ 
+ TEST_F(PermissionManagerTest, SameTypeChangeNotifies) {
+-  int subscription_id =
++  content::PermissionControllerDelegate::SubscriptionId subscription_id =
+       GetPermissionControllerDelegate()->SubscribePermissionStatusChange(
+           PermissionType::GEOLOCATION, main_rfh(), url(),
+           base::Bind(&PermissionManagerTest::OnPermissionChange,
+@@ -369,7 +369,7 @@ TEST_F(PermissionManagerTest, SameTypeChangeNotifies) {
+ }
+ 
+ TEST_F(PermissionManagerTest, DifferentTypeChangeDoesNotNotify) {
+-  int subscription_id =
++  content::PermissionControllerDelegate::SubscriptionId subscription_id =
+       GetPermissionControllerDelegate()->SubscribePermissionStatusChange(
+           PermissionType::GEOLOCATION, main_rfh(), url(),
+           base::Bind(&PermissionManagerTest::OnPermissionChange,
+@@ -386,7 +386,7 @@ TEST_F(PermissionManagerTest, DifferentTypeChangeDoesNotNotify) {
+ }
+ 
+ TEST_F(PermissionManagerTest, ChangeAfterUnsubscribeDoesNotNotify) {
+-  int subscription_id =
++  content::PermissionControllerDelegate::SubscriptionId subscription_id =
+       GetPermissionControllerDelegate()->SubscribePermissionStatusChange(
+           PermissionType::GEOLOCATION, main_rfh(), url(),
+           base::Bind(&PermissionManagerTest::OnPermissionChange,
+@@ -403,7 +403,7 @@ TEST_F(PermissionManagerTest, ChangeAfterUnsubscribeDoesNotNotify) {
+ }
+ 
+ TEST_F(PermissionManagerTest, DifferentPrimaryUrlDoesNotNotify) {
+-  int subscription_id =
++  content::PermissionControllerDelegate::SubscriptionId subscription_id =
+       GetPermissionControllerDelegate()->SubscribePermissionStatusChange(
+           PermissionType::GEOLOCATION, main_rfh(), url(),
+           base::Bind(&PermissionManagerTest::OnPermissionChange,
+@@ -420,7 +420,7 @@ TEST_F(PermissionManagerTest, DifferentPrimaryUrlDoesNotNotify) {
+ }
+ 
+ TEST_F(PermissionManagerTest, DifferentSecondaryUrlDoesNotNotify) {
+-  int subscription_id =
++  content::PermissionControllerDelegate::SubscriptionId subscription_id =
+       GetPermissionControllerDelegate()->SubscribePermissionStatusChange(
+           PermissionType::GEOLOCATION, main_rfh(), url(),
+           base::Bind(&PermissionManagerTest::OnPermissionChange,
+@@ -437,7 +437,7 @@ TEST_F(PermissionManagerTest, DifferentSecondaryUrlDoesNotNotify) {
+ }
+ 
+ TEST_F(PermissionManagerTest, WildCardPatternNotifies) {
+-  int subscription_id =
++  content::PermissionControllerDelegate::SubscriptionId subscription_id =
+       GetPermissionControllerDelegate()->SubscribePermissionStatusChange(
+           PermissionType::GEOLOCATION, main_rfh(), url(),
+           base::Bind(&PermissionManagerTest::OnPermissionChange,
+@@ -458,7 +458,7 @@ TEST_F(PermissionManagerTest, ClearSettingsNotifies) {
+       url(), url(), ContentSettingsType::GEOLOCATION, std::string(),
+       CONTENT_SETTING_ALLOW);
+ 
+-  int subscription_id =
++  content::PermissionControllerDelegate::SubscriptionId subscription_id =
+       GetPermissionControllerDelegate()->SubscribePermissionStatusChange(
+           PermissionType::GEOLOCATION, main_rfh(), url(),
+           base::Bind(&PermissionManagerTest::OnPermissionChange,
+@@ -475,7 +475,7 @@ TEST_F(PermissionManagerTest, ClearSettingsNotifies) {
+ }
+ 
+ TEST_F(PermissionManagerTest, NewValueCorrectlyPassed) {
+-  int subscription_id =
++  content::PermissionControllerDelegate::SubscriptionId subscription_id =
+       GetPermissionControllerDelegate()->SubscribePermissionStatusChange(
+           PermissionType::GEOLOCATION, main_rfh(), url(),
+           base::Bind(&PermissionManagerTest::OnPermissionChange,
+@@ -497,7 +497,7 @@ TEST_F(PermissionManagerTest, ChangeWithoutPermissionChangeDoesNotNotify) {
+       url(), url(), ContentSettingsType::GEOLOCATION, std::string(),
+       CONTENT_SETTING_ALLOW);
+ 
+-  int subscription_id =
++  content::PermissionControllerDelegate::SubscriptionId subscription_id =
+       GetPermissionControllerDelegate()->SubscribePermissionStatusChange(
+           PermissionType::GEOLOCATION, main_rfh(), url(),
+           base::Bind(&PermissionManagerTest::OnPermissionChange,
+@@ -518,7 +518,7 @@ TEST_F(PermissionManagerTest, ChangesBackAndForth) {
+       url(), url(), ContentSettingsType::GEOLOCATION, std::string(),
+       CONTENT_SETTING_ASK);
+ 
+-  int subscription_id =
++  content::PermissionControllerDelegate::SubscriptionId subscription_id =
+       GetPermissionControllerDelegate()->SubscribePermissionStatusChange(
+           PermissionType::GEOLOCATION, main_rfh(), url(),
+           base::Bind(&PermissionManagerTest::OnPermissionChange,
+@@ -549,7 +549,7 @@ TEST_F(PermissionManagerTest, ChangesBackAndForthWorker) {
+       url(), url(), ContentSettingsType::GEOLOCATION, std::string(),
+       CONTENT_SETTING_ASK);
+ 
+-  int subscription_id =
++  content::PermissionControllerDelegate::SubscriptionId subscription_id =
+       GetPermissionControllerDelegate()->SubscribePermissionStatusChange(
+           PermissionType::GEOLOCATION, nullptr, url(),
+           base::Bind(&PermissionManagerTest::OnPermissionChange,
+@@ -576,7 +576,7 @@ TEST_F(PermissionManagerTest, ChangesBackAndForthWorker) {
+ }
+ 
+ TEST_F(PermissionManagerTest, SubscribeMIDIPermission) {
+-  int subscription_id =
++  content::PermissionControllerDelegate::SubscriptionId subscription_id =
+       GetPermissionControllerDelegate()->SubscribePermissionStatusChange(
+           PermissionType::MIDI, main_rfh(), url(),
+           base::Bind(&PermissionManagerTest::OnPermissionChange,
+@@ -796,7 +796,7 @@ TEST_F(PermissionManagerTest, SubscribeWithPermissionDelegation) {
+   content::RenderFrameHost* parent = main_rfh();
+   content::RenderFrameHost* child = AddChildRFH(parent, kOrigin2);
+ 
+-  int subscription_id =
++  content::PermissionControllerDelegate::SubscriptionId subscription_id =
+       GetPermissionControllerDelegate()->SubscribePermissionStatusChange(
+           PermissionType::GEOLOCATION, child, GURL(kOrigin2),
+           base::Bind(&PermissionManagerTest::OnPermissionChange,
+diff --git a/content/browser/android/nfc_host.cc b/content/browser/android/nfc_host.cc
+index 30517f69b3d790690121bda2f3de50c0e31fadd1..0f077d211a23d05813dafd7dc621915c1fb79ba5 100644
+--- a/content/browser/android/nfc_host.cc
++++ b/content/browser/android/nfc_host.cc
+@@ -99,8 +99,8 @@ void NFCHost::OnPermissionStatusChange(blink::mojom::PermissionStatus status) {
+ 
+ void NFCHost::Close() {
+   nfc_provider_.reset();
+-  if (subscription_id_ != 0)
+-    permission_controller_->UnsubscribePermissionStatusChange(subscription_id_);
++  permission_controller_->UnsubscribePermissionStatusChange(subscription_id_);
++  subscription_id_ = PermissionController::SubscriptionId();
+ }
+ 
+ }  // namespace content
+diff --git a/content/browser/android/nfc_host.h b/content/browser/android/nfc_host.h
+index 8df7cbec810ecb535f4ce4b54266c34243341571..6b5f8dde17d0abda6132845018b4a8f81859cd0d 100644
+--- a/content/browser/android/nfc_host.h
++++ b/content/browser/android/nfc_host.h
+@@ -44,7 +44,7 @@ class NFCHost : public WebContentsObserver {
+   mojo::Remote<device::mojom::NFCProvider> nfc_provider_;
+ 
+   // Permission change subscription ID provided by |permission_controller_|.
+-  int subscription_id_ = 0;
++  PermissionController::SubscriptionId subscription_id_;
+ 
+   DISALLOW_COPY_AND_ASSIGN(NFCHost);
+ };
+diff --git a/content/browser/permissions/permission_controller_impl.cc b/content/browser/permissions/permission_controller_impl.cc
+index c6edd2ebec0b57808512c3b6c574548431efac7e..4722e9d7b3ed77489fa28f97afa55726f7f727e4 100644
+--- a/content/browser/permissions/permission_controller_impl.cc
++++ b/content/browser/permissions/permission_controller_impl.cc
+@@ -132,7 +132,8 @@ struct PermissionControllerImpl::Subscription {
+   int render_frame_id = -1;
+   int render_process_id = -1;
+   base::RepeatingCallback<void(blink::mojom::PermissionStatus)> callback;
+-  int delegate_subscription_id;
++  // This is default-initialized to an invalid ID.
++  PermissionControllerDelegate::SubscriptionId delegate_subscription_id;
+ };
+ 
+ PermissionControllerImpl::~PermissionControllerImpl() {
+@@ -388,7 +389,8 @@ void PermissionControllerImpl::OnDelegatePermissionStatusChange(
+     subscription->callback.Run(status);
+ }
+ 
+-int PermissionControllerImpl::SubscribePermissionStatusChange(
++PermissionControllerImpl::SubscriptionId
++PermissionControllerImpl::SubscribePermissionStatusChange(
+     PermissionType permission,
+     RenderFrameHost* render_frame_host,
+     const GURL& requesting_origin,
+@@ -422,21 +424,21 @@ int PermissionControllerImpl::SubscribePermissionStatusChange(
+             base::BindRepeating(
+                 &PermissionControllerImpl::OnDelegatePermissionStatusChange,
+                 base::Unretained(this), subscription.get()));
+-  } else {
+-    subscription->delegate_subscription_id = kNoPendingOperation;
+   }
+-  return subscriptions_.Add(std::move(subscription));
++
++  auto id = subscription_id_generator_.GenerateNextId();
++  subscriptions_.AddWithID(std::move(subscription), id);
++  return id;
+ }
+ 
+ void PermissionControllerImpl::UnsubscribePermissionStatusChange(
+-    int subscription_id) {
++    SubscriptionId subscription_id) {
+   Subscription* subscription = subscriptions_.Lookup(subscription_id);
+   if (!subscription)
+     return;
+   PermissionControllerDelegate* delegate =
+       browser_context_->GetPermissionControllerDelegate();
+-  if (delegate &&
+-      subscription->delegate_subscription_id != kNoPendingOperation) {
++  if (delegate) {
+     delegate->UnsubscribePermissionStatusChange(
+         subscription->delegate_subscription_id);
+   }
+diff --git a/content/browser/permissions/permission_controller_impl.h b/content/browser/permissions/permission_controller_impl.h
+index 7ebf3c48a0e863d9f4312b37e014ce0f89e5c3c7..d85788867f746547f80405c46660e055631d9208 100644
+--- a/content/browser/permissions/permission_controller_impl.h
++++ b/content/browser/permissions/permission_controller_impl.h
+@@ -72,18 +72,19 @@ class CONTENT_EXPORT PermissionControllerImpl : public PermissionController {
+                        const GURL& requesting_origin,
+                        const GURL& embedding_origin);
+ 
+-  int SubscribePermissionStatusChange(
++  SubscriptionId SubscribePermissionStatusChange(
+       PermissionType permission,
+       RenderFrameHost* render_frame_host,
+       const GURL& requesting_origin,
+       const base::RepeatingCallback<void(blink::mojom::PermissionStatus)>&
+           callback);
+ 
+-  void UnsubscribePermissionStatusChange(int subscription_id);
++  void UnsubscribePermissionStatusChange(SubscriptionId subscription_id);
+ 
+  private:
+   struct Subscription;
+-  using SubscriptionsMap = base::IDMap<std::unique_ptr<Subscription>>;
++  using SubscriptionsMap =
++      base::IDMap<std::unique_ptr<Subscription>, SubscriptionId>;
+   using SubscriptionsStatusMap =
+       base::flat_map<SubscriptionsMap::KeyType, blink::mojom::PermissionStatus>;
+ 
+@@ -98,7 +99,13 @@ class CONTENT_EXPORT PermissionControllerImpl : public PermissionController {
+       const base::Optional<url::Origin>& origin);
+ 
+   DevToolsPermissionOverrides devtools_permission_overrides_;
++
++  // Note that SubscriptionId is distinct from
++  // PermissionControllerDelegate::SubscriptionId, and the concrete ID values
++  // may be different as well.
+   SubscriptionsMap subscriptions_;
++  SubscriptionId::Generator subscription_id_generator_;
++
+   BrowserContext* browser_context_;
+ 
+   DISALLOW_COPY_AND_ASSIGN(PermissionControllerImpl);
+diff --git a/content/browser/permissions/permission_service_context.cc b/content/browser/permissions/permission_service_context.cc
+index c3ab81294edbb297108c3b8f59a35f1cfb8131f9..f15abf265eb690b5dfd66bb1c2d5e13b005ddbd0 100644
+--- a/content/browser/permissions/permission_service_context.cc
++++ b/content/browser/permissions/permission_service_context.cc
+@@ -11,7 +11,6 @@
+ #include "content/browser/permissions/permission_service_impl.h"
+ #include "content/public/browser/browser_context.h"
+ #include "content/public/browser/navigation_handle.h"
+-#include "content/public/browser/permission_controller.h"
+ #include "content/public/browser/render_frame_host.h"
+ #include "content/public/browser/render_process_host.h"
+ #include "content/public/browser/web_contents.h"
+@@ -32,7 +31,7 @@ class PermissionServiceContext::PermissionSubscription {
+   PermissionSubscription& operator=(const PermissionSubscription&) = delete;
+ 
+   ~PermissionSubscription() {
+-    DCHECK_NE(id_, 0);
++    DCHECK(id_);
+     BrowserContext* browser_context = context_->GetBrowserContext();
+     if (browser_context) {
+       PermissionControllerImpl::FromBrowserContext(browser_context)
+@@ -41,7 +40,7 @@ class PermissionServiceContext::PermissionSubscription {
+   }
+ 
+   void OnConnectionError() {
+-    DCHECK_NE(id_, 0);
++    DCHECK(id_);
+     context_->ObserverHadConnectionError(id_);
+   }
+ 
+@@ -49,12 +48,12 @@ class PermissionServiceContext::PermissionSubscription {
+     observer_->OnPermissionStatusChange(status);
+   }
+ 
+-  void set_id(int id) { id_ = id; }
++  void set_id(PermissionController::SubscriptionId id) { id_ = id; }
+ 
+  private:
+   PermissionServiceContext* const context_;
+   mojo::Remote<blink::mojom::PermissionObserver> observer_;
+-  int id_ = 0;
++  PermissionController::SubscriptionId id_;
+ };
+ 
+ PermissionServiceContext::PermissionServiceContext(
+@@ -108,7 +107,7 @@ void PermissionServiceContext::CreateSubscription(
+   }
+ 
+   GURL requesting_origin(origin.Serialize());
+-  int subscription_id =
++  auto subscription_id =
+       PermissionControllerImpl::FromBrowserContext(browser_context)
+           ->SubscribePermissionStatusChange(
+               permission_type, render_frame_host_, requesting_origin,
+@@ -119,7 +118,8 @@ void PermissionServiceContext::CreateSubscription(
+   subscriptions_[subscription_id] = std::move(subscription);
+ }
+ 
+-void PermissionServiceContext::ObserverHadConnectionError(int subscription_id) {
++void PermissionServiceContext::ObserverHadConnectionError(
++    PermissionController::SubscriptionId subscription_id) {
+   size_t erased = subscriptions_.erase(subscription_id);
+   DCHECK_EQ(1u, erased);
+ }
+diff --git a/content/browser/permissions/permission_service_context.h b/content/browser/permissions/permission_service_context.h
+index 4f93be504fd854b50bea96dedbc5d324d25ea6f1..0680c70c8ee4a79bb85c2fd1e3769a29f339816e 100644
+--- a/content/browser/permissions/permission_service_context.h
++++ b/content/browser/permissions/permission_service_context.h
+@@ -9,6 +9,7 @@
+ #include <unordered_map>
+ 
+ #include "content/common/content_export.h"
++#include "content/public/browser/permission_controller.h"
+ #include "content/public/browser/permission_type.h"
+ #include "content/public/browser/web_contents_observer.h"
+ #include "mojo/public/cpp/bindings/pending_receiver.h"
+@@ -52,7 +53,8 @@ class CONTENT_EXPORT PermissionServiceContext : public WebContentsObserver {
+       mojo::PendingRemote<blink::mojom::PermissionObserver> observer);
+ 
+   // Called when the connection to a PermissionObserver has an error.
+-  void ObserverHadConnectionError(int subscription_id);
++  void ObserverHadConnectionError(
++      PermissionController::SubscriptionId subscription_id);
+ 
+   // May return nullptr during teardown, or when showing an interstitial.
+   BrowserContext* GetBrowserContext() const;
+@@ -78,7 +80,8 @@ class CONTENT_EXPORT PermissionServiceContext : public WebContentsObserver {
+   RenderFrameHost* const render_frame_host_;
+   RenderProcessHost* const render_process_host_;
+   mojo::UniqueReceiverSet<blink::mojom::PermissionService> services_;
+-  std::unordered_map<int, std::unique_ptr<PermissionSubscription>>
++  std::unordered_map<PermissionController::SubscriptionId,
++                     std::unique_ptr<PermissionSubscription>>
+       subscriptions_;
+ };
+ 
+diff --git a/content/browser/renderer_host/media/media_stream_manager.h b/content/browser/renderer_host/media/media_stream_manager.h
+index 4468b5c906454a8cf4484c8f3f81841c9130721b..677f7a5fe22b55f12c324048972a7200ac8c873b 100644
+--- a/content/browser/renderer_host/media/media_stream_manager.h
++++ b/content/browser/renderer_host/media/media_stream_manager.h
+@@ -50,6 +50,7 @@
+ #include "content/public/browser/desktop_media_id.h"
+ #include "content/public/browser/media_request_state.h"
+ #include "content/public/browser/media_stream_request.h"
++#include "content/public/browser/permission_controller.h"
+ #include "media/base/video_facing.h"
+ #include "third_party/blink/public/common/mediastream/media_devices.h"
+ #include "third_party/blink/public/common/mediastream/media_stream_controls.h"
+diff --git a/content/public/browser/permission_controller.h b/content/public/browser/permission_controller.h
+index b9b42def49b35d31c22ee0d6c158737bdc0824b6..77fe96a1c33aea5e887e171b92f199acdf7dd6df 100644
+--- a/content/public/browser/permission_controller.h
++++ b/content/public/browser/permission_controller.h
+@@ -6,6 +6,7 @@
+ #define CONTENT_PUBLIC_BROWSER_PERMISSION_CONTROLLER_H_
+ 
+ #include "base/supports_user_data.h"
++#include "base/util/type_safety/id_type.h"
+ #include "content/common/content_export.h"
+ #include "content/public/browser/permission_type.h"
+ #include "third_party/blink/public/mojom/permissions/permission_status.mojom.h"
+@@ -20,8 +21,13 @@ class RenderFrameHost;
+ class CONTENT_EXPORT PermissionController
+     : public base::SupportsUserData::Data {
+  public:
+-  // Constant retured when registering and subscribing if
+-  // cancelling/unsubscribing at a later stage would have no effect.
++  // Identifier for an active subscription. This is intentionally a distinct
++  // type from PermissionControllerDelegate::SubscriptionId as the concrete
++  // identifier values may be different.
++  using SubscriptionId = util::IdType64<PermissionController>;
++
++  // Constant returned when requesting a permission if cancelling at a later
++  // stage would have no effect.
+   static const int kNoPendingOperation = -1;
+ 
+   ~PermissionController() override {}
+@@ -48,4 +54,17 @@ class CONTENT_EXPORT PermissionController
+ 
+ }  // namespace content
+ 
++namespace std {
++
++template <>
++struct hash<content::PermissionController::SubscriptionId> {
++  std::size_t operator()(
++      const content::PermissionController::SubscriptionId& v) const {
++    content::PermissionController::SubscriptionId::Hasher hasher;
++    return hasher(v);
++  }
++};
++
++}  // namespace std
++
+ #endif  // CONTENT_PUBLIC_BROWSER_PERMISSION_CONTROLLER_H_
+diff --git a/content/public/browser/permission_controller_delegate.h b/content/public/browser/permission_controller_delegate.h
+index e47de2a278e67091442c63bb7130022eae587041..82a1d4f0efd384386d8215f39d735ba488e4bc61 100644
+--- a/content/public/browser/permission_controller_delegate.h
++++ b/content/public/browser/permission_controller_delegate.h
+@@ -5,6 +5,7 @@
+ #ifndef CONTENT_PUBLIC_BROWSER_PERMISSION_CONTROLLER_DELEGATE_H_
+ #define CONTENT_PUBLIC_BROWSER_PERMISSION_CONTROLLER_DELEGATE_H_
+ 
++#include "base/util/type_safety/id_type.h"
+ #include "content/common/content_export.h"
+ #include "content/public/browser/devtools_permission_overrides.h"
+ #include "third_party/blink/public/mojom/permissions/permission_status.mojom.h"
+@@ -18,6 +19,10 @@ class RenderFrameHost;
+ class CONTENT_EXPORT PermissionControllerDelegate {
+  public:
+   using PermissionOverrides = DevToolsPermissionOverrides::PermissionOverrides;
++
++  // Identifier for an active subscription.
++  using SubscriptionId = util::IdType64<PermissionControllerDelegate>;
++
+   virtual ~PermissionControllerDelegate() = default;
+ 
+   // Requests a permission on behalf of a frame identified by
+@@ -80,21 +85,21 @@ class CONTENT_EXPORT PermissionControllerDelegate {
+ 
+   // Runs the given |callback| whenever the |permission| associated with the
+   // given RenderFrameHost changes. A nullptr should be passed if the request
+-  // is from a worker. Returns the subscription_id to be used to unsubscribe.
+-  // Can be kNoPendingOperation if the subscribe was not successful.
+-  virtual int SubscribePermissionStatusChange(
++  // is from a worker. Returns the ID to be used to unsubscribe, which can be
++  // `is_null()` if the subscribe was not successful.
++  virtual SubscriptionId SubscribePermissionStatusChange(
+       content::PermissionType permission,
+       content::RenderFrameHost* render_frame_host,
+       const GURL& requesting_origin,
+       base::RepeatingCallback<void(blink::mojom::PermissionStatus)>
+           callback) = 0;
+ 
+-  // Unregisters from permission status change notifications.
+-  // The |subscription_id| must match the value returned by the
+-  // SubscribePermissionStatusChange call. Unsubscribing
+-  // an already unsubscribed |subscription_id| or providing the
+-  // |subscription_id| kNoPendingOperation is a no-op.
+-  virtual void UnsubscribePermissionStatusChange(int subscription_id) = 0;
++  // Unregisters from permission status change notifications. The
++  // |subscription_id| must match the value returned by the
++  // SubscribePermissionStatusChange call. Unsubscribing an already
++  // unsubscribed |subscription_id| or an `is_null()` ID is a no-op.
++  virtual void UnsubscribePermissionStatusChange(
++      SubscriptionId subscription_id) = 0;
+ 
+   // Manually overrides default permission settings of delegate, if overrides
+   // are tracked by the delegate. This method should only be called by the
+@@ -116,4 +121,17 @@ class CONTENT_EXPORT PermissionControllerDelegate {
+ 
+ }  // namespace content
+ 
++namespace std {
++
++template <>
++struct hash<content::PermissionControllerDelegate::SubscriptionId> {
++  std::size_t operator()(
++      const content::PermissionControllerDelegate::SubscriptionId& v) const {
++    content::PermissionControllerDelegate::SubscriptionId::Hasher hasher;
++    return hasher(v);
++  }
++};
++
++}  // namespace std
++
+ #endif  // CONTENT_PUBLIC_BROWSER_PERMISSION_CONTROLLER_DELEGATE_H_
+diff --git a/content/public/test/mock_permission_manager.h b/content/public/test/mock_permission_manager.h
+index a193bd00e23abf2295c8bcf2ed5fb3acae68440f..34e71e23a2dae6d55348d8139480459b36377c0c 100644
+--- a/content/public/test/mock_permission_manager.h
++++ b/content/public/test/mock_permission_manager.h
+@@ -49,13 +49,13 @@ class MockPermissionManager : public PermissionControllerDelegate {
+   void ResetPermission(PermissionType permission,
+                        const GURL& requesting_origin,
+                        const GURL& embedding_origin) override {}
+-  int SubscribePermissionStatusChange(
++  SubscriptionId SubscribePermissionStatusChange(
+       PermissionType permission,
+       RenderFrameHost* render_frame_host,
+       const GURL& requesting_origin,
+       base::RepeatingCallback<void(blink::mojom::PermissionStatus)> callback)
+       override;
+-  void UnsubscribePermissionStatusChange(int subscription_id) override {}
++  void UnsubscribePermissionStatusChange(SubscriptionId subscription_id) override {}
+ 
+  private:
+   DISALLOW_COPY_AND_ASSIGN(MockPermissionManager);
+diff --git a/content/shell/browser/shell_permission_manager.cc b/content/shell/browser/shell_permission_manager.cc
+index d0396ea346f267a26a8d318d518be59a55b9311a..b302b378960e9cf2445e1e8983d05f6fc2c668b6 100644
+--- a/content/shell/browser/shell_permission_manager.cc
++++ b/content/shell/browser/shell_permission_manager.cc
+@@ -133,16 +133,16 @@ ShellPermissionManager::GetPermissionStatusForFrame(
+           .GetOrigin());
+ }
+ 
+-int ShellPermissionManager::SubscribePermissionStatusChange(
++ShellPermissionManager::SubscriptionId
++ShellPermissionManager::SubscribePermissionStatusChange(
+     PermissionType permission,
+     RenderFrameHost* render_frame_host,
+     const GURL& requesting_origin,
+     base::RepeatingCallback<void(blink::mojom::PermissionStatus)> callback) {
+-  return PermissionController::kNoPendingOperation;
++  return SubscriptionId();
+ }
+ 
+ void ShellPermissionManager::UnsubscribePermissionStatusChange(
+-    int subscription_id) {
+-}
++    SubscriptionId subscription_id) {}
+ 
+ }  // namespace content
+diff --git a/content/shell/browser/shell_permission_manager.h b/content/shell/browser/shell_permission_manager.h
+index 85477665a9dd643f50c4567c1133973bc258a94f..ecda464779c39df4a8b4b1726414cf2763033f53 100644
+--- a/content/shell/browser/shell_permission_manager.h
++++ b/content/shell/browser/shell_permission_manager.h
+@@ -42,13 +42,14 @@ class ShellPermissionManager : public PermissionControllerDelegate {
+       content::PermissionType permission,
+       content::RenderFrameHost* render_frame_host,
+       const GURL& requesting_origin) override;
+-  int SubscribePermissionStatusChange(
++  SubscriptionId SubscribePermissionStatusChange(
+       PermissionType permission,
+       RenderFrameHost* render_frame_host,
+       const GURL& requesting_origin,
+       base::RepeatingCallback<void(blink::mojom::PermissionStatus)> callback)
+       override;
+-  void UnsubscribePermissionStatusChange(int subscription_id) override;
++  void UnsubscribePermissionStatusChange(
++      SubscriptionId subscription_id) override;
+ 
+  private:
+   DISALLOW_COPY_AND_ASSIGN(ShellPermissionManager);
+diff --git a/content/shell/browser/web_test/web_test_permission_manager.cc b/content/shell/browser/web_test/web_test_permission_manager.cc
+index 67f34deebcbf854692be497b1c31d8da72a5b03d..9c876335c3a2feee4f73d9f6f8e14d67f3988291 100644
+--- a/content/shell/browser/web_test/web_test_permission_manager.cc
++++ b/content/shell/browser/web_test/web_test_permission_manager.cc
+@@ -147,7 +147,8 @@ WebTestPermissionManager::GetPermissionStatusForFrame(
+           .GetOrigin());
+ }
+ 
+-int WebTestPermissionManager::SubscribePermissionStatusChange(
++WebTestPermissionManager::SubscriptionId
++WebTestPermissionManager::SubscribePermissionStatusChange(
+     PermissionType permission,
+     RenderFrameHost* render_frame_host,
+     const GURL& requesting_origin,
+@@ -170,14 +171,18 @@ int WebTestPermissionManager::SubscribePermissionStatusChange(
+       GetPermissionStatus(permission, subscription->permission.origin,
+                           subscription->permission.embedding_origin);
+ 
+-  return subscriptions_.Add(std::move(subscription));
++  auto id = subscription_id_generator_.GenerateNextId();
++  subscriptions_.AddWithID(std::move(subscription), id);
++  return id;
+ }
+ 
+ void WebTestPermissionManager::UnsubscribePermissionStatusChange(
+-    int subscription_id) {
++    SubscriptionId subscription_id) {
+   DCHECK_CURRENTLY_ON(BrowserThread::UI);
+ 
+-  // Whether |subscription_id| is known will be checked by the Remove() call.
++  if (!subscriptions_.Lookup(subscription_id))
++    return;
++
+   subscriptions_.Remove(subscription_id);
+ }
+ 
+diff --git a/content/shell/browser/web_test/web_test_permission_manager.h b/content/shell/browser/web_test/web_test_permission_manager.h
+index 1d15dbb9c7dda0b1e8642435d8a1e8f48af72e5c..46490c28fb013c2f5c8e75d7e7e24761f4498a58 100644
+--- a/content/shell/browser/web_test/web_test_permission_manager.h
++++ b/content/shell/browser/web_test/web_test_permission_manager.h
+@@ -52,13 +52,14 @@ class WebTestPermissionManager
+       content::PermissionType permission,
+       content::RenderFrameHost* render_frame_host,
+       const GURL& requesting_origin) override;
+-  int SubscribePermissionStatusChange(
++  SubscriptionId SubscribePermissionStatusChange(
+       PermissionType permission,
+       RenderFrameHost* render_frame_host,
+       const GURL& requesting_origin,
+       base::RepeatingCallback<void(blink::mojom::PermissionStatus)> callback)
+       override;
+-  void UnsubscribePermissionStatusChange(int subscription_id) override;
++  void UnsubscribePermissionStatusChange(
++      SubscriptionId subscription_id) override;
+ 
+   void SetPermission(PermissionType permission,
+                      blink::mojom::PermissionStatus status,
+@@ -98,7 +99,8 @@ class WebTestPermissionManager
+   };
+ 
+   struct Subscription;
+-  using SubscriptionsMap = base::IDMap<std::unique_ptr<Subscription>>;
++  using SubscriptionsMap =
++      base::IDMap<std::unique_ptr<Subscription>, SubscriptionId>;
+   using PermissionsMap = std::unordered_map<PermissionDescription,
+                                             blink::mojom::PermissionStatus,
+                                             PermissionDescription::Hash>;
+@@ -116,6 +118,7 @@ class WebTestPermissionManager
+ 
+   // List of subscribers currently listening to permission changes.
+   SubscriptionsMap subscriptions_;
++  SubscriptionId::Generator subscription_id_generator_;
+ 
+   mojo::ReceiverSet<blink::test::mojom::PermissionAutomation> receivers_;
+ 
+diff --git a/fuchsia/engine/browser/web_engine_permission_delegate.cc b/fuchsia/engine/browser/web_engine_permission_delegate.cc
+index 98592f05b6d56108119b106a42d839c28131a324..c18b8be7cdf73720cf02afce9ea75ab98d3f1f64 100644
+--- a/fuchsia/engine/browser/web_engine_permission_delegate.cc
++++ b/fuchsia/engine/browser/web_engine_permission_delegate.cc
+@@ -83,20 +83,21 @@ WebEnginePermissionDelegate::GetPermissionStatusForFrame(
+       permission, url::Origin::Create(requesting_origin));
+ }
+ 
+-int WebEnginePermissionDelegate::SubscribePermissionStatusChange(
++WebEnginePermissionDelegate::SubscriptionId
++WebEnginePermissionDelegate::SubscribePermissionStatusChange(
+     content::PermissionType permission,
+     content::RenderFrameHost* render_frame_host,
+     const GURL& requesting_origin,
+     base::RepeatingCallback<void(blink::mojom::PermissionStatus)> callback) {
+   // TODO(crbug.com/1063094): Implement permission status subscription. It's
+   // used in blink to emit PermissionStatus.onchange notifications.
+-  NOTIMPLEMENTED() << ": " << static_cast<int>(permission);
+-  return content::PermissionController::kNoPendingOperation;
++  NOTIMPLEMENTED_LOG_ONCE() << ": " << static_cast<int>(permission);
++  return SubscriptionId();
+ }
+ 
+ void WebEnginePermissionDelegate::UnsubscribePermissionStatusChange(
+-    int subscription_id) {
++    SubscriptionId subscription_id) {
+   // TODO(crbug.com/1063094): Implement permission status subscription. It's
+   // used in blink to emit PermissionStatus.onchange notifications.
+-  NOTREACHED();
++  NOTIMPLEMENTED_LOG_ONCE();
+ }
+diff --git a/fuchsia/engine/browser/web_engine_permission_delegate.h b/fuchsia/engine/browser/web_engine_permission_delegate.h
+index 036207b75d33b752981007a41aa51f3e64db4f0e..c39989b471c2a74ee1a9140e12f205866a0b7aff 100644
+--- a/fuchsia/engine/browser/web_engine_permission_delegate.h
++++ b/fuchsia/engine/browser/web_engine_permission_delegate.h
+@@ -45,13 +45,14 @@ class WebEnginePermissionDelegate
+       content::PermissionType permission,
+       content::RenderFrameHost* render_frame_host,
+       const GURL& requesting_origin) override;
+-  int SubscribePermissionStatusChange(
++  SubscriptionId SubscribePermissionStatusChange(
+       content::PermissionType permission,
+       content::RenderFrameHost* render_frame_host,
+       const GURL& requesting_origin,
+       base::RepeatingCallback<void(blink::mojom::PermissionStatus)> callback)
+       override;
+-  void UnsubscribePermissionStatusChange(int subscription_id) override;
++  void UnsubscribePermissionStatusChange(
++      SubscriptionId subscription_id) override;
+ };
+ 
+ #endif  // FUCHSIA_ENGINE_BROWSER_WEB_ENGINE_PERMISSION_DELEGATE_H_
+diff --git a/headless/lib/browser/headless_permission_manager.cc b/headless/lib/browser/headless_permission_manager.cc
+index 5d4d609fc0c10e57ef3c6a730340dc409789dcdd..359ecdc4b72d560da830c51f23374150e6b30a2d 100644
+--- a/headless/lib/browser/headless_permission_manager.cc
++++ b/headless/lib/browser/headless_permission_manager.cc
+@@ -71,15 +71,16 @@ HeadlessPermissionManager::GetPermissionStatusForFrame(
+   return blink::mojom::PermissionStatus::ASK;
+ }
+ 
+-int HeadlessPermissionManager::SubscribePermissionStatusChange(
++HeadlessPermissionManager::SubscriptionId
++HeadlessPermissionManager::SubscribePermissionStatusChange(
+     content::PermissionType permission,
+     content::RenderFrameHost* render_frame_host,
+     const GURL& requesting_origin,
+     base::RepeatingCallback<void(blink::mojom::PermissionStatus)> callback) {
+-  return content::PermissionController::kNoPendingOperation;
++  return SubscriptionId();
+ }
+ 
+ void HeadlessPermissionManager::UnsubscribePermissionStatusChange(
+-    int subscription_id) {}
++    SubscriptionId subscription_id) {}
+ 
+ }  // namespace headless
+diff --git a/headless/lib/browser/headless_permission_manager.h b/headless/lib/browser/headless_permission_manager.h
+index 4b83309ab3ada17f7f2ac3323ba5f13ab76b9409..ac30670cb384a79457033a25c13da0c305b8eff2 100644
+--- a/headless/lib/browser/headless_permission_manager.h
++++ b/headless/lib/browser/headless_permission_manager.h
+@@ -46,13 +46,14 @@ class HeadlessPermissionManager : public content::PermissionControllerDelegate {
+       content::PermissionType permission,
+       content::RenderFrameHost* render_frame_host,
+       const GURL& requesting_origin) override;
+-  int SubscribePermissionStatusChange(
++  SubscriptionId SubscribePermissionStatusChange(
+       content::PermissionType permission,
+       content::RenderFrameHost* render_frame_host,
+       const GURL& requesting_origin,
+       base::RepeatingCallback<void(blink::mojom::PermissionStatus)> callback)
+       override;
+-  void UnsubscribePermissionStatusChange(int subscription_id) override;
++  void UnsubscribePermissionStatusChange(
++      SubscriptionId subscription_id) override;
+ 
+  private:
+   content::BrowserContext* browser_context_;
