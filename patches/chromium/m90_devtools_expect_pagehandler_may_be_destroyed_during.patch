@@ -1,8 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Andrey Kosyakov <caseq@chromium.org>
 Date: Thu, 1 Apr 2021 06:51:26 +0000
-Subject: [m90] DevTools: expect PageHandler may be destroyed during
- Page.navigate
+Subject: DevTools: expect PageHandler may be destroyed during Page.navigate
 
 (cherry picked from commit ff5e70191ec701cce4f84aaa25cd676376253a8a)
 
