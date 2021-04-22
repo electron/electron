@@ -65,7 +65,7 @@ void CocoaNotification::Show(const NotificationOptions& options) {
   NSMutableArray* additionalActions =
       [[[NSMutableArray alloc] init] autorelease];
   for (const auto& action : options.actions) {
-    if (action.type == base::ASCIIToUTF16("button")) {
+    if (action.type == u"button") {
       if (action_index_ == UINT_MAX) {
         // First button observed is the displayed action
         [notification_ setHasActionButton:true];

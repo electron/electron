@@ -145,10 +145,10 @@ int GetMinimumFontSize() {
 std::u16string MediaStringProvider(media::MessageId id) {
   switch (id) {
     case media::DEFAULT_AUDIO_DEVICE_NAME:
-      return base::ASCIIToUTF16("Default");
+      return u"Default";
 #if defined(OS_WIN)
     case media::COMMUNICATIONS_AUDIO_DEVICE_NAME:
-      return base::ASCIIToUTF16("Communications");
+      return u"Communications";
 #endif
     default:
       return std::u16string();
