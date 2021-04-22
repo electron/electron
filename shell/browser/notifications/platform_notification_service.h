@@ -26,6 +26,7 @@ class PlatformNotificationService
       content::RenderProcessHost* render_process_host,
       const std::string& notification_id,
       const GURL& origin,
+      const GURL& document_url,
       const blink::PlatformNotificationData& notification_data,
       const blink::NotificationResources& notification_resources) override;
   void DisplayPersistentNotification(
