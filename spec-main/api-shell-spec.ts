@@ -62,6 +62,8 @@ describe('shell module', () => {
   });
 
   describe('shell.trashItem()', () => {
+    afterEach(closeAllWindows);
+
     it('moves an item to the trash', async () => {
       const dir = await fs.mkdtemp(path.resolve(app.getPath('temp'), 'electron-shell-spec-'));
       const filename = path.join(dir, 'temp-to-be-deleted');
@@ -73,6 +75,12 @@ describe('shell module', () => {
     it('throws when called with a nonexistent path', async () => {
       const filename = path.join(app.getPath('temp'), 'does-not-exist');
       await expect(shell.trashItem(filename)).to.eventually.be.rejected();
+    });
+
+    it('works in the renderer process', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+      w.loadURL('about:blank');
+      await expect(w.webContents.executeJavaScript('require(\'electron\').shell.trashItem(\'does-not-exist\')')).to.be.rejectedWith(/does-not-exist|Failed to move item|Failed to create FileOperation/);
     });
   });
 });
