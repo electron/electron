@@ -15,6 +15,7 @@
 #include "gin/wrappable.h"
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/pinnable.h"
+#include "third_party/blink/public/mojom/page/page_visibility_state.mojom-forward.h"
 
 class GURL;
 
@@ -95,6 +96,7 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
   int ProcessID() const;
   int RoutingID() const;
   GURL URL() const;
+  blink::mojom::PageVisibilityState VisibilityState() const;
 
   content::RenderFrameHost* Top() const;
   content::RenderFrameHost* Parent() const;
