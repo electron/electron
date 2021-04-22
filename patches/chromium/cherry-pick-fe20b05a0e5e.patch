@@ -1,7 +1,8 @@
-From fe20b05a0e5e4477c313c247180d94d7904176fc Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jana Grill <janagrill@google.com>
 Date: Tue, 20 Apr 2021 18:23:33 +0000
-Subject: [PATCH] M86-LTS: DevTools: expect PageHandler may be destroyed during Page.navigate
+Subject: M86-LTS: DevTools: expect PageHandler may be destroyed during
+ Page.navigate
 
 (cherry picked from commit ff5e70191ec701cce4f84aaa25cd676376253a8a)
 
@@ -19,10 +20,9 @@ Reviewed-by: Victor-Gabriel Savu <vsavu@google.com>
 Owners-Override: Achuith Bhandarkar <achuith@chromium.org>
 Cr-Commit-Position: refs/branch-heads/4240@{#1618}
 Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
----
 
 diff --git a/chrome/browser/extensions/api/debugger/debugger_apitest.cc b/chrome/browser/extensions/api/debugger/debugger_apitest.cc
-index 9c351c70..548b933 100644
+index 71ce5a3399db29451e990d530736460aa28eeec0..b35accc8ce46f3465624898fe18d463529498d07 100644
 --- a/chrome/browser/extensions/api/debugger/debugger_apitest.cc
 +++ b/chrome/browser/extensions/api/debugger/debugger_apitest.cc
 @@ -24,6 +24,7 @@
@@ -33,7 +33,7 @@ index 9c351c70..548b933 100644
  #include "extensions/browser/extension_function.h"
  #include "extensions/common/extension.h"
  #include "extensions/common/extension_builder.h"
-@@ -360,6 +361,19 @@
+@@ -353,6 +354,19 @@ IN_PROC_BROWSER_TEST_F(DebuggerExtensionApiTest,
        << message_;
  }
  
@@ -55,7 +55,7 @@ index 9c351c70..548b933 100644
    void SetUpCommandLine(base::CommandLine* command_line) override {
 diff --git a/chrome/test/data/extensions/api_test/debugger_navigate_to_forbidden_url/background.js b/chrome/test/data/extensions/api_test/debugger_navigate_to_forbidden_url/background.js
 new file mode 100644
-index 0000000..e2ef32f
+index 0000000000000000000000000000000000000000..e2ef32fffd3e5d49e7dc10d53f8c891ddb0f3872
 --- /dev/null
 +++ b/chrome/test/data/extensions/api_test/debugger_navigate_to_forbidden_url/background.js
 @@ -0,0 +1,28 @@
@@ -89,7 +89,7 @@ index 0000000..e2ef32f
 +]);
 diff --git a/chrome/test/data/extensions/api_test/debugger_navigate_to_forbidden_url/manifest.json b/chrome/test/data/extensions/api_test/debugger_navigate_to_forbidden_url/manifest.json
 new file mode 100644
-index 0000000..05db294
+index 0000000000000000000000000000000000000000..05db294ed7f49893431b0039a5f338d20e08f27d
 --- /dev/null
 +++ b/chrome/test/data/extensions/api_test/debugger_navigate_to_forbidden_url/manifest.json
 @@ -0,0 +1,11 @@
@@ -105,10 +105,10 @@ index 0000000..05db294
 +  ]
 +}
 diff --git a/content/browser/devtools/protocol/page_handler.cc b/content/browser/devtools/protocol/page_handler.cc
-index fa56aef..61f2a13 100644
+index 630de0dd016fd3d054bcd40b22d75a242eeaa23e..a340d3e4519ada9edba279090ea11b57521ef0f4 100644
 --- a/content/browser/devtools/protocol/page_handler.cc
 +++ b/content/browser/devtools/protocol/page_handler.cc
-@@ -501,7 +501,12 @@
+@@ -496,7 +496,12 @@ void PageHandler::Navigate(const std::string& url,
    params.referrer = Referrer(GURL(referrer.fromMaybe("")), policy);
    params.transition_type = type;
    params.frame_tree_node_id = frame_tree_node->frame_tree_node_id();
@@ -122,10 +122,10 @@ index fa56aef..61f2a13 100644
    base::UnguessableToken frame_token = frame_tree_node->devtools_frame_token();
    auto navigate_callback = navigate_callbacks_.find(frame_token);
 diff --git a/content/browser/devtools/render_frame_devtools_agent_host.cc b/content/browser/devtools/render_frame_devtools_agent_host.cc
-index 4c18604..8915b14 100644
+index 52fdd0f1066699cc019c33de2517c23f12b4a616..8795c547717b206f4e459f655f6e62a7ba9229e0 100644
 --- a/content/browser/devtools/render_frame_devtools_agent_host.cc
 +++ b/content/browser/devtools/render_frame_devtools_agent_host.cc
-@@ -474,8 +474,11 @@
+@@ -472,8 +472,11 @@ void RenderFrameDevToolsAgentHost::UpdateFrameHost(
      if (!ShouldAllowSession(session))
        restricted_sessions.push_back(session);
    }
