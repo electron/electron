@@ -54,7 +54,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
 
   NotificationPresenter* GetNotificationPresenter();
 
-  void WebNotificationAllowed(int render_process_id,
+  void WebNotificationAllowed(content::RenderFrameHost* rfh,
                               base::OnceCallback<void(bool, bool)> callback);
 
   // content::NavigatorDelegate

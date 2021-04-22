@@ -861,10 +861,10 @@ ElectronBrowserClient::CreateBrowserMainParts(
 }
 
 void ElectronBrowserClient::WebNotificationAllowed(
-    int render_process_id,
+    content::RenderFrameHost* rfh,
     base::OnceCallback<void(bool, bool)> callback) {
   content::WebContents* web_contents =
-      WebContentsPreferences::GetWebContentsFromProcessID(render_process_id);
+      content::WebContents::FromRenderFrameHost(rfh);
   if (!web_contents) {
     std::move(callback).Run(false, false);
     return;

@@ -78,7 +78,7 @@ PlatformNotificationService::PlatformNotificationService(
 PlatformNotificationService::~PlatformNotificationService() = default;
 
 void PlatformNotificationService::DisplayNotification(
-    content::RenderProcessHost* render_process_host,
+    content::RenderFrameHost* render_frame_host,
     const std::string& notification_id,
     const GURL& origin,
     const GURL& document_url,
@@ -102,7 +102,7 @@ void PlatformNotificationService::DisplayNotification(
   auto notification = presenter->CreateNotification(delegate, notification_id);
   if (notification) {
     browser_client_->WebNotificationAllowed(
-        render_process_host->GetID(),
+        render_frame_host,
         base::BindRepeating(&OnWebNotificationAllowed, notification,
                             notification_resources.notification_icon,
                             notification_data));
