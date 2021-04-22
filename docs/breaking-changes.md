@@ -14,6 +14,21 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (14.0)
 
+### Removed: `app.allowRendererProcessReuse`
+
+The `app.allowRendererProcessReuse` property will be removed as part of our plan to
+more closely align with Chromium's process model for security, performance and maintainability.
+
+For more detailed information see [#18397](https://github.com/electron/electron/issues/18397).
+
+### Removed: Browser Window Affinity
+
+The `affinity` option when constructing a new `BrowserWindow` will be removed
+as part of our plan to more closely align with Chromium's process model for security,
+performance and maintainability.
+
+For more detailed information see [#18397](https://github.com/electron/electron/issues/18397).
+
 ### API Changed: `window.open()`
 
 The optional parameter `frameName` will no longer set the title of the window. This now follows the specification described by the [native documentation](https://developer.mozilla.org/en-US/docs/Web/API/Window/open#parameters) under the corresponding parameter `windowName`.
@@ -37,6 +52,27 @@ to open synchronously scriptable child windows, among other incompatibilities.
 
 See the documentation for [window.open in Electron](api/window-open.md)
 for more details.
+
+### Removed: BrowserWindowConstructorOptions inheriting from parent windows
+
+Prior to Electron 14, windows opened with `window.open` would inherit
+BrowserWindow constructor options such as `transparent` and `resizable` from
+their parent window. Beginning with Electron 14, this behavior is removed, and
+windows will not inherit any BrowserWindow constructor options from their
+parents.
+
+Instead, explicitly set options for the new window with `setWindowOpenHandler`:
+
+```js
+webContents.setWindowOpenHandler((details) => {
+  return {
+    action: 'allow',
+    overrideBrowserWindowOptions: {
+      // ...
+    }
+  }
+})
+```
 
 ### Removed: `additionalFeatures`
 
@@ -349,14 +385,6 @@ See [#23265](https://github.com/electron/electron/pull/23265) for more details.
 Setting `{ compress: false }` in `crashReporter.start` is deprecated. Nearly
 all crash ingestion servers support gzip compression. This option will be
 removed in a future version of Electron.
-
-### Removed: Browser Window Affinity
-
-The `affinity` option when constructing a new `BrowserWindow` will be removed
-as part of our plan to more closely align with Chromium's process model for security,
-performance and maintainability.
-
-For more detailed information see [#18397](https://github.com/electron/electron/issues/18397).
 
 ### Default Changed: `enableRemoteModule` defaults to `false`
 

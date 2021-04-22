@@ -1457,13 +1457,6 @@ std::string App::GetUserAgentFallback() {
   return ElectronBrowserClient::Get()->GetUserAgent();
 }
 
-void App::SetBrowserClientCanUseCustomSiteInstance(bool should_disable) {
-  ElectronBrowserClient::Get()->SetCanUseCustomSiteInstance(should_disable);
-}
-bool App::CanBrowserClientUseCustomSiteInstance() {
-  return ElectronBrowserClient::Get()->CanUseCustomSiteInstance();
-}
-
 #if defined(OS_MAC)
 bool App::MoveToApplicationsFolder(gin_helper::ErrorThrower thrower,
                                    gin::Arguments* args) {
@@ -1665,10 +1658,7 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
 #endif
       .SetProperty("userAgentFallback", &App::GetUserAgentFallback,
                    &App::SetUserAgentFallback)
-      .SetMethod("enableSandbox", &App::EnableSandbox)
-      .SetProperty("allowRendererProcessReuse",
-                   &App::CanBrowserClientUseCustomSiteInstance,
-                   &App::SetBrowserClientCanUseCustomSiteInstance);
+      .SetMethod("enableSandbox", &App::EnableSandbox);
 }
 
 const char* App::GetTypeName() {

@@ -6,6 +6,7 @@ import { BrowserWindow, WebFrameMain, webFrameMain, ipcMain } from 'electron/mai
 import { closeAllWindows } from './window-helpers';
 import { emittedOnce, emittedNTimes } from './events-helpers';
 import { AddressInfo } from 'net';
+import { waitUntil } from './spec-helpers';
 
 describe('webFrameMain module', () => {
   const fixtures = path.resolve(__dirname, '..', 'spec-main', 'fixtures');
@@ -132,6 +133,20 @@ describe('webFrameMain module', () => {
       expect(webFrame).to.have.ownProperty('osProcessId').that.is.a('number');
       expect(webFrame).to.have.ownProperty('processId').that.is.a('number');
       expect(webFrame).to.have.ownProperty('routingId').that.is.a('number');
+    });
+  });
+
+  describe('WebFrame.visibilityState', () => {
+    it('should match window state', async () => {
+      const w = new BrowserWindow({ show: true });
+      await w.loadURL('about:blank');
+      const webFrame = w.webContents.mainFrame;
+
+      expect(webFrame.visibilityState).to.equal('visible');
+      w.hide();
+      await expect(
+        waitUntil(() => webFrame.visibilityState === 'hidden')
+      ).to.eventually.be.fulfilled();
     });
   });
 

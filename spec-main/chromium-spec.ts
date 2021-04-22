@@ -1042,7 +1042,7 @@ describe('chromium features', () => {
 
           const parentCode = `new Promise((resolve) => {
             // This is context (3), a child window of the WebView.
-            const child = window.open(${JSON.stringify(child)}, "", "show=no")
+            const child = window.open(${JSON.stringify(child)}, "", "show=no,contextIsolation=no,nodeIntegration=yes")
             window.addEventListener("message", e => {
               resolve(e.data)
             })
@@ -1508,8 +1508,8 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
   });
 
   afterEach(async () => {
-    await closeAllWindows()
-    ;(w as any) = null;
+    await closeAllWindows();
+    (w as any) = null;
     server.close();
   });
 
