@@ -143,7 +143,7 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
     fullscreenable = false;
 #endif
   }
-  // Overriden by 'fullscreenable'.
+  // Overridden by 'fullscreenable'.
   options.Get(options::kFullScreenable, &fullscreenable);
   SetFullScreenable(fullscreenable);
   if (fullscreen) {
