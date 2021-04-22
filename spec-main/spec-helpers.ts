@@ -87,7 +87,7 @@ export async function startRemoteControlApp () {
   return new RemoteControlApp(appProcess, port);
 }
 
-export function waitForTrue (
+export function waitUntil (
   callback: () => boolean,
   opts: { rate?: number, timeout?: number } = {}
 ) {
@@ -115,8 +115,8 @@ export function waitForTrue (
       if (result === true) {
         cleanup();
         resolve();
+        return true;
       }
-      return result;
     };
 
     if (check()) {
@@ -128,7 +128,7 @@ export function waitForTrue (
     timeoutId = setTimeout(() => {
       timeoutId = undefined;
       cleanup();
-      reject(new Error(`waitForTrue timed out after ${timeout}ms`));
+      reject(new Error(`waitUntil timed out after ${timeout}ms`));
     }, timeout);
   });
 }

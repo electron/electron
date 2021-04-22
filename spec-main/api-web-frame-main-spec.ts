@@ -6,7 +6,7 @@ import { BrowserWindow, WebFrameMain, webFrameMain, ipcMain } from 'electron/mai
 import { closeAllWindows } from './window-helpers';
 import { emittedOnce, emittedNTimes } from './events-helpers';
 import { AddressInfo } from 'net';
-import { waitForTrue } from './spec-helpers';
+import { waitUntil } from './spec-helpers';
 
 describe('webFrameMain module', () => {
   const fixtures = path.resolve(__dirname, '..', 'spec-main', 'fixtures');
@@ -145,7 +145,7 @@ describe('webFrameMain module', () => {
       expect(webFrame.visibilityState).to.equal('visible');
       w.hide();
       await expect(
-        waitForTrue(() => webFrame.visibilityState === 'hidden')
+        waitUntil(() => webFrame.visibilityState === 'hidden')
       ).to.eventually.be.fulfilled();
     });
   });
