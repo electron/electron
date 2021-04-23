@@ -1,8 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Taylor Brandstetter <deadbeef@webrtc.org>
 Date: Tue, 13 Apr 2021 16:11:47 -0700
-Subject: [Merge M86] - Fix race with SctpTransport destruction and usrsctp
- timer thread.
+Subject: - Fix race with SctpTransport destruction and usrsctp timer thread.
 
 The race occurs if the transport is being destroyed at the same time as
 a callback occurs on the usrsctp timer thread (for example, for a

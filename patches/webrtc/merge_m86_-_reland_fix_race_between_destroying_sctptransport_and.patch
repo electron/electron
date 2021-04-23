@@ -1,8 +1,8 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Taylor Brandstetter <deadbeef@webrtc.org>
 Date: Wed, 14 Apr 2021 11:09:16 -0700
-Subject: [Merge M86] - Reland "Fix race between destroying SctpTransport and
- receiving notification on timer thread."
+Subject: - Reland "Fix race between destroying SctpTransport and receiving
+ notification on timer thread."
 
 This reverts commit 8a38b1cf681cd77f0d59a68fb45d8dedbd7d4cee.
 
