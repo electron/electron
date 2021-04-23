@@ -1,7 +1,7 @@
-From 7dd3b1c86795aca50817ec64edd68742c5f65390 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Wez <wez@chromium.org>
 Date: Thu, 15 Apr 2021 18:24:27 +0000
-Subject: [PATCH] [views] Handle window deletion during HandleDisplayChange.
+Subject: Handle window deletion during HandleDisplayChange.
 
 In principle there is no reason why the HWNDMessageHandler shouldn't be
 deleted by a HandleDisplayChange() call out to the delegate, e.g. if the
@@ -19,13 +19,12 @@ Cr-Original-Commit-Position: refs/heads/master@{#869603}
 Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2826321
 Cr-Commit-Position: refs/branch-heads/4430@{#1291}
 Cr-Branched-From: e5ce7dc4f7518237b3d9bb93cccca35d25216cbe-refs/heads/master@{#857950}
----
 
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index 0a3940b..6d038ae 100644
+index a23108d0a38af3388b35bd5a0ae3cc3d5e565d93..1332f9ef132b7e5f099cd44f8a4b4831e10dd497 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
-@@ -1667,7 +1667,13 @@
+@@ -1677,7 +1677,13 @@ void HWNDMessageHandler::OnDisplayChange(UINT bits_per_pixel,
                                           const gfx::Size& screen_size) {
    TRACE_EVENT0("ui", "HWNDMessageHandler::OnDisplayChange");
  
