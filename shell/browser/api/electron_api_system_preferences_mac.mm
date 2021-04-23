@@ -427,7 +427,7 @@ bool SystemPreferences::CanPromptTouchID() {
   if (@available(macOS 10.12.2, *)) {
     base::scoped_nsobject<LAContext> context([[LAContext alloc] init]);
     if (![context
-            canEvaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics
+            canEvaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics // can we use LAPolicyDeviceOwnerAuthenticationWithBiometricsOrWatch ?
                         error:nil])
       return false;
     if (@available(macOS 10.13.2, *))
