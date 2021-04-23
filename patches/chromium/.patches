@@ -117,3 +117,6 @@ cherry-pick-66b9ad64f4a4.patch
 cherry-pick-7dd3b1c86795.patch
 cherry-pick-1536a564d959.patch
 cherry-pick-e4abe032f3ad.patch
+add_crashkeys_to_identify_where_target_is_assigned_to_a_stale_value.patch
+add_weak_pointer_to_rwhier_framesinkidownermap_and_rwhier_targetmap.patch
+add_null_pointer_check_in_renderwidgethostinputeventrouter.patch

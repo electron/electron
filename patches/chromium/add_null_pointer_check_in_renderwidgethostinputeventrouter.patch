@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Lan Wei <lanwei@chromium.org>
+Date: Fri, 16 Apr 2021 03:49:10 +0000
+Subject: Add null pointer check in RenderWidgetHostInputEventRouter
+
+We have some crashes in RenderWidgetHostInputEventRouter class, we are
+adding some null pointer check in this class to avoid the crash.
+
+(cherry picked from commit 5f47666b79ac7ded20e1c7657037498561bd3352)
+
+Bug: 1155297
+Change-Id: I3b63d5748523ae2ce8ab469832adfc75d586e411
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2818680
+Reviewed-by: Charlie Reis <creis@chromium.org>
+Commit-Queue: Lan Wei <lanwei@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#871108}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2830091
+Auto-Submit: Lan Wei <lanwei@chromium.org>
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Owners-Override: Lan Wei <lanwei@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4430@{#1296}
+Cr-Branched-From: e5ce7dc4f7518237b3d9bb93cccca35d25216cbe-refs/heads/master@{#857950}
+
+diff --git a/content/browser/renderer_host/render_widget_host_input_event_router.cc b/content/browser/renderer_host/render_widget_host_input_event_router.cc
+index dfd11a52b2d7e8724423ffb37686e5904a96e861..7e309490d675c5dbebe447896b30f0d9cc0bd1d6 100644
+--- a/content/browser/renderer_host/render_widget_host_input_event_router.cc
++++ b/content/browser/renderer_host/render_widget_host_input_event_router.cc
+@@ -1958,7 +1958,7 @@ void RenderWidgetHostInputEventRouter::OnAggregatedHitTestRegionListUpdated(
+     const std::vector<viz::AggregatedHitTestRegion>& hit_test_data) {
+   for (auto& region : hit_test_data) {
+     auto iter = owner_map_.find(region.frame_sink_id);
+-    if (iter != owner_map_.end())
++    if (iter != owner_map_.end() && iter->second)
+       iter->second->NotifyHitTestRegionUpdated(region);
+   }
+ }
