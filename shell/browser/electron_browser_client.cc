@@ -1619,10 +1619,9 @@ void BindBadgeServiceForServiceWorker(
       render_process_host, info.scope, std::move(receiver));
 }
 
-void ElectronContentBrowserClient::
-    RegisterBrowserInterfaceBindersForServiceWorker(
-        mojo::BinderMapWithContext<
-            const content::ServiceWorkerVersionBaseInfo&>* map) {
+void ElectronBrowserClient::RegisterBrowserInterfaceBindersForServiceWorker(
+    mojo::BinderMapWithContext<const content::ServiceWorkerVersionBaseInfo&>*
+        map) {
   map->Add<blink::mojom::BadgeService>(
       base::BindRepeating(&BindBadgeServiceForServiceWorker));
 }
