@@ -23,10 +23,9 @@ namespace electron {
 
 namespace {
 
-bool WebContentsDestroyed(int process_id) {
+bool WebContentsDestroyed(content::RenderFrameHost* rfh) {
   content::WebContents* web_contents =
-      static_cast<ElectronBrowserClient*>(ElectronBrowserClient::Get())
-          ->GetWebContentsFromProcessID(process_id);
+      content::WebContents::FromRenderFrameHost(rfh);
   if (!web_contents)
     return true;
   return web_contents->IsBeingDestroyed();
@@ -45,7 +44,7 @@ class ElectronPermissionManager::PendingRequest {
   PendingRequest(content::RenderFrameHost* render_frame_host,
                  const std::vector<content::PermissionType>& permissions,
                  StatusesCallback callback)
-      : render_process_id_(render_frame_host->GetProcess()->GetID()),
+      : render_frame_id_(render_frame_host->GetGlobalFrameRoutingId()),
         callback_(std::move(callback)),
         permissions_(permissions),
         results_(permissions.size(), blink::mojom::PermissionStatus::DENIED),
@@ -71,7 +70,9 @@ class ElectronPermissionManager::PendingRequest {
     --remaining_results_;
   }
 
-  int render_process_id() const { return render_process_id_; }
+  content::RenderFrameHost* GetRenderFrameHost() {
+    return content::RenderFrameHost::FromID(render_frame_id_);
+  }
 
   bool IsComplete() const { return remaining_results_ == 0; }
 
@@ -82,7 +83,7 @@ class ElectronPermissionManager::PendingRequest {
   }
 
  private:
-  int render_process_id_;
+  GlobalFrameRoutingId render_frame_id_;
   StatusesCallback callback_;
   std::vector<content::PermissionType> permissions_;
   std::vector<blink::mojom::PermissionStatus> results_;
@@ -99,7 +100,7 @@ void ElectronPermissionManager::SetPermissionRequestHandler(
     for (PendingRequestsMap::iterator iter(&pending_requests_); !iter.IsAtEnd();
          iter.Advance()) {
       auto* request = iter.GetCurrentValue();
-      if (!WebContentsDestroyed(request->render_process_id()))
+      if (!WebContentsDestroyed(request->GetRenderFrameHost()))
         request->RunCallback();
     }
     pending_requests_.Clear();
