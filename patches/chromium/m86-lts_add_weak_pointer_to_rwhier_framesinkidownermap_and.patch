@@ -14,7 +14,6 @@ using TargetMap = std::map<uint32_t,
 
 This CL should fix the crash of stale pointer.
 
-
 (cherry picked from commit 3e3e3cf7036d7e33a4d68b8416ae25730f9eee1d)
 
 Bug: 1155297
