@@ -380,7 +380,6 @@ void ElectronBrowserMainParts::ToolkitInitialized() {
 #if defined(OS_LINUX)
   auto linux_ui = BuildGtkUi();
   linux_ui->Initialize();
-  views::LinuxUI::SetInstance(std::move(linux_ui));
 
   // Chromium does not respect GTK dark theme setting, but they may change
   // in future and this code might be no longer needed. Check the Chromium
@@ -391,6 +390,7 @@ void ElectronBrowserMainParts::ToolkitInitialized() {
   // here returns a NativeThemeGtk, which monitors GTK settings.
   dark_theme_observer_.reset(new DarkThemeObserver);
   linux_ui->GetNativeTheme(nullptr)->AddObserver(dark_theme_observer_.get());
+  views::LinuxUI::SetInstance(std::move(linux_ui));
 #endif
 
 #if defined(USE_AURA)
