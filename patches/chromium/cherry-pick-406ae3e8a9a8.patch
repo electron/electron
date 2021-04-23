@@ -1,7 +1,7 @@
-From 406ae3e8a9a8a09ccb9b4e33f2aa7cdbdd29af0c Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Ken Rockot <rockot@google.com>
 Date: Tue, 20 Apr 2021 15:46:33 +0000
-Subject: [PATCH] M86-LTS: Mojo: Properly validate broadcast events
+Subject: M86-LTS: Mojo: Properly validate broadcast events
 
 This corrects broadcast event deserialization by adding a missing
 validation step when decoding the outer message header.
@@ -21,13 +21,12 @@ Reviewed-by: Artem Sumaneev <asumaneev@google.com>
 Commit-Queue: Achuith Bhandarkar <achuith@chromium.org>
 Cr-Commit-Position: refs/branch-heads/4240@{#1614}
 Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
----
 
 diff --git a/mojo/core/node_channel.cc b/mojo/core/node_channel.cc
-index 5db339e..901c0f7 100644
+index 061ea1026e95d1b1f80a762ce377aebdd97e1b42..07e3b8b21f7ef70b64d214ec03e0dd1eb807fad6 100644
 --- a/mojo/core/node_channel.cc
 +++ b/mojo/core/node_channel.cc
-@@ -191,13 +191,16 @@
+@@ -191,13 +191,16 @@ Channel::MessagePtr NodeChannel::CreateEventMessage(size_t capacity,
  }
  
  // static
@@ -50,10 +49,10 @@ index 5db339e..901c0f7 100644
  
  void NodeChannel::Start() {
 diff --git a/mojo/core/node_channel.h b/mojo/core/node_channel.h
-index 58ab42b..7ae08e3 100644
+index 58ab42bd01fc856856d171985dac50934d4e00b2..7ae08e3e73110667f0eafe0fe4f70242bfeece39 100644
 --- a/mojo/core/node_channel.h
 +++ b/mojo/core/node_channel.h
-@@ -90,7 +90,9 @@
+@@ -90,7 +90,9 @@ class MOJO_SYSTEM_IMPL_EXPORT NodeChannel
                                                  void** payload,
                                                  size_t num_handles);
  
@@ -65,10 +64,10 @@ index 58ab42b..7ae08e3 100644
                                    size_t* num_data_bytes);
  
 diff --git a/mojo/core/node_controller.cc b/mojo/core/node_controller.cc
-index 8b11ae5..19f48c5 100644
+index c333ed64f71f0dfe5d0012b07bcedccfd94cd5e9..a8b8520729510408dc822532271d0ff4a36a7151 100644
 --- a/mojo/core/node_controller.cc
 +++ b/mojo/core/node_controller.cc
-@@ -76,7 +76,9 @@
+@@ -76,7 +76,9 @@ ports::ScopedEvent DeserializeEventMessage(
      Channel::MessagePtr channel_message) {
    void* data;
    size_t size;
@@ -80,10 +79,10 @@ index 8b11ae5..19f48c5 100644
    if (!event)
      return nullptr;
 diff --git a/mojo/core/user_message_impl.cc b/mojo/core/user_message_impl.cc
-index b54fdeb..11224149 100644
+index 2f1665e55cf0af69c58c21f2e0d602a93e79052e..a6b35b2cd812bb0da7026b088aa0d96acbbc6a2f 100644
 --- a/mojo/core/user_message_impl.cc
 +++ b/mojo/core/user_message_impl.cc
-@@ -417,7 +417,14 @@
+@@ -415,7 +415,14 @@ Channel::MessagePtr UserMessageImpl::FinalizeEventMessage(
    if (channel_message) {
      void* data;
      size_t size;
