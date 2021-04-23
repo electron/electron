@@ -874,32 +874,31 @@ void InspectableWebContents::RegisterExtensionsAPI(const std::string& origin,
 }
 
 void InspectableWebContents::HandleMessageFromDevToolsFrontend(
-    const std::string& message) {
+    base::Value message) {
   // TODO(alexeykuzmin): Should we expect it to exist?
   if (!embedder_message_dispatcher_) {
     return;
   }
 
-  std::string method;
-  base::ListValue empty_params;
-  base::ListValue* params = &empty_params;
+  const std::string* method = nullptr;
+  base::Value* params = nullptr;
 
-  base::DictionaryValue* dict = nullptr;
-  std::unique_ptr<base::Value> parsed_message(
-      base::JSONReader::ReadDeprecated(message));
-  if (!parsed_message || !parsed_message->GetAsDictionary(&dict) ||
-      !dict->GetString(kFrontendHostMethod, &method) ||
-      (dict->HasKey(kFrontendHostParams) &&
-       !dict->GetList(kFrontendHostParams, &params))) {
+  if (message.is_dict()) {
+    method = message.FindStringKey(kFrontendHostMethod);
+    params = message.FindKey(kFrontendHostParams);
+  }
+
+  if (!method || (params && !params->is_list())) {
     LOG(ERROR) << "Invalid message was sent to embedder: " << message;
     return;
   }
-  int id = 0;
-  dict->GetInteger(kFrontendHostId, &id);
+  int id = message.FindIntKey(kFrontendHostId).value_or(0);
+  base::ListValue* params_list;
+  params->GetAsList(&params_list);
   embedder_message_dispatcher_->Dispatch(
       base::BindRepeating(&InspectableWebContents::SendMessageAck,
                           weak_factory_.GetWeakPtr(), id),
-      method, params);
+      *method, params_list);
 }
 
 void InspectableWebContents::DispatchProtocolMessage(
