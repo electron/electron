@@ -1,7 +1,7 @@
-From 5745eaf16077dc12b31252ab1904f2e1f6344e2d Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Asanka Herath <asanka@chromium.org>
 Date: Wed, 31 Mar 2021 16:33:46 +0000
-Subject: [PATCH] [privacy_budget] Remove unnecessary kCanvasReadback metrics.
+Subject: Remove unnecessary kCanvasReadback metrics.
 
 The identifiability metrics recorded under kCanvasReadback surface type
 used two conflicting sources as inputs: the CanvasRenderingContext
@@ -47,13 +47,12 @@ Auto-Submit: Artem Sumaneev <asumaneev@google.com>
 Commit-Queue: Artem Sumaneev <asumaneev@google.com>
 Cr-Commit-Position: refs/branch-heads/4240@{#1586}
 Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
----
 
 diff --git a/third_party/blink/renderer/modules/canvas/canvas2d/canvas_rendering_context_2d.cc b/third_party/blink/renderer/modules/canvas/canvas2d/canvas_rendering_context_2d.cc
-index 2f35115c..b2093c1 100644
+index d4e0d5d0657e89f531d810f407a232248e0fca6f..95c891fc795cb0024e561ee522da79a82b8f14ce 100644
 --- a/third_party/blink/renderer/modules/canvas/canvas2d/canvas_rendering_context_2d.cc
 +++ b/third_party/blink/renderer/modules/canvas/canvas2d/canvas_rendering_context_2d.cc
-@@ -680,12 +680,6 @@
+@@ -680,12 +680,6 @@ ImageData* CanvasRenderingContext2D::getImageData(
      int sw,
      int sh,
      ExceptionState& exception_state) {
@@ -67,10 +66,10 @@ index 2f35115c..b2093c1 100644
  }
  
 diff --git a/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc b/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc
-index f7874b0..be20ec4 100644
+index d7445bf31a391bea3742327c34dc3eb46c72513b..32e945f0692b66de95735a3cd949943243ec5a7b 100644
 --- a/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc
 +++ b/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc
-@@ -4508,17 +4508,6 @@
+@@ -4508,17 +4508,6 @@ void WebGLRenderingContextBase::readPixels(
      GLenum format,
      GLenum type,
      MaybeShared<DOMArrayBufferView> pixels) {
