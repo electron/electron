@@ -8,11 +8,14 @@
 #include <string>
 
 #include "electron/buildflags/buildflags.h"
+#include "extensions/browser/guest_view/extensions_guest_view_manager_delegate.h"
 #include "extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest_delegate.h"
 #include "printing/buildflags/buildflags.h"
+#include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/extensions/api/management/electron_management_api_delegate.h"
 #include "shell/browser/extensions/electron_extension_web_contents_observer.h"
 #include "shell/browser/extensions/electron_messaging_delegate.h"
+#include "v8/include/v8.h"
 
 #if BUILDFLAG(ENABLE_PRINTING)
 #include "chrome/browser/printing/print_view_manager_basic.h"
@@ -26,6 +29,24 @@
 #endif
 
 namespace extensions {
+
+class ElectronGuestViewManagerDelegate
+    : public ExtensionsGuestViewManagerDelegate {
+ public:
+  explicit ElectronGuestViewManagerDelegate(content::BrowserContext* context)
+      : ExtensionsGuestViewManagerDelegate(context) {}
+  ~ElectronGuestViewManagerDelegate() override = default;
+
+  // GuestViewManagerDelegate:
+  void OnGuestAdded(content::WebContents* guest_web_contents) const override {
+    v8::Isolate* isolate = v8::Isolate::GetCurrent();
+    v8::HandleScope scope(isolate);
+    electron::api::WebContents::FromOrCreate(isolate, guest_web_contents);
+  }
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(ElectronGuestViewManagerDelegate);
+};
 
 class ElectronMimeHandlerViewGuestDelegate
     : public MimeHandlerViewGuestDelegate {
@@ -81,6 +102,12 @@ std::unique_ptr<MimeHandlerViewGuestDelegate>
 ElectronExtensionsAPIClient::CreateMimeHandlerViewGuestDelegate(
     MimeHandlerViewGuest* guest) const {
   return std::make_unique<ElectronMimeHandlerViewGuestDelegate>();
+}
+
+std::unique_ptr<guest_view::GuestViewManagerDelegate>
+ElectronExtensionsAPIClient::CreateGuestViewManagerDelegate(
+    content::BrowserContext* context) const {
+  return std::make_unique<ElectronGuestViewManagerDelegate>(context);
 }
 
 }  // namespace extensions

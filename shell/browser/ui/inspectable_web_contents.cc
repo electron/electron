@@ -41,6 +41,7 @@
 #include "services/network/public/cpp/simple_url_loader.h"
 #include "services/network/public/cpp/simple_url_loader_stream_consumer.h"
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
+#include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/net/asar/asar_url_loader_factory.h"
 #include "shell/browser/protocol_registry.h"
 #include "shell/browser/ui/inspectable_web_contents_delegate.h"
@@ -51,6 +52,7 @@
 #include "third_party/blink/public/common/page/page_zoom.h"
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
+#include "v8/include/v8.h"
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "chrome/common/extensions/chrome_manifest_url_handlers.h"
@@ -450,6 +452,10 @@ void InspectableWebContents::ShowDevTools(bool activate) {
     managed_devtools_web_contents_ = content::WebContents::Create(
         content::WebContents::CreateParams(web_contents_->GetBrowserContext()));
     managed_devtools_web_contents_->SetDelegate(this);
+    v8::Isolate* isolate = v8::Isolate::GetCurrent();
+    v8::HandleScope scope(isolate);
+    api::WebContents::FromOrCreate(isolate,
+                                   managed_devtools_web_contents_.get());
   }
 
   Observe(GetDevToolsWebContents());

@@ -1382,6 +1382,7 @@ describe('chromium features', () => {
       const w = new BrowserWindow({ show: false });
       w.loadURL(pdfSource);
       const [, contents] = await emittedOnce(app, 'web-contents-created');
+      await emittedOnce(contents, 'did-navigate');
       expect(contents.getURL()).to.equal('chrome-extension://mhjfbmdgcfjbbpaeojofohoefgiehjai/index.html');
     });
 
@@ -1389,6 +1390,7 @@ describe('chromium features', () => {
       const w = new BrowserWindow({ show: false });
       w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'pdf-in-iframe.html'));
       const [, contents] = await emittedOnce(app, 'web-contents-created');
+      await emittedOnce(contents, 'did-navigate');
       expect(contents.getURL()).to.equal('chrome-extension://mhjfbmdgcfjbbpaeojofohoefgiehjai/index.html');
     });
   });
