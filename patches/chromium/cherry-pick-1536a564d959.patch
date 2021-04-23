@@ -1,0 +1,100 @@
+From 1536a564d9591d275750552340d2ec5c6d24c4a4 Mon Sep 17 00:00:00 2001
+From: Ken Rockot <rockot@google.com>
+Date: Thu, 15 Apr 2021 18:14:57 +0000
+Subject: [PATCH] Mojo: Properly validate broadcast events
+
+This corrects broadcast event deserialization by adding a missing
+validation step when decoding the outer message header.
+
+(cherry picked from commit 6740adb28374ddeee13febfd5e5d20cb8a365979)
+
+Fixed: 1195308
+Change-Id: Ia67a20e48614e7ef00b1b32f7f4e5f20235be310
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2808678
+Reviewed-by: Daniel Cheng <dcheng@chromium.org>
+Commit-Queue: Ken Rockot <rockot@google.com>
+Cr-Original-Commit-Position: refs/heads/master@{#870238}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2827760
+Commit-Queue: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: Ken Rockot <rockot@google.com>
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/4430@{#1290}
+Cr-Branched-From: e5ce7dc4f7518237b3d9bb93cccca35d25216cbe-refs/heads/master@{#857950}
+---
+
+diff --git a/mojo/core/node_channel.cc b/mojo/core/node_channel.cc
+index 7b52f70d..ed0d28a 100644
+--- a/mojo/core/node_channel.cc
++++ b/mojo/core/node_channel.cc
+@@ -271,13 +271,16 @@
+ }
+ 
+ // static
+-void NodeChannel::GetEventMessageData(Channel::Message* message,
++bool NodeChannel::GetEventMessageData(Channel::Message& message,
+                                       void** data,
+                                       size_t* num_data_bytes) {
+-  // NOTE: OnChannelMessage guarantees that we never accept a Channel::Message
+-  // with a payload of fewer than |sizeof(Header)| bytes.
+-  *data = reinterpret_cast<Header*>(message->mutable_payload()) + 1;
+-  *num_data_bytes = message->payload_size() - sizeof(Header);
++  // NOTE: Callers must guarantee that the payload in `message` must be at least
++  // large enough to hold a Header.
++  if (message.payload_size() < sizeof(Header))
++    return false;
++  *data = reinterpret_cast<Header*>(message.mutable_payload()) + 1;
++  *num_data_bytes = message.payload_size() - sizeof(Header);
++  return true;
+ }
+ 
+ void NodeChannel::Start() {
+diff --git a/mojo/core/node_channel.h b/mojo/core/node_channel.h
+index b037054..488908a 100644
+--- a/mojo/core/node_channel.h
++++ b/mojo/core/node_channel.h
+@@ -95,7 +95,9 @@
+                                                 void** payload,
+                                                 size_t num_handles);
+ 
+-  static void GetEventMessageData(Channel::Message* message,
++  // Retrieves address and size of an Event message's underlying message data.
++  // Returns `false` if the message is not a valid Event message.
++  static bool GetEventMessageData(Channel::Message& message,
+                                   void** data,
+                                   size_t* num_data_bytes);
+ 
+diff --git a/mojo/core/node_controller.cc b/mojo/core/node_controller.cc
+index 8994f49..475b5cb 100644
+--- a/mojo/core/node_controller.cc
++++ b/mojo/core/node_controller.cc
+@@ -76,7 +76,9 @@
+     Channel::MessagePtr channel_message) {
+   void* data;
+   size_t size;
+-  NodeChannel::GetEventMessageData(channel_message.get(), &data, &size);
++  bool valid = NodeChannel::GetEventMessageData(*channel_message, &data, &size);
++  if (!valid)
++    return nullptr;
+   auto event = ports::Event::Deserialize(data, size);
+   if (!event)
+     return nullptr;
+diff --git a/mojo/core/user_message_impl.cc b/mojo/core/user_message_impl.cc
+index 1f3f30a..f96c920 100644
+--- a/mojo/core/user_message_impl.cc
++++ b/mojo/core/user_message_impl.cc
+@@ -417,7 +417,14 @@
+   if (channel_message) {
+     void* data;
+     size_t size;
+-    NodeChannel::GetEventMessageData(channel_message.get(), &data, &size);
++    // The `channel_message` must either be produced locally or must have
++    // already been validated by the caller, as is done for example by
++    // NodeController::DeserializeEventMessage before
++    // NodeController::OnBroadcast re-serializes each copy of the message it
++    // received.
++    bool result =
++        NodeChannel::GetEventMessageData(*channel_message, &data, &size);
++    DCHECK(result);
+     message_event->Serialize(data);
+   }
+ 

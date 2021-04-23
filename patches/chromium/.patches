@@ -113,3 +113,4 @@ word_break_between_space_and_alphanumeric.patch
 moves_background_color_setter_of_webview_to_blinks_webprefs_logic.patch
 blink_wasm_eval_csp.patch
 cherry-pick-162efe98330e.patch
+cherry-pick-1536a564d959.patch
