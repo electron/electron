@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jana Grill <janagrill@google.com>
 Date: Tue, 13 Apr 2021 16:54:14 +0200
-Subject: [LTS-M86][builtins] Harden Array.prototype.concat.
+Subject: Harden Array.prototype.concat.
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
