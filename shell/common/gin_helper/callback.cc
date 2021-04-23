@@ -4,6 +4,7 @@
 
 #include "shell/common/gin_helper/callback.h"
 
+#include "base/stl_util.h"
 #include "content/public/browser/browser_thread.h"
 #include "gin/dictionary.h"
 
