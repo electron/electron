@@ -196,7 +196,7 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
 
   bool focusable;
   if (options.Get(options::kFocusable, &focusable) && !focusable)
-    params.activatable = views::Widget::InitParams::ACTIVATABLE_NO;
+    params.activatable = views::Widget::InitParams::Activatable::kNo;
 
 #if defined(OS_WIN)
   if (parent)
