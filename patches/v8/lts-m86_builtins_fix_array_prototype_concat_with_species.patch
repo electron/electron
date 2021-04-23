@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Igor Sheludko <ishell@chromium.org>
 Date: Wed, 7 Apr 2021 19:12:32 +0200
-Subject: [LTS-M86][builtins] Fix Array.prototype.concat with @@species
+Subject: Fix Array.prototype.concat with @@species
 
 (cherry picked from commit 7989e04979c3195e60a6814e8263063eb91f7b47)
 
