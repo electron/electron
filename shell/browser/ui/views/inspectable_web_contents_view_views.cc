@@ -82,7 +82,7 @@ InspectableWebContentsViewViews::InspectableWebContentsViewViews(
     InspectableWebContents* inspectable_web_contents)
     : inspectable_web_contents_(inspectable_web_contents),
       devtools_web_view_(new views::WebView(nullptr)),
-      title_(base::ASCIIToUTF16("Developer Tools")) {
+      title_(u"Developer Tools") {
   if (!inspectable_web_contents_->IsGuest() &&
       inspectable_web_contents_->GetWebContents()->GetNativeView()) {
     auto* contents_web_view = new views::WebView(nullptr);
@@ -90,8 +90,7 @@ InspectableWebContentsViewViews::InspectableWebContentsViewViews(
         inspectable_web_contents_->GetWebContents());
     contents_web_view_ = contents_web_view;
   } else {
-    contents_web_view_ =
-        new views::Label(base::ASCIIToUTF16("No content under offscreen mode"));
+    contents_web_view_ = new views::Label(u"No content under offscreen mode");
   }
 
   devtools_web_view_->SetVisible(false);
