@@ -40,6 +40,7 @@
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
+#include "content/public/browser/service_worker_version_base_info.h"
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/tts_controller.h"
 #include "content/public/browser/tts_platform.h"
@@ -1604,12 +1605,26 @@ content::BluetoothDelegate* ElectronBrowserClient::GetBluetoothDelegate() {
   return bluetooth_delegate_.get();
 }
 
-void ElectronBrowserClient::BindBadgeServiceReceiverFromServiceWorker(
-    content::RenderProcessHost* service_worker_process_host,
-    const GURL& service_worker_scope,
+void BindBadgeServiceForServiceWorker(
+    const content::ServiceWorkerVersionBaseInfo& info,
     mojo::PendingReceiver<blink::mojom::BadgeService> receiver) {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+
+  content::RenderProcessHost* render_process_host =
+      content::RenderProcessHost::FromID(info.process_id);
+  if (!render_process_host)
+    return;
+
   badging::BadgeManager::BindServiceWorkerReceiver(
-      service_worker_process_host, service_worker_scope, std::move(receiver));
+      render_process_host, info.scope, std::move(receiver));
+}
+
+void ElectronContentBrowserClient::
+    RegisterBrowserInterfaceBindersForServiceWorker(
+        mojo::BinderMapWithContext<
+            const content::ServiceWorkerVersionBaseInfo&>* map) {
+  map->Add<blink::mojom::BadgeService>(
+      base::BindRepeating(&BindBadgeServiceForServiceWorker));
 }
 
 }  // namespace electron

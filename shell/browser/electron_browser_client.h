@@ -71,10 +71,9 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   void RegisterBrowserInterfaceBindersForFrame(
       content::RenderFrameHost* render_frame_host,
       mojo::BinderMapWithContext<content::RenderFrameHost*>* map) override;
-  void BindBadgeServiceReceiverFromServiceWorker(
-      content::RenderProcessHost* service_worker_process_host,
-      const GURL& service_worker_scope,
-      mojo::PendingReceiver<blink::mojom::BadgeService> receiver) override;
+  void RegisterBrowserInterfaceBindersForServiceWorker(
+      mojo::BinderMapWithContext<const content::ServiceWorkerVersionBaseInfo&>*
+          map) override;
 #if defined(OS_LINUX)
   void GetAdditionalMappedFilesForChildProcess(
       const base::CommandLine& command_line,
