@@ -62,7 +62,6 @@
 #include "base/environment.h"
 #include "base/nix/xdg_util.h"
 #include "base/threading/thread_task_runner_handle.h"
-#include "ui/gtk/gtk_ui.h"
 #include "ui/gtk/gtk_ui_factory.h"
 #include "ui/gtk/gtk_util.h"
 #include "ui/views/linux_ui/linux_ui.h"
