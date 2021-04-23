@@ -1,7 +1,7 @@
-From 66b9ad64f4a4158e847403f974569dc9ef7c50b3 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Bill Budge <bbudge@chromium.org>
 Date: Fri, 16 Apr 2021 23:22:33 +0000
-Subject: [PATCH] [merge][90][GeneratedCodeCache] Copy large data before hashing and writing
+Subject: Copy large data before hashing and writing
 
 - Makes a copy before hashing and writing large code entries.
 
@@ -21,13 +21,12 @@ Reviewed-by: Bill Budge <bbudge@chromium.org>
 Auto-Submit: Bill Budge <bbudge@chromium.org>
 Cr-Commit-Position: refs/branch-heads/4430@{#1303}
 Cr-Branched-From: e5ce7dc4f7518237b3d9bb93cccca35d25216cbe-refs/heads/master@{#857950}
----
 
 diff --git a/content/browser/code_cache/generated_code_cache.cc b/content/browser/code_cache/generated_code_cache.cc
-index 69d1f92..f4d0844 100644
+index 69d1f926f3e8b1d7eb23565ebebbebaad4fc392d..f4d084481a3f3faec5906fa27c16feab014f8cff 100644
 --- a/content/browser/code_cache/generated_code_cache.cc
 +++ b/content/browser/code_cache/generated_code_cache.cc
-@@ -384,9 +384,18 @@
+@@ -384,9 +384,18 @@ void GeneratedCodeCache::WriteEntry(const GURL& url,
      // [stream1] <empty>
      // [stream0 (checksum key entry)] <empty>
      // [stream1 (checksum key entry)] data
@@ -47,7 +46,7 @@ index 69d1f92..f4d0844 100644
          result, base::size(result));
      std::string checksum_key = base::HexEncode(result, base::size(result));
      small_buffer = base::MakeRefCounted<net::IOBufferWithSize>(
-@@ -401,7 +410,7 @@
+@@ -401,7 +410,7 @@ void GeneratedCodeCache::WriteEntry(const GURL& url,
      // Issue another write operation for the code, with the checksum as the key
      // and nothing in the header.
      auto small_buffer2 = base::MakeRefCounted<net::IOBufferWithSize>(0);
