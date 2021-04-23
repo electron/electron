@@ -45,8 +45,8 @@ class ElectronPermissionManager::PendingRequest {
   PendingRequest(content::RenderFrameHost* render_frame_host,
                  const std::vector<content::PermissionType>& permissions,
                  StatusesCallback callback)
-      : render_frame_id_(render_frame_host->GetGlobalFrameRoutingId()),
-        render_process_id_(render_frame_host->GetProcess()->GetID()),
+      : render_process_id_(render_frame_host->GetProcess()->GetID()),
+        render_frame_id_(render_frame_host->GetGlobalFrameRoutingId()),
         callback_(std::move(callback)),
         permissions_(permissions),
         results_(permissions.size(), blink::mojom::PermissionStatus::DENIED),
