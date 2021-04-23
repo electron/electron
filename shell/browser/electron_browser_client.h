@@ -272,19 +272,6 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       const content::ChildProcessTerminationInfo& info) override;
 
  private:
-  struct ProcessPreferences {
-    bool sandbox = false;
-    bool native_window_open = false;
-    bool disable_popups = false;
-    bool web_security = true;
-    content::BrowserContext* browser_context = nullptr;
-  };
-
-  void AddProcessPreferences(int process_id, ProcessPreferences prefs);
-  void RemoveProcessPreferences(int process_id);
-  bool IsProcessObserved(int process_id) const;
-  bool RendererUsesNativeWindowOpen(int process_id) const;
-  bool RendererDisablesPopups(int process_id) const;
   content::SiteInstance* GetSiteInstanceFromAffinity(
       content::BrowserContext* browser_context,
       const GURL& url,
@@ -301,8 +288,6 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   std::unique_ptr<NotificationPresenter> notification_presenter_;
 
   Delegate* delegate_ = nullptr;
-
-  std::map<int, ProcessPreferences> process_preferences_;
 
   std::string user_agent_override_ = "";
 

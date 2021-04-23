@@ -101,6 +101,7 @@
 #include "shell/common/options_switches.h"
 #include "shell/common/platform_util.h"
 #include "third_party/blink/public/common/loader/url_loader_throttle.h"
+#include "third_party/blink/public/common/tokens/tokens.h"
 #include "third_party/blink/public/common/web_preferences/web_preferences.h"
 #include "third_party/blink/public/mojom/badging/badging.mojom.h"
 #include "ui/base/resource/resource_bundle.h"
@@ -368,30 +369,6 @@ content::WebContents* ElectronBrowserClient::GetWebContentsFromProcessID(
   return WebContentsPreferences::GetWebContentsFromProcessID(process_id);
 }
 
-void ElectronBrowserClient::AddProcessPreferences(
-    int process_id,
-    ElectronBrowserClient::ProcessPreferences prefs) {
-  process_preferences_[process_id] = prefs;
-}
-
-void ElectronBrowserClient::RemoveProcessPreferences(int process_id) {
-  process_preferences_.erase(process_id);
-}
-
-bool ElectronBrowserClient::IsProcessObserved(int process_id) const {
-  return process_preferences_.find(process_id) != process_preferences_.end();
-}
-
-bool ElectronBrowserClient::RendererUsesNativeWindowOpen(int process_id) const {
-  auto it = process_preferences_.find(process_id);
-  return it != process_preferences_.end() && it->second.native_window_open;
-}
-
-bool ElectronBrowserClient::RendererDisablesPopups(int process_id) const {
-  auto it = process_preferences_.find(process_id);
-  return it != process_preferences_.end() && it->second.disable_popups;
-}
-
 content::SiteInstance* ElectronBrowserClient::GetSiteInstanceFromAffinity(
     content::BrowserContext* browser_context,
     const GURL& url,
@@ -407,8 +384,6 @@ void ElectronBrowserClient::RenderProcessWillLaunch(
     content::RenderProcessHost* host) {
   // When a render process is crashed, it might be reused.
   int process_id = host->GetID();
-  if (IsProcessObserved(process_id))
-    return;
 
   auto* browser_context = host->GetBrowserContext();
   ALLOW_UNUSED_LOCAL(browser_context);
@@ -422,20 +397,6 @@ void ElectronBrowserClient::RenderProcessWillLaunch(
       new ElectronExtensionMessageFilter(process_id, browser_context));
 #endif
 
-  ProcessPreferences prefs;
-  auto* web_preferences =
-      WebContentsPreferences::From(GetWebContentsFromProcessID(process_id));
-  if (web_preferences) {
-    prefs.sandbox = web_preferences->IsEnabled(options::kSandbox);
-    prefs.native_window_open =
-        web_preferences->IsEnabled(options::kNativeWindowOpen);
-    prefs.disable_popups = web_preferences->IsEnabled("disablePopups");
-    prefs.web_security = web_preferences->IsEnabled(options::kWebSecurity,
-                                                    true /* default value */);
-    prefs.browser_context = host->GetBrowserContext();
-  }
-
-  AddProcessPreferences(host->GetID(), prefs);
   // ensure the ProcessPreferences is removed later
   host->AddObserver(this);
 }
@@ -699,10 +660,11 @@ bool ElectronBrowserClient::CanCreateWindow(
     bool* no_javascript_access) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
-  int opener_render_process_id = opener->GetProcess()->GetID();
-
-  if (RendererUsesNativeWindowOpen(opener_render_process_id)) {
-    if (RendererDisablesPopups(opener_render_process_id)) {
+  content::WebContents* web_contents =
+      content::WebContents::FromRenderFrameHost(opener);
+  WebContentsPreferences* prefs = WebContentsPreferences::From(web_contents);
+  if (prefs && prefs->IsEnabled(options::kNativeWindowOpen)) {
+    if (prefs->IsEnabled("disablePopups")) {
       // <webview> without allowpopups attribute should return
       // null from window.open calls
       return false;
@@ -921,7 +883,6 @@ void ElectronBrowserClient::RenderProcessHostDestroyed(
   int process_id = host->GetID();
   pending_processes_.erase(process_id);
   renderer_is_subframe_.erase(process_id);
-  RemoveProcessPreferences(process_id);
   host->RemoveObserver(this);
 }
 
@@ -1390,11 +1351,17 @@ void ElectronBrowserClient::OverrideURLLoaderFactoryParams(
     const url::Origin& origin,
     bool is_for_isolated_world,
     network::mojom::URLLoaderFactoryParams* factory_params) {
-  // Bypass CORB and CORS when web security is disabled.
-  auto it = process_preferences_.find(factory_params->process_id);
-  if (it != process_preferences_.end() && !it->second.web_security) {
-    factory_params->is_corb_enabled = false;
-    factory_params->disable_web_security = true;
+  if (factory_params->top_frame_id) {
+    // Bypass CORB and CORS when web security is disabled.
+    auto* rfh = content::RenderFrameHost::FromFrameToken(
+        factory_params->process_id,
+        blink::LocalFrameToken(factory_params->top_frame_id.value()));
+    auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
+    auto* prefs = WebContentsPreferences::From(web_contents);
+    if (prefs && !prefs->IsEnabled(options::kWebSecurity, true)) {
+      factory_params->is_corb_enabled = false;
+      factory_params->disable_web_security = true;
+    }
   }
 
   extensions::URLLoaderFactoryManager::OverrideURLLoaderFactoryParams(
