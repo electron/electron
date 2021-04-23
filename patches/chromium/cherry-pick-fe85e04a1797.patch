@@ -1,7 +1,7 @@
-From fe85e04a1797694f0413b925b3b03aa4899e4554 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Ken Rockot <rockot@google.com>
 Date: Wed, 31 Mar 2021 18:44:06 +0000
-Subject: [PATCH] Don't use BigBuffer for IPC::Message transport
+Subject: Don't use BigBuffer for IPC::Message transport
 
 M86 merge conflicts and resolution:
 * ipc/ipc_message_pipe_reader.cc
@@ -32,13 +32,12 @@ Auto-Submit: Artem Sumaneev <asumaneev@google.com>
 Commit-Queue: Artem Sumaneev <asumaneev@google.com>
 Cr-Commit-Position: refs/branch-heads/4240@{#1587}
 Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
----
 
 diff --git a/ipc/BUILD.gn b/ipc/BUILD.gn
-index 994d45e..281e84d 100644
+index 48bdc5061eb5ea2c49dccd6d140d6a521d7d282f..54e260d1ba60af64c16868e9a4602ada7c0db302 100644
 --- a/ipc/BUILD.gn
 +++ b/ipc/BUILD.gn
-@@ -187,10 +187,7 @@
+@@ -203,10 +203,7 @@ mojom_component("mojom") {
    output_prefix = "ipc_mojom"
    macro_prefix = "IPC_MOJOM"
    sources = [ "ipc.mojom" ]
@@ -50,7 +49,7 @@ index 994d45e..281e84d 100644
  
    cpp_typemaps = [
      {
-@@ -207,10 +204,7 @@
+@@ -223,10 +220,7 @@ mojom_component("mojom") {
          "//ipc/message_view.cc",
          "//ipc/message_view.h",
        ]
@@ -63,7 +62,7 @@ index 994d45e..281e84d 100644
    ]
  
 diff --git a/ipc/ipc.mojom b/ipc/ipc.mojom
-index c667996..4606022 100644
+index c66799642fbee2cef3449ff5d52cd5f187808cfe..4606022b28bca1df06ba6eb8eaac025573475b10 100644
 --- a/ipc/ipc.mojom
 +++ b/ipc/ipc.mojom
 @@ -4,7 +4,6 @@
@@ -74,7 +73,7 @@ index c667996..4606022 100644
  import "mojo/public/interfaces/bindings/native_struct.mojom";
  
  // A placeholder interface type since we don't yet support generic associated
-@@ -14,7 +13,7 @@
+@@ -14,7 +13,7 @@ interface GenericInterface {};
  // Typemapped such that arbitrarily large IPC::Message objects can be sent and
  // received with minimal copying.
  struct Message {
@@ -83,7 +82,7 @@ index c667996..4606022 100644
    array<mojo.native.SerializedHandle>? handles;
  };
  
-@@ -24,6 +23,7 @@
+@@ -24,6 +23,7 @@ interface Channel {
    SetPeerPid(int32 pid);
  
    // Transmits a classical Chrome IPC message.
@@ -92,7 +91,7 @@ index c667996..4606022 100644
  
    // Requests a Channel-associated interface.
 diff --git a/ipc/ipc_message_pipe_reader.cc b/ipc/ipc_message_pipe_reader.cc
-index bdc5dd6..cbf0363 100644
+index bdc5dd680d0f9107719765334d0a1ea3e864e200..cbf0363a9d941db1ab34ae835e707b7825447659 100644
 --- a/ipc/ipc_message_pipe_reader.cc
 +++ b/ipc/ipc_message_pipe_reader.cc
 @@ -10,6 +10,7 @@
@@ -103,7 +102,7 @@ index bdc5dd6..cbf0363 100644
  #include "base/location.h"
  #include "base/logging.h"
  #include "base/macros.h"
-@@ -62,7 +63,9 @@
+@@ -62,7 +63,9 @@ bool MessagePipeReader::Send(std::unique_ptr<Message> message) {
    if (!sender_)
      return false;
  
@@ -114,7 +113,7 @@ index bdc5dd6..cbf0363 100644
    DVLOG(4) << "Send " << message->type() << ": " << message->size();
    return true;
  }
-@@ -82,11 +85,12 @@
+@@ -82,11 +85,12 @@ void MessagePipeReader::SetPeerPid(int32_t peer_pid) {
  }
  
  void MessagePipeReader::Receive(MessageView message_view) {
@@ -130,10 +129,10 @@ index bdc5dd6..cbf0363 100644
      delegate_->OnBrokenDataReceived();
      return;
 diff --git a/ipc/ipc_mojo_bootstrap_unittest.cc b/ipc/ipc_mojo_bootstrap_unittest.cc
-index 47a7ad7..b32941da 100644
+index 47a7ad79a30165c76041075be10b9be8c13f5e75..b32941da752a54ba7317e439150982adbb9fbcad 100644
 --- a/ipc/ipc_mojo_bootstrap_unittest.cc
 +++ b/ipc/ipc_mojo_bootstrap_unittest.cc
-@@ -77,7 +77,9 @@
+@@ -77,7 +77,9 @@ class PeerPidReceiver : public IPC::mojom::Channel {
      ASSERT_NE(MessageExpectation::kNotExpected, message_expectation_);
      received_message_ = true;
  
@@ -144,7 +143,7 @@ index 47a7ad7..b32941da 100644
      bool expected_valid =
          message_expectation_ == MessageExpectation::kExpectedValid;
      EXPECT_EQ(expected_valid, message.IsValid());
-@@ -196,8 +198,7 @@
+@@ -196,8 +198,7 @@ MULTIPROCESS_TEST_MAIN_WITH_SETUP(
  
    uint8_t data = 0;
    sender->Receive(
@@ -155,7 +154,7 @@ index 47a7ad7..b32941da 100644
    base::RunLoop run_loop;
    PeerPidReceiver impl(std::move(receiver), run_loop.QuitClosure());
 diff --git a/ipc/message_mojom_traits.cc b/ipc/message_mojom_traits.cc
-index 4aab924..d8ad4a2 100644
+index 4aab9248e9ff6ca8e2d7d085ae3e996ac04666e8..d8ad4a2f919b01362e3e2746bfb7f4fae77b059d 100644
 --- a/ipc/message_mojom_traits.cc
 +++ b/ipc/message_mojom_traits.cc
 @@ -4,15 +4,13 @@
@@ -177,7 +176,7 @@ index 4aab924..d8ad4a2 100644
  }
  
  // static
-@@ -26,14 +24,14 @@
+@@ -26,14 +24,14 @@ StructTraits<IPC::mojom::MessageDataView, IPC::MessageView>::handles(
  bool StructTraits<IPC::mojom::MessageDataView, IPC::MessageView>::Read(
      IPC::mojom::MessageDataView data,
      IPC::MessageView* out) {
@@ -197,7 +196,7 @@ index 4aab924..d8ad4a2 100644
  }
  
 diff --git a/ipc/message_mojom_traits.h b/ipc/message_mojom_traits.h
-index 617ffbe..6b5064a 100644
+index 617ffbe37309946464e3f180a0ebde97f56dbd75..6b5064a12191e9a663519e7b5cb7c5f907a75054 100644
 --- a/ipc/message_mojom_traits.h
 +++ b/ipc/message_mojom_traits.h
 @@ -7,10 +7,10 @@
@@ -212,7 +211,7 @@ index 617ffbe..6b5064a 100644
  #include "mojo/public/cpp/bindings/struct_traits.h"
  #include "mojo/public/interfaces/bindings/native_struct.mojom.h"
  
-@@ -19,7 +19,7 @@
+@@ -19,7 +19,7 @@ namespace mojo {
  template <>
  class StructTraits<IPC::mojom::MessageDataView, IPC::MessageView> {
   public:
@@ -222,10 +221,10 @@ index 617ffbe..6b5064a 100644
        IPC::MessageView& view);
  
 diff --git a/ipc/message_view.cc b/ipc/message_view.cc
-index 49a8087..39c6608 100644
+index 49a80878e7a92cda13105ea0f2fea36ad7ed05e6..39c6608dd507c3ca051b619d966ae521e95fe8e2 100644
 --- a/ipc/message_view.cc
 +++ b/ipc/message_view.cc
-@@ -11,16 +11,9 @@
+@@ -11,16 +11,9 @@ namespace IPC {
  MessageView::MessageView() = default;
  
  MessageView::MessageView(
@@ -245,7 +244,7 @@ index 49a8087..39c6608 100644
  MessageView::MessageView(MessageView&&) = default;
  
 diff --git a/ipc/message_view.h b/ipc/message_view.h
-index 4ec059bf..c7801bb 100644
+index 4ec059bf3639b9c75178f2300d0796b433e1d2ed..c7801bb963f06b03c51ba87bffc307792b592dae 100644
 --- a/ipc/message_view.h
 +++ b/ipc/message_view.h
 @@ -11,7 +11,6 @@
@@ -256,7 +255,7 @@ index 4ec059bf..c7801bb 100644
  #include "mojo/public/interfaces/bindings/native_struct.mojom-forward.h"
  
  namespace IPC {
-@@ -20,30 +19,18 @@
+@@ -20,30 +19,18 @@ class COMPONENT_EXPORT(IPC_MOJOM) MessageView {
   public:
    MessageView();
    MessageView(
