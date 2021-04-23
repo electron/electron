@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index ba425c07589c36f7ad18ab7475eff9e6329ec914..30b353ab3bbb72150585a34cf25e70f6de96b92f 100644
+index 356b8e8b99deabed3f7e50e9eb35a3af8da8de6c..2e5ff92bc604338870570aaaddb2053c56d53c83 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -5504,6 +5504,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -5505,6 +5505,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -81,10 +81,10 @@ index 441ea4c6ea1705721a1953308133e249407dd335..50353d65497b73e9a8c73656844dc79e
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 193fbea84a3f8cbc600e9b12ac0d95d00021ff84..09994e783f4a82496db8fb48f83bef52bf71e007 100644
+index dca832136e0e7bd0dd789c9115b0279af8bf336d..1cbd039cfd90d7bb3e9064f568a7c4e7f51cb54d 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -158,6 +158,7 @@ class NetworkService;
+@@ -157,6 +157,7 @@ class NetworkService;
  class TrustedURLLoaderHeaderClient;
  }  // namespace mojom
  struct ResourceRequest;
