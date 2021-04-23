@@ -1,7 +1,10 @@
-From e4abe032f3ad1921f38ce255699968608bca9494 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Brendon Tiszka <btiszka@gmail.com>
 Date: Fri, 16 Apr 2021 18:14:13 +0000
-Subject: [PATCH] Ensure that BrowserContext is not used after it has been freed
+Subject: Ensure that BrowserContext is not used after it has been freed
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
 Previously, it was possible for the BrowserContext to be destroyed
 before ReportAnchorElementMetricsOnClick attempted to access it.
@@ -35,13 +38,12 @@ Commit-Queue: Tarun Bansal <tbansal@chromium.org>
 Commit-Queue: Robert Ogden <robertogden@chromium.org>
 Cr-Commit-Position: refs/branch-heads/4430@{#1297}
 Cr-Branched-From: e5ce7dc4f7518237b3d9bb93cccca35d25216cbe-refs/heads/master@{#857950}
----
 
 diff --git a/AUTHORS b/AUTHORS
-index b0b6777..064497a 100644
+index 599cd0fbf5dce0536891ce3fb90ccf9efbbfd5c5..296c220888df0c421e1659d08c546fdde11e60af 100644
 --- a/AUTHORS
 +++ b/AUTHORS
-@@ -150,6 +150,7 @@
+@@ -149,6 +149,7 @@ Bobby Powers <bobbypowers@gmail.com>
  Branden Archer <bma4@zips.uakron.edu>
  Brendan Kirby <brendan.kirby@imgtec.com>
  Brendan Long <self@brendanlong.com>
@@ -50,10 +52,10 @@ index b0b6777..064497a 100644
  Brian G. Merrell <bgmerrell@gmail.com>
  Brian Konzman, SJ <b.g.konzman@gmail.com>
 diff --git a/chrome/browser/navigation_predictor/navigation_predictor.cc b/chrome/browser/navigation_predictor/navigation_predictor.cc
-index becdb8a..6c5e4a9 100644
+index 2e3e9a068cb56973e587eb5c46fd0571f028685e..3d5db56ca1f9a2d7bbc7ebb5af94142a648f0906 100644
 --- a/chrome/browser/navigation_predictor/navigation_predictor.cc
 +++ b/chrome/browser/navigation_predictor/navigation_predictor.cc
-@@ -506,6 +506,9 @@
+@@ -506,6 +506,9 @@ void NavigationPredictor::ReportAnchorElementMetricsOnClick(
    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
    DCHECK(base::FeatureList::IsEnabled(blink::features::kNavigationPredictor));
  
@@ -63,7 +65,7 @@ index becdb8a..6c5e4a9 100644
    if (browser_context_->IsOffTheRecord())
      return;
  
-@@ -652,6 +655,9 @@
+@@ -652,6 +655,9 @@ void NavigationPredictor::ReportAnchorElementMetricsOnLoad(
    // Each document should only report metrics once when page is loaded.
    DCHECK(navigation_scores_map_.empty());
  
@@ -73,7 +75,7 @@ index becdb8a..6c5e4a9 100644
    if (browser_context_->IsOffTheRecord())
      return;
  
-@@ -897,6 +903,9 @@
+@@ -897,6 +903,9 @@ void NavigationPredictor::MaybeTakeActionOnLoad(
  }
  
  void NavigationPredictor::MaybePrefetch() {
