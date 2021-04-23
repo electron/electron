@@ -63,7 +63,6 @@
 #include "base/nix/xdg_util.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "ui/gtk/gtk_ui.h"
-#include "ui/gtk/gtk_ui_delegate.h"
 #include "ui/gtk/gtk_util.h"
 #include "ui/views/linux_ui/linux_ui.h"
 
@@ -77,7 +76,6 @@
 #include "ui/gfx/color_utils.h"
 #include "ui/gfx/x/connection.h"
 #include "ui/gfx/x/xproto_util.h"
-#include "ui/gtk/x/gtk_ui_delegate_x11.h"
 #endif
 
 #if defined(USE_OZONE) || defined(USE_X11)
@@ -378,18 +376,10 @@ void ElectronBrowserMainParts::PostDestroyThreads() {
 }
 
 void ElectronBrowserMainParts::ToolkitInitialized() {
-#if defined(USE_X11)
-  if (!features::IsUsingOzonePlatform()) {
-    // In Aura/X11, Gtk-based LinuxUI implementation is used.
-    gtk_ui_delegate_ =
-        std::make_unique<ui::GtkUiDelegateX11>(x11::Connection::Get());
-    ui::GtkUiDelegate::SetInstance(gtk_ui_delegate_.get());
-  }
-#endif
 #if defined(OS_LINUX)
-  views::LinuxUI* linux_ui = BuildGtkUi(ui::GtkUiDelegate::instance());
-  views::LinuxUI::SetInstance(linux_ui);
+  auto linux_ui = BuildGtkUi();
   linux_ui->Initialize();
+  views::LinuxUI::SetInstance(std::move(linux_ui));
 
   // Chromium does not respect GTK dark theme setting, but they may change
   // in future and this code might be no longer needed. Check the Chromium

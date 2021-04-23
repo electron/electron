@@ -516,10 +516,6 @@ source_set("electron_lib") {
     ]
     if (use_x11) {
       sources += filenames.lib_sources_linux_x11
-      deps += [
-        "//ui/gfx/x",
-        "//ui/gtk/x",
-      ]
     }
     configs += [ ":gio_unix" ]
     defines += [

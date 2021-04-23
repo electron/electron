@@ -32,7 +32,7 @@ class WMState;
 
 #if defined(USE_X11)
 namespace ui {
-class GtkUiDelegate;
+class GtkUiPlatform;
 }
 #endif
 
@@ -126,10 +126,6 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
 
 #if defined(USE_AURA)
   std::unique_ptr<wm::WMState> wm_state_;
-#endif
-
-#if defined(USE_X11)
-  std::unique_ptr<ui::GtkUiDelegate> gtk_ui_delegate_;
 #endif
 
 #if defined(OS_LINUX)
