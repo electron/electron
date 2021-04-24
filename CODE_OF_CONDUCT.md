@@ -2,8 +2,8 @@
 
 As a member project of the OpenJS Foundation, Electron uses [Contributor Covenant v2.0](https://contributor-covenant.org/version/2/0/code_of_conduct) as their code of conduct. The full text is included [below](#contributor-covenant-code-of-conduct) in English, and translations are available from the Contributor Covenant organisation:
 
-* [contributor-covenant.org/translations](https://www.contributor-covenant.org/translations)
-* [github.com/ContributorCovenant](https://github.com/ContributorCovenant/contributor_covenant/tree/release/content/version/2/0)
+* [https://contributor-covenant.org/translations](https://www.contributor-covenant.org/translations)
+* [https://github.com/ContributorCovenant](https://github.com/ContributorCovenant/contributor_covenant/tree/release/content/version/2/0)
 
 ## Contributor Covenant Code of Conduct
 
