@@ -112,8 +112,7 @@
   ],
   "husky": {
     "hooks": {
-      "pre-commit": "lint-staged",
-      "pre-push": "check-for-leaks"
+      "pre-commit": "lint-staged"
     }
   },
   "lint-staged": {
