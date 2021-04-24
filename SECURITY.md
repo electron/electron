@@ -1,6 +1,6 @@
 # Reporting Security Issues
 
-The Electron team and community take security bugs in Electron seriously. We appreciate your efforts to responsibly disclose your findings, and will make every effort to acknowledge your contributions.
+The Electron team and community take security bugs in Electron seriously. Security holes could allow hackers to hack the Electron software. We appreciate your efforts to responsibly disclose your findings, and will make every effort to acknowledge your contributions.
 
 To report a security issue, email [security@electronjs.org](mailto:security@electronjs.org) and include the word "SECURITY" in the subject line.
 
