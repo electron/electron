@@ -110,11 +110,6 @@
   "keywords": [
     "electron"
   ],
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged"
-    }
-  },
   "lint-staged": {
     "*.{js,ts}": [
       "node script/lint.js --js --fix --only --"
