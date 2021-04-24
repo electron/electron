@@ -96,6 +96,7 @@
     "gn-typescript-definitions": "npm run create-typescript-definitions && shx cp electron.d.ts",
     "pre-flight": "pre-flight",
     "gn-check": "node ./script/gn-check.js",
+    "precommit": "lint-staged",
     "preinstall": "node -e 'process.exit(0)'",
     "prepack": "check-for-leaks",
     "prepare": "husky install",
