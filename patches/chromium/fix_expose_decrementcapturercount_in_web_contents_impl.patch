@@ -8,10 +8,10 @@ we invoke it in order to expose contents.decrementCapturerCount([stayHidden, sta
 to users. We should try to upstream this.
 
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 31264194b338fe6f3d81e8650941db27c924d71b..a9d7592f42738bd9305cea966a1f3f802e71f2c5 100644
+index cd0203ecf9bdf8f544ac94f8aba65b1f115bc02f..5cdd2f0d06015ccb5ab5e8fcdbe5bcbde3593646 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -1726,9 +1726,11 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
+@@ -1728,9 +1728,11 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
    // shown in the address bar), as opposed to one in for example a Prerender.
    bool IsPrimaryFrameTree(const FrameTree& frame_tree) const;
  
@@ -25,10 +25,10 @@ index 31264194b338fe6f3d81e8650941db27c924d71b..a9d7592f42738bd9305cea966a1f3f80
    // Calculates the PageVisibilityState for |visibility|, taking the capturing
    // state into account.
 diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
-index ceca0729b42ffd4381f7f17281f6a5d55a846563..252790eee378bbb3633aad07bdcf4da66e3e50a3 100644
+index 450cff790462dc8659ae668a7efcd9b42050f434..09aebfc15cf461792221f058971fe32c735fe134 100644
 --- a/content/public/browser/web_contents.h
 +++ b/content/public/browser/web_contents.h
-@@ -570,6 +570,7 @@ class WebContents : public PageNavigator,
+@@ -563,6 +563,7 @@ class WebContents : public PageNavigator,
        const gfx::Size& capture_size,
        bool stay_hidden,
        bool stay_awake) WARN_UNUSED_RESULT = 0;
