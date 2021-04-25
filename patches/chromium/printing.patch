@@ -622,7 +622,7 @@ index 92561ff7c6bce6febd8cd2f39f59e3df707f8bdb..241686fa8bdc346f073b5fb92f57c72c
      std::unique_ptr<PrintSettings> settings =
          PrintSettingsFromJobSettings(job_settings);
 diff --git a/printing/printing_context.h b/printing/printing_context.h
-index 0a9bf2b3a6c1f2417c550bb0f523491eccccb56b..a322f1897a69a8a8ca7c4bcb7a46b34726ff8127 100644
+index c8d087c3f2f3feee2f110a3597affc693fbb6de8..f26bd191fbbb6b80b563523f44a770971f08fd2a 100644
 --- a/printing/printing_context.h
 +++ b/printing/printing_context.h
 @@ -133,12 +133,12 @@ class PRINTING_EXPORT PrintingContext {

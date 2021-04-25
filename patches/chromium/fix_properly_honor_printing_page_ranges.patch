@@ -10,7 +10,7 @@ them should they exist.
 This will be upstreamed.
 
 diff --git a/printing/printing_context_mac.h b/printing/printing_context_mac.h
-index 00c78a7446480a15a4dfa360ccdc438eaf1215c1..5b0db3e754ac6c9e335365173800d2e1a5ca629d 100644
+index 6249cfe4d5a77401ac0d8d31844f11a8c7271e14..da137f8b540d3f6dd4c02ecf500d1f496c523f9d 100644
 --- a/printing/printing_context_mac.h
 +++ b/printing/printing_context_mac.h
 @@ -82,6 +82,10 @@ class PRINTING_EXPORT PrintingContextMac : public PrintingContext {
