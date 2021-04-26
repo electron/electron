@@ -1,0 +1,202 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Georg Neis <neis@chromium.org>
+Date: Wed, 10 Mar 2021 09:45:36 +0100
+Subject: Merged: Squashed multiple commits.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Merged: [const-tracking] Mark const field as mutable when reconfiguring
+Revision: 7535b91f7cb22274de734d5da7d0324d8653d626
+
+Merged: [const-tracking] Fix incorrect DCHECK in MapUpdater
+Revision: f95db8916a731e6e5ccc0282616bc907ce06012f
+
+BUG=chromium:1161847,chromium:1185463,v8:9233
+NOTRY=true
+NOPRESUBMIT=true
+NOTREECHECKS=true
+R=​ishell@chromium.org
+
+(cherry picked from commit 56518020bff4d0e8b82cff843c9f618c90084e42)
+
+Change-Id: I7f46a701646e1dd67a049b2aa4ac32d05b6885f3
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2748079
+Commit-Queue: Georg Neis <neis@chromium.org>
+Reviewed-by: Igor Sheludko <ishell@chromium.org>
+Cr-Original-Commit-Position: refs/branch-heads/8.9@{#43}
+Cr-Original-Branched-From: 16b9bbbd581c25391981aa03180b76aa60463a3e-refs/heads/8.9.255@{#1}
+Cr-Original-Branched-From: d16a2a688498bd1c3e6a49edb25d8c4ca56232dc-refs/heads/master@{#72039}
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2794428
+Reviewed-by: Victor-Gabriel Savu <vsavu@google.com>
+Commit-Queue: Artem Sumaneev <asumaneev@google.com>
+Cr-Commit-Position: refs/branch-heads/8.6@{#73}
+Cr-Branched-From: a64aed2333abf49e494d2a5ce24bbd14fff19f60-refs/heads/8.6.395@{#1}
+Cr-Branched-From: a626bc036236c9bf92ac7b87dc40c9e538b087e3-refs/heads/master@{#69472}
+
+diff --git a/src/objects/map-updater.cc b/src/objects/map-updater.cc
+index b4b158749381efcf780d5c8ba07c286be6ba6b30..047750ebbd454a5f3f1fce7bc06ac042085245a4 100644
+--- a/src/objects/map-updater.cc
++++ b/src/objects/map-updater.cc
+@@ -121,6 +121,41 @@ Handle<Map> MapUpdater::ReconfigureToDataField(InternalIndex descriptor,
+   PropertyDetails old_details =
+       old_descriptors_->GetDetails(modified_descriptor_);
+ 
++  // If the {descriptor} was "const" data field so far, we need to update the
++  // {old_map_} here, otherwise we could get the constants wrong, i.e.
++  //
++  //   o.x = 1;
++  //   change o.x's attributes to something else
++  //   delete o.x;
++  //   o.x = 2;
++  //
++  // could trick V8 into thinking that `o.x` is still 1 even after the second
++  // assignment.
++  // This situation is similar to what might happen with property deletion.
++  if (old_details.constness() == PropertyConstness::kConst &&
++      old_details.location() == kField &&
++      old_details.attributes() != new_attributes_) {
++    Handle<FieldType> field_type(
++        old_descriptors_->GetFieldType(modified_descriptor_), isolate_);
++    Map::GeneralizeField(isolate_, old_map_, descriptor,
++                         PropertyConstness::kMutable,
++                         old_details.representation(), field_type);
++    // The old_map_'s property must become mutable.
++    // Note, that the {old_map_} and {old_descriptors_} are not expected to be
++    // updated by the generalization if the map is already deprecated.
++    DCHECK_IMPLIES(
++        !old_map_->is_deprecated(),
++        PropertyConstness::kMutable ==
++            old_descriptors_->GetDetails(modified_descriptor_).constness());
++    // Although the property in the old map is marked as mutable we still
++    // treat it as constant when merging with the new path in transition tree.
++    // This is fine because up until this reconfiguration the field was
++    // known to be constant, so it's fair to proceed treating it as such
++    // during this reconfiguration session. The issue is that after the
++    // reconfiguration the original field might become mutable (see the delete
++    // example above).
++  }
++
+   // If property kind is not reconfigured merge the result with
+   // representation/field type from the old descriptor.
+   if (old_details.kind() == new_kind_) {
+diff --git a/test/cctest/test-field-type-tracking.cc b/test/cctest/test-field-type-tracking.cc
+index 2f59d7bff83a2c0aab8ae815ed0ac5e3825f4262..6b2b6dadf14ae836e11d7ff78108c99a10d38765 100644
+--- a/test/cctest/test-field-type-tracking.cc
++++ b/test/cctest/test-field-type-tracking.cc
+@@ -1081,20 +1081,31 @@ void TestReconfigureDataFieldAttribute_GeneralizeField(
+   Handle<Code> code_field_type = CreateDummyOptimizedCode(isolate);
+   Handle<Code> code_field_repr = CreateDummyOptimizedCode(isolate);
+   Handle<Code> code_field_const = CreateDummyOptimizedCode(isolate);
+-  Handle<Map> field_owner(
+-      map->FindFieldOwner(isolate, InternalIndex(kSplitProp)), isolate);
+-  DependentCode::InstallDependency(isolate,
+-                                   MaybeObjectHandle::Weak(code_field_type),
+-                                   field_owner, DependentCode::kFieldTypeGroup);
+-  DependentCode::InstallDependency(
+-      isolate, MaybeObjectHandle::Weak(code_field_repr), field_owner,
+-      DependentCode::kFieldRepresentationGroup);
+-  DependentCode::InstallDependency(
+-      isolate, MaybeObjectHandle::Weak(code_field_const), field_owner,
+-      DependentCode::kFieldConstGroup);
++  Handle<Code> code_src_field_const = CreateDummyOptimizedCode(isolate);
++  {
++    Handle<Map> field_owner(
++        map->FindFieldOwner(isolate, InternalIndex(kSplitProp)), isolate);
++    DependentCode::InstallDependency(
++        isolate, MaybeObjectHandle::Weak(code_field_type), field_owner,
++        DependentCode::kFieldTypeGroup);
++    DependentCode::InstallDependency(
++        isolate, MaybeObjectHandle::Weak(code_field_repr), field_owner,
++        DependentCode::kFieldRepresentationGroup);
++    DependentCode::InstallDependency(
++        isolate, MaybeObjectHandle::Weak(code_field_const), field_owner,
++        DependentCode::kFieldConstGroup);
++  }
++  {
++    Handle<Map> field_owner(
++        map2->FindFieldOwner(isolate, InternalIndex(kSplitProp)), isolate);
++    DependentCode::InstallDependency(
++        isolate, MaybeObjectHandle::Weak(code_src_field_const), field_owner,
++        DependentCode::kFieldConstGroup);
++  }
+   CHECK(!code_field_type->marked_for_deoptimization());
+   CHECK(!code_field_repr->marked_for_deoptimization());
+   CHECK(!code_field_const->marked_for_deoptimization());
++  CHECK(!code_src_field_const->marked_for_deoptimization());
+ 
+   // Reconfigure attributes of property |kSplitProp| of |map2| to NONE, which
+   // should generalize representations in |map1|.
+@@ -1102,10 +1113,21 @@ void TestReconfigureDataFieldAttribute_GeneralizeField(
+       Map::ReconfigureExistingProperty(isolate, map2, InternalIndex(kSplitProp),
+                                        kData, NONE, PropertyConstness::kConst);
+ 
+-  // |map2| should be left unchanged but marked unstable.
++  // |map2| should be mosly left unchanged but marked unstable and if the
++  // source property was constant it should also be transitioned to kMutable.
+   CHECK(!map2->is_stable());
+   CHECK(!map2->is_deprecated());
+   CHECK_NE(*map2, *new_map);
++  // If the "source" property was const then update constness expectations for
++  // "source" map and ensure the deoptimization dependency was triggered.
++  if (to.constness == PropertyConstness::kConst) {
++    expectations2.SetDataField(kSplitProp, READ_ONLY,
++                               PropertyConstness::kMutable, to.representation,
++                               to.type);
++    CHECK(code_src_field_const->marked_for_deoptimization());
++  } else {
++    CHECK(!code_src_field_const->marked_for_deoptimization());
++  }
+   CHECK(expectations2.Check(*map2));
+ 
+   for (int i = kSplitProp; i < kPropCount; i++) {
+diff --git a/test/mjsunit/regress/regress-crbug-1161847-1.js b/test/mjsunit/regress/regress-crbug-1161847-1.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..282d9b878718105db40fee0283d15227fb724a3a
+--- /dev/null
++++ b/test/mjsunit/regress/regress-crbug-1161847-1.js
+@@ -0,0 +1,19 @@
++// Copyright 2021 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax
++
++function foo(first_run) {
++  let o = { x: 0 };
++  if (first_run) assertTrue(%HasOwnConstDataProperty(o, 'x'));
++  Object.defineProperty(o, 'x', { writable: false });
++  delete o.x;
++  o.x = 23;
++  if (first_run) assertFalse(%HasOwnConstDataProperty(o, 'x'));
++}
++%PrepareFunctionForOptimization(foo);
++foo(true);
++foo(false);
++%OptimizeFunctionOnNextCall(foo);
++foo(false);
+diff --git a/test/mjsunit/regress/regress-crbug-1161847-2.js b/test/mjsunit/regress/regress-crbug-1161847-2.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..ec61fee068acea0ea259164816142a01851f3669
+--- /dev/null
++++ b/test/mjsunit/regress/regress-crbug-1161847-2.js
+@@ -0,0 +1,19 @@
++// Copyright 2021 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax
++
++function foo(first_run) {
++  let o = { x: 0 };
++  if (first_run) assertTrue(%HasOwnConstDataProperty(o, 'x'));
++  Object.defineProperty(o, 'x', { get() { return 1; }, configurable: true, enumerable: true });
++  delete o.x;
++  o.x = 23;
++  if (first_run) assertFalse(%HasOwnConstDataProperty(o, 'x'));
++}
++%PrepareFunctionForOptimization(foo);
++foo(true);
++foo(false);
++%OptimizeFunctionOnNextCall(foo);
++foo(false);
