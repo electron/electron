@@ -1,0 +1,40 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Wez <wez@chromium.org>
+Date: Thu, 15 Apr 2021 18:24:27 +0000
+Subject: Handle window deletion during HandleDisplayChange.
+
+In principle there is no reason why the HWNDMessageHandler shouldn't be
+deleted by a HandleDisplayChange() call out to the delegate, e.g. if the
+change results in a change in window layout.
+
+(cherry picked from commit 299155e5e37a77670b7969771e09e9a16b1f5612)
+
+Bug: 1192552
+Change-Id: I9fca35ff32e7037c6492f4cee7069e272059b920
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2804382
+Auto-Submit: Wez <wez@chromium.org>
+Commit-Queue: Scott Violet <sky@chromium.org>
+Reviewed-by: Scott Violet <sky@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#869603}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2826321
+Cr-Commit-Position: refs/branch-heads/4430@{#1291}
+Cr-Branched-From: e5ce7dc4f7518237b3d9bb93cccca35d25216cbe-refs/heads/master@{#857950}
+
+diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
+index ce3672e4d5cee51651bc6f8c294b27f0a9e01682..bb8b1c4fd7f1e93b6d50978ccb701393df956425 100644
+--- a/ui/views/win/hwnd_message_handler.cc
++++ b/ui/views/win/hwnd_message_handler.cc
+@@ -1673,7 +1673,13 @@ void HWNDMessageHandler::OnDisplayChange(UINT bits_per_pixel,
+                                          const gfx::Size& screen_size) {
+   TRACE_EVENT0("ui", "HWNDMessageHandler::OnDisplayChange");
+ 
++  base::WeakPtr<HWNDMessageHandler> ref(msg_handler_weak_factory_.GetWeakPtr());
+   delegate_->HandleDisplayChange();
++
++  // HandleDisplayChange() may result in |this| being deleted.
++  if (!ref)
++    return;
++
+   // Force a WM_NCCALCSIZE to occur to ensure that we handle auto hide
+   // taskbars correctly.
+   SendFrameChanged();
