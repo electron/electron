@@ -1164,11 +1164,6 @@ if (is_mac) {
         "//build/config/win:delayloads",
       ]
 
-      if (target_cpu == "arm64") {
-        configs -= [ "//build/config/win:cfi_linker" ]
-        ldflags += [ "/guard:cf,nolongjmp" ]
-      }
-
       if (current_cpu == "x86") {
         # Set the initial stack size to 0.5MiB, instead of the 1.5MiB needed by
         # Chrome's main thread. This saves significant memory on threads (like
