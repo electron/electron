@@ -8,7 +8,7 @@ import sys
 
 from lib.config import PLATFORM, get_target_arch
 from lib.util import scoped_cwd, get_electron_version, make_zip, \
-                     get_electron_branding, get_out_dir
+                     get_electron_branding, get_out_dir, execute
 
 ELECTRON_VERSION = get_electron_version()
 PROJECT_NAME = get_electron_branding()['project_name']
