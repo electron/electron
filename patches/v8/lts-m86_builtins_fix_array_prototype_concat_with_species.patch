@@ -1,0 +1,96 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Igor Sheludko <ishell@chromium.org>
+Date: Wed, 7 Apr 2021 19:12:32 +0200
+Subject: Fix Array.prototype.concat with @@species
+
+(cherry picked from commit 7989e04979c3195e60a6814e8263063eb91f7b47)
+
+No-Try: true
+No-Presubmit: true
+No-Tree-Checks: true
+Bug: chromium:1195977
+Change-Id: I16843bce2e9f776abca0f2b943b898ab5e597e42
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2810787
+Reviewed-by: Camillo Bruni <cbruni@chromium.org>
+Commit-Queue: Igor Sheludko <ishell@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#73842}
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2823829
+Commit-Queue: Jana Grill <janagrill@chromium.org>
+Reviewed-by: Igor Sheludko <ishell@chromium.org>
+Reviewed-by: Victor-Gabriel Savu <vsavu@google.com>
+Cr-Commit-Position: refs/branch-heads/8.6@{#77}
+Cr-Branched-From: a64aed2333abf49e494d2a5ce24bbd14fff19f60-refs/heads/8.6.395@{#1}
+Cr-Branched-From: a626bc036236c9bf92ac7b87dc40c9e538b087e3-refs/heads/master@{#69472}
+
+diff --git a/src/builtins/builtins-array.cc b/src/builtins/builtins-array.cc
+index 3c2fe33c5b4b330c509d2926bc1e30daa1e09dba..938fb96c1d42d8152f974df33c3bed4cc1b542d3 100644
+--- a/src/builtins/builtins-array.cc
++++ b/src/builtins/builtins-array.cc
+@@ -649,11 +649,14 @@ class ArrayConcatVisitor {
+         index_offset_(0u),
+         bit_field_(FastElementsField::encode(fast_elements) |
+                    ExceedsLimitField::encode(false) |
+-                   IsFixedArrayField::encode(storage->IsFixedArray()) |
++                   IsFixedArrayField::encode(storage->IsFixedArray(isolate)) |
+                    HasSimpleElementsField::encode(
+-                       storage->IsFixedArray() ||
+-                       !storage->map().IsCustomElementsReceiverMap())) {
+-    DCHECK(!(this->fast_elements() && !is_fixed_array()));
++                       storage->IsFixedArray(isolate) ||
++                       // Don't take fast path for storages that might have
++                       // side effects when storing to them.
++                       (!storage->map(isolate).IsCustomElementsReceiverMap() &&
++                        !storage->IsJSTypedArray(isolate)))) {
++    DCHECK_IMPLIES(this->fast_elements(), is_fixed_array());
+   }
+ 
+   ~ArrayConcatVisitor() { clear_storage(); }
+@@ -1063,8 +1066,8 @@ bool IterateElements(Isolate* isolate, Handle<JSReceiver> receiver,
+     return IterateElementsSlow(isolate, receiver, length, visitor);
+   }
+ 
+-  if (!HasOnlySimpleElements(isolate, *receiver) ||
+-      !visitor->has_simple_elements()) {
++  if (!visitor->has_simple_elements() ||
++      !HasOnlySimpleElements(isolate, *receiver)) {
+     return IterateElementsSlow(isolate, receiver, length, visitor);
+   }
+   Handle<JSObject> array = Handle<JSObject>::cast(receiver);
+diff --git a/src/objects/fixed-array-inl.h b/src/objects/fixed-array-inl.h
+index e60224315826c793ea8e9327db6c7a62786530c3..e4796b00a33ab56c1bdf7b9db570bf5add406a27 100644
+--- a/src/objects/fixed-array-inl.h
++++ b/src/objects/fixed-array-inl.h
+@@ -336,7 +336,7 @@ int Search(T* array, Name name, int valid_entries, int* out_insertion_index,
+ double FixedDoubleArray::get_scalar(int index) {
+   DCHECK(map() != GetReadOnlyRoots().fixed_cow_array_map() &&
+          map() != GetReadOnlyRoots().fixed_array_map());
+-  DCHECK(index >= 0 && index < this->length());
++  DCHECK_LT(static_cast<unsigned>(index), static_cast<unsigned>(length()));
+   DCHECK(!is_the_hole(index));
+   return ReadField<double>(kHeaderSize + index * kDoubleSize);
+ }
+@@ -344,7 +344,7 @@ double FixedDoubleArray::get_scalar(int index) {
+ uint64_t FixedDoubleArray::get_representation(int index) {
+   DCHECK(map() != GetReadOnlyRoots().fixed_cow_array_map() &&
+          map() != GetReadOnlyRoots().fixed_array_map());
+-  DCHECK(index >= 0 && index < this->length());
++  DCHECK_LT(static_cast<unsigned>(index), static_cast<unsigned>(length()));
+   int offset = kHeaderSize + index * kDoubleSize;
+   // Bug(v8:8875): Doubles may be unaligned.
+   return base::ReadUnalignedValue<uint64_t>(field_address(offset));
+@@ -362,6 +362,7 @@ Handle<Object> FixedDoubleArray::get(FixedDoubleArray array, int index,
+ void FixedDoubleArray::set(int index, double value) {
+   DCHECK(map() != GetReadOnlyRoots().fixed_cow_array_map() &&
+          map() != GetReadOnlyRoots().fixed_array_map());
++  DCHECK_LT(static_cast<unsigned>(index), static_cast<unsigned>(length()));
+   int offset = kHeaderSize + index * kDoubleSize;
+   if (std::isnan(value)) {
+     WriteField<double>(offset, std::numeric_limits<double>::quiet_NaN());
+@@ -378,6 +379,7 @@ void FixedDoubleArray::set_the_hole(Isolate* isolate, int index) {
+ void FixedDoubleArray::set_the_hole(int index) {
+   DCHECK(map() != GetReadOnlyRoots().fixed_cow_array_map() &&
+          map() != GetReadOnlyRoots().fixed_array_map());
++  DCHECK_LT(static_cast<unsigned>(index), static_cast<unsigned>(length()));
+   int offset = kHeaderSize + index * kDoubleSize;
+   base::WriteUnalignedValue<uint64_t>(field_address(offset), kHoleNanInt64);
+ }

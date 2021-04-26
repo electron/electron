@@ -21,5 +21,7 @@
 
   "src/electron/patches/usrsctp": "src/third_party/usrsctp/usrsctplib",
 
-  "src/electron/patches/pdfium": "src/third_party/pdfium"
+  "src/electron/patches/pdfium": "src/third_party/pdfium",
+
+  "src/electron/patches/webrtc": "src/third_party/webrtc"
 }
