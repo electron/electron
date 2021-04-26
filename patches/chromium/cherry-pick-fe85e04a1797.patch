@@ -1,0 +1,291 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ken Rockot <rockot@google.com>
+Date: Wed, 31 Mar 2021 18:44:06 +0000
+Subject: Don't use BigBuffer for IPC::Message transport
+
+M86 merge conflicts and resolution:
+* ipc/ipc_message_pipe_reader.cc
+  Fixed extra include.
+
+(cherry picked from commit 85bd7c88523545ab0e497d5e7b3e929793813358)
+
+(cherry picked from commit fad3b9ffe7c7ff82909d911c573bd185aa3b3b50)
+
+Fixed: 1184399
+Change-Id: Iddd91ae8d7ae63022b61c96239f5e39261dfb735
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2737012
+Commit-Queue: Ken Rockot <rockot@google.com>
+Reviewed-by: Daniel Cheng <dcheng@chromium.org>
+Cr-Original-Original-Commit-Position: refs/heads/master@{#860010}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2779918
+Auto-Submit: Ken Rockot <rockot@google.com>
+Reviewed-by: Adrian Taylor <adetaylor@chromium.org>
+Reviewed-by: Alex Gough <ajgo@chromium.org>
+Commit-Queue: Alex Gough <ajgo@chromium.org>
+Cr-Original-Commit-Position: refs/branch-heads/4389@{#1597}
+Cr-Original-Branched-From: 9251c5db2b6d5a59fe4eac7aafa5fed37c139bb7-refs/heads/master@{#843830}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2794488
+Reviewed-by: Victor-Gabriel Savu <vsavu@google.com>
+Reviewed-by: Artem Sumaneev <asumaneev@google.com>
+Reviewed-by: Ken Rockot <rockot@google.com>
+Auto-Submit: Artem Sumaneev <asumaneev@google.com>
+Commit-Queue: Artem Sumaneev <asumaneev@google.com>
+Cr-Commit-Position: refs/branch-heads/4240@{#1587}
+Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
+
+diff --git a/ipc/BUILD.gn b/ipc/BUILD.gn
+index 48bdc5061eb5ea2c49dccd6d140d6a521d7d282f..54e260d1ba60af64c16868e9a4602ada7c0db302 100644
+--- a/ipc/BUILD.gn
++++ b/ipc/BUILD.gn
+@@ -203,10 +203,7 @@ mojom_component("mojom") {
+   output_prefix = "ipc_mojom"
+   macro_prefix = "IPC_MOJOM"
+   sources = [ "ipc.mojom" ]
+-  public_deps = [
+-    "//mojo/public/interfaces/bindings",
+-    "//mojo/public/mojom/base",
+-  ]
++  public_deps = [ "//mojo/public/interfaces/bindings" ]
+ 
+   cpp_typemaps = [
+     {
+@@ -223,10 +220,7 @@ mojom_component("mojom") {
+         "//ipc/message_view.cc",
+         "//ipc/message_view.h",
+       ]
+-      traits_public_deps = [
+-        "//ipc:message_support",
+-        "//mojo/public/cpp/base:shared_typemap_traits",
+-      ]
++      traits_public_deps = [ "//ipc:message_support" ]
+     },
+   ]
+ 
+diff --git a/ipc/ipc.mojom b/ipc/ipc.mojom
+index c66799642fbee2cef3449ff5d52cd5f187808cfe..4606022b28bca1df06ba6eb8eaac025573475b10 100644
+--- a/ipc/ipc.mojom
++++ b/ipc/ipc.mojom
+@@ -4,7 +4,6 @@
+ 
+ module IPC.mojom;
+ 
+-import "mojo/public/mojom/base/big_buffer.mojom";
+ import "mojo/public/interfaces/bindings/native_struct.mojom";
+ 
+ // A placeholder interface type since we don't yet support generic associated
+@@ -14,7 +13,7 @@ interface GenericInterface {};
+ // Typemapped such that arbitrarily large IPC::Message objects can be sent and
+ // received with minimal copying.
+ struct Message {
+-  mojo_base.mojom.BigBuffer buffer;
++  array<uint8> bytes;
+   array<mojo.native.SerializedHandle>? handles;
+ };
+ 
+@@ -24,6 +23,7 @@ interface Channel {
+   SetPeerPid(int32 pid);
+ 
+   // Transmits a classical Chrome IPC message.
++  [UnlimitedSize]
+   Receive(Message message);
+ 
+   // Requests a Channel-associated interface.
+diff --git a/ipc/ipc_message_pipe_reader.cc b/ipc/ipc_message_pipe_reader.cc
+index bdc5dd680d0f9107719765334d0a1ea3e864e200..cbf0363a9d941db1ab34ae835e707b7825447659 100644
+--- a/ipc/ipc_message_pipe_reader.cc
++++ b/ipc/ipc_message_pipe_reader.cc
+@@ -10,6 +10,7 @@
+ 
+ #include "base/bind.h"
+ #include "base/bind_helpers.h"
++#include "base/containers/span.h"
+ #include "base/location.h"
+ #include "base/logging.h"
+ #include "base/macros.h"
+@@ -62,7 +63,9 @@ bool MessagePipeReader::Send(std::unique_ptr<Message> message) {
+   if (!sender_)
+     return false;
+ 
+-  sender_->Receive(MessageView(*message, std::move(handles)));
++  base::span<const uint8_t> bytes(static_cast<const uint8_t*>(message->data()),
++                                  message->size());
++  sender_->Receive(MessageView(bytes, std::move(handles)));
+   DVLOG(4) << "Send " << message->type() << ": " << message->size();
+   return true;
+ }
+@@ -82,11 +85,12 @@ void MessagePipeReader::SetPeerPid(int32_t peer_pid) {
+ }
+ 
+ void MessagePipeReader::Receive(MessageView message_view) {
+-  if (!message_view.size()) {
++  if (message_view.bytes().empty()) {
+     delegate_->OnBrokenDataReceived();
+     return;
+   }
+-  Message message(message_view.data(), message_view.size());
++  Message message(reinterpret_cast<const char*>(message_view.bytes().data()),
++                  message_view.bytes().size());
+   if (!message.IsValid()) {
+     delegate_->OnBrokenDataReceived();
+     return;
+diff --git a/ipc/ipc_mojo_bootstrap_unittest.cc b/ipc/ipc_mojo_bootstrap_unittest.cc
+index 47a7ad79a30165c76041075be10b9be8c13f5e75..b32941da752a54ba7317e439150982adbb9fbcad 100644
+--- a/ipc/ipc_mojo_bootstrap_unittest.cc
++++ b/ipc/ipc_mojo_bootstrap_unittest.cc
+@@ -77,7 +77,9 @@ class PeerPidReceiver : public IPC::mojom::Channel {
+     ASSERT_NE(MessageExpectation::kNotExpected, message_expectation_);
+     received_message_ = true;
+ 
+-    IPC::Message message(message_view.data(), message_view.size());
++    IPC::Message message(
++        reinterpret_cast<const char*>(message_view.bytes().data()),
++        message_view.bytes().size());
+     bool expected_valid =
+         message_expectation_ == MessageExpectation::kExpectedValid;
+     EXPECT_EQ(expected_valid, message.IsValid());
+@@ -196,8 +198,7 @@ MULTIPROCESS_TEST_MAIN_WITH_SETUP(
+ 
+   uint8_t data = 0;
+   sender->Receive(
+-      IPC::MessageView(mojo_base::BigBufferView(base::make_span(&data, 0)),
+-                       base::nullopt /* handles */));
++      IPC::MessageView(base::make_span(&data, 0), base::nullopt /* handles */));
+ 
+   base::RunLoop run_loop;
+   PeerPidReceiver impl(std::move(receiver), run_loop.QuitClosure());
+diff --git a/ipc/message_mojom_traits.cc b/ipc/message_mojom_traits.cc
+index 4aab9248e9ff6ca8e2d7d085ae3e996ac04666e8..d8ad4a2f919b01362e3e2746bfb7f4fae77b059d 100644
+--- a/ipc/message_mojom_traits.cc
++++ b/ipc/message_mojom_traits.cc
+@@ -4,15 +4,13 @@
+ 
+ #include "ipc/message_mojom_traits.h"
+ 
+-#include "mojo/public/cpp/base/big_buffer_mojom_traits.h"
+-
+ namespace mojo {
+ 
+ // static
+-mojo_base::BigBufferView
+-StructTraits<IPC::mojom::MessageDataView, IPC::MessageView>::buffer(
++base::span<const uint8_t>
++StructTraits<IPC::mojom::MessageDataView, IPC::MessageView>::bytes(
+     IPC::MessageView& view) {
+-  return view.TakeBufferView();
++  return view.bytes();
+ }
+ 
+ // static
+@@ -26,14 +24,14 @@ StructTraits<IPC::mojom::MessageDataView, IPC::MessageView>::handles(
+ bool StructTraits<IPC::mojom::MessageDataView, IPC::MessageView>::Read(
+     IPC::mojom::MessageDataView data,
+     IPC::MessageView* out) {
+-  mojo_base::BigBufferView buffer_view;
+-  if (!data.ReadBuffer(&buffer_view))
+-    return false;
++  mojo::ArrayDataView<uint8_t> bytes;
++  data.GetBytesDataView(&bytes);
++
+   base::Optional<std::vector<mojo::native::SerializedHandlePtr>> handles;
+   if (!data.ReadHandles(&handles))
+     return false;
+ 
+-  *out = IPC::MessageView(std::move(buffer_view), std::move(handles));
++  *out = IPC::MessageView(bytes, std::move(handles));
+   return true;
+ }
+ 
+diff --git a/ipc/message_mojom_traits.h b/ipc/message_mojom_traits.h
+index 617ffbe37309946464e3f180a0ebde97f56dbd75..6b5064a12191e9a663519e7b5cb7c5f907a75054 100644
+--- a/ipc/message_mojom_traits.h
++++ b/ipc/message_mojom_traits.h
+@@ -7,10 +7,10 @@
+ 
+ #include <vector>
+ 
++#include "base/containers/span.h"
+ #include "base/optional.h"
+ #include "ipc/ipc.mojom-shared.h"
+ #include "ipc/message_view.h"
+-#include "mojo/public/cpp/base/big_buffer.h"
+ #include "mojo/public/cpp/bindings/struct_traits.h"
+ #include "mojo/public/interfaces/bindings/native_struct.mojom.h"
+ 
+@@ -19,7 +19,7 @@ namespace mojo {
+ template <>
+ class StructTraits<IPC::mojom::MessageDataView, IPC::MessageView> {
+  public:
+-  static mojo_base::BigBufferView buffer(IPC::MessageView& view);
++  static base::span<const uint8_t> bytes(IPC::MessageView& view);
+   static base::Optional<std::vector<mojo::native::SerializedHandlePtr>> handles(
+       IPC::MessageView& view);
+ 
+diff --git a/ipc/message_view.cc b/ipc/message_view.cc
+index 49a80878e7a92cda13105ea0f2fea36ad7ed05e6..39c6608dd507c3ca051b619d966ae521e95fe8e2 100644
+--- a/ipc/message_view.cc
++++ b/ipc/message_view.cc
+@@ -11,16 +11,9 @@ namespace IPC {
+ MessageView::MessageView() = default;
+ 
+ MessageView::MessageView(
+-    const Message& message,
++    base::span<const uint8_t> bytes,
+     base::Optional<std::vector<mojo::native::SerializedHandlePtr>> handles)
+-    : buffer_view_(base::make_span(static_cast<const uint8_t*>(message.data()),
+-                                   message.size())),
+-      handles_(std::move(handles)) {}
+-
+-MessageView::MessageView(
+-    mojo_base::BigBufferView buffer_view,
+-    base::Optional<std::vector<mojo::native::SerializedHandlePtr>> handles)
+-    : buffer_view_(std::move(buffer_view)), handles_(std::move(handles)) {}
++    : bytes_(bytes), handles_(std::move(handles)) {}
+ 
+ MessageView::MessageView(MessageView&&) = default;
+ 
+diff --git a/ipc/message_view.h b/ipc/message_view.h
+index 4ec059bf3639b9c75178f2300d0796b433e1d2ed..c7801bb963f06b03c51ba87bffc307792b592dae 100644
+--- a/ipc/message_view.h
++++ b/ipc/message_view.h
+@@ -11,7 +11,6 @@
+ #include "base/containers/span.h"
+ #include "base/macros.h"
+ #include "ipc/ipc_message.h"
+-#include "mojo/public/cpp/base/big_buffer.h"
+ #include "mojo/public/interfaces/bindings/native_struct.mojom-forward.h"
+ 
+ namespace IPC {
+@@ -20,30 +19,18 @@ class COMPONENT_EXPORT(IPC_MOJOM) MessageView {
+  public:
+   MessageView();
+   MessageView(
+-      const Message& message,
+-      base::Optional<std::vector<mojo::native::SerializedHandlePtr>> handles);
+-  MessageView(
+-      mojo_base::BigBufferView buffer_view,
++      base::span<const uint8_t> bytes,
+       base::Optional<std::vector<mojo::native::SerializedHandlePtr>> handles);
+   MessageView(MessageView&&);
+   ~MessageView();
+ 
+   MessageView& operator=(MessageView&&);
+ 
+-  const char* data() const {
+-    return reinterpret_cast<const char*>(buffer_view_.data().data());
+-  }
+-
+-  uint32_t size() const {
+-    return static_cast<uint32_t>(buffer_view_.data().size());
+-  }
+-
+-  mojo_base::BigBufferView TakeBufferView() { return std::move(buffer_view_); }
+-
++  base::span<const uint8_t> bytes() const { return bytes_; }
+   base::Optional<std::vector<mojo::native::SerializedHandlePtr>> TakeHandles();
+ 
+  private:
+-  mojo_base::BigBufferView buffer_view_;
++  base::span<const uint8_t> bytes_;
+   base::Optional<std::vector<mojo::native::SerializedHandlePtr>> handles_;
+ 
+   DISALLOW_COPY_AND_ASSIGN(MessageView);
