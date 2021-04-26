@@ -17,6 +17,8 @@
 #include "ui/views/widget/native_widget_mac.h"
 
 using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
+using FullScreenTransitionState =
+    electron::NativeWindowMac::FullScreenTransitionState;
 
 @implementation ElectronNSWindowDelegate
 
@@ -212,7 +214,9 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
 }
 
 - (void)windowWillEnterFullScreen:(NSNotification*)notification {
-  // Setting resizable to true before entering fullscreen
+  shell_->SetFullScreenTransitionState(FullScreenTransitionState::ENTERING);
+
+  // Setting resizable to true before entering fullscreen.
   is_resizable_ = shell_->IsResizable();
   shell_->SetResizable(true);
   // Hide the native toolbar before entering fullscreen, so there is no visual
@@ -224,6 +228,8 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
 }
 
 - (void)windowDidEnterFullScreen:(NSNotification*)notification {
+  shell_->SetFullScreenTransitionState(FullScreenTransitionState::NONE);
+
   shell_->NotifyWindowEnterFullScreen();
 
   // For frameless window we don't show set title for normal mode since the
@@ -252,9 +258,13 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
     [window setTitlebarAppearsTransparent:NO];
     shell_->SetStyleMask(true, NSWindowStyleMaskFullSizeContentView);
   }
+
+  shell_->HandlePendingFullscreenTransitions();
 }
 
 - (void)windowWillExitFullScreen:(NSNotification*)notification {
+  shell_->SetFullScreenTransitionState(FullScreenTransitionState::EXITING);
+
   // Restore the titlebar visibility.
   NSWindow* window = shell_->GetNativeWindow().GetNativeNSWindow();
   if ((shell_->transparent() || !shell_->has_frame()) &&
@@ -268,19 +278,23 @@ using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
     shell_->SetStyleMask(false, NSWindowStyleMaskFullSizeContentView);
     [window setTitlebarAppearsTransparent:YES];
   }
-  shell_->SetExitingFullScreen(true);
+
   if (shell_->title_bar_style() == TitleBarStyle::HIDDEN) {
     shell_->RedrawTrafficLights();
   }
 }
 
 - (void)windowDidExitFullScreen:(NSNotification*)notification {
+  shell_->SetFullScreenTransitionState(FullScreenTransitionState::NONE);
+
   shell_->SetResizable(is_resizable_);
   shell_->NotifyWindowLeaveFullScreen();
-  shell_->SetExitingFullScreen(false);
+
   if (shell_->title_bar_style() == TitleBarStyle::HIDDEN) {
     shell_->RedrawTrafficLights();
   }
+
+  shell_->HandlePendingFullscreenTransitions();
 }
 
 - (void)windowWillClose:(NSNotification*)notification {

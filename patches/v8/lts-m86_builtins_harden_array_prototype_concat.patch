@@ -1,0 +1,79 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jana Grill <janagrill@google.com>
+Date: Tue, 13 Apr 2021 16:54:14 +0200
+Subject: Harden Array.prototype.concat.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Defence in depth patch to prevent JavaScript from executing
+from within IterateElements.
+
+R=​ishell@chromium.org
+R=​cbruni@chromium.org
+
+(cherry picked from commit 8284359ed0607e452a4dda2ce89811fb019b4aaa)
+
+No-Try: true
+No-Presubmit: true
+No-Tree-Checks: true
+Bug: chromium:1195977
+Change-Id: Ie59d468b73b94818cea986a3ded0804f6dddd10b
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2819941
+Reviewed-by: Camillo Bruni <cbruni@chromium.org>
+Reviewed-by: Igor Sheludko <ishell@chromium.org>
+Commit-Queue: Igor Sheludko <ishell@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#73898}
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2821961
+Commit-Queue: Jana Grill <janagrill@chromium.org>
+Reviewed-by: Victor-Gabriel Savu <vsavu@google.com>
+Cr-Commit-Position: refs/branch-heads/8.6@{#76}
+Cr-Branched-From: a64aed2333abf49e494d2a5ce24bbd14fff19f60-refs/heads/8.6.395@{#1}
+Cr-Branched-From: a626bc036236c9bf92ac7b87dc40c9e538b087e3-refs/heads/master@{#69472}
+
+diff --git a/AUTHORS b/AUTHORS
+index 054e2bee4b6e2a5ee99cb3229c98095fce52f0a5..209548ea4b67d13826fea1f1b93e7320f8279fc0 100644
+--- a/AUTHORS
++++ b/AUTHORS
+@@ -69,6 +69,7 @@ Ben Newman <ben@meteor.com>
+ Ben Noordhuis <info@bnoordhuis.nl>
+ Benjamin Tan <demoneaux@gmail.com>
+ Bert Belder <bertbelder@gmail.com>
++Brendon Tiszka <btiszka@gmail.com>
+ Burcu Dogan <burcujdogan@gmail.com>
+ Caitlin Potter <caitpotter88@gmail.com>
+ Craig Schlenter <craig.schlenter@gmail.com>
+diff --git a/src/builtins/builtins-array.cc b/src/builtins/builtins-array.cc
+index 938fb96c1d42d8152f974df33c3bed4cc1b542d3..8055d8382d48f618d8fcd3b18f48b2da04fa3f69 100644
+--- a/src/builtins/builtins-array.cc
++++ b/src/builtins/builtins-array.cc
+@@ -1083,6 +1083,9 @@ bool IterateElements(Isolate* isolate, Handle<JSReceiver> receiver,
+     case HOLEY_SEALED_ELEMENTS:
+     case HOLEY_NONEXTENSIBLE_ELEMENTS:
+     case HOLEY_ELEMENTS: {
++      // Disallow execution so the cached elements won't change mid execution.
++      DisallowJavascriptExecution no_js(isolate);
++
+       // Run through the elements FixedArray and use HasElement and GetElement
+       // to check the prototype for missing elements.
+       Handle<FixedArray> elements(FixedArray::cast(array->elements()), isolate);
+@@ -1109,6 +1112,9 @@ bool IterateElements(Isolate* isolate, Handle<JSReceiver> receiver,
+     }
+     case HOLEY_DOUBLE_ELEMENTS:
+     case PACKED_DOUBLE_ELEMENTS: {
++      // Disallow execution so the cached elements won't change mid execution.
++      DisallowJavascriptExecution no_js(isolate);
++
+       // Empty array is FixedArray but not FixedDoubleArray.
+       if (length == 0) break;
+       // Run through the elements FixedArray and use HasElement and GetElement
+@@ -1145,6 +1151,9 @@ bool IterateElements(Isolate* isolate, Handle<JSReceiver> receiver,
+     }
+ 
+     case DICTIONARY_ELEMENTS: {
++      // Disallow execution so the cached dictionary won't change mid execution.
++      DisallowJavascriptExecution no_js(isolate);
++
+       Handle<NumberDictionary> dict(array->element_dictionary(), isolate);
+       std::vector<uint32_t> indices;
+       indices.reserve(dict->Capacity() / 2);
