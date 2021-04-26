@@ -1,0 +1,82 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Brendon Tiszka <btiszka@gmail.com>
+Date: Tue, 20 Apr 2021 15:45:03 +0000
+Subject: M86-LTS: Ensure that BrowserContext is not used after it has been
+ freed
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Previously, it was possible for the BrowserContext to be destroyed
+before ReportAnchorElementMetricsOnClick attempted to access it.
+
+The fix uses the fact that NavigationPredictor extends
+WebContentsObserver and checks that web_contents is still alive
+before dereferencing BrowserContext. WebContents will always
+outlive BrowserContext.
+
+R=​lukasza@chromium.org, ryansturm@chromium.org
+
+(cherry picked from commit 7313a810ae0b1361cbe8453bc5496654dee24c76)
+
+Bug: 1197904
+Change-Id: Iee4f126e92670a84d57c7a4ec7d6f702fb975c7e
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2821639
+Reviewed-by: Ryan Sturm <ryansturm@chromium.org>
+Reviewed-by: Łukasz Anforowicz <lukasza@chromium.org>
+Commit-Queue: Łukasz Anforowicz <lukasza@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#872021}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2838328
+Owners-Override: Achuith Bhandarkar <achuith@chromium.org>
+Auto-Submit: Achuith Bhandarkar <achuith@chromium.org>
+Reviewed-by: Artem Sumaneev <asumaneev@google.com>
+Commit-Queue: Achuith Bhandarkar <achuith@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4240@{#1613}
+Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
+
+diff --git a/AUTHORS b/AUTHORS
+index d51c01045102715691a2e28cd44701a58a11cfa0..ae48471f7360a946447c915621236155e1399f86 100644
+--- a/AUTHORS
++++ b/AUTHORS
+@@ -148,6 +148,7 @@ Bobby Powers <bobbypowers@gmail.com>
+ Branden Archer <bma4@zips.uakron.edu>
+ Brendan Kirby <brendan.kirby@imgtec.com>
+ Brendan Long <self@brendanlong.com>
++Brendon Tiszka <btiszka@gmail.com>
+ Brian Clifton <clifton@brave.com>
+ Brian G. Merrell <bgmerrell@gmail.com>
+ Brian Konzman, SJ <b.g.konzman@gmail.com>
+diff --git a/chrome/browser/navigation_predictor/navigation_predictor.cc b/chrome/browser/navigation_predictor/navigation_predictor.cc
+index c532ddf44166215ae8eaa3d8433c7ed6fefdef06..f3799eaff3f960b162fbe5fb93e043804a26d121 100644
+--- a/chrome/browser/navigation_predictor/navigation_predictor.cc
++++ b/chrome/browser/navigation_predictor/navigation_predictor.cc
+@@ -506,6 +506,9 @@ void NavigationPredictor::ReportAnchorElementMetricsOnClick(
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   DCHECK(base::FeatureList::IsEnabled(blink::features::kNavigationPredictor));
+ 
++  if (!web_contents())
++    return;
++
+   if (browser_context_->IsOffTheRecord())
+     return;
+ 
+@@ -652,6 +655,9 @@ void NavigationPredictor::ReportAnchorElementMetricsOnLoad(
+   // Each document should only report metrics once when page is loaded.
+   DCHECK(navigation_scores_map_.empty());
+ 
++  if (!web_contents())
++    return;
++
+   if (browser_context_->IsOffTheRecord())
+     return;
+ 
+@@ -897,6 +903,9 @@ void NavigationPredictor::MaybeTakeActionOnLoad(
+ }
+ 
+ void NavigationPredictor::MaybePrefetch() {
++  if (!web_contents())
++    return;
++
+   // If prefetches aren't allowed here, this URL has already
+   // been prefetched, or the current tab is hidden,
+   // we shouldn't prefetch again.
