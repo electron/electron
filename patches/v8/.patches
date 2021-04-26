@@ -28,4 +28,6 @@ regexp_throw_when_length_of_text_nodes_in_alternatives_is_too.patch
 cherry-pick-02f84c745fc0.patch
 merged_deoptimizer_fix_bug_in_optimizedframe_summarize.patch
 cherry-pick-512cd5e179f4.patch
+lts-m86_builtins_fix_array_prototype_concat_with_species.patch
+lts-m86_builtins_harden_array_prototype_concat.patch
 merged_squashed_multiple_commits.patch
