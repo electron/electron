@@ -154,6 +154,8 @@ class WebContents : public gin::Wrappable<WebContents>,
   Type GetType() const;
   bool Equal(const WebContents* web_contents) const;
   void LoadURL(const GURL& url, const gin_helper::Dictionary& options);
+  void Reload();
+  void ReloadIgnoringCache();
   void DownloadURL(const GURL& url);
   GURL GetURL() const;
   std::u16string GetTitle() const;
@@ -161,10 +163,17 @@ class WebContents : public gin::Wrappable<WebContents>,
   bool IsLoadingMainFrame() const;
   bool IsWaitingForResponse() const;
   void Stop();
-  void ReloadIgnoringCache();
+  bool CanGoBack() const;
   void GoBack();
+  bool CanGoForward() const;
   void GoForward();
+  bool CanGoToOffset(int offset) const;
   void GoToOffset(int offset);
+  bool CanGoToIndex(int index) const;
+  void GoToIndex(int index);
+  int GetActiveIndex() const;
+  void ClearHistory();
+  int GetHistoryLength() const;
   const std::string GetWebRTCIPHandlingPolicy() const;
   void SetWebRTCIPHandlingPolicy(const std::string& webrtc_ip_handling_policy);
   bool IsCrashed() const;

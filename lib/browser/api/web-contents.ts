@@ -4,7 +4,6 @@ import type { BrowserWindowConstructorOptions, LoadURLOptions } from 'electron/m
 import * as url from 'url';
 import * as path from 'path';
 import { openGuestWindow, makeWebPreferences, parseContentTypeFormat } from '@electron/internal/browser/guest-window-manager';
-import { NavigationController } from '@electron/internal/browser/navigation-controller';
 import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
 import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-utils';
 import { MessagePortMain } from '@electron/internal/browser/message-port-main';
@@ -407,6 +406,80 @@ WebContents.prototype.loadFile = function (filePath, options = {}) {
   }));
 };
 
+WebContents.prototype.loadURL = function (url, options) {
+  if (!options) {
+    options = {};
+  }
+
+  const p = new Promise<void>((resolve, reject) => {
+    const resolveAndCleanup = () => {
+      removeListeners();
+      resolve();
+    };
+    const rejectAndCleanup = (errorCode: number, errorDescription: string, url: string) => {
+      const err = new Error(`${errorDescription} (${errorCode}) loading '${typeof url === 'string' ? url.substr(0, 2048) : url}'`);
+      Object.assign(err, { errno: errorCode, code: errorDescription, url });
+      removeListeners();
+      reject(err);
+    };
+    const finishListener = () => {
+      resolveAndCleanup();
+    };
+    const failListener = (event: Electron.Event, errorCode: number, errorDescription: string, validatedURL: string, isMainFrame: boolean) => {
+      if (isMainFrame) {
+        rejectAndCleanup(errorCode, errorDescription, validatedURL);
+      }
+    };
+
+    let navigationStarted = false;
+    const navigationListener = (event: Electron.Event, url: string, isSameDocument: boolean, isMainFrame: boolean) => {
+      if (isMainFrame) {
+        if (navigationStarted && !isSameDocument) {
+          // the webcontents has started another unrelated navigation in the
+          // main frame (probably from the app calling `loadURL` again); reject
+          // the promise
+          // We should only consider the request aborted if the "navigation" is
+          // actually navigating and not simply transitioning URL state in the
+          // current context.  E.g. pushState and `location.hash` changes are
+          // considered navigation events but are triggered with isSameDocument.
+          // We can ignore these to allow virtual routing on page load as long
+          // as the routing does not leave the document
+          return rejectAndCleanup(-3, 'ERR_ABORTED', url);
+        }
+        navigationStarted = true;
+      }
+    };
+    const stopLoadingListener = () => {
+      // By the time we get here, either 'finish' or 'fail' should have fired
+      // if the navigation occurred. However, in some situations (e.g. when
+      // attempting to load a page with a bad scheme), loading will stop
+      // without emitting finish or fail. In this case, we reject the promise
+      // with a generic failure.
+      // TODO(jeremy): enumerate all the cases in which this can happen. If
+      // the only one is with a bad scheme, perhaps ERR_INVALID_ARGUMENT
+      // would be more appropriate.
+      rejectAndCleanup(-2, 'ERR_FAILED', url);
+    };
+    const removeListeners = () => {
+      this.removeListener('did-finish-load', finishListener);
+      this.removeListener('did-fail-load', failListener);
+      this.removeListener('did-start-navigation', navigationListener);
+      this.removeListener('did-stop-loading', stopLoadingListener);
+      this.removeListener('destroyed', stopLoadingListener);
+    };
+    this.on('did-finish-load', finishListener);
+    this.on('did-fail-load', failListener);
+    this.on('did-start-navigation', navigationListener);
+    this.on('did-stop-loading', stopLoadingListener);
+    this.on('destroyed', stopLoadingListener);
+  });
+  // Add a no-op rejection handler to silence the unhandled rejection error.
+  p.catch(() => {});
+  this._loadURL(url, options);
+  this.emit('load-url', url, options);
+  return p;
+};
+
 WebContents.prototype.setWindowOpenHandler = function (handler: (details: Electron.HandlerDetails) => ({action: 'allow'} | {action: 'deny', overrideBrowserWindowOptions?: BrowserWindowConstructorOptions})) {
   this._windowOpenHandler = handler;
 };
@@ -475,24 +548,6 @@ const loggingEnabled = () => {
 
 // Add JavaScript wrappers for WebContents class.
 WebContents.prototype._init = function () {
-  // The navigation controller.
-  const navigationController = new NavigationController(this);
-  this.loadURL = navigationController.loadURL.bind(navigationController);
-  this.getURL = navigationController.getURL.bind(navigationController);
-  this.stop = navigationController.stop.bind(navigationController);
-  this.reload = navigationController.reload.bind(navigationController);
-  this.reloadIgnoringCache = navigationController.reloadIgnoringCache.bind(navigationController);
-  this.canGoBack = navigationController.canGoBack.bind(navigationController);
-  this.canGoForward = navigationController.canGoForward.bind(navigationController);
-  this.canGoToIndex = navigationController.canGoToIndex.bind(navigationController);
-  this.canGoToOffset = navigationController.canGoToOffset.bind(navigationController);
-  this.clearHistory = navigationController.clearHistory.bind(navigationController);
-  this.goBack = navigationController.goBack.bind(navigationController);
-  this.goForward = navigationController.goForward.bind(navigationController);
-  this.goToIndex = navigationController.goToIndex.bind(navigationController);
-  this.goToOffset = navigationController.goToOffset.bind(navigationController);
-  this.getActiveIndex = navigationController.getActiveIndex.bind(navigationController);
-  this.length = navigationController.length.bind(navigationController);
   // Read off the ID at construction time, so that it's accessible even after
   // the underlying C++ WebContents is destroyed.
   const id = this.id;
