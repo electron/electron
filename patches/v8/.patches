@@ -12,3 +12,4 @@ chore_disallow_copying_cppheapcreateparams.patch
 mac_wasm_work_around_macos_11_2_code_page_decommit_failures.patch
 patch_profiler_allow_empty_source_url_for_asm_modules.patch
 cherry-pick-512cd5e179f4.patch
+merged_squashed_multiple_commits.patch

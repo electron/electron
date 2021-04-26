@@ -1,0 +1,137 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: "ishell@chromium.org" <ishell@chromium.org>
+Date: Wed, 14 Apr 2021 22:58:27 +0200
+Subject: Merged: Squashed multiple commits.
+
+Merged: [builtins] Fix Array.prototype.concat with @@species
+Revision: 7989e04979c3195e60a6814e8263063eb91f7b47
+
+Merged: [builtins] Harden Array.prototype.concat.
+Revision: 8284359ed0607e452a4dda2ce89811fb019b4aaa
+
+BUG=chromium:1195977
+NOTRY=true
+NOPRESUBMIT=true
+NOTREECHECKS=true
+
+Change-Id: Ic65e4ee3c5a91dc8f55edfb07cee664a6a1d6fff
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2826126
+Reviewed-by: Adam Klein <adamk@chromium.org>
+Cr-Commit-Position: refs/branch-heads/9.0@{#36}
+Cr-Branched-From: bd0108b4c88e0d6f2350cb79b5f363fbd02f3eb7-refs/heads/9.0.257@{#1}
+Cr-Branched-From: 349bcc6a075411f1a7ce2d866c3dfeefc2efa39d-refs/heads/master@{#73001}
+
+diff --git a/AUTHORS b/AUTHORS
+index 716a23b5bf4058ba757784ab1227a48a5352b284..237e7e9cd9b9913d802d1d98b94dd206033702cd 100644
+--- a/AUTHORS
++++ b/AUTHORS
+@@ -68,6 +68,7 @@ Ben Newman <ben@meteor.com>
+ Ben Noordhuis <info@bnoordhuis.nl>
+ Benjamin Tan <demoneaux@gmail.com>
+ Bert Belder <bertbelder@gmail.com>
++Brendon Tiszka <btiszka@gmail.com>
+ Burcu Dogan <burcujdogan@gmail.com>
+ Caitlin Potter <caitpotter88@gmail.com>
+ Craig Schlenter <craig.schlenter@gmail.com>
+diff --git a/src/builtins/builtins-array.cc b/src/builtins/builtins-array.cc
+index 3270ccbcf8d845f69906f18e54a6c3c2e828df25..9df78e3203015b37147cf5095fb1431b042d0d09 100644
+--- a/src/builtins/builtins-array.cc
++++ b/src/builtins/builtins-array.cc
+@@ -650,11 +650,14 @@ class ArrayConcatVisitor {
+         index_offset_(0u),
+         bit_field_(FastElementsField::encode(fast_elements) |
+                    ExceedsLimitField::encode(false) |
+-                   IsFixedArrayField::encode(storage->IsFixedArray()) |
++                   IsFixedArrayField::encode(storage->IsFixedArray(isolate)) |
+                    HasSimpleElementsField::encode(
+-                       storage->IsFixedArray() ||
+-                       !storage->map().IsCustomElementsReceiverMap())) {
+-    DCHECK(!(this->fast_elements() && !is_fixed_array()));
++                       storage->IsFixedArray(isolate) ||
++                       // Don't take fast path for storages that might have
++                       // side effects when storing to them.
++                       (!storage->map(isolate).IsCustomElementsReceiverMap() &&
++                        !storage->IsJSTypedArray(isolate)))) {
++    DCHECK_IMPLIES(this->fast_elements(), is_fixed_array());
+   }
+ 
+   ~ArrayConcatVisitor() { clear_storage(); }
+@@ -1065,8 +1068,8 @@ bool IterateElements(Isolate* isolate, Handle<JSReceiver> receiver,
+     return IterateElementsSlow(isolate, receiver, length, visitor);
+   }
+ 
+-  if (!HasOnlySimpleElements(isolate, *receiver) ||
+-      !visitor->has_simple_elements()) {
++  if (!visitor->has_simple_elements() ||
++      !HasOnlySimpleElements(isolate, *receiver)) {
+     return IterateElementsSlow(isolate, receiver, length, visitor);
+   }
+   Handle<JSObject> array = Handle<JSObject>::cast(receiver);
+@@ -1082,6 +1085,9 @@ bool IterateElements(Isolate* isolate, Handle<JSReceiver> receiver,
+     case HOLEY_SEALED_ELEMENTS:
+     case HOLEY_NONEXTENSIBLE_ELEMENTS:
+     case HOLEY_ELEMENTS: {
++      // Disallow execution so the cached elements won't change mid execution.
++      DisallowJavascriptExecution no_js(isolate);
++
+       // Run through the elements FixedArray and use HasElement and GetElement
+       // to check the prototype for missing elements.
+       Handle<FixedArray> elements(FixedArray::cast(array->elements()), isolate);
+@@ -1108,6 +1114,9 @@ bool IterateElements(Isolate* isolate, Handle<JSReceiver> receiver,
+     }
+     case HOLEY_DOUBLE_ELEMENTS:
+     case PACKED_DOUBLE_ELEMENTS: {
++      // Disallow execution so the cached elements won't change mid execution.
++      DisallowJavascriptExecution no_js(isolate);
++
+       // Empty array is FixedArray but not FixedDoubleArray.
+       if (length == 0) break;
+       // Run through the elements FixedArray and use HasElement and GetElement
+@@ -1144,6 +1153,9 @@ bool IterateElements(Isolate* isolate, Handle<JSReceiver> receiver,
+     }
+ 
+     case DICTIONARY_ELEMENTS: {
++      // Disallow execution so the cached dictionary won't change mid execution.
++      DisallowJavascriptExecution no_js(isolate);
++
+       Handle<NumberDictionary> dict(array->element_dictionary(), isolate);
+       std::vector<uint32_t> indices;
+       indices.reserve(dict->Capacity() / 2);
+diff --git a/src/objects/fixed-array-inl.h b/src/objects/fixed-array-inl.h
+index e4b4609119dffc41d0a6b29f7f1c91e49cd8a5ca..501759728f2bc7496a7daf5038dcd4cdf18ed315 100644
+--- a/src/objects/fixed-array-inl.h
++++ b/src/objects/fixed-array-inl.h
+@@ -337,7 +337,7 @@ int Search(T* array, Name name, int valid_entries, int* out_insertion_index,
+ double FixedDoubleArray::get_scalar(int index) {
+   DCHECK(map() != GetReadOnlyRoots().fixed_cow_array_map() &&
+          map() != GetReadOnlyRoots().fixed_array_map());
+-  DCHECK(index >= 0 && index < this->length());
++  DCHECK_LT(static_cast<unsigned>(index), static_cast<unsigned>(length()));
+   DCHECK(!is_the_hole(index));
+   return ReadField<double>(kHeaderSize + index * kDoubleSize);
+ }
+@@ -345,7 +345,7 @@ double FixedDoubleArray::get_scalar(int index) {
+ uint64_t FixedDoubleArray::get_representation(int index) {
+   DCHECK(map() != GetReadOnlyRoots().fixed_cow_array_map() &&
+          map() != GetReadOnlyRoots().fixed_array_map());
+-  DCHECK(index >= 0 && index < this->length());
++  DCHECK_LT(static_cast<unsigned>(index), static_cast<unsigned>(length()));
+   int offset = kHeaderSize + index * kDoubleSize;
+   // Bug(v8:8875): Doubles may be unaligned.
+   return base::ReadUnalignedValue<uint64_t>(field_address(offset));
+@@ -363,6 +363,7 @@ Handle<Object> FixedDoubleArray::get(FixedDoubleArray array, int index,
+ void FixedDoubleArray::set(int index, double value) {
+   DCHECK(map() != GetReadOnlyRoots().fixed_cow_array_map() &&
+          map() != GetReadOnlyRoots().fixed_array_map());
++  DCHECK_LT(static_cast<unsigned>(index), static_cast<unsigned>(length()));
+   int offset = kHeaderSize + index * kDoubleSize;
+   if (std::isnan(value)) {
+     WriteField<double>(offset, std::numeric_limits<double>::quiet_NaN());
+@@ -379,6 +380,7 @@ void FixedDoubleArray::set_the_hole(Isolate* isolate, int index) {
+ void FixedDoubleArray::set_the_hole(int index) {
+   DCHECK(map() != GetReadOnlyRoots().fixed_cow_array_map() &&
+          map() != GetReadOnlyRoots().fixed_array_map());
++  DCHECK_LT(static_cast<unsigned>(index), static_cast<unsigned>(length()));
+   int offset = kHeaderSize + index * kDoubleSize;
+   base::WriteUnalignedValue<uint64_t>(field_address(offset), kHoleNanInt64);
+ }

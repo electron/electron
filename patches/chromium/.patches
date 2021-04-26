@@ -114,3 +114,4 @@ moves_background_color_setter_of_webview_to_blinks_webprefs_logic.patch
 blink_wasm_eval_csp.patch
 cherry-pick-162efe98330e.patch
 cherry-pick-66b9ad64f4a4.patch
+cherry-pick-e4abe032f3ad.patch
