@@ -149,5 +149,6 @@ cherry-pick-6a6361c9f31c.patch
 use_idtype_for_permission_change_subscriptions.patch
 m86-lts_add_null_pointer_check_in_renderwidgethostinputeventrouter.patch
 m86-lts_add_weak_pointer_to_rwhier_framesinkidownermap_and.patch
+cherry-pick-7dd3b1c86795.patch
 cherry-pick-fe85e04a1797.patch
 cherry-pick-6b84dc72351b.patch
