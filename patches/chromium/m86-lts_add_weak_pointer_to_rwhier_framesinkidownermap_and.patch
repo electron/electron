@@ -1,0 +1,168 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Lan Wei <lanwei@chromium.org>
+Date: Tue, 20 Apr 2021 16:32:33 +0000
+Subject: M86-LTS: Add weak pointer to RWHIER::FrameSinkIdOwnerMap and
+ RWHIER::TargetMap
+
+In RWHIER::FrameSinkIdOwnerMap and RWHIER::TargetMap, we change raw
+pointer of RenderWidgetHostViewBase to weak pointer, such as
+using FrameSinkIdOwnerMap = std::unordered_map<viz::FrameSinkId,
+                                base::WeakPtr<RenderWidgetHostViewBase>,
+                                viz::FrameSinkIdHash>;
+using TargetMap = std::map<uint32_t,
+                           base::WeakPtr<RenderWidgetHostViewBase>>;
+
+This CL should fix the crash of stale pointer.
+
+(cherry picked from commit 3e3e3cf7036d7e33a4d68b8416ae25730f9eee1d)
+
+Bug: 1155297
+Change-Id: I5b3270882ef06ae48c86bd460261723c7113953d
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2792344
+Reviewed-by: James MacLean <wjmaclean@chromium.org>
+Reviewed-by: Aaron Colwell <acolwell@chromium.org>
+Commit-Queue: Lan Wei <lanwei@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#870013}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2838587
+Owners-Override: Achuith Bhandarkar <achuith@chromium.org>
+Auto-Submit: Achuith Bhandarkar <achuith@chromium.org>
+Reviewed-by: Lan Wei <lanwei@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4240@{#1616}
+Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
+
+diff --git a/content/browser/renderer_host/render_widget_host_input_event_router.cc b/content/browser/renderer_host/render_widget_host_input_event_router.cc
+index ad11cebc476702414792dd2c63774c4fe6283382..8ee7c8aff4b12da9e2257caa95ccfab1f6177d46 100644
+--- a/content/browser/renderer_host/render_widget_host_input_event_router.cc
++++ b/content/browser/renderer_host/render_widget_host_input_event_router.cc
+@@ -345,7 +345,7 @@ void RenderWidgetHostInputEventRouter::OnRenderWidgetHostViewBaseDestroyed(
+ 
+   // Remove this view from the owner_map.
+   for (auto entry : owner_map_) {
+-    if (entry.second == view) {
++    if (entry.second.get() == view) {
+       owner_map_.erase(entry.first);
+       // There will only be one instance of a particular view in the map.
+       break;
+@@ -368,7 +368,7 @@ void RenderWidgetHostInputEventRouter::OnRenderWidgetHostViewBaseDestroyed(
+   // replace it with nullptr so that we maintain the 1:1 correspondence between
+   // map entries and the touch sequences that underly them.
+   for (auto it : touchscreen_gesture_target_map_) {
+-    if (it.second == view)
++    if (it.second.get() == view)
+       it.second = nullptr;
+   }
+ 
+@@ -417,8 +417,10 @@ void RenderWidgetHostInputEventRouter::OnRenderWidgetHostViewBaseDestroyed(
+ void RenderWidgetHostInputEventRouter::ClearAllObserverRegistrations() {
+   // Since we're shutting down, it's safe to call RenderWidgetHostViewBase::
+   // RemoveObserver() directly here.
+-  for (auto entry : owner_map_)
+-    entry.second->RemoveObserver(this);
++  for (auto entry : owner_map_) {
++    if (entry.second)
++      entry.second->RemoveObserver(this);
++  }
+   owner_map_.clear();
+   viz::HostFrameSinkManager* manager = GetHostFrameSinkManager();
+   if (manager)
+@@ -840,7 +842,7 @@ void RenderWidgetHostInputEventRouter::DispatchTouchEvent(
+                touch_event.unique_touch_event_id) ==
+            touchscreen_gesture_target_map_.end());
+     touchscreen_gesture_target_map_[touch_event.unique_touch_event_id] =
+-        touch_target_;
++        touch_target_->GetWeakPtr();
+   } else if (touch_event.GetType() == blink::WebInputEvent::Type::kTouchStart) {
+     active_touches_ += CountChangedTouchPoints(touch_event);
+   }
+@@ -1352,7 +1354,7 @@ void RenderWidgetHostInputEventRouter::AddFrameSinkIdOwner(
+   // We want to be notified if the owner is destroyed so we can remove it from
+   // our map.
+   owner->AddObserver(this);
+-  owner_map_.insert(std::make_pair(id, owner));
++  owner_map_.insert(std::make_pair(id, owner->GetWeakPtr()));
+ }
+ 
+ void RenderWidgetHostInputEventRouter::RemoveFrameSinkIdOwner(
+@@ -1364,7 +1366,8 @@ void RenderWidgetHostInputEventRouter::RemoveFrameSinkIdOwner(
+     // stale values if the view destructs and isn't an observer anymore.
+     // Note: the view the iterator points at will be deleted in the following
+     // call, and shouldn't be used after this point.
+-    OnRenderWidgetHostViewBaseDestroyed(it_to_remove->second);
++    if (it_to_remove->second)
++      OnRenderWidgetHostViewBaseDestroyed(it_to_remove->second.get());
+   }
+ }
+ 
+@@ -1415,7 +1418,7 @@ RenderWidgetHostInputEventRouter::FindTouchscreenGestureEventTarget(
+ bool RenderWidgetHostInputEventRouter::IsViewInMap(
+     const RenderWidgetHostViewBase* view) const {
+   DCHECK(!is_registered(view->GetFrameSinkId()) ||
+-         owner_map_.find(view->GetFrameSinkId())->second == view);
++         owner_map_.find(view->GetFrameSinkId())->second.get() == view);
+   return is_registered(view->GetFrameSinkId());
+ }
+ 
+@@ -1552,7 +1555,7 @@ void RenderWidgetHostInputEventRouter::DispatchTouchscreenGestureEvent(
+     target = result.view;
+     fallback_target_location = transformed_point;
+   } else if (is_gesture_start) {
+-    target = gesture_target_it->second;
++    target = gesture_target_it->second.get();
+     touchscreen_gesture_target_map_.erase(gesture_target_it);
+ 
+     // Abort any scroll bubbling in progress to avoid double entry.
+@@ -1738,7 +1741,7 @@ RenderWidgetHostInputEventRouter::FindViewFromFrameSinkId(
+   // If the point hit a Surface whose namspace is no longer in the map, then
+   // it likely means the RenderWidgetHostView has been destroyed but its
+   // parent frame has not sent a new compositor frame since that happened.
+-  return iter == owner_map_.end() ? nullptr : iter->second;
++  return iter == owner_map_.end() ? nullptr : iter->second.get();
+ }
+ 
+ bool RenderWidgetHostInputEventRouter::ShouldContinueHitTesting(
+@@ -1758,8 +1761,10 @@ bool RenderWidgetHostInputEventRouter::ShouldContinueHitTesting(
+ std::vector<RenderWidgetHostView*>
+ RenderWidgetHostInputEventRouter::GetRenderWidgetHostViewsForTests() const {
+   std::vector<RenderWidgetHostView*> hosts;
+-  for (auto entry : owner_map_)
+-    hosts.push_back(entry.second);
++  for (auto entry : owner_map_) {
++    DCHECK(entry.second);
++    hosts.push_back(entry.second.get());
++  }
+ 
+   return hosts;
+ }
+@@ -1928,8 +1933,10 @@ void RenderWidgetHostInputEventRouter::SetCursor(const WebCursor& cursor) {
+   last_device_scale_factor_ =
+       last_mouse_move_root_view_->current_device_scale_factor();
+   if (auto* cursor_manager = last_mouse_move_root_view_->GetCursorManager()) {
+-    for (auto it : owner_map_)
+-      cursor_manager->UpdateCursor(it.second, cursor);
++    for (auto it : owner_map_) {
++      if (it.second)
++        cursor_manager->UpdateCursor(it.second.get(), cursor);
++    }
+   }
+ }
+ 
+diff --git a/content/browser/renderer_host/render_widget_host_input_event_router.h b/content/browser/renderer_host/render_widget_host_input_event_router.h
+index 42629b133b883865bebfa27f5d29eb5e2d153d0b..c4ce54a5a6beb509d6242ee0e5ebdf4c88f01251 100644
+--- a/content/browser/renderer_host/render_widget_host_input_event_router.h
++++ b/content/browser/renderer_host/render_widget_host_input_event_router.h
+@@ -195,10 +195,11 @@ class CONTENT_EXPORT RenderWidgetHostInputEventRouter
+   FRIEND_TEST_ALL_PREFIXES(BrowserSideFlingBrowserTest,
+                            InertialGSUBubblingStopsWhenParentCannotScroll);
+ 
+-  using FrameSinkIdOwnerMap = std::unordered_map<viz::FrameSinkId,
+-                                                 RenderWidgetHostViewBase*,
+-                                                 viz::FrameSinkIdHash>;
+-  using TargetMap = std::map<uint32_t, RenderWidgetHostViewBase*>;
++  using FrameSinkIdOwnerMap =
++      std::unordered_map<viz::FrameSinkId,
++                         base::WeakPtr<RenderWidgetHostViewBase>,
++                         viz::FrameSinkIdHash>;
++  using TargetMap = std::map<uint32_t, base::WeakPtr<RenderWidgetHostViewBase>>;
+ 
+   void ClearAllObserverRegistrations();
+   RenderWidgetTargetResult FindViewAtLocation(
