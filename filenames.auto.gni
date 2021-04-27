@@ -232,7 +232,6 @@ auto_filenames = {
     "lib/browser/ipc-main-internal-utils.ts",
     "lib/browser/ipc-main-internal.ts",
     "lib/browser/message-port-main.ts",
-    "lib/browser/navigation-controller.ts",
     "lib/browser/rpc-server.ts",
     "lib/common/api/clipboard.ts",
     "lib/common/api/deprecate.ts",
