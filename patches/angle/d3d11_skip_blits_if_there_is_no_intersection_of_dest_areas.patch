@@ -1,0 +1,139 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Geoff Lang <geofflang@chromium.org>
+Date: Mon, 19 Apr 2021 12:47:05 -0400
+Subject: D3D11: Skip blits if there is no intersection of dest areas
+
+Blit11 would clip the destination rectangle with the destination size
+but ignore the result. gl::ClipRectangle returns false when the
+rectangles do not intersect at all, indicating the blit can be skipped.
+
+This could lead to an out-of-bounds write to the GPU memory for the
+destination texture.
+
+Mark ClipRectangle as nodiscard to prevent future issues.
+
+Bug: chromium:1199402
+Change-Id: I260e82d0917b8aa7e7887f2c9f7ed4b1a03ba785
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/2836786
+Reviewed-by: Jamie Madill <jmadill@chromium.org>
+Commit-Queue: Geoff Lang <geofflang@chromium.org>
+(cherry picked from commit b574643ef28c92fcea5122dd7a72acb42a514eed)
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/2846982
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+
+diff --git a/src/libANGLE/angletypes.h b/src/libANGLE/angletypes.h
+index ed64d1ff2e76fe449e605557d406ce9b29dfd5fc..a583049a98dd02fda3e3626b2be89d0fca8c433e 100644
+--- a/src/libANGLE/angletypes.h
++++ b/src/libANGLE/angletypes.h
+@@ -84,7 +84,9 @@ bool operator==(const Rectangle &a, const Rectangle &b);
+ bool operator!=(const Rectangle &a, const Rectangle &b);
+ 
+ // Calculate the intersection of two rectangles.  Returns false if the intersection is empty.
+-bool ClipRectangle(const Rectangle &source, const Rectangle &clip, Rectangle *intersection);
++ANGLE_NO_DISCARD bool ClipRectangle(const Rectangle &source,
++                                    const Rectangle &clip,
++                                    Rectangle *intersection);
+ // Calculate the smallest rectangle that covers both rectangles.  This rectangle may cover areas
+ // not covered by the two rectangles, for example in this situation:
+ //
+diff --git a/src/libANGLE/renderer/d3d/d3d11/Blit11.cpp b/src/libANGLE/renderer/d3d/d3d11/Blit11.cpp
+index 55f8f8f4d38f30990d7061de6ebaa0595f0447da..6d9365af8db5fa9835127650162d5aeb6ce46b77 100644
+--- a/src/libANGLE/renderer/d3d/d3d11/Blit11.cpp
++++ b/src/libANGLE/renderer/d3d/d3d11/Blit11.cpp
+@@ -141,7 +141,10 @@ void StretchedBlitNearest(const gl::Box &sourceArea,
+                           uint8_t *destData)
+ {
+     gl::Rectangle clippedDestArea(destArea.x, destArea.y, destArea.width, destArea.height);
+-    gl::ClipRectangle(clippedDestArea, clipRect, &clippedDestArea);
++    if (!gl::ClipRectangle(clippedDestArea, clipRect, &clippedDestArea))
++    {
++        return;
++    }
+ 
+     // Determine if entire rows can be copied at once instead of each individual pixel. There
+     // must be no out of bounds lookups, whole rows copies, and no scale.
+diff --git a/src/libANGLE/renderer/gl/FramebufferGL.cpp b/src/libANGLE/renderer/gl/FramebufferGL.cpp
+index ad0fe1c9d287ca656502556a613fd5a1f0793f41..55a1594b9f1f316b422c4dd818eb23685cbc5ff8 100644
+--- a/src/libANGLE/renderer/gl/FramebufferGL.cpp
++++ b/src/libANGLE/renderer/gl/FramebufferGL.cpp
+@@ -1118,7 +1118,10 @@ angle::Result FramebufferGL::clipSrcRegion(const gl::Context *context,
+         // If pixels lying outside the read framebuffer, adjust src region
+         // and dst region to appropriate in-bounds regions respectively.
+         gl::Rectangle realSourceRegion;
+-        ClipRectangle(bounds.sourceRegion, bounds.sourceBounds, &realSourceRegion);
++        if (!ClipRectangle(bounds.sourceRegion, bounds.sourceBounds, &realSourceRegion))
++        {
++            return angle::Result::Stop;
++        }
+         GLuint xOffset = realSourceRegion.x - bounds.sourceRegion.x;
+         GLuint yOffset = realSourceRegion.y - bounds.sourceRegion.y;
+ 
+diff --git a/src/libANGLE/renderer/metal/ContextMtl.mm b/src/libANGLE/renderer/metal/ContextMtl.mm
+index 7a0e59fb40e38aee57d5e59bed72e3c005479970..e24cc10b431683ce8391753842ba582cb0d9987d 100644
+--- a/src/libANGLE/renderer/metal/ContextMtl.mm
++++ b/src/libANGLE/renderer/metal/ContextMtl.mm
+@@ -1581,7 +1581,10 @@ bool IsTransformFeedbackOnly(const gl::State &glState)
+ 
+     // Clip the render area to the viewport.
+     gl::Rectangle viewportClippedRenderArea;
+-    gl::ClipRectangle(renderArea, glState.getViewport(), &viewportClippedRenderArea);
++    if (!gl::ClipRectangle(renderArea, glState.getViewport(), &viewportClippedRenderArea))
++    {
++        viewportClippedRenderArea = gl::Rectangle();
++    }
+ 
+     gl::Rectangle scissoredArea = ClipRectToScissor(getState(), viewportClippedRenderArea, false);
+     if (framebufferMtl->flipY())
+diff --git a/src/libANGLE/renderer/vulkan/ContextVk.cpp b/src/libANGLE/renderer/vulkan/ContextVk.cpp
+index 2f4d0452fe219fea29d6f490818817a5ca5ceb26..a3afc913106442daa7cbe6e5ec6cf6627b5aab1a 100644
+--- a/src/libANGLE/renderer/vulkan/ContextVk.cpp
++++ b/src/libANGLE/renderer/vulkan/ContextVk.cpp
+@@ -2662,8 +2662,11 @@ void ContextVk::updateScissor(const gl::State &glState)
+ 
+     // Clip the render area to the viewport.
+     gl::Rectangle viewportClippedRenderArea;
+-    gl::ClipRectangle(renderArea, getCorrectedViewport(glState.getViewport()),
+-                      &viewportClippedRenderArea);
++    if (!gl::ClipRectangle(renderArea, getCorrectedViewport(glState.getViewport()),
++                           &viewportClippedRenderArea))
++    {
++        viewportClippedRenderArea = gl::Rectangle();
++    }
+ 
+     gl::Rectangle scissoredArea = ClipRectToScissor(getState(), viewportClippedRenderArea, false);
+     gl::Rectangle rotatedScissoredArea;
+diff --git a/src/tests/gl_tests/BlitFramebufferANGLETest.cpp b/src/tests/gl_tests/BlitFramebufferANGLETest.cpp
+index 1859517e1d11717d012dc957b70ac7b261494449..4c3b5b87c1d1f42d467e853372a508514feec844 100644
+--- a/src/tests/gl_tests/BlitFramebufferANGLETest.cpp
++++ b/src/tests/gl_tests/BlitFramebufferANGLETest.cpp
+@@ -2524,6 +2524,30 @@ TEST_P(BlitFramebufferTest, BlitFramebufferSizeOverflow2)
+     EXPECT_GL_ERROR(GL_INVALID_VALUE);
+ }
+ 
++// Test an edge case in D3D11 stencil blitting on the CPU that does not properly clip the
++// destination regions
++TEST_P(BlitFramebufferTest, BlitFramebufferStencilClipNoIntersection)
++{
++    GLFramebuffer framebuffers[2];
++    glBindFramebuffer(GL_READ_FRAMEBUFFER, framebuffers[0]);
++    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, framebuffers[1]);
++
++    GLRenderbuffer renderbuffers[2];
++    glBindRenderbuffer(GL_RENDERBUFFER, renderbuffers[0]);
++    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, 4, 4);
++    glFramebufferRenderbuffer(GL_READ_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER,
++                              renderbuffers[0]);
++
++    glBindRenderbuffer(GL_RENDERBUFFER, renderbuffers[1]);
++    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, 4, 4);
++    glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER,
++                              renderbuffers[1]);
++
++    glBlitFramebuffer(0, 0, 4, 4, 1 << 24, 1 << 24, 1 << 25, 1 << 25, GL_STENCIL_BUFFER_BIT,
++                      GL_NEAREST);
++    EXPECT_GL_NO_ERROR();
++}
++
+ // Use this to select which configurations (e.g. which renderer, which GLES major version) these
+ // tests should be run against.
+ ANGLE_INSTANTIATE_TEST(BlitFramebufferANGLETest,
