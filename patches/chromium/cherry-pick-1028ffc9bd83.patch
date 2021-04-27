@@ -1,0 +1,57 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Bill Budge <bbudge@chromium.org>
+Date: Tue, 20 Apr 2021 15:22:33 +0000
+Subject: M86-LTS: [GeneratedCodeCache] Copy large data before hashing and
+ writing
+
+- Makes a copy before hashing and writing large code entries.
+
+(cherry picked from commit cea0cb8eee9900308d9b43661e9faca449086940)
+
+Bug: chromium:1194046
+Change-Id: Id5a6e6d3a04c83cfed2f18db53587d654d642fc0
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2807255
+Reviewed-by: Nasko Oskov <nasko@chromium.org>
+Reviewed-by: Mythri Alle <mythria@chromium.org>
+Commit-Queue: Bill Budge <bbudge@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#870064}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2838077
+Reviewed-by: Bill Budge <bbudge@chromium.org>
+Commit-Queue: Achuith Bhandarkar <achuith@chromium.org>
+Owners-Override: Achuith Bhandarkar <achuith@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4240@{#1612}
+Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
+
+diff --git a/content/browser/code_cache/generated_code_cache.cc b/content/browser/code_cache/generated_code_cache.cc
+index 69d1f926f3e8b1d7eb23565ebebbebaad4fc392d..f4d084481a3f3faec5906fa27c16feab014f8cff 100644
+--- a/content/browser/code_cache/generated_code_cache.cc
++++ b/content/browser/code_cache/generated_code_cache.cc
+@@ -384,9 +384,18 @@ void GeneratedCodeCache::WriteEntry(const GURL& url,
+     // [stream1] <empty>
+     // [stream0 (checksum key entry)] <empty>
+     // [stream1 (checksum key entry)] data
++
++    // Make a copy of the data before hashing. A compromised renderer could
++    // change shared memory before we can compute the hash and write the data.
++    // TODO(1135729) Eliminate this copy when the shared memory can't be written
++    // by the sender.
++    mojo_base::BigBuffer copy({data.data(), data.size()});
++    if (copy.size() != data.size())
++      return;
++    data = mojo_base::BigBuffer();  // Release the old buffer.
+     uint8_t result[crypto::kSHA256Length];
+     crypto::SHA256HashString(
+-        base::StringPiece(reinterpret_cast<char*>(data.data()), data.size()),
++        base::StringPiece(reinterpret_cast<char*>(copy.data()), copy.size()),
+         result, base::size(result));
+     std::string checksum_key = base::HexEncode(result, base::size(result));
+     small_buffer = base::MakeRefCounted<net::IOBufferWithSize>(
+@@ -401,7 +410,7 @@ void GeneratedCodeCache::WriteEntry(const GURL& url,
+     // Issue another write operation for the code, with the checksum as the key
+     // and nothing in the header.
+     auto small_buffer2 = base::MakeRefCounted<net::IOBufferWithSize>(0);
+-    auto large_buffer2 = base::MakeRefCounted<BigIOBuffer>(std::move(data));
++    auto large_buffer2 = base::MakeRefCounted<BigIOBuffer>(std::move(copy));
+     auto op2 = std::make_unique<PendingOperation>(Operation::kWriteWithSHAKey,
+                                                   checksum_key, small_buffer2,
+                                                   large_buffer2);
