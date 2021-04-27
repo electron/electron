@@ -150,7 +150,13 @@ new Promise((resolve, reject) => {
       resolve(tarballPath);
     });
   })
-  .then((tarballPath) => childProcess.execSync(`npm publish ${tarballPath} --tag ${npmTag} --otp=${process.env.ELECTRON_NPM_OTP}`))
+  .then((tarballPath) => {
+    const existingVersionJSON = childProcess.execSync(`npm view electron@${rootPackageJson.version} --json`).toString('utf-8');
+    // It's possible this is a re-run and we already have published the package, if not we just publish like normal
+    if (!existingVersionJSON) {
+      childProcess.execSync(`npm publish ${tarballPath} --tag ${npmTag} --otp=${process.env.ELECTRON_NPM_OTP}`);
+    }
+  })
   .then(() => {
     const currentTags = JSON.parse(childProcess.execSync('npm show electron dist-tags --json').toString());
     const localVersion = rootPackageJson.version;
