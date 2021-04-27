@@ -1,0 +1,132 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andrey Kosyakov <caseq@chromium.org>
+Date: Thu, 1 Apr 2021 06:51:26 +0000
+Subject: DevTools: expect PageHandler may be destroyed during Page.navigate
+
+(cherry picked from commit ff5e70191ec701cce4f84aaa25cd676376253a8a)
+
+Bug: 1188889
+Change-Id: I5c2fcca84834d66c46d77a70683212c2330177a5
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2787756
+Commit-Queue: Andrey Kosyakov <caseq@chromium.org>
+Reviewed-by: Dmitry Gozman <dgozman@chromium.org>
+Reviewed-by: Karan Bhatia <karandeepb@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#867507}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2798538
+Cr-Commit-Position: refs/branch-heads/4430@{#968}
+Cr-Branched-From: e5ce7dc4f7518237b3d9bb93cccca35d25216cbe-refs/heads/master@{#857950}
+
+diff --git a/chrome/browser/extensions/api/debugger/debugger_apitest.cc b/chrome/browser/extensions/api/debugger/debugger_apitest.cc
+index afd7e870a8dbe036cd03dd37d57d767d4104b630..3df62159c397b057bf8e306271b02959c8ce77c1 100644
+--- a/chrome/browser/extensions/api/debugger/debugger_apitest.cc
++++ b/chrome/browser/extensions/api/debugger/debugger_apitest.cc
+@@ -24,6 +24,7 @@
+ #include "components/sessions/content/session_tab_helper.h"
+ #include "content/public/test/browser_test.h"
+ #include "content/public/test/browser_test_utils.h"
++#include "content/public/test/no_renderer_crashes_assertion.h"
+ #include "extensions/browser/extension_function.h"
+ #include "extensions/common/extension.h"
+ #include "extensions/common/extension_builder.h"
+@@ -364,6 +365,15 @@ IN_PROC_BROWSER_TEST_F(DebuggerExtensionApiTest, AttachToEmptyUrls) {
+   ASSERT_TRUE(RunExtensionTest("debugger_attach_to_empty_urls")) << message_;
+ }
+ 
++// Tests that navigation to a forbidden URL is properly denied and
++// does not cause a crash.
++// This is a regression test for https://crbug.com/1188889.
++IN_PROC_BROWSER_TEST_F(DebuggerExtensionApiTest, NavigateToForbiddenUrl) {
++  content::ScopedAllowRendererCrashes scoped_allow_renderer_crashes;
++  ASSERT_TRUE(RunExtensionTest("debugger_navigate_to_forbidden_url"))
++      << message_;
++}
++
+ class SitePerProcessDebuggerExtensionApiTest : public DebuggerExtensionApiTest {
+  public:
+   void SetUpCommandLine(base::CommandLine* command_line) override {
+diff --git a/chrome/test/data/extensions/api_test/debugger_navigate_to_forbidden_url/background.js b/chrome/test/data/extensions/api_test/debugger_navigate_to_forbidden_url/background.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..e2ef32fffd3e5d49e7dc10d53f8c891ddb0f3872
+--- /dev/null
++++ b/chrome/test/data/extensions/api_test/debugger_navigate_to_forbidden_url/background.js
+@@ -0,0 +1,28 @@
++// Copyright 2021 The Chromium Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++const protocolVersion = '1.3';
++const DETACHED_WHILE_HANDLING = 'Detached while handling command.';
++
++chrome.test.runTests([
++  async function testNavigateToForbiddenUrl() {
++    const {openTab} = await import('/_test_resources/test_util/tabs_util.js');
++    const tab = await openTab('about:blank');
++    const debuggee = {tabId: tab.id};
++    await new Promise(resolve =>
++        chrome.debugger.attach(debuggee, protocolVersion, resolve));
++    chrome.debugger.sendCommand(debuggee, 'Page.crash');
++    await new Promise(resolve =>
++        chrome.debugger.onEvent.addListener((source, method, params) => {
++          if (method === 'Inspector.targetCrashed')
++            resolve();
++        }));
++    const result = await new Promise(resolve =>
++      chrome.debugger.sendCommand(debuggee, 'Page.navigate', {
++          url: 'chrome://version'
++      }, resolve));
++    chrome.test.assertLastError(DETACHED_WHILE_HANDLING);
++    chrome.test.succeed();
++  }
++]);
+diff --git a/chrome/test/data/extensions/api_test/debugger_navigate_to_forbidden_url/manifest.json b/chrome/test/data/extensions/api_test/debugger_navigate_to_forbidden_url/manifest.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..05db294ed7f49893431b0039a5f338d20e08f27d
+--- /dev/null
++++ b/chrome/test/data/extensions/api_test/debugger_navigate_to_forbidden_url/manifest.json
+@@ -0,0 +1,11 @@
++{
++  "name": "Debugger API test for CDP-initiated navigation to forbidden URLs",
++  "version": "1.0",
++  "manifest_version": 2,
++  "background": {
++    "scripts": ["background.js"]
++  },
++  "permissions": [
++    "debugger"
++  ]
++}
+diff --git a/content/browser/devtools/protocol/page_handler.cc b/content/browser/devtools/protocol/page_handler.cc
+index 770f61f64d5c997aa75873c634a79caccdc353ff..c23d575ca94a7ea9cef8d05e987253f31699f631 100644
+--- a/content/browser/devtools/protocol/page_handler.cc
++++ b/content/browser/devtools/protocol/page_handler.cc
+@@ -501,8 +501,12 @@ void PageHandler::Navigate(const std::string& url,
+   params.referrer = Referrer(GURL(referrer.fromMaybe("")), policy);
+   params.transition_type = type;
+   params.frame_tree_node_id = frame_tree_node->frame_tree_node_id();
++  // Handler may be destroyed while navigating if the session
++  // gets disconnected as a result of access checks.
++  base::WeakPtr<PageHandler> weak_self = weak_factory_.GetWeakPtr();
+   frame_tree_node->navigator().GetController()->LoadURLWithParams(params);
+-
++  if (!weak_self)
++    return;
+   base::UnguessableToken frame_token = frame_tree_node->devtools_frame_token();
+   auto navigate_callback = navigate_callbacks_.find(frame_token);
+   if (navigate_callback != navigate_callbacks_.end()) {
+diff --git a/content/browser/devtools/render_frame_devtools_agent_host.cc b/content/browser/devtools/render_frame_devtools_agent_host.cc
+index 01c855696f4fc8e6e432d78178fafe8c9a337134..331fc4bbbb458517693a5351a37f6361ace39479 100644
+--- a/content/browser/devtools/render_frame_devtools_agent_host.cc
++++ b/content/browser/devtools/render_frame_devtools_agent_host.cc
+@@ -474,8 +474,11 @@ void RenderFrameDevToolsAgentHost::UpdateFrameHost(
+     if (!ShouldAllowSession(session))
+       restricted_sessions.push_back(session);
+   }
+-  if (!restricted_sessions.empty())
++  scoped_refptr<RenderFrameDevToolsAgentHost> protect;
++  if (!restricted_sessions.empty()) {
++    protect = this;
+     ForceDetachRestrictedSessions(restricted_sessions);
++  }
+ 
+   UpdateFrameAlive();
+ }
