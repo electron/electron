@@ -129,7 +129,7 @@ describe('shell module', () => {
       await expect(shell.trashItem(filename)).to.eventually.be.rejected();
     });
 
-    it('works in the renderer process', async () => {
+    ifit(!(process.platform === 'win32' && process.arch === 'ia32'))('works in the renderer process', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
       w.loadURL('about:blank');
       await expect(w.webContents.executeJavaScript('require(\'electron\').shell.trashItem(\'does-not-exist\')')).to.be.rejectedWith(/does-not-exist|Failed to move item|Failed to create FileOperation/);
