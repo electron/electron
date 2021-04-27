@@ -6,10 +6,10 @@ Subject: Export symbols needed for Windows build
 These symbols are required to build v8 with BUILD_V8_SHARED on Windows.
 
 diff --git a/src/objects/objects.h b/src/objects/objects.h
-index 6afb5d70155e87a1707a50baa3e16c12eee60eb9..9ae71ee7b9caa08c01d95a5305aabd3740e29058 100644
+index a7718783f3d34c55be162607c589a2f3378ee9a8..f2d09289a9204451c9d9e0e3a6f449eb9c65520a 100644
 --- a/src/objects/objects.h
 +++ b/src/objects/objects.h
-@@ -824,7 +824,7 @@ enum class KeyCollectionMode {
+@@ -841,7 +841,7 @@ enum class KeyCollectionMode {
  // Utility superclass for stack-allocated objects that must be updated
  // on gc.  It provides two ways for the gc to update instances, either
  // iterating or updating after gc.

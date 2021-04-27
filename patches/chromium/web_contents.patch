@@ -1,6 +1,6 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: deepak1556 <hop2deep@gmail.com>
-Date: Wed, 27 Jan 2021 15:11:19 -0800
+Date: Sat, 24 Apr 2021 18:07:09 -0700
 Subject: web_contents.patch
 
 This allows overriding the RenderViewHostDelegateView of a WebContents, which
@@ -9,12 +9,12 @@ is needed for OSR.
 Originally landed in https://github.com/electron/libchromiumcontent/pull/226.
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index e91e0f35fe3ec98d299da675acfad996a0801faf..b6f93e3b8b719d28d21984abf305c839755fda48 100644
+index 1e24697533a51853041e5a15b585d0d3f5a80817..e451a7c6a2bc979458907a15d995693f7d5d38b8 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -2739,6 +2739,12 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
+@@ -2745,6 +2745,12 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
    frame_tree_.Init(site_instance.get(), params.renderer_initiated_creation,
-                    params.main_frame_name, type);
+                    params.main_frame_name);
  
 +  if (params.view && params.delegate_view) {
 +    view_.reset(params.view);
@@ -25,7 +25,7 @@ index e91e0f35fe3ec98d299da675acfad996a0801faf..b6f93e3b8b719d28d21984abf305c839
    WebContentsViewDelegate* delegate =
        GetContentClient()->browser()->GetWebContentsViewDelegate(this);
  
-@@ -2749,6 +2755,7 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
+@@ -2755,6 +2761,7 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
      view_.reset(CreateWebContentsView(this, delegate,
                                        &render_view_host_delegate_view_));
    }
@@ -34,7 +34,7 @@ index e91e0f35fe3ec98d299da675acfad996a0801faf..b6f93e3b8b719d28d21984abf305c839
    CHECK(view_.get());
  
 diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
-index fe5bc4ade5cdbe1332ae9134907f8c956529c48c..9d089057f886c7b6b10ded3c2b37f5580f3b67f7 100644
+index 3c37b58ff833ee4be121b7c285a8740fdc797a2a..450cff790462dc8659ae668a7efcd9b42050f434 100644
 --- a/content/public/browser/web_contents.h
 +++ b/content/public/browser/web_contents.h
 @@ -88,8 +88,11 @@ class BrowserContext;
@@ -49,7 +49,7 @@ index fe5bc4ade5cdbe1332ae9134907f8c956529c48c..9d089057f886c7b6b10ded3c2b37f558
  class WebUI;
  struct DropData;
  struct MHTMLGenerationParams;
-@@ -229,6 +232,10 @@ class WebContents : public PageNavigator,
+@@ -222,6 +225,10 @@ class WebContents : public PageNavigator,
      // Sandboxing flags set on the new WebContents.
      network::mojom::WebSandboxFlags starting_sandbox_flags;
  

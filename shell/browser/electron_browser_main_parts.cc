@@ -62,8 +62,7 @@
 #include "base/environment.h"
 #include "base/nix/xdg_util.h"
 #include "base/threading/thread_task_runner_handle.h"
-#include "ui/gtk/gtk_ui.h"
-#include "ui/gtk/gtk_ui_delegate.h"
+#include "ui/gtk/gtk_ui_factory.h"
 #include "ui/gtk/gtk_util.h"
 #include "ui/views/linux_ui/linux_ui.h"
 
@@ -77,7 +76,6 @@
 #include "ui/gfx/color_utils.h"
 #include "ui/gfx/x/connection.h"
 #include "ui/gfx/x/xproto_util.h"
-#include "ui/gtk/x/gtk_ui_delegate_x11.h"
 #endif
 
 #if defined(USE_OZONE) || defined(USE_X11)
@@ -145,10 +143,10 @@ int GetMinimumFontSize() {
 std::u16string MediaStringProvider(media::MessageId id) {
   switch (id) {
     case media::DEFAULT_AUDIO_DEVICE_NAME:
-      return base::ASCIIToUTF16("Default");
+      return u"Default";
 #if defined(OS_WIN)
     case media::COMMUNICATIONS_AUDIO_DEVICE_NAME:
-      return base::ASCIIToUTF16("Communications");
+      return u"Communications";
 #endif
     default:
       return std::u16string();
@@ -378,17 +376,8 @@ void ElectronBrowserMainParts::PostDestroyThreads() {
 }
 
 void ElectronBrowserMainParts::ToolkitInitialized() {
-#if defined(USE_X11)
-  if (!features::IsUsingOzonePlatform()) {
-    // In Aura/X11, Gtk-based LinuxUI implementation is used.
-    gtk_ui_delegate_ =
-        std::make_unique<ui::GtkUiDelegateX11>(x11::Connection::Get());
-    ui::GtkUiDelegate::SetInstance(gtk_ui_delegate_.get());
-  }
-#endif
 #if defined(OS_LINUX)
-  views::LinuxUI* linux_ui = BuildGtkUi(ui::GtkUiDelegate::instance());
-  views::LinuxUI::SetInstance(linux_ui);
+  auto linux_ui = BuildGtkUi();
   linux_ui->Initialize();
 
   // Chromium does not respect GTK dark theme setting, but they may change
@@ -400,6 +389,7 @@ void ElectronBrowserMainParts::ToolkitInitialized() {
   // here returns a NativeThemeGtk, which monitors GTK settings.
   dark_theme_observer_.reset(new DarkThemeObserver);
   linux_ui->GetNativeTheme(nullptr)->AddObserver(dark_theme_observer_.get());
+  views::LinuxUI::SetInstance(std::move(linux_ui));
 #endif
 
 #if defined(USE_AURA)

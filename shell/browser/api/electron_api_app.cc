@@ -1289,12 +1289,12 @@ v8::Local<v8::Promise> App::GetFileIcon(const base::FilePath& path,
 
   auto* icon_manager = ElectronBrowserMainParts::Get()->GetIconManager();
   gfx::Image* icon =
-      icon_manager->LookupIconFromFilepath(normalized_path, icon_size);
+      icon_manager->LookupIconFromFilepath(normalized_path, icon_size, 1.0f);
   if (icon) {
     promise.Resolve(*icon);
   } else {
     icon_manager->LoadIcon(
-        normalized_path, icon_size,
+        normalized_path, icon_size, 1.0f,
         base::BindOnce(&OnIconDataAvailable, std::move(promise)),
         &cancelable_task_tracker_);
   }

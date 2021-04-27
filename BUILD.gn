@@ -441,7 +441,10 @@ source_set("electron_lib") {
   }
 
   if (is_linux) {
-    deps += [ "//components/crash/content/browser" ]
+    deps += [
+      "//build/config/linux/gtk:gtkprint",
+      "//components/crash/content/browser",
+    ]
   }
 
   if (is_mac) {
@@ -513,10 +516,6 @@ source_set("electron_lib") {
     ]
     if (use_x11) {
       sources += filenames.lib_sources_linux_x11
-      deps += [
-        "//ui/gfx/x",
-        "//ui/gtk/x",
-      ]
     }
     configs += [ ":gio_unix" ]
     defines += [
@@ -1164,11 +1163,6 @@ if (is_mac) {
         "//build/config/win:windowed",
         "//build/config/win:delayloads",
       ]
-
-      if (target_cpu == "arm64") {
-        configs -= [ "//build/config/win:cfi_linker" ]
-        ldflags += [ "/guard:cf,nolongjmp" ]
-      }
 
       if (current_cpu == "x86") {
         # Set the initial stack size to 0.5MiB, instead of the 1.5MiB needed by

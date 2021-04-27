@@ -8,12 +8,12 @@ needed in chromium but our autofill implementation uses them.  This patch can be
 our autofill implementation to work like Chromium's.
 
 diff --git a/ui/native_theme/common_theme.cc b/ui/native_theme/common_theme.cc
-index cdd49c092b611176f27fd581cb56c153b6583eeb..384e639e1b6739536bb10fcabe2c3f895d7bd635 100644
+index 0726aaf384626c6e5d103fe674bac0847a8bb6cf..7c76636270e907e9770c55f7c446f67a26e4c75f 100644
 --- a/ui/native_theme/common_theme.cc
 +++ b/ui/native_theme/common_theme.cc
-@@ -68,6 +68,14 @@ base::Optional<SkColor> GetDarkSchemeColor(NativeTheme::ColorId color_id,
-     case NativeTheme::kColorId_FocusedBorderColor:
-       return gfx::kGoogleBlue400;
+@@ -72,6 +72,14 @@ base::Optional<SkColor> GetDarkSchemeColor(NativeTheme::ColorId color_id,
+     case NativeTheme::kColorId_BubbleBorderShadowBase:
+       return SK_ColorBLACK;
  
 +    // Results Tables
 +    case NativeTheme::kColorId_ResultsTableNormalBackground:
@@ -26,7 +26,7 @@ index cdd49c092b611176f27fd581cb56c153b6583eeb..384e639e1b6739536bb10fcabe2c3f89
      // Button
      case NativeTheme::kColorId_ProminentButtonColor:
        return gfx::kGoogleBlue300;
-@@ -551,6 +559,18 @@ SkColor GetDefaultColor(NativeTheme::ColorId color_id,
+@@ -568,6 +576,18 @@ SkColor GetDefaultColor(NativeTheme::ColorId color_id,
      case NativeTheme::kColorId_WindowBackground:
        return SK_ColorWHITE;
  
@@ -46,7 +46,7 @@ index cdd49c092b611176f27fd581cb56c153b6583eeb..384e639e1b6739536bb10fcabe2c3f89
        // Keeping the kColorId_NumColors case instead of using the default case
        // allows ColorId additions to trigger compile error for an incomplete
 diff --git a/ui/native_theme/native_theme_color_id.h b/ui/native_theme/native_theme_color_id.h
-index 60197576c71e86cd3ad17e83bfc699509c365d6c..426504eec69da7100c6484271fb35f1a69f84a43 100644
+index 9cfa124430631227639d4f94b3cdd565f97efff4..6debfe01925780f243303438911a0cb84fbac2fa 100644
 --- a/ui/native_theme/native_theme_color_id.h
 +++ b/ui/native_theme/native_theme_color_id.h
 @@ -151,6 +151,11 @@

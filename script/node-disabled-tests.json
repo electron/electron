@@ -20,6 +20,7 @@
   "parallel/test-crypto-dh-stateless",
   "parallel/test-crypto-ecb",
   "parallel/test-crypto-engine",
+  "parallel/test-debug-args",
   "parallel/test-debug-usage",
   "parallel/test-debugger-pid",
   "parallel/test-domain-abort-on-uncaught",
