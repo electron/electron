@@ -70,7 +70,7 @@ diff --git a/src/libANGLE/renderer/metal/ContextMtl.mm b/src/libANGLE/renderer/m
 index d8d421f925675113a7d95250572e692fecb986ef..4bda9cf8518f24b8628ec4576e19ee7499131f10 100644
 --- a/src/libANGLE/renderer/metal/ContextMtl.mm
 +++ b/src/libANGLE/renderer/metal/ContextMtl.mm
-@@ -1282,7 +1282,10 @@ bool NeedToInvertDepthRange(float near, float far)
+@@ -1282,7 +1282,10 @@ void ContextMtl::updateScissor(const gl::State &glState)
  
      // Clip the render area to the viewport.
      gl::Rectangle viewportClippedRenderArea;
