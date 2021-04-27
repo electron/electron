@@ -1,0 +1,100 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ken Rockot <rockot@google.com>
+Date: Tue, 20 Apr 2021 15:46:33 +0000
+Subject: M86-LTS: Mojo: Properly validate broadcast events
+
+This corrects broadcast event deserialization by adding a missing
+validation step when decoding the outer message header.
+
+(cherry picked from commit 6740adb28374ddeee13febfd5e5d20cb8a365979)
+
+Fixed: 1195308
+Change-Id: Ia67a20e48614e7ef00b1b32f7f4e5f20235be310
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2808678
+Reviewed-by: Daniel Cheng <dcheng@chromium.org>
+Commit-Queue: Ken Rockot <rockot@google.com>
+Cr-Original-Commit-Position: refs/heads/master@{#870238}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2837712
+Owners-Override: Achuith Bhandarkar <achuith@chromium.org>
+Auto-Submit: Achuith Bhandarkar <achuith@chromium.org>
+Reviewed-by: Artem Sumaneev <asumaneev@google.com>
+Commit-Queue: Achuith Bhandarkar <achuith@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4240@{#1614}
+Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
+
+diff --git a/mojo/core/node_channel.cc b/mojo/core/node_channel.cc
+index 061ea1026e95d1b1f80a762ce377aebdd97e1b42..07e3b8b21f7ef70b64d214ec03e0dd1eb807fad6 100644
+--- a/mojo/core/node_channel.cc
++++ b/mojo/core/node_channel.cc
+@@ -191,13 +191,16 @@ Channel::MessagePtr NodeChannel::CreateEventMessage(size_t capacity,
+ }
+ 
+ // static
+-void NodeChannel::GetEventMessageData(Channel::Message* message,
++bool NodeChannel::GetEventMessageData(Channel::Message& message,
+                                       void** data,
+                                       size_t* num_data_bytes) {
+-  // NOTE: OnChannelMessage guarantees that we never accept a Channel::Message
+-  // with a payload of fewer than |sizeof(Header)| bytes.
+-  *data = reinterpret_cast<Header*>(message->mutable_payload()) + 1;
+-  *num_data_bytes = message->payload_size() - sizeof(Header);
++  // NOTE: Callers must guarantee that the payload in `message` must be at least
++  // large enough to hold a Header.
++  if (message.payload_size() < sizeof(Header))
++    return false;
++  *data = reinterpret_cast<Header*>(message.mutable_payload()) + 1;
++  *num_data_bytes = message.payload_size() - sizeof(Header);
++  return true;
+ }
+ 
+ void NodeChannel::Start() {
+diff --git a/mojo/core/node_channel.h b/mojo/core/node_channel.h
+index 58ab42bd01fc856856d171985dac50934d4e00b2..7ae08e3e73110667f0eafe0fe4f70242bfeece39 100644
+--- a/mojo/core/node_channel.h
++++ b/mojo/core/node_channel.h
+@@ -90,7 +90,9 @@ class MOJO_SYSTEM_IMPL_EXPORT NodeChannel
+                                                 void** payload,
+                                                 size_t num_handles);
+ 
+-  static void GetEventMessageData(Channel::Message* message,
++  // Retrieves address and size of an Event message's underlying message data.
++  // Returns `false` if the message is not a valid Event message.
++  static bool GetEventMessageData(Channel::Message& message,
+                                   void** data,
+                                   size_t* num_data_bytes);
+ 
+diff --git a/mojo/core/node_controller.cc b/mojo/core/node_controller.cc
+index c333ed64f71f0dfe5d0012b07bcedccfd94cd5e9..a8b8520729510408dc822532271d0ff4a36a7151 100644
+--- a/mojo/core/node_controller.cc
++++ b/mojo/core/node_controller.cc
+@@ -76,7 +76,9 @@ ports::ScopedEvent DeserializeEventMessage(
+     Channel::MessagePtr channel_message) {
+   void* data;
+   size_t size;
+-  NodeChannel::GetEventMessageData(channel_message.get(), &data, &size);
++  bool valid = NodeChannel::GetEventMessageData(*channel_message, &data, &size);
++  if (!valid)
++    return nullptr;
+   auto event = ports::Event::Deserialize(data, size);
+   if (!event)
+     return nullptr;
+diff --git a/mojo/core/user_message_impl.cc b/mojo/core/user_message_impl.cc
+index 2f1665e55cf0af69c58c21f2e0d602a93e79052e..a6b35b2cd812bb0da7026b088aa0d96acbbc6a2f 100644
+--- a/mojo/core/user_message_impl.cc
++++ b/mojo/core/user_message_impl.cc
+@@ -415,7 +415,14 @@ Channel::MessagePtr UserMessageImpl::FinalizeEventMessage(
+   if (channel_message) {
+     void* data;
+     size_t size;
+-    NodeChannel::GetEventMessageData(channel_message.get(), &data, &size);
++    // The `channel_message` must either be produced locally or must have
++    // already been validated by the caller, as is done for example by
++    // NodeController::DeserializeEventMessage before
++    // NodeController::OnBroadcast re-serializes each copy of the message it
++    // received.
++    bool result =
++        NodeChannel::GetEventMessageData(*channel_message, &data, &size);
++    DCHECK(result);
+     message_event->Serialize(data);
+   }
+ 
