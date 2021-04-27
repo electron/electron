@@ -1,0 +1,14 @@
+<script>
+  function loadWorker(url) {
+    return new Promise((resolve) => {
+      try {
+        const w = new Worker(url);
+        w.onerror = () => resolve('failed');
+        w.onmessage = (m) => resolve(m.data);
+        w.postMessage('success');
+      } catch {
+        resolve('failed');
+      }
+    });
+  }
+</script>
