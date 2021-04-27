@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Asanka Herath <asanka@chromium.org>
 Date: Wed, 27 Jan 2021 03:34:58 +0000
-Subject: [privacy_budget] Remove unnecessary kCanvasReadback metrics.
+Subject: Remove unnecessary kCanvasReadback metrics.
 
 The identifiability metrics recorded under kCanvasReadback surface type
 used two conflicting sources as inputs: the CanvasRenderingContext
