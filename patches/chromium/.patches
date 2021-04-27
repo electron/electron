@@ -153,4 +153,5 @@ m86-lts_add_weak_pointer_to_rwhier_framesinkidownermap_and.patch
 cherry-pick-7dd3b1c86795.patch
 cherry-pick-fe85e04a1797.patch
 cherry-pick-6b84dc72351b.patch
+cherry-pick-1028ffc9bd83.patch
 privacy_budget_remove_unnecessary_kcanvasreadback_metrics.patch
