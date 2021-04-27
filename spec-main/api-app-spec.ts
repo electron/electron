@@ -1716,6 +1716,8 @@ describe('default behavior', () => {
   });
 
   describe('window-all-closed', () => {
+    afterEach(closeAllWindows);
+
     it('quits when the app does not handle the event', async () => {
       const result = await runTestApp('window-all-closed');
       expect(result).to.equal(false);
@@ -1724,6 +1726,17 @@ describe('default behavior', () => {
     it('does not quit when the app handles the event', async () => {
       const result = await runTestApp('window-all-closed', '--handle-event');
       expect(result).to.equal(true);
+    });
+
+    it('should omit closed windows from getAllWindows', async () => {
+      const w = new BrowserWindow({ show: false });
+      const len = new Promise(resolve => {
+        app.on('window-all-closed', () => {
+          resolve(BrowserWindow.getAllWindows().length);
+        });
+      });
+      w.close();
+      expect(await len).to.equal(0);
     });
   });
 
