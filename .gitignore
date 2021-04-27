@@ -17,7 +17,6 @@
 *.xcodeproj
 /.idea/
 /dist/
-/external_binaries/
 /out/
 /vendor/.gclient
 /vendor/debian_jessie_mips64-sysroot/
