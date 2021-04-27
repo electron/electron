@@ -964,6 +964,13 @@ v8::Local<v8::Promise> Session::CloseAllConnections() {
   return handle;
 }
 
+v8::Local<v8::Value> Session::GetPath(v8::Isolate* isolate) {
+  if (browser_context_->IsOffTheRecord()) {
+    return v8::Null(isolate);
+  }
+  return gin::ConvertToV8(isolate, browser_context_->GetPath());
+}
+
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 base::Value Session::GetSpellCheckerLanguages() {
   return browser_context_->prefs()
@@ -1188,11 +1195,13 @@ gin::ObjectTemplateBuilder Session::GetObjectTemplateBuilder(
 #endif
       .SetMethod("preconnect", &Session::Preconnect)
       .SetMethod("closeAllConnections", &Session::CloseAllConnections)
+      .SetMethod("getStoragePath", &Session::GetPath)
       .SetProperty("cookies", &Session::Cookies)
       .SetProperty("netLog", &Session::NetLog)
       .SetProperty("protocol", &Session::Protocol)
       .SetProperty("serviceWorkers", &Session::ServiceWorkerContext)
-      .SetProperty("webRequest", &Session::WebRequest);
+      .SetProperty("webRequest", &Session::WebRequest)
+      .SetProperty("storagePath", &Session::GetPath);
 }
 
 const char* Session::GetTypeName() {
