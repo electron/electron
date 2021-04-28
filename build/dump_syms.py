@@ -39,7 +39,7 @@ def main(dump_syms, binary, out_dir, stamp_file, dsym_file=None):
     args += ["-g", dsym_file]
   args += [binary]
 
-  symbol_data = subprocess.check_output(args)
+  symbol_data = subprocess.check_output(args).decode(sys.stdout.encoding)
   symbol_path = os.path.join(out_dir, get_symbol_path(symbol_data))
   mkdir_p(os.path.dirname(symbol_path))
 
