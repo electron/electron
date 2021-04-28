@@ -7,7 +7,7 @@ Pass RenderProcessHost through to PlatformNotificationService
 so Electron can identify which renderer a notification came from.
 
 diff --git a/content/browser/notifications/blink_notification_service_impl.cc b/content/browser/notifications/blink_notification_service_impl.cc
-index cbb8ca59d8609daa4b030e2df6714c1bba7d1cb6..c3d64098df46a1d0165ca758fdb2ca6c88bcf59b 100644
+index cd1f69dfbc76c78411de953c6b2ff7146a323cca..4526b0e632205809858cdc8a88ad973024b63c5d 100644
 --- a/content/browser/notifications/blink_notification_service_impl.cc
 +++ b/content/browser/notifications/blink_notification_service_impl.cc
 @@ -89,10 +89,12 @@ BlinkNotificationServiceImpl::BlinkNotificationServiceImpl(
@@ -34,7 +34,7 @@ index cbb8ca59d8609daa4b030e2df6714c1bba7d1cb6..c3d64098df46a1d0165ca758fdb2ca6c
  }
  
 diff --git a/content/browser/notifications/blink_notification_service_impl.h b/content/browser/notifications/blink_notification_service_impl.h
-index 65421fdadca07e0c4250c8e36023aa730500e5d1..232bb1ab2ba5da865fdf41a0f746958feabb7a2e 100644
+index 19c2beb1f1949f0dc4466a8728f151c035544b24..f7aa5f94d6dea0e6b2c1107b8ef01600bf13903b 100644
 --- a/content/browser/notifications/blink_notification_service_impl.h
 +++ b/content/browser/notifications/blink_notification_service_impl.h
 @@ -41,6 +41,7 @@ class CONTENT_EXPORT BlinkNotificationServiceImpl
@@ -108,7 +108,7 @@ index 71dad766e05ac4726e1e18159f2af5ea01079a91..ef8e55a4420288fe64c99e68d0a649a9
        const GURL& document_url,
        mojo::PendingReceiver<blink::mojom::NotificationService> receiver);
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 554f859f2c46829ede73b6cb05a84d26db3e9e70..d11f9a273511d8ee75381d603835c7111cd7ce50 100644
+index 7f27667bd444e8b6f081c02a8a30aecdd937b122..9a57706a1f1cfaad240cd1ccc626b548e4c9e0f6 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -2123,7 +2123,7 @@ void RenderProcessHostImpl::CreateNotificationService(
@@ -121,14 +121,14 @@ index 554f859f2c46829ede73b6cb05a84d26db3e9e70..d11f9a273511d8ee75381d603835c711
  
  void RenderProcessHostImpl::CreateWebSocketConnector(
 diff --git a/content/public/browser/platform_notification_service.h b/content/public/browser/platform_notification_service.h
-index 9646cbeb31141e3518f51482801431f3a6010360..adc98738fe0d102233cb2b8ef04fe6e2a789a4d5 100644
+index 9646cbeb31141e3518f51482801431f3a6010360..b13b6ab07b4931b892749c84879d9a6adb3bcb58 100644
 --- a/content/public/browser/platform_notification_service.h
 +++ b/content/public/browser/platform_notification_service.h
 @@ -26,6 +26,8 @@ struct PlatformNotificationData;
  
  namespace content {
  
-+class RenderProcessHost;
++class RenderFrameHost;
 +
  // The service using which notifications can be presented to the user. There
  // should be a unique instance of the PlatformNotificationService depending
