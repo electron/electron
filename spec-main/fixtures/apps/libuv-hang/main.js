@@ -5,6 +5,7 @@ async function createWindow () {
   const mainWindow = new BrowserWindow({
     show: false,
     webPreferences: {
+      contextIsolation: true,
       preload: path.join(__dirname, 'preload.js')
     }
   });
