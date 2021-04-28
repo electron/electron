@@ -1,0 +1,91 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Asanka Herath <asanka@chromium.org>
+Date: Wed, 27 Jan 2021 03:34:58 +0000
+Subject: Remove unnecessary kCanvasReadback metrics.
+
+The identifiability metrics recorded under kCanvasReadback surface type
+used two conflicting sources as inputs: the CanvasRenderingContext
+type, and the paint-op digest.
+
+There are known collisions between resulting IdentifiableSurface values
+from the two sources, which makes it impossible to losslessly separate
+the two during analysis.
+
+While the fact that a canvas readback happened is interesting, it
+doesn't help determine the observed diversity of clients. Hence this
+change removes one of those sources: the CanvasRenderingContext type.
+
+Bug: 1161379
+Change-Id: I770cb631c9c4afe4c36d1b129aaf61410db25d43
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2600386
+Commit-Queue: Asanka Herath <asanka@chromium.org>
+Reviewed-by: Caleb Raitto <caraitto@chromium.org>
+Reviewed-by: Kentaro Hara <haraken@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#847480}
+
+diff --git a/third_party/blink/renderer/core/offscreencanvas/offscreen_canvas.cc b/third_party/blink/renderer/core/offscreencanvas/offscreen_canvas.cc
+index 6ca96f58319ecafdce623e883dc69ce774449efb..9d9089b48ee138fbd73a35f23537e316d219b440 100644
+--- a/third_party/blink/renderer/core/offscreencanvas/offscreen_canvas.cc
++++ b/third_party/blink/renderer/core/offscreencanvas/offscreen_canvas.cc
+@@ -222,13 +222,6 @@ ImageBitmap* OffscreenCanvas::transferToImageBitmap(
+                                       "ImageBitmap construction failed");
+   }
+ 
+-  RecordIdentifiabilityMetric(
+-      blink::IdentifiableSurface::FromTypeAndToken(
+-          blink::IdentifiableSurface::Type::kCanvasReadback,
+-          context_ ? context_->GetContextType()
+-                   : CanvasRenderingContext::kContextTypeUnknown),
+-      0);
+-
+   return image;
+ }
+ 
+diff --git a/third_party/blink/renderer/modules/canvas/canvas2d/canvas_rendering_context_2d.cc b/third_party/blink/renderer/modules/canvas/canvas2d/canvas_rendering_context_2d.cc
+index cca2abb108c8a94992ac15048154d02badc1f766..ade14e0102ae403a042dae2d06a5aa07741ea012 100644
+--- a/third_party/blink/renderer/modules/canvas/canvas2d/canvas_rendering_context_2d.cc
++++ b/third_party/blink/renderer/modules/canvas/canvas2d/canvas_rendering_context_2d.cc
+@@ -38,8 +38,6 @@
+ #include "third_party/blink/public/common/features.h"
+ #include "third_party/blink/public/common/privacy_budget/identifiability_metric_builder.h"
+ #include "third_party/blink/public/common/privacy_budget/identifiability_metrics.h"
+-#include "third_party/blink/public/common/privacy_budget/identifiability_study_settings.h"
+-#include "third_party/blink/public/common/privacy_budget/identifiable_surface.h"
+ #include "third_party/blink/public/platform/platform.h"
+ #include "third_party/blink/public/platform/task_type.h"
+ #include "third_party/blink/renderer/bindings/modules/v8/rendering_context.h"
+@@ -682,13 +680,6 @@ ImageData* CanvasRenderingContext2D::getImageData(
+     int sw,
+     int sh,
+     ExceptionState& exception_state) {
+-  const IdentifiableSurface surface = IdentifiableSurface::FromTypeAndToken(
+-      IdentifiableSurface::Type::kCanvasReadback, GetContextType());
+-  if (IdentifiabilityStudySettings::Get()->ShouldSample(surface)) {
+-    blink::IdentifiabilityMetricBuilder(ukm_source_id_)
+-        .Set(surface, 0)
+-        .Record(ukm_recorder_);
+-  }
+   return BaseRenderingContext2D::getImageData(sx, sy, sw, sh, exception_state);
+ }
+ 
+diff --git a/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc b/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc
+index 30460118bfe0263e770f9a0fe02b41efe3ea476e..eddb540a7a34a85dc07f1e85f63c75910b8457fb 100644
+--- a/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc
++++ b/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc
+@@ -4667,16 +4667,6 @@ void WebGLRenderingContextBase::readPixels(
+     GLenum format,
+     GLenum type,
+     MaybeShared<DOMArrayBufferView> pixels) {
+-  if (IdentifiabilityStudySettings::Get()->ShouldSample(
+-          blink::IdentifiableSurface::Type::kCanvasReadback)) {
+-    const auto& ukm_params = GetUkmParameters();
+-    blink::IdentifiabilityMetricBuilder(ukm_params.source_id)
+-        .Set(blink::IdentifiableSurface::FromTypeAndToken(
+-                 blink::IdentifiableSurface::Type::kCanvasReadback,
+-                 GetContextType()),
+-             0)
+-        .Record(ukm_params.ukm_recorder);
+-  }
+   ReadPixelsHelper(x, y, width, height, format, type, pixels.View(), 0);
+ }
+ 
