@@ -1,0 +1,44 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Georg Neis <neis@chromium.org>
+Date: Tue, 20 Apr 2021 13:48:07 +0200
+Subject: Merged: [compiler] Fix a bug in VisitSpeculativeIntegerAdditiveOp
+
+Revision: 9313c4ce3f32ad81df1c65becccec7e129181ce3
+
+BUG=chromium:1199345
+NOTRY=true
+NOPRESUBMIT=true
+NOTREECHECKS=true
+R=nicohartmann@chromium.org
+
+Change-Id: I0ee9f13815b1a7d248d4caa506c6930697e1866c
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2839559
+Commit-Queue: Georg Neis <neis@chromium.org>
+Reviewed-by: Nico Hartmann <nicohartmann@chromium.org>
+Cr-Commit-Position: refs/branch-heads/9.0@{#41}
+Cr-Branched-From: bd0108b4c88e0d6f2350cb79b5f363fbd02f3eb7-refs/heads/9.0.257@{#1}
+Cr-Branched-From: 349bcc6a075411f1a7ce2d866c3dfeefc2efa39d-refs/heads/master@{#73001}
+
+diff --git a/src/compiler/simplified-lowering.cc b/src/compiler/simplified-lowering.cc
+index 93a0c71cd72eb7f66a8037490666bc4ab2052583..c2f0d744c2fb698427dd876fb9a37eb280e6f583 100644
+--- a/src/compiler/simplified-lowering.cc
++++ b/src/compiler/simplified-lowering.cc
+@@ -1453,10 +1453,15 @@ class RepresentationSelector {
+     Type right_feedback_type = TypeOf(node->InputAt(1));
+ 
+     // Using Signed32 as restriction type amounts to promising there won't be
+-    // signed overflow. This is incompatible with relying on a Word32
+-    // truncation in order to skip the overflow check.
++    // signed overflow. This is incompatible with relying on a Word32 truncation
++    // in order to skip the overflow check.  Similarly, we must not drop -0 from
++    // the result type unless we deopt for -0 inputs.
+     Type const restriction =
+-        truncation.IsUsedAsWord32() ? Type::Any() : Type::Signed32();
++        truncation.IsUsedAsWord32()
++            ? Type::Any()
++            : (truncation.identify_zeros() == kIdentifyZeros)
++                  ? Type::Signed32OrMinusZero()
++                  : Type::Signed32();
+ 
+     // Handle the case when no int32 checks on inputs are necessary (but
+     // an overflow check is needed on the output). Note that we do not
