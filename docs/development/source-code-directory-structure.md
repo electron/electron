@@ -99,4 +99,3 @@ script/ - The set of all scripts Electron runs for a variety of purposes.
 ```
 
 * **typings** - TypeScript typings for Electron's internal code.
-* **vendor** - Source code for some third party dependencies.
