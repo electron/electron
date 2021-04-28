@@ -100,7 +100,5 @@ script/ - The set of all scripts Electron runs for a variety of purposes.
     └── uploaders/ - Uploads various release-related files during release.
 ```
 
-* **tools** - Helper scripts used by GN files.
-  * Scripts put here should never be invoked by users directly, unlike those in `script`.
 * **typings** - TypeScript typings for Electron's internal code.
 * **vendor** - Source code for some third party dependencies.
