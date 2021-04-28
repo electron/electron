@@ -64,8 +64,8 @@ steps:
     set npm_config_arch=arm64
     cd electron
     REM CalculateNativeWinOcclusion is disabled due to https://bugs.chromium.org/p/chromium/issues/detail?id=1139022
-    FOR %i IN (.\spec-main\*-spec.ts) DO node script/yarn test --runners=main --files %i --enable-logging --verbose --disable-features=CalculateNativeWinOcclusion
-    FOR %i IN (.\spec\*-spec.ts) DO node script/yarn test --runners=remote --files %i --enable-logging --verbose --disable-features=CalculateNativeWinOcclusion
+    FOR %%i IN (.\spec-main\*-spec.ts) DO node script/yarn test --runners=main --files %%i --enable-logging --verbose --disable-features=CalculateNativeWinOcclusion
+    FOR %%i IN (.\spec\*-spec.ts) DO node script/yarn test --runners=remote --files %%i --enable-logging --verbose --disable-features=CalculateNativeWinOcclusion
   displayName: 'Run Electron tests'
   env:
     ELECTRON_OUT_DIR: Default
