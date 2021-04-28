@@ -419,11 +419,11 @@ void NativeWindow::NotifyWindowClosed() {
   if (is_closed_)
     return;
 
-  WindowList::RemoveWindow(this);
-
   is_closed_ = true;
   for (NativeWindowObserver& observer : observers_)
     observer.OnWindowClosed();
+
+  WindowList::RemoveWindow(this);
 }
 
 void NativeWindow::NotifyWindowEndSession() {
