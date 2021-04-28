@@ -15,5 +15,7 @@
 
   "src/electron/patches/depot_tools": "src/third_party/depot_tools",
 
-  "src/electron/patches/nan": "src/third_party/nan"
+  "src/electron/patches/nan": "src/third_party/nan",
+
+  "src/electron/patches/angle": "src/third_party/angle"
 }
