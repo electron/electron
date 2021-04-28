@@ -15,6 +15,7 @@
 
 #include "base/mac/scoped_nsobject.h"
 #include "shell/browser/native_window.h"
+#include "ui/display/display_observer.h"
 #include "ui/native_theme/native_theme_observer.h"
 #include "ui/views/controls/native/native_view_host.h"
 
@@ -28,7 +29,9 @@ namespace electron {
 
 class RootViewMac;
 
-class NativeWindowMac : public NativeWindow, public ui::NativeThemeObserver {
+class NativeWindowMac : public NativeWindow,
+                        public ui::NativeThemeObserver,
+                        public display::DisplayObserver {
  public:
   NativeWindowMac(const gin_helper::Dictionary& options, NativeWindow* parent);
   ~NativeWindowMac() override;
@@ -130,7 +133,6 @@ class NativeWindowMac : public NativeWindow, public ui::NativeThemeObserver {
   bool IsVisibleOnAllWorkspaces() override;
 
   void SetAutoHideCursor(bool auto_hide) override;
-
   void SelectPreviousTab() override;
   void SelectNextTab() override;
   void MergeAllWindows() override;
@@ -141,6 +143,7 @@ class NativeWindowMac : public NativeWindow, public ui::NativeThemeObserver {
   bool SetWindowButtonVisibility(bool visible) override;
 
   void SetVibrancy(const std::string& type) override;
+  void UpdateFrame() override;
   void SetTouchBar(
       std::vector<gin_helper::PersistentDictionary> items) override;
   void RefreshTouchBarItem(const std::string& item_id) override;
@@ -194,6 +197,10 @@ class NativeWindowMac : public NativeWindow, public ui::NativeThemeObserver {
   // views::WidgetDelegate:
   bool CanResize() const override;
   views::View* GetContentsView() override;
+
+  // display::DisplayObserver:
+  void OnDisplayMetricsChanged(const display::Display& display,
+                               uint32_t changed_metrics) override;
 
  private:
   // Add custom layers to the content view.
