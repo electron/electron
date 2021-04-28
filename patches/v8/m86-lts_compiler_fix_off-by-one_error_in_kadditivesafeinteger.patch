@@ -1,0 +1,37 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Georg Neis <neis@chromium.org>
+Date: Mon, 19 Apr 2021 13:12:46 +0200
+Subject: M86-LTS: [compiler] Fix off-by-one error in kAdditiveSafeInteger
+
+(cherry picked from commit 798fbcb0a3e5a292fb775c37c19d9fe73bbac17c)
+
+No-Try: true
+No-Presubmit: true
+No-Tree-Checks: true
+Bug: chromium:1198705
+Change-Id: I6b3ad82754e1ca72701ce57f16c4f085f8c87f77
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2835705
+Auto-Submit: Georg Neis <neis@chromium.org>
+Commit-Queue: Nico Hartmann <nicohartmann@chromium.org>
+Reviewed-by: Nico Hartmann <nicohartmann@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#74033}
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2850708
+Commit-Queue: Artem Sumaneev <asumaneev@google.com>
+Reviewed-by: Victor-Gabriel Savu <vsavu@google.com>
+Cr-Commit-Position: refs/branch-heads/8.6@{#87}
+Cr-Branched-From: a64aed2333abf49e494d2a5ce24bbd14fff19f60-refs/heads/8.6.395@{#1}
+Cr-Branched-From: a626bc036236c9bf92ac7b87dc40c9e538b087e3-refs/heads/master@{#69472}
+
+diff --git a/src/compiler/type-cache.h b/src/compiler/type-cache.h
+index ada95a37219fc01bb01b413b9eb88fcb4c592e98..2ade5f68a3b1d9b0eeb7cac52435b4b224301003 100644
+--- a/src/compiler/type-cache.h
++++ b/src/compiler/type-cache.h
+@@ -80,7 +80,7 @@ class V8_EXPORT_PRIVATE TypeCache final {
+       Type::Union(kPositiveIntegerOrMinusZero, Type::NaN(), zone());
+ 
+   Type const kAdditiveSafeInteger =
+-      CreateRange(-4503599627370496.0, 4503599627370496.0);
++      CreateRange(-4503599627370495.0, 4503599627370495.0);
+   Type const kSafeInteger = CreateRange(-kMaxSafeInteger, kMaxSafeInteger);
+   Type const kAdditiveSafeIntegerOrMinusZero =
+       Type::Union(kAdditiveSafeInteger, Type::MinusZero(), zone());
