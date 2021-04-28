@@ -24,7 +24,7 @@ const NO_NOTES = 'No notes';
 const docTypes = new Set(['doc', 'docs']);
 const featTypes = new Set(['feat', 'feature']);
 const fixTypes = new Set(['fix']);
-const otherTypes = new Set(['spec', 'build', 'test', 'chore', 'deps', 'refactor', 'tools', 'vendor', 'perf', 'style', 'ci']);
+const otherTypes = new Set(['spec', 'build', 'test', 'chore', 'deps', 'refactor', 'tools', 'perf', 'style', 'ci']);
 const knownTypes = new Set([...docTypes.keys(), ...featTypes.keys(), ...fixTypes.keys(), ...otherTypes.keys()]);
 
 const getCacheDir = () => process.env.NOTES_CACHE_PATH || path.resolve(__dirname, '.cache');
