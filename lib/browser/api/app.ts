@@ -63,6 +63,9 @@ Object.defineProperty(app, 'applicationMenu', {
   return execFile !== 'electron';
 })();
 
+// The native implementation is not provided on non-windows platforms
+app.setAppUserModelId = app.setAppUserModelId || (() => {});
+
 app._setDefaultAppPaths = (packagePath) => {
   // Set the user path according to application's name.
   app.setPath('userData', path.join(app.getPath('appData'), app.name!));
