@@ -1,0 +1,85 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Lan Wei <lanwei@chromium.org>
+Date: Thu, 15 Apr 2021 20:01:17 +0000
+Subject: Add crashkeys to identify where |target| is assigned to a stale value
+
+In RenderWidgetHostInputEventRouter::DispatchTouchscreenGestureEvent, the
+|target|'s address is changed and assigned to a stale value.
+
+(cherry picked from commit b7758233216445264174dd249e7565ab4849daa6)
+
+Bug: 1155297
+Change-Id: Id87175059b6d74eeac165abe0ccfd5f6c25d659a
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2764892
+Commit-Queue: Lan Wei <lanwei@chromium.org>
+Reviewed-by: Alex Moshchuk <alexmos@chromium.org>
+Reviewed-by: James MacLean <wjmaclean@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#867419}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2828850
+Auto-Submit: Lan Wei <lanwei@chromium.org>
+Reviewed-by: Adrian Taylor <adetaylor@google.com>
+Owners-Override: Lan Wei <lanwei@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4430@{#1292}
+Cr-Branched-From: e5ce7dc4f7518237b3d9bb93cccca35d25216cbe-refs/heads/master@{#857950}
+
+diff --git a/content/browser/renderer_host/render_widget_host_input_event_router.cc b/content/browser/renderer_host/render_widget_host_input_event_router.cc
+index 10399e2f1dc63cf3715ad887f20b8b46ce0d4e5d..c028af696bfcb9670745a960a0f5ddb19f2c8174 100644
+--- a/content/browser/renderer_host/render_widget_host_input_event_router.cc
++++ b/content/browser/renderer_host/render_widget_host_input_event_router.cc
+@@ -1512,6 +1512,10 @@ void RenderWidgetHostInputEventRouter::DispatchTouchscreenGestureEvent(
+ 
+   base::Optional<gfx::PointF> fallback_target_location;
+ 
++  // Adding crash logs to track the reason of stale pointer value of |target|.
++  LogTouchscreenGestureTargetCrashKeys(
++      "RWHIER::DispatchTouchscreenGestureEvent target set from caller");
++
+   if (gesture_event.unique_touch_event_id == 0) {
+     // On Android it is possible for touchscreen gesture events to arrive that
+     // are not associated with touch events, because non-synthetic events can be
+@@ -1538,9 +1542,19 @@ void RenderWidgetHostInputEventRouter::DispatchTouchscreenGestureEvent(
+     // don't worry about the fact we're ignoring |result.should_query_view|, as
+     // this is the best we can do until we fix https://crbug.com/595422.
+     target = result.view;
++
++    // Adding crash logs to track the reason of stale pointer value of |target|.
++    LogTouchscreenGestureTargetCrashKeys(
++        "RWHIER::DispatchTouchscreenGestureEvent target from "
++        "FindViewAtLocation");
+     fallback_target_location = transformed_point;
+   } else if (is_gesture_start) {
+     target = gesture_target_it->second;
++
++    // Adding crash logs to track the reason of stale pointer value of |target|.
++    LogTouchscreenGestureTargetCrashKeys(
++        "RWHIER::DispatchTouchscreenGestureEvent target from "
++        "touchscreen_gesture_target_map_");
+     touchscreen_gesture_target_map_.erase(gesture_target_it);
+ 
+     // Abort any scroll bubbling in progress to avoid double entry.
+@@ -1969,4 +1983,11 @@ void RenderWidgetHostInputEventRouter::SetAutoScrollInProgress(
+   event_targeter_->SetIsAutoScrollInProgress(is_autoscroll_in_progress);
+ }
+ 
++void RenderWidgetHostInputEventRouter::LogTouchscreenGestureTargetCrashKeys(
++    const std::string& log_message) {
++  static auto* target_crash_key = base::debug::AllocateCrashKeyString(
++      "target_crash_key", base::debug::CrashKeySize::Size256);
++  base::debug::SetCrashKeyString(target_crash_key, log_message);
++}
++
+ }  // namespace content
+diff --git a/content/browser/renderer_host/render_widget_host_input_event_router.h b/content/browser/renderer_host/render_widget_host_input_event_router.h
+index 87a63125228b7346841f63f580157cb6167d8fde..dc9b0d5ea1118f53897307b5f17e253dbe283579 100644
+--- a/content/browser/renderer_host/render_widget_host_input_event_router.h
++++ b/content/browser/renderer_host/render_widget_host_input_event_router.h
+@@ -332,6 +332,9 @@ class CONTENT_EXPORT RenderWidgetHostInputEventRouter final
+   void SetTouchscreenGestureTarget(RenderWidgetHostViewBase* target,
+                                    bool moved_recently = false);
+ 
++  // TODO(crbug.com/1155297): Remove when bug investigation is complete.
++  void LogTouchscreenGestureTargetCrashKeys(const std::string& log_message);
++
+   FrameSinkIdOwnerMap owner_map_;
+   TargetMap touchscreen_gesture_target_map_;
+   RenderWidgetHostViewBase* touch_target_ = nullptr;
