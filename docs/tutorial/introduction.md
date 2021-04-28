@@ -24,6 +24,8 @@ either of these areas, we recommend the following resources:
 * [Getting started with the Web (MDN)](https://developer.mozilla.org/en-US/docs/Learn/Getting_started_with_the_web)
 * [Introduction to Node.js](https://nodejs.dev/learn)
 
+<!-- Talk about Chromium -->
+
 ## Running examples with Electron Fiddle
 
 [Electron Fiddle](https://electronjs.org/fiddle) is a sandbox app written and
