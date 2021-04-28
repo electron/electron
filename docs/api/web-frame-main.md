@@ -182,3 +182,9 @@ This is not the same as the OS process ID; to read that use `frame.osProcessId`.
 An `Integer` representing the unique frame id in the current renderer process.
 Distinct `WebFrameMain` instances that refer to the same underlying frame will
 have the same `routingId`.
+
+#### `frame.visibilityState` _Readonly_
+
+A `string` representing the [visibility state](https://developer.mozilla.org/en-US/docs/Web/API/Document/visibilityState) of the frame.
+
+See also how the [Page Visibility API](browser-window.md#page-visibility) is affected by other Electron APIs.

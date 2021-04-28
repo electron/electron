@@ -35,7 +35,7 @@ ElectronComponentExtensionResourceManager::
   base::Value pdf_strings(base::Value::Type::DICTIONARY);
   pdf_extension_util::AddStrings(
       pdf_extension_util::PdfViewerContext::kPdfViewer, &pdf_strings);
-  pdf_extension_util::AddAdditionalData(&pdf_strings);
+  pdf_extension_util::AddAdditionalData(true, &pdf_strings);
 
   ui::TemplateReplacements pdf_viewer_replacements;
   ui::TemplateReplacementsFromDictionaryValue(

@@ -367,8 +367,7 @@ describe('web security', () => {
   });
 });
 
-// Running child app under ASan might receive SIGKILL because of OOM.
-ifdescribe(!process.env.IS_ASAN)('command line switches', () => {
+describe('command line switches', () => {
   let appProcess: ChildProcess.ChildProcessWithoutNullStreams | undefined;
   afterEach(() => {
     if (appProcess && !appProcess.killed) {
@@ -745,7 +744,9 @@ describe('chromium features', () => {
     }
 
     it('disables node integration when it is disabled on the parent window for chrome devtools URLs', async () => {
-      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+      // NB. webSecurity is disabled because native window.open() is not
+      // allowed to load devtools:// URLs.
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, webSecurity: false } });
       w.loadURL('about:blank');
       w.webContents.executeJavaScript(`
         { b = window.open('devtools://devtools/bundled/inspector.html', '', 'nodeIntegration=no,show=no'); null }
@@ -756,8 +757,8 @@ describe('chromium features', () => {
     });
 
     it('disables JavaScript when it is disabled on the parent window', async () => {
-      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
-      w.webContents.loadURL('about:blank');
+      const w = new BrowserWindow({ show: true, webPreferences: { nodeIntegration: true } });
+      w.webContents.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
       const windowUrl = require('url').format({
         pathname: `${fixturesPath}/pages/window-no-javascript.html`,
         protocol: 'file',
@@ -784,7 +785,7 @@ describe('chromium features', () => {
         targetURL = `file://${fixturesPath}/pages/base-page.html`;
       }
       const w = new BrowserWindow({ show: false });
-      w.loadURL('about:blank');
+      w.webContents.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
       w.webContents.executeJavaScript(`{ b = window.open(${JSON.stringify(targetURL)}); null }`);
       const [, window] = await emittedOnce(app, 'browser-window-created');
       await emittedOnce(window.webContents, 'did-finish-load');
@@ -793,7 +794,7 @@ describe('chromium features', () => {
 
     it('defines a window.location setter', async () => {
       const w = new BrowserWindow({ show: false });
-      w.loadURL('about:blank');
+      w.webContents.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
       w.webContents.executeJavaScript('{ b = window.open("about:blank"); null }');
       const [, { webContents }] = await emittedOnce(app, 'browser-window-created');
       await emittedOnce(webContents, 'did-finish-load');
@@ -804,7 +805,7 @@ describe('chromium features', () => {
 
     it('defines a window.location.href setter', async () => {
       const w = new BrowserWindow({ show: false });
-      w.loadURL('about:blank');
+      w.webContents.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
       w.webContents.executeJavaScript('{ b = window.open("about:blank"); null }');
       const [, { webContents }] = await emittedOnce(app, 'browser-window-created');
       await emittedOnce(webContents, 'did-finish-load');
@@ -1036,12 +1037,12 @@ describe('chromium features', () => {
           // We are testing whether context (3) can access context (2) under various conditions.
 
           // This is context (1), the base window for the test.
-          const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, webviewTag: true, contextIsolation: false } });
+          const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, webviewTag: true, contextIsolation: false, nativeWindowOpen: false } });
           await w.loadURL('about:blank');
 
           const parentCode = `new Promise((resolve) => {
             // This is context (3), a child window of the WebView.
-            const child = window.open(${JSON.stringify(child)}, "", "show=no")
+            const child = window.open(${JSON.stringify(child)}, "", "show=no,contextIsolation=no,nodeIntegration=yes")
             window.addEventListener("message", e => {
               resolve(e.data)
             })
@@ -1381,6 +1382,7 @@ describe('chromium features', () => {
       const w = new BrowserWindow({ show: false });
       w.loadURL(pdfSource);
       const [, contents] = await emittedOnce(app, 'web-contents-created');
+      await emittedOnce(contents, 'did-navigate');
       expect(contents.getURL()).to.equal('chrome-extension://mhjfbmdgcfjbbpaeojofohoefgiehjai/index.html');
     });
 
@@ -1388,6 +1390,7 @@ describe('chromium features', () => {
       const w = new BrowserWindow({ show: false });
       w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'pdf-in-iframe.html'));
       const [, contents] = await emittedOnce(app, 'web-contents-created');
+      await emittedOnce(contents, 'did-navigate');
       expect(contents.getURL()).to.equal('chrome-extension://mhjfbmdgcfjbbpaeojofohoefgiehjai/index.html');
     });
   });
@@ -1453,7 +1456,13 @@ describe('font fallback', () => {
     const fonts = await getRenderedFonts(html);
     expect(fonts).to.be.an('array');
     expect(fonts).to.have.length(1);
-    if (process.platform === 'win32') { expect(fonts[0].familyName).to.equal('Arial'); } else if (process.platform === 'darwin') { expect(fonts[0].familyName).to.equal('Helvetica'); } else if (process.platform === 'linux') { expect(fonts[0].familyName).to.equal('DejaVu Sans'); } // I think this depends on the distro? We don't specify a default.
+    if (process.platform === 'win32') {
+      expect(fonts[0].familyName).to.equal('Arial');
+    } else if (process.platform === 'darwin') {
+      expect(fonts[0].familyName).to.equal('Helvetica');
+    } else if (process.platform === 'linux') {
+      expect(fonts[0].familyName).to.equal('DejaVu Sans');
+    } // I think this depends on the distro? We don't specify a default.
   });
 
   ifit(process.platform !== 'linux')('should fall back to Japanese font for sans-serif Japanese script', async function () {
@@ -1501,8 +1510,8 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
   });
 
   afterEach(async () => {
-    await closeAllWindows()
-    ;(w as any) = null;
+    await closeAllWindows();
+    (w as any) = null;
     server.close();
   });
 
@@ -1583,6 +1592,14 @@ describe('navigator.serial', () => {
       callback(portList[0].portId);
     });
     session.defaultSession.setPermissionCheckHandler(() => false);
+    const port = await getPorts();
+    expect(port).to.equal('NotFoundError: No port selected by the user.');
+  });
+
+  it('does not crash when select-serial-port is called with an invalid port', async () => {
+    w.webContents.session.on('select-serial-port', (event, portList, webContents, callback) => {
+      callback('i-do-not-exist');
+    });
     const port = await getPorts();
     expect(port).to.equal('NotFoundError: No port selected by the user.');
   });

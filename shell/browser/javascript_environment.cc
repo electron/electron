@@ -73,10 +73,11 @@ class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
   ArrayBufferAllocator() {
     // Ref.
     // https://source.chromium.org/chromium/chromium/src/+/master:third_party/blink/renderer/platform/wtf/allocator/partitions.cc;l=94;drc=062c315a858a87f834e16a144c2c8e9591af2beb
-    allocator_->init({base::PartitionOptions::Alignment::kRegular,
+    allocator_->init({base::PartitionOptions::AlignedAlloc::kDisallowed,
                       base::PartitionOptions::ThreadCache::kDisabled,
                       base::PartitionOptions::Quarantine::kAllowed,
-                      base::PartitionOptions::RefCount::kDisabled});
+                      base::PartitionOptions::Cookies::kAllowed,
+                      base::PartitionOptions::RefCount::kDisallowed});
   }
 
   // Allocate() methods return null to signal allocation failure to V8, which

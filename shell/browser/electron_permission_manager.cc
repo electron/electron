@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "content/public/browser/child_process_security_policy.h"
+#include "content/public/browser/global_routing_id.h"
 #include "content/public/browser/permission_controller.h"
 #include "content/public/browser/permission_type.h"
 #include "content/public/browser/render_frame_host.h"
@@ -23,10 +24,9 @@ namespace electron {
 
 namespace {
 
-bool WebContentsDestroyed(int process_id) {
+bool WebContentsDestroyed(content::RenderFrameHost* rfh) {
   content::WebContents* web_contents =
-      static_cast<ElectronBrowserClient*>(ElectronBrowserClient::Get())
-          ->GetWebContentsFromProcessID(process_id);
+      content::WebContents::FromRenderFrameHost(rfh);
   if (!web_contents)
     return true;
   return web_contents->IsBeingDestroyed();
@@ -46,6 +46,7 @@ class ElectronPermissionManager::PendingRequest {
                  const std::vector<content::PermissionType>& permissions,
                  StatusesCallback callback)
       : render_process_id_(render_frame_host->GetProcess()->GetID()),
+        render_frame_id_(render_frame_host->GetGlobalFrameRoutingId()),
         callback_(std::move(callback)),
         permissions_(permissions),
         results_(permissions.size(), blink::mojom::PermissionStatus::DENIED),
@@ -71,7 +72,9 @@ class ElectronPermissionManager::PendingRequest {
     --remaining_results_;
   }
 
-  int render_process_id() const { return render_process_id_; }
+  content::RenderFrameHost* GetRenderFrameHost() {
+    return content::RenderFrameHost::FromID(render_frame_id_);
+  }
 
   bool IsComplete() const { return remaining_results_ == 0; }
 
@@ -83,6 +86,7 @@ class ElectronPermissionManager::PendingRequest {
 
  private:
   int render_process_id_;
+  content::GlobalFrameRoutingId render_frame_id_;
   StatusesCallback callback_;
   std::vector<content::PermissionType> permissions_;
   std::vector<blink::mojom::PermissionStatus> results_;
@@ -99,7 +103,7 @@ void ElectronPermissionManager::SetPermissionRequestHandler(
     for (PendingRequestsMap::iterator iter(&pending_requests_); !iter.IsAtEnd();
          iter.Advance()) {
       auto* request = iter.GetCurrentValue();
-      if (!WebContentsDestroyed(request->render_process_id()))
+      if (!WebContentsDestroyed(request->GetRenderFrameHost()))
         request->RunCallback();
     }
     pending_requests_.Clear();
@@ -112,43 +116,43 @@ void ElectronPermissionManager::SetPermissionCheckHandler(
   check_handler_ = handler;
 }
 
-int ElectronPermissionManager::RequestPermission(
+void ElectronPermissionManager::RequestPermission(
     content::PermissionType permission,
     content::RenderFrameHost* render_frame_host,
     const GURL& requesting_origin,
     bool user_gesture,
     StatusCallback response_callback) {
-  return RequestPermissionWithDetails(permission, render_frame_host,
-                                      requesting_origin, user_gesture, nullptr,
-                                      std::move(response_callback));
+  RequestPermissionWithDetails(permission, render_frame_host, requesting_origin,
+                               user_gesture, nullptr,
+                               std::move(response_callback));
 }
 
-int ElectronPermissionManager::RequestPermissionWithDetails(
+void ElectronPermissionManager::RequestPermissionWithDetails(
     content::PermissionType permission,
     content::RenderFrameHost* render_frame_host,
     const GURL& requesting_origin,
     bool user_gesture,
     const base::DictionaryValue* details,
     StatusCallback response_callback) {
-  return RequestPermissionsWithDetails(
+  RequestPermissionsWithDetails(
       std::vector<content::PermissionType>(1, permission), render_frame_host,
       requesting_origin, user_gesture, details,
       base::BindOnce(PermissionRequestResponseCallbackWrapper,
                      std::move(response_callback)));
 }
 
-int ElectronPermissionManager::RequestPermissions(
+void ElectronPermissionManager::RequestPermissions(
     const std::vector<content::PermissionType>& permissions,
     content::RenderFrameHost* render_frame_host,
     const GURL& requesting_origin,
     bool user_gesture,
     StatusesCallback response_callback) {
-  return RequestPermissionsWithDetails(permissions, render_frame_host,
-                                       requesting_origin, user_gesture, nullptr,
-                                       std::move(response_callback));
+  RequestPermissionsWithDetails(permissions, render_frame_host,
+                                requesting_origin, user_gesture, nullptr,
+                                std::move(response_callback));
 }
 
-int ElectronPermissionManager::RequestPermissionsWithDetails(
+void ElectronPermissionManager::RequestPermissionsWithDetails(
     const std::vector<content::PermissionType>& permissions,
     content::RenderFrameHost* render_frame_host,
     const GURL& requesting_origin,
@@ -157,7 +161,7 @@ int ElectronPermissionManager::RequestPermissionsWithDetails(
     StatusesCallback response_callback) {
   if (permissions.empty()) {
     std::move(response_callback).Run({});
-    return content::PermissionController::kNoPendingOperation;
+    return;
   }
 
   if (request_handler_.is_null()) {
@@ -175,7 +179,7 @@ int ElectronPermissionManager::RequestPermissionsWithDetails(
       statuses.push_back(blink::mojom::PermissionStatus::GRANTED);
     }
     std::move(response_callback).Run(statuses);
-    return content::PermissionController::kNoPendingOperation;
+    return;
   }
 
   auto* web_contents =
@@ -196,8 +200,6 @@ int ElectronPermissionManager::RequestPermissionsWithDetails(
                                render_frame_host->GetParent() == nullptr);
     request_handler_.Run(web_contents, permission, callback, mutable_details);
   }
-
-  return request_id;
 }
 
 void ElectronPermissionManager::OnPermissionResponse(
@@ -232,16 +234,17 @@ blink::mojom::PermissionStatus ElectronPermissionManager::GetPermissionStatus(
                  : blink::mojom::PermissionStatus::DENIED;
 }
 
-int ElectronPermissionManager::SubscribePermissionStatusChange(
+ElectronPermissionManager::SubscriptionId
+ElectronPermissionManager::SubscribePermissionStatusChange(
     content::PermissionType permission,
     content::RenderFrameHost* render_frame_host,
     const GURL& requesting_origin,
     base::RepeatingCallback<void(blink::mojom::PermissionStatus)> callback) {
-  return -1;
+  return SubscriptionId(-1);
 }
 
 void ElectronPermissionManager::UnsubscribePermissionStatusChange(
-    int subscription_id) {}
+    SubscriptionId id) {}
 
 bool ElectronPermissionManager::CheckPermissionWithDetails(
     content::PermissionType permission,

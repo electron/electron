@@ -92,11 +92,6 @@ machine-mac-large: &machine-mac-large
   macos:
     xcode: "12.4.0"
 
-machine-mac-large-arm: &machine-mac-large-arm
-  resource_class: large
-  macos:
-    xcode: "12.4.0"
-
 machine-mac-arm64: &machine-mac-arm64
   resource_class: electronjs/macos-arm64
   machine: true
@@ -530,7 +525,9 @@ step-electron-build: &step-electron-build
         ninja -C out/Default electron:electron_mksnapshot_zip -j $NUMBER_OF_NINJA_PROCESSES
         ninja -C out/Default tools/v8_context_snapshot -j $NUMBER_OF_NINJA_PROCESSES
         gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
+        rm -rf out/Default/clang_x64_v8_arm64/gen
         rm -rf out/Default/clang_x64_v8_arm64/obj
+        rm -rf out/Default/clang_x64/obj
 
         # Regenerate because we just deleted some ninja files 
         gn gen out/Default --args="import(\"$GN_CONFIG\") import(\"$GN_GOMA_FILE\") $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
@@ -853,7 +850,7 @@ step-maybe-zip-symbols: &step-maybe-zip-symbols
       export BUILD_PATH="$PWD/out/Default"
       ninja -C out/Default electron:licenses
       ninja -C out/Default electron:electron_version
-      electron/script/zip-symbols.py -b $BUILD_PATH
+      DELETE_DSYMS_AFTER_ZIP=1 electron/script/zip-symbols.py -b $BUILD_PATH
 
 step-symbols-store: &step-symbols-store
   store_artifacts:
@@ -2119,7 +2116,7 @@ jobs:
           checkout: true
 
   osx-publish-arm64:
-    <<: *machine-mac-large-arm
+    <<: *machine-mac-large
     environment:
       <<: *env-mac-large-release
       <<: *env-release-build
@@ -2144,7 +2141,7 @@ jobs:
           checkout: false
 
   osx-publish-arm64-skip-checkout:
-    <<: *machine-mac-large-arm
+    <<: *machine-mac-large
     environment:
       <<: *env-mac-large-release
       <<: *env-release-build
@@ -2157,7 +2154,7 @@ jobs:
           checkout: false
 
   osx-testing-arm64:
-    <<: *machine-mac-large-arm
+    <<: *machine-mac-large
     environment:
       <<: *env-mac-large
       <<: *env-testing-build
@@ -2226,7 +2223,7 @@ jobs:
           checkout: true
 
   mas-publish-arm64:
-    <<: *machine-mac-large-arm
+    <<: *machine-mac-large
     environment:
       <<: *env-mac-large-release
       <<: *env-mas-apple-silicon
@@ -2251,7 +2248,7 @@ jobs:
           checkout: false
 
   mas-publish-arm64-skip-checkout:
-    <<: *machine-mac-large-arm
+    <<: *machine-mac-large
     environment:
       <<: *env-mac-large-release
       <<: *env-mas-apple-silicon
@@ -2264,7 +2261,7 @@ jobs:
           checkout: false
 
   mas-testing-arm64:
-    <<: *machine-mac-large-arm
+    <<: *machine-mac-large
     environment:
       <<: *env-mac-large
       <<: *env-testing-build
@@ -2326,7 +2323,7 @@ jobs:
     <<: *steps-tests
 
   linux-x64-testing-asan-tests:
-    <<: *machine-linux-medium
+    <<: *machine-linux-xlarge
     environment:
       <<: *env-linux-medium
       <<: *env-headless-testing

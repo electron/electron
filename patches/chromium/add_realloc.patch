@@ -27,10 +27,10 @@ index 210760801f1d027196111631d34bab3eb5a10792..cdfdf91841b5f2feb248b0c5890ddcfd
    free(data);
  }
 diff --git a/gin/array_buffer.h b/gin/array_buffer.h
-index 086371af29bd8c7520485125deddca411e8b978b..2c6886ddcc47019be4d552d4fddfc1c3d00cbca0 100644
+index aef43319737398848dc40a3ab2d9e959ebb399f6..3c6dbc1ec10666b35d68e107a7a694c59c78a59f 100644
 --- a/gin/array_buffer.h
 +++ b/gin/array_buffer.h
-@@ -21,6 +21,7 @@ class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
+@@ -20,6 +20,7 @@ class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
   public:
    void* Allocate(size_t length) override;
    void* AllocateUninitialized(size_t length) override;

@@ -104,7 +104,6 @@ auto_filenames = {
     "docs/api/structures/notification-response.md",
     "docs/api/structures/point.md",
     "docs/api/structures/post-body.md",
-    "docs/api/structures/post-data.md",
     "docs/api/structures/printer-info.md",
     "docs/api/structures/process-memory-info.md",
     "docs/api/structures/process-metric.md",
@@ -130,6 +129,7 @@ auto_filenames = {
     "docs/api/structures/upload-data.md",
     "docs/api/structures/upload-file.md",
     "docs/api/structures/upload-raw-data.md",
+    "docs/api/structures/user-default-types.md",
     "docs/api/structures/web-source.md",
   ]
 
@@ -232,7 +232,6 @@ auto_filenames = {
     "lib/browser/ipc-main-internal-utils.ts",
     "lib/browser/ipc-main-internal.ts",
     "lib/browser/message-port-main.ts",
-    "lib/browser/navigation-controller.ts",
     "lib/browser/rpc-server.ts",
     "lib/common/api/clipboard.ts",
     "lib/common/api/deprecate.ts",

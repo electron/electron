@@ -10,7 +10,7 @@ them should they exist.
 This will be upstreamed.
 
 diff --git a/printing/printing_context_mac.h b/printing/printing_context_mac.h
-index 00c78a7446480a15a4dfa360ccdc438eaf1215c1..5b0db3e754ac6c9e335365173800d2e1a5ca629d 100644
+index 6249cfe4d5a77401ac0d8d31844f11a8c7271e14..da137f8b540d3f6dd4c02ecf500d1f496c523f9d 100644
 --- a/printing/printing_context_mac.h
 +++ b/printing/printing_context_mac.h
 @@ -82,6 +82,10 @@ class PRINTING_EXPORT PrintingContextMac : public PrintingContext {
@@ -100,10 +100,10 @@ index fe7fc797504dcc7097a3d79a2dab2c18de737048..20c63b1f657f2969850b31eaafdff7e5
    } else {
      // No need to bother, we don't know how many pages are available.
 diff --git a/ui/gtk/printing/print_dialog_gtk.cc b/ui/gtk/printing/print_dialog_gtk.cc
-index d2ed5cbe4a48abe0026dda24a016da654e7e201a..d1bdf05c89e2c2aef71e8a8a2bf293725b2559d3 100644
+index 5e7dd30b97c4ca3e6f14636955791ab0c6b63d6d..11a521a5f261e8306a7159487ffad6e4f990a0b2 100644
 --- a/ui/gtk/printing/print_dialog_gtk.cc
 +++ b/ui/gtk/printing/print_dialog_gtk.cc
-@@ -239,6 +239,24 @@ void PrintDialogGtk::UpdateSettings(
+@@ -238,6 +238,24 @@ void PrintDialogGtk::UpdateSettings(
  
    gtk_print_settings_set_n_copies(gtk_settings_, settings->copies());
    gtk_print_settings_set_collate(gtk_settings_, settings->collate());

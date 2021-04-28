@@ -43,7 +43,8 @@ std::pair<scoped_refptr<const Extension>, std::string> LoadUnpacked(
 
   std::string load_error;
   scoped_refptr<Extension> extension = file_util::LoadExtension(
-      extension_dir, Manifest::COMMAND_LINE, load_flags, &load_error);
+      extension_dir, extensions::mojom::ManifestLocation::kCommandLine,
+      load_flags, &load_error);
   if (!extension.get()) {
     std::string err = "Loading extension at " +
                       base::UTF16ToUTF8(extension_dir.LossyDisplayName()) +

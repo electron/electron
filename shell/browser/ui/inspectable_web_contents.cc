@@ -41,6 +41,9 @@
 #include "services/network/public/cpp/simple_url_loader.h"
 #include "services/network/public/cpp/simple_url_loader_stream_consumer.h"
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
+#include "shell/browser/api/electron_api_web_contents.h"
+#include "shell/browser/net/asar/asar_url_loader_factory.h"
+#include "shell/browser/protocol_registry.h"
 #include "shell/browser/ui/inspectable_web_contents_delegate.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
@@ -49,6 +52,7 @@
 #include "third_party/blink/public/common/page/page_zoom.h"
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
+#include "v8/include/v8.h"
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "chrome/common/extensions/chrome_manifest_url_handlers.h"
@@ -448,6 +452,10 @@ void InspectableWebContents::ShowDevTools(bool activate) {
     managed_devtools_web_contents_ = content::WebContents::Create(
         content::WebContents::CreateParams(web_contents_->GetBrowserContext()));
     managed_devtools_web_contents_->SetDelegate(this);
+    v8::Isolate* isolate = v8::Isolate::GetCurrent();
+    v8::HandleScope scope(isolate);
+    api::WebContents::FromOrCreate(isolate,
+                                   managed_devtools_web_contents_.get());
   }
 
   Observe(GetDevToolsWebContents());
@@ -608,9 +616,10 @@ void InspectableWebContents::AddDevToolsExtensionsToClient() {
         new base::DictionaryValue());
     extension_info->SetString("startPage", devtools_page_url.spec());
     extension_info->SetString("name", extension->name());
-    extension_info->SetBoolean("exposeExperimentalAPIs",
-                               extension->permissions_data()->HasAPIPermission(
-                                   extensions::APIPermission::kExperimental));
+    extension_info->SetBoolean(
+        "exposeExperimentalAPIs",
+        extension->permissions_data()->HasAPIPermission(
+            extensions::mojom::APIPermissionID::kExperimental));
     results.Append(std::move(extension_info));
   }
 
@@ -673,12 +682,20 @@ void InspectableWebContents::LoadNetworkResource(DispatchCallback callback,
   resource_request.site_for_cookies = net::SiteForCookies::FromUrl(gurl);
   resource_request.headers.AddHeadersFromString(headers);
 
+  auto* protocol_registry = ProtocolRegistry::FromBrowserContext(
+      GetDevToolsWebContents()->GetBrowserContext());
   NetworkResourceLoader::URLLoaderFactoryHolder url_loader_factory;
   if (gurl.SchemeIsFile()) {
     mojo::PendingRemote<network::mojom::URLLoaderFactory> pending_remote =
-        content::CreateFileURLLoaderFactory(
-            base::FilePath() /* profile_path */,
-            nullptr /* shared_cors_origin_access_list */);
+        AsarURLLoaderFactory::Create();
+    url_loader_factory = network::SharedURLLoaderFactory::Create(
+        std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
+            std::move(pending_remote)));
+  } else if (protocol_registry->IsProtocolRegistered(gurl.scheme())) {
+    auto& protocol_handler = protocol_registry->handlers().at(gurl.scheme());
+    mojo::PendingRemote<network::mojom::URLLoaderFactory> pending_remote =
+        ElectronURLLoaderFactory::Create(protocol_handler.first,
+                                         protocol_handler.second);
     url_loader_factory = network::SharedURLLoaderFactory::Create(
         std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
             std::move(pending_remote)));
@@ -863,32 +880,35 @@ void InspectableWebContents::RegisterExtensionsAPI(const std::string& origin,
 }
 
 void InspectableWebContents::HandleMessageFromDevToolsFrontend(
-    const std::string& message) {
+    base::Value message) {
   // TODO(alexeykuzmin): Should we expect it to exist?
   if (!embedder_message_dispatcher_) {
     return;
   }
 
-  std::string method;
-  base::ListValue empty_params;
-  base::ListValue* params = &empty_params;
+  const std::string* method = nullptr;
+  base::Value* params = nullptr;
 
-  base::DictionaryValue* dict = nullptr;
-  std::unique_ptr<base::Value> parsed_message(
-      base::JSONReader::ReadDeprecated(message));
-  if (!parsed_message || !parsed_message->GetAsDictionary(&dict) ||
-      !dict->GetString(kFrontendHostMethod, &method) ||
-      (dict->HasKey(kFrontendHostParams) &&
-       !dict->GetList(kFrontendHostParams, &params))) {
+  if (message.is_dict()) {
+    method = message.FindStringKey(kFrontendHostMethod);
+    params = message.FindKey(kFrontendHostParams);
+  }
+
+  if (!method || (params && !params->is_list())) {
     LOG(ERROR) << "Invalid message was sent to embedder: " << message;
     return;
   }
-  int id = 0;
-  dict->GetInteger(kFrontendHostId, &id);
+  base::Value empty_params(base::Value::Type::LIST);
+  if (!params) {
+    params = &empty_params;
+  }
+  int id = message.FindIntKey(kFrontendHostId).value_or(0);
+  base::ListValue* params_list = nullptr;
+  params->GetAsList(&params_list);
   embedder_message_dispatcher_->Dispatch(
       base::BindRepeating(&InspectableWebContents::SendMessageAck,
                           weak_factory_.GetWeakPtr(), id),
-      method, params);
+      *method, params_list);
 }
 
 void InspectableWebContents::DispatchProtocolMessage(

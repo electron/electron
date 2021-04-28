@@ -235,11 +235,14 @@ async function callAppVeyor (targetBranch, job, options) {
     method: 'POST'
   };
   jobRequestedCount++;
-  const appVeyorResponse = await makeRequest(requestOpts, true).catch(err => {
-    console.log('Error calling AppVeyor:', err);
-  });
-  const buildUrl = `https://ci.appveyor.com/project/electron-bot/${appVeyorJobs[job]}/build/${appVeyorResponse.version}`;
-  console.log(`AppVeyor release build request for ${job} successful.  Check build status at ${buildUrl}`);
+
+  try {
+    const { version } = await makeRequest(requestOpts, true);
+    const buildUrl = `https://ci.appveyor.com/project/electron-bot/${appVeyorJobs[job]}/build/${version}`;
+    console.log(`AppVeyor release build request for ${job} successful.  Check build status at ${buildUrl}`);
+  } catch (err) {
+    console.log('Could not call AppVeyor: ', err);
+  }
 }
 
 function buildCircleCI (targetBranch, options) {
@@ -267,6 +270,7 @@ async function buildVSTS (targetBranch, options) {
 
   let vstsURL = VSTS_URL;
   let vstsToken = process.env.VSTS_TOKEN;
+  assert(vstsToken, `${options.ci} requires the $VSTS_TOKEN environment variable to be provided`);
   if (options.ci === 'DevOps') {
     vstsURL = DEVOPS_URL;
     vstsToken = process.env.DEVOPS_TOKEN;
@@ -281,12 +285,16 @@ async function buildVSTS (targetBranch, options) {
       'Content-Type': 'application/json'
     }
   };
+
   jobRequestedCount++;
-  const vstsResponse = await makeRequest(requestOpts, true).catch(err => {
-    console.log('Error calling VSTS to get build definitions:', err);
-  });
-  const buildToRun = vstsResponse.value.find(build => build.name === options.job);
-  callVSTSBuild(buildToRun, targetBranch, environmentVariables, vstsURL, vstsToken);
+
+  try {
+    const vstsResponse = await makeRequest(requestOpts, true);
+    const buildToRun = vstsResponse.value.find(build => build.name === options.job);
+    callVSTSBuild(buildToRun, targetBranch, environmentVariables, vstsURL, vstsToken);
+  } catch (err) {
+    console.log('Problem calling VSTS to get build definitions: ', err);
+  }
 }
 
 async function callVSTSBuild (build, targetBranch, environmentVariables, vstsURL, vstsToken) {
@@ -310,10 +318,13 @@ async function callVSTSBuild (build, targetBranch, environmentVariables, vstsURL
     body: JSON.stringify(buildBody),
     method: 'POST'
   };
-  const vstsResponse = await makeRequest(requestOpts, true).catch(err => {
-    console.log(`Error calling VSTS for job ${build.name}`, err);
-  });
-  console.log(`VSTS release build request for ${build.name} successful. Check ${vstsResponse._links.web.href} for status.`);
+
+  try {
+    const { _links } = await makeRequest(requestOpts, true);
+    console.log(`VSTS release build request for ${build.name} successful. Check ${_links.web.href} for status.`);
+  } catch (err) {
+    console.log(`Could not call VSTS for job ${build.name}: `, err);
+  }
 }
 
 function runRelease (targetBranch, options) {

@@ -74,6 +74,7 @@
 #include "mojo/public/cpp/system/platform_handle.h"
 #include "ppapi/buildflags/buildflags.h"
 #include "printing/buildflags/buildflags.h"
+#include "printing/print_job_constants.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
 #include "shell/browser/api/electron_api_browser_window.h"
 #include "shell/browser/api/electron_api_debugger.h"
@@ -1012,8 +1013,9 @@ bool WebContents::IsWebContentsCreationOverridden(
     content::mojom::WindowContainerType window_container_type,
     const GURL& opener_url,
     const content::mojom::CreateNewWindowParams& params) {
-  bool default_prevented = Emit("-will-add-new-contents", params.target_url,
-                                params.frame_name, params.raw_features);
+  bool default_prevented = Emit(
+      "-will-add-new-contents", params.target_url, params.frame_name,
+      params.raw_features, params.disposition, *params.referrer, params.body);
   // If the app prevented the default, redirect to CreateCustomWebContents,
   // which always returns nullptr, which will result in the window open being
   // prevented (window.open() will return null in the renderer).
@@ -1905,6 +1907,10 @@ bool WebContents::Equal(const WebContents* web_contents) const {
   return ID() == web_contents->ID();
 }
 
+GURL WebContents::GetURL() const {
+  return web_contents()->GetLastCommittedURL();
+}
+
 void WebContents::LoadURL(const GURL& url,
                           const gin_helper::Dictionary& options) {
   if (!url.is_valid() || url.spec().size() > url::kMaxURLChars) {
@@ -1955,7 +1961,6 @@ void WebContents::LoadURL(const GURL& url,
   auto weak_this = GetWeakPtr();
 
   params.transition_type = ui::PAGE_TRANSITION_TYPED;
-  params.should_clear_history_list = true;
   params.override_user_agent = content::NavigationController::UA_OVERRIDE_TRUE;
   // Discord non-committed entries to ensure that we don't re-use a pending
   // entry
@@ -1972,6 +1977,23 @@ void WebContents::LoadURL(const GURL& url,
   NotifyUserActivation();
 }
 
+// TODO(MarshallOfSound): Figure out what we need to do with post data here, I
+// believe the default behavior when we pass "true" is to phone out to the
+// delegate and then the controller expects this method to be called again with
+// "false" if the user approves the reload.  For now this would result in
+// ".reload()" calls on POST data domains failing silently.  Passing false would
+// result in them succeeding, but reposting which although more correct could be
+// considering a breaking change.
+void WebContents::Reload() {
+  web_contents()->GetController().Reload(content::ReloadType::NORMAL,
+                                         /* check_for_repost */ true);
+}
+
+void WebContents::ReloadIgnoringCache() {
+  web_contents()->GetController().Reload(content::ReloadType::BYPASSING_CACHE,
+                                         /* check_for_repost */ true);
+}
+
 void WebContents::DownloadURL(const GURL& url) {
   auto* browser_context = web_contents()->GetBrowserContext();
   auto* download_manager =
@@ -1980,10 +2002,6 @@ void WebContents::DownloadURL(const GURL& url) {
       content::DownloadRequestUtils::CreateDownloadForWebContentsMainFrame(
           web_contents(), url, MISSING_TRAFFIC_ANNOTATION));
   download_manager->DownloadUrl(std::move(download_params));
-}
-
-GURL WebContents::GetURL() const {
-  return web_contents()->GetURL();
 }
 
 std::u16string WebContents::GetTitle() const {
@@ -2006,25 +2024,56 @@ void WebContents::Stop() {
   web_contents()->Stop();
 }
 
+bool WebContents::CanGoBack() const {
+  return web_contents()->GetController().CanGoBack();
+}
+
 void WebContents::GoBack() {
-  if (!ElectronBrowserClient::Get()->CanUseCustomSiteInstance()) {
-    electron::ElectronBrowserClient::SuppressRendererProcessRestartForOnce();
-  }
-  web_contents()->GetController().GoBack();
+  if (CanGoBack())
+    web_contents()->GetController().GoBack();
+}
+
+bool WebContents::CanGoForward() const {
+  return web_contents()->GetController().CanGoForward();
 }
 
 void WebContents::GoForward() {
-  if (!ElectronBrowserClient::Get()->CanUseCustomSiteInstance()) {
-    electron::ElectronBrowserClient::SuppressRendererProcessRestartForOnce();
-  }
-  web_contents()->GetController().GoForward();
+  if (CanGoForward())
+    web_contents()->GetController().GoForward();
+}
+
+bool WebContents::CanGoToOffset(int offset) const {
+  return web_contents()->GetController().CanGoToOffset(offset);
 }
 
 void WebContents::GoToOffset(int offset) {
-  if (!ElectronBrowserClient::Get()->CanUseCustomSiteInstance()) {
-    electron::ElectronBrowserClient::SuppressRendererProcessRestartForOnce();
+  if (CanGoToOffset(offset))
+    web_contents()->GetController().GoToOffset(offset);
+}
+
+bool WebContents::CanGoToIndex(int index) const {
+  return index >= 0 && index < GetHistoryLength();
+}
+
+void WebContents::GoToIndex(int index) {
+  if (CanGoToIndex(index))
+    web_contents()->GetController().GoToIndex(index);
+}
+
+int WebContents::GetActiveIndex() const {
+  return web_contents()->GetController().GetCurrentEntryIndex();
+}
+
+void WebContents::ClearHistory() {
+  // In some rare cases (normally while there is no real history) we are in a
+  // state where we can't prune navigation entries
+  if (web_contents()->GetController().CanPruneAllButLastCommitted()) {
+    web_contents()->GetController().PruneAllButLastCommitted();
   }
-  web_contents()->GetController().GoToOffset(offset);
+}
+
+int WebContents::GetHistoryLength() const {
+  return web_contents()->GetController().GetEntryCount();
 }
 
 const std::string WebContents::GetWebRTCIPHandlingPolicy() const {
@@ -2812,22 +2861,29 @@ v8::Local<v8::Promise> WebContents::CapturePage(gin::Arguments* args) {
 void WebContents::IncrementCapturerCount(gin::Arguments* args) {
   gfx::Size size;
   bool stay_hidden = false;
+  bool stay_awake = false;
 
   // get size arguments if they exist
   args->GetNext(&size);
   // get stayHidden arguments if they exist
   args->GetNext(&stay_hidden);
+  // get stayAwake arguments if they exist
+  args->GetNext(&stay_awake);
 
-  web_contents()->IncrementCapturerCount(size, stay_hidden);
+  ignore_result(
+      web_contents()->IncrementCapturerCount(size, stay_hidden, stay_awake));
 }
 
 void WebContents::DecrementCapturerCount(gin::Arguments* args) {
   bool stay_hidden = false;
+  bool stay_awake = false;
 
   // get stayHidden arguments if they exist
   args->GetNext(&stay_hidden);
+  // get stayAwake arguments if they exist
+  args->GetNext(&stay_awake);
 
-  web_contents()->DecrementCapturerCount(stay_hidden);
+  web_contents()->DecrementCapturerCount(stay_hidden, stay_awake);
 }
 
 bool WebContents::IsBeingCaptured() {
@@ -3521,16 +3577,26 @@ v8::Local<v8::ObjectTemplate> WebContents::FillObjectTemplate(
       .SetMethod("getOSProcessId", &WebContents::GetOSProcessID)
       .SetMethod("equal", &WebContents::Equal)
       .SetMethod("_loadURL", &WebContents::LoadURL)
+      .SetMethod("reload", &WebContents::Reload)
+      .SetMethod("reloadIgnoringCache", &WebContents::ReloadIgnoringCache)
       .SetMethod("downloadURL", &WebContents::DownloadURL)
-      .SetMethod("_getURL", &WebContents::GetURL)
+      .SetMethod("getURL", &WebContents::GetURL)
       .SetMethod("getTitle", &WebContents::GetTitle)
       .SetMethod("isLoading", &WebContents::IsLoading)
       .SetMethod("isLoadingMainFrame", &WebContents::IsLoadingMainFrame)
       .SetMethod("isWaitingForResponse", &WebContents::IsWaitingForResponse)
-      .SetMethod("_stop", &WebContents::Stop)
-      .SetMethod("_goBack", &WebContents::GoBack)
-      .SetMethod("_goForward", &WebContents::GoForward)
-      .SetMethod("_goToOffset", &WebContents::GoToOffset)
+      .SetMethod("stop", &WebContents::Stop)
+      .SetMethod("canGoBack", &WebContents::CanGoBack)
+      .SetMethod("goBack", &WebContents::GoBack)
+      .SetMethod("canGoForward", &WebContents::CanGoForward)
+      .SetMethod("goForward", &WebContents::GoForward)
+      .SetMethod("canGoToOffset", &WebContents::CanGoToOffset)
+      .SetMethod("goToOffset", &WebContents::GoToOffset)
+      .SetMethod("canGoToIndex", &WebContents::CanGoToIndex)
+      .SetMethod("goToIndex", &WebContents::GoToIndex)
+      .SetMethod("getActiveIndex", &WebContents::GetActiveIndex)
+      .SetMethod("clearHistory", &WebContents::ClearHistory)
+      .SetMethod("length", &WebContents::GetHistoryLength)
       .SetMethod("isCrashed", &WebContents::IsCrashed)
       .SetMethod("forcefullyCrashRenderer",
                  &WebContents::ForcefullyCrashRenderer)

@@ -18,10 +18,12 @@
 #include "base/strings/sys_string_conversions.h"
 #include "base/task/post_task.h"
 #include "components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h"
+#include "components/remote_cocoa/browser/scoped_cg_window_id.h"
 #include "content/public/browser/browser_accessibility_state.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/desktop_media_id.h"
+#include "content/public/common/content_features.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_browser_view_mac.h"
 #include "shell/browser/ui/cocoa/electron_native_widget_mac.h"
@@ -535,6 +537,12 @@ void NativeWindowMac::ShowInactive() {
 }
 
 void NativeWindowMac::Hide() {
+  // If a sheet is attached to the window when we call [window_ orderOut:nil],
+  // the sheet won't be able to show again on the same window.
+  // Ensure it's closed before calling [window_ orderOut:nil].
+  if ([window_ attachedSheet])
+    [window_ endSheet:[window_ attachedSheet]];
+
   if (is_modal() && parent()) {
     [window_ orderOut:nil];
     [parent()->GetNativeWindow().GetNativeNSWindow() endSheet:window_];
@@ -555,6 +563,11 @@ bool NativeWindowMac::IsVisible() {
   // foreground of the app, which means that it should not be minimized or
   // occluded
   return [window_ isVisible] && !occluded && !IsMinimized();
+}
+
+void NativeWindowMac::SetFullScreenTransitionState(
+    FullScreenTransitionState state) {
+  fullscreen_transition_state_ = state;
 }
 
 bool NativeWindowMac::IsEnabled() {
@@ -621,13 +634,48 @@ bool NativeWindowMac::IsMinimized() {
   return [window_ isMiniaturized];
 }
 
+void NativeWindowMac::HandlePendingFullscreenTransitions() {
+  if (pending_transitions_.empty())
+    return;
+
+  bool next_transition = pending_transitions_.front();
+  pending_transitions_.pop();
+  SetFullScreen(next_transition);
+}
+
 void NativeWindowMac::SetFullScreen(bool fullscreen) {
+  // [NSWindow -toggleFullScreen] is an asynchronous operation, which means
+  // that it's possible to call it while a fullscreen transition is currently
+  // in process. This can create weird behavior (incl. phantom windows),
+  // so we want to schedule a transition for when the current one has completed.
+  if (fullscreen_transition_state() != FullScreenTransitionState::NONE) {
+    if (!pending_transitions_.empty()) {
+      bool last_pending = pending_transitions_.back();
+      // Only push new transitions if they're different than the last transition
+      // in the queue.
+      if (last_pending != fullscreen)
+        pending_transitions_.push(fullscreen);
+    } else {
+      pending_transitions_.push(fullscreen);
+    }
+    return;
+  }
+
   if (fullscreen == IsFullscreen())
     return;
 
   // Take note of the current window size
   if (IsNormal())
     original_frame_ = [window_ frame];
+
+  // This needs to be set here because it can be the case that
+  // SetFullScreen is called by a user before windowWillEnterFullScreen
+  // or windowWillExitFullScreen are invoked, and so a potential transition
+  // could be dropped.
+  fullscreen_transition_state_ = fullscreen
+                                     ? FullScreenTransitionState::ENTERING
+                                     : FullScreenTransitionState::EXITING;
+
   [window_ toggleFullScreenMode:nil];
 }
 
@@ -989,14 +1037,11 @@ void NativeWindowMac::SetKiosk(bool kiosk) {
         NSApplicationPresentationDisableHideApplication;
     [NSApp setPresentationOptions:options];
     is_kiosk_ = true;
-    was_fullscreen_ = IsFullscreen();
-    if (!was_fullscreen_)
-      SetFullScreen(true);
+    SetFullScreen(true);
   } else if (!kiosk && is_kiosk_) {
-    is_kiosk_ = false;
-    if (!was_fullscreen_)
-      SetFullScreen(false);
     [NSApp setPresentationOptions:kiosk_options_];
+    is_kiosk_ = false;
+    SetFullScreen(false);
   }
 }
 
@@ -1070,6 +1115,10 @@ void NativeWindowMac::SetFocusable(bool focusable) {
   // want to call Focus(false) because it moves the window to the back, i.e.
   // at the bottom in term of z-order.
   [window_ setDisableKeyOrMainWindow:!focusable];
+}
+
+bool NativeWindowMac::IsFocusable() {
+  return ![window_ disableKeyOrMainWindow];
 }
 
 void NativeWindowMac::AddBrowserView(NativeBrowserView* view) {
@@ -1153,8 +1202,16 @@ gfx::AcceleratedWidget NativeWindowMac::GetAcceleratedWidget() const {
 }
 
 content::DesktopMediaID NativeWindowMac::GetDesktopMediaID() const {
-  return content::DesktopMediaID(content::DesktopMediaID::TYPE_WINDOW,
-                                 GetAcceleratedWidget());
+  auto desktop_media_id = content::DesktopMediaID(
+      content::DesktopMediaID::TYPE_WINDOW, GetAcceleratedWidget());
+  // c.f.
+  // https://source.chromium.org/chromium/chromium/src/+/master:chrome/browser/media/webrtc/native_desktop_media_list.cc;l=372?q=kWindowCaptureMacV2&ss=chromium
+  if (base::FeatureList::IsEnabled(features::kWindowCaptureMacV2)) {
+    if (remote_cocoa::ScopedCGWindowID::Get(desktop_media_id.id)) {
+      desktop_media_id.window_id = desktop_media_id.id;
+    }
+  }
+  return desktop_media_id;
 }
 
 NativeWindowHandle NativeWindowMac::GetNativeWindowHandle() const {
@@ -1288,7 +1345,12 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
     const bool no_rounded_corner =
         [window_ styleMask] & NSWindowStyleMaskFullSizeContentView;
     if (!has_frame() && !is_modal() && !no_rounded_corner) {
-      CGFloat radius = 5.0f;  // default corner radius
+      CGFloat radius;
+      if (@available(macOS 11.0, *)) {
+        radius = 9.0f;
+      } else {
+        radius = 5.0f;  // smaller corner radius on older versions
+      }
       CGFloat dimension = 2 * radius + 1;
       NSSize size = NSMakeSize(dimension, dimension);
       NSImage* maskImage = [NSImage imageWithSize:size
@@ -1547,7 +1609,6 @@ void NativeWindowMac::NotifyWindowEnterFullScreen() {
 
 void NativeWindowMac::NotifyWindowLeaveFullScreen() {
   NativeWindow::NotifyWindowLeaveFullScreen();
-  exiting_fullscreen_ = false;
 }
 
 void NativeWindowMac::NotifyWindowWillEnterFullScreen() {
@@ -1566,7 +1627,7 @@ void NativeWindowMac::NotifyWindowWillLeaveFullScreen() {
     InternalSetStandardButtonsVisibility(false);
     [[window_ contentView] addSubview:buttons_view_];
   }
-  exiting_fullscreen_ = true;
+
   RedrawTrafficLights();
 }
 

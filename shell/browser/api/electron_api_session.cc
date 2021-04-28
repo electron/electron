@@ -184,14 +184,6 @@ struct Converter<ClearStorageDataOptions> {
 
 bool SSLProtocolVersionFromString(const std::string& version_str,
                                   network::mojom::SSLVersion* version) {
-  if (version_str == switches::kSSLVersionTLSv1) {
-    *version = network::mojom::SSLVersion::kTLS1;
-    return true;
-  }
-  if (version_str == switches::kSSLVersionTLSv11) {
-    *version = network::mojom::SSLVersion::kTLS11;
-    return true;
-  }
   if (version_str == switches::kSSLVersionTLSv12) {
     *version = network::mojom::SSLVersion::kTLS12;
     return true;
@@ -862,7 +854,8 @@ v8::Local<v8::Value> Session::GetAllExtensions() {
   auto installed_extensions = registry->GenerateInstalledExtensionsSet();
   std::vector<const extensions::Extension*> extensions_vector;
   for (const auto& extension : *installed_extensions) {
-    if (extension->location() != extensions::Manifest::COMPONENT)
+    if (extension->location() !=
+        extensions::mojom::ManifestLocation::kExternalComponent)
       extensions_vector.emplace_back(extension.get());
   }
   return gin::ConvertToV8(isolate_, extensions_vector);
@@ -969,6 +962,13 @@ v8::Local<v8::Promise> Session::CloseAllConnections() {
           gin_helper::Promise<void>::ResolvePromise, std::move(promise)));
 
   return handle;
+}
+
+v8::Local<v8::Value> Session::GetPath(v8::Isolate* isolate) {
+  if (browser_context_->IsOffTheRecord()) {
+    return v8::Null(isolate);
+  }
+  return gin::ConvertToV8(isolate, browser_context_->GetPath());
 }
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
@@ -1195,11 +1195,13 @@ gin::ObjectTemplateBuilder Session::GetObjectTemplateBuilder(
 #endif
       .SetMethod("preconnect", &Session::Preconnect)
       .SetMethod("closeAllConnections", &Session::CloseAllConnections)
+      .SetMethod("getStoragePath", &Session::GetPath)
       .SetProperty("cookies", &Session::Cookies)
       .SetProperty("netLog", &Session::NetLog)
       .SetProperty("protocol", &Session::Protocol)
       .SetProperty("serviceWorkers", &Session::ServiceWorkerContext)
-      .SetProperty("webRequest", &Session::WebRequest);
+      .SetProperty("webRequest", &Session::WebRequest)
+      .SetProperty("storagePath", &Session::GetPath);
 }
 
 const char* Session::GetTypeName() {
