@@ -23,7 +23,6 @@ from lib.util import get_electron_branding, execute, get_electron_version, \
                      SRC_DIR, ELECTRON_DIR, TS_NODE
 
 
-ELECTRON_REPO = 'electron/electron'
 ELECTRON_VERSION = get_electron_version()
 
 PROJECT_NAME = get_electron_branding()['project_name']
@@ -358,14 +357,6 @@ def upload_sha256_checksum(version, file_path, key_prefix=None):
     checksum.write('{} *{}'.format(sha256.hexdigest(), filename))
   s3put(bucket, access_key, secret_key, os.path.dirname(checksum_path),
         key_prefix, [checksum_path])
-
-
-def auth_token():
-  token = get_env_var('GITHUB_TOKEN')
-  message = ('Error: Please set the $ELECTRON_GITHUB_TOKEN '
-             'environment variable, which is your personal token')
-  assert token, message
-  return token
 
 
 def get_release(version):
