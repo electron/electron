@@ -1290,18 +1290,13 @@ describe('chromium features', () => {
         console.log('About to wait for w.webContents.executeJavaScript');
         await w.webContents.executeJavaScript(`
           new Promise((resolve, reject) => {
-            try {
-              const webview = new WebView();
-              webview.addEventListener('dom-ready', () => resolve());
-              webview.setAttribute('src', '${origin}');
-              webview.setAttribute('webpreferences', 'enableWebSQL=0,contextIsolation=no');
-              webview.setAttribute('partition', '${sqlPartition}');
-              webview.setAttribute('nodeIntegration', 'on');
-              document.body.appendChild(webview);
-            } catch (ex) {
-              console.log('Error executing javascript', ex);
-              reject(ex)
-            }            
+            const webview = new WebView();
+            webview.setAttribute('src', '${origin}');
+            webview.setAttribute('webpreferences', 'enableWebSQL=0,contextIsolation=no');
+            webview.setAttribute('partition', '${sqlPartition}');
+            webview.setAttribute('nodeIntegration', 'on');
+            document.body.appendChild(webview);
+            webview.addEventListener('dom-ready', () => resolve());
           });
         `);
         console.log('About to wait for second web-sql-response');
