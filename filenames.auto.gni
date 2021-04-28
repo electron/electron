@@ -29,7 +29,6 @@ auto_filenames = {
     "docs/api/incoming-message.md",
     "docs/api/ipc-main.md",
     "docs/api/ipc-renderer.md",
-    "docs/api/locales.md",
     "docs/api/menu-item.md",
     "docs/api/menu.md",
     "docs/api/message-channel-main.md",
