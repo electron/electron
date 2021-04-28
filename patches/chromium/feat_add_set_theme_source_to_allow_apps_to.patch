@@ -13,10 +13,10 @@ uses internally for things like menus and devtools.
 We can remove this patch once it has in some shape been upstreamed.
 
 diff --git a/ui/native_theme/native_theme.cc b/ui/native_theme/native_theme.cc
-index b58740eaff3a808534933ce20ceac084693658a9..df911cda7c5b083ecf7180db91980e5b1e807208 100644
+index 94bc883b019f6311b513edaa5e35f3de015bfb0f..47a81a75e7ef926d3bbf37971b1e3254d3d3e08a 100644
 --- a/ui/native_theme/native_theme.cc
 +++ b/ui/native_theme/native_theme.cc
-@@ -134,6 +134,8 @@ base::Optional<SkColor> NativeTheme::GetColorProviderColor(
+@@ -135,6 +135,8 @@ base::Optional<SkColor> NativeTheme::GetColorProviderColor(
  }
  
  bool NativeTheme::ShouldUseDarkColors() const {

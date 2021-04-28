@@ -7,7 +7,7 @@ Disable private window frame APIs (NSNextStepFrame and NSThemeFrame) for MAS
 build.
 
 diff --git a/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm b/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
-index 69580888047c4ac6abb68873315bcafb78dda706..aa347913a75084f669bf7d89fbcc919b5222c2d5 100644
+index cf88f696a46ff0ac84bcf466b44d1080438426c1..7672eee30a811001a0149edfa4eed9dc6a4b11f6 100644
 --- a/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
 +++ b/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
 @@ -9,6 +9,7 @@
@@ -18,7 +18,7 @@ index 69580888047c4ac6abb68873315bcafb78dda706..aa347913a75084f669bf7d89fbcc919b
  @interface NSWindow (PrivateBrowserNativeWidgetAPI)
  + (Class)frameViewClassForStyleMask:(NSUInteger)windowStyle;
  @end
-@@ -63,6 +64,8 @@ - (NSRect)_draggableFrame NS_DEPRECATED_MAC(10_10, 10_11) {
+@@ -63,10 +64,13 @@ - (NSRect)_draggableFrame NS_DEPRECATED_MAC(10_10, 10_11) {
  
  @end
  
@@ -26,16 +26,13 @@ index 69580888047c4ac6abb68873315bcafb78dda706..aa347913a75084f669bf7d89fbcc919b
 +
  @implementation BrowserNativeWidgetWindow
  
- // Prevent detached tabs from glitching when the window is partially offscreen.
-@@ -84,6 +87,7 @@ - (NSRect)constrainFrameRect:(NSRect)rect toScreen:(NSScreen*)screen {
- 
  // NSWindow (PrivateAPI) overrides.
  
 +#ifndef MAS_BUILD
  + (Class)frameViewClassForStyleMask:(NSUInteger)windowStyle {
    // - NSThemeFrame and its subclasses will be nil if it's missing at runtime.
    if ([BrowserWindowFrame class])
-@@ -98,6 +102,8 @@ - (BOOL)_usesCustomDrawing {
+@@ -81,6 +85,8 @@ - (BOOL)_usesCustomDrawing {
    return NO;
  }
  

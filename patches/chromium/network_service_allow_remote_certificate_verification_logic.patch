@@ -7,12 +7,12 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 1532b031db2cc3a7fc0cc03969000d57d87cd914..3dda30a8157648644e8c70d1836d43d4143029dc 100644
+index eeadeb1b81259e81e73a0a31080c2803c0e84f0c..18f9a7c1277653a4a9e0bd2303d57f40fe5f288a 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -117,6 +117,11 @@
- #include "services/network/url_loader.h"
  #include "services/network/url_request_context_builder_mojo.h"
+ #include "services/network/web_transport.h"
  
 +// Electron
 +#include "net/cert/caching_cert_verifier.h"
@@ -127,7 +127,7 @@ index 1532b031db2cc3a7fc0cc03969000d57d87cd914..3dda30a8157648644e8c70d1836d43d4
  
    builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 72885bc1d20a4da5ad4df3fb8185f05bcf6fbfba..06b1a0d550de946aa41efca2be4efde694cc24c7 100644
+index 807173939f192a8aa839554ee503552ed49038eb..d669e7822b84170dd938dcb3af142ff217814e20 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -90,6 +90,7 @@ class DomainReliabilityMonitor;
@@ -157,7 +157,7 @@ index 72885bc1d20a4da5ad4df3fb8185f05bcf6fbfba..06b1a0d550de946aa41efca2be4efde6
    // CertNetFetcher is not used by the current platform, or if the actual
    // net::CertVerifier is instantiated outside of the network service.
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index c89e5ae1d90db787190f67d1497217981b806abc..78e3e6f03ef771e2a29bf017538c8f92f9a296cf 100644
+index 7fe458d5d865296b669070bb808809f0c4ec9eca..4503c239cf0236d1ff8ed3d2c16e391566b04a4b 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -192,6 +192,17 @@ struct CTPolicy {
