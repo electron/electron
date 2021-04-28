@@ -1,0 +1,94 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Georg Neis <neis@chromium.org>
+Date: Sun, 18 Apr 2021 09:46:25 +0200
+Subject: Merged: [turbofan] Harden ArrayPrototypePop and ArrayPrototypeShift
+
+Revision: d4aafa4022b718596b3deadcc3cdcb9209896154
+
+TBR=glazunov@chromium.org
+BUG=chromium:1198696
+NOTRY=true
+NOPRESUBMIT=true
+NOTREECHECKS=true
+
+Change-Id: I1840ffabbed3a3caab75b0abea1d37d9ed446d3f
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2833911
+Reviewed-by: Georg Neis <neis@chromium.org>
+Commit-Queue: Georg Neis <neis@chromium.org>
+Cr-Commit-Position: refs/branch-heads/9.0@{#39}
+Cr-Branched-From: bd0108b4c88e0d6f2350cb79b5f363fbd02f3eb7-refs/heads/9.0.257@{#1}
+Cr-Branched-From: 349bcc6a075411f1a7ce2d866c3dfeefc2efa39d-refs/heads/master@{#73001}
+
+diff --git a/src/compiler/js-call-reducer.cc b/src/compiler/js-call-reducer.cc
+index 94a6b3a7c792724f8add265ddaf4e0c4cdb3b3b3..b77094b7e1f0c57552fc7c8d3cea1f9d9ed7a269 100644
+--- a/src/compiler/js-call-reducer.cc
++++ b/src/compiler/js-call-reducer.cc
+@@ -5251,24 +5251,31 @@ Reduction JSCallReducer::ReduceArrayPrototypePop(Node* node) {
+       }
+ 
+       // Compute the new {length}.
+-      length = graph()->NewNode(simplified()->NumberSubtract(), length,
+-                                jsgraph()->OneConstant());
++      Node* new_length = graph()->NewNode(simplified()->NumberSubtract(),
++                                          length, jsgraph()->OneConstant());
++
++      // This extra check exists solely to break an exploitation technique
++      // that abuses typer mismatches.
++      new_length = efalse = graph()->NewNode(
++          simplified()->CheckBounds(p.feedback(),
++                                    CheckBoundsFlag::kAbortOnOutOfBounds),
++          new_length, length, efalse, if_false);
+ 
+       // Store the new {length} to the {receiver}.
+       efalse = graph()->NewNode(
+           simplified()->StoreField(AccessBuilder::ForJSArrayLength(kind)),
+-          receiver, length, efalse, if_false);
++          receiver, new_length, efalse, if_false);
+ 
+       // Load the last entry from the {elements}.
+       vfalse = efalse = graph()->NewNode(
+           simplified()->LoadElement(AccessBuilder::ForFixedArrayElement(kind)),
+-          elements, length, efalse, if_false);
++          elements, new_length, efalse, if_false);
+ 
+       // Store a hole to the element we just removed from the {receiver}.
+       efalse = graph()->NewNode(
+           simplified()->StoreElement(
+               AccessBuilder::ForFixedArrayElement(GetHoleyElementsKind(kind))),
+-          elements, length, jsgraph()->TheHoleConstant(), efalse, if_false);
++          elements, new_length, jsgraph()->TheHoleConstant(), efalse, if_false);
+     }
+ 
+     control = graph()->NewNode(common()->Merge(2), if_true, if_false);
+@@ -5444,19 +5451,27 @@ Reduction JSCallReducer::ReduceArrayPrototypeShift(Node* node) {
+         }
+ 
+         // Compute the new {length}.
+-        length = graph()->NewNode(simplified()->NumberSubtract(), length,
+-                                  jsgraph()->OneConstant());
++        Node* new_length = graph()->NewNode(simplified()->NumberSubtract(),
++                                            length, jsgraph()->OneConstant());
++
++        // This extra check exists solely to break an exploitation technique
++        // that abuses typer mismatches.
++        new_length = etrue1 = graph()->NewNode(
++            simplified()->CheckBounds(p.feedback(),
++                                      CheckBoundsFlag::kAbortOnOutOfBounds),
++            new_length, length, etrue1, if_true1);
+ 
+         // Store the new {length} to the {receiver}.
+         etrue1 = graph()->NewNode(
+             simplified()->StoreField(AccessBuilder::ForJSArrayLength(kind)),
+-            receiver, length, etrue1, if_true1);
++            receiver, new_length, etrue1, if_true1);
+ 
+         // Store a hole to the element we just removed from the {receiver}.
+         etrue1 = graph()->NewNode(
+             simplified()->StoreElement(AccessBuilder::ForFixedArrayElement(
+                 GetHoleyElementsKind(kind))),
+-            elements, length, jsgraph()->TheHoleConstant(), etrue1, if_true1);
++            elements, new_length, jsgraph()->TheHoleConstant(), etrue1,
++            if_true1);
+       }
+ 
+       Node* if_false1 = graph()->NewNode(common()->IfFalse(), branch1);
