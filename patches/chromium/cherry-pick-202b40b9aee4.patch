@@ -1,7 +1,7 @@
-From 202b40b9aee4971905c4bf7ec9be789ecc6b39ba Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Tom Anderson <thomasanderson@chromium.org>
 Date: Wed, 10 Feb 2021 23:53:26 +0000
-Subject: [PATCH] [Merge to M88] Avoid spinning a nested message loop for X11 clipboard
+Subject: Avoid spinning a nested message loop for X11 clipboard
 
 *** NOTE: THIS IS NOT A CLEAN MERGE ***
 
@@ -22,10 +22,9 @@ Reviewed-by: Thomas Anderson <thomasanderson@chromium.org>
 Commit-Queue: Thomas Anderson <thomasanderson@chromium.org>
 Cr-Commit-Position: refs/branch-heads/4324@{#2166}
 Cr-Branched-From: c73b5a651d37a6c4d0b8e3262cc4015a5579c6c8-refs/heads/master@{#827102}
----
 
 diff --git a/ui/base/x/selection_requestor.cc b/ui/base/x/selection_requestor.cc
-index e6005f9..6e01199 100644
+index 3e2173b4498129fc01a72eb4593822d26e03bebf..95e45c85318912fc40317ca9377acadee39784d1 100644
 --- a/ui/base/x/selection_requestor.cc
 +++ b/ui/base/x/selection_requestor.cc
 @@ -7,7 +7,6 @@
@@ -36,7 +35,7 @@ index e6005f9..6e01199 100644
  #include "ui/base/x/selection_owner.h"
  #include "ui/base/x/selection_utils.h"
  #include "ui/base/x/x11_util.h"
-@@ -27,7 +26,7 @@
+@@ -28,7 +27,7 @@ const char kChromeSelection[] = "CHROME_SELECTION";
  const int KSelectionRequestorTimerPeriodMs = 100;
  
  // The amount of time to wait for a request to complete before aborting it.
@@ -45,7 +44,7 @@ index e6005f9..6e01199 100644
  
  static_assert(KSelectionRequestorTimerPeriodMs <= kRequestTimeoutMs,
                "timer period must be <= request timeout");
-@@ -234,37 +233,30 @@
+@@ -236,37 +235,30 @@ void SelectionRequestor::ConvertSelectionForCurrentRequest() {
  }
  
  void SelectionRequestor::BlockTillSelectionNotifyForRequest(Request* request) {
@@ -105,10 +104,10 @@ index e6005f9..6e01199 100644
  
  SelectionRequestor::Request* SelectionRequestor::GetCurrentRequest() {
 diff --git a/ui/base/x/selection_requestor_unittest.cc b/ui/base/x/selection_requestor_unittest.cc
-index 2e521f9..ba68529 100644
+index ac538ae6d2530d72705b02ba8f0617dce30f67d2..90097d142cd040249fdb16bf7a7abc8de1739361 100644
 --- a/ui/base/x/selection_requestor_unittest.cc
 +++ b/ui/base/x/selection_requestor_unittest.cc
-@@ -100,7 +100,8 @@
+@@ -122,7 +122,8 @@ void PerformBlockingConvertSelection(SelectionRequestor* requestor,
  
  // Test that SelectionRequestor correctly handles receiving a request while it
  // is processing another request.
