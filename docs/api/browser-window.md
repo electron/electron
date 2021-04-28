@@ -268,6 +268,12 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       When node integration is turned off, the preload script can reintroduce
       Node global symbols back to the global scope. See example
       [here](context-bridge.md#exposing-node-global-symbols).
+    * `preloadInWorker` String (optional) - Specifies a script that will be loaded before other
+      scripts run in worker. This script will always have access to node APIs
+      no matter whether node integration in worker is turned on or off. The value should
+      be the absolute file path to the script.
+      When node integration is turned off, the preload script can reintroduce
+      Node global symbols back to the global scope.
     * `sandbox` Boolean (optional) - If set, this will sandbox the renderer
       associated with the window, making it compatible with the Chromium
       OS-level sandbox and disabling the Node.js engine. This is not the same as
