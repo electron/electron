@@ -69,9 +69,6 @@ def scoped_env(key, value):
 def download(text, url, path):
   safe_mkdir(os.path.dirname(path))
   with open(path, 'wb') as local_file:
-    if hasattr(ssl, '_create_unverified_context'):
-      ssl._create_default_https_context = ssl._create_unverified_context
-
     print("Downloading %s to %s" % (url, path))
     web_file = urlopen(url)
     info = web_file.info()
