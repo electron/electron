@@ -115,6 +115,9 @@ const char kPreloadScripts[] = "preloadScripts";
 // Like --preload, but the passed argument is an URL.
 const char kPreloadURL[] = "preloadURL";
 
+// Script that will be loaded by guest WebWorker before other scripts.
+const char kPreloadScriptInWorker[] = "preloadInWorker";
+
 // Enable the node integration.
 const char kNodeIntegration[] = "nodeIntegration";
 
@@ -244,6 +247,9 @@ const char kScrollBounce[] = "scroll-bounce";
 
 // Command switch passed to renderer process to control nodeIntegration.
 const char kNodeIntegrationInWorker[] = "node-integration-in-worker";
+
+// Command switch passed to renderer process to define preload script.
+const char kPreloadScriptInWorker[] = "preload-in-worker";
 
 // Widevine options
 // Path to Widevine CDM binaries.

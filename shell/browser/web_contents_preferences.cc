@@ -276,6 +276,21 @@ bool WebContentsPreferences::GetPreloadPath(base::FilePath* path) const {
   return false;
 }
 
+bool WebContentsPreferences::GetPreloadInWorkerPath(
+    base::FilePath::StringType* path) const {
+  DCHECK(path);
+  base::FilePath::StringType preload;
+  if (GetAsString(&preference_, options::kPreloadScriptInWorker, &preload)) {
+    if (base::FilePath(preload).IsAbsolute()) {
+      *path = std::move(preload);
+      return true;
+    } else {
+      LOG(ERROR) << "preloadInWorker script must have absolute path.";
+    }
+  }
+  return false;
+}
+
 // static
 content::WebContents* WebContentsPreferences::GetWebContentsFromProcessID(
     int process_id) {
@@ -362,6 +377,13 @@ void WebContentsPreferences::AppendCommandLineSwitches(
 
   if (IsEnabled(options::kNodeIntegrationInWorker))
     command_line->AppendSwitch(switches::kNodeIntegrationInWorker);
+
+  // The preload in worker script.
+  base::FilePath::StringType preloadInWorker;
+  if (GetPreloadInWorkerPath(&preloadInWorker)) {
+    command_line->AppendSwitchNative(switches::kPreloadScriptInWorker,
+                                     preloadInWorker);
+  }
 
   // We are appending args to a webContents so let's save the current state
   // of our preferences object so that during the lifetime of the WebContents

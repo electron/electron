@@ -33,6 +33,20 @@ bool IsDevToolsExtension(content::RenderFrame* render_frame) {
       .SchemeIs("chrome-extension");
 }
 
+bool WorkerHasNodeIntegrationOrPreloadScript() {
+  if (base::CommandLine::ForCurrentProcess()->HasSwitch(
+          switches::kNodeIntegrationInWorker)) {
+    return true;
+  }
+
+  if (base::CommandLine::ForCurrentProcess()->HasSwitch(
+          switches::kPreloadScriptInWorker)) {
+    return true;
+  }
+
+  return false;
+}
+
 }  // namespace
 
 // static
@@ -209,8 +223,7 @@ void ElectronRendererClient::WorkerScriptReadyForEvaluationOnWorkerThread(
     v8::Local<v8::Context> context) {
   // TODO(loc): Note that this will not be correct for in-process child windows
   // with webPreferences that have a different value for nodeIntegrationInWorker
-  if (base::CommandLine::ForCurrentProcess()->HasSwitch(
-          switches::kNodeIntegrationInWorker)) {
+  if (WorkerHasNodeIntegrationOrPreloadScript()) {
     WebWorkerObserver::GetCurrent()->WorkerScriptReadyForEvaluation(context);
   }
 }
@@ -219,8 +232,7 @@ void ElectronRendererClient::WillDestroyWorkerContextOnWorkerThread(
     v8::Local<v8::Context> context) {
   // TODO(loc): Note that this will not be correct for in-process child windows
   // with webPreferences that have a different value for nodeIntegrationInWorker
-  if (base::CommandLine::ForCurrentProcess()->HasSwitch(
-          switches::kNodeIntegrationInWorker)) {
+  if (WorkerHasNodeIntegrationOrPreloadScript()) {
     WebWorkerObserver::GetCurrent()->ContextWillDestroy(context);
   }
 }

@@ -63,6 +63,7 @@ extern const char kZoomFactor[];
 extern const char kPreloadScript[];
 extern const char kPreloadScripts[];
 extern const char kPreloadURL[];
+extern const char kPreloadScriptInWorker[];
 extern const char kNodeIntegration[];
 extern const char kContextIsolation[];
 extern const char kGuestInstanceID[];
@@ -121,6 +122,7 @@ extern const char kEnableApiFilteringLogging[];
 
 extern const char kScrollBounce[];
 extern const char kNodeIntegrationInWorker[];
+extern const char kPreloadScriptInWorker[];
 
 extern const char kWidevineCdmPath[];
 extern const char kWidevineCdmVersion[];

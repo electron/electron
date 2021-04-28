@@ -2735,6 +2735,40 @@ describe('BrowserWindow module', () => {
         expect(w.getSize()).to.deep.equal(size);
       });
     });
+
+    describe('"preloadInWorker" option', () => {
+      const getResult = async (webPrefs: { nodeIntegrationInWorker: boolean}) => {
+        const w = new BrowserWindow({
+          webPreferences: {
+            ...webPrefs,
+            contextIsolation: false,
+            nodeIntegration: true,
+            preloadInWorker: path.join(fixtures, 'module', 'preload-worker.js')
+          },
+          show: false
+        });
+        w.loadFile(path.join(fixtures, 'api', 'no-leak-worker.html'));
+        const [, result] = await emittedOnce(ipcMain, 'var');
+        w.destroy();
+        return result;
+      };
+
+      it('does not leak "require", "process" and "global" with disabled node integration', async () => {
+        const result = await getResult({ nodeIntegrationInWorker: false });
+        expect(result).to.have.property('require', 'undefined');
+        expect(result).to.have.property('process', 'undefined');
+        expect(result).to.have.property('global', 'undefined');
+        expect(result).to.have.property('foo', 'string');
+      });
+
+      it('does not hide "require", "process" and "global" with enabled node integration', async () => {
+        const result = await getResult({ nodeIntegrationInWorker: true });
+        expect(result).to.have.property('require', 'function');
+        expect(result).to.have.property('process', 'object');
+        expect(result).to.have.property('global', 'object');
+        expect(result).to.have.property('foo', 'string');
+      });
+    });
   });
 
   describe('nativeWindowOpen + contextIsolation options', () => {

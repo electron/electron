@@ -61,6 +61,9 @@ class WebContentsPreferences
   // Returns the preload script path.
   bool GetPreloadPath(base::FilePath* path) const;
 
+  // Returns the preload script path to be used in worker.
+  bool GetPreloadInWorkerPath(base::FilePath::StringType* path) const;
+
   // Returns the web preferences.
   base::Value* preference() { return &preference_; }
   base::Value* last_preference() { return &last_preference_; }

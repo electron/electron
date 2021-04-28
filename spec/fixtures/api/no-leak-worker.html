@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Document</title>
+</head>
+<body>
+  <script type="text/javascript" charset="utf-8">
+    const {ipcRenderer} = require('electron')
+    let worker = new Worker(`../workers/worker_var.js`)
+    worker.onmessage = function (event) {
+      ipcRenderer.send('var', event.data)
+      worker.terminate()
+    }
+  </script>
+</body>
+</html>
