@@ -1,7 +1,7 @@
-From 02f5ef8c88d778f7e705ac18000ea715ce28b6ec Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Josh Karlin <jkarlin@chromium.org>
 Date: Wed, 14 Apr 2021 09:21:00 +0000
-Subject: [PATCH] Fix removal of observers in NetworkStateNotifier
+Subject: Fix removal of observers in NetworkStateNotifier
 
 The NetworkStateNotifier has a per-thread list of observer pointers. If
 one is deleted mid-iteration, what we do is replace the pointer in the
@@ -9,7 +9,6 @@ list with a 0, and add the index to the zeroed list of observers to
 remove after iteration completes. Well, the removal step was broken
 for cases where there were multiple elements to remove. It didn't adjust
 for the fact that the indexes shifted after each removal.
-
 
 (cherry picked from commit 5d34987de6cffb8d747c5ed16e82614e9146cc0a)
 
@@ -25,13 +24,12 @@ Reviewed-by: Victor-Gabriel Savu <vsavu@google.com>
 Commit-Queue: Jana Grill <janagrill@chromium.org>
 Cr-Commit-Position: refs/branch-heads/4240@{#1602}
 Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
----
 
 diff --git a/third_party/blink/renderer/platform/network/network_state_notifier.cc b/third_party/blink/renderer/platform/network/network_state_notifier.cc
-index 32328e8..c7227f6 100644
+index 32328e881876a7445e3284fc47978daaa7407fca..c7227f634838ec8deab60cde878311162cbb5472 100644
 --- a/third_party/blink/renderer/platform/network/network_state_notifier.cc
 +++ b/third_party/blink/renderer/platform/network/network_state_notifier.cc
-@@ -395,8 +395,14 @@
+@@ -395,8 +395,14 @@ void NetworkStateNotifier::CollectZeroedObservers(
  
    // If any observers were removed during the iteration they will have
    // 0 values, clean them up.
@@ -49,10 +47,10 @@ index 32328e8..c7227f6 100644
    list->zeroed_observers.clear();
  
 diff --git a/third_party/blink/renderer/platform/network/network_state_notifier_test.cc b/third_party/blink/renderer/platform/network/network_state_notifier_test.cc
-index eb2bd79..f7c3592 100644
+index eb2bd791529df4339ebd8159700769fcd06d795f..f7c359235a87adc231c00eb252dc24a7d95065f8 100644
 --- a/third_party/blink/renderer/platform/network/network_state_notifier_test.cc
 +++ b/third_party/blink/renderer/platform/network/network_state_notifier_test.cc
-@@ -528,6 +528,53 @@
+@@ -528,6 +528,53 @@ TEST_F(NetworkStateNotifierTest, RemoveFutureObserverWhileNotifying) {
        kUnknownThroughputMbps, SaveData::kOff));
  }
  
