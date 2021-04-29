@@ -2610,15 +2610,19 @@ workflows:
     - osx-publish-x64-skip-checkout:
         requires:
           - mac-checkout
+        context: release-env
     - mas-publish-x64-skip-checkout:
         requires:
           - mac-checkout
+        context: release-env
     - osx-publish-arm64-skip-checkout:
         requires:
           - mac-checkout
+        context: release-env
     - mas-publish-arm64-skip-checkout:
         requires:
           - mac-checkout
+        context: release-env
 
   lint:
     when: << pipeline.parameters.run-lint >>
