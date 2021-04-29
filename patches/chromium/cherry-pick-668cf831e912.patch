@@ -1,0 +1,57 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ken Rockot <rockot@google.com>
+Date: Tue, 23 Mar 2021 21:13:00 +0000
+Subject: Never fail in ReceiverSet::Add
+
+Because of how UniqueReceiverSet is implemented and used, it is
+dangerous to allow Add() to fail: callers reasonably assume that added
+objects are still alive immediately after the Add() call.
+
+This changes ReceiverId to a uint64 and simply CHECK-fails on
+insert collision.
+
+This fundamentally increases binary size of 32-bit builds, because
+a widely used 32-bit data type is expanding to 64 bits for the sake
+of security and stability. It is effectively unavoidable for now, and
+also just barely above the tolerable threshold.
+
+A follow-up (but less backwards-mergeable) change should be able to
+reduce binary size beyond this increase by consolidating shared
+code among ReceiverSet template instantiations.
+
+Fixed: 1185732
+Change-Id: I9acf6aaaa36e10fdce5aa49a890173caddc13c52
+Binary-Size: Unavoidable (see above)
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2778871
+Commit-Queue: Ken Rockot <rockot@google.com>
+Auto-Submit: Ken Rockot <rockot@google.com>
+Reviewed-by: Robert Sesek <rsesek@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#865815}
+
+diff --git a/mojo/public/cpp/bindings/receiver_set.h b/mojo/public/cpp/bindings/receiver_set.h
+index 8d7d73231543c70b67913fdf735c1a16cc6170b1..56027d1f3e6393f739c3b51330137d54ae3fc0d2 100644
+--- a/mojo/public/cpp/bindings/receiver_set.h
++++ b/mojo/public/cpp/bindings/receiver_set.h
+@@ -24,7 +24,7 @@
+ 
+ namespace mojo {
+ 
+-using ReceiverId = size_t;
++using ReceiverId = uint64_t;
+ 
+ template <typename ReceiverType>
+ struct ReceiverSetTraits;
+@@ -359,11 +359,11 @@ class ReceiverSetBase {
+                      Context context,
+                      scoped_refptr<base::SequencedTaskRunner> task_runner) {
+     ReceiverId id = next_receiver_id_++;
+-    DCHECK_GE(next_receiver_id_, 0u);
+     auto entry =
+         std::make_unique<Entry>(std::move(impl), std::move(receiver), this, id,
+                                 std::move(context), std::move(task_runner));
+-    receivers_.insert(std::make_pair(id, std::move(entry)));
++    auto result = receivers_.insert(std::make_pair(id, std::move(entry)));
++    CHECK(result.second) << "ReceiverId overflow with collision";
+     return id;
+   }
+ 

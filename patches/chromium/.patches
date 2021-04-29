@@ -172,5 +172,8 @@ m86-lts_add_weak_pointer_to_rwhier_framesinkidownermap_and.patch
 cherry-pick-406ae3e8a9a8.patch
 cherry-pick-fe20b05a0e5e.patch
 cherry-pick-6b84dc72351b.patch
+cherry-pick-7dd3b1c86795.patch
+cherry-pick-1028ffc9bd83.patch
 cherry-pick-5745eaf16077.patch
 cherry-pick-202b40b9aee4.patch
+cherry-pick-668cf831e912.patch
