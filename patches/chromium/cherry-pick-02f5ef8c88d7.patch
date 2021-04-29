@@ -1,0 +1,106 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Josh Karlin <jkarlin@chromium.org>
+Date: Wed, 14 Apr 2021 09:21:00 +0000
+Subject: Fix removal of observers in NetworkStateNotifier
+
+The NetworkStateNotifier has a per-thread list of observer pointers. If
+one is deleted mid-iteration, what we do is replace the pointer in the
+list with a 0, and add the index to the zeroed list of observers to
+remove after iteration completes. Well, the removal step was broken
+for cases where there were multiple elements to remove. It didn't adjust
+for the fact that the indexes shifted after each removal.
+
+(cherry picked from commit 5d34987de6cffb8d747c5ed16e82614e9146cc0a)
+
+Bug: 1170148
+Change-Id: I446acaae5f8a805a58142848634a0ee8c5f90882
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2727306
+Reviewed-by: Kentaro Hara <haraken@chromium.org>
+Commit-Queue: Josh Karlin <jkarlin@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#858853}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2821797
+Reviewed-by: Achuith Bhandarkar <achuith@chromium.org>
+Reviewed-by: Victor-Gabriel Savu <vsavu@google.com>
+Commit-Queue: Jana Grill <janagrill@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4240@{#1602}
+Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
+
+diff --git a/third_party/blink/renderer/platform/network/network_state_notifier.cc b/third_party/blink/renderer/platform/network/network_state_notifier.cc
+index 32328e881876a7445e3284fc47978daaa7407fca..c7227f634838ec8deab60cde878311162cbb5472 100644
+--- a/third_party/blink/renderer/platform/network/network_state_notifier.cc
++++ b/third_party/blink/renderer/platform/network/network_state_notifier.cc
+@@ -395,8 +395,14 @@ void NetworkStateNotifier::CollectZeroedObservers(
+ 
+   // If any observers were removed during the iteration they will have
+   // 0 values, clean them up.
+-  for (wtf_size_t i = 0; i < list->zeroed_observers.size(); ++i)
+-    list->observers.EraseAt(list->zeroed_observers[i]);
++  std::sort(list->zeroed_observers.begin(), list->zeroed_observers.end());
++  int removed = 0;
++  for (wtf_size_t i = 0; i < list->zeroed_observers.size(); ++i) {
++    int index_to_remove = list->zeroed_observers[i] - removed;
++    DCHECK_EQ(nullptr, list->observers[index_to_remove]);
++    list->observers.EraseAt(index_to_remove);
++    removed += 1;
++  }
+ 
+   list->zeroed_observers.clear();
+ 
+diff --git a/third_party/blink/renderer/platform/network/network_state_notifier_test.cc b/third_party/blink/renderer/platform/network/network_state_notifier_test.cc
+index eb2bd791529df4339ebd8159700769fcd06d795f..f7c359235a87adc231c00eb252dc24a7d95065f8 100644
+--- a/third_party/blink/renderer/platform/network/network_state_notifier_test.cc
++++ b/third_party/blink/renderer/platform/network/network_state_notifier_test.cc
+@@ -528,6 +528,53 @@ TEST_F(NetworkStateNotifierTest, RemoveFutureObserverWhileNotifying) {
+       kUnknownThroughputMbps, SaveData::kOff));
+ }
+ 
++// It should be safe to remove multiple observers in one iteration.
++TEST_F(NetworkStateNotifierTest, RemoveMultipleObserversWhileNotifying) {
++  StateObserver observer1, observer2, observer3;
++  std::unique_ptr<NetworkStateNotifier::NetworkStateObserverHandle> handle1 =
++      notifier_.AddConnectionObserver(&observer1, GetTaskRunner());
++  std::unique_ptr<NetworkStateNotifier::NetworkStateObserverHandle> handle2 =
++      notifier_.AddConnectionObserver(&observer2, GetTaskRunner());
++  std::unique_ptr<NetworkStateNotifier::NetworkStateObserverHandle> handle3 =
++      notifier_.AddConnectionObserver(&observer3, GetTaskRunner());
++  observer1.RemoveObserverOnNotification(std::move(handle1));
++  observer3.RemoveObserverOnNotification(std::move(handle3));
++
++  // Running the first time should delete observers 1 and 3.
++  SetConnection(kWebConnectionTypeBluetooth, kBluetoothMaxBandwidthMbps,
++                WebEffectiveConnectionType::kTypeUnknown, kUnknownRtt,
++                kUnknownRtt, kUnknownThroughputMbps, SaveData::kOff);
++  EXPECT_TRUE(VerifyObservations(
++      observer1, kWebConnectionTypeBluetooth, kBluetoothMaxBandwidthMbps,
++      WebEffectiveConnectionType::kTypeUnknown, kUnknownRtt, kUnknownRtt,
++      kUnknownThroughputMbps, SaveData::kOff));
++  EXPECT_TRUE(VerifyObservations(
++      observer2, kWebConnectionTypeBluetooth, kBluetoothMaxBandwidthMbps,
++      WebEffectiveConnectionType::kTypeUnknown, kUnknownRtt, kUnknownRtt,
++      kUnknownThroughputMbps, SaveData::kOff));
++  EXPECT_TRUE(VerifyObservations(
++      observer3, kWebConnectionTypeBluetooth, kBluetoothMaxBandwidthMbps,
++      WebEffectiveConnectionType::kTypeUnknown, kUnknownRtt, kUnknownRtt,
++      kUnknownThroughputMbps, SaveData::kOff));
++
++  // Run again and only observer 2 should have been updated.
++  SetConnection(kWebConnectionTypeEthernet, kEthernetMaxBandwidthMbps,
++                WebEffectiveConnectionType::kTypeUnknown, kUnknownRtt,
++                kUnknownRtt, kUnknownThroughputMbps, SaveData::kOff);
++  EXPECT_TRUE(VerifyObservations(
++      observer1, kWebConnectionTypeBluetooth, kBluetoothMaxBandwidthMbps,
++      WebEffectiveConnectionType::kTypeUnknown, kUnknownRtt, kUnknownRtt,
++      kUnknownThroughputMbps, SaveData::kOff));
++  EXPECT_TRUE(VerifyObservations(
++      observer2, kWebConnectionTypeEthernet, kEthernetMaxBandwidthMbps,
++      WebEffectiveConnectionType::kTypeUnknown, kUnknownRtt, kUnknownRtt,
++      kUnknownThroughputMbps, SaveData::kOff));
++  EXPECT_TRUE(VerifyObservations(
++      observer3, kWebConnectionTypeBluetooth, kBluetoothMaxBandwidthMbps,
++      WebEffectiveConnectionType::kTypeUnknown, kUnknownRtt, kUnknownRtt,
++      kUnknownThroughputMbps, SaveData::kOff));
++}
++
+ TEST_F(NetworkStateNotifierTest, MultipleContextsAddObserver) {
+   StateObserver observer1, observer2;
+   std::unique_ptr<NetworkStateNotifier::NetworkStateObserverHandle> handle1 =
