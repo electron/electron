@@ -1,3 +1,5 @@
+# Tray
+
 ## Class: Tray
 
 > Add icons and context menus to the system's notification area.

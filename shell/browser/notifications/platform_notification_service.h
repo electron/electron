@@ -23,7 +23,7 @@ class PlatformNotificationService
  protected:
   // content::PlatformNotificationService:
   void DisplayNotification(
-      content::RenderProcessHost* render_process_host,
+      content::RenderFrameHost* render_frame_host,
       const std::string& notification_id,
       const GURL& origin,
       const GURL& document_url,

@@ -1,6 +1,6 @@
 {
   "name": "electron",
-  "version": "14.0.0-nightly.20210427",
+  "version": "14.0.0-nightly.20210429",
   "repository": "https://github.com/electron/electron",
   "description": "Build cross platform desktop apps with JavaScript, HTML, and CSS",
   "devDependencies": {
@@ -47,7 +47,7 @@
     "folder-hash": "^2.1.1",
     "fs-extra": "^9.0.1",
     "got": "^6.3.0",
-    "husky": "^2.2.0",
+    "husky": "^6.0.0",
     "klaw": "^3.0.0",
     "lint": "^1.1.2",
     "lint-staged": "^10.2.11",
@@ -96,8 +96,10 @@
     "gn-typescript-definitions": "npm run create-typescript-definitions && shx cp electron.d.ts",
     "pre-flight": "pre-flight",
     "gn-check": "node ./script/gn-check.js",
+    "precommit": "lint-staged",
     "preinstall": "node -e 'process.exit(0)'",
     "prepack": "check-for-leaks",
+    "prepare": "husky install",
     "repl": "node ./script/start.js --interactive",
     "start": "node ./script/start.js",
     "test": "node ./script/spec-runner.js",
@@ -109,12 +111,6 @@
   "keywords": [
     "electron"
   ],
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged",
-      "pre-push": "check-for-leaks"
-    }
-  },
   "lint-staged": {
     "*.{js,ts}": [
       "node script/lint.js --js --fix --only --"
