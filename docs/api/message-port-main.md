@@ -14,6 +14,8 @@ channel messaging.
 
 ## Class: MessagePortMain
 
+> Port interface for channel messaging in the main process.
+
 Process: [Main](../glossary.md#main-process)
 
 ### Instance Methods
