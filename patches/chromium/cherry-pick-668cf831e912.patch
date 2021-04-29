@@ -1,7 +1,7 @@
-From 668cf831e91210d4f23e815e07ff1421f3ee9747 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Ken Rockot <rockot@google.com>
 Date: Tue, 23 Mar 2021 21:13:00 +0000
-Subject: [PATCH] Never fail in ReceiverSet::Add
+Subject: Never fail in ReceiverSet::Add
 
 Because of how UniqueReceiverSet is implemented and used, it is
 dangerous to allow Add() to fail: callers reasonably assume that added
@@ -27,10 +27,9 @@ Commit-Queue: Ken Rockot <rockot@google.com>
 Auto-Submit: Ken Rockot <rockot@google.com>
 Reviewed-by: Robert Sesek <rsesek@chromium.org>
 Cr-Commit-Position: refs/heads/master@{#865815}
----
 
 diff --git a/mojo/public/cpp/bindings/receiver_set.h b/mojo/public/cpp/bindings/receiver_set.h
-index 97049ab..ad94072 100644
+index 8d7d73231543c70b67913fdf735c1a16cc6170b1..56027d1f3e6393f739c3b51330137d54ae3fc0d2 100644
 --- a/mojo/public/cpp/bindings/receiver_set.h
 +++ b/mojo/public/cpp/bindings/receiver_set.h
 @@ -24,7 +24,7 @@
@@ -42,9 +41,9 @@ index 97049ab..ad94072 100644
  
  template <typename ReceiverType>
  struct ReceiverSetTraits;
-@@ -360,11 +360,11 @@
+@@ -359,11 +359,11 @@ class ReceiverSetBase {
+                      Context context,
                       scoped_refptr<base::SequencedTaskRunner> task_runner) {
-     DCHECK(receiver.is_valid());
      ReceiverId id = next_receiver_id_++;
 -    DCHECK_GE(next_receiver_id_, 0u);
      auto entry =
