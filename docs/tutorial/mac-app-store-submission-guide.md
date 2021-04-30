@@ -3,12 +3,12 @@
 This guide provides information on:
 
 * How to sign Electron apps on macOS;
-* How to submit Electron apps to Mac App Store;
+* How to submit Electron apps to Mac App Store (MAS);
 * The limitations of the MAS build.
 
 ## Requirements
 
-To sign Electron apps, following tools must be installed first:
+To sign Electron apps, the following tools must be installed first:
 
 * Xcode 11 or above.
 * The [electron-osx-sign][electron-osx-sign] npm module.
@@ -19,14 +19,14 @@ fee.
 
 ## Sign Electron apps
 
-Electron apps can be distributed through Mac App Store or outside it, each way
+Electron apps can be distributed through Mac App Store or outside it. Each way
 requires different ways of signing and testing. This guide mainly focuses on
 distribution via Mac App Store, but will also mention other methods.
 
-Following steps describe how to get the certificates from Apple, how to sign
+The following steps describe how to get the certificates from Apple, how to sign
 Electron apps, and how to test them.
 
-### Get Certificates
+### Get certificates
 
 The simplest way to get signing certificates is to use Xcode:
 
@@ -42,27 +42,27 @@ The "Apple Development" certificate is used to sign apps for development and
 testing, on machines that have been registered on Apple Developer website. The
 method of registration will be described later.
 
-Apps signed with the "Apple Development" certificate can not be submitted to Mac
-App Store, for that purpose apps must be signed with the "Apple Distribution"
+Apps signed with the "Apple Development" certificate cannot be submitted to Mac
+App Store. For that purpose, apps must be signed with the "Apple Distribution"
 certificate instead. But note that apps signed with the "Apple Distribution"
-certicate can not run directly, it must be also be signed by Apple to be able to
-run, which will only be possible after downloading from Mac App Store.
+certificate cannot run directly. They must be also be signed by Apple to be able to
+run, which will only be possible after downloading the app from the Mac App Store.
 
 #### Other Certificates
 
 You may notice that there are also other kinds of certificates.
 
 The "Developer ID Application" certificate is used to sign apps before
-distributing it outside the Mac App Store.
+distributing them outside the Mac App Store.
 
 The "Developer ID Installer" and "Mac Installer Distribution" certificates are
 used to sign the Mac Installer Package instead of the app itself. Most Electron
 apps do not use Mac Installer Package so they are generally not needed.
 
 Apps signed with "Apple Development" and "Apple Distribution" certificates can
-only run under sandbox mode, so they must use the MAS build of Electron. But
-the "Developer ID Application" certificate does not have this restrictions, apps
-signed with it can use either the normal build or the MAS build of Electron.
+only run under sandbox mode, so they must use the MAS build of Electron.
+However, the "Developer ID Application" certificate does not have this restrictions, so
+apps signed with it can use either the normal build or the MAS build of Electron.
 
 #### Legacy Certificate Names
 
@@ -77,29 +77,29 @@ using one of the old names.
 
 ### Install Provisioning Profile
 
-If you are going to submit the app to Mac App Store, to test it on your local
-machine before submitting it, you have to install the app's provisioning profile
-on your machine, and sign the app with the "Apple Development" certificate and
-the provisioning profile.
+If you want to test your app on your local machine before submitting your app to
+the Mac App Store, you have to install the app's provisioning profile on your machine,
+and sign the app with the "Apple Development" certificate and the provisioning profile.
 
-To register the provisioning profile, you can follow below steps:
+To register the provisioning profile, you can follow the below steps:
 
 1. Open the "Certificates, Identifiers & Profiles" page on the
    [Apple Developer](https://developer.apple.com/account) website.
-2. Add a new App ID for you app in the "Identifiers" page.
-3. Register your local machine in the "Devices" page, you can find your
+2. Add a new App ID for your app in the "Identifiers" page.
+3. Register your local machine in the "Devices" page. You can find your
    machine's "Device ID" in the "Hardware" page of the "System Information" app.
 4. Register a new Provisioning Profile in the "Profiles" page, and download it
    to `/path/to/yourapp.provisionprofile` and install it.
 
-### Enable Sandbox in Apps
+### Enable Apple's App Sandbox
 
-Apps submitted to Mac App Store must run under [App Sandbox][app-sandboxing],
-and only the MAS build of Electron can run under sandbox mode.
+Apps submitted to the Mac App Store must run under Apple's
+[App Sandbox][app-sandboxing]. Only the MAS build of Electron
+can run in the App Sandbox.
 
-When signing app with `electron-osx-sign`, it will automatically add App Sandbox
-capacity to app's entitlements, but if you are using custom entitlements
-following capacities must be added:
+When signing your app with `electron-osx-sign`, it will automatically add the App
+Sandbox capacity to your app's entitlements, but if you are using custom entitlements,
+the following capacities must be added:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -121,8 +121,8 @@ and the `your.bundle.id` should be replaced with the App ID of the app.
 
 #### Extra Steps Without `electron-osx-sign`
 
-If you are signing the app without using `electron-osx-sign`, you should also
-make sure following entitlements are added to the binaries and helpers in the
+If you are signing your app without using `electron-osx-sign`, you should also
+make sure the following entitlements are added to the binaries and helpers in your
 app's bundle:
 
 ```xml
@@ -152,8 +152,8 @@ Apple Developer account's Team ID as its value:
 ```
 
 When using `electron-osx-sign` the `ElectronTeamID` key will be added
-automatically by extracting the Team ID from the certificate's name, you should
-manually add this key if `electron-osx-sign` could not find out the correct Team
+automatically by extracting the Team ID from the certificate's name. You may
+need to manually add this key if `electron-osx-sign` could not find the correct Team
 ID.
 
 ### Sign Apps for Development
@@ -173,7 +173,7 @@ The signed app can only run on the machines that registered by the provisioning
 profile, and this is the only way to test the signed app before submitting to
 Mac App Store.
 
-### Sign Apps for Submitting to Mac App Store
+### Sign apps for submitting to the Mac App Store
 
 To sign an app that will be submitted to Mac App Store, you must sign it with
 the "Apple Distribution" certificate. Note that apps signed with this
@@ -183,7 +183,7 @@ certificate will not run anywhere, unless it is downloaded from Mac App Store.
 electron-osx-sign YourApp.app --identity='Apple Distribution'
 ```
 
-### Sign Apps for Distribution Outside Mac App Store
+### Sign apps for distribution outside the Mac App Store
 
 If you don't plan to submit the app to Mac App Store, you can sign it the
 "Developer ID Application" certificate. In this way there is no requirement to
@@ -203,7 +203,7 @@ This tutorial does not cover [App Notarization][app-notarization], but you might
 want to do it otherwise Apple may prevent users from using your app outside Mac
 App Store.
 
-## Submit Apps to Mac App Store
+## Submit Apps to the Mac App Store
 
 After signing the app with the "Apple Distribution" certificate, you can
 continue to submit it to Mac App Store.
@@ -246,8 +246,8 @@ more information.
 ### Additional Entitlements
 
 Depending on which Electron APIs your app uses, you may need to add additional
-entitlements to your app's entitlements file otherwise App Sandbox would prevent
-using them.
+entitlements to your app's entitlements file. Otherwise, the App Sandbox may prevent
+you from using them.
 
 #### Network Access
 
