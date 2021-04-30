@@ -229,7 +229,5 @@ deploy_script:
           & python script\release\uploaders\upload.py --verbose
         }
       } elseif (Test-Path Env:\TEST_WOA) {
-        # temporarily disabled due to issues from chromium roll
-        # node script/release/ci-release-build.js --job=electron-woa-testing --ci=VSTS --armTest --appveyorJobId=$env:APPVEYOR_JOB_ID $env:APPVEYOR_REPO_BRANCH
-        echo "Skipping WOA testing for now"
+        node script/release/ci-release-build.js --job=electron-woa-testing --ci=VSTS --armTest --appveyorJobId=$env:APPVEYOR_JOB_ID $env:APPVEYOR_REPO_BRANCH
       }
