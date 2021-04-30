@@ -11,6 +11,19 @@ npm install electron --save-dev
 See the [Electron versioning doc][versioning] for info on how to
 manage Electron versions in your apps.
 
+## Running Electron ad-hoc
+
+If you're in a pinch and would prefer to not use `npm install` in your local
+project, you can also run Electron ad-hoc using the [`npx`][npx] command runner
+bundled with `npm`:
+
+```sh
+npx electron .
+```
+
+The above command will run the current working directory with Electron. Note that
+any dependencies in your app will not be installed.
+
 ## Customization
 
 If you want to change the architecture that is downloaded (e.g., `ia32` on an
@@ -170,6 +183,7 @@ If you need to force a re-download of the asset and the SHASUM file set the
 
 [npm]: https://docs.npmjs.com
 [versioning]: ./electron-versioning.md
+[npx]: https://docs.npmjs.com/cli/v7/commands/npx
 [releases]: https://github.com/electron/electron/releases
 [proxy-env-10]: https://github.com/gajus/global-agent/blob/v2.1.5/README.md#environment-variables
 [proxy-env]: https://github.com/np-maintain/global-tunnel/blob/v2.7.1/README.md#auto-config
