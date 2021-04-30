@@ -17,7 +17,7 @@ only one or two specific checks fail. Then it's better to simply comment out the
 failing checks and allow the rest of the target to have them enabled.
 
 diff --git a/content/browser/renderer_host/navigation_controller_impl.cc b/content/browser/renderer_host/navigation_controller_impl.cc
-index 2caf7472c125dc9a54c3f2f46675184d357d675b..616f75c32837457cc29a17db8f4b0ada76d8300a 100644
+index a1a67daa21f93a8e19ee57ea007967e9a0735c18..d826fc5bacf7966e3f910572dd6b0f63de25089d 100644
 --- a/content/browser/renderer_host/navigation_controller_impl.cc
 +++ b/content/browser/renderer_host/navigation_controller_impl.cc
 @@ -1417,8 +1417,10 @@ NavigationType NavigationControllerImpl::ClassifyNavigation(
@@ -46,10 +46,10 @@ index 2caf7472c125dc9a54c3f2f46675184d357d675b..616f75c32837457cc29a17db8f4b0ada
    // navigation. Now we know that the renderer has updated its state accordingly
    // and it is safe to also clear the browser side history.
 diff --git a/ui/base/clipboard/clipboard_win.cc b/ui/base/clipboard/clipboard_win.cc
-index 619b5be9df9e97dc130cbdac82c64e1c413db0f3..8b51d6fc4c7bded2b215bfdd74b18ed723c38c94 100644
+index d1f10922b82e4e0578d1c32978784216117e0696..8f0a750d1a5957b987c5ac506455587a09474461 100644
 --- a/ui/base/clipboard/clipboard_win.cc
 +++ b/ui/base/clipboard/clipboard_win.cc
-@@ -880,10 +880,10 @@ SkBitmap ClipboardWin::ReadImageInternal(ClipboardBuffer buffer) const {
+@@ -889,10 +889,10 @@ SkBitmap ClipboardWin::ReadImageInternal(ClipboardBuffer buffer) const {
  
  void ClipboardWin::WriteToClipboard(ClipboardFormatType format, HANDLE handle) {
    UINT cf_format = format.ToFormatEtc().cfFormat;

@@ -511,10 +511,10 @@ index 04d2ba6d844ee85520a6c51784bf37c818f1bd3f..6095e8b8e177d11782f333cfb3e1c94f
    // Creating output surface failed. The host can send a new request, possibly
    // with a different compositing mode.
 diff --git a/content/browser/compositor/viz_process_transport_factory.cc b/content/browser/compositor/viz_process_transport_factory.cc
-index b1d4cf3b353a5937b575960739d9aa2ad70961f4..5d5a0e3904d3528d11a58568d4fd09c96e48471d 100644
+index 83a23404d1c029af6f7e7aa695bfe60e71d86fde..eef92d3366715774670ebcdcb76ad84ddd8a4ed0 100644
 --- a/content/browser/compositor/viz_process_transport_factory.cc
 +++ b/content/browser/compositor/viz_process_transport_factory.cc
-@@ -418,8 +418,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
+@@ -395,8 +395,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
    compositor_data.display_private.reset();
    root_params->display_private =
        compositor_data.display_private.BindNewEndpointAndPassReceiver();

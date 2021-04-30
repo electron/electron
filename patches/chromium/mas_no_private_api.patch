@@ -7,10 +7,10 @@ Guard usages in blink of private Mac APIs by MAS_BUILD, so they can be
 excluded for people who want to submit their apps to the Mac App store.
 
 diff --git a/content/browser/accessibility/accessibility_tree_formatter_mac.mm b/content/browser/accessibility/accessibility_tree_formatter_mac.mm
-index efa25190717b43b44f6afc89401e135323a0a514..4bf681797f759c6bc4bed148d0207bca127e60e5 100644
+index 4336e1d01f88605ea7f2bbbb644869c5ee7b9b5a..a3eaef03a435d5b06fd8cb97264c19b08358013f 100644
 --- a/content/browser/accessibility/accessibility_tree_formatter_mac.mm
 +++ b/content/browser/accessibility/accessibility_tree_formatter_mac.mm
-@@ -263,7 +263,7 @@
+@@ -264,7 +264,7 @@
        return PopulateSize([value sizeValue]);
      }
    }
@@ -19,7 +19,7 @@ index efa25190717b43b44f6afc89401e135323a0a514..4bf681797f759c6bc4bed148d0207bca
    // AXTextMarker
    if (content::IsAXTextMarker(value)) {
      return PopulateTextPosition(content::AXTextMarkerToAXPosition(value),
-@@ -274,6 +274,7 @@
+@@ -275,6 +275,7 @@
    if (content::IsAXTextMarkerRange(value)) {
      return PopulateTextMarkerRange(value, line_indexer);
    }
@@ -27,8 +27,8 @@ index efa25190717b43b44f6afc89401e135323a0a514..4bf681797f759c6bc4bed148d0207bca
  
    // AXValue
    if (CFGetTypeID(value) == AXValueGetTypeID()) {
-@@ -384,7 +385,7 @@
-   set.SetStringPath(AXMakeSetKey("index3_affinity"), AXMakeConst(affinity));
+@@ -392,7 +393,7 @@
+                     AXMakeConst(affinity));
    return set;
  }
 -
@@ -36,7 +36,7 @@ index efa25190717b43b44f6afc89401e135323a0a514..4bf681797f759c6bc4bed148d0207bca
  base::Value AccessibilityTreeFormatterMac::PopulateTextMarkerRange(
      id marker_range,
      const LineIndexer* line_indexer) const {
-@@ -400,7 +401,7 @@
+@@ -408,7 +409,7 @@
                 PopulateTextPosition(ax_range.focus()->Clone(), line_indexer));
    return dict;
  }
@@ -125,7 +125,7 @@ index a7d6351854d08926c4e9c43c95e9075bd4d4c728..9c89595cb6c37527b96b4afde3871333
  // is concerned.
  @property(nonatomic, readonly) NSString* subrole;
 diff --git a/content/browser/accessibility/browser_accessibility_cocoa.mm b/content/browser/accessibility/browser_accessibility_cocoa.mm
-index efa116acdbad021a7593a2eae3d58c292b40ffbc..079b976338ed8c3776a1060b079454c56cb42126 100644
+index 4e2e99418b4023abd59e82437bd7964dbb34fbe7..53f3295695dc7d83f2785cbe78050449c882deef 100644
 --- a/content/browser/accessibility/browser_accessibility_cocoa.mm
 +++ b/content/browser/accessibility/browser_accessibility_cocoa.mm
 @@ -203,6 +203,7 @@
@@ -364,8 +364,8 @@ index efa116acdbad021a7593a2eae3d58c292b40ffbc..079b976338ed8c3776a1060b079454c5
    return nil;
  }
 @@ -3825,6 +3861,7 @@ - (void)accessibilitySetValue:(id)value forAttribute:(NSString*)attribute {
-         _owner->CreatePositionAt(range.location),
-         _owner->CreatePositionAt(NSMaxRange(range))));
+         _owner->CreatePositionAt(range.location)->AsLeafTextPosition(),
+         _owner->CreatePositionAt(NSMaxRange(range))->AsLeafTextPosition()));
    }
 +#ifndef MAS_BUILD
    if ([attribute

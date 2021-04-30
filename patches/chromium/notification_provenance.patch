@@ -108,7 +108,7 @@ index 71dad766e05ac4726e1e18159f2af5ea01079a91..ef8e55a4420288fe64c99e68d0a649a9
        const GURL& document_url,
        mojo::PendingReceiver<blink::mojom::NotificationService> receiver);
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 7443edf63295b9f631ebdd8126d82ab73ed8f6b2..951e4e8ba3b94798227766c4f21919063ad3e132 100644
+index 3ae3008bb1df73a04d7b2d658db37df0d2fd60eb..9182ca719b0bb37dc0280a4ad296e5de0bb02a40 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -2144,7 +2144,7 @@ void RenderProcessHostImpl::CreateNotificationService(
@@ -142,7 +142,7 @@ index 9646cbeb31141e3518f51482801431f3a6010360..b13b6ab07b4931b892749c84879d9a6a
        const GURL& origin,
        const GURL& document_url,
 diff --git a/content/test/mock_platform_notification_service.cc b/content/test/mock_platform_notification_service.cc
-index 686d5b5e53de58b4b9dc8d9cbaae5b75c7e47f2f..4d276041e0b7429186f1cc443aea09eff6c63851 100644
+index d36d0c40d61f4e131c4a996d283a6ce2d3657ac3..ee08f52a9f8a02c380e8aac52c59849540e8bf4a 100644
 --- a/content/test/mock_platform_notification_service.cc
 +++ b/content/test/mock_platform_notification_service.cc
 @@ -29,6 +29,7 @@ MockPlatformNotificationService::MockPlatformNotificationService(
