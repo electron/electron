@@ -1,0 +1,314 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jana Grill <janagrill@google.com>
+Date: Mon, 19 Apr 2021 10:55:05 +0000
+Subject: Don't show autofill dropdown for element outside the viewport
+
+Details are in the linked bug.
+
+Also cherry pick crrev/c/2682341 and a part of crrev/c/2628287 to fix
+failing tests and compile errors.
+
+(cherry picked from commit 53a4f38ee5d44bd935d176cc89e3e59fd0a3970e)
+
+Bug: 1172533,1173297
+Change-Id: Iee429cac167ccdb0cd74acf57fc5f7c3821883b1
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2675932
+Commit-Queue: Mohamed Amir Yosef <mamir@chromium.org>
+Reviewed-by: Vasilii Sukhanov <vasilii@chromium.org>
+Reviewed-by: Evan Stade <estade@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#851718}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2822155
+Commit-Queue: Jana Grill <janagrill@google.com>
+Reviewed-by: Achuith Bhandarkar <achuith@chromium.org>
+Reviewed-by: Victor-Gabriel Savu <vsavu@google.com>
+Owners-Override: Achuith Bhandarkar <achuith@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4240@{#1611}
+Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
+
+diff --git a/chrome/browser/autofill/autofill_interactive_uitest.cc b/chrome/browser/autofill/autofill_interactive_uitest.cc
+index 7dd45b75afcd47aec7b40e1c0ea48ee51c076bb6..cc7d4eb8bbd82acee0a89df275d51438111f9cae 100644
+--- a/chrome/browser/autofill/autofill_interactive_uitest.cc
++++ b/chrome/browser/autofill/autofill_interactive_uitest.cc
+@@ -2760,7 +2760,14 @@ class AutofillInteractiveIsolationTest : public AutofillInteractiveTestBase {
+   }
+ };
+ 
+-IN_PROC_BROWSER_TEST_F(AutofillInteractiveIsolationTest, SimpleCrossSiteFill) {
++// Flaky on ChromeOS http://crbug.com/1175735
++#if defined(OS_CHROMEOS)
++#define MAYBE_SimpleCrossSiteFill DISABLED_SimpleCrossSiteFill
++#else
++#define MAYBE_SimpleCrossSiteFill SimpleCrossSiteFill
++#endif
++IN_PROC_BROWSER_TEST_F(AutofillInteractiveIsolationTest,
++                       MAYBE_SimpleCrossSiteFill) {
+   CreateTestProfile();
+ 
+   // Main frame is on a.com, iframe is on b.com.
+@@ -2803,7 +2810,8 @@ IN_PROC_BROWSER_TEST_F(AutofillInteractiveIsolationTest, SimpleCrossSiteFill) {
+ // This test verifies that credit card (payment card list) popup works when the
+ // form is inside an OOPIF.
+ // Flaky on Windows http://crbug.com/728488
+-#if defined(OS_WIN)
++// Flaky on ChromeOS http://crbug.com/1175735
++#if defined(OS_WIN) || defined(OS_CHROMEOS)
+ #define MAYBE_CrossSitePaymentForms DISABLED_CrossSitePaymentForms
+ #else
+ #define MAYBE_CrossSitePaymentForms CrossSitePaymentForms
+@@ -2841,8 +2849,14 @@ IN_PROC_BROWSER_TEST_F(AutofillInteractiveTest, MAYBE_CrossSitePaymentForms) {
+                        {ObservedUiEvents::kSuggestionShown});
+ }
+ 
++// Flaky on ChromeOS http://crbug.com/1175735
++#if defined(OS_CHROMEOS)
++#define MAYBE_DeletingFrameUnderSuggestion DISABLED_DeletingFrameUnderSuggestion
++#else
++#define MAYBE_DeletingFrameUnderSuggestion DeletingFrameUnderSuggestion
++#endif
+ IN_PROC_BROWSER_TEST_F(AutofillInteractiveIsolationTest,
+-                       DeletingFrameUnderSuggestion) {
++                       MAYBE_DeletingFrameUnderSuggestion) {
+   CreateTestProfile();
+ 
+   // Main frame is on a.com, iframe is on b.com.
+diff --git a/chrome/browser/autofill/autofill_uitest.cc b/chrome/browser/autofill/autofill_uitest.cc
+index b405c197f6a51bfe28aea9790fc73025238be8e2..f136fd6ac034316822d71d3ccaafb906c43a5139 100644
+--- a/chrome/browser/autofill/autofill_uitest.cc
++++ b/chrome/browser/autofill/autofill_uitest.cc
+@@ -8,6 +8,7 @@
+ #include "base/macros.h"
+ #include "base/run_loop.h"
+ #include "chrome/browser/autofill/autofill_uitest.h"
++#include "chrome/browser/autofill/autofill_uitest_util.h"
+ #include "chrome/browser/autofill/personal_data_manager_factory.h"
+ #include "chrome/browser/profiles/profile.h"
+ #include "chrome/browser/ui/browser.h"
+@@ -78,6 +79,10 @@ void AutofillUiTest::SetUpOnMainThread() {
+                          /* new_host = */ GetWebContents()->GetMainFrame());
+   Observe(GetWebContents());
+ 
++  // Wait for Personal Data Manager to be fully loaded to prevent that
++  // spurious notifications deceive the tests.
++  WaitForPersonalDataManagerToBeLoaded(browser());
++
+   disable_animation_ = std::make_unique<ui::ScopedAnimationDurationScaleMode>(
+       ui::ScopedAnimationDurationScaleMode::ZERO_DURATION);
+ 
+diff --git a/chrome/browser/autofill/autofill_uitest_util.cc b/chrome/browser/autofill/autofill_uitest_util.cc
+index 5bee77a2b6b451c4e15b0329379961164ac4f973..69d62b4f506e83e46db57d7afbff5ddf3911fd79 100644
+--- a/chrome/browser/autofill/autofill_uitest_util.cc
++++ b/chrome/browser/autofill/autofill_uitest_util.cc
+@@ -113,4 +113,12 @@ void WaitForPersonalDataChange(Browser* browser) {
+   observer.Wait();
+ }
+ 
++// Adjusted from crrev/c/2628287 to fix failure in crrev/c/2822155
++void WaitForPersonalDataManagerToBeLoaded(Browser* browser) {
++  PersonalDataManager* pdm =
++      autofill::PersonalDataManagerFactory::GetForProfile(browser->profile());
++  while (!pdm->IsDataLoaded())
++    WaitForPersonalDataChange(browser);
++}
++
+ }  // namespace autofill
+diff --git a/chrome/browser/autofill/autofill_uitest_util.h b/chrome/browser/autofill/autofill_uitest_util.h
+index df333ecf76a98def05aa55fa0c332010fb4eebd0..c95a3888563d43fa26196b7164c73db96cb80343 100644
+--- a/chrome/browser/autofill/autofill_uitest_util.h
++++ b/chrome/browser/autofill/autofill_uitest_util.h
+@@ -24,6 +24,9 @@ void AddTestAutofillData(Browser* browser,
+                          const CreditCard& card);
+ void WaitForPersonalDataChange(Browser* browser);
+ 
++// Adjusted from crrev/c/2628287 to fix failure in crrev/c/2822155
++void WaitForPersonalDataManagerToBeLoaded(Browser* browser);
++
+ }  // namespace autofill
+ 
+ #endif  // CHROME_BROWSER_AUTOFILL_AUTOFILL_UITEST_UTIL_H_
+diff --git a/chrome/browser/ui/passwords/password_generation_popup_view_browsertest.cc b/chrome/browser/ui/passwords/password_generation_popup_view_browsertest.cc
+index 7fbfcfe10bb7ed8987aaddabf3562c7a25efbaf4..31cb5347160cc069ac0fd16abd3f76017d82314a 100644
+--- a/chrome/browser/ui/passwords/password_generation_popup_view_browsertest.cc
++++ b/chrome/browser/ui/passwords/password_generation_popup_view_browsertest.cc
+@@ -26,9 +26,15 @@ class TestPasswordGenerationPopupController
+   explicit TestPasswordGenerationPopupController(
+       content::WebContents* web_contents)
+       : PasswordGenerationPopupControllerImpl(
+-            gfx::RectF(0, 0, 10, 10),
++            gfx::RectF(web_contents->GetContainerBounds().x(),
++                       web_contents->GetContainerBounds().y(),
++                       10,
++                       10),
+             autofill::password_generation::PasswordGenerationUIData(
+-                /*bounds=*/gfx::RectF(0, 0, 10, 10),
++                /*bounds=*/gfx::RectF(web_contents->GetContainerBounds().x(),
++                                      web_contents->GetContainerBounds().y(),
++                                      10,
++                                      10),
+                 /*max_length=*/10,
+                 /*generation_element=*/base::string16(),
+                 autofill::FieldRendererId(100),
+@@ -70,7 +76,9 @@ IN_PROC_BROWSER_TEST_F(PasswordGenerationPopupViewTest,
+       new autofill::TestPasswordGenerationPopupController(GetWebContents());
+   controller_->Show(PasswordGenerationPopupController::kEditGeneratedPassword);
+ 
+-  GetViewTester()->SimulateMouseMovementAt(gfx::Point(1, 1));
++  GetViewTester()->SimulateMouseMovementAt(
++      gfx::Point(GetWebContents()->GetContainerBounds().x() + 1,
++                 GetWebContents()->GetContainerBounds().y() + 1));
+ 
+   // This hides the popup and destroys the controller.
+   GetWebContents()->Close();
+diff --git a/chrome/browser/ui/views/autofill/autofill_popup_base_view.cc b/chrome/browser/ui/views/autofill/autofill_popup_base_view.cc
+index cb0c7e0b669fcae0f9c842221be47c2866a18d39..f748f66b78f6880dc72037e09b86697f30b696c2 100644
+--- a/chrome/browser/ui/views/autofill/autofill_popup_base_view.cc
++++ b/chrome/browser/ui/views/autofill/autofill_popup_base_view.cc
+@@ -259,8 +259,8 @@ bool AutofillPopupBaseView::DoUpdateBoundsAndRedrawPopup() {
+   // area so that the user notices the presence of the popup.
+   int item_height =
+       children().size() > 0 ? children()[0]->GetPreferredSize().height() : 0;
+-  if (!HasEnoughHeightForOneRow(item_height, GetContentAreaBounds(),
+-                                element_bounds)) {
++  if (!CanShowDropdownHere(item_height, GetContentAreaBounds(),
++                           element_bounds)) {
+     HideController(PopupHidingReason::kInsufficientSpace);
+     return false;
+   }
+diff --git a/chrome/browser/ui/views/autofill/autofill_popup_base_view_browsertest.cc b/chrome/browser/ui/views/autofill/autofill_popup_base_view_browsertest.cc
+index fcf2076ddff00a4a010f8d5c14c9b99070aa6911..92b79871919e971aff7043718b0187d8b9e8972c 100644
+--- a/chrome/browser/ui/views/autofill/autofill_popup_base_view_browsertest.cc
++++ b/chrome/browser/ui/views/autofill/autofill_popup_base_view_browsertest.cc
+@@ -53,10 +53,13 @@ class AutofillPopupBaseViewTest : public InProcessBrowserTest {
+   ~AutofillPopupBaseViewTest() override {}
+ 
+   void SetUpOnMainThread() override {
+-    gfx::NativeView native_view =
+-        browser()->tab_strip_model()->GetActiveWebContents()->GetNativeView();
++    content::WebContents* web_contents =
++        browser()->tab_strip_model()->GetActiveWebContents();
++    gfx::NativeView native_view = web_contents->GetNativeView();
+     EXPECT_CALL(mock_delegate_, container_view())
+         .WillRepeatedly(Return(native_view));
++    EXPECT_CALL(mock_delegate_, GetWebContents())
++        .WillRepeatedly(Return(web_contents));
+     EXPECT_CALL(mock_delegate_, ViewDestroyed());
+ 
+     view_ = new AutofillPopupBaseView(
+diff --git a/chrome/browser/ui/views/autofill/autofill_popup_view_native_views.cc b/chrome/browser/ui/views/autofill/autofill_popup_view_native_views.cc
+index 80212002da57695f5eef75d76a33670a2f8ff63a..23e199d21d9140a936e3a6637e935c290650015c 100644
+--- a/chrome/browser/ui/views/autofill/autofill_popup_view_native_views.cc
++++ b/chrome/browser/ui/views/autofill/autofill_popup_view_native_views.cc
+@@ -1284,8 +1284,9 @@ bool AutofillPopupViewNativeViews::DoUpdateBoundsAndRedrawPopup() {
+       body_container_ && body_container_->children().size() > 0
+           ? body_container_->children()[0]->GetPreferredSize().height()
+           : 0;
+-  if (!HasEnoughHeightForOneRow(item_height, GetContentAreaBounds(),
+-                                element_bounds)) {
++
++  if (!CanShowDropdownHere(item_height, GetContentAreaBounds(),
++                           element_bounds)) {
+     controller_->Hide(PopupHidingReason::kInsufficientSpace);
+     return false;
+   }
+diff --git a/chrome/browser/ui/views/autofill/autofill_popup_view_utils.cc b/chrome/browser/ui/views/autofill/autofill_popup_view_utils.cc
+index e95fe363ba65c7bf6223820f5f3ec110d395cbeb..82f528c39a6edeb329bc8c19321831caca41e553 100644
+--- a/chrome/browser/ui/views/autofill/autofill_popup_view_utils.cc
++++ b/chrome/browser/ui/views/autofill/autofill_popup_view_utils.cc
+@@ -87,16 +87,26 @@ gfx::Rect CalculatePopupBounds(const gfx::Size& desired_size,
+   return popup_bounds;
+ }
+ 
+-bool HasEnoughHeightForOneRow(int item_height,
+-                              const gfx::Rect& content_area_bounds,
+-                              const gfx::Rect& element_bounds) {
+-  // Ensure that at least one row of the popup can be displayed within the
++bool CanShowDropdownHere(int item_height,
++                         const gfx::Rect& content_area_bounds,
++                         const gfx::Rect& element_bounds) {
++  // Ensure that at least one row of the popup will be displayed within the
+   // bounds of the content area so that the user notices the presence of the
+   // popup.
+   bool enough_space_for_one_item_in_content_area_above_element =
+       element_bounds.y() - content_area_bounds.y() >= item_height;
++  bool element_top_is_within_content_area_bounds =
++      element_bounds.y() > content_area_bounds.y() &&
++      element_bounds.y() < content_area_bounds.bottom();
++
+   bool enough_space_for_one_item_in_content_area_below_element =
+       content_area_bounds.bottom() - element_bounds.bottom() >= item_height;
+-  return enough_space_for_one_item_in_content_area_above_element ||
+-         enough_space_for_one_item_in_content_area_below_element;
++  bool element_bottom_is_within_content_area_bounds =
++      element_bounds.bottom() > content_area_bounds.y() &&
++      element_bounds.bottom() < content_area_bounds.bottom();
++
++  return (enough_space_for_one_item_in_content_area_above_element &&
++          element_top_is_within_content_area_bounds) ||
++         (enough_space_for_one_item_in_content_area_below_element &&
++          element_bottom_is_within_content_area_bounds);
+ }
+diff --git a/chrome/browser/ui/views/autofill/autofill_popup_view_utils.h b/chrome/browser/ui/views/autofill/autofill_popup_view_utils.h
+index 990d67cababe9363fe5ee1b91bee81986846f807..bab1a26c38f7fcbea7da51e92e0d8e3dfe97622b 100644
+--- a/chrome/browser/ui/views/autofill/autofill_popup_view_utils.h
++++ b/chrome/browser/ui/views/autofill/autofill_popup_view_utils.h
+@@ -34,9 +34,10 @@ gfx::Rect CalculatePopupBounds(const gfx::Size& desired_size,
+                                bool is_rtl);
+ 
+ // Returns whether there is enough height within |content_area_bounds| above or
+-// below |element_bounds| to display |item_height|.
+-bool HasEnoughHeightForOneRow(int item_height,
+-                              const gfx::Rect& content_area_bounds,
+-                              const gfx::Rect& element_bounds);
++// below |element_bounds| to display |item_height|, and that the first dropdown
++// item will actually be visible within the bounds of the content area.
++bool CanShowDropdownHere(int item_height,
++                         const gfx::Rect& content_area_bounds,
++                         const gfx::Rect& element_bounds);
+ 
+ #endif  // CHROME_BROWSER_UI_VIEWS_AUTOFILL_AUTOFILL_POPUP_VIEW_UTILS_H_
+diff --git a/chrome/browser/ui/views/autofill/autofill_popup_view_utils_unittest.cc b/chrome/browser/ui/views/autofill/autofill_popup_view_utils_unittest.cc
+index 78fa8a09a4791bde5825935e8f2b7e805c100b1f..cecd8d2c3173ea7b48ebebf5ae33fd2c531e6551 100644
+--- a/chrome/browser/ui/views/autofill/autofill_popup_view_utils_unittest.cc
++++ b/chrome/browser/ui/views/autofill/autofill_popup_view_utils_unittest.cc
+@@ -1,3 +1,4 @@
++
+ // Copyright 2020 The Chromium Authors. All rights reserved.
+ // Use of this source code is governed by a BSD-style license that can be
+ // found in the LICENSE file.
+@@ -115,7 +116,34 @@ TEST(AutofillPopupViewUtilsTest, NotEnoughHeightForAnItem) {
+   gfx::Rect content_area_bounds(x, window_y + 2, width, height - 2);
+   gfx::Rect element_bounds(x, window_y + 3, width, height - 3);
+ 
+-  bool enough_height_for_item = HasEnoughHeightForOneRow(
+-      item_height, content_area_bounds, element_bounds);
+-  EXPECT_FALSE(enough_height_for_item);
++  EXPECT_FALSE(
++      CanShowDropdownHere(item_height, content_area_bounds, element_bounds));
++}
++
++TEST(AutofillPopupViewUtilsTest, ElementOutOfContentAreaBounds) {
++  // In this test, each row of the popup has a height of 8 pixels, and there is
++  // no enough height in the content area to show one row.
++  //
++  //  |---------------------|    ---> y = 5
++  //  |       Window        |
++  //  | |-----------------| |    ---> y = 7
++  //  | |                 | |
++  //  | |   Content Area  | |
++  //  | |                 | |
++  //  |-|-----------------|-|    ---> y = 50
++  //      |-------------|        ---> y = 53
++  //      |   Element   |
++  //      |-------------|        ---> y = 63
++
++  constexpr int item_height = 8;
++  constexpr int window_y = 5;
++  constexpr int x = 10;
++  constexpr int width = 5;
++  constexpr int height = 46;
++
++  gfx::Rect content_area_bounds(x, window_y + 2, width, height - 2);
++  gfx::Rect element_bounds(x, window_y + height + 3, width, 10);
++
++  EXPECT_FALSE(
++      CanShowDropdownHere(item_height, content_area_bounds, element_bounds));
+ }
