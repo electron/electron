@@ -1,7 +1,7 @@
-From f37149c4434f50be6483e03ef356ae97952ade21 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jana Grill <janagrill@google.com>
 Date: Mon, 19 Apr 2021 10:55:05 +0000
-Subject: [PATCH] [Autofill] Don't show autofill dropdown for element outside the viewport
+Subject: Don't show autofill dropdown for element outside the viewport
 
 Details are in the linked bug.
 
@@ -24,13 +24,12 @@ Reviewed-by: Victor-Gabriel Savu <vsavu@google.com>
 Owners-Override: Achuith Bhandarkar <achuith@chromium.org>
 Cr-Commit-Position: refs/branch-heads/4240@{#1611}
 Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
----
 
 diff --git a/chrome/browser/autofill/autofill_interactive_uitest.cc b/chrome/browser/autofill/autofill_interactive_uitest.cc
-index 7cb848d..0ac50d1 100644
+index 7dd45b75afcd47aec7b40e1c0ea48ee51c076bb6..cc7d4eb8bbd82acee0a89df275d51438111f9cae 100644
 --- a/chrome/browser/autofill/autofill_interactive_uitest.cc
 +++ b/chrome/browser/autofill/autofill_interactive_uitest.cc
-@@ -2781,7 +2781,14 @@
+@@ -2760,7 +2760,14 @@ class AutofillInteractiveIsolationTest : public AutofillInteractiveTestBase {
    }
  };
  
@@ -46,7 +45,7 @@ index 7cb848d..0ac50d1 100644
    CreateTestProfile();
  
    // Main frame is on a.com, iframe is on b.com.
-@@ -2824,7 +2831,8 @@
+@@ -2803,7 +2810,8 @@ IN_PROC_BROWSER_TEST_F(AutofillInteractiveIsolationTest, SimpleCrossSiteFill) {
  // This test verifies that credit card (payment card list) popup works when the
  // form is inside an OOPIF.
  // Flaky on Windows http://crbug.com/728488
@@ -56,7 +55,7 @@ index 7cb848d..0ac50d1 100644
  #define MAYBE_CrossSitePaymentForms DISABLED_CrossSitePaymentForms
  #else
  #define MAYBE_CrossSitePaymentForms CrossSitePaymentForms
-@@ -2862,8 +2870,14 @@
+@@ -2841,8 +2849,14 @@ IN_PROC_BROWSER_TEST_F(AutofillInteractiveTest, MAYBE_CrossSitePaymentForms) {
                         {ObservedUiEvents::kSuggestionShown});
  }
  
@@ -73,7 +72,7 @@ index 7cb848d..0ac50d1 100644
  
    // Main frame is on a.com, iframe is on b.com.
 diff --git a/chrome/browser/autofill/autofill_uitest.cc b/chrome/browser/autofill/autofill_uitest.cc
-index b405c19..f136fd6 100644
+index b405c197f6a51bfe28aea9790fc73025238be8e2..f136fd6ac034316822d71d3ccaafb906c43a5139 100644
 --- a/chrome/browser/autofill/autofill_uitest.cc
 +++ b/chrome/browser/autofill/autofill_uitest.cc
 @@ -8,6 +8,7 @@
@@ -84,7 +83,7 @@ index b405c19..f136fd6 100644
  #include "chrome/browser/autofill/personal_data_manager_factory.h"
  #include "chrome/browser/profiles/profile.h"
  #include "chrome/browser/ui/browser.h"
-@@ -78,6 +79,10 @@
+@@ -78,6 +79,10 @@ void AutofillUiTest::SetUpOnMainThread() {
                           /* new_host = */ GetWebContents()->GetMainFrame());
    Observe(GetWebContents());
  
@@ -96,10 +95,10 @@ index b405c19..f136fd6 100644
        ui::ScopedAnimationDurationScaleMode::ZERO_DURATION);
  
 diff --git a/chrome/browser/autofill/autofill_uitest_util.cc b/chrome/browser/autofill/autofill_uitest_util.cc
-index 5bee77a..69d62b4 100644
+index 5bee77a2b6b451c4e15b0329379961164ac4f973..69d62b4f506e83e46db57d7afbff5ddf3911fd79 100644
 --- a/chrome/browser/autofill/autofill_uitest_util.cc
 +++ b/chrome/browser/autofill/autofill_uitest_util.cc
-@@ -113,4 +113,12 @@
+@@ -113,4 +113,12 @@ void WaitForPersonalDataChange(Browser* browser) {
    observer.Wait();
  }
  
@@ -113,10 +112,10 @@ index 5bee77a..69d62b4 100644
 +
  }  // namespace autofill
 diff --git a/chrome/browser/autofill/autofill_uitest_util.h b/chrome/browser/autofill/autofill_uitest_util.h
-index df333ec..c95a388 100644
+index df333ecf76a98def05aa55fa0c332010fb4eebd0..c95a3888563d43fa26196b7164c73db96cb80343 100644
 --- a/chrome/browser/autofill/autofill_uitest_util.h
 +++ b/chrome/browser/autofill/autofill_uitest_util.h
-@@ -24,6 +24,9 @@
+@@ -24,6 +24,9 @@ void AddTestAutofillData(Browser* browser,
                           const CreditCard& card);
  void WaitForPersonalDataChange(Browser* browser);
  
@@ -127,10 +126,10 @@ index df333ec..c95a388 100644
  
  #endif  // CHROME_BROWSER_AUTOFILL_AUTOFILL_UITEST_UTIL_H_
 diff --git a/chrome/browser/ui/passwords/password_generation_popup_view_browsertest.cc b/chrome/browser/ui/passwords/password_generation_popup_view_browsertest.cc
-index 7fbfcfe..31cb534 100644
+index 7fbfcfe10bb7ed8987aaddabf3562c7a25efbaf4..31cb5347160cc069ac0fd16abd3f76017d82314a 100644
 --- a/chrome/browser/ui/passwords/password_generation_popup_view_browsertest.cc
 +++ b/chrome/browser/ui/passwords/password_generation_popup_view_browsertest.cc
-@@ -26,9 +26,15 @@
+@@ -26,9 +26,15 @@ class TestPasswordGenerationPopupController
    explicit TestPasswordGenerationPopupController(
        content::WebContents* web_contents)
        : PasswordGenerationPopupControllerImpl(
@@ -148,7 +147,7 @@ index 7fbfcfe..31cb534 100644
                  /*max_length=*/10,
                  /*generation_element=*/base::string16(),
                  autofill::FieldRendererId(100),
-@@ -70,7 +76,9 @@
+@@ -70,7 +76,9 @@ IN_PROC_BROWSER_TEST_F(PasswordGenerationPopupViewTest,
        new autofill::TestPasswordGenerationPopupController(GetWebContents());
    controller_->Show(PasswordGenerationPopupController::kEditGeneratedPassword);
  
@@ -160,10 +159,10 @@ index 7fbfcfe..31cb534 100644
    // This hides the popup and destroys the controller.
    GetWebContents()->Close();
 diff --git a/chrome/browser/ui/views/autofill/autofill_popup_base_view.cc b/chrome/browser/ui/views/autofill/autofill_popup_base_view.cc
-index cb0c7e0..f748f66 100644
+index cb0c7e0b669fcae0f9c842221be47c2866a18d39..f748f66b78f6880dc72037e09b86697f30b696c2 100644
 --- a/chrome/browser/ui/views/autofill/autofill_popup_base_view.cc
 +++ b/chrome/browser/ui/views/autofill/autofill_popup_base_view.cc
-@@ -259,8 +259,8 @@
+@@ -259,8 +259,8 @@ bool AutofillPopupBaseView::DoUpdateBoundsAndRedrawPopup() {
    // area so that the user notices the presence of the popup.
    int item_height =
        children().size() > 0 ? children()[0]->GetPreferredSize().height() : 0;
@@ -175,10 +174,10 @@ index cb0c7e0..f748f66 100644
      return false;
    }
 diff --git a/chrome/browser/ui/views/autofill/autofill_popup_base_view_browsertest.cc b/chrome/browser/ui/views/autofill/autofill_popup_base_view_browsertest.cc
-index fcf2076..92b7987 100644
+index fcf2076ddff00a4a010f8d5c14c9b99070aa6911..92b79871919e971aff7043718b0187d8b9e8972c 100644
 --- a/chrome/browser/ui/views/autofill/autofill_popup_base_view_browsertest.cc
 +++ b/chrome/browser/ui/views/autofill/autofill_popup_base_view_browsertest.cc
-@@ -53,10 +53,13 @@
+@@ -53,10 +53,13 @@ class AutofillPopupBaseViewTest : public InProcessBrowserTest {
    ~AutofillPopupBaseViewTest() override {}
  
    void SetUpOnMainThread() override {
@@ -195,10 +194,10 @@ index fcf2076..92b7987 100644
  
      view_ = new AutofillPopupBaseView(
 diff --git a/chrome/browser/ui/views/autofill/autofill_popup_view_native_views.cc b/chrome/browser/ui/views/autofill/autofill_popup_view_native_views.cc
-index 85fb2be..3aa8e7a 100644
+index 80212002da57695f5eef75d76a33670a2f8ff63a..23e199d21d9140a936e3a6637e935c290650015c 100644
 --- a/chrome/browser/ui/views/autofill/autofill_popup_view_native_views.cc
 +++ b/chrome/browser/ui/views/autofill/autofill_popup_view_native_views.cc
-@@ -1230,8 +1230,9 @@
+@@ -1284,8 +1284,9 @@ bool AutofillPopupViewNativeViews::DoUpdateBoundsAndRedrawPopup() {
        body_container_ && body_container_->children().size() > 0
            ? body_container_->children()[0]->GetPreferredSize().height()
            : 0;
@@ -211,10 +210,10 @@ index 85fb2be..3aa8e7a 100644
      return false;
    }
 diff --git a/chrome/browser/ui/views/autofill/autofill_popup_view_utils.cc b/chrome/browser/ui/views/autofill/autofill_popup_view_utils.cc
-index e95fe36..82f528c 100644
+index e95fe363ba65c7bf6223820f5f3ec110d395cbeb..82f528c39a6edeb329bc8c19321831caca41e553 100644
 --- a/chrome/browser/ui/views/autofill/autofill_popup_view_utils.cc
 +++ b/chrome/browser/ui/views/autofill/autofill_popup_view_utils.cc
-@@ -87,16 +87,26 @@
+@@ -87,16 +87,26 @@ gfx::Rect CalculatePopupBounds(const gfx::Size& desired_size,
    return popup_bounds;
  }
  
@@ -248,10 +247,10 @@ index e95fe36..82f528c 100644
 +          element_bottom_is_within_content_area_bounds);
  }
 diff --git a/chrome/browser/ui/views/autofill/autofill_popup_view_utils.h b/chrome/browser/ui/views/autofill/autofill_popup_view_utils.h
-index 990d67c..bab1a26 100644
+index 990d67cababe9363fe5ee1b91bee81986846f807..bab1a26c38f7fcbea7da51e92e0d8e3dfe97622b 100644
 --- a/chrome/browser/ui/views/autofill/autofill_popup_view_utils.h
 +++ b/chrome/browser/ui/views/autofill/autofill_popup_view_utils.h
-@@ -34,9 +34,10 @@
+@@ -34,9 +34,10 @@ gfx::Rect CalculatePopupBounds(const gfx::Size& desired_size,
                                 bool is_rtl);
  
  // Returns whether there is enough height within |content_area_bounds| above or
@@ -267,7 +266,7 @@ index 990d67c..bab1a26 100644
  
  #endif  // CHROME_BROWSER_UI_VIEWS_AUTOFILL_AUTOFILL_POPUP_VIEW_UTILS_H_
 diff --git a/chrome/browser/ui/views/autofill/autofill_popup_view_utils_unittest.cc b/chrome/browser/ui/views/autofill/autofill_popup_view_utils_unittest.cc
-index 78fa8a0..cecd8d2 100644
+index 78fa8a09a4791bde5825935e8f2b7e805c100b1f..cecd8d2c3173ea7b48ebebf5ae33fd2c531e6551 100644
 --- a/chrome/browser/ui/views/autofill/autofill_popup_view_utils_unittest.cc
 +++ b/chrome/browser/ui/views/autofill/autofill_popup_view_utils_unittest.cc
 @@ -1,3 +1,4 @@
@@ -275,7 +274,7 @@ index 78fa8a0..cecd8d2 100644
  // Copyright 2020 The Chromium Authors. All rights reserved.
  // Use of this source code is governed by a BSD-style license that can be
  // found in the LICENSE file.
-@@ -115,7 +116,34 @@
+@@ -115,7 +116,34 @@ TEST(AutofillPopupViewUtilsTest, NotEnoughHeightForAnItem) {
    gfx::Rect content_area_bounds(x, window_y + 2, width, height - 2);
    gfx::Rect element_bounds(x, window_y + 3, width, height - 3);
  
