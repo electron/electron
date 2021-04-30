@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/logging.h"
 #include "gin/converter.h"
 #include "gin/wrappable.h"
 
@@ -34,7 +35,15 @@ v8::Local<v8::Value> EmitEvent(v8::Isolate* isolate,
   internal::ValueVector concatenated_args = {gin::StringToV8(isolate, name)};
   concatenated_args.reserve(1 + args.size());
   concatenated_args.insert(concatenated_args.end(), args.begin(), args.end());
-  return internal::CallMethodWithArgs(isolate, obj, "emit", &concatenated_args);
+
+  v8::TryCatch try_catch(isolate);
+  v8::Local<v8::Value> value =
+      internal::CallMethodWithArgs(isolate, obj, "emit", &concatenated_args);
+  if (try_catch.HasCaught()) {
+    LOG(ERROR) << "An unknown error occurred in the event emitter";
+  }
+
+  return value;
 }
 
 // obj.emit(name, args...);
@@ -48,7 +57,15 @@ v8::Local<v8::Value> EmitEvent(v8::Isolate* isolate,
       gin::StringToV8(isolate, name),
       gin::ConvertToV8(isolate, std::forward<Args>(args))...,
   };
-  return internal::CallMethodWithArgs(isolate, obj, "emit", &converted_args);
+
+  v8::TryCatch try_catch(isolate);
+  v8::Local<v8::Value> value =
+      internal::CallMethodWithArgs(isolate, obj, "emit", &converted_args);
+  if (try_catch.HasCaught()) {
+    LOG(ERROR) << "An unknown error occurred in the event emitter";
+  }
+
+  return value;
 }
 
 // obj.custom_emit(args...)
@@ -60,8 +77,15 @@ v8::Local<v8::Value> CustomEmit(v8::Isolate* isolate,
   internal::ValueVector converted_args = {
       gin::ConvertToV8(isolate, std::forward<Args>(args))...,
   };
-  return internal::CallMethodWithArgs(isolate, object, custom_emit,
-                                      &converted_args);
+
+  v8::TryCatch try_catch(isolate);
+  v8::Local<v8::Value> value = internal::CallMethodWithArgs(
+      isolate, object, custom_emit, &converted_args);
+  if (try_catch.HasCaught()) {
+    LOG(ERROR) << "An unknown error occurred in the event emitter";
+  }
+
+  return value;
 }
 
 template <typename T, typename... Args>
@@ -83,7 +107,15 @@ v8::Local<v8::Value> CallMethod(gin::Wrappable<T>* object,
                                 const char* method_name,
                                 Args&&... args) {
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
-  return CallMethod(isolate, object, method_name, std::forward<Args>(args)...);
+
+  v8::TryCatch try_catch(isolate);
+  v8::Local<v8::Value> value =
+      CallMethod(isolate, object, method_name, std::forward<Args>(args)...);
+  if (try_catch.HasCaught()) {
+    LOG(ERROR) << "An unknown error occurred in the event emitter";
+  }
+
+  return value;
 }
 
 }  // namespace gin_helper
