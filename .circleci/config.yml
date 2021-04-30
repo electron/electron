@@ -2369,9 +2369,11 @@ workflows:
     - osx-publish-skip-checkout:
         requires:
           - mac-checkout
+        context: release-env
     - mas-publish-skip-checkout:
         requires:
           - mac-checkout
+        context: release-env
 
   lint:
     when: << pipeline.parameters.run-lint >>
