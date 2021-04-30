@@ -40,7 +40,8 @@ The simplest way to get signing certificates is to use Xcode:
 
 The "Apple Development" certificate is used to sign apps for development and
 testing, on machines that have been registered on Apple Developer website. The
-method of registration will be described later.
+method of registration will be described in
+[Install provisioning profile](#install-provisioning-profile).
 
 Apps signed with the "Apple Development" certificate cannot be submitted to Mac
 App Store. For that purpose, apps must be signed with the "Apple Distribution"
