@@ -1,10 +1,6 @@
-# Quick Start Guide
+# Quick Start
 
-## Quickstart
-
-Electron is a framework that enables you to create desktop applications with JavaScript, HTML, and CSS. These applications can then be packaged to run directly on macOS, Windows, or Linux, or distributed via the Mac App Store or the Microsoft Store.
-
-Typically, you create a desktop application for an operating system (OS) using each operating system's specific native application frameworks. Electron makes it possible to write your application once using technologies that you already know.
+## Installation
 
 ### Prerequisites
 
@@ -22,11 +18,23 @@ npm -v
 ```
 
 The commands should print the versions of Node.js and npm accordingly.
-If both commands succeeded, you are ready to install Electron.
+
+**Note:** Since Electron embeds Node.js into its binary, the version of Node that is
+used within your app will not necessarily match the version you have installed locally.
+
+### Install Electron
+
+Create a folder for your project and install Electron there:
+
+```sh npm2yarn
+npm i --save-dev electron
+```
 
 ### Create a basic application
 
-From a development perspective, an Electron application is essentially a Node.js application. This means that the starting point of your Electron application will be a `package.json` file like in any other Node.js application. A minimal Electron application has the following structure:
+From a development perspective, an Electron application runs like a typical Node.js application.
+This means that the starting point of your Electron application will be a `package.json` file
+like in any other Node.js application. A minimal Electron application has the following structure:
 
 ```plaintext
 my-electron-app/
@@ -37,16 +45,6 @@ my-electron-app/
 ```
 
 Let's create a basic application based on the structure above.
-
-#### Install Electron
-
-Create a folder for your project and install Electron there:
-
-```sh
-mkdir my-electron-app && cd my-electron-app
-npm init -y
-npm i --save-dev electron
-```
 
 #### Create the main script file
 

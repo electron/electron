@@ -28,13 +28,12 @@ either of these areas, we recommend the following resources:
 
 ## Running examples with Electron Fiddle
 
-[Electron Fiddle](https://electronjs.org/fiddle) is a sandbox app written and
-supported by Electron's maintainers. We highly recommend installing it as a
-learning tool to experiment with Electron's APIs or to prototype features during
+[Electron Fiddle](https://electronjs.org/fiddle) is a sandbox app written
+in Electron and supported by Electron's maintainers. We highly recommend installing
+it as a learning tool to experiment with Electron's APIs or to prototype features during
 development.
 
 Fiddle also integrates nicely with our documentation. When browsing through examples
 in our tutorials, you'll frequently see an "Open in Electron Fiddle" button underneath
-a code block. If you have Fiddle installed, this button will redirect you to a
-`fiddle.electronjs.org` web page that will open that example's code in Fiddle itself, no
-copy-pasting required.
+a code block. If you have Fiddle installed, this button will open a `fiddle.electronjs.org`
+link that will automatically load the example into Fiddle, no copy-pasting required.
