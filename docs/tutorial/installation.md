@@ -11,14 +11,6 @@ npm install electron --save-dev
 See the [Electron versioning doc][versioning] for info on how to
 manage Electron versions in your apps.
 
-## Global Installation
-
-You can also install the `electron` command globally in your `$PATH`:
-
-```sh
-npm install electron -g
-```
-
 ## Customization
 
 If you want to change the architecture that is downloaded (e.g., `ia32` on an
