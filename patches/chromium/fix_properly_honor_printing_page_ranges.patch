@@ -25,7 +25,7 @@ index 07fcfad6ecf676068d3f0b44f97e748d58b13016..f165eea20ca3b120f5fb499248d65fa7
    // Returns true if duplex mode is set.
    bool SetDuplexModeInPrintSettings(mojom::DuplexMode mode);
 diff --git a/printing/printing_context_mac.mm b/printing/printing_context_mac.mm
-index ff9b3e08d49cb0daec83df36257729ff2636fe66..20031e220903f0882bef091ed048f47c4c5dc61c 100644
+index 90da306872814ed166cc38c769491d3a32af7ab0..4e3a9fb906ec91dda5e13d8e185dce068895e99f 100644
 --- a/printing/printing_context_mac.mm
 +++ b/printing/printing_context_mac.mm
 @@ -189,7 +189,8 @@ PMPaper MatchPaper(CFArrayRef paper_list,
