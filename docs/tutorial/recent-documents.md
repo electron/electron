@@ -83,6 +83,14 @@ following code snippet to your menu template:
 }
 ```
 
+Make sure the application menu is added on application 'whenReady' and not before, or 'Open Recent' will be disabled:
+
+```javascript
+app.whenReady().then(() => {
+  Menu.setApplicationMenu(menu);
+});
+```
+
 ![macOS Recent Documents menu item][menu-item-image]
 
 When a file is requested from the recent documents menu, the `open-file` event
