@@ -8,10 +8,10 @@ we invoke it in order to expose contents.decrementCapturerCount([stayHidden, sta
 to users. We should try to upstream this.
 
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index c905b82bc700f8feb0635ced66cfe48aed28776c..b32da2e7f27e8ee2e7126591e12023e17e78c665 100644
+index 860301d6374687ab8f155e5091aba6239c37af35..8b5e624cf456241c7649456ea92716e8233f4c0f 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -1729,9 +1729,11 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
+@@ -1736,9 +1736,11 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
    // shown in the address bar), as opposed to one in for example a Prerender.
    bool IsPrimaryFrameTree(const FrameTree& frame_tree) const;
  

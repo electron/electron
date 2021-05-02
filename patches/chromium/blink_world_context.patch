@@ -7,7 +7,7 @@ This exposes a method for obtaining a reference to an isolated world, which is
 otherwise not available in the Blink API.
 
 diff --git a/third_party/blink/public/web/web_local_frame.h b/third_party/blink/public/web/web_local_frame.h
-index d8cebc01ab2403bbb3286c9fe85b5ba8145779a7..2ef59569d54953863e4e750e99397c4ba791f6f6 100644
+index 95b0e08204792c8a872af5da754fa57830d16945..d67c80ad99fcc5f46d4a475412ec862dba69e973 100644
 --- a/third_party/blink/public/web/web_local_frame.h
 +++ b/third_party/blink/public/web/web_local_frame.h
 @@ -370,6 +370,8 @@ class WebLocalFrame : public WebFrame {
@@ -20,10 +20,10 @@ index d8cebc01ab2403bbb3286c9fe85b5ba8145779a7..2ef59569d54953863e4e750e99397c4b
    // Executes script in the context of the current page and returns the value
    // that the script evaluated to with callback. Script execution can be
 diff --git a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
-index 5613506648709e33a3087a2b0050382e8a995652..17fe50f0944f1aeb500a68803fe9700f40d2c582 100644
+index c9fa66566c5c81746f82a6af92bbd14da88cec0e..f78d8464f5a6c50970cc2c8b28c83559c1a1c769 100644
 --- a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
 +++ b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
-@@ -1065,6 +1065,13 @@ v8::Local<v8::Object> WebLocalFrameImpl::GlobalProxy() const {
+@@ -1079,6 +1079,13 @@ v8::Local<v8::Object> WebLocalFrameImpl::GlobalProxy() const {
    return MainWorldScriptContext()->Global();
  }
  
@@ -38,10 +38,10 @@ index 5613506648709e33a3087a2b0050382e8a995652..17fe50f0944f1aeb500a68803fe9700f
    return BindingSecurity::ShouldAllowAccessToFrame(
        CurrentDOMWindow(V8PerIsolateData::MainThreadIsolate()),
 diff --git a/third_party/blink/renderer/core/frame/web_local_frame_impl.h b/third_party/blink/renderer/core/frame/web_local_frame_impl.h
-index d68632012009dd483ca24d55a63cca0448695b35..e06e3a9ed32626f7488a9d875f8b0c7bf1d72441 100644
+index d029bf6ca2e0aa646dd7b9b763e5854aa2962c49..e0a4c24b81128a6b0d11af8685be8a01d2ad28e6 100644
 --- a/third_party/blink/renderer/core/frame/web_local_frame_impl.h
 +++ b/third_party/blink/renderer/core/frame/web_local_frame_impl.h
-@@ -171,6 +171,8 @@ class CORE_EXPORT WebLocalFrameImpl final
+@@ -170,6 +170,8 @@ class CORE_EXPORT WebLocalFrameImpl final
    v8::Local<v8::Context> MainWorldScriptContext() const override;
    int32_t GetScriptContextWorldId(
        v8::Local<v8::Context> script_context) const override;
