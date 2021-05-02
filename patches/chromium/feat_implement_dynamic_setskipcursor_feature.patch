@@ -7,10 +7,10 @@ useful to skip the cursor capture within the stream while
 the source is being shared
 
 diff --git a/content/browser/media/capture/desktop_capture_device.cc b/content/browser/media/capture/desktop_capture_device.cc
-index e6c609f1880d696880a191710676952a107a8f61..f811a5e81c131d360d9f5a7df83633ff56149c7e 100644
+index c5a4d5ddfba8b06ac53f335de2ef26e2873166c4..030a06d5268702ea49f9ecd2531ae641372fc8b9 100644
 --- a/content/browser/media/capture/desktop_capture_device.cc
 +++ b/content/browser/media/capture/desktop_capture_device.cc
-@@ -117,6 +117,7 @@ class DesktopCaptureDevice::Core : public webrtc::DesktopCapturer::Callback {
+@@ -119,6 +119,7 @@ class DesktopCaptureDevice::Core : public webrtc::DesktopCapturer::Callback {
                          std::unique_ptr<Client> client);
  
    void SetNotificationWindowId(gfx::NativeViewId window_id);
@@ -18,7 +18,7 @@ index e6c609f1880d696880a191710676952a107a8f61..f811a5e81c131d360d9f5a7df83633ff
  
    void SetMockTimeForTesting(
        scoped_refptr<base::SingleThreadTaskRunner> task_runner,
-@@ -273,6 +274,11 @@ void DesktopCaptureDevice::Core::SetNotificationWindowId(
+@@ -275,6 +276,11 @@ void DesktopCaptureDevice::Core::SetNotificationWindowId(
    desktop_capturer_->SetExcludedWindow(window_id);
  }
  
@@ -30,7 +30,7 @@ index e6c609f1880d696880a191710676952a107a8f61..f811a5e81c131d360d9f5a7df83633ff
  void DesktopCaptureDevice::Core::SetMockTimeForTesting(
      scoped_refptr<base::SingleThreadTaskRunner> task_runner,
      const base::TickClock* tick_clock) {
-@@ -625,4 +631,13 @@ void DesktopCaptureDevice::SetMockTimeForTesting(
+@@ -630,4 +636,13 @@ void DesktopCaptureDevice::SetMockTimeForTesting(
    core_->SetMockTimeForTesting(task_runner, tick_clock);
  }
  
@@ -57,7 +57,7 @@ index 58f14fb672766639fc168ef9697455b24ddbcada..ebc3711f74670066e2b048a22e504d7c
   private:
    friend class DesktopCaptureDeviceTest;
 diff --git a/content/browser/renderer_host/media/in_process_launched_video_capture_device.cc b/content/browser/renderer_host/media/in_process_launched_video_capture_device.cc
-index 68442765f9cecf2a59d331f5056f5acc2dacf824..9512efb988093a1c0755b8998023e568d64aebc8 100644
+index a5dddb2551a8a5dd3abdb4c08f1b8c4499d15674..b9c320e23d4f8683705d5c4c84d9f6f78e8fcb69 100644
 --- a/content/browser/renderer_host/media/in_process_launched_video_capture_device.cc
 +++ b/content/browser/renderer_host/media/in_process_launched_video_capture_device.cc
 @@ -137,6 +137,20 @@ void InProcessLaunchedVideoCaptureDevice::SetDesktopCaptureWindowIdAsync(
@@ -80,7 +80,7 @@ index 68442765f9cecf2a59d331f5056f5acc2dacf824..9512efb988093a1c0755b8998023e568
 +
  void InProcessLaunchedVideoCaptureDevice::OnUtilizationReport(
      int frame_feedback_id,
-     media::VideoFrameFeedback feedback) {
+     media::VideoCaptureFeedback feedback) {
 @@ -150,6 +164,20 @@ void InProcessLaunchedVideoCaptureDevice::OnUtilizationReport(
                                  frame_feedback_id, feedback));
  }
@@ -103,7 +103,7 @@ index 68442765f9cecf2a59d331f5056f5acc2dacf824..9512efb988093a1c0755b8998023e568
      SetDesktopCaptureWindowIdOnDeviceThread(media::VideoCaptureDevice* device,
                                              gfx::NativeViewId window_id,
 diff --git a/content/browser/renderer_host/media/in_process_launched_video_capture_device.h b/content/browser/renderer_host/media/in_process_launched_video_capture_device.h
-index 8f82de4715990f5c23efb2b5197e63ed91b6b45c..57019287a3a6aabd2e2772c9c4440b48d221407c 100644
+index 686308ea1feb04d7547ece5052dedf6d650ce9a0..3a4cfbce433ca8c6df4d8d0c38ff2ad607b66447 100644
 --- a/content/browser/renderer_host/media/in_process_launched_video_capture_device.h
 +++ b/content/browser/renderer_host/media/in_process_launched_video_capture_device.h
 @@ -33,6 +33,9 @@ class InProcessLaunchedVideoCaptureDevice : public LaunchedVideoCaptureDevice {
@@ -114,7 +114,7 @@ index 8f82de4715990f5c23efb2b5197e63ed91b6b45c..57019287a3a6aabd2e2772c9c4440b48
 +                                        base::OnceClosure done_cb) override;
 +
    void OnUtilizationReport(int frame_feedback_id,
-                            media::VideoFrameFeedback feedback) override;
+                            media::VideoCaptureFeedback feedback) override;
  
 @@ -41,6 +44,10 @@ class InProcessLaunchedVideoCaptureDevice : public LaunchedVideoCaptureDevice {
        media::VideoCaptureDevice* device,
@@ -128,7 +128,7 @@ index 8f82de4715990f5c23efb2b5197e63ed91b6b45c..57019287a3a6aabd2e2772c9c4440b48
    std::unique_ptr<media::VideoCaptureDevice> device_;
    const scoped_refptr<base::SingleThreadTaskRunner> device_task_runner_;
 diff --git a/content/browser/renderer_host/media/service_launched_video_capture_device.cc b/content/browser/renderer_host/media/service_launched_video_capture_device.cc
-index e0e04740dd0361843ff61b9d2ddb237ee97a720f..b56314727edcc711a3793e71924eded6878a84be 100644
+index 21783408e930a70c1029efbfde8b641eecad1780..6b7fad833c87a6e1d31c63e5e30a6d94beb38956 100644
 --- a/content/browser/renderer_host/media/service_launched_video_capture_device.cc
 +++ b/content/browser/renderer_host/media/service_launched_video_capture_device.cc
 @@ -81,6 +81,15 @@ void ServiceLaunchedVideoCaptureDevice::RequestRefreshFrame() {
@@ -148,7 +148,7 @@ index e0e04740dd0361843ff61b9d2ddb237ee97a720f..b56314727edcc711a3793e71924eded6
      gfx::NativeViewId window_id,
      base::OnceClosure done_cb) {
 diff --git a/content/browser/renderer_host/media/service_launched_video_capture_device.h b/content/browser/renderer_host/media/service_launched_video_capture_device.h
-index faabd6b9a95045b8f442ad4149355a63ab8dc838..54dbc4e89384456c1873ce695ae30fd51b3dee4b 100644
+index ba749b98e5ad542e6ff789859592f3690fc557ac..c268d7238ed02394394d12ad7af3a31974d0f4fa 100644
 --- a/content/browser/renderer_host/media/service_launched_video_capture_device.h
 +++ b/content/browser/renderer_host/media/service_launched_video_capture_device.h
 @@ -34,6 +34,8 @@ class ServiceLaunchedVideoCaptureDevice : public LaunchedVideoCaptureDevice {
@@ -161,7 +161,7 @@ index faabd6b9a95045b8f442ad4149355a63ab8dc838..54dbc4e89384456c1873ce695ae30fd5
    void SetDesktopCaptureWindowIdAsync(gfx::NativeViewId window_id,
                                        base::OnceClosure done_cb) override;
 diff --git a/content/browser/renderer_host/media/video_capture_controller.cc b/content/browser/renderer_host/media/video_capture_controller.cc
-index aa37a1a0adb18d4f6a9ff2b4169f8ac00f515167..ebb0d2e2156e4a551b2ae4710e63b6528973719b 100644
+index 575f9f7526df5feca765de063e39b4140e650de4..cb04590f3120cc2af9c217e80f432e4cb7ea1889 100644
 --- a/content/browser/renderer_host/media/video_capture_controller.cc
 +++ b/content/browser/renderer_host/media/video_capture_controller.cc
 @@ -822,6 +822,15 @@ void VideoCaptureController::SetDesktopCaptureWindowIdAsync(
@@ -181,7 +181,7 @@ index aa37a1a0adb18d4f6a9ff2b4169f8ac00f515167..ebb0d2e2156e4a551b2ae4710e63b652
      const VideoCaptureControllerID& id,
      VideoCaptureControllerEventHandler* handler,
 diff --git a/content/browser/renderer_host/media/video_capture_controller.h b/content/browser/renderer_host/media/video_capture_controller.h
-index f1c707bc17df482bb0ec3744dfd4e457a4fa8772..1a8851b5fccce11a293c5ea429e49e3d426d1ae7 100644
+index 8b5b93e3a91f92b0ac029dc353315699d0dd9977..ce24549bc1b750bf7b73e194fc08718a38798d34 100644
 --- a/content/browser/renderer_host/media/video_capture_controller.h
 +++ b/content/browser/renderer_host/media/video_capture_controller.h
 @@ -150,6 +150,8 @@ class CONTENT_EXPORT VideoCaptureController
@@ -194,10 +194,10 @@ index f1c707bc17df482bb0ec3744dfd4e457a4fa8772..1a8851b5fccce11a293c5ea429e49e3d
    const std::string& device_id() const { return device_id_; }
    blink::mojom::MediaStreamType stream_type() const { return stream_type_; }
 diff --git a/content/browser/renderer_host/media/video_capture_manager.cc b/content/browser/renderer_host/media/video_capture_manager.cc
-index bbf39213260ed8757979f73a908007fb17dea2df..c2027d29d268de54198f3c510ef9ac5295935eca 100644
+index e9d68929855c2c99ac3972b9480d3cea8318ac39..985125c4852d7bf9062d32a4f066ab83e560c7a4 100644
 --- a/content/browser/renderer_host/media/video_capture_manager.cc
 +++ b/content/browser/renderer_host/media/video_capture_manager.cc
-@@ -621,6 +621,36 @@ void VideoCaptureManager::MaybePostDesktopCaptureWindowId(
+@@ -622,6 +622,36 @@ void VideoCaptureManager::MaybePostDesktopCaptureWindowId(
    notification_window_ids_.erase(window_id_it);
  }
  
@@ -235,7 +235,7 @@ index bbf39213260ed8757979f73a908007fb17dea2df..c2027d29d268de54198f3c510ef9ac52
      const base::UnguessableToken& session_id,
      media::VideoCaptureDevice::GetPhotoStateCallback callback) {
 diff --git a/content/browser/renderer_host/media/video_capture_manager.h b/content/browser/renderer_host/media/video_capture_manager.h
-index 3f28001da833aa987c4c703fb102b4f609cbf692..4800ffa7328f0263a34dc8ce65d0f278b7cbdd0a 100644
+index 0f5149cf290a20f8318c169104a7f22e1f8ff1c2..213e0cdda4dc62e9d65a26d2ddbad08fcce9f130 100644
 --- a/content/browser/renderer_host/media/video_capture_manager.h
 +++ b/content/browser/renderer_host/media/video_capture_manager.h
 @@ -163,6 +163,10 @@ class CONTENT_EXPORT VideoCaptureManager
@@ -250,10 +250,10 @@ index 3f28001da833aa987c4c703fb102b4f609cbf692..4800ffa7328f0263a34dc8ce65d0f278
                       VideoCaptureDevice::GetPhotoStateCallback callback);
    void SetPhotoOptions(const base::UnguessableToken& session_id,
 diff --git a/content/public/browser/BUILD.gn b/content/public/browser/BUILD.gn
-index 6155a91c6f3e9153c6675e107fd2cf2fdd121142..e9a87e8e0f679ef316a1f294d375d095a4eba6b1 100644
+index 1f6f074dbc262025570f329498fbcb583dbccf5d..9940197346f8d93b76fb581458e00e012a34077f 100644
 --- a/content/public/browser/BUILD.gn
 +++ b/content/public/browser/BUILD.gn
-@@ -201,6 +201,8 @@ source_set("browser_sources") {
+@@ -202,6 +202,8 @@ source_set("browser_sources") {
      "login_delegate.h",
      "manifest_icon_downloader.h",
      "media_capture_devices.h",

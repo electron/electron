@@ -7,7 +7,7 @@ useful to skip the cursor capture within the stream while
 the source is being shared
 
 diff --git a/modules/desktop_capture/desktop_and_cursor_composer.cc b/modules/desktop_capture/desktop_and_cursor_composer.cc
-index f282c1d500ae8f5087d72a041dbe621508949f74..9568c01d6db34d201d9328ba6f24247d1e24b612 100644
+index 69b8b40c7329bd3b6c24c19e68a7b19d1d82e1ac..796b457de01396645291ce2359725bf56046e68f 100644
 --- a/modules/desktop_capture/desktop_and_cursor_composer.cc
 +++ b/modules/desktop_capture/desktop_and_cursor_composer.cc
 @@ -203,10 +203,14 @@ bool DesktopAndCursorComposer::IsOccluded(const DesktopVector& pos) {
@@ -23,9 +23,9 @@ index f282c1d500ae8f5087d72a041dbe621508949f74..9568c01d6db34d201d9328ba6f24247d
      std::unique_ptr<DesktopFrame> frame) {
 -  if (frame && cursor_) {
 +  if (frame && cursor_ && !skip_cursor_) {
-     if (frame->rect().Contains(cursor_position_) &&
+     if (!frame->may_contain_cursor() &&
+         frame->rect().Contains(cursor_position_) &&
          !desktop_capturer_->IsOccluded(cursor_position_)) {
-       DesktopVector relative_position =
 diff --git a/modules/desktop_capture/desktop_and_cursor_composer.h b/modules/desktop_capture/desktop_and_cursor_composer.h
 index 8f95721ec295e9496654e81f240cf8543b236456..faf32c3a9718525c40724004c8b26e9ac725f8fa 100644
 --- a/modules/desktop_capture/desktop_and_cursor_composer.h
