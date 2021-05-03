@@ -507,14 +507,6 @@ Returns:
 Emitted when `desktopCapturer.getSources()` is called in the renderer process of `webContents`.
 Calling `event.preventDefault()` will make it return empty sources.
 
-### Event: 'desktop-capturer-set-skip-cursor'
-
-Returns:
-
-* `event` Event
-
-Emitted when `desktopCapturer.setSkipCursor(sourceId, skip)` is called. Calling `event.preventDefault()` will stop the cursor skip change.
-
 ## Methods
 
 The `app` object has the following methods:

@@ -253,4 +253,48 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
       }
     }).to.not.throw();
   });
+
+  it('setSkipCursor called when sharing content', async () => {
+    // test calling set skip cursor when we are sharing content in renderer
+    const win = new BrowserWindow({ show: false, width: 200, height: 200, webPreferences: { contextIsolation: false } });
+    win.show();
+
+    const result = await w.webContents.executeJavaScript(`new Promise((resolve, reject) => {
+      const { desktopCapturer } = require('electron');
+      desktopCapturer.getSources({
+        types: ['screen', 'window']
+      }).then(async (sources) => {
+        if (sources.length > 0) {
+
+          const sourceId = sources[0].id;
+
+          try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+              audio: false,
+              video: {
+                mandatory: {
+                  chromeMediaSource: 'desktop',
+                  chromeMediaSourceId: sourceId,
+                  minWidth: 1280,
+                  maxWidth: 1280,
+                  minHeight: 720,
+                  maxHeight: 720
+                }
+              }
+            })
+
+            desktopCapturer.setSkipCursor(sourceId, false);
+
+            resolve('ok');
+          } catch (e) {
+            reject(e);
+          }
+        }
+      });
+    })`);
+
+    expect(result).to.equal('ok');
+
+    win.destroy();
+  });
 });

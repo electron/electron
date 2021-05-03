@@ -203,6 +203,7 @@ declare namespace NodeJS {
     };
     _linkedBinding(name: 'electron_browser_desktop_capturer'): {
       createDesktopCapturer(): ElectronInternal.DesktopCapturer;
+      setSkipCursor(sourceId: string, skip: boolean): void;
     };
     _linkedBinding(name: 'electron_browser_event'): {
       createWithSender(sender: Electron.WebContents): Electron.Event;

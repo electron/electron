@@ -125,11 +125,6 @@ void DesktopCapturer::OnSourceUnchanged(DesktopMediaList* list) {
   UpdateSourcesList(list);
 }
 
-void DesktopCapturer::SetSkipCursor(const std::string& device_id,
-                                    bool skip_cursor) {
-  content::MediaDeviceRequest::SetSkipCursor(device_id, skip_cursor);
-}
-
 void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
   if (capture_window_ &&
       list->GetMediaListType() == DesktopMediaList::Type::kWindow) {
@@ -224,8 +219,7 @@ gin::Handle<DesktopCapturer> DesktopCapturer::Create(v8::Isolate* isolate) {
 gin::ObjectTemplateBuilder DesktopCapturer::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   return gin::Wrappable<DesktopCapturer>::GetObjectTemplateBuilder(isolate)
-      .SetMethod("startHandling", &DesktopCapturer::StartHandling)
-      .SetMethod("setSkipCursor", &DesktopCapturer::SetSkipCursor);
+      .SetMethod("startHandling", &DesktopCapturer::StartHandling);
 }
 
 const char* DesktopCapturer::GetTypeName() {
@@ -245,6 +239,7 @@ void Initialize(v8::Local<v8::Object> exports,
   gin_helper::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("createDesktopCapturer",
                  &electron::api::DesktopCapturer::Create);
+  dict.SetMethod("setSkipCursor", &content::MediaDeviceRequest::SetSkipCursor);
 }
 
 }  // namespace

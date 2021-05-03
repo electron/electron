@@ -99,10 +99,52 @@ which can detected by [`systemPreferences.getMediaAccessStatus`].
 
 ### `desktopCapturer.setSkipCursor(sourceId, skip)`
 
+Used to dynamically show or stop cursor capture in the mediastream when sharing content.
+
 * `sourceId` String - Device id in the format of [`DesktopCapturerSource`](structures/desktop-capturer-source.md) 's id.
 * `skip` Boolean
 
-By default the cursor is captured. Useful to dynamically show or stop cursor capture when sharing content.
+By default the cursor is captured. Following example shows how to toggle the cursor  capture when sharing content.
+
+```javascript
+// In the renderer process.
+const { desktopCapturer } = require('electron')
+
+let capturedSourceId
+
+desktopCapturer.getSources({ types: ['window', 'screen'] }).then(async sources => {
+  for (const source of sources) {
+    if (source.name === 'Electron') {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: false,
+          video: {
+            mandatory: {
+              chromeMediaSource: 'desktop',
+              chromeMediaSourceId: source.id,
+              minWidth: 1280,
+              maxWidth: 1280,
+              minHeight: 720,
+              maxHeight: 720
+            }
+          }
+        })
+        // store the captured source id
+        capturedSourceId = source.id
+        // handle stream
+      } catch (e) {
+        // handle error
+      }
+      return
+    }
+  }
+})
+
+// On some condition like say button click we want to toggle cursor capture
+function onToggleCursor (isSkipCursor) {
+  desktopCapturer.setSkipCursor(capturedSourceId, isSkipCursor)
+}
+```
 
 ## Caveats
 
