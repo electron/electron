@@ -28,6 +28,10 @@ class IconManager;
 namespace wm {
 class WMState;
 }
+
+namespace display {
+class Screen;
+}
 #endif
 
 #if defined(USE_X11)
