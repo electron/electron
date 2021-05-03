@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Samuel Attard <sattard@slack-corp.com>
 Date: Mon, 8 Mar 2021 16:27:39 -0800
-Subject: moves background_color setter of WebView to blinks webprefs logic
+Subject: extend ApplyWebPreferences with Electron-specific logic
 
 background_color can be updated at runtime, as such we need to apply the
 new background color to the WebView in the ApplyPreferences method.
@@ -35,6 +35,8 @@ index d7ada5c44ba02449ab11d4cb5a6f201ea6adf9f6..e77a0d718ee398ad9c31736a9cb13e22
 +      color = static_cast<SkColor>(blink_color);
 +  }
 +  web_view->SetBaseBackgroundColor(color);
++
++  SetUseExternalPopupMenus(!prefs.offscreen);
  }
  
  void WebViewImpl::ThemeChanged() {

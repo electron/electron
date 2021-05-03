@@ -326,13 +326,6 @@ void WebContentsPreferences::AppendCommandLineSwitches(
     }
   }
 
-  // --offscreen
-  // TODO(loc): Offscreen is duplicated in WebPreferences because it's needed
-  // earlier than we can get WebPreferences at the moment.
-  if (IsEnabled(options::kOffscreen)) {
-    command_line->AppendSwitch(options::kOffscreen);
-  }
-
 #if defined(OS_MAC)
   // Enable scroll bounce.
   if (IsEnabled(options::kScrollBounce))
