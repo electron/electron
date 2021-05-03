@@ -1,17 +1,16 @@
-From 5d3a047a15e0a5fce47f2ce2ba87303fe9faa91b Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jeremy Rose <jeremya@chromium.org>
-Date: Mon, 03 May 2021 15:40:47 -0700
-Subject: [PATCH] conditionally import strip_binary.gni in chromedriver tests
+Date: Mon, 3 May 2021 15:40:47 -0700
+Subject: conditionally import strip_binary.gni in chromedriver tests
 
 This import is conditional elsewhere (see e.g.
 https://source.chromium.org/chromium/chromium/src/+/main:chrome/BUILD.gn;l=38;drc=dfe5d22212436b797a2f0dba23fe5152f4c5e871).
 This removes a dependency on the //build/linux .gni files from the macos build.
 
 Change-Id: Ia2f2c245f7182c9f48327962d9e8d37d0e9652b4
----
 
 diff --git a/chrome/test/chromedriver/BUILD.gn b/chrome/test/chromedriver/BUILD.gn
-index 31237143..eae6482 100644
+index 31237143bebba64d15c6b021760a416ec022ca00..eae6482aa679680fa078626a5709a28a7da8bff0 100644
 --- a/chrome/test/chromedriver/BUILD.gn
 +++ b/chrome/test/chromedriver/BUILD.gn
 @@ -4,7 +4,9 @@
