@@ -421,7 +421,7 @@ v8::Local<v8::Promise> Session::GetCacheSize() {
   gin_helper::Promise<int64_t> promise(isolate_);
   auto handle = promise.GetHandle();
 
-  content::BrowserContext::GetDefaultStoragePartition(browser_context_)
+  browser_context_->GetDefaultStoragePartition()
       ->GetNetworkContext()
       ->ComputeHttpCacheSize(
           base::Time(), base::Time::Max(),
@@ -444,7 +444,7 @@ v8::Local<v8::Promise> Session::ClearCache() {
   gin_helper::Promise<void> promise(isolate_);
   auto handle = promise.GetHandle();
 
-  content::BrowserContext::GetDefaultStoragePartition(browser_context_)
+  browser_context_->GetDefaultStoragePartition()
       ->GetNetworkContext()
       ->ClearHttpCache(base::Time(), base::Time::Max(), nullptr,
                        base::BindOnce(gin_helper::Promise<void>::ResolvePromise,
@@ -461,8 +461,7 @@ v8::Local<v8::Promise> Session::ClearStorageData(gin::Arguments* args) {
   ClearStorageDataOptions options;
   args->GetNext(&options);
 
-  auto* storage_partition =
-      content::BrowserContext::GetStoragePartition(browser_context(), nullptr);
+  auto* storage_partition = browser_context()->GetStoragePartition(nullptr);
   if (options.storage_types & StoragePartition::REMOVE_DATA_MASK_COOKIES) {
     // Reset media device id salt when cookies are cleared.
     // https://w3c.github.io/mediacapture-main/#dom-mediadeviceinfo-deviceid
@@ -478,8 +477,7 @@ v8::Local<v8::Promise> Session::ClearStorageData(gin::Arguments* args) {
 }
 
 void Session::FlushStorageData() {
-  auto* storage_partition =
-      content::BrowserContext::GetStoragePartition(browser_context(), nullptr);
+  auto* storage_partition = browser_context()->GetStoragePartition(nullptr);
   storage_partition->Flush();
 }
 
@@ -552,7 +550,7 @@ v8::Local<v8::Promise> Session::ForceReloadProxyConfig() {
   gin_helper::Promise<void> promise(isolate_);
   auto handle = promise.GetHandle();
 
-  content::BrowserContext::GetDefaultStoragePartition(browser_context_)
+  browser_context_->GetDefaultStoragePartition()
       ->GetNetworkContext()
       ->ForceReloadProxyConfig(base::BindOnce(
           gin_helper::Promise<void>::ResolvePromise, std::move(promise)));
@@ -577,16 +575,14 @@ void Session::EnableNetworkEmulation(const gin_helper::Dictionary& options) {
   }
 
   auto* network_context =
-      content::BrowserContext::GetDefaultStoragePartition(browser_context_)
-          ->GetNetworkContext();
+      browser_context_->GetDefaultStoragePartition()->GetNetworkContext();
   network_context->SetNetworkConditions(network_emulation_token_,
                                         std::move(conditions));
 }
 
 void Session::DisableNetworkEmulation() {
   auto* network_context =
-      content::BrowserContext::GetDefaultStoragePartition(browser_context_)
-          ->GetNetworkContext();
+      browser_context_->GetDefaultStoragePartition()->GetNetworkContext();
   network_context->SetNetworkConditions(
       network_emulation_token_, network::mojom::NetworkConditions::New());
 }
@@ -606,7 +602,7 @@ void Session::SetCertVerifyProc(v8::Local<v8::Value> val,
         std::make_unique<CertVerifierClient>(proc),
         cert_verifier_client_remote.InitWithNewPipeAndPassReceiver());
   }
-  content::BrowserContext::GetDefaultStoragePartition(browser_context_)
+  browser_context_->GetDefaultStoragePartition()
       ->GetNetworkContext()
       ->SetCertVerifierClient(std::move(cert_verifier_client_remote));
 }
@@ -655,7 +651,7 @@ v8::Local<v8::Promise> Session::ClearHostResolverCache(gin::Arguments* args) {
   gin_helper::Promise<void> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  content::BrowserContext::GetDefaultStoragePartition(browser_context_)
+  browser_context_->GetDefaultStoragePartition()
       ->GetNetworkContext()
       ->ClearHostCache(nullptr,
                        base::BindOnce(gin_helper::Promise<void>::ResolvePromise,
@@ -668,7 +664,7 @@ v8::Local<v8::Promise> Session::ClearAuthCache() {
   gin_helper::Promise<void> promise(isolate_);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  content::BrowserContext::GetDefaultStoragePartition(browser_context_)
+  browser_context_->GetDefaultStoragePartition()
       ->GetNetworkContext()
       ->ClearHttpAuthCache(
           base::Time(), base::Time::Max(),
@@ -695,8 +691,7 @@ void Session::SetUserAgent(const std::string& user_agent,
                            gin::Arguments* args) {
   browser_context_->SetUserAgent(user_agent);
   auto* network_context =
-      content::BrowserContext::GetDefaultStoragePartition(browser_context_)
-          ->GetNetworkContext();
+      browser_context_->GetDefaultStoragePartition()->GetNetworkContext();
   network_context->SetUserAgent(user_agent);
 
   std::string accept_lang;
@@ -957,7 +952,7 @@ v8::Local<v8::Promise> Session::CloseAllConnections() {
   gin_helper::Promise<void> promise(isolate_);
   auto handle = promise.GetHandle();
 
-  content::BrowserContext::GetDefaultStoragePartition(browser_context_)
+  browser_context_->GetDefaultStoragePartition()
       ->GetNetworkContext()
       ->CloseAllConnections(base::BindOnce(
           gin_helper::Promise<void>::ResolvePromise, std::move(promise)));

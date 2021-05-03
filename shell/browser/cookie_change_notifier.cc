@@ -37,7 +37,7 @@ void CookieChangeNotifier::StartListening() {
   DCHECK(!receiver_.is_bound());
 
   network::mojom::CookieManager* cookie_manager =
-      content::BrowserContext::GetDefaultStoragePartition(browser_context_)
+      browser_context_->GetDefaultStoragePartition()
           ->GetCookieManagerForBrowserProcess();
 
   // Cookie manager should be created whenever network context is created,

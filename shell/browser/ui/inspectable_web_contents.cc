@@ -700,8 +700,9 @@ void InspectableWebContents::LoadNetworkResource(DispatchCallback callback,
         std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
             std::move(pending_remote)));
   } else {
-    auto* partition = content::BrowserContext::GetDefaultStoragePartition(
-        GetDevToolsWebContents()->GetBrowserContext());
+    auto* partition = GetDevToolsWebContents()
+                          ->GetBrowserContext()
+                          ->GetDefaultStoragePartition();
     url_loader_factory = partition->GetURLLoaderFactoryForBrowserProcess();
   }
 
