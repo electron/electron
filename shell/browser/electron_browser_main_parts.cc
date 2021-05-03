@@ -287,8 +287,8 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
 
 int ElectronBrowserMainParts::PreCreateThreads() {
 #if defined(USE_AURA)
-  display::Screen* screen = views::CreateDesktopScreen();
-  display::Screen::SetScreenInstance(screen);
+  screen_ = views::CreateDesktopScreen();
+  display::Screen::SetScreenInstance(screen_.get());
 #if defined(OS_LINUX)
   views::LinuxUI::instance()->UpdateDeviceScaleFactor();
 #endif
