@@ -124,6 +124,7 @@ class Session : public gin::Wrappable<Session>,
   v8::Local<v8::Value> NetLog(v8::Isolate* isolate);
   void Preconnect(const gin_helper::Dictionary& options, gin::Arguments* args);
   v8::Local<v8::Promise> CloseAllConnections();
+  v8::Local<v8::Value> GetPath(v8::Isolate* isolate);
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   base::Value GetSpellCheckerLanguages();
   void SetSpellCheckerLanguages(gin_helper::ErrorThrower thrower,

@@ -822,6 +822,11 @@ Returns `Extension[]` - A list of all loaded extensions.
 **Note:** This API cannot be called before the `ready` event of the `app` module
 is emitted.
 
+#### `ses.getStoragePath()`
+
+A `String | null` indicating the absolute file system path where data for this
+session is persisted on disk.  For in memory sessions this returns `null`.
+
 ### Instance Properties
 
 The following properties are available on instances of `Session`:
@@ -834,6 +839,11 @@ code to the `setSpellCheckerLanguages` API that isn't in this array will result 
 #### `ses.spellCheckerEnabled`
 
 A `Boolean` indicating whether builtin spell checker is enabled.
+
+#### `ses.storagePath` _Readonly_
+
+A `String | null` indicating the absolute file system path where data for this
+session is persisted on disk.  For in memory sessions this returns `null`.
 
 #### `ses.cookies` _Readonly_
 
