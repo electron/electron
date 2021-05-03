@@ -283,7 +283,14 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
               }
             })
 
-            desktopCapturer.setSkipCursor(sourceId, false);
+            // call setSkipCursor with valid id should not crash
+            desktopCapturer.setSkipCursor(sourceId, true);
+
+            // call setSkipCursor with blank id should not crash
+            desktopCapturer.setSkipCursor('', true);
+
+            // call setSkipCursor with unknown id should not crash
+            desktopCapturer.setSkipCursor('unknownid', true);
 
             resolve('ok');
           } catch (e) {
