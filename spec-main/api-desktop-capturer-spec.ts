@@ -4,6 +4,7 @@ import { desktopCapturer } from 'electron/common';
 import { emittedOnce } from './events-helpers';
 import { ifdescribe, ifit } from './spec-helpers';
 import { closeAllWindows } from './window-helpers';
+import * as path from 'path';
 
 const features = process._linkedBinding('electron_common_features');
 
@@ -256,49 +257,19 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
 
   it('setSkipCursor called when sharing content', async () => {
     // test calling set skip cursor when we are sharing content in renderer
-    const win = new BrowserWindow({ show: false, width: 200, height: 200, webPreferences: { contextIsolation: false } });
+    const win = new BrowserWindow({
+      show: false,
+      width: 200,
+      height: 200,
+      webPreferences: {
+        nodeIntegration: true,
+        contextIsolation: false
+      }
+    });
+    win.loadFile(path.join(__dirname, 'fixtures', 'api', 'desktop-capturer-setskipcursor.html'));
     win.show();
 
-    const result = await w.webContents.executeJavaScript(`new Promise((resolve, reject) => {
-      const { desktopCapturer } = require('electron');
-      desktopCapturer.getSources({
-        types: ['screen', 'window']
-      }).then(async (sources) => {
-        if (sources.length > 0) {
-
-          const sourceId = sources[0].id;
-
-          try {
-            const stream = await navigator.mediaDevices.getUserMedia({
-              audio: false,
-              video: {
-                mandatory: {
-                  chromeMediaSource: 'desktop',
-                  chromeMediaSourceId: sourceId,
-                  minWidth: 1280,
-                  maxWidth: 1280,
-                  minHeight: 720,
-                  maxHeight: 720
-                }
-              }
-            })
-
-            // call setSkipCursor with valid id should not crash
-            desktopCapturer.setSkipCursor(sourceId, true);
-
-            // call setSkipCursor with blank id should not crash
-            desktopCapturer.setSkipCursor('', true);
-
-            // call setSkipCursor with unknown id should not crash
-            desktopCapturer.setSkipCursor('unknownid', true);
-
-            resolve('ok');
-          } catch (e) {
-            reject(e);
-          }
-        }
-      });
-    })`);
+    const result = await win.webContents.executeJavaScript('testSetSkipCursor()');
 
     expect(result).to.equal('ok');
 

@@ -1,0 +1,54 @@
+<html>
+<body>
+<script type="text/javascript" charset="utf-8">
+    function testSetSkipCursor() {
+        const { desktopCapturer } = require('electron');
+        return new Promise((resolve, reject) => {
+            desktopCapturer.getSources({
+                types: ['screen', 'window']
+            }).then(async (sources) => {
+                if (sources.length > 0) {
+                    const sourceId = sources[0].id;
+                    try {
+                        const stream = await navigator.mediaDevices.getUserMedia({
+                            audio: false,
+                            video: {
+                            mandatory: {
+                                chromeMediaSource: 'desktop',
+                                chromeMediaSourceId: sourceId,
+                                minWidth: 1280,
+                                maxWidth: 1280,
+                                minHeight: 720,
+                                maxHeight: 720
+                            }
+                            }
+                        })
+
+                        setTimeout(() => {
+                            try {
+                                // call setSkipCursor with valid id should not crash
+                                desktopCapturer.setSkipCursor(sourceId, true);
+
+                                // call setSkipCursor with blank id should not crash
+                                desktopCapturer.setSkipCursor('', true);
+
+                                // call setSkipCursor with unknown id should not crash
+                                desktopCapturer.setSkipCursor('unknownid', true);
+
+                                resolve('ok');
+                            } catch (e) {
+                                reject(e)
+                            }
+                        }, 3000);
+                    } catch (e) {
+                        reject(e);
+                    }
+                } else {
+                    reject(new Error('No Sources found'));
+                }
+            });
+        });
+    }
+</script>
+</body>
+</html>
