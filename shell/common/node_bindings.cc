@@ -575,6 +575,10 @@ void NodeBindings::UvRunOnce() {
   // Enter node context while dealing with uv events.
   v8::Context::Scope context_scope(env->context());
 
+  // Node.js expects `kExplicit` microtasks policy and will run microtasks
+  // checkpoints after every call into JavaScript. Since we use a different
+  // policy in the renderer - switch to `kExplicit` and then drop back to the
+  // previous policy value.
   auto old_policy = env->isolate()->GetMicrotasksPolicy();
   DCHECK_EQ(v8::MicrotasksScope::GetCurrentDepth(env->isolate()), 0);
   env->isolate()->SetMicrotasksPolicy(v8::MicrotasksPolicy::kExplicit);
