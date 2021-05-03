@@ -134,6 +134,9 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
 #endif
 
 #if defined(OS_LINUX)
+  // Used by platform_util to set GDK_BACKEND.
+  static std::string GetGDKBackend();
+
   // Used to notify the native theme of changes to dark mode.
   std::unique_ptr<DarkThemeObserver> dark_theme_observer_;
 #endif
