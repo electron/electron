@@ -155,6 +155,9 @@ std::u16string MediaStringProvider(media::MessageId id) {
 }
 
 #if defined(OS_LINUX)
+
+std::string gdk_backend;
+
 void OverrideLinuxAppDataPath() {
   base::FilePath path;
   if (base::PathService::Get(DIR_APP_DATA, &path))
@@ -375,8 +378,21 @@ void ElectronBrowserMainParts::PostDestroyThreads() {
   fake_browser_process_->PostDestroyThreads();
 }
 
+#if defined(OS_LINUX)
+// static
+std::string ElectronBrowserMainParts::GetGDKBackend() {
+  return gdk_backend;
+}
+#endif
+
 void ElectronBrowserMainParts::ToolkitInitialized() {
 #if defined(OS_LINUX)
+  // This is set by Chromium here:
+  // https://chromium-review.googlesource.com/c/chromium/src/+/2586184
+  // and can detrimentally affect external app behaviors, so we want to
+  // check if the user has set it so we can use it later.
+  base::Environment::Create()->GetVar("GDK_BACKEND", &gdk_backend);
+
   auto linux_ui = BuildGtkUi();
   linux_ui->Initialize();
 

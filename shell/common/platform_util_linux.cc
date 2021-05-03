@@ -122,18 +122,13 @@ bool XDGUtil(const std::vector<std::string>& argv,
   // bring up a new terminal if necessary.  See "man mailcap".
   options.environment["MM_NOTTTY"] = "1";
 
-  // This is set by Chromium here:
-  // https://chromium-review.googlesource.com/c/chromium/src/+/2586184
-  // and can detrimentally affect external app behaviors, so we want to
-  // unset it and replace with the user's setting if one exists.
-  std::string gdk_backend;
-  if (base::Environment::Create()->GetVar("GDK_BACKEND", &gdk_backend)) {
-    options.environment["GDK_BACKEND"] = gdk_backend.c_str();
-  } else {
-    // Setting values in EnvironmentMap to an empty-string will make
-    // sure that they get unset from the environment via AlterEnvironment().
-    options.environment["GDK_BACKEND"] = base::NativeEnvironmentString();
-  }
+  // If the user set a GDK_BACKEND value of their own, use that,
+  // otherwise unset it. Setting values in EnvironmentMap to an empty-string
+  // will make sure that they get unset from the environment via
+  // AlterEnvironment().
+  std::string gdk_backend = ElectronBrowserMainParts::GetGDKBackend();
+  options.environment["GDK_BACKEND"] =
+      gdk_backend ? gdk_backend.c_str() : base::NativeEnvironmentString();
 
   base::Process process = base::LaunchProcess(argv, options);
   if (!process.IsValid())
