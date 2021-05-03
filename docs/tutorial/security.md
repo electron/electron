@@ -692,5 +692,5 @@ which potential security issues are not as widely known.
 [window-open-handler]: ../api/web-contents.md#contentssetwindowopenhandlerhandler
 [will-navigate]: ../api/web-contents.md#event-will-navigate
 [open-external]: ../api/shell.md#shellopenexternalurl-options
-[sandbox]: ../api/sandbox-option.md
+[sandbox]: ../tutorial/sandbox.md
 [responsible-disclosure]: https://en.wikipedia.org/wiki/Responsible_disclosure
