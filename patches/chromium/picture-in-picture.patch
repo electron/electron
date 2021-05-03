@@ -117,7 +117,7 @@ index a3236fd87a096bebcd66a3d9c2525ba7ef8f15bf..0237ed5903abe4577d0a5a1850bb6e27
  #include "ui/base/l10n/l10n_util.h"
  #include "ui/gfx/color_palette.h"
 diff --git a/chrome/browser/ui/views/overlay/skip_ad_label_button.cc b/chrome/browser/ui/views/overlay/skip_ad_label_button.cc
-index e2f0491e511d9873b1e0c15f3d5ce8770dc7d941..5f2509a09f94c756d7af3474da2c1d85bbee67d4 100644
+index e803c1d3bbee5407dcfdc7b5a73cae3fc403a0e6..7bddae5d23fb6f100809c27d3636ae7ea6ca5169 100644
 --- a/chrome/browser/ui/views/overlay/skip_ad_label_button.cc
 +++ b/chrome/browser/ui/views/overlay/skip_ad_label_button.cc
 @@ -5,7 +5,7 @@

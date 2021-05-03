@@ -7,10 +7,10 @@ spellchecker uses a few IDS_ resources.  We need to load these from
 Electrons grit header instead of Chromes
 
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index c7970e581a9760eb1a077baf1bb9e177aafacb93..91b4e8d440ee867fbaad651d5849d6b002dc59a8 100644
+index 7311821a8c1e5e187eae1520931ed1d08cd02e62..1639bf39f3947c9655e2abf62b31cc1983f4fe05 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -6262,6 +6262,7 @@ static_library("browser") {
+@@ -6279,6 +6279,7 @@ static_library("browser") {
      deps += [
        "//components/spellcheck/browser",
        "//components/spellcheck/common",
@@ -44,7 +44,7 @@ index 41761e18716a7d9221511978dc4582a1804920e2..faea3d936c678e31fa29b93ae1ccd976
    ]
  }
 diff --git a/components/language/core/browser/language_prefs.cc b/components/language/core/browser/language_prefs.cc
-index f05230cb09031efe4f0ff7b1d350845f2f3921a2..7eb93f665eb6ca7c8f90909a24666475e97910de 100644
+index 0e744bad147c40075f07b3cb455cbc6720b55397..2dc130b4b8b10d230f71f44d95c6ef1edc484c33 100644
 --- a/components/language/core/browser/language_prefs.cc
 +++ b/components/language/core/browser/language_prefs.cc
 @@ -22,7 +22,7 @@

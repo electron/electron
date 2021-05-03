@@ -241,7 +241,7 @@ index 9b18e1b5c476f199cc46d57e9fd5d57e07964c33..dd897f6991ed9ef0f8437170cdd52e57
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 1896ccd0b7a165da614590c35e00bb5fab1a4172..ca4f61bd6179a05219592f327b339adf47484820 100644
+index 2c066cd7de6fb60d770a8eb3cb7abad59e8dbf12..c2341d7e2b4149c5a83676b237f4c21ba5e9798a 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -212,6 +212,7 @@
@@ -257,9 +257,9 @@ index 1896ccd0b7a165da614590c35e00bb5fab1a4172..ca4f61bd6179a05219592f327b339adf
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
 +    switches::kDisableColorCorrectRendering,
-     network::switches::kExplicitlyAllowedPorts,
      switches::kDisableInProcessStackTraces,
      sandbox::policy::switches::kDisableSeccompFilterSandbox,
+     sandbox::policy::switches::kNoSandbox,
 diff --git a/third_party/blink/renderer/platform/graphics/canvas_color_params.cc b/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
 index 9bd9885624666a8d65b0b1bb710c79077321c451..ff5842db80d81adc8f17d2eef36e82d37dbdbe47 100644
 --- a/third_party/blink/renderer/platform/graphics/canvas_color_params.cc

@@ -43,7 +43,7 @@ index 76bce6517555132e3f873c8294eb0ed5d2a3a87a..fc8916ac6dc76968e0cbd06877ffb80c
  
  void RenderWidgetHostImpl::ShowContextMenuAtPoint(
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 3a307ea6a66109e09faae4849426f9166583f977..0f8ab5c4eeb78b3997e4af2ef2bd9a0902803887 100644
+index d04c66887760d0131576f01a8c843af28b556d8c..1f72cfc963aa7c3b5a7ec6a80e16d5fccad59525 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4151,6 +4151,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
@@ -59,7 +59,7 @@ index 3a307ea6a66109e09faae4849426f9166583f977..0f8ab5c4eeb78b3997e4af2ef2bd9a09
      RenderWidgetHostImpl* render_widget_host) {
    return render_widget_host == GetMainFrame()->GetRenderWidgetHost();
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 0342fbc5d6cc5a808925a6e12d6f288864798347..43b6f3bb996a296f6f6619eff60c84c2a1dc0da5 100644
+index 39b702a18a199390fbc2256c27b0e01a333dd63e..b32e156d3ed18f4753eca9d75a39f3ce990bc93f 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
 @@ -953,6 +953,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
@@ -71,7 +71,7 @@ index 0342fbc5d6cc5a808925a6e12d6f288864798347..43b6f3bb996a296f6f6619eff60c84c2
    bool IsShowingContextMenuOnPage() const override;
    void DidChangeScreenOrientation() override;
 diff --git a/content/public/browser/web_contents_observer.h b/content/public/browser/web_contents_observer.h
-index 7ee27742d3c055065ce01e92cf24a0258c42f802..1196d911eefda44698aa41b1875e918a7516c6da 100644
+index 5217a3a513d89b5c3f83800c1b11c536fb695332..232fa13459c832c10408206100392fe22000c0fe 100644
 --- a/content/public/browser/web_contents_observer.h
 +++ b/content/public/browser/web_contents_observer.h
 @@ -14,6 +14,7 @@

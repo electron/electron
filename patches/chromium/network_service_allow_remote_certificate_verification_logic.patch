@@ -7,10 +7,10 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 8f70586b27c927712711f3ec858abd59607ab930..e3dd41a0ad5d8f933befb2e1f773cd28737aeb3c 100644
+index 1532b031db2cc3a7fc0cc03969000d57d87cd914..3dda30a8157648644e8c70d1836d43d4143029dc 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
-@@ -116,6 +116,11 @@
+@@ -117,6 +117,11 @@
  #include "services/network/url_loader.h"
  #include "services/network/url_request_context_builder_mojo.h"
  
@@ -22,7 +22,7 @@ index 8f70586b27c927712711f3ec858abd59607ab930..e3dd41a0ad5d8f933befb2e1f773cd28
  #if BUILDFLAG(IS_CT_SUPPORTED)
  #include "components/certificate_transparency/chrome_ct_policy_enforcer.h"
  #include "components/certificate_transparency/chrome_require_ct_delegate.h"
-@@ -374,6 +379,79 @@ bool SCTAuditingDelegate::IsSCTAuditingEnabled() {
+@@ -375,6 +380,79 @@ bool SCTAuditingDelegate::IsSCTAuditingEnabled() {
  
  }  // namespace
  
@@ -102,7 +102,7 @@ index 8f70586b27c927712711f3ec858abd59607ab930..e3dd41a0ad5d8f933befb2e1f773cd28
  constexpr uint32_t NetworkContext::kMaxOutstandingRequestsPerProcess;
  
  NetworkContext::PendingCertVerify::PendingCertVerify() = default;
-@@ -573,6 +651,13 @@ void NetworkContext::SetClient(
+@@ -574,6 +652,13 @@ void NetworkContext::SetClient(
    client_.Bind(std::move(client));
  }
  
@@ -116,7 +116,7 @@ index 8f70586b27c927712711f3ec858abd59607ab930..e3dd41a0ad5d8f933befb2e1f773cd28
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -1930,6 +2015,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -1931,6 +2016,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
          std::move(cert_verifier));
      cert_verifier = base::WrapUnique(cert_verifier_with_trust_anchors_);
  #endif  // BUILDFLAG(IS_CHROMEOS_ASH)
