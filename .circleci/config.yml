@@ -412,7 +412,7 @@ step-get-more-space-on-mac: &step-get-more-space-on-mac
           # sudo rm -rf /System/Library/PreferencePanes
           sudo rm -rf /System/Library/AssetsV2/*
           sudo rm -rf /Applications/Safari.app
-          sudo rm -rf ~/project/src/build/linux
+          # sudo rm -rf ~/project/src/build/linux
           sudo rm -rf ~/project/src/third_party/catapult/tracing/test_data
           sudo rm -rf ~/project/src/third_party/angle/third_party/VK-GL-CTS
 
