@@ -83,6 +83,7 @@ If you want to force sandboxing for all renderers, you can also use the
 app's `ready` event.
 
 ```js
+// main.js
 app.enableSandbox()
 app.whenReady().then(() => {
   // no need to pass `sandbox: true` since `app.enableSandbox()` was called.
