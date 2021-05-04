@@ -40,7 +40,12 @@ v8::Local<v8::Value> EmitEvent(v8::Isolate* isolate,
   v8::Local<v8::Value> value =
       internal::CallMethodWithArgs(isolate, obj, "emit", &concatenated_args);
   if (try_catch.HasCaught()) {
-    LOG(ERROR) << "An unknown error occurred in the event emitter";
+    v8::Local<v8::Value> exception = try_catch.Exception();
+    internal::ValueVector error_args = {
+        gin::StringToV8(isolate, "_onerror"),
+        gin::ConvertToV8(isolate, exception),
+    };
+    internal::CallMethodWithArgs(isolate, obj, "emit", &error_args);
   }
 
   return value;
@@ -62,7 +67,12 @@ v8::Local<v8::Value> EmitEvent(v8::Isolate* isolate,
   v8::Local<v8::Value> value =
       internal::CallMethodWithArgs(isolate, obj, "emit", &converted_args);
   if (try_catch.HasCaught()) {
-    LOG(ERROR) << "An unknown error occurred in the event emitter";
+    v8::Local<v8::Value> exception = try_catch.Exception();
+    internal::ValueVector error_args = {
+        gin::StringToV8(isolate, "_onerror"),
+        gin::ConvertToV8(isolate, exception),
+    };
+    internal::CallMethodWithArgs(isolate, obj, "emit", &error_args);
   }
 
   return value;
@@ -82,7 +92,12 @@ v8::Local<v8::Value> CustomEmit(v8::Isolate* isolate,
   v8::Local<v8::Value> value = internal::CallMethodWithArgs(
       isolate, object, custom_emit, &converted_args);
   if (try_catch.HasCaught()) {
-    LOG(ERROR) << "An unknown error occurred in the event emitter";
+    v8::Local<v8::Value> exception = try_catch.Exception();
+    internal::ValueVector error_args = {
+        gin::StringToV8(isolate, "_onerror"),
+        gin::ConvertToV8(isolate, exception),
+    };
+    internal::CallMethodWithArgs(isolate, object, "emit", &error_args);
   }
 
   return value;
@@ -112,7 +127,8 @@ v8::Local<v8::Value> CallMethod(gin::Wrappable<T>* object,
   v8::Local<v8::Value> value =
       CallMethod(isolate, object, method_name, std::forward<Args>(args)...);
   if (try_catch.HasCaught()) {
-    LOG(ERROR) << "An unknown error occurred in the event emitter";
+    CallMethod(object, "_onerror",
+               "An unknown error occurred in the event emitter");
   }
 
   return value;
