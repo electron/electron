@@ -103,7 +103,6 @@ declare namespace NodeJS {
 
   interface InternalWebPreferences {
     contextIsolation: boolean;
-    disableElectronSiteInstanceOverrides: boolean;
     guestInstanceId: number;
     hiddenPage: boolean;
     nativeWindowOpen: boolean;

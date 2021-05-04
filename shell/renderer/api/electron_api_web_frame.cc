@@ -491,9 +491,6 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
 
     if (pref_name == options::kPreloadScripts) {
       return gin::ConvertToV8(isolate, prefs.preloads);
-    } else if (pref_name == options::kDisableElectronSiteInstanceOverrides) {
-      return gin::ConvertToV8(isolate,
-                              prefs.disable_electron_site_instance_overrides);
     } else if (pref_name == options::kBackgroundColor) {
       return gin::ConvertToV8(isolate, prefs.background_color);
     } else if (pref_name == options::kOpenerID) {
@@ -517,9 +514,6 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
       return gin::ConvertToV8(isolate, prefs.node_integration);
     } else if (pref_name == options::kNodeIntegrationInWorker) {
       return gin::ConvertToV8(isolate, prefs.node_integration_in_worker);
-    } else if (pref_name == options::kEnableNodeLeakageInRenderers) {
-      // NOTE: enableNodeLeakageInRenderers is internal-only.
-      return gin::ConvertToV8(isolate, prefs.node_leakage_in_renderers);
     } else if (pref_name == options::kNodeIntegrationInSubFrames) {
       return gin::ConvertToV8(isolate, true);
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)

@@ -243,8 +243,7 @@ class BrowserWindowProxy {
 }
 
 export const windowSetup = (
-  guestInstanceId: number, openerId: number, isHiddenPage: boolean, usesNativeWindowOpen: boolean, rendererProcessReuseEnabled: boolean
-) => {
+  guestInstanceId: number, openerId: number, isHiddenPage: boolean, usesNativeWindowOpen: boolean) => {
   if (!process.sandboxed && guestInstanceId == null) {
     // Override default window.close.
     window.close = function () {
@@ -317,30 +316,6 @@ export const windowSetup = (
 
       window.dispatchEvent(event as MessageEvent);
     });
-  }
-
-  if (!process.sandboxed && !rendererProcessReuseEnabled) {
-    window.history.back = function () {
-      ipcRendererInternal.send(IPC_MESSAGES.NAVIGATION_CONTROLLER_GO_BACK);
-    };
-    if (contextIsolationEnabled) internalContextBridge.overrideGlobalValueFromIsolatedWorld(['history', 'back'], window.history.back);
-
-    window.history.forward = function () {
-      ipcRendererInternal.send(IPC_MESSAGES.NAVIGATION_CONTROLLER_GO_FORWARD);
-    };
-    if (contextIsolationEnabled) internalContextBridge.overrideGlobalValueFromIsolatedWorld(['history', 'forward'], window.history.forward);
-
-    window.history.go = function (offset: number) {
-      ipcRendererInternal.send(IPC_MESSAGES.NAVIGATION_CONTROLLER_GO_TO_OFFSET, +offset);
-    };
-    if (contextIsolationEnabled) internalContextBridge.overrideGlobalValueFromIsolatedWorld(['history', 'go'], window.history.go);
-
-    const getHistoryLength = () => ipcRendererInternal.sendSync(IPC_MESSAGES.NAVIGATION_CONTROLLER_LENGTH);
-    Object.defineProperty(window.history, 'length', {
-      get: getHistoryLength,
-      set () {}
-    });
-    if (contextIsolationEnabled) internalContextBridge.overrideGlobalPropertyFromIsolatedWorld(['history', 'length'], getHistoryLength);
   }
 
   if (guestInstanceId != null) {

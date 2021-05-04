@@ -445,7 +445,6 @@ void ElectronBrowserClient::OverrideWebkitPrefs(
       SessionPreferences::GetValidPreloads(web_contents->GetBrowserContext());
   if (!preloads.empty())
     prefs->preloads = preloads;
-  prefs->disable_electron_site_instance_overrides = true;
 
   SetFontDefaults(prefs);
 

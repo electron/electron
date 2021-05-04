@@ -181,9 +181,6 @@ const char kWebGL[] = "webgl";
 // navigation.
 const char kNavigateOnDragDrop[] = "navigateOnDragDrop";
 
-const char kDisableElectronSiteInstanceOverrides[] =
-    "disableElectronSiteInstanceOverrides";
-const char kEnableNodeLeakageInRenderers[] = "enableNodeLeakageInRenderers";
 const char kHiddenPage[] = "hiddenPage";
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)

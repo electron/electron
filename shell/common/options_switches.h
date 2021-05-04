@@ -90,8 +90,6 @@ extern const char kNavigateOnDragDrop[];
 extern const char kEnableWebSQL[];
 extern const char kEnablePreferredSizeMode[];
 
-extern const char kDisableElectronSiteInstanceOverrides[];
-extern const char kEnableNodeLeakageInRenderers[];
 extern const char kHiddenPage[];
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)

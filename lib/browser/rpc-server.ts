@@ -100,22 +100,6 @@ ipcMainUtils.handleSync(IPC_MESSAGES.BROWSER_SANDBOX_LOAD, async function (event
   };
 });
 
-ipcMainInternal.on(IPC_MESSAGES.NAVIGATION_CONTROLLER_GO_BACK, function (event) {
-  event.sender.goBack();
-});
-
-ipcMainInternal.on(IPC_MESSAGES.NAVIGATION_CONTROLLER_GO_FORWARD, function (event) {
-  event.sender.goForward();
-});
-
-ipcMainInternal.on(IPC_MESSAGES.NAVIGATION_CONTROLLER_GO_TO_OFFSET, function (event, offset) {
-  event.sender.goToOffset(offset);
-});
-
-ipcMainInternal.on(IPC_MESSAGES.NAVIGATION_CONTROLLER_LENGTH, function (event) {
-  event.returnValue = event.sender.length();
-});
-
 ipcMainInternal.on(IPC_MESSAGES.BROWSER_PRELOAD_ERROR, function (event, preloadPath: string, error: Error) {
   event.sender.emit('preload-error', event, preloadPath, error);
 });

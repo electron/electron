@@ -95,18 +95,7 @@ void ElectronRendererClient::DidCreateScriptContext(
   // Only load node if we are a main frame or a devtools extension
   // unless node support has been explicitly enabled for sub frames
   auto prefs = render_frame->GetBlinkPreferences();
-  bool reuse_renderer_processes_enabled =
-      prefs.disable_electron_site_instance_overrides;
-  // Consider the window not "opened" if it does not have an Opener, or if a
-  // user has manually opted in to leaking node in the renderer
-  bool is_not_opened =
-      !render_frame->GetWebFrame()->Opener() || prefs.node_leakage_in_renderers;
-  // Consider this the main frame if it is both a Main Frame and it wasn't
-  // opened.  We allow an opened main frame to have node if renderer process
-  // reuse is enabled as that will correctly free node environments prevent a
-  // leak in child windows.
-  bool is_main_frame = render_frame->IsMainFrame() &&
-                       (is_not_opened || reuse_renderer_processes_enabled);
+  bool is_main_frame = render_frame->IsMainFrame();
   bool is_devtools = IsDevToolsExtension(render_frame);
   bool allow_node_in_subframes = prefs.node_integration_in_sub_frames;
   bool should_load_node =
@@ -121,7 +110,7 @@ void ElectronRendererClient::DidCreateScriptContext(
     node_integration_initialized_ = true;
     node_bindings_->Initialize();
     node_bindings_->PrepareMessageLoop();
-  } else if (reuse_renderer_processes_enabled) {
+  } else {
     node_bindings_->PrepareMessageLoop();
   }
 
@@ -138,9 +127,7 @@ void ElectronRendererClient::DidCreateScriptContext(
 
   // If we have disabled the site instance overrides we should prevent loading
   // any non-context aware native module
-  if (reuse_renderer_processes_enabled)
-    env->set_force_context_aware(true);
-  env->set_warn_context_aware(true);
+  env->set_force_context_aware(true);
 
   environments_.insert(env);
 
@@ -183,12 +170,9 @@ void ElectronRendererClient::WillReleaseScriptContext(
   // We also do this if we have disable electron site instance overrides to
   // avoid memory leaks
   auto prefs = render_frame->GetBlinkPreferences();
-  if (prefs.node_integration_in_sub_frames ||
-      prefs.disable_electron_site_instance_overrides) {
-    node::FreeEnvironment(env);
-    if (env == node_bindings_->uv_env())
-      node::FreeIsolateData(node_bindings_->isolate_data());
-  }
+  node::FreeEnvironment(env);
+  if (env == node_bindings_->uv_env())
+    node::FreeIsolateData(node_bindings_->isolate_data());
 
   // ElectronBindings is tracking node environments.
   electron_bindings_->EnvironmentDestroyed(env);
