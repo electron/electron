@@ -1,6 +1,6 @@
 # Process Sandboxing
 
-One key security feature in Chromium is that processes can executed within a sandbox.
+One key security feature in Chromium is that processes can be executed within a sandbox.
 The sandbox limits the harm that untrusted code can cause by limiting access to most
 system resources — sandboxed processes can only freely use CPU cycles and memory.
 In order to perform operations requiring additional privilege, sandboxed processes
