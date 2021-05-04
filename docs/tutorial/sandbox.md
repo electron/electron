@@ -53,7 +53,7 @@ of Electron and Node's built-in modules:
 In addition, the preload script also exposes certain Node.js primitives as globals:
 
 * [`Buffer`](https://nodejs.org/api/Buffer.html)
-* [`process`](https://nodejs.org/api/process.html)
+* [`process`](../api/process.md)
 * [`clearImmediate`](https://nodejs.org/api/timers.html#timers_clearimmediate_immediate)
 * [`setImmediate`](https://nodejs.org/api/timers.html#timers_setimmediate_callback_args)
 
