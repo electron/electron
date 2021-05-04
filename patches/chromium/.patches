@@ -106,5 +106,4 @@ fix_add_check_for_sandbox_then_result.patch
 extend_apply_webpreferences.patch
 fix_expose_decrementcapturercount_in_web_contents_impl.patch
 add_setter_for_browsermainloop_result_code.patch
-revert_roll_clang_llvmorg-13-init-7051-gdad5caa5-2.patch
 cherry-pick-5d3a047a15e0.patch
