@@ -49,7 +49,7 @@ of Electron and Node's built-in modules:
 * [`timers`](https://nodejs.org/api/timers.html)
 * [`url`](https://nodejs.org/api/url.html)
 
-In addition, the preload script also exposes certain Node.js primitives as globals:
+In addition, the preload script also polyfills certain Node.js primitives as globals:
 
 * [`Buffer`](https://nodejs.org/api/Buffer.html)
 * [`process`](https://nodejs.org/api/process.html)
