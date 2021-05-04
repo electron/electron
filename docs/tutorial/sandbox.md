@@ -78,6 +78,8 @@ privileged APIs to untrusted code running in the renderer process unless
 
 ## Configuring the sandbox
 
+### Enabling the sandbox for a single process
+
 In Electron, renderer sandboxing can be enabled on a per-process basis with
 the `sandbox: true` preference in the [`BrowserWindow`][browser-window] constructor.
 
@@ -93,6 +95,8 @@ app.whenReady().then(() => {
 })
 ```
 
+### Enabling the sandbox globally
+
 If you want to force sandboxing for all renderers, you can also use the
 [`app.enableSandbox`][enable-sandbox] API. Note that this API has to be called before the
 app's `ready` event.
@@ -107,8 +111,13 @@ app.whenReady().then(() => {
 })
 ```
 
+### Disabling Chromium's sandbox (testing only)
+
 You can also disable Chromium's sandbox entirely with the [`--no-sandbox`][no-sandbox]
 CLI flag, which will disable the sandbox for all processes (including utility processes).
+We highly recommend that you only use this flag for testing purposes, and **never**
+in production.
+
 Note that the `sandbox: true` option will still disable the renderer's Node.js
 environment.
 
