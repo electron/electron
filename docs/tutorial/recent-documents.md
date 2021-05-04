@@ -86,16 +86,16 @@ following code snippet to your menu template:
 Make sure the application menu is added on application 'whenReady' and not before, or 'Open Recent' will be disabled:
 
 ```javascript
-const { app, Menu } = require('electron');
+const { app, Menu } = require('electron')
 
 const template = [
   // Menu template here
-];
+]
 const menu = Menu.buildFromTemplate(template)
 
 app.whenReady().then(() => {
-  Menu.setApplicationMenu(menu);
-});
+  Menu.setApplicationMenu(menu)
+})
 ```
 
 ![macOS Recent Documents menu item][menu-item-image]
