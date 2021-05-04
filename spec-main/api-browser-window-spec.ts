@@ -6,7 +6,7 @@ import * as os from 'os';
 import * as qs from 'querystring';
 import * as http from 'http';
 import { AddressInfo } from 'net';
-import { app, BrowserWindow, BrowserView, ipcMain, OnBeforeSendHeadersListenerDetails, protocol, screen, webContents, session, WebContents, BrowserWindowConstructorOptions } from 'electron/main';
+import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersListenerDetails, protocol, screen, webContents, session, WebContents, BrowserWindowConstructorOptions } from 'electron/main';
 
 import { emittedOnce, emittedUntil, emittedNTimes } from './events-helpers';
 import { ifit, ifdescribe, defer, delay } from './spec-helpers';
@@ -100,6 +100,13 @@ describe('BrowserWindow module', () => {
     afterEach(async () => {
       await closeWindow(w);
       w = null as unknown as BrowserWindow;
+    });
+
+    it('should work if called when a messageBox is showing', async () => {
+      const closed = emittedOnce(w, 'closed');
+      dialog.showMessageBox(w, { message: 'Hello Error' });
+      w.close();
+      await closed;
     });
 
     it('should emit unload handler', async () => {
