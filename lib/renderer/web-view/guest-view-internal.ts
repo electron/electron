@@ -8,7 +8,7 @@ import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
 const DEPRECATED_EVENTS: Record<string, string> = {
   'page-title-updated': 'page-title-set'
-};
+} as const;
 
 const dispatchEvent = function (
   webView: WebViewImpl, eventName: string, eventKey: string, ...args: Array<any>
