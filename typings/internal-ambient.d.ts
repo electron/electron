@@ -97,7 +97,7 @@ declare namespace NodeJS {
   }
 
   interface WebViewManagerBinding {
-    addGuest(guestInstanceId: number, elementInstanceId: number, embedder: Electron.WebContents, guest: Electron.WebContents, webPreferences: Electron.WebPreferences): void;
+    addGuest(guestInstanceId: number, embedder: Electron.WebContents, guest: Electron.WebContents, webPreferences: Electron.WebPreferences): void;
     removeGuest(embedder: Electron.WebContents, guestInstanceId: number): void;
   }
 
