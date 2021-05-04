@@ -320,7 +320,7 @@ handleMessageSync(IPC_MESSAGES.GUEST_VIEW_MANAGER_DETACH_GUEST, function (event,
 
 // this message is sent by the actual <webview>
 ipcMainInternal.on(IPC_MESSAGES.GUEST_VIEW_MANAGER_FOCUS_CHANGE, function (event: ElectronInternal.IpcMainInternalEvent, focus: boolean) {
-  event.sender.emit('focus-change', {}, focus);
+  event.sender.emit('-focus-change', {}, focus);
 });
 
 handleMessage(IPC_MESSAGES.GUEST_VIEW_MANAGER_CALL, function (event, guestInstanceId: number, method: string, args: any[]) {
