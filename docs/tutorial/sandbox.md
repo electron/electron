@@ -6,9 +6,9 @@ system resources — sandboxed processes can only freely use CPU cycles and memo
 In order to perform operations requiring additional privilege, sandboxed processes
 use dedicated communication channels to delegate tasks to more privileged processes.
 
-In Chromium, sandboxing is mainly applied to renderer processes. In addition, certain
-utility processes are also sandboxed, including the audio service, the GPU service,
-and the storage service.
+In Chromium, sandboxing is applied to most processes other than the main process.
+This includes renderer processes, as well as utility processes such as the audio service,
+the GPU service and the network service.
 
 See Chromium's [Sandbox design document][sandbox] for more information.
 
