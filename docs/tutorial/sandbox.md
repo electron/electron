@@ -47,8 +47,10 @@ regular Chrome renderer would. A sandboxed renderer won't have a Node.js
 environment initialized.
 
 <!-- TODO(erickzhao): when we have a solid guide for IPC, link it here -->
-Therefore, when the sandbox is enabled, renderer processes can only make changes to the
-system by delegating tasks to the main process via inter-process communication (IPC).
+Therefore, when the sandbox is enabled, renderer processes can only perform privileged
+tasks (such as interacting with the filesystem, making changes to the system, or spawning
+subprocesses) by delegating these tasks to the main process via inter-process
+communication (IPC).
 
 ### Preload scripts
 
