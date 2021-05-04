@@ -319,13 +319,8 @@ handleMessageSync(IPC_MESSAGES.GUEST_VIEW_MANAGER_DETACH_GUEST, function (event,
 });
 
 // this message is sent by the actual <webview>
-ipcMainInternal.on(IPC_MESSAGES.GUEST_VIEW_MANAGER_FOCUS_CHANGE, function (event: ElectronInternal.IpcMainInternalEvent, focus: boolean, guestInstanceId: number) {
-  const guest = getGuest(guestInstanceId);
-  if (guest === event.sender) {
-    event.sender.emit('focus-change', {}, focus, guestInstanceId);
-  } else {
-    console.error(`focus-change for guestInstanceId: ${guestInstanceId}`);
-  }
+ipcMainInternal.on(IPC_MESSAGES.GUEST_VIEW_MANAGER_FOCUS_CHANGE, function (event: ElectronInternal.IpcMainInternalEvent, focus: boolean) {
+  event.sender.emit('focus-change', {}, focus);
 });
 
 handleMessage(IPC_MESSAGES.GUEST_VIEW_MANAGER_CALL, function (event, guestInstanceId: number, method: string, args: any[]) {
@@ -372,18 +367,12 @@ handleMessage(IPC_MESSAGES.GUEST_VIEW_MANAGER_CAPTURE_PAGE, async function (even
 
 // Returns WebContents from its guest id hosted in given webContents.
 const getGuestForWebContents = function (guestInstanceId: number, contents: Electron.WebContents) {
-  const guest = getGuest(guestInstanceId);
-  if (!guest) {
+  const guestInstance = guestInstances.get(guestInstanceId);
+  if (!guestInstance) {
     throw new Error(`Invalid guestInstanceId: ${guestInstanceId}`);
   }
-  if (guest.hostWebContents !== contents) {
+  if (guestInstance.guest.hostWebContents !== contents) {
     throw new Error(`Access denied to guestInstanceId: ${guestInstanceId}`);
   }
-  return guest;
-};
-
-// Returns WebContents from its guest id.
-const getGuest = function (guestInstanceId: number) {
-  const guestInstance = guestInstances.get(guestInstanceId);
-  if (guestInstance != null) return guestInstance.guest;
+  return guestInstance.guest;
 };

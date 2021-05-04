@@ -18,7 +18,7 @@ export const webViewEvents: Record<string, string[]> = {
   'did-navigate': ['url', 'httpResponseCode', 'httpStatusText'],
   'did-frame-navigate': ['url', 'httpResponseCode', 'httpStatusText', 'isMainFrame', 'frameProcessId', 'frameRoutingId'],
   'did-navigate-in-page': ['url', 'isMainFrame', 'frameProcessId', 'frameRoutingId'],
-  'focus-change': ['focus', 'guestInstanceId'],
+  'focus-change': ['focus'],
   close: [],
   crashed: [],
   'render-process-gone': ['details'],
