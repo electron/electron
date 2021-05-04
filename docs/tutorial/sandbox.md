@@ -1,6 +1,6 @@
 # Process Sandboxing
 
-One key security feature in Chromium is that processes can executed within a sandbox.
+One key security feature in Chromium is that processes can be executed within a sandbox.
 The sandbox limits the harm that untrusted code can cause by limiting access to most
 system resources — sandboxed processes can only freely use CPU cycles and memory.
 In order to perform operations requiring additional privilege, sandboxed processes
@@ -29,9 +29,8 @@ Electron has a few additional quirks to consider.
 ### Renderer processes
 
 When renderer processes in Electron are sandboxed, they behave in the same way as a
-regular Chrome renderer would. A sandboxed renderer won't be initialized in a Node.js
-environment, nor will it modify any default JavaScript APIs that behave differently
-by default in Electron (e.g. `window.open`).
+regular Chrome renderer would. A sandboxed renderer won't have a Node.js
+environment initialized.
 
 <!-- TODO(erickzhao): when we have a solid guide for IPC, link it here -->
 Therefore, when the sandbox is enabled, renderer processes can only make changes to the
@@ -49,7 +48,7 @@ of Electron and Node's built-in modules:
 * [`timers`](https://nodejs.org/api/timers.html)
 * [`url`](https://nodejs.org/api/url.html)
 
-In addition, the preload script also exposes certain Node.js primitives as globals:
+In addition, the preload script also polyfills certain Node.js primitives as globals:
 
 * [`Buffer`](https://nodejs.org/api/Buffer.html)
 * [`process`](../api/process.md)
