@@ -19,6 +19,7 @@
 #include "dbus/bus.h"
 #include "dbus/message.h"
 #include "dbus/object_proxy.h"
+#include "shell/browser/electron_browser_main_parts.h"
 #include "shell/common/platform_util_internal.h"
 #include "ui/gtk/gtk_util.h"
 #include "url/gurl.h"
@@ -126,9 +127,9 @@ bool XDGUtil(const std::vector<std::string>& argv,
   // otherwise unset it. Setting values in EnvironmentMap to an empty-string
   // will make sure that they get unset from the environment via
   // AlterEnvironment().
-  std::string gdk_backend = ElectronBrowserMainParts::GetGDKBackend();
+  const char* gdk_backend = electron::ElectronBrowserMainParts::GetGDKBackend();
   options.environment["GDK_BACKEND"] =
-      gdk_backend ? gdk_backend.c_str() : base::NativeEnvironmentString();
+      gdk_backend ? gdk_backend : base::NativeEnvironmentString();
 
   base::Process process = base::LaunchProcess(argv, options);
   if (!process.IsValid())

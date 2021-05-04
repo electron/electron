@@ -88,6 +88,11 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
   Browser* browser() { return browser_.get(); }
   BrowserProcessImpl* browser_process() { return fake_browser_process_.get(); }
 
+#if defined(OS_LINUX)
+  // Used by platform_util to set GDK_BACKEND.
+  static const char* GetGDKBackend();
+#endif
+
  protected:
   // content::BrowserMainParts:
   int PreEarlyInitialization() override;
@@ -132,9 +137,6 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
 #endif
 
 #if defined(OS_LINUX)
-  // Used by platform_util to set GDK_BACKEND.
-  static std::string GetGDKBackend();
-
   // Used to notify the native theme of changes to dark mode.
   std::unique_ptr<DarkThemeObserver> dark_theme_observer_;
 #endif
