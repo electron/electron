@@ -71,6 +71,11 @@ In addition, the preload script also polyfills certain Node.js primitives as glo
 * [`clearImmediate`](https://nodejs.org/api/timers.html#timers_clearimmediate_immediate)
 * [`setImmediate`](https://nodejs.org/api/timers.html#timers_setimmediate_callback_args)
 
+Because the `require` function is a polyfill with limited functionality, you will not be
+able to use [CommonJS modules][commonjs] to separate your preload script into multiple
+files. If you need to split your preload code, use a bundler such as [webpack][webpack]
+or [Parcel][parcel].
+
 Note that because the environment presented to the `preload` script is substantially
 more privileged than that of a sandboxed renderer, it is still possible to leak
 privileged APIs to untrusted code running in the renderer process unless
@@ -157,5 +162,8 @@ version of Electron.
 [browser-window](../api/browser-window.md)
 [enable-sandbox](../api/app.md#appenablesandbox)
 [no-sandbox](../api/command-line-switches.md#--no-sandbox)
+[commonjs](https://nodejs.org/api/modules.html#modules_modules_commonjs_modules)
+[webpack](https://webpack.js.org/)
+[parcel](https://parceljs.org/)
 [context-isolation](./context-isolation.md)
 [beaker](https://github.com/beakerbrowser/beaker)
