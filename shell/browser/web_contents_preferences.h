@@ -36,8 +36,6 @@ class WebContentsPreferences
                          const gin_helper::Dictionary& web_preferences);
   ~WebContentsPreferences() override;
 
-  void Merge(const gin_helper::Dictionary& new_web_preferences);
-
   void SetFromDictionary(const gin_helper::Dictionary& new_web_preferences);
 
   // Append command paramters according to preferences.
