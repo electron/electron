@@ -12,19 +12,33 @@ the GPU service and the network service.
 
 See Chromium's [Sandbox design document][sandbox] for more information.
 
-## Sandboxing in Electron
+## Electron's sandboxing policies
 
-Electron comes with a mixed sandbox environment, having Chromium's sandbox enabled but
-disabling it by default for renderer processes (meaning that it still applies to the
-relevant utility processes).
+Electron comes with a mixed sandbox environment, meaning sandboxed processes can run
+alongside privileged ones. By default, renderer processes are not sandboxed, but
+utility processes are. Note that as in Chromium, the main (browser) process is
+privileged and cannot be sandboxed.
 
-Unsandboxed renderers are not a problem for desktop applications that only display
-trusted code, but it makes Electron less secure than Chromium for displaying untrusted
-web content. For applications that require more security, sandboxed renderers are
-recommended.
+Historically, this mixed sandbox approach was established because having Node.js available
+in the renderer is an extremely powerful tool for app developers. Unfortunately, this
+feature is also an equally massive security vulnerability.
+
+Theoretically, unsandboxed renderers are not a problem for desktop applications that
+only display trusted code, but they make Electron less secure than Chromium for
+displaying untrusted web content. However, even purportedly trusted code may be
+dangerous — there are countless attack vectors that malicious actors can use, from
+cross-site scripting to content injection to man-in-the-middle attacks on remotely loaded
+websites, just to name a few. For this reason, we recommend enabling renderer sandboxing
+for the vast majority of cases under an abundance of caution.
+
+<!--TODO: update this guide when #28466 is either solved or closed -->
+Note that there is an active discussion in the issue tracker to enable renderer sandboxing
+by default. See [#28466][issue-28466]) for details.
+
+## Sandbox behaviour in Electron
 
 Sandboxed processes in Electron behave _mostly_ in the same way as Chromium's do, but
-Electron has a few additional quirks to consider.
+Electron has a few additional concepts to consider because it interfaces with Node.js.
 
 ### Renderer processes
 
@@ -59,7 +73,7 @@ Note that because the Node.js environment is still present in the `preload`, it 
 possible to leak privileged APIs to untrusted code running in the renderer process unless
 [`contextIsolation`][contextIsolation] is enabled.
 
-### Configuring the sandbox
+## Configuring the sandbox
 
 In Electron, renderer sandboxing can be enabled on a per-process basis with
 the `sandbox: true` preference in the [`BrowserWindow`][browser-window] constructor.
@@ -127,7 +141,7 @@ backported. Your best chance at staying secure is to be on the latest stable
 version of Electron.
 
 [sandbox](https://chromium.googlesource.com/chromium/src/+/master/docs/design/sandbox.md)
-[issue-23506](https://github.com/electron/electron/issues/23506)
+[issue-28466](https://github.com/electron/electron/issues/28466)
 [browser-window](../api/browser-window.md)
 [enable-sandbox](../api/app.md#appenablesandbox)
 [no-sandbox](../api/command-line-switches.md#--no-sandbox)
