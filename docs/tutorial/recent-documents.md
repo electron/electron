@@ -83,7 +83,8 @@ following code snippet to your menu template:
 }
 ```
 
-Make sure the application menu is added on application 'whenReady' and not before, or 'Open Recent' will be disabled:
+Make sure the application menu is added after the [`'ready'`](../api/app.md#event-ready)
+event and not before, or the menu item will be disabled:
 
 ```javascript
 const { app, Menu } = require('electron')
