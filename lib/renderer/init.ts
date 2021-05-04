@@ -70,7 +70,6 @@ const nodeIntegration = mainFrame.getWebPreference('nodeIntegration');
 const webviewTag = mainFrame.getWebPreference('webviewTag');
 const isHiddenPage = mainFrame.getWebPreference('hiddenPage');
 const usesNativeWindowOpen = mainFrame.getWebPreference('nativeWindowOpen');
-const rendererProcessReuseEnabled = mainFrame.getWebPreference('disableElectronSiteInstanceOverrides');
 const preloadScript = mainFrame.getWebPreference('preload');
 const preloadScripts = mainFrame.getWebPreference('preloadScripts');
 const guestInstanceId = mainFrame.getWebPreference('guestInstanceId') || null;
@@ -97,7 +96,7 @@ switch (window.location.protocol) {
   default: {
     // Override default web functions.
     const { windowSetup } = require('@electron/internal/renderer/window-setup');
-    windowSetup(guestInstanceId, openerId, isHiddenPage, usesNativeWindowOpen, rendererProcessReuseEnabled);
+    windowSetup(guestInstanceId, openerId, isHiddenPage, usesNativeWindowOpen);
   }
 }
 

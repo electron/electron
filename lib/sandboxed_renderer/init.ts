@@ -124,7 +124,6 @@ if (hasSwitch('unsafely-expose-electron-internals-for-testing')) {
 const contextIsolation = mainFrame.getWebPreference('contextIsolation');
 const webviewTag = mainFrame.getWebPreference('webviewTag');
 const isHiddenPage = mainFrame.getWebPreference('hiddenPage');
-const rendererProcessReuseEnabled = mainFrame.getWebPreference('disableElectronSiteInstanceOverrides');
 const usesNativeWindowOpen = true;
 const guestInstanceId = mainFrame.getWebPreference('guestInstanceId') || null;
 const openerId = mainFrame.getWebPreference('openerId') || null;
@@ -144,7 +143,7 @@ switch (window.location.protocol) {
   default: {
     // Override default web functions.
     const { windowSetup } = require('@electron/internal/renderer/window-setup');
-    windowSetup(guestInstanceId, openerId, isHiddenPage, usesNativeWindowOpen, rendererProcessReuseEnabled);
+    windowSetup(guestInstanceId, openerId, isHiddenPage, usesNativeWindowOpen);
   }
 }
 

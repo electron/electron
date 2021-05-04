@@ -73,15 +73,10 @@ void ElectronRenderFrameObserver::DidInstallConditionalFeatures(
   // DidCreateScriptContext();
   bool is_main_world = IsMainWorld(world_id);
   bool is_main_frame = render_frame_->IsMainFrame();
-  bool reuse_renderer_processes_enabled =
-      prefs.disable_electron_site_instance_overrides;
-  bool is_not_opened = !render_frame_->GetWebFrame()->Opener() ||
-                       prefs.node_leakage_in_renderers;
   bool allow_node_in_sub_frames = prefs.node_integration_in_sub_frames;
   bool should_create_isolated_context =
       use_context_isolation && is_main_world &&
-      (is_main_frame || allow_node_in_sub_frames) &&
-      (is_not_opened || reuse_renderer_processes_enabled);
+      (is_main_frame || allow_node_in_sub_frames);
 
   if (should_create_isolated_context) {
     CreateIsolatedWorldContext();
