@@ -347,8 +347,7 @@ ElectronBrowserContext::GetURLLoaderFactory() {
   // the non-NetworkService implementation always has web security enabled.
   params->disable_web_security = false;
 
-  auto* storage_partition =
-      content::BrowserContext::GetDefaultStoragePartition(this);
+  auto* storage_partition = GetDefaultStoragePartition();
   params->url_loader_network_observer =
       storage_partition->CreateURLLoaderNetworkObserverForNavigationRequest(-1);
   storage_partition->GetNetworkContext()->CreateURLLoaderFactory(

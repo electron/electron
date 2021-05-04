@@ -81,10 +81,10 @@ index 1026b739d283f0fc252fa2af83a6d4cf51bc8553..fe562ab60ce98b8bb0c5080a6428deb3
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 159fa9efa79fd429bcef4a45028801e398d97ca2..c0410d8aa5b4352fca5ab5f33577dc5a5f999dd9 100644
+index 2ff8732060011e2e1d06861e1197c80b2fba2692..3b954f2f5ae931bf4c297141137315ebbff03cdc 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -133,6 +133,8 @@ viz_component("service") {
+@@ -135,6 +135,8 @@ viz_component("service") {
      "display_embedder/output_surface_provider_impl.h",
      "display_embedder/server_shared_bitmap_manager.cc",
      "display_embedder/server_shared_bitmap_manager.h",
@@ -108,7 +108,7 @@ index 77d463e683d8b8d3a202681a6884eacaab79d70d..05d51cb2637d34c073cd0025e3658036
  
  }  // namespace viz
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.cc b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-index 79c800e77a160cc0b10a29dd560d37e19c9d05fd..a9b1b267c97ed513890ba8466f66c3eafcbd5d5b 100644
+index 827084542417d45c9db8082e2c2537e7bdb8ff7f..927b48bbd855fdaebe2b26b8efbb7c48fec0c1a6 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.cc
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.cc
 @@ -25,6 +25,7 @@
@@ -146,7 +146,7 @@ index 79c800e77a160cc0b10a29dd560d37e19c9d05fd..a9b1b267c97ed513890ba8466f66c3ea
    } else if (renderer_settings.use_skia_renderer) {
      DCHECK(gpu_dependency);
      {
-@@ -241,10 +244,22 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
+@@ -251,10 +254,22 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
  std::unique_ptr<SoftwareOutputDevice>
  OutputSurfaceProviderImpl::CreateSoftwareOutputDeviceForPlatform(
      gpu::SurfaceHandle surface_handle,
@@ -511,10 +511,10 @@ index 04d2ba6d844ee85520a6c51784bf37c818f1bd3f..6095e8b8e177d11782f333cfb3e1c94f
    // Creating output surface failed. The host can send a new request, possibly
    // with a different compositing mode.
 diff --git a/content/browser/compositor/viz_process_transport_factory.cc b/content/browser/compositor/viz_process_transport_factory.cc
-index b1d4cf3b353a5937b575960739d9aa2ad70961f4..5d5a0e3904d3528d11a58568d4fd09c96e48471d 100644
+index 83a23404d1c029af6f7e7aa695bfe60e71d86fde..eef92d3366715774670ebcdcb76ad84ddd8a4ed0 100644
 --- a/content/browser/compositor/viz_process_transport_factory.cc
 +++ b/content/browser/compositor/viz_process_transport_factory.cc
-@@ -418,8 +418,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
+@@ -395,8 +395,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
    compositor_data.display_private.reset();
    root_params->display_private =
        compositor_data.display_private.BindNewEndpointAndPassReceiver();

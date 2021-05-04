@@ -28,6 +28,10 @@ class IconManager;
 namespace wm {
 class WMState;
 }
+
+namespace display {
+class Screen;
+}
 #endif
 
 #if defined(USE_X11)
@@ -126,6 +130,7 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
 
 #if defined(USE_AURA)
   std::unique_ptr<wm::WMState> wm_state_;
+  std::unique_ptr<display::Screen> screen_;
 #endif
 
 #if defined(OS_LINUX)

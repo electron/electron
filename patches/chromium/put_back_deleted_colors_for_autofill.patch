@@ -8,7 +8,7 @@ needed in chromium but our autofill implementation uses them.  This patch can be
 our autofill implementation to work like Chromium's.
 
 diff --git a/ui/native_theme/common_theme.cc b/ui/native_theme/common_theme.cc
-index 0726aaf384626c6e5d103fe674bac0847a8bb6cf..7c76636270e907e9770c55f7c446f67a26e4c75f 100644
+index 4436af30ea86d7949ae5f387fbeab9e6369ac12e..575aafe2d19c150e288141fb85cec3f78103ba4a 100644
 --- a/ui/native_theme/common_theme.cc
 +++ b/ui/native_theme/common_theme.cc
 @@ -72,6 +72,14 @@ base::Optional<SkColor> GetDarkSchemeColor(NativeTheme::ColorId color_id,
@@ -26,7 +26,7 @@ index 0726aaf384626c6e5d103fe674bac0847a8bb6cf..7c76636270e907e9770c55f7c446f67a
      // Button
      case NativeTheme::kColorId_ProminentButtonColor:
        return gfx::kGoogleBlue300;
-@@ -568,6 +576,18 @@ SkColor GetDefaultColor(NativeTheme::ColorId color_id,
+@@ -570,6 +578,18 @@ SkColor GetDefaultColor(NativeTheme::ColorId color_id,
      case NativeTheme::kColorId_WindowBackground:
        return SK_ColorWHITE;
  
@@ -46,7 +46,7 @@ index 0726aaf384626c6e5d103fe674bac0847a8bb6cf..7c76636270e907e9770c55f7c446f67a
        // Keeping the kColorId_NumColors case instead of using the default case
        // allows ColorId additions to trigger compile error for an incomplete
 diff --git a/ui/native_theme/native_theme_color_id.h b/ui/native_theme/native_theme_color_id.h
-index 9cfa124430631227639d4f94b3cdd565f97efff4..6debfe01925780f243303438911a0cb84fbac2fa 100644
+index 64e6d428d805a71f1e8779c4c169d232bed79d2d..93086c17e231dbd2226bdc805f26d59703862d3b 100644
 --- a/ui/native_theme/native_theme_color_id.h
 +++ b/ui/native_theme/native_theme_color_id.h
 @@ -151,6 +151,11 @@

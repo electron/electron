@@ -53,7 +53,7 @@ void ResolveProxyHelper::StartPendingRequest() {
   receiver_.set_disconnect_handler(
       base::BindOnce(&ResolveProxyHelper::OnProxyLookupComplete,
                      base::Unretained(this), net::ERR_ABORTED, base::nullopt));
-  content::BrowserContext::GetDefaultStoragePartition(browser_context_)
+  browser_context_->GetDefaultStoragePartition()
       ->GetNetworkContext()
       ->LookUpProxyForURL(pending_requests_.front().url,
                           net::NetworkIsolationKey::Todo(),

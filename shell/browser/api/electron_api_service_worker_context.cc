@@ -74,11 +74,9 @@ gin::WrapperInfo ServiceWorkerContext::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 ServiceWorkerContext::ServiceWorkerContext(
     v8::Isolate* isolate,
-    ElectronBrowserContext* browser_context)
-    : browser_context_(browser_context) {
+    ElectronBrowserContext* browser_context) {
   service_worker_context_ =
-      content::BrowserContext::GetDefaultStoragePartition(browser_context_)
-          ->GetServiceWorkerContext();
+      browser_context->GetDefaultStoragePartition()->GetServiceWorkerContext();
   service_worker_context_->AddObserver(this);
 }
 

@@ -8,7 +8,7 @@ this patch removes that dependency so we can reuse it.
 Ideally we would change this class in upstream to not depend on Profile.
 
 diff --git a/chrome/browser/predictors/preconnect_manager.cc b/chrome/browser/predictors/preconnect_manager.cc
-index c4ea16e117cbf0cedfc6b2b208341cbef8b42a34..de5cf3faaca8f082ba208e19afe9f186a9680ec6 100644
+index 7cbe5b3ebac99849dc784e1dc587b3a091abbf49..6de33ea6f7e452cdfbf3271827a943828e93fb8f 100644
 --- a/chrome/browser/predictors/preconnect_manager.cc
 +++ b/chrome/browser/predictors/preconnect_manager.cc
 @@ -69,7 +69,7 @@ PreresolveJob::PreresolveJob(PreresolveJob&& other) = default;
@@ -32,8 +32,8 @@ index c4ea16e117cbf0cedfc6b2b208341cbef8b42a34..de5cf3faaca8f082ba208e19afe9f186
    }
 +#endif
  
-   return content::BrowserContext::GetDefaultStoragePartition(profile_)
-       ->GetNetworkContext();
+   return profile_->GetDefaultStoragePartition()->GetNetworkContext();
+ }
 diff --git a/chrome/browser/predictors/preconnect_manager.h b/chrome/browser/predictors/preconnect_manager.h
 index dbdde3dfd9bb160486a1d06f16ef86548798b61c..a4373ebdbe8bb833c3b782e3d3cb27a5116f976d 100644
 --- a/chrome/browser/predictors/preconnect_manager.h

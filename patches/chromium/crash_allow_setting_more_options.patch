@@ -75,10 +75,10 @@ index 39557cce474439238255ecd28030215085db0c81..5b3f980837911c710686ab91a2a81c31
    // Used by WebView to sample crashes without generating the unwanted dumps. If
    // the returned value is less than 100, crash dumping will be sampled to that
 diff --git a/components/crash/core/app/crashpad_mac.mm b/components/crash/core/app/crashpad_mac.mm
-index 2be2fd857bc5f6775e20fc595929d984c7543f8c..0d633410842cc4fcb9f1befe452c4fc0776d3af8 100644
+index e3fc1fb2bcab31d6a7cb325a892acb26dc00d4e4..fd654d6e514de416457c283caeb1895dba6286e1 100644
 --- a/components/crash/core/app/crashpad_mac.mm
 +++ b/components/crash/core/app/crashpad_mac.mm
-@@ -86,6 +86,8 @@
+@@ -85,6 +85,8 @@
      }  // @autoreleasepool
      return process_annotations;
    }();
@@ -87,7 +87,7 @@ index 2be2fd857bc5f6775e20fc595929d984c7543f8c..0d633410842cc4fcb9f1befe452c4fc0
    return annotations;
  }
  
-@@ -156,6 +158,13 @@ void DumpProcessWithoutCrashing(task_t task_port) {
+@@ -155,6 +157,13 @@ void DumpProcessWithoutCrashing(task_t task_port) {
  
        std::vector<std::string> arguments;
  

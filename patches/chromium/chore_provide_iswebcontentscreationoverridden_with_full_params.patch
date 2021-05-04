@@ -264,10 +264,10 @@ index c5c5a7b63b5b3b62a9517cbef3ae23ce57a3c89c..4f1b7e88d6d2ae89a60311c8aeb1fcee
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 893caf674e4fc7ed505a5fbbd43d0bc31f1118fc..1e24697533a51853041e5a15b585d0d3f5a80817 100644
+index 2426eb615967cbe3d11ece998d97d63266fac184..f4c8d9e8a20f9be8c6566857fcf1d57ba7ec1af7 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3572,8 +3572,7 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
+@@ -3601,8 +3601,7 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
  
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,
@@ -362,10 +362,10 @@ index 7d27e12c4e9a7f32af8a26f672359057a643dd67..7a30ac31f79871f2a9afa0345e0e88af
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/fuchsia/engine/browser/frame_impl.cc b/fuchsia/engine/browser/frame_impl.cc
-index f50f4343ed5a487538ef9ce819cd19300623a3dd..282bca34f82e5a3b27bc66f0cab494e388f35b9e 100644
+index 9e95136de2a8a802e1753ca4a628e120f97a0b74..1af68ff77159a4c08e98440ddf9ff325f0887975 100644
 --- a/fuchsia/engine/browser/frame_impl.cc
 +++ b/fuchsia/engine/browser/frame_impl.cc
-@@ -372,8 +372,7 @@ bool FrameImpl::IsWebContentsCreationOverridden(
+@@ -373,8 +373,7 @@ bool FrameImpl::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -390,7 +390,7 @@ index fea7e90aa11231009c442e8a449478f63a6d98eb..7b8802fcec4a2fff3b3d147e1bbd97e5
                            int opener_render_process_id,
                            int opener_render_frame_id,
 diff --git a/headless/lib/browser/headless_web_contents_impl.cc b/headless/lib/browser/headless_web_contents_impl.cc
-index 4fdbf1c7030bb2b3765780d1e8c5a502679745de..5b59ce27eaa03897e5cbb3115b485a3ea931e871 100644
+index 4e4b37cc0fbbcf8f630a4e928c957261e9a03603..610848b09bba4dfa7dd645ca62354930b74e3ed5 100644
 --- a/headless/lib/browser/headless_web_contents_impl.cc
 +++ b/headless/lib/browser/headless_web_contents_impl.cc
 @@ -198,8 +198,7 @@ class HeadlessWebContentsImpl::Delegate : public content::WebContentsDelegate {
