@@ -8,8 +8,7 @@ use dedicated communication channels to delegate tasks to more privileged proces
 
 In Chromium, sandboxing is mainly applied to renderer processes. In addition, certain
 utility processes are also sandboxed, including the audio service, the GPU service,
-and the storage service. On Windows, the `chrome://sandbox` page will show you the exact
-sandboxing policy associated with each process.
+and the storage service.
 
 See Chromium's [Sandbox design document][sandbox] for more information.
 
