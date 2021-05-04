@@ -17,10 +17,10 @@ only one or two specific checks fail. Then it's better to simply comment out the
 failing checks and allow the rest of the target to have them enabled.
 
 diff --git a/content/browser/renderer_host/navigation_controller_impl.cc b/content/browser/renderer_host/navigation_controller_impl.cc
-index 21601429c56fc374da8826cb68361ff0de56ac55..9b27a4ff1abac2b104f0ac16c9ed2e3518279d84 100644
+index 5f689adb527d2f8c37b8c923aac66750fd045c26..f74d13195b1174702cda244c69e7fbbe0e22561e 100644
 --- a/content/browser/renderer_host/navigation_controller_impl.cc
 +++ b/content/browser/renderer_host/navigation_controller_impl.cc
-@@ -1336,8 +1336,10 @@ NavigationType NavigationControllerImpl::ClassifyNavigation(
+@@ -1400,8 +1400,10 @@ NavigationType NavigationControllerImpl::ClassifyNavigation(
      return NAVIGATION_TYPE_NEW_SUBFRAME;
    }
  
@@ -33,8 +33,8 @@ index 21601429c56fc374da8826cb68361ff0de56ac55..9b27a4ff1abac2b104f0ac16c9ed2e35
  
    if (rfh->GetParent()) {
      // All manual subframes would be did_create_new_entry and handled above, so
-@@ -1629,7 +1631,10 @@ void NavigationControllerImpl::RendererDidNavigateToNewEntry(
-     new_entry->GetFavicon() = GetLastCommittedEntry()->GetFavicon();
+@@ -1712,7 +1714,10 @@ void NavigationControllerImpl::RendererDidNavigateToNewEntry(
+     }
    }
  
 -  DCHECK(!params.history_list_was_cleared || !replace_entry);
@@ -46,7 +46,7 @@ index 21601429c56fc374da8826cb68361ff0de56ac55..9b27a4ff1abac2b104f0ac16c9ed2e35
    // navigation. Now we know that the renderer has updated its state accordingly
    // and it is safe to also clear the browser side history.
 diff --git a/ui/base/clipboard/clipboard_win.cc b/ui/base/clipboard/clipboard_win.cc
-index 0763e37f028a708c6e739458ec4c87c406e79b46..2d238fde0a1eb3f22fd52cbad3b12d704af2e8ae 100644
+index 751f40e1d792b12189e05f4e68f7590f29d0a173..ab0fe4806f304aa0864af6504e415464a627e946 100644
 --- a/ui/base/clipboard/clipboard_win.cc
 +++ b/ui/base/clipboard/clipboard_win.cc
 @@ -924,10 +924,10 @@ SkBitmap ClipboardWin::ReadImageInternal(ClipboardBuffer buffer) const {

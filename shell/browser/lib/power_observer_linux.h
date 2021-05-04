@@ -19,7 +19,7 @@ namespace electron {
 
 class PowerObserverLinux {
  public:
-  explicit PowerObserverLinux(base::PowerObserver* observer);
+  explicit PowerObserverLinux(base::PowerSuspendObserver* suspend_observer);
   ~PowerObserverLinux();
 
   void SetShutdownHandler(base::Callback<bool()> should_shutdown);
@@ -39,7 +39,7 @@ class PowerObserverLinux {
                          bool success);
 
   base::RepeatingCallback<bool()> should_shutdown_;
-  base::PowerObserver* observer_;
+  base::PowerSuspendObserver* suspend_observer_ = nullptr;
 
   scoped_refptr<dbus::ObjectProxy> logind_;
   std::string lock_owner_name_;

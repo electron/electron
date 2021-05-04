@@ -184,14 +184,6 @@ struct Converter<ClearStorageDataOptions> {
 
 bool SSLProtocolVersionFromString(const std::string& version_str,
                                   network::mojom::SSLVersion* version) {
-  if (version_str == switches::kSSLVersionTLSv1) {
-    *version = network::mojom::SSLVersion::kTLS1;
-    return true;
-  }
-  if (version_str == switches::kSSLVersionTLSv11) {
-    *version = network::mojom::SSLVersion::kTLS11;
-    return true;
-  }
   if (version_str == switches::kSSLVersionTLSv12) {
     *version = network::mojom::SSLVersion::kTLS12;
     return true;
@@ -862,7 +854,8 @@ v8::Local<v8::Value> Session::GetAllExtensions() {
   auto installed_extensions = registry->GenerateInstalledExtensionsSet();
   std::vector<const extensions::Extension*> extensions_vector;
   for (const auto& extension : *installed_extensions) {
-    if (extension->location() != extensions::Manifest::COMPONENT)
+    if (extension->location() !=
+        extensions::mojom::ManifestLocation::kExternalComponent)
       extensions_vector.emplace_back(extension.get());
   }
   return gin::ConvertToV8(isolate_, extensions_vector);

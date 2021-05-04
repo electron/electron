@@ -19,10 +19,10 @@ that clearly establishes the worker script is ready for evaluation with the scop
 initialized.
 
 diff --git a/content/public/renderer/content_renderer_client.h b/content/public/renderer/content_renderer_client.h
-index 205685f200d54e53829ddc29de3bc07e24ea13b1..31656a92b1e0be23ffc4f4fc3d1ba303c76ba234 100644
+index a538b9ebcfa232b90fc7713e6569608a16c57ed3..53917132e03fc1767083ec4aaa6b8d4a06a0cf07 100644
 --- a/content/public/renderer/content_renderer_client.h
 +++ b/content/public/renderer/content_renderer_client.h
-@@ -378,6 +378,11 @@ class CONTENT_EXPORT ContentRendererClient {
+@@ -377,6 +377,11 @@ class CONTENT_EXPORT ContentRendererClient {
    virtual void DidInitializeWorkerContextOnWorkerThread(
        v8::Local<v8::Context> context) {}
  
@@ -78,7 +78,7 @@ index 911708b508fb38c0f22b3ceaa92fc6a66308ac17..792ea5e1159f17354a5e6fd838f3e789
    virtual bool AllowScriptExtensionForServiceWorker(
        const WebSecurityOrigin& script_origin) {
 diff --git a/third_party/blink/renderer/bindings/core/v8/worker_or_worklet_script_controller.cc b/third_party/blink/renderer/bindings/core/v8/worker_or_worklet_script_controller.cc
-index 59430d092bec9e633c35d02d267884a66268ae81..10a567b0b0331f7ed119f62b8a842f27bfa31ee0 100644
+index a52865104b5df3faaf0e861e921c3cd5c4766998..48364b2a48cfb1d80415f3cbf89403bff602e056 100644
 --- a/third_party/blink/renderer/bindings/core/v8/worker_or_worklet_script_controller.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/worker_or_worklet_script_controller.cc
 @@ -257,6 +257,7 @@ void WorkerOrWorkletScriptController::PrepareForEvaluation() {
@@ -86,10 +86,10 @@ index 59430d092bec9e633c35d02d267884a66268ae81..10a567b0b0331f7ed119f62b8a842f27
    ignore_result(per_context_data->ConstructorForType(
        global_scope_->GetWrapperTypeInfo()));
 +  Platform::Current()->WorkerScriptReadyForEvaluation(script_state_->GetContext());
- #else   // USE_BLINK_V8_BINDING_NEW_IDL_INTERFACE
-   ScriptState::Scope scope(script_state_);
-   v8::Local<v8::Context> context = script_state_->GetContext();
-@@ -282,6 +283,8 @@ void WorkerOrWorkletScriptController::PrepareForEvaluation() {
+   // Inform V8 that origin trial information is now connected with the context,
+   // and V8 can extend the context with origin trial features.
+   isolate_->InstallConditionalFeatures(script_state_->GetContext());
+@@ -285,6 +286,8 @@ void WorkerOrWorkletScriptController::PrepareForEvaluation() {
    wrapper_type_info->InstallConditionalFeatures(
        context, *world_, global_object, v8::Local<v8::Object>(),
        v8::Local<v8::Function>(), global_interface_template);
