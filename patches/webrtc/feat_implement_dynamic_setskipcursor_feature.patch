@@ -47,7 +47,7 @@ index 8f95721ec295e9496654e81f240cf8543b236456..faf32c3a9718525c40724004c8b26e9a
    RTC_DISALLOW_COPY_AND_ASSIGN(DesktopAndCursorComposer);
  };
 diff --git a/modules/desktop_capture/desktop_capturer.cc b/modules/desktop_capture/desktop_capturer.cc
-index 8d8bdd5835d9b8c6db980dff64c10827a7aa2438..05b1646d4afbef4a277020d9890e76b72593b924 100644
+index 735aa4d5309b073cf28a78c378d2ad736998d3ba..1c70468b8f5afa9b09990cf585207b98a38747a8 100644
 --- a/modules/desktop_capture/desktop_capturer.cc
 +++ b/modules/desktop_capture/desktop_capturer.cc
 @@ -50,6 +50,8 @@ bool DesktopCapturer::IsOccluded(const DesktopVector& pos) {

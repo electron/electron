@@ -194,10 +194,10 @@ index 8b5b93e3a91f92b0ac029dc353315699d0dd9977..ce24549bc1b750bf7b73e194fc08718a
    const std::string& device_id() const { return device_id_; }
    blink::mojom::MediaStreamType stream_type() const { return stream_type_; }
 diff --git a/content/browser/renderer_host/media/video_capture_manager.cc b/content/browser/renderer_host/media/video_capture_manager.cc
-index e9d68929855c2c99ac3972b9480d3cea8318ac39..985125c4852d7bf9062d32a4f066ab83e560c7a4 100644
+index 4f2e3026c85d1e6e962f32049bba644b4745c9d3..020acd05e76e8916b982c3ef66e72c936466db7a 100644
 --- a/content/browser/renderer_host/media/video_capture_manager.cc
 +++ b/content/browser/renderer_host/media/video_capture_manager.cc
-@@ -622,6 +622,36 @@ void VideoCaptureManager::MaybePostDesktopCaptureWindowId(
+@@ -621,6 +621,36 @@ void VideoCaptureManager::MaybePostDesktopCaptureWindowId(
    notification_window_ids_.erase(window_id_it);
  }
  
@@ -250,10 +250,10 @@ index 0f5149cf290a20f8318c169104a7f22e1f8ff1c2..213e0cdda4dc62e9d65a26d2ddbad08f
                       VideoCaptureDevice::GetPhotoStateCallback callback);
    void SetPhotoOptions(const base::UnguessableToken& session_id,
 diff --git a/content/public/browser/BUILD.gn b/content/public/browser/BUILD.gn
-index 1f6f074dbc262025570f329498fbcb583dbccf5d..9940197346f8d93b76fb581458e00e012a34077f 100644
+index e833ef9f26a366c4f669298017c383da0c6e1dc0..4381e9eac14a5f91f1cd2d7df381cdd171e96782 100644
 --- a/content/public/browser/BUILD.gn
 +++ b/content/public/browser/BUILD.gn
-@@ -202,6 +202,8 @@ source_set("browser_sources") {
+@@ -203,6 +203,8 @@ source_set("browser_sources") {
      "login_delegate.h",
      "manifest_icon_downloader.h",
      "media_capture_devices.h",
