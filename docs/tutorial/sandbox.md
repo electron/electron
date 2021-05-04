@@ -74,7 +74,7 @@ app.whenReady().then(() => {
       sandbox: true
     }
   })
-  win.loadURL('http://google.com')
+  win.loadURL('https://google.com')
 })
 ```
 
@@ -88,7 +88,7 @@ app.enableSandbox()
 app.whenReady().then(() => {
   // no need to pass `sandbox: true` since `app.enableSandbox()` was called.
   const win = new BrowserWindow()
-  win.loadURL('http://google.com')
+  win.loadURL('https://google.com')
 })
 ```
 
