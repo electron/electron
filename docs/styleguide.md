@@ -2,15 +2,14 @@
 
 These are the guidelines for writing Electron documentation.
 
-## Titles
+## Headings
 
 * Each page must have a single `#`-level title at the top.
-* Chapters in the same page must have `##`-level titles.
+* Chapters in the same page must have `##`-level headings.
 * Sub-chapters need to increase the number of `#` in the title according to
   their nesting depth.
-* All words in the page's title must be capitalized, except for conjunctions
-  like "of" and "and" .
-* Only the first word of a chapter title must be capitalized.
+* The page's title must follow [APA title case][title-case]
+* All chapters must follow [APA sentence case][sentence-case]
 
 Using `Quick Start` as example:
 
@@ -232,3 +231,6 @@ a module or a class.
 ## Documentation Translations
 
 See [electron/i18n](https://github.com/electron/i18n#readme)
+
+[title-case](https://apastyle.apa.org/style-grammar-guidelines/capitalization/title-case)
+[sentence-case](https://apastyle.apa.org/style-grammar-guidelines/capitalization/sentence-case)
