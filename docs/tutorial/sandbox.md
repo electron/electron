@@ -30,9 +30,8 @@ Electron has a few additional quirks to consider.
 ### Renderer processes
 
 When renderer processes in Electron are sandboxed, they behave in the same way as a
-regular Chrome renderer would. A sandboxed renderer won't be initialized in a Node.js
-environment, nor will it modify any default JavaScript APIs that behave differently
-by default in Electron (e.g. `window.open`).
+regular Chrome renderer would. A sandboxed renderer won't have a Node.js
+environment initialized.
 
 <!-- TODO(erickzhao): when we have a solid guide for IPC, link it here -->
 Therefore, when the sandbox is enabled, renderer processes can only make changes to the
