@@ -18,17 +18,18 @@ const win = new BrowserWindow({ width: 800, height: 600, frame: false })
 win.show()
 ```
 
-### Alternatives on macOS
+### Alternatives
 
 There's an alternative way to specify a chromeless window.
 Instead of setting `frame` to `false` which disables both the titlebar and window controls,
 you may want to have the title bar hidden and your content extend to the full window size,
-yet still preserve the window controls ("traffic lights") for standard window actions.
+yet still preserve the window controls ("traffic lights" on macOS) for standard window actions.
 You can do so by specifying the `titleBarStyle` option:
 
 #### `hidden`
 
 Results in a hidden title bar and a full size content window, yet the title bar still has the standard window controls (“traffic lights”) in the top left.
+Additionally the Window Controls Overlay [JavaScript APIs][overlay-javascript-apis] and [CSS Environment Variables][overlay-css-env-vars] will be enabled.
 
 ```javascript
 const { BrowserWindow } = require('electron')
@@ -36,9 +37,12 @@ const win = new BrowserWindow({ titleBarStyle: 'hidden' })
 win.show()
 ```
 
+### Alternatives on macOS
+
 #### `hiddenInset`
 
 Results in a hidden title bar with an alternative look where the traffic light buttons are slightly more inset from the window edge.
+Additionally the Window Controls Overlay [JavaScript APIs][overlay-javascript-apis] and [CSS Environment Variables][overlay-css-env-vars] will be enabled.
 
 ```javascript
 const { BrowserWindow } = require('electron')

@@ -229,6 +229,10 @@ filenames = {
     "shell/browser/ui/views/root_view.h",
     "shell/browser/ui/views/submenu_button.cc",
     "shell/browser/ui/views/submenu_button.h",
+    "shell/browser/ui/views/win_caption_button.h",
+    "shell/browser/ui/views/win_caption_button.cc",
+    "shell/browser/ui/views/win_caption_button_container.h",
+    "shell/browser/ui/views/win_caption_button_container.cc",
   ]
 
   lib_sources = [

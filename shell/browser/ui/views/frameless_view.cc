@@ -85,16 +85,16 @@ int FramelessView::NonClientHitTest(const gfx::Point& cursor) {
       return HTCAPTION;
   }
 
+  // Support resizing frameless window by dragging the border.
+  int frame_component = ResizingBorderHitTest(cursor);
+  if (frame_component != HTNOWHERE)
+    return frame_component;
+
   // Check for possible draggable region in the client area for the frameless
   // window.
   SkRegion* draggable_region = window_->draggable_region();
   if (draggable_region && draggable_region->contains(cursor.x(), cursor.y()))
     return HTCAPTION;
-
-  // Support resizing frameless window by dragging the border.
-  int frame_component = ResizingBorderHitTest(cursor);
-  if (frame_component != HTNOWHERE)
-    return frame_component;
 
   return HTCLIENT;
 }
