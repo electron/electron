@@ -19,5 +19,5 @@ dependency, you should be able to access the REPL with the following command:
 
 ## Renderer process
 
-You can use the Console tab of the Dev Tools to get a REPL for any renderer process.
+You can use the DevTools Console tab to get a REPL for any renderer process.
 To learn more, read [the Chrome documentation](https://developer.chrome.com/docs/devtools/console/).
