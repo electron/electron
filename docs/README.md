@@ -68,6 +68,7 @@ an issue:
   * [Testing on Headless CI Systems (Travis, Jenkins)](tutorial/testing-on-headless-ci.md)
   * [DevTools Extension](tutorial/devtools-extension.md)
   * [Automated Testing with a Custom Driver](tutorial/automated-testing-with-a-custom-driver.md)
+  * [REPL](tutorial/repl.md)
 * [Distribution](tutorial/application-distribution.md)
   * [Supported Platforms](tutorial/support.md#supported-platforms)
   * [Code Signing](tutorial/code-signing.md)
