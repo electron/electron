@@ -55,9 +55,9 @@ communication (IPC).
 ### Preload scripts
 
 In order to allow renderer processes to communicate with the main process, preload
-scripts attached to sandboxed renderers will still have a limited Node.js environment
-enabled. Node's `require` module is exposed, but will only be able to import a subset
-of Electron and Node's built-in modules:
+scripts attached to sandboxed renderers will still have a polyfilled subset of Node.js
+APIs available. A `require` function similar to Node's `require` module is exposed,
+but can only import a subset of Electron and Node's built-in modules:
 
 * `electron` (only renderer process modules)
 * [`events`](https://nodejs.org/api/events.html)
@@ -71,8 +71,9 @@ In addition, the preload script also polyfills certain Node.js primitives as glo
 * [`clearImmediate`](https://nodejs.org/api/timers.html#timers_clearimmediate_immediate)
 * [`setImmediate`](https://nodejs.org/api/timers.html#timers_setimmediate_callback_args)
 
-Note that because the Node.js environment is still present in the `preload`, it is still
-possible to leak privileged APIs to untrusted code running in the renderer process unless
+Note that because the environment presented to the `preload` script is substantially
+more privileged than that of a sandboxed renderer, it is still possible to leak
+privileged APIs to untrusted code running in the renderer process unless
 [`contextIsolation`][contextIsolation] is enabled.
 
 ## Configuring the sandbox
