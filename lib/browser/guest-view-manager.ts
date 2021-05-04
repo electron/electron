@@ -216,7 +216,7 @@ const attachGuest = function (event: Electron.IpcMainInvokeEvent,
 
   watchEmbedder(embedder);
 
-  webViewManager.addGuest(guestInstanceId, elementInstanceId, embedder, guest, webPreferences);
+  webViewManager.addGuest(guestInstanceId, embedder, guest, webPreferences);
   guest.attachToIframe(embedder, embedderFrameId);
 };
 
