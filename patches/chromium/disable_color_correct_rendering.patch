@@ -81,7 +81,7 @@ index f919df4d79a1168269c1538ac13a2a944586cf4e..fc34cf5d7dab95e7b6fc0576674b3e2b
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  
 diff --git a/components/viz/service/display/gl_renderer.cc b/components/viz/service/display/gl_renderer.cc
-index 153f8fd8dd9255a3f45532be05b5eb4be296fb0f..5a07850683b7e24489cf0448c4faeb7d48e3134f 100644
+index 046cd7582b11760a3d512ca8e63d495b9b5f35be..fc44552756eda92e376a31943842922ab9e21f92 100644
 --- a/components/viz/service/display/gl_renderer.cc
 +++ b/components/viz/service/display/gl_renderer.cc
 @@ -87,6 +87,9 @@
@@ -198,7 +198,7 @@ index 153f8fd8dd9255a3f45532be05b5eb4be296fb0f..5a07850683b7e24489cf0448c4faeb7d
    gfx::ColorSpace adjusted_src_color_space = src_color_space;
    if (adjust_src_white_level) {
      // If the input color space is HDR, and it did not specify a white level,
-@@ -4039,9 +4051,9 @@ void GLRenderer::CopyRenderPassDrawQuadToOverlayResource(
+@@ -4040,9 +4052,9 @@ void GLRenderer::CopyRenderPassDrawQuadToOverlayResource(
          cc::MathUtil::CheckedRoundUp(iosurface_height, iosurface_multiple);
    }
  
@@ -211,7 +211,7 @@ index 153f8fd8dd9255a3f45532be05b5eb4be296fb0f..5a07850683b7e24489cf0448c4faeb7d
    *new_bounds = gfx::RectF(updated_dst_rect.origin(),
                             gfx::SizeF((*overlay_texture)->texture.size()));
  
-@@ -4261,8 +4273,8 @@ void GLRenderer::FlushOverdrawFeedback(const gfx::Rect& output_rect) {
+@@ -4262,8 +4274,8 @@ void GLRenderer::FlushOverdrawFeedback(const gfx::Rect& output_rect) {
  
    PrepareGeometry(SHARED_BINDING);
  
@@ -222,7 +222,7 @@ index 153f8fd8dd9255a3f45532be05b5eb4be296fb0f..5a07850683b7e24489cf0448c4faeb7d
  
    gfx::Transform render_matrix;
    render_matrix.Translate(0.5 * output_rect.width() + output_rect.x(),
-@@ -4452,3 +4464,5 @@ GLRenderer::OverlayTexture::OverlayTexture() = default;
+@@ -4453,3 +4465,5 @@ GLRenderer::OverlayTexture::OverlayTexture() = default;
  GLRenderer::OverlayTexture::~OverlayTexture() = default;
  
  }  // namespace viz
@@ -241,7 +241,7 @@ index cbb30f8900ed07d5cccbf250f2f1e6fafb66b40e..411fabb7e8c3e2a1aceb9db0fefdc4c6
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 08fd62722a0bcb996f2dfab5329ebaecfe5c50c0..d3e89b9aa2500ce920e77637b1e1e79967d30137 100644
+index 43ad6054fc9c310fb78f8e718a91d29cfcc797d8..635ac52ba7615aa2dbe0c728c274c8027e651b7c 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -211,6 +211,7 @@
@@ -252,7 +252,7 @@ index 08fd62722a0bcb996f2dfab5329ebaecfe5c50c0..d3e89b9aa2500ce920e77637b1e1e799
  #include "ui/gl/gl_switches.h"
  #include "ui/native_theme/native_theme_features.h"
  #include "url/origin.h"
-@@ -3191,6 +3192,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3200,6 +3201,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {

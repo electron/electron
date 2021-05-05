@@ -236,10 +236,10 @@ index b6d860060e4ba86d8871bd19e7011a64eb057350..040a18fa5049698429d2c51b52d32409
    // Used to force the NSApplication's focused accessibility element to be the
    // views::Views accessibility tree when the NSView for this is focused.
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index 44973b5dce26d297eb5339cf9ede2ff06767a453..af92ed3311c14e54845bf743fdea7654f8b6c93d 100644
+index 1de90c3bf77b2b1d69d10cd0fbe6e963f7b48861..f437109802677f1c237116eadfc2952249daf084 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-@@ -284,14 +284,22 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -285,14 +285,22 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
  NativeWidgetMacNSWindowHost::GetNativeViewAccessibleForNSView() const {
    if (in_process_ns_window_bridge_)
      return in_process_ns_window_bridge_->ns_view();
@@ -262,7 +262,7 @@ index 44973b5dce26d297eb5339cf9ede2ff06767a453..af92ed3311c14e54845bf743fdea7654
  }
  
  remote_cocoa::mojom::NativeWidgetNSWindow*
-@@ -1172,6 +1180,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -1173,6 +1181,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
  void NativeWidgetMacNSWindowHost::SetRemoteAccessibilityTokens(
      const std::vector<uint8_t>& window_token,
      const std::vector<uint8_t>& view_token) {
@@ -270,7 +270,7 @@ index 44973b5dce26d297eb5339cf9ede2ff06767a453..af92ed3311c14e54845bf743fdea7654
    remote_window_accessible_ =
        ui::RemoteAccessibility::GetRemoteElementFromToken(window_token);
    remote_view_accessible_ =
-@@ -1179,14 +1188,17 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -1180,14 +1189,17 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    [remote_view_accessible_ setWindowUIElement:remote_window_accessible_.get()];
    [remote_view_accessible_
        setTopLevelUIElement:remote_window_accessible_.get()];
