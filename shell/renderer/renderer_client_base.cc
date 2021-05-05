@@ -22,8 +22,11 @@
 #include "electron/buildflags/buildflags.h"
 #include "media/blink/multibuffer_data_source.h"
 #include "printing/buildflags/buildflags.h"
+#include "shell/common/api/electron_api_native_image.h"
 #include "shell/common/color_util.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/node_includes.h"
+#include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/world_ids.h"
 #include "shell/renderer/browser_exposed_renderer_interfaces.h"
@@ -84,6 +87,21 @@
 namespace electron {
 
 namespace {
+
+content::RenderFrame* GetRenderFrame(v8::Local<v8::Object> value) {
+  v8::Local<v8::Context> context = value->CreationContext();
+  if (context.IsEmpty())
+    return nullptr;
+  blink::WebLocalFrame* frame = blink::WebLocalFrame::FrameForContext(context);
+  if (!frame)
+    return nullptr;
+  return content::RenderFrame::FromWebFrame(frame);
+}
+
+void SetIsWebView(v8::Isolate* isolate, v8::Local<v8::Object> object) {
+  gin_helper::Dictionary dict(isolate, object);
+  dict.SetHidden("isWebView", true);
+}
 
 std::vector<std::string> ParseSchemesCLISwitch(base::CommandLine* command_line,
                                                const char* switch_name) {
@@ -496,11 +514,76 @@ bool RendererClientBase::IsWebViewFrame(
 
   gin_helper::Dictionary frame_element_dict(isolate, frame_element);
 
-  v8::Local<v8::Object> internal;
-  if (!frame_element_dict.GetHidden("internal", &internal))
-    return false;
+  bool is_webview = false;
+  return frame_element_dict.GetHidden("isWebView", &is_webview) && is_webview;
+}
 
-  return !internal.IsEmpty();
+void RendererClientBase::SetupMainWorldOverrides(
+    v8::Handle<v8::Context> context,
+    content::RenderFrame* render_frame) {
+  auto prefs = render_frame->GetBlinkPreferences();
+  // We only need to run the isolated bundle if webview is enabled
+  if (!prefs.webview_tag)
+    return;
+
+  // Setup window overrides in the main world context
+  // Wrap the bundle into a function that receives the isolatedApi as
+  // an argument.
+  auto* isolate = context->GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+  v8::Context::Scope context_scope(context);
+
+  gin_helper::Dictionary isolated_api = gin::Dictionary::CreateEmpty(isolate);
+  isolated_api.SetMethod("allowGuestViewElementDefinition",
+                         &AllowGuestViewElementDefinition);
+  isolated_api.SetMethod("getWebFrameId", &GetWebFrameId);
+  isolated_api.SetMethod("setIsWebView", &SetIsWebView);
+  isolated_api.SetMethod("createNativeImage", &api::NativeImage::CreateEmpty);
+
+  std::vector<v8::Local<v8::String>> isolated_bundle_params = {
+      node::FIXED_ONE_BYTE_STRING(isolate, "isolatedApi")};
+
+  std::vector<v8::Local<v8::Value>> isolated_bundle_args = {
+      isolated_api.GetHandle()};
+
+  util::CompileAndCall(context, "electron/js2c/isolated_bundle",
+                       &isolated_bundle_params, &isolated_bundle_args, nullptr);
+}
+
+// static
+void RendererClientBase::AllowGuestViewElementDefinition(
+    v8::Isolate* isolate,
+    v8::Local<v8::Object> context,
+    v8::Local<v8::Function> register_cb) {
+  v8::HandleScope handle_scope(isolate);
+  v8::Context::Scope context_scope(context->CreationContext());
+  blink::WebCustomElement::EmbedderNamesAllowedScope embedder_names_scope;
+
+  content::RenderFrame* render_frame = GetRenderFrame(context);
+  if (!render_frame)
+    return;
+
+  render_frame->GetWebFrame()->RequestExecuteV8Function(
+      context->CreationContext(), register_cb, v8::Null(isolate), 0, nullptr,
+      nullptr);
+}
+
+// static
+int RendererClientBase::GetWebFrameId(v8::Local<v8::Object> content_window) {
+  // Get the WebLocalFrame before (possibly) executing any user-space JS while
+  // getting the |params|. We track the status of the RenderFrame via an
+  // observer in case it is deleted during user code execution.
+  content::RenderFrame* render_frame = GetRenderFrame(content_window);
+  if (!render_frame)
+    return -1;
+
+  blink::WebLocalFrame* frame = render_frame->GetWebFrame();
+  // Parent must exist.
+  blink::WebFrame* parent_frame = frame->Parent();
+  DCHECK(parent_frame);
+  DCHECK(parent_frame->IsWebLocalFrame());
+
+  return render_frame->GetRoutingID();
 }
 
 }  // namespace electron

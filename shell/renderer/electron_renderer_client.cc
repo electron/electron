@@ -16,7 +16,6 @@
 #include "shell/common/gin_helper/event_emitter_caller.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
-#include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
 #include "shell/renderer/electron_render_frame_observer.h"
 #include "shell/renderer/web_worker_observer.h"
@@ -195,32 +194,6 @@ void ElectronRendererClient::WillDestroyWorkerContextOnWorkerThread(
           switches::kNodeIntegrationInWorker)) {
     WebWorkerObserver::GetCurrent()->ContextWillDestroy(context);
   }
-}
-
-void ElectronRendererClient::SetupMainWorldOverrides(
-    v8::Handle<v8::Context> context,
-    content::RenderFrame* render_frame) {
-  auto prefs = render_frame->GetBlinkPreferences();
-  // We only need to run the isolated bundle if webview is enabled
-  if (!prefs.webview_tag)
-    return;
-  // Setup window overrides in the main world context
-  // Wrap the bundle into a function that receives the isolatedWorld as
-  // an argument.
-  auto* isolate = context->GetIsolate();
-  std::vector<v8::Local<v8::String>> isolated_bundle_params = {
-      node::FIXED_ONE_BYTE_STRING(isolate, "nodeProcess"),
-      node::FIXED_ONE_BYTE_STRING(isolate, "isolatedWorld")};
-
-  auto* env = GetEnvironment(render_frame);
-  DCHECK(env);
-
-  std::vector<v8::Local<v8::Value>> isolated_bundle_args = {
-      env->process_object(),
-      GetContext(render_frame->GetWebFrame(), isolate)->Global()};
-
-  util::CompileAndCall(context, "electron/js2c/isolated_bundle",
-                       &isolated_bundle_params, &isolated_bundle_args, nullptr);
 }
 
 node::Environment* ElectronRendererClient::GetEnvironment(

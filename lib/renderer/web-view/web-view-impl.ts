@@ -1,17 +1,9 @@
-import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal';
-import * as ipcRendererUtils from '@electron/internal/renderer/ipc-renderer-internal-utils';
-import * as guestViewInternal from '@electron/internal/renderer/web-view/guest-view-internal';
+import type * as guestViewInternalModule from '@electron/internal/renderer/web-view/guest-view-internal';
 import { WEB_VIEW_CONSTANTS } from '@electron/internal/renderer/web-view/web-view-constants';
 import { syncMethods, asyncMethods, properties } from '@electron/internal/common/web-view-methods';
 import type { WebViewAttribute, PartitionAttribute } from '@electron/internal/renderer/web-view/web-view-attributes';
 import { setupWebViewAttributes } from '@electron/internal/renderer/web-view/web-view-attributes';
 import { deserialize } from '@electron/internal/common/type-utils';
-import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
-
-export { webFrame } from 'electron';
-export * as guestViewInternal from '@electron/internal/renderer/web-view/guest-view-internal';
-
-const v8Util = process._linkedBinding('electron_common_v8_util');
 
 // ID generator.
 let nextId = 0;
@@ -19,6 +11,14 @@ let nextId = 0;
 const getNextId = function () {
   return ++nextId;
 };
+
+export interface WebViewImplHooks {
+  readonly guestViewInternal: typeof guestViewInternalModule;
+  readonly allowGuestViewElementDefinition: NodeJS.InternalWebFrame['allowGuestViewElementDefinition'];
+  readonly getWebFrameId: NodeJS.InternalWebFrame['getWebFrameId'];
+  readonly setIsWebView: (iframe: HTMLIFrameElement) => void;
+  readonly createNativeImage?: typeof Electron.nativeImage['createEmpty'];
+}
 
 // Represents the internal state of the WebView node.
 export class WebViewImpl {
@@ -37,9 +37,7 @@ export class WebViewImpl {
 
   public attributes: Map<string, WebViewAttribute>;
 
-  public dispatchEventInMainWorld?: (eventName: string, props: any) => boolean;
-
-  constructor (public webviewNode: HTMLElement) {
+  constructor (public webviewNode: HTMLElement, private hooks: WebViewImplHooks) {
     // Create internal iframe element.
     this.internalElement = this.createInternalElement();
     const shadowRoot = this.webviewNode.attachShadow({ mode: 'open' });
@@ -65,7 +63,7 @@ export class WebViewImpl {
     iframeElement.style.width = '100%';
     iframeElement.style.border = '0';
     // used by RendererClientBase::IsWebViewFrame
-    v8Util.setHiddenValue(iframeElement, 'internal', this);
+    this.hooks.setIsWebView(iframeElement);
     return iframeElement;
   }
 
@@ -118,13 +116,21 @@ export class WebViewImpl {
   }
 
   createGuest () {
-    guestViewInternal.createGuest(this.buildParams()).then(guestInstanceId => {
+    this.hooks.guestViewInternal.createGuest(this.buildParams()).then(guestInstanceId => {
       this.attachGuestInstance(guestInstanceId);
     });
   }
 
   dispatchEvent (eventName: string, props: Record<string, any> = {}) {
-    this.dispatchEventInMainWorld!(eventName, props);
+    const event = new Event(eventName);
+    Object.assign(event, props);
+    this.webviewNode.dispatchEvent(event);
+
+    if (eventName === 'load-commit') {
+      this.onLoadCommit(props);
+    } else if (eventName === '-focus-change') {
+      this.onFocusChange();
+    }
   }
 
   // Adds an 'on<event>' property on the webview, which can be used to set/unset
@@ -194,11 +200,16 @@ export class WebViewImpl {
     this.internalInstanceId = getNextId();
     this.guestInstanceId = guestInstanceId;
 
-    guestViewInternal.attachGuest(
+    const embedderFrameId = this.hooks.getWebFrameId(this.internalElement.contentWindow!);
+    if (embedderFrameId < 0) { // this error should not happen.
+      throw new Error('Invalid embedder frame');
+    }
+
+    this.hooks.guestViewInternal.attachGuest(
+      embedderFrameId,
       this.internalInstanceId,
       this.guestInstanceId,
-      this.buildParams(),
-      this.internalElement.contentWindow!
+      this.buildParams()
     );
 
     // TODO(zcbenz): Should we deprecate the "resize" event? Wait, it is not
@@ -210,46 +221,38 @@ export class WebViewImpl {
 
 // I wish eslint wasn't so stupid, but it is
 // eslint-disable-next-line
-export const setupMethods = (WebViewElement: typeof ElectronInternal.WebViewElement) => {
+export const setupMethods = (WebViewElement: typeof ElectronInternal.WebViewElement, hooks: WebViewImplHooks) => {
   // Focusing the webview should move page focus to the underlying iframe.
   WebViewElement.prototype.focus = function () {
     this.contentWindow.focus();
   };
 
   // Forward proto.foo* method calls to WebViewImpl.foo*.
-  const createBlockHandler = function (method: string) {
-    return function (this: ElectronInternal.WebViewElement, ...args: Array<any>) {
-      return ipcRendererUtils.invokeSync(IPC_MESSAGES.GUEST_VIEW_MANAGER_CALL, this.getWebContentsId(), method, args);
-    };
-  };
-
   for (const method of syncMethods) {
-    (WebViewElement.prototype as Record<string, any>)[method] = createBlockHandler(method);
+    (WebViewElement.prototype as Record<string, any>)[method] = function (this: ElectronInternal.WebViewElement, ...args: Array<any>) {
+      return hooks.guestViewInternal.invokeSync(this.getWebContentsId(), method, args);
+    };
   }
 
-  const createNonBlockHandler = function (method: string) {
-    return function (this: ElectronInternal.WebViewElement, ...args: Array<any>) {
-      return ipcRendererInternal.invoke(IPC_MESSAGES.GUEST_VIEW_MANAGER_CALL, this.getWebContentsId(), method, args);
-    };
-  };
-
   for (const method of asyncMethods) {
-    (WebViewElement.prototype as Record<string, any>)[method] = createNonBlockHandler(method);
+    (WebViewElement.prototype as Record<string, any>)[method] = function (this: ElectronInternal.WebViewElement, ...args: Array<any>) {
+      return hooks.guestViewInternal.invoke(this.getWebContentsId(), method, args);
+    };
   }
 
   WebViewElement.prototype.capturePage = async function (...args) {
-    return deserialize(await ipcRendererInternal.invoke(IPC_MESSAGES.GUEST_VIEW_MANAGER_CAPTURE_PAGE, this.getWebContentsId(), args));
+    return deserialize(await hooks.guestViewInternal.capturePage(this.getWebContentsId(), args), hooks.createNativeImage);
   };
 
   const createPropertyGetter = function (property: string) {
     return function (this: ElectronInternal.WebViewElement) {
-      return ipcRendererUtils.invokeSync(IPC_MESSAGES.GUEST_VIEW_MANAGER_PROPERTY_GET, this.getWebContentsId(), property);
+      return hooks.guestViewInternal.propertyGet(this.getWebContentsId(), property);
     };
   };
 
   const createPropertySetter = function (property: string) {
     return function (this: ElectronInternal.WebViewElement, arg: any) {
-      return ipcRendererUtils.invokeSync(IPC_MESSAGES.GUEST_VIEW_MANAGER_PROPERTY_SET, this.getWebContentsId(), property, arg);
+      return hooks.guestViewInternal.propertySet(this.getWebContentsId(), property, arg);
     };
   };
 

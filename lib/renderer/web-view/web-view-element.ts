@@ -9,14 +9,13 @@
 // modules must be passed from outside, all included files must be plain JS.
 
 import { WEB_VIEW_CONSTANTS } from '@electron/internal/renderer/web-view/web-view-constants';
-import type * as webViewImplModule from '@electron/internal/renderer/web-view/web-view-impl';
+import { WebViewImpl, WebViewImplHooks, setupMethods } from '@electron/internal/renderer/web-view/web-view-impl';
 import type { SrcAttribute } from '@electron/internal/renderer/web-view/web-view-attributes';
 
-const internals = new WeakMap<HTMLElement, webViewImplModule.WebViewImpl>();
+const internals = new WeakMap<HTMLElement, WebViewImpl>();
 
 // Return a WebViewElement class that is defined in this context.
-const defineWebViewElement = (webViewImpl: typeof webViewImplModule) => {
-  const { guestViewInternal, WebViewImpl } = webViewImpl;
+const defineWebViewElement = (hooks: WebViewImplHooks) => {
   return class WebViewElement extends HTMLElement {
     static get observedAttributes () {
       return [
@@ -38,13 +37,7 @@ const defineWebViewElement = (webViewImpl: typeof webViewImplModule) => {
 
     constructor () {
       super();
-      const internal = new WebViewImpl(this);
-      internal.dispatchEventInMainWorld = (eventName, props) => {
-        const event = new Event(eventName);
-        Object.assign(event, props);
-        return internal.webviewNode.dispatchEvent(event);
-      };
-      internals.set(this, internal);
+      internals.set(this, new WebViewImpl(this, hooks));
     }
 
     getWebContentsId () {
@@ -61,7 +54,10 @@ const defineWebViewElement = (webViewImpl: typeof webViewImplModule) => {
         return;
       }
       if (!internal.elementAttached) {
-        guestViewInternal.registerEvents(internal, internal.viewInstanceId);
+        hooks.guestViewInternal.registerEvents(internal.viewInstanceId, {
+          dispatchEvent: internal.dispatchEvent.bind(internal),
+          reset: internal.reset.bind(internal)
+        });
         internal.elementAttached = true;
         (internal.attributes.get(WEB_VIEW_CONSTANTS.ATTRIBUTE_SRC) as SrcAttribute).parse();
       }
@@ -79,9 +75,9 @@ const defineWebViewElement = (webViewImpl: typeof webViewImplModule) => {
       if (!internal) {
         return;
       }
-      guestViewInternal.deregisterEvents(internal.viewInstanceId);
+      hooks.guestViewInternal.deregisterEvents(internal.viewInstanceId);
       if (internal.guestInstanceId) {
-        guestViewInternal.detachGuest(internal.guestInstanceId);
+        hooks.guestViewInternal.detachGuest(internal.guestInstanceId);
       }
       internal.elementAttached = false;
       internal.reset();
@@ -90,15 +86,15 @@ const defineWebViewElement = (webViewImpl: typeof webViewImplModule) => {
 };
 
 // Register <webview> custom element.
-const registerWebViewElement = (webViewImpl: typeof webViewImplModule) => {
+const registerWebViewElement = (hooks: WebViewImplHooks) => {
   // I wish eslint wasn't so stupid, but it is
   // eslint-disable-next-line
-  const WebViewElement = defineWebViewElement(webViewImpl) as unknown as typeof ElectronInternal.WebViewElement
+  const WebViewElement = defineWebViewElement(hooks) as unknown as typeof ElectronInternal.WebViewElement
 
-  webViewImpl.setupMethods(WebViewElement);
+  setupMethods(WebViewElement, hooks);
 
   // The customElements.define has to be called in a special scope.
-  webViewImpl.webFrame.allowGuestViewElementDefinition(window, () => {
+  hooks.allowGuestViewElementDefinition(window, () => {
     window.customElements.define('webview', WebViewElement);
     window.WebView = WebViewElement;
 
@@ -116,14 +112,14 @@ const registerWebViewElement = (webViewImpl: typeof webViewImplModule) => {
 };
 
 // Prepare to register the <webview> element.
-export const setupWebView = (webViewImpl: typeof webViewImplModule) => {
+export const setupWebView = (hooks: WebViewImplHooks) => {
   const useCapture = true;
   const listener = (event: Event) => {
     if (document.readyState === 'loading') {
       return;
     }
 
-    registerWebViewElement(webViewImpl);
+    registerWebViewElement(hooks);
 
     window.removeEventListener(event.type, listener, useCapture);
   };

@@ -234,34 +234,6 @@ void ElectronSandboxedRendererClient::DidCreateScriptContext(
   InvokeHiddenCallback(context, kLifecycleKey, "onLoaded");
 }
 
-void ElectronSandboxedRendererClient::SetupMainWorldOverrides(
-    v8::Handle<v8::Context> context,
-    content::RenderFrame* render_frame) {
-  auto prefs = render_frame->GetBlinkPreferences();
-  // We only need to run the isolated bundle if webview is enabled
-  if (!prefs.webview_tag)
-    return;
-
-  // Setup window overrides in the main world context
-  // Wrap the bundle into a function that receives the isolatedWorld as
-  // an argument.
-  auto* isolate = context->GetIsolate();
-
-  gin_helper::Dictionary process = gin::Dictionary::CreateEmpty(isolate);
-  process.SetMethod("_linkedBinding", GetBinding);
-
-  std::vector<v8::Local<v8::String>> isolated_bundle_params = {
-      node::FIXED_ONE_BYTE_STRING(isolate, "nodeProcess"),
-      node::FIXED_ONE_BYTE_STRING(isolate, "isolatedWorld")};
-
-  std::vector<v8::Local<v8::Value>> isolated_bundle_args = {
-      process.GetHandle(),
-      GetContext(render_frame->GetWebFrame(), isolate)->Global()};
-
-  util::CompileAndCall(context, "electron/js2c/isolated_bundle",
-                       &isolated_bundle_params, &isolated_bundle_args, nullptr);
-}
-
 void ElectronSandboxedRendererClient::WillReleaseScriptContext(
     v8::Handle<v8::Context> context,
     content::RenderFrame* render_frame) {

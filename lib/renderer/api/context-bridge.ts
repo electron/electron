@@ -10,7 +10,7 @@ const checkContextIsolationEnabled = () => {
 const contextBridge: Electron.ContextBridge = {
   exposeInMainWorld: (key: string, api: any) => {
     checkContextIsolationEnabled();
-    return binding.exposeAPIInMainWorld(key, api);
+    return binding.exposeAPIInMainWorld(key, api, false);
   }
 };
 
