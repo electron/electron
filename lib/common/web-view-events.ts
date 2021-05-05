@@ -1,4 +1,4 @@
-export const webViewEvents: Record<string, string[]> = {
+export const webViewEvents: Record<string, readonly string[]> = {
   'load-commit': ['url', 'isMainFrame'],
   'did-attach': [],
   'did-finish-load': [],
@@ -33,4 +33,4 @@ export const webViewEvents: Record<string, string[]> = {
   'found-in-page': ['result'],
   'did-change-theme-color': ['themeColor'],
   'update-target-url': ['url']
-};
+} as const;
