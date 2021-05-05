@@ -85,7 +85,8 @@ If you want to test your app on your local machine before submitting your app to
 the Mac App Store, you have to sign the app with the "Apple Development"
 certificate with the provisioning profile embedded in the app bundle.
 
-To get the provisioning profile, you can follow the below steps:
+To [create a provisioning profile](https://help.apple.com/developer-account/#/devf2eb157f8),
+you can follow the below steps:
 
 1. Open the "Certificates, Identifiers & Profiles" page on the
    [Apple Developer](https://developer.apple.com/account) website.
