@@ -1384,9 +1384,6 @@ steps-test-node: &steps-test-node
     - store_test_results:
         path: src/junit
 
-chromium-upgrade-branches: &chromium-upgrade-branches
-  /chromium\-upgrade\/[0-9]+/
-
 # Command Aliases
 commands:
   maybe-restore-portaled-src-cache:
@@ -2089,20 +2086,6 @@ jobs:
       <<: *env-testing-build
     <<: *steps-electron-gn-check
 
-  osx-release-x64:
-    <<: *machine-mac-large
-    environment:
-      <<: *env-mac-large
-      <<: *env-release-build
-      <<: *env-ninja-status
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
-    steps:
-      - electron-build:
-          persist: true
-          checkout: false
-          checkout-and-assume-cache: true
-          attach: false
-
   osx-publish-x64:
     <<: *machine-mac-large
     environment:
@@ -2193,21 +2176,6 @@ jobs:
       <<: *env-mas
       <<: *env-testing-build
     <<: *steps-electron-gn-check
-
-  mas-release:
-    <<: *machine-mac-large
-    environment:
-      <<: *env-mac-large
-      <<: *env-mas
-      <<: *env-release-build
-      <<: *env-ninja-status
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
-    steps:
-      - electron-build:
-          persist: true
-          checkout: false
-          checkout-and-assume-cache: true
-          attach: false
   
   mas-publish:
     <<: *machine-mac-large
@@ -2419,21 +2387,6 @@ jobs:
     parallelism: 2
     <<: *steps-tests
 
-  osx-release-x64-tests:
-    <<: *machine-mac-large
-    environment:
-      <<: *env-mac-large
-      <<: *env-stack-dumping
-      <<: *env-send-slack-notifications
-    <<: *steps-tests
-
-  osx-verify-ffmpeg:
-    <<: *machine-mac
-    environment:
-      <<: *env-machine-mac
-      <<: *env-send-slack-notifications
-    <<: *steps-verify-ffmpeg
-
   osx-testing-arm64-tests:  
     <<: *machine-mac-arm64
     environment:
@@ -2449,21 +2402,6 @@ jobs:
       <<: *env-stack-dumping
     parallelism: 2
     <<: *steps-tests
-
-  mas-release-tests:
-    <<: *machine-mac-large
-    environment:
-      <<: *env-mac-large
-      <<: *env-stack-dumping
-      <<: *env-send-slack-notifications
-    <<: *steps-tests
-
-  mas-verify-ffmpeg:
-    <<: *machine-mac
-    environment:
-      <<: *env-machine-mac
-      <<: *env-send-slack-notifications
-    <<: *steps-verify-ffmpeg
 
   mas-testing-arm64-tests:
     <<: *machine-mac-arm64
@@ -2502,22 +2440,6 @@ jobs:
     <<: *machine-linux-medium
     environment:
       <<: *env-linux-medium
-      <<: *env-send-slack-notifications
-    steps:
-      - *step-maybe-notify-slack-success
-
-  mas-release-summary:
-    <<: *machine-mac
-    environment:
-      <<: *env-machine-mac
-      <<: *env-send-slack-notifications
-    steps:
-      - *step-maybe-notify-slack-success
-
-  osx-release-x64-summary:
-    <<: *machine-mac
-    environment:
-      <<: *env-machine-mac
       <<: *env-send-slack-notifications
     steps:
       - *step-maybe-notify-slack-success
@@ -2598,7 +2520,7 @@ workflows:
     when: << pipeline.parameters.run-mas-publish-arm64 >>
     jobs:
     - mas-publish-arm64:
-        context: release-env        
+        context: release-env
 
   publish-macos:
     when: << pipeline.parameters.run-macos-publish >>
@@ -2732,7 +2654,6 @@ workflows:
             branches:
               only:
                 - master
-                - *chromium-upgrade-branches
     jobs:
       - linux-checkout-fast
       - linux-checkout-and-save-cache
@@ -2773,49 +2694,6 @@ workflows:
           requires:
             - linux-arm64-release
 
-  nightly-mac-release-test:
-    triggers:
-      - schedule:
-          cron: "0 0 * * *"
-          filters:
-            branches:
-              only:
-                - master
-                - *chromium-upgrade-branches
-    jobs:
-      - mac-checkout-fast
-      - mac-checkout-and-save-cache
-
-      - osx-release-x64:
-          requires:
-            - mac-checkout-and-save-cache
-      - osx-release-x64-tests:
-          requires:
-            - osx-release-x64
-      - osx-verify-ffmpeg:
-          requires:
-            - osx-release-x64
-      - osx-release-x64-summary:
-          requires:
-          - osx-release-x64
-          - osx-release-x64-tests
-          - osx-verify-ffmpeg
-
-      - mas-release:
-          requires:
-            - mac-checkout-and-save-cache
-      - mas-release-tests:
-          requires:
-            - mas-release
-      - mas-verify-ffmpeg:
-          requires:
-            - mas-release
-      - mas-release-summary:
-          requires:
-          - mas-release
-          - mas-release-tests
-          - mas-verify-ffmpeg
-
   # Various slow and non-essential checks we run only nightly.
   # Sanitizer jobs should be added here.
   linux-checks-nightly:
@@ -2826,7 +2704,6 @@ workflows:
             branches:
               only:
                 - master
-                - *chromium-upgrade-branches
     jobs:
       - linux-checkout-for-native-tests
 
