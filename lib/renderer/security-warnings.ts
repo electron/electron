@@ -270,7 +270,7 @@ const warnAboutAllowedPopups = function () {
 
 const warnAboutRemoteModuleWithRemoteContent = function (webPreferences?: Electron.WebPreferences) {
   if (!webPreferences || isLocalhost()) return;
-  const remoteModuleEnabled = webPreferences.enableRemoteModule != null ? !!webPreferences.enableRemoteModule : true;
+  const remoteModuleEnabled = webPreferences.enableRemoteModule != null ? !!webPreferences.enableRemoteModule : false;
   if (!remoteModuleEnabled) return;
 
   if (getIsRemoteProtocol()) {
