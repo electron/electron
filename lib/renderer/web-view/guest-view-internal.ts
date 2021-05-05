@@ -26,7 +26,7 @@ const dispatchEvent = function (
 
   if (eventName === 'load-commit') {
     webView.onLoadCommit(props);
-  } else if (eventName === 'focus-change') {
+  } else if (eventName === '-focus-change') {
     webView.onFocusChange();
   }
 };

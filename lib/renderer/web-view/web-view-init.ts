@@ -3,16 +3,16 @@ import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
 const v8Util = process._linkedBinding('electron_common_v8_util');
 
-function handleFocusBlur (guestInstanceId: number) {
+function handleFocusBlur () {
   // Note that while Chromium content APIs have observer for focus/blur, they
   // unfortunately do not work for webview.
 
   window.addEventListener('focus', () => {
-    ipcRendererInternal.send(IPC_MESSAGES.GUEST_VIEW_MANAGER_FOCUS_CHANGE, true, guestInstanceId);
+    ipcRendererInternal.send(IPC_MESSAGES.GUEST_VIEW_MANAGER_FOCUS_CHANGE, true);
   });
 
   window.addEventListener('blur', () => {
-    ipcRendererInternal.send(IPC_MESSAGES.GUEST_VIEW_MANAGER_FOCUS_CHANGE, false, guestInstanceId);
+    ipcRendererInternal.send(IPC_MESSAGES.GUEST_VIEW_MANAGER_FOCUS_CHANGE, false);
   });
 }
 
@@ -32,6 +32,6 @@ export function webViewInit (
 
   if (guestInstanceId) {
     // Report focus/blur events of webview to browser.
-    handleFocusBlur(guestInstanceId);
+    handleFocusBlur();
   }
 }
