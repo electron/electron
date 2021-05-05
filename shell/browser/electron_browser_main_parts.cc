@@ -156,8 +156,6 @@ std::u16string MediaStringProvider(media::MessageId id) {
 
 #if defined(OS_LINUX)
 
-const char* gdk_backend;
-
 void OverrideLinuxAppDataPath() {
   base::FilePath path;
   if (base::PathService::Get(DIR_APP_DATA, &path))
@@ -379,7 +377,8 @@ void ElectronBrowserMainParts::PostDestroyThreads() {
 
 #if defined(OS_LINUX)
 // static
-const char* ElectronBrowserMainParts::GetGDKBackend() {
+base::Optional<std::string>& ElectronBrowserMainParts::GetGDKBackend() {
+  static base::Optional<std::string> gdk_backend;
   return gdk_backend;
 }
 #endif
@@ -392,7 +391,7 @@ void ElectronBrowserMainParts::ToolkitInitialized() {
   // check if the user has set it so we can use it later.
   std::string backend;
   if (base::Environment::Create()->GetVar("GDK_BACKEND", &backend))
-    gdk_backend = backend.c_str();
+    GetGDKBackend().reset(backend);
 
   auto linux_ui = BuildGtkUi();
   linux_ui->Initialize();
