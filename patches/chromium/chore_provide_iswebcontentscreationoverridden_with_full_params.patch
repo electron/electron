@@ -140,7 +140,7 @@ index 33f1168f834d138aefb190b7718271d6962b3532..aeb30a22349e0682586bd1bad20dc5e2
    }
  
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 217251d290d231c02f9166508c4760caf436157c..a495f8b304ff6eea3eb4486561f71fd67c545404 100644
+index 6a2ea7c4fd52fe2ae00c58706eddf0929cfca0cc..7e9e5a84af0b7b75041c2a2c42f66f80c2b7d61b 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
 @@ -1792,12 +1792,11 @@ bool Browser::IsWebContentsCreationOverridden(
@@ -362,10 +362,10 @@ index 7d27e12c4e9a7f32af8a26f672359057a643dd67..7a30ac31f79871f2a9afa0345e0e88af
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/fuchsia/engine/browser/frame_impl.cc b/fuchsia/engine/browser/frame_impl.cc
-index 9e95136de2a8a802e1753ca4a628e120f97a0b74..1af68ff77159a4c08e98440ddf9ff325f0887975 100644
+index cf444f0509056dff3e9486444bf3726c58247c8e..807b4d851139b3454c8a8a365f5925ccc7def0b1 100644
 --- a/fuchsia/engine/browser/frame_impl.cc
 +++ b/fuchsia/engine/browser/frame_impl.cc
-@@ -373,8 +373,7 @@ bool FrameImpl::IsWebContentsCreationOverridden(
+@@ -374,8 +374,7 @@ bool FrameImpl::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
