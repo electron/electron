@@ -33,6 +33,7 @@ async function main () {
   // TODO(ckerr) this is cribbed from read obj/electron/electron_app.ninja.
   // Maybe it would be better to have this script literally open up that
   // file and pull cflags_cc from it instead of using bespoke code here?
+  // I think it's unlikely to work; but if it does, it would be more futureproof
   const cxxflags = [
     '-std=c++14',
     '-nostdinc++',
