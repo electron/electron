@@ -70,10 +70,3 @@ export function attachGuest (
 export function detachGuest (guestInstanceId: number) {
   return ipcRendererUtils.invokeSync(IPC_MESSAGES.GUEST_VIEW_MANAGER_DETACH_GUEST, guestInstanceId);
 }
-
-export const guestViewInternalModule = {
-  deregisterEvents,
-  createGuest,
-  attachGuest,
-  detachGuest
-};
