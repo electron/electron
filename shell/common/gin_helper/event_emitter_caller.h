@@ -10,6 +10,7 @@
 
 #include "gin/converter.h"
 #include "gin/wrappable.h"
+#include "shell/common/node_includes.h"
 
 namespace gin_helper {
 
@@ -62,6 +63,28 @@ v8::Local<v8::Value> CustomEmit(v8::Isolate* isolate,
   };
   return internal::CallMethodWithArgs(isolate, object, custom_emit,
                                       &converted_args);
+}
+
+template <typename T, typename... Args>
+v8::Local<v8::Value> CallMethodCatchException(v8::Isolate* isolate,
+                                              gin::Wrappable<T>* object,
+                                              const char* method_name,
+                                              Args&&... args) {
+  v8::EscapableHandleScope scope(isolate);
+  v8::Local<v8::Object> v8_object;
+  if (object->GetWrapper(isolate).ToLocal(&v8_object)) {
+    // Send unhandled errors within init to a different scope,
+    // so they're handled within JavaScript and don't crash within C++
+    v8::TryCatch try_catch(isolate);
+    v8::Local<v8::Value> value = scope.Escape(CustomEmit(
+        isolate, v8_object, method_name, std::forward<Args>(args)...));
+    if (try_catch.HasCaught()) {
+      node::errors::TriggerUncaughtException(isolate, try_catch);
+    }
+    return value;
+  } else {
+    return v8::Local<v8::Value>();
+  }
 }
 
 template <typename T, typename... Args>
