@@ -8,8 +8,8 @@ These are the guidelines for writing Electron documentation.
 * Chapters in the same page must have `##`-level headings.
 * Sub-chapters need to increase the number of `#` in the heading according to
   their nesting depth.
-* The page's title must follow [APA title case][title-case]
-* All chapters must follow [APA sentence case][sentence-case]
+* The page's title must follow [APA title case][title-case].
+* All chapters must follow [APA sentence case][sentence-case].
 
 Using `Quick Start` as example:
 
