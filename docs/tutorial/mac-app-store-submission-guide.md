@@ -14,13 +14,12 @@ To sign Electron apps, the following tools must be installed first:
 * The [electron-osx-sign][electron-osx-sign] npm module.
 
 You also have to register an Apple Developer account and join the
-[Apple Developer Program][developer-program], which has a yearly subscription
-fee.
+[Apple Developer Program][developer-program].
 
 ## Sign Electron apps
 
 Electron apps can be distributed through Mac App Store or outside it. Each way
-requires different ways of signing and testing. This guide mainly focuses on
+requires different ways of signing and testing. This guide focuses on
 distribution via Mac App Store, but will also mention other methods.
 
 The following steps describe how to get the certificates from Apple, how to sign
@@ -60,6 +59,9 @@ The "Developer ID Installer" and "Mac Installer Distribution" certificates are
 used to sign the Mac Installer Package instead of the app itself. Most Electron
 apps do not use Mac Installer Package so they are generally not needed.
 
+The full list of certificate types can be found
+[here](https://help.apple.com/xcode/mac/current/#/dev80c6204ec).
+
 Apps signed with "Apple Development" and "Apple Distribution" certificates can
 only run under [App Sandbox][app-sandboxing], so they must use the MAS build of
 Electron. However, the "Developer ID Application" certificate does not have this
@@ -97,10 +99,11 @@ To get the provisioning profile, you can follow the below steps:
 
 Apps submitted to the Mac App Store must run under Apple's
 [App Sandbox][app-sandboxing], and only the MAS build of Electron can run with
-the App Sandbox.
+the App Sandbox. The standard darwin build of Electron will fail to launch
+when run under App Sandbox.
 
-When signing your app with `electron-osx-sign`, it will automatically add the
-necessary capacities to your app's entitlements, but if you are using custom
+When signing the app with `electron-osx-sign`, it will automatically add the
+necessary entitlements to your app's entitlements, but if you are using custom
 entitlements, you must ensure App Sandbox capacity is added:
 
 ```xml
@@ -117,7 +120,7 @@ entitlements, you must ensure App Sandbox capacity is added:
 #### Extra steps without `electron-osx-sign`
 
 If you are signing your app without using `electron-osx-sign`, you must ensure
-the app bundle's entitlements have at least following capacities:
+the app bundle's entitlements have at least following keys:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -201,9 +204,9 @@ electron-osx-sign YourApp.app --identity='Apple Distribution'
 ### Sign apps for distribution outside the Mac App Store
 
 If you don't plan to submit the app to Mac App Store, you can sign it the
-"Developer ID Application" certificate. In this way there is no requirement to
-use App Sandbox and the app can be built with either MAS or the normal build of
-Electron.
+"Developer ID Application" certificate. In this way there is no requirement on
+App Sandbox, and you should use the normal darwin build of Electron if you don't
+use App Sandbox.
 
 ```bash
 electron-osx-sign YourApp.app --identity='Developer ID Application' --no-gatekeeper-assess
