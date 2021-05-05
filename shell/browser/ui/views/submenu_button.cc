@@ -38,26 +38,10 @@ SubmenuButton::SubmenuButton(PressedCallback callback,
   SetInkDropMode(InkDropMode::ON);
   SetInkDropBaseColor(
       color_utils::BlendTowardMaxContrast(background_color_, 0x81));
+  InkDrop::UseInkDropForFloodFillRipple(this, false, true);
 }
 
 SubmenuButton::~SubmenuButton() = default;
-
-std::unique_ptr<views::InkDropRipple> SubmenuButton::CreateInkDropRipple()
-    const {
-  std::unique_ptr<views::InkDropRipple> ripple(
-      new views::FloodFillInkDropRipple(
-          size(), GetInkDropCenterBasedOnLastEvent(), GetInkDropBaseColor(),
-          GetInkDropVisibleOpacity()));
-  return ripple;
-}
-
-std::unique_ptr<views::InkDrop> SubmenuButton::CreateInkDrop() {
-  std::unique_ptr<views::InkDropImpl> ink_drop =
-      views::Button::CreateDefaultInkDropImpl();
-  ink_drop->SetShowHighlightOnHover(false);
-  ink_drop->SetShowHighlightOnFocus(true);
-  return std::move(ink_drop);
-}
 
 void SubmenuButton::SetAcceleratorVisibility(bool visible) {
   if (visible == show_underline_)
