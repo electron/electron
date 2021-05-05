@@ -158,7 +158,7 @@ export class WebViewImpl {
 
   // Emits focus/blur events.
   onFocusChange () {
-    const hasFocus = document.activeElement === this.webviewNode;
+    const hasFocus = this.webviewNode.ownerDocument.activeElement === this.webviewNode;
     if (hasFocus !== this.hasFocus) {
       this.hasFocus = hasFocus;
       this.dispatchEvent(new Event(hasFocus ? 'focus' : 'blur'));
