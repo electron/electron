@@ -154,7 +154,7 @@ dialog.showOpenDialog(mainWindow, {
 
 * `browserWindow` [BrowserWindow](browser-window.md) (optional)
 * `options` Object
-  * `title` String (optional) - Title of the dialog, some platforms will not show it.
+  * `title` String (optional) - Title of the dialog, on _Linux_ some desktop environments will not show it.
   * `defaultPath` String (optional) - Absolute directory path, absolute file
     path, or file name to use by default.
   * `buttonLabel` String (optional) - Custom label for the confirmation button, when
@@ -185,7 +185,7 @@ The `filters` specifies an array of file types that can be displayed, see
 
 * `browserWindow` [BrowserWindow](browser-window.md) (optional)
 * `options` Object
-  * `title` String (optional) - Title of the dialog, some platforms will not show it.
+  * `title` String (optional) - Title of the dialog, on _Linux_ some desktop environments will not show it.
   * `defaultPath` String (optional) - Absolute directory path, absolute file
     path, or file name to use by default.
   * `buttonLabel` String (optional) - Custom label for the confirmation button, when
