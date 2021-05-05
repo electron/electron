@@ -38,7 +38,7 @@ SubmenuButton::SubmenuButton(PressedCallback callback,
   SetInkDropMode(InkDropMode::ON);
   SetInkDropBaseColor(
       color_utils::BlendTowardMaxContrast(background_color_, 0x81));
-  InkDrop::UseInkDropForFloodFillRipple(this, false, true);
+  views::InkDrop::UseInkDropForFloodFillRipple(this, false, true);
 }
 
 SubmenuButton::~SubmenuButton() = default;
