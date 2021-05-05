@@ -90,7 +90,7 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
 
 #if defined(OS_LINUX)
   // Used by platform_util to set GDK_BACKEND.
-  static const char* GetGDKBackend();
+  static base::Optional<std::string>& GetGDKBackend();
 #endif
 
  protected:
