@@ -14,6 +14,8 @@ import type { SrcAttribute } from '@electron/internal/renderer/web-view/web-view
 
 type IWebViewImpl = webViewImplModule.WebViewImpl;
 
+const { mainFrame } = process._linkedBinding('electron_renderer_web_frame');
+
 // Return a WebViewElement class that is defined in this context.
 const defineWebViewElement = (v8Util: NodeJS.V8UtilBinding, webViewImpl: typeof webViewImplModule) => {
   const { guestViewInternal, WebViewImpl } = webViewImpl;
@@ -93,7 +95,7 @@ const registerWebViewElement = (v8Util: NodeJS.V8UtilBinding, webViewImpl: typeo
   webViewImpl.setupMethods(WebViewElement);
 
   // The customElements.define has to be called in a special scope.
-  webViewImpl.webFrame.allowGuestViewElementDefinition(window, () => {
+  mainFrame.allowGuestViewElementDefinition(window, () => {
     window.customElements.define('webview', WebViewElement);
     window.WebView = WebViewElement;
 

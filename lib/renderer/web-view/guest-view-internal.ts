@@ -1,10 +1,11 @@
-import { webFrame } from 'electron';
 import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal';
 import * as ipcRendererUtils from '@electron/internal/renderer/ipc-renderer-internal-utils';
 import { webViewEvents } from '@electron/internal/common/web-view-events';
 
 import { WebViewImpl } from '@electron/internal/renderer/web-view/web-view-impl';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
+
+const { mainFrame } = process._linkedBinding('electron_renderer_web_frame');
 
 const DEPRECATED_EVENTS: Record<string, string> = {
   'page-title-updated': 'page-title-set'
@@ -60,7 +61,7 @@ export function createGuest (params: Record<string, any>): Promise<number> {
 export function attachGuest (
   elementInstanceId: number, guestInstanceId: number, params: Record<string, any>, contentWindow: Window
 ) {
-  const embedderFrameId = webFrame.getWebFrameId(contentWindow);
+  const embedderFrameId = mainFrame.getWebFrameId(contentWindow);
   if (embedderFrameId < 0) { // this error should not happen.
     throw new Error('Invalid embedder frame');
   }

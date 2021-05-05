@@ -7,7 +7,6 @@ import type { WebViewAttribute, PartitionAttribute } from '@electron/internal/re
 import { deserialize } from '@electron/internal/common/type-utils';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
-export { webFrame } from 'electron';
 export * as guestViewInternal from '@electron/internal/renderer/web-view/guest-view-internal';
 
 const v8Util = process._linkedBinding('electron_common_v8_util');
