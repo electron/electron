@@ -22,7 +22,7 @@ function handleFocusBlur () {
 export function webViewInit (contextIsolation: boolean, webviewTag: boolean, guestInstanceId: number) {
   // Don't allow recursive `<webview>`.
   if (webviewTag && !guestInstanceId) {
-    const { webViewImplModule } = require('@electron/internal/renderer/web-view/web-view-impl') as typeof webViewImpl;
+    const webViewImplModule = require('@electron/internal/renderer/web-view/web-view-impl') as typeof webViewImpl;
     if (contextIsolation) {
       v8Util.setHiddenValue(window, 'web-view-impl', webViewImplModule);
     } else {
