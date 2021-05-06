@@ -35,3 +35,4 @@ build_add_mjs_support_to_js2c.patch
 src_inline_asynccleanuphookhandle_in_headers.patch
 fix_handle_new_tostring_behavior_in_v8_serdes_test.patch
 fix_the_--harmony-weak-refs_has_been_removed_remove_from_specs.patch
+node-api_faster_threadsafe_function.patch
