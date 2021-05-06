@@ -29,14 +29,15 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
       base::OnceCallback<void(blink::mojom::PermissionStatus)>;
   using StatusesCallback = base::OnceCallback<void(
       const std::vector<blink::mojom::PermissionStatus>&)>;
-  using RequestHandler = base::Callback<void(content::WebContents*,
-                                             content::PermissionType,
-                                             StatusCallback,
-                                             const base::Value&)>;
-  using CheckHandler = base::Callback<bool(content::WebContents*,
-                                           content::PermissionType,
-                                           const GURL& requesting_origin,
-                                           const base::Value&)>;
+  using RequestHandler = base::RepeatingCallback<void(content::WebContents*,
+                                                      content::PermissionType,
+                                                      StatusCallback,
+                                                      const base::Value&)>;
+  using CheckHandler =
+      base::RepeatingCallback<bool(content::WebContents*,
+                                   content::PermissionType,
+                                   const GURL& requesting_origin,
+                                   const base::Value&)>;
 
   // Handler to dispatch permission requests in JS.
   void SetPermissionRequestHandler(const RequestHandler& handler);

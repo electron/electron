@@ -155,7 +155,7 @@ class Browser : public WindowListObserver {
 
 #if defined(OS_MAC)
   // Set the handler which decides whether to shutdown.
-  void SetShutdownHandler(base::Callback<bool()> handler);
+  void SetShutdownHandler(base::RepeatingCallback<bool()> handler);
 
   // Hide the application.
   void Hide();

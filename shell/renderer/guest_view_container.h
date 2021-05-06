@@ -16,7 +16,7 @@ namespace electron {
 
 class GuestViewContainer {
  public:
-  typedef base::Callback<void(const gfx::Size&)> ResizeCallback;
+  typedef base::RepeatingCallback<void(const gfx::Size&)> ResizeCallback;
 
   explicit GuestViewContainer(content::RenderFrame* render_frame);
   virtual ~GuestViewContainer();

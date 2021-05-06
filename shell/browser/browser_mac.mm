@@ -93,7 +93,7 @@ v8::Local<v8::Promise> Browser::GetApplicationInfoForProtocol(
   return handle;
 }
 
-void Browser::SetShutdownHandler(base::Callback<bool()> handler) {
+void Browser::SetShutdownHandler(base::RepeatingCallback<bool()> handler) {
   [[AtomApplication sharedApplication] setShutdownHandler:std::move(handler)];
 }
 

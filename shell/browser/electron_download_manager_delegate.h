@@ -22,7 +22,7 @@ class ElectronDownloadManagerDelegate
     : public content::DownloadManagerDelegate {
  public:
   using CreateDownloadPathCallback =
-      base::Callback<void(const base::FilePath&)>;
+      base::RepeatingCallback<void(const base::FilePath&)>;
 
   explicit ElectronDownloadManagerDelegate(content::DownloadManager* manager);
   ~ElectronDownloadManagerDelegate() override;
