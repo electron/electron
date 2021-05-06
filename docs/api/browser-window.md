@@ -272,7 +272,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       associated with the window, making it compatible with the Chromium
       OS-level sandbox and disabling the Node.js engine. This is not the same as
       the `nodeIntegration` option and the APIs available to the preload script
-      are more limited. Read more about the option [here](sandbox-option.md).
+      are more limited. Read more about the option [here](../tutorial/sandbox.md).
     * `session` [Session](session.md#class-session) (optional) - Sets the session used by the
       page. Instead of passing the Session object directly, you can also choose to
       use the `partition` option instead, which accepts a partition string. When
