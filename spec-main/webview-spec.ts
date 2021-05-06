@@ -721,5 +721,27 @@ describe('<webview> tag', function () {
       })`);
       expect(message).to.equal('hi');
     });
+
+    it('emits focus event when contextIsolation is enabled', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          webviewTag: true,
+          contextIsolation: true
+        }
+      });
+      await w.loadURL('about:blank');
+      await w.webContents.executeJavaScript(`new Promise((resolve, reject) => {
+        const webview = new WebView()
+        webview.setAttribute('src', 'about:blank')
+        webview.addEventListener('dom-ready', () => {
+          webview.focus()
+        })
+        webview.addEventListener('focus', () => {
+          resolve();
+        })
+        document.body.appendChild(webview)
+      })`);
+    });
   });
 });
