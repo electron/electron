@@ -25,7 +25,8 @@ class CookieChangeNotifier : public network::mojom::CookieChangeListener {
 
   // Register callbacks that needs to notified on any cookie store changes.
   base::CallbackListSubscription RegisterCookieChangeCallback(
-      const base::Callback<void(const net::CookieChangeInfo& change)>& cb);
+      const base::RepeatingCallback<void(const net::CookieChangeInfo& change)>&
+          cb);
 
  private:
   void StartListening();

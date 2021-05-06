@@ -33,7 +33,7 @@ index 0ccfe130f00ec3b6c75cd8ee04d5a2777e1fd00c..653829457d58bf92057cc36aa8a28970
    DISALLOW_COPY_AND_ASSIGN(StaticHttpUserAgentSettings);
  };
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 18f9a7c1277653a4a9e0bd2303d57f40fe5f288a..0344da1de5df9ffec6e71669e3115b138420ec9e 100644
+index fa84ecca47caf78174e9f588d2a1c1f65ebb157d..8bfe1d73ee5cd3d32b9190585747faeea483fcfb 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -1140,6 +1140,13 @@ void NetworkContext::SetNetworkConditions(

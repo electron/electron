@@ -52,8 +52,9 @@ class ElectronBeginFrameTimer;
 
 class ElectronDelegatedFrameHostClient;
 
-typedef base::Callback<void(const gfx::Rect&, const SkBitmap&)> OnPaintCallback;
-typedef base::Callback<void(const gfx::Rect&)> OnPopupPaintCallback;
+typedef base::RepeatingCallback<void(const gfx::Rect&, const SkBitmap&)>
+    OnPaintCallback;
+typedef base::RepeatingCallback<void(const gfx::Rect&)> OnPopupPaintCallback;
 
 class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
                                       public ui::CompositorDelegate,

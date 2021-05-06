@@ -33,7 +33,8 @@ enum class ProtocolType {
 
 using StartLoadingCallback = base::OnceCallback<void(gin::Arguments*)>;
 using ProtocolHandler =
-    base::Callback<void(const network::ResourceRequest&, StartLoadingCallback)>;
+    base::RepeatingCallback<void(const network::ResourceRequest&,
+                                 StartLoadingCallback)>;
 
 // scheme => (type, handler).
 using HandlersMap =

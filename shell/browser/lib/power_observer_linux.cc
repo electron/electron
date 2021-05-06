@@ -115,7 +115,8 @@ void PowerObserverLinux::UnblockShutdown() {
   shutdown_lock_.reset();
 }
 
-void PowerObserverLinux::SetShutdownHandler(base::Callback<bool()> handler) {
+void PowerObserverLinux::SetShutdownHandler(
+    base::RepeatingCallback<bool()> handler) {
   // In order to delay system shutdown when e.preventDefault() is invoked
   // on a powerMonitor 'shutdown' event, we need an org.freedesktop.login1
   // shutdown delay lock. For more details see the "Taking Delay Locks"

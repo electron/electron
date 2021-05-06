@@ -35,12 +35,13 @@ class GlobalShortcut : public extensions::GlobalShortcutListener::Observer,
   ~GlobalShortcut() override;
 
  private:
-  typedef std::map<ui::Accelerator, base::Closure> AcceleratorCallbackMap;
+  typedef std::map<ui::Accelerator, base::RepeatingClosure>
+      AcceleratorCallbackMap;
 
   bool RegisterAll(const std::vector<ui::Accelerator>& accelerators,
-                   const base::Closure& callback);
+                   const base::RepeatingClosure& callback);
   bool Register(const ui::Accelerator& accelerator,
-                const base::Closure& callback);
+                const base::RepeatingClosure& callback);
   bool IsRegistered(const ui::Accelerator& accelerator);
   void Unregister(const ui::Accelerator& accelerator);
   void UnregisterSome(const std::vector<ui::Accelerator>& accelerators);
