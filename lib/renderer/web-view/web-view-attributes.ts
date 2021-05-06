@@ -1,7 +1,5 @@
-import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal';
 import { WebViewImpl } from '@electron/internal/renderer/web-view/web-view-impl';
 import { WEB_VIEW_CONSTANTS } from '@electron/internal/renderer/web-view/web-view-constants';
-import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
 const resolveURL = function (url?: string | null) {
   return url ? new URL(url, location.href).href : '';
@@ -188,11 +186,7 @@ export class SrcAttribute extends WebViewAttribute {
       opts.userAgent = useragent;
     }
 
-    const guestInstanceId = this.webViewImpl.guestInstanceId;
-    const method = 'loadURL';
-    const args = [this.getValue(), opts];
-
-    ipcRendererInternal.invoke(IPC_MESSAGES.GUEST_VIEW_MANAGER_CALL, guestInstanceId, method, args);
+    (this.webViewImpl.webviewNode as Electron.WebviewTag).loadURL(this.getValue(), opts);
   }
 }
 
