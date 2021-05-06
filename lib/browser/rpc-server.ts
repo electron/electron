@@ -7,6 +7,8 @@ import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-util
 import * as typeUtils from '@electron/internal/common/type-utils';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
+import type * as desktopCapturerModule from '@electron/internal/browser/desktop-capturer';
+
 const eventBinding = process._linkedBinding('electron_browser_event');
 
 const emitCustomEvent = function (contents: WebContents, eventName: string, ...args: any[]) {
@@ -58,7 +60,7 @@ ipcMainUtils.handleSync(IPC_MESSAGES.BROWSER_CLIPBOARD_SYNC, function (event, me
 });
 
 if (BUILDFLAG(ENABLE_DESKTOP_CAPTURER)) {
-  const desktopCapturer = require('@electron/internal/browser/desktop-capturer');
+  const desktopCapturer = require('@electron/internal/browser/desktop-capturer') as typeof desktopCapturerModule;
 
   ipcMainInternal.handle(IPC_MESSAGES.DESKTOP_CAPTURER_GET_SOURCES, async function (event, options: Electron.SourcesOptions, stack: string) {
     logStack(event.sender, 'desktopCapturer.getSources()', stack);
@@ -69,7 +71,7 @@ if (BUILDFLAG(ENABLE_DESKTOP_CAPTURER)) {
       return [];
     }
 
-    return typeUtils.serialize(await desktopCapturer.getSourcesImpl(event, options));
+    return typeUtils.serialize(await desktopCapturer.getSourcesImpl(event.sender, options));
   });
 }
 

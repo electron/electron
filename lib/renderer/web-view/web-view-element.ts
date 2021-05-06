@@ -9,8 +9,10 @@
 // modules must be passed from outside, all included files must be plain JS.
 
 import { WEB_VIEW_CONSTANTS } from '@electron/internal/renderer/web-view/web-view-constants';
-import { WebViewImpl as IWebViewImpl, webViewImplModule } from '@electron/internal/renderer/web-view/web-view-impl';
+import type * as webViewImplModule from '@electron/internal/renderer/web-view/web-view-impl';
 import type { SrcAttribute } from '@electron/internal/renderer/web-view/web-view-attributes';
+
+type IWebViewImpl = webViewImplModule.WebViewImpl;
 
 // Return a WebViewElement class that is defined in this context.
 const defineWebViewElement = (v8Util: NodeJS.V8UtilBinding, webViewImpl: typeof webViewImplModule) => {

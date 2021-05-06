@@ -1,5 +1,3 @@
-import * as electron from 'electron';
-
 import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal';
 import * as ipcRendererUtils from '@electron/internal/renderer/ipc-renderer-internal-utils';
 import * as guestViewInternal from '@electron/internal/renderer/web-view/guest-view-internal';
@@ -8,7 +6,9 @@ import { syncMethods, asyncMethods, properties } from '@electron/internal/common
 import type { WebViewAttribute, PartitionAttribute } from '@electron/internal/renderer/web-view/web-view-attributes';
 import { deserialize } from '@electron/internal/common/type-utils';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
-const { webFrame } = electron;
+
+export { webFrame } from 'electron';
+export * as guestViewInternal from '@electron/internal/renderer/web-view/guest-view-internal';
 
 const v8Util = process._linkedBinding('electron_common_v8_util');
 
@@ -271,12 +271,4 @@ export const setupMethods = (WebViewElement: typeof ElectronInternal.WebViewElem
       set: createPropertySetter(property)
     });
   }
-};
-
-export const webViewImplModule = {
-  setupAttributes,
-  setupMethods,
-  guestViewInternal,
-  webFrame,
-  WebViewImpl
 };

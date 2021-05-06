@@ -244,7 +244,7 @@ class BrowserWindowProxy {
 
 export const windowSetup = (
   guestInstanceId: number, openerId: number, isHiddenPage: boolean, usesNativeWindowOpen: boolean) => {
-  if (!process.sandboxed && guestInstanceId == null) {
+  if (!process.sandboxed && !guestInstanceId) {
     // Override default window.close.
     window.close = function () {
       ipcRendererInternal.send(IPC_MESSAGES.BROWSER_WINDOW_CLOSE);
@@ -284,9 +284,9 @@ export const windowSetup = (
   // [ grandparent window ] --> [ parent window ] --> [ child window ]
   //     n.W.O = false             n.W.O = true         n.W.O = true
   //        id = 1                    id = 2               id = 3
-  //  openerId = null           openerId = 1         openerId = 1  <- !!wrong!!
+  //  openerId = 0              openerId = 1         openerId = 1  <- !!wrong!!
   //    opener = null             opener = null        opener = [parent window]
-  if (openerId != null && !window.opener) {
+  if (openerId && !window.opener) {
     window.opener = getOrCreateProxy(openerId);
     if (contextIsolationEnabled) internalContextBridge.overrideGlobalValueWithDynamicPropsFromIsolatedWorld(['opener'], window.opener);
   }
@@ -297,7 +297,7 @@ export const windowSetup = (
   };
   if (contextIsolationEnabled) internalContextBridge.overrideGlobalValueFromIsolatedWorld(['prompt'], window.prompt);
 
-  if (!usesNativeWindowOpen || openerId != null) {
+  if (!usesNativeWindowOpen || openerId) {
     ipcRendererInternal.on(IPC_MESSAGES.GUEST_WINDOW_POSTMESSAGE, function (
       _event, sourceId: number, message: any, sourceOrigin: string
     ) {
@@ -318,7 +318,7 @@ export const windowSetup = (
     });
   }
 
-  if (guestInstanceId != null) {
+  if (guestInstanceId) {
     // Webview `document.visibilityState` tracks window visibility (and ignores
     // the actual <webview> element visibility) for backwards compatibility.
     // See discussion in #9178.
