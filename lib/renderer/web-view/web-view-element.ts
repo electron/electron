@@ -12,10 +12,10 @@ import { WEB_VIEW_CONSTANTS } from '@electron/internal/renderer/web-view/web-vie
 import type * as webViewImplModule from '@electron/internal/renderer/web-view/web-view-impl';
 import type { SrcAttribute } from '@electron/internal/renderer/web-view/web-view-attributes';
 
-type IWebViewImpl = webViewImplModule.WebViewImpl;
+const internals = new WeakMap<HTMLElement, webViewImplModule.WebViewImpl>();
 
 // Return a WebViewElement class that is defined in this context.
-const defineWebViewElement = (v8Util: NodeJS.V8UtilBinding, webViewImpl: typeof webViewImplModule) => {
+const defineWebViewElement = (webViewImpl: typeof webViewImplModule) => {
   const { guestViewInternal, WebViewImpl } = webViewImpl;
   return class WebViewElement extends HTMLElement {
     static get observedAttributes () {
@@ -44,11 +44,19 @@ const defineWebViewElement = (v8Util: NodeJS.V8UtilBinding, webViewImpl: typeof 
         Object.assign(event, props);
         return internal.webviewNode.dispatchEvent(event);
       };
-      v8Util.setHiddenValue(this, 'internal', internal);
+      internals.set(this, internal);
+    }
+
+    getWebContentsId () {
+      const internal = internals.get(this);
+      if (!internal || !internal.guestInstanceId) {
+        throw new Error(WEB_VIEW_CONSTANTS.ERROR_MSG_NOT_ATTACHED);
+      }
+      return internal.guestInstanceId;
     }
 
     connectedCallback () {
-      const internal = v8Util.getHiddenValue<IWebViewImpl>(this, 'internal');
+      const internal = internals.get(this);
       if (!internal) {
         return;
       }
@@ -60,14 +68,14 @@ const defineWebViewElement = (v8Util: NodeJS.V8UtilBinding, webViewImpl: typeof 
     }
 
     attributeChangedCallback (name: string, oldValue: any, newValue: any) {
-      const internal = v8Util.getHiddenValue<IWebViewImpl>(this, 'internal');
+      const internal = internals.get(this);
       if (internal) {
         internal.handleWebviewAttributeMutation(name, oldValue, newValue);
       }
     }
 
     disconnectedCallback () {
-      const internal = v8Util.getHiddenValue<IWebViewImpl>(this, 'internal');
+      const internal = internals.get(this);
       if (!internal) {
         return;
       }
@@ -82,10 +90,10 @@ const defineWebViewElement = (v8Util: NodeJS.V8UtilBinding, webViewImpl: typeof 
 };
 
 // Register <webview> custom element.
-const registerWebViewElement = (v8Util: NodeJS.V8UtilBinding, webViewImpl: typeof webViewImplModule) => {
+const registerWebViewElement = (webViewImpl: typeof webViewImplModule) => {
   // I wish eslint wasn't so stupid, but it is
   // eslint-disable-next-line
-  const WebViewElement = defineWebViewElement(v8Util, webViewImpl) as unknown as typeof ElectronInternal.WebViewElement
+  const WebViewElement = defineWebViewElement(webViewImpl) as unknown as typeof ElectronInternal.WebViewElement
 
   webViewImpl.setupMethods(WebViewElement);
 
@@ -108,14 +116,14 @@ const registerWebViewElement = (v8Util: NodeJS.V8UtilBinding, webViewImpl: typeo
 };
 
 // Prepare to register the <webview> element.
-export const setupWebView = (v8Util: NodeJS.V8UtilBinding, webViewImpl: typeof webViewImplModule) => {
+export const setupWebView = (webViewImpl: typeof webViewImplModule) => {
   const useCapture = true;
   const listener = (event: Event) => {
     if (document.readyState === 'loading') {
       return;
     }
 
-    registerWebViewElement(v8Util, webViewImpl);
+    registerWebViewElement(webViewImpl);
 
     window.removeEventListener(event.type, listener, useCapture);
   };
