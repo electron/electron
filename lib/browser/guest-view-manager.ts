@@ -34,12 +34,12 @@ const createGuest = function (embedder: Electron.WebContents, params: Record<str
   const guest = (webContents as typeof ElectronInternal.WebContents).create({
     type: 'webview',
     partition: params.partition,
-    embedder: embedder
+    embedder
   });
   const guestInstanceId = guest.id;
   guestInstances.set(guestInstanceId, {
-    guest: guest,
-    embedder: embedder
+    guest,
+    embedder
   });
 
   // Clear the guest from map when it is destroyed.
@@ -165,7 +165,7 @@ const attachGuest = function (event: Electron.IpcMainInvokeEvent,
       : null;
 
   const webPreferences: Electron.WebPreferences = {
-    guestInstanceId: guestInstanceId,
+    guestInstanceId,
     nodeIntegration: params.nodeintegration != null ? params.nodeintegration : false,
     nodeIntegrationInSubFrames: params.nodeintegrationinsubframes != null ? params.nodeintegrationinsubframes : false,
     plugins: params.plugins,

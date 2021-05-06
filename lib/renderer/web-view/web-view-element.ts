@@ -18,8 +18,6 @@ type IWebViewImpl = webViewImplModule.WebViewImpl;
 const defineWebViewElement = (v8Util: NodeJS.V8UtilBinding, webViewImpl: typeof webViewImplModule) => {
   const { guestViewInternal, WebViewImpl } = webViewImpl;
   return class WebViewElement extends HTMLElement {
-    public internalInstanceId?: number;
-
     static get observedAttributes () {
       return [
         WEB_VIEW_CONSTANTS.ATTRIBUTE_PARTITION,
@@ -78,7 +76,6 @@ const defineWebViewElement = (v8Util: NodeJS.V8UtilBinding, webViewImpl: typeof 
         guestViewInternal.detachGuest(internal.guestInstanceId);
       }
       internal.elementAttached = false;
-      this.internalInstanceId = 0;
       internal.reset();
     }
   };

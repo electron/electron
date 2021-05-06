@@ -17,7 +17,6 @@ export const enum WEB_VIEW_CONSTANTS {
 
   // Error messages.
   ERROR_MSG_ALREADY_NAVIGATED = 'The object has already navigated, so its partition cannot be changed.',
-  ERROR_MSG_CANNOT_INJECT_SCRIPT = '<webview> = ' + 'Script cannot be injected into content until the page has loaded.',
   ERROR_MSG_INVALID_PARTITION_ATTRIBUTE = 'Invalid partition attribute.',
   ERROR_MSG_INVALID_PRELOAD_ATTRIBUTE = 'Only "file:" protocol is supported in "preload" attribute.'
 }

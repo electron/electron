@@ -285,16 +285,6 @@ declare namespace ElectronInternal {
     loader: ModuleLoader;
   }
 
-  interface WebFrameResizeEvent extends WebViewEvent {
-    newWidth: number;
-    newHeight: number;
-  }
-
-  interface WebViewEvent extends Event {
-    url: string;
-    isMainFrame: boolean;
-  }
-
   class WebViewElement extends HTMLElement {
     static observedAttributes: Array<string>;
 
