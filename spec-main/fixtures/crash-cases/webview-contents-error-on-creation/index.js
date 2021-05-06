@@ -1,11 +1,21 @@
 const { app, BrowserWindow } = require('electron');
 
-app.on('web-contents-created', (wc) => {
+app.on('web-contents-created', () => {
   throw new Error();
 });
 
-app.whenReady().then(async () => {
-  const mainWindow = new BrowserWindow({ show: false });
-  await mainWindow.loadURL('about:blank');
+function createWindow () {
+  const mainWindow = new BrowserWindow({
+    width: 800,
+    height: 600
+  });
+
+  mainWindow.loadFile('about:blank');
+}
+
+app.whenReady().then(() => {
+  createWindow();
+
+  setTimeout(() => app.quit());
   process.exit(0);
 });

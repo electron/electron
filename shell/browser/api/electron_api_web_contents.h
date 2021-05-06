@@ -137,6 +137,13 @@ class WebContents : public gin::Wrappable<WebContents>,
       v8::Isolate* isolate,
       const gin_helper::Dictionary& web_preferences);
 
+  // exception helpers to handle catching errors within JavaScript
+  // and sending them to the JS scope, so they don't crash C++
+  static void CatchException(v8::Isolate* isolate,
+                             gin::Handle<WebContents> handle);
+  static void CatchException(v8::Isolate* isolate,
+                             WebContents* api_web_contents);
+
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
   static v8::Local<v8::ObjectTemplate> FillObjectTemplate(
