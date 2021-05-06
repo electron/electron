@@ -15,7 +15,7 @@ the redraw locking mechanism, which fixes these issues. The electron issue
 can be found at https://github.com/electron/electron/issues/1821
 
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index 8bcb03a45d2fac0ce6b074aec0950628c3dd5d5c..022333504e32bfaf03e8072e7c450d12390258c4 100644
+index df245fc922024b3ac50cc9381d0645f65635959b..8bde0c6d99c6433bfb16aafe094c6a499f68f2be 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
 @@ -305,6 +305,10 @@ constexpr int kSynthesizedMouseMessagesTimeDifference = 500;
@@ -37,7 +37,7 @@ index 8bcb03a45d2fac0ce6b074aec0950628c3dd5d5c..022333504e32bfaf03e8072e7c450d12
                       (!(GetWindowLong(hwnd_, GWL_STYLE) & WS_CAPTION) ||
                        !ui::win::IsAeroGlassEnabled())) {
      if (should_lock_)
-@@ -971,6 +976,10 @@ HWNDMessageHandler::RegisterUnadjustedMouseEvent() {
+@@ -974,6 +979,10 @@ HWNDMessageHandler::RegisterUnadjustedMouseEvent() {
    return scoped_enable;
  }
  

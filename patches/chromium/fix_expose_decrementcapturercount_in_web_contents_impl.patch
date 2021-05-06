@@ -8,7 +8,7 @@ we invoke it in order to expose contents.decrementCapturerCount([stayHidden, sta
 to users. We should try to upstream this.
 
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index b32e156d3ed18f4753eca9d75a39f3ce990bc93f..0354de2c8e8482475a006a1ec3c2df5db8102d3d 100644
+index d42008f7893bb36419b46e9e397c965deef957ea..17034e75d2ab5bd4e716e9c72277c77a53387808 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
 @@ -394,6 +394,9 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
@@ -21,7 +21,7 @@ index b32e156d3ed18f4753eca9d75a39f3ce990bc93f..0354de2c8e8482475a006a1ec3c2df5d
    bool IsBeingCaptured() override;
    bool IsBeingVisiblyCaptured() override;
    bool IsAudioMuted() override;
-@@ -1707,10 +1710,6 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
+@@ -1708,10 +1711,6 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
    // shown in the address bar), as opposed to one in for example a Prerender.
    bool IsPrimaryFrameTree(const FrameTree& frame_tree) const;
  
@@ -33,7 +33,7 @@ index b32e156d3ed18f4753eca9d75a39f3ce990bc93f..0354de2c8e8482475a006a1ec3c2df5d
  
    // Delegate for notifying our owner about stuff. Not owned by us.
 diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
-index 9d089057f886c7b6b10ded3c2b37f5580f3b67f7..517d5e18e064f23aebd3eed0e6c0a5e41a32c863 100644
+index 2206586b2be0bca29ffe5ed227dcec67d2e56b27..05aec6c82bfba6b360cb4b4dd3298d2328f06f9e 100644
 --- a/content/public/browser/web_contents.h
 +++ b/content/public/browser/web_contents.h
 @@ -570,6 +570,7 @@ class WebContents : public PageNavigator,
