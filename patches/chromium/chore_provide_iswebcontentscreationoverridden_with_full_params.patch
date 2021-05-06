@@ -264,7 +264,7 @@ index c5c5a7b63b5b3b62a9517cbef3ae23ce57a3c89c..4f1b7e88d6d2ae89a60311c8aeb1fcee
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 2426eb615967cbe3d11ece998d97d63266fac184..f4c8d9e8a20f9be8c6566857fcf1d57ba7ec1af7 100644
+index 54fce2b0b6da947473e8725bf97816de9f51b12a..aa50664e5fcb88ac72118ba5d354f835d427b6fd 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -3601,8 +3601,7 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
@@ -404,7 +404,7 @@ index 4e4b37cc0fbbcf8f630a4e928c957261e9a03603..610848b09bba4dfa7dd645ca62354930
          ->options()
          ->block_new_web_contents();
 diff --git a/ui/views/controls/webview/web_dialog_view.cc b/ui/views/controls/webview/web_dialog_view.cc
-index 9b312a0604c38ea95f03b0ef9885ebaf08ed896c..87d57b3be4609dd1847620d58cb8b61a29114b89 100644
+index cd3f3c8849060fec8d9612d26c6c34caeefb3995..1ed386fd54918b24ebc81d6c2524e5d1fe02a655 100644
 --- a/ui/views/controls/webview/web_dialog_view.cc
 +++ b/ui/views/controls/webview/web_dialog_view.cc
 @@ -429,8 +429,7 @@ bool WebDialogView::IsWebContentsCreationOverridden(
@@ -418,7 +418,7 @@ index 9b312a0604c38ea95f03b0ef9885ebaf08ed896c..87d57b3be4609dd1847620d58cb8b61a
      return delegate_->HandleShouldOverrideWebContentsCreation();
    return false;
 diff --git a/ui/views/controls/webview/web_dialog_view.h b/ui/views/controls/webview/web_dialog_view.h
-index 8c5edd6b46b828bba2422ae11e451625ee4e6894..cc4a53e149fab62a72b321c9a3ec994fb9d87622 100644
+index 96896f5600495ff89b5209bb8cd72d7add6b404a..7df417f0509ddd993fa11bf6fb23ae68886d8008 100644
 --- a/ui/views/controls/webview/web_dialog_view.h
 +++ b/ui/views/controls/webview/web_dialog_view.h
 @@ -159,8 +159,7 @@ class WEBVIEW_EXPORT WebDialogView : public ClientView,

@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 80e4a073dc34ee6eeca411afb663477941b2ebca..e881cd42b45d2100749c270e5abfc12664329051 100644
+index 3925d8f312ea132e0edbc610d61588af5686e2d4..f2f31f6f954b560a3c3e31dc2233292b00c21b80 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -5575,6 +5575,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -5586,6 +5586,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,7 +21,7 @@ index 80e4a073dc34ee6eeca411afb663477941b2ebca..e881cd42b45d2100749c270e5abfc126
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index cee128d842b530dfe00dbd6b7aa1a977fe623d83..6acb183b87ebcfb5d769517985b691b9969bb6e6 100644
+index 24f086e5798930a888ca2f78d9c36c93e046261b..b1cbf6f76c2032dd3a6c90f1c9cf97ccaa734bec 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -3649,6 +3649,14 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
@@ -150,7 +150,7 @@ index b1cfa654259d431adfada00a00f9bfc8ae5ab292..484d36de2ac0ef3b1d19bbd0d6c79db8
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index 386a38dd82433a53b82c0d35de44fdfbfce87b89..b24bbf95e879b1e04d686d703340c978d7f33bba 100644
+index bb60e5d711ab45f89c401f4c053e453a324f6881..fbe1312f13f799b4c1b3dbc663fde81fe64162c8 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
 @@ -27,6 +27,7 @@
@@ -161,7 +161,7 @@ index 386a38dd82433a53b82c0d35de44fdfbfce87b89..b24bbf95e879b1e04d686d703340c978
  #include "third_party/blink/public/web/modules/mediastream/web_media_stream_device_observer.h"
  #include "third_party/blink/public/web/web_frame_widget.h"
  #include "third_party/blink/public/web/web_local_frame.h"
-@@ -326,6 +327,10 @@ WebView* RenderViewImpl::CreateView(
+@@ -317,6 +318,10 @@ WebView* RenderViewImpl::CreateView(
      params->impression = blink::ConvertWebImpressionToImpression(*impression);
    }
  
