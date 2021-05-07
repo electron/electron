@@ -21,10 +21,10 @@ index 08a3eb686360e7a53cca75437cbe5f4d15cb9a17..78d3287ef7a708f44bd8ef0290618ef7
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 77cd0e129e6d248dd0ef12ffd5e10d895ba86076..d04c66887760d0131576f01a8c843af28b556d8c 100644
+index 5efcb22b41690bd178f99fe0745b3438ea043978..63294a8b9ff67cf08d627db17ec374f9e4eb0082 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3608,6 +3608,14 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
+@@ -3609,6 +3609,14 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
    }
    auto* new_contents_impl = new_contents.get();
  
@@ -39,7 +39,7 @@ index 77cd0e129e6d248dd0ef12ffd5e10d895ba86076..d04c66887760d0131576f01a8c843af2
    new_contents_impl->GetController().SetSessionStorageNamespace(
        partition_id, session_storage_namespace);
  
-@@ -3650,12 +3658,6 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
+@@ -3651,12 +3659,6 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
@@ -68,10 +68,10 @@ index 32d021e049b34a72ab6cf8d86ba0c46a0046d069..f94644667683872fdb2ce3c7a66aef99
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index c4d39b0ec9cdccbf57328ade2f93cac0462666aa..0f3a1e7e855baa873aedacd1d0d2bc78d5e36b55 100644
+index 97c47faadb9224497ab9d4551db147e564fa2c55..4c1e26a579f77801941f0ad017e671ec27ac788a 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -560,6 +560,8 @@ bool ContentBrowserClient::CanCreateWindow(
+@@ -567,6 +567,8 @@ bool ContentBrowserClient::CanCreateWindow(
      const std::string& frame_name,
      WindowOpenDisposition disposition,
      const blink::mojom::WindowFeatures& features,
@@ -81,7 +81,7 @@ index c4d39b0ec9cdccbf57328ade2f93cac0462666aa..0f3a1e7e855baa873aedacd1d0d2bc78
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 3b672e4267cda9ff6f6b0f2c2b0a33765d81d3c5..1e74af3b625e80d92c8282d3d15567df7e08d336 100644
+index aac67f9733e5a5f1adba22268337d2cc3319d386..2b95f110e48b3938f3a67759e89d7fe969da4933 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -160,6 +160,7 @@ class NetworkService;
@@ -92,7 +92,7 @@ index 3b672e4267cda9ff6f6b0f2c2b0a33765d81d3c5..1e74af3b625e80d92c8282d3d15567df
  }  // namespace network
  
  namespace sandbox {
-@@ -915,6 +916,8 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -923,6 +924,8 @@ class CONTENT_EXPORT ContentBrowserClient {
        const std::string& frame_name,
        WindowOpenDisposition disposition,
        const blink::mojom::WindowFeatures& features,
