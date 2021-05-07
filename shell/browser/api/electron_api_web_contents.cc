@@ -3708,7 +3708,11 @@ gin::Handle<WebContents> WebContents::New(
     const gin_helper::Dictionary& options) {
   gin::Handle<WebContents> handle =
       gin::CreateHandle(isolate, new WebContents(isolate, options));
-  CatchException(isolate, handle);
+  v8::TryCatch try_catch(isolate);
+  gin_helper::CallMethod(isolate, handle.get(), "_init");
+  if (try_catch.HasCaught()) {
+    node::errors::TriggerUncaughtException(isolate, try_catch);
+  }
   return handle;
 }
 
@@ -3719,7 +3723,11 @@ gin::Handle<WebContents> WebContents::CreateAndTake(
     Type type) {
   gin::Handle<WebContents> handle = gin::CreateHandle(
       isolate, new WebContents(isolate, std::move(web_contents), type));
-  CatchException(isolate, handle);
+  v8::TryCatch try_catch(isolate);
+  gin_helper::CallMethod(isolate, handle.get(), "_init");
+  if (try_catch.HasCaught()) {
+    node::errors::TriggerUncaughtException(isolate, try_catch);
+  }
   return handle;
 }
 
@@ -3739,7 +3747,11 @@ gin::Handle<WebContents> WebContents::FromOrCreate(
   WebContents* api_web_contents = From(web_contents);
   if (!api_web_contents) {
     api_web_contents = new WebContents(isolate, web_contents);
-    CatchException(isolate, api_web_contents);
+    v8::TryCatch try_catch(isolate);
+    gin_helper::CallMethod(isolate, api_web_contents, "_init");
+    if (try_catch.HasCaught()) {
+      node::errors::TriggerUncaughtException(isolate, try_catch);
+    }
   }
   return gin::CreateHandle(isolate, api_web_contents);
 }
@@ -3769,26 +3781,6 @@ gin::Handle<WebContents> WebContents::CreateFromWebPreferences(
   }
 
   return web_contents;
-}
-
-// static
-void WebContents::CatchException(v8::Isolate* isolate,
-                                 gin::Handle<WebContents> handle) {
-  v8::TryCatch try_catch(isolate);
-  gin_helper::CallMethod(isolate, handle.get(), "_init");
-  if (try_catch.HasCaught()) {
-    node::errors::TriggerUncaughtException(isolate, try_catch);
-  }
-}
-
-// static
-void WebContents::CatchException(v8::Isolate* isolate,
-                                 WebContents* api_web_contents) {
-  v8::TryCatch try_catch(isolate);
-  gin_helper::CallMethod(isolate, api_web_contents, "_init");
-  if (try_catch.HasCaught()) {
-    node::errors::TriggerUncaughtException(isolate, try_catch);
-  }
 }
 
 // static

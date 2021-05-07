@@ -1,21 +1,14 @@
 const { app, BrowserWindow } = require('electron');
 
-app.on('web-contents-created', () => {
-  throw new Error();
-});
-
-function createWindow () {
+app.whenReady().then(() => {
   const mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600
+    show: false
+  });
+  mainWindow.loadFile('about:blank');
+
+  app.on('web-contents-created', () => {
+    throw new Error();
   });
 
-  mainWindow.loadFile('about:blank');
-}
-
-app.whenReady().then(() => {
-  createWindow();
-
-  setTimeout(() => app.quit());
-  process.exit(0);
+  app.quit();
 });
