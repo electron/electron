@@ -4,6 +4,7 @@ import * as guestViewInternal from '@electron/internal/renderer/web-view/guest-v
 import { WEB_VIEW_CONSTANTS } from '@electron/internal/renderer/web-view/web-view-constants';
 import { syncMethods, asyncMethods, properties } from '@electron/internal/common/web-view-methods';
 import type { WebViewAttribute, PartitionAttribute } from '@electron/internal/renderer/web-view/web-view-attributes';
+import { setupWebViewAttributes } from '@electron/internal/renderer/web-view/web-view-attributes';
 import { deserialize } from '@electron/internal/common/type-utils';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
@@ -34,9 +35,7 @@ export class WebViewImpl {
   public on: Record<string, any> = {}
   public internalElement: HTMLIFrameElement
 
-  // Replaced in web-view-attributes
-  public attributes = new Map<string, WebViewAttribute>();
-  public setupWebViewAttributes (): void {}
+  public attributes: Map<string, WebViewAttribute>;
 
   public dispatchEventInMainWorld?: (eventName: string, props: any) => boolean;
 
@@ -47,7 +46,7 @@ export class WebViewImpl {
     const style = shadowRoot.ownerDocument.createElement('style');
     style.textContent = ':host { display: flex; }';
     shadowRoot.appendChild(style);
-    this.setupWebViewAttributes();
+    this.attributes = setupWebViewAttributes(this);
     this.viewInstanceId = getNextId();
     shadowRoot.appendChild(this.internalElement);
 
@@ -207,10 +206,6 @@ export class WebViewImpl {
     this.resizeObserver.observe(this.internalElement);
   }
 }
-
-export const setupAttributes = () => {
-  require('@electron/internal/renderer/web-view/web-view-attributes');
-};
 
 // I wish eslint wasn't so stupid, but it is
 // eslint-disable-next-line

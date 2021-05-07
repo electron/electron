@@ -1,4 +1,4 @@
-import { WebViewImpl } from '@electron/internal/renderer/web-view/web-view-impl';
+import type { WebViewImpl } from '@electron/internal/renderer/web-view/web-view-impl';
 import { WEB_VIEW_CONSTANTS } from '@electron/internal/renderer/web-view/web-view-constants';
 
 const resolveURL = function (url?: string | null) {
@@ -249,18 +249,20 @@ class WebPreferencesAttribute extends WebViewAttribute {
 }
 
 // Sets up all of the webview attributes.
-WebViewImpl.prototype.setupWebViewAttributes = function () {
-  this.attributes.set(WEB_VIEW_CONSTANTS.ATTRIBUTE_PARTITION, new PartitionAttribute(this));
-  this.attributes.set(WEB_VIEW_CONSTANTS.ATTRIBUTE_SRC, new SrcAttribute(this));
-  this.attributes.set(WEB_VIEW_CONSTANTS.ATTRIBUTE_HTTPREFERRER, new HttpReferrerAttribute(this));
-  this.attributes.set(WEB_VIEW_CONSTANTS.ATTRIBUTE_USERAGENT, new UserAgentAttribute(this));
-  this.attributes.set(WEB_VIEW_CONSTANTS.ATTRIBUTE_NODEINTEGRATION, new BooleanAttribute(WEB_VIEW_CONSTANTS.ATTRIBUTE_NODEINTEGRATION, this));
-  this.attributes.set(WEB_VIEW_CONSTANTS.ATTRIBUTE_NODEINTEGRATIONINSUBFRAMES, new BooleanAttribute(WEB_VIEW_CONSTANTS.ATTRIBUTE_NODEINTEGRATIONINSUBFRAMES, this));
-  this.attributes.set(WEB_VIEW_CONSTANTS.ATTRIBUTE_PLUGINS, new BooleanAttribute(WEB_VIEW_CONSTANTS.ATTRIBUTE_PLUGINS, this));
-  this.attributes.set(WEB_VIEW_CONSTANTS.ATTRIBUTE_DISABLEWEBSECURITY, new BooleanAttribute(WEB_VIEW_CONSTANTS.ATTRIBUTE_DISABLEWEBSECURITY, this));
-  this.attributes.set(WEB_VIEW_CONSTANTS.ATTRIBUTE_ALLOWPOPUPS, new BooleanAttribute(WEB_VIEW_CONSTANTS.ATTRIBUTE_ALLOWPOPUPS, this));
-  this.attributes.set(WEB_VIEW_CONSTANTS.ATTRIBUTE_PRELOAD, new PreloadAttribute(this));
-  this.attributes.set(WEB_VIEW_CONSTANTS.ATTRIBUTE_BLINKFEATURES, new BlinkFeaturesAttribute(this));
-  this.attributes.set(WEB_VIEW_CONSTANTS.ATTRIBUTE_DISABLEBLINKFEATURES, new DisableBlinkFeaturesAttribute(this));
-  this.attributes.set(WEB_VIEW_CONSTANTS.ATTRIBUTE_WEBPREFERENCES, new WebPreferencesAttribute(this));
-};
+export function setupWebViewAttributes (self: WebViewImpl) {
+  return new Map<string, WebViewAttribute>([
+    [WEB_VIEW_CONSTANTS.ATTRIBUTE_PARTITION, new PartitionAttribute(self)],
+    [WEB_VIEW_CONSTANTS.ATTRIBUTE_SRC, new SrcAttribute(self)],
+    [WEB_VIEW_CONSTANTS.ATTRIBUTE_HTTPREFERRER, new HttpReferrerAttribute(self)],
+    [WEB_VIEW_CONSTANTS.ATTRIBUTE_USERAGENT, new UserAgentAttribute(self)],
+    [WEB_VIEW_CONSTANTS.ATTRIBUTE_NODEINTEGRATION, new BooleanAttribute(WEB_VIEW_CONSTANTS.ATTRIBUTE_NODEINTEGRATION, self)],
+    [WEB_VIEW_CONSTANTS.ATTRIBUTE_NODEINTEGRATIONINSUBFRAMES, new BooleanAttribute(WEB_VIEW_CONSTANTS.ATTRIBUTE_NODEINTEGRATIONINSUBFRAMES, self)],
+    [WEB_VIEW_CONSTANTS.ATTRIBUTE_PLUGINS, new BooleanAttribute(WEB_VIEW_CONSTANTS.ATTRIBUTE_PLUGINS, self)],
+    [WEB_VIEW_CONSTANTS.ATTRIBUTE_DISABLEWEBSECURITY, new BooleanAttribute(WEB_VIEW_CONSTANTS.ATTRIBUTE_DISABLEWEBSECURITY, self)],
+    [WEB_VIEW_CONSTANTS.ATTRIBUTE_ALLOWPOPUPS, new BooleanAttribute(WEB_VIEW_CONSTANTS.ATTRIBUTE_ALLOWPOPUPS, self)],
+    [WEB_VIEW_CONSTANTS.ATTRIBUTE_PRELOAD, new PreloadAttribute(self)],
+    [WEB_VIEW_CONSTANTS.ATTRIBUTE_BLINKFEATURES, new BlinkFeaturesAttribute(self)],
+    [WEB_VIEW_CONSTANTS.ATTRIBUTE_DISABLEBLINKFEATURES, new DisableBlinkFeaturesAttribute(self)],
+    [WEB_VIEW_CONSTANTS.ATTRIBUTE_WEBPREFERENCES, new WebPreferencesAttribute(self)]
+  ]);
+}

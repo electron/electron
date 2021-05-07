@@ -115,7 +115,6 @@ export const setupWebView = (v8Util: NodeJS.V8UtilBinding, webViewImpl: typeof w
       return;
     }
 
-    webViewImpl.setupAttributes();
     registerWebViewElement(v8Util, webViewImpl);
 
     window.removeEventListener(event.type, listener, useCapture);
