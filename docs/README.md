@@ -22,7 +22,7 @@ an issue:
 
 * [Quick Start Guide](tutorial/quick-start.md)
   * [Prerequisites](tutorial/quick-start.md#prerequisites)
-  * [Create a basic application](tutorial/quick-start.md#create-a-basic-application)
+  * [Create a basic application](tutorial/quick-start.md)
   * [Run your application](tutorial/quick-start.md#run-your-application)
   * [Package and distribute the application](tutorial/quick-start.md#package-and-distribute-the-application)
 
