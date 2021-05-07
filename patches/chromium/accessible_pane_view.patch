@@ -9,10 +9,10 @@ need to override them in MenuBar.
 Pending upstream patch: https://crrev.com/c/1959189
 
 diff --git a/ui/views/accessible_pane_view.h b/ui/views/accessible_pane_view.h
-index 813fd13860a863cd1e6e5bfec38d15f798418673..990c905e8f19dd015a625010ea30adfcb6f51ea6 100644
+index 4a4be84bf8d8b626ddc367506f61e9fb8cbefe60..81e6d6ac55eeae44337f336dc61bc1b021b60f25 100644
 --- a/ui/views/accessible_pane_view.h
 +++ b/ui/views/accessible_pane_view.h
-@@ -35,7 +35,7 @@ class VIEWS_EXPORT AccessiblePaneView : public View,
+@@ -36,7 +36,7 @@ class VIEWS_EXPORT AccessiblePaneView : public View,
    // If |initial_focus| is not NULL, that control will get
    // the initial focus, if it's enabled and focusable. Returns true if
    // the pane was able to receive focus.
@@ -21,7 +21,7 @@ index 813fd13860a863cd1e6e5bfec38d15f798418673..990c905e8f19dd015a625010ea30adfc
  
    bool pane_has_focus() const { return pane_has_focus_; }
  
-@@ -83,7 +83,7 @@ class VIEWS_EXPORT AccessiblePaneView : public View,
+@@ -84,7 +84,7 @@ class VIEWS_EXPORT AccessiblePaneView : public View,
    bool ContainsForFocusSearch(View* root, const View* v);
  
    // Remove pane focus.

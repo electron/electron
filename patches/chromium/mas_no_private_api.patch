@@ -125,7 +125,7 @@ index a7d6351854d08926c4e9c43c95e9075bd4d4c728..9c89595cb6c37527b96b4afde3871333
  // is concerned.
  @property(nonatomic, readonly) NSString* subrole;
 diff --git a/content/browser/accessibility/browser_accessibility_cocoa.mm b/content/browser/accessibility/browser_accessibility_cocoa.mm
-index 4e2e99418b4023abd59e82437bd7964dbb34fbe7..53f3295695dc7d83f2785cbe78050449c882deef 100644
+index 381eaf1ba11d860bfc8673eb09591ff861ee9f52..75f226eb170565fd27e63e843636df07ec13462f 100644
 --- a/content/browser/accessibility/browser_accessibility_cocoa.mm
 +++ b/content/browser/accessibility/browser_accessibility_cocoa.mm
 @@ -203,6 +203,7 @@

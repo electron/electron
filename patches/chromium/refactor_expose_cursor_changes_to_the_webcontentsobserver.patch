@@ -43,10 +43,10 @@ index ac6e92d1dab80d2e9d3a48ac419102b93615d7a9..b56b5031abacad5e3d7c575097999845
  
  void RenderWidgetHostImpl::ShowContextMenuAtPoint(
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index b1cbf6f76c2032dd3a6c90f1c9cf97ccaa734bec..54fce2b0b6da947473e8725bf97816de9f51b12a 100644
+index 58396522fe702895991ddde9034f06c73f0fb265..89325afaec5755b58542996224db8ca6f02750c8 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4192,6 +4192,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
+@@ -4193,6 +4193,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
    return text_input_manager_.get();
  }
  
@@ -59,10 +59,10 @@ index b1cbf6f76c2032dd3a6c90f1c9cf97ccaa734bec..54fce2b0b6da947473e8725bf97816de
      RenderWidgetHostImpl* render_widget_host) {
    return render_widget_host == GetMainFrame()->GetRenderWidgetHost();
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 2520b412d1cb644d44dbc12d6d4d1d4ab131ca33..e66c762b5093e7154920b7df8638733bd146f535 100644
+index 607d6fb5b1d1870eae6a4a8ec45704fe4129bf55..f5f6aeb207b39cc18784f08aa25cf1da96c08a50 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -960,6 +960,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
+@@ -961,6 +961,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
        blink::mojom::FrameVisibility visibility) override;
    void SendScreenRects() override;
    TextInputManager* GetTextInputManager() override;
@@ -71,10 +71,10 @@ index 2520b412d1cb644d44dbc12d6d4d1d4ab131ca33..e66c762b5093e7154920b7df8638733b
    bool IsShowingContextMenuOnPage() const override;
    void DidChangeScreenOrientation() override;
 diff --git a/content/public/browser/web_contents_observer.h b/content/public/browser/web_contents_observer.h
-index 214737d2c00e6bb61efa5d68e5561edc483ab51c..f93e9b653c35d0a742a92cfbebcac7f962a58b50 100644
+index aebe8b43060ed7ad21656c80735d34b3f6d9c419..7869f0b0e9734d45f88e0fb74fc8d85c6ec9c94d 100644
 --- a/content/public/browser/web_contents_observer.h
 +++ b/content/public/browser/web_contents_observer.h
-@@ -14,6 +14,7 @@
+@@ -15,6 +15,7 @@
  #include "base/threading/thread_restrictions.h"
  #include "components/viz/common/vertical_scroll_direction.h"
  #include "content/common/content_export.h"
@@ -82,7 +82,7 @@ index 214737d2c00e6bb61efa5d68e5561edc483ab51c..f93e9b653c35d0a742a92cfbebcac7f9
  #include "content/public/browser/allow_service_worker_result.h"
  #include "content/public/browser/cookie_access_details.h"
  #include "content/public/browser/navigation_controller.h"
-@@ -413,6 +414,9 @@ class CONTENT_EXPORT WebContentsObserver : public IPC::Listener {
+@@ -414,6 +415,9 @@ class CONTENT_EXPORT WebContentsObserver : public IPC::Listener {
    // Invoked every time the WebContents changes visibility.
    virtual void OnVisibilityChanged(Visibility visibility) {}
  

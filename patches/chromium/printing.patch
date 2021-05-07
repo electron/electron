@@ -610,7 +610,7 @@ index ae14b4e5da65fb3548d4369216a3c6b90c8d17a1..67962f518035b528dd3e958e6e56c764
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Set options for print preset from source PDF document.
 diff --git a/printing/printing_context.cc b/printing/printing_context.cc
-index 92561ff7c6bce6febd8cd2f39f59e3df707f8bdb..241686fa8bdc346f073b5fb92f57c72cfd1be8af 100644
+index 30fa5344771c7e558ba44177429c551cba3b03e8..29d7e4a020989af699a25f69a4ee5ced70cb70bb 100644
 --- a/printing/printing_context.cc
 +++ b/printing/printing_context.cc
 @@ -96,7 +96,6 @@ PrintingContext::Result PrintingContext::UsePdfSettings() {
@@ -622,10 +622,10 @@ index 92561ff7c6bce6febd8cd2f39f59e3df707f8bdb..241686fa8bdc346f073b5fb92f57c72c
      std::unique_ptr<PrintSettings> settings =
          PrintSettingsFromJobSettings(job_settings);
 diff --git a/printing/printing_context.h b/printing/printing_context.h
-index a45e0a76781513552295d6b1e6f46d1345088e76..47554e55a0aa7d1074f9c38dbe36b8a575838531 100644
+index e9c2b30471473fae1619e4171567f30fc4e6ea1a..4b0102a6f8b4acc86875ca76f928add756d5f21f 100644
 --- a/printing/printing_context.h
 +++ b/printing/printing_context.h
-@@ -133,12 +133,12 @@ class COMPONENT_EXPORT(PRINTING) PrintingContext {
+@@ -134,12 +134,12 @@ class COMPONENT_EXPORT(PRINTING) PrintingContext {
  
    int job_id() const { return job_id_; }
  

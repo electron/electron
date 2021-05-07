@@ -171,10 +171,10 @@ index 827084542417d45c9db8082e2c2537e7bdb8ff7f..927b48bbd855fdaebe2b26b8efbb7c48
    return CreateSoftwareOutputDeviceWin(surface_handle, &output_device_backing_,
                                         display_client);
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.h b/components/viz/service/display_embedder/output_surface_provider_impl.h
-index a6bb42cdbc567f526cc70c5c4d9b967274dc0332..d116844635922c8a1086dfa13063b8ae8b43ce59 100644
+index bb3734050405297a3fe4408dae7a5bbe5c98b2e9..560ddfa2e9b24462a94c0e35a6b97e3ce5e36b81 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.h
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.h
-@@ -61,12 +61,14 @@ class VIZ_SERVICE_EXPORT OutputSurfaceProviderImpl
+@@ -62,12 +62,14 @@ class VIZ_SERVICE_EXPORT OutputSurfaceProviderImpl
        mojom::DisplayClient* display_client,
        DisplayCompositorMemoryAndTaskController* gpu_dependency,
        const RendererSettings& renderer_settings,
@@ -189,8 +189,8 @@ index a6bb42cdbc567f526cc70c5c4d9b967274dc0332..d116844635922c8a1086dfa13063b8ae
 +      mojom::DisplayClient* display_client,
 +      bool offscreen);
  
-   GpuServiceImpl* const gpu_service_impl_;
-   gpu::CommandBufferTaskExecutor* const task_executor_;
+   const CheckedPtr<GpuServiceImpl> gpu_service_impl_;
+   const CheckedPtr<gpu::CommandBufferTaskExecutor> task_executor_;
 diff --git a/components/viz/service/display_embedder/software_output_device_mac.cc b/components/viz/service/display_embedder/software_output_device_mac.cc
 index 49149081cc603f14eacee647cbb2fcf8ed5e66fd..9ff3f2ee203403fdaa31edb8a0bcc000c4d214d7 100644
 --- a/components/viz/service/display_embedder/software_output_device_mac.cc
@@ -511,10 +511,10 @@ index 04d2ba6d844ee85520a6c51784bf37c818f1bd3f..6095e8b8e177d11782f333cfb3e1c94f
    // Creating output surface failed. The host can send a new request, possibly
    // with a different compositing mode.
 diff --git a/content/browser/compositor/viz_process_transport_factory.cc b/content/browser/compositor/viz_process_transport_factory.cc
-index 83a23404d1c029af6f7e7aa695bfe60e71d86fde..eef92d3366715774670ebcdcb76ad84ddd8a4ed0 100644
+index 68f4ba8d0f349b3ddaedd037329f80f70c0f6338..6f2cb083c252643f11b82fa69d8ec2c060c05fdd 100644
 --- a/content/browser/compositor/viz_process_transport_factory.cc
 +++ b/content/browser/compositor/viz_process_transport_factory.cc
-@@ -395,8 +395,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
+@@ -396,8 +396,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
    compositor_data.display_private.reset();
    root_params->display_private =
        compositor_data.display_private.BindNewEndpointAndPassReceiver();
