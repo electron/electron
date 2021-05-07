@@ -24,7 +24,7 @@ an issue:
   * [Prerequisites](tutorial/quick-start.md#prerequisites)
   * [Create a basic application](tutorial/quick-start.md)
   * [Run your application](tutorial/quick-start.md#run-your-application)
-  * [Package and distribute the application](tutorial/quick-start.md#package-and-distribute-the-application)
+  * [Package and distribute the application](tutorial/quick-start.md#package-and-distribute-your-application)
 
 ### Learning the basics
 
