@@ -27,7 +27,7 @@ export function webViewInit (contextIsolation: boolean, webviewTag: boolean, gue
       v8Util.setHiddenValue(window, 'web-view-impl', webViewImplModule);
     } else {
       const { setupWebView } = require('@electron/internal/renderer/web-view/web-view-element') as typeof webViewElement;
-      setupWebView(v8Util, webViewImplModule);
+      setupWebView(webViewImplModule);
     }
   }
 

@@ -64,6 +64,7 @@ export class WebViewImpl {
     iframeElement.style.flex = '1 1 auto';
     iframeElement.style.width = '100%';
     iframeElement.style.border = '0';
+    // used by RendererClientBase::IsWebViewFrame
     v8Util.setHiddenValue(iframeElement, 'internal', this);
     return iframeElement;
   }
@@ -210,14 +211,6 @@ export class WebViewImpl {
 // I wish eslint wasn't so stupid, but it is
 // eslint-disable-next-line
 export const setupMethods = (WebViewElement: typeof ElectronInternal.WebViewElement) => {
-  WebViewElement.prototype.getWebContentsId = function () {
-    const internal = v8Util.getHiddenValue<WebViewImpl>(this, 'internal');
-    if (!internal.guestInstanceId) {
-      throw new Error('The WebView must be attached to the DOM and the dom-ready event emitted before this method can be called.');
-    }
-    return internal.guestInstanceId;
-  };
-
   // Focusing the webview should move page focus to the underlying iframe.
   WebViewElement.prototype.focus = function () {
     this.contentWindow.focus();

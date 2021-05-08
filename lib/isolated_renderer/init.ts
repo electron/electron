@@ -11,5 +11,5 @@ const webViewImpl = v8Util.getHiddenValue(isolatedWorld, 'web-view-impl');
 if (webViewImpl) {
   // Must setup the WebView element in main world.
   const { setupWebView } = require('@electron/internal/renderer/web-view/web-view-element') as typeof webViewElementModule;
-  setupWebView(v8Util, webViewImpl as any);
+  setupWebView(webViewImpl as any);
 }
