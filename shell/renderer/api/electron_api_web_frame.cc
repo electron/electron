@@ -29,7 +29,7 @@
 #include "shell/renderer/api/context_bridge/object_cache.h"
 #include "shell/renderer/api/electron_api_context_bridge.h"
 #include "shell/renderer/api/electron_api_spell_check_client.h"
-#include "shell/renderer/electron_renderer_client.h"
+#include "shell/renderer/renderer_client_base.h"
 #include "third_party/blink/public/common/browser_interface_broker_proxy.h"
 #include "third_party/blink/public/common/page/page_zoom.h"
 #include "third_party/blink/public/common/web_cache/web_cache_resource_type_stats.h"
@@ -118,7 +118,7 @@ bool SpellCheckWord(v8::Isolate* isolate,
   size_t start;
   size_t length;
 
-  ElectronRendererClient* client = ElectronRendererClient::Get();
+  RendererClientBase* client = RendererClientBase::Get();
   auto* render_frame = GetRenderFrame(window);
   if (!render_frame)
     return true;
