@@ -57,6 +57,35 @@ parameters:
     type: boolean
     default: false
 
+# Executors
+executors:
+  linux-docker:
+    parameters:
+      size:
+        description: "Docker executor size"
+        default: 2xlarge+
+        type: enum
+        enum: ["medium", "xlarge", "2xlarge+"]
+    docker:
+      - image: electron.azurecr.io/build:6555a80939fb4c3ddf9343b3f140e573f40de225
+    resource_class: << parameters.size >>
+
+  macos:
+    parameters:
+      size:
+        description: "macOS executor size"
+        default: large
+        type: enum
+        enum: ["medium", "large"]
+    macos:
+      xcode: "12.4.0"
+    resource_class: << parameters.size >>
+
+  # Electron Runners
+  apple-silicon:
+    resource_class: electronjs/macos-arm64
+    machine: true
+
 # The config expects the following environment variables to be set:
 #  - "SLACK_WEBHOOK" Slack hook URL to send notifications.
 #
@@ -65,36 +94,6 @@ parameters:
 #
 # CircleCI docs on variables:
 # https://circleci.com/docs/2.0/env-vars/
-
-# Build machines configs.
-docker-image: &docker-image
-  docker:
-    - image: electron.azurecr.io/build:6555a80939fb4c3ddf9343b3f140e573f40de225
-
-machine-linux-medium: &machine-linux-medium
-  <<: *docker-image
-  resource_class: medium
-
-machine-linux-xlarge: &machine-linux-xlarge
-  <<: *docker-image
-  resource_class: xlarge
-
-machine-linux-2xlarge: &machine-linux-2xlarge
-  <<: *docker-image
-  resource_class: 2xlarge+
-
-machine-mac: &machine-mac
-  macos:
-    xcode: "12.4.0"
-
-machine-mac-large: &machine-mac-large
-  resource_class: large
-  macos:
-    xcode: "12.4.0"
-
-machine-mac-arm64: &machine-mac-arm64
-  resource_class: electronjs/macos-arm64
-  machine: true
 
 # Build configurations options.
 env-testing-build: &env-testing-build
@@ -1689,13 +1688,17 @@ commands:
 jobs:
   # Layer 0: Lint. Standalone.
   lint:
-    <<: *machine-linux-medium
+    executor:
+      name: linux-docker
+      size: medium
     environment:
       <<: *env-linux-medium
     <<: *steps-lint
 
   ts-compile-doc-change:
-    <<: *machine-linux-medium
+    executor:
+      name: linux-docker
+      size: medium
     environment:
       <<: *env-linux-medium
       <<: *env-testing-build
@@ -1703,7 +1706,7 @@ jobs:
 
   # Layer 1: Checkout.
   linux-checkout:
-    <<: *machine-linux-2xlarge
+    executor: linux-docker
     environment:
       <<: *env-linux-2xlarge
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
@@ -1716,7 +1719,7 @@ jobs:
           restore-src-cache: false
 
   linux-checkout-fast:
-    <<: *machine-linux-2xlarge
+    executor: linux-docker
     environment:
       <<: *env-linux-2xlarge
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
@@ -1728,14 +1731,14 @@ jobs:
           persist-checkout: true
 
   linux-checkout-and-save-cache:
-    <<: *machine-linux-2xlarge
+    executor: linux-docker
     environment:
       <<: *env-linux-2xlarge
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
     <<: *steps-checkout-and-save-cache
 
   linux-checkout-for-native-tests:
-    <<: *machine-linux-2xlarge
+    executor: linux-docker
     environment:
       <<: *env-linux-2xlarge
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_pyyaml=True'
@@ -1747,7 +1750,7 @@ jobs:
           persist-checkout: true
 
   linux-checkout-for-native-tests-with-no-patches:
-    <<: *machine-linux-2xlarge
+    executor: linux-docker
     environment:
       <<: *env-linux-2xlarge
       GCLIENT_EXTRA_ARGS: '--custom-var=apply_patches=False --custom-var=checkout_pyyaml=True'
@@ -1759,7 +1762,7 @@ jobs:
           persist-checkout: true
 
   mac-checkout:
-    <<: *machine-linux-2xlarge
+    executor: linux-docker
     environment:
       <<: *env-linux-2xlarge
       <<: *env-testing-build
@@ -1774,7 +1777,7 @@ jobs:
           restore-src-cache: false
 
   mac-checkout-fast:
-    <<: *machine-linux-2xlarge
+    executor: linux-docker
     environment:
       <<: *env-linux-2xlarge
       <<: *env-testing-build
@@ -1788,7 +1791,7 @@ jobs:
           persist-checkout: true
 
   mac-checkout-and-save-cache:
-    <<: *machine-linux-2xlarge
+    executor: linux-docker
     environment:
       <<: *env-linux-2xlarge
       <<: *env-testing-build
@@ -1798,7 +1801,7 @@ jobs:
 
   # Layer 2: Builds.
   linux-x64-testing:
-    <<: *machine-linux-2xlarge
+    executor: linux-docker
     environment:
       <<: *env-global
       <<: *env-testing-build
@@ -1811,7 +1814,7 @@ jobs:
           use-out-cache: false
 
   linux-x64-testing-asan:
-    <<: *machine-linux-2xlarge
+    executor: linux-docker
     environment:
       <<: *env-global
       <<: *env-testing-build
@@ -1827,7 +1830,7 @@ jobs:
           build-nonproprietary-ffmpeg: false
 
   linux-x64-testing-no-run-as-node:
-    <<: *machine-linux-2xlarge
+    executor: linux-docker
     environment:
       <<: *env-linux-2xlarge
       <<: *env-testing-build
@@ -1841,14 +1844,16 @@ jobs:
           use-out-cache: false
 
   linux-x64-testing-gn-check:
-    <<: *machine-linux-medium
+    executor:
+      name: linux-docker
+      size: medium
     environment:
       <<: *env-linux-medium
       <<: *env-testing-build
     <<: *steps-electron-gn-check
 
   linux-x64-release:
-    <<: *machine-linux-2xlarge
+    executor: linux-docker
     environment:
       <<: *env-linux-2xlarge-release
       <<: *env-release-build
@@ -1861,7 +1866,7 @@ jobs:
           checkout: true
 
   linux-x64-publish:
-    <<: *machine-linux-2xlarge
+    executor: linux-docker
     environment:
       <<: *env-linux-2xlarge-release
       <<: *env-release-build
@@ -1873,7 +1878,7 @@ jobs:
           checkout: true
 
   linux-ia32-testing:
-    <<: *machine-linux-2xlarge
+    executor: linux-docker
     environment:
       <<: *env-global
       <<: *env-ia32
@@ -1887,7 +1892,7 @@ jobs:
           use-out-cache: false
 
   linux-ia32-release:
-    <<: *machine-linux-2xlarge
+    executor: linux-docker
     environment:
       <<: *env-linux-2xlarge-release
       <<: *env-ia32
@@ -1901,7 +1906,7 @@ jobs:
           checkout: true
 
   linux-ia32-publish:
-    <<: *machine-linux-2xlarge
+    executor: linux-docker
     environment:
       <<: *env-linux-2xlarge-release
       <<: *env-ia32
@@ -1915,7 +1920,7 @@ jobs:
           checkout: true
 
   linux-arm-testing:
-    <<: *machine-linux-2xlarge
+    executor: linux-docker
     environment:
       <<: *env-global
       <<: *env-arm
@@ -1931,7 +1936,7 @@ jobs:
           use-out-cache: false
 
   linux-arm-release:
-    <<: *machine-linux-2xlarge
+    executor: linux-docker
     environment:
       <<: *env-linux-2xlarge-release
       <<: *env-arm
@@ -1945,7 +1950,7 @@ jobs:
           checkout: true
 
   linux-arm-publish:
-    <<: *machine-linux-2xlarge
+    executor: linux-docker
     environment:
       <<: *env-linux-2xlarge-release
       <<: *env-arm
@@ -1960,7 +1965,7 @@ jobs:
           checkout: true
 
   linux-arm64-testing:
-    <<: *machine-linux-2xlarge
+    executor: linux-docker
     environment:
       <<: *env-global
       <<: *env-arm64
@@ -1976,7 +1981,9 @@ jobs:
           use-out-cache: false
 
   linux-arm64-testing-gn-check:
-    <<: *machine-linux-medium
+    executor:
+      name: linux-docker
+      size: medium
     environment:
       <<: *env-linux-medium
       <<: *env-arm64
@@ -1984,7 +1991,7 @@ jobs:
     <<: *steps-electron-gn-check
 
   linux-arm64-release:
-    <<: *machine-linux-2xlarge
+    executor: linux-docker
     environment:
       <<: *env-linux-2xlarge-release
       <<: *env-arm64
@@ -1998,7 +2005,7 @@ jobs:
           checkout: true
 
   linux-arm64-publish:
-    <<: *machine-linux-2xlarge
+    executor: linux-docker
     environment:
       <<: *env-linux-2xlarge-release
       <<: *env-arm64
@@ -2012,7 +2019,7 @@ jobs:
           checkout: true
 
   osx-testing-x64:
-    <<: *machine-mac-large
+    executor: macos
     environment:
       <<: *env-mac-large
       <<: *env-testing-build
@@ -2027,14 +2034,16 @@ jobs:
           attach: false
 
   osx-testing-x64-gn-check:
-    <<: *machine-mac
+    executor:
+      name: macos
+      size: medium
     environment:
       <<: *env-machine-mac
       <<: *env-testing-build
     <<: *steps-electron-gn-check
 
   osx-publish-x64:
-    <<: *machine-mac-large
+    executor: macos
     environment:
       <<: *env-mac-large-release
       <<: *env-release-build
@@ -2046,7 +2055,7 @@ jobs:
           checkout: true
 
   osx-publish-arm64:
-    <<: *machine-mac-large
+    executor: macos
     environment:
       <<: *env-mac-large-release
       <<: *env-release-build
@@ -2059,7 +2068,7 @@ jobs:
           checkout: true
 
   osx-publish-x64-skip-checkout:
-    <<: *machine-mac-large
+    executor: macos
     environment:
       <<: *env-mac-large-release
       <<: *env-release-build
@@ -2071,7 +2080,7 @@ jobs:
           checkout: false
 
   osx-publish-arm64-skip-checkout:
-    <<: *machine-mac-large
+    executor: macos
     environment:
       <<: *env-mac-large-release
       <<: *env-release-build
@@ -2084,7 +2093,7 @@ jobs:
           checkout: false
 
   osx-testing-arm64:
-    <<: *machine-mac-large
+    executor: macos
     environment:
       <<: *env-mac-large
       <<: *env-testing-build
@@ -2101,7 +2110,7 @@ jobs:
           attach: false
 
   mas-testing-x64:
-    <<: *machine-mac-large
+    executor: macos
     environment:
       <<: *env-mac-large
       <<: *env-mas
@@ -2117,7 +2126,9 @@ jobs:
           attach: false
 
   mas-testing-x64-gn-check:
-    <<: *machine-mac
+    executor:
+      name: macos
+      size: medium
     environment:
       <<: *env-machine-mac
       <<: *env-mas
@@ -2125,7 +2136,7 @@ jobs:
     <<: *steps-electron-gn-check
   
   mas-publish:
-    <<: *machine-mac-large
+    executor: macos
     environment:
       <<: *env-mac-large-release
       <<: *env-mas
@@ -2138,7 +2149,7 @@ jobs:
           checkout: true
 
   mas-publish-arm64:
-    <<: *machine-mac-large
+    executor: macos
     environment:
       <<: *env-mac-large-release
       <<: *env-mas-apple-silicon
@@ -2151,7 +2162,7 @@ jobs:
           checkout: true          
 
   mas-publish-x64-skip-checkout:
-    <<: *machine-mac-large
+    executor: macos
     environment:
       <<: *env-mac-large-release
       <<: *env-mas
@@ -2163,7 +2174,7 @@ jobs:
           checkout: false
 
   mas-publish-arm64-skip-checkout:
-    <<: *machine-mac-large
+    executor: macos
     environment:
       <<: *env-mac-large-release
       <<: *env-mas-apple-silicon
@@ -2176,7 +2187,7 @@ jobs:
           checkout: false
 
   mas-testing-arm64:
-    <<: *machine-mac-large
+    executor: macos
     environment:
       <<: *env-mac-large
       <<: *env-testing-build
@@ -2194,7 +2205,7 @@ jobs:
 
   # Layer 3: Tests.
   linux-x64-unittests:
-    <<: *machine-linux-2xlarge
+    executor: linux-docker
     environment:
       <<: *env-linux-2xlarge
       <<: *env-unittests
@@ -2202,7 +2213,7 @@ jobs:
     <<: *steps-native-tests
 
   linux-x64-disabled-unittests:
-    <<: *machine-linux-2xlarge
+    executor: linux-docker
     environment:
       <<: *env-linux-2xlarge
       <<: *env-unittests
@@ -2211,7 +2222,7 @@ jobs:
     <<: *steps-native-tests
 
   linux-x64-chromium-unittests:
-    <<: *machine-linux-2xlarge
+    executor: linux-docker
     environment:
       <<: *env-linux-2xlarge
       <<: *env-unittests
@@ -2220,7 +2231,7 @@ jobs:
     <<: *steps-native-tests
 
   linux-x64-browsertests:
-    <<: *machine-linux-2xlarge
+    executor: linux-docker
     environment:
       <<: *env-linux-2xlarge
       <<: *env-browsertests
@@ -2229,7 +2240,9 @@ jobs:
     <<: *steps-native-tests
 
   linux-x64-testing-tests:
-    <<: *machine-linux-medium
+    executor:
+      name: linux-docker
+      size: medium
     environment:
       <<: *env-linux-medium
       <<: *env-headless-testing
@@ -2238,7 +2251,9 @@ jobs:
     <<: *steps-tests
 
   linux-x64-testing-asan-tests:
-    <<: *machine-linux-xlarge
+    executor:
+      name: linux-docker
+      size: xlarge
     environment:
       <<: *env-linux-medium
       <<: *env-headless-testing
@@ -2249,7 +2264,9 @@ jobs:
     <<: *steps-tests
 
   linux-x64-testing-nan:
-    <<: *machine-linux-medium
+    executor:
+      name: linux-docker
+      size: medium
     environment:
       <<: *env-linux-medium
       <<: *env-headless-testing
@@ -2257,7 +2274,7 @@ jobs:
     <<: *steps-test-nan
 
   linux-x64-testing-node:
-    <<: *machine-linux-2xlarge
+    executor: linux-docker
     environment:
       <<: *env-linux-medium
       <<: *env-headless-testing
@@ -2265,7 +2282,9 @@ jobs:
     <<: *steps-test-node
 
   linux-x64-release-tests:
-    <<: *machine-linux-medium
+    executor:
+      name: linux-docker
+      size: medium
     environment:
       <<: *env-linux-medium
       <<: *env-headless-testing
@@ -2273,7 +2292,9 @@ jobs:
     <<: *steps-tests
 
   linux-x64-verify-ffmpeg:
-    <<: *machine-linux-medium
+    executor:
+      name: linux-docker
+      size: medium
     environment:
       <<: *env-linux-medium
       <<: *env-headless-testing
@@ -2281,7 +2302,9 @@ jobs:
     <<: *steps-verify-ffmpeg
 
   linux-ia32-testing-tests:
-    <<: *machine-linux-medium
+    executor:
+      name: linux-docker
+      size: medium
     environment:
       <<: *env-linux-medium
       <<: *env-ia32
@@ -2291,7 +2314,9 @@ jobs:
     <<: *steps-tests
 
   linux-ia32-testing-nan:
-    <<: *machine-linux-medium
+    executor:
+      name: linux-docker
+      size: medium
     environment:
       <<: *env-linux-medium
       <<: *env-ia32
@@ -2300,7 +2325,7 @@ jobs:
     <<: *steps-test-nan
 
   linux-ia32-testing-node:
-    <<: *machine-linux-2xlarge
+    executor: linux-docker
     environment:
       <<: *env-linux-medium
       <<: *env-ia32
@@ -2309,7 +2334,9 @@ jobs:
     <<: *steps-test-node
 
   linux-ia32-release-tests:
-    <<: *machine-linux-medium
+    executor:
+      name: linux-docker
+      size: medium
     environment:
       <<: *env-linux-medium
       <<: *env-ia32
@@ -2318,7 +2345,9 @@ jobs:
     <<: *steps-tests
 
   linux-ia32-verify-ffmpeg:
-    <<: *machine-linux-medium
+    executor:
+      name: linux-docker
+      size: medium
     environment:
       <<: *env-linux-medium
       <<: *env-ia32
@@ -2327,7 +2356,9 @@ jobs:
     <<: *steps-verify-ffmpeg
 
   osx-testing-x64-tests:
-    <<: *machine-mac-large
+    executor:
+      name: macos
+      size: medium
     environment:
       <<: *env-mac-large
       <<: *env-stack-dumping
@@ -2335,7 +2366,7 @@ jobs:
     <<: *steps-tests
 
   osx-testing-arm64-tests:  
-    <<: *machine-mac-arm64
+    executor: apple-silicon
     environment:
       <<: *env-mac-large
       <<: *env-stack-dumping
@@ -2343,7 +2374,9 @@ jobs:
     <<: *steps-tests
 
   mas-testing-x64-tests:
-    <<: *machine-mac-large
+    executor:
+      name: macos
+      size: medium
     environment:
       <<: *env-mac-large
       <<: *env-stack-dumping
@@ -2351,7 +2384,7 @@ jobs:
     <<: *steps-tests
 
   mas-testing-arm64-tests:
-    <<: *machine-mac-arm64
+    executor: apple-silicon
     environment:
       <<: *env-mac-large
       <<: *env-stack-dumping
@@ -2360,7 +2393,9 @@ jobs:
 
   # Layer 4: Summary.
   linux-x64-release-summary:
-    <<: *machine-linux-medium
+    executor:
+      name: linux-docker
+      size: medium
     environment:
       <<: *env-linux-medium
       <<: *env-send-slack-notifications
@@ -2368,7 +2403,9 @@ jobs:
       - *step-maybe-notify-slack-success
 
   linux-ia32-release-summary:
-    <<: *machine-linux-medium
+    executor:
+      name: linux-docker
+      size: medium
     environment:
       <<: *env-linux-medium
       <<: *env-send-slack-notifications
@@ -2376,7 +2413,9 @@ jobs:
       - *step-maybe-notify-slack-success
 
   linux-arm-release-summary:
-    <<: *machine-linux-medium
+    executor:
+      name: linux-docker
+      size: medium
     environment:
       <<: *env-linux-medium
       <<: *env-send-slack-notifications
@@ -2384,7 +2423,9 @@ jobs:
       - *step-maybe-notify-slack-success
 
   linux-arm64-release-summary:
-    <<: *machine-linux-medium
+    executor:
+      name: linux-docker
+      size: medium
     environment:
       <<: *env-linux-medium
       <<: *env-send-slack-notifications
