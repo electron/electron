@@ -94,6 +94,9 @@ std::vector<std::string> ParseSchemesCLISwitch(base::CommandLine* command_line,
                            base::SPLIT_WANT_NONEMPTY);
 }
 
+// static
+RendererClientBase* g_renderer_client_base = nullptr;
+
 }  // namespace
 
 RendererClientBase::RendererClientBase() {
@@ -128,9 +131,13 @@ RendererClientBase::RendererClientBase() {
   DCHECK(command_line->HasSwitch(::switches::kRendererClientId));
   renderer_client_id_ =
       command_line->GetSwitchValueASCII(::switches::kRendererClientId);
+
+  g_renderer_client_base = this;
 }
 
-RendererClientBase::~RendererClientBase() = default;
+RendererClientBase::~RendererClientBase() {
+  g_renderer_client_base = nullptr;
+}
 
 void RendererClientBase::DidCreateScriptContext(
     v8::Handle<v8::Context> context,
@@ -146,6 +153,12 @@ void RendererClientBase::DidCreateScriptContext(
       render_frame->GetBlinkPreferences().enable_remote_module;
   global.SetHidden("enableRemoteModule", enableRemoteModule);
 #endif
+}
+
+// static
+RendererClientBase* RendererClientBase::Get() {
+  DCHECK(g_renderer_client_base);
+  return g_renderer_client_base;
 }
 
 void RendererClientBase::AddRenderBindings(
