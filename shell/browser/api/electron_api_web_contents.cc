@@ -3140,6 +3140,13 @@ void WebContents::NotifyUserActivation() {
         blink::mojom::UserActivationNotificationType::kInteraction);
 }
 
+void WebContents::SetImageAnimationPolicy(const std::string& new_policy) {
+  auto* web_preferences = WebContentsPreferences::From(web_contents());
+  web_preferences->preference()->SetKey(options::kImageAnimationPolicy,
+                                        base::Value(new_policy));
+  web_contents()->OnWebPreferencesChanged();
+}
+
 v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
     v8::Isolate* isolate,
     const base::FilePath& file_path) {
@@ -3687,6 +3694,8 @@ v8::Local<v8::ObjectTemplate> WebContents::FillObjectTemplate(
                  &WebContents::GetWebRTCIPHandlingPolicy)
       .SetMethod("_grantOriginAccess", &WebContents::GrantOriginAccess)
       .SetMethod("takeHeapSnapshot", &WebContents::TakeHeapSnapshot)
+      .SetMethod("setImageAnimationPolicy",
+                 &WebContents::SetImageAnimationPolicy)
       .SetProperty("id", &WebContents::ID)
       .SetProperty("session", &WebContents::Session)
       .SetProperty("hostWebContents", &WebContents::HostWebContents)

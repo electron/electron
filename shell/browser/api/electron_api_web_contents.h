@@ -419,6 +419,7 @@ class WebContents : public gin::Wrappable<WebContents>,
   void SetTemporaryZoomLevel(double level);
   void DoGetZoomLevel(
       electron::mojom::ElectronBrowser::DoGetZoomLevelCallback callback);
+  void SetImageAnimationPolicy(const std::string& new_policy);
 
  private:
   // Does not manage lifetime of |web_contents|.
