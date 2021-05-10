@@ -54,7 +54,7 @@ index 19c2beb1f1949f0dc4466a8728f151c035544b24..f7aa5f94d6dea0e6b2c1107b8ef01600
  
    scoped_refptr<ServiceWorkerContextWrapper> service_worker_context_;
 diff --git a/content/browser/notifications/blink_notification_service_impl_unittest.cc b/content/browser/notifications/blink_notification_service_impl_unittest.cc
-index 9d7587a5efd0ee467948c4afa997cee555fd3d2d..2f42439b533c2ff56c7dd8f99c458ffa52af1fbf 100644
+index 3694fd8900bee0f235bbae31def3f5e6338538ed..5942c9fe4aab65492e78eaa4396bd362ab9f6d4b 100644
 --- a/content/browser/notifications/blink_notification_service_impl_unittest.cc
 +++ b/content/browser/notifications/blink_notification_service_impl_unittest.cc
 @@ -139,7 +139,7 @@ class BlinkNotificationServiceImplTest : public ::testing::Test {
@@ -88,10 +88,10 @@ index 8db550c4d38132b062eac6eca7862b113de6c780..edb5fbd27e4503984a21a310e0ea2639
  
  void PlatformNotificationContextImpl::RemoveService(
 diff --git a/content/browser/notifications/platform_notification_context_impl.h b/content/browser/notifications/platform_notification_context_impl.h
-index f902861bd7d441ffd6bd64c346daeddd99b4b2ac..c1a6b1b4bdc040d7eb11ed8e3f772d17f02bd9aa 100644
+index 71dad766e05ac4726e1e18159f2af5ea01079a91..ef8e55a4420288fe64c99e68d0a649a9f31a49f8 100644
 --- a/content/browser/notifications/platform_notification_context_impl.h
 +++ b/content/browser/notifications/platform_notification_context_impl.h
-@@ -45,6 +45,7 @@ class BrowserContext;
+@@ -44,6 +44,7 @@ class BrowserContext;
  struct NotificationDatabaseData;
  class PlatformNotificationServiceProxy;
  class ServiceWorkerContextWrapper;
@@ -99,7 +99,7 @@ index f902861bd7d441ffd6bd64c346daeddd99b4b2ac..c1a6b1b4bdc040d7eb11ed8e3f772d17
  
  // Implementation of the Web Notification storage context. The public methods
  // defined in this interface must only be called on the UI thread.
-@@ -69,6 +70,7 @@ class CONTENT_EXPORT PlatformNotificationContextImpl
+@@ -68,6 +69,7 @@ class CONTENT_EXPORT PlatformNotificationContextImpl
    // Creates a BlinkNotificationServiceImpl that is owned by this context.
    // |document_url| is empty when originating from a worker.
    void CreateService(
@@ -108,7 +108,7 @@ index f902861bd7d441ffd6bd64c346daeddd99b4b2ac..c1a6b1b4bdc040d7eb11ed8e3f772d17
        const GURL& document_url,
        mojo::PendingReceiver<blink::mojom::NotificationService> receiver);
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 6eee013d0401a7507cdcc0773ab0d9418c86b5c4..2afda54851efbb052371ce1e49f29cc56e93dce4 100644
+index a1382e2531876c842cd37899d0260a21a6e4055c..ce8fa7210f98d663954778034e5c1db649f91ebe 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -2160,7 +2160,7 @@ void RenderProcessHostImpl::CreateNotificationService(
@@ -154,10 +154,10 @@ index d36d0c40d61f4e131c4a996d283a6ce2d3657ac3..ee08f52a9f8a02c380e8aac52c598495
      const GURL& origin,
      const GURL& document_url,
 diff --git a/content/test/mock_platform_notification_service.h b/content/test/mock_platform_notification_service.h
-index 1b21862df54c3d3b9ea13dda10990c01036aec87..7bc6af2c912e163dbd2bf6d12db1f5af8366cc37 100644
+index fb20e5bd456a88a7ebd95aa7e1d5a2a527dc8775..6162a2581b4d84e5feb7c4b9eaa440c03fe9b374 100644
 --- a/content/test/mock_platform_notification_service.h
 +++ b/content/test/mock_platform_notification_service.h
-@@ -47,6 +47,7 @@ class MockPlatformNotificationService : public PlatformNotificationService {
+@@ -46,6 +46,7 @@ class MockPlatformNotificationService : public PlatformNotificationService {
  
    // PlatformNotificationService implementation.
    void DisplayNotification(

@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index b6eb4a2af6de714d4a9f68a918871acd9689696b..1b5d6a7b79ebc4d0af0c27afad93de21f50bef8b 100644
+index b1647921ee6ed1c4b3c3afb867587e31a861db70..686ecc4da66f95c5b553757cb61af9700c172ae6 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -5587,6 +5587,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -5712,6 +5712,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,7 +21,7 @@ index b6eb4a2af6de714d4a9f68a918871acd9689696b..1b5d6a7b79ebc4d0af0c27afad93de21
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 576c67543b10719a2bec5d54fd93219512e33f73..58396522fe702895991ddde9034f06c73f0fb265 100644
+index 92ed79fc561b0789ab164b2c28a7860159c60c38..aed19709076c8b3d0df42b4dcb994f8bbe2d6026 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -3650,6 +3650,14 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
@@ -81,10 +81,10 @@ index 338c0091490bd3e3d4517cf815fd3caf253d2164..2361f649d7c9cfb7dd8326ae682f4486
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 802e4f2875769f78365b23edb4edf7ef8a8b6af0..5622d3d9852edee2b2f49f87606f334d0fa2541e 100644
+index ccd0247f99eeef26de3b2f3206fd66fc4f690546..0e19f40fdd18746dee8813bf403a7759f6c0f46d 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -157,6 +157,7 @@ class NetworkService;
+@@ -158,6 +158,7 @@ class NetworkService;
  class TrustedURLLoaderHeaderClient;
  }  // namespace mojom
  struct ResourceRequest;
@@ -92,7 +92,7 @@ index 802e4f2875769f78365b23edb4edf7ef8a8b6af0..5622d3d9852edee2b2f49f87606f334d
  }  // namespace network
  
  namespace sandbox {
-@@ -925,6 +926,8 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -928,6 +929,8 @@ class CONTENT_EXPORT ContentBrowserClient {
        const std::string& frame_name,
        WindowOpenDisposition disposition,
        const blink::mojom::WindowFeatures& features,
@@ -150,7 +150,7 @@ index b1cfa654259d431adfada00a00f9bfc8ae5ab292..484d36de2ac0ef3b1d19bbd0d6c79db8
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index bb60e5d711ab45f89c401f4c053e453a324f6881..fbe1312f13f799b4c1b3dbc663fde81fe64162c8 100644
+index 753c4c9dd69d8fdd691ae9e601eaaebfb3fe4022..ab9ac23ccb1058919dd52e690f35f7225a7a7d19 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
 @@ -27,6 +27,7 @@
@@ -220,10 +220,10 @@ index 888a2a26e67dae0d42353e5e906d26ea30c66cb3..7e48698a4b18d4d805667b93f7996252
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index c02bf531f7f7c82642710c0286a366f241f13797..6a9e101c7b56c9192cddcd7d14c414ab46a406ba 100644
+index ed8efd8f85eda998e241f97019943eb8a75b46c5..8d6c56d2fda68c7fa44af35e8a407f236dd39681 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
-@@ -1991,6 +1991,7 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
+@@ -1987,6 +1987,7 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
  
    WebWindowFeatures window_features =
        GetWindowFeaturesFromString(features, incumbent_window);

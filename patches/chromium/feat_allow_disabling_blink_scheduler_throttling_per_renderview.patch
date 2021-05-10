@@ -48,10 +48,10 @@ index 9f1acca2bdb697b79a01362a9a5d8dd098eca925..c57c03b838a773d41614002afee27520
    // This interface should only be implemented inside content.
    friend class RenderViewHostImpl;
 diff --git a/content/renderer/render_view_impl.h b/content/renderer/render_view_impl.h
-index b855cc7ce85117b3b32fe097b4c209ed5302e041..66456189bb90f2002682308a0ec83dc709d3cc72 100644
+index c08c71c584f0431dbf411fd3e5741b4768e859d2..4543670f4fd86c2e84b6a29472f6bf573c9e4825 100644
 --- a/content/renderer/render_view_impl.h
 +++ b/content/renderer/render_view_impl.h
-@@ -206,6 +206,8 @@ class CONTENT_EXPORT RenderViewImpl : public blink::WebViewClient,
+@@ -200,6 +200,8 @@ class CONTENT_EXPORT RenderViewImpl : public blink::WebViewClient,
    static WindowOpenDisposition NavigationPolicyToDisposition(
        blink::WebNavigationPolicy policy);
  
@@ -59,7 +59,7 @@ index b855cc7ce85117b3b32fe097b4c209ed5302e041..66456189bb90f2002682308a0ec83dc7
 +
    // Misc private functions ----------------------------------------------------
  
- #if defined(OS_ANDROID)
+   // In OOPIF-enabled modes, this tells each RenderFrame with a pending state
 diff --git a/third_party/blink/public/mojom/page/page.mojom b/third_party/blink/public/mojom/page/page.mojom
 index e122d4ffb857023841dabcb6fed352d7586d8344..3c7cd1cb8b204024a0835150302ee8896e01ee45 100644
 --- a/third_party/blink/public/mojom/page/page.mojom
@@ -85,7 +85,7 @@ index 733afd6ead8ff4103c3273401d8c68ac24b51b45..d6b08817ed5446b45d29996178d2fe22
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index 540b321309ff594dc120077e0219d35cc92c9117..90636a53231ce906a57e30596ebe8385802cecfa 100644
+index b05d3cab74f8d1a511280d7f5a46234498559a2f..517847096e5de42cd06bb6d51ee23eedd4944619 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
 @@ -3519,6 +3519,13 @@ PageScheduler* WebViewImpl::Scheduler() const {
@@ -102,7 +102,7 @@ index 540b321309ff594dc120077e0219d35cc92c9117..90636a53231ce906a57e30596ebe8385
  void WebViewImpl::SetVisibilityState(
      mojom::blink::PageVisibilityState visibility_state,
      bool is_initial_state) {
-@@ -3531,7 +3538,8 @@ void WebViewImpl::SetVisibilityState(
+@@ -3530,7 +3537,8 @@ void WebViewImpl::SetVisibilityState(
    }
    GetPage()->SetVisibilityState(visibility_state, is_initial_state);
    GetPage()->GetPageScheduler()->SetPageVisible(

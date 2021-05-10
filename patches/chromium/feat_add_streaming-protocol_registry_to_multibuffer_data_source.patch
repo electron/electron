@@ -13,13 +13,13 @@ other protocols to register their streaming behavior. MultibufferDataSource::Ass
 then refers to the list so that it can correctly determine the data source's settings.
 
 diff --git a/media/blink/multibuffer_data_source.cc b/media/blink/multibuffer_data_source.cc
-index 4d03cef33f1399634316893d83da7f487a384cfa..92626fd17c811465c57864ff3428d1fa359591bc 100644
+index c157471b08e12edf2ff5385e78cd4cbe2e8129a9..5ef9dbd289f50359f611290d6a42b2f2aac77977 100644
 --- a/media/blink/multibuffer_data_source.cc
 +++ b/media/blink/multibuffer_data_source.cc
-@@ -11,9 +11,11 @@
+@@ -10,9 +10,11 @@
+ #include "base/callback_helpers.h"
  #include "base/location.h"
  #include "base/macros.h"
- #include "base/memory/checked_ptr.h"
 +#include "base/no_destructor.h"
  #include "base/numerics/ranges.h"
  #include "base/numerics/safe_conversions.h"
@@ -28,7 +28,7 @@ index 4d03cef33f1399634316893d83da7f487a384cfa..92626fd17c811465c57864ff3428d1fa
  #include "media/base/media_log.h"
  #include "media/blink/buffered_data_source_host_impl.h"
  #include "media/blink/multibuffer_reader.h"
-@@ -61,10 +63,22 @@ const int kUpdateBufferSizeFrequency = 32;
+@@ -60,10 +62,22 @@ const int kUpdateBufferSizeFrequency = 32;
  // How long to we delay a seek after a read?
  constexpr base::TimeDelta kSeekDelay = base::TimeDelta::FromMilliseconds(20);
  
@@ -51,7 +51,7 @@ index 4d03cef33f1399634316893d83da7f487a384cfa..92626fd17c811465c57864ff3428d1fa
  class MultibufferDataSource::ReadOperation {
   public:
    ReadOperation(int64_t position,
-@@ -154,7 +168,14 @@ bool MultibufferDataSource::media_has_played() const {
+@@ -153,7 +167,14 @@ bool MultibufferDataSource::media_has_played() const {
  
  bool MultibufferDataSource::AssumeFullyBuffered() const {
    DCHECK(url_data_);

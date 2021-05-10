@@ -35,10 +35,10 @@ index 7cbe5b3ebac99849dc784e1dc587b3a091abbf49..6de33ea6f7e452cdfbf3271827a94382
    return profile_->GetDefaultStoragePartition()->GetNetworkContext();
  }
 diff --git a/chrome/browser/predictors/preconnect_manager.h b/chrome/browser/predictors/preconnect_manager.h
-index b86681eccc470c8e0ada095f0021db699171ce5a..c5dadf5bbedd95f09d06e5e33cf55ee2261dd37c 100644
+index dbdde3dfd9bb160486a1d06f16ef86548798b61c..a4373ebdbe8bb833c3b782e3d3cb27a5116f976d 100644
 --- a/chrome/browser/predictors/preconnect_manager.h
 +++ b/chrome/browser/predictors/preconnect_manager.h
-@@ -23,6 +23,10 @@
+@@ -22,6 +22,10 @@
  
  class Profile;
  
@@ -49,7 +49,7 @@ index b86681eccc470c8e0ada095f0021db699171ce5a..c5dadf5bbedd95f09d06e5e33cf55ee2
  namespace network {
  namespace mojom {
  class NetworkContext;
-@@ -146,7 +150,7 @@ class PreconnectManager {
+@@ -145,7 +149,7 @@ class PreconnectManager {
          bool success) {}
    };
  
@@ -58,7 +58,7 @@ index b86681eccc470c8e0ada095f0021db699171ce5a..c5dadf5bbedd95f09d06e5e33cf55ee2
    virtual ~PreconnectManager();
  
    // Starts preconnect and preresolve jobs keyed by |url|.
-@@ -211,7 +215,7 @@ class PreconnectManager {
+@@ -210,7 +214,7 @@ class PreconnectManager {
    network::mojom::NetworkContext* GetNetworkContext() const;
  
    base::WeakPtr<Delegate> delegate_;

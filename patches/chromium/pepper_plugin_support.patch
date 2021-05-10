@@ -107,10 +107,10 @@ index e90525fdee7b7f1e299e56899ddca51af93d7aa6..4afb696f57d83935dabd0abc97bfe800
  int32_t PepperIsolatedFileSystemMessageFilter::OpenPluginPrivateFileSystem(
      ppapi::host::HostMessageContext* context) {
 diff --git a/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.h b/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.h
-index 1c6fdec83e8fb68410d2fa6a9c14d45388201a63..3cbc881511766d6b733b5720ea843d1b9189838b 100644
+index 56a23e8f41bb418d414f11af5797b30571d4cc2b..6f9f577f16de80dd2ab194b557bbd9ec89599280 100644
 --- a/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.h
 +++ b/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.h
-@@ -21,7 +21,9 @@
+@@ -20,7 +20,9 @@
  #include "storage/browser/file_system/isolated_context.h"
  #include "url/gurl.h"
  
@@ -120,7 +120,7 @@ index 1c6fdec83e8fb68410d2fa6a9c14d45388201a63..3cbc881511766d6b733b5720ea843d1b
  
  namespace content {
  class BrowserPpapiHost;
-@@ -55,6 +57,7 @@ class PepperIsolatedFileSystemMessageFilter
+@@ -54,6 +56,7 @@ class PepperIsolatedFileSystemMessageFilter
  
    ~PepperIsolatedFileSystemMessageFilter() override;
  
@@ -128,7 +128,7 @@ index 1c6fdec83e8fb68410d2fa6a9c14d45388201a63..3cbc881511766d6b733b5720ea843d1b
    Profile* GetProfile();
  
    // Returns filesystem id of isolated filesystem if valid, or empty string
-@@ -62,10 +65,13 @@ class PepperIsolatedFileSystemMessageFilter
+@@ -61,10 +64,13 @@ class PepperIsolatedFileSystemMessageFilter
    // allows access on that thread.
    storage::IsolatedContext::ScopedFSHandle CreateCrxFileSystem(
        Profile* profile);
@@ -142,9 +142,9 @@ index 1c6fdec83e8fb68410d2fa6a9c14d45388201a63..3cbc881511766d6b733b5720ea843d1b
    int32_t OpenPluginPrivateFileSystem(ppapi::host::HostMessageContext* context);
  
    const int render_process_id_;
-@@ -76,8 +82,10 @@ class PepperIsolatedFileSystemMessageFilter
+@@ -75,8 +81,10 @@ class PepperIsolatedFileSystemMessageFilter
    // Not owned by this object.
-   CheckedPtr<ppapi::host::PpapiHost> ppapi_host_;
+   ppapi::host::PpapiHost* ppapi_host_;
  
 +#if 0
    // Set of origins that can use CrxFs private APIs from NaCl.
