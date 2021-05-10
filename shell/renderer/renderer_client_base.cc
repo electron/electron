@@ -92,6 +92,9 @@ std::vector<std::string> ParseSchemesCLISwitch(base::CommandLine* command_line,
                            base::SPLIT_WANT_NONEMPTY);
 }
 
+// static
+RendererClientBase* g_renderer_client_base = nullptr;
+
 }  // namespace
 
 RendererClientBase::RendererClientBase() {
@@ -123,9 +126,13 @@ RendererClientBase::RendererClientBase() {
   DCHECK(command_line->HasSwitch(::switches::kRendererClientId));
   renderer_client_id_ =
       command_line->GetSwitchValueASCII(::switches::kRendererClientId);
+
+  g_renderer_client_base = this;
 }
 
-RendererClientBase::~RendererClientBase() = default;
+RendererClientBase::~RendererClientBase() {
+  g_renderer_client_base = nullptr;
+}
 
 void RendererClientBase::DidCreateScriptContext(
     v8::Handle<v8::Context> context,
@@ -135,6 +142,12 @@ void RendererClientBase::DidCreateScriptContext(
       "%s-%" PRId64, renderer_client_id_.c_str(), ++next_context_id_);
   gin_helper::Dictionary global(context->GetIsolate(), context->Global());
   global.SetHidden("contextId", context_id);
+}
+
+// static
+RendererClientBase* RendererClientBase::Get() {
+  DCHECK(g_renderer_client_base);
+  return g_renderer_client_base;
 }
 
 void RendererClientBase::BindProcess(v8::Isolate* isolate,

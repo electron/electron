@@ -60,6 +60,8 @@ class RendererClientBase : public content::ContentRendererClient
   RendererClientBase();
   ~RendererClientBase() override;
 
+  static RendererClientBase* Get();
+
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   // service_manager::LocalInterfaceProvider implementation.
   void GetInterface(const std::string& name,

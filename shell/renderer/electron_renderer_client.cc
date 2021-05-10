@@ -35,25 +35,13 @@ bool IsDevToolsExtension(content::RenderFrame* render_frame) {
 
 }  // namespace
 
-// static
-ElectronRendererClient* ElectronRendererClient::self_ = nullptr;
-
 ElectronRendererClient::ElectronRendererClient()
     : node_bindings_(
           NodeBindings::Create(NodeBindings::BrowserEnvironment::kRenderer)),
-      electron_bindings_(new ElectronBindings(node_bindings_->uv_loop())) {
-  DCHECK(!self_) << "Cannot have two ElectronRendererClient";
-  self_ = this;
-}
+      electron_bindings_(new ElectronBindings(node_bindings_->uv_loop())) {}
 
 ElectronRendererClient::~ElectronRendererClient() {
   asar::ClearArchives();
-}
-
-// static
-ElectronRendererClient* ElectronRendererClient::Get() {
-  DCHECK(self_);
-  return self_;
 }
 
 void ElectronRendererClient::RenderFrameCreated(
