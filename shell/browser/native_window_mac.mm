@@ -1303,6 +1303,45 @@ void NativeWindowMac::SetAutoHideCursor(bool auto_hide) {
   [window_ setDisableAutoHideCursor:!auto_hide];
 }
 
+void NativeWindowMac::UpdateVibrancyRadii(bool fullscreen) {
+  NSView* vibrant_view = [window_ vibrantView];
+  NSVisualEffectView* effect_view = (NSVisualEffectView*)vibrant_view;
+
+  if (effect_view != nil && !vibrancy_type_.empty()) {
+    const bool no_rounded_corner =
+        [window_ styleMask] & NSWindowStyleMaskFullSizeContentView;
+    if (!has_frame() && !is_modal() && !no_rounded_corner) {
+      CGFloat radius;
+      if (fullscreen) {
+        radius = 0.0f;
+      } else if (@available(macOS 11.0, *)) {
+        radius = 9.0f;
+      } else {
+        // Smaller corner radius on versions prior to Big Sur.
+        radius = 5.0f;
+      }
+
+      CGFloat dimension = 2 * radius + 1;
+      NSSize size = NSMakeSize(dimension, dimension);
+      NSImage* maskImage = [NSImage imageWithSize:size
+                                          flipped:NO
+                                   drawingHandler:^BOOL(NSRect rect) {
+                                     NSBezierPath* bezierPath = [NSBezierPath
+                                         bezierPathWithRoundedRect:rect
+                                                           xRadius:radius
+                                                           yRadius:radius];
+                                     [[NSColor blackColor] set];
+                                     [bezierPath fill];
+                                     return YES;
+                                   }];
+
+      [maskImage setCapInsets:NSEdgeInsetsMake(radius, radius, radius, radius)];
+      [maskImage setResizingMode:NSImageResizingModeStretch];
+      [effect_view setMaskImage:maskImage];
+    }
+  }
+}
+
 void NativeWindowMac::SetVibrancy(const std::string& type) {
   NSView* vibrant_view = [window_ vibrantView];
 
@@ -1320,6 +1359,7 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
     return;
   }
 
+  vibrancy_type_ = type;
   background_color_before_vibrancy_.reset([[window_ backgroundColor] retain]);
   transparency_before_vibrancy_ = [window_ titlebarAppearsTransparent];
 
@@ -1345,39 +1385,11 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
       [effect_view setState:NSVisualEffectStateFollowsWindowActiveState];
     }
 
-    // Make Vibrant view have rounded corners, so the frameless window can keep
-    // its rounded corners.
-    const bool no_rounded_corner =
-        [window_ styleMask] & NSWindowStyleMaskFullSizeContentView;
-    if (!has_frame() && !is_modal() && !no_rounded_corner) {
-      CGFloat radius;
-      if (@available(macOS 11.0, *)) {
-        radius = 9.0f;
-      } else {
-        radius = 5.0f;  // smaller corner radius on older versions
-      }
-      CGFloat dimension = 2 * radius + 1;
-      NSSize size = NSMakeSize(dimension, dimension);
-      NSImage* maskImage = [NSImage imageWithSize:size
-                                          flipped:NO
-                                   drawingHandler:^BOOL(NSRect rect) {
-                                     NSBezierPath* bezierPath = [NSBezierPath
-                                         bezierPathWithRoundedRect:rect
-                                                           xRadius:radius
-                                                           yRadius:radius];
-                                     [[NSColor blackColor] set];
-                                     [bezierPath fill];
-                                     return YES;
-                                   }];
-      [maskImage setCapInsets:NSEdgeInsetsMake(radius, radius, radius, radius)];
-      [maskImage setResizingMode:NSImageResizingModeStretch];
-
-      [effect_view setMaskImage:maskImage];
-    }
-
     [[window_ contentView] addSubview:effect_view
                            positioned:NSWindowBelow
                            relativeTo:nil];
+
+    UpdateVibrancyRadii(IsFullscreen());
   }
 
   std::string dep_warn = " has been deprecated and removed as of macOS 10.15.";
@@ -1385,7 +1397,6 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
       node::Environment::GetCurrent(JavascriptEnvironment::GetIsolate());
 
   NSVisualEffectMaterial vibrancyType;
-
   if (type == "appearance-based") {
     EmitWarning(env, "NSVisualEffectMaterialAppearanceBased" + dep_warn,
                 "electron");
@@ -1623,6 +1634,8 @@ void NativeWindowMac::NotifyWindowWillEnterFullScreen() {
     [buttons_view_ removeFromSuperview];
     InternalSetStandardButtonsVisibility(true);
   }
+
+  UpdateVibrancyRadii(true);
 }
 
 void NativeWindowMac::NotifyWindowWillLeaveFullScreen() {
@@ -1634,6 +1647,7 @@ void NativeWindowMac::NotifyWindowWillLeaveFullScreen() {
   }
 
   RedrawTrafficLights();
+  UpdateVibrancyRadii(false);
 }
 
 void NativeWindowMac::Cleanup() {
