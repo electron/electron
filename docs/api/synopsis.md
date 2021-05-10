@@ -43,8 +43,6 @@ extra ability to use node modules if `nodeIntegration` is enabled:
 </html>
 ```
 
-To run your app, read [Run your app](../tutorial/quick-start.md#run-your-application).
-
 ## Destructuring assignment
 
 As of 0.37, you can use
