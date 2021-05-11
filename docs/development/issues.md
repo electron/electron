@@ -51,7 +51,7 @@ have differing opinions, including whether the behavior is a bug or feature.
 This discussion is part of the process and should be kept focused, helpful,
 and professional.
 
-Terse responses that provide neither additional context nor supporting detail
+Brief responses that provide neither additional context nor supporting detail
 are not helpful or professional. To many, such responses are annoying and
 unfriendly.
 
