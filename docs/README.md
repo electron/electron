@@ -27,10 +27,6 @@ an issue:
 
 ### Learning the basics
 
-* [Electron's Process Model](tutorial/quick-start.md#application-architecture)
-  * [Main and Renderer Processes](tutorial/quick-start.md#main-and-renderer-processes)
-  * [Electron API](tutorial/quick-start.md#electron-api)
-  * [Node.js API](tutorial/quick-start.md#nodejs-api)
 * Adding Features to Your App
   * [Notifications](tutorial/notifications.md)
   * [Recent Documents](tutorial/recent-documents.md)
