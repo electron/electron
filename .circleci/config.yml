@@ -1877,18 +1877,6 @@ jobs:
           attach: false
           checkout: true
 
-  linux-x64-publish-skip-checkout:
-    executor: linux-docker
-    environment:
-      <<: *env-linux-2xlarge-release
-      <<: *env-release-build
-      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
-      <<: *env-ninja-status
-    steps:
-      - electron-publish:
-          attach: true
-          checkout: false
-
   linux-ia32-testing:
     executor: linux-docker
     environment:
@@ -1930,20 +1918,6 @@ jobs:
       - electron-publish:
           attach: false
           checkout: true
-
-  linux-ia32-publish-skip-checkout:
-    executor: linux-docker
-    environment:
-      <<: *env-linux-2xlarge-release
-      <<: *env-ia32
-      <<: *env-release-build
-      <<: *env-32bit-release
-      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
-      <<: *env-ninja-status
-    steps:
-      - electron-publish:
-          attach: true
-          checkout: false
 
   linux-arm-testing:
     executor: linux-docker
@@ -1989,20 +1963,6 @@ jobs:
       - electron-publish:
           attach: false
           checkout: true
-
-  linux-arm-publish-skip-checkout:
-    executor: linux-docker
-    environment:
-      <<: *env-linux-2xlarge-release
-      <<: *env-arm
-      <<: *env-release-build
-      <<: *env-32bit-release
-      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
-      <<: *env-ninja-status
-    steps:
-      - electron-publish:
-          attach: true
-          checkout: false
 
   linux-arm64-testing:
     executor: linux-docker
@@ -2057,19 +2017,6 @@ jobs:
       - electron-publish:
           attach: false
           checkout: true
-
-  linux-arm64-publish-skip-checkout:
-    executor: linux-docker
-    environment:
-      <<: *env-linux-2xlarge-release
-      <<: *env-arm64
-      <<: *env-release-build
-      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
-      <<: *env-ninja-status
-    steps:
-      - electron-publish:
-          attach: true
-          checkout: false
 
   osx-testing-x64:
     executor: macos
@@ -2497,22 +2444,13 @@ workflows:
   publish-linux:
     when: << pipeline.parameters.run-linux-publish >>
     jobs:
-    - linux-checkout
-    - linux-x64-publish-skip-checkout:
-        requires:
-          - linux-checkout
+    - linux-x64-publish:
         context: release-env
-    - linux-ia32-publish-skip-checkout:
-        requires:
-          - linux-checkout
+    - linux-ia32-publish:
         context: release-env
-    - linux-arm-publish-skip-checkout:
-        requires:
-          - linux-checkout
+    - linux-arm-publish:
         context: release-env
-    - linux-arm64-publish-skip-checkout:
-        requires:
-          - linux-checkout
+    - linux-arm64-publish:
         context: release-env
 
   publish-x64-linux:
