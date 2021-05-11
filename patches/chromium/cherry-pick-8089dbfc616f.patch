@@ -1,7 +1,10 @@
-From 8089dbfc616f4f9e71cf9f63c28d8cfbcc228ab8 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Francois Doray <fdoray@chromium.org>
 Date: Mon, 26 Apr 2021 19:48:20 +0000
-Subject: [PATCH] [threadpool] Cleanup the "NoDetachBelowInitialCapacity" feature.
+Subject: Cleanup the "NoDetachBelowInitialCapacity" feature.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
 Motivation: The feature is not used since 2019.
 
@@ -11,15 +14,14 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2845241
 Reviewed-by: Etienne Pierre-Doray <etiennep@chromium.org>
 Commit-Queue: François Doray <fdoray@chromium.org>
 Cr-Commit-Position: refs/heads/master@{#876279}
----
 
 diff --git a/base/task/task_features.cc b/base/task/task_features.cc
-index c7d2eb1..3bccd84 100644
+index b7452cf330b71ce76fd63281fafc0618f652e8c6..4e498738ffeea1513aa475c69f29844e8d327d22 100644
 --- a/base/task/task_features.cc
 +++ b/base/task/task_features.cc
-@@ -8,9 +8,6 @@
- 
- namespace base {
+@@ -11,9 +11,6 @@ namespace base {
+ const Feature kAllTasksUserBlocking{"AllTasksUserBlocking",
+                                     FEATURE_DISABLED_BY_DEFAULT};
  
 -const Feature kNoDetachBelowInitialCapacity = {
 -    "NoDetachBelowInitialCapacity", base::FEATURE_DISABLED_BY_DEFAULT};
@@ -28,12 +30,12 @@ index c7d2eb1..3bccd84 100644
                                         base::FEATURE_DISABLED_BY_DEFAULT};
  
 diff --git a/base/task/task_features.h b/base/task/task_features.h
-index 4ffe773..6d039db 100644
+index 4e361b8e6ba92e4db0614e7ae0daf60b9942bfb1..c80499566e18819172a38d7c7eef3a0080eac3da 100644
 --- a/base/task/task_features.h
 +++ b/base/task/task_features.h
-@@ -13,10 +13,6 @@
+@@ -15,10 +15,6 @@ struct Feature;
  
- struct Feature;
+ extern const BASE_EXPORT Feature kAllTasksUserBlocking;
  
 -// Under this feature, unused threads in ThreadGroup are only detached
 -// if the total number of threads in the pool is above the initial capacity.
@@ -43,10 +45,10 @@ index 4ffe773..6d039db 100644
  // instead of waiting for a threshold in the foreground thread group.
  extern const BASE_EXPORT Feature kMayBlockWithoutDelay;
 diff --git a/base/task/thread_pool/thread_group_impl.cc b/base/task/thread_pool/thread_group_impl.cc
-index 0aa268d..4f5b6f3 100644
+index 0aa268df2eff3de9f018ce6643f8690131395f4d..4f5b6f39231ab9c82dcb69b400360ff35b90dd6b 100644
 --- a/base/task/thread_pool/thread_group_impl.cc
 +++ b/base/task/thread_pool/thread_group_impl.cc
-@@ -713,8 +713,6 @@
+@@ -713,8 +713,6 @@ bool ThreadGroupImpl::WorkerThreadDelegateImpl::CanCleanupLockRequired(
    return !last_used_time.is_null() &&
           subtle::TimeTicksNowIgnoringOverride() - last_used_time >=
               outer_->after_start().suggested_reclaim_time &&
