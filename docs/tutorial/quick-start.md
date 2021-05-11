@@ -275,8 +275,8 @@ window.addEventListener('DOMContentLoaded', () => {
     if (element) element.innerText = text
   }
 
-  for (const type of ['chrome', 'node', 'electron']) {
-    replaceText(`${type}-version`, process.versions[type])
+  for (const dependency of ['chrome', 'node', 'electron']) {
+    replaceText(`${dependency}-version`, process.versions[dependency])
   }
 })
 ```
@@ -317,18 +317,22 @@ There are two Node.js concepts that are used here:
 ### Bonus: Add functionality to your web contents
 
 At this point, you might be wondering how to add more functionality to your application.
-For anyt interactions with your web contents, you want to add scripting to your
-renderer process. Because the renderer runs in a browser environment, you can use the
-same web APIs and tooling you use on the web. Moreover, you only need to target the
-specific Chromium version that Electron includes — no polyfills required.
 
-Just like in a web environment, you can add a `<script>` tag at the end of your
-`index.html` file's `<body>` to include some `renderer.js` script into the renderer
-process:
+For any interactions with your web contents, you want to add scripts to your
+renderer process. Because the renderer runs in a normal web environment, you can add a
+`<script>` tag right before your `index.html` file's closing `</body>` tag to include
+any arbitrary scripts you want:
 
 ```html
 <script src="./renderer.js"></script>
 ```
+
+The code contained in `renderer.js` can then use the same JavaScript APIs and tooling
+you use for typical front-end development, such as using [`webpack`][webpack] to bundle
+and minify your code or using [React][react] to manage your user interfaces.
+
+[webpack]: https://webpack.js.org
+[react]: https://reactjs.org
 
 ### Recap
 
@@ -399,8 +403,8 @@ window.addEventListener('DOMContentLoaded', () => {
     if (element) element.innerText = text
   }
 
-  for (const type of ['chrome', 'node', 'electron']) {
-    replaceText(`${type}-version`, process.versions[type])
+  for (const dependency of ['chrome', 'node', 'electron']) {
+    replaceText(`${dependency}-version`, process.versions[dependency])
   }
 })
 ```
@@ -439,7 +443,7 @@ To summarize all the steps we've done:
   and runs in a Node.js environment. In this script, we used Electron's `app` and
   `BrowserWindow` modules to create a browser window that displays web content
   in a separate process (the renderer).
-* In order to access certain Node.js functionality in the renderer, we used attached
+* In order to access certain Node.js functionality in the renderer, we attached
   a preload script to our `BrowserWindow` constructor.
 
 ## Package and distribute your application
@@ -493,100 +497,3 @@ Forge's scaffolding:
     ├── ...
     └── out/my-electron-app-darwin-x64/my-electron-app.app/Contents/MacOS/my-electron-app
     ```
-
-## Learning the basics
-
-This section guides you through the basics of how Electron works under the hood. It aims at strengthening knowledge about Electron and the application created earlier in the Quickstart section.
-
-### Application architecture
-
-Electron consists of three main pillars:
-
-* **Chromium** for displaying web content.
-* **Node.js** for working with the local filesystem and the operating system.
-* **Custom APIs** for working with often-needed OS native functions.
-
-Developing an application with Electron is like building a Node.js app with a web interface or building web pages with seamless Node.js integration.
-
-#### Main and Renderer Processes
-
-As it was mentioned before, Electron has two types of processes: Main and Renderer.
-
-* The Main process **creates** web pages by creating `BrowserWindow` instances. Each `BrowserWindow` instance runs the web page in its Renderer process. When a `BrowserWindow` instance is destroyed, the corresponding Renderer process gets terminated as well.
-* The Main process **manages** all web pages and their corresponding Renderer processes.
-
-----
-
-* The Renderer process **manages** only the corresponding web page. A crash in one Renderer process does not affect other Renderer processes.
-* The Renderer process **communicates** with the Main process via IPC to perform GUI operations in a web page. Calling native GUI-related APIs from the Renderer process directly is restricted due to security concerns and potential resource leakage.
-
-----
-
-The communication between processes is possible via Inter-Process Communication (IPC) modules: [`ipcMain`](../api/ipc-main.md) and [`ipcRenderer`](../api/ipc-renderer.md).
-
-#### APIs
-
-##### Electron API
-
-Electron APIs are assigned based on the process type, meaning that some modules can be used from either the Main or Renderer process, and some from both. Electron's API documentation indicates which process each module can be used from.
-
-For example, to access the Electron API in both processes, require its included module:
-
-```js
-const electron = require('electron')
-```
-
-To create a window, call the `BrowserWindow` class, which is only available in the Main process:
-
-```js
-const { BrowserWindow } = require('electron')
-const win = new BrowserWindow()
-```
-
-To call the Main process from the Renderer, use the IPC module:
-
-```js
-// In the Main process
-const { ipcMain } = require('electron')
-
-ipcMain.handle('perform-action', (event, ...args) => {
-  // ... do actions on behalf of the Renderer
-})
-```
-
-```js
-// In the Renderer process
-const { ipcRenderer } = require('electron')
-
-ipcRenderer.invoke('perform-action', ...args)
-```
-
-> NOTE: Because Renderer processes may run untrusted code (especially from third parties), it is important to carefully validate the requests that come to the Main process.
-
-##### Node.js API
-
-> NOTE: To access the Node.js API from the Renderer process, you need to set the `nodeIntegration` preference to `true` and the `contextIsolation` preference to `false`.  Please note that access to the Node.js API in any renderer that loads remote content is not recommended for [security reasons](../tutorial/security.md#2-do-not-enable-nodejs-integration-for-remote-content).
-
-Electron exposes full access to Node.js API and its modules both in the Main and the Renderer processes. For example, you can read all the files from the root directory:
-
-```js
-const fs = require('fs')
-
-const root = fs.readdirSync('/')
-
-console.log(root)
-```
-
-To use a Node.js module, you first need to install it as a dependency:
-
-```sh
-npm install --save aws-sdk
-```
-
-Then, in your Electron application, require the module:
-
-```js
-const S3 = require('aws-sdk/clients/s3')
-```
-
-[quick-start]: https://github.com/electron/electron-quick-start
