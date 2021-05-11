@@ -73,7 +73,7 @@ index e122d4ffb857023841dabcb6fed352d7586d8344..3c7cd1cb8b204024a0835150302ee889
 +  SetSchedulerThrottling(bool allowed);
  };
 diff --git a/third_party/blink/public/web/web_view.h b/third_party/blink/public/web/web_view.h
-index 733afd6ead8ff4103c3273401d8c68ac24b51b45..d6b08817ed5446b45d29996178d2fe22d18199a6 100644
+index 5c90d306a8e82dcee667e65c0908fc0fe034e6bb..30a8beae286a8606ebeab523782d98f43b42ba00 100644
 --- a/third_party/blink/public/web/web_view.h
 +++ b/third_party/blink/public/web/web_view.h
 @@ -348,6 +348,7 @@ class WebView {
@@ -85,10 +85,10 @@ index 733afd6ead8ff4103c3273401d8c68ac24b51b45..d6b08817ed5446b45d29996178d2fe22
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index b05d3cab74f8d1a511280d7f5a46234498559a2f..517847096e5de42cd06bb6d51ee23eedd4944619 100644
+index ab802873ba4bf2d5696a6565cad6d0d41b8170dc..e019595d205bd5d3b5d1d23833f653907b55531b 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
-@@ -3519,6 +3519,13 @@ PageScheduler* WebViewImpl::Scheduler() const {
+@@ -3523,6 +3523,13 @@ PageScheduler* WebViewImpl::Scheduler() const {
    return GetPage()->GetPageScheduler();
  }
  
@@ -102,7 +102,7 @@ index b05d3cab74f8d1a511280d7f5a46234498559a2f..517847096e5de42cd06bb6d51ee23eed
  void WebViewImpl::SetVisibilityState(
      mojom::blink::PageVisibilityState visibility_state,
      bool is_initial_state) {
-@@ -3530,7 +3537,8 @@ void WebViewImpl::SetVisibilityState(
+@@ -3534,7 +3541,8 @@ void WebViewImpl::SetVisibilityState(
    }
    GetPage()->SetVisibilityState(visibility_state, is_initial_state);
    GetPage()->GetPageScheduler()->SetPageVisible(
@@ -113,7 +113,7 @@ index b05d3cab74f8d1a511280d7f5a46234498559a2f..517847096e5de42cd06bb6d51ee23eed
  
  mojom::blink::PageVisibilityState WebViewImpl::GetVisibilityState() {
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.h b/third_party/blink/renderer/core/exported/web_view_impl.h
-index 21774b035c3f8ddd6c7fc507a59fab6e15c4cc02..8cd3edf177aed5c564a9154785cc168fa3e7ea25 100644
+index 5149d97889632aad6add9909a066c4d2feba22ee..1672c7e5a5c717df76b0b6af2df9e44cc7614204 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.h
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.h
 @@ -392,6 +392,7 @@ class CORE_EXPORT WebViewImpl final : public WebView,

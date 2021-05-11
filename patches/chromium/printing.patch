@@ -102,7 +102,7 @@ index cc9aaff789c561b8c29f0415b3241ac5a7d09e1c..7efb79ed4e2f35098ff0f885e0f8e414
  }
  
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index f60e42b681bc90e190fd899ff3355d5faad18572..78effea1e1b2efebbf715769a1ab322591e77d09 100644
+index 98d04414b4dced88b83eae84a3f068e4e59a3eaf..28da4427050a540eb9cff5b1fed929187e31bd60 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -28,10 +28,10 @@
@@ -239,7 +239,7 @@ index f60e42b681bc90e190fd899ff3355d5faad18572..78effea1e1b2efebbf715769a1ab3225
    if (!job_settings.FindIntKey(kSettingPrinterType)) {
      UpdatePrintSettingsReply(std::move(callback), nullptr, false);
      return;
-@@ -700,7 +720,7 @@ void PrintViewManagerBase::PrintingFailed(int32_t cookie) {
+@@ -705,7 +725,7 @@ void PrintViewManagerBase::PrintingFailed(int32_t cookie) {
    PrintManager::PrintingFailed(cookie);
  
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
@@ -248,7 +248,7 @@ index f60e42b681bc90e190fd899ff3355d5faad18572..78effea1e1b2efebbf715769a1ab3225
  #endif
  
    ReleasePrinterQuery();
-@@ -712,6 +732,11 @@ void PrintViewManagerBase::PrintingFailed(int32_t cookie) {
+@@ -717,6 +737,11 @@ void PrintViewManagerBase::PrintingFailed(int32_t cookie) {
  }
  
  void PrintViewManagerBase::ShowInvalidPrinterSettingsError() {
@@ -260,7 +260,7 @@ index f60e42b681bc90e190fd899ff3355d5faad18572..78effea1e1b2efebbf715769a1ab3225
    base::ThreadTaskRunnerHandle::Get()->PostTask(
        FROM_HERE, base::BindOnce(&ShowWarningMessageBox,
                                  l10n_util::GetStringUTF16(
-@@ -781,9 +806,13 @@ void PrintViewManagerBase::OnNotifyPrintJobEvent(
+@@ -786,9 +811,13 @@ void PrintViewManagerBase::OnNotifyPrintJobEvent(
            content::NotificationService::NoDetails());
        break;
      }
@@ -276,7 +276,7 @@ index f60e42b681bc90e190fd899ff3355d5faad18572..78effea1e1b2efebbf715769a1ab3225
        NOTREACHED();
        break;
      }
-@@ -892,8 +921,10 @@ bool PrintViewManagerBase::CreateNewPrintJob(
+@@ -897,8 +926,10 @@ bool PrintViewManagerBase::CreateNewPrintJob(
    DCHECK(!quit_inner_loop_);
    DCHECK(query);
  
@@ -289,7 +289,7 @@ index f60e42b681bc90e190fd899ff3355d5faad18572..78effea1e1b2efebbf715769a1ab3225
  
    // We can't print if there is no renderer.
    if (!web_contents()->GetMainFrame()->GetRenderViewHost() ||
-@@ -914,8 +945,6 @@ bool PrintViewManagerBase::CreateNewPrintJob(
+@@ -919,8 +950,6 @@ bool PrintViewManagerBase::CreateNewPrintJob(
                          /*source_id=*/"");
  #endif
  
@@ -298,7 +298,7 @@ index f60e42b681bc90e190fd899ff3355d5faad18572..78effea1e1b2efebbf715769a1ab3225
    printing_succeeded_ = false;
    return true;
  }
-@@ -964,14 +993,22 @@ void PrintViewManagerBase::ReleasePrintJob() {
+@@ -969,14 +998,22 @@ void PrintViewManagerBase::ReleasePrintJob() {
    content::RenderFrameHost* rfh = printing_rfh_;
    printing_rfh_ = nullptr;
  
@@ -323,7 +323,7 @@ index f60e42b681bc90e190fd899ff3355d5faad18572..78effea1e1b2efebbf715769a1ab3225
    // Don't close the worker thread.
    print_job_ = nullptr;
  }
-@@ -1007,7 +1044,7 @@ bool PrintViewManagerBase::RunInnerMessageLoop() {
+@@ -1012,7 +1049,7 @@ bool PrintViewManagerBase::RunInnerMessageLoop() {
  }
  
  bool PrintViewManagerBase::OpportunisticallyCreatePrintJob(int cookie) {

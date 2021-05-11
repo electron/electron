@@ -20,7 +20,7 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index 97b0d75f600ae238e4dbf4770fb2b4c3e4c6eb58..0f51f1fe1eb5b86f0b43935ffc6c9c883dd9863c 100644
+index 8780f67b03764da7821d86fb1f22e59212b01add..04a9e83debe931b5bb32bd3b9e9bbf0ae9e74cef 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
 @@ -1790,6 +1790,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
@@ -241,7 +241,7 @@ index cbb30f8900ed07d5cccbf250f2f1e6fafb66b40e..411fabb7e8c3e2a1aceb9db0fefdc4c6
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index b9cea3ca2608fdc72a814dec969158810a99ea65..31e4b028c7c2c40eb9f2a7c3528d1908fafa97cf 100644
+index 9ca967c31df3a144c40c14a641765a41c48f0f68..90507c84cb87ca889d9971a2c66db8e1cbdd5097 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -210,6 +210,7 @@
@@ -293,10 +293,10 @@ index 628c6bca129cd58a25984ff8300bfb4c33ec7ebf..ff9ce55f2701990b5b6119c18575477b
  }
  
 diff --git a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
-index 2c8e7445e9226f4860a0d36284e0cf770dbaa233..6cabd21b8dd996578d9aa02a553d4e3bca5fde04 100644
+index f5751beeb390b556dde8598b67b5fc9270e6805b..b155ad47f19950602000cecba52b1176ef95a749 100644
 --- a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 +++ b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
-@@ -24,6 +24,7 @@
+@@ -25,6 +25,7 @@
  #include "third_party/blink/renderer/platform/runtime_enabled_features.h"
  #include "ui/base/ui_base_features.h"
  #include "ui/base/ui_base_switches.h"
@@ -304,7 +304,7 @@ index 2c8e7445e9226f4860a0d36284e0cf770dbaa233..6cabd21b8dd996578d9aa02a553d4e3b
  #include "ui/native_theme/native_theme_features.h"
  #include "ui/native_theme/overlay_scrollbar_constants_aura.h"
  
-@@ -177,6 +178,9 @@ cc::LayerTreeSettings GenerateLayerTreeSettings(
+@@ -178,6 +179,9 @@ cc::LayerTreeSettings GenerateLayerTreeSettings(
    settings.main_frame_before_activation_enabled =
        cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
  
