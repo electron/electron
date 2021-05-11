@@ -64,7 +64,6 @@
     "shx": "^0.3.2",
     "standard-markdown": "^6.0.0",
     "stream-json": "^1.7.1",
-    "sumchecker": "^2.0.2",
     "tap-xunit": "^2.4.1",
     "temp": "^0.8.3",
     "timers-browserify": "1.4.2",
