@@ -7,8 +7,7 @@ function createWindow () {
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
-      nodeIntegrationInSubFrames: true,
-      preload: path.resolve(__dirname, 'preload.js')
+      nodeIntegrationInSubFrames: true
     }
   });
 
@@ -43,6 +42,10 @@ server.on('error', (err) => {
   throw err;
 });
 
-server.listen('/tmp/echo.sock', () => {
+const p = process.platform === 'win32'
+  ? path.join('\\\\?\\pipe', process.cwd(), 'myctl')
+  : '/tmp/echo.sock';
+
+server.listen(p, () => {
   console.log('server bound');
 });
