@@ -2,11 +2,16 @@
   <body>
     <iframe id="mainframe"></iframe>
     <script>
-      const net = require('net')
+      const net = require('net');
+      const path = require('path');
 
       document.getElementById("mainframe").src="./page2.html";
 
-      const client = net.createConnection({ path: '/tmp/echo.sock' }, () => {
+      const p = process.platform === 'win32'
+              ? path.join('\\\\?\\pipe', process.cwd(), 'myctl')
+              : '/tmp/echo.sock';
+
+      const client = net.createConnection({ path: p }, () => {
         console.log('connected to server');
         client.write('world!\r\n');
       });
