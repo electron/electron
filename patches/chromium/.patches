@@ -114,3 +114,6 @@ cherry-pick-2e7c9b33453b.patch
 move_networkstateobserver_from_document_to_window.patch
 cherry-pick-0894af410c4e.patch
 cherry-pick-91dd4f79ab5b.patch
+load_v8_snapshot_in_browser_process.patch
+fix_patch_out_permissions_checks_in_exclusive_access.patch
+fix_aspect_ratio_with_max_size.patch
