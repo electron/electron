@@ -135,8 +135,7 @@ async function pushRelease (branch) {
 
 async function runReleaseBuilds (branch) {
   await ciReleaseBuild(branch, {
-    ghRelease: true,
-    automaticRelease: args.automaticRelease
+    ghRelease: true
   });
 }
 
