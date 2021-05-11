@@ -84,7 +84,7 @@ namespace internal {
 void* FromV8Impl(v8::Isolate* isolate, v8::Local<v8::Value> val) {
   if (!val->IsObject())
     return nullptr;
-  v8::Local<v8::Object> obj = v8::Local<v8::Object>::Cast(val);
+  v8::Local<v8::Object> obj = val.As<v8::Object>();
   if (obj->InternalFieldCount() != 1)
     return nullptr;
   return obj->GetAlignedPointerFromInternalField(0);

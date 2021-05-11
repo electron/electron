@@ -282,7 +282,7 @@ v8::Local<v8::Value> V8ValueConverter::ToArrayBuffer(
   }
 
   v8::Local<v8::Value> args[] = {array_buffer};
-  auto func = v8::Local<v8::Function>::Cast(from_value);
+  auto func = from_value.As<v8::Function>();
   auto result = func->Call(context, v8::Null(isolate), 1, args);
   if (!result.IsEmpty()) {
     return result.ToLocalChecked();

@@ -86,7 +86,7 @@ struct Converter<v8::Local<v8::Array>> {
                      v8::Local<v8::Array>* out) {
     if (!val->IsArray())
       return false;
-    *out = v8::Local<v8::Array>::Cast(val);
+    *out = val.As<v8::Array>();
     return true;
   }
 };
@@ -102,7 +102,7 @@ struct Converter<v8::Local<v8::String>> {
                      v8::Local<v8::String>* out) {
     if (!val->IsString())
       return false;
-    *out = v8::Local<v8::String>::Cast(val);
+    *out = val.As<v8::String>();
     return true;
   }
 };
@@ -128,7 +128,7 @@ struct Converter<std::set<T>> {
 
     auto context = isolate->GetCurrentContext();
     std::set<T> result;
-    v8::Local<v8::Array> array(v8::Local<v8::Array>::Cast(val));
+    v8::Local<v8::Array> array = val.As<v8::Array>();
     uint32_t length = array->Length();
     for (uint32_t i = 0; i < length; ++i) {
       T item;
