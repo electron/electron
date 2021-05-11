@@ -160,6 +160,8 @@ class NativeWindowMac : public NativeWindow,
   // Use a custom content view instead of Chromium's BridgedContentView.
   void OverrideNSWindowContentView();
 
+  void UpdateVibrancyRadii(bool fullscreen);
+
   // Set the attribute of NSWindow while work around a bug of zoom button.
   void SetStyleMask(bool on, NSUInteger flag);
   void SetCollectionBehavior(bool on, NSUInteger flag);
@@ -270,6 +272,7 @@ class NativeWindowMac : public NativeWindow,
 
   base::scoped_nsobject<NSColor> background_color_before_vibrancy_;
   bool transparency_before_vibrancy_ = false;
+  std::string vibrancy_type_;
 
   // The presentation options before entering simple fullscreen mode.
   NSApplicationPresentationOptions simple_fullscreen_options_;
