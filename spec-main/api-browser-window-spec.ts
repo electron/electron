@@ -953,6 +953,17 @@ describe('BrowserWindow module', () => {
         await resize;
         expectBoundsEqual(w.getSize(), size);
       });
+
+      it('doesn\'t change bounds when maximum size is set', () => {
+        w.setMenu(null);
+        w.setMaximumSize(400, 400);
+        // Without https://github.com/electron/electron/pull/29101
+        // following call would shrink the window to 384x361.
+        // There would be also DCHECK in resize_utils.cc on
+        // debug build.
+        w.setAspectRatio(1.0);
+        expectBoundsEqual(w.getSize(), [400, 400]);
+      });
     });
 
     describe('BrowserWindow.setPosition(x, y)', () => {
