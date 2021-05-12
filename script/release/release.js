@@ -409,7 +409,7 @@ async function getShaSumMappingFromUrl (shaSumFileUrl, fileNamePrefix) {
   const response = await got(shaSumFileUrl);
   const raw = response.body;
   return raw.split('\n').map(line => line.trim()).filter(Boolean).reduce((map, line) => {
-    const [sha, file] = line.split(' ');
+    const [sha, file] = line.replace('  ', ' ').split(' ');
     map[file.slice(fileNamePrefix.length)] = sha;
     return map;
   }, {});
