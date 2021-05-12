@@ -102,9 +102,8 @@ namespace api {
 
 namespace {
 
-content::RenderFrame* GetRenderFrame(v8::Local<v8::Value> value) {
-  v8::Local<v8::Context> context =
-      v8::Local<v8::Object>::Cast(value)->CreationContext();
+content::RenderFrame* GetRenderFrame(v8::Local<v8::Object> value) {
+  v8::Local<v8::Context> context = value->CreationContext();
   if (context.IsEmpty())
     return nullptr;
   blink::WebLocalFrame* frame = blink::WebLocalFrame::FrameForContext(context);
@@ -559,7 +558,7 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
         nullptr);
   }
 
-  static int GetWebFrameId(v8::Local<v8::Value> content_window) {
+  static int GetWebFrameId(v8::Local<v8::Object> content_window) {
     // Get the WebLocalFrame before (possibly) executing any user-space JS while
     // getting the |params|. We track the status of the RenderFrame via an
     // observer in case it is deleted during user code execution.
