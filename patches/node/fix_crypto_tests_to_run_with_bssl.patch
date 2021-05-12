@@ -361,7 +361,7 @@ index ce4e2922de806276586796e2b3abdb885fc99840..4a92a134291964003fe50a3a9fec9d3e
  }
  
 diff --git a/test/parallel/test-crypto-dh.js b/test/parallel/test-crypto-dh.js
-index f51ffba042421a62aba455ec8aa786a444aed3fc..4a1338f1dab9832dcd9f98e1b82ec527d5813d44 100644
+index 8a5fd21eea511ecd60aa99ca1ba5c592cd5028fa..d165256887abd6f10a8ff89076e8ae528725d074 100644
 --- a/test/parallel/test-crypto-dh.js
 +++ b/test/parallel/test-crypto-dh.js
 @@ -41,7 +41,7 @@ for (const bits of [-1, 0, 1]) {

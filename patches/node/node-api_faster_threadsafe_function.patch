@@ -219,7 +219,7 @@ index f1a5265b6a7234dc754aedc86ecd3132f3d90b09..d1076b29aeb5133a0325d3e7ebd097d2
    // These are variables set once, upon creation, and then never again, which
    // means we don't need the mutex to read them.
 diff --git a/test/node-api/test_threadsafe_function/binding.c b/test/node-api/test_threadsafe_function/binding.c
-index c9c526153804c60b5bd5844d2c2aacac7f0fb514..ae3ec67de43cfffdfb10772761dbd69f01c623bb 100644
+index b016dfa6c36656acf4a9010fd6fca18f10785158..339e772aa7e0e67b2448b7c23f5d87002e082305 100644
 --- a/test/node-api/test_threadsafe_function/binding.c
 +++ b/test/node-api/test_threadsafe_function/binding.c
 @@ -7,7 +7,7 @@
