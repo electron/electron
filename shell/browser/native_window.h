@@ -256,6 +256,9 @@ class NativeWindow : public base::SupportsUserData,
     return weak_factory_.GetWeakPtr();
   }
 
+  virtual gfx::Rect GetWindowControlsOverlayRect();
+  virtual void SetWindowControlsOverlayRect(const gfx::Rect& overlay_rect);
+
   // Methods called by the WebContents.
   virtual void HandleKeyboardEvent(
       content::WebContents*,
@@ -299,6 +302,7 @@ class NativeWindow : public base::SupportsUserData,
                                      const base::DictionaryValue& details);
   void NotifyNewWindowForTab();
   void NotifyWindowSystemContextMenu(int x, int y, bool* prevent_default);
+  void NotifyLayoutWindowControlsOverlay();
 
 #if defined(OS_WIN)
   void NotifyWindowMessage(UINT message, WPARAM w_param, LPARAM l_param);
@@ -390,6 +394,8 @@ class NativeWindow : public base::SupportsUserData,
 
   // Accessible title.
   std::u16string accessible_title_;
+
+  gfx::Rect overlay_rect_;
 
   base::WeakPtrFactory<NativeWindow> weak_factory_{this};
 

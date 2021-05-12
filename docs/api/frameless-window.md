@@ -29,6 +29,7 @@ You can do so by specifying the `titleBarStyle` option:
 #### `hidden`
 
 Results in a hidden title bar and a full size content window, yet the title bar still has the standard window controls (“traffic lights”) in the top left.
+Additionally the Window Controls Overlay [JavaScript APIs][overlay-javascript-apis] and [CSS Environment Variables][overlay-css-env-vars] will be enabled.
 
 ```javascript
 const { BrowserWindow } = require('electron')
@@ -39,6 +40,7 @@ win.show()
 #### `hiddenInset`
 
 Results in a hidden title bar with an alternative look where the traffic light buttons are slightly more inset from the window edge.
+Additionally the Window Controls Overlay [JavaScript APIs][overlay-javascript-apis] and [CSS Environment Variables][overlay-css-env-vars] will be enabled.
 
 ```javascript
 const { BrowserWindow } = require('electron')
@@ -186,3 +188,5 @@ behave correctly on all platforms you should never use a custom context menu on
 draggable areas.
 
 [ignore-mouse-events]: browser-window.md#winsetignoremouseeventsignore-options
+[overlay-javascript-apis]: https://github.com/WICG/window-controls-overlay/blob/main/explainer.md#javascript-apis
+[overlay-css-env-vars]: https://github.com/WICG/window-controls-overlay/blob/main/explainer.md#css-environment-variables
