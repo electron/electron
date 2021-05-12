@@ -531,7 +531,7 @@ step-electron-build: &step-electron-build
         # Regenerate because we just deleted some ninja files 
         gn gen out/Default --args="import(\"$GN_CONFIG\") import(\"$GN_GOMA_FILE\") $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
       fi
-      ninja -C out/Default electron -j $NUMBER_OF_NINJA_PROCESSES
+      NINJA_SUMMARIZE_BUILD=1 autoninja -C out/Default electron -j $NUMBER_OF_NINJA_PROCESSES
       node electron/script/check-symlinks.js
 
 step-native-unittests-build: &step-native-unittests-build
@@ -922,14 +922,6 @@ step-fix-known-hosts-linux: &step-fix-known-hosts-linux
       if [ "`uname`" == "Linux" ]; then
         ./src/electron/.circleci/fix-known-hosts.sh
       fi
-
-step-ninja-summary: &step-ninja-summary
-  run:
-    name: Print ninja summary
-    command: |
-      set +e
-      set +o pipefail
-      python depot_tools/post_build_ninja_summary.py -C src/out/Default || echo Ninja Summary Failed
 
 step-ninja-report: &step-ninja-report
   store_artifacts:
@@ -1536,7 +1528,6 @@ commands:
                   - *step-restore-out-cache
             - *step-gn-gen-default
             - *step-electron-build
-            - *step-ninja-summary
             - *step-ninja-report
             - *step-maybe-electron-dist-strip
             - *step-electron-dist-build
