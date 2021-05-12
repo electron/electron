@@ -702,8 +702,8 @@ WebContents::WebContents(v8::Isolate* isolate,
   // BrowserViews are not attached to a window initially so they should start
   // off as hidden. This is also important for compositor recycling. See:
   // https://github.com/electron/electron/pull/21372
-  initially_shown_ = type_ != Type::kBrowserView;
-  options.Get(options::kShow, &initially_shown_);
+  bool initially_shown = type_ != Type::kBrowserView;
+  options.Get(options::kShow, &initially_shown);
 
   // Obtain the session.
   std::string partition;
@@ -759,7 +759,7 @@ WebContents::WebContents(v8::Isolate* isolate,
 #endif
   } else {
     content::WebContents::CreateParams params(session->browser_context());
-    params.initially_hidden = !initially_shown_;
+    params.initially_hidden = !initially_shown;
     web_contents = content::WebContents::Create(params);
   }
 
@@ -3113,10 +3113,6 @@ v8::Local<v8::Value> WebContents::Debugger(v8::Isolate* isolate) {
   return v8::Local<v8::Value>::New(isolate, debugger_);
 }
 
-bool WebContents::WasInitiallyShown() {
-  return initially_shown_;
-}
-
 content::RenderFrameHost* WebContents::MainFrame() {
   return web_contents()->GetMainFrame();
 }
@@ -3688,7 +3684,6 @@ v8::Local<v8::ObjectTemplate> WebContents::FillObjectTemplate(
       .SetProperty("hostWebContents", &WebContents::HostWebContents)
       .SetProperty("devToolsWebContents", &WebContents::DevToolsWebContents)
       .SetProperty("debugger", &WebContents::Debugger)
-      .SetProperty("_initiallyShown", &WebContents::WasInitiallyShown)
       .SetProperty("mainFrame", &WebContents::MainFrame)
       .Build();
 }

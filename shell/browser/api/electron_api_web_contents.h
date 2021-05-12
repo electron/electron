@@ -324,7 +324,6 @@ class WebContents : public gin::Wrappable<WebContents>,
   content::WebContents* HostWebContents() const;
   v8::Local<v8::Value> DevToolsWebContents(v8::Isolate* isolate);
   v8::Local<v8::Value> Debugger(v8::Isolate* isolate);
-  bool WasInitiallyShown();
   content::RenderFrameHost* MainFrame();
 
   WebContentsZoomController* GetZoomController() { return zoom_controller_; }
@@ -721,8 +720,6 @@ class WebContents : public gin::Wrappable<WebContents>,
   base::ObserverList<ExtendedWebContentsObserver> observers_;
 
   v8::Global<v8::Value> pending_child_web_preferences_;
-
-  bool initially_shown_ = true;
 
   // The window that this WebContents belongs to.
   base::WeakPtr<NativeWindow> owner_window_;
