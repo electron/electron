@@ -10,7 +10,6 @@ disable_hidden.patch
 dom_storage_limits.patch
 render_widget_host_view_base.patch
 render_widget_host_view_mac.patch
-thread_capabilities.patch
 webview_cross_drag.patch
 gin_enable_disable_v8_platform.patch
 blink-worker-enable-csp-in-file-scheme.patch
