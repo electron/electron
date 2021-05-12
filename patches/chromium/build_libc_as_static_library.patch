@@ -1,0 +1,21 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: VerteDinde <keeleymhammond@gmail.com>
+Date: Wed, 12 May 2021 13:19:19 -0700
+Subject: build_libc++_as_static_library
+
+Build libc++ as static library to compile and pass
+nan tests
+
+diff --git a/buildtools/third_party/libc++/BUILD.gn b/buildtools/third_party/libc++/BUILD.gn
+index 65f6e8585ad374ad59e7670babfedd2fbdfbaa43..1cfca8c94e7c86a8bc02d520fb97086805a903e3 100644
+--- a/buildtools/third_party/libc++/BUILD.gn
++++ b/buildtools/third_party/libc++/BUILD.gn
+@@ -32,7 +32,7 @@ config("winver") {
+ if (libcxx_is_shared) {
+   _libcxx_target_type = "shared_library"
+ } else {
+-  _libcxx_target_type = "source_set"
++  _libcxx_target_type = "static_library"
+ }
+ target(_libcxx_target_type, "libc++") {
+   # Most things that need to depend on libc++ should do so via the implicit
