@@ -27,6 +27,7 @@
 #include "base/task/post_task.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/common/chrome_paths.h"
+#include "chrome/common/chrome_switches.h"
 #include "chrome/common/chrome_version.h"
 #include "components/net_log/chrome_net_log.h"
 #include "components/network_hints/common/network_hints.mojom.h"
@@ -142,6 +143,7 @@
 #include "extensions/browser/extension_message_filter.h"
 #include "extensions/browser/extension_navigation_throttle.h"
 #include "extensions/browser/extension_navigation_ui_data.h"
+#include "extensions/browser/extension_prefs.h"
 #include "extensions/browser/extension_protocols.h"
 #include "extensions/browser/extension_registry.h"
 #include "extensions/browser/extensions_browser_client.h"
@@ -245,6 +247,15 @@ enum class RenderProcessHostPrivilege {
   kIsolated,
   kExtension,
 };
+
+// Copied from chrome/browser/extensions/extension_util.cc.
+bool AllowFileAccess(const std::string& extension_id,
+                     content::BrowserContext* context) {
+  return base::CommandLine::ForCurrentProcess()->HasSwitch(
+             ::switches::kDisableExtensionsFileAccessCheck) ||
+         extensions::ExtensionPrefs::Get(context)->AllowFileAccess(
+             extension_id);
+}
 
 RenderProcessHostPrivilege GetPrivilegeRequiredByUrl(
     const GURL& url,
@@ -1423,12 +1434,12 @@ void ElectronBrowserClient::RegisterNonNetworkSubresourceURLLoaderFactories(
                            {content::kChromeUIResourcesHost}));
   }
 
-  // Extension with a background page get file access that gets approval from
-  // ChildProcessSecurityPolicy.
-  extensions::ExtensionHost* host =
-      extensions::ProcessManager::Get(web_contents->GetBrowserContext())
-          ->GetBackgroundHostForExtension(extension->id());
-  if (host) {
+  // Extensions with the necessary permissions get access to file:// URLs that
+  // gets approval from ChildProcessSecurityPolicy. Keep this logic in sync with
+  // ExtensionWebContentsObserver::RenderFrameCreated.
+  extensions::Manifest::Type type = extension->GetType();
+  if (type == extensions::Manifest::TYPE_EXTENSION &&
+      AllowFileAccess(extension->id(), web_contents->GetBrowserContext())) {
     factories->emplace(url::kFileScheme,
                        FileURLLoaderFactory::Create(render_process_id));
   }
