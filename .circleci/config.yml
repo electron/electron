@@ -594,11 +594,6 @@ step-electron-dist-build: &step-electron-dist-build
         fi
       fi
 
-step-electron-dist-store: &step-electron-dist-store
-  store_artifacts:
-    path: src/out/Default/dist.zip
-    destination: dist.zip
-
 step-electron-maybe-chromedriver-gn-gen: &step-electron-maybe-chromedriver-gn-gen
   run:
     name: chromedriver GN gen
@@ -627,27 +622,12 @@ step-electron-chromedriver-build: &step-electron-chromedriver-build
         cp out/chromedriver/chromedriver.zip out/Default
       fi
 
-step-electron-chromedriver-store: &step-electron-chromedriver-store
-  store_artifacts:
-    path: src/out/Default/chromedriver.zip
-    destination: chromedriver.zip
-
 step-nodejs-headers-build: &step-nodejs-headers-build
   run:
     name: Build Node.js headers
     command: |
       cd src
       ninja -C out/Default third_party/electron_node:headers
-
-step-nodejs-headers-store: &step-nodejs-headers-store
-  store_artifacts:
-    path: src/out/Default/gen/node_headers.tar.gz
-    destination: node_headers.tar.gz
-
-step-native-unittests-store: &step-native-unittests-store
-  store_artifacts:
-    path: src/out/Default/shell_browser_ui_unittests
-    destination: shell_browser_ui_unittests
 
 step-electron-publish: &step-electron-publish
   run:
@@ -739,11 +719,6 @@ step-verify-ffmpeg: &step-verify-ffmpeg
       cd src
       python electron/script/verify-ffmpeg.py --source-root "$PWD" --build-dir out/Default --ffmpeg-path out/ffmpeg
 
-step-ffmpeg-store: &step-ffmpeg-store
-  store_artifacts:
-    path: src/out/ffmpeg/ffmpeg.zip
-    destination: ffmpeg.zip
-
 step-verify-mksnapshot: &step-verify-mksnapshot
   run:
     name: Verify mksnapshot
@@ -812,11 +787,6 @@ step-mksnapshot-build: &step-mksnapshot-build
         (cd out/Default; zip mksnapshot.zip mksnapshot_args gen/v8/embedded.S)
       fi
 
-step-mksnapshot-store: &step-mksnapshot-store
-  store_artifacts:
-    path: src/out/Default/mksnapshot.zip
-    destination: mksnapshot.zip
-
 step-hunspell-build: &step-hunspell-build
   run:
     name: hunspell build
@@ -825,11 +795,6 @@ step-hunspell-build: &step-hunspell-build
       if [ "$SKIP_DIST_ZIP" != "1" ]; then
         ninja -C out/Default electron:hunspell_dictionaries_zip -j $NUMBER_OF_NINJA_PROCESSES
       fi
-
-step-hunspell-store: &step-hunspell-store
-  store_artifacts:
-    path: src/out/Default/hunspell_dictionaries.zip
-    destination: hunspell_dictionaries.zip
 
 step-maybe-generate-breakpad-symbols: &step-maybe-generate-breakpad-symbols
   run:
@@ -850,11 +815,6 @@ step-maybe-zip-symbols: &step-maybe-zip-symbols
       ninja -C out/Default electron:licenses
       ninja -C out/Default electron:electron_version
       DELETE_DSYMS_AFTER_ZIP=1 electron/script/zip-symbols.py -b $BUILD_PATH
-
-step-symbols-store: &step-symbols-store
-  store_artifacts:
-    path: src/out/Default/symbols.zip
-    destination: symbols.zip
 
 step-maybe-cross-arch-snapshot: &step-maybe-cross-arch-snapshot
   run:
@@ -878,11 +838,6 @@ step-maybe-cross-arch-snapshot: &step-maybe-cross-arch-snapshot
         mkdir cross-arch-snapshots
         cp out/Default-mksnapshot-test/*.bin cross-arch-snapshots
       fi
-
-step-maybe-cross-arch-snapshot-store: &step-maybe-cross-arch-snapshot-store
-  store_artifacts:
-    path: src/cross-arch-snapshots
-    destination: cross-arch-snapshots
 
 step-maybe-trigger-arm-test: &step-maybe-trigger-arm-test
   run:
@@ -1407,6 +1362,39 @@ commands:
               rm -rf src
               mv /var/portal/src ./
             fi
+
+  move_and_store_all_artifacts:
+    steps:
+      - run:
+          name: Move all generated artifacts to upload folder
+          command: |
+            rm -rf generated_artifacts
+            mkdir generated_artifacts
+            mv_if_exist() {
+              if [ -f "$1" ] || [ -d "$1" ]; then
+                echo Storing $1
+                mv $1 generated_artifacts
+              else
+                echo Skipping $1 - It is not present on disk
+              fi
+            }
+            mv_if_exist src/out/Default/dist.zip
+            mv_if_exist src/out/Default/shell_browser_ui_unittests
+            mv_if_exist src/out/Default/gen/node_headers.tar.gz
+            mv_if_exist src/out/Default/symbols.zip
+            mv_if_exist src/out/Default/mksnapshot.zip
+            mv_if_exist src/out/Default/chromedriver.zip
+            mv_if_exist src/out/ffmpeg/ffmpeg.zip
+            mv_if_exist src/out/Default/hunspell_dictionaries.zip
+            mv_if_exist src/cross-arch-snapshots
+          when: always
+      - store_artifacts:
+          path: generated_artifacts
+          destination: ./
+      - store_artifacts:
+          path: generated_artifacts/cross-arch-snapshots
+          destination: cross-arch-snapshots
+
   checkout-from-cache:
     steps:
       - *step-checkout-electron
@@ -1531,28 +1519,22 @@ commands:
             - *step-ninja-report
             - *step-maybe-electron-dist-strip
             - *step-electron-dist-build
-            - *step-electron-dist-store
 
             # Native test targets
             - *step-native-unittests-build
-            - *step-native-unittests-store
 
             # Node.js headers
             - *step-nodejs-headers-build
-            - *step-nodejs-headers-store
 
             - *step-show-goma-stats
 
             # mksnapshot
             - *step-mksnapshot-build
-            - *step-mksnapshot-store
             - *step-maybe-cross-arch-snapshot
-            - *step-maybe-cross-arch-snapshot-store
 
             # chromedriver
             - *step-electron-maybe-chromedriver-gn-gen
             - *step-electron-chromedriver-build
-            - *step-electron-chromedriver-store
 
             - when:
                 condition: << parameters.build-nonproprietary-ffmpeg >>
@@ -1560,11 +1542,9 @@ commands:
                   # ffmpeg
                   - *step-ffmpeg-gn-gen
                   - *step-ffmpeg-build
-                  - *step-ffmpeg-store
 
             # hunspell
             - *step-hunspell-build
-            - *step-hunspell-store
 
       # Save all data needed for a further tests run.
       - when:
@@ -1577,7 +1557,6 @@ commands:
           steps:
             - *step-maybe-generate-breakpad-symbols
             - *step-maybe-zip-symbols
-            - *step-symbols-store
 
       - when:
           condition: << parameters.build >>
@@ -1598,6 +1577,8 @@ commands:
                 condition: << parameters.use-out-cache >>
                 steps:
                   - *step-save-out-cache
+
+            - move_and_store_all_artifacts
 
             # Trigger tests on arm hardware if needed
             - *step-maybe-trigger-arm-test
@@ -1643,37 +1624,31 @@ commands:
       - *step-maybe-generate-breakpad-symbols
       - *step-maybe-electron-dist-strip
       - *step-electron-dist-build
-      - *step-electron-dist-store
       - *step-maybe-zip-symbols
-      - *step-symbols-store
 
       # mksnapshot
       - *step-mksnapshot-build
-      - *step-mksnapshot-store
 
       # chromedriver
       - *step-electron-maybe-chromedriver-gn-gen
       - *step-electron-chromedriver-build
-      - *step-electron-chromedriver-store
 
       # Node.js headers
       - *step-nodejs-headers-build
-      - *step-nodejs-headers-store
 
       # ffmpeg
       - *step-ffmpeg-gn-gen
       - *step-ffmpeg-build
-      - *step-ffmpeg-store
 
       # hunspell
       - *step-hunspell-build
-      - *step-hunspell-store
 
       # typescript defs
       - *step-maybe-generate-typescript-defs
 
       # Publish
-      - *step-electron-publish      
+      - *step-electron-publish
+      - move_and_store_all_artifacts
 
 # List of all jobs.
 jobs:
