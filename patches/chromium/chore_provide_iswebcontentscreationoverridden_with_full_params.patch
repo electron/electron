@@ -140,10 +140,10 @@ index ef84e04d628fb5cdbaf8fbbf84af3bf23e00c522..f1ee0bee5bfd08227a29498f8410d5d3
    }
  
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 6a2ea7c4fd52fe2ae00c58706eddf0929cfca0cc..7e9e5a84af0b7b75041c2a2c42f66f80c2b7d61b 100644
+index 77cb5676b4e6b8d0d9b65cbf0979048822f796e9..b525c5f17d62a4d97ad425e1fc06de82ad706cb0 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -1792,12 +1792,11 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -1793,12 +1793,11 @@ bool Browser::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -362,10 +362,10 @@ index 7d27e12c4e9a7f32af8a26f672359057a643dd67..7a30ac31f79871f2a9afa0345e0e88af
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/fuchsia/engine/browser/frame_impl.cc b/fuchsia/engine/browser/frame_impl.cc
-index cf444f0509056dff3e9486444bf3726c58247c8e..807b4d851139b3454c8a8a365f5925ccc7def0b1 100644
+index cb35d3ea88744e985c18e14d049ac39674b05e81..907eee0b8b94cef0fd75343aeb0191ca3b9f56c9 100644
 --- a/fuchsia/engine/browser/frame_impl.cc
 +++ b/fuchsia/engine/browser/frame_impl.cc
-@@ -374,8 +374,7 @@ bool FrameImpl::IsWebContentsCreationOverridden(
+@@ -381,8 +381,7 @@ bool FrameImpl::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -376,10 +376,10 @@ index cf444f0509056dff3e9486444bf3726c58247c8e..807b4d851139b3454c8a8a365f5925cc
    // can catch bad client behavior while not interfering with normal operation.
    constexpr size_t kMaxPendingWebContentsCount = 10;
 diff --git a/fuchsia/engine/browser/frame_impl.h b/fuchsia/engine/browser/frame_impl.h
-index fea7e90aa11231009c442e8a449478f63a6d98eb..7b8802fcec4a2fff3b3d147e1bbd97e54a9b18c6 100644
+index 08a79325f127bc7ed22df4e433c6a4aae6a3c9b7..03ff3ff83fa4edc9e78fcb3ef1a195078bf3f42a 100644
 --- a/fuchsia/engine/browser/frame_impl.h
 +++ b/fuchsia/engine/browser/frame_impl.h
-@@ -237,8 +237,7 @@ class FrameImpl : public fuchsia::web::Frame,
+@@ -240,8 +240,7 @@ class FrameImpl : public fuchsia::web::Frame,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,

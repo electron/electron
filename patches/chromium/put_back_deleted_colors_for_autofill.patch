@@ -8,12 +8,12 @@ needed in chromium but our autofill implementation uses them.  This patch can be
 our autofill implementation to work like Chromium's.
 
 diff --git a/ui/native_theme/common_theme.cc b/ui/native_theme/common_theme.cc
-index 4436af30ea86d7949ae5f387fbeab9e6369ac12e..575aafe2d19c150e288141fb85cec3f78103ba4a 100644
+index 043ace0c33285d48a78541862ef9bc75d178dbe4..1fbe82d1baca7e296a2f44762fc5c99d66d60532 100644
 --- a/ui/native_theme/common_theme.cc
 +++ b/ui/native_theme/common_theme.cc
-@@ -72,6 +72,14 @@ base::Optional<SkColor> GetDarkSchemeColor(NativeTheme::ColorId color_id,
-     case NativeTheme::kColorId_BubbleBorderShadowBase:
-       return SK_ColorBLACK;
+@@ -68,6 +68,14 @@ base::Optional<SkColor> GetDarkSchemeColor(NativeTheme::ColorId color_id,
+     case NativeTheme::kColorId_FocusedBorderColor:
+       return gfx::kGoogleBlue400;
  
 +    // Results Tables
 +    case NativeTheme::kColorId_ResultsTableNormalBackground:
@@ -26,7 +26,7 @@ index 4436af30ea86d7949ae5f387fbeab9e6369ac12e..575aafe2d19c150e288141fb85cec3f7
      // Button
      case NativeTheme::kColorId_ProminentButtonColor:
        return gfx::kGoogleBlue300;
-@@ -570,6 +578,18 @@ SkColor GetDefaultColor(NativeTheme::ColorId color_id,
+@@ -587,6 +595,18 @@ SkColor GetDefaultColor(NativeTheme::ColorId color_id,
      case NativeTheme::kColorId_WindowBackground:
        return SK_ColorWHITE;
  
@@ -46,10 +46,10 @@ index 4436af30ea86d7949ae5f387fbeab9e6369ac12e..575aafe2d19c150e288141fb85cec3f7
        // Keeping the kColorId_NumColors case instead of using the default case
        // allows ColorId additions to trigger compile error for an incomplete
 diff --git a/ui/native_theme/native_theme_color_id.h b/ui/native_theme/native_theme_color_id.h
-index 64e6d428d805a71f1e8779c4c169d232bed79d2d..93086c17e231dbd2226bdc805f26d59703862d3b 100644
+index 84848edbbe9de7ef9fe6e2ab0a34d3b9428cde10..5e07980e4793cc3b19140510fb3fd3b23c6a88ef 100644
 --- a/ui/native_theme/native_theme_color_id.h
 +++ b/ui/native_theme/native_theme_color_id.h
-@@ -151,6 +151,11 @@
+@@ -157,6 +157,11 @@
    OP(kColorId_TableHeaderText),                                                \
    OP(kColorId_TableHeaderBackground),                                          \
    OP(kColorId_TableHeaderSeparator),                                           \
