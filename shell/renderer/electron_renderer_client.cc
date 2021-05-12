@@ -94,10 +94,6 @@ void ElectronRendererClient::DidCreateScriptContext(
 
   injected_frames_.insert(render_frame);
 
-  // auto* isolate = renderer_context->GetIsolate();
-  // v8::MicrotasksScope microtasks_scope(isolate,
-  // v8::MicrotasksScope::kDoNotRunMicrotasks);
-
   if (!node_integration_initialized_) {
     node_integration_initialized_ = true;
     node_bindings_->Initialize();
@@ -212,8 +208,6 @@ void ElectronRendererClient::SetupMainWorldOverrides(
   // Wrap the bundle into a function that receives the isolatedWorld as
   // an argument.
   auto* isolate = context->GetIsolate();
-  // v8::MicrotasksScope microtasks_scope(isolate,
-  // v8::MicrotasksScope::kDoNotRunMicrotasks);
   std::vector<v8::Local<v8::String>> isolated_bundle_params = {
       node::FIXED_ONE_BYTE_STRING(isolate, "nodeProcess"),
       node::FIXED_ONE_BYTE_STRING(isolate, "isolatedWorld")};

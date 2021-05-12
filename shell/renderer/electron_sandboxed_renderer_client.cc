@@ -221,8 +221,6 @@ void ElectronSandboxedRendererClient::DidCreateScriptContext(
   // Wrap the bundle into a function that receives the binding object as
   // argument.
   auto* isolate = context->GetIsolate();
-  // v8::MicrotasksScope microtasks_scope(isolate,
-  // v8::MicrotasksScope::kDoNotRunMicrotasks);
   auto binding = v8::Object::New(isolate);
   InitializeBindings(binding, context, render_frame);
 
@@ -252,8 +250,6 @@ void ElectronSandboxedRendererClient::SetupMainWorldOverrides(
   // Wrap the bundle into a function that receives the isolatedWorld as
   // an argument.
   auto* isolate = context->GetIsolate();
-  // v8::MicrotasksScope microtasks_scope(isolate,
-  // v8::MicrotasksScope::kDoNotRunMicrotasks);
 
   gin_helper::Dictionary process = gin::Dictionary::CreateEmpty(isolate);
   process.SetMethod("_linkedBinding", GetBinding);
