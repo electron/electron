@@ -563,7 +563,6 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
 void ExposeAPIInMainWorld(v8::Isolate* isolate,
                           const std::string& key,
                           v8::Local<v8::Value> api,
-                          bool configurable,
                           gin_helper::Arguments* args) {
   TRACE_EVENT1("electron", "ContextBridge::ExposeAPIInMainWorld", "key", key);
 
@@ -604,11 +603,7 @@ void ExposeAPIInMainWorld(v8::Isolate* isolate,
         !DeepFreeze(proxy.As<v8::Object>(), main_context))
       return;
 
-    if (configurable) {
-      global.SetReadOnly(key, proxy);
-    } else {
-      global.SetReadOnlyNonConfigurable(key, proxy);
-    }
+    global.SetReadOnlyNonConfigurable(key, proxy);
   }
 }
 

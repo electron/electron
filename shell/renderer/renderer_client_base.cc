@@ -29,6 +29,8 @@
 #include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/world_ids.h"
+#include "shell/renderer/api/context_bridge/object_cache.h"
+#include "shell/renderer/api/electron_api_context_bridge.h"
 #include "shell/renderer/browser_exposed_renderer_interfaces.h"
 #include "shell/renderer/content_settings_observer.h"
 #include "shell/renderer/electron_api_service_impl.h"
@@ -539,6 +541,19 @@ void RendererClientBase::SetupMainWorldOverrides(
   isolated_api.SetMethod("getWebFrameId", &GetWebFrameId);
   isolated_api.SetMethod("setIsWebView", &SetIsWebView);
   isolated_api.SetMethod("createNativeImage", &api::NativeImage::CreateEmpty);
+
+  auto source_context = GetContext(render_frame->GetWebFrame(), isolate);
+  gin_helper::Dictionary global(isolate, source_context->Global());
+
+  v8::Local<v8::Value> guest_view_internal;
+  if (global.GetHidden("guestViewInternal", &guest_view_internal)) {
+    api::context_bridge::ObjectCache object_cache;
+    auto result = api::PassValueToOtherContext(
+        source_context, context, guest_view_internal, &object_cache, false, 0);
+    if (!result.IsEmpty()) {
+      isolated_api.Set("guestViewInternal", result.ToLocalChecked());
+    }
+  }
 
   std::vector<v8::Local<v8::String>> isolated_bundle_params = {
       node::FIXED_ONE_BYTE_STRING(isolate, "isolatedApi")};

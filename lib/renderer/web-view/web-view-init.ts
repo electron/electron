@@ -4,7 +4,6 @@ import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 import type * as webViewElementModule from '@electron/internal/renderer/web-view/web-view-element';
 import type * as guestViewInternalModule from '@electron/internal/renderer/web-view/guest-view-internal';
 
-const contextBridge = process._linkedBinding('electron_renderer_context_bridge');
 const v8Util = process._linkedBinding('electron_common_v8_util');
 const { mainFrame: webFrame } = process._linkedBinding('electron_renderer_web_frame');
 
@@ -26,7 +25,7 @@ export function webViewInit (contextIsolation: boolean, webviewTag: boolean, gue
   if (webviewTag && !guestInstanceId) {
     const guestViewInternal = require('@electron/internal/renderer/web-view/guest-view-internal') as typeof guestViewInternalModule;
     if (contextIsolation) {
-      contextBridge.exposeAPIInMainWorld('__electronGuestViewInternal__', guestViewInternal, true);
+      v8Util.setHiddenValue(window, 'guestViewInternal', guestViewInternal);
     } else {
       const { setupWebView } = require('@electron/internal/renderer/web-view/web-view-element') as typeof webViewElementModule;
       setupWebView({

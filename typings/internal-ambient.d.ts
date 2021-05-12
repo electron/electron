@@ -3,6 +3,7 @@ declare var internalBinding: any;
 declare var binding: { get: (name: string) => any; process: NodeJS.Process; createPreloadScript: (src: string) => Function };
 
 declare var isolatedApi: {
+  guestViewInternal: any;
   allowGuestViewElementDefinition: NodeJS.InternalWebFrame['allowGuestViewElementDefinition'];
   getWebFrameId: NodeJS.InternalWebFrame['getWebFrameId'];
   setIsWebView: (iframe: HTMLIFrameElement) => void;
