@@ -199,11 +199,8 @@ void ElectronSandboxedRendererClient::DidCreateScriptContext(
   bool is_devtools =
       IsDevTools(render_frame) || IsDevToolsExtension(render_frame);
 
-  // See comment in ElectronRendererClient::DidCreateScriptContext.
-  GURL url = render_frame->GetWebFrame()->GetDocument().Url();
   bool allow_node_in_sub_frames =
-      render_frame->GetBlinkPreferences().node_integration_in_sub_frames &&
-      !url.IsAboutBlank();
+      render_frame->GetBlinkPreferences().node_integration_in_sub_frames;
 
   bool should_load_preload =
       (is_main_frame || is_devtools || allow_node_in_sub_frames) &&
