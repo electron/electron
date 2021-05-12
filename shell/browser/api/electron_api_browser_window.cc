@@ -312,6 +312,10 @@ void BrowserWindow::OnWindowLeaveFullScreen() {
   BaseWindow::OnWindowLeaveFullScreen();
 }
 
+void BrowserWindow::UpdateWindowControlsOverlay(gfx::Rect bounding_rect) {
+  web_contents()->UpdateWindowControlsOverlay(bounding_rect);
+}
+
 void BrowserWindow::CloseImmediately() {
   // Close all child windows before closing current window.
   v8::Locker locker(isolate());

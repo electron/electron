@@ -146,6 +146,7 @@ class NativeWindowMac : public NativeWindow,
   void CloseFilePreview() override;
   gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds) const override;
   gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds) const override;
+  gfx::Rect GetWindowControlsOverlayRect() override;
   void NotifyWindowEnterFullScreen() override;
   void NotifyWindowLeaveFullScreen() override;
   void SetActive(bool is_key) override;

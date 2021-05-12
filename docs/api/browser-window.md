@@ -219,9 +219,14 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       bar.
     * `hidden` - Results in a hidden title bar and a full size content window, yet
       the title bar still has the standard window controls ("traffic lights") in
-      the top left.
+      the top left.  Using this value will also enable the Window Controls Overlay
+      [JavaScript APIs][overlay-javascript-apis] and
+      [CSS Environment Variables][overlay-css-env-vars].
     * `hiddenInset` - Results in a hidden title bar with an alternative look
       where the traffic light buttons are slightly more inset from the window edge.
+      Using this value will also enable the Window Controls Overlay
+      [JavaScript APIs][overlay-javascript-apis] and
+      [CSS Environment Variables][overlay-css-env-vars].
     * `customButtonsOnHover` - Results in a hidden title bar and a full size
       content window, the traffic light buttons will display when being hovered
       over in the top left of the window.  **Note:** This option is currently
@@ -1815,3 +1820,5 @@ removed in future Electron releases.
 [window-levels]: https://developer.apple.com/documentation/appkit/nswindow/level
 [chrome-content-scripts]: https://developer.chrome.com/extensions/content_scripts#execution-environment
 [event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter
+[overlay-javascript-apis]: https://github.com/WICG/window-controls-overlay/blob/main/explainer.md#javascript-apis
+[overlay-css-env-vars]: https://github.com/WICG/window-controls-overlay/blob/main/explainer.md#css-environment-variables
