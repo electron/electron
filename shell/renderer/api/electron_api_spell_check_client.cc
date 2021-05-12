@@ -219,6 +219,9 @@ void SpellCheckClient::SpellCheckWords(const SpellCheckScope& scope,
                                        const std::set<std::u16string>& words) {
   DCHECK(!scope.spell_check_.IsEmpty());
 
+  v8::MicrotasksScope microtasks_scope(
+      isolate_, v8::MicrotasksScope::kDoNotRunMicrotasks);
+
   v8::Local<v8::FunctionTemplate> templ = gin_helper::CreateFunctionTemplate(
       isolate_,
       base::BindRepeating(&SpellCheckClient::OnSpellCheckDone, AsWeakPtr()));

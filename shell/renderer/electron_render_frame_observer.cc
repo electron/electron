@@ -63,6 +63,10 @@ void ElectronRenderFrameObserver::DidClearWindowObject() {
 void ElectronRenderFrameObserver::DidInstallConditionalFeatures(
     v8::Handle<v8::Context> context,
     int world_id) {
+  auto* isolate = context->GetIsolate();
+  v8::MicrotasksScope microtasks_scope(
+      isolate, v8::MicrotasksScope::kDoNotRunMicrotasks);
+
   if (ShouldNotifyClient(world_id))
     renderer_client_->DidCreateScriptContext(context, render_frame_);
 
