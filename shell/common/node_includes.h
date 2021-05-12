@@ -64,6 +64,7 @@
 #include "env.h"
 #include "node.h"
 #include "node_buffer.h"
+#include "node_errors.h"
 #include "node_internals.h"
 #include "node_options-inl.h"
 #include "node_options.h"

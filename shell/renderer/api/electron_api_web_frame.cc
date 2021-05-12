@@ -33,7 +33,7 @@
 #include "shell/renderer/api/context_bridge/object_cache.h"
 #include "shell/renderer/api/electron_api_context_bridge.h"
 #include "shell/renderer/api/electron_api_spell_check_client.h"
-#include "shell/renderer/electron_renderer_client.h"
+#include "shell/renderer/renderer_client_base.h"
 #include "third_party/blink/public/common/browser_interface_broker_proxy.h"
 #include "third_party/blink/public/common/page/page_zoom.h"
 #include "third_party/blink/public/common/web_cache/web_cache_resource_type_stats.h"
@@ -102,9 +102,8 @@ namespace api {
 
 namespace {
 
-content::RenderFrame* GetRenderFrame(v8::Local<v8::Value> value) {
-  v8::Local<v8::Context> context =
-      v8::Local<v8::Object>::Cast(value)->CreationContext();
+content::RenderFrame* GetRenderFrame(v8::Local<v8::Object> value) {
+  v8::Local<v8::Context> context = value->CreationContext();
   if (context.IsEmpty())
     return nullptr;
   blink::WebLocalFrame* frame = blink::WebLocalFrame::FrameForContext(context);
@@ -121,7 +120,7 @@ bool SpellCheckWord(content::RenderFrame* render_frame,
   size_t start;
   size_t length;
 
-  ElectronRendererClient* client = ElectronRendererClient::Get();
+  RendererClientBase* client = RendererClientBase::Get();
 
   std::u16string w = base::UTF8ToUTF16(word);
   int id = render_frame->GetRoutingID();
@@ -559,7 +558,7 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
         nullptr);
   }
 
-  static int GetWebFrameId(v8::Local<v8::Value> content_window) {
+  static int GetWebFrameId(v8::Local<v8::Object> content_window) {
     // Get the WebLocalFrame before (possibly) executing any user-space JS while
     // getting the |params|. We track the status of the RenderFrame via an
     // observer in case it is deleted during user code execution.
