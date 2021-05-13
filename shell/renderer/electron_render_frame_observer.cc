@@ -65,7 +65,7 @@ void ElectronRenderFrameObserver::DidInstallConditionalFeatures(
     v8::Handle<v8::Context> context,
     int world_id) {
   auto* isolate = context->GetIsolate();
-  gin_helper::MicrotasksScope microtasks_scope(
+  v8::MicrotasksScope microtasks_scope(
       isolate, v8::MicrotasksScope::kDoNotRunMicrotasks);
 
   if (ShouldNotifyClient(world_id))

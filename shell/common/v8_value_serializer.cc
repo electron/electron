@@ -21,12 +21,12 @@ const uint8_t kVersionTag = 0xFF;
 class V8Serializer : public v8::ValueSerializer::Delegate {
  public:
   explicit V8Serializer(v8::Isolate* isolate)
-      : isolate_(isolate),
-        serializer_(isolate, this),
-        microtasks_scope_(isolate, v8::MicrotasksScope::kDoNotRunMicrotasks) {}
+      : isolate_(isolate), serializer_(isolate, this) {}
   ~V8Serializer() override = default;
 
   bool Serialize(v8::Local<v8::Value> value, blink::CloneableMessage* out) {
+    gin_helper::MicrotasksScope microtasks_scope(
+        isolate_, v8::MicrotasksScope::kDoNotRunMicrotasks);
     WriteBlinkEnvelope(19);
 
     serializer_.WriteHeader();
@@ -79,7 +79,6 @@ class V8Serializer : public v8::ValueSerializer::Delegate {
   v8::Isolate* isolate_;
   std::vector<uint8_t> data_;
   v8::ValueSerializer serializer_;
-  gin_helper::MicrotasksScope microtasks_scope_;
 };
 
 class V8Deserializer : public v8::ValueDeserializer::Delegate {
