@@ -28,6 +28,8 @@ Electron applications are structured very similarly. As an app developer, you co
 two types of processes: main and renderer. These are analogous to Chrome's own browser
 and renderer processes outlined above.
 
+[Chrome Comic]: https://www.google.com/googlebooks/chrome/
+
 ## The main process
 
 Each Electron app has a single main process, which acts as the application's entry
@@ -86,6 +88,7 @@ app.on('window-all-closed', function () {
 ```
 
 [app]: ../api/app.md
+[quick-start-lifecycle]: ./quick-start.md#manage-your-windows-lifecycle
 
 ### Native APIs
 
@@ -131,9 +134,9 @@ way to even import Electron's content scripts.
 
 <!-- Note: This guide doesn't take sandboxing into account, which might fundamentally 
 change the statements here. -->
-A preload script contains code that executes in a renderer process before its web content
-begins loading. This script runs within the renderer context, but has a more privileged
-environment, meaning it also has full access to Node.js APIs by default.
+Preload scripts contain code that executes in a renderer process before its web content
+begins loading. These scripts runs within the renderer context, but are granted more
+privileges by having access to Node.js APIs.
 
 A preload script can be attached to the main process in the `BrowserWindow` constructor's
 `webPreferences` option.
@@ -148,85 +151,53 @@ const win = new BrowserWindow({
 ```
 
 Because the preload script shares a global [`Window`][window-mdn] interface with the
-renderers and can access Node.js APIs, it serves to provide your renderer with
-powers that it would not have by itself. Below are a few common tasks that can be done
-using custom preload logic.
+renderers and can access Node.js APIs, it serves to enhance your renderer by exposing
+arbitrary APIs in the `window` global that your web contents can then consume.
 
-### Exposing arbitrary APIs to the renderer process
-
-Although the two share a `window` global, you cannot directly attach any variables from
-the preload to `window` to do this. By default, preload scripts are isolated from the
-renderer to avoid leaking any privileged APIs into your web content's code (see the
-[Context Isolation][context-isolation] guide for more details).
-
-We use the [`contextBridge`][context-bridge] module to bootstrap this setup.
+Although preload scripts share a `window` global with the renderer they're attached to,
+you cannot directly attach any variables from the preload to `window` because of
+the [`contextIsolation`][context-isolation] default.
 
 ```js title='preload.js'
+window.myAPI = {
+  desktop: true
+}
+```
 
+```js title='renderer.js'
+console.log(window.myAPI)
+// => undefined
+```
+
+Context Isolation means that preload scripts are isolated from the renderer's main world
+to avoid leaking any privileged APIs into your web content's code.
+
+Instead, use the [`contextBridge`][context-bridge] module to accomplish this
+securely:
+
+```js title='preload.js'
 const { contextBridge } = require('electron')
-```
 
-#### APIs
-
-##### Electron API
-
-Electron APIs are assigned based on the process type, meaning that some modules can be used from either the Main or Renderer process, and some from both. Electron's API documentation indicates which process each module can be used from.
-
-For example, to access the Electron API in both processes, require its included module:
-
-```js
-const electron = require('electron')
-```
-
-To create a window, call the `BrowserWindow` class, which is only available in the Main process:
-
-```js
-const { BrowserWindow } = require('electron')
-const win = new BrowserWindow()
-```
-
-To call the Main process from the Renderer, use the IPC module:
-
-```js
-// In the Main process
-const { ipcMain } = require('electron')
-
-ipcMain.handle('perform-action', (event, ...args) => {
-  // ... do actions on behalf of the Renderer
+contextBridge.exposeInMainWorld('myAPI', {
+  desktop: true
 })
 ```
 
-```js
-// In the Renderer process
-const { ipcRenderer } = require('electron')
-
-ipcRenderer.invoke('perform-action', ...args)
+```js title='renderer.js'
+console.log(window.myAPI)
+// => { desktop: true }
 ```
 
-> NOTE: Because Renderer processes may run untrusted code (especially from third parties), it is important to carefully validate the requests that come to the Main process.
+This feature is incredibly useful for two main purposes:
 
-##### Node.js API
+* By exposing [`ipcRenderer`][ipcRenderer] helpers to the renderer, you can use
+  inter-process communication (IPC) to trigger main process tasks from the
+  renderer (and vice-versa).
+* If you're developing an Electron wrapper for an existing web app hosted on a remote
+  URL, you can add custom properties onto the renderer's `window` global that can
+  be used for desktop-only logic on the web client's side.
 
-> NOTE: To access the Node.js API from the Renderer process, you need to set the `nodeIntegration` preference to `true` and the `contextIsolation` preference to `false`.  Please note that access to the Node.js API in any renderer that loads remote content is not recommended for [security reasons](../tutorial/security.md#2-do-not-enable-nodejs-integration-for-remote-content).
-
-Electron exposes full access to Node.js API and its modules both in the Main and the Renderer processes. For example, you can read all the files from the root directory:
-
-```js
-const fs = require('fs')
-
-const root = fs.readdirSync('/')
-
-console.log(root)
-```
-
-To use a Node.js module, you first need to install it as a dependency:
-
-```sh
-npm install --save aws-sdk
-```
-
-Then, in your Electron application, require the module:
-
-```js
-const S3 = require('aws-sdk/clients/s3')
-```
+[window-mdn]: https://developer.mozilla.org/en-US/docs/Web/API/Window
+[context-isolation]: ./context-isolation.md
+[context-bridge]: ../api/context-bridge.md
+[ipcRenderer]: ../api/ipc-renderer.md
