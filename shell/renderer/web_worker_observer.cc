@@ -9,7 +9,6 @@
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/asar/asar_util.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
-#include "shell/common/gin_helper/microtasks_scope.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
 
@@ -47,7 +46,7 @@ void WebWorkerObserver::WorkerScriptReadyForEvaluation(
     v8::Local<v8::Context> worker_context) {
   v8::Context::Scope context_scope(worker_context);
   auto* isolate = worker_context->GetIsolate();
-  gin_helper::MicrotasksScope microtasks_scope(
+  v8::MicrotasksScope microtasks_scope(
       isolate, v8::MicrotasksScope::kDoNotRunMicrotasks);
 
   // Start the embed thread.
