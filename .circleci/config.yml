@@ -2383,37 +2383,7 @@ jobs:
     <<: *steps-tests
 
   # Layer 4: Summary.
-  linux-x64-release-summary:
-    executor:
-      name: linux-docker
-      size: medium
-    environment:
-      <<: *env-linux-medium
-      <<: *env-send-slack-notifications
-    steps:
-      - *step-maybe-notify-slack-success
-
-  linux-ia32-release-summary:
-    executor:
-      name: linux-docker
-      size: medium
-    environment:
-      <<: *env-linux-medium
-      <<: *env-send-slack-notifications
-    steps:
-      - *step-maybe-notify-slack-success
-
-  linux-arm-release-summary:
-    executor:
-      name: linux-docker
-      size: medium
-    environment:
-      <<: *env-linux-medium
-      <<: *env-send-slack-notifications
-    steps:
-      - *step-maybe-notify-slack-success
-
-  linux-arm64-release-summary:
+  linux-release-summary:
     executor:
       name: linux-docker
       size: medium
@@ -2635,7 +2605,8 @@ workflows:
       - linux-x64-verify-ffmpeg:
           requires:
             - linux-x64-release
-      - linux-x64-release-summary:
+      - linux-release-summary:
+          name: linux-x64-release-summary
           requires:
             - linux-x64-release
             - linux-x64-release-tests
@@ -2648,19 +2619,22 @@ workflows:
       - linux-ia32-verify-ffmpeg:
           requires:
             - linux-ia32-release
-      - linux-ia32-release-summary:
+      - linux-release-summary:
+          name: linux-ia32-release-summary
           requires:
             - linux-ia32-release
             - linux-ia32-release-tests
             - linux-ia32-verify-ffmpeg
 
       - linux-arm-release
-      - linux-arm-release-summary:
+      - linux-release-summary:
+          name: linux-arm-release-summary
           requires:
             - linux-arm-release
 
       - linux-arm64-release
-      - linux-arm64-release-summary:
+      - linux-release-summary:
+          name: linux-arm64-release-summary
           requires:
             - linux-arm64-release
 
