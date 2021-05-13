@@ -29,6 +29,7 @@ async function main () {
   const clangDir = path.resolve(BASE, 'third_party', 'llvm-build', 'Release+Asserts', 'bin');
   const cc = path.resolve(clangDir, 'clang');
   const cxx = path.resolve(clangDir, 'clang++');
+  const ld = path.resolve(clangDir, 'clang++');
 
   // TODO(ckerr) this is cribbed from read obj/electron/electron_app.ninja.
   // Maybe it would be better to have this script literally open up that
@@ -55,6 +56,7 @@ async function main () {
     env.CC = cc;
     env.CFLAGS = cxxflags;
     env.CXX = cxx;
+    env.LD = ld;
     env.CXXFLAGS = cxxflags;
     env.LDFLAGS = ldflags;
   }
