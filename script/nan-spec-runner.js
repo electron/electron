@@ -43,11 +43,18 @@ async function main () {
   ].join(' ');
 
   // TODO(vertedinde) experimenting with needed ldflags here
+  const libcxxPrefix = path.resolve(BASE, 'third_party/llvm-build/Release+Asserts/include/c++/v1');
   const ldflags = [
     `-L/"${path.resolve(BASE, 'out', `${utils.getOutDir({ shouldLog: true })}`, 'obj', 'buildtools', 'third_party', 'libc++abi', 'libc++abi')}"`,
-    `-L/"${path.resolve(BASE, 'out', `${utils.getOutDir({ shouldLog: true })}`, 'obj', 'buildtools', 'third_party', 'libc++', 'libc++.a')}"`
+    `-L/"${path.resolve(BASE, 'out', `${utils.getOutDir({ shouldLog: true })}`, 'obj', 'buildtools', 'third_party', 'libc++', 'libc++.a')}"`,
     // `-L/"${path.resolve(BASE, 'buildtools', 'third_party', 'libc++', 'trunk', 'include')}"`,
     // `-L/"${path.resolve(BASE, 'buildtools', 'third_party', 'libc++abi', 'trunk', 'include')}"`
+    '-std=c++14',
+    // '-stdlib=libc++',
+    '-nostdinc++',
+    `-I${libcxxPrefix}/include/c++/v1`,
+    `-L${libcxxPrefix}/lib`,
+    `-Wl,-rpath,${libcxxPrefix}/lib`
   ].join(' ');
 
   if (process.platform !== 'win32') {
