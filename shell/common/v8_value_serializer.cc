@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "gin/converter.h"
+#include "shell/common/gin_helper/microtasks_scope.h"
 #include "third_party/blink/public/common/messaging/cloneable_message.h"
 #include "v8/include/v8.h"
 
@@ -78,7 +79,7 @@ class V8Serializer : public v8::ValueSerializer::Delegate {
   v8::Isolate* isolate_;
   std::vector<uint8_t> data_;
   v8::ValueSerializer serializer_;
-  v8::MicrotasksScope microtasks_scope_;
+  gin_helper::MicrotasksScope microtasks_scope_;
 };
 
 class V8Deserializer : public v8::ValueDeserializer::Delegate {

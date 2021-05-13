@@ -14,6 +14,7 @@
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/application_info.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/microtasks_scope.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
@@ -168,7 +169,7 @@ void ElectronSandboxedRendererClient::RunScriptsAtDocumentStart(
     return;
 
   auto* isolate = blink::MainThreadIsolate();
-  v8::MicrotasksScope microtasks_scope(
+  gin_helper::MicrotasksScope microtasks_scope(
       isolate, v8::MicrotasksScope::kDoNotRunMicrotasks);
   v8::HandleScope handle_scope(isolate);
 
@@ -186,7 +187,7 @@ void ElectronSandboxedRendererClient::RunScriptsAtDocumentEnd(
     return;
 
   auto* isolate = blink::MainThreadIsolate();
-  v8::MicrotasksScope microtasks_scope(
+  gin_helper::MicrotasksScope microtasks_scope(
       isolate, v8::MicrotasksScope::kDoNotRunMicrotasks);
   v8::HandleScope handle_scope(isolate);
 
@@ -273,7 +274,7 @@ void ElectronSandboxedRendererClient::WillReleaseScriptContext(
     return;
 
   auto* isolate = context->GetIsolate();
-  v8::MicrotasksScope microtasks_scope(
+  gin_helper::MicrotasksScope microtasks_scope(
       isolate, v8::MicrotasksScope::kDoNotRunMicrotasks);
   v8::HandleScope handle_scope(isolate);
   v8::Context::Scope context_scope(context);

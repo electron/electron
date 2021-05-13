@@ -9,13 +9,14 @@
 namespace gin_helper {
 
 MicrotasksScope::MicrotasksScope(v8::Isolate* isolate,
-                                 bool ignore_browser_checkpoint) {
+                                 bool ignore_browser_checkpoint,
+                                 v8::MicrotasksScope::Type scope_type) {
   if (Locker::IsBrowserProcess()) {
     if (!ignore_browser_checkpoint)
       v8::MicrotasksScope::PerformCheckpoint(isolate);
   } else {
-    v8_microtasks_scope_ = std::make_unique<v8::MicrotasksScope>(
-        isolate, v8::MicrotasksScope::kRunMicrotasks);
+    v8_microtasks_scope_ =
+        std::make_unique<v8::MicrotasksScope>(isolate, scope_type);
   }
 }
 

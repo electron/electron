@@ -19,6 +19,7 @@
 #include "net/base/net_module.h"
 #include "net/grit/net_resources.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
+#include "shell/common/gin_helper/microtasks_scope.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/world_ids.h"
 #include "third_party/blink/public/common/browser_interface_broker_proxy.h"
@@ -64,7 +65,7 @@ void ElectronRenderFrameObserver::DidInstallConditionalFeatures(
     v8::Handle<v8::Context> context,
     int world_id) {
   auto* isolate = context->GetIsolate();
-  v8::MicrotasksScope microtasks_scope(
+  gin_helper::MicrotasksScope microtasks_scope(
       isolate, v8::MicrotasksScope::kDoNotRunMicrotasks);
 
   if (ShouldNotifyClient(world_id))
