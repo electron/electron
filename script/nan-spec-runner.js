@@ -42,11 +42,21 @@ async function main () {
     `-isystem"${path.resolve(BASE, 'buildtools', 'third_party', 'libc++abi', 'trunk', 'include')}"`
   ].join(' ');
 
+  // needed ldflags for libc++ and libc++abi
+  const ldflags = [
+    '-stdlib=libc++',
+    '-fuse-ld=lld',
+    '-lc++abi',
+    `-L"${path.resolve(BASE, 'out', `${utils.getOutDir({ shouldLog: true })}`, 'obj', 'buildtools', 'third_party', 'libc++abi')}"`,
+    `-L"${path.resolve(BASE, 'out', `${utils.getOutDir({ shouldLog: true })}`, 'obj', 'buildtools', 'third_party', 'libc++')}"`
+  ].join(' ');
+
   if (process.platform !== 'win32') {
     env.CC = cc;
     env.CFLAGS = cxxflags;
     env.CXX = cxx;
     env.CXXFLAGS = cxxflags;
+    env.LDFLAGS = ldflags;
   }
 
   const { status: buildStatus } = cp.spawnSync(NPX_CMD, ['node-gyp', 'rebuild', '--verbose', '--directory', 'test', '-j', 'max'], {
