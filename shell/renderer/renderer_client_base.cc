@@ -538,7 +538,6 @@ void RendererClientBase::SetupMainWorldOverrides(
   gin_helper::Dictionary isolated_api = gin::Dictionary::CreateEmpty(isolate);
   isolated_api.SetMethod("allowGuestViewElementDefinition",
                          &AllowGuestViewElementDefinition);
-  isolated_api.SetMethod("getWebFrameId", &GetWebFrameId);
   isolated_api.SetMethod("setIsWebView", &SetIsWebView);
   isolated_api.SetMethod("createNativeImage", &api::NativeImage::CreateEmpty);
 
@@ -581,24 +580,6 @@ void RendererClientBase::AllowGuestViewElementDefinition(
   render_frame->GetWebFrame()->RequestExecuteV8Function(
       context->CreationContext(), register_cb, v8::Null(isolate), 0, nullptr,
       nullptr);
-}
-
-// static
-int RendererClientBase::GetWebFrameId(v8::Local<v8::Object> content_window) {
-  // Get the WebLocalFrame before (possibly) executing any user-space JS while
-  // getting the |params|. We track the status of the RenderFrame via an
-  // observer in case it is deleted during user code execution.
-  content::RenderFrame* render_frame = GetRenderFrame(content_window);
-  if (!render_frame)
-    return -1;
-
-  blink::WebLocalFrame* frame = render_frame->GetWebFrame();
-  // Parent must exist.
-  blink::WebFrame* parent_frame = frame->Parent();
-  DCHECK(parent_frame);
-  DCHECK(parent_frame->IsWebLocalFrame());
-
-  return render_frame->GetRoutingID();
 }
 
 }  // namespace electron

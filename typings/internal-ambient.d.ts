@@ -5,7 +5,6 @@ declare var binding: { get: (name: string) => any; process: NodeJS.Process; crea
 declare var isolatedApi: {
   guestViewInternal: any;
   allowGuestViewElementDefinition: NodeJS.InternalWebFrame['allowGuestViewElementDefinition'];
-  getWebFrameId: NodeJS.InternalWebFrame['getWebFrameId'];
   setIsWebView: (iframe: HTMLIFrameElement) => void;
   createNativeImage: typeof Electron.nativeImage['createEmpty'];
 }

@@ -91,8 +91,6 @@ class RendererClientBase : public content::ContentRendererClient
       v8::Local<v8::Object> context,
       v8::Local<v8::Function> register_cb);
 
-  static int GetWebFrameId(v8::Local<v8::Object> content_window);
-
   bool IsWebViewFrame(v8::Handle<v8::Context> context,
                       content::RenderFrame* render_frame) const;
 

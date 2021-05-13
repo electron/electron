@@ -15,7 +15,6 @@ const getNextId = function () {
 export interface WebViewImplHooks {
   readonly guestViewInternal: typeof guestViewInternalModule;
   readonly allowGuestViewElementDefinition: NodeJS.InternalWebFrame['allowGuestViewElementDefinition'];
-  readonly getWebFrameId: NodeJS.InternalWebFrame['getWebFrameId'];
   readonly setIsWebView: (iframe: HTMLIFrameElement) => void;
   readonly createNativeImage?: typeof Electron.nativeImage['createEmpty'];
 }
@@ -200,13 +199,8 @@ export class WebViewImpl {
     this.internalInstanceId = getNextId();
     this.guestInstanceId = guestInstanceId;
 
-    const embedderFrameId = this.hooks.getWebFrameId(this.internalElement.contentWindow!);
-    if (embedderFrameId < 0) { // this error should not happen.
-      throw new Error('Invalid embedder frame');
-    }
-
     this.hooks.guestViewInternal.attachGuest(
-      embedderFrameId,
+      this.internalElement,
       this.internalInstanceId,
       this.guestInstanceId,
       this.buildParams()

@@ -31,7 +31,6 @@ export function webViewInit (contextIsolation: boolean, webviewTag: boolean, gue
       setupWebView({
         guestViewInternal,
         allowGuestViewElementDefinition: webFrame.allowGuestViewElementDefinition,
-        getWebFrameId: webFrame.getWebFrameId,
         setIsWebView: iframe => v8Util.setHiddenValue(iframe, 'isWebView', true)
       });
     }

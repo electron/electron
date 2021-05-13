@@ -351,7 +351,7 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override {
     return gin::Wrappable<WebFrameRenderer>::GetObjectTemplateBuilder(isolate)
-        .SetMethod("getWebFrameId", &RendererClientBase::GetWebFrameId)
+        .SetMethod("getWebFrameId", &WebFrameRenderer::GetWebFrameId)
         .SetMethod("setName", &WebFrameRenderer::SetName)
         .SetMethod("setZoomLevel", &WebFrameRenderer::SetZoomLevel)
         .SetMethod("getZoomLevel", &WebFrameRenderer::GetZoomLevel)
@@ -527,6 +527,23 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
 
     blink::WebFrame* web_frame = render_frame->GetWebFrame();
     web_frame->View()->SetDefaultPageScaleLimits(min_level, max_level);
+  }
+
+  static int GetWebFrameId(v8::Local<v8::Object> content_window) {
+    // Get the WebLocalFrame before (possibly) executing any user-space JS while
+    // getting the |params|. We track the status of the RenderFrame via an
+    // observer in case it is deleted during user code execution.
+    content::RenderFrame* render_frame = GetRenderFrame(content_window);
+    if (!render_frame)
+      return -1;
+
+    blink::WebLocalFrame* frame = render_frame->GetWebFrame();
+    // Parent must exist.
+    blink::WebFrame* parent_frame = frame->Parent();
+    DCHECK(parent_frame);
+    DCHECK(parent_frame->IsWebLocalFrame());
+
+    return render_frame->GetRoutingID();
   }
 
   void SetSpellCheckProvider(gin_helper::ErrorThrower thrower,
