@@ -1,4 +1,4 @@
-import { webFrame, IpcMessageEvent } from 'electron';
+import { webFrame } from 'electron';
 import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal';
 import * as ipcRendererUtils from '@electron/internal/renderer/ipc-renderer-internal-utils';
 
@@ -52,15 +52,15 @@ const dispatchEvent = function (
     dispatchEvent(webView, DEPRECATED_EVENTS[eventName], eventKey, ...args);
   }
 
-  const domEvent = new Event(eventName) as ElectronInternal.WebViewEvent;
+  const props: Record<string, any> = {};
   WEB_VIEW_EVENTS[eventKey].forEach((prop, index) => {
-    (domEvent as any)[prop] = args[index];
+    props[prop] = args[index];
   });
 
-  webView.dispatchEvent(domEvent);
+  webView.dispatchEvent(eventName, props);
 
   if (eventName === 'load-commit') {
-    webView.onLoadCommit(domEvent);
+    webView.onLoadCommit(props);
   } else if (eventName === 'focus-change') {
     webView.onFocusChange();
   }
@@ -70,8 +70,7 @@ export function registerEvents (webView: WebViewImpl, viewInstanceId: number) {
   ipcRendererInternal.onMessageFromMain(`ELECTRON_GUEST_VIEW_INTERNAL_DESTROY_GUEST-${viewInstanceId}`, function () {
     webView.guestInstanceId = undefined;
     webView.reset();
-    const domEvent = new Event('destroyed');
-    webView.dispatchEvent(domEvent);
+    webView.dispatchEvent('destroyed');
   });
 
   ipcRendererInternal.onMessageFromMain(`ELECTRON_GUEST_VIEW_INTERNAL_DISPATCH_EVENT-${viewInstanceId}`, function (event, eventName, ...args) {
@@ -79,11 +78,7 @@ export function registerEvents (webView: WebViewImpl, viewInstanceId: number) {
   });
 
   ipcRendererInternal.onMessageFromMain(`ELECTRON_GUEST_VIEW_INTERNAL_IPC_MESSAGE-${viewInstanceId}`, function (event, channel, ...args) {
-    const domEvent = new Event('ipc-message') as IpcMessageEvent;
-    domEvent.channel = channel;
-    domEvent.args = args;
-
-    webView.dispatchEvent(domEvent);
+    webView.dispatchEvent('ipc-message', { channel, args });
   });
 }
 

@@ -277,16 +277,6 @@ declare namespace ElectronInternal {
     allowGuestViewElementDefinition(window: Window, context: any): void;
   }
 
-  interface WebFrameResizeEvent extends Electron.Event {
-    newWidth: number;
-    newHeight: number;
-  }
-
-  interface WebViewEvent extends Event {
-    url: string;
-    isMainFrame: boolean;
-  }
-
   class WebViewElement extends HTMLElement {
     static observedAttributes: Array<string>;
 
