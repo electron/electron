@@ -369,7 +369,7 @@ source_set("electron_lib") {
     "//third_party/webrtc_overrides:webrtc_component",
     "//third_party/widevine/cdm:headers",
     "//third_party/zlib/google:zip",
-    "//ui/accessibility",
+    "//ui/accessibility:ax_enums_mojo",
     "//ui/base",
     "//ui/base/idle",
     "//ui/events:dom_keycode_converter",
