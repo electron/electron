@@ -48,10 +48,10 @@ index 9f1acca2bdb697b79a01362a9a5d8dd098eca925..c57c03b838a773d41614002afee27520
    // This interface should only be implemented inside content.
    friend class RenderViewHostImpl;
 diff --git a/content/renderer/render_view_impl.h b/content/renderer/render_view_impl.h
-index 60e6bce680b1e03888b36026e712d5806fc48256..7d004e0eb6f1f03669a99cfe7777cbd012205a9f 100644
+index b65e4cc345b05292e1c31d0b05dacc1363d641a8..fe2f8b68cd7cc3f4417ae70dcd711ae56883e117 100644
 --- a/content/renderer/render_view_impl.h
 +++ b/content/renderer/render_view_impl.h
-@@ -194,6 +194,8 @@ class CONTENT_EXPORT RenderViewImpl : public blink::WebViewClient,
+@@ -200,6 +200,8 @@ class CONTENT_EXPORT RenderViewImpl : public blink::WebViewClient,
    static WindowOpenDisposition NavigationPolicyToDisposition(
        blink::WebNavigationPolicy policy);
  

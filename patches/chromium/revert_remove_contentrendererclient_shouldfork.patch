@@ -88,7 +88,7 @@ index 6191d4774ae35f00c3b58f62719962de616c8ad7..f717ae1d8e3bf642792f1dcfebbaa287
    // |url|. If the function returns a valid |new_url|, the request must be
    // updated to use it.
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index e3a89fec6fd45262e75e557da1d0ae10f3295828..1959f22a9a62fdbe251d1dd06ae817bc47b38d4e 100644
+index c2b9b96589183d1a4fae8593e7994a10baa5e29b..8b23d276dbc7ba0ec27ab4e9e0fd916f49f8f423 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
 @@ -4908,6 +4908,22 @@ void RenderFrameImpl::BeginNavigation(
