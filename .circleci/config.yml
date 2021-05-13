@@ -661,6 +661,7 @@ step-persist-data-for-tests: &step-persist-data-for-tests
       - src/electron
       - src/third_party/electron_node
       - src/third_party/nan
+      - src/third_party
       - src/cross-arch-snapshots
       - src/third_party/llvm-build
       - src/build/linux
