@@ -165,7 +165,8 @@ bool ElectronRenderFrameObserver::ShouldNotifyClient(int world_id) {
   // https://source.chromium.org/chromium/chromium/src/+/main:content/renderer/render_frame_impl.h;l=870-892;drc=4b6001440a18740b76a1c63fa2a002cc941db394
   GURL url = render_frame_->GetWebFrame()->GetDocument().Url();
   bool allow_node_in_sub_frames = prefs.node_integration_in_sub_frames;
-  if (allow_node_in_sub_frames && url.IsAboutBlank())
+  if (allow_node_in_sub_frames && url.IsAboutBlank() &&
+      !render_frame_->IsMainFrame())
     return false;
 
   if (prefs.context_isolation &&
