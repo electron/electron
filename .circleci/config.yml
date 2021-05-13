@@ -1139,49 +1139,6 @@ steps-lint: &steps-lint
           cd src/electron
           node script/yarn tsc -p tsconfig.script.json
 
-steps-checkout-and-save-cache: &steps-checkout-and-save-cache
-  steps:
-    - *step-checkout-electron
-    - *step-check-for-doc-only-change
-    - *step-persist-doc-only-change
-    - *step-maybe-early-exit-doc-only-change
-    - *step-depot-tools-get
-    - *step-depot-tools-add-to-path
-    - *step-restore-brew-cache
-    - *step-get-more-space-on-mac
-    - *step-install-gnutar-on-mac
-
-    - *step-generate-deps-hash
-    - *step-touch-sync-done
-    - maybe-restore-portaled-src-cache:
-        halt-if-successful: true
-    - *step-maybe-restore-git-cache
-    - *step-set-git-cache-path
-    # This sync call only runs if .circle-sync-done is an EMPTY file
-    - *step-gclient-sync
-    - store_artifacts:
-        path: patches
-    - *step-save-git-cache
-    # These next few steps reset Electron to the correct commit regardless of which cache was restored
-    - run:
-        name: Wipe Electron
-        command: rm -rf src/electron
-    - *step-checkout-electron
-    - *step-run-electron-only-hooks
-    - *step-generate-deps-hash-cleanly
-    - *step-mark-sync-done
-    - *step-minimize-workspace-size-from-checkout
-    - *step-delete-git-directories
-    - run:
-        name: Move src folder to the cross-OS portal
-        command: |
-          sudo mkdir -p /var/portal
-          sudo chown -R $(id -u):$(id -g) /var/portal
-          mv ./src /var/portal
-    - *step-save-src-cache
-    - *step-make-src-cache-marker
-    - *step-save-src-cache-marker
-
 steps-electron-gn-check: &steps-electron-gn-check
   steps:
     - attach_workspace:
@@ -1445,6 +1402,12 @@ commands:
       checkout-and-assume-cache:
         type: boolean
         default: false
+      save-git-cache:
+        type: boolean
+        default: false
+      checkout-to-create-src-cache:
+        type: boolean
+        default: false
       build:
         type: boolean
         default: true
@@ -1486,13 +1449,18 @@ commands:
             - when:
                 condition: << parameters.restore-src-cache >>
                 steps:
-                  - maybe-restore-portaled-src-cache
+                  - maybe-restore-portaled-src-cache:
+                      halt-if-successful: << parameters.checkout-to-create-src-cache >>
             - *step-maybe-restore-git-cache
             - *step-set-git-cache-path
             # This sync call only runs if .circle-sync-done is an EMPTY file
             - *step-gclient-sync
             - store_artifacts:
                 path: patches
+            - when:
+                condition: << parameters.save-git-cache >>
+                steps:
+                  - *step-save-git-cache
             # These next few steps reset Electron to the correct commit regardless of which cache was restored
             - run:
                 name: Wipe Electron
@@ -1502,6 +1470,7 @@ commands:
             - *step-generate-deps-hash-cleanly
             - *step-mark-sync-done
             - *step-minimize-workspace-size-from-checkout
+            - *step-delete-git-directories
             - when:
                 condition: << parameters.persist-checkout >>
                 steps:
@@ -1510,6 +1479,18 @@ commands:
                       paths:
                         - depot_tools
                         - src
+            - when:
+                condition: << parameters.checkout-to-create-src-cache >>
+                steps:
+                  - run:
+                      name: Move src folder to the cross-OS portal
+                      command: |
+                        sudo mkdir -p /var/portal
+                        sudo chown -R $(id -u):$(id -g) /var/portal
+                        mv ./src /var/portal
+                  - *step-save-src-cache
+                  - *step-make-src-cache-marker
+                  - *step-save-src-cache-marker
 
       - when:
           condition: << parameters.build >>
@@ -1709,7 +1690,7 @@ jobs:
           persist-checkout: true
           restore-src-cache: false
 
-  linux-checkout-fast:
+  linux-checkout-for-workspace:
     executor: linux-docker
     environment:
       <<: *env-linux-2xlarge
@@ -1721,12 +1702,18 @@ jobs:
           checkout: true
           persist-checkout: true
 
-  linux-checkout-and-save-cache:
+  linux-make-src-cache:
     executor: linux-docker
     environment:
       <<: *env-linux-2xlarge
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
-    <<: *steps-checkout-and-save-cache
+    steps:
+      - electron-build:
+          persist: false
+          build: false
+          checkout: true
+          save-git-cache: true
+          checkout-to-create-src-cache: true
 
   linux-checkout-for-native-tests:
     executor: linux-docker
@@ -1767,7 +1754,7 @@ jobs:
           persist-checkout: true
           restore-src-cache: false
 
-  mac-checkout-fast:
+  mac-checkout-for-workspace:
     executor: linux-docker
     environment:
       <<: *env-linux-2xlarge
@@ -1781,14 +1768,20 @@ jobs:
           checkout: true
           persist-checkout: true
 
-  mac-checkout-and-save-cache:
+  mac-make-src-cache:
     executor: linux-docker
     environment:
       <<: *env-linux-2xlarge
       <<: *env-testing-build
       <<: *env-macos-build
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
-    <<: *steps-checkout-and-save-cache
+    steps:
+      - electron-build:
+          persist: false
+          build: false
+          checkout: true
+          save-git-cache: true
+          checkout-to-create-src-cache: true
 
   # Layer 2: Builds.
   linux-x64-testing:
@@ -2491,15 +2484,15 @@ workflows:
   build-linux:
     when: << pipeline.parameters.run-build-linux >>
     jobs:
-      - linux-checkout-fast
-      - linux-checkout-and-save-cache
+      - linux-checkout-for-workspace
+      - linux-make-src-cache
 
       - linux-x64-testing
       - linux-x64-testing-asan
       - linux-x64-testing-no-run-as-node
       - linux-x64-testing-gn-check:
           requires:
-            - linux-checkout-fast
+            - linux-checkout-for-workspace
       - linux-x64-testing-tests:
           requires:
             - linux-x64-testing
@@ -2529,22 +2522,22 @@ workflows:
       - linux-arm64-testing
       - linux-arm64-testing-gn-check:
           requires:
-            - linux-checkout-fast
+            - linux-checkout-for-workspace
       - ts-compile-doc-change
 
   build-mac:
     when: << pipeline.parameters.run-build-mac >>
     jobs:
-      - mac-checkout-fast
-      - mac-checkout-and-save-cache
+      - mac-checkout-for-workspace
+      - mac-make-src-cache
 
       - osx-testing-x64:
           requires:
-            - mac-checkout-and-save-cache
+            - mac-make-src-cache
 
       - osx-testing-x64-gn-check:
           requires:
-            - mac-checkout-fast
+            - mac-checkout-for-workspace
 
       - osx-testing-x64-tests:
           requires:
@@ -2552,7 +2545,7 @@ workflows:
 
       - osx-testing-arm64:
           requires:
-            - mac-checkout-and-save-cache
+            - mac-make-src-cache
 
       - osx-testing-arm64-tests:
           filters:
@@ -2564,11 +2557,11 @@ workflows:
 
       - mas-testing-x64:
           requires:
-            - mac-checkout-and-save-cache
+            - mac-make-src-cache
 
       - mas-testing-x64-gn-check:
           requires:
-            - mac-checkout-fast
+            - mac-checkout-for-workspace
 
       - mas-testing-x64-tests:
           requires:
@@ -2576,7 +2569,7 @@ workflows:
 
       - mas-testing-arm64:
           requires:
-            - mac-checkout-and-save-cache
+            - mac-make-src-cache
 
       - mas-testing-arm64-tests:
           filters:
@@ -2595,8 +2588,8 @@ workflows:
               only:
                 - master
     jobs:
-      - linux-checkout-fast
-      - linux-checkout-and-save-cache
+      - linux-checkout-for-workspace
+      - linux-make-src-cache
 
       - linux-x64-release
       - linux-x64-release-tests:
