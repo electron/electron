@@ -53,6 +53,10 @@ export function createGuest (params: Record<string, any>): Promise<number> {
 }
 
 export function attachGuest (iframe: HTMLIFrameElement, elementInstanceId: number, guestInstanceId: number, params: Record<string, any>) {
+  if (!(iframe instanceof HTMLIFrameElement)) {
+    throw new Error('Invalid embedder frame');
+  }
+
   const embedderFrameId = webFrame.getWebFrameId(iframe.contentWindow!);
   if (embedderFrameId < 0) { // this error should not happen.
     throw new Error('Invalid embedder frame');
