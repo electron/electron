@@ -261,7 +261,7 @@ step-gclient-sync: &step-gclient-sync
           if ! git diff-index --quiet HEAD --; then
             # There are changes to the patches. Make a git commit with the updated patches
             git add patches
-            GIT_COMMITTER_NAME="Electron Bot" GIT_COMMITTER_EMAIL="electron@github.com" git commit -m "update patches" --author="Electron Bot <electron@github.com>"
+            GIT_COMMITTER_NAME="PatchUp" GIT_COMMITTER_EMAIL="73610968+patchup[bot]@users.noreply.github.com" git commit -m "chore: update patches" --author="PatchUp <73610968+patchup[bot]@users.noreply.github.com>"
             # Export it
             mkdir -p ../../patches
             git format-patch -1 --stdout --keep-subject --no-stat --full-index > ../../patches/update-patches.patch
