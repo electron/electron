@@ -1,0 +1,20 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: VerteDinde <keeleymhammond@gmail.com>
+Date: Thu, 13 May 2021 11:46:48 -0700
+Subject: build_libc++abi as static
+
+Addresses nan symbol errors, builds libc++abi as static
+
+diff --git a/buildtools/third_party/libc++abi/BUILD.gn b/buildtools/third_party/libc++abi/BUILD.gn
+index 8b1da01ce87ff6db8e67938d4c083312cfa3101f..1668eba70db1933a434709c0140fe125991249b3 100644
+--- a/buildtools/third_party/libc++abi/BUILD.gn
++++ b/buildtools/third_party/libc++abi/BUILD.gn
+@@ -4,7 +4,7 @@
+ 
+ import("//build/config/c++/c++.gni")
+ 
+-source_set("libc++abi") {
++static_library("libc++abi") {
+   if (export_libcxxabi_from_executables) {
+     visibility = [ "//build/config:executable_deps" ]
+   } else {

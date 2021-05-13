@@ -107,3 +107,4 @@ make_include_of_stack_trace_h_unconditional.patch
 revert_roll_clang_llvmorg-13-init-7051-gdad5caa5-2.patch
 cherry-pick-5d3a047a15e0.patch
 build_libc_as_static_library.patch
+build_libc_abi_as_static.patch
