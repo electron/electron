@@ -177,7 +177,7 @@ Menu.setApplicationMenu = function (menu: MenuType) {
     bindings.setApplicationMenu(menu);
   } else {
     const windows = BaseWindow.getAllWindows();
-    return windows.map(w => w.setMenu(menu));
+    windows.map(w => w.setMenu(menu));
   }
 };
 
