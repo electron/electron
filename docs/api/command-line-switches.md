@@ -142,7 +142,8 @@ proxy server flags that are passed.
 
 ### --no-sandbox
 
-Disables Chromium sandbox, which is now enabled by default.
+Disables the Chromium [sandbox](https://www.chromium.org/developers/design-documents/sandbox).
+Forces renderer process and Chromium helper processes to run un-sandboxed.
 Should only be used for testing.
 
 ### --proxy-bypass-list=`hosts`
