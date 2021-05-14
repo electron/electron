@@ -139,7 +139,7 @@ NativeImage::~NativeImage() {
     auto* const image_skia = image_.ToImageSkia();
     if (!image_skia->isNull()) {
       isolate_->AdjustAmountOfExternalAllocatedMemory(
-          image_skia->bitmap()->computeByteSize());
+          -static_cast<int64_t>(image_skia->bitmap()->computeByteSize()));
     }
   }
 }
