@@ -9,7 +9,7 @@ with what's exposed through BoringSSL. I plan to upstream parts of this or
 otherwise introduce shims to reduce friction.
 
 diff --git a/src/node_crypto.cc b/src/node_crypto.cc
-index c0baf86802a67f00830c81d325f448bcea7d4e40..c2fd0f94eeb1aeaecdb18e80268ef1fb84c5c8c2 100644
+index c119b2314f18d1710bb3cbf1910c86ff994ec951..58554799b50097972405e40f593d089236bca961 100644
 --- a/src/node_crypto.cc
 +++ b/src/node_crypto.cc
 @@ -5207,11 +5207,11 @@ bool DiffieHellman::Init(int primeLength, int g) {

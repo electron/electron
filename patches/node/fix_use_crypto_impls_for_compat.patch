@@ -3,12 +3,21 @@ From: Shelley Vohr <shelley.vohr@gmail.com>
 Date: Wed, 12 Feb 2020 15:08:04 -0800
 Subject: fix: use crypto impls for compat
 
-BoringSSL does not export DSA_get0_q. This patch works around that problem
-by using the implementations of those functions as found in the OpenSSL repo.
-I plan to try and upstream a version of this.
+BoringSSL does not export DSA_get0_q, OPENSSL_secure_malloc, or
+OPENSSL_secure_clear_free.
+
+This patch works around the DSA_get0_q problem by using the
+implementations of that function as found in the OpenSSL repo.
+
+Node.js added the malloc/free incompatibilities in https://github.com/nodejs/node/pull/36729
+though they don't use secure heap at the moment. This makes it equivalent
+to swap these out with OPENSSL_malloc and OPENSSL_clear_free at present.
+We can revisit this once that happens and determine a more mutually
+compatible path forward either by upstreaming a shim to BoringSSL or
+adapting Node.js.
 
 diff --git a/src/node_crypto.cc b/src/node_crypto.cc
-index 79e781fb3e6ec63334c2c5d4b24d2a6049be79fc..c0baf86802a67f00830c81d325f448bcea7d4e40 100644
+index 79e781fb3e6ec63334c2c5d4b24d2a6049be79fc..c119b2314f18d1710bb3cbf1910c86ff994ec951 100644
 --- a/src/node_crypto.cc
 +++ b/src/node_crypto.cc
 @@ -4574,7 +4574,7 @@ static unsigned int GetBytesOfRS(const ManagedEVPPKey& pkey) {
@@ -20,3 +29,21 @@ index 79e781fb3e6ec63334c2c5d4b24d2a6049be79fc..c0baf86802a67f00830c81d325f448bc
    } else if (base_id == EVP_PKEY_EC) {
      EC_KEY* ec_key = EVP_PKEY_get0_EC_KEY(pkey.get());
      const EC_GROUP* ec_group = EC_KEY_get0_group(ec_key);
+@@ -6949,7 +6949,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+   CHECK(args[0]->IsUint32());
+   Environment* env = Environment::GetCurrent(args);
+   uint32_t len = args[0].As<Uint32>()->Value();
+-  char* data = static_cast<char*>(OPENSSL_secure_malloc(len));
++  char* data = static_cast<char*>(OPENSSL_malloc(len));
+   if (data == nullptr) {
+     // There's no memory available for the allocation.
+     // Return nothing.
+@@ -6961,7 +6961,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+           data,
+           len,
+           [](void* data, size_t len, void* deleter_data) {
+-            OPENSSL_secure_clear_free(data, len);
++            OPENSSL_clear_free(data, len);
+           },
+           data);
+   Local<ArrayBuffer> buffer = ArrayBuffer::New(env->isolate(), store);
