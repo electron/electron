@@ -14,6 +14,7 @@
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/application_info.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/microtasks_scope.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
@@ -168,6 +169,8 @@ void ElectronSandboxedRendererClient::RunScriptsAtDocumentStart(
     return;
 
   auto* isolate = blink::MainThreadIsolate();
+  gin_helper::MicrotasksScope microtasks_scope(
+      isolate, v8::MicrotasksScope::kDoNotRunMicrotasks);
   v8::HandleScope handle_scope(isolate);
 
   v8::Local<v8::Context> context =
@@ -184,6 +187,8 @@ void ElectronSandboxedRendererClient::RunScriptsAtDocumentEnd(
     return;
 
   auto* isolate = blink::MainThreadIsolate();
+  gin_helper::MicrotasksScope microtasks_scope(
+      isolate, v8::MicrotasksScope::kDoNotRunMicrotasks);
   v8::HandleScope handle_scope(isolate);
 
   v8::Local<v8::Context> context =
@@ -269,6 +274,8 @@ void ElectronSandboxedRendererClient::WillReleaseScriptContext(
     return;
 
   auto* isolate = context->GetIsolate();
+  gin_helper::MicrotasksScope microtasks_scope(
+      isolate, v8::MicrotasksScope::kDoNotRunMicrotasks);
   v8::HandleScope handle_scope(isolate);
   v8::Context::Scope context_scope(context);
   InvokeHiddenCallback(context, kLifecycleKey, "onExit");

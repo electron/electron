@@ -54,10 +54,10 @@ index 19c2beb1f1949f0dc4466a8728f151c035544b24..f7aa5f94d6dea0e6b2c1107b8ef01600
  
    scoped_refptr<ServiceWorkerContextWrapper> service_worker_context_;
 diff --git a/content/browser/notifications/blink_notification_service_impl_unittest.cc b/content/browser/notifications/blink_notification_service_impl_unittest.cc
-index e27c23e0aeaf08c903c2fc1f7cb0b24d137b9a7a..4768449379941021c9c2fd388040b75395129231 100644
+index 3694fd8900bee0f235bbae31def3f5e6338538ed..5942c9fe4aab65492e78eaa4396bd362ab9f6d4b 100644
 --- a/content/browser/notifications/blink_notification_service_impl_unittest.cc
 +++ b/content/browser/notifications/blink_notification_service_impl_unittest.cc
-@@ -138,7 +138,7 @@ class BlinkNotificationServiceImplTest : public ::testing::Test {
+@@ -139,7 +139,7 @@ class BlinkNotificationServiceImplTest : public ::testing::Test {
  
      notification_service_ = std::make_unique<BlinkNotificationServiceImpl>(
          notification_context_.get(), &browser_context_,
@@ -108,7 +108,7 @@ index 71dad766e05ac4726e1e18159f2af5ea01079a91..ef8e55a4420288fe64c99e68d0a649a9
        const GURL& document_url,
        mojo::PendingReceiver<blink::mojom::NotificationService> receiver);
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 6eee013d0401a7507cdcc0773ab0d9418c86b5c4..2afda54851efbb052371ce1e49f29cc56e93dce4 100644
+index efe1470d3af7c923f2a65ce4988f078f6e56672e..e68880e344f8efd790da07b2fd1071a2666f489c 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -2160,7 +2160,7 @@ void RenderProcessHostImpl::CreateNotificationService(
