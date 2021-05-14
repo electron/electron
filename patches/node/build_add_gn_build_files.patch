@@ -373,10 +373,10 @@ index 0000000000000000000000000000000000000000..446119163d1f7bad577cb0b7b217ecf2
 +}
 diff --git a/deps/cares/BUILD.gn b/deps/cares/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..adce7f6aa905540da7eb8042606a285b260fefc4
+index 0000000000000000000000000000000000000000..880bc22a44db82ef6bf9766bb2ad5af2a2f6d719
 --- /dev/null
 +++ b/deps/cares/BUILD.gn
-@@ -0,0 +1,131 @@
+@@ -0,0 +1,132 @@
 +config("cares_config") {
 +  include_dirs = [ "include" ]
 +}
@@ -399,13 +399,9 @@ index 0000000000000000000000000000000000000000..adce7f6aa905540da7eb8042606a285b
 +    "include/ares_rules.h",
 +    "include/ares_version.h",
 +    "include/nameser.h",
-+    "src/ares__close_sockets.c",
-+    "src/ares__get_hostent.c",
-+    "src/ares__read_line.c",
-+    "src/ares__readaddrinfo.c",
-+    "src/ares__timeval.c",
 +    "src/ares_android.c",
 +    "src/ares_cancel.c",
++    "src/ares__close_sockets.c",
 +    "src/ares_create_query.c",
 +    "src/ares_data.c",
 +    "src/ares_data.h",
@@ -421,11 +417,11 @@ index 0000000000000000000000000000000000000000..adce7f6aa905540da7eb8042606a285b
 +    "src/ares_getaddrinfo.c",
 +    "src/ares_gethostbyaddr.c",
 +    "src/ares_gethostbyname.c",
++    "src/ares__get_hostent.c",
 +    "src/ares_getnameinfo.c",
 +    "src/ares_getopt.c",
 +    "src/ares_getopt.h",
 +    "src/ares_getsock.c",
-+    "src/ares_inet_net_pton.h",
 +    "src/ares_init.c",
 +    "src/ares_ipv6.h",
 +    "src/ares_library_init.c",
@@ -437,8 +433,9 @@ index 0000000000000000000000000000000000000000..adce7f6aa905540da7eb8042606a285b
 +    "src/ares_nowarn.h",
 +    "src/ares_options.c",
 +    "src/ares__parse_into_addrinfo.c",
-+    "src/ares_parse_a_reply.c",
 +    "src/ares_parse_aaaa_reply.c",
++    "src/ares_parse_a_reply.c",
++    "src/ares_parse_caa_reply.c",
 +    "src/ares_parse_mx_reply.c",
 +    "src/ares_parse_naptr_reply.c",
 +    "src/ares_parse_ns_reply.c",
@@ -450,6 +447,8 @@ index 0000000000000000000000000000000000000000..adce7f6aa905540da7eb8042606a285b
 +    "src/ares_private.h",
 +    "src/ares_process.c",
 +    "src/ares_query.c",
++    "src/ares__read_line.c",
++    "src/ares__readaddrinfo.c",
 +    "src/ares_search.c",
 +    "src/ares_send.c",
 +    "src/ares_setup.h",
@@ -461,6 +460,7 @@ index 0000000000000000000000000000000000000000..adce7f6aa905540da7eb8042606a285b
 +    "src/ares_strerror.c",
 +    "src/ares_strsplit.c",
 +    "src/ares_timeout.c",
++    "src/ares__timeval.c",
 +    "src/ares_version.c",
 +    "src/ares_writev.c",
 +    "src/ares_writev.h",
@@ -468,6 +468,7 @@ index 0000000000000000000000000000000000000000..adce7f6aa905540da7eb8042606a285b
 +    "src/bitncmp.h",
 +    "src/inet_net_pton.c",
 +    "src/inet_ntop.c",
++    "src/ares_inet_net_pton.h",
 +    "src/setup_once.h",
 +  ]
 +
