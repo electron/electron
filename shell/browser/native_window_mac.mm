@@ -1338,6 +1338,7 @@ void NativeWindowMac::UpdateVibrancyRadii(bool fullscreen) {
       [maskImage setCapInsets:NSEdgeInsetsMake(radius, radius, radius, radius)];
       [maskImage setResizingMode:NSImageResizingModeStretch];
       [effect_view setMaskImage:maskImage];
+      [window_ setCornerMask:maskImage];
     }
   }
 }
@@ -1346,10 +1347,6 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
   NSView* vibrant_view = [window_ vibrantView];
 
   if (type.empty()) {
-    if (background_color_before_vibrancy_) {
-      [window_ setBackgroundColor:background_color_before_vibrancy_];
-      [window_ setTitlebarAppearsTransparent:transparency_before_vibrancy_];
-    }
     if (vibrant_view == nil)
       return;
 
@@ -1360,13 +1357,6 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
   }
 
   vibrancy_type_ = type;
-  background_color_before_vibrancy_.reset([[window_ backgroundColor] retain]);
-  transparency_before_vibrancy_ = [window_ titlebarAppearsTransparent];
-
-  if (title_bar_style_ != TitleBarStyle::kNormal) {
-    [window_ setTitlebarAppearsTransparent:YES];
-    [window_ setBackgroundColor:[NSColor clearColor]];
-  }
 
   NSVisualEffectView* effect_view = (NSVisualEffectView*)vibrant_view;
   if (effect_view == nil) {
