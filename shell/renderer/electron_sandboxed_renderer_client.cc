@@ -204,8 +204,10 @@ void ElectronSandboxedRendererClient::DidCreateScriptContext(
   bool is_main_frame = render_frame->IsMainFrame();
   bool is_devtools =
       IsDevTools(render_frame) || IsDevToolsExtension(render_frame);
+
   bool allow_node_in_sub_frames =
       render_frame->GetBlinkPreferences().node_integration_in_sub_frames;
+
   bool should_load_preload =
       (is_main_frame || is_devtools || allow_node_in_sub_frames) &&
       !IsWebViewFrame(context, render_frame);
