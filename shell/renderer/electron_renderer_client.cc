@@ -80,12 +80,13 @@ void ElectronRendererClient::DidCreateScriptContext(
   // TODO(zcbenz): Do not create Node environment if node integration is not
   // enabled.
 
-  // Only load node if we are a main frame or a devtools extension
-  // unless node support has been explicitly enabled for sub frames
+  // Only load Node.js if we are a main frame or a devtools extension
+  // unless Node.js support has been explicitly enabled for subframes.
   auto prefs = render_frame->GetBlinkPreferences();
   bool is_main_frame = render_frame->IsMainFrame();
   bool is_devtools = IsDevToolsExtension(render_frame);
   bool allow_node_in_subframes = prefs.node_integration_in_sub_frames;
+
   bool should_load_node =
       (is_main_frame || is_devtools || allow_node_in_subframes) &&
       !IsWebViewFrame(renderer_context, render_frame);
