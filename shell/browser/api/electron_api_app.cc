@@ -1442,6 +1442,28 @@ void App::SetUserAgentFallback(const std::string& user_agent) {
   ElectronBrowserClient::Get()->SetUserAgent(user_agent);
 }
 
+#if defined(OS_WIN)
+
+typedef BOOL(WINAPI* LPFN_ISWOW64PROCESS2)(HANDLE, PUSHORT, PUSHORT);
+
+bool App::IsRunningUnderARM64Translation() const {
+  USHORT processMachine = 0;
+  USHORT nativeMachine = 0;
+
+  LPFN_ISWOW64PROCESS2 fnIsWow64Process2 = (LPFN_ISWOW64PROCESS2)GetProcAddress(
+      GetModuleHandle(L"kernel32"), "IsWow64Process2");
+
+  if (fnIsWow64Process2 != NULL) {
+    if (!fnIsWow64Process2(GetCurrentProcess(), &processMachine,
+                           &nativeMachine)) {
+      return false;
+    }
+  }
+
+  return nativeMachine == 0xaa64;
+}
+#endif
+
 std::string App::GetUserAgentFallback() {
   return ElectronBrowserClient::Get()->GetUserAgent();
 }
@@ -1644,6 +1666,10 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetProperty("dock", &App::GetDockAPI)
       .SetProperty("runningUnderRosettaTranslation",
                    &App::IsRunningUnderRosettaTranslation)
+#endif
+#if defined(OS_MAC) || defined(OS_WIN)
+      .SetProperty("runningUnderARM64Translation",
+                   &App::IsRunningUnderARM64Translation)
 #endif
       .SetProperty("userAgentFallback", &App::GetUserAgentFallback,
                    &App::SetUserAgentFallback)

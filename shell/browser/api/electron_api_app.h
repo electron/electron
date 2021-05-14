@@ -224,6 +224,10 @@ class App : public ElectronBrowserClient::Delegate,
   v8::Global<v8::Value> dock_;
 #endif
 
+#if defined(OS_MAC) || defined(OS_WIN)
+  bool IsRunningUnderARM64Translation() const;
+#endif
+
 #if defined(MAS_BUILD)
   base::RepeatingCallback<void()> StartAccessingSecurityScopedResource(
       gin::Arguments* args);
