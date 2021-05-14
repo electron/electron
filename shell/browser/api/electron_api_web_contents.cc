@@ -2218,10 +2218,8 @@ void WebContents::EnableDeviceEmulation(
   DCHECK(web_contents());
   auto* frame_host = web_contents()->GetMainFrame();
   if (frame_host) {
-    auto* widget_host_impl =
-        frame_host ? static_cast<content::RenderWidgetHostImpl*>(
-                         frame_host->GetView()->GetRenderWidgetHost())
-                   : nullptr;
+    auto* widget_host_impl = static_cast<content::RenderWidgetHostImpl*>(
+        frame_host->GetView()->GetRenderWidgetHost());
     if (widget_host_impl) {
       auto& frame_widget = widget_host_impl->GetAssociatedFrameWidget();
       frame_widget->EnableDeviceEmulation(params);
@@ -2236,10 +2234,8 @@ void WebContents::DisableDeviceEmulation() {
   DCHECK(web_contents());
   auto* frame_host = web_contents()->GetMainFrame();
   if (frame_host) {
-    auto* widget_host_impl =
-        frame_host ? static_cast<content::RenderWidgetHostImpl*>(
-                         frame_host->GetView()->GetRenderWidgetHost())
-                   : nullptr;
+    auto* widget_host_impl = static_cast<content::RenderWidgetHostImpl*>(
+        frame_host->GetView()->GetRenderWidgetHost());
     if (widget_host_impl) {
       auto& frame_widget = widget_host_impl->GetAssociatedFrameWidget();
       frame_widget->DisableDeviceEmulation();

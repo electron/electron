@@ -118,6 +118,8 @@ class NativeImage : public gin::Wrappable<NativeImage> {
   float GetAspectRatio(const base::Optional<float> scale_factor);
   void AddRepresentation(const gin_helper::Dictionary& options);
 
+  void AdjustAmountOfExternalAllocatedMemory(bool add);
+
   // Mark the image as template image.
   void SetTemplateImage(bool setAsTemplate);
   // Determine if the image is a template image.

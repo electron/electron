@@ -82,9 +82,6 @@ class RendererClientBase : public content::ContentRendererClient
   // Get the context that the Electron API is running in.
   v8::Local<v8::Context> GetContext(blink::WebLocalFrame* frame,
                                     v8::Isolate* isolate) const;
-  // Executes a given v8 Script
-  static v8::Local<v8::Value> RunScript(v8::Local<v8::Context> context,
-                                        v8::Local<v8::String> source);
 
   static void AllowGuestViewElementDefinition(
       v8::Isolate* isolate,

@@ -88,17 +88,9 @@
 
 namespace electron {
 
-namespace {
+content::RenderFrame* GetRenderFrame(v8::Local<v8::Object> value);
 
-content::RenderFrame* GetRenderFrame(v8::Local<v8::Object> value) {
-  v8::Local<v8::Context> context = value->CreationContext();
-  if (context.IsEmpty())
-    return nullptr;
-  blink::WebLocalFrame* frame = blink::WebLocalFrame::FrameForContext(context);
-  if (!frame)
-    return nullptr;
-  return content::RenderFrame::FromWebFrame(frame);
-}
+namespace {
 
 void SetIsWebView(v8::Isolate* isolate, v8::Local<v8::Object> object) {
   gin_helper::Dictionary dict(isolate, object);
@@ -481,16 +473,6 @@ v8::Local<v8::Context> RendererClientBase::GetContext(
     return frame->WorldScriptContext(isolate, WorldIDs::ISOLATED_WORLD_ID);
   else
     return frame->MainWorldScriptContext();
-}
-
-v8::Local<v8::Value> RendererClientBase::RunScript(
-    v8::Local<v8::Context> context,
-    v8::Local<v8::String> source) {
-  auto maybe_script = v8::Script::Compile(context, source);
-  v8::Local<v8::Script> script;
-  if (!maybe_script.ToLocal(&script))
-    return v8::Local<v8::Value>();
-  return script->Run(context).ToLocalChecked();
 }
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
