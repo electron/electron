@@ -35,6 +35,10 @@ class WindowStateWatcher;
 class EventDisabler;
 #endif
 
+#if defined(OS_WIN)
+gfx::Rect ScreenToDIPRect(HWND hwnd, const gfx::Rect& pixel_bounds);
+#endif
+
 class NativeWindowViews : public NativeWindow,
                           public views::WidgetObserver,
                           public ui::EventHandler {
