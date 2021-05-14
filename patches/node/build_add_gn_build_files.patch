@@ -554,10 +554,10 @@ index 0000000000000000000000000000000000000000..ce15bc57093caa1bd84ea77e7438e892
 +}
 diff --git a/deps/nghttp2/BUILD.gn b/deps/nghttp2/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..66af819990b338caa49ca59d1fe6c5ad61816d05
+index 0000000000000000000000000000000000000000..cd25ec4a073b45fd80beee829165e0dac4d8c5c1
 --- /dev/null
 +++ b/deps/nghttp2/BUILD.gn
-@@ -0,0 +1,46 @@
+@@ -0,0 +1,47 @@
 +config("nghttp2_config") {
 +  defines = [ "NGHTTP2_STATICLIB" ]
 +  include_dirs = [ "lib/includes" ]
@@ -589,6 +589,7 @@ index 0000000000000000000000000000000000000000..66af819990b338caa49ca59d1fe6c5ad
 +    "lib/nghttp2_hd_huffman_data.c",
 +    "lib/nghttp2_helper.c",
 +    "lib/nghttp2_http.c",
++    "lib/nghttp2_ksl.c",
 +    "lib/nghttp2_map.c",
 +    "lib/nghttp2_mem.c",
 +    "lib/nghttp2_npn.c",
