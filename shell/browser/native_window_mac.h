@@ -270,8 +270,6 @@ class NativeWindowMac : public NativeWindow,
   NSInteger original_level_;
   NSUInteger simple_fullscreen_mask_;
 
-  base::scoped_nsobject<NSColor> background_color_before_vibrancy_;
-  bool transparency_before_vibrancy_ = false;
   std::string vibrancy_type_;
 
   // The presentation options before entering simple fullscreen mode.
