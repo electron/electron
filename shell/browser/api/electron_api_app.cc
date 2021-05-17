@@ -1444,23 +1444,21 @@ void App::SetUserAgentFallback(const std::string& user_agent) {
 
 #if defined(OS_WIN)
 
-typedef BOOL(WINAPI* LPFN_ISWOW64PROCESS2)(HANDLE, PUSHORT, PUSHORT);
-
 bool App::IsRunningUnderARM64Translation() const {
   USHORT processMachine = 0;
   USHORT nativeMachine = 0;
 
-  LPFN_ISWOW64PROCESS2 fnIsWow64Process2 = (LPFN_ISWOW64PROCESS2)GetProcAddress(
-      GetModuleHandle(L"kernel32"), "IsWow64Process2");
+  auto IsWow64Process2 = reinterpret_cast<decltype(&::IsWow64Process2)>(
+      GetProcAddress(GetModuleHandle(L"kernel32.dll"), "IsWow64Process2"));
 
-  if (fnIsWow64Process2 != NULL) {
-    if (!fnIsWow64Process2(GetCurrentProcess(), &processMachine,
-                           &nativeMachine)) {
+  if (IsWow64Process2) {
+    if (!IsWow64Process2(GetCurrentProcess(), &processMachine,
+                         &nativeMachine)) {
       return false;
     }
   }
 
-  return nativeMachine == 0xaa64;
+  return nativeMachine == IMAGE_FILE_MACHINE_ARM64;
 }
 #endif
 
