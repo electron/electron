@@ -1377,9 +1377,7 @@ std::vector<gin_helper::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
 }
 
 v8::Local<v8::Value> App::GetGPUFeatureStatus(v8::Isolate* isolate) {
-  auto status = content::GetFeatureStatus();
-  base::DictionaryValue temp;
-  return gin::ConvertToV8(isolate, status ? *status : temp);
+  return gin::ConvertToV8(isolate, content::GetFeatureStatus());
 }
 
 v8::Local<v8::Promise> App::GetGPUInfo(v8::Isolate* isolate,

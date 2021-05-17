@@ -10,6 +10,7 @@
 #include "base/optional.h"
 #include "base/task/thread_pool.h"
 #include "base/threading/thread_restrictions.h"
+#include "base/trace_event/trace_config.h"
 #include "content/public/browser/tracing_controller.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"

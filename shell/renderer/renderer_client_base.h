@@ -74,7 +74,7 @@ class RendererClientBase : public content::ContentRendererClient
                                         content::RenderFrame* render_frame) = 0;
   virtual void DidClearWindowObject(content::RenderFrame* render_frame);
   virtual void SetupMainWorldOverrides(v8::Handle<v8::Context> context,
-                                       content::RenderFrame* render_frame) = 0;
+                                       content::RenderFrame* render_frame);
 
   std::unique_ptr<blink::WebPrescientNetworking> CreatePrescientNetworking(
       content::RenderFrame* render_frame) override;
@@ -86,7 +86,11 @@ class RendererClientBase : public content::ContentRendererClient
   static v8::Local<v8::Value> RunScript(v8::Local<v8::Context> context,
                                         v8::Local<v8::String> source);
 
-  // v8Util.getHiddenValue(window.frameElement, 'internal')
+  static void AllowGuestViewElementDefinition(
+      v8::Isolate* isolate,
+      v8::Local<v8::Object> context,
+      v8::Local<v8::Function> register_cb);
+
   bool IsWebViewFrame(v8::Handle<v8::Context> context,
                       content::RenderFrame* render_frame) const;
 

@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "base/files/file_path.h"
+#include "base/scoped_observation.h"
 #include "chrome/common/pref_names.h"
 #include "content/public/browser/file_select_listener.h"
 #include "content/public/browser/render_frame_host.h"
@@ -100,8 +101,9 @@ class FileSelectHelper : public content::WebContentsObserver,
   scoped_refptr<content::FileSelectListener> listener_;
   FileChooserParams::Mode mode_;
 
-  ScopedObserver<content::RenderWidgetHost, content::RenderWidgetHostObserver>
-      observer_{this};
+  base::ScopedObservation<content::RenderWidgetHost,
+                          content::RenderWidgetHostObserver>
+      observation_{this};
 
   // Temporary files only used on OSX. This class is responsible for deleting
   // these files when they are no longer needed.

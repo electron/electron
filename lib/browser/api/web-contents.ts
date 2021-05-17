@@ -1,4 +1,4 @@
-import { app, ipcMain, session, deprecate, webFrameMain } from 'electron/main';
+import { app, ipcMain, session, webFrameMain } from 'electron/main';
 import type { BrowserWindowConstructorOptions, LoadURLOptions } from 'electron/main';
 
 import * as url from 'url';
@@ -709,11 +709,6 @@ WebContents.prototype._init = function () {
         }
       });
     });
-
-    const prefs = this.getWebPreferences() || {};
-    if (prefs.webviewTag && prefs.contextIsolation) {
-      deprecate.log('Security Warning: A WebContents was just created with both webviewTag and contextIsolation enabled.  This combination is fundamentally less secure and effectively bypasses the protections of contextIsolation.  We strongly recommend you move away from webviews to OOPIF or BrowserView in order for your app to be more secure');
-    }
   }
 
   this.on('login', (event, ...args) => {

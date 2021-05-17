@@ -456,7 +456,8 @@ void OffScreenRenderWidgetHostView::Destroy() {
   delete this;
 }
 
-void OffScreenRenderWidgetHostView::SetTooltipText(const std::u16string&) {}
+void OffScreenRenderWidgetHostView::UpdateTooltipUnderCursor(
+    const std::u16string&) {}
 
 uint32_t OffScreenRenderWidgetHostView::GetCaptureSequenceNumber() const {
   return latest_capture_sequence_number_;
