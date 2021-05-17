@@ -557,7 +557,7 @@ void AppendToFile(const base::FilePath& path, const std::string& content) {
                                                 base::BlockingType::WILL_BLOCK);
   DCHECK(!path.empty());
 
-  base::AppendToFile(path, content.data(), content.size());
+  base::AppendToFile(path, content);
 }
 
 PrefService* GetPrefService(content::WebContents* web_contents) {
