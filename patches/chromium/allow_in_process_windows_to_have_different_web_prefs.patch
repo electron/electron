@@ -77,14 +77,14 @@ diff --git a/third_party/blink/public/common/web_preferences/web_preferences.h b
 index 6a7194fc499dd6c88b6e205853390dbd3dd09094..ecda2293dfb14225a3358509f170196fe2f4ff65 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences.h
-@@ -9,6 +9,7 @@
- #include <string>
+@@ -10,6 +10,7 @@
  #include <vector>
  
-+#include "base/files/file_path.h"
- #include "base/time/time.h"
  #include "build/build_config.h"
++#include "base/files/file_path.h"
  #include "net/nqe/effective_connection_type.h"
+ #include "third_party/blink/public/common/common_export.h"
+ #include "third_party/blink/public/mojom/css/preferred_color_scheme.mojom-shared.h"
 @@ -161,6 +162,25 @@ struct BLINK_COMMON_EXPORT WebPreferences {
    blink::mojom::V8CacheOptions v8_cache_options;
    bool record_whole_document;
