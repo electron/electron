@@ -66,4 +66,4 @@ index b024f38cef70991a354a6498c5a46400230dec25..8e01059b128732c460d7ddc74db55eb1
 +  bool DxdiagDx12VulkanRequested() const;
  #endif
    void UpdateGpuFeatureInfo(const gpu::GpuFeatureInfo& gpu_feature_info,
-                             const base::Optional<gpu::GpuFeatureInfo>&
+                             const absl::optional<gpu::GpuFeatureInfo>&

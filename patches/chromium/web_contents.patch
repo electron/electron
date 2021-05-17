@@ -34,16 +34,18 @@ index db7d13190a6c4a81df496ed5f02db25faef61dd2..1f884e66eee5cf36442ceb6dc22a30a4
    CHECK(view_.get());
  
 diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
-index 9663a9a547329001493a6ef5735ec49ed6d396ca..19b8672d09ccf0daf0275aa5b54e11dfc613bf7b 100644
+index 84c271d015931322c4c3a259dc3db64655502bdf..0a2850d75b84847e3e6d404a782e3aa76f28871b 100644
 --- a/content/public/browser/web_contents.h
 +++ b/content/public/browser/web_contents.h
-@@ -88,8 +88,11 @@ class BrowserContext;
+@@ -84,10 +84,13 @@ class BrowserContext;
  class BrowserPluginGuestDelegate;
  class RenderFrameHost;
  class RenderViewHost;
 +class RenderViewHostDelegateView;
  class RenderWidgetHostView;
 +class RenderWidgetHostViewBase;
+ class ScreenOrientationDelegate;
+ class SiteInstance;
  class WebContentsDelegate;
 +class WebContentsView;
  class WebUI;
