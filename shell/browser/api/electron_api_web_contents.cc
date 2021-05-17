@@ -2014,8 +2014,7 @@ void WebContents::ReloadIgnoringCache() {
 
 void WebContents::DownloadURL(const GURL& url) {
   auto* browser_context = web_contents()->GetBrowserContext();
-  auto* download_manager =
-      content::BrowserContext::GetDownloadManager(browser_context);
+  auto* download_manager = browser_context->GetDownloadManager();
   std::unique_ptr<download::DownloadUrlParameters> download_params(
       content::DownloadRequestUtils::CreateDownloadForWebContentsMainFrame(
           web_contents(), url, MISSING_TRAFFIC_ANNOTATION));
