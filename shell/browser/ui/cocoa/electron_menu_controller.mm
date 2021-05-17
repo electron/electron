@@ -21,9 +21,9 @@
 #include "shell/browser/ui/electron_menu_model.h"
 #include "shell/browser/window_list.h"
 #include "ui/base/accelerators/accelerator.h"
-#include "ui/base/accelerators/platform_accelerator_cocoa.h"
 #include "ui/base/l10n/l10n_util_mac.h"
 #include "ui/events/cocoa/cocoa_event_utils.h"
+#include "ui/events/keycodes/keyboard_code_conversion_mac.h"
 #include "ui/gfx/image/image.h"
 #include "ui/strings/grit/ui_strings.h"
 
@@ -392,10 +392,25 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
     ui::Accelerator accelerator;
     if (model->GetAcceleratorAtWithParams(index, useDefaultAccelerator_,
                                           &accelerator)) {
-      NSString* key_equivalent;
-      NSUInteger modifier_mask;
-      GetKeyEquivalentAndModifierMaskFromAccelerator(
-          accelerator, &key_equivalent, &modifier_mask);
+      // Note that we are not using Chromium's
+      // ui::GetKeyEquivalentAndModifierMaskFromAccelerator API,
+      // because it will convert Shift+Character to ShiftedCharacter, for
+      // example Shift+/ would be converted to +, which is against macOS HIG.
+      // See also https://github.com/electron/electron/issues/21790.
+      NSUInteger modifier_mask = 0;
+      if (accelerator.IsShiftDown())
+        modifier_mask |= NSEventModifierFlagShift;
+      if (accelerator.IsCtrlDown())
+        modifier_mask |= NSEventModifierFlagControl;
+      if (accelerator.IsAltDown())
+        modifier_mask |= NSEventModifierFlagOption;
+      if (accelerator.IsCmdDown())
+        modifier_mask |= NSEventModifierFlagCommand;
+      unichar character;
+      int result = ui::MacKeyCodeForWindowsKeyCode(
+          accelerator.key_code(), modifier_mask, nullptr, &character);
+      DCHECK_NE(result, -1);
+      NSString* key_equivalent = [NSString stringWithFormat:@"%C", character];
       [item setKeyEquivalent:key_equivalent];
       [item setKeyEquivalentModifierMask:modifier_mask];
     }
