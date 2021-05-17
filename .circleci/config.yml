@@ -272,7 +272,7 @@ step-gclient-sync: &step-gclient-sync
           if ! git diff-index --quiet HEAD --; then
             # There are changes to the patches. Make a git commit with the updated patches
             git add patches
-            GIT_COMMITTER_NAME="Electron Bot" GIT_COMMITTER_EMAIL="electron@github.com" git commit -m "update patches" --author="Electron Bot <electron@github.com>"
+            GIT_COMMITTER_NAME="PatchUp" GIT_COMMITTER_EMAIL="73610968+patchup[bot]@users.noreply.github.com" git commit -m "chore: update patches" --author="PatchUp <73610968+patchup[bot]@users.noreply.github.com>"
             # Export it
             mkdir -p ../../patches
             git format-patch -1 --stdout --keep-subject --no-stat --full-index > ../../patches/update-patches.patch
@@ -532,6 +532,7 @@ step-electron-build: &step-electron-build
         gn gen out/Default --args="import(\"$GN_CONFIG\") import(\"$GN_GOMA_FILE\") $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
       fi
       NINJA_SUMMARIZE_BUILD=1 autoninja -C out/Default electron -j $NUMBER_OF_NINJA_PROCESSES
+      cp out/Default/.ninja_log out/electron_ninja_log
       node electron/script/check-symlinks.js
 
 step-native-unittests-build: &step-native-unittests-build
@@ -594,11 +595,6 @@ step-electron-dist-build: &step-electron-dist-build
         fi
       fi
 
-step-electron-dist-store: &step-electron-dist-store
-  store_artifacts:
-    path: src/out/Default/dist.zip
-    destination: dist.zip
-
 step-electron-maybe-chromedriver-gn-gen: &step-electron-maybe-chromedriver-gn-gen
   run:
     name: chromedriver GN gen
@@ -627,27 +623,12 @@ step-electron-chromedriver-build: &step-electron-chromedriver-build
         cp out/chromedriver/chromedriver.zip out/Default
       fi
 
-step-electron-chromedriver-store: &step-electron-chromedriver-store
-  store_artifacts:
-    path: src/out/Default/chromedriver.zip
-    destination: chromedriver.zip
-
 step-nodejs-headers-build: &step-nodejs-headers-build
   run:
     name: Build Node.js headers
     command: |
       cd src
       ninja -C out/Default third_party/electron_node:headers
-
-step-nodejs-headers-store: &step-nodejs-headers-store
-  store_artifacts:
-    path: src/out/Default/gen/node_headers.tar.gz
-    destination: node_headers.tar.gz
-
-step-native-unittests-store: &step-native-unittests-store
-  store_artifacts:
-    path: src/out/Default/shell_browser_ui_unittests
-    destination: shell_browser_ui_unittests
 
 step-electron-publish: &step-electron-publish
   run:
@@ -739,11 +720,6 @@ step-verify-ffmpeg: &step-verify-ffmpeg
       cd src
       python electron/script/verify-ffmpeg.py --source-root "$PWD" --build-dir out/Default --ffmpeg-path out/ffmpeg
 
-step-ffmpeg-store: &step-ffmpeg-store
-  store_artifacts:
-    path: src/out/ffmpeg/ffmpeg.zip
-    destination: ffmpeg.zip
-
 step-verify-mksnapshot: &step-verify-mksnapshot
   run:
     name: Verify mksnapshot
@@ -812,11 +788,6 @@ step-mksnapshot-build: &step-mksnapshot-build
         (cd out/Default; zip mksnapshot.zip mksnapshot_args gen/v8/embedded.S)
       fi
 
-step-mksnapshot-store: &step-mksnapshot-store
-  store_artifacts:
-    path: src/out/Default/mksnapshot.zip
-    destination: mksnapshot.zip
-
 step-hunspell-build: &step-hunspell-build
   run:
     name: hunspell build
@@ -825,11 +796,6 @@ step-hunspell-build: &step-hunspell-build
       if [ "$SKIP_DIST_ZIP" != "1" ]; then
         ninja -C out/Default electron:hunspell_dictionaries_zip -j $NUMBER_OF_NINJA_PROCESSES
       fi
-
-step-hunspell-store: &step-hunspell-store
-  store_artifacts:
-    path: src/out/Default/hunspell_dictionaries.zip
-    destination: hunspell_dictionaries.zip
 
 step-maybe-generate-breakpad-symbols: &step-maybe-generate-breakpad-symbols
   run:
@@ -850,11 +816,6 @@ step-maybe-zip-symbols: &step-maybe-zip-symbols
       ninja -C out/Default electron:licenses
       ninja -C out/Default electron:electron_version
       DELETE_DSYMS_AFTER_ZIP=1 electron/script/zip-symbols.py -b $BUILD_PATH
-
-step-symbols-store: &step-symbols-store
-  store_artifacts:
-    path: src/out/Default/symbols.zip
-    destination: symbols.zip
 
 step-maybe-cross-arch-snapshot: &step-maybe-cross-arch-snapshot
   run:
@@ -878,11 +839,6 @@ step-maybe-cross-arch-snapshot: &step-maybe-cross-arch-snapshot
         mkdir cross-arch-snapshots
         cp out/Default-mksnapshot-test/*.bin cross-arch-snapshots
       fi
-
-step-maybe-cross-arch-snapshot-store: &step-maybe-cross-arch-snapshot-store
-  store_artifacts:
-    path: src/cross-arch-snapshots
-    destination: cross-arch-snapshots
 
 step-maybe-trigger-arm-test: &step-maybe-trigger-arm-test
   run:
@@ -922,11 +878,6 @@ step-fix-known-hosts-linux: &step-fix-known-hosts-linux
       if [ "`uname`" == "Linux" ]; then
         ./src/electron/.circleci/fix-known-hosts.sh
       fi
-
-step-ninja-report: &step-ninja-report
-  store_artifacts:
-    path: src/out/Default/.ninja_log
-    destination: ninja_log
 
 # Checkout Steps
 step-generate-deps-hash: &step-generate-deps-hash
@@ -1138,49 +1089,6 @@ steps-lint: &steps-lint
         command: |
           cd src/electron
           node script/yarn tsc -p tsconfig.script.json
-
-steps-checkout-and-save-cache: &steps-checkout-and-save-cache
-  steps:
-    - *step-checkout-electron
-    - *step-check-for-doc-only-change
-    - *step-persist-doc-only-change
-    - *step-maybe-early-exit-doc-only-change
-    - *step-depot-tools-get
-    - *step-depot-tools-add-to-path
-    - *step-restore-brew-cache
-    - *step-get-more-space-on-mac
-    - *step-install-gnutar-on-mac
-
-    - *step-generate-deps-hash
-    - *step-touch-sync-done
-    - maybe-restore-portaled-src-cache:
-        halt-if-successful: true
-    - *step-maybe-restore-git-cache
-    - *step-set-git-cache-path
-    # This sync call only runs if .circle-sync-done is an EMPTY file
-    - *step-gclient-sync
-    - store_artifacts:
-        path: patches
-    - *step-save-git-cache
-    # These next few steps reset Electron to the correct commit regardless of which cache was restored
-    - run:
-        name: Wipe Electron
-        command: rm -rf src/electron
-    - *step-checkout-electron
-    - *step-run-electron-only-hooks
-    - *step-generate-deps-hash-cleanly
-    - *step-mark-sync-done
-    - *step-minimize-workspace-size-from-checkout
-    - *step-delete-git-directories
-    - run:
-        name: Move src folder to the cross-OS portal
-        command: |
-          sudo mkdir -p /var/portal
-          sudo chown -R $(id -u):$(id -g) /var/portal
-          mv ./src /var/portal
-    - *step-save-src-cache
-    - *step-make-src-cache-marker
-    - *step-save-src-cache-marker
 
 steps-electron-gn-check: &steps-electron-gn-check
   steps:
@@ -1407,6 +1315,40 @@ commands:
               rm -rf src
               mv /var/portal/src ./
             fi
+
+  move_and_store_all_artifacts:
+    steps:
+      - run:
+          name: Move all generated artifacts to upload folder
+          command: |
+            rm -rf generated_artifacts
+            mkdir generated_artifacts
+            mv_if_exist() {
+              if [ -f "$1" ] || [ -d "$1" ]; then
+                echo Storing $1
+                mv $1 generated_artifacts
+              else
+                echo Skipping $1 - It is not present on disk
+              fi
+            }
+            mv_if_exist src/out/Default/dist.zip
+            mv_if_exist src/out/Default/shell_browser_ui_unittests
+            mv_if_exist src/out/Default/gen/node_headers.tar.gz
+            mv_if_exist src/out/Default/symbols.zip
+            mv_if_exist src/out/Default/mksnapshot.zip
+            mv_if_exist src/out/Default/chromedriver.zip
+            mv_if_exist src/out/ffmpeg/ffmpeg.zip
+            mv_if_exist src/out/Default/hunspell_dictionaries.zip
+            mv_if_exist src/cross-arch-snapshots
+            mv_if_exist src/out/electron_ninja_log
+          when: always
+      - store_artifacts:
+          path: generated_artifacts
+          destination: ./
+      - store_artifacts:
+          path: generated_artifacts/cross-arch-snapshots
+          destination: cross-arch-snapshots
+
   checkout-from-cache:
     steps:
       - *step-checkout-electron
@@ -1443,6 +1385,12 @@ commands:
         type: boolean
         default: true
       checkout-and-assume-cache:
+        type: boolean
+        default: false
+      save-git-cache:
+        type: boolean
+        default: false
+      checkout-to-create-src-cache:
         type: boolean
         default: false
       build:
@@ -1486,13 +1434,18 @@ commands:
             - when:
                 condition: << parameters.restore-src-cache >>
                 steps:
-                  - maybe-restore-portaled-src-cache
+                  - maybe-restore-portaled-src-cache:
+                      halt-if-successful: << parameters.checkout-to-create-src-cache >>
             - *step-maybe-restore-git-cache
             - *step-set-git-cache-path
             # This sync call only runs if .circle-sync-done is an EMPTY file
             - *step-gclient-sync
             - store_artifacts:
                 path: patches
+            - when:
+                condition: << parameters.save-git-cache >>
+                steps:
+                  - *step-save-git-cache
             # These next few steps reset Electron to the correct commit regardless of which cache was restored
             - run:
                 name: Wipe Electron
@@ -1502,6 +1455,7 @@ commands:
             - *step-generate-deps-hash-cleanly
             - *step-mark-sync-done
             - *step-minimize-workspace-size-from-checkout
+            - *step-delete-git-directories
             - when:
                 condition: << parameters.persist-checkout >>
                 steps:
@@ -1510,6 +1464,18 @@ commands:
                       paths:
                         - depot_tools
                         - src
+            - when:
+                condition: << parameters.checkout-to-create-src-cache >>
+                steps:
+                  - run:
+                      name: Move src folder to the cross-OS portal
+                      command: |
+                        sudo mkdir -p /var/portal
+                        sudo chown -R $(id -u):$(id -g) /var/portal
+                        mv ./src /var/portal
+                  - *step-save-src-cache
+                  - *step-make-src-cache-marker
+                  - *step-save-src-cache-marker
 
       - when:
           condition: << parameters.build >>
@@ -1528,31 +1494,24 @@ commands:
                   - *step-restore-out-cache
             - *step-gn-gen-default
             - *step-electron-build
-            - *step-ninja-report
             - *step-maybe-electron-dist-strip
             - *step-electron-dist-build
-            - *step-electron-dist-store
 
             # Native test targets
             - *step-native-unittests-build
-            - *step-native-unittests-store
 
             # Node.js headers
             - *step-nodejs-headers-build
-            - *step-nodejs-headers-store
 
             - *step-show-goma-stats
 
             # mksnapshot
             - *step-mksnapshot-build
-            - *step-mksnapshot-store
             - *step-maybe-cross-arch-snapshot
-            - *step-maybe-cross-arch-snapshot-store
 
             # chromedriver
             - *step-electron-maybe-chromedriver-gn-gen
             - *step-electron-chromedriver-build
-            - *step-electron-chromedriver-store
 
             - when:
                 condition: << parameters.build-nonproprietary-ffmpeg >>
@@ -1560,11 +1519,9 @@ commands:
                   # ffmpeg
                   - *step-ffmpeg-gn-gen
                   - *step-ffmpeg-build
-                  - *step-ffmpeg-store
 
             # hunspell
             - *step-hunspell-build
-            - *step-hunspell-store
 
       # Save all data needed for a further tests run.
       - when:
@@ -1577,7 +1534,6 @@ commands:
           steps:
             - *step-maybe-generate-breakpad-symbols
             - *step-maybe-zip-symbols
-            - *step-symbols-store
 
       - when:
           condition: << parameters.build >>
@@ -1598,6 +1554,8 @@ commands:
                 condition: << parameters.use-out-cache >>
                 steps:
                   - *step-save-out-cache
+
+            - move_and_store_all_artifacts
 
             # Trigger tests on arm hardware if needed
             - *step-maybe-trigger-arm-test
@@ -1643,37 +1601,31 @@ commands:
       - *step-maybe-generate-breakpad-symbols
       - *step-maybe-electron-dist-strip
       - *step-electron-dist-build
-      - *step-electron-dist-store
       - *step-maybe-zip-symbols
-      - *step-symbols-store
 
       # mksnapshot
       - *step-mksnapshot-build
-      - *step-mksnapshot-store
 
       # chromedriver
       - *step-electron-maybe-chromedriver-gn-gen
       - *step-electron-chromedriver-build
-      - *step-electron-chromedriver-store
 
       # Node.js headers
       - *step-nodejs-headers-build
-      - *step-nodejs-headers-store
 
       # ffmpeg
       - *step-ffmpeg-gn-gen
       - *step-ffmpeg-build
-      - *step-ffmpeg-store
 
       # hunspell
       - *step-hunspell-build
-      - *step-hunspell-store
 
       # typescript defs
       - *step-maybe-generate-typescript-defs
 
       # Publish
-      - *step-electron-publish      
+      - *step-electron-publish
+      - move_and_store_all_artifacts
 
 # List of all jobs.
 jobs:
@@ -1709,7 +1661,7 @@ jobs:
           persist-checkout: true
           restore-src-cache: false
 
-  linux-checkout-fast:
+  linux-checkout-for-workspace:
     executor: linux-docker
     environment:
       <<: *env-linux-2xlarge
@@ -1721,12 +1673,18 @@ jobs:
           checkout: true
           persist-checkout: true
 
-  linux-checkout-and-save-cache:
+  linux-make-src-cache:
     executor: linux-docker
     environment:
       <<: *env-linux-2xlarge
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
-    <<: *steps-checkout-and-save-cache
+    steps:
+      - electron-build:
+          persist: false
+          build: false
+          checkout: true
+          save-git-cache: true
+          checkout-to-create-src-cache: true
 
   linux-checkout-for-native-tests:
     executor: linux-docker
@@ -1767,7 +1725,7 @@ jobs:
           persist-checkout: true
           restore-src-cache: false
 
-  mac-checkout-fast:
+  mac-checkout-for-workspace:
     executor: linux-docker
     environment:
       <<: *env-linux-2xlarge
@@ -1781,14 +1739,20 @@ jobs:
           checkout: true
           persist-checkout: true
 
-  mac-checkout-and-save-cache:
+  mac-make-src-cache:
     executor: linux-docker
     environment:
       <<: *env-linux-2xlarge
       <<: *env-testing-build
       <<: *env-macos-build
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
-    <<: *steps-checkout-and-save-cache
+    steps:
+      - electron-build:
+          persist: false
+          build: false
+          checkout: true
+          save-git-cache: true
+          checkout-to-create-src-cache: true
 
   # Layer 2: Builds.
   linux-x64-testing:
@@ -2383,37 +2347,7 @@ jobs:
     <<: *steps-tests
 
   # Layer 4: Summary.
-  linux-x64-release-summary:
-    executor:
-      name: linux-docker
-      size: medium
-    environment:
-      <<: *env-linux-medium
-      <<: *env-send-slack-notifications
-    steps:
-      - *step-maybe-notify-slack-success
-
-  linux-ia32-release-summary:
-    executor:
-      name: linux-docker
-      size: medium
-    environment:
-      <<: *env-linux-medium
-      <<: *env-send-slack-notifications
-    steps:
-      - *step-maybe-notify-slack-success
-
-  linux-arm-release-summary:
-    executor:
-      name: linux-docker
-      size: medium
-    environment:
-      <<: *env-linux-medium
-      <<: *env-send-slack-notifications
-    steps:
-      - *step-maybe-notify-slack-success
-
-  linux-arm64-release-summary:
+  linux-release-summary:
     executor:
       name: linux-docker
       size: medium
@@ -2521,15 +2455,15 @@ workflows:
   build-linux:
     when: << pipeline.parameters.run-build-linux >>
     jobs:
-      - linux-checkout-fast
-      - linux-checkout-and-save-cache
+      - linux-checkout-for-workspace
+      - linux-make-src-cache
 
       - linux-x64-testing
       - linux-x64-testing-asan
       - linux-x64-testing-no-run-as-node
       - linux-x64-testing-gn-check:
           requires:
-            - linux-checkout-fast
+            - linux-checkout-for-workspace
       - linux-x64-testing-tests:
           requires:
             - linux-x64-testing
@@ -2559,22 +2493,22 @@ workflows:
       - linux-arm64-testing
       - linux-arm64-testing-gn-check:
           requires:
-            - linux-checkout-fast
+            - linux-checkout-for-workspace
       - ts-compile-doc-change
 
   build-mac:
     when: << pipeline.parameters.run-build-mac >>
     jobs:
-      - mac-checkout-fast
-      - mac-checkout-and-save-cache
+      - mac-checkout-for-workspace
+      - mac-make-src-cache
 
       - osx-testing-x64:
           requires:
-            - mac-checkout-and-save-cache
+            - mac-make-src-cache
 
       - osx-testing-x64-gn-check:
           requires:
-            - mac-checkout-fast
+            - mac-checkout-for-workspace
 
       - osx-testing-x64-tests:
           requires:
@@ -2582,7 +2516,7 @@ workflows:
 
       - osx-testing-arm64:
           requires:
-            - mac-checkout-and-save-cache
+            - mac-make-src-cache
 
       - osx-testing-arm64-tests:
           filters:
@@ -2594,11 +2528,11 @@ workflows:
 
       - mas-testing-x64:
           requires:
-            - mac-checkout-and-save-cache
+            - mac-make-src-cache
 
       - mas-testing-x64-gn-check:
           requires:
-            - mac-checkout-fast
+            - mac-checkout-for-workspace
 
       - mas-testing-x64-tests:
           requires:
@@ -2606,7 +2540,7 @@ workflows:
 
       - mas-testing-arm64:
           requires:
-            - mac-checkout-and-save-cache
+            - mac-make-src-cache
 
       - mas-testing-arm64-tests:
           filters:
@@ -2625,8 +2559,8 @@ workflows:
               only:
                 - master
     jobs:
-      - linux-checkout-fast
-      - linux-checkout-and-save-cache
+      - linux-checkout-for-workspace
+      - linux-make-src-cache
 
       - linux-x64-release
       - linux-x64-release-tests:
@@ -2635,7 +2569,8 @@ workflows:
       - linux-x64-verify-ffmpeg:
           requires:
             - linux-x64-release
-      - linux-x64-release-summary:
+      - linux-release-summary:
+          name: linux-x64-release-summary
           requires:
             - linux-x64-release
             - linux-x64-release-tests
@@ -2648,19 +2583,22 @@ workflows:
       - linux-ia32-verify-ffmpeg:
           requires:
             - linux-ia32-release
-      - linux-ia32-release-summary:
+      - linux-release-summary:
+          name: linux-ia32-release-summary
           requires:
             - linux-ia32-release
             - linux-ia32-release-tests
             - linux-ia32-verify-ffmpeg
 
       - linux-arm-release
-      - linux-arm-release-summary:
+      - linux-release-summary:
+          name: linux-arm-release-summary
           requires:
             - linux-arm-release
 
       - linux-arm64-release
-      - linux-arm64-release-summary:
+      - linux-release-summary:
+          name: linux-arm64-release-summary
           requires:
             - linux-arm64-release
 

@@ -1,4 +1,6 @@
-const { nativeImage } = process._linkedBinding('electron_common_native_image');
+function getCreateNativeImage () {
+  return process._linkedBinding('electron_common_native_image').nativeImage.createEmpty;
+}
 
 export function isPromise (val: any) {
   return (
@@ -57,8 +59,8 @@ function serializeNativeImage (image: Electron.NativeImage) {
   return { __ELECTRON_SERIALIZED_NativeImage__: true, representations };
 }
 
-function deserializeNativeImage (value: any) {
-  const image = nativeImage.createEmpty();
+function deserializeNativeImage (value: any, createNativeImage: typeof Electron.nativeImage['createEmpty']) {
+  const image = createNativeImage();
 
   // Use Buffer when there's only one representation for better perf.
   // This avoids compressing to/from PNG where it's not necessary to
@@ -93,15 +95,15 @@ export function serialize (value: any): any {
   }
 }
 
-export function deserialize (value: any): any {
+export function deserialize (value: any, createNativeImage: typeof Electron.nativeImage['createEmpty'] = getCreateNativeImage()): any {
   if (value && value.__ELECTRON_SERIALIZED_NativeImage__) {
-    return deserializeNativeImage(value);
+    return deserializeNativeImage(value, createNativeImage);
   } else if (Array.isArray(value)) {
-    return value.map(deserialize);
+    return value.map(value => deserialize(value, createNativeImage));
   } else if (isSerializableObject(value)) {
     return value;
   } else if (value instanceof Object) {
-    return objectMap(value, deserialize);
+    return objectMap(value, value => deserialize(value, createNativeImage));
   } else {
     return value;
   }

@@ -130,18 +130,6 @@ bool SpellCheckWord(content::RenderFrame* render_frame,
 
 #endif
 
-class RenderFrameStatus final : public content::RenderFrameObserver {
- public:
-  explicit RenderFrameStatus(content::RenderFrame* render_frame)
-      : content::RenderFrameObserver(render_frame) {}
-  ~RenderFrameStatus() final = default;
-
-  bool is_ok() { return render_frame() != nullptr; }
-
-  // RenderFrameObserver implementation.
-  void OnDestruct() final {}
-};
-
 class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
  public:
   // for compatibility with the older version of this, error is after result
@@ -377,7 +365,7 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
         .SetMethod("setVisualZoomLevelLimits",
                    &WebFrameRenderer::SetVisualZoomLevelLimits)
         .SetMethod("allowGuestViewElementDefinition",
-                   &WebFrameRenderer::AllowGuestViewElementDefinition)
+                   &RendererClientBase::AllowGuestViewElementDefinition)
         .SetMethod("insertText", &WebFrameRenderer::InsertText)
         .SetMethod("insertCSS", &WebFrameRenderer::InsertCSS)
         .SetMethod("removeInsertedCSS", &WebFrameRenderer::RemoveInsertedCSS)
@@ -541,31 +529,12 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
     web_frame->View()->SetDefaultPageScaleLimits(min_level, max_level);
   }
 
-  void AllowGuestViewElementDefinition(v8::Isolate* isolate,
-                                       v8::Local<v8::Object> context,
-                                       v8::Local<v8::Function> register_cb) {
-    v8::HandleScope handle_scope(isolate);
-    v8::Context::Scope context_scope(context->CreationContext());
-    blink::WebCustomElement::EmbedderNamesAllowedScope embedder_names_scope;
-
-    content::RenderFrame* render_frame;
-    if (!MaybeGetRenderFrame(isolate, "allowGuestViewElementDefinition",
-                             &render_frame))
-      return;
-
-    render_frame->GetWebFrame()->RequestExecuteV8Function(
-        context->CreationContext(), register_cb, v8::Null(isolate), 0, nullptr,
-        nullptr);
-  }
-
   static int GetWebFrameId(v8::Local<v8::Object> content_window) {
     // Get the WebLocalFrame before (possibly) executing any user-space JS while
     // getting the |params|. We track the status of the RenderFrame via an
     // observer in case it is deleted during user code execution.
     content::RenderFrame* render_frame = GetRenderFrame(content_window);
-    RenderFrameStatus render_frame_status(render_frame);
-
-    if (!render_frame_status.is_ok())
+    if (!render_frame)
       return -1;
 
     blink::WebLocalFrame* frame = render_frame->GetWebFrame();
