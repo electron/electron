@@ -13,7 +13,6 @@ render_widget_host_view_mac.patch
 thread_capabilities.patch
 webview_cross_drag.patch
 gin_enable_disable_v8_platform.patch
-blink-worker-enable-csp-in-file-scheme.patch
 disable-redraw-lock.patch
 enable_reset_aspect_ratio.patch
 v8_context_snapshot_generator.patch
