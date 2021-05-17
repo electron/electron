@@ -14,6 +14,7 @@
 #include "ui/display/display.h"
 #include "ui/display/win/screen_win.h"
 #include "ui/gfx/geometry/insets.h"
+#include "ui/gfx/geometry/resize_utils.h"
 #include "ui/views/widget/native_widget_private.h"
 
 // Must be included after other Windows headers.
@@ -134,6 +135,31 @@ const char* AppCommandToString(int command_id) {
       return "dictate-or-command-control-toggle";
     default:
       return "unknown";
+  }
+}
+
+// Copied from ui/views/win/hwnd_message_handler.cc
+gfx::ResizeEdge GetWindowResizeEdge(WPARAM param) {
+  switch (param) {
+    case WMSZ_BOTTOM:
+      return gfx::ResizeEdge::kBottom;
+    case WMSZ_TOP:
+      return gfx::ResizeEdge::kTop;
+    case WMSZ_LEFT:
+      return gfx::ResizeEdge::kLeft;
+    case WMSZ_RIGHT:
+      return gfx::ResizeEdge::kRight;
+    case WMSZ_TOPLEFT:
+      return gfx::ResizeEdge::kTopLeft;
+    case WMSZ_TOPRIGHT:
+      return gfx::ResizeEdge::kTopRight;
+    case WMSZ_BOTTOMLEFT:
+      return gfx::ResizeEdge::kBottomLeft;
+    case WMSZ_BOTTOMRIGHT:
+      return gfx::ResizeEdge::kBottomRight;
+    default:
+      NOTREACHED();
+      return gfx::ResizeEdge::kBottomRight;
   }
 }
 
@@ -263,7 +289,8 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
       gfx::Rect bounds = gfx::Rect(*reinterpret_cast<RECT*>(l_param));
       HWND hwnd = GetAcceleratedWidget();
       gfx::Rect dpi_bounds = ScreenToDIPRect(hwnd, bounds);
-      NotifyWindowWillResize(dpi_bounds, &prevent_default);
+      NotifyWindowWillResize(dpi_bounds, GetWindowResizeEdge(w_param),
+                             &prevent_default);
       if (prevent_default) {
         ::GetWindowRect(hwnd, reinterpret_cast<RECT*>(l_param));
         return true;  // Tells Windows that the Sizing is handled.
