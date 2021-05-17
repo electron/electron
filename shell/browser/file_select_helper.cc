@@ -49,7 +49,7 @@ FileSelectHelper::FileSelectHelper(
   DCHECK(web_contents_);
 
   content::WebContentsObserver::Observe(web_contents_);
-  observer_.Add(render_frame_host_->GetRenderViewHost()->GetWidget());
+  observation_.Observe(render_frame_host_->GetRenderViewHost()->GetWidget());
 }
 
 FileSelectHelper::~FileSelectHelper() = default;
@@ -235,7 +235,8 @@ void FileSelectHelper::OnFilesSelected(
 void FileSelectHelper::RenderWidgetHostDestroyed(
     content::RenderWidgetHost* widget_host) {
   render_frame_host_ = nullptr;
-  observer_.Remove(widget_host);
+  DCHECK(observation_.IsObservingSource(widget_host));
+  observation_.Reset();
 }
 
 // content::WebContentsObserver:

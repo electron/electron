@@ -7,10 +7,10 @@ Guard usages in blink of private Mac APIs by MAS_BUILD, so they can be
 excluded for people who want to submit their apps to the Mac App store.
 
 diff --git a/content/browser/accessibility/accessibility_tree_formatter_mac.mm b/content/browser/accessibility/accessibility_tree_formatter_mac.mm
-index 4336e1d01f88605ea7f2bbbb644869c5ee7b9b5a..a3eaef03a435d5b06fd8cb97264c19b08358013f 100644
+index 65adc773e82d99c5dd57d52e84a71e67d676be13..f5d0318c1c4fa036a233142cd6eea0a03eed7e39 100644
 --- a/content/browser/accessibility/accessibility_tree_formatter_mac.mm
 +++ b/content/browser/accessibility/accessibility_tree_formatter_mac.mm
-@@ -264,7 +264,7 @@
+@@ -273,7 +273,7 @@
        return PopulateSize([value sizeValue]);
      }
    }
@@ -19,7 +19,7 @@ index 4336e1d01f88605ea7f2bbbb644869c5ee7b9b5a..a3eaef03a435d5b06fd8cb97264c19b0
    // AXTextMarker
    if (content::IsAXTextMarker(value)) {
      return PopulateTextPosition(content::AXTextMarkerToAXPosition(value),
-@@ -275,6 +275,7 @@
+@@ -284,6 +284,7 @@
    if (content::IsAXTextMarkerRange(value)) {
      return PopulateTextMarkerRange(value, line_indexer);
    }
@@ -27,7 +27,7 @@ index 4336e1d01f88605ea7f2bbbb644869c5ee7b9b5a..a3eaef03a435d5b06fd8cb97264c19b0
  
    // AXValue
    if (CFGetTypeID(value) == AXValueGetTypeID()) {
-@@ -392,7 +393,7 @@
+@@ -401,7 +402,7 @@
                      AXMakeConst(affinity));
    return set;
  }
@@ -36,7 +36,7 @@ index 4336e1d01f88605ea7f2bbbb644869c5ee7b9b5a..a3eaef03a435d5b06fd8cb97264c19b0
  base::Value AccessibilityTreeFormatterMac::PopulateTextMarkerRange(
      id marker_range,
      const LineIndexer* line_indexer) const {
-@@ -408,7 +409,7 @@
+@@ -417,7 +418,7 @@
                 PopulateTextPosition(ax_range.focus()->Clone(), line_indexer));
    return dict;
  }
@@ -125,7 +125,7 @@ index a7d6351854d08926c4e9c43c95e9075bd4d4c728..9c89595cb6c37527b96b4afde3871333
  // is concerned.
  @property(nonatomic, readonly) NSString* subrole;
 diff --git a/content/browser/accessibility/browser_accessibility_cocoa.mm b/content/browser/accessibility/browser_accessibility_cocoa.mm
-index 4e2e99418b4023abd59e82437bd7964dbb34fbe7..53f3295695dc7d83f2785cbe78050449c882deef 100644
+index 381eaf1ba11d860bfc8673eb09591ff861ee9f52..75f226eb170565fd27e63e843636df07ec13462f 100644
 --- a/content/browser/accessibility/browser_accessibility_cocoa.mm
 +++ b/content/browser/accessibility/browser_accessibility_cocoa.mm
 @@ -203,6 +203,7 @@
@@ -471,7 +471,7 @@ index c15f3a631292b538698625328fb429ee3c9964f5..37e038753ecf1b82ec92c06b2c0729b5
  }
  
 diff --git a/device/bluetooth/bluetooth_adapter_mac.mm b/device/bluetooth/bluetooth_adapter_mac.mm
-index b56737af6f4da7cc01f78430c53dfa5afd1bc6df..60cdaa18e55acfd5817d2689bdb5a0ec8c1318d7 100644
+index 97e7ab4543700d56e3da436b93185c12ae85e6e6..beda3f54f0c850691accf4e7716514f3f4bc2d5f 100644
 --- a/device/bluetooth/bluetooth_adapter_mac.mm
 +++ b/device/bluetooth/bluetooth_adapter_mac.mm
 @@ -43,6 +43,7 @@

@@ -121,7 +121,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   void ImeCancelComposition(void) override;
   void RenderProcessGone() override;
   void Destroy(void) override;
-  void SetTooltipText(const std::u16string&) override;
+  void UpdateTooltipUnderCursor(const std::u16string&) override;
   content::CursorManager* GetCursorManager() override;
   void CopyFromSurface(
       const gfx::Rect& src_rect,
