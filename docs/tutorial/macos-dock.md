@@ -23,26 +23,21 @@ Starting with a working application from the
  following lines:
 
 ```javascript fiddle='docs/fiddles/features/macos-dock-menu'
-const { app, BrowserWindow, Menu } = require('electron');
-const path = require('path');
-const os = require('os');
+const { app, BrowserWindow, Menu } = require('electron')
 
 function createWindow () {
   const win = new BrowserWindow({
     width: 800,
     height: 600,
-    webPreferences: {
-      preload: path.join(__dirname, 'preload.js')
-    }
-  });
+  })
 
-  win.loadFile('index.html');
+  win.loadFile('index.html')
 }
 
 const dockMenu = Menu.buildFromTemplate([
   {
     label: 'New Window',
-    click () { console.log('New Window'); }
+    click () { console.log('New Window') }
   }, {
     label: 'New Window with Settings',
     submenu: [
@@ -51,25 +46,25 @@ const dockMenu = Menu.buildFromTemplate([
     ]
   },
   { label: 'New Command...' }
-]);
+])
 
 app.whenReady().then(() => {
-  if (os.platform() === 'darwin') {
-    app.dock.setMenu(dockMenu);
+  if (process.platform === 'darwin') {
+    app.dock.setMenu(dockMenu)
   }
-}).then(createWindow);
+}).then(createWindow)
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
-    app.quit();
+    app.quit()
   }
-});
+})
 
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
+    createWindow()
   }
-});
+})
 
 ```
 
