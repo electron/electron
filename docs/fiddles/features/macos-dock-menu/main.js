@@ -12,7 +12,7 @@ function createWindow () {
 const dockMenu = Menu.buildFromTemplate([
   {
     label: 'New Window',
-    click () { console.log('New Window'); }
+    click () { console.log('New Window') }
   }, {
     label: 'New Window with Settings',
     submenu: [
@@ -25,7 +25,7 @@ const dockMenu = Menu.buildFromTemplate([
 
 app.whenReady().then(() => {
   if (process.platform === 'darwin') {
-    app.dock.setMenu(dockMenu);
+    app.dock.setMenu(dockMenu)
   }
 }).then(createWindow)
 
@@ -37,6 +37,6 @@ app.on('window-all-closed', () => {
 
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
+    createWindow()
   }
 })
