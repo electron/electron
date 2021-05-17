@@ -127,6 +127,42 @@ void MenuMac::ClosePopupAt(int32_t window_id) {
                                                    std::move(close_popup));
 }
 
+std::u16string MenuMac::GetAcceleratorTextAt(int index) const {
+  // A least effort to get the real shortcut text of NSMenuItem, the code does
+  // not need to be perfect since it is test only.
+  base::scoped_nsobject<ElectronMenuController> controller(
+      [[ElectronMenuController alloc] initWithModel:model()
+                              useDefaultAccelerator:NO]);
+  NSMenuItem* item = [[controller menu] itemAtIndex:index];
+  std::u16string text;
+  NSEventModifierFlags modifiers = [item keyEquivalentModifierMask];
+  if (modifiers & NSEventModifierFlagControl)
+    text += u"Ctrl";
+  if (modifiers & NSEventModifierFlagShift) {
+    if (!text.empty())
+      text += u"+";
+    text += u"Shift";
+  }
+  if (modifiers & NSEventModifierFlagOption) {
+    if (!text.empty())
+      text += u"+";
+    text += u"Alt";
+  }
+  if (modifiers & NSEventModifierFlagCommand) {
+    if (!text.empty())
+      text += u"+";
+    text += u"Command";
+  }
+  if (!text.empty())
+    text += u"+";
+  auto key = base::ToUpperASCII(base::SysNSStringToUTF16([item keyEquivalent]));
+  if (key == u"\t")
+    text += u"Tab";
+  else
+    text += key;
+  return text;
+}
+
 void MenuMac::ClosePopupOnUI(int32_t window_id) {
   auto controller = popup_controllers_.find(window_id);
   if (controller != popup_controllers_.end()) {
