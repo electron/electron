@@ -80,7 +80,7 @@ This switch can not be used in `app.commandLine.appendSwitch` since it is parsed
 earlier than user's app is loaded, but you can set the `ELECTRON_ENABLE_LOGGING`
 environment variable to achieve the same effect.
 
-## --force-fieldtrials=`trials`
+### --force-fieldtrials=`trials`
 
 Field trials to be forcefully enabled or disabled.
 
