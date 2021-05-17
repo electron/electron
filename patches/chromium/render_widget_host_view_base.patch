@@ -6,10 +6,10 @@ Subject: render_widget_host_view_base.patch
 ... something to do with OSR? and maybe <webview> as well? terrifying.
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.cc b/content/browser/renderer_host/render_widget_host_view_base.cc
-index 3f877e23a9187de6adeb6b8ab6f62d731958c3e5..52b74b056ef8049e3ec7fe3ab0a3d032209004fb 100644
+index d504e82794cb50fb81dd9a568644254115c03e5d..d67f775b1bb6ca12055aed68947e0ca1591d4cfc 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_base.cc
-@@ -631,6 +631,13 @@ bool RenderWidgetHostViewBase::ScreenRectIsUnstableFor(
+@@ -664,6 +664,13 @@ bool RenderWidgetHostViewBase::ScreenRectIsUnstableFor(
    return false;
  }
  
@@ -24,7 +24,7 @@ index 3f877e23a9187de6adeb6b8ab6f62d731958c3e5..52b74b056ef8049e3ec7fe3ab0a3d032
      const blink::WebMouseEvent& event,
      const ui::LatencyInfo& latency) {
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.h b/content/browser/renderer_host/render_widget_host_view_base.h
-index f7d24ea5f1e94bf3af4f659be3a5140d82f97eb9..30db813a7e67debff3e0708ee077973a39894cc9 100644
+index 8cc591cfc75a02b371293b1edc6d9fad8d4ea36d..2fa7e2f5d1280e9b933bd0b2524ddea50f7b4de0 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.h
 +++ b/content/browser/renderer_host/render_widget_host_view_base.h
 @@ -24,8 +24,10 @@
@@ -38,7 +38,7 @@ index f7d24ea5f1e94bf3af4f659be3a5140d82f97eb9..30db813a7e67debff3e0708ee077973a
  #include "content/public/browser/render_widget_host_view.h"
  #include "content/public/browser/visibility.h"
  #include "content/public/common/widget_type.h"
-@@ -65,9 +67,11 @@ class CursorManager;
+@@ -66,9 +68,11 @@ class CursorManager;
  class MouseWheelPhaseHandler;
  class RenderWidgetHostImpl;
  class RenderWidgetHostViewBaseObserver;
@@ -50,7 +50,7 @@ index f7d24ea5f1e94bf3af4f659be3a5140d82f97eb9..30db813a7e67debff3e0708ee077973a
  class WebCursor;
  class WebContentsAccessibility;
  class DelegatedFrameHost;
-@@ -148,6 +152,9 @@ class CONTENT_EXPORT RenderWidgetHostViewBase : public RenderWidgetHostView {
+@@ -145,6 +149,9 @@ class CONTENT_EXPORT RenderWidgetHostViewBase : public RenderWidgetHostView {
        bool show_reason_unoccluded,
        bool show_reason_bfcache_restore) final;
  

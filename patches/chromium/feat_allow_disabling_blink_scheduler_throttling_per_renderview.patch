@@ -73,7 +73,7 @@ index e122d4ffb857023841dabcb6fed352d7586d8344..3c7cd1cb8b204024a0835150302ee889
 +  SetSchedulerThrottling(bool allowed);
  };
 diff --git a/third_party/blink/public/web/web_view.h b/third_party/blink/public/web/web_view.h
-index 98c0204aeb4f6325459e96648eb48db640e0d0ed..0a44bd86901f30b0ebb1ec593d38f0024ec11909 100644
+index 26aafb1350fe3e5df35800d858794b60aa309f21..e686722564b5d85ee77acc09ccba93d8605b1a0a 100644
 --- a/third_party/blink/public/web/web_view.h
 +++ b/third_party/blink/public/web/web_view.h
 @@ -357,6 +357,7 @@ class WebView {
@@ -85,7 +85,7 @@ index 98c0204aeb4f6325459e96648eb48db640e0d0ed..0a44bd86901f30b0ebb1ec593d38f002
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index 90bed685233f79cd0172fd2dcc68533f63ed8cd5..8723b43c27f4088fa75f586f3f44dc567f60a26e 100644
+index e5d12060da4fd6366313a28f4a99ac52ce119803..ff5dda58a3db3efeea952f0ae75cf85575e1a12c 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
 @@ -3559,6 +3559,13 @@ PageScheduler* WebViewImpl::Scheduler() const {
@@ -113,7 +113,7 @@ index 90bed685233f79cd0172fd2dcc68533f63ed8cd5..8723b43c27f4088fa75f586f3f44dc56
  
  mojom::blink::PageVisibilityState WebViewImpl::GetVisibilityState() {
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.h b/third_party/blink/renderer/core/exported/web_view_impl.h
-index c9359a66612c82395535411538cd6abdf3192273..604342940afb360bcd7c697132ea48951f3c5113 100644
+index e536aeacc79dcc5cf45674fbc4d288a8265a7548..ad45ff800911f4d937e1268a8b6a6d40e2cd6cfc 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.h
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.h
 @@ -403,6 +403,7 @@ class CORE_EXPORT WebViewImpl final : public WebView,

@@ -21,10 +21,10 @@ index 42d97b4b0c5a9c6e283be40f6c081419adcb127d..f445b4fdd9196ab65a9a2b48d3f0baea
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index a0a4ef84d5cfabc0820d57469d7e928467b5c2f7..1fd24594e91fa1f7f6e873aea422b8258fc3d191 100644
+index ec8c6d3956485103b7add39d111ba372126ce21f..04e320e1b0150dbf7edd42be88c3ab6ceaecf46f 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3649,6 +3649,14 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
+@@ -3658,6 +3658,14 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
    }
    auto* new_contents_impl = new_contents.get();
  
@@ -39,7 +39,7 @@ index a0a4ef84d5cfabc0820d57469d7e928467b5c2f7..1fd24594e91fa1f7f6e873aea422b825
    new_contents_impl->GetController().SetSessionStorageNamespace(
        partition_id, session_storage_namespace);
  
-@@ -3691,12 +3699,6 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
+@@ -3700,12 +3708,6 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
@@ -199,7 +199,7 @@ index c65d30c9187dd275488ed74bcc3a4eb918d2cbce..e4c6c828150e91f555b1b42e1988a101
                         bool opener_suppressed,
                         bool* no_javascript_access) override;
 diff --git a/third_party/blink/public/web/web_window_features.h b/third_party/blink/public/web/web_window_features.h
-index 888a2a26e67dae0d42353e5e906d26ea30c66cb3..7e48698a4b18d4d805667b93f79962524e090044 100644
+index 84d32491a56528a84b4395fba1d54cdbb38d522b..09998a83c449ef8cd9f360fbcdcf7edc0bbfa4a9 100644
 --- a/third_party/blink/public/web/web_window_features.h
 +++ b/third_party/blink/public/web/web_window_features.h
 @@ -34,6 +34,7 @@
@@ -220,7 +220,7 @@ index 888a2a26e67dae0d42353e5e906d26ea30c66cb3..7e48698a4b18d4d805667b93f7996252
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index 6831470f386c21f8a4bfb06ba1b231042acdcddc..1b61e783d99cccdac3b344ad79f93ce6dcb31121 100644
+index 06983193aa144c526b606c6b1291b2271a4570b3..cf2bc64ee509727570cc55a08dcdb39d3f18cce9 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
 @@ -1989,6 +1989,7 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
