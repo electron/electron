@@ -111,7 +111,7 @@ class Menu : public gin::Wrappable<Menu>,
   std::u16string GetLabelAt(int index) const;
   std::u16string GetSublabelAt(int index) const;
   std::u16string GetToolTipAt(int index) const;
-  std::u16string GetAcceleratorTextAt(int index) const;
+  virtual std::u16string GetAcceleratorTextAt(int index) const;
   bool IsItemCheckedAt(int index) const;
   bool IsEnabledAt(int index) const;
   bool IsVisibleAt(int index) const;

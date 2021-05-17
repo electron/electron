@@ -34,6 +34,7 @@ class MenuMac : public Menu {
                  int positioning_item,
                  base::OnceClosure callback);
   void ClosePopupAt(int32_t window_id) override;
+  std::u16string GetAcceleratorTextAt(int index) const override;
   void ClosePopupOnUI(int32_t window_id);
 
  private:
