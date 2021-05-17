@@ -18,12 +18,11 @@ an issue:
 
 ## Guides and Tutorials
 
-### Quickstart
+### Getting Started
 
-* [Quick Start Guide](tutorial/quick-start.md)
-  * [Prerequisites](tutorial/quick-start.md#prerequisites)
-  * [Create a basic application](tutorial/quick-start.md)
-  * [Package and distribute the application](tutorial/quick-start.md#package-and-distribute-your-application)
+* [Introduction](tutorial/introduction.md)
+* [Quick Start](tutorial/quick-start.md)
+* [Process Model](tutorial/process-model.md)
 
 ### Learning the basics
 
