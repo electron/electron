@@ -6,10 +6,10 @@ Subject: disable_hidden.patch
 Electron uses this to disable background throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 23e0d6312912648fda6e0795c082f6e179a56dc0..504fa6dc547a4c3152677abf152a1bf063f77155 100644
+index 31ddf3d11a50e388c32c0f0cc83148bdd4b23c42..20ca2f9ebb9f1e0e0665db68cf3cea13015f70e1 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -711,6 +711,9 @@ void RenderWidgetHostImpl::WasHidden() {
+@@ -712,6 +712,9 @@ void RenderWidgetHostImpl::WasHidden() {
    if (is_hidden_)
      return;
  
@@ -20,7 +20,7 @@ index 23e0d6312912648fda6e0795c082f6e179a56dc0..504fa6dc547a4c3152677abf152a1bf0
        blink::mojom::PointerLockResult::kWrongDocument);
  
 diff --git a/content/browser/renderer_host/render_widget_host_impl.h b/content/browser/renderer_host/render_widget_host_impl.h
-index 20aaa6fee4db490f4e337ce724a4dc8e117c2066..a1b4fe9dd9c69209291741cc2b3a92ad20a097d9 100644
+index 1490224235f9a34fc76e688349e1bb86bbcbe967..eb2a4320080c15e1b884587cf0777f30846d99ff 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.h
 +++ b/content/browser/renderer_host/render_widget_host_impl.h
 @@ -850,6 +850,9 @@ class CONTENT_EXPORT RenderWidgetHostImpl
@@ -34,7 +34,7 @@ index 20aaa6fee4db490f4e337ce724a4dc8e117c2066..a1b4fe9dd9c69209291741cc2b3a92ad
    // |routing_id| must not be MSG_ROUTING_NONE.
    // If this object outlives |delegate|, DetachDelegate() must be called when
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index bef783530231bf2a0e402f2aa4d1ebf0b3199b6f..5cf5e0abe59afbe54bd4faeba5c59617ec0477b6 100644
+index b8ae3c5d06c09139966accc3861e2c65d6310fb9..00de546240344c20548f05ff750a86223c9613ed 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
 @@ -595,7 +595,7 @@ void RenderWidgetHostViewAura::HideImpl() {

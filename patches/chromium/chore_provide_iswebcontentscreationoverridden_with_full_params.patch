@@ -35,7 +35,7 @@ index 5b4d70991e19edcdfee731c56251932bf43e535f..fe1977c5e6ce0f5b30e8be529b9efa51
  
  #endif  // CHROME_BROWSER_ANDROID_DOCUMENT_DOCUMENT_WEB_CONTENTS_DELEGATE_H_
 diff --git a/chrome/browser/chromeos/first_run/drive_first_run_controller.cc b/chrome/browser/chromeos/first_run/drive_first_run_controller.cc
-index e9901861cefeb446f7f7b2fab19ae4e9c4dd0b61..935d92812006789f941b0f14fe5547857c6ce41f 100644
+index d072e66a2ad8a05c9678c98aa5dbeecd4a925465..3874397a4f3096cc965fc8ce4ee955c763ab3ada 100644
 --- a/chrome/browser/chromeos/first_run/drive_first_run_controller.cc
 +++ b/chrome/browser/chromeos/first_run/drive_first_run_controller.cc
 @@ -124,8 +124,7 @@ class DriveWebContentsManager : public content::WebContentsObserver,
@@ -140,7 +140,7 @@ index ef84e04d628fb5cdbaf8fbbf84af3bf23e00c522..f1ee0bee5bfd08227a29498f8410d5d3
    }
  
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 77cb5676b4e6b8d0d9b65cbf0979048822f796e9..b525c5f17d62a4d97ad425e1fc06de82ad706cb0 100644
+index 7c840e8a0cbe1b8e5b7ebfba5d4dbd1488f4a530..b0854e1191b2fb124b4dfd52bd49a13f321829b3 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
 @@ -1793,12 +1793,11 @@ bool Browser::IsWebContentsCreationOverridden(
@@ -159,7 +159,7 @@ index 77cb5676b4e6b8d0d9b65cbf0979048822f796e9..b525c5f17d62a4d97ad425e1fc06de82
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index 1864b4517655accf6be67afc66be813839d13aca..990594de3c9f1cb6a90cdc5b36445a19cfdcfe76 100644
+index 71ce1e28e6291dcf5a8765003b93054eca360925..11d87d0ad1f86963b52c870adcdc65c2322ececc 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
 @@ -796,8 +796,7 @@ class Browser : public TabStripModelObserver,
@@ -264,10 +264,10 @@ index c5c5a7b63b5b3b62a9517cbef3ae23ce57a3c89c..4f1b7e88d6d2ae89a60311c8aeb1fcee
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index edcdf9990186346434a55372c5b894f6a8274f8b..db7d13190a6c4a81df496ed5f02db25faef61dd2 100644
+index ecab39d4103ff5512d7905f0c7734edf6de4e5c0..e584b11762356b6c95e54a7e72137dea2f75141d 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3611,8 +3611,7 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
+@@ -3601,8 +3601,7 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
  
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,
@@ -334,7 +334,7 @@ index 9b293d0df6c634bf44a69d607c4eee839a74b4a1..7e5b9cbdcc232c5e20eae0130d800f50
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
-index e2b5240255bfdd77ed7513b26ec404f2ec244151..8e45bb4e1817e5bce6465f895026bbf953920339 100644
+index 8dc27c2df589861c3176a54c02abe821419e39c7..7e5d49798cd4f55e6b3e24f5f10824f5043c2ddd 100644
 --- a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
 +++ b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
 @@ -380,8 +380,7 @@ bool MimeHandlerViewGuest::IsWebContentsCreationOverridden(
@@ -362,7 +362,7 @@ index 7d27e12c4e9a7f32af8a26f672359057a643dd67..7a30ac31f79871f2a9afa0345e0e88af
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/fuchsia/engine/browser/frame_impl.cc b/fuchsia/engine/browser/frame_impl.cc
-index cb35d3ea88744e985c18e14d049ac39674b05e81..907eee0b8b94cef0fd75343aeb0191ca3b9f56c9 100644
+index ba54048e3af4e71a38afbd07ad1e5bef57aa589b..833f4425b6499c8bbcd17dfa488e8126ac28bd1c 100644
 --- a/fuchsia/engine/browser/frame_impl.cc
 +++ b/fuchsia/engine/browser/frame_impl.cc
 @@ -381,8 +381,7 @@ bool FrameImpl::IsWebContentsCreationOverridden(
@@ -376,7 +376,7 @@ index cb35d3ea88744e985c18e14d049ac39674b05e81..907eee0b8b94cef0fd75343aeb0191ca
    // can catch bad client behavior while not interfering with normal operation.
    constexpr size_t kMaxPendingWebContentsCount = 10;
 diff --git a/fuchsia/engine/browser/frame_impl.h b/fuchsia/engine/browser/frame_impl.h
-index 08a79325f127bc7ed22df4e433c6a4aae6a3c9b7..03ff3ff83fa4edc9e78fcb3ef1a195078bf3f42a 100644
+index 5ae42572b62fa277aae17e6722f714a90dd9496e..5aa358ecdf4b1a7f3a272834fd50e7bee49accc8 100644
 --- a/fuchsia/engine/browser/frame_impl.h
 +++ b/fuchsia/engine/browser/frame_impl.h
 @@ -240,8 +240,7 @@ class FrameImpl : public fuchsia::web::Frame,

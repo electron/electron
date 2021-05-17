@@ -20,10 +20,10 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index 8780f67b03764da7821d86fb1f22e59212b01add..04a9e83debe931b5bb32bd3b9e9bbf0ae9e74cef 100644
+index f75e776fc6cae207a7ba42fa7d893b3e8cb02856..6a9563fe2a7570bb0109a8dab83983c3935f49c5 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
-@@ -1790,6 +1790,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
+@@ -1791,6 +1791,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
  
  gfx::ColorSpace LayerTreeHostImpl::GetRasterColorSpace(
      gfx::ContentColorUsage content_color_usage) const {
@@ -81,7 +81,7 @@ index f919df4d79a1168269c1538ac13a2a944586cf4e..fc34cf5d7dab95e7b6fc0576674b3e2b
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  
 diff --git a/components/viz/service/display/gl_renderer.cc b/components/viz/service/display/gl_renderer.cc
-index 046cd7582b11760a3d512ca8e63d495b9b5f35be..fc44552756eda92e376a31943842922ab9e21f92 100644
+index f2032b6f0f3794dac20f690421369cf33356394b..e6261f1e4e85470084ce37aa043d07259b74dfaa 100644
 --- a/components/viz/service/display/gl_renderer.cc
 +++ b/components/viz/service/display/gl_renderer.cc
 @@ -87,6 +87,9 @@
@@ -229,7 +229,7 @@ index 046cd7582b11760a3d512ca8e63d495b9b5f35be..fc44552756eda92e376a31943842922a
 +
 +#undef PATCH_CS
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index a361e3a9aebaac7fe171709022aad21049c1c109..c29b7a1ba3377833a565048b28370243babbef0b 100644
+index f0689a0342831498b5bde01af92839137cc0ac87..47541cb43e55b01b59f1680a8628973cc6a22afb 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
 @@ -225,6 +225,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
@@ -241,10 +241,10 @@ index a361e3a9aebaac7fe171709022aad21049c1c109..c29b7a1ba3377833a565048b28370243
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 91ae85f1f37d5106fe3ff2d5920e506299954096..add7e2b5e4a9d241da3bba8ef87f5eedbc5987cb 100644
+index de2b3a3c79a6bb5392ad267b489f0d171fd572a3..35f42a2f73977d2b193582f5dd5b918db0c10414 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -210,6 +210,7 @@
+@@ -213,6 +213,7 @@
  #include "ui/accessibility/accessibility_switches.h"
  #include "ui/base/ui_base_switches.h"
  #include "ui/display/display_switches.h"
@@ -252,7 +252,7 @@ index 91ae85f1f37d5106fe3ff2d5920e506299954096..add7e2b5e4a9d241da3bba8ef87f5eed
  #include "ui/gl/gl_switches.h"
  #include "ui/native_theme/native_theme_features.h"
  #include "url/origin.h"
-@@ -3205,6 +3206,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3237,6 +3238,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {

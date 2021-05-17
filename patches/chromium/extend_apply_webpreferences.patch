@@ -12,7 +12,7 @@ Ideally we could add an embedder observer pattern here but that can be
 done in future work.
 
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index d9887073dbbb313693f7398b2dd7d34dc50a31bd..0582f42be8cdd38a674c8e4b7ce03575d50ada9d 100644
+index 8723b43c27f4088fa75f586f3f44dc567f60a26e..f6f12bf8a0dab320129350761a98573383c79940 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
 @@ -155,6 +155,7 @@
@@ -23,7 +23,7 @@ index d9887073dbbb313693f7398b2dd7d34dc50a31bd..0582f42be8cdd38a674c8e4b7ce03575
  #include "third_party/blink/renderer/platform/graphics/image.h"
  #include "third_party/blink/renderer/platform/graphics/paint/cull_rect.h"
  #include "third_party/blink/renderer/platform/graphics/paint/paint_record_builder.h"
-@@ -1783,6 +1784,16 @@ void WebView::ApplyWebPreferences(const web_pref::WebPreferences& prefs,
+@@ -1787,6 +1788,16 @@ void WebView::ApplyWebPreferences(const web_pref::WebPreferences& prefs,
  
    RuntimeEnabledFeatures::SetTranslateServiceEnabled(
        prefs.translate_service_available);
