@@ -42,8 +42,8 @@ class JavascriptEnvironment {
   node::MultiIsolatePlatform* platform_;
 
   v8::Isolate* isolate_;
-  gin::IsolateHolder isolate_holder_;
-  v8::Locker locker_;
+  std::unique_ptr<gin::IsolateHolder> isolate_holder_;
+  std::unique_ptr<v8::Locker> locker_;
   v8::Global<v8::Context> context_;
 
   std::unique_ptr<MicrotasksRunner> microtasks_runner_;

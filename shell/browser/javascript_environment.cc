@@ -144,15 +144,14 @@ class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
 
 base::NoDestructor<base::PartitionAllocator> ArrayBufferAllocator::allocator_{};
 
-JavascriptEnvironment::JavascriptEnvironment(uv_loop_t* event_loop)
-    : isolate_(Initialize(event_loop)),
-      isolate_holder_(base::ThreadTaskRunnerHandle::Get(),
-                      gin::IsolateHolder::kSingleThread,
-                      gin::IsolateHolder::kAllowAtomicsWait,
-                      gin::IsolateHolder::IsolateType::kUtility,
-                      gin::IsolateHolder::IsolateCreationMode::kNormal,
-                      isolate_),
-      locker_(isolate_) {
+JavascriptEnvironment::JavascriptEnvironment(uv_loop_t* event_loop) {
+  isolate_ = Initialize(event_loop);
+  isolate_holder_ = std::make_unique<gin::IsolateHolder>(
+      base::ThreadTaskRunnerHandle::Get(), gin::IsolateHolder::kSingleThread,
+      gin::IsolateHolder::kAllowAtomicsWait,
+      gin::IsolateHolder::IsolateType::kUtility,
+      gin::IsolateHolder::IsolateCreationMode::kNormal, isolate_);
+  locker_ = std::make_unique<v8::Locker>(isolate_);
   isolate_->Enter();
   v8::HandleScope scope(isolate_);
   auto context = node::NewContext(isolate_);
