@@ -21,7 +21,7 @@ index ad603aa7c557bfd4f571a541d70e2edf9ae757d9..d4b0bf8f5e8f3af9328b0099b65d9963
  namespace blink {
 @@ -25,6 +26,9 @@ class WebMessagePortConverter {
    // neutered, it will return nullopt.
-   BLINK_EXPORT static base::Optional<MessagePortChannel>
+   BLINK_EXPORT static absl::optional<MessagePortChannel>
    DisentangleAndExtractMessagePortChannel(v8::Isolate*, v8::Local<v8::Value>);
 +
 +  BLINK_EXPORT static v8::Local<v8::Value>

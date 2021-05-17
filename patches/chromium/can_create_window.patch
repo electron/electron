@@ -203,7 +203,7 @@ index 888a2a26e67dae0d42353e5e906d26ea30c66cb3..7e48698a4b18d4d805667b93f7996252
 --- a/third_party/blink/public/web/web_window_features.h
 +++ b/third_party/blink/public/web/web_window_features.h
 @@ -34,6 +34,7 @@
- #include "base/optional.h"
+ #include "third_party/abseil-cpp/absl/types/optional.h"
  
  #include "third_party/blink/public/platform/web_impression.h"
 +#include "third_party/blink/renderer/platform/wtf/text/wtf_string.h"
@@ -213,7 +213,7 @@ index 888a2a26e67dae0d42353e5e906d26ea30c66cb3..7e48698a4b18d4d805667b93f7996252
 @@ -68,6 +69,8 @@ struct WebWindowFeatures {
    // Represents the attribution source declared by Attribution Reporting related
    // window features, if any.
-   base::Optional<WebImpression> impression;
+   absl::optional<WebImpression> impression;
 +
 +  String raw_features;
  };
