@@ -3235,7 +3235,7 @@ bool WebContents::IsFullscreenForTabOrPending(
 blink::SecurityStyle WebContents::GetSecurityStyle(
     content::WebContents* web_contents,
     content::SecurityStyleExplanations* security_style_explanations) {
-  auto state = security_state::GetVisibleSecurityState(web_contents());
+  auto state = security_state::GetVisibleSecurityState(web_contents);
   auto security_level = security_state::GetSecurityLevel(*state, false);
   return security_state::GetSecurityStyle(security_level, *state,
                                           security_style_explanations);
