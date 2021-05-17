@@ -7,6 +7,7 @@
 
 #include <string>
 
+#include "base/optional.h"
 #include "ui/events/keycodes/keyboard_codes.h"
 
 namespace electron {
@@ -17,7 +18,10 @@ ui::KeyboardCode KeyboardCodeFromCharCode(char16_t c, bool* shifted);
 
 // Return key code of the |str|, and also determine whether the SHIFT key is
 // pressed.
-ui::KeyboardCode KeyboardCodeFromStr(const std::string& str, bool* shifted);
+ui::KeyboardCode KeyboardCodeFromStr(
+    const std::string& str,
+    bool* shifted,
+    base::Optional<char16_t>* shifted_char = nullptr);
 
 }  // namespace electron
 
