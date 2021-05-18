@@ -100,24 +100,8 @@ The example renders an HTML page with a couple elements. The `<strong id="theme-
 Run the example using Electron Fiddle and then click the "Toggle Dark Mode" button; the app
  should start alternating between a light and dark background color.
 
-The `renderer.js` file is responsible for controlling the `<button>` functionality.
-
-```js title='renderer.js'
-document.getElementById('toggle-dark-mode').addEventListener('click', async () => {
-  const isDarkMode = await window.darkMode.toggle()
-  document.getElementById('theme-source').innerHTML = isDarkMode ? 'Dark' : 'Light'
-})
-
-document.getElementById('reset-to-system').addEventListener('click', async () => {
-  await window.darkMode.system()
-  document.getElementById('theme-source').innerHTML = 'System'
-})
-```
-
-Using `addEventListener`, the `renderer.js` file adds `'click'` [event listeners][event-listeners]
- to each button element. Each event listener handler makes calls to the `window.darkMode` API.
- This API is loaded onto the `window` object by the `preload.js` script, and thus only exposes the
- necessary IPC channels.
+The `preload.js` script adds a new API to the `window` object called `darkMode`. This API
+ only exposes the necessary IPC channels to the renderer process.
 
 ```js title='preload.js'
 const { contextBridge, ipcRenderer } = require('electron')
@@ -133,6 +117,24 @@ Through the `contextBridge`, the `preload.js` script exposes two IPC channels, `
  Now the renderer process can communicate with the main process securely and perform the necessary
  mutations to the `nativeTheme` object. For more information on IPC channels visit the
  [context isolation](./context-isolation.md) documentation.
+
+The `renderer.js` file is responsible for controlling the `<button>` functionality.
+
+```js title='renderer.js'
+document.getElementById('toggle-dark-mode').addEventListener('click', async () => {
+  const isDarkMode = await window.darkMode.toggle()
+  document.getElementById('theme-source').innerHTML = isDarkMode ? 'Dark' : 'Light'
+})
+
+document.getElementById('reset-to-system').addEventListener('click', async () => {
+  await window.darkMode.system()
+  document.getElementById('theme-source').innerHTML = 'System'
+})
+```
+
+Using `addEventListener`, the `renderer.js` file adds `'click'` [event listeners][event-listeners]
+ to each button element. Each event listener handler makes calls to the respective `window.darkMode`
+ API methods.
 
 Finally, the `main.js` file represents the main process and contains the actual `nativeTheme` API.
 
