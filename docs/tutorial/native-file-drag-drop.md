@@ -14,7 +14,11 @@ API in response to the `ondragstart` event.
 
 ## Example
 
-The ipc message from the renderer to the main process needs to come from `preload.js` to stay compliant with security guidelines. Add the following code to `preload.js`:
+A simple example demonstrating how you can create a file on the fly to be dragged out of the window.
+
+### Preload.js
+
+In `preload.js` use the [`contextBridge`](../api/context-bridge.md) to inject a method `window.electron.startDrag(...)` that will trigger an ipc message from to the main process.
 
 ```js
 const { contextBridge, ipcRenderer } = require('electron')
@@ -30,6 +34,8 @@ contextBridge.exposeInMainWorld('electron', {
 })
 ```
 
+### Index.html
+
 Add a draggable element to `index.html`, and reference your renderer script:
 
 ```html
@@ -37,9 +43,9 @@ Add a draggable element to `index.html`, and reference your renderer script:
 <script src="renderer.js"></script>
 ```
 
-and instruct the renderer process (in `renderer.js`) to handle drag events by calling the `contextBridge` method you added in `preload.js`:
+### Renderer.js
 
-`renderer.js`:
+In `renderer.js` setup the renderer process to handle drag events by calling the method you added via the [`contextBridge`](../api/context-bridge.md) above.
 
 ```javascript
 document.getElementById('drag').ondragstart = (event) => {
@@ -47,6 +53,8 @@ document.getElementById('drag').ondragstart = (event) => {
   window.electron.startDrag('drag-and-drop.md')
 }
 ```
+
+### Main.js
 
 In the Main process(`main.js` file), expand the received event with a path to the file that is
 being dragged and an icon:
