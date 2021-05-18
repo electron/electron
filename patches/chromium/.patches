@@ -38,7 +38,6 @@ ssl_security_state_tab_helper.patch
 desktop_media_list.patch
 proxy_config_monitor.patch
 gritsettings_resource_ids.patch
-isolate_holder.patch
 notification_provenance.patch
 dump_syms.patch
 command-ismediakey.patch
