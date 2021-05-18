@@ -1,9 +1,12 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Samuel Attard <samuel.r.attard@gmail.com>
 Date: Tue, 17 Nov 2020 16:59:28 -0800
-Subject: use public APIs to determine if a font is a system font in MAS build
+Subject: mas: use public APIs to determine if a font is a system font
 
-CTFontDescriptorIsSystemUIFont is a private API, we're using an _interesting_ technique in the MAS build to determine if the font is a system font by checking if it's kCTFontPriorityAttribute is set to system priority.
+CTFontDescriptorIsSystemUIFont is a private API, we're using an
+_interesting_ technique in the MAS build to determine if the font is a
+system font by checking if it's kCTFontPriorityAttribute is set to
+system priority.
 
 diff --git a/ui/gfx/platform_font_mac.mm b/ui/gfx/platform_font_mac.mm
 index bc8aeaade0593f543de0e156bed02d685ac9bc39..b7d0127938ce8dfe66fc9f3375f0e01c674ee624 100644
