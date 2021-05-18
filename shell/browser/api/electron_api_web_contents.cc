@@ -27,7 +27,6 @@
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/values.h"
 #include "chrome/browser/browser_process.h"
-#include "chrome/browser/ssl/security_state_tab_helper.h"
 #include "chrome/browser/ui/views/eye_dropper/eye_dropper.h"
 #include "chrome/common/pref_names.h"
 #include "components/prefs/pref_service.h"
@@ -833,7 +832,6 @@ void WebContents::InitWithSessionAndOptions(
   web_contents()->NotifyPreferencesChanged();
 
   WebContentsPermissionHelper::CreateForWebContents(web_contents());
-  SecurityStateTabHelper::CreateForWebContents(web_contents());
   InitZoomController(web_contents(), options);
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   extensions::ElectronExtensionWebContentsObserver::CreateForWebContents(
@@ -877,7 +875,6 @@ void WebContents::InitWithExtensionView(v8::Isolate* isolate,
   Observe(web_contents);
   InitWithWebContents(web_contents, GetBrowserContext(), IsGuest());
   inspectable_web_contents_->GetView()->SetDelegate(this);
-  SecurityStateTabHelper::CreateForWebContents(web_contents);
 }
 #endif
 
@@ -3237,11 +3234,9 @@ bool WebContents::IsFullscreenForTabOrPending(
 blink::SecurityStyle WebContents::GetSecurityStyle(
     content::WebContents* web_contents,
     content::SecurityStyleExplanations* security_style_explanations) {
-  SecurityStateTabHelper* helper =
-      SecurityStateTabHelper::FromWebContents(web_contents);
-  DCHECK(helper);
-  return security_state::GetSecurityStyle(helper->GetSecurityLevel(),
-                                          *helper->GetVisibleSecurityState(),
+  auto state = security_state::GetVisibleSecurityState(web_contents);
+  auto security_level = security_state::GetSecurityLevel(*state, false);
+  return security_state::GetSecurityStyle(security_level, *state,
                                           security_style_explanations);
 }
 
