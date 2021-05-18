@@ -29,7 +29,7 @@ async function main () {
   const clangDir = path.resolve(BASE, 'third_party', 'llvm-build', 'Release+Asserts', 'bin');
   const cc = path.resolve(clangDir, 'clang');
   const cxx = path.resolve(clangDir, 'clang++');
-  const ld = path.resolve(clangDir, 'clang++');
+  const ld = path.resolve(clangDir, 'lld');
 
   // TODO(ckerr) this is cribbed from read obj/electron/electron_app.ninja.
   // Maybe it would be better to have this script literally open up that
@@ -47,19 +47,19 @@ async function main () {
   const ldflags = [
     '-stdlib=libc++',
     '-fuse-ld=lld',
-    '-lc++abi',
     `-L"${path.resolve(BASE, 'out', `${utils.getOutDir({ shouldLog: true })}`, 'obj', 'buildtools', 'third_party', 'libc++abi')}"`,
-    `-L"${path.resolve(BASE, 'out', `${utils.getOutDir({ shouldLog: true })}`, 'obj', 'buildtools', 'third_party', 'libc++')}"`
+    `-L"${path.resolve(BASE, 'out', `${utils.getOutDir({ shouldLog: true })}`, 'obj', 'buildtools', 'third_party', 'libc++')}"`,
+    '-lc++abi'
   ].join(' ');
 
-  // if (process.platform !== 'win32') {
-  env.CC = cc;
-  env.CFLAGS = cxxflags;
-  env.CXX = cxx;
-  env.LD = ld;
-  env.CXXFLAGS = cxxflags;
-  env.LDFLAGS = ldflags;
-  // }
+  if (process.platform !== 'win32') {
+    env.CC = cc;
+    env.CFLAGS = cxxflags;
+    env.CXX = cxx;
+    env.LD = ld;
+    env.CXXFLAGS = cxxflags;
+    env.LDFLAGS = ldflags;
+  }
 
   const { status: buildStatus } = cp.spawnSync(NPX_CMD, ['node-gyp', 'rebuild', '--verbose', '--directory', 'test', '-j', 'max'], {
     env,
