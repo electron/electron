@@ -47,52 +47,11 @@ of this theming, due to the use of the macOS 10.14 SDK.
 
 ## Example
 
-This example demonstrates an Electron application that derives its theme colors from the `nativeTheme`. Additionally, it provides theme toggle and reset controls using IPC channels.
+This example demonstrates an Electron application that derives its theme colors from the
+`nativeTheme`. Additionally, it provides theme toggle and reset controls using IPC channels.
 
 ```javascript fiddle='docs/fiddles/features/macos-dark-mode'
-const { app, BrowserWindow, ipcMain, nativeTheme } = require('electron')
-const path = require('path')
 
-function createWindow () {
-  const win = new BrowserWindow({
-    width: 800,
-    height: 600,
-    webPreferences: {
-      preload: path.join(__dirname, 'preload.js')
-    }
-  })
-
-  win.loadFile('index.html')
-
-  ipcMain.handle('dark-mode:toggle', () => {
-    if (nativeTheme.shouldUseDarkColors) {
-      nativeTheme.themeSource = 'light'
-    } else {
-      nativeTheme.themeSource = 'dark'
-    }
-    return nativeTheme.shouldUseDarkColors
-  })
-
-  ipcMain.handle('dark-mode:system', () => {
-    nativeTheme.themeSouce = 'system'
-  })
-}
-
-app.whenReady().then(() => {
-  createWindow()
-
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow()
-    }
-  })
-})
-
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit()
-  }
-})
 ```
 
 ### How does this work?
@@ -133,9 +92,13 @@ And the `style.css` file:
 }
 ```
 
-The example renders an HTML page with a couple elements. The `<strong id="theme-source">` element shows which theme is currently selected, and the two `<button>` elements are the controls. The CSS file uses the [`prefers-color-scheme`][prefers-color-scheme] media query to set the `<body>` element background and text colors.
+The example renders an HTML page with a couple elements. The `<strong id="theme-source">`
+ element shows which theme is currently selected, and the two `<button>` elements are the
+ controls. The CSS file uses the [`prefers-color-scheme`][prefers-color-scheme] media query
+ to set the `<body>` element background and text colors.
 
-> Note: See it in action! Load the example using Electron Fiddle and then click the "Toggle Dark Mode" button.
+Run the example using Electron Fiddle and then click the "Toggle Dark Mode" button; the app
+ should start alternating between a light and dark background color.
 
 The `renderer.js` file is responsible for controlling the `<button>` functionality.
 
@@ -151,7 +114,10 @@ document.getElementById('reset-to-system').addEventListener('click', async () =>
 })
 ```
 
-It adds `'click'` [event listeners][event-listeners] to each button. The functions make calls to the `window.darkMode` API. The `darkMode` API is loaded onto the `window` object by the `preload.js` script.
+Using `addEventListener`, the `renderer.js` file adds `'click'` [event listeners][event-listeners]
+ to each button element. Each event listener handler makes calls to the `window.darkMode` API.
+ This API is loaded onto the `window` object by the `preload.js` script, and thus only exposes the
+ necessary IPC channels.
 
 ```js title='preload.js'
 const { contextBridge, ipcRenderer } = require('electron')
@@ -162,9 +128,13 @@ contextBridge.exposeInMainWorld('darkMode', {
 })
 ```
 
-The `'dark-mode:toggle'` and `'dark-mode:system'` strings correspond to IPC Channel names that the Main Process can use to perform the necessary mutations to the `nativeTheme` object. The use of `contextBridge` is important for [Electron application security best practices](./context-isolation.md).
+Through the `contextBridge`, the `preload.js` script exposes two IPC channels, `'dark-mode:toggle'`
+ and `'dark-mode:system'`, and assigns two methods, `toggle` and `system`, to the `darkMode` API.
+ Now the renderer process can communicate with the main process securely and perform the necessary
+ mutations to the `nativeTheme` object. For more information on IPC channels visit the
+ [context isolation](./context-isolation.md) documentation.
 
-Finally, the `main.js` file represents the Main Process and contains the actual `nativeTheme` API.
+Finally, the `main.js` file represents the main process and contains the actual `nativeTheme` API.
 
 ```js
 const { app, BrowserWindow, ipcMain, nativeTheme } = require('electron')
@@ -212,7 +182,17 @@ app.on('window-all-closed', () => {
 })
 ```
 
-The `ipcMain.handle` methods are how the main process responds to the click events from the buttons on the HTML page.
+The `ipcMain.handle` methods are how the main process responds to the click events from the buttons
+ on the HTML page.
+
+The `'dark-mode:toggle'` IPC channel handler method checks the `shouldUseDarkColors` boolean property,
+ sets the corresponding `themeSource`, and then returns the current `shouldUseDarkColors` property.
+ Looking back on the renderer process event listener for this IPC channel, the return value from this
+ handler is utilized to assign the correct text to the `<strong id='theme-source'>` element.
+
+The `'dark-mode:system'` IPC channel handler method assigns the string `'system'` to the `themeSource`
+ and returns nothing. This also corresponds with the relative renderer process event listener as the
+ method is awaited with no return value expected.
 
 After launching the Electron application, you can change modes or reset the
 theme to system default by clicking corresponding buttons:
