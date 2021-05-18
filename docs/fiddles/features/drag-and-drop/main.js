@@ -15,7 +15,7 @@ function createWindow () {
   win.loadFile('index.html')
 }
 
-const iconName = `${process.cwd()}/iconForDragAndDrop.png`;
+const iconName = path.join(process.cwd(), 'iconForDragAndDrop.png');
 const icon = fs.createWriteStream(iconName);
 
 http.get('http://img.icons8.com/ios/452/drag-and-drop.png', (response) => {
