@@ -3,8 +3,25 @@ From: deepak1556 <hop2deep@gmail.com>
 Date: Thu, 18 Oct 2018 17:07:01 -0700
 Subject: desktop_media_list.patch
 
-* Expose the capturer source list for the desktopCapturer API
-* Free the one-time use capturer after thumbnails are fetched
+Our current desktop capturer api is a one-shot call to the underlying
+implementation, i.e. a user calls desktopCapturer.getSources with the
+interested source type, we then return a promise that will eventually
+resolve with the sources and their thumbnails which are returned from
+the implementation in a given frame.
+
+* The core of this work is done by NativeDesktopMediaList in //chrome/browser/media/webrtc/native_desktop_media_list.cc.
+* DesktopMediaListObserver (//chrome/browser/media/webrtc/desktop_media_list_observer.h)
+  is the observer class that gets signalled with the sources from
+  NativeDesktopMediaList, our desktopcapturer api class is an
+  implementation of the DesktopMediaListObserver to receive those
+  signals.
+* To set the observer on NativeDesktopMediaList  we had to call
+  DesktopMediaList::StartUpdating https://source.chromium.org/chromium/chromium/src/+/main:chrome/browser/media/webrtc/desktop_media_list.h;l=74;drc=09a4396a448775456084fe36bb84662f5757d988;
+  but this call is not a one-shot but rather repeats the observer
+  signals for every frame. This is the call which chrome currently
+  uses.
+
+This patch allows us to get the one-shot effect with the above classes.
 
 diff --git a/chrome/browser/media/webrtc/desktop_media_list.h b/chrome/browser/media/webrtc/desktop_media_list.h
 index d7b52b0d1b8cfb823513303ec0f6322d8dc8d153..f2dbf39f81abfc6fde4064345ab0d222ee98438c 100644
