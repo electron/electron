@@ -1,4 +1,3 @@
-add_realloc.patch
 build_gn.patch
 dcheck.patch
 accelerator.patch
