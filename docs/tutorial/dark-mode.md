@@ -115,8 +115,7 @@ contextBridge.exposeInMainWorld('darkMode', {
 Through the `contextBridge`, the `preload.js` script exposes two IPC channels, `'dark-mode:toggle'`
  and `'dark-mode:system'`, and assigns two methods, `toggle` and `system`, to the `darkMode` API.
  Now the renderer process can communicate with the main process securely and perform the necessary
- mutations to the `nativeTheme` object. For more information on IPC channels visit the
- [context isolation](./context-isolation.md) documentation.
+ mutations to the `nativeTheme` object.
 
 The `renderer.js` file is responsible for controlling the `<button>` functionality.
 
