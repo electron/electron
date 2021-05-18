@@ -18,7 +18,7 @@ An example demonstrating how you can create a file on the fly to be dragged out 
 
 ### Preload.js
 
-In `preload.js` use the [`contextBridge`] to inject a method `window.electron.startDrag(...)` that will trigger an ipc message from to the main process.
+In `preload.js` use the [`contextBridge`] to inject a method `window.electron.startDrag(...)` that will send an ipc message to the main process.
 
 ```js
 const { contextBridge, ipcRenderer } = require('electron')
