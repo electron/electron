@@ -19,7 +19,7 @@ https://chromium-review.googlesource.com/c/chromium/src/+/1901591, we should try
 re-submitting the patch.
 
 diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
-index ae8a8ae78e5cbd6dd414e6eb8bc35931418fb74c..80263ff6c4330e60addb7634781f9a3590c61eb8 100644
+index 8b557bdeb4b8f3660cb9aa1adaf2bf28b6a326bf..aa8ffdd580292b88ff32ea536d34080c12db1778 100644
 --- a/content/app/content_main_runner_impl.cc
 +++ b/content/app/content_main_runner_impl.cc
 @@ -737,7 +737,7 @@ int ContentMainRunnerImpl::Initialize(const ContentMainParams& params) {
@@ -107,4 +107,3 @@ index dd16f2c082665e74cc3c0aaa1ddb53977ce4a7ea..1806baf2d97b36e5c5097516c82d14fc
    // Allows the embedder to perform platform-specific initialization before
    // BrowserMain() is invoked (i.e. before BrowserMainRunner, BrowserMainLoop,
    // BrowserMainParts, etc. are created).
-
