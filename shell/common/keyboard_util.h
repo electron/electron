@@ -16,12 +16,11 @@ namespace electron {
 // pressed.
 ui::KeyboardCode KeyboardCodeFromCharCode(char16_t c, bool* shifted);
 
-// Return key code of the |str|, and also determine whether the SHIFT key is
+// Return key code of the |str|, if the original key is a shifted character,
+// for example + and /, set it in |shifted_char|.
 // pressed.
-ui::KeyboardCode KeyboardCodeFromStr(
-    const std::string& str,
-    bool* shifted,
-    base::Optional<char16_t>* shifted_char = nullptr);
+ui::KeyboardCode KeyboardCodeFromStr(const std::string& str,
+                                     base::Optional<char16_t>* shifted_char);
 
 }  // namespace electron
 
