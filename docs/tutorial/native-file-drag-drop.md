@@ -56,7 +56,7 @@ document.getElementById('drag').ondragstart = (event) => {
 
 ### Main.js
 
-In the Main process(`main.js` file), expand the received event with a path to the file that is
+In the Main process (`main.js` file), expand the received event with a path to the file that is
 being dragged and an icon:
 
 ```javascript fiddle='docs/fiddles/features/drag-and-drop'
