@@ -135,7 +135,7 @@ And the `style.css` file:
 
 The example renders an HTML page with a couple elements. The `<strong id="theme-source">` element shows which theme is currently selected, and the two `<button>` elements are the controls. The CSS file uses the [`prefers-color-scheme`][prefers-color-scheme] media query to set the `<body>` element background and text colors.
 
-> See it in action! Load the example using Electron Fiddle and then click the "Toggle Dark Mode" button.
+> Note: See it in action! Load the example using Electron Fiddle and then click the "Toggle Dark Mode" button.
 
 The `renderer.js` file is responsible for controlling the `<button>` functionality.
 
@@ -151,7 +151,7 @@ document.getElementById('reset-to-system').addEventListener('click', async () =>
 })
 ```
 
-It adds `'click'` [event listeners](https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener) to each button. The functions make calls to the `window.darkMode` API. The `darkMode` API is loaded onto the `window` object by the `preload.js` script.
+It adds `'click'` [event listeners][event-listeners] to each button. The functions make calls to the `window.darkMode` API. The `darkMode` API is loaded onto the `window` object by the `preload.js` script.
 
 ```js title='preload.js'
 const { contextBridge, ipcRenderer } = require('electron')
@@ -224,3 +224,4 @@ theme to system default by clicking corresponding buttons:
 [electron-packager]: https://github.com/electron/electron-packager
 [packager-darwindarkmode-api]: https://electron.github.io/electron-packager/master/interfaces/electronpackager.options.html#darwindarkmodesupport
 [prefers-color-scheme]: https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-color-scheme
+[event-listeners]: https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener
