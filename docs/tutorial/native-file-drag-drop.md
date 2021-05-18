@@ -22,14 +22,15 @@ In `preload.js` use the [`contextBridge`] to inject a method `window.electron.st
 
 ```js
 const { contextBridge, ipcRenderer } = require('electron')
-const fs = require('fs')
+const fs = require('fs').promises
+const path = require('path')
 
 contextBridge.exposeInMainWorld('electron', {
-  startDrag: (fileName) => {
+  startDrag: async (fileName) => {
     // Create a new file to copy - you can also copy existing files.
-    fs.writeFileSync(fileName, '# Test drag and drop')
+    await fs.writeFile(fileName, '# Test drag and drop')
 
-    ipcRenderer.send('ondragstart', process.cwd() + `/${fileName}`)
+    ipcRenderer.send('ondragstart', path.join(process.cwd(), fileName))
   }
 })
 ```
