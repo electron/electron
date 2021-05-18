@@ -1,0 +1,254 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Tue, 18 May 2021 10:27:23 +0200
+Subject: Revert "Remove Print Preview code from PrintManager."
+
+This reverts commit 9ad88d54d1cefe3a400d87a809c129b0f393677c.
+
+diff --git a/chrome/browser/printing/print_view_manager_unittest.cc b/chrome/browser/printing/print_view_manager_unittest.cc
+index 72bdf47d0691eb62bf456b03f86c695d1eaf810f..d1f3955dcd6aab4082c6c7157967ef6f2300cff7 100644
+--- a/chrome/browser/printing/print_view_manager_unittest.cc
++++ b/chrome/browser/printing/print_view_manager_unittest.cc
+@@ -7,7 +7,6 @@
+ 
+ #include "base/auto_reset.h"
+ #include "base/bind.h"
+-#include "base/notreached.h"
+ #include "base/run_loop.h"
+ #include "build/build_config.h"
+ #include "build/chromeos_buildflags.h"
+@@ -93,20 +92,6 @@ class TestPrintViewManager : public PrintViewManagerBase {
+ #endif  // defined(OS_CHROMEOS)
+     return true;
+   }
+-  void SetupScriptedPrintPreview(
+-      SetupScriptedPrintPreviewCallback callback) override {
+-    NOTREACHED();
+-  }
+-  void ShowScriptedPrintPreview(bool is_modifiable) override { NOTREACHED(); }
+-  void RequestPrintPreview(
+-      mojom::RequestPrintPreviewParamsPtr params) override {
+-    NOTREACHED();
+-  }
+-  void CheckForCancel(int32_t preview_ui_id,
+-                      int32_t request_id,
+-                      CheckForCancelCallback callback) override {
+-    NOTREACHED();
+-  }
+ 
+  private:
+   TestPrintJob* test_job() {
+diff --git a/components/printing/browser/print_manager.cc b/components/printing/browser/print_manager.cc
+index 3e95b47324b465f7a0014369637db04ef8b18bed..3551b51fbdbf92c34930b8aed29e221c8fc4e0c2 100644
+--- a/components/printing/browser/print_manager.cc
++++ b/components/printing/browser/print_manager.cc
+@@ -34,6 +34,12 @@ void PrintManager::DidGetDocumentCookie(int32_t cookie) {
+   cookie_ = cookie;
+ }
+ 
++#if BUILDFLAG(ENABLE_TAGGED_PDF)
++void PrintManager::SetAccessibilityTree(
++    int32_t cookie,
++    const ui::AXTreeUpdate& accessibility_tree) {}
++#endif
++
+ void PrintManager::DidShowPrintDialog() {}
+ 
+ void PrintManager::DidPrintDocument(mojom::DidPrintDocumentParamsPtr params,
+@@ -54,6 +60,30 @@ void PrintManager::PrintingFailed(int32_t cookie) {
+ #endif
+ }
+ 
++#if BUILDFLAG(ENABLE_PRINT_PREVIEW)
++void PrintManager::UpdatePrintSettings(int32_t cookie,
++                                       base::Value job_settings,
++                                       UpdatePrintSettingsCallback callback) {
++  auto params = mojom::PrintPagesParams::New();
++  params->params = mojom::PrintParams::New();
++  std::move(callback).Run(std::move(params), false);
++}
++
++void PrintManager::SetupScriptedPrintPreview(
++    SetupScriptedPrintPreviewCallback callback) {
++  std::move(callback).Run();
++}
++
++void PrintManager::ShowScriptedPrintPreview(bool source_is_modifiable) {}
++
++void PrintManager::RequestPrintPreview(
++    mojom::RequestPrintPreviewParamsPtr params) {}
++
++void PrintManager::CheckForCancel(int32_t preview_ui_id,
++                                  int32_t request_id,
++                                  CheckForCancelCallback callback) {}
++#endif
++
+ bool PrintManager::IsPrintRenderFrameConnected(
+     content::RenderFrameHost* rfh) const {
+   auto it = print_render_frames_.find(rfh);
+diff --git a/components/printing/browser/print_manager.h b/components/printing/browser/print_manager.h
+index 9bafa5d7fbbc4e32250cd6a3667e1924a5a58e6e..a2030babc78ac2fcd77f15e17ee7648a1cf24304 100644
+--- a/components/printing/browser/print_manager.h
++++ b/components/printing/browser/print_manager.h
+@@ -19,6 +19,10 @@
+ #include "base/callback.h"
+ #endif
+ 
++#if BUILDFLAG(ENABLE_TAGGED_PDF)
++#include "ui/accessibility/ax_tree_update_forward.h"
++#endif
++
+ namespace printing {
+ 
+ class PrintManager : public content::WebContentsObserver,
+@@ -41,9 +45,26 @@ class PrintManager : public content::WebContentsObserver,
+   void DidGetDocumentCookie(int32_t cookie) override;
+   void DidPrintDocument(mojom::DidPrintDocumentParamsPtr params,
+                         DidPrintDocumentCallback callback) override;
++#if BUILDFLAG(ENABLE_TAGGED_PDF)
++  void SetAccessibilityTree(
++      int32_t cookie,
++      const ui::AXTreeUpdate& accessibility_tree) override;
++#endif
+   void DidShowPrintDialog() override;
+   void ShowInvalidPrinterSettingsError() override;
+   void PrintingFailed(int32_t cookie) override;
++#if BUILDFLAG(ENABLE_PRINT_PREVIEW)
++  void UpdatePrintSettings(int32_t cookie,
++                           base::Value job_settings,
++                           UpdatePrintSettingsCallback callback) override;
++  void SetupScriptedPrintPreview(
++      SetupScriptedPrintPreviewCallback callback) override;
++  void ShowScriptedPrintPreview(bool source_is_modifiable) override;
++  void RequestPrintPreview(mojom::RequestPrintPreviewParamsPtr params) override;
++  void CheckForCancel(int32_t preview_ui_id,
++                      int32_t request_id,
++                      CheckForCancelCallback callback) override;
++#endif
+ 
+  protected:
+   explicit PrintManager(content::WebContents* contents);
+diff --git a/headless/lib/browser/headless_print_manager.cc b/headless/lib/browser/headless_print_manager.cc
+index 36045c52174421201d5bd9f5f50be780647cadaf..6620bf1ba1a4b66c85352405e046e9bea1eebe72 100644
+--- a/headless/lib/browser/headless_print_manager.cc
++++ b/headless/lib/browser/headless_print_manager.cc
+@@ -20,33 +20,20 @@
+ #include "printing/mojom/print.mojom.h"
+ #include "printing/print_job_constants.h"
+ #include "printing/units.h"
+-
+ #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
+ #include "mojo/public/cpp/bindings/message.h"
+ #endif
+ 
+ namespace headless {
+ 
+-namespace {
+-
+ #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
+-constexpr char kInvalidUpdatePrintSettingsCall[] =
+-    "Invalid UpdatePrintSettings Call";
+-constexpr char kInvalidSetupScriptedPrintPreviewCall[] =
+-    "Invalid SetupScriptedPrintPreview Call";
+-constexpr char kInvalidShowScriptedPrintPreviewCall[] =
+-    "Invalid ShowScriptedPrintPreview Call";
+-constexpr char kInvalidRequestPrintPreviewCall[] =
+-    "Invalid RequestPrintPreview Call";
+-constexpr char kInvalidCheckForCancelCall[] = "Invalid CheckForCancel Call";
+-#endif
++namespace {
+ 
+-#if BUILDFLAG(ENABLE_TAGGED_PDF)
+-constexpr char kInvalidSetAccessibilityTreeCall[] =
+-    "Invalid SetAccessibilityTree Call";
+-#endif
++constexpr char kInvalidPathForCheckForCancel[] =
++    "Invalid path for CheckForCancel";
+ 
+ }  // namespace
++#endif
+ 
+ HeadlessPrintSettings::HeadlessPrintSettings()
+     : prefer_css_page_size(false),
+@@ -263,51 +250,12 @@ void HeadlessPrintManager::PrintingFailed(int32_t cookie) {
+ }
+ 
+ #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
+-void HeadlessPrintManager::UpdatePrintSettings(
+-    int32_t cookie,
+-    base::Value job_settings,
+-    UpdatePrintSettingsCallback callback) {
+-  // UpdatePrintSettingsCallback() should never be called on
+-  // HeadlessPrintManager, since it is only triggered by Print Preview.
+-  mojo::ReportBadMessage(kInvalidUpdatePrintSettingsCall);
+-}
+-
+-void HeadlessPrintManager::SetupScriptedPrintPreview(
+-    SetupScriptedPrintPreviewCallback callback) {
+-  // SetupScriptedPrintPreview() should never be called on HeadlessPrintManager,
+-  // since it is only triggered by Print Preview.
+-  mojo::ReportBadMessage(kInvalidSetupScriptedPrintPreviewCall);
+-}
+-
+-void HeadlessPrintManager::ShowScriptedPrintPreview(bool source_is_modifiable) {
+-  // ShowScriptedPrintPreview() should never be called on HeadlessPrintManager,
+-  // since it is only triggered by Print Preview.
+-  mojo::ReportBadMessage(kInvalidShowScriptedPrintPreviewCall);
+-}
+-
+-void HeadlessPrintManager::RequestPrintPreview(
+-    printing::mojom::RequestPrintPreviewParamsPtr params) {
+-  // RequestPrintPreview() should never be called on HeadlessPrintManager, since
+-  // it is only triggered by Print Preview.
+-  mojo::ReportBadMessage(kInvalidRequestPrintPreviewCall);
+-}
+-
+ void HeadlessPrintManager::CheckForCancel(int32_t preview_ui_id,
+                                           int32_t request_id,
+                                           CheckForCancelCallback callback) {
+-  // CheckForCancel() should never be called on HeadlessPrintManager, since it
++  // CheckForCancel should never be called on HeadlessPrintManager, since this
+   // is only triggered by Print Preview.
+-  mojo::ReportBadMessage(kInvalidCheckForCancelCall);
+-}
+-#endif  // BUILDFLAG(ENABLE_PRINT_PREVIEW)
+-
+-#if BUILDFLAG(ENABLE_TAGGED_PDF)
+-void HeadlessPrintManager::SetAccessibilityTree(
+-    int32_t cookie,
+-    const ui::AXTreeUpdate& accessibility_tree) {
+-  // SetAccessibilityTree() should never be called on HeadlessPrintManager,
+-  // since it is only triggered by Print Preview.
+-  mojo::ReportBadMessage(kInvalidSetAccessibilityTreeCall);
++  mojo::ReportBadMessage(kInvalidPathForCheckForCancel);
+ }
+ #endif
+ 
+diff --git a/headless/lib/browser/headless_print_manager.h b/headless/lib/browser/headless_print_manager.h
+index cd49820ae8fb4c46e601e41c6987d53e9484048b..f593ec2c7906dd3819d3423caf6f6aa748534714 100644
+--- a/headless/lib/browser/headless_print_manager.h
++++ b/headless/lib/browser/headless_print_manager.h
+@@ -101,23 +101,10 @@ class HeadlessPrintManager
+   void ShowInvalidPrinterSettingsError() override;
+   void PrintingFailed(int32_t cookie) override;
+ #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
+-  void UpdatePrintSettings(int32_t cookie,
+-                           base::Value job_settings,
+-                           UpdatePrintSettingsCallback callback) override;
+-  void SetupScriptedPrintPreview(
+-      SetupScriptedPrintPreviewCallback callback) override;
+-  void ShowScriptedPrintPreview(bool source_is_modifiable) override;
+-  void RequestPrintPreview(
+-      printing::mojom::RequestPrintPreviewParamsPtr params) override;
+   void CheckForCancel(int32_t preview_ui_id,
+                       int32_t request_id,
+                       CheckForCancelCallback callback) override;
+ #endif
+-#if BUILDFLAG(ENABLE_TAGGED_PDF)
+-  void SetAccessibilityTree(
+-      int32_t cookie,
+-      const ui::AXTreeUpdate& accessibility_tree) override;
+-#endif
+ 
+   void Reset();
+   void ReleaseJob(PrintResult result);
