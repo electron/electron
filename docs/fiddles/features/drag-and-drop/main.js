@@ -1,9 +1,9 @@
 const { app, BrowserWindow, ipcMain, nativeImage, NativeImage } = require('electron')
 const path = require('path')
 const fs = require('fs')
-const http = require('http')
+const https = require('https')
 
-function createWindow () {
+function createWindow() {
   const win = new BrowserWindow({
     width: 800,
     height: 600,
@@ -18,7 +18,10 @@ function createWindow () {
 const iconName = path.join(process.cwd(), 'iconForDragAndDrop.png');
 const icon = fs.createWriteStream(iconName);
 
-http.get('http://img.icons8.com/ios/452/drag-and-drop.png', (response) => {
+// Create a new file to copy - you can also copy existing files.
+fs.writeFileSync(path.join(process.cwd(), 'drag-and-drop.md'), '# Test drag and drop')
+
+https.get('https://img.icons8.com/ios/452/drag-and-drop.png', (response) => {
   response.pipe(icon);
 });
 
