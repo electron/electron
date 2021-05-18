@@ -21,98 +21,68 @@ status of Electron, you should develop additional means for this check.
 
 ## Example
 
-### Event detection in the Renderer process
+Starting with an HTML file `index.html`, this example will demonstrate how the `navigator.onLine` API can be used to build a connection status indicator.
 
-Starting with a working application from the
-[Quick Start Guide](quick-start.md), update the `main.js` file
-with the following lines:
+```html title="index.html"
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Hello World!</title>
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';" />
+</head>
+<body>
+    <h1>Connection status: <strong id='status'></strong></h1>
+    
+    <script src="renderer.js"></script>
+</body>
+</html>
+```
 
-```javascript
+In order to mutate the DOM, create a `renderer.js` file that adds event listeners to the `'online'` and `'offline'` `window` events. The event handler sets the content of the `<strong id='status'>` element depending on the result of `navigator.onLine`.
+
+```js title='renderer.js'
+function onlineStatusIndicator () {
+  document.getElementById('status').innerHTML = navigator.onLine ? 'online' : 'offline'
+}
+
+window.addEventListener('online', onlineStatusIndicator)
+window.addEventListener('offline', onlineStatusIndicator)
+
+onlineStatusIndicator()
+```
+
+Finally, create a `main.js` file for main process that creates the window.
+
+```js title='main.js'
 const { app, BrowserWindow } = require('electron')
 
-let onlineStatusWindow
+function createWindow () {
+  const onlineStatusWindow = new BrowserWindow({
+    width: 400,
+    height: 100
+  })
+
+  onlineStatusWindow.loadFile('index.html')
+}
 
 app.whenReady().then(() => {
-  onlineStatusWindow = new BrowserWindow({ width: 0, height: 0, show: false })
-  onlineStatusWindow.loadURL(`file://${__dirname}/index.html`)
+  createWindow()
+
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+      createWindow()
+    }
+  })
 })
-```
 
-in the `index.html` file, add the following line before the
-closing `</body>` tag:
-
-```html
-<script src="renderer.js"></script>
-```
-
-and add the `renderer.js` file:
-
-```javascript fiddle='docs/fiddles/features/online-detection/renderer'
-const alertOnlineStatus = () => { window.alert(navigator.onLine ? 'online' : 'offline') }
-
-window.addEventListener('online', alertOnlineStatus)
-window.addEventListener('offline', alertOnlineStatus)
-
-alertOnlineStatus()
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit()
+  }
+})
 ```
 
 After launching the Electron application, you should see the notification:
 
-![Online-offline-event detection](../images/online-event-detection.png)
-
-### Event detection in the Main process
-
-There may be situations when you want to respond to online/offline events in
-the Main process as well. The Main process, however, does not have a
-`navigator` object and cannot detect these events directly. In this case, you
-need to forward the events to the Main process using Electron's inter-process
-communication (IPC) utilities.
-
-Starting with a working application from the
-[Quick Start Guide](quick-start.md), update the `main.js` file
-with the following lines:
-
-```javascript
-const { app, BrowserWindow, ipcMain } = require('electron')
-let onlineStatusWindow
-
-app.whenReady().then(() => {
-  onlineStatusWindow = new BrowserWindow({ width: 0, height: 0, show: false, webPreferences: { nodeIntegration: true } })
-  onlineStatusWindow.loadURL(`file://${__dirname}/index.html`)
-})
-
-ipcMain.on('online-status-changed', (event, status) => {
-  console.log(status)
-})
-```
-
-in the `index.html` file, add the following line before the
-closing `</body>` tag:
-
-```html
-<script src="renderer.js"></script>
-```
-
-and add the `renderer.js` file:
-
-```javascript fiddle='docs/fiddles/features/online-detection/main'
-const { ipcRenderer } = require('electron')
-const updateOnlineStatus = () => { ipcRenderer.send('online-status-changed', navigator.onLine ? 'online' : 'offline') }
-
-window.addEventListener('online', updateOnlineStatus)
-window.addEventListener('offline', updateOnlineStatus)
-
-updateOnlineStatus()
-```
-
-After launching the Electron application, you should see the notification in the
-Console:
-
-```sh
-npm start
-
-> electron@1.0.0 start /electron
-> electron .
-
-online
-```
+![Connection status](../images/connection-status.png)
