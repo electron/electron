@@ -1,9 +1,5 @@
-const { ipcRenderer } = require('electron')
-const fs = require('fs')
-
 document.getElementById('drag').ondragstart = (event) => {
-  const fileName = 'drag-and-drop.md'
-  fs.writeFileSync(fileName, '# Test drag and drop');
+  console.log("draggin...")
   event.preventDefault()
-  ipcRenderer.send('ondragstart', process.cwd() + `/${fileName}`)
+  window.electron.startDrag('drag-and-drop.md')
 }

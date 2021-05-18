@@ -7,12 +7,7 @@
 </head>
 <body>
     <h1>Hello World!</h1>
-    <p>
-        We are using node <script>document.write(process.versions.node)</script>,
-        Chrome <script>document.write(process.versions.chrome)</script>,
-        and Electron <script>document.write(process.versions.electron)</script>.
-    </p>
-    <a href="#" id="drag">Drag me</a>
+    <div style="background:green;padding:10px;display:inline-block" draggable="true" id="drag">Drag me</div>
     <script src="renderer.js"></script>
 </body>
 </html>
