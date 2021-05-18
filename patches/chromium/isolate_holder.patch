@@ -7,6 +7,13 @@ Pass pre allocated isolate for initialization, node platform
 needs to register on an isolate so that it can be used later
 down in the initialization process of an isolate.
 
+Specifically, v8::Isolate::Initialize ends up calling
+NodePlatform::GetForegroundTaskRunner, which requires that the
+isolate has previously been registered with NodePlatform::RegisterIsolate.
+However, if we let gin allocate the isolate, there's no opportunity
+for us to register the isolate in between Isolate::Allocate and
+Isolate::Initialize.
+
 diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
 index 9fd05f22c4f6d484c5cedfa1f38a147158726d42..2897c065246d5336d209d4e5a856fb984d06063f 100644
 --- a/gin/isolate_holder.cc
