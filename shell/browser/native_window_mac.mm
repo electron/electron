@@ -1671,6 +1671,16 @@ void NativeWindowMac::NotifyWindowWillLeaveFullScreen() {
   UpdateVibrancyRadii(false);
 }
 
+void NativeWindowMac::SetActive(bool is_key) {
+  if (is_key)
+    widget()->Activate();
+  is_active_ = is_key;
+}
+
+bool NativeWindowMac::IsActive() const {
+  return is_active_;
+}
+
 void NativeWindowMac::ReorderButtonsView() {
   if (buttons_view_) {
     [buttons_view_ removeFromSuperview];
