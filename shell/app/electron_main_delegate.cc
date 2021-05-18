@@ -328,7 +328,7 @@ void ElectronMainDelegate::PreSandboxStartup() {
   }
 }
 
-void ElectronMainDelegate::PreCreateMainMessageLoop() {
+void ElectronMainDelegate::PreBrowserMain() {
   // This is initialized early because the service manager reads some feature
   // flags and we need to make sure the feature list is initialized before the
   // service manager reads the features.
