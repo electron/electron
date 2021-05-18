@@ -95,13 +95,11 @@ window.addEventListener('keyup', handleKeyPress, true);
 key presses before other listeners so they can't have `stopPropagation()`
 called on them.
 
-### Intercepting events in the main process
+#### Intercepting events in the main process
 
 The [`before-input-event`](../api/web-contents.md#event-before-input-event) event
 is emitted before dispatching `keydown` and `keyup` events in the page. It can
 be used to catch and handle custom shortcuts that are not visible in the menu.
-
-##### Example
 
 Starting with a working application from the
 [Quick Start Guide](quick-start.md), update the `main.js` file with the
@@ -111,7 +109,7 @@ following lines:
 const { app, BrowserWindow } = require('electron')
 
 app.whenReady().then(() => {
-  const win = new BrowserWindow({ width: 800, height: 600, webPreferences: { nodeIntegration: true } })
+  const win = new BrowserWindow({ width: 800, height: 600 })
 
   win.loadFile('index.html')
   win.webContents.on('before-input-event', (event, input) => {
