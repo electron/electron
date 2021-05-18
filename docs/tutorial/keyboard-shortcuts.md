@@ -81,15 +81,21 @@ If you want to handle keyboard shortcuts within a [BrowserWindow], you can
 listen for the `keyup` and `keydown` [DOM events][dom-events] inside the
 renderer process using the [addEventListener() API][addEventListener-api].
 
-```js
-window.addEventListener('keyup', doSomething, true)
+```javascript fiddle='docs/fiddles/features/keyboard-shortcuts/web-apis'
+function handleKeyPress(event) {
+  // You can put code here to handle the keypress.
+  document.getElementById("last-keypress").innerText = event.key;
+  console.log(`You pressed ${event.key}`);
+}
+
+window.addEventListener('keyup', handleKeyPress, true);
 ```
 
-Note the third parameter `true` indicates that the listener will always receive
+> Note the third parameter `true` indicates that the listener will always receive
 key presses before other listeners so they can't have `stopPropagation()`
 called on them.
 
-#### Intercepting events in the main process
+### Intercepting events in the main process
 
 The [`before-input-event`](../api/web-contents.md#event-before-input-event) event
 is emitted before dispatching `keydown` and `keyup` events in the page. It can
