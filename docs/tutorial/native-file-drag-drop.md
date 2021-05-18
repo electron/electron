@@ -14,28 +14,39 @@ API in response to the `ondragstart` event.
 
 ## Example
 
-Starting with a working application from the
-[Quick Start Guide](quick-start.md), add the following lines to the
-`index.html` file:
+The ipc message from the renderer to the main process needs to come from `preload.js` to stay compliant with security guidelines. Add the following code to `preload.js`:
+
+```js
+const { contextBridge, ipcRenderer } = require('electron')
+const fs = require('fs')
+
+contextBridge.exposeInMainWorld('electron', {
+  startDrag: (fileName) => {
+    // Create a new file to copy - you can also copy existing files.
+    fs.writeFileSync(fileName, '# Test drag and drop')
+
+    ipcRenderer.send('ondragstart', process.cwd() + `/${fileName}`)
+  }
+})
+```
+
+Add a draggable element to `index.html`, and reference your renderer script:
 
 ```html
-<a href="#" id="drag">Drag me</a>
+<div style="border:2px solid black;border-radius:3px;padding:5px;display:inline-block" draggable="true" id="drag">Drag me</div>
 <script src="renderer.js"></script>
 ```
 
-and add the following lines to the `renderer.js` file:
+and instruct the renderer process (in `renderer.js`) to handle drag events by calling the `contextBridge` method you added in `preload.js`:
+
+`renderer.js`:
 
 ```javascript
-const { ipcRenderer } = require('electron')
-
 document.getElementById('drag').ondragstart = (event) => {
   event.preventDefault()
-  ipcRenderer.send('ondragstart', '/absolute/path/to/the/item')
+  window.electron.startDrag('drag-and-drop.md')
 }
 ```
-
-The code above instructs the Renderer process to handle the `ondragstart` event
-and forward the information to the Main process.
 
 In the Main process(`main.js` file), expand the received event with a path to the file that is
 being dragged and an icon:
