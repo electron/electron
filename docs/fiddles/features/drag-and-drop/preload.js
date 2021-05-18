@@ -1,10 +1,10 @@
 const { contextBridge, ipcRenderer } = require('electron')
-const fs = require('fs')
+const fs = require('fs').promises;
 
 contextBridge.exposeInMainWorld('electron', {
-  startDrag: (fileName) => {
+  startDrag: async (fileName) => {
     // Create a new file to copy - you can also copy existing files.
-    fs.writeFileSync(fileName, '# Test drag and drop')
+    await fs.writeFile(fileName, '# Test drag and drop')
 
     ipcRenderer.send('ondragstart', process.cwd() + `/${fileName}`)
   }
