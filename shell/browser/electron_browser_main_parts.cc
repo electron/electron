@@ -475,12 +475,12 @@ void ElectronBrowserMainParts::WillRunMainMessageLoop(
   Browser::Get()->SetMainMessageLoopQuitClosure(run_loop->QuitClosure());
 }
 
-void ElectronBrowserMainParts::PostMainMessageLoopStart() {
+void ElectronBrowserMainParts::PostCreateMainMessageLoop() {
 #if defined(USE_OZONE)
   if (features::IsUsingOzonePlatform()) {
     auto shutdown_cb =
         base::BindOnce(base::RunLoop::QuitCurrentWhenIdleClosureDeprecated());
-    ui::OzonePlatform::GetInstance()->PostMainMessageLoopStart(
+    ui::OzonePlatform::GetInstance()->PostCreateMainMessageLoop(
         std::move(shutdown_cb));
   }
 #endif
@@ -527,12 +527,12 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
 }
 
 #if !defined(OS_MAC)
-void ElectronBrowserMainParts::PreMainMessageLoopStart() {
-  PreMainMessageLoopStartCommon();
+void ElectronBrowserMainParts::PreCreateMainMessageLoop() {
+  PreCreateMainMessageLoopCommon();
 }
 #endif
 
-void ElectronBrowserMainParts::PreMainMessageLoopStartCommon() {
+void ElectronBrowserMainParts::PreCreateMainMessageLoopCommon() {
 #if defined(OS_MAC)
   InitializeMainNib();
   RegisterURLHandler();

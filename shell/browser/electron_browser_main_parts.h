@@ -99,14 +99,14 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
   int PreMainMessageLoopRun() override;
   void WillRunMainMessageLoop(
       std::unique_ptr<base::RunLoop>& run_loop) override;
-  void PostMainMessageLoopStart() override;
+  void PostCreateMainMessageLoop() override;
   void PostMainMessageLoopRun() override;
-  void PreMainMessageLoopStart() override;
+  void PreCreateMainMessageLoop() override;
   void PostCreateThreads() override;
   void PostDestroyThreads() override;
 
  private:
-  void PreMainMessageLoopStartCommon();
+  void PreCreateMainMessageLoopCommon();
 
 #if defined(OS_POSIX)
   // Set signal handlers.
