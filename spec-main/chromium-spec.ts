@@ -1617,7 +1617,6 @@ describe('navigator.clipboard', () => {
   let w: BrowserWindow;
   before(async () => {
     w = new BrowserWindow({
-      show: false,
       webPreferences: {
         enableBlinkFeatures: 'Serial'
       }

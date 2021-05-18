@@ -1655,17 +1655,18 @@ void WebContents::ReadyToCommitNavigation(
   // Don't focus content in an inactive window.
   if (!owner_window())
     return;
+#if defined(OS_MAC)
+  if (!owner_window()->IsActive())
+    return;
+#else
   if (!owner_window()->widget()->IsActive())
     return;
+#endif
   // Don't focus content after subframe navigations.
   if (!navigation_handle->IsInMainFrame())
     return;
   // Only focus for top-level contents.
   if (type_ != Type::kBrowserWindow)
-    return;
-  // Only set the initial focus when navigating away from the
-  // blank page.
-  if (web_contents()->GetLastCommittedURL() != "about:blank")
     return;
   web_contents()->SetInitialFocus();
 }

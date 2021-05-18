@@ -149,6 +149,8 @@ class NativeWindowMac : public NativeWindow,
   gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds) const override;
   void NotifyWindowEnterFullScreen() override;
   void NotifyWindowLeaveFullScreen() override;
+  void SetActive(bool is_key) override;
+  bool IsActive() const override;
 
   void NotifyWindowWillEnterFullScreen();
   void NotifyWindowWillLeaveFullScreen();
@@ -267,6 +269,7 @@ class NativeWindowMac : public NativeWindow,
   bool is_simple_fullscreen_ = false;
   bool was_maximizable_ = false;
   bool was_movable_ = false;
+  bool is_active_ = false;
   NSRect original_frame_;
   NSInteger original_level_;
   NSUInteger simple_fullscreen_mask_;
