@@ -18,18 +18,14 @@ An example demonstrating how you can create a file on the fly to be dragged out 
 
 ### Preload.js
 
-In `preload.js` use the [`contextBridge`] to inject a method `window.electron.startDrag(...)` that will send an ipc message to the main process.
+In `preload.js` use the [`contextBridge`] to inject a method `window.electron.startDrag(...)` that will send an IPC message to the main process.
 
 ```js
 const { contextBridge, ipcRenderer } = require('electron')
-const fs = require('fs').promises
 const path = require('path')
 
 contextBridge.exposeInMainWorld('electron', {
-  startDrag: async (fileName) => {
-    // Create a new file to copy - you can also copy existing files.
-    await fs.writeFile(fileName, '# Test drag and drop')
-
+  startDrag: (fileName) => {
     ipcRenderer.send('ondragstart', path.join(process.cwd(), fileName))
   }
 })
@@ -46,7 +42,7 @@ Add a draggable element to `index.html`, and reference your renderer script:
 
 ### Renderer.js
 
-In `renderer.js` setup the renderer process to handle drag events by calling the method you added via the [`contextBridge`] above.
+In `renderer.js` set up the renderer process to handle drag events by calling the method you added via the [`contextBridge`] above.
 
 ```javascript
 document.getElementById('drag').ondragstart = (event) => {
