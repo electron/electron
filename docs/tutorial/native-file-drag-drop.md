@@ -18,7 +18,7 @@ A simple example demonstrating how you can create a file on the fly to be dragge
 
 ### Preload.js
 
-In `preload.js` use the [`contextBridge`](../api/context-bridge.md) to inject a method `window.electron.startDrag(...)` that will trigger an ipc message from to the main process.
+In `preload.js` use the [`contextBridge`] to inject a method `window.electron.startDrag(...)` that will trigger an ipc message from to the main process.
 
 ```js
 const { contextBridge, ipcRenderer } = require('electron')
@@ -45,7 +45,7 @@ Add a draggable element to `index.html`, and reference your renderer script:
 
 ### Renderer.js
 
-In `renderer.js` setup the renderer process to handle drag events by calling the method you added via the [`contextBridge`](../api/context-bridge.md) above.
+In `renderer.js` setup the renderer process to handle drag events by calling the method you added via the [`contextBridge`] above.
 
 ```javascript
 document.getElementById('drag').ondragstart = (event) => {
@@ -75,3 +75,5 @@ the item from the BrowserWindow onto your desktop. In this guide,
 the item is a Markdown file located in the root of the project:
 
 ![Drag and drop](../images/drag-and-drop.gif)
+
+[`contextBridge`]: ../api/context-bridge.md
