@@ -145,12 +145,17 @@ class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
 base::NoDestructor<base::PartitionAllocator> ArrayBufferAllocator::allocator_{};
 
 JavascriptEnvironment::JavascriptEnvironment(uv_loop_t* event_loop) {
-  isolate_ = Initialize(event_loop);
+  Initialize(event_loop);
   isolate_holder_ = std::make_unique<gin::IsolateHolder>(
       base::ThreadTaskRunnerHandle::Get(), gin::IsolateHolder::kSingleThread,
       gin::IsolateHolder::kAllowAtomicsWait,
       gin::IsolateHolder::IsolateType::kUtility,
-      gin::IsolateHolder::IsolateCreationMode::kNormal, isolate_);
+      gin::IsolateHolder::IsolateCreationMode::kNormal);
+
+  isolate_ = isolate_holder_->isolate();
+  platform_->RegisterIsolate(isolate_, event_loop);
+  g_isolate = isolate_;
+
   locker_ = std::make_unique<v8::Locker>(isolate_);
   isolate_->Enter();
   v8::HandleScope scope(isolate_);
@@ -315,7 +320,7 @@ class TracingControllerImpl : public node::tracing::TracingController {
   DISALLOW_COPY_AND_ASSIGN(TracingControllerImpl);
 };
 
-v8::Isolate* JavascriptEnvironment::Initialize(uv_loop_t* event_loop) {
+void JavascriptEnvironment::Initialize(uv_loop_t* event_loop) {
   auto* cmd = base::CommandLine::ForCurrentProcess();
 
   // --js-flags.
@@ -336,12 +341,6 @@ v8::Isolate* JavascriptEnvironment::Initialize(uv_loop_t* event_loop) {
   gin::IsolateHolder::Initialize(
       gin::IsolateHolder::kNonStrictMode, new ArrayBufferAllocator(),
       nullptr /* external_reference_table */, false /* create_v8_platform */);
-
-  v8::Isolate* isolate = v8::Isolate::Allocate();
-  platform_->RegisterIsolate(isolate, event_loop);
-  g_isolate = isolate;
-
-  return isolate;
 }
 
 // static
