@@ -14,7 +14,7 @@ API in response to the `ondragstart` event.
 
 ## Example
 
-A simple example demonstrating how you can create a file on the fly to be dragged out of the window.
+An example demonstrating how you can create a file on the fly to be dragged out of the window.
 
 ### Preload.js
 
