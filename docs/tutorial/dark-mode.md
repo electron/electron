@@ -97,11 +97,10 @@ The example renders an HTML page with a couple elements. The `<strong id="theme-
  controls. The CSS file uses the [`prefers-color-scheme`][prefers-color-scheme] media query
  to set the `<body>` element background and text colors.
 
-Run the example using Electron Fiddle and then click the "Toggle Dark Mode" button; the app
- should start alternating between a light and dark background color.
-
 The `preload.js` script adds a new API to the `window` object called `darkMode`. This API
- only exposes the necessary IPC channels to the renderer process.
+ exposes two IPC channels to the renderer process, `'dark-mode:toggle'` and `'dark-mode:system'`.
+ It also assigns two methods, `toggle` and `system`, which pass messages from the renderer to the
+ main process.
 
 ```js title='preload.js'
 const { contextBridge, ipcRenderer } = require('electron')
@@ -112,9 +111,7 @@ contextBridge.exposeInMainWorld('darkMode', {
 })
 ```
 
-Through the `contextBridge`, the `preload.js` script exposes two IPC channels, `'dark-mode:toggle'`
- and `'dark-mode:system'`, and assigns two methods, `toggle` and `system`, to the `darkMode` API.
- Now the renderer process can communicate with the main process securely and perform the necessary
+Now the renderer process can communicate with the main process securely and perform the necessary
  mutations to the `nativeTheme` object.
 
 The `renderer.js` file is responsible for controlling the `<button>` functionality.
@@ -195,8 +192,8 @@ The `'dark-mode:system'` IPC channel handler method assigns the string `'system'
  and returns nothing. This also corresponds with the relative renderer process event listener as the
  method is awaited with no return value expected.
 
-After launching the Electron application, you can change modes or reset the
-theme to system default by clicking corresponding buttons:
+Run the example using Electron Fiddle and then click the "Toggle Dark Mode" button; the app should
+ start alternating between a light and dark background color.
 
 ![Dark Mode](../images/dark_mode.gif)
 
