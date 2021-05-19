@@ -13,39 +13,30 @@ __Application dock menu:__
 
 ![macOS Dock Menu][dock-menu-image]
 
-To add a file to recent documents, you need to use the
-[app.addRecentDocument][addrecentdocument] API.
-
 ## Example
 
-### Add an item to recent documents
-
-Starting with a working application from the
-[Quick Start Guide](quick-start.md), add the following lines to the
-`main.js` file:
+### Managing recent documents
 
 ```javascript fiddle='docs/fiddles/features/recent-documents'
-const { app } = require('electron')
-
-app.addRecentDocument('/Users/USERNAME/Desktop/work.type')
 ```
 
+#### Adding a recent document
+
+To add a file to recent documents, use the
+[app.addRecentDocument][addrecentdocument] API.
+
 After launching the Electron application, right click the application icon.
-You should see the item you just added. In this guide, the item is a Markdown
-file located in the root of the project:
+In this guide, the item is a Markdown file located in the root of the project.
+You should see `recently-used.md` added to the list of recent files:
 
 ![Recent document](../images/recent-documents.png)
 
-### Clear the list of recent documents
+#### Clearing the list of recent documents
 
-To clear the list of recent documents, you need to use
-[app.clearRecentDocuments][clearrecentdocuments] API in the `main.js` file:
-
-```javascript
-const { app } = require('electron')
-
-app.clearRecentDocuments()
-```
+To clear the list of recent documents, use the
+[app.clearRecentDocuments][clearrecentdocuments] API.
+In this guide, the list of documents is cleared once all windows have been
+closed.
 
 ## Additional information
 
