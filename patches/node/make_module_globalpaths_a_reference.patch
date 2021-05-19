@@ -7,19 +7,15 @@ We need to hack the search paths of the require function so we can
 load libraries from embedded applications without modifications of
 node's module code.
 
-(cherry picked from commit 76ba048c37588ee32636817fa7b8dffc64330cbf)
-
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index ebe0c741c9e177fe99631643030f97e8545c3368..82c08cd17b33c14b85e6586269b5dc4b233fd9e6 100644
+index fbfc17ba6d188537c9fc3dbfb86cae9b708541f7..0390f2a9a2c82f33918407091c086dcc3cbffae1 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
-@@ -1199,8 +1199,8 @@ Module._initPaths = function() {
- 
+@@ -1236,7 +1236,7 @@ Module._initPaths = function() {
    modulePaths = paths;
  
--  // Clone as a shallow copy, for introspection.
--  Module.globalPaths = modulePaths.slice(0);
-+  // clone as a shallow copy, for introspection.
+   // Clone as a shallow copy, for introspection.
+-  Module.globalPaths = ArrayPrototypeSlice(modulePaths);
 +  Module.globalPaths = modulePaths;
  };
  
