@@ -121,7 +121,7 @@ or other Node.js APIs. In order to import NPM modules in the renderer, you must 
 the same bundler toolchains (for example, `webpack` or `parcel`) that you use for web
 apps.
 
-> Note: Renderer processes can be spawned with full Node.js environment for ease of
+> Note: Renderer processes can be spawned with a full Node.js environment for ease of
 > development. Historically, this used to be the default, but this feature was disabled
 > for security reasons.
 
