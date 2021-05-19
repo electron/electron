@@ -139,6 +139,8 @@ class NativeWindowMac : public NativeWindow,
   void MoveTabToNewWindow() override;
   void ToggleTabBar() override;
   bool AddTabbedWindow(NativeWindow* window) override;
+  void SetActive(bool is_key) override;
+  bool IsActive() const override;
 
   bool SetWindowButtonVisibility(bool visible) override;
 
@@ -263,6 +265,7 @@ class NativeWindowMac : public NativeWindow,
   bool is_simple_fullscreen_ = false;
   bool was_maximizable_ = false;
   bool was_movable_ = false;
+  bool is_active_ = false;
   NSRect original_frame_;
   NSInteger original_level_;
   NSUInteger simple_fullscreen_mask_;
