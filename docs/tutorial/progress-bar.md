@@ -49,7 +49,22 @@ Starting with a working application from the
 const { BrowserWindow } = require('electron')
 const win = new BrowserWindow()
 
-win.setProgressBar(0.5)
+const INCREMENT = 0.02;
+const INTERVAL_DELAY = 100; //ms
+let c = 0;
+let interval = setInterval(() => {
+
+    //update progress bar to next value
+    win.setProgressBar(c);
+
+    if(c > 1) {
+        //progress bar has reached full so reset it and stop the timer
+        win.setProgressBar(-1);
+        clearTimeout(interval);
+    }
+    c += INCREMENT;
+}, INTERVAL_DELAY);
+
 ```
 
 After launching the Electron application, you should see the bar in
