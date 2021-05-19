@@ -329,7 +329,7 @@ any arbitrary scripts you want:
 
 The code contained in `renderer.js` can then use the same JavaScript APIs and tooling
 you use for typical front-end development, such as using [`webpack`][webpack] to bundle
-and minify your code or using [React][react] to manage your user interfaces.
+and minify your code or [React][react] to manage your user interfaces.
 
 [webpack]: https://webpack.js.org
 [react]: https://reactjs.org
