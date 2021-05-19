@@ -7,27 +7,24 @@ function createWindow () {
   })
 
   win.loadFile('index.html')
-  
-  const INCREMENT = 0.02;
-  const INTERVAL_DELAY = 100; //ms
-  let c = 0;
-  let interval = setInterval(() => {
-    
-    //update progress bar to next value
-    win.setProgressBar(c);
 
-    if(c > 1) {
-      //progress bar has reached full so reset it and stop the timer
-      win.setProgressBar(-1);
-      clearTimeout(interval);
+  const INCREMENT = 0.02
+  const INTERVAL_DELAY = 100 // ms
+  let c = 0
+  const interval = setInterval(() => {
+    // update progress bar to next value
+    win.setProgressBar(c)
+
+    if (c > 1) {
+      // progress bar has reached full so reset it and stop the timer
+      win.setProgressBar(-1)
+      clearTimeout(interval)
     }
-    c += INCREMENT;
-  }, INTERVAL_DELAY);
+    c += INCREMENT
+  }, INTERVAL_DELAY)
 }
 
-
 app.whenReady().then(createWindow)
-
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
