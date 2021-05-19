@@ -40,29 +40,30 @@ See the [API documentation for more options and modes][setprogressbar].
 
 ## Example
 
-Starting with a working application from the
-[Quick Start Guide](quick-start.md), add the following lines to the
+Add the following lines to the
 `main.js` file:
 
 ```javascript fiddle='docs/fiddles/features/progress-bar'
 const { BrowserWindow } = require('electron')
 const win = new BrowserWindow()
 
-const INCREMENT = 0.02;
-const INTERVAL_DELAY = 100; //ms
-let c = 0;
-let interval = setInterval(() => {
+const INCREMENT = 0.02
+const INTERVAL_DELAY = 100 // ms
+let c = 0
 
-    //update progress bar to next value
-    win.setProgressBar(c);
+// create an interval timer that fires every INTERVAL_DELAY
+// see docs at https://nodejs.org/api/timers.html#timers_setinterval_callback_delay_args
+const interval = setInterval(() => {
+    // update progress bar to next value
+    win.setProgressBar(c)
 
-    if(c > 1) {
-        //progress bar has reached full so reset it and stop the timer
-        win.setProgressBar(-1);
-        clearTimeout(interval);
+    if (c > 1) {
+        // progress bar has reached full so reset it and stop the timer
+        win.setProgressBar(-1)
+        clearTimeout(interval)
     }
-    c += INCREMENT;
-}, INTERVAL_DELAY);
+    c += INCREMENT
+}, INTERVAL_DELAY)
 
 ```
 
