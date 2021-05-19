@@ -29,7 +29,7 @@ core principles introduced in the comic remain helpful to understand Electron.
 
 ## Running examples with Electron Fiddle
 
-[Electron Fiddle][fiddle] is a sandbox app written in Electron and supported by
+[Electron Fiddle][fiddle] is a sandbox app written with Electron and supported by
 Electron's maintainers. We highly recommend installing it as a learning tool to
 experiment with Electron's APIs or to prototype features during development.
 
