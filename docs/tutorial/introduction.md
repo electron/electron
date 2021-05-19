@@ -1,8 +1,8 @@
 # Introduction
 
 Welcome to the Electron documentation! If this is your first time developing
-an Electron app, this document. Otherwise, feel free to explore our guides
-and API documentation!
+an Electron app, read through this Getting Started section to get familiar with the
+basics. Otherwise, feel free to explore our guides and API documentation!
 
 ## What is Electron?
 
