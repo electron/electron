@@ -451,7 +451,7 @@ To summarize all the steps we've done:
 The fastest way to distribute your newly created app is using
 [Electron Forge](https://www.electronforge.io).
 
-1. Import Electron Forge to your app folder, and use the `import` script to set up
+1. Add Electron Forge as a development dependency of your app, and use its `import` command to set up
 Forge's scaffolding:
 
     ```sh npm2yarn
