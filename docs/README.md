@@ -18,7 +18,7 @@ an issue:
 
 ## Guides and Tutorials
 
-### Getting Started
+### Getting started
 
 * [Introduction](tutorial/introduction.md)
 * [Quick Start](tutorial/quick-start.md)
