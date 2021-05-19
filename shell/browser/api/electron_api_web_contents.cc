@@ -696,8 +696,8 @@ WebContents::WebContents(v8::Isolate* isolate,
   // BrowserViews are not attached to a window initially so they should start
   // off as hidden. This is also important for compositor recycling. See:
   // https://github.com/electron/electron/pull/21372
-  initially_shown_ = type_ != Type::kBrowserView;
-  options.Get(options::kShow, &initially_shown_);
+  bool initially_shown = type_ != Type::kBrowserView;
+  options.Get(options::kShow, &initially_shown);
 
   // Obtain the session.
   std::string partition;
@@ -753,7 +753,7 @@ WebContents::WebContents(v8::Isolate* isolate,
 #endif
   } else {
     content::WebContents::CreateParams params(session->browser_context());
-    params.initially_hidden = !initially_shown_;
+    params.initially_hidden = !initially_shown;
     web_contents = content::WebContents::Create(params);
   }
 
@@ -1653,6 +1653,27 @@ void WebContents::DidStartNavigation(
 void WebContents::DidRedirectNavigation(
     content::NavigationHandle* navigation_handle) {
   EmitNavigationEvent("did-redirect-navigation", navigation_handle);
+}
+
+void WebContents::ReadyToCommitNavigation(
+    content::NavigationHandle* navigation_handle) {
+  // Don't focus content in an inactive window.
+  if (!owner_window())
+    return;
+#if defined(OS_MAC)
+  if (!owner_window()->IsActive())
+    return;
+#else
+  if (!owner_window()->widget()->IsActive())
+    return;
+#endif
+  // Don't focus content after subframe navigations.
+  if (!navigation_handle->IsInMainFrame())
+    return;
+  // Only focus for top-level contents.
+  if (type_ != Type::kBrowserWindow)
+    return;
+  web_contents()->SetInitialFocus();
 }
 
 void WebContents::DidFinishNavigation(
@@ -3101,10 +3122,6 @@ v8::Local<v8::Value> WebContents::Debugger(v8::Isolate* isolate) {
   return v8::Local<v8::Value>::New(isolate, debugger_);
 }
 
-bool WebContents::WasInitiallyShown() {
-  return initially_shown_;
-}
-
 content::RenderFrameHost* WebContents::MainFrame() {
   return web_contents()->GetMainFrame();
 }
@@ -3672,7 +3689,6 @@ v8::Local<v8::ObjectTemplate> WebContents::FillObjectTemplate(
       .SetProperty("hostWebContents", &WebContents::HostWebContents)
       .SetProperty("devToolsWebContents", &WebContents::DevToolsWebContents)
       .SetProperty("debugger", &WebContents::Debugger)
-      .SetProperty("_initiallyShown", &WebContents::WasInitiallyShown)
       .SetProperty("mainFrame", &WebContents::MainFrame)
       .Build();
 }

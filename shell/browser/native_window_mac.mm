@@ -1746,6 +1746,16 @@ gfx::Rect NativeWindowMac::WindowBoundsToContentBounds(
   }
 }
 
+void NativeWindowMac::SetActive(bool is_key) {
+  if (is_key)
+    widget()->Activate();
+  is_active_ = is_key;
+}
+
+bool NativeWindowMac::IsActive() const {
+  return is_active_;
+}
+
 bool NativeWindowMac::CanResize() const {
   return resizable_;
 }
