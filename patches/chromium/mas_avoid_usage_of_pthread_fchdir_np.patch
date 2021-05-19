@@ -1,8 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Samuel Attard <sattard@slack-corp.com>
 Date: Mon, 4 Mar 2019 14:46:48 -0800
-Subject: 
- fix_disable_usage_of_pthread_fchdir_np_and_pthread_chdir_np_in_MAS.patch
+Subject: mas: avoid usage of pthread_fchdir_np
 
 Disable usage of pthread_fchdir_np and pthread_chdir_np in MAS builds.
 

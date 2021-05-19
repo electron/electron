@@ -1,9 +1,8 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Cheng Zhao <zcbenz@gmail.com>
 Date: Thu, 20 Sep 2018 17:48:49 -0700
-Subject: mas_disable_remote_layer.patch
-
-Disable remote layer APIs (CAContext and CALayerHost) for MAS build.
+Subject: mas: disable remote layer APIs (CAContext and CALayerHost) for MAS
+ build
 
 Accordin to ccameron:
 
