@@ -2,7 +2,9 @@
 
 Electron inherits its multi-process architecture from Chromium, which makes the framework
 architecturally very similar to a modern web browser. In this guide, we'll expound on
-the conceptual knowledge of Electron that we applied in the minimal quick start app.
+the conceptual knowledge of Electron that we applied in the minimal [quick start app][].
+
+[quick start app]: ./quick-start.md
 
 ## Why not a single process?
 
@@ -45,13 +47,6 @@ Each instance of the `BrowserWindow` class creates an application window that lo
 a web page in a separate renderer process. You can interact with this web content
 from the main process using the window's [`webContents`][web-contents] object.
 
-> Note: A renderer process is also created for [web embeds][web-embed] such as the
-> `BrowserView` module. The `webContents` object is also accessible for embedded
-> web content.
-
-Because the `BrowserWindow` module is an [`EventEmitter`][event-emitter], you can also
-add handlers for various user events (for example, minimizing or maximizing your window).
-
 ```js title='main.js'
 const { BrowserWindow } = require('electron')
 
@@ -61,6 +56,13 @@ win.loadURL('https://github.com')
 const contents = win.webContents
 console.log(contents)
 ```
+
+> Note: A renderer process is also created for [web embeds][web-embed] such as the
+> `BrowserView` module. The `webContents` object is also accessible for embedded
+> web content.
+
+Because the `BrowserWindow` module is an [`EventEmitter`][event-emitter], you can also
+add handlers for various user events (for example, minimizing or maximizing your window).
 
 When a `BrowserWindow` instance is destroyed, its corresponding renderer process gets
 terminated as well.
@@ -93,8 +95,9 @@ app.on('window-all-closed', function () {
 ### Native APIs
 
 To extend Electron's features beyond being a Chromium wrapper for web contents, the
-main process also adds custom APIs to. Electron exposes various modules that control
-native desktop functionality, such as menus, dialogs, and tray icons.
+main process also adds custom APIs to interact with the user's operating system.
+Electron exposes various modules that control native desktop functionality, such
+as menus, dialogs, and tray icons.
 
 For a full list of Electron's main process modules, check out our API documentation.
 
@@ -117,9 +120,9 @@ to understand is:
 * Executable JavaScript code can be added through `<script>` elements.
 
 Moreover, this also means that the renderer has no direct access to `require`
-or other Node.js APIs. In order to import NPM modules in the renderer, you must use
-the same bundler toolchains (for example, `webpack` or `parcel`) that you use for web
-apps.
+or other Node.js APIs. In order to directly include NPM modules in the renderer,
+you must use the same bundler toolchains (for example, `webpack` or `parcel`) that you
+use on the web.
 
 > Note: Renderer processes can be spawned with a full Node.js environment for ease of
 > development. Historically, this used to be the default, but this feature was disabled
