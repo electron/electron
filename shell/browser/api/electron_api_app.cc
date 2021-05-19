@@ -1451,11 +1451,12 @@ bool App::IsRunningUnderARM64Translation() const {
   auto IsWow64Process2 = reinterpret_cast<decltype(&::IsWow64Process2)>(
       GetProcAddress(GetModuleHandle(L"kernel32.dll"), "IsWow64Process2"));
 
-  if (IsWow64Process2) {
-    if (!IsWow64Process2(GetCurrentProcess(), &processMachine,
-                         &nativeMachine)) {
-      return false;
-    }
+  if (IsWow64Process2 == nullptr) {
+    return false;
+  }
+
+  if (!IsWow64Process2(GetCurrentProcess(), &processMachine, &nativeMachine)) {
+    return false;
   }
 
   return nativeMachine == IMAGE_FILE_MACHINE_ARM64;
