@@ -1402,39 +1402,6 @@ index 0000000000000000000000000000000000000000..c94c7150b72e64fe0e0f5c693da31230
 +    "//v8/include/v8.h"
 +  ]
 +}
-diff --git a/node.gyp b/node.gyp
-index 61b789ec74ab554648164875d540f34c09ffc116..753f135322a007b3b9d330ccd4101cc18b454e58 100644
---- a/node.gyp
-+++ b/node.gyp
-@@ -238,17 +238,17 @@
-       'lib/internal/streams/state.js',
-       'lib/internal/streams/pipeline.js',
-       'lib/internal/streams/end-of-stream.js',
--      'deps/v8/tools/splaytree.js',
--      'deps/v8/tools/codemap.js',
--      'deps/v8/tools/consarray.js',
--      'deps/v8/tools/csvparser.js',
--      'deps/v8/tools/profile.js',
--      'deps/v8/tools/profile_view.js',
--      'deps/v8/tools/logreader.js',
--      'deps/v8/tools/arguments.js',
--      'deps/v8/tools/tickprocessor.js',
--      'deps/v8/tools/SourceMap.js',
--      'deps/v8/tools/tickprocessor-driver.js',
-+      'deps/v8/tools/splaytree.mjs',
-+      'deps/v8/tools/codemap.mjs',
-+      'deps/v8/tools/consarray.mjs',
-+      'deps/v8/tools/csvparser.mjs',
-+      'deps/v8/tools/profile.mjs',
-+      'deps/v8/tools/profile_view.mjs',
-+      'deps/v8/tools/logreader.mjs',
-+      'deps/v8/tools/arguments.mjs',
-+      'deps/v8/tools/tickprocessor.mjs',
-+      'deps/v8/tools/sourcemap.mjs',
-+      'deps/v8/tools/tickprocessor-driver.mjs',
-       'deps/node-inspect/lib/_inspect.js',
-       'deps/node-inspect/lib/internal/inspect_client.js',
-       'deps/node-inspect/lib/internal/inspect_repl.js',
 diff --git a/src/inspector/BUILD.gn b/src/inspector/BUILD.gn
 new file mode 100644
 index 0000000000000000000000000000000000000000..d1d6b51e8c0c5bc6a5d09e217eb3048361d9d591
