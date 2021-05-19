@@ -15,8 +15,12 @@ function createWindow () {
   const INTERVAL_DELAY = 100; //ms
   let c = 0;
   let interval = setInterval(() => {
+    
+    //update progress bar to next value
     win.setProgressBar(c);
+
     if(c > 1) {
+      //progress bar has reached full so reset it and stop the timer
       win.setProgressBar(-1);
       clearTimeout(interval);
     }
