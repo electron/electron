@@ -74,8 +74,6 @@ void ElectronRendererClient::RunScriptsAtDocumentEnd(
 void ElectronRendererClient::DidCreateScriptContext(
     v8::Handle<v8::Context> renderer_context,
     content::RenderFrame* render_frame) {
-  RendererClientBase::DidCreateScriptContext(renderer_context, render_frame);
-
   // TODO(zcbenz): Do not create Node environment if node integration is not
   // enabled.
 

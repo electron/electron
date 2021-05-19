@@ -154,16 +154,6 @@ RendererClientBase::~RendererClientBase() {
   g_renderer_client_base = nullptr;
 }
 
-void RendererClientBase::DidCreateScriptContext(
-    v8::Handle<v8::Context> context,
-    content::RenderFrame* render_frame) {
-  // global.setHidden("contextId", `${processHostId}-${++next_context_id_}`)
-  auto context_id = base::StringPrintf(
-      "%s-%" PRId64, renderer_client_id_.c_str(), ++next_context_id_);
-  gin_helper::Dictionary global(context->GetIsolate(), context->Global());
-  global.SetHidden("contextId", context_id);
-}
-
 // static
 RendererClientBase* RendererClientBase::Get() {
   DCHECK(g_renderer_client_base);
@@ -173,9 +163,13 @@ RendererClientBase* RendererClientBase::Get() {
 void RendererClientBase::BindProcess(v8::Isolate* isolate,
                                      gin_helper::Dictionary* process,
                                      content::RenderFrame* render_frame) {
+  auto context_id = base::StringPrintf(
+      "%s-%" PRId64, renderer_client_id_.c_str(), ++next_context_id_);
+
   process->SetReadOnly("isMainFrame", render_frame->IsMainFrame());
   process->SetReadOnly("contextIsolated",
                        render_frame->GetBlinkPreferences().context_isolation);
+  process->SetReadOnly("contextId", context_id);
 }
 
 void RendererClientBase::RenderThreadStarted() {
