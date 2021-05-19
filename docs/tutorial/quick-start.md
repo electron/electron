@@ -288,7 +288,7 @@ To attach this script to your renderer process, pass in the path to your preload
 to the `webPreferences.preload` option in your existing `BrowserWindow` constructor.
 
 ```js
-// import Node's 'path' module at the top of your file
+// include the Node.js 'path' module at the top of your file
 const path = require('path')
 
 // modify your existing createWindow() function
