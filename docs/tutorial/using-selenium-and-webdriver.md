@@ -108,55 +108,51 @@ driver.quit()
 
 ## Setting up with WebdriverIO
 
-[WebdriverIO](https://webdriver.io/) provides a Node package for testing with web
-driver.
+[WebdriverIO](https://webdriver.io/) provides a Node package for testing with WebDriver. It can be used as an automation framework using the WDIO testrunner that comes with various of plugins (e.g. reporter and services) that helps you put together your test setup.
 
-### 1. Start ChromeDriver
+### 1. Install WDIO Testrunner
 
-First you need to download the `chromedriver` binary, and run it:
-
-```sh
-$ npm install electron-chromedriver
-$ ./node_modules/.bin/chromedriver --url-base=wd/hub --port=9515
-Starting ChromeDriver (v2.10.291558) on port 9515
-Only local connections are allowed.
-```
-
-Remember the port number `9515`, which will be used later
-
-### 2. Install WebdriverIO
+First you need to download the WDIO testrunner CLI client:
 
 ```sh
-$ npm install webdriverio
+$ npm install --save-dev @wdio/cli
 ```
 
-### 3. Connect to chrome driver
+### 2. Setup
+
+Use the configuration wizard to setup your environment:
+
+```sh
+$ npx wdio config --yes
+```
+
+This installs all necessary packages for you and generates a `wdio.conf.js` configuration file.
+
+### 3. Connect to Electron
+
+Update the capabilities in your configuration file to point to your Electron app:
 
 ```javascript
-const webdriverio = require('webdriverio')
-const options = {
-  host: 'localhost', // Use localhost as chrome driver server
-  port: 9515, // "9515" is the port opened by chrome driver.
-  desiredCapabilities: {
+// wdio.conf.js
+export.config = {
+  // ...
+  capabilities: [{
     browserName: 'chrome',
     'goog:chromeOptions': {
       binary: '/Path-to-Your-App/electron', // Path to your Electron binary.
       args: [/* cli arguments */] // Optional, perhaps 'app=' + /path/to/your/app/
     }
-  }
+  }]
+  // ...
 }
+```
 
-const client = webdriverio.remote(options)
+### Run Your Test
 
-client
-  .init()
-  .url('http://google.com')
-  .setValue('#q', 'webdriverio')
-  .click('#btnG')
-  .getTitle().then((title) => {
-    console.log('Title was: ' + title)
-  })
-  .end()
+To run your tests, just call:
+
+```sh
+$ npx wdio run wdio.conf.js
 ```
 
 ## Workflow
