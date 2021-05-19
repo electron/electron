@@ -16,20 +16,24 @@ We can revisit this once that happens and determine a more mutually
 compatible path forward either by upstreaming a shim to BoringSSL or
 adapting Node.js.
 
-diff --git a/src/node_crypto.cc b/src/node_crypto.cc
-index 79e781fb3e6ec63334c2c5d4b24d2a6049be79fc..c119b2314f18d1710bb3cbf1910c86ff994ec951 100644
---- a/src/node_crypto.cc
-+++ b/src/node_crypto.cc
-@@ -4574,7 +4574,7 @@ static unsigned int GetBytesOfRS(const ManagedEVPPKey& pkey) {
+diff --git a/src/crypto/crypto_sig.cc b/src/crypto/crypto_sig.cc
+index 7b113a8dcb06b0b0e1329ce0daf7305598ea6545..b04e53a7f24885ffb6639430988d0ffb524b028e 100644
+--- a/src/crypto/crypto_sig.cc
++++ b/src/crypto/crypto_sig.cc
+@@ -110,7 +110,7 @@ unsigned int GetBytesOfRS(const ManagedEVPPKey& pkey) {
    if (base_id == EVP_PKEY_DSA) {
-     DSA* dsa_key = EVP_PKEY_get0_DSA(pkey.get());
+     const DSA* dsa_key = EVP_PKEY_get0_DSA(pkey.get());
      // Both r and s are computed mod q, so their width is limited by that of q.
 -    bits = BN_num_bits(DSA_get0_q(dsa_key));
 +    bits = BN_num_bits(dsa_key->q);
    } else if (base_id == EVP_PKEY_EC) {
-     EC_KEY* ec_key = EVP_PKEY_get0_EC_KEY(pkey.get());
+     const EC_KEY* ec_key = EVP_PKEY_get0_EC_KEY(pkey.get());
      const EC_GROUP* ec_group = EC_KEY_get0_group(ec_key);
-@@ -6949,7 +6949,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
+index da66cde877c6ce045d907205bb2a6e369234fb8e..fbe4c0f06c10df7c8a492711594381c27c6f81f7 100644
+--- a/src/crypto/crypto_util.cc
++++ b/src/crypto/crypto_util.cc
+@@ -655,7 +655,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
    CHECK(args[0]->IsUint32());
    Environment* env = Environment::GetCurrent(args);
    uint32_t len = args[0].As<Uint32>()->Value();
@@ -38,7 +42,7 @@ index 79e781fb3e6ec63334c2c5d4b24d2a6049be79fc..c119b2314f18d1710bb3cbf1910c86ff
    if (data == nullptr) {
      // There's no memory available for the allocation.
      // Return nothing.
-@@ -6961,7 +6961,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -667,7 +667,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
            data,
            len,
            [](void* data, size_t len, void* deleter_data) {
