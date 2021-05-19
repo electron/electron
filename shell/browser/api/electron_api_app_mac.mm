@@ -60,6 +60,13 @@ void App::SetActivationPolicy(gin_helper::ErrorThrower thrower,
 }
 
 bool App::IsRunningUnderRosettaTranslation() const {
+  node::Environment* env =
+      node::Environment::GetCurrent(JavascriptEnvironment::GetIsolate());
+
+  EmitWarning(env,
+              "The app.runningUnderRosettaTranslation API is deprecated, use "
+              "app.runningUnderARM64Translation instead.",
+              "electron");
   return IsRunningUnderARM64Translation();
 }
 
