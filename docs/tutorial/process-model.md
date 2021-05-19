@@ -128,7 +128,7 @@ apps.
 At this point, you might be wondering how your renderer process user interfaces
 can interact with Node.js and Electron's native desktop functionality if these
 features are only accessible from the main process. In fact, there is no direct
-way to even import Electron's content scripts.
+way to import Electron's content scripts.
 
 ## Preload scripts
 
