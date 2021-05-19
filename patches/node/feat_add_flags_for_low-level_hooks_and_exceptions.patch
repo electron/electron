@@ -47,23 +47,25 @@ index 905afd8c235b7b1a7b45823db486384935a2a52b..102847cd32d03addeb40c9539eafc92b
  
    // Cache the original command line to be
    // used in diagnostic reports.
-@@ -871,6 +875,8 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
+@@ -894,7 +894,8 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
      if (exit_code != 0) return exit_code;
    }
  #endif
+-
 +  if (g_upstream_node_mode) {
 +  // NOTE(jeremy): indentation is intentionally wrong here, to ease rebasing.
- 
    const int exit_code = ProcessGlobalArgs(argv,
                                            exec_argv,
-@@ -915,6 +921,7 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
+                                           errors,
+@@ -937,7 +938,7 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
+     return 9;
    }
    per_process::metadata.versions.InitializeIntlVersions();
- #endif
+-
 +  }  // g_upstream_node_mode
- 
-   NativeModuleEnv::InitializeCodeCache();
- 
+ # ifndef __POSIX__
+   std::string tz;
+   if (credentials::SafeGetenv("TZ", &tz) && !tz.empty()) {
 diff --git a/src/node.h b/src/node.h
 index 38e0ef50f9b283b1d7ca8f54412d99b8cd38e524..34a16feaed229a59181e1b2e48b0e111d5b0b2a6 100644
 --- a/src/node.h
