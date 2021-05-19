@@ -10,7 +10,7 @@ diff --git a/lib/internal/bootstrap/node.js b/lib/internal/bootstrap/node.js
 index 2705f8b50a658db0fc1ce6fba245792f6a567300..5aab40071b68affe602be16d451be598b246faa1 100644
 --- a/lib/internal/bootstrap/node.js
 +++ b/lib/internal/bootstrap/node.js
-@@ -57,6 +57,10 @@ setupBuffer();
+@@ -62,6 +62,10 @@ setupBuffer();
  process.domain = null;
  process._exiting = false;
  
@@ -19,8 +19,9 @@ index 2705f8b50a658db0fc1ce6fba245792f6a567300..5aab40071b68affe602be16d451be598
 +process.internalBinding = internalBinding;
 +
  // process.config is serialized config.gypi
- process.config = JSONParse(internalBinding('native_module').config);
- require('internal/worker/js_transferable').setup();
+ const nativeModule = internalBinding('native_module');
+ 
+
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
 index ef52bf6486d8c827dce105e50b57c1129dcaf5a4..e2a205739ce89820fe5f1f24e609ff16b86afb04 100644
 --- a/lib/internal/modules/cjs/loader.js
@@ -34,15 +35,16 @@ index ef52bf6486d8c827dce105e50b57c1129dcaf5a4..e2a205739ce89820fe5f1f24e609ff16
  const packageJsonReader = require('internal/modules/package_json_reader');
  const { safeGetenv } = internalBinding('credentials');
  const {
-@@ -143,7 +143,7 @@ function stat(filename) {
+@@ -157,7 +157,7 @@ function stat(filename) {
      const result = statCache.get(filename);
      if (result !== undefined) return result;
    }
 -  const result = internalModuleStat(filename);
 +  const result = internalFsBinding.internalModuleStat(filename);
-   if (statCache !== null) statCache.set(filename, result);
-   return result;
- }
+   if (statCache !== null && result >= 0) {
+     // Only set cache when `internalModuleStat(filename)` succeeds.
+     statCache.set(filename, result);
+
 diff --git a/lib/internal/modules/package_json_reader.js b/lib/internal/modules/package_json_reader.js
 index 4a2b0e6ddb3ed8881f896c6f556c9debaf778b81..209df9033a26c29c6e60bd173f71055884a0db89 100644
 --- a/lib/internal/modules/package_json_reader.js
@@ -60,8 +62,8 @@ index 4a2b0e6ddb3ed8881f896c6f556c9debaf778b81..209df9033a26c29c6e60bd173f710558
      return cache.get(jsonPath);
    }
  
--  const [string, containsKeys] = internalModuleReadJSON(
-+  const [string, containsKeys] = internalFsBinding.internalModuleReadJSON(
+-  const { 0: string, 1: containsKeys } = internalModuleReadJSON(
++  const { 0: string, 1: containsKeys } = internalFsBinding.internalModuleReadJSON(
      toNamespacedPath(jsonPath)
    );
    const result = { string, containsKeys };
