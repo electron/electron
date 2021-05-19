@@ -26,7 +26,7 @@ npm -v
 
 The commands should print the versions of Node.js and npm accordingly.
 
-**Note:** Since Electron embeds Node.js into its binary, the version of Node running
+**Note:** Since Electron embeds Node.js into its binary, the version of Node.js running
 your code is unrelated to the version running on your system.
 
 [node-download]: https://nodejs.org/en/download/
