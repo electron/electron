@@ -1747,26 +1747,36 @@ index 0000000000000000000000000000000000000000..3088ae4bdf814ae255c9805ebd393b2e
 +
 +  out_file.writelines(new_contents)
 diff --git a/tools/install.py b/tools/install.py
-index 693faff4c37ac4d83a47e818f4412900497a2b62..7ab58f7cba6f210e4b7829257fb87e26a091cc89 100755
+index 045d406d84be301722f3de62abc448db84e751f8..49b5ba2c0ac53266dee594ea9ee56609381b5eed 100755
 --- a/tools/install.py
 +++ b/tools/install.py
-@@ -159,8 +159,8 @@ def files(action):
+@@ -159,13 +159,13 @@ def files(action):
  def headers(action):
-   def ignore_inspector_headers(files_arg, dest):
-     inspector_headers = [
--      'deps/v8/include/v8-inspector.h',
--      'deps/v8/include/v8-inspector-protocol.h'
-+      '../../v8/include/v8-inspector.h',
-+      '../../v8/include/v8-inspector-protocol.h'
+   def wanted_v8_headers(files_arg, dest):
+     v8_headers = [
+-      'deps/v8/include/cppgc/common.h',
+-      'deps/v8/include/v8.h',
+-      'deps/v8/include/v8-internal.h',
+-      'deps/v8/include/v8-platform.h',
+-      'deps/v8/include/v8-profiler.h',
+-      'deps/v8/include/v8-version.h',
+-      'deps/v8/include/v8config.h',
++      '../../v8/include/cppgc/common.h',
++      '../../v8/include/v8.h',
++      '../../v8/include/v8-internal.h',
++      '../../v8/include/v8-platform.h',
++      '../../v8/include/v8-profiler.h',
++      '../../v8/include/v8-version.h',
++      '../../v8/include/v8config.h',
      ]
-     files_arg = [name for name in files_arg if name not in inspector_headers]
+     files_arg = [name for name in files_arg if name in v8_headers]
      action(files_arg, dest)
-@@ -182,7 +182,7 @@ def headers(action):
+@@ -187,7 +187,7 @@ def headers(action):
    if sys.platform.startswith('aix'):
      action(['out/Release/node.exp'], 'include/node/')
  
--  subdir_files('deps/v8/include', 'include/node/', ignore_inspector_headers)
-+  subdir_files('../../v8/include', 'include/node/', ignore_inspector_headers)
+-  subdir_files('deps/v8/include', 'include/node/', wanted_v8_headers)
++  subdir_files('../../v8/include', 'include/node/', wanted_v8_headers)
  
    if 'false' == variables.get('node_shared_libuv'):
      subdir_files('deps/uv/include', 'include/node/', action)
