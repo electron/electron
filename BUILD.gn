@@ -620,7 +620,6 @@ source_set("electron_lib") {
     sources += [
       "shell/browser/printing/print_preview_message_handler.cc",
       "shell/browser/printing/print_preview_message_handler.h",
-      "shell/browser/printing/print_preview_message_handler.h",
       "shell/browser/printing/print_view_manager_electron.cc",
       "shell/browser/printing/print_view_manager_electron.h",
       "shell/renderer/printing/print_render_frame_helper_delegate.cc",

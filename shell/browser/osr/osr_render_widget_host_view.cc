@@ -190,7 +190,6 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
   DCHECK(!render_widget_host_->GetView());
 
   // Initialize a display struct as needed, to cache the scale factor.
-  // TODO(crbug.com/1182855): Use the parent_view's entire display::DisplayList.
   if (display_list_.displays().empty()) {
     display_list_ = display::DisplayList(
         {display::Display(display::kDefaultDisplayId)},
@@ -997,7 +996,6 @@ void OffScreenRenderWidgetHostView::ResizeRootLayer(bool force) {
   const bool scaleFactorDidChange = scaleFactor != sf;
 
   // Initialize a display struct as needed, to cache the scale factor.
-  // TODO(crbug.com/1182855): Use the parent_view's entire display::DisplayList.
   if (display_list_.displays().empty()) {
     display_list_ = display::DisplayList(
         {display::Display(display::kDefaultDisplayId)},
