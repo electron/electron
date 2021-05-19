@@ -1433,6 +1433,31 @@ describe('chromium features', () => {
       expect(pageExists).to.be.true();
     });
   });
+
+  describe('document.hasFocus', () => {
+    it('has correct value when multiple windows are opened', async () => {
+      const w1 = new BrowserWindow({ show: true });
+      const w2 = new BrowserWindow({ show: true });
+      const w3 = new BrowserWindow({ show: false });
+      await w1.loadFile(path.join(__dirname, 'fixtures', 'blank.html'));
+      await w2.loadFile(path.join(__dirname, 'fixtures', 'blank.html'));
+      await w3.loadFile(path.join(__dirname, 'fixtures', 'blank.html'));
+      expect(webContents.getFocusedWebContents().id).to.equal(w2.webContents.id);
+      let focus = false;
+      focus = await w1.webContents.executeJavaScript(
+        'document.hasFocus()'
+      );
+      expect(focus).to.be.false();
+      focus = await w2.webContents.executeJavaScript(
+        'document.hasFocus()'
+      );
+      expect(focus).to.be.true();
+      focus = await w3.webContents.executeJavaScript(
+        'document.hasFocus()'
+      );
+      expect(focus).to.be.false();
+    });
+  });
 });
 
 describe('font fallback', () => {
