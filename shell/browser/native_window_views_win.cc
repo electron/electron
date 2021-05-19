@@ -260,11 +260,12 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
     case WM_SIZING: {
       is_resizing_ = true;
       bool prevent_default = false;
-      NotifyWindowWillResize(gfx::Rect(*reinterpret_cast<RECT*>(l_param)),
-                             &prevent_default);
+      gfx::Rect bounds = gfx::Rect(*reinterpret_cast<RECT*>(l_param));
+      HWND hwnd = GetAcceleratedWidget();
+      gfx::Rect dpi_bounds = ScreenToDIPRect(hwnd, bounds);
+      NotifyWindowWillResize(dpi_bounds, &prevent_default);
       if (prevent_default) {
-        ::GetWindowRect(GetAcceleratedWidget(),
-                        reinterpret_cast<RECT*>(l_param));
+        ::GetWindowRect(hwnd, reinterpret_cast<RECT*>(l_param));
         return true;  // Tells Windows that the Sizing is handled.
       }
       return false;
@@ -288,11 +289,12 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
     case WM_MOVING: {
       is_moving_ = true;
       bool prevent_default = false;
-      NotifyWindowWillMove(gfx::Rect(*reinterpret_cast<RECT*>(l_param)),
-                           &prevent_default);
+      gfx::Rect bounds = gfx::Rect(*reinterpret_cast<RECT*>(l_param));
+      HWND hwnd = GetAcceleratedWidget();
+      gfx::Rect dpi_bounds = ScreenToDIPRect(hwnd, bounds);
+      NotifyWindowWillMove(dpi_bounds, &prevent_default);
       if (!movable_ || prevent_default) {
-        ::GetWindowRect(GetAcceleratedWidget(),
-                        reinterpret_cast<RECT*>(l_param));
+        ::GetWindowRect(hwnd, reinterpret_cast<RECT*>(l_param));
         return true;  // Tells Windows that the Move is handled. If not true,
                       // frameless windows can be moved using
                       // -webkit-app-region: drag elements.

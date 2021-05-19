@@ -82,6 +82,22 @@
 
 namespace electron {
 
+#if defined(OS_WIN)
+
+// Similar to the ones in display::win::ScreenWin, but with rounded values
+// These help to avoid problems that arise from unresizable windows where the
+// original ceil()-ed values can cause calculation errors, since converting
+// both ways goes through a ceil() call. Related issue: #15816
+gfx::Rect ScreenToDIPRect(HWND hwnd, const gfx::Rect& pixel_bounds) {
+  float scale_factor = display::win::ScreenWin::GetScaleFactorForHWND(hwnd);
+  gfx::Rect dip_rect = ScaleToRoundedRect(pixel_bounds, 1.0f / scale_factor);
+  dip_rect.set_origin(
+      display::win::ScreenWin::ScreenToDIPRect(hwnd, pixel_bounds).origin());
+  return dip_rect;
+}
+
+#endif
+
 namespace {
 
 #if defined(OS_WIN)
@@ -94,18 +110,6 @@ void FlipWindowStyle(HWND handle, bool on, DWORD flag) {
   else
     style &= ~flag;
   ::SetWindowLong(handle, GWL_STYLE, style);
-}
-
-// Similar to the ones in display::win::ScreenWin, but with rounded values
-// These help to avoid problems that arise from unresizable windows where the
-// original ceil()-ed values can cause calculation errors, since converting
-// both ways goes through a ceil() call. Related issue: #15816
-gfx::Rect ScreenToDIPRect(HWND hwnd, const gfx::Rect& pixel_bounds) {
-  float scale_factor = display::win::ScreenWin::GetScaleFactorForHWND(hwnd);
-  gfx::Rect dip_rect = ScaleToRoundedRect(pixel_bounds, 1.0f / scale_factor);
-  dip_rect.set_origin(
-      display::win::ScreenWin::ScreenToDIPRect(hwnd, pixel_bounds).origin());
-  return dip_rect;
 }
 
 gfx::Rect DIPToScreenRect(HWND hwnd, const gfx::Rect& pixel_bounds) {
