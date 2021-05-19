@@ -36,11 +36,6 @@
 #include "components/os_crypt/keychain_password_mac.h"
 #endif
 
-#if defined(OS_LINUX)
-#include "components/os_crypt/key_storage_keyring.h"
-#include "components/os_crypt/key_storage_libsecret.h"
-#endif
-
 namespace {
 
 // The global instance of the SystemNetworkContextmanager.
@@ -237,11 +232,9 @@ void SystemNetworkContextManager::OnNetworkServiceCreated(
   if (electron::fuses::IsCookieEncryptionEnabled()) {
     std::string app_name = electron::Browser::Get()->GetName();
 #if defined(OS_MAC)
-    KeychainPassword::service_name = app_name + " Safe Storage";
-    KeychainPassword::account_name = app_name;
-#elif defined(OS_LINUX)
-    KeyStorageKeyring::kApplicationName = app_name;
-    KeyStorageLibsecret::kApplicationName = app_name;
+    KeychainPassword::service_name =
+        base::NoDestructor(app_name + " Safe Storage");
+    KeychainPassword::account_name = base::NoDestructor(app_name);
 #endif
     // The OSCrypt keys are process bound, so if network service is out of
     // process, send it the required key.
@@ -254,6 +247,7 @@ void SystemNetworkContextManager::OnNetworkServiceCreated(
 
       network::mojom::CryptConfigPtr config =
           network::mojom::CryptConfig::New();
+      config->application_name = app_name;
       config->product_name = app_name;
       // c.f.
       // https://source.chromium.org/chromium/chromium/src/+/master:chrome/common/chrome_switches.cc;l=689;drc=9d82515060b9b75fa941986f5db7390299669ef1
