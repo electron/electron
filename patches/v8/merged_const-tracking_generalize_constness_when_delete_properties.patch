@@ -1,0 +1,383 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andrey Belenko <andrey.belenko@gmail.com>
+Date: Tue, 18 May 2021 20:16:39 +0200
+Subject: Merged: [const-tracking] Generalize constness when delete properties
+
+Revision: d570bbe0c74ec4ae40d1abc34bea617ff2d63f26
+
+BUG=chromium:1201938
+
+Change-Id: I2745bd574d9f971b3f1e41d5084ec9e9fbbeef07
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2880214
+
+diff --git a/src/builtins/builtins-internal-gen.cc b/src/builtins/builtins-internal-gen.cc
+index 4e315e5ef584c6be12592d135c4ab92a37c19cff..2ac3deda3bea9e85802821eca239dcce0b3dbb03 100644
+--- a/src/builtins/builtins-internal-gen.cc
++++ b/src/builtins/builtins-internal-gen.cc
+@@ -513,8 +513,8 @@ TF_BUILTIN(DeleteProperty, DeletePropertyBaseAssembler) {
+     Label dictionary(this), dont_delete(this);
+     GotoIf(IsDictionaryMap(receiver_map), &dictionary);
+ 
+-    // Fast properties need to clear recorded slots, which can only be done
+-    // in C++.
++    // Fast properties need to clear recorded slots and mark the deleted
++    // property as mutable, which can only be done in C++.
+     Goto(&slow);
+ 
+     BIND(&dictionary);
+diff --git a/src/objects/map-inl.h b/src/objects/map-inl.h
+index df9c93a49753700e059519dad8aaf8cb5dca1aea..d1356a306f6174c047284ed3178dda3199c09791 100644
+--- a/src/objects/map-inl.h
++++ b/src/objects/map-inl.h
+@@ -186,6 +186,10 @@ bool Map::TooManyFastProperties(StoreOrigin store_origin) const {
+   }
+ }
+ 
++Name Map::GetLastDescriptorName(Isolate* isolate) const {
++  return instance_descriptors(isolate, kRelaxedLoad).GetKey(LastAdded());
++}
++
+ PropertyDetails Map::GetLastDescriptorDetails(Isolate* isolate) const {
+   return instance_descriptors(isolate, kRelaxedLoad).GetDetails(LastAdded());
+ }
+diff --git a/src/objects/map-updater.cc b/src/objects/map-updater.cc
+index 64f3c14a8940e05871a0b4e942b673e61983242a..0e0c3372cd8368c70c78a9f0fa76ac6a1e6ae689 100644
+--- a/src/objects/map-updater.cc
++++ b/src/objects/map-updater.cc
+@@ -121,41 +121,6 @@ Handle<Map> MapUpdater::ReconfigureToDataField(InternalIndex descriptor,
+   PropertyDetails old_details =
+       old_descriptors_->GetDetails(modified_descriptor_);
+ 
+-  // If the {descriptor} was "const" data field so far, we need to update the
+-  // {old_map_} here, otherwise we could get the constants wrong, i.e.
+-  //
+-  //   o.x = 1;
+-  //   change o.x's attributes to something else
+-  //   delete o.x;
+-  //   o.x = 2;
+-  //
+-  // could trick V8 into thinking that `o.x` is still 1 even after the second
+-  // assignment.
+-  // This situation is similar to what might happen with property deletion.
+-  if (old_details.constness() == PropertyConstness::kConst &&
+-      old_details.location() == kField &&
+-      old_details.attributes() != new_attributes_) {
+-    Handle<FieldType> field_type(
+-        old_descriptors_->GetFieldType(modified_descriptor_), isolate_);
+-    Map::GeneralizeField(isolate_, old_map_, descriptor,
+-                         PropertyConstness::kMutable,
+-                         old_details.representation(), field_type);
+-    // The old_map_'s property must become mutable.
+-    // Note, that the {old_map_} and {old_descriptors_} are not expected to be
+-    // updated by the generalization if the map is already deprecated.
+-    DCHECK_IMPLIES(
+-        !old_map_->is_deprecated(),
+-        PropertyConstness::kMutable ==
+-            old_descriptors_->GetDetails(modified_descriptor_).constness());
+-    // Although the property in the old map is marked as mutable we still
+-    // treat it as constant when merging with the new path in transition tree.
+-    // This is fine because up until this reconfiguration the field was
+-    // known to be constant, so it's fair to proceed treating it as such
+-    // during this reconfiguration session. The issue is that after the
+-    // reconfiguration the original field might become mutable (see the delete
+-    // example above).
+-  }
+-
+   // If property kind is not reconfigured merge the result with
+   // representation/field type from the old descriptor.
+   if (old_details.kind() == new_kind_) {
+diff --git a/src/objects/map.h b/src/objects/map.h
+index 561dc8b6bfeccc7b3a9d737f1afe646a688a4d00..486e5e28fd0c9d8adf4b319277416750dc030cd7 100644
+--- a/src/objects/map.h
++++ b/src/objects/map.h
+@@ -632,7 +632,8 @@ class Map : public HeapObject {
+   // Returns true if prototype validity cell value represents "valid" prototype
+   // chain state.
+   inline bool IsPrototypeValidityCellValid() const;
+-
++  
++  inline Name GetLastDescriptorName(Isolate* isolate) const;
+   inline PropertyDetails GetLastDescriptorDetails(Isolate* isolate) const;
+ 
+   inline InternalIndex LastAdded() const;
+diff --git a/src/objects/property-details.h b/src/objects/property-details.h
+index af6f0cdaeb5bd70c9e83c33fc494f7e33d7f23d5..c8e597d397efaaae03d0f3282495ed27e3ab40a7 100644
+--- a/src/objects/property-details.h
++++ b/src/objects/property-details.h
+@@ -31,6 +31,12 @@ enum PropertyAttributes {
+   // a non-existent property.
+ };
+ 
++// Number of distinct bits in PropertyAttributes.
++static const int kPropertyAttributesBitsCount = 3;
++
++static const int kPropertyAttributesCombinationsCount =
++    1 << kPropertyAttributesBitsCount;
++
+ enum PropertyFilter {
+   ALL_PROPERTIES = 0,
+   ONLY_WRITABLE = 1,
+@@ -62,6 +68,11 @@ STATIC_ASSERT(SKIP_STRINGS ==
+ STATIC_ASSERT(SKIP_SYMBOLS ==
+               static_cast<PropertyFilter>(v8::PropertyFilter::SKIP_SYMBOLS));
+ 
++// Assert that kPropertyAttributesBitsCount value matches the definition of
++// ALL_ATTRIBUTES_MASK.
++STATIC_ASSERT((ALL_ATTRIBUTES_MASK == (READ_ONLY | DONT_ENUM | DONT_DELETE)) ==
++              (kPropertyAttributesBitsCount == 3));
++
+ class Smi;
+ class TypeInfo;
+ 
+diff --git a/src/objects/transitions.cc b/src/objects/transitions.cc
+index 0b81ad372608bbfed6a1db20ca230648b82095db..29813977d37e85c3d7243fa83b8f3c6f51d784bc 100644
+--- a/src/objects/transitions.cc
++++ b/src/objects/transitions.cc
+@@ -270,6 +270,34 @@ MaybeHandle<Map> TransitionsAccessor::FindTransitionToDataProperty(
+   return Handle<Map>(target, isolate_);
+ }
+ 
++void TransitionsAccessor::ForEachTransitionTo(
++    Name name, const ForEachTransitionCallback& callback,
++    DisallowGarbageCollection* no_gc) {
++  DCHECK(name.IsUniqueName());
++  switch (encoding()) {
++    case kPrototypeInfo:
++    case kUninitialized:
++    case kMigrationTarget:
++      return;
++    case kWeakRef: {
++      Map target = Map::cast(raw_transitions_->GetHeapObjectAssumeWeak());
++      InternalIndex descriptor = target.LastAdded();
++      DescriptorArray descriptors = target.instance_descriptors(kRelaxedLoad);
++      Name key = descriptors.GetKey(descriptor);
++      if (key == name) {
++        callback(target);
++      }
++      return;
++    }
++    case kFullTransitionArray: {
++      base::SharedMutexGuardIf<base::kShared> scope(
++          isolate_->transition_array_access(), concurrent_access_);
++      return transitions().ForEachTransitionTo(name, callback);
++    }
++  }
++  UNREACHABLE();
++}
++
+ bool TransitionsAccessor::CanHaveMoreTransitions() {
+   if (map_.is_dictionary_map()) return false;
+   if (encoding() == kFullTransitionArray) {
+@@ -612,6 +640,21 @@ Map TransitionArray::SearchAndGetTarget(PropertyKind kind, Name name,
+   return SearchDetailsAndGetTarget(transition, kind, attributes);
+ }
+ 
++void TransitionArray::ForEachTransitionTo(
++    Name name, const ForEachTransitionCallback& callback) {
++  int transition = SearchName(name, nullptr);
++  if (transition == kNotFound) return;
++
++  int nof_transitions = number_of_transitions();
++  DCHECK(transition < nof_transitions);
++  Name key = GetKey(transition);
++  for (; transition < nof_transitions && GetKey(transition) == key;
++       transition++) {
++    Map target = GetTarget(transition);
++    callback(target);
++  }
++}
++
+ void TransitionArray::Sort() {
+   DisallowGarbageCollection no_gc;
+   // In-place insertion sort.
+diff --git a/src/objects/transitions.h b/src/objects/transitions.h
+index 4f992bc6cfdf0d937eba8c2485bd3b5e86b2d686..237cfcd0efa7679c44a2e2a02db08e8942a4850e 100644
+--- a/src/objects/transitions.h
++++ b/src/objects/transitions.h
+@@ -19,6 +19,9 @@
+ namespace v8 {
+ namespace internal {
+ 
++// Find all transitions with given name and calls the callback.
++using ForEachTransitionCallback = std::function<void(Map)>;
++
+ // TransitionsAccessor is a helper class to encapsulate access to the various
+ // ways a Map can store transitions to other maps in its respective field at
+ // Map::kTransitionsOrPrototypeInfo.
+@@ -68,6 +71,14 @@ class V8_EXPORT_PRIVATE TransitionsAccessor {
+     return FindTransitionToDataProperty(name, kFieldOnly);
+   }
+ 
++  // Find all transitions with given name and calls the callback.
++  // Neither GCs nor operations requiring Isolate::full_transition_array_access
++  // lock are allowed inside the callback.
++  // If any of the GC- or lock-requiring processing is necessary, it has to be
++  // done outside of the callback.
++  void ForEachTransitionTo(Name name, const ForEachTransitionCallback& callback,
++                           DisallowGarbageCollection* no_gc);
++
+   inline Handle<String> ExpectedTransitionKey();
+   inline Handle<Map> ExpectedTransitionTarget();
+ 
+@@ -320,6 +331,10 @@ class TransitionArray : public WeakFixedArray {
+   Map SearchDetailsAndGetTarget(int transition, PropertyKind kind,
+                                 PropertyAttributes attributes);
+ 
++  // Find all transitions with given name and calls the callback.
++  void ForEachTransitionTo(Name name,
++                           const ForEachTransitionCallback& callback);
++
+   inline int number_of_transitions() const;
+ 
+   static bool CompactPrototypeTransitionArray(Isolate* isolate,
+diff --git a/src/runtime/runtime-object.cc b/src/runtime/runtime-object.cc
+index 2bb98e674cd29ae60392a926c915ce04e1f06edc..86ef12909136d34ef75979bceb70bd22acc57e62 100644
+--- a/src/runtime/runtime-object.cc
++++ b/src/runtime/runtime-object.cc
+@@ -18,6 +18,7 @@
+ #include "src/objects/js-array-inl.h"
+ #include "src/objects/property-descriptor-object.h"
+ #include "src/objects/property-descriptor.h"
++#include "src/objects/property-details.h"
+ #include "src/runtime/runtime-utils.h"
+ #include "src/runtime/runtime.h"
+ 
+@@ -94,6 +95,54 @@ MaybeHandle<Object> Runtime::HasProperty(Isolate* isolate,
+ 
+ namespace {
+ 
++void GeneralizeAllTransitionsToFieldAsMutable(Isolate* isolate, Handle<Map> map,
++                                              Handle<Name> name) {
++  InternalIndex descriptor(map->NumberOfOwnDescriptors());
++
++  Handle<Map> target_maps[kPropertyAttributesCombinationsCount];
++  int target_maps_count = 0;
++
++  // Collect all outgoing field transitions.
++  {
++    DisallowGarbageCollection no_gc;
++    TransitionsAccessor transitions(isolate, *map, &no_gc);
++    transitions.ForEachTransitionTo(
++        *name,
++        [&](Map target) {
++          DCHECK_EQ(descriptor, target.LastAdded());
++          DCHECK_EQ(*name, target.GetLastDescriptorName(isolate));
++          PropertyDetails details = target.GetLastDescriptorDetails(isolate);
++          // Currently, we track constness only for fields.
++          if (details.kind() == kData &&
++              details.constness() == PropertyConstness::kConst) {
++            target_maps[target_maps_count++] = handle(target, isolate);
++          }
++          DCHECK_IMPLIES(details.kind() == kAccessor,
++                         details.constness() == PropertyConstness::kConst);
++        },
++        &no_gc);
++    CHECK_LE(target_maps_count, kPropertyAttributesCombinationsCount);
++  }
++
++  for (int i = 0; i < target_maps_count; i++) {
++    Handle<Map> target = target_maps[i];
++    PropertyDetails details =
++        target->instance_descriptors(isolate, kRelaxedLoad)
++            .GetDetails(descriptor);
++    Handle<FieldType> field_type(
++        target->instance_descriptors(isolate, kRelaxedLoad)
++            .GetFieldType(descriptor),
++        isolate);
++    Map::GeneralizeField(isolate, target, descriptor,
++                         PropertyConstness::kMutable, details.representation(),
++                         field_type);
++    DCHECK_EQ(PropertyConstness::kMutable,
++              target->instance_descriptors(isolate, kRelaxedLoad)
++                  .GetDetails(descriptor)
++                  .constness());
++  }
++}
++
+ bool DeleteObjectPropertyFast(Isolate* isolate, Handle<JSReceiver> receiver,
+                               Handle<Object> raw_key) {
+   // This implements a special case for fast property deletion: when the
+@@ -103,6 +152,8 @@ bool DeleteObjectPropertyFast(Isolate* isolate, Handle<JSReceiver> receiver,
+   // (1) The receiver must be a regular object and the key a unique name.
+   Handle<Map> receiver_map(receiver->map(), isolate);
+   if (receiver_map->IsSpecialReceiverMap()) return false;
++  DCHECK(receiver_map->IsJSObjectMap());
++
+   if (!raw_key->IsUniqueName()) return false;
+   Handle<Name> key = Handle<Name>::cast(raw_key);
+   // (2) The property to be deleted must be the last property.
+@@ -125,26 +176,6 @@ bool DeleteObjectPropertyFast(Isolate* isolate, Handle<JSReceiver> receiver,
+ 
+   // Preconditions successful. No more bailouts after this point.
+ 
+-  // If the {descriptor} was "const" so far, we need to update the
+-  // {receiver_map} here, otherwise we could get the constants wrong, i.e.
+-  //
+-  //   o.x = 1;
+-  //   delete o.x;
+-  //   o.x = 2;
+-  //
+-  // could trick V8 into thinking that `o.x` is still 1 even after the second
+-  // assignment.
+-  if (details.constness() == PropertyConstness::kConst &&
+-      details.location() == kField) {
+-    Handle<FieldType> field_type(descriptors->GetFieldType(descriptor),
+-                                 isolate);
+-    Map::GeneralizeField(isolate, receiver_map, descriptor,
+-                         PropertyConstness::kMutable, details.representation(),
+-                         field_type);
+-    DCHECK_EQ(PropertyConstness::kMutable,
+-              descriptors->GetDetails(descriptor).constness());
+-  }
+-
+   // Zap the property to avoid keeping objects alive. Zapping is not necessary
+   // for properties stored in the descriptor array.
+   if (details.location() == kField) {
+@@ -191,6 +222,30 @@ bool DeleteObjectPropertyFast(Isolate* isolate, Handle<JSReceiver> receiver,
+   receiver->HeapObjectVerify(isolate);
+   receiver->property_array().PropertyArrayVerify(isolate);
+ #endif
++
++  // If the {descriptor} was "const" so far, we need to update the
++  // {receiver_map} here, otherwise we could get the constants wrong, i.e.
++  //
++  //   o.x = 1;
++  //   [change o.x's attributes or reconfigure property kind]
++  //   delete o.x;
++  //   o.x = 2;
++  //
++  // could trick V8 into thinking that `o.x` is still 1 even after the second
++  // assignment.
++
++  // Step 1: Migrate object to an up-to-date shape.
++  if (parent_map->is_deprecated()) {
++    JSObject::MigrateInstance(isolate, Handle<JSObject>::cast(receiver));
++    parent_map = handle(receiver->map(), isolate);
++  }
++
++  // Step 2: Mark outgoing transitions from the up-to-date version of the
++  // parent_map to same property name of any kind or attributes as mutable.
++  // Also migrate object to the up-to-date map to make the object shapes
++  // converge sooner.
++  GeneralizeAllTransitionsToFieldAsMutable(isolate, parent_map, key);
++  
+   return true;
+ }
+ 
+diff --git a/src/runtime/runtime.h b/src/runtime/runtime.h
+index 311238c9d56fe344b977d5f5c67d0b60775c61c3..86bb613d1810032544b4cf76108b957bad5eb2bc 100644
+--- a/src/runtime/runtime.h
++++ b/src/runtime/runtime.h
+@@ -755,9 +755,9 @@ class Runtime : public AllStatic {
+   // Get the runtime intrinsic function table.
+   static const Function* RuntimeFunctionTable(Isolate* isolate);
+ 
+-  V8_WARN_UNUSED_RESULT static Maybe<bool> DeleteObjectProperty(
+-      Isolate* isolate, Handle<JSReceiver> receiver, Handle<Object> key,
+-      LanguageMode language_mode);
++  V8_EXPORT_PRIVATE V8_WARN_UNUSED_RESULT static Maybe<bool>
++  DeleteObjectProperty(Isolate* isolate, Handle<JSReceiver> receiver,
++                       Handle<Object> key, LanguageMode language_mode);
+ 
+   V8_EXPORT_PRIVATE V8_WARN_UNUSED_RESULT static MaybeHandle<Object>
+   SetObjectProperty(Isolate* isolate, Handle<Object> object, Handle<Object> key,
