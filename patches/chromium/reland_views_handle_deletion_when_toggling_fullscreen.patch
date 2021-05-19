@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Andrey Belenko <andrey.belenko@gmail.com>
 Date: Wed, 19 May 2021 13:18:02 +0200
-Subject: [reland] views: handle deletion when toggling fullscreen
+Subject: views: handle deletion when toggling fullscreen
 
 This differs from the first in so far as needing to add more early
 outs in the windows side if destroyed. This was caught by the asan
