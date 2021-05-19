@@ -1,0 +1,232 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andrey Belenko <andrey.belenko@gmail.com>
+Date: Wed, 19 May 2021 10:54:46 +0200
+Subject: Guard WebContents::DownloadImage() against malformed renderer
+ response
+
+Callers expect that ImageDownloadCallback gets invoked with two vectors
+having the same number of elements (one containing the bitmaps and the
+other one the corresponding sizes).
+
+However, these vectors are populated directly from the Mojo response,
+so there needs to be some browser-process sanitization to protect
+against buggy or compromised renderers.
+
+In this patch, WebContentsImpl::OnDidDownloadImage() mimics a 400 error
+if the response is malformed, similarly to how it's done in other edge
+cases (renderer process dead upon download). Because this scenario is
+a violation of the Mojo API contract, the browser process also issues
+a bad message log (newly-introduced WCI_INVALID_DOWNLOAD_IMAGE_RESULT)
+and shuts down the renderer process.
+
+(cherry picked from commit 034ba14e44f08e8ca84b42350f3238f847e08e5f)
+
+Change-Id: Ic0843e10efc26809fabd8f1bbe506ba1703d1486
+Fixed: 1201446
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2871796
+
+diff --git a/components/favicon/core/favicon_handler.cc b/components/favicon/core/favicon_handler.cc
+index 3d278c8e7cb1212c266e3b1838be8f658165a795..197901e64c7cd8d8e2750c28d502ee5428b35df4 100644
+--- a/components/favicon/core/favicon_handler.cc
++++ b/components/favicon/core/favicon_handler.cc
+@@ -507,6 +507,8 @@ void FaviconHandler::OnDidDownloadFavicon(
+     const GURL& image_url,
+     const std::vector<SkBitmap>& bitmaps,
+     const std::vector<gfx::Size>& original_bitmap_sizes) {
++  DCHECK_EQ(bitmaps.size(), original_bitmap_sizes.size());
++
+   // Mark download as finished.
+   image_download_request_.Cancel();
+ 
+diff --git a/components/favicon/core/favicon_handler.h b/components/favicon/core/favicon_handler.h
+index 98706de7a7bcdeee857acd5a9113c45ecf82dca7..574d88ac91a6322644cbe5fda9e964807830c20e 100644
+--- a/components/favicon/core/favicon_handler.h
++++ b/components/favicon/core/favicon_handler.h
+@@ -238,7 +238,9 @@ class FaviconHandler {
+   void ScheduleImageDownload(const GURL& image_url,
+                              favicon_base::IconType icon_type);
+ 
+-  // Triggered when a download of an image has finished.
++  // Triggered when a download of an image has finished. |bitmaps| and
++  // |original_bitmap_sizes| must contain the same number of elements (i.e. same
++  // vector size).
+   void OnDidDownloadFavicon(
+       favicon_base::IconType icon_type,
+       int id,
+diff --git a/components/favicon/ios/web_favicon_driver.mm b/components/favicon/ios/web_favicon_driver.mm
+index 963a4dbcc5c971ea53c5d603cc73d1d2dab4f3ae..1dd5f4f2b38b55b8831aa527dd52ae11d45632fb 100644
+--- a/components/favicon/ios/web_favicon_driver.mm
++++ b/components/favicon/ios/web_favicon_driver.mm
+@@ -75,6 +75,7 @@
+           for (const auto& frame : frames) {
+             sizes.push_back(gfx::Size(frame.width(), frame.height()));
+           }
++          DCHECK_EQ(frames.size(), sizes.size());
+         }
+         std::move(local_callback)
+             .Run(local_download_id, metadata.http_response_code, local_url,
+diff --git a/components/favicon_base/select_favicon_frames.cc b/components/favicon_base/select_favicon_frames.cc
+index 90b58e621492d0e503f7965de91581c0a451d163..73cd7dd5331a818f413d831b4ae596bc88805a8a 100644
+--- a/components/favicon_base/select_favicon_frames.cc
++++ b/components/favicon_base/select_favicon_frames.cc
+@@ -216,6 +216,7 @@ gfx::ImageSkia CreateFaviconImageSkia(
+     const std::vector<gfx::Size>& original_sizes,
+     int desired_size_in_dip,
+     float* score) {
++  DCHECK_EQ(bitmaps.size(), original_sizes.size());
+ 
+   const std::vector<float>& favicon_scales = favicon_base::GetFaviconScales();
+   std::vector<int> desired_sizes;
+diff --git a/components/favicon_base/select_favicon_frames.h b/components/favicon_base/select_favicon_frames.h
+index 573a38c79cddf839622488589b71b4d19fbdfba6..eab1e54466763e5a6a6069a29e877da054972fa8 100644
+--- a/components/favicon_base/select_favicon_frames.h
++++ b/components/favicon_base/select_favicon_frames.h
+@@ -38,6 +38,8 @@ extern const float kSelectFaviconFramesInvalidScore;
+ // it inspired by this method.
+ // If an unsupported scale (not in the favicon_base::GetFaviconScales())
+ // is requested, the ImageSkia will automatically scales using lancoz3.
++// |original_sizes| represents the pixel sizes of the favicon bitmaps in
++// |bitmaps|, which also means both vectors must have the same size.
+ gfx::ImageSkia CreateFaviconImageSkia(
+     const std::vector<SkBitmap>& bitmaps,
+     const std::vector<gfx::Size>& original_sizes,
+diff --git a/content/browser/bad_message.h b/content/browser/bad_message.h
+index c6675ef501de6cbaa175793ac0b13ba9b93a12e6..e198d661c711dc648a4e4c2249e0a60f69c406da 100644
+--- a/content/browser/bad_message.h
++++ b/content/browser/bad_message.h
+@@ -260,6 +260,15 @@ enum BadMessageReason {
+   RFH_RECEIVED_ASSOCIATED_MESSAGE_WHILE_BFCACHED = 232,
+   RWH_CLOSE_PORTAL = 233,
+   MSDH_INVALID_STREAM_TYPE = 234,
++  RFH_CREATE_CHILD_FRAME_TOKENS_NOT_FOUND = 235,
++  ASGH_ASSOCIATED_INTERFACE_REQUEST = 236,
++  ASGH_RECEIVED_CONTROL_MESSAGE = 237,
++  CSDH_BAD_OWNER = 238,
++  SYNC_COMPOSITOR_NO_LOCAL_SURFACE_ID = 239,
++  WCI_INVALID_FULLSCREEN_OPTIONS = 240,
++  PAYMENTS_WITHOUT_PERMISSION = 241,
++  WEB_BUNDLE_INVALID_NAVIGATION_URL = 242,
++  WCI_INVALID_DOWNLOAD_IMAGE_RESULT = 243,
+ 
+   // Please add new elements here. The naming convention is abbreviated class
+   // name (e.g. RenderFrameHost becomes RFH) plus a unique description of the
+diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
+index 750944d45d66f70a5e32219148a4f0cb9edd351c..d0e25934cda73577524b80051b7e4cd6150077e8 100644
+--- a/content/browser/web_contents/web_contents_impl.cc
++++ b/content/browser/web_contents/web_contents_impl.cc
+@@ -169,6 +169,7 @@
+ #include "third_party/blink/public/common/web_preferences/web_preferences.h"
+ #include "third_party/blink/public/mojom/frame/frame.mojom.h"
+ #include "third_party/blink/public/mojom/frame/fullscreen.mojom.h"
++#include "third_party/blink/public/mojom/image_downloader/image_downloader.mojom.h"
+ #include "third_party/blink/public/mojom/loader/pause_subresource_loading_handle.mojom.h"
+ #include "third_party/blink/public/mojom/mediastream/media_stream.mojom-shared.h"
+ #include "third_party/skia/include/core/SkBitmap.h"
+@@ -5066,18 +5067,18 @@ int WebContentsImpl::DownloadImageInFrame(
+     // respond with a 400 HTTP error code to indicate that something went wrong.
+     GetUIThreadTaskRunner({})->PostTask(
+         FROM_HERE,
+-        base::BindOnce(&WebContentsImpl::OnDidDownloadImage,
+-                       weak_factory_.GetWeakPtr(), std::move(callback),
+-                       download_id, url, 400, std::vector<SkBitmap>(),
+-                       std::vector<gfx::Size>()));
++        base::BindOnce(
++            &WebContentsImpl::OnDidDownloadImage, weak_factory_.GetWeakPtr(),
++            initiator_frame->GetWeakPtr(), std::move(callback), download_id,
++            url, 400, std::vector<SkBitmap>(), std::vector<gfx::Size>()));
+     return download_id;
+   }
+ 
+   mojo_image_downloader->DownloadImage(
+       url, is_favicon, preferred_size, max_bitmap_size, bypass_cache,
+       base::BindOnce(&WebContentsImpl::OnDidDownloadImage,
+-                     weak_factory_.GetWeakPtr(), std::move(callback),
+-                     download_id, url));
++                     weak_factory_.GetWeakPtr(), initiator_frame->GetWeakPtr(),
++                     std::move(callback), download_id, url));
+   return download_id;
+ }
+ 
+@@ -8044,6 +8045,7 @@ bool WebContentsImpl::CompletedFirstVisuallyNonEmptyPaint() {
+ }
+ 
+ void WebContentsImpl::OnDidDownloadImage(
++    base::WeakPtr<RenderFrameHostImpl> rfh,
+     ImageDownloadCallback callback,
+     int id,
+     const GURL& image_url,
+@@ -8053,6 +8055,21 @@ void WebContentsImpl::OnDidDownloadImage(
+   OPTIONAL_TRACE_EVENT1("content", "WebContentsImpl::OnDidDownloadImage",
+                         "image_url",
+                         base::trace_event::ValueToString(image_url));
++
++  // Guard against buggy or compromised renderers that could violate the API
++  // contract that |images| and |original_image_sizes| must have the same
++  // length.
++  if (images.size() != original_image_sizes.size()) {
++    if (rfh) {
++      ReceivedBadMessage(rfh->GetProcess(),
++                         bad_message::WCI_INVALID_DOWNLOAD_IMAGE_RESULT);
++    }
++    // Respond with a 400 to indicate that something went wrong.
++    std::move(callback).Run(id, 400, image_url, std::vector<SkBitmap>(),
++                            std::vector<gfx::Size>());
++    return;
++  }
++
+   std::move(callback).Run(id, http_status_code, image_url, images,
+                           original_image_sizes);
+ }
+diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
+index b78cb8f558052e01d61456ca282359eb4b342c35..54a780a2cbbe1259b13d5d46c9a90aaffbb516a9 100644
+--- a/content/browser/web_contents/web_contents_impl.h
++++ b/content/browser/web_contents/web_contents_impl.h
+@@ -1470,7 +1470,8 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
+       std::set<RenderWidgetHostView*>& result);
+ 
+   // Called with the result of a DownloadImage() request.
+-  void OnDidDownloadImage(ImageDownloadCallback callback,
++  void OnDidDownloadImage(base::WeakPtr<RenderFrameHostImpl> rfh,
++                          ImageDownloadCallback callback,
+                           int id,
+                           const GURL& image_url,
+                           int32_t http_status_code,
+diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
+index a43c9972377f6365c3fe0e33f0d29700f597bd2d..8260da280d387847e18ca22782e71c0d6614385f 100644
+--- a/content/public/browser/web_contents.h
++++ b/content/public/browser/web_contents.h
+@@ -918,8 +918,9 @@ class WebContents : public PageNavigator,
+   // |bitmaps| will be empty on download failure.
+   // |sizes| are the sizes in pixels of the bitmaps before they were resized due
+   // to the max bitmap size passed to DownloadImage(). Each entry in the bitmaps
+-  // vector corresponds to an entry in the sizes vector. If a bitmap was
+-  // resized, there should be a single returned bitmap.
++  // vector corresponds to an entry in the sizes vector (both vector sizes are
++  // guaranteed to be equal). If a bitmap was resized, there should be a single
++  // returned bitmap.
+   using ImageDownloadCallback =
+       base::OnceCallback<void(int id,
+                               int http_status_code,
+diff --git a/third_party/blink/renderer/modules/image_downloader/image_downloader_impl.cc b/third_party/blink/renderer/modules/image_downloader/image_downloader_impl.cc
+index fb0fc97d689c8c6b1f6f9fa27d250e0438550725..740c6c01318a1d9d2914ddef9949db9ced559d14 100644
+--- a/third_party/blink/renderer/modules/image_downloader/image_downloader_impl.cc
++++ b/third_party/blink/renderer/modules/image_downloader/image_downloader_impl.cc
+@@ -79,7 +79,8 @@ SkBitmap ResizeImage(const SkBitmap& image, uint32_t max_image_size) {
+ // size |max_image_size|. Returns the result if it is not empty. Otherwise,
+ // find the smallest image in the array and resize it proportionally to fit
+ // in a box of size |max_image_size|.
+-// Sets |original_image_sizes| to the sizes of |images| before resizing.
++// Sets |original_image_sizes| to the sizes of |images| before resizing. Both
++// output vectors are guaranteed to have the same size.
+ void FilterAndResizeImagesForMaximalSize(
+     const WTF::Vector<SkBitmap>& unfiltered,
+     uint32_t max_image_size,
+@@ -202,6 +203,8 @@ void ImageDownloaderImpl::DidDownloadImage(
+   FilterAndResizeImagesForMaximalSize(images, max_image_size, &result_images,
+                                       &result_original_image_sizes);
+ 
++  DCHECK_EQ(result_images.size(), result_original_image_sizes.size());
++
+   std::move(callback).Run(http_status_code, result_images,
+                           result_original_image_sizes);
+ }

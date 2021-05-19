@@ -1,0 +1,50 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andrey Belenko <andrey.belenko@gmail.com>
+Date: Wed, 19 May 2021 17:11:00 +0200
+Subject: Remove tabs and line breaks from the middle of app names when
+ parsing.
+
+(cherry picked from commit f9b0a09d60acabadfcb9ddeacc9d943cc9811199)
+
+Bug: 1180126
+Change-Id: Ie6f08d45f97214c4f1ab766aa8af001b8fb8599c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2821876
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2877715
+
+diff --git a/third_party/blink/renderer/modules/manifest/manifest_parser.cc b/third_party/blink/renderer/modules/manifest/manifest_parser.cc
+index d50f50ca92f0f622bb26f2b0a29b3fb8d70eed85..ed45e9fff703dd07c8f14f60eaa3c97a213c1b4f 100644
+--- a/third_party/blink/renderer/modules/manifest/manifest_parser.cc
++++ b/third_party/blink/renderer/modules/manifest/manifest_parser.cc
+@@ -46,6 +46,10 @@ bool URLIsWithinScope(const KURL& url, const KURL& scope) {
+          url.GetPath().StartsWith(scope.GetPath());
+ }
+ 
++static bool IsCrLfOrTabChar(UChar c) {
++  return c == '\n' || c == '\r' || c == '\t';
++}
++
+ }  // anonymous namespace
+ 
+ ManifestParser::ManifestParser(const String& data,
+@@ -256,11 +260,21 @@ KURL ManifestParser::ParseURL(const JSONObject* object,
+ 
+ String ManifestParser::ParseName(const JSONObject* object) {
+   base::Optional<String> name = ParseString(object, "name", Trim);
++  if (name.has_value()) {
++    name = name->RemoveCharacters(IsCrLfOrTabChar);
++    if (name->length() == 0)
++      name = base::nullopt;
++  }
+   return name.has_value() ? *name : String();
+ }
+ 
+ String ManifestParser::ParseShortName(const JSONObject* object) {
+   base::Optional<String> short_name = ParseString(object, "short_name", Trim);
++  if (short_name.has_value()) {
++    short_name = short_name->RemoveCharacters(IsCrLfOrTabChar);
++    if (short_name->length() == 0)
++      short_name = base::nullopt;
++  }
+   return short_name.has_value() ? *short_name : String();
+ }
+ 

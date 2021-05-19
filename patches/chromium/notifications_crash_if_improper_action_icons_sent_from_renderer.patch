@@ -1,0 +1,149 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andrey Belenko <andrey.belenko@gmail.com>
+Date: Wed, 19 May 2021 12:54:32 +0200
+Subject: Notifications: crash if improper action icons sent from renderer.
+
+Previously, the code only called DCHECK but as this data is from a
+renderer we should probably crash the browser.
+
+(cherry picked from commit 3b28dc50187b22e080ad9c1e4e6c4f3b08f3136d)
+
+Bug: 1200019
+Change-Id: If4d9d48c8e18a3ed9c8bb3a50b952591259e0db5
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2838205
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2872493
+
+diff --git a/chrome/browser/notifications/platform_notification_service_impl.cc b/chrome/browser/notifications/platform_notification_service_impl.cc
+index 403cf8f11bec68504e32ebace2f80e04ad136491..5d5f7fafd484ff5cb9fe31b459b5b23b740cf513 100644
+--- a/chrome/browser/notifications/platform_notification_service_impl.cc
++++ b/chrome/browser/notifications/platform_notification_service_impl.cc
+@@ -403,8 +403,10 @@ PlatformNotificationServiceImpl::CreateNotificationFromData(
+     const std::string& notification_id,
+     const blink::PlatformNotificationData& notification_data,
+     const blink::NotificationResources& notification_resources) const {
+-  DCHECK_EQ(notification_data.actions.size(),
+-            notification_resources.action_icons.size());
++  // Blink always populates action icons to match the actions, even if no icon
++  // was fetched, so this indicates a compromised renderer.
++  CHECK_EQ(notification_data.actions.size(),
++           notification_resources.action_icons.size());
+ 
+   message_center::RichNotificationData optional_fields;
+ 
+diff --git a/content/browser/notifications/blink_notification_service_impl.cc b/content/browser/notifications/blink_notification_service_impl.cc
+index 7105781e0019b456f287fd0ebb6e309efe2cecad..8fcbb96ed39da9ec468cbe310bf8f499e338a235 100644
+--- a/content/browser/notifications/blink_notification_service_impl.cc
++++ b/content/browser/notifications/blink_notification_service_impl.cc
+@@ -39,6 +39,9 @@ const char kBadMessageImproperNotificationImage[] =
+     "disabled.";
+ const char kBadMessageInvalidNotificationTriggerTimestamp[] =
+     "Received an invalid notification trigger timestamp.";
++const char kBadMessageInvalidNotificationActionButtons[] =
++    "Received a notification with a number of action images that does not "
++    "match the number of actions.";
+ 
+ // Returns the implementation of the PlatformNotificationService. May be NULL.
+ PlatformNotificationService* GetNotificationService(
+@@ -134,7 +137,8 @@ void BlinkNotificationServiceImpl::DisplayNonPersistentNotification(
+     mojo::PendingRemote<blink::mojom::NonPersistentNotificationListener>
+         event_listener_remote) {
+   DCHECK_CURRENTLY_ON(BrowserThread::UI);
+-  if (!ValidateNotificationResources(notification_resources))
++  if (!ValidateNotificationDataAndResources(platform_notification_data,
++                                            notification_resources))
+     return;
+ 
+   if (!GetNotificationService(browser_context_))
+@@ -190,28 +194,32 @@ BlinkNotificationServiceImpl::CheckPermissionStatus() {
+                             origin_.GetURL());
+ }
+ 
+-bool BlinkNotificationServiceImpl::ValidateNotificationResources(
++bool BlinkNotificationServiceImpl::ValidateNotificationDataAndResources(
++    const blink::PlatformNotificationData& platform_notification_data,
+     const blink::NotificationResources& notification_resources) {
+-  if (notification_resources.image.drawsNothing() ||
+-      base::FeatureList::IsEnabled(features::kNotificationContentImage))
+-    return true;
+-  receiver_.ReportBadMessage(kBadMessageImproperNotificationImage);
+-  // The above ReportBadMessage() closes |binding_| but does not trigger its
+-  // connection error handler, so we need to call the error handler explicitly
+-  // here to do some necessary work.
+-  OnConnectionError();
+-  return false;
+-}
++  if (platform_notification_data.actions.size() !=
++      notification_resources.action_icons.size()) {
++    receiver_.ReportBadMessage(kBadMessageInvalidNotificationActionButtons);
++    OnConnectionError();
++    return false;
++  }
+ 
+-// Checks if this notification has a valid trigger.
+-bool BlinkNotificationServiceImpl::ValidateNotificationData(
+-    const blink::PlatformNotificationData& notification_data) {
+-  if (!CheckNotificationTriggerRange(notification_data)) {
++  if (!CheckNotificationTriggerRange(platform_notification_data)) {
+     receiver_.ReportBadMessage(kBadMessageInvalidNotificationTriggerTimestamp);
+     OnConnectionError();
+     return false;
+   }
+ 
++  if (!notification_resources.image.drawsNothing() &&
++      !base::FeatureList::IsEnabled(features::kNotificationContentImage)) {
++    receiver_.ReportBadMessage(kBadMessageImproperNotificationImage);
++    // The above ReportBadMessage() closes |binding_| but does not trigger its
++    // connection error handler, so we need to call the error handler explicitly
++    // here to do some necessary work.
++    OnConnectionError();
++    return false;
++  }
++
+   return true;
+ }
+ 
+@@ -221,10 +229,8 @@ void BlinkNotificationServiceImpl::DisplayPersistentNotification(
+     const blink::NotificationResources& notification_resources,
+     DisplayPersistentNotificationCallback callback) {
+   DCHECK_CURRENTLY_ON(BrowserThread::UI);
+-  if (!ValidateNotificationResources(notification_resources))
+-    return;
+-
+-  if (!ValidateNotificationData(platform_notification_data))
++  if (!ValidateNotificationDataAndResources(platform_notification_data,
++                                            notification_resources))
+     return;
+ 
+   if (!GetNotificationService(browser_context_)) {
+diff --git a/content/browser/notifications/blink_notification_service_impl.h b/content/browser/notifications/blink_notification_service_impl.h
+index dc5307e6500b0bfb5da83e8d8ff8886b91133522..fe1abadd2bc196914cb7b6d9fe29a75435f08988 100644
+--- a/content/browser/notifications/blink_notification_service_impl.h
++++ b/content/browser/notifications/blink_notification_service_impl.h
+@@ -72,20 +72,15 @@ class CONTENT_EXPORT BlinkNotificationServiceImpl
+   // Check the permission status for the current |origin_|.
+   blink::mojom::PermissionStatus CheckPermissionStatus();
+ 
+-  // Validate |notification_resources| received in a Mojo IPC message.
+-  // If the validation failed, we'd close the Mojo connection |binding_| and
+-  // destroy |this| by calling OnConnectionError() directly, then return false.
+-  // So, please do not touch |this| again after you got a false return value.
+-  bool ValidateNotificationResources(
++  // Validate |notification_data| and |notification_resources| received in a
++  // Mojo IPC message. If the validation failed, we'd close the Mojo connection
++  // |binding_| and destroy |this| by calling OnConnectionError() directly, then
++  // return false. So, please do not touch |this| again after you got a false
++  // return value.
++  bool ValidateNotificationDataAndResources(
++      const blink::PlatformNotificationData& notification_data,
+       const blink::NotificationResources& notification_resources);
+ 
+-  // Validate |notification_data| received in a Mojo IPC message.
+-  // If the validation failed, we'd close the Mojo connection |binding_| and
+-  // destroy |this| by calling OnConnectionError() directly, then return false.
+-  // So, please do not touch |this| again after you got a false return value.
+-  bool ValidateNotificationData(
+-      const blink::PlatformNotificationData& notification_data);
+-
+   void DidWriteNotificationData(DisplayPersistentNotificationCallback callback,
+                                 bool success,
+                                 const std::string& notification_id);
