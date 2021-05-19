@@ -79,18 +79,18 @@ index 93e9474297fd9032981786ae9d4e005f2d1a9a2e..bca4c44a31d1ffe7c9ae15b6f60cd55e
    name = NormalizeFileName(filename)
    slug = SLUGGER_RE.sub('_', name)
    var = slug + '_raw'
-@@ -123,7 +127,9 @@ def AddModule(filename, definitions, initializers):
+@@ -123,7 +123,9 @@ def AddModule(filename, definitions, initializers):
    initializers.append(initializer)
  
  def NormalizeFileName(filename):
--  split = filename.split(os.path.sep)
+-  split = filename.split('/')
 +  if filename.startswith('//v8'):
 +    filename = "deps/" + filename[2:]
-+  split = os.path.normpath(filename).split(os.path.sep)
++  split = os.path.normpath(filename).split('/')
    if split[0] == 'deps':
      split = ['internal'] + split
    else:  # `lib/**/*.js` so drop the 'lib' part
-@@ -141,7 +147,7 @@ def NormalizeFileName(filename):
+@@ -141,7 +143,7 @@ def NormalizeFileName(filename):
    return os.path.splitext(filename)[0]
  
  
@@ -99,8 +99,8 @@ index 93e9474297fd9032981786ae9d4e005f2d1a9a2e..bca4c44a31d1ffe7c9ae15b6f60cd55e
    # Build source code lines
    definitions = []
    initializers = []
-@@ -149,13 +155,26 @@ def JS2C(source_files, target):
-   for filename in source_files['.js']:
+@@ -151,13 +153,26 @@ def JS2C(source_files, target):
+   for filename in source_files['.mjs']:
      AddModule(filename, definitions, initializers)
  
 -  config_def, config_size = handle_config_gypi(source_files['config.gypi'])
@@ -129,7 +129,7 @@ index 93e9474297fd9032981786ae9d4e005f2d1a9a2e..bca4c44a31d1ffe7c9ae15b6f60cd55e
    write_if_chaged(out, target)
  
  
-@@ -211,17 +230,21 @@ def main():
+@@ -213,18 +228,22 @@ def main():
    )
    parser.add_argument('--target', help='output file')
    parser.add_argument('--verbose', action='store_true', help='output file')
@@ -139,20 +139,24 @@ index 93e9474297fd9032981786ae9d4e005f2d1a9a2e..bca4c44a31d1ffe7c9ae15b6f60cd55e
    global is_verbose
    is_verbose = options.verbose
    source_files = functools.reduce(SourceFileByExt, options.sources, {})
-   # Should have exactly 2 types: `.js`, and `.gypi`
--  assert len(source_files) == 2
+-  # Should have exactly 3 types: `.js`, `.mjs` and `.gypi`
+-  assert len(source_files) == 3
 -  # Currently config.gypi is the only `.gypi` file allowed
 -  assert source_files['.gypi'] == ['config.gypi']
 -  source_files['config.gypi'] = source_files.pop('.gypi')[0]
 -  JS2C(source_files, options.target)
+-
 +  if options.only_js:
-+    assert len(source_files) == 1
-+  else:
++    # Should have exactly 3 types: `.js`, `.mjs`
 +    assert len(source_files) == 2
++  else:
++    # Should have exactly 3 types: `.js`, `.mjs` and `.gypi`
++    assert len(source_files) == 3
 +    # Currently config.gypi is the only `.gypi` file allowed
 +    assert source_files['.gypi'][0].endswith('config.gypi')
 +    source_files['config.gypi'] = source_files.pop('.gypi')[0]
 +  JS2C(source_files, options.target, options.only_js)
  
- 
  if __name__ == "__main__":
+   main()
+
