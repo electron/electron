@@ -31,7 +31,10 @@ currently at 63% towards completion, you would call it as
 `setProgressBar(0.63)`.
 
 Setting the parameter to negative values (e.g. `-1`) will remove the progress
-bar. Setting it to a value greater than `1` will indicate an indeterminate progress bar in Windows or clamp to 100% in other operating systems. An indeterminate progress bar remains active but does not show an actual percentage, and is used for situations when you do not know how long an operation will take to complete.
+bar. Setting it to a value greater than `1` will indicate an indeterminate progress bar
+in Windows or clamp to 100% in other operating systems. An indeterminate progress bar
+remains active but does not show an actual percentage, and is used for situations when
+you do not know how long an operation will take to complete.
 
 See the [API documentation for more options and modes][setprogressbar].
 
@@ -63,7 +66,8 @@ let interval = setInterval(() => {
 
 ```
 
-After launching the Electron application, the dock (macOS) or taskbar (Windows, Unity) should show a progress bar that starts at zero and progresses through 100% to completion.
+After launching the Electron application, the dock (macOS) or taskbar (Windows, Unity)
+should show a progress bar that starts at zero and progresses through 100% to completion.
 
 ![macOS dock progress bar](../images/dock-progress-bar.png)
 
