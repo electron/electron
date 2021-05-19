@@ -159,7 +159,7 @@ index 77cb5676b4e6b8d0d9b65cbf0979048822f796e9..b525c5f17d62a4d97ad425e1fc06de82
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index 1864b4517655accf6be67afc66be813839d13aca..990594de3c9f1cb6a90cdc5b36445a19cfdcfe76 100644
+index 1864b4517655accf6be67afc66be813839d13aca..af9bf3455d2d7b58ce475e281f901221119d675b 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
 @@ -796,8 +796,7 @@ class Browser : public TabStripModelObserver,
@@ -168,7 +168,7 @@ index 1864b4517655accf6be67afc66be813839d13aca..990594de3c9f1cb6a90cdc5b36445a19
        const GURL& opener_url,
 -      const std::string& frame_name,
 -      const GURL& target_url) override;
-+      const mojom::CreateNewWindowParams& params) override;
++      const content::mojom::CreateNewWindowParams& params) override;
    content::WebContents* CreateCustomWebContents(
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
