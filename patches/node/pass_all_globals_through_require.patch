@@ -23,18 +23,18 @@ index 82c08cd17b33c14b85e6586269b5dc4b233fd9e6..ef52bf6486d8c827dce105e50b57c112
  const {
    isProxy
  } = require('internal/util/types');
-@@ -1063,10 +1070,12 @@ Module.prototype._compile = function(content, filename) {
-   if (requireDepth === 0) statCache = new Map();
+@@ -1104,10 +1104,12 @@ Module.prototype._compile = function(content, filename) {
+   if (requireDepth === 0) statCache = new SafeMap();
    if (inspectorWrapper) {
      result = inspectorWrapper(compiledWrapper, thisValue, exports,
 -                              require, module, filename, dirname);
 +                              require, module, filename, dirname,
 +                              process, localGlobal, localBuffer);
    } else {
-     result = compiledWrapper.call(thisValue, exports, require, module,
--                                  filename, dirname);
-+                                  filename, dirname, process, localGlobal,
-+                                  localBuffer);
+     result = ReflectApply(compiledWrapper, thisValue,
+-                          [exports, require, module, filename, dirname]);
++                          [exports, require, module, filename,
++                           dirname, process, localGlobal, localBuffer]);
    }
    hasLoadedAnyUserCJSModule = true;
    if (requireDepth === 0) statCache = null;
