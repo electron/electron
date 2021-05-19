@@ -1,0 +1,38 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Fri, 14 May 2021 13:55:28 +0200
+Subject: src: remove extra semi after member fn
+
+This was added in https://github.com/nodejs/node/pull/34186 and
+https://github.com/nodejs/node/pull/38172.
+
+Fix upstreamed at https://github.com/nodejs/node/pull/38686.
+
+diff --git a/src/cares_wrap.h b/src/cares_wrap.h
+index bceafcb8b7f46b8044c69716e7241d2fa065ee5c..20d350a76321e8414508083c2037ad8c238c940b 100644
+--- a/src/cares_wrap.h
++++ b/src/cares_wrap.h
+@@ -141,8 +141,8 @@ struct NodeAresTask final : public MemoryRetainer {
+   uv_poll_t poll_watcher;
+ 
+   inline void MemoryInfo(MemoryTracker* trakcer) const override;
+-  SET_MEMORY_INFO_NAME(NodeAresTask);
+-  SET_SELF_SIZE(NodeAresTask);
++  SET_MEMORY_INFO_NAME(NodeAresTask)
++  SET_SELF_SIZE(NodeAresTask)
+ 
+   struct Hash {
+     inline size_t operator()(NodeAresTask* a) const {
+diff --git a/src/timer_wrap.h b/src/timer_wrap.h
+index b2c20bf24d8746b5bc33ac2e55f20cd303dff269..dbc23b442bea39d4556a21bb7f365dd68239095d 100644
+--- a/src/timer_wrap.h
++++ b/src/timer_wrap.h
+@@ -32,7 +32,7 @@ class TimerWrap final : public MemoryRetainer {
+   void Ref();
+   void Unref();
+ 
+-  SET_NO_MEMORY_INFO();
++  SET_NO_MEMORY_INFO()
+   SET_MEMORY_INFO_NAME(TimerWrap)
+   SET_SELF_SIZE(TimerWrap)
+ 

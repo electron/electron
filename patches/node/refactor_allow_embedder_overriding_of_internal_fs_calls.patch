@@ -22,10 +22,10 @@ index 2705f8b50a658db0fc1ce6fba245792f6a567300..5aab40071b68affe602be16d451be598
  process.config = JSONParse(internalBinding('native_module').config);
  require('internal/worker/js_transferable').setup();
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index 5bebce776dc60052aa01422af29d7766033e7331..541c18d8032c5247433367f9e04c946cf203d475 100644
+index ef52bf6486d8c827dce105e50b57c1129dcaf5a4..e2a205739ce89820fe5f1f24e609ff16b86afb04 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
-@@ -70,7 +70,7 @@ const fs = require('fs');
+@@ -71,7 +71,7 @@ const fs = require('fs');
  const internalFS = require('internal/fs/utils');
  const path = require('path');
  const { sep } = path;
@@ -34,7 +34,7 @@ index 5bebce776dc60052aa01422af29d7766033e7331..541c18d8032c5247433367f9e04c946c
  const packageJsonReader = require('internal/modules/package_json_reader');
  const { safeGetenv } = internalBinding('credentials');
  const {
-@@ -142,7 +142,7 @@ function stat(filename) {
+@@ -143,7 +143,7 @@ function stat(filename) {
      const result = statCache.get(filename);
      if (result !== undefined) return result;
    }

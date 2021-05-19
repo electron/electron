@@ -8,7 +8,7 @@ node modules will have different (wrong) ideas about how v8 structs are laid
 out in memory on 64-bit machines, and will summarily fail to work.
 
 diff --git a/common.gypi b/common.gypi
-index d37d29736ead82aca6c89cc7625ca4d9a053da32..b6aa3c0504fd108ada368d30f3021d1c171a4879 100644
+index 3f305b39cb35a1a36a54cff80476fecba1556d5d..cd56b9b314823ff48c1a599ec51c6a3077b62f98 100644
 --- a/common.gypi
 +++ b/common.gypi
 @@ -64,7 +64,7 @@
