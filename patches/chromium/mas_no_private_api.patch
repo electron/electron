@@ -46,7 +46,7 @@ index 65adc773e82d99c5dd57d52e84a71e67d676be13..f5d0318c1c4fa036a233142cd6eea0a0
      NSArray* node_array,
      const LineIndexer* line_indexer) const {
 diff --git a/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm b/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm
-index 0210ba27e7c738303edde35235d0e44cf827c501..1e1b7ec5b63f2fe582f77154dd32a1e0b921d2c7 100644
+index 754d25d76da46d5a02973e314893e8d70fcf9b68..cfefed563c59f7f97304b4cb7d5b008da713fc3c 100644
 --- a/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm
 +++ b/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm
 @@ -177,6 +177,7 @@
@@ -125,7 +125,7 @@ index a7d6351854d08926c4e9c43c95e9075bd4d4c728..9c89595cb6c37527b96b4afde3871333
  // is concerned.
  @property(nonatomic, readonly) NSString* subrole;
 diff --git a/content/browser/accessibility/browser_accessibility_cocoa.mm b/content/browser/accessibility/browser_accessibility_cocoa.mm
-index 381eaf1ba11d860bfc8673eb09591ff861ee9f52..75f226eb170565fd27e63e843636df07ec13462f 100644
+index 7f10021cf452fd178ecfdddbe3ff9da795c17c3d..ec5e7bd85dc2583e9de428761d3516fba5cc9e3d 100644
 --- a/content/browser/accessibility/browser_accessibility_cocoa.mm
 +++ b/content/browser/accessibility/browser_accessibility_cocoa.mm
 @@ -203,6 +203,7 @@
@@ -471,7 +471,7 @@ index c15f3a631292b538698625328fb429ee3c9964f5..37e038753ecf1b82ec92c06b2c0729b5
  }
  
 diff --git a/device/bluetooth/bluetooth_adapter_mac.mm b/device/bluetooth/bluetooth_adapter_mac.mm
-index 97e7ab4543700d56e3da436b93185c12ae85e6e6..beda3f54f0c850691accf4e7716514f3f4bc2d5f 100644
+index c1b17a752c12b3fba2275ff09896a2bd5ee53546..e9675f50499d8d260410a29252f0d3fdac3c226c 100644
 --- a/device/bluetooth/bluetooth_adapter_mac.mm
 +++ b/device/bluetooth/bluetooth_adapter_mac.mm
 @@ -43,6 +43,7 @@
@@ -515,7 +515,7 @@ index 97e7ab4543700d56e3da436b93185c12ae85e6e6..beda3f54f0c850691accf4e7716514f3
  
  void BluetoothAdapterMac::RemovePairingDelegateInternal(
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index c68099d5baa0fec203313e8734d2d659578d687d..4a724e0f744722a4ba30ff6e22b56997364e4c49 100644
+index d7a46d050eb2ab63849397cf0d36a23f193a8413..1396a4b8ed4d5ec761d4026a564447ccb4cd168b 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
 @@ -175,6 +175,12 @@ source_set("audio") {
@@ -532,7 +532,7 @@ index c68099d5baa0fec203313e8734d2d659578d687d..4a724e0f744722a4ba30ff6e22b56997
        "AudioToolbox.framework",
        "AudioUnit.framework",
 diff --git a/media/audio/mac/audio_manager_mac.cc b/media/audio/mac/audio_manager_mac.cc
-index 29f12e9928ed23605f4f2d0f443a6d79a71cfc71..8a9bff20664922ceb0c4f657755e3c3ac6121215 100644
+index 261596b9b7414e5c732bef945610c0cdf1384da8..f58ac1d55acac1895391579275a12b0f9802491d 100644
 --- a/media/audio/mac/audio_manager_mac.cc
 +++ b/media/audio/mac/audio_manager_mac.cc
 @@ -883,7 +883,7 @@ AudioParameters AudioManagerMac::GetPreferredOutputStreamParameters(
@@ -545,7 +545,7 @@ index 29f12e9928ed23605f4f2d0f443a6d79a71cfc71..8a9bff20664922ceb0c4f657755e3c3a
  }
  
 diff --git a/net/dns/dns_config_service_posix.cc b/net/dns/dns_config_service_posix.cc
-index 0bb9da11b80dc00c9c47a4c90c1e764152d25cfa..57617b93425d7c9cd7662da5771cfc8bb47944d2 100644
+index 2de14574f1b7e848fc03ff1071fddf8307bc9ea2..75a86416bad754f1e9c92afb2fad27a501b9cc6c 100644
 --- a/net/dns/dns_config_service_posix.cc
 +++ b/net/dns/dns_config_service_posix.cc
 @@ -136,8 +136,8 @@ class DnsConfigServicePosix::Watcher : public DnsConfigService::Watcher {

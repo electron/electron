@@ -500,11 +500,12 @@ void Browser::ShowAboutPanel() {
 void Browser::SetAboutPanelOptions(base::DictionaryValue options) {
   about_panel_options_.Clear();
 
-  for (auto& pair : options) {
-    std::string& key = pair.first;
-    if (!key.empty() && pair.second->is_string()) {
+  for (const auto& pair : options.DictItems()) {
+    std::string key = std::string(pair.first);
+    if (!key.empty() && pair.second.is_string()) {
       key[0] = base::ToUpperASCII(key[0]);
-      about_panel_options_.Set(key, std::move(pair.second));
+      auto val = std::make_unique<base::Value>(pair.second.Clone());
+      about_panel_options_.Set(key, std::move(val));
     }
   }
 }

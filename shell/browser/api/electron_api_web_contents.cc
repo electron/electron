@@ -162,11 +162,11 @@
 #endif
 
 #if BUILDFLAG(ENABLE_PRINTING)
-#include "chrome/browser/printing/print_view_manager_basic.h"
 #include "components/printing/browser/print_manager_utils.h"
 #include "printing/backend/print_backend.h"  // nogncheck
 #include "printing/mojom/print.mojom.h"
 #include "shell/browser/printing/print_preview_message_handler.h"
+#include "shell/browser/printing/print_view_manager_electron.h"
 
 #if defined(OS_WIN)
 #include "printing/backend/win_helper.h"
@@ -557,7 +557,7 @@ void AppendToFile(const base::FilePath& path, const std::string& content) {
                                                 base::BlockingType::WILL_BLOCK);
   DCHECK(!path.empty());
 
-  base::AppendToFile(path, content.data(), content.size());
+  base::AppendToFile(path, content);
 }
 
 PrefService* GetPrefService(content::WebContents* web_contents) {
@@ -886,7 +886,7 @@ void WebContents::InitWithWebContents(content::WebContents* web_contents,
 
 #if BUILDFLAG(ENABLE_PRINTING)
   PrintPreviewMessageHandler::CreateForWebContents(web_contents);
-  printing::PrintViewManagerBasic::CreateForWebContents(web_contents);
+  PrintViewManagerElectron::CreateForWebContents(web_contents);
   printing::CreateCompositeClientIfNeeded(web_contents,
                                           browser_context->GetUserAgent());
 #endif
@@ -2014,8 +2014,7 @@ void WebContents::ReloadIgnoringCache() {
 
 void WebContents::DownloadURL(const GURL& url) {
   auto* browser_context = web_contents()->GetBrowserContext();
-  auto* download_manager =
-      content::BrowserContext::GetDownloadManager(browser_context);
+  auto* download_manager = browser_context->GetDownloadManager();
   std::unique_ptr<download::DownloadUrlParameters> download_params(
       content::DownloadRequestUtils::CreateDownloadForWebContentsMainFrame(
           web_contents(), url, MISSING_TRAFFIC_ANNOTATION));
@@ -2366,7 +2365,7 @@ void WebContents::OnGetDefaultPrinter(
     bool silent,
     std::u16string default_printer) {
   // The content::WebContents might be already deleted at this point, and the
-  // PrintViewManagerBasic class does not do null check.
+  // PrintViewManagerElectron class does not do null check.
   if (!web_contents()) {
     if (print_callback)
       std::move(print_callback).Run(false, "failed");
@@ -2386,7 +2385,10 @@ void WebContents::OnGetDefaultPrinter(
   print_settings.SetStringKey(printing::kSettingDeviceName, printer_name);
 
   auto* print_view_manager =
-      printing::PrintViewManagerBasic::FromWebContents(web_contents());
+      PrintViewManagerElectron::FromWebContents(web_contents());
+  if (!print_view_manager)
+    return;
+
   auto* focused_frame = web_contents()->GetFocusedFrame();
   auto* rfh = focused_frame && focused_frame->HasSelection()
                   ? focused_frame

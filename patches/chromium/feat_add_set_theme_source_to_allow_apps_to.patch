@@ -13,10 +13,10 @@ uses internally for things like menus and devtools.
 We can remove this patch once it has in some shape been upstreamed.
 
 diff --git a/ui/native_theme/native_theme.cc b/ui/native_theme/native_theme.cc
-index 94bc883b019f6311b513edaa5e35f3de015bfb0f..47a81a75e7ef926d3bbf37971b1e3254d3d3e08a 100644
+index db0681f9278b4a60f6c25faf37fdb2aba41d65a6..58655f4285d3835b51c43e0b55fe15d9d6360a7f 100644
 --- a/ui/native_theme/native_theme.cc
 +++ b/ui/native_theme/native_theme.cc
-@@ -135,6 +135,8 @@ base::Optional<SkColor> NativeTheme::GetColorProviderColor(
+@@ -135,6 +135,8 @@ absl::optional<SkColor> NativeTheme::GetColorProviderColor(
  }
  
  bool NativeTheme::ShouldUseDarkColors() const {
@@ -26,7 +26,7 @@ index 94bc883b019f6311b513edaa5e35f3de015bfb0f..47a81a75e7ef926d3bbf37971b1e3254
  }
  
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
-index 177818c18f6f895586c9ecf5139a4658d5f556b2..d674de9cbdac9012e9e152cd36ad0c5ae250bbdb 100644
+index 519e969c3088b9990cbc596aad7b87c5e1bfc133..a414b5a5dbdbf8c05d2a0f543fa498e2563c4566 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
 @@ -403,6 +403,22 @@ class NATIVE_THEME_EXPORT NativeTheme {
@@ -61,7 +61,7 @@ index 177818c18f6f895586c9ecf5139a4658d5f556b2..d674de9cbdac9012e9e152cd36ad0c5a
    SEQUENCE_CHECKER(sequence_checker_);
  
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index 13a1f3763d137667220325237c419257e9868a8d..78fd1055ea24b4589c2b66c40a7778f12999aad4 100644
+index ae908912cd5ea1b2cd43974e1b8ea1bc0c600042..d0a34eca1ded4cbba46fe1d0655a49018b667461 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
 @@ -749,6 +749,8 @@ bool NativeThemeWin::ShouldUseDarkColors() const {

@@ -49,7 +49,7 @@ index 41363666bbbec7a92ac563282816f0a058979bc7..82ec517dbd675ad8b4a78848b7d2a7f7
  // HWNDMessageHandler, gfx::WindowImpl overrides:
  
 diff --git a/ui/views/win/hwnd_message_handler.h b/ui/views/win/hwnd_message_handler.h
-index 796708c73a5e4ef2961c6fd9b023ee6e856e95d1..e56c345f171c99b0bc0479c27fe54d1039f9049f 100644
+index a338ec40a4052a40304d7cf8c4e222f539412e68..6c109dde127bb04b33d18f030ffe4ec2a2e044c6 100644
 --- a/ui/views/win/hwnd_message_handler.h
 +++ b/ui/views/win/hwnd_message_handler.h
 @@ -202,6 +202,8 @@ class VIEWS_EXPORT HWNDMessageHandler : public gfx::WindowImpl,
