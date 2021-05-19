@@ -42,7 +42,7 @@ Starting with an HTML file `index.html`, this example will demonstrate how the `
 In order to mutate the DOM, create a `renderer.js` file that adds event listeners to the `'online'` and `'offline'` `window` events. The event handler sets the content of the `<strong id='status'>` element depending on the result of `navigator.onLine`.
 
 ```js title='renderer.js'
-function onlineStatusIndicator () {
+function updateOnlineStatus () {
   document.getElementById('status').innerHTML = navigator.onLine ? 'online' : 'offline'
 }
 
