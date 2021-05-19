@@ -43,8 +43,8 @@
 #include "ui/gfx/image/image.h"
 
 #if BUILDFLAG(ENABLE_PRINTING)
-#include "chrome/browser/printing/print_view_manager_basic.h"
 #include "shell/browser/printing/print_preview_message_handler.h"
+#include "shell/browser/printing/print_view_manager_electron.h"
 #endif
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
