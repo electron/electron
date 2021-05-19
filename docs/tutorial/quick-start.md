@@ -111,7 +111,7 @@ of your project.
 
 > Note: If you run the `start` script again at this point, your app will no longer throw
 > any errors! However, it won't do anything yet because we haven't added any code into
-> `main.js` yet.
+> `main.js`.
 
 [package-json-main]: https://docs.npmjs.com/cli/v7/configuring-npm/package-json#main
 
@@ -262,6 +262,9 @@ global `process` object. However, you can't just edit the DOM from the main
 process because it has no access to the renderer's `document` context.
 They're in entirely different processes!
 
+> Note: If you need a more in-depth look at Electron processes, see the
+> [Process Model][] document.
+
 This is where attaching a **preload** script to your renderer comes in handy.
 A preload script runs before the renderer process is loaded, and has access to both
 renderer globals (e.g. `window` and `document`) and a Node.js environment.
@@ -311,6 +314,10 @@ There are two Node.js concepts that are used here:
 * The [`path.join`][path-join] API joins multiple path segments together, creating a
   combined path string that works across all platforms.
 
+We use a path relative to the currently executing JavaScript file so that your relative
+path will work in both development and packaged mode.
+
+[Process Model]: ./process-model.md
 [dirname]: https://nodejs.org/api/modules.html#modules_dirname
 [path-join]: https://nodejs.org/api/path.html#path_path_join_paths
 
