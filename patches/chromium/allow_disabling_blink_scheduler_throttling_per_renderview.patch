@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: deepak1556 <hop2deep@gmail.com>
 Date: Mon, 18 May 2020 11:12:26 -0700
-Subject: feat: allow disabling blink scheduler throttling per RenderView
+Subject: allow disabling blink scheduler throttling per RenderView
 
 This allows us to disable throttling for hidden windows.
 
@@ -113,7 +113,7 @@ index 44e8d23433b42aebb293633928ddb27a9b7a6924..d9887073dbbb313693f7398b2dd7d34d
  
  mojom::blink::PageVisibilityState WebViewImpl::GetVisibilityState() {
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.h b/third_party/blink/renderer/core/exported/web_view_impl.h
-index 5149d97889632aad6add9909a066c4d2feba22ee..1672c7e5a5c717df76b0b6af2df9e44cc7614204 100644
+index 5149d97889632aad6add9909a066c4d2feba22ee..c1f35f9686eefd8601b619fba6d620661d9249d2 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.h
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.h
 @@ -392,6 +392,7 @@ class CORE_EXPORT WebViewImpl final : public WebView,
@@ -124,17 +124,7 @@ index 5149d97889632aad6add9909a066c4d2feba22ee..1672c7e5a5c717df76b0b6af2df9e44c
    void SetVisibilityState(mojom::blink::PageVisibilityState visibility_state,
                            bool is_initial_state) override;
    mojom::blink::PageVisibilityState GetVisibilityState() override;
-@@ -801,11 +802,18 @@ class CORE_EXPORT WebViewImpl final : public WebView,
- 
-   float zoom_factor_override_ = 0.f;
- 
-+  // TODO(bokan): Temporary debugging added to diagnose
-+  // https://crbug.com/992315. Somehow we're synchronously calling
-+  // WebViewImpl::Close while handling an input event.
-+  bool debug_inside_input_handling_ = false;
-+
-   FloatSize elastic_overscroll_;
- 
+@@ -806,6 +807,8 @@ class CORE_EXPORT WebViewImpl final : public WebView,
    // If true, we send IPC messages when |preferred_size_| changes.
    bool send_preferred_size_changes_ = false;
  
