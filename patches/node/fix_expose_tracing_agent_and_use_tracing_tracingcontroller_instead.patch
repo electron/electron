@@ -33,12 +33,12 @@ index 34a16feaed229a59181e1b2e48b0e111d5b0b2a6..a649f52403659fd18898e1e813f97e32
  class TracingController;
  
  }
-@@ -522,6 +523,8 @@ NODE_DEPRECATED("Use GetMultiIsolatePlatform(env) instead",
+@@ -484,6 +484,8 @@ NODE_EXTERN v8::MaybeLocal<v8::Value> PrepareStackTraceCallback(
  NODE_EXTERN MultiIsolatePlatform* GetMultiIsolatePlatform(Environment* env);
  NODE_EXTERN MultiIsolatePlatform* GetMultiIsolatePlatform(IsolateData* env);
  
 +NODE_EXTERN node::tracing::Agent* CreateAgent();
 +
- // Legacy variants of MultiIsolatePlatform::Create().
- NODE_DEPRECATED("Use variant taking a v8::TracingController* pointer instead",
+ NODE_DEPRECATED("Use MultiIsolatePlatform::Create() instead",
      NODE_EXTERN MultiIsolatePlatform* CreatePlatform(
+         int thread_pool_size,

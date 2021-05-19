@@ -48,16 +48,16 @@ index b646fdda58ebcbf2dd92ee4fc9cb0d9c039174d1..14893ad605b9f8c64b0b8fc28625e235
  };
  
  enum IsolateSettingsFlags {
-@@ -536,7 +537,8 @@ NODE_DEPRECATED("Use variant taking a v8::TracingController* pointer instead",
-         node::tracing::TracingController* tracing_controller));
- NODE_EXTERN MultiIsolatePlatform* CreatePlatform(
-     int thread_pool_size,
--    v8::TracingController* tracing_controller);
-+    v8::TracingController* tracing_controller,
-+    v8::PageAllocator* = nullptr);
- NODE_EXTERN void FreePlatform(MultiIsolatePlatform* platform);
+@@ -490,7 +490,8 @@ NODE_EXTERN node::tracing::Agent* CreateAgent();
+ NODE_DEPRECATED("Use MultiIsolatePlatform::Create() instead",
+     NODE_EXTERN MultiIsolatePlatform* CreatePlatform(
+         int thread_pool_size,
+-        v8::TracingController* tracing_controller));
++        v8::TracingController* tracing_controller,
++        v8::PageAllocator* = nullptr));
+ NODE_DEPRECATED("Use MultiIsolatePlatform::Create() instead",
+     NODE_EXTERN void FreePlatform(MultiIsolatePlatform* platform));
  
- // Get/set the currently active tracing controller. Using CreatePlatform()
 diff --git a/src/node_platform.cc b/src/node_platform.cc
 index aac0682670fcffd235fcf450bc5e2b0d45985b47..96be2281b562c44b276483970c06862250ea8941 100644
 --- a/src/node_platform.cc
