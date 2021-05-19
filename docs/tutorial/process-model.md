@@ -155,7 +155,7 @@ renderers and can access Node.js APIs, it serves to enhance your renderer by exp
 arbitrary APIs in the `window` global that your web contents can then consume.
 
 Although preload scripts share a `window` global with the renderer they're attached to,
-you cannot directly attach any variables from the preload to `window` because of
+you cannot directly attach any variables from the preload script to `window` because of
 the [`contextIsolation`][context-isolation] default.
 
 ```js title='preload.js'
