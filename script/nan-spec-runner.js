@@ -49,7 +49,8 @@ async function main () {
     '-fuse-ld=lld',
     `-L"${path.resolve(BASE, 'out', `${utils.getOutDir({ shouldLog: true })}`, 'obj', 'buildtools', 'third_party', 'libc++abi')}"`,
     `-L"${path.resolve(BASE, 'out', `${utils.getOutDir({ shouldLog: true })}`, 'obj', 'buildtools', 'third_party', 'libc++')}"`,
-    '-lc++abi'
+    '-lc++abi',
+    '-fPIC'
   ].join(' ');
 
   if (process.platform !== 'win32') {
