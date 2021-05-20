@@ -1,6 +1,6 @@
 const { app, BrowserWindow } = require('electron')
 
-let indeterminateTimeout, progressInterval
+let progressInterval
 
 function createWindow () {
   const win = new BrowserWindow({
@@ -10,26 +10,18 @@ function createWindow () {
 
   win.loadFile('index.html')
 
-  const INCREMENT = 0.02
+  const INCREMENT = 0.03
   const INTERVAL_DELAY = 100 // ms
-  const INDETERMINATE_PAUSE = 5000 // ms
 
   let c = 0
   progressInterval = setInterval(() => {
     // update progress bar to next value
+    // values between 0 and 1 will show progress, >1 will show indeterminate or stick at 100%
     win.setProgressBar(c)
-
-    if (c > 1) {
-      // set to indeterminate state
-      win.setProgressBar(2)
-
-      // stop the interval
-      clearInterval(progressInterval)
-
-      // and after INDETERMINATE_PAUSE reset the progress bar
-      indeterminateTimeout = setTimeout(() => win.setProgressBar(-1), INDETERMINATE_PAUSE)
-    }
-    c += INCREMENT
+    
+    // increment or reset progress bar
+    if (c < 2) c += INCREMENT
+    else c = 0
   }, INTERVAL_DELAY)
 }
 
@@ -38,7 +30,6 @@ app.whenReady().then(createWindow)
 // before the app is terminated, clear both timers
 app.on('before-quit', () => {
   clearInterval(progressInterval)
-  clearTimeout(indeterminateTimeout)
 })
 
 app.on('window-all-closed', () => {
