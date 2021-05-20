@@ -7,10 +7,10 @@ This adds GN build files for Node, so we don't have to build with GYP.
 
 diff --git a/BUILD.gn b/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..446119163d1f7bad577cb0b7b217ecf24b994526
+index 0000000000000000000000000000000000000000..bd26c3623d3314539609a978270d3ced1d167777
 --- /dev/null
 +++ b/BUILD.gn
-@@ -0,0 +1,360 @@
+@@ -0,0 +1,400 @@
 +import("//electron/build/asar.gni")
 +import("//v8/gni/v8.gni")
 +
@@ -273,18 +273,58 @@ index 0000000000000000000000000000000000000000..446119163d1f7bad577cb0b7b217ecf2
 +  if (node_use_openssl) {
 +    deps += [ "//third_party/boringssl" ]
 +    sources += [
++      "src/crypto/crypto_aes.cc",
++      "src/crypto/crypto_aes.h",
++      "src/crypto/crypto_bio.cc",
++      "src/crypto/crypto_bio.h",
++      "src/crypto/crypto_cipher.cc",
++      "src/crypto/crypto_cipher.h",
++      "src/crypto/crypto_clienthello-inl.h",
++      "src/crypto/crypto_clienthello.cc",
++      "src/crypto/crypto_clienthello.h",
++      "src/crypto/crypto_common.cc",
++      "src/crypto/crypto_common.h",
++      "src/crypto/crypto_context.cc",
++      "src/crypto/crypto_context.h",
++      "src/crypto/crypto_dh.cc",
++      "src/crypto/crypto_dh.h",
++      "src/crypto/crypto_dsa.cc",
++      "src/crypto/crypto_dsa.h",
++      "src/crypto/crypto_ec.cc",
++      "src/crypto/crypto_ec.h",
++      "src/crypto/crypto_groups.h",
++      "src/crypto/crypto_hash.cc",
++      "src/crypto/crypto_hash.h",
++      "src/crypto/crypto_hkdf.cc",
++      "src/crypto/crypto_hkdf.h",
++      "src/crypto/crypto_hmac.cc",
++      "src/crypto/crypto_hmac.h",
++      "src/crypto/crypto_keygen.cc",
++      "src/crypto/crypto_keygen.h",
++      "src/crypto/crypto_keys.cc",
++      "src/crypto/crypto_keys.h",
++      "src/crypto/crypto_pbkdf2.cc",
++      "src/crypto/crypto_pbkdf2.h",
++      "src/crypto/crypto_random.cc",
++      "src/crypto/crypto_random.h",
++      "src/crypto/crypto_rsa.cc",
++      "src/crypto/crypto_rsa.h",
++      "src/crypto/crypto_scrypt.cc",
++      "src/crypto/crypto_scrypt.h",
++      "src/crypto/crypto_sig.cc",
++      "src/crypto/crypto_sig.h",
++      "src/crypto/crypto_spkac.cc",
++      "src/crypto/crypto_spkac.h",
++      "src/crypto/crypto_timing.cc",
++      "src/crypto/crypto_timing.h",
++      "src/crypto/crypto_tls.cc",
++      "src/crypto/crypto_tls.h",
++      "src/crypto/crypto_util.cc",
++      "src/crypto/crypto_util.h",
++      "src/crypto/crypto_x509.cc",
++      "src/crypto/crypto_x509.h",
 +      "src/node_crypto.cc",
 +      "src/node_crypto.h",
-+      "src/node_crypto_common.cc",
-+      "src/node_crypto_common.h",
-+      "src/node_crypto_bio.cc",
-+      "src/node_crypto_bio.h",
-+      "src/node_crypto_clienthello-inl.h",
-+      "src/node_crypto_clienthello.cc",
-+      "src/node_crypto_clienthello.h",
-+      "src/node_crypto_groups.h",
-+      "src/tls_wrap.cc",
-+      "src/tls_wrap.h",
 +    ]
 +    cflags_cc += [ "-Wno-sign-compare" ]
 +  }
