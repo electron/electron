@@ -335,6 +335,33 @@ describe('chrome extensions', () => {
   });
 
   describe('chrome.tabs', () => {
+    const callTabsAPI = async (webContents: Electron.WebContents, name: string, ...args: any[]) => {
+      return webContents.executeJavaScript(`new Promise((resolve) => { chrome.tabs.${name}(${args.concat(['resolve']).join(', ')}) })`);
+    };
+
+    const prepareTabsAPITest = async () => {
+      const customSession = session.fromPartition(`persist:${uuid.v4()}`);
+      const extension = await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-api'));
+      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, sandbox: true } });
+      await w.loadURL(`${extension.url}/index.html`);
+
+      return { session: customSession, window: w, extension };
+    };
+
+    it('getActiveTab can return null', async () => {
+      const { session, window } = await prepareTabsAPITest();
+      session.setExtensionAPIHandlers({ getActiveTab: () => null });
+      const zoom = await callTabsAPI(window.webContents, 'getZoom');
+      expect(zoom).to.equal(undefined);
+    });
+
+    it('getActiveTab works with getZoom', async () => {
+      const { session, window } = await prepareTabsAPITest();
+      session.setExtensionAPIHandlers({ getActiveTab: () => window.webContents });
+      const zoom = await callTabsAPI(window.webContents, 'getZoom');
+      expect(zoom).to.equal(1);
+    });
+
     it('executeScript', async () => {
       const customSession = session.fromPartition(`persist:${uuid.v4()}`);
       await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-api'));
@@ -392,12 +419,9 @@ describe('chrome extensions', () => {
     });
 
     it('get returns correct details', async () => {
-      const customSession = session.fromPartition(`persist:${uuid.v4()}`);
-      const extension = await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-api'));
-      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } });
-      await w.loadURL(`${extension.url}/index.html`);
+      const { window, session } = await prepareTabsAPITest();
 
-      customSession.setExtensionAPIHandlers({
+      session.setExtensionAPIHandlers({
         getTab: () => {
           return {
             groupId: 2
@@ -405,36 +429,30 @@ describe('chrome extensions', () => {
         }
       });
 
-      const tab = await w.webContents.executeJavaScript(`new Promise((resolve) => { chrome.tabs.get(${w.webContents.id}, resolve) })`);
+      const tab = await callTabsAPI(window.webContents, 'get', window.webContents.id);
 
       expect(tab.groupId).to.equal(2);
     });
 
     it('get does not return a tab even if it exists', async () => {
-      const customSession = session.fromPartition(`persist:${uuid.v4()}`);
-      const extension = await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-api'));
-      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } });
-      await w.loadURL(`${extension.url}/index.html`);
+      const { window, session } = await prepareTabsAPITest();
 
-      customSession.setExtensionAPIHandlers({
+      session.setExtensionAPIHandlers({
         getTab: () => {
           return null;
         }
       });
 
-      const tab = await w.webContents.executeJavaScript(`new Promise((resolve) => { chrome.tabs.get(${w.webContents.id}, resolve) })`);
+      const tab = await callTabsAPI(window.webContents, 'get', window.webContents.id);
 
       expect(tab).to.be.undefined();
     });
 
     it('copes with the webcontents being destroyed', async () => {
-      const customSession = session.fromPartition(`persist:${uuid.v4()}`);
-      const extension = await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-api'));
-      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } });
-      await w.loadURL(`${extension.url}/index.html`);
+      const { window, session } = await prepareTabsAPITest();
 
       const p = new Promise(resolve => {
-        customSession.setExtensionAPIHandlers({
+        session.setExtensionAPIHandlers({
           getTab: (wc) => {
             setTimeout(resolve);
             wc.destroy();
@@ -443,7 +461,7 @@ describe('chrome extensions', () => {
         });
       });
 
-      w.webContents.executeJavaScript(`new Promise((resolve) => { chrome.tabs.get(${w.webContents.id}, resolve) })`);
+      callTabsAPI(window.webContents, 'get', window.webContents.id);
       await p;
     });
   });
