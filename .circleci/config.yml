@@ -666,7 +666,7 @@ step-persist-data-for-tests: &step-persist-data-for-tests
       - src/build/linux
       - src/buildtools/third_party/libc++
       - src/buildtools/third_party/libc++abi
-      - src/tools/lldb
+      - src/out/Default/obj/buildtools/third_party
 
 step-electron-dist-unzip: &step-electron-dist-unzip
   run:
