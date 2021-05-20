@@ -12,13 +12,9 @@
 #include "mojo/public/cpp/bindings/remote.h"
 #include "services/network/public/mojom/network_context.mojom.h"
 #include "services/network/public/mojom/network_service.mojom.h"
+#include "services/network/public/mojom/url_loader.mojom.h"
 
 namespace network {
-namespace mojom {
-class URLLoaderFactory;
-}
-class SharedURLLoaderFactory;
-}  // namespace network
 
 namespace net_log {
 class NetExportFileWriter;
