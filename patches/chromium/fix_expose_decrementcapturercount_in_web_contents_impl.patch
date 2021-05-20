@@ -28,11 +28,13 @@ diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_
 index 3b7b5facc0cd2454a83f9034d63add1e684f438c..409bd016ee867d2e826feb441b6b8f15f56c0dd6 100644
 --- a/content/public/browser/web_contents.h
 +++ b/content/public/browser/web_contents.h
-@@ -561,6 +561,7 @@ class WebContents : public PageNavigator,
-       const gfx::Size& capture_size,
+@@ -563,6 +563,8 @@ class WebContents : public PageNavigator,
        bool stay_hidden,
        bool stay_awake) WARN_UNUSED_RESULT = 0;
-+  virtual void DecrementCapturerCount(bool stay_hidden, bool stay_awake) = 0;
  
-   // Returns true if audio/screenshot/video is being captured by the embedder,
-   // as indicated by calls to IncrementCapturerCount().
++  virtual void DecrementCapturerCount(bool stay_hidden, bool stay_awake) = 0;
++
+   // Getter for the capture handle, which allows a captured application to
+   // opt-in to exposing information to its capturer(s).
+   virtual const blink::mojom::CaptureHandleConfig& GetCaptureHandleConfig() = 0;
+
