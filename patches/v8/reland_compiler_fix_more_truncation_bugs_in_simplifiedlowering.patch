@@ -116,7 +116,7 @@ index c2f0d744c2fb698427dd876fb9a37eb280e6f583..c50b41a8445f8053e58e92682918b0f4
 -          }
 +          VisitForCheckedInt32Mul<T>(node, truncation, input0_type,
 +                                       input1_type,
-+                                       UseInfo::TruncatingWord32());
++                                       CheckedUseInfoAsWord32FromHint(hint));
            return;
          }
  
