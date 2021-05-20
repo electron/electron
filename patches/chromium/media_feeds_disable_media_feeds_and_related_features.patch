@@ -1,0 +1,41 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andrey Belenko <andrey.belenko@gmail.com>
+Date: Wed, 19 May 2021 14:12:59 +0200
+Subject: Media Feeds: Disable Media Feeds and related features
+
+Media Feeds is deleted in M91 and later and is unused in previous
+versions as well. There is a security issue with Media Feeds though, so
+we'd like to force it to be disabled in previous versions, so this CL
+turns it off for M90.
+
+(cherry picked from commit b064a73431541e520d273c227e762983c2f177b7)
+
+Bug: 1195340
+Change-Id: I29e18be2abe4c1b4560d6324af3b6da93a97d947
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2847504
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2883741
+
+diff --git a/media/base/media_switches.cc b/media/base/media_switches.cc
+index 0c20d23e273405a78f59d91196f12160dba2e824..37fc954bffa26cad04a8d31e2838416f84670281 100644
+--- a/media/base/media_switches.cc
++++ b/media/base/media_switches.cc
+@@ -730,15 +730,16 @@ const base::Feature kMediaEngagementHTTPSOnly{
+ 
+ // Enables Media Feeds to allow sites to provide specific recommendations for
+ // users.
+-const base::Feature kMediaFeeds{"MediaFeeds", base::FEATURE_ENABLED_BY_DEFAULT};
++const base::Feature kMediaFeeds{"MediaFeeds",
++                                base::FEATURE_DISABLED_BY_DEFAULT};
+ 
+ // Enables fetching Media Feeds periodically in the background.
+ const base::Feature kMediaFeedsBackgroundFetching{
+-    "MediaFeedsBackgroundFetching", base::FEATURE_ENABLED_BY_DEFAULT};
++    "MediaFeedsBackgroundFetching", base::FEATURE_DISABLED_BY_DEFAULT};
+ 
+ // Enables checking Media Feeds against safe search to prevent adult content.
+ const base::Feature kMediaFeedsSafeSearch{"MediaFeedsSafeSearch",
+-                                          base::FEATURE_ENABLED_BY_DEFAULT};
++                                          base::FEATURE_DISABLED_BY_DEFAULT};
+ 
+ // Send events to devtools rather than to chrome://media-internals
+ const base::Feature kMediaInspectorLogging{"MediaInspectorLogging",

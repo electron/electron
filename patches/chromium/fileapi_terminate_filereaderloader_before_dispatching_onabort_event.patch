@@ -1,0 +1,58 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andrey Belenko <andrey.belenko@gmail.com>
+Date: Wed, 19 May 2021 12:27:18 +0200
+Subject: FileAPI: Terminate FileReaderLoader before dispatching onabort event.
+
+Otherwise FileReader could end up in an inconsistent state where a load
+is still in progress while the state was set to done.
+
+(cherry picked from commit a74c980df61dd7367ad1b11e6a735be82d2696f0)
+
+Bug: 1201073
+Change-Id: Ib2c833537e1badc57d125568d5d35f53f12582a8
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2860442
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2871355
+
+diff --git a/third_party/blink/renderer/core/fileapi/file_reader.cc b/third_party/blink/renderer/core/fileapi/file_reader.cc
+index 2bbc4db7923c659eda6d63230998ca3414f397d3..93221ba5cf92b9efd702378e1b94cca4fb6ab470 100644
+--- a/third_party/blink/renderer/core/fileapi/file_reader.cc
++++ b/third_party/blink/renderer/core/fileapi/file_reader.cc
+@@ -335,7 +335,10 @@ void FileReader::abort() {
+   loading_state_ = kLoadingStateAborted;
+ 
+   DCHECK_NE(kDone, state_);
+-  state_ = kDone;
++  // Synchronously cancel the loader before dispatching events. This way we make
++  // sure the FileReader internal state stays consistent even if another load
++  // is started from one of the event handlers, or right after abort returns.
++  Terminate();
+ 
+   base::AutoReset<bool> firing_events(&still_firing_events_, true);
+ 
+@@ -347,15 +350,12 @@ void FileReader::abort() {
+       ThrottlingController::RemoveReader(GetExecutionContext(), this);
+ 
+   FireEvent(event_type_names::kAbort);
++  // TODO(https://crbug.com/1204139): Only fire loadend event if no new load was
++  // started from the abort event handler.
+   FireEvent(event_type_names::kLoadend);
+ 
+   // All possible events have fired and we're done, no more pending activity.
+   ThrottlingController::FinishReader(GetExecutionContext(), this, final_step);
+-
+-  // Also synchronously cancel the loader, as script might initiate a new load
+-  // right after this method returns, in which case an async termination would
+-  // terminate the wrong loader.
+-  Terminate();
+ }
+ 
+ void FileReader::result(StringOrArrayBuffer& result_attribute) const {
+@@ -428,6 +428,8 @@ void FileReader::DidFinishLoading() {
+       ThrottlingController::RemoveReader(GetExecutionContext(), this);
+ 
+   FireEvent(event_type_names::kLoad);
++  // TODO(https://crbug.com/1204139): Only fire loadend event if no new load was
++  // started from the abort event handler.
+   FireEvent(event_type_names::kLoadend);
+ 
+   // All possible events have fired and we're done, no more pending activity.

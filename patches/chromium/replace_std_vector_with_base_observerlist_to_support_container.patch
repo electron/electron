@@ -1,0 +1,144 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andrey Belenko <andrey.belenko@gmail.com>
+Date: Tue, 18 May 2021 23:22:27 +0200
+Subject: Replace std::vector with base::ObserverList to support container
+ modification while iterating
+
+TaskTracker saves list of viewers in vector, that needs to be notified
+when distillation is completed. At the time of notifying the viewers,
+we are indirectly erasing viewers from vector while iterating.
+
+This is causing container-overflow in asan build when vector has more
+than one viewer while notifying.
+
+This change is to replace vector with ObserverList that can be modified
+during iteration without invalidating the iterator.
+
+(cherry picked from commit be19f42dab0706d5fdd74acd6eaa424e9277e9c4)
+
+Bug: 1203590
+Change-Id: I7c7b8237584c48c9ebc2639b9268a6a78c2db4b2
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2856118
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2883743
+
+diff --git a/base/observer_list.h b/base/observer_list.h
+index 28369a25941dd62ba63a14dccfb46b8092eb6a24..a2f830191f36f74c12aa8e67db978356309e2691 100644
+--- a/base/observer_list.h
++++ b/base/observer_list.h
+@@ -272,6 +272,7 @@ class ObserverList {
+       NOTREACHED() << "Observers can only be added once!";
+       return;
+     }
++    observers_count_++;
+     observers_.emplace_back(ObserverStorageType(obs));
+   }
+ 
+@@ -284,7 +285,8 @@ class ObserverList {
+                      [obs](const auto& o) { return o.IsEqual(obs); });
+     if (it == observers_.end())
+       return;
+-
++    if (!it->IsMarkedForRemoval())
++      observers_count_--;
+     if (live_iterators_.empty()) {
+       observers_.erase(it);
+     } else {
+@@ -314,8 +316,12 @@ class ObserverList {
+       for (auto& observer : observers_)
+         observer.MarkForRemoval();
+     }
++
++    observers_count_ = 0;
+   }
+ 
++  bool empty() const { return !observers_count_; }
++
+   bool might_have_observers() const { return !observers_.empty(); }
+ 
+  private:
+@@ -334,6 +340,8 @@ class ObserverList {
+ 
+   base::LinkedList<internal::WeakLinkNode<ObserverList>> live_iterators_;
+ 
++  size_t observers_count_{0};
++
+   const ObserverListPolicy policy_;
+ 
+   SEQUENCE_CHECKER(iteration_sequence_checker_);
+diff --git a/components/dom_distiller/core/task_tracker.cc b/components/dom_distiller/core/task_tracker.cc
+index e66a62c4091e44183253ba7221db6dedcca4a1a2..f22c88967bc7d7b1a32339657b5fc2bf8248bbde 100644
+--- a/components/dom_distiller/core/task_tracker.cc
++++ b/components/dom_distiller/core/task_tracker.cc
+@@ -85,7 +85,7 @@ void TaskTracker::AddSaveCallback(SaveCallback callback) {
+ 
+ std::unique_ptr<ViewerHandle> TaskTracker::AddViewer(
+     ViewRequestDelegate* delegate) {
+-  viewers_.push_back(delegate);
++  viewers_.AddObserver(delegate);
+   if (content_ready_) {
+     // Distillation for this task has already completed, and so the delegate can
+     // be immediately told of the result.
+@@ -115,7 +115,7 @@ bool TaskTracker::HasUrl(const GURL& url) const {
+ }
+ 
+ void TaskTracker::RemoveViewer(ViewRequestDelegate* delegate) {
+-  base::Erase(viewers_, delegate);
++  viewers_.RemoveObserver(delegate);
+   if (viewers_.empty()) {
+     MaybeCancel();
+   }
+@@ -219,8 +219,8 @@ void TaskTracker::DistilledArticleReady(
+ }
+ 
+ void TaskTracker::NotifyViewersAndCallbacks() {
+-  for (auto* viewer : viewers_) {
+-    NotifyViewer(viewer);
++  for (auto& viewer : viewers_) {
++    NotifyViewer(&viewer);
+   }
+ 
+   // Already inside a callback run SaveCallbacks directly.
+@@ -242,8 +242,8 @@ void TaskTracker::DoSaveCallbacks(bool success) {
+ 
+ void TaskTracker::OnArticleDistillationUpdated(
+     const ArticleDistillationUpdate& article_update) {
+-  for (auto* viewer : viewers_) {
+-    viewer->OnArticleUpdated(article_update);
++  for (auto& viewer : viewers_) {
++    viewer.OnArticleUpdated(article_update);
+   }
+ }
+ 
+diff --git a/components/dom_distiller/core/task_tracker.h b/components/dom_distiller/core/task_tracker.h
+index 484145cf7d176fd0c3f2fa73da4cf94c23cc0bda..cc13e7272923ec3de52bcea186fdc30391c8cd2b 100644
+--- a/components/dom_distiller/core/task_tracker.h
++++ b/components/dom_distiller/core/task_tracker.h
+@@ -11,6 +11,7 @@
+ #include "base/bind.h"
+ #include "base/callback.h"
+ #include "base/memory/weak_ptr.h"
++#include "base/observer_list.h"
+ #include "components/dom_distiller/core/article_distillation_update.h"
+ #include "components/dom_distiller/core/article_entry.h"
+ #include "components/dom_distiller/core/distiller.h"
+@@ -40,9 +41,9 @@ class ViewerHandle {
+ 
+ // Interface for a DOM distiller entry viewer. Implement this to make a view
+ // request and receive the data for an entry when it becomes available.
+-class ViewRequestDelegate {
++class ViewRequestDelegate : public base::CheckedObserver {
+  public:
+-  virtual ~ViewRequestDelegate() = default;
++  ~ViewRequestDelegate() override = default;
+ 
+   // Called when the distilled article contents are available. The
+   // DistilledArticleProto is owned by a TaskTracker instance and is invalidated
+@@ -140,7 +141,7 @@ class TaskTracker {
+   std::vector<SaveCallback> save_callbacks_;
+   // A ViewRequestDelegate will be added to this list when a view request is
+   // made and removed when the corresponding ViewerHandle is destroyed.
+-  std::vector<ViewRequestDelegate*> viewers_;
++  base::ObserverList<ViewRequestDelegate> viewers_;
+ 
+   std::unique_ptr<Distiller> distiller_;
+   bool blob_fetcher_running_;

@@ -1,0 +1,138 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andrey Belenko <andrey.belenko@gmail.com>
+Date: Tue, 18 May 2021 21:52:40 +0200
+Subject: Reland "[compiler] Fix more truncation bugs in SimplifiedLowering"
+
+This is a reland of 47077d94492cb604e3a7f02c0d7c3c495ff6b713 without
+changes. The revert was false alarm.
+
+Original change's description:
+> [compiler] Fix more truncation bugs in SimplifiedLowering
+>
+> Bug: chromium:1200490
+> Change-Id: I3555b6d99bdb4b4e7c302a43a82c17e8bff84ebe
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2840452
+
+Bug: chromium:1200490
+Change-Id: I75cac59050bc393d157a1ee5bed776c8986a7bbe
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2843817
+
+diff --git a/src/compiler/simplified-lowering.cc b/src/compiler/simplified-lowering.cc
+index c2f0d744c2fb698427dd876fb9a37eb280e6f583..6ed92e855c66a266e1909925caed0140a5c59a67 100644
+--- a/src/compiler/simplified-lowering.cc
++++ b/src/compiler/simplified-lowering.cc
+@@ -1398,17 +1398,32 @@ class RepresentationSelector {
+     return jsgraph_->simplified();
+   }
+ 
+-  void LowerToCheckedInt32Mul(Node* node, Truncation truncation,
+-                              Type input0_type, Type input1_type) {
+-    // If one of the inputs is positive and/or truncation is being applied,
+-    // there is no need to return -0.
+-    CheckForMinusZeroMode mz_mode =
+-        truncation.IdentifiesZeroAndMinusZero() ||
+-                IsSomePositiveOrderedNumber(input0_type) ||
+-                IsSomePositiveOrderedNumber(input1_type)
+-            ? CheckForMinusZeroMode::kDontCheckForMinusZero
+-            : CheckForMinusZeroMode::kCheckForMinusZero;
+-    NodeProperties::ChangeOp(node, simplified()->CheckedInt32Mul(mz_mode));
++  template <Phase T>
++  void VisitForCheckedInt32Mul(Node* node, Truncation truncation,
++                               Type input0_type, Type input1_type,
++                               UseInfo input_use) {
++    DCHECK_EQ(node->opcode(), IrOpcode::kSpeculativeNumberMultiply);
++    // A -0 input is impossible or will cause a deopt.
++    DCHECK(BothInputsAre(node, Type::Signed32()) ||
++           !input_use.truncation().IdentifiesZeroAndMinusZero());
++
++    CheckForMinusZeroMode mz_mode;
++    Type restriction;
++    if (IsSomePositiveOrderedNumber(input0_type) ||
++        IsSomePositiveOrderedNumber(input1_type)) {
++      mz_mode = CheckForMinusZeroMode::kDontCheckForMinusZero;
++      restriction = Type::Signed32();
++    } else if (truncation.IdentifiesZeroAndMinusZero()) {
++      mz_mode = CheckForMinusZeroMode::kDontCheckForMinusZero;
++      restriction = Type::Signed32OrMinusZero();
++    } else {
++      mz_mode = CheckForMinusZeroMode::kCheckForMinusZero;
++      restriction = Type::Signed32();
++    }
++
++    VisitBinop<T>(node, input_use, MachineRepresentation::kWord32, restriction);
++    if (lower<T>())
++      NodeProperties::ChangeOp(node, simplified()->CheckedInt32Mul(mz_mode));
+   }
+ 
+   void ChangeToInt32OverflowOp(Node* node) {
+@@ -1600,12 +1615,22 @@ class RepresentationSelector {
+         VisitBinop<T>(node, lhs_use, rhs_use, MachineRepresentation::kWord32);
+         if (lower<T>()) DeferReplacement(node, lowering->Int32Mod(node));
+       } else if (BothInputsAre(node, Type::Unsigned32OrMinusZeroOrNaN())) {
++        Type const restriction =
++            truncation.IdentifiesZeroAndMinusZero() &&
++                    TypeOf(node->InputAt(0)).Maybe(Type::MinusZero())
++                ? Type::Unsigned32OrMinusZero()
++                : Type::Unsigned32();
+         VisitBinop<T>(node, lhs_use, rhs_use, MachineRepresentation::kWord32,
+-                      Type::Unsigned32());
++                      restriction);
+         if (lower<T>()) ChangeToUint32OverflowOp(node);
+       } else {
++        Type const restriction =
++            truncation.IdentifiesZeroAndMinusZero() &&
++                    TypeOf(node->InputAt(0)).Maybe(Type::MinusZero())
++                ? Type::Signed32OrMinusZero()
++                : Type::Signed32();
+         VisitBinop<T>(node, lhs_use, rhs_use, MachineRepresentation::kWord32,
+-                      Type::Signed32());
++                      restriction);
+         if (lower<T>()) ChangeToInt32OverflowOp(node);
+       }
+       return;
+@@ -2165,23 +2190,18 @@ class RepresentationSelector {
+           // If both inputs and feedback are int32, use the overflow op.
+           if (hint == NumberOperationHint::kSignedSmall ||
+               hint == NumberOperationHint::kSigned32) {
+-            VisitBinop<T>(node, UseInfo::TruncatingWord32(),
+-                          MachineRepresentation::kWord32, Type::Signed32());
+-            if (lower<T>()) {
+-              LowerToCheckedInt32Mul(node, truncation, input0_type,
+-                                     input1_type);
+-            }
++            VisitForCheckedInt32Mul<T>(node, truncation, input0_type,
++                                       input1_type,
++                                       UseInfo::TruncatingWord32());
+             return;
+           }
+         }
+ 
+         if (hint == NumberOperationHint::kSignedSmall ||
+             hint == NumberOperationHint::kSigned32) {
+-          VisitBinop<T>(node, CheckedUseInfoAsWord32FromHint(hint),
+-                        MachineRepresentation::kWord32, Type::Signed32());
+-          if (lower<T>()) {
+-            LowerToCheckedInt32Mul(node, truncation, input0_type, input1_type);
+-          }
++          VisitForCheckedInt32Mul<T>(node, truncation, input0_type,
++                                       input1_type,
++                                       CheckedUseInfoAsWord32FromHint(hint));
+           return;
+         }
+ 
+@@ -3901,7 +3921,6 @@ template <>
+ void RepresentationSelector::SetOutput<RETYPE>(
+     Node* node, MachineRepresentation representation, Type restriction_type) {
+   NodeInfo* const info = GetInfo(node);
+-  DCHECK(info->restriction_type().Is(restriction_type));
+   DCHECK(restriction_type.Is(info->restriction_type()));
+   info->set_output(representation);
+ }
+@@ -3911,7 +3930,6 @@ void RepresentationSelector::SetOutput<LOWER>(
+     Node* node, MachineRepresentation representation, Type restriction_type) {
+   NodeInfo* const info = GetInfo(node);
+   DCHECK_EQ(info->representation(), representation);
+-  DCHECK(info->restriction_type().Is(restriction_type));
+   DCHECK(restriction_type.Is(info->restriction_type()));
+   USE(info);
+ }

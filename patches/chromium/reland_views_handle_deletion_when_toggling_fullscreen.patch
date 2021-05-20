@@ -1,0 +1,149 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andrey Belenko <andrey.belenko@gmail.com>
+Date: Wed, 19 May 2021 13:18:02 +0200
+Subject: views: handle deletion when toggling fullscreen
+
+This differs from the first in so far as needing to add more early
+outs in the windows side if destroyed. This was caught by the asan
+bot.
+
+Toggling fullscreen means the bounds change. There are some
+code paths that may delete the Widget when the bounds changes.
+This patch ensures the right thing happens if the Widget is
+deleted when this happens.
+
+BUG=1197436
+
+(cherry picked from commit 60fe7a686c0620855c28a60721f668a99e409ee4)
+
+Change-Id: I8ce8f2045878b6f6de530f58e386149189900498
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2857227
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2868317
+
+diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_platform.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_platform.cc
+index 6a1fcf7fe75d8fadbcb024c7434651bfaf05dc73..e539f14cb2bd56000dccfc557ca6573a3b53dcf1 100644
+--- a/ui/views/widget/desktop_aura/desktop_window_tree_host_platform.cc
++++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_platform.cc
+@@ -583,7 +583,10 @@ void DesktopWindowTreeHostPlatform::SetFullscreen(bool fullscreen) {
+   if (IsFullscreen() == fullscreen)
+     return;
+ 
++  auto weak_ptr = GetWeakPtr();
+   platform_window()->ToggleFullscreen();
++  if (!weak_ptr)
++    return;
+ 
+   // The state must change synchronously to let media react on fullscreen
+   // changes.
+diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
+index af2c2f2bbc1f52f4455fb973ab2fc0d0dd013ca5..cf0c64cebe0c9c1acb789527a0406d74daeb250a 100644
+--- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
++++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
+@@ -463,7 +463,10 @@ void DesktopWindowTreeHostWin::FrameTypeChanged() {
+ }
+ 
+ void DesktopWindowTreeHostWin::SetFullscreen(bool fullscreen) {
++  auto weak_ptr = GetWeakPtr();
+   message_handler_->SetFullscreen(fullscreen);
++  if (!weak_ptr)
++    return;
+   // TODO(sky): workaround for ScopedFullscreenVisibility showing window
+   // directly. Instead of this should listen for visibility changes and then
+   // update window.
+diff --git a/ui/views/widget/widget.cc b/ui/views/widget/widget.cc
+index d784b8eae003ba79b109845f0d7f40c99c007791..b54f42885c976ebcd13f08ccf666447791124063 100644
+--- a/ui/views/widget/widget.cc
++++ b/ui/views/widget/widget.cc
+@@ -724,7 +724,10 @@ void Widget::SetFullscreen(bool fullscreen) {
+   if (IsFullscreen() == fullscreen)
+     return;
+ 
++  auto weak_ptr = GetWeakPtr();
+   native_widget_->SetFullscreen(fullscreen);
++  if (!weak_ptr)
++    return;
+ 
+   if (non_client_view_)
+     non_client_view_->InvalidateLayout();
+diff --git a/ui/views/win/fullscreen_handler.cc b/ui/views/win/fullscreen_handler.cc
+index 8791362556fcd7544b79982dd6535d55ecd25a50..708d28f45028ee10459c7973d51caecfe0d09097 100644
+--- a/ui/views/win/fullscreen_handler.cc
++++ b/ui/views/win/fullscreen_handler.cc
+@@ -70,6 +70,7 @@ void FullscreenHandler::SetFullscreenImpl(bool fullscreen) {
+ 
+   fullscreen_ = fullscreen;
+ 
++  auto ref = weak_ptr_factory_.GetWeakPtr();
+   if (fullscreen_) {
+     // Set new window style and size.
+     SetWindowLong(hwnd_, GWL_STYLE,
+@@ -102,6 +103,8 @@ void FullscreenHandler::SetFullscreenImpl(bool fullscreen) {
+                  new_rect.height(),
+                  SWP_NOZORDER | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+   }
++  if (!ref)
++    return;
+ 
+   MarkFullscreen(fullscreen);
+ }
+diff --git a/ui/views/win/fullscreen_handler.h b/ui/views/win/fullscreen_handler.h
+index fe17c7f0368b1dd35a37006033ddf34d35ea3982..c76ef18a6f59e9239d5a281d26c6e34646b68ee3 100644
+--- a/ui/views/win/fullscreen_handler.h
++++ b/ui/views/win/fullscreen_handler.h
+@@ -11,6 +11,7 @@
+ #include <map>
+ 
+ #include "base/macros.h"
++#include "base/memory/weak_ptr.h"
+ 
+ namespace gfx {
+ class Rect;
+@@ -54,6 +55,8 @@ class FullscreenHandler {
+   // Used to mark a window as fullscreen.
+   Microsoft::WRL::ComPtr<ITaskbarList2> task_bar_list_;
+ 
++  base::WeakPtrFactory<FullscreenHandler> weak_ptr_factory_{this};
++
+   DISALLOW_COPY_AND_ASSIGN(FullscreenHandler);
+ };
+ 
+diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
+index bb8b1c4fd7f1e93b6d50978ccb701393df956425..d7f91e4d70dcd7224aa8569e8773f69efac7a4e5 100644
+--- a/ui/views/win/hwnd_message_handler.cc
++++ b/ui/views/win/hwnd_message_handler.cc
+@@ -900,7 +900,10 @@ void HWNDMessageHandler::SetWindowIcons(const gfx::ImageSkia& window_icon,
+ 
+ void HWNDMessageHandler::SetFullscreen(bool fullscreen) {
+   background_fullscreen_hack_ = false;
++  auto ref = msg_handler_weak_factory_.GetWeakPtr();
+   fullscreen_handler()->SetFullscreen(fullscreen);
++  if (!ref)
++    return;
+ 
+   // Add the fullscreen window to the fullscreen window map which is used to
+   // handle window activations.
+@@ -1404,8 +1407,10 @@ void HWNDMessageHandler::ClientAreaSizeChanged() {
+   // Ignore size changes due to fullscreen windows losing activation.
+   if (background_fullscreen_hack_ && !sent_window_size_changing_)
+     return;
+-  gfx::Size s = GetClientAreaBounds().size();
+-  delegate_->HandleClientSizeChanged(s);
++  auto ref = msg_handler_weak_factory_.GetWeakPtr();
++  delegate_->HandleClientSizeChanged(GetClientAreaBounds().size());
++  if (!ref)
++    return;
+ 
+   current_window_size_message_++;
+   sent_window_size_changing_ = false;
+@@ -2930,8 +2935,11 @@ void HWNDMessageHandler::OnWindowPosChanging(WINDOWPOS* window_pos) {
+ void HWNDMessageHandler::OnWindowPosChanged(WINDOWPOS* window_pos) {
+   TRACE_EVENT0("ui", "HWNDMessageHandler::OnWindowPosChanged");
+ 
++  base::WeakPtr<HWNDMessageHandler> ref(msg_handler_weak_factory_.GetWeakPtr());
+   if (DidClientAreaSizeChange(window_pos))
+     ClientAreaSizeChanged();
++  if (!ref)
++    return;
+   if (window_pos->flags & SWP_FRAMECHANGED)
+     SetDwmFrameExtension(DwmFrameState::kOn);
+   if (window_pos->flags & SWP_SHOWWINDOW) {

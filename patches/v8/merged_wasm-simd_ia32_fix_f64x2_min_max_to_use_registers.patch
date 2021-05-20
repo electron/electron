@@ -1,0 +1,40 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andrey Belenko <andrey.belenko@gmail.com>
+Date: Tue, 18 May 2021 17:59:17 +0200
+Subject: Merged: [wasm-simd][ia32] Fix f64x2 min max to use registers
+
+We don't have memory alignment yet, so using memory operands will cause
+segv if we try to access the unaligned operands (on non-AVX systems).
+
+The fix here is kept simple (the logic can be cleaned up a bit and
+optimized to not use unique registers), in order to keep the cherry-pick
+and back-merge as small and safe as possible.
+
+(cherry picked from commit 7f2d41fa3748ecc8fc888d93f82d77718b1dd6b0)
+
+Bug: chromium:1204071
+Change-Id: I7d7d177ff096ebd3de399fcf1ec7d9ac57bbb80b
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2872565
+
+diff --git a/src/compiler/backend/ia32/instruction-selector-ia32.cc b/src/compiler/backend/ia32/instruction-selector-ia32.cc
+index fec4053871bd14ac0f732e41e1b03eaa64a8c5cb..8a1d32e7f8096679fb265a6b7b4d84696288b8b4 100644
+--- a/src/compiler/backend/ia32/instruction-selector-ia32.cc
++++ b/src/compiler/backend/ia32/instruction-selector-ia32.cc
+@@ -2199,7 +2199,7 @@ void InstructionSelector::VisitF64x2Min(Node* node) {
+   IA32OperandGenerator g(this);
+   InstructionOperand temps[] = {g.TempSimd128Register()};
+   InstructionOperand operand0 = g.UseUniqueRegister(node->InputAt(0));
+-  InstructionOperand operand1 = g.UseUnique(node->InputAt(1));
++  InstructionOperand operand1 = g.UseUniqueRegister(node->InputAt(1));
+ 
+   if (IsSupported(AVX)) {
+     Emit(kIA32F64x2Min, g.DefineAsRegister(node), operand0, operand1,
+@@ -2214,7 +2214,7 @@ void InstructionSelector::VisitF64x2Max(Node* node) {
+   IA32OperandGenerator g(this);
+   InstructionOperand temps[] = {g.TempSimd128Register()};
+   InstructionOperand operand0 = g.UseUniqueRegister(node->InputAt(0));
+-  InstructionOperand operand1 = g.UseUnique(node->InputAt(1));
++  InstructionOperand operand1 = g.UseUniqueRegister(node->InputAt(1));
+   if (IsSupported(AVX)) {
+     Emit(kIA32F64x2Max, g.DefineAsRegister(node), operand0, operand1,
+          arraysize(temps), temps);

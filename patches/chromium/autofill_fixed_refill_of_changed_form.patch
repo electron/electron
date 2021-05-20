@@ -1,0 +1,41 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andrey Belenko <andrey.belenko@gmail.com>
+Date: Wed, 19 May 2021 17:22:52 +0200
+Subject: Fixed refill of changed form.
+
+(cherry picked from commit 533bb3adcfe3499f90e2646fc60312f303b963ac)
+
+Bug: 1203667
+Change-Id: I2693a024531775e0e60cc330107d77d10558f466
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2867655
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2874611
+
+diff --git a/components/autofill/core/browser/autofill_manager.cc b/components/autofill/core/browser/autofill_manager.cc
+index 0b72ac3b8a0d3bb3294be995d2b9a4bc52b81a8f..5f92b20734d06249fc119432f45def087214709c 100644
+--- a/components/autofill/core/browser/autofill_manager.cc
++++ b/components/autofill/core/browser/autofill_manager.cc
+@@ -1743,7 +1743,10 @@ void AutofillManager::FillOrPreviewDataModelForm(
+   form_structure->RationalizePhoneNumbersInSection(autofill_field->section);
+ 
+   FormData result = form;
+-  DCHECK_EQ(form_structure->field_count(), form.fields.size());
++  // TODO(crbug/1203667#c9): Skip if the form has changed in the meantime, which
++  // may happen with refills.
++  if (form_structure->field_count() != form.fields.size())
++    return;
+ 
+   if (action == AutofillDriver::FORM_DATA_ACTION_FILL && !is_refill) {
+     filling_contexts_map_[form_structure->GetIdentifierForRefill()] =
+@@ -1787,8 +1790,10 @@ void AutofillManager::FillOrPreviewDataModelForm(
+       continue;
+     }
+ 
+-    // The field order should be the same in |form_structure| and |result|.
+-    DCHECK(form_structure->field(i)->SameFieldAs(result.fields[i]));
++    // TODO(crbug/1203667#c9): Skip if the form has changed in the meantime,
++    // which may happen with refills.
++    if (!form_structure->field(i)->SameFieldAs(result.fields[i]))
++      continue;
+ 
+     AutofillField* cached_field = form_structure->field(i);
+     FieldTypeGroup field_group_type = cached_field->Type().group();
