@@ -14,9 +14,9 @@ diff --git a/src/api/environment.cc b/src/api/environment.cc
 index 53b07052e43a09f29f863ee1b2287bdebe7b7a7f..c08fe4b32d4155badb572f15529f903c0ec63146 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -358,12 +358,14 @@ Environment* CreateEnvironment(
-       thread_id);
- 
+@@ -341,12 +341,14 @@ Environment* CreateEnvironment(
+   Environment* env = new Environment(
+       isolate_data, context, args, exec_args, nullptr, flags, thread_id);
  #if HAVE_INSPECTOR
 -  if (inspector_parent_handle) {
 -    env->InitializeInspector(
