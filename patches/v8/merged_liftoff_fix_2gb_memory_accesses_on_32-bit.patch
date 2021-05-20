@@ -1,0 +1,120 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andrey Belenko <andrey.belenko@gmail.com>
+Date: Tue, 18 May 2021 20:55:56 +0200
+Subject: Merged: [liftoff] Fix >=2GB memory accesses on 32-bit
+
+We were inconsistent in handling offsets >= 2GB on 32-bit systems. The
+code was still relying on this being detected as statically out of
+bounds, but with the increase of {kV8MaxWasmMemoryPages} to support 4GB
+memories, this is not the case any more.
+
+This CL fixes this by again detecting such situations as statically OOB.
+We do not expect to be able to allocate memories of size >2GB on such
+systems. If this assumptions turns out to be wrong, we will erroneously
+trap. If that happens, we will have to explicitly disallow memories of
+such size on 32-bit systems.
+
+(cherry picked from commit 7ad5b961553d7d9bc30da1bb839726be2b92bb51)
+
+Bug: v8:7881, chromium:1201340
+Change-Id: I8a91dd067a1c63a6d1caacb874a27b44b0983774
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2875210
+
+diff --git a/src/wasm/baseline/arm/liftoff-assembler-arm.h b/src/wasm/baseline/arm/liftoff-assembler-arm.h
+index bee45ad9af86376618833396b8b828391ff852e4..972ce2897fb5a9efe4832be9f4fcf6c3b4c96cb6 100644
+--- a/src/wasm/baseline/arm/liftoff-assembler-arm.h
++++ b/src/wasm/baseline/arm/liftoff-assembler-arm.h
+@@ -729,13 +729,8 @@ void LiftoffAssembler::Load(LiftoffRegister dst, Register src_addr,
+                             Register offset_reg, uint32_t offset_imm,
+                             LoadType type, LiftoffRegList pinned,
+                             uint32_t* protected_load_pc, bool is_load_mem) {
+-  // If offset_imm cannot be converted to int32 safely, we abort as a separate
+-  // check should cause this code to never be executed.
+-  // TODO(7881): Support when >2GB is required.
+-  if (!is_uint31(offset_imm)) {
+-    TurboAssembler::Abort(AbortReason::kOffsetOutOfRange);
+-    return;
+-  }
++  // Offsets >=2GB are statically OOB on 32-bit systems.
++  DCHECK_LE(offset_imm, std::numeric_limits<int32_t>::max());
+   liftoff::LoadInternal(this, dst, src_addr, offset_reg,
+                         static_cast<int32_t>(offset_imm), type, pinned,
+                         protected_load_pc, is_load_mem);
+@@ -745,13 +740,8 @@ void LiftoffAssembler::Store(Register dst_addr, Register offset_reg,
+                              uint32_t offset_imm, LiftoffRegister src,
+                              StoreType type, LiftoffRegList pinned,
+                              uint32_t* protected_store_pc, bool is_store_mem) {
+-  // If offset_imm cannot be converted to int32 safely, we abort as a separate
+-  // check should cause this code to never be executed.
+-  // TODO(7881): Support when >2GB is required.
+-  if (!is_uint31(offset_imm)) {
+-    TurboAssembler::Abort(AbortReason::kOffsetOutOfRange);
+-    return;
+-  }
++  // Offsets >=2GB are statically OOB on 32-bit systems.
++  DCHECK_LE(offset_imm, std::numeric_limits<int32_t>::max());
+   UseScratchRegisterScope temps(this);
+   if (type.value() == StoreType::kF64Store) {
+     Register actual_dst_addr = liftoff::CalculateActualAddress(
+diff --git a/src/wasm/baseline/ia32/liftoff-assembler-ia32.h b/src/wasm/baseline/ia32/liftoff-assembler-ia32.h
+index 890337fe12e162ce781d53e5ff59abe91307e53c..dccb5dbdb266320e1ea4ea00607881a3231365e8 100644
+--- a/src/wasm/baseline/ia32/liftoff-assembler-ia32.h
++++ b/src/wasm/baseline/ia32/liftoff-assembler-ia32.h
+@@ -365,13 +365,8 @@ void LiftoffAssembler::Load(LiftoffRegister dst, Register src_addr,
+                             Register offset_reg, uint32_t offset_imm,
+                             LoadType type, LiftoffRegList pinned,
+                             uint32_t* protected_load_pc, bool is_load_mem) {
+-  if (offset_imm > static_cast<uint32_t>(std::numeric_limits<int32_t>::max())) {
+-    // We do not generate code here, because such an offset should never pass
+-    // the bounds check. However, the spec requires us to compile code with such
+-    // an offset.
+-    Trap();
+-    return;
+-  }
++  // Offsets >=2GB are statically OOB on 32-bit systems.
++  DCHECK_LE(offset_imm, std::numeric_limits<int32_t>::max());
+   DCHECK_EQ(type.value_type() == kWasmI64, dst.is_gp_pair());
+   Operand src_op = offset_reg == no_reg
+                        ? Operand(src_addr, offset_imm)
+@@ -447,6 +442,7 @@ void LiftoffAssembler::Store(Register dst_addr, Register offset_reg,
+                              StoreType type, LiftoffRegList pinned,
+                              uint32_t* protected_store_pc, bool is_store_mem) {
+   DCHECK_EQ(type.value_type() == kWasmI64, src.is_gp_pair());
++  // Offsets >=2GB are statically OOB on 32-bit systems.
+   DCHECK_LE(offset_imm, std::numeric_limits<int32_t>::max());
+   Operand dst_op = offset_reg == no_reg
+                        ? Operand(dst_addr, offset_imm)
+diff --git a/src/wasm/baseline/liftoff-compiler.cc b/src/wasm/baseline/liftoff-compiler.cc
+index 9a42bbf50c778e325ad7e92b819543dabfbdfa2f..9e9badfafa54654a1b8bc8db50dc4ec2506b3221 100644
+--- a/src/wasm/baseline/liftoff-compiler.cc
++++ b/src/wasm/baseline/liftoff-compiler.cc
+@@ -2207,10 +2207,7 @@ class LiftoffCompiler {
+   Register BoundsCheckMem(FullDecoder* decoder, uint32_t access_size,
+                           uint64_t offset, LiftoffRegister index,
+                           LiftoffRegList pinned, ForceCheck force_check) {
+-    // If the offset does not fit in a uintptr_t, this can never succeed on this
+-    // machine.
+     const bool statically_oob =
+-        offset > std::numeric_limits<uintptr_t>::max() ||
+         !base::IsInBounds<uintptr_t>(offset, access_size,
+                                      env_->max_memory_size);
+ 
+diff --git a/src/wasm/compilation-environment.h b/src/wasm/compilation-environment.h
+index a9526f702b30501b8aff99d7cc6f8eada51db318..236ad4b21ba41c07c9b398a9d7e393b8152aba63 100644
+--- a/src/wasm/compilation-environment.h
++++ b/src/wasm/compilation-environment.h
+@@ -64,9 +64,11 @@ struct CompilationEnv {
+ 
+   const LowerSimd lower_simd;
+ 
+-  static constexpr uint32_t kMaxMemoryPagesAtRuntime =
+-      std::min(kV8MaxWasmMemoryPages,
+-               std::numeric_limits<uintptr_t>::max() / kWasmPageSize);
++  // We assume that memories of size >= half of the virtual address space
++  // cannot be allocated (see https://crbug.com/1201340).
++  static constexpr uint32_t kMaxMemoryPagesAtRuntime = std::min(
++      kV8MaxWasmMemoryPages,
++      (uintptr_t{1} << (kSystemPointerSize == 4 ? 31 : 63)) / kWasmPageSize);
+ 
+   constexpr CompilationEnv(const WasmModule* module,
+                            UseTrapHandler use_trap_handler,
