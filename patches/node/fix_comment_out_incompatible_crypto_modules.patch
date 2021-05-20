@@ -54,3 +54,43 @@ index ea4c70ad5d8c844860ba3480fc7ef4205f0a3cdc..cdf8dd47d6e2a5894066cec01fbe347a
    ecdh->group_ = EC_KEY_get0_group(ecdh->key_.get());
  }
  
+diff --git a/src/crypto/crypto_util.h b/src/crypto/crypto_util.h
+index f2f61aa45185812e9248845b664539be4fe24550..303ba4c3b7c4c2fc5dee906e22d5e7642b8351c8 100644
+--- a/src/crypto/crypto_util.h
++++ b/src/crypto/crypto_util.h
+@@ -15,7 +15,9 @@
+ #include <openssl/err.h>
+ #include <openssl/evp.h>
+ #include <openssl/ec.h>
++#ifndef OPENSSL_IS_BORINGSSL
+ #include <openssl/kdf.h>
++#endif
+ #include <openssl/rsa.h>
+ #include <openssl/dsa.h>
+ #include <openssl/ssl.h>
+diff --git a/src/node.cc b/src/node.cc
+index a99f2f4f01b16fc70f3038a25da22c788714b3f6..ceb532648b33a6c2f3b8a135b315985cfff5419e 100644
+--- a/src/node.cc
++++ b/src/node.cc
+@@ -1020,7 +1020,7 @@ InitializationResult InitializeOncePerProcess(int argc, char** argv) {
+     return result;
+   }
+ 
+-#if HAVE_OPENSSL
++#if HAVE_OPENSSL && !defined(OPENSSL_IS_BORINGSSL)
+   {
+     std::string extra_ca_certs;
+     if (credentials::SafeGetenv("NODE_EXTRA_CA_CERTS", &extra_ca_certs))
+diff --git a/src/node_metadata.h b/src/node_metadata.h
+index 4486d5af2c1622c7c8f44401dc3ebb986d8e3c2e..db1769f1b3f1617ed8dbbea57b5e324183b42be2 100644
+--- a/src/node_metadata.h
++++ b/src/node_metadata.h
+@@ -6,7 +6,7 @@
+ #include <string>
+ #include "node_version.h"
+ 
+-#if HAVE_OPENSSL
++#if 0
+ #include <openssl/crypto.h>
+ #endif  // HAVE_OPENSSL
+ 
