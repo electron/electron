@@ -49,7 +49,7 @@ function updateOnlineStatus () {
 window.addEventListener('online', updateOnlineStatus)
 window.addEventListener('offline', updateOnlineStatus)
 
-onlineStatusIndicator()
+updateOnlineStatus()
 ```
 
 Finally, create a `main.js` file for main process that creates the window.
