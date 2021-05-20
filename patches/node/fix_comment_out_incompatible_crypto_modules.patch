@@ -54,4 +54,3 @@ index ea4c70ad5d8c844860ba3480fc7ef4205f0a3cdc..cdf8dd47d6e2a5894066cec01fbe347a
    ecdh->group_ = EC_KEY_get0_group(ecdh->key_.get());
  }
  
-

@@ -7,10 +7,10 @@ Subject: src: allow embedders to provide a custom PageAllocator to
 For certain embedder use cases there are more complex memory allocation requirements that the default V8 page allocator does not handle, for example using MAP_JIT when running under a hardened runtime environment on macOS.  This allows such embedders to provide their own allocator that does handle these cases.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index c08fe4b32d4155badb572f15529f903c0ec63146..a8cf0d763f78c2752e3aa22479dadd9fa53c222f 100644
+index 96dbf0d8325715c8f4db115884e4b68f2c7b7502..981b324891e6c2def77e773de360fff43e0577fd 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -488,8 +488,9 @@ MultiIsolatePlatform* CreatePlatform(
+@@ -470,8 +470,9 @@ MultiIsolatePlatform* CreatePlatform(
  
  MultiIsolatePlatform* CreatePlatform(
      int thread_pool_size,
@@ -22,7 +22,7 @@ index c08fe4b32d4155badb572f15529f903c0ec63146..a8cf0d763f78c2752e3aa22479dadd9f
        .release();
  }
  
-@@ -499,8 +500,9 @@ void FreePlatform(MultiIsolatePlatform* platform) {
+@@ -481,8 +482,9 @@ void FreePlatform(MultiIsolatePlatform* platform) {
  
  std::unique_ptr<MultiIsolatePlatform> MultiIsolatePlatform::Create(
      int thread_pool_size,
@@ -35,10 +35,10 @@ index c08fe4b32d4155badb572f15529f903c0ec63146..a8cf0d763f78c2752e3aa22479dadd9f
  
  MaybeLocal<Object> GetPerContextExports(Local<Context> context) {
 diff --git a/src/node.h b/src/node.h
-index b646fdda58ebcbf2dd92ee4fc9cb0d9c039174d1..14893ad605b9f8c64b0b8fc28625e235655dcd63 100644
+index 691c16ba60b0ce8633555825e44c3ace96c5000f..ccb452bbe941c30fdc8c4eb616eb6f0259aa8b8e 100644
 --- a/src/node.h
 +++ b/src/node.h
-@@ -333,7 +333,8 @@ class NODE_EXTERN MultiIsolatePlatform : public v8::Platform {
+@@ -313,7 +313,8 @@ class NODE_EXTERN MultiIsolatePlatform : public v8::Platform {
  
    static std::unique_ptr<MultiIsolatePlatform> Create(
        int thread_pool_size,
@@ -48,7 +48,7 @@ index b646fdda58ebcbf2dd92ee4fc9cb0d9c039174d1..14893ad605b9f8c64b0b8fc28625e235
  };
  
  enum IsolateSettingsFlags {
-@@ -490,7 +490,8 @@ NODE_EXTERN node::tracing::Agent* CreateAgent();
+@@ -494,7 +495,8 @@ NODE_EXTERN node::tracing::Agent* CreateAgent();
  NODE_DEPRECATED("Use MultiIsolatePlatform::Create() instead",
      NODE_EXTERN MultiIsolatePlatform* CreatePlatform(
          int thread_pool_size,
@@ -59,7 +59,7 @@ index b646fdda58ebcbf2dd92ee4fc9cb0d9c039174d1..14893ad605b9f8c64b0b8fc28625e235
      NODE_EXTERN void FreePlatform(MultiIsolatePlatform* platform));
  
 diff --git a/src/node_platform.cc b/src/node_platform.cc
-index aac0682670fcffd235fcf450bc5e2b0d45985b47..96be2281b562c44b276483970c06862250ea8941 100644
+index 564edd033e6275a6dc34641ed7eb67f92011f972..1ec78bab9bd1e5ace39b5a6a46977edd64e50754 100644
 --- a/src/node_platform.cc
 +++ b/src/node_platform.cc
 @@ -324,12 +324,16 @@ void PerIsolatePlatformData::DecreaseHandleCount() {
@@ -80,7 +80,7 @@ index aac0682670fcffd235fcf450bc5e2b0d45985b47..96be2281b562c44b276483970c068622
    // TODO(addaleax): It's a bit icky that we use global state here, but we can't
    // really do anything about it unless V8 starts exposing a way to access the
    // current v8::Platform instance.
-@@ -544,6 +548,10 @@ Platform::StackTracePrinter NodePlatform::GetStackTracePrinter() {
+@@ -550,6 +554,10 @@ Platform::StackTracePrinter NodePlatform::GetStackTracePrinter() {
    };
  }
  
@@ -92,7 +92,7 @@ index aac0682670fcffd235fcf450bc5e2b0d45985b47..96be2281b562c44b276483970c068622
    return v8::platform::NewDefaultJobHandle(this, priority, std::move(job_task), 1 /* num_worker_threads */);
  }
 diff --git a/src/node_platform.h b/src/node_platform.h
-index a274be6bbea19a4488bca393712a9ac8b50fe16a..314cf2d1056d30a77ead400d100a4d4c6f844be6 100644
+index 94cbfc9c55a9ace52f39e22eccfcd8b9eacd0186..8921fe2303c9ef8cbe7ca3f5e16e31a9e4b7d22c 100644
 --- a/src/node_platform.h
 +++ b/src/node_platform.h
 @@ -138,7 +138,8 @@ class WorkerThreadsTaskRunner {
@@ -105,7 +105,7 @@ index a274be6bbea19a4488bca393712a9ac8b50fe16a..314cf2d1056d30a77ead400d100a4d4c
    ~NodePlatform() override;
  
    void DrainTasks(v8::Isolate* isolate) override;
-@@ -168,6 +169,7 @@ class NodePlatform : public MultiIsolatePlatform {
+@@ -171,6 +172,7 @@ class NodePlatform : public MultiIsolatePlatform {
        v8::Isolate* isolate) override;
  
    Platform::StackTracePrinter GetStackTracePrinter() override;
@@ -113,7 +113,7 @@ index a274be6bbea19a4488bca393712a9ac8b50fe16a..314cf2d1056d30a77ead400d100a4d4c
  
   private:
    IsolatePlatformDelegate* ForIsolate(v8::Isolate* isolate);
-@@ -179,6 +181,7 @@ class NodePlatform : public MultiIsolatePlatform {
+@@ -182,6 +184,7 @@ class NodePlatform : public MultiIsolatePlatform {
    std::unordered_map<v8::Isolate*, DelegatePair> per_isolate_;
  
    v8::TracingController* tracing_controller_;

@@ -6,7 +6,7 @@ Subject: fix: handle new ToString() behavior in v8 serdes test
 Refs: https://chromium-review.googlesource.com/c/v8/v8/+/2739980
 
 diff --git a/test/parallel/test-v8-serdes.js b/test/parallel/test-v8-serdes.js
-index f080f551396c8bb27e16448babecca2f2ad18a2b..d7304e6255648bd19c66012b55b93598d5ffa66d 100644
+index 1d3b6ff81168e704aa67e7abe1556c460e06ffa9..4dffedd3c32b4b1b6eb75e46f8bfb447260046bb 100644
 --- a/test/parallel/test-v8-serdes.js
 +++ b/test/parallel/test-v8-serdes.js
 @@ -50,7 +50,7 @@ const hostObject = new (internalBinding('js_stream').JSStream)();

@@ -1608,7 +1608,7 @@ index 0000000000000000000000000000000000000000..d1d6b51e8c0c5bc6a5d09e217eb30483
 +  args = rebase_path(inputs + outputs, root_build_dir)
 +}
 diff --git a/src/node_version.h b/src/node_version.h
-index 5419747db7b6504ad9d61b1cd3d53d93913e360f..e51bf333b77e67af188a3d352ca22b12d939e412 100644
+index 810425a5562f6a45304a94cb1d58e3b812983401..9cc414d689feefc9a932d87c6a571259271254ee 100644
 --- a/src/node_version.h
 +++ b/src/node_version.h
 @@ -89,7 +89,10 @@
@@ -1781,7 +1781,7 @@ index 045d406d84be301722f3de62abc448db84e751f8..49b5ba2c0ac53266dee594ea9ee56609
    if 'false' == variables.get('node_shared_libuv'):
      subdir_files('deps/uv/include', 'include/node/', action)
 diff --git a/tools/js2c.py b/tools/js2c.py
-index 0f073e182bdb2858957e4b28ae15b366d7933dbe..93e9474297fd9032981786ae9d4e005f2d1a9a2e 100755
+index d40f28ce2bff2b7fc28ceeafc7772831746e7f89..4af54c3fa00602f9d0ce5cc4dca253d425048706 100755
 --- a/tools/js2c.py
 +++ b/tools/js2c.py
 @@ -130,6 +130,14 @@ def NormalizeFileName(filename):
