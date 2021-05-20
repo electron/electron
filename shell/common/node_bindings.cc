@@ -518,7 +518,7 @@ node::Environment* NodeBindings::CreateEnvironment(
 }
 
 void NodeBindings::LoadEnvironment(node::Environment* env) {
-  node::LoadEnvironment(env);
+  node::LoadEnvironment(env, node::StartExecutionCallback{});
   gin_helper::EmitEvent(env->isolate(), env->process_object(), "loaded");
 }
 

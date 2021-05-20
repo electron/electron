@@ -240,7 +240,7 @@ int NodeMain(int argc, char* argv[]) {
     }
 
     v8::HandleScope scope(isolate);
-    node::LoadEnvironment(env);
+    node::LoadEnvironment(env, node::StartExecutionCallback{});
 
     env->set_trace_sync_io(env->options()->trace_sync_io);
 
