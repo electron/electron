@@ -9,7 +9,7 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 9708cea34a2a15bf0ad10d0acbd23870abcc0bf7..05b5abd7b4b9aca999ed428ed50fcf2d6983b767 100644
+index 24eb7cb69784688a37040c3c2cb2c9b8fcec5a21..2b2e4ca3c0b21f3520efb1804c5f060a7cb5a69f 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
 @@ -5720,6 +5720,7 @@ void RenderFrameHostImpl::CreateNewWindow(
@@ -21,10 +21,10 @@ index 9708cea34a2a15bf0ad10d0acbd23870abcc0bf7..05b5abd7b4b9aca999ed428ed50fcf2d
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index ec8c6d3956485103b7add39d111ba372126ce21f..04e320e1b0150dbf7edd42be88c3ab6ceaecf46f 100644
+index f7c82c8ecfb748e662f9d3e2964ee4e42641c3ae..66f8002554113cd8d555f1ce9a0059adcbca276e 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3658,6 +3658,14 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
+@@ -3664,6 +3664,14 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
    }
    auto* new_contents_impl = new_contents.get();
  
@@ -39,7 +39,7 @@ index ec8c6d3956485103b7add39d111ba372126ce21f..04e320e1b0150dbf7edd42be88c3ab6c
    new_contents_impl->GetController().SetSessionStorageNamespace(
        partition_id, session_storage_namespace);
  
-@@ -3700,12 +3708,6 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
+@@ -3706,12 +3714,6 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
@@ -150,7 +150,7 @@ index b1cfa654259d431adfada00a00f9bfc8ae5ab292..484d36de2ac0ef3b1d19bbd0d6c79db8
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index 9ee8f76a0de7fa8ab568363b97c9dc22eb698e15..71d98e472641d6ebbc8857365ee1ee36c6ee1ff9 100644
+index e373e98480136b0d9a229c3f6c8750b0c5955717..27348a27b82fa01e7fa54bc7440481d12fcc6ae8 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
 @@ -27,6 +27,7 @@

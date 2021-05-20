@@ -114,7 +114,7 @@ index 3116e9098aad4fab8d1f8d2bb74b2437548b3566..1bb3ed4c7ec4f03c2512c6321c016fac
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index e8364021255814f7d3d41688f623a189bc44f52e..c4ba0addc40a9f9b304ae207b765a0ed6f1bcb45 100644
+index 12c2fa474ae190a2eadfba9210bedc209e34be35..616caa8ae5dada24b152702fe816a5117b7738d6 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -241,8 +241,10 @@
@@ -128,7 +128,7 @@ index e8364021255814f7d3d41688f623a189bc44f52e..c4ba0addc40a9f9b304ae207b765a0ed
  
    // Disconnect from the previous bridge (this will have the effect of
    // destroying the associated bridge), and close the receiver (to allow it
-@@ -1435,8 +1437,10 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1442,8 +1444,10 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  
  gfx::NativeViewAccessible
  RenderWidgetHostViewMac::AccessibilityGetNativeViewAccessibleForWindow() {
@@ -139,7 +139,7 @@ index e8364021255814f7d3d41688f623a189bc44f52e..c4ba0addc40a9f9b304ae207b765a0ed
    return [GetInProcessNSView() window];
  }
  
-@@ -1480,9 +1484,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1487,9 +1491,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  }
  
  void RenderWidgetHostViewMac::SetAccessibilityWindow(NSWindow* window) {
@@ -151,7 +151,7 @@ index e8364021255814f7d3d41688f623a189bc44f52e..c4ba0addc40a9f9b304ae207b765a0ed
  }
  
  bool RenderWidgetHostViewMac::SyncIsWidgetForMainFrame(
-@@ -1976,12 +1982,14 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1983,12 +1989,14 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  
  void RenderWidgetHostViewMac::SetRemoteAccessibilityWindowToken(
      const std::vector<uint8_t>& window_token) {

@@ -201,7 +201,7 @@ index 058ec72442d59989c4d6df4a7c791ecfeff0ef99..f7c8c2139382cb2e290c561624291afe
    // The profile used for the presentation.
    Profile* otr_profile_;
 diff --git a/components/embedder_support/android/delegate/web_contents_delegate_android.cc b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
-index e878f49dd6cc69f5ba0b43e666277d29ed8c0d91..3a8eb296fee0ac2dda52435b58537a98d90e4467 100644
+index 821efb221cd2a6efca5ec9af0e91d930bf335dea..f5c34246a329ce49d5fe84067c722656005b89fa 100644
 --- a/components/embedder_support/android/delegate/web_contents_delegate_android.cc
 +++ b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
 @@ -169,14 +169,13 @@ bool WebContentsDelegateAndroid::IsWebContentsCreationOverridden(
@@ -264,10 +264,10 @@ index c5c5a7b63b5b3b62a9517cbef3ae23ce57a3c89c..4f1b7e88d6d2ae89a60311c8aeb1fcee
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index e240f8a32b1f7f69afa992861c995e668695c51f..87792fc94a84ed3336c70d431516150a91ec5928 100644
+index 871814291e162cab18d0331162a5c47ee019da4e..7721ad622b30ad12be18f95a4f70f96c5fb2c481 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3610,8 +3610,7 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
+@@ -3616,8 +3616,7 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
  
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,
