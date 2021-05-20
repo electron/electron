@@ -213,8 +213,6 @@ class App : public ElectronBrowserClient::Delegate,
   void EnableSandbox(gin_helper::ErrorThrower thrower);
   void SetUserAgentFallback(const std::string& user_agent);
   std::string GetUserAgentFallback();
-  void SetBrowserClientCanUseCustomSiteInstance(bool should_disable);
-  bool CanBrowserClientUseCustomSiteInstance();
 
 #if defined(OS_MAC)
   void SetActivationPolicy(gin_helper::ErrorThrower thrower,

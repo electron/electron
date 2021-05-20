@@ -16,7 +16,6 @@
 #include "shell/common/gin_helper/event_emitter_caller.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
-#include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
 #include "shell/renderer/electron_render_frame_observer.h"
 #include "shell/renderer/web_worker_observer.h"
@@ -35,25 +34,13 @@ bool IsDevToolsExtension(content::RenderFrame* render_frame) {
 
 }  // namespace
 
-// static
-ElectronRendererClient* ElectronRendererClient::self_ = nullptr;
-
 ElectronRendererClient::ElectronRendererClient()
     : node_bindings_(
           NodeBindings::Create(NodeBindings::BrowserEnvironment::kRenderer)),
-      electron_bindings_(new ElectronBindings(node_bindings_->uv_loop())) {
-  DCHECK(!self_) << "Cannot have two ElectronRendererClient";
-  self_ = this;
-}
+      electron_bindings_(new ElectronBindings(node_bindings_->uv_loop())) {}
 
 ElectronRendererClient::~ElectronRendererClient() {
   asar::ClearArchives();
-}
-
-// static
-ElectronRendererClient* ElectronRendererClient::Get() {
-  DCHECK(self_);
-  return self_;
 }
 
 void ElectronRendererClient::RenderFrameCreated(
@@ -92,23 +79,13 @@ void ElectronRendererClient::DidCreateScriptContext(
   // TODO(zcbenz): Do not create Node environment if node integration is not
   // enabled.
 
-  // Only load node if we are a main frame or a devtools extension
-  // unless node support has been explicitly enabled for sub frames
+  // Only load Node.js if we are a main frame or a devtools extension
+  // unless Node.js support has been explicitly enabled for subframes.
   auto prefs = render_frame->GetBlinkPreferences();
-  bool reuse_renderer_processes_enabled =
-      prefs.disable_electron_site_instance_overrides;
-  // Consider the window not "opened" if it does not have an Opener, or if a
-  // user has manually opted in to leaking node in the renderer
-  bool is_not_opened =
-      !render_frame->GetWebFrame()->Opener() || prefs.node_leakage_in_renderers;
-  // Consider this the main frame if it is both a Main Frame and it wasn't
-  // opened.  We allow an opened main frame to have node if renderer process
-  // reuse is enabled as that will correctly free node environments prevent a
-  // leak in child windows.
-  bool is_main_frame = render_frame->IsMainFrame() &&
-                       (is_not_opened || reuse_renderer_processes_enabled);
+  bool is_main_frame = render_frame->IsMainFrame();
   bool is_devtools = IsDevToolsExtension(render_frame);
   bool allow_node_in_subframes = prefs.node_integration_in_sub_frames;
+
   bool should_load_node =
       (is_main_frame || is_devtools || allow_node_in_subframes) &&
       !IsWebViewFrame(renderer_context, render_frame);
@@ -121,7 +98,7 @@ void ElectronRendererClient::DidCreateScriptContext(
     node_integration_initialized_ = true;
     node_bindings_->Initialize();
     node_bindings_->PrepareMessageLoop();
-  } else if (reuse_renderer_processes_enabled) {
+  } else {
     node_bindings_->PrepareMessageLoop();
   }
 
@@ -138,9 +115,7 @@ void ElectronRendererClient::DidCreateScriptContext(
 
   // If we have disabled the site instance overrides we should prevent loading
   // any non-context aware native module
-  if (reuse_renderer_processes_enabled)
-    env->set_force_context_aware(true);
-  env->set_warn_context_aware(true);
+  env->set_force_context_aware(true);
 
   environments_.insert(env);
 
@@ -183,12 +158,9 @@ void ElectronRendererClient::WillReleaseScriptContext(
   // We also do this if we have disable electron site instance overrides to
   // avoid memory leaks
   auto prefs = render_frame->GetBlinkPreferences();
-  if (prefs.node_integration_in_sub_frames ||
-      prefs.disable_electron_site_instance_overrides) {
-    node::FreeEnvironment(env);
-    if (env == node_bindings_->uv_env())
-      node::FreeIsolateData(node_bindings_->isolate_data());
-  }
+  node::FreeEnvironment(env);
+  if (env == node_bindings_->uv_env())
+    node::FreeIsolateData(node_bindings_->isolate_data());
 
   // ElectronBindings is tracking node environments.
   electron_bindings_->EnvironmentDestroyed(env);
@@ -197,7 +169,6 @@ void ElectronRendererClient::WillReleaseScriptContext(
 bool ElectronRendererClient::ShouldFork(blink::WebLocalFrame* frame,
                                         const GURL& url,
                                         const std::string& http_method,
-                                        bool is_initial_navigation,
                                         bool is_server_redirect) {
   // Handle all the navigations and reloads in browser.
   // FIXME We only support GET here because http method will be ignored when
@@ -224,32 +195,6 @@ void ElectronRendererClient::WillDestroyWorkerContextOnWorkerThread(
           switches::kNodeIntegrationInWorker)) {
     WebWorkerObserver::GetCurrent()->ContextWillDestroy(context);
   }
-}
-
-void ElectronRendererClient::SetupMainWorldOverrides(
-    v8::Handle<v8::Context> context,
-    content::RenderFrame* render_frame) {
-  auto prefs = render_frame->GetBlinkPreferences();
-  // We only need to run the isolated bundle if webview is enabled
-  if (!prefs.webview_tag)
-    return;
-  // Setup window overrides in the main world context
-  // Wrap the bundle into a function that receives the isolatedWorld as
-  // an argument.
-  auto* isolate = context->GetIsolate();
-  std::vector<v8::Local<v8::String>> isolated_bundle_params = {
-      node::FIXED_ONE_BYTE_STRING(isolate, "nodeProcess"),
-      node::FIXED_ONE_BYTE_STRING(isolate, "isolatedWorld")};
-
-  auto* env = GetEnvironment(render_frame);
-  DCHECK(env);
-
-  std::vector<v8::Local<v8::Value>> isolated_bundle_args = {
-      env->process_object(),
-      GetContext(render_frame->GetWebFrame(), isolate)->Global()};
-
-  util::CompileAndCall(context, "electron/js2c/isolated_bundle",
-                       &isolated_bundle_params, &isolated_bundle_args, nullptr);
 }
 
 node::Environment* ElectronRendererClient::GetEnvironment(

@@ -117,7 +117,7 @@ class BrowserWindow : public BaseWindow,
 
   // Closure that would be called when window is unresponsive when closing,
   // it should be cancelled when we can prove that the window is responsive.
-  base::CancelableClosure window_unresponsive_closure_;
+  base::CancelableRepeatingClosure window_unresponsive_closure_;
 
 #if defined(OS_MAC)
   std::vector<mojom::DraggableRegionPtr> draggable_regions_;

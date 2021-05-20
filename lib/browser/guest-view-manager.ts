@@ -34,12 +34,12 @@ const createGuest = function (embedder: Electron.WebContents, params: Record<str
   const guest = (webContents as typeof ElectronInternal.WebContents).create({
     type: 'webview',
     partition: params.partition,
-    embedder: embedder
+    embedder
   });
   const guestInstanceId = guest.id;
   guestInstances.set(guestInstanceId, {
-    guest: guest,
-    embedder: embedder
+    guest,
+    embedder
   });
 
   // Clear the guest from map when it is destroyed.
@@ -165,7 +165,7 @@ const attachGuest = function (event: Electron.IpcMainInvokeEvent,
       : null;
 
   const webPreferences: Electron.WebPreferences = {
-    guestInstanceId: guestInstanceId,
+    guestInstanceId,
     nodeIntegration: params.nodeintegration != null ? params.nodeintegration : false,
     nodeIntegrationInSubFrames: params.nodeintegrationinsubframes != null ? params.nodeintegrationinsubframes : false,
     plugins: params.plugins,
@@ -216,7 +216,7 @@ const attachGuest = function (event: Electron.IpcMainInvokeEvent,
 
   watchEmbedder(embedder);
 
-  webViewManager.addGuest(guestInstanceId, elementInstanceId, embedder, guest, webPreferences);
+  webViewManager.addGuest(guestInstanceId, embedder, guest, webPreferences);
   guest.attachToIframe(embedder, embedderFrameId);
 };
 
@@ -319,13 +319,8 @@ handleMessageSync(IPC_MESSAGES.GUEST_VIEW_MANAGER_DETACH_GUEST, function (event,
 });
 
 // this message is sent by the actual <webview>
-ipcMainInternal.on(IPC_MESSAGES.GUEST_VIEW_MANAGER_FOCUS_CHANGE, function (event: ElectronInternal.IpcMainInternalEvent, focus: boolean, guestInstanceId: number) {
-  const guest = getGuest(guestInstanceId);
-  if (guest === event.sender) {
-    event.sender.emit('focus-change', {}, focus, guestInstanceId);
-  } else {
-    console.error(`focus-change for guestInstanceId: ${guestInstanceId}`);
-  }
+ipcMainInternal.on(IPC_MESSAGES.GUEST_VIEW_MANAGER_FOCUS_CHANGE, function (event: ElectronInternal.IpcMainInternalEvent, focus: boolean) {
+  event.sender.emit('-focus-change', {}, focus);
 });
 
 handleMessage(IPC_MESSAGES.GUEST_VIEW_MANAGER_CALL, function (event, guestInstanceId: number, method: string, args: any[]) {
@@ -372,18 +367,12 @@ handleMessage(IPC_MESSAGES.GUEST_VIEW_MANAGER_CAPTURE_PAGE, async function (even
 
 // Returns WebContents from its guest id hosted in given webContents.
 const getGuestForWebContents = function (guestInstanceId: number, contents: Electron.WebContents) {
-  const guest = getGuest(guestInstanceId);
-  if (!guest) {
+  const guestInstance = guestInstances.get(guestInstanceId);
+  if (!guestInstance) {
     throw new Error(`Invalid guestInstanceId: ${guestInstanceId}`);
   }
-  if (guest.hostWebContents !== contents) {
+  if (guestInstance.guest.hostWebContents !== contents) {
     throw new Error(`Access denied to guestInstanceId: ${guestInstanceId}`);
   }
-  return guest;
-};
-
-// Returns WebContents from its guest id.
-const getGuest = function (guestInstanceId: number) {
-  const guestInstance = guestInstances.get(guestInstanceId);
-  if (guestInstance != null) return guestInstance.guest;
+  return guestInstance.guest;
 };

@@ -10,10 +10,10 @@ them should they exist.
 This will be upstreamed.
 
 diff --git a/printing/printing_context_mac.h b/printing/printing_context_mac.h
-index 00c78a7446480a15a4dfa360ccdc438eaf1215c1..5b0db3e754ac6c9e335365173800d2e1a5ca629d 100644
+index 07fcfad6ecf676068d3f0b44f97e748d58b13016..f165eea20ca3b120f5fb499248d65fa7befc7686 100644
 --- a/printing/printing_context_mac.h
 +++ b/printing/printing_context_mac.h
-@@ -82,6 +82,10 @@ class PRINTING_EXPORT PrintingContextMac : public PrintingContext {
+@@ -82,6 +82,10 @@ class COMPONENT_EXPORT(PRINTING) PrintingContextMac : public PrintingContext {
    // Returns true if the orientation was set.
    bool SetOrientationIsLandscape(bool landscape);
  
@@ -25,7 +25,7 @@ index 00c78a7446480a15a4dfa360ccdc438eaf1215c1..5b0db3e754ac6c9e335365173800d2e1
    // Returns true if duplex mode is set.
    bool SetDuplexModeInPrintSettings(mojom::DuplexMode mode);
 diff --git a/printing/printing_context_mac.mm b/printing/printing_context_mac.mm
-index ff9b3e08d49cb0daec83df36257729ff2636fe66..20031e220903f0882bef091ed048f47c4c5dc61c 100644
+index 1a52ea3cd11b3ec573cfef6f6f03ab39fcb998d6..c8a17ef24a4bb62fc03b361d5153acc8f0098c6b 100644
 --- a/printing/printing_context_mac.mm
 +++ b/printing/printing_context_mac.mm
 @@ -189,7 +189,8 @@ PMPaper MatchPaper(CFArrayRef paper_list,
@@ -100,10 +100,10 @@ index fe7fc797504dcc7097a3d79a2dab2c18de737048..20c63b1f657f2969850b31eaafdff7e5
    } else {
      // No need to bother, we don't know how many pages are available.
 diff --git a/ui/gtk/printing/print_dialog_gtk.cc b/ui/gtk/printing/print_dialog_gtk.cc
-index d2ed5cbe4a48abe0026dda24a016da654e7e201a..d1bdf05c89e2c2aef71e8a8a2bf293725b2559d3 100644
+index 5e7dd30b97c4ca3e6f14636955791ab0c6b63d6d..11a521a5f261e8306a7159487ffad6e4f990a0b2 100644
 --- a/ui/gtk/printing/print_dialog_gtk.cc
 +++ b/ui/gtk/printing/print_dialog_gtk.cc
-@@ -239,6 +239,24 @@ void PrintDialogGtk::UpdateSettings(
+@@ -238,6 +238,24 @@ void PrintDialogGtk::UpdateSettings(
  
    gtk_print_settings_set_n_copies(gtk_settings_, settings->copies());
    gtk_print_settings_set_collate(gtk_settings_, settings->collate());

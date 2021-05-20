@@ -22,6 +22,11 @@ template("webpack_build") {
                "//electron/typings/internal-electron.d.ts",
              ] + invoker.inputs
 
+    mode = "development"
+    if (is_official_build) {
+      mode = "production"
+    }
+
     args = [
       "--config",
       rebase_path(invoker.config_file),
@@ -29,6 +34,7 @@ template("webpack_build") {
       "--output-path=" + rebase_path(get_path_info(invoker.out_file, "dir")),
       "--env.buildflags=" +
           rebase_path("$target_gen_dir/buildflags/buildflags.h"),
+      "--env.mode=" + mode,
     ]
     deps += [ "buildflags" ]
 

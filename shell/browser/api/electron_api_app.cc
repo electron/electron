@@ -627,7 +627,7 @@ void App::OnWindowAllClosed() {
 }
 
 void App::OnQuit() {
-  int exitCode = ElectronBrowserMainParts::Get()->GetExitCode();
+  const int exitCode = ElectronBrowserMainParts::Get()->GetExitCode();
   Emit("quit", exitCode);
 
   if (process_singleton_) {
@@ -877,17 +877,6 @@ void App::BrowserChildProcessCrashedOrKilled(
 void App::RenderProcessReady(content::RenderProcessHost* host) {
   ChildProcessLaunched(content::PROCESS_TYPE_RENDERER, host->GetID(),
                        host->GetProcess().Handle());
-
-  // TODO(jeremy): this isn't really the right place to be creating
-  // `WebContents` instances, but this was implicitly happening before in
-  // `RenderProcessPreferences`, so this is at least more explicit...
-  content::WebContents* web_contents =
-      ElectronBrowserClient::Get()->GetWebContentsFromProcessID(host->GetID());
-  if (web_contents) {
-    v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-    v8::HandleScope scope(isolate);
-    WebContents::FromOrCreate(isolate, web_contents);
-  }
 }
 
 void App::RenderProcessExited(content::RenderProcessHost* host) {
@@ -1300,12 +1289,12 @@ v8::Local<v8::Promise> App::GetFileIcon(const base::FilePath& path,
 
   auto* icon_manager = ElectronBrowserMainParts::Get()->GetIconManager();
   gfx::Image* icon =
-      icon_manager->LookupIconFromFilepath(normalized_path, icon_size);
+      icon_manager->LookupIconFromFilepath(normalized_path, icon_size, 1.0f);
   if (icon) {
     promise.Resolve(*icon);
   } else {
     icon_manager->LoadIcon(
-        normalized_path, icon_size,
+        normalized_path, icon_size, 1.0f,
         base::BindOnce(&OnIconDataAvailable, std::move(promise)),
         &cancelable_task_tracker_);
   }
@@ -1388,9 +1377,7 @@ std::vector<gin_helper::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
 }
 
 v8::Local<v8::Value> App::GetGPUFeatureStatus(v8::Isolate* isolate) {
-  auto status = content::GetFeatureStatus();
-  base::DictionaryValue temp;
-  return gin::ConvertToV8(isolate, status ? *status : temp);
+  return gin::ConvertToV8(isolate, content::GetFeatureStatus());
 }
 
 v8::Local<v8::Promise> App::GetGPUInfo(v8::Isolate* isolate,
@@ -1455,13 +1442,6 @@ void App::SetUserAgentFallback(const std::string& user_agent) {
 
 std::string App::GetUserAgentFallback() {
   return ElectronBrowserClient::Get()->GetUserAgent();
-}
-
-void App::SetBrowserClientCanUseCustomSiteInstance(bool should_disable) {
-  ElectronBrowserClient::Get()->SetCanUseCustomSiteInstance(should_disable);
-}
-bool App::CanBrowserClientUseCustomSiteInstance() {
-  return ElectronBrowserClient::Get()->CanUseCustomSiteInstance();
 }
 
 #if defined(OS_MAC)
@@ -1665,10 +1645,7 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
 #endif
       .SetProperty("userAgentFallback", &App::GetUserAgentFallback,
                    &App::SetUserAgentFallback)
-      .SetMethod("enableSandbox", &App::EnableSandbox)
-      .SetProperty("allowRendererProcessReuse",
-                   &App::CanBrowserClientUseCustomSiteInstance,
-                   &App::SetBrowserClientCanUseCustomSiteInstance);
+      .SetMethod("enableSandbox", &App::EnableSandbox);
 }
 
 const char* App::GetTypeName() {

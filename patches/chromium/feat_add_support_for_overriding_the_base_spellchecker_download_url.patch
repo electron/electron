@@ -9,7 +9,7 @@ production use cases.  This is unlikely to be upstreamed as the change
 is entirely in //chrome.
 
 diff --git a/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc b/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc
-index ca81ec53b3316bfc01c083818d5d2b4c0b59e967..c303a5bdd8cc3d19c61b03206c5e17ed98fefabf 100644
+index afe8d213363f61f49a3be323f1f5e8eb8c5a1dd9..191c12c845e18e37ace1935580c859546303fab1 100644
 --- a/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc
 +++ b/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc
 @@ -50,6 +50,9 @@ namespace {

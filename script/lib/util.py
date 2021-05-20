@@ -34,12 +34,6 @@ if sys.platform in ['win32', 'cygwin']:
   TS_NODE += '.cmd'
 
 
-def tempdir(prefix=''):
-  directory = tempfile.mkdtemp(prefix=prefix)
-  atexit.register(shutil.rmtree, directory)
-  return directory
-
-
 @contextlib.contextmanager
 def scoped_cwd(path):
   cwd = os.getcwd()
@@ -65,9 +59,6 @@ def scoped_env(key, value):
 def download(text, url, path):
   safe_mkdir(os.path.dirname(path))
   with open(path, 'wb') as local_file:
-    if hasattr(ssl, '_create_unverified_context'):
-      ssl._create_default_https_context = ssl._create_unverified_context
-
     print("Downloading %s to %s" % (url, path))
     web_file = urlopen(url)
     info = web_file.info()
@@ -99,19 +90,6 @@ def download(text, url, path):
       print()
   return path
 
-
-def extract_tarball(tarball_path, member, destination):
-  with tarfile.open(tarball_path) as tarball:
-    tarball.extract(member, destination)
-
-
-def extract_zip(zip_path, destination):
-  if sys.platform == 'darwin':
-    # Use unzip command on Mac to keep symbol links in zip file work.
-    execute(['unzip', zip_path, '-d', destination])
-  else:
-    with zipfile.ZipFile(zip_path) as z:
-      z.extractall(destination)
 
 def make_zip(zip_file_path, files, dirs):
   safe_unlink(zip_file_path)
@@ -169,19 +147,6 @@ def execute(argv, env=None, cwd=None):
     raise e
 
 
-def execute_stdout(argv, env=None, cwd=None):
-  if env is None:
-    env = os.environ
-  if is_verbose_mode():
-    print(' '.join(argv))
-    try:
-      subprocess.check_call(argv, env=env, cwd=cwd)
-    except subprocess.CalledProcessError as e:
-      print(e.output)
-      raise e
-  else:
-    execute(argv, env, cwd)
-
 def get_electron_branding():
   SOURCE_ROOT = os.path.abspath(os.path.join(__file__, '..', '..', '..'))
   branding_file_path = os.path.join(
@@ -208,10 +173,6 @@ def s3put(bucket, access_key, secret_key, prefix, key_prefix, files):
     '--grant', 'public-read',
   ] + files, env)
   print(output)
-
-
-def add_exec_bit(filename):
-  os.chmod(filename, os.stat(filename).st_mode | stat.S_IEXEC)
 
 def get_out_dir():
   out_dir = 'Debug'

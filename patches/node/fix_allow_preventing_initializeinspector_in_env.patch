@@ -36,10 +36,10 @@ index 53b07052e43a09f29f863ee1b2287bdebe7b7a7f..c08fe4b32d4155badb572f15529f903c
  #endif
  
 diff --git a/src/env-inl.h b/src/env-inl.h
-index 623e9d4e429c03bb267539a318166f3ef3b9c501..52a122a51049238547ff662bed1a10b346f3af00 100644
+index 9b2f82cc00e661f139611dd2de53598d6d8ff210..006bcaf4a9a864438cd447dc4235b3a5257cd2a5 100644
 --- a/src/env-inl.h
 +++ b/src/env-inl.h
-@@ -837,6 +837,10 @@ inline bool Environment::tracks_unmanaged_fds() const {
+@@ -829,6 +829,10 @@ inline bool Environment::tracks_unmanaged_fds() const {
    return flags_ & EnvironmentFlags::kTrackUnmanagedFds;
  }
  
@@ -51,10 +51,10 @@ index 623e9d4e429c03bb267539a318166f3ef3b9c501..52a122a51049238547ff662bed1a10b3
    return emit_filehandle_warning_;
  }
 diff --git a/src/env.h b/src/env.h
-index 38d17f4e18aa38fde2c2f59a9816c8fb0f65fd51..4fe2eb3b7699efcab87c377743a955effbbfd9de 100644
+index 9c435f12db0e2d0a13ebd2b01810f0857c55fe2e..1ea1caf0e327719c39f91ce3c0897dde5034c904 100644
 --- a/src/env.h
 +++ b/src/env.h
-@@ -1022,6 +1022,7 @@ class Environment : public MemoryRetainer {
+@@ -1026,6 +1026,7 @@ class Environment : public MemoryRetainer {
    inline bool owns_process_state() const;
    inline bool owns_inspector() const;
    inline bool tracks_unmanaged_fds() const;

@@ -335,6 +335,7 @@ source_set("electron_lib") {
     "//components/network_session_configurator/common",
     "//components/pref_registry",
     "//components/prefs",
+    "//components/security_state/content",
     "//components/upload_list",
     "//components/user_prefs",
     "//components/viz/host",
@@ -441,12 +442,16 @@ source_set("electron_lib") {
   }
 
   if (is_linux) {
-    deps += [ "//components/crash/content/browser" ]
+    deps += [
+      "//build/config/linux/gtk:gtkprint",
+      "//components/crash/content/browser",
+    ]
   }
 
   if (is_mac) {
     deps += [
       "//components/remote_cocoa/app_shim",
+      "//components/remote_cocoa/browser",
       "//content/common:mac_helpers",
       "//ui/accelerated_widget_mac",
     ]
@@ -512,10 +517,6 @@ source_set("electron_lib") {
     ]
     if (use_x11) {
       sources += filenames.lib_sources_linux_x11
-      deps += [
-        "//ui/gfx/x",
-        "//ui/gtk/x",
-      ]
     }
     configs += [ ":gio_unix" ]
     defines += [
@@ -619,6 +620,8 @@ source_set("electron_lib") {
     sources += [
       "shell/browser/printing/print_preview_message_handler.cc",
       "shell/browser/printing/print_preview_message_handler.h",
+      "shell/browser/printing/print_view_manager_electron.cc",
+      "shell/browser/printing/print_view_manager_electron.h",
       "shell/renderer/printing/print_render_frame_helper_delegate.cc",
       "shell/renderer/printing/print_render_frame_helper_delegate.h",
     ]
@@ -1163,11 +1166,6 @@ if (is_mac) {
         "//build/config/win:windowed",
         "//build/config/win:delayloads",
       ]
-
-      if (target_cpu == "arm64") {
-        configs -= [ "//build/config/win:cfi_linker" ]
-        ldflags += [ "/guard:cf,nolongjmp" ]
-      }
 
       if (current_cpu == "x86") {
         # Set the initial stack size to 0.5MiB, instead of the 1.5MiB needed by

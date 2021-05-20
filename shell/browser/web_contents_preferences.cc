@@ -141,9 +141,8 @@ WebContentsPreferences::WebContentsPreferences(
   SetDefaultBoolIfUndefined(options::kDisableHtmlFullscreenWindowResize, false);
   SetDefaultBoolIfUndefined(options::kWebviewTag, false);
   SetDefaultBoolIfUndefined(options::kSandbox, false);
-  SetDefaultBoolIfUndefined(options::kNativeWindowOpen, false);
+  SetDefaultBoolIfUndefined(options::kNativeWindowOpen, true);
   SetDefaultBoolIfUndefined(options::kContextIsolation, true);
-  SetDefaultBoolIfUndefined(options::kWorldSafeExecuteJavaScript, true);
   SetDefaultBoolIfUndefined(options::kJavaScript, true);
   SetDefaultBoolIfUndefined(options::kImages, true);
   SetDefaultBoolIfUndefined(options::kTextAreasAreResizable, true);
@@ -326,13 +325,6 @@ void WebContentsPreferences::AppendCommandLineSwitches(
     }
   }
 
-  // --offscreen
-  // TODO(loc): Offscreen is duplicated in WebPreferences because it's needed
-  // earlier than we can get WebPreferences at the moment.
-  if (IsEnabled(options::kOffscreen)) {
-    command_line->AppendSwitch(options::kOffscreen);
-  }
-
 #if defined(OS_MAC)
   // Enable scroll bounce.
   if (IsEnabled(options::kScrollBounce))
@@ -443,9 +435,6 @@ void WebContentsPreferences::OverrideWebkitPrefs(
   // Run Electron APIs and preload script in isolated world
   prefs->context_isolation = IsEnabled(options::kContextIsolation, true);
 
-  prefs->world_safe_execute_javascript =
-      IsEnabled(options::kWorldSafeExecuteJavaScript, true);
-
   int guest_instance_id = 0;
   if (GetAsInteger(&preference_, options::kGuestInstanceID, &guest_instance_id))
     prefs->guest_instance_id = guest_instance_id;
@@ -478,7 +467,7 @@ void WebContentsPreferences::OverrideWebkitPrefs(
   GetPreloadPath(&prefs->preload);
 
   // Check if nativeWindowOpen is enabled.
-  prefs->native_window_open = IsEnabled(options::kNativeWindowOpen);
+  prefs->native_window_open = IsEnabled(options::kNativeWindowOpen, true);
 
   // Check if we have node integration specified.
   prefs->node_integration = IsEnabled(options::kNodeIntegration);

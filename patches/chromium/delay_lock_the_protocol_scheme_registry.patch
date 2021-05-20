@@ -19,10 +19,10 @@ https://chromium-review.googlesource.com/c/chromium/src/+/1901591, we should try
 re-submitting the patch.
 
 diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
-index e49304a95fdb71565f61d8d1eb27de365e450eb9..2cf621a173d9c10a20e802ee44fbaa1d364f67e9 100644
+index 8b557bdeb4b8f3660cb9aa1adaf2bf28b6a326bf..aa8ffdd580292b88ff32ea536d34080c12db1778 100644
 --- a/content/app/content_main_runner_impl.cc
 +++ b/content/app/content_main_runner_impl.cc
-@@ -722,7 +722,7 @@ int ContentMainRunnerImpl::Initialize(const ContentMainParams& params) {
+@@ -737,7 +737,7 @@ int ContentMainRunnerImpl::Initialize(const ContentMainParams& params) {
    }
  #endif
  
@@ -83,7 +83,7 @@ index 17d256b852b6e7615cf4e52e4a2d7fa326a4df44..bd0512902df4484e8714cda9ab1352b1
    return true;
  }
 diff --git a/content/public/app/content_main_delegate.h b/content/public/app/content_main_delegate.h
-index 4162083f789b6cf5e29e52e4bd498c377cab1a20..d6010bc0e4dba560d10c3ed4729d77b5a60eddcd 100644
+index dd16f2c082665e74cc3c0aaa1ddb53977ce4a7ea..1806baf2d97b36e5c5097516c82d14fce7ca41a5 100644
 --- a/content/public/app/content_main_delegate.h
 +++ b/content/public/app/content_main_delegate.h
 @@ -65,6 +65,20 @@ class CONTENT_EXPORT ContentMainDelegate {
@@ -105,5 +105,5 @@ index 4162083f789b6cf5e29e52e4bd498c377cab1a20..d6010bc0e4dba560d10c3ed4729d77b5
 +  virtual bool ShouldLockSchemeRegistry();
 +
    // Allows the embedder to perform platform-specific initialization before
-   // creating the main message loop.
-   virtual void PreCreateMainMessageLoop() {}
+   // BrowserMain() is invoked (i.e. before BrowserMainRunner, BrowserMainLoop,
+   // BrowserMainParts, etc. are created).

@@ -29,7 +29,6 @@ auto_filenames = {
     "docs/api/incoming-message.md",
     "docs/api/ipc-main.md",
     "docs/api/ipc-renderer.md",
-    "docs/api/locales.md",
     "docs/api/menu-item.md",
     "docs/api/menu.md",
     "docs/api/message-channel-main.md",
@@ -43,7 +42,6 @@ auto_filenames = {
     "docs/api/power-save-blocker.md",
     "docs/api/process.md",
     "docs/api/protocol.md",
-    "docs/api/sandbox-option.md",
     "docs/api/screen.md",
     "docs/api/service-workers.md",
     "docs/api/session.md",
@@ -104,7 +102,6 @@ auto_filenames = {
     "docs/api/structures/notification-response.md",
     "docs/api/structures/point.md",
     "docs/api/structures/post-body.md",
-    "docs/api/structures/post-data.md",
     "docs/api/structures/printer-info.md",
     "docs/api/structures/process-memory-info.md",
     "docs/api/structures/process-metric.md",
@@ -131,6 +128,7 @@ auto_filenames = {
     "docs/api/structures/upload-data.md",
     "docs/api/structures/upload-file.md",
     "docs/api/structures/upload-raw-data.md",
+    "docs/api/structures/user-default-types.md",
     "docs/api/structures/web-source.md",
   ]
 
@@ -170,9 +168,13 @@ auto_filenames = {
   ]
 
   isolated_bundle_deps = [
+    "lib/common/type-utils.ts",
+    "lib/common/web-view-methods.ts",
     "lib/isolated_renderer/init.ts",
+    "lib/renderer/web-view/web-view-attributes.ts",
     "lib/renderer/web-view/web-view-constants.ts",
     "lib/renderer/web-view/web-view-element.ts",
+    "lib/renderer/web-view/web-view-impl.ts",
     "package.json",
     "tsconfig.electron.json",
     "tsconfig.json",
@@ -233,7 +235,6 @@ auto_filenames = {
     "lib/browser/ipc-main-internal-utils.ts",
     "lib/browser/ipc-main-internal.ts",
     "lib/browser/message-port-main.ts",
-    "lib/browser/navigation-controller.ts",
     "lib/browser/rpc-server.ts",
     "lib/common/api/clipboard.ts",
     "lib/common/api/deprecate.ts",

@@ -52,8 +52,9 @@ class ElectronBeginFrameTimer;
 
 class ElectronDelegatedFrameHostClient;
 
-typedef base::Callback<void(const gfx::Rect&, const SkBitmap&)> OnPaintCallback;
-typedef base::Callback<void(const gfx::Rect&)> OnPopupPaintCallback;
+typedef base::RepeatingCallback<void(const gfx::Rect&, const SkBitmap&)>
+    OnPaintCallback;
+typedef base::RepeatingCallback<void(const gfx::Rect&)> OnPopupPaintCallback;
 
 class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
                                       public ui::CompositorDelegate,
@@ -100,6 +101,12 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   void ShowDefinitionForSelection() override;
   void SpeakSelection() override;
   void SetWindowFrameInScreen(const gfx::Rect& rect) override;
+  void ShowSharePicker(
+      const std::string& title,
+      const std::string& text,
+      const std::string& url,
+      const std::vector<std::string>& file_paths,
+      blink::mojom::ShareService::ShareCallback callback) override;
   bool UpdateNSViewAndDisplay();
 #endif  // defined(OS_MAC)
 
@@ -114,7 +121,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   void ImeCancelComposition(void) override;
   void RenderProcessGone() override;
   void Destroy(void) override;
-  void SetTooltipText(const std::u16string&) override;
+  void UpdateTooltipUnderCursor(const std::u16string&) override;
   content::CursorManager* GetCursorManager() override;
   void CopyFromSurface(
       const gfx::Rect& src_rect,

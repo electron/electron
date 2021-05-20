@@ -197,7 +197,7 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
 
   // Locate & retain the recent documents menu item
   if (!recentDocumentsMenuItem_) {
-    std::u16string title = base::ASCIIToUTF16("Open Recent");
+    std::u16string title = u"Open Recent";
     NSString* openTitle = l10n_util::FixUpWindowsStyleLabel(title);
 
     recentDocumentsMenuItem_.reset([[[[[NSApp mainMenu]
@@ -339,8 +339,8 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
   std::u16string role = model->GetRoleAt(index);
   electron::ElectronMenuModel::ItemType type = model->GetTypeAt(index);
 
-  if (role == base::ASCIIToUTF16("services")) {
-    std::u16string title = base::ASCIIToUTF16("Services");
+  if (role == u"services") {
+    std::u16string title = u"Services";
     NSString* label = l10n_util::FixUpWindowsStyleLabel(title);
 
     [item setTarget:nil];
@@ -348,7 +348,7 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
     NSMenu* submenu = [[[NSMenu alloc] initWithTitle:label] autorelease];
     [item setSubmenu:submenu];
     [NSApp setServicesMenu:submenu];
-  } else if (role == base::ASCIIToUTF16("sharemenu")) {
+  } else if (role == u"sharemenu") {
     SharingItem sharing_item;
     model->GetSharingItemAt(index, &sharing_item);
     [item setTarget:nil];
@@ -374,13 +374,11 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
     [item setSubmenu:submenu];
 
     // Set submenu's role.
-    if ((role == base::ASCIIToUTF16("window") ||
-         role == base::ASCIIToUTF16("windowmenu")) &&
-        [submenu numberOfItems])
+    if ((role == u"window" || role == u"windowmenu") && [submenu numberOfItems])
       [NSApp setWindowsMenu:submenu];
-    else if (role == base::ASCIIToUTF16("help"))
+    else if (role == u"help")
       [NSApp setHelpMenu:submenu];
-    else if (role == base::ASCIIToUTF16("recentdocuments"))
+    else if (role == u"recentdocuments")
       [self replaceSubmenuShowingRecentDocuments:item];
   } else {
     // The MenuModel works on indexes so we can't just set the command id as the

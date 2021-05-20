@@ -24,7 +24,7 @@ class Wrappable : public WrappableBase {
 
   template <typename Sig>
   static void SetConstructor(v8::Isolate* isolate,
-                             const base::Callback<Sig>& constructor) {
+                             const base::RepeatingCallback<Sig>& constructor) {
     v8::Local<v8::FunctionTemplate> templ = gin_helper::CreateFunctionTemplate(
         isolate, base::BindRepeating(&internal::InvokeNew<Sig>, constructor));
     templ->InstanceTemplate()->SetInternalFieldCount(1);

@@ -14,9 +14,9 @@ gclient_gn_args = [
 
 vars = {
   'chromium_version':
-    '91.0.4448.0',
+    '92.0.4511.0',
   'node_version':
-    'v14.16.0',
+    'v14.17.0',
   'nan_version':
     'v2.14.2',
   'squirrel.mac_version':
@@ -88,7 +88,7 @@ deps = {
     'url': (Var("nodejs_git")) + '/node.git@' + (Var("node_version")),
     'condition': 'checkout_node and process_deps',
   },
-  'src/electron/vendor/pyyaml': {
+  'src/third_party/pyyaml': {
     'url': (Var("yaml_git")) + '/pyyaml.git@' + (Var("pyyaml_version")),
     'condition': 'checkout_pyyaml and process_deps',
   },

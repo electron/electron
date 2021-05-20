@@ -1,0 +1,38 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Fri, 9 Apr 2021 19:30:01 +0200
+Subject: fix: expose DecrementCapturerCount in web_contents_impl
+
+This was made private in https://chromium-review.googlesource.com/c/chromium/src/+/2807829 but
+we invoke it in order to expose contents.decrementCapturerCount([stayHidden, stayAwake])
+to users. We should try to upstream this.
+
+diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
+index 5212e1547796cae0c2c2508e5c0fcdab18190895..db8b468eecca3e980075072e50863738c280e1a2 100644
+--- a/content/browser/web_contents/web_contents_impl.h
++++ b/content/browser/web_contents/web_contents_impl.h
+@@ -1738,9 +1738,11 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
+   // shown in the address bar), as opposed to one in for example a Prerender.
+   bool IsPrimaryFrameTree(const FrameTree& frame_tree) const;
+ 
++ public:
+   // Called when the base::ScopedClosureRunner returned by
+   // IncrementCapturerCount() is destructed.
+-  void DecrementCapturerCount(bool stay_hidden, bool stay_awake);
++  void DecrementCapturerCount(bool stay_hidden, bool stay_awake) override;
++ private:
+ 
+   // Calculates the PageVisibilityState for |visibility|, taking the capturing
+   // state into account.
+diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
+index 3b7b5facc0cd2454a83f9034d63add1e684f438c..409bd016ee867d2e826feb441b6b8f15f56c0dd6 100644
+--- a/content/public/browser/web_contents.h
++++ b/content/public/browser/web_contents.h
+@@ -561,6 +561,7 @@ class WebContents : public PageNavigator,
+       const gfx::Size& capture_size,
+       bool stay_hidden,
+       bool stay_awake) WARN_UNUSED_RESULT = 0;
++  virtual void DecrementCapturerCount(bool stay_hidden, bool stay_awake) = 0;
+ 
+   // Returns true if audio/screenshot/video is being captured by the embedder,
+   // as indicated by calls to IncrementCapturerCount().

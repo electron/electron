@@ -143,7 +143,7 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
     fullscreenable = false;
 #endif
   }
-  // Overriden by 'fullscreenable'.
+  // Overridden by 'fullscreenable'.
   options.Get(options::kFullScreenable, &fullscreenable);
   SetFullScreenable(fullscreenable);
   if (fullscreen) {
@@ -328,6 +328,10 @@ bool NativeWindow::IsDocumentEdited() {
 
 void NativeWindow::SetFocusable(bool focusable) {}
 
+bool NativeWindow::IsFocusable() {
+  return false;
+}
+
 void NativeWindow::SetMenu(ElectronMenuModel* menu) {}
 
 void NativeWindow::SetParentWindow(NativeWindow* parent) {
@@ -419,11 +423,11 @@ void NativeWindow::NotifyWindowClosed() {
   if (is_closed_)
     return;
 
-  WindowList::RemoveWindow(this);
-
   is_closed_ = true;
   for (NativeWindowObserver& observer : observers_)
     observer.OnWindowClosed();
+
+  WindowList::RemoveWindow(this);
 }
 
 void NativeWindow::NotifyWindowEndSession() {

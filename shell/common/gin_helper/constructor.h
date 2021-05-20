@@ -12,19 +12,19 @@ namespace gin_helper {
 
 namespace internal {
 
-// This set of templates invokes a base::Callback by converting the Arguments
-// into native types. It relies on the function_template.h to provide helper
-// templates.
+// This set of templates invokes a base::RepeatingCallback by converting the
+// Arguments into native types. It relies on the function_template.h to provide
+// helper templates.
 inline WrappableBase* InvokeFactory(
     gin::Arguments* args,
-    const base::Callback<WrappableBase*()>& callback) {
+    const base::RepeatingCallback<WrappableBase*()>& callback) {
   return callback.Run();
 }
 
 template <typename P1>
 inline WrappableBase* InvokeFactory(
     gin::Arguments* args,
-    const base::Callback<WrappableBase*(P1)>& callback) {
+    const base::RepeatingCallback<WrappableBase*(P1)>& callback) {
   typename CallbackParamTraits<P1>::LocalType a1;
   if (!gin_helper::GetNextArgument(args, 0, true, &a1))
     return nullptr;
@@ -34,7 +34,7 @@ inline WrappableBase* InvokeFactory(
 template <typename P1, typename P2>
 inline WrappableBase* InvokeFactory(
     gin::Arguments* args,
-    const base::Callback<WrappableBase*(P1, P2)>& callback) {
+    const base::RepeatingCallback<WrappableBase*(P1, P2)>& callback) {
   typename CallbackParamTraits<P1>::LocalType a1;
   typename CallbackParamTraits<P2>::LocalType a2;
   if (!gin_helper::GetNextArgument(args, 0, true, &a1) ||
@@ -46,7 +46,7 @@ inline WrappableBase* InvokeFactory(
 template <typename P1, typename P2, typename P3>
 inline WrappableBase* InvokeFactory(
     gin::Arguments* args,
-    const base::Callback<WrappableBase*(P1, P2, P3)>& callback) {
+    const base::RepeatingCallback<WrappableBase*(P1, P2, P3)>& callback) {
   typename CallbackParamTraits<P1>::LocalType a1;
   typename CallbackParamTraits<P2>::LocalType a2;
   typename CallbackParamTraits<P3>::LocalType a3;
@@ -60,7 +60,7 @@ inline WrappableBase* InvokeFactory(
 template <typename P1, typename P2, typename P3, typename P4>
 inline WrappableBase* InvokeFactory(
     gin::Arguments* args,
-    const base::Callback<WrappableBase*(P1, P2, P3, P4)>& callback) {
+    const base::RepeatingCallback<WrappableBase*(P1, P2, P3, P4)>& callback) {
   typename CallbackParamTraits<P1>::LocalType a1;
   typename CallbackParamTraits<P2>::LocalType a2;
   typename CallbackParamTraits<P3>::LocalType a3;
@@ -76,7 +76,8 @@ inline WrappableBase* InvokeFactory(
 template <typename P1, typename P2, typename P3, typename P4, typename P5>
 inline WrappableBase* InvokeFactory(
     gin::Arguments* args,
-    const base::Callback<WrappableBase*(P1, P2, P3, P4, P5)>& callback) {
+    const base::RepeatingCallback<WrappableBase*(P1, P2, P3, P4, P5)>&
+        callback) {
   typename CallbackParamTraits<P1>::LocalType a1;
   typename CallbackParamTraits<P2>::LocalType a2;
   typename CallbackParamTraits<P3>::LocalType a3;
@@ -99,7 +100,8 @@ template <typename P1,
           typename P6>
 inline WrappableBase* InvokeFactory(
     gin::Arguments* args,
-    const base::Callback<WrappableBase*(P1, P2, P3, P4, P5, P6)>& callback) {
+    const base::RepeatingCallback<WrappableBase*(P1, P2, P3, P4, P5, P6)>&
+        callback) {
   typename CallbackParamTraits<P1>::LocalType a1;
   typename CallbackParamTraits<P2>::LocalType a2;
   typename CallbackParamTraits<P3>::LocalType a3;
@@ -117,7 +119,7 @@ inline WrappableBase* InvokeFactory(
 }
 
 template <typename Sig>
-void InvokeNew(const base::Callback<Sig>& factory,
+void InvokeNew(const base::RepeatingCallback<Sig>& factory,
                v8::Isolate* isolate,
                gin_helper::Arguments* args) {
   if (!args->IsConstructCall()) {

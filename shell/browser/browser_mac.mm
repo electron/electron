@@ -93,7 +93,7 @@ v8::Local<v8::Promise> Browser::GetApplicationInfoForProtocol(
   return handle;
 }
 
-void Browser::SetShutdownHandler(base::Callback<bool()> handler) {
+void Browser::SetShutdownHandler(base::RepeatingCallback<bool()> handler) {
   [[AtomApplication sharedApplication] setShutdownHandler:std::move(handler)];
 }
 
@@ -217,8 +217,6 @@ std::u16string Browser::GetApplicationNameForProtocol(const GURL& url) {
   std::u16string app_display_name = GetAppDisplayNameForProtocol(app_path);
   return app_display_name;
 }
-
-void Browser::SetAppUserModelID(const std::wstring& name) {}
 
 bool Browser::SetBadgeCount(base::Optional<int> count) {
   DockSetBadgeText(!count.has_value() || count.value() != 0
@@ -502,11 +500,12 @@ void Browser::ShowAboutPanel() {
 void Browser::SetAboutPanelOptions(base::DictionaryValue options) {
   about_panel_options_.Clear();
 
-  for (auto& pair : options) {
-    std::string& key = pair.first;
-    if (!key.empty() && pair.second->is_string()) {
+  for (const auto& pair : options.DictItems()) {
+    std::string key = std::string(pair.first);
+    if (!key.empty() && pair.second.is_string()) {
       key[0] = base::ToUpperASCII(key[0]);
-      about_panel_options_.Set(key, std::move(pair.second));
+      auto val = std::make_unique<base::Value>(pair.second.Clone());
+      about_panel_options_.Set(key, std::move(val));
     }
   }
 }

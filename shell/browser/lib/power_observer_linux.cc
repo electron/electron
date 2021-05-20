@@ -31,8 +31,10 @@ base::FilePath::StringType GetExecutableBaseName() {
 
 namespace electron {
 
-PowerObserverLinux::PowerObserverLinux(base::PowerObserver* observer)
-    : observer_(observer), lock_owner_name_(GetExecutableBaseName()) {
+PowerObserverLinux::PowerObserverLinux(
+    base::PowerSuspendObserver* suspend_observer)
+    : suspend_observer_(suspend_observer),
+      lock_owner_name_(GetExecutableBaseName()) {
   auto* bus = bluez::BluezDBusThreadManager::Get()->GetSystemBus();
   if (!bus) {
     LOG(WARNING) << "Failed to get system bus connection";
@@ -113,7 +115,8 @@ void PowerObserverLinux::UnblockShutdown() {
   shutdown_lock_.reset();
 }
 
-void PowerObserverLinux::SetShutdownHandler(base::Callback<bool()> handler) {
+void PowerObserverLinux::SetShutdownHandler(
+    base::RepeatingCallback<bool()> handler) {
   // In order to delay system shutdown when e.preventDefault() is invoked
   // on a powerMonitor 'shutdown' event, we need an org.freedesktop.login1
   // shutdown delay lock. For more details see the "Taking Delay Locks"
@@ -142,13 +145,13 @@ void PowerObserverLinux::OnPrepareForSleep(dbus::Signal* signal) {
     return;
   }
   if (suspending) {
-    observer_->OnSuspend();
+    suspend_observer_->OnSuspend();
 
     UnblockSleep();
   } else {
     BlockSleep();
 
-    observer_->OnResume();
+    suspend_observer_->OnResume();
   }
 }
 

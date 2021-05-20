@@ -8,10 +8,10 @@ Fixes an 'assigment to 'char *' from 'const char *'' error in libuv.
 This will be upstreamed.
 
 diff --git a/deps/uv/src/win/fs.c b/deps/uv/src/win/fs.c
-index 8a801749d472b041fa4472a84e8499cf02b29fc4..99b30f579763e068d907dd17c21ce22265b6bf6f 100644
+index a083b5e82c8c4294d45a65ab4d01fa3ceb650cdd..5eaaee3b0c6a5f52e10b5749eae4b21c5c059322 100644
 --- a/deps/uv/src/win/fs.c
 +++ b/deps/uv/src/win/fs.c
-@@ -1242,8 +1242,8 @@ void fs__mktemp(uv_fs_t* req, uv__fs_mktemp_func func) {
+@@ -1237,8 +1237,8 @@ void fs__mktemp(uv_fs_t* req, uv__fs_mktemp_func func) {
    size_t len;
    uint64_t v;
    char* path;

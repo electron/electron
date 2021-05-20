@@ -1,8 +1,13 @@
 /* eslint-disable no-var */
 declare var internalBinding: any;
-declare var nodeProcess: any;
-declare var isolatedWorld: any;
 declare var binding: { get: (name: string) => any; process: NodeJS.Process; createPreloadScript: (src: string) => Function };
+
+declare var isolatedApi: {
+  guestViewInternal: any;
+  allowGuestViewElementDefinition: NodeJS.InternalWebFrame['allowGuestViewElementDefinition'];
+  setIsWebView: (iframe: HTMLIFrameElement) => void;
+  createNativeImage: typeof Electron.nativeImage['createEmpty'];
+}
 
 declare const BUILDFLAG: (flag: boolean) => boolean;
 
@@ -97,13 +102,12 @@ declare namespace NodeJS {
   }
 
   interface WebViewManagerBinding {
-    addGuest(guestInstanceId: number, elementInstanceId: number, embedder: Electron.WebContents, guest: Electron.WebContents, webPreferences: Electron.WebPreferences): void;
+    addGuest(guestInstanceId: number, embedder: Electron.WebContents, guest: Electron.WebContents, webPreferences: Electron.WebPreferences): void;
     removeGuest(embedder: Electron.WebContents, guestInstanceId: number): void;
   }
 
   interface InternalWebPreferences {
     contextIsolation: boolean;
-    disableElectronSiteInstanceOverrides: boolean;
     guestInstanceId: number;
     hiddenPage: boolean;
     nativeWindowOpen: boolean;
@@ -112,20 +116,16 @@ declare namespace NodeJS {
     preload: string
     preloadScripts: string[];
     webviewTag: boolean;
-    worldSafeExecuteJavaScript: boolean;
+  }
+
+  interface InternalWebFrame extends Electron.WebFrame {
+    getWebPreference<K extends keyof InternalWebPreferences>(name: K): InternalWebPreferences[K];
+    getWebFrameId(window: Window): number;
+    allowGuestViewElementDefinition(context: object, callback: Function): void;
   }
 
   interface WebFrameBinding {
-    _findFrameByRoutingId(window: Window, routingId: number): Window;
-    _getFrameForSelector(window: Window, selector: string): Window;
-    _findFrameByName(window: Window, name: string): Window;
-    _getOpener(window: Window): Window;
-    _getParent(window: Window): Window;
-    _getTop(window: Window): Window;
-    _getFirstChild(window: Window): Window;
-    _getNextSibling(window: Window): Window;
-    _getRoutingId(window: Window): number;
-    getWebPreference<K extends keyof InternalWebPreferences>(window: Window, name: K): InternalWebPreferences[K];
+    mainFrame: InternalWebFrame;
   }
 
   type DataPipe = {

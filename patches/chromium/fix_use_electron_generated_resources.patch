@@ -12,10 +12,10 @@ as they will loaded as empty strings.
 * IDS_UTILITY_PROCESS_PRINTING_SERVICE_NAME on Windows
 
 diff --git a/chrome/browser/pdf/pdf_extension_util.cc b/chrome/browser/pdf/pdf_extension_util.cc
-index 0944d8c843985ee2f72e28bca37105a681cb82bb..6b1a3a1b7f8b776323d321d0b425e040654646a9 100644
+index 67a7140453728a685ad8fca283a1465ddc4a8a51..1b7bed03e5c3231fdd73aa369a598db5a883bfec 100644
 --- a/chrome/browser/pdf/pdf_extension_util.cc
 +++ b/chrome/browser/pdf/pdf_extension_util.cc
-@@ -9,8 +9,7 @@
+@@ -10,8 +10,7 @@
  #include "build/chromeos_buildflags.h"
  #include "chrome/browser/browser_process.h"
  #include "chrome/common/chrome_content_client.h"

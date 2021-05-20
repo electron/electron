@@ -2,6 +2,7 @@
 # Use of this source code is governed by the MIT license that can be
 # found in the LICENSE file.
 
+import("//build/config/ozone.gni")
 import("//build/config/ui.gni")
 import("//components/spellcheck/spellcheck_build_features.gni")
 import("//electron/buildflags/buildflags.gni")
@@ -42,8 +43,6 @@ static_library("chrome") {
     "//chrome/browser/predictors/proxy_lookup_client_impl.h",
     "//chrome/browser/predictors/resolve_host_client_impl.cc",
     "//chrome/browser/predictors/resolve_host_client_impl.h",
-    "//chrome/browser/ssl/security_state_tab_helper.cc",
-    "//chrome/browser/ssl/security_state_tab_helper.h",
     "//chrome/browser/ui/views/autofill/autofill_popup_view_utils.cc",
     "//chrome/browser/ui/views/autofill/autofill_popup_view_utils.h",
     "//extensions/browser/app_window/size_constraints.cc",
@@ -79,7 +78,6 @@ static_library("chrome") {
     "//components/keyed_service/content",
     "//components/paint_preview/buildflags",
     "//components/proxy_config",
-    "//components/security_state/content",
     "//content/public/browser",
     "//services/strings",
   ]
@@ -92,12 +90,18 @@ static_library("chrome") {
 
   if (is_linux) {
     sources += [ "//chrome/browser/icon_loader_auralinux.cc" ]
+    if (use_x11 || use_ozone) {
+      sources +=
+          [ "//chrome/browser/extensions/global_shortcut_listener_linux.cc" ]
+    }
     if (use_x11) {
       sources += [
         "//chrome/browser/extensions/global_shortcut_listener_x11.cc",
         "//chrome/browser/extensions/global_shortcut_listener_x11.h",
       ]
-    } else if (use_ozone) {
+    }
+    if (use_ozone) {
+      deps += [ "//ui/ozone" ]
       sources += [
         "//chrome/browser/extensions/global_shortcut_listener_ozone.cc",
         "//chrome/browser/extensions/global_shortcut_listener_ozone.h",
@@ -188,7 +192,7 @@ static_library("chrome") {
     }
 
     if (is_linux) {
-      sources += [ "//chrome/browser/media/webrtc/window_icon_util_x11.cc" ]
+      sources += [ "//chrome/browser/media/webrtc/window_icon_util_linux.cc" ]
     }
   }
 
@@ -212,8 +216,6 @@ static_library("chrome") {
       "//chrome/browser/printing/print_job_worker.h",
       "//chrome/browser/printing/print_view_manager_base.cc",
       "//chrome/browser/printing/print_view_manager_base.h",
-      "//chrome/browser/printing/print_view_manager_basic.cc",
-      "//chrome/browser/printing/print_view_manager_basic.h",
       "//chrome/browser/printing/printer_query.cc",
       "//chrome/browser/printing/printer_query.h",
       "//chrome/browser/printing/printing_service.cc",
@@ -250,8 +252,12 @@ static_library("chrome") {
       "//chrome/browser/picture_in_picture/picture_in_picture_window_manager.h",
       "//chrome/browser/ui/views/overlay/back_to_tab_image_button.cc",
       "//chrome/browser/ui/views/overlay/back_to_tab_image_button.h",
+      "//chrome/browser/ui/views/overlay/back_to_tab_label_button.cc",
       "//chrome/browser/ui/views/overlay/close_image_button.cc",
       "//chrome/browser/ui/views/overlay/close_image_button.h",
+      "//chrome/browser/ui/views/overlay/constants.h",
+      "//chrome/browser/ui/views/overlay/hang_up_button.cc",
+      "//chrome/browser/ui/views/overlay/hang_up_button.h",
       "//chrome/browser/ui/views/overlay/overlay_window_views.cc",
       "//chrome/browser/ui/views/overlay/overlay_window_views.h",
       "//chrome/browser/ui/views/overlay/playback_image_button.cc",
@@ -260,6 +266,10 @@ static_library("chrome") {
       "//chrome/browser/ui/views/overlay/resize_handle_button.h",
       "//chrome/browser/ui/views/overlay/skip_ad_label_button.cc",
       "//chrome/browser/ui/views/overlay/skip_ad_label_button.h",
+      "//chrome/browser/ui/views/overlay/toggle_camera_button.cc",
+      "//chrome/browser/ui/views/overlay/toggle_camera_button.h",
+      "//chrome/browser/ui/views/overlay/toggle_microphone_button.cc",
+      "//chrome/browser/ui/views/overlay/toggle_microphone_button.h",
       "//chrome/browser/ui/views/overlay/track_image_button.cc",
       "//chrome/browser/ui/views/overlay/track_image_button.h",
     ]

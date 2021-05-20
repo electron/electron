@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "gin/converter.h"
+#include "shell/common/gin_helper/microtasks_scope.h"
 #include "third_party/blink/public/common/messaging/cloneable_message.h"
 #include "v8/include/v8.h"
 
@@ -24,6 +25,8 @@ class V8Serializer : public v8::ValueSerializer::Delegate {
   ~V8Serializer() override = default;
 
   bool Serialize(v8::Local<v8::Value> value, blink::CloneableMessage* out) {
+    gin_helper::MicrotasksScope microtasks_scope(
+        isolate_, v8::MicrotasksScope::kDoNotRunMicrotasks);
     WriteBlinkEnvelope(19);
 
     serializer_.WriteHeader();

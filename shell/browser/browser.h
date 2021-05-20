@@ -83,8 +83,10 @@ class Browser : public WindowListObserver {
   // Clear the recent documents list.
   void ClearRecentDocuments();
 
+#if defined(OS_WIN)
   // Set the application user model ID.
   void SetAppUserModelID(const std::wstring& name);
+#endif
 
   // Remove the default protocol handler registry key
   bool RemoveAsDefaultProtocolClient(const std::string& protocol,
@@ -153,7 +155,7 @@ class Browser : public WindowListObserver {
 
 #if defined(OS_MAC)
   // Set the handler which decides whether to shutdown.
-  void SetShutdownHandler(base::Callback<bool()> handler);
+  void SetShutdownHandler(base::RepeatingCallback<bool()> handler);
 
   // Hide the application.
   void Hide();

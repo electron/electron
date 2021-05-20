@@ -2,11 +2,6 @@ import { app, BrowserWindow } from 'electron/main';
 import type { OpenDialogOptions, OpenDialogReturnValue, MessageBoxOptions, SaveDialogOptions, SaveDialogReturnValue, MessageBoxReturnValue, CertificateTrustDialogOptions } from 'electron/main';
 const dialogBinding = process._linkedBinding('electron_browser_dialog');
 
-const DialogType = {
-  OPEN: 'OPEN' as 'OPEN',
-  SAVE: 'SAVE' as 'SAVE'
-};
-
 enum SaveFileDialogProperties {
   createDirectory = 1 << 0,
   showHiddenFiles = 1 << 1,
@@ -72,16 +67,6 @@ const setupSaveDialogProperties = (properties: (keyof typeof SaveFileDialogPrope
   return dialogProperties;
 };
 
-const setupDialogProperties = (type: keyof typeof DialogType, properties: string[]): number => {
-  if (type === DialogType.OPEN) {
-    return setupOpenDialogProperties(properties as (keyof typeof OpenFileDialogProperties)[]);
-  } else if (type === DialogType.SAVE) {
-    return setupSaveDialogProperties(properties as (keyof typeof SaveFileDialogProperties)[]);
-  } else {
-    return 0;
-  }
-};
-
 const saveDialog = (sync: boolean, window: BrowserWindow | null, options?: SaveDialogOptions) => {
   checkAppInitialized();
 
@@ -115,7 +100,7 @@ const saveDialog = (sync: boolean, window: BrowserWindow | null, options?: SaveD
     nameFieldLabel,
     showsTagField,
     window,
-    properties: setupDialogProperties(DialogType.SAVE, properties)
+    properties: setupSaveDialogProperties(properties)
   };
 
   return sync ? dialogBinding.showSaveDialogSync(settings) : dialogBinding.showSaveDialog(settings);
@@ -156,7 +141,7 @@ const openDialog = (sync: boolean, window: BrowserWindow | null, options?: OpenD
     message,
     securityScopedBookmarks,
     window,
-    properties: setupDialogProperties(DialogType.OPEN, properties)
+    properties: setupOpenDialogProperties(properties)
   };
 
   return (sync) ? dialogBinding.showOpenDialogSync(settings) : dialogBinding.showOpenDialog(settings);

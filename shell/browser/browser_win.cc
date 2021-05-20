@@ -168,8 +168,7 @@ bool FormatCommandLineString(std::wstring* exe,
   }
 
   if (!launch_args.empty()) {
-    std::u16string joined_launch_args =
-        base::JoinString(launch_args, base::UTF8ToUTF16(" "));
+    std::u16string joined_launch_args = base::JoinString(launch_args, u" ");
     *exe = base::StringPrintf(L"%ls %ls", exe->c_str(),
                               base::UTF16ToWide(joined_launch_args).c_str());
   }
@@ -297,7 +296,7 @@ void GetFileIcon(const base::FilePath& path,
 
   auto* icon_manager = ElectronBrowserMainParts::Get()->GetIconManager();
   gfx::Image* icon =
-      icon_manager->LookupIconFromFilepath(normalized_path, icon_size);
+      icon_manager->LookupIconFromFilepath(normalized_path, icon_size, 1.0f);
   if (icon) {
     gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
     dict.Set("icon", *icon);
@@ -305,7 +304,7 @@ void GetFileIcon(const base::FilePath& path,
     dict.Set("path", normalized_path);
     promise.Resolve(dict);
   } else {
-    icon_manager->LoadIcon(normalized_path, icon_size,
+    icon_manager->LoadIcon(normalized_path, icon_size, 1.0f,
                            base::BindOnce(&OnIconDataAvailable, normalized_path,
                                           app_display_name, std::move(promise)),
                            cancelable_task_tracker_);

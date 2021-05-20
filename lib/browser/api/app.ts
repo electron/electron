@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-import { deprecate, Menu } from 'electron/main';
+import { Menu } from 'electron/main';
 
 const bindings = process._linkedBinding('electron_browser_app');
 const commandLine = process._linkedBinding('electron_common_command_line');
@@ -62,6 +62,9 @@ Object.defineProperty(app, 'applicationMenu', {
   }
   return execFile !== 'electron';
 })();
+
+// The native implementation is not provided on non-windows platforms
+app.setAppUserModelId = app.setAppUserModelId || (() => {});
 
 app._setDefaultAppPaths = (packagePath) => {
   // Set the user path according to application's name.
@@ -129,7 +132,3 @@ for (const name of events) {
     webContents.emit(name, event, ...args);
   });
 }
-
-// Deprecate allowRendererProcessReuse but only if they set it to false, no need to log if
-// they are setting it to true
-deprecate.removeProperty({ __proto__: app } as any, 'allowRendererProcessReuse', [false]);

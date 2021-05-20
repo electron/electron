@@ -1,13 +1,13 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Cheng Zhao <zcbenz@gmail.com>
 Date: Thu, 20 Sep 2018 17:48:49 -0700
-Subject: mas_disable_custom_window_frame.patch
+Subject: mas: disable private window-frame APIs
 
 Disable private window frame APIs (NSNextStepFrame and NSThemeFrame) for MAS
 build.
 
 diff --git a/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm b/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
-index 69580888047c4ac6abb68873315bcafb78dda706..aa347913a75084f669bf7d89fbcc919b5222c2d5 100644
+index cf88f696a46ff0ac84bcf466b44d1080438426c1..7672eee30a811001a0149edfa4eed9dc6a4b11f6 100644
 --- a/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
 +++ b/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
 @@ -9,6 +9,7 @@
@@ -18,7 +18,7 @@ index 69580888047c4ac6abb68873315bcafb78dda706..aa347913a75084f669bf7d89fbcc919b
  @interface NSWindow (PrivateBrowserNativeWidgetAPI)
  + (Class)frameViewClassForStyleMask:(NSUInteger)windowStyle;
  @end
-@@ -63,6 +64,8 @@ - (NSRect)_draggableFrame NS_DEPRECATED_MAC(10_10, 10_11) {
+@@ -63,10 +64,13 @@ - (NSRect)_draggableFrame NS_DEPRECATED_MAC(10_10, 10_11) {
  
  @end
  
@@ -26,16 +26,13 @@ index 69580888047c4ac6abb68873315bcafb78dda706..aa347913a75084f669bf7d89fbcc919b
 +
  @implementation BrowserNativeWidgetWindow
  
- // Prevent detached tabs from glitching when the window is partially offscreen.
-@@ -84,6 +87,7 @@ - (NSRect)constrainFrameRect:(NSRect)rect toScreen:(NSScreen*)screen {
- 
  // NSWindow (PrivateAPI) overrides.
  
 +#ifndef MAS_BUILD
  + (Class)frameViewClassForStyleMask:(NSUInteger)windowStyle {
    // - NSThemeFrame and its subclasses will be nil if it's missing at runtime.
    if ([BrowserWindowFrame class])
-@@ -98,6 +102,8 @@ - (BOOL)_usesCustomDrawing {
+@@ -81,6 +85,8 @@ - (BOOL)_usesCustomDrawing {
    return NO;
  }
  
@@ -78,7 +75,7 @@ index 8416c7c6e052dafb2aad61c0bd3224c36e945d23..cd356beda023ab2409b16d58ca38c70b
 +
  @end
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
-index e03bbc724cfd01967e71998394361556df1c4915..783745b11365c04c1e1052197d20d494bc901d45 100644
+index 5a23ea7558814eec59eda349bc7194afcb70d01e..c9147bbe5a225291552082434e5db34239394139 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
 @@ -17,6 +17,7 @@ class NativeWidgetNSWindowBridge;
@@ -98,10 +95,10 @@ index e03bbc724cfd01967e71998394361556df1c4915..783745b11365c04c1e1052197d20d494
  // The NSWindow used by BridgedNativeWidget. Provides hooks into AppKit that
  // can only be accomplished by overriding methods.
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index 44a574ee1a15c5a4a5cf8bfce0d2552068289cd2..6ed1e83a55b91b63beb716d56b5d21ce8fff59a6 100644
+index 73e450939f1232bb8f2e19067c15c1f465ca6745..a19db25096260258ae2debc16bc5612edd62e411 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-@@ -15,7 +15,9 @@
+@@ -16,7 +16,9 @@
  #import "ui/base/cocoa/window_size_constants.h"
  
  @interface NSWindow (Private)
@@ -111,7 +108,7 @@ index 44a574ee1a15c5a4a5cf8bfce0d2552068289cd2..6ed1e83a55b91b63beb716d56b5d21ce
  - (BOOL)hasKeyAppearance;
  - (long long)_resizeDirectionForMouseLocation:(CGPoint)location;
  - (BOOL)_isConsideredOpenForPersistentState;
-@@ -47,6 +49,8 @@ - (void)cr_mouseDownOnFrameView:(NSEvent*)event {
+@@ -48,6 +50,8 @@ - (void)cr_mouseDownOnFrameView:(NSEvent*)event {
  }
  @end
  
@@ -120,7 +117,7 @@ index 44a574ee1a15c5a4a5cf8bfce0d2552068289cd2..6ed1e83a55b91b63beb716d56b5d21ce
  @implementation NativeWidgetMacNSWindowTitledFrame
  - (void)mouseDown:(NSEvent*)event {
    if (self.window.isMovable)
-@@ -73,6 +77,8 @@ - (BOOL)usesCustomDrawing {
+@@ -74,6 +78,8 @@ - (BOOL)usesCustomDrawing {
  }
  @end
  
@@ -129,7 +126,7 @@ index 44a574ee1a15c5a4a5cf8bfce0d2552068289cd2..6ed1e83a55b91b63beb716d56b5d21ce
  @implementation NativeWidgetMacNSWindow {
   @private
    base::scoped_nsobject<CommandDispatcher> _commandDispatcher;
-@@ -154,6 +160,8 @@ - (BOOL)hasViewsMenuActive {
+@@ -181,6 +187,8 @@ - (BOOL)hasViewsMenuActive {
  
  // NSWindow overrides.
  
@@ -138,7 +135,7 @@ index 44a574ee1a15c5a4a5cf8bfce0d2552068289cd2..6ed1e83a55b91b63beb716d56b5d21ce
  + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    if (windowStyle & NSWindowStyleMaskTitled) {
      if (Class customFrame = [NativeWidgetMacNSWindowTitledFrame class])
-@@ -165,6 +173,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
+@@ -192,6 +200,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    return [super frameViewClassForStyleMask:windowStyle];
  }
  

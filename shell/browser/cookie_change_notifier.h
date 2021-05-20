@@ -25,7 +25,8 @@ class CookieChangeNotifier : public network::mojom::CookieChangeListener {
 
   // Register callbacks that needs to notified on any cookie store changes.
   base::CallbackListSubscription RegisterCookieChangeCallback(
-      const base::Callback<void(const net::CookieChangeInfo& change)>& cb);
+      const base::RepeatingCallback<void(const net::CookieChangeInfo& change)>&
+          cb);
 
  private:
   void StartListening();
@@ -35,7 +36,7 @@ class CookieChangeNotifier : public network::mojom::CookieChangeListener {
   void OnCookieChange(const net::CookieChangeInfo& change) override;
 
   ElectronBrowserContext* browser_context_;
-  base::CallbackList<void(const net::CookieChangeInfo& change)>
+  base::RepeatingCallbackList<void(const net::CookieChangeInfo& change)>
       cookie_change_sub_list_;
 
   mojo::Receiver<network::mojom::CookieChangeListener> receiver_;

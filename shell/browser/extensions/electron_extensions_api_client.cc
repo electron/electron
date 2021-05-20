@@ -8,16 +8,19 @@
 #include <string>
 
 #include "electron/buildflags/buildflags.h"
+#include "extensions/browser/guest_view/extensions_guest_view_manager_delegate.h"
 #include "extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest_delegate.h"
 #include "printing/buildflags/buildflags.h"
+#include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/extensions/api/management/electron_management_api_delegate.h"
 #include "shell/browser/extensions/electron_extension_web_contents_observer.h"
 #include "shell/browser/extensions/electron_messaging_delegate.h"
+#include "v8/include/v8.h"
 
 #if BUILDFLAG(ENABLE_PRINTING)
-#include "chrome/browser/printing/print_view_manager_basic.h"
 #include "components/printing/browser/print_manager_utils.h"
 #include "shell/browser/printing/print_preview_message_handler.h"
+#include "shell/browser/printing/print_view_manager_electron.h"
 #endif
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
@@ -26,6 +29,24 @@
 #endif
 
 namespace extensions {
+
+class ElectronGuestViewManagerDelegate
+    : public ExtensionsGuestViewManagerDelegate {
+ public:
+  explicit ElectronGuestViewManagerDelegate(content::BrowserContext* context)
+      : ExtensionsGuestViewManagerDelegate(context) {}
+  ~ElectronGuestViewManagerDelegate() override = default;
+
+  // GuestViewManagerDelegate:
+  void OnGuestAdded(content::WebContents* guest_web_contents) const override {
+    v8::Isolate* isolate = v8::Isolate::GetCurrent();
+    v8::HandleScope scope(isolate);
+    electron::api::WebContents::FromOrCreate(isolate, guest_web_contents);
+  }
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(ElectronGuestViewManagerDelegate);
+};
 
 class ElectronMimeHandlerViewGuestDelegate
     : public MimeHandlerViewGuestDelegate {
@@ -60,7 +81,7 @@ void ElectronExtensionsAPIClient::AttachWebContentsHelpers(
     content::WebContents* web_contents) const {
 #if BUILDFLAG(ENABLE_PRINTING)
   electron::PrintPreviewMessageHandler::CreateForWebContents(web_contents);
-  printing::PrintViewManagerBasic::CreateForWebContents(web_contents);
+  electron::PrintViewManagerElectron::CreateForWebContents(web_contents);
 #endif
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
@@ -81,6 +102,12 @@ std::unique_ptr<MimeHandlerViewGuestDelegate>
 ElectronExtensionsAPIClient::CreateMimeHandlerViewGuestDelegate(
     MimeHandlerViewGuest* guest) const {
   return std::make_unique<ElectronMimeHandlerViewGuestDelegate>();
+}
+
+std::unique_ptr<guest_view::GuestViewManagerDelegate>
+ElectronExtensionsAPIClient::CreateGuestViewManagerDelegate(
+    content::BrowserContext* context) const {
+  return std::make_unique<ElectronGuestViewManagerDelegate>(context);
 }
 
 }  // namespace extensions

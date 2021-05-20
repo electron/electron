@@ -123,7 +123,7 @@ describe('app module', () => {
   describe('app.getLocaleCountryCode()', () => {
     it('should be empty or have length of two', () => {
       let expectedLength = 2;
-      if (process.platform === 'linux') {
+      if (process.platform === 'linux' && process.env.CI) {
         // Linux CI machines have no locale.
         expectedLength = 0;
       }
@@ -143,8 +143,7 @@ describe('app module', () => {
     });
   });
 
-  // Running child app under ASan might receive SIGKILL because of OOM.
-  ifdescribe(!process.env.IS_ASAN)('app.exit(exitCode)', () => {
+  describe('app.exit(exitCode)', () => {
     let appProcess: cp.ChildProcess | null = null;
 
     afterEach(() => {
@@ -210,8 +209,7 @@ describe('app module', () => {
     });
   });
 
-  // Running child app under ASan might receive SIGKILL because of OOM.
-  ifdescribe(!process.env.IS_ASAN)('app.requestSingleInstanceLock', () => {
+  describe('app.requestSingleInstanceLock', () => {
     it('prevents the second launch of app', async function () {
       this.timeout(120000);
       const appPath = path.join(fixturesPath, 'api', 'singleton');
@@ -253,8 +251,7 @@ describe('app module', () => {
     });
   });
 
-  // Running child app under ASan might receive SIGKILL because of OOM.
-  ifdescribe(!process.env.IS_ASAN)('app.relaunch', () => {
+  describe('app.relaunch', () => {
     let server: net.Server | null = null;
     const socketPath = process.platform === 'win32' ? '\\\\.\\pipe\\electron-app-relaunch' : '/tmp/electron-app-relaunch';
 
@@ -854,8 +851,7 @@ describe('app module', () => {
     });
   });
 
-  // Running child app under ASan might receive SIGKILL because of OOM.
-  ifdescribe(!process.env.IS_ASAN)('getAppPath', () => {
+  describe('getAppPath', () => {
     it('works for directories with package.json', async () => {
       const { appPath } = await runTestApp('app-path');
       expect(appPath).to.equal(path.resolve(fixturesPath, 'api/app-path'));
@@ -1331,8 +1327,7 @@ describe('app module', () => {
     });
   });
 
-  // Running child app under ASan might receive SIGKILL because of OOM.
-  ifdescribe(!process.env.IS_ASAN)('sandbox options', () => {
+  describe('sandbox options', () => {
     let appProcess: cp.ChildProcess = null as any;
     let server: net.Server = null as any;
     const socketPath = process.platform === 'win32' ? '\\\\.\\pipe\\electron-mixed-sandbox' : '/tmp/electron-mixed-sandbox';
@@ -1557,8 +1552,7 @@ describe('app module', () => {
     });
   });
 
-  // Running child app under ASan might receive SIGKILL because of OOM.
-  ifdescribe(!process.env.IS_ASAN)('commandLine.hasSwitch (existing argv)', () => {
+  describe('commandLine.hasSwitch (existing argv)', () => {
     it('returns true when present', async () => {
       const { hasSwitch } = await runTestApp('command-line', '--foobar');
       expect(hasSwitch).to.equal(true);
@@ -1586,8 +1580,7 @@ describe('app module', () => {
     });
   });
 
-  // Running child app under ASan might receive SIGKILL because of OOM.
-  ifdescribe(!process.env.IS_ASAN)('commandLine.getSwitchValue (existing argv)', () => {
+  describe('commandLine.getSwitchValue (existing argv)', () => {
     it('returns the value when present', async () => {
       const { getSwitchValue } = await runTestApp('command-line', '--foobar=test');
       expect(getSwitchValue).to.equal('test');
@@ -1614,8 +1607,7 @@ describe('app module', () => {
   });
 });
 
-// Running child app under ASan might receive SIGKILL because of OOM.
-ifdescribe(!process.env.IS_ASAN)('default behavior', () => {
+describe('default behavior', () => {
   describe('application menu', () => {
     it('creates the default menu if the app does not set it', async () => {
       const result = await runTestApp('default-menu');
@@ -1634,6 +1626,8 @@ ifdescribe(!process.env.IS_ASAN)('default behavior', () => {
   });
 
   describe('window-all-closed', () => {
+    afterEach(closeAllWindows);
+
     it('quits when the app does not handle the event', async () => {
       const result = await runTestApp('window-all-closed');
       expect(result).to.equal(false);
@@ -1642,6 +1636,17 @@ ifdescribe(!process.env.IS_ASAN)('default behavior', () => {
     it('does not quit when the app handles the event', async () => {
       const result = await runTestApp('window-all-closed', '--handle-event');
       expect(result).to.equal(true);
+    });
+
+    it('should omit closed windows from getAllWindows', async () => {
+      const w = new BrowserWindow({ show: false });
+      const len = new Promise(resolve => {
+        app.on('window-all-closed', () => {
+          resolve(BrowserWindow.getAllWindows().length);
+        });
+      });
+      w.close();
+      expect(await len).to.equal(0);
     });
   });
 
@@ -1666,26 +1671,6 @@ ifdescribe(!process.env.IS_ASAN)('default behavior', () => {
       app.userAgentFallback = 'test-agent/123';
       app.userAgentFallback = '';
       expect(app.userAgentFallback).to.equal(initialValue);
-    });
-  });
-
-  describe('app.allowRendererProcessReuse', () => {
-    it('should default to true', () => {
-      expect(app.allowRendererProcessReuse).to.equal(true);
-    });
-
-    it('should cause renderer processes to get new PIDs when false', async () => {
-      const output = await runTestApp('site-instance-overrides', 'false');
-      expect(output[0]).to.be.a('number').that.is.greaterThan(0);
-      expect(output[1]).to.be.a('number').that.is.greaterThan(0);
-      expect(output[0]).to.not.equal(output[1]);
-    });
-
-    it('should cause renderer processes to keep the same PID when true', async () => {
-      const output = await runTestApp('site-instance-overrides', 'true');
-      expect(output[0]).to.be.a('number').that.is.greaterThan(0);
-      expect(output[1]).to.be.a('number').that.is.greaterThan(0);
-      expect(output[0]).to.equal(output[1]);
     });
   });
 

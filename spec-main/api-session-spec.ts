@@ -1090,6 +1090,24 @@ describe('session module', () => {
     });
   });
 
+  describe('session.storagePage', () => {
+    it('returns a string', () => {
+      expect(session.defaultSession.storagePath).to.be.a('string');
+    });
+
+    it('returns null for in memory sessions', () => {
+      expect(session.fromPartition('in-memory').storagePath).to.equal(null);
+    });
+
+    it('returns different paths for partitions and the default session', () => {
+      expect(session.defaultSession.storagePath).to.not.equal(session.fromPartition('persist:two').storagePath);
+    });
+
+    it('returns different paths for different partitions', () => {
+      expect(session.fromPartition('persist:one').storagePath).to.not.equal(session.fromPartition('persist:two').storagePath);
+    });
+  });
+
   describe('ses.setSSLConfig()', () => {
     it('can disable cipher suites', async () => {
       const ses = session.fromPartition('' + Math.random());

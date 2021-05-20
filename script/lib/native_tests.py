@@ -4,10 +4,9 @@ import os
 import subprocess
 import sys
 
-SOURCE_ROOT = os.path.abspath(
-    os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-VENDOR_DIR = os.path.join(SOURCE_ROOT, 'vendor')
-PYYAML_LIB_DIR = os.path.join(VENDOR_DIR, 'pyyaml', 'lib')
+from util import SRC_DIR
+
+PYYAML_LIB_DIR = os.path.join(SRC_DIR, 'third_party', 'pyyaml', 'lib')
 sys.path.append(PYYAML_LIB_DIR)
 import yaml  #pylint: disable=wrong-import-position,wrong-import-order
 

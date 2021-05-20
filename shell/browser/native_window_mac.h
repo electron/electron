@@ -8,6 +8,7 @@
 #import <Cocoa/Cocoa.h>
 
 #include <memory>
+#include <queue>
 #include <string>
 #include <tuple>
 #include <vector>
@@ -104,6 +105,7 @@ class NativeWindowMac : public NativeWindow,
   void SetIgnoreMouseEvents(bool ignore, bool forward) override;
   void SetContentProtection(bool enable) override;
   void SetFocusable(bool focusable) override;
+  bool IsFocusable() override;
   void AddBrowserView(NativeBrowserView* browser_view) override;
   void RemoveBrowserView(NativeBrowserView* browser_view) override;
   void SetTopBrowserView(NativeBrowserView* browser_view) override;
@@ -147,6 +149,8 @@ class NativeWindowMac : public NativeWindow,
   gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds) const override;
   void NotifyWindowEnterFullScreen() override;
   void NotifyWindowLeaveFullScreen() override;
+  void SetActive(bool is_key) override;
+  bool IsActive() const override;
 
   void NotifyWindowWillEnterFullScreen();
   void NotifyWindowWillLeaveFullScreen();
@@ -159,10 +163,18 @@ class NativeWindowMac : public NativeWindow,
   // Use a custom content view instead of Chromium's BridgedContentView.
   void OverrideNSWindowContentView();
 
+  void UpdateVibrancyRadii(bool fullscreen);
+
   // Set the attribute of NSWindow while work around a bug of zoom button.
   void SetStyleMask(bool on, NSUInteger flag);
   void SetCollectionBehavior(bool on, NSUInteger flag);
   void SetWindowLevel(int level);
+
+  enum class FullScreenTransitionState { ENTERING, EXITING, NONE };
+
+  // Handle fullscreen transitions.
+  void SetFullScreenTransitionState(FullScreenTransitionState state);
+  void HandlePendingFullscreenTransitions();
 
   enum class VisualEffectState {
     kFollowWindow,
@@ -182,7 +194,6 @@ class NativeWindowMac : public NativeWindow,
   ElectronTouchBar* touch_bar() const { return touch_bar_.get(); }
   bool zoom_to_page_width() const { return zoom_to_page_width_; }
   bool always_simple_fullscreen() const { return always_simple_fullscreen_; }
-  bool exiting_fullscreen() const { return exiting_fullscreen_; }
 
  protected:
   // views::WidgetDelegate:
@@ -224,11 +235,16 @@ class NativeWindowMac : public NativeWindow,
   std::unique_ptr<RootViewMac> root_view_;
 
   bool is_kiosk_ = false;
-  bool was_fullscreen_ = false;
   bool zoom_to_page_width_ = false;
   bool resizable_ = true;
-  bool exiting_fullscreen_ = false;
   base::Optional<gfx::Point> traffic_light_position_;
+
+  std::queue<bool> pending_transitions_;
+  FullScreenTransitionState fullscreen_transition_state() const {
+    return fullscreen_transition_state_;
+  }
+  FullScreenTransitionState fullscreen_transition_state_ =
+      FullScreenTransitionState::NONE;
 
   NSInteger attention_request_id_ = 0;  // identifier from requestUserAttention
 
@@ -253,12 +269,12 @@ class NativeWindowMac : public NativeWindow,
   bool is_simple_fullscreen_ = false;
   bool was_maximizable_ = false;
   bool was_movable_ = false;
+  bool is_active_ = false;
   NSRect original_frame_;
   NSInteger original_level_;
   NSUInteger simple_fullscreen_mask_;
 
-  base::scoped_nsobject<NSColor> background_color_before_vibrancy_;
-  bool transparency_before_vibrancy_ = false;
+  std::string vibrancy_type_;
 
   // The presentation options before entering simple fullscreen mode.
   NSApplicationPresentationOptions simple_fullscreen_options_;

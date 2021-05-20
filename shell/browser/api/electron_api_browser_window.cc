@@ -78,10 +78,6 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
   api_web_contents_->AddObserver(this);
   Observe(api_web_contents_->web_contents());
 
-  // Keep a copy of the options for later use.
-  gin_helper::Dictionary(isolate, web_contents.ToV8().As<v8::Object>())
-      .Set("browserWindowOptions", options);
-
   // Associate with BrowserWindow.
   web_contents->SetOwnerWindow(window());
 
@@ -293,6 +289,7 @@ void BrowserWindow::OnWindowIsKeyChanged(bool is_key) {
   auto* rwhv = web_contents()->GetRenderWidgetHostView();
   if (rwhv)
     rwhv->SetActive(is_key);
+  window()->SetActive(is_key);
 #endif
 }
 

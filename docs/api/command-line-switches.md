@@ -75,7 +75,7 @@ This switch can not be used in `app.commandLine.appendSwitch` since it is parsed
 earlier than user's app is loaded, but you can set the `ELECTRON_ENABLE_LOGGING`
 environment variable to achieve the same effect.
 
-## --force-fieldtrials=`trials`
+### --force-fieldtrials=`trials`
 
 Field trials to be forcefully enabled or disabled.
 
@@ -137,7 +137,8 @@ proxy server flags that are passed.
 
 ### --no-sandbox
 
-Disables Chromium sandbox, which is now enabled by default.
+Disables the Chromium [sandbox](https://www.chromium.org/developers/design-documents/sandbox).
+Forces renderer process and Chromium helper processes to run un-sandboxed.
 Should only be used for testing.
 
 ### --proxy-bypass-list=`hosts`
