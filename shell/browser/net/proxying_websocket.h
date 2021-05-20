@@ -96,7 +96,7 @@ class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
       WebSocketFactory factory,
       const GURL& url,
       const GURL& site_for_cookies,
-      const base::Optional<std::string>& user_agent,
+      const absl::optional<std::string>& user_agent,
       mojo::PendingRemote<network::mojom::WebSocketHandshakeClient>
           handshake_client,
       bool has_extra_headers,

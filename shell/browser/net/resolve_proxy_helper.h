@@ -55,7 +55,7 @@ class ResolveProxyHelper
   // network::mojom::ProxyLookupClient implementation.
   void OnProxyLookupComplete(
       int32_t net_error,
-      const base::Optional<net::ProxyInfo>& proxy_info) override;
+      const absl::optional<net::ProxyInfo>& proxy_info) override;
 
   // Self-reference. Owned as long as there's an outstanding proxy lookup.
   scoped_refptr<ResolveProxyHelper> owned_self_;

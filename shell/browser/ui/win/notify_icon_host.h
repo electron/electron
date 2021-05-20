@@ -24,7 +24,7 @@ class NotifyIconHost {
   NotifyIconHost();
   ~NotifyIconHost();
 
-  NotifyIcon* CreateNotifyIcon(base::Optional<UUID> guid);
+  NotifyIcon* CreateNotifyIcon(absl::optional<UUID> guid);
   void Remove(NotifyIcon* notify_icon);
 
  private:

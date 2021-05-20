@@ -912,7 +912,7 @@ void App::SetAppPath(const base::FilePath& app_path) {
 
 #if !defined(OS_MAC)
 void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
-                         base::Optional<base::FilePath> custom_path) {
+                         absl::optional<base::FilePath> custom_path) {
   if (custom_path.has_value()) {
     if (!custom_path->IsAbsolute()) {
       thrower.ThrowError("Path must be absolute");
@@ -961,7 +961,7 @@ base::FilePath App::GetPath(gin_helper::ErrorThrower thrower,
     // If users try to get the logs path before setting a logs path,
     // set the path to a sensible default and then try to get it again
     if (!succeed && name == "logs") {
-      SetAppLogsPath(thrower, base::Optional<base::FilePath>());
+      SetAppLogsPath(thrower, absl::optional<base::FilePath>());
       succeed = base::PathService::Get(key, &path);
     }
 

@@ -95,13 +95,13 @@ bool GetNextArgument(gin::Arguments* args,
   }
 }
 
-// Support base::Optional as output, which would be empty and do not throw error
+// Support absl::optional as output, which would be empty and do not throw error
 // when conversion to T fails.
 template <typename T>
 bool GetNextArgument(gin::Arguments* args,
                      int create_flags,
                      bool is_first,
-                     base::Optional<T>* result) {
+                     absl::optional<T>* result) {
   T converted;
   // Use gin::Arguments::GetNext which always advances |next| counter.
   if (args->GetNext(&converted))

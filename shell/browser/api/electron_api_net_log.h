@@ -57,7 +57,7 @@ class NetLog : public gin::Wrappable<NetLog> {
 
   network::mojom::NetLogExporterPtr net_log_exporter_;
 
-  base::Optional<gin_helper::Promise<void>> pending_start_promise_;
+  absl::optional<gin_helper::Promise<void>> pending_start_promise_;
 
   scoped_refptr<base::TaskRunner> file_task_runner_;
 

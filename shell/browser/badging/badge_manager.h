@@ -41,7 +41,7 @@ class BadgeManager : public KeyedService, public blink::mojom::BadgeService {
       mojo::PendingReceiver<blink::mojom::BadgeService> receiver);
 
   // Determines the text to put on the badge based on some badge_content.
-  static std::string GetBadgeString(base::Optional<int> badge_content);
+  static std::string GetBadgeString(absl::optional<int> badge_content);
 
  private:
   // The BindingContext of a mojo request. Allows mojo calls to be tied back

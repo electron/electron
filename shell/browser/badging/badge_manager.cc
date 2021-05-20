@@ -67,7 +67,7 @@ void BadgeManager::BindServiceWorkerReceiver(
                                 std::move(context));
 }
 
-std::string BadgeManager::GetBadgeString(base::Optional<int> badge_content) {
+std::string BadgeManager::GetBadgeString(absl::optional<int> badge_content) {
   if (!badge_content)
     return "•";
 
@@ -87,7 +87,7 @@ void BadgeManager::SetBadge(blink::mojom::BadgeValuePtr mojo_value) {
     return;
   }
 
-  base::Optional<int> value =
+  absl::optional<int> value =
       mojo_value->is_flag() ? base::nullopt
                             : base::make_optional(mojo_value->get_number());
 

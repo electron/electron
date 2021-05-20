@@ -58,7 +58,7 @@ namespace {
 
 using CompletionCallback = base::OnceCallback<void(const base::FilePath&)>;
 
-base::Optional<base::FilePath> CreateTemporaryFileOnIO() {
+absl::optional<base::FilePath> CreateTemporaryFileOnIO() {
   base::FilePath temp_file_path;
   if (!base::CreateTemporaryFile(&temp_file_path))
     return base::nullopt;
@@ -66,10 +66,10 @@ base::Optional<base::FilePath> CreateTemporaryFileOnIO() {
 }
 
 void StopTracing(gin_helper::Promise<base::FilePath> promise,
-                 base::Optional<base::FilePath> file_path) {
+                 absl::optional<base::FilePath> file_path) {
   auto resolve_or_reject = base::AdaptCallbackForRepeating(base::BindOnce(
       [](gin_helper::Promise<base::FilePath> promise,
-         const base::FilePath& path, base::Optional<std::string> error) {
+         const base::FilePath& path, absl::optional<std::string> error) {
         if (error) {
           promise.RejectWithErrorMessage(error.value());
         } else {

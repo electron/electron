@@ -28,9 +28,9 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
     SharingItem(const SharingItem&) = delete;
     ~SharingItem();
 
-    base::Optional<std::vector<std::string>> texts;
-    base::Optional<std::vector<GURL>> urls;
-    base::Optional<std::vector<base::FilePath>> file_paths;
+    absl::optional<std::vector<std::string>> texts;
+    absl::optional<std::vector<GURL>> urls;
+    absl::optional<std::vector<base::FilePath>> file_paths;
   };
 #endif
 
@@ -93,7 +93,7 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
   bool GetSharingItemAt(int index, SharingItem* item) const;
   // Set/Get the SharingItem of this menu.
   void SetSharingItem(SharingItem item);
-  const base::Optional<SharingItem>& GetSharingItem() const;
+  const absl::optional<SharingItem>& GetSharingItem() const;
 #endif
 
   // ui::SimpleMenuModel:
@@ -111,7 +111,7 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
   Delegate* delegate_;  // weak ref.
 
 #if defined(OS_MAC)
-  base::Optional<SharingItem> sharing_item_;
+  absl::optional<SharingItem> sharing_item_;
 #endif
 
   std::map<int, std::u16string> toolTips_;   // command id -> tooltip

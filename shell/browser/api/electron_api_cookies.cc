@@ -131,10 +131,10 @@ bool MatchesCookie(const base::Value& filter,
   if ((str = filter.FindStringKey("domain")) &&
       !MatchesDomain(*str, cookie.Domain()))
     return false;
-  base::Optional<bool> secure_filter = filter.FindBoolKey("secure");
+  absl::optional<bool> secure_filter = filter.FindBoolKey("secure");
   if (secure_filter && *secure_filter == cookie.IsSecure())
     return false;
-  base::Optional<bool> session_filter = filter.FindBoolKey("session");
+  absl::optional<bool> session_filter = filter.FindBoolKey("session");
   if (session_filter && *session_filter != !cookie.IsPersistent())
     return false;
   return true;
@@ -162,7 +162,7 @@ void FilterCookieWithStatuses(
 }
 
 // Parse dictionary property to CanonicalCookie time correctly.
-base::Time ParseTimeProperty(const base::Optional<double>& value) {
+base::Time ParseTimeProperty(const absl::optional<double>& value) {
   if (!value)  // empty time means ignoring the parameter
     return base::Time();
   if (*value == 0)  // FromDoubleT would convert 0 to empty Time

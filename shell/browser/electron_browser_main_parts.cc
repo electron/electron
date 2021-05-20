@@ -314,7 +314,7 @@ int ElectronBrowserMainParts::PreCreateThreads() {
   // We must set this env first to make ui::ResourceBundle accept the custom
   // locale.
   std::unique_ptr<base::Environment> env(base::Environment::Create());
-  base::Optional<std::string> lc_all;
+  absl::optional<std::string> lc_all;
   if (!locale.empty()) {
     std::string str;
     if (env->GetVar("LC_ALL", &str))

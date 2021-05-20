@@ -353,7 +353,7 @@ void OffScreenRenderWidgetHostView::SetBackgroundColor(SkColor color) {
   }
 }
 
-base::Optional<SkColor> OffScreenRenderWidgetHostView::GetBackgroundColor() {
+absl::optional<SkColor> OffScreenRenderWidgetHostView::GetBackgroundColor() {
   return background_color_;
 }
 
@@ -498,7 +498,7 @@ gfx::Rect OffScreenRenderWidgetHostView::GetBoundsInRootWindow() {
   return gfx::Rect(size_);
 }
 
-base::Optional<content::DisplayFeature>
+absl::optional<content::DisplayFeature>
 OffScreenRenderWidgetHostView::GetDisplayFeature() {
   return base::nullopt;
 }
