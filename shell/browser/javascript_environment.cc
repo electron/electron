@@ -168,7 +168,6 @@ JavascriptEnvironment::~JavascriptEnvironment() {
   isolate_->Exit();
   g_isolate = nullptr;
 
-  platform_->CancelPendingDelayedTasks(isolate_);
   platform_->UnregisterIsolate(isolate_);
 }
 
