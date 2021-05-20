@@ -229,7 +229,7 @@ index 80cafcc0fbf7968ceb7a72dd0af516b5fefa31d0..56b9c93b98c232a316e285a7f9b67998
 +
 +#undef PATCH_CS
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index f0689a0342831498b5bde01af92839137cc0ac87..47541cb43e55b01b59f1680a8628973cc6a22afb 100644
+index 4f7de5612c2278af86893686025d3372ba03ee5c..1dc9f7796877b1f9bacd05f1d6d0160935a9dc6f 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
 @@ -225,6 +225,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
@@ -241,10 +241,10 @@ index f0689a0342831498b5bde01af92839137cc0ac87..47541cb43e55b01b59f1680a8628973c
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 3606af3bdda4ee7e7bc996b3c41c29a0e1fe48bc..05020a6e9111f80bb2382e49d5d91375f54aa6d8 100644
+index d24afb35b02947f58274a4d97b2ab04275a3b020..9631e2ca7831058fda83d401955c1b067bd175b6 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -211,6 +211,7 @@
+@@ -212,6 +212,7 @@
  #include "ui/accessibility/accessibility_switches.h"
  #include "ui/base/ui_base_switches.h"
  #include "ui/display/display_switches.h"
@@ -252,7 +252,7 @@ index 3606af3bdda4ee7e7bc996b3c41c29a0e1fe48bc..05020a6e9111f80bb2382e49d5d91375
  #include "ui/gl/gl_switches.h"
  #include "ui/native_theme/native_theme_features.h"
  #include "url/origin.h"
-@@ -3203,6 +3204,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3200,6 +3201,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
