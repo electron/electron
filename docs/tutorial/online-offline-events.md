@@ -47,7 +47,7 @@ function updateOnlineStatus () {
 }
 
 window.addEventListener('online', updateOnlineStatus)
-window.addEventListener('offline', onlineStatusIndicator)
+window.addEventListener('offline', updateOnlineStatus)
 
 onlineStatusIndicator()
 ```
