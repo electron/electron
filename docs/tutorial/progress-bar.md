@@ -40,31 +40,50 @@ See the [API documentation for more options and modes][setprogressbar].
 
 ## Example
 
-Add the following lines to the
-`main.js` file:
+Make the following updates to the `main.js` file.
+
+First, add the following declaration line to the top of the file (above the
+`createWindow` function)...
+```
+let indeterminateTimeout, progressInterval
+```
+
+Next, add the following code _inside_ the `createWindow` function just after the call
+to `loadFile`...
 
 ```javascript fiddle='docs/fiddles/features/progress-bar'
-const { BrowserWindow } = require('electron')
-const win = new BrowserWindow()
+  const INCREMENT = 0.02
+  const INTERVAL_DELAY = 100 // ms
+  const INDETERMINATE_PAUSE = 5000 // ms
 
-const INCREMENT = 0.02
-const INTERVAL_DELAY = 100 // ms
-let c = 0
-
-// create an interval timer that fires every INTERVAL_DELAY
-// see docs at https://nodejs.org/api/timers.html#timers_setinterval_callback_delay_args
-const interval = setInterval(() => {
+  let c = 0
+  progressInterval = setInterval(() => {
+    
     // update progress bar to next value
     win.setProgressBar(c)
 
-    if (c > 1) {
-        // progress bar has reached full so reset it and stop the timer
-        win.setProgressBar(-1)
-        clearTimeout(interval)
-    }
-    c += INCREMENT
-}, INTERVAL_DELAY)
+      if (c > 1) {
+        // set to indeterminate state
+        win.setProgressBar(2)
+        
+        // stop the interval
+        clearInterval(progressInterval)
 
+        // and after INDETERMINATE_PAUSE reset the progress bar
+        indeterminateTimeout = setTimeout(() => win.setProgressBar(-1), INDETERMINATE_PAUSE)
+      }
+      c += INCREMENT
+  }, INTERVAL_DELAY)
+```
+
+And finally, add this function _after_ the `createWindow` function...
+
+```
+// before the app is terminated, clear both timers
+app.on('before-quit', () => {
+  clearInterval(progressInterval)
+  clearTimeout(indeterminateTimeout)
+})
 ```
 
 After launching the Electron application, the dock (macOS) or taskbar (Windows, Unity)
