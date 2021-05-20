@@ -12,7 +12,7 @@ Ideally we could add an embedder observer pattern here but that can be
 done in future work.
 
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index d7ada5c44ba02449ab11d4cb5a6f201ea6adf9f6..e77a0d718ee398ad9c31736a9cb13e22c00114e9 100644
+index 6007654af0e7a3e6c6148aa32b00f5116a44be2b..edcc2009b430480731cbee2d77316c12d32d6a9d 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
 @@ -155,6 +155,7 @@
@@ -23,7 +23,7 @@ index d7ada5c44ba02449ab11d4cb5a6f201ea6adf9f6..e77a0d718ee398ad9c31736a9cb13e22
  #include "third_party/blink/renderer/platform/graphics/image.h"
  #include "third_party/blink/renderer/platform/graphics/paint/cull_rect.h"
  #include "third_party/blink/renderer/platform/graphics/paint/paint_record_builder.h"
-@@ -1770,6 +1771,14 @@ void WebView::ApplyWebPreferences(const web_pref::WebPreferences& prefs,
+@@ -1768,6 +1769,14 @@ void WebView::ApplyWebPreferences(const web_pref::WebPreferences& prefs,
  
    RuntimeEnabledFeatures::SetTranslateServiceEnabled(
        prefs.translate_service_available);
