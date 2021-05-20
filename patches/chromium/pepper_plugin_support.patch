@@ -154,55 +154,59 @@ index 56a23e8f41bb418d414f11af5797b30571d4cc2b..6f9f577f16de80dd2ab194b557bbd9ec
    DISALLOW_COPY_AND_ASSIGN(PepperIsolatedFileSystemMessageFilter);
  };
 diff --git a/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc b/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc
-index 7820a55f563d40865cd7bbf4a03e7f82db81043e..d9b1c4bc6abfa395782761455d4dd2e3105d7b14 100644
+index 60cfd89dfd18eced6f6d103267b80d547d2e9f26..a326b07db091dba194c3b389338d9fc29ab76563 100644
 --- a/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc
 +++ b/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc
 @@ -7,8 +7,13 @@
  #include "base/check_op.h"
  #include "chrome/renderer/pepper/pepper_flash_font_file_host.h"
  #include "chrome/renderer/pepper/pepper_flash_fullscreen_host.h"
-+#if 0
- #include "chrome/renderer/pepper/pepper_uma_host.h"
-+#endif
-+#include "electron/buildflags/buildflags.h"
-+#if BUILDFLAG(ENABLE_PDF_VIEWER)
- #include "components/pdf/renderer/pepper_pdf_host.h"
-+#endif
+-#include "chrome/renderer/pepper/pepper_uma_host.h"
+-#include "components/pdf/renderer/pepper_pdf_host.h"
+++#if 0
++ #include "chrome/renderer/pepper/pepper_uma_host.h"
+++#endif
+++#include "electron/buildflags/buildflags.h"
+++#if BUILDFLAG(ENABLE_PDF_VIEWER)
++ #include "components/pdf/renderer/pepper_pdf_host.h"
+++#endif
  #include "content/public/renderer/renderer_ppapi_host.h"
+ #include "pdf/buildflags.h"
  #include "ppapi/host/ppapi_host.h"
- #include "ppapi/host/resource_host.h"
-@@ -36,19 +41,10 @@ ChromeRendererPepperHostFactory::CreateResourceHost(
+@@ -37,6 +42,7 @@ ChromeRendererPepperHostFactory::CreateResourceHost(
    if (!host_->IsValidInstance(instance))
      return nullptr;
  
--  if (host_->GetPpapiHost()->permissions().HasPermission(
--          ppapi::PERMISSION_FLASH)) {
--    switch (message.type()) {
--      case PpapiHostMsg_FlashFullscreen_Create::ID: {
--        return std::make_unique<PepperFlashFullscreenHost>(host_, instance,
--                                                           resource);
--      }
--    }
--  }
--
-   // TODO(raymes): PDF also needs access to the FlashFontFileHost currently.
-   // We should either rename PPB_FlashFont_File to PPB_FontFile_Private or get
-   // rid of its use in PDF if possible.
-+#if BUILDFLAG(ENABLE_PDF_VIEWER)
++#if 0
    if (host_->GetPpapiHost()->permissions().HasPermission(
-           ppapi::PERMISSION_FLASH) ||
-       host_->GetPpapiHost()->permissions().HasPermission(
-@@ -75,7 +71,9 @@ ChromeRendererPepperHostFactory::CreateResourceHost(
+           ppapi::PERMISSION_FLASH)) {
+     switch (message.type()) {
+@@ -46,6 +52,7 @@ ChromeRendererPepperHostFactory::CreateResourceHost(
        }
      }
    }
 +#endif
  
+   // TODO(raymes): PDF also needs access to the FlashFontFileHost currently.
+   // We should either rename PPB_FlashFont_File to PPB_FontFile_Private or get
+@@ -68,7 +75,7 @@ ChromeRendererPepperHostFactory::CreateResourceHost(
+     }
+   }
+ 
+-#if BUILDFLAG(ENABLE_PDF)
++#if BUILDFLAG(ENABLE_PDF_VIEWER)
+   if (host_->GetPpapiHost()->permissions().HasPermission(
+           ppapi::PERMISSION_PDF)) {
+     switch (message.type()) {
+@@ -79,6 +86,7 @@ ChromeRendererPepperHostFactory::CreateResourceHost(
+   }
+ #endif
+ 
 +#if 0
    // Permissions for the following interfaces will be checked at the
    // time of the corresponding instance's method calls.  Currently these
    // interfaces are available only for whitelisted apps which may not have
-@@ -85,6 +83,7 @@ ChromeRendererPepperHostFactory::CreateResourceHost(
+@@ -88,6 +96,7 @@ ChromeRendererPepperHostFactory::CreateResourceHost(
        return std::make_unique<PepperUMAHost>(host_, instance, resource);
      }
    }
