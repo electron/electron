@@ -8,11 +8,123 @@ and https://github.com/nodejs/node/pull/31178 that is not currently compatible
 with what's exposed through BoringSSL. I plan to upstream parts of this or
 otherwise introduce shims to reduce friction.
 
+diff --git a/src/crypto/crypto_cipher.cc b/src/crypto/crypto_cipher.cc
+index 5ce466582823ae1304731610da61b7fde77fc65a..c40f03e56fce2d5edae179170d3846515d99e393 100644
+--- a/src/crypto/crypto_cipher.cc
++++ b/src/crypto/crypto_cipher.cc
+@@ -144,14 +144,14 @@ void GetCipherInfo(const FunctionCallbackInfo<Value>& args) {
+           OneByteString(env->isolate(), mode_label)).IsNothing()) {
+     return;
+   }
+-
++#ifndef OPENSSL_IS_BORINGSSL
+   if (info->Set(
+           env->context(),
+           env->name_string(),
+           OneByteString(env->isolate(), EVP_CIPHER_name(cipher))).IsNothing()) {
+     return;
+   }
+-
++#endif
+   if (info->Set(
+           env->context(),
+           FIXED_ONE_BYTE_STRING(env->isolate(), "nid"),
+@@ -905,12 +905,14 @@ bool PublicKeyCipher::Cipher(
+     // OpenSSL takes ownership of the label, so we need to create a copy.
+     void* label = OPENSSL_memdup(oaep_label.data(), oaep_label.size());
+     CHECK_NOT_NULL(label);
++#ifndef OPENSSL_IS_BORINGSSL
+     if (0 >= EVP_PKEY_CTX_set0_rsa_oaep_label(ctx.get(),
+                 reinterpret_cast<unsigned char*>(label),
+                                       oaep_label.size())) {
+       OPENSSL_free(label);
+       return false;
+     }
++#endif
+   }
+ 
+   size_t out_len = 0;
+diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
+index 8feefde819ea8b67c92afd2af7edf1fcc00aabd0..70f318bd63c49ff5919f363f1d3c5f94d2e4b007 100644
+--- a/src/crypto/crypto_context.cc
++++ b/src/crypto/crypto_context.cc
+@@ -493,12 +493,14 @@ void SecureContext::Init(const FunctionCallbackInfo<Value>& args) {
+   // OpenSSL 1.1.0 changed the ticket key size, but the OpenSSL 1.0.x size was
+   // exposed in the public API. To retain compatibility, install a callback
+   // which restores the old algorithm.
++#ifndef OPENSSL_IS_BORINGSSL
+   if (RAND_bytes(sc->ticket_key_name_, sizeof(sc->ticket_key_name_)) <= 0 ||
+       RAND_bytes(sc->ticket_key_hmac_, sizeof(sc->ticket_key_hmac_)) <= 0 ||
+       RAND_bytes(sc->ticket_key_aes_, sizeof(sc->ticket_key_aes_)) <= 0) {
+     return THROW_ERR_CRYPTO_OPERATION_FAILED(
+         env, "Error generating ticket keys");
+   }
++#endif
+   SSL_CTX_set_tlsext_ticket_key_cb(sc->ctx_.get(), TicketCompatibilityCallback);
+ }
+ 
+@@ -1194,6 +1196,7 @@ int SecureContext::TicketCompatibilityCallback(SSL* ssl,
+ 
+   if (enc) {
+     memcpy(name, sc->ticket_key_name_, sizeof(sc->ticket_key_name_));
++#ifndef OPENSSL_IS_BORINGSSL
+     if (RAND_bytes(iv, 16) <= 0 ||
+         EVP_EncryptInit_ex(ectx, EVP_aes_128_cbc(), nullptr,
+                            sc->ticket_key_aes_, iv) <= 0 ||
+@@ -1201,6 +1204,7 @@ int SecureContext::TicketCompatibilityCallback(SSL* ssl,
+                      EVP_sha256(), nullptr) <= 0) {
+       return -1;
+     }
++#endif
+     return 1;
+   }
+ 
 diff --git a/src/crypto/crypto_dh.cc b/src/crypto/crypto_dh.cc
-index 1c48f98656fd211403354bb88331450e51ffb3e5..5c50976b663db560d758c7bb6f97d3e35d5dcb55 100644
+index 1c48f98656fd211403354bb88331450e51ffb3e5..7c3ee76b91dbc4f4f5d72594218cce07231edcb7 100644
 --- a/src/crypto/crypto_dh.cc
 +++ b/src/crypto/crypto_dh.cc
-@@ -469,6 +469,7 @@ Maybe<bool> DhKeyGenTraits::AdditionalConfig(
+@@ -120,13 +120,11 @@ void DiffieHellman::MemoryInfo(MemoryTracker* tracker) const {
+ bool DiffieHellman::Init(const char* p, int p_len, int g) {
+   dh_.reset(DH_new());
+   if (p_len <= 0) {
+-    ERR_put_error(ERR_LIB_BN, BN_F_BN_GENERATE_PRIME_EX,
+-      BN_R_BITS_TOO_SMALL, __FILE__, __LINE__);
++    OPENSSL_PUT_ERROR(BN, BN_R_BITS_TOO_SMALL);
+     return false;
+   }
+   if (g <= 1) {
+-    ERR_put_error(ERR_LIB_DH, DH_F_DH_BUILTIN_GENPARAMS,
+-      DH_R_BAD_GENERATOR, __FILE__, __LINE__);
++    OPENSSL_PUT_ERROR(DH, DH_R_BAD_GENERATOR);
+     return false;
+   }
+   BIGNUM* bn_p =
+@@ -144,21 +142,18 @@ bool DiffieHellman::Init(const char* p, int p_len, int g) {
+ bool DiffieHellman::Init(const char* p, int p_len, const char* g, int g_len) {
+   dh_.reset(DH_new());
+   if (p_len <= 0) {
+-    ERR_put_error(ERR_LIB_BN, BN_F_BN_GENERATE_PRIME_EX,
+-      BN_R_BITS_TOO_SMALL, __FILE__, __LINE__);
++    OPENSSL_PUT_ERROR(BN, BN_R_BITS_TOO_SMALL);
+     return false;
+   }
+   if (g_len <= 0) {
+-    ERR_put_error(ERR_LIB_DH, DH_F_DH_BUILTIN_GENPARAMS,
+-      DH_R_BAD_GENERATOR, __FILE__, __LINE__);
++    OPENSSL_PUT_ERROR(DH, DH_R_BAD_GENERATOR);
+     return false;
+   }
+   BIGNUM* bn_g =
+       BN_bin2bn(reinterpret_cast<const unsigned char*>(g), g_len, nullptr);
+   if (BN_is_zero(bn_g) || BN_is_one(bn_g)) {
+     BN_free(bn_g);
+-    ERR_put_error(ERR_LIB_DH, DH_F_DH_BUILTIN_GENPARAMS,
+-      DH_R_BAD_GENERATOR, __FILE__, __LINE__);
++    OPENSSL_PUT_ERROR(DH, DH_R_BAD_GENERATOR);
+     return false;
+   }
+   BIGNUM* bn_p =
+@@ -469,6 +464,7 @@ Maybe<bool> DhKeyGenTraits::AdditionalConfig(
  EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
    EVPKeyPointer key_params;
    if (params->params.prime_fixed_value) {
@@ -20,7 +132,7 @@ index 1c48f98656fd211403354bb88331450e51ffb3e5..5c50976b663db560d758c7bb6f97d3e3
      DHPointer dh(DH_new());
      if (!dh)
        return EVPKeyCtxPointer();
-@@ -485,9 +486,11 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
+@@ -485,9 +481,11 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
      key_params = EVPKeyPointer(EVP_PKEY_new());
      CHECK(key_params);
      EVP_PKEY_assign_DH(key_params.get(), dh.release());
@@ -32,7 +144,7 @@ index 1c48f98656fd211403354bb88331450e51ffb3e5..5c50976b663db560d758c7bb6f97d3e3
      if (!param_ctx ||
          EVP_PKEY_paramgen_init(param_ctx.get()) <= 0 ||
          EVP_PKEY_CTX_set_dh_paramgen_prime_len(
-@@ -499,7 +502,7 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
+@@ -499,7 +497,7 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
          EVP_PKEY_paramgen(param_ctx.get(), &raw_params) <= 0) {
        return EVPKeyCtxPointer();
      }
@@ -53,6 +165,133 @@ index ea4c70ad5d8c844860ba3480fc7ef4205f0a3cdc..cdf8dd47d6e2a5894066cec01fbe347a
 +  ecdh->key_.reset(EC_KEY_dup(new_key.get()));
    ecdh->group_ = EC_KEY_get0_group(ecdh->key_.get());
  }
+ 
+diff --git a/src/crypto/crypto_hkdf.cc b/src/crypto/crypto_hkdf.cc
+index 0aa96ada47abe4b66fb616c665101278bbe0afb6..1e9a4863c5faea5f6b275483ca16f3a6e8dac25b 100644
+--- a/src/crypto/crypto_hkdf.cc
++++ b/src/crypto/crypto_hkdf.cc
+@@ -101,6 +101,7 @@ bool HKDFTraits::DeriveBits(
+     Environment* env,
+     const HKDFConfig& params,
+     ByteSource* out) {
++#ifndef OPENSSL_IS_BORINGSSL
+   EVPKeyCtxPointer ctx =
+       EVPKeyCtxPointer(EVP_PKEY_CTX_new_id(EVP_PKEY_HKDF, nullptr));
+   if (!ctx ||
+@@ -132,6 +133,9 @@ bool HKDFTraits::DeriveBits(
+ 
+   *out = std::move(buf);
+   return true;
++#else
++  return false;
++#endif
+ }
+ 
+ void HKDFConfig::MemoryInfo(MemoryTracker* tracker) const {
+diff --git a/src/crypto/crypto_random.cc b/src/crypto/crypto_random.cc
+index b24f8f32136ffaed54310d5dc02e57b0f69450d6..587a313f0fcd3e705f167bfb8652c26c176dbebe 100644
+--- a/src/crypto/crypto_random.cc
++++ b/src/crypto/crypto_random.cc
+@@ -66,8 +66,12 @@ bool RandomBytesTraits::DeriveBits(
+     Environment* env,
+     const RandomBytesConfig& params,
+     ByteSource* unused) {
++#ifndef OPENSSL_IS_BORINGSSL
+   CheckEntropy();  // Ensure that OpenSSL's PRNG is properly seeded.
+   return RAND_bytes(params.buffer, params.size) != 0;
++#else
++  return false;
++#endif
+ }
+ 
+ void RandomPrimeConfig::MemoryInfo(MemoryTracker* tracker) const {
+@@ -149,7 +153,7 @@ Maybe<bool> RandomPrimeTraits::AdditionalConfig(
+ 
+   params->bits = bits;
+   params->safe = safe;
+-  params->prime.reset(BN_secure_new());
++  params->prime.reset(BN_new());
+   if (!params->prime) {
+     THROW_ERR_CRYPTO_OPERATION_FAILED(env, "could not generate prime");
+     return Nothing<bool>();
+diff --git a/src/crypto/crypto_rsa.cc b/src/crypto/crypto_rsa.cc
+index 5fa91cce1a6ad2bc1167e20a4dadcfdfc2343440..d6db572ffac83b82eb3356a4d3258ae89219e38c 100644
+--- a/src/crypto/crypto_rsa.cc
++++ b/src/crypto/crypto_rsa.cc
+@@ -210,10 +210,12 @@ WebCryptoCipherStatus RSA_Cipher(
+   if (label_len > 0) {
+     void* label = OPENSSL_memdup(params.label.get(), label_len);
+     CHECK_NOT_NULL(label);
++#ifndef OPENSSL_IS_BORINGSSL
+     if (EVP_PKEY_CTX_set0_rsa_oaep_label(ctx.get(), label, label_len) <= 0) {
+       OPENSSL_free(label);
+       return WebCryptoCipherStatus::FAILED;
+     }
++#endif
+   }
+ 
+   size_t out_len = 0;
+diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
+index fbe4c0f06c10df7c8a492711594381c27c6f81f7..1684a4242d160f5536c30ffef2a3acffa258cc4f 100644
+--- a/src/crypto/crypto_util.cc
++++ b/src/crypto/crypto_util.cc
+@@ -61,6 +61,7 @@ int VerifyCallback(int preverify_ok, X509_STORE_CTX* ctx) {
+ }
+ 
+ void CheckEntropy() {
++#ifndef OPENSSL_IS_BORINGSSL
+   for (;;) {
+     int status = RAND_status();
+     CHECK_GE(status, 0);  // Cannot fail.
+@@ -71,15 +72,20 @@ void CheckEntropy() {
+     if (RAND_poll() == 0)
+       break;
+   }
++#endif
+ }
+ 
+ bool EntropySource(unsigned char* buffer, size_t length) {
++#ifndef OPENSSL_IS_BORINGSSL
+   // Ensure that OpenSSL's PRNG is properly seeded.
+   CheckEntropy();
+   // RAND_bytes() can return 0 to indicate that the entropy data is not truly
+   // random. That's okay, it's still better than V8's stock source of entropy,
+   // which is /dev/urandom on UNIX platforms and the current time on Windows.
+   return RAND_bytes(buffer, length) != -1;
++#else
++  return false;
++#endif
+ }
+ 
+ int PasswordCallback(char* buf, int size, int rwflag, void* u) {
+@@ -118,7 +124,6 @@ void InitCryptoOnce() {
+   OPENSSL_init_ssl(0, settings);
+   OPENSSL_INIT_free(settings);
+   settings = nullptr;
+-#endif
+ 
+ #ifndef _WIN32
+   if (per_process::cli_options->secure_heap != 0) {
+@@ -137,6 +142,7 @@ void InitCryptoOnce() {
+         break;
+     }
+   }
++#endif
+ #endif
+ 
+   /* Override FIPS settings in cnf file, if needed. */
+@@ -675,10 +681,12 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+ }
+ 
+ void SecureHeapUsed(const FunctionCallbackInfo<Value>& args) {
++#ifndef OPENSSL_IS_BORINGSSL
+   Environment* env = Environment::GetCurrent(args);
+   if (CRYPTO_secure_malloc_initialized())
+     args.GetReturnValue().Set(
+         BigInt::New(env->isolate(), CRYPTO_secure_used()));
++#endif
+ }
+ }  // namespace
  
 diff --git a/src/crypto/crypto_util.h b/src/crypto/crypto_util.h
 index f2f61aa45185812e9248845b664539be4fe24550..303ba4c3b7c4c2fc5dee906e22d5e7642b8351c8 100644
