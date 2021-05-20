@@ -80,7 +80,7 @@ index 564edd033e6275a6dc34641ed7eb67f92011f972..1ec78bab9bd1e5ace39b5a6a46977edd
    // TODO(addaleax): It's a bit icky that we use global state here, but we can't
    // really do anything about it unless V8 starts exposing a way to access the
    // current v8::Platform instance.
-@@ -550,6 +554,10 @@ Platform::StackTracePrinter NodePlatform::GetStackTracePrinter() {
+@@ -550,6 +550,10 @@ Platform::StackTracePrinter NodePlatform::GetStackTracePrinter() {
    };
  }
  
@@ -88,9 +88,10 @@ index 564edd033e6275a6dc34641ed7eb67f92011f972..1ec78bab9bd1e5ace39b5a6a46977edd
 +  return page_allocator_;
 +}
 +
- std::unique_ptr<v8::JobHandle> NodePlatform::PostJob(v8::TaskPriority priority, std::unique_ptr<v8::JobTask> job_task) {
-   return v8::platform::NewDefaultJobHandle(this, priority, std::move(job_task), 1 /* num_worker_threads */);
- }
+ template <class T>
+ TaskQueue<T>::TaskQueue()
+     : lock_(), tasks_available_(), tasks_drained_(),
+
 diff --git a/src/node_platform.h b/src/node_platform.h
 index 94cbfc9c55a9ace52f39e22eccfcd8b9eacd0186..8921fe2303c9ef8cbe7ca3f5e16e31a9e4b7d22c 100644
 --- a/src/node_platform.h
