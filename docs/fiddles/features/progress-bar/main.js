@@ -16,21 +16,20 @@ function createWindow () {
 
   let c = 0
   progressInterval = setInterval(() => {
-    
     // update progress bar to next value
     win.setProgressBar(c)
 
-      if (c > 1) {
-        // set to indeterminate state
-        win.setProgressBar(2)
-        
-        // stop the interval
-        clearInterval(progressInterval)
+    if (c > 1) {
+      // set to indeterminate state
+      win.setProgressBar(2)
 
-        // and after INDETERMINATE_PAUSE reset the progress bar
-        indeterminateTimeout = setTimeout(() => win.setProgressBar(-1), INDETERMINATE_PAUSE)
-      }
-      c += INCREMENT
+      // stop the interval
+      clearInterval(progressInterval)
+
+      // and after INDETERMINATE_PAUSE reset the progress bar
+      indeterminateTimeout = setTimeout(() => win.setProgressBar(-1), INDETERMINATE_PAUSE)
+    }
+    c += INCREMENT
   }, INTERVAL_DELAY)
 }
 
