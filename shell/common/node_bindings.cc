@@ -366,9 +366,8 @@ void NodeBindings::Initialize() {
     fprintf(stderr, "%s: %s\n", argv[0].c_str(), error.c_str());
   }
 
-  if (exit_code != 0) {
+  if (exit_code != 0)
     exit(exit_code);
-  }
 
 #if defined(OS_WIN)
   // uv_init overrides error mode to suppress the default crash dialog, bring

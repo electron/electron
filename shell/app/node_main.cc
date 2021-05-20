@@ -172,9 +172,13 @@ int NodeMain(int argc, char* argv[]) {
     // Parse and set Node.js cli flags.
     SetNodeCliFlags();
 
-    int exec_argc;
-    const char** exec_argv;
-    node::Init(&argc, const_cast<const char**>(argv), &exec_argc, &exec_argv);
+    std::vector<std::string> args(argv, argv + argc);  // NOLINT
+    std::vector<std::string> exec_args;
+    std::vector<std::string> errors;
+    node::InitializeNodeWithArgs(&args, &exec_args, &errors);
+
+    for (const std::string& error : errors)
+      fprintf(stderr, "%s: %s\n", args[0].c_str(), error.c_str());
 
     gin::V8Initializer::LoadV8Snapshot(
         gin::V8Initializer::V8SnapshotFileType::kWithAdditionalContext);
@@ -201,9 +205,6 @@ int NodeMain(int argc, char* argv[]) {
       isolate_data = node::CreateIsolateData(isolate, loop, gin_env.platform());
       CHECK_NE(nullptr, isolate_data);
 
-      std::vector<std::string> args(argv, argv + argc);  // NOLINT
-      std::vector<std::string> exec_args(exec_argv,
-                                         exec_argv + exec_argc);  // NOLINT
       env = node::CreateEnvironment(isolate_data, gin_env.context(), args,
                                     exec_args);
       CHECK_NOT_NULL(env);
