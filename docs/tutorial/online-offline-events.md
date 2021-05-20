@@ -46,7 +46,7 @@ function updateOnlineStatus () {
   document.getElementById('status').innerHTML = navigator.onLine ? 'online' : 'offline'
 }
 
-window.addEventListener('online', onlineStatusIndicator)
+window.addEventListener('online', updateOnlineStatus)
 window.addEventListener('offline', onlineStatusIndicator)
 
 onlineStatusIndicator()
