@@ -14,6 +14,7 @@
 #include "extensions/browser/extension_navigation_ui_data.h"
 #include "net/base/completion_repeating_callback.h"
 #include "net/base/load_flags.h"
+#include "net/http/http_status_code.h"
 #include "net/http/http_util.h"
 #include "services/metrics/public/cpp/ukm_source_id.h"
 #include "services/network/public/cpp/features.h"
@@ -21,6 +22,8 @@
 #include "shell/common/options_switches.h"
 
 namespace electron {
+
+const int kMaxCORSPreflightProxyAuthRetries = 3;
 
 ProxyingURLLoaderFactory::InProgressRequest::FollowRedirectParams::
     FollowRedirectParams() = default;
@@ -556,9 +559,17 @@ void ProxyingURLLoaderFactory::InProgressRequest::
   override_headers_ = nullptr;
 
   if (for_cors_preflight_) {
-    // If this is for CORS preflight, there is no associated client. We notify
-    // the completion here, and deletes |this|.
+    // If this is for CORS preflight, there is no associated client.
     info_->AddResponseInfoFromResourceResponse(*current_response_);
+    // Do not finish(cancel) proxied preflight requests that require proxy auth.
+    // Network code will renegotiate such connection/request.
+    if (info_->response_code == net::HTTP_PROXY_AUTHENTICATION_REQUIRED &&
+        ++cors_preflight_proxy_auth_retries_ <=
+            kMaxCORSPreflightProxyAuthRetries) {
+      return;
+    }
+
+    // We notify the completion here, and delete |this|.
     factory_->web_request_api()->OnResponseStarted(&info_.value(), request_);
     factory_->web_request_api()->OnCompleted(&info_.value(), request_, net::OK);
 
