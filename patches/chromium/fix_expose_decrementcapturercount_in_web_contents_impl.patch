@@ -8,22 +8,24 @@ we invoke it in order to expose contents.decrementCapturerCount([stayHidden, sta
 to users. We should try to upstream this.
 
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 9945d93e6607480d76ffe9bbf76eea899759247a..c3d5441588245cec17f1b22c7698f9d63538c1b9 100644
+index 8657ae6a54f776b967d1285e05b9397d6ef21b0c..238709cce4fab831c45b42b59e00c4eb0992e29a 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -1742,9 +1742,11 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
-   // shown in the address bar), as opposed to one in for example a Prerender.
-   bool IsPrimaryFrameTree(const FrameTree& frame_tree) const;
+@@ -1770,10 +1770,12 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
+   // outermost frame trees in this WebContents.
+   std::vector<RenderFrameHostImpl*> GetOutermostMainFrames();
  
 + public:
    // Called when the base::ScopedClosureRunner returned by
    // IncrementCapturerCount() is destructed.
 -  void DecrementCapturerCount(bool stay_hidden, bool stay_awake);
 +  void DecrementCapturerCount(bool stay_hidden, bool stay_awake) override;
-+ private:
  
++ private:
    // Calculates the PageVisibilityState for |visibility|, taking the capturing
    // state into account.
+   PageVisibilityState CalculatePageVisibilityState(Visibility visibility) const;
+
 diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
 index d284aa3ed58cc93b246dc429f211e2bbd74d4983..8547f5dc8af839cf9c5f0f5393f33ac2eaebf036 100644
 --- a/content/public/browser/web_contents.h
