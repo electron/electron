@@ -26,7 +26,7 @@ Assuming you have a working Electron application from the
 <script src="renderer.js"></script>
 ```
 
-and add the `renderer.js` file:
+...and add the `renderer.js` file:
 
 ```javascript fiddle='docs/fiddles/features/notifications/renderer'
 const NOTIFICATION_TITLE = 'Title'
@@ -43,7 +43,7 @@ After launching the Electron application, you should see the notification:
 
 If you open the Console and then click the notification, you will see the
 message that was generated after triggering the `onclick` event. Note that this message will
-appear in the console _in the running Electron app_ - not in Fiddle.
+appear in the developer console _in the running Electron app_ - not in Fiddle.
 
 ![Onclick message for the notification](../images/message-notification-renderer.png)
 
