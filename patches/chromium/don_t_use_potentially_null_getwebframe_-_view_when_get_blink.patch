@@ -18,7 +18,7 @@ index 0d48fadd2dccbf4721f93e98d1a090f8e576f573..88a8810b5885081749c578ad18312b36
  }
  
  const blink::web_pref::WebPreferences& RenderFrameImpl::GetBlinkPreferences() {
--  return GetWebFrame()->View()->GetWebPreferences();
+-  return GetWebView()->GetWebPreferences();
 +  return render_view_->GetWebView()->GetWebPreferences();
  }
  
