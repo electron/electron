@@ -18,7 +18,7 @@ Change-Id: I75cac59050bc393d157a1ee5bed776c8986a7bbe
 Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2843817
 
 diff --git a/src/compiler/simplified-lowering.cc b/src/compiler/simplified-lowering.cc
-index c2f0d744c2fb698427dd876fb9a37eb280e6f583..c50b41a8445f8053e58e92682918b0f4903cc6d2 100644
+index c2f0d744c2fb698427dd876fb9a37eb280e6f583..6ed92e855c66a266e1909925caed0140a5c59a67 100644
 --- a/src/compiler/simplified-lowering.cc
 +++ b/src/compiler/simplified-lowering.cc
 @@ -1398,17 +1398,32 @@ class RepresentationSelector {
