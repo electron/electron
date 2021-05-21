@@ -1,0 +1,95 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tudor Brindus <me@tbrindus.ca>
+Date: Tue, 4 May 2021 07:17:23 +0000
+Subject: x11: Fix window enumeration order when WM doesn't set
+ |_NET_CLIENT_LIST_STACKING|
+
+Chrome needs to know what window to send Xdnd events to during a
+drag-and-drop operation.
+
+It does so through |X11TopmostWindowFinder::FindWindowAt|, which calls
+into |EnumerateWindows| when the WM has not set
+|_NET_CLIENT_LIST_STACKING|. GNOME/mutter set this property, so this is
+a little-tested code path.
+
+However, setting this property is not mandated by the spec, and in
+practice wlroots/Sway do not currently set it.
+
+Chrome's current |EnumerateWindows| fallback path is incorrect,
+resulting in downstream bugs like
+https://github.com/swaywm/sway/issues/5692 and
+https://github.com/swaywm/wlroots/issues/2889.
+
+|EnumerateWindows| ends up calling |EnumerateChildren|, which uses
+|XQueryTree| to determine the stacking order. |XQueryTree| returns
+windows in bottom-to-top order, so the list has to be reverse-iterated
+to get a top-down order that |FindWindowAt| expects (and to match the
+order reported by |_NET_CLIENT_LIST_STACKING|).
+
+The original code introduced in da11eed did so; however, it regressed in
+3c64537 -- currently, the code comments are inconsistent with the actual
+logic.
+
+This commit switches |EnumerateChildren| to use a reverse iterator. It
+is not used anywhere but as a fallback when |_NET_CLIENT_LIST_STACKING|
+is not present, so this should be a safe change.
+
+I have not touched the iteration order of Chrome's X11 menus. I suspect
+that these are in the right order already.
+
+TEST=manually tested on Sway 1.6, with Chromium overlapping an X11 gedit
+     window
+
+Change-Id: I8f777aa566db1e8d0614187fa4b3d156caa1e0f9
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2844104
+Reviewed-by: Maksim Sisov <msisov@igalia.com>
+Commit-Queue: Maksim Sisov <msisov@igalia.com>
+Cr-Commit-Position: refs/heads/master@{#878767}
+
+diff --git a/AUTHORS b/AUTHORS
+index ae48471f7360a946447c915621236155e1399f86..4b48c543aa3c70fa5f785fb294f5dfe1a48217be 100644
+--- a/AUTHORS
++++ b/AUTHORS
+@@ -1036,6 +1036,7 @@ Toshihito Kikuchi <leamovret@gmail.com>
+ Trent Willis <trentmwillis@gmail.com>
+ Trevor Perrin <unsafe@trevp.net>
+ Tripta Gupta <tripta.g@samsung.com>
++Tudor Brindus <me@tbrindus.ca>
+ Tuukka Toivonen <tuukka.toivonen@intel.com>
+ U. Artie Eoff <ullysses.a.eoff@intel.com>
+ Umar Hansa <umar.hansa@gmail.com>
+diff --git a/ui/base/x/x11_util.cc b/ui/base/x/x11_util.cc
+index c210014f2b07e731fb2e7c3ccbce44dec43dda25..482fa1d3528fe1ca7280af2f3a32f55128e0ce96 100644
+--- a/ui/base/x/x11_util.cc
++++ b/ui/base/x/x11_util.cc
+@@ -811,10 +811,10 @@ bool EnumerateChildren(EnumerateWindowsDelegate* delegate,
+     return false;
+ 
+   std::vector<x11::Window> windows;
+-  std::vector<x11::Window>::iterator iter;
+   if (depth == 0) {
+     XMenuList::GetInstance()->InsertMenuWindows(&windows);
+     // Enumerate the menus first.
++    std::vector<x11::Window>::iterator iter;
+     for (iter = windows.begin(); iter != windows.end(); iter++) {
+       if (delegate->ShouldStopIterating(*iter))
+         return true;
+@@ -829,7 +829,8 @@ bool EnumerateChildren(EnumerateWindowsDelegate* delegate,
+ 
+   // XQueryTree returns the children of |window| in bottom-to-top order, so
+   // reverse-iterate the list to check the windows from top-to-bottom.
+-  for (iter = windows.begin(); iter != windows.end(); iter++) {
++  std::vector<x11::Window>::reverse_iterator iter;
++  for (iter = windows.rbegin(); iter != windows.rend(); iter++) {
+     if (IsWindowNamed(*iter) && delegate->ShouldStopIterating(*iter))
+       return true;
+   }
+@@ -839,7 +840,7 @@ bool EnumerateChildren(EnumerateWindowsDelegate* delegate,
+   // loop because the recursion and call to XQueryTree are expensive and is only
+   // needed for a small number of cases.
+   if (++depth <= max_depth) {
+-    for (iter = windows.begin(); iter != windows.end(); iter++) {
++    for (iter = windows.rbegin(); iter != windows.rend(); iter++) {
+       if (EnumerateChildren(delegate, *iter, max_depth, depth))
+         return true;
+     }
