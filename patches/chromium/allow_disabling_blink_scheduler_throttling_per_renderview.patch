@@ -113,7 +113,7 @@ index e5d12060da4fd6366313a28f4a99ac52ce119803..ff5dda58a3db3efeea952f0ae75cf855
  
  mojom::blink::PageVisibilityState WebViewImpl::GetVisibilityState() {
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.h b/third_party/blink/renderer/core/exported/web_view_impl.h
-index 5149d97889632aad6add9909a066c4d2feba22ee..c1f35f9686eefd8601b619fba6d620661d9249d2 100644
+index e536aeacc79dcc5cf45674fbc4d288a8265a7548..c06214e3c714c96acd104208c7495397e924bc12 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.h
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.h
 @@ -403,6 +403,7 @@ class CORE_EXPORT WebViewImpl final : public WebView,
@@ -124,7 +124,7 @@ index 5149d97889632aad6add9909a066c4d2feba22ee..c1f35f9686eefd8601b619fba6d62066
    void SetVisibilityState(mojom::blink::PageVisibilityState visibility_state,
                            bool is_initial_state) override;
    mojom::blink::PageVisibilityState GetVisibilityState() override;
-@@ -806,6 +807,8 @@ class CORE_EXPORT WebViewImpl final : public WebView,
+@@ -828,6 +829,8 @@ class CORE_EXPORT WebViewImpl final : public WebView,
    // If true, we send IPC messages when |preferred_size_| changes.
    bool send_preferred_size_changes_ = false;
  
