@@ -62,7 +62,7 @@ void RootView::SetMenu(ElectronMenuModel* menu_model) {
     return;
 
   if (!menu_bar_) {
-    menu_bar_ = std::make_unique<MenuBar>(this);
+    menu_bar_ = std::make_unique<MenuBar>(window_, this);
     menu_bar_->set_owned_by_client();
     if (!menu_bar_autohide_)
       SetMenuBarVisibility(true);
