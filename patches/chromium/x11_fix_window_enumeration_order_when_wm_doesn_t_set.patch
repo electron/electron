@@ -47,10 +47,10 @@ Commit-Queue: Maksim Sisov <msisov@igalia.com>
 Cr-Commit-Position: refs/heads/master@{#878767}
 
 diff --git a/AUTHORS b/AUTHORS
-index b3279bec4c2c51e094b664a535d9ee6b44c3bc63..1a3153086a2c3863091814cbd852c358346a62ed 100644
+index ae48471f7360a946447c915621236155e1399f86..4b48c543aa3c70fa5f785fb294f5dfe1a48217be 100644
 --- a/AUTHORS
 +++ b/AUTHORS
-@@ -1085,6 +1085,7 @@ Toshiaki Tanaka <zokutyou2@gmail.com>
+@@ -1036,6 +1036,7 @@ Toshihito Kikuchi <leamovret@gmail.com>
  Trent Willis <trentmwillis@gmail.com>
  Trevor Perrin <unsafe@trevp.net>
  Tripta Gupta <tripta.g@samsung.com>
@@ -59,10 +59,10 @@ index b3279bec4c2c51e094b664a535d9ee6b44c3bc63..1a3153086a2c3863091814cbd852c358
  U. Artie Eoff <ullysses.a.eoff@intel.com>
  Umar Hansa <umar.hansa@gmail.com>
 diff --git a/ui/base/x/x11_util.cc b/ui/base/x/x11_util.cc
-index 2efcfb9f4564911506365142c51550932348b71b..c4b92b77ba8f3a9236a29d3fae7df1fd71d960fe 100644
+index c210014f2b07e731fb2e7c3ccbce44dec43dda25..482fa1d3528fe1ca7280af2f3a32f55128e0ce96 100644
 --- a/ui/base/x/x11_util.cc
 +++ b/ui/base/x/x11_util.cc
-@@ -719,10 +719,10 @@ bool EnumerateChildren(EnumerateWindowsDelegate* delegate,
+@@ -811,10 +811,10 @@ bool EnumerateChildren(EnumerateWindowsDelegate* delegate,
      return false;
  
    std::vector<x11::Window> windows;
@@ -74,7 +74,7 @@ index 2efcfb9f4564911506365142c51550932348b71b..c4b92b77ba8f3a9236a29d3fae7df1fd
      for (iter = windows.begin(); iter != windows.end(); iter++) {
        if (delegate->ShouldStopIterating(*iter))
          return true;
-@@ -737,7 +737,8 @@ bool EnumerateChildren(EnumerateWindowsDelegate* delegate,
+@@ -829,7 +829,8 @@ bool EnumerateChildren(EnumerateWindowsDelegate* delegate,
  
    // XQueryTree returns the children of |window| in bottom-to-top order, so
    // reverse-iterate the list to check the windows from top-to-bottom.
@@ -84,7 +84,7 @@ index 2efcfb9f4564911506365142c51550932348b71b..c4b92b77ba8f3a9236a29d3fae7df1fd
      if (IsWindowNamed(*iter) && delegate->ShouldStopIterating(*iter))
        return true;
    }
-@@ -747,7 +748,7 @@ bool EnumerateChildren(EnumerateWindowsDelegate* delegate,
+@@ -839,7 +840,7 @@ bool EnumerateChildren(EnumerateWindowsDelegate* delegate,
    // loop because the recursion and call to XQueryTree are expensive and is only
    // needed for a small number of cases.
    if (++depth <= max_depth) {
