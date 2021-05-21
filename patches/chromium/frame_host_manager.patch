@@ -42,7 +42,7 @@ index f426d1ebdaa9d13c7e47f22ce617e2b61a862854..26907541dd4268e3f8c82676bdda892b
    // another SiteInstance for the same site.
    void RegisterSiteInstance(SiteInstanceImpl* site_instance);
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index bd3a898a230c90aaf6bfd82601ad5279f7b7673e..5ab908d3494bf3eb14c7ed3e70d93e20abc47e03 100644
+index 6f1fe2a9f91d78924a65dc3c759a17b0c9de669a..94b14696c271c16094e050f90730a3182b22cb77 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
 @@ -1569,6 +1569,21 @@ void NavigationRequest::BeginNavigation() {
@@ -67,7 +67,7 @@ index bd3a898a230c90aaf6bfd82601ad5279f7b7673e..5ab908d3494bf3eb14c7ed3e70d93e20
        // Select an appropriate RenderFrameHost.
        std::string frame_host_choice_reason;
        render_frame_host_ =
-@@ -6158,6 +6173,7 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
+@@ -6159,6 +6174,7 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
            {WILL_START_REQUEST, {
                WILL_REDIRECT_REQUEST,
                WILL_PROCESS_RESPONSE,
@@ -75,7 +75,7 @@ index bd3a898a230c90aaf6bfd82601ad5279f7b7673e..5ab908d3494bf3eb14c7ed3e70d93e20
                READY_TO_COMMIT,
                DID_COMMIT,
                CANCELING,
-@@ -6171,10 +6187,15 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
+@@ -6172,10 +6188,15 @@ void NavigationRequest::CheckStateTransition(NavigationState state) const {
                WILL_FAIL_REQUEST,
            }},
            {WILL_PROCESS_RESPONSE, {
@@ -92,7 +92,7 @@ index bd3a898a230c90aaf6bfd82601ad5279f7b7673e..5ab908d3494bf3eb14c7ed3e70d93e20
                NOT_STARTED,
                DID_COMMIT,
 diff --git a/content/browser/renderer_host/navigation_request.h b/content/browser/renderer_host/navigation_request.h
-index e1568bf756ea90a08645303b0be986c7cbe848ce..a6fa64a8728b2b95293a10c96c4d0fdd644cd3a0 100644
+index a8a5306ae3f6967ae498890eeee05f382a941608..8388178c66bf372d7f3000e5e5fec2dff353adf8 100644
 --- a/content/browser/renderer_host/navigation_request.h
 +++ b/content/browser/renderer_host/navigation_request.h
 @@ -140,6 +140,10 @@ class CONTENT_EXPORT NavigationRequest
