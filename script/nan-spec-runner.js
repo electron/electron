@@ -44,7 +44,6 @@ async function main () {
     '-fPIC'
   ].join(' ');
 
-  // TODO(vertedinde) experimenting with needed ldflags here
   const ldflags = [
     '-stdlib=libc++',
     '-fuse-ld=lld',

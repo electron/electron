@@ -102,7 +102,6 @@ def main(argv):
           name_to_write = arcname
           if should_flatten:
             if flatten_relative_to:
-              print()
               if name_to_write.startswith(flatten_relative_to):
                 name_to_write = name_to_write[len(flatten_relative_to):]
               else:
