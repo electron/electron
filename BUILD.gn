@@ -1293,7 +1293,7 @@ template("dist_zip") {
                              "testonly",
                            ])
     flatten = false
-    flatten_relative_to = "_"
+    flatten_relative_to = false
     if (defined(invoker.flatten)) {
       flatten = invoker.flatten
       if (defined(invoker.flatten_relative_to)) {

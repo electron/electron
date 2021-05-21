@@ -101,11 +101,13 @@ def main(argv):
           )
           name_to_write = arcname
           if should_flatten:
-            if flatten_relative_to is not None:
+            if flatten_relative_to:
+              print()
               if name_to_write.startswith(flatten_relative_to):
                 name_to_write = name_to_write[len(flatten_relative_to):]
               else:
-                raise Exception("Tried to zip file outside of relative folder")
+                name_to_write = os.path.basename(arcname)
+                # raise Exception("Tried to zip file outside of relative folder")
             else:
               name_to_write = os.path.basename(arcname)
           z.write(
