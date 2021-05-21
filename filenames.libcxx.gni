@@ -191,6 +191,4 @@ libcxx_headers = [
   "//buildtools/third_party/libc++/trunk/include/wctype.h",
 ]
 
-libcxx_licenses = [
-  "//buildtools/third_party/libc++/trunk/LICENSE.TXT",
-]
+libcxx_licenses = [ "//buildtools/third_party/libc++/trunk/LICENSE.TXT" ]
