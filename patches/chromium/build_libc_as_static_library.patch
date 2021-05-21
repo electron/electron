@@ -7,15 +7,32 @@ Build libc++ as static library to compile and pass
 nan tests
 
 diff --git a/buildtools/third_party/libc++/BUILD.gn b/buildtools/third_party/libc++/BUILD.gn
-index 65f6e8585ad374ad59e7670babfedd2fbdfbaa43..1cfca8c94e7c86a8bc02d520fb97086805a903e3 100644
+index 65f6e8585ad374ad59e7670babfedd2fbdfbaa43..bc81afc12811c7cdff9c69aa0db47bc7a8b3bfb5 100644
 --- a/buildtools/third_party/libc++/BUILD.gn
 +++ b/buildtools/third_party/libc++/BUILD.gn
-@@ -32,7 +32,7 @@ config("winver") {
+@@ -32,7 +32,11 @@ config("winver") {
  if (libcxx_is_shared) {
    _libcxx_target_type = "shared_library"
  } else {
 -  _libcxx_target_type = "source_set"
-+  _libcxx_target_type = "static_library"
++  if (is_win) {
++    _libcxx_target_type = "source_set"
++  } else {
++    _libcxx_target_type = "static_library"
++  }
  }
  target(_libcxx_target_type, "libc++") {
    # Most things that need to depend on libc++ should do so via the implicit
+diff --git a/buildtools/third_party/libc++abi/BUILD.gn b/buildtools/third_party/libc++abi/BUILD.gn
+index 8b1da01ce87ff6db8e67938d4c083312cfa3101f..1668eba70db1933a434709c0140fe125991249b3 100644
+--- a/buildtools/third_party/libc++abi/BUILD.gn
++++ b/buildtools/third_party/libc++abi/BUILD.gn
+@@ -4,7 +4,7 @@
+ 
+ import("//build/config/c++/c++.gni")
+ 
+-source_set("libc++abi") {
++static_library("libc++abi") {
+   if (export_libcxxabi_from_executables) {
+     visibility = [ "//build/config:executable_deps" ]
+   } else {
