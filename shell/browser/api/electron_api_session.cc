@@ -328,8 +328,7 @@ Session::Session(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
       network_emulation_token_(base::UnguessableToken::Create()),
       browser_context_(browser_context) {
   // Observe DownloadManager to get download notifications.
-  content::BrowserContext::GetDownloadManager(browser_context)
-      ->AddObserver(this);
+  browser_context->GetDownloadManager()->AddObserver(this);
 
   new SessionPreferences(browser_context);
 
@@ -352,8 +351,7 @@ Session::Session(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
 }
 
 Session::~Session() {
-  content::BrowserContext::GetDownloadManager(browser_context())
-      ->RemoveObserver(this);
+  browser_context()->GetDownloadManager()->RemoveObserver(this);
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   SpellcheckService* service =
@@ -726,8 +724,7 @@ v8::Local<v8::Promise> Session::GetBlobData(v8::Isolate* isolate,
 }
 
 void Session::DownloadURL(const GURL& url) {
-  auto* download_manager =
-      content::BrowserContext::GetDownloadManager(browser_context());
+  auto* download_manager = browser_context()->GetDownloadManager();
   auto download_params = std::make_unique<download::DownloadUrlParameters>(
       url, MISSING_TRAFFIC_ANNOTATION);
   download_manager->DownloadUrl(std::move(download_params));
@@ -757,8 +754,7 @@ void Session::CreateInterruptedDownload(const gin_helper::Dictionary& options) {
         isolate_, "Must pass an offset value less than length.")));
     return;
   }
-  auto* download_manager =
-      content::BrowserContext::GetDownloadManager(browser_context());
+  auto* download_manager = browser_context()->GetDownloadManager();
   download_manager->GetNextId(base::BindRepeating(
       &DownloadIdCallback, download_manager, path, url_chain, mime_type, offset,
       length, last_modified, etag, base::Time::FromDoubleT(start_time)));
@@ -851,7 +847,7 @@ v8::Local<v8::Value> Session::GetAllExtensions() {
   std::vector<const extensions::Extension*> extensions_vector;
   for (const auto& extension : *installed_extensions) {
     if (extension->location() !=
-        extensions::mojom::ManifestLocation::kExternalComponent)
+        extensions::mojom::ManifestLocation::kComponent)
       extensions_vector.emplace_back(extension.get());
   }
   return gin::ConvertToV8(isolate_, extensions_vector);

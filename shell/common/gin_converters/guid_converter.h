@@ -5,15 +5,16 @@
 #ifndef SHELL_COMMON_GIN_CONVERTERS_GUID_CONVERTER_H_
 #define SHELL_COMMON_GIN_CONVERTERS_GUID_CONVERTER_H_
 
+#include <string>
+
+#include "gin/converter.h"
+
 #if defined(OS_WIN)
 #include <rpc.h>
 
 #include "base/strings/sys_string_conversions.h"
 #include "base/win/win_util.h"
 #endif
-#include <string>
-
-#include "gin/converter.h"
 
 #if defined(OS_WIN)
 typedef GUID UUID;

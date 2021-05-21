@@ -168,8 +168,7 @@ bool FormatCommandLineString(std::wstring* exe,
   }
 
   if (!launch_args.empty()) {
-    std::u16string joined_launch_args =
-        base::JoinString(launch_args, base::UTF8ToUTF16(" "));
+    std::u16string joined_launch_args = base::JoinString(launch_args, u" ");
     *exe = base::StringPrintf(L"%ls %ls", exe->c_str(),
                               base::UTF16ToWide(joined_launch_args).c_str());
   }

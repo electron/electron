@@ -9,10 +9,10 @@ is needed for OSR.
 Originally landed in https://github.com/electron/libchromiumcontent/pull/226.
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 37ccef65290b4e996d8326886117f6b7b43f56c3..83c73c17461ff8fa7543c112e812dcaca592d133 100644
+index 87792fc94a84ed3336c70d431516150a91ec5928..15a8243ca9cfeca6b4eef631881564e0ba07e50d 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -2775,6 +2775,12 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
+@@ -2783,6 +2783,12 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
    frame_tree_.Init(site_instance.get(), params.renderer_initiated_creation,
                     params.main_frame_name);
  
@@ -25,7 +25,7 @@ index 37ccef65290b4e996d8326886117f6b7b43f56c3..83c73c17461ff8fa7543c112e812dcac
    WebContentsViewDelegate* delegate =
        GetContentClient()->browser()->GetWebContentsViewDelegate(this);
  
-@@ -2785,6 +2791,7 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
+@@ -2793,6 +2799,7 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params) {
      view_.reset(CreateWebContentsView(this, delegate,
                                        &render_view_host_delegate_view_));
    }
@@ -34,22 +34,24 @@ index 37ccef65290b4e996d8326886117f6b7b43f56c3..83c73c17461ff8fa7543c112e812dcac
    CHECK(view_.get());
  
 diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
-index 9663a9a547329001493a6ef5735ec49ed6d396ca..19b8672d09ccf0daf0275aa5b54e11dfc613bf7b 100644
+index 84c271d015931322c4c3a259dc3db64655502bdf..3b7b5facc0cd2454a83f9034d63add1e684f438c 100644
 --- a/content/public/browser/web_contents.h
 +++ b/content/public/browser/web_contents.h
-@@ -88,8 +88,11 @@ class BrowserContext;
+@@ -84,10 +84,13 @@ class BrowserContext;
  class BrowserPluginGuestDelegate;
  class RenderFrameHost;
  class RenderViewHost;
 +class RenderViewHostDelegateView;
  class RenderWidgetHostView;
 +class RenderWidgetHostViewBase;
+ class ScreenOrientationDelegate;
+ class SiteInstance;
  class WebContentsDelegate;
 +class WebContentsView;
  class WebUI;
  struct DropData;
  struct MHTMLGenerationParams;
-@@ -222,6 +225,10 @@ class WebContents : public PageNavigator,
+@@ -220,6 +223,10 @@ class WebContents : public PageNavigator,
      // Sandboxing flags set on the new WebContents.
      network::mojom::WebSandboxFlags starting_sandbox_flags;
  

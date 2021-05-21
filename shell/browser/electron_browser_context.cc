@@ -281,7 +281,7 @@ ElectronBrowserContext::CreateZoomLevelDelegate(
 content::DownloadManagerDelegate*
 ElectronBrowserContext::GetDownloadManagerDelegate() {
   if (!download_manager_delegate_.get()) {
-    auto* download_manager = content::BrowserContext::GetDownloadManager(this);
+    auto* download_manager = this->GetDownloadManager();
     download_manager_delegate_ =
         std::make_unique<ElectronDownloadManagerDelegate>(download_manager);
   }

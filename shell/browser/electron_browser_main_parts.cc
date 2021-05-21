@@ -475,12 +475,12 @@ void ElectronBrowserMainParts::WillRunMainMessageLoop(
   Browser::Get()->SetMainMessageLoopQuitClosure(run_loop->QuitClosure());
 }
 
-void ElectronBrowserMainParts::PostMainMessageLoopStart() {
+void ElectronBrowserMainParts::PostCreateMainMessageLoop() {
 #if defined(USE_OZONE)
   if (features::IsUsingOzonePlatform()) {
     auto shutdown_cb =
         base::BindOnce(base::RunLoop::QuitCurrentWhenIdleClosureDeprecated());
-    ui::OzonePlatform::GetInstance()->PostMainMessageLoopStart(
+    ui::OzonePlatform::GetInstance()->PostCreateMainMessageLoop(
         std::move(shutdown_cb));
   }
 #endif
@@ -503,8 +503,7 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
   // Shutdown the DownloadManager before destroying Node to prevent
   // DownloadItem callbacks from crashing.
   for (auto& iter : ElectronBrowserContext::browser_context_map()) {
-    auto* download_manager =
-        content::BrowserContext::GetDownloadManager(iter.second.get());
+    auto* download_manager = iter.second.get()->GetDownloadManager();
     if (download_manager) {
       download_manager->Shutdown();
     }
@@ -528,12 +527,12 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
 }
 
 #if !defined(OS_MAC)
-void ElectronBrowserMainParts::PreMainMessageLoopStart() {
-  PreMainMessageLoopStartCommon();
+void ElectronBrowserMainParts::PreCreateMainMessageLoop() {
+  PreCreateMainMessageLoopCommon();
 }
 #endif
 
-void ElectronBrowserMainParts::PreMainMessageLoopStartCommon() {
+void ElectronBrowserMainParts::PreCreateMainMessageLoopCommon() {
 #if defined(OS_MAC)
   InitializeMainNib();
   RegisterURLHandler();

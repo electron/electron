@@ -8,10 +8,10 @@ needed in chromium but our autofill implementation uses them.  This patch can be
 our autofill implementation to work like Chromium's.
 
 diff --git a/ui/native_theme/common_theme.cc b/ui/native_theme/common_theme.cc
-index 043ace0c33285d48a78541862ef9bc75d178dbe4..1fbe82d1baca7e296a2f44762fc5c99d66d60532 100644
+index 4a526861f54e7c6fffaf76a2457bf418698cdc8b..2335988a186e4a437bbe82a6a113a17755e65cd1 100644
 --- a/ui/native_theme/common_theme.cc
 +++ b/ui/native_theme/common_theme.cc
-@@ -68,6 +68,14 @@ base::Optional<SkColor> GetDarkSchemeColor(NativeTheme::ColorId color_id,
+@@ -68,6 +68,14 @@ absl::optional<SkColor> GetDarkSchemeColor(NativeTheme::ColorId color_id,
      case NativeTheme::kColorId_FocusedBorderColor:
        return gfx::kGoogleBlue400;
  
@@ -46,7 +46,7 @@ index 043ace0c33285d48a78541862ef9bc75d178dbe4..1fbe82d1baca7e296a2f44762fc5c99d
        // Keeping the kColorId_NumColors case instead of using the default case
        // allows ColorId additions to trigger compile error for an incomplete
 diff --git a/ui/native_theme/native_theme_color_id.h b/ui/native_theme/native_theme_color_id.h
-index 84848edbbe9de7ef9fe6e2ab0a34d3b9428cde10..5e07980e4793cc3b19140510fb3fd3b23c6a88ef 100644
+index 083640808cd6a4a5e6e65d715c77ef58d090ba1e..d7d2fe4e0ada417769cbfe8390b8e2b134549962 100644
 --- a/ui/native_theme/native_theme_color_id.h
 +++ b/ui/native_theme/native_theme_color_id.h
 @@ -157,6 +157,11 @@
@@ -62,10 +62,10 @@ index 84848edbbe9de7ef9fe6e2ab0a34d3b9428cde10..5e07980e4793cc3b19140510fb3fd3b2
    OP(kColorId_ThrobberSpinningColor),                                          \
    OP(kColorId_ThrobberWaitingColor),                                           \
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index 68b798fc755a3ec3130e43254b6ec306d30a19fa..13a1f3763d137667220325237c419257e9868a8d 100644
+index 5e1dcf9487470986d771b7777033be2c32677962..ae908912cd5ea1b2cd43974e1b8ea1bc0c600042 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
-@@ -659,6 +659,18 @@ base::Optional<SkColor> NativeThemeWin::GetPlatformHighContrastColor(
+@@ -659,6 +659,18 @@ absl::optional<SkColor> NativeThemeWin::GetPlatformHighContrastColor(
      case kColorId_ThrobberWaitingColor:
        return system_colors_[SystemThemeColor::kGrayText];
  
