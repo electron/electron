@@ -143,10 +143,10 @@ index f6084545a8acf1485d862a2366eee1da56d0a565..e2882c8b4fbb5402066c9132ed5ebed1
  }
  
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
-@@ -256,7 +260,9 @@ void UpdatePrintSettingsReplyOnIO(
+@@ -258,7 +258,9 @@ void UpdatePrintSettingsReplyOnIO(
+   DCHECK_CURRENTLY_ON(content::BrowserThread::IO);
    DCHECK(printer_query);
-   auto params = mojom::PrintPagesParams::New();
-   params->params = mojom::PrintParams::New();
+   mojom::PrintPagesParamsPtr params = CreateEmptyPrintPagesParamsPtr();
 -  if (printer_query->last_status() == PrintingContext::OK) {
 +  // We call update without first printing from defaults,
 +  // so the last printer status will still be defaulted to PrintingContext::FAILED
@@ -210,35 +210,36 @@ index f6084545a8acf1485d862a2366eee1da56d0a565..e2882c8b4fbb5402066c9132ed5ebed1
  }
  
  void PrintViewManagerBase::NavigationStopped() {
-@@ -643,12 +661,13 @@ void PrintViewManagerBase::DidPrintDocument(
+@@ -637,12 +637,13 @@ void PrintViewManagerBase::DidPrintDocument(
  void PrintViewManagerBase::GetDefaultPrintSettings(
      GetDefaultPrintSettingsCallback callback) {
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 +#if 0 // Printing is always enabled.
    if (!printing_enabled_.GetValue()) {
-     auto params = mojom::PrintParams::New();
-     GetDefaultPrintSettingsReply(std::move(callback), std::move(params));
+     GetDefaultPrintSettingsReply(std::move(callback),
+                                  mojom::PrintParams::New());
      return;
    }
 -
 +#endif
-   content::RenderFrameHost* render_frame_host =
-       print_manager_host_receivers_.GetCurrentTargetFrame();
- 
-@@ -665,11 +684,12 @@ void PrintViewManagerBase::UpdatePrintSettings(
+   content::RenderFrameHost* render_frame_host = GetCurrentTargetFrame();
+   content::GetIOThreadTaskRunner({})->PostTask(
+       FROM_HERE,
+@@ -657,12 +658,13 @@ void PrintViewManagerBase::UpdatePrintSettings(
      base::Value job_settings,
      UpdatePrintSettingsCallback callback) {
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-+  #if 0 // Printing is always enabled.
++#if 0 // Printing is always enabled.
    if (!printing_enabled_.GetValue()) {
-     UpdatePrintSettingsReply(std::move(callback), nullptr, false);
+     UpdatePrintSettingsReply(std::move(callback),
+                              CreateEmptyPrintPagesParamsPtr(), false);
      return;
    }
 -
-+  #endif
++#endif
    if (!job_settings.FindIntKey(kSettingPrinterType)) {
-     UpdatePrintSettingsReply(std::move(callback), nullptr, false);
-     return;
+     UpdatePrintSettingsReply(std::move(callback),
+                              CreateEmptyPrintPagesParamsPtr(), false);
 @@ -709,7 +729,7 @@ void PrintViewManagerBase::PrintingFailed(int32_t cookie) {
    PrintManager::PrintingFailed(cookie);
  
