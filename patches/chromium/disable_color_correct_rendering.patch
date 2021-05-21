@@ -176,7 +176,7 @@ index 80cafcc0fbf7968ceb7a72dd0af516b5fefa31d0..56b9c93b98c232a316e285a7f9b67998
  
    DCHECK_EQ(GL_TEXTURE0, GetActiveTextureUnit(gl_));
    gl_->BindTexture(GL_TEXTURE_EXTERNAL_OES, lock.texture_id());
-@@ -2833,8 +2843,8 @@ void GLRenderer::FlushTextureQuadCache(BoundGeometry flush_binding) {
+@@ -2834,8 +2834,8 @@ void GLRenderer::FlushTextureQuadCache(BoundGeometry flush_binding) {
        draw_cache_.nearest_neighbor ? GL_NEAREST : GL_LINEAR);
  
    // Bind the program to the GL state.
@@ -184,20 +184,20 @@ index 80cafcc0fbf7968ceb7a72dd0af516b5fefa31d0..56b9c93b98c232a316e285a7f9b67998
 -                CurrentRenderPassColorSpace(),
 +  SetUseProgram(draw_cache_.program_key, PATCH_CS(locked_quad.color_space()),
 +                PATCH_CS(CurrentRenderPassColorSpace()),
-                 /*adjust_src_white_level=*/draw_cache_.is_video_frame);
+                 /*adjust_src_white_level=*/draw_cache_.is_video_frame,
+                 locked_quad.hdr_metadata());
  
-   if (current_program_->rounded_corner_rect_location() != -1) {
-@@ -3663,7 +3673,9 @@ void GLRenderer::SetUseProgram(const ProgramKey& program_key_no_color,
-                                const gfx::ColorSpace& src_color_space,
+@@ -3666,7 +3666,9 @@ void GLRenderer::SetUseProgram(const ProgramKey& program_key_no_color,
                                 const gfx::ColorSpace& dst_color_space,
-                                bool adjust_src_white_level) {
+                                bool adjust_src_white_level,
+                                absl::optional<gfx::HDRMetadata> hdr_metadata) {
 -  DCHECK(dst_color_space.IsValid());
 +  if (settings_->enable_color_correct_rendering) {
 +    DCHECK(dst_color_space.IsValid());
 +  }
    gfx::ColorSpace adjusted_src_color_space = src_color_space;
-   if (adjust_src_white_level) {
-     // If the input color space is HDR, and it did not specify a white level,
+   if (adjust_src_white_level && src_color_space.IsHDR()) {
+     // TODO(b/183236148): consider using the destination's HDR static metadata
 @@ -4042,9 +4054,9 @@ void GLRenderer::CopyRenderPassDrawQuadToOverlayResource(
          cc::MathUtil::CheckedRoundUp(iosurface_height, iosurface_multiple);
    }
