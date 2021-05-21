@@ -29,7 +29,8 @@ for (const folder of ['libc++', 'libc++abi']) {
   ${headers.map(f => `"//${path.posix.join(gclientPath, f)}"`).join(',\n  ')},
 ]
 
-${prettyName}_licenses = [ "//buildtools/third_party/${folder}/trunk/LICENSE.TXT" ]`;
+${prettyName}_licenses = [ "//buildtools/third_party/${folder}/trunk/LICENSE.TXT" ]
+`;
 
   const filenamesPath = path.resolve(__dirname, '..', `filenames.${prettyName}.gni`);
 

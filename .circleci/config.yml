@@ -803,6 +803,17 @@ step-hunspell-build: &step-hunspell-build
         ninja -C out/Default electron:hunspell_dictionaries_zip -j $NUMBER_OF_NINJA_PROCESSES
       fi
 
+step-maybe-generate-libcxx: &step-maybe-generate-libcxx
+  run:
+    name: maybe generate libcxx
+    command: |
+      cd src
+      if [ "`uname`" == "Linux" ]; then
+        ninja -C out/Default electron:libcxx_headers_zip -j $NUMBER_OF_NINJA_PROCESSES
+        ninja -C out/Default electron:libcxxabi_headers_zip -j $NUMBER_OF_NINJA_PROCESSES
+        ninja -C out/Default electron:libcxx_objects_zip -j $NUMBER_OF_NINJA_PROCESSES
+      fi
+
 step-maybe-generate-breakpad-symbols: &step-maybe-generate-breakpad-symbols
   run:
     name: Generate breakpad symbols
@@ -1625,6 +1636,9 @@ commands:
 
       # hunspell
       - *step-hunspell-build
+
+      # libcxx
+      - *step-maybe-generate-libcxx
 
       # typescript defs
       - *step-maybe-generate-typescript-defs
