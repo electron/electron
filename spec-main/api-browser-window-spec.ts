@@ -2742,6 +2742,16 @@ describe('BrowserWindow module', () => {
         expect(w.getSize()).to.deep.equal(size);
       });
     });
+
+    describe('"frameName" option', () => {
+      it('sets the main frame name', () => {
+        const frameName = 'main boi';
+        const w = new BrowserWindow({
+          webPreferences: { frameName }
+        });
+        expect(w.webContents.mainFrame.name).to.equal(frameName);
+      });
+    });
   });
 
   describe('nativeWindowOpen + contextIsolation options', () => {
