@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 7f4dc277620918d3a091dc785166b5227f4ee161..fb8031635c4d34773ddf2122257f267bd79d77b1 100644
+index b4c2b23799188cdb55c06a3169ce7a3cd4e3c9f7..27fcdb73342c7cdc30d301dc8c1998c1bd894e3e 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -5736,6 +5736,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -5740,6 +5740,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,10 +21,10 @@ index 7f4dc277620918d3a091dc785166b5227f4ee161..fb8031635c4d34773ddf2122257f267b
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 4fa132389ec7185c5c5b07c02aa2b48d364fa811..ea866616eb1ae895dfc51dc166ba24cf8db55dfe 100644
+index 5dc3f95a5db5d4bad2512923d8703276cd93c1c9..0f99f5c65e5c4539b0ea985a1db4b5bee1abc603 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3757,6 +3757,14 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
+@@ -3758,6 +3758,14 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
    }
    auto* new_contents_impl = new_contents.get();
  
@@ -39,7 +39,7 @@ index 4fa132389ec7185c5c5b07c02aa2b48d364fa811..ea866616eb1ae895dfc51dc166ba24cf
    new_contents_impl->GetController().SetSessionStorageNamespace(
        partition_id, session_storage_namespace);
  
-@@ -3799,12 +3807,6 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
+@@ -3800,12 +3808,6 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
@@ -53,10 +53,10 @@ index 4fa132389ec7185c5c5b07c02aa2b48d364fa811..ea866616eb1ae895dfc51dc166ba24cf
                               new_contents_impl, opener, params.target_url,
                               params.referrer.To<Referrer>(), params.disposition,
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index 5f6980ca1865dfb58830de7012d7c3f499457e3d..04bfe5f3cc0fdaf5065d64f1a0a9ec6b2595e5f8 100644
+index 642e02a6fccfc7f2f40bad30c7285fcb5489d354..ffaa484e178e61f65d04b34a93922a00f5a3b71b 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
-@@ -455,6 +455,10 @@ struct CreateNewWindowParams {
+@@ -466,6 +466,10 @@ struct CreateNewWindowParams {
    // The impression associated with the navigation in the new window, if
    // one is specified.
    Impression? impression;
@@ -150,7 +150,7 @@ index b1cfa654259d431adfada00a00f9bfc8ae5ab292..484d36de2ac0ef3b1d19bbd0d6c79db8
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index 5d85a561f6e204eab971f19a9ad07b677a1d7321..d2275b5b8b27812a2fe70e9026ac05e4d85c56af 100644
+index be0a2a33bc8e7d9ca731c3e4868695b5fb56f509..7d76b747ffb3ec0b5e08b66911a6f465ebfa6890 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
 @@ -26,6 +26,7 @@
@@ -161,7 +161,7 @@ index 5d85a561f6e204eab971f19a9ad07b677a1d7321..d2275b5b8b27812a2fe70e9026ac05e4
  #include "third_party/blink/public/web/modules/mediastream/web_media_stream_device_observer.h"
  #include "third_party/blink/public/web/web_frame_widget.h"
  #include "third_party/blink/public/web/web_local_frame.h"
-@@ -311,6 +312,10 @@ WebView* RenderViewImpl::CreateView(
+@@ -312,6 +313,10 @@ WebView* RenderViewImpl::CreateView(
      params->impression = blink::ConvertWebImpressionToImpression(*impression);
    }
  
