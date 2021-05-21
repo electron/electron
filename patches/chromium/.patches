@@ -106,3 +106,4 @@ chore_allow_overriding_of_enable_pak_file_integrity_checks.patch
 make_include_of_stack_trace_h_unconditional.patch
 build_libc_as_static_library.patch
 build_libc_abi_as_static.patch
+gn_electron_libcxx_zip_visibility.patch

@@ -1,0 +1,20 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: VerteDinde <khammond@slack-corp.com>
+Date: Thu, 20 May 2021 18:32:28 -0700
+Subject: gn_electron:libcxx_zip_visibility
+
+In order to build native modules with libc++, we need to expose the header files
+with gn - this patch adds the zip to the libc++ BUILD.gn visibility.
+
+diff --git a/buildtools/third_party/libc++/BUILD.gn b/buildtools/third_party/libc++/BUILD.gn
+index 65f6e8585ad374ad59e7670babfedd2fbdfbaa43..b98d119c51b9ed9e5d90d433ed33bf18942c206a 100644
+--- a/buildtools/third_party/libc++/BUILD.gn
++++ b/buildtools/third_party/libc++/BUILD.gn
+@@ -40,6 +40,7 @@ target(_libcxx_target_type, "libc++") {
+   # need to explicitly depend on libc++.
+   visibility = [
+     "//build/config:common_deps",
++    "//electron:libcxx_zip",
+     "//third_party/catapult/devil:devil",
+   ]
+   if (is_linux && !is_chromeos) {
