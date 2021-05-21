@@ -43,6 +43,7 @@ async function main () {
     `-isystem"${path.resolve(BASE, 'buildtools', 'third_party', 'libc++abi', 'trunk', 'include')}"`
   ].join(' ');
 
+  // TODO(vertedinde) experimenting with needed ldflags here
   const ldflags = [
     '-stdlib=libc++',
     '-fuse-ld=lld',
@@ -51,12 +52,23 @@ async function main () {
     '-lc++abi'
   ].join(' ');
 
-  env.CC = cc;
-  env.CFLAGS = cxxflags;
-  env.CXX = cxx;
-  env.LD = ld;
-  env.CXXFLAGS = cxxflags;
-  env.LDFLAGS = ldflags;
+  const winldflags = [
+    `-L"${path.resolve(BASE, 'out', `${utils.getOutDir({ shouldLog: true })}`, 'obj', 'buildtools', 'third_party', 'libc++abi')}"`,
+    `-L"${path.resolve(BASE, 'out', `${utils.getOutDir({ shouldLog: true })}`, 'obj', 'buildtools', 'third_party', 'libc++')}"`
+  ].join(' ');
+
+  if (process.platform !== 'win32') {
+    env.CC = cc;
+    env.CFLAGS = cxxflags;
+    env.CXX = cxx;
+    env.LD = ld;
+    env.CXXFLAGS = cxxflags;
+    env.LDFLAGS = ldflags;
+  }
+
+  if (process.platform === 'win32') {
+    env.LDFLAGS = winldflags;
+  }
 
   const { status: buildStatus } = cp.spawnSync(NPX_CMD, ['node-gyp', 'rebuild', '--verbose', '--directory', 'test', '-j', 'max'], {
     env,
