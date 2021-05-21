@@ -94,6 +94,11 @@ def main():
     debug_zip = os.path.join(OUT_DIR, DEBUG_NAME)
     shutil.copy2(os.path.join(OUT_DIR, 'debug.zip'), debug_zip)
     upload_electron(release, debug_zip, args)
+    if get_target_arch() == "x64":
+      # Upload headers.zip and abi_headers.zip as non-platform specific
+      pass
+    # Upload libc++.zip as platform specific (only on linux)
+    # Also add to release.js list of assets for validation
 
   # Upload free version of ffmpeg.
   ffmpeg = get_zip_name('ffmpeg', ELECTRON_VERSION)

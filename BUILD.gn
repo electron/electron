@@ -25,6 +25,8 @@ import("electron_paks.gni")
 import("filenames.auto.gni")
 import("filenames.gni")
 import("filenames.hunspell.gni")
+import("filenames.libcxx.gni")
+import("filenames.libcxxabi.gni")
 
 if (is_mac) {
   import("//build/config/mac/rules.gni")
@@ -1291,13 +1293,18 @@ template("dist_zip") {
                              "testonly",
                            ])
     flatten = false
+    flatten_relative_to = "_"
     if (defined(invoker.flatten)) {
       flatten = invoker.flatten
+      if (defined(invoker.flatten_relative_to)) {
+        flatten_relative_to = invoker.flatten_relative_to
+      }
     }
     args = rebase_path(outputs + [ _runtime_deps_file ], root_build_dir) + [
              target_cpu,
              target_os,
              "$flatten",
+             "$flatten_relative_to",
            ]
   }
 }
@@ -1386,6 +1393,43 @@ dist_zip("hunspell_dictionaries_zip") {
   flatten = true
 
   outputs = [ "$root_build_dir/hunspell_dictionaries.zip" ]
+}
+
+copy("libcxx_headers") {
+  sources = libcxx_headers + libcxx_licenses
+  outputs = [ "$target_gen_dir/electron_libcxx_include/{{source_root_relative_dir}}/{{source_file_part}}" ]
+}
+
+dist_zip("libcxx_headers_zip") {
+  data_deps = [ ":libcxx_headers" ]
+  flatten = true
+  flatten_relative_to = rebase_path(
+          "$target_gen_dir/electron_libcxx_include/buildtools/third_party/libc++/trunk",
+          "$root_out_dir")
+
+  outputs = [ "$root_build_dir/libcxx_headers.zip" ]
+}
+
+copy("libcxxabi_headers") {
+  sources = libcxxabi_headers + libcxxabi_licenses
+  outputs = [ "$target_gen_dir/electron_libcxxabi_include/{{source_root_relative_dir}}/{{source_file_part}}" ]
+}
+
+dist_zip("libcxxabi_headers_zip") {
+  data_deps = [ ":libcxxabi_headers" ]
+  flatten = true
+  flatten_relative_to = rebase_path(
+          "$target_gen_dir/electron_libcxxabi_include/buildtools/third_party/libc++abi/trunk",
+          "$root_out_dir")
+
+  outputs = [ "$root_build_dir/libcxxabi_headers.zip" ]
+}
+
+action("libcxx_zip") {
+  deps = [ "//buildtools/third_party/libc++" ]
+  script = "build/zip_libcxx.py"
+  outputs = [ "$root_build_dir/libc++.zip" ]
+  args = rebase_path(outputs)
 }
 
 group("electron") {
