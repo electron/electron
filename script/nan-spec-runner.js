@@ -40,7 +40,8 @@ async function main () {
     '-nostdinc++',
     '-D_LIBCPP_HAS_NO_VENDOR_AVAILABILITY_ANNOTATIONS', // needed by next line
     `-isystem"${path.resolve(BASE, 'buildtools', 'third_party', 'libc++', 'trunk', 'include')}"`,
-    `-isystem"${path.resolve(BASE, 'buildtools', 'third_party', 'libc++abi', 'trunk', 'include')}"`
+    `-isystem"${path.resolve(BASE, 'buildtools', 'third_party', 'libc++abi', 'trunk', 'include')}"`,
+    '-fPIC'
   ].join(' ');
 
   // TODO(vertedinde) experimenting with needed ldflags here

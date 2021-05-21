@@ -107,7 +107,6 @@ def main(argv):
                 name_to_write = name_to_write[len(flatten_relative_to):]
               else:
                 name_to_write = os.path.basename(arcname)
-                # raise Exception("Tried to zip file outside of relative folder")
             else:
               name_to_write = os.path.basename(arcname)
           z.write(

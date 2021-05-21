@@ -1270,7 +1270,7 @@ steps-test-nan: &steps-test-nan
         name: Run Nan Tests
         command: |
           cd src
-          node electron/script/nan-spec-runner.js -fPIC
+          node electron/script/nan-spec-runner.js
 
 steps-test-node: &steps-test-node
   steps:
