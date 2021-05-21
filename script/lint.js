@@ -13,6 +13,8 @@ const SOURCE_ROOT = path.normalize(path.dirname(__dirname));
 const DEPOT_TOOLS = path.resolve(SOURCE_ROOT, '..', 'third_party', 'depot_tools');
 
 const IGNORELIST = new Set([
+  ['filenames.libcxx.gni'],
+  ['filenames.libcxxabi.gni'],
   ['shell', 'browser', 'resources', 'win', 'resource.h'],
   ['shell', 'browser', 'notifications', 'mac', 'notification_center_delegate.h'],
   ['shell', 'browser', 'ui', 'cocoa', 'event_dispatching_window.h'],
