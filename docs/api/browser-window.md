@@ -391,8 +391,8 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       contain the layout of the document—without requiring scrolling. Enabling
       this will cause the `preferred-size-changed` event to be emitted on the
       `WebContents` when the preferred size changes. Default is `false`.
-    * `frameName` String (optional) - The name assigned to the top-level frame
-      of the `WebContents` instance.
+    * `mainFrameName` String (optional) - The name assigned to the top-level
+      frame of the `WebContents` instance.
 
 When setting minimum or maximum window size with `minWidth`/`maxWidth`/
 `minHeight`/`maxHeight`, it only constrains the users. It won't prevent you from

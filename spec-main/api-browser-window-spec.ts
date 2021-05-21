@@ -2743,13 +2743,13 @@ describe('BrowserWindow module', () => {
       });
     });
 
-    describe('"frameName" option', () => {
+    describe('"mainFrameName" option', () => {
       it('sets the main frame name', () => {
-        const frameName = 'main boi';
+        const mainFrameName = 'main boi';
         const w = new BrowserWindow({
-          webPreferences: { frameName }
+          webPreferences: { mainFrameName }
         });
-        expect(w.webContents.mainFrame.name).to.equal(frameName);
+        expect(w.webContents.mainFrame.name).to.equal(mainFrameName);
       });
     });
   });
