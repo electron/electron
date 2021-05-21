@@ -154,22 +154,20 @@ index 56a23e8f41bb418d414f11af5797b30571d4cc2b..6f9f577f16de80dd2ab194b557bbd9ec
    DISALLOW_COPY_AND_ASSIGN(PepperIsolatedFileSystemMessageFilter);
  };
 diff --git a/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc b/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc
-index 60cfd89dfd18eced6f6d103267b80d547d2e9f26..a326b07db091dba194c3b389338d9fc29ab76563 100644
+index 60cfd89dfd18eced6f6d103267b80d547d2e9f26..95d36e99832f434d878a2a2fc3101a611926acb2 100644
 --- a/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc
 +++ b/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc
 @@ -7,8 +7,13 @@
  #include "base/check_op.h"
  #include "chrome/renderer/pepper/pepper_flash_font_file_host.h"
  #include "chrome/renderer/pepper/pepper_flash_fullscreen_host.h"
--#include "chrome/renderer/pepper/pepper_uma_host.h"
--#include "components/pdf/renderer/pepper_pdf_host.h"
-++#if 0
-+ #include "chrome/renderer/pepper/pepper_uma_host.h"
-++#endif
-++#include "electron/buildflags/buildflags.h"
-++#if BUILDFLAG(ENABLE_PDF_VIEWER)
-+ #include "components/pdf/renderer/pepper_pdf_host.h"
-++#endif
++#if 0
+ #include "chrome/renderer/pepper/pepper_uma_host.h"
++#endif
++#include "electron/buildflags/buildflags.h"
++#if BUILDFLAG(ENABLE_PDF_VIEWER)
+ #include "components/pdf/renderer/pepper_pdf_host.h"
++#endif
  #include "content/public/renderer/renderer_ppapi_host.h"
  #include "pdf/buildflags.h"
  #include "ppapi/host/ppapi_host.h"
