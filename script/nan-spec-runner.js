@@ -43,7 +43,6 @@ async function main () {
     `-isystem"${path.resolve(BASE, 'buildtools', 'third_party', 'libc++abi', 'trunk', 'include')}"`
   ].join(' ');
 
-  // TODO(vertedinde) experimenting with needed ldflags here
   const ldflags = [
     '-stdlib=libc++',
     '-fuse-ld=lld',
@@ -52,14 +51,12 @@ async function main () {
     '-lc++abi'
   ].join(' ');
 
-  if (process.platform !== 'win32') {
-    env.CC = cc;
-    env.CFLAGS = cxxflags;
-    env.CXX = cxx;
-    env.LD = ld;
-    env.CXXFLAGS = cxxflags;
-    env.LDFLAGS = ldflags;
-  }
+  env.CC = cc;
+  env.CFLAGS = cxxflags;
+  env.CXX = cxx;
+  env.LD = ld;
+  env.CXXFLAGS = cxxflags;
+  env.LDFLAGS = ldflags;
 
   const { status: buildStatus } = cp.spawnSync(NPX_CMD, ['node-gyp', 'rebuild', '--verbose', '--directory', 'test', '-j', 'max'], {
     env,
