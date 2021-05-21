@@ -39,6 +39,8 @@ ${prettyName}_licenses = [
   if (check) {
     const currentContent = fs.readFileSync(filenamesPath, 'utf8');
     if (currentContent !== content) {
+      console.log('currentContent: ', currentContent);
+      console.log('content: ', content);
       throw new Error(`${prettyName} filenames need to be regenerated, latest generation does not match current file.  Please run node gen-libc++-filenames.js`);
     }
   } else {

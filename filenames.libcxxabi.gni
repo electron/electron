@@ -3,4 +3,6 @@ libcxxabi_headers = [
   "//buildtools/third_party/libc++abi/trunk/include/cxxabi.h",
 ]
 
-libcxxabi_licenses = [ "//buildtools/third_party/libc++abi/trunk/LICENSE.TXT" ]
+libcxxabi_licenses = [
+  "//buildtools/third_party/libc++abi/trunk/LICENSE.TXT",
+]
