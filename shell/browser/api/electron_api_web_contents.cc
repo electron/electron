@@ -1399,6 +1399,12 @@ void WebContents::HandleNewRenderFrame(
 void WebContents::RenderFrameCreated(
     content::RenderFrameHost* render_frame_host) {
   HandleNewRenderFrame(render_frame_host);
+
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+  gin_helper::Dictionary details = gin_helper::Dictionary::CreateEmpty(isolate);
+  details.SetGetter("frame", render_frame_host);
+  Emit("frame-created", details);
 }
 
 void WebContents::RenderFrameDeleted(
@@ -1517,6 +1523,10 @@ void WebContents::DidAcquireFullscreen(content::RenderFrameHost* rfh) {
 
 void WebContents::DOMContentLoaded(
     content::RenderFrameHost* render_frame_host) {
+  auto* web_frame = WebFrameMain::FromRenderFrameHost(render_frame_host);
+  if (web_frame)
+    web_frame->DOMContentLoaded();
+
   if (!render_frame_host->GetParent())
     Emit("dom-ready");
 }

@@ -13,6 +13,7 @@
 #include "gin/handle.h"
 #include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/remote.h"
+#include "shell/browser/event_emitter_mixin.h"
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/pinnable.h"
 #include "third_party/blink/public/mojom/page/page_visibility_state.mojom-forward.h"
@@ -35,6 +36,7 @@ class WebContents;
 
 // Bindings for accessing frames from the main process.
 class WebFrameMain : public gin::Wrappable<WebFrameMain>,
+                     public gin_helper::EventEmitterMixin<WebFrameMain>,
                      public gin_helper::Pinnable<WebFrameMain>,
                      public gin_helper::Constructible<WebFrameMain> {
  public:
@@ -80,7 +82,6 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
   // WebFrameMain can outlive its RenderFrameHost pointer so we need to check
   // whether its been disposed of prior to accessing it.
   bool CheckRenderFrame() const;
-  void Connect();
 
   v8::Local<v8::Promise> ExecuteJavaScript(gin::Arguments* args,
                                            const std::u16string& code);
@@ -108,6 +109,8 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
   std::vector<content::RenderFrameHost*> FramesInSubtree() const;
 
   void OnRendererConnectionError();
+  void Connect();
+  void DOMContentLoaded();
 
   mojo::Remote<mojom::ElectronRenderer> renderer_api_;
   mojo::PendingReceiver<mojom::ElectronRenderer> pending_receiver_;
