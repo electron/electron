@@ -71,6 +71,16 @@ or `undefined` if there is no WebFrameMain associated with the given IDs.
 Process: [Main](../glossary.md#main-process)<br />
 _This class is not exported from the `'electron'` module. It is only available as a return value of other methods in the Electron API._
 
+### Instance Events
+
+#### Event: 'dom-ready'
+
+Returns:
+
+* `event` Event
+
+Emitted when the document is loaded.
+
 ### Instance Methods
 
 #### `frame.executeJavaScript(code[, userGesture])`

@@ -244,4 +244,66 @@ describe('webFrameMain module', () => {
       }
     });
   });
+
+  describe('"frame-created" event', () => {
+    it('emits when the main frame is created', async () => {
+      const w = new BrowserWindow({ show: false });
+      const promise = emittedOnce(w.webContents, 'frame-created');
+      w.webContents.loadFile(path.join(subframesPath, 'frame.html'));
+      const [, details] = await promise;
+      expect(details.frame).to.equal(w.webContents.mainFrame);
+    });
+
+    it('emits when nested frames are created', async () => {
+      const w = new BrowserWindow({ show: false });
+      const promise = emittedNTimes(w.webContents, 'frame-created', 2);
+      w.webContents.loadFile(path.join(subframesPath, 'frame-container.html'));
+      const [[, mainDetails], [, nestedDetails]] = await promise;
+      expect(mainDetails.frame).to.equal(w.webContents.mainFrame);
+      expect(nestedDetails.frame).to.equal(w.webContents.mainFrame.frames[0]);
+    });
+
+    it('emits after navigating cross-domain', async () => {
+      const [serverA, serverB] = await Promise.all([createServer(), createServer()]);
+
+      // HACK: Use 'localhost' instead of '127.0.0.1' so Chromium treats it as
+      // a separate origin because differing ports aren't enough :thinking:
+      const secondUrl = `http://localhost:${new URL(serverB.url).port}`;
+
+      const w = new BrowserWindow({ show: false });
+      await w.webContents.loadURL(serverA.url);
+
+      // NOTE: Second navigation is cross-origin which leads to Chromium
+      // swapping RenderFrameHosts. This is maybe not what we want for this
+      // API...
+      const promise = emittedOnce(w.webContents, 'frame-created');
+      await w.webContents.loadURL(secondUrl);
+      const [, mainDetails] = await promise;
+      expect(mainDetails.frame).to.equal(w.webContents.mainFrame);
+    });
+  });
+
+  describe('"dom-ready" event', () => {
+    it('emits for top-level frame', async () => {
+      const w = new BrowserWindow({ show: false });
+      const promise = emittedOnce(w.webContents.mainFrame, 'dom-ready');
+      w.webContents.loadURL('about:blank');
+      await promise;
+    });
+
+    it('emits for sub frame', async () => {
+      const w = new BrowserWindow({ show: false });
+      const promise = new Promise<void>(resolve => {
+        w.webContents.on('frame-created', (e, { frame }) => {
+          frame.on('dom-ready', () => {
+            if (frame.name === 'frameA') {
+              resolve();
+            }
+          });
+        });
+      });
+      w.webContents.loadFile(path.join(subframesPath, 'frame-with-frame.html'));
+      await promise;
+    });
+  });
 });
