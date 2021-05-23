@@ -141,6 +141,11 @@ Archive::~Archive() {
 }
 
 bool Archive::Init() {
+  if (header_)
+    return true;
+
+  base::AutoLock auto_lock(lock_);
+
   if (!file_.IsValid()) {
     if (file_.error_details() != base::File::FILE_ERROR_NOT_FOUND) {
       LOG(WARNING) << "Opening " << path_.value() << ": "
@@ -198,7 +203,7 @@ bool Archive::Init() {
   return true;
 }
 
-bool Archive::GetFileInfo(const base::FilePath& path, FileInfo* info) {
+bool Archive::GetFileInfo(const base::FilePath& path, FileInfo* info) const {
   if (!header_)
     return false;
 
@@ -213,7 +218,7 @@ bool Archive::GetFileInfo(const base::FilePath& path, FileInfo* info) {
   return FillFileInfoWithNode(info, header_size_, node);
 }
 
-bool Archive::Stat(const base::FilePath& path, Stats* stats) {
+bool Archive::Stat(const base::FilePath& path, Stats* stats) const {
   if (!header_)
     return false;
 
@@ -237,7 +242,7 @@ bool Archive::Stat(const base::FilePath& path, Stats* stats) {
 }
 
 bool Archive::Readdir(const base::FilePath& path,
-                      std::vector<base::FilePath>* files) {
+                      std::vector<base::FilePath>* files) const {
   if (!header_)
     return false;
 
@@ -257,7 +262,8 @@ bool Archive::Readdir(const base::FilePath& path,
   return true;
 }
 
-bool Archive::Realpath(const base::FilePath& path, base::FilePath* realpath) {
+bool Archive::Realpath(const base::FilePath& path,
+                       base::FilePath* realpath) const {
   if (!header_)
     return false;
 
@@ -276,6 +282,11 @@ bool Archive::Realpath(const base::FilePath& path, base::FilePath* realpath) {
 }
 
 bool Archive::CopyFileOut(const base::FilePath& path, base::FilePath* out) {
+  if (!header_)
+    return false;
+
+  base::AutoLock auto_lock(lock_);
+
   auto it = external_files_.find(path.value());
   if (it != external_files_.end()) {
     *out = it->second->path();

@@ -11,6 +11,7 @@
 
 #include "base/files/file.h"
 #include "base/files/file_path.h"
+#include "base/synchronization/lock.h"
 
 namespace base {
 class DictionaryValue;
@@ -21,7 +22,7 @@ namespace asar {
 class ScopedTemporaryFile;
 
 // This class represents an asar package, and provides methods to read
-// information from it.
+// information from it. It is thread-safe.
 class Archive {
  public:
   struct FileInfo {
@@ -46,16 +47,17 @@ class Archive {
   bool Init();
 
   // Get the info of a file.
-  bool GetFileInfo(const base::FilePath& path, FileInfo* info);
+  bool GetFileInfo(const base::FilePath& path, FileInfo* info) const;
 
   // Fs.stat(path).
-  bool Stat(const base::FilePath& path, Stats* stats);
+  bool Stat(const base::FilePath& path, Stats* stats) const;
 
   // Fs.readdir(path).
-  bool Readdir(const base::FilePath& path, std::vector<base::FilePath>* files);
+  bool Readdir(const base::FilePath& path,
+               std::vector<base::FilePath>* files) const;
 
   // Fs.realpath(path).
-  bool Realpath(const base::FilePath& path, base::FilePath* realpath);
+  bool Realpath(const base::FilePath& path, base::FilePath* realpath) const;
 
   // Copy the file into a temporary file, and return the new path.
   // For unpacked file, this method will return its real path.
@@ -65,9 +67,9 @@ class Archive {
   int GetFD() const;
 
   base::FilePath path() const { return path_; }
-  base::DictionaryValue* header() const { return header_.get(); }
 
  private:
+  base::Lock lock_;
   base::FilePath path_;
   base::File file_;
   int fd_ = -1;
