@@ -1,4 +1,4 @@
-version: 2.1
+version: 3.1
 
 parameters:
   upload-to-s3:
@@ -19,19 +19,19 @@ parameters:
 
   run-linux-x64-publish:
     type: boolean
-    default: false
+    default: true
 
   run-linux-ia32-publish:
     type: boolean
-    default: false
+    default: true
 
   run-linux-arm-publish:
     type: boolean
-    default: false
+    default: true
 
   run-linux-arm64-publish:
     type: boolean
-    default: false
+    default: true
 
   run-osx-publish:
     type: boolean
