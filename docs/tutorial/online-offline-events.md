@@ -33,7 +33,6 @@ Starting with an HTML file `index.html`, this example will demonstrate how the `
 </head>
 <body>
     <h1>Connection status: <strong id='status'></strong></h1>
-    
     <script src="renderer.js"></script>
 </body>
 </html>
