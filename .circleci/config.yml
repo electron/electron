@@ -1604,6 +1604,8 @@ commands:
           condition: << parameters.checkout >>
           steps:
             - *step-checkout-electron
+            - *step-maybe-restore-git-cache
+            - *step-set-git-cache-path
             - *step-gclient-sync
             - *step-delete-git-directories
             - *step-minimize-workspace-size-from-checkout
