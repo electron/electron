@@ -29,7 +29,6 @@ class ElectronSandboxedRendererClient : public RendererClientBase {
                                 content::RenderFrame* render_frame) override;
   // content::ContentRendererClient:
   void RenderFrameCreated(content::RenderFrame*) override;
-  void RenderViewCreated(content::RenderView*) override;
   void RunScriptsAtDocumentStart(content::RenderFrame* render_frame) override;
   void RunScriptsAtDocumentEnd(content::RenderFrame* render_frame) override;
   bool ShouldFork(blink::WebLocalFrame* frame,

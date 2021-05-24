@@ -35,6 +35,8 @@ const base::Feature kContextBridgeMutability{"ContextBridgeMutability",
 
 namespace electron {
 
+content::RenderFrame* GetRenderFrame(v8::Local<v8::Object> value);
+
 namespace api {
 
 namespace context_bridge {
@@ -54,16 +56,6 @@ static int kMaxRecursion = 1000;
 // Returns true if |maybe| is both a value, and that value is true.
 inline bool IsTrue(v8::Maybe<bool> maybe) {
   return maybe.IsJust() && maybe.FromJust();
-}
-
-content::RenderFrame* GetRenderFrame(const v8::Local<v8::Object>& value) {
-  v8::Local<v8::Context> context = value->CreationContext();
-  if (context.IsEmpty())
-    return nullptr;
-  blink::WebLocalFrame* frame = blink::WebLocalFrame::FrameForContext(context);
-  if (!frame)
-    return nullptr;
-  return content::RenderFrame::FromWebFrame(frame);
 }
 
 // Sourced from "extensions/renderer/v8_schema_registry.cc"

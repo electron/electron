@@ -86,9 +86,13 @@ v8::Local<v8::Value> GetBinding(v8::Isolate* isolate,
 }
 
 v8::Local<v8::Value> CreatePreloadScript(v8::Isolate* isolate,
-                                         v8::Local<v8::String> preloadSrc) {
-  return RendererClientBase::RunScript(isolate->GetCurrentContext(),
-                                       preloadSrc);
+                                         v8::Local<v8::String> source) {
+  auto context = isolate->GetCurrentContext();
+  auto maybe_script = v8::Script::Compile(context, source);
+  v8::Local<v8::Script> script;
+  if (!maybe_script.ToLocal(&script))
+    return v8::Local<v8::Value>();
+  return script->Run(context).ToLocalChecked();
 }
 
 double Uptime() {
@@ -155,11 +159,6 @@ void ElectronSandboxedRendererClient::RenderFrameCreated(
     content::RenderFrame* render_frame) {
   new ElectronRenderFrameObserver(render_frame, this);
   RendererClientBase::RenderFrameCreated(render_frame);
-}
-
-void ElectronSandboxedRendererClient::RenderViewCreated(
-    content::RenderView* render_view) {
-  RendererClientBase::RenderViewCreated(render_view);
 }
 
 void ElectronSandboxedRendererClient::RunScriptsAtDocumentStart(
