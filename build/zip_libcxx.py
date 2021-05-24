@@ -22,6 +22,9 @@ def get_object_files(base_path, archive_name):
     if line.startswith(base_path):
       object_file = line.split(":")[0]
       object_files.add(object_file)
+    if line.startswith('nm: '):
+      object_file = line.split(":")[1].lstrip()
+      object_files.add(object_file)
   return list(object_files) + [archive_file]
 
 def main(argv):
