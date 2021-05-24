@@ -200,8 +200,6 @@ void ElectronSandboxedRendererClient::RunScriptsAtDocumentEnd(
 void ElectronSandboxedRendererClient::DidCreateScriptContext(
     v8::Handle<v8::Context> context,
     content::RenderFrame* render_frame) {
-  RendererClientBase::DidCreateScriptContext(context, render_frame);
-
   // Only allow preload for the main frame or
   // For devtools we still want to run the preload_bundle script
   // Or when nodeSupport is explicitly enabled in sub frames

@@ -69,7 +69,7 @@ class RendererClientBase : public content::ContentRendererClient
 #endif
 
   virtual void DidCreateScriptContext(v8::Handle<v8::Context> context,
-                                      content::RenderFrame* render_frame);
+                                      content::RenderFrame* render_frame) = 0;
   virtual void WillReleaseScriptContext(v8::Handle<v8::Context> context,
                                         content::RenderFrame* render_frame) = 0;
   virtual void DidClearWindowObject(content::RenderFrame* render_frame);
