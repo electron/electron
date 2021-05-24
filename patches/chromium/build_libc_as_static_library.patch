@@ -7,7 +7,7 @@ Build libc++ as static library to compile and pass
 nan tests
 
 diff --git a/buildtools/third_party/libc++/BUILD.gn b/buildtools/third_party/libc++/BUILD.gn
-index 65f6e8585ad374ad59e7670babfedd2fbdfbaa43..0b1333bc8de626db056567f599be27808e1495e5 100644
+index 65f6e8585ad374ad59e7670babfedd2fbdfbaa43..7928a03447347f441e1e7dfc43f7a8e475eb120b 100644
 --- a/buildtools/third_party/libc++/BUILD.gn
 +++ b/buildtools/third_party/libc++/BUILD.gn
 @@ -32,7 +32,11 @@ config("winver") {
@@ -27,7 +27,7 @@ index 65f6e8585ad374ad59e7670babfedd2fbdfbaa43..0b1333bc8de626db056567f599be2780
    # need to explicitly depend on libc++.
    visibility = [
      "//build/config:common_deps",
-+    "//electron:libcxx_zip",
++    "//electron:libcxx_objects_zip",
      "//third_party/catapult/devil:devil",
    ]
    if (is_linux && !is_chromeos) {

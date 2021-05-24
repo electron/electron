@@ -1426,7 +1426,7 @@ dist_zip("libcxxabi_headers_zip") {
   outputs = [ "$root_build_dir/libcxxabi_headers.zip" ]
 }
 
-action("libcxx_zip") {
+action("libcxx_objects_zip") {
   deps = [ "//buildtools/third_party/libc++" ]
   script = "build/zip_libcxx.py"
   outputs = [ "$root_build_dir/libcxx_objects.zip" ]
