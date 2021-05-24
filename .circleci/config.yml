@@ -1604,6 +1604,7 @@ commands:
           condition: << parameters.checkout >>
           steps:
             - *step-checkout-electron
+            - *step-touch-sync-done
             - *step-maybe-restore-git-cache
             - *step-set-git-cache-path
             - *step-gclient-sync
