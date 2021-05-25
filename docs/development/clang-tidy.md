@@ -10,12 +10,12 @@ files, you need to have built Electron so that it knows which compiler flags
 were used. There is one required option for the script `--output-dir`, which
 tells the script which build directory to pull the compilation information
 from. A typical usage would be:
-`npm run lint:clang-tiy --out-dir ../out/Testing`
+`npm run lint:clang-tidy --out-dir ../out/Testing`
 
 With no filenames provided, all C/C++/Objective-C files will be checked.
 You can provide a list of files to be checked by passing the filenames after
 the options:
-`npm run lint:clang-tiy --out-dir ../out/Testing shell/browser/api/electron_api_app.cc`
+`npm run lint:clang-tidy --out-dir ../out/Testing shell/browser/api/electron_api_app.cc`
 
 While `clang-tidy` has a
 [long list](https://clang.llvm.org/extra/clang-tidy/checks/list.html)
