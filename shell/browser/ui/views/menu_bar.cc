@@ -124,7 +124,10 @@ bool MenuBar::AcceleratorPressed(const ui::Accelerator& accelerator) {
           ? ui::Accelerator(ui::VKEY_ESCAPE, accelerator.modifiers(),
                             accelerator.key_state(), accelerator.time_stamp())
           : accelerator;
-  return views::AccessiblePaneView::AcceleratorPressed(translated);
+  bool result = views::AccessiblePaneView::AcceleratorPressed(translated);
+  if (result && !pane_has_focus())
+    root_view_->RestoreFocus();
+  return result;
 }
 
 bool MenuBar::SetPaneFocusAndFocusDefault() {
@@ -149,6 +152,8 @@ void MenuBar::OnThemeChanged() {
 void MenuBar::OnDidChangeFocus(View* focused_before, View* focused_now) {
   views::AccessiblePaneView::OnDidChangeFocus(focused_before, focused_now);
   SetAcceleratorVisibility(pane_has_focus());
+  if (!pane_has_focus())
+    root_view_->RestoreFocus();
 }
 
 const char* MenuBar::GetClassName() const {
