@@ -27,7 +27,7 @@ index a856604756aa65c52171a9eff84ba2b316d8609c..72c16682e5df615ab84f67af66cc36c2
    // TODO(crbug/466975): Libsecret and KWallet don't need this. We can remove
    // this when we stop supporting keyring.
 diff --git a/components/os_crypt/key_storage_keyring.cc b/components/os_crypt/key_storage_keyring.cc
-index 409bd27cbc0877634d7d9809575cfa5f60ba04c2..75141308a18e5c3c083439621796f0b49b78db6b 100644
+index 29720b8e8ff81791970e054050b37bbc5f338eb3..3ad654cf4a893f497ac4567aea77f8d1f2e1525f 100644
 --- a/components/os_crypt/key_storage_keyring.cc
 +++ b/components/os_crypt/key_storage_keyring.cc
 @@ -15,12 +15,6 @@
@@ -56,7 +56,7 @@ index 409bd27cbc0877634d7d9809575cfa5f60ba04c2..75141308a18e5c3c083439621796f0b4
  
  KeyStorageKeyring::~KeyStorageKeyring() {}
  
-@@ -49,7 +45,8 @@ base::Optional<std::string> KeyStorageKeyring::GetKeyImpl() {
+@@ -49,7 +45,8 @@ absl::optional<std::string> KeyStorageKeyring::GetKeyImpl() {
    gchar* password_c = nullptr;
    GnomeKeyringResult result =
        GnomeKeyringLoader::gnome_keyring_find_password_sync_ptr(
@@ -66,7 +66,7 @@ index 409bd27cbc0877634d7d9809575cfa5f60ba04c2..75141308a18e5c3c083439621796f0b4
    if (result == GNOME_KEYRING_RESULT_OK) {
      password = password_c;
      GnomeKeyringLoader::gnome_keyring_free_password_ptr(password_c);
-@@ -71,7 +68,7 @@ base::Optional<std::string> KeyStorageKeyring::AddRandomPasswordInKeyring() {
+@@ -71,7 +68,7 @@ absl::optional<std::string> KeyStorageKeyring::AddRandomPasswordInKeyring() {
    GnomeKeyringResult result =
        GnomeKeyringLoader::gnome_keyring_store_password_sync_ptr(
            &kSchema, nullptr /* default keyring */, KeyStorageLinux::kKey,
@@ -74,9 +74,9 @@ index 409bd27cbc0877634d7d9809575cfa5f60ba04c2..75141308a18e5c3c083439621796f0b4
 +          password.c_str(), "application", application_name_.c_str(), nullptr);
    if (result != GNOME_KEYRING_RESULT_OK) {
      VLOG(1) << "OSCrypt failed to store generated password to gnome-keyring";
-     return base::nullopt;
+     return absl::nullopt;
 diff --git a/components/os_crypt/key_storage_keyring.h b/components/os_crypt/key_storage_keyring.h
-index 6406f2825997e0166defd7dd1457c734aa5ee6c4..fb8283f91aebe549c46deae97a483218cf4f57d7 100644
+index 26a3f587b49cdea3e4913ce0e08eeade6d1853a0..598c8b8ad35efa002a29dd98c9cba98453bef5ac 100644
 --- a/components/os_crypt/key_storage_keyring.h
 +++ b/components/os_crypt/key_storage_keyring.h
 @@ -20,8 +20,9 @@ class SingleThreadTaskRunner;
@@ -101,7 +101,7 @@ index 6406f2825997e0166defd7dd1457c734aa5ee6c4..fb8283f91aebe549c46deae97a483218
  };
  
 diff --git a/components/os_crypt/key_storage_keyring_unittest.cc b/components/os_crypt/key_storage_keyring_unittest.cc
-index 010febfe974a2bdd2efb52c78b1fc16c5d248768..0cecd45b78b871c15ed7caf1025aca8710f113f9 100644
+index aba31971dc33f4b60c2847fd037c419baf084eaa..93fc216d54168eb3fd7e9f1b23f71a77f6e6735d 100644
 --- a/components/os_crypt/key_storage_keyring_unittest.cc
 +++ b/components/os_crypt/key_storage_keyring_unittest.cc
 @@ -130,7 +130,7 @@ class GnomeKeyringTest : public testing::Test {
@@ -114,7 +114,7 @@ index 010febfe974a2bdd2efb52c78b1fc16c5d248768..0cecd45b78b871c15ed7caf1025aca87
  }
  
 diff --git a/components/os_crypt/key_storage_libsecret.cc b/components/os_crypt/key_storage_libsecret.cc
-index 312570612ccb6ec4480a6f8d4a74accf5ba79ff8..f97ae381cd8e838b0150ef77d42500f66403cd11 100644
+index 0857cc1874f4153541c7f21dd8cc6bdc1d59b39d..ccc60522791508f02dc759e55e781dbb9627967b 100644
 --- a/components/os_crypt/key_storage_libsecret.cc
 +++ b/components/os_crypt/key_storage_libsecret.cc
 @@ -14,12 +14,6 @@
@@ -137,7 +137,7 @@ index 312570612ccb6ec4480a6f8d4a74accf5ba79ff8..f97ae381cd8e838b0150ef77d42500f6
 +KeyStorageLibsecret::KeyStorageLibsecret(std::string application_name)
 +    : application_name_(std::move(application_name)) {}
 +
- base::Optional<std::string>
+ absl::optional<std::string>
  KeyStorageLibsecret::AddRandomPasswordInLibsecret() {
    std::string password;
 @@ -71,7 +68,7 @@ KeyStorageLibsecret::AddRandomPasswordInLibsecret() {
@@ -151,7 +151,7 @@ index 312570612ccb6ec4480a6f8d4a74accf5ba79ff8..f97ae381cd8e838b0150ef77d42500f6
      g_error_free(error);
 @@ -88,7 +85,7 @@ KeyStorageLibsecret::AddRandomPasswordInLibsecret() {
  
- base::Optional<std::string> KeyStorageLibsecret::GetKeyImpl() {
+ absl::optional<std::string> KeyStorageLibsecret::GetKeyImpl() {
    LibsecretAttributesBuilder attrs;
 -  attrs.Append("application", kApplicationName);
 +  attrs.Append("application", application_name_);
@@ -159,7 +159,7 @@ index 312570612ccb6ec4480a6f8d4a74accf5ba79ff8..f97ae381cd8e838b0150ef77d42500f6
    LibsecretLoader::SearchHelper helper;
    helper.Search(&kKeystoreSchemaV2, attrs.Get(),
 diff --git a/components/os_crypt/key_storage_libsecret.h b/components/os_crypt/key_storage_libsecret.h
-index e59a2a1b5a776010556613ad63391c000ef977a4..1e889f00406cdf4eb40a3807df89432c2d57e4e1 100644
+index 4759d076ea0017a41b398491dd24dde76a61e463..5292e21b8e7e1a873591e474571adb5b4ed8fe16 100644
 --- a/components/os_crypt/key_storage_libsecret.h
 +++ b/components/os_crypt/key_storage_libsecret.h
 @@ -15,7 +15,7 @@
@@ -173,7 +173,7 @@ index e59a2a1b5a776010556613ad63391c000ef977a4..1e889f00406cdf4eb40a3807df89432c
   protected:
 @@ -26,6 +26,8 @@ class COMPONENT_EXPORT(OS_CRYPT) KeyStorageLibsecret : public KeyStorageLinux {
   private:
-   base::Optional<std::string> AddRandomPasswordInLibsecret();
+   absl::optional<std::string> AddRandomPasswordInLibsecret();
  
 +  const std::string application_name_;
 +
@@ -181,7 +181,7 @@ index e59a2a1b5a776010556613ad63391c000ef977a4..1e889f00406cdf4eb40a3807df89432c
  };
  
 diff --git a/components/os_crypt/key_storage_libsecret_unittest.cc b/components/os_crypt/key_storage_libsecret_unittest.cc
-index ca54c3f27b42a685dd0d695922d340f580bac57b..8988ffb928a97186f429ea96e543003a4175aacb 100644
+index ebe9a6b4bcbf748cd7f7e5fcf941b78ab1835749..a17bbc1f8061b33d55444919f546256d63bc809b 100644
 --- a/components/os_crypt/key_storage_libsecret_unittest.cc
 +++ b/components/os_crypt/key_storage_libsecret_unittest.cc
 @@ -236,7 +236,7 @@ class LibsecretTest : public testing::Test {
@@ -192,7 +192,7 @@ index ca54c3f27b42a685dd0d695922d340f580bac57b..8988ffb928a97186f429ea96e543003a
 +  KeyStorageLibsecret libsecret("chromium");
    MockLibsecretLoader::ResetForOSCrypt();
    g_password_store.Pointer()->SetPassword("initial password");
-   base::Optional<std::string> password = libsecret.GetKey();
+   absl::optional<std::string> password = libsecret.GetKey();
 @@ -248,7 +248,7 @@ TEST_F(LibsecretTest, LibsecretRepeats) {
  }
  
@@ -200,10 +200,10 @@ index ca54c3f27b42a685dd0d695922d340f580bac57b..8988ffb928a97186f429ea96e543003a
 -  KeyStorageLibsecret libsecret;
 +  KeyStorageLibsecret libsecret("chromium");
    MockLibsecretLoader::ResetForOSCrypt();
-   base::Optional<std::string> password = libsecret.GetKey();
+   absl::optional<std::string> password = libsecret.GetKey();
    MockLibsecretLoader::ResetForOSCrypt();
 diff --git a/components/os_crypt/key_storage_linux.cc b/components/os_crypt/key_storage_linux.cc
-index 2e388de793af588722c857cd7b896df9734f2b6e..6e0cda0eb0e0e43b111ce2285465b7dbd6f0ab89 100644
+index 8feb147c96baa2f853a647eb648297b4b747f515..53b1903ff04043e2d058deda086e116a0e00fdca 100644
 --- a/components/os_crypt/key_storage_linux.cc
 +++ b/components/os_crypt/key_storage_linux.cc
 @@ -11,6 +11,7 @@
@@ -257,7 +257,7 @@ index 2e388de793af588722c857cd7b896df9734f2b6e..6e0cda0eb0e0e43b111ce2285465b7db
        VLOG(1) << "OSCrypt using Keyring as backend.";
        return key_storage;
 diff --git a/services/network/network_service.cc b/services/network/network_service.cc
-index 4c3e4eb1b2998469a1c1e78599ba59c602f02d06..48944434963b96ed8f09d69a597f256a9ab97dfa 100644
+index 02c8af43258f6a31f3cc667e73f55f8f67330b51..bea06f626cc2b302ca8a25c753c37cea0d4c9e8c 100644
 --- a/services/network/network_service.cc
 +++ b/services/network/network_service.cc
 @@ -622,6 +622,7 @@ void NetworkService::SetCryptConfig(mojom::CryptConfigPtr crypt_config) {
@@ -269,10 +269,10 @@ index 4c3e4eb1b2998469a1c1e78599ba59c602f02d06..48944434963b96ed8f09d69a597f256a
    config->should_use_preference = crypt_config->should_use_preference;
    config->user_data_path = crypt_config->user_data_path;
 diff --git a/services/network/public/mojom/network_service.mojom b/services/network/public/mojom/network_service.mojom
-index c3c07ef85719895e4b43131c805d82aa9d9cb3c1..73dcf87775898b395e5a5bf65e82635947719116 100644
+index 3a1abc4d1b64ad9480f5218cd1de8fd61a064f34..0edbe59d3a70b5bca759cd8a726baded6b81ea71 100644
 --- a/services/network/public/mojom/network_service.mojom
 +++ b/services/network/public/mojom/network_service.mojom
-@@ -98,6 +98,13 @@ struct CryptConfig {
+@@ -99,6 +99,13 @@ struct CryptConfig {
    // The product name to use for permission prompts.
    string product_name;
  
