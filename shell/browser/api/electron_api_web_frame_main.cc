@@ -362,6 +362,18 @@ content::FindRequestManager* WebFrameMain::GetOrCreateFindRequestManager() {
   }
   // Concurrent find sessions must not overlap, so destroy any existing
   // FindRequestManagers in any inner WebFrameMain.
+  // First check parent frames.
+  auto* rfh = render_frame_->GetParent();
+  while (rfh) {
+    auto* web_frame_main = FromRenderFrameHost(rfh);
+    if (web_frame_main && web_frame_main->find_request_manager_) {
+      web_frame_main->find_request_manager_->StopFinding(
+          content::STOP_FIND_ACTION_CLEAR_SELECTION);
+      web_frame_main->find_request_manager_.release();
+    }
+    rfh = rfh->GetParent();
+  }
+  // Now check child frames.
   for (content::RenderFrameHost* rfh : render_frame_->GetFramesInSubtree()) {
     if (rfh == render_frame_)
       continue;
