@@ -524,7 +524,7 @@ Returns:
 * `event` Event
 * `newBounds` [Rectangle](structures/rectangle.md) - Size the window is being resized to.
 * `details` Object
-  * `edge` (String) - The edge of the window being dragged for resizing.
+  * `edge` (String) - The edge of the window being dragged for resizing. Can be `bottom`, `left, `right`, `top-left`, `top-right`, `bottom-left` or `bottom-right`.
 
 Emitted before the window is resized. Calling `event.preventDefault()` will prevent the window from being resized.
 
