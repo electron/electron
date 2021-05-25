@@ -234,8 +234,8 @@ void SystemNetworkContextManager::OnNetworkServiceCreated(
     std::string app_name = electron::Browser::Get()->GetName();
 #if defined(OS_MAC)
     KeychainPassword::service_name =
-        base::NoDestructor(app_name + " Safe Storage");
-    KeychainPassword::account_name = base::NoDestructor(app_name);
+        base::NoDestructor<std::string>(app_name + " Safe Storage");
+    KeychainPassword::account_name = base::NoDestructor<std::string>(app_name);
 #endif
     // The OSCrypt keys are process bound, so if network service is out of
     // process, send it the required key.
