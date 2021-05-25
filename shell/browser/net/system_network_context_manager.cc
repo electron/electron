@@ -11,6 +11,7 @@
 #include "base/path_service.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/net/chrome_mojo_proxy_resolver_factory.h"
+#include "chrome/common/chrome_switches.h"
 #include "components/os_crypt/os_crypt.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/network_service_instance.h"
@@ -251,9 +252,10 @@ void SystemNetworkContextManager::OnNetworkServiceCreated(
       config->product_name = app_name;
       // c.f.
       // https://source.chromium.org/chromium/chromium/src/+/master:chrome/common/chrome_switches.cc;l=689;drc=9d82515060b9b75fa941986f5db7390299669ef1
-      config->store = command_line.GetSwitchValueASCII("password-store");
+      config->store =
+          command_line.GetSwitchValueASCII(::switches::kPasswordStore);
       config->should_use_preference =
-          command_line.HasSwitch("enable-encryption-selection");
+          command_line.HasSwitch(::switches::kEnableEncryptionSelection);
       base::PathService::Get(electron::DIR_USER_DATA, &config->user_data_path);
       network_service->SetCryptConfig(std::move(config));
 #else
