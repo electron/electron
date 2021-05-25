@@ -287,5 +287,5 @@ export function showCertificateTrustDialog (windowOrOptions: BrowserWindow | Cer
 
   if (typeof message !== 'string') throw new TypeError('message must be a string');
 
-  return dialogBinding.showCertificateTrustDialog(window, certificate, message);
+  return dialogBinding.showCertificateTrustDialog?.(window, certificate, message);
 }

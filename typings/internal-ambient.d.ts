@@ -7,7 +7,7 @@ declare var isolatedApi: {
   allowGuestViewElementDefinition: NodeJS.InternalWebFrame['allowGuestViewElementDefinition'];
   setIsWebView: (iframe: HTMLIFrameElement) => void;
   createNativeImage: typeof Electron.nativeImage['createEmpty'];
-}
+};
 
 declare const BUILDFLAG: (flag: boolean) => boolean;
 
@@ -209,6 +209,17 @@ declare namespace NodeJS {
     };
     _linkedBinding(name: 'electron_browser_desktop_capturer'): {
       createDesktopCapturer(): ElectronInternal.DesktopCapturer;
+    };
+    _linkedBinding(name: 'electron_browser_dialog'): {
+      /** only available on mac and windows */
+      showCertificateTrustDialog?: (window: BrowserWindow, settings: CertificateTrustDialogOptions, message: string) => void;
+      showErrorBox: (...args: any[]) => void;
+      showMessageBox: (settings: any) => void;
+      showMessageBoxSync: (settings: any) => void;
+      showOpenDialog: (settings: any) => void;
+      showOpenDialogSync: (settings: any) => void;
+      showSaveDialog: (settings: any) => void;
+      showSaveDialogSync: (settings: any) => void;
     };
     _linkedBinding(name: 'electron_browser_event'): {
       createWithSender(sender: Electron.WebContents): Electron.Event;
