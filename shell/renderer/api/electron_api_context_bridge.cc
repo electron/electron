@@ -24,6 +24,7 @@
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/world_ids.h"
+#include "third_party/blink/public/web/web_blob.h"
 #include "third_party/blink/public/web/web_element.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 
@@ -343,6 +344,14 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
   if (!elem.IsNull()) {
     v8::Context::Scope destination_context_scope(destination_context);
     return v8::MaybeLocal<v8::Value>(elem.ToV8Value(
+        destination_context->Global(), destination_context->GetIsolate()));
+  }
+
+  // Custom logic to "clone" Blob references
+  blink::WebBlob blob = blink::WebBlob::FromV8Value(value);
+  if (!blob.IsNull()) {
+    v8::Context::Scope destination_context_scope(destination_context);
+    return v8::MaybeLocal<v8::Value>(blob.ToV8Value(
         destination_context->Global(), destination_context->GetIsolate()));
   }
 
