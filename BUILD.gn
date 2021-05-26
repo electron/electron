@@ -1,6 +1,7 @@
 import("//build/config/locales.gni")
 import("//build/config/ui.gni")
 import("//build/config/win/manifest.gni")
+import("//components/os_crypt/features.gni")
 import("//components/spellcheck/spellcheck_build_features.gni")
 import("//content/public/app/mac_helpers.gni")
 import("//extensions/buildflags/buildflags.gni")
@@ -684,6 +685,10 @@ source_set("electron_lib") {
       "shell/browser/win/dark_mode.h",
     ]
     libs += [ "uxtheme.lib" ]
+  }
+
+  if (allow_runtime_configurable_key_storage) {
+    defines += [ "ALLOW_RUNTIME_CONFIGURABLE_KEY_STORAGE" ]
   }
 }
 
