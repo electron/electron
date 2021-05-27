@@ -11,7 +11,6 @@
 #include <string>
 #include <vector>
 
-#include "base/optional.h"
 #include "content/public/browser/content_browser_client.h"
 #include "content/public/browser/render_frame_host.h"
 #include "extensions/browser/api/web_request/web_request_info.h"
@@ -26,6 +25,7 @@
 #include "shell/browser/api/electron_api_web_request.h"
 #include "shell/browser/net/electron_url_loader_factory.h"
 #include "shell/browser/net/web_request_api_interface.h"
+#include "third_party/abseil-cpp/absl/types/optional.h"
 
 namespace electron {
 

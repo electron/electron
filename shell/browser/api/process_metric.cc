@@ -7,7 +7,7 @@
 #include <memory>
 #include <utility>
 
-#include "base/optional.h"
+#include "third_party/abseil-cpp/absl/types/optional.h"
 
 #if defined(OS_WIN)
 #include <windows.h>

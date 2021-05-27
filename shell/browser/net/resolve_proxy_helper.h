@@ -9,9 +9,9 @@
 #include <string>
 
 #include "base/memory/ref_counted.h"
-#include "base/optional.h"
 #include "mojo/public/cpp/bindings/receiver.h"
 #include "services/network/public/mojom/proxy_lookup_client.mojom.h"
+#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "url/gurl.h"
 
 namespace electron {

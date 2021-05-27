@@ -10,8 +10,8 @@
 #include <vector>
 
 #include "base/macros.h"
-#include "base/optional.h"
 #include "shell/common/gin_converters/guid_converter.h"
+#include "third_party/abseil-cpp/absl/types/optional.h"
 
 const GUID GUID_DEFAULT = {0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0}};
 

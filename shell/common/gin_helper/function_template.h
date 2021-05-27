@@ -9,12 +9,12 @@
 
 #include "base/bind.h"
 #include "base/callback.h"
-#include "base/optional.h"
 #include "gin/arguments.h"
 #include "shell/common/gin_helper/arguments.h"
 #include "shell/common/gin_helper/destroyable.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/microtasks_scope.h"
+#include "third_party/abseil-cpp/absl/types/optional.h"
 
 // This file is forked from gin/function_template.h with 2 differences:
 // 1. Support for additional types of arguments.

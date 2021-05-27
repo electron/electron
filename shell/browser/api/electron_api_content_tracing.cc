@@ -7,7 +7,6 @@
 #include <utility>
 
 #include "base/files/file_util.h"
-#include "base/optional.h"
 #include "base/task/thread_pool.h"
 #include "base/threading/thread_restrictions.h"
 #include "base/trace_event/trace_config.h"
@@ -18,6 +17,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
+#include "third_party/abseil-cpp/absl/types/optional.h"
 
 using content::TracingController;
 

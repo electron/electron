@@ -8,7 +8,7 @@
 #import <Cocoa/Cocoa.h>
 
 #include "base/mac/scoped_nsobject.h"
-#include "base/optional.h"
+#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/gfx/geometry/point.h"
 
 // Custom Quit, Minimize and Full Screen button container for frameless

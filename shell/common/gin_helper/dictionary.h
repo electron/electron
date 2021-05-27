@@ -8,10 +8,10 @@
 #include <type_traits>
 #include <utility>
 
-#include "base/optional.h"
 #include "gin/dictionary.h"
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_helper/function_template.h"
+#include "third_party/abseil-cpp/absl/types/optional.h"
 
 namespace gin_helper {
 
