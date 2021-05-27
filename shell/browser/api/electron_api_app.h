@@ -126,7 +126,7 @@ class App : public ElectronBrowserClient::Delegate,
   base::OnceClosure SelectClientCertificate(
       content::WebContents* web_contents,
       net::SSLCertRequestInfo* cert_request_info,
-      net::ClientCertIdentityList client_certs,
+      net::ClientCertIdentityList identities,
       std::unique_ptr<content::ClientCertificateDelegate> delegate) override;
   bool CanCreateWindow(content::RenderFrameHost* opener,
                        const GURL& opener_url,
