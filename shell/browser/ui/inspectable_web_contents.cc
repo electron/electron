@@ -38,6 +38,7 @@
 #include "content/public/common/user_agent.h"
 #include "ipc/ipc_channel.h"
 #include "net/http/http_response_headers.h"
+#include "net/http/http_status_code.h"
 #include "services/network/public/cpp/simple_url_loader.h"
 #include "services/network/public/cpp/simple_url_loader_stream_consumer.h"
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
@@ -289,7 +290,7 @@ class InspectableWebContents::NetworkResourceLoader
       base::DictionaryValue response;
       response.SetInteger("statusCode", response_headers_
                                             ? response_headers_->response_code()
-                                            : 200);
+                                            : net::HTTP_OK);
 
       auto headers = std::make_unique<base::DictionaryValue>();
       size_t iterator = 0;
@@ -652,7 +653,7 @@ void InspectableWebContents::LoadNetworkResource(DispatchCallback callback,
   GURL gurl(url);
   if (!gurl.is_valid()) {
     base::DictionaryValue response;
-    response.SetInteger("statusCode", 404);
+    response.SetInteger("statusCode", net::HTTP_NOT_FOUND);
     std::move(callback).Run(&response);
     return;
   }

@@ -101,7 +101,7 @@ network::mojom::URLResponseHeadPtr ToResponseHead(
     return head;
   }
 
-  int status_code = 200;
+  int status_code = net::HTTP_OK;
   dict.Get("statusCode", &status_code);
   head->headers = new net::HttpResponseHeaders(base::StringPrintf(
       "HTTP/1.1 %d %s", status_code,
