@@ -1817,6 +1817,7 @@ jobs:
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
       <<: *env-ninja-status
     steps:
+      - run: echo running
       - when:
           condition:
             or:
@@ -1865,6 +1866,7 @@ jobs:
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
       <<: *env-ninja-status
     steps:
+      - run: echo running
       - when:
           condition:
             or:
@@ -1916,6 +1918,7 @@ jobs:
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
       <<: *env-ninja-status
     steps:
+      - run: echo running
       - when:
           condition:
             or:
@@ -1976,6 +1979,7 @@ jobs:
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
       <<: *env-ninja-status
     steps:
+      - run: echo running
       - when:
           condition:
             or:
@@ -2018,6 +2022,7 @@ jobs:
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
       <<: *env-ninja-status
     steps:
+      - run: echo running
       - when:
           condition:
             or:
@@ -2037,6 +2042,7 @@ jobs:
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
       <<: *env-ninja-status
     steps:
+      - run: echo running
       - when:
           condition:
             or:
@@ -2098,6 +2104,7 @@ jobs:
       <<: *env-release-build
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
+      - run: echo running
       - when:
           condition:
             or:
@@ -2117,6 +2124,7 @@ jobs:
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
       <<: *env-ninja-status
     steps:
+      - run: echo running
       - when:
           condition:
             or:
