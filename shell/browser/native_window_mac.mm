@@ -1453,6 +1453,7 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
 void NativeWindowMac::SetWindowButtonVisibility(bool visible) {
   window_button_visibility_ = visible;
   InternalSetWindowButtonVisibility(visible);
+  NotifyLayoutWindowControlsOverlay();
 }
 
 bool NativeWindowMac::GetWindowButtonVisibility() const {
@@ -1470,6 +1471,7 @@ void NativeWindowMac::SetTrafficLightPosition(
   if (buttons_view_) {
     [buttons_view_ setMargin:traffic_light_position_];
     [buttons_view_ viewDidMoveToWindow];
+    NotifyLayoutWindowControlsOverlay();
   }
 }
 
@@ -1811,16 +1813,21 @@ void NativeWindowMac::SetForwardMouseMessages(bool forward) {
 
 gfx::Rect NativeWindowMac::GetWindowControlsOverlayRect() {
   gfx::Rect bounding_rect;
-  if (title_bar_style_ == TitleBarStyle::kHidden ||
-      title_bar_style_ == TitleBarStyle::kHiddenInset) {
+  if (!has_frame() && buttons_view_ && ![buttons_view_ isHidden] &&
+      !traffic_light_position_) {
     NSRect button_frame = [buttons_view_ frame];
     const int overlay_width = GetContentSize().width() - NSWidth(button_frame);
     int overlay_height = NSHeight(button_frame) + 6;
     if (title_bar_style_ == TitleBarStyle::kHiddenInset) {
       overlay_height += 15;
     }
-    bounding_rect =
-        gfx::Rect(button_frame.size.width, 0, overlay_width, overlay_height);
+    if (base::i18n::IsRTL()) {
+      bounding_rect = gfx::Rect(0, 0, overlay_width - button_frame.size.width,
+                                overlay_height);
+    } else {
+      bounding_rect =
+          gfx::Rect(button_frame.size.width, 0, overlay_width, overlay_height);
+    }
   }
   return bounding_rect;
 }
