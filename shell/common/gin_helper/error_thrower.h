@@ -14,8 +14,7 @@ class ErrorThrower {
  public:
   explicit ErrorThrower(v8::Isolate* isolate);
   ErrorThrower();
-
-  ~ErrorThrower();
+  ~ErrorThrower() = default;
 
   void ThrowError(base::StringPiece err_msg) const;
   void ThrowTypeError(base::StringPiece err_msg) const;
