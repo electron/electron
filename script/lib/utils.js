@@ -6,6 +6,7 @@ const ELECTRON_DIR = path.resolve(__dirname, '..', '..');
 const SRC_DIR = path.resolve(ELECTRON_DIR, '..');
 
 const RELEASE_BRANCH_PATTERN = /(\d)+-(?:(?:[0-9]+-x$)|(?:x+-y$))/;
+// TODO(main-migration): Simplify once main branch is renamed
 const MAIN_BRANCH_PATTERN = /^(main|master)$/;
 const ORIGIN_MAIN_BRANCH_PATTERN = /^origin\/(main|master)$/;
 
