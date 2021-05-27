@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index e606e81f9945175ade5bff3c48d34ee409fb354b..f7552c849630469236daa6ae2985c529f638b3e4 100644
+index fa95b1744e46396013cdf8344b23933aacefc270..f70cf0036d950a0fd5ccb2ea432f51231ca382f2 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -117,6 +117,11 @@
@@ -22,7 +22,7 @@ index e606e81f9945175ade5bff3c48d34ee409fb354b..f7552c849630469236daa6ae2985c529
  #if BUILDFLAG(IS_CT_SUPPORTED)
  #include "components/certificate_transparency/chrome_ct_policy_enforcer.h"
  #include "components/certificate_transparency/chrome_require_ct_delegate.h"
-@@ -375,6 +380,79 @@ bool SCTAuditingDelegate::IsSCTAuditingEnabled() {
+@@ -376,6 +381,79 @@ bool SCTAuditingDelegate::IsSCTAuditingEnabled() {
  
  }  // namespace
  
@@ -102,7 +102,7 @@ index e606e81f9945175ade5bff3c48d34ee409fb354b..f7552c849630469236daa6ae2985c529
  constexpr uint32_t NetworkContext::kMaxOutstandingRequestsPerProcess;
  
  NetworkContext::PendingCertVerify::PendingCertVerify() = default;
-@@ -574,6 +652,13 @@ void NetworkContext::SetClient(
+@@ -575,6 +653,13 @@ void NetworkContext::SetClient(
    client_.Bind(std::move(client));
  }
  
@@ -157,10 +157,10 @@ index 89451c626bee5a9970a1f77f2739ce03a01e6b30..22e155061860f6782b261205f6297c09
    // CertNetFetcher is not used by the current platform, or if the actual
    // net::CertVerifier is instantiated outside of the network service.
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index e24ec4cb3c49ade12be048d96aaca2f672fb292f..6f830a84d20e39b802b44465882f9ae0627a0759 100644
+index 8b74f2f855eaed87c012fea690238e1c95978f71..492a03d742702e2aaaf00cc77fdd53c8a8d968cd 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
-@@ -192,6 +192,17 @@ struct CTPolicy {
+@@ -189,6 +189,17 @@ struct CTPolicy {
    array<string> excluded_legacy_spkis;
  };
  
@@ -178,7 +178,7 @@ index e24ec4cb3c49ade12be048d96aaca2f672fb292f..6f830a84d20e39b802b44465882f9ae0
  // Parameters for constructing a network context.
  struct NetworkContextParams {
    // Name used by memory tools to identify the context.
-@@ -732,6 +743,9 @@ interface NetworkContext {
+@@ -723,6 +734,9 @@ interface NetworkContext {
    // Sets a client for this network context.
    SetClient(pending_remote<NetworkContextClient> client);
  

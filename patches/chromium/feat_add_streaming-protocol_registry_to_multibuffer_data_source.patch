@@ -13,7 +13,7 @@ other protocols to register their streaming behavior. MultibufferDataSource::Ass
 then refers to the list so that it can correctly determine the data source's settings.
 
 diff --git a/media/blink/multibuffer_data_source.cc b/media/blink/multibuffer_data_source.cc
-index c157471b08e12edf2ff5385e78cd4cbe2e8129a9..5ef9dbd289f50359f611290d6a42b2f2aac77977 100644
+index e43037d541ad5d387d71222d831e7119bbb7c278..d49b92f3605523c62cdc267b1424b06c345a0a8c 100644
 --- a/media/blink/multibuffer_data_source.cc
 +++ b/media/blink/multibuffer_data_source.cc
 @@ -10,9 +10,11 @@
@@ -48,12 +48,12 @@ index c157471b08e12edf2ff5385e78cd4cbe2e8129a9..5ef9dbd289f50359f611290d6a42b2f2
 +  GetStreamingSchemes()->push_back(new_scheme);
 +}
 +
- class MultibufferDataSource::ReadOperation {
+ class MultiBufferDataSource::ReadOperation {
   public:
    ReadOperation(int64_t position,
-@@ -153,7 +167,14 @@ bool MultibufferDataSource::media_has_played() const {
+@@ -153,7 +167,14 @@ bool MultiBufferDataSource::media_has_played() const {
  
- bool MultibufferDataSource::AssumeFullyBuffered() const {
+ bool MultiBufferDataSource::AssumeFullyBuffered() const {
    DCHECK(url_data_);
 -  return !url_data_->url().SchemeIsHTTPOrHTTPS();
 +
@@ -66,9 +66,9 @@ index c157471b08e12edf2ff5385e78cd4cbe2e8129a9..5ef9dbd289f50359f611290d6a42b2f2
 +  return true;
  }
  
- void MultibufferDataSource::SetReader(MultiBufferReader* reader) {
+ void MultiBufferDataSource::SetReader(MultiBufferReader* reader) {
 diff --git a/media/blink/multibuffer_data_source.h b/media/blink/multibuffer_data_source.h
-index 2f35c43811e98679c739d1d672fd6dce517ea24f..b598d58c26a12f0e97ecfcb611baf46a86af4a62 100644
+index 37be059fb536fce4d5beadefd6c321e6eeaca252..f410034768052c09ebfacce2e6bd56065ad7097e 100644
 --- a/media/blink/multibuffer_data_source.h
 +++ b/media/blink/multibuffer_data_source.h
 @@ -32,6 +32,8 @@ class BufferedDataSourceHost;

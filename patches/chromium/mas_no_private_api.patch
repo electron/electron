@@ -471,10 +471,10 @@ index c15f3a631292b538698625328fb429ee3c9964f5..37e038753ecf1b82ec92c06b2c0729b5
  }
  
 diff --git a/device/bluetooth/bluetooth_adapter_mac.mm b/device/bluetooth/bluetooth_adapter_mac.mm
-index c1b17a752c12b3fba2275ff09896a2bd5ee53546..e9675f50499d8d260410a29252f0d3fdac3c226c 100644
+index 717daca205b64ddbaf138f88400683dafac1a270..50ce32674525567b24b387e64b27f815585e61a0 100644
 --- a/device/bluetooth/bluetooth_adapter_mac.mm
 +++ b/device/bluetooth/bluetooth_adapter_mac.mm
-@@ -43,6 +43,7 @@
+@@ -42,6 +42,7 @@
  #include "device/bluetooth/bluetooth_socket_mac.h"
  #include "device/bluetooth/public/cpp/bluetooth_address.h"
  
@@ -482,7 +482,7 @@ index c1b17a752c12b3fba2275ff09896a2bd5ee53546..e9675f50499d8d260410a29252f0d3fd
  extern "C" {
  // Undocumented IOBluetooth Preference API [1]. Used by `blueutil` [2] and
  // `Karabiner` [3] to programmatically control the Bluetooth state. Calling the
-@@ -56,6 +57,7 @@
+@@ -55,6 +56,7 @@
  // [4] https://support.apple.com/kb/PH25091
  void IOBluetoothPreferenceSetControllerPowerState(int state);
  }
@@ -490,7 +490,7 @@ index c1b17a752c12b3fba2275ff09896a2bd5ee53546..e9675f50499d8d260410a29252f0d3fd
  
  namespace {
  
-@@ -124,8 +126,10 @@ CBCentralManagerState GetCBManagerState(CBCentralManager* manager) {
+@@ -123,8 +125,10 @@ CBCentralManagerState GetCBManagerState(CBCentralManager* manager) {
        controller_state_function_(
            base::BindRepeating(&BluetoothAdapterMac::GetHostControllerState,
                                base::Unretained(this))),
@@ -501,7 +501,7 @@ index c1b17a752c12b3fba2275ff09896a2bd5ee53546..e9675f50499d8d260410a29252f0d3fd
        classic_discovery_manager_(
            BluetoothDiscoveryManagerMac::CreateClassic(this)),
        low_energy_discovery_manager_(
-@@ -356,8 +360,12 @@ CBCentralManagerState GetCBManagerState(CBCentralManager* manager) {
+@@ -355,8 +359,12 @@ CBCentralManagerState GetCBManagerState(CBCentralManager* manager) {
  }
  
  bool BluetoothAdapterMac::SetPoweredImpl(bool powered) {

@@ -9,7 +9,7 @@ correctly tagged with MAP_JIT we need to use gins page allocator instead
 of the default V8 allocator.  This probably can't be usptreamed.
 
 diff --git a/gin/public/v8_platform.h b/gin/public/v8_platform.h
-index 967ef1dffddfb4d6e30c7b97eacc099c70f4ef31..9c870947e2747c9c73bbf9a058a689b8b422f470 100644
+index fa0e7faad9296b9be8d662324c52f40e502f2e38..a579b359c684ccd72dcbe43f40b4aa7b4779c36b 100644
 --- a/gin/public/v8_platform.h
 +++ b/gin/public/v8_platform.h
 @@ -25,6 +25,7 @@ class GIN_EXPORT V8Platform : public v8::Platform {

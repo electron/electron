@@ -3,7 +3,6 @@ dcheck.patch
 accelerator.patch
 blink_file_path.patch
 blink_local_frame.patch
-blink_world_context.patch
 can_create_window.patch
 disable_hidden.patch
 dom_storage_limits.patch
@@ -97,7 +96,5 @@ fix_add_check_for_sandbox_then_result.patch
 extend_apply_webpreferences.patch
 fix_expose_decrementcapturercount_in_web_contents_impl.patch
 add_setter_for_browsermainloop_result_code.patch
-chore_allow_overriding_of_enable_pak_file_integrity_checks.patch
 make_include_of_stack_trace_h_unconditional.patch
 build_libc_as_static_library.patch
-support_runtime_configurable_key_storage_on_linux_os_crypto.patch
