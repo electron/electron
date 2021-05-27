@@ -61,6 +61,11 @@ async function main () {
     updateWinRC(components)
   ]);
 
+  // if bumping stable, update supported versions
+  if (opts.bump === 'stable') {
+    await Promise(updateSupported(version));
+  }
+
   // commit all updated version-related files
   await commitVersionBump(version);
 
@@ -140,6 +145,21 @@ async function updateWinRC (components) {
     }
   });
   await writeFile(filePath, arr.join('\n'));
+}
+
+// updates support.md file with new semver values (stable only)
+async function updateSupported (version) {
+  const v = parseInt(version);
+  const newVersions = [`${v}.x.y`, `${v - 1}.x.y`, `${v - 2}.x.y`];
+  const previousVersions = [`${v - 1}.x.y`, `${v - 2}.x.y`, `${v - 3}.x.y`];
+
+  const filePath = path.resolve(ELECTRON_DIR, 'docs', 'tutorial', 'support.md');
+  const contents = await readFile(filePath, 'utf8');
+  const newContents = previousVersions.reduce((contents, current, i) => {
+    return contents.replace(current, newVersions[i]);
+  }, contents);
+
+  await writeFile(filePath, newContents, 'utf8');
 }
 
 if (process.mainModule === module) {
