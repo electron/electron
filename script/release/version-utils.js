@@ -65,8 +65,9 @@ async function nextNightly (v) {
   const pre = `nightly.${getCurrentDate()}`;
 
   const branch = (await GitProcess.exec(['rev-parse', '--abbrev-ref', 'HEAD'], ELECTRON_DIR)).stdout.trim();
-  if (branch === 'master') {
-    next = semver.inc(await getLastMajorForMaster(), 'major');
+  // TODO(main-migration): Simplify once main branch is renamed
+  if (branch === 'master' || branch === 'main') {
+    next = semver.inc(await getLastMajorForMain(), 'major');
   } else if (isStable(v)) {
     next = semver.inc(next, 'patch');
   }
@@ -74,7 +75,7 @@ async function nextNightly (v) {
   return `${next}-${pre}`;
 }
 
-async function getLastMajorForMaster () {
+async function getLastMajorForMain () {
   let branchNames;
   const result = await GitProcess.exec(['branch', '-a', '--remote', '--list', 'origin/[0-9]*-x-y'], ELECTRON_DIR);
   if (result.exitCode === 0) {
