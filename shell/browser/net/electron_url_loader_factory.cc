@@ -544,7 +544,7 @@ void ElectronURLLoaderFactory::SendContents(
   head->headers->AddHeader("Access-Control-Allow-Origin", "*");
   client_remote->OnReceiveResponse(std::move(head));
 
-  // Code bellow follows the pattern of data_url_loader_factory.cc.
+  // Code below follows the pattern of data_url_loader_factory.cc.
   mojo::ScopedDataPipeProducerHandle producer;
   mojo::ScopedDataPipeConsumerHandle consumer;
   if (mojo::CreateDataPipe(nullptr, producer, consumer) != MOJO_RESULT_OK) {
