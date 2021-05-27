@@ -1,14 +1,12 @@
-const { shell } = require('electron')
-const path = require('path')
+// All of the Node.js APIs are available in the preload process.
+// It has the same sandbox as a Chrome extension.
+window.addEventListener('DOMContentLoaded', () => {
+  const replaceText = (selector, text) => {
+    const element = document.getElementById(selector)
+    if (element) element.innerText = text
+  }
 
-const openInBrowserButton = document.getElementById('open-in-browser')
-const openAppLink = document.getElementById('open-app-link')
-// Hides openAppLink when loaded inside Electron
-openAppLink.style.display = 'none'
-
-openInBrowserButton.addEventListener('click', () => {
-  console.log('clicked')
-  const pageDirectory = __dirname.replace('app.asar', 'app.asar.unpacked')
-  const pagePath = path.join('file://', pageDirectory, 'index.html')
-  shell.openExternal(pagePath)
+  for (const type of ['chrome', 'node', 'electron']) {
+    replaceText(`${type}-version`, process.versions[type])
+  }
 })
