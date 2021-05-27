@@ -401,7 +401,7 @@ absl::optional<base::TimeDelta> GetCursorBlinkInterval() {
                : base::TimeDelta::FromMilliseconds(system_msec);
   }
 #endif
-  return base::nullopt;
+  return absl::nullopt;
 }
 
 #if BUILDFLAG(ENABLE_PRINTING)

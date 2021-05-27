@@ -61,7 +61,7 @@ using CompletionCallback = base::OnceCallback<void(const base::FilePath&)>;
 absl::optional<base::FilePath> CreateTemporaryFileOnIO() {
   base::FilePath temp_file_path;
   if (!base::CreateTemporaryFile(&temp_file_path))
-    return base::nullopt;
+    return absl::nullopt;
   return base::make_optional(std::move(temp_file_path));
 }
 
@@ -79,7 +79,7 @@ void StopTracing(gin_helper::Promise<base::FilePath> promise,
       std::move(promise), *file_path));
   if (file_path) {
     auto endpoint = TracingController::CreateFileEndpoint(
-        *file_path, base::BindRepeating(resolve_or_reject, base::nullopt));
+        *file_path, base::BindRepeating(resolve_or_reject, absl::nullopt));
     if (!TracingController::GetInstance()->StopTracing(endpoint)) {
       resolve_or_reject.Run(base::make_optional(
           "Failed to stop tracing (was a trace in progress?)"));
