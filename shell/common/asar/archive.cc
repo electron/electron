@@ -237,7 +237,7 @@ bool Archive::Stat(const base::FilePath& path, Stats* stats) {
 }
 
 bool Archive::Readdir(const base::FilePath& path,
-                      std::vector<base::FilePath>* list) {
+                      std::vector<base::FilePath>* files) {
   if (!header_)
     return false;
 
@@ -245,13 +245,13 @@ bool Archive::Readdir(const base::FilePath& path,
   if (!GetNodeFromPath(path.AsUTF8Unsafe(), header_.get(), &node))
     return false;
 
-  const base::DictionaryValue* files;
-  if (!GetFilesNode(header_.get(), node, &files))
+  const base::DictionaryValue* files_node;
+  if (!GetFilesNode(header_.get(), node, &files_node))
     return false;
 
-  base::DictionaryValue::Iterator iter(*files);
+  base::DictionaryValue::Iterator iter(*files_node);
   while (!iter.IsAtEnd()) {
-    list->push_back(base::FilePath::FromUTF8Unsafe(iter.key()));
+    files->push_back(base::FilePath::FromUTF8Unsafe(iter.key()));
     iter.Advance();
   }
   return true;

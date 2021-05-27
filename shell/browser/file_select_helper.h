@@ -74,11 +74,11 @@ class FileSelectHelper : public content::WebContentsObserver,
   // of the package.
   void ProcessSelectedFilesMac(const std::vector<ui::SelectedFileInfo>& files);
 
-  // Saves the paths of |zipped_files| for later deletion. Passes |files| to the
-  // render view host.
+  // Saves the paths of |temporary_files| for later deletion. Passes |files| to
+  // the render view host.
   void ProcessSelectedFilesMacOnUIThread(
       const std::vector<ui::SelectedFileInfo>& files,
-      const std::vector<base::FilePath>& zipped_files);
+      const std::vector<base::FilePath>& temporary_files);
 
   // Zips the package at |path| into a temporary destination. Returns the
   // temporary destination, if the zip was successful. Otherwise returns an
