@@ -50,7 +50,8 @@ namespace api {
 
 gin::WrapperInfo Menu::kWrapperInfo = {gin::kEmbedderNativeGin};
 
-Menu::Menu(gin::Arguments* args) : model_(new ElectronMenuModel(this)) {
+Menu::Menu(gin::Arguments* args)
+    : model_(std::make_unique<ElectronMenuModel>(this)) {
   model_->AddObserver(this);
 
 #if defined(OS_MAC)

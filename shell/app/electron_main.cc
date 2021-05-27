@@ -252,7 +252,7 @@ int main(int argc, char* argv[]) {
     abort();
   }
 
-  std::unique_ptr<char[]> exec_path(new char[exec_path_size]);
+  auto exec_path = std::make_unique<char[]>(exec_path_size);
   rv = _NSGetExecutablePath(exec_path.get(), &exec_path_size);
   if (rv != 0) {
     fprintf(stderr, "_NSGetExecutablePath: get path failed\n");

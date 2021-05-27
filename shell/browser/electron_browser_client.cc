@@ -611,7 +611,7 @@ std::string ElectronBrowserClient::GetGeolocationApiKey() {
 
 scoped_refptr<content::QuotaPermissionContext>
 ElectronBrowserClient::CreateQuotaPermissionContext() {
-  return new ElectronQuotaPermissionContext;
+  return base::MakeRefCounted<ElectronQuotaPermissionContext>();
 }
 
 content::GeneratedCodeCacheSettings

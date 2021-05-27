@@ -112,8 +112,9 @@ void BrowserProcessImpl::PostEarlyInitialization() {
     user_pref_store->ReadPrefs();
     prefs_factory.set_user_prefs(user_pref_store);
   } else {
-    prefs_factory.set_user_prefs(
-        new OverlayUserPrefStore(new InMemoryPrefStore));
+    auto user_pref_store =
+        base::MakeRefCounted<OverlayUserPrefStore>(new InMemoryPrefStore);
+    prefs_factory.set_user_prefs(user_pref_store);
   }
   local_state_ = prefs_factory.Create(std::move(pref_registry));
 }

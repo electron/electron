@@ -214,7 +214,8 @@ void SystemNetworkContextManager::DeleteInstance() {
 SystemNetworkContextManager::SystemNetworkContextManager(
     PrefService* pref_service)
     : proxy_config_monitor_(pref_service) {
-  shared_url_loader_factory_ = new URLLoaderFactoryForSystem(this);
+  shared_url_loader_factory_ =
+      base::MakeRefCounted<URLLoaderFactoryForSystem>(this);
 }
 
 SystemNetworkContextManager::~SystemNetworkContextManager() {

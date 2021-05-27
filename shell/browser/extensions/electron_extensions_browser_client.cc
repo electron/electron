@@ -57,14 +57,15 @@ using extensions::ExtensionsBrowserClient;
 namespace electron {
 
 ElectronExtensionsBrowserClient::ElectronExtensionsBrowserClient()
-    : api_client_(new extensions::ElectronExtensionsAPIClient),
-      process_manager_delegate_(new extensions::ElectronProcessManagerDelegate),
-      extension_cache_(new extensions::NullExtensionCache()) {
+    : api_client_(std::make_unique<extensions::ElectronExtensionsAPIClient>()),
+      process_manager_delegate_(
+          std::make_unique<extensions::ElectronProcessManagerDelegate>()),
+      extension_cache_(std::make_unique<extensions::NullExtensionCache>()) {
   // Electron does not have a concept of channel, so leave UNKNOWN to
   // enable all channel-dependent extension APIs.
   extensions::SetCurrentChannel(version_info::Channel::UNKNOWN);
-  resource_manager_.reset(
-      new extensions::ElectronComponentExtensionResourceManager());
+  resource_manager_ =
+      std::make_unique<extensions::ElectronComponentExtensionResourceManager>();
 
   AddAPIProvider(
       std::make_unique<extensions::CoreExtensionsBrowserAPIProvider>());
@@ -245,7 +246,7 @@ ElectronExtensionsBrowserClient::GetProcessManagerDelegate() const {
 std::unique_ptr<extensions::ExtensionHostDelegate>
 ElectronExtensionsBrowserClient::
     CreateExtensionHostDelegate() {  // TODO(samuelmaddock):
-  return base::WrapUnique(new extensions::ElectronExtensionHostDelegate);
+  return std::make_unique<extensions::ElectronExtensionHostDelegate>();
 }
 
 bool ElectronExtensionsBrowserClient::DidVersionUpdate(
@@ -348,7 +349,7 @@ ElectronExtensionsBrowserClient::GetExtensionWebContentsObserver(
 
 extensions::KioskDelegate* ElectronExtensionsBrowserClient::GetKioskDelegate() {
   if (!kiosk_delegate_)
-    kiosk_delegate_.reset(new ElectronKioskDelegate());
+    kiosk_delegate_ = std::make_unique<ElectronKioskDelegate>();
   return kiosk_delegate_.get();
 }
 

@@ -97,15 +97,17 @@ network::mojom::URLResponseHeadPtr ToResponseHead(
   head->mime_type = "text/html";
   head->charset = "utf-8";
   if (dict.IsEmpty()) {
-    head->headers = new net::HttpResponseHeaders("HTTP/1.1 200 OK");
+    head->headers =
+        base::MakeRefCounted<net::HttpResponseHeaders>("HTTP/1.1 200 OK");
     return head;
   }
 
   int status_code = net::HTTP_OK;
   dict.Get("statusCode", &status_code);
-  head->headers = new net::HttpResponseHeaders(base::StringPrintf(
-      "HTTP/1.1 %d %s", status_code,
-      net::GetHttpReasonPhrase(static_cast<net::HttpStatusCode>(status_code))));
+  head->headers = base::MakeRefCounted<net::HttpResponseHeaders>(
+      base::StringPrintf("HTTP/1.1 %d %s", status_code,
+                         net::GetHttpReasonPhrase(
+                             static_cast<net::HttpStatusCode>(status_code))));
 
   dict.Get("charset", &head->charset);
   bool has_mime_type = dict.Get("mimeType", &head->mime_type);

@@ -108,7 +108,7 @@ void WebContentsPermissionHelper::RequestMediaAccessPermission(
       &MediaAccessAllowed, request, std::move(response_callback)));
 
   base::DictionaryValue details;
-  std::unique_ptr<base::ListValue> media_types(new base::ListValue);
+  auto media_types = std::make_unique<base::ListValue>();
   if (request.audio_type ==
       blink::mojom::MediaStreamType::DEVICE_AUDIO_CAPTURE) {
     media_types->AppendString("audio");

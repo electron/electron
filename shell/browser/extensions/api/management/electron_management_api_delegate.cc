@@ -111,9 +111,8 @@ ElectronManagementAPIDelegate::SetEnabledFunctionDelegate(
     content::BrowserContext* browser_context,
     const extensions::Extension* extension,
     base::OnceCallback<void(bool)> callback) const {
-  return std::unique_ptr<ManagementSetEnabledFunctionInstallPromptDelegate>(
-      new ManagementSetEnabledFunctionInstallPromptDelegate(
-          web_contents, browser_context, extension, std::move(callback)));
+  return std::make_unique<ManagementSetEnabledFunctionInstallPromptDelegate>(
+      web_contents, browser_context, extension, std::move(callback));
 }
 
 std::unique_ptr<extensions::UninstallDialogDelegate>
@@ -121,9 +120,8 @@ ElectronManagementAPIDelegate::UninstallFunctionDelegate(
     extensions::ManagementUninstallFunctionBase* function,
     const extensions::Extension* target_extension,
     bool show_programmatic_uninstall_ui) const {
-  return std::unique_ptr<extensions::UninstallDialogDelegate>(
-      new ManagementUninstallFunctionUninstallDialogDelegate(
-          function, target_extension, show_programmatic_uninstall_ui));
+  return std::make_unique<ManagementUninstallFunctionUninstallDialogDelegate>(
+      function, target_extension, show_programmatic_uninstall_ui);
 }
 
 bool ElectronManagementAPIDelegate::CreateAppShortcutFunctionDelegate(
