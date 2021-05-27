@@ -62,7 +62,7 @@ absl::optional<std::string> GetXdgAppOutput(
   if (!ran_ok || success_code != EXIT_SUCCESS)
     return absl::optional<std::string>();
 
-  return base::make_optional(reply);
+  return absl::make_optional(reply);
 }
 
 bool SetDefaultWebClient(const std::string& protocol) {

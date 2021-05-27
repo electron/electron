@@ -89,7 +89,7 @@ void BadgeManager::SetBadge(blink::mojom::BadgeValuePtr mojo_value) {
 
   absl::optional<int> value =
       mojo_value->is_flag() ? absl::nullopt
-                            : base::make_optional(mojo_value->get_number());
+                            : absl::make_optional(mojo_value->get_number());
 
   electron::Browser::Get()->SetBadgeCount(value);
 }
