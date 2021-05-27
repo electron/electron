@@ -14,8 +14,6 @@
 #include "services/network/public/mojom/url_loader.mojom.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 
-namespace network {
-
 namespace net_log {
 class NetExportFileWriter;
 }
