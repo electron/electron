@@ -1,0 +1,21 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sattard@slack-corp.com>
+Date: Fri, 28 May 2021 14:29:38 -0700
+Subject: build: read IDL files as utf8 to fix python3 character encodding
+ issue
+
+This should be upstreamed
+
+diff --git a/tools/json_schema_compiler/idl_schema.py b/tools/json_schema_compiler/idl_schema.py
+index 029e83c7179b2582bc46b5e3eeac1e32a016a479..f83d9edd37ad89478d6b741e1cf0c525bab94587 100755
+--- a/tools/json_schema_compiler/idl_schema.py
++++ b/tools/json_schema_compiler/idl_schema.py
+@@ -575,7 +575,7 @@ def Load(filename):
+   Python dictionary in a format that the JSON schema compiler expects to see.
+   '''
+ 
+-  f = open(filename, 'r')
++  f = open(filename, 'r', encoding='utf-8')
+   contents = f.read()
+   f.close()
+ 
