@@ -45,6 +45,26 @@ returns `null`.
 Returns `WebContents` | undefined - A WebContents instance with the given ID, or
 `undefined` if there is no WebContents associated with the given ID.
 
+### `webContents.fromDevToolsTargetId(targetId)`
+
+* `targetId` String - The Chrome DevTools Protocol [TargetID](https://chromedevtools.github.io/devtools-protocol/tot/Target/#type-TargetID) associated with the WebContents instance.
+
+Returns `WebContents` | undefined - A WebContents instance with the given TargetID, or
+`undefined` if there is no WebContents associated with the given TargetID.
+
+When communicating with the [Chrome DevTools Protocol](https://chromedevtools.github.io/devtools-protocol/),
+it can be useful to lookup a WebContents instance based on its assigned TargetID.
+
+```js
+async function lookupTargetId (browserWindow) {
+  const wc = browserWindow.webContents
+  await wc.debugger.attach('1.3')
+  const { targetInfo } = await wc.debugger.sendCommand('Target.getTargetInfo')
+  const { targetId } = targetInfo
+  const targetWebContents = await webContents.fromDevToolsTargetId(targetId)
+}
+```
+
 ## Class: WebContents
 
 > Render and control the contents of a BrowserWindow instance.
