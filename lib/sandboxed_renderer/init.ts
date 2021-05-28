@@ -127,9 +127,7 @@ if (hasSwitch('unsafely-expose-electron-internals-for-testing')) {
 const contextIsolation = mainFrame.getWebPreference('contextIsolation');
 const webviewTag = mainFrame.getWebPreference('webviewTag');
 const isHiddenPage = mainFrame.getWebPreference('hiddenPage');
-const usesNativeWindowOpen = true;
 const guestInstanceId = mainFrame.getWebPreference('guestInstanceId');
-const openerId = mainFrame.getWebPreference('openerId');
 
 switch (window.location.protocol) {
   case 'devtools:': {
@@ -146,7 +144,7 @@ switch (window.location.protocol) {
   default: {
     // Override default web functions.
     const { windowSetup } = require('@electron/internal/renderer/window-setup') as typeof windowSetupModule;
-    windowSetup(guestInstanceId, openerId, isHiddenPage, usesNativeWindowOpen);
+    windowSetup(guestInstanceId, isHiddenPage);
   }
 }
 

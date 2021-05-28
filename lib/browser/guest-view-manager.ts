@@ -185,7 +185,6 @@ const attachGuest = function (event: Electron.IpcMainInvokeEvent,
   const inheritedWebPreferences = new Map([
     ['contextIsolation', true],
     ['javascript', false],
-    ['nativeWindowOpen', true],
     ['nodeIntegration', false],
     ['sandbox', true],
     ['nodeIntegrationInSubFrames', false],

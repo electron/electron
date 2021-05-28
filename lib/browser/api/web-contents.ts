@@ -680,8 +680,7 @@ WebContents.prototype._init = function () {
       }
     });
 
-    // Create a new browser window for the native implementation of
-    // "window.open", used in sandbox and nativeWindowOpen mode.
+    // Create a new browser window for "window.open"
     this.on('-add-new-contents' as any, (event: ElectronInternal.Event, webContents: Electron.WebContents, disposition: string,
       _userGesture: boolean, _left: number, _top: number, _width: number, _height: number, url: string, frameName: string,
       referrer: Electron.Referrer, rawFeatures: string, postData: PostData) => {

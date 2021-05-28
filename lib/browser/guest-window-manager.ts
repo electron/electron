@@ -1,9 +1,9 @@
 /**
  * Create and minimally track guest windows at the direction of the renderer
  * (via window.open). Here, "guest" roughly means "child" — it's not necessarily
- * emblematic of its process status; both in-process (same-origin
- * nativeWindowOpen) and out-of-process (cross-origin nativeWindowOpen and
- * BrowserWindowProxy) are created here. "Embedder" roughly means "parent."
+ * emblematic of its process status; both in-process (same-origin) and
+ * out-of-process (cross-origin) are created here. "Embedder" roughly means
+ * "parent."
  */
 import { BrowserWindow } from 'electron/main';
 import type { BrowserWindowConstructorOptions, Referrer, WebContents, LoadURLOptions } from 'electron/main';
@@ -23,13 +23,12 @@ const unregisterFrameName = (name: string) => frameNamesToWindow.delete(name);
 const getGuestWindowByFrameName = (name: string) => frameNamesToWindow.get(name);
 
 /**
- * `openGuestWindow` is called for both implementations of window.open
- * (BrowserWindowProxy and nativeWindowOpen) to create and setup event handling
- * for the new window.
+ * `openGuestWindow` is called to create and setup event handling for the new
+ * window.
  *
  * Until its removal in 12.0.0, the `new-window` event is fired, allowing the
  * user to preventDefault() on the passed event (which ends up calling
- * DestroyWebContents in the nativeWindowOpen code path).
+ * DestroyWebContents).
  */
 export function openGuestWindow ({ event, embedder, guest, referrer, disposition, postData, overrideBrowserWindowOptions, windowOpenArgs }: {
   event: { sender: WebContents, defaultPrevented: boolean },
@@ -73,22 +72,6 @@ export function openGuestWindow ({ event, embedder, guest, referrer, disposition
     webContents: guest,
     ...browserWindowOptions
   });
-  if (!guest) {
-    // We should only call `loadURL` if the webContents was constructed by us in
-    // the case of BrowserWindowProxy (non-sandboxed, nativeWindowOpen: false),
-    // as navigating to the url when creating the window from an existing
-    // webContents is not necessary (it will navigate there anyway).
-    // This can also happen if we enter this function from OpenURLFromTab, in
-    // which case the browser process is responsible for initiating navigation
-    // in the new window.
-    window.loadURL(url, {
-      httpReferrer: referrer,
-      ...(postData && {
-        postData,
-        extraHeaders: formatPostDataHeaders(postData as Electron.UploadRawData[])
-      })
-    });
-  }
 
   handleWindowLifecycleEvents({ embedder, frameName, guest: window });
 
@@ -190,7 +173,6 @@ function emitDeprecatedNewWindowEvent ({ event, embedder, guest, windowOpenArgs,
 const securityWebPreferences: { [key: string]: boolean } = {
   contextIsolation: true,
   javascript: false,
-  nativeWindowOpen: true,
   nodeIntegration: false,
   sandbox: true,
   webviewTag: false,
@@ -236,7 +218,6 @@ export function makeWebPreferences ({ embedder, secureOverrideWebPreferences = {
     }
     return map;
   }, {} as Electron.WebPreferences));
-  const openerId = parentWebPreferences.nativeWindowOpen ? null : embedder.id;
 
   return {
     ...parsedWebPreferences,
@@ -245,19 +226,7 @@ export function makeWebPreferences ({ embedder, secureOverrideWebPreferences = {
     // setWindowOpenHandler) to change them.
     ...securityWebPreferencesFromParent,
     ...secureOverrideWebPreferences,
-    // Sets correct openerId here to give correct options to 'new-window' event handler
-    // TODO: Figure out another way to pass this?
-    openerId
   };
-}
-
-function formatPostDataHeaders (postData: PostData) {
-  if (!postData) return;
-
-  const { contentType, boundary } = parseContentTypeFormat(postData);
-  if (boundary != null) { return `content-type: ${contentType}; boundary=${boundary}`; }
-
-  return `content-type: ${contentType}`;
 }
 
 const MULTIPART_CONTENT_TYPE = 'multipart/form-data';

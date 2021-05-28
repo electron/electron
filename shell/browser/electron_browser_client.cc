@@ -674,7 +674,7 @@ bool ElectronBrowserClient::CanCreateWindow(
   content::WebContents* web_contents =
       content::WebContents::FromRenderFrameHost(opener);
   WebContentsPreferences* prefs = WebContentsPreferences::From(web_contents);
-  if (prefs && prefs->IsEnabled(options::kNativeWindowOpen)) {
+  if (prefs) {
     if (prefs->IsEnabled("disablePopups")) {
       // <webview> without allowpopups attribute should return
       // null from window.open calls

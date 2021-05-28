@@ -14,6 +14,7 @@ import { closeWindow, closeAllWindows } from './window-helpers';
 
 const features = process._linkedBinding('electron_common_features');
 const fixtures = path.resolve(__dirname, '..', 'spec', 'fixtures');
+const mainFixtures = path.resolve(__dirname, 'fixtures');
 
 // Is the display's scale factor possibly causing rounding of pixel coordinate
 // values?
@@ -2354,7 +2355,7 @@ describe('BrowserWindow module', () => {
           }
         });
 
-        const preloadPath = path.join(fixtures, 'api', 'new-window-preload.js');
+        const preloadPath = path.join(mainFixtures, 'api', 'new-window-preload.js');
         w.webContents.setWindowOpenHandler(() => ({ action: 'allow', overrideBrowserWindowOptions: { webPreferences: { preload: preloadPath } } }));
         w.loadFile(path.join(fixtures, 'api', 'new-window.html'));
         const [, { argv }] = await emittedOnce(ipcMain, 'answer');
@@ -2369,7 +2370,7 @@ describe('BrowserWindow module', () => {
           }
         });
 
-        const preloadPath = path.join(fixtures, 'api', 'new-window-preload.js');
+        const preloadPath = path.join(mainFixtures, 'api', 'new-window-preload.js');
         w.webContents.setWindowOpenHandler(() => ({ action: 'allow', overrideBrowserWindowOptions: { webPreferences: { preload: preloadPath, foo: 'bar' } } }));
         w.loadFile(path.join(fixtures, 'api', 'new-window.html'));
         const [[, childWebContents]] = await Promise.all([
@@ -2540,7 +2541,7 @@ describe('BrowserWindow module', () => {
       });
     });
 
-    describe('nativeWindowOpen option', () => {
+    describe('child windows', () => {
       let w: BrowserWindow = null as unknown as BrowserWindow;
 
       beforeEach(() => {
@@ -2548,7 +2549,6 @@ describe('BrowserWindow module', () => {
           show: false,
           webPreferences: {
             nodeIntegration: true,
-            nativeWindowOpen: true,
             // tests relies on preloads in opened windows
             nodeIntegrationInSubFrames: true,
             contextIsolation: false
@@ -2580,6 +2580,17 @@ describe('BrowserWindow module', () => {
         const [, content] = await answer;
         expect(content).to.equal('Hello');
       });
+      it('opens window with cross-scripting enabled from isolated context', async () => {
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            preload: path.join(fixtures, 'api', 'native-window-open-isolated-preload.js')
+          }
+        });
+        w.loadFile(path.join(fixtures, 'api', 'native-window-open-isolated.html'));
+        const [, content] = await emittedOnce(ipcMain, 'answer');
+        expect(content).to.equal('Hello');
+      });
       ifit(!process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)('loads native addons correctly after reload', async () => {
         w.loadFile(path.join(__dirname, 'fixtures', 'api', 'native-window-open-native-addon.html'));
         {
@@ -2599,7 +2610,6 @@ describe('BrowserWindow module', () => {
           show: false,
           webPreferences: {
             nodeIntegrationInSubFrames: true,
-            nativeWindowOpen: true,
             webviewTag: true,
             contextIsolation: false,
             preload
@@ -2607,7 +2617,7 @@ describe('BrowserWindow module', () => {
         });
         w.webContents.setWindowOpenHandler(() => ({
           action: 'allow',
-          overrideBrowserWindowOptions: { show: false, webPreferences: { contextIsolation: false, webviewTag: true, nativeWindowOpen: true, nodeIntegrationInSubFrames: true } }
+          overrideBrowserWindowOptions: { show: false, webPreferences: { contextIsolation: false, webviewTag: true, nodeIntegrationInSubFrames: true } }
         }));
         w.webContents.once('new-window', (event, url, frameName, disposition, options) => {
           options.show = false;
@@ -2617,23 +2627,8 @@ describe('BrowserWindow module', () => {
         w.loadFile(path.join(fixtures, 'api', 'new-window-webview.html'));
         await webviewLoaded;
       });
-      it('should inherit the nativeWindowOpen setting in opened windows', async () => {
-        const preloadPath = path.join(fixtures, 'api', 'new-window-preload.js');
-
-        w.webContents.setWindowOpenHandler(() => ({
-          action: 'allow',
-          overrideBrowserWindowOptions: {
-            webPreferences: {
-              preload: preloadPath
-            }
-          }
-        }));
-        w.loadFile(path.join(fixtures, 'api', 'new-window.html'));
-        const [, { nativeWindowOpen }] = await emittedOnce(ipcMain, 'answer');
-        expect(nativeWindowOpen).to.be.true();
-      });
       it('should open windows with the options configured via new-window event listeners', async () => {
-        const preloadPath = path.join(fixtures, 'api', 'new-window-preload.js');
+        const preloadPath = path.join(mainFixtures, 'api', 'new-window-preload.js');
         w.webContents.setWindowOpenHandler(() => ({
           action: 'allow',
           overrideBrowserWindowOptions: {
@@ -2676,7 +2671,6 @@ describe('BrowserWindow module', () => {
           const w = new BrowserWindow({
             show: false,
             webPreferences: {
-              nativeWindowOpen: true,
               // test relies on preloads in opened window
               nodeIntegrationInSubFrames: true,
               contextIsolation: false
@@ -2687,7 +2681,7 @@ describe('BrowserWindow module', () => {
             action: 'allow',
             overrideBrowserWindowOptions: {
               webPreferences: {
-                preload: path.join(fixtures, 'api', 'window-open-preload.js'),
+                preload: path.join(mainFixtures, 'api', 'window-open-preload.js'),
                 contextIsolation: false,
                 nodeIntegrationInSubFrames: true
               }
@@ -2695,9 +2689,8 @@ describe('BrowserWindow module', () => {
           }));
 
           w.loadFile(path.join(fixtures, 'api', 'window-open-location-open.html'));
-          const [, { nodeIntegration, nativeWindowOpen, typeofProcess }] = await emittedOnce(ipcMain, 'answer');
+          const [, { nodeIntegration, typeofProcess }] = await emittedOnce(ipcMain, 'answer');
           expect(nodeIntegration).to.be.false();
-          expect(nativeWindowOpen).to.be.true();
           expect(typeofProcess).to.eql('undefined');
         });
 
@@ -2705,7 +2698,6 @@ describe('BrowserWindow module', () => {
           const w = new BrowserWindow({
             show: false,
             webPreferences: {
-              nativeWindowOpen: true,
               // test relies on preloads in opened window
               nodeIntegrationInSubFrames: true
             }
@@ -2715,7 +2707,7 @@ describe('BrowserWindow module', () => {
             action: 'allow',
             overrideBrowserWindowOptions: {
               webPreferences: {
-                preload: path.join(fixtures, 'api', 'window-open-preload.js')
+                preload: path.join(mainFixtures, 'api', 'window-open-preload.js')
               }
             }
           }));
@@ -2741,23 +2733,6 @@ describe('BrowserWindow module', () => {
         await enterHtmlFullScreen;
         expect(w.getSize()).to.deep.equal(size);
       });
-    });
-  });
-
-  describe('nativeWindowOpen + contextIsolation options', () => {
-    afterEach(closeAllWindows);
-    it('opens window with cross-scripting enabled from isolated context', async () => {
-      const w = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          nativeWindowOpen: true,
-          contextIsolation: true,
-          preload: path.join(fixtures, 'api', 'native-window-open-isolated-preload.js')
-        }
-      });
-      w.loadFile(path.join(fixtures, 'api', 'native-window-open-isolated.html'));
-      const [, content] = await emittedOnce(ipcMain, 'answer');
-      expect(content).to.equal('Hello');
     });
   });
 

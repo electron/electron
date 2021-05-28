@@ -18,7 +18,6 @@
       "y": 5,
       "webPreferences": {
         "contextIsolation": true,
-        "nativeWindowOpen": true,
         "nodeIntegration": false,
         "webviewTag": false,
         "nodeIntegrationInSubFrames": false,
@@ -51,7 +50,6 @@
       "webPreferences": {
         "zoomFactor": "2",
         "contextIsolation": true,
-        "nativeWindowOpen": true,
         "nodeIntegration": false,
         "webviewTag": false,
         "nodeIntegrationInSubFrames": false,
@@ -81,7 +79,6 @@
       "backgroundColor": "gray",
       "webPreferences": {
         "contextIsolation": true,
-        "nativeWindowOpen": true,
         "nodeIntegration": false,
         "webviewTag": false,
         "nodeIntegrationInSubFrames": false,
@@ -116,7 +113,6 @@
       "title": "sup",
       "webPreferences": {
         "contextIsolation": true,
-        "nativeWindowOpen": true,
         "nodeIntegration": false,
         "webviewTag": false,
         "nodeIntegrationInSubFrames": false,
@@ -149,7 +145,6 @@
       "y": 1,
       "webPreferences": {
         "contextIsolation": true,
-        "nativeWindowOpen": true,
         "nodeIntegration": false,
         "webviewTag": false,
         "nodeIntegrationInSubFrames": false,

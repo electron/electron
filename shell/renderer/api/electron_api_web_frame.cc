@@ -491,9 +491,6 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
       return gin::ConvertToV8(isolate, prefs.preloads);
     } else if (pref_name == options::kBackgroundColor) {
       return gin::ConvertToV8(isolate, prefs.background_color);
-    } else if (pref_name == options::kOpenerID) {
-      // NOTE: openerId is internal-only.
-      return gin::ConvertToV8(isolate, prefs.opener_id);
     } else if (pref_name == options::kContextIsolation) {
       return gin::ConvertToV8(isolate, prefs.context_isolation);
     } else if (pref_name == options::kGuestInstanceID) {
@@ -506,8 +503,6 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
       return gin::ConvertToV8(isolate, prefs.offscreen);
     } else if (pref_name == options::kPreloadScript) {
       return gin::ConvertToV8(isolate, prefs.preload.value());
-    } else if (pref_name == options::kNativeWindowOpen) {
-      return gin::ConvertToV8(isolate, prefs.native_window_open);
     } else if (pref_name == options::kNodeIntegration) {
       return gin::ConvertToV8(isolate, prefs.node_integration);
     } else if (pref_name == options::kNodeIntegrationInWorker) {

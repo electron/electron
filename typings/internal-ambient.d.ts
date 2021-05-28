@@ -110,7 +110,6 @@ declare namespace NodeJS {
     contextIsolation: boolean;
     guestInstanceId: number;
     hiddenPage: boolean;
-    nativeWindowOpen: boolean;
     nodeIntegration: boolean;
     openerId: number;
     preload: string
