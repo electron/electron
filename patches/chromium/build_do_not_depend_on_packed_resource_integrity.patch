@@ -1,0 +1,47 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sattard@slack-corp.com>
+Date: Thu, 27 May 2021 17:21:07 -0700
+Subject: build: do not depend on packed_resource_integrity
+
+This ensures we do not depend on a target that does not exist when
+building Electron, electron generates its own .pak files via
+electron_repack and therefore this integrity target which is generated
+by the chrome_paks target does not exist.  This can not be upstreamed,
+if we ever align our .pak file generation with Chrome we can remove this
+patch.
+
+diff --git a/chrome/BUILD.gn b/chrome/BUILD.gn
+index 75868925758560075e95b79a7473e635b23127d5..1aba073ab6bddfa20d82f66938383fe98baf5774 100644
+--- a/chrome/BUILD.gn
++++ b/chrome/BUILD.gn
+@@ -170,11 +170,16 @@ if (!is_android && !is_mac) {
+         "common/crash_keys.h",
+       ]
+ 
++      if (!is_electron_build) {
++        deps += [
++          ":packed_resources_integrity",
++        ]
++      }
++
+       deps += [
+         ":chrome_dll",
+         ":chrome_exe_version",
+         ":copy_first_run",
+-        ":packed_resources_integrity",
+         ":visual_elements_resources",
+         "//base",
+         "//build:branding_buildflags",
+diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
+index db5f3f0b159432aae29ea98f13bcd02a70a2e407..da640037394d792656dd3ee631936fc626db4a53 100644
+--- a/chrome/browser/BUILD.gn
++++ b/chrome/browser/BUILD.gn
+@@ -4287,7 +4287,7 @@ static_library("browser") {
+ 
+     # On Windows, the hashes are embedded in //chrome:chrome_initial rather
+     # than here in :chrome_dll.
+-    if (!is_win) {
++    if (!is_win && !is_electron_build) {
+       deps += [ "//chrome:packed_resources_integrity" ]
+     }
+ 
