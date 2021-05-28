@@ -1,7 +1,14 @@
 import { expect } from 'chai';
-import { nextVersion } from '../script/release/version-bumper';
+import { nextVersion, shouldUpdateSupported, updateSupported } from '../script/release/version-bumper';
 import * as utils from '../script/release/version-utils';
 import { ifdescribe } from './spec-helpers';
+const fs = require('fs');
+const path = require('path');
+const { promisify } = require('util');
+
+const fixtureDir = path.resolve(__dirname, 'fixtures', 'version-bumper', 'fixture_support.md');
+const readFile = promisify(fs.readFile);
+const writeFile = promisify(fs.writeFile);
 
 describe('version-bumper', () => {
   describe('makeVersion', () => {
@@ -38,6 +45,94 @@ describe('version-bumper', () => {
 
       const version = utils.makeVersion(components, '.', utils.preType.FULL);
       expect(version).to.equal('2.0.0-nightly.12345678');
+    });
+  });
+
+  describe('updateSupported', () => {
+    let restore: any;
+    before(async () => {
+      restore = await readFile(fixtureDir, 'utf8');
+    });
+
+    afterEach(async () => {
+      await writeFile(fixtureDir, restore, 'utf8');
+    });
+
+    it('updates correctly when a new stable version is promoted from beta', async () => {
+      const version = '4.0.0';
+      const currentVersion = '4.0.0-beta.29';
+      if (shouldUpdateSupported('stable', currentVersion, version)) {
+        await updateSupported(version, fixtureDir);
+      }
+      const contents = await readFile(fixtureDir, 'utf8');
+
+      expect(contents).to.contain('4.x.y\n* 3.x.y\n* 2.x.y');
+    });
+
+    it('should not update when a new stable patch version is promoted', async () => {
+      const version = '3.0.1';
+      const currentVersion = '3.0.0';
+      if (shouldUpdateSupported('stable', currentVersion, version)) {
+        await updateSupported(version, fixtureDir);
+      }
+      const contents = await readFile(fixtureDir, 'utf8');
+
+      expect(contents).to.contain('3.x.y\n* 2.x.y\n* 1.x.y');
+    });
+
+    it('should not update when a new stable minor version is promoted', async () => {
+      const version = '3.1.0';
+      const currentVersion = '3.0.0';
+      if (shouldUpdateSupported('minor', currentVersion, version)) {
+        await updateSupported(version, fixtureDir);
+      }
+      const contents = await readFile(fixtureDir, 'utf8');
+
+      expect(contents).to.contain('3.x.y\n* 2.x.y\n* 1.x.y');
+    });
+
+    it('should not update when a new beta.1 version is promoted', async () => {
+      const version = '5.0.0-beta.1';
+      const currentVersion = '4.0.0-beta.29';
+      if (shouldUpdateSupported('beta', currentVersion, version)) {
+        await updateSupported(version, fixtureDir);
+      }
+      const contents = await readFile(fixtureDir, 'utf8');
+
+      expect(contents).to.contain('3.x.y\n* 2.x.y\n* 1.x.y');
+    });
+
+    it('should not update when a new beta.12 version is promoted', async () => {
+      const version = '4.0.0-beta.12';
+      const currentVersion = '4.0.0-beta.11';
+      if (shouldUpdateSupported('beta', currentVersion, version)) {
+        await updateSupported(version, fixtureDir);
+      }
+      const contents = await readFile(fixtureDir, 'utf8');
+
+      expect(contents).to.contain('3.x.y\n* 2.x.y\n* 1.x.y');
+    });
+
+    it('should update when a new major nightly version is promoted', async () => {
+      const version = '4.0.0-nightly.19950901';
+      const currentVersion = '3.0.0-nightly.19950828';
+      if (shouldUpdateSupported('nightly', currentVersion, version)) {
+        await updateSupported(version, fixtureDir);
+      }
+      const contents = await readFile(fixtureDir, 'utf8');
+
+      expect(contents).to.contain('4.x.y\n* 3.x.y\n* 2.x.y');
+    });
+
+    it('should not update when a new nightly version is promoted', async () => {
+      const version = '3.0.0-nightly.19950901';
+      const currentVersion = '3.0.0-nightly.19950828';
+      if (shouldUpdateSupported('nightly', currentVersion, version)) {
+        await updateSupported(version, fixtureDir);
+      }
+      const contents = await readFile(fixtureDir, 'utf8');
+
+      expect(contents).to.contain('3.x.y\n* 2.x.y\n* 1.x.y');
     });
   });
 
