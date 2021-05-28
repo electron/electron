@@ -842,7 +842,7 @@ describe('chromium features', () => {
         show: false,
         webPreferences: {
           contextIsolation: false,
-          nodeIntegration: true,
+          nodeIntegration: true
         }
       });
       w.loadURL('about:blank');

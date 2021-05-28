@@ -225,7 +225,7 @@ export function makeWebPreferences ({ embedder, secureOverrideWebPreferences = {
     // ability to change important security options but allow main (via
     // setWindowOpenHandler) to change them.
     ...securityWebPreferencesFromParent,
-    ...secureOverrideWebPreferences,
+    ...secureOverrideWebPreferences
   };
 }
 

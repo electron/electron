@@ -15,7 +15,7 @@ function genSnapshot (browserWindow: BrowserWindow, features: string) {
 }
 
 describe('new-window event', () => {
-  const snapshotFileName = 'native-window-open.snapshot.txt'
+  const snapshotFileName = 'native-window-open.snapshot.txt';
   const browserWindowOptions = {
     show: false,
     width: 200,
@@ -25,7 +25,7 @@ describe('new-window event', () => {
     webPreferences: {
       sandbox: true
     }
-  }
+  };
 
   const snapshotFile = resolve(__dirname, 'fixtures', 'snapshots', snapshotFileName);
   let browserWindow: BrowserWindow;
@@ -71,9 +71,9 @@ describe('new-window event', () => {
 });
 
 describe('webContents.setWindowOpenHandler', () => {
-  let browserWindow: BrowserWindow
+  let browserWindow: BrowserWindow;
   beforeEach(async () => {
-    browserWindow = new BrowserWindow({show: false});
+    browserWindow = new BrowserWindow({ show: false });
     await browserWindow.loadURL('about:blank');
   });
 
