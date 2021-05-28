@@ -1339,9 +1339,19 @@ copy("electron_version") {
   outputs = [ "$root_build_dir/version" ]
 }
 
+action("electron_architecture") {
+  outputs = [ "$root_build_dir/arch" ]
+  script = "build/arch.py"
+  args = [
+    target_cpu,
+    rebase_path(root_build_dir),
+  ]
+}
+
 dist_zip("electron_dist_zip") {
   data_deps = [
     ":electron_app",
+    ":electron_architecture",
     ":electron_version",
     ":licenses",
   ]
