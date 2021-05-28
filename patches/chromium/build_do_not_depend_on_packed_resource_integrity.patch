@@ -45,3 +45,24 @@ index 31a6b8c0e27692bcba4783bb9c0e9d36fc106dad..6dd3e95d91b847bec2e0660fc1360f1f
        deps += [ "//chrome:packed_resources_integrity" ]
      }
  
+diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
+index 6fd5f6547ae1af166d31f66a01362c20ca80d8d0..c2c08b84304870da7d29c6a90f72e6f742294b8b 100644
+--- a/chrome/test/BUILD.gn
++++ b/chrome/test/BUILD.gn
+@@ -4875,10 +4875,15 @@ test("unit_tests") {
+     assert(toolkit_views)
+     sources += [ "../browser/ui/startup/credential_provider_signin_info_fetcher_win_unittest.cc" ]
+     deps += [
+-      "//chrome:packed_resources_integrity",
+       "//chrome/browser/win/conflicts:unit_tests",
+       "//chrome/test:credential_provider_test_utils",
+     ]
++
++    if (!is_electron_build) {
++      deps += [
++        "//chrome:packed_resources_integrity",
++      ]
++    }
+   }
+ 
+   if (is_win || is_chromeos_ash || is_mac) {
