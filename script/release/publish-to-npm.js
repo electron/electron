@@ -131,7 +131,7 @@ new Promise((resolve, reject) => {
       if (currentBranch === 'master' || currentBranch === 'main') {
         // This should never happen, main releases should be nightly releases
         // this is here just-in-case
-        npmTag = 'main';
+        throw new Error('Unreachable release phase, can\'t tag a non-nightly release on the main branch');
       } else if (!release.prerelease) {
         // Tag the release with a `2-0-x` style tag
         npmTag = currentBranch;
