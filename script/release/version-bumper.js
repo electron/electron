@@ -9,6 +9,7 @@ const minimist = require('minimist');
 
 const { ELECTRON_DIR } = require('../lib/utils');
 const versionUtils = require('./version-utils');
+const supported = path.resolve(ELECTRON_DIR, 'docs', 'tutorial', 'support.md');
 
 const writeFile = promisify(fs.writeFile);
 const readFile = promisify(fs.readFile);
@@ -39,6 +40,7 @@ async function main () {
   const opts = parseCommandLine();
   const currentVersion = await versionUtils.getElectronVersion();
   const version = await nextVersion(opts.bump, currentVersion);
+  const shouldUpdateSupported = (opts.bump, currentVersion, version);
 
   const parsed = semver.parse(version);
   const components = {
@@ -61,9 +63,8 @@ async function main () {
     updateWinRC(components)
   ]);
 
-  // if bumping stable, update supported versions
-  if (opts.bump === 'stable') {
-    await Promise(updateSupported(version));
+  if (shouldUpdateSupported) {
+    await Promise(updateSupported(version, supported));
   }
 
   // commit all updated version-related files
@@ -110,6 +111,22 @@ async function nextVersion (bumpType, version) {
   return version;
 }
 
+function shouldUpdateSupported (bump, current, version) {
+  return isMajorStable(bump, current) || isMajorNightly(version, current);
+}
+
+function isMajorStable (bump, currentVersion) {
+  if (versionUtils.isBeta(currentVersion) && (bump === 'stable')) return true;
+  return false;
+}
+
+function isMajorNightly (version, currentVersion) {
+  const parsed = semver.parse(version);
+  const current = semver.parse(currentVersion);
+  if (versionUtils.isNightly(currentVersion) && (parsed.major > current.major)) return true;
+  return false;
+}
+
 // update VERSION file with latest release info
 async function updateVersion (version) {
   const versionPath = path.resolve(ELECTRON_DIR, 'ELECTRON_VERSION');
@@ -148,13 +165,14 @@ async function updateWinRC (components) {
 }
 
 // updates support.md file with new semver values (stable only)
-async function updateSupported (version) {
+async function updateSupported (version, filePath) {
   const v = parseInt(version);
-  const newVersions = [`${v}.x.y`, `${v - 1}.x.y`, `${v - 2}.x.y`];
-  const previousVersions = [`${v - 1}.x.y`, `${v - 2}.x.y`, `${v - 3}.x.y`];
-
-  const filePath = path.resolve(ELECTRON_DIR, 'docs', 'tutorial', 'support.md');
+  const newVersions = [`* ${v}.x.y`, `* ${v - 1}.x.y`, `* ${v - 2}.x.y`];
   const contents = await readFile(filePath, 'utf8');
+  const previousVersions = contents.split('\n').filter((elem) => {
+    return (/[^\n]*\.x\.y[^\n]*/).test(elem);
+  }, []);
+
   const newContents = previousVersions.reduce((contents, current, i) => {
     return contents.replace(current, newVersions[i]);
   }, contents);
@@ -169,4 +187,4 @@ if (process.mainModule === module) {
   });
 }
 
-module.exports = { nextVersion };
+module.exports = { nextVersion, shouldUpdateSupported, updateSupported };
