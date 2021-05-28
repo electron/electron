@@ -46,18 +46,18 @@ index 65adc773e82d99c5dd57d52e84a71e67d676be13..f5d0318c1c4fa036a233142cd6eea0a0
      NSArray* node_array,
      const LineIndexer* line_indexer) const {
 diff --git a/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm b/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm
-index 754d25d76da46d5a02973e314893e8d70fcf9b68..cfefed563c59f7f97304b4cb7d5b008da713fc3c 100644
+index 9e659cffb60ceec3d9f9ece23a524229e3eba565..36218d5179ea2f9935e1d8869f9205885c0bd6a4 100644
 --- a/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm
 +++ b/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm
-@@ -177,6 +177,7 @@
-   if (property_name == "AXIndexForChildUIElement") {  // UIElement
+@@ -186,6 +186,7 @@
+       property_name == "AXTextMarkerRangeForUIElement") {  // UIElement
      return OptionalNSObject::NotNilOrError(PropertyNodeToUIElement(arg_node));
    }
 +#ifndef MAS_BUILD
    if (property_name == "AXIndexForTextMarker") {  // TextMarker
      return OptionalNSObject::NotNilOrError(PropertyNodeToTextMarker(arg_node));
    }
-@@ -184,6 +185,7 @@
+@@ -193,6 +194,7 @@
      return OptionalNSObject::NotNilOrError(
          PropertyNodeToTextMarkerRange(arg_node));
    }
@@ -65,7 +65,7 @@ index 754d25d76da46d5a02973e314893e8d70fcf9b68..cfefed563c59f7f97304b4cb7d5b008d
  
    return OptionalNSObject::NotApplicable();
  }
-@@ -249,6 +251,7 @@
+@@ -258,6 +260,7 @@
    return uielement;
  }
  
@@ -73,7 +73,7 @@ index 754d25d76da46d5a02973e314893e8d70fcf9b68..cfefed563c59f7f97304b4cb7d5b008d
  id AttributeInvoker::DictNodeToTextMarker(
      const AXPropertyNode& dictnode) const {
    if (!dictnode.IsDict()) {
-@@ -356,6 +359,7 @@ OptionalNSObject TextMarkerRangeGetEndMarker(const OptionalNSObject& obj) {
+@@ -365,6 +368,7 @@ OptionalNSObject TextMarkerRangeGetEndMarker(const OptionalNSObject& obj) {
    return OptionalNSObject::NotNilOrError(content::AXTextMarkerFrom(
        cocoa_node, range.focus()->text_offset(), range.focus()->affinity()));
  }

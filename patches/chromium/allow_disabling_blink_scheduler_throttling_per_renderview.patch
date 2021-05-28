@@ -22,7 +22,7 @@ index 5f4b4d0a6b7df869fef93129b6a3ce4c217a74c5..f00052e3335c5c2dbd00812be61ccae0
    return is_active();
  }
 diff --git a/content/browser/renderer_host/render_view_host_impl.h b/content/browser/renderer_host/render_view_host_impl.h
-index 091395a4b193a75122ab857a5b079d4db1869850..e59a275ec7fee3416d775959db92768462e39b72 100644
+index 37f3a9cae4ce9652943bbe7e71541ce182f52c1e..608b54785a1d8b34df41b030f65253c14b8285a1 100644
 --- a/content/browser/renderer_host/render_view_host_impl.h
 +++ b/content/browser/renderer_host/render_view_host_impl.h
 @@ -135,6 +135,7 @@ class CONTENT_EXPORT RenderViewHostImpl

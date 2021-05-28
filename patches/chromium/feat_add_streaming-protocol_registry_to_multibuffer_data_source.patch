@@ -68,10 +68,10 @@ index e43037d541ad5d387d71222d831e7119bbb7c278..d49b92f3605523c62cdc267b1424b06c
  
  void MultiBufferDataSource::SetReader(MultiBufferReader* reader) {
 diff --git a/media/blink/multibuffer_data_source.h b/media/blink/multibuffer_data_source.h
-index 37be059fb536fce4d5beadefd6c321e6eeaca252..f410034768052c09ebfacce2e6bd56065ad7097e 100644
+index 1ee6944629ab348f327848f6bda8b521e9fc3db4..3c4dfcf25ec67a8ca1e3a2ae1941386990e63827 100644
 --- a/media/blink/multibuffer_data_source.h
 +++ b/media/blink/multibuffer_data_source.h
-@@ -32,6 +32,8 @@ class BufferedDataSourceHost;
+@@ -31,6 +31,8 @@ class BufferedDataSourceHost;
  class MediaLog;
  class MultiBufferReader;
  
