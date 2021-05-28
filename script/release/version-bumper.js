@@ -40,7 +40,6 @@ async function main () {
   const opts = parseCommandLine();
   const currentVersion = await versionUtils.getElectronVersion();
   const version = await nextVersion(opts.bump, currentVersion);
-  const shouldUpdateSupported = (opts.bump, currentVersion, version);
 
   const parsed = semver.parse(version);
   const components = {
@@ -56,16 +55,16 @@ async function main () {
     return 0;
   }
 
+  if (shouldUpdateSupported(opts.bump, currentVersion, version)) {
+    await updateSupported(version, supported);
+  }
+
   // update all version-related files
   await Promise.all([
     updateVersion(version),
     updatePackageJSON(version),
     updateWinRC(components)
   ]);
-
-  if (shouldUpdateSupported) {
-    await Promise(updateSupported(version, supported));
-  }
 
   // commit all updated version-related files
   await commitVersionBump(version);
