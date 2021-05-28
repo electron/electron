@@ -1,12 +1,8 @@
-// All of the Node.js APIs are available in the preload process.
-// It has the same sandbox as a Chrome extension.
-window.addEventListener('DOMContentLoaded', () => {
-  const replaceText = (selector, text) => {
-    const element = document.getElementById(selector)
-    if (element) element.innerText = text
-  }
+// This file is required by the index.html file and will
+// be executed in the renderer process for that window.
+// All APIs exposed by the context bridge are available here.
 
-  for (const type of ['chrome', 'node', 'electron']) {
-    replaceText(`${type}-version`, process.versions[type])
-  }
-})
+// Binds the buttons to the context bridge API.
+document.getElementById('open-in-browser').addEventListener('click', () => {
+  shell.open();
+});
