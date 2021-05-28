@@ -118,9 +118,7 @@ declare namespace Electron {
     _executeCommand(event: any, id: number): void;
     _menuWillShow(): void;
     commandsMap: Record<string, MenuItem>;
-    groupsMap: Record<string, {
-      checked: boolean;
-    }[]>;
+    groupsMap: Record<string, MenuItem[]>;
     getItemCount(): number;
     popupAt(window: BaseWindow, x: number, y: number, positioning: number, callback: () => void): void;
     closePopupAt(id: number): void;

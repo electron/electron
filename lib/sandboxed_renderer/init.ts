@@ -1,4 +1,3 @@
-/* eslint no-eval: "off" */
 /* global binding */
 import * as events from 'events';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';

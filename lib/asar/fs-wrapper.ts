@@ -3,7 +3,6 @@ import * as path from 'path';
 import * as util from 'util';
 
 const asar = process._linkedBinding('electron_common_asar');
-const v8Util = process._linkedBinding('electron_common_v8_util');
 
 const Module = require('module');
 
@@ -787,6 +786,8 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     overrideAPISync(childProcess, 'execFileSync');
   };
 
+  const asarReady = new WeakSet();
+
   // Lazily override the child_process APIs only when child_process is
   // fetched the first time.  We will eagerly override the child_process APIs
   // when this env var is set so that stack traces generated inside node unit
@@ -799,8 +800,8 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     Module._load = (request: string, ...args: any[]) => {
       const loadResult = originalModuleLoad(request, ...args);
       if (request === 'child_process') {
-        if (!v8Util.getHiddenValue(loadResult, 'asar-ready')) {
-          v8Util.setHiddenValue(loadResult, 'asar-ready', true);
+        if (!asarReady.has(loadResult)) {
+          asarReady.add(loadResult);
           // Just to make it obvious what we are dealing with here
           const childProcess = loadResult;
 
