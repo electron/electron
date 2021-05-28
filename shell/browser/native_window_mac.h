@@ -196,7 +196,6 @@ class NativeWindowMac : public NativeWindow,
 
  protected:
   // views::WidgetDelegate:
-  bool CanResize() const override;
   views::View* GetContentsView() override;
 
   // ui::NativeThemeObserver:

@@ -157,6 +157,7 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   // On Windows we rely on the CanResize() to indicate whether window can be
   // resized, and it should be set before window is created.
   options.Get(options::kResizable, &resizable_);
+  SetCanResize(resizable_);
   options.Get(options::kMinimizable, &minimizable_);
   options.Get(options::kMaximizable, &maximizable_);
 
@@ -714,6 +715,7 @@ void NativeWindowViews::SetResizable(bool resizable) {
     FlipWindowStyle(GetAcceleratedWidget(), resizable, WS_THICKFRAME);
 #endif
   resizable_ = resizable;
+  SetCanResize(resizable_);
 }
 
 bool NativeWindowViews::MoveAbove(const std::string& sourceId) {
@@ -764,7 +766,7 @@ bool NativeWindowViews::IsResizable() {
   if (has_frame())
     return ::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE) & WS_THICKFRAME;
 #endif
-  return CanResize();
+  return resizable_;
 }
 
 void NativeWindowViews::SetAspectRatio(double aspect_ratio,
@@ -1483,10 +1485,6 @@ views::View* NativeWindowViews::GetInitiallyFocusedView() {
   return focused_view_;
 }
 
-bool NativeWindowViews::CanResize() const {
-  return resizable_;
-}
-
 bool NativeWindowViews::CanMaximize() const {
   return resizable_ && maximizable_;
 }
@@ -1526,7 +1524,7 @@ bool NativeWindowViews::ShouldDescendIntoChildForEventHandling(
     return false;
 
   // And the events on border for dragging resizable frameless window.
-  if (!has_frame() && CanResize()) {
+  if (!has_frame() && resizable_) {
     auto* frame =
         static_cast<FramelessView*>(widget()->non_client_view()->frame_view());
     return frame->ResizingBorderHitTest(location) == HTNOWHERE;

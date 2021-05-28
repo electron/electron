@@ -274,6 +274,7 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
                    height);
 
   options.Get(options::kResizable, &resizable_);
+  SetCanResize(resizable_);
   options.Get(options::kTitleBarStyle, &title_bar_style_);
   options.Get(options::kZoomToPageWidth, &zoom_to_page_width_);
   options.Get(options::kSimpleFullScreen, &always_simple_fullscreen_);
@@ -1699,10 +1700,6 @@ void NativeWindowMac::SetCollectionBehavior(bool on, NSUInteger flag) {
   // Change collectionBehavior will make the zoom button revert to default,
   // probably a bug of Cocoa or macOS.
   SetMaximizable(was_maximizable);
-}
-
-bool NativeWindowMac::CanResize() const {
-  return resizable_;
 }
 
 views::View* NativeWindowMac::GetContentsView() {
