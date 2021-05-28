@@ -1,10 +1,14 @@
 // Modules to control application life and create native browser window
-const {app, protocol, BrowserWindow, BrowserView} = require('electron')
+const { app, BrowserWindow, ipcMain, shell } = require('electron')
 const path = require('path')
 
-protocol.registerSchemesAsPrivileged([
-  { scheme: 'myapp', privileges: { standard: true } }
-])
+if (process.defaultApp) {
+  if (process.argv.length >= 2) {
+    app.setAsDefaultProtocolClient('electron-fiddle', process.execPath, [path.resolve(process.argv[1])])
+  }
+} else {
+    app.setAsDefaultProtocolClient('electron-fiddle')
+}
 
 function createWindow () {
   // Create the browser window.
@@ -12,32 +16,34 @@ function createWindow () {
     width: 800,
     height: 600,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js')
+      preload: path.join(__dirname, 'preload.js'),
     }
   })
 
-  // and load the index.html of the app.
   mainWindow.loadFile('index.html')
 }
-
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
-app.whenReady().then(() => {
-  protocol.registerStringProtocol('myapp', (request, response) => {
-    response('<p>hello from myapp://</p>')
-  })
-
-  createWindow()
-  
-  app.on('activate', function () {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
-  })
-})
 
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
 app.on('window-all-closed', function () {
   if (process.platform !== 'darwin') app.quit()
+})
+
+// This method will be called when Electron has finished
+// initialization and is ready to create browser windows.
+// Some APIs can only be used after this event occurs.
+app.whenReady().then(() => {
+  mainWindow = createWindow()
+})
+
+app.on('open-url', (event, url) => {
+    dialog.showErrorBox('Welcome Back', `You arrived from: ${url}`)
+})
+
+// Handle window controls via IPC
+ipcMain.on('shell:open', (ipcEvent) => {
+  const pageDirectory = __dirname.replace('app.asar', 'app.asar.unpacked')
+  const pagePath = path.join('file://', pageDirectory, 'index.html')
+  shell.openExternal(pagePath)
 })
