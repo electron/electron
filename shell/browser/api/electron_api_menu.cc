@@ -4,7 +4,6 @@
 
 #include "shell/browser/api/electron_api_menu.h"
 
-#include <map>
 #include <utility>
 
 #include "shell/browser/api/ui_event.h"

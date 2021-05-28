@@ -4,6 +4,8 @@
 
 #include "shell/renderer/electron_sandboxed_renderer_client.h"
 
+#include <vector>
+
 #include "base/base_paths.h"
 #include "base/command_line.h"
 #include "base/files/file_path.h"

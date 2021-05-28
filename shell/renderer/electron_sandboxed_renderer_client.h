@@ -7,7 +7,6 @@
 #include <memory>
 #include <set>
 #include <string>
-#include <vector>
 
 #include "base/process/process_metrics.h"
 #include "shell/renderer/renderer_client_base.h"

@@ -5,7 +5,6 @@
 #ifndef SHELL_BROWSER_UI_DEVTOOLS_MANAGER_DELEGATE_H_
 #define SHELL_BROWSER_UI_DEVTOOLS_MANAGER_DELEGATE_H_
 
-#include <memory>
 #include <string>
 
 #include "base/compiler_specific.h"

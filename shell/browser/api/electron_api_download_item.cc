@@ -4,7 +4,6 @@
 
 #include "shell/browser/api/electron_api_download_item.h"
 
-#include <map>
 #include <memory>
 
 #include "base/strings/utf_string_conversions.h"

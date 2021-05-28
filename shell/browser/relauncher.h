@@ -29,9 +29,6 @@
 // in light of PID reuse, so the parent must remain alive long enough for the
 // relauncher to set up its kqueue.
 
-#include <string>
-#include <vector>
-
 #include "base/command_line.h"
 
 #if defined(OS_WIN)

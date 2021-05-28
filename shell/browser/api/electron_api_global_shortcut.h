@@ -6,7 +6,6 @@
 #define SHELL_BROWSER_API_ELECTRON_API_GLOBAL_SHORTCUT_H_
 
 #include <map>
-#include <string>
 #include <vector>
 
 #include "base/callback.h"

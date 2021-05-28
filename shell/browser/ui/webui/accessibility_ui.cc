@@ -4,7 +4,10 @@
 
 #include "shell/browser/ui/webui/accessibility_ui.h"
 
+#include <memory>
+#include <string>
 #include <utility>
+#include <vector>
 
 #include "base/bind.h"
 #include "base/callback_helpers.h"

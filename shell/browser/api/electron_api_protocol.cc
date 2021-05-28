@@ -4,8 +4,6 @@
 
 #include "shell/browser/api/electron_api_protocol.h"
 
-#include <memory>
-#include <utility>
 #include <vector>
 
 #include "base/command_line.h"

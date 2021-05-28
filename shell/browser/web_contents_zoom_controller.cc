@@ -4,6 +4,8 @@
 
 #include "shell/browser/web_contents_zoom_controller.h"
 
+#include <string>
+
 #include "content/public/browser/navigation_details.h"
 #include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/navigation_handle.h"

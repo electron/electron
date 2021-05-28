@@ -5,9 +5,7 @@
 #ifndef SHELL_BROWSER_ELECTRON_BROWSER_MAIN_PARTS_H_
 #define SHELL_BROWSER_ELECTRON_BROWSER_MAIN_PARTS_H_
 
-#include <list>
 #include <memory>
-#include <string>
 
 #include "base/callback.h"
 #include "base/metrics/field_trial.h"

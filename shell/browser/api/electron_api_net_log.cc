@@ -4,6 +4,7 @@
 
 #include "shell/browser/api/electron_api_net_log.h"
 
+#include <string>
 #include <utility>
 
 #include "base/command_line.h"
