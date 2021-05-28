@@ -1978,7 +1978,8 @@ void WebContents::LoadURL(const GURL& url,
   // Calling LoadURLWithParams() can trigger JS which destroys |this|.
   auto weak_this = GetWeakPtr();
 
-  params.transition_type = ui::PAGE_TRANSITION_TYPED;
+  params.transition_type = ui::PageTransitionFromInt(
+      ui::PAGE_TRANSITION_TYPED | ui::PAGE_TRANSITION_FROM_API);
   params.override_user_agent = content::NavigationController::UA_OVERRIDE_TRUE;
   // Discord non-committed entries to ensure that we don't re-use a pending
   // entry

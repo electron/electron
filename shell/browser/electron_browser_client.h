@@ -263,6 +263,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       const GURL& scope,
       const GURL& site_for_cookies,
       const base::Optional<url::Origin>& top_frame_origin) override;
+  bool IsExplicitNavigation(ui::PageTransition transition) override;
 
   // content::RenderProcessHostObserver:
   void RenderProcessHostDestroyed(content::RenderProcessHost* host) override;
