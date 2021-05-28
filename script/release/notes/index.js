@@ -37,13 +37,13 @@ const getTagsOf = async (point) => {
 };
 
 const getTagsOnBranch = async (point) => {
-  const masterTags = await getTagsOf('master');
-  if (point === 'master') {
-    return masterTags;
+  const mainTags = await getTagsOf('main');
+  if (point === 'main') {
+    return mainTags;
   }
 
-  const masterTagsSet = new Set(masterTags);
-  return (await getTagsOf(point)).filter(tag => !masterTagsSet.has(tag));
+  const mainTagsSet = new Set(mainTags);
+  return (await getTagsOf(point)).filter(tag => !mainTagsSet.has(tag));
 };
 
 const getBranchOf = async (point) => {
@@ -66,7 +66,8 @@ const getAllBranches = async () => {
     return branches.split('\n')
       .map(branch => branch.trim())
       .filter(branch => !!branch)
-      .filter(branch => branch !== 'origin/HEAD -> origin/master')
+      // TODO(main-migration): Simplify once branch rename is complete.
+      .filter(branch => branch !== 'origin/HEAD -> origin/master' && branch !== 'origin/HEAD -> origin/main')
       .sort();
   } catch (err) {
     console.error('Failed to fetch all branches');
