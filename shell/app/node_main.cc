@@ -175,10 +175,13 @@ int NodeMain(int argc, char* argv[]) {
     std::vector<std::string> args(argv, argv + argc);  // NOLINT
     std::vector<std::string> exec_args;
     std::vector<std::string> errors;
-    node::InitializeNodeWithArgs(&args, &exec_args, &errors);
+    exit_code = node::InitializeNodeWithArgs(&args, &exec_args, &errors);
 
     for (const std::string& error : errors)
       fprintf(stderr, "%s: %s\n", args[0].c_str(), error.c_str());
+
+    if (exit_code != 0)
+      exit(exit_code);
 
     gin::V8Initializer::LoadV8Snapshot(
         gin::V8Initializer::V8SnapshotFileType::kWithAdditionalContext);

@@ -362,9 +362,8 @@ void NodeBindings::Initialize() {
 
   int exit_code = node::InitializeNodeWithArgs(&argv, &exec_argv, &errors);
 
-  for (const std::string& error : errors) {
+  for (const std::string& error : errors)
     fprintf(stderr, "%s: %s\n", argv[0].c_str(), error.c_str());
-  }
 
   if (exit_code != 0)
     exit(exit_code);
