@@ -45,40 +45,25 @@ index 5ce466582823ae1304731610da61b7fde77fc65a..c40f03e56fce2d5edae179170d384651
  
    size_t out_len = 0;
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index 8feefde819ea8b67c92afd2af7edf1fcc00aabd0..70f318bd63c49ff5919f363f1d3c5f94d2e4b007 100644
+index 8feefde819ea8b67c92afd2af7edf1fcc00aabd0..af360270e74ecca8f72ab1cb5083acacab4ae9df 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
-@@ -493,12 +493,14 @@ void SecureContext::Init(const FunctionCallbackInfo<Value>& args) {
-   // OpenSSL 1.1.0 changed the ticket key size, but the OpenSSL 1.0.x size was
-   // exposed in the public API. To retain compatibility, install a callback
-   // which restores the old algorithm.
-+#ifndef OPENSSL_IS_BORINGSSL
-   if (RAND_bytes(sc->ticket_key_name_, sizeof(sc->ticket_key_name_)) <= 0 ||
-       RAND_bytes(sc->ticket_key_hmac_, sizeof(sc->ticket_key_hmac_)) <= 0 ||
-       RAND_bytes(sc->ticket_key_aes_, sizeof(sc->ticket_key_aes_)) <= 0) {
-     return THROW_ERR_CRYPTO_OPERATION_FAILED(
-         env, "Error generating ticket keys");
-   }
-+#endif
-   SSL_CTX_set_tlsext_ticket_key_cb(sc->ctx_.get(), TicketCompatibilityCallback);
- }
+@@ -13,6 +13,7 @@
  
-@@ -1194,6 +1196,7 @@ int SecureContext::TicketCompatibilityCallback(SSL* ssl,
- 
-   if (enc) {
-     memcpy(name, sc->ticket_key_name_, sizeof(sc->ticket_key_name_));
-+#ifndef OPENSSL_IS_BORINGSSL
-     if (RAND_bytes(iv, 16) <= 0 ||
-         EVP_EncryptInit_ex(ectx, EVP_aes_128_cbc(), nullptr,
-                            sc->ticket_key_aes_, iv) <= 0 ||
-@@ -1201,6 +1204,7 @@ int SecureContext::TicketCompatibilityCallback(SSL* ssl,
+ #include <openssl/x509.h>
+ #include <openssl/pkcs12.h>
++#include <openssl/rand.h>
+ #ifndef OPENSSL_NO_ENGINE
+ #include <openssl/engine.h>
+ #endif  // !OPENSSL_NO_ENGINE
+@@ -1201,7 +1202,6 @@ int SecureContext::TicketCompatibilityCallback(SSL* ssl,
                       EVP_sha256(), nullptr) <= 0) {
        return -1;
      }
-+#endif
-     return 1;
+-    return 1;
    }
  
+   if (memcmp(name, sc->ticket_key_name_, sizeof(sc->ticket_key_name_)) != 0) {
 diff --git a/src/crypto/crypto_dh.cc b/src/crypto/crypto_dh.cc
 index 1c48f98656fd211403354bb88331450e51ffb3e5..7c3ee76b91dbc4f4f5d72594218cce07231edcb7 100644
 --- a/src/crypto/crypto_dh.cc
@@ -189,23 +174,18 @@ index 0aa96ada47abe4b66fb616c665101278bbe0afb6..1e9a4863c5faea5f6b275483ca16f3a6
  
  void HKDFConfig::MemoryInfo(MemoryTracker* tracker) const {
 diff --git a/src/crypto/crypto_random.cc b/src/crypto/crypto_random.cc
-index b24f8f32136ffaed54310d5dc02e57b0f69450d6..587a313f0fcd3e705f167bfb8652c26c176dbebe 100644
+index b24f8f32136ffaed54310d5dc02e57b0f69450d6..50a6663966cdb147a702df21240fa449850c3549 100644
 --- a/src/crypto/crypto_random.cc
 +++ b/src/crypto/crypto_random.cc
-@@ -66,8 +66,12 @@ bool RandomBytesTraits::DeriveBits(
-     Environment* env,
-     const RandomBytesConfig& params,
-     ByteSource* unused) {
-+#ifndef OPENSSL_IS_BORINGSSL
-   CheckEntropy();  // Ensure that OpenSSL's PRNG is properly seeded.
-   return RAND_bytes(params.buffer, params.size) != 0;
-+#else
-+  return false;
-+#endif
- }
+@@ -8,6 +8,7 @@
+ #include "v8.h"
  
- void RandomPrimeConfig::MemoryInfo(MemoryTracker* tracker) const {
-@@ -149,7 +153,7 @@ Maybe<bool> RandomPrimeTraits::AdditionalConfig(
+ #include <openssl/bn.h>
++#include <openssl/rand.h>
+ 
+ namespace node {
+ 
+@@ -149,7 +150,7 @@ Maybe<bool> RandomPrimeTraits::AdditionalConfig(
  
    params->bits = bits;
    params->safe = safe;
@@ -232,39 +212,19 @@ index 5fa91cce1a6ad2bc1167e20a4dadcfdfc2343440..d6db572ffac83b82eb3356a4d3258ae8
  
    size_t out_len = 0;
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index fbe4c0f06c10df7c8a492711594381c27c6f81f7..1684a4242d160f5536c30ffef2a3acffa258cc4f 100644
+index fbe4c0f06c10df7c8a492711594381c27c6f81f7..76c8c037ffd3c8b67179d7d881ad6ea530b00686 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
-@@ -61,6 +61,7 @@ int VerifyCallback(int preverify_ok, X509_STORE_CTX* ctx) {
- }
+@@ -20,6 +20,8 @@
+ #endif
+ #endif
  
- void CheckEntropy() {
-+#ifndef OPENSSL_IS_BORINGSSL
-   for (;;) {
-     int status = RAND_status();
-     CHECK_GE(status, 0);  // Cannot fail.
-@@ -71,15 +72,20 @@ void CheckEntropy() {
-     if (RAND_poll() == 0)
-       break;
-   }
-+#endif
- }
++#include <openssl/rand.h>
++
+ namespace node {
  
- bool EntropySource(unsigned char* buffer, size_t length) {
-+#ifndef OPENSSL_IS_BORINGSSL
-   // Ensure that OpenSSL's PRNG is properly seeded.
-   CheckEntropy();
-   // RAND_bytes() can return 0 to indicate that the entropy data is not truly
-   // random. That's okay, it's still better than V8's stock source of entropy,
-   // which is /dev/urandom on UNIX platforms and the current time on Windows.
-   return RAND_bytes(buffer, length) != -1;
-+#else
-+  return false;
-+#endif
- }
- 
- int PasswordCallback(char* buf, int size, int rwflag, void* u) {
-@@ -118,7 +124,6 @@ void InitCryptoOnce() {
+ using v8::ArrayBuffer;
+@@ -118,7 +120,6 @@ void InitCryptoOnce() {
    OPENSSL_init_ssl(0, settings);
    OPENSSL_INIT_free(settings);
    settings = nullptr;
@@ -272,7 +232,7 @@ index fbe4c0f06c10df7c8a492711594381c27c6f81f7..1684a4242d160f5536c30ffef2a3acff
  
  #ifndef _WIN32
    if (per_process::cli_options->secure_heap != 0) {
-@@ -137,6 +142,7 @@ void InitCryptoOnce() {
+@@ -137,6 +138,7 @@ void InitCryptoOnce() {
          break;
      }
    }
@@ -280,7 +240,7 @@ index fbe4c0f06c10df7c8a492711594381c27c6f81f7..1684a4242d160f5536c30ffef2a3acff
  #endif
  
    /* Override FIPS settings in cnf file, if needed. */
-@@ -675,10 +681,12 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -675,10 +677,12 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
  }
  
  void SecureHeapUsed(const FunctionCallbackInfo<Value>& args) {
