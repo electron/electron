@@ -597,21 +597,13 @@ step-electron-dist-build: &step-electron-dist-build
         fi
       fi
 
-step-electron-maybe-chromedriver-gn-gen: &step-electron-maybe-chromedriver-gn-gen
-  run:
-    name: chromedriver GN gen
-    command: |
-      cd src
-      if [ "$TARGET_ARCH" == "arm" ] || [ "$TARGET_ARCH" == "arm64" ]; then
-        gn gen out/chromedriver --args="import(\"$GN_CONFIG\") import(\"$GN_GOMA_FILE\") is_component_ffmpeg=false proprietary_codecs=false $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
-      fi
-
 step-electron-chromedriver-build: &step-electron-chromedriver-build
   run:
     name: Build chromedriver.zip
     command: |
       cd src
       if [ "$TARGET_ARCH" == "arm" ] || [ "$TARGET_ARCH" == "arm64" ]; then
+        gn gen out/chromedriver --args="import(\"$GN_CONFIG\") import(\"$GN_GOMA_FILE\") is_component_ffmpeg=false proprietary_codecs=false $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
         export CHROMEDRIVER_DIR="out/chromedriver"
       else
         export CHROMEDRIVER_DIR="out/Default"
@@ -1528,7 +1520,6 @@ commands:
             - *step-maybe-cross-arch-snapshot
 
             # chromedriver
-            - *step-electron-maybe-chromedriver-gn-gen
             - *step-electron-chromedriver-build
 
             - when:
@@ -1628,7 +1619,6 @@ commands:
       - *step-mksnapshot-build
 
       # chromedriver
-      - *step-electron-maybe-chromedriver-gn-gen
       - *step-electron-chromedriver-build
 
       # Node.js headers
