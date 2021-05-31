@@ -8,6 +8,11 @@ const semver = require('semver');
 const { ELECTRON_DIR } = require('../../lib/utils');
 const notesGenerator = require('./notes.js');
 
+const { Octokit } = require('@octokit/rest');
+const octokit = new Octokit({
+  auth: process.env.ELECTRON_GITHUB_TOKEN
+});
+
 const semverify = version => version.replace(/^origin\//, '').replace(/[xy]/g, '0').replace(/-/g, '.');
 
 const runGit = async (args) => {
@@ -37,8 +42,12 @@ const getTagsOf = async (point) => {
 };
 
 const getTagsOnBranch = async (point) => {
-  const mainTags = await getTagsOf('main');
-  if (point === 'main') {
+  const { data: { default_branch: defaultBranch } } = await octokit.repos.get({
+    owner: 'electron',
+    repo: 'electron'
+  });
+  const mainTags = await getTagsOf(defaultBranch);
+  if (point === defaultBranch) {
     return mainTags;
   }
 
