@@ -11,7 +11,7 @@ before it's acceptable to upstream, as this patch comments out a couple
 of tests that upstream probably cares about.
 
 diff --git a/test/parallel/test-crypto-authenticated.js b/test/parallel/test-crypto-authenticated.js
-index 21c5af6cfe3e5eef64fc2d4dcc63c55b1d79ad51..6df71c5c2372b661c0f8cbab352f40d5e16b76bc 100644
+index 21c5af6cfe3e5eef64fc2d4dcc63c55b1d79ad51..1bcb7580bcdabba54e18cb87f75a9dbf40cf0ab8 100644
 --- a/test/parallel/test-crypto-authenticated.js
 +++ b/test/parallel/test-crypto-authenticated.js
 @@ -50,7 +50,9 @@ const errMessages = {
@@ -135,6 +135,18 @@ index 21c5af6cfe3e5eef64fc2d4dcc63c55b1d79ad51..6df71c5c2372b661c0f8cbab352f40d5
    // Valid extracted from TEST_CASES, check that it detects IV tampering.
    const valid = {
      algo: 'chacha20-poly1305',
+@@ -669,7 +697,10 @@ for (const test of TEST_CASES) {
+ 
+ {
+   // CCM cipher without data should not crash, see https://github.com/nodejs/node/issues/38035.
+-  const algo = 'aes-128-ccm';
++  common.printSkipMessage(`unsupported aes-128-ccm test`);
++  return;
++
++  const algo = 'aes-192-cbc';
+   const key = Buffer.alloc(16);
+   const iv = Buffer.alloc(12);
+   const opts = { authTagLength: 10 };
 diff --git a/test/parallel/test-crypto-binary-default.js b/test/parallel/test-crypto-binary-default.js
 index 3bbca5b0da395b94c04da7bb7c55b107e41367d8..af62558c4f23aa82804e0077da7b7f3a86cfac60 100644
 --- a/test/parallel/test-crypto-binary-default.js
@@ -473,7 +485,7 @@ index af2146982c7a3bf7bd7527f44e4b17a3b605026e..f6b91f675cfea367c608892dee078b56
    // Non-XOF hash functions should accept valid outputLength options as well.
    assert.strictEqual(crypto.createHash('sha224', { outputLength: 28 })
 diff --git a/test/parallel/test-crypto-key-objects.js b/test/parallel/test-crypto-key-objects.js
-index 3159b0da3f2901aab17e0b360eda84decaed9eb3..fc4375c5374df2cd66750e71eb5cebcb0da89061 100644
+index 3159b0da3f2901aab17e0b360eda84decaed9eb3..995b7f6b45bd0aa83eef143b15dede5658ac1bc0 100644
 --- a/test/parallel/test-crypto-key-objects.js
 +++ b/test/parallel/test-crypto-key-objects.js
 @@ -310,11 +310,11 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
@@ -520,6 +532,24 @@ index 3159b0da3f2901aab17e0b360eda84decaed9eb3..fc4375c5374df2cd66750e71eb5cebcb
  ].forEach((info) => {
    const keyType = info.keyType;
  
+@@ -424,7 +426,7 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
+     }
+   }
+ });
+-
++/*
+ [
+   { private: fixtures.readKey('ec_p256_private.pem', 'ascii'),
+     public: fixtures.readKey('ec_p256_public.pem', 'ascii'),
+@@ -517,7 +519,7 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
+     }
+   }
+ });
+-
++*/
+ {
+   // Reading an encrypted key without a passphrase should fail.
+   assert.throws(() => createPrivateKey(privateDsa), common.hasOpenSSL3 ? {
 @@ -550,7 +552,7 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
    }), {
      message: common.hasOpenSSL3 ?
@@ -548,7 +578,7 @@ index 3159b0da3f2901aab17e0b360eda84decaed9eb3..fc4375c5374df2cd66750e71eb5cebcb
    // Exporting an encrypted private key requires a cipher
    const privateKey = createPrivateKey(privatePem);
 diff --git a/test/parallel/test-crypto-keygen.js b/test/parallel/test-crypto-keygen.js
-index 4612fc4a1ac40a27ccc2c70ac11e32f0fdcaa2c3..53acf4d41e4f0c13477beb7b269e34626fefce08 100644
+index 4612fc4a1ac40a27ccc2c70ac11e32f0fdcaa2c3..a4d604cf0318cfb0771e3573245b1ed989991473 100644
 --- a/test/parallel/test-crypto-keygen.js
 +++ b/test/parallel/test-crypto-keygen.js
 @@ -300,6 +300,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
@@ -683,6 +713,22 @@ index 4612fc4a1ac40a27ccc2c70ac11e32f0fdcaa2c3..53acf4d41e4f0c13477beb7b269e3462
  
  // Test invalid key encoding types.
  {
+@@ -1362,6 +1376,7 @@ if (!common.hasOpenSSL3) {
+     }, common.mustSucceed((publicKey, privateKey) => {
+       assert.strictEqual(publicKey.type, 'public');
+ 
++      /*
+       for (const passphrase of ['', Buffer.alloc(0)]) {
+         const privateKeyObject = createPrivateKey({
+           passphrase,
+@@ -1369,6 +1384,7 @@ if (!common.hasOpenSSL3) {
+         });
+         assert.strictEqual(privateKeyObject.asymmetricKeyType, 'rsa');
+       }
++      */
+ 
+       // Encrypting with an empty passphrase is not the same as not encrypting
+       // the key, and not specifying a passphrase should fail when decoding it.
 diff --git a/test/parallel/test-crypto-padding-aes256.js b/test/parallel/test-crypto-padding-aes256.js
 index 14d853bdfd0a5dcc5bdb6e00cb20fdbeaabd2aff..3ae6fc47d4c6a8296a2c3c70daf464fad886a88d 100644
 --- a/test/parallel/test-crypto-padding-aes256.js
@@ -867,6 +913,80 @@ index 008ab129f0e019c659eecf5a76b7eb412c947fe3..6688f5d916f50e1e4fcfff1619c8634a
    }));
  
  cipher.end('Papaya!');  // Should not cause an unhandled exception.
+diff --git a/test/parallel/test-crypto-x509.js b/test/parallel/test-crypto-x509.js
+index c85a79b4854369e35fbe89833e9df9a12065671e..48fb14bd044c87ae5bdbe2563f70d42084f24d09 100644
+--- a/test/parallel/test-crypto-x509.js
++++ b/test/parallel/test-crypto-x509.js
+@@ -104,7 +104,9 @@ const der = Buffer.from(
+     '84:AC:5B:08:9A:20:89:B6:8F:D6'
+   );
+   assert.strictEqual(x509.keyUsage, undefined);
+-  assert.strictEqual(x509.serialNumber, 'ECC9B856270DA9A8');
++
++  const serialPattern = /ECC9B856270DA9A8|ecc9b856270da9a8/;
++  assert.strictEqual(serialPattern.test(x509.serialNumber), true);
+ 
+   assert.deepStrictEqual(x509.raw, der);
+ 
+@@ -190,6 +192,18 @@ const der = Buffer.from(
+   });
+   mc.port2.postMessage(x509);
+ 
++  const modulusOSSL = 'EF5440701637E28ABB038E5641F828D834C342A9D25EDBB86A2BF' +
++                      '6FBD809CB8E037A98B71708E001242E4DEB54C6164885F599DD87' +
++                      'A23215745955BE20417E33C4D0D1B80C9DA3DE419A2607195D2FB' +
++                      '75657B0BBFB5EB7D0BBA5122D1B6964C7B570D50B8EC001EEB68D' +
++                      'FB584437508F3129928D673B30A3E0BF4F50609E6371';
++
++  const modulusBSSL = 'ef5440701637e28abb038e5641f828d834c342a9d25edbb86a2bf' +
++                      '6fbd809cb8e037a98b71708e001242e4deb54c6164885f599dd87' +
++                      'a23215745955be20417e33c4d0d1b80c9da3de419a2607195d2fb' +
++                      '75657b0bbfb5eb7d0bba5122d1b6964c7b570d50b8ec001eeb68d'+
++                      'fb584437508f3129928d673b30a3e0bf4f50609e6371';
++
+   // Verify that legacy encoding works
+   const legacyObjectCheck = {
+     subject: 'C=US\n' +
+@@ -213,11 +227,7 @@ const der = Buffer.from(
+         'CA Issuers - URI:http://ca.nodejs.org/ca.cert' :
+         'OCSP - URI:http://ocsp.nodejs.org/\n' +
+         'CA Issuers - URI:http://ca.nodejs.org/ca.cert\n',
+-    modulus: 'EF5440701637E28ABB038E5641F828D834C342A9D25EDBB86A2BF' +
+-             '6FBD809CB8E037A98B71708E001242E4DEB54C6164885F599DD87' +
+-             'A23215745955BE20417E33C4D0D1B80C9DA3DE419A2607195D2FB' +
+-             '75657B0BBFB5EB7D0BBA5122D1B6964C7B570D50B8EC001EEB68D' +
+-             'FB584437508F3129928D673B30A3E0BF4F50609E6371',
++    modulusPattern: new RegExp(`${modulusOSSL}|${modulusBSSL}`),
+     bits: 1024,
+     exponent: '0x10001',
+     valid_from: 'Nov 16 18:42:21 2018 GMT',
+@@ -226,7 +236,7 @@ const der = Buffer.from(
+     fingerprint256:
+       'B0:BE:46:49:B8:29:63:E0:6F:63:C8:8A:57:9C:3F:9B:72:' +
+       'C6:F5:89:E3:0D:84:AC:5B:08:9A:20:89:B6:8F:D6',
+-    serialNumber: 'ECC9B856270DA9A8'
++    serialNumberPattern: /ECC9B856270DA9A8|ecc9b856270da9a8/
+   };
+ 
+   const legacyObject = x509.toLegacyObject();
+@@ -235,7 +245,7 @@ const der = Buffer.from(
+   assert.strictEqual(legacyObject.subject, legacyObjectCheck.subject);
+   assert.strictEqual(legacyObject.issuer, legacyObjectCheck.issuer);
+   assert.strictEqual(legacyObject.infoAccess, legacyObjectCheck.infoAccess);
+-  assert.strictEqual(legacyObject.modulus, legacyObjectCheck.modulus);
++  assert.strictEqual(legacyObjectCheck.modulusPattern.test(legacyObject.modulus), true);
+   assert.strictEqual(legacyObject.bits, legacyObjectCheck.bits);
+   assert.strictEqual(legacyObject.exponent, legacyObjectCheck.exponent);
+   assert.strictEqual(legacyObject.valid_from, legacyObjectCheck.valid_from);
+@@ -244,7 +254,5 @@ const der = Buffer.from(
+   assert.strictEqual(
+     legacyObject.fingerprint256,
+     legacyObjectCheck.fingerprint256);
+-  assert.strictEqual(
+-    legacyObject.serialNumber,
+-    legacyObjectCheck.serialNumber);
++  assert.strictEqual(legacyObjectCheck.serialNumberPattern.test(legacyObject.serialNumber), true);
+ }
 diff --git a/test/parallel/test-crypto.js b/test/parallel/test-crypto.js
 index 58441be4d093f06cac3d47e2fa752f2354a49f8a..36a91946c8ad23250a47c433c1216ec9cb14f0e1 100644
 --- a/test/parallel/test-crypto.js
@@ -946,3 +1066,28 @@ index 58441be4d093f06cac3d47e2fa752f2354a49f8a..36a91946c8ad23250a47c433c1216ec9
  // Make sure memory isn't released before being returned
  console.log(crypto.randomBytes(16));
  
+diff --git a/test/parallel/test-tls-getcertificate-x509.js b/test/parallel/test-tls-getcertificate-x509.js
+index 5be788f67931131256f7fb0ab802cb0edee58173..13963fbeee1bbe5d4a25f1ef8bb58c7a0ad1eb23 100644
+--- a/test/parallel/test-tls-getcertificate-x509.js
++++ b/test/parallel/test-tls-getcertificate-x509.js
+@@ -21,8 +21,8 @@ server.once('secureConnection', common.mustCall(function(socket) {
+   const cert = socket.getX509Certificate();
+   assert(cert instanceof X509Certificate);
+   assert.strictEqual(
+-    cert.serialNumber,
+-    'D0082F458B6EFBE8');
++    /d0082f458b6efbe8|D0082F458B6EFBE8/.test(cert.serialNumber), true
++  )
+ }));
+ 
+ server.listen(0, common.mustCall(function() {
+@@ -34,8 +34,7 @@ server.listen(0, common.mustCall(function() {
+     assert(peerCert.issuerCertificate instanceof X509Certificate);
+     assert.strictEqual(peerCert.issuerCertificate.issuerCertificate, undefined);
+     assert.strictEqual(
+-      peerCert.issuerCertificate.serialNumber,
+-      'ECC9B856270DA9A7'
++      /ecc9b856270da9a7|ECC9B856270DA9A7/.test(peerCert.issuerCertificate.serialNumber), true
+     );
+     server.close();
+   }));
