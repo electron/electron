@@ -586,6 +586,43 @@ describe('chromium features', () => {
       w.loadFile(path.join(fixturesPath, 'pages', 'service-worker', 'index.html'));
     });
 
+    it('should register for custom scheme', (done) => {
+      const customSession = session.fromPartition('custom-scheme');
+      const { serviceWorkerScheme } = global as any;
+      customSession.protocol.registerFileProtocol(serviceWorkerScheme, (request, callback) => {
+        let file = url.parse(request.url).pathname!;
+        if (file[0] === '/' && process.platform === 'win32') file = file.slice(1);
+
+        callback({ path: path.normalize(file) } as any);
+      });
+
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true,
+          session: customSession,
+          contextIsolation: false
+        }
+      });
+      w.webContents.on('ipc-message', (event, channel, message) => {
+        if (channel === 'reload') {
+          w.webContents.reload();
+        } else if (channel === 'error') {
+          done(`unexpected error : ${message}`);
+        } else if (channel === 'response') {
+          expect(message).to.equal('Hello from serviceWorker!');
+          customSession.clearStorageData({
+            storages: ['serviceworkers']
+          }).then(() => {
+            customSession.protocol.uninterceptProtocol(serviceWorkerScheme);
+            done();
+          });
+        }
+      });
+      w.webContents.on('crashed', () => done(new Error('WebContents crashed.')));
+      w.loadFile(path.join(fixturesPath, 'pages', 'service-worker', 'custom-scheme-index.html'));
+    });
+
     it('should not crash when nodeIntegration is enabled', (done) => {
       const w = new BrowserWindow({
         show: false,
