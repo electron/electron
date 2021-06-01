@@ -287,5 +287,8 @@ export function showCertificateTrustDialog (windowOrOptions: BrowserWindow | Cer
 
   if (typeof message !== 'string') throw new TypeError('message must be a string');
 
-  return dialogBinding.showCertificateTrustDialog?.(window, certificate, message);
+  if (!dialogBinding.showCertificateTrustDialog) {
+    throw new Error(`showCertificateTrustDialog is not supported on ${process.platform}`);
+  }
+  return dialogBinding.showCertificateTrustDialog(window, certificate, message);
 }
