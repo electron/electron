@@ -794,12 +794,6 @@ bool ElectronBrowserClient::ArePersistentMediaDeviceIDsAllowed(
   return true;
 }
 
-bool ElectronBrowserClient::IsExplicitNavigation(
-    ui::PageTransition transition) {
-  return content::ContentBrowserClient::IsExplicitNavigation(transition) ||
-         (transition & ui::PAGE_TRANSITION_FROM_API);
-}
-
 void ElectronBrowserClient::SiteInstanceDeleting(
     content::SiteInstance* site_instance) {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
