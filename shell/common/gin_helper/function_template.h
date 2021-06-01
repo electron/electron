@@ -96,7 +96,7 @@ bool GetNextArgument(gin::Arguments* args,
 }
 
 // Support base::Optional as output, which would be empty and do not throw error
-// when convertion to T fails.
+// when conversion to T fails.
 template <typename T>
 bool GetNextArgument(gin::Arguments* args,
                      int create_flags,
