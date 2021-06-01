@@ -10,7 +10,6 @@
 
 #include <shlobj.h>
 #include <wrl\wrappers\corewrappers.h>
-#include <vector>
 
 #include "base/environment.h"
 #include "base/strings/utf_string_conversions.h"

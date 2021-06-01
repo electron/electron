@@ -4,7 +4,6 @@
 
 #include "shell/renderer/api/electron_api_context_bridge.h"
 
-#include <map>
 #include <memory>
 #include <set>
 #include <string>

@@ -5,7 +5,6 @@
 #ifndef SHELL_BROWSER_NOTIFICATIONS_PLATFORM_NOTIFICATION_SERVICE_H_
 #define SHELL_BROWSER_NOTIFICATIONS_PLATFORM_NOTIFICATION_SERVICE_H_
 
-#include <set>
 #include <string>
 
 #include "content/public/browser/platform_notification_service.h"

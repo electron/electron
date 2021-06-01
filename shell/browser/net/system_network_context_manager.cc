@@ -4,6 +4,7 @@
 
 #include "shell/browser/net/system_network_context_manager.h"
 
+#include <memory>
 #include <string>
 #include <utility>
 

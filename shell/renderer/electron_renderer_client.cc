@@ -5,7 +5,6 @@
 #include "shell/renderer/electron_renderer_client.h"
 
 #include <string>
-#include <vector>
 
 #include "base/command_line.h"
 #include "content/public/renderer/render_frame.h"

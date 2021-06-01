@@ -6,7 +6,6 @@
 #define SHELL_BROWSER_API_ELECTRON_API_DOWNLOAD_ITEM_H_
 
 #include <string>
-#include <vector>
 
 #include "base/files/file_path.h"
 #include "base/memory/weak_ptr.h"

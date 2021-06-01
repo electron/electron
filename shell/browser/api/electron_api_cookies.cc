@@ -4,7 +4,6 @@
 
 #include "shell/browser/api/electron_api_cookies.h"
 
-#include <memory>
 #include <utility>
 
 #include "base/time/time.h"

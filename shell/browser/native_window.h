@@ -6,10 +6,8 @@
 #define SHELL_BROWSER_NATIVE_WINDOW_H_
 
 #include <list>
-#include <map>
 #include <memory>
 #include <string>
-#include <tuple>
 #include <vector>
 
 #include "base/memory/weak_ptr.h"

@@ -5,10 +5,8 @@
 #ifndef SHELL_BROWSER_BADGING_BADGE_MANAGER_H_
 #define SHELL_BROWSER_BADGING_BADGE_MANAGER_H_
 
-#include <map>
 #include <memory>
 #include <string>
-#include <vector>
 
 #include "base/macros.h"
 #include "base/optional.h"

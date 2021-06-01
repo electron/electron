@@ -5,9 +5,6 @@
 #ifndef SHELL_BROWSER_NOTIFICATIONS_LINUX_LIBNOTIFY_NOTIFICATION_H_
 #define SHELL_BROWSER_NOTIFICATIONS_LINUX_LIBNOTIFY_NOTIFICATION_H_
 
-#include <string>
-#include <vector>
-
 #include "library_loaders/libnotify_loader.h"
 #include "shell/browser/notifications/notification.h"
 #include "ui/base/glib/glib_signal.h"

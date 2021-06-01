@@ -7,7 +7,6 @@
 
 #include <memory>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
 #include "content/public/renderer/content_renderer_client.h"

@@ -5,7 +5,6 @@
 #include "shell/browser/ui/win/notify_icon.h"
 
 #include <objbase.h>
-#include <utility>
 
 #include "base/logging.h"
 #include "base/strings/string_number_conversions.h"
