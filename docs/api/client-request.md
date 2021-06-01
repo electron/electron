@@ -71,7 +71,7 @@ const request = net.request({
 
 Returns:
 
-* `response` IncomingMessage - An object representing the HTTP response message.
+* `response` [IncomingMessage](incoming-message.md) - An object representing the HTTP response message.
 
 #### Event: 'login'
 
