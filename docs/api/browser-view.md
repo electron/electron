@@ -71,14 +71,14 @@ The `bounds` of this BrowserView instance as `Object`.
 * `color` String - Color in `#aarrggbb` or `#argb` form. The alpha channel is
   optional.
 
-### ***Important Note***
+### Important Note
 
-If any Property or Method which directly influences the UI of a `BrowserView` Instance Object 
+If any Property or Method which directly influences the UI of a `BrowserView` Instance Object
 is not called after calling `win.setBrowserView(view)`, it would not be loaded by the renderer.
 
 #### **Example**
 
-The following Code Won't Work as the `view.setBounds()`is called before `win.setBrowserView(view)`
+The following Code Won't Work as the `view.setBounds()`is called before `win.setBrowserView(view)`.
 
 ```javascript
 // In the main process.
@@ -92,8 +92,7 @@ view.webContents.loadURL('https://electronjs.org')
 win.setBrowserView(view)
 
 ```
-
-But the following code will work
+But the following code will work.
 
 ```javascript
 // In the main process.
