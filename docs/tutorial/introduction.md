@@ -49,11 +49,11 @@ is a great place to get advice from other Electron app developers.
 the [GitHub issue tracker][issue-tracker] to see if any existing issues match your
 problem. If not, feel free to fill out our bug report template and submit a new issue.
 
-[chromium]:https://www.chromium.org/
-[node]:https://nodejs.org/
-[mdn-guide]:https://developer.mozilla.org/en-US/docs/Learn/Getting_started_with_the_web
-[node-guide]:https://nodejs.dev/learn
-[comic]:https://www.google.com/googlebooks/chrome/
-[fiddle]:https://electronjs.org/fiddle
-[issue-tracker]:https://github.com/electron/electron/issues
-[discord]:https://discord.gg/electron
+[chromium]: https://www.chromium.org/
+[node]: https://nodejs.org/
+[mdn-guide]: https://developer.mozilla.org/en-US/docs/Learn/Getting_started_with_the_web
+[node-guide]: https://nodejs.dev/learn
+[comic]: https://www.google.com/googlebooks/chrome/
+[fiddle]: https://electronjs.org/fiddle
+[issue-tracker]: https://github.com/electron/electron/issues
+[discord]: https://discord.gg/electron
