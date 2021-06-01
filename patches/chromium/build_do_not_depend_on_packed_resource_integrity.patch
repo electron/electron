@@ -33,10 +33,10 @@ index 75868925758560075e95b79a7473e635b23127d5..1aba073ab6bddfa20d82f66938383fe9
          "//base",
          "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index 31a6b8c0e27692bcba4783bb9c0e9d36fc106dad..6dd3e95d91b847bec2e0660fc1360f1fa3762f2c 100644
+index 5987371ecfcf8252a90d33499581e72f70f2e6be..1abf19d90ad1c02946ad88756ac4c9f9342f34e4 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -4286,7 +4286,7 @@ static_library("browser") {
+@@ -4289,7 +4289,7 @@ static_library("browser") {
  
      # On Windows, the hashes are embedded in //chrome:chrome_initial rather
      # than here in :chrome_dll.
@@ -46,10 +46,10 @@ index 31a6b8c0e27692bcba4783bb9c0e9d36fc106dad..6dd3e95d91b847bec2e0660fc1360f1f
      }
  
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index 6fd5f6547ae1af166d31f66a01362c20ca80d8d0..c2c08b84304870da7d29c6a90f72e6f742294b8b 100644
+index 304ce09dd594327c9d70f2ea192e1f68031b21fd..0963e86e899dd5a6df6fa72f526c5d9c6b99f83e 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
-@@ -4875,10 +4875,15 @@ test("unit_tests") {
+@@ -4877,10 +4877,15 @@ test("unit_tests") {
      assert(toolkit_views)
      sources += [ "../browser/ui/startup/credential_provider_signin_info_fetcher_win_unittest.cc" ]
      deps += [

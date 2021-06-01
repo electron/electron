@@ -150,7 +150,7 @@ index b1cfa654259d431adfada00a00f9bfc8ae5ab292..484d36de2ac0ef3b1d19bbd0d6c79db8
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index 8cc8c14b217a16e79d425edd5c4082095129b7f9..9a341bcda3db791140ffeb80911da302b13a8530 100644
+index 4be2d898406a298a22c8ea17395398bd3219935f..720d83f9c9dc1976c423e54d000a1f8e6b0252c0 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
 @@ -26,6 +26,7 @@
