@@ -18,6 +18,7 @@ BASE_URL = os.getenv('LIBCHROMIUMCONTENT_MIRROR') or \
 
 PLATFORM = {
   'cygwin': 'win32',
+  'msys': 'win32',
   'darwin': 'darwin',
   'linux': 'linux',
   'linux2': 'linux',
