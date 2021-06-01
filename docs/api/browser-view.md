@@ -90,8 +90,8 @@ const view = new BrowserView()
 view.setBounds({ x: 0, y: 0, width: 300, height: 300 })
 view.webContents.loadURL('https://electronjs.org')
 win.setBrowserView(view)
-
 ```
+
 But the following code will work.
 
 ```javascript
@@ -104,5 +104,4 @@ const view = new BrowserView()
 view.webContents.loadURL('https://electronjs.org')
 win.setBrowserView(view)
 view.setBounds({ x: 0, y: 0, width: 300, height: 300 })
-
 ```
