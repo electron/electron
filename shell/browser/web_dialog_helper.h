@@ -32,7 +32,7 @@ class WebDialogHelper {
                       const blink::mojom::FileChooserParams& params);
   void EnumerateDirectory(content::WebContents* web_contents,
                           scoped_refptr<content::FileSelectListener> listener,
-                          const base::FilePath& path);
+                          const base::FilePath& dir);
 
  private:
   NativeWindow* window_;

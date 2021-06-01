@@ -29,7 +29,7 @@ class DownloadItem : public gin::Wrappable<DownloadItem>,
   static gin::Handle<DownloadItem> FromOrCreate(v8::Isolate* isolate,
                                                 download::DownloadItem* item);
 
-  static DownloadItem* FromDownloadItem(download::DownloadItem*);
+  static DownloadItem* FromDownloadItem(download::DownloadItem* item);
 
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
@@ -43,14 +43,14 @@ class DownloadItem : public gin::Wrappable<DownloadItem>,
   file_dialog::DialogSettings GetSaveDialogOptions() const;
 
  private:
-  DownloadItem(v8::Isolate* isolate, download::DownloadItem* download_item);
+  DownloadItem(v8::Isolate* isolate, download::DownloadItem* item);
   ~DownloadItem() override;
 
   bool CheckAlive() const;
 
   // download::DownloadItem::Observer
-  void OnDownloadUpdated(download::DownloadItem* download) override;
-  void OnDownloadDestroyed(download::DownloadItem* download) override;
+  void OnDownloadUpdated(download::DownloadItem* item) override;
+  void OnDownloadDestroyed(download::DownloadItem* item) override;
 
   // JS API
   void Pause();
