@@ -97,7 +97,7 @@ class SimpleURLLoaderWrapper
                        int64_t sent_bytes) override {}
   void Clone(
       mojo::PendingReceiver<network::mojom::URLLoaderNetworkServiceObserver>
-          listener) override;
+          observer) override;
 
   // SimpleURLLoader callbacks
   void OnResponseStarted(const GURL& final_url,
