@@ -56,6 +56,8 @@ void MenuBar::SetAcceleratorVisibility(bool visible) {
 }
 
 MenuBar::View* MenuBar::FindAccelChild(char16_t key) {
+  if (key == 0)
+    return nullptr;
   for (auto* child : GetChildrenInZOrder()) {
     if (static_cast<SubmenuButton*>(child)->accelerator() == key)
       return child;
