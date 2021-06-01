@@ -156,7 +156,6 @@ int NodeMain(int argc, char* argv[]) {
   int exit_code = 1;
   {
     // Feed gin::PerIsolateData with a task runner.
-    argv = uv_setup_args(argc, argv);
     uv_loop_t* loop = uv_default_loop();
     auto uv_task_runner = base::MakeRefCounted<UvTaskRunner>(loop);
     base::ThreadTaskRunnerHandle handle(uv_task_runner);
@@ -172,16 +171,11 @@ int NodeMain(int argc, char* argv[]) {
     // Parse and set Node.js cli flags.
     SetNodeCliFlags();
 
-    std::vector<std::string> args(argv, argv + argc);  // NOLINT
-    std::vector<std::string> exec_args;
-    std::vector<std::string> errors;
-    exit_code = node::InitializeNodeWithArgs(&args, &exec_args, &errors);
+    node::InitializationResult result =
+        node::InitializeOncePerProcess(argc, argv);
 
-    for (const std::string& error : errors)
-      fprintf(stderr, "%s: %s\n", args[0].c_str(), error.c_str());
-
-    if (exit_code != 0)
-      exit(exit_code);
+    if (result.early_return)
+      exit(result.exit_code);
 
     gin::V8Initializer::LoadV8Snapshot(
         gin::V8Initializer::V8SnapshotFileType::kWithAdditionalContext);
@@ -208,8 +202,8 @@ int NodeMain(int argc, char* argv[]) {
       isolate_data = node::CreateIsolateData(isolate, loop, gin_env.platform());
       CHECK_NE(nullptr, isolate_data);
 
-      env = node::CreateEnvironment(isolate_data, gin_env.context(), args,
-                                    exec_args);
+      env = node::CreateEnvironment(isolate_data, gin_env.context(),
+                                    result.args, result.exec_args);
       CHECK_NOT_NULL(env);
 
       node::IsolateSettings is;
