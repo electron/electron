@@ -87,6 +87,16 @@ std::vector<std::string> GetStandardSchemes() {
   return g_standard_schemes;
 }
 
+void AddServiceWorkerScheme(const std::string& scheme) {
+  // There is no API to add service worker scheme, but there is an API to
+  // return const reference to the schemes vector.
+  // If in future the API is changed to return a copy instead of reference,
+  // the compilation will fail, and we should add a patch at that time.
+  auto& mutable_schemes =
+      const_cast<std::vector<std::string>&>(content::GetServiceWorkerSchemes());
+  mutable_schemes.push_back(scheme);
+}
+
 void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
                                  v8::Local<v8::Value> val) {
   std::vector<CustomScheme> custom_schemes;
@@ -123,13 +133,7 @@ void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
     }
     if (custom_scheme.options.allowServiceWorkers) {
       service_worker_schemes.push_back(custom_scheme.scheme);
-      // There is no API to add service worker scheme, but there is an API to
-      // return const reference to the schemes vector.
-      // If in future the API is changed to return a copy instead of reference,
-      // the compilation will fail, and we should add a patch at that time.
-      auto& mutable_schemes = const_cast<std::vector<std::string>&>(
-          content::GetServiceWorkerSchemes());
-      mutable_schemes.push_back(custom_scheme.scheme);
+      AddServiceWorkerScheme(custom_scheme.scheme);
     }
     if (custom_scheme.options.stream) {
       g_streaming_schemes.push_back(custom_scheme.scheme);
