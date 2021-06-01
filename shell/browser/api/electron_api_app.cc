@@ -936,6 +936,20 @@ void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
 }
 #endif
 
+// static
+bool App::IsPackaged() {
+  base::FilePath exe_path;
+  base::PathService::Get(base::FILE_EXE, &exe_path);
+  base::FilePath::StringType base_name =
+      base::ToLowerASCII(exe_path.BaseName().value());
+
+#if defined(OS_WIN)
+  return base_name != FILE_PATH_LITERAL("electron.exe");
+#else
+  return base_name != FILE_PATH_LITERAL("electron");
+#endif
+}
+
 base::FilePath App::GetPath(gin_helper::ErrorThrower thrower,
                             const std::string& name) {
   bool succeed = false;
@@ -1607,6 +1621,7 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetMethod("isUnityRunning",
                  base::BindRepeating(&Browser::IsUnityRunning, browser))
 #endif
+      .SetProperty("isPackaged", &App::IsPackaged)
       .SetMethod("setAppPath", &App::SetAppPath)
       .SetMethod("getAppPath", &App::GetAppPath)
       .SetMethod("setPath", &App::SetPath)

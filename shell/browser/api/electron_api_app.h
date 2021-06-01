@@ -75,6 +75,8 @@ class App : public ElectronBrowserClient::Delegate,
   void RenderProcessReady(content::RenderProcessHost* host);
   void RenderProcessExited(content::RenderProcessHost* host);
 
+  static bool IsPackaged();
+
   App();
 
  private:
