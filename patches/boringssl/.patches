@@ -2,3 +2,4 @@ expose_ripemd160.patch
 expose_aes-cfb.patch
 expose_des-ede3.patch
 src_add_impl_for_evp_pkey_get0.patch
+ensure_name_not_null_in_evp_get_cipherbyname.patch
