@@ -63,7 +63,7 @@ index 17e1739c12ee38864e735130792321adadb43f08..df75c885e702e6b92ce0441f1a85dddd
  
    if (IsCmdDown()) {
 diff --git a/ui/base/accelerators/accelerator.h b/ui/base/accelerators/accelerator.h
-index 35a9bb01aef4b3fea34caf06f97944405a0212fe..02103169ef39b1048ebad8231c06afdedd01f13c 100644
+index 35a9bb01aef4b3fea34caf06f97944405a0212fe..45f07a97c834d6716210aadb1e8f3f83aa08b5e9 100644
 --- a/ui/base/accelerators/accelerator.h
 +++ b/ui/base/accelerators/accelerator.h
 @@ -15,6 +15,7 @@
