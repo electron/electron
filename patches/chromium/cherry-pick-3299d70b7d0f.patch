@@ -1,7 +1,11 @@
-From 3299d70b7d0f9847df26c1a05498ee740413f4f6 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Hongchan Choi <hongchan@chromium.org>
 Date: Wed, 21 Apr 2021 01:58:33 +0000
-Subject: [PATCH] Make PushPullFIFO adapt to irregular audio callbacks from the browser process
+Subject: Make PushPullFIFO adapt to irregular audio callbacks from the browser
+ process
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
 For background and rationale:
 go/webaudio-worklet-glitch-aaudio (Googler only)
@@ -34,13 +38,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2797664
 Commit-Queue: Hongchan Choi <hongchan@chromium.org>
 Reviewed-by: Raymond Toy <rtoy@chromium.org>
 Cr-Commit-Position: refs/heads/master@{#874535}
----
 
 diff --git a/third_party/blink/renderer/platform/audio/audio_destination.cc b/third_party/blink/renderer/platform/audio/audio_destination.cc
-index 126783e..a16975a 100644
+index 126783eb5a6e4f738555d49803dc908c39d101ed..a16975a4ece7a8e8fd8e9870360e815efddcc920 100644
 --- a/third_party/blink/renderer/platform/audio/audio_destination.cc
 +++ b/third_party/blink/renderer/platform/audio/audio_destination.cc
-@@ -212,10 +212,10 @@
+@@ -212,10 +212,10 @@ void AudioDestination::Render(const WebVector<float*>& destination_data,
    for (unsigned i = 0; i < number_of_output_channels_; ++i)
      output_bus_->SetChannelMemory(i, destination_data[i], number_of_frames);
  
@@ -54,7 +57,7 @@ index 126783e..a16975a 100644
      PostCrossThreadTask(
          *worklet_task_runner_, FROM_HERE,
          CrossThreadBindOnce(&AudioDestination::RequestRender,
-@@ -223,7 +223,8 @@
+@@ -223,7 +223,8 @@ void AudioDestination::Render(const WebVector<float*>& destination_data,
                              frames_to_render, delay, delay_timestamp,
                              prior_frames_skipped));
    } else {
@@ -64,7 +67,7 @@ index 126783e..a16975a 100644
      RequestRender(number_of_frames, frames_to_render, delay,
                    delay_timestamp, prior_frames_skipped);
    }
-@@ -316,6 +317,11 @@
+@@ -316,6 +317,11 @@ void AudioDestination::StartWithWorkletTaskRunner(
  
    if (device_state_ != DeviceState::kStopped)
      return;
@@ -77,10 +80,10 @@ index 126783e..a16975a 100644
    web_audio_device_->Start();
    SetDeviceState(DeviceState::kRunning);
 diff --git a/third_party/blink/renderer/platform/audio/push_pull_fifo.cc b/third_party/blink/renderer/platform/audio/push_pull_fifo.cc
-index f89e51e..0dfc6d87 100644
+index f89e51ee5544d2c265d81c1247c4a16723d7e153..0dfc6d8707da99f6ceb9a58a78d67bcb1af10ee1 100644
 --- a/third_party/blink/renderer/platform/audio/push_pull_fifo.cc
 +++ b/third_party/blink/renderer/platform/audio/push_pull_fifo.cc
-@@ -210,6 +210,99 @@
+@@ -210,6 +210,99 @@ size_t PushPullFIFO::Pull(AudioBus* output_bus, size_t frames_requested) {
        : 0;
  }
  
@@ -181,10 +184,10 @@ index f89e51e..0dfc6d87 100644
    MutexLocker locker(lock_);
    return {length(),     NumberOfChannels(), frames_available_, index_read_,
 diff --git a/third_party/blink/renderer/platform/audio/push_pull_fifo.h b/third_party/blink/renderer/platform/audio/push_pull_fifo.h
-index 8b822b1..ad34a8b 100644
+index 8b822b17f66bdc27a61d09bc272631846ea82dcb..ad34a8b0fc39cf566c971323a8dade13a53a1420 100644
 --- a/third_party/blink/renderer/platform/audio/push_pull_fifo.h
 +++ b/third_party/blink/renderer/platform/audio/push_pull_fifo.h
-@@ -71,18 +71,33 @@
+@@ -71,18 +71,33 @@ class PLATFORM_EXPORT PushPullFIFO {
    //    the request from the consumer without causing error, but with a glitch.
    size_t Pull(AudioBus* output_bus, size_t frames_requested);
  
@@ -219,7 +222,7 @@ index 8b822b1..ad34a8b 100644
    // For single thread unit test only. Get the current configuration that
    // consists of FIFO length, number of channels, read/write index position and
    // under/overflow count.
-@@ -101,6 +116,11 @@
+@@ -101,6 +116,11 @@ class PLATFORM_EXPORT PushPullFIFO {
    unsigned underflow_count_ = 0;
  
    Mutex lock_;
@@ -232,10 +235,10 @@ index 8b822b1..ad34a8b 100644
    size_t frames_available_ GUARDED_BY(lock_) = 0;
    size_t index_read_ GUARDED_BY(lock_) = 0;
 diff --git a/third_party/blink/renderer/platform/audio/push_pull_fifo_test.cc b/third_party/blink/renderer/platform/audio/push_pull_fifo_test.cc
-index 13c6a4d..7abc6af 100644
+index 13c6a4d5078e6e1970cd976a3c5829aa7c915460..7abc6af203e7e84e3acda71440c035dfc1b66226 100644
 --- a/third_party/blink/renderer/platform/audio/push_pull_fifo_test.cc
 +++ b/third_party/blink/renderer/platform/audio/push_pull_fifo_test.cc
-@@ -364,6 +364,96 @@
+@@ -364,6 +364,96 @@ INSTANTIATE_TEST_SUITE_P(PushPullFIFOFeatureTest,
                           PushPullFIFOFeatureTest,
                           testing::ValuesIn(g_feature_test_params));
  
