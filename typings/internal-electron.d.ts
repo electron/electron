@@ -56,7 +56,6 @@ declare namespace Electron {
   }
 
   interface WebContents {
-    _getURL(): string;
     _loadURL(url: string, options: ElectronInternal.LoadURLOptions): void;
     _stop(): void;
     _goBack(): void;
