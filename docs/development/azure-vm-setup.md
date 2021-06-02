@@ -49,7 +49,7 @@ Example Use Case:
         * Master VHD URI - use URI obtained @ end of previous step
         * Location use `East US`
 
-6. Log back into Azure and find the VM you just created in Homee < Virtual Machines < `$YOUR_NEW_VM`
+6. Log back into Azure and find the VM you just created in Home < Virtual Machines < `$YOUR_NEW_VM`
     * You can download a RDP (Remote Desktop) file to access the VM.
 
 7. Using Microsoft Remote Desktop, click `Connect` to connect to the VM.

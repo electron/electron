@@ -20,7 +20,7 @@ applicative code.
 
 #### Event: 'end'
 
-Indicates that response body has ended.
+Indicates that response body has ended. Must be placed before 'data' event.
 
 #### Event: 'aborted'
 

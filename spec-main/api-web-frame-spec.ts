@@ -9,31 +9,27 @@ describe('webFrame module', () => {
 
   afterEach(closeAllWindows);
 
-  for (const worldSafe of [true, false]) {
-    it(`can use executeJavaScript with world safe mode ${worldSafe ? 'enabled' : 'disabled'}`, async () => {
-      const w = new BrowserWindow({
-        show: true,
-        webPreferences: {
-          nodeIntegration: true,
-          contextIsolation: true,
-          worldSafeExecuteJavaScript: worldSafe,
-          preload: path.join(fixtures, 'pages', 'world-safe-preload.js')
-        }
-      });
-      const isSafe = emittedOnce(ipcMain, 'executejs-safe');
-      w.loadURL('about:blank');
-      const [, wasSafe] = await isSafe;
-      expect(wasSafe).to.equal(worldSafe);
-    });
-  }
-
-  it('can use executeJavaScript with world safe mode enabled and catch conversion errors', async () => {
+  it('can use executeJavaScript', async () => {
     const w = new BrowserWindow({
       show: true,
       webPreferences: {
         nodeIntegration: true,
         contextIsolation: true,
-        worldSafeExecuteJavaScript: true,
+        preload: path.join(fixtures, 'pages', 'world-safe-preload.js')
+      }
+    });
+    const isSafe = emittedOnce(ipcMain, 'executejs-safe');
+    w.loadURL('about:blank');
+    const [, wasSafe] = await isSafe;
+    expect(wasSafe).to.equal(true);
+  });
+
+  it('can use executeJavaScript and catch conversion errors', async () => {
+    const w = new BrowserWindow({
+      show: true,
+      webPreferences: {
+        nodeIntegration: true,
+        contextIsolation: true,
         preload: path.join(fixtures, 'pages', 'world-safe-preload-error.js')
       }
     });
@@ -48,7 +44,8 @@ describe('webFrame module', () => {
     const w = new BrowserWindow({
       show: false,
       webPreferences: {
-        nodeIntegration: true
+        nodeIntegration: true,
+        contextIsolation: false
       }
     });
     await w.loadFile(path.join(fixtures, 'pages', 'webframe-spell-check.html'));

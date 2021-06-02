@@ -17,24 +17,22 @@ class SessionPreferences : public base::SupportsUserData::Data {
  public:
   static SessionPreferences* FromBrowserContext(
       content::BrowserContext* context);
-  static std::vector<base::FilePath::StringType> GetValidPreloads(
+  static std::vector<base::FilePath> GetValidPreloads(
       content::BrowserContext* context);
 
   explicit SessionPreferences(content::BrowserContext* context);
   ~SessionPreferences() override;
 
-  void set_preloads(const std::vector<base::FilePath::StringType>& preloads) {
+  void set_preloads(const std::vector<base::FilePath>& preloads) {
     preloads_ = preloads;
   }
-  const std::vector<base::FilePath::StringType>& preloads() const {
-    return preloads_;
-  }
+  const std::vector<base::FilePath>& preloads() const { return preloads_; }
 
  private:
   // The user data key.
   static int kLocatorKey;
 
-  std::vector<base::FilePath::StringType> preloads_;
+  std::vector<base::FilePath> preloads_;
 };
 
 }  // namespace electron

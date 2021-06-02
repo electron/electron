@@ -6,10 +6,11 @@
 #define SHELL_COMMON_GIN_CONVERTERS_BLINK_CONVERTER_H_
 
 #include "gin/converter.h"
+#include "third_party/blink/public/common/context_menu_data/context_menu_data.h"
 #include "third_party/blink/public/common/input/web_input_event.h"
 #include "third_party/blink/public/common/messaging/cloneable_message.h"
 #include "third_party/blink/public/common/web_cache/web_cache_resource_type_stats.h"
-#include "third_party/blink/public/web/web_context_menu_data.h"
+#include "third_party/blink/public/mojom/loader/referrer.mojom-forward.h"
 
 namespace blink {
 class WebMouseEvent;
@@ -53,13 +54,6 @@ struct Converter<blink::WebMouseWheelEvent> {
 };
 
 template <>
-struct Converter<blink::WebSize> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     blink::WebSize* out);
-};
-
-template <>
 struct Converter<blink::DeviceEmulationParams> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
@@ -67,16 +61,17 @@ struct Converter<blink::DeviceEmulationParams> {
 };
 
 template <>
-struct Converter<blink::ContextMenuDataMediaType> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const blink::ContextMenuDataMediaType& in);
+struct Converter<blink::mojom::ContextMenuDataMediaType> {
+  static v8::Local<v8::Value> ToV8(
+      v8::Isolate* isolate,
+      const blink::mojom::ContextMenuDataMediaType& in);
 };
 
 template <>
-struct Converter<blink::ContextMenuDataInputFieldType> {
+struct Converter<blink::mojom::ContextMenuDataInputFieldType> {
   static v8::Local<v8::Value> ToV8(
       v8::Isolate* isolate,
-      const blink::ContextMenuDataInputFieldType& in);
+      const blink::mojom::ContextMenuDataInputFieldType& in);
 };
 
 template <>
@@ -99,6 +94,15 @@ struct Converter<network::mojom::ReferrerPolicy> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      network::mojom::ReferrerPolicy* out);
+};
+
+template <>
+struct Converter<blink::mojom::Referrer> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const blink::mojom::Referrer& val);
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     blink::mojom::Referrer* out);
 };
 
 template <>

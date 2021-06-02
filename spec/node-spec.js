@@ -122,7 +122,7 @@ describe('node feature', () => {
         });
         await emittedOnce(child.stdout, 'close');
         expect(JSON.parse(output)).to.deep.equal({
-          processLog: process.platform === 'win32' ? 'function' : 'undefined',
+          stdoutType: 'pipe',
           processType: 'undefined',
           window: 'undefined'
         });
@@ -302,6 +302,20 @@ describe('node feature', () => {
         const result = Buffer.concat([decipher.update(input), decipher.final()]).toString('utf8');
         expect(cipherText).to.equal(result);
       }
+    });
+
+    it('does not crash when using crypto.diffieHellman() constructors', () => {
+      const crypto = require('crypto');
+
+      crypto.createDiffieHellman('abc');
+      crypto.createDiffieHellman('abc', 2);
+
+      // Needed to test specific DiffieHellman ctors.
+
+      // eslint-disable-next-line no-octal
+      crypto.createDiffieHellman('abc', Buffer.from([02]));
+      // eslint-disable-next-line no-octal
+      crypto.createDiffieHellman('abc', '123');
     });
   });
 

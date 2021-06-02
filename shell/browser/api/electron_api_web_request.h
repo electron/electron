@@ -86,14 +86,14 @@ class WebRequest : public gin::Wrappable<WebRequest>, public WebRequestAPI {
   WebRequest(v8::Isolate* isolate, content::BrowserContext* browser_context);
   ~WebRequest() override;
 
-  enum SimpleEvent {
+  enum class SimpleEvent {
     kOnSendHeaders,
     kOnBeforeRedirect,
     kOnResponseStarted,
     kOnCompleted,
     kOnErrorOccurred,
   };
-  enum ResponseEvent {
+  enum class ResponseEvent {
     kOnBeforeRequest,
     kOnBeforeSendHeaders,
     kOnHeadersReceived,

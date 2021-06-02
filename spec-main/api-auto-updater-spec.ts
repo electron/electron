@@ -54,7 +54,7 @@ ifdescribe(!process.mas)('autoUpdater module', function () {
       });
     });
 
-    ifdescribe(process.platform === 'darwin')('on Mac', function () {
+    ifdescribe(process.platform === 'darwin' && process.arch !== 'arm64')('on Mac', function () {
       it('emits an error when the application is unsigned', async () => {
         const errorEvent = emittedOnce(autoUpdater, 'error');
         autoUpdater.setFeedURL({ url: '' });

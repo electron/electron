@@ -6,7 +6,6 @@
 
 #include <algorithm>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include "base/memory/ptr_util.h"
@@ -48,7 +47,7 @@ gfx::Size GetExpandedWindowSize(const NativeWindow* window, gfx::Size size) {
 
 NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
                            NativeWindow* parent)
-    : widget_(new views::Widget), parent_(parent), weak_factory_(this) {
+    : widget_(new views::Widget), parent_(parent) {
   ++next_id_;
 
   options.Get(options::kFrame, &has_frame_);
@@ -109,7 +108,7 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
   } else {
     SetSizeConstraints(size_constraints);
   }
-#if defined(OS_WIN) || defined(USE_X11)
+#if defined(OS_WIN) || defined(OS_LINUX)
   bool resizable;
   if (options.Get(options::kResizable, &resizable)) {
     SetResizable(resizable);
@@ -143,7 +142,7 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
     fullscreenable = false;
 #endif
   }
-  // Overriden by 'fullscreenable'.
+  // Overridden by 'fullscreenable'.
   options.Get(options::kFullScreenable, &fullscreenable);
   SetFullScreenable(fullscreenable);
   if (fullscreen) {
@@ -328,6 +327,10 @@ bool NativeWindow::IsDocumentEdited() {
 
 void NativeWindow::SetFocusable(bool focusable) {}
 
+bool NativeWindow::IsFocusable() {
+  return false;
+}
+
 void NativeWindow::SetMenu(ElectronMenuModel* menu) {}
 
 void NativeWindow::SetParentWindow(NativeWindow* parent) {
@@ -350,7 +353,7 @@ bool NativeWindow::AddTabbedWindow(NativeWindow* window) {
   return true;  // for non-Mac platforms
 }
 
-void NativeWindow::SetVibrancy(const std::string& filename) {}
+void NativeWindow::SetVibrancy(const std::string& type) {}
 
 void NativeWindow::SetTouchBar(
     std::vector<gin_helper::PersistentDictionary> items) {}
@@ -370,10 +373,6 @@ void NativeWindow::SetMenuBarVisibility(bool visible) {}
 
 bool NativeWindow::IsMenuBarVisible() {
   return true;
-}
-
-bool NativeWindow::SetWindowButtonVisibility(bool visible) {
-  return false;
 }
 
 double NativeWindow::GetAspectRatio() {
@@ -423,11 +422,11 @@ void NativeWindow::NotifyWindowClosed() {
   if (is_closed_)
     return;
 
-  WindowList::RemoveWindow(this);
-
   is_closed_ = true;
   for (NativeWindowObserver& observer : observers_)
     observer.OnWindowClosed();
+
+  WindowList::RemoveWindow(this);
 }
 
 void NativeWindow::NotifyWindowEndSession() {
@@ -481,9 +480,10 @@ void NativeWindow::NotifyWindowRestore() {
 }
 
 void NativeWindow::NotifyWindowWillResize(const gfx::Rect& new_bounds,
+                                          const gfx::ResizeEdge& edge,
                                           bool* prevent_default) {
   for (NativeWindowObserver& observer : observers_)
-    observer.OnWindowWillResize(new_bounds, prevent_default);
+    observer.OnWindowWillResize(new_bounds, edge, prevent_default);
 }
 
 void NativeWindow::NotifyWindowWillMove(const gfx::Rect& new_bounds,
@@ -495,6 +495,11 @@ void NativeWindow::NotifyWindowWillMove(const gfx::Rect& new_bounds,
 void NativeWindow::NotifyWindowResize() {
   for (NativeWindowObserver& observer : observers_)
     observer.OnWindowResize();
+}
+
+void NativeWindow::NotifyWindowResized() {
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnWindowResized();
 }
 
 void NativeWindow::NotifyWindowMove() {
@@ -579,6 +584,13 @@ void NativeWindow::NotifyNewWindowForTab() {
     observer.OnNewWindowForTab();
 }
 
+void NativeWindow::NotifyWindowSystemContextMenu(int x,
+                                                 int y,
+                                                 bool* prevent_default) {
+  for (NativeWindowObserver& observer : observers_)
+    observer.OnSystemContextMenu(x, y, prevent_default);
+}
+
 #if defined(OS_WIN)
 void NativeWindow::NotifyWindowMessage(UINT message,
                                        WPARAM w_param,
@@ -596,7 +608,7 @@ const views::Widget* NativeWindow::GetWidget() const {
   return widget();
 }
 
-base::string16 NativeWindow::GetAccessibleWindowTitle() const {
+std::u16string NativeWindow::GetAccessibleWindowTitle() const {
   if (accessible_title_.empty()) {
     return views::WidgetDelegate::GetAccessibleWindowTitle();
   }

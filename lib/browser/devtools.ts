@@ -4,6 +4,7 @@ import * as url from 'url';
 
 import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
 import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-utils';
+import { IPC_MESSAGES } from '@electron/internal//common/ipc-messages';
 
 const convertToMenuTemplate = function (items: ContextMenuItem[], handler: (id: number) => void) {
   return items.map(function (item) {
@@ -53,15 +54,15 @@ const isChromeDevTools = function (pageURL: string) {
 };
 
 const assertChromeDevTools = function (contents: Electron.WebContents, api: string) {
-  const pageURL = contents._getURL();
+  const pageURL = contents.getURL();
   if (!isChromeDevTools(pageURL)) {
     console.error(`Blocked ${pageURL} from calling ${api}`);
     throw new Error(`Blocked ${api}`);
   }
 };
 
-ipcMainInternal.handle('ELECTRON_INSPECTOR_CONTEXT_MENU', function (event: Electron.IpcMainInvokeEvent, items: ContextMenuItem[], isEditMenu: boolean) {
-  return new Promise(resolve => {
+ipcMainInternal.handle(IPC_MESSAGES.INSPECTOR_CONTEXT_MENU, function (event, items: ContextMenuItem[], isEditMenu: boolean) {
+  return new Promise<number | void>(resolve => {
     assertChromeDevTools(event.sender, 'window.InspectorFrontendHost.showContextMenuAtPoint()');
 
     const template = isEditMenu ? getEditMenuItems() : convertToMenuTemplate(items, resolve);
@@ -72,7 +73,7 @@ ipcMainInternal.handle('ELECTRON_INSPECTOR_CONTEXT_MENU', function (event: Elect
   });
 });
 
-ipcMainInternal.handle('ELECTRON_INSPECTOR_SELECT_FILE', async function (event: Electron.IpcMainInvokeEvent) {
+ipcMainInternal.handle(IPC_MESSAGES.INSPECTOR_SELECT_FILE, async function (event) {
   assertChromeDevTools(event.sender, 'window.UI.createFileSelectorElement()');
 
   const result = await dialog.showOpenDialog({});
@@ -84,7 +85,7 @@ ipcMainInternal.handle('ELECTRON_INSPECTOR_SELECT_FILE', async function (event: 
   return [path, data];
 });
 
-ipcMainUtils.handleSync('ELECTRON_INSPECTOR_CONFIRM', async function (event: Electron.IpcMainInvokeEvent, message: string = '', title: string = '') {
+ipcMainUtils.handleSync(IPC_MESSAGES.INSPECTOR_CONFIRM, async function (event, message: string = '', title: string = '') {
   assertChromeDevTools(event.sender, 'window.confirm()');
 
   const options = {

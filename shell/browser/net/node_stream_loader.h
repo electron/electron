@@ -12,7 +12,6 @@
 
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "mojo/public/cpp/bindings/remote.h"
-#include "mojo/public/cpp/bindings/strong_binding.h"
 #include "mojo/public/cpp/system/data_pipe_producer.h"
 #include "services/network/public/mojom/url_loader.mojom.h"
 #include "services/network/public/mojom/url_response_head.mojom.h"
@@ -31,7 +30,7 @@ namespace electron {
 class NodeStreamLoader : public network::mojom::URLLoader {
  public:
   NodeStreamLoader(network::mojom::URLResponseHeadPtr head,
-                   network::mojom::URLLoaderRequest loader,
+                   mojo::PendingReceiver<network::mojom::URLLoader> loader,
                    mojo::PendingRemote<network::mojom::URLLoaderClient> client,
                    v8::Isolate* isolate,
                    v8::Local<v8::Object> emitter);
@@ -61,7 +60,7 @@ class NodeStreamLoader : public network::mojom::URLLoader {
   void PauseReadingBodyFromNet() override {}
   void ResumeReadingBodyFromNet() override {}
 
-  mojo::Binding<network::mojom::URLLoader> binding_;
+  mojo::Receiver<network::mojom::URLLoader> url_loader_;
   mojo::Remote<network::mojom::URLLoaderClient> client_;
 
   v8::Isolate* isolate_;
@@ -95,7 +94,7 @@ class NodeStreamLoader : public network::mojom::URLLoader {
   // Store the V8 callbacks to unsubscribe them later.
   std::map<std::string, v8::Global<v8::Value>> handlers_;
 
-  base::WeakPtrFactory<NodeStreamLoader> weak_factory_;
+  base::WeakPtrFactory<NodeStreamLoader> weak_factory_{this};
 
   DISALLOW_COPY_AND_ASSIGN(NodeStreamLoader);
 };

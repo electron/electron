@@ -1,6 +1,6 @@
 /// <reference path="../electron.d.ts" />
 
- /**
+/**
  * This file augments the Electron TS namespace with the internal APIs
  * that are not documented but are used by Electron internally
  */
@@ -21,17 +21,28 @@ declare namespace Electron {
 
   type TouchBarItemType = NonNullable<Electron.TouchBarConstructorOptions['items']>[0];
 
+  interface BaseWindow {
+    _init(): void;
+  }
+
   interface BrowserWindow {
+    _init(): void;
     _touchBar: Electron.TouchBar | null;
     _setTouchBarItems: (items: TouchBarItemType[]) => void;
     _setEscapeTouchBarItem: (item: TouchBarItemType | {}) => void;
     _refreshTouchBarItem: (itemID: string) => void;
+    _getWindowButtonVisibility: () => boolean;
+    frameName: string;
     on(event: '-touch-bar-interaction', listener: (event: Event, itemID: string, details: any) => void): this;
     removeListener(event: '-touch-bar-interaction', listener: (event: Event, itemID: string, details: any) => void): this;
   }
 
+  interface BrowserWindowConstructorOptions {
+    webContents?: WebContents;
+  }
+
   interface ContextBridge {
-    internalContextBridge: {
+    internalContextBridge?: {
       contextIsolationEnabled: boolean;
       overrideGlobalValueFromIsolatedWorld(keys: string[], value: any): void;
       overrideGlobalValueWithDynamicPropsFromIsolatedWorld(keys: string[], value: any): void;
@@ -45,75 +56,19 @@ declare namespace Electron {
   }
 
   interface WebContents {
-    _getURL(): string;
-    _loadURL(url: string, options: Electron.LoadURLOptions): void;
-    _stop(): void;
-    _goBack(): void;
-    _goForward(): void;
-    _goToOffset(offset: number): void;
+    _loadURL(url: string, options: ElectronInternal.LoadURLOptions): void;
     getOwnerBrowserWindow(): Electron.BrowserWindow;
     getWebPreferences(): Electron.WebPreferences;
     getLastWebPreferences(): Electron.WebPreferences;
     _getPreloadPaths(): string[];
     equal(other: WebContents): boolean;
-    _initiallyShown: boolean;
-  }
-
-  interface WebPreferences {
-    guestInstanceId?: number;
-    openerId?: number;
-  }
-
-  interface SerializedError {
-    message: string;
-    stack?: string,
-    name: string,
-    from: Electron.ProcessType,
-    cause: SerializedError,
-    __ELECTRON_SERIALIZED_ERROR__: true
-  }
-
-  interface ErrorWithCause extends Error {
-    from?: string;
-    cause?: ErrorWithCause;
-  }
-
-  interface InjectionBase {
-    url: string;
-    code: string
-  }
-
-  interface ContentScript {
-    js: Array<InjectionBase>;
-    css: Array<InjectionBase>;
-    runAt: string;
-    matches: {
-      some: (input: (pattern: string) => boolean | RegExpMatchArray | null) => boolean;
-    }
-    /**
-     * Whether to match all frames, or only the top one.
-     * https://developer.chrome.com/extensions/content_scripts#frames
-     */
-    allFrames: boolean
-  }
-
-  type ContentScriptEntry = {
-    extensionId: string;
-    contentScripts: ContentScript[];
-  }
-
-  interface IpcRendererInternal extends Electron.IpcRenderer {
-    invoke<T>(channel: string, ...args: any[]): Promise<T>;
-    sendToAll(webContentsId: number, channel: string, ...args: any[]): void
-  }
-
-  interface WebContentsInternal extends Electron.WebContents {
-    _send(internal: boolean, sendToAll: boolean, channel: string, args: any): boolean;
-    _sendToFrame(internal: boolean, sendToAll: boolean, frameId: number, channel: string, args: any): boolean;
-    _sendToFrameInternal(frameId: number, channel: string, args: any): boolean;
-    _postMessage(channel: string, message: any, transfer?: any[]): void;
+    browserWindowOptions: BrowserWindowConstructorOptions;
+    _windowOpenHandler: ((details: Electron.HandlerDetails) => any) | null;
+    _callWindowOpenHandler(event: any, details: Electron.HandlerDetails): Electron.BrowserWindowConstructorOptions | null;
+    _setNextChildWebPreferences(prefs: Partial<Electron.BrowserWindowConstructorOptions['webPreferences']> & Pick<Electron.BrowserWindowConstructorOptions, 'backgroundColor'>): void;
+    _send(internal: boolean, channel: string, args: any): boolean;
+    _sendToFrameInternal(frameId: number | [number, number], channel: string, ...args: any[]): boolean;
     _sendInternal(channel: string, ...args: any[]): void;
-    _sendInternalToAll(channel: string, ...args: any[]): void;
     _printToPDF(options: any): Promise<Buffer>;
     _print(options: any, callback?: (success: boolean, failureReason: string) => void): void;
     _getPrinters(): Electron.PrinterInfo[];
@@ -121,6 +76,28 @@ declare namespace Electron {
     canGoToIndex(index: number): boolean;
     getActiveIndex(): number;
     length(): number;
+    destroy(): void;
+    // <webview>
+    attachToIframe(embedderWebContents: Electron.WebContents, embedderFrameId: number): void;
+    detachFromOuterFrame(): void;
+    setEmbedder(embedder: Electron.WebContents): void;
+    attachParams?: Record<string, any>;
+    viewInstanceId: number;
+  }
+
+  interface WebFrameMain {
+    _send(internal: boolean, channel: string, args: any): void;
+    _sendInternal(channel: string, ...args: any[]): void;
+    _postMessage(channel: string, message: any, transfer?: any[]): void;
+  }
+
+  interface WebPreferences {
+    guestInstanceId?: number;
+    openerId?: number | null;
+    disablePopups?: boolean;
+    preloadURL?: string;
+    embedder?: Electron.WebContents;
+    type?: 'backgroundPage' | 'window' | 'browserView' | 'remote' | 'webview' | 'offscreen';
   }
 
   interface Menu {
@@ -131,6 +108,7 @@ declare namespace Electron {
     _isCommandIdVisible(id: string): boolean;
     _getAcceleratorForCommandId(id: string, useDefaultAccelerator: boolean): Accelerator | undefined;
     _shouldRegisterAcceleratorForCommandId(id: string): boolean;
+    _getSharingItemForCommandId(id: string): SharingItem | null;
     _callMenuWillShow(): void;
     _executeCommand(event: any, id: number): void;
     _menuWillShow(): void;
@@ -158,9 +136,19 @@ declare namespace Electron {
     overrideReadOnlyProperty(property: string, value: any): void;
     groupId: number;
     getDefaultRoleAccelerator(): Accelerator | undefined;
+    getCheckStatus(): boolean;
     acceleratorWorksWhenHidden?: boolean;
   }
 
+  interface IpcMainEvent {
+    sendReply(value: any): void;
+  }
+
+  interface IpcMainInvokeEvent {
+    sendReply(value: any): void;
+    _reply(value: any): void;
+    _throw(error: Error | string): void;
+  }
 
   const deprecate: ElectronInternal.DeprecationUtil;
 
@@ -169,7 +157,7 @@ declare namespace Electron {
   }
 
   class View {}
-  
+
   // Experimental views API
   class BaseWindow {
     constructor(args: {show: boolean})
@@ -215,8 +203,8 @@ declare namespace ElectronInternal {
     getHandler(): DeprecationHandler | null;
     warn(oldName: string, newName: string): void;
     log(message: string): void;
-    removeFunction(fn: Function, removedName: string): Function;
-    renameFunction(fn: Function, newName: string | Function): Function;
+    removeFunction<T extends Function>(fn: T, removedName: string): T;
+    renameFunction<T extends Function>(fn: T, newName: string): T;
     event(emitter: NodeJS.EventEmitter, oldName: string, newName: string): void;
     removeProperty<T, K extends (keyof T & string)>(object: T, propertyName: K, onlyForValues?: any[]): T;
     renameProperty<T, K extends (keyof T & string)>(object: T, oldName: string, newName: K): T;
@@ -244,16 +232,12 @@ declare namespace ElectronInternal {
     appIcon: Electron.NativeImage | null;
   }
 
-  interface KeyWeakMap<K, V> {
-    set(key: K, value: V): void;
-    get(key: K): V | undefined;
-    has(key: K): boolean;
-    remove(key: K): void;
+  interface IpcRendererInternal extends Electron.IpcRenderer {
+    invoke<T>(channel: string, ...args: any[]): Promise<T>;
   }
 
   // Internal IPC has _replyInternal and NO reply method
   interface IpcMainInternalEvent extends Omit<Electron.IpcMainEvent, 'reply'> {
-    _replyInternal(...args: any[]): void;
   }
 
   interface IpcMainInternal extends NodeJS.EventEmitter {
@@ -262,27 +246,32 @@ declare namespace ElectronInternal {
     once(channel: string, listener: (event: IpcMainInternalEvent, ...args: any[]) => void): this;
   }
 
+  interface Event extends Electron.Event {
+    sender: WebContents;
+  }
+
+  interface LoadURLOptions extends Electron.LoadURLOptions {
+    reloadIgnoringCache?: boolean;
+  }
+
+  interface WebContentsPrintOptions extends Electron.WebContentsPrintOptions {
+    mediaSize?: MediaSize;
+  }
+
+  type MediaSize = {
+    name: string,
+    custom_display_name: string,
+    height_microns: number,
+    width_microns: number,
+    is_default?: 'true',
+  }
+
   type ModuleLoader = () => any;
 
   interface ModuleEntry {
     name: string;
     private?: boolean;
     loader: ModuleLoader;
-  }
-
-  interface WebFrameInternal extends Electron.WebFrame {
-    getWebFrameId(window: Window): number;
-    allowGuestViewElementDefinition(window: Window, context: any): void;
-  }
-
-  interface WebFrameResizeEvent extends Electron.Event {
-    newWidth: number;
-    newHeight: number;
-  }
-
-  interface WebViewEvent extends Event {
-    url: string;
-    isMainFrame: boolean;
   }
 
   class WebViewElement extends HTMLElement {
@@ -297,6 +286,10 @@ declare namespace ElectronInternal {
     // Created in web-view-impl
     public getWebContentsId(): number;
     public capturePage(rect?: Electron.Rectangle): Promise<Electron.NativeImage>;
+  }
+
+  class WebContents extends Electron.WebContents {
+    static create(opts: Electron.WebPreferences): Electron.WebContents;
   }
 }
 

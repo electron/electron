@@ -1,15 +1,15 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jeremy Apthorp <nornagon@nornagon.net>
 Date: Thu, 20 Sep 2018 17:49:20 -0700
-Subject: mas-cfisobjc.patch
+Subject: mas: avoid usage of _CFIsObjC
 
 Removes usage of the _CFIsObjC private API.
 
 diff --git a/base/mac/foundation_util.mm b/base/mac/foundation_util.mm
-index be12912dcd0ef0cf046ee2d4033a18ecfdf1e992..d2af322a9d5751105e2c8fe023aad9a91027bf05 100644
+index e63f0ec0e2e618a4b280a08d14a619e1186e0466..225c6b83515c7b530ac59b1af7ac2194483f0311 100644
 --- a/base/mac/foundation_util.mm
 +++ b/base/mac/foundation_util.mm
-@@ -28,12 +28,6 @@
+@@ -29,12 +29,6 @@
  #if !defined(OS_IOS)
  CFTypeID SecACLGetTypeID();
  CFTypeID SecTrustedApplicationGetTypeID();
@@ -22,7 +22,7 @@ index be12912dcd0ef0cf046ee2d4033a18ecfdf1e992..d2af322a9d5751105e2c8fe023aad9a9
  #endif
  }  // extern "C"
  
-@@ -326,8 +320,7 @@ void SetBaseBundleID(const char* new_base_bundle_id) {
+@@ -327,8 +321,7 @@ void SetBaseBundleID(const char* new_base_bundle_id) {
        const_cast<NSFont*>(reinterpret_cast<const NSFont*>(cf_val));
    DCHECK(!cf_val ||
           CTFontGetTypeID() == CFGetTypeID(cf_val) ||
@@ -32,7 +32,7 @@ index be12912dcd0ef0cf046ee2d4033a18ecfdf1e992..d2af322a9d5751105e2c8fe023aad9a9
    return ns_val;
  }
  
-@@ -398,9 +391,6 @@ CTFontRef NSToCFCast(NSFont* ns_val) {
+@@ -399,9 +392,6 @@ CTFontRef NSToCFCast(NSFont* ns_val) {
      return (CTFontRef)(cf_val);
    }
  

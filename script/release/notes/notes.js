@@ -24,7 +24,7 @@ const NO_NOTES = 'No notes';
 const docTypes = new Set(['doc', 'docs']);
 const featTypes = new Set(['feat', 'feature']);
 const fixTypes = new Set(['fix']);
-const otherTypes = new Set(['spec', 'build', 'test', 'chore', 'deps', 'refactor', 'tools', 'vendor', 'perf', 'style', 'ci']);
+const otherTypes = new Set(['spec', 'build', 'test', 'chore', 'deps', 'refactor', 'tools', 'perf', 'style', 'ci']);
 const knownTypes = new Set([...docTypes.keys(), ...featTypes.keys(), ...fixTypes.keys(), ...otherTypes.keys()]);
 
 const getCacheDir = () => process.env.NOTES_CACHE_PATH || path.resolve(__dirname, '.cache');
@@ -381,6 +381,7 @@ async function getBranchNameOfRef (ref, dir) {
   return (await runGit(dir, ['branch', '--all', '--contains', ref, '--sort', 'version:refname']))
     .split(/\r?\n/) // split into lines
     .shift() // we sorted by refname and want the first result
+    .match(/(?:\s?\*\s){0,1}(.*)/)[1] // if present, remove leading '* ' in case we're currently in that branch
     .match(/(?:.*\/)?(.*)/)[1] // 'remote/origins/10-x-y' -> '10-x-y'
     .trim();
 }
@@ -398,7 +399,7 @@ const getNotes = async (fromRef, toRef, newVersion) => {
   const pool = new Pool();
   const toBranch = await getBranchNameOfRef(toRef, ELECTRON_DIR);
 
-  console.log(`Generating release notes between ${fromRef} and ${toRef} for version ${newVersion} in branch ${toBranch}`);
+  console.log(`Generating release notes between '${fromRef}' and '${toRef}' for version '${newVersion}' in branch '${toBranch}'`);
 
   // get the electron/electron commits
   const electron = { owner: 'electron', repo: 'electron', dir: ELECTRON_DIR };

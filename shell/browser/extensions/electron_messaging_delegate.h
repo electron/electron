@@ -45,9 +45,9 @@ class ElectronMessagingDelegate : public MessagingDelegate {
   void QueryIncognitoConnectability(
       content::BrowserContext* context,
       const Extension* extension,
-      content::WebContents* web_contents,
+      content::WebContents* source_contents,
       const GURL& url,
-      const base::Callback<void(bool)>& callback) override;
+      base::OnceCallback<void(bool)> callback) override;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(ElectronMessagingDelegate);

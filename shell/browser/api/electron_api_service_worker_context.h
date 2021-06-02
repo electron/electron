@@ -34,6 +34,7 @@ class ServiceWorkerContext
   void OnReportConsoleMessage(int64_t version_id,
                               const GURL& scope,
                               const content::ConsoleMessage& message) override;
+  void OnRegistrationCompleted(const GURL& scope) override;
   void OnDestruct(content::ServiceWorkerContext* context) override;
 
   // gin::Wrappable
@@ -48,11 +49,9 @@ class ServiceWorkerContext
   ~ServiceWorkerContext() override;
 
  private:
-  ElectronBrowserContext* browser_context_;
-
   content::ServiceWorkerContext* service_worker_context_;
 
-  base::WeakPtrFactory<ServiceWorkerContext> weak_ptr_factory_;
+  base::WeakPtrFactory<ServiceWorkerContext> weak_ptr_factory_{this};
 
   DISALLOW_COPY_AND_ASSIGN(ServiceWorkerContext);
 };

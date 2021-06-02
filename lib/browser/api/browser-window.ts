@@ -4,9 +4,9 @@ const { BrowserWindow } = process._linkedBinding('electron_browser_window') as {
 
 Object.setPrototypeOf(BrowserWindow.prototype, BaseWindow.prototype);
 
-(BrowserWindow.prototype as any)._init = function (this: BWT) {
+BrowserWindow.prototype._init = function (this: BWT) {
   // Call parent class's _init.
-  (BaseWindow.prototype as any)._init.call(this);
+  BaseWindow.prototype._init.call(this);
 
   // Avoid recursive require.
   const { app } = require('electron');
@@ -19,20 +19,6 @@ Object.setPrototypeOf(BrowserWindow.prototype, BaseWindow.prototype);
     };
     nativeSetBounds.call(this, bounds, ...opts);
   };
-
-  // Sometimes the webContents doesn't get focus when window is shown, so we
-  // have to force focusing on webContents in this case. The safest way is to
-  // focus it when we first start to load URL, if we do it earlier it won't
-  // have effect, if we do it later we might move focus in the page.
-  //
-  // Though this hack is only needed on macOS when the app is launched from
-  // Finder, we still do it on all platforms in case of other bugs we don't
-  // know.
-  if (this.webContents._initiallyShown) {
-    this.webContents.once('load-url' as any, function (this: WebContents) {
-      this.focus();
-    });
-  }
 
   // Redirect focus/blur event to app instance too.
   this.on('blur', (event: Event) => {
@@ -96,11 +82,7 @@ BrowserWindow.fromWebContents = (webContents: WebContents) => {
 };
 
 BrowserWindow.fromBrowserView = (browserView: BrowserView) => {
-  for (const window of BrowserWindow.getAllWindows()) {
-    if (window.getBrowserView() === browserView) return window;
-  }
-
-  return null;
+  return BrowserWindow.fromWebContents(browserView.webContents);
 };
 
 BrowserWindow.prototype.setTouchBar = function (touchBar) {

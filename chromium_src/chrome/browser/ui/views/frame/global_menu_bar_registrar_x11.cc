@@ -38,8 +38,7 @@ void GlobalMenuBarRegistrarX11::OnWindowUnmapped(x11::Window window) {
   live_windows_.erase(window);
 }
 
-GlobalMenuBarRegistrarX11::GlobalMenuBarRegistrarX11()
-    : registrar_proxy_(nullptr) {
+GlobalMenuBarRegistrarX11::GlobalMenuBarRegistrarX11() {
   // libdbusmenu uses the gio version of dbus; I tried using the code in dbus/,
   // but it looks like that's isn't sharing the bus name with the gio version,
   // even when |connection_type| is set to SHARED.
@@ -122,8 +121,7 @@ void GlobalMenuBarRegistrarX11::OnNameOwnerChanged(GObject* /* ignored */,
                                                    GParamSpec* /* ignored */) {
   // If the name owner changed, we need to reregister all the live x11::Window
   // with the system.
-  for (std::set<x11::Window>::const_iterator it = live_windows_.begin();
-       it != live_windows_.end(); ++it) {
-    RegisterXWindow(*it);
+  for (const auto& window : live_windows_) {
+    RegisterXWindow(window);
   }
 }

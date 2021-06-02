@@ -14,6 +14,7 @@
 #include "ui/display/display.h"
 #include "ui/display/win/screen_win.h"
 #include "ui/gfx/geometry/insets.h"
+#include "ui/gfx/geometry/resize_utils.h"
 #include "ui/views/widget/native_widget_private.h"
 
 // Must be included after other Windows headers.
@@ -137,6 +138,31 @@ const char* AppCommandToString(int command_id) {
   }
 }
 
+// Copied from ui/views/win/hwnd_message_handler.cc
+gfx::ResizeEdge GetWindowResizeEdge(WPARAM param) {
+  switch (param) {
+    case WMSZ_BOTTOM:
+      return gfx::ResizeEdge::kBottom;
+    case WMSZ_TOP:
+      return gfx::ResizeEdge::kTop;
+    case WMSZ_LEFT:
+      return gfx::ResizeEdge::kLeft;
+    case WMSZ_RIGHT:
+      return gfx::ResizeEdge::kRight;
+    case WMSZ_TOPLEFT:
+      return gfx::ResizeEdge::kTopLeft;
+    case WMSZ_TOPRIGHT:
+      return gfx::ResizeEdge::kTopRight;
+    case WMSZ_BOTTOMLEFT:
+      return gfx::ResizeEdge::kBottomLeft;
+    case WMSZ_BOTTOMRIGHT:
+      return gfx::ResizeEdge::kBottomRight;
+    default:
+      NOTREACHED();
+      return gfx::ResizeEdge::kBottomRight;
+  }
+}
+
 bool IsScreenReaderActive() {
   UINT screenReader = 0;
   SystemParametersInfo(SPI_GETSCREENREADER, 0, &screenReader, 0);
@@ -149,10 +175,8 @@ std::set<NativeWindowViews*> NativeWindowViews::forwarding_windows_;
 HHOOK NativeWindowViews::mouse_hook_ = NULL;
 
 void NativeWindowViews::Maximize() {
-  // Only use Maximize() when:
-  // 1. window has WS_THICKFRAME style;
-  // 2. and window is not frameless when there is autohide taskbar.
-  if (::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE) & WS_THICKFRAME) {
+  // Only use Maximize() when window is NOT transparent style
+  if (!transparent()) {
     if (IsVisible())
       widget()->Maximize();
     else
@@ -161,8 +185,8 @@ void NativeWindowViews::Maximize() {
     return;
   } else {
     restore_bounds_ = GetBounds();
-    auto display =
-        display::Screen::GetScreen()->GetDisplayNearestPoint(GetPosition());
+    auto display = display::Screen::GetScreen()->GetDisplayNearestWindow(
+        GetNativeWindow());
     SetBounds(display.work_area(), false);
   }
 }
@@ -233,6 +257,7 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
       // of the window during the restore operation, this way chromium can
       // use the proper display to calculate the scale factor to use.
       if (!last_normal_placement_bounds_.IsEmpty() &&
+          (IsVisible() || IsMinimized()) &&
           GetWindowPlacement(GetAcceleratedWidget(), &wp)) {
         wp.rcNormalPosition = last_normal_placement_bounds_.ToRECT();
 
@@ -259,12 +284,15 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
         return taskbar_host_.HandleThumbarButtonEvent(LOWORD(w_param));
       return false;
     case WM_SIZING: {
+      is_resizing_ = true;
       bool prevent_default = false;
-      NotifyWindowWillResize(gfx::Rect(*reinterpret_cast<RECT*>(l_param)),
+      gfx::Rect bounds = gfx::Rect(*reinterpret_cast<RECT*>(l_param));
+      HWND hwnd = GetAcceleratedWidget();
+      gfx::Rect dpi_bounds = ScreenToDIPRect(hwnd, bounds);
+      NotifyWindowWillResize(dpi_bounds, GetWindowResizeEdge(w_param),
                              &prevent_default);
       if (prevent_default) {
-        ::GetWindowRect(GetAcceleratedWidget(),
-                        reinterpret_cast<RECT*>(l_param));
+        ::GetWindowRect(hwnd, reinterpret_cast<RECT*>(l_param));
         return true;  // Tells Windows that the Sizing is handled.
       }
       return false;
@@ -274,13 +302,26 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
       HandleSizeEvent(w_param, l_param);
       return false;
     }
+    case WM_EXITSIZEMOVE: {
+      if (is_resizing_) {
+        NotifyWindowResized();
+        is_resizing_ = false;
+      }
+      if (is_moving_) {
+        NotifyWindowMoved();
+        is_moving_ = false;
+      }
+      return false;
+    }
     case WM_MOVING: {
+      is_moving_ = true;
       bool prevent_default = false;
-      NotifyWindowWillMove(gfx::Rect(*reinterpret_cast<RECT*>(l_param)),
-                           &prevent_default);
+      gfx::Rect bounds = gfx::Rect(*reinterpret_cast<RECT*>(l_param));
+      HWND hwnd = GetAcceleratedWidget();
+      gfx::Rect dpi_bounds = ScreenToDIPRect(hwnd, bounds);
+      NotifyWindowWillMove(dpi_bounds, &prevent_default);
       if (!movable_ || prevent_default) {
-        ::GetWindowRect(GetAcceleratedWidget(),
-                        reinterpret_cast<RECT*>(l_param));
+        ::GetWindowRect(hwnd, reinterpret_cast<RECT*>(l_param));
         return true;  // Tells Windows that the Move is handled. If not true,
                       // frameless windows can be moved using
                       // -webkit-app-region: drag elements.
@@ -306,8 +347,37 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
       }
       return false;
     }
-    default:
+    case WM_CONTEXTMENU: {
+      bool prevent_default = false;
+      NotifyWindowSystemContextMenu(GET_X_LPARAM(l_param),
+                                    GET_Y_LPARAM(l_param), &prevent_default);
+      return prevent_default;
+    }
+    case WM_SYSCOMMAND: {
+      // Mask is needed to account for double clicking title bar to maximize
+      WPARAM max_mask = 0xFFF0;
+      if (transparent() && ((w_param & max_mask) == SC_MAXIMIZE)) {
+        return true;
+      }
       return false;
+    }
+    case WM_INITMENU: {
+      // This is handling the scenario where the menu might get triggered by the
+      // user doing "alt + space" resulting in system maximization and restore
+      // being used on transparent windows when that does not work.
+      if (transparent()) {
+        HMENU menu = GetSystemMenu(GetAcceleratedWidget(), false);
+        EnableMenuItem(menu, SC_MAXIMIZE,
+                       MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
+        EnableMenuItem(menu, SC_RESTORE,
+                       MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
+        return true;
+      }
+      return false;
+    }
+    default: {
+      return false;
+    }
   }
 }
 
@@ -378,7 +448,7 @@ void NativeWindowViews::SetForwardMouseMessages(bool forward) {
 
     RemoveWindowSubclass(legacy_window_, SubclassProc, 1);
 
-    if (forwarding_windows_.size() == 0) {
+    if (forwarding_windows_.empty()) {
       UnhookWindowsHookEx(mouse_hook_);
       mouse_hook_ = NULL;
     }
@@ -391,7 +461,7 @@ LRESULT CALLBACK NativeWindowViews::SubclassProc(HWND hwnd,
                                                  LPARAM l_param,
                                                  UINT_PTR subclass_id,
                                                  DWORD_PTR ref_data) {
-  NativeWindowViews* window = reinterpret_cast<NativeWindowViews*>(ref_data);
+  auto* window = reinterpret_cast<NativeWindowViews*>(ref_data);
   switch (msg) {
     case WM_MOUSELEAVE: {
       // When input is forwarded to underlying windows, this message is posted.

@@ -5,6 +5,7 @@
 
 #import "shell/browser/ui/cocoa/electron_menu_controller.h"
 
+#include <string>
 #include <utility>
 
 #include "base/logging.h"
@@ -14,16 +15,20 @@
 #include "base/task/post_task.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
+#include "net/base/mac/url_conversions.h"
 #include "shell/browser/mac/electron_application.h"
+#include "shell/browser/native_window.h"
 #include "shell/browser/ui/electron_menu_model.h"
+#include "shell/browser/window_list.h"
 #include "ui/base/accelerators/accelerator.h"
-#include "ui/base/accelerators/platform_accelerator_cocoa.h"
 #include "ui/base/l10n/l10n_util_mac.h"
 #include "ui/events/cocoa/cocoa_event_utils.h"
+#include "ui/events/keycodes/keyboard_code_conversion_mac.h"
 #include "ui/gfx/image/image.h"
 #include "ui/strings/grit/ui_strings.h"
 
 using content::BrowserThread;
+using SharingItem = electron::ElectronMenuModel::SharingItem;
 
 namespace {
 
@@ -84,6 +89,24 @@ NSMenu* MakeEmptySubmenu() {
   [submenu addItemWithTitle:empty_menu_title action:NULL keyEquivalent:@""];
   [[submenu itemAtIndex:0] setEnabled:NO];
   return submenu.autorelease();
+}
+
+// Convert an SharingItem to an array of NSObjects.
+NSArray* ConvertSharingItemToNS(const SharingItem& item) {
+  NSMutableArray* result = [NSMutableArray array];
+  if (item.texts) {
+    for (const std::string& str : *item.texts)
+      [result addObject:base::SysUTF8ToNSString(str)];
+  }
+  if (item.file_paths) {
+    for (const base::FilePath& path : *item.file_paths)
+      [result addObject:base::mac::FilePathToNSURL(path)];
+  }
+  if (item.urls) {
+    for (const GURL& url : *item.urls)
+      [result addObject:net::NSURLWithGURL(url)];
+  }
+  return result;
 }
 
 }  // namespace
@@ -174,7 +197,7 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
 
   // Locate & retain the recent documents menu item
   if (!recentDocumentsMenuItem_) {
-    base::string16 title = base::ASCIIToUTF16("Open Recent");
+    std::u16string title = u"Open Recent";
     NSString* openTitle = l10n_util::FixUpWindowsStyleLabel(title);
 
     recentDocumentsMenuItem_.reset([[[[[NSApp mainMenu]
@@ -267,12 +290,37 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
   recentDocumentsMenuItem_.reset([item retain]);
 }
 
+// Fill the menu with Share Menu items.
+- (NSMenu*)createShareMenuForItem:(const SharingItem&)item {
+  NSArray* items = ConvertSharingItemToNS(item);
+  if ([items count] == 0)
+    return MakeEmptySubmenu();
+  base::scoped_nsobject<NSMenu> menu([[NSMenu alloc] init]);
+  NSArray* services = [NSSharingService sharingServicesForItems:items];
+  for (NSSharingService* service in services)
+    [menu addItem:[self menuItemForService:service withItems:items]];
+  return menu.autorelease();
+}
+
+// Creates a menu item that calls |service| when invoked.
+- (NSMenuItem*)menuItemForService:(NSSharingService*)service
+                        withItems:(NSArray*)items {
+  base::scoped_nsobject<NSMenuItem> item([[NSMenuItem alloc]
+      initWithTitle:service.menuItemTitle
+             action:@selector(performShare:)
+      keyEquivalent:@""]);
+  [item setTarget:self];
+  [item setImage:service.image];
+  [item setRepresentedObject:@{@"service" : service, @"items" : items}];
+  return item.autorelease();
+}
+
 // Adds an item or a hierarchical menu to the item at the |index|,
 // associated with the entry in the model identified by |modelIndex|.
 - (void)addItemToMenu:(NSMenu*)menu
               atIndex:(NSInteger)index
             fromModel:(electron::ElectronMenuModel*)model {
-  base::string16 label16 = model->GetLabelAt(index);
+  std::u16string label16 = model->GetLabelAt(index);
   NSString* label = l10n_util::FixUpWindowsStyleLabel(label16);
 
   base::scoped_nsobject<NSMenuItem> item([[NSMenuItem alloc]
@@ -285,14 +333,14 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
   if (icon.IsImage())
     [item setImage:icon.GetImage().ToNSImage()];
 
-  base::string16 toolTip = model->GetToolTipAt(index);
+  std::u16string toolTip = model->GetToolTipAt(index);
   [item setToolTip:base::SysUTF16ToNSString(toolTip)];
 
-  base::string16 role = model->GetRoleAt(index);
+  std::u16string role = model->GetRoleAt(index);
   electron::ElectronMenuModel::ItemType type = model->GetTypeAt(index);
 
-  if (role == base::ASCIIToUTF16("services")) {
-    base::string16 title = base::ASCIIToUTF16("Services");
+  if (role == u"services") {
+    std::u16string title = u"Services";
     NSString* label = l10n_util::FixUpWindowsStyleLabel(title);
 
     [item setTarget:nil];
@@ -300,6 +348,12 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
     NSMenu* submenu = [[[NSMenu alloc] initWithTitle:label] autorelease];
     [item setSubmenu:submenu];
     [NSApp setServicesMenu:submenu];
+  } else if (role == u"sharemenu") {
+    SharingItem sharing_item;
+    model->GetSharingItemAt(index, &sharing_item);
+    [item setTarget:nil];
+    [item setAction:nil];
+    [item setSubmenu:[self createShareMenuForItem:sharing_item]];
   } else if (type == electron::ElectronMenuModel::TYPE_SUBMENU &&
              model->IsVisibleAt(index)) {
     // We need to specifically check that the submenu top-level item has been
@@ -320,13 +374,11 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
     [item setSubmenu:submenu];
 
     // Set submenu's role.
-    if ((role == base::ASCIIToUTF16("window") ||
-         role == base::ASCIIToUTF16("windowmenu")) &&
-        [submenu numberOfItems])
+    if ((role == u"window" || role == u"windowmenu") && [submenu numberOfItems])
       [NSApp setWindowsMenu:submenu];
-    else if (role == base::ASCIIToUTF16("help"))
+    else if (role == u"help")
       [NSApp setHelpMenu:submenu];
-    else if (role == base::ASCIIToUTF16("recentdocuments"))
+    else if (role == u"recentdocuments")
       [self replaceSubmenuShowingRecentDocuments:item];
   } else {
     // The MenuModel works on indexes so we can't just set the command id as the
@@ -340,11 +392,31 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
     ui::Accelerator accelerator;
     if (model->GetAcceleratorAtWithParams(index, useDefaultAccelerator_,
                                           &accelerator)) {
-      NSString* key_equivalent;
-      NSUInteger modifier_mask;
-      GetKeyEquivalentAndModifierMaskFromAccelerator(
-          accelerator, &key_equivalent, &modifier_mask);
-      [item setKeyEquivalent:key_equivalent];
+      // Note that we are not using Chromium's
+      // GetKeyEquivalentAndModifierMaskFromAccelerator API,
+      // because it will convert Shift+Character to ShiftedCharacter, for
+      // example Shift+/ would be converted to ?, which is against macOS HIG.
+      // See also https://github.com/electron/electron/issues/21790.
+      NSUInteger modifier_mask = 0;
+      if (accelerator.IsCtrlDown())
+        modifier_mask |= NSEventModifierFlagControl;
+      if (accelerator.IsAltDown())
+        modifier_mask |= NSEventModifierFlagOption;
+      if (accelerator.IsCmdDown())
+        modifier_mask |= NSEventModifierFlagCommand;
+      unichar character;
+      if (accelerator.shifted_char) {
+        // When a shifted char is explicitly specified, for example Ctrl+Plus,
+        // use the shifted char directly.
+        character = static_cast<unichar>(*accelerator.shifted_char);
+      } else {
+        // Otherwise use the unshifted combinations, for example Ctrl+Shift+=.
+        if (accelerator.IsShiftDown())
+          modifier_mask |= NSEventModifierFlagShift;
+        ui::MacKeyCodeForWindowsKeyCode(accelerator.key_code(), modifier_mask,
+                                        nullptr, &character);
+      }
+      [item setKeyEquivalent:[NSString stringWithFormat:@"%C", character]];
       [item setKeyEquivalentModifierMask:modifier_mask];
     }
 
@@ -372,6 +444,8 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
 // radio, etc) of each item in the menu.
 - (BOOL)validateUserInterfaceItem:(id<NSValidatedUserInterfaceItem>)item {
   SEL action = [item action];
+  if (action == @selector(performShare:))
+    return YES;
   if (action != @selector(itemSelected:))
     return NO;
 
@@ -405,14 +479,30 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
   }
 }
 
+// Performs the share action using the sharing service represented by |sender|.
+- (void)performShare:(NSMenuItem*)sender {
+  NSDictionary* object =
+      base::mac::ObjCCastStrict<NSDictionary>([sender representedObject]);
+  NSSharingService* service =
+      base::mac::ObjCCastStrict<NSSharingService>(object[@"service"]);
+  NSArray* items = base::mac::ObjCCastStrict<NSArray>(object[@"items"]);
+  [service setDelegate:self];
+  [service performWithItems:items];
+}
+
 - (NSMenu*)menu {
   if (menu_)
     return menu_.get();
 
-  menu_.reset([[NSMenu alloc] initWithTitle:@""]);
+  if (model_ && model_->GetSharingItem()) {
+    NSMenu* menu = [self createShareMenuForItem:*model_->GetSharingItem()];
+    menu_.reset([menu retain]);
+  } else {
+    menu_.reset([[NSMenu alloc] initWithTitle:@""]);
+    if (model_)
+      [self populateWithModel:model_.get()];
+  }
   [menu_ setDelegate:self];
-  if (model_)
-    [self populateWithModel:model_.get()];
   return menu_.get();
 }
 
@@ -437,6 +527,20 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
       base::PostTask(FROM_HERE, {BrowserThread::UI}, std::move(closeCallback));
     }
   }
+}
+
+// NSSharingServiceDelegate
+
+- (NSWindow*)sharingService:(NSSharingService*)service
+    sourceWindowForShareItems:(NSArray*)items
+          sharingContentScope:(NSSharingContentScope*)scope {
+  // Return the current active window.
+  const auto& list = electron::WindowList::GetWindows();
+  for (electron::NativeWindow* window : list) {
+    if (window->IsFocused())
+      return window->GetNativeWindow().GetNativeNSWindow();
+  }
+  return nil;
 }
 
 @end

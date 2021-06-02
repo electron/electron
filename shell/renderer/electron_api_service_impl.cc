@@ -11,6 +11,7 @@
 #include "base/environment.h"
 #include "base/macros.h"
 #include "base/threading/thread_restrictions.h"
+#include "base/trace_event/trace_event.h"
 #include "gin/data_object_builder.h"
 #include "mojo/public/cpp/system/platform_handle.h"
 #include "shell/common/electron_constants.h"
@@ -104,22 +105,42 @@ ElectronApiServiceImpl::ElectronApiServiceImpl(
     content::RenderFrame* render_frame,
     RendererClientBase* renderer_client)
     : content::RenderFrameObserver(render_frame),
-      renderer_client_(renderer_client),
-      weak_factory_(this) {}
+      renderer_client_(renderer_client) {
+  registry_.AddInterface(base::BindRepeating(&ElectronApiServiceImpl::BindTo,
+                                             base::Unretained(this)));
+}
 
 void ElectronApiServiceImpl::BindTo(
-    mojo::PendingAssociatedReceiver<mojom::ElectronRenderer> receiver) {
-  // Note: BindTo might be called for multiple times.
-  if (receiver_.is_bound())
-    receiver_.reset();
+    mojo::PendingReceiver<mojom::ElectronRenderer> receiver) {
+  if (document_created_) {
+    if (receiver_.is_bound())
+      receiver_.reset();
 
-  receiver_.Bind(std::move(receiver));
-  receiver_.set_disconnect_handler(
-      base::BindOnce(&ElectronApiServiceImpl::OnConnectionError, GetWeakPtr()));
+    receiver_.Bind(std::move(receiver));
+    receiver_.set_disconnect_handler(base::BindOnce(
+        &ElectronApiServiceImpl::OnConnectionError, GetWeakPtr()));
+  } else {
+    pending_receiver_ = std::move(receiver);
+  }
+}
+
+void ElectronApiServiceImpl::OnInterfaceRequestForFrame(
+    const std::string& interface_name,
+    mojo::ScopedMessagePipeHandle* interface_pipe) {
+  registry_.TryBindInterface(interface_name, interface_pipe);
 }
 
 void ElectronApiServiceImpl::DidCreateDocumentElement() {
   document_created_ = true;
+
+  if (pending_receiver_) {
+    if (receiver_.is_bound())
+      receiver_.reset();
+
+    receiver_.Bind(std::move(pending_receiver_));
+    receiver_.set_disconnect_handler(base::BindOnce(
+        &ElectronApiServiceImpl::OnConnectionError, GetWeakPtr()));
+  }
 }
 
 void ElectronApiServiceImpl::OnDestruct() {
@@ -132,29 +153,9 @@ void ElectronApiServiceImpl::OnConnectionError() {
 }
 
 void ElectronApiServiceImpl::Message(bool internal,
-                                     bool send_to_all,
                                      const std::string& channel,
                                      blink::CloneableMessage arguments,
                                      int32_t sender_id) {
-  // Don't handle browser messages before document element is created.
-  //
-  // Note: It is probably better to save the message and then replay it after
-  // document is ready, but current behavior has been there since the first
-  // day of Electron, and no one has complained so far.
-  //
-  // Reason 1:
-  // When we receive a message from the browser, we try to transfer it
-  // to a web page, and when we do that Blink creates an empty
-  // document element if it hasn't been created yet, and it makes our init
-  // script to run while `window.location` is still "about:blank".
-  // (See https://github.com/electron/electron/pull/1044.)
-  //
-  // Reason 2:
-  // The libuv message loop integration would be broken for unkown reasons.
-  // (See https://github.com/electron/electron/issues/19368.)
-  if (!document_created_)
-    return;
-
   blink::WebLocalFrame* frame = render_frame()->GetWebFrame();
   if (!frame)
     return;
@@ -168,18 +169,6 @@ void ElectronApiServiceImpl::Message(bool internal,
   v8::Local<v8::Value> args = gin::ConvertToV8(isolate, arguments);
 
   EmitIPCEvent(context, internal, channel, {}, args, sender_id);
-
-  // Also send the message to all sub-frames.
-  // TODO(MarshallOfSound): Completely move this logic to the main process
-  if (send_to_all) {
-    for (blink::WebFrame* child = frame->FirstChild(); child;
-         child = child->NextSibling())
-      if (child->IsWebLocalFrame()) {
-        v8::Local<v8::Context> child_context =
-            renderer_client_->GetContext(child->ToWebLocalFrame(), isolate);
-        EmitIPCEvent(child_context, internal, channel, {}, args, sender_id);
-      }
-  }
 }
 
 void ElectronApiServiceImpl::ReceivePostMessage(
@@ -210,26 +199,19 @@ void ElectronApiServiceImpl::ReceivePostMessage(
                0);
 }
 
-void ElectronApiServiceImpl::NotifyUserActivation() {
-  blink::WebLocalFrame* frame = render_frame()->GetWebFrame();
-  if (frame)
-    frame->NotifyUserActivation(
-        blink::mojom::UserActivationNotificationType::kInteraction);
-}
-
 void ElectronApiServiceImpl::TakeHeapSnapshot(
     mojo::ScopedHandle file,
     TakeHeapSnapshotCallback callback) {
   base::ThreadRestrictions::ScopedAllowIO allow_io;
 
-  base::PlatformFile platform_file;
+  base::ScopedPlatformFile platform_file;
   if (mojo::UnwrapPlatformFile(std::move(file), &platform_file) !=
       MOJO_RESULT_OK) {
     LOG(ERROR) << "Unable to get the file handle from mojo.";
     std::move(callback).Run(false);
     return;
   }
-  base::File base_file(platform_file);
+  base::File base_file(std::move(platform_file));
 
   bool success =
       electron::TakeHeapSnapshot(blink::MainThreadIsolate(), &base_file);

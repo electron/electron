@@ -17,7 +17,7 @@ class Arguments;
 namespace electron {
 
 // Possible bundle movement conflicts
-enum class BundlerMoverConflictType { EXISTS, EXISTS_AND_RUNNING };
+enum class BundlerMoverConflictType { kExists, kExistsAndRunning };
 
 class ElectronBundleMover {
  public:

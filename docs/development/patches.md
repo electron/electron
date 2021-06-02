@@ -41,6 +41,7 @@ To help manage these patch sets, we provide two tools: `git-import-patches` and 
 ### Usage
 
 #### Adding a new patch
+
 ```bash
 $ cd src/third_party/electron_node
 $ vim some/code/file.cc
@@ -53,6 +54,7 @@ $ ../../electron/script/git-export-patches -o ../../electron/patches/node
 Re-exporting patches will sometimes cause shasums in unrelated patches to change. This is generally harmless and can be ignored (but go ahead and add those changes to your PR, it'll stop them from showing up for other people).
 
 #### Editing an existing patch
+
 ```bash
 $ cd src/v8
 $ vim some/code/file.cc
@@ -64,6 +66,7 @@ $ ../electron/script/git-export-patches -o ../electron/patches/v8
 ```
 
 #### Removing a patch
+
 ```bash
 $ vim src/electron/patches/node/.patches
 # Delete the line with the name of the patch you want to remove
@@ -76,6 +79,7 @@ $ ../../electron/script/git-export-patches -o ../../electron/patches/node
 Note that `git-import-patches` will mark the commit that was `HEAD` when it was run as `refs/patches/upstream-head`. This lets you keep track of which commits are from Electron patches (those that come after `refs/patches/upstream-head`) and which commits are in upstream (those before `refs/patches/upstream-head`).
 
 #### Resolving conflicts
+
 When updating an upstream dependency, patches may fail to apply cleanly. Often, the conflict can be resolved automatically by git with a 3-way merge. You can instruct `git-import-patches` to use the 3-way merge algorithm by passing the `-3` argument:
 
 ```bash

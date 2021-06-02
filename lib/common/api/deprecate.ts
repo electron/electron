@@ -43,7 +43,7 @@ const deprecate: ElectronInternal.DeprecationUtil = {
     return function (this: any) {
       warn();
       fn.apply(this, arguments);
-    };
+    } as unknown as typeof fn;
   },
 
   // change the name of a function
@@ -52,7 +52,7 @@ const deprecate: ElectronInternal.DeprecationUtil = {
     return function (this: any) {
       warn();
       return fn.apply(this, arguments);
-    };
+    } as unknown as typeof fn;
   },
 
   moveAPI<T extends Function> (fn: T, oldUsage: string, newUsage: string): T {
@@ -60,7 +60,7 @@ const deprecate: ElectronInternal.DeprecationUtil = {
     return function (this: any) {
       warn();
       return fn.apply(this, arguments);
-    } as any;
+    } as unknown as typeof fn;
   },
 
   // change the name of an event

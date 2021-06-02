@@ -5,9 +5,17 @@
   // Deprecated APIs are still supported and should be tested.
   process.throwDeprecation = false
 
+  const Module = require('module');
   const path = require('path')
   const electron = require('electron')
   const { ipcRenderer } = electron
+
+  // Extra module paths which can be used to load Mocha reporters
+  if (process.env.ELECTRON_TEST_EXTRA_MODULE_PATHS) {
+    for (const modulePath of process.env.ELECTRON_TEST_EXTRA_MODULE_PATHS.split(':')) {
+      Module.globalPaths.push(modulePath);
+    }
+  }
 
   // Set up chai-as-promised here first to avoid conflicts
   // It must be loaded first or really strange things happen inside
@@ -82,6 +90,10 @@
   const chai = require('chai')
   chai.use(require('chai-as-promised'))
   chai.use(require('dirty-chai'))
+
+  // Show full object diff
+  // https://github.com/chaijs/chai/issues/469
+  chai.config.truncateThreshold = 0;
 
   const runner = mocha.run(() => {
     // Ensure the callback is called after runner is defined

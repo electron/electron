@@ -5,9 +5,6 @@
 #ifndef SHELL_COMMON_ELECTRON_COMMAND_LINE_H_
 #define SHELL_COMMON_ELECTRON_COMMAND_LINE_H_
 
-#include <string>
-#include <vector>
-
 #include "base/command_line.h"
 #include "base/macros.h"
 #include "build/build_config.h"

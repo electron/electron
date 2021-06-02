@@ -132,7 +132,7 @@ void MessagePort::Entangle(blink::MessagePortDescriptor port) {
   connector_->PauseIncomingMethodCallProcessing();
   connector_->set_incoming_receiver(this);
   connector_->set_connection_error_handler(
-      base::Bind(&MessagePort::Close, weak_factory_.GetWeakPtr()));
+      base::BindOnce(&MessagePort::Close, weak_factory_.GetWeakPtr()));
   if (HasPendingActivity())
     Pin();
 }
@@ -177,7 +177,7 @@ std::vector<blink::MessagePortChannel> MessagePort::DisentanglePorts(
     v8::Isolate* isolate,
     const std::vector<gin::Handle<MessagePort>>& ports,
     bool* threw_exception) {
-  if (!ports.size())
+  if (ports.empty())
     return std::vector<blink::MessagePortChannel>();
 
   std::unordered_set<MessagePort*> visited;

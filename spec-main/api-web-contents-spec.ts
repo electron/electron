@@ -3,8 +3,7 @@ import { AddressInfo } from 'net';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as http from 'http';
-import * as ChildProcess from 'child_process';
-import { BrowserWindow, ipcMain, webContents, session, WebContents, app } from 'electron/main';
+import { BrowserWindow, ipcMain, webContents, session, WebContents, app, BrowserView } from 'electron/main';
 import { clipboard } from 'electron/common';
 import { emittedOnce } from './events-helpers';
 import { closeAllWindows } from './window-helpers';
@@ -42,9 +41,15 @@ describe('webContents module', () => {
     });
   });
 
+  describe('fromId()', () => {
+    it('returns undefined for an unknown id', () => {
+      expect(webContents.fromId(12345)).to.be.undefined();
+    });
+  });
+
   describe('will-prevent-unload event', function () {
     afterEach(closeAllWindows);
-    it('does not emit if beforeunload returns undefined', async () => {
+    it('does not emit if beforeunload returns undefined in a BrowserWindow', async () => {
       const w = new BrowserWindow({ show: false });
       w.webContents.once('will-prevent-unload', () => {
         expect.fail('should not have fired');
@@ -55,14 +60,41 @@ describe('webContents module', () => {
       await wait;
     });
 
-    it('emits if beforeunload returns false', async () => {
+    it('does not emit if beforeunload returns undefined in a BrowserView', async () => {
+      const w = new BrowserWindow({ show: false });
+      const view = new BrowserView();
+      w.setBrowserView(view);
+      view.setBounds(w.getBounds());
+
+      view.webContents.once('will-prevent-unload', () => {
+        expect.fail('should not have fired');
+      });
+
+      await view.webContents.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-undefined.html'));
+      const wait = emittedOnce(w, 'closed');
+      w.close();
+      await wait;
+    });
+
+    it('emits if beforeunload returns false in a BrowserWindow', async () => {
       const w = new BrowserWindow({ show: false });
       await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false.html'));
       w.close();
       await emittedOnce(w.webContents, 'will-prevent-unload');
     });
 
-    it('supports calling preventDefault on will-prevent-unload events', async () => {
+    it('emits if beforeunload returns false in a BrowserView', async () => {
+      const w = new BrowserWindow({ show: false });
+      const view = new BrowserView();
+      w.setBrowserView(view);
+      view.setBounds(w.getBounds());
+
+      await view.webContents.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false.html'));
+      w.close();
+      await emittedOnce(view.webContents, 'will-prevent-unload');
+    });
+
+    it('supports calling preventDefault on will-prevent-unload events in a BrowserWindow', async () => {
       const w = new BrowserWindow({ show: false });
       w.webContents.once('will-prevent-unload', event => event.preventDefault());
       await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false.html'));
@@ -188,7 +220,7 @@ describe('webContents module', () => {
       let w: BrowserWindow;
 
       before(async () => {
-        w = new BrowserWindow({ show: false });
+        w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: false } });
         await w.loadURL('about:blank');
       });
       after(closeAllWindows);
@@ -321,7 +353,7 @@ describe('webContents module', () => {
 
     it('rejects if the load is aborted', async () => {
       const s = http.createServer(() => { /* never complete the request */ });
-      await new Promise(resolve => s.listen(0, '127.0.0.1', resolve));
+      await new Promise<void>(resolve => s.listen(0, '127.0.0.1', resolve));
       const { port } = s.address() as AddressInfo;
       const p = expect(w.loadURL(`http://127.0.0.1:${port}`)).to.eventually.be.rejectedWith(Error, /ERR_ABORTED/);
       // load a different file before the first load completes, causing the
@@ -339,9 +371,9 @@ describe('webContents module', () => {
         resp = res;
         // don't end the response yet
       });
-      await new Promise(resolve => s.listen(0, '127.0.0.1', resolve));
+      await new Promise<void>(resolve => s.listen(0, '127.0.0.1', resolve));
       const { port } = s.address() as AddressInfo;
-      const p = new Promise(resolve => {
+      const p = new Promise<void>(resolve => {
         w.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL, isMainFrame) => {
           if (!isMainFrame) {
             resolve();
@@ -363,9 +395,9 @@ describe('webContents module', () => {
         resp = res;
         // don't end the response yet
       });
-      await new Promise(resolve => s.listen(0, '127.0.0.1', resolve));
+      await new Promise<void>(resolve => s.listen(0, '127.0.0.1', resolve));
       const { port } = s.address() as AddressInfo;
-      const p = new Promise(resolve => {
+      const p = new Promise<void>(resolve => {
         w.webContents.on('did-frame-finish-load', (event, isMainFrame) => {
           if (!isMainFrame) {
             resolve();
@@ -387,7 +419,7 @@ describe('webContents module', () => {
     const testFn = (process.platform === 'win32' && process.arch === 'arm64' ? it.skip : it);
     testFn('returns the focused web contents', async () => {
       const w = new BrowserWindow({ show: true });
-      await w.loadURL('about:blank');
+      await w.loadFile(path.join(__dirname, 'fixtures', 'blank.html'));
       expect(webContents.getFocusedWebContents().id).to.equal(w.webContents.id);
 
       const devToolsOpened = emittedOnce(w.webContents, 'devtools-opened');
@@ -510,7 +542,7 @@ describe('webContents module', () => {
   describe('before-input-event event', () => {
     afterEach(closeAllWindows);
     it('can prevent document keyboard events', async () => {
-      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
       await w.loadFile(path.join(fixturesPath, 'pages', 'key-events.html'));
       const keyDown = new Promise(resolve => {
         ipcMain.once('keydown', (event, key) => resolve(key));
@@ -651,7 +683,7 @@ describe('webContents module', () => {
   describe('sendInputEvent(event)', () => {
     let w: BrowserWindow;
     beforeEach(async () => {
-      w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+      w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
       await w.loadFile(path.join(fixturesPath, 'pages', 'key-events.html'));
     });
     afterEach(closeAllWindows);
@@ -758,11 +790,11 @@ describe('webContents module', () => {
 
       expect(() => {
         w.webContents.startDrag({ file: __filename } as any);
-      }).to.throw('Must specify non-empty \'icon\' option');
+      }).to.throw('\'icon\' parameter is required');
 
       expect(() => {
         w.webContents.startDrag({ file: __filename, icon: path.join(mainFixturesPath, 'blank.png') });
-      }).to.throw('Must specify non-empty \'icon\' option');
+      }).to.throw(/Failed to load image from path (.+)/);
     });
   });
 
@@ -944,7 +976,7 @@ describe('webContents module', () => {
     });
 
     it('can persist zoom level across navigation', (done) => {
-      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
       let finalNavigation = false;
       ipcMain.on('set-zoom', (e, host) => {
         const zoomLevel = hostZoomMap[host];
@@ -1064,7 +1096,7 @@ describe('webContents module', () => {
     });
 
     it('cannot propagate when used with webframe', async () => {
-      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
       const w2 = new BrowserWindow({ show: false });
 
       const temporaryZoomSet = emittedOnce(ipcMain, 'temporary-zoom-set');
@@ -1105,7 +1137,7 @@ describe('webContents module', () => {
       });
 
       it('cannot persist zoom level after navigation with webFrame', async () => {
-        const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+        const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
         const source = `
           const {ipcRenderer, webFrame} = require('electron')
           webFrame.setZoomLevel(0.6)
@@ -1156,6 +1188,10 @@ describe('webContents module', () => {
             res.end();
           } else if (req.url === '/redirected') {
             res.end('<html><script>window.localStorage</script></html>');
+          } else if (req.url === '/first-window-open') {
+            res.end(`<html><script>window.open('${serverUrl}/second-window-open', 'first child');</script></html>`);
+          } else if (req.url === '/second-window-open') {
+            res.end('<html><script>window.open(\'wrong://url\', \'second child\');</script></html>');
           } else {
             res.end();
           }
@@ -1190,6 +1226,29 @@ describe('webContents module', () => {
       w.loadURL(`${serverUrl}/redirect-cross-site`);
       await destroyed;
       expect(currentRenderViewDeletedEmitted).to.be.false('current-render-view-deleted was emitted');
+    });
+
+    it('does not emit current-render-view-deleted when speculative RVHs are deleted and nativeWindowOpen is set to true', async () => {
+      const parentWindow = new BrowserWindow({ show: false, webPreferences: { nativeWindowOpen: true } });
+      let currentRenderViewDeletedEmitted = false;
+      let childWindow: BrowserWindow | null = null;
+      const destroyed = emittedOnce(parentWindow.webContents, 'destroyed');
+      const renderViewDeletedHandler = () => {
+        currentRenderViewDeletedEmitted = true;
+      };
+      const childWindowCreated = new Promise<void>((resolve) => {
+        app.once('browser-window-created', (event, window) => {
+          childWindow = window;
+          window.webContents.on('current-render-view-deleted' as any, renderViewDeletedHandler);
+          resolve();
+        });
+      });
+      parentWindow.loadURL(`${serverUrl}/first-window-open`);
+      await childWindowCreated;
+      childWindow!.webContents.removeListener('current-render-view-deleted' as any, renderViewDeletedHandler);
+      parentWindow.close();
+      await destroyed;
+      expect(currentRenderViewDeletedEmitted).to.be.false('child window was destroyed');
     });
 
     it('emits current-render-view-deleted if the current RVHs are deleted', async () => {
@@ -1235,15 +1294,53 @@ describe('webContents module', () => {
     });
   });
 
-  describe('create()', () => {
-    it('does not crash on exit', async () => {
-      const appPath = path.join(fixturesPath, 'api', 'leak-exit-webcontents.js');
-      const electronPath = process.execPath;
-      const appProcess = ChildProcess.spawn(electronPath, [appPath]);
-      const [code] = await emittedOnce(appProcess, 'close');
-      expect(code).to.equal(0);
+  const crashPrefs = [
+    {
+      nodeIntegration: true
+    },
+    {
+      sandbox: true
+    }
+  ];
+
+  const nicePrefs = (o: any) => {
+    let s = '';
+    for (const key of Object.keys(o)) {
+      s += `${key}=${o[key]}, `;
+    }
+    return `(${s.slice(0, s.length - 2)})`;
+  };
+
+  for (const prefs of crashPrefs) {
+    describe(`crash  with webPreferences ${nicePrefs(prefs)}`, () => {
+      let w: BrowserWindow;
+      beforeEach(async () => {
+        w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+        await w.loadURL('about:blank');
+      });
+      afterEach(closeAllWindows);
+
+      it('isCrashed() is false by default', () => {
+        expect(w.webContents.isCrashed()).to.equal(false);
+      });
+
+      it('forcefullyCrashRenderer() crashes the process with reason=killed||crashed', async () => {
+        expect(w.webContents.isCrashed()).to.equal(false);
+        const crashEvent = emittedOnce(w.webContents, 'render-process-gone');
+        w.webContents.forcefullyCrashRenderer();
+        const [, details] = await crashEvent;
+        expect(details.reason === 'killed' || details.reason === 'crashed').to.equal(true, 'reason should be killed || crashed');
+        expect(w.webContents.isCrashed()).to.equal(true);
+      });
+
+      it('a crashed process is recoverable with reload()', async () => {
+        expect(w.webContents.isCrashed()).to.equal(false);
+        w.webContents.forcefullyCrashRenderer();
+        w.webContents.reload();
+        expect(w.webContents.isCrashed()).to.equal(false);
+      });
     });
-  });
+  }
 
   // Destroying webContents in its event listener is going to crash when
   // Electron is built in Debug mode.
@@ -1342,7 +1439,7 @@ describe('webContents module', () => {
   describe('ipc-message event', () => {
     afterEach(closeAllWindows);
     it('emits when the renderer process sends an asynchronous message', async () => {
-      const w = new BrowserWindow({ show: true, webPreferences: { nodeIntegration: true } });
+      const w = new BrowserWindow({ show: true, webPreferences: { nodeIntegration: true, contextIsolation: false } });
       await w.webContents.loadURL('about:blank');
       w.webContents.executeJavaScript(`
         require('electron').ipcRenderer.send('message', 'Hello World!')
@@ -1357,7 +1454,7 @@ describe('webContents module', () => {
   describe('ipc-message-sync event', () => {
     afterEach(closeAllWindows);
     it('emits when the renderer process sends a synchronous message', async () => {
-      const w = new BrowserWindow({ show: true, webPreferences: { nodeIntegration: true } });
+      const w = new BrowserWindow({ show: true, webPreferences: { nodeIntegration: true, contextIsolation: false } });
       await w.webContents.loadURL('about:blank');
       const promise: Promise<[string, string]> = new Promise(resolve => {
         w.webContents.once('ipc-message-sync', (event, channel, arg) => {
@@ -1398,7 +1495,7 @@ describe('webContents module', () => {
         w.webContents.once('did-finish-load', () => {
           w.webContents.once('new-window', (event, newUrl, frameName, disposition, options, features, referrer) => {
             expect(referrer.url).to.equal(url);
-            expect(referrer.policy).to.equal('no-referrer-when-downgrade');
+            expect(referrer.policy).to.equal('strict-origin-when-cross-origin');
           });
           w.webContents.executeJavaScript('a.click()');
         });
@@ -1656,28 +1753,6 @@ describe('webContents module', () => {
       expect(data).to.be.an.instanceof(Buffer).that.is.not.empty();
     });
 
-    it('respects custom settings', async () => {
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'print-to-pdf.html'));
-
-      const data = await w.webContents.printToPDF({
-        pageRanges: {
-          from: 0,
-          to: 2
-        },
-        landscape: true
-      });
-
-      const doc = await pdfjs.getDocument(data).promise;
-
-      // Check that correct # of pages are rendered.
-      expect(doc.numPages).to.equal(3);
-
-      // Check that PDF is generated in landscape mode.
-      const firstPage = await doc.getPage(1);
-      const { width, height } = firstPage.getViewport({ scale: 100 });
-      expect(width).to.be.greaterThan(height);
-    });
-
     it('does not crash when called multiple times in parallel', async () => {
       const promises = [];
       for (let i = 0; i < 3; i++) {
@@ -1701,13 +1776,47 @@ describe('webContents module', () => {
         expect(data).to.be.an.instanceof(Buffer).that.is.not.empty();
       }
     });
+
+    describe('using a large document', () => {
+      beforeEach(async () => {
+        w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
+        await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'print-to-pdf.html'));
+      });
+
+      afterEach(closeAllWindows);
+
+      it('respects custom settings', async () => {
+        const data = await w.webContents.printToPDF({
+          pageRanges: {
+            from: 0,
+            to: 2
+          },
+          landscape: true
+        });
+
+        const doc = await pdfjs.getDocument(data).promise;
+
+        // Check that correct # of pages are rendered.
+        expect(doc.numPages).to.equal(3);
+
+        // Check that PDF is generated in landscape mode.
+        const firstPage = await doc.getPage(1);
+        const { width, height } = firstPage.getViewport({ scale: 100 });
+        expect(width).to.be.greaterThan(height);
+      });
+    });
   });
 
   describe('PictureInPicture video', () => {
     afterEach(closeAllWindows);
-    it('works as expected', async () => {
+    it('works as expected', async function () {
       const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
       await w.loadFile(path.join(fixturesPath, 'api', 'picture-in-picture.html'));
+
+      if (!await w.webContents.executeJavaScript('document.createElement(\'video\').canPlayType(\'video/webm; codecs="vp8.0"\')')) {
+        this.skip();
+      }
+
       const result = await w.webContents.executeJavaScript(
         `runTest(${features.isPictureInPictureEnabled()})`, true);
       expect(result).to.be.true();
@@ -1772,7 +1881,7 @@ describe('webContents module', () => {
     afterEach(closeAllWindows);
 
     it('can get multiple shared workers', async () => {
-      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
 
       const ready = emittedOnce(ipcMain, 'ready');
       w.loadFile(path.join(fixturesPath, 'api', 'shared-worker', 'shared-worker.html'));
@@ -1786,7 +1895,7 @@ describe('webContents module', () => {
     });
 
     it('can inspect a specific shared worker', async () => {
-      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
 
       const ready = emittedOnce(ipcMain, 'ready');
       w.loadFile(path.join(fixturesPath, 'api', 'shared-worker', 'shared-worker.html'));
@@ -1911,6 +2020,17 @@ describe('webContents module', () => {
       await w.loadURL(serverUrl);
       const body = await w.webContents.executeJavaScript('document.documentElement.textContent');
       expect(body).to.equal('401');
+    });
+  });
+
+  describe('crashed event', () => {
+    it('does not crash main process when destroying WebContents in it', (done) => {
+      const contents = (webContents as any).create({ nodeIntegration: true });
+      contents.once('crashed', () => {
+        contents.destroy();
+        done();
+      });
+      contents.loadURL('about:blank').then(() => contents.forcefullyCrashRenderer());
     });
   });
 

@@ -9,17 +9,16 @@ for every navigation to keep Node.js working properly. Once Native Modules in th
 are required to be NAPI or context aware (Electron v11), this patch can be removed.
 
 diff --git a/chrome/renderer/chrome_content_renderer_client.cc b/chrome/renderer/chrome_content_renderer_client.cc
-index 87243e716262b31c49a2bf18fc3b3b8c38b29c53..76d5e9f82d8db1c2212db79fb2116a2a1695b0d1 100644
+index 2ac02aabeb0689e70f842a98eec132f220b9810f..ab9f4655933326cf2197a73a1672781792bfbcb4 100644
 --- a/chrome/renderer/chrome_content_renderer_client.cc
 +++ b/chrome/renderer/chrome_content_renderer_client.cc
-@@ -1281,6 +1281,25 @@ bool ChromeContentRendererClient::AllowPopup() {
+@@ -1300,6 +1300,24 @@ ChromeContentRendererClient::GetProtocolHandlerSecurityLevel() {
  #endif
  }
  
 +bool ChromeContentRendererClient::ShouldFork(WebLocalFrame* frame,
 +                                             const GURL& url,
 +                                             const std::string& http_method,
-+                                             bool is_initial_navigation,
 +                                             bool is_server_redirect) {
 +  DCHECK(!frame->Parent());
 +
@@ -39,33 +38,31 @@ index 87243e716262b31c49a2bf18fc3b3b8c38b29c53..76d5e9f82d8db1c2212db79fb2116a2a
      WebLocalFrame* frame,
      ui::PageTransition transition_type,
 diff --git a/chrome/renderer/chrome_content_renderer_client.h b/chrome/renderer/chrome_content_renderer_client.h
-index 04d63a82dde7b1ec4259ec90e0733f3536e97ad0..e335dfbfabe643d15e78c691750aed3aab4a006a 100644
+index 4fb3926576c80881a9230bb91bfe7655fec12df1..0f7f3773cf5efcf55cbf001885083f393529911b 100644
 --- a/chrome/renderer/chrome_content_renderer_client.h
 +++ b/chrome/renderer/chrome_content_renderer_client.h
-@@ -127,6 +127,11 @@ class ChromeContentRendererClient
+@@ -121,6 +121,10 @@ class ChromeContentRendererClient
        base::SingleThreadTaskRunner* compositor_thread_task_runner) override;
    bool RunIdleHandlerWhenWidgetsHidden() override;
    bool AllowPopup() override;
 +  bool ShouldFork(blink::WebLocalFrame* frame,
-+                const GURL& url,
-+                const std::string& http_method,
-+                bool is_initial_navigation,
-+                bool is_server_redirect) override;
++                  const GURL& url,
++                  const std::string& http_method,
++                  bool is_server_redirect) override;
+   blink::ProtocolHandlerSecurityLevel GetProtocolHandlerSecurityLevel()
+       override;
    void WillSendRequest(blink::WebLocalFrame* frame,
-                        ui::PageTransition transition_type,
-                        const blink::WebURL& url,
 diff --git a/content/public/renderer/content_renderer_client.cc b/content/public/renderer/content_renderer_client.cc
-index 889362f4bf241c88c7228b7bef029383211ef826..b83f2a91d993e3a086b63c5f01a8960df7f4780f 100644
+index 4e168c711b87e92e4494f4b876a8aff8847cb8c8..dc87b57843f61dd7c65723e04bb0e92340647acd 100644
 --- a/content/public/renderer/content_renderer_client.cc
 +++ b/content/public/renderer/content_renderer_client.cc
-@@ -114,6 +114,14 @@ bool ContentRendererClient::HandleNavigation(
+@@ -112,6 +112,13 @@ bool ContentRendererClient::HandleNavigation(
  }
  #endif
  
 +bool ContentRendererClient::ShouldFork(blink::WebLocalFrame* frame,
 +                                       const GURL& url,
 +                                       const std::string& http_method,
-+                                       bool is_initial_navigation,
 +                                       bool is_server_redirect) {
 +  return false;
 +}
@@ -74,10 +71,10 @@ index 889362f4bf241c88c7228b7bef029383211ef826..b83f2a91d993e3a086b63c5f01a8960d
      blink::WebLocalFrame* frame,
      ui::PageTransition transition_type,
 diff --git a/content/public/renderer/content_renderer_client.h b/content/public/renderer/content_renderer_client.h
-index 9349a3755f824630904bcd044a6ba403d639f490..5097d3f812f8ad0a583042ba332855c8b3fda222 100644
+index 529e597b572854cbf56bb45d9554549e51e519f4..f3dd10a3b30c89a02acc499279660d975a9a2de8 100644
 --- a/content/public/renderer/content_renderer_client.h
 +++ b/content/public/renderer/content_renderer_client.h
-@@ -229,6 +229,13 @@ class CONTENT_EXPORT ContentRendererClient {
+@@ -201,6 +201,12 @@ class CONTENT_EXPORT ContentRendererClient {
                                  bool is_redirect);
  #endif
  
@@ -85,17 +82,16 @@ index 9349a3755f824630904bcd044a6ba403d639f490..5097d3f812f8ad0a583042ba332855c8
 +  virtual bool ShouldFork(blink::WebLocalFrame* frame,
 +                          const GURL& url,
 +                          const std::string& http_method,
-+                          bool is_initial_navigation,
 +                          bool is_server_redirect);
 +
    // Notifies the embedder that the given frame is requesting the resource at
    // |url|. If the function returns a valid |new_url|, the request must be
-   // updated to use it. The |force_ignore_site_for_cookies| output parameter
+   // updated to use it.
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index f9e97c36bca9c70af0c585b81902165c1ac6ba5d..f0c50a4693a5363c0b0f834de0e4924e66a39039 100644
+index 0f13101c719e6f43cfc5d281d0f6f345d475744d..ba517758ddd044a32e9c364bd803e0090d19b8cb 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -5755,6 +5755,23 @@ void RenderFrameImpl::BeginNavigation(
+@@ -4913,6 +4913,22 @@ void RenderFrameImpl::BeginNavigation(
      // we can do a per-frame check here rather than a process-wide check.
      bool should_fork = HasWebUIScheme(url) || HasWebUIScheme(old_url) ||
                         (enabled_bindings_ & kWebUIBindingsPolicyMask);
@@ -110,10 +106,9 @@ index f9e97c36bca9c70af0c585b81902165c1ac6ba5d..f0c50a4693a5363c0b0f834de0e4924e
 +
 +    if (!should_fork) {
 +      // Give the embedder a chance.
-+      bool is_initial_navigation = render_view_->history_list_length_ == 0;
 +      should_fork = GetContentClient()->renderer()->ShouldFork(
 +          frame_, url, info->url_request.HttpMethod().Utf8(),
-+          is_initial_navigation, false /* is_redirect */);
++          false /* is_redirect */);
 +    }
 +
      if (should_fork) {

@@ -11,6 +11,10 @@
 
 #include "gin/converter.h"
 
+#if defined(OS_WIN)
+#include "base/strings/string_util_win.h"
+#endif
+
 namespace gin {
 
 // Make it possible to convert move-only types.
@@ -82,7 +86,7 @@ struct Converter<v8::Local<v8::Array>> {
                      v8::Local<v8::Array>* out) {
     if (!val->IsArray())
       return false;
-    *out = v8::Local<v8::Array>::Cast(val);
+    *out = val.As<v8::Array>();
     return true;
   }
 };
@@ -98,7 +102,7 @@ struct Converter<v8::Local<v8::String>> {
                      v8::Local<v8::String>* out) {
     if (!val->IsString())
       return false;
-    *out = v8::Local<v8::String>::Cast(val);
+    *out = val.As<v8::String>();
     return true;
   }
 };
@@ -124,7 +128,7 @@ struct Converter<std::set<T>> {
 
     auto context = isolate->GetCurrentContext();
     std::set<T> result;
-    v8::Local<v8::Array> array(v8::Local<v8::Array>::Cast(val));
+    v8::Local<v8::Array> array = val.As<v8::Array>();
     uint32_t length = array->Length();
     for (uint32_t i = 0; i < length; ++i) {
       T item;
@@ -181,6 +185,30 @@ struct Converter<std::map<K, V>> {
     return obj;
   }
 };
+
+#if defined(OS_WIN)
+template <>
+struct Converter<std::wstring> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const std::wstring& val) {
+    return Converter<std::u16string>::ToV8(isolate, base::AsString16(val));
+  }
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     std::wstring* out) {
+    if (!val->IsString())
+      return false;
+
+    std::u16string str;
+    if (Converter<std::u16string>::FromV8(isolate, val, &str)) {
+      *out = base::AsWString(str);
+      return true;
+    } else {
+      return false;
+    }
+  }
+};
+#endif
 
 }  // namespace gin
 

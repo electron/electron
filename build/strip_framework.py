@@ -12,5 +12,7 @@ subprocess.check_output(["rm", "-rf", dest])
 subprocess.check_output(["cp", "-a", source, dest])
 
 # Strip headers, we do not need to ship them
-subprocess.check_output(["rm", "-r", os.path.join(dest, 'Headers')])
-subprocess.check_output(["rm", "-r", os.path.join(dest, 'Versions', 'Current', 'Headers')])
+subprocess.check_output(["rm", "-r", os.path.join(dest, "Headers")])
+subprocess.check_output(
+    ["rm", "-r", os.path.join(dest, "Versions", "Current", "Headers")]
+)

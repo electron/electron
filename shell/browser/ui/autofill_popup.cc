@@ -4,8 +4,6 @@
 
 #include <algorithm>
 #include <memory>
-
-#include <utility>
 #include <vector>
 
 #include "base/i18n/rtl.h"
@@ -89,8 +87,8 @@ void AutofillPopup::Hide() {
   }
 }
 
-void AutofillPopup::SetItems(const std::vector<base::string16>& values,
-                             const std::vector<base::string16>& labels) {
+void AutofillPopup::SetItems(const std::vector<std::u16string>& values,
+                             const std::vector<std::u16string>& labels) {
   DCHECK(view_);
   values_ = values;
   labels_ = labels;
@@ -148,7 +146,7 @@ int AutofillPopup::GetDesiredPopupWidth() {
         kEndPadding + 2 * kPopupBorderThickness +
         gfx::GetStringWidth(GetValueAt(i), GetValueFontListForRow(i)) +
         gfx::GetStringWidth(GetLabelAt(i), GetLabelFontListForRow(i));
-    if (GetLabelAt(i).length() > 0)
+    if (!GetLabelAt(i).empty())
       row_size += kNamePadding + kEndPadding;
 
     popup_width = std::max(popup_width, row_size);
@@ -184,11 +182,11 @@ int AutofillPopup::GetLineCount() {
   return values_.size();
 }
 
-base::string16 AutofillPopup::GetValueAt(int i) {
+std::u16string AutofillPopup::GetValueAt(int i) {
   return values_.at(i);
 }
 
-base::string16 AutofillPopup::GetLabelAt(int i) {
+std::u16string AutofillPopup::GetLabelAt(int i) {
   return labels_.at(i);
 }
 

@@ -26,19 +26,12 @@ template("typescript_build") {
       "//electron/typings/internal-electron.d.ts",
     ]
 
-    type_roots = "node_modules/@types,typings"
-    if (defined(invoker.type_root)) {
-      type_roots += "," + invoker.type_root
-    }
-
     base_out_path = invoker.output_gen_dir + "/electron/"
     args = [
       "-p",
       rebase_path(invoker.tsconfig),
       "--outDir",
       rebase_path("$base_out_path" + invoker.output_dir_name),
-      "--typeRoots",
-      type_roots,
     ]
 
     outputs = []

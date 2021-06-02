@@ -6,7 +6,6 @@
 #define SHELL_BROWSER_API_ELECTRON_API_DOWNLOAD_ITEM_H_
 
 #include <string>
-#include <vector>
 
 #include "base/files/file_path.h"
 #include "base/memory/weak_ptr.h"
@@ -30,7 +29,7 @@ class DownloadItem : public gin::Wrappable<DownloadItem>,
   static gin::Handle<DownloadItem> FromOrCreate(v8::Isolate* isolate,
                                                 download::DownloadItem* item);
 
-  static DownloadItem* FromDownloadItem(download::DownloadItem*);
+  static DownloadItem* FromDownloadItem(download::DownloadItem* item);
 
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
@@ -44,14 +43,14 @@ class DownloadItem : public gin::Wrappable<DownloadItem>,
   file_dialog::DialogSettings GetSaveDialogOptions() const;
 
  private:
-  DownloadItem(v8::Isolate* isolate, download::DownloadItem* download_item);
+  DownloadItem(v8::Isolate* isolate, download::DownloadItem* item);
   ~DownloadItem() override;
 
   bool CheckAlive() const;
 
   // download::DownloadItem::Observer
-  void OnDownloadUpdated(download::DownloadItem* download) override;
-  void OnDownloadDestroyed(download::DownloadItem* download) override;
+  void OnDownloadUpdated(download::DownloadItem* item) override;
+  void OnDownloadDestroyed(download::DownloadItem* item) override;
 
   // JS API
   void Pause();
@@ -66,7 +65,7 @@ class DownloadItem : public gin::Wrappable<DownloadItem>,
   std::string GetFilename() const;
   std::string GetContentDisposition() const;
   const GURL& GetURL() const;
-  v8::Local<v8::Value> GetURLChain(v8::Isolate*) const;
+  v8::Local<v8::Value> GetURLChain() const;
   download::DownloadItem::DownloadState GetState() const;
   bool IsDone() const;
   void SetSaveDialogOptions(const file_dialog::DialogSettings& options);
@@ -77,6 +76,8 @@ class DownloadItem : public gin::Wrappable<DownloadItem>,
   base::FilePath save_path_;
   file_dialog::DialogSettings dialog_options_;
   download::DownloadItem* download_item_;
+
+  v8::Isolate* isolate_;
 
   base::WeakPtrFactory<DownloadItem> weak_factory_{this};
 

@@ -5,7 +5,6 @@
 #ifndef SHELL_BROWSER_API_ELECTRON_API_VIEW_H_
 #define SHELL_BROWSER_API_ELECTRON_API_VIEW_H_
 
-#include <memory>
 #include <vector>
 
 #include "electron/buildflags/buildflags.h"
@@ -25,8 +24,8 @@ class View : public gin_helper::Wrappable<View> {
                              v8::Local<v8::FunctionTemplate> prototype);
 
 #if BUILDFLAG(ENABLE_VIEWS_API)
-  void AddChildView(gin::Handle<View> view);
-  void AddChildViewAt(gin::Handle<View> view, size_t index);
+  void AddChildView(gin::Handle<View> child);
+  void AddChildViewAt(gin::Handle<View> child, size_t index);
 #endif
 
   views::View* view() const { return view_; }

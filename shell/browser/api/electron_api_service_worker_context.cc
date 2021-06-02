@@ -15,6 +15,7 @@
 #include "gin/object_template_builder.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/javascript_environment.h"
+#include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/function_template_extensions.h"
@@ -73,11 +74,9 @@ gin::WrapperInfo ServiceWorkerContext::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 ServiceWorkerContext::ServiceWorkerContext(
     v8::Isolate* isolate,
-    ElectronBrowserContext* browser_context)
-    : browser_context_(browser_context), weak_ptr_factory_(this) {
+    ElectronBrowserContext* browser_context) {
   service_worker_context_ =
-      content::BrowserContext::GetDefaultStoragePartition(browser_context_)
-          ->GetServiceWorkerContext();
+      browser_context->GetDefaultStoragePartition()->GetServiceWorkerContext();
   service_worker_context_->AddObserver(this);
 }
 
@@ -100,6 +99,13 @@ void ServiceWorkerContext::OnReportConsoleMessage(
            .Set("lineNumber", message.line_number)
            .Set("sourceUrl", message.source_url.spec())
            .Build());
+}
+
+void ServiceWorkerContext::OnRegistrationCompleted(const GURL& scope) {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+  Emit("registration-completed",
+       gin::DataObjectBuilder(isolate).Set("scope", scope).Build());
 }
 
 void ServiceWorkerContext::OnDestruct(content::ServiceWorkerContext* context) {

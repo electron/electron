@@ -11,7 +11,9 @@
 #include "base/lazy_instance.h"
 #include "base/logging.h"
 #include "extensions/browser/media_capture_util.h"
+#include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/extensions/electron_extension_web_contents_observer.h"
+#include "v8/include/v8.h"
 
 namespace extensions {
 
@@ -22,9 +24,12 @@ ElectronExtensionHostDelegate::~ElectronExtensionHostDelegate() {}
 void ElectronExtensionHostDelegate::OnExtensionHostCreated(
     content::WebContents* web_contents) {
   ElectronExtensionWebContentsObserver::CreateForWebContents(web_contents);
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::HandleScope scope(isolate);
+  electron::api::WebContents::FromOrCreate(isolate, web_contents);
 }
 
-void ElectronExtensionHostDelegate::OnRenderViewCreatedForBackgroundPage(
+void ElectronExtensionHostDelegate::OnMainFrameCreatedForBackgroundPage(
     ExtensionHost* host) {}
 
 content::JavaScriptDialogManager*

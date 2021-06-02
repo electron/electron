@@ -6,9 +6,7 @@
 #define SHELL_BROWSER_SERIAL_SERIAL_CHOOSER_CONTEXT_H_
 
 #include <map>
-#include <memory>
 #include <set>
-#include <string>
 #include <utility>
 #include <vector>
 

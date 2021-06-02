@@ -45,6 +45,16 @@ Returns:
 
 Emitted when a service worker logs something to the console.
 
+#### Event: 'registration-completed'
+
+Returns:
+
+* `event` Event
+* `details` Object - Information about the registered service worker
+  * `scope` String - The base URL that a service worker is registered for
+
+Emitted when a service worker has been registered. Can occur after a call to [`navigator.serviceWorker.register('/sw.js')`](https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorkerContainer/register) successfully resolves or when a Chrome extension is loaded.
+
 ### Instance Methods
 
 The following methods are available on instances of `ServiceWorkers`:

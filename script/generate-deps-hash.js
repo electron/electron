@@ -9,7 +9,6 @@ const HASH_VERSION = 3;
 const filesToHash = [
   path.resolve(__dirname, '../DEPS'),
   path.resolve(__dirname, '../yarn.lock'),
-  path.resolve(__dirname, '../script/external-binaries.json'),
   path.resolve(__dirname, '../script/sysroots.json')
 ];
 

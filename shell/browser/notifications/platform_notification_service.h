@@ -5,7 +5,6 @@
 #ifndef SHELL_BROWSER_NOTIFICATIONS_PLATFORM_NOTIFICATION_SERVICE_H_
 #define SHELL_BROWSER_NOTIFICATIONS_PLATFORM_NOTIFICATION_SERVICE_H_
 
-#include <set>
 #include <string>
 
 #include "content/public/browser/platform_notification_service.h"
@@ -23,9 +22,10 @@ class PlatformNotificationService
  protected:
   // content::PlatformNotificationService:
   void DisplayNotification(
-      content::RenderProcessHost* render_process_host,
+      content::RenderFrameHost* render_frame_host,
       const std::string& notification_id,
       const GURL& origin,
+      const GURL& document_url,
       const blink::PlatformNotificationData& notification_data,
       const blink::NotificationResources& notification_resources) override;
   void DisplayPersistentNotification(

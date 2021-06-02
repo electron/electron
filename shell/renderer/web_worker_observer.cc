@@ -30,7 +30,7 @@ WebWorkerObserver* WebWorkerObserver::GetCurrent() {
 
 WebWorkerObserver::WebWorkerObserver()
     : node_bindings_(
-          NodeBindings::Create(NodeBindings::BrowserEnvironment::WORKER)),
+          NodeBindings::Create(NodeBindings::BrowserEnvironment::kWorker)),
       electron_bindings_(new ElectronBindings(node_bindings_->uv_loop())) {
   lazy_tls.Pointer()->Set(this);
 }
@@ -45,6 +45,9 @@ WebWorkerObserver::~WebWorkerObserver() {
 void WebWorkerObserver::WorkerScriptReadyForEvaluation(
     v8::Local<v8::Context> worker_context) {
   v8::Context::Scope context_scope(worker_context);
+  auto* isolate = worker_context->GetIsolate();
+  v8::MicrotasksScope microtasks_scope(
+      isolate, v8::MicrotasksScope::kDoNotRunMicrotasks);
 
   // Start the embed thread.
   node_bindings_->PrepareMessageLoop();

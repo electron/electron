@@ -4,7 +4,6 @@
 
 #include "shell/browser/api/electron_api_menu.h"
 
-#include <map>
 #include <utility>
 
 #include "shell/browser/api/ui_event.h"
@@ -12,11 +11,38 @@
 #include "shell/browser/native_window.h"
 #include "shell/common/gin_converters/accelerator_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_converters/file_path_converter.h"
+#include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 #include "ui/base/models/image_model.h"
+
+#if defined(OS_MAC)
+
+namespace gin {
+
+using SharingItem = electron::ElectronMenuModel::SharingItem;
+
+template <>
+struct Converter<SharingItem> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     SharingItem* out) {
+    gin_helper::Dictionary dict;
+    if (!ConvertFromV8(isolate, val, &dict))
+      return false;
+    dict.GetOptional("texts", &(out->texts));
+    dict.GetOptional("filePaths", &(out->file_paths));
+    dict.GetOptional("urls", &(out->urls));
+    return true;
+  }
+};
+
+}  // namespace gin
+
+#endif
 
 namespace electron {
 
@@ -26,6 +52,15 @@ gin::WrapperInfo Menu::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 Menu::Menu(gin::Arguments* args) : model_(new ElectronMenuModel(this)) {
   model_->AddObserver(this);
+
+#if defined(OS_MAC)
+  gin_helper::Dictionary options;
+  if (args->GetNext(&options)) {
+    ElectronMenuModel::SharingItem item;
+    if (options.Get("sharingItem", &item))
+      model_->SetSharingItem(std::move(item));
+  }
+#endif
 }
 
 Menu::~Menu() {
@@ -81,6 +116,19 @@ bool Menu::ShouldRegisterAcceleratorForCommandId(int command_id) const {
                           command_id);
 }
 
+#if defined(OS_MAC)
+bool Menu::GetSharingItemForCommandId(
+    int command_id,
+    ElectronMenuModel::SharingItem* item) const {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+  v8::Local<v8::Value> val =
+      gin_helper::CallMethod(isolate, const_cast<Menu*>(this),
+                             "_getSharingItemForCommandId", command_id);
+  return gin::ConvertFromV8(isolate, val, item);
+}
+#endif
+
 void Menu::ExecuteCommand(int command_id, int flags) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
@@ -114,7 +162,7 @@ base::OnceClosure Menu::BindSelfToClosure(base::OnceClosure callback) {
 
 void Menu::InsertItemAt(int index,
                         int command_id,
-                        const base::string16& label) {
+                        const std::u16string& label) {
   model_->InsertItemAt(index, command_id, label);
 }
 
@@ -124,20 +172,20 @@ void Menu::InsertSeparatorAt(int index) {
 
 void Menu::InsertCheckItemAt(int index,
                              int command_id,
-                             const base::string16& label) {
+                             const std::u16string& label) {
   model_->InsertCheckItemAt(index, command_id, label);
 }
 
 void Menu::InsertRadioItemAt(int index,
                              int command_id,
-                             const base::string16& label,
+                             const std::u16string& label,
                              int group_id) {
   model_->InsertRadioItemAt(index, command_id, label, group_id);
 }
 
 void Menu::InsertSubMenuAt(int index,
                            int command_id,
-                           const base::string16& label,
+                           const std::u16string& label,
                            Menu* menu) {
   menu->parent_ = this;
   model_->InsertSubMenuAt(index, command_id, label, menu->model_.get());
@@ -147,15 +195,15 @@ void Menu::SetIcon(int index, const gfx::Image& image) {
   model_->SetIcon(index, ui::ImageModel::FromImage(image));
 }
 
-void Menu::SetSublabel(int index, const base::string16& sublabel) {
+void Menu::SetSublabel(int index, const std::u16string& sublabel) {
   model_->SetSecondaryLabel(index, sublabel);
 }
 
-void Menu::SetToolTip(int index, const base::string16& toolTip) {
+void Menu::SetToolTip(int index, const std::u16string& toolTip) {
   model_->SetToolTip(index, toolTip);
 }
 
-void Menu::SetRole(int index, const base::string16& role) {
+void Menu::SetRole(int index, const std::u16string& role) {
   model_->SetRole(index, role);
 }
 
@@ -175,23 +223,25 @@ int Menu::GetCommandIdAt(int index) const {
   return model_->GetCommandIdAt(index);
 }
 
-base::string16 Menu::GetLabelAt(int index) const {
+std::u16string Menu::GetLabelAt(int index) const {
   return model_->GetLabelAt(index);
 }
 
-base::string16 Menu::GetSublabelAt(int index) const {
+std::u16string Menu::GetSublabelAt(int index) const {
   return model_->GetSecondaryLabelAt(index);
 }
 
-base::string16 Menu::GetToolTipAt(int index) const {
+std::u16string Menu::GetToolTipAt(int index) const {
   return model_->GetToolTipAt(index);
 }
 
-base::string16 Menu::GetAcceleratorTextAt(int index) const {
+#ifdef DCHECK_IS_ON
+std::u16string Menu::GetAcceleratorTextAtForTesting(int index) const {
   ui::Accelerator accelerator;
   model_->GetAcceleratorAtWithParams(index, true, &accelerator);
   return accelerator.GetShortcutText();
 }
+#endif
 
 bool Menu::IsItemCheckedAt(int index) const {
   return model_->IsItemCheckedAt(index);
@@ -215,7 +265,7 @@ void Menu::OnMenuWillClose() {
 }
 
 void Menu::OnMenuWillShow() {
-  Pin(v8::Isolate::GetCurrent());
+  Pin(JavascriptEnvironment::GetIsolate());
   Emit("menu-will-show");
 }
 
@@ -240,13 +290,15 @@ v8::Local<v8::ObjectTemplate> Menu::FillObjectTemplate(
       .SetMethod("getLabelAt", &Menu::GetLabelAt)
       .SetMethod("getSublabelAt", &Menu::GetSublabelAt)
       .SetMethod("getToolTipAt", &Menu::GetToolTipAt)
-      .SetMethod("getAcceleratorTextAt", &Menu::GetAcceleratorTextAt)
       .SetMethod("isItemCheckedAt", &Menu::IsItemCheckedAt)
       .SetMethod("isEnabledAt", &Menu::IsEnabledAt)
       .SetMethod("worksWhenHiddenAt", &Menu::WorksWhenHiddenAt)
       .SetMethod("isVisibleAt", &Menu::IsVisibleAt)
       .SetMethod("popupAt", &Menu::PopupAt)
       .SetMethod("closePopupAt", &Menu::ClosePopupAt)
+#ifdef DCHECK_IS_ON
+      .SetMethod("getAcceleratorTextAt", &Menu::GetAcceleratorTextAtForTesting)
+#endif
       .Build();
 }
 

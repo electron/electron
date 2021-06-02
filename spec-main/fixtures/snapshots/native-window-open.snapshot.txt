@@ -2,182 +2,170 @@
   [
     "top=5,left=10,resizable=no",
     {
-      "sender": "[WebContents]",
-      "returnValue": "placeholder-guest-contents-id"
+      "sender": "[WebContents]"
     },
     "about:blank",
-    "frame name",
+    "frame-name",
     "new-window",
     {
       "show": true,
       "width": 800,
       "height": 600,
-      "webContents": "[WebContents]",
-      "title": "frame name",
-      "webPreferences": {
-        "nativeWindowOpen": true,
-        "sandbox": true,
-        "backgroundColor": "blue",
-        "nodeIntegration": false,
-        "webviewTag": false,
-        "nodeIntegrationInSubFrames": false
-      },
       "top": 5,
       "left": 10,
       "resizable": false,
       "x": 10,
       "y": 5,
-      "backgroundColor": "blue",
-      "focusable": false
+      "webPreferences": {
+        "contextIsolation": true,
+        "nativeWindowOpen": true,
+        "nodeIntegration": false,
+        "sandbox": true,
+        "webviewTag": false,
+        "nodeIntegrationInSubFrames": false,
+        "openerId": null
+      },
+      "webContents": "[WebContents]"
     },
     [],
     {
       "url": "",
-      "policy": "no-referrer-when-downgrade"
+      "policy": "strict-origin-when-cross-origin"
     },
     null
   ],
   [
     "zoomFactor=2,resizable=0,x=0,y=10",
     {
-      "sender": "[WebContents]",
-      "returnValue": "placeholder-guest-contents-id"
+      "sender": "[WebContents]"
     },
     "about:blank",
-    "frame name",
+    "frame-name",
     "new-window",
     {
       "show": true,
       "width": 800,
       "height": 600,
-      "webContents": "[WebContents]",
-      "title": "frame name",
-      "webPreferences": {
-        "zoomFactor": "2",
-        "nativeWindowOpen": true,
-        "sandbox": true,
-        "backgroundColor": "blue",
-        "nodeIntegration": false,
-        "webviewTag": false,
-        "nodeIntegrationInSubFrames": false
-      },
       "resizable": false,
       "x": 0,
       "y": 10,
-      "backgroundColor": "blue",
-      "focusable": false
+      "webPreferences": {
+        "zoomFactor": "2",
+        "contextIsolation": true,
+        "nativeWindowOpen": true,
+        "nodeIntegration": false,
+        "sandbox": true,
+        "webviewTag": false,
+        "nodeIntegrationInSubFrames": false,
+        "openerId": null
+      },
+      "webContents": "[WebContents]"
     },
     [],
     {
       "url": "",
-      "policy": "no-referrer-when-downgrade"
+      "policy": "strict-origin-when-cross-origin"
     },
     null
   ],
   [
     "backgroundColor=gray,webPreferences=0,x=100,y=100",
     {
-      "sender": "[WebContents]",
-      "returnValue": "placeholder-guest-contents-id"
+      "sender": "[WebContents]"
     },
     "about:blank",
-    "frame name",
+    "frame-name",
     "new-window",
     {
       "show": true,
       "width": 800,
       "height": 600,
-      "webContents": "[WebContents]",
-      "title": "frame name",
-      "webPreferences": {
-        "nativeWindowOpen": true,
-        "sandbox": true,
-        "backgroundColor": "gray",
-        "nodeIntegration": false,
-        "webviewTag": false,
-        "nodeIntegrationInSubFrames": false
-      },
       "backgroundColor": "gray",
+      "webPreferences": {
+        "contextIsolation": true,
+        "nativeWindowOpen": true,
+        "nodeIntegration": false,
+        "sandbox": true,
+        "webviewTag": false,
+        "nodeIntegrationInSubFrames": false,
+        "openerId": null,
+        "backgroundColor": "gray"
+      },
       "x": 100,
       "y": 100,
-      "focusable": false
+      "webContents": "[WebContents]"
     },
     [],
     {
       "url": "",
-      "policy": "no-referrer-when-downgrade"
+      "policy": "strict-origin-when-cross-origin"
     },
     null
   ],
   [
     "x=50,y=20,title=sup",
     {
-      "sender": "[WebContents]",
-      "returnValue": "placeholder-guest-contents-id"
+      "sender": "[WebContents]"
     },
     "about:blank",
-    "frame name",
+    "frame-name",
     "new-window",
     {
       "show": true,
       "width": 800,
       "height": 600,
-      "webContents": "[WebContents]",
-      "title": "sup",
-      "webPreferences": {
-        "nativeWindowOpen": true,
-        "sandbox": true,
-        "backgroundColor": "blue",
-        "nodeIntegration": false,
-        "webviewTag": false,
-        "nodeIntegrationInSubFrames": false
-      },
       "x": 50,
       "y": 20,
-      "backgroundColor": "blue",
-      "focusable": false
+      "title": "sup",
+      "webPreferences": {
+        "contextIsolation": true,
+        "nativeWindowOpen": true,
+        "nodeIntegration": false,
+        "sandbox": true,
+        "webviewTag": false,
+        "nodeIntegrationInSubFrames": false,
+        "openerId": null
+      },
+      "webContents": "[WebContents]"
     },
     [],
     {
       "url": "",
-      "policy": "no-referrer-when-downgrade"
+      "policy": "strict-origin-when-cross-origin"
     },
     null
   ],
   [
     "show=false,top=1,left=1",
     {
-      "sender": "[WebContents]",
-      "returnValue": "placeholder-guest-contents-id"
+      "sender": "[WebContents]"
     },
     "about:blank",
-    "frame name",
+    "frame-name",
     "new-window",
     {
       "show": false,
       "width": 800,
       "height": 600,
-      "webContents": "[WebContents]",
-      "title": "frame name",
-      "webPreferences": {
-        "nativeWindowOpen": true,
-        "sandbox": true,
-        "backgroundColor": "blue",
-        "nodeIntegration": false,
-        "webviewTag": false,
-        "nodeIntegrationInSubFrames": false
-      },
       "top": 1,
       "left": 1,
       "x": 1,
       "y": 1,
-      "backgroundColor": "blue",
-      "focusable": false
+      "webPreferences": {
+        "contextIsolation": true,
+        "nativeWindowOpen": true,
+        "nodeIntegration": false,
+        "sandbox": true,
+        "webviewTag": false,
+        "nodeIntegrationInSubFrames": false,
+        "openerId": null
+      },
+      "webContents": "[WebContents]"
     },
     [],
     {
       "url": "",
-      "policy": "no-referrer-when-downgrade"
+      "policy": "strict-origin-when-cross-origin"
     },
     null
   ]

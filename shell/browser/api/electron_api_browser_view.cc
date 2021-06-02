@@ -4,9 +4,12 @@
 
 #include "shell/browser/api/electron_api_browser_view.h"
 
+#include <vector>
+
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/native_browser_view.h"
+#include "shell/browser/ui/drag_util.h"
 #include "shell/common/color_util.h"
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -75,22 +78,31 @@ BrowserView::BrowserView(gin::Arguments* args,
       gin::Dictionary::CreateEmpty(isolate);
   options.Get(options::kWebPreferences, &web_preferences);
   web_preferences.Set("type", "browserView");
-  gin::Handle<class WebContents> web_contents =
-      WebContents::Create(isolate, web_preferences);
+
+  v8::Local<v8::Value> value;
+
+  // Copy the webContents option to webPreferences. This is only used internally
+  // to implement nativeWindowOpen option.
+  if (options.Get("webContents", &value)) {
+    web_preferences.SetHidden("webContents", value);
+  }
+
+  auto web_contents =
+      WebContents::CreateFromWebPreferences(args->isolate(), web_preferences);
 
   web_contents_.Reset(isolate, web_contents.ToV8());
   api_web_contents_ = web_contents.get();
+  api_web_contents_->AddObserver(this);
   Observe(web_contents->web_contents());
 
   view_.reset(
-      NativeBrowserView::Create(api_web_contents_->managed_web_contents()));
+      NativeBrowserView::Create(api_web_contents_->inspectable_web_contents()));
 }
 
 BrowserView::~BrowserView() {
-  if (api_web_contents_) {  // destroy() is called
-    // Destroy WebContents asynchronously unless app is shutting down,
-    // because destroy() might be called inside WebContents's event handler.
-    api_web_contents_->DestroyWebContents(!Browser::Get()->is_shutting_down());
+  if (api_web_contents_) {  // destroy() called without closing WebContents
+    api_web_contents_->RemoveObserver(this);
+    api_web_contents_->Destroy();
   }
 }
 
@@ -98,6 +110,11 @@ void BrowserView::WebContentsDestroyed() {
   api_web_contents_ = nullptr;
   web_contents_.Reset();
   Unpin();
+}
+
+void BrowserView::OnDraggableRegionsUpdated(
+    const std::vector<mojom::DraggableRegionPtr>& regions) {
+  view_->UpdateDraggableRegions(regions);
 }
 
 // static

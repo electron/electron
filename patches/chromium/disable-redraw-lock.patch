@@ -15,10 +15,10 @@ the redraw locking mechanism, which fixes these issues. The electron issue
 can be found at https://github.com/electron/electron/issues/1821
 
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index 5e8d267d868d4a8d90b7c4652c3be4d4df87d500..6838a9bb1b17d66f3653dd81dca616fee7c2ba41 100644
+index 41363666bbbec7a92ac563282816f0a058979bc7..82ec517dbd675ad8b4a78848b7d2a7f71512c2d5 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
-@@ -306,6 +306,10 @@ constexpr int kSynthesizedMouseMessagesTimeDifference = 500;
+@@ -307,6 +307,10 @@ constexpr int kSynthesizedMouseMessagesTimeDifference = 500;
  
  }  // namespace
  
@@ -29,7 +29,7 @@ index 5e8d267d868d4a8d90b7c4652c3be4d4df87d500..6838a9bb1b17d66f3653dd81dca616fe
  // A scoping class that prevents a window from being able to redraw in response
  // to invalidations that may occur within it for the lifetime of the object.
  //
-@@ -357,6 +361,7 @@ class HWNDMessageHandler::ScopedRedrawLock {
+@@ -358,6 +362,7 @@ class HWNDMessageHandler::ScopedRedrawLock {
          cancel_unlock_(false),
          should_lock_(owner_->IsVisible() && !owner->HasChildRenderingWindow() &&
                       ::IsWindow(hwnd_) &&
@@ -37,7 +37,7 @@ index 5e8d267d868d4a8d90b7c4652c3be4d4df87d500..6838a9bb1b17d66f3653dd81dca616fe
                       (!(GetWindowLong(hwnd_, GWL_STYLE) & WS_CAPTION) ||
                        !ui::win::IsAeroGlassEnabled())) {
      if (should_lock_)
-@@ -970,6 +975,10 @@ HWNDMessageHandler::RegisterUnadjustedMouseEvent() {
+@@ -978,6 +983,10 @@ HWNDMessageHandler::RegisterUnadjustedMouseEvent() {
    return scoped_enable;
  }
  
@@ -49,10 +49,10 @@ index 5e8d267d868d4a8d90b7c4652c3be4d4df87d500..6838a9bb1b17d66f3653dd81dca616fe
  // HWNDMessageHandler, gfx::WindowImpl overrides:
  
 diff --git a/ui/views/win/hwnd_message_handler.h b/ui/views/win/hwnd_message_handler.h
-index 7118ff56f0dd1c6291e4095ce7f3d8fc723f0398..5dbaab15ee1667ed1caf0b746b8e31d1b12a7b52 100644
+index a338ec40a4052a40304d7cf8c4e222f539412e68..6c109dde127bb04b33d18f030ffe4ec2a2e044c6 100644
 --- a/ui/views/win/hwnd_message_handler.h
 +++ b/ui/views/win/hwnd_message_handler.h
-@@ -203,6 +203,8 @@ class VIEWS_EXPORT HWNDMessageHandler : public gfx::WindowImpl,
+@@ -202,6 +202,8 @@ class VIEWS_EXPORT HWNDMessageHandler : public gfx::WindowImpl,
    using TouchIDs = std::set<DWORD>;
    enum class DwmFrameState { kOff, kOn };
  

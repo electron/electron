@@ -1,11 +1,11 @@
 [![Electron Logo](https://electronjs.org/images/electron-logo.svg)](https://electronjs.org)
 
-
 [![CircleCI Build Status](https://circleci.com/gh/electron/electron/tree/master.svg?style=shield)](https://circleci.com/gh/electron/electron/tree/master)
 [![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/4lggi9dpjc1qob7k/branch/master?svg=true)](https://ci.appveyor.com/project/electron-bot/electron-ljo26/branch/master)
 [![devDependency Status](https://david-dm.org/electron/electron/dev-status.svg)](https://david-dm.org/electron/electron?type=dev)
+[![Electron Discord Invite](https://img.shields.io/discord/745037351163527189?color=%237289DA&label=chat&logo=discord&logoColor=white)](https://discord.com/invite/electron)
 
-:memo: Available Translations: 🇨🇳 🇹🇼 🇧🇷 🇪🇸 🇰🇷 🇯🇵 🇷🇺 🇫🇷 🇹🇭 🇳🇱 🇹🇷 🇮🇩 🇺🇦 🇨🇿 🇮🇹 🇵🇱.
+:memo: Available Translations: 🇨🇳 🇧🇷 🇪🇸 🇯🇵 🇷🇺 🇫🇷 🇺🇸 🇩🇪.
 View these docs in other languages at [electron/i18n](https://github.com/electron/i18n/tree/master/content/).
 
 The Electron framework lets you write cross-platform desktop applications
@@ -28,15 +28,12 @@ The preferred method is to install Electron as a development dependency in your
 app:
 
 ```sh
-npm install electron --save-dev [--save-exact]
+npm install electron --save-dev
 ```
 
-The `--save-exact` flag is recommended for Electron prior to version 2, as it does not follow semantic
-versioning. As of version 2.0.0, Electron follows semver, so you don't need `--save-exact` flag. For info on how to manage Electron versions in your apps, see
-[Electron versioning](docs/tutorial/electron-versioning.md).
-
 For more installation options and troubleshooting tips, see
-[installation](docs/tutorial/installation.md).
+[installation](docs/tutorial/installation.md). For info on how to manage Electron versions in your apps, see
+[Electron versioning](docs/tutorial/electron-versioning.md).
 
 ## Quick start & Electron Fiddle
 

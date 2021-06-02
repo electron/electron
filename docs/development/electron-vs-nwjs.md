@@ -19,7 +19,7 @@ application.
 
 Electron works more like the Node.js runtime. Electron's APIs are lower level so
 you can use it for browser testing in place of
-[PhantomJS](http://phantomjs.org/).
+[PhantomJS](https://phantomjs.org/).
 
 ## 2) Node Integration
 

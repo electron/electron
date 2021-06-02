@@ -11,7 +11,6 @@
 #include "base/callback.h"
 #include "base/mac/scoped_nsobject.h"
 #include "base/memory/weak_ptr.h"
-#include "base/strings/string16.h"
 
 namespace electron {
 class ElectronMenuModel;
@@ -23,7 +22,8 @@ class ElectronMenuModel;
 // allow for hierarchical menus). The tag is the index into that model for
 // that particular item. It is important that the model outlives this object
 // as it only maintains weak references.
-@interface ElectronMenuController : NSObject <NSMenuDelegate> {
+@interface ElectronMenuController
+    : NSObject <NSMenuDelegate, NSSharingServiceDelegate> {
  @protected
   base::WeakPtr<electron::ElectronMenuModel> model_;
   base::scoped_nsobject<NSMenu> menu_;

@@ -35,6 +35,8 @@ describe('renderer nodeIntegrationInSubFrames', () => {
         expect(event1[0].frameId).to.not.equal(event2[0].frameId);
         expect(event1[0].frameId).to.equal(event1[2]);
         expect(event2[0].frameId).to.equal(event2[2]);
+        expect(event1[0].senderFrame.routingId).to.equal(event1[2]);
+        expect(event2[0].senderFrame.routingId).to.equal(event2[2]);
       });
 
       it('should load preload scripts in nested iframes', async () => {
@@ -47,6 +49,9 @@ describe('renderer nodeIntegrationInSubFrames', () => {
         expect(event1[0].frameId).to.equal(event1[2]);
         expect(event2[0].frameId).to.equal(event2[2]);
         expect(event3[0].frameId).to.equal(event3[2]);
+        expect(event1[0].senderFrame.routingId).to.equal(event1[2]);
+        expect(event2[0].senderFrame.routingId).to.equal(event2[2]);
+        expect(event3[0].senderFrame.routingId).to.equal(event3[2]);
       });
 
       it('should correctly reply to the main frame with using event.reply', async () => {
@@ -55,8 +60,18 @@ describe('renderer nodeIntegrationInSubFrames', () => {
         const [event1] = await detailsPromise;
         const pongPromise = emittedOnce(ipcMain, 'preload-pong');
         event1[0].reply('preload-ping');
-        const details = await pongPromise;
-        expect(details[1]).to.equal(event1[0].frameId);
+        const [, frameId] = await pongPromise;
+        expect(frameId).to.equal(event1[0].frameId);
+      });
+
+      it('should correctly reply to the main frame with using event.senderFrame.send', async () => {
+        const detailsPromise = emittedNTimes(ipcMain, 'preload-ran', 2);
+        w.loadFile(path.resolve(__dirname, `fixtures/sub-frames/frame-container${fixtureSuffix}.html`));
+        const [event1] = await detailsPromise;
+        const pongPromise = emittedOnce(ipcMain, 'preload-pong');
+        event1[0].senderFrame.send('preload-ping');
+        const [, frameId] = await pongPromise;
+        expect(frameId).to.equal(event1[0].frameId);
       });
 
       it('should correctly reply to the sub-frames with using event.reply', async () => {
@@ -65,8 +80,18 @@ describe('renderer nodeIntegrationInSubFrames', () => {
         const [, event2] = await detailsPromise;
         const pongPromise = emittedOnce(ipcMain, 'preload-pong');
         event2[0].reply('preload-ping');
-        const details = await pongPromise;
-        expect(details[1]).to.equal(event2[0].frameId);
+        const [, frameId] = await pongPromise;
+        expect(frameId).to.equal(event2[0].frameId);
+      });
+
+      it('should correctly reply to the sub-frames with using event.senderFrame.send', async () => {
+        const detailsPromise = emittedNTimes(ipcMain, 'preload-ran', 2);
+        w.loadFile(path.resolve(__dirname, `fixtures/sub-frames/frame-container${fixtureSuffix}.html`));
+        const [, event2] = await detailsPromise;
+        const pongPromise = emittedOnce(ipcMain, 'preload-pong');
+        event2[0].senderFrame.send('preload-ping');
+        const [, frameId] = await pongPromise;
+        expect(frameId).to.equal(event2[0].frameId);
       });
 
       it('should correctly reply to the nested sub-frames with using event.reply', async () => {
@@ -75,8 +100,18 @@ describe('renderer nodeIntegrationInSubFrames', () => {
         const [, , event3] = await detailsPromise;
         const pongPromise = emittedOnce(ipcMain, 'preload-pong');
         event3[0].reply('preload-ping');
-        const details = await pongPromise;
-        expect(details[1]).to.equal(event3[0].frameId);
+        const [, frameId] = await pongPromise;
+        expect(frameId).to.equal(event3[0].frameId);
+      });
+
+      it('should correctly reply to the nested sub-frames with using event.senderFrame.send', async () => {
+        const detailsPromise = emittedNTimes(ipcMain, 'preload-ran', 3);
+        w.loadFile(path.resolve(__dirname, `fixtures/sub-frames/frame-with-frame-container${fixtureSuffix}.html`));
+        const [, , event3] = await detailsPromise;
+        const pongPromise = emittedOnce(ipcMain, 'preload-pong');
+        event3[0].senderFrame.send('preload-ping');
+        const [, frameId] = await pongPromise;
+        expect(frameId).to.equal(event3[0].frameId);
       });
 
       it('should not expose globals in main world', async () => {
@@ -86,7 +121,7 @@ describe('renderer nodeIntegrationInSubFrames', () => {
         const senders = details.map(event => event[0].sender);
         const isolatedGlobals = await Promise.all(senders.map(sender => sender.executeJavaScript('window.isolatedGlobal')));
         for (const result of isolatedGlobals) {
-          if (webPreferences.contextIsolation) {
+          if (webPreferences.contextIsolation === undefined || webPreferences.contextIsolation) {
             expect(result).to.be.undefined();
           } else {
             expect(result).to.equal(true);
@@ -132,8 +167,8 @@ describe('renderer nodeIntegrationInSubFrames', () => {
       webPreferences: { sandbox: true }
     },
     {
-      name: 'context isolation',
-      webPreferences: { contextIsolation: true }
+      name: 'context isolation disabled',
+      webPreferences: { contextIsolation: false }
     },
     {
       name: 'webview',
@@ -155,7 +190,8 @@ describe('renderer nodeIntegrationInSubFrames', () => {
         webPreferences: {
           preload: path.resolve(__dirname, 'fixtures/sub-frames/webview-iframe-preload.js'),
           nodeIntegrationInSubFrames: true,
-          webviewTag: true
+          webviewTag: true,
+          contextIsolation: false
         }
       });
     });
@@ -216,7 +252,7 @@ ifdescribe(process.platform !== 'linux')('cross-site frame sandboxing', () => {
         await w.loadURL(serverUrl);
 
         const pidMain = w.webContents.getOSProcessId();
-        const pidFrame = (w.webContents as any)._getOSProcessIdForFrame('frame', crossSiteUrl);
+        const pidFrame = w.webContents.mainFrame.frames.find(f => f.name === 'frame')!.osProcessId;
 
         const metrics = app.getAppMetrics();
         const isProcessSandboxed = function (pid: number) {

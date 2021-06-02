@@ -31,7 +31,7 @@ void AutofillPopupChildView::GetAccessibleNodeData(ui::AXNodeData* node_data) {
 
 AutofillPopupView::AutofillPopupView(AutofillPopup* popup,
                                      views::Widget* parent_widget)
-    : popup_(popup), parent_widget_(parent_widget), weak_ptr_factory_(this) {
+    : popup_(popup), parent_widget_(parent_widget) {
   CreateChildViews();
   SetFocusBehavior(FocusBehavior::ALWAYS);
   set_drag_controller(this);
@@ -73,7 +73,7 @@ void AutofillPopupView::Show() {
     // The widget is destroyed by the corresponding NativeWidget, so we use
     // a weak pointer to hold the reference and don't have to worry about
     // deletion.
-    views::Widget* widget = new views::Widget;
+    auto* widget = new views::Widget;
     views::Widget::InitParams params(views::Widget::InitParams::TYPE_POPUP);
     params.delegate = this;
     params.parent = parent_widget_->GetNativeView();

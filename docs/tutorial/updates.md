@@ -132,7 +132,7 @@ autoUpdater.on('error', message => {
 })
 ```
 
-## Handing Updates Manually
+## Handling Updates Manually
 
 Because the requests made by Auto Update aren't under your direct control, you may find situations that are difficult to handle (such as if the update server is behind authentication). The `url` field does support files, which means that with some effort, you can sidestep the server-communication aspect of the process. [Here's an example of how this could work](https://github.com/electron/electron/issues/5020#issuecomment-477636990).
 

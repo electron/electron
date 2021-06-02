@@ -95,7 +95,7 @@ Returns `Promise<DesktopCapturerSource[]>` - Resolves with an array of [`Desktop
 which can detected by [`systemPreferences.getMediaAccessStatus`].
 
 [`navigator.mediaDevices.getUserMedia`]: https://developer.mozilla.org/en/docs/Web/API/MediaDevices/getUserMedia
-[`systemPreferences.getMediaAccessStatus`]: system-preferences.md#systempreferencesgetmediaaccessstatusmediatype-macos
+[`systemPreferences.getMediaAccessStatus`]: system-preferences.md#systempreferencesgetmediaaccessstatusmediatype-windows-macos
 
 ## Caveats
 

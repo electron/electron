@@ -1,25 +1,25 @@
 #!/usr/bin/env node
 
-var electron = require('./')
+const electron = require('./');
 
-var proc = require('child_process')
+const proc = require('child_process');
 
-var child = proc.spawn(electron, process.argv.slice(2), { stdio: 'inherit', windowsHide: false })
+const child = proc.spawn(electron, process.argv.slice(2), { stdio: 'inherit', windowsHide: false });
 child.on('close', function (code, signal) {
   if (code === null) {
-    console.error(electron, 'exited with signal', signal)
-    process.exit(1)
+    console.error(electron, 'exited with signal', signal);
+    process.exit(1);
   }
-  process.exit(code)
-})
+  process.exit(code);
+});
 
 const handleTerminationSignal = function (signal) {
   process.on(signal, function signalHandler () {
     if (!child.killed) {
-      child.kill(signal)
+      child.kill(signal);
     }
-  })
-}
+  });
+};
 
-handleTerminationSignal('SIGINT')
-handleTerminationSignal('SIGTERM')
+handleTerminationSignal('SIGINT');
+handleTerminationSignal('SIGTERM');

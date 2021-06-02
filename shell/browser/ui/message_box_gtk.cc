@@ -13,9 +13,16 @@
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/unresponsive_suppressor.h"
 #include "ui/base/glib/glib_signal.h"
-#include "ui/events/platform/x11/x11_event_source.h"
 #include "ui/gfx/image/image_skia.h"
 #include "ui/gtk/gtk_util.h"
+
+#if defined(USE_X11)
+#include "ui/events/platform/x11/x11_event_source.h"
+#endif
+
+#if defined(USE_OZONE) || defined(USE_X11)
+#include "ui/base/ui_base_features.h"
+#endif
 
 #define ANSI_FOREGROUND_RED "\x1b[31m"
 #define ANSI_FOREGROUND_BLACK "\x1b[30m"
@@ -80,9 +87,13 @@ class GtkMessageBox : public NativeWindowObserver {
 
     // Add buttons.
     GtkDialog* dialog = GTK_DIALOG(dialog_);
-    for (size_t i = 0; i < settings.buttons.size(); ++i) {
-      gtk_dialog_add_button(dialog, TranslateToStock(i, settings.buttons[i]),
-                            i);
+    if (settings.buttons.size() == 0) {
+      gtk_dialog_add_button(dialog, TranslateToStock(0, "OK"), 0);
+    } else {
+      for (size_t i = 0; i < settings.buttons.size(); ++i) {
+        gtk_dialog_add_button(dialog, TranslateToStock(i, settings.buttons[i]),
+                              i);
+      }
     }
     gtk_dialog_set_default_response(dialog, settings.default_id);
 
@@ -133,11 +144,16 @@ class GtkMessageBox : public NativeWindowObserver {
 
   void Show() {
     gtk_widget_show(dialog_);
-    // We need to call gtk_window_present after making the widgets visible to
-    // make sure window gets correctly raised and gets focus.
-    x11::Time time = ui::X11EventSource::GetInstance()->GetTimestamp();
-    gtk_window_present_with_time(GTK_WINDOW(dialog_),
-                                 static_cast<uint32_t>(time));
+
+#if defined(USE_X11)
+    if (!features::IsUsingOzonePlatform()) {
+      // We need to call gtk_window_present after making the widgets visible to
+      // make sure window gets correctly raised and gets focus.
+      x11::Time time = ui::X11EventSource::GetInstance()->GetTimestamp();
+      gtk_window_present_with_time(GTK_WINDOW(dialog_),
+                                   static_cast<uint32_t>(time));
+    }
+#endif
   }
 
   int RunSynchronous() {
@@ -204,11 +220,11 @@ void ShowMessageBox(const MessageBoxSettings& settings,
   (new GtkMessageBox(settings))->RunAsynchronous(std::move(callback));
 }
 
-void ShowErrorBox(const base::string16& title, const base::string16& content) {
+void ShowErrorBox(const std::u16string& title, const std::u16string& content) {
   if (Browser::Get()->is_ready()) {
     electron::MessageBoxSettings settings;
     settings.type = electron::MessageBoxType::kError;
-    settings.buttons = {"OK"};
+    settings.buttons = {};
     settings.title = "Error";
     settings.message = base::UTF16ToUTF8(title);
     settings.detail = base::UTF16ToUTF8(content);

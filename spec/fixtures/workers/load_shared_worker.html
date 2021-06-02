@@ -1,0 +1,15 @@
+<script>
+  function loadSharedWorker(url) {
+    return new Promise((resolve) => {
+      try {
+        const w = new SharedWorker(url);
+        w.onerror = () => resolve('failed');
+        w.port.onmessage = (m) => resolve(m.data);
+        w.port.postMessage('success');
+      } catch {
+        resolve('failed');
+      }
+    });
+  }
+</script>
+

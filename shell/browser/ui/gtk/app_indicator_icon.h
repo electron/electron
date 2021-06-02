@@ -41,7 +41,7 @@ class AppIndicatorIcon : public views::StatusIconLinux {
   // icons.
   AppIndicatorIcon(std::string id,
                    const gfx::ImageSkia& image,
-                   const base::string16& tool_tip);
+                   const std::u16string& tool_tip);
   ~AppIndicatorIcon() override;
 
   // Indicates whether libappindicator so could be opened.
@@ -49,7 +49,7 @@ class AppIndicatorIcon : public views::StatusIconLinux {
 
   // Overridden from views::StatusIconLinux:
   void SetIcon(const gfx::ImageSkia& image) override;
-  void SetToolTip(const base::string16& tool_tip) override;
+  void SetToolTip(const std::u16string& tool_tip) override;
   void UpdatePlatformContextMenu(ui::MenuModel* menu) override;
   void RefreshPlatformContextMenu() override;
 
@@ -96,13 +96,13 @@ class AppIndicatorIcon : public views::StatusIconLinux {
   base::nix::DesktopEnvironment desktop_env_;
 
   // Gtk status icon wrapper
-  AppIndicator* icon_;
+  AppIndicator* icon_ = nullptr;
 
   std::unique_ptr<AppIndicatorIconMenu> menu_;
-  ui::MenuModel* menu_model_;
+  ui::MenuModel* menu_model_ = nullptr;
 
   base::FilePath temp_dir_;
-  int icon_change_count_;
+  int icon_change_count_ = 0;
 
   base::WeakPtrFactory<AppIndicatorIcon> weak_factory_{this};
 

@@ -66,7 +66,7 @@ void SetNodeCliFlags() {
 
   for (const auto& arg : argv) {
 #if defined(OS_WIN)
-    const auto& option = base::UTF16ToUTF8(arg);
+    const auto& option = base::WideToUTF8(arg);
 #else
     const auto& option = arg;
 #endif
@@ -206,15 +206,12 @@ int NodeMain(int argc, char* argv[]) {
                                          exec_argv + exec_argc);  // NOLINT
       env = node::CreateEnvironment(isolate_data, gin_env.context(), args,
                                     exec_args);
-      CHECK_NE(nullptr, env);
+      CHECK_NOT_NULL(env);
 
       node::IsolateSettings is;
       node::SetIsolateUpForNode(isolate, is);
 
       gin_helper::Dictionary process(isolate, env->process_object());
-#if defined(OS_WIN)
-      process.SetMethod("log", &ElectronBindings::Log);
-#endif
       process.SetMethod("crash", &ElectronBindings::Crash);
 
       // Setup process.crashReporter in child node processes
@@ -242,14 +239,8 @@ int NodeMain(int argc, char* argv[]) {
       }
     }
 
-    // TODO(codebytere): we should try to handle this upstream.
-    {
-      v8::HandleScope scope(isolate);
-      node::InternalCallbackScope callback_scope(
-          env, v8::Object::New(isolate), {1, 0},
-          node::InternalCallbackScope::kSkipAsyncHooks);
-      node::LoadEnvironment(env);
-    }
+    v8::HandleScope scope(isolate);
+    node::LoadEnvironment(env);
 
     env->set_trace_sync_io(env->options()->trace_sync_io);
 
@@ -288,10 +279,6 @@ int NodeMain(int argc, char* argv[]) {
     node::Stop(env);
     node::FreeEnvironment(env);
     node::FreeIsolateData(isolate_data);
-
-    gin_env.platform()->DrainTasks(isolate);
-    gin_env.platform()->CancelPendingDelayedTasks(isolate);
-    gin_env.platform()->UnregisterIsolate(isolate);
   }
 
   // According to "src/gin/shell/gin_main.cc":

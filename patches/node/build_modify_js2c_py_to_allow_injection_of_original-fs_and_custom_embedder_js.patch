@@ -14,7 +14,7 @@ renderer/browser/worker/sandboxed bootstrap scripts).  These are loaded
 through LoadEmbedderJavaScriptSource()
 
 diff --git a/src/node_native_module.cc b/src/node_native_module.cc
-index 74729c412674be2cbf01d68be1bc496b06b8ce1e..7311f249fbb24e0612d9f4f174e96fa13ed77acb 100644
+index 4c3633e06c60265c974bdd2a5a3d2e615e4aeb82..5e03a3a6e35e934faf71e765d7fc6e356f40e8d0 100644
 --- a/src/node_native_module.cc
 +++ b/src/node_native_module.cc
 @@ -20,6 +20,7 @@ NativeModuleLoader NativeModuleLoader::instance_;
@@ -38,7 +38,7 @@ index 3be3f2364dd252bcdd668c699a0e7ae1e754e873..b2af1bce312ffca44e7005e11f92327e
  
    bool Exists(const char* id);
 diff --git a/tools/js2c.py b/tools/js2c.py
-index d5109fcae5542730623f5ec3ca244ec0973109f2..b25a9038ea7cfdb49b81e85f5bf497cc360e2b9e 100755
+index 93e9474297fd9032981786ae9d4e005f2d1a9a2e..bca4c44a31d1ffe7c9ae15b6f60cd55e325f707d 100755
 --- a/tools/js2c.py
 +++ b/tools/js2c.py
 @@ -38,6 +38,8 @@ import functools
@@ -129,7 +129,7 @@ index d5109fcae5542730623f5ec3ca244ec0973109f2..b25a9038ea7cfdb49b81e85f5bf497cc
    write_if_chaged(out, target)
  
  
-@@ -209,17 +228,21 @@ def main():
+@@ -211,17 +230,21 @@ def main():
    )
    parser.add_argument('--target', help='output file')
    parser.add_argument('--verbose', action='store_true', help='output file')

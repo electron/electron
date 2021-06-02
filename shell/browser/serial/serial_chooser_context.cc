@@ -4,6 +4,7 @@
 
 #include "shell/browser/serial/serial_chooser_context.h"
 
+#include <string>
 #include <utility>
 
 #include "base/base64.h"
@@ -15,8 +16,17 @@
 namespace electron {
 
 constexpr char kPortNameKey[] = "name";
-constexpr char kPersistentIdKey[] = "persistent_id";
 constexpr char kTokenKey[] = "token";
+#if defined(OS_WIN)
+constexpr char kDeviceInstanceIdKey[] = "device_instance_id";
+#else
+constexpr char kVendorIdKey[] = "vendor_id";
+constexpr char kProductIdKey[] = "product_id";
+constexpr char kSerialNumberKey[] = "serial_number";
+#if defined(OS_MAC)
+constexpr char kUsbDriverKey[] = "usb_driver";
+#endif  // defined(OS_MAC)
+#endif  // defined(OS_WIN)
 
 std::string EncodeToken(const base::UnguessableToken& token) {
   const uint64_t data[2] = {token.GetHighForSerialization(),
@@ -35,7 +45,7 @@ base::UnguessableToken DecodeToken(base::StringPiece input) {
     return base::UnguessableToken();
   }
 
-  const uint64_t* data = reinterpret_cast<const uint64_t*>(buffer.data());
+  const auto* data = reinterpret_cast<const uint64_t*>(buffer.data());
   return base::UnguessableToken::Deserialize(data[0], data[1]);
 }
 
@@ -45,10 +55,29 @@ base::Value PortInfoToValue(const device::mojom::SerialPortInfo& port) {
     value.SetStringKey(kPortNameKey, *port.display_name);
   else
     value.SetStringKey(kPortNameKey, port.path.LossyDisplayName());
-  if (SerialChooserContext::CanStorePersistentEntry(port))
-    value.SetStringKey(kPersistentIdKey, port.persistent_id.value());
-  else
+
+  if (!SerialChooserContext::CanStorePersistentEntry(port)) {
     value.SetStringKey(kTokenKey, EncodeToken(port.token));
+    return value;
+  }
+
+#if defined(OS_WIN)
+  // Windows provides a handy device identifier which we can rely on to be
+  // sufficiently stable for identifying devices across restarts.
+  value.SetStringKey(kDeviceInstanceIdKey, port.device_instance_id);
+#else
+  DCHECK(port.has_vendor_id);
+  value.SetIntKey(kVendorIdKey, port.vendor_id);
+  DCHECK(port.has_product_id);
+  value.SetIntKey(kProductIdKey, port.product_id);
+  DCHECK(port.serial_number);
+  value.SetStringKey(kSerialNumberKey, *port.serial_number);
+
+#if defined(OS_MAC)
+  DCHECK(port.usb_driver_name && !port.usb_driver_name->empty());
+  value.SetStringKey(kUsbDriverKey, *port.usb_driver_name);
+#endif  // defined(OS_MAC)
+#endif  // defined(OS_WIN)
   return value;
 }
 
@@ -89,7 +118,28 @@ bool SerialChooserContext::CanStorePersistentEntry(
   if (!port.display_name || port.display_name->empty())
     return false;
 
-  return port.persistent_id && !port.persistent_id->empty();
+#if defined(OS_WIN)
+  return !port.device_instance_id.empty();
+#else
+  if (!port.has_vendor_id || !port.has_product_id || !port.serial_number ||
+      port.serial_number->empty()) {
+    return false;
+  }
+
+#if defined(OS_MAC)
+  // The combination of the standard USB vendor ID, product ID and serial
+  // number properties should be enough to uniquely identify a device
+  // however recent versions of macOS include built-in drivers for common
+  // types of USB-to-serial adapters while their manufacturers still
+  // recommend installing their custom drivers. When both are loaded two
+  // IOSerialBSDClient instances are found for each device. Including the
+  // USB driver name allows us to distinguish between the two.
+  if (!port.usb_driver_name || port.usb_driver_name->empty())
+    return false;
+#endif  // defined(OS_MAC)
+
+  return true;
+#endif  // defined(OS_WIN)
 }
 
 device::mojom::SerialPortManager* SerialChooserContext::GetPortManager() {

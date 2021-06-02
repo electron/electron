@@ -5,7 +5,6 @@
 #ifndef SHELL_BROWSER_API_ELECTRON_API_COOKIES_H_
 #define SHELL_BROWSER_API_ELECTRON_API_COOKIES_H_
 
-#include <memory>
 #include <string>
 
 #include "base/callback_list.h"
@@ -63,9 +62,7 @@ class Cookies : public gin::Wrappable<Cookies>,
   void OnCookieChanged(const net::CookieChangeInfo& change);
 
  private:
-  std::unique_ptr<base::CallbackList<void(
-      const net::CookieChangeInfo& change)>::Subscription>
-      cookie_change_subscription_;
+  base::CallbackListSubscription cookie_change_subscription_;
 
   // Weak reference; ElectronBrowserContext is guaranteed to outlive us.
   ElectronBrowserContext* browser_context_;

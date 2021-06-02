@@ -51,6 +51,21 @@
   <message name="IDS_PICTURE_IN_PICTURE_SKIP_AD_CONTROL_TEXT" desc="Text label of the skip ad control button. The button appears when the user hovers over the Picture-in-Picture window.">
     Skip Ad
   </message>
+  <message name="IDS_PICTURE_IN_PICTURE_MUTE_MICROPHONE_TEXT" desc="Text label of the mute microphone control button. The button appears when the user hovers over the Picture-in-Picture window.">
+    Mute microphone
+  </message>
+  <message name="IDS_PICTURE_IN_PICTURE_UNMUTE_MICROPHONE_TEXT" desc="Text label of the unmute microphone control button. The button appears when the user hovers over the Picture-in-Picture window.">
+    Unmute microphone
+  </message>
+  <message name="IDS_PICTURE_IN_PICTURE_TURN_ON_CAMERA_TEXT" desc="Text label of the turn on camera control button. The button appears when the user hovers over the Picture-in-Picture window.">
+    Turn on camera
+  </message>
+  <message name="IDS_PICTURE_IN_PICTURE_TURN_OFF_CAMERA_TEXT" desc="Text label of the turn off camera control button. The button appears when the user hovers over the Picture-in-Picture window.">
+    Turn off camera
+  </message>
+  <message name="IDS_PICTURE_IN_PICTURE_HANG_UP_TEXT" desc="Text label of the hang up control button. The button appears when the user hovers over the Picture-in-Picture window.">
+    Hang up
+  </message>
   <message name="IDS_PICTURE_IN_PICTURE_CLOSE_CONTROL_TEXT" desc="Text label of the close control button. The button appears when the user hovers over the Picture-in-Picture window.">
     Close
   </message>
@@ -80,4 +95,21 @@
       Windows Utilities
     </message>
   </if>
+  <message name="IDS_DOWNLOAD_MORE_ACTIONS"
+          desc="Tooltip of a button on the downloads page that shows a menu with actions like 'Open downloads folder' or 'Clear all'">
+    More actions
+  </message>
+  <!-- Badging -->
+  <message name="IDS_SATURATED_BADGE_CONTENT" desc="The content to display when the application's badge is too large to display to indicate that the badge is more than a given maximum. This string should be as short as possible, preferably only one character beyond the content">
+    <ph name="MAXIMUM_VALUE">$1<ex>99</ex></ph>+
+  </message>
+  <message name="IDS_BADGE_UNREAD_NOTIFICATIONS_SATURATED" desc="The accessibility text which will be read by a screen reader when the notification count is too large to display (e.g. greater than 99).">
+    {MAX_UNREAD_NOTIFICATIONS, plural, =1 {More than 1 unread notification} other {More than # unread notifications}}
+  </message>
+  <message name="IDS_BADGE_UNREAD_NOTIFICATIONS_UNSPECIFIED" desc="The accessibility text which will be read by a screen reader when there are some unspecified number of notifications, or user attention is required">
+    Unread Notifications
+  </message>
+  <message name="IDS_BADGE_UNREAD_NOTIFICATIONS" desc="The accessibility text which will be read by a screen reader when there are notifcatications">
+    {UNREAD_NOTIFICATIONS, plural, =1 {1 Unread Notification} other {# Unread Notifications}}
+  </message>  
 </grit-part>

@@ -43,6 +43,6 @@ If the V8 context crashes, the DevTools will display this message.
 
 `DevTools was disconnected from the page. Once page is reloaded, DevTools will automatically reconnect.`
 
-Chromium logs can be enabled via the `ELECTRON_ENABLE_LOGGING` environment variable. For more information, see the [environment variables documentation](https://www.electronjs.org/docs/api/environment-variables#electron_enable_logging).
+Chromium logs can be enabled via the `ELECTRON_ENABLE_LOGGING` environment variable. For more information, see the [environment variables documentation](../api/environment-variables.md#electron_enable_logging).
 
-Alternatively, the command line argument `--enable-logging` can be passed. More information is available in the [command line switches documentation](https://www.electronjs.org/docs/api/command-line-switches#--enable-logging).
+Alternatively, the command line argument `--enable-logging` can be passed. More information is available in the [command line switches documentation](../api/command-line-switches.md#--enable-loggingdestination).

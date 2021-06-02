@@ -8,11 +8,10 @@
 </head>
 <body>
   <script>
-    require('electron').ipcRenderer.on('get-visibility-state', (event) => {
-      event.sender.send('visibility-state', document.visibilityState)
-    })
+    const { ipcRenderer } = require('electron')
+    ipcRenderer.send('initial-visibility-state', document.visibilityState)
     document.addEventListener('visibilitychange', () => {
-      require('electron').ipcRenderer.send('visibility-change')
+      ipcRenderer.send(`visibility-change-${document.visibilityState}`)
     })
   </script>
 </body>

@@ -8,11 +8,11 @@ Process: [Main](../glossary.md#main-process)
 
 The `powerMonitor` module emits the following events:
 
-### Event: 'suspend' _macOS_ _Windows_
+### Event: 'suspend'
 
 Emitted when the system is suspending.
 
-### Event: 'resume' _macOS_ _Windows_
+### Event: 'resume'
 
 Emitted when system is resuming.
 
@@ -65,3 +65,18 @@ before considered idle.  `locked` is available on supported systems only.
 Returns `Integer` - Idle time in seconds
 
 Calculate system idle time in seconds.
+
+### `powerMonitor.isOnBatteryPower()`
+
+Returns `Boolean` - Whether the system is on battery power.
+
+To monitor for changes in this property, use the `on-battery` and `on-ac`
+events.
+
+## Properties
+
+### `powerMonitor.onBatteryPower`
+
+A `Boolean` property. True if the system is on battery power.
+
+See [`powerMonitor.isOnBatteryPower()`](#powermonitorisonbatterypower).

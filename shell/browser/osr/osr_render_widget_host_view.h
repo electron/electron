@@ -52,8 +52,9 @@ class ElectronBeginFrameTimer;
 
 class ElectronDelegatedFrameHostClient;
 
-typedef base::Callback<void(const gfx::Rect&, const SkBitmap&)> OnPaintCallback;
-typedef base::Callback<void(const gfx::Rect&)> OnPopupPaintCallback;
+typedef base::RepeatingCallback<void(const gfx::Rect&, const SkBitmap&)>
+    OnPaintCallback;
+typedef base::RepeatingCallback<void(const gfx::Rect&)> OnPopupPaintCallback;
 
 class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
                                       public ui::CompositorDelegate,
@@ -67,10 +68,6 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
                                 OffScreenRenderWidgetHostView* parent_host_view,
                                 gfx::Size initial_size);
   ~OffScreenRenderWidgetHostView() override;
-
-  content::BrowserAccessibilityManager* CreateBrowserAccessibilityManager(
-      content::BrowserAccessibilityDelegate*,
-      bool) override;
 
   // content::RenderWidgetHostView:
   void InitAsChild(gfx::NativeView) override;
@@ -104,30 +101,38 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   void ShowDefinitionForSelection() override;
   void SpeakSelection() override;
   void SetWindowFrameInScreen(const gfx::Rect& rect) override;
+  void ShowSharePicker(
+      const std::string& title,
+      const std::string& text,
+      const std::string& url,
+      const std::vector<std::string>& file_paths,
+      blink::mojom::ShareService::ShareCallback callback) override;
   bool UpdateNSViewAndDisplay();
 #endif  // defined(OS_MAC)
 
   // content::RenderWidgetHostViewBase:
 
   void ResetFallbackToFirstNavigationSurface() override;
-  void InitAsPopup(content::RenderWidgetHostView* rwhv,
+  void InitAsPopup(content::RenderWidgetHostView* parent_host_view,
                    const gfx::Rect& rect) override;
-  void InitAsFullscreen(content::RenderWidgetHostView*) override;
   void UpdateCursor(const content::WebCursor&) override;
   void SetIsLoading(bool is_loading) override;
   void TextInputStateChanged(const ui::mojom::TextInputState& params) override;
   void ImeCancelComposition(void) override;
   void RenderProcessGone() override;
   void Destroy(void) override;
-  void SetTooltipText(const base::string16&) override;
+  void UpdateTooltipUnderCursor(const std::u16string&) override;
   content::CursorManager* GetCursorManager() override;
   void CopyFromSurface(
       const gfx::Rect& src_rect,
       const gfx::Size& output_size,
       base::OnceCallback<void(const SkBitmap&)> callback) override;
-  void GetScreenInfo(blink::ScreenInfo* results) override;
+  void GetScreenInfo(blink::ScreenInfo* screen_info) override;
   void TransformPointToRootSurface(gfx::PointF* point) override;
   gfx::Rect GetBoundsInRootWindow(void) override;
+  base::Optional<content::DisplayFeature> GetDisplayFeature() override;
+  void SetDisplayFeatureForTesting(
+      const content::DisplayFeature* display_feature) override;
   viz::SurfaceId GetCurrentSurfaceId() const override;
   std::unique_ptr<content::SyntheticGestureTarget>
   CreateSyntheticGestureTarget() override;
@@ -140,8 +145,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
       content::RenderWidgetHost*,
       content::WebContentsView*) override;
 
-  const viz::LocalSurfaceIdAllocation& GetLocalSurfaceIdAllocation()
-      const override;
+  const viz::LocalSurfaceId& GetLocalSurfaceId() const override;
   const viz::FrameSinkId& GetFrameSinkId() const override;
 
   void DidNavigate() override;
@@ -152,6 +156,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
       gfx::PointF* transformed_point) override;
 
   // ui::CompositorDelegate:
+  bool IsOffscreen() const override;
   std::unique_ptr<viz::HostDisplayClient> CreateHostDisplayClient(
       ui::Compositor* compositor) override;
 
@@ -254,10 +259,10 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
 
   bool paint_callback_running_ = false;
 
-  viz::LocalSurfaceIdAllocation delegated_frame_host_allocation_;
+  viz::LocalSurfaceId delegated_frame_host_surface_id_;
   viz::ParentLocalSurfaceIdAllocator delegated_frame_host_allocator_;
 
-  viz::LocalSurfaceIdAllocation compositor_allocation_;
+  viz::LocalSurfaceId compositor_surface_id_;
   viz::ParentLocalSurfaceIdAllocator compositor_allocator_;
 
   std::unique_ptr<ui::Layer> root_layer_;
@@ -283,7 +288,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
 
   std::unique_ptr<SkBitmap> backing_;
 
-  base::WeakPtrFactory<OffScreenRenderWidgetHostView> weak_ptr_factory_;
+  base::WeakPtrFactory<OffScreenRenderWidgetHostView> weak_ptr_factory_{this};
 
   DISALLOW_COPY_AND_ASSIGN(OffScreenRenderWidgetHostView);
 };

@@ -8,7 +8,6 @@
 #include <memory>
 #include <set>
 #include <string>
-#include <vector>
 
 #include "shell/renderer/renderer_client_base.h"
 
@@ -31,11 +30,6 @@ class ElectronRendererClient : public RendererClientBase {
                               content::RenderFrame* render_frame) override;
   void WillReleaseScriptContext(v8::Handle<v8::Context> context,
                                 content::RenderFrame* render_frame) override;
-  void SetupMainWorldOverrides(v8::Handle<v8::Context> context,
-                               content::RenderFrame* render_frame) override;
-  void SetupExtensionWorldOverrides(v8::Handle<v8::Context> context,
-                                    content::RenderFrame* render_frame,
-                                    int world_id) override;
 
  private:
   // content::ContentRendererClient:
@@ -45,7 +39,6 @@ class ElectronRendererClient : public RendererClientBase {
   bool ShouldFork(blink::WebLocalFrame* frame,
                   const GURL& url,
                   const std::string& http_method,
-                  bool is_initial_navigation,
                   bool is_server_redirect) override;
   void WorkerScriptReadyForEvaluationOnWorkerThread(
       v8::Local<v8::Context> context) override;

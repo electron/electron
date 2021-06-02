@@ -15,14 +15,12 @@ namespace electron {
 URLPipeLoader::URLPipeLoader(
     scoped_refptr<network::SharedURLLoaderFactory> factory,
     std::unique_ptr<network::ResourceRequest> request,
-    network::mojom::URLLoaderRequest loader,
+    mojo::PendingReceiver<network::mojom::URLLoader> loader,
     mojo::PendingRemote<network::mojom::URLLoaderClient> client,
     const net::NetworkTrafficAnnotationTag& annotation,
     base::DictionaryValue upload_data)
-    : binding_(this, std::move(loader)),
-      client_(std::move(client)),
-      weak_factory_(this) {
-  binding_.set_connection_error_handler(base::BindOnce(
+    : url_loader_(this, std::move(loader)), client_(std::move(client)) {
+  url_loader_.set_disconnect_handler(base::BindOnce(
       &URLPipeLoader::NotifyComplete, base::Unretained(this), net::ERR_FAILED));
 
   // PostTask since it might destruct.
@@ -40,7 +38,7 @@ void URLPipeLoader::Start(
     const net::NetworkTrafficAnnotationTag& annotation,
     base::DictionaryValue upload_data) {
   loader_ = network::SimpleURLLoader::Create(std::move(request), annotation);
-  loader_->SetOnResponseStartedCallback(base::Bind(
+  loader_->SetOnResponseStartedCallback(base::BindOnce(
       &URLPipeLoader::OnResponseStarted, weak_factory_.GetWeakPtr()));
 
   // TODO(zcbenz): The old protocol API only supports string as upload data,
@@ -63,7 +61,7 @@ void URLPipeLoader::OnResponseStarted(
     const network::mojom::URLResponseHead& response_head) {
   mojo::ScopedDataPipeProducerHandle producer;
   mojo::ScopedDataPipeConsumerHandle consumer;
-  MojoResult rv = mojo::CreateDataPipe(nullptr, &producer, &consumer);
+  MojoResult rv = mojo::CreateDataPipe(nullptr, producer, consumer);
   if (rv != MOJO_RESULT_OK) {
     NotifyComplete(net::ERR_INSUFFICIENT_RESOURCES);
     return;

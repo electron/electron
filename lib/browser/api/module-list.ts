@@ -26,12 +26,14 @@ export const browserModuleList: ElectronInternal.ModuleEntry[] = [
   { name: 'protocol', loader: () => require('./protocol') },
   { name: 'screen', loader: () => require('./screen') },
   { name: 'session', loader: () => require('./session') },
+  { name: 'ShareMenu', loader: () => require('./share-menu') },
   { name: 'systemPreferences', loader: () => require('./system-preferences') },
   { name: 'TouchBar', loader: () => require('./touch-bar') },
   { name: 'Tray', loader: () => require('./tray') },
   { name: 'View', loader: () => require('./view') },
   { name: 'webContents', loader: () => require('./web-contents') },
-  { name: 'WebContentsView', loader: () => require('./web-contents-view') }
+  { name: 'WebContentsView', loader: () => require('./web-contents-view') },
+  { name: 'webFrameMain', loader: () => require('./web-frame-main') }
 ];
 
 if (BUILDFLAG(ENABLE_DESKTOP_CAPTURER)) {

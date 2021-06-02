@@ -10,8 +10,6 @@
 
 #include "base/macros.h"
 #include "base/memory/weak_ptr.h"
-#include "base/scoped_observer.h"
-#include "base/strings/string16.h"
 #include "content/public/browser/serial_chooser.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_observer.h"
@@ -44,7 +42,7 @@ class SerialChooserController final : public SerialChooserContext::PortObserver,
   // SerialChooserContext::PortObserver:
   void OnPortAdded(const device::mojom::SerialPortInfo& port) override;
   void OnPortRemoved(const device::mojom::SerialPortInfo& port) override;
-  void OnPortManagerConnectionError() override;
+  void OnPortManagerConnectionError() override {}
 
  private:
   api::Session* GetSession();
@@ -59,11 +57,6 @@ class SerialChooserController final : public SerialChooserContext::PortObserver,
   url::Origin embedding_origin_;
 
   base::WeakPtr<SerialChooserContext> chooser_context_;
-  ScopedObserver<SerialChooserContext,
-                 SerialChooserContext::PortObserver,
-                 &SerialChooserContext::AddPortObserver,
-                 &SerialChooserContext::RemovePortObserver>
-      observer_{this};
 
   std::vector<device::mojom::SerialPortInfoPtr> ports_;
 

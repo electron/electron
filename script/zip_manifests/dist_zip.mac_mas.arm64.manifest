@@ -1,0 +1,228 @@
+Electron.app/
+Electron.app/Contents/
+Electron.app/Contents/Frameworks/
+Electron.app/Contents/Frameworks/Electron Framework.framework/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Electron Framework
+Electron.app/Contents/Frameworks/Electron Framework.framework/Libraries
+Electron.app/Contents/Frameworks/Electron Framework.framework/Resources
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Electron Framework
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries/libEGL.dylib
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries/libGLESv2.dylib
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries/libffmpeg.dylib
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries/libswiftshader_libEGL.dylib
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries/libswiftshader_libGLESv2.dylib
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries/libvk_swiftshader.dylib
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries/vk_swiftshader_icd.json
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/Info.plist
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/MainMenu.nib
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/am.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/am.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/ar.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/ar.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/bg.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/bg.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/bn.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/bn.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/ca.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/ca.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/chrome_100_percent.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/chrome_200_percent.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/cs.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/cs.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/da.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/da.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/de.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/de.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/el.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/el.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/en.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/en.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/en_GB.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/en_GB.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/es.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/es.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/es_419.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/es_419.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/et.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/et.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/fa.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/fa.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/fi.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/fi.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/fil.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/fil.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/fr.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/fr.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/gu.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/gu.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/he.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/he.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/hi.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/hi.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/hr.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/hr.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/hu.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/hu.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/icudtl.dat
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/id.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/id.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/it.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/it.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/ja.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/ja.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/kn.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/kn.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/ko.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/ko.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/lt.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/lt.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/lv.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/lv.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/ml.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/ml.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/mr.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/mr.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/ms.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/ms.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/nb.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/nb.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/nl.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/nl.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/pl.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/pl.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/pt_BR.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/pt_BR.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/pt_PT.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/pt_PT.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/resources.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/ro.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/ro.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/ru.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/ru.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/sk.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/sk.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/sl.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/sl.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/sr.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/sr.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/sv.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/sv.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/sw.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/sw.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/ta.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/ta.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/te.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/te.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/th.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/th.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/tr.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/tr.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/uk.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/uk.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/v8_context_snapshot.arm64.bin
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/vi.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/vi.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/zh_CN.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/zh_CN.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/zh_TW.lproj/
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Resources/zh_TW.lproj/locale.pak
+Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/Current
+Electron.app/Contents/Frameworks/Electron Helper.app/
+Electron.app/Contents/Frameworks/Electron Helper.app/Contents/
+Electron.app/Contents/Frameworks/Electron Helper.app/Contents/Info.plist
+Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/
+Electron.app/Contents/Frameworks/Electron Helper.app/Contents/MacOS/Electron Helper
+Electron.app/Contents/Frameworks/Electron Helper.app/Contents/PkgInfo
+Electron.app/Contents/Frameworks/Electron Helper (GPU).app/
+Electron.app/Contents/Frameworks/Electron Helper (GPU).app/Contents/
+Electron.app/Contents/Frameworks/Electron Helper (GPU).app/Contents/Info.plist
+Electron.app/Contents/Frameworks/Electron Helper (GPU).app/Contents/MacOS/
+Electron.app/Contents/Frameworks/Electron Helper (GPU).app/Contents/MacOS/Electron Helper (GPU)
+Electron.app/Contents/Frameworks/Electron Helper (GPU).app/Contents/PkgInfo
+Electron.app/Contents/Frameworks/Electron Helper (Plugin).app/
+Electron.app/Contents/Frameworks/Electron Helper (Plugin).app/Contents/
+Electron.app/Contents/Frameworks/Electron Helper (Plugin).app/Contents/Info.plist
+Electron.app/Contents/Frameworks/Electron Helper (Plugin).app/Contents/MacOS/
+Electron.app/Contents/Frameworks/Electron Helper (Plugin).app/Contents/MacOS/Electron Helper (Plugin)
+Electron.app/Contents/Frameworks/Electron Helper (Plugin).app/Contents/PkgInfo
+Electron.app/Contents/Frameworks/Electron Helper (Renderer).app/
+Electron.app/Contents/Frameworks/Electron Helper (Renderer).app/Contents/
+Electron.app/Contents/Frameworks/Electron Helper (Renderer).app/Contents/Info.plist
+Electron.app/Contents/Frameworks/Electron Helper (Renderer).app/Contents/MacOS/
+Electron.app/Contents/Frameworks/Electron Helper (Renderer).app/Contents/MacOS/Electron Helper (Renderer)
+Electron.app/Contents/Frameworks/Electron Helper (Renderer).app/Contents/PkgInfo
+Electron.app/Contents/Info.plist
+Electron.app/Contents/Library/
+Electron.app/Contents/Library/LoginItems/
+Electron.app/Contents/Library/LoginItems/Electron Login Helper.app/
+Electron.app/Contents/Library/LoginItems/Electron Login Helper.app/Contents/
+Electron.app/Contents/Library/LoginItems/Electron Login Helper.app/Contents/Info.plist
+Electron.app/Contents/Library/LoginItems/Electron Login Helper.app/Contents/MacOS/
+Electron.app/Contents/Library/LoginItems/Electron Login Helper.app/Contents/MacOS/Electron Login Helper
+Electron.app/Contents/Library/LoginItems/Electron Login Helper.app/Contents/PkgInfo
+Electron.app/Contents/MacOS/
+Electron.app/Contents/MacOS/Electron
+Electron.app/Contents/PkgInfo
+Electron.app/Contents/Resources/
+Electron.app/Contents/Resources/am.lproj/
+Electron.app/Contents/Resources/ar.lproj/
+Electron.app/Contents/Resources/bg.lproj/
+Electron.app/Contents/Resources/bn.lproj/
+Electron.app/Contents/Resources/ca.lproj/
+Electron.app/Contents/Resources/cs.lproj/
+Electron.app/Contents/Resources/da.lproj/
+Electron.app/Contents/Resources/de.lproj/
+Electron.app/Contents/Resources/default_app.asar
+Electron.app/Contents/Resources/el.lproj/
+Electron.app/Contents/Resources/electron.icns
+Electron.app/Contents/Resources/en.lproj/
+Electron.app/Contents/Resources/en_GB.lproj/
+Electron.app/Contents/Resources/es.lproj/
+Electron.app/Contents/Resources/es_419.lproj/
+Electron.app/Contents/Resources/et.lproj/
+Electron.app/Contents/Resources/fa.lproj/
+Electron.app/Contents/Resources/fi.lproj/
+Electron.app/Contents/Resources/fil.lproj/
+Electron.app/Contents/Resources/fr.lproj/
+Electron.app/Contents/Resources/gu.lproj/
+Electron.app/Contents/Resources/he.lproj/
+Electron.app/Contents/Resources/hi.lproj/
+Electron.app/Contents/Resources/hr.lproj/
+Electron.app/Contents/Resources/hu.lproj/
+Electron.app/Contents/Resources/id.lproj/
+Electron.app/Contents/Resources/it.lproj/
+Electron.app/Contents/Resources/ja.lproj/
+Electron.app/Contents/Resources/kn.lproj/
+Electron.app/Contents/Resources/ko.lproj/
+Electron.app/Contents/Resources/lt.lproj/
+Electron.app/Contents/Resources/lv.lproj/
+Electron.app/Contents/Resources/ml.lproj/
+Electron.app/Contents/Resources/mr.lproj/
+Electron.app/Contents/Resources/ms.lproj/
+Electron.app/Contents/Resources/nb.lproj/
+Electron.app/Contents/Resources/nl.lproj/
+Electron.app/Contents/Resources/pl.lproj/
+Electron.app/Contents/Resources/pt_BR.lproj/
+Electron.app/Contents/Resources/pt_PT.lproj/
+Electron.app/Contents/Resources/ro.lproj/
+Electron.app/Contents/Resources/ru.lproj/
+Electron.app/Contents/Resources/sk.lproj/
+Electron.app/Contents/Resources/sl.lproj/
+Electron.app/Contents/Resources/sr.lproj/
+Electron.app/Contents/Resources/sv.lproj/
+Electron.app/Contents/Resources/sw.lproj/
+Electron.app/Contents/Resources/ta.lproj/
+Electron.app/Contents/Resources/te.lproj/
+Electron.app/Contents/Resources/th.lproj/
+Electron.app/Contents/Resources/tr.lproj/
+Electron.app/Contents/Resources/uk.lproj/
+Electron.app/Contents/Resources/vi.lproj/
+Electron.app/Contents/Resources/zh_CN.lproj/
+Electron.app/Contents/Resources/zh_TW.lproj/
+LICENSE
+LICENSES.chromium.html
+version

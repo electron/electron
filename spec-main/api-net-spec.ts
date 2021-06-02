@@ -4,7 +4,7 @@ import * as http from 'http';
 import * as url from 'url';
 import { AddressInfo, Socket } from 'net';
 import { emittedOnce } from './events-helpers';
-import { defer } from './spec-helpers';
+import { defer, delay } from './spec-helpers';
 
 const kOneKiloByte = 1024;
 const kOneMegaByte = kOneKiloByte * kOneKiloByte;
@@ -475,6 +475,26 @@ describe('net module', () => {
       await collectStreamBody(response);
     });
 
+    it('should not change the case of header name', async () => {
+      const customHeaderName = 'X-Header-Name';
+      const customHeaderValue = 'value';
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        expect(request.headers[customHeaderName.toLowerCase()]).to.equal(customHeaderValue.toString());
+        expect(request.rawHeaders.includes(customHeaderName)).to.equal(true);
+        response.statusCode = 200;
+        response.statusMessage = 'OK';
+        response.end();
+      });
+
+      const urlRequest = net.request(serverUrl);
+      urlRequest.setHeader(customHeaderName, customHeaderValue);
+      expect(urlRequest.getHeader(customHeaderName)).to.equal(customHeaderValue);
+      urlRequest.write('');
+      const response = await getResponse(urlRequest);
+      expect(response.statusCode).to.equal(200);
+      await collectStreamBody(response);
+    });
+
     it('should not be able to set a custom HTTP request header after first write', async () => {
       const customHeaderName = 'Some-Custom-Header-Name';
       const customHeaderValue = 'Some-Customer-Header-Value';
@@ -532,6 +552,27 @@ describe('net module', () => {
         urlRequest.removeHeader(customHeaderName);
       }).to.throw();
       expect(urlRequest.getHeader(customHeaderName)).to.equal(customHeaderValue);
+      const response = await getResponse(urlRequest);
+      expect(response.statusCode).to.equal(200);
+      await collectStreamBody(response);
+    });
+
+    it('should keep the order of headers', async () => {
+      const customHeaderNameA = 'X-Header-100';
+      const customHeaderNameB = 'X-Header-200';
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        const headerNames = Array.from(Object.keys(request.headers));
+        const headerAIndex = headerNames.indexOf(customHeaderNameA.toLowerCase());
+        const headerBIndex = headerNames.indexOf(customHeaderNameB.toLowerCase());
+        expect(headerBIndex).to.be.below(headerAIndex);
+        response.statusCode = 200;
+        response.statusMessage = 'OK';
+        response.end();
+      });
+
+      const urlRequest = net.request(serverUrl);
+      urlRequest.setHeader(customHeaderNameB, 'b');
+      urlRequest.setHeader(customHeaderNameA, 'a');
       const response = await getResponse(urlRequest);
       expect(response.statusCode).to.equal(200);
       await collectStreamBody(response);
@@ -754,6 +795,140 @@ describe('net module', () => {
     describe('when {"credentials":"omit"}', () => {
       it('should not send cookies');
       it('should not store cookies');
+    });
+
+    it('should set sec-fetch-site to same-origin for request from same origin', async () => {
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        expect(request.headers['sec-fetch-site']).to.equal('same-origin');
+        response.statusCode = 200;
+        response.statusMessage = 'OK';
+        response.end();
+      });
+      const urlRequest = net.request({
+        url: serverUrl,
+        origin: serverUrl
+      });
+      await collectStreamBody(await getResponse(urlRequest));
+    });
+
+    it('should set sec-fetch-site to same-origin for request with the same origin header', async () => {
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        expect(request.headers['sec-fetch-site']).to.equal('same-origin');
+        response.statusCode = 200;
+        response.statusMessage = 'OK';
+        response.end();
+      });
+      const urlRequest = net.request({
+        url: serverUrl
+      });
+      urlRequest.setHeader('Origin', serverUrl);
+      await collectStreamBody(await getResponse(urlRequest));
+    });
+
+    it('should set sec-fetch-site to cross-site for request from other origin', async () => {
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        expect(request.headers['sec-fetch-site']).to.equal('cross-site');
+        response.statusCode = 200;
+        response.statusMessage = 'OK';
+        response.end();
+      });
+      const urlRequest = net.request({
+        url: serverUrl,
+        origin: 'https://not-exists.com'
+      });
+      await collectStreamBody(await getResponse(urlRequest));
+    });
+
+    it('should not send sec-fetch-user header by default', async () => {
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        expect(request.headers).not.to.have.property('sec-fetch-user');
+        response.statusCode = 200;
+        response.statusMessage = 'OK';
+        response.end();
+      });
+      const urlRequest = net.request({
+        url: serverUrl
+      });
+      await collectStreamBody(await getResponse(urlRequest));
+    });
+
+    it('should set sec-fetch-user to ?1 if requested', async () => {
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        expect(request.headers['sec-fetch-user']).to.equal('?1');
+        response.statusCode = 200;
+        response.statusMessage = 'OK';
+        response.end();
+      });
+      const urlRequest = net.request({
+        url: serverUrl
+      });
+      urlRequest.setHeader('sec-fetch-user', '?1');
+      await collectStreamBody(await getResponse(urlRequest));
+    });
+
+    it('should set sec-fetch-mode to no-cors by default', async () => {
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        expect(request.headers['sec-fetch-mode']).to.equal('no-cors');
+        response.statusCode = 200;
+        response.statusMessage = 'OK';
+        response.end();
+      });
+      const urlRequest = net.request({
+        url: serverUrl
+      });
+      await collectStreamBody(await getResponse(urlRequest));
+    });
+
+    ['navigate', 'cors', 'no-cors', 'same-origin'].forEach((mode) => {
+      it(`should set sec-fetch-mode to ${mode} if requested`, async () => {
+        const serverUrl = await respondOnce.toSingleURL((request, response) => {
+          expect(request.headers['sec-fetch-mode']).to.equal(mode);
+          response.statusCode = 200;
+          response.statusMessage = 'OK';
+          response.end();
+        });
+        const urlRequest = net.request({
+          url: serverUrl,
+          origin: serverUrl
+        });
+        urlRequest.setHeader('sec-fetch-mode', mode);
+        await collectStreamBody(await getResponse(urlRequest));
+      });
+    });
+
+    it('should set sec-fetch-dest to empty by default', async () => {
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        expect(request.headers['sec-fetch-dest']).to.equal('empty');
+        response.statusCode = 200;
+        response.statusMessage = 'OK';
+        response.end();
+      });
+      const urlRequest = net.request({
+        url: serverUrl
+      });
+      await collectStreamBody(await getResponse(urlRequest));
+    });
+
+    [
+      'empty', 'audio', 'audioworklet', 'document', 'embed', 'font',
+      'frame', 'iframe', 'image', 'manifest', 'object', 'paintworklet',
+      'report', 'script', 'serviceworker', 'style', 'track', 'video',
+      'worker', 'xslt'
+    ].forEach((dest) => {
+      it(`should set sec-fetch-dest to ${dest} if requested`, async () => {
+        const serverUrl = await respondOnce.toSingleURL((request, response) => {
+          expect(request.headers['sec-fetch-dest']).to.equal(dest);
+          response.statusCode = 200;
+          response.statusMessage = 'OK';
+          response.end();
+        });
+        const urlRequest = net.request({
+          url: serverUrl,
+          origin: serverUrl
+        });
+        urlRequest.setHeader('sec-fetch-dest', dest);
+        await collectStreamBody(await getResponse(urlRequest));
+      });
     });
 
     it('should be able to abort an HTTP request before first write', async () => {
@@ -1308,7 +1483,7 @@ describe('net module', () => {
       const urlRequest = net.request(serverUrl);
       urlRequest.end(randomBuffer(kOneMegaByte));
       const [error] = await emittedOnce(urlRequest, 'error');
-      expect(error.message).to.be.oneOf(['net::ERR_CONNECTION_RESET', 'net::ERR_CONNECTION_ABORTED']);
+      expect(error.message).to.be.oneOf(['net::ERR_FAILED', 'net::ERR_CONNECTION_RESET', 'net::ERR_CONNECTION_ABORTED']);
     });
 
     it('should not emit any event after close', async () => {
@@ -1475,6 +1650,38 @@ describe('net module', () => {
       netRequest.end();
       await collectStreamBody(nodeResponse);
       expect(nodeRequestProcessed).to.equal(true);
+    });
+
+    it('should correctly throttle an incoming stream', async () => {
+      let numChunksSent = 0;
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        const data = randomString(kOneMegaByte);
+        const write = () => {
+          let ok = true;
+          do {
+            numChunksSent++;
+            if (numChunksSent > 30) return;
+            ok = response.write(data);
+          } while (ok);
+          response.once('drain', write);
+        };
+        write();
+      });
+      const urlRequest = net.request(serverUrl);
+      urlRequest.on('response', () => {});
+      urlRequest.end();
+      await delay(2000);
+      expect(numChunksSent).to.be.at.most(20);
+    });
+  });
+
+  describe('net.isOnline', () => {
+    it('getter returns boolean', () => {
+      expect(net.isOnline()).to.be.a('boolean');
+    });
+
+    it('property returns boolean', () => {
+      expect(net.online).to.be.a('boolean');
     });
   });
 

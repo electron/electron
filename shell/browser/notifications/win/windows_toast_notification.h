@@ -66,7 +66,7 @@ class WindowsToastNotification : public Notification {
       const std::wstring& icon_path,
       const std::wstring& timeout_type,
       const bool silent,
-      ABI::Windows::Data::Xml::Dom::IXmlDocument** toastXml);
+      ABI::Windows::Data::Xml::Dom::IXmlDocument** toast_xml);
   HRESULT SetXmlAudioSilent(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc);
   HRESULT SetXmlScenarioReminder(
       ABI::Windows::Data::Xml::Dom::IXmlDocument* doc);
@@ -77,10 +77,11 @@ class WindowsToastNotification : public Notification {
                      const std::wstring& body);
   HRESULT SetXmlImage(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc,
                       const std::wstring& icon_path);
-  HRESULT GetTextNodeList(ScopedHString* tag,
-                          ABI::Windows::Data::Xml::Dom::IXmlDocument* doc,
-                          ABI::Windows::Data::Xml::Dom::IXmlNodeList** nodeList,
-                          uint32_t reqLength);
+  HRESULT GetTextNodeList(
+      ScopedHString* tag,
+      ABI::Windows::Data::Xml::Dom::IXmlDocument* doc,
+      ABI::Windows::Data::Xml::Dom::IXmlNodeList** node_list,
+      uint32_t req_length);
   HRESULT AppendTextToXml(ABI::Windows::Data::Xml::Dom::IXmlDocument* doc,
                           ABI::Windows::Data::Xml::Dom::IXmlNode* node,
                           const std::wstring& text);

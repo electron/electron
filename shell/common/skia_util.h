@@ -5,8 +5,6 @@
 #ifndef SHELL_COMMON_SKIA_UTIL_H_
 #define SHELL_COMMON_SKIA_UTIL_H_
 
-#include <string>
-
 #include "ui/gfx/image/image_skia.h"
 
 namespace electron {

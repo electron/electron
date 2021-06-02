@@ -218,7 +218,7 @@ LRESULT CALLBACK SystemPreferences::WndProcStatic(HWND hwnd,
                                                   UINT message,
                                                   WPARAM wparam,
                                                   LPARAM lparam) {
-  SystemPreferences* msg_wnd = reinterpret_cast<SystemPreferences*>(
+  auto* msg_wnd = reinterpret_cast<SystemPreferences*>(
       GetWindowLongPtr(hwnd, GWLP_USERDATA));
   if (msg_wnd)
     return msg_wnd->WndProc(hwnd, message, wparam, lparam);

@@ -5,44 +5,25 @@
 #ifndef SHELL_BROWSER_UI_VIEWS_MENU_BAR_H_
 #define SHELL_BROWSER_UI_VIEWS_MENU_BAR_H_
 
-#include <memory>
-
+#include "shell/browser/native_window_observer.h"
 #include "shell/browser/ui/electron_menu_model.h"
 #include "shell/browser/ui/views/menu_delegate.h"
 #include "shell/browser/ui/views/root_view.h"
 #include "ui/views/accessible_pane_view.h"
-#include "ui/views/controls/button/button.h"
-#include "ui/views/focus/focus_manager.h"
-#include "ui/views/view.h"
 
 namespace views {
-class Button;
 class MenuButton;
-}  // namespace views
+}
 
 namespace electron {
 
-class MenuBarColorUpdater : public views::FocusChangeListener {
- public:
-  explicit MenuBarColorUpdater(MenuBar* menu_bar);
-  ~MenuBarColorUpdater() override;
-
-  void OnDidChangeFocus(views::View* focused_before,
-                        views::View* focused_now) override;
-  void OnWillChangeFocus(views::View* focused_before,
-                         views::View* focused_now) override {}
-
- private:
-  MenuBar* menu_bar_;
-};
-
 class MenuBar : public views::AccessiblePaneView,
-                public views::ButtonListener,
-                public electron::MenuDelegate::Observer {
+                public MenuDelegate::Observer,
+                public NativeWindowObserver {
  public:
   static const char kViewClassName[];
 
-  explicit MenuBar(RootView* window);
+  MenuBar(NativeWindow* window, RootView* root_view);
   ~MenuBar() override;
 
   // Replaces current menu with a new one.
@@ -52,10 +33,10 @@ class MenuBar : public views::AccessiblePaneView,
   void SetAcceleratorVisibility(bool visible);
 
   // Returns true if the submenu has accelerator |key|
-  bool HasAccelerator(base::char16 key);
+  bool HasAccelerator(char16_t key);
 
   // Shows the submenu whose accelerator is |key|.
-  void ActivateAccelerator(base::char16 key);
+  void ActivateAccelerator(char16_t key);
 
   // Returns there are how many items in the root menu.
   int GetItemCount() const;
@@ -65,44 +46,43 @@ class MenuBar : public views::AccessiblePaneView,
                                     ElectronMenuModel** menu_model,
                                     views::MenuButton** button);
 
-  // electron::MenuDelegate::Observer:
+ private:
+  // MenuDelegate::Observer:
   void OnBeforeExecuteCommand() override;
   void OnMenuClosed() override;
 
+  // NativeWindowObserver:
+  void OnWindowBlur() override;
+  void OnWindowFocus() override;
+
   // views::AccessiblePaneView:
   bool AcceleratorPressed(const ui::Accelerator& accelerator) override;
-  bool SetPaneFocus(views::View* initial_focus) override;
-  void RemovePaneFocus() override;
+  bool SetPaneFocusAndFocusDefault() override;
   void OnThemeChanged() override;
 
- protected:
+  // views::FocusChangeListener:
+  void OnDidChangeFocus(View* focused_before, View* focused_now) override;
+
   // views::View:
   const char* GetClassName() const override;
 
-  // views::ButtonListener:
-  void ButtonPressed(views::Button* source, const ui::Event& event) override;
-
- private:
-  friend class MenuBarColorUpdater;
+  void ButtonPressed(int id, const ui::Event& event);
 
   void RebuildChildren();
   void UpdateViewColors();
-
   void RefreshColorCache();
+  View* FindAccelChild(char16_t key);
+
   SkColor background_color_;
-#if defined(USE_X11)
+#if defined(OS_LINUX)
   SkColor enabled_color_;
   SkColor disabled_color_;
 #endif
 
-  RootView* window_ = nullptr;
+  NativeWindow* window_;
+  RootView* root_view_;
   ElectronMenuModel* menu_model_ = nullptr;
-
-  View* FindAccelChild(base::char16 key);
-
-  bool has_focus_ = true;
-
-  std::unique_ptr<MenuBarColorUpdater> color_updater_;
+  bool accelerator_installed_ = false;
 
   DISALLOW_COPY_AND_ASSIGN(MenuBar);
 };

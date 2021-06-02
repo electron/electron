@@ -11,6 +11,18 @@
 #include "shell/browser/ui/inspectable_web_contents_view_mac.h"
 #include "ui/gfx/mac/scoped_cocoa_disable_screen_updates.h"
 
+@implementation ControlRegionView
+
+- (BOOL)mouseDownCanMoveWindow {
+  return NO;
+}
+
+- (NSView*)hitTest:(NSPoint)aPoint {
+  return nil;
+}
+
+@end
+
 @implementation ElectronInspectableWebContentsView
 
 - (instancetype)initWithInspectableWebContentsViewMac:
@@ -23,18 +35,7 @@
   devtools_visible_ = NO;
   devtools_docked_ = NO;
   devtools_is_first_responder_ = NO;
-
-  [[NSNotificationCenter defaultCenter]
-      addObserver:self
-         selector:@selector(viewDidBecomeFirstResponder:)
-             name:kViewDidBecomeFirstResponder
-           object:nil];
-
-  [[NSNotificationCenter defaultCenter]
-      addObserver:self
-         selector:@selector(parentWindowBecameMain:)
-             name:NSWindowDidBecomeMainNotification
-           object:nil];
+  attached_to_window_ = NO;
 
   if (inspectableWebContentsView_->inspectable_web_contents()->IsGuest()) {
     fake_view_.reset([[NSView alloc] init]);
@@ -48,18 +49,41 @@
     [self addSubview:contentsView];
   }
 
+  // This will float above devtools to exclude it from dragging.
+  devtools_mask_.reset([[ControlRegionView alloc] initWithFrame:NSZeroRect]);
+
   // See https://code.google.com/p/chromium/issues/detail?id=348490.
   [self setWantsLayer:YES];
 
   return self;
 }
 
-- (void)removeObservers {
+- (void)dealloc {
   [[NSNotificationCenter defaultCenter] removeObserver:self];
+  [super dealloc];
 }
 
 - (void)resizeSubviewsWithOldSize:(NSSize)oldBoundsSize {
   [self adjustSubviews];
+}
+
+- (void)viewDidMoveToWindow {
+  if (attached_to_window_ && !self.window) {
+    attached_to_window_ = NO;
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+  } else if (!attached_to_window_ && self.window) {
+    attached_to_window_ = YES;
+    [[NSNotificationCenter defaultCenter]
+        addObserver:self
+           selector:@selector(viewDidBecomeFirstResponder:)
+               name:kViewDidBecomeFirstResponder
+             object:nil];
+    [[NSNotificationCenter defaultCenter]
+        addObserver:self
+           selector:@selector(parentWindowBecameMain:)
+               name:NSWindowDidBecomeMainNotification
+             object:nil];
+  }
 }
 
 - (IBAction)showDevTools:(id)sender {
@@ -69,6 +93,14 @@
 - (void)notifyDevToolsFocused {
   if (inspectableWebContentsView_->GetDelegate())
     inspectableWebContentsView_->GetDelegate()->DevToolsFocused();
+}
+
+- (void)notifyDevToolsResized {
+  // When devtools is opened, resizing devtools would not trigger
+  // UpdateDraggableRegions for WebContents, so we have to notify the window
+  // to do an update of draggable regions.
+  if (inspectableWebContentsView_->GetDelegate())
+    inspectableWebContentsView_->GetDelegate()->DevToolsResized();
 }
 
 - (void)setDevToolsVisible:(BOOL)visible activate:(BOOL)activate {
@@ -84,6 +116,12 @@
   devtools_visible_ = visible;
   if (devtools_docked_) {
     if (visible) {
+      // The devToolsView is placed under the contentsView, so it has to be
+      // draggable to make draggable region of contentsView work.
+      [devToolsView setMouseDownCanMoveWindow:YES];
+      // This view will exclude the actual devtools part from dragging.
+      [self addSubview:devtools_mask_.get()];
+
       // Place the devToolsView under contentsView, notice that we didn't set
       // sizes for them until the setContentsResizingStrategy message.
       [self addSubview:devToolsView positioned:NSWindowBelow relativeTo:nil];
@@ -94,7 +132,9 @@
     } else {
       gfx::ScopedCocoaDisableScreenUpdates disabler;
       [devToolsView removeFromSuperview];
+      [devtools_mask_ removeFromSuperview];
       [self adjustSubviews];
+      [self notifyDevToolsResized];
     }
   } else {
     if (visible) {
@@ -182,7 +222,7 @@
   NSView* devToolsView = [[self subviews] objectAtIndex:0];
   NSView* contentsView = [[self subviews] objectAtIndex:1];
 
-  DCHECK_EQ(2u, [[self subviews] count]);
+  DCHECK_EQ(3u, [[self subviews] count]);
 
   gfx::Rect new_devtools_bounds;
   gfx::Rect new_contents_bounds;
@@ -191,6 +231,28 @@
       &new_devtools_bounds, &new_contents_bounds);
   [devToolsView setFrame:[self flipRectToNSRect:new_devtools_bounds]];
   [contentsView setFrame:[self flipRectToNSRect:new_contents_bounds]];
+
+  // Move mask to the devtools area to exclude it from dragging.
+  NSRect cf = contentsView.frame;
+  NSRect sb = [self bounds];
+  NSRect devtools_frame;
+  if (cf.size.height < sb.size.height) {  // bottom docked
+    devtools_frame.origin.x = 0;
+    devtools_frame.origin.y = 0;
+    devtools_frame.size.width = sb.size.width;
+    devtools_frame.size.height = sb.size.height - cf.size.height;
+  } else {                // left or right docked
+    if (cf.origin.x > 0)  // left docked
+      devtools_frame.origin.x = 0;
+    else  // right docked.
+      devtools_frame.origin.x = cf.size.width;
+    devtools_frame.origin.y = 0;
+    devtools_frame.size.width = sb.size.width - cf.size.width;
+    devtools_frame.size.height = sb.size.height;
+  }
+  [devtools_mask_ setFrame:devtools_frame];
+
+  [self notifyDevToolsResized];
 }
 
 - (void)setTitle:(NSString*)title {
@@ -200,8 +262,7 @@
 - (void)viewDidBecomeFirstResponder:(NSNotification*)notification {
   auto* inspectable_web_contents =
       inspectableWebContentsView_->inspectable_web_contents();
-  if (!inspectable_web_contents || inspectable_web_contents->IsGuest())
-    return;
+  DCHECK(inspectable_web_contents);
   auto* webContents = inspectable_web_contents->GetWebContents();
   auto* webContentsView = webContents->GetNativeView().GetNativeNSView();
 

@@ -8,10 +8,6 @@
 #include <memory>
 #include <string>
 
-#if defined(OS_LINUX)
-#include <glib.h>  // for g_setenv()
-#endif
-
 #include "base/base_switches.h"
 #include "base/command_line.h"
 #include "base/debug/stack_trace.h"
@@ -28,7 +24,6 @@
 #include "extensions/common/constants.h"
 #include "ipc/ipc_buildflags.h"
 #include "sandbox/policy/switches.h"
-#include "services/service_manager/embedder/switches.h"
 #include "services/tracing/public/cpp/stack_sampling/tracing_sampler_profiler.h"
 #include "shell/app/electron_content_client.h"
 #include "shell/browser/electron_browser_client.h"
@@ -40,7 +35,6 @@
 #include "shell/renderer/electron_renderer_client.h"
 #include "shell/renderer/electron_sandboxed_renderer_client.h"
 #include "shell/utility/electron_content_utility_client.h"
-#include "ui/base/l10n/l10n_util.h"
 #include "ui/base/resource/resource_bundle.h"
 #include "ui/base/ui_base_switches.h"
 
@@ -96,13 +90,12 @@ bool SubprocessNeedsResourceBundle(const std::string& process_type) {
   return
 #if defined(OS_LINUX)
       // The zygote process opens the resources for the renderers.
-      process_type == service_manager::switches::kZygoteProcess ||
+      process_type == ::switches::kZygoteProcess ||
 #endif
 #if defined(OS_MAC)
       // Mac needs them too for scrollbar related images and for sandbox
       // profiles.
       process_type == ::switches::kPpapiPluginProcess ||
-      process_type == ::switches::kPpapiBrokerProcess ||
       process_type == ::switches::kGpuProcess ||
 #endif
       process_type == ::switches::kRendererProcess ||
@@ -183,12 +176,8 @@ void InitLogging(base::Environment* env,
   }
 }
 
-}  // namespace
-
 // TODO(nornagon): move path provider overriding to its own file in
 // shell/common
-namespace electron {
-
 bool GetDefaultCrashDumpsPath(base::FilePath* path) {
   base::FilePath cur;
   if (!base::PathService::Get(DIR_USER_DATA, &cur))
@@ -218,12 +207,11 @@ void RegisterPathProvider() {
                                       PATH_END);
 }
 
-}  // namespace electron
+}  // namespace
 
-void LoadResourceBundle(const std::string& locale) {
+std::string LoadResourceBundle(const std::string& locale) {
   const bool initialized = ui::ResourceBundle::HasSharedInstance();
-  if (initialized)
-    ui::ResourceBundle::CleanupSharedInstance();
+  DCHECK(!initialized);
 
   // Load other resource files.
   base::FilePath pak_dir;
@@ -234,12 +222,12 @@ void LoadResourceBundle(const std::string& locale) {
   base::PathService::Get(base::DIR_MODULE, &pak_dir);
 #endif
 
-  ui::ResourceBundle::InitSharedInstanceWithLocale(
+  std::string loaded_locale = ui::ResourceBundle::InitSharedInstanceWithLocale(
       locale, nullptr, ui::ResourceBundle::LOAD_COMMON_RESOURCES);
   ui::ResourceBundle& bundle = ui::ResourceBundle::GetSharedInstance();
-  bundle.ReloadLocaleResources(locale);
   bundle.AddDataPackFromPath(pak_dir.Append(FILE_PATH_LITERAL("resources.pak")),
                              ui::SCALE_FACTOR_NONE);
+  return loaded_locale;
 }
 
 ElectronMainDelegate::ElectronMainDelegate() = default;
@@ -265,8 +253,8 @@ bool ElectronMainDelegate::BasicStartupComplete(int* exit_code) {
 
   auto env = base::Environment::Create();
 
-  // Enable convient stack printing. This is enabled by default in non-official
-  // builds.
+  // Enable convenient stack printing. This is enabled by default in
+  // non-official builds.
   if (env->HasVar(kElectronEnableStackDumping))
     base::debug::EnableInProcessStackDumping();
 
@@ -341,36 +329,6 @@ bool ElectronMainDelegate::BasicStartupComplete(int* exit_code) {
   return false;
 }
 
-void ElectronMainDelegate::PostEarlyInitialization(bool is_running_tests) {
-  std::string custom_locale;
-  ui::ResourceBundle::InitSharedInstanceWithLocale(
-      custom_locale, nullptr, ui::ResourceBundle::LOAD_COMMON_RESOURCES);
-  auto* cmd_line = base::CommandLine::ForCurrentProcess();
-  if (cmd_line->HasSwitch(::switches::kLang)) {
-    const std::string locale = cmd_line->GetSwitchValueASCII(::switches::kLang);
-    const base::FilePath locale_file_path =
-        ui::ResourceBundle::GetSharedInstance().GetLocaleFilePath(locale);
-    if (!locale_file_path.empty()) {
-      custom_locale = locale;
-#if defined(OS_LINUX)
-      /* When built with USE_GLIB, libcc's GetApplicationLocaleInternal() uses
-       * glib's g_get_language_names(), which keys off of getenv("LC_ALL") */
-      g_setenv("LC_ALL", custom_locale.c_str(), TRUE);
-#endif
-    }
-  }
-
-#if defined(OS_MAC)
-  if (custom_locale.empty())
-    l10n_util::OverrideLocaleWithCocoaLocale();
-#endif
-
-  LoadResourceBundle(custom_locale);
-
-  ElectronBrowserClient::SetApplicationLocale(
-      l10n_util::GetApplicationLocale(custom_locale));
-}
-
 void ElectronMainDelegate::PreSandboxStartup() {
   auto* command_line = base::CommandLine::ForCurrentProcess();
 
@@ -400,8 +358,7 @@ void ElectronMainDelegate::PreSandboxStartup() {
 #endif
 
 #if defined(OS_LINUX)
-  if (process_type != service_manager::switches::kZygoteProcess &&
-      !process_type.empty()) {
+  if (process_type != ::switches::kZygoteProcess && !process_type.empty()) {
     ElectronCrashReporterClient::Create();
     breakpad::InitCrashReporter(process_type);
   }
@@ -425,7 +382,7 @@ void ElectronMainDelegate::PreSandboxStartup() {
   }
 }
 
-void ElectronMainDelegate::PreCreateMainMessageLoop() {
+void ElectronMainDelegate::PreBrowserMain() {
   // This is initialized early because the service manager reads some feature
   // flags and we need to make sure the feature list is initialized before the
   // service manager reads the features.

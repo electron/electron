@@ -37,6 +37,7 @@ class ExecuteCodeInTabFunction : public ExecuteCodeFunction {
 class TabsExecuteScriptFunction : public ExecuteCodeInTabFunction {
  protected:
   bool ShouldInsertCSS() const override;
+  bool ShouldRemoveCSS() const override;
 
  private:
   ~TabsExecuteScriptFunction() override {}

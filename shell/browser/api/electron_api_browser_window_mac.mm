@@ -12,56 +12,19 @@
 #include "base/mac/scoped_nsobject.h"
 #include "shell/browser/native_browser_view.h"
 #include "shell/browser/native_window_mac.h"
+#include "shell/browser/ui/cocoa/electron_inspectable_web_contents_view.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
-
-@interface NSView (WebContentsView)
-- (void)setMouseDownCanMoveWindow:(BOOL)can_move;
-@end
-
-@interface ControlRegionView : NSView
-@end
-
-@implementation ControlRegionView
-
-- (BOOL)mouseDownCanMoveWindow {
-  return NO;
-}
-
-- (NSView*)hitTest:(NSPoint)aPoint {
-  return nil;
-}
-
-@end
 
 namespace electron {
 
 namespace api {
 
-namespace {
-
-// Return a vector of non-draggable regions that fill a window of size
-// |width| by |height|, but leave gaps where the window should be draggable.
-std::vector<gfx::Rect> CalculateNonDraggableRegions(
-    std::unique_ptr<SkRegion> draggable,
-    int width,
-    int height) {
-  std::vector<gfx::Rect> result;
-  SkRegion non_draggable;
-  non_draggable.op({0, 0, width, height}, SkRegion::kUnion_Op);
-  non_draggable.op(*draggable, SkRegion::kDifference_Op);
-  for (SkRegion::Iterator it(non_draggable); !it.done(); it.next()) {
-    result.push_back(gfx::SkIRectToRect(it.rect()));
-  }
-  return result;
-}
-
-}  // namespace
-
-void BrowserWindow::OverrideNSWindowContentView(InspectableWebContents* iwc) {
+void BrowserWindow::OverrideNSWindowContentView(
+    InspectableWebContentsView* view) {
   // Make NativeWindow use a NSView as content view.
   static_cast<NativeWindowMac*>(window())->OverrideNSWindowContentView();
   // Add webview to contentView.
-  NSView* webView = iwc->GetView()->GetNativeView().GetNativeNSView();
+  NSView* webView = view->GetNativeView().GetNativeNSView();
   NSView* contentView =
       [window()->GetNativeWindow().GetNativeNSWindow() contentView];
   [webView setFrame:[contentView bounds]];
@@ -72,6 +35,10 @@ void BrowserWindow::OverrideNSWindowContentView(InspectableWebContents* iwc) {
   [contentView addSubview:webView positioned:NSWindowBelow relativeTo:last];
 
   [contentView viewDidMoveToWindow];
+}
+
+void BrowserWindow::OnDevToolsResized() {
+  UpdateDraggableRegions(draggable_regions_);
 }
 
 void BrowserWindow::UpdateDraggableRegions(
@@ -102,23 +69,20 @@ void BrowserWindow::UpdateDraggableRegions(
     if ([subview isKindOfClass:[ControlRegionView class]])
       [subview removeFromSuperview];
 
-  // Draggable regions is implemented by having the whole web view draggable
-  // (mouseDownCanMoveWindow) and overlaying regions that are not draggable.
-  if (&draggable_regions_ != &regions) {
-    draggable_regions_.clear();
-    for (const auto& r : regions)
-      draggable_regions_.push_back(r.Clone());
-  }
+  // Draggable regions are implemented by having the whole web view draggable
+  // and overlaying regions that are not draggable.
+  if (&draggable_regions_ != &regions)
+    draggable_regions_ = mojo::Clone(regions);
+
   std::vector<gfx::Rect> drag_exclude_rects;
   if (regions.empty()) {
-    drag_exclude_rects.push_back(gfx::Rect(0, 0, webViewWidth, webViewHeight));
+    drag_exclude_rects.emplace_back(0, 0, webViewWidth, webViewHeight);
   } else {
     drag_exclude_rects = CalculateNonDraggableRegions(
         DraggableRegionsToSkRegion(regions), webViewWidth, webViewHeight);
   }
 
-  auto browser_views = window_->browser_views();
-  for (NativeBrowserView* view : browser_views) {
+  for (NativeBrowserView* view : window_->browser_views()) {
     view->UpdateDraggableRegions(drag_exclude_rects);
   }
 

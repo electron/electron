@@ -5,7 +5,6 @@
 #ifndef SHELL_BROWSER_UI_WIN_DIALOG_THREAD_H_
 #define SHELL_BROWSER_UI_WIN_DIALOG_THREAD_H_
 
-#include <memory>
 #include <utility>
 
 #include "base/memory/scoped_refptr.h"

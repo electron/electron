@@ -8,7 +8,6 @@
 #include <map>
 #include <memory>
 #include <string>
-#include <vector>
 
 #include "base/memory/weak_ptr.h"
 #include "chrome/browser/predictors/preconnect_manager.h"
@@ -48,9 +47,7 @@ class SpecialStoragePolicy;
 class WebViewManager;
 class ProtocolRegistry;
 
-class ElectronBrowserContext
-    : public content::BrowserContext,
-      public network::mojom::TrustedURLLoaderAuthClient {
+class ElectronBrowserContext : public content::BrowserContext {
  public:
   // partition_id => browser_context
   struct PartitionKey {
@@ -113,13 +110,6 @@ class ElectronBrowserContext
       override;
   content::StorageNotificationService* GetStorageNotificationService() override;
 
-  // extensions deps
-  void SetCorsOriginAccessListForOrigin(
-      const url::Origin& source_origin,
-      std::vector<network::mojom::CorsOriginPatternPtr> allow_patterns,
-      std::vector<network::mojom::CorsOriginPatternPtr> block_patterns,
-      base::OnceClosure closure) override;
-
   CookieChangeNotifier* cookie_change_notifier() const {
     return cookie_change_notifier_.get();
   }
@@ -158,14 +148,10 @@ class ElectronBrowserContext
                          bool in_memory,
                          base::DictionaryValue options);
 
-  void OnLoaderCreated(int32_t request_id,
-                       mojo::PendingReceiver<network::mojom::TrustedAuthClient>
-                           header_client) override;
-
   // Initialize pref registry.
   void InitPrefs();
 
-  ValueMapPrefStore* in_memory_pref_store_;
+  ValueMapPrefStore* in_memory_pref_store_ = nullptr;
 
   std::unique_ptr<content::ResourceContext> resource_context_;
   std::unique_ptr<CookieChangeNotifier> cookie_change_notifier_;
@@ -192,12 +178,11 @@ class ElectronBrowserContext
 
   // Shared URLLoaderFactory.
   scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory_;
-  mojo::Receiver<network::mojom::TrustedURLLoaderAuthClient> auth_client_{this};
 
   network::mojom::SSLConfigPtr ssl_config_;
   mojo::Remote<network::mojom::SSLConfigClient> ssl_config_client_;
 
-  base::WeakPtrFactory<ElectronBrowserContext> weak_factory_;
+  base::WeakPtrFactory<ElectronBrowserContext> weak_factory_{this};
 
   DISALLOW_COPY_AND_ASSIGN(ElectronBrowserContext);
 };

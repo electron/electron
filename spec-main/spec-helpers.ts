@@ -2,9 +2,19 @@ import * as childProcess from 'child_process';
 import * as path from 'path';
 import * as http from 'http';
 import * as v8 from 'v8';
+import { SuiteFunction, TestFunction } from 'mocha';
 
-export const ifit = (condition: boolean) => (condition ? it : it.skip);
-export const ifdescribe = (condition: boolean) => (condition ? describe : describe.skip);
+const addOnly = <T>(fn: Function): T => {
+  const wrapped = (...args: any[]) => {
+    return fn(...args);
+  };
+  (wrapped as any).only = wrapped;
+  (wrapped as any).skip = wrapped;
+  return wrapped as any;
+};
+
+export const ifit = (condition: boolean) => (condition ? it : addOnly<TestFunction>(it.skip));
+export const ifdescribe = (condition: boolean) => (condition ? describe : addOnly<SuiteFunction>(describe.skip));
 
 export const delay = (time: number = 0) => new Promise(resolve => setTimeout(resolve, time));
 
@@ -75,4 +85,50 @@ export async function startRemoteControlApp () {
   });
   defer(() => { appProcess.kill('SIGINT'); });
   return new RemoteControlApp(appProcess, port);
+}
+
+export function waitUntil (
+  callback: () => boolean,
+  opts: { rate?: number, timeout?: number } = {}
+) {
+  const { rate = 10, timeout = 10000 } = opts;
+  return new Promise<void>((resolve, reject) => {
+    let intervalId: NodeJS.Timeout | undefined; // eslint-disable-line prefer-const
+    let timeoutId: NodeJS.Timeout | undefined;
+
+    const cleanup = () => {
+      if (intervalId) clearInterval(intervalId);
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+
+    const check = () => {
+      let result;
+
+      try {
+        result = callback();
+      } catch (e) {
+        cleanup();
+        reject(e);
+        return;
+      }
+
+      if (result === true) {
+        cleanup();
+        resolve();
+        return true;
+      }
+    };
+
+    if (check()) {
+      return;
+    }
+
+    intervalId = setInterval(check, rate);
+
+    timeoutId = setTimeout(() => {
+      timeoutId = undefined;
+      cleanup();
+      reject(new Error(`waitUntil timed out after ${timeout}ms`));
+    }, timeout);
+  });
 }

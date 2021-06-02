@@ -23,7 +23,6 @@
 #include "components/upload_list/crash_upload_list.h"
 #include "content/public/common/content_switches.h"
 #include "electron/electron_version.h"
-#include "services/service_manager/embedder/switches.h"
 #include "shell/common/electron_paths.h"
 
 #if defined(OS_POSIX) && !defined(OS_MAC)
@@ -32,6 +31,10 @@
 
 #if defined(OS_POSIX)
 #include "base/debug/dump_without_crashing.h"
+#endif
+
+#if defined(OS_WIN)
+#include "base/strings/string_util_win.h"
 #endif
 
 namespace {
@@ -126,19 +129,19 @@ base::FilePath ElectronCrashReporterClient::GetReporterLogFilename() {
 
 #if defined(OS_WIN)
 void ElectronCrashReporterClient::GetProductNameAndVersion(
-    const base::string16& exe_path,
-    base::string16* product_name,
-    base::string16* version,
-    base::string16* special_build,
-    base::string16* channel_name) {
-  *product_name = base::UTF8ToUTF16(ELECTRON_PRODUCT_NAME);
-  *version = base::UTF8ToUTF16(ELECTRON_VERSION_STRING);
+    const std::wstring& exe_path,
+    std::wstring* product_name,
+    std::wstring* version,
+    std::wstring* special_build,
+    std::wstring* channel_name) {
+  *product_name = base::UTF8ToWide(ELECTRON_PRODUCT_NAME);
+  *version = base::UTF8ToWide(ELECTRON_VERSION_STRING);
 }
 #endif
 
 #if defined(OS_WIN)
 bool ElectronCrashReporterClient::GetCrashDumpLocation(
-    base::string16* crash_dir_str) {
+    std::wstring* crash_dir_str) {
   base::FilePath crash_dir;
   if (!base::PathService::Get(electron::DIR_CRASH_DUMPS, &crash_dir))
     return false;
@@ -210,7 +213,7 @@ bool ElectronCrashReporterClient::EnableBreakpadForProcess(
     const std::string& process_type) {
   return process_type == switches::kRendererProcess ||
          process_type == switches::kPpapiPluginProcess ||
-         process_type == service_manager::switches::kZygoteProcess ||
+         process_type == switches::kZygoteProcess ||
          process_type == switches::kGpuProcess ||
          process_type == switches::kUtilityProcess || process_type == "node";
 }

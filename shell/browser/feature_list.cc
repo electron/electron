@@ -9,10 +9,12 @@
 #include "base/base_switches.h"
 #include "base/command_line.h"
 #include "base/feature_list.h"
+#include "base/metrics/field_trial.h"
 #include "content/public/common/content_features.h"
 #include "electron/buildflags/buildflags.h"
 #include "media/base/media_switches.h"
 #include "net/base/features.h"
+#include "services/network/public/cpp/features.h"
 
 namespace electron {
 
@@ -36,16 +38,18 @@ void InitializeFeatureList() {
       std::string(",") +
       net::features::kCookiesWithoutSameSiteMustBeSecure.name;
 
-  // https://www.polymer-project.org/blog/2018-10-02-webcomponents-v0-deprecations
-  // https://chromium-review.googlesource.com/c/chromium/src/+/1869562
-  // Any website which uses older WebComponents will fail in without this
-  // enabled, since Electron does not support origin trials.
-  enable_features += std::string(",") + "WebComponentsV0Enabled";
-
 #if !BUILDFLAG(ENABLE_PICTURE_IN_PICTURE)
   disable_features += std::string(",") + media::kPictureInPicture.name;
 #endif
   base::FeatureList::InitializeInstance(enable_features, disable_features);
+}
+
+void InitializeFieldTrials() {
+  auto* cmd_line = base::CommandLine::ForCurrentProcess();
+  auto force_fieldtrials =
+      cmd_line->GetSwitchValueASCII(::switches::kForceFieldTrials);
+
+  base::FieldTrialList::CreateTrialsFromString(force_fieldtrials);
 }
 
 }  // namespace electron

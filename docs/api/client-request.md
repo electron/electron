@@ -47,6 +47,7 @@ following properties:
     be aborted. When mode is `manual` the redirection will be cancelled unless
     [`request.followRedirect`](#requestfollowredirect) is invoked synchronously
     during the [`redirect`](#event-redirect) event.  Defaults to `follow`.
+  * `origin` String (optional) - The origin URL of the request.
 
 `options` properties such as `protocol`, `host`, `hostname`, `port` and `path`
 strictly follow the Node.js model as described in the
@@ -98,6 +99,7 @@ request.on('login', (authInfo, callback) => {
   callback('username', 'password')
 })
 ```
+
 Providing empty credentials will cancel the request and report an authentication
 error on the response object:
 
@@ -138,7 +140,6 @@ follow and no response object will be provided.
 Emitted as the last event in the HTTP request-response transaction. The `close`
 event indicates that no more events will be emitted on either the `request` or
 `response` objects.
-
 
 #### Event: 'redirect'
 

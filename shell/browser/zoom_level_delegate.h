@@ -5,7 +5,6 @@
 #ifndef SHELL_BROWSER_ZOOM_LEVEL_DELEGATE_H_
 #define SHELL_BROWSER_ZOOM_LEVEL_DELEGATE_H_
 
-#include <memory>
 #include <string>
 
 #include "base/files/file_path.h"
@@ -52,8 +51,8 @@ class ZoomLevelDelegate : public content::ZoomLevelDelegate {
   void OnZoomLevelChanged(const content::HostZoomMap::ZoomLevelChange& change);
 
   PrefService* pref_service_;
-  content::HostZoomMap* host_zoom_map_;
-  std::unique_ptr<content::HostZoomMap::Subscription> zoom_subscription_;
+  content::HostZoomMap* host_zoom_map_ = nullptr;
+  base::CallbackListSubscription zoom_subscription_;
   std::string partition_key_;
 
   DISALLOW_COPY_AND_ASSIGN(ZoomLevelDelegate);

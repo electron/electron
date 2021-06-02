@@ -64,12 +64,8 @@ Forces the maximum disk space to be used by the disk cache, in bytes.
 ### --enable-api-filtering-logging
 
 Enables caller stack logging for the following APIs (filtering events):
-- `desktopCapturer.getSources()` / `desktop-capturer-get-sources`
-- `remote.require()` / `remote-require`
-- `remote.getGlobal()` / `remote-get-builtin`
-- `remote.getBuiltin()` / `remote-get-global`
-- `remote.getCurrentWindow()` / `remote-get-current-window`
-- `remote.getCurrentWebContents()` / `remote-get-current-web-contents`
+
+* `desktopCapturer.getSources()` / `desktop-capturer-get-sources`
 
 ### --enable-logging[=destination]
 
@@ -88,6 +84,12 @@ If `destination` is:
   in the same directory as the Electron executable.
 
 See also `--logging-level`, `--v`, and `--vmodule`.
+
+### --force-fieldtrials=`trials`
+
+Field trials to be forcefully enabled or disabled.
+
+For example: `WebRTC-Audio-Red-For-Opus/Enabled/`
 
 ### --host-rules=`rules`
 
@@ -164,7 +166,8 @@ proxy server flags that are passed.
 
 ### --no-sandbox
 
-Disables Chromium sandbox, which is now enabled by default.
+Disables the Chromium [sandbox](https://www.chromium.org/developers/design-documents/sandbox).
+Forces renderer process and Chromium helper processes to run un-sandboxed.
 Should only be used for testing.
 
 ### --proxy-bypass-list=`hosts`
@@ -199,14 +202,6 @@ authentication [per Chromium issue](https://bugs.chromium.org/p/chromium/issues/
 ### --remote-debugging-port=`port`
 
 Enables remote debugging over HTTP on the specified `port`.
-
-### --ppapi-flash-path=`path`
-
-Sets the `path` of the pepper flash plugin.
-
-### --ppapi-flash-version=`version`
-
-Sets the `version` of the pepper flash plugin.
 
 ### --v=`log_level`
 
@@ -268,12 +263,15 @@ See the [Debugging the Main Process][debugging-main-process] guide for more deta
 Aliased to `--debug[=[host:]port`.
 
 ### --inspect-publish-uid=stderr,http
+
 Specify ways of the inspector web socket url exposure.
 
 By default inspector websocket url is available in stderr and under /json/list endpoint on http://host:port/json/list.
 
 [app]: app.md
-[append-switch]: app.md#appcommandlineappendswitchswitch-value
+[append-switch]: command-line.md#commandlineappendswitchswitch-value
+[ready]: app.md#event-ready
+[play-silent-audio]: https://github.com/atom/atom/pull/9485/files
 [debugging-main-process]: ../tutorial/debugging-main-process.md
 [logging]: https://source.chromium.org/chromium/chromium/src/+/master:base/logging.h
 [node-cli]: https://nodejs.org/api/cli.html

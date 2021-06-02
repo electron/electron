@@ -135,8 +135,10 @@ class AsarURLLoader : public network::mojom::URLLoader {
       info.offset = 0;
     }
 
-    mojo::DataPipe pipe(kDefaultFileUrlPipeSize);
-    if (!pipe.consumer_handle.is_valid()) {
+    mojo::ScopedDataPipeProducerHandle producer_handle;
+    mojo::ScopedDataPipeConsumerHandle consumer_handle;
+    if (mojo::CreateDataPipe(kDefaultFileUrlPipeSize, producer_handle,
+                             consumer_handle) != MOJO_RESULT_OK) {
       OnClientComplete(net::ERR_FAILED);
       return;
     }
@@ -201,9 +203,9 @@ class AsarURLLoader : public network::mojom::URLLoader {
           static_cast<uint32_t>(read_result.bytes_read - first_byte_to_send),
           static_cast<uint32_t>(total_bytes_to_send));
       const uint32_t expected_write_size = write_size;
-      MojoResult result = pipe.producer_handle->WriteData(
-          &initial_read_buffer[first_byte_to_send], &write_size,
-          MOJO_WRITE_DATA_FLAG_NONE);
+      MojoResult result =
+          producer_handle->WriteData(&initial_read_buffer[first_byte_to_send],
+                                     &write_size, MOJO_WRITE_DATA_FLAG_NONE);
       if (result != MOJO_RESULT_OK || write_size != expected_write_size) {
         OnFileWritten(result);
         return;
@@ -228,7 +230,7 @@ class AsarURLLoader : public network::mojom::URLLoader {
                                head->mime_type.c_str());
     }
     client_->OnReceiveResponse(std::move(head));
-    client_->OnStartLoadingResponseBody(std::move(pipe.consumer_handle));
+    client_->OnStartLoadingResponseBody(std::move(consumer_handle));
 
     if (total_bytes_to_send == 0) {
       // There's definitely no more data, so we're already done.
@@ -245,8 +247,8 @@ class AsarURLLoader : public network::mojom::URLLoader {
         first_byte_to_send + info.offset,
         first_byte_to_send + info.offset + total_bytes_to_send);
 
-    data_producer_ = std::make_unique<mojo::DataPipeProducer>(
-        std::move(pipe.producer_handle));
+    data_producer_ =
+        std::make_unique<mojo::DataPipeProducer>(std::move(producer_handle));
     data_producer_->Write(
         std::move(file_data_source),
         base::BindOnce(&AsarURLLoader::OnFileWritten, base::Unretained(this)));

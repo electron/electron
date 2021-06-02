@@ -32,7 +32,7 @@ class MessagePort : public gin::Wrappable<MessagePort>, mojo::MessageReceiver {
   void Start();
   void Close();
 
-  void Entangle(blink::MessagePortDescriptor handle);
+  void Entangle(blink::MessagePortDescriptor port);
   void Entangle(blink::MessagePortChannel channel);
 
   blink::MessagePortChannel Disentangle();

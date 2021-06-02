@@ -56,7 +56,7 @@ inline void dispatch_sync_main(dispatch_block_t block) {
   electron::Browser::Get()->Quit();
 }
 
-- (void)setShutdownHandler:(base::Callback<bool()>)handler {
+- (void)setShutdownHandler:(base::RepeatingCallback<bool()>)handler {
   shouldShutdown_ = std::move(handler);
 }
 
@@ -177,36 +177,22 @@ inline void dispatch_sync_main(dispatch_block_t block) {
   electron::Browser::Get()->OpenURL(base::SysNSStringToUTF8(url));
 }
 
-- (bool)voiceOverEnabled {
-  NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
-  [defaults addSuiteNamed:@"com.apple.universalaccess"];
-  [defaults synchronize];
-
-  return [defaults boolForKey:@"voiceOverOnOffKey"];
-}
-
 - (void)accessibilitySetValue:(id)value forAttribute:(NSString*)attribute {
-  // Undocumented attribute that VoiceOver happens to set while running.
-  // Chromium uses this too, even though it's not exactly right.
-  if ([attribute isEqualToString:@"AXEnhancedUserInterface"]) {
-    bool enableAccessibility = ([self voiceOverEnabled] && [value boolValue]);
-    [self updateAccessibilityEnabled:enableAccessibility];
-  } else if ([attribute isEqualToString:@"AXManualAccessibility"]) {
-    [self updateAccessibilityEnabled:[value boolValue]];
+  // Undocumented attribute that screen reader related functionality
+  // sets when running.
+  if ([attribute isEqualToString:@"AXEnhancedUserInterface"] ||
+      [attribute isEqualToString:@"AXManualAccessibility"]) {
+    auto* ax_state = content::BrowserAccessibilityState::GetInstance();
+    if ([value boolValue]) {
+      ax_state->OnScreenReaderDetected();
+    } else {
+      ax_state->DisableAccessibility();
+    }
+
+    electron::Browser::Get()->OnAccessibilitySupportChanged();
   }
+
   return [super accessibilitySetValue:value forAttribute:attribute];
-}
-
-- (void)updateAccessibilityEnabled:(BOOL)enabled {
-  auto* ax_state = content::BrowserAccessibilityState::GetInstance();
-
-  if (enabled) {
-    ax_state->OnScreenReaderDetected();
-  } else {
-    ax_state->DisableAccessibility();
-  }
-
-  electron::Browser::Get()->OnAccessibilitySupportChanged();
 }
 
 - (void)orderFrontStandardAboutPanel:(id)sender {

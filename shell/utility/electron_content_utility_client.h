@@ -6,8 +6,6 @@
 #define SHELL_UTILITY_ELECTRON_CONTENT_UTILITY_CLIENT_H_
 
 #include <memory>
-#include <string>
-#include <vector>
 
 #include "base/compiler_specific.h"
 #include "content/public/utility/content_utility_client.h"
@@ -18,6 +16,10 @@ namespace printing {
 class PrintingHandler;
 }
 
+namespace mojo {
+class ServiceFactory;
+}  // namespace mojo
+
 namespace electron {
 
 class ElectronContentUtilityClient : public content::ContentUtilityClient {
@@ -27,8 +29,8 @@ class ElectronContentUtilityClient : public content::ContentUtilityClient {
 
   void ExposeInterfacesToBrowser(mojo::BinderMap* binders) override;
   bool OnMessageReceived(const IPC::Message& message) override;
-  mojo::ServiceFactory* GetMainThreadServiceFactory() override;
-  mojo::ServiceFactory* GetIOThreadServiceFactory() override;
+  void RegisterMainThreadServices(mojo::ServiceFactory& services) override;
+  void RegisterIOThreadServices(mojo::ServiceFactory& services) override;
 
  private:
 #if BUILDFLAG(ENABLE_PRINT_PREVIEW) && defined(OS_WIN)
@@ -36,7 +38,7 @@ class ElectronContentUtilityClient : public content::ContentUtilityClient {
 #endif
 
   // True if the utility process runs with elevated privileges.
-  bool utility_process_running_elevated_;
+  bool utility_process_running_elevated_ = false;
 
   DISALLOW_COPY_AND_ASSIGN(ElectronContentUtilityClient);
 };

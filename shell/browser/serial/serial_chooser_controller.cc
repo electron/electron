@@ -32,16 +32,24 @@ struct Converter<device::mojom::SerialPortInfoPtr> {
     if (port->display_name && !port->display_name->empty()) {
       dict.Set("displayName", *port->display_name);
     }
-    if (port->persistent_id && !port->persistent_id->empty()) {
-      dict.Set("persistentId", *port->persistent_id);
-    }
     if (port->has_vendor_id) {
       dict.Set("vendorId", base::StringPrintf("%u", port->vendor_id));
     }
     if (port->has_product_id) {
       dict.Set("productId", base::StringPrintf("%u", port->product_id));
     }
-
+    if (port->serial_number && !port->serial_number->empty()) {
+      dict.Set("serialNumber", *port->serial_number);
+    }
+#if defined(OS_MAC)
+    if (port->usb_driver_name && !port->usb_driver_name->empty()) {
+      dict.Set("usbDriverName", *port->usb_driver_name);
+    }
+#elif defined(OS_WIN)
+    if (!port->device_instance_id.empty()) {
+      dict.Set("deviceInstanceId", port->device_instance_id);
+    }
+#endif
     return gin::ConvertToV8(isolate, dict);
   }
 };
@@ -69,11 +77,13 @@ SerialChooserController::SerialChooserController(
   DCHECK(chooser_context_);
   chooser_context_->GetPortManager()->GetDevices(base::BindOnce(
       &SerialChooserController::OnGetDevices, weak_factory_.GetWeakPtr()));
-  observer_.Add(chooser_context_.get());
 }
 
 SerialChooserController::~SerialChooserController() {
   RunCallback(/*port=*/nullptr);
+  if (chooser_context_) {
+    chooser_context_->RemovePortObserver(this);
+  }
 }
 
 api::Session* SerialChooserController::GetSession() {
@@ -106,10 +116,6 @@ void SerialChooserController::OnPortRemoved(
   }
 }
 
-void SerialChooserController::OnPortManagerConnectionError() {
-  observer_.RemoveAll();
-}
-
 void SerialChooserController::OnDeviceChosen(const std::string& port_id) {
   if (port_id.empty()) {
     RunCallback(/*port=*/nullptr);
@@ -118,9 +124,13 @@ void SerialChooserController::OnDeviceChosen(const std::string& port_id) {
         std::find_if(ports_.begin(), ports_.end(), [&port_id](const auto& ptr) {
           return ptr->token.ToString() == port_id;
         });
-    chooser_context_->GrantPortPermission(requesting_origin_, embedding_origin_,
-                                          *it->get());
-    RunCallback(it->Clone());
+    if (it != ports_.end()) {
+      chooser_context_->GrantPortPermission(requesting_origin_,
+                                            embedding_origin_, *it->get());
+      RunCallback(it->Clone());
+    } else {
+      RunCallback(/*port=*/nullptr);
+    }
   }
 }
 

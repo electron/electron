@@ -17,7 +17,9 @@ Menu.prototype._init = function () {
 };
 
 Menu.prototype._isCommandIdChecked = function (id) {
-  return this.commandsMap[id] ? this.commandsMap[id].checked : false;
+  const item = this.commandsMap[id];
+  if (!item) return false;
+  return item.getCheckStatus();
 };
 
 Menu.prototype._isCommandIdEnabled = function (id) {
@@ -40,6 +42,12 @@ Menu.prototype._getAcceleratorForCommandId = function (id, useDefaultAccelerator
 Menu.prototype._shouldRegisterAcceleratorForCommandId = function (id) {
   return this.commandsMap[id] ? this.commandsMap[id].registerAccelerator : false;
 };
+
+if (process.platform === 'darwin') {
+  Menu.prototype._getSharingItemForCommandId = function (id) {
+    return this.commandsMap[id] ? this.commandsMap[id].sharingItem : null;
+  };
+}
 
 Menu.prototype._executeCommand = function (event, id) {
   const command = this.commandsMap[id];
@@ -169,7 +177,7 @@ Menu.setApplicationMenu = function (menu: MenuType) {
     bindings.setApplicationMenu(menu);
   } else {
     const windows = BaseWindow.getAllWindows();
-    return windows.map(w => w.setMenu(menu));
+    windows.map(w => w.setMenu(menu));
   }
 };
 
@@ -223,12 +231,12 @@ function sortTemplate (template: (MenuItemConstructorOptions | MenuItem)[]) {
 function generateGroupId (items: (MenuItemConstructorOptions | MenuItem)[], pos: number) {
   if (pos > 0) {
     for (let idx = pos - 1; idx >= 0; idx--) {
-      if (items[idx].type === 'radio') return (items[idx] as any).groupId;
+      if (items[idx].type === 'radio') return (items[idx] as MenuItem).groupId;
       if (items[idx].type === 'separator') break;
     }
   } else if (pos < items.length) {
     for (let idx = pos; idx <= items.length - 1; idx++) {
-      if (items[idx].type === 'radio') return (items[idx] as any).groupId;
+      if (items[idx].type === 'radio') return (items[idx] as MenuItem).groupId;
       if (items[idx].type === 'separator') break;
     }
   }

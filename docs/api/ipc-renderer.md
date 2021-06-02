@@ -61,9 +61,13 @@ Algorithm][SCA], just like [`window.postMessage`][], so prototype chains will no
 included. Sending Functions, Promises, Symbols, WeakMaps, or WeakSets will
 throw an exception.
 
-> **NOTE**: Sending non-standard JavaScript types such as DOM objects or
-> special Electron objects is deprecated, and will begin throwing an exception
-> starting with Electron 9.
+> **NOTE:** Sending non-standard JavaScript types such as DOM objects or
+> special Electron objects will throw an exception.
+>
+> Since the main process does not have support for DOM objects such as
+> `ImageBitmap`, `File`, `DOMMatrix` and so on, such objects cannot be sent over
+> Electron's IPC to the main process, as the main process would have no way to decode
+> them. Attempting to send such objects over IPC will result in an error.
 
 The main process handles it by listening for `channel` with the
 [`ipcMain`](ipc-main.md) module.
@@ -85,14 +89,19 @@ Algorithm][SCA], just like [`window.postMessage`][], so prototype chains will no
 included. Sending Functions, Promises, Symbols, WeakMaps, or WeakSets will
 throw an exception.
 
-> **NOTE**: Sending non-standard JavaScript types such as DOM objects or
-> special Electron objects is deprecated, and will begin throwing an exception
-> starting with Electron 9.
+> **NOTE:** Sending non-standard JavaScript types such as DOM objects or
+> special Electron objects will throw an exception.
+>
+> Since the main process does not have support for DOM objects such as
+> `ImageBitmap`, `File`, `DOMMatrix` and so on, such objects cannot be sent over
+> Electron's IPC to the main process, as the main process would have no way to decode
+> them. Attempting to send such objects over IPC will result in an error.
 
 The main process should listen for `channel` with
 [`ipcMain.handle()`](ipc-main.md#ipcmainhandlechannel-listener).
 
 For example:
+
 ```javascript
 // Renderer process
 ipcRenderer.invoke('some-name', someArgument).then((result) => {
@@ -123,9 +132,13 @@ Algorithm][SCA], just like [`window.postMessage`][], so prototype chains will no
 included. Sending Functions, Promises, Symbols, WeakMaps, or WeakSets will
 throw an exception.
 
-> **NOTE**: Sending non-standard JavaScript types such as DOM objects or
-> special Electron objects is deprecated, and will begin throwing an exception
-> starting with Electron 9.
+> **NOTE:** Sending non-standard JavaScript types such as DOM objects or
+> special Electron objects will throw an exception.
+>
+> Since the main process does not have support for DOM objects such as
+> `ImageBitmap`, `File`, `DOMMatrix` and so on, such objects cannot be sent over
+> Electron's IPC to the main process, as the main process would have no way to decode
+> them. Attempting to send such objects over IPC will result in an error.
 
 The main process handles it by listening for `channel` with [`ipcMain`](ipc-main.md) module,
 and replies by setting `event.returnValue`.
@@ -149,6 +162,7 @@ The transferred `MessagePort` objects will be available in the main process as
 property of the emitted event.
 
 For example:
+
 ```js
 // Renderer process
 const { port1, port2 } = new MessageChannel()

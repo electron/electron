@@ -12,7 +12,6 @@
 #include "base/macros.h"
 #include "base/memory/scoped_refptr.h"
 #include "base/process/process_metrics.h"
-#include "base/strings/string16.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_bindings.h"
 #include "uv.h"  // NOLINT(build/include_directory)
@@ -48,7 +47,6 @@ class ElectronBindings {
                           gin_helper::Dictionary* process,
                           base::ProcessMetrics* metrics);
 
-  static void Log(const base::string16& message);
   static void Crash();
 
  private:

@@ -17,13 +17,12 @@ sys.path.append(
 
 from zipfile import ZipFile
 from lib.config import PLATFORM, get_target_arch,  get_env_var, s3_config, \
-                       get_zip_name
+                       get_zip_name, enable_verbose_mode, get_platform_key
 from lib.util import get_electron_branding, execute, get_electron_version, \
                      s3put, get_electron_exec, get_out_dir, \
-                     SRC_DIR, ELECTRON_DIR
+                     SRC_DIR, ELECTRON_DIR, TS_NODE
 
 
-ELECTRON_REPO = 'electron/electron'
 ELECTRON_VERSION = get_electron_version()
 
 PROJECT_NAME = get_electron_branding()['project_name']
@@ -36,12 +35,17 @@ SYMBOLS_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION, 'symbols')
 DSYM_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION, 'dsym')
 PDB_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION, 'pdb')
 DEBUG_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION, 'debug')
-TOOLCHAIN_PROFILE_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION, 'toolchain-profile')
+TOOLCHAIN_PROFILE_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION,
+                                      'toolchain-profile')
+CXX_OBJECTS_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION,
+                                      'libcxx_objects')
 
 
 def main():
   args = parse_args()
-  if  args.upload_to_s3:
+  if args.verbose:
+    enable_verbose_mode()
+  if args.upload_to_s3:
     utcnow = datetime.datetime.utcnow()
     args.upload_timestamp = utcnow.strftime('%Y%m%d')
 
@@ -59,7 +63,8 @@ def main():
     tag_exists = True
 
   if not args.upload_to_s3:
-    assert release['exists'], 'Release does not exist; cannot upload to GitHub!'
+    assert release['exists'], \
+          'Release does not exist; cannot upload to GitHub!'
     assert tag_exists == args.overwrite, \
           'You have to pass --overwrite to overwrite a published release'
 
@@ -73,11 +78,13 @@ def main():
     shutil.copy2(os.path.join(OUT_DIR, 'symbols.zip'), symbols_zip)
     upload_electron(release, symbols_zip, args)
   if PLATFORM == 'darwin':
-    api_path = os.path.join(ELECTRON_DIR, 'electron-api.json')
-    upload_electron(release, api_path, args)
+    if get_platform_key() == 'darwin' and get_target_arch() == 'x64':
+      api_path = os.path.join(ELECTRON_DIR, 'electron-api.json')
+      upload_electron(release, api_path, args)
 
-    ts_defs_path = os.path.join(ELECTRON_DIR, 'electron.d.ts')
-    upload_electron(release, ts_defs_path, args)
+      ts_defs_path = os.path.join(ELECTRON_DIR, 'electron.d.ts')
+      upload_electron(release, ts_defs_path, args)
+
     dsym_zip = os.path.join(OUT_DIR, DSYM_NAME)
     shutil.copy2(os.path.join(OUT_DIR, 'dsym.zip'), dsym_zip)
     upload_electron(release, dsym_zip, args)
@@ -89,6 +96,20 @@ def main():
     debug_zip = os.path.join(OUT_DIR, DEBUG_NAME)
     shutil.copy2(os.path.join(OUT_DIR, 'debug.zip'), debug_zip)
     upload_electron(release, debug_zip, args)
+
+    # Upload libcxx_objects.zip for linux only
+    libcxx_objects = get_zip_name('libcxx-objects', ELECTRON_VERSION)
+    libcxx_objects_zip = os.path.join(OUT_DIR, libcxx_objects)
+    shutil.copy2(os.path.join(OUT_DIR, 'libcxx_objects.zip'), libcxx_objects_zip)
+    upload_electron(release, libcxx_objects_zip, args)
+
+    # Upload headers.zip and abi_headers.zip as non-platform specific
+    if get_target_arch() == "x64":
+      cxx_headers_zip = os.path.join(OUT_DIR, 'libcxx_headers.zip')
+      upload_electron(release, cxx_headers_zip, args)
+
+      abi_headers_zip = os.path.join(OUT_DIR, 'libcxxabi_headers.zip')
+      upload_electron(release, abi_headers_zip, args)
 
   # Upload free version of ffmpeg.
   ffmpeg = get_zip_name('ffmpeg', ELECTRON_VERSION)
@@ -114,7 +135,8 @@ def main():
 
   if PLATFORM == 'linux' and get_target_arch() == 'x64':
     # Upload the hunspell dictionaries only from the linux x64 build
-    hunspell_dictionaries_zip = os.path.join(OUT_DIR, 'hunspell_dictionaries.zip')
+    hunspell_dictionaries_zip = os.path.join(
+      OUT_DIR, 'hunspell_dictionaries.zip')
     upload_electron(release, hunspell_dictionaries_zip, args)
 
   if not tag_exists and not args.upload_to_s3:
@@ -126,7 +148,9 @@ def main():
   if PLATFORM == 'win32':
     toolchain_profile_zip = os.path.join(OUT_DIR, TOOLCHAIN_PROFILE_NAME)
     with ZipFile(toolchain_profile_zip, 'w') as myzip:
-      myzip.write(os.path.join(OUT_DIR, 'windows_toolchain_profile.json'), 'toolchain_profile.json')
+      myzip.write(
+        os.path.join(OUT_DIR, 'windows_toolchain_profile.json'),
+        'toolchain_profile.json')
     upload_electron(release, toolchain_profile_zip, args)
 
 
@@ -146,17 +170,20 @@ def parse_args():
                       action='store_true',
                       default=False,
                       required=False)
+  parser.add_argument('--verbose',
+                      action='store_true',
+                      help='Mooooorreee logs')
   return parser.parse_args()
 
 
 def run_python_upload_script(script, *args):
   script_path = os.path.join(
     ELECTRON_DIR, 'script', 'release', 'uploaders', script)
-  return execute([sys.executable, script_path] + list(args))
+  print(execute([sys.executable, script_path] + list(args)))
 
 
 def get_electron_build_version():
-  if get_target_arch().startswith('arm') or os.environ.has_key('CI'):
+  if get_target_arch().startswith('arm') or 'CI' in os.environ:
     # In CI we just build as told.
     return ELECTRON_VERSION
   electron = get_electron_exec()
@@ -170,12 +197,10 @@ class NonZipFileError(ValueError):
 def zero_zip_date_time(fname):
   """ Wrap strip-zip zero_zip_date_time within a file opening operation """
   try:
-    zip = open(fname, 'r+b')
-    _zero_zip_date_time(zip)
+    with open(fname, 'r+b') as f:
+      _zero_zip_date_time(f)
   except:
     raise NonZipFileError(fname)
-  finally:
-    zip.close()
 
 
 def _zero_zip_date_time(zip_):
@@ -208,7 +233,7 @@ def _zero_zip_date_time(zip_):
       _, header_length = values
       extra_struct = Struct("<HH" + "B" * header_length)
       values = list(extra_struct.unpack_from(mm, offset))
-      header_id, header_length, rest = values[0], values[1], values[2:]
+      header_id, header_length = values[:2]
 
       if header_id in (EXTENDED_TIME_DATA, UNIX_EXTRA_DATA):
         values[0] = STRIPZIP_OPTION_HEADER
@@ -218,7 +243,7 @@ def _zero_zip_date_time(zip_):
       if header_id == ZIP64_EXTRA_HEADER:
         assert header_length == 16
         values = list(zip64_extra_struct.unpack_from(mm, offset))
-        header_id, header_length, uncompressed_size, compressed_size = values
+        header_id, header_length, _, compressed_size = values
 
       offset += extra_header_struct.size + header_length
 
@@ -266,7 +291,7 @@ def _zero_zip_date_time(zip_):
     if signature_struct.unpack_from(mm, offset) != (FILE_HEADER_SIGNATURE,):
       break
     values = list(local_file_header_struct.unpack_from(mm, offset))
-    _, _, _, _, _, _, _, compressed_size, _, name_length, extra_field_length = values
+    compressed_size, _, name_length, extra_field_length = values[7:11]
     # reset last_mod_time
     values[4] = 0
     # reset last_mod_date
@@ -274,20 +299,22 @@ def _zero_zip_date_time(zip_):
     local_file_header_struct.pack_into(mm, offset, *values)
     offset += local_file_header_struct.size + name_length
     if extra_field_length != 0:
-      compressed_size = purify_extra_data(mm, offset, extra_field_length, compressed_size)
+      compressed_size = purify_extra_data(mm, offset, extra_field_length,
+                                          compressed_size)
     offset += compressed_size + extra_field_length
 
   while offset < archive_size:
     if signature_struct.unpack_from(mm, offset) != (CENDIR_HEADER_SIGNATURE,):
       break
     values = list(central_directory_header_struct.unpack_from(mm, offset))
-    _, _, _, _, _, _, _, _, _, _, file_name_length, extra_field_length, file_comment_length, _, _, _, _ = values
+    file_name_length, extra_field_length, file_comment_length = values[10:13]
     # reset last_mod_time
     values[5] = 0
     # reset last_mod_date
     values[6] = 0x21
     central_directory_header_struct.pack_into(mm, offset, *values)
-    offset += central_directory_header_struct.size + file_name_length + extra_field_length + file_comment_length
+    offset += central_directory_header_struct.size
+    offset += file_name_length + extra_field_length + file_comment_length
     if extra_field_length != 0:
       purify_extra_data(mm, offset - extra_field_length, extra_field_length)
 
@@ -327,8 +354,8 @@ def upload_io_to_github(release, filename, filepath, version):
   print('Uploading %s to Github' % \
       (filename))
   script_path = os.path.join(
-    ELECTRON_DIR, 'script', 'release', 'uploaders', 'upload-to-github.js')
-  execute(['node', script_path, filepath, filename, str(release['id']),
+    ELECTRON_DIR, 'script', 'release', 'uploaders', 'upload-to-github.ts')
+  execute([TS_NODE, script_path, filepath, filename, str(release['id']),
           version])
 
 
@@ -346,14 +373,6 @@ def upload_sha256_checksum(version, file_path, key_prefix=None):
     checksum.write('{} *{}'.format(sha256.hexdigest(), filename))
   s3put(bucket, access_key, secret_key, os.path.dirname(checksum_path),
         key_prefix, [checksum_path])
-
-
-def auth_token():
-  token = get_env_var('GITHUB_TOKEN')
-  message = ('Error: Please set the $ELECTRON_GITHUB_TOKEN '
-             'environment variable, which is your personal token')
-  assert token, message
-  return token
 
 
 def get_release(version):

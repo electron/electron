@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "base/files/file_util.h"
+#include "base/logging.h"
 #include "base/strings/pattern.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
@@ -17,6 +18,7 @@
 #include "gin/arguments.h"
 #include "gin/object_template_builder.h"
 #include "gin/per_isolate_data.h"
+#include "gin/wrappable.h"
 #include "net/base/data_url.h"
 #include "shell/common/asar/asar_util.h"
 #include "shell/common/gin_converters/file_path_converter.h"
@@ -103,16 +105,11 @@ base::win::ScopedHICON ReadICOFromPath(int size, const base::FilePath& path) {
 }
 #endif
 
-void Noop(char*, void*) {}
-
 }  // namespace
 
 NativeImage::NativeImage(v8::Isolate* isolate, const gfx::Image& image)
     : image_(image), isolate_(isolate) {
-  if (image_.HasRepresentation(gfx::Image::kImageRepSkia)) {
-    isolate_->AdjustAmountOfExternalAllocatedMemory(
-        image_.ToImageSkia()->bitmap()->computeByteSize());
-  }
+  AdjustAmountOfExternalAllocatedMemory(true);
 }
 
 #if defined(OS_WIN)
@@ -122,18 +119,63 @@ NativeImage::NativeImage(v8::Isolate* isolate, const base::FilePath& hicon_path)
   gfx::ImageSkia image_skia;
   electron::util::ReadImageSkiaFromICO(&image_skia, GetHICON(256));
   image_ = gfx::Image(image_skia);
-  if (image_.HasRepresentation(gfx::Image::kImageRepSkia)) {
-    isolate_->AdjustAmountOfExternalAllocatedMemory(
-        image_.ToImageSkia()->bitmap()->computeByteSize());
-  }
+
+  AdjustAmountOfExternalAllocatedMemory(true);
 }
 #endif
 
 NativeImage::~NativeImage() {
+  AdjustAmountOfExternalAllocatedMemory(false);
+}
+
+void NativeImage::AdjustAmountOfExternalAllocatedMemory(bool add) {
   if (image_.HasRepresentation(gfx::Image::kImageRepSkia)) {
-    isolate_->AdjustAmountOfExternalAllocatedMemory(-static_cast<int64_t>(
-        image_.ToImageSkia()->bitmap()->computeByteSize()));
+    auto* const image_skia = image_.ToImageSkia();
+    if (!image_skia->isNull()) {
+      int64_t size = image_skia->bitmap()->computeByteSize();
+      isolate_->AdjustAmountOfExternalAllocatedMemory(add ? size : -size);
+    }
   }
+}
+
+// static
+bool NativeImage::TryConvertNativeImage(v8::Isolate* isolate,
+                                        v8::Local<v8::Value> image,
+                                        NativeImage** native_image,
+                                        OnConvertError on_error) {
+  std::string error_message;
+
+  base::FilePath icon_path;
+  if (gin::ConvertFromV8(isolate, image, &icon_path)) {
+    *native_image = NativeImage::CreateFromPath(isolate, icon_path).get();
+    if ((*native_image)->image().IsEmpty()) {
+#if defined(OS_WIN)
+      const auto img_path = base::WideToUTF8(icon_path.value());
+#else
+      const auto img_path = icon_path.value();
+#endif
+      error_message = "Failed to load image from path '" + img_path + "'";
+    }
+  } else {
+    if (!gin::ConvertFromV8(isolate, image, native_image)) {
+      error_message = "Argument must be a file path or a NativeImage";
+    }
+  }
+
+  if (!error_message.empty()) {
+    switch (on_error) {
+      case OnConvertError::kThrow:
+        isolate->ThrowException(
+            v8::Exception::Error(gin::StringToV8(isolate, error_message)));
+        break;
+      case OnConvertError::kWarn:
+        LOG(WARNING) << error_message;
+        break;
+    }
+    return false;
+  }
+
+  return true;
 }
 
 #if defined(OS_WIN)
@@ -183,13 +225,20 @@ v8::Local<v8::Value> NativeImage::ToBitmap(gin::Arguments* args) {
 
   const SkBitmap bitmap =
       image_.AsImageSkia().GetRepresentation(scale_factor).GetBitmap();
-  SkPixelRef* ref = bitmap.pixelRef();
-  if (!ref)
-    return node::Buffer::New(args->isolate(), 0).ToLocalChecked();
-  return node::Buffer::Copy(args->isolate(),
-                            reinterpret_cast<const char*>(ref->pixels()),
-                            bitmap.computeByteSize())
-      .ToLocalChecked();
+
+  SkImageInfo info =
+      SkImageInfo::MakeN32Premul(bitmap.width(), bitmap.height());
+
+  auto array_buffer =
+      v8::ArrayBuffer::New(args->isolate(), info.computeMinByteSize());
+  auto backing_store = array_buffer->GetBackingStore();
+  if (bitmap.readPixels(info, backing_store->Data(), info.minRowBytes(), 0,
+                        0)) {
+    return node::Buffer::New(args->isolate(), array_buffer, 0,
+                             info.computeMinByteSize())
+        .ToLocalChecked();
+  }
+  return node::Buffer::New(args->isolate(), 0).ToLocalChecked();
 }
 
 v8::Local<v8::Value> NativeImage::ToJPEG(v8::Isolate* isolate, int quality) {
@@ -217,6 +266,10 @@ std::string NativeImage::ToDataURL(gin::Arguments* args) {
       image_.AsImageSkia().GetRepresentation(scale_factor).GetBitmap());
 }
 
+void SkUnref(char* data, void* hint) {
+  reinterpret_cast<SkRefCnt*>(hint)->unref();
+}
+
 v8::Local<v8::Value> NativeImage::GetBitmap(gin::Arguments* args) {
   float scale_factor = GetScaleFactorFromOptions(args);
 
@@ -225,9 +278,10 @@ v8::Local<v8::Value> NativeImage::GetBitmap(gin::Arguments* args) {
   SkPixelRef* ref = bitmap.pixelRef();
   if (!ref)
     return node::Buffer::New(args->isolate(), 0).ToLocalChecked();
+  ref->ref();
   return node::Buffer::New(args->isolate(),
                            reinterpret_cast<char*>(ref->pixels()),
-                           bitmap.computeByteSize(), &Noop, nullptr)
+                           bitmap.computeByteSize(), &SkUnref, ref)
       .ToLocalChecked();
 }
 
@@ -260,7 +314,11 @@ gfx::Size NativeImage::GetSize(const base::Optional<float> scale_factor) {
 
 std::vector<float> NativeImage::GetScaleFactors() {
   gfx::ImageSkia image_skia = image_.AsImageSkia();
-  return image_skia.GetSupportedScales();
+  std::vector<float> scale_factors;
+  for (const auto& rep : image_skia.image_reps()) {
+    scale_factors.push_back(rep.scale());
+  }
+  return scale_factors;
 }
 
 float NativeImage::GetAspectRatio(const base::Optional<float> scale_factor) {
@@ -283,7 +341,9 @@ gin::Handle<NativeImage> NativeImage::Resize(gin::Arguments* args,
   bool height_set = options.GetInteger("height", &height);
   size.SetSize(width, height);
 
-  if (width_set && !height_set) {
+  if (width <= 0 && height <= 0) {
+    return CreateEmpty(args->isolate());
+  } else if (width_set && !height_set) {
     // Scale height to preserve original aspect ratio
     size.set_height(width);
     size =
@@ -379,18 +439,20 @@ gin::Handle<NativeImage> NativeImage::Create(v8::Isolate* isolate,
 gin::Handle<NativeImage> NativeImage::CreateFromPNG(v8::Isolate* isolate,
                                                     const char* buffer,
                                                     size_t length) {
-  gfx::Image image = gfx::Image::CreateFrom1xPNGBytes(
-      reinterpret_cast<const unsigned char*>(buffer), length);
-  return Create(isolate, image);
+  gfx::ImageSkia image_skia;
+  electron::util::AddImageSkiaRepFromPNG(
+      &image_skia, reinterpret_cast<const unsigned char*>(buffer), length, 1.0);
+  return Create(isolate, gfx::Image(image_skia));
 }
 
 // static
 gin::Handle<NativeImage> NativeImage::CreateFromJPEG(v8::Isolate* isolate,
                                                      const char* buffer,
                                                      size_t length) {
-  gfx::Image image = gfx::ImageFrom1xJPEGEncodedData(
-      reinterpret_cast<const unsigned char*>(buffer), length);
-  return Create(isolate, image);
+  gfx::ImageSkia image_skia;
+  electron::util::AddImageSkiaRepFromJPEG(
+      &image_skia, reinterpret_cast<const unsigned char*>(buffer), length, 1.0);
+  return Create(isolate, gfx::Image(image_skia));
 }
 
 // static
@@ -456,8 +518,8 @@ gin::Handle<NativeImage> NativeImage::CreateFromBitmap(
   bitmap.allocN32Pixels(width, height, false);
   bitmap.writePixels({info, node::Buffer::Data(buffer), bitmap.rowBytes()});
 
-  gfx::ImageSkia image_skia;
-  image_skia.AddRepresentation(gfx::ImageSkiaRep(bitmap, scale_factor));
+  gfx::ImageSkia image_skia =
+      gfx::ImageSkia::CreateFromBitmap(bitmap, scale_factor);
 
   return Create(thrower.isolate(), gfx::Image(image_skia));
 }
@@ -554,50 +616,6 @@ gin::WrapperInfo NativeImage::kWrapperInfo = {gin::kEmbedderNativeGin};
 }  // namespace api
 
 }  // namespace electron
-
-namespace gin {
-
-v8::Local<v8::Value> Converter<electron::api::NativeImage*>::ToV8(
-    v8::Isolate* isolate,
-    electron::api::NativeImage* val) {
-  v8::Local<v8::Object> ret;
-  if (val && val->GetWrapper(isolate).ToLocal(&ret))
-    return ret;
-  else
-    return v8::Null(isolate);
-}
-
-bool Converter<electron::api::NativeImage*>::FromV8(
-    v8::Isolate* isolate,
-    v8::Local<v8::Value> val,
-    electron::api::NativeImage** out) {
-  // Try converting from file path.
-  base::FilePath path;
-  if (ConvertFromV8(isolate, val, &path)) {
-    *out = electron::api::NativeImage::CreateFromPath(isolate, path).get();
-    if ((*out)->image().IsEmpty()) {
-#if defined(OS_WIN)
-      const auto img_path = base::UTF16ToUTF8(path.value());
-#else
-      const auto img_path = path.value();
-#endif
-      isolate->ThrowException(v8::Exception::Error(
-          StringToV8(isolate, "Image could not be created from " + img_path)));
-      return false;
-    }
-
-    return true;
-  }
-
-  // reinterpret_cast is safe here because NativeImage is the only subclass of
-  // gin::Wrappable<NativeImage>.
-  *out = static_cast<electron::api::NativeImage*>(
-      static_cast<gin::WrappableBase*>(gin::internal::FromV8Impl(
-          isolate, val, &electron::api::NativeImage::kWrapperInfo)));
-  return *out != nullptr;
-}
-
-}  // namespace gin
 
 namespace {
 

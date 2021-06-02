@@ -47,7 +47,8 @@ PowerMonitor::PowerMonitor(v8::Isolate* isolate) {
       &PowerMonitor::ShouldShutdown, base::Unretained(this)));
 #endif
 
-  base::PowerMonitor::AddObserver(this);
+  base::PowerMonitor::AddPowerStateObserver(this);
+  base::PowerMonitor::AddPowerSuspendObserver(this);
 
 #if defined(OS_MAC) || defined(OS_WIN)
   InitPlatformSpecificMonitors();
@@ -55,7 +56,8 @@ PowerMonitor::PowerMonitor(v8::Isolate* isolate) {
 }
 
 PowerMonitor::~PowerMonitor() {
-  base::PowerMonitor::RemoveObserver(this);
+  base::PowerMonitor::RemovePowerStateObserver(this);
+  base::PowerMonitor::RemovePowerSuspendObserver(this);
 }
 
 bool PowerMonitor::ShouldShutdown() {
@@ -136,6 +138,10 @@ int GetSystemIdleTime() {
   return ui::CalculateIdleTime();
 }
 
+bool IsOnBatteryPower() {
+  return base::PowerMonitor::IsOnBatteryPower();
+}
+
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
@@ -147,6 +153,7 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("getSystemIdleState",
                  base::BindRepeating(&GetSystemIdleState));
   dict.SetMethod("getSystemIdleTime", base::BindRepeating(&GetSystemIdleTime));
+  dict.SetMethod("isOnBatteryPower", base::BindRepeating(&IsOnBatteryPower));
 }
 
 }  // namespace

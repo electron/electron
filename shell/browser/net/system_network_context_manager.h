@@ -5,10 +5,6 @@
 #ifndef SHELL_BROWSER_NET_SYSTEM_NETWORK_CONTEXT_MANAGER_H_
 #define SHELL_BROWSER_NET_SYSTEM_NETWORK_CONTEXT_MANAGER_H_
 
-#include <memory>
-#include <string>
-#include <vector>
-
 #include "base/macros.h"
 #include "base/memory/ref_counted.h"
 #include "base/optional.h"

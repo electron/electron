@@ -54,8 +54,7 @@ void Debugger::DispatchProtocolMessage(DevToolsAgentHost* agent_host,
                                        base::JSON_REPLACE_INVALID_CHARACTERS);
   if (!parsed_message || !parsed_message->is_dict())
     return;
-  base::DictionaryValue* dict =
-      static_cast<base::DictionaryValue*>(parsed_message.get());
+  auto* dict = static_cast<base::DictionaryValue*>(parsed_message.get());
   int id;
   if (!dict->GetInteger("id", &id)) {
     std::string method;
@@ -186,6 +185,7 @@ v8::Local<v8::Promise> Debugger::SendCommand(gin::Arguments* args) {
 void Debugger::ClearPendingRequests() {
   for (auto& it : pending_requests_)
     it.second.RejectWithErrorMessage("target closed while handling command");
+  pending_requests_.clear();
 }
 
 // static

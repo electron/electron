@@ -28,7 +28,7 @@
 * `session` Session (optional) - The session used for requesting URL, by default
   the HTTP request will reuse the current session. Setting `session` to `null`
   would use a random independent session. This is only used for URL responses.
-* `uploadData` ProtocolResponseUploadData (optional) - The data used as upload data. This is only
+* `uploadData` [ProtocolResponseUploadData](protocol-response-upload-data.md) (optional) - The data used as upload data. This is only
   used for URL responses when `method` is `"POST"`.
 
-[net-error]: https://code.google.com/p/chromium/codesearch#chromium/src/net/base/net_error_list.h
+[net-error]: https://source.chromium.org/chromium/chromium/src/+/master:net/base/net_error_list.h

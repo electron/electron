@@ -25,7 +25,7 @@ class TaskbarHost {
     std::string tooltip;
     gfx::Image icon;
     std::vector<std::string> flags;
-    base::Closure clicked_callback;
+    base::RepeatingClosure clicked_callback;
 
     ThumbarButton();
     ThumbarButton(const ThumbarButton&);
@@ -48,7 +48,7 @@ class TaskbarHost {
 
   // Set the overlay icon in taskbar.
   bool SetOverlayIcon(HWND window,
-                      const gfx::Image& overlay,
+                      const SkBitmap& overlay,
                       const std::string& text);
 
   // Set the region of the window to show as a thumbnail in taskbar.
@@ -60,11 +60,13 @@ class TaskbarHost {
   // Called by the window that there is a button in thumbar clicked.
   bool HandleThumbarButtonEvent(int button_id);
 
+  void SetThumbarButtonsAdded(bool added) { thumbar_buttons_added_ = added; }
+
  private:
   // Initialize the taskbar object.
   bool InitializeTaskbar();
 
-  using CallbackMap = std::map<int, base::Closure>;
+  using CallbackMap = std::map<int, base::RepeatingClosure>;
   CallbackMap callback_map_;
 
   std::vector<ThumbarButton> last_buttons_;

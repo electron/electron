@@ -1,5 +1,7 @@
 # Recent Documents (Windows & macOS)
 
+## Overview
+
 Windows and macOS provide access to a list of recent documents opened by
 the application via JumpList or dock menu, respectively.
 
@@ -11,39 +13,58 @@ __Application dock menu:__
 
 ![macOS Dock Menu][dock-menu-image]
 
-To add a file to recent documents, you can use the
-[app.addRecentDocument][addrecentdocument] API:
+To add a file to recent documents, you need to use the
+[app.addRecentDocument][addrecentdocument] API.
 
-```javascript
+## Example
+
+### Add an item to recent documents
+
+Starting with a working application from the
+[Quick Start Guide](quick-start.md), add the following lines to the
+`main.js` file:
+
+```javascript fiddle='docs/fiddles/features/recent-documents'
 const { app } = require('electron')
+
 app.addRecentDocument('/Users/USERNAME/Desktop/work.type')
 ```
 
-And you can use [app.clearRecentDocuments][clearrecentdocuments] API to empty
-the recent documents list:
+After launching the Electron application, right click the application icon.
+You should see the item you just added. In this guide, the item is a Markdown
+file located in the root of the project:
+
+![Recent document](../images/recent-documents.png)
+
+### Clear the list of recent documents
+
+To clear the list of recent documents, you need to use
+[app.clearRecentDocuments][clearrecentdocuments] API in the `main.js` file:
 
 ```javascript
 const { app } = require('electron')
+
 app.clearRecentDocuments()
 ```
 
-## Windows Notes
+## Additional information
 
-In order to be able to use this feature on Windows, your application has to be
-registered as a handler of the file type of the document, otherwise the file
-won't appear in JumpList even after you have added it. You can find everything
+### Windows Notes
+
+To use this feature on Windows, your application has to be registered as
+a handler of the file type of the document, otherwise the file won't appear
+in JumpList even after you have added it. You can find everything
 on registering your application in [Application Registration][app-registration].
 
 When a user clicks a file from the JumpList, a new instance of your application
 will be started with the path of the file added as a command line argument.
 
-## macOS Notes
+### macOS Notes
 
-### Adding the Recent Documents list to the application menu:
+#### Add the Recent Documents list to the application menu
 
-![macOS Recent Documents menu item][menu-item-image]
-
-You can add menu items to access and clear recent documents by adding the following code snippet to your menu's template.
+You can add menu items to access and clear recent documents by adding the
+following code snippet to your menu template:
 
 ```json
 {
@@ -61,6 +82,24 @@ You can add menu items to access and clear recent documents by adding the follow
   ]
 }
 ```
+
+Make sure the application menu is added after the [`'ready'`](../api/app.md#event-ready)
+event and not before, or the menu item will be disabled:
+
+```javascript
+const { app, Menu } = require('electron')
+
+const template = [
+  // Menu template here
+]
+const menu = Menu.buildFromTemplate(template)
+
+app.whenReady().then(() => {
+  Menu.setApplicationMenu(menu)
+})
+```
+
+![macOS Recent Documents menu item][menu-item-image]
 
 When a file is requested from the recent documents menu, the `open-file` event
 of `app` module will be emitted for it.

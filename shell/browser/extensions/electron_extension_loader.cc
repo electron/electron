@@ -12,12 +12,15 @@
 #include "base/files/file_util.h"
 #include "base/logging.h"
 #include "base/sequenced_task_runner.h"
+#include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/task_runner_util.h"
 #include "base/threading/thread_restrictions.h"
+#include "base/time/time.h"
 #include "extensions/browser/extension_file_task_runner.h"
 #include "extensions/browser/extension_prefs.h"
 #include "extensions/browser/extension_registry.h"
+#include "extensions/browser/pref_names.h"
 #include "extensions/common/file_util.h"
 
 namespace extensions {
@@ -27,7 +30,8 @@ using LoadErrorBehavior = ExtensionRegistrar::LoadErrorBehavior;
 namespace {
 
 std::pair<scoped_refptr<const Extension>, std::string> LoadUnpacked(
-    const base::FilePath& extension_dir) {
+    const base::FilePath& extension_dir,
+    int load_flags) {
   // app_shell only supports unpacked extensions.
   // NOTE: If you add packed extension support consider removing the flag
   // FOLLOW_SYMLINKS_ANYWHERE below. Packed extensions should not have symlinks.
@@ -37,10 +41,10 @@ std::pair<scoped_refptr<const Extension>, std::string> LoadUnpacked(
     return std::make_pair(nullptr, err);
   }
 
-  int load_flags = Extension::FOLLOW_SYMLINKS_ANYWHERE;
   std::string load_error;
   scoped_refptr<Extension> extension = file_util::LoadExtension(
-      extension_dir, Manifest::COMMAND_LINE, load_flags, &load_error);
+      extension_dir, extensions::mojom::ManifestLocation::kCommandLine,
+      load_flags, &load_error);
   if (!extension.get()) {
     std::string err = "Loading extension at " +
                       base::UTF16ToUTF8(extension_dir.LossyDisplayName()) +
@@ -50,7 +54,7 @@ std::pair<scoped_refptr<const Extension>, std::string> LoadUnpacked(
 
   std::string warnings;
   // Log warnings.
-  if (extension->install_warnings().size()) {
+  if (!extension->install_warnings().empty()) {
     warnings += "Warnings loading extension at " +
                 base::UTF16ToUTF8(extension_dir.LossyDisplayName()) + ":\n";
     for (const auto& warning : extension->install_warnings()) {
@@ -66,17 +70,17 @@ std::pair<scoped_refptr<const Extension>, std::string> LoadUnpacked(
 ElectronExtensionLoader::ElectronExtensionLoader(
     content::BrowserContext* browser_context)
     : browser_context_(browser_context),
-      extension_registrar_(browser_context, this),
-      weak_factory_(this) {}
+      extension_registrar_(browser_context, this) {}
 
 ElectronExtensionLoader::~ElectronExtensionLoader() = default;
 
 void ElectronExtensionLoader::LoadExtension(
     const base::FilePath& extension_dir,
+    int load_flags,
     base::OnceCallback<void(const Extension*, const std::string&)> cb) {
   base::PostTaskAndReplyWithResult(
       GetExtensionFileTaskRunner().get(), FROM_HERE,
-      base::BindOnce(&LoadUnpacked, extension_dir),
+      base::BindOnce(&LoadUnpacked, extension_dir, load_flags),
       base::BindOnce(&ElectronExtensionLoader::FinishExtensionLoad,
                      weak_factory_.GetWeakPtr(), std::move(cb)));
 }
@@ -109,7 +113,24 @@ void ElectronExtensionLoader::FinishExtensionLoad(
   scoped_refptr<const Extension> extension = result.first;
   if (extension) {
     extension_registrar_.AddExtension(extension);
+
+    // Write extension install time to ExtensionPrefs. This is required by
+    // WebRequestAPI which calls extensions::ExtensionPrefs::GetInstallTime.
+    //
+    // Implementation for writing the pref was based on
+    // PreferenceAPIBase::SetExtensionControlledPref.
+    {
+      ExtensionPrefs* extension_prefs = ExtensionPrefs::Get(browser_context_);
+      ExtensionPrefs::ScopedDictionaryUpdate update(
+          extension_prefs, extension.get()->id(),
+          extensions::pref_names::kPrefPreferences);
+      auto preference = update.Create();
+      const base::Time install_time = base::Time::Now();
+      preference->SetString(
+          "install_time", base::NumberToString(install_time.ToInternalValue()));
+    }
   }
+
   std::move(cb).Run(extension.get(), result.second);
 }
 
@@ -155,9 +176,13 @@ void ElectronExtensionLoader::LoadExtensionForReload(
     LoadErrorBehavior load_error_behavior) {
   CHECK(!path.empty());
 
+  // TODO(nornagon): we should save whether file access was granted
+  // when loading this extension and retain it here. As is, reloading an
+  // extension will cause the file access permission to be dropped.
+  int load_flags = Extension::FOLLOW_SYMLINKS_ANYWHERE;
   base::PostTaskAndReplyWithResult(
       GetExtensionFileTaskRunner().get(), FROM_HERE,
-      base::BindOnce(&LoadUnpacked, path),
+      base::BindOnce(&LoadUnpacked, path, load_flags),
       base::BindOnce(&ElectronExtensionLoader::FinishExtensionReload,
                      weak_factory_.GetWeakPtr(), extension_id));
   did_schedule_reload_ = true;

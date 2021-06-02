@@ -8,14 +8,11 @@ import "third_party/blink/public/mojom/messaging/transferable_message.mojom";
 interface ElectronRenderer {
   Message(
       bool internal,
-      bool send_to_all,
       string channel,
       blink.mojom.CloneableMessage arguments,
       int32 sender_id);
 
   ReceivePostMessage(string channel, blink.mojom.TransferableMessage message);
-
-  NotifyUserActivation();
 
   TakeHeapSnapshot(handle file) => (bool success);
 };
@@ -67,7 +64,6 @@ interface ElectronBrowser {
   // WebContents's main frame, specified by |web_contents_id|.
   MessageTo(
     bool internal,
-    bool send_to_all,
     int32 web_contents_id,
     string channel,
     blink.mojom.CloneableMessage arguments);

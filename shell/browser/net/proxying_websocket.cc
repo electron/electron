@@ -9,7 +9,6 @@
 #include "base/bind.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
-#include "components/keyed_service/content/browser_context_keyed_service_shutdown_notifier_factory.h"
 #include "content/public/browser/browser_thread.h"
 #include "extensions/browser/extension_navigation_ui_data.h"
 #include "net/base/ip_endpoint.h"
@@ -45,7 +44,8 @@ ProxyingWebSocket::ProxyingWebSocket(
           /*is_download=*/false,
           /*is_async=*/true,
           /*is_service_worker_script=*/false,
-          /*navigation_id=*/base::nullopt)) {}
+          /*navigation_id=*/base::nullopt,
+          /*ukm_source_id=*/ukm::kInvalidSourceIdObj)) {}
 
 ProxyingWebSocket::~ProxyingWebSocket() {
   if (on_before_send_headers_callback_) {
@@ -115,6 +115,10 @@ void ProxyingWebSocket::ContinueToHeadersReceived() {
   DCHECK_EQ(net::OK, result);
   OnHeadersReceivedComplete(net::OK);
 }
+
+void ProxyingWebSocket::OnFailure(const std::string& message,
+                                  int32_t net_error,
+                                  int32_t response_code) {}
 
 void ProxyingWebSocket::OnConnectionEstablished(
     mojo::PendingRemote<network::mojom::WebSocket> websocket,
@@ -379,15 +383,15 @@ void ProxyingWebSocket::OnAuthRequiredComplete(AuthRequiredResponse rv) {
   CHECK(auth_required_callback_);
   ResumeIncomingMethodCallProcessing();
   switch (rv) {
-    case AuthRequiredResponse::AUTH_REQUIRED_RESPONSE_NO_ACTION:
-    case AuthRequiredResponse::AUTH_REQUIRED_RESPONSE_CANCEL_AUTH:
+    case AuthRequiredResponse::kNoAction:
+    case AuthRequiredResponse::kCancelAuth:
       std::move(auth_required_callback_).Run(base::nullopt);
       break;
 
-    case AuthRequiredResponse::AUTH_REQUIRED_RESPONSE_SET_AUTH:
+    case AuthRequiredResponse::kSetAuth:
       std::move(auth_required_callback_).Run(auth_credentials_);
       break;
-    case AuthRequiredResponse::AUTH_REQUIRED_RESPONSE_IO_PENDING:
+    case AuthRequiredResponse::kIoPending:
       NOTREACHED();
       break;
   }
@@ -405,7 +409,7 @@ void ProxyingWebSocket::OnHeadersReceivedCompleteForAuth(
 
   auto continuation = base::BindRepeating(
       &ProxyingWebSocket::OnAuthRequiredComplete, weak_factory_.GetWeakPtr());
-  auto auth_rv = AuthRequiredResponse::AUTH_REQUIRED_RESPONSE_IO_PENDING;
+  auto auth_rv = AuthRequiredResponse::kIoPending;
   PauseIncomingMethodCallProcessing();
 
   OnAuthRequiredComplete(auth_rv);
@@ -438,7 +442,7 @@ void ProxyingWebSocket::OnError(int error_code) {
 void ProxyingWebSocket::OnMojoConnectionErrorWithCustomReason(
     uint32_t custom_reason,
     const std::string& description) {
-  // Here we want to nofiy the custom reason to the client, which is why
+  // Here we want to notify the custom reason to the client, which is why
   // we reset |forwarding_handshake_client_| manually.
   forwarding_handshake_client_.ResetWithReason(custom_reason, description);
   OnError(net::ERR_FAILED);

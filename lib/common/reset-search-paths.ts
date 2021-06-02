@@ -5,6 +5,18 @@ const Module = require('module');
 // Clear Node's global search paths.
 Module.globalPaths.length = 0;
 
+// We do not want to allow use of the VM module in the renderer process as
+// it conflicts with Blink's V8::Context internal logic.
+if (process.type === 'renderer') {
+  const _load = Module._load;
+  Module._load = function (request: string) {
+    if (request === 'vm') {
+      console.warn('The vm module of Node.js is deprecated in the renderer process and will be removed.');
+    }
+    return _load.apply(this, arguments);
+  };
+}
+
 // Prevent Node from adding paths outside this app to search paths.
 const resourcesPathWithTrailingSlash = process.resourcesPath + path.sep;
 const originalNodeModulePaths = Module._nodeModulePaths;
@@ -43,10 +55,10 @@ if (process.type === 'renderer') {
 }
 
 const originalResolveFilename = Module._resolveFilename;
-Module._resolveFilename = function (request: string, parent: NodeModule, isMain: boolean) {
+Module._resolveFilename = function (request: string, parent: NodeModule, isMain: boolean, options?: { paths: Array<string>}) {
   if (request === 'electron' || request.startsWith('electron/')) {
     return 'electron';
   } else {
-    return originalResolveFilename(request, parent, isMain);
+    return originalResolveFilename(request, parent, isMain, options);
   }
 };

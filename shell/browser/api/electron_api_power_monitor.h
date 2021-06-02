@@ -22,7 +22,8 @@ namespace api {
 class PowerMonitor : public gin::Wrappable<PowerMonitor>,
                      public gin_helper::EventEmitterMixin<PowerMonitor>,
                      public gin_helper::Pinnable<PowerMonitor>,
-                     public base::PowerObserver {
+                     public base::PowerStateObserver,
+                     public base::PowerSuspendObserver {
  public:
   static v8::Local<v8::Value> Create(v8::Isolate* isolate);
 
@@ -47,8 +48,10 @@ class PowerMonitor : public gin::Wrappable<PowerMonitor>,
   void InitPlatformSpecificMonitors();
 #endif
 
-  // base::PowerObserver implementations:
+  // base::PowerStateObserver implementations:
   void OnPowerStateChange(bool on_battery_power) override;
+
+  // base::PowerSuspendObserver implementations:
   void OnSuspend() override;
   void OnResume() override;
 
@@ -77,8 +80,6 @@ class PowerMonitor : public gin::Wrappable<PowerMonitor>,
 #if defined(OS_LINUX)
   PowerObserverLinux power_observer_linux_{this};
 #endif
-
-  v8::Global<v8::Value> pinned_;
 
   DISALLOW_COPY_AND_ASSIGN(PowerMonitor);
 };

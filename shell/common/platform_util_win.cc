@@ -16,7 +16,7 @@
 #include <wrl/client.h>
 
 #include "base/bind.h"
-#include "base/bind_helpers.h"
+#include "base/callback_helpers.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/logging.h"
@@ -32,6 +32,7 @@
 #include "base/win/windows_version.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
+#include "net/base/escape.h"
 #include "shell/common/electron_paths.h"
 #include "ui/base/win/shell.h"
 #include "url/gurl.h"
@@ -241,8 +242,10 @@ std::string OpenExternalOnWorkerThread(
   // Quote the input scheme to be sure that the command does not have
   // parameters unexpected by the external program. This url should already
   // have been escaped.
-  base::string16 escaped_url = L"\"" + base::UTF8ToUTF16(url.spec()) + L"\"";
-  base::string16 working_dir = options.working_dir.value();
+  std::wstring escaped_url =
+      L"\"" + base::UTF8ToWide(net::EscapeExternalHandlerValue(url.spec())) +
+      L"\"";
+  std::wstring working_dir = options.working_dir.value();
 
   if (reinterpret_cast<ULONG_PTR>(
           ShellExecuteW(nullptr, L"open", escaped_url.c_str(), nullptr,
@@ -420,12 +423,6 @@ bool MoveItemToTrashWithError(const base::FilePath& path,
   }
 
   return true;
-}
-
-bool MoveItemToTrash(const base::FilePath& path, bool delete_on_fail) {
-  std::string error;  // ignored
-  base::win::ScopedCOMInitializer com_initializer;
-  return MoveItemToTrashWithError(path, delete_on_fail, &error);
 }
 
 namespace internal {

@@ -1,20 +1,21 @@
 # Windows Taskbar
 
-Electron has APIs to configure the app's icon in the Windows taskbar. Supported
-are the [creation of a `JumpList`](#jumplist),
+## Overview
+
+Electron has APIs to configure the app's icon in the Windows taskbar. This API
+supports both Windows-only features like [creation of a `JumpList`](#jumplist),
 [custom thumbnails and toolbars](#thumbnail-toolbars),
 [icon overlays](#icon-overlays-in-taskbar), and the so-called
-["Flash Frame" effect](#flash-frame), but
-Electron also uses the app's dock icon to implement cross-platform features
+["Flash Frame" effect](#flash-frame), and cross-platform features
 like [recent documents][recent-documents] and
 [application progress][progress-bar].
 
 ## JumpList
 
 Windows allows apps to define a custom context menu that shows up when users
-right-click the app's icon in the task bar. That context menu is called
+right-click the app's icon in the taskbar. That context menu is called
 `JumpList`. You specify custom actions in the `Tasks` category of JumpList,
-as quoted from MSDN:
+as quoted from [MSDN][msdn-jumplist]:
 
 > Applications define tasks based on both the program's features and the key
 > things a user is expected to do with them. Tasks should be context-free, in
@@ -33,19 +34,29 @@ as quoted from MSDN:
 > confuse the user who does not expect that portion of the destination list to
 > change.
 
-__Tasks of Internet Explorer:__
-
 ![IE](https://i-msdn.sec.s-msft.com/dynimg/IC420539.png)
 
+> NOTE: The screenshot above is an example of general tasks of
+Internet Explorer
+
 Unlike the dock menu in macOS which is a real menu, user tasks in Windows work
-like application shortcuts such that when user clicks a task, a program will be
-executed with specified arguments.
+like application shortcuts. For example, when a user clicks a task, the program
+will be executed with specified arguments.
 
 To set user tasks for your application, you can use
-[app.setUserTasks][setusertaskstasks] API:
+[app.setUserTasks][setusertaskstasks] API.
+
+#### Examples
+
+##### Set user tasks
+
+Starting with a working application from the
+[Quick Start Guide](quick-start.md), update the `main.js` file with the
+following lines:
 
 ```javascript
 const { app } = require('electron')
+
 app.setUserTasks([
   {
     program: process.execPath,
@@ -58,25 +69,29 @@ app.setUserTasks([
 ])
 ```
 
-To clean your tasks list, call `app.setUserTasks` with an empty array:
+##### Clear tasks list
+
+To clear your tasks list, you need to call `app.setUserTasks` with an empty
+array in the `main.js` file.
 
 ```javascript
 const { app } = require('electron')
+
 app.setUserTasks([])
 ```
 
-The user tasks will still show even after your application closes, so the icon
-and program path specified for a task should exist until your application is
-uninstalled.
+> NOTE: The user tasks will still be displayed even after closing your
+application, so the icon and program path specified for a task should exist until your application is uninstalled.
 
+[msdn-jumplist]: https://docs.microsoft.com/en-us/windows/win32/shell/taskbar-extensions#tasks
 
-## Thumbnail Toolbars
+### Thumbnail Toolbars
 
-On Windows you can add a thumbnail toolbar with specified buttons in a taskbar
-layout of an application window. It provides users a way to access to a
+On Windows, you can add a thumbnail toolbar with specified buttons to a taskbar
+layout of an application window. It provides users with a way to access a
 particular window's command without restoring or activating the window.
 
-From MSDN, it's illustrated:
+As quoted from [MSDN][msdn-thumbnail]:
 
 > This toolbar is the familiar standard toolbar common control. It has a
 > maximum of seven buttons. Each button's ID, image, tooltip, and state are defined
@@ -87,12 +102,21 @@ From MSDN, it's illustrated:
 > For example, Windows Media Player might offer standard media transport controls
 > such as play, pause, mute, and stop.
 
-__Thumbnail toolbar of Windows Media Player:__
-
 ![player](https://i-msdn.sec.s-msft.com/dynimg/IC420540.png)
 
-You can use [BrowserWindow.setThumbarButtons][setthumbarbuttons] to set
-thumbnail toolbar in your application:
+> NOTE: The screenshot above is an example of thumbnail toolbar of Windows
+Media Player
+
+To set thumbnail toolbar in your application, you need to use
+[BrowserWindow.setThumbarButtons][setthumbarbuttons]
+
+#### Examples
+
+##### Set thumbnail toolbar
+
+Starting with a working application from the
+[Quick Start Guide](quick-start.md), update the `main.js` file with the
+following lines:
 
 ```javascript
 const { BrowserWindow } = require('electron')
@@ -114,8 +138,10 @@ win.setThumbarButtons([
 ])
 ```
 
-To clean thumbnail toolbar buttons, just call `BrowserWindow.setThumbarButtons`
-with an empty array:
+##### Clear thumbnail toolbar
+
+To clear thumbnail toolbar buttons, you need to call
+`BrowserWindow.setThumbarButtons` with an empty array in the `main.js` file.
 
 ```javascript
 const { BrowserWindow } = require('electron')
@@ -124,11 +150,14 @@ const win = new BrowserWindow()
 win.setThumbarButtons([])
 ```
 
+[msdn-thumbnail]: https://docs.microsoft.com/en-us/windows/win32/shell/taskbar-extensions#thumbnail-toolbars
 
-## Icon Overlays in Taskbar
+### Icon Overlays in Taskbar
 
-On Windows a taskbar button can use a small overlay to display application
-status, as quoted from MSDN:
+On Windows, a taskbar button can use a small overlay to display application
+status.
+
+As quoted from [MSDN][msdn-icon-overlay]:
 
 > Icon overlays serve as a contextual notification of status, and are intended
 > to negate the need for a separate notification area status icon to communicate
@@ -140,42 +169,62 @@ status, as quoted from MSDN:
 > network status, messenger status, or new mail. The user should not be
 > presented with constantly changing overlays or animations.
 
-__Overlay on taskbar button:__
-
 ![Overlay on taskbar button](https://i-msdn.sec.s-msft.com/dynimg/IC420441.png)
 
-To set the overlay icon for a window, you can use the
-[BrowserWindow.setOverlayIcon][setoverlayicon] API:
+> NOTE: The screenshot above is an example of overlay on a taskbar button
+
+To set the overlay icon for a window, you need to use the
+[BrowserWindow.setOverlayIcon][setoverlayicon] API.
+
+#### Example
+
+Starting with a working application from the
+[Quick Start Guide](quick-start.md), update the `main.js` file with the
+following lines:
 
 ```javascript
 const { BrowserWindow } = require('electron')
+
 const win = new BrowserWindow()
+
 win.setOverlayIcon('path/to/overlay.png', 'Description for overlay')
 ```
 
+[msdn-icon-overlay]: https://docs.microsoft.com/en-us/windows/win32/shell/taskbar-extensions#icon-overlays
 
-## Flash Frame
+### Flash Frame
 
-On Windows you can highlight the taskbar button to get the user's attention.
-This is similar to bouncing the dock icon on macOS.
-From the MSDN reference documentation:
+On Windows, you can highlight the taskbar button to get the user's attention.
+This is similar to bouncing the dock icon in macOS.
+
+As quoted from [MSDN][msdn-flash-frame]:
 
 > Typically, a window is flashed to inform the user that the window requires
 > attention but that it does not currently have the keyboard focus.
 
-To flash the BrowserWindow taskbar button, you can use the
-[BrowserWindow.flashFrame][flashframe] API:
+To flash the BrowserWindow taskbar button, you need to use the
+[BrowserWindow.flashFrame][flashframe] API.
+
+#### Example
+
+Starting with a working application from the
+[Quick Start Guide](quick-start.md), update the `main.js` file with the
+following lines:
 
 ```javascript
 const { BrowserWindow } = require('electron')
+
 const win = new BrowserWindow()
+
 win.once('focus', () => win.flashFrame(false))
 win.flashFrame(true)
 ```
 
-Don't forget to call the `flashFrame` method with `false` to turn off the flash. In
-the above example, it is called when the window comes into focus, but you might
-use a timeout or some other event to disable it.
+> NOTE: Don't forget to call `win.flashFrame(false)` to turn off the flash.
+In the above example, it is called when the window comes into focus,
+but you might use a timeout or some other event to disable it.
+
+[msdn-flash-frame]: https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-flashwindow#remarks
 
 [setthumbarbuttons]: ../api/browser-window.md#winsetthumbarbuttonsbuttons-windows
 [setusertaskstasks]: ../api/app.md#appsetusertaskstasks-windows

@@ -7,7 +7,6 @@
 
 #include <memory>
 #include <string>
-#include <vector>
 
 #include "base/compiler_specific.h"
 #include "base/macros.h"
@@ -41,6 +40,7 @@ class ElectronExtensionSystem : public ExtensionSystem {
   // success, or nullptr otherwise.
   void LoadExtension(
       const base::FilePath& extension_dir,
+      int load_flags,
       base::OnceCallback<void(const Extension*, const std::string&)> cb);
 
   // Finish initialization for the shell extension system.
@@ -60,7 +60,7 @@ class ElectronExtensionSystem : public ExtensionSystem {
   RuntimeData* runtime_data() override;
   ManagementPolicy* management_policy() override;
   ServiceWorkerManager* service_worker_manager() override;
-  SharedUserScriptManager* shared_user_script_manager() override;
+  UserScriptManager* user_script_manager() override;
   StateStore* state_store() override;
   StateStore* rules_store() override;
   scoped_refptr<ValueStoreFactory> store_factory() override;
@@ -102,7 +102,7 @@ class ElectronExtensionSystem : public ExtensionSystem {
   std::unique_ptr<ServiceWorkerManager> service_worker_manager_;
   std::unique_ptr<RuntimeData> runtime_data_;
   std::unique_ptr<QuotaService> quota_service_;
-  std::unique_ptr<SharedUserScriptManager> shared_user_script_manager_;
+  std::unique_ptr<UserScriptManager> user_script_manager_;
   std::unique_ptr<AppSorting> app_sorting_;
   std::unique_ptr<ManagementPolicy> management_policy_;
 
@@ -113,7 +113,7 @@ class ElectronExtensionSystem : public ExtensionSystem {
   // Signaled when the extension system has completed its startup tasks.
   base::OneShotEvent ready_;
 
-  base::WeakPtrFactory<ElectronExtensionSystem> weak_factory_;
+  base::WeakPtrFactory<ElectronExtensionSystem> weak_factory_{this};
 
   DISALLOW_COPY_AND_ASSIGN(ElectronExtensionSystem);
 };

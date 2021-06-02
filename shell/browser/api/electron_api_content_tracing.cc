@@ -10,6 +10,7 @@
 #include "base/optional.h"
 #include "base/task/thread_pool.h"
 #include "base/threading/thread_restrictions.h"
+#include "base/trace_event/trace_config.h"
 #include "content/public/browser/tracing_controller.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
@@ -66,15 +67,26 @@ base::Optional<base::FilePath> CreateTemporaryFileOnIO() {
 
 void StopTracing(gin_helper::Promise<base::FilePath> promise,
                  base::Optional<base::FilePath> file_path) {
+  auto resolve_or_reject = base::AdaptCallbackForRepeating(base::BindOnce(
+      [](gin_helper::Promise<base::FilePath> promise,
+         const base::FilePath& path, base::Optional<std::string> error) {
+        if (error) {
+          promise.RejectWithErrorMessage(error.value());
+        } else {
+          promise.Resolve(path);
+        }
+      },
+      std::move(promise), *file_path));
   if (file_path) {
     auto endpoint = TracingController::CreateFileEndpoint(
-        *file_path, base::AdaptCallbackForRepeating(base::BindOnce(
-                        &gin_helper::Promise<base::FilePath>::ResolvePromise,
-                        std::move(promise), *file_path)));
-    TracingController::GetInstance()->StopTracing(endpoint);
+        *file_path, base::BindRepeating(resolve_or_reject, base::nullopt));
+    if (!TracingController::GetInstance()->StopTracing(endpoint)) {
+      resolve_or_reject.Run(base::make_optional(
+          "Failed to stop tracing (was a trace in progress?)"));
+    }
   } else {
-    promise.RejectWithErrorMessage(
-        "Failed to create temporary file for trace data");
+    resolve_or_reject.Run(
+        base::make_optional("Failed to create temporary file for trace data"));
   }
 }
 

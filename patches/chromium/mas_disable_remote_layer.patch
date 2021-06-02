@@ -1,9 +1,8 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Cheng Zhao <zcbenz@gmail.com>
 Date: Thu, 20 Sep 2018 17:48:49 -0700
-Subject: mas_disable_remote_layer.patch
-
-Disable remote layer APIs (CAContext and CALayerHost) for MAS build.
+Subject: mas: disable remote layer APIs (CAContext and CALayerHost) for MAS
+ build
 
 Accordin to ccameron:
 
@@ -41,19 +40,19 @@ index d565d2ab23d7a42e6787b58103fd40a8675b8e28..4cb9681c1f810a0cbd7f7ef04c4a7c73
  
    gfx::Size pixel_size_;
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.mm b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-index 67e0efb23c717c3194f27695215a8bd20dbbb957..cf02fab328d9fe7a6e9f53c712a7c1c871b8b304 100644
+index 26c5873ab995a7ff354532d1952c33b758131c90..6e1d1bbf146c0b1c344646207ffb09de2e6e9b0d 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-@@ -51,7 +51,7 @@
+@@ -53,7 +53,7 @@
  
-   ca_layer_tree_coordinator_.reset(new ui::CALayerTreeCoordinator(
-       use_remote_layer_api_, allow_av_sample_buffer_display_layer));
+   ca_layer_tree_coordinator_ = std::make_unique<ui::CALayerTreeCoordinator>(
+       use_remote_layer_api_, allow_av_sample_buffer_display_layer);
 -
 +#ifndef MAS_BUILD
    // Create the CAContext to send this to the GPU process, and the layer for
    // the context.
    if (use_remote_layer_api_) {
-@@ -60,6 +60,7 @@
+@@ -62,6 +62,7 @@
                                                     options:@{}] retain]);
      [ca_context_ setLayer:ca_layer_tree_coordinator_->GetCALayerForDisplay()];
    }
@@ -61,7 +60,7 @@ index 67e0efb23c717c3194f27695215a8bd20dbbb957..cf02fab328d9fe7a6e9f53c712a7c1c8
  }
  
  template <typename BaseClass>
-@@ -140,7 +141,9 @@
+@@ -142,7 +143,9 @@
                           "GLImpl", static_cast<int>(gl::GetGLImplementation()),
                           "width", pixel_size_.width());
      if (use_remote_layer_api_) {
@@ -72,10 +71,10 @@ index 67e0efb23c717c3194f27695215a8bd20dbbb957..cf02fab328d9fe7a6e9f53c712a7c1c8
        IOSurfaceRef io_surface =
            ca_layer_tree_coordinator_->GetIOSurfaceForDisplay();
 diff --git a/ui/accelerated_widget_mac/display_ca_layer_tree.mm b/ui/accelerated_widget_mac/display_ca_layer_tree.mm
-index 0db8f3e223e3cb8e289af63a50104fb6823ed46a..d7969cf08317731bf8e1c8545a07734412593e37 100644
+index a55934320e475af475f7169a5b30954c7e98d775..78d626f2c5be20106ebd54b71a9b0663c55086da 100644
 --- a/ui/accelerated_widget_mac/display_ca_layer_tree.mm
 +++ b/ui/accelerated_widget_mac/display_ca_layer_tree.mm
-@@ -98,6 +98,7 @@ - (void)setContentsChanged;
+@@ -99,6 +99,7 @@ - (void)setContentsChanged;
  }
  
  void DisplayCALayerTree::GotCALayerFrame(uint32_t ca_context_id) {
@@ -83,7 +82,7 @@ index 0db8f3e223e3cb8e289af63a50104fb6823ed46a..d7969cf08317731bf8e1c8545a077344
    // Early-out if the remote layer has not changed.
    if ([remote_layer_ contextId] == ca_context_id)
      return;
-@@ -122,6 +123,9 @@ - (void)setContentsChanged;
+@@ -123,6 +124,9 @@ - (void)setContentsChanged;
      [io_surface_layer_ removeFromSuperlayer];
      io_surface_layer_.reset();
    }

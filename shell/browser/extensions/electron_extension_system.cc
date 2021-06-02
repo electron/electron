@@ -31,7 +31,7 @@
 #include "extensions/browser/quota_service.h"
 #include "extensions/browser/runtime_data.h"
 #include "extensions/browser/service_worker_manager.h"
-#include "extensions/browser/shared_user_script_manager.h"
+#include "extensions/browser/user_script_manager.h"
 #include "extensions/browser/value_store/value_store_factory_impl.h"
 #include "extensions/common/constants.h"
 #include "extensions/common/file_util.h"
@@ -49,15 +49,15 @@ namespace extensions {
 ElectronExtensionSystem::ElectronExtensionSystem(
     BrowserContext* browser_context)
     : browser_context_(browser_context),
-      store_factory_(new ValueStoreFactoryImpl(browser_context->GetPath())),
-      weak_factory_(this) {}
+      store_factory_(new ValueStoreFactoryImpl(browser_context->GetPath())) {}
 
 ElectronExtensionSystem::~ElectronExtensionSystem() = default;
 
 void ElectronExtensionSystem::LoadExtension(
     const base::FilePath& extension_dir,
+    int load_flags,
     base::OnceCallback<void(const Extension*, const std::string&)> cb) {
-  extension_loader_->LoadExtension(extension_dir, std::move(cb));
+  extension_loader_->LoadExtension(extension_dir, load_flags, std::move(cb));
 }
 
 void ElectronExtensionSystem::FinishInitialization() {
@@ -84,8 +84,7 @@ void ElectronExtensionSystem::InitForRegularProfile(bool extensions_enabled) {
   runtime_data_ =
       std::make_unique<RuntimeData>(ExtensionRegistry::Get(browser_context_));
   quota_service_ = std::make_unique<QuotaService>();
-  shared_user_script_manager_ =
-      std::make_unique<SharedUserScriptManager>(browser_context_);
+  user_script_manager_ = std::make_unique<UserScriptManager>(browser_context_);
   app_sorting_ = std::make_unique<NullAppSorting>();
   extension_loader_ =
       std::make_unique<ElectronExtensionLoader>(browser_context_);
@@ -114,13 +113,16 @@ void ElectronExtensionSystem::LoadComponentExtensions() {
   std::string pdf_manifest_string = pdf_extension_util::GetManifest();
   std::unique_ptr<base::DictionaryValue> pdf_manifest =
       ParseManifest(pdf_manifest_string);
-  base::FilePath root_directory;
-  CHECK(base::PathService::Get(chrome::DIR_RESOURCES, &root_directory));
-  root_directory = root_directory.Append(FILE_PATH_LITERAL("pdf"));
-  scoped_refptr<const Extension> pdf_extension = extensions::Extension::Create(
-      root_directory, extensions::Manifest::COMPONENT, *pdf_manifest,
-      extensions::Extension::REQUIRE_KEY, &utf8_error);
-  extension_loader_->registrar()->AddExtension(pdf_extension);
+  if (pdf_manifest) {
+    base::FilePath root_directory;
+    CHECK(base::PathService::Get(chrome::DIR_RESOURCES, &root_directory));
+    root_directory = root_directory.Append(FILE_PATH_LITERAL("pdf"));
+    scoped_refptr<const Extension> pdf_extension =
+        extensions::Extension::Create(
+            root_directory, extensions::mojom::ManifestLocation::kComponent,
+            *pdf_manifest, extensions::Extension::REQUIRE_KEY, &utf8_error);
+    extension_loader_->registrar()->AddExtension(pdf_extension);
+  }
 #endif
 }
 
@@ -140,8 +142,8 @@ ServiceWorkerManager* ElectronExtensionSystem::service_worker_manager() {
   return service_worker_manager_.get();
 }
 
-SharedUserScriptManager* ElectronExtensionSystem::shared_user_script_manager() {
-  return new SharedUserScriptManager(browser_context_);
+UserScriptManager* ElectronExtensionSystem::user_script_manager() {
+  return new UserScriptManager(browser_context_);
 }
 
 StateStore* ElectronExtensionSystem::state_store() {
@@ -173,11 +175,11 @@ AppSorting* ElectronExtensionSystem::app_sorting() {
 void ElectronExtensionSystem::RegisterExtensionWithRequestContexts(
     const Extension* extension,
     base::OnceClosure callback) {
-  base::PostTaskAndReply(
-      FROM_HERE, {BrowserThread::IO},
-      base::Bind(&InfoMap::AddExtension, info_map(),
-                 base::RetainedRef(extension), base::Time::Now(), false, false),
-      std::move(callback));
+  base::PostTaskAndReply(FROM_HERE, {BrowserThread::IO},
+                         base::BindOnce(&InfoMap::AddExtension, info_map(),
+                                        base::RetainedRef(extension),
+                                        base::Time::Now(), false, false),
+                         std::move(callback));
 }
 
 void ElectronExtensionSystem::UnregisterExtensionWithRequestContexts(

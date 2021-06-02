@@ -51,7 +51,6 @@ class BrowserProcessImpl : public BrowserProcess {
   metrics_services_manager::MetricsServicesManager* GetMetricsServicesManager()
       override;
   metrics::MetricsService* metrics_service() override;
-  rappor::RapporServiceImpl* rappor_service() override;
   ProfileManager* profile_manager() override;
   PrefService* local_state() override;
   scoped_refptr<network::SharedURLLoaderFactory> shared_url_loader_factory()
@@ -79,9 +78,8 @@ class BrowserProcessImpl : public BrowserProcess {
   safe_browsing::SafeBrowsingService* safe_browsing_service() override;
   subresource_filter::RulesetService* subresource_filter_ruleset_service()
       override;
-  federated_learning::FlocBlocklistService* floc_blocklist_service() override;
-  optimization_guide::OptimizationGuideService* optimization_guide_service()
-      override;
+  federated_learning::FlocSortingLshClustersService*
+  floc_sorting_lsh_clusters_service() override;
   component_updater::ComponentUpdateService* component_updater() override;
   MediaFileSystemRegistry* media_file_system_registry() override;
   WebRtcLogUploader* webrtc_log_uploader() override;

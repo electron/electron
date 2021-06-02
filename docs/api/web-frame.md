@@ -62,6 +62,11 @@ Sets the maximum and minimum pinch-to-zoom level.
 > webFrame.setVisualZoomLevelLimits(1, 3)
 > ```
 
+> **NOTE**: Visual zoom only applies to pinch-to-zoom behavior. Cmd+/-/0 zoom shortcuts are
+> controlled by the 'zoomIn', 'zoomOut', and 'resetZoom' MenuItem roles in the application
+> Menu. To disable shortcuts, manually [define the Menu](./menu.md#examples) and omit zoom roles
+> from the definition.
+
 ### `webFrame.setSpellCheckProvider(language, provider)`
 
 * `language` String
@@ -175,6 +180,7 @@ reject and the `result` would be `undefined`. This is because Chromium does not
 dispatch errors of isolated worlds to foreign worlds.
 
 ### `webFrame.setIsolatedWorldInfo(worldId, info)`
+
 * `worldId` Integer - The ID of the world to run the javascript in, `0` is the default world, `999` is the world used by Electrons `contextIsolation` feature. Chrome extensions reserve the range of IDs in `[1 << 20, 1 << 29)`. You can provide any integer here.
 * `info` Object
   * `securityOrigin` String (optional) - Security origin for the isolated world.
@@ -256,6 +262,20 @@ renderer process.
    specific `WebContents` navigation events (e.g. `did-frame-navigate`)
 
 Returns `WebFrame` - that has the supplied `routingId`, `null` if not found.
+
+### `webFrame.isWordMisspelled(word)`
+
+* `word` String - The word to be spellchecked.
+
+Returns `Boolean` - True if the word is misspelled according to the built in
+spellchecker, false otherwise. If no dictionary is loaded, always return false.
+
+### `webFrame.getWordSuggestions(word)`
+
+* `word` String - The misspelled word.
+
+Returns `String[]` - A list of suggested words for a given word. If the word
+is spelled correctly, the result will be empty.
 
 ## Properties
 

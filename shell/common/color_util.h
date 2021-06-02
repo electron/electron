@@ -12,10 +12,12 @@
 namespace electron {
 
 // Parse hex color like "#FFF" or "#EFEFEF"
-SkColor ParseHexColor(const std::string& name);
+SkColor ParseHexColor(const std::string& color_string);
 
 // Convert color to RGB hex value like "#ABCDEF"
 std::string ToRGBHex(SkColor color);
+
+std::string ToRGBAHex(SkColor color, bool include_hash = true);
 
 }  // namespace electron
 

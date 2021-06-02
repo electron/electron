@@ -7,6 +7,7 @@
 #include <propkey.h>  // for PKEY_* constants
 
 #include "base/logging.h"
+#include "base/stl_util.h"
 #include "base/win/scoped_co_mem.h"
 #include "base/win/scoped_propvariant.h"
 #include "base/win/win_util.h"
@@ -26,6 +27,13 @@ bool AppendTask(const JumpListItem& item, IObjectCollection* collection) {
       FAILED(link->SetArguments(item.arguments.c_str())) ||
       FAILED(link->SetWorkingDirectory(item.working_dir.value().c_str())) ||
       FAILED(link->SetDescription(item.description.c_str())))
+    return false;
+
+  // SetDescription limits the size of the parameter to INFOTIPSIZE (1024),
+  // which suggests rejection when exceeding that limit, but experimentation
+  // has shown that descriptions longer than 260 characters cause a silent
+  // failure, despite SetDescription returning the success code S_OK.
+  if (item.description.size() > 260)
     return false;
 
   if (!item.icon_path.empty() &&
@@ -83,7 +91,7 @@ bool ConvertShellLinkToJumpListItem(IShellLink* shell_link,
   DCHECK(shell_link);
   DCHECK(item);
 
-  item->type = JumpListItem::Type::TASK;
+  item->type = JumpListItem::Type::kTask;
   wchar_t path[MAX_PATH];
   if (FAILED(shell_link->GetPath(path, base::size(path), nullptr, 0)))
     return false;
@@ -134,7 +142,7 @@ void ConvertRemovedJumpListItems(IObjectArray* in,
     IShellLink* shell_link;
     for (UINT i = 0; i < removed_count; ++i) {
       if (SUCCEEDED(in->GetAt(i, IID_PPV_ARGS(&shell_item)))) {
-        item.type = JumpListItem::Type::FILE;
+        item.type = JumpListItem::Type::kFile;
         GetShellItemFileName(shell_item, &item.path);
         out->push_back(item);
         shell_item->Release();
@@ -158,7 +166,7 @@ JumpListCategory::JumpListCategory() = default;
 JumpListCategory::JumpListCategory(const JumpListCategory&) = default;
 JumpListCategory::~JumpListCategory() = default;
 
-JumpList::JumpList(const base::string16& app_id) : app_id_(app_id) {
+JumpList::JumpList(const std::wstring& app_id) : app_id_(app_id) {
   destinations_.CoCreateInstance(CLSID_DestinationList);
 }
 
@@ -217,22 +225,22 @@ bool JumpList::Delete() {
 JumpListResult JumpList::AppendCategory(const JumpListCategory& category) {
   DCHECK(destinations_);
   if (!destinations_)
-    return JumpListResult::GENERIC_ERROR;
+    return JumpListResult::kGenericError;
 
   if (category.items.empty())
-    return JumpListResult::SUCCESS;
+    return JumpListResult::kSuccess;
 
   CComPtr<IObjectCollection> collection;
   if (FAILED(collection.CoCreateInstance(CLSID_EnumerableObjectCollection))) {
-    return JumpListResult::GENERIC_ERROR;
+    return JumpListResult::kGenericError;
   }
 
-  auto result = JumpListResult::SUCCESS;
+  auto result = JumpListResult::kSuccess;
   // Keep track of how many items were actually appended to the category.
   int appended_count = 0;
   for (const auto& item : category.items) {
     switch (item.type) {
-      case JumpListItem::Type::TASK:
+      case JumpListItem::Type::kTask:
         if (AppendTask(item, collection))
           ++appended_count;
         else
@@ -241,8 +249,8 @@ JumpListResult JumpList::AppendCategory(const JumpListCategory& category) {
                         "to Jump List.";
         break;
 
-      case JumpListItem::Type::SEPARATOR:
-        if (category.type == JumpListCategory::Type::TASKS) {
+      case JumpListItem::Type::kSeparator:
+        if (category.type == JumpListCategory::Type::kTasks) {
           if (AppendSeparator(collection))
             ++appended_count;
         } else {
@@ -250,11 +258,11 @@ JumpListResult JumpList::AppendCategory(const JumpListCategory& category) {
                      << "'" << category.name << "'. "
                      << "Separators are only allowed in the standard 'Tasks' "
                         "Jump List category.";
-          result = JumpListResult::CUSTOM_CATEGORY_SEPARATOR_ERROR;
+          result = JumpListResult::kCustomCategorySeparatorError;
         }
         break;
 
-      case JumpListItem::Type::FILE:
+      case JumpListItem::Type::kFile:
         if (AppendFile(item, collection))
           ++appended_count;
         else
@@ -269,17 +277,17 @@ JumpListResult JumpList::AppendCategory(const JumpListCategory& category) {
     return result;
 
   if ((static_cast<size_t>(appended_count) < category.items.size()) &&
-      (result == JumpListResult::SUCCESS)) {
-    result = JumpListResult::GENERIC_ERROR;
+      (result == JumpListResult::kSuccess)) {
+    result = JumpListResult::kGenericError;
   }
 
   CComQIPtr<IObjectArray> items(collection);
 
-  if (category.type == JumpListCategory::Type::TASKS) {
+  if (category.type == JumpListCategory::Type::kTasks) {
     if (FAILED(destinations_->AddUserTasks(items))) {
       LOG(ERROR) << "Failed to append items to the standard Tasks category.";
-      if (result == JumpListResult::SUCCESS)
-        result = JumpListResult::GENERIC_ERROR;
+      if (result == JumpListResult::kSuccess)
+        result = JumpListResult::kGenericError;
     }
   } else {
     HRESULT hr = destinations_->AppendCategory(category.name.c_str(), items);
@@ -288,17 +296,17 @@ JumpListResult JumpList::AppendCategory(const JumpListCategory& category) {
         LOG(ERROR) << "Failed to append custom category "
                    << "'" << category.name << "' "
                    << "to Jump List due to missing file type registration.";
-        result = JumpListResult::MISSING_FILE_TYPE_REGISTRATION_ERROR;
+        result = JumpListResult::kMissingFileTypeRegistrationError;
       } else if (hr == E_ACCESSDENIED) {
         LOG(ERROR) << "Failed to append custom category "
                    << "'" << category.name << "' "
                    << "to Jump List due to system privacy settings.";
-        result = JumpListResult::CUSTOM_CATEGORY_ACCESS_DENIED_ERROR;
+        result = JumpListResult::kCustomCategoryAccessDeniedError;
       } else {
         LOG(ERROR) << "Failed to append custom category "
                    << "'" << category.name << "' to Jump List.";
-        if (result == JumpListResult::SUCCESS)
-          result = JumpListResult::GENERIC_ERROR;
+        if (result == JumpListResult::kSuccess)
+          result = JumpListResult::kGenericError;
       }
     }
   }
@@ -313,36 +321,36 @@ JumpListResult JumpList::AppendCategories(
     const std::vector<JumpListCategory>& categories) {
   DCHECK(destinations_);
   if (!destinations_)
-    return JumpListResult::GENERIC_ERROR;
+    return JumpListResult::kGenericError;
 
-  auto result = JumpListResult::SUCCESS;
+  auto result = JumpListResult::kSuccess;
   for (const auto& category : categories) {
-    auto latestResult = JumpListResult::SUCCESS;
+    auto latestResult = JumpListResult::kSuccess;
     switch (category.type) {
-      case JumpListCategory::Type::TASKS:
-      case JumpListCategory::Type::CUSTOM:
+      case JumpListCategory::Type::kTasks:
+      case JumpListCategory::Type::kCustom:
         latestResult = AppendCategory(category);
         break;
 
-      case JumpListCategory::Type::RECENT:
+      case JumpListCategory::Type::kRecent:
         if (FAILED(destinations_->AppendKnownCategory(KDC_RECENT))) {
           LOG(ERROR) << "Failed to append Recent category to Jump List.";
-          latestResult = JumpListResult::GENERIC_ERROR;
+          latestResult = JumpListResult::kGenericError;
         }
         break;
 
-      case JumpListCategory::Type::FREQUENT:
+      case JumpListCategory::Type::kFrequent:
         if (FAILED(destinations_->AppendKnownCategory(KDC_FREQUENT))) {
           LOG(ERROR) << "Failed to append Frequent category to Jump List.";
-          latestResult = JumpListResult::GENERIC_ERROR;
+          latestResult = JumpListResult::kGenericError;
         }
         break;
     }
     // Keep the first non-generic error code as only one can be returned from
     // the function (so try to make it the most useful one).
-    if (((result == JumpListResult::SUCCESS) ||
-         (result == JumpListResult::GENERIC_ERROR)) &&
-        (latestResult != JumpListResult::SUCCESS))
+    if (((result == JumpListResult::kSuccess) ||
+         (result == JumpListResult::kGenericError)) &&
+        (latestResult != JumpListResult::kSuccess))
       result = latestResult;
   }
   return result;

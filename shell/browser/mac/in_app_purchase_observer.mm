@@ -182,7 +182,7 @@ Transaction::Transaction() = default;
 Transaction::Transaction(const Transaction&) = default;
 Transaction::~Transaction() = default;
 
-TransactionObserver::TransactionObserver() : weak_ptr_factory_(this) {
+TransactionObserver::TransactionObserver() {
   observer_ = [[InAppTransactionObserver alloc]
       initWithCallback:base::BindRepeating(
                            &TransactionObserver::OnTransactionsUpdated,

@@ -6,6 +6,8 @@
 #define SHELL_COMMON_GIN_CONVERTERS_NET_CONVERTER_H_
 
 #include <string>
+#include <utility>
+#include <vector>
 
 #include "gin/converter.h"
 #include "services/network/public/mojom/fetch_api.mojom.h"
@@ -110,6 +112,35 @@ template <>
 struct Converter<net::RedirectInfo> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const net::RedirectInfo& val);
+};
+
+template <typename K, typename V>
+struct Converter<std::vector<std::pair<K, V>>> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> value,
+                     std::vector<std::pair<K, V>>* out) {
+    if (!value->IsObject())
+      return false;
+    out->clear();
+    v8::Local<v8::Context> context = isolate->GetCurrentContext();
+    v8::Local<v8::Object> obj = value.As<v8::Object>();
+    v8::Local<v8::Array> keys = obj->GetPropertyNames(context).ToLocalChecked();
+    for (uint32_t i = 0; i < keys->Length(); ++i) {
+      v8::Local<v8::Value> v8key;
+      if (!keys->Get(context, i).ToLocal(&v8key))
+        return false;
+      v8::Local<v8::Value> v8value;
+      if (!obj->Get(context, v8key).ToLocal(&v8value))
+        return false;
+      K key;
+      V value;
+      if (!ConvertFromV8(isolate, v8key, &key) ||
+          !ConvertFromV8(isolate, v8value, &value))
+        return false;
+      (*out).emplace_back(std::move(key), std::move(value));
+    }
+    return true;
+  }
 };
 
 }  // namespace gin

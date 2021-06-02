@@ -1,6 +1,6 @@
 # Using clang-format on C++ Code
 
-[`clang-format`](http://clang.llvm.org/docs/ClangFormat.html) is a tool to
+[`clang-format`](https://clang.llvm.org/docs/ClangFormat.html) is a tool to
 automatically format C/C++/Objective-C code, so that developers don't need to
 worry about style issues during code reviews.
 
@@ -30,6 +30,6 @@ run `git-clang-format HEAD~1`. See `git-clang-format -h` for more details.
 You can also integrate `clang-format` directly into your favorite editors.
 For further guidance on setting up editor integration, see these pages:
 
-  * [Atom](https://atom.io/packages/clang-format)
-  * [Vim & Emacs](http://clang.llvm.org/docs/ClangFormat.html#vim-integration)
-  * [Visual Studio Code](https://marketplace.visualstudio.com/items?itemName=xaver.clang-format)
+* [Atom](https://atom.io/packages/clang-format)
+* [Vim & Emacs](https://clang.llvm.org/docs/ClangFormat.html#vim-integration)
+* [Visual Studio Code](https://marketplace.visualstudio.com/items?itemName=xaver.clang-format)

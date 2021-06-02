@@ -16,35 +16,31 @@ namespace electron {
 // Special button that used by menu bar to show submenus.
 class SubmenuButton : public views::MenuButton {
  public:
-  SubmenuButton(views::ButtonListener* button_listener,
-                const base::string16& title,
+  SubmenuButton(PressedCallback callback,
+                const std::u16string& title,
                 const SkColor& background_color);
   ~SubmenuButton() override;
 
   void SetAcceleratorVisibility(bool visible);
   void SetUnderlineColor(SkColor color);
 
-  base::char16 accelerator() const { return accelerator_; }
+  char16_t accelerator() const { return accelerator_; }
 
   void GetAccessibleNodeData(ui::AXNodeData* node_data) override;
 
   // views::MenuButton:
   void PaintButtonContents(gfx::Canvas* canvas) override;
 
-  // views::InkDropHostView:
-  std::unique_ptr<views::InkDropRipple> CreateInkDropRipple() const override;
-  std::unique_ptr<views::InkDrop> CreateInkDrop() override;
-
  private:
-  bool GetUnderlinePosition(const base::string16& text,
-                            base::char16* accelerator,
+  bool GetUnderlinePosition(const std::u16string& text,
+                            char16_t* accelerator,
                             int* start,
                             int* end) const;
-  void GetCharacterPosition(const base::string16& text,
+  void GetCharacterPosition(const std::u16string& text,
                             int index,
                             int* pos) const;
 
-  base::char16 accelerator_ = 0;
+  char16_t accelerator_ = 0;
 
   bool show_underline_ = false;
 

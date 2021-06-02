@@ -11,7 +11,7 @@ From [ChromeDriver - WebDriver for Chrome][chrome-driver]:
 ## Setting up Spectron
 
 [Spectron][spectron] is the officially supported ChromeDriver testing framework
-for Electron. It is built on top of [WebdriverIO](http://webdriver.io/) and
+for Electron. It is built on top of [WebdriverIO](https://webdriver.io/) and
 has helpers to access Electron APIs in your tests and bundles ChromeDriver.
 
 ```sh
@@ -51,7 +51,7 @@ verifyWindowIsVisibleWithTitle(myApp)
 
 ## Setting up with WebDriverJs
 
-[WebDriverJs](https://code.google.com/p/selenium/wiki/WebDriverJs) provides
+[WebDriverJs](https://www.selenium.dev/selenium/docs/api/javascript/index.html) provides
 a Node package for testing with web driver, we will use it as an example.
 
 ### 1. Start ChromeDriver
@@ -86,12 +86,12 @@ const driver = new webdriver.Builder()
   // The "9515" is the port opened by chrome driver.
   .usingServer('http://localhost:9515')
   .withCapabilities({
-    chromeOptions: {
+    'goog:chromeOptions': {
       // Here is the path to your Electron binary.
       binary: '/Path-to-Your-App.app/Contents/MacOS/Electron'
     }
   })
-  .forBrowser('electron')
+  .forBrowser('chrome') // note: use .forBrowser('electron') for selenium-webdriver <= 3.6.0
   .build()
 
 driver.get('http://www.google.com')
@@ -108,7 +108,7 @@ driver.quit()
 
 ## Setting up with WebdriverIO
 
-[WebdriverIO](http://webdriver.io/) provides a Node package for testing with web
+[WebdriverIO](https://webdriver.io/) provides a Node package for testing with web
 driver.
 
 ### 1. Start ChromeDriver

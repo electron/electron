@@ -9,13 +9,15 @@
 #include <utility>
 
 #include "base/guid.h"
+#include "base/strings/string_number_conversions.h"
+#include "base/strings/stringprintf.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/storage_partition.h"
-#include "mojo/public/cpp/bindings/binding.h"
 #include "mojo/public/cpp/system/data_pipe_producer.h"
 #include "mojo/public/cpp/system/string_data_source.h"
 #include "net/base/filename_util.h"
 #include "net/http/http_status_code.h"
+#include "net/url_request/redirect_util.h"
 #include "services/network/public/cpp/url_loader_completion_status.h"
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
 #include "shell/browser/api/electron_api_session.h"
@@ -28,6 +30,7 @@
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
+#include "third_party/blink/public/mojom/loader/resource_load_info.mojom-shared.h"
 
 #include "shell/common/node_includes.h"
 
@@ -98,7 +101,7 @@ network::mojom::URLResponseHeadPtr ToResponseHead(
     return head;
   }
 
-  int status_code = 200;
+  int status_code = net::HTTP_OK;
   dict.Get("statusCode", &status_code);
   head->headers = new net::HttpResponseHeaders(base::StringPrintf(
       "HTTP/1.1 %d %s", status_code,
@@ -123,11 +126,16 @@ network::mojom::URLResponseHeadPtr ToResponseHead(
       } else {
         continue;
       }
-      // Some apps are passing content-type via headers, which is not accepted
-      // in NetworkService.
-      if (base::ToLowerASCII(iter.first) == "content-type") {
+      auto header_name_lowercase = base::ToLowerASCII(iter.first);
+
+      if (header_name_lowercase == "content-type") {
+        // Some apps are passing content-type via headers, which is not accepted
+        // in NetworkService.
         head->headers->GetMimeTypeAndCharset(&head->mime_type, &head->charset);
         has_content_type = true;
+      } else if (header_name_lowercase == "content-length" &&
+                 iter.second.is_string()) {
+        base::StringToInt64(iter.second.GetString(), &head->content_length);
       }
     }
   }
@@ -147,15 +155,13 @@ struct WriteData {
 };
 
 void OnWrite(std::unique_ptr<WriteData> write_data, MojoResult result) {
-  if (result != MOJO_RESULT_OK) {
-    network::URLLoaderCompletionStatus status(net::ERR_FAILED);
-    return;
+  network::URLLoaderCompletionStatus status(net::ERR_FAILED);
+  if (result == MOJO_RESULT_OK) {
+    status = network::URLLoaderCompletionStatus(net::OK);
+    status.encoded_data_length = write_data->data.size();
+    status.encoded_body_length = write_data->data.size();
+    status.decoded_body_length = write_data->data.size();
   }
-
-  network::URLLoaderCompletionStatus status(net::OK);
-  status.encoded_data_length = write_data->data.size();
-  status.encoded_body_length = write_data->data.size();
-  status.decoded_body_length = write_data->data.size();
   write_data->client->OnComplete(status);
 }
 
@@ -179,7 +185,7 @@ ElectronURLLoaderFactory::ElectronURLLoaderFactory(
     ProtocolType type,
     const ProtocolHandler& handler,
     mojo::PendingReceiver<network::mojom::URLLoaderFactory> factory_receiver)
-    : content::NonNetworkURLLoaderFactoryBase(std::move(factory_receiver)),
+    : network::SelfDeletingURLLoaderFactory(std::move(factory_receiver)),
       type_(type),
       handler_(handler) {}
 
@@ -187,30 +193,41 @@ ElectronURLLoaderFactory::~ElectronURLLoaderFactory() = default;
 
 void ElectronURLLoaderFactory::CreateLoaderAndStart(
     mojo::PendingReceiver<network::mojom::URLLoader> loader,
-    int32_t routing_id,
     int32_t request_id,
     uint32_t options,
     const network::ResourceRequest& request,
     mojo::PendingRemote<network::mojom::URLLoaderClient> client,
     const net::MutableNetworkTrafficAnnotationTag& traffic_annotation) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+  mojo::PendingRemote<network::mojom::URLLoaderFactory> proxy_factory;
   handler_.Run(
       request,
       base::BindOnce(&ElectronURLLoaderFactory::StartLoading, std::move(loader),
-                     routing_id, request_id, options, request,
-                     std::move(client), traffic_annotation, nullptr, type_));
+                     request_id, options, request, std::move(client),
+                     traffic_annotation, std::move(proxy_factory), type_));
+}
+
+// static
+void ElectronURLLoaderFactory::OnComplete(
+    mojo::PendingRemote<network::mojom::URLLoaderClient> client,
+    int32_t request_id,
+    const network::URLLoaderCompletionStatus& status) {
+  if (client.is_valid()) {
+    mojo::Remote<network::mojom::URLLoaderClient> client_remote(
+        std::move(client));
+    client_remote->OnComplete(status);
+  }
 }
 
 // static
 void ElectronURLLoaderFactory::StartLoading(
     mojo::PendingReceiver<network::mojom::URLLoader> loader,
-    int32_t routing_id,
     int32_t request_id,
     uint32_t options,
     const network::ResourceRequest& request,
     mojo::PendingRemote<network::mojom::URLLoaderClient> client,
     const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
-    network::mojom::URLLoaderFactory* proxy_factory,
+    mojo::PendingRemote<network::mojom::URLLoaderFactory> proxy_factory,
     ProtocolType type,
     gin::Arguments* args) {
   // Send network error when there is no argument passed.
@@ -219,10 +236,8 @@ void ElectronURLLoaderFactory::StartLoading(
   // passed, to keep compatibility with old code.
   v8::Local<v8::Value> response;
   if (!args->GetNext(&response)) {
-    mojo::Remote<network::mojom::URLLoaderClient> client_remote(
-        std::move(client));
-    client_remote->OnComplete(
-        network::URLLoaderCompletionStatus(net::ERR_NOT_IMPLEMENTED));
+    OnComplete(std::move(client), request_id,
+               network::URLLoaderCompletionStatus(net::ERR_NOT_IMPLEMENTED));
     return;
   }
 
@@ -231,9 +246,8 @@ void ElectronURLLoaderFactory::StartLoading(
   if (!dict.IsEmpty()) {
     int error_code;
     if (dict.Get("error", &error_code)) {
-      mojo::Remote<network::mojom::URLLoaderClient> client_remote(
-          std::move(client));
-      client_remote->OnComplete(network::URLLoaderCompletionStatus(error_code));
+      OnComplete(std::move(client), request_id,
+                 network::URLLoaderCompletionStatus(error_code));
       return;
     }
   }
@@ -248,27 +262,39 @@ void ElectronURLLoaderFactory::StartLoading(
   // API in WebRequestProxyingURLLoaderFactory.
   std::string location;
   if (head->headers->IsRedirect(&location)) {
-    GURL new_location = GURL(location);
-    net::SiteForCookies new_site_for_cookies =
-        net::SiteForCookies::FromUrl(new_location);
-    network::ResourceRequest new_request = request;
-    new_request.url = new_location;
-    new_request.site_for_cookies = new_site_for_cookies;
+    // If the request is a MAIN_FRAME request, the first-party URL gets
+    // updated on redirects.
+    const net::RedirectInfo::FirstPartyURLPolicy first_party_url_policy =
+        request.resource_type ==
+                static_cast<int>(blink::mojom::ResourceType::kMainFrame)
+            ? net::RedirectInfo::FirstPartyURLPolicy::UPDATE_URL_ON_REDIRECT
+            : net::RedirectInfo::FirstPartyURLPolicy::NEVER_CHANGE_URL;
 
-    net::RedirectInfo redirect_info;
-    redirect_info.status_code = head->headers->response_code();
-    redirect_info.new_method = request.method;
-    redirect_info.new_url = new_location;
-    redirect_info.new_site_for_cookies = new_site_for_cookies;
+    net::RedirectInfo redirect_info = net::RedirectInfo::ComputeRedirectInfo(
+        request.method, request.url, request.site_for_cookies,
+        first_party_url_policy, request.referrer_policy,
+        request.referrer.GetAsReferrer().spec(), head->headers->response_code(),
+        request.url.Resolve(location),
+        net::RedirectUtil::GetReferrerPolicyHeader(head->headers.get()), false);
+
+    network::ResourceRequest new_request = request;
+    new_request.method = redirect_info.new_method;
+    new_request.url = redirect_info.new_url;
+    new_request.site_for_cookies = redirect_info.new_site_for_cookies;
+    new_request.referrer = GURL(redirect_info.new_referrer);
+    new_request.referrer_policy = redirect_info.new_referrer_policy;
+
+    DCHECK(client.is_valid());
+
     mojo::Remote<network::mojom::URLLoaderClient> client_remote(
         std::move(client));
 
     client_remote->OnReceiveRedirect(redirect_info, std::move(head));
 
-    // Unound client, so it an be passed to sub-methods
+    // Unbound client, so it an be passed to sub-methods
     client = client_remote.Unbind();
     // When the redirection comes from an intercepted scheme (which has
-    // |proxy_factory| passed), we askes the proxy factory to create a loader
+    // |proxy_factory| passed), we ask the proxy factory to create a loader
     // for new URL, otherwise we call |StartLoadingHttp|, which creates
     // loader with default factory.
     //
@@ -280,9 +306,12 @@ void ElectronURLLoaderFactory::StartLoading(
     // module.
     //
     // I'm not sure whether this is an intended behavior in Chromium.
-    if (proxy_factory) {
-      proxy_factory->CreateLoaderAndStart(
-          std::move(loader), routing_id, request_id, options, new_request,
+    if (proxy_factory.is_valid()) {
+      mojo::Remote<network::mojom::URLLoaderFactory> proxy_factory_remote(
+          std::move(proxy_factory));
+
+      proxy_factory_remote->CreateLoaderAndStart(
+          std::move(loader), request_id, options, new_request,
           std::move(client), traffic_annotation);
     } else {
       StartLoadingHttp(std::move(loader), new_request, std::move(client),
@@ -294,10 +323,8 @@ void ElectronURLLoaderFactory::StartLoading(
 
   // Some protocol accepts non-object responses.
   if (dict.IsEmpty() && ResponseMustBeObject(type)) {
-    mojo::Remote<network::mojom::URLLoaderClient> client_remote(
-        std::move(client));
-    client_remote->OnComplete(
-        network::URLLoaderCompletionStatus(net::ERR_NOT_IMPLEMENTED));
+    OnComplete(std::move(client), request_id,
+               network::URLLoaderCompletionStatus(net::ERR_NOT_IMPLEMENTED));
     return;
   }
 
@@ -324,15 +351,13 @@ void ElectronURLLoaderFactory::StartLoading(
     case ProtocolType::kFree:
       ProtocolType type;
       if (!gin::ConvertFromV8(args->isolate(), response, &type)) {
-        mojo::Remote<network::mojom::URLLoaderClient> client_remote(
-            std::move(client));
-        client_remote->OnComplete(
-            network::URLLoaderCompletionStatus(net::ERR_FAILED));
+        OnComplete(std::move(client), request_id,
+                   network::URLLoaderCompletionStatus(net::ERR_FAILED));
         return;
       }
-      StartLoading(std::move(loader), routing_id, request_id, options, request,
-                   std::move(client), traffic_annotation, proxy_factory, type,
-                   args);
+      StartLoading(std::move(loader), request_id, options, request,
+                   std::move(client), traffic_annotation,
+                   std::move(proxy_factory), type, args);
       break;
   }
 }
@@ -475,7 +500,7 @@ void ElectronURLLoaderFactory::StartLoadingStream(
     client_remote->OnReceiveResponse(std::move(head));
     mojo::ScopedDataPipeProducerHandle producer;
     mojo::ScopedDataPipeConsumerHandle consumer;
-    if (mojo::CreateDataPipe(nullptr, &producer, &consumer) != MOJO_RESULT_OK) {
+    if (mojo::CreateDataPipe(nullptr, producer, consumer) != MOJO_RESULT_OK) {
       client_remote->OnComplete(
           network::URLLoaderCompletionStatus(net::ERR_INSUFFICIENT_RESOURCES));
       return;
@@ -519,10 +544,10 @@ void ElectronURLLoaderFactory::SendContents(
   head->headers->AddHeader("Access-Control-Allow-Origin", "*");
   client_remote->OnReceiveResponse(std::move(head));
 
-  // Code bellow follows the pattern of data_url_loader_factory.cc.
+  // Code below follows the pattern of data_url_loader_factory.cc.
   mojo::ScopedDataPipeProducerHandle producer;
   mojo::ScopedDataPipeConsumerHandle consumer;
-  if (mojo::CreateDataPipe(nullptr, &producer, &consumer) != MOJO_RESULT_OK) {
+  if (mojo::CreateDataPipe(nullptr, producer, consumer) != MOJO_RESULT_OK) {
     client_remote->OnComplete(
         network::URLLoaderCompletionStatus(net::ERR_INSUFFICIENT_RESOURCES));
     return;
@@ -535,9 +560,10 @@ void ElectronURLLoaderFactory::SendContents(
   write_data->data = std::move(data);
   write_data->producer =
       std::make_unique<mojo::DataPipeProducer>(std::move(producer));
+  auto* producer_ptr = write_data->producer.get();
 
   base::StringPiece string_piece(write_data->data);
-  write_data->producer->Write(
+  producer_ptr->Write(
       std::make_unique<mojo::StringDataSource>(
           string_piece, mojo::StringDataSource::AsyncWritingMode::
                             STRING_STAYS_VALID_UNTIL_COMPLETION),

@@ -5,6 +5,7 @@
 #include "shell/common/gin_helper/event_emitter.h"
 
 #include "content/public/browser/render_frame_host.h"
+#include "content/public/browser/render_process_host.h"
 #include "shell/browser/api/event.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
@@ -58,7 +59,7 @@ v8::Local<v8::Object> CreateNativeEvent(
   if (frame && callback) {
     gin::Handle<Event> native_event = Event::Create(isolate);
     native_event->SetCallback(std::move(callback));
-    event = v8::Local<v8::Object>::Cast(native_event.ToV8());
+    event = native_event.ToV8().As<v8::Object>();
   } else {
     // No need to create native event if we do not need to send reply.
     event = CreateEvent(isolate);
@@ -67,8 +68,10 @@ v8::Local<v8::Object> CreateNativeEvent(
   Dictionary dict(isolate, event);
   dict.Set("sender", sender);
   // Should always set frameId even when callback is null.
-  if (frame)
+  if (frame) {
     dict.Set("frameId", frame->GetRoutingID());
+    dict.Set("processId", frame->GetProcess()->GetID());
+  }
   return event;
 }
 

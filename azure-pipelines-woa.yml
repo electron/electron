@@ -63,7 +63,8 @@ steps:
     set npm_config_nodedir=%cd%\out\Default\gen\node_headers
     set npm_config_arch=arm64
     cd electron
-    node script/yarn test -- --enable-logging --verbose
+    # CalculateNativeWinOcclusion is disabled due to https://bugs.chromium.org/p/chromium/issues/detail?id=1139022
+    node script/yarn test -- --enable-logging --verbose --disable-features=CalculateNativeWinOcclusion
   displayName: 'Run Electron tests'
   env:
     ELECTRON_OUT_DIR: Default
@@ -92,6 +93,6 @@ steps:
   condition: always()
 
 - powershell: |
-    Remove-Item -path $env:APPDATA/Electron* -Recurse
+    Remove-Item -path $env:APPDATA/Electron* -Recurse -Force -ErrorAction Ignore
   displayName: 'Delete user app data directories'
   condition: always()

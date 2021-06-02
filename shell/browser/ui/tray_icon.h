@@ -55,17 +55,17 @@ class TrayIcon {
   virtual std::string GetTitle() = 0;
 #endif
 
-  enum class IconType { None, Info, Warning, Error, Custom };
+  enum class IconType { kNone, kInfo, kWarning, kError, kCustom };
 
   struct BalloonOptions {
-    IconType icon_type = IconType::Custom;
+    IconType icon_type = IconType::kCustom;
 #if defined(OS_WIN)
     HICON icon = nullptr;
 #else
     gfx::Image icon;
 #endif
-    base::string16 title;
-    base::string16 content;
+    std::u16string title;
+    std::u16string content;
     bool large_icon = true;
     bool no_sound = false;
     bool respect_quiet_time = false;

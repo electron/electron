@@ -24,6 +24,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/common/content_paths.h"
 #include "electron/buildflags/buildflags.h"
+#include "shell/browser/api/electron_api_app.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/electron_command_line.h"
 #include "shell/common/gin_converters/file_path_converter.h"
@@ -33,6 +34,7 @@
 #include "shell/common/gin_helper/microtasks_scope.h"
 #include "shell/common/mac/main_application_bundle.h"
 #include "shell/common/node_includes.h"
+#include "third_party/blink/renderer/bindings/core/v8/v8_initializer.h"  // nogncheck
 
 #if !defined(MAS_BUILD)
 #include "shell/common/crash_keys.h"
@@ -55,6 +57,7 @@
   V(electron_browser_power_monitor)      \
   V(electron_browser_power_save_blocker) \
   V(electron_browser_protocol)           \
+  V(electron_browser_printing)           \
   V(electron_browser_session)            \
   V(electron_browser_system_preferences) \
   V(electron_browser_base_window)        \
@@ -62,11 +65,13 @@
   V(electron_browser_view)               \
   V(electron_browser_web_contents)       \
   V(electron_browser_web_contents_view)  \
+  V(electron_browser_web_frame_main)     \
   V(electron_browser_web_view_manager)   \
   V(electron_browser_window)             \
   V(electron_common_asar)                \
   V(electron_common_clipboard)           \
   V(electron_common_command_line)        \
+  V(electron_common_environment)         \
   V(electron_common_features)            \
   V(electron_common_native_image)        \
   V(electron_common_native_theme)        \
@@ -126,19 +131,6 @@ void stop_and_close_uv_loop(uv_loop_t* loop) {
 
 bool g_is_initialized = false;
 
-bool IsPackagedApp() {
-  base::FilePath exe_path;
-  base::PathService::Get(base::FILE_EXE, &exe_path);
-  base::FilePath::StringType base_name =
-      base::ToLowerASCII(exe_path.BaseName().value());
-
-#if defined(OS_WIN)
-  return base_name != FILE_PATH_LITERAL("electron.exe");
-#else
-  return base_name != FILE_PATH_LITERAL("electron");
-#endif
-}
-
 void V8FatalErrorCallback(const char* location, const char* message) {
   LOG(ERROR) << "Fatal error in V8: " << location << " " << message;
 
@@ -149,6 +141,45 @@ void V8FatalErrorCallback(const char* location, const char* message) {
 
   volatile int* zero = nullptr;
   *zero = 0;
+}
+
+bool AllowWasmCodeGenerationCallback(v8::Local<v8::Context> context,
+                                     v8::Local<v8::String>) {
+  // If we're running with contextIsolation enabled in the renderer process,
+  // fall back to Blink's logic.
+  v8::Isolate* isolate = context->GetIsolate();
+  if (node::Environment::GetCurrent(isolate) == nullptr) {
+    if (gin_helper::Locker::IsBrowserProcess())
+      return false;
+    return blink::V8Initializer::WasmCodeGenerationCheckCallbackInMainThread(
+        context, v8::String::Empty(isolate));
+  }
+
+  return node::AllowWasmCodeGenerationCallback(context,
+                                               v8::String::Empty(isolate));
+}
+
+void ErrorMessageListener(v8::Local<v8::Message> message,
+                          v8::Local<v8::Value> data) {
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  gin_helper::MicrotasksScope microtasks_scope(
+      isolate, v8::MicrotasksScope::kDoNotRunMicrotasks);
+  node::Environment* env = node::Environment::GetCurrent(isolate);
+
+  if (env) {
+    // Emit the after() hooks now that the exception has been handled.
+    // Analogous to node/lib/internal/process/execution.js#L176-L180
+    if (env->async_hooks()->fields()[node::AsyncHooks::kAfter]) {
+      while (env->async_hooks()->fields()[node::AsyncHooks::kStackLength]) {
+        node::AsyncWrap::EmitAfter(env, env->execution_async_id());
+        env->async_hooks()->pop_async_context(env->execution_async_id());
+      }
+    }
+
+    // Ensure that the async id stack is properly cleared so the async
+    // hook stack does not become corrupted.
+    env->async_hooks()->clear_async_id_stack();
+  }
 }
 
 // Initialize Node.js cli options to pass to Node.js
@@ -173,7 +204,7 @@ void SetNodeCliFlags() {
 
   for (const auto& arg : argv) {
 #if defined(OS_WIN)
-    const auto& option = base::UTF16ToUTF8(arg);
+    const auto& option = base::WideToUTF8(arg);
 #else
     const auto& option = arg;
 #endif
@@ -214,7 +245,7 @@ void SetNodeOptions(base::Environment* env) {
     std::vector<std::string> parts = base::SplitString(
         options, " ", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
 
-    bool is_packaged_app = IsPackagedApp();
+    bool is_packaged_app = electron::api::App::IsPackaged();
 
     for (const auto& part : parts) {
       // Strip off values passed to individual NODE_OPTIONs
@@ -261,8 +292,8 @@ base::FilePath GetResourcesPath() {
 }  // namespace
 
 NodeBindings::NodeBindings(BrowserEnvironment browser_env)
-    : browser_env_(browser_env), weak_factory_(this) {
-  if (browser_env == BrowserEnvironment::WORKER) {
+    : browser_env_(browser_env) {
+  if (browser_env == BrowserEnvironment::kWorker) {
     uv_loop_init(&worker_loop_);
     uv_loop_ = &worker_loop_;
   } else {
@@ -312,7 +343,7 @@ void NodeBindings::Initialize() {
 
 #if defined(OS_LINUX)
   // Get real command line in renderer process forked by zygote.
-  if (browser_env_ != BrowserEnvironment::BROWSER)
+  if (browser_env_ != BrowserEnvironment::kBrowser)
     ElectronCommandLine::InitializeFromCommandLine();
 #endif
 
@@ -322,26 +353,27 @@ void NodeBindings::Initialize() {
   // Parse and set Node.js cli flags.
   SetNodeCliFlags();
 
-  // pass non-null program name to argv so it doesn't crash
-  // trying to index into a nullptr
-  int argc = 1;
-  int exec_argc = 0;
-  const char* prog_name = "electron";
-  const char** argv = &prog_name;
-  const char** exec_argv = nullptr;
-
   std::unique_ptr<base::Environment> env(base::Environment::Create());
   SetNodeOptions(env.get());
 
-  // TODO(codebytere): this is going to be deprecated in the near future
-  // in favor of Init(std::vector<std::string>* argv,
-  //        std::vector<std::string>* exec_argv)
-  node::Init(&argc, argv, &exec_argc, &exec_argv);
+  std::vector<std::string> argv = {"electron"};
+  std::vector<std::string> exec_argv;
+  std::vector<std::string> errors;
+
+  int exit_code = node::InitializeNodeWithArgs(&argv, &exec_argv, &errors);
+
+  for (const std::string& error : errors) {
+    fprintf(stderr, "%s: %s\n", argv[0].c_str(), error.c_str());
+  }
+
+  if (exit_code != 0) {
+    exit(exit_code);
+  }
 
 #if defined(OS_WIN)
   // uv_init overrides error mode to suppress the default crash dialog, bring
   // it back if user wants to show it.
-  if (browser_env_ == BrowserEnvironment::BROWSER ||
+  if (browser_env_ == BrowserEnvironment::kBrowser ||
       env->HasVar("ELECTRON_DEFAULT_ERROR_MODE"))
     SetErrorMode(GetErrorMode() & ~SEM_NOGPFAULTERRORBOX);
 #endif
@@ -364,13 +396,13 @@ node::Environment* NodeBindings::CreateEnvironment(
   // Feed node the path to initialization script.
   std::string process_type;
   switch (browser_env_) {
-    case BrowserEnvironment::BROWSER:
+    case BrowserEnvironment::kBrowser:
       process_type = "browser";
       break;
-    case BrowserEnvironment::RENDERER:
+    case BrowserEnvironment::kRenderer:
       process_type = "renderer";
       break;
-    case BrowserEnvironment::WORKER:
+    case BrowserEnvironment::kWorker:
       process_type = "worker";
       break;
   }
@@ -379,7 +411,7 @@ node::Environment* NodeBindings::CreateEnvironment(
   // Do not set DOM globals for renderer process.
   // We must set this before the node bootstrapper which is run inside
   // CreateEnvironment
-  if (browser_env_ != BrowserEnvironment::BROWSER)
+  if (browser_env_ != BrowserEnvironment::kBrowser)
     global.Set("_noBrowserGlobals", true);
 
   std::vector<std::string> exec_args;
@@ -392,7 +424,7 @@ node::Environment* NodeBindings::CreateEnvironment(
       node::CreateIsolateData(context->GetIsolate(), uv_loop_, platform);
 
   node::Environment* env;
-  if (browser_env_ != BrowserEnvironment::BROWSER) {
+  if (browser_env_ != BrowserEnvironment::kBrowser) {
     // Only one ESM loader can be registered per isolate -
     // in renderer processes this should be blink. We need to tell Node.js
     // not to register its handler (overriding blinks) in non-browser processes.
@@ -400,12 +432,13 @@ node::Environment* NodeBindings::CreateEnvironment(
                      node::EnvironmentFlags::kNoRegisterESMLoader |
                      node::EnvironmentFlags::kNoInitializeInspector;
     v8::TryCatch try_catch(context->GetIsolate());
-    env = node::CreateEnvironment(isolate_data_, context, args, exec_args,
-                                  (node::EnvironmentFlags::Flags)flags);
+    env = node::CreateEnvironment(
+        isolate_data_, context, args, exec_args,
+        static_cast<node::EnvironmentFlags::Flags>(flags));
     DCHECK(env);
 
     // This will only be caught when something has gone terrible wrong as all
-    // electron scripts are wrapped in a try {} catch {} in run-compiler.js
+    // electron scripts are wrapped in a try {} catch {} by webpack
     if (try_catch.HasCaught()) {
       LOG(ERROR) << "Failed to initialize node environment in process: "
                  << process_type;
@@ -417,7 +450,7 @@ node::Environment* NodeBindings::CreateEnvironment(
 
   // Clean up the global _noBrowserGlobals that we unironically injected into
   // the global scope
-  if (browser_env_ != BrowserEnvironment::BROWSER) {
+  if (browser_env_ != BrowserEnvironment::kBrowser) {
     // We need to bootstrap the env in non-browser processes so that
     // _noBrowserGlobals is read correctly before we remove it
     global.Delete("_noBrowserGlobals");
@@ -429,7 +462,17 @@ node::Environment* NodeBindings::CreateEnvironment(
   // crash message and location to CrashReports.
   is.fatal_error_callback = V8FatalErrorCallback;
 
-  if (browser_env_ == BrowserEnvironment::BROWSER) {
+  // We don't want to abort either in the renderer or browser processes.
+  // We already listen for uncaught exceptions and handle them there.
+  is.should_abort_on_uncaught_exception_callback = [](v8::Isolate*) {
+    return false;
+  };
+
+  // Use a custom callback here to allow us to leverage Blink's logic in the
+  // renderer process.
+  is.allow_wasm_code_generation_callback = AllowWasmCodeGenerationCallback;
+
+  if (browser_env_ == BrowserEnvironment::kBrowser) {
     // Node.js requires that microtask checkpoints be explicitly invoked.
     is.policy = v8::MicrotasksPolicy::kExplicit;
   } else {
@@ -441,11 +484,24 @@ node::Environment* NodeBindings::CreateEnvironment(
     // Blink's.
     is.flags &= ~node::IsolateSettingsFlags::MESSAGE_LISTENER_WITH_ERROR_LEVEL;
 
+    // Isolate message listeners are additive (you can add multiple), so instead
+    // we add an extra one here to ensure that the async hook stack is properly
+    // cleared when errors are thrown.
+    context->GetIsolate()->AddMessageListenerWithErrorLevel(
+        ErrorMessageListener, v8::Isolate::kMessageError);
+
     // We do not want to use the promise rejection callback that Node.js uses,
     // because it does not send PromiseRejectionEvents to the global script
     // context. We need to use the one Blink already provides.
     is.flags |=
         node::IsolateSettingsFlags::SHOULD_NOT_SET_PROMISE_REJECTION_CALLBACK;
+
+    // We do not want to use the stack trace callback that Node.js uses,
+    // because it relies on Node.js being aware of the current Context and
+    // that's not always the case. We need to use the one Blink already
+    // provides.
+    is.flags |=
+        node::IsolateSettingsFlags::SHOULD_NOT_SET_PREPARE_STACK_TRACE_CALLBACK;
   }
 
   node::SetIsolateUpForNode(context->GetIsolate(), is);
@@ -467,6 +523,16 @@ void NodeBindings::LoadEnvironment(node::Environment* env) {
 }
 
 void NodeBindings::PrepareMessageLoop() {
+#if !defined(OS_WIN)
+  int handle = uv_backend_fd(uv_loop_);
+
+  // If the backend fd hasn't changed, don't proceed.
+  if (handle == handle_)
+    return;
+
+  handle_ = handle;
+#endif
+
   // Add dummy handle for libuv, otherwise libuv would quit when there is
   // nothing to do.
   uv_async_init(uv_loop_, dummy_uv_handle_.get(), nullptr);
@@ -500,17 +566,24 @@ void NodeBindings::UvRunOnce() {
   // Enter node context while dealing with uv events.
   v8::Context::Scope context_scope(env->context());
 
-  // Perform microtask checkpoint after running JavaScript.
-  gin_helper::MicrotasksScope microtasks_scope(env->isolate());
+  // Node.js expects `kExplicit` microtasks policy and will run microtasks
+  // checkpoints after every call into JavaScript. Since we use a different
+  // policy in the renderer - switch to `kExplicit` and then drop back to the
+  // previous policy value.
+  auto old_policy = env->isolate()->GetMicrotasksPolicy();
+  DCHECK_EQ(v8::MicrotasksScope::GetCurrentDepth(env->isolate()), 0);
+  env->isolate()->SetMicrotasksPolicy(v8::MicrotasksPolicy::kExplicit);
 
-  if (browser_env_ != BrowserEnvironment::BROWSER)
+  if (browser_env_ != BrowserEnvironment::kBrowser)
     TRACE_EVENT_BEGIN0("devtools.timeline", "FunctionCall");
 
   // Deal with uv events.
   int r = uv_run(uv_loop_, UV_RUN_NOWAIT);
 
-  if (browser_env_ != BrowserEnvironment::BROWSER)
+  if (browser_env_ != BrowserEnvironment::kBrowser)
     TRACE_EVENT_END0("devtools.timeline", "FunctionCall");
+
+  env->isolate()->SetMicrotasksPolicy(old_policy);
 
   if (r == 0)
     base::RunLoop().QuitWhenIdle();  // Quit from uv.
@@ -531,7 +604,7 @@ void NodeBindings::WakeupEmbedThread() {
 
 // static
 void NodeBindings::EmbedThreadRunner(void* arg) {
-  NodeBindings* self = static_cast<NodeBindings*>(arg);
+  auto* self = static_cast<NodeBindings*>(arg);
 
   while (true) {
     // Wait for the main loop to deal with events.

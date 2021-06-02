@@ -58,13 +58,13 @@ class AutofillAgent : public content::RenderFrameObserver,
   void DataListOptionsChanged(const blink::WebInputElement&) override;
 
   // mojom::ElectronAutofillAgent
-  void AcceptDataListSuggestion(const base::string16& suggestion) override;
+  void AcceptDataListSuggestion(const std::u16string& suggestion) override;
 
   bool IsUserGesture() const;
   void HidePopup();
   void ShowPopup(const blink::WebFormControlElement&,
-                 const std::vector<base::string16>&,
-                 const std::vector<base::string16>&);
+                 const std::vector<std::u16string>&,
+                 const std::vector<std::u16string>&);
   void ShowSuggestions(const blink::WebFormControlElement& element,
                        const ShowSuggestionsOptions& options);
 
@@ -84,7 +84,7 @@ class AutofillAgent : public content::RenderFrameObserver,
 
   mojo::AssociatedReceiver<mojom::ElectronAutofillAgent> receiver_{this};
 
-  base::WeakPtrFactory<AutofillAgent> weak_ptr_factory_;
+  base::WeakPtrFactory<AutofillAgent> weak_ptr_factory_{this};
 
   DISALLOW_COPY_AND_ASSIGN(AutofillAgent);
 };

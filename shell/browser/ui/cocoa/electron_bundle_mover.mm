@@ -24,9 +24,9 @@ struct Converter<electron::BundlerMoverConflictType> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    electron::BundlerMoverConflictType value) {
     switch (value) {
-      case electron::BundlerMoverConflictType::EXISTS:
+      case electron::BundlerMoverConflictType::kExists:
         return gin::StringToV8(isolate, "exists");
-      case electron::BundlerMoverConflictType::EXISTS_AND_RUNNING:
+      case electron::BundlerMoverConflictType::kExistsAndRunning:
         return gin::StringToV8(isolate, "existsAndRunning");
       default:
         return gin::StringToV8(isolate, "");
@@ -117,7 +117,7 @@ bool ElectronBundleMover::Move(gin_helper::ErrorThrower thrower,
       if (IsApplicationAtPathRunning(destinationPath)) {
         // Check for callback handler and get user choice for open/quit
         if (!ShouldContinueMove(
-                thrower, BundlerMoverConflictType::EXISTS_AND_RUNNING, args))
+                thrower, BundlerMoverConflictType::kExistsAndRunning, args))
           return false;
 
         // Unless explicitly denied, give running app focus and terminate self
@@ -130,7 +130,7 @@ bool ElectronBundleMover::Move(gin_helper::ErrorThrower thrower,
         return true;
       } else {
         // Check callback handler and get user choice for app trashing
-        if (!ShouldContinueMove(thrower, BundlerMoverConflictType::EXISTS,
+        if (!ShouldContinueMove(thrower, BundlerMoverConflictType::kExists,
                                 args))
           return false;
 
@@ -424,15 +424,6 @@ bool ElectronBundleMover::Trash(NSString* path) {
           trashItemAtURL:[NSURL fileURLWithPath:path]
         resultingItemURL:NULL
                    error:NULL];
-  }
-
-  if (!result) {
-    result = [[NSWorkspace sharedWorkspace]
-        performFileOperation:NSWorkspaceRecycleOperation
-                      source:[path stringByDeletingLastPathComponent]
-                 destination:@""
-                       files:[NSArray arrayWithObject:[path lastPathComponent]]
-                         tag:NULL];
   }
 
   // As a last resort try trashing with AppleScript.

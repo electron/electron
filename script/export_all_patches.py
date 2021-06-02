@@ -7,7 +7,7 @@ from lib import git
 
 
 def export_patches(dirs, dry_run):
-  for patch_dir, repo in dirs.iteritems():
+  for patch_dir, repo in dirs.items():
     git.export_patches(repo=repo, out_dir=patch_dir, dry_run=dry_run)
 
 

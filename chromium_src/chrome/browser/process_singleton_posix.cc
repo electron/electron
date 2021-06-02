@@ -333,7 +333,7 @@ bool IsChromeProcess(pid_t pid) {
 // A helper class to hold onto a socket.
 class ScopedSocket {
  public:
-  ScopedSocket() : fd_(-1) { Reset(); }
+  ScopedSocket() { Reset(); }
   ~ScopedSocket() { Close(); }
   int fd() { return fd_; }
   void Reset() {
@@ -347,7 +347,7 @@ class ScopedSocket {
   }
 
  private:
-  int fd_;
+  int fd_ = -1;
 };
 
 // Returns a random string for uniquifying profile connections.
@@ -473,10 +473,7 @@ class ProcessSingleton::LinuxWatcher
     SocketReader(ProcessSingleton::LinuxWatcher* parent,
                  scoped_refptr<base::SingleThreadTaskRunner> ui_task_runner,
                  int fd)
-        : parent_(parent),
-          ui_task_runner_(ui_task_runner),
-          fd_(fd),
-          bytes_read_(0) {
+        : parent_(parent), ui_task_runner_(ui_task_runner), fd_(fd) {
       DCHECK_CURRENTLY_ON(BrowserThread::IO);
       // Wait for reads.
       fd_watch_controller_ = base::FileDescriptorWatcher::WatchReadable(
@@ -508,20 +505,20 @@ class ProcessSingleton::LinuxWatcher
         fd_watch_controller_;
 
     // The ProcessSingleton::LinuxWatcher that owns us.
-    ProcessSingleton::LinuxWatcher* const parent_;
+    ProcessSingleton::LinuxWatcher* const parent_ = nullptr;
 
     // A reference to the UI task runner.
     scoped_refptr<base::SingleThreadTaskRunner> ui_task_runner_;
 
     // The file descriptor we're reading.
-    const int fd_;
+    const int fd_ = -1;
 
     // Store the message in this buffer.
     char buf_[kMaxMessageLength];
 
     // Tracks the number of bytes we've read in case we're getting partial
     // reads.
-    size_t bytes_read_;
+    size_t bytes_read_ = 0;
 
     base::OneShotTimer timer_;
 
@@ -826,10 +823,9 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
   to_send.append(current_dir.value());
 
   const std::vector<std::string>& argv = electron::ElectronCommandLine::argv();
-  for (std::vector<std::string>::const_iterator it = argv.begin();
-       it != argv.end(); ++it) {
+  for (const auto& arg : argv) {
     to_send.push_back(kTokenDelimiter);
-    to_send.append(*it);
+    to_send.append(arg);
   }
 
   // Send the message

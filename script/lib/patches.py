@@ -12,7 +12,8 @@ def read_patch(patch_dir, patch_filename):
   patch_path = os.path.join(patch_dir, patch_filename)
   with codecs.open(patch_path, encoding='utf-8') as f:
     for l in f.readlines():
-      if not added_filename_line and (l.startswith('diff -') or l.startswith('---')):
+      line_has_correct_start = l.startswith('diff -') or l.startswith('---')
+      if not added_filename_line and line_has_correct_start:
         ret.append('Patch-Filename: {}\n'.format(patch_filename))
         added_filename_line = True
       ret.append(l)

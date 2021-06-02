@@ -47,7 +47,7 @@ class MediaCaptureDevicesDispatcher : public content::MediaObserver {
 
   // Unittests that do not require actual device enumeration should call this
   // API on the singleton. It is safe to call this multiple times on the
-  // signleton.
+  // singleton.
   void DisableDeviceEnumerationForTesting();
 
   // Overridden from content::MediaObserver:
@@ -80,7 +80,7 @@ class MediaCaptureDevicesDispatcher : public content::MediaObserver {
   blink::MediaStreamDevices test_video_devices_;
 
   // Flag used by unittests to disable device enumeration.
-  bool is_device_enumeration_disabled_;
+  bool is_device_enumeration_disabled_ = false;
 
   DISALLOW_COPY_AND_ASSIGN(MediaCaptureDevicesDispatcher);
 };

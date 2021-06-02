@@ -16,17 +16,25 @@ template("webpack_build") {
     inputs = [
                invoker.config_file,
                "//electron/build/webpack/webpack.config.base.js",
-               "//electron/build/webpack/run-compiler.js",
                "//electron/tsconfig.json",
                "//electron/yarn.lock",
                "//electron/typings/internal-ambient.d.ts",
                "//electron/typings/internal-electron.d.ts",
              ] + invoker.inputs
 
+    mode = "development"
+    if (is_official_build) {
+      mode = "production"
+    }
+
     args = [
+      "--config",
       rebase_path(invoker.config_file),
-      rebase_path(invoker.out_file),
-      "--buildflags=" + rebase_path("$target_gen_dir/buildflags/buildflags.h"),
+      "--output-filename=" + get_path_info(invoker.out_file, "file"),
+      "--output-path=" + rebase_path(get_path_info(invoker.out_file, "dir")),
+      "--env.buildflags=" +
+          rebase_path("$target_gen_dir/buildflags/buildflags.h"),
+      "--env.mode=" + mode,
     ]
     deps += [ "buildflags" ]
 

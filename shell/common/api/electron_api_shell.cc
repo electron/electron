@@ -85,16 +85,6 @@ v8::Local<v8::Promise> OpenPath(v8::Isolate* isolate,
   return handle;
 }
 
-bool MoveItemToTrash(gin::Arguments* args) {
-  base::FilePath full_path;
-  args->GetNext(&full_path);
-
-  bool delete_on_fail = false;
-  args->GetNext(&delete_on_fail);
-
-  return platform_util::MoveItemToTrash(full_path, delete_on_fail);
-}
-
 v8::Local<v8::Promise> TrashItem(v8::Isolate* isolate,
                                  const base::FilePath& path) {
   gin_helper::Promise<void> promise(isolate);
@@ -127,7 +117,7 @@ bool WriteShortcutLink(const base::FilePath& shortcut_path,
 
   base::win::ShortcutProperties properties;
   base::FilePath path;
-  base::string16 str;
+  std::wstring str;
   UUID toastActivatorClsid;
   int index;
   if (options.Get("target", &path))
@@ -181,7 +171,6 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("showItemInFolder", &platform_util::ShowItemInFolder);
   dict.SetMethod("openPath", &OpenPath);
   dict.SetMethod("openExternal", &OpenExternal);
-  dict.SetMethod("moveItemToTrash", &MoveItemToTrash);
   dict.SetMethod("trashItem", &TrashItem);
   dict.SetMethod("beep", &platform_util::Beep);
 #if defined(OS_WIN)

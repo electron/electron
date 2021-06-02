@@ -5,7 +5,6 @@
 #include "shell/browser/ui/win/notify_icon.h"
 
 #include <objbase.h>
-#include <utility>
 
 #include "base/logging.h"
 #include "base/strings/string_number_conversions.h"
@@ -25,15 +24,15 @@ namespace {
 UINT ConvertIconType(electron::TrayIcon::IconType type) {
   using IconType = electron::TrayIcon::IconType;
   switch (type) {
-    case IconType::None:
+    case IconType::kNone:
       return NIIF_NONE;
-    case IconType::Info:
+    case IconType::kInfo:
       return NIIF_INFO;
-    case IconType::Warning:
+    case IconType::kWarning:
       return NIIF_WARNING;
-    case IconType::Error:
+    case IconType::kError:
       return NIIF_ERROR;
-    case IconType::Custom:
+    case IconType::kCustom:
       return NIIF_USER;
     default:
       NOTREACHED() << "Invalid icon type";
@@ -141,7 +140,7 @@ void NotifyIcon::SetToolTip(const std::string& tool_tip) {
   NOTIFYICONDATA icon_data;
   InitIconData(&icon_data);
   icon_data.uFlags |= NIF_TIP;
-  wcsncpy_s(icon_data.szTip, base::UTF8ToUTF16(tool_tip).c_str(), _TRUNCATE);
+  wcsncpy_s(icon_data.szTip, base::UTF8ToWide(tool_tip).c_str(), _TRUNCATE);
   BOOL result = Shell_NotifyIcon(NIM_MODIFY, &icon_data);
   if (!result)
     LOG(WARNING) << "Unable to set tooltip for status tray icon";
@@ -151,8 +150,10 @@ void NotifyIcon::DisplayBalloon(const BalloonOptions& options) {
   NOTIFYICONDATA icon_data;
   InitIconData(&icon_data);
   icon_data.uFlags |= NIF_INFO;
-  wcsncpy_s(icon_data.szInfoTitle, options.title.c_str(), _TRUNCATE);
-  wcsncpy_s(icon_data.szInfo, options.content.c_str(), _TRUNCATE);
+  wcsncpy_s(icon_data.szInfoTitle, base::UTF16ToWide(options.title).c_str(),
+            _TRUNCATE);
+  wcsncpy_s(icon_data.szInfo, base::UTF16ToWide(options.content).c_str(),
+            _TRUNCATE);
   icon_data.uTimeout = 0;
   icon_data.hBalloonIcon = options.icon;
   icon_data.dwInfoFlags = ConvertIconType(options.icon_type);

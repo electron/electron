@@ -28,35 +28,27 @@
 #include "chrome/browser/icon_manager.h"
 #include "electron/electron_version.h"
 #include "shell/browser/api/electron_api_app.h"
+#include "shell/browser/badging/badge_manager.h"
 #include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/ui/message_box.h"
 #include "shell/browser/ui/win/jump_list.h"
+#include "shell/browser/window_list.h"
 #include "shell/common/application_info.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_helper/arguments.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/skia_util.h"
+#include "skia/ext/legacy_display_globals.h"
+#include "ui/base/l10n/l10n_util.h"
 #include "ui/events/keycodes/keyboard_code_conversion_win.h"
+#include "ui/strings/grit/ui_strings.h"
 
 namespace electron {
 
 namespace {
 
-BOOL CALLBACK WindowsEnumerationHandler(HWND hwnd, LPARAM param) {
-  DWORD target_process_id = *reinterpret_cast<DWORD*>(param);
-  DWORD process_id = 0;
-
-  GetWindowThreadProcessId(hwnd, &process_id);
-  if (process_id == target_process_id) {
-    SetFocus(hwnd);
-    return FALSE;
-  }
-
-  return TRUE;
-}
-
-bool GetProcessExecPath(base::string16* exe) {
+bool GetProcessExecPath(std::wstring* exe) {
   base::FilePath path;
   if (!base::PathService::Get(base::FILE_EXE, &path)) {
     return false;
@@ -65,13 +57,13 @@ bool GetProcessExecPath(base::string16* exe) {
   return true;
 }
 
-bool GetProtocolLaunchPath(gin::Arguments* args, base::string16* exe) {
+bool GetProtocolLaunchPath(gin::Arguments* args, std::wstring* exe) {
   if (!args->GetNext(exe) && !GetProcessExecPath(exe)) {
     return false;
   }
 
   // Read in optional args arg
-  std::vector<base::string16> launch_args;
+  std::vector<std::wstring> launch_args;
   if (args->GetNext(&launch_args) && !launch_args.empty())
     *exe = base::StringPrintf(L"\"%ls\" %ls \"%%1\"", exe->c_str(),
                               base::JoinString(launch_args, L" ").c_str());
@@ -83,7 +75,7 @@ bool GetProtocolLaunchPath(gin::Arguments* args, base::string16* exe) {
 // Windows treats a given scheme as an Internet scheme only if its registry
 // entry has a "URL Protocol" key. Check this, otherwise we allow ProgIDs to be
 // used as custom protocols which leads to security bugs.
-bool IsValidCustomProtocol(const base::string16& scheme) {
+bool IsValidCustomProtocol(const std::wstring& scheme) {
   if (scheme.empty())
     return false;
   base::win::RegKey cmd_key(HKEY_CLASSES_ROOT, scheme.c_str(), KEY_QUERY_VALUE);
@@ -98,11 +90,10 @@ bool IsValidCustomProtocol(const base::string16& scheme) {
 // Windows 8 introduced a new protocol->executable binding system which cannot
 // be retrieved in the HKCR registry subkey method implemented below. We call
 // AssocQueryString with the new Win8-only flag ASSOCF_IS_PROTOCOL instead.
-base::string16 GetAppInfoHelperForProtocol(ASSOCSTR assoc_str,
-                                           const GURL& url) {
-  const base::string16 url_scheme = base::ASCIIToUTF16(url.scheme());
+std::wstring GetAppInfoHelperForProtocol(ASSOCSTR assoc_str, const GURL& url) {
+  const std::wstring url_scheme = base::ASCIIToWide(url.scheme());
   if (!IsValidCustomProtocol(url_scheme))
-    return base::string16();
+    return std::wstring();
 
   wchar_t out_buffer[1024];
   DWORD buffer_size = base::size(out_buffer);
@@ -111,13 +102,13 @@ base::string16 GetAppInfoHelperForProtocol(ASSOCSTR assoc_str,
                        out_buffer, &buffer_size);
   if (FAILED(hr)) {
     DLOG(WARNING) << "AssocQueryString failed!";
-    return base::string16();
+    return std::wstring();
   }
-  return base::string16(out_buffer);
+  return std::wstring(out_buffer);
 }
 
 void OnIconDataAvailable(const base::FilePath& app_path,
-                         const base::string16& app_display_name,
+                         const std::wstring& app_display_name,
                          gin_helper::Promise<gin_helper::Dictionary> promise,
                          gfx::Image icon) {
   if (!icon.IsEmpty()) {
@@ -134,21 +125,21 @@ void OnIconDataAvailable(const base::FilePath& app_path,
   }
 }
 
-base::string16 GetAppDisplayNameForProtocol(const GURL& url) {
+std::wstring GetAppDisplayNameForProtocol(const GURL& url) {
   return GetAppInfoHelperForProtocol(ASSOCSTR_FRIENDLYAPPNAME, url);
 }
 
-base::string16 GetAppPathForProtocol(const GURL& url) {
+std::wstring GetAppPathForProtocol(const GURL& url) {
   return GetAppInfoHelperForProtocol(ASSOCSTR_EXECUTABLE, url);
 }
 
-base::string16 GetAppForProtocolUsingRegistry(const GURL& url) {
-  const base::string16 url_scheme = base::ASCIIToUTF16(url.scheme());
+std::wstring GetAppForProtocolUsingRegistry(const GURL& url) {
+  const std::wstring url_scheme = base::ASCIIToWide(url.scheme());
   if (!IsValidCustomProtocol(url_scheme))
-    return base::string16();
+    return std::wstring();
 
   // First, try and extract the application's display name.
-  base::string16 command_to_launch;
+  std::wstring command_to_launch;
   base::win::RegKey cmd_key_name(HKEY_CLASSES_ROOT, url_scheme.c_str(),
                                  KEY_READ);
   if (cmd_key_name.ReadValue(NULL, &command_to_launch) == ERROR_SUCCESS &&
@@ -158,7 +149,7 @@ base::string16 GetAppForProtocolUsingRegistry(const GURL& url) {
 
   // Otherwise, parse the command line in the registry, and return the basename
   // of the program path if it exists.
-  const base::string16 cmd_key_path = url_scheme + L"\\shell\\open\\command";
+  const std::wstring cmd_key_path = url_scheme + L"\\shell\\open\\command";
   base::win::RegKey cmd_key_exe(HKEY_CLASSES_ROOT, cmd_key_path.c_str(),
                                 KEY_READ);
   if (cmd_key_exe.ReadValue(NULL, &command_to_launch) == ERROR_SUCCESS) {
@@ -167,18 +158,19 @@ base::string16 GetAppForProtocolUsingRegistry(const GURL& url) {
     return command_line.GetProgram().BaseName().value();
   }
 
-  return base::string16();
+  return std::wstring();
 }
 
-bool FormatCommandLineString(base::string16* exe,
-                             const std::vector<base::string16>& launch_args) {
+bool FormatCommandLineString(std::wstring* exe,
+                             const std::vector<std::u16string>& launch_args) {
   if (exe->empty() && !GetProcessExecPath(exe)) {
     return false;
   }
 
   if (!launch_args.empty()) {
+    std::u16string joined_launch_args = base::JoinString(launch_args, u" ");
     *exe = base::StringPrintf(L"%ls %ls", exe->c_str(),
-                              base::JoinString(launch_args, L" ").c_str());
+                              base::UTF16ToWide(joined_launch_args).c_str());
   }
 
   return true;
@@ -192,23 +184,36 @@ bool FormatCommandLineString(base::string16* exe,
 std::vector<Browser::LaunchItem> GetLoginItemSettingsHelper(
     base::win::RegistryValueIterator* it,
     boolean* executable_will_launch_at_login,
-    base::string16 scope,
+    std::wstring scope,
     const Browser::LoginItemSettings& options) {
   std::vector<Browser::LaunchItem> launch_items;
 
-  while (it->Valid()) {
-    base::string16 exe = options.path;
-    if (FormatCommandLineString(&exe, options.args)) {
+  base::FilePath lookup_exe_path;
+  if (options.path.empty()) {
+    std::wstring process_exe_path;
+    GetProcessExecPath(&process_exe_path);
+    lookup_exe_path =
+        base::CommandLine::FromString(process_exe_path).GetProgram();
+  } else {
+    lookup_exe_path =
+        base::CommandLine::FromString(base::UTF16ToWide(options.path))
+            .GetProgram();
+  }
+
+  if (!lookup_exe_path.empty()) {
+    while (it->Valid()) {
+      base::CommandLine registry_launch_cmd =
+          base::CommandLine::FromString(it->Value());
+      base::FilePath registry_launch_path = registry_launch_cmd.GetProgram();
+      bool exe_match = base::FilePath::CompareEqualIgnoreCase(
+          lookup_exe_path.value(), registry_launch_path.value());
+
       // add launch item to vector if it has a matching path (case-insensitive)
-      if ((base::CompareCaseInsensitiveASCII(it->Value(), exe.c_str())) == 0) {
+      if (exe_match) {
         Browser::LaunchItem launch_item;
-        base::string16 launch_path = options.path;
-        if (!(launch_path.size() > 0)) {
-          GetProcessExecPath(&launch_path);
-        }
         launch_item.name = it->Name();
-        launch_item.path = launch_path;
-        launch_item.args = options.args;
+        launch_item.path = registry_launch_path.value();
+        launch_item.args = registry_launch_cmd.GetArgs();
         launch_item.scope = scope;
         launch_item.enabled = true;
 
@@ -249,8 +254,8 @@ std::vector<Browser::LaunchItem> GetLoginItemSettingsHelper(
                   reinterpret_cast<char*>(binary_accepted_alt));
               std::string reg_startup_binary(
                   reinterpret_cast<char*>(startup_binary));
-              launch_item.enabled = (reg_binary == reg_startup_binary) ||
-                                    (reg_binary == reg_binary_alt);
+              launch_item.enabled = (reg_startup_binary == reg_binary) ||
+                                    (reg_startup_binary == reg_binary_alt);
             }
           }
         }
@@ -259,8 +264,8 @@ std::vector<Browser::LaunchItem> GetLoginItemSettingsHelper(
             *executable_will_launch_at_login || launch_item.enabled;
         launch_items.push_back(launch_item);
       }
+      it->operator++();
     }
-    it->operator++();
   }
   return launch_items;
 }
@@ -281,23 +286,17 @@ Browser::UserTask::UserTask() = default;
 Browser::UserTask::UserTask(const UserTask&) = default;
 Browser::UserTask::~UserTask() = default;
 
-void Browser::Focus(gin::Arguments* args) {
-  // On Windows we just focus on the first window found for this process.
-  DWORD pid = GetCurrentProcessId();
-  EnumWindows(&WindowsEnumerationHandler, reinterpret_cast<LPARAM>(&pid));
-}
-
 void GetFileIcon(const base::FilePath& path,
                  v8::Isolate* isolate,
                  base::CancelableTaskTracker* cancelable_task_tracker_,
-                 const base::string16 app_display_name,
+                 const std::wstring app_display_name,
                  gin_helper::Promise<gin_helper::Dictionary> promise) {
   base::FilePath normalized_path = path.NormalizePathSeparators();
   IconLoader::IconSize icon_size = IconLoader::IconSize::LARGE;
 
   auto* icon_manager = ElectronBrowserMainParts::Get()->GetIconManager();
   gfx::Image* icon =
-      icon_manager->LookupIconFromFilepath(normalized_path, icon_size);
+      icon_manager->LookupIconFromFilepath(normalized_path, icon_size, 1.0f);
   if (icon) {
     gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
     dict.Set("icon", *icon);
@@ -305,7 +304,7 @@ void GetFileIcon(const base::FilePath& path,
     dict.Set("path", normalized_path);
     promise.Resolve(dict);
   } else {
-    icon_manager->LoadIcon(normalized_path, icon_size,
+    icon_manager->LoadIcon(normalized_path, icon_size, 1.0f,
                            base::BindOnce(&OnIconDataAvailable, normalized_path,
                                           app_display_name, std::move(promise)),
                            cancelable_task_tracker_);
@@ -319,13 +318,13 @@ void GetApplicationInfoForProtocolUsingRegistry(
     base::CancelableTaskTracker* cancelable_task_tracker_) {
   base::FilePath app_path;
 
-  const base::string16 url_scheme = base::ASCIIToUTF16(url.scheme());
+  const std::wstring url_scheme = base::ASCIIToWide(url.scheme());
   if (!IsValidCustomProtocol(url_scheme)) {
     promise.RejectWithErrorMessage("invalid url_scheme");
     return;
   }
-  base::string16 command_to_launch;
-  const base::string16 cmd_key_path = url_scheme + L"\\shell\\open\\command";
+  std::wstring command_to_launch;
+  const std::wstring cmd_key_path = url_scheme + L"\\shell\\open\\command";
   base::win::RegKey cmd_key_exe(HKEY_CLASSES_ROOT, cmd_key_path.c_str(),
                                 KEY_READ);
   if (cmd_key_exe.ReadValue(NULL, &command_to_launch) == ERROR_SUCCESS) {
@@ -337,9 +336,9 @@ void GetApplicationInfoForProtocolUsingRegistry(
         "Unable to retrieve installation path to app");
     return;
   }
-  const base::string16 app_display_name = GetAppForProtocolUsingRegistry(url);
+  const std::wstring app_display_name = GetAppForProtocolUsingRegistry(url);
 
-  if (app_display_name.length() == 0) {
+  if (app_display_name.empty()) {
     promise.RejectWithErrorMessage(
         "Unable to retrieve application display name");
     return;
@@ -357,7 +356,7 @@ void GetApplicationInfoForProtocolUsingAssocQuery(
     const GURL& url,
     gin_helper::Promise<gin_helper::Dictionary> promise,
     base::CancelableTaskTracker* cancelable_task_tracker_) {
-  base::string16 app_path = GetAppPathForProtocol(url);
+  std::wstring app_path = GetAppPathForProtocol(url);
 
   if (app_path.empty()) {
     promise.RejectWithErrorMessage(
@@ -365,7 +364,7 @@ void GetApplicationInfoForProtocolUsingAssocQuery(
     return;
   }
 
-  base::string16 app_display_name = GetAppDisplayNameForProtocol(url);
+  std::wstring app_display_name = GetAppDisplayNameForProtocol(url);
 
   if (app_display_name.empty()) {
     promise.RejectWithErrorMessage("Unable to retrieve display name of app");
@@ -393,7 +392,7 @@ void Browser::ClearRecentDocuments() {
   SHAddToRecentDocs(SHARD_APPIDINFO, nullptr);
 }
 
-void Browser::SetAppUserModelID(const base::string16& name) {
+void Browser::SetAppUserModelID(const std::wstring& name) {
   electron::SetAppUserModelID(name);
 }
 
@@ -403,10 +402,10 @@ bool Browser::SetUserTasks(const std::vector<UserTask>& tasks) {
     return false;
 
   JumpListCategory category;
-  category.type = JumpListCategory::Type::TASKS;
+  category.type = JumpListCategory::Type::kTasks;
   category.items.reserve(tasks.size());
   JumpListItem item;
-  item.type = JumpListItem::Type::TASK;
+  item.type = JumpListItem::Type::kTask;
   for (const auto& task : tasks) {
     item.title = task.title;
     item.path = task.program;
@@ -429,12 +428,12 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
 
   // Main Registry Key
   HKEY root = HKEY_CURRENT_USER;
-  base::string16 keyPath = L"Software\\Classes\\";
+  std::wstring keyPath = L"Software\\Classes\\";
 
   // Command Key
-  base::string16 wprotocol = base::UTF8ToUTF16(protocol);
-  base::string16 shellPath = wprotocol + L"\\shell";
-  base::string16 cmdPath = keyPath + shellPath + L"\\open\\command";
+  std::wstring wprotocol = base::UTF8ToWide(protocol);
+  std::wstring shellPath = wprotocol + L"\\shell";
+  std::wstring cmdPath = keyPath + shellPath + L"\\open\\command";
 
   base::win::RegKey classesKey;
   base::win::RegKey commandKey;
@@ -448,12 +447,12 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
     // Key doesn't even exist, we can confirm that it is not set
     return true;
 
-  base::string16 keyVal;
+  std::wstring keyVal;
   if (FAILED(commandKey.ReadValue(L"", &keyVal)))
     // Default value not set, we can confirm that it is not set
     return true;
 
-  base::string16 exe;
+  std::wstring exe;
   if (!GetProtocolLaunchPath(args, &exe))
     return false;
 
@@ -464,7 +463,7 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
 
     // Let's clean up after ourselves
     base::win::RegKey protocolKey;
-    base::string16 protocolPath = keyPath + wprotocol;
+    std::wstring protocolPath = keyPath + wprotocol;
 
     if (SUCCEEDED(
             protocolKey.Open(root, protocolPath.c_str(), KEY_ALL_ACCESS))) {
@@ -503,17 +502,17 @@ bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
   if (protocol.empty())
     return false;
 
-  base::string16 exe;
+  std::wstring exe;
   if (!GetProtocolLaunchPath(args, &exe))
     return false;
 
   // Main Registry Key
   HKEY root = HKEY_CURRENT_USER;
-  base::string16 keyPath = base::UTF8ToUTF16("Software\\Classes\\" + protocol);
-  base::string16 urlDecl = base::UTF8ToUTF16("URL:" + protocol);
+  std::wstring keyPath = base::UTF8ToWide("Software\\Classes\\" + protocol);
+  std::wstring urlDecl = base::UTF8ToWide("URL:" + protocol);
 
   // Command Key
-  base::string16 cmdPath = keyPath + L"\\shell\\open\\command";
+  std::wstring cmdPath = keyPath + L"\\shell\\open\\command";
 
   // Write information to registry
   base::win::RegKey key(root, keyPath.c_str(), KEY_ALL_ACCESS);
@@ -533,16 +532,16 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
   if (protocol.empty())
     return false;
 
-  base::string16 exe;
+  std::wstring exe;
   if (!GetProtocolLaunchPath(args, &exe))
     return false;
 
   // Main Registry Key
   HKEY root = HKEY_CURRENT_USER;
-  base::string16 keyPath = base::UTF8ToUTF16("Software\\Classes\\" + protocol);
+  std::wstring keyPath = base::UTF8ToWide("Software\\Classes\\" + protocol);
 
   // Command Key
-  base::string16 cmdPath = keyPath + L"\\shell\\open\\command";
+  std::wstring cmdPath = keyPath + L"\\shell\\open\\command";
 
   base::win::RegKey key;
   base::win::RegKey commandKey;
@@ -554,7 +553,7 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
     // Key doesn't exist, we can confirm that it is not set
     return false;
 
-  base::string16 keyVal;
+  std::wstring keyVal;
   if (FAILED(commandKey.ReadValue(L"", &keyVal)))
     // Default value not set, we can confirm that it is not set
     return false;
@@ -563,15 +562,15 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
   return keyVal == exe;
 }
 
-base::string16 Browser::GetApplicationNameForProtocol(const GURL& url) {
+std::u16string Browser::GetApplicationNameForProtocol(const GURL& url) {
   // Windows 8 or above has a new protocol association query.
   if (base::win::GetVersion() >= base::win::Version::WIN8) {
-    base::string16 application_name = GetAppDisplayNameForProtocol(url);
+    std::wstring application_name = GetAppDisplayNameForProtocol(url);
     if (!application_name.empty())
-      return application_name;
+      return base::WideToUTF16(application_name);
   }
 
-  return GetAppForProtocolUsingRegistry(url);
+  return base::WideToUTF16(GetAppForProtocolUsingRegistry(url));
 }
 
 v8::Local<v8::Promise> Browser::GetApplicationInfoForProtocol(
@@ -592,25 +591,116 @@ v8::Local<v8::Promise> Browser::GetApplicationInfoForProtocol(
   return handle;
 }
 
-bool Browser::SetBadgeCount(int count) {
-  return false;
+bool Browser::SetBadgeCount(base::Optional<int> count) {
+  base::Optional<std::string> badge_content;
+  if (count.has_value() && count.value() == 0) {
+    badge_content = base::nullopt;
+  } else {
+    badge_content = badging::BadgeManager::GetBadgeString(count);
+  }
+
+  // There are 3 different cases when the badge has a value:
+  // 1. |contents| is between 1 and 99 inclusive => Set the accessibility text
+  //    to a pluralized notification count (e.g. 4 Unread Notifications).
+  // 2. |contents| is greater than 99 => Set the accessibility text to
+  //    More than |kMaxBadgeContent| unread notifications, so the
+  //    accessibility text matches what is displayed on the badge (e.g. More
+  //    than 99 notifications).
+  // 3. The badge is set to 'flag' => Set the accessibility text to something
+  //    less specific (e.g. Unread Notifications).
+  std::string badge_alt_string;
+  if (count.has_value()) {
+    badge_count_ = count.value();
+    badge_alt_string = (uint64_t)badge_count_ <= badging::kMaxBadgeContent
+                           // Case 1.
+                           ? l10n_util::GetPluralStringFUTF8(
+                                 IDS_BADGE_UNREAD_NOTIFICATIONS, badge_count_)
+                           // Case 2.
+                           : l10n_util::GetPluralStringFUTF8(
+                                 IDS_BADGE_UNREAD_NOTIFICATIONS_SATURATED,
+                                 badging::kMaxBadgeContent);
+  } else {
+    // Case 3.
+    badge_alt_string =
+        l10n_util::GetStringUTF8(IDS_BADGE_UNREAD_NOTIFICATIONS_UNSPECIFIED);
+    badge_count_ = 0;
+  }
+  for (auto* window : WindowList::GetWindows()) {
+    // On Windows set the badge on the first window found.
+    UpdateBadgeContents(window->GetAcceleratedWidget(), badge_content,
+                        badge_alt_string);
+  }
+  return true;
+}
+
+void Browser::UpdateBadgeContents(
+    HWND hwnd,
+    const base::Optional<std::string>& badge_content,
+    const std::string& badge_alt_string) {
+  SkBitmap badge;
+  if (badge_content) {
+    std::string content = badge_content.value();
+    constexpr int kOverlayIconSize = 16;
+    // This is the color used by the Windows 10 Badge API, for platform
+    // consistency.
+    constexpr int kBackgroundColor = SkColorSetRGB(0x26, 0x25, 0x2D);
+    constexpr int kForegroundColor = SK_ColorWHITE;
+    constexpr int kRadius = kOverlayIconSize / 2;
+    // The minimum gap to have between our content and the edge of the badge.
+    constexpr int kMinMargin = 3;
+    // The amount of space we have to render the icon.
+    constexpr int kMaxBounds = kOverlayIconSize - 2 * kMinMargin;
+    constexpr int kMaxTextSize = 24;  // Max size for our text.
+    constexpr int kMinTextSize = 7;   // Min size for our text.
+
+    badge.allocN32Pixels(kOverlayIconSize, kOverlayIconSize);
+    SkCanvas canvas(badge, skia::LegacyDisplayGlobals::GetSkSurfaceProps());
+
+    SkPaint paint;
+    paint.setAntiAlias(true);
+    paint.setColor(kBackgroundColor);
+
+    canvas.clear(SK_ColorTRANSPARENT);
+    canvas.drawCircle(kRadius, kRadius, kRadius, paint);
+
+    paint.reset();
+    paint.setColor(kForegroundColor);
+
+    SkFont font;
+
+    SkRect bounds;
+    int text_size = kMaxTextSize;
+    // Find the largest |text_size| larger than |kMinTextSize| in which
+    // |content| fits into our 16x16px icon, with margins.
+    do {
+      font.setSize(text_size--);
+      font.measureText(content.c_str(), content.size(), SkTextEncoding::kUTF8,
+                       &bounds);
+    } while (text_size >= kMinTextSize &&
+             (bounds.width() > kMaxBounds || bounds.height() > kMaxBounds));
+
+    canvas.drawSimpleText(
+        content.c_str(), content.size(), SkTextEncoding::kUTF8,
+        kRadius - bounds.width() / 2 - bounds.x(),
+        kRadius - bounds.height() / 2 - bounds.y(), font, paint);
+  }
+  taskbar_host_.SetOverlayIcon(hwnd, badge, badge_alt_string);
 }
 
 void Browser::SetLoginItemSettings(LoginItemSettings settings) {
-  base::string16 key_path =
-      L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
+  std::wstring key_path = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
   base::win::RegKey key(HKEY_CURRENT_USER, key_path.c_str(), KEY_ALL_ACCESS);
 
-  base::string16 startup_approved_key_path =
+  std::wstring startup_approved_key_path =
       L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApproved"
       L"\\Run";
   base::win::RegKey startup_approved_key(
       HKEY_CURRENT_USER, startup_approved_key_path.c_str(), KEY_ALL_ACCESS);
   PCWSTR key_name =
-      settings.name.size() > 0 ? settings.name.c_str() : GetAppUserModelID();
+      !settings.name.empty() ? settings.name.c_str() : GetAppUserModelID();
 
   if (settings.open_at_login) {
-    base::string16 exe = settings.path;
+    std::wstring exe = base::UTF16ToWide(settings.path);
     if (FormatCommandLineString(&exe, settings.args)) {
       key.WriteValue(key_name, exe.c_str());
 
@@ -643,13 +733,13 @@ void Browser::SetLoginItemSettings(LoginItemSettings settings) {
 Browser::LoginItemSettings Browser::GetLoginItemSettings(
     const LoginItemSettings& options) {
   LoginItemSettings settings;
-  base::string16 keyPath = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
+  std::wstring keyPath = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
   base::win::RegKey key(HKEY_CURRENT_USER, keyPath.c_str(), KEY_ALL_ACCESS);
-  base::string16 keyVal;
+  std::wstring keyVal;
 
   // keep old openAtLogin behaviour
   if (!FAILED(key.ReadValue(GetAppUserModelID(), &keyVal))) {
-    base::string16 exe = options.path;
+    std::wstring exe = base::UTF16ToWide(options.path);
     if (FormatCommandLineString(&exe, options.args)) {
       settings.open_at_login = keyVal == exe;
     }

@@ -17,14 +17,12 @@ using electron::WebContentsPreferences;
 namespace {
 
 void AddGuest(int guest_instance_id,
-              int element_instance_id,
               content::WebContents* embedder,
               content::WebContents* guest_web_contents,
               const base::DictionaryValue& options) {
   auto* manager = electron::WebViewManager::GetWebViewManager(embedder);
   if (manager)
-    manager->AddGuest(guest_instance_id, element_instance_id, embedder,
-                      guest_web_contents);
+    manager->AddGuest(guest_instance_id, embedder, guest_web_contents);
 
   double zoom_factor;
   if (options.GetDouble(electron::options::kZoomFactor, &zoom_factor)) {

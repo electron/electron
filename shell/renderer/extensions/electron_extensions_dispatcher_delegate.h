@@ -28,7 +28,7 @@ class ElectronExtensionsDispatcherDelegate
       extensions::ResourceBundleSourceMap* source_map) override;
   void RequireWebViewModules(extensions::ScriptContext* context) override;
   void OnActiveExtensionsUpdated(
-      const std::set<std::string>& extensions_ids) override;
+      const std::set<std::string>& extension_ids) override;
   void InitializeBindingsSystem(
       extensions::Dispatcher* dispatcher,
       extensions::NativeExtensionBindingsSystem* bindings_system) override;

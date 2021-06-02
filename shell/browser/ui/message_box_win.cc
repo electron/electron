@@ -39,8 +39,8 @@ struct CommonButtonID {
   int button;
   int id;
 };
-CommonButtonID GetCommonID(const base::string16& button) {
-  base::string16 lower = base::ToLowerASCII(button);
+CommonButtonID GetCommonID(const std::wstring& button) {
+  std::wstring lower = base::ToLowerASCII(button);
   if (lower == L"ok")
     return {TDCBF_OK_BUTTON, IDOK};
   else if (lower == L"yes")
@@ -58,7 +58,7 @@ CommonButtonID GetCommonID(const base::string16& button) {
 
 // Determine whether the buttons are common buttons, if so map common ID
 // to button ID.
-void MapToCommonID(const std::vector<base::string16>& buttons,
+void MapToCommonID(const std::vector<std::wstring>& buttons,
                    std::map<int, int>* id_map,
                    TASKDIALOG_COMMON_BUTTON_FLAGS* button_flags,
                    std::vector<TASKDIALOG_BUTTON>* dialog_buttons) {
@@ -76,18 +76,18 @@ void MapToCommonID(const std::vector<base::string16>& buttons,
   }
 }
 
-DialogResult ShowTaskDialogUTF16(NativeWindow* parent,
-                                 MessageBoxType type,
-                                 const std::vector<base::string16>& buttons,
-                                 int default_id,
-                                 int cancel_id,
-                                 bool no_link,
-                                 const base::string16& title,
-                                 const base::string16& message,
-                                 const base::string16& detail,
-                                 const base::string16& checkbox_label,
-                                 bool checkbox_checked,
-                                 const gfx::ImageSkia& icon) {
+DialogResult ShowTaskDialogWstr(NativeWindow* parent,
+                                MessageBoxType type,
+                                const std::vector<std::wstring>& buttons,
+                                int default_id,
+                                int cancel_id,
+                                bool no_link,
+                                const std::wstring& title,
+                                const std::wstring& message,
+                                const std::wstring& detail,
+                                const std::wstring& checkbox_label,
+                                bool checkbox_checked,
+                                const gfx::ImageSkia& icon) {
   TASKDIALOG_FLAGS flags =
       TDF_SIZE_TO_CONTENT |           // Show all content.
       TDF_ALLOW_DIALOG_CANCELLATION;  // Allow canceling the dialog.
@@ -107,11 +107,12 @@ DialogResult ShowTaskDialogUTF16(NativeWindow* parent,
 
   // TaskDialogIndirect doesn't allow empty name, if we set empty title it
   // will show "electron.exe" in title.
-  base::string16 app_name = base::UTF8ToUTF16(Browser::Get()->GetName());
-  if (title.empty())
+  if (title.empty()) {
+    std::wstring app_name = base::UTF8ToWide(Browser::Get()->GetName());
     config.pszWindowTitle = app_name.c_str();
-  else
+  } else {
     config.pszWindowTitle = title.c_str();
+  }
 
   base::win::ScopedHICON hicon;
   if (!icon.isNull()) {
@@ -136,7 +137,7 @@ DialogResult ShowTaskDialogUTF16(NativeWindow* parent,
     }
   }
 
-  // If "detail" is empty then don't make message hilighted.
+  // If "detail" is empty then don't make message highlighted.
   if (detail.empty()) {
     config.pszContent = message.c_str();
   } else {
@@ -161,7 +162,7 @@ DialogResult ShowTaskDialogUTF16(NativeWindow* parent,
   } else {
     MapToCommonID(buttons, &id_map, &config.dwCommonButtons, &dialog_buttons);
   }
-  if (dialog_buttons.size() > 0) {
+  if (!dialog_buttons.empty()) {
     config.pButtons = &dialog_buttons.front();
     config.cButtons = dialog_buttons.size();
     if (!no_link)
@@ -185,20 +186,19 @@ DialogResult ShowTaskDialogUTF16(NativeWindow* parent,
 }
 
 DialogResult ShowTaskDialogUTF8(const MessageBoxSettings& settings) {
-  std::vector<base::string16> utf16_buttons;
+  std::vector<std::wstring> buttons;
   for (const auto& button : settings.buttons)
-    utf16_buttons.push_back(base::UTF8ToUTF16(button));
+    buttons.push_back(base::UTF8ToWide(button));
 
-  const base::string16 title_16 = base::UTF8ToUTF16(settings.title);
-  const base::string16 message_16 = base::UTF8ToUTF16(settings.message);
-  const base::string16 detail_16 = base::UTF8ToUTF16(settings.detail);
-  const base::string16 checkbox_label_16 =
-      base::UTF8ToUTF16(settings.checkbox_label);
+  const std::wstring title = base::UTF8ToWide(settings.title);
+  const std::wstring message = base::UTF8ToWide(settings.message);
+  const std::wstring detail = base::UTF8ToWide(settings.detail);
+  const std::wstring checkbox_label = base::UTF8ToWide(settings.checkbox_label);
 
-  return ShowTaskDialogUTF16(
-      settings.parent_window, settings.type, utf16_buttons, settings.default_id,
-      settings.cancel_id, settings.no_link, title_16, message_16, detail_16,
-      checkbox_label_16, settings.checkbox_checked, settings.icon);
+  return ShowTaskDialogWstr(
+      settings.parent_window, settings.type, buttons, settings.default_id,
+      settings.cancel_id, settings.no_link, title, message, detail,
+      checkbox_label, settings.checkbox_checked, settings.icon);
 }
 
 }  // namespace
@@ -219,10 +219,12 @@ void ShowMessageBox(const MessageBoxSettings& settings,
                          std::move(callback)));
 }
 
-void ShowErrorBox(const base::string16& title, const base::string16& content) {
+void ShowErrorBox(const std::u16string& title, const std::u16string& content) {
   electron::UnresponsiveSuppressor suppressor;
-  ShowTaskDialogUTF16(nullptr, MessageBoxType::kError, {}, -1, 0, false,
-                      L"Error", title, content, L"", false, gfx::ImageSkia());
+  ShowTaskDialogWstr(nullptr, MessageBoxType::kError, {}, -1, 0, false,
+                     base::UTF8ToWide("Error"), base::UTF16ToWide(title),
+                     base::UTF16ToWide(content), base::UTF8ToWide(""), false,
+                     gfx::ImageSkia());
 }
 
 }  // namespace electron

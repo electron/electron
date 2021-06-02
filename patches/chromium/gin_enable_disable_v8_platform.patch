@@ -7,7 +7,7 @@ We don't use gin to create the V8 platform, because we need to inject Node
 things.
 
 diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
-index 73435b1c2c008a376421f8c94059fdb61d58feed..9ded78a8fd05bf4278c9800fcd0cdea6cefa2ac8 100644
+index 08815f12ad8088353a2bd704c513263876c39856..9fd05f22c4f6d484c5cedfa1f38a147158726d42 100644
 --- a/gin/isolate_holder.cc
 +++ b/gin/isolate_holder.cc
 @@ -105,9 +105,10 @@ IsolateHolder::~IsolateHolder() {
@@ -24,10 +24,10 @@ index 73435b1c2c008a376421f8c94059fdb61d58feed..9ded78a8fd05bf4278c9800fcd0cdea6
    g_reference_table = reference_table;
  }
 diff --git a/gin/public/isolate_holder.h b/gin/public/isolate_holder.h
-index f23af2d9738f3aa76e3a49301e1c3216ee4a64b4..ede178acabc63c3c33d6ce93efd5632bec50ba89 100644
+index eaf06bd895f3ed390d1b206b2dc5adcca5c87e72..6bd634c4a66999648c51b8867c0d9b0ccbda78f1 100644
 --- a/gin/public/isolate_holder.h
 +++ b/gin/public/isolate_holder.h
-@@ -88,7 +88,8 @@ class GIN_EXPORT IsolateHolder {
+@@ -89,7 +89,8 @@ class GIN_EXPORT IsolateHolder {
    // reference pointers. Otherwise, it can be nullptr.
    static void Initialize(ScriptMode mode,
                           v8::ArrayBuffer::Allocator* allocator,
@@ -38,10 +38,10 @@ index f23af2d9738f3aa76e3a49301e1c3216ee4a64b4..ede178acabc63c3c33d6ce93efd5632b
    v8::Isolate* isolate() { return isolate_; }
  
 diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
-index 9ba60a7f928a24b4829dafdf9a7362ad58bd7c64..51fe2fa000e47ced3661ba581c52dceba93447fe 100644
+index f4d6372c79a7e0b91df287be19494129c391d50d..7e247ee07de099a3cff1cdfdf2dabe207d3c648b 100644
 --- a/gin/v8_initializer.cc
 +++ b/gin/v8_initializer.cc
-@@ -191,12 +191,14 @@ enum LoadV8FileResult {
+@@ -216,12 +216,14 @@ void SetV8FlagsFormatted(const char* format, ...) {
  }  // namespace
  
  // static

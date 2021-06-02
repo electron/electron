@@ -4,12 +4,11 @@
 
 #include "shell/browser/api/electron_api_protocol.h"
 
-#include <memory>
-#include <utility>
 #include <vector>
 
 #include "base/command_line.h"
 #include "base/stl_util.h"
+#include "content/common/url_schemes.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "gin/object_template_builder.h"
 #include "shell/browser/browser.h"
@@ -65,7 +64,6 @@ struct Converter<CustomScheme> {
     // options are optional. Default values specified in SchemeOptions are used
     if (dict.Get("privileges", &opt)) {
       opt.Get("standard", &(out->options.standard));
-      opt.Get("supportFetchAPI", &(out->options.supportFetchAPI));
       opt.Get("secure", &(out->options.secure));
       opt.Get("bypassCSP", &(out->options.bypassCSP));
       opt.Get("allowServiceWorkers", &(out->options.allowServiceWorkers));
@@ -86,6 +84,16 @@ gin::WrapperInfo Protocol::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 std::vector<std::string> GetStandardSchemes() {
   return g_standard_schemes;
+}
+
+void AddServiceWorkerScheme(const std::string& scheme) {
+  // There is no API to add service worker scheme, but there is an API to
+  // return const reference to the schemes vector.
+  // If in future the API is changed to return a copy instead of reference,
+  // the compilation will fail, and we should add a patch at that time.
+  auto& mutable_schemes =
+      const_cast<std::vector<std::string>&>(content::GetServiceWorkerSchemes());
+  mutable_schemes.push_back(scheme);
 }
 
 void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
@@ -124,6 +132,7 @@ void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
     }
     if (custom_scheme.options.allowServiceWorkers) {
       service_worker_schemes.push_back(custom_scheme.scheme);
+      AddServiceWorkerScheme(custom_scheme.scheme);
     }
     if (custom_scheme.options.stream) {
       g_streaming_schemes.push_back(custom_scheme.scheme);
@@ -160,13 +169,13 @@ const char* kBuiltinSchemes[] = {
 // Convert error code to string.
 std::string ErrorCodeToString(ProtocolError error) {
   switch (error) {
-    case ProtocolError::REGISTERED:
+    case ProtocolError::kRegistered:
       return "The scheme has been registered";
-    case ProtocolError::NOT_REGISTERED:
+    case ProtocolError::kNotRegistered:
       return "The scheme has not been registered";
-    case ProtocolError::INTERCEPTED:
+    case ProtocolError::kIntercepted:
       return "The scheme has been intercepted";
-    case ProtocolError::NOT_INTERCEPTED:
+    case ProtocolError::kNotIntercepted:
       return "The scheme has not been intercepted";
     default:
       return "Unexpected error";
@@ -184,14 +193,14 @@ ProtocolError Protocol::RegisterProtocol(ProtocolType type,
                                          const std::string& scheme,
                                          const ProtocolHandler& handler) {
   bool added = protocol_registry_->RegisterProtocol(type, scheme, handler);
-  return added ? ProtocolError::OK : ProtocolError::REGISTERED;
+  return added ? ProtocolError::kOK : ProtocolError::kRegistered;
 }
 
 bool Protocol::UnregisterProtocol(const std::string& scheme,
                                   gin::Arguments* args) {
   bool removed = protocol_registry_->UnregisterProtocol(scheme);
   HandleOptionalCallback(
-      args, removed ? ProtocolError::OK : ProtocolError::NOT_REGISTERED);
+      args, removed ? ProtocolError::kOK : ProtocolError::kNotRegistered);
   return removed;
 }
 
@@ -203,14 +212,14 @@ ProtocolError Protocol::InterceptProtocol(ProtocolType type,
                                           const std::string& scheme,
                                           const ProtocolHandler& handler) {
   bool added = protocol_registry_->InterceptProtocol(type, scheme, handler);
-  return added ? ProtocolError::OK : ProtocolError::INTERCEPTED;
+  return added ? ProtocolError::kOK : ProtocolError::kIntercepted;
 }
 
 bool Protocol::UninterceptProtocol(const std::string& scheme,
                                    gin::Arguments* args) {
   bool removed = protocol_registry_->UninterceptProtocol(scheme);
   HandleOptionalCallback(
-      args, removed ? ProtocolError::OK : ProtocolError::NOT_INTERCEPTED);
+      args, removed ? ProtocolError::kOK : ProtocolError::kNotIntercepted);
   return removed;
 }
 
@@ -248,7 +257,7 @@ void Protocol::HandleOptionalCallback(gin::Arguments* args,
         env,
         "The callback argument of protocol module APIs is no longer needed.",
         "ProtocolDeprecateCallback");
-    if (error == ProtocolError::OK)
+    if (error == ProtocolError::kOK)
       callback.Run(v8::Null(args->isolate()));
     else
       callback.Run(v8::Exception::Error(

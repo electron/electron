@@ -46,9 +46,12 @@ const main = async () => {
   const webpackTargetsWithDeps = await Promise.all(webpackTargets.map(async webpackTarget => {
     const tmpDir = await fs.mkdtemp(path.resolve(os.tmpdir(), 'electron-filenames-'));
     const child = cp.spawn('node', [
-      'build/webpack/get-outputs.js',
-      `./${webpackTarget.config}`,
-      path.resolve(tmpDir, `${webpackTarget.name}.measure.js`)
+      './node_modules/webpack-cli/bin/cli.js',
+      '--config', `./build/webpack/${webpackTarget.config}`,
+      '--display', 'errors-only',
+      `--output-path=${tmpDir}`,
+      `--output-filename=${webpackTarget.name}.measure.js`,
+      '--env.PRINT_WEBPACK_GRAPH'
     ], {
       cwd: path.resolve(__dirname, '..')
     });
@@ -57,7 +60,7 @@ const main = async () => {
       output += chunk.toString();
     });
     child.stderr.on('data', chunk => console.error(chunk.toString()));
-    await new Promise((resolve, reject) => child.on('exit', (code) => {
+    await new Promise<void>((resolve, reject) => child.on('exit', (code) => {
       if (code !== 0) {
         console.error(output);
         return reject(new Error(`Failed to list webpack dependencies for entry: ${webpackTarget.name}`));

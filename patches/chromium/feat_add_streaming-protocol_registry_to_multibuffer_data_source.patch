@@ -13,7 +13,7 @@ other protocols to register their streaming behavior. MultibufferDataSource::Ass
 then refers to the list so that it can correctly determine the data source's settings.
 
 diff --git a/media/blink/multibuffer_data_source.cc b/media/blink/multibuffer_data_source.cc
-index d41162d5295a70ba48640610d3de39a73849ac4a..287b5294f28a4b74e967b9fbf796a859a38ad737 100644
+index c157471b08e12edf2ff5385e78cd4cbe2e8129a9..5ef9dbd289f50359f611290d6a42b2f2aac77977 100644
 --- a/media/blink/multibuffer_data_source.cc
 +++ b/media/blink/multibuffer_data_source.cc
 @@ -10,9 +10,11 @@
@@ -28,7 +28,7 @@ index d41162d5295a70ba48640610d3de39a73849ac4a..287b5294f28a4b74e967b9fbf796a859
  #include "media/base/media_log.h"
  #include "media/blink/buffered_data_source_host_impl.h"
  #include "media/blink/multibuffer_reader.h"
-@@ -59,10 +61,22 @@ const int kUpdateBufferSizeFrequency = 32;
+@@ -60,10 +62,22 @@ const int kUpdateBufferSizeFrequency = 32;
  // How long to we delay a seek after a read?
  constexpr base::TimeDelta kSeekDelay = base::TimeDelta::FromMilliseconds(20);
  
@@ -51,7 +51,7 @@ index d41162d5295a70ba48640610d3de39a73849ac4a..287b5294f28a4b74e967b9fbf796a859
  class MultibufferDataSource::ReadOperation {
   public:
    ReadOperation(int64_t position,
-@@ -152,7 +166,14 @@ bool MultibufferDataSource::media_has_played() const {
+@@ -153,7 +167,14 @@ bool MultibufferDataSource::media_has_played() const {
  
  bool MultibufferDataSource::AssumeFullyBuffered() const {
    DCHECK(url_data_);
@@ -68,10 +68,10 @@ index d41162d5295a70ba48640610d3de39a73849ac4a..287b5294f28a4b74e967b9fbf796a859
  
  void MultibufferDataSource::SetReader(MultiBufferReader* reader) {
 diff --git a/media/blink/multibuffer_data_source.h b/media/blink/multibuffer_data_source.h
-index 013ce7404ddba2a02bea78a72b535377e8d4e17c..9a283e238f8b1f0cca7f1ca2d3d68847529e0f7c 100644
+index 2f35c43811e98679c739d1d672fd6dce517ea24f..b598d58c26a12f0e97ecfcb611baf46a86af4a62 100644
 --- a/media/blink/multibuffer_data_source.h
 +++ b/media/blink/multibuffer_data_source.h
-@@ -31,6 +31,8 @@ class BufferedDataSourceHost;
+@@ -32,6 +32,8 @@ class BufferedDataSourceHost;
  class MediaLog;
  class MultiBufferReader;
  

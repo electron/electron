@@ -10,6 +10,7 @@
 #include "extensions/browser/extension_api_frame_id_map.h"
 #include "extensions/common/error_utils.h"
 #include "extensions/common/manifest_constants.h"
+#include "extensions/common/mojom/host_id.mojom.h"
 #include "extensions/common/permissions/permissions_data.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/web_contents_zoom_controller.h"
@@ -34,19 +35,19 @@ void ZoomModeToZoomSettings(WebContentsZoomController::ZoomMode zoom_mode,
                             api::tabs::ZoomSettings* zoom_settings) {
   DCHECK(zoom_settings);
   switch (zoom_mode) {
-    case WebContentsZoomController::ZoomMode::DEFAULT:
+    case WebContentsZoomController::ZoomMode::kDefault:
       zoom_settings->mode = api::tabs::ZOOM_SETTINGS_MODE_AUTOMATIC;
       zoom_settings->scope = api::tabs::ZOOM_SETTINGS_SCOPE_PER_ORIGIN;
       break;
-    case WebContentsZoomController::ZoomMode::ISOLATED:
+    case WebContentsZoomController::ZoomMode::kIsolated:
       zoom_settings->mode = api::tabs::ZOOM_SETTINGS_MODE_AUTOMATIC;
       zoom_settings->scope = api::tabs::ZOOM_SETTINGS_SCOPE_PER_TAB;
       break;
-    case WebContentsZoomController::ZoomMode::MANUAL:
+    case WebContentsZoomController::ZoomMode::kManual:
       zoom_settings->mode = api::tabs::ZOOM_SETTINGS_MODE_MANUAL;
       zoom_settings->scope = api::tabs::ZOOM_SETTINGS_SCOPE_PER_TAB;
       break;
-    case WebContentsZoomController::ZoomMode::DISABLED:
+    case WebContentsZoomController::ZoomMode::kDisabled:
       zoom_settings->mode = api::tabs::ZOOM_SETTINGS_MODE_DISABLED;
       zoom_settings->scope = api::tabs::ZOOM_SETTINGS_SCOPE_PER_TAB;
       break;
@@ -84,7 +85,8 @@ ExecuteCodeFunction::InitResult ExecuteCodeInTabFunction::Init() {
 
   execute_tab_id_ = tab_id;
   details_ = std::move(details);
-  set_host_id(HostID(HostID::EXTENSIONS, extension()->id()));
+  set_host_id(
+      mojom::HostID(mojom::HostID::HostType::kExtensions, extension()->id()));
   return set_init_result(SUCCESS);
 }
 
@@ -131,7 +133,7 @@ bool ExecuteCodeInTabFunction::CanExecuteScriptOnPage(std::string* error) {
                                                       execute_tab_id_, error)) {
     if (is_about_url &&
         extension()->permissions_data()->active_permissions().HasAPIPermission(
-            APIPermission::kTab)) {
+            extensions::mojom::APIPermissionID::kTab)) {
       *error = ErrorUtils::FormatErrorMessage(
           manifest_errors::kCannotAccessAboutUrl,
           rfh->GetLastCommittedURL().spec(),
@@ -160,6 +162,10 @@ const GURL& ExecuteCodeInTabFunction::GetWebViewSrc() const {
 }
 
 bool TabsExecuteScriptFunction::ShouldInsertCSS() const {
+  return false;
+}
+
+bool TabsExecuteScriptFunction::ShouldRemoveCSS() const {
   return false;
 }
 
@@ -278,24 +284,24 @@ ExtensionFunction::ResponseAction TabsSetZoomSettingsFunction::Run() {
   // Determine the correct internal zoom mode to set |web_contents| to from the
   // user-specified |zoom_settings|.
   WebContentsZoomController::ZoomMode zoom_mode =
-      WebContentsZoomController::ZoomMode::DEFAULT;
+      WebContentsZoomController::ZoomMode::kDefault;
   switch (params->zoom_settings.mode) {
     case tabs::ZOOM_SETTINGS_MODE_NONE:
     case tabs::ZOOM_SETTINGS_MODE_AUTOMATIC:
       switch (params->zoom_settings.scope) {
         case tabs::ZOOM_SETTINGS_SCOPE_NONE:
         case tabs::ZOOM_SETTINGS_SCOPE_PER_ORIGIN:
-          zoom_mode = WebContentsZoomController::ZoomMode::DEFAULT;
+          zoom_mode = WebContentsZoomController::ZoomMode::kDefault;
           break;
         case tabs::ZOOM_SETTINGS_SCOPE_PER_TAB:
-          zoom_mode = WebContentsZoomController::ZoomMode::ISOLATED;
+          zoom_mode = WebContentsZoomController::ZoomMode::kIsolated;
       }
       break;
     case tabs::ZOOM_SETTINGS_MODE_MANUAL:
-      zoom_mode = WebContentsZoomController::ZoomMode::MANUAL;
+      zoom_mode = WebContentsZoomController::ZoomMode::kManual;
       break;
     case tabs::ZOOM_SETTINGS_MODE_DISABLED:
-      zoom_mode = WebContentsZoomController::ZoomMode::DISABLED;
+      zoom_mode = WebContentsZoomController::ZoomMode::kDisabled;
   }
 
   contents->GetZoomController()->SetZoomMode(zoom_mode);

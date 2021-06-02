@@ -10,10 +10,10 @@ this patch is required to provide ripemd160 support in the nodejs crypto
 module.
 
 diff --git a/crypto/digest_extra/digest_extra.c b/crypto/digest_extra/digest_extra.c
-index 4b4bb38135e6089eaf6f47afda0199567a2397ef..43b7eca808b82a032055f56ce726ce4f38c5f2c5 100644
+index 311c5cba0e359a20b34ba6c7ee84c34b6068049f..c4638d40aab0a4b9612216d68cd7fb50823a0ae6 100644
 --- a/crypto/digest_extra/digest_extra.c
 +++ b/crypto/digest_extra/digest_extra.c
-@@ -81,6 +81,7 @@ static const struct nid_to_digest nid_to_digest_mapping[] = {
+@@ -83,6 +83,7 @@ static const struct nid_to_digest nid_to_digest_mapping[] = {
      {NID_sha384, EVP_sha384, SN_sha384, LN_sha384},
      {NID_sha512, EVP_sha512, SN_sha512, LN_sha512},
      {NID_md5_sha1, EVP_md5_sha1, SN_md5_sha1, LN_md5_sha1},
@@ -22,7 +22,7 @@ index 4b4bb38135e6089eaf6f47afda0199567a2397ef..43b7eca808b82a032055f56ce726ce4f
      // hash function when given a signature OID. To avoid unintended lax parsing
      // of hash OIDs, this is no longer supported for lookup by OID or NID.
 diff --git a/crypto/fipsmodule/digest/digests.c b/crypto/fipsmodule/digest/digests.c
-index 16daeba650e2390c168fb4998450ba5182815816..893dc93cb03bd4518afee795af44316b810fcb20 100644
+index f006ebbc53eea78ce0337a076a05285f22da7a18..7b9309f39a2e5dc6e61bb89e5d32b1766165f5a7 100644
 --- a/crypto/fipsmodule/digest/digests.c
 +++ b/crypto/fipsmodule/digest/digests.c
 @@ -63,6 +63,7 @@
@@ -33,7 +33,7 @@ index 16daeba650e2390c168fb4998450ba5182815816..893dc93cb03bd4518afee795af44316b
  
  #include "internal.h"
  #include "../delocate.h"
-@@ -293,4 +294,27 @@ DEFINE_METHOD_FUNCTION(EVP_MD, EVP_md5_sha1) {
+@@ -301,4 +302,27 @@ DEFINE_METHOD_FUNCTION(EVP_MD, EVP_md5_sha1) {
    out->ctx_size = sizeof(MD5_SHA1_CTX);
  }
  
@@ -80,10 +80,10 @@ index d540144b293297791c087e0b968a47d368a73695..53cb9d2dc8f1962a70dc12b648d27c32
 +  callback(EVP_ripemd160(), "ripemd160", NULL, arg);
  }
 diff --git a/include/openssl/digest.h b/include/openssl/digest.h
-index 7b0ed06cb352718a972be875d03d7c7c89489701..7072457224af3a66d1862f0028cb0ae17847f237 100644
+index 66f1b5dcfd8232a697145acb2b6c2efe890d543f..67fc522172dc3ab56787fa5db3c277fd4811474a 100644
 --- a/include/openssl/digest.h
 +++ b/include/openssl/digest.h
-@@ -89,6 +89,9 @@ OPENSSL_EXPORT const EVP_MD *EVP_sha512_256(void);
+@@ -90,6 +90,9 @@ OPENSSL_EXPORT const EVP_MD *EVP_blake2b256(void);
  // MD5 and SHA-1, as used in TLS 1.1 and below.
  OPENSSL_EXPORT const EVP_MD *EVP_md5_sha1(void);
  

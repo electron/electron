@@ -4,7 +4,6 @@
 
 #include "shell/browser/api/electron_api_download_item.h"
 
-#include <map>
 #include <memory>
 
 #include "base/strings/utf_string_conversions.h"
@@ -74,17 +73,15 @@ const void* kElectronApiDownloadItemKey = &kElectronApiDownloadItemKey;
 gin::WrapperInfo DownloadItem::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 // static
-DownloadItem* DownloadItem::FromDownloadItem(
-    download::DownloadItem* download_item) {
+DownloadItem* DownloadItem::FromDownloadItem(download::DownloadItem* item) {
   // ^- say that 7 times fast in a row
-  UserDataLink* data = static_cast<UserDataLink*>(
-      download_item->GetUserData(kElectronApiDownloadItemKey));
+  auto* data = static_cast<UserDataLink*>(
+      item->GetUserData(kElectronApiDownloadItemKey));
   return data ? data->download_item.get() : nullptr;
 }
 
-DownloadItem::DownloadItem(v8::Isolate* isolate,
-                           download::DownloadItem* download_item)
-    : download_item_(download_item) {
+DownloadItem::DownloadItem(v8::Isolate* isolate, download::DownloadItem* item)
+    : download_item_(item), isolate_(isolate) {
   download_item_->AddObserver(this);
   download_item_->SetUserData(
       kElectronApiDownloadItemKey,
@@ -101,8 +98,8 @@ DownloadItem::~DownloadItem() {
 
 bool DownloadItem::CheckAlive() const {
   if (!download_item_) {
-    gin_helper::ErrorThrower(v8::Isolate::GetCurrent())
-        .ThrowError("DownloadItem used after being destroyed");
+    gin_helper::ErrorThrower(isolate_).ThrowError(
+        "DownloadItem used after being destroyed");
     return false;
   }
   return true;
@@ -119,7 +116,7 @@ void DownloadItem::OnDownloadUpdated(download::DownloadItem* item) {
   }
 }
 
-void DownloadItem::OnDownloadDestroyed(download::DownloadItem* download_item) {
+void DownloadItem::OnDownloadDestroyed(download::DownloadItem* /*item*/) {
   download_item_ = nullptr;
   Unpin();
 }
@@ -200,10 +197,10 @@ const GURL& DownloadItem::GetURL() const {
   return download_item_->GetURL();
 }
 
-v8::Local<v8::Value> DownloadItem::GetURLChain(v8::Isolate* isolate) const {
+v8::Local<v8::Value> DownloadItem::GetURLChain() const {
   if (!CheckAlive())
     return v8::Local<v8::Value>();
-  return gin::ConvertToV8(isolate, download_item_->GetUrlChain());
+  return gin::ConvertToV8(isolate_, download_item_->GetUrlChain());
 }
 
 download::DownloadItem::DownloadState DownloadItem::GetState() const {

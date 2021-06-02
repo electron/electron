@@ -191,7 +191,7 @@ bool Converter<net::HttpResponseHeaders*>::FromV8(
   };
 
   auto context = isolate->GetCurrentContext();
-  auto headers = v8::Local<v8::Object>::Cast(val);
+  auto headers = val.As<v8::Object>();
   auto keys = headers->GetOwnPropertyNames(context).ToLocalChecked();
   for (uint32_t i = 0; i < keys->Length(); i++) {
     v8::Local<v8::Value> keyVal;
@@ -203,7 +203,7 @@ bool Converter<net::HttpResponseHeaders*>::FromV8(
 
     auto localVal = headers->Get(context, keyVal).ToLocalChecked();
     if (localVal->IsArray()) {
-      auto values = v8::Local<v8::Array>::Cast(localVal);
+      auto values = localVal.As<v8::Array>();
       for (uint32_t j = 0; j < values->Length(); j++) {
         if (!addHeaderFromValue(key,
                                 values->Get(context, j).ToLocalChecked())) {
@@ -255,26 +255,32 @@ v8::Local<v8::Value> Converter<network::ResourceRequestBody>::ToV8(
     const auto& element = elements[i];
     gin::Dictionary upload_data(isolate, v8::Object::New(isolate));
     switch (element.type()) {
-      case network::mojom::DataElementType::kFile:
+      case network::mojom::DataElement::Tag::kFile: {
+        const auto& element_file = element.As<network::DataElementFile>();
         upload_data.Set("type", "file");
-        upload_data.Set("file", element.path().value());
-        upload_data.Set("filePath", base::Value(element.path().AsUTF8Unsafe()));
-        upload_data.Set("offset", static_cast<int>(element.offset()));
-        upload_data.Set("length", static_cast<int>(element.length()));
+        upload_data.Set("file", element_file.path().value());
+        upload_data.Set("filePath",
+                        base::Value(element_file.path().AsUTF8Unsafe()));
+        upload_data.Set("offset", static_cast<int>(element_file.offset()));
+        upload_data.Set("length", static_cast<int>(element_file.length()));
         upload_data.Set("modificationTime",
-                        element.expected_modification_time().ToDoubleT());
+                        element_file.expected_modification_time().ToDoubleT());
         break;
-      case network::mojom::DataElementType::kBytes:
+      }
+      case network::mojom::DataElement::Tag::kBytes: {
         upload_data.Set("type", "rawData");
-        upload_data.Set("bytes", node::Buffer::Copy(isolate, element.bytes(),
-                                                    element.length())
-                                     .ToLocalChecked());
+        const auto& bytes = element.As<network::DataElementBytes>().bytes();
+        const char* data = reinterpret_cast<const char*>(bytes.data());
+        upload_data.Set(
+            "bytes",
+            node::Buffer::Copy(isolate, data, bytes.size()).ToLocalChecked());
         break;
-      case network::mojom::DataElementType::kDataPipe: {
+      }
+      case network::mojom::DataElement::Tag::kDataPipe: {
         upload_data.Set("type", "blob");
         // TODO(zcbenz): After the NetworkService refactor, the old blobUUID API
-        // becomes unecessarily complex, we should deprecate the getBlobData API
-        // and return the DataPipeHolder wrapper directly.
+        // becomes unnecessarily complex, we should deprecate the getBlobData
+        // API and return the DataPipeHolder wrapper directly.
         auto holder = electron::api::DataPipeHolder::Create(isolate, element);
         upload_data.Set("blobUUID", holder->id());
         // The lifetime of data pipe is bound to the uploadData object.
@@ -334,10 +340,6 @@ bool Converter<scoped_refptr<network::ResourceRequestBody>>::FromV8(
                               static_cast<uint64_t>(offset),
                               static_cast<uint64_t>(length),
                               base::Time::FromDoubleT(modification_time));
-    } else if (type == "blob") {
-      std::string uuid;
-      dict->GetString("blobUUID", &uuid);
-      (*out)->AppendBlob(uuid);
     }
   }
   return true;

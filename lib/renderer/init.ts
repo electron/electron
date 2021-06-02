@@ -1,4 +1,11 @@
 import * as path from 'path';
+import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
+
+import type * as ipcRendererInternalModule from '@electron/internal/renderer/ipc-renderer-internal';
+import type * as webFrameInitModule from '@electron/internal/renderer/web-frame-init';
+import type * as webViewInitModule from '@electron/internal/renderer/web-view/web-view-init';
+import type * as windowSetupModule from '@electron/internal/renderer/window-setup';
+import type * as securityWarningsModule from '@electron/internal/renderer/security-warnings';
 
 const Module = require('module');
 
@@ -38,47 +45,38 @@ require('@electron/internal/common/init');
 // The global variable will be used by ipc for event dispatching
 const v8Util = process._linkedBinding('electron_common_v8_util');
 
-const { ipcRendererInternal } = require('@electron/internal/renderer/ipc-renderer-internal');
+const { ipcRendererInternal } = require('@electron/internal/renderer/ipc-renderer-internal') as typeof ipcRendererInternalModule;
 const ipcRenderer = require('@electron/internal/renderer/api/ipc-renderer').default;
 
 v8Util.setHiddenValue(global, 'ipcNative', {
   onMessage (internal: boolean, channel: string, ports: any[], args: any[], senderId: number) {
+    if (internal && senderId !== 0) {
+      console.error(`Message ${channel} sent by unexpected WebContents (${senderId})`);
+      return;
+    }
     const sender = internal ? ipcRendererInternal : ipcRenderer;
     sender.emit(channel, { sender, senderId, ports }, ...args);
   }
 });
 
 // Use electron module after everything is ready.
-const { webFrameInit } = require('@electron/internal/renderer/web-frame-init');
+const { webFrameInit } = require('@electron/internal/renderer/web-frame-init') as typeof webFrameInitModule;
 webFrameInit();
 
 // Process command line arguments.
 const { hasSwitch, getSwitchValue } = process._linkedBinding('electron_common_command_line');
+const { mainFrame } = process._linkedBinding('electron_renderer_web_frame');
 
-const parseOption = function<T> (
-  name: string, defaultValue: T, converter?: (value: string) => T
-) {
-  return hasSwitch(name)
-    ? (
-      converter
-        ? converter(getSwitchValue(name))
-        : getSwitchValue(name)
-    )
-    : defaultValue;
-};
-
-const contextIsolation = hasSwitch('context-isolation');
-const nodeIntegration = hasSwitch('node-integration');
-const webviewTag = hasSwitch('webview-tag');
-const isHiddenPage = hasSwitch('hidden-page');
-const usesNativeWindowOpen = hasSwitch('native-window-open');
-const rendererProcessReuseEnabled = hasSwitch('disable-electron-site-instance-overrides');
-
-const preloadScript = parseOption('preload', null);
-const preloadScripts = parseOption('preload-scripts', [], value => value.split(path.delimiter)) as string[];
-const appPath = parseOption('app-path', null);
-const guestInstanceId = parseOption('guest-instance-id', null, value => parseInt(value));
-const openerId = parseOption('opener-id', null, value => parseInt(value));
+const contextIsolation = mainFrame.getWebPreference('contextIsolation');
+const nodeIntegration = mainFrame.getWebPreference('nodeIntegration');
+const webviewTag = mainFrame.getWebPreference('webviewTag');
+const isHiddenPage = mainFrame.getWebPreference('hiddenPage');
+const usesNativeWindowOpen = mainFrame.getWebPreference('nativeWindowOpen');
+const preloadScript = mainFrame.getWebPreference('preload');
+const preloadScripts = mainFrame.getWebPreference('preloadScripts');
+const guestInstanceId = mainFrame.getWebPreference('guestInstanceId');
+const openerId = mainFrame.getWebPreference('openerId');
+const appPath = hasSwitch('app-path') ? getSwitchValue('app-path') : null;
 
 // The webContents preload script is loaded after the session preload scripts.
 if (preloadScript) {
@@ -94,18 +92,19 @@ switch (window.location.protocol) {
   case 'chrome-extension:': {
     break;
   }
-  case 'chrome:':
+  case 'chrome:': {
     break;
+  }
   default: {
     // Override default web functions.
-    const { windowSetup } = require('@electron/internal/renderer/window-setup');
-    windowSetup(guestInstanceId, openerId, isHiddenPage, usesNativeWindowOpen, rendererProcessReuseEnabled);
+    const { windowSetup } = require('@electron/internal/renderer/window-setup') as typeof windowSetupModule;
+    windowSetup(guestInstanceId, openerId, isHiddenPage, usesNativeWindowOpen);
   }
 }
 
 // Load webview tag implementation.
 if (process.isMainFrame) {
-  const { webViewInit } = require('@electron/internal/renderer/web-view/web-view-init');
+  const { webViewInit } = require('@electron/internal/renderer/web-view/web-view-init') as typeof webViewInitModule;
   webViewInit(contextIsolation, webviewTag, guestInstanceId);
 }
 
@@ -154,7 +153,7 @@ if (nodeIntegration) {
       // We do not want to add `uncaughtException` to our definitions
       // because we don't want anyone else (anywhere) to throw that kind
       // of error.
-      global.process.emit('uncaughtException' as any, error as any);
+      global.process.emit('uncaughtException', error as any);
       return true;
     } else {
       return false;
@@ -184,12 +183,12 @@ for (const preloadScript of preloadScripts) {
     console.error(`Unable to load preload script: ${preloadScript}`);
     console.error(error);
 
-    ipcRendererInternal.send('ELECTRON_BROWSER_PRELOAD_ERROR', preloadScript, error);
+    ipcRendererInternal.send(IPC_MESSAGES.BROWSER_PRELOAD_ERROR, preloadScript, error);
   }
 }
 
 // Warn about security issues
 if (process.isMainFrame) {
-  const { securityWarnings } = require('@electron/internal/renderer/security-warnings');
+  const { securityWarnings } = require('@electron/internal/renderer/security-warnings') as typeof securityWarningsModule;
   securityWarnings(nodeIntegration);
 }

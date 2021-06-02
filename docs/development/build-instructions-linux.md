@@ -1,6 +1,8 @@
 # Build Instructions (Linux)
 
-Follow the guidelines below for building Electron on Linux.
+Follow the guidelines below for building **Electron itself** on Linux, for the purposes of creating custom Electron binaries. For bundling and distributing your app code with the prebuilt Electron binaries, see the [application distribution][application-distribution] guide.
+
+[application-distribution]: ../tutorial/application-distribution.md
 
 ## Prerequisites
 
@@ -53,6 +55,15 @@ $ sudo dnf install clang dbus-devel gtk3-devel libnotify-devel \
                    libgnome-keyring-devel xorg-x11-server-utils libcap-devel \
                    cups-devel libXtst-devel alsa-lib-devel libXrandr-devel \
                    nss-devel python-dbusmock openjdk-8-jre
+```
+
+On Arch Linux / Manjaro, install the following libraries:
+
+```sh
+$ sudo pacman -Syu base-devel clang libdbus gtk2 libnotify \
+                   libgnome-keyring alsa-lib libcap libcups libxtst \
+                   libxss nss gcc-multilib curl gperf bison \
+                   python2 python-dbusmock jdk8-openjdk
 ```
 
 Other distributions may offer similar packages for installation via package

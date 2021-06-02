@@ -5,10 +5,9 @@
 #ifndef SHELL_BROWSER_API_ELECTRON_API_APP_H_
 #define SHELL_BROWSER_API_ELECTRON_API_APP_H_
 
+#include <map>
 #include <memory>
 #include <string>
-#include <unordered_map>
-#include <utility>
 #include <vector>
 
 #include "base/task/cancelable_task_tracker.h"
@@ -74,7 +73,9 @@ class App : public ElectronBrowserClient::Delegate,
 
   base::FilePath GetAppPath() const;
   void RenderProcessReady(content::RenderProcessHost* host);
-  void RenderProcessDisconnected(base::ProcessId host_pid);
+  void RenderProcessExited(content::RenderProcessHost* host);
+
+  static bool IsPackaged();
 
   App();
 
@@ -126,7 +127,7 @@ class App : public ElectronBrowserClient::Delegate,
   base::OnceClosure SelectClientCertificate(
       content::WebContents* web_contents,
       net::SSLCertRequestInfo* cert_request_info,
-      net::ClientCertIdentityList client_certs,
+      net::ClientCertIdentityList identities,
       std::unique_ptr<content::ClientCertificateDelegate> delegate) override;
   bool CanCreateWindow(content::RenderFrameHost* opener,
                        const GURL& opener_url,
@@ -167,9 +168,11 @@ class App : public ElectronBrowserClient::Delegate,
 
   void SetAppPath(const base::FilePath& app_path);
   void ChildProcessLaunched(int process_type,
+                            int pid,
                             base::ProcessHandle handle,
+                            const std::string& service_name = std::string(),
                             const std::string& name = std::string());
-  void ChildProcessDisconnected(base::ProcessId pid);
+  void ChildProcessDisconnected(int pid);
 
   void SetAppLogsPath(gin_helper::ErrorThrower thrower,
                       base::Optional<base::FilePath> custom_path);
@@ -211,8 +214,6 @@ class App : public ElectronBrowserClient::Delegate,
   void EnableSandbox(gin_helper::ErrorThrower thrower);
   void SetUserAgentFallback(const std::string& user_agent);
   std::string GetUserAgentFallback();
-  void SetBrowserClientCanUseCustomSiteInstance(bool should_disable);
-  bool CanBrowserClientUseCustomSiteInstance();
 
 #if defined(OS_MAC)
   void SetActivationPolicy(gin_helper::ErrorThrower thrower,
@@ -220,7 +221,12 @@ class App : public ElectronBrowserClient::Delegate,
   bool MoveToApplicationsFolder(gin_helper::ErrorThrower, gin::Arguments* args);
   bool IsInApplicationsFolder();
   v8::Local<v8::Value> GetDockAPI(v8::Isolate* isolate);
+  bool IsRunningUnderRosettaTranslation() const;
   v8::Global<v8::Value> dock_;
+#endif
+
+#if defined(OS_MAC) || defined(OS_WIN)
+  bool IsRunningUnderARM64Translation() const;
 #endif
 
 #if defined(MAS_BUILD)
@@ -248,8 +254,7 @@ class App : public ElectronBrowserClient::Delegate,
   base::FilePath app_path_;
 
   using ProcessMetricMap =
-      std::unordered_map<base::ProcessId,
-                         std::unique_ptr<electron::ProcessMetric>>;
+      std::map<int, std::unique_ptr<electron::ProcessMetric>>;
   ProcessMetricMap app_metrics_;
 
   bool disable_hw_acceleration_ = false;

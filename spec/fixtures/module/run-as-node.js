@@ -1,5 +1,5 @@
 console.log(JSON.stringify({
-  processLog: typeof process.log,
+  stdoutType: process.stdout._type,
   processType: typeof process.type,
   window: typeof window
 }));

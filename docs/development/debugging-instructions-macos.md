@@ -24,6 +24,7 @@ you prefer a graphical interface.
   debugging C, Objective-C and C++ on the desktop and iOS devices and simulator.
 
 * **.lldbinit**: Create or edit `~/.lldbinit` to allow Chromium code to be properly source-mapped.
+
    ```text
    command script import ~/electron/src/tools/lldb/lldbinit.py
    ```
@@ -120,6 +121,7 @@ Now, if you open up Electron's developer tools and call `setName`, you will once
 breakpoint.
 
 ### Further Reading
+
 LLDB is a powerful tool with a great documentation. To learn more about it, consider
 Apple's debugging documentation, for instance the [LLDB Command Structure Reference][lldb-command-structure]
 or the introduction to [Using LLDB as a Standalone Debugger][lldb-standalone].
@@ -129,4 +131,4 @@ will explain more complex debugging scenarios.
 
 [lldb-command-structure]: https://developer.apple.com/library/mac/documentation/IDEs/Conceptual/gdb_to_lldb_transition_guide/document/lldb-basics.html#//apple_ref/doc/uid/TP40012917-CH2-SW2
 [lldb-standalone]: https://developer.apple.com/library/mac/documentation/IDEs/Conceptual/gdb_to_lldb_transition_guide/document/lldb-terminal-workflow-tutorial.html
-[lldb-tutorial]: http://lldb.llvm.org/tutorial.html
+[lldb-tutorial]: https://lldb.llvm.org/tutorial.html

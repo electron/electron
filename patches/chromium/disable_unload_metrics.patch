@@ -1,0 +1,45 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 20 Sep 2018 17:45:47 -0700
+Subject: fix: disable unload metrics
+
+Chromium introduced unload metrics in:
+https://chromium-review.googlesource.com/c/chromium/src/+/2314877
+
+Which would cause some DCHECKs to assert in Electron:
+https://github.com/electron/electron/issues/27717
+
+And it would then crash and make some tests fail:
+crashReporter module should send minidump when sandboxed renderer crashes api-crash-reporter-spec.ts 643 ms
+Error message:
+ptype: expected 'browser' to equal 'renderer'
+Error stack trace:
+AssertionError: ptype: expected 'browser' to equal 'renderer'
+    at checkCrash (electron\spec-main\api-crash-reporter-spec.ts:39:35)
+    at Context.<anonymous> (electron\spec-main\api-crash-reporter-spec.ts:154:7)
+    at runMicrotasks (<anonymous>)
+    at processTicksAndRejections (internal/process/task_queues.js:93:5)
+
+This patch temporarily disables the metrics so we can have green CI, and we
+should continue seeking for a real fix.
+
+diff --git a/content/browser/renderer_host/navigator.cc b/content/browser/renderer_host/navigator.cc
+index 3654c2b2511677afd472c4ccd62b20d3e81d240c..719cef1979ff95fa778fe11e5325a41d1d4751ba 100644
+--- a/content/browser/renderer_host/navigator.cc
++++ b/content/browser/renderer_host/navigator.cc
+@@ -1078,6 +1078,7 @@ void Navigator::RecordNavigationMetrics(
+             .InMilliseconds());
+   }
+ 
++#if 0
+   // If this is a same-process navigation and we have timestamps for unload
+   // durations, fill those metrics out as well.
+   if (params.unload_start && params.unload_end &&
+@@ -1124,6 +1125,7 @@ void Navigator::RecordNavigationMetrics(
+          first_before_unload_start_time)
+             .InMilliseconds());
+   }
++#endif
+ 
+   builder.Record(ukm::UkmRecorder::Get());
+   navigation_data_.reset();

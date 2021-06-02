@@ -1,15 +1,16 @@
 import { BrowserWindow } from 'electron';
 import { writeFileSync, readFileSync } from 'fs';
 import { resolve } from 'path';
-import { expect } from 'chai';
+import { expect, assert } from 'chai';
 import { closeAllWindows } from './window-helpers';
+const { emittedOnce } = require('./events-helpers');
 
 function genSnapshot (browserWindow: BrowserWindow, features: string) {
   return new Promise((resolve) => {
     browserWindow.webContents.on('new-window', (...args: any[]) => {
       resolve([features, ...args]);
     });
-    browserWindow.webContents.executeJavaScript(`window.open('about:blank', 'frame name', '${features}')`);
+    browserWindow.webContents.executeJavaScript(`window.open('about:blank', 'frame-name', '${features}') && true`);
   });
 }
 
@@ -52,7 +53,7 @@ describe('new-window event', () => {
       beforeEach((done) => {
         browserWindow = new BrowserWindow(browserWindowOptions);
         browserWindow.loadURL('about:blank');
-        browserWindow.on('ready-to-show', () => done());
+        browserWindow.on('ready-to-show', () => { done(); });
       });
 
       afterEach(closeAllWindows);
@@ -86,6 +87,186 @@ describe('new-window event', () => {
   }
 });
 
+describe('webContents.setWindowOpenHandler', () => {
+  const testConfig = {
+    native: {
+      browserWindowOptions: {
+        show: false,
+        webPreferences: {
+          nativeWindowOpen: true
+        }
+      }
+    },
+    proxy: {
+      browserWindowOptions: {
+        show: false,
+        webPreferences: {
+          nativeWindowOpen: false
+        }
+      }
+    }
+  };
+
+  for (const testName of Object.keys(testConfig) as (keyof typeof testConfig)[]) {
+    let browserWindow: BrowserWindow;
+    const { browserWindowOptions } = testConfig[testName];
+
+    describe(testName, () => {
+      beforeEach(async () => {
+        browserWindow = new BrowserWindow(browserWindowOptions);
+        await browserWindow.loadURL('about:blank');
+      });
+
+      afterEach(closeAllWindows);
+
+      it('does not fire window creation events if an override returns action: deny', async () => {
+        const denied = new Promise((resolve) => {
+          browserWindow.webContents.setWindowOpenHandler(() => {
+            setTimeout(resolve);
+            return { action: 'deny' };
+          });
+        });
+        browserWindow.webContents.on('new-window', () => {
+          assert.fail('new-window should not to be called with an overridden window.open');
+        });
+
+        browserWindow.webContents.on('did-create-window', () => {
+          assert.fail('did-create-window should not to be called with an overridden window.open');
+        });
+
+        browserWindow.webContents.executeJavaScript("window.open('about:blank', '', 'show=no') && true");
+
+        await denied;
+      });
+
+      it('is called when clicking on a target=_blank link', async () => {
+        const denied = new Promise((resolve) => {
+          browserWindow.webContents.setWindowOpenHandler(() => {
+            setTimeout(resolve);
+            return { action: 'deny' };
+          });
+        });
+        browserWindow.webContents.on('new-window', () => {
+          assert.fail('new-window should not to be called with an overridden window.open');
+        });
+
+        browserWindow.webContents.on('did-create-window', () => {
+          assert.fail('did-create-window should not to be called with an overridden window.open');
+        });
+
+        await browserWindow.webContents.loadURL('data:text/html,<a target="_blank" href="http://example.com" style="display: block; width: 100%; height: 100%; position: fixed; left: 0; top: 0;">link</a>');
+        browserWindow.webContents.sendInputEvent({ type: 'mouseDown', x: 10, y: 10, button: 'left', clickCount: 1 });
+        browserWindow.webContents.sendInputEvent({ type: 'mouseUp', x: 10, y: 10, button: 'left', clickCount: 1 });
+
+        await denied;
+      });
+
+      it('is called when shift-clicking on a link', async () => {
+        const denied = new Promise((resolve) => {
+          browserWindow.webContents.setWindowOpenHandler(() => {
+            setTimeout(resolve);
+            return { action: 'deny' };
+          });
+        });
+        browserWindow.webContents.on('new-window', () => {
+          assert.fail('new-window should not to be called with an overridden window.open');
+        });
+
+        browserWindow.webContents.on('did-create-window', () => {
+          assert.fail('did-create-window should not to be called with an overridden window.open');
+        });
+
+        await browserWindow.webContents.loadURL('data:text/html,<a href="http://example.com" style="display: block; width: 100%; height: 100%; position: fixed; left: 0; top: 0;">link</a>');
+        browserWindow.webContents.sendInputEvent({ type: 'mouseDown', x: 10, y: 10, button: 'left', clickCount: 1, modifiers: ['shift'] });
+        browserWindow.webContents.sendInputEvent({ type: 'mouseUp', x: 10, y: 10, button: 'left', clickCount: 1, modifiers: ['shift'] });
+
+        await denied;
+      });
+
+      it('fires handler with correct params', async () => {
+        const testFrameName = 'test-frame-name';
+        const testFeatures = 'top=10&left=10&something-unknown&show=no';
+        const testUrl = 'app://does-not-exist/';
+        const details = await new Promise<Electron.HandlerDetails>(resolve => {
+          browserWindow.webContents.setWindowOpenHandler((details) => {
+            setTimeout(() => resolve(details));
+            return { action: 'deny' };
+          });
+
+          browserWindow.webContents.executeJavaScript(`window.open('${testUrl}', '${testFrameName}', '${testFeatures}') && true`);
+        });
+        const { url, frameName, features, disposition, referrer } = details;
+        expect(url).to.equal(testUrl);
+        expect(frameName).to.equal(testFrameName);
+        expect(features).to.equal(testFeatures);
+        expect(disposition).to.equal('new-window');
+        expect(referrer).to.deep.equal({
+          policy: 'strict-origin-when-cross-origin',
+          url: ''
+        });
+      });
+
+      it('includes post body', async () => {
+        const details = await new Promise<Electron.HandlerDetails>(resolve => {
+          browserWindow.webContents.setWindowOpenHandler((details) => {
+            setTimeout(() => resolve(details));
+            return { action: 'deny' };
+          });
+
+          browserWindow.webContents.loadURL(`data:text/html,${encodeURIComponent(`
+            <form action="http://example.com" target="_blank" method="POST" id="form">
+              <input name="key" value="value"></input>
+            </form>
+            <script>form.submit()</script>
+          `)}`);
+        });
+        const { url, frameName, features, disposition, referrer, postBody } = details;
+        expect(url).to.equal('http://example.com/');
+        expect(frameName).to.equal('');
+        expect(features).to.deep.equal('');
+        expect(disposition).to.equal('foreground-tab');
+        expect(referrer).to.deep.equal({
+          policy: 'strict-origin-when-cross-origin',
+          url: ''
+        });
+        expect(postBody).to.deep.equal({
+          contentType: 'application/x-www-form-urlencoded',
+          data: [{
+            type: 'rawData',
+            bytes: Buffer.from('key=value')
+          }]
+        });
+      });
+
+      it('does fire window creation events if an override returns action: allow', async () => {
+        browserWindow.webContents.setWindowOpenHandler(() => ({ action: 'allow' }));
+
+        setImmediate(() => {
+          browserWindow.webContents.executeJavaScript("window.open('about:blank', '', 'show=no') && true");
+        });
+
+        await Promise.all([
+          emittedOnce(browserWindow.webContents, 'did-create-window'),
+          emittedOnce(browserWindow.webContents, 'new-window')
+        ]);
+      });
+
+      it('can change webPreferences of child windows', (done) => {
+        browserWindow.webContents.setWindowOpenHandler(() => ({ action: 'allow', overrideBrowserWindowOptions: { webPreferences: { defaultFontSize: 30 } } }));
+
+        browserWindow.webContents.on('did-create-window', async (childWindow) => {
+          await childWindow.webContents.executeJavaScript("document.write('hello')");
+          const size = await childWindow.webContents.executeJavaScript("getComputedStyle(document.querySelector('body')).fontSize");
+          expect(size).to.equal('30px');
+          done();
+        });
+
+        browserWindow.webContents.executeJavaScript("window.open('about:blank', '', 'show=no') && true");
+      });
+    });
+  }
+});
+
 function stringifySnapshots (snapshots: any, pretty = false) {
   return JSON.stringify(snapshots, (key, value) => {
     if (['sender', 'webContents'].includes(key)) {
@@ -93,6 +274,9 @@ function stringifySnapshots (snapshots: any, pretty = false) {
     }
     if (key === 'openerId' && typeof value === 'number') {
       return 'placeholder-opener-id';
+    }
+    if (key === 'processId' && typeof value === 'number') {
+      return 'placeholder-process-id';
     }
     if (key === 'returnValue') {
       return 'placeholder-guest-contents-id';

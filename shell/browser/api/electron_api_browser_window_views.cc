@@ -15,7 +15,7 @@ void BrowserWindow::UpdateDraggableRegions(
   if (window_->has_frame())
     return;
   static_cast<NativeWindowViews*>(window_.get())
-      ->UpdateDraggableRegions(DraggableRegionsToSkRegion(regions));
+      ->UpdateDraggableRegions(regions);
 }
 
 }  // namespace api

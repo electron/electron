@@ -26,7 +26,6 @@ InspectableWebContentsViewMac::InspectableWebContentsViewMac(
           initWithInspectableWebContentsViewMac:this]) {}
 
 InspectableWebContentsViewMac::~InspectableWebContentsViewMac() {
-  [view_ removeObservers];
   CloseDevTools();
 }
 
@@ -59,7 +58,7 @@ void InspectableWebContentsViewMac::SetContentsResizingStrategy(
   [view_ setContentsResizingStrategy:strategy];
 }
 
-void InspectableWebContentsViewMac::SetTitle(const base::string16& title) {
+void InspectableWebContentsViewMac::SetTitle(const std::u16string& title) {
   [view_ setTitle:base::SysUTF16ToNSString(title)];
 }
 

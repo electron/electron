@@ -11,13 +11,18 @@ npm install electron --save-dev
 See the [Electron versioning doc][versioning] for info on how to
 manage Electron versions in your apps.
 
-## Global Installation
+## Running Electron ad-hoc
 
-You can also install the `electron` command globally in your `$PATH`:
+If you're in a pinch and would prefer to not use `npm install` in your local
+project, you can also run Electron ad-hoc using the [`npx`][npx] command runner
+bundled with `npm`:
 
 ```sh
-npm install electron -g
+npx electron .
 ```
+
+The above command will run the current working directory with Electron. Note that
+any dependencies in your app will not be installed.
 
 ## Customization
 
@@ -45,6 +50,7 @@ value, plus additional environment variables depending on your host system's Nod
 * [Before Node 10][proxy-env]
 
 ## Custom Mirrors and Caches
+
 During installation, the `electron` module will call out to
 [`@electron/get`][electron-get] to download prebuilt binaries of
 Electron for your platform. It will do so by contacting GitHub's
@@ -55,6 +61,7 @@ If you are unable to access GitHub or you need to provide a custom build, you
 can do so by either providing a mirror or an existing cache directory.
 
 #### Mirror
+
 You can use environment variables to override the base URL, the path at which to
 look for Electron binaries, and the binary filename. The URL used by `@electron/get`
 is composed as follows:
@@ -84,6 +91,7 @@ The above configuration will download from URLs such as
 `https://npm.taobao.org/mirrors/electron/8.0.0/electron-v8.0.0-linux-x64.zip`.
 
 #### Cache
+
 Alternatively, you can override the local cache. `@electron/get` will cache
 downloaded binaries in a local directory to not stress your network. You can use
 that cache folder to provide custom builds of Electron or to avoid making contact
@@ -126,12 +134,14 @@ a text file. A typical cache might look like this:
 ```
 
 ## Skip binary download
+
 When installing the `electron` NPM package, it automatically downloads the electron binary.
 
 This can sometimes be unnecessary, e.g. in a CI environment, when testing another component.
 
 To prevent the binary from being downloaded when you install all npm dependencies you can set the environment variable `ELECTRON_SKIP_BINARY_DOWNLOAD`.
 E.g.:
+
 ```sh
 ELECTRON_SKIP_BINARY_DOWNLOAD=1 npm install
 ```
@@ -173,6 +183,7 @@ If you need to force a re-download of the asset and the SHASUM file set the
 
 [npm]: https://docs.npmjs.com
 [versioning]: ./electron-versioning.md
+[npx]: https://docs.npmjs.com/cli/v7/commands/npx
 [releases]: https://github.com/electron/electron/releases
 [proxy-env-10]: https://github.com/gajus/global-agent/blob/v2.1.5/README.md#environment-variables
 [proxy-env]: https://github.com/np-maintain/global-tunnel/blob/v2.7.1/README.md#auto-config

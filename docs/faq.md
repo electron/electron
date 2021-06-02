@@ -133,7 +133,7 @@ is only available in renderer processes.
 
 ## The font looks blurry, what is this and what can I do?
 
-If [sub-pixel anti-aliasing](http://alienryderflex.com/sub_pixel/) is deactivated, then fonts on LCD screens can look blurry. Example:
+If [sub-pixel anti-aliasing](https://alienryderflex.com/sub_pixel/) is deactivated, then fonts on LCD screens can look blurry. Example:
 
 ![subpixel rendering example]
 

@@ -1,18 +1,21 @@
-var fs = require('fs')
-var path = require('path')
+const fs = require('fs');
+const path = require('path');
 
-var pathFile = path.join(__dirname, 'path.txt')
+const pathFile = path.join(__dirname, 'path.txt');
 
 function getElectronPath () {
+  let executablePath;
   if (fs.existsSync(pathFile)) {
-    var executablePath = fs.readFileSync(pathFile, 'utf-8')
-    if (process.env.ELECTRON_OVERRIDE_DIST_PATH) {
-      return path.join(process.env.ELECTRON_OVERRIDE_DIST_PATH, executablePath)
-    }
-    return path.join(__dirname, 'dist', executablePath)
+    executablePath = fs.readFileSync(pathFile, 'utf-8');
+  }
+  if (process.env.ELECTRON_OVERRIDE_DIST_PATH) {
+    return path.join(process.env.ELECTRON_OVERRIDE_DIST_PATH, executablePath || 'electron');
+  }
+  if (executablePath) {
+    return path.join(__dirname, 'dist', executablePath);
   } else {
-    throw new Error('Electron failed to install correctly, please delete node_modules/electron and try installing again')
+    throw new Error('Electron failed to install correctly, please delete node_modules/electron and try installing again');
   }
 }
 
-module.exports = getElectronPath()
+module.exports = getElectronPath();

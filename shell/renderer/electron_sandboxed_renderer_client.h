@@ -7,7 +7,6 @@
 #include <memory>
 #include <set>
 #include <string>
-#include <vector>
 
 #include "base/process/process_metrics.h"
 #include "shell/renderer/renderer_client_base.h"
@@ -21,26 +20,19 @@ class ElectronSandboxedRendererClient : public RendererClientBase {
 
   void InitializeBindings(v8::Local<v8::Object> binding,
                           v8::Local<v8::Context> context,
-                          bool is_main_frame);
+                          content::RenderFrame* render_frame);
   // electron::RendererClientBase:
   void DidCreateScriptContext(v8::Handle<v8::Context> context,
                               content::RenderFrame* render_frame) override;
   void WillReleaseScriptContext(v8::Handle<v8::Context> context,
                                 content::RenderFrame* render_frame) override;
-  void SetupMainWorldOverrides(v8::Handle<v8::Context> context,
-                               content::RenderFrame* render_frame) override;
-  void SetupExtensionWorldOverrides(v8::Handle<v8::Context> context,
-                                    content::RenderFrame* render_frame,
-                                    int world_id) override;
   // content::ContentRendererClient:
   void RenderFrameCreated(content::RenderFrame*) override;
-  void RenderViewCreated(content::RenderView*) override;
   void RunScriptsAtDocumentStart(content::RenderFrame* render_frame) override;
   void RunScriptsAtDocumentEnd(content::RenderFrame* render_frame) override;
   bool ShouldFork(blink::WebLocalFrame* frame,
                   const GURL& url,
                   const std::string& http_method,
-                  bool is_initial_navigation,
                   bool is_server_redirect) override;
 
  private:

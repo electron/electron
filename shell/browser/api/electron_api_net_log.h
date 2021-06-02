@@ -5,10 +5,6 @@
 #ifndef SHELL_BROWSER_API_ELECTRON_API_NET_LOG_H_
 #define SHELL_BROWSER_API_ELECTRON_API_NET_LOG_H_
 
-#include <list>
-#include <memory>
-#include <string>
-
 #include "base/callback.h"
 #include "base/optional.h"
 #include "base/values.h"
@@ -65,7 +61,7 @@ class NetLog : public gin::Wrappable<NetLog> {
 
   scoped_refptr<base::TaskRunner> file_task_runner_;
 
-  base::WeakPtrFactory<NetLog> weak_ptr_factory_;
+  base::WeakPtrFactory<NetLog> weak_ptr_factory_{this};
 
   DISALLOW_COPY_AND_ASSIGN(NetLog);
 };

@@ -8,7 +8,6 @@
 #include "shell/browser/api/electron_api_menu.h"
 
 #include <map>
-#include <string>
 
 #import "shell/browser/ui/cocoa/electron_menu_controller.h"
 
@@ -35,11 +34,14 @@ class MenuMac : public Menu {
                  int positioning_item,
                  base::OnceClosure callback);
   void ClosePopupAt(int32_t window_id) override;
-  void ClosePopupOnUI(int32_t window_id);
+#ifdef DCHECK_IS_ON
+  std::u16string GetAcceleratorTextAtForTesting(int index) const override;
+#endif
 
  private:
   friend class Menu;
 
+  void ClosePopupOnUI(int32_t window_id);
   void OnClosed(int32_t window_id, base::OnceClosure callback);
 
   scoped_nsobject<ElectronMenuController> menu_controller_;
@@ -47,7 +49,7 @@ class MenuMac : public Menu {
   // window ID -> open context menu
   std::map<int32_t, scoped_nsobject<ElectronMenuController>> popup_controllers_;
 
-  base::WeakPtrFactory<MenuMac> weak_factory_;
+  base::WeakPtrFactory<MenuMac> weak_factory_{this};
 
   DISALLOW_COPY_AND_ASSIGN(MenuMac);
 };

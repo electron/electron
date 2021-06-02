@@ -5,8 +5,6 @@
 #ifndef SHELL_BROWSER_COOKIE_CHANGE_NOTIFIER_H_
 #define SHELL_BROWSER_COOKIE_CHANGE_NOTIFIER_H_
 
-#include <memory>
-
 #include "base/callback_list.h"
 #include "base/macros.h"
 #include "mojo/public/cpp/bindings/receiver.h"
@@ -24,10 +22,9 @@ class CookieChangeNotifier : public network::mojom::CookieChangeListener {
   ~CookieChangeNotifier() override;
 
   // Register callbacks that needs to notified on any cookie store changes.
-  std::unique_ptr<base::CallbackList<
-      void(const net::CookieChangeInfo& change)>::Subscription>
-  RegisterCookieChangeCallback(
-      const base::Callback<void(const net::CookieChangeInfo& change)>& cb);
+  base::CallbackListSubscription RegisterCookieChangeCallback(
+      const base::RepeatingCallback<void(const net::CookieChangeInfo& change)>&
+          cb);
 
  private:
   void StartListening();
@@ -37,7 +34,7 @@ class CookieChangeNotifier : public network::mojom::CookieChangeListener {
   void OnCookieChange(const net::CookieChangeInfo& change) override;
 
   ElectronBrowserContext* browser_context_;
-  base::CallbackList<void(const net::CookieChangeInfo& change)>
+  base::RepeatingCallbackList<void(const net::CookieChangeInfo& change)>
       cookie_change_sub_list_;
 
   mojo::Receiver<network::mojom::CookieChangeListener> receiver_;

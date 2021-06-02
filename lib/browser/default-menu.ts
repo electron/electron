@@ -1,4 +1,4 @@
-import { Menu } from 'electron/main';
+import { app, Menu } from 'electron/main';
 import { shell } from 'electron/common';
 
 const v8Util = process._linkedBinding('electron_common_v8_util');
@@ -10,7 +10,7 @@ export const setDefaultApplicationMenu = () => {
 
   const helpMenu: Electron.MenuItemConstructorOptions = {
     role: 'help',
-    submenu: [
+    submenu: app.isPackaged ? [] : [
       {
         label: 'Learn More',
         click: async () => {
@@ -27,7 +27,7 @@ export const setDefaultApplicationMenu = () => {
       {
         label: 'Community Discussions',
         click: async () => {
-          await shell.openExternal('https://discuss.atom.io/c/electron');
+          await shell.openExternal('https://discord.gg/electron');
         }
       },
       {

@@ -64,6 +64,11 @@ class Menu : public gin::Wrappable<Menu>,
       bool use_default_accelerator,
       ui::Accelerator* accelerator) const override;
   bool ShouldRegisterAcceleratorForCommandId(int command_id) const override;
+#if defined(OS_MAC)
+  bool GetSharingItemForCommandId(
+      int command_id,
+      ElectronMenuModel::SharingItem* item) const override;
+#endif
   void ExecuteCommand(int command_id, int event_flags) override;
   void OnMenuWillShow(ui::SimpleMenuModel* source) override;
 
@@ -73,6 +78,9 @@ class Menu : public gin::Wrappable<Menu>,
                        int positioning_item,
                        base::OnceClosure callback) = 0;
   virtual void ClosePopupAt(int32_t window_id) = 0;
+#ifdef DCHECK_IS_ON
+  virtual std::u16string GetAcceleratorTextAtForTesting(int index) const;
+#endif
 
   std::unique_ptr<ElectronMenuModel> model_;
   Menu* parent_ = nullptr;
@@ -82,31 +90,30 @@ class Menu : public gin::Wrappable<Menu>,
   void OnMenuWillShow() override;
 
  private:
-  void InsertItemAt(int index, int command_id, const base::string16& label);
+  void InsertItemAt(int index, int command_id, const std::u16string& label);
   void InsertSeparatorAt(int index);
   void InsertCheckItemAt(int index,
                          int command_id,
-                         const base::string16& label);
+                         const std::u16string& label);
   void InsertRadioItemAt(int index,
                          int command_id,
-                         const base::string16& label,
+                         const std::u16string& label,
                          int group_id);
   void InsertSubMenuAt(int index,
                        int command_id,
-                       const base::string16& label,
+                       const std::u16string& label,
                        Menu* menu);
   void SetIcon(int index, const gfx::Image& image);
-  void SetSublabel(int index, const base::string16& sublabel);
-  void SetToolTip(int index, const base::string16& toolTip);
-  void SetRole(int index, const base::string16& role);
+  void SetSublabel(int index, const std::u16string& sublabel);
+  void SetToolTip(int index, const std::u16string& toolTip);
+  void SetRole(int index, const std::u16string& role);
   void Clear();
   int GetIndexOfCommandId(int command_id);
   int GetItemCount() const;
   int GetCommandIdAt(int index) const;
-  base::string16 GetLabelAt(int index) const;
-  base::string16 GetSublabelAt(int index) const;
-  base::string16 GetToolTipAt(int index) const;
-  base::string16 GetAcceleratorTextAt(int index) const;
+  std::u16string GetLabelAt(int index) const;
+  std::u16string GetSublabelAt(int index) const;
+  std::u16string GetToolTipAt(int index) const;
   bool IsItemCheckedAt(int index) const;
   bool IsEnabledAt(int index) const;
   bool IsVisibleAt(int index) const;
@@ -126,7 +133,7 @@ struct Converter<electron::ElectronMenuModel*> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      electron::ElectronMenuModel** out) {
-    // null would be tranfered to NULL.
+    // null would be transferred to NULL.
     if (val->IsNull()) {
       *out = nullptr;
       return true;
