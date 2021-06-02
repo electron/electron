@@ -7,10 +7,10 @@ spellchecker uses a few IDS_ resources.  We need to load these from
 Electrons grit header instead of Chromes
 
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index 199407202dfcf42e2f50f7c4f7d479d26574f953..5987371ecfcf8252a90d33499581e72f70f2e6be 100644
+index b4acb5dd3862e8411bfb00a99168e69822be0d53..6a690c18e5fd8b36237be6711437cf8997e074c7 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -6367,6 +6367,7 @@ static_library("browser") {
+@@ -6365,6 +6365,7 @@ static_library("browser") {
      deps += [
        "//components/spellcheck/browser",
        "//components/spellcheck/common",
@@ -19,7 +19,7 @@ index 199407202dfcf42e2f50f7c4f7d479d26574f953..5987371ecfcf8252a90d33499581e72f
  
      if (!is_android) {
 diff --git a/chrome/browser/spellchecker/spellcheck_factory.cc b/chrome/browser/spellchecker/spellcheck_factory.cc
-index d511c9085253ebfba69ba37f41193d15638bb10f..d98cfc569c775b52687a533e03c595a5e45be87e 100644
+index 2b7aa1add57dccbcbf8202cead5b7d2d5a174270..2ba03fc045f2e4bb12f173aacb6581ccb20bfc5a 100644
 --- a/chrome/browser/spellchecker/spellcheck_factory.cc
 +++ b/chrome/browser/spellchecker/spellcheck_factory.cc
 @@ -6,7 +6,7 @@
