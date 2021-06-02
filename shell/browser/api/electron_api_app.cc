@@ -938,6 +938,10 @@ void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
 
 // static
 bool App::IsPackaged() {
+  auto env = base::Environment::Create();
+  if (env->HasVar("ELECTRON_FORCE_IS_PACKAGED"))
+    return true;
+
   base::FilePath exe_path;
   base::PathService::Get(base::FILE_EXE, &exe_path);
   base::FilePath::StringType base_name =
