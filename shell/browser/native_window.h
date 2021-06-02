@@ -32,6 +32,7 @@ class Image;
 class Point;
 class Rect;
 class RectF;
+enum class ResizeEdge;
 class Size;
 }  // namespace gfx
 
@@ -275,6 +276,7 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyWindowRestore();
   void NotifyWindowMove();
   void NotifyWindowWillResize(const gfx::Rect& new_bounds,
+                              const gfx::ResizeEdge& edge,
                               bool* prevent_default);
   void NotifyWindowResize();
   void NotifyWindowResized();

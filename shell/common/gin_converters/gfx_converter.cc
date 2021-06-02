@@ -10,6 +10,7 @@
 #include "ui/gfx/geometry/point.h"
 #include "ui/gfx/geometry/point_f.h"
 #include "ui/gfx/geometry/rect.h"
+#include "ui/gfx/geometry/resize_utils.h"
 #include "ui/gfx/geometry/size.h"
 
 namespace gin {
@@ -158,6 +159,31 @@ v8::Local<v8::Value> Converter<display::Display>::ToV8(
   dict.Set("internal", val.IsInternal());
   dict.Set("touchSupport", val.touch_support());
   return dict.GetHandle();
+}
+
+v8::Local<v8::Value> Converter<gfx::ResizeEdge>::ToV8(
+    v8::Isolate* isolate,
+    const gfx::ResizeEdge& val) {
+  switch (val) {
+    case gfx::ResizeEdge::kRight:
+      return StringToV8(isolate, "right");
+    case gfx::ResizeEdge::kBottom:
+      return StringToV8(isolate, "bottom");
+    case gfx::ResizeEdge::kTop:
+      return StringToV8(isolate, "top");
+    case gfx::ResizeEdge::kLeft:
+      return StringToV8(isolate, "left");
+    case gfx::ResizeEdge::kTopLeft:
+      return StringToV8(isolate, "top-left");
+    case gfx::ResizeEdge::kTopRight:
+      return StringToV8(isolate, "top-right");
+    case gfx::ResizeEdge::kBottomLeft:
+      return StringToV8(isolate, "bottom-left");
+    case gfx::ResizeEdge::kBottomRight:
+      return StringToV8(isolate, "bottom-right");
+    default:
+      return StringToV8(isolate, "unknown");
+  }
 }
 
 }  // namespace gin
