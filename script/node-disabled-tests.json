@@ -93,6 +93,7 @@
   "parallel/test-tls-finished",
   "parallel/test-tls-generic-stream",
   "parallel/test-tls-getcipher",
+  "parallel/test-tls-getprotocol",
   "parallel/test-tls-handshake-error",
   "parallel/test-tls-handshake-exception",
   "parallel/test-tls-hello-parser-failure",
