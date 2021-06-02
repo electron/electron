@@ -353,7 +353,7 @@ void NodeBindings::Initialize() {
   // Parse and set Node.js cli flags.
   SetNodeCliFlags();
 
-  std::unique_ptr<base::Environment> env(base::Environment::Create());
+  auto env = base::Environment::Create();
   SetNodeOptions(env.get());
 
   std::vector<std::string> argv = {"electron"};
