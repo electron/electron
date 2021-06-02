@@ -44,17 +44,19 @@ bool IsDirectoryCached(const base::FilePath& path) {
 
 }  // namespace
 
-std::pair<ArchiveMap&, base::Lock&> GetArchiveCache() {
+ArchiveMap& GetArchiveCache() {
   static base::NoDestructor<ArchiveMap> s_archive_map;
-  static base::NoDestructor<base::Lock> lock;
+  return *s_archive_map;
+}
 
-  return std::pair<ArchiveMap&, base::Lock&>(*s_archive_map, *lock);
+base::Lock& GetArchiveCacheLock() {
+  static base::NoDestructor<base::Lock> lock;
+  return *lock;
 }
 
 std::shared_ptr<Archive> GetOrCreateAsarArchive(const base::FilePath& path) {
-  std::pair<ArchiveMap&, base::Lock&> archiveMapAndLock = GetArchiveCache();
-  ArchiveMap& map = archiveMapAndLock.first;
-  base::AutoLock auto_lock(archiveMapAndLock.second);
+  base::AutoLock auto_lock(GetArchiveCacheLock());
+  ArchiveMap& map = GetArchiveCache();
 
   // if we have it, return it
   const auto lower = map.lower_bound(path);
@@ -73,9 +75,8 @@ std::shared_ptr<Archive> GetOrCreateAsarArchive(const base::FilePath& path) {
 }
 
 void ClearArchives() {
-  std::pair<ArchiveMap&, base::Lock&> archiveMapAndLock = GetArchiveCache();
-  ArchiveMap& map = archiveMapAndLock.first;
-  base::AutoLock auto_lock(archiveMapAndLock.second);
+  base::AutoLock auto_lock(GetArchiveCacheLock());
+  ArchiveMap& map = GetArchiveCache();
 
   map.clear();
 }
