@@ -7,6 +7,8 @@
 #include "base/path_service.h"
 #include "shell/browser/api/electron_api_app.h"
 #include "shell/common/electron_paths.h"
+#include "shell/common/node_includes.h"
+#include "shell/common/process_util.h"
 
 #import <Cocoa/Cocoa.h>
 #import <sys/sysctl.h>
