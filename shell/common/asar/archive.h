@@ -5,6 +5,7 @@
 #ifndef SHELL_COMMON_ASAR_ARCHIVE_H_
 #define SHELL_COMMON_ASAR_ARCHIVE_H_
 
+#include <atomic>
 #include <memory>
 #include <unordered_map>
 #include <vector>
@@ -71,7 +72,8 @@ class Archive {
  private:
   // Lock protects archive initialization, and |external_files_|
   base::Lock lock_;
-  base::FilePath path_;
+  std::atomic_bool initialized_;
+  const base::FilePath path_;
   base::File file_;
   int fd_ = -1;
   uint32_t header_size_ = 0;
