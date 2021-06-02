@@ -1066,6 +1066,41 @@ index 58441be4d093f06cac3d47e2fa752f2354a49f8a..36a91946c8ad23250a47c433c1216ec9
  // Make sure memory isn't released before being returned
  console.log(crypto.randomBytes(16));
  
+diff --git a/test/parallel/test-https-agent-additional-options.js b/test/parallel/test-https-agent-additional-options.js
+index 543ee176fb6af38874fee9f14be76f3fdda11060..fef9f1bc2f9fc6c220cf47847e86e03882b51b1d 100644
+--- a/test/parallel/test-https-agent-additional-options.js
++++ b/test/parallel/test-https-agent-additional-options.js
+@@ -13,7 +13,7 @@ const options = {
+   cert: fixtures.readKey('agent1-cert.pem'),
+   ca: fixtures.readKey('ca1-cert.pem'),
+   minVersion: 'TLSv1.1',
+-  ciphers: 'ALL@SECLEVEL=0'
++  // ciphers: 'ALL@SECLEVEL=0'
+ };
+ 
+ const server = https.Server(options, (req, res) => {
+@@ -28,7 +28,7 @@ function getBaseOptions(port) {
+     ca: options.ca,
+     rejectUnauthorized: true,
+     servername: 'agent1',
+-    ciphers: 'ALL@SECLEVEL=0'
++    // ciphers: 'ALL@SECLEVEL=0'
+   };
+ }
+ 
+diff --git a/test/parallel/test-https-agent-session-eviction.js b/test/parallel/test-https-agent-session-eviction.js
+index 940c43cc40bf15e51df177ee30ecc69ffbeec296..e95743a91a3c709c7d2c10dc80b3f75b7d988027 100644
+--- a/test/parallel/test-https-agent-session-eviction.js
++++ b/test/parallel/test-https-agent-session-eviction.js
+@@ -14,7 +14,7 @@ const options = {
+   key: readKey('agent1-key.pem'),
+   cert: readKey('agent1-cert.pem'),
+   secureOptions: SSL_OP_NO_TICKET,
+-  ciphers: 'RSA@SECLEVEL=0'
++  // ciphers: 'RSA@SECLEVEL=0'
+ };
+ 
+ // Create TLS1.2 server
 diff --git a/test/parallel/test-tls-getcertificate-x509.js b/test/parallel/test-tls-getcertificate-x509.js
 index 5be788f67931131256f7fb0ab802cb0edee58173..13963fbeee1bbe5d4a25f1ef8bb58c7a0ad1eb23 100644
 --- a/test/parallel/test-tls-getcertificate-x509.js
