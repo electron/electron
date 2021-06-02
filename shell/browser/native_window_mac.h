@@ -234,7 +234,6 @@ class NativeWindowMac : public NativeWindow,
 
   bool is_kiosk_ = false;
   bool zoom_to_page_width_ = false;
-  bool resizable_ = true;
   absl::optional<gfx::Point> traffic_light_position_;
 
   std::queue<bool> pending_transitions_;

@@ -157,7 +157,6 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   // On Windows we rely on the CanResize() to indicate whether window can be
   // resized, and it should be set before window is created.
   options.Get(options::kResizable, &resizable_);
-  SetCanResize(resizable_);
   options.Get(options::kMinimizable, &minimizable_);
   options.Get(options::kMaximizable, &maximizable_);
 
@@ -217,6 +216,9 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
 #endif
 
   widget()->Init(std::move(params));
+#if defined(OS_WIN)
+  SetCanResize(resizable_);
+#endif
 
   bool fullscreen = false;
   options.Get(options::kFullscreen, &fullscreen);
