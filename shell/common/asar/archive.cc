@@ -118,7 +118,7 @@ bool FillFileInfoWithNode(Archive::FileInfo* info,
 }  // namespace
 
 Archive::Archive(const base::FilePath& path)
-    : path_(path), file_(base::File::FILE_OK) {
+    : initialized_(false), path_(path), file_(base::File::FILE_OK) {
   base::ThreadRestrictions::ScopedAllowIO allow_io;
   file_.Initialize(path_, base::File::FLAG_OPEN | base::File::FLAG_READ);
 #if defined(OS_WIN)
@@ -141,10 +141,10 @@ Archive::~Archive() {
 }
 
 bool Archive::Init() {
-  if (header_)
-    return true;
-
   base::AutoLock auto_lock(lock_);
+
+  if (initialized_)
+    return true;
 
   if (!file_.IsValid()) {
     if (file_.error_details() != base::File::FILE_ERROR_NOT_FOUND) {
@@ -200,11 +200,12 @@ bool Archive::Init() {
   header_size_ = 8 + size;
   header_ = base::DictionaryValue::From(
       base::Value::ToUniquePtrValue(std::move(*value)));
+  initialized_ = true;
   return true;
 }
 
 bool Archive::GetFileInfo(const base::FilePath& path, FileInfo* info) const {
-  if (!header_)
+  if (!initialized_)
     return false;
 
   const base::DictionaryValue* node;
@@ -219,7 +220,7 @@ bool Archive::GetFileInfo(const base::FilePath& path, FileInfo* info) const {
 }
 
 bool Archive::Stat(const base::FilePath& path, Stats* stats) const {
-  if (!header_)
+  if (!initialized_)
     return false;
 
   const base::DictionaryValue* node;
@@ -243,7 +244,7 @@ bool Archive::Stat(const base::FilePath& path, Stats* stats) const {
 
 bool Archive::Readdir(const base::FilePath& path,
                       std::vector<base::FilePath>* files) const {
-  if (!header_)
+  if (!initialized_)
     return false;
 
   const base::DictionaryValue* node;
@@ -264,7 +265,7 @@ bool Archive::Readdir(const base::FilePath& path,
 
 bool Archive::Realpath(const base::FilePath& path,
                        base::FilePath* realpath) const {
-  if (!header_)
+  if (!initialized_)
     return false;
 
   const base::DictionaryValue* node;
@@ -282,7 +283,7 @@ bool Archive::Realpath(const base::FilePath& path,
 }
 
 bool Archive::CopyFileOut(const base::FilePath& path, base::FilePath* out) {
-  if (!header_)
+  if (!initialized_)
     return false;
 
   base::AutoLock auto_lock(lock_);
