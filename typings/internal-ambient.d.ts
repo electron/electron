@@ -111,7 +111,6 @@ declare namespace NodeJS {
     guestInstanceId: number;
     hiddenPage: boolean;
     nodeIntegration: boolean;
-    openerId: number;
     preload: string
     preloadScripts: string[];
     webviewTag: boolean;

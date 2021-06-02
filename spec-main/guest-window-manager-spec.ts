@@ -230,9 +230,6 @@ function stringifySnapshots (snapshots: any, pretty = false) {
     if (['sender', 'webContents'].includes(key)) {
       return '[WebContents]';
     }
-    if (key === 'openerId' && typeof value === 'number') {
-      return 'placeholder-opener-id';
-    }
     if (key === 'processId' && typeof value === 'number') {
       return 'placeholder-process-id';
     }
@@ -244,8 +241,5 @@ function stringifySnapshots (snapshots: any, pretty = false) {
 }
 
 function parseSnapshots (snapshotsJson: string) {
-  return JSON.parse(snapshotsJson, (key, value) => {
-    if (key === 'openerId' && value === 'placeholder-opener-id') return 1;
-    return value;
-  });
+  return JSON.parse(snapshotsJson);
 }
