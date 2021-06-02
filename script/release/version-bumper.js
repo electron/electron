@@ -1,18 +1,17 @@
 #!/usr/bin/env node
 
 const { GitProcess } = require('dugite');
-const fs = require('fs');
+const { promises: fs } = require('fs');
 const semver = require('semver');
 const path = require('path');
-const { promisify } = require('util');
 const minimist = require('minimist');
 
 const { ELECTRON_DIR } = require('../lib/utils');
 const versionUtils = require('./version-utils');
 const supported = path.resolve(ELECTRON_DIR, 'docs', 'tutorial', 'support.md');
 
-const writeFile = promisify(fs.writeFile);
-const readFile = promisify(fs.readFile);
+const writeFile = fs.writeFile;
+const readFile = fs.readFile;
 
 function parseCommandLine () {
   let help;

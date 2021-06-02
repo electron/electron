@@ -2,13 +2,12 @@ import { expect } from 'chai';
 import { nextVersion, shouldUpdateSupported, updateSupported } from '../script/release/version-bumper';
 import * as utils from '../script/release/version-utils';
 import { ifdescribe } from './spec-helpers';
-const fs = require('fs');
+const { promises: fs } = require('fs');
 const path = require('path');
-const { promisify } = require('util');
 
 const fixtureDir = path.resolve(__dirname, 'fixtures', 'version-bumper', 'fixture_support.md');
-const readFile = promisify(fs.readFile);
-const writeFile = promisify(fs.writeFile);
+const readFile = fs.readFile;
+const writeFile = fs.writeFile;
 
 describe('version-bumper', () => {
   describe('makeVersion', () => {
