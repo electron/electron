@@ -69,6 +69,7 @@ class Archive {
   base::FilePath path() const { return path_; }
 
  private:
+  // Lock protects archive initialization, and |external_files_|
   base::Lock lock_;
   base::FilePath path_;
   base::File file_;
