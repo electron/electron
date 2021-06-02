@@ -39,10 +39,6 @@ To enable this mode, GPU acceleration has to be disabled by calling the
 
 ## Example
 
-Starting with a working application from the
-[Quick Start Guide](quick-start.md), add the following lines to the
-`main.js` file:
-
 ```javascript fiddle='docs/fiddles/features/offscreen-rendering'
 const { app, BrowserWindow } = require('electron')
 const fs = require('fs')
@@ -63,5 +59,5 @@ app.whenReady().then(() => {
 ```
 
 After launching the Electron application, navigate to your application's
-working folder.
+working folder, where you'll find the rendered image.
 [disablehardwareacceleration]: ../api/app.md#appdisablehardwareacceleration

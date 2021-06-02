@@ -499,6 +499,7 @@ step-gn-check: &step-gn-check
       gn check out/Default //electron/shell/common/api:mojo
       # Check the hunspell filenames
       node electron/script/gen-hunspell-filenames.js --check
+      node electron/script/gen-libc++-filenames.js --check
 
 step-electron-build: &step-electron-build
   run:
@@ -524,6 +525,7 @@ step-electron-build: &step-electron-build
         ninja -C out/Default electron:electron_mksnapshot_zip -j $NUMBER_OF_NINJA_PROCESSES
         ninja -C out/Default tools/v8_context_snapshot -j $NUMBER_OF_NINJA_PROCESSES
         gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
+        (cd out/Default; zip mksnapshot.zip mksnapshot_args clang_x64_v8_arm64/gen/v8/embedded.S)
         rm -rf out/Default/clang_x64_v8_arm64/gen
         rm -rf out/Default/clang_x64_v8_arm64/obj
         rm -rf out/Default/clang_x64/obj
@@ -595,21 +597,13 @@ step-electron-dist-build: &step-electron-dist-build
         fi
       fi
 
-step-electron-maybe-chromedriver-gn-gen: &step-electron-maybe-chromedriver-gn-gen
-  run:
-    name: chromedriver GN gen
-    command: |
-      cd src
-      if [ "$TARGET_ARCH" == "arm" ] || [ "$TARGET_ARCH" == "arm64" ]; then
-        gn gen out/chromedriver --args="import(\"$GN_CONFIG\") import(\"$GN_GOMA_FILE\") is_component_ffmpeg=false proprietary_codecs=false $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
-      fi
-
 step-electron-chromedriver-build: &step-electron-chromedriver-build
   run:
     name: Build chromedriver.zip
     command: |
       cd src
       if [ "$TARGET_ARCH" == "arm" ] || [ "$TARGET_ARCH" == "arm64" ]; then
+        gn gen out/chromedriver --args="import(\"$GN_CONFIG\") import(\"$GN_GOMA_FILE\") is_component_ffmpeg=false proprietary_codecs=false $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
         export CHROMEDRIVER_DIR="out/chromedriver"
       else
         export CHROMEDRIVER_DIR="out/Default"
@@ -662,6 +656,11 @@ step-persist-data-for-tests: &step-persist-data-for-tests
       - src/third_party/electron_node
       - src/third_party/nan
       - src/cross-arch-snapshots
+      - src/third_party/llvm-build
+      - src/build/linux
+      - src/buildtools/third_party/libc++
+      - src/buildtools/third_party/libc++abi
+      - src/out/Default/obj/buildtools/third_party
 
 step-electron-dist-unzip: &step-electron-dist-unzip
   run:
@@ -795,6 +794,17 @@ step-hunspell-build: &step-hunspell-build
       cd src
       if [ "$SKIP_DIST_ZIP" != "1" ]; then
         ninja -C out/Default electron:hunspell_dictionaries_zip -j $NUMBER_OF_NINJA_PROCESSES
+      fi
+
+step-maybe-generate-libcxx: &step-maybe-generate-libcxx
+  run:
+    name: maybe generate libcxx
+    command: |
+      cd src
+      if [ "`uname`" == "Linux" ]; then
+        ninja -C out/Default electron:libcxx_headers_zip -j $NUMBER_OF_NINJA_PROCESSES
+        ninja -C out/Default electron:libcxxabi_headers_zip -j $NUMBER_OF_NINJA_PROCESSES
+        ninja -C out/Default electron:libcxx_objects_zip -j $NUMBER_OF_NINJA_PROCESSES
       fi
 
 step-maybe-generate-breakpad-symbols: &step-maybe-generate-breakpad-symbols
@@ -1510,7 +1520,6 @@ commands:
             - *step-maybe-cross-arch-snapshot
 
             # chromedriver
-            - *step-electron-maybe-chromedriver-gn-gen
             - *step-electron-chromedriver-build
 
             - when:
@@ -1587,6 +1596,9 @@ commands:
           condition: << parameters.checkout >>
           steps:
             - *step-checkout-electron
+            - *step-touch-sync-done
+            - *step-maybe-restore-git-cache
+            - *step-set-git-cache-path
             - *step-gclient-sync
             - *step-delete-git-directories
             - *step-minimize-workspace-size-from-checkout
@@ -1607,7 +1619,6 @@ commands:
       - *step-mksnapshot-build
 
       # chromedriver
-      - *step-electron-maybe-chromedriver-gn-gen
       - *step-electron-chromedriver-build
 
       # Node.js headers
@@ -1619,6 +1630,9 @@ commands:
 
       # hunspell
       - *step-hunspell-build
+
+      # libcxx
+      - *step-maybe-generate-libcxx
 
       # typescript defs
       - *step-maybe-generate-typescript-defs
@@ -1648,19 +1662,6 @@ jobs:
     <<: *steps-electron-ts-compile-for-doc-change
 
   # Layer 1: Checkout.
-  linux-checkout:
-    executor: linux-docker
-    environment:
-      <<: *env-linux-2xlarge
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
-    steps:
-      - electron-build:
-          persist: false
-          build: false
-          checkout: true
-          persist-checkout: true
-          restore-src-cache: false
-
   linux-checkout-for-workspace:
     executor: linux-docker
     environment:

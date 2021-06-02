@@ -9,9 +9,6 @@
 #include <thumbcache.h>
 #include <wrl/client.h>
 
-#include <string>
-#include <vector>
-
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/skia_util.h"

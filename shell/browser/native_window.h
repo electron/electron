@@ -6,10 +6,8 @@
 #define SHELL_BROWSER_NATIVE_WINDOW_H_
 
 #include <list>
-#include <map>
 #include <memory>
 #include <string>
-#include <tuple>
 #include <vector>
 
 #include "base/memory/weak_ptr.h"
@@ -34,6 +32,7 @@ class Image;
 class Point;
 class Rect;
 class RectF;
+enum class ResizeEdge;
 class Size;
 }  // namespace gfx
 
@@ -99,7 +98,7 @@ class NativeWindow : public base::SupportsUserData,
   virtual bool IsNormal();
   virtual gfx::Rect GetNormalBounds() = 0;
   virtual void SetSizeConstraints(
-      const extensions::SizeConstraints& size_constraints);
+      const extensions::SizeConstraints& window_constraints);
   virtual extensions::SizeConstraints GetSizeConstraints() const;
   virtual void SetContentSizeConstraints(
       const extensions::SizeConstraints& size_constraints);
@@ -277,6 +276,7 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyWindowRestore();
   void NotifyWindowMove();
   void NotifyWindowWillResize(const gfx::Rect& new_bounds,
+                              const gfx::ResizeEdge& edge,
                               bool* prevent_default);
   void NotifyWindowResize();
   void NotifyWindowResized();

@@ -4,8 +4,6 @@
 
 #include "shell/browser/web_dialog_helper.h"
 
-#include <memory>
-
 #include <string>
 #include <utility>
 #include <vector>

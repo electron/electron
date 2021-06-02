@@ -5,8 +5,6 @@
 #ifndef SHELL_BROWSER_COOKIE_CHANGE_NOTIFIER_H_
 #define SHELL_BROWSER_COOKIE_CHANGE_NOTIFIER_H_
 
-#include <memory>
-
 #include "base/callback_list.h"
 #include "base/macros.h"
 #include "mojo/public/cpp/bindings/receiver.h"

@@ -4,7 +4,6 @@
 
 #include "shell/browser/api/electron_api_global_shortcut.h"
 
-#include <string>
 #include <vector>
 
 #include "base/stl_util.h"

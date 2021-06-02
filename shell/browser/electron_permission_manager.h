@@ -5,7 +5,6 @@
 #ifndef SHELL_BROWSER_ELECTRON_PERMISSION_MANAGER_H_
 #define SHELL_BROWSER_ELECTRON_PERMISSION_MANAGER_H_
 
-#include <map>
 #include <memory>
 #include <vector>
 

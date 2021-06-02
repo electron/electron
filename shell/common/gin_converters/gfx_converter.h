@@ -16,6 +16,7 @@ class Point;
 class PointF;
 class Size;
 class Rect;
+enum class ResizeEdge;
 }  // namespace gfx
 
 namespace gin {
@@ -60,6 +61,12 @@ struct Converter<display::Display> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      display::Display* out);
+};
+
+template <>
+struct Converter<gfx::ResizeEdge> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const gfx::ResizeEdge& val);
 };
 
 }  // namespace gin

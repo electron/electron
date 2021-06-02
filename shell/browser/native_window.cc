@@ -6,7 +6,6 @@
 
 #include <algorithm>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include "base/memory/ptr_util.h"
@@ -481,9 +480,10 @@ void NativeWindow::NotifyWindowRestore() {
 }
 
 void NativeWindow::NotifyWindowWillResize(const gfx::Rect& new_bounds,
+                                          const gfx::ResizeEdge& edge,
                                           bool* prevent_default) {
   for (NativeWindowObserver& observer : observers_)
-    observer.OnWindowWillResize(new_bounds, prevent_default);
+    observer.OnWindowWillResize(new_bounds, edge, prevent_default);
 }
 
 void NativeWindow::NotifyWindowWillMove(const gfx::Rect& new_bounds,

@@ -74,9 +74,7 @@ void WrappableBase::FirstWeakCallback(
 // static
 void WrappableBase::SecondWeakCallback(
     const v8::WeakCallbackInfo<WrappableBase>& data) {
-  auto* wrappable = static_cast<WrappableBase*>(data.GetInternalField(0));
-  if (wrappable)
-    delete wrappable;
+  delete static_cast<WrappableBase*>(data.GetInternalField(0));
 }
 
 namespace internal {

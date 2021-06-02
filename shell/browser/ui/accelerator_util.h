@@ -20,10 +20,10 @@ typedef struct {
 typedef std::map<ui::Accelerator, MenuItem> AcceleratorTable;
 
 // Parse a string as an accelerator.
-bool StringToAccelerator(const std::string& description,
+bool StringToAccelerator(const std::string& shortcut,
                          ui::Accelerator* accelerator);
 
-// Generate a table that contains memu model's accelerators and command ids.
+// Generate a table that contains menu model's accelerators and command ids.
 void GenerateAcceleratorTable(AcceleratorTable* table,
                               electron::ElectronMenuModel* model);
 

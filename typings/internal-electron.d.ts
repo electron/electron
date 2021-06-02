@@ -56,12 +56,7 @@ declare namespace Electron {
   }
 
   interface WebContents {
-    _getURL(): string;
     _loadURL(url: string, options: ElectronInternal.LoadURLOptions): void;
-    _stop(): void;
-    _goBack(): void;
-    _goForward(): void;
-    _goToOffset(offset: number): void;
     getOwnerBrowserWindow(): Electron.BrowserWindow;
     getWebPreferences(): Electron.WebPreferences;
     getLastWebPreferences(): Electron.WebPreferences;

@@ -6,7 +6,6 @@
 
 #include <algorithm>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include "base/strings/string_util.h"
@@ -187,10 +186,10 @@ bool Converter<blink::WebKeyboardEvent>::FromV8(v8::Isolate* isolate,
   if (!dict.Get("keyCode", &str))
     return false;
 
-  bool shifted = false;
-  ui::KeyboardCode keyCode = electron::KeyboardCodeFromStr(str, &shifted);
+  base::Optional<char16_t> shifted_char;
+  ui::KeyboardCode keyCode = electron::KeyboardCodeFromStr(str, &shifted_char);
   out->windows_key_code = keyCode;
-  if (shifted)
+  if (shifted_char)
     out->SetModifiers(out->GetModifiers() |
                       blink::WebInputEvent::Modifiers::kShiftKey);
 

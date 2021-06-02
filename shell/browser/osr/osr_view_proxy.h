@@ -6,7 +6,6 @@
 #define SHELL_BROWSER_OSR_OSR_VIEW_PROXY_H_
 
 #include <memory>
-#include <set>
 
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/events/event.h"

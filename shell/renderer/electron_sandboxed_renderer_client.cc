@@ -4,6 +4,8 @@
 
 #include "shell/renderer/electron_sandboxed_renderer_client.h"
 
+#include <vector>
+
 #include "base/base_paths.h"
 #include "base/command_line.h"
 #include "base/files/file_path.h"
@@ -86,9 +88,13 @@ v8::Local<v8::Value> GetBinding(v8::Isolate* isolate,
 }
 
 v8::Local<v8::Value> CreatePreloadScript(v8::Isolate* isolate,
-                                         v8::Local<v8::String> preloadSrc) {
-  return RendererClientBase::RunScript(isolate->GetCurrentContext(),
-                                       preloadSrc);
+                                         v8::Local<v8::String> source) {
+  auto context = isolate->GetCurrentContext();
+  auto maybe_script = v8::Script::Compile(context, source);
+  v8::Local<v8::Script> script;
+  if (!maybe_script.ToLocal(&script))
+    return v8::Local<v8::Value>();
+  return script->Run(context).ToLocalChecked();
 }
 
 double Uptime() {
@@ -157,11 +163,6 @@ void ElectronSandboxedRendererClient::RenderFrameCreated(
   RendererClientBase::RenderFrameCreated(render_frame);
 }
 
-void ElectronSandboxedRendererClient::RenderViewCreated(
-    content::RenderView* render_view) {
-  RendererClientBase::RenderViewCreated(render_view);
-}
-
 void ElectronSandboxedRendererClient::RunScriptsAtDocumentStart(
     content::RenderFrame* render_frame) {
   RendererClientBase::RunScriptsAtDocumentStart(render_frame);
@@ -201,8 +202,6 @@ void ElectronSandboxedRendererClient::RunScriptsAtDocumentEnd(
 void ElectronSandboxedRendererClient::DidCreateScriptContext(
     v8::Handle<v8::Context> context,
     content::RenderFrame* render_frame) {
-  RendererClientBase::DidCreateScriptContext(context, render_frame);
-
   // Only allow preload for the main frame or
   // For devtools we still want to run the preload_bundle script
   // Or when nodeSupport is explicitly enabled in sub frames

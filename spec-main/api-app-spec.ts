@@ -1700,6 +1700,19 @@ describe('default behavior', () => {
       expect(webContents).to.equal(w.webContents);
     });
   });
+
+  describe('running under ARM64 translation', () => {
+    it('does not throw an error', () => {
+      if (process.platform === 'darwin' || process.platform === 'win32') {
+        expect(app.runningUnderARM64Translation).not.to.be.undefined();
+        expect(() => {
+          return app.runningUnderARM64Translation;
+        }).not.to.throw();
+      } else {
+        expect(app.runningUnderARM64Translation).to.be.undefined();
+      }
+    });
+  });
 });
 
 async function runTestApp (name: string, ...args: any[]) {

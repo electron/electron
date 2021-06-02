@@ -4,7 +4,6 @@
 
 #include "shell/browser/badging/badge_manager.h"
 
-#include <tuple>
 #include <utility>
 
 #include "base/i18n/number_formatting.h"

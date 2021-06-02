@@ -4,8 +4,6 @@
 
 #include "shell/browser/native_browser_view_views.h"
 
-#include <memory>
-#include <utility>
 #include <vector>
 
 #include "shell/browser/ui/drag_util.h"

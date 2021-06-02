@@ -5,7 +5,6 @@
 #include "shell/browser/api/electron_api_session.h"
 
 #include <algorithm>
-#include <map>
 #include <memory>
 #include <set>
 #include <string>
