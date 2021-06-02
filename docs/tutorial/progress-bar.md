@@ -40,7 +40,8 @@ See the [API documentation for more options and modes][setprogressbar].
 
 ## Example
 
-Replace the entire contents of your `main.js` file with...
+In this example, we add a progress bar to the main window that increments over time
+using Node.js timers.
 
 ```javascript fiddle='docs/fiddles/features/progress-bar'
 const { app, BrowserWindow } = require('electron')
