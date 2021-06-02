@@ -104,7 +104,7 @@ ElectronBrowserContext::ElectronBrowserContext(const std::string& partition,
                                                bool in_memory,
                                                base::DictionaryValue options)
     : storage_policy_(base::MakeRefCounted<SpecialStoragePolicy>()),
-      protocol_registry_(new ProtocolRegistry),
+      protocol_registry_(base::WrapUnique(new ProtocolRegistry)),
       in_memory_(in_memory),
       ssl_config_(network::mojom::SSLConfig::New()) {
   user_agent_ = ElectronBrowserClient::Get()->GetUserAgent();
