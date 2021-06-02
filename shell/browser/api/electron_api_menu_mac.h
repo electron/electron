@@ -35,11 +35,14 @@ class MenuMac : public Menu {
                  int positioning_item,
                  base::OnceClosure callback);
   void ClosePopupAt(int32_t window_id) override;
-  void ClosePopupOnUI(int32_t window_id);
+#ifdef DCHECK_IS_ON
+  base::string16 GetAcceleratorTextAtForTesting(int index) const override;
+#endif
 
  private:
   friend class Menu;
 
+  void ClosePopupOnUI(int32_t window_id);
   void OnClosed(int32_t window_id, base::OnceClosure callback);
 
   scoped_nsobject<ElectronMenuController> menu_controller_;

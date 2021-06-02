@@ -78,6 +78,9 @@ class Menu : public gin::Wrappable<Menu>,
                        int positioning_item,
                        base::OnceClosure callback) = 0;
   virtual void ClosePopupAt(int32_t window_id) = 0;
+#ifdef DCHECK_IS_ON
+  virtual base::string16 GetAcceleratorTextAtForTesting(int index) const;
+#endif
 
   std::unique_ptr<ElectronMenuModel> model_;
   Menu* parent_ = nullptr;
@@ -111,7 +114,6 @@ class Menu : public gin::Wrappable<Menu>,
   base::string16 GetLabelAt(int index) const;
   base::string16 GetSublabelAt(int index) const;
   base::string16 GetToolTipAt(int index) const;
-  base::string16 GetAcceleratorTextAt(int index) const;
   bool IsItemCheckedAt(int index) const;
   bool IsEnabledAt(int index) const;
   bool IsVisibleAt(int index) const;
