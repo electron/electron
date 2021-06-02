@@ -220,9 +220,9 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
     // Make the promise a shared_ptr so that when the original promise is
     // freed the proxy promise is correctly freed as well instead of being
     // left dangling
-    std::shared_ptr<gin_helper::Promise<v8::Local<v8::Value>>> proxied_promise(
-        new gin_helper::Promise<v8::Local<v8::Value>>(
-            destination_context->GetIsolate()));
+    auto proxied_promise =
+        std::make_shared<gin_helper::Promise<v8::Local<v8::Value>>>(
+            destination_context->GetIsolate());
     v8::Local<v8::Promise> proxied_promise_handle =
         proxied_promise->GetHandle();
 

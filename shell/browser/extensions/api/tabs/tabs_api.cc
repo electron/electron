@@ -72,7 +72,7 @@ ExecuteCodeFunction::InitResult ExecuteCodeInTabFunction::Init() {
   base::DictionaryValue* details_value = NULL;
   if (!args_->GetDictionary(1, &details_value))
     return set_init_result(VALIDATION_FAILURE);
-  std::unique_ptr<InjectDetails> details(new InjectDetails());
+  auto details = std::make_unique<InjectDetails>();
   if (!InjectDetails::Populate(*details_value, details.get()))
     return set_init_result(VALIDATION_FAILURE);
 

@@ -613,8 +613,7 @@ void InspectableWebContents::AddDevToolsExtensionsToClient() {
         web_contents_->GetMainFrame()->GetProcess()->GetID(),
         url::Origin::Create(extension->url()));
 
-    std::unique_ptr<base::DictionaryValue> extension_info(
-        new base::DictionaryValue());
+    auto extension_info = std::make_unique<base::DictionaryValue>();
     extension_info->SetString("startPage", devtools_page_url.spec());
     extension_info->SetString("name", extension->name());
     extension_info->SetBoolean(

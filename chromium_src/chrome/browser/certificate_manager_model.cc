@@ -133,8 +133,8 @@ void CertificateManagerModel::DidGetCertDBOnUIThread(
     CreationCallback callback) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
-  std::unique_ptr<CertificateManagerModel> model(
-      new CertificateManagerModel(cert_db, is_user_db_available));
+  auto model =
+      std::make_unique<CertificateManagerModel>(cert_db, is_user_db_available);
   std::move(callback).Run(std::move(model));
 }
 
