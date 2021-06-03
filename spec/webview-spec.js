@@ -522,6 +522,26 @@ describe('<webview> tag', function () {
     });
   });
 
+  describe('window.open', () => {
+    it('does not crash when called from UV tick', async () => {
+      const src = `file://${fixtures}/pages/window-open-from-uv-tick.html`;
+      loadWebView(webview, {
+        nodeintegration: 'on',
+        webpreferences: 'contextIsolation=no',
+        src,
+        allowpopups: true
+      });
+
+      const { url, frameName } = await waitForEvent(webview, 'new-window');
+      expect(url).to.equal(`${src}#foo`);
+
+      const { channel, args } = await waitForEvent(webview, 'ipc-message');
+
+      expect(channel).to.equal('channel');
+      expect(args).to.deep.equal(['loaded']);
+    });
+  });
+
   describe('ipc-message event', () => {
     it('emits when guest sends an ipc message to browser', async () => {
       loadWebView(webview, {

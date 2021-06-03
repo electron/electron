@@ -1,0 +1,19 @@
+<html>
+<body>
+<script>
+setImmediate(async () => {
+  if (!location.hash) {
+    const p = new Promise(resolve => {
+      window.addEventListener('message', resolve, { once: true });
+    })
+    window.open('#foo', '', 'nodeIntegration=no')
+    const e = await p
+
+    require('electron').ipcRenderer.sendToHost('channel', 'loaded');
+  } else {
+    window.opener.postMessage('foo', '*')
+  }
+})
+</script>
+</body>
+</html>
