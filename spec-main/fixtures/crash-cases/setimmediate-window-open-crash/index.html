@@ -6,7 +6,7 @@ setImmediate(async () => {
     const p = new Promise(resolve => {
       window.addEventListener('message', resolve, { once: true });
     })
-    window.open('#foo', '', 'nodeIntegration=no')
+    window.open('#foo', '', 'nodeIntegration=no,show=no')
     const e = await p
     document.body.textContent = e.data
 
