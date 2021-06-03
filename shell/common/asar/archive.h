@@ -69,8 +69,7 @@ class Archive {
   base::FilePath path() const { return path_; }
 
  private:
-  // Lock protects |external_files_|
-  base::Lock lock_;
+  bool initialized_;
   const base::FilePath path_;
   base::File file_;
   int fd_ = -1;
@@ -78,6 +77,7 @@ class Archive {
   std::unique_ptr<base::DictionaryValue> header_;
 
   // Cached external temporary files.
+  base::Lock external_files_lock_;
   std::unordered_map<base::FilePath::StringType,
                      std::unique_ptr<ScopedTemporaryFile>>
       external_files_;

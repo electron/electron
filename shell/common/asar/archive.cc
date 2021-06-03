@@ -119,7 +119,7 @@ bool FillFileInfoWithNode(Archive::FileInfo* info,
 }  // namespace
 
 Archive::Archive(const base::FilePath& path)
-    : path_(path), file_(base::File::FILE_OK) {
+    : initialized_(false), path_(path), file_(base::File::FILE_OK) {
   base::ThreadRestrictions::ScopedAllowIO allow_io;
   file_.Initialize(path_, base::File::FLAG_OPEN | base::File::FLAG_READ);
 #if defined(OS_WIN)
@@ -143,7 +143,8 @@ Archive::~Archive() {
 
 bool Archive::Init() {
   // Should only be initialized once
-  CHECK(!header_);
+  CHECK(!initialized_);
+  initialized_ = true;
 
   if (!file_.IsValid()) {
     if (file_.error_details() != base::File::FILE_ERROR_NOT_FOUND) {
@@ -284,7 +285,7 @@ bool Archive::CopyFileOut(const base::FilePath& path, base::FilePath* out) {
   if (!header_)
     return false;
 
-  base::AutoLock auto_lock(lock_);
+  base::AutoLock auto_lock(external_files_lock_);
 
   auto it = external_files_.find(path.value());
   if (it != external_files_.end()) {
