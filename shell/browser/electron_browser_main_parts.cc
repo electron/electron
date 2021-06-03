@@ -17,6 +17,7 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/icon_manager.h"
+#include "components/os_crypt/os_crypt.h"
 #include "content/browser/browser_main_loop.h"  // nogncheck
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/child_process_security_policy.h"
@@ -26,6 +27,7 @@
 #include "content/public/common/content_switches.h"
 #include "content/public/common/result_codes.h"
 #include "electron/buildflags/buildflags.h"
+#include "electron/fuses.h"
 #include "media/base/localized_strings.h"
 #include "services/network/public/cpp/features.h"
 #include "services/tracing/public/cpp/stack_sampling/tracing_sampler_profiler.h"
@@ -549,6 +551,16 @@ void ElectronBrowserMainParts::PreMainMessageLoopStartCommon() {
   RegisterURLHandler();
 #endif
   media::SetLocalizedStringProvider(MediaStringProvider);
+
+#if defined(OS_WIN)
+  if (electron::fuses::IsCookieEncryptionEnabled()) {
+    auto* local_state = g_browser_process->local_state();
+    DCHECK(local_state);
+
+    bool os_crypt_init = OSCrypt::Init(local_state);
+    DCHECK(os_crypt_init);
+  }
+#endif
 }
 
 device::mojom::GeolocationControl*

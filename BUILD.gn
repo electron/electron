@@ -1,6 +1,7 @@
 import("//build/config/locales.gni")
 import("//build/config/ui.gni")
 import("//build/config/win/manifest.gni")
+import("//components/os_crypt/features.gni")
 import("//components/spellcheck/spellcheck_build_features.gni")
 import("//content/public/app/mac_helpers.gni")
 import("//extensions/buildflags/buildflags.gni")
@@ -292,7 +293,7 @@ templated_file("electron_version_header") {
 action("electron_fuses") {
   script = "build/fuses/build.py"
 
-  inputs = [ "build/fuses/fuses.json" ]
+  inputs = [ "build/fuses/fuses.json5" ]
 
   outputs = [
     "$target_gen_dir/fuses.h",
@@ -331,6 +332,7 @@ source_set("electron_lib") {
     "//components/network_hints/common:mojo_bindings",
     "//components/network_hints/renderer",
     "//components/network_session_configurator/common",
+    "//components/os_crypt",
     "//components/pref_registry",
     "//components/prefs",
     "//components/upload_list",
@@ -677,6 +679,10 @@ source_set("electron_lib") {
       "shell/browser/win/dark_mode.h",
     ]
     libs += [ "uxtheme.lib" ]
+  }
+
+  if (allow_runtime_configurable_key_storage) {
+    defines += [ "ALLOW_RUNTIME_CONFIGURABLE_KEY_STORAGE" ]
   }
 }
 
