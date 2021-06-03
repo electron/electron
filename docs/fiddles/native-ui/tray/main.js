@@ -1,8 +1,3 @@
-// Add icons and context menus to the system's notification area.
-//
-// For more info, see:
-// https://electronjs.org/docs/api/tray
-
 const { app, Tray, Menu, nativeImage } = require('electron')
 
 let tray
