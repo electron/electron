@@ -477,7 +477,9 @@ node::Environment* NodeBindings::CreateEnvironment(
     is.policy = v8::MicrotasksPolicy::kExplicit;
   } else {
     // Match Blink's behavior by allowing microtasks invocation to be controlled
-    // by MicrotasksScope objects.
+    // by MicrotasksScope objects when queued outside of `UvRunOnce()` call, but
+    // use explicit microtasks policy while inside `UvRunOnce()` for better
+    // compatibility with Node.js and better performance.
     is.policy = context->GetIsolate()->GetMicrotasksPolicy();
 
     // We do not want to use Node.js' message listener as it interferes with
