@@ -111,3 +111,5 @@ cherry-pick-8089dbfc616f.patch
 x11_fix_window_enumeration_order_when_wm_doesn_t_set.patch
 build_libc_as_static_library.patch
 cherry-pick-3299d70b7d0f.patch
+support_runtime_configurable_key_storage_on_linux_os_crypto.patch
+make_keychain_service_account_optionally_configurable_at_runtime.patch
