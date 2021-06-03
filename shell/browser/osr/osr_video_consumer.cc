@@ -111,7 +111,7 @@ void OffScreenVideoConsumer::OnFrameCaptured(
       new FramePinner{std::move(mapping), callbacks_remote.Unbind()});
   bitmap.setImmutable();
 
-  base::Optional<gfx::Rect> update_rect = info->metadata.capture_update_rect;
+  absl::optional<gfx::Rect> update_rect = info->metadata.capture_update_rect;
   if (!update_rect.has_value() || update_rect->IsEmpty()) {
     update_rect = content_rect;
   }

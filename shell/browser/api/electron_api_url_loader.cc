@@ -316,7 +316,7 @@ void SimpleURLLoaderWrapper::PinBodyGetter(v8::Local<v8::Value> body_getter) {
 SimpleURLLoaderWrapper::~SimpleURLLoaderWrapper() = default;
 
 void SimpleURLLoaderWrapper::OnAuthRequired(
-    const base::Optional<base::UnguessableToken>& window_id,
+    const absl::optional<base::UnguessableToken>& window_id,
     uint32_t request_id,
     const GURL& url,
     bool first_auth_attempt,
@@ -337,7 +337,7 @@ void SimpleURLLoaderWrapper::OnAuthRequired(
          gin::Arguments* args) {
         std::u16string username_str, password_str;
         if (!args->GetNext(&username_str) || !args->GetNext(&password_str)) {
-          auth_responder->OnAuthCredentials(base::nullopt);
+          auth_responder->OnAuthCredentials(absl::nullopt);
           return;
         }
         auth_responder->OnAuthCredentials(

@@ -186,7 +186,7 @@ bool Archive::Init() {
     return false;
   }
 
-  base::Optional<base::Value> value = base::JSONReader::Read(header);
+  absl::optional<base::Value> value = base::JSONReader::Read(header);
   if (!value || !value->is_dict()) {
     LOG(ERROR) << "Failed to parse header";
     return false;

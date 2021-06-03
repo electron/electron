@@ -10,8 +10,8 @@
 #include <vector>
 
 #include "base/macros.h"
-#include "base/optional.h"
 #include "shell/common/gin_converters/guid_converter.h"
+#include "third_party/abseil-cpp/absl/types/optional.h"
 
 const GUID GUID_DEFAULT = {0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0}};
 
@@ -24,7 +24,7 @@ class NotifyIconHost {
   NotifyIconHost();
   ~NotifyIconHost();
 
-  NotifyIcon* CreateNotifyIcon(base::Optional<UUID> guid);
+  NotifyIcon* CreateNotifyIcon(absl::optional<UUID> guid);
   void Remove(NotifyIcon* notify_icon);
 
  private:

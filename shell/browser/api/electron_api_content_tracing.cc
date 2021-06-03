@@ -7,7 +7,6 @@
 #include <utility>
 
 #include "base/files/file_util.h"
-#include "base/optional.h"
 #include "base/task/thread_pool.h"
 #include "base/threading/thread_restrictions.h"
 #include "base/trace_event/trace_config.h"
@@ -18,6 +17,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
+#include "third_party/abseil-cpp/absl/types/optional.h"
 
 using content::TracingController;
 
@@ -58,18 +58,18 @@ namespace {
 
 using CompletionCallback = base::OnceCallback<void(const base::FilePath&)>;
 
-base::Optional<base::FilePath> CreateTemporaryFileOnIO() {
+absl::optional<base::FilePath> CreateTemporaryFileOnIO() {
   base::FilePath temp_file_path;
   if (!base::CreateTemporaryFile(&temp_file_path))
-    return base::nullopt;
-  return base::make_optional(std::move(temp_file_path));
+    return absl::nullopt;
+  return absl::make_optional(std::move(temp_file_path));
 }
 
 void StopTracing(gin_helper::Promise<base::FilePath> promise,
-                 base::Optional<base::FilePath> file_path) {
+                 absl::optional<base::FilePath> file_path) {
   auto resolve_or_reject = base::AdaptCallbackForRepeating(base::BindOnce(
       [](gin_helper::Promise<base::FilePath> promise,
-         const base::FilePath& path, base::Optional<std::string> error) {
+         const base::FilePath& path, absl::optional<std::string> error) {
         if (error) {
           promise.RejectWithErrorMessage(error.value());
         } else {
@@ -79,14 +79,14 @@ void StopTracing(gin_helper::Promise<base::FilePath> promise,
       std::move(promise), *file_path));
   if (file_path) {
     auto endpoint = TracingController::CreateFileEndpoint(
-        *file_path, base::BindRepeating(resolve_or_reject, base::nullopt));
+        *file_path, base::BindRepeating(resolve_or_reject, absl::nullopt));
     if (!TracingController::GetInstance()->StopTracing(endpoint)) {
-      resolve_or_reject.Run(base::make_optional(
+      resolve_or_reject.Run(absl::make_optional(
           "Failed to stop tracing (was a trace in progress?)"));
     }
   } else {
     resolve_or_reject.Run(
-        base::make_optional("Failed to create temporary file for trace data"));
+        absl::make_optional("Failed to create temporary file for trace data"));
   }
 }
 
@@ -96,7 +96,7 @@ v8::Local<v8::Promise> StopRecording(gin_helper::Arguments* args) {
 
   base::FilePath path;
   if (args->GetNext(&path) && !path.empty()) {
-    StopTracing(std::move(promise), base::make_optional(path));
+    StopTracing(std::move(promise), absl::make_optional(path));
   } else {
     // use a temporary file.
     base::ThreadPool::PostTaskAndReplyWithResult(

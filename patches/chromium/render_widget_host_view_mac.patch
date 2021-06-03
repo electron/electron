@@ -10,10 +10,10 @@ kinds of utility windows. Similarly for `disableAutoHideCursor`.
 Additionally, disables usage of some private APIs in MAS builds.
 
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index dd8c6b1d7e6a0ac5e7a069c96dcffe379c1b69bf..0d21dd75e419b482b1bd54fefaf07b96c795f71c 100644
+index e92152bde1b04ad5623c7f5684be80d211c7f20b..cf0be922f1054824103f626ddabc86e7e214f7ea 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-@@ -152,6 +152,15 @@ void ExtractUnderlines(NSAttributedString* string,
+@@ -153,6 +153,15 @@ void ExtractUnderlines(NSAttributedString* string,
  
  }  // namespace
  
@@ -29,7 +29,7 @@ index dd8c6b1d7e6a0ac5e7a069c96dcffe379c1b69bf..0d21dd75e419b482b1bd54fefaf07b96
  // These are not documented, so use only after checking -respondsToSelector:.
  @interface NSApplication (UndocumentedSpeechMethods)
  - (void)speakString:(NSString*)string;
-@@ -574,6 +583,9 @@ - (BOOL)acceptsMouseEventsWhenInactive {
+@@ -575,6 +584,9 @@ - (BOOL)acceptsMouseEventsWhenInactive {
  }
  
  - (BOOL)acceptsFirstMouse:(NSEvent*)theEvent {
@@ -39,7 +39,7 @@ index dd8c6b1d7e6a0ac5e7a069c96dcffe379c1b69bf..0d21dd75e419b482b1bd54fefaf07b96
    return [self acceptsMouseEventsWhenInactive];
  }
  
-@@ -649,6 +661,10 @@ - (BOOL)shouldIgnoreMouseEvent:(NSEvent*)theEvent {
+@@ -650,6 +662,10 @@ - (BOOL)shouldIgnoreMouseEvent:(NSEvent*)theEvent {
    // its parent view.
    BOOL hitSelf = NO;
    while (view) {
@@ -50,7 +50,7 @@ index dd8c6b1d7e6a0ac5e7a069c96dcffe379c1b69bf..0d21dd75e419b482b1bd54fefaf07b96
      if (view == self)
        hitSelf = YES;
      if ([view isKindOfClass:[self class]] && ![view isEqual:self] &&
-@@ -997,6 +1013,10 @@ - (void)keyEvent:(NSEvent*)theEvent wasKeyEquivalent:(BOOL)equiv {
+@@ -998,6 +1014,10 @@ - (void)keyEvent:(NSEvent*)theEvent wasKeyEquivalent:(BOOL)equiv {
                                eventType == NSKeyDown &&
                                !(modifierFlags & NSCommandKeyMask);
  

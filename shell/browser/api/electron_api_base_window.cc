@@ -893,7 +893,7 @@ bool BaseWindow::GetWindowButtonVisibility() const {
 void BaseWindow::SetTrafficLightPosition(const gfx::Point& position) {
   // For backward compatibility we treat (0, 0) as resetting to default.
   if (position.IsOrigin())
-    window_->SetTrafficLightPosition(base::nullopt);
+    window_->SetTrafficLightPosition(absl::nullopt);
   else
     window_->SetTrafficLightPosition(position);
 }

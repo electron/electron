@@ -273,7 +273,8 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
                    round((NSHeight(main_screen_rect) - height) / 2), width,
                    height);
 
-  options.Get(options::kResizable, &resizable_);
+  bool resizable = true;
+  options.Get(options::kResizable, &resizable);
   options.Get(options::kTitleBarStyle, &title_bar_style_);
   options.Get(options::kZoomToPageWidth, &zoom_to_page_width_);
   options.Get(options::kSimpleFullScreen, &always_simple_fullscreen_);
@@ -328,7 +329,7 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
     styleMask |= NSMiniaturizableWindowMask;
   if (closable)
     styleMask |= NSWindowStyleMaskClosable;
-  if (resizable_)
+  if (resizable)
     styleMask |= NSResizableWindowMask;
   if (!useStandardWindow || transparent() || !has_frame())
     styleMask |= NSTexturedBackgroundWindowMask;
@@ -342,6 +343,7 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   params.type = views::Widget::InitParams::TYPE_WINDOW;
   params.native_widget = new ElectronNativeWidgetMac(this, styleMask, widget());
   widget()->Init(std::move(params));
+  SetCanResize(resizable);
   window_ = static_cast<ElectronNSWindow*>(
       widget()->GetNativeWindow().GetNativeNSWindow());
 
@@ -780,6 +782,7 @@ void NativeWindowMac::MoveTop() {
 
 void NativeWindowMac::SetResizable(bool resizable) {
   SetStyleMask(resizable, NSWindowStyleMaskResizable);
+  SetCanResize(resizable);
 }
 
 bool NativeWindowMac::IsResizable() {
@@ -1462,7 +1465,7 @@ bool NativeWindowMac::GetWindowButtonVisibility() const {
 }
 
 void NativeWindowMac::SetTrafficLightPosition(
-    base::Optional<gfx::Point> position) {
+    absl::optional<gfx::Point> position) {
   traffic_light_position_ = std::move(position);
   if (buttons_view_) {
     [buttons_view_ setMargin:traffic_light_position_];
@@ -1470,7 +1473,7 @@ void NativeWindowMac::SetTrafficLightPosition(
   }
 }
 
-base::Optional<gfx::Point> NativeWindowMac::GetTrafficLightPosition() const {
+absl::optional<gfx::Point> NativeWindowMac::GetTrafficLightPosition() const {
   return traffic_light_position_;
 }
 
@@ -1699,10 +1702,6 @@ void NativeWindowMac::SetCollectionBehavior(bool on, NSUInteger flag) {
   // Change collectionBehavior will make the zoom button revert to default,
   // probably a bug of Cocoa or macOS.
   SetMaximizable(was_maximizable);
-}
-
-bool NativeWindowMac::CanResize() const {
-  return resizable_;
 }
 
 views::View* NativeWindowMac::GetContentsView() {
