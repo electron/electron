@@ -174,7 +174,7 @@ ElectronURLLoaderFactory::Create(ProtocolType type,
   mojo::PendingRemote<network::mojom::URLLoaderFactory> pending_remote;
 
   // The ElectronURLLoaderFactory will delete itself when there are no more
-  // receivers - see the NonNetworkURLLoaderFactoryBase::OnDisconnect method.
+  // receivers - see the SelfDeletingURLLoaderFactory::OnDisconnect method.
   new ElectronURLLoaderFactory(type, handler,
                                pending_remote.InitWithNewPipeAndPassReceiver());
 
