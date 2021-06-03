@@ -8,12 +8,14 @@ setImmediate(async () => {
     })
     window.open('#foo', '', 'nodeIntegration=no')
     const e = await p
+    document.body.textContent = e.data
 
-    require('electron').ipcRenderer.sendToHost('channel', 'loaded');
+    window.close();
   } else {
     window.opener.postMessage('foo', '*')
   }
 })
 </script>
+test
 </body>
 </html>
