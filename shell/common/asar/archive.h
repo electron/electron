@@ -5,7 +5,6 @@
 #ifndef SHELL_COMMON_ASAR_ARCHIVE_H_
 #define SHELL_COMMON_ASAR_ARCHIVE_H_
 
-#include <atomic>
 #include <memory>
 #include <unordered_map>
 #include <vector>
@@ -23,7 +22,7 @@ namespace asar {
 class ScopedTemporaryFile;
 
 // This class represents an asar package, and provides methods to read
-// information from it. It is thread-safe.
+// information from it. It is thread-safe after |Init| has been called.
 class Archive {
  public:
   struct FileInfo {
@@ -70,9 +69,8 @@ class Archive {
   base::FilePath path() const { return path_; }
 
  private:
-  // Lock protects archive initialization, and |external_files_|
+  // Lock protects |external_files_|
   base::Lock lock_;
-  std::atomic_bool initialized_;
   const base::FilePath path_;
   base::File file_;
   int fd_ = -1;
