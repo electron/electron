@@ -187,7 +187,7 @@ bool Converter<blink::WebKeyboardEvent>::FromV8(v8::Isolate* isolate,
   if (!dict.Get("keyCode", &str))
     return false;
 
-  base::Optional<char16_t> shifted_char;
+  absl::optional<char16_t> shifted_char;
   ui::KeyboardCode keyCode = electron::KeyboardCodeFromStr(str, &shifted_char);
   out->windows_key_code = keyCode;
   if (shifted_char)

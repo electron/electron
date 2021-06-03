@@ -14,13 +14,13 @@
 
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
-#include "base/optional.h"
 #include "base/supports_user_data.h"
 #include "base/values.h"
 #include "content/public/browser/desktop_media_id.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "extensions/browser/app_window/size_constraints.h"
 #include "shell/browser/native_window_observer.h"
+#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/views/widget/widget_delegate.h"
 
 class SkRegion;
@@ -208,8 +208,8 @@ class NativeWindow : public base::SupportsUserData,
 #if defined(OS_MAC)
   virtual void SetWindowButtonVisibility(bool visible) = 0;
   virtual bool GetWindowButtonVisibility() const = 0;
-  virtual void SetTrafficLightPosition(base::Optional<gfx::Point> position) = 0;
-  virtual base::Optional<gfx::Point> GetTrafficLightPosition() const = 0;
+  virtual void SetTrafficLightPosition(absl::optional<gfx::Point> position) = 0;
+  virtual absl::optional<gfx::Point> GetTrafficLightPosition() const = 0;
   virtual void RedrawTrafficLights() = 0;
   virtual void UpdateFrame() = 0;
 #endif

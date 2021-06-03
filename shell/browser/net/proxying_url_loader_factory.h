@@ -11,7 +11,6 @@
 #include <string>
 #include <vector>
 
-#include "base/optional.h"
 #include "content/public/browser/content_browser_client.h"
 #include "content/public/browser/render_frame_host.h"
 #include "extensions/browser/api/web_request/web_request_info.h"
@@ -26,6 +25,7 @@
 #include "shell/browser/api/electron_api_web_request.h"
 #include "shell/browser/net/electron_url_loader_factory.h"
 #include "shell/browser/net/web_request_api_interface.h"
+#include "third_party/abseil-cpp/absl/types/optional.h"
 
 namespace electron {
 
@@ -69,7 +69,7 @@ class ProxyingURLLoaderFactory
         const std::vector<std::string>& removed_headers,
         const net::HttpRequestHeaders& modified_headers,
         const net::HttpRequestHeaders& modified_cors_exempt_headers,
-        const base::Optional<GURL>& new_url) override;
+        const absl::optional<GURL>& new_url) override;
     void SetPriority(net::RequestPriority priority,
                      int32_t intra_priority_value) override;
     void PauseReadingBodyFromNet() override;
@@ -121,7 +121,7 @@ class ProxyingURLLoaderFactory
 
     ProxyingURLLoaderFactory* factory_;
     network::ResourceRequest request_;
-    const base::Optional<url::Origin> original_initiator_;
+    const absl::optional<url::Origin> original_initiator_;
     const uint64_t request_id_ = 0;
     const int32_t view_routing_id_ = MSG_ROUTING_NONE;
     const int32_t frame_routing_id_ = MSG_ROUTING_NONE;
@@ -131,7 +131,7 @@ class ProxyingURLLoaderFactory
     mojo::Receiver<network::mojom::URLLoader> proxied_loader_receiver_;
     mojo::Remote<network::mojom::URLLoaderClient> target_client_;
 
-    base::Optional<extensions::WebRequestInfo> info_;
+    absl::optional<extensions::WebRequestInfo> info_;
 
     network::mojom::URLResponseHeadPtr current_response_;
     scoped_refptr<net::HttpResponseHeaders> override_headers_;
@@ -166,7 +166,7 @@ class ProxyingURLLoaderFactory
       std::vector<std::string> removed_headers;
       net::HttpRequestHeaders modified_headers;
       net::HttpRequestHeaders modified_cors_exempt_headers;
-      base::Optional<GURL> new_url;
+      absl::optional<GURL> new_url;
 
       DISALLOW_COPY_AND_ASSIGN(FollowRedirectParams);
     };
@@ -185,7 +185,7 @@ class ProxyingURLLoaderFactory
       int view_routing_id,
       uint64_t* request_id_generator,
       std::unique_ptr<extensions::ExtensionNavigationUIData> navigation_ui_data,
-      base::Optional<int64_t> navigation_id,
+      absl::optional<int64_t> navigation_id,
       network::mojom::URLLoaderFactoryRequest loader_request,
       mojo::PendingRemote<network::mojom::URLLoaderFactory>
           target_factory_remote,
@@ -245,7 +245,7 @@ class ProxyingURLLoaderFactory
   const int view_routing_id_;
   uint64_t* request_id_generator_;  // managed by ElectronBrowserClient
   std::unique_ptr<extensions::ExtensionNavigationUIData> navigation_ui_data_;
-  base::Optional<int64_t> navigation_id_;
+  absl::optional<int64_t> navigation_id_;
   mojo::ReceiverSet<network::mojom::URLLoaderFactory> proxy_receivers_;
   mojo::Remote<network::mojom::URLLoaderFactory> target_factory_;
   mojo::Receiver<network::mojom::TrustedURLLoaderHeaderClient>
