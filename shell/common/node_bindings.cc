@@ -478,7 +478,7 @@ node::Environment* NodeBindings::CreateEnvironment(
   } else {
     // Match Blink's behavior by allowing microtasks invocation to be controlled
     // by MicrotasksScope objects.
-    is.policy = v8::MicrotasksPolicy::kScoped;
+    is.policy = context->GetIsolate()->GetMicrotasksPolicy();
 
     // We do not want to use Node.js' message listener as it interferes with
     // Blink's.
