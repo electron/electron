@@ -1,4 +1,4 @@
-# Notifications (Windows, Linux, macOS)
+****# Notifications (Windows, Linux, macOS)
 
 ## Overview
 
@@ -18,7 +18,7 @@ To show notifications in the Main process, you need to use the
 
 ### Show notifications in the Renderer process
 
-Assuming you have a working Electron application from the
+Starting with a working application from the
 [Quick Start Guide](quick-start.md), add the following line to the
 `index.html` file before the closing `</body>` tag:
 
