@@ -139,7 +139,7 @@ void InitLogging(base::Environment* env,
         command_line->GetSwitchValueASCII(::switches::kLoggingLevel);
     int level = 0;
     if (base::StringToInt(log_level, &level) && level >= 0 &&
-        level < logging::LOG_NUM_SEVERITIES) {
+        level < logging::LOGGING_NUM_SEVERITIES) {
       logging::SetMinLogLevel(level);
     } else {
       DLOG(WARNING) << "Bad log level: " << log_level;
