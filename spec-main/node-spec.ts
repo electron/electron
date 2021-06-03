@@ -132,6 +132,29 @@ describe('node feature', () => {
       child.stderr.on('data', listener);
       child.stdout.on('data', listener);
     });
+
+    it('does allow --require in non-packaged apps', async () => {
+      const appPath = path.join(fixtures, 'module', 'noop.js');
+      const env = Object.assign({}, process.env, {
+        NODE_OPTIONS: `--require=${path.join(fixtures, 'module', 'fail.js')}`
+      });
+      // App should exit with code 1.
+      const child = childProcess.spawn(process.execPath, [appPath], { env });
+      const [code] = await emittedOnce(child, 'exit');
+      expect(code).to.equal(1);
+    });
+
+    it('does not allow --require in packaged apps', async () => {
+      const appPath = path.join(fixtures, 'module', 'noop.js');
+      const env = Object.assign({}, process.env, {
+        ELECTRON_FORCE_IS_PACKAGED: 'true',
+        NODE_OPTIONS: `--require=${path.join(fixtures, 'module', 'fail.js')}`
+      });
+      // App should exit with code 0.
+      const child = childProcess.spawn(process.execPath, [appPath], { env });
+      const [code] = await emittedOnce(child, 'exit');
+      expect(code).to.equal(0);
+    });
   });
 
   describe('Node.js cli flags', () => {
