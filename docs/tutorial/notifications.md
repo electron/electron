@@ -41,11 +41,7 @@ After launching the Electron application, you should see the notification:
 
 ![Notification in the Renderer process](../images/notification-renderer.png)
 
-If you open the Console and then click the notification, you will see the
-message that was generated after triggering the `onclick` event. Note that this message will
-appear in the developer console _in the running Electron app_ - not in Fiddle.
-
-![Onclick message for the notification](../images/message-notification-renderer.png)
+Additionally, if you click on the notification, the DOM will update to show "Notification clicked!".
 
 ### Show notifications in the Main process
 
