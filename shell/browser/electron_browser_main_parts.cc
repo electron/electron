@@ -11,7 +11,6 @@
 #include "base/base_switches.h"
 #include "base/command_line.h"
 #include "base/feature_list.h"
-#include "base/optional.h"
 #include "base/path_service.h"
 #include "base/run_loop.h"
 #include "base/strings/string_number_conversions.h"
@@ -48,6 +47,7 @@
 #include "shell/common/gin_helper/trackable_object.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
+#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/base/idle/idle.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/ui_base_switches.h"
@@ -311,7 +311,7 @@ int ElectronBrowserMainParts::PreCreateThreads() {
   // We must set this env first to make ui::ResourceBundle accept the custom
   // locale.
   std::unique_ptr<base::Environment> env(base::Environment::Create());
-  base::Optional<std::string> lc_all;
+  absl::optional<std::string> lc_all;
   if (!locale.empty()) {
     std::string str;
     if (env->GetVar("LC_ALL", &str))

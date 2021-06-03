@@ -9,10 +9,10 @@
 
 #include "shell/browser/ui/autofill_popup.h"
 
-#include "base/optional.h"
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "content/public/browser/render_widget_host.h"
 #include "electron/buildflags/buildflags.h"
+#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/accessibility/ax_node_data.h"
 #include "ui/views/drag_controller.h"
 #include "ui/views/focus/widget_focus_manager.h"
@@ -80,8 +80,8 @@ class AutofillPopupView : public views::WidgetDelegateView,
  private:
   friend class AutofillPopup;
 
-  void OnSelectedRowChanged(base::Optional<int> previous_row_selection,
-                            base::Optional<int> current_row_selection);
+  void OnSelectedRowChanged(absl::optional<int> previous_row_selection,
+                            absl::optional<int> current_row_selection);
 
   // Draw the given autofill entry in |entry_rect|.
   void DrawAutofillEntry(gfx::Canvas* canvas,
@@ -118,7 +118,7 @@ class AutofillPopupView : public views::WidgetDelegateView,
   void AcceptSuggestion(int index);
   bool AcceptSelectedLine();
   void AcceptSelection(const gfx::Point& point);
-  void SetSelectedLine(base::Optional<int> selected_line);
+  void SetSelectedLine(absl::optional<int> selected_line);
   void SetSelection(const gfx::Point& point);
   void SelectNextLine();
   void SelectPreviousLine();
@@ -137,7 +137,7 @@ class AutofillPopupView : public views::WidgetDelegateView,
   base::Time show_time_;
 
   // The index of the currently selected line
-  base::Optional<int> selected_line_;
+  absl::optional<int> selected_line_;
 
 #if BUILDFLAG(ENABLE_OSR)
   std::unique_ptr<OffscreenViewProxy> view_proxy_;

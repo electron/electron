@@ -7,13 +7,13 @@ This tweaks Chrome's pepper flash and PDF plugin support to make it
 usable from Electron.
 
 diff --git a/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc b/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc
-index e90525fdee7b7f1e299e56899ddca51af93d7aa6..4afb696f57d83935dabd0abc97bfe80018b56977 100644
+index 66e5a32ca6021a712a82d918a6dcb44039f71bf2..ce1559ea6020825ad0fa996e3148ff2744fa00c4 100644
 --- a/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc
 +++ b/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc
 @@ -7,17 +7,21 @@
  #include <stddef.h>
  
- #include "base/stl_util.h"
+ #include "base/cxx17_backports.h"
 +#if 0
  #include "chrome/browser/browser_process.h"
  #include "chrome/browser/profiles/profile.h"
@@ -154,7 +154,7 @@ index 56a23e8f41bb418d414f11af5797b30571d4cc2b..6f9f577f16de80dd2ab194b557bbd9ec
    DISALLOW_COPY_AND_ASSIGN(PepperIsolatedFileSystemMessageFilter);
  };
 diff --git a/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc b/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc
-index 7820a55f563d40865cd7bbf4a03e7f82db81043e..d9b1c4bc6abfa395782761455d4dd2e3105d7b14 100644
+index 60cfd89dfd18eced6f6d103267b80d547d2e9f26..95d36e99832f434d878a2a2fc3101a611926acb2 100644
 --- a/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc
 +++ b/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc
 @@ -7,8 +7,13 @@
@@ -169,40 +169,42 @@ index 7820a55f563d40865cd7bbf4a03e7f82db81043e..d9b1c4bc6abfa395782761455d4dd2e3
  #include "components/pdf/renderer/pepper_pdf_host.h"
 +#endif
  #include "content/public/renderer/renderer_ppapi_host.h"
+ #include "pdf/buildflags.h"
  #include "ppapi/host/ppapi_host.h"
- #include "ppapi/host/resource_host.h"
-@@ -36,19 +41,10 @@ ChromeRendererPepperHostFactory::CreateResourceHost(
+@@ -37,6 +42,7 @@ ChromeRendererPepperHostFactory::CreateResourceHost(
    if (!host_->IsValidInstance(instance))
      return nullptr;
  
--  if (host_->GetPpapiHost()->permissions().HasPermission(
--          ppapi::PERMISSION_FLASH)) {
--    switch (message.type()) {
--      case PpapiHostMsg_FlashFullscreen_Create::ID: {
--        return std::make_unique<PepperFlashFullscreenHost>(host_, instance,
--                                                           resource);
--      }
--    }
--  }
--
-   // TODO(raymes): PDF also needs access to the FlashFontFileHost currently.
-   // We should either rename PPB_FlashFont_File to PPB_FontFile_Private or get
-   // rid of its use in PDF if possible.
-+#if BUILDFLAG(ENABLE_PDF_VIEWER)
++#if 0
    if (host_->GetPpapiHost()->permissions().HasPermission(
-           ppapi::PERMISSION_FLASH) ||
-       host_->GetPpapiHost()->permissions().HasPermission(
-@@ -75,7 +71,9 @@ ChromeRendererPepperHostFactory::CreateResourceHost(
+           ppapi::PERMISSION_FLASH)) {
+     switch (message.type()) {
+@@ -46,6 +52,7 @@ ChromeRendererPepperHostFactory::CreateResourceHost(
        }
      }
    }
 +#endif
  
+   // TODO(raymes): PDF also needs access to the FlashFontFileHost currently.
+   // We should either rename PPB_FlashFont_File to PPB_FontFile_Private or get
+@@ -68,7 +75,7 @@ ChromeRendererPepperHostFactory::CreateResourceHost(
+     }
+   }
+ 
+-#if BUILDFLAG(ENABLE_PDF)
++#if BUILDFLAG(ENABLE_PDF_VIEWER)
+   if (host_->GetPpapiHost()->permissions().HasPermission(
+           ppapi::PERMISSION_PDF)) {
+     switch (message.type()) {
+@@ -79,6 +86,7 @@ ChromeRendererPepperHostFactory::CreateResourceHost(
+   }
+ #endif
+ 
 +#if 0
    // Permissions for the following interfaces will be checked at the
    // time of the corresponding instance's method calls.  Currently these
    // interfaces are available only for whitelisted apps which may not have
-@@ -85,6 +83,7 @@ ChromeRendererPepperHostFactory::CreateResourceHost(
+@@ -88,6 +96,7 @@ ChromeRendererPepperHostFactory::CreateResourceHost(
        return std::make_unique<PepperUMAHost>(host_, instance, resource);
      }
    }

@@ -29,7 +29,5 @@ enable_pseudolocales = false
 
 is_cfi = false
 
-enable_pak_file_integrity_checks = false
-
 # Make application name configurable at runtime for cookie crypto
 allow_runtime_configurable_key_storage = true

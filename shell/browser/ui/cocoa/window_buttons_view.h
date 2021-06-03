@@ -8,7 +8,7 @@
 #import <Cocoa/Cocoa.h>
 
 #include "base/mac/scoped_nsobject.h"
-#include "base/optional.h"
+#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/gfx/geometry/point.h"
 
 // Custom Quit, Minimize and Full Screen button container for frameless
@@ -22,8 +22,8 @@
   base::scoped_nsobject<NSTrackingArea> tracking_area_;
 }
 
-- (id)initWithMargin:(const base::Optional<gfx::Point>&)margin;
-- (void)setMargin:(const base::Optional<gfx::Point>&)margin;
+- (id)initWithMargin:(const absl::optional<gfx::Point>&)margin;
+- (void)setMargin:(const absl::optional<gfx::Point>&)margin;
 - (void)setShowOnHover:(BOOL)yes;
 - (void)setNeedsDisplayForButtons;
 @end
