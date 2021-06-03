@@ -14,7 +14,7 @@ PrintViewManagerElectron::PrintViewManagerElectron(
     content::WebContents* web_contents)
     : PrintViewManagerBase(web_contents) {}
 
-PrintViewManagerElectron::~PrintViewManagerElectron() {}
+PrintViewManagerElectron::~PrintViewManagerElectron() = default;
 
 void PrintViewManagerElectron::SetupScriptedPrintPreview(
     SetupScriptedPrintPreviewCallback callback) {

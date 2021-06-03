@@ -46,7 +46,7 @@ ElectronComponentExtensionResourceManager::
 }
 
 ElectronComponentExtensionResourceManager::
-    ~ElectronComponentExtensionResourceManager() {}
+    ~ElectronComponentExtensionResourceManager() = default;
 
 bool ElectronComponentExtensionResourceManager::IsComponentExtensionResource(
     const base::FilePath& extension_path,

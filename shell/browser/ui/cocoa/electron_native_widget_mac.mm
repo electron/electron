@@ -16,7 +16,7 @@ ElectronNativeWidgetMac::ElectronNativeWidgetMac(
       shell_(shell),
       style_mask_(style_mask) {}
 
-ElectronNativeWidgetMac::~ElectronNativeWidgetMac() {}
+ElectronNativeWidgetMac::~ElectronNativeWidgetMac() = default;
 
 NativeWidgetMacNSWindow* ElectronNativeWidgetMac::CreateNSWindow(
     const remote_cocoa::mojom::CreateWindowParams* params) {

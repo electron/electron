@@ -16,7 +16,7 @@ ScopedHString::ScopedHString(const std::wstring& source) {
   Reset(source);
 }
 
-ScopedHString::ScopedHString() {}
+ScopedHString::ScopedHString() = default;
 
 ScopedHString::~ScopedHString() {
   Reset();

@@ -12,7 +12,7 @@ RootViewMac::RootViewMac(NativeWindow* window) : window_(window) {
   set_owned_by_client();
 }
 
-RootViewMac::~RootViewMac() {}
+RootViewMac::~RootViewMac() = default;
 
 void RootViewMac::Layout() {
   if (!window_->content_view())  // Not ready yet.
