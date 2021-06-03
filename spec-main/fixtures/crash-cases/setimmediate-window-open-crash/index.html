@@ -8,7 +8,6 @@ setImmediate(async () => {
     })
     window.open('#foo', '', 'nodeIntegration=no,show=no')
     const e = await p
-    document.body.textContent = e.data
 
     window.close();
   } else {
