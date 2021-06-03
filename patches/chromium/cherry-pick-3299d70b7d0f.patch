@@ -1,0 +1,337 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Hongchan Choi <hongchan@chromium.org>
+Date: Wed, 21 Apr 2021 01:58:33 +0000
+Subject: Make PushPullFIFO adapt to irregular audio callbacks from the browser
+ process
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+For background and rationale:
+go/webaudio-worklet-glitch-aaudio (Googler only)
+
+The current implementation of PushPullFIFO doesn’t dynamically increase
+or decrease the amount frames to keep in the FIFO. So it is vulnerable
+to callback bursts from the device thread and it does not recover from
+subsequent callbacks when underrun happens.
+
+The proposed solution is to implement the “earmark” counter in
+PushPullFIFO, so it can dynamically adapt when the buffer
+underrun happens by increasing the frame amount to keep. This design is
+inspired by the buffer optimization technique [1] from the AAudio
+reference.
+
+[1] https://developer.android.com/ndk/guides/audio/aaudio/aaudio#optimizing-performance
+
+Tested on:
+https://googlechromelabs.github.io/web-audio-samples/audio-worklet/ [Android, MacOS]
+https://learningsynths.ableton.com/en/playground [Android, MacOS]
+https://mfcc64.github.io/0000001/audio-worklet-test.html [Android, MacOS]
+https://dev.anthum.com/audio-worklet/chrome-android-debug [Android, MacOS]
+
+Potentially this patch might be able to fix:
+825823,1198540,1188901,1188104
+
+Bug: 1090441,1173656,1181434,1188117
+Change-Id: I69e5f100caf2896e268234d41e4e18c3b1648719
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2797664
+Commit-Queue: Hongchan Choi <hongchan@chromium.org>
+Reviewed-by: Raymond Toy <rtoy@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#874535}
+
+diff --git a/third_party/blink/renderer/platform/audio/audio_destination.cc b/third_party/blink/renderer/platform/audio/audio_destination.cc
+index 126783eb5a6e4f738555d49803dc908c39d101ed..a16975a4ece7a8e8fd8e9870360e815efddcc920 100644
+--- a/third_party/blink/renderer/platform/audio/audio_destination.cc
++++ b/third_party/blink/renderer/platform/audio/audio_destination.cc
+@@ -212,10 +212,10 @@ void AudioDestination::Render(const WebVector<float*>& destination_data,
+   for (unsigned i = 0; i < number_of_output_channels_; ++i)
+     output_bus_->SetChannelMemory(i, destination_data[i], number_of_frames);
+ 
+-  size_t frames_to_render = fifo_->Pull(output_bus_.get(), number_of_frames);
+-
+-  // Use the dual-thread rendering model if the AudioWorklet is activated.
+   if (worklet_task_runner_) {
++    // Use the dual-thread rendering if the AudioWorklet is activated.
++    size_t frames_to_render =
++        fifo_->PullAndUpdateEarmark(output_bus_.get(), number_of_frames);
+     PostCrossThreadTask(
+         *worklet_task_runner_, FROM_HERE,
+         CrossThreadBindOnce(&AudioDestination::RequestRender,
+@@ -223,7 +223,8 @@ void AudioDestination::Render(const WebVector<float*>& destination_data,
+                             frames_to_render, delay, delay_timestamp,
+                             prior_frames_skipped));
+   } else {
+-    // Otherwise use the single-thread rendering with AudioDeviceThread.
++    // Otherwise use the single-thread rendering.
++    size_t frames_to_render = fifo_->Pull(output_bus_.get(), number_of_frames);
+     RequestRender(number_of_frames, frames_to_render, delay,
+                   delay_timestamp, prior_frames_skipped);
+   }
+@@ -316,6 +317,11 @@ void AudioDestination::StartWithWorkletTaskRunner(
+ 
+   if (device_state_ != DeviceState::kStopped)
+     return;
++
++  // The dual-thread rendering kicks off, so updates the earmark frames
++  // accordingly.
++  fifo_->SetEarmarkFrames(callback_buffer_size_);
++
+   worklet_task_runner_ = std::move(worklet_task_runner);
+   web_audio_device_->Start();
+   SetDeviceState(DeviceState::kRunning);
+diff --git a/third_party/blink/renderer/platform/audio/push_pull_fifo.cc b/third_party/blink/renderer/platform/audio/push_pull_fifo.cc
+index f89e51ee5544d2c265d81c1247c4a16723d7e153..0dfc6d8707da99f6ceb9a58a78d67bcb1af10ee1 100644
+--- a/third_party/blink/renderer/platform/audio/push_pull_fifo.cc
++++ b/third_party/blink/renderer/platform/audio/push_pull_fifo.cc
+@@ -210,6 +210,99 @@ size_t PushPullFIFO::Pull(AudioBus* output_bus, size_t frames_requested) {
+       : 0;
+ }
+ 
++size_t PushPullFIFO::PullAndUpdateEarmark(AudioBus* output_bus,
++                                          size_t frames_requested) {
++  TRACE_EVENT2("webaudio",
++               "PushPullFIFO::PullAndUpdateEarmark",
++               "frames_requested", frames_requested,
++               "pull_count_", pull_count_);
++
++  CHECK(output_bus);
++  SECURITY_CHECK(frames_requested <= output_bus->length());
++
++  MutexLocker locker(lock_);
++  TRACE_EVENT0("webaudio", "PushPullFIFO::PullAndUpdateEarmark (under lock)");
++
++  SECURITY_CHECK(frames_requested <= fifo_length_);
++  SECURITY_CHECK(index_read_ < fifo_length_);
++
++  // The frames available was not enough to fulfill |frames_requested|. Fill
++  // the output buffer with silence and update |earmark_frames_|.
++  if (frames_requested > frames_available_) {
++    const size_t missing_frames = frames_requested - frames_available_;
++
++    if (underflow_count_++ < kMaxMessagesToLog) {
++      LOG(WARNING) << "PushPullFIFO::PullAndUpdateEarmark"
++                   << "underflow while pulling ("
++                   << "underflowCount=" << underflow_count_
++                   << ", availableFrames=" << frames_available_
++                   << ", requestedFrames=" << frames_requested
++                   << ", fifoLength=" << fifo_length_ << ")";
++    }
++
++    TRACE_EVENT2("webaudio",
++                 "PushPullFIFO::PullAndUpdateEarmark (underrun)",
++                 "missing frames", missing_frames,
++                 "underflow_count_", underflow_count_);
++
++    // We assume that the next |frames_requested| from |AudioOutputDevice| will
++    // be the same.
++    earmark_frames_ += frames_requested;
++
++    // |earmark_frames_| can't be bigger than the half of the FIFO size.
++    if (earmark_frames_ > fifo_length_ * 0.5) {
++      earmark_frames_ = fifo_length_ * 0.5;
++    }
++
++    // Note that it silences when underrun happens now, and ship the remaining
++    // frames in subsequent callbacks without silence in between.
++    for (unsigned i = 0; i < fifo_bus_->NumberOfChannels(); ++i) {
++      float* output_bus_channel = output_bus->Channel(i)->MutableData();
++      memset(output_bus_channel, 0,
++             frames_requested * sizeof(*output_bus_channel));
++    }
++
++    // The producer (WebAudio) needs to prepare the next pull plus what's
++    // missing.
++    return frames_requested + missing_frames;
++  }
++
++  const size_t remainder = fifo_length_ - index_read_;
++  const size_t frames_to_fill = std::min(frames_available_, frames_requested);
++
++  for (unsigned i = 0; i < fifo_bus_->NumberOfChannels(); ++i) {
++    const float* fifo_bus_channel = fifo_bus_->Channel(i)->Data();
++    float* output_bus_channel = output_bus->Channel(i)->MutableData();
++
++    // Fill up the output bus with the available frames first.
++    if (remainder >= frames_to_fill) {
++      // The remainder is big enough for the frames to pull.
++      memcpy(output_bus_channel, fifo_bus_channel + index_read_,
++            frames_to_fill * sizeof(*fifo_bus_channel));
++    } else {
++      // The frames to pull is bigger than the remainder size.
++      // Wrap around the index.
++      memcpy(output_bus_channel, fifo_bus_channel + index_read_,
++            remainder * sizeof(*fifo_bus_channel));
++      memcpy(output_bus_channel + remainder, fifo_bus_channel,
++            (frames_to_fill - remainder) * sizeof(*fifo_bus_channel));
++    }
++  }
++
++  // Update the read index; wrap it around if necessary.
++  index_read_ = (index_read_ + frames_to_fill) % fifo_length_;
++
++  // Update the number of frames in FIFO.
++  frames_available_ -= frames_to_fill;
++  DCHECK_EQ((index_read_ + frames_available_) % fifo_length_, index_write_);
++
++  pull_count_++;
++
++  // Ask the producer to fill the FIFO up to |earmark_frames_|.
++  return earmark_frames_ > frames_available_
++      ? earmark_frames_ - frames_available_ : 0;
++}
++
+ const PushPullFIFOStateForTest PushPullFIFO::GetStateForTest() {
+   MutexLocker locker(lock_);
+   return {length(),     NumberOfChannels(), frames_available_, index_read_,
+diff --git a/third_party/blink/renderer/platform/audio/push_pull_fifo.h b/third_party/blink/renderer/platform/audio/push_pull_fifo.h
+index 8b822b17f66bdc27a61d09bc272631846ea82dcb..ad34a8b0fc39cf566c971323a8dade13a53a1420 100644
+--- a/third_party/blink/renderer/platform/audio/push_pull_fifo.h
++++ b/third_party/blink/renderer/platform/audio/push_pull_fifo.h
+@@ -71,18 +71,33 @@ class PLATFORM_EXPORT PushPullFIFO {
+   //    the request from the consumer without causing error, but with a glitch.
+   size_t Pull(AudioBus* output_bus, size_t frames_requested);
+ 
++  // Pull and update |ear_mark_frames_| to make the dual thread rendering mode
++  // (i.e. AudioWorklet) more smooth. The single thread rendering does not need
++  // this treatment.
++  size_t PullAndUpdateEarmark(AudioBus* output_bus, size_t frames_requested);
++
++  void SetEarmarkFrames(size_t earmark_frames) {
++    DCHECK(IsMainThread());
++    MutexLocker locker(lock_);
++    earmark_frames_ = earmark_frames;
++  }
++
+   size_t length() const { return fifo_length_; }
+   unsigned NumberOfChannels() const {
+     lock_.AssertAcquired();
+     return fifo_bus_->NumberOfChannels();
+   }
+ 
+-  // TODO(hongchan): For single thread unit test only. Consider refactoring.
+   AudioBus* GetFIFOBusForTest() {
+     MutexLocker locker(lock_);
+     return fifo_bus_.get();
+   }
+ 
++  size_t GetEarmarkFramesForTest() {
++    MutexLocker locker(lock_);
++    return earmark_frames_;
++  }
++
+   // For single thread unit test only. Get the current configuration that
+   // consists of FIFO length, number of channels, read/write index position and
+   // under/overflow count.
+@@ -101,6 +116,11 @@ class PLATFORM_EXPORT PushPullFIFO {
+   unsigned underflow_count_ = 0;
+ 
+   Mutex lock_;
++
++  // To adapt the unstable callback timing. Every buffer underrun from
++  // PullAndUpdateEarmark() will increase this number.
++  size_t earmark_frames_ GUARDED_BY(lock_) = 0;
++
+   // The number of frames in the FIFO actually available for pulling.
+   size_t frames_available_ GUARDED_BY(lock_) = 0;
+   size_t index_read_ GUARDED_BY(lock_) = 0;
+diff --git a/third_party/blink/renderer/platform/audio/push_pull_fifo_test.cc b/third_party/blink/renderer/platform/audio/push_pull_fifo_test.cc
+index 13c6a4d5078e6e1970cd976a3c5829aa7c915460..7abc6af203e7e84e3acda71440c035dfc1b66226 100644
+--- a/third_party/blink/renderer/platform/audio/push_pull_fifo_test.cc
++++ b/third_party/blink/renderer/platform/audio/push_pull_fifo_test.cc
+@@ -364,6 +364,96 @@ INSTANTIATE_TEST_SUITE_P(PushPullFIFOFeatureTest,
+                          PushPullFIFOFeatureTest,
+                          testing::ValuesIn(g_feature_test_params));
+ 
++
++struct FIFOEarmarkTestParam {
++  FIFOTestSetup setup;
++  size_t callback_buffer_size;
++  size_t expected_earmark_frames;
++};
++
++class PushPullFIFOEarmarkFramesTest
++    : public testing::TestWithParam<FIFOEarmarkTestParam> {};
++
++TEST_P(PushPullFIFOEarmarkFramesTest, FeatureTests) {
++  const FIFOTestSetup setup = GetParam().setup;
++  const size_t callback_buffer_size = GetParam().callback_buffer_size;
++  const size_t expected_earmark_frames = GetParam().expected_earmark_frames;
++
++  // Create a FIFO with a specified configuration.
++  std::unique_ptr<PushPullFIFO> fifo = std::make_unique<PushPullFIFO>(
++      setup.number_of_channels, setup.fifo_length);
++  fifo->SetEarmarkFrames(callback_buffer_size);
++
++  scoped_refptr<AudioBus> output_bus;
++
++  // Iterate all the scheduled push/pull actions.
++  size_t frame_counter = 0;
++  for (const auto& action : setup.fifo_actions) {
++    if (strcmp(action.action, "PUSH") == 0) {
++      scoped_refptr<AudioBus> input_bus =
++          AudioBus::Create(setup.number_of_channels, action.number_of_frames);
++      frame_counter = FillBusWithLinearRamp(input_bus.get(), frame_counter);
++      fifo->Push(input_bus.get());
++      LOG(INFO) << "PUSH " << action.number_of_frames
++                << " frames (frameCounter=" << frame_counter << ")";
++    } else if (strcmp(action.action, "PULL_EARMARK") == 0) {
++      output_bus =
++          AudioBus::Create(setup.number_of_channels, action.number_of_frames);
++      fifo->PullAndUpdateEarmark(output_bus.get(), action.number_of_frames);
++      LOG(INFO) << "PULL_EARMARK " << action.number_of_frames << " frames";
++    } else {
++      NOTREACHED();
++    }
++  }
++
++  // Test the earmark frames.
++  const size_t actual_earmark_frames = fifo->GetEarmarkFramesForTest();
++  EXPECT_EQ(expected_earmark_frames, actual_earmark_frames);
++}
++
++FIFOEarmarkTestParam g_earmark_test_params[] = {
++  // When there's no underrun, the earmark is equal to the callback size.
++  {{8192, 2, {
++      {"PUSH", 128},
++      {"PUSH", 128},
++      {"PULL_EARMARK", 256},
++      {"PUSH", 128},
++      {"PUSH", 128},
++      {"PULL_EARMARK", 256}
++    }}, 256, 256},
++  // The first underrun increases the earmark by the callback size.
++  {{8192, 2, {
++      {"PUSH", 128},
++      {"PUSH", 128},
++      {"PULL_EARMARK", 384}, // udnerrun; updating earmark and skipping pull.
++      {"PUSH", 128},
++      {"PUSH", 128},
++      {"PUSH", 128},
++      {"PULL_EARMARK", 384}  // OK
++    }}, 384, 768},
++  // Simulating "bursty and irregular" callbacks.
++  {{8192, 2, {
++      {"PUSH", 128},
++      {"PUSH", 128},
++      {"PUSH", 128},
++      {"PUSH", 128},
++      {"PULL_EARMARK", 480}, // OK
++      {"PUSH", 128},
++      {"PUSH", 128},
++      {"PULL_EARMARK", 480}, // underrun; updating earmark and skipping pull.
++      {"PUSH", 128},
++      {"PUSH", 128},
++      {"PUSH", 128},
++      {"PULL_EARMARK", 480}, // OK
++      {"PUSH", 128},
++      {"PULL_EARMARK", 480}  // underrun; updating earmark and skipping pull.
++    }}, 480, 1440}
++};
++
++INSTANTIATE_TEST_SUITE_P(PushPullFIFOEarmarkFramesTest,
++                         PushPullFIFOEarmarkFramesTest,
++                         testing::ValuesIn(g_earmark_test_params));
++
+ }  // namespace
+ 
+ }  // namespace blink
