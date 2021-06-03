@@ -1,0 +1,56 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Thu, 3 Jun 2021 19:32:09 +0200
+Subject: src: add get/set pair for unhandled rejections mode
+
+This PR adds a get/set pair for unhandled rejections modes.
+
+We do not want unhandled rejections to crash the process and want to
+be able to control this effectively from C++ and not cli flag
+which is the only option right now.
+
+Upstreamed at https://github.com/nodejs/node/pull/38915.
+
+diff --git a/src/env-inl.h b/src/env-inl.h
+index 6d34c5125e93bc0f0ce414be573438aec091dbb5..6879f0ede8d185d3e10b419a369c0ea082465fa6 100644
+--- a/src/env-inl.h
++++ b/src/env-inl.h
+@@ -509,6 +509,24 @@ inline bool Environment::abort_on_uncaught_exception() const {
+   return options_->abort_on_uncaught_exception;
+ }
+ 
++inline void Environment::set_unhandled_rejections_mode(
++  const std::string& mode) {
++  if (!mode.empty() &&
++      mode != "warn-with-error-code" &&
++      mode != "throw" &&
++      mode != "strict" &&
++      mode != "warn" &&
++      mode != "none") {
++    fprintf(stderr, "Invalid unhandled rejections mode: %s", mode.c_str());
++  } else {
++    options_->unhandled_rejections = mode;
++  }
++}
++
++inline std::string Environment::unhandled_rejections_mode() const {
++  return options_->unhandled_rejections;
++}
++
+ inline void Environment::set_force_context_aware(bool value) {
+   options_->force_context_aware = value;
+ }
+diff --git a/src/env.h b/src/env.h
+index 2b0088bc29639c4da38a148368fb0dbfa3a19b4c..f84e5989c8fc316b72f2f1f75bb293534b32eaef 100644
+--- a/src/env.h
++++ b/src/env.h
+@@ -1101,6 +1101,9 @@ class Environment : public MemoryRetainer {
+   void PrintSyncTrace() const;
+   inline void set_trace_sync_io(bool value);
+ 
++  inline void set_unhandled_rejections_mode(const std::string& mode);
++  inline std::string unhandled_rejections_mode() const;
++
+   inline void set_force_context_aware(bool value);
+   inline bool force_context_aware() const;
+ 

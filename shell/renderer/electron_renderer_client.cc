@@ -112,6 +112,9 @@ void ElectronRendererClient::DidCreateScriptContext(
   // any non-context aware native module
   env->set_force_context_aware(true);
 
+  // We do not want to crash the renderer process on unhandled rejections.
+  env->set_unhandled_rejections_mode("warn");
+
   environments_.insert(env);
 
   // Add Electron extended APIs.
