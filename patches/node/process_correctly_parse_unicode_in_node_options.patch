@@ -1,0 +1,75 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Bartosz Sosnowski <bartosz@janeasystems.com>
+Date: Wed, 22 Jul 2020 12:55:11 +0200
+Subject: process: correctly parse Unicode in NODE_OPTIONS
+
+Fixes an issue on Windows, where Unicode in NODE_OPTIONS was not parsed
+correctly.
+
+Fixes: https://github.com/nodejs/node/issues/34399
+
+PR-URL: https://github.com/nodejs/node/pull/34476
+Reviewed-By: Anna Henningsen <anna@addaleax.net>
+Reviewed-By: James M Snell <jasnell@gmail.com>
+Reviewed-By: Gus Caplan <me@gus.host>
+Reviewed-By: Denys Otrishko <shishugi@gmail.com>
+
+diff --git a/src/node_credentials.cc b/src/node_credentials.cc
+index d552a501726396b0d38c55f6f7cb5c2287189fc8..7c7a4f84c860844641d6931a6352ea4473ab4eac 100644
+--- a/src/node_credentials.cc
++++ b/src/node_credentials.cc
+@@ -58,8 +58,20 @@ bool SafeGetenv(const char* key, std::string* text, Environment* env) {
+ 
+   {
+     Mutex::ScopedLock lock(per_process::env_var_mutex);
+-    if (const char* value = getenv(key)) {
+-      *text = value;
++
++    size_t init_sz = 256;
++    MaybeStackBuffer<char, 256> val;
++    int ret = uv_os_getenv(key, *val, &init_sz);
++
++    if (ret == UV_ENOBUFS) {
++      // Buffer is not large enough, reallocate to the updated init_sz
++      // and fetch env value again.
++      val.AllocateSufficientStorage(init_sz);
++      ret = uv_os_getenv(key, *val, &init_sz);
++    }
++
++    if (ret >= 0) {  // Env key value fetch success.
++      *text = *val;
+       return true;
+     }
+   }
+diff --git a/test/parallel/test-unicode-node-options.js b/test/parallel/test-unicode-node-options.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..e5a40d118791d3748fa2a82e9c8bddefd78ad17e
+--- /dev/null
++++ b/test/parallel/test-unicode-node-options.js
+@@ -0,0 +1,26 @@
++'use strict';
++// Flags: --expose-internals
++require('../common');
++const { getOptionValue } = require('internal/options');
++const assert = require('assert');
++const cp = require('child_process');
++
++const expected_redirect_value = 'foó';
++
++if (process.argv.length === 2) {
++  const NODE_OPTIONS = `--redirect-warnings=${expected_redirect_value}`;
++  const result = cp.spawnSync(process.argv0,
++                              ['--expose-internals', __filename, 'test'],
++                              {
++                                env: {
++                                  ...process.env,
++                                  NODE_OPTIONS
++                                },
++                                stdio: 'inherit'
++                              });
++  assert.strictEqual(result.status, 0);
++} else {
++  const redirect_value = getOptionValue('--redirect-warnings');
++  console.log(`--redirect-warings=${redirect_value}`);
++  assert.strictEqual(redirect_value, expected_redirect_value);
++}
