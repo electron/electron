@@ -1,3 +1,6 @@
+import { BrowserWindow } from 'electron';
+import { CertificateTrustDialogOptions, OpenDialogReturnValue } from 'electron/main';
+
 /* eslint-disable no-var */
 declare var internalBinding: any;
 declare var binding: { get: (name: string) => any; process: NodeJS.Process; createPreloadScript: (src: string) => Function };
@@ -213,7 +216,7 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_browser_dialog'): {
       /** only available on mac and windows */
       showCertificateTrustDialog?: (window: BrowserWindow, settings: CertificateTrustDialogOptions, message: string) => void;
-      showErrorBox: (...args: any[]) => void;
+      showErrorBox: (...args: any[]) => OpenDialogReturnValue;
       showMessageBox: (settings: any) => void;
       showMessageBoxSync: (settings: any) => void;
       showOpenDialog: (settings: any) => void;
