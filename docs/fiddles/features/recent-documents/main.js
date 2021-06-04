@@ -3,10 +3,12 @@ const fs = require('fs')
 const path = require('path')
 
 function createWindow () {
-  new BrowserWindow({
+  const win = new BrowserWindow({
     width: 800,
     height: 600
   })
+
+  win.loadFile('index.html')
 }
 
 const fileName = 'recently-used.md'
