@@ -6,10 +6,10 @@ Subject: build: do not include vr:directx_helpers when !enable_vr
 Upstream: https://chromium-review.googlesource.com/c/chromium/src/+/2935426
 
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index 1a955144f1b53edd367b6487114d855e45ca828e..3f8687aca2a84ad53dd0633bd98711e082629b8c 100644
+index 5349ca0848e783db71d02355bd763d2174e4680f..c62fcb965e6c833c0c6a3673e04ce94a4375c673 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
-@@ -4907,9 +4907,7 @@ test("unit_tests") {
+@@ -4915,9 +4915,7 @@ test("unit_tests") {
      ]
  
      if (!is_electron_build) {
@@ -20,12 +20,3 @@ index 1a955144f1b53edd367b6487114d855e45ca828e..3f8687aca2a84ad53dd0633bd98711e0
      }
    }
  
-@@ -8597,7 +8595,7 @@ if (!is_android) {
-       "//third_party/blink/web_tests/resources/testharness.js",
-     ]
- 
--    if (is_win) {
-+    if (is_win && enable_vr) {
-       deps += [
-         "//device/vr",
-         "//device/vr:directx_helpers",
