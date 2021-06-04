@@ -31,3 +31,5 @@ is_cfi = false
 
 # Make application name configurable at runtime for cookie crypto
 allow_runtime_configurable_key_storage = true
+
+enable_cet_shadow_stack = false
