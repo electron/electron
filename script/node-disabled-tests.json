@@ -36,7 +36,6 @@
   "parallel/test-finalization-group-error",
   "parallel/test-freeze-intrinsics",
   "parallel/test-fs-utimes-y2K38",
-  "parallel/test-fs-write-sigxfsz",
   "parallel/test-gc-tls-external-memory",
   "parallel/test-http2-clean-output",
   "parallel/test-http2-reset-flood",
