@@ -183,7 +183,7 @@ class InspectableWebContents
   bool HandleKeyboardEvent(content::WebContents*,
                            const content::NativeWebKeyboardEvent&) override;
   void CloseContents(content::WebContents* source) override;
-  content::ColorChooser* OpenColorChooser(
+  std::unique_ptr<content::ColorChooser> OpenColorChooser(
       content::WebContents* source,
       SkColor color,
       const std::vector<blink::mojom::ColorSuggestionPtr>& suggestions)
