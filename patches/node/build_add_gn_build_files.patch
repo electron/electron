@@ -1766,10 +1766,10 @@ index 0000000000000000000000000000000000000000..3088ae4bdf814ae255c9805ebd393b2e
 +
 +  out_file.writelines(new_contents)
 diff --git a/tools/install.py b/tools/install.py
-index 045d406d84be301722f3de62abc448db84e751f8..49b5ba2c0ac53266dee594ea9ee56609381b5eed 100755
+index 045d406d84be301722f3de62abc448db84e751f8..95aa4c985d33ef37a73eebfca8bb8651e5059d37 100755
 --- a/tools/install.py
 +++ b/tools/install.py
-@@ -159,13 +159,13 @@ def files(action):
+@@ -159,14 +159,15 @@ def files(action):
  def headers(action):
    def wanted_v8_headers(files_arg, dest):
      v8_headers = [
@@ -1788,9 +1788,11 @@ index 045d406d84be301722f3de62abc448db84e751f8..49b5ba2c0ac53266dee594ea9ee56609
 +      '../../v8/include/v8-version.h',
 +      '../../v8/include/v8config.h',
      ]
++    v8_headers = [h.replace('deps/', '../../') for h in v8_headers]
      files_arg = [name for name in files_arg if name in v8_headers]
      action(files_arg, dest)
-@@ -187,7 +187,7 @@ def headers(action):
+ 
+@@ -187,7 +188,7 @@ def headers(action):
    if sys.platform.startswith('aix'):
      action(['out/Release/node.exp'], 'include/node/')
  
