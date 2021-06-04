@@ -16,7 +16,7 @@ namespace asar {
 
 class Archive;
 
-// Gets or creates and caches a new Archive from the path.
+// Gets or creates a new Archive from the path.
 std::shared_ptr<Archive> GetOrCreateAsarArchive(const base::FilePath& path);
 
 // Destroy cached Archive objects.

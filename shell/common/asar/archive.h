@@ -11,7 +11,6 @@
 
 #include "base/files/file.h"
 #include "base/files/file_path.h"
-#include "base/synchronization/lock.h"
 
 namespace base {
 class DictionaryValue;
@@ -22,7 +21,7 @@ namespace asar {
 class ScopedTemporaryFile;
 
 // This class represents an asar package, and provides methods to read
-// information from it. It is thread-safe after |Init| has been called.
+// information from it.
 class Archive {
  public:
   struct FileInfo {
@@ -47,17 +46,16 @@ class Archive {
   bool Init();
 
   // Get the info of a file.
-  bool GetFileInfo(const base::FilePath& path, FileInfo* info) const;
+  bool GetFileInfo(const base::FilePath& path, FileInfo* info);
 
   // Fs.stat(path).
-  bool Stat(const base::FilePath& path, Stats* stats) const;
+  bool Stat(const base::FilePath& path, Stats* stats);
 
   // Fs.readdir(path).
-  bool Readdir(const base::FilePath& path,
-               std::vector<base::FilePath>* files) const;
+  bool Readdir(const base::FilePath& path, std::vector<base::FilePath>* files);
 
   // Fs.realpath(path).
-  bool Realpath(const base::FilePath& path, base::FilePath* realpath) const;
+  bool Realpath(const base::FilePath& path, base::FilePath* realpath);
 
   // Copy the file into a temporary file, and return the new path.
   // For unpacked file, this method will return its real path.
@@ -67,17 +65,16 @@ class Archive {
   int GetFD() const;
 
   base::FilePath path() const { return path_; }
+  base::DictionaryValue* header() const { return header_.get(); }
 
  private:
-  bool initialized_;
-  const base::FilePath path_;
+  base::FilePath path_;
   base::File file_;
   int fd_ = -1;
   uint32_t header_size_ = 0;
   std::unique_ptr<base::DictionaryValue> header_;
 
   // Cached external temporary files.
-  base::Lock external_files_lock_;
   std::unordered_map<base::FilePath::StringType,
                      std::unique_ptr<ScopedTemporaryFile>>
       external_files_;

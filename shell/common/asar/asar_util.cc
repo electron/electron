@@ -6,14 +6,11 @@
 
 #include <map>
 #include <string>
-#include <utility>
 
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/lazy_instance.h"
-#include "base/no_destructor.h"
 #include "base/stl_util.h"
-#include "base/synchronization/lock.h"
 #include "base/threading/thread_local.h"
 #include "base/threading/thread_restrictions.h"
 #include "shell/common/asar/archive.h"
@@ -22,41 +19,30 @@ namespace asar {
 
 namespace {
 
+// The global instance of ArchiveMap, will be destroyed on exit.
 typedef std::map<base::FilePath, std::shared_ptr<Archive>> ArchiveMap;
+base::LazyInstance<base::ThreadLocalPointer<ArchiveMap>>::Leaky
+    g_archive_map_tls = LAZY_INSTANCE_INITIALIZER;
 
 const base::FilePath::CharType kAsarExtension[] = FILE_PATH_LITERAL(".asar");
 
+std::map<base::FilePath, bool> g_is_directory_cache;
+
 bool IsDirectoryCached(const base::FilePath& path) {
-  static base::NoDestructor<std::map<base::FilePath, bool>>
-      s_is_directory_cache;
-  static base::NoDestructor<base::Lock> lock;
-
-  base::AutoLock auto_lock(*lock);
-  auto& is_directory_cache = *s_is_directory_cache;
-
-  auto it = is_directory_cache.find(path);
-  if (it != is_directory_cache.end()) {
+  auto it = g_is_directory_cache.find(path);
+  if (it != g_is_directory_cache.end()) {
     return it->second;
   }
   base::ThreadRestrictions::ScopedAllowIO allow_io;
-  return is_directory_cache[path] = base::DirectoryExists(path);
+  return g_is_directory_cache[path] = base::DirectoryExists(path);
 }
 
 }  // namespace
 
-ArchiveMap& GetArchiveCache() {
-  static base::NoDestructor<ArchiveMap> s_archive_map;
-  return *s_archive_map;
-}
-
-base::Lock& GetArchiveCacheLock() {
-  static base::NoDestructor<base::Lock> lock;
-  return *lock;
-}
-
 std::shared_ptr<Archive> GetOrCreateAsarArchive(const base::FilePath& path) {
-  base::AutoLock auto_lock(GetArchiveCacheLock());
-  ArchiveMap& map = GetArchiveCache();
+  if (!g_archive_map_tls.Pointer()->Get())
+    g_archive_map_tls.Pointer()->Set(new ArchiveMap);
+  ArchiveMap& map = *g_archive_map_tls.Pointer()->Get();
 
   // if we have it, return it
   const auto lower = map.lower_bound(path);
@@ -75,10 +61,8 @@ std::shared_ptr<Archive> GetOrCreateAsarArchive(const base::FilePath& path) {
 }
 
 void ClearArchives() {
-  base::AutoLock auto_lock(GetArchiveCacheLock());
-  ArchiveMap& map = GetArchiveCache();
-
-  map.clear();
+  if (g_archive_map_tls.Pointer()->Get())
+    delete g_archive_map_tls.Pointer()->Get();
 }
 
 bool GetAsarArchivePath(const base::FilePath& full_path,
