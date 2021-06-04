@@ -47,7 +47,7 @@ index 8feefde819ea8b67c92afd2af7edf1fcc00aabd0..7eb17ee53475fbbedb456f535b7d4a76
  #include <openssl/engine.h>
  #endif  // !OPENSSL_NO_ENGINE
 diff --git a/src/crypto/crypto_dh.cc b/src/crypto/crypto_dh.cc
-index 1c48f98656fd211403354bb88331450e51ffb3e5..7c3ee76b91dbc4f4f5d72594218cce07231edcb7 100644
+index 1c48f98656fd211403354bb88331450e51ffb3e5..19029e058eb7ebbea283ad49be47c0c6246cf4e7 100644
 --- a/src/crypto/crypto_dh.cc
 +++ b/src/crypto/crypto_dh.cc
 @@ -120,13 +120,11 @@ void DiffieHellman::MemoryInfo(MemoryTracker* tracker) const {
@@ -91,35 +91,40 @@ index 1c48f98656fd211403354bb88331450e51ffb3e5..7c3ee76b91dbc4f4f5d72594218cce07
      return false;
    }
    BIGNUM* bn_p =
-@@ -469,6 +464,7 @@ Maybe<bool> DhKeyGenTraits::AdditionalConfig(
- EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
-   EVPKeyPointer key_params;
-   if (params->params.prime_fixed_value) {
-+#if 0
-     DHPointer dh(DH_new());
-     if (!dh)
+@@ -478,16 +473,20 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
+     if (!BN_set_word(bn_g.get(), params->params.generator) ||
+         !DH_set0_pqg(dh.get(), prime, nullptr, bn_g.get()))
        return EVPKeyCtxPointer();
-@@ -485,9 +481,11 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
+-
++#ifndef OPENSSL_IS_BORINGSSL
+     params->params.prime_fixed_value.release();
+     bn_g.release();
+ 
      key_params = EVPKeyPointer(EVP_PKEY_new());
      CHECK(key_params);
      EVP_PKEY_assign_DH(key_params.get(), dh.release());
++#else
++    return EVPKeyCtxPointer();
 +#endif
    } else {
      EVPKeyCtxPointer param_ctx(EVP_PKEY_CTX_new_id(EVP_PKEY_DH, nullptr));
      EVP_PKEY* raw_params = nullptr;
-+#if 0
++#ifndef OPENSSL_IS_BORINGSSL
      if (!param_ctx ||
          EVP_PKEY_paramgen_init(param_ctx.get()) <= 0 ||
          EVP_PKEY_CTX_set_dh_paramgen_prime_len(
-@@ -499,7 +497,7 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
+@@ -499,8 +498,10 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
          EVP_PKEY_paramgen(param_ctx.get(), &raw_params) <= 0) {
        return EVPKeyCtxPointer();
      }
 -
-+#endif
      key_params = EVPKeyPointer(raw_params);
++#else
++    return EVPKeyCtxPointer();
++#endif
    }
  
+   EVPKeyCtxPointer ctx(EVP_PKEY_CTX_new(key_params.get(), nullptr));
 diff --git a/src/crypto/crypto_ec.cc b/src/crypto/crypto_ec.cc
 index ea4c70ad5d8c844860ba3480fc7ef4205f0a3cdc..cdf8dd47d6e2a5894066cec01fbe347af079ec22 100644
 --- a/src/crypto/crypto_ec.cc
