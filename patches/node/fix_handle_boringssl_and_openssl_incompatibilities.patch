@@ -34,6 +34,73 @@ index 5ce466582823ae1304731610da61b7fde77fc65a..0bf80ecd89deb83cf5ecfa8ee7c8fe1d
      return;
    }
  
+diff --git a/src/crypto/crypto_common.cc b/src/crypto/crypto_common.cc
+index f4b7bd3ad8548a0b69943ddea669e6f1991b7a49..221d652fa7de246e5f69fcf392e334087bac0199 100644
+--- a/src/crypto/crypto_common.cc
++++ b/src/crypto/crypto_common.cc
+@@ -242,7 +242,7 @@ const char* GetClientHelloALPN(const SSLPointer& ssl) {
+   const unsigned char* buf;
+   size_t len;
+   size_t rem;
+-
++#ifndef OPENSSL_IS_BORINGSSL
+   if (!SSL_client_hello_get0_ext(
+           ssl.get(),
+           TLSEXT_TYPE_application_layer_protocol_negotiation,
+@@ -255,13 +255,15 @@ const char* GetClientHelloALPN(const SSLPointer& ssl) {
+   len = (buf[0] << 8) | buf[1];
+   if (len + 2 != rem) return nullptr;
+   return reinterpret_cast<const char*>(buf + 3);
++#endif
++  return nullptr;
+ }
+ 
+ const char* GetClientHelloServerName(const SSLPointer& ssl) {
+   const unsigned char* buf;
+   size_t len;
+   size_t rem;
+-
++#ifndef OPENSSL_IS_BORINGSSL
+   if (!SSL_client_hello_get0_ext(
+           ssl.get(),
+           TLSEXT_TYPE_server_name,
+@@ -283,6 +285,8 @@ const char* GetClientHelloServerName(const SSLPointer& ssl) {
+   if (len + 2 > rem)
+     return nullptr;
+   return reinterpret_cast<const char*>(buf + 5);
++#endif
++  return nullptr;
+ }
+ 
+ const char* GetServerName(SSL* ssl) {
+@@ -290,7 +294,10 @@ const char* GetServerName(SSL* ssl) {
+ }
+ 
+ bool SetGroups(SecureContext* sc, const char* groups) {
++#ifndef OPENSSL_IS_BORINGSSL
+   return SSL_CTX_set1_groups_list(**sc, groups) == 1;
++#endif
++  return false;
+ }
+ 
+ const char* X509ErrorCode(long err) {  // NOLINT(runtime/int)
+@@ -757,13 +764,13 @@ MaybeLocal<Array> GetClientHelloCiphers(
+     Environment* env,
+     const SSLPointer& ssl) {
+   EscapableHandleScope scope(env->isolate());
+-  const unsigned char* buf;
+-  size_t len = SSL_client_hello_get0_ciphers(ssl.get(), &buf);
++  const unsigned char* buf = nullptr;
++  size_t len = 0; // SSL_client_hello_get0_ciphers(ssl.get(), &buf);
+   size_t count = len / 2;
+   MaybeStackBuffer<Local<Value>, 16> ciphers(count);
+   int j = 0;
+   for (size_t n = 0; n < len; n += 2) {
+-    const SSL_CIPHER* cipher = SSL_CIPHER_find(ssl.get(), buf);
++    const SSL_CIPHER* cipher = nullptr; // SSL_CIPHER_find(ssl.get(), buf);
+     buf += 2;
+     Local<Object> obj = Object::New(env->isolate());
+     if (!Set(env->context(),
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
 index 8feefde819ea8b67c92afd2af7edf1fcc00aabd0..7eb17ee53475fbbedb456f535b7d4a76ea66693e 100644
 --- a/src/crypto/crypto_context.cc
@@ -125,6 +192,28 @@ index 1c48f98656fd211403354bb88331450e51ffb3e5..19029e058eb7ebbea283ad49be47c0c6
    }
  
    EVPKeyCtxPointer ctx(EVP_PKEY_CTX_new(key_params.get(), nullptr));
+diff --git a/src/crypto/crypto_dsa.cc b/src/crypto/crypto_dsa.cc
+index 271db427fa8539feb30c1712574976fb1f623e91..05ec6103007b0c687c1c713c44f5e00f1f2f33c3 100644
+--- a/src/crypto/crypto_dsa.cc
++++ b/src/crypto/crypto_dsa.cc
+@@ -29,7 +29,7 @@ namespace crypto {
+ EVPKeyCtxPointer DsaKeyGenTraits::Setup(DsaKeyPairGenConfig* params) {
+   EVPKeyCtxPointer param_ctx(EVP_PKEY_CTX_new_id(EVP_PKEY_DSA, nullptr));
+   EVP_PKEY* raw_params = nullptr;
+-
++#ifndef OPENSSL_IS_BORINGSSL
+   if (!param_ctx ||
+       EVP_PKEY_paramgen_init(param_ctx.get()) <= 0 ||
+       EVP_PKEY_CTX_set_dsa_paramgen_bits(
+@@ -49,7 +49,7 @@ EVPKeyCtxPointer DsaKeyGenTraits::Setup(DsaKeyPairGenConfig* params) {
+       return EVPKeyCtxPointer();
+     }
+   }
+-
++#endif
+   if (EVP_PKEY_paramgen(param_ctx.get(), &raw_params) <= 0)
+     return EVPKeyCtxPointer();
+ 
 diff --git a/src/crypto/crypto_ec.cc b/src/crypto/crypto_ec.cc
 index ea4c70ad5d8c844860ba3480fc7ef4205f0a3cdc..cdf8dd47d6e2a5894066cec01fbe347af079ec22 100644
 --- a/src/crypto/crypto_ec.cc
@@ -211,7 +300,7 @@ index 7b113a8dcb06b0b0e1329ce0daf7305598ea6545..b04e53a7f24885ffb6639430988d0ffb
      const EC_KEY* ec_key = EVP_PKEY_get0_EC_KEY(pkey.get());
      const EC_GROUP* ec_group = EC_KEY_get0_group(ec_key);
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index da66cde877c6ce045d907205bb2a6e369234fb8e..76c8c037ffd3c8b67179d7d881ad6ea530b00686 100644
+index 0d533ce42531d147a4c99fef5a72c311e0796150..76c8c037ffd3c8b67179d7d881ad6ea530b00686 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
 @@ -20,6 +20,8 @@
@@ -239,7 +328,32 @@ index da66cde877c6ce045d907205bb2a6e369234fb8e..76c8c037ffd3c8b67179d7d881ad6ea5
  #endif
  
    /* Override FIPS settings in cnf file, if needed. */
-@@ -655,7 +657,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -488,24 +490,14 @@ Maybe<bool> Decorate(Environment* env, Local<Object> obj,
+     V(BIO)                                                                    \
+     V(PKCS7)                                                                  \
+     V(X509V3)                                                                 \
+-    V(PKCS12)                                                                 \
+     V(RAND)                                                                   \
+-    V(DSO)                                                                    \
+     V(ENGINE)                                                                 \
+     V(OCSP)                                                                   \
+     V(UI)                                                                     \
+     V(COMP)                                                                   \
+     V(ECDSA)                                                                  \
+     V(ECDH)                                                                   \
+-    V(OSSL_STORE)                                                             \
+-    V(FIPS)                                                                   \
+-    V(CMS)                                                                    \
+-    V(TS)                                                                     \
+     V(HMAC)                                                                   \
+-    V(CT)                                                                     \
+-    V(ASYNC)                                                                  \
+-    V(KDF)                                                                    \
+-    V(SM2)                                                                    \
+     V(USER)                                                                   \
+ 
+ #define V(name) case ERR_LIB_##name: lib = #name "_"; break;
+@@ -665,7 +657,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
    CHECK(args[0]->IsUint32());
    Environment* env = Environment::GetCurrent(args);
    uint32_t len = args[0].As<Uint32>()->Value();
@@ -248,7 +362,7 @@ index da66cde877c6ce045d907205bb2a6e369234fb8e..76c8c037ffd3c8b67179d7d881ad6ea5
    if (data == nullptr) {
      // There's no memory available for the allocation.
      // Return nothing.
-@@ -667,7 +669,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -677,7 +669,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
            data,
            len,
            [](void* data, size_t len, void* deleter_data) {
@@ -257,7 +371,7 @@ index da66cde877c6ce045d907205bb2a6e369234fb8e..76c8c037ffd3c8b67179d7d881ad6ea5
            },
            data);
    Local<ArrayBuffer> buffer = ArrayBuffer::New(env->isolate(), store);
-@@ -675,10 +677,12 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -685,10 +677,12 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
  }
  
  void SecureHeapUsed(const FunctionCallbackInfo<Value>& args) {
