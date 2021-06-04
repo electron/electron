@@ -66,7 +66,7 @@ absl::optional<std::string> GetXdgAppOutput(
 }
 
 bool SetDefaultWebClient(const std::string& protocol) {
-  std::unique_ptr<base::Environment> env(base::Environment::Create());
+  auto env = base::Environment::Create();
 
   std::vector<std::string> argv = {kXdgSettings, "set"};
   if (!protocol.empty()) {
@@ -95,7 +95,7 @@ bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
 
 bool Browser::IsDefaultProtocolClient(const std::string& protocol,
                                       gin::Arguments* args) {
-  std::unique_ptr<base::Environment> env(base::Environment::Create());
+  auto env = base::Environment::Create();
 
   if (protocol.empty())
     return false;

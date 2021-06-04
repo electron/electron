@@ -572,7 +572,7 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
       command_line->AppendSwitchPath(switches::kAppPath, app_path);
     }
 
-    std::unique_ptr<base::Environment> env(base::Environment::Create());
+    auto env = base::Environment::Create();
     if (env->HasVar("ELECTRON_PROFILE_INIT_SCRIPTS")) {
       command_line->AppendSwitch("profile-electron-init");
     }
@@ -603,7 +603,7 @@ void ElectronBrowserClient::DidCreatePpapiPlugin(
 
 // attempt to get api key from env
 std::string ElectronBrowserClient::GetGeolocationApiKey() {
-  std::unique_ptr<base::Environment> env(base::Environment::Create());
+  auto env = base::Environment::Create();
   std::string api_key;
   env->GetVar("GOOGLE_API_KEY", &api_key);
   return api_key;
