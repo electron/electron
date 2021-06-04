@@ -11,10 +11,10 @@ if we ever align our .pak file generation with Chrome we can remove this
 patch.
 
 diff --git a/chrome/BUILD.gn b/chrome/BUILD.gn
-index 75868925758560075e95b79a7473e635b23127d5..1aba073ab6bddfa20d82f66938383fe98baf5774 100644
+index 8e07f7000de932bc9b6bf484b1a9fce4d4580b4a..eac65b694c0a0857f73f75228b8d673bdfcd2b93 100644
 --- a/chrome/BUILD.gn
 +++ b/chrome/BUILD.gn
-@@ -170,11 +170,16 @@ if (!is_android && !is_mac) {
+@@ -172,11 +172,16 @@ if (!is_android && !is_mac) {
          "common/crash_keys.h",
        ]
  
@@ -33,10 +33,10 @@ index 75868925758560075e95b79a7473e635b23127d5..1aba073ab6bddfa20d82f66938383fe9
          "//base",
          "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index 6a690c18e5fd8b36237be6711437cf8997e074c7..8b0fc49851669ac98bdeed9975ed1f84596ddfa2 100644
+index 682bfaffd5b478921ead0bfbfac3a1154dbae33f..79fca1a1fbde53c306201dfdefd12b26b126fa54 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -4287,7 +4287,7 @@ static_library("browser") {
+@@ -4291,7 +4291,7 @@ static_library("browser") {
  
      # On Windows, the hashes are embedded in //chrome:chrome_initial rather
      # than here in :chrome_dll.
@@ -46,10 +46,10 @@ index 6a690c18e5fd8b36237be6711437cf8997e074c7..8b0fc49851669ac98bdeed9975ed1f84
      }
  
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index 081cb42207daad824a12ea8b5c709387a3a0832a..4c4d614a47f36d2d75bd83081f10c5d294f59d6c 100644
+index f8b7b67dd0e38048ed01d661a4f192967d528494..1a955144f1b53edd367b6487114d855e45ca828e 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
-@@ -4878,10 +4878,15 @@ test("unit_tests") {
+@@ -4902,10 +4902,15 @@ test("unit_tests") {
      assert(toolkit_views)
      sources += [ "../browser/ui/startup/credential_provider_signin_info_fetcher_win_unittest.cc" ]
      deps += [

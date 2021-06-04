@@ -15,7 +15,6 @@ enable_reset_aspect_ratio.patch
 v8_context_snapshot_generator.patch
 boringssl_build_gn.patch
 pepper_plugin_support.patch
-no_cache_storage_check.patch
 gtk_visibility.patch
 sysroot.patch
 resource_file_conflict.patch
