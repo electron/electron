@@ -292,6 +292,10 @@ resource_coordinator::TabManager* BrowserProcessImpl::GetTabManager() {
   return nullptr;
 }
 
+SerialPolicyAllowedPorts* BrowserProcessImpl::serial_policy_allowed_ports() {
+  return nullptr;
+}
+
 void BrowserProcessImpl::SetApplicationLocale(const std::string& locale) {
   locale_ = locale;
 }
