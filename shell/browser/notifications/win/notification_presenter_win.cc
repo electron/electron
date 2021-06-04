@@ -63,9 +63,9 @@ NotificationPresenter* NotificationPresenter::Create() {
   return presenter.release();
 }
 
-NotificationPresenterWin::NotificationPresenterWin() {}
+NotificationPresenterWin::NotificationPresenterWin() = default;
 
-NotificationPresenterWin::~NotificationPresenterWin() {}
+NotificationPresenterWin::~NotificationPresenterWin() = default;
 
 bool NotificationPresenterWin::Init() {
   base::ThreadRestrictions::ScopedAllowIO allow_io;

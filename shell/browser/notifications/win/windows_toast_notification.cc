@@ -596,7 +596,7 @@ bool WindowsToastNotification::RemoveCallbacks(
 ToastEventHandler::ToastEventHandler(Notification* notification)
     : notification_(notification->GetWeakPtr()) {}
 
-ToastEventHandler::~ToastEventHandler() {}
+ToastEventHandler::~ToastEventHandler() = default;
 
 IFACEMETHODIMP ToastEventHandler::Invoke(
     ABI::Windows::UI::Notifications::IToastNotification* sender,

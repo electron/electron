@@ -72,7 +72,7 @@ ElectronExtensionsBrowserClient::ElectronExtensionsBrowserClient()
       std::make_unique<extensions::ElectronExtensionsBrowserAPIProvider>());
 }
 
-ElectronExtensionsBrowserClient::~ElectronExtensionsBrowserClient() {}
+ElectronExtensionsBrowserClient::~ElectronExtensionsBrowserClient() = default;
 
 bool ElectronExtensionsBrowserClient::IsShuttingDown() {
   return electron::Browser::Get()->is_shutting_down();

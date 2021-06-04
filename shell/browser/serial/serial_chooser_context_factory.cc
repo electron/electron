@@ -14,7 +14,7 @@ SerialChooserContextFactory::SerialChooserContextFactory()
           "SerialChooserContext",
           BrowserContextDependencyManager::GetInstance()) {}
 
-SerialChooserContextFactory::~SerialChooserContextFactory() {}
+SerialChooserContextFactory::~SerialChooserContextFactory() = default;
 
 KeyedService* SerialChooserContextFactory::BuildServiceInstanceFor(
     content::BrowserContext* context) const {

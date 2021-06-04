@@ -92,9 +92,9 @@ void ElectronCrashReporterClient::SetGlobalAnnotations(
   global_annotations_ = annotations;
 }
 
-ElectronCrashReporterClient::ElectronCrashReporterClient() {}
+ElectronCrashReporterClient::ElectronCrashReporterClient() = default;
 
-ElectronCrashReporterClient::~ElectronCrashReporterClient() {}
+ElectronCrashReporterClient::~ElectronCrashReporterClient() = default;
 
 #if defined(OS_LINUX)
 void ElectronCrashReporterClient::SetCrashReporterClientIdFromGUID(

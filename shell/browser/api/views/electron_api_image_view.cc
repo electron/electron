@@ -18,7 +18,7 @@ ImageView::ImageView() : View(new views::ImageView()) {
   view()->set_owned_by_client();
 }
 
-ImageView::~ImageView() {}
+ImageView::~ImageView() = default;
 
 void ImageView::SetImage(const gfx::Image& image) {
   image_view()->SetImage(image.AsImageSkia());

@@ -225,7 +225,7 @@ NativeBrowserViewMac::NativeBrowserViewMac(
   view.autoresizingMask = kDefaultAutoResizingMask;
 }
 
-NativeBrowserViewMac::~NativeBrowserViewMac() {}
+NativeBrowserViewMac::~NativeBrowserViewMac() = default;
 
 void NativeBrowserViewMac::SetAutoResizeFlags(uint8_t flags) {
   NSAutoresizingMaskOptions autoresizing_mask = kDefaultAutoResizingMask;

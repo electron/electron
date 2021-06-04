@@ -18,9 +18,11 @@
 
 using extensions::NativeHandler;
 
-ElectronExtensionsDispatcherDelegate::ElectronExtensionsDispatcherDelegate() {}
+ElectronExtensionsDispatcherDelegate::ElectronExtensionsDispatcherDelegate() =
+    default;
 
-ElectronExtensionsDispatcherDelegate::~ElectronExtensionsDispatcherDelegate() {}
+ElectronExtensionsDispatcherDelegate::~ElectronExtensionsDispatcherDelegate() =
+    default;
 
 void ElectronExtensionsDispatcherDelegate::RegisterNativeHandlers(
     extensions::Dispatcher* dispatcher,
