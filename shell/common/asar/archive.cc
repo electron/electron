@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/check.h"
 #include "base/files/file.h"
 #include "base/files/file_util.h"
 #include "base/json/json_reader.h"
@@ -118,7 +119,7 @@ bool FillFileInfoWithNode(Archive::FileInfo* info,
 }  // namespace
 
 Archive::Archive(const base::FilePath& path)
-    : path_(path), file_(base::File::FILE_OK) {
+    : initialized_(false), path_(path), file_(base::File::FILE_OK) {
   base::ThreadRestrictions::ScopedAllowIO allow_io;
   file_.Initialize(path_, base::File::FLAG_OPEN | base::File::FLAG_READ);
 #if defined(OS_WIN)
@@ -141,6 +142,10 @@ Archive::~Archive() {
 }
 
 bool Archive::Init() {
+  // Should only be initialized once
+  CHECK(!initialized_);
+  initialized_ = true;
+
   if (!file_.IsValid()) {
     if (file_.error_details() != base::File::FILE_ERROR_NOT_FOUND) {
       LOG(WARNING) << "Opening " << path_.value() << ": "
@@ -198,7 +203,7 @@ bool Archive::Init() {
   return true;
 }
 
-bool Archive::GetFileInfo(const base::FilePath& path, FileInfo* info) {
+bool Archive::GetFileInfo(const base::FilePath& path, FileInfo* info) const {
   if (!header_)
     return false;
 
@@ -213,7 +218,7 @@ bool Archive::GetFileInfo(const base::FilePath& path, FileInfo* info) {
   return FillFileInfoWithNode(info, header_size_, node);
 }
 
-bool Archive::Stat(const base::FilePath& path, Stats* stats) {
+bool Archive::Stat(const base::FilePath& path, Stats* stats) const {
   if (!header_)
     return false;
 
@@ -237,7 +242,7 @@ bool Archive::Stat(const base::FilePath& path, Stats* stats) {
 }
 
 bool Archive::Readdir(const base::FilePath& path,
-                      std::vector<base::FilePath>* files) {
+                      std::vector<base::FilePath>* files) const {
   if (!header_)
     return false;
 
@@ -257,7 +262,8 @@ bool Archive::Readdir(const base::FilePath& path,
   return true;
 }
 
-bool Archive::Realpath(const base::FilePath& path, base::FilePath* realpath) {
+bool Archive::Realpath(const base::FilePath& path,
+                       base::FilePath* realpath) const {
   if (!header_)
     return false;
 
@@ -276,6 +282,11 @@ bool Archive::Realpath(const base::FilePath& path, base::FilePath* realpath) {
 }
 
 bool Archive::CopyFileOut(const base::FilePath& path, base::FilePath* out) {
+  if (!header_)
+    return false;
+
+  base::AutoLock auto_lock(external_files_lock_);
+
   auto it = external_files_.find(path.value());
   if (it != external_files_.end()) {
     *out = it->second->path();
