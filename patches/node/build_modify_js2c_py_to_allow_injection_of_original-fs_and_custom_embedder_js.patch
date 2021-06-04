@@ -108,8 +108,8 @@ index 4af54c3fa00602f9d0ce5cc4dca253d425048706..ef6572732b8c0464fb22536aed9171b4
 -  config_def, config_size = handle_config_gypi(source_files['config.gypi'])
 -  definitions.append(config_def)
 +  for extension in source_files.keys():
-+    for filename in source_files[extension]:
-+      if extension == '.js' or extension == '.mjs':
++    if extension == '.js' or extension == '.mjs':
++      for filename in source_files[extension]:
 +        AddModule(filename, definitions, initializers)
 +
 +        # Electron: Expose fs module without asar support.
