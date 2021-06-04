@@ -41,7 +41,6 @@
 #include "shell/browser/ui/devtools_manager_delegate.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/application_info.h"
-#include "shell/common/asar/asar_util.h"
 #include "shell/common/electron_paths.h"
 #include "shell/common/gin_helper/trackable_object.h"
 #include "shell/common/node_bindings.h"
@@ -209,9 +208,7 @@ ElectronBrowserMainParts::ElectronBrowserMainParts(
   self_ = this;
 }
 
-ElectronBrowserMainParts::~ElectronBrowserMainParts() {
-  asar::ClearArchives();
-}
+ElectronBrowserMainParts::~ElectronBrowserMainParts() = default;
 
 // static
 ElectronBrowserMainParts* ElectronBrowserMainParts::Get() {
