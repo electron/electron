@@ -1,51 +1,41 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Shelley Vohr <shelley.vohr@gmail.com>
-Date: Wed, 27 May 2020 13:02:13 -0700
-Subject: fix: comment out incompatible crypto modules
+Date: Wed, 12 Feb 2020 15:08:04 -0800
+Subject: fix: handle BoringSSL and OpenSSL incompatibilities
 
-Node.js introduced some functionality in https://github.com/nodejs/node/pull/32739
-and https://github.com/nodejs/node/pull/31178 that is not currently compatible
-with what's exposed through BoringSSL. I plan to upstream parts of this or
-otherwise introduce shims to reduce friction.
+This patch corrects for imcompatibilities between OpenSSL, which Node.js uses,
+and BoringSSL which Electron uses via Chromium. Each incompatibility typically has
+~2 paths forward:
+* Upstream a shim or adapted implementation to BoringSSL
+* Alter Node.js functionality to something which both libraries can handle.
+
+Where possible, we should seek to make this patch as minimal as possible.
+
+Upstreams for code herein (update when changed):
+* https://boringssl-review.googlesource.com/c/boringssl/+/47824
+* https://boringssl-review.googlesource.com/c/boringssl/+/47844
+* https://github.com/nodejs/node/pull/38926
+* https://github.com/nodejs/node/pull/38925
+* https://github.com/nodejs/node/pull/38901
+* https://github.com/nodejs/node/pull/38900
+* https://github.com/nodejs/node/pull/38864
+* https://github.com/nodejs/node/pull/38744
 
 diff --git a/src/crypto/crypto_cipher.cc b/src/crypto/crypto_cipher.cc
-index 5ce466582823ae1304731610da61b7fde77fc65a..c40f03e56fce2d5edae179170d3846515d99e393 100644
+index 5ce466582823ae1304731610da61b7fde77fc65a..0bf80ecd89deb83cf5ecfa8ee7c8fe1dec3b6c36 100644
 --- a/src/crypto/crypto_cipher.cc
 +++ b/src/crypto/crypto_cipher.cc
-@@ -144,14 +144,14 @@ void GetCipherInfo(const FunctionCallbackInfo<Value>& args) {
-           OneByteString(env->isolate(), mode_label)).IsNothing()) {
-     return;
-   }
--
-+#ifndef OPENSSL_IS_BORINGSSL
+@@ -148,7 +148,7 @@ void GetCipherInfo(const FunctionCallbackInfo<Value>& args) {
    if (info->Set(
            env->context(),
            env->name_string(),
-           OneByteString(env->isolate(), EVP_CIPHER_name(cipher))).IsNothing()) {
+-          OneByteString(env->isolate(), EVP_CIPHER_name(cipher))).IsNothing()) {
++          OneByteString(env->isolate(), OBJ_nid2sn(EVP_CIPHER_nid(cipher)))).IsNothing()) {
      return;
    }
--
-+#endif
-   if (info->Set(
-           env->context(),
-           FIXED_ONE_BYTE_STRING(env->isolate(), "nid"),
-@@ -905,12 +905,14 @@ bool PublicKeyCipher::Cipher(
-     // OpenSSL takes ownership of the label, so we need to create a copy.
-     void* label = OPENSSL_memdup(oaep_label.data(), oaep_label.size());
-     CHECK_NOT_NULL(label);
-+#ifndef OPENSSL_IS_BORINGSSL
-     if (0 >= EVP_PKEY_CTX_set0_rsa_oaep_label(ctx.get(),
-                 reinterpret_cast<unsigned char*>(label),
-                                       oaep_label.size())) {
-       OPENSSL_free(label);
-       return false;
-     }
-+#endif
-   }
  
-   size_t out_len = 0;
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index 8feefde819ea8b67c92afd2af7edf1fcc00aabd0..af360270e74ecca8f72ab1cb5083acacab4ae9df 100644
+index 8feefde819ea8b67c92afd2af7edf1fcc00aabd0..7eb17ee53475fbbedb456f535b7d4a76ea66693e 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
 @@ -13,6 +13,7 @@
@@ -56,14 +46,6 @@ index 8feefde819ea8b67c92afd2af7edf1fcc00aabd0..af360270e74ecca8f72ab1cb5083acac
  #ifndef OPENSSL_NO_ENGINE
  #include <openssl/engine.h>
  #endif  // !OPENSSL_NO_ENGINE
-@@ -1201,7 +1202,6 @@ int SecureContext::TicketCompatibilityCallback(SSL* ssl,
-                      EVP_sha256(), nullptr) <= 0) {
-       return -1;
-     }
--    return 1;
-   }
- 
-   if (memcmp(name, sc->ticket_key_name_, sizeof(sc->ticket_key_name_)) != 0) {
 diff --git a/src/crypto/crypto_dh.cc b/src/crypto/crypto_dh.cc
 index 1c48f98656fd211403354bb88331450e51ffb3e5..7c3ee76b91dbc4f4f5d72594218cce07231edcb7 100644
 --- a/src/crypto/crypto_dh.cc
@@ -195,24 +177,36 @@ index b24f8f32136ffaed54310d5dc02e57b0f69450d6..50a6663966cdb147a702df21240fa449
      THROW_ERR_CRYPTO_OPERATION_FAILED(env, "could not generate prime");
      return Nothing<bool>();
 diff --git a/src/crypto/crypto_rsa.cc b/src/crypto/crypto_rsa.cc
-index 5fa91cce1a6ad2bc1167e20a4dadcfdfc2343440..d6db572ffac83b82eb3356a4d3258ae89219e38c 100644
+index 5fa91cce1a6ad2bc1167e20a4dadcfdfc2343440..6f1bad3f129066eddcbddf32849b6d4832b62ae9 100644
 --- a/src/crypto/crypto_rsa.cc
 +++ b/src/crypto/crypto_rsa.cc
-@@ -210,10 +210,12 @@ WebCryptoCipherStatus RSA_Cipher(
+@@ -210,7 +210,10 @@ WebCryptoCipherStatus RSA_Cipher(
    if (label_len > 0) {
      void* label = OPENSSL_memdup(params.label.get(), label_len);
      CHECK_NOT_NULL(label);
-+#ifndef OPENSSL_IS_BORINGSSL
-     if (EVP_PKEY_CTX_set0_rsa_oaep_label(ctx.get(), label, label_len) <= 0) {
+-    if (EVP_PKEY_CTX_set0_rsa_oaep_label(ctx.get(), label, label_len) <= 0) {
++    if (EVP_PKEY_CTX_set0_rsa_oaep_label(
++      ctx.get(),
++      reinterpret_cast<unsigned char*>(label),
++      label_len) <= 0) {
        OPENSSL_free(label);
        return WebCryptoCipherStatus::FAILED;
      }
-+#endif
-   }
- 
-   size_t out_len = 0;
+diff --git a/src/crypto/crypto_sig.cc b/src/crypto/crypto_sig.cc
+index 7b113a8dcb06b0b0e1329ce0daf7305598ea6545..b04e53a7f24885ffb6639430988d0ffb524b028e 100644
+--- a/src/crypto/crypto_sig.cc
++++ b/src/crypto/crypto_sig.cc
+@@ -110,7 +110,7 @@ unsigned int GetBytesOfRS(const ManagedEVPPKey& pkey) {
+   if (base_id == EVP_PKEY_DSA) {
+     const DSA* dsa_key = EVP_PKEY_get0_DSA(pkey.get());
+     // Both r and s are computed mod q, so their width is limited by that of q.
+-    bits = BN_num_bits(DSA_get0_q(dsa_key));
++    bits = BN_num_bits(dsa_key->q);
+   } else if (base_id == EVP_PKEY_EC) {
+     const EC_KEY* ec_key = EVP_PKEY_get0_EC_KEY(pkey.get());
+     const EC_GROUP* ec_group = EC_KEY_get0_group(ec_key);
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index fbe4c0f06c10df7c8a492711594381c27c6f81f7..76c8c037ffd3c8b67179d7d881ad6ea530b00686 100644
+index da66cde877c6ce045d907205bb2a6e369234fb8e..76c8c037ffd3c8b67179d7d881ad6ea530b00686 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
 @@ -20,6 +20,8 @@
@@ -240,6 +234,24 @@ index fbe4c0f06c10df7c8a492711594381c27c6f81f7..76c8c037ffd3c8b67179d7d881ad6ea5
  #endif
  
    /* Override FIPS settings in cnf file, if needed. */
+@@ -655,7 +657,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+   CHECK(args[0]->IsUint32());
+   Environment* env = Environment::GetCurrent(args);
+   uint32_t len = args[0].As<Uint32>()->Value();
+-  char* data = static_cast<char*>(OPENSSL_secure_malloc(len));
++  char* data = static_cast<char*>(OPENSSL_malloc(len));
+   if (data == nullptr) {
+     // There's no memory available for the allocation.
+     // Return nothing.
+@@ -667,7 +669,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+           data,
+           len,
+           [](void* data, size_t len, void* deleter_data) {
+-            OPENSSL_secure_clear_free(data, len);
++            OPENSSL_clear_free(data, len);
+           },
+           data);
+   Local<ArrayBuffer> buffer = ArrayBuffer::New(env->isolate(), store);
 @@ -675,10 +677,12 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
  }
  
