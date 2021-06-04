@@ -434,7 +434,8 @@ std::u16string GetDefaultPrinterAsync() {
   scoped_refptr<printing::PrintBackend> print_backend =
       printing::PrintBackend::CreateInstance(
           g_browser_process->GetApplicationLocale());
-  std::string printer_name = print_backend->GetDefaultPrinterName();
+  std::string printer_name;
+  print_backend->GetDefaultPrinterName(printer_name);
 
   // Some devices won't have a default printer, so we should
   // also check for existing printers and pick the first
