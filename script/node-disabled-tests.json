@@ -24,7 +24,6 @@
   "parallel/test-crypto-ecb",
   "parallel/test-crypto-engine",
   "parallel/test-crypto-fips",
-  "parallel/test-crypto-getcipherinfo",
   "parallel/test-crypto-hkdf.js",
   "parallel/test-crypto-rsa-dsa",
   "parallel/test-crypto-secure-heap",
