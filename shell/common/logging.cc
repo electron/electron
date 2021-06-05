@@ -46,16 +46,22 @@ base::FilePath GetLogFileName(const base::CommandLine& command_line) {
   if (!command_line.HasSwitch(switches::kEnableLogging))
     return ::logging::LOG_NONE;
 
-  // Let --enable-logging=stderr force only stderr, particularly useful for
-  // non-debug builds where otherwise you can't get logs to stderr at all.
+  // --enable-logging logs to stderr, --enable-logging=file logs to a file.
+  // NB. this differs from Chromium, in which --enable-logging logs to a file
+  // and --enable-logging=stderr logs to stderr, because that's how Electron
+  // used to work, so in order to not break anyone who was depending on
+  // --enable-logging logging to stderr, we preserve the old behavior by
+  // default.
   std::string logging_destination =
       command_line.GetSwitchValueASCII(switches::kEnableLogging);
-  if (logging_destination == "stderr") {
-    return ::logging::LOG_TO_SYSTEM_DEBUG_LOG | ::logging::LOG_TO_STDERR;
+  // TODO(nornagon): if --log-file or ELECTRON_LOG_FILE is specified along with
+  // --enable-logging, return LOG_TO_FILE.
+  if (logging_destination == "file") {
+    return ::logging::LOG_TO_FILE;
   } else if (logging_destination != "") {
     PLOG(ERROR) << "Invalid logging destination: " << logging_destination;
   }
-  return ::logging::LOG_TO_FILE;
+  return ::logging::LOG_TO_SYSTEM_DEBUG_LOG | ::logging::LOG_TO_STDERR;
 }
 
 void InitLogging(const base::CommandLine& command_line) {
