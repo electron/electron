@@ -117,15 +117,18 @@ const mainWindow = new BrowserWindow({
 mainWindow.webContents.setWindowOpenHandler(({ url }) => {
   if (url === 'about:blank') {
     return {
-      frame: false,
-      fullscreenable: false,
-      backgroundColor: 'black',
-      webPreferences: {
-        preload: 'my-child-window-preload-script.js'
+      action: 'allow',
+      overrideBrowserWindowOptions: {
+        frame: false,
+        fullscreenable: false,
+        backgroundColor: 'black',
+        webPreferences: {
+          preload: 'my-child-window-preload-script.js'
+        }
       }
     }
   }
-  return false
+  return { action: 'deny' }
 })
 ```
 
