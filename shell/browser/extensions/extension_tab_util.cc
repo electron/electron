@@ -25,6 +25,7 @@
 #include "extensions/common/error_utils.h"
 #include "extensions/common/manifest_constants.h"
 #include "extensions/common/manifest_handlers/incognito_info.h"
+#include "extensions/common/permissions/api_permission.h"
 #include "extensions/common/permissions/permissions_data.h"
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/api/electron_api_web_contents.h"
@@ -35,6 +36,7 @@
 
 using content::NavigationEntry;
 using content::WebContents;
+using extensions::mojom::APIPermissionID;
 
 namespace extensions {
 
@@ -56,11 +58,11 @@ ExtensionTabUtil::ScrubTabBehaviorType GetScrubTabBehaviorImpl(
   if (extension) {
     bool api_permission = false;
     if (tab_id == -1) {
-      api_permission =
-          extension->permissions_data()->HasAPIPermission(APIPermission::kTab);
+      api_permission = extension->permissions_data()->HasAPIPermission(
+          APIPermissionID::kTab);
     } else {
       api_permission = extension->permissions_data()->HasAPIPermissionForTab(
-          tab_id, APIPermission::kTab);
+          tab_id, APIPermissionID::kTab);
     }
 
     bool host_permission = extension->permissions_data()
