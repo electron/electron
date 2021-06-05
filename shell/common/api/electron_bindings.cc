@@ -38,7 +38,7 @@ ElectronBindings::ElectronBindings(uv_loop_t* loop) {
   metrics_ = base::ProcessMetrics::CreateCurrentProcessMetrics();
 }
 
-ElectronBindings::~ElectronBindings() {}
+ElectronBindings::~ElectronBindings() = default;
 
 // static
 void ElectronBindings::BindProcess(v8::Isolate* isolate,

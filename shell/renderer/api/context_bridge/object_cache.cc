@@ -14,7 +14,7 @@ namespace api {
 
 namespace context_bridge {
 
-ObjectCache::ObjectCache() {}
+ObjectCache::ObjectCache() = default;
 ObjectCache::~ObjectCache() = default;
 
 void ObjectCache::CacheProxiedObject(v8::Local<v8::Value> from,

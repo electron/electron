@@ -31,7 +31,7 @@ bool StringToAccelerator(const std::string& shortcut,
   // Now, parse it into an accelerator.
   int modifiers = ui::EF_NONE;
   ui::KeyboardCode key = ui::VKEY_UNKNOWN;
-  base::Optional<char16_t> shifted_char;
+  absl::optional<char16_t> shifted_char;
   for (const auto& token : tokens) {
     ui::KeyboardCode code = electron::KeyboardCodeFromStr(token, &shifted_char);
     if (shifted_char)

@@ -52,7 +52,7 @@ void ElectronCrashReporterClient::Create() {
 
   // By setting the BREAKPAD_DUMP_LOCATION environment variable, an alternate
   // location to write crash dumps can be set.
-  std::unique_ptr<base::Environment> env(base::Environment::Create());
+  auto env = base::Environment::Create();
   std::string alternate_crash_dump_location;
   base::FilePath crash_dumps_dir_path;
   if (env->GetVar("BREAKPAD_DUMP_LOCATION", &alternate_crash_dump_location)) {
@@ -92,9 +92,9 @@ void ElectronCrashReporterClient::SetGlobalAnnotations(
   global_annotations_ = annotations;
 }
 
-ElectronCrashReporterClient::ElectronCrashReporterClient() {}
+ElectronCrashReporterClient::ElectronCrashReporterClient() = default;
 
-ElectronCrashReporterClient::~ElectronCrashReporterClient() {}
+ElectronCrashReporterClient::~ElectronCrashReporterClient() = default;
 
 #if defined(OS_LINUX)
 void ElectronCrashReporterClient::SetCrashReporterClientIdFromGUID(

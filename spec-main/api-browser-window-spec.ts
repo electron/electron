@@ -772,8 +772,10 @@ describe('BrowserWindow module', () => {
         expect(otherWindow.isFocused()).to.equal(true);
 
         const wFocused = emittedOnce(w, 'focus');
+        const otherWindowBlurred = emittedOnce(otherWindow, 'blur');
         w.focus();
         await wFocused;
+        await otherWindowBlurred;
         expect(w.isFocused()).to.equal(true);
 
         otherWindow.moveTop();

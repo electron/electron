@@ -43,7 +43,6 @@ class DevToolsWindowDelegate : public views::ClientView,
   // views::WidgetDelegate:
   void DeleteDelegate() override { delete this; }
   views::View* GetInitiallyFocusedView() override { return view_; }
-  bool CanResize() const override { return true; }
   bool CanMaximize() const override { return true; }
   bool CanMinimize() const override { return true; }
   std::u16string GetWindowTitle() const override { return shell_->GetTitle(); }
