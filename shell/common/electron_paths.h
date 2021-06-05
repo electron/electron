@@ -22,9 +22,8 @@ namespace electron {
 enum {
   PATH_START = 11000,
 
-  DIR_USER_DATA = PATH_START,  // Directory where user data can be written.
-  DIR_USER_CACHE,              // Directory where user cache can be written.
-  DIR_APP_LOGS,                // Directory where app logs live
+  DIR_USER_CACHE = PATH_START,  // Directory where user cache can be written.
+  DIR_APP_LOGS,                 // Directory where app logs live
 
 #if defined(OS_WIN)
   DIR_RECENT,  // Directory where recent files live

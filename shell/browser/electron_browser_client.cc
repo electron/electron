@@ -100,6 +100,7 @@
 #include "shell/common/api/api.mojom.h"
 #include "shell/common/application_info.h"
 #include "shell/common/electron_paths.h"
+#include "shell/common/logging.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/platform_util.h"
 #include "third_party/blink/public/common/loader/url_loader_throttle.h"
@@ -542,6 +543,10 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
   }
 #endif
 
+  base::FilePath user_data_dir;
+  if (base::PathService::Get(chrome::DIR_USER_DATA, &user_data_dir))
+    command_line->AppendSwitchPath(::switches::kUserDataDir, user_data_dir);
+
   if (process_type == ::switches::kUtilityProcess ||
       process_type == ::switches::kRendererProcess) {
     // Copy following switches to child process.
@@ -794,6 +799,11 @@ bool ElectronBrowserClient::ArePersistentMediaDeviceIDsAllowed(
   return true;
 }
 
+base::FilePath ElectronBrowserClient::GetLoggingFileName(
+    const base::CommandLine& cmd_line) {
+  return logging::GetLogFileName(cmd_line);
+}
+
 void ElectronBrowserClient::SiteInstanceDeleting(
     content::SiteInstance* site_instance) {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -1023,7 +1033,7 @@ void ElectronBrowserClient::OnNetworkServiceCreated(
 std::vector<base::FilePath>
 ElectronBrowserClient::GetNetworkContextsParentDirectory() {
   base::FilePath user_data_dir;
-  base::PathService::Get(DIR_USER_DATA, &user_data_dir);
+  base::PathService::Get(chrome::DIR_USER_DATA, &user_data_dir);
   DCHECK(!user_data_dir.empty());
 
   return {user_data_dir};
@@ -1416,7 +1426,7 @@ std::string ElectronBrowserClient::GetApplicationLocale() {
 
 base::FilePath ElectronBrowserClient::GetFontLookupTableCacheDir() {
   base::FilePath user_data_dir;
-  base::PathService::Get(DIR_USER_DATA, &user_data_dir);
+  base::PathService::Get(chrome::DIR_USER_DATA, &user_data_dir);
   DCHECK(!user_data_dir.empty());
   return user_data_dir.Append(FILE_PATH_LITERAL("FontLookupTableCache"));
 }

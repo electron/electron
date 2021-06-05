@@ -18,6 +18,7 @@
 #include "base/path_service.h"
 #include "base/strings/string_split.h"
 #include "chrome/common/chrome_paths.h"
+#include "chrome/common/chrome_switches.h"
 #include "components/content_settings/core/common/content_settings_pattern.h"
 #include "content/public/common/content_switches.h"
 #include "electron/buildflags/buildflags.h"
@@ -30,7 +31,9 @@
 #include "shell/browser/electron_gpu_client.h"
 #include "shell/browser/feature_list.h"
 #include "shell/browser/relauncher.h"
+#include "shell/common/application_info.h"
 #include "shell/common/electron_paths.h"
+#include "shell/common/logging.h"
 #include "shell/common/options_switches.h"
 #include "shell/renderer/electron_renderer_client.h"
 #include "shell/renderer/electron_sandboxed_renderer_client.h"
@@ -72,7 +75,6 @@ constexpr base::StringPiece kElectronDisableSandbox("ELECTRON_DISABLE_SANDBOX");
 constexpr base::StringPiece kElectronEnableLogging("ELECTRON_ENABLE_LOGGING");
 constexpr base::StringPiece kElectronEnableStackDumping(
     "ELECTRON_ENABLE_STACK_DUMPING");
-constexpr base::StringPiece kLogFileName("ELECTRON_LOG_FILE");
 
 bool IsBrowserProcess(base::CommandLine* cmd) {
   std::string process_type = cmd->GetSwitchValueASCII(::switches::kProcessType);
@@ -112,75 +114,11 @@ void InvalidParameterHandler(const wchar_t*,
 }
 #endif
 
-void InitLogging(base::Environment* env,
-                 const base::CommandLine* command_line) {
-  if (!command_line->HasSwitch(::switches::kEnableLogging))
-    return;
-
-  logging::LoggingDestination log_mode;
-  base::FilePath log_filename(FILE_PATH_LITERAL("electron_debug.log"));
-  if (command_line->GetSwitchValueASCII(::switches::kEnableLogging) ==
-      "stderr") {
-    log_mode = logging::LOG_TO_SYSTEM_DEBUG_LOG | logging::LOG_TO_STDERR;
-  } else {
-    base::FilePath custom_filename(
-        command_line->GetSwitchValuePath(::switches::kEnableLogging));
-    if (custom_filename.empty()) {
-      log_mode = logging::LOG_TO_ALL;
-    } else {
-      log_mode = logging::LOG_TO_FILE;
-      log_filename = custom_filename;
-    }
-  }
-
-  if (command_line->HasSwitch(::switches::kLoggingLevel) &&
-      logging::GetMinLogLevel() >= 0) {
-    std::string log_level =
-        command_line->GetSwitchValueASCII(::switches::kLoggingLevel);
-    int level = 0;
-    if (base::StringToInt(log_level, &level) && level >= 0 &&
-        level < logging::LOGGING_NUM_SEVERITIES) {
-      logging::SetMinLogLevel(level);
-    } else {
-      DLOG(WARNING) << "Bad log level: " << log_level;
-    }
-  }
-
-  base::FilePath log_path;
-  logging::LoggingSettings settings;
-
-  // we log to where the executable is.
-  if (log_path.empty()) {
-    if (base::PathService::Get(base::DIR_MODULE, &log_path)) {
-      log_path = log_path.Append(log_filename);
-    } else {
-      log_path = log_filename;
-    }
-  }
-
-  std::string filename;
-  if (env->GetVar(kLogFileName, &filename) && !filename.empty()) {
-    log_path = base::FilePath::FromUTF8Unsafe(filename);
-  }
-
-  settings.logging_dest = log_mode;
-  settings.log_file_path = log_path.value().c_str();
-  settings.lock_log = logging::DONT_LOCK_LOG_FILE;
-  bool success = logging::InitLogging(settings);
-  DCHECK(success);
-
-  logging::SetLogItems(true /* pid */, false, true /* timestamp */, false);
-
-  if ((log_mode & logging::LOG_TO_FILE) != 0) {
-    std::cerr << "logging to " << log_path << std::endl;
-  }
-}
-
 // TODO(nornagon): move path provider overriding to its own file in
 // shell/common
 bool GetDefaultCrashDumpsPath(base::FilePath* path) {
   base::FilePath cur;
-  if (!base::PathService::Get(DIR_USER_DATA, &cur))
+  if (!base::PathService::Get(chrome::DIR_USER_DATA, &cur))
     return false;
 #if defined(OS_MAC) || defined(OS_WIN)
   cur = cur.Append(FILE_PATH_LITERAL("Crashpad"));
@@ -195,9 +133,26 @@ bool GetDefaultCrashDumpsPath(base::FilePath* path) {
   return true;
 }
 
-bool ElectronPathProvider(int key, base::FilePath* path) {
-  if (key == DIR_CRASH_DUMPS) {
-    return GetDefaultCrashDumpsPath(path);
+bool ElectronPathProvider(int key, base::FilePath* result) {
+  switch (key) {
+    case chrome::DIR_USER_DATA:
+      if (base::PathService::Get(DIR_APP_DATA, result)) {
+        *result = result->Append(
+            base::FilePath::FromUTF8Unsafe(GetApplicationName()));
+        return true;
+      }
+      return false;
+    case DIR_CRASH_DUMPS:
+      return GetDefaultCrashDumpsPath(result);
+    case chrome::DIR_APP_DICTIONARIES:
+      if (base::PathService::Get(chrome::DIR_USER_DATA, result)) {
+        *result =
+            result->Append(base::FilePath::FromUTF8Unsafe("Dictionaries"));
+        return true;
+      }
+      return false;
+    case chrome::DIR_LOGS:
+      return base::PathService::Get(chrome::DIR_USER_DATA, result);
   }
   return false;
 }
@@ -267,17 +222,6 @@ bool ElectronMainDelegate::BasicStartupComplete(int* exit_code) {
   chrome::RegisterPathProvider();
   electron::RegisterPathProvider();
 
-  if (env->HasVar(kElectronEnableLogging) &&
-      !command_line->HasSwitch(::switches::kEnableLogging)) {
-    // support the long-standing 'ELECTRON_ENABLE_LOGGING' envvar:
-    // behaves equivalently to --enable-logging=stderr
-    auto cmd_tmp = *command_line;
-    cmd_tmp.AppendSwitchASCII(::switches::kEnableLogging, "stderr");
-    InitLogging(env.get(), &cmd_tmp);
-  } else {
-    InitLogging(env.get(), command_line);
-  }
-
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   ContentSettingsPattern::SetNonWildcardDomainNonPortSchemes(
       kNonWildcardDomainNonPortSchemes, kNonWildcardDomainNonPortSchemesSize);
@@ -335,6 +279,25 @@ void ElectronMainDelegate::PreSandboxStartup() {
   std::string process_type =
       command_line->GetSwitchValueASCII(::switches::kProcessType);
 
+  base::FilePath user_data_dir =
+      command_line->GetSwitchValuePath(::switches::kUserDataDir);
+  if (!user_data_dir.empty()) {
+    base::PathService::OverrideAndCreateIfNeeded(chrome::DIR_USER_DATA,
+                                                 user_data_dir, false, true);
+  }
+
+  auto env = base::Environment::Create();
+  if (env->HasVar(kElectronEnableLogging) &&
+      !command_line->HasSwitch(::switches::kEnableLogging)) {
+    // support the long-standing 'ELECTRON_ENABLE_LOGGING' envvar:
+    // behaves equivalently to --enable-logging=stderr
+    command_line->AppendSwitchASCII(::switches::kEnableLogging, "stderr");
+  }
+#if !defined(OS_WIN)
+  // For windows we call InitLogging when the sandbox is initialized.
+  electron::logging::InitLogging(*command_line);
+#endif
+
 #if !defined(MAS_BUILD)
   crash_reporter::InitializeCrashKeys();
 #endif
@@ -380,6 +343,12 @@ void ElectronMainDelegate::PreSandboxStartup() {
     command_line->AppendSwitch("enable-avfoundation");
 #endif
   }
+}
+
+void ElectronMainDelegate::SandboxInitialized(const std::string& process_type) {
+#if defined(OS_WIN)
+  electron::logging::InitLogging(process_type);
+#endif
 }
 
 void ElectronMainDelegate::PreBrowserMain() {

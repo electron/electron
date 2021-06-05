@@ -441,7 +441,7 @@ int GetPathConstant(const std::string& name) {
   if (name == "appData")
     return DIR_APP_DATA;
   else if (name == "userData")
-    return DIR_USER_DATA;
+    return chrome::DIR_USER_DATA;
   else if (name == "cache")
     return DIR_CACHE;
   else if (name == "userCache")
@@ -924,7 +924,7 @@ void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
     }
   } else {
     base::FilePath path;
-    if (base::PathService::Get(DIR_USER_DATA, &path)) {
+    if (base::PathService::Get(chrome::DIR_USER_DATA, &path)) {
       path = path.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
       path = path.Append(base::FilePath::FromUTF8Unsafe("logs"));
       {
@@ -994,13 +994,6 @@ void App::SetPath(gin_helper::ErrorThrower thrower,
   if (key >= 0) {
     succeed =
         base::PathService::OverrideAndCreateIfNeeded(key, path, true, false);
-    if (key == DIR_USER_DATA) {
-      succeed |= base::PathService::OverrideAndCreateIfNeeded(
-          chrome::DIR_USER_DATA, path, true, false);
-      succeed |= base::PathService::Override(
-          chrome::DIR_APP_DICTIONARIES,
-          path.Append(base::FilePath::FromUTF8Unsafe("Dictionaries")));
-    }
   }
   if (!succeed)
     thrower.ThrowError("Failed to set path");
@@ -1072,7 +1065,7 @@ bool App::RequestSingleInstanceLock() {
     return true;
 
   base::FilePath user_dir;
-  base::PathService::Get(DIR_USER_DATA, &user_dir);
+  base::PathService::Get(chrome::DIR_USER_DATA, &user_dir);
 
   auto cb = base::BindRepeating(&App::OnSecondInstance, base::Unretained(this));
 
