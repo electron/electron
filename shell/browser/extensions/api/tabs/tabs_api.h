@@ -45,7 +45,7 @@ class TabsExecuteScriptFunction : public ExecuteCodeInTabFunction {
 
 class TabsInsertCSSFunction : public ExecuteCodeInTabFunction {
  private:
-  ~TabsInsertCSSFunction() override {}
+  ~TabsInsertCSSFunction() override = default;
 
   bool ShouldInsertCSS() const override;
 
@@ -54,7 +54,7 @@ class TabsInsertCSSFunction : public ExecuteCodeInTabFunction {
 
 class TabsRemoveCSSFunction : public ExecuteCodeInTabFunction {
  private:
-  ~TabsRemoveCSSFunction() override {}
+  ~TabsRemoveCSSFunction() override = default;
 
   bool ShouldRemoveCSS() const override;
 

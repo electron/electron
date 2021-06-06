@@ -14,9 +14,6 @@
 #include "shell/common/extensions/api/tabs.h"
 #include "ui/base/window_open_disposition.h"
 
-class GURL;
-class ExtensionFunction;
-
 namespace electron {
 namespace api {
 struct ExtensionTabDetails;
@@ -25,19 +22,10 @@ class WebContents;
 
 }  // namespace electron
 
-namespace base {
-class DictionaryValue;
-class ListValue;
-}  // namespace base
-
 namespace content {
-class BrowserContext;
 class WebContents;
 }  // namespace content
 
-namespace gfx {
-class Rect;
-}
 
 namespace extensions {
 class Extension;

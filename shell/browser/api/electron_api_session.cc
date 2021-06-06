@@ -277,10 +277,10 @@ namespace electron {
 
 namespace api {
 
-ExtensionTabDetails::ExtensionTabDetails() {}
+ExtensionTabDetails::ExtensionTabDetails() = default;
 ExtensionTabDetails::ExtensionTabDetails(const ExtensionTabDetails& other) =
     default;
-ExtensionTabDetails::~ExtensionTabDetails() {}
+ExtensionTabDetails::~ExtensionTabDetails() = default;
 
 namespace {
 
