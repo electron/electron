@@ -46,10 +46,10 @@ index 19409f6cd402e4d0aa53344ceab03ecf418bb2ea..05f555823ff8c3481aeb7f340cbf50c4
      }
  
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index 47aff42464829c0a220924734c8d5482865ac40e..b94361de9b2cfe1144b229fe9ecbbd06c8f36543 100644
+index 1d849f6140e7a8f1d39bb3161644fbbdddeca833..6661518018b582e96038e5d3b6dab05303611c14 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
-@@ -5026,10 +5026,15 @@ test("unit_tests") {
+@@ -5027,10 +5027,15 @@ test("unit_tests") {
      assert(toolkit_views)
      sources += [ "../browser/ui/startup/credential_provider_signin_info_fetcher_win_unittest.cc" ]
      deps += [
