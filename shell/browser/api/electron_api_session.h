@@ -207,10 +207,10 @@ class Session : public gin::Wrappable<Session>,
   v8::Global<v8::Value> service_worker_context_;
   v8::Global<v8::Value> web_request_;
 
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   bool has_emitted_chrome_tabs_get_warning_ = false;
   bool has_emitted_active_tab_warning_ = false;
 
-#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   using GetTabHandler =
       base::RepeatingCallback<v8::Local<v8::Value>(WebContents*)>;
   using GetActiveTabHandler =

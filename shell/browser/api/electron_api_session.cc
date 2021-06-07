@@ -183,33 +183,6 @@ struct Converter<ClearStorageDataOptions> {
   }
 };
 
-template <>
-struct Converter<electron::api::ExtensionTabDetails> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     electron::api::ExtensionTabDetails* out) {
-    gin_helper::Dictionary options;
-    if (!ConvertFromV8(isolate, val, &options))
-      return false;
-
-    *out = electron::api::ExtensionTabDetails();
-
-    options.Get("windowId", &out->window_id);
-    options.Get("active", &out->active);
-    options.Get("highlighted", &out->highlighted);
-    options.Get("pinned", &out->pinned);
-    options.Get("groupId", &out->group_id);
-    options.Get("index", &out->index);
-    options.Get("discarded", &out->discarded);
-    options.Get("autoDiscardable", &out->auto_discardable);
-    options.Get("openerTabId", &out->opener_tab_id);
-    options.Get("mutedReason", &out->muted_reason);
-    options.Get("mutedExtensionId", &out->muted_extension_id);
-
-    return true;
-  }
-};
-
 bool SSLProtocolVersionFromString(const std::string& version_str,
                                   network::mojom::SSLVersion* version) {
   if (version_str == switches::kSSLVersionTLSv12) {
@@ -276,10 +249,12 @@ namespace electron {
 
 namespace api {
 
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 ExtensionTabDetails::ExtensionTabDetails() = default;
 ExtensionTabDetails::ExtensionTabDetails(const ExtensionTabDetails& other) =
     default;
 ExtensionTabDetails::~ExtensionTabDetails() = default;
+#endif
 
 namespace {
 

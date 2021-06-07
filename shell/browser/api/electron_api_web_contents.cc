@@ -89,7 +89,6 @@
 #include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/electron_javascript_dialog_manager.h"
 #include "shell/browser/electron_navigation_throttle.h"
-#include "shell/browser/extensions/extension_tab_util.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/session_preferences.h"
 #include "shell/browser/ui/drag_util.h"
@@ -162,6 +161,7 @@
 #include "extensions/browser/view_type_utils.h"
 #include "extensions/common/mojom/view_type.mojom.h"
 #include "shell/browser/extensions/electron_extension_web_contents_observer.h"
+#include "shell/browser/extensions/extension_tab_util.h"
 #endif
 
 #if BUILDFLAG(ENABLE_PRINTING)
