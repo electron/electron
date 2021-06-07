@@ -10,16 +10,12 @@ class CommandLine;
 class FilePath;
 }  // namespace base
 
-namespace electron {
-
 namespace logging {
 
-void InitLogging(const base::CommandLine& command_line);
+void InitElectronLogging(const base::CommandLine& command_line);
 
 base::FilePath GetLogFileName(const base::CommandLine& command_line);
 
 }  // namespace logging
-
-}  // namespace electron
 
 #endif  // SHELL_COMMON_LOGGING_H_

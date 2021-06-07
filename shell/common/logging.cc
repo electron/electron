@@ -17,8 +17,6 @@
 #include "content/public/common/content_switches.h"
 #include "shell/common/electron_paths.h"
 
-namespace electron {
-
 namespace logging {
 
 constexpr base::StringPiece kLogFileName("ELECTRON_LOG_FILE");
@@ -43,7 +41,7 @@ base::FilePath GetLogFileName(const base::CommandLine& command_line) {
   }
 }
 
-::logging::LoggingDestination DetermineLoggingDestination(
+LoggingDestination DetermineLoggingDestination(
     const base::CommandLine& command_line) {
   bool enable_logging = false;
   std::string enable_logging_value;
@@ -59,7 +57,7 @@ base::FilePath GetLogFileName(const base::CommandLine& command_line) {
     }
   }
   if (!enable_logging)
-    return ::logging::LOG_NONE;
+    return LOG_NONE;
 
   // --enable-logging logs to stderr, --enable-logging=file logs to a file.
   // NB. this differs from Chromium, in which --enable-logging logs to a file
@@ -74,26 +72,25 @@ base::FilePath GetLogFileName(const base::CommandLine& command_line) {
   if (filename.empty())
     base::Environment::Create()->GetVar(kLogFileName, &filename);
   if (!filename.empty() || logging_destination == "file")
-    return ::logging::LOG_TO_FILE;
-  return ::logging::LOG_TO_SYSTEM_DEBUG_LOG | ::logging::LOG_TO_STDERR;
+    return LOG_TO_FILE;
+  return LOG_TO_SYSTEM_DEBUG_LOG | LOG_TO_STDERR;
 }
 
-void InitLogging(const base::CommandLine& command_line) {
+void InitElectronLogging(const base::CommandLine& command_line) {
   const std::string process_type =
       command_line.GetSwitchValueASCII(::switches::kProcessType);
-  ::logging::LoggingDestination logging_dest =
-      DetermineLoggingDestination(command_line);
-  ::logging::LogLockingState log_locking_state = ::logging::LOCK_LOG_FILE;
+  LoggingDestination logging_dest = DetermineLoggingDestination(command_line);
+  LogLockingState log_locking_state = LOCK_LOG_FILE;
   base::FilePath log_path;
 
   if (command_line.HasSwitch(::switches::kLoggingLevel) &&
-      ::logging::GetMinLogLevel() >= 0) {
+      GetMinLogLevel() >= 0) {
     std::string log_level =
         command_line.GetSwitchValueASCII(::switches::kLoggingLevel);
     int level = 0;
     if (base::StringToInt(log_level, &level) && level >= 0 &&
-        level < ::logging::LOGGING_NUM_SEVERITIES) {
-      ::logging::SetMinLogLevel(level);
+        level < LOGGING_NUM_SEVERITIES) {
+      SetMinLogLevel(level);
     } else {
       DLOG(WARNING) << "Bad log level: " << log_level;
     }
@@ -101,31 +98,28 @@ void InitLogging(const base::CommandLine& command_line) {
 
   // Don't resolve the log path unless we need to. Otherwise we leave an open
   // ALPC handle after sandbox lockdown on Windows.
-  if ((logging_dest & ::logging::LOG_TO_FILE) != 0) {
+  if ((logging_dest & LOG_TO_FILE) != 0) {
     log_path = GetLogFileName(command_line);
   } else {
-    log_locking_state = ::logging::DONT_LOCK_LOG_FILE;
+    log_locking_state = DONT_LOCK_LOG_FILE;
   }
 
   // On Windows, having non canonical forward slashes in log file name causes
   // problems with sandbox filters, see https://crbug.com/859676
   log_path = log_path.NormalizePathSeparators();
 
-  ::logging::LoggingSettings settings;
+  LoggingSettings settings;
   settings.logging_dest = logging_dest;
   settings.log_file_path = log_path.value().c_str();
   settings.lock_log = log_locking_state;
-  settings.delete_old = process_type.empty()
-                            ? ::logging::DELETE_OLD_LOG_FILE
-                            : ::logging::APPEND_TO_OLD_LOG_FILE;
-  bool success = ::logging::InitLogging(settings);
+  settings.delete_old =
+      process_type.empty() ? DELETE_OLD_LOG_FILE : APPEND_TO_OLD_LOG_FILE;
+  bool success = InitLogging(settings);
   if (!success) {
     PLOG(FATAL) << "Failed to init logging";
   }
 
-  ::logging::SetLogItems(true /* pid */, false, true /* timestamp */, false);
+  SetLogItems(true /* pid */, false, true /* timestamp */, false);
 }
 
 }  // namespace logging
-
-}  // namespace electron
