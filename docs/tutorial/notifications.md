@@ -18,7 +18,7 @@ To show notifications in the Main process, you need to use the
 
 ### Show notifications in the Renderer process
 
-Assuming you have a working Electron application from the
+Starting with a working application from the
 [Quick Start Guide](quick-start.md), add the following line to the
 `index.html` file before the closing `</body>` tag:
 
@@ -26,26 +26,22 @@ Assuming you have a working Electron application from the
 <script src="renderer.js"></script>
 ```
 
-and add the `renderer.js` file:
+...and add the `renderer.js` file:
 
 ```javascript fiddle='docs/fiddles/features/notifications/renderer'
-const myNotification = new Notification('Title', {
-  body: 'Notification from the Renderer process'
-})
+const NOTIFICATION_TITLE = 'Title'
+const NOTIFICATION_BODY = 'Notification from the Renderer process. Click to log to console.'
+const CLICK_MESSAGE = 'Notification clicked'
 
-myNotification.onclick = () => {
-  console.log('Notification clicked')
-}
+new Notification(NOTIFICATION_TITLE, { body: NOTIFICATION_BODY })
+  .onclick = () => console.log(CLICK_MESSAGE)
 ```
 
 After launching the Electron application, you should see the notification:
 
 ![Notification in the Renderer process](../images/notification-renderer.png)
 
-If you open the Console and then click the notification, you will see the
-message that was generated after triggering the `onclick` event:
-
-![Onclick message for the notification](../images/message-notification-renderer.png)
+Additionally, if you click on the notification, the DOM will update to show "Notification clicked!".
 
 ### Show notifications in the Main process
 
