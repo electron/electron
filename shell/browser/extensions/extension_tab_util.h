@@ -6,8 +6,6 @@
 #define SHELL_BROWSER_EXTENSIONS_EXTENSION_TAB_UTIL_H_
 
 #include <memory>
-#include <string>
-#include <vector>
 
 #include "base/callback.h"
 #include "extensions/common/features/feature.h"
@@ -25,7 +23,6 @@ class WebContents;
 namespace content {
 class WebContents;
 }  // namespace content
-
 
 namespace extensions {
 class Extension;

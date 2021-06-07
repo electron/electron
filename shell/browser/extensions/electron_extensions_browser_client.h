@@ -29,12 +29,6 @@ class ElectronComponentExtensionResourceManager;
 }  // namespace extensions
 
 namespace electron {
-
-namespace api {
-class Session;
-class WebContents;
-}  // namespace api
-
 // An ExtensionsBrowserClient that supports a single content::BrowserContext
 // with no related incognito context.
 class ElectronExtensionsBrowserClient

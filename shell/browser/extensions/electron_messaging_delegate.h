@@ -10,13 +10,6 @@
 
 #include "extensions/browser/api/messaging/messaging_delegate.h"
 
-namespace electron {
-namespace api {
-class WebContents;
-class Session;
-}  // namespace api
-}  // namespace electron
-
 namespace extensions {
 
 // Helper class for Chrome-specific features of the extension messaging API.
