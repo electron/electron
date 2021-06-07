@@ -39,7 +39,6 @@
   "parallel/test-http2-clean-output",
   "parallel/test-http2-reset-flood",
   "parallel/test-https-agent-session-reuse",
-  "parallel/test-https-client-resume",
   "parallel/test-https-options-boolean-check",
   "parallel/test-inspector-inspect-brk-node",
   "parallel/test-inspector-multisession-ws",
