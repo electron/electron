@@ -1686,6 +1686,7 @@ describe('asar package', function () {
 
     it('can recursively delete a directory with an asar file in it', () => {
       const deleteDir = path.join(asarDir, 'deleteme');
+      fs.mkdirSync(deleteDir);
 
       originalFs.rmdirSync(deleteDir, { recursive: true });
 
