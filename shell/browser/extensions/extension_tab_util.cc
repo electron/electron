@@ -137,7 +137,7 @@ electron::api::WebContents* ExtensionTabUtil::GetWebContentsById(int tab_id) {
   return electron::api::WebContents::FromID(tab_id);
 }
 
-base::Optional<electron::api::ExtensionTabDetails>
+absl::optional<electron::api::ExtensionTabDetails>
 ExtensionTabUtil::GetTabDetailsFromWebContents(
     electron::api::WebContents* contents) {
   if (!contents)

@@ -80,7 +80,7 @@ class ExtensionTabUtil {
 
   static electron::api::WebContents* GetWebContentsById(int tab_id);
 
-  static base::Optional<electron::api::ExtensionTabDetails>
+  static absl::optional<electron::api::ExtensionTabDetails>
   GetTabDetailsFromWebContents(electron::api::WebContents* contents);
 
   static std::unique_ptr<api::tabs::Tab> CreateTabObject(

@@ -177,7 +177,7 @@ class Session : public gin::Wrappable<Session>,
 
   void SetExtensionAPIHandlers(const gin_helper::Dictionary& api,
                                gin::Arguments* args);
-  base::Optional<ExtensionTabDetails> GetExtensionTabDetails(
+  absl::optional<ExtensionTabDetails> GetExtensionTabDetails(
       WebContents* tab_contents);
   WebContents* GetActiveTab(WebContents* sender_contents);
 #endif
