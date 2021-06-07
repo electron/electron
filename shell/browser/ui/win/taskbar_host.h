@@ -25,7 +25,7 @@ class TaskbarHost {
     std::string tooltip;
     gfx::Image icon;
     std::vector<std::string> flags;
-    base::Closure clicked_callback;
+    base::RepeatingClosure clicked_callback;
 
     ThumbarButton();
     ThumbarButton(const ThumbarButton&);
@@ -66,7 +66,7 @@ class TaskbarHost {
   // Initialize the taskbar object.
   bool InitializeTaskbar();
 
-  using CallbackMap = std::map<int, base::Closure>;
+  using CallbackMap = std::map<int, base::RepeatingClosure>;
   CallbackMap callback_map_;
 
   std::vector<ThumbarButton> last_buttons_;

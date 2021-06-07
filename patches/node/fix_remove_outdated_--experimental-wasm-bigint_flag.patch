@@ -10,7 +10,7 @@ This patch can be removed as soon as we upgrade Node.js to a version of
 V8 which contains the above CL.
 
 diff --git a/test/wasi/test-return-on-exit.js b/test/wasi/test-return-on-exit.js
-index 3f5d40c9ba7fb864767e9ac6c4b9a9f466d687e7..362d13b490a96f16029ba7edc0cda14db0feaab6 100644
+index eef97996fbf7442a6bdd808fe1b5b6eab148f322..e61f4174c3d4ee3778f5d0d5aeb2270f263ee63f 100644
 --- a/test/wasi/test-return-on-exit.js
 +++ b/test/wasi/test-return-on-exit.js
 @@ -1,4 +1,4 @@

@@ -4,8 +4,6 @@
 
 #include "shell/browser/api/electron_api_browser_window.h"
 
-#include <memory>
-
 #include "base/threading/thread_task_runner_handle.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_owner_delegate.h"  // nogncheck
@@ -289,6 +287,7 @@ void BrowserWindow::OnWindowIsKeyChanged(bool is_key) {
   auto* rwhv = web_contents()->GetRenderWidgetHostView();
   if (rwhv)
     rwhv->SetActive(is_key);
+  window()->SetActive(is_key);
 #endif
 }
 

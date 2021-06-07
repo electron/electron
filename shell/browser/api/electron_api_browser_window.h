@@ -5,7 +5,6 @@
 #ifndef SHELL_BROWSER_API_ELECTRON_API_BROWSER_WINDOW_H_
 #define SHELL_BROWSER_API_ELECTRON_API_BROWSER_WINDOW_H_
 
-#include <memory>
 #include <string>
 #include <vector>
 
@@ -117,7 +116,7 @@ class BrowserWindow : public BaseWindow,
 
   // Closure that would be called when window is unresponsive when closing,
   // it should be cancelled when we can prove that the window is responsive.
-  base::CancelableClosure window_unresponsive_closure_;
+  base::CancelableRepeatingClosure window_unresponsive_closure_;
 
 #if defined(OS_MAC)
   std::vector<mojom::DraggableRegionPtr> draggable_regions_;

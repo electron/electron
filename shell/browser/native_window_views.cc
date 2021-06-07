@@ -9,7 +9,6 @@
 #endif
 
 #include <memory>
-#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -82,6 +81,22 @@
 
 namespace electron {
 
+#if defined(OS_WIN)
+
+// Similar to the ones in display::win::ScreenWin, but with rounded values
+// These help to avoid problems that arise from unresizable windows where the
+// original ceil()-ed values can cause calculation errors, since converting
+// both ways goes through a ceil() call. Related issue: #15816
+gfx::Rect ScreenToDIPRect(HWND hwnd, const gfx::Rect& pixel_bounds) {
+  float scale_factor = display::win::ScreenWin::GetScaleFactorForHWND(hwnd);
+  gfx::Rect dip_rect = ScaleToRoundedRect(pixel_bounds, 1.0f / scale_factor);
+  dip_rect.set_origin(
+      display::win::ScreenWin::ScreenToDIPRect(hwnd, pixel_bounds).origin());
+  return dip_rect;
+}
+
+#endif
+
 namespace {
 
 #if defined(OS_WIN)
@@ -94,18 +109,6 @@ void FlipWindowStyle(HWND handle, bool on, DWORD flag) {
   else
     style &= ~flag;
   ::SetWindowLong(handle, GWL_STYLE, style);
-}
-
-// Similar to the ones in display::win::ScreenWin, but with rounded values
-// These help to avoid problems that arise from unresizable windows where the
-// original ceil()-ed values can cause calculation errors, since converting
-// both ways goes through a ceil() call. Related issue: #15816
-gfx::Rect ScreenToDIPRect(HWND hwnd, const gfx::Rect& pixel_bounds) {
-  float scale_factor = display::win::ScreenWin::GetScaleFactorForHWND(hwnd);
-  gfx::Rect dip_rect = ScaleToRoundedRect(pixel_bounds, 1.0f / scale_factor);
-  dip_rect.set_origin(
-      display::win::ScreenWin::ScreenToDIPRect(hwnd, pixel_bounds).origin());
-  return dip_rect;
 }
 
 gfx::Rect DIPToScreenRect(HWND hwnd, const gfx::Rect& pixel_bounds) {
@@ -213,6 +216,9 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
 #endif
 
   widget()->Init(std::move(params));
+#if defined(OS_WIN)
+  SetCanResize(resizable_);
+#endif
 
   bool fullscreen = false;
   options.Get(options::kFullscreen, &fullscreen);
@@ -328,12 +334,12 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
     last_window_state_ = ui::SHOW_STATE_NORMAL;
 #endif
 
-#if defined(OS_LINUX)
-  // Listen to move events.
+  // Listen to mouse events.
   aura::Window* window = GetNativeWindow();
   if (window)
     window->AddPreTargetHandler(this);
 
+#if defined(OS_LINUX)
   // On linux after the widget is initialized we might have to force set the
   // bounds if the bounds are smaller than the current display
   SetBounds(gfx::Rect(GetPosition(), bounds.size()), false);
@@ -348,11 +354,9 @@ NativeWindowViews::~NativeWindowViews() {
   SetForwardMouseMessages(false);
 #endif
 
-#if defined(OS_LINUX)
   aura::Window* window = GetNativeWindow();
   if (window)
     window->RemovePreTargetHandler(this);
-#endif
 }
 
 void NativeWindowViews::SetGTKDarkThemeEnabled(bool use_dark_theme) {
@@ -713,6 +717,7 @@ void NativeWindowViews::SetResizable(bool resizable) {
     FlipWindowStyle(GetAcceleratedWidget(), resizable, WS_THICKFRAME);
 #endif
   resizable_ = resizable;
+  SetCanResize(resizable_);
 }
 
 bool NativeWindowViews::MoveAbove(const std::string& sourceId) {
@@ -763,7 +768,7 @@ bool NativeWindowViews::IsResizable() {
   if (has_frame())
     return ::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE) & WS_THICKFRAME;
 #endif
-  return CanResize();
+  return resizable_;
 }
 
 void NativeWindowViews::SetAspectRatio(double aspect_ratio,
@@ -1457,11 +1462,9 @@ void NativeWindowViews::OnWidgetBoundsChanged(views::Widget* changed_widget,
 }
 
 void NativeWindowViews::OnWidgetDestroying(views::Widget* widget) {
-#if defined(OS_LINUX)
   aura::Window* window = GetNativeWindow();
   if (window)
     window->RemovePreTargetHandler(this);
-#endif
 }
 
 void NativeWindowViews::OnWidgetDestroyed(views::Widget* changed_widget) {
@@ -1482,10 +1485,6 @@ void NativeWindowViews::DeleteDelegate() {
 
 views::View* NativeWindowViews::GetInitiallyFocusedView() {
   return focused_view_;
-}
-
-bool NativeWindowViews::CanResize() const {
-  return resizable_;
 }
 
 bool NativeWindowViews::CanMaximize() const {
@@ -1527,7 +1526,7 @@ bool NativeWindowViews::ShouldDescendIntoChildForEventHandling(
     return false;
 
   // And the events on border for dragging resizable frameless window.
-  if (!has_frame() && CanResize()) {
+  if (!has_frame() && resizable_) {
     auto* frame =
         static_cast<FramelessView*>(widget()->non_client_view()->frame_view());
     return frame->ResizingBorderHitTest(location) == HTNOWHERE;
@@ -1579,17 +1578,20 @@ void NativeWindowViews::HandleKeyboardEvent(
   root_view_->HandleKeyEvent(event);
 }
 
-#if defined(OS_LINUX)
 void NativeWindowViews::OnMouseEvent(ui::MouseEvent* event) {
   if (event->type() != ui::ET_MOUSE_PRESSED)
     return;
 
+  // Alt+Click should not toggle menu bar.
+  root_view_->ResetAltState();
+
+#if defined(OS_LINUX)
   if (event->changed_button_flags() == ui::EF_BACK_MOUSE_BUTTON)
     NotifyWindowExecuteAppCommand(kBrowserBackward);
   else if (event->changed_button_flags() == ui::EF_FORWARD_MOUSE_BUTTON)
     NotifyWindowExecuteAppCommand(kBrowserForward);
-}
 #endif
+}
 
 ui::WindowShowState NativeWindowViews::GetRestoredState() {
   if (IsMaximized())

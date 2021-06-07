@@ -33,7 +33,7 @@
 #include "shell/renderer/api/context_bridge/object_cache.h"
 #include "shell/renderer/api/electron_api_context_bridge.h"
 #include "shell/renderer/api/electron_api_spell_check_client.h"
-#include "shell/renderer/electron_renderer_client.h"
+#include "shell/renderer/renderer_client_base.h"
 #include "third_party/blink/public/common/browser_interface_broker_proxy.h"
 #include "third_party/blink/public/common/page/page_zoom.h"
 #include "third_party/blink/public/common/web_cache/web_cache_resource_type_stats.h"
@@ -98,13 +98,8 @@ struct Converter<blink::WebDocument::CSSOrigin> {
 
 namespace electron {
 
-namespace api {
-
-namespace {
-
-content::RenderFrame* GetRenderFrame(v8::Local<v8::Value> value) {
-  v8::Local<v8::Context> context =
-      v8::Local<v8::Object>::Cast(value)->CreationContext();
+content::RenderFrame* GetRenderFrame(v8::Local<v8::Object> value) {
+  v8::Local<v8::Context> context = value->CreationContext();
   if (context.IsEmpty())
     return nullptr;
   blink::WebLocalFrame* frame = blink::WebLocalFrame::FrameForContext(context);
@@ -112,6 +107,10 @@ content::RenderFrame* GetRenderFrame(v8::Local<v8::Value> value) {
     return nullptr;
   return content::RenderFrame::FromWebFrame(frame);
 }
+
+namespace api {
+
+namespace {
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 
@@ -121,7 +120,7 @@ bool SpellCheckWord(content::RenderFrame* render_frame,
   size_t start;
   size_t length;
 
-  ElectronRendererClient* client = ElectronRendererClient::Get();
+  RendererClientBase* client = RendererClientBase::Get();
 
   std::u16string w = base::UTF8ToUTF16(word);
   int id = render_frame->GetRoutingID();
@@ -130,18 +129,6 @@ bool SpellCheckWord(content::RenderFrame* render_frame,
 }
 
 #endif
-
-class RenderFrameStatus final : public content::RenderFrameObserver {
- public:
-  explicit RenderFrameStatus(content::RenderFrame* render_frame)
-      : content::RenderFrameObserver(render_frame) {}
-  ~RenderFrameStatus() final = default;
-
-  bool is_ok() { return render_frame() != nullptr; }
-
-  // RenderFrameObserver implementation.
-  void OnDestruct() final {}
-};
 
 class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
  public:
@@ -378,7 +365,7 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
         .SetMethod("setVisualZoomLevelLimits",
                    &WebFrameRenderer::SetVisualZoomLevelLimits)
         .SetMethod("allowGuestViewElementDefinition",
-                   &WebFrameRenderer::AllowGuestViewElementDefinition)
+                   &RendererClientBase::AllowGuestViewElementDefinition)
         .SetMethod("insertText", &WebFrameRenderer::InsertText)
         .SetMethod("insertCSS", &WebFrameRenderer::InsertCSS)
         .SetMethod("removeInsertedCSS", &WebFrameRenderer::RemoveInsertedCSS)
@@ -433,6 +420,17 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
     }
     *render_frame_ptr = frame;
     return true;
+  }
+
+  static v8::Local<v8::Value> CreateWebFrameRenderer(v8::Isolate* isolate,
+                                                     blink::WebFrame* frame) {
+    if (frame && frame->IsWebLocalFrame()) {
+      auto* render_frame =
+          content::RenderFrame::FromWebFrame(frame->ToWebLocalFrame());
+      return WebFrameRenderer::Create(isolate, render_frame).ToV8();
+    } else {
+      return v8::Null(isolate);
+    }
   }
 
   void SetName(v8::Isolate* isolate, const std::string& name) {
@@ -491,9 +489,6 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
 
     if (pref_name == options::kPreloadScripts) {
       return gin::ConvertToV8(isolate, prefs.preloads);
-    } else if (pref_name == options::kDisableElectronSiteInstanceOverrides) {
-      return gin::ConvertToV8(isolate,
-                              prefs.disable_electron_site_instance_overrides);
     } else if (pref_name == options::kBackgroundColor) {
       return gin::ConvertToV8(isolate, prefs.background_color);
     } else if (pref_name == options::kOpenerID) {
@@ -517,9 +512,6 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
       return gin::ConvertToV8(isolate, prefs.node_integration);
     } else if (pref_name == options::kNodeIntegrationInWorker) {
       return gin::ConvertToV8(isolate, prefs.node_integration_in_worker);
-    } else if (pref_name == options::kEnableNodeLeakageInRenderers) {
-      // NOTE: enableNodeLeakageInRenderers is internal-only.
-      return gin::ConvertToV8(isolate, prefs.node_leakage_in_renderers);
     } else if (pref_name == options::kNodeIntegrationInSubFrames) {
       return gin::ConvertToV8(isolate, true);
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
@@ -548,31 +540,12 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
     web_frame->View()->SetDefaultPageScaleLimits(min_level, max_level);
   }
 
-  void AllowGuestViewElementDefinition(v8::Isolate* isolate,
-                                       v8::Local<v8::Object> context,
-                                       v8::Local<v8::Function> register_cb) {
-    v8::HandleScope handle_scope(isolate);
-    v8::Context::Scope context_scope(context->CreationContext());
-    blink::WebCustomElement::EmbedderNamesAllowedScope embedder_names_scope;
-
-    content::RenderFrame* render_frame;
-    if (!MaybeGetRenderFrame(isolate, "allowGuestViewElementDefinition",
-                             &render_frame))
-      return;
-
-    render_frame->GetWebFrame()->RequestExecuteV8Function(
-        context->CreationContext(), register_cb, v8::Null(isolate), 0, nullptr,
-        nullptr);
-  }
-
-  static int GetWebFrameId(v8::Local<v8::Value> content_window) {
+  static int GetWebFrameId(v8::Local<v8::Object> content_window) {
     // Get the WebLocalFrame before (possibly) executing any user-space JS while
     // getting the |params|. We track the status of the RenderFrame via an
     // observer in case it is deleted during user code execution.
     content::RenderFrame* render_frame = GetRenderFrame(content_window);
-    RenderFrameStatus render_frame_status(render_frame);
-
-    if (!render_frame_status.is_ok())
+    if (!render_frame)
       return -1;
 
     blink::WebLocalFrame* frame = render_frame->GetWebFrame();
@@ -838,13 +811,7 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
       return v8::Null(isolate);
 
     blink::WebFrame* frame = render_frame->GetWebFrame()->Opener();
-    if (frame && frame->IsWebLocalFrame())
-      return WebFrameRenderer::Create(
-                 isolate,
-                 content::RenderFrame::FromWebFrame(frame->ToWebLocalFrame()))
-          .ToV8();
-    else
-      return v8::Null(isolate);
+    return CreateWebFrameRenderer(isolate, frame);
   }
 
   // Don't name it as GetParent, Windows has API with same name.
@@ -854,13 +821,7 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
       return v8::Null(isolate);
 
     blink::WebFrame* frame = render_frame->GetWebFrame()->Parent();
-    if (frame && frame->IsWebLocalFrame())
-      return WebFrameRenderer::Create(
-                 isolate,
-                 content::RenderFrame::FromWebFrame(frame->ToWebLocalFrame()))
-          .ToV8();
-    else
-      return v8::Null(isolate);
+    return CreateWebFrameRenderer(isolate, frame);
   }
 
   v8::Local<v8::Value> GetTop(v8::Isolate* isolate) {
@@ -869,13 +830,7 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
       return v8::Null(isolate);
 
     blink::WebFrame* frame = render_frame->GetWebFrame()->Top();
-    if (frame && frame->IsWebLocalFrame())
-      return WebFrameRenderer::Create(
-                 isolate,
-                 content::RenderFrame::FromWebFrame(frame->ToWebLocalFrame()))
-          .ToV8();
-    else
-      return v8::Null(isolate);
+    return CreateWebFrameRenderer(isolate, frame);
   }
 
   v8::Local<v8::Value> GetFirstChild(v8::Isolate* isolate) {
@@ -884,13 +839,7 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
       return v8::Null(isolate);
 
     blink::WebFrame* frame = render_frame->GetWebFrame()->FirstChild();
-    if (frame && frame->IsWebLocalFrame())
-      return WebFrameRenderer::Create(
-                 isolate,
-                 content::RenderFrame::FromWebFrame(frame->ToWebLocalFrame()))
-          .ToV8();
-    else
-      return v8::Null(isolate);
+    return CreateWebFrameRenderer(isolate, frame);
   }
 
   v8::Local<v8::Value> GetNextSibling(v8::Isolate* isolate) {
@@ -899,13 +848,7 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
       return v8::Null(isolate);
 
     blink::WebFrame* frame = render_frame->GetWebFrame()->NextSibling();
-    if (frame && frame->IsWebLocalFrame())
-      return WebFrameRenderer::Create(
-                 isolate,
-                 content::RenderFrame::FromWebFrame(frame->ToWebLocalFrame()))
-          .ToV8();
-    else
-      return v8::Null(isolate);
+    return CreateWebFrameRenderer(isolate, frame);
   }
 
   v8::Local<v8::Value> GetFrameForSelector(v8::Isolate* isolate,
@@ -921,30 +864,18 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
       return v8::Null(isolate);
 
     blink::WebFrame* frame = blink::WebFrame::FromFrameOwnerElement(element);
-    if (frame && frame->IsWebLocalFrame())
-      return WebFrameRenderer::Create(
-                 isolate,
-                 content::RenderFrame::FromWebFrame(frame->ToWebLocalFrame()))
-          .ToV8();
-    else
-      return v8::Null(isolate);
+    return CreateWebFrameRenderer(isolate, frame);
   }
 
   v8::Local<v8::Value> FindFrameByName(v8::Isolate* isolate,
                                        const std::string& name) {
     content::RenderFrame* render_frame;
-    if (!MaybeGetRenderFrame(isolate, "getFrameForSelector", &render_frame))
+    if (!MaybeGetRenderFrame(isolate, "findFrameByName", &render_frame))
       return v8::Null(isolate);
 
     blink::WebFrame* frame = render_frame->GetWebFrame()->FindFrameByName(
         blink::WebString::FromUTF8(name));
-    if (frame && frame->IsWebLocalFrame())
-      return WebFrameRenderer::Create(
-                 isolate,
-                 content::RenderFrame::FromWebFrame(frame->ToWebLocalFrame()))
-          .ToV8();
-    else
-      return v8::Null(isolate);
+    return CreateWebFrameRenderer(isolate, frame);
   }
 
   int GetRoutingId(v8::Isolate* isolate) {
@@ -975,8 +906,8 @@ void Initialize(v8::Local<v8::Object> exports,
 
   v8::Isolate* isolate = context->GetIsolate();
   gin_helper::Dictionary dict(isolate, exports);
-  dict.Set("mainFrame",
-           WebFrameRenderer::Create(isolate, GetRenderFrame(exports)));
+  dict.Set("mainFrame", WebFrameRenderer::Create(
+                            isolate, electron::GetRenderFrame(exports)));
 }
 
 }  // namespace

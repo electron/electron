@@ -109,7 +109,7 @@ class Browser : public WindowListObserver {
 #endif
 
   // Set/Get the badge count.
-  bool SetBadgeCount(base::Optional<int> count);
+  bool SetBadgeCount(absl::optional<int> count);
   int GetBadgeCount();
 
 #if defined(OS_WIN)
@@ -155,7 +155,7 @@ class Browser : public WindowListObserver {
 
 #if defined(OS_MAC)
   // Set the handler which decides whether to shutdown.
-  void SetShutdownHandler(base::Callback<bool()> handler);
+  void SetShutdownHandler(base::RepeatingCallback<bool()> handler);
 
   // Hide the application.
   void Hide();
@@ -368,7 +368,7 @@ class Browser : public WindowListObserver {
 
 #if defined(OS_WIN)
   void UpdateBadgeContents(HWND hwnd,
-                           const base::Optional<std::string>& badge_content,
+                           const absl::optional<std::string>& badge_content,
                            const std::string& badge_alt_string);
 
   // In charge of running taskbar related APIs.

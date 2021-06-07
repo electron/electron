@@ -13,7 +13,7 @@ function isValid (options: Electron.SourcesOptions) {
   return Array.isArray(types);
 }
 
-export const getSourcesImpl = (event: Electron.IpcMainEvent | null, args: Electron.SourcesOptions) => {
+export const getSourcesImpl = (sender: Electron.WebContents | null, args: Electron.SourcesOptions) => {
   if (!isValid(args)) throw new Error('Invalid options');
 
   const captureWindow = args.types.includes('window');
@@ -48,8 +48,8 @@ export const getSourcesImpl = (event: Electron.IpcMainEvent | null, args: Electr
       }
       // Remove from currentlyRunning once we resolve or reject
       currentlyRunning = currentlyRunning.filter(running => running.options !== options);
-      if (event) {
-        event.sender.removeListener('destroyed', stopRunning);
+      if (sender) {
+        sender.removeListener('destroyed', stopRunning);
       }
     };
 
@@ -68,8 +68,8 @@ export const getSourcesImpl = (event: Electron.IpcMainEvent | null, args: Electr
     // If the WebContents is destroyed before receiving result, just remove the
     // reference to emit and the capturer itself so that it never dispatches
     // back to the renderer
-    if (event) {
-      event.sender.once('destroyed', stopRunning);
+    if (sender) {
+      sender.once('destroyed', stopRunning);
     }
   });
 

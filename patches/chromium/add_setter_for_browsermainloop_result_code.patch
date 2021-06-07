@@ -10,10 +10,10 @@ valid use cases for setting custom exit codes of the main loop.  This
 exposes a simple setter that embedders can call.
 
 diff --git a/content/browser/browser_main_loop.h b/content/browser/browser_main_loop.h
-index e116a3de7fb765758793b3feecab2654193c3a96..0131d97a8b82d2339c99d1b1c6c3faeba2ae35ff 100644
+index 090ca9c6e8785c6e9f1b9245771645ea19805795..fdf587055a71103c21f27fd79e5714baa24ea5c4 100644
 --- a/content/browser/browser_main_loop.h
 +++ b/content/browser/browser_main_loop.h
-@@ -167,6 +167,10 @@ class CONTENT_EXPORT BrowserMainLoop {
+@@ -161,6 +161,10 @@ class CONTENT_EXPORT BrowserMainLoop {
  
    int GetResultCode() const { return result_code_; }
  

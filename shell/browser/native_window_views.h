@@ -10,7 +10,6 @@
 #include <memory>
 #include <set>
 #include <string>
-#include <tuple>
 #include <vector>
 
 #include "shell/common/api/api.mojom.h"
@@ -33,6 +32,10 @@ class WindowStateWatcher;
 
 #if defined(USE_X11)
 class EventDisabler;
+#endif
+
+#if defined(OS_WIN)
+gfx::Rect ScreenToDIPRect(HWND hwnd, const gfx::Rect& pixel_bounds);
 #endif
 
 class NativeWindowViews : public NativeWindow,
@@ -182,7 +185,6 @@ class NativeWindowViews : public NativeWindow,
   // views::WidgetDelegate:
   void DeleteDelegate() override;
   views::View* GetInitiallyFocusedView() override;
-  bool CanResize() const override;
   bool CanMaximize() const override;
   bool CanMinimize() const override;
   std::u16string GetWindowTitle() const override;
@@ -221,10 +223,8 @@ class NativeWindowViews : public NativeWindow,
       content::WebContents*,
       const content::NativeWebKeyboardEvent& event) override;
 
-#if defined(OS_LINUX)
   // ui::EventHandler:
   void OnMouseEvent(ui::MouseEvent* event) override;
-#endif
 
   // Returns the restore state for the window.
   ui::WindowShowState GetRestoredState();

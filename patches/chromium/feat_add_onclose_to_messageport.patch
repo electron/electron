@@ -10,10 +10,10 @@ get this standardised, but in lieu of that, this makes MessagePort a
 whole bunch more useful!
 
 diff --git a/third_party/blink/renderer/core/messaging/message_port.cc b/third_party/blink/renderer/core/messaging/message_port.cc
-index 9e9de51e37ee46266c647bd9c0c27e02a42bf5f1..d16727bed1a99b8171d0c7c5c5b7f38289ae9e55 100644
+index bacf27d57927dba10566b4c02ce12c6ed5c876c9..d0247e32a93447cfe3af286ae83bff958e6edcca 100644
 --- a/third_party/blink/renderer/core/messaging/message_port.cc
 +++ b/third_party/blink/renderer/core/messaging/message_port.cc
-@@ -158,6 +158,7 @@ void MessagePort::close() {
+@@ -159,6 +159,7 @@ void MessagePort::close() {
      Entangle(pipe.TakePort0());
    }
    closed_ = true;

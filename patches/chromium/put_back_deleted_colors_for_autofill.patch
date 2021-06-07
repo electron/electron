@@ -8,12 +8,12 @@ needed in chromium but our autofill implementation uses them.  This patch can be
 our autofill implementation to work like Chromium's.
 
 diff --git a/ui/native_theme/common_theme.cc b/ui/native_theme/common_theme.cc
-index 4436af30ea86d7949ae5f387fbeab9e6369ac12e..575aafe2d19c150e288141fb85cec3f78103ba4a 100644
+index 4a526861f54e7c6fffaf76a2457bf418698cdc8b..2335988a186e4a437bbe82a6a113a17755e65cd1 100644
 --- a/ui/native_theme/common_theme.cc
 +++ b/ui/native_theme/common_theme.cc
-@@ -72,6 +72,14 @@ base::Optional<SkColor> GetDarkSchemeColor(NativeTheme::ColorId color_id,
-     case NativeTheme::kColorId_BubbleBorderShadowBase:
-       return SK_ColorBLACK;
+@@ -68,6 +68,14 @@ absl::optional<SkColor> GetDarkSchemeColor(NativeTheme::ColorId color_id,
+     case NativeTheme::kColorId_FocusedBorderColor:
+       return gfx::kGoogleBlue400;
  
 +    // Results Tables
 +    case NativeTheme::kColorId_ResultsTableNormalBackground:
@@ -26,7 +26,7 @@ index 4436af30ea86d7949ae5f387fbeab9e6369ac12e..575aafe2d19c150e288141fb85cec3f7
      // Button
      case NativeTheme::kColorId_ProminentButtonColor:
        return gfx::kGoogleBlue300;
-@@ -570,6 +578,18 @@ SkColor GetDefaultColor(NativeTheme::ColorId color_id,
+@@ -587,6 +595,18 @@ SkColor GetDefaultColor(NativeTheme::ColorId color_id,
      case NativeTheme::kColorId_WindowBackground:
        return SK_ColorWHITE;
  
@@ -46,10 +46,10 @@ index 4436af30ea86d7949ae5f387fbeab9e6369ac12e..575aafe2d19c150e288141fb85cec3f7
        // Keeping the kColorId_NumColors case instead of using the default case
        // allows ColorId additions to trigger compile error for an incomplete
 diff --git a/ui/native_theme/native_theme_color_id.h b/ui/native_theme/native_theme_color_id.h
-index 64e6d428d805a71f1e8779c4c169d232bed79d2d..93086c17e231dbd2226bdc805f26d59703862d3b 100644
+index 083640808cd6a4a5e6e65d715c77ef58d090ba1e..d7d2fe4e0ada417769cbfe8390b8e2b134549962 100644
 --- a/ui/native_theme/native_theme_color_id.h
 +++ b/ui/native_theme/native_theme_color_id.h
-@@ -151,6 +151,11 @@
+@@ -157,6 +157,11 @@
    OP(kColorId_TableHeaderText),                                                \
    OP(kColorId_TableHeaderBackground),                                          \
    OP(kColorId_TableHeaderSeparator),                                           \
@@ -62,10 +62,10 @@ index 64e6d428d805a71f1e8779c4c169d232bed79d2d..93086c17e231dbd2226bdc805f26d597
    OP(kColorId_ThrobberSpinningColor),                                          \
    OP(kColorId_ThrobberWaitingColor),                                           \
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index 68b798fc755a3ec3130e43254b6ec306d30a19fa..13a1f3763d137667220325237c419257e9868a8d 100644
+index a02662fb29ff297a55afdb0d6e2dc336137a749d..eafe512bc90d967eaadddc2e355c418ecd7dd83a 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
-@@ -659,6 +659,18 @@ base::Optional<SkColor> NativeThemeWin::GetPlatformHighContrastColor(
+@@ -658,6 +658,18 @@ absl::optional<SkColor> NativeThemeWin::GetPlatformHighContrastColor(
      case kColorId_ThrobberWaitingColor:
        return system_colors_[SystemThemeColor::kGrayText];
  

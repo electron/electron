@@ -7,6 +7,7 @@
 
 #include <string>
 
+#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/events/keycodes/keyboard_codes.h"
 
 namespace electron {
@@ -15,9 +16,11 @@ namespace electron {
 // pressed.
 ui::KeyboardCode KeyboardCodeFromCharCode(char16_t c, bool* shifted);
 
-// Return key code of the |str|, and also determine whether the SHIFT key is
+// Return key code of the |str|, if the original key is a shifted character,
+// for example + and /, set it in |shifted_char|.
 // pressed.
-ui::KeyboardCode KeyboardCodeFromStr(const std::string& str, bool* shifted);
+ui::KeyboardCode KeyboardCodeFromStr(const std::string& str,
+                                     absl::optional<char16_t>* shifted_char);
 
 }  // namespace electron
 

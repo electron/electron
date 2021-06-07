@@ -1,4 +1,4 @@
-import { app, ipcMain, session, deprecate, webFrameMain } from 'electron/main';
+import { app, ipcMain, session, webFrameMain } from 'electron/main';
 import type { BrowserWindowConstructorOptions, LoadURLOptions } from 'electron/main';
 
 import * as url from 'url';
@@ -60,7 +60,7 @@ const PDFPageSizes: Record<string, ElectronInternal.MediaSize> = {
     width_microns: 279400,
     custom_display_name: 'Tabloid'
   }
-};
+} as const;
 
 // The minimum micron size Chromium accepts is that where:
 // Per printing/units.h:
@@ -109,7 +109,7 @@ const defaultPrintingSetting = {
   printerType: 2,
   title: undefined as string | undefined,
   url: undefined as string | undefined
-};
+} as const;
 
 // JavaScript implementations of WebContents.
 const binding = process._linkedBinding('electron_browser_web_contents');
@@ -191,7 +191,7 @@ WebContents.prototype.executeJavaScriptInIsolatedWorld = async function (worldId
 
 let pendingPromise: Promise<any> | undefined;
 WebContents.prototype.printToPDF = async function (options) {
-  const printSettings = {
+  const printSettings: Record<string, any> = {
     ...defaultPrintingSetting,
     requestID: getNextId()
   };
@@ -709,11 +709,6 @@ WebContents.prototype._init = function () {
         }
       });
     });
-
-    const prefs = this.getWebPreferences() || {};
-    if (prefs.webviewTag && prefs.contextIsolation) {
-      deprecate.log('Security Warning: A WebContents was just created with both webviewTag and contextIsolation enabled.  This combination is fundamentally less secure and effectively bypasses the protections of contextIsolation.  We strongly recommend you move away from webviews to OOPIF or BrowserView in order for your app to be more secure');
-    }
   }
 
   this.on('login', (event, ...args) => {

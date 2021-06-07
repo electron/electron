@@ -154,7 +154,7 @@ ElectronBrowserContext::ElectronBrowserContext(const std::string& partition,
 
 ElectronBrowserContext::~ElectronBrowserContext() {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
-  NotifyWillBeDestroyed(this);
+  NotifyWillBeDestroyed();
   // Notify any keyed services of browser context destruction.
   BrowserContextDependencyManager::GetInstance()->DestroyBrowserContextServices(
       this);
@@ -281,7 +281,7 @@ ElectronBrowserContext::CreateZoomLevelDelegate(
 content::DownloadManagerDelegate*
 ElectronBrowserContext::GetDownloadManagerDelegate() {
   if (!download_manager_delegate_.get()) {
-    auto* download_manager = content::BrowserContext::GetDownloadManager(this);
+    auto* download_manager = this->GetDownloadManager();
     download_manager_delegate_ =
         std::make_unique<ElectronDownloadManagerDelegate>(download_manager);
   }
@@ -334,7 +334,7 @@ ElectronBrowserContext::GetURLLoaderFactory() {
       ->WillCreateURLLoaderFactory(
           this, nullptr, -1,
           content::ContentBrowserClient::URLLoaderFactoryType::kNavigation,
-          url::Origin(), base::nullopt, ukm::kInvalidSourceIdObj,
+          url::Origin(), absl::nullopt, ukm::kInvalidSourceIdObj,
           &factory_receiver, &header_client, nullptr, nullptr, nullptr);
 
   network::mojom::URLLoaderFactoryParamsPtr params =

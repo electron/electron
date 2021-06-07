@@ -22,10 +22,10 @@ However, the patch would need to be reviewed by the security team, as it
 does touch a security-sensitive class.
 
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 458f004ce92f719795dbc91f65a6bb6f05244291..08fd62722a0bcb996f2dfab5329ebaecfe5c50c0 100644
+index 5de57bd4a08e586251d26ede70e6b51ad61d2c42..aa5b91076df81cf32f6aa1e128073c278234a684 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -388,10 +388,18 @@ class RendererSandboxedProcessLauncherDelegate
+@@ -422,10 +422,18 @@ class RendererSandboxedProcessLauncherDelegate
   public:
    RendererSandboxedProcessLauncherDelegate() = default;
  
@@ -44,7 +44,7 @@ index 458f004ce92f719795dbc91f65a6bb6f05244291..08fd62722a0bcb996f2dfab5329ebaec
      const base::CommandLine& browser_command_line =
          *base::CommandLine::ForCurrentProcess();
      base::CommandLine::StringType renderer_prefix =
-@@ -409,6 +417,11 @@ class RendererSandboxedProcessLauncherDelegate
+@@ -443,6 +451,11 @@ class RendererSandboxedProcessLauncherDelegate
    sandbox::policy::SandboxType GetSandboxType() override {
      return sandbox::policy::SandboxType::kRenderer;
    }
@@ -56,7 +56,7 @@ index 458f004ce92f719795dbc91f65a6bb6f05244291..08fd62722a0bcb996f2dfab5329ebaec
  };
  
  #if defined(OS_WIN)
-@@ -419,6 +432,9 @@ class RendererSandboxedProcessLauncherDelegateWin
+@@ -453,6 +466,9 @@ class RendererSandboxedProcessLauncherDelegateWin
    RendererSandboxedProcessLauncherDelegateWin(base::CommandLine* cmd_line)
        : renderer_code_integrity_enabled_(
              GetContentClient()->browser()->IsRendererCodeIntegrityEnabled()) {
@@ -66,7 +66,7 @@ index 458f004ce92f719795dbc91f65a6bb6f05244291..08fd62722a0bcb996f2dfab5329ebaec
      if (cmd_line->HasSwitch(switches::kJavaScriptFlags)) {
        std::string js_flags =
            cmd_line->GetSwitchValueASCII(switches::kJavaScriptFlags);
-@@ -1870,9 +1886,15 @@ bool RenderProcessHostImpl::Init() {
+@@ -1984,9 +2000,15 @@ bool RenderProcessHostImpl::Init() {
      std::unique_ptr<SandboxedProcessLauncherDelegate> sandbox_delegate =
          std::make_unique<RendererSandboxedProcessLauncherDelegateWin>(
              cmd_line.get());

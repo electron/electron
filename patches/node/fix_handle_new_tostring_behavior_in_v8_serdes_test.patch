@@ -6,10 +6,10 @@ Subject: fix: handle new ToString() behavior in v8 serdes test
 Refs: https://chromium-review.googlesource.com/c/v8/v8/+/2739980
 
 diff --git a/test/parallel/test-v8-serdes.js b/test/parallel/test-v8-serdes.js
-index 593fb34ad7359419a886df4492d36715357a0905..3eeb1b45a9d14f97fc61f4c308b0538c65230275 100644
+index f080f551396c8bb27e16448babecca2f2ad18a2b..d7304e6255648bd19c66012b55b93598d5ffa66d 100644
 --- a/test/parallel/test-v8-serdes.js
 +++ b/test/parallel/test-v8-serdes.js
-@@ -54,7 +54,7 @@ const deserializerTypeError =
+@@ -50,7 +50,7 @@ const hostObject = new (internalBinding('js_stream').JSStream)();
  {
    const ser = new v8.DefaultSerializer();
    ser._getDataCloneError = common.mustCall((message) => {

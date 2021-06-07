@@ -54,7 +54,7 @@ std::pair<scoped_refptr<const Extension>, std::string> LoadUnpacked(
 
   std::string warnings;
   // Log warnings.
-  if (extension->install_warnings().size()) {
+  if (!extension->install_warnings().empty()) {
     warnings += "Warnings loading extension at " +
                 base::UTF16ToUTF8(extension_dir.LossyDisplayName()) + ":\n";
     for (const auto& warning : extension->install_warnings()) {
@@ -125,7 +125,7 @@ void ElectronExtensionLoader::FinishExtensionLoad(
           extension_prefs, extension.get()->id(),
           extensions::pref_names::kPrefPreferences);
       auto preference = update.Create();
-      const base::Time install_time = base::Time().Now();
+      const base::Time install_time = base::Time::Now();
       preference->SetString(
           "install_time", base::NumberToString(install_time.ToInternalValue()));
     }

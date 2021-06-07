@@ -21,7 +21,7 @@ class ObjectTemplateBuilder {
  public:
   ObjectTemplateBuilder(v8::Isolate* isolate,
                         v8::Local<v8::ObjectTemplate> templ);
-  ~ObjectTemplateBuilder();
+  ~ObjectTemplateBuilder() = default;
 
   // It's against Google C++ style to return a non-const ref, but we take some
   // poetic license here in order that all calls to Set() can be via the '.'
@@ -32,9 +32,9 @@ class ObjectTemplateBuilder {
   }
 
   // In the following methods, T and U can be function pointer, member function
-  // pointer, base::Callback, or v8::FunctionTemplate. Most clients will want to
-  // use one of the first two options. Also see gin::CreateFunctionTemplate()
-  // for creating raw function templates.
+  // pointer, base::RepeatingCallback, or v8::FunctionTemplate. Most clients
+  // will want to use one of the first two options. Also see
+  // gin::CreateFunctionTemplate() for creating raw function templates.
   template <typename T>
   ObjectTemplateBuilder& SetMethod(const base::StringPiece& name,
                                    const T& callback) {

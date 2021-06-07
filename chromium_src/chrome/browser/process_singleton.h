@@ -9,9 +9,6 @@
 #include <windows.h>
 #endif  // defined(OS_WIN)
 
-#include <set>
-#include <vector>
-
 #include "base/callback.h"
 #include "base/command_line.h"
 #include "base/files/file_path.h"
@@ -158,7 +155,7 @@ class ProcessSingleton {
 
   // Function to call when the other process is hung and needs to be killed.
   // Allows overriding for tests.
-  base::Callback<void(int)> kill_callback_;
+  base::RepeatingCallback<void(int)> kill_callback_;
 
   // Path in file system to the socket.
   base::FilePath socket_path_;

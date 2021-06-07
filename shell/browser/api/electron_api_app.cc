@@ -5,8 +5,8 @@
 #include "shell/browser/api/electron_api_app.h"
 
 #include <memory>
-
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "base/callback_helpers.h"
@@ -14,7 +14,6 @@
 #include "base/environment.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
-#include "base/optional.h"
 #include "base/path_service.h"
 #include "base/system/sys_info.h"
 #include "chrome/browser/browser_process.h"
@@ -57,6 +56,7 @@
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/platform_util.h"
+#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/gfx/image/image.h"
 
 #if defined(OS_WIN)
@@ -536,10 +536,16 @@ void OnClientCertificateSelected(
   if (!certs.empty()) {
     scoped_refptr<net::X509Certificate> cert(certs[0].get());
     for (auto& identity : *identities) {
-      if (cert->EqualsExcludingChain(identity->certificate())) {
+      scoped_refptr<net::X509Certificate> identity_cert =
+          identity->certificate();
+      // Since |cert| was recreated from |data|, it won't include any
+      // intermediates. That's fine for checking equality, but once a match is
+      // found then |identity_cert| should be used since it will include the
+      // intermediates which would otherwise be lost.
+      if (cert->EqualsExcludingChain(identity_cert.get())) {
         net::ClientCertIdentity::SelfOwningAcquirePrivateKey(
-            std::move(identity),
-            base::BindRepeating(&GotPrivateKey, delegate, std::move(cert)));
+            std::move(identity), base::BindRepeating(&GotPrivateKey, delegate,
+                                                     std::move(identity_cert)));
         break;
       }
     }
@@ -912,7 +918,7 @@ void App::SetAppPath(const base::FilePath& app_path) {
 
 #if !defined(OS_MAC)
 void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
-                         base::Optional<base::FilePath> custom_path) {
+                         absl::optional<base::FilePath> custom_path) {
   if (custom_path.has_value()) {
     if (!custom_path->IsAbsolute()) {
       thrower.ThrowError("Path must be absolute");
@@ -936,6 +942,24 @@ void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
 }
 #endif
 
+// static
+bool App::IsPackaged() {
+  auto env = base::Environment::Create();
+  if (env->HasVar("ELECTRON_FORCE_IS_PACKAGED"))
+    return true;
+
+  base::FilePath exe_path;
+  base::PathService::Get(base::FILE_EXE, &exe_path);
+  base::FilePath::StringType base_name =
+      base::ToLowerASCII(exe_path.BaseName().value());
+
+#if defined(OS_WIN)
+  return base_name != FILE_PATH_LITERAL("electron.exe");
+#else
+  return base_name != FILE_PATH_LITERAL("electron");
+#endif
+}
+
 base::FilePath App::GetPath(gin_helper::ErrorThrower thrower,
                             const std::string& name) {
   bool succeed = false;
@@ -947,7 +971,7 @@ base::FilePath App::GetPath(gin_helper::ErrorThrower thrower,
     // If users try to get the logs path before setting a logs path,
     // set the path to a sensible default and then try to get it again
     if (!succeed && name == "logs") {
-      SetAppLogsPath(thrower, base::Optional<base::FilePath>());
+      SetAppLogsPath(thrower, absl::optional<base::FilePath>());
       succeed = base::PathService::Get(key, &path);
     }
 
@@ -994,7 +1018,7 @@ void App::SetPath(gin_helper::ErrorThrower thrower,
 
 void App::SetDesktopName(const std::string& desktop_name) {
 #if defined(OS_LINUX)
-  std::unique_ptr<base::Environment> env(base::Environment::Create());
+  auto env = base::Environment::Create();
   env->SetVar("CHROME_DESKTOP", desktop_name);
 #endif
 }
@@ -1377,9 +1401,7 @@ std::vector<gin_helper::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
 }
 
 v8::Local<v8::Value> App::GetGPUFeatureStatus(v8::Isolate* isolate) {
-  auto status = content::GetFeatureStatus();
-  base::DictionaryValue temp;
-  return gin::ConvertToV8(isolate, status ? *status : temp);
+  return gin::ConvertToV8(isolate, content::GetFeatureStatus());
 }
 
 v8::Local<v8::Promise> App::GetGPUInfo(v8::Isolate* isolate,
@@ -1441,6 +1463,27 @@ void App::EnableSandbox(gin_helper::ErrorThrower thrower) {
 void App::SetUserAgentFallback(const std::string& user_agent) {
   ElectronBrowserClient::Get()->SetUserAgent(user_agent);
 }
+
+#if defined(OS_WIN)
+
+bool App::IsRunningUnderARM64Translation() const {
+  USHORT processMachine = 0;
+  USHORT nativeMachine = 0;
+
+  auto IsWow64Process2 = reinterpret_cast<decltype(&::IsWow64Process2)>(
+      GetProcAddress(GetModuleHandle(L"kernel32.dll"), "IsWow64Process2"));
+
+  if (IsWow64Process2 == nullptr) {
+    return false;
+  }
+
+  if (!IsWow64Process2(GetCurrentProcess(), &processMachine, &nativeMachine)) {
+    return false;
+  }
+
+  return nativeMachine == IMAGE_FILE_MACHINE_ARM64;
+}
+#endif
 
 std::string App::GetUserAgentFallback() {
   return ElectronBrowserClient::Get()->GetUserAgent();
@@ -1609,6 +1652,7 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetMethod("isUnityRunning",
                  base::BindRepeating(&Browser::IsUnityRunning, browser))
 #endif
+      .SetProperty("isPackaged", &App::IsPackaged)
       .SetMethod("setAppPath", &App::SetAppPath)
       .SetMethod("getAppPath", &App::GetAppPath)
       .SetMethod("setPath", &App::SetPath)
@@ -1644,6 +1688,10 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetProperty("dock", &App::GetDockAPI)
       .SetProperty("runningUnderRosettaTranslation",
                    &App::IsRunningUnderRosettaTranslation)
+#endif
+#if defined(OS_MAC) || defined(OS_WIN)
+      .SetProperty("runningUnderARM64Translation",
+                   &App::IsRunningUnderARM64Translation)
 #endif
       .SetProperty("userAgentFallback", &App::GetUserAgentFallback,
                    &App::SetUserAgentFallback)

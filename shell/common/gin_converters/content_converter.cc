@@ -5,7 +5,6 @@
 #include "shell/common/gin_converters/content_converter.h"
 
 #include <string>
-#include <vector>
 
 #include "content/public/browser/context_menu_params.h"
 #include "content/public/browser/native_web_keyboard_event.h"

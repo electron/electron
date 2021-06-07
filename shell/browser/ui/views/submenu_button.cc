@@ -4,9 +4,6 @@
 
 #include "shell/browser/ui/views/submenu_button.h"
 
-#include <memory>
-#include <utility>
-
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "ui/accessibility/ax_enums.mojom.h"
@@ -35,29 +32,13 @@ SubmenuButton::SubmenuButton(PressedCallback callback,
     gfx::Canvas::SizeStringInt(GetText(), gfx::FontList(), &text_width_,
                                &text_height_, 0, 0);
 
-  SetInkDropMode(InkDropMode::ON);
-  SetInkDropBaseColor(
+  ink_drop()->SetMode(views::InkDropHost::InkDropMode::ON);
+  ink_drop()->SetBaseColor(
       color_utils::BlendTowardMaxContrast(background_color_, 0x81));
+  views::InkDrop::UseInkDropForFloodFillRipple(ink_drop(), false, true);
 }
 
 SubmenuButton::~SubmenuButton() = default;
-
-std::unique_ptr<views::InkDropRipple> SubmenuButton::CreateInkDropRipple()
-    const {
-  std::unique_ptr<views::InkDropRipple> ripple(
-      new views::FloodFillInkDropRipple(
-          size(), GetInkDropCenterBasedOnLastEvent(), GetInkDropBaseColor(),
-          GetInkDropVisibleOpacity()));
-  return ripple;
-}
-
-std::unique_ptr<views::InkDrop> SubmenuButton::CreateInkDrop() {
-  std::unique_ptr<views::InkDropImpl> ink_drop =
-      views::Button::CreateDefaultInkDropImpl();
-  ink_drop->SetShowHighlightOnHover(false);
-  ink_drop->SetShowHighlightOnFocus(true);
-  return std::move(ink_drop);
-}
 
 void SubmenuButton::SetAcceleratorVisibility(bool visible) {
   if (visible == show_underline_)

@@ -1,10 +1,11 @@
 import { BaseWindow, MenuItem, webContents, Menu as MenuType, BrowserWindow, MenuItemConstructorOptions } from 'electron/main';
 import { sortMenuItems } from '@electron/internal/browser/api/menu-utils';
+import { setApplicationMenuWasSet } from '@electron/internal/browser/default-menu';
 
-const v8Util = process._linkedBinding('electron_common_v8_util');
 const bindings = process._linkedBinding('electron_browser_menu');
 
 const { Menu } = bindings as { Menu: typeof MenuType };
+const checked = new WeakMap<MenuItem, boolean>();
 let applicationMenu: MenuType | null = null;
 let groupIdIndex = 0;
 
@@ -60,7 +61,7 @@ Menu.prototype._menuWillShow = function () {
   // Ensure radio groups have at least one menu item selected
   for (const id of Object.keys(this.groupsMap)) {
     const found = this.groupsMap[id].find(item => item.checked) || null;
-    if (!found) v8Util.setHiddenValue(this.groupsMap[id][0], 'checked', true);
+    if (!found) checked.set(this.groupsMap[id][0], true);
   }
 };
 
@@ -169,7 +170,7 @@ Menu.setApplicationMenu = function (menu: MenuType) {
   }
 
   applicationMenu = menu;
-  v8Util.setHiddenValue(global, 'applicationMenuSet', true);
+  setApplicationMenuWasSet();
 
   if (process.platform === 'darwin') {
     if (!menu) return;
@@ -177,7 +178,7 @@ Menu.setApplicationMenu = function (menu: MenuType) {
     bindings.setApplicationMenu(menu);
   } else {
     const windows = BaseWindow.getAllWindows();
-    return windows.map(w => w.setMenu(menu));
+    windows.map(w => w.setMenu(menu));
   }
 };
 
@@ -275,15 +276,15 @@ function insertItemByType (this: MenuType, item: MenuItem, pos: number) {
       this.groupsMap[item.groupId].push(item);
 
       // Setting a radio menu item should flip other items in the group.
-      v8Util.setHiddenValue(item, 'checked', item.checked);
+      checked.set(item, item.checked);
       Object.defineProperty(item, 'checked', {
         enumerable: true,
-        get: () => v8Util.getHiddenValue(item, 'checked'),
+        get: () => checked.get(item),
         set: () => {
           this.groupsMap[item.groupId].forEach(other => {
-            if (other !== item) v8Util.setHiddenValue(other, 'checked', false);
+            if (other !== item) checked.set(other, false);
           });
-          v8Util.setHiddenValue(item, 'checked', true);
+          checked.set(item, true);
         }
       });
       this.insertRadioItem(pos, item.commandId, item.label, item.groupId);

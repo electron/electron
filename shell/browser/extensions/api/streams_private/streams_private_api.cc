@@ -4,6 +4,7 @@
 
 #include "electron/shell/browser/extensions/api/streams_private/streams_private_api.h"
 
+#include <memory>
 #include <utility>
 
 #include "content/public/browser/browser_thread.h"

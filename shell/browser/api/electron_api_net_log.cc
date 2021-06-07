@@ -4,6 +4,7 @@
 
 #include "shell/browser/api/electron_api_net_log.h"
 
+#include <string>
 #include <utility>
 
 #include "base/command_line.h"
@@ -121,7 +122,7 @@ v8::Local<v8::Promise> NetLog::StartLogging(base::FilePath log_path,
   }
 
   pending_start_promise_ =
-      base::make_optional<gin_helper::Promise<void>>(args->isolate());
+      absl::make_optional<gin_helper::Promise<void>>(args->isolate());
   v8::Local<v8::Promise> handle = pending_start_promise_->GetHandle();
 
   auto command_line_string =

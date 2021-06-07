@@ -24,6 +24,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/common/content_paths.h"
 #include "electron/buildflags/buildflags.h"
+#include "shell/browser/api/electron_api_app.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/electron_command_line.h"
 #include "shell/common/gin_converters/file_path_converter.h"
@@ -130,19 +131,6 @@ void stop_and_close_uv_loop(uv_loop_t* loop) {
 
 bool g_is_initialized = false;
 
-bool IsPackagedApp() {
-  base::FilePath exe_path;
-  base::PathService::Get(base::FILE_EXE, &exe_path);
-  base::FilePath::StringType base_name =
-      base::ToLowerASCII(exe_path.BaseName().value());
-
-#if defined(OS_WIN)
-  return base_name != FILE_PATH_LITERAL("electron.exe");
-#else
-  return base_name != FILE_PATH_LITERAL("electron");
-#endif
-}
-
 void V8FatalErrorCallback(const char* location, const char* message) {
   LOG(ERROR) << "Fatal error in V8: " << location << " " << message;
 
@@ -174,6 +162,8 @@ bool AllowWasmCodeGenerationCallback(v8::Local<v8::Context> context,
 void ErrorMessageListener(v8::Local<v8::Message> message,
                           v8::Local<v8::Value> data) {
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  gin_helper::MicrotasksScope microtasks_scope(
+      isolate, v8::MicrotasksScope::kDoNotRunMicrotasks);
   node::Environment* env = node::Environment::GetCurrent(isolate);
 
   if (env) {
@@ -255,7 +245,7 @@ void SetNodeOptions(base::Environment* env) {
     std::vector<std::string> parts = base::SplitString(
         options, " ", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
 
-    bool is_packaged_app = IsPackagedApp();
+    bool is_packaged_app = electron::api::App::IsPackaged();
 
     for (const auto& part : parts) {
       // Strip off values passed to individual NODE_OPTIONs
@@ -363,7 +353,7 @@ void NodeBindings::Initialize() {
   // Parse and set Node.js cli flags.
   SetNodeCliFlags();
 
-  std::unique_ptr<base::Environment> env(base::Environment::Create());
+  auto env = base::Environment::Create();
   SetNodeOptions(env.get());
 
   std::vector<std::string> argv = {"electron"};
@@ -442,8 +432,9 @@ node::Environment* NodeBindings::CreateEnvironment(
                      node::EnvironmentFlags::kNoRegisterESMLoader |
                      node::EnvironmentFlags::kNoInitializeInspector;
     v8::TryCatch try_catch(context->GetIsolate());
-    env = node::CreateEnvironment(isolate_data_, context, args, exec_args,
-                                  (node::EnvironmentFlags::Flags)flags);
+    env = node::CreateEnvironment(
+        isolate_data_, context, args, exec_args,
+        static_cast<node::EnvironmentFlags::Flags>(flags));
     DCHECK(env);
 
     // This will only be caught when something has gone terrible wrong as all

@@ -5,7 +5,6 @@
 #ifndef SHELL_BROWSER_API_ELECTRON_API_VIEW_H_
 #define SHELL_BROWSER_API_ELECTRON_API_VIEW_H_
 
-#include <memory>
 #include <vector>
 
 #include "electron/buildflags/buildflags.h"

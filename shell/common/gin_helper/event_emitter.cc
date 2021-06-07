@@ -59,7 +59,7 @@ v8::Local<v8::Object> CreateNativeEvent(
   if (frame && callback) {
     gin::Handle<Event> native_event = Event::Create(isolate);
     native_event->SetCallback(std::move(callback));
-    event = v8::Local<v8::Object>::Cast(native_event.ToV8());
+    event = native_event.ToV8().As<v8::Object>();
   } else {
     // No need to create native event if we do not need to send reply.
     event = CreateEvent(isolate);

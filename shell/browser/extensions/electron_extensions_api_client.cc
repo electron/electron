@@ -18,9 +18,9 @@
 #include "v8/include/v8.h"
 
 #if BUILDFLAG(ENABLE_PRINTING)
-#include "chrome/browser/printing/print_view_manager_basic.h"
 #include "components/printing/browser/print_manager_utils.h"
 #include "shell/browser/printing/print_preview_message_handler.h"
+#include "shell/browser/printing/print_view_manager_electron.h"
 #endif
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
@@ -51,8 +51,8 @@ class ElectronGuestViewManagerDelegate
 class ElectronMimeHandlerViewGuestDelegate
     : public MimeHandlerViewGuestDelegate {
  public:
-  ElectronMimeHandlerViewGuestDelegate() {}
-  ~ElectronMimeHandlerViewGuestDelegate() override {}
+  ElectronMimeHandlerViewGuestDelegate() = default;
+  ~ElectronMimeHandlerViewGuestDelegate() override = default;
 
   // MimeHandlerViewGuestDelegate.
   bool HandleContextMenu(content::WebContents* web_contents,
@@ -81,7 +81,7 @@ void ElectronExtensionsAPIClient::AttachWebContentsHelpers(
     content::WebContents* web_contents) const {
 #if BUILDFLAG(ENABLE_PRINTING)
   electron::PrintPreviewMessageHandler::CreateForWebContents(web_contents);
-  printing::PrintViewManagerBasic::CreateForWebContents(web_contents);
+  electron::PrintViewManagerElectron::CreateForWebContents(web_contents);
 #endif
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)

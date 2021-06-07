@@ -6,7 +6,7 @@ Subject: Pass all globals through "require"
 (cherry picked from commit 7d015419cb7a0ecfe6728431a4ed2056cd411d62)
 
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index 0b85bc8af1af275f05318bd315d9c6b9a5d3d6dd..5bebce776dc60052aa01422af29d7766033e7331 100644
+index 82c08cd17b33c14b85e6586269b5dc4b233fd9e6..ef52bf6486d8c827dce105e50b57c1129dcaf5a4 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
 @@ -109,6 +109,13 @@ const {
@@ -23,7 +23,7 @@ index 0b85bc8af1af275f05318bd315d9c6b9a5d3d6dd..5bebce776dc60052aa01422af29d7766
  const {
    isProxy
  } = require('internal/util/types');
-@@ -1058,10 +1065,12 @@ Module.prototype._compile = function(content, filename) {
+@@ -1063,10 +1070,12 @@ Module.prototype._compile = function(content, filename) {
    if (requireDepth === 0) statCache = new Map();
    if (inspectorWrapper) {
      result = inspectorWrapper(compiledWrapper, thisValue, exports,

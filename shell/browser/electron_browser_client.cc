@@ -27,6 +27,7 @@
 #include "base/task/post_task.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/common/chrome_paths.h"
+#include "chrome/common/chrome_switches.h"
 #include "chrome/common/chrome_version.h"
 #include "components/net_log/chrome_net_log.h"
 #include "components/network_hints/common/network_hints.mojom.h"
@@ -144,6 +145,7 @@
 #include "extensions/browser/extension_message_filter.h"
 #include "extensions/browser/extension_navigation_throttle.h"
 #include "extensions/browser/extension_navigation_ui_data.h"
+#include "extensions/browser/extension_prefs.h"
 #include "extensions/browser/extension_protocols.h"
 #include "extensions/browser/extension_registry.h"
 #include "extensions/browser/extensions_browser_client.h"
@@ -224,6 +226,15 @@ enum class RenderProcessHostPrivilege {
   kIsolated,
   kExtension,
 };
+
+// Copied from chrome/browser/extensions/extension_util.cc.
+bool AllowFileAccess(const std::string& extension_id,
+                     content::BrowserContext* context) {
+  return base::CommandLine::ForCurrentProcess()->HasSwitch(
+             ::switches::kDisableExtensionsFileAccessCheck) ||
+         extensions::ExtensionPrefs::Get(context)->AllowFileAccess(
+             extension_id);
+}
 
 RenderProcessHostPrivilege GetPrivilegeRequiredByUrl(
     const GURL& url,
@@ -445,7 +456,6 @@ void ElectronBrowserClient::OverrideWebkitPrefs(
       SessionPreferences::GetValidPreloads(web_contents->GetBrowserContext());
   if (!preloads.empty())
     prefs->preloads = preloads;
-  prefs->disable_electron_site_instance_overrides = true;
 
   SetFontDefaults(prefs);
 
@@ -562,7 +572,7 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
       command_line->AppendSwitchPath(switches::kAppPath, app_path);
     }
 
-    std::unique_ptr<base::Environment> env(base::Environment::Create());
+    auto env = base::Environment::Create();
     if (env->HasVar("ELECTRON_PROFILE_INIT_SCRIPTS")) {
       command_line->AppendSwitch("profile-electron-init");
     }
@@ -593,7 +603,7 @@ void ElectronBrowserClient::DidCreatePpapiPlugin(
 
 // attempt to get api key from env
 std::string ElectronBrowserClient::GetGeolocationApiKey() {
-  std::unique_ptr<base::Environment> env(base::Environment::Create());
+  auto env = base::Environment::Create();
   std::string api_key;
   env->GetVar("GOOGLE_API_KEY", &api_key);
   return api_key;
@@ -780,7 +790,7 @@ bool ElectronBrowserClient::ArePersistentMediaDeviceIDsAllowed(
     content::BrowserContext* browser_context,
     const GURL& scope,
     const GURL& site_for_cookies,
-    const base::Optional<url::Origin>& top_frame_origin) {
+    const absl::optional<url::Origin>& top_frame_origin) {
   return true;
 }
 
@@ -937,7 +947,7 @@ bool ElectronBrowserClient::HandleExternalProtocol(
     bool is_main_frame,
     ui::PageTransition page_transition,
     bool has_user_gesture,
-    const base::Optional<url::Origin>& initiating_origin,
+    const absl::optional<url::Origin>& initiating_origin,
     mojo::PendingRemote<network::mojom::URLLoaderFactory>* out_factory) {
   base::PostTask(
       FROM_HERE, {BrowserThread::UI},
@@ -1077,7 +1087,7 @@ class FileURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
     mojo::PendingRemote<network::mojom::URLLoaderFactory> pending_remote;
 
     // The FileURLLoaderFactory will delete itself when there are no more
-    // receivers - see the NonNetworkURLLoaderFactoryBase::OnDisconnect method.
+    // receivers - see the SelfDeletingURLLoaderFactory::OnDisconnect method.
     new FileURLLoaderFactory(child_id,
                              pending_remote.InitWithNewPipeAndPassReceiver());
 
@@ -1183,12 +1193,12 @@ void ElectronBrowserClient::RegisterNonNetworkSubresourceURLLoaderFactories(
                            {content::kChromeUIResourcesHost}));
   }
 
-  // Extension with a background page get file access that gets approval from
-  // ChildProcessSecurityPolicy.
-  extensions::ExtensionHost* host =
-      extensions::ProcessManager::Get(web_contents->GetBrowserContext())
-          ->GetBackgroundHostForExtension(extension->id());
-  if (host) {
+  // Extensions with the necessary permissions get access to file:// URLs that
+  // gets approval from ChildProcessSecurityPolicy. Keep this logic in sync with
+  // ExtensionWebContentsObserver::RenderFrameCreated.
+  extensions::Manifest::Type type = extension->GetType();
+  if (type == extensions::Manifest::TYPE_EXTENSION &&
+      AllowFileAccess(extension->id(), web_contents->GetBrowserContext())) {
     factories->emplace(url::kFileScheme,
                        FileURLLoaderFactory::Create(render_process_id));
   }
@@ -1240,7 +1250,7 @@ void ElectronBrowserClient::CreateWebSocket(
     WebSocketFactory factory,
     const GURL& url,
     const net::SiteForCookies& site_for_cookies,
-    const base::Optional<std::string>& user_agent,
+    const absl::optional<std::string>& user_agent,
     mojo::PendingRemote<network::mojom::WebSocketHandshakeClient>
         handshake_client) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
@@ -1278,7 +1288,7 @@ bool ElectronBrowserClient::WillCreateURLLoaderFactory(
     int render_process_id,
     URLLoaderFactoryType type,
     const url::Origin& request_initiator,
-    base::Optional<int64_t> navigation_id,
+    absl::optional<int64_t> navigation_id,
     ukm::SourceIdObj ukm_source_id,
     mojo::PendingReceiver<network::mojom::URLLoaderFactory>* factory_receiver,
     mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>*

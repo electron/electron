@@ -101,7 +101,7 @@ network::mojom::URLResponseHeadPtr ToResponseHead(
     return head;
   }
 
-  int status_code = 200;
+  int status_code = net::HTTP_OK;
   dict.Get("statusCode", &status_code);
   head->headers = new net::HttpResponseHeaders(base::StringPrintf(
       "HTTP/1.1 %d %s", status_code,
@@ -174,7 +174,7 @@ ElectronURLLoaderFactory::Create(ProtocolType type,
   mojo::PendingRemote<network::mojom::URLLoaderFactory> pending_remote;
 
   // The ElectronURLLoaderFactory will delete itself when there are no more
-  // receivers - see the NonNetworkURLLoaderFactoryBase::OnDisconnect method.
+  // receivers - see the SelfDeletingURLLoaderFactory::OnDisconnect method.
   new ElectronURLLoaderFactory(type, handler,
                                pending_remote.InitWithNewPipeAndPassReceiver());
 
@@ -544,7 +544,7 @@ void ElectronURLLoaderFactory::SendContents(
   head->headers->AddHeader("Access-Control-Allow-Origin", "*");
   client_remote->OnReceiveResponse(std::move(head));
 
-  // Code bellow follows the pattern of data_url_loader_factory.cc.
+  // Code below follows the pattern of data_url_loader_factory.cc.
   mojo::ScopedDataPipeProducerHandle producer;
   mojo::ScopedDataPipeConsumerHandle consumer;
   if (mojo::CreateDataPipe(nullptr, producer, consumer) != MOJO_RESULT_OK) {

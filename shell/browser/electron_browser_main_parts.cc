@@ -5,18 +5,18 @@
 #include "shell/browser/electron_browser_main_parts.h"
 
 #include <memory>
-
+#include <string>
 #include <utility>
 
 #include "base/base_switches.h"
 #include "base/command_line.h"
 #include "base/feature_list.h"
-#include "base/optional.h"
 #include "base/path_service.h"
 #include "base/run_loop.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/icon_manager.h"
+#include "components/os_crypt/os_crypt.h"
 #include "content/browser/browser_main_loop.h"  // nogncheck
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/child_process_security_policy.h"
@@ -26,6 +26,7 @@
 #include "content/public/common/content_switches.h"
 #include "content/public/common/result_codes.h"
 #include "electron/buildflags/buildflags.h"
+#include "electron/fuses.h"
 #include "media/base/localized_strings.h"
 #include "services/network/public/cpp/features.h"
 #include "services/tracing/public/cpp/stack_sampling/tracing_sampler_profiler.h"
@@ -42,11 +43,11 @@
 #include "shell/browser/ui/devtools_manager_delegate.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/application_info.h"
-#include "shell/common/asar/asar_util.h"
 #include "shell/common/electron_paths.h"
 #include "shell/common/gin_helper/trackable_object.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
+#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/base/idle/idle.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/ui_base_switches.h"
@@ -158,7 +159,7 @@ void OverrideLinuxAppDataPath() {
   base::FilePath path;
   if (base::PathService::Get(DIR_APP_DATA, &path))
     return;
-  std::unique_ptr<base::Environment> env(base::Environment::Create());
+  auto env = base::Environment::Create();
   path = base::nix::GetXDGDirectory(env.get(), base::nix::kXdgConfigHomeEnvVar,
                                     base::nix::kDotConfigDir);
   base::PathService::Override(DIR_APP_DATA, path);
@@ -207,9 +208,7 @@ ElectronBrowserMainParts::ElectronBrowserMainParts(
   self_ = this;
 }
 
-ElectronBrowserMainParts::~ElectronBrowserMainParts() {
-  asar::ClearArchives();
-}
+ElectronBrowserMainParts::~ElectronBrowserMainParts() = default;
 
 // static
 ElectronBrowserMainParts* ElectronBrowserMainParts::Get() {
@@ -311,8 +310,8 @@ int ElectronBrowserMainParts::PreCreateThreads() {
   // which keys off of getenv("LC_ALL").
   // We must set this env first to make ui::ResourceBundle accept the custom
   // locale.
-  std::unique_ptr<base::Environment> env(base::Environment::Create());
-  base::Optional<std::string> lc_all;
+  auto env = base::Environment::Create();
+  absl::optional<std::string> lc_all;
   if (!locale.empty()) {
     std::string str;
     if (env->GetVar("LC_ALL", &str))
@@ -475,12 +474,12 @@ void ElectronBrowserMainParts::WillRunMainMessageLoop(
   Browser::Get()->SetMainMessageLoopQuitClosure(run_loop->QuitClosure());
 }
 
-void ElectronBrowserMainParts::PostMainMessageLoopStart() {
+void ElectronBrowserMainParts::PostCreateMainMessageLoop() {
 #if defined(USE_OZONE)
   if (features::IsUsingOzonePlatform()) {
     auto shutdown_cb =
         base::BindOnce(base::RunLoop::QuitCurrentWhenIdleClosureDeprecated());
-    ui::OzonePlatform::GetInstance()->PostMainMessageLoopStart(
+    ui::OzonePlatform::GetInstance()->PostCreateMainMessageLoop(
         std::move(shutdown_cb));
   }
 #endif
@@ -503,8 +502,7 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
   // Shutdown the DownloadManager before destroying Node to prevent
   // DownloadItem callbacks from crashing.
   for (auto& iter : ElectronBrowserContext::browser_context_map()) {
-    auto* download_manager =
-        content::BrowserContext::GetDownloadManager(iter.second.get());
+    auto* download_manager = iter.second.get()->GetDownloadManager();
     if (download_manager) {
       download_manager->Shutdown();
     }
@@ -528,17 +526,27 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
 }
 
 #if !defined(OS_MAC)
-void ElectronBrowserMainParts::PreMainMessageLoopStart() {
-  PreMainMessageLoopStartCommon();
+void ElectronBrowserMainParts::PreCreateMainMessageLoop() {
+  PreCreateMainMessageLoopCommon();
 }
 #endif
 
-void ElectronBrowserMainParts::PreMainMessageLoopStartCommon() {
+void ElectronBrowserMainParts::PreCreateMainMessageLoopCommon() {
 #if defined(OS_MAC)
   InitializeMainNib();
   RegisterURLHandler();
 #endif
   media::SetLocalizedStringProvider(MediaStringProvider);
+
+#if defined(OS_WIN)
+  if (electron::fuses::IsCookieEncryptionEnabled()) {
+    auto* local_state = g_browser_process->local_state();
+    DCHECK(local_state);
+
+    bool os_crypt_init = OSCrypt::Init(local_state);
+    DCHECK(os_crypt_init);
+  }
+#endif
 }
 
 device::mojom::GeolocationControl*

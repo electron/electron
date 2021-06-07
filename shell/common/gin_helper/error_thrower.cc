@@ -15,8 +15,6 @@ ErrorThrower::ErrorThrower(v8::Isolate* isolate) : isolate_(isolate) {}
 // costly to invoke
 ErrorThrower::ErrorThrower() : isolate_(v8::Isolate::GetCurrent()) {}
 
-ErrorThrower::~ErrorThrower() = default;
-
 void ErrorThrower::ThrowError(base::StringPiece err_msg) const {
   Throw(v8::Exception::Error, err_msg);
 }

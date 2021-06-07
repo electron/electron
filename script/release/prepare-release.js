@@ -112,7 +112,7 @@ async function createRelease (branchToTarget, isBeta) {
     name: `electron ${newVersion}`,
     body: releaseBody,
     prerelease: releaseIsPrelease,
-    target_commitish: newVersion.indexOf('nightly') !== -1 ? 'master' : branchToTarget
+    target_commitish: newVersion.indexOf('nightly') !== -1 ? 'main' : branchToTarget
   }).catch(err => {
     console.log(`${fail} Error creating new release: `, err);
     process.exit(1);
@@ -135,8 +135,7 @@ async function pushRelease (branch) {
 
 async function runReleaseBuilds (branch) {
   await ciReleaseBuild(branch, {
-    ghRelease: true,
-    automaticRelease: args.automaticRelease
+    ghRelease: true
   });
 }
 
@@ -181,7 +180,7 @@ async function promptForVersion (version) {
   });
 }
 
-// function to determine if there have been commits to master since the last release
+// function to determine if there have been commits to main since the last release
 async function changesToRelease () {
   const lastCommitWasRelease = new RegExp('^Bump v[0-9.]*(-beta[0-9.]*)?(-nightly[0-9.]*)?$', 'g');
   const lastCommit = await GitProcess.exec(['log', '-n', '1', '--pretty=format:\'%s\''], ELECTRON_DIR);

@@ -9,6 +9,7 @@
 #include "chrome/common/chrome_constants.h"
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/browser/shared_cors_origin_access_list.h"
+#include "electron/fuses.h"
 #include "net/net_buildflags.h"
 #include "services/network/network_service.h"
 #include "services/network/public/cpp/cors/origin_access_list.h"
@@ -44,7 +45,7 @@ void NetworkContextService::ConfigureNetworkContextParams(
   network_context_params->user_agent = browser_context_->GetUserAgent();
 
   network_context_params->cors_origin_access_list =
-      content::BrowserContext::GetSharedCorsOriginAccessList(browser_context_)
+      browser_context_->GetSharedCorsOriginAccessList()
           ->GetOriginAccessList()
           .CreateCorsOriginAccessPatternsList();
 
@@ -77,9 +78,8 @@ void NetworkContextService::ConfigureNetworkContextParams(
     network_context_params->restore_old_session_cookies = false;
     network_context_params->persist_session_cookies = false;
 
-    // TODO(deepak1556): Matches the existing behavior https://git.io/fxHMl,
-    // enable encryption as a followup.
-    network_context_params->enable_encrypted_cookies = false;
+    network_context_params->enable_encrypted_cookies =
+        electron::fuses::IsCookieEncryptionEnabled();
 
     network_context_params->transport_security_persister_path = path;
   }

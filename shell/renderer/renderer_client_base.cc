@@ -22,10 +22,16 @@
 #include "electron/buildflags/buildflags.h"
 #include "media/blink/multibuffer_data_source.h"
 #include "printing/buildflags/buildflags.h"
+#include "shell/browser/api/electron_api_protocol.h"
+#include "shell/common/api/electron_api_native_image.h"
 #include "shell/common/color_util.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/node_includes.h"
+#include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/world_ids.h"
+#include "shell/renderer/api/context_bridge/object_cache.h"
+#include "shell/renderer/api/electron_api_context_bridge.h"
 #include "shell/renderer/browser_exposed_renderer_interfaces.h"
 #include "shell/renderer/content_settings_observer.h"
 #include "shell/renderer/electron_api_service_impl.h"
@@ -83,7 +89,14 @@
 
 namespace electron {
 
+content::RenderFrame* GetRenderFrame(v8::Local<v8::Object> value);
+
 namespace {
+
+void SetIsWebView(v8::Isolate* isolate, v8::Local<v8::Object> object) {
+  gin_helper::Dictionary dict(isolate, object);
+  dict.SetHidden("isWebView", true);
+}
 
 std::vector<std::string> ParseSchemesCLISwitch(base::CommandLine* command_line,
                                                const char* switch_name) {
@@ -92,10 +105,18 @@ std::vector<std::string> ParseSchemesCLISwitch(base::CommandLine* command_line,
                            base::SPLIT_WANT_NONEMPTY);
 }
 
+// static
+RendererClientBase* g_renderer_client_base = nullptr;
+
 }  // namespace
 
 RendererClientBase::RendererClientBase() {
   auto* command_line = base::CommandLine::ForCurrentProcess();
+  // Parse --service-worker-schemes=scheme1,scheme2
+  std::vector<std::string> service_worker_schemes_list =
+      ParseSchemesCLISwitch(command_line, switches::kServiceWorkerSchemes);
+  for (const std::string& scheme : service_worker_schemes_list)
+    electron::api::AddServiceWorkerScheme(scheme);
   // Parse --standard-schemes=scheme1,scheme2
   std::vector<std::string> standard_schemes_list =
       ParseSchemesCLISwitch(command_line, switches::kStandardSchemes);
@@ -123,26 +144,30 @@ RendererClientBase::RendererClientBase() {
   DCHECK(command_line->HasSwitch(::switches::kRendererClientId));
   renderer_client_id_ =
       command_line->GetSwitchValueASCII(::switches::kRendererClientId);
+
+  g_renderer_client_base = this;
 }
 
-RendererClientBase::~RendererClientBase() = default;
+RendererClientBase::~RendererClientBase() {
+  g_renderer_client_base = nullptr;
+}
 
-void RendererClientBase::DidCreateScriptContext(
-    v8::Handle<v8::Context> context,
-    content::RenderFrame* render_frame) {
-  // global.setHidden("contextId", `${processHostId}-${++next_context_id_}`)
-  auto context_id = base::StringPrintf(
-      "%s-%" PRId64, renderer_client_id_.c_str(), ++next_context_id_);
-  gin_helper::Dictionary global(context->GetIsolate(), context->Global());
-  global.SetHidden("contextId", context_id);
+// static
+RendererClientBase* RendererClientBase::Get() {
+  DCHECK(g_renderer_client_base);
+  return g_renderer_client_base;
 }
 
 void RendererClientBase::BindProcess(v8::Isolate* isolate,
                                      gin_helper::Dictionary* process,
                                      content::RenderFrame* render_frame) {
+  auto context_id = base::StringPrintf(
+      "%s-%" PRId64, renderer_client_id_.c_str(), ++next_context_id_);
+
   process->SetReadOnly("isMainFrame", render_frame->IsMainFrame());
   process->SetReadOnly("contextIsolated",
                        render_frame->GetBlinkPreferences().context_isolation);
+  process->SetReadOnly("contextId", context_id);
 }
 
 void RendererClientBase::RenderThreadStarted() {
@@ -333,7 +358,8 @@ bool RendererClientBase::IsPluginHandledExternally(
   // electron_content_client.cc / ComputeBuiltInPlugins.
   content::WebPluginInfo info;
   info.type = content::WebPluginInfo::PLUGIN_TYPE_BROWSER_PLUGIN;
-  info.name = base::UTF8ToUTF16("Chromium PDF Viewer");
+  const char16_t kPDFExtensionPluginName[] = u"Chromium PDF Viewer";
+  info.name = kPDFExtensionPluginName;
   info.path = base::FilePath::FromUTF8Unsafe(extension_misc::kPdfExtensionId);
   info.background_color = content::WebPluginInfo::kDefaultBackgroundColor;
   info.mime_types.emplace_back("application/pdf", "pdf",
@@ -445,19 +471,10 @@ v8::Local<v8::Context> RendererClientBase::GetContext(
   auto* render_frame = content::RenderFrame::FromWebFrame(frame);
   DCHECK(render_frame);
   if (render_frame && render_frame->GetBlinkPreferences().context_isolation)
-    return frame->WorldScriptContext(isolate, WorldIDs::ISOLATED_WORLD_ID);
+    return frame->GetScriptContextFromWorldId(isolate,
+                                              WorldIDs::ISOLATED_WORLD_ID);
   else
     return frame->MainWorldScriptContext();
-}
-
-v8::Local<v8::Value> RendererClientBase::RunScript(
-    v8::Local<v8::Context> context,
-    v8::Local<v8::String> source) {
-  auto maybe_script = v8::Script::Compile(context, source);
-  v8::Local<v8::Script> script;
-  if (!maybe_script.ToLocal(&script))
-    return v8::Local<v8::Value>();
-  return script->Run(context).ToLocalChecked();
 }
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -483,11 +500,70 @@ bool RendererClientBase::IsWebViewFrame(
 
   gin_helper::Dictionary frame_element_dict(isolate, frame_element);
 
-  v8::Local<v8::Object> internal;
-  if (!frame_element_dict.GetHidden("internal", &internal))
-    return false;
+  bool is_webview = false;
+  return frame_element_dict.GetHidden("isWebView", &is_webview) && is_webview;
+}
 
-  return !internal.IsEmpty();
+void RendererClientBase::SetupMainWorldOverrides(
+    v8::Handle<v8::Context> context,
+    content::RenderFrame* render_frame) {
+  auto prefs = render_frame->GetBlinkPreferences();
+  // We only need to run the isolated bundle if webview is enabled
+  if (!prefs.webview_tag)
+    return;
+
+  // Setup window overrides in the main world context
+  // Wrap the bundle into a function that receives the isolatedApi as
+  // an argument.
+  auto* isolate = context->GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+  v8::Context::Scope context_scope(context);
+
+  gin_helper::Dictionary isolated_api = gin::Dictionary::CreateEmpty(isolate);
+  isolated_api.SetMethod("allowGuestViewElementDefinition",
+                         &AllowGuestViewElementDefinition);
+  isolated_api.SetMethod("setIsWebView", &SetIsWebView);
+  isolated_api.SetMethod("createNativeImage", &api::NativeImage::CreateEmpty);
+
+  auto source_context = GetContext(render_frame->GetWebFrame(), isolate);
+  gin_helper::Dictionary global(isolate, source_context->Global());
+
+  v8::Local<v8::Value> guest_view_internal;
+  if (global.GetHidden("guestViewInternal", &guest_view_internal)) {
+    api::context_bridge::ObjectCache object_cache;
+    auto result = api::PassValueToOtherContext(
+        source_context, context, guest_view_internal, &object_cache, false, 0);
+    if (!result.IsEmpty()) {
+      isolated_api.Set("guestViewInternal", result.ToLocalChecked());
+    }
+  }
+
+  std::vector<v8::Local<v8::String>> isolated_bundle_params = {
+      node::FIXED_ONE_BYTE_STRING(isolate, "isolatedApi")};
+
+  std::vector<v8::Local<v8::Value>> isolated_bundle_args = {
+      isolated_api.GetHandle()};
+
+  util::CompileAndCall(context, "electron/js2c/isolated_bundle",
+                       &isolated_bundle_params, &isolated_bundle_args, nullptr);
+}
+
+// static
+void RendererClientBase::AllowGuestViewElementDefinition(
+    v8::Isolate* isolate,
+    v8::Local<v8::Object> context,
+    v8::Local<v8::Function> register_cb) {
+  v8::HandleScope handle_scope(isolate);
+  v8::Context::Scope context_scope(context->CreationContext());
+  blink::WebCustomElement::EmbedderNamesAllowedScope embedder_names_scope;
+
+  content::RenderFrame* render_frame = GetRenderFrame(context);
+  if (!render_frame)
+    return;
+
+  render_frame->GetWebFrame()->RequestExecuteV8Function(
+      context->CreationContext(), register_cb, v8::Null(isolate), 0, nullptr,
+      nullptr);
 }
 
 }  // namespace electron

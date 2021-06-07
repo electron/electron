@@ -8,15 +8,14 @@ WebPreferences of in-process child windows, rather than relying on
 process-level command line switches, as before.
 
 diff --git a/third_party/blink/common/web_preferences/web_preferences.cc b/third_party/blink/common/web_preferences/web_preferences.cc
-index 8a1315f7f89588bb21c6d3c21a7de7c07fed9679..24297949a13d920a2f0bee40fb2b45759c122897 100644
+index 8a1315f7f89588bb21c6d3c21a7de7c07fed9679..2ad5dc0b70a2b0bf298866dd2b9515112d3583f0 100644
 --- a/third_party/blink/common/web_preferences/web_preferences.cc
 +++ b/third_party/blink/common/web_preferences/web_preferences.cc
-@@ -148,6 +148,25 @@ WebPreferences::WebPreferences()
+@@ -148,6 +148,23 @@ WebPreferences::WebPreferences()
        fake_no_alloc_direct_call_for_testing_enabled(false),
        v8_cache_options(blink::mojom::V8CacheOptions::kDefault),
        record_whole_document(false),
 +      // Begin Electron-specific WebPreferences.
-+      disable_electron_site_instance_overrides(),
 +      background_color(base::EmptyString()),
 +      opener_id(0),
 +      context_isolation(false),
@@ -27,7 +26,6 @@ index 8a1315f7f89588bb21c6d3c21a7de7c07fed9679..24297949a13d920a2f0bee40fb2b4575
 +      native_window_open(false),
 +      node_integration(false),
 +      node_integration_in_worker(false),
-+      node_leakage_in_renderers(false),
 +      node_integration_in_sub_frames(false),
 +      enable_spellcheck(false),
 +      enable_plugins(false),
@@ -38,7 +36,7 @@ index 8a1315f7f89588bb21c6d3c21a7de7c07fed9679..24297949a13d920a2f0bee40fb2b4575
        accelerated_video_decode_enabled(false),
        animation_policy(
 diff --git a/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc b/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
-index ab2d320a4073308c249821a060e870afc0dbc3a5..3eafdd66010a649091099348ce25847a42211606 100644
+index ab2d320a4073308c249821a060e870afc0dbc3a5..1799d27380c112d98e55e63b9dd842c78014c62a 100644
 --- a/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
 +++ b/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
 @@ -24,6 +24,11 @@ bool StructTraits<blink::mojom::WebPreferencesDataView,
@@ -53,12 +51,11 @@ index ab2d320a4073308c249821a060e870afc0dbc3a5..3eafdd66010a649091099348ce25847a
        !data.ReadLazyFrameLoadingDistanceThresholdsPx(
            &out->lazy_frame_loading_distance_thresholds_px) ||
        !data.ReadLazyImageLoadingDistanceThresholdsPx(
-@@ -154,6 +159,23 @@ bool StructTraits<blink::mojom::WebPreferencesDataView,
+@@ -154,6 +159,21 @@ bool StructTraits<blink::mojom::WebPreferencesDataView,
        data.fake_no_alloc_direct_call_for_testing_enabled();
    out->v8_cache_options = data.v8_cache_options();
    out->record_whole_document = data.record_whole_document();
 +  // Begin Electron-specific WebPreferences.
-+  out->disable_electron_site_instance_overrides = data.disable_electron_site_instance_overrides();
 +  out->opener_id = data.opener_id();
 +  out->context_isolation = data.context_isolation();
 +  out->guest_instance_id = data.guest_instance_id();
@@ -67,7 +64,6 @@ index ab2d320a4073308c249821a060e870afc0dbc3a5..3eafdd66010a649091099348ce25847a
 +  out->native_window_open = data.native_window_open();
 +  out->node_integration = data.node_integration();
 +  out->node_integration_in_worker = data.node_integration_in_worker();
-+  out->node_leakage_in_renderers = data.node_leakage_in_renderers();
 +  out->node_integration_in_sub_frames = data.node_integration_in_sub_frames();
 +  out->enable_spellcheck = data.enable_spellcheck();
 +  out->enable_plugins = data.enable_plugins();
@@ -78,24 +74,23 @@ index ab2d320a4073308c249821a060e870afc0dbc3a5..3eafdd66010a649091099348ce25847a
    out->accelerated_video_decode_enabled =
        data.accelerated_video_decode_enabled();
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences.h b/third_party/blink/public/common/web_preferences/web_preferences.h
-index 6a7194fc499dd6c88b6e205853390dbd3dd09094..eb9cc0f0c9c70a9dc5242d43d6672f579af5180c 100644
+index 84736bea7ac7b6fcc85782ba9faecb23a0d6574c..99b0d5866781e26022fb3fd8ef684562582d8204 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences.h
-@@ -9,6 +9,7 @@
- #include <string>
+@@ -10,6 +10,7 @@
  #include <vector>
  
-+#include "base/files/file_path.h"
- #include "base/time/time.h"
  #include "build/build_config.h"
++#include "base/files/file_path.h"
  #include "net/nqe/effective_connection_type.h"
-@@ -161,6 +162,27 @@ struct BLINK_COMMON_EXPORT WebPreferences {
+ #include "third_party/blink/public/common/common_export.h"
+ #include "third_party/blink/public/mojom/css/preferred_color_scheme.mojom-shared.h"
+@@ -160,6 +161,25 @@ struct BLINK_COMMON_EXPORT WebPreferences {
    blink::mojom::V8CacheOptions v8_cache_options;
    bool record_whole_document;
  
 +  // Begin Electron-specific WebPreferences.
 +  std::vector<base::FilePath> preloads;
-+  bool disable_electron_site_instance_overrides;
 +  std::string background_color;
 +  int opener_id;
 +  bool context_isolation;
@@ -106,7 +101,6 @@ index 6a7194fc499dd6c88b6e205853390dbd3dd09094..eb9cc0f0c9c70a9dc5242d43d6672f57
 +  bool native_window_open;
 +  bool node_integration;
 +  bool node_integration_in_worker;
-+  bool node_leakage_in_renderers;
 +  bool node_integration_in_sub_frames;
 +  bool enable_spellcheck;
 +  bool enable_plugins;
@@ -118,7 +112,7 @@ index 6a7194fc499dd6c88b6e205853390dbd3dd09094..eb9cc0f0c9c70a9dc5242d43d6672f57
    // only controls whether or not the "document.cookie" field is properly
    // connected to the backing store, for instance if you wanted to be able to
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
-index 90a2bb1a13afd749b540545fff22ba2134917b5d..56e1db519f36eac90e3b62175daa2087f7983308 100644
+index 90a2bb1a13afd749b540545fff22ba2134917b5d..5ca57b9b52de2b398ed19ae0e2ce5bf3a2387469 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
 @@ -6,6 +6,7 @@
@@ -129,17 +123,13 @@ index 90a2bb1a13afd749b540545fff22ba2134917b5d..56e1db519f36eac90e3b62175daa2087
  #include "mojo/public/cpp/bindings/struct_traits.h"
  #include "net/nqe/effective_connection_type.h"
  #include "third_party/blink/public/common/common_export.h"
-@@ -446,6 +447,80 @@ struct BLINK_COMMON_EXPORT StructTraits<blink::mojom::WebPreferencesDataView,
+@@ -446,6 +447,72 @@ struct BLINK_COMMON_EXPORT StructTraits<blink::mojom::WebPreferencesDataView,
      return r.record_whole_document;
    }
  
 +  // Begin Electron-specific WebPreferences.
 +  static const std::vector<base::FilePath>& preloads(const blink::web_pref::WebPreferences& r) {
 +    return r.preloads;
-+  }
-+
-+  static bool disable_electron_site_instance_overrides(const blink::web_pref::WebPreferences& r) {
-+    return r.disable_electron_site_instance_overrides;
 +  }
 +
 +  static const std::string& background_color(const blink::web_pref::WebPreferences& r) {
@@ -182,10 +172,6 @@ index 90a2bb1a13afd749b540545fff22ba2134917b5d..56e1db519f36eac90e3b62175daa2087
 +    return r.node_integration_in_worker;
 +  }
 +
-+  static bool node_leakage_in_renderers(const blink::web_pref::WebPreferences& r) {
-+    return r.node_leakage_in_renderers;
-+  }
-+
 +  static bool node_integration_in_sub_frames(const blink::web_pref::WebPreferences& r) {
 +    return r.node_integration_in_sub_frames;
 +  }
@@ -211,7 +197,7 @@ index 90a2bb1a13afd749b540545fff22ba2134917b5d..56e1db519f36eac90e3b62175daa2087
      return r.cookie_enabled;
    }
 diff --git a/third_party/blink/public/mojom/webpreferences/web_preferences.mojom b/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
-index db9994ca72f244d6e626d8793ec0cc181a582ea4..8624b88d7fabb207f05f12e8acbc283863a93838 100644
+index db9994ca72f244d6e626d8793ec0cc181a582ea4..234a3aabfa4e0aa3fb32bd18b33fce3d03ac57af 100644
 --- a/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
 +++ b/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
 @@ -9,6 +9,7 @@ import "third_party/blink/public/mojom/css/preferred_contrast.mojom";
@@ -222,13 +208,12 @@ index db9994ca72f244d6e626d8793ec0cc181a582ea4..8624b88d7fabb207f05f12e8acbc2838
  
  enum PointerType {
    kPointerNone                              = 1,             // 1 << 0
-@@ -212,6 +213,27 @@ struct WebPreferences {
+@@ -212,6 +213,25 @@ struct WebPreferences {
    V8CacheOptions v8_cache_options;
    bool record_whole_document;
  
 +  // Begin Electron-specific WebPreferences.
 +  array<mojo_base.mojom.FilePath> preloads;
-+  bool disable_electron_site_instance_overrides;
 +  string background_color;
 +  int32 opener_id;
 +  bool context_isolation;
@@ -239,7 +224,6 @@ index db9994ca72f244d6e626d8793ec0cc181a582ea4..8624b88d7fabb207f05f12e8acbc2838
 +  bool native_window_open;
 +  bool node_integration;
 +  bool node_integration_in_worker;
-+  bool node_leakage_in_renderers;
 +  bool node_integration_in_sub_frames;
 +  bool enable_spellcheck;
 +  bool enable_plugins;

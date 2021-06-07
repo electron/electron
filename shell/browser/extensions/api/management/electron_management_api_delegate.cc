@@ -42,7 +42,7 @@ class ManagementSetEnabledFunctionInstallPromptDelegate
       base::OnceCallback<void(bool)> callback) {
     // TODO(sentialx): emit event
   }
-  ~ManagementSetEnabledFunctionInstallPromptDelegate() override {}
+  ~ManagementSetEnabledFunctionInstallPromptDelegate() override = default;
 
  private:
   base::WeakPtrFactory<ManagementSetEnabledFunctionInstallPromptDelegate>
@@ -61,7 +61,7 @@ class ManagementUninstallFunctionUninstallDialogDelegate
     // TODO(sentialx): emit event
   }
 
-  ~ManagementUninstallFunctionUninstallDialogDelegate() override {}
+  ~ManagementUninstallFunctionUninstallDialogDelegate() override = default;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(ManagementUninstallFunctionUninstallDialogDelegate);
@@ -69,9 +69,9 @@ class ManagementUninstallFunctionUninstallDialogDelegate
 
 }  // namespace
 
-ElectronManagementAPIDelegate::ElectronManagementAPIDelegate() {}
+ElectronManagementAPIDelegate::ElectronManagementAPIDelegate() = default;
 
-ElectronManagementAPIDelegate::~ElectronManagementAPIDelegate() {}
+ElectronManagementAPIDelegate::~ElectronManagementAPIDelegate() = default;
 
 void ElectronManagementAPIDelegate::LaunchAppFunctionDelegate(
     const extensions::Extension* extension,

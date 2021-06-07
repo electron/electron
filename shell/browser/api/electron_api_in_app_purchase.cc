@@ -105,9 +105,9 @@ const char* InAppPurchase::GetTypeName() {
   return "InAppPurchase";
 }
 
-InAppPurchase::InAppPurchase() {}
+InAppPurchase::InAppPurchase() = default;
 
-InAppPurchase::~InAppPurchase() {}
+InAppPurchase::~InAppPurchase() = default;
 
 v8::Local<v8::Promise> InAppPurchase::PurchaseProduct(
     const std::string& product_id,

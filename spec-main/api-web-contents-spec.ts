@@ -419,7 +419,7 @@ describe('webContents module', () => {
     const testFn = (process.platform === 'win32' && process.arch === 'arm64' ? it.skip : it);
     testFn('returns the focused web contents', async () => {
       const w = new BrowserWindow({ show: true });
-      await w.loadURL('about:blank');
+      await w.loadFile(path.join(__dirname, 'fixtures', 'blank.html'));
       expect(webContents.getFocusedWebContents().id).to.equal(w.webContents.id);
 
       const devToolsOpened = emittedOnce(w.webContents, 'devtools-opened');
@@ -521,12 +521,13 @@ describe('webContents module', () => {
       w.show();
       await focused;
       expect(w.isFocused()).to.be.true();
+      const blurred = emittedOnce(w, 'blur');
       w.webContents.openDevTools({ mode: 'detach', activate: true });
       await Promise.all([
         emittedOnce(w.webContents, 'devtools-opened'),
         emittedOnce(w.webContents, 'devtools-focused')
       ]);
-      await delay();
+      await blurred;
       expect(w.isFocused()).to.be.false();
     });
 

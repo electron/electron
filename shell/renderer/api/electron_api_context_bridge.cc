@@ -4,7 +4,6 @@
 
 #include "shell/renderer/api/electron_api_context_bridge.h"
 
-#include <map>
 #include <memory>
 #include <set>
 #include <string>
@@ -24,6 +23,7 @@
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/world_ids.h"
+#include "third_party/blink/public/web/web_blob.h"
 #include "third_party/blink/public/web/web_element.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 
@@ -34,6 +34,8 @@ const base::Feature kContextBridgeMutability{"ContextBridgeMutability",
 }
 
 namespace electron {
+
+content::RenderFrame* GetRenderFrame(v8::Local<v8::Object> value);
 
 namespace api {
 
@@ -56,16 +58,6 @@ inline bool IsTrue(v8::Maybe<bool> maybe) {
   return maybe.IsJust() && maybe.FromJust();
 }
 
-content::RenderFrame* GetRenderFrame(const v8::Local<v8::Object>& value) {
-  v8::Local<v8::Context> context = value->CreationContext();
-  if (context.IsEmpty())
-    return nullptr;
-  blink::WebLocalFrame* frame = blink::WebLocalFrame::FrameForContext(context);
-  if (!frame)
-    return nullptr;
-  return content::RenderFrame::FromWebFrame(frame);
-}
-
 // Sourced from "extensions/renderer/v8_schema_registry.cc"
 // Recursively freezes every v8 object on |object|.
 bool DeepFreeze(const v8::Local<v8::Object>& object,
@@ -83,7 +75,7 @@ bool DeepFreeze(const v8::Local<v8::Object>& object,
         object->Get(context, property_names->Get(context, i).ToLocalChecked())
             .ToLocalChecked();
     if (child->IsObject() && !child->IsTypedArray()) {
-      if (!DeepFreeze(v8::Local<v8::Object>::Cast(child), context, frozen))
+      if (!DeepFreeze(child.As<v8::Object>(), context, frozen))
         return false;
     }
   }
@@ -181,7 +173,7 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
   // Proxy functions and monitor the lifetime in the new context to release
   // the global handle at the right time.
   if (value->IsFunction()) {
-    auto func = v8::Local<v8::Function>::Cast(value);
+    auto func = value.As<v8::Function>();
     v8::MaybeLocal<v8::Value> maybe_original_fn = GetPrivate(
         source_context, func, context_bridge::kOriginalFunctionPrivateKey);
 
@@ -224,7 +216,7 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
   // Proxy promises as they have a safe and guaranteed memory lifecycle
   if (value->IsPromise()) {
     v8::Context::Scope destination_scope(destination_context);
-    auto source_promise = v8::Local<v8::Promise>::Cast(value);
+    auto source_promise = value.As<v8::Promise>();
     // Make the promise a shared_ptr so that when the original promise is
     // freed the proxy promise is correctly freed as well instead of being
     // left dangling
@@ -290,10 +282,10 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
 
     ignore_result(source_promise->Then(
         source_context,
-        v8::Local<v8::Function>::Cast(
-            gin::ConvertToV8(destination_context->GetIsolate(), then_cb)),
-        v8::Local<v8::Function>::Cast(
-            gin::ConvertToV8(destination_context->GetIsolate(), catch_cb))));
+        gin::ConvertToV8(destination_context->GetIsolate(), then_cb)
+            .As<v8::Function>(),
+        gin::ConvertToV8(destination_context->GetIsolate(), catch_cb)
+            .As<v8::Function>()));
 
     object_cache->CacheProxiedObject(value, proxied_promise_handle);
     return v8::MaybeLocal<v8::Value>(proxied_promise_handle);
@@ -325,7 +317,7 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
   // promises are proxied correctly.
   if (IsPlainArray(value)) {
     v8::Context::Scope destination_context_scope(destination_context);
-    v8::Local<v8::Array> arr = v8::Local<v8::Array>::Cast(value);
+    v8::Local<v8::Array> arr = value.As<v8::Array>();
     size_t length = arr->Length();
     v8::Local<v8::Array> cloned_arr =
         v8::Array::New(destination_context->GetIsolate(), length);
@@ -354,9 +346,17 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
         destination_context->Global(), destination_context->GetIsolate()));
   }
 
+  // Custom logic to "clone" Blob references
+  blink::WebBlob blob = blink::WebBlob::FromV8Value(value);
+  if (!blob.IsNull()) {
+    v8::Context::Scope destination_context_scope(destination_context);
+    return v8::MaybeLocal<v8::Value>(blob.ToV8Value(
+        destination_context->Global(), destination_context->GetIsolate()));
+  }
+
   // Proxy all objects
   if (IsPlainObject(value)) {
-    auto object_value = v8::Local<v8::Object>::Cast(value);
+    auto object_value = value.As<v8::Object>();
     auto passed_value = CreateProxyForAPI(
         object_value, source_context, destination_context, object_cache,
         support_dynamic_properties, recursion_depth + 1);
@@ -408,7 +408,7 @@ void ProxyFunctionWrapper(const v8::FunctionCallbackInfo<v8::Value>& info) {
       !maybe_func.ToLocal(&func_value))
     return;
 
-  v8::Local<v8::Function> func = v8::Local<v8::Function>::Cast(func_value);
+  v8::Local<v8::Function> func = func_value.As<v8::Function>();
   v8::Local<v8::Context> func_owning_context = func->CreationContext();
 
   {
@@ -507,7 +507,7 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
       if (support_dynamic_properties) {
         v8::Context::Scope source_context_scope(source_context);
         auto maybe_desc = api.GetHandle()->GetOwnPropertyDescriptor(
-            source_context, v8::Local<v8::Name>::Cast(key));
+            source_context, key.As<v8::Name>());
         v8::Local<v8::Value> desc_value;
         if (!maybe_desc.ToLocal(&desc_value) || !desc_value->IsObject())
           continue;
@@ -581,8 +581,8 @@ void ExposeAPIInMainWorld(v8::Isolate* isolate,
     return;
   }
 
-  v8::Local<v8::Context> isolated_context =
-      frame->WorldScriptContext(args->isolate(), WorldIDs::ISOLATED_WORLD_ID);
+  v8::Local<v8::Context> isolated_context = frame->GetScriptContextFromWorldId(
+      args->isolate(), WorldIDs::ISOLATED_WORLD_ID);
 
   {
     context_bridge::ObjectCache object_cache;
@@ -600,7 +600,7 @@ void ExposeAPIInMainWorld(v8::Isolate* isolate,
     }
 
     if (proxy->IsObject() && !proxy->IsTypedArray() &&
-        !DeepFreeze(v8::Local<v8::Object>::Cast(proxy), main_context))
+        !DeepFreeze(proxy.As<v8::Object>(), main_context))
       return;
 
     global.SetReadOnlyNonConfigurable(key, proxy);

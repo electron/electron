@@ -13,9 +13,7 @@
 #include "shell/browser/notifications/win/win32_desktop_notifications/desktop_notification_controller.h"
 
 #include <windowsx.h>
-#include <algorithm>
 #include <utility>
-#include <vector>
 
 #include "base/check.h"
 #include "shell/browser/notifications/win/win32_desktop_notifications/common.h"

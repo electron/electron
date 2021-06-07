@@ -93,10 +93,6 @@ class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
     return result;
   }
 
-  void* Realloc(void* data, size_t size) override {
-    return allocator_->root()->Realloc(data, size, "Electron");
-  }
-
   void Free(void* data, size_t size) override {
     allocator_->root()->Free(data);
   }

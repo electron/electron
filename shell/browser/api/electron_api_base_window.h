@@ -62,6 +62,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void OnWindowMinimize() override;
   void OnWindowRestore() override;
   void OnWindowWillResize(const gfx::Rect& new_bounds,
+                          const gfx::ResizeEdge& edge,
                           bool* prevent_default) override;
   void OnWindowResize() override;
   void OnWindowResized() override;

@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Cheng Zhao <zcbenz@gmail.com>
 Date: Thu, 20 Sep 2018 17:48:49 -0700
-Subject: mas_disable_custom_window_frame.patch
+Subject: mas: disable private window-frame APIs
 
 Disable private window frame APIs (NSNextStepFrame and NSThemeFrame) for MAS
 build.
@@ -95,7 +95,7 @@ index 5a23ea7558814eec59eda349bc7194afcb70d01e..c9147bbe5a225291552082434e5db342
  // The NSWindow used by BridgedNativeWidget. Provides hooks into AppKit that
  // can only be accomplished by overriding methods.
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index ca3d6a6626d191bcc6253ab35e2b5094e50d11d3..a693e44156a82dad9846be60436c5ada3972d0d9 100644
+index e301610a2d7cc0559e1bca7947f4f557b32b3c94..c98a6a1d02a607bb30869c14e915ed12f1941b91 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 @@ -16,7 +16,9 @@

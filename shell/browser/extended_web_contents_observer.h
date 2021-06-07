@@ -5,6 +5,7 @@
 #ifndef SHELL_BROWSER_EXTENDED_WEB_CONTENTS_OBSERVER_H_
 #define SHELL_BROWSER_EXTENDED_WEB_CONTENTS_OBSERVER_H_
 
+#include <string>
 #include <vector>
 
 #include "base/observer_list.h"

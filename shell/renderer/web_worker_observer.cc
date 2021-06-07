@@ -7,7 +7,6 @@
 #include "base/lazy_instance.h"
 #include "base/threading/thread_local.h"
 #include "shell/common/api/electron_bindings.h"
-#include "shell/common/asar/asar_util.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
@@ -39,12 +38,14 @@ WebWorkerObserver::~WebWorkerObserver() {
   lazy_tls.Pointer()->Set(nullptr);
   node::FreeEnvironment(node_bindings_->uv_env());
   node::FreeIsolateData(node_bindings_->isolate_data());
-  asar::ClearArchives();
 }
 
 void WebWorkerObserver::WorkerScriptReadyForEvaluation(
     v8::Local<v8::Context> worker_context) {
   v8::Context::Scope context_scope(worker_context);
+  auto* isolate = worker_context->GetIsolate();
+  v8::MicrotasksScope microtasks_scope(
+      isolate, v8::MicrotasksScope::kDoNotRunMicrotasks);
 
   // Start the embed thread.
   node_bindings_->PrepareMessageLoop();

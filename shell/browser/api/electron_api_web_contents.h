@@ -43,8 +43,8 @@
 #include "ui/gfx/image/image.h"
 
 #if BUILDFLAG(ENABLE_PRINTING)
-#include "chrome/browser/printing/print_view_manager_basic.h"
 #include "shell/browser/printing/print_preview_message_handler.h"
+#include "shell/browser/printing/print_view_manager_electron.h"
 #endif
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -324,7 +324,6 @@ class WebContents : public gin::Wrappable<WebContents>,
   content::WebContents* HostWebContents() const;
   v8::Local<v8::Value> DevToolsWebContents(v8::Isolate* isolate);
   v8::Local<v8::Value> Debugger(v8::Isolate* isolate);
-  bool WasInitiallyShown();
   content::RenderFrameHost* MainFrame();
 
   WebContentsZoomController* GetZoomController() { return zoom_controller_; }
@@ -559,9 +558,10 @@ class WebContents : public gin::Wrappable<WebContents>,
       content::NavigationHandle* navigation_handle) override;
   void DidRedirectNavigation(
       content::NavigationHandle* navigation_handle) override;
+  void ReadyToCommitNavigation(
+      content::NavigationHandle* navigation_handle) override;
   void DidFinishNavigation(
       content::NavigationHandle* navigation_handle) override;
-  bool OnMessageReceived(const IPC::Message& message) override;
   void WebContentsDestroyed() override;
   void NavigationEntryCommitted(
       const content::LoadCommittedDetails& load_details) override;
@@ -613,7 +613,7 @@ class WebContents : public gin::Wrappable<WebContents>,
 
   // content::WebContentsDelegate:
   bool CanOverscrollContent() override;
-  content::ColorChooser* OpenColorChooser(
+  std::unique_ptr<content::ColorChooser> OpenColorChooser(
       content::WebContents* web_contents,
       SkColor color,
       const std::vector<blink::mojom::ColorSuggestionPtr>& suggestions)
@@ -721,8 +721,6 @@ class WebContents : public gin::Wrappable<WebContents>,
   base::ObserverList<ExtendedWebContentsObserver> observers_;
 
   v8::Global<v8::Value> pending_child_web_preferences_;
-
-  bool initially_shown_ = true;
 
   // The window that this WebContents belongs to.
   base::WeakPtr<NativeWindow> owner_window_;

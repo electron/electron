@@ -10,7 +10,6 @@
 #include <memory>
 #include <queue>
 #include <string>
-#include <tuple>
 #include <vector>
 
 #include "base/mac/scoped_nsobject.h"
@@ -78,7 +77,7 @@ class NativeWindowMac : public NativeWindow,
   bool IsClosable() override;
   void SetAlwaysOnTop(ui::ZOrderLevel z_order,
                       const std::string& level,
-                      int relativeLevel) override;
+                      int relative_level) override;
   ui::ZOrderLevel GetZOrderLevel() override;
   void Center() override;
   void Invalidate() override;
@@ -126,8 +125,8 @@ class NativeWindowMac : public NativeWindow,
   void SetVibrancy(const std::string& type) override;
   void SetWindowButtonVisibility(bool visible) override;
   bool GetWindowButtonVisibility() const override;
-  void SetTrafficLightPosition(base::Optional<gfx::Point> position) override;
-  base::Optional<gfx::Point> GetTrafficLightPosition() const override;
+  void SetTrafficLightPosition(absl::optional<gfx::Point> position) override;
+  absl::optional<gfx::Point> GetTrafficLightPosition() const override;
   void RedrawTrafficLights() override;
   void UpdateFrame() override;
   void SetTouchBar(
@@ -149,6 +148,8 @@ class NativeWindowMac : public NativeWindow,
   gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds) const override;
   void NotifyWindowEnterFullScreen() override;
   void NotifyWindowLeaveFullScreen() override;
+  void SetActive(bool is_key) override;
+  bool IsActive() const override;
 
   void NotifyWindowWillEnterFullScreen();
   void NotifyWindowWillLeaveFullScreen();
@@ -160,6 +161,8 @@ class NativeWindowMac : public NativeWindow,
 
   // Use a custom content view instead of Chromium's BridgedContentView.
   void OverrideNSWindowContentView();
+
+  void UpdateVibrancyRadii(bool fullscreen);
 
   // Set the attribute of NSWindow while work around a bug of zoom button.
   void SetStyleMask(bool on, NSUInteger flag);
@@ -193,7 +196,6 @@ class NativeWindowMac : public NativeWindow,
 
  protected:
   // views::WidgetDelegate:
-  bool CanResize() const override;
   views::View* GetContentsView() override;
 
   // ui::NativeThemeObserver:
@@ -232,8 +234,7 @@ class NativeWindowMac : public NativeWindow,
 
   bool is_kiosk_ = false;
   bool zoom_to_page_width_ = false;
-  bool resizable_ = true;
-  base::Optional<gfx::Point> traffic_light_position_;
+  absl::optional<gfx::Point> traffic_light_position_;
 
   std::queue<bool> pending_transitions_;
   FullScreenTransitionState fullscreen_transition_state() const {
@@ -255,7 +256,7 @@ class NativeWindowMac : public NativeWindow,
 
   // The visibility mode of window button controls when explicitly set through
   // setWindowButtonVisibility().
-  base::Optional<bool> window_button_visibility_;
+  absl::optional<bool> window_button_visibility_;
 
   // Maximizable window state; necessary for persistence through redraws.
   bool maximizable_ = true;
@@ -265,12 +266,12 @@ class NativeWindowMac : public NativeWindow,
   bool is_simple_fullscreen_ = false;
   bool was_maximizable_ = false;
   bool was_movable_ = false;
+  bool is_active_ = false;
   NSRect original_frame_;
   NSInteger original_level_;
   NSUInteger simple_fullscreen_mask_;
 
-  base::scoped_nsobject<NSColor> background_color_before_vibrancy_;
-  bool transparency_before_vibrancy_ = false;
+  std::string vibrancy_type_;
 
   // The presentation options before entering simple fullscreen mode.
   NSApplicationPresentationOptions simple_fullscreen_options_;

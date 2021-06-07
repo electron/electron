@@ -2,7 +2,6 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include <string>
 #include <utility>
 
 #include "base/hash/hash.h"
@@ -38,7 +37,7 @@ struct Converter<std::pair<Type1, Type2>> {
     if (!val->IsArray())
       return false;
 
-    v8::Local<v8::Array> array(v8::Local<v8::Array>::Cast(val));
+    v8::Local<v8::Array> array = val.As<v8::Array>();
     if (array->Length() != 2)
       return false;
 

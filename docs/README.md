@@ -18,20 +18,14 @@ an issue:
 
 ## Guides and Tutorials
 
-### Quickstart
+### Getting started
 
-* [Quick Start Guide](tutorial/quick-start.md)
-  * [Prerequisites](tutorial/quick-start.md#prerequisites)
-  * [Create a basic application](tutorial/quick-start.md#create-a-basic-application)
-  * [Run your application](tutorial/quick-start.md#run-your-application)
-  * [Package and distribute the application](tutorial/quick-start.md#package-and-distribute-the-application)
+* [Introduction](tutorial/introduction.md)
+* [Quick Start](tutorial/quick-start.md)
+* [Process Model](tutorial/process-model.md)
 
 ### Learning the basics
 
-* [Electron's Process Model](tutorial/quick-start.md#application-architecture)
-  * [Main and Renderer Processes](tutorial/quick-start.md#main-and-renderer-processes)
-  * [Electron API](tutorial/quick-start.md#electron-api)
-  * [Node.js API](tutorial/quick-start.md#nodejs-api)
 * Adding Features to Your App
   * [Notifications](tutorial/notifications.md)
   * [Recent Documents](tutorial/recent-documents.md)
@@ -59,6 +53,7 @@ an issue:
   * [Using Native Node.js Modules](tutorial/using-native-node-modules.md)
   * [Performance Strategies](tutorial/performance.md)
   * [Security Strategies](tutorial/security.md)
+  * [Process Sandboxing](tutorial/sandbox.md)
 * [Accessibility](tutorial/accessibility.md)
   * [Manually Enabling Accessibility Features](tutorial/accessibility.md#manually-enabling-accessibility-features)
 * [Testing and Debugging](tutorial/application-debugging.md)

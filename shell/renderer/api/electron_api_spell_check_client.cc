@@ -4,9 +4,7 @@
 
 #include "shell/renderer/api/electron_api_spell_check_client.h"
 
-#include <map>
 #include <memory>
-
 #include <set>
 #include <unordered_set>
 #include <utility>
@@ -18,6 +16,7 @@
 #include "components/spellcheck/renderer/spellcheck_worditerator.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/function_template.h"
+#include "shell/common/gin_helper/microtasks_scope.h"
 #include "third_party/blink/public/web/web_text_checking_completion.h"
 #include "third_party/blink/public/web/web_text_checking_result.h"
 #include "third_party/icu/source/common/unicode/uscript.h"
@@ -218,6 +217,9 @@ void SpellCheckClient::OnSpellCheckDone(
 void SpellCheckClient::SpellCheckWords(const SpellCheckScope& scope,
                                        const std::set<std::u16string>& words) {
   DCHECK(!scope.spell_check_.IsEmpty());
+
+  gin_helper::MicrotasksScope microtasks_scope(
+      isolate_, v8::MicrotasksScope::kDoNotRunMicrotasks);
 
   v8::Local<v8::FunctionTemplate> templ = gin_helper::CreateFunctionTemplate(
       isolate_,
