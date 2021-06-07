@@ -471,7 +471,8 @@ v8::Local<v8::Context> RendererClientBase::GetContext(
   auto* render_frame = content::RenderFrame::FromWebFrame(frame);
   DCHECK(render_frame);
   if (render_frame && render_frame->GetBlinkPreferences().context_isolation)
-    return frame->WorldScriptContext(isolate, WorldIDs::ISOLATED_WORLD_ID);
+    return frame->GetScriptContextFromWorldId(isolate,
+                                              WorldIDs::ISOLATED_WORLD_ID);
   else
     return frame->MainWorldScriptContext();
 }

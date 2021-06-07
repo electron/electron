@@ -10,10 +10,10 @@ them should they exist.
 This will be upstreamed.
 
 diff --git a/printing/printing_context_mac.h b/printing/printing_context_mac.h
-index 07fcfad6ecf676068d3f0b44f97e748d58b13016..f165eea20ca3b120f5fb499248d65fa7befc7686 100644
+index 0fb5c91b8abcdd7e674251bafebfc2c51044ef77..8c134bae25afeb0dbbb6e33182f053bb34e2f978 100644
 --- a/printing/printing_context_mac.h
 +++ b/printing/printing_context_mac.h
-@@ -82,6 +82,10 @@ class COMPONENT_EXPORT(PRINTING) PrintingContextMac : public PrintingContext {
+@@ -83,6 +83,10 @@ class COMPONENT_EXPORT(PRINTING) PrintingContextMac : public PrintingContext {
    // Returns true if the orientation was set.
    bool SetOrientationIsLandscape(bool landscape);
  
@@ -25,10 +25,10 @@ index 07fcfad6ecf676068d3f0b44f97e748d58b13016..f165eea20ca3b120f5fb499248d65fa7
    // Returns true if duplex mode is set.
    bool SetDuplexModeInPrintSettings(mojom::DuplexMode mode);
 diff --git a/printing/printing_context_mac.mm b/printing/printing_context_mac.mm
-index 1a52ea3cd11b3ec573cfef6f6f03ab39fcb998d6..c8a17ef24a4bb62fc03b361d5153acc8f0098c6b 100644
+index 9f80fe6f10515849dd02d580db9852e6fbbbaa30..67f5b76a8141857ba02abd806341f06b07a4ebdc 100644
 --- a/printing/printing_context_mac.mm
 +++ b/printing/printing_context_mac.mm
-@@ -189,7 +189,8 @@ PMPaper MatchPaper(CFArrayRef paper_list,
+@@ -190,7 +190,8 @@ PMPaper MatchPaper(CFArrayRef paper_list,
          !SetCollateInPrintSettings(settings_->collate()) ||
          !SetDuplexModeInPrintSettings(settings_->duplex_mode()) ||
          !SetOutputColor(static_cast<int>(settings_->color())) ||
@@ -38,7 +38,7 @@ index 1a52ea3cd11b3ec573cfef6f6f03ab39fcb998d6..c8a17ef24a4bb62fc03b361d5153acc8
        return OnError();
      }
    }
-@@ -342,6 +343,22 @@ PMPaper MatchPaper(CFArrayRef paper_list,
+@@ -343,6 +344,22 @@ PMPaper MatchPaper(CFArrayRef paper_list,
    return PMSetCopies(print_settings, copies, false) == noErr;
  }
  
@@ -100,7 +100,7 @@ index fe7fc797504dcc7097a3d79a2dab2c18de737048..20c63b1f657f2969850b31eaafdff7e5
    } else {
      // No need to bother, we don't know how many pages are available.
 diff --git a/ui/gtk/printing/print_dialog_gtk.cc b/ui/gtk/printing/print_dialog_gtk.cc
-index 5e7dd30b97c4ca3e6f14636955791ab0c6b63d6d..11a521a5f261e8306a7159487ffad6e4f990a0b2 100644
+index 62108f0eb91fd04235d29a5e010aa600f76f8288..0e21b30dbe3f6daca9dce6d2b89b063c13d044ee 100644
 --- a/ui/gtk/printing/print_dialog_gtk.cc
 +++ b/ui/gtk/printing/print_dialog_gtk.cc
 @@ -238,6 +238,24 @@ void PrintDialogGtk::UpdateSettings(

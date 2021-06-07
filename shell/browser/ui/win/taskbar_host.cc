@@ -55,9 +55,9 @@ TaskbarHost::ThumbarButton::ThumbarButton(const TaskbarHost::ThumbarButton&) =
     default;
 TaskbarHost::ThumbarButton::~ThumbarButton() = default;
 
-TaskbarHost::TaskbarHost() {}
+TaskbarHost::TaskbarHost() = default;
 
-TaskbarHost::~TaskbarHost() {}
+TaskbarHost::~TaskbarHost() = default;
 
 bool TaskbarHost::SetThumbarButtons(HWND window,
                                     const std::vector<ThumbarButton>& buttons) {

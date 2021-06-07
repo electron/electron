@@ -16,7 +16,7 @@ ProtocolRegistry* ProtocolRegistry::FromBrowserContext(
   return static_cast<ElectronBrowserContext*>(context)->protocol_registry();
 }
 
-ProtocolRegistry::ProtocolRegistry() {}
+ProtocolRegistry::ProtocolRegistry() = default;
 
 ProtocolRegistry::~ProtocolRegistry() = default;
 

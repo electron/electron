@@ -4,7 +4,8 @@
 
 #include "shell/browser/electron_pdf_web_contents_helper_client.h"
 
-ElectronPDFWebContentsHelperClient::ElectronPDFWebContentsHelperClient() {}
+ElectronPDFWebContentsHelperClient::ElectronPDFWebContentsHelperClient() =
+    default;
 ElectronPDFWebContentsHelperClient::~ElectronPDFWebContentsHelperClient() =
     default;
 

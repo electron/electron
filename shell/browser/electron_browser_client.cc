@@ -572,7 +572,7 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
       command_line->AppendSwitchPath(switches::kAppPath, app_path);
     }
 
-    std::unique_ptr<base::Environment> env(base::Environment::Create());
+    auto env = base::Environment::Create();
     if (env->HasVar("ELECTRON_PROFILE_INIT_SCRIPTS")) {
       command_line->AppendSwitch("profile-electron-init");
     }
@@ -603,7 +603,7 @@ void ElectronBrowserClient::DidCreatePpapiPlugin(
 
 // attempt to get api key from env
 std::string ElectronBrowserClient::GetGeolocationApiKey() {
-  std::unique_ptr<base::Environment> env(base::Environment::Create());
+  auto env = base::Environment::Create();
   std::string api_key;
   env->GetVar("GOOGLE_API_KEY", &api_key);
   return api_key;
@@ -790,7 +790,7 @@ bool ElectronBrowserClient::ArePersistentMediaDeviceIDsAllowed(
     content::BrowserContext* browser_context,
     const GURL& scope,
     const GURL& site_for_cookies,
-    const base::Optional<url::Origin>& top_frame_origin) {
+    const absl::optional<url::Origin>& top_frame_origin) {
   return true;
 }
 
@@ -947,7 +947,7 @@ bool ElectronBrowserClient::HandleExternalProtocol(
     bool is_main_frame,
     ui::PageTransition page_transition,
     bool has_user_gesture,
-    const base::Optional<url::Origin>& initiating_origin,
+    const absl::optional<url::Origin>& initiating_origin,
     mojo::PendingRemote<network::mojom::URLLoaderFactory>* out_factory) {
   base::PostTask(
       FROM_HERE, {BrowserThread::UI},
@@ -1087,7 +1087,7 @@ class FileURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
     mojo::PendingRemote<network::mojom::URLLoaderFactory> pending_remote;
 
     // The FileURLLoaderFactory will delete itself when there are no more
-    // receivers - see the NonNetworkURLLoaderFactoryBase::OnDisconnect method.
+    // receivers - see the SelfDeletingURLLoaderFactory::OnDisconnect method.
     new FileURLLoaderFactory(child_id,
                              pending_remote.InitWithNewPipeAndPassReceiver());
 
@@ -1250,7 +1250,7 @@ void ElectronBrowserClient::CreateWebSocket(
     WebSocketFactory factory,
     const GURL& url,
     const net::SiteForCookies& site_for_cookies,
-    const base::Optional<std::string>& user_agent,
+    const absl::optional<std::string>& user_agent,
     mojo::PendingRemote<network::mojom::WebSocketHandshakeClient>
         handshake_client) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
@@ -1288,7 +1288,7 @@ bool ElectronBrowserClient::WillCreateURLLoaderFactory(
     int render_process_id,
     URLLoaderFactoryType type,
     const url::Origin& request_initiator,
-    base::Optional<int64_t> navigation_id,
+    absl::optional<int64_t> navigation_id,
     ukm::SourceIdObj ukm_source_id,
     mojo::PendingReceiver<network::mojom::URLLoaderFactory>* factory_receiver,
     mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>*

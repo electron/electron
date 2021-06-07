@@ -550,12 +550,13 @@ describe('webContents module', () => {
       w.show();
       await focused;
       expect(w.isFocused()).to.be.true();
+      const blurred = emittedOnce(w, 'blur');
       w.webContents.openDevTools({ mode: 'detach', activate: true });
       await Promise.all([
         emittedOnce(w.webContents, 'devtools-opened'),
         emittedOnce(w.webContents, 'devtools-focused')
       ]);
-      await delay();
+      await blurred;
       expect(w.isFocused()).to.be.false();
     });
 

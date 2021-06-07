@@ -16,7 +16,6 @@
 #include "base/files/file_util.h"
 #include "base/json/json_reader.h"
 #include "base/no_destructor.h"
-#include "base/optional.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/current_thread.h"
 #include "base/task/post_task.h"
@@ -38,6 +37,7 @@
 #include "content/browser/renderer_host/render_widget_host_impl.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_view_base.h"  // nogncheck
 #include "content/public/browser/child_process_security_policy.h"
+#include "content/public/browser/color_chooser.h"
 #include "content/public/browser/context_menu_params.h"
 #include "content/public/browser/download_request_utils.h"
 #include "content/public/browser/favicon_status.h"
@@ -124,6 +124,7 @@
 #include "shell/common/process_util.h"
 #include "shell/common/v8_value_serializer.h"
 #include "storage/browser/file_system/isolated_context.h"
+#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "third_party/blink/public/common/input/web_input_event.h"
 #include "third_party/blink/public/common/messaging/transferable_message_mojom_traits.h"
@@ -387,7 +388,7 @@ void OnCapturePageDone(gin_helper::Promise<gfx::Image> promise,
   promise.Resolve(gfx::Image::CreateFrom1xBitmap(bitmap));
 }
 
-base::Optional<base::TimeDelta> GetCursorBlinkInterval() {
+absl::optional<base::TimeDelta> GetCursorBlinkInterval() {
 #if defined(OS_MAC)
   base::TimeDelta interval;
   if (ui::TextInsertionCaretBlinkPeriod(&interval))
@@ -403,7 +404,7 @@ base::Optional<base::TimeDelta> GetCursorBlinkInterval() {
                : base::TimeDelta::FromMilliseconds(system_msec);
   }
 #endif
-  return base::nullopt;
+  return absl::nullopt;
 }
 
 #if BUILDFLAG(ENABLE_PRINTING)
@@ -435,7 +436,8 @@ std::u16string GetDefaultPrinterAsync() {
   scoped_refptr<printing::PrintBackend> print_backend =
       printing::PrintBackend::CreateInstance(
           g_browser_process->GetApplicationLocale());
-  std::string printer_name = print_backend->GetDefaultPrinterName();
+  std::string printer_name;
+  print_backend->GetDefaultPrinterName(printer_name);
 
   // Some devices won't have a default printer, so we should
   // also check for existing printers and pick the first
@@ -1818,15 +1820,6 @@ void WebContents::DevToolsResized() {
     observer.OnDevToolsResized();
 }
 
-bool WebContents::OnMessageReceived(const IPC::Message& message) {
-  bool handled = true;
-  IPC_BEGIN_MESSAGE_MAP(WebContents, message)
-    IPC_MESSAGE_UNHANDLED(handled = false)
-  IPC_END_MESSAGE_MAP()
-
-  return handled;
-}
-
 void WebContents::SetOwnerWindow(NativeWindow* owner_window) {
   SetOwnerWindow(GetWebContents(), owner_window);
 }
@@ -3206,7 +3199,7 @@ bool WebContents::CanOverscrollContent() {
   return false;
 }
 
-content::ColorChooser* WebContents::OpenColorChooser(
+std::unique_ptr<content::ColorChooser> WebContents::OpenColorChooser(
     content::WebContents* web_contents,
     SkColor color,
     const std::vector<blink::mojom::ColorSuggestionPtr>& suggestions) {
