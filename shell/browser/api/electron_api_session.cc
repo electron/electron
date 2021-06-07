@@ -193,7 +193,6 @@ struct Converter<electron::api::ExtensionTabDetails> {
       return false;
 
     *out = electron::api::ExtensionTabDetails();
-    auto tmp = electron::api::ExtensionTabDetails();
 
     options.Get("windowId", &out->window_id);
     options.Get("active", &out->active);
