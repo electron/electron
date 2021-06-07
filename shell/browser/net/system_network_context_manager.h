@@ -20,13 +20,6 @@
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 
-namespace network {
-namespace mojom {
-class URLLoaderFactory;
-}
-class SharedURLLoaderFactory;
-}  // namespace network
-
 namespace net_log {
 class NetExportFileWriter;
 }
