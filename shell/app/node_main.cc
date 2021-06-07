@@ -49,7 +49,7 @@ namespace {
 
 // Initialize Node.js cli options to pass to Node.js
 // See https://nodejs.org/api/cli.html#cli_options
-void SetNodeCliFlags() {
+int SetNodeCliFlags() {
   // Options that are unilaterally disallowed
   const std::unordered_set<base::StringPiece, base::StringPieceHash>
       disallowed = {"--openssl-config", "--use-bundled-ca", "--use-openssl-ca",
@@ -74,6 +74,7 @@ void SetNodeCliFlags() {
     if (disallowed.count(stripped) != 0) {
       LOG(ERROR) << "The Node.js cli flag " << stripped
                  << " is not supported in Electron";
+      return 9;
     } else {
       args.push_back(option);
     }
@@ -83,7 +84,8 @@ void SetNodeCliFlags() {
 
   // Node.js itself will output parsing errors to
   // console so we don't need to handle that ourselves
-  ProcessGlobalArgs(&args, nullptr, &errors, node::kDisallowedInEnvironment);
+  return ProcessGlobalArgs(&args, nullptr, &errors,
+                           node::kDisallowedInEnvironment);
 }
 
 #if defined(MAS_BUILD)
@@ -169,7 +171,9 @@ int NodeMain(int argc, char* argv[]) {
     NodeBindings::RegisterBuiltinModules();
 
     // Parse and set Node.js cli flags.
-    SetNodeCliFlags();
+    int flags_exit_code = SetNodeCliFlags();
+    if (flags_exit_code != 0)
+      exit(flags_exit_code);
 
     node::InitializationResult result =
         node::InitializeOncePerProcess(argc, argv);
