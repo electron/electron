@@ -195,7 +195,7 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
         {display::Display(display::kDefaultDisplayId)},
         display::kDefaultDisplayId, display::kDefaultDisplayId);
   }
-  display::Display current_display = *display_list_.GetCurrentDisplayIterator();
+  display::Display current_display = display_list_.GetCurrentDisplay();
   current_display.set_device_scale_factor(kDefaultScaleFactor);
   display_list_.UpdateDisplay(current_display);
 
@@ -1001,7 +1001,7 @@ void OffScreenRenderWidgetHostView::ResizeRootLayer(bool force) {
         {display::Display(display::kDefaultDisplayId)},
         display::kDefaultDisplayId, display::kDefaultDisplayId);
   }
-  display::Display current_display = *display_list_.GetCurrentDisplayIterator();
+  display::Display current_display = display_list_.GetCurrentDisplay();
   current_display.set_device_scale_factor(scaleFactor);
   display_list_.UpdateDisplay(current_display);
 
