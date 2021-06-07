@@ -1525,6 +1525,7 @@ commands:
       - when:
           condition: << parameters.build >>
           steps:
+            - move_and_store_all_artifacts
             - run:
                 name: Remove the big things on macOS, this seems to be better on average
                 command: |
@@ -1541,8 +1542,6 @@ commands:
                 condition: << parameters.use-out-cache >>
                 steps:
                   - *step-save-out-cache
-
-            - move_and_store_all_artifacts
 
             # Trigger tests on arm hardware if needed
             - *step-maybe-trigger-arm-test
