@@ -119,7 +119,7 @@ ElectronBrowserContext::ElectronBrowserContext(const std::string& partition,
                     &max_cache_size_);
 
   if (!base::PathService::Get(chrome::DIR_USER_DATA, &path_)) {
-    base::PathService::Get(base::DIR_APP_DATA, &path_);
+    base::PathService::Get(DIR_APP_DATA, &path_);
     path_ = path_.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
     base::PathService::Override(chrome::DIR_USER_DATA, path_);
   }
