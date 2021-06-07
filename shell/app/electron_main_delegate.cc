@@ -347,7 +347,7 @@ void ElectronMainDelegate::PreSandboxStartup() {
 
 void ElectronMainDelegate::SandboxInitialized(const std::string& process_type) {
 #if defined(OS_WIN)
-  electron::logging::InitLogging(process_type);
+  electron::logging::InitLogging(*base::CommandLine::ForCurrentProcess());
 #endif
 }
 
