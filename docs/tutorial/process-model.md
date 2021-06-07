@@ -138,7 +138,7 @@ way to import Electron's content scripts.
 <!-- Note: This guide doesn't take sandboxing into account, which might fundamentally 
 change the statements here. -->
 Preload scripts contain code that executes in a renderer process before its web content
-begins loading. These scripts runs within the renderer context, but are granted more
+begins loading. These scripts run within the renderer context, but are granted more
 privileges by having access to Node.js APIs.
 
 A preload script can be attached to the main process in the `BrowserWindow` constructor's
