@@ -72,7 +72,6 @@ namespace {
 const char* kRelauncherProcess = "relauncher";
 
 constexpr base::StringPiece kElectronDisableSandbox("ELECTRON_DISABLE_SANDBOX");
-constexpr base::StringPiece kElectronEnableLogging("ELECTRON_ENABLE_LOGGING");
 constexpr base::StringPiece kElectronEnableStackDumping(
     "ELECTRON_ENABLE_STACK_DUMPING");
 
@@ -286,13 +285,6 @@ void ElectronMainDelegate::PreSandboxStartup() {
                                                  user_data_dir, false, true);
   }
 
-  auto env = base::Environment::Create();
-  if (env->HasVar(kElectronEnableLogging) &&
-      !command_line->HasSwitch(::switches::kEnableLogging)) {
-    // support the long-standing 'ELECTRON_ENABLE_LOGGING' envvar:
-    // behaves equivalently to --enable-logging=stderr
-    command_line->AppendSwitchASCII(::switches::kEnableLogging, "stderr");
-  }
 #if !defined(OS_WIN)
   // For windows we call InitLogging when the sandbox is initialized.
   electron::logging::InitLogging(*command_line);

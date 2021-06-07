@@ -22,6 +22,7 @@ namespace electron {
 namespace logging {
 
 constexpr base::StringPiece kLogFileName("ELECTRON_LOG_FILE");
+constexpr base::StringPiece kElectronEnableLogging("ELECTRON_ENABLE_LOGGING");
 
 base::FilePath GetLogFileName(const base::CommandLine& command_line) {
   std::string filename = command_line.GetSwitchValueASCII(switches::kLogFile);
@@ -44,7 +45,20 @@ base::FilePath GetLogFileName(const base::CommandLine& command_line) {
 
 ::logging::LoggingDestination DetermineLoggingDestination(
     const base::CommandLine& command_line) {
-  if (!command_line.HasSwitch(switches::kEnableLogging))
+  bool enable_logging = false;
+  std::string enable_logging_value;
+  if (command_line.HasSwitch(::switches::kEnableLogging)) {
+    enable_logging = true;
+    enable_logging_value =
+        command_line.GetSwitchValueASCII(switches::kEnableLogging);
+  } else {
+    auto env = base::Environment::Create();
+    if (env->HasVar(kElectronEnableLogging)) {
+      enable_logging = true;
+      env->GetVar(kElectronEnableLogging, &enable_logging_value);
+    }
+  }
+  if (!enable_logging)
     return ::logging::LOG_NONE;
 
   // --enable-logging logs to stderr, --enable-logging=file logs to a file.
@@ -53,15 +67,14 @@ base::FilePath GetLogFileName(const base::CommandLine& command_line) {
   // used to work, so in order to not break anyone who was depending on
   // --enable-logging logging to stderr, we preserve the old behavior by
   // default.
-  std::string logging_destination =
-      command_line.GetSwitchValueASCII(switches::kEnableLogging);
-  // TODO(nornagon): if --log-file or ELECTRON_LOG_FILE is specified along with
+  std::string logging_destination = enable_logging_value;
+  // If --log-file or ELECTRON_LOG_FILE is specified along with
   // --enable-logging, return LOG_TO_FILE.
-  if (logging_destination == "file") {
+  std::string filename = command_line.GetSwitchValueASCII(switches::kLogFile);
+  if (filename.empty())
+    base::Environment::Create()->GetVar(kLogFileName, &filename);
+  if (!filename.empty() || logging_destination == "file")
     return ::logging::LOG_TO_FILE;
-  } else if (logging_destination != "") {
-    PLOG(ERROR) << "Invalid logging destination: " << logging_destination;
-  }
   return ::logging::LOG_TO_SYSTEM_DEBUG_LOG | ::logging::LOG_TO_STDERR;
 }
 
