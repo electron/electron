@@ -1156,6 +1156,32 @@ index 5be788f67931131256f7fb0ab802cb0edee58173..13963fbeee1bbe5d4a25f1ef8bb58c7a
      );
      server.close();
    }));
+diff --git a/test/parallel/test-tls-getprotocol.js b/test/parallel/test-tls-getprotocol.js
+index 02c683c71c8775e84d5d125a4f05560b8206677d..4c6dd20ca0a8d0acdf9f8d1b7153087de9305196 100644
+--- a/test/parallel/test-tls-getprotocol.js
++++ b/test/parallel/test-tls-getprotocol.js
+@@ -18,7 +18,7 @@ const clientConfigs = [
+ 
+ const serverConfig = {
+   secureProtocol: 'TLS_method',
+-  ciphers: 'RSA@SECLEVEL=0',
++  // ciphers: 'RSA@SECLEVEL=0',
+   key: fixtures.readKey('agent2-key.pem'),
+   cert: fixtures.readKey('agent2-cert.pem')
+ };
+diff --git a/test/parallel/test-tls-write-error.js b/test/parallel/test-tls-write-error.js
+index b06f2fa2c53ea72f9a66f0d002dd9281d0259a0f..864fffeebfad75d95416fd47efdea7f222c507a2 100644
+--- a/test/parallel/test-tls-write-error.js
++++ b/test/parallel/test-tls-write-error.js
+@@ -17,7 +17,7 @@ const server_cert = fixtures.readKey('agent1-cert.pem');
+ const opts = {
+   key: server_key,
+   cert: server_cert,
+-  ciphers: 'ALL@SECLEVEL=0'
++  // ciphers: 'ALL@SECLEVEL=0'
+ };
+ 
+ const server = https.createServer(opts, (req, res) => {
 diff --git a/test/parallel/test-webcrypto-derivebits.js b/test/parallel/test-webcrypto-derivebits.js
 index 95c38f454fbb939c9f74f25ec946d0c8e94e4c41..882c01fd812f5ed880fa3482ede92695ad505ff3 100644
 --- a/test/parallel/test-webcrypto-derivebits.js
