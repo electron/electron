@@ -21,6 +21,34 @@ To set the represented file of window, you can use the
 ## Example
 
 ```javascript fiddle='docs/fiddles/features/represented-file'
+const { app, BrowserWindow } = require('electron')
+const os = require('os');
+
+function createWindow () {
+  const win = new BrowserWindow({
+    width: 800,
+    height: 600
+  })
+}
+
+app.whenReady().then(() => {
+  const win = new BrowserWindow()
+
+  win.setRepresentedFilename(os.homedir())
+  win.setDocumentEdited(true)
+})
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit()
+  }
+})
+
+app.on('activate', () => {
+  if (BrowserWindow.getAllWindows().length === 0) {
+    createWindow()
+  }
+})
 ```
 
 After launching the Electron application, click on the title with `Command` or
