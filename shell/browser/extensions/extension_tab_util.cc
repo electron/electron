@@ -141,7 +141,7 @@ absl::optional<electron::api::ExtensionTabDetails>
 ExtensionTabUtil::GetTabDetailsFromWebContents(
     electron::api::WebContents* contents) {
   if (!contents)
-    return base::nullopt;
+    return absl::nullopt;
   return electron::api::Session::FromBrowserContext(
              contents->web_contents()->GetBrowserContext())
       ->GetExtensionTabDetails(contents);

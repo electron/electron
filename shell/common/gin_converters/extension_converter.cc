@@ -28,31 +28,29 @@ v8::Local<v8::Value> Converter<const extensions::Extension*>::ToV8(
   return gin::ConvertToV8(isolate, dict);
 }
 
-template <>
-struct Converter<electron::api::ExtensionTabDetails> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     electron::api::ExtensionTabDetails* out) {
-    gin_helper::Dictionary options;
-    if (!ConvertFromV8(isolate, val, &options))
-      return false;
+bool Converter<electron::api::ExtensionTabDetails>::FromV8(
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> val,
+    electron::api::ExtensionTabDetails* out) {
+  gin_helper::Dictionary options;
+  if (!ConvertFromV8(isolate, val, &options))
+    return false;
 
-    *out = electron::api::ExtensionTabDetails();
+  *out = electron::api::ExtensionTabDetails();
 
-    options.Get("windowId", &out->window_id);
-    options.Get("active", &out->active);
-    options.Get("highlighted", &out->highlighted);
-    options.Get("pinned", &out->pinned);
-    options.Get("groupId", &out->group_id);
-    options.Get("index", &out->index);
-    options.Get("discarded", &out->discarded);
-    options.Get("autoDiscardable", &out->auto_discardable);
-    options.Get("openerTabId", &out->opener_tab_id);
-    options.Get("mutedReason", &out->muted_reason);
-    options.Get("mutedExtensionId", &out->muted_extension_id);
+  options.Get("windowId", &out->window_id);
+  options.Get("active", &out->active);
+  options.Get("highlighted", &out->highlighted);
+  options.Get("pinned", &out->pinned);
+  options.Get("groupId", &out->group_id);
+  options.Get("index", &out->index);
+  options.Get("discarded", &out->discarded);
+  options.Get("autoDiscardable", &out->auto_discardable);
+  options.Get("openerTabId", &out->opener_tab_id);
+  options.Get("mutedReason", &out->muted_reason);
+  options.Get("mutedExtensionId", &out->muted_extension_id);
 
-    return true;
-  }
-};
+  return true;
+}
 
 }  // namespace gin
