@@ -193,7 +193,6 @@ struct Converter<electron::api::ExtensionTabDetails> {
       return false;
 
     *out = electron::api::ExtensionTabDetails();
-    auto tmp = electron::api::ExtensionTabDetails();
 
     options.Get("windowId", &out->window_id);
     options.Get("active", &out->active);
@@ -277,10 +276,10 @@ namespace electron {
 
 namespace api {
 
-ExtensionTabDetails::ExtensionTabDetails() {}
+ExtensionTabDetails::ExtensionTabDetails() = default;
 ExtensionTabDetails::ExtensionTabDetails(const ExtensionTabDetails& other) =
     default;
-ExtensionTabDetails::~ExtensionTabDetails() {}
+ExtensionTabDetails::~ExtensionTabDetails() = default;
 
 namespace {
 
