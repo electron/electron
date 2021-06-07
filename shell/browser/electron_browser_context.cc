@@ -154,7 +154,7 @@ ElectronBrowserContext::ElectronBrowserContext(const std::string& partition,
 
 ElectronBrowserContext::~ElectronBrowserContext() {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
-  NotifyWillBeDestroyed(this);
+  NotifyWillBeDestroyed();
   // Notify any keyed services of browser context destruction.
   BrowserContextDependencyManager::GetInstance()->DestroyBrowserContextServices(
       this);
