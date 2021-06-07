@@ -219,12 +219,14 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       bar.
     * `hidden` - Results in a hidden title bar and a full size content window, yet
       the title bar still has the standard window controls ("traffic lights") in
-      the top left.  Using this value will also enable the Window Controls Overlay
+      the top left.  If `enableBlinkFeatures: 'WebAppWindowControlsOverlay'` is set,
+      using this value will also enable the Window Controls Overlay
       [JavaScript APIs][overlay-javascript-apis] and
       [CSS Environment Variables][overlay-css-env-vars].
     * `hiddenInset` - Results in a hidden title bar with an alternative look
       where the traffic light buttons are slightly more inset from the window edge.
-      Using this value will also enable the Window Controls Overlay
+      If `enableBlinkFeatures: 'WebAppWindowControlsOverlay'` is set, using this
+      value will also enable the Window Controls Overlay
       [JavaScript APIs][overlay-javascript-apis] and
       [CSS Environment Variables][overlay-css-env-vars].
     * `customButtonsOnHover` - Results in a hidden title bar and a full size
