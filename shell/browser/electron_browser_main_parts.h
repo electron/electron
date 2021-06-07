@@ -11,7 +11,6 @@
 
 #include "base/callback.h"
 #include "base/metrics/field_trial.h"
-#include "base/optional.h"
 #include "base/timer/timer.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_main_parts.h"
@@ -19,6 +18,7 @@
 #include "electron/buildflags/buildflags.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "services/device/public/mojom/geolocation_control.mojom.h"
+#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/views/layout/layout_provider.h"
 
 class BrowserProcess;
@@ -145,7 +145,7 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
 
   // A place to remember the exit code once the message loop is ready.
   // Before then, we just exit() without any intermediate steps.
-  base::Optional<int> exit_code_;
+  absl::optional<int> exit_code_;
 
   std::unique_ptr<JavascriptEnvironment> js_env_;
   std::unique_ptr<Browser> browser_;

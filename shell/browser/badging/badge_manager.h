@@ -11,9 +11,9 @@
 #include <vector>
 
 #include "base/macros.h"
-#include "base/optional.h"
 #include "components/keyed_service/core/keyed_service.h"
 #include "mojo/public/cpp/bindings/receiver_set.h"
+#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "third_party/blink/public/mojom/badging/badging.mojom.h"
 #include "url/gurl.h"
 
@@ -43,7 +43,7 @@ class BadgeManager : public KeyedService, public blink::mojom::BadgeService {
       mojo::PendingReceiver<blink::mojom::BadgeService> receiver);
 
   // Determines the text to put on the badge based on some badge_content.
-  static std::string GetBadgeString(base::Optional<int> badge_content);
+  static std::string GetBadgeString(absl::optional<int> badge_content);
 
  private:
   // The BindingContext of a mojo request. Allows mojo calls to be tied back

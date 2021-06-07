@@ -7,7 +7,7 @@
 #include <memory>
 #include <utility>
 
-#include "base/optional.h"
+#include "third_party/abseil-cpp/absl/types/optional.h"
 
 #if defined(OS_WIN)
 #include <windows.h>
@@ -34,7 +34,7 @@ mach_port_t TaskForPid(pid_t pid) {
   return task;
 }
 
-base::Optional<mach_task_basic_info_data_t> GetTaskInfo(mach_port_t task) {
+absl::optional<mach_task_basic_info_data_t> GetTaskInfo(mach_port_t task) {
   if (task == MACH_PORT_NULL)
     return base::nullopt;
   mach_task_basic_info_data_t info = {};

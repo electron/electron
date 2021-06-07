@@ -88,7 +88,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   gfx::Size GetVisibleViewportSize() override;
   void SetInsets(const gfx::Insets&) override;
   void SetBackgroundColor(SkColor color) override;
-  base::Optional<SkColor> GetBackgroundColor() override;
+  absl::optional<SkColor> GetBackgroundColor() override;
   void UpdateBackgroundColor() override;
   blink::mojom::PointerLockResult LockMouse(
       bool request_unadjusted_movement) override;
@@ -130,7 +130,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   void GetScreenInfo(blink::ScreenInfo* results) override;
   void TransformPointToRootSurface(gfx::PointF* point) override;
   gfx::Rect GetBoundsInRootWindow(void) override;
-  base::Optional<content::DisplayFeature> GetDisplayFeature() override;
+  absl::optional<content::DisplayFeature> GetDisplayFeature() override;
   void SetDisplayFeatureForTesting(
       const content::DisplayFeature* display_feature) override;
   viz::SurfaceId GetCurrentSurfaceId() const override;

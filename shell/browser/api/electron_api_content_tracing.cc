@@ -7,7 +7,6 @@
 #include <utility>
 
 #include "base/files/file_util.h"
-#include "base/optional.h"
 #include "base/task/thread_pool.h"
 #include "base/threading/thread_restrictions.h"
 #include "base/trace_event/trace_config.h"
@@ -18,6 +17,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
+#include "third_party/abseil-cpp/absl/types/optional.h"
 
 using content::TracingController;
 
@@ -58,7 +58,7 @@ namespace {
 
 using CompletionCallback = base::OnceCallback<void(const base::FilePath&)>;
 
-base::Optional<base::FilePath> CreateTemporaryFileOnIO() {
+absl::optional<base::FilePath> CreateTemporaryFileOnIO() {
   base::FilePath temp_file_path;
   if (!base::CreateTemporaryFile(&temp_file_path))
     return base::nullopt;
@@ -66,10 +66,10 @@ base::Optional<base::FilePath> CreateTemporaryFileOnIO() {
 }
 
 void StopTracing(gin_helper::Promise<base::FilePath> promise,
-                 base::Optional<base::FilePath> file_path) {
+                 absl::optional<base::FilePath> file_path) {
   auto resolve_or_reject = base::AdaptCallbackForRepeating(base::BindOnce(
       [](gin_helper::Promise<base::FilePath> promise,
-         const base::FilePath& path, base::Optional<std::string> error) {
+         const base::FilePath& path, absl::optional<std::string> error) {
         if (error) {
           promise.RejectWithErrorMessage(error.value());
         } else {
