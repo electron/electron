@@ -154,7 +154,7 @@ index 56a23e8f41bb418d414f11af5797b30571d4cc2b..6f9f577f16de80dd2ab194b557bbd9ec
    DISALLOW_COPY_AND_ASSIGN(PepperIsolatedFileSystemMessageFilter);
  };
 diff --git a/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc b/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc
-index 7820a55f563d40865cd7bbf4a03e7f82db81043e..d9b1c4bc6abfa395782761455d4dd2e3105d7b14 100644
+index 60cfd89dfd18eced6f6d103267b80d547d2e9f26..b078cee6627f5cefe0ec677e77327df703f9078b 100644
 --- a/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc
 +++ b/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc
 @@ -7,8 +7,13 @@
@@ -169,9 +169,9 @@ index 7820a55f563d40865cd7bbf4a03e7f82db81043e..d9b1c4bc6abfa395782761455d4dd2e3
  #include "components/pdf/renderer/pepper_pdf_host.h"
 +#endif
  #include "content/public/renderer/renderer_ppapi_host.h"
+ #include "pdf/buildflags.h"
  #include "ppapi/host/ppapi_host.h"
- #include "ppapi/host/resource_host.h"
-@@ -36,19 +41,10 @@ ChromeRendererPepperHostFactory::CreateResourceHost(
+@@ -37,19 +42,10 @@ ChromeRendererPepperHostFactory::CreateResourceHost(
    if (!host_->IsValidInstance(instance))
      return nullptr;
  
@@ -192,17 +192,17 @@ index 7820a55f563d40865cd7bbf4a03e7f82db81043e..d9b1c4bc6abfa395782761455d4dd2e3
    if (host_->GetPpapiHost()->permissions().HasPermission(
            ppapi::PERMISSION_FLASH) ||
        host_->GetPpapiHost()->permissions().HasPermission(
-@@ -75,7 +71,9 @@ ChromeRendererPepperHostFactory::CreateResourceHost(
-       }
+@@ -78,7 +74,9 @@ ChromeRendererPepperHostFactory::CreateResourceHost(
      }
    }
+ #endif
 +#endif
  
 +#if 0
    // Permissions for the following interfaces will be checked at the
    // time of the corresponding instance's method calls.  Currently these
    // interfaces are available only for whitelisted apps which may not have
-@@ -85,6 +83,7 @@ ChromeRendererPepperHostFactory::CreateResourceHost(
+@@ -88,6 +86,7 @@ ChromeRendererPepperHostFactory::CreateResourceHost(
        return std::make_unique<PepperUMAHost>(host_, instance, resource);
      }
    }

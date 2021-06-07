@@ -11,14 +11,14 @@ This regressed in https://chromium-review.googlesource.com/c/chromium/src/+/2572
 Upstream: https://chromium-review.googlesource.com/c/chromium/src/+/2598393
 
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index ba517758ddd044a32e9c364bd803e0090d19b8cb..23717632bad15eaaf34d9190d242724cc1a4a07b 100644
+index a14a75f741aba5bf1ccb4746506f9622a7e77bd2..de9264b39429fff08f585293330055385cee038b 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -2278,7 +2278,7 @@ blink::WebLocalFrame* RenderFrameImpl::GetWebFrame() {
+@@ -2300,7 +2300,7 @@ const blink::WebView* RenderFrameImpl::GetWebView() const {
  }
  
  const blink::web_pref::WebPreferences& RenderFrameImpl::GetBlinkPreferences() {
--  return GetWebFrame()->View()->GetWebPreferences();
+-  return GetWebView()->GetWebPreferences();
 +  return render_view_->GetWebView()->GetWebPreferences();
  }
  
