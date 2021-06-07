@@ -1813,20 +1813,19 @@ void NativeWindowMac::SetForwardMouseMessages(bool forward) {
 
 gfx::Rect NativeWindowMac::GetWindowControlsOverlayRect() {
   gfx::Rect bounding_rect;
-  if (!has_frame() && buttons_view_ && ![buttons_view_ isHidden] &&
-      !traffic_light_position_) {
+  if (!has_frame() && buttons_view_ && ![buttons_view_ isHidden]) {
     NSRect button_frame = [buttons_view_ frame];
-    const int overlay_width = GetContentSize().width() - NSWidth(button_frame);
-    int overlay_height = NSHeight(button_frame) + 6;
-    if (title_bar_style_ == TitleBarStyle::kHiddenInset) {
-      overlay_height += 15;
-    }
+    gfx::Point buttons_view_margin = [buttons_view_ getMargin];
+    const int overlay_width = GetContentSize().width() - NSWidth(button_frame) -
+                              buttons_view_margin.x();
+    CGFloat overlay_height =
+        NSHeight(button_frame) + buttons_view_margin.y() * 2;
     if (base::i18n::IsRTL()) {
-      bounding_rect = gfx::Rect(0, 0, overlay_width - button_frame.size.width,
-                                overlay_height);
+      bounding_rect = gfx::Rect(0, 0, overlay_width, overlay_height);
     } else {
       bounding_rect =
-          gfx::Rect(button_frame.size.width, 0, overlay_width, overlay_height);
+          gfx::Rect(button_frame.size.width + buttons_view_margin.x(), 0,
+                    overlay_width, overlay_height);
     }
   }
   return bounding_rect;

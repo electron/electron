@@ -116,4 +116,8 @@ const NSWindowButton kButtonTypes[] = {
   [self setNeedsDisplayForButtons];
 }
 
+- (gfx::Point)getMargin {
+  return margin_;
+}
+
 @end

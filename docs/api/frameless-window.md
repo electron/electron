@@ -29,7 +29,8 @@ You can do so by specifying the `titleBarStyle` option:
 #### `hidden`
 
 Results in a hidden title bar and a full size content window, yet the title bar still has the standard window controls (“traffic lights”) in the top left.
-Additionally the Window Controls Overlay [JavaScript APIs][overlay-javascript-apis] and [CSS Environment Variables][overlay-css-env-vars] will be enabled.
+Additionally, if `enableBlinkFeatures: 'WebAppWindowControlsOverlay'` is set, the Window Controls Overlay [JavaScript APIs][overlay-javascript-apis] and
+[CSS Environment Variables][overlay-css-env-vars] will be enabled.
 
 ```javascript
 const { BrowserWindow } = require('electron')
@@ -40,7 +41,8 @@ win.show()
 #### `hiddenInset`
 
 Results in a hidden title bar with an alternative look where the traffic light buttons are slightly more inset from the window edge.
-Additionally the Window Controls Overlay [JavaScript APIs][overlay-javascript-apis] and [CSS Environment Variables][overlay-css-env-vars] will be enabled.
+Additionally, if `enableBlinkFeatures: 'WebAppWindowControlsOverlay'` is set, the Window Controls Overlay
+[JavaScript APIs][overlay-javascript-apis] and [CSS Environment Variables][overlay-css-env-vars] will be enabled.
 
 ```javascript
 const { BrowserWindow } = require('electron')

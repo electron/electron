@@ -26,6 +26,7 @@
 - (void)setMargin:(const absl::optional<gfx::Point>&)margin;
 - (void)setShowOnHover:(BOOL)yes;
 - (void)setNeedsDisplayForButtons;
+- (gfx::Point)getMargin;
 @end
 
 #endif  // SHELL_BROWSER_UI_COCOA_WINDOW_BUTTONS_VIEW_H_

@@ -105,7 +105,7 @@ class NativeWindowObserver : public base::CheckedObserver {
   // Some commands are implemented on on other platforms as well
   virtual void OnExecuteAppCommand(const std::string& command_name) {}
 
-  virtual void UpdateWindowControlsOverlay(gfx::Rect bounding_rect) {}
+  virtual void UpdateWindowControlsOverlay(const gfx::Rect bounding_rect) {}
 };
 
 }  // namespace electron
