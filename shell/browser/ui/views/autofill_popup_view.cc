@@ -485,7 +485,7 @@ void AutofillPopupView::SelectPreviousLine() {
 }
 
 void AutofillPopupView::ClearSelection() {
-  SetSelectedLine(base::nullopt);
+  SetSelectedLine(absl::nullopt);
 }
 
 void AutofillPopupView::RemoveObserver() {

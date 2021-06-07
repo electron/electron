@@ -338,7 +338,7 @@ void SimpleURLLoaderWrapper::OnAuthRequired(
          gin::Arguments* args) {
         std::u16string username_str, password_str;
         if (!args->GetNext(&username_str) || !args->GetNext(&password_str)) {
-          auth_responder->OnAuthCredentials(base::nullopt);
+          auth_responder->OnAuthCredentials(absl::nullopt);
           return;
         }
         auth_responder->OnAuthCredentials(

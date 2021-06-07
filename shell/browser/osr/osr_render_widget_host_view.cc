@@ -500,7 +500,7 @@ gfx::Rect OffScreenRenderWidgetHostView::GetBoundsInRootWindow() {
 
 absl::optional<content::DisplayFeature>
 OffScreenRenderWidgetHostView::GetDisplayFeature() {
-  return base::nullopt;
+  return absl::nullopt;
 }
 
 void OffScreenRenderWidgetHostView::SetDisplayFeatureForTesting(

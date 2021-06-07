@@ -594,7 +594,7 @@ v8::Local<v8::Promise> Browser::GetApplicationInfoForProtocol(
 bool Browser::SetBadgeCount(absl::optional<int> count) {
   absl::optional<std::string> badge_content;
   if (count.has_value() && count.value() == 0) {
-    badge_content = base::nullopt;
+    badge_content = absl::nullopt;
   } else {
     badge_content = badging::BadgeManager::GetBadgeString(count);
   }

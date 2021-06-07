@@ -61,8 +61,8 @@ using CompletionCallback = base::OnceCallback<void(const base::FilePath&)>;
 absl::optional<base::FilePath> CreateTemporaryFileOnIO() {
   base::FilePath temp_file_path;
   if (!base::CreateTemporaryFile(&temp_file_path))
-    return base::nullopt;
-  return base::make_optional(std::move(temp_file_path));
+    return absl::nullopt;
+  return absl::make_optional(std::move(temp_file_path));
 }
 
 void StopTracing(gin_helper::Promise<base::FilePath> promise,
@@ -79,14 +79,14 @@ void StopTracing(gin_helper::Promise<base::FilePath> promise,
       std::move(promise), *file_path));
   if (file_path) {
     auto endpoint = TracingController::CreateFileEndpoint(
-        *file_path, base::BindRepeating(resolve_or_reject, base::nullopt));
+        *file_path, base::BindRepeating(resolve_or_reject, absl::nullopt));
     if (!TracingController::GetInstance()->StopTracing(endpoint)) {
-      resolve_or_reject.Run(base::make_optional(
+      resolve_or_reject.Run(absl::make_optional(
           "Failed to stop tracing (was a trace in progress?)"));
     }
   } else {
     resolve_or_reject.Run(
-        base::make_optional("Failed to create temporary file for trace data"));
+        absl::make_optional("Failed to create temporary file for trace data"));
   }
 }
 
@@ -96,7 +96,7 @@ v8::Local<v8::Promise> StopRecording(gin_helper::Arguments* args) {
 
   base::FilePath path;
   if (args->GetNext(&path) && !path.empty()) {
-    StopTracing(std::move(promise), base::make_optional(path));
+    StopTracing(std::move(promise), absl::make_optional(path));
   } else {
     // use a temporary file.
     base::ThreadPool::PostTaskAndReplyWithResult(
