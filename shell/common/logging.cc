@@ -118,10 +118,6 @@ void InitLogging(const base::CommandLine& command_line) {
   settings.delete_old = process_type.empty()
                             ? ::logging::DELETE_OLD_LOG_FILE
                             : ::logging::APPEND_TO_OLD_LOG_FILE;
-  fprintf(
-      stderr, "LOG_TO_STDERR = %s\n",
-      (settings.logging_dest & ::logging::LOG_TO_STDERR) ? "true" : "false");
-  fprintf(stderr, "logging_dest = %d\n", settings.logging_dest);
   bool success = ::logging::InitLogging(settings);
   if (!success) {
     PLOG(FATAL) << "Failed to init logging";
