@@ -293,6 +293,7 @@ v8::Local<v8::Promise> Cookies::Set(v8::Isolate* isolate,
   const std::string* url_string = details.FindStringKey("url");
   if (!url_string) {
     promise.RejectWithErrorMessage("Missing required option 'url'");
+    return handle;
   }
   const std::string* name = details.FindStringKey("name");
   const std::string* value = details.FindStringKey("value");
