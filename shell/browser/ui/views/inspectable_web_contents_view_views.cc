@@ -12,6 +12,7 @@
 #include "shell/browser/ui/inspectable_web_contents.h"
 #include "shell/browser/ui/inspectable_web_contents_delegate.h"
 #include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
+#include "ui/base/models/image_model.h"
 #include "ui/views/controls/label.h"
 #include "ui/views/controls/webview/webview.h"
 #include "ui/views/widget/widget.h"
@@ -46,8 +47,8 @@ class DevToolsWindowDelegate : public views::ClientView,
   bool CanMaximize() const override { return true; }
   bool CanMinimize() const override { return true; }
   std::u16string GetWindowTitle() const override { return shell_->GetTitle(); }
-  gfx::ImageSkia GetWindowAppIcon() override { return GetWindowIcon(); }
-  gfx::ImageSkia GetWindowIcon() override { return icon_; }
+  ui::ImageModel GetWindowAppIcon() override { return GetWindowIcon(); }
+  ui::ImageModel GetWindowIcon() override { return icon_; }
   views::Widget* GetWidget() override { return widget_; }
   const views::Widget* GetWidget() const override { return widget_; }
   views::View* GetContentsView() override { return view_; }
@@ -65,7 +66,7 @@ class DevToolsWindowDelegate : public views::ClientView,
   InspectableWebContentsViewViews* shell_;
   views::View* view_;
   views::Widget* widget_;
-  gfx::ImageSkia icon_;
+  ui::ImageModel icon_;
 
   DISALLOW_COPY_AND_ASSIGN(DevToolsWindowDelegate);
 };
