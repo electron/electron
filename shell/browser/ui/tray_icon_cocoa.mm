@@ -15,6 +15,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "shell/browser/ui/cocoa/NSString+ANSI.h"
 #include "shell/browser/ui/cocoa/electron_menu_controller.h"
+#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/events/cocoa/cocoa_event_utils.h"
 #include "ui/gfx/mac/coordinate_conversion.h"
 #include "ui/native_theme/native_theme.h"
@@ -385,7 +386,7 @@ gfx::Rect TrayIconCocoa::GetBounds() {
 }
 
 // static
-TrayIcon* TrayIcon::Create(base::Optional<UUID> guid) {
+TrayIcon* TrayIcon::Create(absl::optional<UUID> guid) {
   return new TrayIconCocoa;
 }
 

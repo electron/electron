@@ -41,6 +41,7 @@
 #include "shell/common/options_switches.h"
 #include "shell/common/process_util.h"
 #include "skia/ext/skia_utils_mac.h"
+#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "third_party/webrtc/modules/desktop_capture/mac/window_list_utils.h"
 #include "ui/display/screen.h"
 #include "ui/gfx/skia_util.h"
@@ -1462,7 +1463,7 @@ bool NativeWindowMac::GetWindowButtonVisibility() const {
 }
 
 void NativeWindowMac::SetTrafficLightPosition(
-    base::Optional<gfx::Point> position) {
+    absl::optional<gfx::Point> position) {
   traffic_light_position_ = std::move(position);
   if (buttons_view_) {
     [buttons_view_ setMargin:position];
@@ -1470,7 +1471,7 @@ void NativeWindowMac::SetTrafficLightPosition(
   }
 }
 
-base::Optional<gfx::Point> NativeWindowMac::GetTrafficLightPosition() const {
+absl::optional<gfx::Point> NativeWindowMac::GetTrafficLightPosition() const {
   return traffic_light_position_;
 }
 

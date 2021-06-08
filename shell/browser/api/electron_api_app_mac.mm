@@ -7,6 +7,7 @@
 #include "base/path_service.h"
 #include "shell/browser/api/electron_api_app.h"
 #include "shell/common/electron_paths.h"
+#include "third_party/abseil-cpp/absl/types/optional.h"
 
 #import <Cocoa/Cocoa.h>
 #import <sys/sysctl.h>
@@ -16,7 +17,7 @@ namespace electron {
 namespace api {
 
 void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
-                         base::Optional<base::FilePath> custom_path) {
+                         absl::optional<base::FilePath> custom_path) {
   if (custom_path.has_value()) {
     if (!custom_path->IsAbsolute()) {
       thrower.ThrowError("Path must be absolute");

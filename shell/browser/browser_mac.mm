@@ -29,6 +29,7 @@
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/platform_util.h"
+#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/gfx/image/image.h"
 #include "url/gurl.h"
 
@@ -218,7 +219,7 @@ std::u16string Browser::GetApplicationNameForProtocol(const GURL& url) {
   return app_display_name;
 }
 
-bool Browser::SetBadgeCount(base::Optional<int> count) {
+bool Browser::SetBadgeCount(absl::optional<int> count) {
   DockSetBadgeText(!count.has_value() || count.value() != 0
                        ? badging::BadgeManager::GetBadgeString(count)
                        : "");
