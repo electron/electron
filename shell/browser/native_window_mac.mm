@@ -1478,8 +1478,13 @@ absl::optional<gfx::Point> NativeWindowMac::GetTrafficLightPosition() const {
 }
 
 void NativeWindowMac::RedrawTrafficLights() {
-  if (buttons_view_)
+  if (buttons_view_) {
+    // Ensure the buttons view are always floated on the top.
+    [buttons_view_ removeFromSuperview];
+    [[window_ contentView] addSubview:buttons_view_];
+
     [buttons_view_ setNeedsDisplayForButtons];
+  }
 }
 
 // In simpleFullScreen mode, update the frame for new bounds.
