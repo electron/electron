@@ -28,6 +28,7 @@
 #include "shell/common/process_util.h"
 #include "third_party/blink/public/common/web_preferences/web_preferences.h"
 #include "third_party/blink/public/mojom/v8_cache_options.mojom.h"
+#include "third_party/blink/public/mojom/webpreferences/web_preferences.mojom-blink.h"  // nogncheck
 
 #if defined(OS_WIN)
 #include "ui/gfx/switches.h"
@@ -105,6 +106,26 @@ bool GetAsAutoplayPolicy(const base::Value* val,
       return true;
     }
     return false;
+  }
+  return false;
+}
+
+bool GetImageAnimationPolicy(const base::Value* val,
+                             blink::mojom::ImageAnimationPolicy* out) {
+  std::string policy;
+  if (GetAsString(val, electron::options::kImageAnimationPolicy, &policy)) {
+    if (policy == "animate") {
+      *out = blink::mojom::ImageAnimationPolicy::kImageAnimationPolicyAllowed;
+      return true;
+    } else if (policy == "animateOnce") {
+      *out =
+          blink::mojom::ImageAnimationPolicy::kImageAnimationPolicyAnimateOnce;
+      return true;
+    } else if (policy == "noAnimation") {
+      *out =
+          blink::mojom::ImageAnimationPolicy::kImageAnimationPolicyNoAnimation;
+      return true;
+    }
   }
   return false;
 }
@@ -367,6 +388,7 @@ void WebContentsPreferences::OverrideWebkitPrefs(
   prefs->javascript_enabled =
       IsEnabled(options::kJavaScript, true /* default_value */);
   prefs->images_enabled = IsEnabled(options::kImages, true /* default_value */);
+  GetImageAnimationPolicy(&preference_, &prefs->animation_policy);
   prefs->text_areas_are_resizable =
       IsEnabled(options::kTextAreasAreResizable, true /* default_value */);
   prefs->navigate_on_drag_drop =
