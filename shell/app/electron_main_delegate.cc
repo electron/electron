@@ -144,14 +144,13 @@ bool ElectronPathProvider(int key, base::FilePath* result) {
     case DIR_CRASH_DUMPS:
       return GetDefaultCrashDumpsPath(result);
     case chrome::DIR_APP_DICTIONARIES:
+      // TODO(nornagon): can we just default to using Chrome's logic here?
       if (base::PathService::Get(chrome::DIR_USER_DATA, result)) {
         *result =
             result->Append(base::FilePath::FromUTF8Unsafe("Dictionaries"));
         return true;
       }
       return false;
-    case chrome::DIR_LOGS:
-      return base::PathService::Get(chrome::DIR_USER_DATA, result);
   }
   return false;
 }
@@ -218,8 +217,8 @@ bool ElectronMainDelegate::BasicStartupComplete(int* exit_code) {
   tracing_sampler_profiler_ =
       tracing::TracingSamplerProfiler::CreateOnMainThread();
 
-  chrome::RegisterPathProvider();
   electron::RegisterPathProvider();
+  chrome::RegisterPathProvider();
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   ContentSettingsPattern::SetNonWildcardDomainNonPortSchemes(
