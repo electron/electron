@@ -35,7 +35,7 @@ index 3a817e6450f8ee3239294d1ec5ead0d0fd584b5e..4a0a1c8104ee9d2989d10b1110ef9d30
  
    // If we are likely to software composite the resource, we use sRGB because
 diff --git a/cc/trees/layer_tree_settings.h b/cc/trees/layer_tree_settings.h
-index 7fa2b4da8c86c89b97a747a5f965485923fae7c9..dd91f7c9eff59824b6571a97be0529f62592d185 100644
+index bd5bcf4a03022869fe610015e882ff1980d8a0e8..a3fdd7ae208719bd10ddf1044a501e44e0897ae8 100644
 --- a/cc/trees/layer_tree_settings.h
 +++ b/cc/trees/layer_tree_settings.h
 @@ -95,6 +95,8 @@ class CC_EXPORT LayerTreeSettings {
@@ -241,7 +241,7 @@ index 262633bdb89ffefb78091788b4b48d23e0e473e6..69016f864405f87a5ee161b52b9dacf9
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 3a9fd06967f4e086639105486b0626aedbe1c4c6..168c1599412b383d1f868eee32555cee0fb5b922 100644
+index 3a8aa147230ab18d9f1e485decc7eb4995ac111f..abf6ae39e99d4d592412c548cbac78862eeb463f 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -213,6 +213,7 @@
@@ -252,7 +252,7 @@ index 3a9fd06967f4e086639105486b0626aedbe1c4c6..168c1599412b383d1f868eee32555cee
  #include "ui/gl/gl_switches.h"
  #include "ui/native_theme/native_theme_features.h"
  #include "url/origin.h"
-@@ -3311,6 +3312,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3317,6 +3318,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -293,7 +293,7 @@ index 628c6bca129cd58a25984ff8300bfb4c33ec7ebf..ff9ce55f2701990b5b6119c18575477b
  }
  
 diff --git a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
-index f5751beeb390b556dde8598b67b5fc9270e6805b..b155ad47f19950602000cecba52b1176ef95a749 100644
+index 82757ec0893fb1a0c4a31549d85ed95194826d8c..e7ba24aec0d1aabc0093fe0ecaf72438c6009a8f 100644
 --- a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 +++ b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 @@ -25,6 +25,7 @@

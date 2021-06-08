@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index d90b9001191600d5659085f4ba0820393c9bbcb1..6794dc92e1bda455a2f32a3af7eb382cdebc40b9 100644
+index 491c8b441dfe84862c8b0caa7941cc1e7d16e331..74b3fb5010895869b606890f1523512cd2ee96af 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -5974,6 +5974,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -5979,6 +5979,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -150,7 +150,7 @@ index 8a3c4c24a55ae7c520514ded527eb6214a5708a9..631c9b3aab0f2dfe8e6d8437b3f31676
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index 9f0234214130857b55ef9735edfe1478c30e800d..e6c947467f260b0f973a656bd828d60c3016c436 100644
+index a229509d7254f87af5128ffdaad4cd9c74c3e980..766adb31cf654ff964fbca3acc941c092e382448 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
 @@ -26,6 +26,7 @@
@@ -161,7 +161,7 @@ index 9f0234214130857b55ef9735edfe1478c30e800d..e6c947467f260b0f973a656bd828d60c
  #include "third_party/blink/public/web/modules/mediastream/web_media_stream_device_observer.h"
  #include "third_party/blink/public/web/web_frame_widget.h"
  #include "third_party/blink/public/web/web_local_frame.h"
-@@ -289,6 +290,10 @@ WebView* RenderViewImpl::CreateView(
+@@ -284,6 +285,10 @@ WebView* RenderViewImpl::CreateView(
      params->impression = blink::ConvertWebImpressionToImpression(*impression);
    }
  
