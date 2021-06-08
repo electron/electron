@@ -391,7 +391,7 @@ void ElectronBrowserMainParts::ToolkitInitialized() {
   // check if the user has set it so we can use it later.
   std::string backend;
   if (base::Environment::Create()->GetVar("GDK_BACKEND", &backend))
-    GetGDKBackend().reset(backend);
+    GetGDKBackend().assign(backend);
 
   auto linux_ui = BuildGtkUi();
   linux_ui->Initialize();
