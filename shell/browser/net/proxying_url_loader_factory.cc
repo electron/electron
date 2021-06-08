@@ -820,8 +820,9 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
   // make ServiceWorker work with file:// URLs, we have to intercept its
   // requests here.
   if (IsForServiceWorkerScript() && request.url.SchemeIsFile()) {
-    asar::CreateAsarURLLoader(request, std::move(loader), std::move(client),
-                              new net::HttpResponseHeaders(""));
+    asar::CreateAsarURLLoader(
+        request, std::move(loader), std::move(client),
+        base::MakeRefCounted<net::HttpResponseHeaders>(""));
     return;
   }
 

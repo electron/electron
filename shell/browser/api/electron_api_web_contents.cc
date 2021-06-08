@@ -537,8 +537,7 @@ FileSystem CreateFileSystemStruct(content::WebContents* web_contents,
 
 std::unique_ptr<base::DictionaryValue> CreateFileSystemValue(
     const FileSystem& file_system) {
-  std::unique_ptr<base::DictionaryValue> file_system_value(
-      new base::DictionaryValue());
+  auto file_system_value = std::make_unique<base::DictionaryValue>();
   file_system_value->SetString("type", file_system.type);
   file_system_value->SetString("fileSystemName", file_system.file_system_name);
   file_system_value->SetString("rootURL", file_system.root_url);
@@ -618,7 +617,8 @@ WebContents::WebContents(v8::Isolate* isolate,
     : content::WebContentsObserver(web_contents),
       type_(Type::kRemote),
       id_(GetAllWebContents().Add(this)),
-      devtools_file_system_indexer_(new DevToolsFileSystemIndexer),
+      devtools_file_system_indexer_(
+          base::MakeRefCounted<DevToolsFileSystemIndexer>()),
       file_task_runner_(
           base::ThreadPool::CreateSequencedTaskRunner({base::MayBlock()}))
 #if BUILDFLAG(ENABLE_PRINTING)
@@ -635,7 +635,7 @@ WebContents::WebContents(v8::Isolate* isolate,
 
   extensions::ElectronExtensionWebContentsObserver::CreateForWebContents(
       web_contents);
-  script_executor_.reset(new extensions::ScriptExecutor(web_contents));
+  script_executor_ = std::make_unique<extensions::ScriptExecutor>(web_contents);
 #endif
 
   auto session = Session::CreateFrom(isolate, GetBrowserContext());
@@ -674,7 +674,8 @@ WebContents::WebContents(v8::Isolate* isolate,
 WebContents::WebContents(v8::Isolate* isolate,
                          const gin_helper::Dictionary& options)
     : id_(GetAllWebContents().Add(this)),
-      devtools_file_system_indexer_(new DevToolsFileSystemIndexer),
+      devtools_file_system_indexer_(
+          base::MakeRefCounted<DevToolsFileSystemIndexer>()),
       file_task_runner_(
           base::ThreadPool::CreateSequencedTaskRunner({base::MayBlock()}))
 #if BUILDFLAG(ENABLE_PRINTING)
@@ -838,7 +839,8 @@ void WebContents::InitWithSessionAndOptions(
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   extensions::ElectronExtensionWebContentsObserver::CreateForWebContents(
       web_contents());
-  script_executor_.reset(new extensions::ScriptExecutor(web_contents()));
+  script_executor_ =
+      std::make_unique<extensions::ScriptExecutor>(web_contents());
 #endif
 
   AutofillDriverFactory::CreateForWebContents(web_contents());
@@ -904,8 +906,8 @@ void WebContents::InitWithWebContents(content::WebContents* web_contents,
       web_preferences && web_preferences->IsEnabled(options::kOffscreen);
 
   // Create InspectableWebContents.
-  inspectable_web_contents_.reset(new InspectableWebContents(
-      web_contents, browser_context->prefs(), is_guest));
+  inspectable_web_contents_ = std::make_unique<InspectableWebContents>(
+      web_contents, browser_context->prefs(), is_guest);
   inspectable_web_contents_->SetDelegate(this);
 }
 

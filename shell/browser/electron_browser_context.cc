@@ -103,7 +103,7 @@ ElectronBrowserContext::browser_context_map() {
 ElectronBrowserContext::ElectronBrowserContext(const std::string& partition,
                                                bool in_memory,
                                                base::DictionaryValue options)
-    : storage_policy_(new SpecialStoragePolicy),
+    : storage_policy_(base::MakeRefCounted<SpecialStoragePolicy>()),
       protocol_registry_(new ProtocolRegistry),
       in_memory_(in_memory),
       ssl_config_(network::mojom::SSLConfig::New()) {
@@ -184,9 +184,9 @@ void ElectronBrowserContext::InitPrefs() {
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS) || \
     BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-  auto registry = WrapRefCounted(new user_prefs::PrefRegistrySyncable);
+  auto registry = base::MakeRefCounted<user_prefs::PrefRegistrySyncable>();
 #else
-  auto registry = WrapRefCounted(new PrefRegistrySimple);
+  auto registry = base::MakeRefCounted<PrefRegistrySimple>();
 #endif
 
   registry->RegisterFilePathPref(prefs::kSelectFileLastDirectory,

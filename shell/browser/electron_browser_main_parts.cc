@@ -199,11 +199,12 @@ ElectronBrowserMainParts* ElectronBrowserMainParts::self_ = nullptr;
 
 ElectronBrowserMainParts::ElectronBrowserMainParts(
     const content::MainFunctionParams& params)
-    : fake_browser_process_(new BrowserProcessImpl),
-      browser_(new Browser),
+    : fake_browser_process_(std::make_unique<BrowserProcessImpl>()),
+      browser_(std::make_unique<Browser>()),
       node_bindings_(
           NodeBindings::Create(NodeBindings::BrowserEnvironment::kBrowser)),
-      electron_bindings_(new ElectronBindings(node_bindings_->uv_loop())) {
+      electron_bindings_(
+          std::make_unique<ElectronBindings>(node_bindings_->uv_loop())) {
   DCHECK(!self_) << "Cannot have two ElectronBrowserMainParts";
   self_ = this;
 }
@@ -386,7 +387,7 @@ void ElectronBrowserMainParts::ToolkitInitialized() {
   UpdateDarkThemeSetting();
   // Update the native theme when GTK theme changes. The GetNativeTheme
   // here returns a NativeThemeGtk, which monitors GTK settings.
-  dark_theme_observer_.reset(new DarkThemeObserver);
+  dark_theme_observer_ = std::make_unique<DarkThemeObserver>();
   linux_ui->GetNativeTheme(nullptr)->AddObserver(dark_theme_observer_.get());
   views::LinuxUI::SetInstance(std::move(linux_ui));
 #endif
@@ -401,7 +402,7 @@ void ElectronBrowserMainParts::ToolkitInitialized() {
 #endif
 
 #if defined(OS_MAC)
-  views_delegate_.reset(new ViewsDelegateMac);
+  views_delegate_ = std::make_unique<ViewsDelegateMac>();
 #else
   views_delegate_ = std::make_unique<ViewsDelegate>();
 #endif
