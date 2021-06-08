@@ -8,7 +8,7 @@
 
 #include <string>
 
-#include "ui/gfx/image/image_skia.h"
+#include "ui/base/models/image_model.h"
 
 namespace electron {
 
@@ -22,7 +22,7 @@ class InspectableWebContentsViewDelegate {
   virtual void DevToolsResized() {}
 
   // Returns the icon of devtools window.
-  virtual gfx::ImageSkia GetDevToolsWindowIcon();
+  virtual ui::ImageModel GetDevToolsWindowIcon();
 
 #if defined(OS_LINUX)
   // Called when creating devtools window.
