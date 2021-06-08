@@ -81,10 +81,10 @@ index 1026b739d283f0fc252fa2af83a6d4cf51bc8553..fe562ab60ce98b8bb0c5080a6428deb3
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 2ff8732060011e2e1d06861e1197c80b2fba2692..3b954f2f5ae931bf4c297141137315ebbff03cdc 100644
+index 7692a2aaf9e4aced560ee4af170e967b7d612eb9..85a2af12aee6eca62b624ae68bccf824750b367b 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -135,6 +135,8 @@ viz_component("service") {
+@@ -137,6 +137,8 @@ viz_component("service") {
      "display_embedder/output_surface_provider_impl.h",
      "display_embedder/server_shared_bitmap_manager.cc",
      "display_embedder/server_shared_bitmap_manager.h",

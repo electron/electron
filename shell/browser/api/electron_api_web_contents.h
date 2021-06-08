@@ -40,6 +40,7 @@
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/error_thrower.h"
+#include "ui/base/models/image_model.h"
 #include "ui/gfx/image/image.h"
 
 #if BUILDFLAG(ENABLE_PRINTING)
@@ -660,7 +661,7 @@ class WebContents : public gin::Wrappable<WebContents>,
 
   // InspectableWebContentsViewDelegate:
 #if defined(TOOLKIT_VIEWS) && !defined(OS_MAC)
-  gfx::ImageSkia GetDevToolsWindowIcon() override;
+  ui::ImageModel GetDevToolsWindowIcon() override;
 #endif
 #if defined(OS_LINUX)
   void GetDevToolsWindowWMClass(std::string* name,
