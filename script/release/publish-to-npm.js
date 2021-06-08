@@ -111,8 +111,9 @@ new Promise((resolve, reject) => {
     const currentBranch = await getCurrentBranch();
 
     if (release.tag_name.indexOf('nightly') > 0) {
-      if (currentBranch === 'master') {
-        // Nightlies get published to their own module, so master nightlies should be tagged as latest
+      // TODO(main-migration): Simplify once main branch is renamed.
+      if (currentBranch === 'master' || currentBranch === 'main') {
+        // Nightlies get published to their own module, so they should be tagged as latest
         npmTag = 'latest';
       } else {
         npmTag = `nightly-${currentBranch}`;
@@ -127,10 +128,10 @@ new Promise((resolve, reject) => {
         JSON.stringify(currentJson, null, 2)
       );
     } else {
-      if (currentBranch === 'master') {
-        // This should never happen, master releases should be nightly releases
+      if (currentBranch === 'master' || currentBranch === 'main') {
+        // This should never happen, main releases should be nightly releases
         // this is here just-in-case
-        npmTag = 'master';
+        throw new Error('Unreachable release phase, can\'t tag a non-nightly release on the main branch');
       } else if (!release.prerelease) {
         // Tag the release with a `2-0-x` style tag
         npmTag = currentBranch;

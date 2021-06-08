@@ -113,7 +113,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   // content::RenderWidgetHostViewBase:
 
   void ResetFallbackToFirstNavigationSurface() override;
-  void InitAsPopup(content::RenderWidgetHostView* rwhv,
+  void InitAsPopup(content::RenderWidgetHostView* parent_host_view,
                    const gfx::Rect& rect) override;
   void UpdateCursor(const content::WebCursor&) override;
   void SetIsLoading(bool is_loading) override;
@@ -127,7 +127,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
       const gfx::Rect& src_rect,
       const gfx::Size& output_size,
       base::OnceCallback<void(const SkBitmap&)> callback) override;
-  void GetScreenInfo(blink::ScreenInfo* results) override;
+  void GetScreenInfo(blink::ScreenInfo* screen_info) override;
   void TransformPointToRootSurface(gfx::PointF* point) override;
   gfx::Rect GetBoundsInRootWindow(void) override;
   absl::optional<content::DisplayFeature> GetDisplayFeature() override;

@@ -1466,7 +1466,7 @@ void NativeWindowMac::SetTrafficLightPosition(
     absl::optional<gfx::Point> position) {
   traffic_light_position_ = std::move(position);
   if (buttons_view_) {
-    [buttons_view_ setMargin:position];
+    [buttons_view_ setMargin:traffic_light_position_];
     [buttons_view_ viewDidMoveToWindow];
   }
 }

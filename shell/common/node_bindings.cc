@@ -131,6 +131,10 @@ void stop_and_close_uv_loop(uv_loop_t* loop) {
 bool g_is_initialized = false;
 
 bool IsPackagedApp() {
+  auto env = base::Environment::Create();
+  if (env->HasVar("ELECTRON_FORCE_IS_PACKAGED"))
+    return true;
+
   base::FilePath exe_path;
   base::PathService::Get(base::FILE_EXE, &exe_path);
   base::FilePath::StringType base_name =

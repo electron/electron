@@ -11,7 +11,6 @@
 #include "content/public/renderer/render_frame.h"
 #include "electron/buildflags/buildflags.h"
 #include "shell/common/api/electron_bindings.h"
-#include "shell/common/asar/asar_util.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
 #include "shell/common/node_bindings.h"
@@ -39,9 +38,7 @@ ElectronRendererClient::ElectronRendererClient()
           NodeBindings::Create(NodeBindings::BrowserEnvironment::kRenderer)),
       electron_bindings_(new ElectronBindings(node_bindings_->uv_loop())) {}
 
-ElectronRendererClient::~ElectronRendererClient() {
-  asar::ClearArchives();
-}
+ElectronRendererClient::~ElectronRendererClient() = default;
 
 void ElectronRendererClient::RenderFrameCreated(
     content::RenderFrame* render_frame) {
