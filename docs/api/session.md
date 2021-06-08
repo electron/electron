@@ -820,9 +820,9 @@ is emitted.
 #### `ses.setExtensionAPIHandlers(handlers)`
 
 * `handlers` Object
-  * `getTab` Function<[TabDetails](structures/tab-details.md) | null> | null (optional)
+  * `getTab` Function<[TabDetails](structures/tab-details.md)> | null (optional)
     * `webContents` [WebContents](web-contents.md) - the `webContents` of a tab that has been requested.
-  * `getActiveTab` Function<[WebContents](web-contents.md) | null> | null (optional)
+  * `getActiveTab` Function<[WebContents](web-contents.md)> | null (optional)
     * `sender` [WebContents](web-contents.md) - the `webContents` from which the active tab request originated.
 
 Tells the Chrome API what to do when an extension requests a tab via i.e. `chrome.tabs.get` and how to handle "active" tab requests (i.e. `chrome.tabs.executeScript` without `tabId` parameter defaults to the active tab).
