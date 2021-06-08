@@ -265,7 +265,7 @@ void DownloadIdCallback(content::DownloadManager* download_manager,
                         uint32_t id) {
   download_manager->CreateDownloadItem(
       base::GenerateGUID(), id, path, path, url_chain, GURL(), GURL(), GURL(),
-      GURL(), base::nullopt, mime_type, mime_type, start_time, base::Time(),
+      GURL(), absl::nullopt, mime_type, mime_type, start_time, base::Time(),
       etag, last_modified, offset, length, std::string(),
       download::DownloadItem::INTERRUPTED,
       download::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,

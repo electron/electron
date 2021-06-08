@@ -126,8 +126,8 @@ class NativeWindowMac : public NativeWindow,
   void SetVibrancy(const std::string& type) override;
   void SetWindowButtonVisibility(bool visible) override;
   bool GetWindowButtonVisibility() const override;
-  void SetTrafficLightPosition(base::Optional<gfx::Point> position) override;
-  base::Optional<gfx::Point> GetTrafficLightPosition() const override;
+  void SetTrafficLightPosition(absl::optional<gfx::Point> position) override;
+  absl::optional<gfx::Point> GetTrafficLightPosition() const override;
   void RedrawTrafficLights() override;
   void UpdateFrame() override;
   void SetTouchBar(
@@ -197,7 +197,6 @@ class NativeWindowMac : public NativeWindow,
 
  protected:
   // views::WidgetDelegate:
-  bool CanResize() const override;
   views::View* GetContentsView() override;
 
   // ui::NativeThemeObserver:
@@ -236,8 +235,7 @@ class NativeWindowMac : public NativeWindow,
 
   bool is_kiosk_ = false;
   bool zoom_to_page_width_ = false;
-  bool resizable_ = true;
-  base::Optional<gfx::Point> traffic_light_position_;
+  absl::optional<gfx::Point> traffic_light_position_;
 
   std::queue<bool> pending_transitions_;
   FullScreenTransitionState fullscreen_transition_state() const {
@@ -259,7 +257,7 @@ class NativeWindowMac : public NativeWindow,
 
   // The visibility mode of window button controls when explicitly set through
   // setWindowButtonVisibility().
-  base::Optional<bool> window_button_visibility_;
+  absl::optional<bool> window_button_visibility_;
 
   // Maximizable window state; necessary for persistence through redraws.
   bool maximizable_ = true;

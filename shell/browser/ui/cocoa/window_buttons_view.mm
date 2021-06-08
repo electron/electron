@@ -23,7 +23,7 @@ const NSWindowButton kButtonTypes[] = {
 
 @implementation WindowButtonsView
 
-- (id)initWithMargin:(const base::Optional<gfx::Point>&)margin {
+- (id)initWithMargin:(const absl::optional<gfx::Point>&)margin {
   self = [super initWithFrame:NSZeroRect];
   [self setMargin:margin];
 
@@ -50,7 +50,7 @@ const NSWindowButton kButtonTypes[] = {
   return self;
 }
 
-- (void)setMargin:(const base::Optional<gfx::Point>&)margin {
+- (void)setMargin:(const absl::optional<gfx::Point>&)margin {
   margin_ = margin.value_or(gfx::Point(7, 3));
 }
 

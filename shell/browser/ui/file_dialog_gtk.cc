@@ -29,7 +29,7 @@
 namespace file_dialog {
 
 static GModule* gtk_module;
-static base::Optional<bool> supports_gtk_file_chooser_native;
+static absl::optional<bool> supports_gtk_file_chooser_native;
 
 using dl_gtk_native_dialog_show_t = void (*)(void*);
 using dl_gtk_native_dialog_destroy_t = void (*)(void*);
