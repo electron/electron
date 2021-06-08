@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index fa95b1744e46396013cdf8344b23933aacefc270..f70cf0036d950a0fd5ccb2ea432f51231ca382f2 100644
+index 2928935f9c96adcf40173ddb80641c35d027d39e..dcba764424f06d0b1f331ef7dc7f33b307f6a659 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -117,6 +117,11 @@
@@ -116,7 +116,7 @@ index fa95b1744e46396013cdf8344b23933aacefc270..f70cf0036d950a0fd5ccb2ea432f5123
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -1933,6 +2018,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -1952,6 +2037,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
          std::move(cert_verifier));
      cert_verifier = base::WrapUnique(cert_verifier_with_trust_anchors_);
  #endif  // BUILDFLAG(IS_CHROMEOS_ASH)
@@ -127,7 +127,7 @@ index fa95b1744e46396013cdf8344b23933aacefc270..f70cf0036d950a0fd5ccb2ea432f5123
  
    builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 89451c626bee5a9970a1f77f2739ce03a01e6b30..22e155061860f6782b261205f6297c09f8c6e1fa 100644
+index a0fbfe19e9c0a5ff841fd8673b331486f3b698fd..093a9bcf105b925f6c8a1491f623adcfedf4aa51 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -90,6 +90,7 @@ class DomainReliabilityMonitor;
@@ -147,7 +147,7 @@ index 89451c626bee5a9970a1f77f2739ce03a01e6b30..22e155061860f6782b261205f6297c09
    void ResetURLLoaderFactories() override;
    void GetCookieManager(
        mojo::PendingReceiver<mojom::CookieManager> receiver) override;
-@@ -696,6 +699,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -700,6 +703,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    CertVerifierWithTrustAnchors* cert_verifier_with_trust_anchors_ = nullptr;
  #endif
  
@@ -157,7 +157,7 @@ index 89451c626bee5a9970a1f77f2739ce03a01e6b30..22e155061860f6782b261205f6297c09
    // CertNetFetcher is not used by the current platform, or if the actual
    // net::CertVerifier is instantiated outside of the network service.
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 8b74f2f855eaed87c012fea690238e1c95978f71..492a03d742702e2aaaf00cc77fdd53c8a8d968cd 100644
+index 17693738bb1bc2d239639942816259f4b910fe5c..a1ca0c3521cc26fd5a6ee83385516d1623e749ed 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -189,6 +189,17 @@ struct CTPolicy {
