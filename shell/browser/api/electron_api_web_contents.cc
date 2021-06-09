@@ -3464,10 +3464,8 @@ void WebContents::DevToolsSearchInPath(int request_id,
 }
 
 #if defined(TOOLKIT_VIEWS) && !defined(OS_MAC)
-gfx::ImageSkia WebContents::GetDevToolsWindowIcon() {
-  if (!owner_window())
-    return gfx::ImageSkia();
-  return owner_window()->GetWindowAppIcon();
+ui::ImageModel WebContents::GetDevToolsWindowIcon() {
+  return owner_window() ? owner_window()->GetWindowAppIcon() : ui::ImageModel{};
 }
 #endif
 
