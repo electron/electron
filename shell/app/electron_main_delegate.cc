@@ -152,7 +152,7 @@ bool ElectronPathProvider(int key, base::FilePath* result) {
         return true;
       }
       return false;
-    case DIR_USER_CACHE:
+    case DIR_USER_CACHE: {
 #if defined(OS_POSIX)
       int parent_key = base::DIR_CACHE;
 #else
@@ -166,6 +166,7 @@ bool ElectronPathProvider(int key, base::FilePath* result) {
         return true;
       }
       return false;
+    }
 #if defined(OS_LINUX)
     case DIR_APP_DATA:
       auto env = base::Environment::Create();
