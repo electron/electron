@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 491c8b441dfe84862c8b0caa7941cc1e7d16e331..74b3fb5010895869b606890f1523512cd2ee96af 100644
+index 4c7558e8c4ff6c4f20957489a31dc6fd69ced3fb..9ddb612838e73479dbe28b838f09f7af2ccdf5c0 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -5979,6 +5979,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -5984,6 +5984,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,10 +21,10 @@ index 491c8b441dfe84862c8b0caa7941cc1e7d16e331..74b3fb5010895869b606890f1523512c
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index e3146d7cfdfb1f1856edba2e371a8b7589b627a1..952c073cfb1a2385581759b29683f1b66564d99b 100644
+index dbb175f5aa717e84d7ab6ecd21988bea2ccf0758..4b296b6f3a3f35ed233403105a79bf3dcc406eb8 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3774,6 +3774,14 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
+@@ -3756,6 +3756,14 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
    }
    auto* new_contents_impl = new_contents.get();
  
@@ -39,7 +39,7 @@ index e3146d7cfdfb1f1856edba2e371a8b7589b627a1..952c073cfb1a2385581759b29683f1b6
    new_contents_impl->GetController().SetSessionStorageNamespace(
        partition_id, session_storage_namespace);
  
-@@ -3816,12 +3824,6 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
+@@ -3798,12 +3806,6 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
