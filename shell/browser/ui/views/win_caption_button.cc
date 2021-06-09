@@ -8,7 +8,6 @@
 
 #include "base/i18n/rtl.h"
 #include "base/numerics/safe_conversions.h"
-#include "chrome/browser/themes/theme_properties.h"
 #include "chrome/browser/ui/frame/window_frame_util.h"
 #include "chrome/grit/theme_resources.h"
 #include "shell/browser/ui/views/win_frame_view.h"

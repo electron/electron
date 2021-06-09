@@ -8,7 +8,6 @@
 #include <memory>
 
 #include "base/win/windows_version.h"
-#include "chrome/browser/win/titlebar_config.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/views/win_caption_button_container.h"
 #include "ui/base/win/hwnd_metrics.h"
