@@ -108,7 +108,6 @@ class NativeWindowObserver : public base::CheckedObserver {
 
   virtual void UpdateWindowControlsOverlay(const gfx::Rect& bounding_rect) {}
 };
-
 }  // namespace electron
 
 #endif  // SHELL_BROWSER_NATIVE_WINDOW_OBSERVER_H_
