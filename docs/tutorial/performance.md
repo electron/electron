@@ -120,9 +120,9 @@ file in the directory you executed it in. Both files can be analyzed using
 the Chrome Developer Tools, using the `Performance` and `Memory` tabs
 respectively.
 
-![Performance CPU Profile](../images/performance-cpu-prof.png)
+![Performance CPU Profile][performance-cpu-prof]
 
-![Performance Heap Memory Profile](../images/performance-heap-prof.png)
+![Performance Heap Memory Profile][performance-heap-prof]
 
 In this example, on the author's machine, we saw that loading `request` took
 almost half a second, whereas `node-fetch` took dramatically less memory
