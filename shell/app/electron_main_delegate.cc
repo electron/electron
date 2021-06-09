@@ -339,11 +339,7 @@ void ElectronMainDelegate::PreSandboxStartup() {
 
 void ElectronMainDelegate::SandboxInitialized(const std::string& process_type) {
 #if defined(OS_WIN)
-  auto* command_line = base::CommandLine::ForCurrentProcess();
-
-  std::string process_type =
-      command_line->GetSwitchValueASCII(::switches::kProcessType);
-  logging::InitElectronLogging(*command_line,
+  logging::InitElectronLogging(*base::CommandLine::ForCurrentProcess(),
                                /* is_preinit = */ process_type.empty());
 #endif
 }
