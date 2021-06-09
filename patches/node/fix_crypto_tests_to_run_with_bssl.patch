@@ -11,7 +11,7 @@ before it's acceptable to upstream, as this patch comments out a couple
 of tests that upstream probably cares about.
 
 diff --git a/test/parallel/test-crypto-authenticated.js b/test/parallel/test-crypto-authenticated.js
-index 21c5af6cfe3e5eef64fc2d4dcc63c55b1d79ad51..1bcb7580bcdabba54e18cb87f75a9dbf40cf0ab8 100644
+index 21c5af6cfe3e5eef64fc2d4dcc63c55b1d79ad51..b21eb4b97ad778304b3a4e8d549e109614350dfb 100644
 --- a/test/parallel/test-crypto-authenticated.js
 +++ b/test/parallel/test-crypto-authenticated.js
 @@ -50,7 +50,9 @@ const errMessages = {
@@ -135,18 +135,16 @@ index 21c5af6cfe3e5eef64fc2d4dcc63c55b1d79ad51..1bcb7580bcdabba54e18cb87f75a9dbf
    // Valid extracted from TEST_CASES, check that it detects IV tampering.
    const valid = {
      algo: 'chacha20-poly1305',
-@@ -669,7 +697,10 @@ for (const test of TEST_CASES) {
+@@ -669,6 +697,9 @@ for (const test of TEST_CASES) {
  
  {
    // CCM cipher without data should not crash, see https://github.com/nodejs/node/issues/38035.
--  const algo = 'aes-128-ccm';
 +  common.printSkipMessage(`unsupported aes-128-ccm test`);
 +  return;
 +
-+  const algo = 'aes-192-cbc';
+   const algo = 'aes-128-ccm';
    const key = Buffer.alloc(16);
    const iv = Buffer.alloc(12);
-   const opts = { authTagLength: 10 };
 diff --git a/test/parallel/test-crypto-binary-default.js b/test/parallel/test-crypto-binary-default.js
 index 3bbca5b0da395b94c04da7bb7c55b107e41367d8..af62558c4f23aa82804e0077da7b7f3a86cfac60 100644
 --- a/test/parallel/test-crypto-binary-default.js
@@ -1217,3 +1215,48 @@ index ee48a61f4ac8f5e8e4cec96eb03d75cb1c45f56a..5108bbf7499f29bafffda76f3c5270aa
  
  // Test PBKDF2 bit derivation
  {
+diff --git a/test/parallel/test-webcrypto-encrypt-decrypt-rsa.js b/test/parallel/test-webcrypto-encrypt-decrypt-rsa.js
+index e01152c07f294d834f70d94bc105b77ea008c017..177bfdf4702afbbbede15e0ae37c144cfabeae46 100644
+--- a/test/parallel/test-webcrypto-encrypt-decrypt-rsa.js
++++ b/test/parallel/test-webcrypto-encrypt-decrypt-rsa.js
+@@ -130,7 +130,7 @@ async function testEncryptionLongPlaintext({ algorithm,
+ 
+   return assert.rejects(
+     subtle.encrypt(algorithm, publicKey, newplaintext), {
+-      message: /data too large/
++      message: /data too large|DATA_TOO_LARGE_FOR_KEY_SIZE/
+     });
+ }
+ 
+diff --git a/test/parallel/test-webcrypto-wrap-unwrap.js b/test/parallel/test-webcrypto-wrap-unwrap.js
+index 54a5a782a09586ff7e02ab23d8c8ca984106f036..8624d1fcf77254bb256a6f4bbde2ff20e148a02b 100644
+--- a/test/parallel/test-webcrypto-wrap-unwrap.js
++++ b/test/parallel/test-webcrypto-wrap-unwrap.js
+@@ -21,14 +21,15 @@ const kWrappingData = {
+     wrap: { label: new Uint8Array(8) },
+     pair: true
+   },
+-  'AES-CTR': {
++  'AES-CBC': {
+     generate: { length: 128 },
+-    wrap: { counter: new Uint8Array(16), length: 64 },
++    wrap: { iv: new Uint8Array(16) },
+     pair: false
+   },
+-  'AES-CBC': {
++  /*
++  'AES-CTR': {
+     generate: { length: 128 },
+-    wrap: { iv: new Uint8Array(16) },
++    wrap: { counter: new Uint8Array(16), length: 64 },
+     pair: false
+   },
+   'AES-GCM': {
+@@ -45,6 +46,7 @@ const kWrappingData = {
+     wrap: { },
+     pair: false
+   }
++  */
+ };
+ 
+ function generateWrappingKeys() {
