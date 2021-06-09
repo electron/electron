@@ -4,6 +4,8 @@
 
 #include "shell/browser/ui/views/win_caption_button.h"
 
+#include <utility>
+
 #include "base/i18n/rtl.h"
 #include "base/numerics/safe_conversions.h"
 #include "chrome/browser/themes/theme_properties.h"

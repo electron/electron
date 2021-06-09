@@ -5,16 +5,14 @@
 #include "shell/browser/ui/views/win_caption_button_container.h"
 
 #include <memory>
+#include <utility>
 
 #include "shell/browser/ui/views/win_caption_button.h"
 #include "shell/browser/ui/views/win_frame_view.h"
-
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/strings/grit/ui_strings.h"
 #include "ui/views/layout/flex_layout.h"
 #include "ui/views/view_class_properties.h"
-
-#include "base/debug/stack_trace.h"
 
 namespace electron {
 

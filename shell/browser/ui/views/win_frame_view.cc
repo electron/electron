@@ -5,19 +5,18 @@
 #include "shell/browser/ui/views/win_frame_view.h"
 
 #include <dwmapi.h>
+#include <memory>
 
 #include "base/win/windows_version.h"
-#include "shell/browser/native_window_views.h"
-#include "ui/views/widget/widget.h"
-#include "ui/views/win/hwnd_util.h"
-
 #include "chrome/browser/win/titlebar_config.h"
+#include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/views/win_caption_button_container.h"
 #include "ui/base/win/hwnd_metrics.h"
-#include "ui/display/win/screen_win.h"
-
 #include "ui/display/win/dpi.h"
+#include "ui/display/win/screen_win.h"
 #include "ui/gfx/geometry/dip_util.h"
+#include "ui/views/widget/widget.h"
+#include "ui/views/win/hwnd_util.h"
 
 namespace electron {
 
