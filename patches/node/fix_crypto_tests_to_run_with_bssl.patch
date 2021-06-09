@@ -954,7 +954,7 @@ index c85a79b4854369e35fbe89833e9df9a12065671e..48fb14bd044c87ae5bdbe2563f70d420
 -  assert.strictEqual(x509.serialNumber, 'ECC9B856270DA9A8');
 +
 +  const serialPattern = /ECC9B856270DA9A8|ecc9b856270da9a8/;
-+  assert.strictEqual(serialPattern.test(x509.serialNumber), true);
++  assert.match(x509.serialNumber, serialPattern);
  
    assert.deepStrictEqual(x509.raw, der);
  
