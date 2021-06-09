@@ -42,6 +42,7 @@ class BluetoothChooser : public content::BluetoothChooser {
   EventHandler event_handler_;
   int num_retries_ = 0;
   bool refreshing_ = false;
+  bool rescan_ = false;
 
   DISALLOW_COPY_AND_ASSIGN(BluetoothChooser);
 };
