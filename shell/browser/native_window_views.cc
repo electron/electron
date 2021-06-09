@@ -47,9 +47,11 @@
 #include "base/strings/string_util.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/linux/unity_service.h"
+#include "shell/browser/ui/electron_desktop_window_tree_host_linux.h"
+#include "shell/browser/ui/views/client_frame_view_linux.h"
 #include "shell/browser/ui/views/frameless_view.h"
 #include "shell/browser/ui/views/native_frame_view.h"
-#include "ui/views/widget/desktop_aura/desktop_window_tree_host_linux.h"
+#include "ui/views/widget/desktop_aura/desktop_native_widget_aura.h"
 #include "ui/views/window/native_frame_view.h"
 
 #if defined(USE_X11)
@@ -78,7 +80,6 @@
 #include "ui/display/screen.h"
 #include "ui/display/win/screen_win.h"
 #include "ui/gfx/color_utils.h"
-#include "ui/views/widget/desktop_aura/desktop_native_widget_aura.h"
 #endif
 
 namespace electron {
@@ -228,9 +229,10 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   params.bounds = bounds;
   params.delegate = this;
   params.type = views::Widget::InitParams::TYPE_WINDOW;
-  params.remove_standard_frame = !has_frame();
+  params.remove_standard_frame = !has_frame() || has_client_frame();
 
-  if (transparent())
+  // If a client frame, we need to draw our own shadows.
+  if (transparent() || has_client_frame())
     params.opacity = views::Widget::InitParams::WindowOpacity::kTranslucent;
 
   // The given window is most likely not rectangular since it uses
@@ -254,6 +256,11 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   // Set WM_CLASS.
   params.wm_class_name = base::ToLowerASCII(name);
   params.wm_class_class = name;
+
+  auto* native_widget = new views::DesktopNativeWidgetAura(widget());
+  params.native_widget = native_widget;
+  params.desktop_window_tree_host =
+      new ElectronDesktopWindowTreeHostLinux(this, native_widget);
 #endif
 
   widget()->Init(std::move(params));
@@ -338,7 +345,7 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   ::SetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE, ex_style);
 #endif
 
-  if (has_frame()) {
+  if (has_frame() && !has_client_frame()) {
     // TODO(zcbenz): This was used to force using native frame on Windows 2003,
     // we should check whether setting it in InitParams can work.
     widget()->set_frame_type(views::Widget::FrameType::kForceNative);
@@ -558,7 +565,7 @@ void NativeWindowViews::SetEnabledInternal(bool enable) {
   ::EnableWindow(GetAcceleratedWidget(), enable);
 #elif defined(USE_X11)
   views::DesktopWindowTreeHostPlatform* tree_host =
-      views::DesktopWindowTreeHostLinux::GetHostForWidget(
+      ElectronDesktopWindowTreeHostLinux::GetHostForWidget(
           GetAcceleratedWidget());
   if (enable) {
     tree_host->RemoveEventRewriter(event_disabler_.get());
@@ -1552,7 +1559,7 @@ bool NativeWindowViews::ShouldDescendIntoChildForEventHandling(
     return false;
 
   // And the events on border for dragging resizable frameless window.
-  if (!has_frame() && resizable_) {
+  if ((!has_frame() || has_client_frame()) && resizable_) {
     auto* frame =
         static_cast<FramelessView*>(widget()->non_client_view()->frame_view());
     return frame->ResizingBorderHitTest(location) == HTNOWHERE;
@@ -1572,10 +1579,12 @@ NativeWindowViews::CreateNonClientFrameView(views::Widget* widget) {
   frame_view->Init(this, widget);
   return frame_view;
 #else
-  if (has_frame()) {
+  if (has_frame() && !has_client_frame()) {
     return std::make_unique<NativeFrameView>(this, widget);
   } else {
-    auto frame_view = std::make_unique<FramelessView>();
+    auto frame_view = has_frame() && has_client_frame()
+                          ? std::make_unique<ClientFrameViewLinux>()
+                          : std::make_unique<FramelessView>();
     frame_view->Init(this, widget);
     return frame_view;
   }
