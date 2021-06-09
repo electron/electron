@@ -151,6 +151,20 @@ bool ElectronPathProvider(int key, base::FilePath* result) {
         return true;
       }
       return false;
+    case DIR_USER_CACHE:
+#if defined(OS_POSIX)
+      int parent_key = base::DIR_CACHE;
+#else
+      // On Windows, there's no OS-level centralized location for caches, so
+      // store the cache in the app data directory.
+      int parent_key = base::DIR_APP_DATA;
+#endif
+      if (base::PathService::Get(parent_key, result)) {
+        *result = result->Append(
+            base::FilePath::FromUTF8Unsafe(GetApplicationName()));
+        return true;
+      }
+      return false;
 #if defined(OS_LINUX)
     case DIR_APP_DATA:
       auto env = base::Environment::Create();

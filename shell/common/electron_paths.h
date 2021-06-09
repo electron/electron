@@ -40,12 +40,6 @@ enum {
 #if !defined(OS_LINUX)
   DIR_APP_DATA = base::DIR_APP_DATA,
 #endif
-
-#if defined(OS_POSIX)
-  DIR_CACHE = base::DIR_CACHE  // Directory where to put cache data.
-#else
-  DIR_CACHE = base::DIR_APP_DATA
-#endif
 };
 
 static_assert(PATH_START < PATH_END, "invalid PATH boundaries");
