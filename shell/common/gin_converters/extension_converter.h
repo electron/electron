@@ -19,6 +19,10 @@ struct ExtensionTabDetails;
 }
 }  // namespace electron
 
+namespace gin_helper {
+class Dictionary;
+}
+
 namespace gin {
 
 template <>
