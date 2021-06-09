@@ -312,7 +312,8 @@ void BrowserWindow::OnWindowLeaveFullScreen() {
   BaseWindow::OnWindowLeaveFullScreen();
 }
 
-void BrowserWindow::UpdateWindowControlsOverlay(gfx::Rect bounding_rect) {
+void BrowserWindow::UpdateWindowControlsOverlay(
+    const gfx::Rect& bounding_rect) {
   web_contents()->UpdateWindowControlsOverlay(bounding_rect);
 }
 
