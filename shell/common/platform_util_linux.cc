@@ -19,6 +19,7 @@
 #include "dbus/bus.h"
 #include "dbus/message.h"
 #include "dbus/object_proxy.h"
+#include "shell/browser/electron_browser_main_parts.h"
 #include "shell/common/platform_util_internal.h"
 #include "ui/gtk/gtk_util.h"
 #include "url/gurl.h"
