@@ -367,13 +367,6 @@ describe('web security', () => {
   });
 });
 
-ifdescribe(process.platform === 'linux')('subprocesses', () => {
-  it('does not propagate GDK_BACKEND', () => {
-    const backend = process.env.GDK_BACKEND;
-    expect(backend).to.eq(null);
-  });
-});
-
 describe('command line switches', () => {
   let appProcess: ChildProcess.ChildProcessWithoutNullStreams | undefined;
   afterEach(() => {
