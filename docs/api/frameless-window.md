@@ -29,8 +29,6 @@ You can do so by specifying the `titleBarStyle` option:
 #### `hidden`
 
 Results in a hidden title bar and a full size content window, yet the title bar still has the standard window controls (“traffic lights”) in the top left.
-Additionally, if `enableBlinkFeatures: 'WebAppWindowControlsOverlay'` is set, the Window Controls Overlay [JavaScript APIs][overlay-javascript-apis] and
-[CSS Environment Variables][overlay-css-env-vars] will be enabled.
 
 ```javascript
 const { BrowserWindow } = require('electron')
@@ -41,8 +39,6 @@ win.show()
 #### `hiddenInset`
 
 Results in a hidden title bar with an alternative look where the traffic light buttons are slightly more inset from the window edge.
-Additionally, if `enableBlinkFeatures: 'WebAppWindowControlsOverlay'` is set, the Window Controls Overlay
-[JavaScript APIs][overlay-javascript-apis] and [CSS Environment Variables][overlay-css-env-vars] will be enabled.
 
 ```javascript
 const { BrowserWindow } = require('electron')
@@ -64,6 +60,13 @@ const { BrowserWindow } = require('electron')
 const win = new BrowserWindow({ titleBarStyle: 'customButtonsOnHover', frame: false })
 win.show()
 ```
+
+## Windows Control Overlay
+
+On macOS, when using a frameless window in conjuction with `win.setWindowButtonVisibility(true)` or using one of the `titleBarStyle`s described above so
+that the traffic lights are visibile, you can access the Window Controls Overlay [JavaScript APIs][overlay-javascript-apis] and
+[CSS Environment Variables][overlay-css-env-vars] by setting the blink feature `'WebAppWindowControlsOverlay`
+(eg `enableBlinkFeatures: 'WebAppWindowControlsOverlay'`).
 
 ## Transparent window
 
