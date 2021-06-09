@@ -127,7 +127,7 @@ void MenuMac::ClosePopupAt(int32_t window_id) {
                                                    std::move(close_popup));
 }
 
-#ifdef DCHECK_IS_ON
+#if DCHECK_IS_ON()
 std::u16string MenuMac::GetAcceleratorTextAtForTesting(int index) const {
   // A least effort to get the real shortcut text of NSMenuItem, the code does
   // not need to be perfect since it is test only.
