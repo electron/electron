@@ -35,10 +35,10 @@ void CertVerifierClient::Verify(
   params.validated_certificate = default_result.verified_cert;
   cert_verify_proc_.Run(
       params,
-      base::AdaptCallbackForRepeating(base::BindOnce(
+      base::BindOnce(
           [](VerifyCallback callback, const net::CertVerifyResult& result,
              int err) { std::move(callback).Run(err, result); },
-          std::move(callback), default_result)));
+          std::move(callback), default_result));
 }
 
 }  // namespace electron
