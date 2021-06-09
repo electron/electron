@@ -120,10 +120,9 @@ debugging purposes.
 
 Prints Chrome's internal logging to the console.
 
-Setting this variable is nearly the same as passing `--enable-logging=stderr`
-on the command line, but since `ELECTRON_ENABLE_LOGGING` is parsed sooner, it
-works where `app.commandLine.appendSwitch` would not. For more info, see
-`--enable-logging` in [command-line switches](./command-line-switches.md).
+Setting this variable is the same as passing `--enable-logging`
+on the command line. For more info, see `--enable-logging` in [command-line
+switches](./command-line-switches.md#enable-loggingfile).
 
 ### `ELECTRON_DEBUG_DRAG_REGIONS`
 
