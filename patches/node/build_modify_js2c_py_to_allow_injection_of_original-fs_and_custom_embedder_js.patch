@@ -86,7 +86,7 @@ index 4af54c3fa00602f9d0ce5cc4dca253d425048706..e283173df67814f8dee33b970132e52a
 -  split = filename.split('/')
 +  if filename.startswith('//v8'):
 +    filename = "deps/" + filename[2:]
-+  split = os.path.normpath(filename).split('/')
++  split = os.path.normpath(filename).split(os.path.sep)
    if split[0] == 'deps':
      split = ['internal'] + split
    else:  # `lib/**/*.js` so drop the 'lib' part
