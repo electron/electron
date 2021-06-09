@@ -443,7 +443,11 @@ int GetPathConstant(const std::string& name) {
   else if (name == "userData")
     return chrome::DIR_USER_DATA;
   else if (name == "cache")
-    return DIR_CACHE;
+#if defined(OS_POSIX)
+    return base::DIR_CACHE;
+#else
+    return base::DIR_APP_DATA;
+#endif
   else if (name == "userCache")
     return DIR_USER_CACHE;
   else if (name == "logs")
