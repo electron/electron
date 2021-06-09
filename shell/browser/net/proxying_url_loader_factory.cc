@@ -698,11 +698,10 @@ void ProxyingURLLoaderFactory::InProgressRequest::
 
   info_->AddResponseInfoFromResourceResponse(*current_response_);
 
-  net::CompletionRepeatingCallback copyable_callback =
-      base::AdaptCallbackForRepeating(std::move(continuation));
+  auto callback_pair = base::SplitOnceCallback(std::move(continuation));
   DCHECK(info_.has_value());
   int result = factory_->web_request_api()->OnHeadersReceived(
-      &info_.value(), request_, copyable_callback,
+      &info_.value(), request_, std::move(callback_pair.first),
       current_response_->headers.get(), &override_headers_, &redirect_url_);
   if (result == net::ERR_BLOCKED_BY_CLIENT) {
     OnRequestError(network::URLLoaderCompletionStatus(result));
@@ -722,7 +721,7 @@ void ProxyingURLLoaderFactory::InProgressRequest::
 
   DCHECK_EQ(net::OK, result);
 
-  copyable_callback.Run(net::OK);
+  std::move(callback_pair.second).Run(net::OK);
 }
 
 void ProxyingURLLoaderFactory::InProgressRequest::OnRequestError(
