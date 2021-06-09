@@ -42,18 +42,19 @@ base::FilePath GetLogFileName(const base::CommandLine& command_line) {
 }
 
 LoggingDestination DetermineLoggingDestination(
-    const base::CommandLine& command_line) {
+    const base::CommandLine& command_line,
+    bool is_preinit) {
   bool enable_logging = false;
-  std::string enable_logging_value;
+  std::string logging_destination;
   if (command_line.HasSwitch(::switches::kEnableLogging)) {
     enable_logging = true;
-    enable_logging_value =
+    logging_destination =
         command_line.GetSwitchValueASCII(switches::kEnableLogging);
   } else {
     auto env = base::Environment::Create();
     if (env->HasVar(kElectronEnableLogging)) {
       enable_logging = true;
-      env->GetVar(kElectronEnableLogging, &enable_logging_value);
+      env->GetVar(kElectronEnableLogging, &logging_destination);
     }
   }
   if (!enable_logging)
@@ -65,21 +66,27 @@ LoggingDestination DetermineLoggingDestination(
   // used to work, so in order to not break anyone who was depending on
   // --enable-logging logging to stderr, we preserve the old behavior by
   // default.
-  std::string logging_destination = enable_logging_value;
   // If --log-file or ELECTRON_LOG_FILE is specified along with
   // --enable-logging, return LOG_TO_FILE.
   std::string filename = command_line.GetSwitchValueASCII(switches::kLogFile);
   if (filename.empty())
     base::Environment::Create()->GetVar(kLogFileName, &filename);
-  if (!filename.empty() || logging_destination == "file")
+  // If we're in the pre-init phase, before JS has run, we want to avoid
+  // logging to the default log file, which is inside the user data directory,
+  // because we aren't able to accurately determine the user data directory
+  // before JS runs. Instead, log to stderr unless there's an explicit filename
+  // given.
+  if (!filename.empty() || (logging_destination == "file" && !is_preinit))
     return LOG_TO_FILE;
   return LOG_TO_SYSTEM_DEBUG_LOG | LOG_TO_STDERR;
 }
 
-void InitElectronLogging(const base::CommandLine& command_line) {
+void InitElectronLogging(const base::CommandLine& command_line,
+                         bool is_preinit) {
   const std::string process_type =
       command_line.GetSwitchValueASCII(::switches::kProcessType);
-  LoggingDestination logging_dest = DetermineLoggingDestination(command_line);
+  LoggingDestination logging_dest =
+      DetermineLoggingDestination(command_line, is_preinit);
   LogLockingState log_locking_state = LOCK_LOG_FILE;
   base::FilePath log_path;
 

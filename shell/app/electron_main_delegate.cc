@@ -286,7 +286,8 @@ void ElectronMainDelegate::PreSandboxStartup() {
 
 #if !defined(OS_WIN)
   // For windows we call InitLogging when the sandbox is initialized.
-  logging::InitElectronLogging(*command_line);
+  logging::InitElectronLogging(*command_line,
+                               /* is_preinit = */ process_type.empty());
 #endif
 
 #if !defined(MAS_BUILD)
@@ -338,7 +339,12 @@ void ElectronMainDelegate::PreSandboxStartup() {
 
 void ElectronMainDelegate::SandboxInitialized(const std::string& process_type) {
 #if defined(OS_WIN)
-  logging::InitElectronLogging(*base::CommandLine::ForCurrentProcess());
+  auto* command_line = base::CommandLine::ForCurrentProcess();
+
+  std::string process_type =
+      command_line->GetSwitchValueASCII(::switches::kProcessType);
+  logging::InitElectronLogging(*command_line,
+                               /* is_preinit = */ process_type.empty());
 #endif
 }
 

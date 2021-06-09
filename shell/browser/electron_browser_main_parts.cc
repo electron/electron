@@ -45,6 +45,7 @@
 #include "shell/common/application_info.h"
 #include "shell/common/electron_paths.h"
 #include "shell/common/gin_helper/trackable_object.h"
+#include "shell/common/logging.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
@@ -279,6 +280,11 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
 
   // Initialize field trials.
   InitializeFieldTrials();
+
+  // Reinitialize logging now that the app has had a chance to set the app name
+  // and/or user data directory.
+  logging::InitElectronLogging(*base::CommandLine::ForCurrentProcess(),
+                               /* is_preinit = */ false);
 
   // Initialize after user script environment creation.
   fake_browser_process_->PostEarlyInitialization();

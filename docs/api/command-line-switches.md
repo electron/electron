@@ -67,23 +67,27 @@ Enables caller stack logging for the following APIs (filtering events):
 
 * `desktopCapturer.getSources()` / `desktop-capturer-get-sources`
 
-### --enable-logging[=destination]
+### --enable-logging[=file]
 
-Prints Chromium's logging into console.
+Prints Chromium's logging to stderr (or a log file).
 
-This switch can not be used in `app.commandLine.appendSwitch` since it is parsed
-earlier than user's app is loaded, but you can set the `ELECTRON_ENABLE_LOGGING`
-environment variable to achieve the same effect.
+This switch can not be used in `app.commandLine.appendSwitch` since it is read
+before the first line JavaScript is run.
+
+The `ELECTRON_ENABLE_LOGGING` environment variable has the same effect as
+passing `--enable-logging`.
 
 If `destination` is:
 
-* `stderr`: logging will be sent to stderr.
-* a filename: logging will be saved to `filename`
-  in the same directory as the Electron executable.
-* an empty string: logging will be saved to stderr and to `electron_debug.log`
-  in the same directory as the Electron executable.
+* an empty string: logs will be printed on stderr.
+* `file`: logs will be saved to the file specified by `--log-file=...`, or to
+  `electron_debug.log` in the user-data directory if `--log-file` is not
+  specified.
 
-See also `--logging-level`, `--v`, and `--vmodule`.
+> **Note:** On Windows, logs from child processes cannot be sent to stderr.
+> Logging to a file is the most reliable way to collect logs on Windows.
+
+See also `--log-file`, `--logging-level`, `--v`, and `--vmodule`.
 
 ### --force-fieldtrials=`trials`
 
@@ -135,6 +139,14 @@ See the [Node.js documentation][node-cli] or run `node --help` in your terminal 
 ### --lang
 
 Set a custom locale.
+
+### --log-file=`path`
+
+If `--enable-logging` is specified, logs will be written to the given path. The
+parent directory must exist.
+
+Setting the `ELECTRON_LOG_FILE` environment variable is equivalent to passing
+this flag. If both are present, the command-line switch takes precedence.
 
 ### --log-net-log=`path`
 
