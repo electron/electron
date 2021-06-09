@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 7549a07a55d064681b931a15018583e57ffc459b..3b1131ea1f95e7217e87e73e8b1c880ac1e09921 100644
+index d90b9001191600d5659085f4ba0820393c9bbcb1..6794dc92e1bda455a2f32a3af7eb382cdebc40b9 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -5940,6 +5940,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -5974,6 +5974,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,10 +21,10 @@ index 7549a07a55d064681b931a15018583e57ffc459b..3b1131ea1f95e7217e87e73e8b1c880a
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index ca25b3772e1186058ae90542cbfd541709101a16..b7bbed210f92b350b2dcd3f87dc0c87476ab2b5e 100644
+index e3146d7cfdfb1f1856edba2e371a8b7589b627a1..952c073cfb1a2385581759b29683f1b66564d99b 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3760,6 +3760,14 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
+@@ -3774,6 +3774,14 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
    }
    auto* new_contents_impl = new_contents.get();
  
@@ -39,7 +39,7 @@ index ca25b3772e1186058ae90542cbfd541709101a16..b7bbed210f92b350b2dcd3f87dc0c874
    new_contents_impl->GetController().SetSessionStorageNamespace(
        partition_id, session_storage_namespace);
  
-@@ -3802,12 +3810,6 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
+@@ -3816,12 +3824,6 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
@@ -53,7 +53,7 @@ index ca25b3772e1186058ae90542cbfd541709101a16..b7bbed210f92b350b2dcd3f87dc0c874
                               new_contents_impl, opener, params.target_url,
                               params.referrer.To<Referrer>(), params.disposition,
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index e7293484f9779d87ee5e5d913b72f2eca24f91e1..71928d8cc6216f20704a7adda528bacd9292e188 100644
+index 542a9bb6343b16c4dfe3aebae97ec06073021e52..840d562fcc8e0da12393924d56c2a6f319be9006 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
 @@ -468,6 +468,10 @@ struct CreateNewWindowParams {
@@ -150,7 +150,7 @@ index 8a3c4c24a55ae7c520514ded527eb6214a5708a9..631c9b3aab0f2dfe8e6d8437b3f31676
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index 870b5f66ec8ec2e243c691b460071a9363cd0fa4..3d8175c6d343450173bc2f16cc6a6f37e7d0084d 100644
+index 9f0234214130857b55ef9735edfe1478c30e800d..e6c947467f260b0f973a656bd828d60c3016c436 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
 @@ -26,6 +26,7 @@
