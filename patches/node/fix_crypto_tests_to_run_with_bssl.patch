@@ -944,7 +944,7 @@ index 008ab129f0e019c659eecf5a76b7eb412c947fe3..6688f5d916f50e1e4fcfff1619c8634a
  
  cipher.end('Papaya!');  // Should not cause an unhandled exception.
 diff --git a/test/parallel/test-crypto-x509.js b/test/parallel/test-crypto-x509.js
-index c85a79b4854369e35fbe89833e9df9a12065671e..48fb14bd044c87ae5bdbe2563f70d42084f24d09 100644
+index c85a79b4854369e35fbe89833e9df9a12065671e..741eb42c091d02176c3b891d63f263cd342034e2 100644
 --- a/test/parallel/test-crypto-x509.js
 +++ b/test/parallel/test-crypto-x509.js
 @@ -104,7 +104,9 @@ const der = Buffer.from(
