@@ -151,6 +151,13 @@ bool ElectronPathProvider(int key, base::FilePath* result) {
         return true;
       }
       return false;
+#if defined(OS_LINUX)
+    case DIR_APP_DATA:
+      auto env = base::Environment::Create();
+      *result = base::nix::GetXDGDirectory(
+          env.get(), base::nix::kXdgConfigHomeEnvVar, base::nix::kDotConfigDir);
+      return true;
+#endif
   }
   return false;
 }
