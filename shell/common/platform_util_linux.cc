@@ -19,7 +19,6 @@
 #include "dbus/bus.h"
 #include "dbus/message.h"
 #include "dbus/object_proxy.h"
-#include "shell/browser/electron_browser_main_parts.h"
 #include "shell/common/platform_util_internal.h"
 #include "ui/gtk/gtk_util.h"
 #include "url/gurl.h"
@@ -122,18 +121,6 @@ bool XDGUtil(const std::vector<std::string>& argv,
   // it that we definitely don't have a terminal available and that it should
   // bring up a new terminal if necessary.  See "man mailcap".
   options.environment["MM_NOTTTY"] = "1";
-
-  // If the user set a GDK_BACKEND value of their own, use that,
-  // otherwise unset it becuase Chromium is setting GDK_BACKEND
-  // during GTK initialization and we want to respect user preference.
-  // Setting values in EnvironmentMap to an empty-string
-  // will make sure that they get unset from the environment via
-  // AlterEnvironment().
-  const base::Optional<std::string>& gdk_backend =
-      electron::ElectronBrowserMainParts::GetGDKBackend();
-  options.environment["GDK_BACKEND"] = gdk_backend.has_value()
-                                           ? gdk_backend.value().c_str()
-                                           : base::NativeEnvironmentString();
 
   base::Process process = base::LaunchProcess(argv, options);
   if (!process.IsValid())
