@@ -38,7 +38,7 @@ index 3be3f2364dd252bcdd668c699a0e7ae1e754e873..b2af1bce312ffca44e7005e11f92327e
  
    bool Exists(const char* id);
 diff --git a/tools/js2c.py b/tools/js2c.py
-index 4af54c3fa00602f9d0ce5cc4dca253d425048706..e283173df67814f8dee33b970132e52a2a2dca8f 100755
+index 4af54c3fa00602f9d0ce5cc4dca253d425048706..18f584473fb87f036ce2a67c5172cccaf0caaa5f 100755
 --- a/tools/js2c.py
 +++ b/tools/js2c.py
 @@ -38,6 +38,8 @@ import functools
