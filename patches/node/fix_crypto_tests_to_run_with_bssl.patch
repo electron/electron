@@ -944,21 +944,20 @@ index 008ab129f0e019c659eecf5a76b7eb412c947fe3..6688f5d916f50e1e4fcfff1619c8634a
  
  cipher.end('Papaya!');  // Should not cause an unhandled exception.
 diff --git a/test/parallel/test-crypto-x509.js b/test/parallel/test-crypto-x509.js
-index c85a79b4854369e35fbe89833e9df9a12065671e..741eb42c091d02176c3b891d63f263cd342034e2 100644
+index c85a79b4854369e35fbe89833e9df9a12065671e..8f13ac60362854d12264f26b74533bd55efd6605 100644
 --- a/test/parallel/test-crypto-x509.js
 +++ b/test/parallel/test-crypto-x509.js
-@@ -104,7 +104,9 @@ const der = Buffer.from(
+@@ -104,7 +104,8 @@ const der = Buffer.from(
      '84:AC:5B:08:9A:20:89:B6:8F:D6'
    );
    assert.strictEqual(x509.keyUsage, undefined);
 -  assert.strictEqual(x509.serialNumber, 'ECC9B856270DA9A8');
 +
-+  const serialPattern = /ECC9B856270DA9A8|ecc9b856270da9a8/;
-+  assert.match(x509.serialNumber, serialPattern);
++  assert.match(x509.serialNumber, /ECC9B856270DA9A8/i);
  
    assert.deepStrictEqual(x509.raw, der);
  
-@@ -190,6 +192,18 @@ const der = Buffer.from(
+@@ -190,6 +191,12 @@ const der = Buffer.from(
    });
    mc.port2.postMessage(x509);
  
@@ -968,16 +967,10 @@ index c85a79b4854369e35fbe89833e9df9a12065671e..741eb42c091d02176c3b891d63f263cd
 +                      '75657B0BBFB5EB7D0BBA5122D1B6964C7B570D50B8EC001EEB68D' +
 +                      'FB584437508F3129928D673B30A3E0BF4F50609E6371';
 +
-+  const modulusBSSL = 'ef5440701637e28abb038e5641f828d834c342a9d25edbb86a2bf' +
-+                      '6fbd809cb8e037a98b71708e001242e4deb54c6164885f599dd87' +
-+                      'a23215745955be20417e33c4d0d1b80c9da3de419a2607195d2fb' +
-+                      '75657b0bbfb5eb7d0bba5122d1b6964c7b570d50b8ec001eeb68d'+
-+                      'fb584437508f3129928d673b30a3e0bf4f50609e6371';
-+
    // Verify that legacy encoding works
    const legacyObjectCheck = {
      subject: 'C=US\n' +
-@@ -213,11 +227,7 @@ const der = Buffer.from(
+@@ -213,11 +220,7 @@ const der = Buffer.from(
          'CA Issuers - URI:http://ca.nodejs.org/ca.cert' :
          'OCSP - URI:http://ocsp.nodejs.org/\n' +
          'CA Issuers - URI:http://ca.nodejs.org/ca.cert\n',
@@ -986,36 +979,36 @@ index c85a79b4854369e35fbe89833e9df9a12065671e..741eb42c091d02176c3b891d63f263cd
 -             'A23215745955BE20417E33C4D0D1B80C9DA3DE419A2607195D2FB' +
 -             '75657B0BBFB5EB7D0BBA5122D1B6964C7B570D50B8EC001EEB68D' +
 -             'FB584437508F3129928D673B30A3E0BF4F50609E6371',
-+    modulusPattern: new RegExp(`${modulusOSSL}|${modulusBSSL}`),
++    modulusPattern: new RegExp(modulusOSSL, 'i'),
      bits: 1024,
      exponent: '0x10001',
      valid_from: 'Nov 16 18:42:21 2018 GMT',
-@@ -226,7 +236,7 @@ const der = Buffer.from(
+@@ -226,7 +229,7 @@ const der = Buffer.from(
      fingerprint256:
        'B0:BE:46:49:B8:29:63:E0:6F:63:C8:8A:57:9C:3F:9B:72:' +
        'C6:F5:89:E3:0D:84:AC:5B:08:9A:20:89:B6:8F:D6',
 -    serialNumber: 'ECC9B856270DA9A8'
-+    serialNumberPattern: /ECC9B856270DA9A8|ecc9b856270da9a8/
++    serialNumberPattern: /ECC9B856270DA9A8/i
    };
  
    const legacyObject = x509.toLegacyObject();
-@@ -235,7 +245,7 @@ const der = Buffer.from(
+@@ -235,7 +238,7 @@ const der = Buffer.from(
    assert.strictEqual(legacyObject.subject, legacyObjectCheck.subject);
    assert.strictEqual(legacyObject.issuer, legacyObjectCheck.issuer);
    assert.strictEqual(legacyObject.infoAccess, legacyObjectCheck.infoAccess);
 -  assert.strictEqual(legacyObject.modulus, legacyObjectCheck.modulus);
-+  assert.strictEqual(legacyObjectCheck.modulusPattern.test(legacyObject.modulus), true);
++  assert.match(legacyObject.modulus, legacyObjectCheck.modulusPattern);
    assert.strictEqual(legacyObject.bits, legacyObjectCheck.bits);
    assert.strictEqual(legacyObject.exponent, legacyObjectCheck.exponent);
    assert.strictEqual(legacyObject.valid_from, legacyObjectCheck.valid_from);
-@@ -244,7 +254,5 @@ const der = Buffer.from(
+@@ -244,7 +247,5 @@ const der = Buffer.from(
    assert.strictEqual(
      legacyObject.fingerprint256,
      legacyObjectCheck.fingerprint256);
 -  assert.strictEqual(
 -    legacyObject.serialNumber,
 -    legacyObjectCheck.serialNumber);
-+  assert.strictEqual(legacyObjectCheck.serialNumberPattern.test(legacyObject.serialNumber), true);
++  assert.match(legacyObject.serialNumber, legacyObjectCheck.serialNumberPattern);
  }
 diff --git a/test/parallel/test-crypto.js b/test/parallel/test-crypto.js
 index 58441be4d093f06cac3d47e2fa752f2354a49f8a..36a91946c8ad23250a47c433c1216ec9cb14f0e1 100644
@@ -1132,30 +1125,32 @@ index 940c43cc40bf15e51df177ee30ecc69ffbeec296..e95743a91a3c709c7d2c10dc80b3f75b
  
  // Create TLS1.2 server
 diff --git a/test/parallel/test-tls-getcertificate-x509.js b/test/parallel/test-tls-getcertificate-x509.js
-index 5be788f67931131256f7fb0ab802cb0edee58173..13963fbeee1bbe5d4a25f1ef8bb58c7a0ad1eb23 100644
+index 5be788f67931131256f7fb0ab802cb0edee58173..0969e417c239b7300f53f6c4434318bc8fe579fe 100644
 --- a/test/parallel/test-tls-getcertificate-x509.js
 +++ b/test/parallel/test-tls-getcertificate-x509.js
-@@ -21,8 +21,8 @@ server.once('secureConnection', common.mustCall(function(socket) {
+@@ -20,9 +20,7 @@ const server = tls.createServer(options, function(cleartext) {
+ server.once('secureConnection', common.mustCall(function(socket) {
    const cert = socket.getX509Certificate();
    assert(cert instanceof X509Certificate);
-   assert.strictEqual(
+-  assert.strictEqual(
 -    cert.serialNumber,
 -    'D0082F458B6EFBE8');
-+    /d0082f458b6efbe8|D0082F458B6EFBE8/.test(cert.serialNumber), true
-+  )
++  assert.match(cert.serialNumber, /D0082F458B6EFBE8/i)
  }));
  
  server.listen(0, common.mustCall(function() {
-@@ -34,8 +34,7 @@ server.listen(0, common.mustCall(function() {
+@@ -33,10 +31,7 @@ server.listen(0, common.mustCall(function() {
+     const peerCert = socket.getPeerX509Certificate();
      assert(peerCert.issuerCertificate instanceof X509Certificate);
      assert.strictEqual(peerCert.issuerCertificate.issuerCertificate, undefined);
-     assert.strictEqual(
+-    assert.strictEqual(
 -      peerCert.issuerCertificate.serialNumber,
 -      'ECC9B856270DA9A7'
-+      /ecc9b856270da9a7|ECC9B856270DA9A7/.test(peerCert.issuerCertificate.serialNumber), true
-     );
+-    );
++    assert.match(peerCert.issuerCertificate.serialNumber, /ECC9B856270DA9A7/i);
      server.close();
    }));
+   socket.end('Hello');
 diff --git a/test/parallel/test-tls-getprotocol.js b/test/parallel/test-tls-getprotocol.js
 index 02c683c71c8775e84d5d125a4f05560b8206677d..4c6dd20ca0a8d0acdf9f8d1b7153087de9305196 100644
 --- a/test/parallel/test-tls-getprotocol.js
