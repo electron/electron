@@ -77,12 +77,10 @@ before the first line JavaScript is run.
 The `ELECTRON_ENABLE_LOGGING` environment variable has the same effect as
 passing `--enable-logging`.
 
-If `destination` is:
-
-* an empty string: logs will be printed on stderr.
-* `file`: logs will be saved to the file specified by `--log-file=...`, or to
-  `electron_debug.log` in the user-data directory if `--log-file` is not
-  specified.
+Passing `--enable-logging` will result in logs being printed on stderr.
+Passing `--enable-logging=file` will result in logs being saved to the file
+specified by `--log-file=...`, or to `electron_debug.log` in the user-data
+directory if `--log-file` is not specified.
 
 > **Note:** On Windows, logs from child processes cannot be sent to stderr.
 > Logging to a file is the most reliable way to collect logs on Windows.
