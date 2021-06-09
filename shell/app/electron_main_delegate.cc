@@ -51,6 +51,7 @@
 #endif
 
 #if defined(OS_LINUX)
+#include "base/nix/xdg_util.h"
 #include "components/crash/core/app/breakpad_linux.h"
 #include "v8/include/v8-wasm-trap-handler-posix.h"
 #include "v8/include/v8.h"
