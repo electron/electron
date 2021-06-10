@@ -315,7 +315,8 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   if (title_bar_style_ != TitleBarStyle::kNormal)
     set_has_frame(false);
 
-  NSUInteger styleMask = NSWindowStyleMaskTitled;
+  NSUInteger styleMask =
+      has_frame() ? NSWindowStyleMaskTitled : NSBorderlessWindowMask;
 
   // The NSWindowStyleMaskFullSizeContentView style removes rounded corners
   // for framless window.
