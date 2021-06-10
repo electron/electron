@@ -1,0 +1,35 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Thu, 10 Jun 2021 15:15:35 +0200
+Subject: fix: account for debugger agent race condition
+
+In Electron the debugger agent hasn't necessarily been enabled by the
+time the inspect prompt displays, leading to "Debugger agent is not enabled"
+errors. This is remedied by adding a small timeout to the test.
+
+We'll either upstream this or figure out a better solution.
+
+diff --git a/test/inspector-cli/test-inspector-cli-address.js b/test/inspector-cli/test-inspector-cli-address.js
+index ff31747016c2d49ac87fa272eba3231e9d4fbae5..e4f7b13aad3c60100e56df00165d1af550f1a117 100644
+--- a/test/inspector-cli/test-inspector-cli-address.js
++++ b/test/inspector-cli/test-inspector-cli-address.js
+@@ -59,6 +59,7 @@ function launchTarget(...args) {
+       cli = startCLI([`${host || '127.0.0.1'}:${port}`]);
+       return cli.waitForPrompt();
+     })
++    .then(() => new Promise(resolve => setTimeout(resolve, 1000)))
+     .then(() => cli.command('sb("alive.js", 3)'))
+     .then(() => cli.waitFor(/break/))
+     .then(() => cli.waitForPrompt())
+diff --git a/test/inspector-cli/test-inspector-cli-pid.js b/test/inspector-cli/test-inspector-cli-pid.js
+index 97de9f40369d2d1df9674c6df5bbaf78022667c6..3d51a8963ba24e5e5f6a64cd792859535670dd9a 100644
+--- a/test/inspector-cli/test-inspector-cli-pid.js
++++ b/test/inspector-cli/test-inspector-cli-pid.js
+@@ -38,6 +38,7 @@ function launchTarget(...args) {
+       cli = startCLI(['-p', `${target.pid}`]);
+       return cli.waitForPrompt();
+     })
++    .then(() => new Promise(resolve => setTimeout(resolve, 1000)))
+     .then(() => cli.command('sb("alive.js", 3)'))
+     .then(() => cli.waitFor(/break/))
+     .then(() => cli.waitForPrompt())
