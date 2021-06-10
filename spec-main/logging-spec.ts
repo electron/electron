@@ -10,7 +10,9 @@ import * as uuid from 'uuid';
 // This test depends on functions that are only available when DCHECK_IS_ON.
 ifdescribe(process._linkedBinding('electron_common_testing'))('logging', () => {
   it('does not log by default', async () => {
-    const rc = await startRemoteControlApp();
+    // ELECTRON_ENABLE_LOGGING is turned on in the appveyor config.
+    const { ELECTRON_ENABLE_LOGGING: _, ...envWithoutEnableLogging } = process.env;
+    const rc = await startRemoteControlApp([], { env: envWithoutEnableLogging });
     const stderrComplete = new Promise<string>(resolve => {
       let stderr = '';
       rc.process.stderr!.on('data', function listener (chunk) {
