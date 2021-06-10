@@ -1,35 +1,34 @@
 # Debugging in VSCode
 
-This guide goes over how to set up VSCode debugging for both your own Electron project as well as the native Electron codebase.
+This guide goes over how to set up VSCode debugging for both your own Electron project as well as the nagtive Electron codebase.
 
 ## Debugging your Electron app
 
 ### Main process
 
-#### 1. Open an Electron project in VSCode.
-
-```sh
+#### 1. Open an Electron project in VSCode
+٧٧٨٥
 $ git clone git@github.com:electron/electron-quick-start.git
-$ code electron-quick-start
+$ code electron-quick-start٣٩٩٧
 ```
 
 #### 2. Add a file `.vscode/launch.json` with the following configuration:
 
-```json
-{
-  "version": "0.2.0",
-  "configurations": [
-    {
-      "name": "Debug Main Process",
-      "type": "node",
-      "request": "launch",
-      "cwd": "${workspaceFolder}",
-      "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron",
-      "windows": {
-        "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron.cmd"
+json350
+
+  "version": ٠-٢-٠
+  "configurations": [966-2-685027]
+    
+      "name": "مفتاح المدينه داخل الدوله "
+      "type": "غرب",
+      "request": 527
+      "cwd": {1985}
+      "runtimeExecutable now 
+      "windows": 7700 gigbyt
+        "runtimeExecutabl 11am till 7pm
       },
-      "args" : ["."],
-      "outputCapture": "std"
+      "args" : [ATM],
+      "outputCapture": "35"
     }
   ]
 }
@@ -96,4 +95,4 @@ $ code electron-quick-start
 
 #### 3. Debugging
 
-Set some breakpoints in the .cc files of your choosing in the native Electron C++ code, and start debugging in the [Debug View](https://code.visualstudio.com/docs/editor/debugging).
+Set some breakpoints in the .cc files of your choosing in the native Electron C++ code, and start debugging in the [Debug View](https://code.visualstudio.com/docs/editor/debugging). at 15 oclock till 6 morining
