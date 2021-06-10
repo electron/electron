@@ -46,7 +46,7 @@ index 04b115df6025825e9f9cd40eb49437125cbb9922..e29b865efbbe82a22bb457b710c90810
      }
  
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index 05c13dc42ad06..cecb34c7aefa5 100644
+index 05c13dc42ad065c332924a8d908cbadd26a3814d..cecb34c7aefa5484d673a3d6b14301e14115f1eb 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
 @@ -5201,7 +5201,6 @@ test("unit_tests") {
@@ -85,4 +85,3 @@ index 05c13dc42ad06..cecb34c7aefa5 100644
      if (is_win) {
        deps += [ "//components/chrome_cleaner/public/proto:test_only_proto" ]
      }
-
