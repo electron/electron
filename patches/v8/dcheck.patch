@@ -19,10 +19,10 @@ index 50173de3f145b4febcc29c03080306c137918527..1ac347ede7e51559917f09442ac4824f
    isolate->default_microtask_queue()->PerformCheckpoint(this);
  }
 diff --git a/src/heap/heap.cc b/src/heap/heap.cc
-index 823d37fd02d0169f0cb2785f9aa3395c5970711e..db6c29b72dd45f625b9876dab0e68ee56c9fae66 100644
+index af55137e1f6026f5e97f7b496ee71b78ddeb665b..582fc6302bddc736d71cb650d45d6bf9deafa9b2 100644
 --- a/src/heap/heap.cc
 +++ b/src/heap/heap.cc
-@@ -5600,9 +5600,9 @@ void Heap::TearDown() {
+@@ -5607,9 +5607,9 @@ void Heap::TearDown() {
  void Heap::AddGCPrologueCallback(v8::Isolate::GCCallbackWithData callback,
                                   GCType gc_type, void* data) {
    DCHECK_NOT_NULL(callback);
