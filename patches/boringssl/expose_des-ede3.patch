@@ -6,10 +6,10 @@ Subject: expose des-ede3
 This should be upstreamed.
 
 diff --git a/crypto/cipher_extra/cipher_extra.c b/crypto/cipher_extra/cipher_extra.c
-index 588a4773437c311877f275bf3679f9688cda3c46..e771ed6589b4579cc35300d5b2a1b68d92e444f5 100644
+index 5ede89f9f0761d1da1baa899e9a02b77ffcffe93..8205e121c152fe4e2d8df34a1ac2fe0498381f31 100644
 --- a/crypto/cipher_extra/cipher_extra.c
 +++ b/crypto/cipher_extra/cipher_extra.c
-@@ -93,6 +93,8 @@ const EVP_CIPHER *EVP_get_cipherbyname(const char *name) {
+@@ -97,6 +97,8 @@ const EVP_CIPHER *EVP_get_cipherbyname(const char *name) {
      return EVP_rc4();
    } else if (OPENSSL_strcasecmp(name, "des-cbc") == 0) {
      return EVP_des_cbc();
