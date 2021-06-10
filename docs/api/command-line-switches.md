@@ -71,9 +71,6 @@ Enables caller stack logging for the following APIs (filtering events):
 
 Prints Chromium's logging to stderr (or a log file).
 
-This switch can not be used in `app.commandLine.appendSwitch` since it is read
-before the first line JavaScript is run.
-
 The `ELECTRON_ENABLE_LOGGING` environment variable has the same effect as
 passing `--enable-logging`.
 
