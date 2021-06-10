@@ -81,7 +81,7 @@ index f919df4d79a1168269c1538ac13a2a944586cf4e..fc34cf5d7dab95e7b6fc0576674b3e2b
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  
 diff --git a/components/viz/service/display/gl_renderer.cc b/components/viz/service/display/gl_renderer.cc
-index 6eb1aa1766528176a1b9b77596031494f8b4fc00..67cc9e57b28d0544256c36c2744917e22b1cf43b 100644
+index 7585a8aa3c694cd4699918582e3429de06afca8c..45a866d8b4533f0d2ef4582c79c2b2401ff35f13 100644
 --- a/components/viz/service/display/gl_renderer.cc
 +++ b/components/viz/service/display/gl_renderer.cc
 @@ -89,6 +89,9 @@
@@ -187,7 +187,7 @@ index 6eb1aa1766528176a1b9b77596031494f8b4fc00..67cc9e57b28d0544256c36c2744917e2
                  /*adjust_src_white_level=*/draw_cache_.is_video_frame,
                  locked_quad.hdr_metadata());
  
-@@ -3666,7 +3676,9 @@ void GLRenderer::SetUseProgram(const ProgramKey& program_key_no_color,
+@@ -3691,7 +3701,9 @@ void GLRenderer::SetUseProgram(const ProgramKey& program_key_no_color,
                                 const gfx::ColorSpace& dst_color_space,
                                 bool adjust_src_white_level,
                                 absl::optional<gfx::HDRMetadata> hdr_metadata) {
@@ -198,7 +198,7 @@ index 6eb1aa1766528176a1b9b77596031494f8b4fc00..67cc9e57b28d0544256c36c2744917e2
    gfx::ColorSpace adjusted_src_color_space = src_color_space;
    if (adjust_src_white_level && src_color_space.IsHDR()) {
      // TODO(b/183236148): consider using the destination's HDR static metadata
-@@ -4050,9 +4062,9 @@ void GLRenderer::CopyRenderPassDrawQuadToOverlayResource(
+@@ -4075,9 +4087,9 @@ void GLRenderer::CopyRenderPassDrawQuadToOverlayResource(
          cc::MathUtil::CheckedRoundUp(iosurface_height, iosurface_multiple);
    }
  
@@ -211,7 +211,7 @@ index 6eb1aa1766528176a1b9b77596031494f8b4fc00..67cc9e57b28d0544256c36c2744917e2
    *new_bounds = gfx::RectF(updated_dst_rect.origin(),
                             gfx::SizeF((*overlay_texture)->texture.size()));
  
-@@ -4272,8 +4284,8 @@ void GLRenderer::FlushOverdrawFeedback(const gfx::Rect& output_rect) {
+@@ -4297,8 +4309,8 @@ void GLRenderer::FlushOverdrawFeedback(const gfx::Rect& output_rect) {
  
    PrepareGeometry(SHARED_BINDING);
  
@@ -222,7 +222,7 @@ index 6eb1aa1766528176a1b9b77596031494f8b4fc00..67cc9e57b28d0544256c36c2744917e2
  
    gfx::Transform render_matrix;
    render_matrix.Translate(0.5 * output_rect.width() + output_rect.x(),
-@@ -4463,3 +4475,5 @@ GLRenderer::OverlayTexture::OverlayTexture() = default;
+@@ -4488,3 +4500,5 @@ GLRenderer::OverlayTexture::OverlayTexture() = default;
  GLRenderer::OverlayTexture::~OverlayTexture() = default;
  
  }  // namespace viz

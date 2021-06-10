@@ -9,7 +9,7 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 4c7558e8c4ff6c4f20957489a31dc6fd69ced3fb..9ddb612838e73479dbe28b838f09f7af2ccdf5c0 100644
+index 5bb8c66b6a4acd6c22c7c0cfb0efd667633bca0d..0954c041e00580284a658009ecb415c17c9ae7ad 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
 @@ -5984,6 +5984,7 @@ void RenderFrameHostImpl::CreateNewWindow(
@@ -21,7 +21,7 @@ index 4c7558e8c4ff6c4f20957489a31dc6fd69ced3fb..9ddb612838e73479dbe28b838f09f7af
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index dbb175f5aa717e84d7ab6ecd21988bea2ccf0758..4b296b6f3a3f35ed233403105a79bf3dcc406eb8 100644
+index 05888b53ef39c90941ccc069849f271e60bbd909..95d2a7b15e67e2af6f9aebb0c975f5713762032d 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -3756,6 +3756,14 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
@@ -81,7 +81,7 @@ index 09597633dfd443376784d8645611ab18a903bf23..1fe182db87390b346fa03091dcc17761
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 7dd2b78088759ffdd80c33cd529adbb93215334f..5ec83c0a56fc91d3c13d97dd8c58a286b6358146 100644
+index 4251b44d48eb3c197bcc5156618fbe3c8218abec..3b589fe50af60d072a61cdc12306b74526989410 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -160,6 +160,7 @@ class NetworkService;
@@ -92,7 +92,7 @@ index 7dd2b78088759ffdd80c33cd529adbb93215334f..5ec83c0a56fc91d3c13d97dd8c58a286
  }  // namespace network
  
  namespace sandbox {
-@@ -937,6 +938,8 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -929,6 +930,8 @@ class CONTENT_EXPORT ContentBrowserClient {
        const std::string& frame_name,
        WindowOpenDisposition disposition,
        const blink::mojom::WindowFeatures& features,
