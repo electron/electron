@@ -129,7 +129,7 @@ v8::Local<v8::Value> HttpResponseHeadersToV8(
           !value.empty()) {
         net::HttpContentDisposition header(value, std::string());
         std::string decodedFilename =
-            header.is_attachment() ? " attachement" : " inline";
+            header.is_attachment() ? " attachment" : " inline";
         decodedFilename += "; filename=" + header.filename();
         value = decodedFilename;
       }
