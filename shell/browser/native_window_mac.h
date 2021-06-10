@@ -152,6 +152,9 @@ class NativeWindowMac : public NativeWindow,
   void NotifyWindowWillEnterFullScreen();
   void NotifyWindowWillLeaveFullScreen();
 
+  // Ensure the buttons view are always floated on the top.
+  void ReorderButtonsView();
+
   // Cleanup observers when window is getting closed. Note that the destructor
   // can be called much later after window gets closed, so we should not do
   // cleanup in destructor.
