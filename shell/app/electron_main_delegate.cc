@@ -240,8 +240,8 @@ bool ElectronMainDelegate::BasicStartupComplete(int* exit_code) {
   tracing_sampler_profiler_ =
       tracing::TracingSamplerProfiler::CreateOnMainThread();
 
-  electron::RegisterPathProvider();
   chrome::RegisterPathProvider();
+  electron::RegisterPathProvider();
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   ContentSettingsPattern::SetNonWildcardDomainNonPortSchemes(
