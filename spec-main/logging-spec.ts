@@ -18,13 +18,16 @@ ifdescribe(process._linkedBinding('electron_common_testing'))('logging', () => {
       });
       rc.process.on('close', () => { resolve(stderr); });
     });
-    await rc.remotely(() => {
+    const [hasLoggingSwitch, hasLoggingVar] = await rc.remotely(() => {
       // Make sure we're actually capturing stderr by logging a known value to
       // stderr.
       console.error('SENTINEL');
       process._linkedBinding('electron_common_testing').log(0, 'TEST_LOG');
-      process.exit(0);
+      setTimeout(() => { process.exit(0); });
+      return [require('electron').app.commandLine.hasSwitch('enable-logging'), !!process.env.ELECTRON_ENABLE_LOGGING];
     });
+    expect(hasLoggingSwitch).to.be.false();
+    expect(hasLoggingVar).to.be.false();
     const stderr = await stderrComplete;
     // stderr should include the sentinel but not the LOG() message.
     expect(stderr).to.match(/SENTINEL/);
