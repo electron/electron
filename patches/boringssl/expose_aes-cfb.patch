@@ -12,10 +12,10 @@ https://boringssl-review.googlesource.com/c/boringssl/+/33984 for a
 similar patch that was merged upstream.
 
 diff --git a/crypto/cipher_extra/cipher_extra.c b/crypto/cipher_extra/cipher_extra.c
-index b132265bc103658dba3de6e0c3dc50d3634da5b0..588a4773437c311877f275bf3679f9688cda3c46 100644
+index 786a5d5fb13d7ceafc9b7d58c0aaccb88552506d..5ede89f9f0761d1da1baa899e9a02b77ffcffe93 100644
 --- a/crypto/cipher_extra/cipher_extra.c
 +++ b/crypto/cipher_extra/cipher_extra.c
-@@ -101,10 +101,14 @@ const EVP_CIPHER *EVP_get_cipherbyname(const char *name) {
+@@ -105,10 +105,14 @@ const EVP_CIPHER *EVP_get_cipherbyname(const char *name) {
      return EVP_des_ede3_cbc();
    } else if (OPENSSL_strcasecmp(name, "aes-128-cbc") == 0) {
      return EVP_aes_128_cbc();
