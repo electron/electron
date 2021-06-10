@@ -131,9 +131,7 @@ bool XDGUtil(const std::vector<std::string>& argv,
   // AlterEnvironment().
   const absl::optional<std::string>& gdk_backend =
       electron::ElectronBrowserMainParts::GetGDKBackend();
-  options.environment["GDK_BACKEND"] = gdk_backend.has_value()
-                                           ? gdk_backend.value().c_str()
-                                           : base::NativeEnvironmentString();
+  options.environment["GDK_BACKEND"] = gdk_backend ? *gdk_backend : std::string{};
 
   base::Process process = base::LaunchProcess(argv, options);
   if (!process.IsValid())
