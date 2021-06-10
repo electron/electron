@@ -46,7 +46,7 @@ index 04b115df6025825e9f9cd40eb49437125cbb9922..e29b865efbbe82a22bb457b710c90810
      }
  
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index 05c13dc42ad065c332924a8d908cbadd26a3814d..e38fc621bc674278b22abf9663acb7d13ee55342 100644
+index 05c13dc42ad06..cecb34c7aefa5 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
 @@ -5201,7 +5201,6 @@ test("unit_tests") {
@@ -57,16 +57,32 @@ index 05c13dc42ad065c332924a8d908cbadd26a3814d..e38fc621bc674278b22abf9663acb7d1
        "//chrome/browser:chrome_process_finder",
        "//chrome/browser/safe_browsing/chrome_cleaner",
        "//chrome/browser/safe_browsing/chrome_cleaner:public",
-@@ -5214,6 +5213,12 @@ test("unit_tests") {
+@@ -5214,6 +5213,9 @@ test("unit_tests") {
        "//components/chrome_cleaner/public/proto",
        "//ui/events/devices:test_support",
      ]
-+
 +    if (!is_electron_build) {
-+      deps += [
-+        "//chrome:packed_resources_integrity",
-+      ]
++      deps += [ "//chrome:packed_resources_integrity" ]
 +    }
    }
  
    if (is_win || is_chromeos_ash || is_mac) {
+@@ -5774,7 +5776,6 @@ test("unit_tests") {
+     }
+ 
+     deps += [
+-      "//chrome:packed_resources_integrity_hash",
+       "//chrome/browser:cart_db_content_proto",
+       "//chrome/browser/media/router:test_support",
+       "//chrome/browser/promo_browser_command:mojo_bindings",
+@@ -5809,6 +5810,9 @@ test("unit_tests") {
+       "//ui/color:test_support",
+       "//ui/native_theme:test_support",
+     ]
++    if (!is_electron_build) {
++      deps += [ "//chrome:packed_resources_integrity_hash" ]
++    }
+     if (is_win) {
+       deps += [ "//components/chrome_cleaner/public/proto:test_only_proto" ]
+     }
+
