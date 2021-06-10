@@ -85,7 +85,7 @@ directory if `--log-file` is not specified.
 > **Note:** On Windows, logs from child processes cannot be sent to stderr.
 > Logging to a file is the most reliable way to collect logs on Windows.
 
-See also `--log-file`, `--logging-level`, `--v`, and `--vmodule`.
+See also `--log-file`, `--log-level`, `--v`, and `--vmodule`.
 
 ### --force-fieldtrials=`trials`
 
@@ -150,13 +150,13 @@ this flag. If both are present, the command-line switch takes precedence.
 
 Enables net log events to be saved and writes them to `path`.
 
-### --logging-level=`N`
+### --log-level=`N`
 
 Sets the verbosity of logging when used together with `--enable-logging`.
 `N` should be one of [Chrome's LogSeverities][severities].
 
 Note that two complimentary logging mechanisms in Chromium -- `LOG()`
-and `VLOG()` -- are controlled by different switches. `--logging-level`
+and `VLOG()` -- are controlled by different switches. `--log-level`
 controls `LOG()` messages, while `--v` and `--vmodule` control `VLOG()`
 messages. So you may want to use a combination of these three switches
 depending on the granularity you want and what logging calls are made
@@ -167,7 +167,7 @@ See [Chromium Logging source][logging] for more information on how
 of as sub-levels / per-module levels inside `LOG(INFO)` to control the
 firehose of `LOG(INFO)` data.
 
-See also `--enable-logging`, `--logging-level`, `--v`, and `--vmodule`.
+See also `--enable-logging`, `--log-level`, `--v`, and `--vmodule`.
 
 ### --no-proxy-server
 
@@ -220,7 +220,7 @@ positive values are used for V-logging levels.
 
 This switch only works when `--enable-logging` is also passed.
 
-See also `--enable-logging`, `--logging-level`, and `--vmodule`.
+See also `--enable-logging`, `--log-level`, and `--vmodule`.
 
 ### --vmodule=`pattern`
 
@@ -234,7 +234,7 @@ logging level for all code in the source files under a `foo/bar` directory.
 
 This switch only works when `--enable-logging` is also passed.
 
-See also `--enable-logging`, `--logging-level`, and `--v`.
+See also `--enable-logging`, `--log-level`, and `--v`.
 
 ### --force_high_performance_gpu
 

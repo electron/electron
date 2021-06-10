@@ -2,6 +2,11 @@ const { app } = require('electron');
 const http = require('http');
 const v8 = require('v8');
 
+if (app.commandLine.hasSwitch('boot-eval')) {
+  // eslint-disable-next-line no-eval
+  eval(app.commandLine.getSwitchValue('boot-eval'));
+}
+
 app.whenReady().then(() => {
   const server = http.createServer((req, res) => {
     const chunks = [];

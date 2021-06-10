@@ -510,6 +510,7 @@ filenames = {
     "shell/common/api/electron_api_native_image.cc",
     "shell/common/api/electron_api_native_image.h",
     "shell/common/api/electron_api_shell.cc",
+    "shell/common/api/electron_api_testing.cc",
     "shell/common/api/electron_api_v8_util.cc",
     "shell/common/api/electron_bindings.cc",
     "shell/common/api/electron_bindings.h",
