@@ -558,8 +558,9 @@ describe('session module', () => {
     it('accepts the request when the callback is called with 0', async () => {
       const ses = session.fromPartition(`${Math.random()}`);
       let validate: () => void;
-      ses.setCertificateVerifyProc(({ verificationResult, errorCode }, callback) => {
+      ses.setCertificateVerifyProc(({ hostname, verificationResult, errorCode }, callback) => {
         validate = () => {
+          expect(hostname).to.equal('127.0.0.1');
           expect(verificationResult).to.be.oneOf(['net::ERR_CERT_AUTHORITY_INVALID', 'net::ERR_CERT_COMMON_NAME_INVALID']);
           expect(errorCode).to.be.oneOf([-202, -200]);
         };
