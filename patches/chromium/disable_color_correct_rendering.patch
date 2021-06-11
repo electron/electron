@@ -81,7 +81,7 @@ index f919df4d79a1168269c1538ac13a2a944586cf4e..fc34cf5d7dab95e7b6fc0576674b3e2b
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  
 diff --git a/components/viz/service/display/gl_renderer.cc b/components/viz/service/display/gl_renderer.cc
-index 7585a8aa3c694cd4699918582e3429de06afca8c..45a866d8b4533f0d2ef4582c79c2b2401ff35f13 100644
+index 4da975c0f06df7aef526898557f0945dcdd1806a..5810197b0ab6a247e12ae8a6d96f71b2806ac0bc 100644
 --- a/components/viz/service/display/gl_renderer.cc
 +++ b/components/viz/service/display/gl_renderer.cc
 @@ -89,6 +89,9 @@
@@ -198,7 +198,7 @@ index 7585a8aa3c694cd4699918582e3429de06afca8c..45a866d8b4533f0d2ef4582c79c2b240
    gfx::ColorSpace adjusted_src_color_space = src_color_space;
    if (adjust_src_white_level && src_color_space.IsHDR()) {
      // TODO(b/183236148): consider using the destination's HDR static metadata
-@@ -4075,9 +4087,9 @@ void GLRenderer::CopyRenderPassDrawQuadToOverlayResource(
+@@ -4074,9 +4086,9 @@ void GLRenderer::CopyRenderPassDrawQuadToOverlayResource(
          cc::MathUtil::CheckedRoundUp(iosurface_height, iosurface_multiple);
    }
  
@@ -211,7 +211,7 @@ index 7585a8aa3c694cd4699918582e3429de06afca8c..45a866d8b4533f0d2ef4582c79c2b240
    *new_bounds = gfx::RectF(updated_dst_rect.origin(),
                             gfx::SizeF((*overlay_texture)->texture.size()));
  
-@@ -4297,8 +4309,8 @@ void GLRenderer::FlushOverdrawFeedback(const gfx::Rect& output_rect) {
+@@ -4296,8 +4308,8 @@ void GLRenderer::FlushOverdrawFeedback(const gfx::Rect& output_rect) {
  
    PrepareGeometry(SHARED_BINDING);
  
@@ -222,7 +222,7 @@ index 7585a8aa3c694cd4699918582e3429de06afca8c..45a866d8b4533f0d2ef4582c79c2b240
  
    gfx::Transform render_matrix;
    render_matrix.Translate(0.5 * output_rect.width() + output_rect.x(),
-@@ -4488,3 +4500,5 @@ GLRenderer::OverlayTexture::OverlayTexture() = default;
+@@ -4487,3 +4499,5 @@ GLRenderer::OverlayTexture::OverlayTexture() = default;
  GLRenderer::OverlayTexture::~OverlayTexture() = default;
  
  }  // namespace viz
