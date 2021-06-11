@@ -30,7 +30,8 @@ WebWorkerObserver* WebWorkerObserver::GetCurrent() {
 WebWorkerObserver::WebWorkerObserver()
     : node_bindings_(
           NodeBindings::Create(NodeBindings::BrowserEnvironment::kWorker)),
-      electron_bindings_(new ElectronBindings(node_bindings_->uv_loop())) {
+      electron_bindings_(
+          std::make_unique<ElectronBindings>(node_bindings_->uv_loop())) {
   lazy_tls.Pointer()->Set(this);
 }
 

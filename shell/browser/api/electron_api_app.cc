@@ -540,10 +540,16 @@ void OnClientCertificateSelected(
   if (!certs.empty()) {
     scoped_refptr<net::X509Certificate> cert(certs[0].get());
     for (auto& identity : *identities) {
-      if (cert->EqualsExcludingChain(identity->certificate())) {
+      scoped_refptr<net::X509Certificate> identity_cert =
+          identity->certificate();
+      // Since |cert| was recreated from |data|, it won't include any
+      // intermediates. That's fine for checking equality, but once a match is
+      // found then |identity_cert| should be used since it will include the
+      // intermediates which would otherwise be lost.
+      if (cert->EqualsExcludingChain(identity_cert.get())) {
         net::ClientCertIdentity::SelfOwningAcquirePrivateKey(
-            std::move(identity),
-            base::BindRepeating(&GotPrivateKey, delegate, std::move(cert)));
+            std::move(identity), base::BindRepeating(&GotPrivateKey, delegate,
+                                                     std::move(identity_cert)));
         break;
       }
     }

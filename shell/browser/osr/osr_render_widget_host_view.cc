@@ -183,9 +183,9 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
       frame_rate_(frame_rate),
       size_(initial_size),
       painting_(painting),
-      cursor_manager_(new content::CursorManager(this)),
+      cursor_manager_(std::make_unique<content::CursorManager>(this)),
       mouse_wheel_phase_handler_(this),
-      backing_(new SkBitmap) {
+      backing_(std::make_unique<SkBitmap>()) {
   DCHECK(render_widget_host_);
   DCHECK(!render_widget_host_->GetView());
 

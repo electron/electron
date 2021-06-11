@@ -17,45 +17,23 @@ parameters:
     type: boolean
     default: true
 
-  run-linux-x64-publish:
-    type: boolean
-    default: false
-
-  run-linux-ia32-publish:
-    type: boolean
-    default: false
-
-  run-linux-arm-publish:
-    type: boolean
-    default: false
-
-  run-linux-arm64-publish:
-    type: boolean
-    default: false
-
-  run-osx-publish:
-    type: boolean
-    default: false
-
-  run-osx-publish-arm64:
-    type: boolean
-    default: false
-
-  run-mas-publish:
-    type: boolean
-    default: false
-
-  run-mas-publish-arm64:
-    type: boolean
-    default: false
-
   run-linux-publish:
     type: boolean
     default: false
 
+  linux-publish-arch-limit:
+    type: enum
+    default: all
+    enum: ["all", "arm", "arm64", "x64", "ia32"]
+
   run-macos-publish:
     type: boolean
     default: false
+
+  macos-publish-arch-limit:
+    type: enum
+    default: all
+    enum: ["all", "osx-x64", "osx-arm64", "mas-x64", "mas-arm64"]
 
 # Executors
 executors:
@@ -1547,6 +1525,7 @@ commands:
       - when:
           condition: << parameters.build >>
           steps:
+            - move_and_store_all_artifacts
             - run:
                 name: Remove the big things on macOS, this seems to be better on average
                 command: |
@@ -1563,8 +1542,6 @@ commands:
                 condition: << parameters.use-out-cache >>
                 steps:
                   - *step-save-out-cache
-
-            - move_and_store_all_artifacts
 
             # Trigger tests on arm hardware if needed
             - *step-maybe-trigger-arm-test
@@ -1829,9 +1806,16 @@ jobs:
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
       <<: *env-ninja-status
     steps:
-      - electron-publish:
-          attach: false
-          checkout: true
+      - run: echo running
+      - when:
+          condition:
+            or:
+              - equal: ["all", << pipeline.parameters.linux-publish-arch-limit >>]
+              - equal: ["x64", << pipeline.parameters.linux-publish-arch-limit >>]
+          steps:
+            - electron-publish:
+                attach: false
+                checkout: true
 
   linux-ia32-testing:
     executor: linux-docker
@@ -1871,9 +1855,16 @@ jobs:
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
       <<: *env-ninja-status
     steps:
-      - electron-publish:
-          attach: false
-          checkout: true
+      - run: echo running
+      - when:
+          condition:
+            or:
+              - equal: ["all", << pipeline.parameters.linux-publish-arch-limit >>]
+              - equal: ["ia32", << pipeline.parameters.linux-publish-arch-limit >>]
+          steps:
+            - electron-publish:
+                attach: false
+                checkout: true
 
   linux-arm-testing:
     executor: linux-docker
@@ -1916,9 +1907,16 @@ jobs:
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
       <<: *env-ninja-status
     steps:
-      - electron-publish:
-          attach: false
-          checkout: true
+      - run: echo running
+      - when:
+          condition:
+            or:
+              - equal: ["all", << pipeline.parameters.linux-publish-arch-limit >>]
+              - equal: ["arm", << pipeline.parameters.linux-publish-arch-limit >>]
+          steps:
+            - electron-publish:
+                attach: false
+                checkout: true
 
   linux-arm64-testing:
     executor: linux-docker
@@ -1970,9 +1968,16 @@ jobs:
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
       <<: *env-ninja-status
     steps:
-      - electron-publish:
-          attach: false
-          checkout: true
+      - run: echo running
+      - when:
+          condition:
+            or:
+              - equal: ["all", << pipeline.parameters.linux-publish-arch-limit >>]
+              - equal: ["arm64", << pipeline.parameters.linux-publish-arch-limit >>]
+          steps:
+            - electron-publish:
+                attach: false
+                checkout: true
 
   osx-testing-x64:
     executor: macos
@@ -1998,31 +2003,6 @@ jobs:
       <<: *env-testing-build
     <<: *steps-electron-gn-check
 
-  osx-publish-x64:
-    executor: macos
-    environment:
-      <<: *env-mac-large-release
-      <<: *env-release-build
-      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
-      <<: *env-ninja-status
-    steps:
-      - electron-publish:
-          attach: false
-          checkout: true
-
-  osx-publish-arm64:
-    executor: macos
-    environment:
-      <<: *env-mac-large-release
-      <<: *env-release-build
-      <<: *env-apple-silicon
-      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
-      <<: *env-ninja-status
-    steps:
-      - electron-publish:
-          attach: false
-          checkout: true
-
   osx-publish-x64-skip-checkout:
     executor: macos
     environment:
@@ -2031,9 +2011,16 @@ jobs:
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
       <<: *env-ninja-status
     steps:
-      - electron-publish:
-          attach: true
-          checkout: false
+      - run: echo running
+      - when:
+          condition:
+            or:
+              - equal: ["all", << pipeline.parameters.macos-publish-arch-limit >>]
+              - equal: ["osx-x64", << pipeline.parameters.macos-publish-arch-limit >>]
+          steps:
+            - electron-publish:
+                attach: true
+                checkout: false
 
   osx-publish-arm64-skip-checkout:
     executor: macos
@@ -2044,9 +2031,16 @@ jobs:
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
       <<: *env-ninja-status
     steps:
-      - electron-publish:
-          attach: true
-          checkout: false
+      - run: echo running
+      - when:
+          condition:
+            or:
+              - equal: ["all", << pipeline.parameters.macos-publish-arch-limit >>]
+              - equal: ["osx-arm64", << pipeline.parameters.macos-publish-arch-limit >>]
+          steps:
+            - electron-publish:
+                attach: true
+                checkout: false
 
   osx-testing-arm64:
     executor: macos
@@ -2090,32 +2084,6 @@ jobs:
       <<: *env-mas
       <<: *env-testing-build
     <<: *steps-electron-gn-check
-  
-  mas-publish:
-    executor: macos
-    environment:
-      <<: *env-mac-large-release
-      <<: *env-mas
-      <<: *env-release-build
-      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
-      <<: *env-ninja-status
-    steps:
-      - electron-publish:
-          attach: false
-          checkout: true
-
-  mas-publish-arm64:
-    executor: macos
-    environment:
-      <<: *env-mac-large-release
-      <<: *env-mas-apple-silicon
-      <<: *env-release-build
-      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
-      <<: *env-ninja-status
-    steps:
-      - electron-publish:
-          attach: false
-          checkout: true          
 
   mas-publish-x64-skip-checkout:
     executor: macos
@@ -2125,9 +2093,16 @@ jobs:
       <<: *env-release-build
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
     steps:
-      - electron-publish:
-          attach: true
-          checkout: false
+      - run: echo running
+      - when:
+          condition:
+            or:
+              - equal: ["all", << pipeline.parameters.macos-publish-arch-limit >>]
+              - equal: ["mas-x64", << pipeline.parameters.macos-publish-arch-limit >>]
+          steps:
+            - electron-publish:
+                attach: true
+                checkout: false
 
   mas-publish-arm64-skip-checkout:
     executor: macos
@@ -2138,9 +2113,16 @@ jobs:
       UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
       <<: *env-ninja-status
     steps:
-      - electron-publish:
-          attach: true
-          checkout: false
+      - run: echo running
+      - when:
+          condition:
+            or:
+              - equal: ["all", << pipeline.parameters.macos-publish-arch-limit >>]
+              - equal: ["mas-arm64", << pipeline.parameters.macos-publish-arch-limit >>]
+          steps:
+            - electron-publish:
+                attach: true
+                checkout: false
 
   mas-testing-arm64:
     executor: macos
@@ -2361,12 +2343,6 @@ jobs:
 workflows:
   version: 2.1
 
-  # The publish workflows below each contain one job so that they are
-  # compatible with how sudowoodo works today.  If these workflows are
-  # changed to have multiple jobs, then scripts/release/ci-release-build.js
-  # will need to be updated and there will most likely need to be changes to
-  # sudowoodo
-
   publish-linux:
     when: << pipeline.parameters.run-linux-publish >>
     jobs:
@@ -2377,54 +2353,6 @@ workflows:
     - linux-arm-publish:
         context: release-env
     - linux-arm64-publish:
-        context: release-env
-
-  publish-x64-linux:
-    when: << pipeline.parameters.run-linux-x64-publish >>
-    jobs:
-    - linux-x64-publish:
-        context: release-env
-
-  publish-ia32-linux:
-    when: << pipeline.parameters.run-linux-ia32-publish >>
-    jobs:
-    - linux-ia32-publish:
-        context: release-env
-
-  publish-arm-linux:
-    when: << pipeline.parameters.run-linux-arm-publish >>
-    jobs:
-    - linux-arm-publish:
-        context: release-env
-
-  publish-arm64-linux:
-    when: << pipeline.parameters.run-linux-arm64-publish >>
-    jobs:
-    - linux-arm64-publish:
-        context: release-env
-
-  publish-osx:
-    when: << pipeline.parameters.run-osx-publish >>
-    jobs:
-    - osx-publish-x64:
-        context: release-env
-
-  publish-mas:
-    when: << pipeline.parameters.run-mas-publish >>
-    jobs:
-    - mas-publish:
-        context: release-env
-
-  publish-osx-arm64:
-    when: << pipeline.parameters.run-osx-publish-arm64 >>
-    jobs:
-    - osx-publish-arm64:
-        context: release-env
-
-  publish-mas-arm64:
-    when: << pipeline.parameters.run-mas-publish-arm64 >>
-    jobs:
-    - mas-publish-arm64:
         context: release-env
 
   publish-macos:

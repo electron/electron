@@ -616,7 +616,7 @@ std::string ElectronBrowserClient::GetGeolocationApiKey() {
 
 scoped_refptr<content::QuotaPermissionContext>
 ElectronBrowserClient::CreateQuotaPermissionContext() {
-  return new ElectronQuotaPermissionContext;
+  return base::MakeRefCounted<ElectronQuotaPermissionContext>();
 }
 
 content::GeneratedCodeCacheSettings
@@ -1097,7 +1097,7 @@ class FileURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
     mojo::PendingRemote<network::mojom::URLLoaderFactory> pending_remote;
 
     // The FileURLLoaderFactory will delete itself when there are no more
-    // receivers - see the NonNetworkURLLoaderFactoryBase::OnDisconnect method.
+    // receivers - see the SelfDeletingURLLoaderFactory::OnDisconnect method.
     new FileURLLoaderFactory(child_id,
                              pending_remote.InitWithNewPipeAndPassReceiver());
 

@@ -40,6 +40,7 @@
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/error_thrower.h"
+#include "ui/base/models/image_model.h"
 #include "ui/gfx/image/image.h"
 
 #if BUILDFLAG(ENABLE_PRINTING)
@@ -419,6 +420,7 @@ class WebContents : public gin::Wrappable<WebContents>,
   void SetTemporaryZoomLevel(double level);
   void DoGetZoomLevel(
       electron::mojom::ElectronBrowser::DoGetZoomLevelCallback callback);
+  void SetImageAnimationPolicy(const std::string& new_policy);
 
  private:
   // Does not manage lifetime of |web_contents|.
@@ -562,7 +564,6 @@ class WebContents : public gin::Wrappable<WebContents>,
       content::NavigationHandle* navigation_handle) override;
   void DidFinishNavigation(
       content::NavigationHandle* navigation_handle) override;
-  bool OnMessageReceived(const IPC::Message& message) override;
   void WebContentsDestroyed() override;
   void NavigationEntryCommitted(
       const content::LoadCommittedDetails& load_details) override;
@@ -614,7 +615,7 @@ class WebContents : public gin::Wrappable<WebContents>,
 
   // content::WebContentsDelegate:
   bool CanOverscrollContent() override;
-  content::ColorChooser* OpenColorChooser(
+  std::unique_ptr<content::ColorChooser> OpenColorChooser(
       content::WebContents* web_contents,
       SkColor color,
       const std::vector<blink::mojom::ColorSuggestionPtr>& suggestions)
@@ -660,7 +661,7 @@ class WebContents : public gin::Wrappable<WebContents>,
 
   // InspectableWebContentsViewDelegate:
 #if defined(TOOLKIT_VIEWS) && !defined(OS_MAC)
-  gfx::ImageSkia GetDevToolsWindowIcon() override;
+  ui::ImageModel GetDevToolsWindowIcon() override;
 #endif
 #if defined(OS_LINUX)
   void GetDevToolsWindowWMClass(std::string* name,

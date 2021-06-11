@@ -27,6 +27,7 @@
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
+#include "content/public/browser/color_chooser.h"
 #include "content/public/browser/file_select_listener.h"
 #include "content/public/browser/file_url_loader.h"
 #include "content/public/browser/host_zoom_map.h"
@@ -613,8 +614,7 @@ void InspectableWebContents::AddDevToolsExtensionsToClient() {
         web_contents_->GetMainFrame()->GetProcess()->GetID(),
         url::Origin::Create(extension->url()));
 
-    std::unique_ptr<base::DictionaryValue> extension_info(
-        new base::DictionaryValue());
+    auto extension_info = std::make_unique<base::DictionaryValue>();
     extension_info->SetString("startPage", devtools_page_url.spec());
     extension_info->SetString("name", extension->name());
     extension_info->SetBoolean(
@@ -994,7 +994,7 @@ void InspectableWebContents::CloseContents(content::WebContents* source) {
   CloseDevTools();
 }
 
-content::ColorChooser* InspectableWebContents::OpenColorChooser(
+std::unique_ptr<content::ColorChooser> InspectableWebContents::OpenColorChooser(
     content::WebContents* source,
     SkColor color,
     const std::vector<blink::mojom::ColorSuggestionPtr>& suggestions) {

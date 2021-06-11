@@ -52,8 +52,7 @@ NotificationPresenter* NotificationPresenter::Create() {
     return new NotificationPresenterWin7;
   if (!WindowsToastNotification::Initialize())
     return nullptr;
-  std::unique_ptr<NotificationPresenterWin> presenter(
-      new NotificationPresenterWin);
+  auto presenter = std::make_unique<NotificationPresenterWin>();
   if (!presenter->Init())
     return nullptr;
 

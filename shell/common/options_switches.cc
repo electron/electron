@@ -171,6 +171,9 @@ const char kJavaScript[] = "javascript";
 // Enables image support.
 const char kImages[] = "images";
 
+// Image animation policy.
+const char kImageAnimationPolicy[] = "imageAnimationPolicy";
+
 // Make TextArea elements resizable.
 const char kTextAreasAreResizable[] = "textAreasAreResizable";
 

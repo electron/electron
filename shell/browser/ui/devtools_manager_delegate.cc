@@ -44,8 +44,8 @@ class TCPServerSocketFactory : public content::DevToolsSocketFactory {
  private:
   // content::ServerSocketFactory.
   std::unique_ptr<net::ServerSocket> CreateForHttpServer() override {
-    std::unique_ptr<net::ServerSocket> socket(
-        new net::TCPServerSocket(nullptr, net::NetLogSource()));
+    auto socket =
+        std::make_unique<net::TCPServerSocket>(nullptr, net::NetLogSource());
     if (socket->ListenWithAddressAndPort(address_, port_, 10) != net::OK)
       return std::unique_ptr<net::ServerSocket>();
 
@@ -78,8 +78,7 @@ std::unique_ptr<content::DevToolsSocketFactory> CreateSocketFactory() {
       DLOG(WARNING) << "Invalid http debugger port number " << temp_port;
     }
   }
-  return std::unique_ptr<content::DevToolsSocketFactory>(
-      new TCPServerSocketFactory("127.0.0.1", port));
+  return std::make_unique<TCPServerSocketFactory>("127.0.0.1", port);
 }
 
 const char kBrowserCloseMethod[] = "Browser.close";
