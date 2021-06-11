@@ -11,6 +11,8 @@
 #include "gin/converter.h"
 #include "gin/wrappable.h"
 
+#include "shell/common/gin_converters/std_converter.h"
+
 namespace gin_helper {
 
 namespace internal {
