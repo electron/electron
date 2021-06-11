@@ -344,7 +344,7 @@ void SimpleURLLoaderWrapper::OnAuthRequired(
             net::AuthCredentials(username_str, password_str));
       },
       std::move(auth_responder));
-  Emit("login", auth_info, std::move(cb));
+  Emit("login", auth_info, base::AdaptCallbackForRepeating(std::move(cb)));
 }
 
 void SimpleURLLoaderWrapper::OnSSLCertificateError(
@@ -549,7 +549,8 @@ void SimpleURLLoaderWrapper::OnDataReceived(base::StringPiece string_piece,
   auto array_buffer = v8::ArrayBuffer::New(isolate, string_piece.size());
   auto backing_store = array_buffer->GetBackingStore();
   memcpy(backing_store->Data(), string_piece.data(), string_piece.size());
-  Emit("data", array_buffer, std::move(resume));
+  Emit("data", array_buffer,
+       base::AdaptCallbackForRepeating(std::move(resume)));
 }
 
 void SimpleURLLoaderWrapper::OnComplete(bool success) {
