@@ -543,9 +543,14 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
   }
 #endif
 
-  base::FilePath user_data_dir;
-  if (base::PathService::Get(chrome::DIR_USER_DATA, &user_data_dir))
-    command_line->AppendSwitchPath(::switches::kUserDataDir, user_data_dir);
+  // The zygote process is booted before JS runs, so DIR_USER_DATA isn't usable
+  // at that time. It doesn't need --user-data-dir to be correct anyway, since
+  // the zygote itself doesn't access anything in that directory.
+  if (process_type != ::switches::kZygoteProcess) {
+    base::FilePath user_data_dir;
+    if (base::PathService::Get(chrome::DIR_USER_DATA, &user_data_dir))
+      command_line->AppendSwitchPath(::switches::kUserDataDir, user_data_dir);
+  }
 
   if (process_type == ::switches::kUtilityProcess ||
       process_type == ::switches::kRendererProcess) {
