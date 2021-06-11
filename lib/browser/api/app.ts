@@ -55,14 +55,6 @@ Object.defineProperty(app, 'applicationMenu', {
   }
 });
 
-(app as any).isPackaged = (() => {
-  const execFile = path.basename(process.execPath).toLowerCase();
-  if (process.platform === 'win32') {
-    return execFile !== 'electron.exe';
-  }
-  return execFile !== 'electron';
-})();
-
 // The native implementation is not provided on non-windows platforms
 app.setAppUserModelId = app.setAppUserModelId || (() => {});
 

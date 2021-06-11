@@ -23,7 +23,7 @@ ElectronDesktopWindowTreeHostWin::ElectronDesktopWindowTreeHostWin(
                                       desktop_native_widget_aura),
       native_window_view_(native_window_view) {}
 
-ElectronDesktopWindowTreeHostWin::~ElectronDesktopWindowTreeHostWin() {}
+ElectronDesktopWindowTreeHostWin::~ElectronDesktopWindowTreeHostWin() = default;
 
 bool ElectronDesktopWindowTreeHostWin::PreHandleMSG(UINT message,
                                                     WPARAM w_param,

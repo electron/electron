@@ -4,7 +4,6 @@
 
 #include "shell/browser/electron_speech_recognition_manager_delegate.h"
 
-#include <string>
 #include <utility>
 
 #include "base/callback.h"

@@ -4,8 +4,6 @@
 
 #include "shell/browser/cookie_change_notifier.h"
 
-#include <utility>
-
 #include "base/bind.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/storage_partition.h"

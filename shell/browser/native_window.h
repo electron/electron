@@ -6,21 +6,19 @@
 #define SHELL_BROWSER_NATIVE_WINDOW_H_
 
 #include <list>
-#include <map>
 #include <memory>
 #include <string>
-#include <tuple>
 #include <vector>
 
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
-#include "base/optional.h"
 #include "base/supports_user_data.h"
 #include "base/values.h"
 #include "content/public/browser/desktop_media_id.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "extensions/browser/app_window/size_constraints.h"
 #include "shell/browser/native_window_observer.h"
+#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/views/widget/widget_delegate.h"
 
 class SkRegion;
@@ -34,6 +32,7 @@ class Image;
 class Point;
 class Rect;
 class RectF;
+enum class ResizeEdge;
 class Size;
 }  // namespace gfx
 
@@ -99,7 +98,7 @@ class NativeWindow : public base::SupportsUserData,
   virtual bool IsNormal();
   virtual gfx::Rect GetNormalBounds() = 0;
   virtual void SetSizeConstraints(
-      const extensions::SizeConstraints& size_constraints);
+      const extensions::SizeConstraints& window_constraints);
   virtual extensions::SizeConstraints GetSizeConstraints() const;
   virtual void SetContentSizeConstraints(
       const extensions::SizeConstraints& size_constraints);
@@ -208,8 +207,8 @@ class NativeWindow : public base::SupportsUserData,
 #if defined(OS_MAC)
   virtual void SetWindowButtonVisibility(bool visible) = 0;
   virtual bool GetWindowButtonVisibility() const = 0;
-  virtual void SetTrafficLightPosition(base::Optional<gfx::Point> position) = 0;
-  virtual base::Optional<gfx::Point> GetTrafficLightPosition() const = 0;
+  virtual void SetTrafficLightPosition(absl::optional<gfx::Point> position) = 0;
+  virtual absl::optional<gfx::Point> GetTrafficLightPosition() const = 0;
   virtual void RedrawTrafficLights() = 0;
   virtual void UpdateFrame() = 0;
 #endif
@@ -277,6 +276,7 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyWindowRestore();
   void NotifyWindowMove();
   void NotifyWindowWillResize(const gfx::Rect& new_bounds,
+                              const gfx::ResizeEdge& edge,
                               bool* prevent_default);
   void NotifyWindowResize();
   void NotifyWindowResized();

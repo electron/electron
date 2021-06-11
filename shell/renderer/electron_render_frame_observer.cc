@@ -4,7 +4,6 @@
 
 #include "shell/renderer/electron_render_frame_observer.h"
 
-#include <string>
 #include <utility>
 #include <vector>
 

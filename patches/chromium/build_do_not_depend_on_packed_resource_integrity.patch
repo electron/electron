@@ -1,0 +1,68 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sattard@slack-corp.com>
+Date: Thu, 27 May 2021 17:21:07 -0700
+Subject: build: do not depend on packed_resource_integrity
+
+This ensures we do not depend on a target that does not exist when
+building Electron, electron generates its own .pak files via
+electron_repack and therefore this integrity target which is generated
+by the chrome_paks target does not exist.  This can not be upstreamed,
+if we ever align our .pak file generation with Chrome we can remove this
+patch.
+
+diff --git a/chrome/BUILD.gn b/chrome/BUILD.gn
+index 8e07f7000de932bc9b6bf484b1a9fce4d4580b4a..eac65b694c0a0857f73f75228b8d673bdfcd2b93 100644
+--- a/chrome/BUILD.gn
++++ b/chrome/BUILD.gn
+@@ -172,11 +172,16 @@ if (!is_android && !is_mac) {
+         "common/crash_keys.h",
+       ]
+ 
++      if (!is_electron_build) {
++        deps += [
++          ":packed_resources_integrity",
++        ]
++      }
++
+       deps += [
+         ":chrome_dll",
+         ":chrome_exe_version",
+         ":copy_first_run",
+-        ":packed_resources_integrity",
+         ":visual_elements_resources",
+         "//base",
+         "//build:branding_buildflags",
+diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
+index a7b5475c29acff9032ceb28f1237c4901559deba..db2b9ea0a08d6dc72afc67b305f628eb2ad67a38 100644
+--- a/chrome/browser/BUILD.gn
++++ b/chrome/browser/BUILD.gn
+@@ -4277,7 +4277,7 @@ static_library("browser") {
+ 
+     # On Windows, the hashes are embedded in //chrome:chrome_initial rather
+     # than here in :chrome_dll.
+-    if (!is_win) {
++    if (!is_win && !is_electron_build) {
+       deps += [ "//chrome:packed_resources_integrity" ]
+     }
+ 
+diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
+index d5f3e36ccf1aad7a88424befeed9d7be59cb4ad5..7a0809f33c376154720e204b1b0456bc59b341b7 100644
+--- a/chrome/test/BUILD.gn
++++ b/chrome/test/BUILD.gn
+@@ -5025,10 +5025,15 @@ test("unit_tests") {
+     assert(toolkit_views)
+     sources += [ "../browser/ui/startup/credential_provider_signin_info_fetcher_win_unittest.cc" ]
+     deps += [
+-      "//chrome:packed_resources_integrity",
+       "//chrome/browser/win/conflicts:unit_tests",
+       "//chrome/test:credential_provider_test_utils",
+     ]
++
++    if (!is_electron_build) {
++      deps += [
++        "//chrome:packed_resources_integrity",
++      ]
++    }
+   }
+ 
+   if (is_win || is_chromeos_ash || is_mac) {

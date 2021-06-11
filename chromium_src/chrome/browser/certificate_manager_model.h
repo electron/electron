@@ -5,7 +5,6 @@
 #ifndef CHROME_BROWSER_CERTIFICATE_MANAGER_MODEL_H_
 #define CHROME_BROWSER_CERTIFICATE_MANAGER_MODEL_H_
 
-#include <map>
 #include <memory>
 #include <string>
 

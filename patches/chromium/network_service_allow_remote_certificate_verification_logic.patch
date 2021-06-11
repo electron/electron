@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 9cdf5d553feb765a77da3b959a052e86daffdd2f..81acb80ef2a52b2133dcc59a1214723345095f61 100644
+index 2928935f9c96adcf40173ddb80641c35d027d39e..dcba764424f06d0b1f331ef7dc7f33b307f6a659 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -117,6 +117,11 @@
@@ -22,7 +22,7 @@ index 9cdf5d553feb765a77da3b959a052e86daffdd2f..81acb80ef2a52b2133dcc59a12147233
  #if BUILDFLAG(IS_CT_SUPPORTED)
  #include "components/certificate_transparency/chrome_ct_policy_enforcer.h"
  #include "components/certificate_transparency/chrome_require_ct_delegate.h"
-@@ -375,6 +380,79 @@ bool SCTAuditingDelegate::IsSCTAuditingEnabled() {
+@@ -376,6 +381,79 @@ bool SCTAuditingDelegate::IsSCTAuditingEnabled() {
  
  }  // namespace
  
@@ -102,7 +102,7 @@ index 9cdf5d553feb765a77da3b959a052e86daffdd2f..81acb80ef2a52b2133dcc59a12147233
  constexpr uint32_t NetworkContext::kMaxOutstandingRequestsPerProcess;
  
  NetworkContext::PendingCertVerify::PendingCertVerify() = default;
-@@ -574,6 +652,13 @@ void NetworkContext::SetClient(
+@@ -575,6 +653,13 @@ void NetworkContext::SetClient(
    client_.Bind(std::move(client));
  }
  
@@ -116,7 +116,7 @@ index 9cdf5d553feb765a77da3b959a052e86daffdd2f..81acb80ef2a52b2133dcc59a12147233
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -1933,6 +2018,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -1952,6 +2037,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
          std::move(cert_verifier));
      cert_verifier = base::WrapUnique(cert_verifier_with_trust_anchors_);
  #endif  // BUILDFLAG(IS_CHROMEOS_ASH)
@@ -127,7 +127,7 @@ index 9cdf5d553feb765a77da3b959a052e86daffdd2f..81acb80ef2a52b2133dcc59a12147233
  
    builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 89451c626bee5a9970a1f77f2739ce03a01e6b30..22e155061860f6782b261205f6297c09f8c6e1fa 100644
+index a0fbfe19e9c0a5ff841fd8673b331486f3b698fd..093a9bcf105b925f6c8a1491f623adcfedf4aa51 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -90,6 +90,7 @@ class DomainReliabilityMonitor;
@@ -147,7 +147,7 @@ index 89451c626bee5a9970a1f77f2739ce03a01e6b30..22e155061860f6782b261205f6297c09
    void ResetURLLoaderFactories() override;
    void GetCookieManager(
        mojo::PendingReceiver<mojom::CookieManager> receiver) override;
-@@ -696,6 +699,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -700,6 +703,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    CertVerifierWithTrustAnchors* cert_verifier_with_trust_anchors_ = nullptr;
  #endif
  
@@ -157,10 +157,10 @@ index 89451c626bee5a9970a1f77f2739ce03a01e6b30..22e155061860f6782b261205f6297c09
    // CertNetFetcher is not used by the current platform, or if the actual
    // net::CertVerifier is instantiated outside of the network service.
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index e24ec4cb3c49ade12be048d96aaca2f672fb292f..6f830a84d20e39b802b44465882f9ae0627a0759 100644
+index 17693738bb1bc2d239639942816259f4b910fe5c..a1ca0c3521cc26fd5a6ee83385516d1623e749ed 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
-@@ -192,6 +192,17 @@ struct CTPolicy {
+@@ -189,6 +189,17 @@ struct CTPolicy {
    array<string> excluded_legacy_spkis;
  };
  
@@ -178,7 +178,7 @@ index e24ec4cb3c49ade12be048d96aaca2f672fb292f..6f830a84d20e39b802b44465882f9ae0
  // Parameters for constructing a network context.
  struct NetworkContextParams {
    // Name used by memory tools to identify the context.
-@@ -732,6 +743,9 @@ interface NetworkContext {
+@@ -723,6 +734,9 @@ interface NetworkContext {
    // Sets a client for this network context.
    SetClient(pending_remote<NetworkContextClient> client);
  

@@ -1,0 +1,21 @@
+<script>
+  const ipcRenderer = require('electron').ipcRenderer;
+  navigator.serviceWorker.register('service-worker.js', {scope: './'}).then(() => {
+    if (navigator.serviceWorker.controller) {
+      var xhr = new XMLHttpRequest();
+      xhr.open('GET', 'sw://dummy/echo');
+      xhr.setRequestHeader('X-Mock-Response', 'yes');
+      xhr.addEventListener('error', error => {
+        ipcRenderer.send('error', `${error.message}\n${error.stack}`);
+      })
+      xhr.addEventListener('load', () => {
+        ipcRenderer.send('response', xhr.responseText);
+      });
+      xhr.send();
+    } else {
+      ipcRenderer.send('reload');
+    }
+  }).catch(error => {
+    ipcRenderer.send('error', `${error.message}\n${error.stack}`);
+  })
+</script>

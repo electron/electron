@@ -12,7 +12,6 @@
 #include "base/callback_helpers.h"
 #include "base/location.h"
 #include "base/memory/ptr_util.h"
-#include "base/optional.h"
 #include "base/single_thread_task_runner.h"
 #include "base/task/post_task.h"
 #include "base/time/time.h"
@@ -32,6 +31,7 @@
 #include "content/public/browser/render_process_host.h"
 #include "gpu/command_buffer/client/gl_helper.h"
 #include "media/base/video_frame.h"
+#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "third_party/blink/public/common/input/web_input_event.h"
 #include "third_party/skia/include/core/SkCanvas.h"
 #include "ui/compositor/compositor.h"
@@ -183,9 +183,9 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
       frame_rate_(frame_rate),
       size_(initial_size),
       painting_(painting),
-      cursor_manager_(new content::CursorManager(this)),
+      cursor_manager_(std::make_unique<content::CursorManager>(this)),
       mouse_wheel_phase_handler_(this),
-      backing_(new SkBitmap) {
+      backing_(std::make_unique<SkBitmap>()) {
   DCHECK(render_widget_host_);
   DCHECK(!render_widget_host_->GetView());
 
@@ -195,7 +195,7 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
         {display::Display(display::kDefaultDisplayId)},
         display::kDefaultDisplayId, display::kDefaultDisplayId);
   }
-  display::Display current_display = *display_list_.GetCurrentDisplayIterator();
+  display::Display current_display = display_list_.GetCurrentDisplay();
   current_display.set_device_scale_factor(kDefaultScaleFactor);
   display_list_.UpdateDisplay(current_display);
 
@@ -353,7 +353,7 @@ void OffScreenRenderWidgetHostView::SetBackgroundColor(SkColor color) {
   }
 }
 
-base::Optional<SkColor> OffScreenRenderWidgetHostView::GetBackgroundColor() {
+absl::optional<SkColor> OffScreenRenderWidgetHostView::GetBackgroundColor() {
   return background_color_;
 }
 
@@ -498,9 +498,9 @@ gfx::Rect OffScreenRenderWidgetHostView::GetBoundsInRootWindow() {
   return gfx::Rect(size_);
 }
 
-base::Optional<content::DisplayFeature>
+absl::optional<content::DisplayFeature>
 OffScreenRenderWidgetHostView::GetDisplayFeature() {
-  return base::nullopt;
+  return absl::nullopt;
 }
 
 void OffScreenRenderWidgetHostView::SetDisplayFeatureForTesting(
@@ -1001,7 +1001,7 @@ void OffScreenRenderWidgetHostView::ResizeRootLayer(bool force) {
         {display::Display(display::kDefaultDisplayId)},
         display::kDefaultDisplayId, display::kDefaultDisplayId);
   }
-  display::Display current_display = *display_list_.GetCurrentDisplayIterator();
+  display::Display current_display = display_list_.GetCurrentDisplay();
   current_display.set_device_scale_factor(scaleFactor);
   display_list_.UpdateDisplay(current_display);
 

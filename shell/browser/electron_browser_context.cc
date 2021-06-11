@@ -103,7 +103,7 @@ ElectronBrowserContext::browser_context_map() {
 ElectronBrowserContext::ElectronBrowserContext(const std::string& partition,
                                                bool in_memory,
                                                base::DictionaryValue options)
-    : storage_policy_(new SpecialStoragePolicy),
+    : storage_policy_(base::MakeRefCounted<SpecialStoragePolicy>()),
       protocol_registry_(new ProtocolRegistry),
       in_memory_(in_memory),
       ssl_config_(network::mojom::SSLConfig::New()) {
@@ -154,7 +154,7 @@ ElectronBrowserContext::ElectronBrowserContext(const std::string& partition,
 
 ElectronBrowserContext::~ElectronBrowserContext() {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
-  NotifyWillBeDestroyed(this);
+  NotifyWillBeDestroyed();
   // Notify any keyed services of browser context destruction.
   BrowserContextDependencyManager::GetInstance()->DestroyBrowserContextServices(
       this);
@@ -184,9 +184,9 @@ void ElectronBrowserContext::InitPrefs() {
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS) || \
     BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-  auto registry = WrapRefCounted(new user_prefs::PrefRegistrySyncable);
+  auto registry = base::MakeRefCounted<user_prefs::PrefRegistrySyncable>();
 #else
-  auto registry = WrapRefCounted(new PrefRegistrySimple);
+  auto registry = base::MakeRefCounted<PrefRegistrySimple>();
 #endif
 
   registry->RegisterFilePathPref(prefs::kSelectFileLastDirectory,
@@ -334,7 +334,7 @@ ElectronBrowserContext::GetURLLoaderFactory() {
       ->WillCreateURLLoaderFactory(
           this, nullptr, -1,
           content::ContentBrowserClient::URLLoaderFactoryType::kNavigation,
-          url::Origin(), base::nullopt, ukm::kInvalidSourceIdObj,
+          url::Origin(), absl::nullopt, ukm::kInvalidSourceIdObj,
           &factory_receiver, &header_client, nullptr, nullptr, nullptr);
 
   network::mojom::URLLoaderFactoryParamsPtr params =

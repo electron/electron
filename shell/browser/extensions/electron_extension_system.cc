@@ -92,7 +92,7 @@ void ElectronExtensionSystem::InitForRegularProfile(bool extensions_enabled) {
   if (!browser_context_->IsOffTheRecord())
     LoadComponentExtensions();
 
-  management_policy_.reset(new ManagementPolicy);
+  management_policy_ = std::make_unique<ManagementPolicy>();
 }
 
 std::unique_ptr<base::DictionaryValue> ParseManifest(
@@ -160,7 +160,7 @@ scoped_refptr<ValueStoreFactory> ElectronExtensionSystem::store_factory() {
 
 InfoMap* ElectronExtensionSystem::info_map() {
   if (!info_map_.get())
-    info_map_ = new InfoMap;
+    info_map_ = base::MakeRefCounted<InfoMap>();
   return info_map_.get();
 }
 

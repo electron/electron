@@ -56,12 +56,7 @@ declare namespace Electron {
   }
 
   interface WebContents {
-    _getURL(): string;
     _loadURL(url: string, options: ElectronInternal.LoadURLOptions): void;
-    _stop(): void;
-    _goBack(): void;
-    _goForward(): void;
-    _goToOffset(offset: number): void;
     getOwnerBrowserWindow(): Electron.BrowserWindow;
     getWebPreferences(): Electron.WebPreferences;
     getLastWebPreferences(): Electron.WebPreferences;
@@ -118,9 +113,7 @@ declare namespace Electron {
     _executeCommand(event: any, id: number): void;
     _menuWillShow(): void;
     commandsMap: Record<string, MenuItem>;
-    groupsMap: Record<string, {
-      checked: boolean;
-    }[]>;
+    groupsMap: Record<string, MenuItem[]>;
     getItemCount(): number;
     popupAt(window: BaseWindow, x: number, y: number, positioning: number, callback: () => void): void;
     closePopupAt(id: number): void;

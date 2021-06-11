@@ -9,7 +9,6 @@
 #endif
 
 #include <memory>
-#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -146,8 +145,9 @@ class NativeWindowClientView : public views::ClientView {
 NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
                                      NativeWindow* parent)
     : NativeWindow(options, parent),
-      root_view_(new RootView(this)),
-      keyboard_event_handler_(new views::UnhandledKeyboardEventHandler) {
+      root_view_(std::make_unique<RootView>(this)),
+      keyboard_event_handler_(
+          std::make_unique<views::UnhandledKeyboardEventHandler>()) {
   options.Get(options::kTitle, &title_);
 
   bool menu_bar_autohide;
@@ -217,6 +217,9 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
 #endif
 
   widget()->Init(std::move(params));
+#if defined(OS_WIN)
+  SetCanResize(resizable_);
+#endif
 
   bool fullscreen = false;
   options.Get(options::kFullscreen, &fullscreen);
@@ -332,12 +335,12 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
     last_window_state_ = ui::SHOW_STATE_NORMAL;
 #endif
 
-#if defined(OS_LINUX)
-  // Listen to move events.
+  // Listen to mouse events.
   aura::Window* window = GetNativeWindow();
   if (window)
     window->AddPreTargetHandler(this);
 
+#if defined(OS_LINUX)
   // On linux after the widget is initialized we might have to force set the
   // bounds if the bounds are smaller than the current display
   SetBounds(gfx::Rect(GetPosition(), bounds.size()), false);
@@ -352,11 +355,9 @@ NativeWindowViews::~NativeWindowViews() {
   SetForwardMouseMessages(false);
 #endif
 
-#if defined(OS_LINUX)
   aura::Window* window = GetNativeWindow();
   if (window)
     window->RemovePreTargetHandler(this);
-#endif
 }
 
 void NativeWindowViews::SetGTKDarkThemeEnabled(bool use_dark_theme) {
@@ -717,6 +718,7 @@ void NativeWindowViews::SetResizable(bool resizable) {
     FlipWindowStyle(GetAcceleratedWidget(), resizable, WS_THICKFRAME);
 #endif
   resizable_ = resizable;
+  SetCanResize(resizable_);
 }
 
 bool NativeWindowViews::MoveAbove(const std::string& sourceId) {
@@ -746,8 +748,8 @@ bool NativeWindowViews::MoveAbove(const std::string& sourceId) {
 }
 
 void NativeWindowViews::MoveTop() {
-  // TODO(julien.isorce): fix chromium in order to use existing
-  // widget()->StackAtTop().
+// TODO(julien.isorce): fix chromium in order to use existing
+// widget()->StackAtTop().
 #if defined(OS_WIN)
   gfx::Point pos = GetPosition();
   gfx::Size size = GetSize();
@@ -767,7 +769,7 @@ bool NativeWindowViews::IsResizable() {
   if (has_frame())
     return ::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE) & WS_THICKFRAME;
 #endif
-  return CanResize();
+  return resizable_;
 }
 
 void NativeWindowViews::SetAspectRatio(double aspect_ratio,
@@ -1461,11 +1463,9 @@ void NativeWindowViews::OnWidgetBoundsChanged(views::Widget* changed_widget,
 }
 
 void NativeWindowViews::OnWidgetDestroying(views::Widget* widget) {
-#if defined(OS_LINUX)
   aura::Window* window = GetNativeWindow();
   if (window)
     window->RemovePreTargetHandler(this);
-#endif
 }
 
 void NativeWindowViews::OnWidgetDestroyed(views::Widget* changed_widget) {
@@ -1486,10 +1486,6 @@ void NativeWindowViews::DeleteDelegate() {
 
 views::View* NativeWindowViews::GetInitiallyFocusedView() {
   return focused_view_;
-}
-
-bool NativeWindowViews::CanResize() const {
-  return resizable_;
 }
 
 bool NativeWindowViews::CanMaximize() const {
@@ -1531,7 +1527,7 @@ bool NativeWindowViews::ShouldDescendIntoChildForEventHandling(
     return false;
 
   // And the events on border for dragging resizable frameless window.
-  if (!has_frame() && CanResize()) {
+  if (!has_frame() && resizable_) {
     auto* frame =
         static_cast<FramelessView*>(widget()->non_client_view()->frame_view());
     return frame->ResizingBorderHitTest(location) == HTNOWHERE;
@@ -1583,17 +1579,20 @@ void NativeWindowViews::HandleKeyboardEvent(
   root_view_->HandleKeyEvent(event);
 }
 
-#if defined(OS_LINUX)
 void NativeWindowViews::OnMouseEvent(ui::MouseEvent* event) {
   if (event->type() != ui::ET_MOUSE_PRESSED)
     return;
 
+  // Alt+Click should not toggle menu bar.
+  root_view_->ResetAltState();
+
+#if defined(OS_LINUX)
   if (event->changed_button_flags() == ui::EF_BACK_MOUSE_BUTTON)
     NotifyWindowExecuteAppCommand(kBrowserBackward);
   else if (event->changed_button_flags() == ui::EF_FORWARD_MOUSE_BUTTON)
     NotifyWindowExecuteAppCommand(kBrowserForward);
-}
 #endif
+}
 
 ui::WindowShowState NativeWindowViews::GetRestoredState() {
   if (IsMaximized())

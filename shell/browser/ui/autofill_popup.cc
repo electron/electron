@@ -4,8 +4,6 @@
 
 #include <algorithm>
 #include <memory>
-
-#include <utility>
 #include <vector>
 
 #include "base/i18n/rtl.h"

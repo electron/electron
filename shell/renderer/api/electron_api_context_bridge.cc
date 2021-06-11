@@ -4,7 +4,6 @@
 
 #include "shell/renderer/api/electron_api_context_bridge.h"
 
-#include <map>
 #include <memory>
 #include <set>
 #include <string>
@@ -24,6 +23,7 @@
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/world_ids.h"
+#include "third_party/blink/public/web/web_blob.h"
 #include "third_party/blink/public/web/web_element.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 
@@ -34,6 +34,8 @@ const base::Feature kContextBridgeMutability{"ContextBridgeMutability",
 }
 
 namespace electron {
+
+content::RenderFrame* GetRenderFrame(v8::Local<v8::Object> value);
 
 namespace api {
 
@@ -54,16 +56,6 @@ static int kMaxRecursion = 1000;
 // Returns true if |maybe| is both a value, and that value is true.
 inline bool IsTrue(v8::Maybe<bool> maybe) {
   return maybe.IsJust() && maybe.FromJust();
-}
-
-content::RenderFrame* GetRenderFrame(const v8::Local<v8::Object>& value) {
-  v8::Local<v8::Context> context = value->CreationContext();
-  if (context.IsEmpty())
-    return nullptr;
-  blink::WebLocalFrame* frame = blink::WebLocalFrame::FrameForContext(context);
-  if (!frame)
-    return nullptr;
-  return content::RenderFrame::FromWebFrame(frame);
 }
 
 // Sourced from "extensions/renderer/v8_schema_registry.cc"
@@ -228,9 +220,9 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
     // Make the promise a shared_ptr so that when the original promise is
     // freed the proxy promise is correctly freed as well instead of being
     // left dangling
-    std::shared_ptr<gin_helper::Promise<v8::Local<v8::Value>>> proxied_promise(
-        new gin_helper::Promise<v8::Local<v8::Value>>(
-            destination_context->GetIsolate()));
+    auto proxied_promise =
+        std::make_shared<gin_helper::Promise<v8::Local<v8::Value>>>(
+            destination_context->GetIsolate());
     v8::Local<v8::Promise> proxied_promise_handle =
         proxied_promise->GetHandle();
 
@@ -351,6 +343,14 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
   if (!elem.IsNull()) {
     v8::Context::Scope destination_context_scope(destination_context);
     return v8::MaybeLocal<v8::Value>(elem.ToV8Value(
+        destination_context->Global(), destination_context->GetIsolate()));
+  }
+
+  // Custom logic to "clone" Blob references
+  blink::WebBlob blob = blink::WebBlob::FromV8Value(value);
+  if (!blob.IsNull()) {
+    v8::Context::Scope destination_context_scope(destination_context);
+    return v8::MaybeLocal<v8::Value>(blob.ToV8Value(
         destination_context->Global(), destination_context->GetIsolate()));
   }
 
@@ -581,8 +581,8 @@ void ExposeAPIInMainWorld(v8::Isolate* isolate,
     return;
   }
 
-  v8::Local<v8::Context> isolated_context =
-      frame->WorldScriptContext(args->isolate(), WorldIDs::ISOLATED_WORLD_ID);
+  v8::Local<v8::Context> isolated_context = frame->GetScriptContextFromWorldId(
+      args->isolate(), WorldIDs::ISOLATED_WORLD_ID);
 
   {
     context_bridge::ObjectCache object_cache;

@@ -5,7 +5,6 @@
 #ifndef SHELL_BROWSER_ZOOM_LEVEL_DELEGATE_H_
 #define SHELL_BROWSER_ZOOM_LEVEL_DELEGATE_H_
 
-#include <memory>
 #include <string>
 
 #include "base/files/file_path.h"

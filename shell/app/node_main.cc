@@ -158,7 +158,7 @@ int NodeMain(int argc, char* argv[]) {
     // Feed gin::PerIsolateData with a task runner.
     argv = uv_setup_args(argc, argv);
     uv_loop_t* loop = uv_default_loop();
-    scoped_refptr<UvTaskRunner> uv_task_runner(new UvTaskRunner(loop));
+    auto uv_task_runner = base::MakeRefCounted<UvTaskRunner>(loop);
     base::ThreadTaskRunnerHandle handle(uv_task_runner);
 
     // Initialize feature list.

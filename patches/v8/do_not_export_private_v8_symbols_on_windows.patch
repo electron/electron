@@ -12,10 +12,10 @@ This patch can be safely removed if, when it is removed, `node.lib` does not
 contain any standard C++ library exports (e.g. `std::ostringstream`).
 
 diff --git a/BUILD.gn b/BUILD.gn
-index aee9d655d521cd72856c32be29b16b38fbb186f2..e3f5ded1f477fdb9c894854ed0601535dce3f818 100644
+index 3eeac10700fa06790b0691b0b52d9c413a79a94f..49fd11008d1841e6d3868fc0546d8703c6c3e554 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -505,6 +505,10 @@ config("internal_config") {
+@@ -521,6 +521,10 @@ config("internal_config") {
      ":cppgc_header_features",
    ]
  
@@ -27,10 +27,10 @@ index aee9d655d521cd72856c32be29b16b38fbb186f2..e3f5ded1f477fdb9c894854ed0601535
      defines += [ "BUILDING_V8_SHARED" ]
    }
 diff --git a/src/base/macros.h b/src/base/macros.h
-index 49a06b87da5d4fa95ed52f5e0214ef4e9eba54f4..e878feb5c16b4b469de0a2c763681b5b63688bb7 100644
+index 99ccd28a1db58d0fa938025dbf28c5490e04ca15..b36cf6a2b43741b7b72aaa6896787ce621d09d9c 100644
 --- a/src/base/macros.h
 +++ b/src/base/macros.h
-@@ -388,13 +388,17 @@ bool is_inbounds(float_t v) {
+@@ -381,13 +381,17 @@ bool is_inbounds(float_t v) {
  #ifdef V8_OS_WIN
  
  // Setup for Windows shared library export.

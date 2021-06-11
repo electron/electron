@@ -8,10 +8,10 @@
 #include <type_traits>
 #include <utility>
 
-#include "base/optional.h"
 #include "gin/dictionary.h"
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_helper/function_template.h"
+#include "third_party/abseil-cpp/absl/types/optional.h"
 
 namespace gin_helper {
 
@@ -61,9 +61,9 @@ class Dictionary : public gin::Dictionary {
     return !result.IsNothing() && result.FromJust();
   }
 
-  // Like normal Get but put result in an base::Optional.
+  // Like normal Get but put result in an absl::optional.
   template <typename T>
-  bool GetOptional(base::StringPiece key, base::Optional<T>* out) const {
+  bool GetOptional(base::StringPiece key, absl::optional<T>* out) const {
     T ret;
     if (Get(key, &ret)) {
       out->emplace(std::move(ret));

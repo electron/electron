@@ -6,7 +6,6 @@
 #define SHELL_BROWSER_API_ELECTRON_API_DEBUGGER_H_
 
 #include <map>
-#include <string>
 
 #include "base/callback.h"
 #include "base/values.h"

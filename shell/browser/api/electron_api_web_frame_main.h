@@ -5,7 +5,6 @@
 #ifndef SHELL_BROWSER_API_ELECTRON_API_WEB_FRAME_MAIN_H_
 #define SHELL_BROWSER_API_ELECTRON_API_WEB_FRAME_MAIN_H_
 
-#include <memory>
 #include <string>
 #include <vector>
 
@@ -13,6 +12,7 @@
 #include "base/process/process.h"
 #include "gin/handle.h"
 #include "gin/wrappable.h"
+#include "mojo/public/cpp/bindings/remote.h"
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/pinnable.h"
 #include "third_party/blink/public/mojom/page/page_visibility_state.mojom-forward.h"
@@ -88,7 +88,7 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
   void PostMessage(v8::Isolate* isolate,
                    const std::string& channel,
                    v8::Local<v8::Value> message_value,
-                   base::Optional<v8::Local<v8::Value>> transfer);
+                   absl::optional<v8::Local<v8::Value>> transfer);
 
   int FrameTreeNodeID() const;
   std::string Name() const;

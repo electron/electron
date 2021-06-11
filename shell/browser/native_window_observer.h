@@ -18,7 +18,8 @@
 
 namespace gfx {
 class Rect;
-}
+enum class ResizeEdge;
+}  // namespace gfx
 
 namespace electron {
 
@@ -71,6 +72,7 @@ class NativeWindowObserver : public base::CheckedObserver {
   virtual void OnWindowMinimize() {}
   virtual void OnWindowRestore() {}
   virtual void OnWindowWillResize(const gfx::Rect& new_bounds,
+                                  const gfx::ResizeEdge& edge,
                                   bool* prevent_default) {}
   virtual void OnWindowResize() {}
   virtual void OnWindowResized() {}

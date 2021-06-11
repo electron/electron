@@ -22,6 +22,7 @@
 #include "electron/buildflags/buildflags.h"
 #include "media/blink/multibuffer_data_source.h"
 #include "printing/buildflags/buildflags.h"
+#include "shell/browser/api/electron_api_protocol.h"
 #include "shell/common/api/electron_api_native_image.h"
 #include "shell/common/color_util.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -88,17 +89,9 @@
 
 namespace electron {
 
-namespace {
+content::RenderFrame* GetRenderFrame(v8::Local<v8::Object> value);
 
-content::RenderFrame* GetRenderFrame(v8::Local<v8::Object> value) {
-  v8::Local<v8::Context> context = value->CreationContext();
-  if (context.IsEmpty())
-    return nullptr;
-  blink::WebLocalFrame* frame = blink::WebLocalFrame::FrameForContext(context);
-  if (!frame)
-    return nullptr;
-  return content::RenderFrame::FromWebFrame(frame);
-}
+namespace {
 
 void SetIsWebView(v8::Isolate* isolate, v8::Local<v8::Object> object) {
   gin_helper::Dictionary dict(isolate, object);
@@ -119,6 +112,11 @@ RendererClientBase* g_renderer_client_base = nullptr;
 
 RendererClientBase::RendererClientBase() {
   auto* command_line = base::CommandLine::ForCurrentProcess();
+  // Parse --service-worker-schemes=scheme1,scheme2
+  std::vector<std::string> service_worker_schemes_list =
+      ParseSchemesCLISwitch(command_line, switches::kServiceWorkerSchemes);
+  for (const std::string& scheme : service_worker_schemes_list)
+    electron::api::AddServiceWorkerScheme(scheme);
   // Parse --standard-schemes=scheme1,scheme2
   std::vector<std::string> standard_schemes_list =
       ParseSchemesCLISwitch(command_line, switches::kStandardSchemes);
@@ -154,16 +152,6 @@ RendererClientBase::~RendererClientBase() {
   g_renderer_client_base = nullptr;
 }
 
-void RendererClientBase::DidCreateScriptContext(
-    v8::Handle<v8::Context> context,
-    content::RenderFrame* render_frame) {
-  // global.setHidden("contextId", `${processHostId}-${++next_context_id_}`)
-  auto context_id = base::StringPrintf(
-      "%s-%" PRId64, renderer_client_id_.c_str(), ++next_context_id_);
-  gin_helper::Dictionary global(context->GetIsolate(), context->Global());
-  global.SetHidden("contextId", context_id);
-}
-
 // static
 RendererClientBase* RendererClientBase::Get() {
   DCHECK(g_renderer_client_base);
@@ -173,9 +161,13 @@ RendererClientBase* RendererClientBase::Get() {
 void RendererClientBase::BindProcess(v8::Isolate* isolate,
                                      gin_helper::Dictionary* process,
                                      content::RenderFrame* render_frame) {
+  auto context_id = base::StringPrintf(
+      "%s-%" PRId64, renderer_client_id_.c_str(), ++next_context_id_);
+
   process->SetReadOnly("isMainFrame", render_frame->IsMainFrame());
   process->SetReadOnly("contextIsolated",
                        render_frame->GetBlinkPreferences().context_isolation);
+  process->SetReadOnly("contextId", context_id);
 }
 
 void RendererClientBase::RenderThreadStarted() {
@@ -187,7 +179,8 @@ void RendererClientBase::RenderThreadStarted() {
   extensions_client_.reset(CreateExtensionsClient());
   extensions::ExtensionsClient::Set(extensions_client_.get());
 
-  extensions_renderer_client_.reset(new ElectronExtensionsRendererClient);
+  extensions_renderer_client_ =
+      std::make_unique<ElectronExtensionsRendererClient>();
   extensions::ExtensionsRendererClient::Set(extensions_renderer_client_.get());
 
   thread->AddObserver(extensions_renderer_client_->GetDispatcher());
@@ -195,7 +188,7 @@ void RendererClientBase::RenderThreadStarted() {
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
   // Enables printing from Chrome PDF viewer.
-  pdf_print_client_.reset(new ChromePDFPrintClient());
+  pdf_print_client_ = std::make_unique<ChromePDFPrintClient>();
   pdf::PepperPDFHost::SetPrintClient(pdf_print_client_.get());
 #endif
 
@@ -479,19 +472,10 @@ v8::Local<v8::Context> RendererClientBase::GetContext(
   auto* render_frame = content::RenderFrame::FromWebFrame(frame);
   DCHECK(render_frame);
   if (render_frame && render_frame->GetBlinkPreferences().context_isolation)
-    return frame->WorldScriptContext(isolate, WorldIDs::ISOLATED_WORLD_ID);
+    return frame->GetScriptContextFromWorldId(isolate,
+                                              WorldIDs::ISOLATED_WORLD_ID);
   else
     return frame->MainWorldScriptContext();
-}
-
-v8::Local<v8::Value> RendererClientBase::RunScript(
-    v8::Local<v8::Context> context,
-    v8::Local<v8::String> source) {
-  auto maybe_script = v8::Script::Compile(context, source);
-  v8::Local<v8::Script> script;
-  if (!maybe_script.ToLocal(&script))
-    return v8::Local<v8::Value>();
-  return script->Run(context).ToLocalChecked();
 }
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)

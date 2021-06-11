@@ -15,8 +15,9 @@ namespace electron {
 namespace {
 
 // Return key code represented by |str|.
-ui::KeyboardCode KeyboardCodeFromKeyIdentifier(const std::string& s,
-                                               bool* shifted) {
+ui::KeyboardCode KeyboardCodeFromKeyIdentifier(
+    const std::string& s,
+    absl::optional<char16_t>* shifted_char) {
   std::string str = base::ToLowerASCII(s);
   if (str == "ctrl" || str == "control") {
     return ui::VKEY_CONTROL;
@@ -36,7 +37,7 @@ ui::KeyboardCode KeyboardCodeFromKeyIdentifier(const std::string& s,
   } else if (str == "altgr") {
     return ui::VKEY_ALTGR;
   } else if (str == "plus") {
-    *shifted = true;
+    shifted_char->emplace('+');
     return ui::VKEY_OEM_PLUS;
   } else if (str == "capslock") {
     return ui::VKEY_CAPITAL;
@@ -319,11 +320,17 @@ ui::KeyboardCode KeyboardCodeFromCharCode(char16_t c, bool* shifted) {
   }
 }
 
-ui::KeyboardCode KeyboardCodeFromStr(const std::string& str, bool* shifted) {
-  if (str.size() == 1)
-    return KeyboardCodeFromCharCode(str[0], shifted);
-  else
-    return KeyboardCodeFromKeyIdentifier(str, shifted);
+ui::KeyboardCode KeyboardCodeFromStr(const std::string& str,
+                                     absl::optional<char16_t>* shifted_char) {
+  if (str.size() == 1) {
+    bool shifted = false;
+    auto ret = KeyboardCodeFromCharCode(str[0], &shifted);
+    if (shifted)
+      shifted_char->emplace(str[0]);
+    return ret;
+  } else {
+    return KeyboardCodeFromKeyIdentifier(str, shifted_char);
+  }
 }
 
 }  // namespace electron

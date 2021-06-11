@@ -4,7 +4,6 @@
 
 #include "shell/browser/api/electron_api_menu.h"
 
-#include <map>
 #include <utility>
 
 #include "shell/browser/api/ui_event.h"
@@ -51,7 +50,8 @@ namespace api {
 
 gin::WrapperInfo Menu::kWrapperInfo = {gin::kEmbedderNativeGin};
 
-Menu::Menu(gin::Arguments* args) : model_(new ElectronMenuModel(this)) {
+Menu::Menu(gin::Arguments* args)
+    : model_(std::make_unique<ElectronMenuModel>(this)) {
   model_->AddObserver(this);
 
 #if defined(OS_MAC)
@@ -236,11 +236,13 @@ std::u16string Menu::GetToolTipAt(int index) const {
   return model_->GetToolTipAt(index);
 }
 
-std::u16string Menu::GetAcceleratorTextAt(int index) const {
+#ifdef DCHECK_IS_ON
+std::u16string Menu::GetAcceleratorTextAtForTesting(int index) const {
   ui::Accelerator accelerator;
   model_->GetAcceleratorAtWithParams(index, true, &accelerator);
   return accelerator.GetShortcutText();
 }
+#endif
 
 bool Menu::IsItemCheckedAt(int index) const {
   return model_->IsItemCheckedAt(index);
@@ -289,13 +291,15 @@ v8::Local<v8::ObjectTemplate> Menu::FillObjectTemplate(
       .SetMethod("getLabelAt", &Menu::GetLabelAt)
       .SetMethod("getSublabelAt", &Menu::GetSublabelAt)
       .SetMethod("getToolTipAt", &Menu::GetToolTipAt)
-      .SetMethod("getAcceleratorTextAt", &Menu::GetAcceleratorTextAt)
       .SetMethod("isItemCheckedAt", &Menu::IsItemCheckedAt)
       .SetMethod("isEnabledAt", &Menu::IsEnabledAt)
       .SetMethod("worksWhenHiddenAt", &Menu::WorksWhenHiddenAt)
       .SetMethod("isVisibleAt", &Menu::IsVisibleAt)
       .SetMethod("popupAt", &Menu::PopupAt)
       .SetMethod("closePopupAt", &Menu::ClosePopupAt)
+#ifdef DCHECK_IS_ON
+      .SetMethod("getAcceleratorTextAt", &Menu::GetAcceleratorTextAtForTesting)
+#endif
       .Build();
 }
 

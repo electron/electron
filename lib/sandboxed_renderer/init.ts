@@ -1,4 +1,3 @@
-/* eslint no-eval: "off" */
 /* global binding */
 import * as events from 'events';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
@@ -95,10 +94,6 @@ Object.defineProperty(preloadProcess, 'noDeprecation', {
     process.noDeprecation = value;
   }
 });
-
-// Expose process.contextId
-const contextId = v8Util.getHiddenValue<string>(global, 'contextId');
-Object.defineProperty(preloadProcess, 'contextId', { enumerable: true, value: contextId });
 
 process.on('loaded', () => (preloadProcess as events.EventEmitter).emit('loaded'));
 process.on('exit', () => (preloadProcess as events.EventEmitter).emit('exit'));

@@ -102,7 +102,7 @@ index e3fc1fb2bcab31d6a7cb325a892acb26dc00d4e4..fd654d6e514de416457c283caeb1895d
          arguments.push_back("--monitor-self");
        }
 diff --git a/components/crash/core/app/crashpad_win.cc b/components/crash/core/app/crashpad_win.cc
-index 686be7964d77dbba91a6265d157d05d97d5823fb..3e4585f7ba14650fa8b7e644b026147e0bac5119 100644
+index 7dd251b2fdda8c59bb630a5d3ee86e9e858f256e..93f1d5954651ef961c72b97885a708ecff2e9aa7 100644
 --- a/components/crash/core/app/crashpad_win.cc
 +++ b/components/crash/core/app/crashpad_win.cc
 @@ -89,6 +89,7 @@ base::FilePath PlatformCrashpadInitialization(

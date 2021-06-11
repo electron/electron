@@ -8,7 +8,6 @@
 #include <memory>
 #include <set>
 #include <string>
-#include <vector>
 
 #include "shell/renderer/renderer_client_base.h"
 

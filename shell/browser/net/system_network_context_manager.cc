@@ -4,15 +4,21 @@
 
 #include "shell/browser/net/system_network_context_manager.h"
 
+#include <memory>
 #include <string>
 #include <utility>
 
 #include "base/command_line.h"
+#include "base/path_service.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/net/chrome_mojo_proxy_resolver_factory.h"
+#include "chrome/common/chrome_switches.h"
+#include "components/os_crypt/os_crypt.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/common/content_features.h"
+#include "content/public/common/network_service_util.h"
+#include "electron/fuses.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "net/net_buildflags.h"
 #include "services/cert_verifier/public/mojom/cert_verifier_service_factory.mojom.h"
@@ -21,10 +27,16 @@
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
 #include "services/network/public/mojom/network_context.mojom.h"
+#include "shell/browser/browser.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/common/application_info.h"
+#include "shell/common/electron_paths.h"
 #include "shell/common/options_switches.h"
 #include "url/gurl.h"
+
+#if defined(OS_MAC)
+#include "components/os_crypt/keychain_password_mac.h"
+#endif
 
 namespace {
 
@@ -202,7 +214,8 @@ void SystemNetworkContextManager::DeleteInstance() {
 SystemNetworkContextManager::SystemNetworkContextManager(
     PrefService* pref_service)
     : proxy_config_monitor_(pref_service) {
-  shared_url_loader_factory_ = new URLLoaderFactoryForSystem(this);
+  shared_url_loader_factory_ =
+      base::MakeRefCounted<URLLoaderFactoryForSystem>(this);
 }
 
 SystemNetworkContextManager::~SystemNetworkContextManager() {
@@ -218,6 +231,39 @@ void SystemNetworkContextManager::OnNetworkServiceCreated(
   network_service->CreateNetworkContext(
       network_context_.BindNewPipeAndPassReceiver(),
       CreateNetworkContextParams());
+
+  if (electron::fuses::IsCookieEncryptionEnabled()) {
+    std::string app_name = electron::Browser::Get()->GetName();
+#if defined(OS_MAC)
+    *KeychainPassword::service_name = app_name + " Safe Storage";
+    *KeychainPassword::account_name = app_name;
+#endif
+    // The OSCrypt keys are process bound, so if network service is out of
+    // process, send it the required key.
+    if (content::IsOutOfProcessNetworkService()) {
+#if defined(OS_LINUX)
+      // c.f.
+      // https://source.chromium.org/chromium/chromium/src/+/master:chrome/browser/net/system_network_context_manager.cc;l=515;drc=9d82515060b9b75fa941986f5db7390299669ef1;bpv=1;bpt=1
+      const base::CommandLine& command_line =
+          *base::CommandLine::ForCurrentProcess();
+
+      network::mojom::CryptConfigPtr config =
+          network::mojom::CryptConfig::New();
+      config->application_name = app_name;
+      config->product_name = app_name;
+      // c.f.
+      // https://source.chromium.org/chromium/chromium/src/+/master:chrome/common/chrome_switches.cc;l=689;drc=9d82515060b9b75fa941986f5db7390299669ef1
+      config->store =
+          command_line.GetSwitchValueASCII(::switches::kPasswordStore);
+      config->should_use_preference =
+          command_line.HasSwitch(::switches::kEnableEncryptionSelection);
+      base::PathService::Get(electron::DIR_USER_DATA, &config->user_data_path);
+      network_service->SetCryptConfig(std::move(config));
+#else
+      network_service->SetEncryptionKey(OSCrypt::GetRawEncryptionKey());
+#endif
+    }
+  }
 }
 
 network::mojom::NetworkContextParamsPtr

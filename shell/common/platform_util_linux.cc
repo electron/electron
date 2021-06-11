@@ -190,7 +190,7 @@ void OpenExternal(const GURL& url,
 }
 
 bool MoveItemToTrash(const base::FilePath& full_path, bool delete_on_fail) {
-  std::unique_ptr<base::Environment> env(base::Environment::Create());
+  auto env = base::Environment::Create();
 
   // find the trash method
   std::string trash;

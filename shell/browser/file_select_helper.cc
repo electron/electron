@@ -4,7 +4,6 @@
 
 #include <memory>
 
-#include <string>
 #include <utility>
 #include <vector>
 
@@ -162,8 +161,7 @@ void FileSelectHelper::OnOpenDialogDone(gin_helper::Dictionary result) {
       std::vector<ui::SelectedFileInfo> files =
           ui::FilePathListToSelectedFileInfoList(paths);
       // If we are uploading a folder we need to enumerate its contents
-      if (mode_ == FileChooserParams::Mode::kUploadFolder &&
-          paths.size() >= 1) {
+      if (mode_ == FileChooserParams::Mode::kUploadFolder && !paths.empty()) {
         lister_base_dir_ = paths[0];
         EnumerateDirectory();
       } else {

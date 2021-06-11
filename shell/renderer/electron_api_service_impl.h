@@ -5,7 +5,6 @@
 #ifndef SHELL_RENDERER_ELECTRON_API_SERVICE_IMPL_H_
 #define SHELL_RENDERER_ELECTRON_API_SERVICE_IMPL_H_
 
-#include <queue>
 #include <string>
 
 #include "base/memory/weak_ptr.h"
