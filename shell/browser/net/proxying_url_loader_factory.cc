@@ -328,6 +328,14 @@ bool ProxyingURLLoaderFactory::IsForServiceWorkerScript() const {
 
 void ProxyingURLLoaderFactory::InProgressRequest::OnLoaderCreated(
     mojo::PendingReceiver<network::mojom::TrustedHeaderClient> receiver) {
+  // When CORS is involved there may be multiple network::URLLoader associated
+  // with this InProgressRequest, because CorsURLLoader may create a new
+  // network::URLLoader for the same request id in redirect handling - see
+  // CorsURLLoader::FollowRedirect. In such a case the old network::URLLoader
+  // is going to be detached fairly soon, so we don't need to take care of it.
+  // We need this explicit reset to avoid a DCHECK failure in mojo::Receiver.
+  header_client_receiver_.reset();
+
   header_client_receiver_.Bind(std::move(receiver));
   if (for_cors_preflight_) {
     // In this case we don't have |target_loader_| and
