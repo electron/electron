@@ -116,23 +116,6 @@ void InvalidParameterHandler(const wchar_t*,
 
 // TODO(nornagon): move path provider overriding to its own file in
 // shell/common
-bool GetDefaultCrashDumpsPath(base::FilePath* path) {
-  base::FilePath cur;
-  if (!base::PathService::Get(chrome::DIR_USER_DATA, &cur))
-    return false;
-#if defined(OS_MAC) || defined(OS_WIN)
-  cur = cur.Append(FILE_PATH_LITERAL("Crashpad"));
-#else
-  cur = cur.Append(FILE_PATH_LITERAL("Crash Reports"));
-#endif
-  // TODO(bauerb): http://crbug.com/259796
-  base::ThreadRestrictions::ScopedAllowIO allow_io;
-  if (!base::PathExists(cur) && !base::CreateDirectory(cur))
-    return false;
-  *path = cur;
-  return true;
-}
-
 bool ElectronPathProvider(int key, base::FilePath* result) {
   bool create_dir = false;
   base::FilePath cur;
@@ -144,7 +127,14 @@ bool ElectronPathProvider(int key, base::FilePath* result) {
       create_dir = true;
       break;
     case DIR_CRASH_DUMPS:
-      GetDefaultCrashDumpsPath(&cur);
+      if (!base::PathService::Get(chrome::DIR_USER_DATA, &cur))
+        return false;
+#if defined(OS_MAC) || defined(OS_WIN)
+      cur = cur.Append(FILE_PATH_LITERAL("Crashpad"));
+#else
+      cur = cur.Append(FILE_PATH_LITERAL("Crash Reports"));
+#endif
+      create_dir = true;
       break;
     case chrome::DIR_APP_DICTIONARIES:
       base::debug::StackTrace().Print();
@@ -165,6 +155,7 @@ bool ElectronPathProvider(int key, base::FilePath* result) {
       if (!base::PathService::Get(parent_key, &cur))
         return false;
       cur = cur.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
+      create_dir = true;
       break;
     }
 #if defined(OS_LINUX)
