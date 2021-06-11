@@ -33,7 +33,6 @@
 #include "shell/browser/relauncher.h"
 #include "shell/common/application_info.h"
 #include "shell/common/electron_paths.h"
-#include "shell/common/logging.h"
 #include "shell/common/options_switches.h"
 #include "shell/renderer/electron_renderer_client.h"
 #include "shell/renderer/electron_sandboxed_renderer_client.h"
