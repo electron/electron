@@ -162,6 +162,27 @@ bool ElectronPathProvider(int key, base::FilePath* result) {
       break;
     }
 #endif
+#if defined(OS_WIN)
+    case DIR_RECENT:
+      if (!platform_util::GetFolderPath(DIR_RECENT, &cur))
+        return false;
+      create_dir = true;
+      break;
+#endif
+    case DIR_APP_LOGS:
+#if defined(OS_MAC)
+      if (!base::PathService::Get(base::DIR_HOME, &cur))
+        return false;
+      cur = cur.Append(FILE_PATH_LITERAL("Library")) cur =
+          cur.Append(FILE_PATH_LITERAL("Logs")) cur =
+              cur.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()))
+                  create_dir = true;
+#else
+      if (!base::PathService::Get(chrome::DIR_USER_DATA, &cur))
+        return false;
+      cur = cur.Append(base::FilePath::FromUTF8Unsafe("logs"));
+      break;
+#endif
     default:
       return false;
   }
