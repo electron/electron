@@ -134,24 +134,26 @@ bool GetDefaultCrashDumpsPath(base::FilePath* path) {
 }
 
 bool ElectronPathProvider(int key, base::FilePath* result) {
+  bool create_dir = false;
+  base::FilePath cur;
   switch (key) {
     case chrome::DIR_USER_DATA:
-      if (base::PathService::Get(DIR_APP_DATA, result)) {
-        *result = result->Append(
-            base::FilePath::FromUTF8Unsafe(GetApplicationName()));
-        return true;
-      }
-      return false;
+      if (!base::PathService::Get(DIR_APP_DATA, &cur))
+        return false;
+      cur = cur.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
+      create_dir = true;
+      break;
     case DIR_CRASH_DUMPS:
-      return GetDefaultCrashDumpsPath(result);
+      GetDefaultCrashDumpsPath(&cur);
+      break;
     case chrome::DIR_APP_DICTIONARIES:
+      base::debug::StackTrace().Print();
       // TODO(nornagon): can we just default to using Chrome's logic here?
-      if (base::PathService::Get(chrome::DIR_USER_DATA, result)) {
-        *result =
-            result->Append(base::FilePath::FromUTF8Unsafe("Dictionaries"));
-        return true;
-      }
-      return false;
+      if (!base::PathService::Get(chrome::DIR_USER_DATA, &cur))
+        return false;
+      cur = cur.Append(base::FilePath::FromUTF8Unsafe("Dictionaries"));
+      create_dir = true;
+      break;
     case DIR_USER_CACHE: {
 #if defined(OS_POSIX)
       int parent_key = base::DIR_CACHE;
@@ -160,22 +162,32 @@ bool ElectronPathProvider(int key, base::FilePath* result) {
       // store the cache in the app data directory.
       int parent_key = base::DIR_APP_DATA;
 #endif
-      if (base::PathService::Get(parent_key, result)) {
-        *result = result->Append(
-            base::FilePath::FromUTF8Unsafe(GetApplicationName()));
-        return true;
-      }
-      return false;
+      if (!base::PathService::Get(parent_key, &cur))
+        return false;
+      cur = cur.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
+      break;
     }
 #if defined(OS_LINUX)
-    case DIR_APP_DATA:
+    case DIR_APP_DATA: {
       auto env = base::Environment::Create();
-      *result = base::nix::GetXDGDirectory(
+      cur = base::nix::GetXDGDirectory(
           env.get(), base::nix::kXdgConfigHomeEnvVar, base::nix::kDotConfigDir);
-      return true;
+      break;
+    }
 #endif
+    default:
+      return false;
   }
-  return false;
+
+  // TODO(bauerb): http://crbug.com/259796
+  base::ThreadRestrictions::ScopedAllowIO allow_io;
+  if (create_dir && !base::PathExists(cur) && !base::CreateDirectory(cur)) {
+    return false;
+  }
+
+  *result = cur;
+
+  return true;
 }
 
 void RegisterPathProvider() {
