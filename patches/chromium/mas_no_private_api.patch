@@ -46,10 +46,10 @@ index 65adc773e82d99c5dd57d52e84a71e67d676be13..f5d0318c1c4fa036a233142cd6eea0a0
      NSArray* node_array,
      const LineIndexer* line_indexer) const {
 diff --git a/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm b/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm
-index 3e47fed937bf05eff5417d457c85cfb73af7c55f..c21833838d60cad275630be9d2d202f4c1b70c15 100644
+index 517f501c3f9dc2e83a918d02564d123115b67d82..9dc0c66a357b378345a28b271d4e65dee343cdd2 100644
 --- a/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm
 +++ b/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm
-@@ -204,6 +204,7 @@
+@@ -243,6 +243,7 @@
        property_name == "AXTextMarkerRangeForUIElement") {  // UIElement
      return OptionalNSObject::NotNilOrError(PropertyNodeToUIElement(arg_node));
    }
@@ -57,7 +57,7 @@ index 3e47fed937bf05eff5417d457c85cfb73af7c55f..c21833838d60cad275630be9d2d202f4
    if (property_name == "AXIndexForTextMarker" ||
        property_name == "AXNextWordEndTextMarkerForTextMarker" ||
        property_name ==
-@@ -214,6 +215,7 @@
+@@ -253,6 +254,7 @@
      return OptionalNSObject::NotNilOrError(
          PropertyNodeToTextMarkerRange(arg_node));
    }
@@ -65,7 +65,7 @@ index 3e47fed937bf05eff5417d457c85cfb73af7c55f..c21833838d60cad275630be9d2d202f4
  
    return OptionalNSObject::NotApplicable();
  }
-@@ -279,6 +281,7 @@
+@@ -318,6 +320,7 @@
    return uielement;
  }
  
@@ -73,7 +73,7 @@ index 3e47fed937bf05eff5417d457c85cfb73af7c55f..c21833838d60cad275630be9d2d202f4
  id AttributeInvoker::DictNodeToTextMarker(
      const AXPropertyNode& dictnode) const {
    if (!dictnode.IsDict()) {
-@@ -386,6 +389,7 @@ OptionalNSObject TextMarkerRangeGetEndMarker(const OptionalNSObject& obj) {
+@@ -425,6 +428,7 @@ OptionalNSObject TextMarkerRangeGetEndMarker(const OptionalNSObject& obj) {
    return OptionalNSObject::NotNilOrError(content::AXTextMarkerFrom(
        cocoa_node, range.focus()->text_offset(), range.focus()->affinity()));
  }
