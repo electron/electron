@@ -527,6 +527,10 @@ gfx::Size OffScreenRenderWidgetHostView::GetCompositorViewportPixelSize() {
                                 GetCurrentDeviceScaleFactor());
 }
 
+ui::Compositor* OffScreenRenderWidgetHostView::GetCompositor() {
+  return compositor_.get();
+}
+
 content::RenderWidgetHostViewBase*
 OffScreenRenderWidgetHostView::CreateViewForWidget(
     content::RenderWidgetHost* render_widget_host,
@@ -945,10 +949,6 @@ void OffScreenRenderWidgetHostView::SetFrameRate(int frame_rate) {
 
 int OffScreenRenderWidgetHostView::GetFrameRate() const {
   return frame_rate_;
-}
-
-ui::Compositor* OffScreenRenderWidgetHostView::GetCompositor() const {
-  return compositor_.get();
 }
 
 ui::Layer* OffScreenRenderWidgetHostView::GetRootLayer() const {
