@@ -109,7 +109,7 @@ function loadApplicationPackage (packagePath: string) {
 
     try {
       const filePath = Module._resolveFilename(packagePath, module, true);
-      app._setDefaultAppPaths(appPath || path.dirname(filePath));
+      app.setAppPath(appPath || path.dirname(filePath));
     } catch (e) {
       showErrorMessage(`Unable to find Electron app at ${packagePath}\n\n${e.message}`);
       return;

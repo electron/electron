@@ -61,7 +61,6 @@
 
 #if defined(OS_LINUX)
 #include "base/environment.h"
-#include "base/nix/xdg_util.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "ui/gtk/gtk_ui_factory.h"
 #include "ui/gtk/gtk_util.h"
@@ -155,16 +154,6 @@ std::u16string MediaStringProvider(media::MessageId id) {
 }
 
 #if defined(OS_LINUX)
-void OverrideLinuxAppDataPath() {
-  base::FilePath path;
-  if (base::PathService::Get(DIR_APP_DATA, &path))
-    return;
-  auto env = base::Environment::Create();
-  path = base::nix::GetXDGDirectory(env.get(), base::nix::kXdgConfigHomeEnvVar,
-                                    base::nix::kDotConfigDir);
-  base::PathService::Override(DIR_APP_DATA, path);
-}
-
 // GTK does not provide a way to check if current theme is dark, so we compare
 // the text and background luminosity to get a result.
 // This trick comes from FireFox.
@@ -232,10 +221,6 @@ int ElectronBrowserMainParts::GetExitCode() const {
 
 int ElectronBrowserMainParts::PreEarlyInitialization() {
   field_trial_list_ = std::make_unique<base::FieldTrialList>(nullptr);
-#if defined(OS_LINUX)
-  OverrideLinuxAppDataPath();
-#endif
-
 #if defined(OS_POSIX)
   HandleSIGCHLD();
 #endif
