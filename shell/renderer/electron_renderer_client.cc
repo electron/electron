@@ -9,6 +9,7 @@
 #include "base/command_line.h"
 #include "content/public/renderer/render_frame.h"
 #include "electron/buildflags/buildflags.h"
+#include "net/http/http_request_headers.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
@@ -169,7 +170,7 @@ bool ElectronRendererClient::ShouldFork(blink::WebLocalFrame* frame,
   // FIXME We only support GET here because http method will be ignored when
   // the OpenURLFromTab is triggered, which means form posting would not work,
   // we should solve this by patching Chromium in future.
-  return http_method == "GET";
+  return http_method == net::HttpRequestHeaders::kGetMethod;
 }
 
 void ElectronRendererClient::WorkerScriptReadyForEvaluationOnWorkerThread(
