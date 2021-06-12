@@ -10,7 +10,6 @@
 
 #include "base/base_switches.h"
 #include "base/command_line.h"
-#include "base/debug/stack_trace.h"
 #include "base/environment.h"
 #include "base/files/file_util.h"
 #include "base/logging.h"
@@ -137,7 +136,6 @@ bool ElectronPathProvider(int key, base::FilePath* result) {
       create_dir = true;
       break;
     case chrome::DIR_APP_DICTIONARIES:
-      base::debug::StackTrace().Print();
       // TODO(nornagon): can we just default to using Chrome's logic here?
       if (!base::PathService::Get(chrome::DIR_USER_DATA, &cur))
         return false;
