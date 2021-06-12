@@ -754,7 +754,7 @@ describe('protocol module', () => {
     });
   });
 
-  describe.skip('protocol.registerSchemesAsPrivileged standard', () => {
+  describe('protocol.registerSchemesAsPrivileged standard', () => {
     const standardScheme = (global as any).standardScheme;
     const origin = `${standardScheme}://fake-host`;
     const imageURL = `${origin}/test.png`;
@@ -766,7 +766,8 @@ describe('protocol module', () => {
       w = new BrowserWindow({
         show: false,
         webPreferences: {
-          nodeIntegration: true
+          nodeIntegration: true,
+          contextIsolation: false
         }
       });
     });
