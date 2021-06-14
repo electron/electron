@@ -78,7 +78,7 @@ class Menu : public gin::Wrappable<Menu>,
                        int positioning_item,
                        base::OnceClosure callback) = 0;
   virtual void ClosePopupAt(int32_t window_id) = 0;
-#ifdef DCHECK_IS_ON
+#if DCHECK_IS_ON()
   virtual std::u16string GetAcceleratorTextAtForTesting(int index) const;
 #endif
 
