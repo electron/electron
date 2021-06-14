@@ -35,7 +35,7 @@ class MenuMac : public Menu {
                  int positioning_item,
                  base::OnceClosure callback);
   void ClosePopupAt(int32_t window_id) override;
-#ifdef DCHECK_IS_ON
+#if DCHECK_IS_ON()
   std::u16string GetAcceleratorTextAtForTesting(int index) const override;
 #endif
 
