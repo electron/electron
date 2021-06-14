@@ -170,10 +170,10 @@ bool ElectronPathProvider(int key, base::FilePath* result) {
 #if defined(OS_MAC)
       if (!base::PathService::Get(base::DIR_HOME, &cur))
         return false;
-      cur = cur.Append(FILE_PATH_LITERAL("Library")) cur =
-          cur.Append(FILE_PATH_LITERAL("Logs")) cur =
-              cur.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()))
-                  create_dir = true;
+      cur = cur.Append(FILE_PATH_LITERAL("Library"));
+      cur = cur.Append(FILE_PATH_LITERAL("Logs"));
+      cur = cur.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
+      create_dir = true;
 #else
       if (!base::PathService::Get(chrome::DIR_USER_DATA, &cur))
         return false;
