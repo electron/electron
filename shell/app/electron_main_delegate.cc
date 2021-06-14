@@ -304,9 +304,16 @@ void ElectronMainDelegate::PreSandboxStartup() {
 #endif
 
 #if defined(OS_LINUX)
+  // Zygote needs to call InitCrashReporter() in RunZygote().
   if (process_type != ::switches::kZygoteProcess && !process_type.empty()) {
     ElectronCrashReporterClient::Create();
-    breakpad::InitCrashReporter(process_type);
+    if (crash_reporter::IsCrashpadEnabled()) {
+      crash_reporter::InitializeCrashpad(process_type.empty(), process_type);
+      crash_reporter::SetFirstChanceExceptionHandler(
+          v8::TryHandleWebAssemblyTrapPosix);
+    } else {
+      breakpad::InitCrashReporter(process_type);
+    }
   }
 #endif
 
@@ -394,7 +401,13 @@ void ElectronMainDelegate::ZygoteForked() {
       base::CommandLine::ForCurrentProcess();
   std::string process_type =
       command_line->GetSwitchValueASCII(::switches::kProcessType);
-  breakpad::InitCrashReporter(process_type);
+  if (crash_reporter::IsCrashpadEnabled()) {
+    crash_reporter::InitializeCrashpad(false, process_type);
+    crash_reporter::SetFirstChanceExceptionHandler(
+        v8::TryHandleWebAssemblyTrapPosix);
+  } else {
+    breakpad::InitCrashReporter(process_type);
+  }
 
   // Reset the command line for the newly spawned process.
   crash_keys::SetCrashKeysFromCommandLine(*command_line);
