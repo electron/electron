@@ -65,7 +65,7 @@ executors:
     machine: true
 
 # The config expects the following environment variables to be set:
-#  - "SLACK_WEBHOOK" Slack hook URL to send notifications.
+# "SLACK_WEBHOOK" Slack hook URL to send notifications.
 #
 # The publishing scripts expect access tokens to be defined as env vars,
 # but those are not covered here.
