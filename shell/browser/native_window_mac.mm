@@ -458,11 +458,8 @@ void NativeWindowMac::SetContentView(views::View* view) {
   set_content_view(view);
   root_view->AddChildView(content_view());
 
-  if (buttons_view_) {
-    // Ensure the buttons view are always floated on the top.
-    [buttons_view_ removeFromSuperview];
-    [[window_ contentView] addSubview:buttons_view_];
-  }
+  if (buttons_view_)
+    ReorderButtonsView();
 
   root_view->Layout();
 }
@@ -1143,6 +1140,8 @@ void NativeWindowMac::AddBrowserView(NativeBrowserView* view) {
   }
 
   [CATransaction commit];
+
+  ReorderButtonsView();
 }
 
 void NativeWindowMac::RemoveBrowserView(NativeBrowserView* view) {
@@ -1184,6 +1183,8 @@ void NativeWindowMac::SetTopBrowserView(NativeBrowserView* view) {
   }
 
   [CATransaction commit];
+
+  ReorderButtonsView();
 }
 
 void NativeWindowMac::SetParentWindow(NativeWindow* parent) {
@@ -1634,6 +1635,13 @@ void NativeWindowMac::NotifyWindowWillLeaveFullScreen() {
 
   RedrawTrafficLights();
   UpdateVibrancyRadii(false);
+}
+
+void NativeWindowMac::ReorderButtonsView() {
+  if (buttons_view_) {
+    [buttons_view_ removeFromSuperview];
+    [[window_ contentView] addSubview:buttons_view_];
+  }
 }
 
 void NativeWindowMac::Cleanup() {
