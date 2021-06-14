@@ -1422,6 +1422,7 @@ commands:
             - attach_workspace:
                 at: .
             - *step-maybe-early-exit-doc-only-change
+            - run: rm -rf src/electron
       - *step-restore-brew-cache
       - *step-install-gnutar-on-mac
       - *step-save-brew-cache
