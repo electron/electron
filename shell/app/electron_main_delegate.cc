@@ -10,7 +10,6 @@
 
 #include "base/base_switches.h"
 #include "base/command_line.h"
-#include "base/debug/stack_trace.h"
 #include "base/environment.h"
 #include "base/files/file_util.h"
 #include "base/logging.h"
@@ -35,6 +34,7 @@
 #include "shell/common/electron_paths.h"
 #include "shell/common/logging.h"
 #include "shell/common/options_switches.h"
+#include "shell/common/platform_util.h"
 #include "shell/renderer/electron_renderer_client.h"
 #include "shell/renderer/electron_sandboxed_renderer_client.h"
 #include "shell/utility/electron_content_utility_client.h"
@@ -137,7 +137,6 @@ bool ElectronPathProvider(int key, base::FilePath* result) {
       create_dir = true;
       break;
     case chrome::DIR_APP_DICTIONARIES:
-      base::debug::StackTrace().Print();
       // TODO(nornagon): can we just default to using Chrome's logic here?
       if (!base::PathService::Get(chrome::DIR_USER_DATA, &cur))
         return false;
@@ -166,6 +165,27 @@ bool ElectronPathProvider(int key, base::FilePath* result) {
       break;
     }
 #endif
+#if defined(OS_WIN)
+    case DIR_RECENT:
+      if (!platform_util::GetFolderPath(DIR_RECENT, &cur))
+        return false;
+      create_dir = true;
+      break;
+#endif
+    case DIR_APP_LOGS:
+#if defined(OS_MAC)
+      if (!base::PathService::Get(base::DIR_HOME, &cur))
+        return false;
+      cur = cur.Append(FILE_PATH_LITERAL("Library"));
+      cur = cur.Append(FILE_PATH_LITERAL("Logs"));
+      cur = cur.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
+#else
+      if (!base::PathService::Get(chrome::DIR_USER_DATA, &cur))
+        return false;
+      cur = cur.Append(base::FilePath::FromUTF8Unsafe("logs"));
+#endif
+      create_dir = true;
+      break;
     default:
       return false;
   }
