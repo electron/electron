@@ -2,7 +2,7 @@
 
 > Collect tracing data from Chromium to find performance bottlenecks and slow operations.
 
-Exported in: [Main](../glossary.md#main-process)
+Process: [Main](../glossary.md#main-process)
 
 This module does not include a web interface. To view recorded traces, use
 [trace viewer][], available at `chrome://tracing` in Chrome.

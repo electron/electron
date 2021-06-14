@@ -9,7 +9,7 @@ relative to its owning window. It is meant to be an alternative to the
 
 > Create and control views.
 
-Exported in: [Main](../glossary.md#main-process)
+Process: [Main](../glossary.md#main-process)
 
 ### Example
 

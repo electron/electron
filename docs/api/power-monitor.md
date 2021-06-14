@@ -2,7 +2,7 @@
 
 > Monitor power state changes.
 
-Exported in: [Main](../glossary.md#main-process)
+Process: [Main](../glossary.md#main-process)
 
 ## Events
 

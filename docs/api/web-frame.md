@@ -2,7 +2,7 @@
 
 > Customize the rendering of the current web page.
 
-Exported in: [Renderer](../glossary.md#renderer-process)
+Process: [Renderer](../glossary.md#renderer-process)
 
 `webFrame` export of the Electron module is an instance of the `WebFrame`
 class representing the top frame of the current `BrowserWindow`. Sub-frames can

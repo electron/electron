@@ -2,7 +2,7 @@
 
 > Communicate asynchronously from a renderer process to the main process.
 
-Exported in: [Renderer](../glossary.md#renderer-process)
+Process: [Renderer](../glossary.md#renderer-process)
 
 The `ipcRenderer` module is an  [EventEmitter][event-emitter]. It provides a few
 methods so you can send synchronous and asynchronous messages from the render

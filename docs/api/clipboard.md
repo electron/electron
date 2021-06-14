@@ -2,7 +2,7 @@
 
 > Perform copy and paste operations on the system clipboard.
 
-Exported in: [Main](../glossary.md#main-process), [Renderer](../glossary.md#renderer-process)
+Process: [Main](../glossary.md#main-process), [Renderer](../glossary.md#renderer-process)
 
 On Linux, there is also a `selection` clipboard. To manipulate it
 you need to pass `selection` to each method:

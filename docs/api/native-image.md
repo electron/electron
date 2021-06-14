@@ -2,7 +2,7 @@
 
 > Create tray, dock, and application icons using PNG or JPG files.
 
-Exported in: [Main](../glossary.md#main-process), [Renderer](../glossary.md#renderer-process)
+Process: [Main](../glossary.md#main-process), [Renderer](../glossary.md#renderer-process)
 
 In Electron, for the APIs that take images, you can pass either file paths or
 `NativeImage` instances. An empty image will be used when `null` is passed.
@@ -215,7 +215,8 @@ where `SYSTEM_IMAGE_NAME` should be replaced with any value from [this list](htt
 
 > Natively wrap images such as tray, dock, and application icons.
 
-Process: [Main](../glossary.md#main-process), [Renderer](../glossary.md#renderer-process)
+Process: [Main](../glossary.md#main-process), [Renderer](../glossary.md#renderer-process)<br />
+_This class is not exported from the `'electron'` module. It is only available as a return value of other methods in the Electron API._
 
 ### Instance Methods
 

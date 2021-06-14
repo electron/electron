@@ -4,7 +4,7 @@
 
 > Create TouchBar layouts for native macOS applications
 
-Exported in: [Main](../glossary.md#main-process)
+Process: [Main](../glossary.md#main-process)
 
 ### `new TouchBar(options)`
 

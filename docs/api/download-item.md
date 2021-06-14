@@ -2,7 +2,8 @@
 
 > Control file downloads from remote sources.
 
-Process: [Main](../glossary.md#main-process)
+Process: [Main](../glossary.md#main-process)<br />
+_This class is not exported from the `'electron'` module. It is only available as a return value of other methods in the Electron API._
 
 `DownloadItem` is an [EventEmitter][event-emitter] that represents a download item in Electron.
 It is used in `will-download` event of `Session` class, and allows users to

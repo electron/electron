@@ -2,7 +2,8 @@
 
 > Manipulate the command line arguments for your app that Chromium reads
 
-Process: [Main](../glossary.md#main-process)
+Process: [Main](../glossary.md#main-process)<br />
+_This class is not exported from the `'electron'` module. It is only available as a return value of other methods in the Electron API._
 
 The following example shows how to check if the `--disable-gpu` flag is set.
 

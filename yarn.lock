@@ -18,10 +18,10 @@
     esutils "^2.0.2"
     js-tokens "^4.0.0"
 
-"@electron/docs-parser@^0.12.0":
-  version "0.12.0"
-  resolved "https://registry.yarnpkg.com/@electron/docs-parser/-/docs-parser-0.12.0.tgz#a1ae37164bf93f9cabcb1d51f19146a0a7f07168"
-  integrity sha512-/z9XUi5z752tpNa+fC+STtGKKOT9lQ9PgU15MMSUtOHRVbNfoQfGoFQaiUKi5uqH+UnAwBZ+p8PHId30KtVxCA==
+"@electron/docs-parser@^0.12.1":
+  version "0.12.1"
+  resolved "https://registry.yarnpkg.com/@electron/docs-parser/-/docs-parser-0.12.1.tgz#254c324b5953c67cdcce0a8902736778a1788742"
+  integrity sha512-E9/GjNVlFzBM2MNOoLjiKSE0xAMM3KsxvzMKmMeORY7aDbalObFm23XCh8DC8Jn/hfh6BzgVPF3OZO9hKvs5nw==
   dependencies:
     "@types/markdown-it" "^10.0.0"
     chai "^4.2.0"

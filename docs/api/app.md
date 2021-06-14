@@ -2,7 +2,7 @@
 
 > Control your application's event lifecycle.
 
-Exported in: [Main](../glossary.md#main-process)
+Process: [Main](../glossary.md#main-process)
 
 The following example shows how to quit the application when the last window is
 closed:

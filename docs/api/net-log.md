@@ -2,7 +2,7 @@
 
 > Logging network events for a session.
 
-Exported in: [Main](../glossary.md#main-process)
+Process: [Main](../glossary.md#main-process)
 
 ```javascript
 const { netLog } = require('electron')

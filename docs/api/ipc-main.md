@@ -2,7 +2,7 @@
 
 > Communicate asynchronously from the main process to renderer processes.
 
-Exported in: [Main](../glossary.md#main-process)
+Process: [Main](../glossary.md#main-process)
 
 The `ipcMain` module is an [Event Emitter][event-emitter]. When used in the main
 process, it handles asynchronous and synchronous messages sent from a renderer
