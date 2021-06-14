@@ -149,7 +149,6 @@ class ProxyingURLLoaderFactory
     GURL redirect_url_;
 
     const bool for_cors_preflight_ = false;
-    int cors_preflight_proxy_auth_retries_ = 0;
 
     // If |has_any_extra_headers_listeners_| is set to true, the request will be
     // sent with the network::mojom::kURLLoadOptionUseHeaderClient option, and

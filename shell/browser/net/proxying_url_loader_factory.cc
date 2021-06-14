@@ -29,8 +29,6 @@
 
 namespace electron {
 
-const int kMaxCORSPreflightProxyAuthRetries = 3;
-
 ProxyingURLLoaderFactory::InProgressRequest::FollowRedirectParams::
     FollowRedirectParams() = default;
 ProxyingURLLoaderFactory::InProgressRequest::FollowRedirectParams::
@@ -612,19 +610,15 @@ void ProxyingURLLoaderFactory::InProgressRequest::
   if (for_cors_preflight_) {
     // If this is for CORS preflight, there is no associated client.
     info_->AddResponseInfoFromResourceResponse(*current_response_);
-    // Do not finish(cancel) proxied preflight requests that require proxy auth.
-    // Network code will renegotiate such connection/request.
-    if (info_->response_code == net::HTTP_PROXY_AUTHENTICATION_REQUIRED &&
-        ++cors_preflight_proxy_auth_retries_ <=
-            kMaxCORSPreflightProxyAuthRetries) {
+    // Do not finish proxied preflight requests that require proxy auth.
+    // The request is not finished yet, give control back to network service
+    // which will start authentication process.
+    if (info_->response_code == net::HTTP_PROXY_AUTHENTICATION_REQUIRED)
       return;
-    }
-
     // We notify the completion here, and delete |this|.
     factory_->web_request_api()->OnResponseStarted(&info_.value(), request_);
     factory_->web_request_api()->OnCompleted(&info_.value(), request_, net::OK);
 
-    // Deletes |this|.
     factory_->RemoveRequest(network_service_request_id_, request_id_);
     return;
   }
