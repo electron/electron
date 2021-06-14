@@ -174,13 +174,13 @@ bool ElectronPathProvider(int key, base::FilePath* result) {
       cur = cur.Append(FILE_PATH_LITERAL("Library"));
       cur = cur.Append(FILE_PATH_LITERAL("Logs"));
       cur = cur.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
-      create_dir = true;
 #else
       if (!base::PathService::Get(chrome::DIR_USER_DATA, &cur))
         return false;
       cur = cur.Append(base::FilePath::FromUTF8Unsafe("logs"));
-      break;
 #endif
+      create_dir = true;
+      break;
     default:
       return false;
   }
