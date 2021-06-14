@@ -162,7 +162,7 @@ client
 ## Workflow
 
 To test your application without rebuilding Electron,
-[place](https://github.com/electron/electron/blob/master/docs/tutorial/application-distribution.md)
+[place](application-distribution.md)
 your app source into Electron's resource directory.
 
 Alternatively, pass an argument to run with your Electron binary that points to
