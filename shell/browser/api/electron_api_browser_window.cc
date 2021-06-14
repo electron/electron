@@ -396,6 +396,10 @@ void BrowserWindow::ResetBrowserViews() {
 #endif
 }
 
+void BrowserWindow::OnDevToolsResized() {
+  UpdateDraggableRegions(draggable_regions_);
+}
+
 void BrowserWindow::SetVibrancy(v8::Isolate* isolate,
                                 v8::Local<v8::Value> value) {
   std::string type = gin::V8ToString(isolate, value);
