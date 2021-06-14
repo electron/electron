@@ -128,7 +128,7 @@ async function runRemoteBasedElectronTests () {
   const runnerArgs = ['electron/spec', ...unknownArgs.slice(2)];
   if (process.platform === 'linux') {
     runnerArgs.unshift(path.resolve(__dirname, 'dbus_mock.py'), exe);
-    exe = 'python';
+    exe = 'python3';
   }
 
   const { status } = childProcess.spawnSync(exe, runnerArgs, {
@@ -199,7 +199,7 @@ async function runMainProcessElectronTests () {
   const runnerArgs = ['electron/spec-main', ...unknownArgs.slice(2)];
   if (process.platform === 'linux') {
     runnerArgs.unshift(path.resolve(__dirname, 'dbus_mock.py'), exe);
-    exe = 'python';
+    exe = 'python3';
   }
 
   const { status, signal } = childProcess.spawnSync(exe, runnerArgs, {
