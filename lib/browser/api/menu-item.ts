@@ -45,6 +45,7 @@ const MenuItem = function (this: any, options: any) {
 
   Object.defineProperty(this, 'userAccelerator', {
     get: () => {
+      if (process.platform !== 'darwin') return null;
       if (!this.menu) return null;
       return this.menu._getUserAcceleratorAt(this.commandId);
     },

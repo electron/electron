@@ -28,9 +28,9 @@ static scoped_nsobject<NSMenu> applicationMenu_;
 ui::Accelerator GetAcceleratorFromKeyEquivalentAndModifierMask(
     NSString* key_equivalent,
     NSUInteger modifier_mask) {
-  bool shifted;
+  absl::optional<char16_t> shifted_char;
   ui::KeyboardCode code = electron::KeyboardCodeFromStr(
-      base::SysNSStringToUTF8(key_equivalent), &shifted);
+      base::SysNSStringToUTF8(key_equivalent), &shifted_char);
   int modifiers = 0;
   if (modifier_mask & NSEventModifierFlagShift)
     modifiers |= ui::EF_SHIFT_DOWN;
