@@ -1,0 +1,22 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: VerteDinde <keeleymhammond@gmail.com>
+Date: Mon, 14 Jun 2021 13:18:32 -0700
+Subject: chore: disable WinRetrieveSuggestions by default
+
+This patch disables WinRetrieveSuggestionsOnlyOnDemand by default.
+Having it on allows spelling suggestions to be potentially loaded async,
+which causes unpredictable behavior in Electron.
+
+diff --git a/components/spellcheck/common/spellcheck_features.cc b/components/spellcheck/common/spellcheck_features.cc
+index 99717a69171d7aea8635b092f848f53d14f78c84..d8ce1aa2dce91f97f9ced78ed7051e591db9c1cc 100644
+--- a/components/spellcheck/common/spellcheck_features.cc
++++ b/components/spellcheck/common/spellcheck_features.cc
+@@ -32,7 +32,7 @@ const base::Feature kWinDelaySpellcheckServiceInit{
+     "WinDelaySpellcheckServiceInit", base::FEATURE_DISABLED_BY_DEFAULT};
+ 
+ const base::Feature kWinRetrieveSuggestionsOnlyOnDemand{
+-    "WinRetrieveSuggestionsOnlyOnDemand", base::FEATURE_ENABLED_BY_DEFAULT};
++    "WinRetrieveSuggestionsOnlyOnDemand", base::FEATURE_DISABLED_BY_DEFAULT};
+ 
+ bool WindowsVersionSupportsSpellchecker() {
+   return base::win::GetVersion() > base::win::Version::WIN7 &&
