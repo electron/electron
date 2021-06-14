@@ -9,6 +9,9 @@ import { BrowserWindow, WebPreferences } from 'electron/main';
 import { closeWindow } from './window-helpers';
 import { AddressInfo } from 'net';
 import { emittedUntil } from './events-helpers';
+import { ifit } from './spec-helpers';
+
+const features = process._linkedBinding('electron_common_features');
 
 const messageContainsSecurityWarning = (event: Event, level: number, message: string) => {
   return message.indexOf('Electron Security Warning') > -1;
@@ -226,10 +229,13 @@ describe('security warnings', () => {
         expect(message).to.not.include('insecure-resources.html');
       });
 
-      it('should warn about enabled remote module with remote content', async () => {
+      ifit(features.isRemoteModuleEnabled())('should warn about enabled remote module with remote content', async () => {
         w = new BrowserWindow({
           show: false,
-          webPreferences
+          webPreferences: {
+            enableRemoteModule: true,
+            ...webPreferences
+          }
         });
 
         w.loadURL(`${serverUrl}/base-page-security.html`);
@@ -237,10 +243,13 @@ describe('security warnings', () => {
         expect(message).to.include('enableRemoteModule');
       });
 
-      it('should not warn about enabled remote module with remote content from localhost', async () => {
+      ifit(features.isRemoteModuleEnabled())('should not warn about enabled remote module with remote content from localhost', async () => {
         w = new BrowserWindow({
           show: false,
-          webPreferences
+          webPreferences: {
+            enableRemoteModule: true,
+            ...webPreferences
+          }
         });
         w.loadURL(`${serverUrl}/base-page-security-onload-message.html`);
         const [,, message] = await emittedUntil(w.webContents, 'console-message', isLoaded);
