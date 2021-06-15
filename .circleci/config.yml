@@ -2450,10 +2450,6 @@ workflows:
             - mac-make-src-cache
 
       - osx-testing-arm64-tests:
-          filters:
-            branches:
-              # Do not run this on forked pull requests
-              ignore: /pull\/[0-9]+/
           requires:
             - osx-testing-arm64
 
