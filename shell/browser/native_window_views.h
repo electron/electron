@@ -178,7 +178,7 @@ class NativeWindowViews : public NativeWindow,
 #if defined(OS_WIN)
   enum class TitleBarStyle{
       kNormal,
-      kHidden,
+      kOverlay,
   };
   TitleBarStyle title_bar_style() const { return title_bar_style_; }
   bool IsWindowControlsOverlayEnabled() const;

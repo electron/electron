@@ -1910,31 +1910,18 @@ describe('BrowserWindow module', () => {
     };
     afterEach(closeAllWindows);
     afterEach(() => { ipcMain.removeAllListeners('geometrychange'); });
-    it('creates browser window with hidden title bar', () => {
+    it('creates browser window with overlay title bar', () => {
       const w = new BrowserWindow({
         show: false,
         width: 400,
         height: 400,
-        titleBarStyle: 'hidden'
+        titleBarStyle: 'overlay'
       });
       const contentSize = w.getContentSize();
       expect(contentSize).to.deep.equal([400, 400]);
     });
-    ifit(process.platform === 'darwin')('creates browser window with hidden inset title bar', () => {
-      const w = new BrowserWindow({
-        show: false,
-        width: 400,
-        height: 400,
-        titleBarStyle: 'hiddenInset'
-      });
-      const contentSize = w.getContentSize();
-      expect(contentSize).to.deep.equal([400, 400]);
-    });
-    it('sets Window Control Overlay with hidden title bar', async () => {
-      await testWindowsOverlay('hidden');
-    });
-    ifit(process.platform === 'darwin')('sets Window Control Overlay with hidden inset title bar', async () => {
-      await testWindowsOverlay('hiddenInset');
+    it('sets Window Control Overlay with overlay title bar', async () => {
+      await testWindowsOverlay('overlay');
     });
   });
 

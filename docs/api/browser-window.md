@@ -218,15 +218,11 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     * `default` - Results in the standard gray opaque Mac title
       bar.
     * `hidden` - Results in a hidden title bar and a full size content window, yet
-      the title bar still has the standard window controls ("traffic lights") in
-      the top left.  Using this value will also enable the Window Controls Overlay
-      [JavaScript APIs][overlay-javascript-apis] and
-      [CSS Environment Variables][overlay-css-env-vars].
+      the title bar still has the standard window controls ("traffic lights" on macOS) in
+      the top left.
     * `hiddenInset` - Results in a hidden title bar with an alternative look
       where the traffic light buttons are slightly more inset from the window edge.
-      Using this value will also enable the Window Controls Overlay
-      [JavaScript APIs][overlay-javascript-apis] and
-      [CSS Environment Variables][overlay-css-env-vars].
+    * `overlay` - Results in a hidden title bar and a full size content window, yet the title bar still has the standard window controls ("traffic lights" on macOS). These controls are in the top left on macOS and top right for Windows.  Using this value will also enable the Window Controls Overlay [JavaScript APIs][overlay-javascript-apis] and [CSS Environment Variables][overlay-css-env-vars].
     * `customButtonsOnHover` - Results in a hidden title bar and a full size
       content window, the traffic light buttons will display when being hovered
       over in the top left of the window.  **Note:** This option is currently

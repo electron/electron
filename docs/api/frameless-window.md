@@ -26,10 +26,21 @@ you may want to have the title bar hidden and your content extend to the full wi
 yet still preserve the window controls ("traffic lights" on macOS) for standard window actions.
 You can do so by specifying the `titleBarStyle` option:
 
+### Alternatives on macOS
+
+#### `overlay`
+
+Results in a hidden title bar and a full size content window, yet the title bar still has the standard window controls ("traffic lights" on macOS). These controls are in the top left on macOS and top right for Windows.  Using this value will also enable the Window Controls Overlay [JavaScript APIs][overlay-javascript-apis] and [CSS Environment Variables][overlay-css-env-vars].
+
+```javascript
+const { BrowserWindow } = require('electron')
+const win = new BrowserWindow({ titleBarStyle: 'overlay' })
+win.show()
+```
+
 #### `hidden`
 
 Results in a hidden title bar and a full size content window, yet the title bar still has the standard window controls (“traffic lights”) in the top left.
-Additionally the Window Controls Overlay [JavaScript APIs][overlay-javascript-apis] and [CSS Environment Variables][overlay-css-env-vars] will be enabled.
 
 ```javascript
 const { BrowserWindow } = require('electron')
@@ -37,12 +48,9 @@ const win = new BrowserWindow({ titleBarStyle: 'hidden' })
 win.show()
 ```
 
-### Alternatives on macOS
-
 #### `hiddenInset`
 
 Results in a hidden title bar with an alternative look where the traffic light buttons are slightly more inset from the window edge.
-Additionally the Window Controls Overlay [JavaScript APIs][overlay-javascript-apis] and [CSS Environment Variables][overlay-css-env-vars] will be enabled.
 
 ```javascript
 const { BrowserWindow } = require('electron')
