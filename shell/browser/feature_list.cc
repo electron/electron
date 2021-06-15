@@ -10,6 +10,7 @@
 #include "base/command_line.h"
 #include "base/feature_list.h"
 #include "base/metrics/field_trial.h"
+#include "components/spellcheck/common/spellcheck_features.h"
 #include "content/public/common/content_features.h"
 #include "electron/buildflags/buildflags.h"
 #include "media/base/media_switches.h"
@@ -40,6 +41,13 @@ void InitializeFeatureList() {
 
 #if !BUILDFLAG(ENABLE_PICTURE_IN_PICTURE)
   disable_features += std::string(",") + media::kPictureInPicture.name;
+#endif
+
+#if defined(OS_WIN)
+  // Disable async spellchecker suggestions for Windows, which causes
+  // an empty suggestions list to be returned
+  disable_features +=
+      std::string(",") + spellcheck::kWinRetrieveSuggestionsOnlyOnDemand.name;
 #endif
   base::FeatureList::InitializeInstance(enable_features, disable_features);
 }
