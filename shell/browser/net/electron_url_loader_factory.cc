@@ -16,6 +16,7 @@
 #include "mojo/public/cpp/system/data_pipe_producer.h"
 #include "mojo/public/cpp/system/string_data_source.h"
 #include "net/base/filename_util.h"
+#include "net/http/http_request_headers.h"
 #include "net/http/http_status_code.h"
 #include "net/url_request/redirect_util.h"
 #include "services/network/public/cpp/url_loader_completion_status.h"
@@ -455,7 +456,8 @@ void ElectronURLLoaderFactory::StartLoadingHttp(
     request->method = original_request.method;
 
   base::DictionaryValue upload_data;
-  if (request->method != "GET" && request->method != "HEAD")
+  if (request->method != net::HttpRequestHeaders::kGetMethod &&
+      request->method != net::HttpRequestHeaders::kHeadMethod)
     dict.Get("uploadData", &upload_data);
 
   ElectronBrowserContext* browser_context =

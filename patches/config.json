@@ -11,7 +11,5 @@
 
   "src/electron/patches/Mantle": "src/third_party/squirrel.mac/vendor/Mantle",
 
-  "src/electron/patches/ReactiveObjC": "src/third_party/squirrel.mac/vendor/ReactiveObjC",
-
-  "src/electron/patches/nan": "src/third_party/nan"
+  "src/electron/patches/ReactiveObjC": "src/third_party/squirrel.mac/vendor/ReactiveObjC"
 }

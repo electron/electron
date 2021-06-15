@@ -723,7 +723,7 @@ void Initialize(v8::Local<v8::Object> exports,
                  &electron::api::OverrideGlobalPropertyFromIsolatedWorld);
   dict.SetMethod("_isCalledFromMainWorld",
                  &electron::api::IsCalledFromMainWorld);
-#ifdef DCHECK_IS_ON
+#if DCHECK_IS_ON()
   dict.Set("_isDebug", true);
 #endif
 }

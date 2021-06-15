@@ -441,9 +441,13 @@ int GetPathConstant(const std::string& name) {
   if (name == "appData")
     return DIR_APP_DATA;
   else if (name == "userData")
-    return DIR_USER_DATA;
+    return chrome::DIR_USER_DATA;
   else if (name == "cache")
-    return DIR_CACHE;
+#if defined(OS_POSIX)
+    return base::DIR_CACHE;
+#else
+    return base::DIR_APP_DATA;
+#endif
   else if (name == "userCache")
     return DIR_USER_CACHE;
   else if (name == "logs")
@@ -930,8 +934,7 @@ void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
     }
   } else {
     base::FilePath path;
-    if (base::PathService::Get(DIR_USER_DATA, &path)) {
-      path = path.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
+    if (base::PathService::Get(chrome::DIR_USER_DATA, &path)) {
       path = path.Append(base::FilePath::FromUTF8Unsafe("logs"));
       {
         base::ThreadRestrictions::ScopedAllowIO allow_io;
@@ -962,30 +965,10 @@ bool App::IsPackaged() {
 
 base::FilePath App::GetPath(gin_helper::ErrorThrower thrower,
                             const std::string& name) {
-  bool succeed = false;
   base::FilePath path;
 
   int key = GetPathConstant(name);
-  if (key >= 0) {
-    succeed = base::PathService::Get(key, &path);
-    // If users try to get the logs path before setting a logs path,
-    // set the path to a sensible default and then try to get it again
-    if (!succeed && name == "logs") {
-      SetAppLogsPath(thrower, absl::optional<base::FilePath>());
-      succeed = base::PathService::Get(key, &path);
-    }
-
-#if defined(OS_WIN)
-    // If we get the "recent" path before setting it, set it
-    if (!succeed && name == "recent" &&
-        platform_util::GetFolderPath(DIR_RECENT, &path)) {
-      base::ThreadRestrictions::ScopedAllowIO allow_io;
-      succeed = base::PathService::Override(DIR_RECENT, path);
-    }
-#endif
-  }
-
-  if (!succeed)
+  if (key < 0 || !base::PathService::Get(key, &path))
     thrower.ThrowError("Failed to get '" + name + "' path");
 
   return path;
@@ -999,20 +982,9 @@ void App::SetPath(gin_helper::ErrorThrower thrower,
     return;
   }
 
-  bool succeed = false;
   int key = GetPathConstant(name);
-  if (key >= 0) {
-    succeed =
-        base::PathService::OverrideAndCreateIfNeeded(key, path, true, false);
-    if (key == DIR_USER_DATA) {
-      succeed |= base::PathService::OverrideAndCreateIfNeeded(
-          chrome::DIR_USER_DATA, path, true, false);
-      succeed |= base::PathService::Override(
-          chrome::DIR_APP_DICTIONARIES,
-          path.Append(base::FilePath::FromUTF8Unsafe("Dictionaries")));
-    }
-  }
-  if (!succeed)
+  if (key < 0 || !base::PathService::OverrideAndCreateIfNeeded(
+                     key, path, /* is_absolute = */ true, /* create = */ false))
     thrower.ThrowError("Failed to set path");
 }
 
@@ -1082,7 +1054,7 @@ bool App::RequestSingleInstanceLock() {
     return true;
 
   base::FilePath user_dir;
-  base::PathService::Get(DIR_USER_DATA, &user_dir);
+  base::PathService::Get(chrome::DIR_USER_DATA, &user_dir);
 
   auto cb = base::BindRepeating(&App::OnSecondInstance, base::Unretained(this));
 
