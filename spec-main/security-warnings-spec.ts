@@ -232,7 +232,7 @@ describe('security warnings', () => {
       ifit(features.isRemoteModuleEnabled())('should warn about enabled remote module with remote content', async () => {
         w = new BrowserWindow({
           show: false,
-          webPreferences
+          webPreferences: { ...webPreferences, enableRemoteModule: true }
         });
 
         w.loadURL(`${serverUrl}/base-page-security.html`);
@@ -243,7 +243,7 @@ describe('security warnings', () => {
       ifit(features.isRemoteModuleEnabled())('should not warn about enabled remote module with remote content from localhost', async () => {
         w = new BrowserWindow({
           show: false,
-          webPreferences
+          webPreferences: { ...webPreferences, enableRemoteModule: true }
         });
         w.loadURL(`${serverUrl}/base-page-security-onload-message.html`);
         const [,, message] = await emittedUntil(w.webContents, 'console-message', isLoaded);
