@@ -297,7 +297,9 @@ const logSecurityWarnings = function (
   warnAboutEnableBlinkFeatures(webPreferences);
   warnAboutInsecureCSP();
   warnAboutAllowedPopups();
-  warnAboutRemoteModuleWithRemoteContent(webPreferences);
+  if (BUILDFLAG(ENABLE_REMOTE_MODULE)) {
+    warnAboutRemoteModuleWithRemoteContent(webPreferences);
+  }
 };
 
 const getWebPreferences = async function () {
