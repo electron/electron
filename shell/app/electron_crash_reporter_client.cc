@@ -152,7 +152,6 @@ bool ElectronCrashReporterClient::GetCrashDumpLocation(
 bool ElectronCrashReporterClient::GetCrashDumpLocation(
     base::FilePath* crash_dir) {
   return base::PathService::Get(electron::DIR_CRASH_DUMPS, crash_dir);
-  ;
 }
 #endif
 
