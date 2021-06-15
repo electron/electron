@@ -117,14 +117,10 @@ ElectronBrowserContext::ElectronBrowserContext(const std::string& partition,
   base::StringToInt(command_line->GetSwitchValueASCII(switches::kDiskCacheSize),
                     &max_cache_size_);
 
-  if (!base::PathService::Get(DIR_USER_DATA, &path_)) {
+  if (!base::PathService::Get(chrome::DIR_USER_DATA, &path_)) {
     base::PathService::Get(DIR_APP_DATA, &path_);
     path_ = path_.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
-    base::PathService::Override(DIR_USER_DATA, path_);
     base::PathService::Override(chrome::DIR_USER_DATA, path_);
-    base::PathService::Override(
-        chrome::DIR_APP_DICTIONARIES,
-        path_.Append(base::FilePath::FromUTF8Unsafe("Dictionaries")));
   }
 
   if (!in_memory && !partition.empty())

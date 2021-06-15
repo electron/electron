@@ -8,8 +8,8 @@
 #include <memory>
 #include <string>
 
+#include "base/base_switches.h"
 #include "base/command_line.h"
-#include "base/debug/stack_trace.h"
 #include "base/environment.h"
 #include "base/files/file_util.h"
 #include "base/logging.h"
@@ -17,6 +17,7 @@
 #include "base/path_service.h"
 #include "base/strings/string_split.h"
 #include "chrome/common/chrome_paths.h"
+#include "chrome/common/chrome_switches.h"
 #include "components/content_settings/core/common/content_settings_pattern.h"
 #include "content/public/common/content_switches.h"
 #include "electron/buildflags/buildflags.h"
@@ -29,8 +30,10 @@
 #include "shell/browser/electron_gpu_client.h"
 #include "shell/browser/feature_list.h"
 #include "shell/browser/relauncher.h"
+#include "shell/common/application_info.h"
 #include "shell/common/electron_paths.h"
 #include "shell/common/options_switches.h"
+#include "shell/common/platform_util.h"
 #include "shell/renderer/electron_renderer_client.h"
 #include "shell/renderer/electron_sandboxed_renderer_client.h"
 #include "shell/utility/electron_content_utility_client.h"
@@ -47,6 +50,7 @@
 #endif
 
 #if defined(OS_LINUX)
+#include "base/nix/xdg_util.h"
 #include "components/crash/core/app/breakpad_linux.h"
 #include "v8/include/v8-wasm-trap-handler-posix.h"
 #include "v8/include/v8.h"
@@ -107,28 +111,89 @@ void InvalidParameterHandler(const wchar_t*,
 
 // TODO(nornagon): move path provider overriding to its own file in
 // shell/common
-bool GetDefaultCrashDumpsPath(base::FilePath* path) {
+bool ElectronPathProvider(int key, base::FilePath* result) {
+  bool create_dir = false;
   base::FilePath cur;
-  if (!base::PathService::Get(DIR_USER_DATA, &cur))
-    return false;
+  switch (key) {
+    case chrome::DIR_USER_DATA:
+      if (!base::PathService::Get(DIR_APP_DATA, &cur))
+        return false;
+      cur = cur.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
+      create_dir = true;
+      break;
+    case DIR_CRASH_DUMPS:
+      if (!base::PathService::Get(chrome::DIR_USER_DATA, &cur))
+        return false;
 #if defined(OS_MAC) || defined(OS_WIN)
-  cur = cur.Append(FILE_PATH_LITERAL("Crashpad"));
+      cur = cur.Append(FILE_PATH_LITERAL("Crashpad"));
 #else
-  cur = cur.Append(FILE_PATH_LITERAL("Crash Reports"));
+      cur = cur.Append(FILE_PATH_LITERAL("Crash Reports"));
 #endif
+      create_dir = true;
+      break;
+    case chrome::DIR_APP_DICTIONARIES:
+      // TODO(nornagon): can we just default to using Chrome's logic here?
+      if (!base::PathService::Get(chrome::DIR_USER_DATA, &cur))
+        return false;
+      cur = cur.Append(base::FilePath::FromUTF8Unsafe("Dictionaries"));
+      create_dir = true;
+      break;
+    case DIR_USER_CACHE: {
+#if defined(OS_POSIX)
+      int parent_key = base::DIR_CACHE;
+#else
+      // On Windows, there's no OS-level centralized location for caches, so
+      // store the cache in the app data directory.
+      int parent_key = base::DIR_APP_DATA;
+#endif
+      if (!base::PathService::Get(parent_key, &cur))
+        return false;
+      cur = cur.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
+      create_dir = true;
+      break;
+    }
+#if defined(OS_LINUX)
+    case DIR_APP_DATA: {
+      auto env = base::Environment::Create();
+      cur = base::nix::GetXDGDirectory(
+          env.get(), base::nix::kXdgConfigHomeEnvVar, base::nix::kDotConfigDir);
+      break;
+    }
+#endif
+#if defined(OS_WIN)
+    case DIR_RECENT:
+      if (!platform_util::GetFolderPath(DIR_RECENT, &cur))
+        return false;
+      create_dir = true;
+      break;
+#endif
+    case DIR_APP_LOGS:
+#if defined(OS_MAC)
+      if (!base::PathService::Get(base::DIR_HOME, &cur))
+        return false;
+      cur = cur.Append(FILE_PATH_LITERAL("Library"));
+      cur = cur.Append(FILE_PATH_LITERAL("Logs"));
+      cur = cur.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
+#else
+      if (!base::PathService::Get(chrome::DIR_USER_DATA, &cur))
+        return false;
+      cur = cur.Append(base::FilePath::FromUTF8Unsafe("logs"));
+#endif
+      create_dir = true;
+      break;
+    default:
+      return false;
+  }
+
   // TODO(bauerb): http://crbug.com/259796
   base::ThreadRestrictions::ScopedAllowIO allow_io;
-  if (!base::PathExists(cur) && !base::CreateDirectory(cur))
+  if (create_dir && !base::PathExists(cur) && !base::CreateDirectory(cur)) {
     return false;
-  *path = cur;
-  return true;
-}
-
-bool ElectronPathProvider(int key, base::FilePath* path) {
-  if (key == DIR_CRASH_DUMPS) {
-    return GetDefaultCrashDumpsPath(path);
   }
-  return false;
+
+  *result = cur;
+
+  return true;
 }
 
 void RegisterPathProvider() {
@@ -280,6 +345,13 @@ void ElectronMainDelegate::PreSandboxStartup() {
 
   std::string process_type =
       command_line->GetSwitchValueASCII(::switches::kProcessType);
+
+  base::FilePath user_data_dir =
+      command_line->GetSwitchValuePath(::switches::kUserDataDir);
+  if (!user_data_dir.empty()) {
+    base::PathService::OverrideAndCreateIfNeeded(chrome::DIR_USER_DATA,
+                                                 user_data_dir, false, true);
+  }
 
 #if !defined(MAS_BUILD)
   crash_reporter::InitializeCrashKeys();

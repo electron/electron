@@ -14,6 +14,7 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
+#include "chrome/common/chrome_paths.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/devtools_frontend_host.h"
 #include "content/public/browser/devtools_socket_factory.h"
@@ -89,7 +90,7 @@ const char kBrowserCloseMethod[] = "Browser.close";
 // static
 void DevToolsManagerDelegate::StartHttpHandler() {
   base::FilePath user_dir;
-  base::PathService::Get(DIR_USER_DATA, &user_dir);
+  base::PathService::Get(chrome::DIR_USER_DATA, &user_dir);
   content::DevToolsAgentHost::StartRemoteDebuggingServer(
       CreateSocketFactory(), user_dir, base::FilePath());
 }
