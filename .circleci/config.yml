@@ -1399,6 +1399,8 @@ commands:
           steps:
             - attach_workspace:
                 at: .
+            - *step-maybe-early-exit-doc-only-change
+            - run: rm -rf src/electron
       - *step-restore-brew-cache
       - *step-install-gnutar-on-mac
       - *step-save-brew-cache
@@ -1992,7 +1994,7 @@ jobs:
           persist: true
           checkout: false
           checkout-and-assume-cache: true
-          attach: false
+          attach: true
 
   osx-testing-x64-gn-check:
     executor:
@@ -2057,7 +2059,7 @@ jobs:
           persist: true
           checkout: false
           checkout-and-assume-cache: true
-          attach: false
+          attach: true
 
   mas-testing-x64:
     executor: macos
@@ -2073,7 +2075,7 @@ jobs:
           persist: true
           checkout: false
           checkout-and-assume-cache: true
-          attach: false
+          attach: true
 
   mas-testing-x64-gn-check:
     executor:
@@ -2139,7 +2141,7 @@ jobs:
           persist: true
           checkout: false
           checkout-and-assume-cache: true
-          attach: false
+          attach: true
 
   # Layer 3: Tests.
   linux-x64-unittests:

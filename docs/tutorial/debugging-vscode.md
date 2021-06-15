@@ -45,7 +45,7 @@ Here is a pre-configured project that you can download and directly debug in VSC
 
 If you want to build Electron from source and modify the native Electron codebase, this section will help you in testing your modifications.
 
-For those unsure where to acquire this code or how to build it, [Electron's Build Tools](https://github.com/electron/build-tools) automates and explains most of this process. If you wish to manually set up the environment, you can instead use these [build instructions](https://www.electronjs.org/docs/development/build-instructions-gn).
+For those unsure where to acquire this code or how to build it, [Electron's Build Tools](https://github.com/electron/build-tools) automates and explains most of this process. If you wish to manually set up the environment, you can instead use these [build instructions](../development/build-instructions-gn.md).
 
 ### Windows (C++)
 
@@ -89,7 +89,7 @@ $ code electron-quick-start
 * `cppvsdbg` requires the [built-in C/C++ extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools) be enabled.
 * `${workspaceFolder}` is the full path to Chromium's `src` directory.
 * `your-executable-location` will be one of the following depending on a few items:
-  * `Testing`: If you are using the default settings of [Electron's Build-Tools](https://github.com/electron/build-tools) or the default instructions when [building from source](https://www.electronjs.org/docs/development/build-instructions-gn#building).
+  * `Testing`: If you are using the default settings of [Electron's Build-Tools](https://github.com/electron/build-tools) or the default instructions when [building from source](../development/build-instructions-gn.md#building).
   * `Release`: If you built a Release build rather than a Testing build.
   * `your-directory-name`: If you modified this during your build process from the default, this will be whatever you specified.
 * The `args` array string `"your-electron-project-path"` should be the absolute path to either the directory or `main.js` file of the Electron project you are using for testing. In this example, it should be your path to `electron-quick-start`.

@@ -36,7 +36,7 @@ ProxyingURLLoaderFactory::InProgressRequest::FollowRedirectParams::
 
 ProxyingURLLoaderFactory::InProgressRequest::InProgressRequest(
     ProxyingURLLoaderFactory* factory,
-    int64_t web_request_id,
+    uint64_t web_request_id,
     int32_t view_routing_id,
     int32_t frame_routing_id,
     int32_t network_service_request_id,

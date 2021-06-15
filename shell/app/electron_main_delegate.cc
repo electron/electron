@@ -331,12 +331,13 @@ void ElectronMainDelegate::PreSandboxStartup() {
   }
 
 #if !defined(OS_WIN)
-  // For windows we call InitLogging when the sandbox is initialized.
-  // We only preinit in the zygote (i.e. never log to a default log file),
-  // because the zygote is booted prior to JS running, so it can't know the
-  // correct user-data directory. (And, further, accessing the application name
-  // on Linux can cause glib calls that end up spawning threads, which if done
-  // before the zygote is booted, causes a CHECK().)
+  // For windows we call InitLogging later, after the sandbox is initialized.
+  //
+  // On Linux, we force a "preinit" in the zygote (i.e. never log to a default
+  // log file), because the zygote is booted prior to JS running, so it can't
+  // know the correct user-data directory. (And, further, accessing the
+  // application name on Linux can cause glib calls that end up spawning
+  // threads, which if done before the zygote is booted, causes a CHECK().)
   logging::InitElectronLogging(*command_line,
                                /* is_preinit = */ process_type.empty() ||
                                    process_type == ::switches::kZygoteProcess);
