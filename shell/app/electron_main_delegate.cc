@@ -18,6 +18,7 @@
 #include "base/strings/string_split.h"
 #include "chrome/common/chrome_paths.h"
 #include "components/content_settings/core/common/content_settings_pattern.h"
+#include "components/crash/core/app/crash_switches.h"
 #include "content/public/common/content_switches.h"
 #include "electron/buildflags/buildflags.h"
 #include "extensions/common/constants.h"
@@ -308,9 +309,12 @@ void ElectronMainDelegate::PreSandboxStartup() {
   if (process_type != ::switches::kZygoteProcess && !process_type.empty()) {
     ElectronCrashReporterClient::Create();
     if (crash_reporter::IsCrashpadEnabled()) {
-      crash_reporter::InitializeCrashpad(process_type.empty(), process_type);
-      crash_reporter::SetFirstChanceExceptionHandler(
-          v8::TryHandleWebAssemblyTrapPosix);
+      if (command_line->HasSwitch(
+              crash_reporter::switches::kCrashpadHandlerPid)) {
+        crash_reporter::InitializeCrashpad(false, process_type);
+        crash_reporter::SetFirstChanceExceptionHandler(
+            v8::TryHandleWebAssemblyTrapPosix);
+      }
     } else {
       breakpad::InitCrashReporter(process_type);
     }
@@ -402,9 +406,12 @@ void ElectronMainDelegate::ZygoteForked() {
   std::string process_type =
       command_line->GetSwitchValueASCII(::switches::kProcessType);
   if (crash_reporter::IsCrashpadEnabled()) {
-    crash_reporter::InitializeCrashpad(false, process_type);
-    crash_reporter::SetFirstChanceExceptionHandler(
-        v8::TryHandleWebAssemblyTrapPosix);
+    if (command_line->HasSwitch(
+            crash_reporter::switches::kCrashpadHandlerPid)) {
+      crash_reporter::InitializeCrashpad(false, process_type);
+      crash_reporter::SetFirstChanceExceptionHandler(
+          v8::TryHandleWebAssemblyTrapPosix);
+    }
   } else {
     breakpad::InitCrashReporter(process_type);
   }

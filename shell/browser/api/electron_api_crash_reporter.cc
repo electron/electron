@@ -44,6 +44,7 @@
 #include "base/guid.h"
 #include "components/crash/core/app/breakpad_linux.h"
 #include "components/crash/core/common/crash_keys.h"
+#include "components/upload_list/combining_upload_list.h"
 #include "v8/include/v8-wasm-trap-handler-posix.h"
 #include "v8/include/v8.h"
 #endif
@@ -150,10 +151,13 @@ void Start(const std::string& submit_url,
           ? "node"
           : command_line->GetSwitchValueASCII(::switches::kProcessType);
 #if defined(OS_LINUX)
-  if (crash_reporter::IsCrashpadEnabled()) {
+  if (::crash_reporter::IsCrashpadEnabled()) {
     for (const auto& pair : extra)
       electron::crash_keys::SetCrashKey(pair.first, pair.second);
-    ::crash_reporter::InitializeCrashpad(process_type.empty(), process_type);
+    {
+      base::ThreadRestrictions::ScopedAllowIO allow_io;
+      ::crash_reporter::InitializeCrashpad(process_type.empty(), process_type);
+    }
     if (ignore_system_crash_handler) {
       crashpad::CrashpadInfo::GetCrashpadInfo()
           ->set_system_crash_reporter_forwarding(crashpad::TriState::kDisabled);
