@@ -561,7 +561,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
               expect(remoteCrashesDir).to.equal(crashesDir);
 
               let reportsDir = crashesDir;
-              if (process.platform === 'darwin') {
+              if (process.platform === 'darwin' || (process.platform === 'linux' && withLinuxCrashpad)) {
                 reportsDir = path.join(crashesDir, 'completed');
               } else if (process.platform === 'win32') {
                 reportsDir = path.join(crashesDir, 'reports');
@@ -570,7 +570,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
               crash(crashingProcess, remotely);
               const newFiles = await newFileAppeared;
               expect(newFiles.length).to.be.greaterThan(0);
-              if (process.platform === 'linux') {
+              if (process.platform === 'linux' && !withLinuxCrashpad) {
                 if (crashingProcess === 'main') {
                   expect(newFiles[0]).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{8}-[0-9a-f]{8}\.dmp$/);
                 } else {
