@@ -437,6 +437,7 @@ step-fix-sync-on-mac: &step-fix-sync-on-mac
         # Fix Clang Install (wrong binary)
         rm -rf src/third_party/llvm-build
         python src/tools/clang/scripts/update.py
+        python src/tools/clang/scripts/update.py --package=lld_mac
       fi
 
 step-install-signing-cert-on-mac: &step-install-signing-cert-on-mac
