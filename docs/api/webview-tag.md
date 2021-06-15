@@ -18,7 +18,8 @@ more information see the [BrowserWindow constructor docs](browser-window.md).
 
 > Display external web content in an isolated frame and process.
 
-Process: [Renderer](../glossary.md#renderer-process)
+Process: [Renderer](../glossary.md#renderer-process)<br />
+_This class is not exported from the `'electron'` module. It is only available as a return value of other methods in the Electron API._
 
 Use the `webview` tag to embed 'guest' content (such as web pages) in your
 Electron app. The guest content is contained within the `webview` container.
