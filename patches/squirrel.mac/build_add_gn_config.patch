@@ -23,10 +23,10 @@ index 89c499e451ecb48655cfd42b01ffa1da56998c2e..98f80aad43a87ed75ca1660ad6a178db
 +vendor
 diff --git a/BUILD.gn b/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..449c8ccd5ebf37aeb4f61754d9d5ea3c25b22d23
+index 0000000000000000000000000000000000000000..d43e6d6be5c8e2b3a5f715721e61589be493718d
 --- /dev/null
 +++ b/BUILD.gn
-@@ -0,0 +1,236 @@
+@@ -0,0 +1,239 @@
 +assert(is_mac)
 +
 +import("//build/config/mac/rules.gni")
@@ -118,7 +118,10 @@ index 0000000000000000000000000000000000000000..449c8ccd5ebf37aeb4f61754d9d5ea3c
 +    "CURRENT_PROJECT_VERSION=0.0.0",
 +    "PRODUCT_BUNDLE_IDENTIFIER=com.electron.reactive",
 +  ]
-+  defines = [ "BUILDING_RAC_FRAMEWORK=1" ]
++  defines = [
++    "BUILDING_RAC_FRAMEWORK=1",
++    "DTRACE_PROBES_DISABLED",
++  ]
 +
 +  configs -= [
 +    "//build/config/compiler:chromium_code",
