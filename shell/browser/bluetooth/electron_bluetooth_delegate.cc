@@ -6,7 +6,6 @@
 
 #include <memory>
 
-#include "base/scoped_observer.h"
 #include "base/strings/utf_string_conversions.h"
 #include "build/build_config.h"
 #include "content/public/browser/render_frame_host.h"
