@@ -22,7 +22,7 @@ Upstreams for code herein (update when changed):
 * https://github.com/nodejs/node/pull/38744
 
 diff --git a/src/crypto/crypto_cipher.cc b/src/crypto/crypto_cipher.cc
-index 5ce466582823ae1304731610da61b7fde77fc65a..0bf80ecd89deb83cf5ecfa8ee7c8fe1dec3b6c36 100644
+index 5ce466582823ae1304731610da61b7fde77fc65a..cd3c7cea3b83be95a6663909ad9e1a2d2f2eb25a 100644
 --- a/src/crypto/crypto_cipher.cc
 +++ b/src/crypto/crypto_cipher.cc
 @@ -148,7 +148,7 @@ void GetCipherInfo(const FunctionCallbackInfo<Value>& args) {
@@ -34,6 +34,15 @@ index 5ce466582823ae1304731610da61b7fde77fc65a..0bf80ecd89deb83cf5ecfa8ee7c8fe1d
      return;
    }
  
+@@ -906,7 +906,7 @@ bool PublicKeyCipher::Cipher(
+     void* label = OPENSSL_memdup(oaep_label.data(), oaep_label.size());
+     CHECK_NOT_NULL(label);
+     if (0 >= EVP_PKEY_CTX_set0_rsa_oaep_label(ctx.get(),
+-                reinterpret_cast<unsigned char*>(label),
++                     static_cast<unsigned char*>(label),
+                                       oaep_label.size())) {
+       OPENSSL_free(label);
+       return false;
 diff --git a/src/crypto/crypto_common.cc b/src/crypto/crypto_common.cc
 index f4b7bd3ad8548a0b69943ddea669e6f1991b7a49..221d652fa7de246e5f69fcf392e334087bac0199 100644
 --- a/src/crypto/crypto_common.cc
@@ -271,7 +280,7 @@ index b24f8f32136ffaed54310d5dc02e57b0f69450d6..50a6663966cdb147a702df21240fa449
      THROW_ERR_CRYPTO_OPERATION_FAILED(env, "could not generate prime");
      return Nothing<bool>();
 diff --git a/src/crypto/crypto_rsa.cc b/src/crypto/crypto_rsa.cc
-index 5fa91cce1a6ad2bc1167e20a4dadcfdfc2343440..6f1bad3f129066eddcbddf32849b6d4832b62ae9 100644
+index 5fa91cce1a6ad2bc1167e20a4dadcfdfc2343440..5bbeb01ab58ac7f95e2c4ee1357f50540be86229 100644
 --- a/src/crypto/crypto_rsa.cc
 +++ b/src/crypto/crypto_rsa.cc
 @@ -210,7 +210,10 @@ WebCryptoCipherStatus RSA_Cipher(
@@ -281,7 +290,7 @@ index 5fa91cce1a6ad2bc1167e20a4dadcfdfc2343440..6f1bad3f129066eddcbddf32849b6d48
 -    if (EVP_PKEY_CTX_set0_rsa_oaep_label(ctx.get(), label, label_len) <= 0) {
 +    if (EVP_PKEY_CTX_set0_rsa_oaep_label(
 +      ctx.get(),
-+      reinterpret_cast<unsigned char*>(label),
++      static_cast<unsigned char*>(label),
 +      label_len) <= 0) {
        OPENSSL_free(label);
        return WebCryptoCipherStatus::FAILED;
