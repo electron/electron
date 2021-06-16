@@ -151,7 +151,17 @@ bool ElectronCrashReporterClient::GetCrashDumpLocation(
 #else
 bool ElectronCrashReporterClient::GetCrashDumpLocation(
     base::FilePath* crash_dir) {
-  return base::PathService::Get(electron::DIR_CRASH_DUMPS, crash_dir);
+  bool result = base::PathService::Get(electron::DIR_CRASH_DUMPS, crash_dir);
+  {
+    // If the DIR_CRASH_DUMPS path is overridden with
+    // app.setPath('crashDumps', ...) then the directory might not have been
+    // created.
+    base::ThreadRestrictions::ScopedAllowIO allow_io;
+    if (result && !base::PathExists(*crash_dir)) {
+      return base::CreateDirectory(*crash_dir);
+    }
+  }
+  return result;
 }
 #endif
 
