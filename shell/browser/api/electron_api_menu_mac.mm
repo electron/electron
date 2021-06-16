@@ -82,9 +82,12 @@ v8::Local<v8::Value> Menu::GetUserAcceleratorAt(int command_id) const {
       [[ElectronMenuController alloc] initWithModel:model()
                               useDefaultAccelerator:NO]);
 
+  int command_index = GetIndexOfCommandId(command_id);
+  if (command_index == -1)
+    return v8::Null(isolate);
+
   base::scoped_nsobject<NSMenuItem> item =
-      [controller makeMenuItemForIndex:GetIndexOfCommandId(command_id)
-                             fromModel:model()];
+      [controller makeMenuItemForIndex:command_index fromModel:model()];
   if ([[item userKeyEquivalent] length] == 0)
     return v8::Null(isolate);
 
