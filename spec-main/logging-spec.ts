@@ -130,6 +130,21 @@ ifdescribe(process._linkedBinding('electron_common_testing'))('logging', () => {
     expect(contents).to.match(/TEST_LOG/);
   });
 
+  it('does not lose early log messages when logging to a given file with --log-file', async () => {
+    const logFilePath = path.join(app.getPath('temp'), 'test-log-file-' + uuid.v4());
+    const rc = await startRemoteControlApp(['--enable-logging', '--log-file=' + logFilePath, `--boot-eval=process._linkedBinding('electron_common_testing').log(0, 'EARLY_LOG')`]);
+    rc.remotely(() => {
+      process._linkedBinding('electron_common_testing').log(0, 'LATER_LOG');
+      setTimeout(() => { require('electron').app.quit(); });
+    });
+    await emittedOnce(rc.process, 'exit');
+    const stat = await fs.stat(logFilePath);
+    expect(stat.isFile()).to.be.true();
+    const contents = await fs.readFile(logFilePath, 'utf8');
+    expect(contents).to.match(/EARLY_LOG/);
+    expect(contents).to.match(/LATER_LOG/);
+  });
+
   it('enables logging when switch is appended during first tick', async () => {
     const rc = await startRemoteControlApp(['--boot-eval=require(\'electron\').app.commandLine.appendSwitch(\'--enable-logging\')']);
     const stderrComplete = new Promise<string>(resolve => {
