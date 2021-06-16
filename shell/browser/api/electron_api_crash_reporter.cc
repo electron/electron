@@ -203,7 +203,9 @@ scoped_refptr<UploadList> CreateCrashUploadList() {
   base::PathService::Get(electron::DIR_CRASH_DUMPS, &crash_dir_path);
   base::FilePath upload_log_path =
       crash_dir_path.AppendASCII(CrashUploadList::kReporterLogFilename);
-  return base::MakeRefCounted<TextLogUploadList>(upload_log_path);
+  scoped_refptr<UploadList> result =
+      base::MakeRefCounted<TextLogUploadList>(upload_log_path);
+  return result;
 #endif  // defined(OS_MAC) || defined(OS_WIN)
 }
 

@@ -151,14 +151,7 @@ bool ElectronCrashReporterClient::GetCrashDumpLocation(
 #else
 bool ElectronCrashReporterClient::GetCrashDumpLocation(
     base::FilePath* crash_dir) {
-  bool result = base::PathService::Get(electron::DIR_CRASH_DUMPS, crash_dir);
-  {
-    base::ThreadRestrictions::ScopedAllowIO allow_io;
-    if (result && !base::PathExists(*crash_dir)) {
-      return base::CreateDirectory(*crash_dir);
-    }
-  }
-  return result;
+  return base::PathService::Get(electron::DIR_CRASH_DUMPS, crash_dir);
 }
 #endif
 
