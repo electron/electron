@@ -202,7 +202,7 @@ index 1c48f98656fd211403354bb88331450e51ffb3e5..19029e058eb7ebbea283ad49be47c0c6
  
    EVPKeyCtxPointer ctx(EVP_PKEY_CTX_new(key_params.get(), nullptr));
 diff --git a/src/crypto/crypto_dsa.cc b/src/crypto/crypto_dsa.cc
-index 271db427fa8539feb30c1712574976fb1f623e91..05ec6103007b0c687c1c713c44f5e00f1f2f33c3 100644
+index 271db427fa8539feb30c1712574976fb1f623e91..b2b6af1f9e6db54bdff0be7a567255f47da7b918 100644
 --- a/src/crypto/crypto_dsa.cc
 +++ b/src/crypto/crypto_dsa.cc
 @@ -29,7 +29,7 @@ namespace crypto {
@@ -214,11 +214,13 @@ index 271db427fa8539feb30c1712574976fb1f623e91..05ec6103007b0c687c1c713c44f5e00f
    if (!param_ctx ||
        EVP_PKEY_paramgen_init(param_ctx.get()) <= 0 ||
        EVP_PKEY_CTX_set_dsa_paramgen_bits(
-@@ -49,7 +49,7 @@ EVPKeyCtxPointer DsaKeyGenTraits::Setup(DsaKeyPairGenConfig* params) {
+@@ -49,7 +49,9 @@ EVPKeyCtxPointer DsaKeyGenTraits::Setup(DsaKeyPairGenConfig* params) {
        return EVPKeyCtxPointer();
      }
    }
 -
++#else
++  return EVPKeyCtxPointer();
 +#endif
    if (EVP_PKEY_paramgen(param_ctx.get(), &raw_params) <= 0)
      return EVPKeyCtxPointer();
