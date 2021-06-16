@@ -61,7 +61,8 @@ typedef std::unordered_map<content::RenderFrameHost*, WebFrameMain*>
 base::LazyInstance<RenderFrameMap>::DestructorAtExit g_render_frame_map =
     LAZY_INSTANCE_INITIALIZER;
 
-WebFrameMain* FromRenderFrameHost(content::RenderFrameHost* rfh) {
+// static
+WebFrameMain* WebFrameMain::From(content::RenderFrameHost* rfh) {
   auto frame_map = g_render_frame_map.Get();
   auto iter = frame_map.find(rfh);
   auto* web_frame = iter == frame_map.end() ? nullptr : iter->second;
@@ -293,6 +294,13 @@ std::vector<content::RenderFrameHost*> WebFrameMain::FramesInSubtree() const {
   return frame_hosts;
 }
 
+void WebFrameMain::Connect() {
+  if (pending_receiver_) {
+    render_frame_->GetRemoteInterfaces()->GetInterface(
+        std::move(pending_receiver_));
+  }
+}
+
 // static
 gin::Handle<WebFrameMain> WebFrameMain::New(v8::Isolate* isolate) {
   return gin::Handle<WebFrameMain>();
@@ -303,7 +311,7 @@ gin::Handle<WebFrameMain> WebFrameMain::From(v8::Isolate* isolate,
                                              content::RenderFrameHost* rfh) {
   if (rfh == nullptr)
     return gin::Handle<WebFrameMain>();
-  auto* web_frame = FromRenderFrameHost(rfh);
+  auto* web_frame = From(rfh);
   if (web_frame)
     return gin::CreateHandle(isolate, web_frame);
 
@@ -322,26 +330,6 @@ gin::Handle<WebFrameMain> WebFrameMain::FromID(v8::Isolate* isolate,
   auto* rfh =
       content::RenderFrameHost::FromID(render_process_id, render_frame_id);
   return From(isolate, rfh);
-}
-
-// static
-void WebFrameMain::RenderFrameDeleted(content::RenderFrameHost* rfh) {
-  auto* web_frame = FromRenderFrameHost(rfh);
-  if (web_frame)
-    web_frame->MarkRenderFrameDisposed();
-}
-
-void WebFrameMain::RenderFrameCreated(content::RenderFrameHost* rfh) {
-  auto* web_frame = FromRenderFrameHost(rfh);
-  if (web_frame)
-    web_frame->Connect();
-}
-
-void WebFrameMain::Connect() {
-  if (pending_receiver_) {
-    render_frame_->GetRemoteInterfaces()->GetInterface(
-        std::move(pending_receiver_));
-  }
 }
 
 // static

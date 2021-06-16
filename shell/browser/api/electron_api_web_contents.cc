@@ -1390,6 +1390,10 @@ void WebContents::HandleNewRenderFrame(
 void WebContents::RenderFrameCreated(
     content::RenderFrameHost* render_frame_host) {
   HandleNewRenderFrame(render_frame_host);
+
+  auto* web_frame = WebFrameMain::From(render_frame_host);
+  if (web_frame)
+    web_frame->Connect();
 }
 
 void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
@@ -1635,7 +1639,9 @@ void WebContents::RenderFrameDeleted(
     content::RenderFrameHost* render_frame_host) {
   // A WebFrameMain can outlive its RenderFrameHost so we need to mark it as
   // disposed to prevent access to it.
-  WebFrameMain::RenderFrameDeleted(render_frame_host);
+  auto* web_frame = WebFrameMain::From(render_frame_host);
+  if (web_frame)
+    web_frame->MarkRenderFrameDisposed();
 }
 
 void WebContents::DidStartNavigation(
