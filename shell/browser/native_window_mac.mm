@@ -1337,10 +1337,9 @@ void NativeWindowMac::SetAutoHideCursor(bool auto_hide) {
 }
 
 void NativeWindowMac::UpdateVibrancyRadii(bool fullscreen) {
-  NSView* vibrant_view = [window_ vibrantView];
-  NSVisualEffectView* effect_view = (NSVisualEffectView*)vibrant_view;
+  NSVisualEffectView* vibrantView = [window_ vibrantView];
 
-  if (effect_view != nil && !vibrancy_type_.empty()) {
+  if (vibrantView != nil && !vibrancy_type_.empty()) {
     const bool no_rounded_corner =
         [window_ styleMask] & NSWindowStyleMaskFullSizeContentView;
     if (!has_frame() && !is_modal() && !no_rounded_corner) {
@@ -1370,43 +1369,42 @@ void NativeWindowMac::UpdateVibrancyRadii(bool fullscreen) {
 
       [maskImage setCapInsets:NSEdgeInsetsMake(radius, radius, radius, radius)];
       [maskImage setResizingMode:NSImageResizingModeStretch];
-      [effect_view setMaskImage:maskImage];
+      [vibrantView setMaskImage:maskImage];
       [window_ setCornerMask:maskImage];
     }
   }
 }
 
 void NativeWindowMac::SetVibrancy(const std::string& type) {
-  NSView* vibrant_view = [window_ vibrantView];
+  NSVisualEffectView* vibrantView = [window_ vibrantView];
 
   if (type.empty()) {
-    if (vibrant_view == nil)
+    if (vibrantView == nil)
       return;
 
-    [vibrant_view removeFromSuperview];
+    [vibrantView removeFromSuperview];
     [window_ setVibrantView:nil];
 
     return;
   }
 
-  NSVisualEffectView* effect_view = (NSVisualEffectView*)vibrant_view;
-  if (effect_view == nil) {
-    effect_view = [[[NSVisualEffectView alloc]
+  if (vibrantView == nil) {
+    vibrantView = [[[NSVisualEffectView alloc]
         initWithFrame:[[window_ contentView] bounds]] autorelease];
-    [window_ setVibrantView:(NSView*)effect_view];
+    [window_ setVibrantView:vibrantView];
 
-    [effect_view setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
-    [effect_view setBlendingMode:NSVisualEffectBlendingModeBehindWindow];
+    [vibrantView setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+    [vibrantView setBlendingMode:NSVisualEffectBlendingModeBehindWindow];
 
     if (visual_effect_state_ == VisualEffectState::kActive) {
-      [effect_view setState:NSVisualEffectStateActive];
+      [vibrantView setState:NSVisualEffectStateActive];
     } else if (visual_effect_state_ == VisualEffectState::kInactive) {
-      [effect_view setState:NSVisualEffectStateInactive];
+      [vibrantView setState:NSVisualEffectStateInactive];
     } else {
-      [effect_view setState:NSVisualEffectStateFollowsWindowActiveState];
+      [vibrantView setState:NSVisualEffectStateFollowsWindowActiveState];
     }
 
-    [[window_ contentView] addSubview:effect_view
+    [[window_ contentView] addSubview:vibrantView
                            positioned:NSWindowBelow
                            relativeTo:nil];
 
@@ -1476,7 +1474,7 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
 
   if (vibrancyType) {
     vibrancy_type_ = type;
-    [effect_view setMaterial:vibrancyType];
+    [vibrantView setMaterial:vibrancyType];
   }
 }
 
