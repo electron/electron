@@ -476,10 +476,12 @@ node::Environment* NodeBindings::CreateEnvironment(
     // Node.js requires that microtask checkpoints be explicitly invoked.
     is.policy = v8::MicrotasksPolicy::kExplicit;
   } else {
-    // Match Blink's behavior by allowing microtasks invocation to be controlled
-    // by MicrotasksScope objects when queued outside of `UvRunOnce()` call, but
-    // use explicit microtasks policy while inside `UvRunOnce()` for better
-    // compatibility with Node.js and better performance.
+    // Blink expects the microtasks policy to be kScoped, but Node.js expects it
+    // to be kExplicit. In the renderer, there can be many contexts within the
+    // same isolate, so we don't want to change the existing policy here, which
+    // could be either kExplicit or kScoped depending on whether we're executing
+    // from within a Node.js or a Blink entrypoint. Instead, the policy is
+    // toggled to kExplicit when entering Node.js through UvRunOnce.
     is.policy = context->GetIsolate()->GetMicrotasksPolicy();
 
     // We do not want to use Node.js' message listener as it interferes with
