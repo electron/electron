@@ -74,6 +74,9 @@ int SetNodeCliFlags() {
     if (disallowed.count(stripped) != 0) {
       LOG(ERROR) << "The Node.js cli flag " << stripped
                  << " is not supported in Electron";
+      // Node.js returns 9 from ProcessGlobalArgs for any errors encountered
+      // when setting up cli flags and env vars. Since we're outlawing these
+      // flags (making them errors) return 9 here for consistency.
       return 9;
     } else {
       args.push_back(option);
