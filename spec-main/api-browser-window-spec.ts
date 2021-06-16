@@ -1609,6 +1609,13 @@ describe('BrowserWindow module', () => {
         w.setVibrancy('' as any);
       }).to.not.throw();
     });
+
+    it('does not crash if vibrancy is set to an invalid value', () => {
+      const w = new BrowserWindow({ show: false });
+      expect(() => {
+        w.setVibrancy('i-am-not-a-valid-vibrancy-type' as any);
+      }).to.not.throw();
+    });
   });
 
   ifdescribe(process.platform === 'darwin')('trafficLightPosition', () => {
