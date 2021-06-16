@@ -132,7 +132,7 @@ ifdescribe(process._linkedBinding('electron_common_testing'))('logging', () => {
 
   it('does not lose early log messages when logging to a given file with --log-file', async () => {
     const logFilePath = path.join(app.getPath('temp'), 'test-log-file-' + uuid.v4());
-    const rc = await startRemoteControlApp(['--enable-logging', '--log-file=' + logFilePath, `--boot-eval=process._linkedBinding('electron_common_testing').log(0, 'EARLY_LOG')`]);
+    const rc = await startRemoteControlApp(['--enable-logging', '--log-file=' + logFilePath, '--boot-eval=process._linkedBinding(\'electron_common_testing\').log(0, \'EARLY_LOG\')']);
     rc.remotely(() => {
       process._linkedBinding('electron_common_testing').log(0, 'LATER_LOG');
       setTimeout(() => { require('electron').app.quit(); });
