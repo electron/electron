@@ -27,7 +27,7 @@ index 6d34c5125e93bc0f0ce414be573438aec091dbb5..6879f0ede8d185d3e10b419a369c0ea0
 +      mode != "strict" &&
 +      mode != "warn" &&
 +      mode != "none") {
-+    fprintf(stderr, "Invalid unhandled rejections mode: %s", mode.c_str());
++    fprintf(stderr, "Invalid unhandled rejections mode: %s\n", mode.c_str());
 +  } else {
 +    options_->unhandled_rejections = mode;
 +  }
