@@ -1601,8 +1601,7 @@ void WebContents::MessageSync(
                  internal, channel, std::move(arguments));
 }
 
-void WebContents::MessageTo(bool internal,
-                            int32_t web_contents_id,
+void WebContents::MessageTo(int32_t web_contents_id,
                             const std::string& channel,
                             blink::CloneableMessage arguments) {
   TRACE_EVENT1("electron", "WebContents::MessageTo", "channel", channel);
@@ -1617,7 +1616,7 @@ void WebContents::MessageTo(bool internal,
         WebFrameMain::From(JavascriptEnvironment::GetIsolate(), frame);
 
     int32_t sender_id = ID();
-    web_frame_main->GetRendererApi()->Message(internal, channel,
+    web_frame_main->GetRendererApi()->Message(false /* internal */, channel,
                                               std::move(arguments), sender_id);
   }
 }

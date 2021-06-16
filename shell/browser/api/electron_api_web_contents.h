@@ -409,8 +409,7 @@ class WebContents : public gin::Wrappable<WebContents>,
       blink::CloneableMessage arguments,
       electron::mojom::ElectronBrowser::MessageSyncCallback callback,
       content::RenderFrameHost* render_frame_host);
-  void MessageTo(bool internal,
-                 int32_t web_contents_id,
+  void MessageTo(int32_t web_contents_id,
                  const std::string& channel,
                  blink::CloneableMessage arguments);
   void MessageHost(const std::string& channel,
