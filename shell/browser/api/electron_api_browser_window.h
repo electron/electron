@@ -63,9 +63,7 @@ class BrowserWindow : public BaseWindow,
   void OnActivateContents() override;
   void OnPageTitleUpdated(const base::string16& title,
                           bool explicit_set) override;
-#if defined(OS_MAC)
   void OnDevToolsResized() override;
-#endif
 
   // NativeWindowObserver:
   void RequestPreferredWidth(int* width) override;
@@ -121,9 +119,7 @@ class BrowserWindow : public BaseWindow,
   // it should be cancelled when we can prove that the window is responsive.
   base::CancelableClosure window_unresponsive_closure_;
 
-#if defined(OS_MAC)
   std::vector<mojom::DraggableRegionPtr> draggable_regions_;
-#endif
 
   v8::Global<v8::Value> web_contents_;
   base::WeakPtr<api::WebContents> api_web_contents_;

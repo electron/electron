@@ -132,6 +132,10 @@ void InspectableWebContentsViewViews::ShowDevTools(bool activate) {
     } else {
       devtools_window_->ShowInactive();
     }
+
+    // Update draggable regions to account for the new dock position.
+    if (GetDelegate())
+      GetDelegate()->DevToolsResized();
   } else {
     devtools_web_view_->SetVisible(true);
     devtools_web_view_->SetWebContents(
@@ -232,6 +236,9 @@ void InspectableWebContentsViewViews::Layout() {
 
   devtools_web_view_->SetBoundsRect(new_devtools_bounds);
   contents_web_view_->SetBoundsRect(new_contents_bounds);
+
+  if (GetDelegate())
+    GetDelegate()->DevToolsResized();
 }
 
 }  // namespace electron
