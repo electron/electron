@@ -1353,8 +1353,6 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
     return;
   }
 
-  vibrancy_type_ = type;
-
   NSVisualEffectView* effect_view = (NSVisualEffectView*)vibrant_view;
   if (effect_view == nil) {
     effect_view = [[[NSVisualEffectView alloc]
@@ -1383,7 +1381,7 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
   node::Environment* env =
       node::Environment::GetCurrent(JavascriptEnvironment::GetIsolate());
 
-  NSVisualEffectMaterial vibrancyType;
+  NSVisualEffectMaterial vibrancyType{};
   if (type == "appearance-based") {
     EmitWarning(env, "NSVisualEffectMaterialAppearanceBased" + dep_warn,
                 "electron");
@@ -1440,8 +1438,10 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
     }
   }
 
-  if (vibrancyType)
+  if (vibrancyType) {
+    vibrancy_type_ = type;
     [effect_view setMaterial:vibrancyType];
+  }
 }
 
 void NativeWindowMac::SetWindowButtonVisibility(bool visible) {
