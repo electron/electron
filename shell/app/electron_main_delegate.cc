@@ -32,6 +32,7 @@
 #include "shell/browser/relauncher.h"
 #include "shell/common/application_info.h"
 #include "shell/common/electron_paths.h"
+#include "shell/common/logging.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/platform_util.h"
 #include "shell/renderer/electron_renderer_client.h"
@@ -70,6 +71,10 @@ namespace electron {
 namespace {
 
 const char* kRelauncherProcess = "relauncher";
+
+constexpr base::StringPiece kElectronDisableSandbox("ELECTRON_DISABLE_SANDBOX");
+constexpr base::StringPiece kElectronEnableStackDumping(
+    "ELECTRON_ENABLE_STACK_DUMPING");
 
 bool IsBrowserProcess(base::CommandLine* cmd) {
   std::string process_type = cmd->GetSwitchValueASCII(::switches::kProcessType);
@@ -236,7 +241,6 @@ const size_t ElectronMainDelegate::kNonWildcardDomainNonPortSchemesSize =
 bool ElectronMainDelegate::BasicStartupComplete(int* exit_code) {
   auto* command_line = base::CommandLine::ForCurrentProcess();
 
-  logging::LoggingSettings settings;
 #if defined(OS_WIN)
   v8_crashpad_support::SetUp();
 
@@ -244,43 +248,16 @@ bool ElectronMainDelegate::BasicStartupComplete(int* exit_code) {
   // prevent output in the same line as the prompt.
   if (IsBrowserProcess(command_line))
     std::wcout << std::endl;
-#if defined(DEBUG)
-  // Print logging to debug.log on Windows
-  settings.logging_dest = logging::LOG_TO_ALL;
-  base::FilePath log_filename;
-  base::PathService::Get(base::DIR_EXE, &log_filename);
-  log_filename = log_filename.AppendASCII("debug.log");
-  settings.log_file_path = log_filename.value().c_str();
-  settings.lock_log = logging::LOCK_LOG_FILE;
-  settings.delete_old = logging::DELETE_OLD_LOG_FILE;
-#else
-  settings.logging_dest =
-      logging::LOG_TO_SYSTEM_DEBUG_LOG | logging::LOG_TO_STDERR;
-#endif  // defined(DEBUG)
-#else   // defined(OS_WIN)
-  settings.logging_dest =
-      logging::LOG_TO_SYSTEM_DEBUG_LOG | logging::LOG_TO_STDERR;
 #endif  // !defined(OS_WIN)
 
-  // Only enable logging when --enable-logging is specified.
   auto env = base::Environment::Create();
-  if (!command_line->HasSwitch(::switches::kEnableLogging) &&
-      !env->HasVar("ELECTRON_ENABLE_LOGGING")) {
-    settings.logging_dest = logging::LOG_NONE;
-    logging::SetMinLogLevel(logging::LOGGING_NUM_SEVERITIES);
-  }
-
-  logging::InitLogging(settings);
-
-  // Logging with pid and timestamp.
-  logging::SetLogItems(true, false, true, false);
 
   // Enable convenient stack printing. This is enabled by default in
   // non-official builds.
-  if (env->HasVar("ELECTRON_ENABLE_STACK_DUMPING"))
+  if (env->HasVar(kElectronEnableStackDumping))
     base::debug::EnableInProcessStackDumping();
 
-  if (env->HasVar("ELECTRON_DISABLE_SANDBOX"))
+  if (env->HasVar(kElectronDisableSandbox))
     command_line->AppendSwitch(sandbox::policy::switches::kNoSandbox);
 
   tracing_sampler_profiler_ =
@@ -353,6 +330,19 @@ void ElectronMainDelegate::PreSandboxStartup() {
                                                  user_data_dir, false, true);
   }
 
+#if !defined(OS_WIN)
+  // For windows we call InitLogging later, after the sandbox is initialized.
+  //
+  // On Linux, we force a "preinit" in the zygote (i.e. never log to a default
+  // log file), because the zygote is booted prior to JS running, so it can't
+  // know the correct user-data directory. (And, further, accessing the
+  // application name on Linux can cause glib calls that end up spawning
+  // threads, which if done before the zygote is booted, causes a CHECK().)
+  logging::InitElectronLogging(*command_line,
+                               /* is_preinit = */ process_type.empty() ||
+                                   process_type == ::switches::kZygoteProcess);
+#endif
+
 #if !defined(MAS_BUILD)
   crash_reporter::InitializeCrashKeys();
 #endif
@@ -398,6 +388,13 @@ void ElectronMainDelegate::PreSandboxStartup() {
     command_line->AppendSwitch("enable-avfoundation");
 #endif
   }
+}
+
+void ElectronMainDelegate::SandboxInitialized(const std::string& process_type) {
+#if defined(OS_WIN)
+  logging::InitElectronLogging(*base::CommandLine::ForCurrentProcess(),
+                               /* is_preinit = */ process_type.empty());
+#endif
 }
 
 void ElectronMainDelegate::PreBrowserMain() {
