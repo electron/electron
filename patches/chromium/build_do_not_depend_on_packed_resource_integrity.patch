@@ -11,7 +11,7 @@ if we ever align our .pak file generation with Chrome we can remove this
 patch.
 
 diff --git a/chrome/BUILD.gn b/chrome/BUILD.gn
-index c0beea906cc463cf55d37924a61cf0ba7eba6ab2..98202508b872221e9242d7ebaf0d03e654d8cecb 100644
+index 72567c45bafd90556c133b594053f18c45265da0..ee2b95656d1bc1dc37d9bbf0ad2e9c2158eeab19 100644
 --- a/chrome/BUILD.gn
 +++ b/chrome/BUILD.gn
 @@ -172,11 +172,16 @@ if (!is_android && !is_mac) {
@@ -33,10 +33,10 @@ index c0beea906cc463cf55d37924a61cf0ba7eba6ab2..98202508b872221e9242d7ebaf0d03e6
          "//base",
          "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index c9b47583391472ed9d0e309fe6c5c8cf5b900400..63e29d5b1f1ee6af729feb82ed002d96e1fc582a 100644
+index f753ebb2574e89f4937fbbfbfcfb43d2f421c238..334f482ad4a8bcd67008fb27696d8e14e133fc74 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -4275,7 +4275,7 @@ static_library("browser") {
+@@ -4287,7 +4287,7 @@ static_library("browser") {
  
      # On Windows, the hashes are embedded in //chrome:chrome_initial rather
      # than here in :chrome_dll.
@@ -46,16 +46,20 @@ index c9b47583391472ed9d0e309fe6c5c8cf5b900400..63e29d5b1f1ee6af729feb82ed002d96
      }
  
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index 9135f841967fc8e85e6befbf23c54d570fd3ce58..43a4578c5cd67179acb2769c17cf82837d505e56 100644
+index 8aee0e34ccc405f69e1365f741a141cfaec2ad02..7d44bc16ee5153853cde477ef4c99109f0a373ba 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
-@@ -5045,10 +5045,15 @@ test("unit_tests") {
+@@ -5221,7 +5221,6 @@ test("unit_tests") {
      assert(toolkit_views)
      sources += [ "../browser/ui/startup/credential_provider_signin_info_fetcher_win_unittest.cc" ]
      deps += [
 -      "//chrome:packed_resources_integrity",
-       "//chrome/browser/win/conflicts:unit_tests",
-       "//chrome/test:credential_provider_test_utils",
+       "//chrome/browser:chrome_process_finder",
+       "//chrome/browser/safe_browsing/chrome_cleaner",
+       "//chrome/browser/safe_browsing/chrome_cleaner:public",
+@@ -5234,6 +5233,12 @@ test("unit_tests") {
+       "//components/chrome_cleaner/public/proto",
+       "//ui/events/devices:test_support",
      ]
 +
 +    if (!is_electron_build) {

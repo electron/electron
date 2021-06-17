@@ -61,7 +61,7 @@ index 4b741d67c4c20766e248f0799825103ba4f2a1ce..adf85811da98e1666e8e93e5b339e176
  #include "ui/base/l10n/l10n_util.h"
  #include "ui/gfx/paint_vector_icon.h"
 diff --git a/chrome/browser/ui/views/overlay/overlay_window_views.cc b/chrome/browser/ui/views/overlay/overlay_window_views.cc
-index d094b65029c7d73a77238844b9f31ffbf3ddbafd..61ecfb4dee4b6bca43721039651752793d30fab6 100644
+index c7eb11ed3bcd33861bf4d7b3447040602591e993..cb740fec8f53b35b3cc9715e93af1d8ddfa0af5e 100644
 --- a/chrome/browser/ui/views/overlay/overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/overlay_window_views.cc
 @@ -16,9 +16,11 @@
@@ -85,7 +85,7 @@ index d094b65029c7d73a77238844b9f31ffbf3ddbafd..61ecfb4dee4b6bca4372103965175279
  #include "components/url_formatter/url_formatter.h"
  #include "components/vector_icons/vector_icons.h"
  #include "content/public/browser/picture_in_picture_window_controller.h"
-@@ -56,7 +58,7 @@
+@@ -58,7 +60,7 @@
  #include "ui/aura/window.h"
  #endif
  
@@ -94,7 +94,7 @@ index d094b65029c7d73a77238844b9f31ffbf3ddbafd..61ecfb4dee4b6bca4372103965175279
  #include "chrome/browser/shell_integration_win.h"
  #include "ui/aura/window.h"
  #include "ui/aura/window_tree_host.h"
-@@ -240,7 +242,7 @@ std::unique_ptr<OverlayWindowViews> OverlayWindowViews::Create(
+@@ -242,7 +244,7 @@ std::unique_ptr<OverlayWindowViews> OverlayWindowViews::Create(
    overlay_window->Init(std::move(params));
    overlay_window->OnRootViewReady();
  

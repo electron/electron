@@ -22,10 +22,10 @@ However, the patch would need to be reviewed by the security team, as it
 does touch a security-sensitive class.
 
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 953797c2efaa9de150b6a43f6a2a59fe031af236..506888cef32304ae5b27f85f758c9fa38024dfdb 100644
+index 8ac3669841ba4048ac3fa8bacefbb035283cd504..4c520c1a507c92cc59772cda2822fe5dc034eaab 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -422,10 +422,18 @@ class RendererSandboxedProcessLauncherDelegate
+@@ -426,10 +426,18 @@ class RendererSandboxedProcessLauncherDelegate
   public:
    RendererSandboxedProcessLauncherDelegate() = default;
  
@@ -44,7 +44,7 @@ index 953797c2efaa9de150b6a43f6a2a59fe031af236..506888cef32304ae5b27f85f758c9fa3
      const base::CommandLine& browser_command_line =
          *base::CommandLine::ForCurrentProcess();
      base::CommandLine::StringType renderer_prefix =
-@@ -443,6 +451,11 @@ class RendererSandboxedProcessLauncherDelegate
+@@ -447,6 +455,11 @@ class RendererSandboxedProcessLauncherDelegate
    sandbox::policy::SandboxType GetSandboxType() override {
      return sandbox::policy::SandboxType::kRenderer;
    }
@@ -56,20 +56,20 @@ index 953797c2efaa9de150b6a43f6a2a59fe031af236..506888cef32304ae5b27f85f758c9fa3
  };
  
  #if defined(OS_WIN)
-@@ -453,6 +466,9 @@ class RendererSandboxedProcessLauncherDelegateWin
-   RendererSandboxedProcessLauncherDelegateWin(base::CommandLine* cmd_line)
+@@ -458,6 +471,9 @@ class RendererSandboxedProcessLauncherDelegateWin
+                                               bool is_jit_disabled)
        : renderer_code_integrity_enabled_(
              GetContentClient()->browser()->IsRendererCodeIntegrityEnabled()) {
 +#if BUILDFLAG(USE_ZYGOTE_HANDLE)
 +    use_zygote_ = !cmd_line->HasSwitch(switches::kNoZygote);
 +#endif
-     if (cmd_line->HasSwitch(switches::kJavaScriptFlags)) {
-       std::string js_flags =
-           cmd_line->GetSwitchValueASCII(switches::kJavaScriptFlags);
-@@ -1984,9 +2000,15 @@ bool RenderProcessHostImpl::Init() {
+     if (is_jit_disabled) {
+       dynamic_code_can_be_disabled_ = true;
+       return;
+@@ -2007,9 +2023,15 @@ bool RenderProcessHostImpl::Init() {
      std::unique_ptr<SandboxedProcessLauncherDelegate> sandbox_delegate =
          std::make_unique<RendererSandboxedProcessLauncherDelegateWin>(
-             cmd_line.get());
+             cmd_line.get(), IsJitDisabled());
 +#else
 +#if BUILDFLAG(USE_ZYGOTE_HANDLE)
 +    bool use_zygote = !cmd_line->HasSwitch(switches::kNoZygote);
