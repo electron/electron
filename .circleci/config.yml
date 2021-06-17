@@ -1010,7 +1010,7 @@ step-maybe-early-exit-doc-only-change: &step-maybe-early-exit-doc-only-change
     name: Shortcircuit build if doc only change
     command: |
       if [ -s src/electron/.skip-ci-build ]; then
-        circleci-agent step halt
+        circleci step halt
       fi
 
 step-maybe-early-exit-no-doc-change: &step-maybe-early-exit-no-doc-change
@@ -1018,7 +1018,7 @@ step-maybe-early-exit-no-doc-change: &step-maybe-early-exit-no-doc-change
     name: Shortcircuit job if change is not doc only
     command: |
       if [ ! -s src/electron/.skip-ci-build ]; then
-        circleci-agent step halt
+        circleci step halt
       fi
 
 step-ts-compile: &step-ts-compile
@@ -1293,7 +1293,7 @@ commands:
                 name: Halt the job early if the src cache exists
                 command: |
                   if [ -f ".src-cache-marker" ]; then
-                    circleci-agent step halt
+                    circleci step halt
                   fi
       - *step-maybe-restore-src-cache
       - run:
