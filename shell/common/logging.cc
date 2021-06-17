@@ -41,6 +41,13 @@ base::FilePath GetLogFileName(const base::CommandLine& command_line) {
   }
 }
 
+bool HasExplicitLogFile(const base::CommandLine& command_line) {
+  std::string filename = command_line.GetSwitchValueASCII(switches::kLogFile);
+  if (filename.empty())
+    base::Environment::Create()->GetVar(kLogFileName, &filename);
+  return !filename.empty();
+}
+
 LoggingDestination DetermineLoggingDestination(
     const base::CommandLine& command_line,
     bool is_preinit) {
@@ -68,15 +75,12 @@ LoggingDestination DetermineLoggingDestination(
   // default.
   // If --log-file or ELECTRON_LOG_FILE is specified along with
   // --enable-logging, return LOG_TO_FILE.
-  std::string filename = command_line.GetSwitchValueASCII(switches::kLogFile);
-  if (filename.empty())
-    base::Environment::Create()->GetVar(kLogFileName, &filename);
   // If we're in the pre-init phase, before JS has run, we want to avoid
   // logging to the default log file, which is inside the user data directory,
   // because we aren't able to accurately determine the user data directory
   // before JS runs. Instead, log to stderr unless there's an explicit filename
   // given.
-  if (!filename.empty() || (logging_destination == "file" && !is_preinit))
+  if (HasExplicitLogFile(command_line) || (logging_destination == "file" && !is_preinit))
     return LOG_TO_FILE;
   return LOG_TO_SYSTEM_DEBUG_LOG | LOG_TO_STDERR;
 }
@@ -119,8 +123,12 @@ void InitElectronLogging(const base::CommandLine& command_line,
   settings.logging_dest = logging_dest;
   settings.log_file_path = log_path.value().c_str();
   settings.lock_log = log_locking_state;
+  // If we're logging to an explicit file passed with --log-file, we don't want
+  // to delete the log file on our second initialization.
   settings.delete_old =
-      process_type.empty() ? DELETE_OLD_LOG_FILE : APPEND_TO_OLD_LOG_FILE;
+    process_type.empty() && (is_preinit || !HasExplicitLogFile(command_line))
+    ? DELETE_OLD_LOG_FILE
+    : APPEND_TO_OLD_LOG_FILE;
   bool success = InitLogging(settings);
   if (!success) {
     PLOG(FATAL) << "Failed to init logging";
