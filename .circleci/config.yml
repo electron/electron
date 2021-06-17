@@ -57,6 +57,16 @@ parameters:
     type: boolean
     default: false
 
+# Executors
+executors:
+  linux-arm:
+    resource_class: electronjs/linux-arm
+    machine: true
+
+  linux-arm64:
+    resource_class: electronjs/linux-arm64
+    machine: true
+
 # The config expects the following environment variables to be set:
 #  - "SLACK_WEBHOOK" Slack hook URL to send notifications.
 #
@@ -224,6 +234,22 @@ step-maybe-notify-slack-success: &step-maybe-notify-slack-success
         -d "{\"text\": \"$MESSAGE\", \"attachments\": [{\"color\": \"good\",\"title\": \"$CIRCLE_JOB nightly build results\",\"title_link\": \"$CIRCLE_BUILD_URL\"}]}" $SLACK_WEBHOOK
       fi
     when: on_success
+
+step-maybe-cleanup-arm64-mac: &step-maybe-cleanup-arm64-mac
+  run:
+    name: Cleanup after testing
+    command: |
+      if  [ "$TARGET_ARCH" == "arm64" ] &&[ "`uname`" == "Darwin" ]; then
+        killall Electron || echo "No Electron processes left running"
+        killall Safari || echo "No Safari processes left running"
+        rm -rf ~/Library/Application\ Support/Electron*
+        rm -rf ~/Library/Application\ Support/electron*
+      elif [ "$TARGET_ARCH" == "arm" ] || [ "$TARGET_ARCH" == "arm64" ]; then
+        pkill Xvfb || echo "Xvfb not running"
+        pkill electron || echo "electron not running"
+      fi
+
+    when: always
 
 step-checkout-electron: &step-checkout-electron
   checkout:
@@ -734,7 +760,11 @@ step-verify-mksnapshot: &step-verify-mksnapshot
     name: Verify mksnapshot
     command: |
       cd src
-      python electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default
+      if [ "$TARGET_ARCH" == "arm" ] || [ "$TARGET_ARCH" == "arm64" ]; then
+        python electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default --snapshot-files-dir $PWD/cross-arch-snapshots
+      else
+        python electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default
+      fi
 
 step-verify-chromedriver: &step-verify-chromedriver
   run:
@@ -860,23 +890,6 @@ step-maybe-cross-arch-snapshot-store: &step-maybe-cross-arch-snapshot-store
   store_artifacts:
     path: src/cross-arch-snapshots
     destination: cross-arch-snapshots
-
-step-maybe-trigger-arm-test: &step-maybe-trigger-arm-test
-  run:
-    name: Trigger an arm test on VSTS if applicable
-    command: |
-      cd src
-      # Only run for non-fork prs
-      if [ "$TRIGGER_ARM_TEST" == "true" ] && [ -z "$CIRCLE_PR_NUMBER" ]; then
-        #Trigger VSTS job, passing along CircleCI job number and branch to build
-        if [ "`uname`" == "Darwin" ]; then
-          echo "Triggering electron-arm2-testing build on Azure DevOps"  
-          node electron/script/release/ci-release-build.js --job=electron-arm2-testing --ci=DevOps --armTest --circleBuildNum=$CIRCLE_BUILD_NUM $CIRCLE_BRANCH
-        else
-          echo "Triggering electron-$TARGET_ARCH-testing build on VSTS"  
-          node electron/script/release/ci-release-build.js --job=electron-$TARGET_ARCH-testing --ci=VSTS --armTest --circleBuildNum=$CIRCLE_BUILD_NUM $CIRCLE_BRANCH
-        fi
-      fi
 
 step-maybe-generate-typescript-defs: &step-maybe-generate-typescript-defs
   run:
@@ -1292,8 +1305,14 @@ steps-tests: &steps-tests
           ELECTRON_DISABLE_SECURITY_WARNINGS: 1
         command: |
           cd src
-          (cd electron && node script/yarn test --runners=main --trace-uncaught --enable-logging --files $(circleci tests glob spec-main/*-spec.ts | circleci tests split))
-          (cd electron && node script/yarn test --runners=remote --trace-uncaught --enable-logging --files $(circleci tests glob spec/*-spec.js | circleci tests split))
+          if [ "$TARGET_ARCH" == "arm" ] || [ "$TARGET_ARCH" == "arm64" ]; then
+            export ELECTRON_SKIP_NATIVE_MODULE_TESTS=true
+            (cd electron && node script/yarn test --runners=main --trace-uncaught --enable-logging)
+            (cd electron && node script/yarn test --runners=remote --trace-uncaught --enable-logging)
+          else
+            (cd electron && node script/yarn test --runners=main --trace-uncaught --enable-logging --files $(circleci tests glob spec-main/*-spec.ts | circleci tests split))
+            (cd electron && node script/yarn test --runners=remote --trace-uncaught --enable-logging --files $(circleci tests glob spec/*-spec.js | circleci tests split))
+          fi
     - run:
         name: Check test results existence
         command: |
@@ -1588,9 +1607,6 @@ commands:
                 condition: << parameters.use-out-cache >>
                 steps:
                   - *step-save-out-cache
-
-            # Trigger tests on arm hardware if needed
-            - *step-maybe-trigger-arm-test
 
             - *step-maybe-notify-slack-failure
 
@@ -1919,7 +1935,7 @@ jobs:
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
     steps:
       - electron-build:
-          persist: false
+          persist: true
           checkout: true
           use-out-cache: false
 
@@ -1977,7 +1993,7 @@ jobs:
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
     steps:
       - electron-build:
-          persist: false
+          persist: true
           checkout: true
           use-out-cache: false
 
@@ -2365,6 +2381,24 @@ jobs:
       <<: *env-send-slack-notifications
     <<: *steps-verify-ffmpeg
 
+  linux-arm-testing-tests:
+    executor: linux-arm
+    environment:
+      <<: *env-arm
+      <<: *env-global
+      <<: *env-headless-testing
+      <<: *env-stack-dumping
+    <<: *steps-tests
+
+  linux-arm64-testing-tests:
+    executor: linux-arm64
+    environment:
+      <<: *env-arm64
+      <<: *env-global
+      <<: *env-headless-testing
+      <<: *env-stack-dumping
+    <<: *steps-tests
+
   osx-testing-x64-tests:
     <<: *machine-mac-large
     environment:
@@ -2597,8 +2631,23 @@ workflows:
             - linux-ia32-testing
 
       - linux-arm-testing
+      - linux-arm-testing-tests:
+          filters:
+            branches:
+              # Do not run this on forked pull requests
+              ignore: /pull\/[0-9]+/        
+          requires:
+            - linux-arm-testing      
 
       - linux-arm64-testing
+      - linux-arm64-testing-tests:
+          filters:
+            branches:
+              # Do not run this on forked pull requests
+              ignore: /pull\/[0-9]+/        
+          requires:
+            - linux-arm64-testing
+
       - linux-arm64-testing-gn-check:
           requires:
             - linux-checkout-fast
