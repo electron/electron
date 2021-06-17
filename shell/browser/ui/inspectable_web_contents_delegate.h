@@ -35,6 +35,7 @@ class InspectableWebContentsDelegate {
   virtual void DevToolsSearchInPath(int request_id,
                                     const std::string& file_system_path,
                                     const std::string& query) {}
+  virtual void DevToolsSetEyeDropperActive(bool active) {}
 };
 
 }  // namespace electron
