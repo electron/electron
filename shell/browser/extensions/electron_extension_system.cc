@@ -113,6 +113,7 @@ void ElectronExtensionSystem::LoadComponentExtensions() {
   std::string pdf_manifest_string = pdf_extension_util::GetManifest();
   std::unique_ptr<base::DictionaryValue> pdf_manifest =
       ParseManifest(pdf_manifest_string);
+  LOG(INFO) << "PDF MANIFEST: " << pdf_manifest;
   if (pdf_manifest) {
     base::FilePath root_directory;
     CHECK(base::PathService::Get(chrome::DIR_RESOURCES, &root_directory));
