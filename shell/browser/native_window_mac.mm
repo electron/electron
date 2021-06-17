@@ -1652,8 +1652,7 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
   node::Environment* env =
       node::Environment::GetCurrent(v8::Isolate::GetCurrent());
 
-  NSVisualEffectMaterial vibrancyType;
-
+  NSVisualEffectMaterial vibrancyType{};
   if (type == "appearance-based") {
     EmitWarning(env, "NSVisualEffectMaterialAppearanceBased" + dep_warn,
                 "electron");
@@ -1710,8 +1709,10 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
     }
   }
 
-  if (vibrancyType)
+  if (vibrancyType) {
+    vibrancy_type_ = type;
     [effect_view setMaterial:vibrancyType];
+  }
 }
 
 void NativeWindowMac::SetTrafficLightPosition(const gfx::Point& position) {
