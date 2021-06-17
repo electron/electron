@@ -362,13 +362,11 @@ void NodeBindings::Initialize() {
 
   int exit_code = node::InitializeNodeWithArgs(&argv, &exec_argv, &errors);
 
-  for (const std::string& error : errors) {
+  for (const std::string& error : errors)
     fprintf(stderr, "%s: %s\n", argv[0].c_str(), error.c_str());
-  }
 
-  if (exit_code != 0) {
+  if (exit_code != 0)
     exit(exit_code);
-  }
 
 #if defined(OS_WIN)
   // uv_init overrides error mode to suppress the default crash dialog, bring
@@ -518,7 +516,7 @@ node::Environment* NodeBindings::CreateEnvironment(
 }
 
 void NodeBindings::LoadEnvironment(node::Environment* env) {
-  node::LoadEnvironment(env);
+  node::LoadEnvironment(env, node::StartExecutionCallback{});
   gin_helper::EmitEvent(env->isolate(), env->process_object(), "loaded");
 }
 
