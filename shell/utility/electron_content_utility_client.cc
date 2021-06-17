@@ -107,19 +107,6 @@ void ElectronContentUtilityClient::ExposeInterfacesToBrowser(
   }
 }
 
-bool ElectronContentUtilityClient::OnMessageReceived(
-    const IPC::Message& message) {
-  if (utility_process_running_elevated_)
-    return false;
-
-#if BUILDFLAG(ENABLE_PRINT_PREVIEW) && defined(OS_WIN)
-  if (printing_handler_->OnMessageReceived(message))
-    return true;
-#endif
-
-  return false;
-}
-
 void ElectronContentUtilityClient::RegisterMainThreadServices(
     mojo::ServiceFactory& services) {
 #if defined(OS_WIN)
