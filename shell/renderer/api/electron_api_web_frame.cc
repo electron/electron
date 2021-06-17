@@ -259,8 +259,7 @@ class FrameSetSpellChecker : public content::RenderFrameVisitor {
   }
 
   bool Visit(content::RenderFrame* render_frame) override {
-    auto* view = render_frame->GetRenderView();
-    if (view->GetMainRenderFrame() == main_frame_ ||
+    if (render_frame->GetMainRenderFrame() == main_frame_ ||
         (render_frame->IsMainFrame() && render_frame == main_frame_)) {
       render_frame->GetWebFrame()->SetTextCheckClient(spell_check_client_);
     }
