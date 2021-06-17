@@ -9,7 +9,7 @@ uses and which is present in OpenSSL but not BoringSSL.
 This will be upstreamed either fully or as a shim.
 
 diff --git a/crypto/evp/evp.c b/crypto/evp/evp.c
-index 653d6573fdf1c542010698e9f6d1cf8170ea2f0c..738cec60a9fed4bfad56c7b2b75c44eb225abfcf 100644
+index bb316450fbe3689f21bd540c52d5fb29802fb68d..dabb52120d13fd2bc02ba9f46b834df178b195c5 100644
 --- a/crypto/evp/evp.c
 +++ b/crypto/evp/evp.c
 @@ -224,6 +224,10 @@ int EVP_PKEY_type(int nid) {
@@ -24,7 +24,7 @@ index 653d6573fdf1c542010698e9f6d1cf8170ea2f0c..738cec60a9fed4bfad56c7b2b75c44eb
    if (EVP_PKEY_assign_RSA(pkey, key)) {
      RSA_up_ref(key);
 diff --git a/include/openssl/evp.h b/include/openssl/evp.h
-index 378eb320f7c01df33850cca9d0111db32ffa6175..9eebf9c609abd31ed63c1f1c720c716d074e3f6d 100644
+index 405b402a6dc3c2de5cce1722996c0c3e9d1b182e..addf149f98ffd95877861d4db8c0c02d6b7f7cc1 100644
 --- a/include/openssl/evp.h
 +++ b/include/openssl/evp.h
 @@ -156,6 +156,8 @@ OPENSSL_EXPORT int EVP_PKEY_type(int nid);
