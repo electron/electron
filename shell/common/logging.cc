@@ -80,7 +80,8 @@ LoggingDestination DetermineLoggingDestination(
   // because we aren't able to accurately determine the user data directory
   // before JS runs. Instead, log to stderr unless there's an explicit filename
   // given.
-  if (HasExplicitLogFile(command_line) || (logging_destination == "file" && !is_preinit))
+  if (HasExplicitLogFile(command_line) ||
+      (logging_destination == "file" && !is_preinit))
     return LOG_TO_FILE;
   return LOG_TO_SYSTEM_DEBUG_LOG | LOG_TO_STDERR;
 }
@@ -126,9 +127,9 @@ void InitElectronLogging(const base::CommandLine& command_line,
   // If we're logging to an explicit file passed with --log-file, we don't want
   // to delete the log file on our second initialization.
   settings.delete_old =
-    process_type.empty() && (is_preinit || !HasExplicitLogFile(command_line))
-    ? DELETE_OLD_LOG_FILE
-    : APPEND_TO_OLD_LOG_FILE;
+      process_type.empty() && (is_preinit || !HasExplicitLogFile(command_line))
+          ? DELETE_OLD_LOG_FILE
+          : APPEND_TO_OLD_LOG_FILE;
   bool success = InitLogging(settings);
   if (!success) {
     PLOG(FATAL) << "Failed to init logging";
