@@ -3469,6 +3469,30 @@ void WebContents::DevToolsSearchInPath(int request_id,
                           file_system_path));
 }
 
+void WebContents::DevToolsSetEyeDropperActive(bool active) {
+  auto* web_contents = GetWebContents();
+  if (!web_contents)
+    return;
+
+  if (active) {
+    eye_dropper_ = std::make_unique<DevToolsEyeDropper>(
+        web_contents, base::BindRepeating(&WebContents::ColorPickedInEyeDropper,
+                                          base::Unretained(this)));
+  } else {
+    eye_dropper_.reset();
+  }
+}
+
+void WebContents::ColorPickedInEyeDropper(int r, int g, int b, int a) {
+  base::DictionaryValue color;
+  color.SetInteger("r", r);
+  color.SetInteger("g", g);
+  color.SetInteger("b", b);
+  color.SetInteger("a", a);
+  inspectable_web_contents_->CallClientFunction(
+      "DevToolsAPI.eyeDropperPickedColor", &color, nullptr, nullptr);
+}
+
 #if defined(TOOLKIT_VIEWS) && !defined(OS_MAC)
 gfx::ImageSkia WebContents::GetDevToolsWindowIcon() {
   if (!owner_window())
