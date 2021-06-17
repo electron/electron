@@ -489,8 +489,6 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
 
     if (pref_name == options::kPreloadScripts) {
       return gin::ConvertToV8(isolate, prefs.preloads);
-    } else if (pref_name == options::kBackgroundColor) {
-      return gin::ConvertToV8(isolate, prefs.background_color);
     } else if (pref_name == options::kOpenerID) {
       // NOTE: openerId is internal-only.
       return gin::ConvertToV8(isolate, prefs.opener_id);

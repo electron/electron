@@ -11,12 +11,11 @@ diff --git a/third_party/blink/common/web_preferences/web_preferences.cc b/third
 index 8a1315f7f89588bb21c6d3c21a7de7c07fed9679..2ad5dc0b70a2b0bf298866dd2b9515112d3583f0 100644
 --- a/third_party/blink/common/web_preferences/web_preferences.cc
 +++ b/third_party/blink/common/web_preferences/web_preferences.cc
-@@ -148,6 +148,23 @@ WebPreferences::WebPreferences()
+@@ -148,6 +148,22 @@ WebPreferences::WebPreferences()
        fake_no_alloc_direct_call_for_testing_enabled(false),
        v8_cache_options(blink::mojom::V8CacheOptions::kDefault),
        record_whole_document(false),
 +      // Begin Electron-specific WebPreferences.
-+      background_color(base::EmptyString()),
 +      opener_id(0),
 +      context_isolation(false),
 +      guest_instance_id(0),
@@ -39,13 +38,12 @@ diff --git a/third_party/blink/common/web_preferences/web_preferences_mojom_trai
 index ab2d320a4073308c249821a060e870afc0dbc3a5..1799d27380c112d98e55e63b9dd842c78014c62a 100644
 --- a/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
 +++ b/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
-@@ -24,6 +24,11 @@ bool StructTraits<blink::mojom::WebPreferencesDataView,
+@@ -24,6 +24,10 @@ bool StructTraits<blink::mojom::WebPreferencesDataView,
        !data.ReadCursiveFontFamilyMap(&out->cursive_font_family_map) ||
        !data.ReadFantasyFontFamilyMap(&out->fantasy_font_family_map) ||
        !data.ReadPictographFontFamilyMap(&out->pictograph_font_family_map) ||
 +      // Begin Electron-specific WebPreferences.
 +      !data.ReadPreloads(&out->preloads) ||
-+      !data.ReadBackgroundColor(&out->background_color) ||
 +      !data.ReadPreload(&out->preload) ||
 +      // End Electron-specific WebPreferences.
        !data.ReadLazyFrameLoadingDistanceThresholdsPx(
@@ -85,13 +83,12 @@ index 8a8bc79a2e9dbc78830528cee8883bb8d65fe51f..2271d6af25513b2da14a230a28b7ce4b
  #include "net/nqe/effective_connection_type.h"
  #include "third_party/blink/public/common/common_export.h"
  #include "third_party/blink/public/mojom/css/preferred_color_scheme.mojom-shared.h"
-@@ -161,6 +162,25 @@ struct BLINK_COMMON_EXPORT WebPreferences {
+@@ -161,6 +162,24 @@ struct BLINK_COMMON_EXPORT WebPreferences {
    blink::mojom::V8CacheOptions v8_cache_options;
    bool record_whole_document;
  
 +  // Begin Electron-specific WebPreferences.
 +  std::vector<base::FilePath> preloads;
-+  std::string background_color;
 +  int opener_id;
 +  bool context_isolation;
 +  int guest_instance_id;
@@ -123,17 +120,13 @@ index 90a2bb1a13afd749b540545fff22ba2134917b5d..5ca57b9b52de2b398ed19ae0e2ce5bf3
  #include "mojo/public/cpp/bindings/struct_traits.h"
  #include "net/nqe/effective_connection_type.h"
  #include "third_party/blink/public/common/common_export.h"
-@@ -446,6 +447,72 @@ struct BLINK_COMMON_EXPORT StructTraits<blink::mojom::WebPreferencesDataView,
+@@ -446,6 +447,68 @@ struct BLINK_COMMON_EXPORT StructTraits<blink::mojom::WebPreferencesDataView,
      return r.record_whole_document;
    }
  
 +  // Begin Electron-specific WebPreferences.
 +  static const std::vector<base::FilePath>& preloads(const blink::web_pref::WebPreferences& r) {
 +    return r.preloads;
-+  }
-+
-+  static const std::string& background_color(const blink::web_pref::WebPreferences& r) {
-+    return r.background_color;
 +  }
 +
 +  static int opener_id(const blink::web_pref::WebPreferences& r) {
@@ -208,13 +201,12 @@ index db9994ca72f244d6e626d8793ec0cc181a582ea4..234a3aabfa4e0aa3fb32bd18b33fce3d
  
  enum PointerType {
    kPointerNone                              = 1,             // 1 << 0
-@@ -212,6 +213,25 @@ struct WebPreferences {
+@@ -212,6 +213,24 @@ struct WebPreferences {
    V8CacheOptions v8_cache_options;
    bool record_whole_document;
  
 +  // Begin Electron-specific WebPreferences.
 +  array<mojo_base.mojom.FilePath> preloads;
-+  string background_color;
 +  int32 opener_id;
 +  bool context_isolation;
 +  int32 guest_instance_id;
