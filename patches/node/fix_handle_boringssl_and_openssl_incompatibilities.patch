@@ -22,7 +22,7 @@ Upstreams for code herein (update when changed):
 * https://github.com/nodejs/node/pull/38744
 
 diff --git a/src/crypto/crypto_cipher.cc b/src/crypto/crypto_cipher.cc
-index 5ce466582823ae1304731610da61b7fde77fc65a..cd3c7cea3b83be95a6663909ad9e1a2d2f2eb25a 100644
+index 4629143d47e492cb834fab507b13ac414be92307..37f50773e6d7ade5e88ffb5f8437ab8f79fad00a 100644
 --- a/src/crypto/crypto_cipher.cc
 +++ b/src/crypto/crypto_cipher.cc
 @@ -148,7 +148,7 @@ void GetCipherInfo(const FunctionCallbackInfo<Value>& args) {
@@ -311,7 +311,7 @@ index 7b113a8dcb06b0b0e1329ce0daf7305598ea6545..b04e53a7f24885ffb6639430988d0ffb
      const EC_KEY* ec_key = EVP_PKEY_get0_EC_KEY(pkey.get());
      const EC_GROUP* ec_group = EC_KEY_get0_group(ec_key);
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index 0d533ce42531d147a4c99fef5a72c311e0796150..76c8c037ffd3c8b67179d7d881ad6ea530b00686 100644
+index 47945389b4068dfce126274a1cf2d10d635c50a9..2bf22564a34a3d7e91be59c88063447fdc501dd0 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
 @@ -20,6 +20,8 @@
@@ -323,7 +323,7 @@ index 0d533ce42531d147a4c99fef5a72c311e0796150..76c8c037ffd3c8b67179d7d881ad6ea5
  namespace node {
  
  using v8::ArrayBuffer;
-@@ -118,7 +120,6 @@ void InitCryptoOnce() {
+@@ -120,7 +122,6 @@ void InitCryptoOnce() {
    OPENSSL_init_ssl(0, settings);
    OPENSSL_INIT_free(settings);
    settings = nullptr;
@@ -331,7 +331,7 @@ index 0d533ce42531d147a4c99fef5a72c311e0796150..76c8c037ffd3c8b67179d7d881ad6ea5
  
  #ifndef _WIN32
    if (per_process::cli_options->secure_heap != 0) {
-@@ -137,6 +138,7 @@ void InitCryptoOnce() {
+@@ -139,6 +140,7 @@ void InitCryptoOnce() {
          break;
      }
    }
@@ -339,7 +339,7 @@ index 0d533ce42531d147a4c99fef5a72c311e0796150..76c8c037ffd3c8b67179d7d881ad6ea5
  #endif
  
    /* Override FIPS settings in cnf file, if needed. */
-@@ -488,24 +490,14 @@ Maybe<bool> Decorate(Environment* env, Local<Object> obj,
+@@ -490,24 +492,14 @@ Maybe<bool> Decorate(Environment* env, Local<Object> obj,
      V(BIO)                                                                    \
      V(PKCS7)                                                                  \
      V(X509V3)                                                                 \
@@ -364,7 +364,7 @@ index 0d533ce42531d147a4c99fef5a72c311e0796150..76c8c037ffd3c8b67179d7d881ad6ea5
      V(USER)                                                                   \
  
  #define V(name) case ERR_LIB_##name: lib = #name "_"; break;
-@@ -665,7 +657,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -667,7 +659,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
    CHECK(args[0]->IsUint32());
    Environment* env = Environment::GetCurrent(args);
    uint32_t len = args[0].As<Uint32>()->Value();
@@ -373,7 +373,7 @@ index 0d533ce42531d147a4c99fef5a72c311e0796150..76c8c037ffd3c8b67179d7d881ad6ea5
    if (data == nullptr) {
      // There's no memory available for the allocation.
      // Return nothing.
-@@ -677,7 +669,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -679,7 +671,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
            data,
            len,
            [](void* data, size_t len, void* deleter_data) {
@@ -382,7 +382,7 @@ index 0d533ce42531d147a4c99fef5a72c311e0796150..76c8c037ffd3c8b67179d7d881ad6ea5
            },
            data);
    Local<ArrayBuffer> buffer = ArrayBuffer::New(env->isolate(), store);
-@@ -685,10 +677,12 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -687,10 +679,12 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
  }
  
  void SecureHeapUsed(const FunctionCallbackInfo<Value>& args) {
@@ -396,7 +396,7 @@ index 0d533ce42531d147a4c99fef5a72c311e0796150..76c8c037ffd3c8b67179d7d881ad6ea5
  }  // namespace
  
 diff --git a/src/crypto/crypto_util.h b/src/crypto/crypto_util.h
-index f2f61aa45185812e9248845b664539be4fe24550..303ba4c3b7c4c2fc5dee906e22d5e7642b8351c8 100644
+index 94bcb100cca0e213ac19afb2ed30b80716cf27af..1fe961a99b3f115c1381f3641d718a21988e9659 100644
 --- a/src/crypto/crypto_util.h
 +++ b/src/crypto/crypto_util.h
 @@ -15,7 +15,9 @@
@@ -410,7 +410,7 @@ index f2f61aa45185812e9248845b664539be4fe24550..303ba4c3b7c4c2fc5dee906e22d5e764
  #include <openssl/dsa.h>
  #include <openssl/ssl.h>
 diff --git a/src/node.cc b/src/node.cc
-index a99f2f4f01b16fc70f3038a25da22c788714b3f6..ceb532648b33a6c2f3b8a135b315985cfff5419e 100644
+index 5c52ab8081253706d2c643457a5dfcbb8e24e6ac..040c4995ed3366d858a5bbb61d10a7354ea02d4d 100644
 --- a/src/node.cc
 +++ b/src/node.cc
 @@ -1020,7 +1020,7 @@ InitializationResult InitializeOncePerProcess(int argc, char** argv) {

@@ -8,7 +8,7 @@ they use themselves as the entry point. We should try to upstream some form
 of this.
 
 diff --git a/lib/internal/bootstrap/pre_execution.js b/lib/internal/bootstrap/pre_execution.js
-index 4e6765de3b1668740c318310147625d795c7a18d..27a2060c0f0f5895b97514a21e9ffdfe0558347e 100644
+index 73d94842e25894d4f5940d06fb6cc7809d52c9ff..e838caf1c34a4df211825ad5cf0fe9e7ae6ed9f6 100644
 --- a/lib/internal/bootstrap/pre_execution.js
 +++ b/lib/internal/bootstrap/pre_execution.js
 @@ -102,10 +102,12 @@ function patchProcessObject(expandArgv1) {
@@ -29,7 +29,7 @@ index 4e6765de3b1668740c318310147625d795c7a18d..27a2060c0f0f5895b97514a21e9ffdfe
  
    // TODO(joyeecheung): most of these should be deprecated and removed,
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index 23f7fcce7cfe8879be95fd949af70da1869e17b3..5e2fca90e26ea18be8c406ceb0bbc3523a39f6c5 100644
+index abb460f2f16438503e95f04ea07c0b788a6ef0e5..76cd94d5312f041c5dc401d606fd91006a691f68 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
 @@ -1083,6 +1083,13 @@ Module.prototype._compile = function(content, filename) {

@@ -7,10 +7,10 @@ Subject: src: allow embedders to provide a custom PageAllocator to
 For certain embedder use cases there are more complex memory allocation requirements that the default V8 page allocator does not handle, for example using MAP_JIT when running under a hardened runtime environment on macOS.  This allows such embedders to provide their own allocator that does handle these cases.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 96dbf0d8325715c8f4db115884e4b68f2c7b7502..981b324891e6c2def77e773de360fff43e0577fd 100644
+index db7619935eb522c2a6d2ac548b6d5cb3b6af70ac..da5d5d8d063aaa6b57a0fa57f41b27f6593d7219 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -470,8 +470,9 @@ MultiIsolatePlatform* CreatePlatform(
+@@ -472,8 +472,9 @@ MultiIsolatePlatform* CreatePlatform(
  
  MultiIsolatePlatform* CreatePlatform(
      int thread_pool_size,
@@ -22,7 +22,7 @@ index 96dbf0d8325715c8f4db115884e4b68f2c7b7502..981b324891e6c2def77e773de360fff4
        .release();
  }
  
-@@ -481,8 +482,9 @@ void FreePlatform(MultiIsolatePlatform* platform) {
+@@ -483,8 +484,9 @@ void FreePlatform(MultiIsolatePlatform* platform) {
  
  std::unique_ptr<MultiIsolatePlatform> MultiIsolatePlatform::Create(
      int thread_pool_size,

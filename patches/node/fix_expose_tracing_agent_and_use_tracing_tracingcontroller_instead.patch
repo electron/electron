@@ -7,10 +7,10 @@ Subject: fix: expose tracing::Agent and use tracing::TracingController instead
 This API is used by Electron to create Node's tracing controller.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 46e3360ef9c023bfb4cb45393a81c4af55e8d805..bcadb23b0ebdadf8dc724afb022ca492d0df8f66 100644
+index ff5f923c58a2e477163c670be05fecd0882cde84..109cd9f7e9eac085206a62dabd2dbe167039a631 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -454,6 +454,10 @@ MultiIsolatePlatform* GetMultiIsolatePlatform(IsolateData* env) {
+@@ -456,6 +456,10 @@ MultiIsolatePlatform* GetMultiIsolatePlatform(IsolateData* env) {
    return env->platform();
  }
  

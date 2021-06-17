@@ -12,10 +12,10 @@ which is the only option right now.
 Upstreamed at https://github.com/nodejs/node/pull/38915.
 
 diff --git a/src/env-inl.h b/src/env-inl.h
-index 6d34c5125e93bc0f0ce414be573438aec091dbb5..abb2a9cf2652639e3ce636565190d2ed433334b2 100644
+index 0cdb6e7f8e4c25c66faaf942d2cb10e34e4cb22e..4b0152afd91f187634a3b53d584f5c42ddb613fc 100644
 --- a/src/env-inl.h
 +++ b/src/env-inl.h
-@@ -509,6 +509,24 @@ inline bool Environment::abort_on_uncaught_exception() const {
+@@ -560,6 +560,24 @@ inline bool Environment::abort_on_uncaught_exception() const {
    return options_->abort_on_uncaught_exception;
  }
  
@@ -41,10 +41,10 @@ index 6d34c5125e93bc0f0ce414be573438aec091dbb5..abb2a9cf2652639e3ce636565190d2ed
    options_->force_context_aware = value;
  }
 diff --git a/src/env.h b/src/env.h
-index 2b0088bc29639c4da38a148368fb0dbfa3a19b4c..f84e5989c8fc316b72f2f1f75bb293534b32eaef 100644
+index 5233d40f0b09f3c6b646be8b789d01f461c4fb3f..a2fcba4421f54ad88e1875d318acda31535cf25b 100644
 --- a/src/env.h
 +++ b/src/env.h
-@@ -1101,6 +1101,9 @@ class Environment : public MemoryRetainer {
+@@ -1113,6 +1113,9 @@ class Environment : public MemoryRetainer {
    void PrintSyncTrace() const;
    inline void set_trace_sync_io(bool value);
  

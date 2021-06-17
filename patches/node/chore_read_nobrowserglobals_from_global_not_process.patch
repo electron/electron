@@ -7,7 +7,7 @@ This is used so that we can modify the flag at runtime where
 config can only be set at compile time.
 
 diff --git a/lib/internal/bootstrap/node.js b/lib/internal/bootstrap/node.js
-index ca7274622fd95d06cf529db0751da9e189ad556e..74b148e4912a44f6be260f9200e976bae97c0fd8 100644
+index 8b70f79d2b278f2f6b15abc2eba5045b1ca503b4..bfc6edfae4b4b4f8b7ee2a97209e1801d7c2d4c9 100644
 --- a/lib/internal/bootstrap/node.js
 +++ b/lib/internal/bootstrap/node.js
 @@ -193,7 +193,7 @@ const {

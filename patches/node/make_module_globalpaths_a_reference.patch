@@ -8,7 +8,7 @@ load libraries from embedded applications without modifications of
 node's module code.
 
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index fbfc17ba6d188537c9fc3dbfb86cae9b708541f7..0390f2a9a2c82f33918407091c086dcc3cbffae1 100644
+index 4f2b594755262f07a645122adf7865644dfa4e12..8560cf5367a540a6ee5427e0f30c52c295e57e93 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
 @@ -1236,7 +1236,7 @@ Module._initPaths = function() {
