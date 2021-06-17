@@ -10,6 +10,7 @@ gclient_gn_args = [
   'checkout_openxr',
   'checkout_google_benchmark',
   'mac_xcode_version',
+  'generate_location_tags',
 ]
 
 vars = {
@@ -51,6 +52,8 @@ vars = {
   'use_rts': False,
 
   'mac_xcode_version': 'default',
+
+  'generate_location_tags': False,
 
   # To allow running hooks without parsing the DEPS tree
   'process_deps': True,
