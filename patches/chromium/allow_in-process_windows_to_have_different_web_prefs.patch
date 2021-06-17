@@ -8,7 +8,7 @@ WebPreferences of in-process child windows, rather than relying on
 process-level command line switches, as before.
 
 diff --git a/third_party/blink/common/web_preferences/web_preferences.cc b/third_party/blink/common/web_preferences/web_preferences.cc
-index 8a1315f7f89588bb21c6d3c21a7de7c07fed9679..2ad5dc0b70a2b0bf298866dd2b9515112d3583f0 100644
+index 8a1315f7f89588bb21c6d3c21a7de7c07fed9679..51cc790f7e1ba1440a6ffaa56c9e01687fc35c06 100644
 --- a/third_party/blink/common/web_preferences/web_preferences.cc
 +++ b/third_party/blink/common/web_preferences/web_preferences.cc
 @@ -148,6 +148,22 @@ WebPreferences::WebPreferences()
@@ -35,7 +35,7 @@ index 8a1315f7f89588bb21c6d3c21a7de7c07fed9679..2ad5dc0b70a2b0bf298866dd2b951511
        accelerated_video_decode_enabled(false),
        animation_policy(
 diff --git a/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc b/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
-index ab2d320a4073308c249821a060e870afc0dbc3a5..1799d27380c112d98e55e63b9dd842c78014c62a 100644
+index ab2d320a4073308c249821a060e870afc0dbc3a5..dedf907f9cd78dc1acf09cfc683c2946fb6ce204 100644
 --- a/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
 +++ b/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
 @@ -24,6 +24,10 @@ bool StructTraits<blink::mojom::WebPreferencesDataView,
@@ -49,7 +49,7 @@ index ab2d320a4073308c249821a060e870afc0dbc3a5..1799d27380c112d98e55e63b9dd842c7
        !data.ReadLazyFrameLoadingDistanceThresholdsPx(
            &out->lazy_frame_loading_distance_thresholds_px) ||
        !data.ReadLazyImageLoadingDistanceThresholdsPx(
-@@ -154,6 +159,21 @@ bool StructTraits<blink::mojom::WebPreferencesDataView,
+@@ -154,6 +158,21 @@ bool StructTraits<blink::mojom::WebPreferencesDataView,
        data.fake_no_alloc_direct_call_for_testing_enabled();
    out->v8_cache_options = data.v8_cache_options();
    out->record_whole_document = data.record_whole_document();
@@ -72,7 +72,7 @@ index ab2d320a4073308c249821a060e870afc0dbc3a5..1799d27380c112d98e55e63b9dd842c7
    out->accelerated_video_decode_enabled =
        data.accelerated_video_decode_enabled();
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences.h b/third_party/blink/public/common/web_preferences/web_preferences.h
-index 8a8bc79a2e9dbc78830528cee8883bb8d65fe51f..2271d6af25513b2da14a230a28b7ce4b0aeb6e19 100644
+index 8a8bc79a2e9dbc78830528cee8883bb8d65fe51f..1be461b65302bd7eda42547e8062ce28cc4abb77 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences.h
 @@ -10,6 +10,7 @@
@@ -109,7 +109,7 @@ index 8a8bc79a2e9dbc78830528cee8883bb8d65fe51f..2271d6af25513b2da14a230a28b7ce4b
    // only controls whether or not the "document.cookie" field is properly
    // connected to the backing store, for instance if you wanted to be able to
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
-index 90a2bb1a13afd749b540545fff22ba2134917b5d..5ca57b9b52de2b398ed19ae0e2ce5bf3a2387469 100644
+index 90a2bb1a13afd749b540545fff22ba2134917b5d..609ae3c04bd52ac837401de35b70e4b01dce72d1 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
 @@ -6,6 +6,7 @@
@@ -190,7 +190,7 @@ index 90a2bb1a13afd749b540545fff22ba2134917b5d..5ca57b9b52de2b398ed19ae0e2ce5bf3
      return r.cookie_enabled;
    }
 diff --git a/third_party/blink/public/mojom/webpreferences/web_preferences.mojom b/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
-index db9994ca72f244d6e626d8793ec0cc181a582ea4..234a3aabfa4e0aa3fb32bd18b33fce3d03ac57af 100644
+index db9994ca72f244d6e626d8793ec0cc181a582ea4..ff254afea1a871c075a59bcef1ae079441318737 100644
 --- a/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
 +++ b/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
 @@ -9,6 +9,7 @@ import "third_party/blink/public/mojom/css/preferred_contrast.mojom";
