@@ -88,6 +88,8 @@
 
 #define ELECTRON_DESKTOP_CAPTURER_MODULE(V) V(electron_browser_desktop_capturer)
 
+#define ELECTRON_TESTING_MODULE(V) V(electron_common_testing)
+
 // This is used to load built-in modules. Instead of using
 // __attribute__((constructor)), we call the _register_<modname>
 // function for each built-in modules explicitly. This is only
@@ -100,6 +102,9 @@ ELECTRON_VIEWS_MODULES(V)
 #endif
 #if BUILDFLAG(ENABLE_DESKTOP_CAPTURER)
 ELECTRON_DESKTOP_CAPTURER_MODULE(V)
+#endif
+#if DCHECK_IS_ON()
+ELECTRON_TESTING_MODULE(V)
 #endif
 #undef V
 
@@ -328,6 +333,9 @@ void NodeBindings::RegisterBuiltinModules() {
 #endif
 #if BUILDFLAG(ENABLE_DESKTOP_CAPTURER)
   ELECTRON_DESKTOP_CAPTURER_MODULE(V)
+#endif
+#if DCHECK_IS_ON()
+  ELECTRON_TESTING_MODULE(V)
 #endif
 #undef V
 }

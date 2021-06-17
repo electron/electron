@@ -100,6 +100,7 @@
 #include "shell/common/api/api.mojom.h"
 #include "shell/common/application_info.h"
 #include "shell/common/electron_paths.h"
+#include "shell/common/logging.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/platform_util.h"
 #include "third_party/blink/public/common/loader/url_loader_throttle.h"
@@ -542,6 +543,15 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
   }
 #endif
 
+  // The zygote process is booted before JS runs, so DIR_USER_DATA isn't usable
+  // at that time. It doesn't need --user-data-dir to be correct anyway, since
+  // the zygote itself doesn't access anything in that directory.
+  if (process_type != ::switches::kZygoteProcess) {
+    base::FilePath user_data_dir;
+    if (base::PathService::Get(chrome::DIR_USER_DATA, &user_data_dir))
+      command_line->AppendSwitchPath(::switches::kUserDataDir, user_data_dir);
+  }
+
   if (process_type == ::switches::kUtilityProcess ||
       process_type == ::switches::kRendererProcess) {
     // Copy following switches to child process.
@@ -792,6 +802,11 @@ bool ElectronBrowserClient::ArePersistentMediaDeviceIDsAllowed(
     const GURL& site_for_cookies,
     const absl::optional<url::Origin>& top_frame_origin) {
   return true;
+}
+
+base::FilePath ElectronBrowserClient::GetLoggingFileName(
+    const base::CommandLine& cmd_line) {
+  return logging::GetLogFileName(cmd_line);
 }
 
 void ElectronBrowserClient::SiteInstanceDeleting(

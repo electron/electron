@@ -9,6 +9,7 @@
 #include <utility>
 
 #include "base/barrier_closure.h"
+#include "base/base_paths.h"
 #include "base/command_line.h"
 #include "base/files/file_path.h"
 #include "base/no_destructor.h"
