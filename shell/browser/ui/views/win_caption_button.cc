@@ -57,8 +57,8 @@ void WinCaptionButton::OnPaintBackground(gfx::Canvas* canvas) {
   // TODO(@mlaurencin): For having non-default button colors in future, bg_color
   // and theme_alpha can be set to 0x00 so the button is transparent. See
   // WinCaptionButton::GetBaseColor for the needed button text changes
-  const SkColor bg_color = color_utils::GetSysSkColor(COLOR_BTNFACE);
-  const SkAlpha theme_alpha = 0xFF;
+  const SkColor bg_color = frame_view_->window()->overlay_color();
+  const SkAlpha theme_alpha = SkColorGetA(bg_color);
 
   gfx::Rect bounds = GetContentsBounds();
   bounds.Inset(0, 0, 0, 0);

@@ -70,12 +70,14 @@
 
 #elif defined(OS_WIN)
 #include "base/win/win_util.h"
+#include "extensions/common/image_util.h"
 #include "shell/browser/ui/views/win_frame_view.h"
 #include "shell/browser/ui/win/electron_desktop_native_widget_aura.h"
 #include "skia/ext/skia_utils_win.h"
 #include "ui/base/win/shell.h"
 #include "ui/display/screen.h"
 #include "ui/display/win/screen_win.h"
+#include "ui/gfx/color_utils.h"
 #include "ui/views/widget/desktop_aura/desktop_native_widget_aura.h"
 #endif
 
@@ -186,6 +188,12 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   options.Get("thickFrame", &thick_frame_);
   if (transparent())
     thick_frame_ = false;
+
+  overlay_color_ = color_utils::GetSysSkColor(COLOR_BTNFACE);
+  std::string over_color_string_;
+  options.Get(options::kOverlayColor, &over_color_string_);
+  extensions::image_util::ParseCssColorString(over_color_string_,
+                                              &overlay_color_);
 
   options.Get(options::kTitleBarStyle, &title_bar_style_);
 
