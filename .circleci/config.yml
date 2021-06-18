@@ -235,7 +235,7 @@ step-maybe-notify-slack-success: &step-maybe-notify-slack-success
       fi
     when: on_success
 
-step-maybe-cleanup-arm64-mac: &step-maybe-cleanup-arm64-mac
+step-maybe-cleanup-arm: &step-maybe-cleanup-arm
   run:
     name: Cleanup after testing
     command: |
@@ -1335,6 +1335,8 @@ steps-tests: &steps-tests
     - *step-verify-chromedriver
 
     - *step-maybe-notify-slack-failure
+
+    - *step-maybe-cleanup-arm
 
 steps-test-nan: &steps-test-nan
   steps:
