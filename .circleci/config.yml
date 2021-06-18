@@ -222,6 +222,8 @@ step-maybe-cleanup-arm64-mac: &step-maybe-cleanup-arm64-mac
       elif [ "$TARGET_ARCH" == "arm" ] || [ "$TARGET_ARCH" == "arm64" ]; then
         pkill Xvfb || echo "Xvfb not running"
         pkill electron || echo "electron not running"
+        rm -rf ~/.config/Electron*
+        rm -rf ~/.config/electron*
       fi
 
     when: always
