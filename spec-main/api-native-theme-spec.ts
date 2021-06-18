@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { nativeTheme, systemPreferences, BrowserWindow } from 'electron/main';
+import { nativeTheme, systemPreferences, BrowserWindow, ipcMain } from 'electron/main';
 import * as os from 'os';
 import * as path from 'path';
 import * as semver from 'semver';
@@ -75,14 +75,24 @@ describe('nativeTheme module', () => {
     };
 
     it('should override the result of prefers-color-scheme CSS media query', async () => {
-      const w = new BrowserWindow({ show: false });
+      const w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: false, nodeIntegration: true } });
       await w.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
+      await w.webContents.executeJavaScript(`
+        window.matchMedia('(prefers-color-scheme: dark)')
+          .addEventListener('change', () => require('electron').ipcRenderer.send('theme-change'))
+      `);
       const originalSystemIsDark = await getPrefersColorSchemeIsDark(w);
+      let changePromise: Promise<any[]> = emittedOnce(ipcMain, 'theme-change');
       nativeTheme.themeSource = 'dark';
+      if (!originalSystemIsDark) await changePromise;
       expect(await getPrefersColorSchemeIsDark(w)).to.equal(true);
+      changePromise = emittedOnce(ipcMain, 'theme-change');
       nativeTheme.themeSource = 'light';
+      await changePromise;
       expect(await getPrefersColorSchemeIsDark(w)).to.equal(false);
+      changePromise = emittedOnce(ipcMain, 'theme-change');
       nativeTheme.themeSource = 'system';
+      if (originalSystemIsDark) await changePromise;
       expect(await getPrefersColorSchemeIsDark(w)).to.equal(originalSystemIsDark);
       w.close();
     });

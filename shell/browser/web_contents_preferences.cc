@@ -28,6 +28,7 @@
 #include "shell/common/process_util.h"
 #include "third_party/blink/public/common/web_preferences/web_preferences.h"
 #include "third_party/blink/public/mojom/v8_cache_options.mojom.h"
+#include "third_party/blink/public/mojom/webpreferences/web_preferences.mojom-blink.h"  // nogncheck
 
 #if defined(OS_WIN)
 #include "ui/gfx/switches.h"
@@ -50,7 +51,7 @@ bool GetAsString(const base::Value* val,
 
 bool GetAsString(const base::Value* val,
                  base::StringPiece path,
-                 base::string16* out) {
+                 std::u16string* out) {
   if (val) {
     auto* found = val->FindKeyOfType(path, base::Value::Type::STRING);
     if (found) {
@@ -60,6 +61,21 @@ bool GetAsString(const base::Value* val,
   }
   return false;
 }
+
+#if defined(OS_WIN)
+bool GetAsString(const base::Value* val,
+                 base::StringPiece path,
+                 std::wstring* out) {
+  if (val) {
+    auto* found = val->FindKeyOfType(path, base::Value::Type::STRING);
+    if (found) {
+      *out = base::UTF8ToWide(found->GetString());
+      return true;
+    }
+  }
+  return false;
+}
+#endif
 
 bool GetAsInteger(const base::Value* val, base::StringPiece path, int* out) {
   if (val) {
@@ -90,6 +106,26 @@ bool GetAsAutoplayPolicy(const base::Value* val,
       return true;
     }
     return false;
+  }
+  return false;
+}
+
+bool GetImageAnimationPolicy(const base::Value* val,
+                             blink::mojom::ImageAnimationPolicy* out) {
+  std::string policy;
+  if (GetAsString(val, electron::options::kImageAnimationPolicy, &policy)) {
+    if (policy == "animate") {
+      *out = blink::mojom::ImageAnimationPolicy::kImageAnimationPolicyAllowed;
+      return true;
+    } else if (policy == "animateOnce") {
+      *out =
+          blink::mojom::ImageAnimationPolicy::kImageAnimationPolicyAnimateOnce;
+      return true;
+    } else if (policy == "noAnimation") {
+      *out =
+          blink::mojom::ImageAnimationPolicy::kImageAnimationPolicyNoAnimation;
+      return true;
+    }
   }
   return false;
 }
@@ -126,18 +162,8 @@ WebContentsPreferences::WebContentsPreferences(
   SetDefaultBoolIfUndefined(options::kDisableHtmlFullscreenWindowResize, false);
   SetDefaultBoolIfUndefined(options::kWebviewTag, false);
   SetDefaultBoolIfUndefined(options::kSandbox, false);
-  SetDefaultBoolIfUndefined(options::kNativeWindowOpen, false);
-  if (IsUndefined(options::kContextIsolation)) {
-    node::Environment* env = node::Environment::GetCurrent(isolate);
-    EmitWarning(env,
-                "The default of contextIsolation is deprecated and will be "
-                "changing from false to true in a future release of Electron.  "
-                "See https://github.com/electron/electron/issues/23506 for "
-                "more information",
-                "electron");
-  }
-  SetDefaultBoolIfUndefined(options::kContextIsolation, false);
-  SetDefaultBoolIfUndefined(options::kWorldSafeExecuteJavaScript, false);
+  SetDefaultBoolIfUndefined(options::kNativeWindowOpen, true);
+  SetDefaultBoolIfUndefined(options::kContextIsolation, true);
   SetDefaultBoolIfUndefined(options::kJavaScript, true);
   SetDefaultBoolIfUndefined(options::kImages, true);
   SetDefaultBoolIfUndefined(options::kTextAreasAreResizable, true);
@@ -255,7 +281,13 @@ bool WebContentsPreferences::GetPreloadPath(base::FilePath* path) const {
   } else if (GetAsString(&preference_, options::kPreloadURL, &preload_path)) {
     // Translate to file path if there is "preload-url" option.
     base::FilePath preload;
-    if (net::FileURLToFilePath(GURL(preload_path), &preload)) {
+    GURL preload_url;
+#if defined(OS_WIN)
+    preload_url = GURL(base::WideToUTF8(preload_path));
+#else
+    preload_url = GURL(preload_path);
+#endif
+    if (net::FileURLToFilePath(preload_url, &preload)) {
       *path = std::move(preload);
       return true;
     } else {
@@ -314,13 +346,6 @@ void WebContentsPreferences::AppendCommandLineSwitches(
     }
   }
 
-  // --offscreen
-  // TODO(loc): Offscreen is duplicated in WebPreferences because it's needed
-  // earlier than we can get WebPreferences at the moment.
-  if (IsEnabled(options::kOffscreen)) {
-    command_line->AppendSwitch(options::kOffscreen);
-  }
-
 #if defined(OS_MAC)
   // Enable scroll bounce.
   if (IsEnabled(options::kScrollBounce))
@@ -363,6 +388,7 @@ void WebContentsPreferences::OverrideWebkitPrefs(
   prefs->javascript_enabled =
       IsEnabled(options::kJavaScript, true /* default_value */);
   prefs->images_enabled = IsEnabled(options::kImages, true /* default_value */);
+  GetImageAnimationPolicy(&preference_, &prefs->animation_policy);
   prefs->text_areas_are_resizable =
       IsEnabled(options::kTextAreasAreResizable, true /* default_value */);
   prefs->navigate_on_drag_drop =
@@ -389,7 +415,7 @@ void WebContentsPreferences::OverrideWebkitPrefs(
   auto* fonts_dict = preference_.FindKeyOfType("defaultFontFamily",
                                                base::Value::Type::DICTIONARY);
   if (fonts_dict) {
-    base::string16 font;
+    std::u16string font;
     if (GetAsString(fonts_dict, "standard", &font))
       prefs->standard_font_family_map[blink::web_pref::kCommonScript] = font;
     if (GetAsString(fonts_dict, "serif", &font))
@@ -429,15 +455,7 @@ void WebContentsPreferences::OverrideWebkitPrefs(
     prefs->opener_id = opener_id;
 
   // Run Electron APIs and preload script in isolated world
-  prefs->context_isolation = IsEnabled(options::kContextIsolation);
-
-#if BUILDFLAG(ENABLE_REMOTE_MODULE)
-  // Whether to enable the remote module
-  prefs->enable_remote_module = IsEnabled(options::kEnableRemoteModule, false);
-#endif
-
-  prefs->world_safe_execute_javascript =
-      IsEnabled(options::kWorldSafeExecuteJavaScript);
+  prefs->context_isolation = IsEnabled(options::kContextIsolation, true);
 
   int guest_instance_id = 0;
   if (GetAsInteger(&preference_, options::kGuestInstanceID, &guest_instance_id))
@@ -471,7 +489,7 @@ void WebContentsPreferences::OverrideWebkitPrefs(
   GetPreloadPath(&prefs->preload);
 
   // Check if nativeWindowOpen is enabled.
-  prefs->native_window_open = IsEnabled(options::kNativeWindowOpen);
+  prefs->native_window_open = IsEnabled(options::kNativeWindowOpen, true);
 
   // Check if we have node integration specified.
   prefs->node_integration = IsEnabled(options::kNodeIntegration);

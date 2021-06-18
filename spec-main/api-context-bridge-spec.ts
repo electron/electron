@@ -5,6 +5,7 @@ import * as fs from 'fs-extra';
 import * as http from 'http';
 import * as os from 'os';
 import * as path from 'path';
+import * as cp from 'child_process';
 
 import { closeWindow } from './window-helpers';
 import { emittedOnce } from './events-helpers';
@@ -22,7 +23,7 @@ describe('contextBridge', () => {
       res.setHeader('Content-Type', 'text/html');
       res.end('');
     });
-    await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
   });
 
   after(async () => {
@@ -283,7 +284,7 @@ describe('contextBridge', () => {
             return err;
           }
         });
-        expect(result).to.be.an.instanceOf(Error).with.property('message', 'Uncaught Error: i-rejected');
+        expect(result).to.be.an.instanceOf(Error).with.property('message', 'i-rejected');
       });
 
       it('should proxy nested promises and reject with the correct value', async () => {
@@ -300,7 +301,7 @@ describe('contextBridge', () => {
             return err;
           }
         });
-        expect(result).to.be.an.instanceOf(Error).with.property('message', 'Uncaught Error: i-rejected');
+        expect(result).to.be.an.instanceOf(Error).with.property('message', 'i-rejected');
       });
 
       it('should proxy promises and resolve with the correct value if it resolves later', async () => {
@@ -350,6 +351,31 @@ describe('contextBridge', () => {
           return root.example();
         });
         expect(result).equal('return-value');
+      });
+
+      it('should not double-proxy functions when they are returned to their origin side of the bridge', async () => {
+        await makeBindingWindow(() => {
+          contextBridge.exposeInMainWorld('example', (fn: any) => fn);
+        });
+        const result = await callWithBindings(async (root: any) => {
+          const fn = () => null;
+          return root.example(fn) === fn;
+        });
+        expect(result).equal(true);
+      });
+
+      it('should properly handle errors thrown in proxied functions', async () => {
+        await makeBindingWindow(() => {
+          contextBridge.exposeInMainWorld('example', () => { throw new Error('oh no'); });
+        });
+        const result = await callWithBindings(async (root: any) => {
+          try {
+            root.example();
+          } catch (e) {
+            return e.message;
+          }
+        });
+        expect(result).equal('oh no');
       });
 
       it('should proxy methods that are callable multiple times', async () => {
@@ -558,6 +584,33 @@ describe('contextBridge', () => {
         expect(result).to.deep.equal(['BODY', 'HTMLBodyElement', 'function']);
       });
 
+      it('should handle Blobs', async () => {
+        await makeBindingWindow(() => {
+          contextBridge.exposeInMainWorld('example', {
+            getBlob: () => new Blob(['ab', 'cd'])
+          });
+        });
+        const result = await callWithBindings(async (root: any) => {
+          return [await root.example.getBlob().text()];
+        });
+        expect(result).to.deep.equal(['abcd']);
+      });
+
+      it('should handle Blobs going backwards over the bridge', async () => {
+        await makeBindingWindow(() => {
+          contextBridge.exposeInMainWorld('example', {
+            getBlobText: async (fn: Function) => {
+              const blob = fn();
+              return [await blob.text()];
+            }
+          });
+        });
+        const result = await callWithBindings((root: any) => {
+          return root.example.getBlobText(() => new Blob(['12', '45']));
+        });
+        expect(result).to.deep.equal(['1245']);
+      });
+
       // Can only run tests which use the GCRunner in non-sandboxed environments
       if (!useSandbox) {
         it('should release the global hold on methods sent across contexts', async () => {
@@ -763,7 +816,8 @@ describe('contextBridge', () => {
             symbolKeyed: {
               [Symbol('foo')]: 123
             },
-            getBody: () => document.body
+            getBody: () => document.body,
+            getBlob: () => new Blob(['ab', 'cd'])
           });
         });
         const result = await callWithBindings(async (root: any) => {
@@ -836,7 +890,8 @@ describe('contextBridge', () => {
             [(await example.object.getPromise()).arr[3][0], String],
             [arg, Object],
             [arg.key, String],
-            [example.getBody(), HTMLBodyElement]
+            [example.getBody(), HTMLBodyElement],
+            [example.getBlob(), Blob]
           ];
           return {
             protoMatches: protoChecks.map(([a, Constructor]) => Object.getPrototypeOf(a) === Constructor.prototype)
@@ -862,6 +917,12 @@ describe('contextBridge', () => {
             getArr: () => [123, 'string', true, ['foo']],
             getPromise: async () => ({ number: 123, string: 'string', boolean: true, fn: () => 'string', arr: [123, 'string', true, ['foo']] }),
             getFunctionFromFunction: async () => () => null,
+            getError: () => new Error('foo'),
+            getWeirdError: () => {
+              const e = new Error('foo');
+              e.message = { garbage: true } as any;
+              return e;
+            },
             object: {
               number: 123,
               string: 'string',
@@ -921,6 +982,10 @@ describe('contextBridge', () => {
             [cleanedRoot.getFunctionFromFunction, Function],
             [cleanedRoot.getFunctionFromFunction(), Promise],
             [await cleanedRoot.getFunctionFromFunction(), Function],
+            [cleanedRoot.getError(), Error],
+            [cleanedRoot.getError().message, String],
+            [cleanedRoot.getWeirdError(), Error],
+            [cleanedRoot.getWeirdError().message, String],
             [cleanedRoot.getPromise(), Promise],
             [await cleanedRoot.getPromise(), Object],
             [(await cleanedRoot.getPromise()).number, Number],
@@ -971,7 +1036,7 @@ describe('contextBridge', () => {
         describe('overrideGlobalValueFromIsolatedWorld', () => {
           it('should override top level properties', async () => {
             await makeBindingWindow(() => {
-              contextBridge.internalContextBridge.overrideGlobalValueFromIsolatedWorld(['open'], () => ({ you: 'are a wizard' }));
+              contextBridge.internalContextBridge!.overrideGlobalValueFromIsolatedWorld(['open'], () => ({ you: 'are a wizard' }));
             });
             const result = await callWithBindings(async (root: any) => {
               return root.open();
@@ -981,7 +1046,7 @@ describe('contextBridge', () => {
 
           it('should override deep properties', async () => {
             await makeBindingWindow(() => {
-              contextBridge.internalContextBridge.overrideGlobalValueFromIsolatedWorld(['document', 'foo'], () => 'I am foo');
+              contextBridge.internalContextBridge!.overrideGlobalValueFromIsolatedWorld(['document', 'foo'], () => 'I am foo');
             });
             const result = await callWithBindings(async (root: any) => {
               return root.document.foo();
@@ -998,7 +1063,7 @@ describe('contextBridge', () => {
                 callCount++;
                 return true;
               };
-              contextBridge.internalContextBridge.overrideGlobalPropertyFromIsolatedWorld(['isFun'], getter);
+              contextBridge.internalContextBridge!.overrideGlobalPropertyFromIsolatedWorld(['isFun'], getter);
               contextBridge.exposeInMainWorld('foo', {
                 callCount: () => callCount
               });
@@ -1012,7 +1077,7 @@ describe('contextBridge', () => {
 
           it('should not make a setter if none is provided', async () => {
             await makeBindingWindow(() => {
-              contextBridge.internalContextBridge.overrideGlobalPropertyFromIsolatedWorld(['isFun'], () => true);
+              contextBridge.internalContextBridge!.overrideGlobalPropertyFromIsolatedWorld(['isFun'], () => true);
             });
             const result = await callWithBindings(async (root: any) => {
               root.isFun = 123;
@@ -1028,7 +1093,7 @@ describe('contextBridge', () => {
                 callArgs.push(args);
                 return true;
               };
-              contextBridge.internalContextBridge.overrideGlobalPropertyFromIsolatedWorld(['isFun'], () => true, setter);
+              contextBridge.internalContextBridge!.overrideGlobalPropertyFromIsolatedWorld(['isFun'], () => true, setter);
               contextBridge.exposeInMainWorld('foo', {
                 callArgs: () => callArgs
               });
@@ -1046,7 +1111,7 @@ describe('contextBridge', () => {
         describe('overrideGlobalValueWithDynamicPropsFromIsolatedWorld', () => {
           it('should not affect normal values', async () => {
             await makeBindingWindow(() => {
-              contextBridge.internalContextBridge.overrideGlobalValueWithDynamicPropsFromIsolatedWorld(['thing'], {
+              contextBridge.internalContextBridge!.overrideGlobalValueWithDynamicPropsFromIsolatedWorld(['thing'], {
                 a: 123,
                 b: () => 2,
                 c: () => ({ d: 3 })
@@ -1060,7 +1125,7 @@ describe('contextBridge', () => {
 
           it('should work with getters', async () => {
             await makeBindingWindow(() => {
-              contextBridge.internalContextBridge.overrideGlobalValueWithDynamicPropsFromIsolatedWorld(['thing'], {
+              contextBridge.internalContextBridge!.overrideGlobalValueWithDynamicPropsFromIsolatedWorld(['thing'], {
                 get foo () {
                   return 'hi there';
                 }
@@ -1072,10 +1137,28 @@ describe('contextBridge', () => {
             expect(result).to.equal('hi there');
           });
 
+          it('should work with nested getters', async () => {
+            await makeBindingWindow(() => {
+              contextBridge.internalContextBridge!.overrideGlobalValueWithDynamicPropsFromIsolatedWorld(['thing'], {
+                get foo () {
+                  return {
+                    get bar () {
+                      return 'hi there';
+                    }
+                  };
+                }
+              });
+            });
+            const result = await callWithBindings(async (root: any) => {
+              return root.thing.foo.bar;
+            });
+            expect(result).to.equal('hi there');
+          });
+
           it('should work with setters', async () => {
             await makeBindingWindow(() => {
               let a: any = null;
-              contextBridge.internalContextBridge.overrideGlobalValueWithDynamicPropsFromIsolatedWorld(['thing'], {
+              contextBridge.internalContextBridge!.overrideGlobalValueWithDynamicPropsFromIsolatedWorld(['thing'], {
                 get foo () {
                   return a;
                 },
@@ -1091,9 +1174,32 @@ describe('contextBridge', () => {
             expect(result).to.equal(124);
           });
 
+          it('should work with nested getter / setter combos', async () => {
+            await makeBindingWindow(() => {
+              let a: any = null;
+              contextBridge.internalContextBridge!.overrideGlobalValueWithDynamicPropsFromIsolatedWorld(['thing'], {
+                get thingy () {
+                  return {
+                    get foo () {
+                      return a;
+                    },
+                    set foo (arg: any) {
+                      a = arg + 1;
+                    }
+                  };
+                }
+              });
+            });
+            const result = await callWithBindings(async (root: any) => {
+              root.thing.thingy.foo = 123;
+              return root.thing.thingy.foo;
+            });
+            expect(result).to.equal(124);
+          });
+
           it('should work with deep properties', async () => {
             await makeBindingWindow(() => {
-              contextBridge.internalContextBridge.overrideGlobalValueWithDynamicPropsFromIsolatedWorld(['thing'], {
+              contextBridge.internalContextBridge!.overrideGlobalValueWithDynamicPropsFromIsolatedWorld(['thing'], {
                 a: () => ({
                   get foo () {
                     return 'still here';
@@ -1113,4 +1219,32 @@ describe('contextBridge', () => {
 
   generateTests(true);
   generateTests(false);
+});
+
+describe('ContextBridgeMutability', () => {
+  it('should not make properties unwriteable and read-only if ContextBridgeMutability is on', async () => {
+    const appPath = path.join(fixturesPath, 'context-bridge-mutability');
+    const appProcess = cp.spawn(process.execPath, ['--enable-logging', '--enable-features=ContextBridgeMutability', appPath]);
+
+    let output = '';
+    appProcess.stdout.on('data', data => { output += data; });
+    await emittedOnce(appProcess, 'exit');
+
+    expect(output).to.include('some-modified-text');
+    expect(output).to.include('obj-modified-prop');
+    expect(output).to.include('1,2,5,3,4');
+  });
+
+  it('should make properties unwriteable and read-only if ContextBridgeMutability is off', async () => {
+    const appPath = path.join(fixturesPath, 'context-bridge-mutability');
+    const appProcess = cp.spawn(process.execPath, ['--enable-logging', appPath]);
+
+    let output = '';
+    appProcess.stdout.on('data', data => { output += data; });
+    await emittedOnce(appProcess, 'exit');
+
+    expect(output).to.include('some-text');
+    expect(output).to.include('obj-prop');
+    expect(output).to.include('1,2,3,4');
+  });
 });

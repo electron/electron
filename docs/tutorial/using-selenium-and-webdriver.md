@@ -86,12 +86,12 @@ const driver = new webdriver.Builder()
   // The "9515" is the port opened by chrome driver.
   .usingServer('http://localhost:9515')
   .withCapabilities({
-    chromeOptions: {
+    'goog:chromeOptions': {
       // Here is the path to your Electron binary.
       binary: '/Path-to-Your-App.app/Contents/MacOS/Electron'
     }
   })
-  .forBrowser('electron')
+  .forBrowser('chrome') // note: use .forBrowser('electron') for selenium-webdriver <= 3.6.0
   .build()
 
 driver.get('http://www.google.com')
@@ -162,7 +162,7 @@ client
 ## Workflow
 
 To test your application without rebuilding Electron,
-[place](https://github.com/electron/electron/blob/master/docs/tutorial/application-distribution.md)
+[place](application-distribution.md)
 your app source into Electron's resource directory.
 
 Alternatively, pass an argument to run with your Electron binary that points to

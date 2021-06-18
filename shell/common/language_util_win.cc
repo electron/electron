@@ -16,24 +16,8 @@
 
 namespace electron {
 
-std::vector<std::string> GetPreferredLanguages() {
-  std::vector<base::string16> languages16;
-
-  // Attempt to use API available on Windows 10 or later, which
-  // returns the full list of language preferences.
-  if (!GetPreferredLanguagesUsingGlobalization(&languages16)) {
-    base::win::i18n::GetThreadPreferredUILanguageList(&languages16);
-  }
-
-  std::vector<std::string> languages;
-  for (const auto& language : languages16) {
-    languages.push_back(base::SysWideToUTF8(language));
-  }
-  return languages;
-}
-
 bool GetPreferredLanguagesUsingGlobalization(
-    std::vector<base::string16>* languages) {
+    std::vector<std::wstring>* languages) {
   if (base::win::GetVersion() < base::win::Version::WIN10)
     return false;
   if (!base::win::ResolveCoreWinRTDelayload() ||
@@ -71,6 +55,22 @@ bool GetPreferredLanguagesUsingGlobalization(
   }
 
   return true;
+}
+
+std::vector<std::string> GetPreferredLanguages() {
+  std::vector<std::wstring> languages16;
+
+  // Attempt to use API available on Windows 10 or later, which
+  // returns the full list of language preferences.
+  if (!GetPreferredLanguagesUsingGlobalization(&languages16)) {
+    base::win::i18n::GetThreadPreferredUILanguageList(&languages16);
+  }
+
+  std::vector<std::string> languages;
+  for (const auto& language : languages16) {
+    languages.push_back(base::SysWideToUTF8(language));
+  }
+  return languages;
 }
 
 }  // namespace electron

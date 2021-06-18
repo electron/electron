@@ -16,7 +16,7 @@ namespace electron {
 
 class GuestViewContainer {
  public:
-  typedef base::Callback<void(const gfx::Size&)> ResizeCallback;
+  typedef base::RepeatingCallback<void(const gfx::Size&)> ResizeCallback;
 
   explicit GuestViewContainer(content::RenderFrame* render_frame);
   virtual ~GuestViewContainer();
@@ -32,7 +32,7 @@ class GuestViewContainer {
 
   ResizeCallback element_resize_callback_;
 
-  base::WeakPtrFactory<GuestViewContainer> weak_ptr_factory_;
+  base::WeakPtrFactory<GuestViewContainer> weak_ptr_factory_{this};
 
   DISALLOW_COPY_AND_ASSIGN(GuestViewContainer);
 };

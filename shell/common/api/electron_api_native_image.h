@@ -75,11 +75,13 @@ class NativeImage : public gin::Wrappable<NativeImage> {
       const gfx::Size& size);
 #endif
 
-  static v8::Local<v8::FunctionTemplate> GetConstructor(v8::Isolate* isolate);
+  enum class OnConvertError { kThrow, kWarn };
 
-  static bool TryConvertNativeImage(v8::Isolate* isolate,
-                                    v8::Local<v8::Value> image,
-                                    NativeImage** native_image);
+  static bool TryConvertNativeImage(
+      v8::Isolate* isolate,
+      v8::Local<v8::Value> image,
+      NativeImage** native_image,
+      OnConvertError on_error = OnConvertError::kThrow);
 
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
@@ -112,9 +114,11 @@ class NativeImage : public gin::Wrappable<NativeImage> {
   gin::Handle<NativeImage> Crop(v8::Isolate* isolate, const gfx::Rect& rect);
   std::string ToDataURL(gin::Arguments* args);
   bool IsEmpty();
-  gfx::Size GetSize(const base::Optional<float> scale_factor);
-  float GetAspectRatio(const base::Optional<float> scale_factor);
+  gfx::Size GetSize(const absl::optional<float> scale_factor);
+  float GetAspectRatio(const absl::optional<float> scale_factor);
   void AddRepresentation(const gin_helper::Dictionary& options);
+
+  void AdjustAmountOfExternalAllocatedMemory(bool add);
 
   // Mark the image as template image.
   void SetTemplateImage(bool setAsTemplate);

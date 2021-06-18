@@ -8,15 +8,15 @@
 
 namespace electron {
 
-ScopedHString::ScopedHString(const wchar_t* source) : str_(nullptr) {
+ScopedHString::ScopedHString(const wchar_t* source) {
   Reset(source);
 }
 
-ScopedHString::ScopedHString(const std::wstring& source) : str_(nullptr) {
+ScopedHString::ScopedHString(const std::wstring& source) {
   Reset(source);
 }
 
-ScopedHString::ScopedHString() : str_(nullptr) {}
+ScopedHString::ScopedHString() = default;
 
 ScopedHString::~ScopedHString() {
   Reset();

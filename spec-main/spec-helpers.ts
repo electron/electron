@@ -69,9 +69,9 @@ class RemoteControlApp {
   }
 }
 
-export async function startRemoteControlApp () {
+export async function startRemoteControlApp (extraArgs: string[] = [], options?: childProcess.SpawnOptionsWithoutStdio) {
   const appPath = path.join(__dirname, 'fixtures', 'apps', 'remote-control');
-  const appProcess = childProcess.spawn(process.execPath, [appPath]);
+  const appProcess = childProcess.spawn(process.execPath, [appPath, ...extraArgs], options);
   appProcess.stderr.on('data', d => {
     process.stderr.write(d);
   });
@@ -85,4 +85,50 @@ export async function startRemoteControlApp () {
   });
   defer(() => { appProcess.kill('SIGINT'); });
   return new RemoteControlApp(appProcess, port);
+}
+
+export function waitUntil (
+  callback: () => boolean,
+  opts: { rate?: number, timeout?: number } = {}
+) {
+  const { rate = 10, timeout = 10000 } = opts;
+  return new Promise<void>((resolve, reject) => {
+    let intervalId: NodeJS.Timeout | undefined; // eslint-disable-line prefer-const
+    let timeoutId: NodeJS.Timeout | undefined;
+
+    const cleanup = () => {
+      if (intervalId) clearInterval(intervalId);
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+
+    const check = () => {
+      let result;
+
+      try {
+        result = callback();
+      } catch (e) {
+        cleanup();
+        reject(e);
+        return;
+      }
+
+      if (result === true) {
+        cleanup();
+        resolve();
+        return true;
+      }
+    };
+
+    if (check()) {
+      return;
+    }
+
+    intervalId = setInterval(check, rate);
+
+    timeoutId = setTimeout(() => {
+      timeoutId = undefined;
+      cleanup();
+      reject(new Error(`waitUntil timed out after ${timeout}ms`));
+    }, timeout);
+  });
 }

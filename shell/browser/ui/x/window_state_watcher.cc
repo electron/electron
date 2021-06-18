@@ -8,13 +8,20 @@
 
 #include "ui/base/x/x11_util.h"
 #include "ui/gfx/x/x11_atom_cache.h"
+#include "ui/gfx/x/xproto_util.h"
 
 namespace electron {
 
 WindowStateWatcher::WindowStateWatcher(NativeWindowViews* window)
     : window_(window),
       widget_(window->GetAcceleratedWidget()),
-      window_state_atom_(x11::GetAtom("_NET_WM_STATE")) {
+      net_wm_state_atom_(x11::GetAtom("_NET_WM_STATE")),
+      net_wm_state_hidden_atom_(x11::GetAtom("_NET_WM_STATE_HIDDEN")),
+      net_wm_state_maximized_vert_atom_(
+          x11::GetAtom("_NET_WM_STATE_MAXIMIZED_VERT")),
+      net_wm_state_maximized_horz_atom_(
+          x11::GetAtom("_NET_WM_STATE_MAXIMIZED_HORZ")),
+      net_wm_state_fullscreen_atom_(x11::GetAtom("_NET_WM_STATE_FULLSCREEN")) {
   ui::X11EventSource::GetInstance()->connection()->AddEventObserver(this);
 }
 
@@ -24,25 +31,20 @@ WindowStateWatcher::~WindowStateWatcher() {
 
 void WindowStateWatcher::OnEvent(const x11::Event& x11_event) {
   if (IsWindowStateEvent(x11_event)) {
-    bool was_minimized_ = window_->IsMinimized();
-    bool was_maximized_ = window_->IsMaximized();
+    const bool was_minimized_ = window_->IsMinimized();
+    const bool was_maximized_ = window_->IsMaximized();
 
     std::vector<x11::Atom> wm_states;
-
-    if (ui::GetAtomArrayProperty(
+    if (GetArrayProperty(
             static_cast<x11::Window>(window_->GetAcceleratedWidget()),
-            "_NET_WM_STATE", &wm_states)) {
-      auto props =
+            net_wm_state_atom_, &wm_states)) {
+      const auto props =
           base::flat_set<x11::Atom>(std::begin(wm_states), std::end(wm_states));
-      bool is_minimized =
-          props.find(x11::GetAtom("_NET_WM_STATE_HIDDEN")) != props.end();
-      bool is_maximized =
-          props.find(x11::GetAtom("_NET_WM_STATE_MAXIMIZED_VERT")) !=
-              props.end() &&
-          props.find(x11::GetAtom("_NET_WM_STATE_MAXIMIZED_HORZ")) !=
-              props.end();
-      bool is_fullscreen =
-          props.find(x11::GetAtom("_NET_WM_STATE_FULLSCREEN")) != props.end();
+      const bool is_minimized = props.contains(net_wm_state_hidden_atom_);
+      const bool is_maximized =
+          props.contains(net_wm_state_maximized_vert_atom_) &&
+          props.contains(net_wm_state_maximized_horz_atom_);
+      const bool is_fullscreen = props.contains(net_wm_state_fullscreen_atom_);
 
       if (is_minimized != was_minimized_) {
         if (is_minimized)
@@ -71,7 +73,7 @@ void WindowStateWatcher::OnEvent(const x11::Event& x11_event) {
 
 bool WindowStateWatcher::IsWindowStateEvent(const x11::Event& x11_event) const {
   auto* property = x11_event.As<x11::PropertyNotifyEvent>();
-  return (property && property->atom == window_state_atom_ &&
+  return (property && property->atom == net_wm_state_atom_ &&
           static_cast<uint32_t>(property->window) == widget_);
 }
 

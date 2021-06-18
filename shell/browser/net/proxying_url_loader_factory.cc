@@ -4,21 +4,28 @@
 
 #include "shell/browser/net/proxying_url_loader_factory.h"
 
+#include <memory>
 #include <utility>
 
+#include "base/bind.h"
+#include "base/callback_helpers.h"
 #include "base/command_line.h"
 #include "base/strings/string_split.h"
 #include "base/strings/string_util.h"
+#include "base/strings/stringprintf.h"
 #include "content/public/browser/browser_context.h"
 #include "extensions/browser/extension_navigation_ui_data.h"
-#include "mojo/public/cpp/bindings/binding.h"
 #include "net/base/completion_repeating_callback.h"
 #include "net/base/load_flags.h"
+#include "net/http/http_response_headers.h"
+#include "net/http/http_status_code.h"
 #include "net/http/http_util.h"
+#include "net/url_request/redirect_info.h"
 #include "services/metrics/public/cpp/ukm_source_id.h"
 #include "services/network/public/cpp/features.h"
 #include "shell/browser/net/asar/asar_url_loader.h"
 #include "shell/common/options_switches.h"
+#include "url/origin.h"
 
 namespace electron {
 
@@ -29,8 +36,9 @@ ProxyingURLLoaderFactory::InProgressRequest::FollowRedirectParams::
 
 ProxyingURLLoaderFactory::InProgressRequest::InProgressRequest(
     ProxyingURLLoaderFactory* factory,
-    int64_t web_request_id,
-    int32_t routing_id,
+    uint64_t web_request_id,
+    int32_t view_routing_id,
+    int32_t frame_routing_id,
     int32_t network_service_request_id,
     uint32_t options,
     const network::ResourceRequest& request,
@@ -41,8 +49,9 @@ ProxyingURLLoaderFactory::InProgressRequest::InProgressRequest(
       request_(request),
       original_initiator_(request.request_initiator),
       request_id_(web_request_id),
-      routing_id_(routing_id),
       network_service_request_id_(network_service_request_id),
+      view_routing_id_(view_routing_id),
+      frame_routing_id_(frame_routing_id),
       options_(options),
       traffic_annotation_(traffic_annotation),
       proxied_loader_receiver_(this, std::move(loader_receiver)),
@@ -66,11 +75,13 @@ ProxyingURLLoaderFactory::InProgressRequest::InProgressRequest(
 ProxyingURLLoaderFactory::InProgressRequest::InProgressRequest(
     ProxyingURLLoaderFactory* factory,
     uint64_t request_id,
+    int32_t frame_routing_id,
     const network::ResourceRequest& request)
     : factory_(factory),
       request_(request),
       original_initiator_(request.request_initiator),
       request_id_(request_id),
+      frame_routing_id_(frame_routing_id),
       proxied_loader_receiver_(this),
       for_cors_preflight_(true),
       has_any_extra_headers_listeners_(true) {}
@@ -83,11 +94,11 @@ ProxyingURLLoaderFactory::InProgressRequest::~InProgressRequest() {
   }
   if (on_before_send_headers_callback_) {
     std::move(on_before_send_headers_callback_)
-        .Run(net::ERR_ABORTED, base::nullopt);
+        .Run(net::ERR_ABORTED, absl::nullopt);
   }
   if (on_headers_received_callback_) {
     std::move(on_headers_received_callback_)
-        .Run(net::ERR_ABORTED, base::nullopt, base::nullopt);
+        .Run(net::ERR_ABORTED, absl::nullopt, absl::nullopt);
   }
 }
 
@@ -105,10 +116,10 @@ void ProxyingURLLoaderFactory::InProgressRequest::UpdateRequestInfo() {
   network::ResourceRequest request_for_info = request_;
   request_for_info.request_initiator = original_initiator_;
   info_.emplace(extensions::WebRequestInfoInitParams(
-      request_id_, factory_->render_process_id_, request_.render_frame_id,
+      request_id_, factory_->render_process_id_, frame_routing_id_,
       factory_->navigation_ui_data_ ? factory_->navigation_ui_data_->DeepCopy()
                                     : nullptr,
-      routing_id_, request_for_info, false,
+      view_routing_id_, request_for_info, false,
       !(options_ & network::mojom::kURLLoadOptionSynchronous),
       factory_->IsForServiceWorkerScript(), factory_->navigation_id_,
       ukm::kInvalidSourceIdObj));
@@ -154,7 +165,7 @@ void ProxyingURLLoaderFactory::InProgressRequest::RestartInternal() {
     // they respond. |continuation| above will be invoked asynchronously to
     // continue or cancel the request.
     //
-    // We pause the binding here to prevent further client message processing.
+    // We pause the receiver here to prevent further client message processing.
     if (proxied_client_receiver_.is_bound())
       proxied_client_receiver_.Pause();
 
@@ -173,7 +184,7 @@ void ProxyingURLLoaderFactory::InProgressRequest::FollowRedirect(
     const std::vector<std::string>& removed_headers,
     const net::HttpRequestHeaders& modified_headers,
     const net::HttpRequestHeaders& modified_cors_exempt_headers,
-    const base::Optional<GURL>& new_url) {
+    const absl::optional<GURL>& new_url) {
   if (new_url)
     request_.url = new_url.value();
 
@@ -222,6 +233,11 @@ void ProxyingURLLoaderFactory::InProgressRequest::PauseReadingBodyFromNet() {
 void ProxyingURLLoaderFactory::InProgressRequest::ResumeReadingBodyFromNet() {
   if (target_loader_.is_bound())
     target_loader_->ResumeReadingBodyFromNet();
+}
+
+void ProxyingURLLoaderFactory::InProgressRequest::OnReceiveEarlyHints(
+    network::mojom::EarlyHintsPtr early_hints) {
+  target_client_->OnReceiveEarlyHints(std::move(early_hints));
 }
 
 void ProxyingURLLoaderFactory::InProgressRequest::OnReceiveResponse(
@@ -303,12 +319,17 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnComplete(
   factory_->RemoveRequest(network_service_request_id_, request_id_);
 }
 
+bool ProxyingURLLoaderFactory::IsForServiceWorkerScript() const {
+  return loader_factory_type_ == content::ContentBrowserClient::
+                                     URLLoaderFactoryType::kServiceWorkerScript;
+}
+
 void ProxyingURLLoaderFactory::InProgressRequest::OnLoaderCreated(
     mojo::PendingReceiver<network::mojom::TrustedHeaderClient> receiver) {
   header_client_receiver_.Bind(std::move(receiver));
   if (for_cors_preflight_) {
     // In this case we don't have |target_loader_| and
-    // |proxied_client_binding_|, and |receiver| is the only connection to the
+    // |proxied_client_receiver_|, and |receiver| is the only connection to the
     // network service, so we observe mojo connection errors.
     header_client_receiver_.set_disconnect_handler(base::BindOnce(
         &ProxyingURLLoaderFactory::InProgressRequest::OnRequestError,
@@ -321,7 +342,7 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnBeforeSendHeaders(
     const net::HttpRequestHeaders& headers,
     OnBeforeSendHeadersCallback callback) {
   if (!current_request_uses_header_client_) {
-    std::move(callback).Run(net::OK, base::nullopt);
+    std::move(callback).Run(net::OK, absl::nullopt);
     return;
   }
 
@@ -335,7 +356,7 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnHeadersReceived(
     const net::IPEndPoint& remote_endpoint,
     OnHeadersReceivedCallback callback) {
   if (!current_request_uses_header_client_) {
-    std::move(callback).Run(net::OK, base::nullopt, GURL());
+    std::move(callback).Run(net::OK, absl::nullopt, GURL());
 
     if (for_cors_preflight_) {
       // CORS preflight is supported only when "extraHeaders" is specified.
@@ -355,25 +376,57 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnHeadersReceived(
                      weak_factory_.GetWeakPtr()));
 }
 
-void ProxyingURLLoaderFactory::OnLoaderForCorsPreflightCreated(
-    const network::ResourceRequest& request,
-    mojo::PendingReceiver<network::mojom::TrustedHeaderClient> receiver) {
-  // Please note that the URLLoader is now starting, without waiting for
-  // additional signals from here. The URLLoader will be blocked before
-  // sending HTTP request headers (TrustedHeaderClient.OnBeforeSendHeaders),
-  // but the connection set up will be done before that. This is acceptable from
-  // Web Request API because the extension has already allowed to set up
-  // a connection to the same URL (i.e., the actual request), and distinguishing
-  // two connections for the actual request and the preflight request before
-  // sending request headers is very difficult.
-  const uint64_t web_request_id = ++(*request_id_generator_);
+void ProxyingURLLoaderFactory::InProgressRequest::
+    HandleBeforeRequestRedirect() {
+  // The extension requested a redirect. Close the connection with the current
+  // URLLoader and inform the URLLoaderClient the WebRequest API generated a
+  // redirect. To load |redirect_url_|, a new URLLoader will be recreated
+  // after receiving FollowRedirect().
 
-  auto result = requests_.insert(std::make_pair(
-      web_request_id,
-      std::make_unique<InProgressRequest>(this, web_request_id, request)));
+  // Forgetting to close the connection with the current URLLoader caused
+  // bugs. The latter doesn't know anything about the redirect. Continuing
+  // the load with it gives unexpected results. See
+  // https://crbug.com/882661#c72.
+  proxied_client_receiver_.reset();
+  header_client_receiver_.reset();
+  target_loader_.reset();
 
-  result.first->second->OnLoaderCreated(std::move(receiver));
-  result.first->second->Restart();
+  constexpr int kInternalRedirectStatusCode = net::HTTP_TEMPORARY_REDIRECT;
+
+  net::RedirectInfo redirect_info;
+  redirect_info.status_code = kInternalRedirectStatusCode;
+  redirect_info.new_method = request_.method;
+  redirect_info.new_url = redirect_url_;
+  redirect_info.new_site_for_cookies =
+      net::SiteForCookies::FromUrl(redirect_url_);
+
+  auto head = network::mojom::URLResponseHead::New();
+  std::string headers = base::StringPrintf(
+      "HTTP/1.1 %i Internal Redirect\n"
+      "Location: %s\n"
+      "Non-Authoritative-Reason: WebRequest API\n\n",
+      kInternalRedirectStatusCode, redirect_url_.spec().c_str());
+
+  // Cross-origin requests need to modify the Origin header to 'null'. Since
+  // CorsURLLoader sets |request_initiator| to the Origin request header in
+  // NetworkService, we need to modify |request_initiator| here to craft the
+  // Origin header indirectly.
+  // Following checks implement the step 10 of "4.4. HTTP-redirect fetch",
+  // https://fetch.spec.whatwg.org/#http-redirect-fetch
+  if (request_.request_initiator &&
+      (!url::Origin::Create(redirect_url_)
+            .IsSameOriginWith(url::Origin::Create(request_.url)) &&
+       !request_.request_initiator->IsSameOriginWith(
+           url::Origin::Create(request_.url)))) {
+    // Reset the initiator to pretend tainted origin flag of the spec is set.
+    request_.request_initiator = url::Origin();
+  }
+  head->headers = base::MakeRefCounted<net::HttpResponseHeaders>(
+      net::HttpUtil::AssembleRawHeaders(headers));
+  head->encoded_data_length = 0;
+
+  current_response_ = std::move(head);
+  ContinueToBeforeRedirect(redirect_info, net::OK);
 }
 
 void ProxyingURLLoaderFactory::InProgressRequest::ContinueToBeforeSendHeaders(
@@ -423,6 +476,50 @@ void ProxyingURLLoaderFactory::InProgressRequest::ContinueToBeforeSendHeaders(
 
   ContinueToSendHeaders(std::set<std::string>(), std::set<std::string>(),
                         net::OK);
+}
+
+void ProxyingURLLoaderFactory::InProgressRequest::ContinueToStartRequest(
+    int error_code) {
+  if (error_code != net::OK) {
+    OnRequestError(network::URLLoaderCompletionStatus(error_code));
+    return;
+  }
+
+  if (current_request_uses_header_client_ && !redirect_url_.is_empty()) {
+    HandleBeforeRequestRedirect();
+    return;
+  }
+
+  if (proxied_client_receiver_.is_bound())
+    proxied_client_receiver_.Resume();
+
+  if (header_client_receiver_.is_bound())
+    header_client_receiver_.Resume();
+
+  if (for_cors_preflight_) {
+    // For CORS preflight requests, we have already started the request in
+    // the network service. We did block the request by blocking
+    // |header_client_receiver_|, which we unblocked right above.
+    return;
+  }
+
+  if (!target_loader_.is_bound() && factory_->target_factory_.is_bound()) {
+    // No extensions have cancelled us up to this point, so it's now OK to
+    // initiate the real network request.
+    uint32_t options = options_;
+    // Even if this request does not use the header client, future redirects
+    // might, so we need to set the option on the loader.
+    if (has_any_extra_headers_listeners_)
+      options |= network::mojom::kURLLoadOptionUseHeaderClient;
+    factory_->target_factory_->CreateLoaderAndStart(
+        mojo::MakeRequest(&target_loader_), network_service_request_id_,
+        options, request_, proxied_client_receiver_.BindNewPipeAndPassRemote(),
+        traffic_annotation_);
+  }
+
+  // From here the lifecycle of this request is driven by subsequent events on
+  // either |proxied_loader_receiver_|, |proxied_client_receiver_|, or
+  // |header_client_receiver_|.
 }
 
 void ProxyingURLLoaderFactory::InProgressRequest::ContinueToSendHeaders(
@@ -475,51 +572,6 @@ void ProxyingURLLoaderFactory::InProgressRequest::ContinueToSendHeaders(
     ContinueToStartRequest(net::OK);
 }
 
-void ProxyingURLLoaderFactory::InProgressRequest::ContinueToStartRequest(
-    int error_code) {
-  if (error_code != net::OK) {
-    OnRequestError(network::URLLoaderCompletionStatus(error_code));
-    return;
-  }
-
-  if (current_request_uses_header_client_ && !redirect_url_.is_empty()) {
-    HandleBeforeRequestRedirect();
-    return;
-  }
-
-  if (proxied_client_receiver_.is_bound())
-    proxied_client_receiver_.Resume();
-
-  if (header_client_receiver_.is_bound())
-    header_client_receiver_.Resume();
-
-  if (for_cors_preflight_) {
-    // For CORS preflight requests, we have already started the request in
-    // the network service. We did block the request by blocking
-    // |header_client_receiver_|, which we unblocked right above.
-    return;
-  }
-
-  if (!target_loader_.is_bound() && factory_->target_factory_.is_bound()) {
-    // No extensions have cancelled us up to this point, so it's now OK to
-    // initiate the real network request.
-    uint32_t options = options_;
-    // Even if this request does not use the header client, future redirects
-    // might, so we need to set the option on the loader.
-    if (has_any_extra_headers_listeners_)
-      options |= network::mojom::kURLLoadOptionUseHeaderClient;
-    factory_->target_factory_->CreateLoaderAndStart(
-        mojo::MakeRequest(&target_loader_), routing_id_,
-        network_service_request_id_, options, request_,
-        proxied_client_receiver_.BindNewPipeAndPassRemote(),
-        traffic_annotation_);
-  }
-
-  // From here the lifecycle of this request is driven by subsequent events on
-  // either |proxy_loader_binding_|, |proxy_client_receiver_|, or
-  // |header_client_receiver_|.
-}
-
 void ProxyingURLLoaderFactory::InProgressRequest::
     ContinueToHandleOverrideHeaders(int error_code) {
   if (error_code != net::OK) {
@@ -528,7 +580,7 @@ void ProxyingURLLoaderFactory::InProgressRequest::
   }
 
   DCHECK(on_headers_received_callback_);
-  base::Optional<std::string> headers;
+  absl::optional<std::string> headers;
   if (override_headers_) {
     headers = override_headers_->raw_headers();
     if (current_request_uses_header_client_) {
@@ -640,70 +692,16 @@ void ProxyingURLLoaderFactory::InProgressRequest::ContinueToBeforeRedirect(
 }
 
 void ProxyingURLLoaderFactory::InProgressRequest::
-    HandleBeforeRequestRedirect() {
-  // The extension requested a redirect. Close the connection with the current
-  // URLLoader and inform the URLLoaderClient the WebRequest API generated a
-  // redirect. To load |redirect_url_|, a new URLLoader will be recreated
-  // after receiving FollowRedirect().
-
-  // Forgetting to close the connection with the current URLLoader caused
-  // bugs. The latter doesn't know anything about the redirect. Continuing
-  // the load with it gives unexpected results. See
-  // https://crbug.com/882661#c72.
-  proxied_client_receiver_.reset();
-  header_client_receiver_.reset();
-  target_loader_.reset();
-
-  constexpr int kInternalRedirectStatusCode = 307;
-
-  net::RedirectInfo redirect_info;
-  redirect_info.status_code = kInternalRedirectStatusCode;
-  redirect_info.new_method = request_.method;
-  redirect_info.new_url = redirect_url_;
-  redirect_info.new_site_for_cookies =
-      net::SiteForCookies::FromUrl(redirect_url_);
-
-  auto head = network::mojom::URLResponseHead::New();
-  std::string headers = base::StringPrintf(
-      "HTTP/1.1 %i Internal Redirect\n"
-      "Location: %s\n"
-      "Non-Authoritative-Reason: WebRequest API\n\n",
-      kInternalRedirectStatusCode, redirect_url_.spec().c_str());
-
-  // Cross-origin requests need to modify the Origin header to 'null'. Since
-  // CorsURLLoader sets |request_initiator| to the Origin request header in
-  // NetworkService, we need to modify |request_initiator| here to craft the
-  // Origin header indirectly.
-  // Following checks implement the step 10 of "4.4. HTTP-redirect fetch",
-  // https://fetch.spec.whatwg.org/#http-redirect-fetch
-  if (request_.request_initiator &&
-      (!url::Origin::Create(redirect_url_)
-            .IsSameOriginWith(url::Origin::Create(request_.url)) &&
-       !request_.request_initiator->IsSameOriginWith(
-           url::Origin::Create(request_.url)))) {
-    // Reset the initiator to pretend tainted origin flag of the spec is set.
-    request_.request_initiator = url::Origin();
-  }
-  head->headers = base::MakeRefCounted<net::HttpResponseHeaders>(
-      net::HttpUtil::AssembleRawHeaders(headers));
-  head->encoded_data_length = 0;
-
-  current_response_ = std::move(head);
-  ContinueToBeforeRedirect(redirect_info, net::OK);
-}
-
-void ProxyingURLLoaderFactory::InProgressRequest::
     HandleResponseOrRedirectHeaders(net::CompletionOnceCallback continuation) {
   override_headers_ = nullptr;
   redirect_url_ = GURL();
 
   info_->AddResponseInfoFromResourceResponse(*current_response_);
 
-  net::CompletionRepeatingCallback copyable_callback =
-      base::AdaptCallbackForRepeating(std::move(continuation));
+  auto callback_pair = base::SplitOnceCallback(std::move(continuation));
   DCHECK(info_.has_value());
   int result = factory_->web_request_api()->OnHeadersReceived(
-      &info_.value(), request_, copyable_callback,
+      &info_.value(), request_, std::move(callback_pair.first),
       current_response_->headers.get(), &override_headers_, &redirect_url_);
   if (result == net::ERR_BLOCKED_BY_CLIENT) {
     OnRequestError(network::URLLoaderCompletionStatus(result));
@@ -723,7 +721,7 @@ void ProxyingURLLoaderFactory::InProgressRequest::
 
   DCHECK_EQ(net::OK, result);
 
-  copyable_callback.Run(net::OK);
+  std::move(callback_pair.second).Run(net::OK);
 }
 
 void ProxyingURLLoaderFactory::InProgressRequest::OnRequestError(
@@ -741,9 +739,11 @@ ProxyingURLLoaderFactory::ProxyingURLLoaderFactory(
     WebRequestAPI* web_request_api,
     const HandlersMap& intercepted_handlers,
     int render_process_id,
+    int frame_routing_id,
+    int view_routing_id,
     uint64_t* request_id_generator,
     std::unique_ptr<extensions::ExtensionNavigationUIData> navigation_ui_data,
-    base::Optional<int64_t> navigation_id,
+    absl::optional<int64_t> navigation_id,
     network::mojom::URLLoaderFactoryRequest loader_request,
     mojo::PendingRemote<network::mojom::URLLoaderFactory> target_factory_remote,
     mojo::PendingReceiver<network::mojom::TrustedURLLoaderHeaderClient>
@@ -752,6 +752,8 @@ ProxyingURLLoaderFactory::ProxyingURLLoaderFactory(
     : web_request_api_(web_request_api),
       intercepted_handlers_(intercepted_handlers),
       render_process_id_(render_process_id),
+      frame_routing_id_(frame_routing_id),
+      view_routing_id_(view_routing_id),
       request_id_generator_(request_id_generator),
       navigation_ui_data_(std::move(navigation_ui_data)),
       navigation_id_(std::move(navigation_id)),
@@ -772,8 +774,6 @@ ProxyingURLLoaderFactory::ProxyingURLLoaderFactory(
       ",", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
 }
 
-ProxyingURLLoaderFactory::~ProxyingURLLoaderFactory() = default;
-
 bool ProxyingURLLoaderFactory::ShouldIgnoreConnectionsLimit(
     const network::ResourceRequest& request) {
   for (const auto& domain : ignore_connections_limit_domains_) {
@@ -786,7 +786,6 @@ bool ProxyingURLLoaderFactory::ShouldIgnoreConnectionsLimit(
 
 void ProxyingURLLoaderFactory::CreateLoaderAndStart(
     mojo::PendingReceiver<network::mojom::URLLoader> loader,
-    int32_t routing_id,
     int32_t request_id,
     uint32_t options,
     const network::ResourceRequest& original_request,
@@ -808,11 +807,10 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
 
     // <scheme, <type, handler>>
     it->second.second.Run(
-        request,
-        base::BindOnce(&ElectronURLLoaderFactory::StartLoading,
-                       std::move(loader), routing_id, request_id, options,
-                       request, std::move(client), traffic_annotation,
-                       std::move(loader_remote), it->second.first));
+        request, base::BindOnce(&ElectronURLLoaderFactory::StartLoading,
+                                std::move(loader), request_id, options, request,
+                                std::move(client), traffic_annotation,
+                                std::move(loader_remote), it->second.first));
     return;
   }
 
@@ -821,16 +819,17 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
   // make ServiceWorker work with file:// URLs, we have to intercept its
   // requests here.
   if (IsForServiceWorkerScript() && request.url.SchemeIsFile()) {
-    asar::CreateAsarURLLoader(request, std::move(loader), std::move(client),
-                              new net::HttpResponseHeaders(""));
+    asar::CreateAsarURLLoader(
+        request, std::move(loader), std::move(client),
+        base::MakeRefCounted<net::HttpResponseHeaders>(""));
     return;
   }
 
   if (!web_request_api()->HasListener()) {
     // Pass-through to the original factory.
-    target_factory_->CreateLoaderAndStart(
-        std::move(loader), routing_id, request_id, options, request,
-        std::move(client), traffic_annotation);
+    target_factory_->CreateLoaderAndStart(std::move(loader), request_id,
+                                          options, request, std::move(client),
+                                          traffic_annotation);
     return;
   }
 
@@ -850,8 +849,9 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
   auto result = requests_.emplace(
       web_request_id,
       std::make_unique<InProgressRequest>(
-          this, web_request_id, routing_id, request_id, options, request,
-          traffic_annotation, std::move(loader), std::move(client)));
+          this, web_request_id, view_routing_id_, frame_routing_id_, request_id,
+          options, request, traffic_annotation, std::move(loader),
+          std::move(client)));
   result.first->second->Restart();
 }
 
@@ -872,10 +872,28 @@ void ProxyingURLLoaderFactory::OnLoaderCreated(
   request_it->second->OnLoaderCreated(std::move(receiver));
 }
 
-bool ProxyingURLLoaderFactory::IsForServiceWorkerScript() const {
-  return loader_factory_type_ == content::ContentBrowserClient::
-                                     URLLoaderFactoryType::kServiceWorkerScript;
+void ProxyingURLLoaderFactory::OnLoaderForCorsPreflightCreated(
+    const network::ResourceRequest& request,
+    mojo::PendingReceiver<network::mojom::TrustedHeaderClient> receiver) {
+  // Please note that the URLLoader is now starting, without waiting for
+  // additional signals from here. The URLLoader will be blocked before
+  // sending HTTP request headers (TrustedHeaderClient.OnBeforeSendHeaders),
+  // but the connection set up will be done before that. This is acceptable from
+  // Web Request API because the extension has already allowed to set up
+  // a connection to the same URL (i.e., the actual request), and distinguishing
+  // two connections for the actual request and the preflight request before
+  // sending request headers is very difficult.
+  const uint64_t web_request_id = ++(*request_id_generator_);
+
+  auto result = requests_.insert(std::make_pair(
+      web_request_id, std::make_unique<InProgressRequest>(
+                          this, web_request_id, frame_routing_id_, request)));
+
+  result.first->second->OnLoaderCreated(std::move(receiver));
+  result.first->second->Restart();
 }
+
+ProxyingURLLoaderFactory::~ProxyingURLLoaderFactory() = default;
 
 void ProxyingURLLoaderFactory::OnTargetFactoryError() {
   target_factory_.reset();

@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jeremy Apthorp <nornagon@nornagon.net>
 Date: Thu, 20 Sep 2018 17:49:20 -0700
-Subject: mas-cfisobjc.patch
+Subject: mas: avoid usage of _CFIsObjC
 
 Removes usage of the _CFIsObjC private API.
 

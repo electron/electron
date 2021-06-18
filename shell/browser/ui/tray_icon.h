@@ -18,7 +18,7 @@ namespace electron {
 
 class TrayIcon {
  public:
-  static TrayIcon* Create(base::Optional<UUID> guid);
+  static TrayIcon* Create(absl::optional<UUID> guid);
 
 #if defined(OS_WIN)
   using ImageType = HICON;
@@ -64,8 +64,8 @@ class TrayIcon {
 #else
     gfx::Image icon;
 #endif
-    base::string16 title;
-    base::string16 content;
+    std::u16string title;
+    std::u16string content;
     bool large_icon = true;
     bool no_sound = false;
     bool respect_quiet_time = false;

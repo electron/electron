@@ -192,7 +192,8 @@ void SystemPreferences::InitializeWindow() {
   // Creating this listener before the app is ready causes global shortcuts
   // to not fire
   if (Browser::Get()->is_ready())
-    color_change_listener_.reset(new gfx::ScopedSysColorChangeListener(this));
+    color_change_listener_ =
+        std::make_unique<gfx::ScopedSysColorChangeListener>(this);
   else
     Browser::Get()->AddObserver(this);
 
@@ -259,7 +260,8 @@ void SystemPreferences::OnSysColorChange() {
 
 void SystemPreferences::OnFinishLaunching(
     const base::DictionaryValue& launch_info) {
-  color_change_listener_.reset(new gfx::ScopedSysColorChangeListener(this));
+  color_change_listener_ =
+      std::make_unique<gfx::ScopedSysColorChangeListener>(this);
 }
 
 }  // namespace api

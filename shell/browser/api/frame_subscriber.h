@@ -41,7 +41,7 @@ class FrameSubscriber : public content::WebContentsObserver,
   void AttachToHost(content::RenderWidgetHost* host);
   void DetachFromHost();
 
-  void RenderViewCreated(content::RenderViewHost* host) override;
+  void RenderFrameCreated(content::RenderFrameHost* render_frame_host) override;
   void RenderViewDeleted(content::RenderViewHost* host) override;
   void RenderViewHostChanged(content::RenderViewHost* old_host,
                              content::RenderViewHost* new_host) override;
@@ -67,7 +67,7 @@ class FrameSubscriber : public content::WebContentsObserver,
   content::RenderWidgetHost* host_;
   std::unique_ptr<viz::ClientFrameSinkVideoCapturer> video_capturer_;
 
-  base::WeakPtrFactory<FrameSubscriber> weak_ptr_factory_;
+  base::WeakPtrFactory<FrameSubscriber> weak_ptr_factory_{this};
 
   DISALLOW_COPY_AND_ASSIGN(FrameSubscriber);
 };

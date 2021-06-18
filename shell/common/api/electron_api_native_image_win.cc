@@ -9,9 +9,6 @@
 #include <thumbcache.h>
 #include <wrl/client.h>
 
-#include <string>
-#include <vector>
-
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/skia_util.h"
@@ -37,7 +34,7 @@ v8::Local<v8::Promise> NativeImage::CreateThumbnailFromPath(
 
   // create an IShellItem
   Microsoft::WRL::ComPtr<IShellItem> pItem;
-  std::wstring image_path = path.AsUTF16Unsafe();
+  std::wstring image_path = path.value();
   hr = SHCreateItemFromParsingName(image_path.c_str(), nullptr,
                                    IID_PPV_ARGS(&pItem));
 
@@ -93,9 +90,8 @@ v8::Local<v8::Promise> NativeImage::CreateThumbnailFromPath(
 
   base::win::ScopedHICON icon(CreateIconIndirect(&icon_info));
   SkBitmap skbitmap = IconUtil::CreateSkBitmapFromHICON(icon.get());
-  gfx::ImageSkia image_skia;
-  image_skia.AddRepresentation(
-      gfx::ImageSkiaRep(skbitmap, 1.0 /*scale factor*/));
+  gfx::ImageSkia image_skia =
+      gfx::ImageSkia::CreateFromBitmap(skbitmap, 1.0 /*scale factor*/);
   gfx::Image gfx_image = gfx::Image(image_skia);
   promise.Resolve(gfx_image);
   return handle;

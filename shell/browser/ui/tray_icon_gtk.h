@@ -33,14 +33,14 @@ class TrayIconGtk : public TrayIcon, public views::StatusIconLinux::Delegate {
   // The following four methods are only used by StatusIconLinuxDbus, which we
   // aren't yet using, so they are given stub implementations.
   const gfx::ImageSkia& GetImage() const override;
-  const base::string16& GetToolTip() const override;
+  const std::u16string& GetToolTip() const override;
   ui::MenuModel* GetMenuModel() const override;
   void OnImplInitializationFailed() override;
 
  private:
   std::unique_ptr<views::StatusIconLinux> icon_;
   gfx::ImageSkia image_;
-  base::string16 tool_tip_;
+  std::u16string tool_tip_;
   ui::MenuModel* menu_model_;
 
   DISALLOW_COPY_AND_ASSIGN(TrayIconGtk);

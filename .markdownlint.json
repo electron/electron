@@ -1,0 +1,29 @@
+{
+  "commands-show-output": false,
+  "first-line-h1": false,
+  "header-increment": false,
+  "line-length": {
+    "code_blocks": false,
+    "tables": false,
+    "stern": true,
+    "line_length": -1
+  },
+  "no-bare-urls": false,
+  "no-blanks-blockquote": false,
+  "no-duplicate-header": {
+    "allow_different_nesting": true
+  },
+  "no-emphasis-as-header": false,
+  "no-hard-tabs": {
+    "code_blocks": false
+  },
+  "no-space-in-emphasis": false,
+  "no-trailing-punctuation": false,
+  "no-trailing-spaces": {
+    "br_spaces": 0
+  },
+  "single-h1": false,
+  "no-inline-html": {
+    "allowed_elements": ["br"]
+  }
+}

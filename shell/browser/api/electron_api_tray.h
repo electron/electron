@@ -44,7 +44,7 @@ class Tray : public gin::Wrappable<Tray>,
   // gin_helper::Constructible
   static gin::Handle<Tray> New(gin_helper::ErrorThrower thrower,
                                v8::Local<v8::Value> image,
-                               base::Optional<UUID> guid,
+                               absl::optional<UUID> guid,
                                gin::Arguments* args);
   static v8::Local<v8::ObjectTemplate> FillObjectTemplate(
       v8::Isolate*,
@@ -56,7 +56,7 @@ class Tray : public gin::Wrappable<Tray>,
  private:
   Tray(v8::Isolate* isolate,
        v8::Local<v8::Value> image,
-       base::Optional<UUID> guid);
+       absl::optional<UUID> guid);
   ~Tray() override;
 
   // TrayIconObserver:
@@ -87,7 +87,7 @@ class Tray : public gin::Wrappable<Tray>,
   void SetPressedImage(v8::Isolate* isolate, v8::Local<v8::Value> image);
   void SetToolTip(const std::string& tool_tip);
   void SetTitle(const std::string& title,
-                const base::Optional<gin_helper::Dictionary>& options,
+                const absl::optional<gin_helper::Dictionary>& options,
                 gin::Arguments* args);
   std::string GetTitle();
   void SetIgnoreDoubleClickEvents(bool ignore);

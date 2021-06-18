@@ -13,7 +13,7 @@
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "base/observer_list_types.h"
-#include "base/optional.h"
+#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/base/models/simple_menu_model.h"
 #include "url/gurl.h"
 
@@ -28,9 +28,9 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
     SharingItem(const SharingItem&) = delete;
     ~SharingItem();
 
-    base::Optional<std::vector<std::string>> texts;
-    base::Optional<std::vector<GURL>> urls;
-    base::Optional<std::vector<base::FilePath>> file_paths;
+    absl::optional<std::vector<std::string>> texts;
+    absl::optional<std::vector<GURL>> urls;
+    absl::optional<std::vector<base::FilePath>> file_paths;
   };
 #endif
 
@@ -77,12 +77,12 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
   void AddObserver(Observer* obs) { observers_.AddObserver(obs); }
   void RemoveObserver(Observer* obs) { observers_.RemoveObserver(obs); }
 
-  void SetToolTip(int index, const base::string16& toolTip);
-  base::string16 GetToolTipAt(int index);
-  void SetRole(int index, const base::string16& role);
-  base::string16 GetRoleAt(int index);
-  void SetSecondaryLabel(int index, const base::string16& sublabel);
-  base::string16 GetSecondaryLabelAt(int index) const override;
+  void SetToolTip(int index, const std::u16string& toolTip);
+  std::u16string GetToolTipAt(int index);
+  void SetRole(int index, const std::u16string& role);
+  std::u16string GetRoleAt(int index);
+  void SetSecondaryLabel(int index, const std::u16string& sublabel);
+  std::u16string GetSecondaryLabelAt(int index) const override;
   bool GetAcceleratorAtWithParams(int index,
                                   bool use_default_accelerator,
                                   ui::Accelerator* accelerator) const;
@@ -93,7 +93,7 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
   bool GetSharingItemAt(int index, SharingItem* item) const;
   // Set/Get the SharingItem of this menu.
   void SetSharingItem(SharingItem item);
-  const base::Optional<SharingItem>& GetSharingItem() const;
+  const absl::optional<SharingItem>& GetSharingItem() const;
 #endif
 
   // ui::SimpleMenuModel:
@@ -111,12 +111,12 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
   Delegate* delegate_;  // weak ref.
 
 #if defined(OS_MAC)
-  base::Optional<SharingItem> sharing_item_;
+  absl::optional<SharingItem> sharing_item_;
 #endif
 
-  std::map<int, base::string16> toolTips_;   // command id -> tooltip
-  std::map<int, base::string16> roles_;      // command id -> role
-  std::map<int, base::string16> sublabels_;  // command id -> sublabel
+  std::map<int, std::u16string> toolTips_;   // command id -> tooltip
+  std::map<int, std::u16string> roles_;      // command id -> role
+  std::map<int, std::u16string> sublabels_;  // command id -> sublabel
   base::ObserverList<Observer> observers_;
 
   base::WeakPtrFactory<ElectronMenuModel> weak_factory_{this};

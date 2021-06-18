@@ -1,0 +1,1262 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Rose <nornagon@nornagon.net>
+Date: Tue, 9 Feb 2021 12:34:46 -0800
+Subject: fix crypto tests to run with bssl
+
+This fixes some crypto tests so that they pass when compiled with
+BoringSSL.
+
+This should be upstreamed in some form, though it may need to be tweaked
+before it's acceptable to upstream, as this patch comments out a couple
+of tests that upstream probably cares about.
+
+diff --git a/test/parallel/test-crypto-authenticated.js b/test/parallel/test-crypto-authenticated.js
+index 21c5af6cfe3e5eef64fc2d4dcc63c55b1d79ad51..b21eb4b97ad778304b3a4e8d549e109614350dfb 100644
+--- a/test/parallel/test-crypto-authenticated.js
++++ b/test/parallel/test-crypto-authenticated.js
+@@ -50,7 +50,9 @@ const errMessages = {
+ const ciphers = crypto.getCiphers();
+ 
+ const expectedWarnings = common.hasFipsCrypto ?
+-  [] : [
++  [] : !ciphers.includes('aes-192-ccm') ? [
++    ['Use Cipheriv for counter mode of aes-192-gcm'],
++  ] : [
+     ['Use Cipheriv for counter mode of aes-192-gcm'],
+     ['Use Cipheriv for counter mode of aes-192-ccm'],
+     ['Use Cipheriv for counter mode of aes-192-ccm'],
+@@ -319,7 +321,9 @@ for (const test of TEST_CASES) {
+ 
+ // Test that create(De|C)ipher(iv)? throws if the mode is CCM and an invalid
+ // authentication tag length has been specified.
+-{
++if (!ciphers.includes('aes-256-ccm')) {
++  common.printSkipMessage(`unsupported aes-256-ccm test`);
++} else {
+   for (const authTagLength of [-1, true, false, NaN, 5.5]) {
+     assert.throws(() => {
+       crypto.createCipheriv('aes-256-ccm',
+@@ -407,6 +411,10 @@ for (const test of TEST_CASES) {
+ // authentication tag has been specified.
+ {
+   for (const mode of ['ccm', 'ocb']) {
++    if (!ciphers.includes(`aes-256-${mode}`)) {
++      common.printSkipMessage(`unsupported aes-256-${mode} test`);
++      continue;
++    }
+     assert.throws(() => {
+       crypto.createCipheriv(`aes-256-${mode}`,
+                             'FxLKsqdmv0E9xrQhp0b1ZgI0K7JFZJM8',
+@@ -441,7 +449,9 @@ for (const test of TEST_CASES) {
+ }
+ 
+ // Test that setAAD throws if an invalid plaintext length has been specified.
+-{
++if (!ciphers.includes('aes-256-ccm')) {
++  common.printSkipMessage(`unsupported aes-256-ccm test`);
++} else {
+   const cipher = crypto.createCipheriv('aes-256-ccm',
+                                        'FxLKsqdmv0E9xrQhp0b1ZgI0K7JFZJM8',
+                                        'qkuZpJWCewa6S',
+@@ -462,7 +472,9 @@ for (const test of TEST_CASES) {
+ }
+ 
+ // Test that setAAD and update throw if the plaintext is too long.
+-{
++if (!ciphers.includes('aes-256-ccm')) {
++  common.printSkipMessage(`unsupported aes-256-ccm test`);
++} else {
+   for (const ivLength of [13, 12]) {
+     const maxMessageSize = (1 << (8 * (15 - ivLength))) - 1;
+     const key = 'FxLKsqdmv0E9xrQhp0b1ZgI0K7JFZJM8';
+@@ -493,7 +505,9 @@ for (const test of TEST_CASES) {
+ 
+ // Test that setAAD throws if the mode is CCM and the plaintext length has not
+ // been specified.
+-{
++if (!ciphers.includes('aes-256-ccm')) {
++  common.printSkipMessage(`unsupported aes-256-ccm test`);
++} else {
+   assert.throws(() => {
+     const cipher = crypto.createCipheriv('aes-256-ccm',
+                                          'FxLKsqdmv0E9xrQhp0b1ZgI0K7JFZJM8',
+@@ -518,7 +532,9 @@ for (const test of TEST_CASES) {
+ }
+ 
+ // Test that final() throws in CCM mode when no authentication tag is provided.
+-{
++if (!ciphers.includes('aes-128-ccm')) {
++  common.printSkipMessage(`unsupported aes-256-ccm test`);
++} else {
+   if (!common.hasFipsCrypto) {
+     const key = Buffer.from('1ed2233fa2223ef5d7df08546049406c', 'hex');
+     const iv = Buffer.from('7305220bca40d4c90e1791e9', 'hex');
+@@ -550,7 +566,9 @@ for (const test of TEST_CASES) {
+ }
+ 
+ // Test that an IV length of 11 does not overflow max_message_size_.
+-{
++if (!ciphers.includes('aes-128-ccm')) {
++  common.printSkipMessage(`unsupported aes-128-ccm test`);
++} else {
+   const key = 'x'.repeat(16);
+   const iv = Buffer.from('112233445566778899aabb', 'hex');
+   const options = { authTagLength: 8 };
+@@ -567,6 +585,10 @@ for (const test of TEST_CASES) {
+   const iv = Buffer.from('0123456789ab', 'utf8');
+ 
+   for (const mode of ['gcm', 'ocb']) {
++    if (!ciphers.includes(`aes-128-${mode}`)) {
++      common.printSkipMessage(`unsupported aes-128-${mode} test`);
++      continue;
++    }
+     for (const authTagLength of mode === 'gcm' ? [undefined, 8] : [8]) {
+       const cipher = crypto.createCipheriv(`aes-128-${mode}`, key, iv, {
+         authTagLength
+@@ -601,6 +623,10 @@ for (const test of TEST_CASES) {
+   const opts = { authTagLength: 8 };
+ 
+   for (const mode of ['gcm', 'ccm', 'ocb']) {
++    if (!ciphers.includes(`aes-128-${mode}`)) {
++      common.printSkipMessage(`unsupported aes-128-${mode} test`);
++      continue;
++    }
+     const cipher = crypto.createCipheriv(`aes-128-${mode}`, key, iv, opts);
+     const ciphertext = Buffer.concat([cipher.update(plain), cipher.final()]);
+     const tag = cipher.getAuthTag();
+@@ -623,7 +649,9 @@ for (const test of TEST_CASES) {
+ // Test chacha20-poly1305 rejects invalid IV lengths of 13, 14, 15, and 16 (a
+ // length of 17 or greater was already rejected).
+ // - https://www.openssl.org/news/secadv/20190306.txt
+-{
++if (!ciphers.includes('chacha20-poly1305')) {
++  common.printSkipMessage(`unsupported chacha20-poly1305 test`);
++} else {
+   // Valid extracted from TEST_CASES, check that it detects IV tampering.
+   const valid = {
+     algo: 'chacha20-poly1305',
+@@ -669,6 +697,9 @@ for (const test of TEST_CASES) {
+ 
+ {
+   // CCM cipher without data should not crash, see https://github.com/nodejs/node/issues/38035.
++  common.printSkipMessage(`unsupported aes-128-ccm test`);
++  return;
++
+   const algo = 'aes-128-ccm';
+   const key = Buffer.alloc(16);
+   const iv = Buffer.alloc(12);
+diff --git a/test/parallel/test-crypto-binary-default.js b/test/parallel/test-crypto-binary-default.js
+index 3bbca5b0da395b94c04da7bb7c55b107e41367d8..af62558c4f23aa82804e0077da7b7f3a86cfac60 100644
+--- a/test/parallel/test-crypto-binary-default.js
++++ b/test/parallel/test-crypto-binary-default.js
+@@ -51,15 +51,15 @@ tls.createSecureContext({ pfx: certPfx, passphrase: 'sample' });
+ 
+ assert.throws(function() {
+   tls.createSecureContext({ pfx: certPfx });
+-}, /^Error: mac verify failure$/);
++}, /^Error: (mac verify failure|INCORRECT_PASSWORD)$/);
+ 
+ assert.throws(function() {
+   tls.createSecureContext({ pfx: certPfx, passphrase: 'test' });
+-}, /^Error: mac verify failure$/);
++}, /^Error: (mac verify failure|INCORRECT_PASSWORD)$/);
+ 
+ assert.throws(function() {
+   tls.createSecureContext({ pfx: 'sample', passphrase: 'test' });
+-}, /^Error: not enough data$/);
++}, /^Error: (not enough data|BAD_PKCS12_DATA)$/);
+ 
+ // Test HMAC
+ {
+@@ -462,7 +462,7 @@ assert.throws(function() {
+ function testCipher1(key) {
+   // Test encryption and decryption
+   const plaintext = 'Keep this a secret? No! Tell everyone about node.js!';
+-  const cipher = crypto.createCipher('aes192', key);
++  const cipher = crypto.createCipher('aes-192-cbc', key);
+ 
+   // Encrypt plaintext which is in utf8 format
+   // to a ciphertext which will be in hex
+@@ -470,7 +470,7 @@ function testCipher1(key) {
+   // Only use binary or hex, not base64.
+   ciph += cipher.final('hex');
+ 
+-  const decipher = crypto.createDecipher('aes192', key);
++  const decipher = crypto.createDecipher('aes-192-cbc', key);
+   let txt = decipher.update(ciph, 'hex', 'utf8');
+   txt += decipher.final('utf8');
+ 
+@@ -485,14 +485,14 @@ function testCipher2(key) {
+       '32|RmVZZkFUVmpRRkp0TmJaUm56ZU9qcnJkaXNNWVNpTTU*|iXmckfRWZBGWWELw' +
+       'eCBsThSsfUHLeRe0KCsK8ooHgxie0zOINpXxfZi/oNG7uq9JWFVCk70gfzQH8ZUJ' +
+       'jAfaFg**';
+-  const cipher = crypto.createCipher('aes256', key);
++  const cipher = crypto.createCipher('aes-256-cbc', key);
+ 
+   // Encrypt plaintext which is in utf8 format
+   // to a ciphertext which will be in Base64
+   let ciph = cipher.update(plaintext, 'utf8', 'base64');
+   ciph += cipher.final('base64');
+ 
+-  const decipher = crypto.createDecipher('aes256', key);
++  const decipher = crypto.createDecipher('aes-256-cbc', key);
+   let txt = decipher.update(ciph, 'base64', 'utf8');
+   txt += decipher.final('utf8');
+ 
+@@ -537,6 +537,10 @@ function testCipher4(key, iv) {
+ 
+ 
+ function testCipher5(key, iv) {
++  if (!crypto.getCiphers().includes('id-aes128-wrap')) {
++    common.printSkipMessage(`unsupported id-aes128-wrap test`);
++    return;
++  }
+   // Test encryption and decryption with explicit key with aes128-wrap
+   const plaintext =
+       '32|RmVZZkFUVmpRRkp0TmJaUm56ZU9qcnJkaXNNWVNpTTU*|iXmckfRWZBGWWELw' +
+@@ -662,6 +666,8 @@ assert.throws(
+ }
+ 
+ 
++/* NB: BoringSSL does not support using DSA through the EVP API.
++ * https://boringssl.googlesource.com/boringssl/+/a2278d4d2cabe73f6663e3299ea7808edfa306b9/PORTING.md#dsa-s
+ //
+ // Test DSA signing and verification
+ //
+@@ -682,6 +688,7 @@ assert.throws(
+ 
+   assert.strictEqual(verify.verify(publicKey, signature, 'hex'), true);
+ }
++*/
+ 
+ 
+ //
+diff --git a/test/parallel/test-crypto-cipher-decipher.js b/test/parallel/test-crypto-cipher-decipher.js
+index 35514afbea92562a81c163b1e4d918b4ab609f71..13098e1acf12c309f2ed6f6143a2c2eeb8a2763d 100644
+--- a/test/parallel/test-crypto-cipher-decipher.js
++++ b/test/parallel/test-crypto-cipher-decipher.js
+@@ -22,7 +22,7 @@ common.expectWarning({
+ function testCipher1(key) {
+   // Test encryption and decryption
+   const plaintext = 'Keep this a secret? No! Tell everyone about node.js!';
+-  const cipher = crypto.createCipher('aes192', key);
++  const cipher = crypto.createCipher('aes-192-cbc', key);
+ 
+   // Encrypt plaintext which is in utf8 format
+   // to a ciphertext which will be in hex
+@@ -30,7 +30,7 @@ function testCipher1(key) {
+   // Only use binary or hex, not base64.
+   ciph += cipher.final('hex');
+ 
+-  const decipher = crypto.createDecipher('aes192', key);
++  const decipher = crypto.createDecipher('aes-192-cbc', key);
+   let txt = decipher.update(ciph, 'hex', 'utf8');
+   txt += decipher.final('utf8');
+ 
+@@ -40,11 +40,11 @@ function testCipher1(key) {
+   // NB: In real life, it's not guaranteed that you can get all of it
+   // in a single read() like this.  But in this case, we know it's
+   // quite small, so there's no harm.
+-  const cStream = crypto.createCipher('aes192', key);
++  const cStream = crypto.createCipher('aes-192-cbc', key);
+   cStream.end(plaintext);
+   ciph = cStream.read();
+ 
+-  const dStream = crypto.createDecipher('aes192', key);
++  const dStream = crypto.createDecipher('aes-192-cbc', key);
+   dStream.end(ciph);
+   txt = dStream.read().toString('utf8');
+ 
+@@ -59,14 +59,14 @@ function testCipher2(key) {
+       '32|RmVZZkFUVmpRRkp0TmJaUm56ZU9qcnJkaXNNWVNpTTU*|iXmckfRWZBGWWELw' +
+       'eCBsThSsfUHLeRe0KCsK8ooHgxie0zOINpXxfZi/oNG7uq9JWFVCk70gfzQH8ZUJ' +
+       'jAfaFg**';
+-  const cipher = crypto.createCipher('aes256', key);
++  const cipher = crypto.createCipher('aes-256-cbc', key);
+ 
+   // Encrypt plaintext which is in utf8 format to a ciphertext which will be in
+   // Base64.
+   let ciph = cipher.update(plaintext, 'utf8', 'base64');
+   ciph += cipher.final('base64');
+ 
+-  const decipher = crypto.createDecipher('aes256', key);
++  const decipher = crypto.createDecipher('aes-256-cbc', key);
+   let txt = decipher.update(ciph, 'base64', 'utf8');
+   txt += decipher.final('utf8');
+ 
+@@ -170,7 +170,7 @@ testCipher2(Buffer.from('0123456789abcdef'));
+ // Regression test for https://github.com/nodejs/node-v0.x-archive/issues/5482:
+ // string to Cipher#update() should not assert.
+ {
+-  const c = crypto.createCipher('aes192', '0123456789abcdef');
++  const c = crypto.createCipher('aes-192-cbc', '0123456789abcdef');
+   c.update('update');
+   c.final();
+ }
+@@ -178,15 +178,15 @@ testCipher2(Buffer.from('0123456789abcdef'));
+ // https://github.com/nodejs/node-v0.x-archive/issues/5655 regression tests,
+ // 'utf-8' and 'utf8' are identical.
+ {
+-  let c = crypto.createCipher('aes192', '0123456789abcdef');
++  let c = crypto.createCipher('aes-192-cbc', '0123456789abcdef');
+   c.update('update', '');  // Defaults to "utf8".
+   c.final('utf-8');  // Should not throw.
+ 
+-  c = crypto.createCipher('aes192', '0123456789abcdef');
++  c = crypto.createCipher('aes-192-cbc', '0123456789abcdef');
+   c.update('update', 'utf8');
+   c.final('utf-8');  // Should not throw.
+ 
+-  c = crypto.createCipher('aes192', '0123456789abcdef');
++  c = crypto.createCipher('aes-192-cbc', '0123456789abcdef');
+   c.update('update', 'utf-8');
+   c.final('utf8');  // Should not throw.
+ }
+@@ -195,23 +195,23 @@ testCipher2(Buffer.from('0123456789abcdef'));
+ {
+   const key = '0123456789abcdef';
+   const plaintext = 'Top secret!!!';
+-  const c = crypto.createCipher('aes192', key);
++  const c = crypto.createCipher('aes-192-cbc', key);
+   let ciph = c.update(plaintext, 'utf16le', 'base64');
+   ciph += c.final('base64');
+ 
+-  let decipher = crypto.createDecipher('aes192', key);
++  let decipher = crypto.createDecipher('aes-192-cbc', key);
+ 
+   let txt;
+   txt = decipher.update(ciph, 'base64', 'ucs2');
+   txt += decipher.final('ucs2');
+   assert.strictEqual(txt, plaintext);
+ 
+-  decipher = crypto.createDecipher('aes192', key);
++  decipher = crypto.createDecipher('aes-192-cbc', key);
+   txt = decipher.update(ciph, 'base64', 'ucs-2');
+   txt += decipher.final('ucs-2');
+   assert.strictEqual(txt, plaintext);
+ 
+-  decipher = crypto.createDecipher('aes192', key);
++  decipher = crypto.createDecipher('aes-192-cbc', key);
+   txt = decipher.update(ciph, 'base64', 'utf-16le');
+   txt += decipher.final('utf-16le');
+   assert.strictEqual(txt, plaintext);
+diff --git a/test/parallel/test-crypto-cipheriv-decipheriv.js b/test/parallel/test-crypto-cipheriv-decipheriv.js
+index 87f3641fb188bd322e7c256e9548c6af85dc9a14..1e803bc33ba4642065bf1897c56f65fc92bd2a50 100644
+--- a/test/parallel/test-crypto-cipheriv-decipheriv.js
++++ b/test/parallel/test-crypto-cipheriv-decipheriv.js
+@@ -60,6 +60,10 @@ function testCipher2(key, iv) {
+ 
+ 
+ function testCipher3(key, iv) {
++  if (!crypto.getCiphers().includes('id-aes128-wrap')) {
++    common.printSkipMessage(`unsupported id-aes128-wrap test`);
++    return;
++  }
+   // Test encryption and decryption with explicit key and iv.
+   // AES Key Wrap test vector comes from RFC3394
+   const plaintext = Buffer.from('00112233445566778899AABBCCDDEEFF', 'hex');
+diff --git a/test/parallel/test-crypto-classes.js b/test/parallel/test-crypto-classes.js
+index dd073274aef765e8f1e403aa2c8baf9694b521cb..fc6339e040debe61ecc61a3eb5b26823b102f1ff 100644
+--- a/test/parallel/test-crypto-classes.js
++++ b/test/parallel/test-crypto-classes.js
+@@ -22,8 +22,8 @@ const TEST_CASES = {
+ };
+ 
+ if (!common.hasFipsCrypto) {
+-  TEST_CASES.Cipher = ['aes192', 'secret'];
+-  TEST_CASES.Decipher = ['aes192', 'secret'];
++  TEST_CASES.Cipher = ['aes-192-cbc', 'secret'];
++  TEST_CASES.Decipher = ['aes-192-cbc', 'secret'];
+   TEST_CASES.DiffieHellman = [common.hasOpenSSL3 ? 1024 : 256];
+ }
+ 
+diff --git a/test/parallel/test-crypto-dh.js b/test/parallel/test-crypto-dh.js
+index cae9301517c37c7e90292d71fe5a6086cf55e0be..b9bc86e4d8b897cec583dea16f64f680252d2efa 100644
+--- a/test/parallel/test-crypto-dh.js
++++ b/test/parallel/test-crypto-dh.js
+@@ -49,7 +49,7 @@ for (const bits of [-1, 0, 1]) {
+     assert.throws(() => crypto.createDiffieHellman(bits), {
+       code: 'ERR_OSSL_BN_BITS_TOO_SMALL',
+       name: 'Error',
+-      message: /bits too small/,
++      message: /bits too small|BITS_TOO_SMALL/,
+     });
+   }
+ }
+@@ -65,7 +65,7 @@ for (const g of [-1, 1]) {
+   const ex = {
+     code: 'ERR_OSSL_DH_BAD_GENERATOR',
+     name: 'Error',
+-    message: /bad generator/,
++    message: /bad generator|BAD_GENERATOR/,
+   };
+   assert.throws(() => crypto.createDiffieHellman('abcdef', g), ex);
+   assert.throws(() => crypto.createDiffieHellman('abcdef', 'hex', g), ex);
+@@ -79,7 +79,7 @@ for (const g of [Buffer.from([]),
+   const ex = {
+     code: 'ERR_OSSL_DH_BAD_GENERATOR',
+     name: 'Error',
+-    message: /bad generator/,
++    message: /bad generator|BAD_GENERATOR/,
+   };
+   assert.throws(() => crypto.createDiffieHellman('abcdef', g), ex);
+   assert.throws(() => crypto.createDiffieHellman('abcdef', 'hex', g), ex);
+@@ -155,18 +155,17 @@ assert.strictEqual(secret1, secret4);
+ let wrongBlockLength;
+ if (common.hasOpenSSL3) {
+   wrongBlockLength = {
+-    message: 'error:1C80006B:Provider routines::wrong final block length',
+-    code: 'ERR_OSSL_WRONG_FINAL_BLOCK_LENGTH',
+-    library: 'Provider routines',
+-    reason: 'wrong final block length'
++    message: /error:1C80006B:Provider routines::wrong final block length|error:1e00007b:Cipher functions:OPENSSL_internal:WRONG_FINAL_BLOCK_LENGTH/,
++    code: /ERR_OSSL_(EVP_)?WRONG_FINAL_BLOCK_LENGTH/,
++    library: /digital envelope routines|Cipher functions/,
++    reason: /wrong final block length|WRONG_FINAL_BLOCK_LENGTH/
+   };
+ } else {
+   wrongBlockLength = {
+-    message: 'error:0606506D:digital envelope' +
+-      ' routines:EVP_DecryptFinal_ex:wrong final block length',
+-    code: 'ERR_OSSL_EVP_WRONG_FINAL_BLOCK_LENGTH',
+-    library: 'digital envelope routines',
+-    reason: 'wrong final block length'
++    message: /error:0606506D:digital envelope routines:EVP_DecryptFinal_ex:wrong final block length|error:1e00007b:Cipher functions:OPENSSL_internal:WRONG_FINAL_BLOCK_LENGTH/,
++    code: /ERR_OSSL_(EVP_)?WRONG_FINAL_BLOCK_LENGTH/,
++    library: /digital envelope routines|Cipher functions/,
++    reason: /wrong final block length|WRONG_FINAL_BLOCK_LENGTH/
+   };
+ }
+ 
+diff --git a/test/parallel/test-crypto-ecdh-convert-key.js b/test/parallel/test-crypto-ecdh-convert-key.js
+index f4d5a651ed6b888d3527a462ab5fccee58ea48b6..c0046099df9ec0c7a33ed9baa2127da849871001 100644
+--- a/test/parallel/test-crypto-ecdh-convert-key.js
++++ b/test/parallel/test-crypto-ecdh-convert-key.js
+@@ -117,7 +117,7 @@ if (getCurves().includes('secp256k1')) {
+   // rather than Node's generic error message.
+   const badKey = 'f'.repeat(128);
+   assert.throws(
+-    () => ECDH.convertKey(badKey, 'secp256k1', 'hex', 'hex', 'compressed'),
++    () => ECDH.convertKey(badKey, 'secp521r1', 'hex', 'hex', 'compressed'),
+     /Failed to convert Buffer to EC_POINT/);
+ 
+   // Next statement should not throw an exception.
+diff --git a/test/parallel/test-crypto-getcipherinfo.js b/test/parallel/test-crypto-getcipherinfo.js
+index 98d2a52eceac4bc564fd2878f77b50c336a67a66..30461eddc0b9a0622bbf2b8c5585ed0c986bfa90 100644
+--- a/test/parallel/test-crypto-getcipherinfo.js
++++ b/test/parallel/test-crypto-getcipherinfo.js
+@@ -17,6 +17,10 @@ assert.strictEqual(getCipherInfo(-1), undefined);
+ assert.strictEqual(getCipherInfo('cipher that does not exist'), undefined);
+ 
+ ciphers.forEach((cipher) => {
++  if (cipher.endsWith('gcm')) {
++    common.printSkipMessage(`Skipping unsupporter gcm cipher ${cipher}`);
++    return;
++  }
+   const info = getCipherInfo(cipher);
+   assert(info);
+   const info2 = getCipherInfo(info.nid);
+@@ -62,9 +66,13 @@ assert(getCipherInfo('aes-128-cbc', { ivLength: 16 }));
+ 
+ assert(!getCipherInfo('aes-128-ccm', { ivLength: 1 }));
+ assert(!getCipherInfo('aes-128-ccm', { ivLength: 14 }));
++/*
+ for (let n = 7; n <= 13; n++)
+   assert(getCipherInfo('aes-128-ccm', { ivLength: n }));
++*/
+ 
+ assert(!getCipherInfo('aes-128-ocb', { ivLength: 16 }));
++/*
+ for (let n = 1; n < 16; n++)
+   assert(getCipherInfo('aes-128-ocb', { ivLength: n }));
++*/
+\ No newline at end of file
+diff --git a/test/parallel/test-crypto-hash-stream-pipe.js b/test/parallel/test-crypto-hash-stream-pipe.js
+index d22281abbd5c3cab3aaa3ac494301fa6b4a8a968..5f0c6a4aed2e868a1a1049212edf218791cd6868 100644
+--- a/test/parallel/test-crypto-hash-stream-pipe.js
++++ b/test/parallel/test-crypto-hash-stream-pipe.js
+@@ -30,11 +30,11 @@ const crypto = require('crypto');
+ 
+ const stream = require('stream');
+ const s = new stream.PassThrough();
+-const h = crypto.createHash('sha3-512');
+-const expect = '36a38a2a35e698974d4e5791a3f05b05' +
+-               '198235381e864f91a0e8cd6a26b677ec' +
+-               'dcde8e2b069bd7355fabd68abd6fc801' +
+-               '19659f25e92f8efc961ee3a7c815c758';
++const h = crypto.createHash('sha512');
++const expect = 'fba055c6fd0c5b6645407749ed7a8b41' +
++               'b8f629f2163c3ca3701d864adabda1f8' +
++               '93c37bf82b22fdd151ba8e357f611da4' +
++               '88a74b6a5525dd9b69554c6ce5138ad7';
+ 
+ s.pipe(h).on('data', common.mustCall(function(c) {
+   assert.strictEqual(c, expect);
+diff --git a/test/parallel/test-crypto-hash.js b/test/parallel/test-crypto-hash.js
+index af2146982c7a3bf7bd7527f44e4b17a3b605026e..f6b91f675cfea367c608892dee078b565814f2dd 100644
+--- a/test/parallel/test-crypto-hash.js
++++ b/test/parallel/test-crypto-hash.js
+@@ -182,6 +182,7 @@ assert.throws(
+ 
+ // Test XOF hash functions and the outputLength option.
+ {
++  /*
+   // Default outputLengths.
+   assert.strictEqual(crypto.createHash('shake128').digest('hex'),
+                      '7f9c2ba4e88f827d616045507605853e');
+@@ -236,6 +237,7 @@ assert.throws(
+   assert.strictEqual(superLongHash.length, 2 * 1024 * 1024);
+   assert.ok(superLongHash.endsWith('193414035ddba77bf7bba97981e656ec'));
+   assert.ok(superLongHash.startsWith('a2a28dbc49cfd6e5d6ceea3d03e77748'));
++  */
+ 
+   // Non-XOF hash functions should accept valid outputLength options as well.
+   assert.strictEqual(crypto.createHash('sha224', { outputLength: 28 })
+diff --git a/test/parallel/test-crypto-key-objects.js b/test/parallel/test-crypto-key-objects.js
+index 3159b0da3f2901aab17e0b360eda84decaed9eb3..995b7f6b45bd0aa83eef143b15dede5658ac1bc0 100644
+--- a/test/parallel/test-crypto-key-objects.js
++++ b/test/parallel/test-crypto-key-objects.js
+@@ -310,11 +310,11 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
+   }, common.hasOpenSSL3 ? {
+     message: 'Failed to read private key',
+   } : {
+-    message: 'error:0909006C:PEM routines:get_name:no start line',
+-    code: 'ERR_OSSL_PEM_NO_START_LINE',
+-    reason: 'no start line',
+-    library: 'PEM routines',
+-    function: 'get_name',
++    message: /error:2007E073:BIO routines:BIO_new_mem_buf:null parameter|error:0900006e:PEM routines:OPENSSL_internal:NO_START_LINE/,
++    code: /ERR_OSSL_BIO_NULL_PARAMETER|ERR_OSSL_PEM_NO_START_LINE/,
++    reason: /null parameter|NO_START_LINE/,
++    library: /BIO routines|PEM routines/,
++    function: /BIO_new_mem_buf|OPENSSL_internal/,
+   });
+ 
+   // This should not abort either: https://github.com/nodejs/node/issues/29904
+@@ -337,8 +337,8 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
+     message: /error:1E08010C:DECODER routines::unsupported/,
+     library: 'DECODER routines'
+   } : {
+-    message: /asn1 encoding/,
+-    library: 'asn1 encoding routines'
++    message: /asn1 encoding|DECODE_ERROR/,
++    library: /asn1 encoding routines|public key routines/
+   });
+ }
+ 
+@@ -352,6 +352,7 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
+       d: 'wVK6M3SMhQh3NK-7GRrSV-BVWQx1FO5pW8hhQeu_NdA',
+       kty: 'OKP'
+     } },
++/*
+   { private: fixtures.readKey('ed448_private.pem', 'ascii'),
+     public: fixtures.readKey('ed448_public.pem', 'ascii'),
+     keyType: 'ed448',
+@@ -383,6 +384,7 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
+          'S0jlSYJk',
+       kty: 'OKP'
+     } },
++*/
+ ].forEach((info) => {
+   const keyType = info.keyType;
+ 
+@@ -424,7 +426,7 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
+     }
+   }
+ });
+-
++/*
+ [
+   { private: fixtures.readKey('ec_p256_private.pem', 'ascii'),
+     public: fixtures.readKey('ec_p256_public.pem', 'ascii'),
+@@ -517,7 +519,7 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
+     }
+   }
+ });
+-
++*/
+ {
+   // Reading an encrypted key without a passphrase should fail.
+   assert.throws(() => createPrivateKey(privateDsa), common.hasOpenSSL3 ? {
+@@ -550,7 +552,7 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
+   }), {
+     message: common.hasOpenSSL3 ?
+       'error:07880109:common libcrypto routines::interrupted or cancelled' :
+-      /bad decrypt/
++      /bad decrypt|BAD_DECRYPT/
+   });
+ 
+   const publicKey = createPublicKey(publicDsa);
+@@ -573,7 +575,7 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
+     () => privateKey.export({ format: 'jwk' }),
+     { code: 'ERR_CRYPTO_JWK_UNSUPPORTED_KEY_TYPE' });
+ }
+-
++/*
+ {
+   // Test RSA-PSS.
+   {
+@@ -719,7 +721,7 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
+     }
+   }
+ }
+-
++*/
+ {
+   // Exporting an encrypted private key requires a cipher
+   const privateKey = createPrivateKey(privatePem);
+diff --git a/test/parallel/test-crypto-keygen.js b/test/parallel/test-crypto-keygen.js
+index 4612fc4a1ac40a27ccc2c70ac11e32f0fdcaa2c3..a4d604cf0318cfb0771e3573245b1ed989991473 100644
+--- a/test/parallel/test-crypto-keygen.js
++++ b/test/parallel/test-crypto-keygen.js
+@@ -300,6 +300,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
+   }));
+ }
+ 
++  /*
+ {
+   // Test RSA-PSS.
+   generateKeyPair('rsa-pss', {
+@@ -342,7 +343,9 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
+     testSignVerify(publicKey, privateKey);
+   }));
+ }
++*/
+ 
++  /*
+ {
+   const privateKeyEncoding = {
+     type: 'pkcs8',
+@@ -412,6 +415,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
+     });
+   }));
+ }
++*/
+ 
+ {
+   // Test async elliptic curve key generation, e.g. for ECDSA, with a SEC1
+@@ -436,6 +440,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
+     testSignVerify(publicKey, privateKey);
+   }));
+ 
++  /*
+   // Test async elliptic curve key generation, e.g. for ECDSA, with a SEC1
+   // private key with paramEncoding explicit.
+   generateKeyPair('ec', {
+@@ -457,6 +462,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
+ 
+     testSignVerify(publicKey, privateKey);
+   }));
++  */
+ 
+   // Do the same with an encrypted private key.
+   generateKeyPair('ec', {
+@@ -492,6 +498,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
+     testSignVerify(publicKey, { key: privateKey, passphrase: 'secret' });
+   }));
+ 
++  /*
+   // Do the same with an encrypted private key with paramEncoding explicit.
+   generateKeyPair('ec', {
+     namedCurve: 'prime256v1',
+@@ -525,6 +532,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
+ 
+     testSignVerify(publicKey, { key: privateKey, passphrase: 'secret' });
+   }));
++  */
+ }
+ 
+ {
+@@ -566,6 +574,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
+     });
+   }));
+ 
++  /*
+   // Test async elliptic curve key generation, e.g. for ECDSA, with an encrypted
+   // private key with paramEncoding explicit.
+   generateKeyPair('ec', {
+@@ -603,6 +612,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
+       passphrase: 'top secret'
+     });
+   }));
++  */
+ }
+ 
+ // Test invalid parameter encoding.
+@@ -951,6 +961,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
+   }
+ }
+ 
++  /*
+ // Test DSA parameters.
+ {
+   // Test invalid modulus lengths.
+@@ -978,6 +989,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
+     });
+   }
+ }
++*/
+ 
+ // Test EC parameters.
+ {
+@@ -1022,13 +1034,13 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
+   }));
+ 
+   generateKeyPair('ec', {
+-    namedCurve: 'secp256k1',
++    namedCurve: 'secp521r1',
+   }, common.mustSucceed((publicKey, privateKey) => {
+     assert.deepStrictEqual(publicKey.asymmetricKeyDetails, {
+-      namedCurve: 'secp256k1'
++      namedCurve: 'secp521r1'
+     });
+     assert.deepStrictEqual(privateKey.asymmetricKeyDetails, {
+-      namedCurve: 'secp256k1'
++      namedCurve: 'secp521r1'
+     });
+   }));
+ }
+@@ -1036,7 +1048,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
+ // Test EdDSA key generation.
+ {
+   if (!/^1\.1\.0/.test(process.versions.openssl)) {
+-    ['ed25519', 'ed448', 'x25519', 'x448'].forEach((keyType) => {
++    ['ed25519'/*, 'ed448', 'x25519', 'x448'*/].forEach((keyType) => {
+       generateKeyPair(keyType, common.mustSucceed((publicKey, privateKey) => {
+         assert.strictEqual(publicKey.type, 'public');
+         assert.strictEqual(publicKey.asymmetricKeyType, keyType);
+@@ -1050,6 +1062,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
+   }
+ }
+ 
++/*
+ // Test classic Diffie-Hellman key generation.
+ {
+   generateKeyPair('dh', {
+@@ -1162,6 +1175,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
+     });
+   }
+ }
++*/
+ 
+ // Test invalid key encoding types.
+ {
+@@ -1362,6 +1376,7 @@ if (!common.hasOpenSSL3) {
+     }, common.mustSucceed((publicKey, privateKey) => {
+       assert.strictEqual(publicKey.type, 'public');
+ 
++      /*
+       for (const passphrase of ['', Buffer.alloc(0)]) {
+         const privateKeyObject = createPrivateKey({
+           passphrase,
+@@ -1369,6 +1384,7 @@ if (!common.hasOpenSSL3) {
+         });
+         assert.strictEqual(privateKeyObject.asymmetricKeyType, 'rsa');
+       }
++      */
+ 
+       // Encrypting with an empty passphrase is not the same as not encrypting
+       // the key, and not specifying a passphrase should fail when decoding it.
+diff --git a/test/parallel/test-crypto-padding-aes256.js b/test/parallel/test-crypto-padding-aes256.js
+index 14d853bdfd0a5dcc5bdb6e00cb20fdbeaabd2aff..3ae6fc47d4c6a8296a2c3c70daf464fad886a88d 100644
+--- a/test/parallel/test-crypto-padding-aes256.js
++++ b/test/parallel/test-crypto-padding-aes256.js
+@@ -32,13 +32,13 @@ const key = Buffer.from('0123456789abcdef0123456789abcdef' +
+                         '0123456789abcdef0123456789abcdef', 'hex');
+ 
+ function encrypt(val, pad) {
+-  const c = crypto.createCipheriv('aes256', key, iv);
++  const c = crypto.createCipheriv('aes-256-cbc', key, iv);
+   c.setAutoPadding(pad);
+   return c.update(val, 'utf8', 'latin1') + c.final('latin1');
+ }
+ 
+ function decrypt(val, pad) {
+-  const c = crypto.createDecipheriv('aes256', key, iv);
++  const c = crypto.createDecipheriv('aes-256-cbc', key, iv);
+   c.setAutoPadding(pad);
+   return c.update(val, 'latin1', 'utf8') + c.final('utf8');
+ }
+diff --git a/test/parallel/test-crypto-padding.js b/test/parallel/test-crypto-padding.js
+index f1f14b472997e76bb4100edb1c6cf4fc24d1074d..5057e3f9bc5bb78aceffa5e79530f8ceed84e6f7 100644
+--- a/test/parallel/test-crypto-padding.js
++++ b/test/parallel/test-crypto-padding.js
+@@ -87,10 +87,9 @@ assert.throws(function() {
+   code: 'ERR_OSSL_WRONG_FINAL_BLOCK_LENGTH',
+   reason: 'wrong final block length',
+ } : {
+-  message: 'error:0607F08A:digital envelope routines:EVP_EncryptFinal_ex:' +
+-    'data not multiple of block length',
+-  code: 'ERR_OSSL_EVP_DATA_NOT_MULTIPLE_OF_BLOCK_LENGTH',
+-  reason: 'data not multiple of block length',
++  message: /error:0607F08A:digital envelope routines:EVP_EncryptFinal_ex:data not multiple of block length|error:1e00006a:Cipher functions:OPENSSL_internal:DATA_NOT_MULTIPLE_OF_BLOCK_LENGTH/,
++  code: /ERR_OSSL(_EVP)?_DATA_NOT_MULTIPLE_OF_BLOCK_LENGTH/,
++  reason: /data not multiple of block length|DATA_NOT_MULTIPLE_OF_BLOCK_LENGTH/,
+ }
+ );
+ 
+@@ -114,10 +113,9 @@ assert.throws(function() {
+   reason: 'bad decrypt',
+   code: 'ERR_OSSL_BAD_DECRYPT',
+ } : {
+-  message: 'error:06065064:digital envelope routines:EVP_DecryptFinal_ex:' +
+-    'bad decrypt',
+-  reason: 'bad decrypt',
+-  code: 'ERR_OSSL_EVP_BAD_DECRYPT',
++  message: /error:06065064:digital envelope routines:EVP_DecryptFinal_ex:bad decrypt|error:1e000065:Cipher functions:OPENSSL_internal:BAD_DECRYPT/,
++  reason: /bad decrypt|BAD_DECRYPT/,
++  code: /ERR_OSSL(_EVP)?_BAD_DECRYPT/,
+ });
+ 
+ // No-pad encrypted string should return the same:
+diff --git a/test/parallel/test-crypto-private-decrypt-gh32240.js b/test/parallel/test-crypto-private-decrypt-gh32240.js
+index 1785f5eef3d202976666081d09850ed744d83446..e88227a215ba4f7fa196f7642ae694a57d55b3ca 100644
+--- a/test/parallel/test-crypto-private-decrypt-gh32240.js
++++ b/test/parallel/test-crypto-private-decrypt-gh32240.js
+@@ -24,7 +24,7 @@ const pkeyEncrypted =
+   pair.privateKey.export({
+     type: 'pkcs1',
+     format: 'pem',
+-    cipher: 'aes128',
++    cipher: 'aes-128-cbc',
+     passphrase: 'secret',
+   });
+ 
+diff --git a/test/parallel/test-crypto-rsa-dsa.js b/test/parallel/test-crypto-rsa-dsa.js
+index 567d8650c5a1772ce8d4e0901f41a07918f3f661..979d372a32723a492c85da91ca127da77f9c08e2 100644
+--- a/test/parallel/test-crypto-rsa-dsa.js
++++ b/test/parallel/test-crypto-rsa-dsa.js
+@@ -31,12 +31,11 @@ const dsaPkcs8KeyPem = fixtures.readKey('dsa_private_pkcs8.pem');
+ const ec = new TextEncoder();
+ 
+ const openssl1DecryptError = {
+-  message: 'error:06065064:digital envelope routines:EVP_DecryptFinal_ex:' +
+-    'bad decrypt',
+-  code: 'ERR_OSSL_EVP_BAD_DECRYPT',
+-  reason: 'bad decrypt',
+-  function: 'EVP_DecryptFinal_ex',
+-  library: 'digital envelope routines',
++  message: /error:06065064:digital envelope routines:EVP_DecryptFinal_ex:bad decrypt|error:1e000065:Cipher functions:OPENSSL_internal:BAD_DECRYPT/,
++  code: /ERR_OSSL(_EVP)?_BAD_DECRYPT/,
++  reason: /bad decrypt|BAD_DECRYPT/,
++  function: /EVP_DecryptFinal_ex|OPENSSL_internal/,
++  library: /digital envelope routines|Cipher functions/,
+ };
+ 
+ const decryptError = common.hasOpenSSL3 ?
+@@ -400,7 +399,7 @@ assert.throws(() => {
+   assert.strictEqual(verify2.verify(publicKey, signature, 'hex'), true);
+ }
+ 
+-
++/*
+ //
+ // Test DSA signing and verification
+ //
+@@ -475,3 +474,4 @@ const input = 'I AM THE WALRUS';
+ 
+   assert.strictEqual(verify.verify(dsaPubPem, signature, 'hex'), true);
+ }
++*/
+diff --git a/test/parallel/test-crypto-sign-verify.js b/test/parallel/test-crypto-sign-verify.js
+index 15fa3db4a69f191d0d4458bb01c1d23508f07754..27f7d15103276e68b5c73061d0abd11d52b66c9c 100644
+--- a/test/parallel/test-crypto-sign-verify.js
++++ b/test/parallel/test-crypto-sign-verify.js
+@@ -32,6 +32,7 @@ const keySize = 2048;
+                                      'instance when called without `new`');
+ }
+ 
++/*
+ // Test handling of exceptional conditions
+ {
+   const library = {
+@@ -72,6 +73,7 @@ const keySize = 2048;
+ 
+   delete Object.prototype.opensslErrorStack;
+ }
++*/
+ 
+ assert.throws(
+   () => crypto.createVerify('SHA256').verify({
+@@ -345,15 +347,17 @@ assert.throws(
+         padding: crypto.constants.RSA_PKCS1_OAEP_PADDING
+       });
+   }, common.hasOpenSSL3 ? {
+-    code: 'ERR_OSSL_ILLEGAL_OR_UNSUPPORTED_PADDING_MODE',
+-    message: /illegal or unsupported padding mode/,
++    code: /^ERR_OSSL_(RSA|EVP)_ILLEGAL_OR_UNSUPPORTED_PADDING_MODE$/,
++    message: /illegal or unsupported padding mode|ILLEGAL_OR_UNSUPPORTED_PADDING_MODE/,
+   } : {
+-    code: 'ERR_OSSL_RSA_ILLEGAL_OR_UNSUPPORTED_PADDING_MODE',
+-    message: /illegal or unsupported padding mode/,
++    code: /^ERR_OSSL_(RSA|EVP)_ILLEGAL_OR_UNSUPPORTED_PADDING_MODE$/,
++    message: /illegal or unsupported padding mode|ILLEGAL_OR_UNSUPPORTED_PADDING_MODE/,
++    /*
+     opensslErrorStack: [
+       'error:06089093:digital envelope routines:EVP_PKEY_CTX_ctrl:' +
+       'command not supported',
+     ],
++    */
+   });
+ }
+ 
+@@ -423,10 +427,12 @@ assert.throws(
+     public: fixtures.readKey('ed25519_public.pem', 'ascii'),
+     algo: null,
+     sigLen: 64 },
++  /*
+   { private: fixtures.readKey('ed448_private.pem', 'ascii'),
+     public: fixtures.readKey('ed448_public.pem', 'ascii'),
+     algo: null,
+     sigLen: 114 },
++    */
+   { private: fixtures.readKey('rsa_private_2048.pem', 'ascii'),
+     public: fixtures.readKey('rsa_public_2048.pem', 'ascii'),
+     algo: 'sha1',
+@@ -497,7 +503,7 @@ assert.throws(
+ 
+ {
+   const data = Buffer.from('Hello world');
+-  const keys = [['ec-key.pem', 64], ['dsa_private_1025.pem', 40]];
++  const keys = [['ec-key.pem', 64]/*, ['dsa_private_1025.pem', 40]*/];
+ 
+   for (const [file, length] of keys) {
+     const privKey = fixtures.readKey(file);
+diff --git a/test/parallel/test-crypto-stream.js b/test/parallel/test-crypto-stream.js
+index 008ab129f0e019c659eecf5a76b7eb412c947fe3..6688f5d916f50e1e4fcfff1619c8634a3233f820 100644
+--- a/test/parallel/test-crypto-stream.js
++++ b/test/parallel/test-crypto-stream.js
+@@ -76,10 +76,10 @@ cipher.pipe(decipher)
+     library: 'Provider routines',
+     reason: 'bad decrypt',
+   } : {
+-    message: /bad decrypt/,
+-    function: 'EVP_DecryptFinal_ex',
+-    library: 'digital envelope routines',
+-    reason: 'bad decrypt',
++    message: /bad decrypt|BAD_DECRYPT/,
++    function: /EVP_DecryptFinal_ex|OPENSSL_internal/,
++    library: /digital envelope routines|Cipher functions/,
++    reason: /bad decrypt|BAD_DECRYPT/,
+   }));
+ 
+ cipher.end('Papaya!');  // Should not cause an unhandled exception.
+diff --git a/test/parallel/test-crypto-x509.js b/test/parallel/test-crypto-x509.js
+index c85a79b4854369e35fbe89833e9df9a12065671e..8f13ac60362854d12264f26b74533bd55efd6605 100644
+--- a/test/parallel/test-crypto-x509.js
++++ b/test/parallel/test-crypto-x509.js
+@@ -104,7 +104,8 @@ const der = Buffer.from(
+     '84:AC:5B:08:9A:20:89:B6:8F:D6'
+   );
+   assert.strictEqual(x509.keyUsage, undefined);
+-  assert.strictEqual(x509.serialNumber, 'ECC9B856270DA9A8');
++
++  assert.match(x509.serialNumber, /ECC9B856270DA9A8/i);
+ 
+   assert.deepStrictEqual(x509.raw, der);
+ 
+@@ -190,6 +191,12 @@ const der = Buffer.from(
+   });
+   mc.port2.postMessage(x509);
+ 
++  const modulusOSSL = 'EF5440701637E28ABB038E5641F828D834C342A9D25EDBB86A2BF' +
++                      '6FBD809CB8E037A98B71708E001242E4DEB54C6164885F599DD87' +
++                      'A23215745955BE20417E33C4D0D1B80C9DA3DE419A2607195D2FB' +
++                      '75657B0BBFB5EB7D0BBA5122D1B6964C7B570D50B8EC001EEB68D' +
++                      'FB584437508F3129928D673B30A3E0BF4F50609E6371';
++
+   // Verify that legacy encoding works
+   const legacyObjectCheck = {
+     subject: 'C=US\n' +
+@@ -213,11 +220,7 @@ const der = Buffer.from(
+         'CA Issuers - URI:http://ca.nodejs.org/ca.cert' :
+         'OCSP - URI:http://ocsp.nodejs.org/\n' +
+         'CA Issuers - URI:http://ca.nodejs.org/ca.cert\n',
+-    modulus: 'EF5440701637E28ABB038E5641F828D834C342A9D25EDBB86A2BF' +
+-             '6FBD809CB8E037A98B71708E001242E4DEB54C6164885F599DD87' +
+-             'A23215745955BE20417E33C4D0D1B80C9DA3DE419A2607195D2FB' +
+-             '75657B0BBFB5EB7D0BBA5122D1B6964C7B570D50B8EC001EEB68D' +
+-             'FB584437508F3129928D673B30A3E0BF4F50609E6371',
++    modulusPattern: new RegExp(modulusOSSL, 'i'),
+     bits: 1024,
+     exponent: '0x10001',
+     valid_from: 'Nov 16 18:42:21 2018 GMT',
+@@ -226,7 +229,7 @@ const der = Buffer.from(
+     fingerprint256:
+       'B0:BE:46:49:B8:29:63:E0:6F:63:C8:8A:57:9C:3F:9B:72:' +
+       'C6:F5:89:E3:0D:84:AC:5B:08:9A:20:89:B6:8F:D6',
+-    serialNumber: 'ECC9B856270DA9A8'
++    serialNumberPattern: /ECC9B856270DA9A8/i
+   };
+ 
+   const legacyObject = x509.toLegacyObject();
+@@ -235,7 +238,7 @@ const der = Buffer.from(
+   assert.strictEqual(legacyObject.subject, legacyObjectCheck.subject);
+   assert.strictEqual(legacyObject.issuer, legacyObjectCheck.issuer);
+   assert.strictEqual(legacyObject.infoAccess, legacyObjectCheck.infoAccess);
+-  assert.strictEqual(legacyObject.modulus, legacyObjectCheck.modulus);
++  assert.match(legacyObject.modulus, legacyObjectCheck.modulusPattern);
+   assert.strictEqual(legacyObject.bits, legacyObjectCheck.bits);
+   assert.strictEqual(legacyObject.exponent, legacyObjectCheck.exponent);
+   assert.strictEqual(legacyObject.valid_from, legacyObjectCheck.valid_from);
+@@ -244,7 +247,5 @@ const der = Buffer.from(
+   assert.strictEqual(
+     legacyObject.fingerprint256,
+     legacyObjectCheck.fingerprint256);
+-  assert.strictEqual(
+-    legacyObject.serialNumber,
+-    legacyObjectCheck.serialNumber);
++  assert.match(legacyObject.serialNumber, legacyObjectCheck.serialNumberPattern);
+ }
+diff --git a/test/parallel/test-crypto.js b/test/parallel/test-crypto.js
+index 58441be4d093f06cac3d47e2fa752f2354a49f8a..36a91946c8ad23250a47c433c1216ec9cb14f0e1 100644
+--- a/test/parallel/test-crypto.js
++++ b/test/parallel/test-crypto.js
+@@ -67,7 +67,7 @@ assert.throws(() => {
+   // Throws general Error, so there is no opensslErrorStack property.
+   return err instanceof Error &&
+          err.name === 'Error' &&
+-         /^Error: mac verify failure$/.test(err) &&
++         (/^Error: (mac verify failure|INCORRECT_PASSWORD)$/.test(err)) &&
+          !('opensslErrorStack' in err);
+ });
+ 
+@@ -77,7 +77,7 @@ assert.throws(() => {
+   // Throws general Error, so there is no opensslErrorStack property.
+   return err instanceof Error &&
+          err.name === 'Error' &&
+-         /^Error: mac verify failure$/.test(err) &&
++         (/^Error: (mac verify failure|INCORRECT_PASSWORD)$/.test(err)) &&
+          !('opensslErrorStack' in err);
+ });
+ 
+@@ -87,7 +87,7 @@ assert.throws(() => {
+   // Throws general Error, so there is no opensslErrorStack property.
+   return err instanceof Error &&
+          err.name === 'Error' &&
+-         /^Error: not enough data$/.test(err) &&
++         /^Error: (not enough data|BAD_PKCS12_DATA)$/.test(err) &&
+          !('opensslErrorStack' in err);
+ });
+ 
+@@ -137,8 +137,6 @@ assert(crypto.getHashes().includes('sha1'));
+ assert(crypto.getHashes().includes('sha256'));
+ assert(!crypto.getHashes().includes('SHA1'));
+ assert(!crypto.getHashes().includes('SHA256'));
+-assert(crypto.getHashes().includes('RSA-SHA1'));
+-assert(!crypto.getHashes().includes('rsa-sha1'));
+ validateList(crypto.getHashes());
+ 
+ // Assume that we have at least secp384r1.
+@@ -172,7 +170,7 @@ const encodingError = {
+ // hex input that's not a power of two should throw, not assert in C++ land.
+ ['createCipher', 'createDecipher'].forEach((funcName) => {
+   assert.throws(
+-    () => crypto[funcName]('aes192', 'test').update('0', 'hex'),
++    () => crypto[funcName]('aes-192-cbc', 'test').update('0', 'hex'),
+     (error) => {
+       assert.ok(!('opensslErrorStack' in error));
+       if (common.hasFipsCrypto) {
+@@ -224,15 +222,15 @@ assert.throws(() => {
+     library: 'rsa routines',
+   } : {
+     name: 'Error',
+-    message: /routines:RSA_sign:digest too big for rsa key$/,
+-    library: 'rsa routines',
+-    function: 'RSA_sign',
+-    reason: 'digest too big for rsa key',
++    message: /routines:RSA_sign:digest too big for rsa key$|routines:OPENSSL_internal:DIGEST_TOO_BIG_FOR_RSA_KEY$/,
++    library: /rsa routines|RSA routines/,
++    function: /RSA_sign|OPENSSL_internal/,
++    reason: /digest too big for rsa key|DIGEST_TOO_BIG_FOR_RSA_KEY/,
+     code: 'ERR_OSSL_RSA_DIGEST_TOO_BIG_FOR_RSA_KEY'
+   });
+   return true;
+ });
+-
++/*
+ if (!common.hasOpenSSL3) {
+   assert.throws(() => {
+     // The correct header inside `rsa_private_pkcs8_bad.pem` should have been
+@@ -260,7 +258,7 @@ if (!common.hasOpenSSL3) {
+     return true;
+   });
+ }
+-
++*/
+ // Make sure memory isn't released before being returned
+ console.log(crypto.randomBytes(16));
+ 
+diff --git a/test/parallel/test-https-agent-additional-options.js b/test/parallel/test-https-agent-additional-options.js
+index 543ee176fb6af38874fee9f14be76f3fdda11060..fef9f1bc2f9fc6c220cf47847e86e03882b51b1d 100644
+--- a/test/parallel/test-https-agent-additional-options.js
++++ b/test/parallel/test-https-agent-additional-options.js
+@@ -13,7 +13,7 @@ const options = {
+   cert: fixtures.readKey('agent1-cert.pem'),
+   ca: fixtures.readKey('ca1-cert.pem'),
+   minVersion: 'TLSv1.1',
+-  ciphers: 'ALL@SECLEVEL=0'
++  // ciphers: 'ALL@SECLEVEL=0'
+ };
+ 
+ const server = https.Server(options, (req, res) => {
+@@ -28,7 +28,7 @@ function getBaseOptions(port) {
+     ca: options.ca,
+     rejectUnauthorized: true,
+     servername: 'agent1',
+-    ciphers: 'ALL@SECLEVEL=0'
++    // ciphers: 'ALL@SECLEVEL=0'
+   };
+ }
+ 
+diff --git a/test/parallel/test-https-agent-session-eviction.js b/test/parallel/test-https-agent-session-eviction.js
+index 940c43cc40bf15e51df177ee30ecc69ffbeec296..e95743a91a3c709c7d2c10dc80b3f75b7d988027 100644
+--- a/test/parallel/test-https-agent-session-eviction.js
++++ b/test/parallel/test-https-agent-session-eviction.js
+@@ -14,7 +14,7 @@ const options = {
+   key: readKey('agent1-key.pem'),
+   cert: readKey('agent1-cert.pem'),
+   secureOptions: SSL_OP_NO_TICKET,
+-  ciphers: 'RSA@SECLEVEL=0'
++  // ciphers: 'RSA@SECLEVEL=0'
+ };
+ 
+ // Create TLS1.2 server
+diff --git a/test/parallel/test-tls-getcertificate-x509.js b/test/parallel/test-tls-getcertificate-x509.js
+index 5be788f67931131256f7fb0ab802cb0edee58173..0969e417c239b7300f53f6c4434318bc8fe579fe 100644
+--- a/test/parallel/test-tls-getcertificate-x509.js
++++ b/test/parallel/test-tls-getcertificate-x509.js
+@@ -20,9 +20,7 @@ const server = tls.createServer(options, function(cleartext) {
+ server.once('secureConnection', common.mustCall(function(socket) {
+   const cert = socket.getX509Certificate();
+   assert(cert instanceof X509Certificate);
+-  assert.strictEqual(
+-    cert.serialNumber,
+-    'D0082F458B6EFBE8');
++  assert.match(cert.serialNumber, /D0082F458B6EFBE8/i)
+ }));
+ 
+ server.listen(0, common.mustCall(function() {
+@@ -33,10 +31,7 @@ server.listen(0, common.mustCall(function() {
+     const peerCert = socket.getPeerX509Certificate();
+     assert(peerCert.issuerCertificate instanceof X509Certificate);
+     assert.strictEqual(peerCert.issuerCertificate.issuerCertificate, undefined);
+-    assert.strictEqual(
+-      peerCert.issuerCertificate.serialNumber,
+-      'ECC9B856270DA9A7'
+-    );
++    assert.match(peerCert.issuerCertificate.serialNumber, /ECC9B856270DA9A7/i);
+     server.close();
+   }));
+   socket.end('Hello');
+diff --git a/test/parallel/test-tls-getprotocol.js b/test/parallel/test-tls-getprotocol.js
+index 02c683c71c8775e84d5d125a4f05560b8206677d..4c6dd20ca0a8d0acdf9f8d1b7153087de9305196 100644
+--- a/test/parallel/test-tls-getprotocol.js
++++ b/test/parallel/test-tls-getprotocol.js
+@@ -18,7 +18,7 @@ const clientConfigs = [
+ 
+ const serverConfig = {
+   secureProtocol: 'TLS_method',
+-  ciphers: 'RSA@SECLEVEL=0',
++  // ciphers: 'RSA@SECLEVEL=0',
+   key: fixtures.readKey('agent2-key.pem'),
+   cert: fixtures.readKey('agent2-cert.pem')
+ };
+diff --git a/test/parallel/test-tls-write-error.js b/test/parallel/test-tls-write-error.js
+index b06f2fa2c53ea72f9a66f0d002dd9281d0259a0f..864fffeebfad75d95416fd47efdea7f222c507a2 100644
+--- a/test/parallel/test-tls-write-error.js
++++ b/test/parallel/test-tls-write-error.js
+@@ -17,7 +17,7 @@ const server_cert = fixtures.readKey('agent1-cert.pem');
+ const opts = {
+   key: server_key,
+   cert: server_cert,
+-  ciphers: 'ALL@SECLEVEL=0'
++  // ciphers: 'ALL@SECLEVEL=0'
+ };
+ 
+ const server = https.createServer(opts, (req, res) => {
+diff --git a/test/parallel/test-webcrypto-derivebits.js b/test/parallel/test-webcrypto-derivebits.js
+index 95c38f454fbb939c9f74f25ec946d0c8e94e4c41..882c01fd812f5ed880fa3482ede92695ad505ff3 100644
+--- a/test/parallel/test-webcrypto-derivebits.js
++++ b/test/parallel/test-webcrypto-derivebits.js
+@@ -39,6 +39,7 @@ const { internalBinding } = require('internal/test/binding');
+   test('P-521').then(common.mustCall());
+ }
+ 
++/*
+ // Test HKDF bit derivation
+ {
+   async function test(pass, info, salt, hash, length, expected) {
+@@ -70,6 +71,7 @@ const { internalBinding } = require('internal/test/binding');
+ 
+   tests.then(common.mustCall());
+ }
++*/
+ 
+ // Test PBKDF2 bit derivation
+ {
+diff --git a/test/parallel/test-webcrypto-derivekey.js b/test/parallel/test-webcrypto-derivekey.js
+index ee48a61f4ac8f5e8e4cec96eb03d75cb1c45f56a..5108bbf7499f29bafffda76f3c5270aae0271b44 100644
+--- a/test/parallel/test-webcrypto-derivekey.js
++++ b/test/parallel/test-webcrypto-derivekey.js
+@@ -48,6 +48,7 @@ const { internalBinding } = require('internal/test/binding');
+   test('P-521').then(common.mustCall());
+ }
+ 
++/*
+ // Test HKDF bit derivation
+ {
+   async function test(pass, info, salt, hash, expected) {
+@@ -84,6 +85,7 @@ const { internalBinding } = require('internal/test/binding');
+ 
+   tests.then(common.mustCall());
+ }
++*/
+ 
+ // Test PBKDF2 bit derivation
+ {
+diff --git a/test/parallel/test-webcrypto-encrypt-decrypt-rsa.js b/test/parallel/test-webcrypto-encrypt-decrypt-rsa.js
+index e01152c07f294d834f70d94bc105b77ea008c017..177bfdf4702afbbbede15e0ae37c144cfabeae46 100644
+--- a/test/parallel/test-webcrypto-encrypt-decrypt-rsa.js
++++ b/test/parallel/test-webcrypto-encrypt-decrypt-rsa.js
+@@ -130,7 +130,7 @@ async function testEncryptionLongPlaintext({ algorithm,
+ 
+   return assert.rejects(
+     subtle.encrypt(algorithm, publicKey, newplaintext), {
+-      message: /data too large/
++      message: /data too large|DATA_TOO_LARGE_FOR_KEY_SIZE/
+     });
+ }
+ 
+diff --git a/test/parallel/test-webcrypto-wrap-unwrap.js b/test/parallel/test-webcrypto-wrap-unwrap.js
+index 54a5a782a09586ff7e02ab23d8c8ca984106f036..8624d1fcf77254bb256a6f4bbde2ff20e148a02b 100644
+--- a/test/parallel/test-webcrypto-wrap-unwrap.js
++++ b/test/parallel/test-webcrypto-wrap-unwrap.js
+@@ -21,14 +21,15 @@ const kWrappingData = {
+     wrap: { label: new Uint8Array(8) },
+     pair: true
+   },
+-  'AES-CTR': {
++  'AES-CBC': {
+     generate: { length: 128 },
+-    wrap: { counter: new Uint8Array(16), length: 64 },
++    wrap: { iv: new Uint8Array(16) },
+     pair: false
+   },
+-  'AES-CBC': {
++  /*
++  'AES-CTR': {
+     generate: { length: 128 },
+-    wrap: { iv: new Uint8Array(16) },
++    wrap: { counter: new Uint8Array(16), length: 64 },
+     pair: false
+   },
+   'AES-GCM': {
+@@ -45,6 +46,7 @@ const kWrappingData = {
+     wrap: { },
+     pair: false
+   }
++  */
+ };
+ 
+ function generateWrappingKeys() {

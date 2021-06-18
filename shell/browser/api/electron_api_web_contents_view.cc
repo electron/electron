@@ -44,18 +44,8 @@ WebContentsView::WebContentsView(v8::Isolate* isolate,
 }
 
 WebContentsView::~WebContentsView() {
-  if (api_web_contents_) {  // destroy() is called
-    // Destroy WebContents asynchronously, as we might be in GC currently and
-    // WebContents emits an event in its destructor.
-    base::PostTask(FROM_HERE, {content::BrowserThread::UI},
-                   base::BindOnce(
-                       [](base::WeakPtr<WebContents> contents) {
-                         if (contents)
-                           contents->DestroyWebContents(
-                               !Browser::Get()->is_shutting_down());
-                       },
-                       api_web_contents_->GetWeakPtr()));
-  }
+  if (api_web_contents_)  // destroy() called without closing WebContents
+    api_web_contents_->Destroy();
 }
 
 gin::Handle<WebContents> WebContentsView::GetWebContents(v8::Isolate* isolate) {

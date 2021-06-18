@@ -303,6 +303,20 @@ describe('node feature', () => {
         expect(cipherText).to.equal(result);
       }
     });
+
+    it('does not crash when using crypto.diffieHellman() constructors', () => {
+      const crypto = require('crypto');
+
+      crypto.createDiffieHellman('abc');
+      crypto.createDiffieHellman('abc', 2);
+
+      // Needed to test specific DiffieHellman ctors.
+
+      // eslint-disable-next-line no-octal
+      crypto.createDiffieHellman('abc', Buffer.from([02]));
+      // eslint-disable-next-line no-octal
+      crypto.createDiffieHellman('abc', '123');
+    });
   });
 
   describe('process.stdout', () => {

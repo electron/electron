@@ -1,0 +1,6 @@
+libcxxabi_headers = [
+  "//buildtools/third_party/libc++abi/trunk/include/__cxxabi_config.h",
+  "//buildtools/third_party/libc++abi/trunk/include/cxxabi.h",
+]
+
+libcxxabi_licenses = [ "//buildtools/third_party/libc++abi/trunk/LICENSE.TXT" ]

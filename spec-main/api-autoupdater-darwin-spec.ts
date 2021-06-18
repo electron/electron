@@ -6,15 +6,14 @@ import * as fs from 'fs-extra';
 import * as os from 'os';
 import * as path from 'path';
 import { AddressInfo } from 'net';
+import { ifdescribe } from './spec-helpers';
 
 const features = process._linkedBinding('electron_common_features');
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
 // We can only test the auto updater on darwin non-component builds
-const describeFn = (process.platform === 'darwin' && !process.mas && !features.isComponentBuild() ? describe : describe.skip);
-
-describeFn('autoUpdater behavior', function () {
+ifdescribe(process.platform === 'darwin' && process.arch !== 'arm64' && !process.mas && !features.isComponentBuild())('autoUpdater behavior', function () {
   this.timeout(120000);
 
   let identity = '';
@@ -184,7 +183,7 @@ describeFn('autoUpdater behavior', function () {
 
     afterEach(async () => {
       if (httpServer) {
-        await new Promise(resolve => {
+        await new Promise<void>(resolve => {
           httpServer.close(() => {
             httpServer = null as any;
             server = null as any;
@@ -288,7 +287,7 @@ describeFn('autoUpdater behavior', function () {
             pub_date: (new Date()).toString()
           });
         });
-        const relaunchPromise = new Promise((resolve) => {
+        const relaunchPromise = new Promise<void>((resolve) => {
           server.get('/update-check/updated/:version', (req, res) => {
             res.status(204).send();
             resolve();
@@ -338,7 +337,7 @@ describeFn('autoUpdater behavior', function () {
             ]
           });
         });
-        const relaunchPromise = new Promise((resolve) => {
+        const relaunchPromise = new Promise<void>((resolve) => {
           server.get('/update-check/updated/:version', (req, res) => {
             res.status(204).send();
             resolve();

@@ -51,7 +51,6 @@ class BrowserProcessImpl : public BrowserProcess {
   metrics_services_manager::MetricsServicesManager* GetMetricsServicesManager()
       override;
   metrics::MetricsService* metrics_service() override;
-  rappor::RapporServiceImpl* rappor_service() override;
   ProfileManager* profile_manager() override;
   PrefService* local_state() override;
   scoped_refptr<network::SharedURLLoaderFactory> shared_url_loader_factory()
@@ -81,8 +80,6 @@ class BrowserProcessImpl : public BrowserProcess {
       override;
   federated_learning::FlocSortingLshClustersService*
   floc_sorting_lsh_clusters_service() override;
-  optimization_guide::OptimizationGuideService* optimization_guide_service()
-      override;
   component_updater::ComponentUpdateService* component_updater() override;
   MediaFileSystemRegistry* media_file_system_registry() override;
   WebRtcLogUploader* webrtc_log_uploader() override;
@@ -91,6 +88,7 @@ class BrowserProcessImpl : public BrowserProcess {
   resource_coordinator::ResourceCoordinatorParts* resource_coordinator_parts()
       override;
   resource_coordinator::TabManager* GetTabManager() override;
+  SerialPolicyAllowedPorts* serial_policy_allowed_ports() override;
   void CreateDevToolsProtocolHandler() override {}
   void CreateDevToolsAutoOpener() override {}
   void set_background_mode_manager_for_test(

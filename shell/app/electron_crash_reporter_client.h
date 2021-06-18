@@ -39,15 +39,15 @@ class ElectronCrashReporterClient : public crash_reporter::CrashReporterClient {
 #endif
 
 #if defined(OS_WIN)
-  void GetProductNameAndVersion(const base::string16& exe_path,
-                                base::string16* product_name,
-                                base::string16* version,
-                                base::string16* special_build,
-                                base::string16* channel_name) override;
+  void GetProductNameAndVersion(const std::wstring& exe_path,
+                                std::wstring* product_name,
+                                std::wstring* version,
+                                std::wstring* special_build,
+                                std::wstring* channel_name) override;
 #endif
 
 #if defined(OS_WIN)
-  bool GetCrashDumpLocation(base::string16* crash_dir) override;
+  bool GetCrashDumpLocation(std::wstring* crash_dir) override;
 #else
   bool GetCrashDumpLocation(base::FilePath* crash_dir) override;
 #endif
@@ -82,7 +82,7 @@ class ElectronCrashReporterClient : public crash_reporter::CrashReporterClient {
   friend class base::NoDestructor<ElectronCrashReporterClient>;
 
   std::string upload_url_;
-  bool collect_stats_consent_;
+  bool collect_stats_consent_ = false;
   bool rate_limit_ = false;
   bool compress_uploads_ = false;
   std::map<std::string, std::string> global_annotations_;

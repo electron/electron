@@ -44,17 +44,17 @@ ProxyingWebSocket::ProxyingWebSocket(
           /*is_download=*/false,
           /*is_async=*/true,
           /*is_service_worker_script=*/false,
-          /*navigation_id=*/base::nullopt,
+          /*navigation_id=*/absl::nullopt,
           /*ukm_source_id=*/ukm::kInvalidSourceIdObj)) {}
 
 ProxyingWebSocket::~ProxyingWebSocket() {
   if (on_before_send_headers_callback_) {
     std::move(on_before_send_headers_callback_)
-        .Run(net::ERR_ABORTED, base::nullopt);
+        .Run(net::ERR_ABORTED, absl::nullopt);
   }
   if (on_headers_received_callback_) {
     std::move(on_headers_received_callback_)
-        .Run(net::ERR_ABORTED, base::nullopt, GURL());
+        .Run(net::ERR_ABORTED, absl::nullopt, GURL());
   }
 }
 
@@ -230,7 +230,7 @@ void ProxyingWebSocket::StartProxying(
     WebSocketFactory factory,
     const GURL& url,
     const GURL& site_for_cookies,
-    const base::Optional<std::string>& user_agent,
+    const absl::optional<std::string>& user_agent,
     mojo::PendingRemote<network::mojom::WebSocketHandshakeClient>
         handshake_client,
     bool has_extra_headers,
@@ -359,11 +359,11 @@ void ProxyingWebSocket::OnHeadersReceivedComplete(int error_code) {
   }
 
   if (on_headers_received_callback_) {
-    base::Optional<std::string> headers;
+    absl::optional<std::string> headers;
     if (override_headers_)
       headers = override_headers_->raw_headers();
     std::move(on_headers_received_callback_)
-        .Run(net::OK, headers, base::nullopt);
+        .Run(net::OK, headers, absl::nullopt);
   }
 
   if (override_headers_) {
@@ -385,7 +385,7 @@ void ProxyingWebSocket::OnAuthRequiredComplete(AuthRequiredResponse rv) {
   switch (rv) {
     case AuthRequiredResponse::kNoAction:
     case AuthRequiredResponse::kCancelAuth:
-      std::move(auth_required_callback_).Run(base::nullopt);
+      std::move(auth_required_callback_).Run(absl::nullopt);
       break;
 
     case AuthRequiredResponse::kSetAuth:

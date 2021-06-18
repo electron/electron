@@ -1,0 +1,35 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sattard@slack-corp.com>
+Date: Wed, 22 May 2019 13:34:18 -0700
+Subject: chore: add context to context aware module prevention
+
+This patch adds extra context to why we prevent non-context-aware Node.js
+modules from being used in the renderer process. This should be upstreamed as
+a customizable error message.
+
+diff --git a/src/node_binding.cc b/src/node_binding.cc
+index 3c05e553c8e61456205a1f632c903055650a3fc6..292204024f64e6457f1344db1c74d006b7233c82 100644
+--- a/src/node_binding.cc
++++ b/src/node_binding.cc
+@@ -4,6 +4,7 @@
+ #include "node_errors.h"
+ #include "node_external_reference.h"
+ #include "node_native_module_env.h"
++#include "node_process.h"
+ #include "util.h"
+ 
+ #include <string>
+@@ -465,7 +466,12 @@ void DLOpen(const FunctionCallbackInfo<Value>& args) {
+       if (mp->nm_context_register_func == nullptr) {
+         if (env->force_context_aware()) {
+           dlib->Close();
+-          THROW_ERR_NON_CONTEXT_AWARE_DISABLED(env);
++          char errmsg[1024];
++          snprintf(errmsg,
++                   sizeof(errmsg),
++                   "Loading non-context-aware native module in renderer: '%s', but app.allowRendererProcessReuse is true. See https://github.com/electron/electron/issues/18397.",
++                   *filename);
++          env->ThrowError(errmsg);
+           return false;
+         }
+       }

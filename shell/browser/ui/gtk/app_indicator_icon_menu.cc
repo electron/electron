@@ -16,10 +16,7 @@ namespace electron {
 namespace gtkui {
 
 AppIndicatorIconMenu::AppIndicatorIconMenu(ui::MenuModel* model)
-    : menu_model_(model),
-      click_action_replacement_menu_item_added_(false),
-      gtk_menu_(nullptr),
-      block_activation_(false) {
+    : menu_model_(model) {
   {
     ANNOTATE_SCOPED_MEMORY_LEAK;  // http://crbug.com/378770
     gtk_menu_ = gtk_menu_new();
@@ -40,7 +37,7 @@ AppIndicatorIconMenu::~AppIndicatorIconMenu() {
 
 void AppIndicatorIconMenu::UpdateClickActionReplacementMenuItem(
     const char* label,
-    const base::Closure& callback) {
+    const base::RepeatingClosure& callback) {
   click_action_replacement_callback_ = callback;
 
   if (click_action_replacement_menu_item_added_) {

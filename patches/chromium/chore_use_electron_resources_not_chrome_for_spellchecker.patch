@@ -7,10 +7,10 @@ spellchecker uses a few IDS_ resources.  We need to load these from
 Electrons grit header instead of Chromes
 
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index d5707259012a7ec9340e9f3795b24356d266a12d..06ba635b2d69d2016fd44c550556a8e6b5b27cc6 100644
+index 95d495998f5feb4c290ffbc430b380ce136d89e8..c9b47583391472ed9d0e309fe6c5c8cf5b900400 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -6203,6 +6203,7 @@ static_library("browser") {
+@@ -6384,6 +6384,7 @@ static_library("browser") {
      deps += [
        "//components/spellcheck/browser",
        "//components/spellcheck/common",
@@ -32,10 +32,10 @@ index 2b7aa1add57dccbcbf8202cead5b7d2d5a174270..2ba03fc045f2e4bb12f173aacb6581cc
  #include "components/pref_registry/pref_registry_syncable.h"
  #include "components/prefs/pref_service.h"
 diff --git a/components/language/core/browser/BUILD.gn b/components/language/core/browser/BUILD.gn
-index 65741e76bec42c50e83c8911cf5de416fea64a23..e7a7be24d90d596e67a987ba7a6a4bc917acfece 100644
+index 41761e18716a7d9221511978dc4582a1804920e2..faea3d936c678e31fa29b93ae1ccd976ad52c7a1 100644
 --- a/components/language/core/browser/BUILD.gn
 +++ b/components/language/core/browser/BUILD.gn
-@@ -32,6 +32,7 @@ static_library("browser") {
+@@ -34,6 +34,7 @@ static_library("browser") {
      "//components/pref_registry",
      "//components/prefs",
      "//components/strings",
@@ -44,10 +44,10 @@ index 65741e76bec42c50e83c8911cf5de416fea64a23..e7a7be24d90d596e67a987ba7a6a4bc9
    ]
  }
 diff --git a/components/language/core/browser/language_prefs.cc b/components/language/core/browser/language_prefs.cc
-index c14811efa87b223729d37695d86f858dd8f366ee..444c8273e4985f7e276ad0dd0fd001b027bc0d47 100644
+index ba4d8473077d1cc35cec531750460a7ee289c1b0..1b19de36dc654f3b8c544f6ce8fc5ac058354cbc 100644
 --- a/components/language/core/browser/language_prefs.cc
 +++ b/components/language/core/browser/language_prefs.cc
-@@ -21,7 +21,7 @@
+@@ -23,7 +23,7 @@
  #include "components/pref_registry/pref_registry_syncable.h"
  #include "components/prefs/pref_service.h"
  #include "components/prefs/scoped_user_pref_update.h"

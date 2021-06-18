@@ -14,16 +14,15 @@ namespace electron {
 
 NodeStreamLoader::NodeStreamLoader(
     network::mojom::URLResponseHeadPtr head,
-    network::mojom::URLLoaderRequest loader,
+    mojo::PendingReceiver<network::mojom::URLLoader> loader,
     mojo::PendingRemote<network::mojom::URLLoaderClient> client,
     v8::Isolate* isolate,
     v8::Local<v8::Object> emitter)
-    : binding_(this, std::move(loader)),
+    : url_loader_(this, std::move(loader)),
       client_(std::move(client)),
       isolate_(isolate),
-      emitter_(isolate, emitter),
-      weak_factory_(this) {
-  binding_.set_connection_error_handler(
+      emitter_(isolate, emitter) {
+  url_loader_.set_disconnect_handler(
       base::BindOnce(&NodeStreamLoader::NotifyComplete,
                      weak_factory_.GetWeakPtr(), net::ERR_FAILED));
 
@@ -53,7 +52,7 @@ NodeStreamLoader::~NodeStreamLoader() {
 void NodeStreamLoader::Start(network::mojom::URLResponseHeadPtr head) {
   mojo::ScopedDataPipeProducerHandle producer;
   mojo::ScopedDataPipeConsumerHandle consumer;
-  MojoResult rv = mojo::CreateDataPipe(nullptr, &producer, &consumer);
+  MojoResult rv = mojo::CreateDataPipe(nullptr, producer, consumer);
   if (rv != MOJO_RESULT_OK) {
     NotifyComplete(net::ERR_INSUFFICIENT_RESOURCES);
     return;
@@ -166,7 +165,7 @@ void NodeStreamLoader::On(const char* event, EventCallback callback) {
   handlers_[event].Reset(isolate_, args[1]);
   node::MakeCallback(isolate_, emitter_.Get(isolate_), "on",
                      node::arraysize(args), args, {0, 0});
-  // No more code bellow, as this class may destruct when subscribing.
+  // No more code below, as this class may destruct when subscribing.
 }
 
 }  // namespace electron

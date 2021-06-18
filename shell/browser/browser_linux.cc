@@ -51,7 +51,7 @@ bool LaunchXdgUtility(const std::vector<std::string>& argv, int* exit_code) {
   return process.WaitForExit(exit_code);
 }
 
-base::Optional<std::string> GetXdgAppOutput(
+absl::optional<std::string> GetXdgAppOutput(
     const std::vector<std::string>& argv) {
   std::string reply;
   int success_code;
@@ -60,13 +60,13 @@ base::Optional<std::string> GetXdgAppOutput(
                                                &success_code);
 
   if (!ran_ok || success_code != EXIT_SUCCESS)
-    return base::Optional<std::string>();
+    return absl::optional<std::string>();
 
-  return base::make_optional(reply);
+  return absl::make_optional(reply);
 }
 
 bool SetDefaultWebClient(const std::string& protocol) {
-  std::unique_ptr<base::Environment> env(base::Environment::Create());
+  auto env = base::Environment::Create();
 
   std::vector<std::string> argv = {kXdgSettings, "set"};
   if (!protocol.empty()) {
@@ -84,21 +84,9 @@ bool SetDefaultWebClient(const std::string& protocol) {
   return ran_ok && exit_code == EXIT_SUCCESS;
 }
 
-void Browser::Focus(gin::Arguments* args) {
-  // Focus on the first visible window.
-  for (auto* const window : WindowList::GetWindows()) {
-    if (window->IsVisible()) {
-      window->Focus(true);
-      break;
-    }
-  }
-}
-
 void Browser::AddRecentDocument(const base::FilePath& path) {}
 
 void Browser::ClearRecentDocuments() {}
-
-void Browser::SetAppUserModelID(const base::string16& name) {}
 
 bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
                                          gin::Arguments* args) {
@@ -107,7 +95,7 @@ bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
 
 bool Browser::IsDefaultProtocolClient(const std::string& protocol,
                                       gin::Arguments* args) {
-  std::unique_ptr<base::Environment> env(base::Environment::Create());
+  auto env = base::Environment::Create();
 
   if (protocol.empty())
     return false;
@@ -132,7 +120,7 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
   return false;
 }
 
-base::string16 Browser::GetApplicationNameForProtocol(const GURL& url) {
+std::u16string Browser::GetApplicationNameForProtocol(const GURL& url) {
   const std::vector<std::string> argv = {
       "xdg-mime", "query", "default",
       std::string("x-scheme-handler/") + url.scheme()};
@@ -140,10 +128,10 @@ base::string16 Browser::GetApplicationNameForProtocol(const GURL& url) {
   return base::ASCIIToUTF16(GetXdgAppOutput(argv).value_or(std::string()));
 }
 
-bool Browser::SetBadgeCount(int count) {
-  if (IsUnityRunning()) {
-    unity::SetDownloadCount(count);
-    badge_count_ = count;
+bool Browser::SetBadgeCount(absl::optional<int> count) {
+  if (IsUnityRunning() && count.has_value()) {
+    unity::SetDownloadCount(count.value());
+    badge_count_ = count.value();
     return true;
   } else {
     return false;

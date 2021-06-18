@@ -1,5 +1,5 @@
 <script>
-  const child = window.open(`./window-open-postMessage.html`, '', 'show=no')
+  const child = window.open(`./window-open-postMessage.html`, '', 'show=no,nodeIntegration=yes,contextIsolation=no')
   window.onmessage = (e) => {
     if (e.data === 'ready') {
       child.postMessage('testing', '*')

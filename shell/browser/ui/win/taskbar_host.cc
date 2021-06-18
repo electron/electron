@@ -55,9 +55,9 @@ TaskbarHost::ThumbarButton::ThumbarButton(const TaskbarHost::ThumbarButton&) =
     default;
 TaskbarHost::ThumbarButton::~ThumbarButton() = default;
 
-TaskbarHost::TaskbarHost() {}
+TaskbarHost::TaskbarHost() = default;
 
-TaskbarHost::~TaskbarHost() {}
+TaskbarHost::~TaskbarHost() = default;
 
 bool TaskbarHost::SetThumbarButtons(HWND window,
                                     const std::vector<ThumbarButton>& buttons) {
@@ -104,7 +104,7 @@ bool TaskbarHost::SetThumbarButtons(HWND window,
     // Set tooltip.
     if (!button.tooltip.empty()) {
       thumb_button.dwMask |= THB_TOOLTIP;
-      wcsncpy_s(thumb_button.szTip, base::UTF8ToUTF16(button.tooltip).c_str(),
+      wcsncpy_s(thumb_button.szTip, base::UTF8ToWide(button.tooltip).c_str(),
                 _TRUNCATE);
     }
 
@@ -114,11 +114,12 @@ bool TaskbarHost::SetThumbarButtons(HWND window,
 
   // Finally add them to taskbar.
   HRESULT r;
-  if (thumbar_buttons_added_)
+  if (thumbar_buttons_added_) {
     r = taskbar_->ThumbBarUpdateButtons(window, kMaxButtonsCount,
                                         thumb_buttons);
-  else
+  } else {
     r = taskbar_->ThumbBarAddButtons(window, kMaxButtonsCount, thumb_buttons);
+  }
 
   thumbar_buttons_added_ = true;
   last_buttons_ = buttons;
@@ -166,15 +167,14 @@ bool TaskbarHost::SetProgressBar(HWND window,
 }
 
 bool TaskbarHost::SetOverlayIcon(HWND window,
-                                 const gfx::Image& overlay,
+                                 const SkBitmap& overlay,
                                  const std::string& text) {
   if (!InitializeTaskbar())
     return false;
 
-  base::win::ScopedHICON icon(
-      IconUtil::CreateHICONFromSkBitmap(overlay.AsBitmap()));
+  base::win::ScopedHICON icon(IconUtil::CreateHICONFromSkBitmap(overlay));
   return SUCCEEDED(taskbar_->SetOverlayIcon(window, icon.get(),
-                                            base::UTF8ToUTF16(text).c_str()));
+                                            base::UTF8ToWide(text).c_str()));
 }
 
 bool TaskbarHost::SetThumbnailClip(HWND window, const gfx::Rect& region) {
@@ -194,8 +194,8 @@ bool TaskbarHost::SetThumbnailToolTip(HWND window, const std::string& tooltip) {
   if (!InitializeTaskbar())
     return false;
 
-  return SUCCEEDED(taskbar_->SetThumbnailTooltip(
-      window, base::UTF8ToUTF16(tooltip).c_str()));
+  return SUCCEEDED(
+      taskbar_->SetThumbnailTooltip(window, base::UTF8ToWide(tooltip).c_str()));
 }
 
 bool TaskbarHost::HandleThumbarButtonEvent(int button_id) {

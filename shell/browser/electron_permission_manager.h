@@ -5,7 +5,6 @@
 #ifndef SHELL_BROWSER_ELECTRON_PERMISSION_MANAGER_H_
 #define SHELL_BROWSER_ELECTRON_PERMISSION_MANAGER_H_
 
-#include <map>
 #include <memory>
 #include <vector>
 
@@ -29,38 +28,39 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
       base::OnceCallback<void(blink::mojom::PermissionStatus)>;
   using StatusesCallback = base::OnceCallback<void(
       const std::vector<blink::mojom::PermissionStatus>&)>;
-  using RequestHandler = base::Callback<void(content::WebContents*,
-                                             content::PermissionType,
-                                             StatusCallback,
-                                             const base::Value&)>;
-  using CheckHandler = base::Callback<bool(content::WebContents*,
-                                           content::PermissionType,
-                                           const GURL& requesting_origin,
-                                           const base::Value&)>;
+  using RequestHandler = base::RepeatingCallback<void(content::WebContents*,
+                                                      content::PermissionType,
+                                                      StatusCallback,
+                                                      const base::Value&)>;
+  using CheckHandler =
+      base::RepeatingCallback<bool(content::WebContents*,
+                                   content::PermissionType,
+                                   const GURL& requesting_origin,
+                                   const base::Value&)>;
 
   // Handler to dispatch permission requests in JS.
   void SetPermissionRequestHandler(const RequestHandler& handler);
   void SetPermissionCheckHandler(const CheckHandler& handler);
 
   // content::PermissionControllerDelegate:
-  int RequestPermission(content::PermissionType permission,
-                        content::RenderFrameHost* render_frame_host,
-                        const GURL& requesting_origin,
-                        bool user_gesture,
-                        StatusCallback callback) override;
-  int RequestPermissionWithDetails(content::PermissionType permission,
-                                   content::RenderFrameHost* render_frame_host,
-                                   const GURL& requesting_origin,
-                                   bool user_gesture,
-                                   const base::DictionaryValue* details,
-                                   StatusCallback callback);
-  int RequestPermissions(
+  void RequestPermission(content::PermissionType permission,
+                         content::RenderFrameHost* render_frame_host,
+                         const GURL& requesting_origin,
+                         bool user_gesture,
+                         StatusCallback callback) override;
+  void RequestPermissionWithDetails(content::PermissionType permission,
+                                    content::RenderFrameHost* render_frame_host,
+                                    const GURL& requesting_origin,
+                                    bool user_gesture,
+                                    const base::DictionaryValue* details,
+                                    StatusCallback callback);
+  void RequestPermissions(
       const std::vector<content::PermissionType>& permissions,
       content::RenderFrameHost* render_frame_host,
       const GURL& requesting_origin,
       bool user_gesture,
       StatusesCallback callback) override;
-  int RequestPermissionsWithDetails(
+  void RequestPermissionsWithDetails(
       const std::vector<content::PermissionType>& permissions,
       content::RenderFrameHost* render_frame_host,
       const GURL& requesting_origin,
@@ -90,13 +90,13 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
       content::PermissionType permission,
       const GURL& requesting_origin,
       const GURL& embedding_origin) override;
-  int SubscribePermissionStatusChange(
+  SubscriptionId SubscribePermissionStatusChange(
       content::PermissionType permission,
       content::RenderFrameHost* render_frame_host,
       const GURL& requesting_origin,
       base::RepeatingCallback<void(blink::mojom::PermissionStatus)> callback)
       override;
-  void UnsubscribePermissionStatusChange(int subscription_id) override;
+  void UnsubscribePermissionStatusChange(SubscriptionId id) override;
 
  private:
   class PendingRequest;

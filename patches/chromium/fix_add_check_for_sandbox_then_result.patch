@@ -1,0 +1,21 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <samuel.r.attard@gmail.com>
+Date: Wed, 3 Mar 2021 15:52:46 -0800
+Subject: fix: add CHECK for sandbox then_result
+
+It fixes things, we do not know why, we should look at reverting this
+patch and doing further investigation in the future.  This patch cannot
+be upstreamed.
+
+diff --git a/sandbox/linux/bpf_dsl/bpf_dsl.cc b/sandbox/linux/bpf_dsl/bpf_dsl.cc
+index 846dc7a83d12be57cb91bd0a7f9e698990776684..1c3dba162b8eb4af28c78e84b5553447e4f1c76a 100644
+--- a/sandbox/linux/bpf_dsl/bpf_dsl.cc
++++ b/sandbox/linux/bpf_dsl/bpf_dsl.cc
+@@ -305,6 +305,7 @@ Elser::~Elser() {
+ }
+ 
+ Elser Elser::ElseIf(BoolExpr cond, ResultExpr then_result) const {
++  CHECK(then_result);
+   return Elser(Cons(std::make_pair(std::move(cond), std::move(then_result)),
+                     clause_list_));
+ }

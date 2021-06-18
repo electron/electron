@@ -28,7 +28,7 @@ app.whenReady().then(() => {
   if (crashType === 'main') {
     process.crash();
   } else if (crashType === 'renderer') {
-    const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+    const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
     w.loadURL('about:blank');
     if (setExtraParameters) {
       w.webContents.executeJavaScript(`
@@ -38,17 +38,18 @@ app.whenReady().then(() => {
       `);
     }
     w.webContents.executeJavaScript('process.crash()');
-    w.webContents.on('crashed', () => process.exit(0));
+    w.webContents.on('render-process-gone', () => process.exit(0));
   } else if (crashType === 'sandboxed-renderer') {
     const w = new BrowserWindow({
       show: false,
       webPreferences: {
         sandbox: true,
-        preload: path.resolve(__dirname, 'sandbox-preload.js')
+        preload: path.resolve(__dirname, 'sandbox-preload.js'),
+        contextIsolation: false
       }
     });
     w.loadURL(`about:blank?set_extra=${setExtraParameters ? 1 : 0}`);
-    w.webContents.on('crashed', () => process.exit(0));
+    w.webContents.on('render-process-gone', () => process.exit(0));
   } else if (crashType === 'node') {
     const crashesDir = path.join(app.getPath('temp'), `${app.name} Crashes`);
     const version = app.getVersion();

@@ -4,7 +4,6 @@
 
 #include "shell/browser/api/electron_api_screen.h"
 
-#include <algorithm>
 #include <string>
 
 #include "base/bind.h"
@@ -109,22 +108,22 @@ static gfx::Rect DIPToScreenRect(electron::NativeWindow* window,
 
 void Screen::OnDisplayAdded(const display::Display& new_display) {
   base::ThreadTaskRunnerHandle::Get()->PostNonNestableTask(
-      FROM_HERE, base::Bind(&DelayEmit, base::Unretained(this), "display-added",
-                            new_display));
+      FROM_HERE, base::BindOnce(&DelayEmit, base::Unretained(this),
+                                "display-added", new_display));
 }
 
 void Screen::OnDisplayRemoved(const display::Display& old_display) {
   base::ThreadTaskRunnerHandle::Get()->PostNonNestableTask(
-      FROM_HERE, base::Bind(&DelayEmit, base::Unretained(this),
-                            "display-removed", old_display));
+      FROM_HERE, base::BindOnce(&DelayEmit, base::Unretained(this),
+                                "display-removed", old_display));
 }
 
 void Screen::OnDisplayMetricsChanged(const display::Display& display,
                                      uint32_t changed_metrics) {
   base::ThreadTaskRunnerHandle::Get()->PostNonNestableTask(
-      FROM_HERE, base::Bind(&DelayEmitWithMetrics, base::Unretained(this),
-                            "display-metrics-changed", display,
-                            MetricsToArray(changed_metrics)));
+      FROM_HERE, base::BindOnce(&DelayEmitWithMetrics, base::Unretained(this),
+                                "display-metrics-changed", display,
+                                MetricsToArray(changed_metrics)));
 }
 
 // static

@@ -5,7 +5,7 @@
 #ifndef SHELL_RENDERER_API_CONTEXT_BRIDGE_OBJECT_CACHE_H_
 #define SHELL_RENDERER_API_CONTEXT_BRIDGE_OBJECT_CACHE_H_
 
-#include <map>
+#include <unordered_map>
 #include <utility>
 
 #include "base/containers/linked_list.h"
@@ -22,13 +22,6 @@ namespace context_bridge {
 
 using ObjectCachePair = std::pair<v8::Local<v8::Value>, v8::Local<v8::Value>>;
 
-struct ObjectCachePairNode : public base::LinkNode<ObjectCachePairNode> {
-  explicit ObjectCachePairNode(ObjectCachePair&& pair);
-  ~ObjectCachePairNode();
-
-  ObjectCachePair pair;
-};
-
 class ObjectCache final {
  public:
   ObjectCache();
@@ -41,7 +34,7 @@ class ObjectCache final {
 
  private:
   // object_identity ==> [from_value, proxy_value]
-  std::map<int, base::LinkedList<ObjectCachePairNode>> proxy_map_;
+  std::unordered_map<int, std::forward_list<ObjectCachePair>> proxy_map_;
 };
 
 }  // namespace context_bridge

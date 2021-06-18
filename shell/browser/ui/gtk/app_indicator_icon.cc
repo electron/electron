@@ -20,6 +20,7 @@
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/post_task.h"
+#include "base/task/thread_pool.h"
 #include "content/public/browser/browser_thread.h"
 #include "shell/browser/ui/gtk/app_indicator_icon_menu.h"
 #include "third_party/skia/include/core/SkBitmap.h"
@@ -157,9 +158,9 @@ namespace gtkui {
 
 AppIndicatorIcon::AppIndicatorIcon(std::string id,
                                    const gfx::ImageSkia& image,
-                                   const base::string16& tool_tip)
-    : id_(id), icon_(nullptr), menu_model_(nullptr), icon_change_count_(0) {
-  std::unique_ptr<base::Environment> env(base::Environment::Create());
+                                   const std::u16string& tool_tip)
+    : id_(id) {
+  auto env = base::Environment::Create();
   desktop_env_ = base::nix::GetDesktopEnvironment(env.get());
 
   EnsureLibAppIndicatorLoaded();
@@ -170,9 +171,8 @@ AppIndicatorIcon::~AppIndicatorIcon() {
   if (icon_) {
     app_indicator_set_status(icon_, APP_INDICATOR_STATUS_PASSIVE);
     g_object_unref(icon_);
-    base::PostTask(
-        FROM_HERE,
-        {base::ThreadPool(), base::MayBlock(), base::TaskPriority::BEST_EFFORT},
+    base::ThreadPool::PostTask(
+        FROM_HERE, {base::MayBlock(), base::TaskPriority::BEST_EFFORT},
         base::BindOnce(&DeleteTempDirectory, temp_dir_));
   }
 }
@@ -194,19 +194,19 @@ void AppIndicatorIcon::SetIcon(const gfx::ImageSkia& image) {
   SkBitmap safe_bitmap = *image.bitmap();
 
   const base::TaskTraits kTraits = {
-      base::ThreadPool(), base::MayBlock(), base::TaskPriority::USER_VISIBLE,
+      base::MayBlock(), base::TaskPriority::USER_VISIBLE,
       base::TaskShutdownBehavior::SKIP_ON_SHUTDOWN};
 
   if (desktop_env_ == base::nix::DESKTOP_ENVIRONMENT_KDE4 ||
       desktop_env_ == base::nix::DESKTOP_ENVIRONMENT_KDE5) {
-    base::PostTaskAndReplyWithResult(
+    base::ThreadPool::PostTaskAndReplyWithResult(
         FROM_HERE, kTraits,
         base::BindOnce(AppIndicatorIcon::WriteKDE4TempImageOnWorkerThread,
                        safe_bitmap, temp_dir_),
         base::BindOnce(&AppIndicatorIcon::SetImageFromFile,
                        weak_factory_.GetWeakPtr()));
   } else {
-    base::PostTaskAndReplyWithResult(
+    base::ThreadPool::PostTaskAndReplyWithResult(
         FROM_HERE, kTraits,
         base::BindOnce(AppIndicatorIcon::WriteUnityTempImageOnWorkerThread,
                        safe_bitmap, icon_change_count_, id_),
@@ -215,7 +215,7 @@ void AppIndicatorIcon::SetIcon(const gfx::ImageSkia& image) {
   }
 }
 
-void AppIndicatorIcon::SetToolTip(const base::string16& tool_tip) {
+void AppIndicatorIcon::SetToolTip(const std::u16string& tool_tip) {
   DCHECK(!tool_tip_.empty());
   tool_tip_ = base::UTF16ToUTF8(tool_tip);
   UpdateClickActionReplacementMenuItem();
@@ -282,8 +282,9 @@ AppIndicatorIcon::WriteKDE4TempImageOnWorkerThread(
                                std::max(bitmap.height(), kMinimalSize));
   scaled_bitmap.eraseARGB(0, 0, 0, 0);
   SkCanvas canvas(scaled_bitmap);
-  canvas.drawBitmap(bitmap, (scaled_bitmap.width() - bitmap.width()) / 2,
-                    (scaled_bitmap.height() - bitmap.height()) / 2);
+  canvas.drawImage(bitmap.asImage(),
+                   (scaled_bitmap.width() - bitmap.width()) / 2,
+                   (scaled_bitmap.height() - bitmap.height()) / 2);
 
   base::FilePath image_path = image_dir.Append(icon_name + ".png");
   if (!WriteFile(image_path, scaled_bitmap))
@@ -340,9 +341,8 @@ void AppIndicatorIcon::SetImageFromFile(const SetImageFromFileParams& params) {
   }
 
   if (temp_dir_ != params.parent_temp_dir) {
-    base::PostTask(
-        FROM_HERE,
-        {base::ThreadPool(), base::MayBlock(), base::TaskPriority::BEST_EFFORT},
+    base::ThreadPool::PostTask(
+        FROM_HERE, {base::MayBlock(), base::TaskPriority::BEST_EFFORT},
         base::BindOnce(&DeleteTempDirectory, temp_dir_));
     temp_dir_ = params.parent_temp_dir;
   }
@@ -365,8 +365,9 @@ void AppIndicatorIcon::UpdateClickActionReplacementMenuItem() {
   DCHECK(!tool_tip_.empty());
   menu_->UpdateClickActionReplacementMenuItem(
       tool_tip_.c_str(),
-      base::Bind(&AppIndicatorIcon::OnClickActionReplacementMenuItemActivated,
-                 base::Unretained(this)));
+      base::BindRepeating(
+          &AppIndicatorIcon::OnClickActionReplacementMenuItemActivated,
+          base::Unretained(this)));
 }
 
 void AppIndicatorIcon::OnClickActionReplacementMenuItemActivated() {

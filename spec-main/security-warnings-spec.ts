@@ -22,6 +22,7 @@ describe('security warnings', () => {
   let server: http.Server;
   let w: BrowserWindow;
   let useCsp = true;
+  let useTrustedTypes = false;
   let serverUrl: string;
 
   before((done) => {
@@ -48,8 +49,11 @@ describe('security warnings', () => {
             return;
           }
 
-          const cspHeaders = { 'Content-Security-Policy': 'script-src \'self\' \'unsafe-inline\'' };
-          response.writeHead(200, useCsp ? cspHeaders : undefined);
+          const cspHeaders = [
+            ...(useCsp ? ['script-src \'self\' \'unsafe-inline\''] : []),
+            ...(useTrustedTypes ? ['require-trusted-types-for \'script\'; trusted-types *'] : [])
+          ];
+          response.writeHead(200, { 'Content-Security-Policy': cspHeaders });
           response.write(file, 'binary');
           response.end();
         });
@@ -68,6 +72,7 @@ describe('security warnings', () => {
 
   afterEach(async () => {
     useCsp = true;
+    useTrustedTypes = false;
     await closeWindow(w);
     w = null as unknown as any;
   });
@@ -76,7 +81,8 @@ describe('security warnings', () => {
     w = new BrowserWindow({
       show: false,
       webPreferences: {
-        nodeIntegration: true
+        nodeIntegration: true,
+        contextIsolation: false
       }
     });
 
@@ -117,13 +123,23 @@ describe('security warnings', () => {
       it('should warn about insecure Content-Security-Policy', async () => {
         w = new BrowserWindow({
           show: false,
-          webPreferences: {
-            enableRemoteModule: false,
-            ...webPreferences
-          }
+          webPreferences
         });
 
         useCsp = false;
+        w.loadURL(`${serverUrl}/base-page-security.html`);
+        const [,, message] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning);
+        expect(message).to.include('Insecure Content-Security-Policy');
+      });
+
+      it('should warn about insecure Content-Security-Policy (Trusted Types)', async () => {
+        w = new BrowserWindow({
+          show: false,
+          webPreferences
+        });
+
+        useCsp = false;
+        useTrustedTypes = true;
         w.loadURL(`${serverUrl}/base-page-security.html`);
         const [,, message] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning);
         expect(message).to.include('Insecure Content-Security-Policy');
@@ -185,7 +201,7 @@ describe('security warnings', () => {
       it('should warn about insecure resources', async () => {
         w = new BrowserWindow({
           show: false,
-          webPreferences: { ...webPreferences }
+          webPreferences
         });
 
         w.loadURL(`${serverUrl}/insecure-resources.html`);
@@ -203,30 +219,9 @@ describe('security warnings', () => {
         const [,, message] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning);
         expect(message).to.not.include('insecure-resources.html');
       });
-
-      it('should warn about enabled remote module with remote content', async () => {
-        w = new BrowserWindow({
-          show: false,
-          webPreferences
-        });
-
-        w.loadURL(`${serverUrl}/base-page-security.html`);
-        const [,, message] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning);
-        expect(message).to.include('enableRemoteModule');
-      });
-
-      it('should not warn about enabled remote module with remote content from localhost', async () => {
-        w = new BrowserWindow({
-          show: false,
-          webPreferences
-        });
-        w.loadURL(`${serverUrl}/base-page-security-onload-message.html`);
-        const [,, message] = await emittedUntil(w.webContents, 'console-message', isLoaded);
-        expect(message).to.not.include('enableRemoteModule');
-      });
     });
   };
 
-  generateSpecs('without sandbox', {});
-  generateSpecs('with sandbox', { sandbox: true });
+  generateSpecs('without sandbox', { contextIsolation: false });
+  generateSpecs('with sandbox', { sandbox: true, contextIsolation: false });
 });

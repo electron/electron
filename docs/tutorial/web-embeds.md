@@ -20,7 +20,7 @@ and only allow the capabilities you want to support.
 ### WebViews
 
 > Important Note:
-[we do not recommend you to use use WebViews](../api/webview-tag.md#warning),
+[we do not recommend you to use WebViews](../api/webview-tag.md#warning),
 as this tag undergoes dramatic architectural changes that may affect stability
 of your application. Consider switching to alternatives, like `iframe` and
 Electron's `BrowserView`, or an architecture that avoids embedded content

@@ -9,15 +9,14 @@
 // modules must be passed from outside, all included files must be plain JS.
 
 import { WEB_VIEW_CONSTANTS } from '@electron/internal/renderer/web-view/web-view-constants';
-import { WebViewImpl as IWebViewImpl, webViewImplModule } from '@electron/internal/renderer/web-view/web-view-impl';
+import { WebViewImpl, WebViewImplHooks, setupMethods } from '@electron/internal/renderer/web-view/web-view-impl';
 import type { SrcAttribute } from '@electron/internal/renderer/web-view/web-view-attributes';
 
-// Return a WebViewElement class that is defined in this context.
-const defineWebViewElement = (v8Util: NodeJS.V8UtilBinding, webViewImpl: typeof webViewImplModule) => {
-  const { guestViewInternal, WebViewImpl } = webViewImpl;
-  return class WebViewElement extends HTMLElement {
-    public internalInstanceId?: number;
+const internals = new WeakMap<HTMLElement, WebViewImpl>();
 
+// Return a WebViewElement class that is defined in this context.
+const defineWebViewElement = (hooks: WebViewImplHooks) => {
+  return class WebViewElement extends HTMLElement {
     static get observedAttributes () {
       return [
         WEB_VIEW_CONSTANTS.ATTRIBUTE_PARTITION,
@@ -29,7 +28,6 @@ const defineWebViewElement = (v8Util: NodeJS.V8UtilBinding, webViewImpl: typeof 
         WEB_VIEW_CONSTANTS.ATTRIBUTE_PLUGINS,
         WEB_VIEW_CONSTANTS.ATTRIBUTE_DISABLEWEBSECURITY,
         WEB_VIEW_CONSTANTS.ATTRIBUTE_ALLOWPOPUPS,
-        WEB_VIEW_CONSTANTS.ATTRIBUTE_ENABLEREMOTEMODULE,
         WEB_VIEW_CONSTANTS.ATTRIBUTE_PRELOAD,
         WEB_VIEW_CONSTANTS.ATTRIBUTE_BLINKFEATURES,
         WEB_VIEW_CONSTANTS.ATTRIBUTE_DISABLEBLINKFEATURES,
@@ -39,62 +37,66 @@ const defineWebViewElement = (v8Util: NodeJS.V8UtilBinding, webViewImpl: typeof 
 
     constructor () {
       super();
-      const internal = new WebViewImpl(this);
-      internal.dispatchEventInMainWorld = (eventName, props) => {
-        const event = new Event(eventName);
-        Object.assign(event, props);
-        return internal.webviewNode.dispatchEvent(event);
-      };
-      v8Util.setHiddenValue(this, 'internal', internal);
+      internals.set(this, new WebViewImpl(this, hooks));
+    }
+
+    getWebContentsId () {
+      const internal = internals.get(this);
+      if (!internal || !internal.guestInstanceId) {
+        throw new Error(WEB_VIEW_CONSTANTS.ERROR_MSG_NOT_ATTACHED);
+      }
+      return internal.guestInstanceId;
     }
 
     connectedCallback () {
-      const internal = v8Util.getHiddenValue<IWebViewImpl>(this, 'internal');
+      const internal = internals.get(this);
       if (!internal) {
         return;
       }
       if (!internal.elementAttached) {
-        guestViewInternal.registerEvents(internal, internal.viewInstanceId);
+        hooks.guestViewInternal.registerEvents(internal.viewInstanceId, {
+          dispatchEvent: internal.dispatchEvent.bind(internal),
+          reset: internal.reset.bind(internal)
+        });
         internal.elementAttached = true;
         (internal.attributes.get(WEB_VIEW_CONSTANTS.ATTRIBUTE_SRC) as SrcAttribute).parse();
       }
     }
 
     attributeChangedCallback (name: string, oldValue: any, newValue: any) {
-      const internal = v8Util.getHiddenValue<IWebViewImpl>(this, 'internal');
+      const internal = internals.get(this);
       if (internal) {
         internal.handleWebviewAttributeMutation(name, oldValue, newValue);
       }
     }
 
     disconnectedCallback () {
-      const internal = v8Util.getHiddenValue<IWebViewImpl>(this, 'internal');
+      const internal = internals.get(this);
       if (!internal) {
         return;
       }
-      guestViewInternal.deregisterEvents(internal.viewInstanceId);
+      hooks.guestViewInternal.deregisterEvents(internal.viewInstanceId);
       if (internal.guestInstanceId) {
-        guestViewInternal.detachGuest(internal.guestInstanceId);
+        hooks.guestViewInternal.detachGuest(internal.guestInstanceId);
       }
       internal.elementAttached = false;
-      this.internalInstanceId = 0;
       internal.reset();
     }
   };
 };
 
 // Register <webview> custom element.
-const registerWebViewElement = (v8Util: NodeJS.V8UtilBinding, webViewImpl: typeof webViewImplModule) => {
+const registerWebViewElement = (hooks: WebViewImplHooks) => {
   // I wish eslint wasn't so stupid, but it is
   // eslint-disable-next-line
-  const WebViewElement = defineWebViewElement(v8Util, webViewImpl) as unknown as typeof ElectronInternal.WebViewElement
+  const WebViewElement = defineWebViewElement(hooks) as unknown as typeof ElectronInternal.WebViewElement
 
-  webViewImpl.setupMethods(WebViewElement);
+  setupMethods(WebViewElement, hooks);
 
   // The customElements.define has to be called in a special scope.
-  webViewImpl.webFrame.allowGuestViewElementDefinition(window, () => {
+  hooks.allowGuestViewElementDefinition(window, () => {
     window.customElements.define('webview', WebViewElement);
-    (window as any).WebView = WebViewElement;
+    window.WebView = WebViewElement;
 
     // Delete the callbacks so developers cannot call them and produce unexpected
     // behavior.
@@ -110,15 +112,14 @@ const registerWebViewElement = (v8Util: NodeJS.V8UtilBinding, webViewImpl: typeo
 };
 
 // Prepare to register the <webview> element.
-export const setupWebView = (v8Util: NodeJS.V8UtilBinding, webViewImpl: typeof webViewImplModule) => {
+export const setupWebView = (hooks: WebViewImplHooks) => {
   const useCapture = true;
   const listener = (event: Event) => {
     if (document.readyState === 'loading') {
       return;
     }
 
-    webViewImpl.setupAttributes();
-    registerWebViewElement(v8Util, webViewImpl);
+    registerWebViewElement(hooks);
 
     window.removeEventListener(event.type, listener, useCapture);
   };

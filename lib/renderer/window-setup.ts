@@ -182,7 +182,7 @@ class BrowserWindowProxy {
     this.guestId = guestId;
     this._location = new LocationProxy(guestId);
 
-    ipcRendererInternal.onceMessageFromMain(`${IPC_MESSAGES.GUEST_WINDOW_MANAGER_WINDOW_CLOSED}_${guestId}`, () => {
+    ipcRendererInternal.once(`${IPC_MESSAGES.GUEST_WINDOW_MANAGER_WINDOW_CLOSED}_${guestId}`, () => {
       removeProxy(guestId);
       this.closed = true;
     });
@@ -243,9 +243,8 @@ class BrowserWindowProxy {
 }
 
 export const windowSetup = (
-  guestInstanceId: number, openerId: number, isHiddenPage: boolean, usesNativeWindowOpen: boolean, rendererProcessReuseEnabled: boolean
-) => {
-  if (!process.sandboxed && guestInstanceId == null) {
+  guestInstanceId: number, openerId: number, isHiddenPage: boolean, usesNativeWindowOpen: boolean) => {
+  if (!process.sandboxed && !guestInstanceId) {
     // Override default window.close.
     window.close = function () {
       ipcRendererInternal.send(IPC_MESSAGES.BROWSER_WINDOW_CLOSE);
@@ -270,7 +269,24 @@ export const windowSetup = (
     if (contextIsolationEnabled) internalContextBridge.overrideGlobalValueWithDynamicPropsFromIsolatedWorld(['open'], window.open);
   }
 
-  if (openerId != null) {
+  // If this window uses nativeWindowOpen, but its opener window does not, we
+  // need to proxy window.opener in order to let the page communicate with its
+  // opener.
+  // Additionally, windows opened from a nativeWindowOpen child of a
+  // non-nativeWindowOpen parent will initially have their WebPreferences
+  // copied from their opener before having them updated, meaning openerId is
+  // initially incorrect. We detect this situation by checking for
+  // window.opener, which will be non-null for a natively-opened child, so we
+  // can ignore the openerId in that case, since it's incorrectly copied from
+  // the parent. This is, uh, confusing, so here's a diagram that will maybe
+  // help?
+  //
+  // [ grandparent window ] --> [ parent window ] --> [ child window ]
+  //     n.W.O = false             n.W.O = true         n.W.O = true
+  //        id = 1                    id = 2               id = 3
+  //  openerId = 0              openerId = 1         openerId = 1  <- !!wrong!!
+  //    opener = null             opener = null        opener = [parent window]
+  if (openerId && !window.opener) {
     window.opener = getOrCreateProxy(openerId);
     if (contextIsolationEnabled) internalContextBridge.overrideGlobalValueWithDynamicPropsFromIsolatedWorld(['opener'], window.opener);
   }
@@ -281,8 +297,8 @@ export const windowSetup = (
   };
   if (contextIsolationEnabled) internalContextBridge.overrideGlobalValueFromIsolatedWorld(['prompt'], window.prompt);
 
-  if (!usesNativeWindowOpen || openerId != null) {
-    ipcRendererInternal.onMessageFromMain(IPC_MESSAGES.GUEST_WINDOW_POSTMESSAGE, function (
+  if (!usesNativeWindowOpen || openerId) {
+    ipcRendererInternal.on(IPC_MESSAGES.GUEST_WINDOW_POSTMESSAGE, function (
       _event, sourceId: number, message: any, sourceOrigin: string
     ) {
       // Manually dispatch event instead of using postMessage because we also need to
@@ -302,31 +318,7 @@ export const windowSetup = (
     });
   }
 
-  if (!process.sandboxed && !rendererProcessReuseEnabled) {
-    window.history.back = function () {
-      ipcRendererInternal.send(IPC_MESSAGES.NAVIGATION_CONTROLLER_GO_BACK);
-    };
-    if (contextIsolationEnabled) internalContextBridge.overrideGlobalValueFromIsolatedWorld(['history', 'back'], window.history.back);
-
-    window.history.forward = function () {
-      ipcRendererInternal.send(IPC_MESSAGES.NAVIGATION_CONTROLLER_GO_FORWARD);
-    };
-    if (contextIsolationEnabled) internalContextBridge.overrideGlobalValueFromIsolatedWorld(['history', 'forward'], window.history.forward);
-
-    window.history.go = function (offset: number) {
-      ipcRendererInternal.send(IPC_MESSAGES.NAVIGATION_CONTROLLER_GO_TO_OFFSET, +offset);
-    };
-    if (contextIsolationEnabled) internalContextBridge.overrideGlobalValueFromIsolatedWorld(['history', 'go'], window.history.go);
-
-    const getHistoryLength = () => ipcRendererInternal.sendSync(IPC_MESSAGES.NAVIGATION_CONTROLLER_LENGTH);
-    Object.defineProperty(window.history, 'length', {
-      get: getHistoryLength,
-      set () {}
-    });
-    if (contextIsolationEnabled) internalContextBridge.overrideGlobalPropertyFromIsolatedWorld(['history', 'length'], getHistoryLength);
-  }
-
-  if (guestInstanceId != null) {
+  if (guestInstanceId) {
     // Webview `document.visibilityState` tracks window visibility (and ignores
     // the actual <webview> element visibility) for backwards compatibility.
     // See discussion in #9178.
@@ -337,7 +329,7 @@ export const windowSetup = (
     let cachedVisibilityState = isHiddenPage ? 'hidden' : 'visible';
 
     // Subscribe to visibilityState changes.
-    ipcRendererInternal.onMessageFromMain(IPC_MESSAGES.GUEST_INSTANCE_VISIBILITY_CHANGE, function (_event, visibilityState: VisibilityState) {
+    ipcRendererInternal.on(IPC_MESSAGES.GUEST_INSTANCE_VISIBILITY_CHANGE, function (_event, visibilityState: VisibilityState) {
       if (cachedVisibilityState !== visibilityState) {
         cachedVisibilityState = visibilityState;
         document.dispatchEvent(new Event('visibilitychange'));

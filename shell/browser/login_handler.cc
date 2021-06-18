@@ -4,13 +4,9 @@
 
 #include "shell/browser/login_handler.h"
 
-#include <memory>
-#include <string>
 #include <utility>
-#include <vector>
 
 #include "base/callback.h"
-#include "base/strings/string16.h"
 #include "base/threading/sequenced_task_runner_handle.h"
 #include "gin/arguments.h"
 #include "gin/dictionary.h"
@@ -56,7 +52,7 @@ void LoginHandler::EmitEvent(
 
   api::WebContents* api_web_contents = api::WebContents::From(web_contents());
   if (!api_web_contents) {
-    std::move(auth_required_callback_).Run(base::nullopt);
+    std::move(auth_required_callback_).Run(absl::nullopt);
     return;
   }
 
@@ -75,7 +71,7 @@ void LoginHandler::EmitEvent(
                              base::BindOnce(&LoginHandler::CallbackFromJS,
                                             weak_factory_.GetWeakPtr()));
   if (!default_prevented && auth_required_callback_) {
-    std::move(auth_required_callback_).Run(base::nullopt);
+    std::move(auth_required_callback_).Run(absl::nullopt);
   }
 }
 
@@ -83,9 +79,9 @@ LoginHandler::~LoginHandler() = default;
 
 void LoginHandler::CallbackFromJS(gin::Arguments* args) {
   if (auth_required_callback_) {
-    base::string16 username, password;
+    std::u16string username, password;
     if (!args->GetNext(&username) || !args->GetNext(&password)) {
-      std::move(auth_required_callback_).Run(base::nullopt);
+      std::move(auth_required_callback_).Run(absl::nullopt);
       return;
     }
     std::move(auth_required_callback_)

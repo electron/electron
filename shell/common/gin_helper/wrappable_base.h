@@ -36,7 +36,7 @@ class WrappableBase {
   WrappableBase& operator=(const WrappableBase&) = delete;
   virtual ~WrappableBase();
 
-  // Retrieve the v8 wrapper object cooresponding to this object.
+  // Retrieve the v8 wrapper object corresponding to this object.
   v8::Local<v8::Object> GetWrapper() const;
   v8::MaybeLocal<v8::Object> GetWrapper(v8::Isolate* isolate) const;
 

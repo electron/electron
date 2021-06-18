@@ -1,0 +1,10 @@
+{
+  "name": "MV3 Service Worker",
+  "description": "Test for extension service worker support.",
+  "version": "1.0",
+  "manifest_version": 3,
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": ["scripting"]
+}

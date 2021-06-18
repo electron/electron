@@ -24,6 +24,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/common/content_paths.h"
 #include "electron/buildflags/buildflags.h"
+#include "shell/browser/api/electron_api_app.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/electron_command_line.h"
 #include "shell/common/gin_converters/file_path_converter.h"
@@ -87,6 +88,8 @@
 
 #define ELECTRON_DESKTOP_CAPTURER_MODULE(V) V(electron_browser_desktop_capturer)
 
+#define ELECTRON_TESTING_MODULE(V) V(electron_common_testing)
+
 // This is used to load built-in modules. Instead of using
 // __attribute__((constructor)), we call the _register_<modname>
 // function for each built-in modules explicitly. This is only
@@ -99,6 +102,9 @@ ELECTRON_VIEWS_MODULES(V)
 #endif
 #if BUILDFLAG(ENABLE_DESKTOP_CAPTURER)
 ELECTRON_DESKTOP_CAPTURER_MODULE(V)
+#endif
+#if DCHECK_IS_ON()
+ELECTRON_TESTING_MODULE(V)
 #endif
 #undef V
 
@@ -129,19 +135,6 @@ void stop_and_close_uv_loop(uv_loop_t* loop) {
 }
 
 bool g_is_initialized = false;
-
-bool IsPackagedApp() {
-  base::FilePath exe_path;
-  base::PathService::Get(base::FILE_EXE, &exe_path);
-  base::FilePath::StringType base_name =
-      base::ToLowerASCII(exe_path.BaseName().value());
-
-#if defined(OS_WIN)
-  return base_name != FILE_PATH_LITERAL("electron.exe");
-#else
-  return base_name != FILE_PATH_LITERAL("electron");
-#endif
-}
 
 void V8FatalErrorCallback(const char* location, const char* message) {
   LOG(ERROR) << "Fatal error in V8: " << location << " " << message;
@@ -174,6 +167,8 @@ bool AllowWasmCodeGenerationCallback(v8::Local<v8::Context> context,
 void ErrorMessageListener(v8::Local<v8::Message> message,
                           v8::Local<v8::Value> data) {
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  gin_helper::MicrotasksScope microtasks_scope(
+      isolate, v8::MicrotasksScope::kDoNotRunMicrotasks);
   node::Environment* env = node::Environment::GetCurrent(isolate);
 
   if (env) {
@@ -214,7 +209,7 @@ void SetNodeCliFlags() {
 
   for (const auto& arg : argv) {
 #if defined(OS_WIN)
-    const auto& option = base::UTF16ToUTF8(arg);
+    const auto& option = base::WideToUTF8(arg);
 #else
     const auto& option = arg;
 #endif
@@ -255,7 +250,7 @@ void SetNodeOptions(base::Environment* env) {
     std::vector<std::string> parts = base::SplitString(
         options, " ", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
 
-    bool is_packaged_app = IsPackagedApp();
+    bool is_packaged_app = electron::api::App::IsPackaged();
 
     for (const auto& part : parts) {
       // Strip off values passed to individual NODE_OPTIONs
@@ -302,7 +297,7 @@ base::FilePath GetResourcesPath() {
 }  // namespace
 
 NodeBindings::NodeBindings(BrowserEnvironment browser_env)
-    : browser_env_(browser_env), weak_factory_(this) {
+    : browser_env_(browser_env) {
   if (browser_env == BrowserEnvironment::kWorker) {
     uv_loop_init(&worker_loop_);
     uv_loop_ = &worker_loop_;
@@ -339,6 +334,9 @@ void NodeBindings::RegisterBuiltinModules() {
 #if BUILDFLAG(ENABLE_DESKTOP_CAPTURER)
   ELECTRON_DESKTOP_CAPTURER_MODULE(V)
 #endif
+#if DCHECK_IS_ON()
+  ELECTRON_TESTING_MODULE(V)
+#endif
 #undef V
 }
 
@@ -363,21 +361,20 @@ void NodeBindings::Initialize() {
   // Parse and set Node.js cli flags.
   SetNodeCliFlags();
 
-  // pass non-null program name to argv so it doesn't crash
-  // trying to index into a nullptr
-  int argc = 1;
-  int exec_argc = 0;
-  const char* prog_name = "electron";
-  const char** argv = &prog_name;
-  const char** exec_argv = nullptr;
-
-  std::unique_ptr<base::Environment> env(base::Environment::Create());
+  auto env = base::Environment::Create();
   SetNodeOptions(env.get());
 
-  // TODO(codebytere): this is going to be deprecated in the near future
-  // in favor of Init(std::vector<std::string>* argv,
-  //        std::vector<std::string>* exec_argv)
-  node::Init(&argc, argv, &exec_argc, &exec_argv);
+  std::vector<std::string> argv = {"electron"};
+  std::vector<std::string> exec_argv;
+  std::vector<std::string> errors;
+
+  int exit_code = node::InitializeNodeWithArgs(&argv, &exec_argv, &errors);
+
+  for (const std::string& error : errors)
+    fprintf(stderr, "%s: %s\n", argv[0].c_str(), error.c_str());
+
+  if (exit_code != 0)
+    exit(exit_code);
 
 #if defined(OS_WIN)
   // uv_init overrides error mode to suppress the default crash dialog, bring
@@ -441,8 +438,9 @@ node::Environment* NodeBindings::CreateEnvironment(
                      node::EnvironmentFlags::kNoRegisterESMLoader |
                      node::EnvironmentFlags::kNoInitializeInspector;
     v8::TryCatch try_catch(context->GetIsolate());
-    env = node::CreateEnvironment(isolate_data_, context, args, exec_args,
-                                  (node::EnvironmentFlags::Flags)flags);
+    env = node::CreateEnvironment(
+        isolate_data_, context, args, exec_args,
+        static_cast<node::EnvironmentFlags::Flags>(flags));
     DCHECK(env);
 
     // This will only be caught when something has gone terrible wrong as all
@@ -526,11 +524,21 @@ node::Environment* NodeBindings::CreateEnvironment(
 }
 
 void NodeBindings::LoadEnvironment(node::Environment* env) {
-  node::LoadEnvironment(env);
+  node::LoadEnvironment(env, node::StartExecutionCallback{});
   gin_helper::EmitEvent(env->isolate(), env->process_object(), "loaded");
 }
 
 void NodeBindings::PrepareMessageLoop() {
+#if !defined(OS_WIN)
+  int handle = uv_backend_fd(uv_loop_);
+
+  // If the backend fd hasn't changed, don't proceed.
+  if (handle == handle_)
+    return;
+
+  handle_ = handle;
+#endif
+
   // Add dummy handle for libuv, otherwise libuv would quit when there is
   // nothing to do.
   uv_async_init(uv_loop_, dummy_uv_handle_.get(), nullptr);
@@ -564,8 +572,13 @@ void NodeBindings::UvRunOnce() {
   // Enter node context while dealing with uv events.
   v8::Context::Scope context_scope(env->context());
 
-  // Perform microtask checkpoint after running JavaScript.
-  gin_helper::MicrotasksScope microtasks_scope(env->isolate());
+  // Node.js expects `kExplicit` microtasks policy and will run microtasks
+  // checkpoints after every call into JavaScript. Since we use a different
+  // policy in the renderer - switch to `kExplicit` and then drop back to the
+  // previous policy value.
+  auto old_policy = env->isolate()->GetMicrotasksPolicy();
+  DCHECK_EQ(v8::MicrotasksScope::GetCurrentDepth(env->isolate()), 0);
+  env->isolate()->SetMicrotasksPolicy(v8::MicrotasksPolicy::kExplicit);
 
   if (browser_env_ != BrowserEnvironment::kBrowser)
     TRACE_EVENT_BEGIN0("devtools.timeline", "FunctionCall");
@@ -575,6 +588,8 @@ void NodeBindings::UvRunOnce() {
 
   if (browser_env_ != BrowserEnvironment::kBrowser)
     TRACE_EVENT_END0("devtools.timeline", "FunctionCall");
+
+  env->isolate()->SetMicrotasksPolicy(old_policy);
 
   if (r == 0)
     base::RunLoop().QuitWhenIdle();  // Quit from uv.

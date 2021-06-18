@@ -4,9 +4,6 @@
 
 #include "shell/browser/ui/views/submenu_button.h"
 
-#include <memory>
-#include <utility>
-
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "ui/accessibility/ax_enums.mojom.h"
@@ -20,9 +17,10 @@
 
 namespace electron {
 
-SubmenuButton::SubmenuButton(const base::string16& title,
+SubmenuButton::SubmenuButton(PressedCallback callback,
+                             const std::u16string& title,
                              const SkColor& background_color)
-    : views::MenuButton(PressedCallback(), gfx::RemoveAccelerator(title)),
+    : views::MenuButton(callback, gfx::RemoveAccelerator(title)),
       background_color_(background_color) {
 #if defined(OS_LINUX)
   // Dont' use native style border.
@@ -34,29 +32,14 @@ SubmenuButton::SubmenuButton(const base::string16& title,
     gfx::Canvas::SizeStringInt(GetText(), gfx::FontList(), &text_width_,
                                &text_height_, 0, 0);
 
-  SetInkDropMode(InkDropMode::ON);
-  SetInkDropBaseColor(
+  views::InkDropHost* ink_drop = views::InkDrop::Get(this);
+  ink_drop->SetMode(views::InkDropHost::InkDropMode::ON);
+  ink_drop->SetBaseColor(
       color_utils::BlendTowardMaxContrast(background_color_, 0x81));
+  views::InkDrop::UseInkDropForFloodFillRipple(ink_drop, false, true);
 }
 
 SubmenuButton::~SubmenuButton() = default;
-
-std::unique_ptr<views::InkDropRipple> SubmenuButton::CreateInkDropRipple()
-    const {
-  std::unique_ptr<views::InkDropRipple> ripple(
-      new views::FloodFillInkDropRipple(
-          size(), GetInkDropCenterBasedOnLastEvent(), GetInkDropBaseColor(),
-          GetInkDropVisibleOpacity()));
-  return ripple;
-}
-
-std::unique_ptr<views::InkDrop> SubmenuButton::CreateInkDrop() {
-  std::unique_ptr<views::InkDropImpl> ink_drop =
-      views::Button::CreateDefaultInkDropImpl();
-  ink_drop->SetShowHighlightOnHover(false);
-  ink_drop->SetShowHighlightOnFocus(true);
-  return std::move(ink_drop);
-}
 
 void SubmenuButton::SetAcceleratorVisibility(bool visible) {
   if (visible == show_underline_)
@@ -88,12 +71,12 @@ void SubmenuButton::PaintButtonContents(gfx::Canvas* canvas) {
   }
 }
 
-bool SubmenuButton::GetUnderlinePosition(const base::string16& text,
-                                         base::char16* accelerator,
+bool SubmenuButton::GetUnderlinePosition(const std::u16string& text,
+                                         char16_t* accelerator,
                                          int* start,
                                          int* end) const {
   int pos, span;
-  base::string16 trimmed =
+  std::u16string trimmed =
       gfx::LocateAndRemoveAcceleratorChar(text, &pos, &span);
   if (pos > -1 && span != 0) {
     *accelerator = base::ToUpperASCII(trimmed[pos]);
@@ -105,7 +88,7 @@ bool SubmenuButton::GetUnderlinePosition(const base::string16& text,
   return false;
 }
 
-void SubmenuButton::GetCharacterPosition(const base::string16& text,
+void SubmenuButton::GetCharacterPosition(const std::u16string& text,
                                          int index,
                                          int* pos) const {
   int height = 0;

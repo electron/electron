@@ -47,7 +47,8 @@ PowerMonitor::PowerMonitor(v8::Isolate* isolate) {
       &PowerMonitor::ShouldShutdown, base::Unretained(this)));
 #endif
 
-  base::PowerMonitor::AddObserver(this);
+  base::PowerMonitor::AddPowerStateObserver(this);
+  base::PowerMonitor::AddPowerSuspendObserver(this);
 
 #if defined(OS_MAC) || defined(OS_WIN)
   InitPlatformSpecificMonitors();
@@ -55,7 +56,8 @@ PowerMonitor::PowerMonitor(v8::Isolate* isolate) {
 }
 
 PowerMonitor::~PowerMonitor() {
-  base::PowerMonitor::RemoveObserver(this);
+  base::PowerMonitor::RemovePowerStateObserver(this);
+  base::PowerMonitor::RemovePowerSuspendObserver(this);
 }
 
 bool PowerMonitor::ShouldShutdown() {

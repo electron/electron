@@ -48,7 +48,7 @@ class GlobalMenuBarRegistrarX11 {
                      GObject*,
                      GParamSpec*);
 
-  GDBusProxy* registrar_proxy_;
+  GDBusProxy* registrar_proxy_ = nullptr;
 
   // x11::Window which want to be registered, but haven't yet been because
   // we're waiting for the proxy to become available.

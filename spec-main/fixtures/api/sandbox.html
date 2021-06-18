@@ -48,8 +48,9 @@
       },
       'exit-event': () => {
         const {ipcRenderer} = require('electron')
+        const currentLocation = location.href.slice();
         process.on('exit', () => {
-          ipcRenderer.send('answer', location.href)
+          ipcRenderer.send('answer', currentLocation)
         })
         location.assign('http://www.google.com')
       },

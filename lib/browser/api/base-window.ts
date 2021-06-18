@@ -37,13 +37,18 @@ Object.defineProperty(BaseWindow.prototype, 'simpleFullScreen', {
   set: function (simple) { this.setSimpleFullScreen(simple); }
 });
 
+Object.defineProperty(BaseWindow.prototype, 'focusable', {
+  get: function () { return this.isFocusable(); },
+  set: function (focusable) { this.setFocusable(focusable); }
+});
+
 Object.defineProperty(BaseWindow.prototype, 'kiosk', {
   get: function () { return this.isKiosk(); },
   set: function (kiosk) { this.setKiosk(kiosk); }
 });
 
 Object.defineProperty(BaseWindow.prototype, 'documentEdited', {
-  get: function () { return this.isFullscreen(); },
+  get: function () { return this.isDocumentEdited(); },
   set: function (edited) { this.setDocumentEdited(edited); }
 });
 

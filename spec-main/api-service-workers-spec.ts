@@ -1,26 +1,27 @@
 import * as fs from 'fs';
 import * as http from 'http';
 import * as path from 'path';
-import { session, BrowserWindow } from 'electron/main';
+import { session, webContents, WebContents } from 'electron/main';
 import { expect } from 'chai';
 import { v4 } from 'uuid';
 import { AddressInfo } from 'net';
-import { closeWindow } from './window-helpers';
 import { emittedOnce, emittedNTimes } from './events-helpers';
-import { ifdescribe } from './spec-helpers';
 
 const partition = 'service-workers-spec';
-const uuid = v4();
 
 describe('session.serviceWorkers', () => {
   let ses: Electron.Session;
   let server: http.Server;
   let baseUrl: string;
-  let w: BrowserWindow;
+  let w: WebContents = null as unknown as WebContents;
 
   before(async () => {
     ses = session.fromPartition(partition);
     await ses.clearStorageData();
+  });
+
+  beforeEach(async () => {
+    const uuid = v4();
 
     server = http.createServer((req, res) => {
       // /{uuid}/{file}
@@ -31,26 +32,20 @@ describe('session.serviceWorkers', () => {
       }
       res.end(fs.readFileSync(path.resolve(__dirname, 'fixtures', 'api', 'service-workers', file)));
     });
-    await new Promise(resolve => {
+    await new Promise<void>(resolve => {
       server.listen(0, '127.0.0.1', () => {
         baseUrl = `http://localhost:${(server.address() as AddressInfo).port}/${uuid}`;
         resolve();
       });
     });
-  });
 
-  beforeEach(() => {
-    w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+    w = (webContents as any).create({ session: ses });
   });
 
   afterEach(async () => {
-    await ses.clearStorageData();
-    await closeWindow(w);
-    w = null as any;
-  });
-
-  after(async () => {
+    (w as any).destroy();
     server.close();
+    await ses.clearStorageData();
   });
 
   describe('getAllRunning()', () => {
@@ -66,8 +61,7 @@ describe('session.serviceWorkers', () => {
     });
   });
 
-  // TODO (jkleinsc) - reenable this test once https://github.com/electron/electron/issues/26043 is resolved
-  ifdescribe(!process.arch.includes('arm'))('getFromVersionID()', () => {
+  describe('getFromVersionID()', () => {
     it('should report the correct script url and scope', async () => {
       const eventInfo = await emittedOnce(ses.serviceWorkers, 'console-message', () => w.loadURL(`${baseUrl}/index.html`));
       const details: Electron.MessageDetails = eventInfo[1];

@@ -12,6 +12,7 @@
 #include "base/bind.h"
 #include "base/macros.h"
 #include "base/strings/strcat.h"
+#include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/post_task.h"
 #include "chrome/common/extensions/extension_metrics.h"
@@ -38,10 +39,10 @@ class ManagementSetEnabledFunctionInstallPromptDelegate
       content::WebContents* web_contents,
       content::BrowserContext* browser_context,
       const extensions::Extension* extension,
-      const base::Callback<void(bool)>& callback) {
+      base::OnceCallback<void(bool)> callback) {
     // TODO(sentialx): emit event
   }
-  ~ManagementSetEnabledFunctionInstallPromptDelegate() override {}
+  ~ManagementSetEnabledFunctionInstallPromptDelegate() override = default;
 
  private:
   base::WeakPtrFactory<ManagementSetEnabledFunctionInstallPromptDelegate>
@@ -60,7 +61,7 @@ class ManagementUninstallFunctionUninstallDialogDelegate
     // TODO(sentialx): emit event
   }
 
-  ~ManagementUninstallFunctionUninstallDialogDelegate() override {}
+  ~ManagementUninstallFunctionUninstallDialogDelegate() override = default;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(ManagementUninstallFunctionUninstallDialogDelegate);
@@ -68,9 +69,9 @@ class ManagementUninstallFunctionUninstallDialogDelegate
 
 }  // namespace
 
-ElectronManagementAPIDelegate::ElectronManagementAPIDelegate() {}
+ElectronManagementAPIDelegate::ElectronManagementAPIDelegate() = default;
 
-ElectronManagementAPIDelegate::~ElectronManagementAPIDelegate() {}
+ElectronManagementAPIDelegate::~ElectronManagementAPIDelegate() = default;
 
 void ElectronManagementAPIDelegate::LaunchAppFunctionDelegate(
     const extensions::Extension* extension,
@@ -109,10 +110,9 @@ ElectronManagementAPIDelegate::SetEnabledFunctionDelegate(
     content::WebContents* web_contents,
     content::BrowserContext* browser_context,
     const extensions::Extension* extension,
-    const base::Callback<void(bool)>& callback) const {
-  return std::unique_ptr<ManagementSetEnabledFunctionInstallPromptDelegate>(
-      new ManagementSetEnabledFunctionInstallPromptDelegate(
-          web_contents, browser_context, extension, callback));
+    base::OnceCallback<void(bool)> callback) const {
+  return std::make_unique<ManagementSetEnabledFunctionInstallPromptDelegate>(
+      web_contents, browser_context, extension, std::move(callback));
 }
 
 std::unique_ptr<extensions::UninstallDialogDelegate>
@@ -120,9 +120,8 @@ ElectronManagementAPIDelegate::UninstallFunctionDelegate(
     extensions::ManagementUninstallFunctionBase* function,
     const extensions::Extension* target_extension,
     bool show_programmatic_uninstall_ui) const {
-  return std::unique_ptr<extensions::UninstallDialogDelegate>(
-      new ManagementUninstallFunctionUninstallDialogDelegate(
-          function, target_extension, show_programmatic_uninstall_ui));
+  return std::make_unique<ManagementUninstallFunctionUninstallDialogDelegate>(
+      function, target_extension, show_programmatic_uninstall_ui);
 }
 
 bool ElectronManagementAPIDelegate::CreateAppShortcutFunctionDelegate(
@@ -204,7 +203,7 @@ bool ElectronManagementAPIDelegate::UninstallExtension(
     content::BrowserContext* context,
     const std::string& transient_extension_id,
     extensions::UninstallReason reason,
-    base::string16* error) const {
+    std::u16string* error) const {
   // TODO(sentialx): we don't have ExtensionService
   // return extensions::ExtensionSystem::Get(context)
   //     ->extension_service()
@@ -231,4 +230,11 @@ GURL ElectronManagementAPIDelegate::GetIconURL(
                                    grayscale ? "?grayscale=true" : ""));
   CHECK(icon_url.is_valid());
   return icon_url;
+}
+
+GURL ElectronManagementAPIDelegate::GetEffectiveUpdateURL(
+    const extensions::Extension& extension,
+    content::BrowserContext* context) const {
+  // TODO(codebytere): we do not currently support ExtensionManagement.
+  return GURL::EmptyGURL();
 }

@@ -36,6 +36,7 @@ environment:
   ELECTRON_ENABLE_STACK_DUMPING: 1
   MOCHA_REPORTER: mocha-multi-reporters
   MOCHA_MULTI_REPORTERS: mocha-appveyor-reporter, tap
+  GOMA_FALLBACK_ON_AUTH_FAILURE: true
 notifications:
   - provider: Webhook
     url: https://electron-mission-control.herokuapp.com/rest/appveyor-hook

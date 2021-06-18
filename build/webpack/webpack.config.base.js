@@ -61,13 +61,6 @@ module.exports = ({
       );
     }
 
-    if (defines.ENABLE_REMOTE_MODULE === 'false') {
-      ignoredModules.push(
-        '@electron/internal/browser/remote/server',
-        '@electron/internal/renderer/api/remote'
-      );
-    }
-
     if (defines.ENABLE_VIEWS_API === 'false') {
       ignoredModules.push(
         '@electron/internal/browser/api/views/image-view.js'
@@ -163,7 +156,7 @@ if ((globalThis.process || binding.process).argv.includes("--profile-electron-in
         setImmediate: false
       },
       optimization: {
-        minimize: true,
+        minimize: env.mode === 'production',
         minimizer: [
           new TerserPlugin({
             terserOptions: {

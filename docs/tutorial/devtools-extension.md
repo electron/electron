@@ -32,6 +32,7 @@ Using the [React Developer Tools][react-devtools] as an example:
    * on macOS it is `~/Library/Application Support/Google/Chrome/Default/Extensions`.
 1. Pass the location of the extension to the [`ses.loadExtension`][load-extension]
    API. For React Developer Tools `v4.9.0`, it looks something like:
+
    ```javascript
     const { app, session } = require('electron')
     const path = require('path')
@@ -96,7 +97,7 @@ of the extension is not working as expected.
 [devtools-extension]: https://developer.chrome.com/extensions/devtools
 [session]: ../api/session.md
 [react-devtools]: https://chrome.google.com/webstore/detail/react-developer-tools/fmkadmapgofadopljbjfkapdkoienihi
-[load-extension]: ../api/session.md#sesloadextensionpath
+[load-extension]: ../api/session.md#sesloadextensionpath-options
 [extension-structure]: ../api/structures/extension.md
 [remove-extension]: ../api/session.md#sesremoveextensionextensionid
 [electron-devtools-installer]: https://github.com/MarshallOfSound/electron-devtools-installer

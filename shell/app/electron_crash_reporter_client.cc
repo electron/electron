@@ -33,6 +33,10 @@
 #include "base/debug/dump_without_crashing.h"
 #endif
 
+#if defined(OS_WIN)
+#include "base/strings/string_util_win.h"
+#endif
+
 namespace {
 
 ElectronCrashReporterClient* Instance() {
@@ -48,7 +52,7 @@ void ElectronCrashReporterClient::Create() {
 
   // By setting the BREAKPAD_DUMP_LOCATION environment variable, an alternate
   // location to write crash dumps can be set.
-  std::unique_ptr<base::Environment> env(base::Environment::Create());
+  auto env = base::Environment::Create();
   std::string alternate_crash_dump_location;
   base::FilePath crash_dumps_dir_path;
   if (env->GetVar("BREAKPAD_DUMP_LOCATION", &alternate_crash_dump_location)) {
@@ -88,9 +92,9 @@ void ElectronCrashReporterClient::SetGlobalAnnotations(
   global_annotations_ = annotations;
 }
 
-ElectronCrashReporterClient::ElectronCrashReporterClient() {}
+ElectronCrashReporterClient::ElectronCrashReporterClient() = default;
 
-ElectronCrashReporterClient::~ElectronCrashReporterClient() {}
+ElectronCrashReporterClient::~ElectronCrashReporterClient() = default;
 
 #if defined(OS_LINUX)
 void ElectronCrashReporterClient::SetCrashReporterClientIdFromGUID(
@@ -125,19 +129,19 @@ base::FilePath ElectronCrashReporterClient::GetReporterLogFilename() {
 
 #if defined(OS_WIN)
 void ElectronCrashReporterClient::GetProductNameAndVersion(
-    const base::string16& exe_path,
-    base::string16* product_name,
-    base::string16* version,
-    base::string16* special_build,
-    base::string16* channel_name) {
-  *product_name = base::UTF8ToUTF16(ELECTRON_PRODUCT_NAME);
-  *version = base::UTF8ToUTF16(ELECTRON_VERSION_STRING);
+    const std::wstring& exe_path,
+    std::wstring* product_name,
+    std::wstring* version,
+    std::wstring* special_build,
+    std::wstring* channel_name) {
+  *product_name = base::UTF8ToWide(ELECTRON_PRODUCT_NAME);
+  *version = base::UTF8ToWide(ELECTRON_VERSION_STRING);
 }
 #endif
 
 #if defined(OS_WIN)
 bool ElectronCrashReporterClient::GetCrashDumpLocation(
-    base::string16* crash_dir_str) {
+    std::wstring* crash_dir_str) {
   base::FilePath crash_dir;
   if (!base::PathService::Get(electron::DIR_CRASH_DUMPS, &crash_dir))
     return false;
@@ -161,7 +165,7 @@ bool ElectronCrashReporterClient::GetCrashDumpLocation(
 #if defined(OS_MAC) || defined(OS_LINUX)
 bool ElectronCrashReporterClient::GetCrashMetricsLocation(
     base::FilePath* metrics_dir) {
-  return base::PathService::Get(electron::DIR_USER_DATA, metrics_dir);
+  return base::PathService::Get(chrome::DIR_USER_DATA, metrics_dir);
 }
 #endif  // OS_MAC || OS_LINUX
 

@@ -120,7 +120,7 @@ std::string GetDefaultFontForPref(const char* pref_name) {
 
 // Map from script to font.
 // Key comparison uses pointer equality.
-using ScriptFontMap = std::unordered_map<const char*, base::string16>;
+using ScriptFontMap = std::unordered_map<const char*, std::u16string>;
 
 // Map from font family to ScriptFontMap.
 // Key comparison uses pointer equality.
@@ -130,7 +130,7 @@ using FontFamilyMap = std::unordered_map<const char*, ScriptFontMap>;
 // e.g. ("sans-serif", "Zyyy") -> "Arial"
 FontFamilyMap g_font_cache;
 
-base::string16 FetchFont(const char* script, const char* map_name) {
+std::u16string FetchFont(const char* script, const char* map_name) {
   FontFamilyMap::const_iterator it = g_font_cache.find(map_name);
   if (it != g_font_cache.end()) {
     ScriptFontMap::const_iterator it2 = it->second.find(script);
@@ -140,7 +140,7 @@ base::string16 FetchFont(const char* script, const char* map_name) {
 
   std::string pref_name = base::StringPrintf("%s.%s", map_name, script);
   std::string font = GetDefaultFontForPref(pref_name.c_str());
-  base::string16 font16 = base::UTF8ToUTF16(font);
+  std::u16string font16 = base::UTF8ToUTF16(font);
 
   ScriptFontMap& map = g_font_cache[map_name];
   map[script] = font16;
@@ -151,7 +151,7 @@ void FillFontFamilyMap(const char* map_name,
                        blink::web_pref::ScriptFontFamilyMap* map) {
   for (size_t i = 0; i < prefs::kWebKitScriptsForFontFamilyMapsLength; ++i) {
     const char* script = prefs::kWebKitScriptsForFontFamilyMaps[i];
-    base::string16 result = FetchFont(script, map_name);
+    std::u16string result = FetchFont(script, map_name);
     if (!result.empty()) {
       (*map)[script] = result;
     }

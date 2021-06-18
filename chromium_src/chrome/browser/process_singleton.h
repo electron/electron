@@ -9,9 +9,6 @@
 #include <windows.h>
 #endif  // defined(OS_WIN)
 
-#include <set>
-#include <vector>
-
 #include "base/callback.h"
 #include "base/command_line.h"
 #include "base/files/file_path.h"
@@ -127,10 +124,11 @@ class ProcessSingleton {
   NotificationCallback notification_callback_;  // Handler for notifications.
 
 #if defined(OS_WIN)
-  HWND remote_window_;               // The HWND_MESSAGE of another browser.
+  HWND remote_window_ = nullptr;     // The HWND_MESSAGE of another browser.
   base::win::MessageWindow window_;  // The message-only window.
-  bool is_virtualized_;  // Stuck inside Microsoft Softricity VM environment.
-  HANDLE lock_file_;
+  bool is_virtualized_ =
+      false;  // Stuck inside Microsoft Softricity VM environment.
+  HANDLE lock_file_ = INVALID_HANDLE_VALUE;
   base::FilePath user_data_dir_;
   ShouldKillRemoteProcessCallback should_kill_remote_process_callback_;
 #elif defined(OS_POSIX) && !defined(OS_ANDROID)
@@ -157,7 +155,7 @@ class ProcessSingleton {
 
   // Function to call when the other process is hung and needs to be killed.
   // Allows overriding for tests.
-  base::Callback<void(int)> kill_callback_;
+  base::RepeatingCallback<void(int)> kill_callback_;
 
   // Path in file system to the socket.
   base::FilePath socket_path_;
@@ -175,7 +173,7 @@ class ProcessSingleton {
   // because it posts messages between threads.
   class LinuxWatcher;
   scoped_refptr<LinuxWatcher> watcher_;
-  int sock_;
+  int sock_ = -1;
   bool listen_on_ready_ = false;
 #endif
 

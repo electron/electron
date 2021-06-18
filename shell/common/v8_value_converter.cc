@@ -257,7 +257,9 @@ v8::Local<v8::Value> V8ValueConverter::ToArrayBuffer(
   }
   auto context = isolate->GetCurrentContext();
   auto array_buffer = v8::ArrayBuffer::New(isolate, length);
-  memcpy(array_buffer->GetContents().Data(), data, length);
+  std::shared_ptr<v8::BackingStore> backing_store =
+      array_buffer->GetBackingStore();
+  memcpy(backing_store->Data(), data, length);
   // From this point, if something goes wrong(can't find Buffer class for
   // example) we'll simply return a Uint8Array based on the created ArrayBuffer.
   // This can happen if no preload script was specified to the renderer.
@@ -280,7 +282,7 @@ v8::Local<v8::Value> V8ValueConverter::ToArrayBuffer(
   }
 
   v8::Local<v8::Value> args[] = {array_buffer};
-  auto func = v8::Local<v8::Function>::Cast(from_value);
+  auto func = from_value.As<v8::Function>();
   auto result = func->Call(context, v8::Null(isolate), 1, args);
   if (!result.IsEmpty()) {
     return result.ToLocalChecked();
@@ -389,7 +391,7 @@ std::unique_ptr<base::Value> V8ValueConverter::FromV8Array(
       val->CreationContext() != isolate->GetCurrentContext())
     scope = std::make_unique<v8::Context::Scope>(val->CreationContext());
 
-  std::unique_ptr<base::ListValue> result(new base::ListValue());
+  auto result = std::make_unique<base::ListValue>();
 
   // Only fields with integer keys are carried over to the ListValue.
   for (uint32_t i = 0; i < val->Length(); ++i) {

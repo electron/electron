@@ -14,8 +14,6 @@ interface ElectronRenderer {
 
   ReceivePostMessage(string channel, blink.mojom.TransferableMessage message);
 
-  NotifyUserActivation();
-
   TakeHeapSnapshot(handle file) => (bool success);
 };
 
@@ -65,7 +63,6 @@ interface ElectronBrowser {
   // Emits an event from the |ipcRenderer| JavaScript object in the target
   // WebContents's main frame, specified by |web_contents_id|.
   MessageTo(
-    bool internal,
     int32 web_contents_id,
     string channel,
     blink.mojom.CloneableMessage arguments);

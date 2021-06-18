@@ -12,7 +12,6 @@ buildflag_header("buildflags") {
     "ENABLE_DESKTOP_CAPTURER=$enable_desktop_capturer",
     "ENABLE_RUN_AS_NODE=$enable_run_as_node",
     "ENABLE_OSR=$enable_osr",
-    "ENABLE_REMOTE_MODULE=$enable_remote_module",
     "ENABLE_VIEWS_API=$enable_views_api",
     "ENABLE_PDF_VIEWER=$enable_pdf_viewer",
     "ENABLE_TTS=$enable_tts",

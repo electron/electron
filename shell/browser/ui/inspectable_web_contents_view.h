@@ -6,7 +6,8 @@
 #ifndef SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_VIEW_H_
 #define SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_VIEW_H_
 
-#include "base/strings/string16.h"
+#include <string>
+
 #include "ui/gfx/native_widget_types.h"
 
 class DevToolsContentsResizingStrategy;
@@ -23,7 +24,7 @@ class InspectableWebContentsViewDelegate;
 
 class InspectableWebContentsView {
  public:
-  InspectableWebContentsView() : delegate_(nullptr) {}
+  InspectableWebContentsView() {}
   virtual ~InspectableWebContentsView() {}
 
   // The delegate manages its own life.
@@ -51,10 +52,10 @@ class InspectableWebContentsView {
   virtual void SetIsDocked(bool docked, bool activate) = 0;
   virtual void SetContentsResizingStrategy(
       const DevToolsContentsResizingStrategy& strategy) = 0;
-  virtual void SetTitle(const base::string16& title) = 0;
+  virtual void SetTitle(const std::u16string& title) = 0;
 
  private:
-  InspectableWebContentsViewDelegate* delegate_;  // weak references.
+  InspectableWebContentsViewDelegate* delegate_ = nullptr;  // weak references.
 };
 
 }  // namespace electron

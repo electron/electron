@@ -7,6 +7,7 @@
 
 namespace electron {
 void InitializeFeatureList();
-}
+void InitializeFieldTrials();
+}  // namespace electron
 
 #endif  // SHELL_BROWSER_FEATURE_LIST_H_

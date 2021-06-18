@@ -8,7 +8,7 @@ Chrome moved the SetCursor IPC message to mojo, which we use to tell OSR about `
 Refs: https://chromium-review.googlesource.com/c/chromium/src/+/2172779
 
 diff --git a/content/browser/renderer_host/render_widget_host_delegate.h b/content/browser/renderer_host/render_widget_host_delegate.h
-index f3875c216b5f4169a3beb9ae3aeb73c9f4df23f1..5e471024655e1b9ee224ed8ba7fc416e8be10aaa 100644
+index 591d412c780a87c8aaffb71e812774ab7a3e2612..cebe9c6943001e0a0a02b82cfd49fc0617871625 100644
 --- a/content/browser/renderer_host/render_widget_host_delegate.h
 +++ b/content/browser/renderer_host/render_widget_host_delegate.h
 @@ -14,6 +14,7 @@
@@ -18,8 +18,8 @@ index f3875c216b5f4169a3beb9ae3aeb73c9f4df23f1..5e471024655e1b9ee224ed8ba7fc416e
 +#include "content/common/cursors/webcursor.h"
  #include "content/public/common/drop_data.h"
  #include "services/metrics/public/cpp/ukm_recorder.h"
- #include "third_party/blink/public/common/input/web_input_event.h"
-@@ -266,6 +267,9 @@ class CONTENT_EXPORT RenderWidgetHostDelegate {
+ #include "third_party/abseil-cpp/absl/types/optional.h"
+@@ -260,6 +261,9 @@ class CONTENT_EXPORT RenderWidgetHostDelegate {
    // Returns the associated RenderViewHostDelegateView*, if possible.
    virtual RenderViewHostDelegateView* GetDelegateView();
  
@@ -30,10 +30,10 @@ index f3875c216b5f4169a3beb9ae3aeb73c9f4df23f1..5e471024655e1b9ee224ed8ba7fc416e
    // RenderWidgetHost on the main frame, and false otherwise.
    virtual bool IsWidgetForMainFrame(RenderWidgetHostImpl*);
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 0db198a8cb657c679f6ba96fb9ac04460b448b14..0c5599d817c1327446e12d76b7cdca58369a7aae 100644
+index 7188857619477bc3f93dc836f56d4f25a88cc29e..ba6e00b0b168c46fbb983937466a5fd4f72bca5d 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -1875,6 +1875,8 @@ void RenderWidgetHostImpl::FilterDropData(DropData* drop_data) {
+@@ -1979,6 +1979,8 @@ void RenderWidgetHostImpl::FilterDropData(DropData* drop_data) {
  void RenderWidgetHostImpl::SetCursor(const ui::Cursor& cursor) {
    if (view_)
      view_->UpdateCursor(WebCursor(cursor));
@@ -43,39 +43,38 @@ index 0db198a8cb657c679f6ba96fb9ac04460b448b14..0c5599d817c1327446e12d76b7cdca58
  
  void RenderWidgetHostImpl::ShowContextMenuAtPoint(
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 4e058f7bc0d9f58269816d4a4afe432d01212db9..ad7be058905cce2c4cc7e5829c80e0c47ba54fe3 100644
+index 95d2a7b15e67e2af6f9aebb0c975f5713762032d..09ae42633e0635d94b5a1b4f71af943f0cd7bb64 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4134,6 +4134,12 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
+@@ -4316,6 +4316,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
    return text_input_manager_.get();
  }
  
 +void WebContentsImpl::OnCursorChanged(const WebCursor& cursor) {
-+  observers_.ForEachObserver([&](WebContentsObserver* observer) {
-+    observer->OnCursorChanged(cursor);
-+  });
++  observers_.NotifyObservers(&WebContentsObserver::OnCursorChanged,
++                             cursor);
 +}
 +
  bool WebContentsImpl::IsWidgetForMainFrame(
      RenderWidgetHostImpl* render_widget_host) {
    return render_widget_host == GetMainFrame()->GetRenderWidgetHost();
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index a56cb369db3285348536eb344e595f0d8fee70dc..63cb45896b1cd589ada801e41e9fe547a9088416 100644
+index 7ba50c203e96b98774fe92f7c772de236deba824..aa6b35d85fcbd1378a96c027a1f9e72660911484 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -943,6 +943,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
+@@ -969,6 +969,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
        blink::mojom::FrameVisibility visibility) override;
    void SendScreenRects() override;
    TextInputManager* GetTextInputManager() override;
 +  void OnCursorChanged(const WebCursor& cursor) override;
    bool IsWidgetForMainFrame(RenderWidgetHostImpl* render_widget_host) override;
-   bool AddDomainInfoToRapporSample(rappor::Sample* sample) override;
    bool IsShowingContextMenuOnPage() const override;
+   void DidChangeScreenOrientation() override;
 diff --git a/content/public/browser/web_contents_observer.h b/content/public/browser/web_contents_observer.h
-index 9ab0a264e9ec660950e17cc608c375bf6366ac4a..45f56a4ea05e40b0b8287cea77810b7c9bdd1020 100644
+index 3fc353fbfc4db00eedb858301b4d7bdd1e1a1fad..d9f4902377884488e1588cabba93a9e8cecd82c2 100644
 --- a/content/public/browser/web_contents_observer.h
 +++ b/content/public/browser/web_contents_observer.h
-@@ -14,6 +14,7 @@
+@@ -13,6 +13,7 @@
  #include "base/threading/thread_restrictions.h"
  #include "components/viz/common/vertical_scroll_direction.h"
  #include "content/common/content_export.h"
@@ -83,7 +82,7 @@ index 9ab0a264e9ec660950e17cc608c375bf6366ac4a..45f56a4ea05e40b0b8287cea77810b7c
  #include "content/public/browser/allow_service_worker_result.h"
  #include "content/public/browser/cookie_access_details.h"
  #include "content/public/browser/navigation_controller.h"
-@@ -367,6 +368,9 @@ class CONTENT_EXPORT WebContentsObserver : public IPC::Listener {
+@@ -422,6 +423,9 @@ class CONTENT_EXPORT WebContentsObserver {
    // Invoked every time the WebContents changes visibility.
    virtual void OnVisibilityChanged(Visibility visibility) {}
  

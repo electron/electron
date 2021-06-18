@@ -1,0 +1,336 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Thu, 20 May 2021 11:33:53 +0200
+Subject: src: remove extra semis from member fns
+
+Refs https://github.com/nodejs/node/pull/37917 and https://github.com/nodejs/node/pull/36811
+
+Upstreamed at https://github.com/nodejs/node/pull/38744
+
+diff --git a/src/crypto/crypto_aes.h b/src/crypto/crypto_aes.h
+index a5e37409548e69ed4766eeec7e6c1bf919af10bc..d6eefffb4a846cb5827d655f93fd0f571ef15541 100644
+--- a/src/crypto/crypto_aes.h
++++ b/src/crypto/crypto_aes.h
+@@ -52,8 +52,8 @@ struct AESCipherConfig final : public MemoryRetainer {
+   AESCipherConfig& operator=(AESCipherConfig&& other) noexcept;
+ 
+   void MemoryInfo(MemoryTracker* tracker) const override;
+-  SET_MEMORY_INFO_NAME(AESCipherConfig);
+-  SET_SELF_SIZE(AESCipherConfig);
++  SET_MEMORY_INFO_NAME(AESCipherConfig)
++  SET_SELF_SIZE(AESCipherConfig)
+ };
+ 
+ struct AESCipherTraits final {
+diff --git a/src/crypto/crypto_dh.h b/src/crypto/crypto_dh.h
+index 7c69afb0a46ab419d63f063e2e898c71e60657f2..fecbf41070bda4a1d6bb6b43e339d01605e81406 100644
+--- a/src/crypto/crypto_dh.h
++++ b/src/crypto/crypto_dh.h
+@@ -114,9 +114,9 @@ using DHKeyExportJob = KeyExportJob<DHKeyExportTraits>;
+ struct DHBitsConfig final : public MemoryRetainer {
+   std::shared_ptr<KeyObjectData> private_key;
+   std::shared_ptr<KeyObjectData> public_key;
+-  SET_NO_MEMORY_INFO();
+-  SET_MEMORY_INFO_NAME(DHBitsConfig);
+-  SET_SELF_SIZE(DHBitsConfig);
++  SET_NO_MEMORY_INFO()
++  SET_MEMORY_INFO_NAME(DHBitsConfig)
++  SET_SELF_SIZE(DHBitsConfig)
+ };
+ 
+ struct DHBitsTraits final {
+diff --git a/src/crypto/crypto_dsa.h b/src/crypto/crypto_dsa.h
+index 3f241b33ba06cf43c60514aec18d3b60f2141c6d..647b4d9004e8cbbab20bcb6b8f93a2e0fbb5b45f 100644
+--- a/src/crypto/crypto_dsa.h
++++ b/src/crypto/crypto_dsa.h
+@@ -16,8 +16,8 @@ struct DsaKeyPairParams final : public MemoryRetainer {
+   unsigned int modulus_bits;
+   int divisor_bits;
+   SET_NO_MEMORY_INFO()
+-  SET_MEMORY_INFO_NAME(DsaKeyPairParams);
+-  SET_SELF_SIZE(DsaKeyPairParams);
++  SET_MEMORY_INFO_NAME(DsaKeyPairParams)
++  SET_SELF_SIZE(DsaKeyPairParams)
+ };
+ 
+ using DsaKeyPairGenConfig = KeyPairGenConfig<DsaKeyPairParams>;
+@@ -38,9 +38,9 @@ struct DsaKeyGenTraits final {
+ using DsaKeyPairGenJob = KeyGenJob<KeyPairGenTraits<DsaKeyGenTraits>>;
+ 
+ struct DSAKeyExportConfig final : public MemoryRetainer {
+-  SET_NO_MEMORY_INFO();
+-  SET_MEMORY_INFO_NAME(DSAKeyExportConfig);
+-  SET_SELF_SIZE(DSAKeyExportConfig);
++  SET_NO_MEMORY_INFO()
++  SET_MEMORY_INFO_NAME(DSAKeyExportConfig)
++  SET_SELF_SIZE(DSAKeyExportConfig)
+ };
+ 
+ struct DSAKeyExportTraits final {
+diff --git a/src/crypto/crypto_ec.h b/src/crypto/crypto_ec.h
+index 444fca58d497795bdb15876654705f79e6c93b75..317ee877a12b6b0267a86c75dd9325309011400d 100644
+--- a/src/crypto/crypto_ec.h
++++ b/src/crypto/crypto_ec.h
+@@ -60,8 +60,8 @@ struct ECDHBitsConfig final : public MemoryRetainer {
+   std::shared_ptr<KeyObjectData> public_;
+ 
+   void MemoryInfo(MemoryTracker* tracker) const override;
+-  SET_MEMORY_INFO_NAME(ECDHBitsConfig);
+-  SET_SELF_SIZE(ECDHBitsConfig);
++  SET_MEMORY_INFO_NAME(ECDHBitsConfig)
++  SET_SELF_SIZE(ECDHBitsConfig)
+ };
+ 
+ struct ECDHBitsTraits final {
+diff --git a/src/crypto/crypto_hash.h b/src/crypto/crypto_hash.h
+index b2ecce0c5b8501ad3f168758fda1194b64bacf13..9f004d1dda6ea55923d26040c47efd7885879cbc 100644
+--- a/src/crypto/crypto_hash.h
++++ b/src/crypto/crypto_hash.h
+@@ -52,8 +52,8 @@ struct HashConfig final : public MemoryRetainer {
+   HashConfig& operator=(HashConfig&& other) noexcept;
+ 
+   void MemoryInfo(MemoryTracker* tracker) const override;
+-  SET_MEMORY_INFO_NAME(HashConfig);
+-  SET_SELF_SIZE(HashConfig);
++  SET_MEMORY_INFO_NAME(HashConfig)
++  SET_SELF_SIZE(HashConfig)
+ };
+ 
+ struct HashTraits final {
+diff --git a/src/crypto/crypto_hkdf.h b/src/crypto/crypto_hkdf.h
+index 06774bcde97378261e6c4a1658964a4d69b9b19d..666aad65474a2ee0610c597226f5874c7c30aa1a 100644
+--- a/src/crypto/crypto_hkdf.h
++++ b/src/crypto/crypto_hkdf.h
+@@ -29,8 +29,8 @@ struct HKDFConfig final : public MemoryRetainer {
+   HKDFConfig& operator=(HKDFConfig&& other) noexcept;
+ 
+   void MemoryInfo(MemoryTracker* tracker) const override;
+-  SET_MEMORY_INFO_NAME(HKDFConfig);
+-  SET_SELF_SIZE(HKDFConfig);
++  SET_MEMORY_INFO_NAME(HKDFConfig)
++  SET_SELF_SIZE(HKDFConfig)
+ };
+ 
+ struct HKDFTraits final {
+diff --git a/src/crypto/crypto_hmac.h b/src/crypto/crypto_hmac.h
+index fd7dba2ed8a09839296ca2e35346076fb445af30..d7427ce883c2e17c55a96da1b7b6f69a4c5e192a 100644
+--- a/src/crypto/crypto_hmac.h
++++ b/src/crypto/crypto_hmac.h
+@@ -54,8 +54,8 @@ struct HmacConfig final : public MemoryRetainer {
+   HmacConfig& operator=(HmacConfig&& other) noexcept;
+ 
+   void MemoryInfo(MemoryTracker* tracker) const override;
+-  SET_MEMORY_INFO_NAME(HmacConfig);
+-  SET_SELF_SIZE(HmacConfig);
++  SET_MEMORY_INFO_NAME(HmacConfig)
++  SET_SELF_SIZE(HmacConfig)
+ };
+ 
+ struct HmacTraits final {
+diff --git a/src/crypto/crypto_keygen.h b/src/crypto/crypto_keygen.h
+index 3dcbd2f0cecfd1d576222de6de5be6ee65699fff..532bcdb80c78cf3e77d6bdeb36e1fc985e198b6d 100644
+--- a/src/crypto/crypto_keygen.h
++++ b/src/crypto/crypto_keygen.h
+@@ -112,7 +112,7 @@ class KeyGenJob final : public CryptoJob<KeyGenTraits> {
+     return v8::Just(errors->ToException(env).ToLocal(err));
+   }
+ 
+-  SET_SELF_SIZE(KeyGenJob);
++  SET_SELF_SIZE(KeyGenJob)
+ 
+  private:
+   KeyGenJobStatus status_ = KeyGenJobStatus::FAILED;
+diff --git a/src/crypto/crypto_keys.h b/src/crypto/crypto_keys.h
+index 98e497a5b220c799ac05df6788b3006d2df5dd14..3662b3a3b8688b1921bdc50bda87f5088308881b 100644
+--- a/src/crypto/crypto_keys.h
++++ b/src/crypto/crypto_keys.h
+@@ -149,8 +149,8 @@ class KeyObjectData : public MemoryRetainer {
+   size_t GetSymmetricKeySize() const;
+ 
+   void MemoryInfo(MemoryTracker* tracker) const override;
+-  SET_MEMORY_INFO_NAME(KeyObjectData);
+-  SET_SELF_SIZE(KeyObjectData);
++  SET_MEMORY_INFO_NAME(KeyObjectData)
++  SET_SELF_SIZE(KeyObjectData)
+ 
+  private:
+   explicit KeyObjectData(ByteSource symmetric_key);
+diff --git a/src/crypto/crypto_pbkdf2.h b/src/crypto/crypto_pbkdf2.h
+index 42b95627e0da624d538429019f90b8f6ee02b0fb..6fda7cd3101002561ff98736b8a7a77cc2cee998 100644
+--- a/src/crypto/crypto_pbkdf2.h
++++ b/src/crypto/crypto_pbkdf2.h
+@@ -39,8 +39,8 @@ struct PBKDF2Config final : public MemoryRetainer {
+   PBKDF2Config& operator=(PBKDF2Config&& other) noexcept;
+ 
+   void MemoryInfo(MemoryTracker* tracker) const override;
+-  SET_MEMORY_INFO_NAME(PBKDF2Config);
+-  SET_SELF_SIZE(PBKDF2Config);
++  SET_MEMORY_INFO_NAME(PBKDF2Config)
++  SET_SELF_SIZE(PBKDF2Config)
+ };
+ 
+ struct PBKDF2Traits final {
+diff --git a/src/crypto/crypto_random.h b/src/crypto/crypto_random.h
+index 1a2a88dc2920ff452eef488dc55a253da49319ed..c9a827f6171e15b5af08cd91d4cbc4ac77f1e202 100644
+--- a/src/crypto/crypto_random.h
++++ b/src/crypto/crypto_random.h
+@@ -16,9 +16,9 @@ namespace crypto {
+ struct RandomBytesConfig final : public MemoryRetainer {
+   unsigned char* buffer;
+   size_t size;
+-  SET_NO_MEMORY_INFO();
+-  SET_MEMORY_INFO_NAME(RandomBytesConfig);
+-  SET_SELF_SIZE(RandomBytesConfig);
++  SET_NO_MEMORY_INFO()
++  SET_MEMORY_INFO_NAME(RandomBytesConfig)
++  SET_SELF_SIZE(RandomBytesConfig)
+ };
+ 
+ struct RandomBytesTraits final {
+@@ -54,8 +54,8 @@ struct RandomPrimeConfig final : public MemoryRetainer {
+   int bits;
+   bool safe;
+   void MemoryInfo(MemoryTracker* tracker) const override;
+-  SET_MEMORY_INFO_NAME(RandomPrimeConfig);
+-  SET_SELF_SIZE(RandomPrimeConfig);
++  SET_MEMORY_INFO_NAME(RandomPrimeConfig)
++  SET_SELF_SIZE(RandomPrimeConfig)
+ };
+ 
+ struct RandomPrimeTraits final {
+@@ -89,8 +89,8 @@ struct CheckPrimeConfig final : public MemoryRetainer {
+   int checks = 1;
+ 
+   void MemoryInfo(MemoryTracker* tracker) const override;
+-  SET_MEMORY_INFO_NAME(CheckPrimeConfig);
+-  SET_SELF_SIZE(CheckPrimeConfig);
++  SET_MEMORY_INFO_NAME(CheckPrimeConfig)
++  SET_SELF_SIZE(CheckPrimeConfig)
+ };
+ 
+ struct CheckPrimeTraits final {
+diff --git a/src/crypto/crypto_rsa.h b/src/crypto/crypto_rsa.h
+index acc233ccbb36d28dcda2578987e285ae4f394a8e..eea53815f04e22d573885295c18182f7d85b8e7e 100644
+--- a/src/crypto/crypto_rsa.h
++++ b/src/crypto/crypto_rsa.h
+@@ -31,8 +31,8 @@ struct RsaKeyPairParams final : public MemoryRetainer {
+   int saltlen = 0;
+ 
+   SET_NO_MEMORY_INFO()
+-  SET_MEMORY_INFO_NAME(RsaKeyPairParams);
+-  SET_SELF_SIZE(RsaKeyPairParams);
++  SET_MEMORY_INFO_NAME(RsaKeyPairParams)
++  SET_SELF_SIZE(RsaKeyPairParams)
+ };
+ 
+ using RsaKeyPairGenConfig = KeyPairGenConfig<RsaKeyPairParams>;
+@@ -88,8 +88,8 @@ struct RSACipherConfig final : public MemoryRetainer {
+   RSACipherConfig(RSACipherConfig&& other) noexcept;
+ 
+   void MemoryInfo(MemoryTracker* tracker) const override;
+-  SET_MEMORY_INFO_NAME(RSACipherConfig);
+-  SET_SELF_SIZE(RSACipherConfig);
++  SET_MEMORY_INFO_NAME(RSACipherConfig)
++  SET_SELF_SIZE(RSACipherConfig)
+ };
+ 
+ struct RSACipherTraits final {
+diff --git a/src/crypto/crypto_scrypt.h b/src/crypto/crypto_scrypt.h
+index b51d6c194ad67a0512460c241413d6cae2617e38..4ca888e31d4e523b7cc0a7a8a2204d772a2c0a16 100644
+--- a/src/crypto/crypto_scrypt.h
++++ b/src/crypto/crypto_scrypt.h
+@@ -41,8 +41,8 @@ struct ScryptConfig final : public MemoryRetainer {
+   ScryptConfig& operator=(ScryptConfig&& other) noexcept;
+ 
+   void MemoryInfo(MemoryTracker* tracker) const override;
+-  SET_MEMORY_INFO_NAME(ScryptConfig);
+-  SET_SELF_SIZE(ScryptConfig);
++  SET_MEMORY_INFO_NAME(ScryptConfig)
++  SET_SELF_SIZE(ScryptConfig)
+ };
+ 
+ struct ScryptTraits final {
+diff --git a/src/crypto/crypto_sig.h b/src/crypto/crypto_sig.h
+index fa44811c3ee44d102947f77708047de97ba0b44f..5f9104fc5d3c007f56f2450719584b90dfbc7bdd 100644
+--- a/src/crypto/crypto_sig.h
++++ b/src/crypto/crypto_sig.h
+@@ -127,8 +127,8 @@ struct SignConfiguration final : public MemoryRetainer {
+   SignConfiguration& operator=(SignConfiguration&& other) noexcept;
+ 
+   void MemoryInfo(MemoryTracker* tracker) const override;
+-  SET_MEMORY_INFO_NAME(SignConfiguration);
+-  SET_SELF_SIZE(SignConfiguration);
++  SET_MEMORY_INFO_NAME(SignConfiguration)
++  SET_SELF_SIZE(SignConfiguration)
+ };
+ 
+ struct SignTraits final {
+diff --git a/src/crypto/crypto_util.h b/src/crypto/crypto_util.h
+index 303ba4c3b7c4c2fc5dee906e22d5e7642b8351c8..1fe961a99b3f115c1381f3641d718a21988e9659 100644
+--- a/src/crypto/crypto_util.h
++++ b/src/crypto/crypto_util.h
+@@ -190,8 +190,8 @@ struct CryptoErrorStore final : public MemoryRetainer {
+       v8::Local<v8::String> exception_string = v8::Local<v8::String>()) const;
+ 
+   SET_NO_MEMORY_INFO()
+-  SET_MEMORY_INFO_NAME(CryptoErrorStore);
+-  SET_SELF_SIZE(CryptoErrorStore);
++  SET_MEMORY_INFO_NAME(CryptoErrorStore)
++  SET_SELF_SIZE(CryptoErrorStore)
+ 
+  private:
+   std::vector<std::string> errors_;
+@@ -504,7 +504,7 @@ class DeriveBitsJob final : public CryptoJob<DeriveBitsTraits> {
+     return v8::Just(errors->ToException(env).ToLocal(err));
+   }
+ 
+-  SET_SELF_SIZE(DeriveBitsJob);
++  SET_SELF_SIZE(DeriveBitsJob)
+   void MemoryInfo(MemoryTracker* tracker) const override {
+     tracker->TrackFieldWithSize("out", out_.size());
+     CryptoJob<DeriveBitsTraits>::MemoryInfo(tracker);
+diff --git a/src/crypto/crypto_x509.h b/src/crypto/crypto_x509.h
+index 3bebc8e37d158bfe0bc214a4be2db89c823247d4..05bfb6e7cb3e2046f621c0bbdeee01210fa2ec12 100644
+--- a/src/crypto/crypto_x509.h
++++ b/src/crypto/crypto_x509.h
+@@ -98,8 +98,8 @@ class X509Certificate : public BaseObject {
+   X509* get() { return cert_->get(); }
+ 
+   void MemoryInfo(MemoryTracker* tracker) const override;
+-  SET_MEMORY_INFO_NAME(X509Certificate);
+-  SET_SELF_SIZE(X509Certificate);
++  SET_MEMORY_INFO_NAME(X509Certificate)
++  SET_SELF_SIZE(X509Certificate)
+ 
+   class X509CertificateTransferData : public worker::TransferData {
+    public:
+diff --git a/src/node_blob.h b/src/node_blob.h
+index 965f65390bdd41cb872f86b3d6f5faacb6af85af..9d6178996c8fd59c6b4f348072aa58ba9f9d925b 100644
+--- a/src/node_blob.h
++++ b/src/node_blob.h
+@@ -46,8 +46,8 @@ class Blob : public BaseObject {
+   }
+ 
+   void MemoryInfo(MemoryTracker* tracker) const override;
+-  SET_MEMORY_INFO_NAME(Blob);
+-  SET_SELF_SIZE(Blob);
++  SET_MEMORY_INFO_NAME(Blob)
++  SET_SELF_SIZE(Blob)
+ 
+   // Copies the contents of the Blob into an ArrayBuffer.
+   v8::MaybeLocal<v8::Value> GetArrayBuffer(Environment* env);
+diff --git a/src/node_sockaddr.h b/src/node_sockaddr.h
+index 704fe0c5116f8f95884325b0b49c731009869112..8add38b465e324942801785f9fb94a81fc612547 100644
+--- a/src/node_sockaddr.h
++++ b/src/node_sockaddr.h
+@@ -173,8 +173,8 @@ class SocketAddressBase : public BaseObject {
+   }
+ 
+   void MemoryInfo(MemoryTracker* tracker) const override;
+-  SET_MEMORY_INFO_NAME(SocketAddressBase);
+-  SET_SELF_SIZE(SocketAddressBase);
++  SET_MEMORY_INFO_NAME(SocketAddressBase)
++  SET_SELF_SIZE(SocketAddressBase)
+ 
+   TransferMode GetTransferMode() const override {
+     return TransferMode::kCloneable;

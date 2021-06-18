@@ -5,7 +5,6 @@
 #ifndef SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSION_LOADER_H_
 #define SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSION_LOADER_H_
 
-#include <memory>
 #include <string>
 #include <utility>
 
@@ -37,6 +36,7 @@ class ElectronExtensionLoader : public ExtensionRegistrar::Delegate {
   // Loads an unpacked extension from a directory synchronously. Returns the
   // extension on success, or nullptr otherwise.
   void LoadExtension(const base::FilePath& extension_dir,
+                     int load_flags,
                      base::OnceCallback<void(const Extension* extension,
                                              const std::string&)> cb);
 
@@ -90,7 +90,7 @@ class ElectronExtensionLoader : public ExtensionRegistrar::Delegate {
   // LoadExtensionForReload().
   bool did_schedule_reload_ = false;
 
-  base::WeakPtrFactory<ElectronExtensionLoader> weak_factory_;
+  base::WeakPtrFactory<ElectronExtensionLoader> weak_factory_{this};
 
   DISALLOW_COPY_AND_ASSIGN(ElectronExtensionLoader);
 };

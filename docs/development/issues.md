@@ -33,8 +33,7 @@ contributing, and more. Please use the issue tracker for bugs only!
 To submit a bug report:
 
 When opening a new issue in the [`electron/electron` issue tracker](https://github.com/electron/electron/issues/new/choose), users
-will be presented with [a template](https://github.com/electron/electron/blob/master/.github/ISSUE_TEMPLATE/Bug_report.md)
-that should be filled in.
+will be presented with a template that should be filled in.
 
 If you believe that you have found a bug in Electron, please fill out the template
 to the best of your ability.

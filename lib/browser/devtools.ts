@@ -54,7 +54,7 @@ const isChromeDevTools = function (pageURL: string) {
 };
 
 const assertChromeDevTools = function (contents: Electron.WebContents, api: string) {
-  const pageURL = contents._getURL();
+  const pageURL = contents.getURL();
   if (!isChromeDevTools(pageURL)) {
     console.error(`Blocked ${pageURL} from calling ${api}`);
     throw new Error(`Blocked ${api}`);
@@ -62,7 +62,7 @@ const assertChromeDevTools = function (contents: Electron.WebContents, api: stri
 };
 
 ipcMainInternal.handle(IPC_MESSAGES.INSPECTOR_CONTEXT_MENU, function (event, items: ContextMenuItem[], isEditMenu: boolean) {
-  return new Promise(resolve => {
+  return new Promise<number | void>(resolve => {
     assertChromeDevTools(event.sender, 'window.InspectorFrontendHost.showContextMenuAtPoint()');
 
     const template = isEditMenu ? getEditMenuItems() : convertToMenuTemplate(items, resolve);

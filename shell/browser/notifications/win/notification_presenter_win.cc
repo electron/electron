@@ -52,8 +52,7 @@ NotificationPresenter* NotificationPresenter::Create() {
     return new NotificationPresenterWin7;
   if (!WindowsToastNotification::Initialize())
     return nullptr;
-  std::unique_ptr<NotificationPresenterWin> presenter(
-      new NotificationPresenterWin);
+  auto presenter = std::make_unique<NotificationPresenterWin>();
   if (!presenter->Init())
     return nullptr;
 
@@ -63,16 +62,16 @@ NotificationPresenter* NotificationPresenter::Create() {
   return presenter.release();
 }
 
-NotificationPresenterWin::NotificationPresenterWin() {}
+NotificationPresenterWin::NotificationPresenterWin() = default;
 
-NotificationPresenterWin::~NotificationPresenterWin() {}
+NotificationPresenterWin::~NotificationPresenterWin() = default;
 
 bool NotificationPresenterWin::Init() {
   base::ThreadRestrictions::ScopedAllowIO allow_io;
   return temp_dir_.CreateUniqueTempDir();
 }
 
-base::string16 NotificationPresenterWin::SaveIconToFilesystem(
+std::wstring NotificationPresenterWin::SaveIconToFilesystem(
     const SkBitmap& icon,
     const GURL& origin) {
   std::string filename;
@@ -85,12 +84,12 @@ base::string16 NotificationPresenterWin::SaveIconToFilesystem(
   }
 
   base::ThreadRestrictions::ScopedAllowIO allow_io;
-  base::FilePath path = temp_dir_.GetPath().Append(base::UTF8ToUTF16(filename));
+  base::FilePath path = temp_dir_.GetPath().Append(base::UTF8ToWide(filename));
   if (base::PathExists(path))
     return path.value();
   if (SaveIconToPath(icon, path))
     return path.value();
-  return base::UTF8ToUTF16(origin.spec());
+  return base::UTF8ToWide(origin.spec());
 }
 
 Notification* NotificationPresenterWin::CreateNotificationObject(

@@ -17,8 +17,7 @@ ElectronBrowserHandlerImpl::ElectronBrowserHandlerImpl(
     content::RenderFrameHost* frame_host,
     mojo::PendingReceiver<mojom::ElectronBrowser> receiver)
     : render_process_id_(frame_host->GetProcess()->GetID()),
-      render_frame_id_(frame_host->GetRoutingID()),
-      weak_factory_(this) {
+      render_frame_id_(frame_host->GetRoutingID()) {
   content::WebContents* web_contents =
       content::WebContents::FromRenderFrameHost(frame_host);
   DCHECK(web_contents);
@@ -87,14 +86,12 @@ void ElectronBrowserHandlerImpl::MessageSync(bool internal,
   }
 }
 
-void ElectronBrowserHandlerImpl::MessageTo(bool internal,
-                                           int32_t web_contents_id,
+void ElectronBrowserHandlerImpl::MessageTo(int32_t web_contents_id,
                                            const std::string& channel,
                                            blink::CloneableMessage arguments) {
   api::WebContents* api_web_contents = api::WebContents::From(web_contents());
   if (api_web_contents) {
-    api_web_contents->MessageTo(internal, web_contents_id, channel,
-                                std::move(arguments));
+    api_web_contents->MessageTo(web_contents_id, channel, std::move(arguments));
   }
 }
 

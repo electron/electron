@@ -4,7 +4,11 @@
 
 #include "shell/renderer/extensions/electron_extensions_renderer_client.h"
 
+#include <string>
+
 #include "content/public/renderer/render_thread.h"
+#include "extensions/common/constants.h"
+#include "extensions/common/manifest_handlers/background_info.h"
 #include "extensions/renderer/dispatcher.h"
 #include "shell/common/world_ids.h"
 #include "shell/renderer/extensions/electron_extensions_dispatcher_delegate.h"
@@ -17,7 +21,7 @@ ElectronExtensionsRendererClient::ElectronExtensionsRendererClient()
   dispatcher_->OnRenderThreadStarted(content::RenderThread::Get());
 }
 
-ElectronExtensionsRendererClient::~ElectronExtensionsRendererClient() {}
+ElectronExtensionsRendererClient::~ElectronExtensionsRendererClient() = default;
 
 bool ElectronExtensionsRendererClient::IsIncognitoProcess() const {
   // app_shell doesn't support off-the-record contexts.
@@ -35,8 +39,24 @@ extensions::Dispatcher* ElectronExtensionsRendererClient::GetDispatcher() {
 bool ElectronExtensionsRendererClient::
     ExtensionAPIEnabledForServiceWorkerScript(const GURL& scope,
                                               const GURL& script_url) const {
-  // TODO(nornagon): adapt logic from chrome's version
-  return true;
+  if (!script_url.SchemeIs(extensions::kExtensionScheme))
+    return false;
+
+  const extensions::Extension* extension =
+      extensions::RendererExtensionRegistry::Get()->GetExtensionOrAppByURL(
+          script_url);
+
+  if (!extension ||
+      !extensions::BackgroundInfo::IsServiceWorkerBased(extension))
+    return false;
+
+  if (scope != extension->url())
+    return false;
+
+  const std::string& sw_script =
+      extensions::BackgroundInfo::GetBackgroundServiceWorkerScript(extension);
+
+  return extension->GetResourceURL(sw_script) == script_url;
 }
 
 bool ElectronExtensionsRendererClient::AllowPopup() {

@@ -12,6 +12,7 @@
 #include "content/public/renderer/content_renderer_client.h"
 #include "electron/buildflags/buildflags.h"
 #include "printing/buildflags/buildflags.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 // In SHARED_INTERMEDIATE_DIR.
 #include "widevine_cdm_version.h"  // NOLINT(build/include_directory)
@@ -40,11 +41,9 @@ struct WebPluginInfo;
 }
 #endif
 
-namespace guest_view {
-class GuestViewContainer;
-}
-
 namespace electron {
+
+class ElectronApiServiceImpl;
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 class ElectronExtensionsRendererClient;
@@ -60,22 +59,21 @@ class RendererClientBase : public content::ContentRendererClient
   RendererClientBase();
   ~RendererClientBase() override;
 
+  static RendererClientBase* Get();
+
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   // service_manager::LocalInterfaceProvider implementation.
   void GetInterface(const std::string& name,
-                    mojo::ScopedMessagePipeHandle request_handle) override;
+                    mojo::ScopedMessagePipeHandle interface_pipe) override;
 #endif
 
   virtual void DidCreateScriptContext(v8::Handle<v8::Context> context,
-                                      content::RenderFrame* render_frame);
+                                      content::RenderFrame* render_frame) = 0;
   virtual void WillReleaseScriptContext(v8::Handle<v8::Context> context,
                                         content::RenderFrame* render_frame) = 0;
   virtual void DidClearWindowObject(content::RenderFrame* render_frame);
   virtual void SetupMainWorldOverrides(v8::Handle<v8::Context> context,
-                                       content::RenderFrame* render_frame) = 0;
-  virtual void SetupExtensionWorldOverrides(v8::Handle<v8::Context> context,
-                                            content::RenderFrame* render_frame,
-                                            int world_id) = 0;
+                                       content::RenderFrame* render_frame);
 
   std::unique_ptr<blink::WebPrescientNetworking> CreatePrescientNetworking(
       content::RenderFrame* render_frame) override;
@@ -83,11 +81,12 @@ class RendererClientBase : public content::ContentRendererClient
   // Get the context that the Electron API is running in.
   v8::Local<v8::Context> GetContext(blink::WebLocalFrame* frame,
                                     v8::Isolate* isolate) const;
-  // Executes a given v8 Script
-  static v8::Local<v8::Value> RunScript(v8::Local<v8::Context> context,
-                                        v8::Local<v8::String> source);
 
-  // v8Util.getHiddenValue(window.frameElement, 'internal')
+  static void AllowGuestViewElementDefinition(
+      v8::Isolate* isolate,
+      v8::Local<v8::Object> context,
+      v8::Local<v8::Function> register_cb);
+
   bool IsWebViewFrame(v8::Handle<v8::Context> context,
                       content::RenderFrame* render_frame) const;
 
@@ -96,8 +95,9 @@ class RendererClientBase : public content::ContentRendererClient
 #endif
 
  protected:
-  void AddRenderBindings(v8::Isolate* isolate,
-                         v8::Local<v8::Object> binding_object);
+  void BindProcess(v8::Isolate* isolate,
+                   gin_helper::Dictionary* process,
+                   content::RenderFrame* render_frame);
 
   // content::ContentRendererClient:
   void RenderThreadStarted() override;
@@ -111,11 +111,6 @@ class RendererClientBase : public content::ContentRendererClient
       override;
   bool IsKeySystemsUpdateNeeded() override;
   void DidSetUserAgent(const std::string& user_agent) override;
-  guest_view::GuestViewContainer* CreateBrowserPluginDelegate(
-      content::RenderFrame* render_frame,
-      const content::WebPluginInfo& info,
-      const std::string& mime_type,
-      const GURL& original_url);
   bool IsPluginHandledExternally(content::RenderFrame* render_frame,
                                  const blink::WebElement& plugin_element,
                                  const GURL& original_url,
@@ -125,6 +120,28 @@ class RendererClientBase : public content::ContentRendererClient
   void RunScriptsAtDocumentStart(content::RenderFrame* render_frame) override;
   void RunScriptsAtDocumentEnd(content::RenderFrame* render_frame) override;
   void RunScriptsAtDocumentIdle(content::RenderFrame* render_frame) override;
+
+  bool AllowScriptExtensionForServiceWorker(
+      const url::Origin& script_origin) override;
+  void DidInitializeServiceWorkerContextOnWorkerThread(
+      blink::WebServiceWorkerContextProxy* context_proxy,
+      const GURL& service_worker_scope,
+      const GURL& script_url) override;
+  void WillEvaluateServiceWorkerOnWorkerThread(
+      blink::WebServiceWorkerContextProxy* context_proxy,
+      v8::Local<v8::Context> v8_context,
+      int64_t service_worker_version_id,
+      const GURL& service_worker_scope,
+      const GURL& script_url) override;
+  void DidStartServiceWorkerContextOnWorkerThread(
+      int64_t service_worker_version_id,
+      const GURL& service_worker_scope,
+      const GURL& script_url) override;
+  void WillDestroyServiceWorkerContextOnWorkerThread(
+      v8::Local<v8::Context> context,
+      int64_t service_worker_version_id,
+      const GURL& service_worker_scope,
+      const GURL& script_url) override;
 
  protected:
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)

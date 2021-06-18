@@ -129,7 +129,7 @@ v8::Local<v8::Value> HttpResponseHeadersToV8(
           !value.empty()) {
         net::HttpContentDisposition header(value, std::string());
         std::string decodedFilename =
-            header.is_attachment() ? " attachement" : " inline";
+            header.is_attachment() ? " attachment" : " inline";
         decodedFilename += "; filename=" + header.filename();
         value = decodedFilename;
       }
@@ -387,7 +387,7 @@ void WebRequest::SetListener(Event event,
   std::set<std::string> filter_patterns;
   gin::Dictionary dict(args->isolate());
   if (args->GetNext(&arg) && !arg->IsFunction()) {
-    // Note that gin treats Function as Dictionary when doing convertions, so we
+    // Note that gin treats Function as Dictionary when doing conversions, so we
     // have to explicitly check if the argument is Function before trying to
     // convert it to Dictionary.
     if (gin::ConvertFromV8(args->isolate(), arg, &dict)) {

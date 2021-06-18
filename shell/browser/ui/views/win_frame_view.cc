@@ -13,9 +13,9 @@ namespace electron {
 
 const char WinFrameView::kViewClassName[] = "WinFrameView";
 
-WinFrameView::WinFrameView() {}
+WinFrameView::WinFrameView() = default;
 
-WinFrameView::~WinFrameView() {}
+WinFrameView::~WinFrameView() = default;
 
 gfx::Rect WinFrameView::GetWindowBoundsForClientBounds(
     const gfx::Rect& client_bounds) const {

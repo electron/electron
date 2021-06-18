@@ -24,7 +24,7 @@ class ObjectLifeMonitor {
 
   v8::Global<v8::Object> target_;
 
-  base::WeakPtrFactory<ObjectLifeMonitor> weak_ptr_factory_;
+  base::WeakPtrFactory<ObjectLifeMonitor> weak_ptr_factory_{this};
 
   DISALLOW_COPY_AND_ASSIGN(ObjectLifeMonitor);
 };

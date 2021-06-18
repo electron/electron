@@ -1,10 +1,15 @@
 import { ipcRenderer, contextBridge } from 'electron';
 
+const policy = window.trustedTypes.createPolicy('electron-default-app', {
+  // we trust the SVG contents
+  createHTML: input => input
+});
+
 async function getOcticonSvg (name: string) {
   try {
     const response = await fetch(`octicon/${name}.svg`);
     const div = document.createElement('div');
-    div.innerHTML = await response.text();
+    div.innerHTML = policy.createHTML(await response.text());
     return div;
   } catch {
     return null;

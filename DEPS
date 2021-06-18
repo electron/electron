@@ -14,11 +14,14 @@ gclient_gn_args = [
 
 vars = {
   'chromium_version':
-    'b13e791d7244a08d9d61dbfa2bb2b6cdf1ff6294',
+    '93.0.4539.0',
   'node_version':
-    'v14.15.4',
+    'v16.2.0',
   'nan_version':
-    '2c4ee8a32a299eada3cd6e468bbd0a473bfea96d',
+    # The following commit hash of NAN is v2.14.2 with *only* changes to the
+    # test suite. This should be updated to a specific tag when one becomes
+    # available.
+    '65b32af46e9d7fab2e4ff657751205b3865f4920',
   'squirrel.mac_version':
     'cdc0729c8bf8576bfef18629186e1e9ecf1b0d9f',
 
@@ -47,6 +50,8 @@ vars = {
 
   # It's only needed to parse the native tests configurations.
   'checkout_pyyaml': False,
+
+  'use_rts': False,
 
   'mac_xcode_version': 'default',
 
@@ -86,7 +91,7 @@ deps = {
     'url': (Var("nodejs_git")) + '/node.git@' + (Var("node_version")),
     'condition': 'checkout_node and process_deps',
   },
-  'src/electron/vendor/pyyaml': {
+  'src/third_party/pyyaml': {
     'url': (Var("yaml_git")) + '/pyyaml.git@' + (Var("pyyaml_version")),
     'condition': 'checkout_pyyaml and process_deps',
   },

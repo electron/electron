@@ -47,7 +47,7 @@ def get_repo_root(path):
 
 
 def am(repo, patch_data, threeway=False, directory=None, exclude=None,
-    committer_name=None, committer_email=None):
+    committer_name=None, committer_email=None, keep_cr=True):
   args = []
   if threeway:
     args += ['--3way']
@@ -56,6 +56,10 @@ def am(repo, patch_data, threeway=False, directory=None, exclude=None,
   if exclude is not None:
     for path_pattern in exclude:
       args += ['--exclude', path_pattern]
+  if keep_cr is True:
+    # Keep the CR of CRLF in case any patches target files with Windows line
+    # endings.
+    args += ['--keep-cr']
 
   root_args = ['-C', repo]
   if committer_name is not None:
@@ -73,25 +77,6 @@ def am(repo, patch_data, threeway=False, directory=None, exclude=None,
       proc.returncode))
 
 
-def apply_patch(repo, patch_path, directory=None, index=False, reverse=False):
-  args = ['git', '-C', repo, 'apply',
-          '--ignore-space-change',
-          '--ignore-whitespace',
-          '--whitespace', 'fix'
-          ]
-  if directory:
-    args += ['--directory', directory]
-  if index:
-    args += ['--index']
-  if reverse:
-    args += ['--reverse']
-  args += ['--', patch_path]
-
-  return_code = subprocess.call(args)
-  applied_successfully = (return_code == 0)
-  return applied_successfully
-
-
 def import_patches(repo, **kwargs):
   """same as am(), but we save the upstream HEAD so we can refer to it when we
   later export patches"""
@@ -103,51 +88,11 @@ def import_patches(repo, **kwargs):
   am(repo=repo, **kwargs)
 
 
-def get_patch(repo, commit_hash):
-  args = ['git', '-C', repo, 'diff-tree',
-          '-p',
-          commit_hash,
-          '--'  # Explicitly tell Git `commit_hash` is a revision, not a path.
-          ]
-
-  return subprocess.check_output(args).decode('utf-8')
-
-
-def get_head_commit(repo):
-  args = ['git', '-C', repo, 'rev-parse', 'HEAD']
-
-  return subprocess.check_output(args).decode('utf-8').strip()
-
-
 def update_ref(repo, ref, newvalue):
   args = ['git', '-C', repo, 'update-ref', ref, newvalue]
 
   return subprocess.check_call(args)
 
-
-def reset(repo):
-  args = ['git', '-C', repo, 'reset']
-
-  subprocess.check_call(args)
-
-
-def commit(repo, author, message):
-  """Commit whatever in the index is now."""
-
-  # Let's setup committer info so git won't complain about it being missing.
-  # TODO: Is there a better way to set committer's name and email?
-  env = os.environ.copy()
-  env['GIT_COMMITTER_NAME'] = 'Anonymous Committer'
-  env['GIT_COMMITTER_EMAIL'] = 'anonymous@electronjs.org'
-
-  args = ['git', '-C', repo, 'commit',
-          '--author', author,
-          '--message', message
-          ]
-
-  return_code = subprocess.call(args, env=env)
-  committed_successfully = (return_code == 0)
-  return committed_successfully
 
 def get_upstream_head(repo):
   args = [
@@ -230,7 +175,9 @@ def split_patches(patch_data):
   """Split a concatenated series of patches into N separate patches"""
   patches = []
   patch_start = re.compile('^From [0-9a-f]+ ')
-  for line in patch_data.splitlines():
+  # Keep line endings in case any patches target files with CRLF.
+  keep_line_endings = True
+  for line in patch_data.splitlines(keep_line_endings):
     if patch_start.match(line):
       patches.append([])
     patches[-1].append(line)
@@ -246,13 +193,23 @@ def munge_subject_to_filename(subject):
 
 def get_file_name(patch):
   """Return the name of the file to which the patch should be written"""
+  file_name = None
   for line in patch:
     if line.startswith('Patch-Filename: '):
-      return line[len('Patch-Filename: '):]
+      file_name = line[len('Patch-Filename: '):]
+      break
   # If no patch-filename header, munge the subject.
-  for line in patch:
-    if line.startswith('Subject: '):
-      return munge_subject_to_filename(line[len('Subject: '):])
+  if not file_name:
+    for line in patch:
+      if line.startswith('Subject: '):
+        file_name = munge_subject_to_filename(line[len('Subject: '):])
+        break
+  return file_name.rstrip('\n')
+
+
+def join_patch(patch):
+  """Joins and formats patch contents"""
+  return ''.join(remove_patch_filename(patch)).rstrip('\n') + '\n'
 
 
 def remove_patch_filename(patch):
@@ -290,20 +247,18 @@ def export_patches(repo, out_dir, patch_range=None, dry_run=False):
     # If we're doing a dry run, iterate through each patch and see if the newly
     # exported patch differs from what exists. Report number of mismatched
     # patches and fail if there's more than one.
-    patch_count = 0
+    bad_patches = []
     for patch in patches:
       filename = get_file_name(patch)
       filepath = posixpath.join(out_dir, filename)
-      existing_patch = io.open(filepath, 'r', encoding='utf-8').read()
-      formatted_patch = (
-        '\n'.join(remove_patch_filename(patch)).rstrip('\n') + '\n'
-      )
+      existing_patch = unicode(io.open(filepath, 'rb').read(), "utf-8")
+      formatted_patch = join_patch(patch)
       if formatted_patch != existing_patch:
-        patch_count += 1
-    if patch_count > 0:
+        bad_patches.append(filename)
+    if len(bad_patches) > 0:
       sys.stderr.write(
-        "Patches in {} not up to date: {} patches need update\n".format(
-          out_dir, patch_count
+        "Patches in {} not up to date: {} patches need update\n-- {}\n".format(
+          out_dir, len(bad_patches), "\n-- ".join(bad_patches)
         )
       )
       exit(1)
@@ -322,12 +277,11 @@ def export_patches(repo, out_dir, patch_range=None, dry_run=False):
       for patch in patches:
         filename = get_file_name(patch)
         file_path = posixpath.join(out_dir, filename)
-        formatted_patch = (
-          '\n'.join(remove_patch_filename(patch)).rstrip('\n') + '\n'
-        )
+        formatted_patch = join_patch(patch)
+        # Write in binary mode to retain mixed line endings on write.
         with io.open(
-          file_path, 'w', newline='\n', encoding='utf-8'
+          file_path, 'wb'
         ) as f:
-          f.write(formatted_patch)
+          f.write(formatted_patch.encode('utf-8'))
         pl.write(filename + '\n')
 

@@ -77,8 +77,7 @@ auto RunProxyResolver(
 
 }  // namespace
 
-ElectronContentUtilityClient::ElectronContentUtilityClient()
-    : utility_process_running_elevated_(false) {
+ElectronContentUtilityClient::ElectronContentUtilityClient() {
 #if BUILDFLAG(ENABLE_PRINT_PREVIEW) && defined(OS_WIN)
   printing_handler_ = std::make_unique<printing::PrintingHandler>();
 #endif

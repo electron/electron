@@ -1,5 +1,6 @@
 import { expect } from 'chai';
 import * as childProcess from 'child_process';
+import * as fs from 'fs';
 import * as path from 'path';
 import * as util from 'util';
 import { emittedOnce } from './events-helpers';
@@ -7,6 +8,7 @@ import { ifdescribe, ifit } from './spec-helpers';
 import { webContents, WebContents } from 'electron/main';
 
 const features = process._linkedBinding('electron_common_features');
+const mainFixturesPath = path.resolve(__dirname, 'fixtures');
 
 describe('node feature', () => {
   const fixtures = path.join(__dirname, '..', 'spec', 'fixtures');
@@ -20,6 +22,16 @@ describe('node feature', () => {
         expect(msg).to.equal('message');
       });
     });
+  });
+
+  it('does not hang when using the fs module in the renderer process', async () => {
+    const appPath = path.join(mainFixturesPath, 'apps', 'libuv-hang', 'main.js');
+    const appProcess = childProcess.spawn(process.execPath, [appPath], {
+      cwd: path.join(mainFixturesPath, 'apps', 'libuv-hang'),
+      stdio: 'inherit'
+    });
+    const [code] = await emittedOnce(appProcess, 'close');
+    expect(code).to.equal(0);
   });
 
   describe('contexts', () => {
@@ -121,13 +133,36 @@ describe('node feature', () => {
       child.stderr.on('data', listener);
       child.stdout.on('data', listener);
     });
+
+    it('does allow --require in non-packaged apps', async () => {
+      const appPath = path.join(fixtures, 'module', 'noop.js');
+      const env = Object.assign({}, process.env, {
+        NODE_OPTIONS: `--require=${path.join(fixtures, 'module', 'fail.js')}`
+      });
+      // App should exit with code 1.
+      const child = childProcess.spawn(process.execPath, [appPath], { env });
+      const [code] = await emittedOnce(child, 'exit');
+      expect(code).to.equal(1);
+    });
+
+    it('does not allow --require in packaged apps', async () => {
+      const appPath = path.join(fixtures, 'module', 'noop.js');
+      const env = Object.assign({}, process.env, {
+        ELECTRON_FORCE_IS_PACKAGED: 'true',
+        NODE_OPTIONS: `--require=${path.join(fixtures, 'module', 'fail.js')}`
+      });
+      // App should exit with code 0.
+      const child = childProcess.spawn(process.execPath, [appPath], { env });
+      const [code] = await emittedOnce(child, 'exit');
+      expect(code).to.equal(0);
+    });
   });
 
-  describe('Node.js cli flags', () => {
+  ifdescribe(features.isRunAsNodeEnabled())('Node.js cli flags', () => {
     let child: childProcess.ChildProcessWithoutNullStreams;
     let exitPromise: Promise<any[]>;
 
-    ifit(features.isRunAsNodeEnabled())('Prohibits crypto-related flags in ELECTRON_RUN_AS_NODE mode', (done) => {
+    it('Prohibits crypto-related flags in ELECTRON_RUN_AS_NODE mode', (done) => {
       after(async () => {
         const [code, signal] = await exitPromise;
         expect(signal).to.equal(null);
@@ -162,6 +197,17 @@ describe('node feature', () => {
   describe('process.stdout', () => {
     it('is a real Node stream', () => {
       expect((process.stdout as any)._type).to.not.be.undefined();
+    });
+  });
+
+  describe('fs.readFile', () => {
+    it('can accept a FileHandle as the Path argument', async () => {
+      const filePathForHandle = path.resolve(mainFixturesPath, 'dogs-running.txt');
+      const fileHandle = await fs.promises.open(filePathForHandle, 'r');
+
+      const file = await fs.promises.readFile(fileHandle, { encoding: 'utf8' });
+      expect(file).to.not.be.empty();
+      await fileHandle.close();
     });
   });
 
@@ -242,7 +288,7 @@ describe('node feature', () => {
       }
     });
 
-    // IPC Electron child process not supported on Windows
+    // IPC Electron child process not supported on Windows.
     ifit(process.platform !== 'win32')('does not crash when quitting with the inspector connected', function (done) {
       child = childProcess.spawn(process.execPath, [path.join(fixtures, 'module', 'delay-exit'), '--inspect=0'], {
         stdio: ['ipc']

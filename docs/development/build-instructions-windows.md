@@ -1,6 +1,8 @@
 # Build Instructions (Windows)
 
-Follow the guidelines below for building Electron on Windows.
+Follow the guidelines below for building **Electron itself** on Windows, for the purposes of creating custom Electron binaries. For bundling and distributing your app code with the prebuilt Electron binaries, see the [application distribution][application-distribution] guide.
+
+[application-distribution]: ../tutorial/application-distribution.md
 
 ## Prerequisites
 
@@ -22,7 +24,7 @@ creating a full distribution since `symstore.exe` is used for creating a symbol
 store from `.pdb` files.
   * Different versions of the SDK can be installed side by side. To install the
   SDK, open Visual Studio Installer, select
-  `Change` → `Individual Components`, scroll down and select the appropriate
+  `Modify` → `Individual Components`, scroll down and select the appropriate
   Windows SDK to install. Another option would be to look at the
   [Windows SDK and emulator archive](https://developer.microsoft.com/en-us/windows/downloads/sdk-archive)
   and download the standalone version of the SDK respectively.

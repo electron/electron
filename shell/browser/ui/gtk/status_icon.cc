@@ -37,7 +37,7 @@ bool IsStatusIconSupported() {
 
 std::unique_ptr<views::StatusIconLinux> CreateLinuxStatusIcon(
     const gfx::ImageSkia& image,
-    const base::string16& tool_tip,
+    const std::u16string& tool_tip,
     const char* id_prefix) {
 #if GTK_CHECK_VERSION(3, 90, 0)
   NOTIMPLEMENTED();
@@ -46,12 +46,11 @@ std::unique_ptr<views::StatusIconLinux> CreateLinuxStatusIcon(
   if (AppIndicatorIcon::CouldOpen()) {
     ++indicators_count;
 
-    return std::unique_ptr<views::StatusIconLinux>(new AppIndicatorIcon(
+    return std::make_unique<AppIndicatorIcon>(
         base::StringPrintf("%s%d", id_prefix, indicators_count), image,
-        tool_tip));
+        tool_tip);
   } else {
-    return std::unique_ptr<views::StatusIconLinux>(
-        new GtkStatusIcon(image, tool_tip));
+    return std::make_unique<GtkStatusIcon>(image, tool_tip);
   }
   return nullptr;
 #endif

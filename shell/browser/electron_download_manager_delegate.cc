@@ -10,6 +10,7 @@
 #include "base/bind.h"
 #include "base/files/file_util.h"
 #include "base/task/post_task.h"
+#include "base/task/thread_pool.h"
 #include "chrome/common/pref_names.h"
 #include "components/download/public/common/download_danger_type.h"
 #include "components/prefs/pref_service.h"
@@ -37,22 +38,34 @@ base::FilePath CreateDownloadPath(const GURL& url,
                                   const std::string& content_disposition,
                                   const std::string& suggested_filename,
                                   const std::string& mime_type,
+                                  const base::FilePath& last_saved_directory,
                                   const base::FilePath& default_download_path) {
   auto generated_name =
       net::GenerateFileName(url, content_disposition, std::string(),
                             suggested_filename, mime_type, "download");
 
-  if (!base::PathExists(default_download_path))
-    base::CreateDirectory(default_download_path);
+  base::FilePath download_path;
 
-  return default_download_path.Append(generated_name);
+  // If the last saved directory is a non-empty existent path, use it as the
+  // default.
+  if (last_saved_directory.empty() || !base::PathExists(last_saved_directory)) {
+    download_path = default_download_path;
+
+    if (!base::PathExists(download_path))
+      base::CreateDirectory(download_path);
+  } else {
+    // Otherwise use the global default.
+    download_path = last_saved_directory;
+  }
+
+  return download_path.Append(generated_name);
 }
 
 }  // namespace
 
 ElectronDownloadManagerDelegate::ElectronDownloadManagerDelegate(
     content::DownloadManager* manager)
-    : download_manager_(manager), weak_ptr_factory_(this) {}
+    : download_manager_(manager) {}
 
 ElectronDownloadManagerDelegate::~ElectronDownloadManagerDelegate() {
   if (download_manager_) {
@@ -130,7 +143,7 @@ void ElectronDownloadManagerDelegate::OnDownloadPathGenerated(
     std::move(callback).Run(path,
                             download::DownloadItem::TARGET_DISPOSITION_PROMPT,
                             download::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
-                            item->GetMixedContentStatus(), path, base::nullopt,
+                            item->GetMixedContentStatus(), path, absl::nullopt,
                             download::DOWNLOAD_INTERRUPT_REASON_NONE);
   }
 }
@@ -153,10 +166,7 @@ void ElectronDownloadManagerDelegate::OnDownloadSaveDialogDone(
   if (!canceled) {
     if (result.Get("filePath", &path)) {
       // Remember the last selected download directory.
-      auto* browser_context = static_cast<ElectronBrowserContext*>(
-          download_manager_->GetBrowserContext());
-      browser_context->prefs()->SetFilePath(prefs::kDownloadDefaultDirectory,
-                                            path.DirName());
+      last_saved_directory_ = path.DirName();
 
       api::DownloadItem* download = api::DownloadItem::FromDownloadItem(item);
       if (download)
@@ -173,7 +183,7 @@ void ElectronDownloadManagerDelegate::OnDownloadSaveDialogDone(
   std::move(download_callback)
       .Run(path, download::DownloadItem::TARGET_DISPOSITION_PROMPT,
            download::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
-           item->GetMixedContentStatus(), path, base::nullopt,
+           item->GetMixedContentStatus(), path, absl::nullopt,
            interrupt_reason);
 }
 
@@ -193,7 +203,7 @@ bool ElectronDownloadManagerDelegate::DetermineDownloadTarget(
         download::DownloadItem::TARGET_DISPOSITION_OVERWRITE,
         download::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
         download::DownloadItem::MixedContentStatus::UNKNOWN,
-        download->GetForcedFilePath(), base::nullopt,
+        download->GetForcedFilePath(), absl::nullopt,
         download::DOWNLOAD_INTERRUPT_REASON_NONE);
     return true;
   }
@@ -206,7 +216,7 @@ bool ElectronDownloadManagerDelegate::DetermineDownloadTarget(
         save_path, download::DownloadItem::TARGET_DISPOSITION_OVERWRITE,
         download::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
         download::DownloadItem::MixedContentStatus::UNKNOWN, save_path,
-        base::nullopt, download::DOWNLOAD_INTERRUPT_REASON_NONE);
+        absl::nullopt, download::DOWNLOAD_INTERRUPT_REASON_NONE);
     return true;
   }
 
@@ -222,7 +232,7 @@ bool ElectronDownloadManagerDelegate::DetermineDownloadTarget(
       base::BindOnce(&CreateDownloadPath, download->GetURL(),
                      download->GetContentDisposition(),
                      download->GetSuggestedFilename(), download->GetMimeType(),
-                     default_download_path),
+                     last_saved_directory_, default_download_path),
       base::BindOnce(&ElectronDownloadManagerDelegate::OnDownloadPathGenerated,
                      weak_ptr_factory_.GetWeakPtr(), download->GetId(),
                      std::move(*callback)));

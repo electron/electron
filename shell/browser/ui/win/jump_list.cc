@@ -7,6 +7,7 @@
 #include <propkey.h>  // for PKEY_* constants
 
 #include "base/logging.h"
+#include "base/stl_util.h"
 #include "base/win/scoped_co_mem.h"
 #include "base/win/scoped_propvariant.h"
 #include "base/win/win_util.h"
@@ -26,6 +27,13 @@ bool AppendTask(const JumpListItem& item, IObjectCollection* collection) {
       FAILED(link->SetArguments(item.arguments.c_str())) ||
       FAILED(link->SetWorkingDirectory(item.working_dir.value().c_str())) ||
       FAILED(link->SetDescription(item.description.c_str())))
+    return false;
+
+  // SetDescription limits the size of the parameter to INFOTIPSIZE (1024),
+  // which suggests rejection when exceeding that limit, but experimentation
+  // has shown that descriptions longer than 260 characters cause a silent
+  // failure, despite SetDescription returning the success code S_OK.
+  if (item.description.size() > 260)
     return false;
 
   if (!item.icon_path.empty() &&
@@ -158,7 +166,7 @@ JumpListCategory::JumpListCategory() = default;
 JumpListCategory::JumpListCategory(const JumpListCategory&) = default;
 JumpListCategory::~JumpListCategory() = default;
 
-JumpList::JumpList(const base::string16& app_id) : app_id_(app_id) {
+JumpList::JumpList(const std::wstring& app_id) : app_id_(app_id) {
   destinations_.CoCreateInstance(CLSID_DestinationList);
 }
 

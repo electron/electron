@@ -7,10 +7,10 @@ This adds GN build files for Node, so we don't have to build with GYP.
 
 diff --git a/BUILD.gn b/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..446119163d1f7bad577cb0b7b217ecf24b994526
+index 0000000000000000000000000000000000000000..bd26c3623d3314539609a978270d3ced1d167777
 --- /dev/null
 +++ b/BUILD.gn
-@@ -0,0 +1,360 @@
+@@ -0,0 +1,400 @@
 +import("//electron/build/asar.gni")
 +import("//v8/gni/v8.gni")
 +
@@ -273,18 +273,58 @@ index 0000000000000000000000000000000000000000..446119163d1f7bad577cb0b7b217ecf2
 +  if (node_use_openssl) {
 +    deps += [ "//third_party/boringssl" ]
 +    sources += [
++      "src/crypto/crypto_aes.cc",
++      "src/crypto/crypto_aes.h",
++      "src/crypto/crypto_bio.cc",
++      "src/crypto/crypto_bio.h",
++      "src/crypto/crypto_cipher.cc",
++      "src/crypto/crypto_cipher.h",
++      "src/crypto/crypto_clienthello-inl.h",
++      "src/crypto/crypto_clienthello.cc",
++      "src/crypto/crypto_clienthello.h",
++      "src/crypto/crypto_common.cc",
++      "src/crypto/crypto_common.h",
++      "src/crypto/crypto_context.cc",
++      "src/crypto/crypto_context.h",
++      "src/crypto/crypto_dh.cc",
++      "src/crypto/crypto_dh.h",
++      "src/crypto/crypto_dsa.cc",
++      "src/crypto/crypto_dsa.h",
++      "src/crypto/crypto_ec.cc",
++      "src/crypto/crypto_ec.h",
++      "src/crypto/crypto_groups.h",
++      "src/crypto/crypto_hash.cc",
++      "src/crypto/crypto_hash.h",
++      "src/crypto/crypto_hkdf.cc",
++      "src/crypto/crypto_hkdf.h",
++      "src/crypto/crypto_hmac.cc",
++      "src/crypto/crypto_hmac.h",
++      "src/crypto/crypto_keygen.cc",
++      "src/crypto/crypto_keygen.h",
++      "src/crypto/crypto_keys.cc",
++      "src/crypto/crypto_keys.h",
++      "src/crypto/crypto_pbkdf2.cc",
++      "src/crypto/crypto_pbkdf2.h",
++      "src/crypto/crypto_random.cc",
++      "src/crypto/crypto_random.h",
++      "src/crypto/crypto_rsa.cc",
++      "src/crypto/crypto_rsa.h",
++      "src/crypto/crypto_scrypt.cc",
++      "src/crypto/crypto_scrypt.h",
++      "src/crypto/crypto_sig.cc",
++      "src/crypto/crypto_sig.h",
++      "src/crypto/crypto_spkac.cc",
++      "src/crypto/crypto_spkac.h",
++      "src/crypto/crypto_timing.cc",
++      "src/crypto/crypto_timing.h",
++      "src/crypto/crypto_tls.cc",
++      "src/crypto/crypto_tls.h",
++      "src/crypto/crypto_util.cc",
++      "src/crypto/crypto_util.h",
++      "src/crypto/crypto_x509.cc",
++      "src/crypto/crypto_x509.h",
 +      "src/node_crypto.cc",
 +      "src/node_crypto.h",
-+      "src/node_crypto_common.cc",
-+      "src/node_crypto_common.h",
-+      "src/node_crypto_bio.cc",
-+      "src/node_crypto_bio.h",
-+      "src/node_crypto_clienthello-inl.h",
-+      "src/node_crypto_clienthello.cc",
-+      "src/node_crypto_clienthello.h",
-+      "src/node_crypto_groups.h",
-+      "src/tls_wrap.cc",
-+      "src/tls_wrap.h",
 +    ]
 +    cflags_cc += [ "-Wno-sign-compare" ]
 +  }
@@ -373,10 +413,10 @@ index 0000000000000000000000000000000000000000..446119163d1f7bad577cb0b7b217ecf2
 +}
 diff --git a/deps/cares/BUILD.gn b/deps/cares/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..adce7f6aa905540da7eb8042606a285b260fefc4
+index 0000000000000000000000000000000000000000..880bc22a44db82ef6bf9766bb2ad5af2a2f6d719
 --- /dev/null
 +++ b/deps/cares/BUILD.gn
-@@ -0,0 +1,131 @@
+@@ -0,0 +1,132 @@
 +config("cares_config") {
 +  include_dirs = [ "include" ]
 +}
@@ -399,13 +439,9 @@ index 0000000000000000000000000000000000000000..adce7f6aa905540da7eb8042606a285b
 +    "include/ares_rules.h",
 +    "include/ares_version.h",
 +    "include/nameser.h",
-+    "src/ares__close_sockets.c",
-+    "src/ares__get_hostent.c",
-+    "src/ares__read_line.c",
-+    "src/ares__readaddrinfo.c",
-+    "src/ares__timeval.c",
 +    "src/ares_android.c",
 +    "src/ares_cancel.c",
++    "src/ares__close_sockets.c",
 +    "src/ares_create_query.c",
 +    "src/ares_data.c",
 +    "src/ares_data.h",
@@ -421,11 +457,11 @@ index 0000000000000000000000000000000000000000..adce7f6aa905540da7eb8042606a285b
 +    "src/ares_getaddrinfo.c",
 +    "src/ares_gethostbyaddr.c",
 +    "src/ares_gethostbyname.c",
++    "src/ares__get_hostent.c",
 +    "src/ares_getnameinfo.c",
 +    "src/ares_getopt.c",
 +    "src/ares_getopt.h",
 +    "src/ares_getsock.c",
-+    "src/ares_inet_net_pton.h",
 +    "src/ares_init.c",
 +    "src/ares_ipv6.h",
 +    "src/ares_library_init.c",
@@ -437,8 +473,9 @@ index 0000000000000000000000000000000000000000..adce7f6aa905540da7eb8042606a285b
 +    "src/ares_nowarn.h",
 +    "src/ares_options.c",
 +    "src/ares__parse_into_addrinfo.c",
-+    "src/ares_parse_a_reply.c",
 +    "src/ares_parse_aaaa_reply.c",
++    "src/ares_parse_a_reply.c",
++    "src/ares_parse_caa_reply.c",
 +    "src/ares_parse_mx_reply.c",
 +    "src/ares_parse_naptr_reply.c",
 +    "src/ares_parse_ns_reply.c",
@@ -450,6 +487,8 @@ index 0000000000000000000000000000000000000000..adce7f6aa905540da7eb8042606a285b
 +    "src/ares_private.h",
 +    "src/ares_process.c",
 +    "src/ares_query.c",
++    "src/ares__read_line.c",
++    "src/ares__readaddrinfo.c",
 +    "src/ares_search.c",
 +    "src/ares_send.c",
 +    "src/ares_setup.h",
@@ -461,6 +500,7 @@ index 0000000000000000000000000000000000000000..adce7f6aa905540da7eb8042606a285b
 +    "src/ares_strerror.c",
 +    "src/ares_strsplit.c",
 +    "src/ares_timeout.c",
++    "src/ares__timeval.c",
 +    "src/ares_version.c",
 +    "src/ares_writev.c",
 +    "src/ares_writev.h",
@@ -468,6 +508,7 @@ index 0000000000000000000000000000000000000000..adce7f6aa905540da7eb8042606a285b
 +    "src/bitncmp.h",
 +    "src/inet_net_pton.c",
 +    "src/inet_ntop.c",
++    "src/ares_inet_net_pton.h",
 +    "src/setup_once.h",
 +  ]
 +
@@ -553,10 +594,10 @@ index 0000000000000000000000000000000000000000..ce15bc57093caa1bd84ea77e7438e892
 +}
 diff --git a/deps/nghttp2/BUILD.gn b/deps/nghttp2/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..66af819990b338caa49ca59d1fe6c5ad61816d05
+index 0000000000000000000000000000000000000000..cd25ec4a073b45fd80beee829165e0dac4d8c5c1
 --- /dev/null
 +++ b/deps/nghttp2/BUILD.gn
-@@ -0,0 +1,46 @@
+@@ -0,0 +1,47 @@
 +config("nghttp2_config") {
 +  defines = [ "NGHTTP2_STATICLIB" ]
 +  include_dirs = [ "lib/includes" ]
@@ -588,6 +629,7 @@ index 0000000000000000000000000000000000000000..66af819990b338caa49ca59d1fe6c5ad
 +    "lib/nghttp2_hd_huffman_data.c",
 +    "lib/nghttp2_helper.c",
 +    "lib/nghttp2_http.c",
++    "lib/nghttp2_ksl.c",
 +    "lib/nghttp2_map.c",
 +    "lib/nghttp2_mem.c",
 +    "lib/nghttp2_npn.c",
@@ -846,10 +888,10 @@ index 0000000000000000000000000000000000000000..2c9d2826c85bdd033f1df1d6188df636
 +}
 diff --git a/filenames.json b/filenames.json
 new file mode 100644
-index 0000000000000000000000000000000000000000..2dfbb6aae48b65312f212ab01474763d5a796a23
+index 0000000000000000000000000000000000000000..24ab6333726076d6e2057e45410c88a21dd00193
 --- /dev/null
 +++ b/filenames.json
-@@ -0,0 +1,538 @@
+@@ -0,0 +1,528 @@
 +// This file is automatically generated by generate_gn_filenames_json.py
 +// DO NOT EDIT
 +{
@@ -869,72 +911,18 @@ index 0000000000000000000000000000000000000000..2dfbb6aae48b65312f212ab01474763d
 +    {
 +      "dest_dir": "include/node//cppgc/",
 +      "files": [
-+        "//v8/include/cppgc/allocation.h",
-+        "//v8/include/cppgc/common.h",
-+        "//v8/include/cppgc/cross-thread-persistent.h",
-+        "//v8/include/cppgc/custom-space.h",
-+        "//v8/include/cppgc/default-platform.h",
-+        "//v8/include/cppgc/ephemeron-pair.h",
-+        "//v8/include/cppgc/garbage-collected.h",
-+        "//v8/include/cppgc/heap-consistency.h",
-+        "//v8/include/cppgc/heap.h",
-+        "//v8/include/cppgc/liveness-broker.h",
-+        "//v8/include/cppgc/macros.h",
-+        "//v8/include/cppgc/member.h",
-+        "//v8/include/cppgc/name-provider.h",
-+        "//v8/include/cppgc/persistent.h",
-+        "//v8/include/cppgc/platform.h",
-+        "//v8/include/cppgc/prefinalizer.h",
-+        "//v8/include/cppgc/source-location.h",
-+        "//v8/include/cppgc/trace-trait.h",
-+        "//v8/include/cppgc/type-traits.h",
-+        "//v8/include/cppgc/visitor.h"
-+      ]
-+    },
-+    {
-+      "dest_dir": "include/node//cppgc/internal/",
-+      "files": [
-+        "//v8/include/cppgc/internal/api-constants.h",
-+        "//v8/include/cppgc/internal/atomic-entry-flag.h",
-+        "//v8/include/cppgc/internal/caged-heap-local-data.h",
-+        "//v8/include/cppgc/internal/compiler-specific.h",
-+        "//v8/include/cppgc/internal/finalizer-trait.h",
-+        "//v8/include/cppgc/internal/gc-info.h",
-+        "//v8/include/cppgc/internal/logging.h",
-+        "//v8/include/cppgc/internal/name-trait.h",
-+        "//v8/include/cppgc/internal/persistent-node.h",
-+        "//v8/include/cppgc/internal/pointer-policies.h",
-+        "//v8/include/cppgc/internal/prefinalizer-handler.h",
-+        "//v8/include/cppgc/internal/process-heap.h",
-+        "//v8/include/cppgc/internal/write-barrier.h"
++        "//v8/include/cppgc/common.h"
 +      ]
 +    },
 +    {
 +      "dest_dir": "include/node//",
 +      "files": [
-+        "//v8/include/v8-cppgc.h",
-+        "//v8/include/v8-fast-api-calls.h",
 +        "//v8/include/v8-internal.h",
-+        "//v8/include/v8-metrics.h",
 +        "//v8/include/v8-platform.h",
 +        "//v8/include/v8-profiler.h",
-+        "//v8/include/v8-unwinder-state.h",
-+        "//v8/include/v8-util.h",
-+        "//v8/include/v8-value-serializer-version.h",
-+        "//v8/include/v8-version-string.h",
 +        "//v8/include/v8-version.h",
-+        "//v8/include/v8-wasm-trap-handler-posix.h",
-+        "//v8/include/v8-wasm-trap-handler-win.h",
 +        "//v8/include/v8.h",
 +        "//v8/include/v8config.h"
-+      ]
-+    },
-+    {
-+      "dest_dir": "include/node//libplatform/",
-+      "files": [
-+        "//v8/include/libplatform/libplatform-export.h",
-+        "//v8/include/libplatform/libplatform.h",
-+        "//v8/include/libplatform/v8-tracing.h"
 +      ]
 +    },
 +    {
@@ -978,14 +966,17 @@ index 0000000000000000000000000000000000000000..2dfbb6aae48b65312f212ab01474763d
 +    "lib/internal/per_context/messageport.js",
 +    "lib/async_hooks.js",
 +    "lib/assert.js",
++    "lib/assert/strict.js",
 +    "lib/buffer.js",
 +    "lib/child_process.js",
 +    "lib/console.js",
 +    "lib/constants.js",
 +    "lib/crypto.js",
 +    "lib/cluster.js",
++    "lib/diagnostics_channel.js",
 +    "lib/dgram.js",
 +    "lib/dns.js",
++    "lib/dns/promises.js",
 +    "lib/domain.js",
 +    "lib/events.js",
 +    "lib/fs.js",
@@ -1004,6 +995,8 @@ index 0000000000000000000000000000000000000000..2dfbb6aae48b65312f212ab01474763d
 +    "lib/net.js",
 +    "lib/os.js",
 +    "lib/path.js",
++    "lib/path/posix.js",
++    "lib/path/win32.js",
 +    "lib/perf_hooks.js",
 +    "lib/process.js",
 +    "lib/punycode.js",
@@ -1011,6 +1004,7 @@ index 0000000000000000000000000000000000000000..2dfbb6aae48b65312f212ab01474763d
 +    "lib/readline.js",
 +    "lib/repl.js",
 +    "lib/stream.js",
++    "lib/stream/promises.js",
 +    "lib/_stream_readable.js",
 +    "lib/_stream_writable.js",
 +    "lib/_stream_duplex.js",
@@ -1019,6 +1013,7 @@ index 0000000000000000000000000000000000000000..2dfbb6aae48b65312f212ab01474763d
 +    "lib/_stream_wrap.js",
 +    "lib/string_decoder.js",
 +    "lib/sys.js",
++    "lib/timers/promises.js",
 +    "lib/timers.js",
 +    "lib/tls.js",
 +    "lib/_tls_common.js",
@@ -1027,38 +1022,51 @@ index 0000000000000000000000000000000000000000..2dfbb6aae48b65312f212ab01474763d
 +    "lib/tty.js",
 +    "lib/url.js",
 +    "lib/util.js",
++    "lib/util/types.js",
 +    "lib/v8.js",
 +    "lib/vm.js",
 +    "lib/wasi.js",
 +    "lib/worker_threads.js",
 +    "lib/zlib.js",
++    "lib/internal/abort_controller.js",
 +    "lib/internal/assert.js",
 +    "lib/internal/assert/assertion_error.js",
 +    "lib/internal/assert/calltracker.js",
 +    "lib/internal/async_hooks.js",
++    "lib/internal/blob.js",
++    "lib/internal/blocklist.js",
 +    "lib/internal/buffer.js",
 +    "lib/internal/cli_table.js",
 +    "lib/internal/child_process.js",
 +    "lib/internal/child_process/serialization.js",
 +    "lib/internal/cluster/child.js",
-+    "lib/internal/cluster/master.js",
++    "lib/internal/cluster/primary.js",
 +    "lib/internal/cluster/round_robin_handle.js",
 +    "lib/internal/cluster/shared_handle.js",
 +    "lib/internal/cluster/utils.js",
 +    "lib/internal/cluster/worker.js",
 +    "lib/internal/console/constructor.js",
 +    "lib/internal/console/global.js",
++    "lib/internal/crypto/aes.js",
 +    "lib/internal/crypto/certificate.js",
 +    "lib/internal/crypto/cipher.js",
 +    "lib/internal/crypto/diffiehellman.js",
++    "lib/internal/crypto/dsa.js",
++    "lib/internal/crypto/ec.js",
 +    "lib/internal/crypto/hash.js",
++    "lib/internal/crypto/hashnames.js",
++    "lib/internal/crypto/hkdf.js",
 +    "lib/internal/crypto/keygen.js",
 +    "lib/internal/crypto/keys.js",
++    "lib/internal/crypto/mac.js",
 +    "lib/internal/crypto/pbkdf2.js",
 +    "lib/internal/crypto/random.js",
++    "lib/internal/crypto/rsa.js",
 +    "lib/internal/crypto/scrypt.js",
 +    "lib/internal/crypto/sig.js",
 +    "lib/internal/crypto/util.js",
++    "lib/internal/crypto/webcrypto.js",
++    "lib/internal/crypto/x509.js",
 +    "lib/internal/constants.js",
 +    "lib/internal/dgram.js",
 +    "lib/internal/dns/promises.js",
@@ -1083,8 +1091,12 @@ index 0000000000000000000000000000000000000000..2dfbb6aae48b65312f212ab01474763d
 +    "lib/internal/heap_utils.js",
 +    "lib/internal/histogram.js",
 +    "lib/internal/idna.js",
++    "lib/internal/inspector/_inspect.js",
++    "lib/internal/inspector/inspect_client.js",
++    "lib/internal/inspector/inspect_repl.js",
 +    "lib/internal/inspector_async_hook.js",
 +    "lib/internal/js_stream_socket.js",
++    "lib/internal/legacy/processbinding.js",
 +    "lib/internal/linkedlist.js",
 +    "lib/internal/main/check_syntax.js",
 +    "lib/internal/main/eval_string.js",
@@ -1094,7 +1106,6 @@ index 0000000000000000000000000000000000000000..2dfbb6aae48b65312f212ab01474763d
 +    "lib/internal/main/prof_process.js",
 +    "lib/internal/main/repl.js",
 +    "lib/internal/main/run_main_module.js",
-+    "lib/internal/main/run_third_party_main.js",
 +    "lib/internal/main/worker_thread.js",
 +    "lib/internal/modules/run_main.js",
 +    "lib/internal/modules/package_json_reader.js",
@@ -1111,6 +1122,13 @@ index 0000000000000000000000000000000000000000..2dfbb6aae48b65312f212ab01474763d
 +    "lib/internal/modules/esm/translators.js",
 +    "lib/internal/net.js",
 +    "lib/internal/options.js",
++    "lib/internal/perf/perf.js",
++    "lib/internal/perf/nodetiming.js",
++    "lib/internal/perf/usertiming.js",
++    "lib/internal/perf/observe.js",
++    "lib/internal/perf/event_loop_delay.js",
++    "lib/internal/perf/event_loop_utilization.js",
++    "lib/internal/perf/timerify.js",
 +    "lib/internal/policy/manifest.js",
 +    "lib/internal/policy/sri.js",
 +    "lib/internal/priority_queue.js",
@@ -1125,16 +1143,20 @@ index 0000000000000000000000000000000000000000..2dfbb6aae48b65312f212ab01474763d
 +    "lib/internal/process/signal.js",
 +    "lib/internal/process/task_queues.js",
 +    "lib/internal/querystring.js",
++    "lib/internal/readline/callbacks.js",
++    "lib/internal/readline/emitKeypressEvents.js",
 +    "lib/internal/readline/utils.js",
 +    "lib/internal/repl.js",
 +    "lib/internal/repl/await.js",
 +    "lib/internal/repl/history.js",
 +    "lib/internal/repl/utils.js",
++    "lib/internal/socketaddress.js",
 +    "lib/internal/socket_list.js",
 +    "lib/internal/source_map/prepare_stack_trace.js",
 +    "lib/internal/source_map/source_map.js",
 +    "lib/internal/source_map/source_map_cache.js",
 +    "lib/internal/test/binding.js",
++    "lib/internal/test/transfer.js",
 +    "lib/internal/timers.js",
 +    "lib/internal/tls.js",
 +    "lib/internal/trace_events_async_hooks.js",
@@ -1145,6 +1167,7 @@ index 0000000000000000000000000000000000000000..2dfbb6aae48b65312f212ab01474763d
 +    "lib/internal/util/debuglog.js",
 +    "lib/internal/util/inspect.js",
 +    "lib/internal/util/inspector.js",
++    "lib/internal/util/iterable_weak_map.js",
 +    "lib/internal/util/types.js",
 +    "lib/internal/http2/core.js",
 +    "lib/internal/http2/compat.js",
@@ -1159,6 +1182,7 @@ index 0000000000000000000000000000000000000000..2dfbb6aae48b65312f212ab01474763d
 +    "lib/internal/worker/js_transferable.js",
 +    "lib/internal/watchdog.js",
 +    "lib/internal/streams/lazy_transform.js",
++    "lib/internal/streams/add-abort-signal.js",
 +    "lib/internal/streams/buffer_list.js",
 +    "lib/internal/streams/duplexpair.js",
 +    "lib/internal/streams/from.js",
@@ -1172,20 +1196,18 @@ index 0000000000000000000000000000000000000000..2dfbb6aae48b65312f212ab01474763d
 +    "lib/internal/streams/state.js",
 +    "lib/internal/streams/pipeline.js",
 +    "lib/internal/streams/end-of-stream.js",
-+    "//v8/tools/splaytree.js",
-+    "//v8/tools/codemap.js",
-+    "//v8/tools/consarray.js",
-+    "//v8/tools/csvparser.js",
-+    "//v8/tools/profile.js",
-+    "//v8/tools/profile_view.js",
-+    "//v8/tools/logreader.js",
-+    "//v8/tools/arguments.js",
-+    "//v8/tools/tickprocessor.js",
-+    "//v8/tools/SourceMap.js",
-+    "//v8/tools/tickprocessor-driver.js",
-+    "deps/node-inspect/lib/_inspect.js",
-+    "deps/node-inspect/lib/internal/inspect_client.js",
-+    "deps/node-inspect/lib/internal/inspect_repl.js",
++    "lib/internal/streams/utils.js",
++    "//v8/tools/splaytree.mjs",
++    "//v8/tools/codemap.mjs",
++    "//v8/tools/consarray.mjs",
++    "//v8/tools/csvparser.mjs",
++    "//v8/tools/profile.mjs",
++    "//v8/tools/profile_view.mjs",
++    "//v8/tools/logreader.mjs",
++    "//v8/tools/arguments.mjs",
++    "//v8/tools/tickprocessor.mjs",
++    "//v8/tools/sourcemap.mjs",
++    "//v8/tools/tickprocessor-driver.mjs",
 +    "deps/acorn/acorn/dist/acorn.js",
 +    "deps/acorn/acorn-walk/dist/walk.js",
 +    "deps/acorn-plugins/acorn-class-fields/index.js",
@@ -1198,6 +1220,7 @@ index 0000000000000000000000000000000000000000..2dfbb6aae48b65312f212ab01474763d
 +  "node_sources": [
 +    "src/api/async_resource.cc",
 +    "src/api/callback.cc",
++    "src/api/embed_helpers.cc",
 +    "src/api/encoding.cc",
 +    "src/api/environment.cc",
 +    "src/api/exceptions.cc",
@@ -1225,6 +1248,7 @@ index 0000000000000000000000000000000000000000..2dfbb6aae48b65312f212ab01474763d
 +    "src/node.cc",
 +    "src/node_api.cc",
 +    "src/node_binding.cc",
++    "src/node_blob.cc",
 +    "src/node_buffer.cc",
 +    "src/node_config.cc",
 +    "src/node_constants.cc",
@@ -1233,6 +1257,7 @@ index 0000000000000000000000000000000000000000..2dfbb6aae48b65312f212ab01474763d
 +    "src/node_dir.cc",
 +    "src/node_env_var.cc",
 +    "src/node_errors.cc",
++    "src/node_external_reference.cc",
 +    "src/node_file.cc",
 +    "src/node_http_parser.cc",
 +    "src/node_http2.cc",
@@ -1254,6 +1279,7 @@ index 0000000000000000000000000000000000000000..2dfbb6aae48b65312f212ab01474763d
 +    "src/node_report_module.cc",
 +    "src/node_report_utils.cc",
 +    "src/node_serdes.cc",
++    "src/node_snapshotable.cc",
 +    "src/node_sockaddr.cc",
 +    "src/node_stat_watcher.cc",
 +    "src/node_symbols.cc",
@@ -1278,6 +1304,7 @@ index 0000000000000000000000000000000000000000..2dfbb6aae48b65312f212ab01474763d
 +    "src/string_decoder.cc",
 +    "src/tcp_wrap.cc",
 +    "src/timers.cc",
++    "src/timer_wrap.cc",
 +    "src/tracing/agent.cc",
 +    "src/tracing/node_trace_buffer.cc",
 +    "src/tracing/node_trace_writer.cc",
@@ -1320,12 +1347,14 @@ index 0000000000000000000000000000000000000000..2dfbb6aae48b65312f212ab01474763d
 +    "src/node_api.h",
 +    "src/node_api_types.h",
 +    "src/node_binding.h",
++    "src/node_blob.h",
 +    "src/node_buffer.h",
 +    "src/node_constants.h",
 +    "src/node_context_data.h",
 +    "src/node_contextify.h",
 +    "src/node_dir.h",
 +    "src/node_errors.h",
++    "src/node_external_reference.h",
 +    "src/node_file.h",
 +    "src/node_file-inl.h",
 +    "src/node_http_common.h",
@@ -1352,12 +1381,14 @@ index 0000000000000000000000000000000000000000..2dfbb6aae48b65312f212ab01474763d
 +    "src/node_report.h",
 +    "src/node_revert.h",
 +    "src/node_root_certs.h",
++    "src/node_snapshotable.h",
 +    "src/node_sockaddr.h",
 +    "src/node_sockaddr-inl.h",
 +    "src/node_stat_watcher.h",
 +    "src/node_union_bytes.h",
 +    "src/node_url.h",
 +    "src/node_version.h",
++    "src/node_v8.h",
 +    "src/node_v8_platform-inl.h",
 +    "src/node_wasi.h",
 +    "src/node_watchdog.h",
@@ -1381,6 +1412,7 @@ index 0000000000000000000000000000000000000000..2dfbb6aae48b65312f212ab01474763d
 +    "src/tracing/trace_event.h",
 +    "src/tracing/trace_event_common.h",
 +    "src/tracing/traced_value.h",
++    "src/timer_wrap.h",
 +    "src/tty_wrap.h",
 +    "src/udp_wrap.h",
 +    "src/util.h",
@@ -1390,7 +1422,7 @@ index 0000000000000000000000000000000000000000..2dfbb6aae48b65312f212ab01474763d
 +}
 diff --git a/src/inspector/BUILD.gn b/src/inspector/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..f3c5c798c0aefcb8cf9b1570a7b4817c477aecf6
+index 0000000000000000000000000000000000000000..d1d6b51e8c0c5bc6a5d09e217eb3048361d9d591
 --- /dev/null
 +++ b/src/inspector/BUILD.gn
 @@ -0,0 +1,199 @@
@@ -1532,7 +1564,7 @@ index 0000000000000000000000000000000000000000..f3c5c798c0aefcb8cf9b1570a7b4817c
 +    ]
 +    sources = copied_pdl
 +    outputs = invoker.outputs
-+    script = "//v8/third_party/inspector_protocol/convert_protocol_to_json.py"
++    script = "$inspector_protocol_dir/convert_protocol_to_json.py"
 +    args = rebase_path(sources + outputs, root_build_dir)
 +  }
 +}
@@ -1594,7 +1626,7 @@ index 0000000000000000000000000000000000000000..f3c5c798c0aefcb8cf9b1570a7b4817c
 +  args = rebase_path(inputs + outputs, root_build_dir)
 +}
 diff --git a/src/node_version.h b/src/node_version.h
-index 88a4c89870057e1550ebc14a0306e1a3e1089764..82212b81d6e8e1dcdbe2b796adff511000f5c5d1 100644
+index 810425a5562f6a45304a94cb1d58e3b812983401..9cc414d689feefc9a932d87c6a571259271254ee 100644
 --- a/src/node_version.h
 +++ b/src/node_version.h
 @@ -89,7 +89,10 @@
@@ -1603,7 +1635,7 @@ index 88a4c89870057e1550ebc14a0306e1a3e1089764..82212b81d6e8e1dcdbe2b796adff5110
   */
 +// Electron sets NODE_MODULE_VERSION in their GN configuration
 +#ifndef NODE_MODULE_VERSION
- #define NODE_MODULE_VERSION 83
+ #define NODE_MODULE_VERSION 93
 +#endif
  
  // The NAPI_VERSION provided by this version of the runtime. This is the version
@@ -1627,10 +1659,10 @@ index 0000000000000000000000000000000000000000..01f62d4ae6e3b9d539444e3dff069f00
 +  main(sys.argv[1:])
 diff --git a/tools/generate_gn_filenames_json.py b/tools/generate_gn_filenames_json.py
 new file mode 100755
-index 0000000000000000000000000000000000000000..e5fd79da5323e7039730fd8cca66caae8c84e903
+index 0000000000000000000000000000000000000000..cf3b8df67d73b4096a0113b55e2a916b59701b23
 --- /dev/null
 +++ b/tools/generate_gn_filenames_json.py
-@@ -0,0 +1,70 @@
+@@ -0,0 +1,71 @@
 +#!/usr/bin/env python
 +import json
 +import os
@@ -1692,8 +1724,9 @@ index 0000000000000000000000000000000000000000..e5fd79da5323e7039730fd8cca66caae
 +      files = [f for f in files if f.endswith('.h') and f != 'src/node_version.h']
 +    elif any(f.startswith('../../v8/') for f in files):
 +      files = [f.replace('../../v8/', '//v8/', 1) for f in files]
-+    hs = {'files': sorted(files), 'dest_dir': dest_dir}
-+    out['headers'].append(hs)
++    if files:
++      hs = {'files': sorted(files), 'dest_dir': dest_dir}
++      out['headers'].append(hs)
 +
 +  install.variables = {'node_shared_libuv': 'false'}
 +  install.headers(add_headers)
@@ -1733,31 +1766,43 @@ index 0000000000000000000000000000000000000000..3088ae4bdf814ae255c9805ebd393b2e
 +
 +  out_file.writelines(new_contents)
 diff --git a/tools/install.py b/tools/install.py
-index 729b416fc47d3ff3317ae3671dee977c719a8841..530ca7d441d3b65d4e4fac7dd5880afe56aa3807 100755
+index 045d406d84be301722f3de62abc448db84e751f8..95aa4c985d33ef37a73eebfca8bb8651e5059d37 100755
 --- a/tools/install.py
 +++ b/tools/install.py
-@@ -159,8 +159,8 @@ def files(action):
+@@ -159,14 +159,15 @@ def files(action):
  def headers(action):
-   def ignore_inspector_headers(files_arg, dest):
-     inspector_headers = [
--      'deps/v8/include/v8-inspector.h',
--      'deps/v8/include/v8-inspector-protocol.h'
-+      '../../v8/include/v8-inspector.h',
-+      '../../v8/include/v8-inspector-protocol.h'
+   def wanted_v8_headers(files_arg, dest):
+     v8_headers = [
+-      'deps/v8/include/cppgc/common.h',
+-      'deps/v8/include/v8.h',
+-      'deps/v8/include/v8-internal.h',
+-      'deps/v8/include/v8-platform.h',
+-      'deps/v8/include/v8-profiler.h',
+-      'deps/v8/include/v8-version.h',
+-      'deps/v8/include/v8config.h',
++      '../../v8/include/cppgc/common.h',
++      '../../v8/include/v8.h',
++      '../../v8/include/v8-internal.h',
++      '../../v8/include/v8-platform.h',
++      '../../v8/include/v8-profiler.h',
++      '../../v8/include/v8-version.h',
++      '../../v8/include/v8config.h',
      ]
-     files_arg = [name for name in files_arg if name not in inspector_headers]
++    v8_headers = [h.replace('deps/', '../../') for h in v8_headers]
+     files_arg = [name for name in files_arg if name in v8_headers]
      action(files_arg, dest)
-@@ -182,7 +182,7 @@ def headers(action):
+ 
+@@ -187,7 +188,7 @@ def headers(action):
    if sys.platform.startswith('aix'):
      action(['out/Release/node.exp'], 'include/node/')
  
--  subdir_files('deps/v8/include', 'include/node/', ignore_inspector_headers)
-+  subdir_files('../../v8/include', 'include/node/', ignore_inspector_headers)
+-  subdir_files('deps/v8/include', 'include/node/', wanted_v8_headers)
++  subdir_files('../../v8/include', 'include/node/', wanted_v8_headers)
  
    if 'false' == variables.get('node_shared_libuv'):
      subdir_files('deps/uv/include', 'include/node/', action)
 diff --git a/tools/js2c.py b/tools/js2c.py
-index 0f073e182bdb2858957e4b28ae15b366d7933dbe..93e9474297fd9032981786ae9d4e005f2d1a9a2e 100755
+index d40f28ce2bff2b7fc28ceeafc7772831746e7f89..4af54c3fa00602f9d0ce5cc4dca253d425048706 100755
 --- a/tools/js2c.py
 +++ b/tools/js2c.py
 @@ -130,6 +130,14 @@ def NormalizeFileName(filename):

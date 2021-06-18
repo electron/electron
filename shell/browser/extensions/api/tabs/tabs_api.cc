@@ -10,6 +10,7 @@
 #include "extensions/browser/extension_api_frame_id_map.h"
 #include "extensions/common/error_utils.h"
 #include "extensions/common/manifest_constants.h"
+#include "extensions/common/mojom/host_id.mojom.h"
 #include "extensions/common/permissions/permissions_data.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/web_contents_zoom_controller.h"
@@ -56,7 +57,7 @@ void ZoomModeToZoomSettings(WebContentsZoomController::ZoomMode zoom_mode,
 
 ExecuteCodeInTabFunction::ExecuteCodeInTabFunction() : execute_tab_id_(-1) {}
 
-ExecuteCodeInTabFunction::~ExecuteCodeInTabFunction() {}
+ExecuteCodeInTabFunction::~ExecuteCodeInTabFunction() = default;
 
 ExecuteCodeFunction::InitResult ExecuteCodeInTabFunction::Init() {
   if (init_result_)
@@ -71,7 +72,7 @@ ExecuteCodeFunction::InitResult ExecuteCodeInTabFunction::Init() {
   base::DictionaryValue* details_value = NULL;
   if (!args_->GetDictionary(1, &details_value))
     return set_init_result(VALIDATION_FAILURE);
-  std::unique_ptr<InjectDetails> details(new InjectDetails());
+  auto details = std::make_unique<InjectDetails>();
   if (!InjectDetails::Populate(*details_value, details.get()))
     return set_init_result(VALIDATION_FAILURE);
 
@@ -84,7 +85,8 @@ ExecuteCodeFunction::InitResult ExecuteCodeInTabFunction::Init() {
 
   execute_tab_id_ = tab_id;
   details_ = std::move(details);
-  set_host_id(HostID(HostID::EXTENSIONS, extension()->id()));
+  set_host_id(
+      mojom::HostID(mojom::HostID::HostType::kExtensions, extension()->id()));
   return set_init_result(SUCCESS);
 }
 
@@ -131,7 +133,7 @@ bool ExecuteCodeInTabFunction::CanExecuteScriptOnPage(std::string* error) {
                                                       execute_tab_id_, error)) {
     if (is_about_url &&
         extension()->permissions_data()->active_permissions().HasAPIPermission(
-            APIPermission::kTab)) {
+            extensions::mojom::APIPermissionID::kTab)) {
       *error = ErrorUtils::FormatErrorMessage(
           manifest_errors::kCannotAccessAboutUrl,
           rfh->GetLastCommittedURL().spec(),
@@ -178,7 +180,7 @@ ExtensionFunction::ResponseAction TabsGetFunction::Run() {
 
   tabs::Tab tab;
 
-  tab.id.reset(new int(tab_id));
+  tab.id = std::make_unique<int>(tab_id);
   // TODO(nornagon): in Chrome, the tab URL is only available to extensions
   // that have the "tabs" (or "activeTab") permission. We should do the same
   // permission check here.
@@ -247,9 +249,8 @@ ExtensionFunction::ResponseAction TabsGetZoomSettingsFunction::Run() {
       contents->GetZoomController()->zoom_mode();
   api::tabs::ZoomSettings zoom_settings;
   ZoomModeToZoomSettings(zoom_mode, &zoom_settings);
-  zoom_settings.default_zoom_factor.reset(
-      new double(blink::PageZoomLevelToZoomFactor(
-          zoom_controller->GetDefaultZoomLevel())));
+  zoom_settings.default_zoom_factor = std::make_unique<double>(
+      blink::PageZoomLevelToZoomFactor(zoom_controller->GetDefaultZoomLevel()));
 
   return RespondNow(
       ArgumentList(api::tabs::GetZoomSettings::Results::Create(zoom_settings)));

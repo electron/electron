@@ -9,6 +9,8 @@
 #include "base/base_switches.h"
 #include "base/command_line.h"
 #include "base/feature_list.h"
+#include "base/metrics/field_trial.h"
+#include "components/spellcheck/common/spellcheck_features.h"
 #include "content/public/common/content_features.h"
 #include "electron/buildflags/buildflags.h"
 #include "media/base/media_switches.h"
@@ -35,19 +37,27 @@ void InitializeFeatureList() {
       // https://groups.google.com/a/chromium.org/g/embedder-dev/c/4yJi4Twj2NM/m/9bhpWureCAAJ
       std::string(",") + net::features::kSameSiteByDefaultCookies.name +
       std::string(",") +
-      net::features::kCookiesWithoutSameSiteMustBeSecure.name +
-      std::string(",") + network::features::kCertVerifierService.name;
-
-  // https://www.polymer-project.org/blog/2018-10-02-webcomponents-v0-deprecations
-  // https://chromium-review.googlesource.com/c/chromium/src/+/1869562
-  // Any website which uses older WebComponents will fail in without this
-  // enabled, since Electron does not support origin trials.
-  enable_features += std::string(",") + "WebComponentsV0Enabled";
+      net::features::kCookiesWithoutSameSiteMustBeSecure.name;
 
 #if !BUILDFLAG(ENABLE_PICTURE_IN_PICTURE)
   disable_features += std::string(",") + media::kPictureInPicture.name;
 #endif
+
+#if defined(OS_WIN)
+  // Disable async spellchecker suggestions for Windows, which causes
+  // an empty suggestions list to be returned
+  disable_features +=
+      std::string(",") + spellcheck::kWinRetrieveSuggestionsOnlyOnDemand.name;
+#endif
   base::FeatureList::InitializeInstance(enable_features, disable_features);
+}
+
+void InitializeFieldTrials() {
+  auto* cmd_line = base::CommandLine::ForCurrentProcess();
+  auto force_fieldtrials =
+      cmd_line->GetSwitchValueASCII(::switches::kForceFieldTrials);
+
+  base::FieldTrialList::CreateTrialsFromString(force_fieldtrials);
 }
 
 }  // namespace electron

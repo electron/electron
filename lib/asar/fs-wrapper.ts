@@ -3,7 +3,6 @@ import * as path from 'path';
 import * as util from 'util';
 
 const asar = process._linkedBinding('electron_common_asar');
-const v8Util = process._linkedBinding('electron_common_v8_util');
 
 const Module = require('module');
 
@@ -490,61 +489,83 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     }
   };
 
+  function fsReadFileAsar (pathArgument: string, options: any, callback: any) {
+    const pathInfo = splitPath(pathArgument);
+    if (pathInfo.isAsar) {
+      const { asarPath, filePath } = pathInfo;
+
+      if (typeof options === 'function') {
+        callback = options;
+        options = { encoding: null };
+      } else if (typeof options === 'string') {
+        options = { encoding: options };
+      } else if (options === null || options === undefined) {
+        options = { encoding: null };
+      } else if (typeof options !== 'object') {
+        throw new TypeError('Bad arguments');
+      }
+
+      const { encoding } = options;
+      const archive = getOrCreateArchive(asarPath);
+      if (!archive) {
+        const error = createError(AsarError.INVALID_ARCHIVE, { asarPath });
+        nextTick(callback, [error]);
+        return;
+      }
+
+      const info = archive.getFileInfo(filePath);
+      if (!info) {
+        const error = createError(AsarError.NOT_FOUND, { asarPath, filePath });
+        nextTick(callback, [error]);
+        return;
+      }
+
+      if (info.size === 0) {
+        nextTick(callback, [null, encoding ? '' : Buffer.alloc(0)]);
+        return;
+      }
+
+      if (info.unpacked) {
+        const realPath = archive.copyFileOut(filePath);
+        return fs.readFile(realPath, options, callback);
+      }
+
+      const buffer = Buffer.alloc(info.size);
+      const fd = archive.getFd();
+      if (!(fd >= 0)) {
+        const error = createError(AsarError.NOT_FOUND, { asarPath, filePath });
+        nextTick(callback, [error]);
+        return;
+      }
+
+      logASARAccess(asarPath, filePath, info.offset);
+      fs.read(fd, buffer, 0, info.size, info.offset, (error: Error) => {
+        callback(error, encoding ? buffer.toString(encoding) : buffer);
+      });
+    }
+  }
+
   const { readFile } = fs;
   fs.readFile = function (pathArgument: string, options: any, callback: any) {
     const pathInfo = splitPath(pathArgument);
-    if (!pathInfo.isAsar) return readFile.apply(this, arguments);
-    const { asarPath, filePath } = pathInfo;
-
-    if (typeof options === 'function') {
-      callback = options;
-      options = { encoding: null };
-    } else if (typeof options === 'string') {
-      options = { encoding: options };
-    } else if (options === null || options === undefined) {
-      options = { encoding: null };
-    } else if (typeof options !== 'object') {
-      throw new TypeError('Bad arguments');
+    if (!pathInfo.isAsar) {
+      return readFile.apply(this, arguments);
     }
 
-    const { encoding } = options;
-    const archive = getOrCreateArchive(asarPath);
-    if (!archive) {
-      const error = createError(AsarError.INVALID_ARCHIVE, { asarPath });
-      nextTick(callback, [error]);
-      return;
-    }
-
-    const info = archive.getFileInfo(filePath);
-    if (!info) {
-      const error = createError(AsarError.NOT_FOUND, { asarPath, filePath });
-      nextTick(callback, [error]);
-      return;
-    }
-
-    if (info.size === 0) {
-      nextTick(callback, [null, encoding ? '' : Buffer.alloc(0)]);
-      return;
-    }
-
-    if (info.unpacked) {
-      const realPath = archive.copyFileOut(filePath);
-      return fs.readFile(realPath, options, callback);
-    }
-
-    logASARAccess(asarPath, filePath, info.offset);
-    archive.read(info.offset, info.size).then((buf) => {
-      const buffer = Buffer.from(buf);
-      callback(null, encoding ? buffer.toString(encoding) : buffer);
-    }, (err) => {
-      const error: AsarErrorObject = new Error(`EINVAL, ${err.message} while reading ${filePath} in ${asarPath}`);
-      error.code = 'EINVAL';
-      error.errno = -22;
-      callback(error);
-    });
+    return fsReadFileAsar(pathArgument, options, callback);
   };
 
-  fs.promises.readFile = util.promisify(fs.readFile);
+  const { readFile: readFilePromise } = fs.promises;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  fs.promises.readFile = function (pathArgument: string, options: any) {
+    const pathInfo = splitPath(pathArgument);
+    if (!pathInfo.isAsar) {
+      return readFilePromise.apply(this, arguments);
+    }
+
+    const p = util.promisify(fsReadFileAsar);
+    return p(pathArgument, options);
+  };
 
   const { readFileSync } = fs;
   fs.readFileSync = function (pathArgument: string, options: any) {
@@ -573,19 +594,13 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     }
 
     const { encoding } = options;
+    const buffer = Buffer.alloc(info.size);
+    const fd = archive.getFd();
+    if (!(fd >= 0)) throw createError(AsarError.NOT_FOUND, { asarPath, filePath });
 
     logASARAccess(asarPath, filePath, info.offset);
-    let arrayBuffer: ArrayBuffer;
-    try {
-      arrayBuffer = archive.readSync(info.offset, info.size);
-    } catch (err) {
-      const error: AsarErrorObject = new Error(`EINVAL, ${err.message} while reading ${filePath} in ${asarPath}`);
-      error.code = 'EINVAL';
-      error.errno = -22;
-      throw error;
-    }
-    const buffer = Buffer.from(arrayBuffer);
-    return encoding ? buffer.toString(encoding) : buffer;
+    fs.readSync(fd, buffer, 0, info.size, info.offset);
+    return (encoding) ? buffer.toString(encoding) : buffer;
   };
 
   const { readdir } = fs;
@@ -639,8 +654,10 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
 
   fs.promises.readdir = util.promisify(fs.readdir);
 
+  type ReaddirSyncOptions = { encoding: BufferEncoding | null; withFileTypes?: false };
+
   const { readdirSync } = fs;
-  fs.readdirSync = function (pathArgument: string, options: { encoding: BufferEncoding | null; withFileTypes?: false } | BufferEncoding | null) {
+  fs.readdirSync = function (pathArgument: string, options: ReaddirSyncOptions | BufferEncoding | null) {
     const pathInfo = splitPath(pathArgument);
     if (!pathInfo.isAsar) return readdirSync.apply(this, arguments);
     const { asarPath, filePath } = pathInfo;
@@ -655,7 +672,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
       throw createError(AsarError.NOT_FOUND, { asarPath, filePath });
     }
 
-    if (options && (options as any).withFileTypes) {
+    if (options && (options as ReaddirSyncOptions).withFileTypes) {
       const dirents = [];
       for (const file of files) {
         const childPath = path.join(filePath, file);
@@ -695,17 +712,12 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
       return [str, str.length > 0];
     }
 
+    const buffer = Buffer.alloc(info.size);
+    const fd = archive.getFd();
+    if (!(fd >= 0)) return [];
+
     logASARAccess(asarPath, filePath, info.offset);
-    let arrayBuffer: ArrayBuffer;
-    try {
-      arrayBuffer = archive.readSync(info.offset, info.size);
-    } catch (err) {
-      const error: AsarErrorObject = new Error(`EINVAL, ${err.message} while reading ${filePath} in ${asarPath}`);
-      error.code = 'EINVAL';
-      error.errno = -22;
-      throw error;
-    }
-    const buffer = Buffer.from(arrayBuffer);
+    fs.readSync(fd, buffer, 0, info.size, info.offset);
     const str = buffer.toString('utf8');
     return [str, str.length > 0];
   };
@@ -794,6 +806,8 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     overrideAPISync(childProcess, 'execFileSync');
   };
 
+  const asarReady = new WeakSet();
+
   // Lazily override the child_process APIs only when child_process is
   // fetched the first time.  We will eagerly override the child_process APIs
   // when this env var is set so that stack traces generated inside node unit
@@ -806,8 +820,8 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     Module._load = (request: string, ...args: any[]) => {
       const loadResult = originalModuleLoad(request, ...args);
       if (request === 'child_process') {
-        if (!v8Util.getHiddenValue(loadResult, 'asar-ready')) {
-          v8Util.setHiddenValue(loadResult, 'asar-ready', true);
+        if (!asarReady.has(loadResult)) {
+          asarReady.add(loadResult);
           // Just to make it obvious what we are dealing with here
           const childProcess = loadResult;
 

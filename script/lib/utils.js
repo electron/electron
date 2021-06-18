@@ -6,6 +6,9 @@ const ELECTRON_DIR = path.resolve(__dirname, '..', '..');
 const SRC_DIR = path.resolve(ELECTRON_DIR, '..');
 
 const RELEASE_BRANCH_PATTERN = /(\d)+-(?:(?:[0-9]+-x$)|(?:x+-y$))/;
+// TODO(main-migration): Simplify once main branch is renamed
+const MAIN_BRANCH_PATTERN = /^(main|master)$/;
+const ORIGIN_MAIN_BRANCH_PATTERN = /^origin\/(main|master)$/;
 
 require('colors');
 const pass = '✓'.green;
@@ -73,7 +76,7 @@ async function handleGitCall (args, gitDir) {
 
 async function getCurrentBranch (gitDir) {
   let branch = await handleGitCall(['rev-parse', '--abbrev-ref', 'HEAD'], gitDir);
-  if (branch !== 'master' && !RELEASE_BRANCH_PATTERN.test(branch)) {
+  if (!MAIN_BRANCH_PATTERN.test(branch) && !RELEASE_BRANCH_PATTERN.test(branch)) {
     const lastCommit = await handleGitCall(['rev-parse', 'HEAD'], gitDir);
     const branches = (await handleGitCall([
       'branch',
@@ -82,7 +85,7 @@ async function getCurrentBranch (gitDir) {
       '--remote'
     ], gitDir)).split('\n');
 
-    branch = branches.filter(b => b.trim() === 'master' || b.trim() === 'origin/master' || RELEASE_BRANCH_PATTERN.test(b.trim()))[0];
+    branch = branches.find(b => MAIN_BRANCH_PATTERN.test(b.trim()) || ORIGIN_MAIN_BRANCH_PATTERN.test(b.trim()) || RELEASE_BRANCH_PATTERN.test(b.trim()));
     if (!branch) {
       console.log(`${fail} no release branch exists for this ref`);
       process.exit(1);

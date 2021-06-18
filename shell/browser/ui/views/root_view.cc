@@ -62,7 +62,7 @@ void RootView::SetMenu(ElectronMenuModel* menu_model) {
     return;
 
   if (!menu_bar_) {
-    menu_bar_ = std::make_unique<MenuBar>(this);
+    menu_bar_ = std::make_unique<MenuBar>(window_, this);
     menu_bar_->set_owned_by_client();
     if (!menu_bar_autohide_)
       SetMenuBarVisibility(true);
@@ -119,18 +119,18 @@ void RootView::HandleKeyEvent(const content::NativeWebKeyboardEvent& event) {
 
   // Show the submenu when "Alt+Key" is pressed.
   if (event.GetType() == blink::WebInputEvent::Type::kRawKeyDown &&
-      !IsAltKey(event) && IsAltModifier(event)) {
-    if (menu_bar_->HasAccelerator(event.windows_key_code)) {
-      if (!menu_bar_visible_) {
-        SetMenuBarVisibility(true);
+      event.windows_key_code >= ui::VKEY_A &&
+      event.windows_key_code <= ui::VKEY_Z && IsAltModifier(event) &&
+      menu_bar_->HasAccelerator(event.windows_key_code)) {
+    if (!menu_bar_visible_) {
+      SetMenuBarVisibility(true);
 
-        View* focused_view = GetFocusManager()->GetFocusedView();
-        last_focused_view_tracker_->SetView(focused_view);
-        menu_bar_->RequestFocus();
-      }
-
-      menu_bar_->ActivateAccelerator(event.windows_key_code);
+      View* focused_view = GetFocusManager()->GetFocusedView();
+      last_focused_view_tracker_->SetView(focused_view);
+      menu_bar_->RequestFocus();
     }
+
+    menu_bar_->ActivateAccelerator(event.windows_key_code);
     return;
   }
 

@@ -62,6 +62,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void OnWindowMinimize() override;
   void OnWindowRestore() override;
   void OnWindowWillResize(const gfx::Rect& new_bounds,
+                          const gfx::ResizeEdge& edge,
                           bool* prevent_default) override;
   void OnWindowResize() override;
   void OnWindowResized() override;
@@ -92,6 +93,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   // Public APIs of NativeWindow.
   void SetContentView(gin::Handle<View> view);
   void Close();
+  virtual void CloseImmediately();
   virtual void Focus();
   virtual void Blur();
   bool IsFocused();
@@ -170,12 +172,15 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void SetIgnoreMouseEvents(bool ignore, gin_helper::Arguments* args);
   void SetContentProtection(bool enable);
   void SetFocusable(bool focusable);
+  bool IsFocusable();
   void SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> menu);
   void RemoveMenu();
   void SetParentWindow(v8::Local<v8::Value> value, gin_helper::Arguments* args);
   virtual void SetBrowserView(v8::Local<v8::Value> value);
   virtual void AddBrowserView(v8::Local<v8::Value> value);
   virtual void RemoveBrowserView(v8::Local<v8::Value> value);
+  virtual void SetTopBrowserView(v8::Local<v8::Value> value,
+                                 gin_helper::Arguments* args);
   virtual std::vector<v8::Local<v8::Value>> GetBrowserViews() const;
   virtual void ResetBrowserViews();
   std::string GetMediaSourceId() const;
@@ -189,6 +194,8 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   virtual void SetVibrancy(v8::Isolate* isolate, v8::Local<v8::Value> value);
 
 #if defined(OS_MAC)
+  void SetWindowButtonVisibility(bool visible);
+  bool GetWindowButtonVisibility() const;
   void SetTrafficLightPosition(const gfx::Point& position);
   gfx::Point GetTrafficLightPosition() const;
 #endif
@@ -202,7 +209,6 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void MoveTabToNewWindow();
   void ToggleTabBar();
   void AddTabbedWindow(NativeWindow* window, gin_helper::Arguments* args);
-  void SetWindowButtonVisibility(bool visible, gin_helper::Arguments* args);
   void SetAutoHideMenuBar(bool auto_hide);
   bool IsMenuBarAutoHide();
   void SetMenuBarVisibility(bool visible);
@@ -223,6 +229,9 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   bool SetThumbarButtons(gin_helper::Arguments* args);
 #if defined(TOOLKIT_VIEWS)
   void SetIcon(v8::Isolate* isolate, v8::Local<v8::Value> icon);
+  void SetIconImpl(v8::Isolate* isolate,
+                   v8::Local<v8::Value> icon,
+                   NativeImage::OnConvertError on_error);
 #endif
 #if defined(OS_WIN)
   typedef base::RepeatingCallback<void(v8::Local<v8::Value>,
@@ -270,7 +279,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   // Reference to JS wrapper to prevent garbage collection.
   v8::Global<v8::Value> self_ref_;
 
-  base::WeakPtrFactory<BaseWindow> weak_factory_;
+  base::WeakPtrFactory<BaseWindow> weak_factory_{this};
 };
 
 }  // namespace api

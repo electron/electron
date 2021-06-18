@@ -6,7 +6,6 @@
 
 #include <set>
 #include <string>
-#include <vector>
 
 #include "base/files/file_enumerator.h"
 #include "base/logging.h"
@@ -75,7 +74,7 @@ bool LibnotifyNotification::Initialize() {
 
 LibnotifyNotification::LibnotifyNotification(NotificationDelegate* delegate,
                                              NotificationPresenter* presenter)
-    : Notification(delegate, presenter), notification_(nullptr) {}
+    : Notification(delegate, presenter) {}
 
 LibnotifyNotification::~LibnotifyNotification() {
   if (notification_) {
@@ -101,9 +100,9 @@ void LibnotifyNotification::Show(const NotificationOptions& options) {
   }
 
   NotifyUrgency urgency = NOTIFY_URGENCY_NORMAL;
-  if (options.urgency == base::ASCIIToUTF16("critical")) {
+  if (options.urgency == u"critical") {
     urgency = NOTIFY_URGENCY_CRITICAL;
-  } else if (options.urgency == base::ASCIIToUTF16("low")) {
+  } else if (options.urgency == u"low") {
     urgency = NOTIFY_URGENCY_LOW;
   }
 
@@ -118,7 +117,7 @@ void LibnotifyNotification::Show(const NotificationOptions& options) {
   }
 
   // Set the timeout duration for the notification
-  bool neverTimeout = options.timeout_type == base::ASCIIToUTF16("never");
+  bool neverTimeout = options.timeout_type == u"never";
   int timeout = (neverTimeout) ? NOTIFY_EXPIRES_NEVER : NOTIFY_EXPIRES_DEFAULT;
   libnotify_loader_.notify_notification_set_timeout(notification_, timeout);
 

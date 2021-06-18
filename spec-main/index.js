@@ -34,9 +34,11 @@ app.commandLine.appendSwitch('use-fake-device-for-media-stream');
 
 global.standardScheme = 'app';
 global.zoomScheme = 'zoom';
+global.serviceWorkerScheme = 'sw';
 protocol.registerSchemesAsPrivileged([
   { scheme: global.standardScheme, privileges: { standard: true, secure: true, stream: false } },
   { scheme: global.zoomScheme, privileges: { standard: true, secure: true } },
+  { scheme: global.serviceWorkerScheme, privileges: { allowServiceWorkers: true, standard: true, secure: true } },
   { scheme: 'cors-blob', privileges: { corsEnabled: true, supportFetchAPI: true } },
   { scheme: 'cors', privileges: { corsEnabled: true, supportFetchAPI: true } },
   { scheme: 'no-cors', privileges: { supportFetchAPI: true } },
@@ -130,6 +132,10 @@ app.whenReady().then(async () => {
   const chai = require('chai');
   chai.use(require('chai-as-promised'));
   chai.use(require('dirty-chai'));
+
+  // Show full object diff
+  // https://github.com/chaijs/chai/issues/469
+  chai.config.truncateThreshold = 0;
 
   const runner = mocha.run(cb);
 }).catch((err) => {

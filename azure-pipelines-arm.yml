@@ -17,6 +17,7 @@ steps:
     node script/download-circleci-artifacts.js --buildNum=$CIRCLE_BUILD_NUM --name=dist.zip --dest=$ZIP_DEST
     cd $ZIP_DEST
     unzip -o dist.zip
+    xattr -cr Electron.app    
   displayName: 'Download and unzip dist files for test'
   env:
     CIRCLE_TOKEN: $(CIRCLECI_TOKEN)
@@ -48,27 +49,31 @@ steps:
    mkdir -p $CROSS_ARCH_SNAPSHOTS
    cd src/electron
    node script/download-circleci-artifacts.js --buildNum=$CIRCLE_BUILD_NUM --name=cross-arch-snapshots/snapshot_blob.bin --dest=$CROSS_ARCH_SNAPSHOTS
-   node script/download-circleci-artifacts.js --buildNum=$CIRCLE_BUILD_NUM --name=cross-arch-snapshots/v8_context_snapshot.bin --dest=$CROSS_ARCH_SNAPSHOTS
+   node script/download-circleci-artifacts.js --buildNum=$CIRCLE_BUILD_NUM --name=cross-arch-snapshots/v8_context_snapshot.arm64.bin --dest=$CROSS_ARCH_SNAPSHOTS
   displayName: 'Download cross arch snapshot files'
-  env:
-    CIRCLE_TOKEN: $(CIRCLECI_TOKEN)
-
-- bash: |
-   export NATIVE_UNITTESTS_DEST=$PWD/src/out/Default
-   cd src/electron
-   node script/download-circleci-artifacts.js --buildNum=$CIRCLE_BUILD_NUM --name=shell_browser_ui_unittests --dest=$NATIVE_UNITTESTS_DEST
-   chmod +x $NATIVE_UNITTESTS_DEST/shell_browser_ui_unittests
-  displayName: 'Download native unittest executables'
   env:
     CIRCLE_TOKEN: $(CIRCLECI_TOKEN)
 
 - bash: |
     cd src
     export ELECTRON_OUT_DIR=Default
-    set npm_config_arch=arm64
-    (cd electron && node script/yarn test -- --enable-logging)
-  displayName: 'Run Electron tests'
+    export npm_config_arch=arm64
+    (cd electron && node script/yarn test --enable-logging --runners main)
+  displayName: 'Run Electron main tests'
   timeoutInMinutes: 20
+  env:
+    ELECTRON_DISABLE_SECURITY_WARNINGS: 1
+    IGNORE_YARN_INSTALL_ERROR: 1
+    ELECTRON_TEST_RESULTS_DIR: junit
+
+- bash: |
+    cd src
+    export ELECTRON_OUT_DIR=Default
+    export npm_config_arch=arm64
+    (cd electron && node script/yarn test --enable-logging --runners remote)
+  displayName: 'Run Electron remote tests'
+  timeoutInMinutes: 20
+  condition: succeededOrFailed()
   env:
     ELECTRON_DISABLE_SECURITY_WARNINGS: 1
     IGNORE_YARN_INSTALL_ERROR: 1
@@ -80,6 +85,8 @@ steps:
   displayName: Verify non proprietary ffmpeg
   timeoutInMinutes: 5
   condition: succeededOrFailed()
+  env:
+    TARGET_ARCH: arm64
 
 - bash: |
     cd src
@@ -97,6 +104,16 @@ steps:
     searchFolder: '$(System.DefaultWorkingDirectory)/src/junit/'
 
   condition: succeededOrFailed()
+
+- bash: killall Electron || echo "No Electron processes left running"
+  displayName: 'Kill processes left running from last test run'
+  condition: always()
+
+- bash: |
+    rm -rf ~/Library/Application\ Support/Electron*
+    rm -rf ~/Library/Application\ Support/electron*
+  displayName: 'Delete user app data directories'
+  condition: always()
 
 - task: mspremier.PostBuildCleanup.PostBuildCleanup-task.PostBuildCleanup@3
   displayName: 'Clean Agent Directories'

@@ -13,11 +13,6 @@ export const webFrameInit = () => {
   ipcRendererUtils.handle(IPC_MESSAGES.RENDERER_WEB_FRAME_METHOD, (
     event, method: keyof WebFrameMethod, ...args: any[]
   ) => {
-    // TODO(MarshallOfSound): Remove once the world-safe-execute-javascript deprecation warning is removed
-    if (method.startsWith('executeJavaScript')) {
-      return (webFrame as any)[`_${method}`](...args);
-    }
-
     // The TypeScript compiler cannot handle the sheer number of
     // call signatures here and simply gives up. Incorrect invocations
     // will be caught by "keyof WebFrameMethod" though.

@@ -1,0 +1,31 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Tue, 1 Jun 2021 14:50:44 +0200
+Subject: src: add NODE_USE_V8_PLATFORM in InitializeOncePerProcess
+
+This PR adds an extra `NODE_USE_V8_PLATFORM` guard inside
+`InitializeOncePerProcess`. We don't use Node.js V8 platform and instead
+use Chromium's gin library to handle V8 setup.
+This prevents `v8::V8::Initialize` from being called twice.
+
+Upstreamed at https://github.com/nodejs/node/pull/38888.
+
+diff --git a/src/node.cc b/src/node.cc
+index ceb532648b33a6c2f3b8a135b315985cfff5419e..cbe3ed49d016cfd1cc01a6f7d0795e0e085768e8 100644
+--- a/src/node.cc
++++ b/src/node.cc
+@@ -1040,11 +1040,14 @@ InitializationResult InitializeOncePerProcess(int argc, char** argv) {
+   V8::SetEntropySource(crypto::EntropySource);
+ #endif  // HAVE_OPENSSL
+ 
++#if NODE_USE_V8_PLATFORM
+   per_process::v8_platform.Initialize(
+       static_cast<int>(per_process::cli_options->v8_thread_pool_size));
+   V8::Initialize();
+   performance::performance_v8_start = PERFORMANCE_NOW();
+   per_process::v8_initialized = true;
++#endif
++
+   return result;
+ }
+ 

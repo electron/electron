@@ -53,8 +53,7 @@ struct Converter<gin_helper::PersistentDictionary> {
                      gin_helper::PersistentDictionary* out) {
     if (!val->IsObject())
       return false;
-    *out = gin_helper::PersistentDictionary(isolate,
-                                            v8::Local<v8::Object>::Cast(val));
+    *out = gin_helper::PersistentDictionary(isolate, val.As<v8::Object>());
     return true;
   }
 };

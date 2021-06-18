@@ -14,13 +14,13 @@
 
 namespace electron {
 
-void ElectronBrowserMainParts::PreMainMessageLoopStart() {
+void ElectronBrowserMainParts::PreCreateMainMessageLoop() {
   // Set our own application delegate.
   ElectronApplicationDelegate* delegate =
       [[ElectronApplicationDelegate alloc] init];
   [NSApp setDelegate:delegate];
 
-  PreMainMessageLoopStartCommon();
+  PreCreateMainMessageLoopCommon();
 
   // Prevent Cocoa from turning command-line arguments into
   // |-application:openFiles:|, since we already handle them directly.

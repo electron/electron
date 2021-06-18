@@ -11,6 +11,7 @@
 
 #if BUILDFLAG(ENABLE_EXTENSIONS)
 #include "extensions/common/constants.h"
+#include "extensions/renderer/guest_view/mime_handler_view/post_message_support.h"
 #endif  // BUILDFLAG(ENABLE_EXTENSIONS)
 
 namespace electron {
@@ -50,6 +51,20 @@ bool PrintRenderFrameHelperDelegate::IsPrintPreviewEnabled() {
 
 bool PrintRenderFrameHelperDelegate::OverridePrint(
     blink::WebLocalFrame* frame) {
+#if BUILDFLAG(ENABLE_EXTENSIONS)
+  auto* post_message_support =
+      extensions::PostMessageSupport::FromWebLocalFrame(frame);
+  if (post_message_support) {
+    // This message is handled in chrome/browser/resources/pdf/pdf_viewer.js and
+    // instructs the PDF plugin to print. This is to make window.print() on a
+    // PDF plugin document correctly print the PDF. See
+    // https://crbug.com/448720.
+    base::DictionaryValue message;
+    message.SetString("type", "print");
+    post_message_support->PostMessageFromValue(message);
+    return true;
+  }
+#endif  // BUILDFLAG(ENABLE_EXTENSIONS)
   return false;
 }
 

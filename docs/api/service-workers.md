@@ -2,7 +2,8 @@
 
 > Query and receive events from a sessions active service workers.
 
-Process: [Main](../glossary.md#main-process)
+Process: [Main](../glossary.md#main-process)<br />
+_This class is not exported from the `'electron'` module. It is only available as a return value of other methods in the Electron API._
 
 Instances of the `ServiceWorkers` class are accessed by using `serviceWorkers` property of
 a `Session`.
@@ -44,6 +45,16 @@ Returns:
   * `lineNumber` Number - The line number of the source that triggered this console message
 
 Emitted when a service worker logs something to the console.
+
+#### Event: 'registration-completed'
+
+Returns:
+
+* `event` Event
+* `details` Object - Information about the registered service worker
+  * `scope` String - The base URL that a service worker is registered for
+
+Emitted when a service worker has been registered. Can occur after a call to [`navigator.serviceWorker.register('/sw.js')`](https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorkerContainer/register) successfully resolves or when a Chrome extension is loaded.
 
 ### Instance Methods
 

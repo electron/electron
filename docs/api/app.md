@@ -391,7 +391,7 @@ which contains more information about why the render process disappeared. It
 isn't always because it crashed.  The `killed` boolean can be replaced by
 checking `reason === 'killed'` when you switch to that event.
 
-#### Event: 'render-process-gone'
+### Event: 'render-process-gone'
 
 Returns:
 
@@ -406,11 +406,14 @@ Returns:
     * `oom` - Process ran out of memory
     * `launch-failed` - Process never successfully launched
     * `integrity-failure` - Windows code integrity checks failed
+  * `exitCode` Integer - The exit code of the process, unless `reason` is
+    `launch-failed`, in which case `exitCode` will be a platform-specific
+    launch failure error code.
 
 Emitted when the renderer process unexpectedly disappears.  This is normally
 because it was crashed or killed.
 
-#### Event: 'child-process-gone'
+### Event: 'child-process-gone'
 
 Returns:
 
@@ -503,64 +506,6 @@ Returns:
 
 Emitted when `desktopCapturer.getSources()` is called in the renderer process of `webContents`.
 Calling `event.preventDefault()` will make it return empty sources.
-
-### Event: 'remote-require' _Deprecated_
-
-Returns:
-
-* `event` Event
-* `webContents` [WebContents](web-contents.md)
-* `moduleName` String
-
-Emitted when `remote.require()` is called in the renderer process of `webContents`.
-Calling `event.preventDefault()` will prevent the module from being returned.
-Custom value can be returned by setting `event.returnValue`.
-
-### Event: 'remote-get-global' _Deprecated_
-
-Returns:
-
-* `event` Event
-* `webContents` [WebContents](web-contents.md)
-* `globalName` String
-
-Emitted when `remote.getGlobal()` is called in the renderer process of `webContents`.
-Calling `event.preventDefault()` will prevent the global from being returned.
-Custom value can be returned by setting `event.returnValue`.
-
-### Event: 'remote-get-builtin' _Deprecated_
-
-Returns:
-
-* `event` Event
-* `webContents` [WebContents](web-contents.md)
-* `moduleName` String
-
-Emitted when `remote.getBuiltin()` is called in the renderer process of `webContents`.
-Calling `event.preventDefault()` will prevent the module from being returned.
-Custom value can be returned by setting `event.returnValue`.
-
-### Event: 'remote-get-current-window' _Deprecated_
-
-Returns:
-
-* `event` Event
-* `webContents` [WebContents](web-contents.md)
-
-Emitted when `remote.getCurrentWindow()` is called in the renderer process of `webContents`.
-Calling `event.preventDefault()` will prevent the object from being returned.
-Custom value can be returned by setting `event.returnValue`.
-
-### Event: 'remote-get-current-web-contents' _Deprecated_
-
-Returns:
-
-* `event` Event
-* `webContents` [WebContents](web-contents.md)
-
-Emitted when `remote.getCurrentWebContents()` is called in the renderer process of `webContents`.
-Calling `event.preventDefault()` will prevent the object from being returned.
-Custom value can be returned by setting `event.returnValue`.
 
 ## Methods
 
@@ -752,9 +697,10 @@ Overrides the current application's name.
 
 ### `app.getLocale()`
 
-Returns `String` - The current application locale. Possible return values are documented [here](locales.md).
+Returns `String` - The current application locale, fetched using Chromium's `l10n_util` library.
+Possible return values are documented [here](https://source.chromium.org/chromium/chromium/src/+/master:ui/base/l10n/l10n_util.cc).
 
-To set the locale, you'll want to use a command line switch at app startup, which may be found [here](https://github.com/electron/electron/blob/master/docs/api/command-line-switches.md).
+To set the locale, you'll want to use a command line switch at app startup, which may be found [here](command-line-switches.md).
 
 **Note:** When distributing your packaged app, you have to also ship the
 `locales` folder.
@@ -927,6 +873,10 @@ the next successful call to `app.setJumpList(categories)`. Any attempt to
 re-add a removed item to a custom category earlier than that will result in the
 entire custom category being omitted from the Jump List. The list of removed
 items can be obtained using `app.getJumpListSettings()`.
+
+**Note:** The maximum length of a Jump List item's `description` property is
+260 characters. Beyond this limit, the item will not be added to the Jump
+List, nor will it be displayed.
 
 Here's a very simple example of creating a custom Jump List:
 
@@ -1176,9 +1126,9 @@ For `infoType` equal to `basic`:
 
 Using `basic` should be preferred if only basic information like `vendorId` or `driverId` is needed.
 
-### `app.setBadgeCount(count)` _Linux_ _macOS_
+### `app.setBadgeCount([count])` _Linux_ _macOS_
 
-* `count` Integer
+* `count` Integer (optional) - If a value is provided, set the badge to the provided value otherwise, on macOS, display a plain white dot (e.g. unknown number of notifications). On Linux, if a value is not provided the badge will not display.
 
 Returns `Boolean` - Whether the call succeeded.
 
@@ -1479,23 +1429,25 @@ This is the user agent that will be used when no user agent is set at the
 app has the same user agent.  Set to a custom value as early as possible
 in your app's initialization to ensure that your overridden value is used.
 
-### `app.allowRendererProcessReuse`
-
-A `Boolean` which when `true` disables the overrides that Electron has in place
-to ensure renderer processes are restarted on every navigation.  The current
-default value for this property is `true`.
-
-The intention is for these overrides to become disabled by default and then at
-some point in the future this property will be removed.  This property impacts
-which native modules you can use in the renderer process.  For more information
-on the direction Electron is going with renderer process restarts and usage of
-native modules in the renderer process please check out this
-[Tracking Issue](https://github.com/electron/electron/issues/18397).
-
-### `app.runningUnderRosettaTranslation` _macOS_ _Readonly_
+### `app.runningUnderRosettaTranslation` _macOS_ _Readonly_ _Deprecated_
 
 A `Boolean` which when `true` indicates that the app is currently running
 under the [Rosetta Translator Environment](https://en.wikipedia.org/wiki/Rosetta_(software)).
+
+You can use this property to prompt users to download the arm64 version of
+your application when they are running the x64 version under Rosetta
+incorrectly.
+
+**Deprecated:** This property is superceded by the `runningUnderARM64Translation`
+property which detects when the app is being translated to ARM64 in both macOS
+and Windows.
+
+### `app.runningUnderARM64Translation` _Readonly_ _macOS_ _Windows_
+
+A `Boolean` which when `true` indicates that the app is currently running under
+an ARM64 translator (like the macOS
+[Rosetta Translator Environment](https://en.wikipedia.org/wiki/Rosetta_(software))
+or Windows [WOW](https://en.wikipedia.org/wiki/Windows_on_Windows)).
 
 You can use this property to prompt users to download the arm64 version of
 your application when they are running the x64 version under Rosetta

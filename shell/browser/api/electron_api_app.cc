@@ -5,8 +5,8 @@
 #include "shell/browser/api/electron_api_app.h"
 
 #include <memory>
-
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "base/callback_helpers.h"
@@ -14,7 +14,6 @@
 #include "base/environment.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
-#include "base/optional.h"
 #include "base/path_service.h"
 #include "base/system/sys_info.h"
 #include "chrome/browser/browser_process.h"
@@ -58,6 +57,7 @@
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/platform_util.h"
+#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/gfx/image/image.h"
 
 #if defined(OS_WIN)
@@ -442,9 +442,13 @@ int GetPathConstant(const std::string& name) {
   if (name == "appData")
     return DIR_APP_DATA;
   else if (name == "userData")
-    return DIR_USER_DATA;
+    return chrome::DIR_USER_DATA;
   else if (name == "cache")
-    return DIR_CACHE;
+#if defined(OS_POSIX)
+    return base::DIR_CACHE;
+#else
+    return base::DIR_APP_DATA;
+#endif
   else if (name == "userCache")
     return DIR_USER_CACHE;
   else if (name == "logs")
@@ -537,10 +541,16 @@ void OnClientCertificateSelected(
   if (!certs.empty()) {
     scoped_refptr<net::X509Certificate> cert(certs[0].get());
     for (auto& identity : *identities) {
-      if (cert->EqualsExcludingChain(identity->certificate())) {
+      scoped_refptr<net::X509Certificate> identity_cert =
+          identity->certificate();
+      // Since |cert| was recreated from |data|, it won't include any
+      // intermediates. That's fine for checking equality, but once a match is
+      // found then |identity_cert| should be used since it will include the
+      // intermediates which would otherwise be lost.
+      if (cert->EqualsExcludingChain(identity_cert.get())) {
         net::ClientCertIdentity::SelfOwningAcquirePrivateKey(
-            std::move(identity),
-            base::BindRepeating(&GotPrivateKey, delegate, std::move(cert)));
+            std::move(identity), base::BindRepeating(&GotPrivateKey, delegate,
+                                                     std::move(identity_cert)));
         break;
       }
     }
@@ -550,7 +560,7 @@ void OnClientCertificateSelected(
 #if defined(USE_NSS_CERTS)
 int ImportIntoCertStore(CertificateManagerModel* model, base::Value options) {
   std::string file_data, cert_path;
-  base::string16 password;
+  std::u16string password;
   net::ScopedCERTCertificateList imported_certs;
   int rv = -1;
 
@@ -628,7 +638,7 @@ void App::OnWindowAllClosed() {
 }
 
 void App::OnQuit() {
-  int exitCode = ElectronBrowserMainParts::Get()->GetExitCode();
+  const int exitCode = ElectronBrowserMainParts::Get()->GetExitCode();
   Emit("quit", exitCode);
 
   if (process_singleton_) {
@@ -878,17 +888,6 @@ void App::BrowserChildProcessCrashedOrKilled(
 void App::RenderProcessReady(content::RenderProcessHost* host) {
   ChildProcessLaunched(content::PROCESS_TYPE_RENDERER, host->GetID(),
                        host->GetProcess().Handle());
-
-  // TODO(jeremy): this isn't really the right place to be creating
-  // `WebContents` instances, but this was implicitly happening before in
-  // `RenderProcessPreferences`, so this is at least more explicit...
-  content::WebContents* web_contents =
-      ElectronBrowserClient::Get()->GetWebContentsFromProcessID(host->GetID());
-  if (web_contents) {
-    v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-    v8::HandleScope scope(isolate);
-    WebContents::FromOrCreate(isolate, web_contents);
-  }
 }
 
 void App::RenderProcessExited(content::RenderProcessHost* host) {
@@ -923,7 +922,7 @@ void App::SetAppPath(const base::FilePath& app_path) {
 }
 
 void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
-                         base::Optional<base::FilePath> custom_path) {
+                         absl::optional<base::FilePath> custom_path) {
   base::FilePath logs_path;
   if (custom_path.has_value()) {
     if (!custom_path->IsAbsolute()) {
@@ -938,29 +937,29 @@ void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
   base::PathService::Override(DIR_APP_LOGS, logs_path);
 }
 
+// static
+bool App::IsPackaged() {
+  auto env = base::Environment::Create();
+  if (env->HasVar("ELECTRON_FORCE_IS_PACKAGED"))
+    return true;
+
+  base::FilePath exe_path;
+  base::PathService::Get(base::FILE_EXE, &exe_path);
+  base::FilePath::StringType base_name =
+      base::ToLowerASCII(exe_path.BaseName().value());
+
+#if defined(OS_WIN)
+  return base_name != FILE_PATH_LITERAL("electron.exe");
+#else
+  return base_name != FILE_PATH_LITERAL("electron");
+#endif
+}
 base::FilePath App::GetPath(gin_helper::ErrorThrower thrower,
                             const std::string& name) {
-  bool succeed = false;
   base::FilePath path;
 
   int key = GetPathConstant(name);
-  if (key >= 0) {
-    succeed = base::PathService::Get(key, &path);
-    if (succeed && (name == "logs")) {
-      base::ThreadRestrictions::ScopedAllowIO allow_io;
-      base::CreateDirectoryAndGetError(path, nullptr);
-    }
-
-#if defined(OS_WIN)
-    // If we get the "recent" path before setting it, set it
-    if (!succeed && name == "recent" &&
-        platform_util::GetFolderPath(DIR_RECENT, &path)) {
-      base::ThreadRestrictions::ScopedAllowIO allow_io;
-      succeed = base::PathService::Override(DIR_RECENT, path);
-    }
-#endif
-  }
-  if (!succeed)
+  if (key < 0 || !base::PathService::Get(key, &path))
     thrower.ThrowError("Failed to get '" + name + "' path");
 
   return path;
@@ -974,26 +973,15 @@ void App::SetPath(gin_helper::ErrorThrower thrower,
     return;
   }
 
-  bool succeed = false;
   int key = GetPathConstant(name);
-  if (key >= 0) {
-    succeed =
-        base::PathService::OverrideAndCreateIfNeeded(key, path, true, false);
-    if (key == DIR_USER_DATA) {
-      succeed |= base::PathService::OverrideAndCreateIfNeeded(
-          chrome::DIR_USER_DATA, path, true, false);
-      succeed |= base::PathService::Override(
-          chrome::DIR_APP_DICTIONARIES,
-          path.Append(base::FilePath::FromUTF8Unsafe("Dictionaries")));
-    }
-  }
-  if (!succeed)
+  if (key < 0 || !base::PathService::OverrideAndCreateIfNeeded(
+                     key, path, /* is_absolute = */ true, /* create = */ false))
     thrower.ThrowError("Failed to set path");
 }
 
 void App::SetDesktopName(const std::string& desktop_name) {
 #if defined(OS_LINUX)
-  std::unique_ptr<base::Environment> env(base::Environment::Create());
+  auto env = base::Environment::Create();
   env->SetVar("CHROME_DESKTOP", desktop_name);
 #endif
 }
@@ -1057,7 +1045,7 @@ bool App::RequestSingleInstanceLock() {
     return true;
 
   base::FilePath user_dir;
-  base::PathService::Get(DIR_USER_DATA, &user_dir);
+  base::PathService::Get(chrome::DIR_USER_DATA, &user_dir);
 
   auto cb = base::BindRepeating(&App::OnSecondInstance, base::Unretained(this));
 
@@ -1288,12 +1276,12 @@ v8::Local<v8::Promise> App::GetFileIcon(const base::FilePath& path,
 
   auto* icon_manager = ElectronBrowserMainParts::Get()->GetIconManager();
   gfx::Image* icon =
-      icon_manager->LookupIconFromFilepath(normalized_path, icon_size);
+      icon_manager->LookupIconFromFilepath(normalized_path, icon_size, 1.0f);
   if (icon) {
     promise.Resolve(*icon);
   } else {
     icon_manager->LoadIcon(
-        normalized_path, icon_size,
+        normalized_path, icon_size, 1.0f,
         base::BindOnce(&OnIconDataAvailable, std::move(promise)),
         &cancelable_task_tracker_);
   }
@@ -1376,9 +1364,7 @@ std::vector<gin_helper::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
 }
 
 v8::Local<v8::Value> App::GetGPUFeatureStatus(v8::Isolate* isolate) {
-  auto status = content::GetFeatureStatus();
-  base::DictionaryValue temp;
-  return gin::ConvertToV8(isolate, status ? *status : temp);
+  return gin::ConvertToV8(isolate, content::GetFeatureStatus());
 }
 
 v8::Local<v8::Promise> App::GetGPUInfo(v8::Isolate* isolate,
@@ -1441,15 +1427,29 @@ void App::SetUserAgentFallback(const std::string& user_agent) {
   ElectronBrowserClient::Get()->SetUserAgent(user_agent);
 }
 
+#if defined(OS_WIN)
+
+bool App::IsRunningUnderARM64Translation() const {
+  USHORT processMachine = 0;
+  USHORT nativeMachine = 0;
+
+  auto IsWow64Process2 = reinterpret_cast<decltype(&::IsWow64Process2)>(
+      GetProcAddress(GetModuleHandle(L"kernel32.dll"), "IsWow64Process2"));
+
+  if (IsWow64Process2 == nullptr) {
+    return false;
+  }
+
+  if (!IsWow64Process2(GetCurrentProcess(), &processMachine, &nativeMachine)) {
+    return false;
+  }
+
+  return nativeMachine == IMAGE_FILE_MACHINE_ARM64;
+}
+#endif
+
 std::string App::GetUserAgentFallback() {
   return ElectronBrowserClient::Get()->GetUserAgent();
-}
-
-void App::SetBrowserClientCanUseCustomSiteInstance(bool should_disable) {
-  ElectronBrowserClient::Get()->SetCanUseCustomSiteInstance(should_disable);
-}
-bool App::CanBrowserClientUseCustomSiteInstance() {
-  return ElectronBrowserClient::Get()->CanUseCustomSiteInstance();
 }
 
 #if defined(OS_MAC)
@@ -1541,8 +1541,10 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
                  base::BindRepeating(&Browser::AddRecentDocument, browser))
       .SetMethod("clearRecentDocuments",
                  base::BindRepeating(&Browser::ClearRecentDocuments, browser))
+#if defined(OS_WIN)
       .SetMethod("setAppUserModelId",
                  base::BindRepeating(&Browser::SetAppUserModelID, browser))
+#endif
       .SetMethod(
           "isDefaultProtocolClient",
           base::BindRepeating(&Browser::IsDefaultProtocolClient, browser))
@@ -1613,6 +1615,7 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetMethod("isUnityRunning",
                  base::BindRepeating(&Browser::IsUnityRunning, browser))
 #endif
+      .SetProperty("isPackaged", &App::IsPackaged)
       .SetMethod("setAppPath", &App::SetAppPath)
       .SetMethod("getAppPath", &App::GetAppPath)
       .SetMethod("setPath", &App::SetPath)
@@ -1649,12 +1652,13 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetProperty("runningUnderRosettaTranslation",
                    &App::IsRunningUnderRosettaTranslation)
 #endif
+#if defined(OS_MAC) || defined(OS_WIN)
+      .SetProperty("runningUnderARM64Translation",
+                   &App::IsRunningUnderARM64Translation)
+#endif
       .SetProperty("userAgentFallback", &App::GetUserAgentFallback,
                    &App::SetUserAgentFallback)
-      .SetMethod("enableSandbox", &App::EnableSandbox)
-      .SetProperty("allowRendererProcessReuse",
-                   &App::CanBrowserClientUseCustomSiteInstance,
-                   &App::SetBrowserClientCanUseCustomSiteInstance);
+      .SetMethod("enableSandbox", &App::EnableSandbox);
 }
 
 const char* App::GetTypeName() {

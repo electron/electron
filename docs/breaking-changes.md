@@ -12,6 +12,94 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
+## Planned Breaking API Changes (14.0)
+
+### Removed: `app.allowRendererProcessReuse`
+
+The `app.allowRendererProcessReuse` property will be removed as part of our plan to
+more closely align with Chromium's process model for security, performance and maintainability.
+
+For more detailed information see [#18397](https://github.com/electron/electron/issues/18397).
+
+### Removed: Browser Window Affinity
+
+The `affinity` option when constructing a new `BrowserWindow` will be removed
+as part of our plan to more closely align with Chromium's process model for security,
+performance and maintainability.
+
+For more detailed information see [#18397](https://github.com/electron/electron/issues/18397).
+
+### API Changed: `window.open()`
+
+The optional parameter `frameName` will no longer set the title of the window. This now follows the specification described by the [native documentation](https://developer.mozilla.org/en-US/docs/Web/API/Window/open#parameters) under the corresponding parameter `windowName`.
+
+If you were using this parameter to set the title of a window, you can instead use [win.setTitle(title)](api/browser-window.md#winsettitletitle).
+
+### Removed: `worldSafeExecuteJavaScript`
+
+In Electron 14, `worldSafeExecuteJavaScript` will be removed.  There is no alternative, please
+ensure your code works with this property enabled.  It has been enabled by default since Electron
+12.
+
+You will be affected by this change if you use either `webFrame.executeJavaScript` or `webFrame.executeJavaScriptInIsolatedWorld`. You will need to ensure that values returned by either of those methods are supported by the [Context Bridge API](api/context-bridge.md#parameter--error--return-type-support) as these methods use the same value passing semantics.
+
+### Default Changed: `nativeWindowOpen` defaults to `true`
+
+Prior to Electron 14, `window.open` was by default shimmed to use
+`BrowserWindowProxy`. This meant that `window.open('about:blank')` did not work
+to open synchronously scriptable child windows, among other incompatibilities.
+`nativeWindowOpen` is no longer experimental, and is now the default.
+
+See the documentation for [window.open in Electron](api/window-open.md)
+for more details.
+
+### Removed: BrowserWindowConstructorOptions inheriting from parent windows
+
+Prior to Electron 14, windows opened with `window.open` would inherit
+BrowserWindow constructor options such as `transparent` and `resizable` from
+their parent window. Beginning with Electron 14, this behavior is removed, and
+windows will not inherit any BrowserWindow constructor options from their
+parents.
+
+Instead, explicitly set options for the new window with `setWindowOpenHandler`:
+
+```js
+webContents.setWindowOpenHandler((details) => {
+  return {
+    action: 'allow',
+    overrideBrowserWindowOptions: {
+      // ...
+    }
+  }
+})
+```
+
+### Removed: `additionalFeatures`
+
+The deprecated `additionalFeatures` property in the `new-window` and
+`did-create-window` events of WebContents has been removed. Since `new-window`
+uses positional arguments, the argument is still present, but will always be
+the empty array `[]`. (Though note, the `new-window` event itself is
+deprecated, and is replaced by `setWindowOpenHandler`.) Bare keys in window
+features will now present as keys with the value `true` in the options object.
+
+```js
+// Removed in Electron 14
+// Triggered by window.open('...', '', 'my-key')
+webContents.on('did-create-window', (window, details) => {
+  if (details.additionalFeatures.includes('my-key')) {
+    // ...
+  }
+})
+
+// Replace with
+webContents.on('did-create-window', (window, details) => {
+  if (details.options['my-key']) {
+    // ...
+  }
+})
+```
+
 ## Planned Breaking API Changes (13.0)
 
 ### API Changed: `session.setPermissionCheckHandler(handler)`
@@ -92,11 +180,13 @@ session.defaultSession.getAllExtensions()
 ### Removed: methods in `systemPreferences`
 
 The following `systemPreferences` methods have been deprecated:
+
 * `systemPreferences.isDarkMode()`
 * `systemPreferences.isInvertedColorScheme()`
 * `systemPreferences.isHighContrastColorScheme()`
 
 Use the following `nativeTheme` properties instead:
+
 * `nativeTheme.shouldUseDarkColors`
 * `nativeTheme.shouldUseInvertedColorScheme`
 * `nativeTheme.shouldUseHighContrastColors`
@@ -118,6 +208,22 @@ systemPreferences.isHighContrastColorScheme()
 nativeTheme.shouldUseHighContrastColors
 ```
 
+### Deprecated: WebContents `new-window` event
+
+The `new-window` event of WebContents has been deprecated. It is replaced by [`webContents.setWindowOpenHandler()`](api/web-contents.md#contentssetwindowopenhandlerhandler).
+
+```js
+// Deprecated in Electron 13
+webContents.on('new-window', (event) => {
+  event.preventDefault()
+})
+
+// Replace with
+webContents.setWindowOpenHandler((details) => {
+  return { action: 'deny' }
+})
+```
+
 ## Planned Breaking API Changes (12.0)
 
 ### Removed: Pepper Flash support
@@ -126,12 +232,24 @@ Chromium has removed support for Flash, and so we must follow suit. See
 Chromium's [Flash Roadmap](https://www.chromium.org/flash-roadmap) for more
 details.
 
+### Default Changed: `worldSafeExecuteJavaScript` defaults to `true`
+
+In Electron 12, `worldSafeExecuteJavaScript` will be enabled by default.  To restore
+the previous behavior, `worldSafeExecuteJavaScript: false` must be specified in WebPreferences.
+Please note that setting this option to `false` is **insecure**.
+
+This option will be removed in Electron 14 so please migrate your code to support the default
+value.
+
 ### Default Changed: `contextIsolation` defaults to `true`
 
 In Electron 12, `contextIsolation` will be enabled by default.  To restore
 the previous behavior, `contextIsolation: false` must be specified in WebPreferences.
 
-We [recommend having contextIsolation enabled](https://github.com/electron/electron/blob/master/docs/tutorial/security.md#3-enable-context-isolation-for-remote-content) for the security of your application.
+We [recommend having contextIsolation enabled](tutorial/security.md#3-enable-context-isolation-for-remote-content) for the security of your application.
+
+Another implication is that `require()` cannot be used in the renderer process unless
+`nodeIntegration` is `true` and `contextIsolation` is `false`.
 
 For more details see: https://github.com/electron/electron/issues/23506
 
@@ -267,14 +385,6 @@ See [#23265](https://github.com/electron/electron/pull/23265) for more details.
 Setting `{ compress: false }` in `crashReporter.start` is deprecated. Nearly
 all crash ingestion servers support gzip compression. This option will be
 removed in a future version of Electron.
-
-### Removed: Browser Window Affinity
-
-The `affinity` option when constructing a new `BrowserWindow` will be removed
-as part of our plan to more closely align with Chromium's process model for security,
-performance and maintainability.
-
-For more detailed information see [#18397](https://github.com/electron/electron/issues/18397).
 
 ### Default Changed: `enableRemoteModule` defaults to `false`
 
@@ -556,6 +666,7 @@ limits are now fixed at a minimum of 0.25 and a maximum of 5.0, as defined
 ### Deprecated events in `systemPreferences`
 
 The following `systemPreferences` events have been deprecated:
+
 * `inverted-color-scheme-changed`
 * `high-contrast-color-scheme-changed`
 
@@ -573,11 +684,13 @@ nativeTheme.on('updated', () => { /* ... */ })
 ### Deprecated: methods in `systemPreferences`
 
 The following `systemPreferences` methods have been deprecated:
+
 * `systemPreferences.isDarkMode()`
 * `systemPreferences.isInvertedColorScheme()`
 * `systemPreferences.isHighContrastColorScheme()`
 
 Use the following `nativeTheme` properties instead:
+
 * `nativeTheme.shouldUseDarkColors`
 * `nativeTheme.shouldUseInvertedColorScheme`
 * `nativeTheme.shouldUseHighContrastColors`
@@ -696,7 +809,56 @@ In Electron 7, this now returns a `FileList` with a `File` object for:
 
 Note that `webkitdirectory` no longer exposes the path to the selected folder.
 If you require the path to the selected folder rather than the folder contents,
-see the `dialog.showOpenDialog` API ([link](https://github.com/electron/electron/blob/master/docs/api/dialog.md#dialogshowopendialogbrowserwindow-options)).
+see the `dialog.showOpenDialog` API ([link](api/dialog.md#dialogshowopendialogbrowserwindow-options)).
+
+### API Changed: Callback-based versions of promisified APIs
+
+Electron 5 and Electron 6 introduced Promise-based versions of existing
+asynchronous APIs and deprecated their older, callback-based counterparts.
+In Electron 7, all deprecated callback-based APIs are now removed.
+
+These functions now only return Promises:
+
+* `app.getFileIcon()` [#15742](https://github.com/electron/electron/pull/15742)
+* `app.dock.show()` [#16904](https://github.com/electron/electron/pull/16904)
+* `contentTracing.getCategories()` [#16583](https://github.com/electron/electron/pull/16583)
+* `contentTracing.getTraceBufferUsage()` [#16600](https://github.com/electron/electron/pull/16600)
+* `contentTracing.startRecording()` [#16584](https://github.com/electron/electron/pull/16584)
+* `contentTracing.stopRecording()` [#16584](https://github.com/electron/electron/pull/16584)
+* `contents.executeJavaScript()` [#17312](https://github.com/electron/electron/pull/17312)
+* `cookies.flushStore()` [#16464](https://github.com/electron/electron/pull/16464)
+* `cookies.get()` [#16464](https://github.com/electron/electron/pull/16464)
+* `cookies.remove()` [#16464](https://github.com/electron/electron/pull/16464)
+* `cookies.set()` [#16464](https://github.com/electron/electron/pull/16464)
+* `debugger.sendCommand()` [#16861](https://github.com/electron/electron/pull/16861)
+* `dialog.showCertificateTrustDialog()` [#17181](https://github.com/electron/electron/pull/17181)
+* `inAppPurchase.getProducts()` [#17355](https://github.com/electron/electron/pull/17355)
+* `inAppPurchase.purchaseProduct()`[#17355](https://github.com/electron/electron/pull/17355)
+* `netLog.stopLogging()` [#16862](https://github.com/electron/electron/pull/16862)
+* `session.clearAuthCache()` [#17259](https://github.com/electron/electron/pull/17259)
+* `session.clearCache()`  [#17185](https://github.com/electron/electron/pull/17185)
+* `session.clearHostResolverCache()` [#17229](https://github.com/electron/electron/pull/17229)
+* `session.clearStorageData()` [#17249](https://github.com/electron/electron/pull/17249)
+* `session.getBlobData()` [#17303](https://github.com/electron/electron/pull/17303)
+* `session.getCacheSize()`  [#17185](https://github.com/electron/electron/pull/17185)
+* `session.resolveProxy()` [#17222](https://github.com/electron/electron/pull/17222)
+* `session.setProxy()`  [#17222](https://github.com/electron/electron/pull/17222)
+* `shell.openExternal()` [#16176](https://github.com/electron/electron/pull/16176)
+* `webContents.loadFile()` [#15855](https://github.com/electron/electron/pull/15855)
+* `webContents.loadURL()` [#15855](https://github.com/electron/electron/pull/15855)
+* `webContents.hasServiceWorker()` [#16535](https://github.com/electron/electron/pull/16535)
+* `webContents.printToPDF()` [#16795](https://github.com/electron/electron/pull/16795)
+* `webContents.savePage()` [#16742](https://github.com/electron/electron/pull/16742)
+* `webFrame.executeJavaScript()` [#17312](https://github.com/electron/electron/pull/17312)
+* `webFrame.executeJavaScriptInIsolatedWorld()` [#17312](https://github.com/electron/electron/pull/17312)
+* `webviewTag.executeJavaScript()` [#17312](https://github.com/electron/electron/pull/17312)
+* `win.capturePage()` [#15743](https://github.com/electron/electron/pull/15743)
+
+These functions now have two forms, synchronous and Promise-based asynchronous:
+
+* `dialog.showMessageBox()`/`dialog.showMessageBoxSync()` [#17298](https://github.com/electron/electron/pull/17298)
+* `dialog.showOpenDialog()`/`dialog.showOpenDialogSync()` [#16973](https://github.com/electron/electron/pull/16973)
+* `dialog.showSaveDialog()`/`dialog.showSaveDialogSync()` [#17054](https://github.com/electron/electron/pull/17054)
 
 ## Planned Breaking API Changes (6.0)
 
@@ -707,19 +869,6 @@ see the `dialog.showOpenDialog` API ([link](https://github.com/electron/electron
 win.setMenu(null)
 // Replace with
 win.removeMenu()
-```
-
-### API Changed: `contentTracing.getTraceBufferUsage()` is now a promise
-
-```js
-// Deprecated
-contentTracing.getTraceBufferUsage((percentage, value) => {
-  // do something
-})
-// Replace with
-contentTracing.getTraceBufferUsage().then(infoObject => {
-  // infoObject has percentage and value fields
-})
 ```
 
 ### API Changed: `electron.screen` in the renderer process should be accessed via `remote`
@@ -858,6 +1007,31 @@ webFrame.setSpellCheckProvider('en-US', {
     callback(words.filter(text => spellchecker.isMisspelled(text)))
   }
 })
+```
+
+### API Changed: `webContents.getZoomLevel` and `webContents.getZoomFactor` are now synchronous
+
+`webContents.getZoomLevel` and `webContents.getZoomFactor` no longer take callback parameters,
+instead directly returning their number values.
+
+```js
+// Deprecated
+webContents.getZoomLevel((level) => {
+  console.log(level)
+})
+// Replace with
+const level = webContents.getZoomLevel()
+console.log(level)
+```
+
+```js
+// Deprecated
+webContents.getZoomFactor((factor) => {
+  console.log(factor)
+})
+// Replace with
+const factor = webContents.getZoomFactor()
+console.log(factor)
 ```
 
 ## Planned Breaking API Changes (4.0)

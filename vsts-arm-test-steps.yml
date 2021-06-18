@@ -80,6 +80,7 @@ steps:
     ELECTRON_DISABLE_SECURITY_WARNINGS: 1
     IGNORE_YARN_INSTALL_ERROR: 1
     ELECTRON_TEST_RESULTS_DIR: junit
+    CI: 1
 
 - bash: |
     cd src

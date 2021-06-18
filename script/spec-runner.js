@@ -237,19 +237,6 @@ async function installSpecModules (dir) {
     console.log(`${fail} Failed to yarn install in '${dir}'`);
     process.exit(1);
   }
-
-  // TODO(MarshallOfSound): Remove once node-gyp supports arm64
-  if (process.platform === 'darwin' && process.env.npm_config_arch === 'arm64') {
-    for (const nodeModule of fs.readdirSync(path.resolve(dir, 'node_modules'))) {
-      if (fs.existsSync(path.resolve(dir, 'node_modules', nodeModule, 'binding.gyp'))) {
-        childProcess.spawnSync(NPX_CMD, ['https://github.com/MarshallOfSound/node-gyp/archive/apple-silicon.tar.gz', 'clean', 'configure', 'build', '--arch=arm64'], {
-          env,
-          cwd: path.resolve(dir, 'node_modules', nodeModule),
-          stdio: 'inherit'
-        });
-      }
-    }
-  }
 }
 
 function getSpecHash () {

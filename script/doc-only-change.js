@@ -27,19 +27,22 @@ async function checkIfDocOnlyChange () {
           }
         }
       }
-      const filesChanged = await octokit.pulls.listFiles({
-        owner: 'electron', repo: 'electron', pull_number: pullRequestNumber
-      });
+      const filesChanged = await octokit.paginate(octokit.pulls.listFiles.endpoint.merge({
+        owner: 'electron',
+        repo: 'electron',
+        pull_number: pullRequestNumber,
+        per_page: 100
+      }));
 
-      console.log('Changed Files:', filesChanged.data.map(fileInfo => fileInfo.filename));
+      console.log('Changed Files:', filesChanged.map(fileInfo => fileInfo.filename));
 
-      const nonDocChange = filesChanged.data.find((fileInfo) => {
+      const nonDocChange = filesChanged.find((fileInfo) => {
         const fileDirs = fileInfo.filename.split('/');
         if (fileDirs[0] !== 'docs') {
           return true;
         }
       });
-      if (nonDocChange || filesChanged.data.length === 0) {
+      if (nonDocChange || filesChanged.length === 0) {
         process.exit(1);
       } else {
         process.exit(0);

@@ -24,9 +24,9 @@ namespace auto_updater {
 class Delegate {
  public:
   // An error happened.
-  virtual void OnError(const std::string& error) {}
+  virtual void OnError(const std::string& message) {}
 
-  virtual void OnError(const std::string& error,
+  virtual void OnError(const std::string& message,
                        const int code,
                        const std::string& domain) {}
 

@@ -2,7 +2,8 @@
 
 > Intercept and modify the contents of a request at various stages of its lifetime.
 
-Process: [Main](../glossary.md#main-process)
+Process: [Main](../glossary.md#main-process)<br />
+_This class is not exported from the `'electron'` module. It is only available as a return value of other methods in the Electron API._
 
 Instances of the `WebRequest` class are accessed by using the `webRequest`
 property of a `Session`.

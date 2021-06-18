@@ -123,7 +123,7 @@ describe('app module', () => {
   describe('app.getLocaleCountryCode()', () => {
     it('should be empty or have length of two', () => {
       let expectedLength = 2;
-      if (process.platform === 'linux') {
+      if (process.platform === 'linux' && process.env.CI) {
         // Linux CI machines have no locale.
         expectedLength = 0;
       }
@@ -285,13 +285,20 @@ describe('app module', () => {
           } else if (String(data) === 'true' && state === 'first-launch') {
             done();
           } else {
-            done(`Unexpected state: ${state}`);
+            done(`Unexpected state: "${state}", data: "${data}"`);
           }
         });
       });
 
       const appPath = path.join(fixturesPath, 'api', 'relaunch');
-      cp.spawn(process.execPath, [appPath]);
+      const child = cp.spawn(process.execPath, [appPath]);
+      child.stdout.on('data', (c) => console.log(c.toString()));
+      child.stderr.on('data', (c) => console.log(c.toString()));
+      child.on('exit', (code, signal) => {
+        if (code !== 0) {
+          console.log(`Process exited with code "${code}" signal "${signal}"`);
+        }
+      });
     });
   });
 
@@ -408,7 +415,8 @@ describe('app module', () => {
       w = new BrowserWindow({
         show: false,
         webPreferences: {
-          nodeIntegration: true
+          nodeIntegration: true,
+          contextIsolation: false
         }
       });
       await w.loadURL('about:blank');
@@ -425,7 +433,8 @@ describe('app module', () => {
       w = new BrowserWindow({
         show: false,
         webPreferences: {
-          nodeIntegration: true
+          nodeIntegration: true,
+          contextIsolation: false
         }
       });
       await w.loadURL('about:blank');
@@ -443,7 +452,8 @@ describe('app module', () => {
         w = new BrowserWindow({
           show: false,
           webPreferences: {
-            nodeIntegration: true
+            nodeIntegration: true,
+            contextIsolation: false
           }
         });
         await w.loadURL('about:blank');
@@ -455,142 +465,48 @@ describe('app module', () => {
         expect(webContents).to.equal(w.webContents);
       });
     });
-
-    ifdescribe(features.isRemoteModuleEnabled())('remote module filtering', () => {
-      it('should emit remote-require event when remote.require() is invoked', async () => {
-        w = new BrowserWindow({
-          show: false,
-          webPreferences: {
-            nodeIntegration: true,
-            enableRemoteModule: true
-          }
-        });
-        await w.loadURL('about:blank');
-
-        const promise = emittedOnce(app, 'remote-require');
-        w.webContents.executeJavaScript('require(\'electron\').remote.require(\'test\')');
-
-        const [, webContents, moduleName] = await promise;
-        expect(webContents).to.equal(w.webContents);
-        expect(moduleName).to.equal('test');
-      });
-
-      it('should emit remote-get-global event when remote.getGlobal() is invoked', async () => {
-        w = new BrowserWindow({
-          show: false,
-          webPreferences: {
-            nodeIntegration: true,
-            enableRemoteModule: true
-          }
-        });
-        await w.loadURL('about:blank');
-
-        const promise = emittedOnce(app, 'remote-get-global');
-        w.webContents.executeJavaScript('require(\'electron\').remote.getGlobal(\'test\')');
-
-        const [, webContents, globalName] = await promise;
-        expect(webContents).to.equal(w.webContents);
-        expect(globalName).to.equal('test');
-      });
-
-      it('should emit remote-get-builtin event when remote.getBuiltin() is invoked', async () => {
-        w = new BrowserWindow({
-          show: false,
-          webPreferences: {
-            nodeIntegration: true,
-            enableRemoteModule: true
-          }
-        });
-        await w.loadURL('about:blank');
-
-        const promise = emittedOnce(app, 'remote-get-builtin');
-        w.webContents.executeJavaScript('require(\'electron\').remote.app');
-
-        const [, webContents, moduleName] = await promise;
-        expect(webContents).to.equal(w.webContents);
-        expect(moduleName).to.equal('app');
-      });
-
-      it('should emit remote-get-current-window event when remote.getCurrentWindow() is invoked', async () => {
-        w = new BrowserWindow({
-          show: false,
-          webPreferences: {
-            nodeIntegration: true,
-            enableRemoteModule: true
-          }
-        });
-        await w.loadURL('about:blank');
-
-        const promise = emittedOnce(app, 'remote-get-current-window');
-        w.webContents.executeJavaScript('{ require(\'electron\').remote.getCurrentWindow() }');
-
-        const [, webContents] = await promise;
-        expect(webContents).to.equal(w.webContents);
-      });
-
-      it('should emit remote-get-current-web-contents event when remote.getCurrentWebContents() is invoked', async () => {
-        w = new BrowserWindow({
-          show: false,
-          webPreferences: {
-            nodeIntegration: true,
-            enableRemoteModule: true
-          }
-        });
-        await w.loadURL('about:blank');
-
-        const promise = emittedOnce(app, 'remote-get-current-web-contents');
-        w.webContents.executeJavaScript('{ require(\'electron\').remote.getCurrentWebContents() }');
-
-        const [, webContents] = await promise;
-        expect(webContents).to.equal(w.webContents);
-      });
-    });
   });
 
   describe('app.badgeCount', () => {
     const platformIsNotSupported =
         (process.platform === 'win32') ||
         (process.platform === 'linux' && !app.isUnityRunning());
-    const platformIsSupported = !platformIsNotSupported;
 
     const expectedBadgeCount = 42;
 
     after(() => { app.badgeCount = 0; });
 
-    describe('on supported platform', () => {
-      it('with properties', () => {
+    ifdescribe(!platformIsNotSupported)('on supported platform', () => {
+      describe('with properties', () => {
         it('sets a badge count', function () {
-          if (platformIsNotSupported) return this.skip();
-
           app.badgeCount = expectedBadgeCount;
           expect(app.badgeCount).to.equal(expectedBadgeCount);
         });
       });
 
-      it('with functions', () => {
-        it('sets a badge count', function () {
-          if (platformIsNotSupported) return this.skip();
-
+      describe('with functions', () => {
+        it('sets a numerical badge count', function () {
           app.setBadgeCount(expectedBadgeCount);
           expect(app.getBadgeCount()).to.equal(expectedBadgeCount);
+        });
+        it('sets an non numeric (dot) badge count', function () {
+          app.setBadgeCount();
+          // Badge count should be zero when non numeric (dot) is requested
+          expect(app.getBadgeCount()).to.equal(0);
         });
       });
     });
 
-    describe('on unsupported platform', () => {
-      it('with properties', () => {
+    ifdescribe(process.platform !== 'win32' && platformIsNotSupported)('on unsupported platform', () => {
+      describe('with properties', () => {
         it('does not set a badge count', function () {
-          if (platformIsSupported) return this.skip();
-
           app.badgeCount = 9999;
           expect(app.badgeCount).to.equal(0);
         });
       });
 
-      it('with functions', () => {
+      describe('with functions', () => {
         it('does not set a badge count)', function () {
-          if (platformIsSupported) return this.skip();
-
           app.setBadgeCount(9999);
           expect(app.getBadgeCount()).to.equal(0);
         });
@@ -598,7 +514,7 @@ describe('app module', () => {
     });
   });
 
-  describe('app.get/setLoginItemSettings API', function () {
+  ifdescribe(process.platform !== 'linux' && !process.mas)('app.get/setLoginItemSettings API', function () {
     const updateExe = path.resolve(path.dirname(process.execPath), '..', 'Update.exe');
     const processStartArgs = [
       '--processStart', `"${path.basename(process.execPath)}"`,
@@ -614,10 +530,6 @@ describe('app module', () => {
       '/f',
       '/d'
     ];
-
-    before(function () {
-      if (process.platform === 'linux' || process.mas) this.skip();
-    });
 
     beforeEach(() => {
       app.setLoginItemSettings({ openAtLogin: false });
@@ -1125,13 +1037,7 @@ describe('app module', () => {
     });
   });
 
-  describe('app launch through uri', () => {
-    before(function () {
-      if (process.platform !== 'win32') {
-        this.skip();
-      }
-    });
-
+  ifdescribe(process.platform === 'win32')('app launch through uri', () => {
     it('does not launch for argument following a URL', async () => {
       const appPath = path.join(fixturesPath, 'api', 'quit-app');
       // App should exit with non 123 code.
@@ -1630,6 +1536,8 @@ describe('default behavior', () => {
   });
 
   describe('window-all-closed', () => {
+    afterEach(closeAllWindows);
+
     it('quits when the app does not handle the event', async () => {
       const result = await runTestApp('window-all-closed');
       expect(result).to.equal(false);
@@ -1638,6 +1546,17 @@ describe('default behavior', () => {
     it('does not quit when the app handles the event', async () => {
       const result = await runTestApp('window-all-closed', '--handle-event');
       expect(result).to.equal(true);
+    });
+
+    it('should omit closed windows from getAllWindows', async () => {
+      const w = new BrowserWindow({ show: false });
+      const len = new Promise(resolve => {
+        app.on('window-all-closed', () => {
+          resolve(BrowserWindow.getAllWindows().length);
+        });
+      });
+      w.close();
+      expect(await len).to.equal(0);
     });
   });
 
@@ -1665,26 +1584,6 @@ describe('default behavior', () => {
     });
   });
 
-  describe('app.allowRendererProcessReuse', () => {
-    it('should default to true', () => {
-      expect(app.allowRendererProcessReuse).to.equal(true);
-    });
-
-    it('should cause renderer processes to get new PIDs when false', async () => {
-      const output = await runTestApp('site-instance-overrides', 'false');
-      expect(output[0]).to.be.a('number').that.is.greaterThan(0);
-      expect(output[1]).to.be.a('number').that.is.greaterThan(0);
-      expect(output[0]).to.not.equal(output[1]);
-    });
-
-    it('should cause renderer processes to keep the same PID when true', async () => {
-      const output = await runTestApp('site-instance-overrides', 'true');
-      expect(output[0]).to.be.a('number').that.is.greaterThan(0);
-      expect(output[1]).to.be.a('number').that.is.greaterThan(0);
-      expect(output[0]).to.equal(output[1]);
-    });
-  });
-
   describe('login event', () => {
     afterEach(closeAllWindows);
     let server: http.Server;
@@ -1709,6 +1608,19 @@ describe('default behavior', () => {
       w.loadURL(serverUrl);
       const [, webContents] = await emittedOnce(app, 'login');
       expect(webContents).to.equal(w.webContents);
+    });
+  });
+
+  describe('running under ARM64 translation', () => {
+    it('does not throw an error', () => {
+      if (process.platform === 'darwin' || process.platform === 'win32') {
+        expect(app.runningUnderARM64Translation).not.to.be.undefined();
+        expect(() => {
+          return app.runningUnderARM64Translation;
+        }).not.to.throw();
+      } else {
+        expect(app.runningUnderARM64Translation).to.be.undefined();
+      }
     });
   });
 });

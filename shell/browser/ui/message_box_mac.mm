@@ -146,7 +146,7 @@ void ShowMessageBox(const MessageBoxSettings& settings,
   }
 }
 
-void ShowErrorBox(const base::string16& title, const base::string16& content) {
+void ShowErrorBox(const std::u16string& title, const std::u16string& content) {
   NSAlert* alert = [[NSAlert alloc] init];
   [alert setMessageText:base::SysUTF16ToNSString(title)];
   [alert setInformativeText:base::SysUTF16ToNSString(content)];

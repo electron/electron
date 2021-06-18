@@ -5,9 +5,6 @@
 #ifndef SHELL_BROWSER_NOTIFICATIONS_LINUX_LIBNOTIFY_NOTIFICATION_H_
 #define SHELL_BROWSER_NOTIFICATIONS_LINUX_LIBNOTIFY_NOTIFICATION_H_
 
-#include <string>
-#include <vector>
-
 #include "library_loaders/libnotify_loader.h"
 #include "shell/browser/notifications/notification.h"
 #include "ui/base/glib/glib_signal.h"
@@ -37,7 +34,7 @@ class LibnotifyNotification : public Notification {
                      NotifyNotification*,
                      char*);
 
-  NotifyNotification* notification_;
+  NotifyNotification* notification_ = nullptr;
 
   DISALLOW_COPY_AND_ASSIGN(LibnotifyNotification);
 };

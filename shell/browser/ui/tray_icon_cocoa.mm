@@ -315,7 +315,7 @@
 
 namespace electron {
 
-TrayIconCocoa::TrayIconCocoa() : weak_factory_(this) {
+TrayIconCocoa::TrayIconCocoa() {
   status_item_view_.reset([[StatusItemView alloc] initWithIcon:this]);
 }
 
@@ -385,7 +385,7 @@ gfx::Rect TrayIconCocoa::GetBounds() {
 }
 
 // static
-TrayIcon* TrayIcon::Create(base::Optional<UUID> guid) {
+TrayIcon* TrayIcon::Create(absl::optional<UUID> guid) {
   return new TrayIconCocoa;
 }
 

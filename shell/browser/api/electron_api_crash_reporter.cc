@@ -30,8 +30,8 @@
 #include "shell/common/node_includes.h"
 
 #if !defined(MAS_BUILD)
-#include "chrome/browser/crash_upload_list/crash_upload_list_crashpad.h"
 #include "components/crash/core/app/crashpad.h"  // nogncheck
+#include "components/crash/core/browser/crash_upload_list_crashpad.h"  // nogncheck
 #include "components/crash/core/common/crash_key.h"
 #include "shell/app/electron_crash_reporter_client.h"
 #include "shell/common/crash_keys.h"
@@ -172,10 +172,10 @@ void Start(const std::string& submit_url,
   for (const auto& pair : extra)
     electron::crash_keys::SetCrashKey(pair.first, pair.second);
   base::FilePath user_data_dir;
-  base::PathService::Get(DIR_USER_DATA, &user_data_dir);
+  base::PathService::Get(chrome::DIR_USER_DATA, &user_data_dir);
   ::crash_reporter::InitializeCrashpadWithEmbeddedHandler(
       process_type.empty(), process_type,
-      base::UTF16ToUTF8(user_data_dir.value()), base::FilePath());
+      base::WideToUTF8(user_data_dir.value()), base::FilePath());
 #endif
 #endif
 }
@@ -190,19 +190,20 @@ namespace {
 
 #if defined(MAS_BUILD)
 void GetUploadedReports(
+    v8::Isolate* isolate,
     base::OnceCallback<void(v8::Local<v8::Value>)> callback) {
-  std::move(callback).Run(v8::Array::New(v8::Isolate::GetCurrent()));
+  std::move(callback).Run(v8::Array::New(isolate));
 }
 #else
 scoped_refptr<UploadList> CreateCrashUploadList() {
 #if defined(OS_MAC) || defined(OS_WIN)
-  return new CrashUploadListCrashpad();
+  return base::MakeRefCounted<CrashUploadListCrashpad>();
 #else
   base::FilePath crash_dir_path;
   base::PathService::Get(electron::DIR_CRASH_DUMPS, &crash_dir_path);
   base::FilePath upload_log_path =
       crash_dir_path.AppendASCII(CrashUploadList::kReporterLogFilename);
-  return new TextLogUploadList(upload_log_path);
+  return base::MakeRefCounted<TextLogUploadList>(upload_log_path);
 #endif  // defined(OS_MAC) || defined(OS_WIN)
 }
 

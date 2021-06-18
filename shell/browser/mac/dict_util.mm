@@ -40,7 +40,7 @@ base::ListValue NSArrayToListValue(NSArray* arr) {
         result.AppendBoolean([value boolValue]);
       else if (strcmp(objc_type, @encode(double)) == 0 ||
                strcmp(objc_type, @encode(float)) == 0)
-        result.AppendDouble([value doubleValue]);
+        result.Append([value doubleValue]);
       else
         result.AppendInteger([value intValue]);
     } else if ([value isKindOfClass:[NSArray class]]) {

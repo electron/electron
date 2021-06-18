@@ -1,13 +1,17 @@
 /* eslint-disable no-var */
 declare var internalBinding: any;
-declare var nodeProcess: any;
-declare var isolatedWorld: any;
 declare var binding: { get: (name: string) => any; process: NodeJS.Process; createPreloadScript: (src: string) => Function };
+
+declare var isolatedApi: {
+  guestViewInternal: any;
+  allowGuestViewElementDefinition: NodeJS.InternalWebFrame['allowGuestViewElementDefinition'];
+  setIsWebView: (iframe: HTMLIFrameElement) => void;
+  createNativeImage: typeof Electron.nativeImage['createEmpty'];
+}
 
 declare const BUILDFLAG: (flag: boolean) => boolean;
 
 declare const ENABLE_DESKTOP_CAPTURER: boolean;
-declare const ENABLE_REMOTE_MODULE: boolean;
 declare const ENABLE_VIEWS_API: boolean;
 
 declare namespace NodeJS {
@@ -15,7 +19,6 @@ declare namespace NodeJS {
     isBuiltinSpellCheckerEnabled(): boolean;
     isDesktopCapturerEnabled(): boolean;
     isOffscreenRenderingEnabled(): boolean;
-    isRemoteModuleEnabled(): boolean;
     isPDFViewerEnabled(): boolean;
     isRunAsNodeEnabled(): boolean;
     isFakeLocationProviderEnabled(): boolean;
@@ -32,7 +35,7 @@ declare namespace NodeJS {
     send(internal: boolean, channel: string, args: any[]): void;
     sendSync(internal: boolean, channel: string, args: any[]): any;
     sendToHost(channel: string, args: any[]): void;
-    sendTo(internal: boolean, webContentsId: number, channel: string, args: any[]): void;
+    sendTo(webContentsId: number, channel: string, args: any[]): void;
     invoke<T>(internal: boolean, channel: string, args: any[]): Promise<{ error: string, result: T }>;
     postMessage(channel: string, message: any, transferables: MessagePort[]): void;
   }
@@ -45,7 +48,7 @@ declare namespace NodeJS {
     weaklyTrackValue(value: any): void;
     clearWeaklyTrackedValues(): void;
     getWeaklyTrackedValues(): any[];
-    addRemoteObjectRef(contextId: string, id: number): void;
+    runUntilIdle(): void;
     isSameOrigin(a: string, b: string): boolean;
     triggerFatalErrorForTesting(): void;
   }
@@ -78,8 +81,7 @@ declare namespace NodeJS {
     readdir(path: string): string[] | false;
     realpath(path: string): string | false;
     copyFileOut(path: string): string | false;
-    read(offset: number, size: number): Promise<ArrayBuffer>;
-    readSync(offset: number, size: number): ArrayBuffer;
+    getFd(): number | -1;
   }
 
   interface AsarBinding {
@@ -100,8 +102,30 @@ declare namespace NodeJS {
   }
 
   interface WebViewManagerBinding {
-    addGuest(guestInstanceId: number, elementInstanceId: number, embedder: Electron.WebContents, guest: Electron.WebContents, webPreferences: Electron.WebPreferences): void;
+    addGuest(guestInstanceId: number, embedder: Electron.WebContents, guest: Electron.WebContents, webPreferences: Electron.WebPreferences): void;
     removeGuest(embedder: Electron.WebContents, guestInstanceId: number): void;
+  }
+
+  interface InternalWebPreferences {
+    contextIsolation: boolean;
+    guestInstanceId: number;
+    hiddenPage: boolean;
+    nativeWindowOpen: boolean;
+    nodeIntegration: boolean;
+    openerId: number;
+    preload: string
+    preloadScripts: string[];
+    webviewTag: boolean;
+  }
+
+  interface InternalWebFrame extends Electron.WebFrame {
+    getWebPreference<K extends keyof InternalWebPreferences>(name: K): InternalWebPreferences[K];
+    getWebFrameId(window: Window): number;
+    allowGuestViewElementDefinition(context: object, callback: Function): void;
+  }
+
+  interface WebFrameBinding {
+    mainFrame: InternalWebFrame;
   }
 
   type DataPipe = {
@@ -215,8 +239,13 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_browser_view'): { View: Electron.View };
     _linkedBinding(name: 'electron_browser_web_contents_view'): { WebContentsView: typeof Electron.WebContentsView };
     _linkedBinding(name: 'electron_browser_web_view_manager'): WebViewManagerBinding;
+    _linkedBinding(name: 'electron_browser_web_frame_main'): {
+      WebFrameMain: typeof Electron.WebFrameMain;
+      fromId(processId: number, routingId: number): Electron.WebFrameMain;
+    }
     _linkedBinding(name: 'electron_renderer_crash_reporter'): Electron.CrashReporter;
     _linkedBinding(name: 'electron_renderer_ipc'): { ipc: IpcRendererBinding };
+    _linkedBinding(name: 'electron_renderer_web_frame'): WebFrameBinding;
     log: NodeJS.WriteStream['write'];
     activateUvLoop(): void;
 
@@ -228,7 +257,7 @@ declare namespace NodeJS {
     _firstFileName?: string;
 
     helperExecPath: string;
-    isRemoteModuleEnabled: boolean;
+    mainModule: NodeJS.Module;
   }
 }
 
@@ -268,7 +297,9 @@ declare interface Window {
       completeURL: (project: string, path: string) => string;
     }
   };
+  WebView: typeof ElectronInternal.WebViewElement;
   ResizeObserver: ResizeObserver;
+  trustedTypes: TrustedTypePolicyFactory;
 }
 
 /**
@@ -321,60 +352,40 @@ interface ResizeObserverEntry {
   readonly contentRect: DOMRectReadOnly;
 }
 
-// https://github.com/microsoft/TypeScript/pull/38232
+// https://w3c.github.io/webappsec-trusted-types/dist/spec/#trusted-types
 
-interface WeakRef<T extends object> {
-  readonly [Symbol.toStringTag]: 'WeakRef';
+type TrustedHTML = string;
+type TrustedScript = string;
+type TrustedScriptURL = string;
+type TrustedType = TrustedHTML | TrustedScript | TrustedScriptURL;
+type StringContext = 'TrustedHTML' | 'TrustedScript' | 'TrustedScriptURL';
 
-  /**
-   * Returns the WeakRef instance's target object, or undefined if the target object has been
-   * reclaimed.
-   */
-  deref(): T | undefined;
+// https://w3c.github.io/webappsec-trusted-types/dist/spec/#typedef-trustedtypepolicy
+
+interface TrustedTypePolicy {
+  createHTML(input: string, ...arguments: any[]): TrustedHTML;
+  createScript(input: string, ...arguments: any[]): TrustedScript;
+  createScriptURL(input: string, ...arguments: any[]): TrustedScriptURL;
 }
 
-interface WeakRefConstructor {
-  readonly prototype: WeakRef<any>;
+// https://w3c.github.io/webappsec-trusted-types/dist/spec/#typedef-trustedtypepolicyoptions
 
-  /**
-   * Creates a WeakRef instance for the given target object.
-   * @param target The target object for the WeakRef instance.
-   */
-  new<T extends object>(target?: T): WeakRef<T>;
+interface TrustedTypePolicyOptions {
+  createHTML?: (input: string, ...arguments: any[]) => TrustedHTML;
+  createScript?: (input: string, ...arguments: any[]) => TrustedScript;
+  createScriptURL?: (input: string, ...arguments: any[]) => TrustedScriptURL;
 }
 
-declare var WeakRef: WeakRefConstructor;
+// https://w3c.github.io/webappsec-trusted-types/dist/spec/#typedef-trustedtypepolicyfactory
 
-interface FinalizationRegistry {
-  readonly [Symbol.toStringTag]: 'FinalizationRegistry';
-
-  /**
-   * Registers an object with the registry.
-   * @param target The target object to register.
-   * @param heldValue The value to pass to the finalizer for this object. This cannot be the
-   * target object.
-   * @param unregisterToken The token to pass to the unregister method to unregister the target
-   * object. If provided (and not undefined), this must be an object. If not provided, the target
-   * cannot be unregistered.
-   */
-  register(target: object, heldValue: any, unregisterToken?: object): void;
-
-  /**
-   * Unregisters an object from the registry.
-   * @param unregisterToken The token that was used as the unregisterToken argument when calling
-   * register to register the target object.
-   */
-  unregister(unregisterToken: object): void;
+interface TrustedTypePolicyFactory {
+  createPolicy(policyName: string, policyOptions: TrustedTypePolicyOptions): TrustedTypePolicy
+  isHTML(value: any): boolean;
+  isScript(value: any): boolean;
+  isScriptURL(value: any): boolean;
+  readonly emptyHTML: TrustedHTML;
+  readonly emptyScript: TrustedScript;
+  getAttributeType(tagName: string, attribute: string, elementNs?: string, attrNs?: string): StringContext | null;
+  getPropertyType(tagName: string, property: string, elementNs?: string): StringContext | null;
+  readonly defaultPolicy: TrustedTypePolicy | null;
 }
-
-interface FinalizationRegistryConstructor {
-  readonly prototype: FinalizationRegistry;
-
-  /**
-   * Creates a finalization registry with an associated cleanup callback
-   * @param cleanupCallback The callback to call after an object in the registry has been reclaimed.
-   */
-  new(cleanupCallback: (heldValue: any) => void): FinalizationRegistry;
-}
-
-declare var FinalizationRegistry: FinalizationRegistryConstructor;

@@ -119,10 +119,13 @@ class IncomingMessage extends Readable {
       this._shouldPush = this.push(chunk);
     }
     if (this._shouldPush && this._resume) {
-      this._resume();
       // Reset the callback, so that a new one is used for each
-      // batch of throttled data
+      // batch of throttled data. Do this before calling resume to avoid a
+      // potential race-condition
+      const resume = this._resume;
       this._resume = null;
+
+      resume();
     }
   }
 
@@ -185,6 +188,11 @@ class ChunkedBodyStream extends Writable {
     this._downstream = pipe;
     if (this._pendingChunk) {
       const doneWriting = (maybeError: Error | void) => {
+        // If the underlying request has been aborted, we honeslty don't care about the error
+        // all work should cease as soon as we abort anyway, this error is probably a
+        // "mojo pipe disconnected" error (code=9)
+        if (this._clientRequest._aborted) return;
+
         const cb = this._pendingCallback!;
         delete this._pendingCallback;
         delete this._pendingChunk;

@@ -5,24 +5,16 @@
 #ifndef SHELL_BROWSER_NET_SYSTEM_NETWORK_CONTEXT_MANAGER_H_
 #define SHELL_BROWSER_NET_SYSTEM_NETWORK_CONTEXT_MANAGER_H_
 
-#include <memory>
-#include <string>
-#include <vector>
-
 #include "base/macros.h"
 #include "base/memory/ref_counted.h"
-#include "base/optional.h"
 #include "chrome/browser/net/proxy_config_monitor.h"
 #include "mojo/public/cpp/bindings/remote.h"
+#include "services/network/public/cpp/shared_url_loader_factory.h"
 #include "services/network/public/mojom/network_context.mojom.h"
 #include "services/network/public/mojom/network_service.mojom.h"
-
-namespace network {
-namespace mojom {
-class URLLoaderFactory;
-}
-class SharedURLLoaderFactory;
-}  // namespace network
+#include "services/network/public/mojom/url_loader.mojom.h"
+#include "services/network/public/mojom/url_loader_factory.mojom.h"
+#include "third_party/abseil-cpp/absl/types/optional.h"
 
 namespace net_log {
 class NetExportFileWriter;

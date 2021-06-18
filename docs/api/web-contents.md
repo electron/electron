@@ -49,7 +49,8 @@ Returns `WebContents` | undefined - A WebContents instance with the given ID, or
 
 > Render and control the contents of a BrowserWindow instance.
 
-Process: [Main](../glossary.md#main-process)
+Process: [Main](../glossary.md#main-process)<br />
+_This class is not exported from the `'electron'` module. It is only available as a return value of other methods in the Electron API._
 
 ### Instance Events
 
@@ -147,7 +148,8 @@ Returns:
 * `options` BrowserWindowConstructorOptions - The options which will be used for creating the new
   [`BrowserWindow`](browser-window.md).
 * `additionalFeatures` String[] - The non-standard features (features not handled
-  by Chromium or Electron) given to `window.open()`.
+  by Chromium or Electron) given to `window.open()`. Deprecated, and will now
+  always be the empty array `[]`.
 * `referrer` [Referrer](structures/referrer.md) - The referrer that will be
   passed to the new window. May or may not result in the `Referer` header being
   sent, depending on the referrer policy.
@@ -202,13 +204,11 @@ Returns:
   * `frameName` String - Name given to the created window in the
      `window.open()` call.
   * `options` BrowserWindowConstructorOptions - The options used to create the
-    BrowserWindow. They are merged in increasing precedence: options inherited
-    from the parent, parsed options from the `features` string from
-    `window.open()`, and options given by
+    BrowserWindow. They are merged in increasing precedence: parsed options
+    from the `features` string from `window.open()`, security-related
+    webPreferences inherited from the parent, and options given by
     [`webContents.setWindowOpenHandler`](web-contents.md#contentssetwindowopenhandlerhandler).
     Unrecognized options are not filtered out.
-  * `additionalFeatures` String[] - The non-standard features (features not
-    handled Chromium or Electron) _Deprecated_
   * `referrer` [Referrer](structures/referrer.md) - The referrer that will be
     passed to the new window. May or may not result in the `Referer` header
     being sent, depending on the referrer policy.
@@ -375,6 +375,8 @@ win.webContents.on('will-prevent-unload', (event) => {
 })
 ```
 
+**Note:** This will be emitted for `BrowserViews` but will _not_ be respected - this is because we have chosen not to tie the `BrowserView` lifecycle to its owning BrowserWindow should one exist per the [specification](https://developer.mozilla.org/en-US/docs/Web/API/Window/beforeunload_event).
+
 #### Event: 'crashed' _Deprecated_
 
 Returns:
@@ -403,6 +405,9 @@ Returns:
     * `oom` - Process ran out of memory
     * `launch-failed` - Process never successfully launched
     * `integrity-failure` - Windows code integrity checks failed
+  * `exitCode` Integer - The exit code of the process, unless `reason` is
+    `launch-failed`, in which case `exitCode` will be a platform-specific
+    launch failure error code.
 
 Emitted when the renderer process unexpectedly disappears.  This is normally
 because it was crashed or killed.
@@ -836,59 +841,6 @@ Returns:
 Emitted when `desktopCapturer.getSources()` is called in the renderer process.
 Calling `event.preventDefault()` will make it return empty sources.
 
-#### Event: 'remote-require' _Deprecated_
-
-Returns:
-
-* `event` IpcMainEvent
-* `moduleName` String
-
-Emitted when `remote.require()` is called in the renderer process.
-Calling `event.preventDefault()` will prevent the module from being returned.
-Custom value can be returned by setting `event.returnValue`.
-
-#### Event: 'remote-get-global' _Deprecated_
-
-Returns:
-
-* `event` IpcMainEvent
-* `globalName` String
-
-Emitted when `remote.getGlobal()` is called in the renderer process.
-Calling `event.preventDefault()` will prevent the global from being returned.
-Custom value can be returned by setting `event.returnValue`.
-
-#### Event: 'remote-get-builtin' _Deprecated_
-
-Returns:
-
-* `event` IpcMainEvent
-* `moduleName` String
-
-Emitted when `remote.getBuiltin()` is called in the renderer process.
-Calling `event.preventDefault()` will prevent the module from being returned.
-Custom value can be returned by setting `event.returnValue`.
-
-#### Event: 'remote-get-current-window' _Deprecated_
-
-Returns:
-
-* `event` IpcMainEvent
-
-Emitted when `remote.getCurrentWindow()` is called in the renderer process.
-Calling `event.preventDefault()` will prevent the object from being returned.
-Custom value can be returned by setting `event.returnValue`.
-
-#### Event: 'remote-get-current-web-contents' _Deprecated_
-
-Returns:
-
-* `event` IpcMainEvent
-
-Emitted when `remote.getCurrentWebContents()` is called in the renderer process.
-Calling `event.preventDefault()` will prevent the object from being returned.
-Custom value can be returned by setting `event.returnValue`.
-
 #### Event: 'preferred-size-changed'
 
 Returns:
@@ -911,7 +863,7 @@ in `webPreferences`.
   * `httpReferrer` (String | [Referrer](structures/referrer.md)) (optional) - An HTTP Referrer url.
   * `userAgent` String (optional) - A user agent originating the request.
   * `extraHeaders` String (optional) - Extra headers separated by "\n".
-  * `postData` ([UploadRawData[]](structures/upload-raw-data.md) | [UploadFile[]](structures/upload-file.md)) (optional)
+  * `postData` ([UploadRawData](structures/upload-raw-data.md) | [UploadFile](structures/upload-file.md))[] (optional)
   * `baseURLForDataURL` String (optional) - Base url (with trailing path separator) for files to be loaded by the data url. This is needed only if the specified `url` is a data url and needs to load other files.
 
 Returns `Promise<void>` - the promise will resolve when the page has finished loading
@@ -1181,14 +1133,27 @@ Ignore application menu shortcuts while this web contents is focused.
     * `url` String - The _resolved_ version of the URL passed to `window.open()`. e.g. opening a window with `window.open('foo')` will yield something like `https://the-origin/the/current/path/foo`.
     * `frameName` String - Name of the window provided in `window.open()`
     * `features` String - Comma separated list of window features provided to `window.open()`.
+    * `disposition` String - Can be `default`, `foreground-tab`, `background-tab`,
+      `new-window`, `save-to-disk` or `other`.
+    * `referrer` [Referrer](structures/referrer.md) - The referrer that will be
+      passed to the new window. May or may not result in the `Referer` header being
+      sent, depending on the referrer policy.
+    * `postBody` [PostBody](structures/post-body.md) (optional) - The post data that
+      will be sent to the new window, along with the appropriate headers that will
+      be set. If no post data is to be sent, the value will be `null`. Only defined
+      when the window is being created by a form that set `target=_blank`.
+
   Returns `{action: 'deny'} | {action: 'allow', overrideBrowserWindowOptions?: BrowserWindowConstructorOptions}` - `deny` cancels the creation of the new
   window. `allow` will allow the new window to be created. Specifying `overrideBrowserWindowOptions` allows customization of the created window.
   Returning an unrecognized value such as a null, undefined, or an object
   without a recognized 'action' value will result in a console error and have
   the same effect as returning `{action: 'deny'}`.
 
-Called before creating a window when `window.open()` is called from the
-renderer. See [`window.open()`](window-open.md) for more details and how to use this in conjunction with `did-create-window`.
+Called before creating a window a new window is requested by the renderer, e.g.
+by `window.open()`, a link with `target="_blank"`, shift+clicking on a link, or
+submitting a form with `<form target="_blank">`. See
+[`window.open()`](window-open.md) for more details and how to use this in
+conjunction with `did-create-window`.
 
 #### `contents.setAudioMuted(muted)`
 
@@ -1317,8 +1282,7 @@ Inserts `text` to the focused element.
 * `text` String - Content to be searched, must not be empty.
 * `options` Object (optional)
   * `forward` Boolean (optional) - Whether to search forward or backward, defaults to `true`.
-  * `findNext` Boolean (optional) - Whether the operation is first request or a follow up,
-    defaults to `false`.
+  * `findNext` Boolean (optional) - Whether to begin a new text finding session with this request. Should be `true` for initial requests, and `false` for follow-up requests. Defaults to `false`.
   * `matchCase` Boolean (optional) - Whether search should be case-sensitive,
     defaults to `false`.
 
@@ -1360,19 +1324,21 @@ Captures a snapshot of the page within `rect`. Omitting `rect` will capture the 
 Returns `Boolean` - Whether this page is being captured. It returns true when the capturer count
 is large then 0.
 
-#### `contents.incrementCapturerCount([size, stayHidden])`
+#### `contents.incrementCapturerCount([size, stayHidden, stayAwake])`
 
 * `size` [Size](structures/size.md) (optional) - The preferred size for the capturer.
 * `stayHidden` Boolean (optional) -  Keep the page hidden instead of visible.
+* `stayAwake` Boolean (optional) -  Keep the system awake instead of allowing it to sleep.
 
 Increase the capturer count by one. The page is considered visible when its browser window is
 hidden and the capturer count is non-zero. If you would like the page to stay hidden, you should ensure that `stayHidden` is set to true.
 
 This also affects the Page Visibility API.
 
-#### `contents.decrementCapturerCount([stayHidden])`
+#### `contents.decrementCapturerCount([stayHidden, stayAwake])`
 
 * `stayHidden` Boolean (optional) -  Keep the page in hidden state instead of visible.
+* `stayAwake` Boolean (optional) -  Keep the system awake instead of allowing it to sleep.
 
 Decrease the capturer count by one. The page will be set to hidden or occluded state when its
 browser window is hidden or occluded and the capturer count reaches zero. If you want to
@@ -1673,8 +1639,7 @@ included. Sending Functions, Promises, Symbols, WeakMaps, or WeakSets will
 throw an exception.
 
 > **NOTE**: Sending non-standard JavaScript types such as DOM objects or
-> special Electron objects is deprecated, and will begin throwing an exception
-> starting with Electron 9.
+> special Electron objects will throw an exception.
 
 The renderer process can handle the message by listening to `channel` with the
 [`ipcRenderer`](ipc-renderer.md) module.
@@ -1722,9 +1687,8 @@ Send an asynchronous message to a specific frame in a renderer process via
 chains will not be included. Sending Functions, Promises, Symbols, WeakMaps, or
 WeakSets will throw an exception.
 
-> **NOTE**: Sending non-standard JavaScript types such as DOM objects or
-> special Electron objects is deprecated, and will begin throwing an exception
-> starting with Electron 9.
+> **NOTE:** Sending non-standard JavaScript types such as DOM objects or
+> special Electron objects will throw an exception.
 
 The renderer process can handle the message by listening to `channel` with the
 [`ipcRenderer`](ipc-renderer.md) module.
@@ -1959,6 +1923,20 @@ when the page becomes backgrounded. This also affects the Page Visibility API.
 #### `contents.getType()`
 
 Returns `String` - the type of the webContent. Can be `backgroundPage`, `window`, `browserView`, `remote`, `webview` or `offscreen`.
+
+#### `contents.setImageAnimationPolicy(policy)`
+
+* `policy` String - Can be `animate`, `animateOnce` or `noAnimation`.
+
+Sets the image animation policy for this webContents.  The policy only affects
+_new_ images, existing images that are currently being animated are unaffected.
+This is a known limitation in Chromium, you can force image animation to be
+recalculated with `img.src = img.src` which will result in no network traffic
+but will update the animation policy.
+
+This corresponds to the [animationPolicy][] accessibility feature in Chromium.
+
+[animationPolicy]: https://developer.chrome.com/docs/extensions/reference/accessibilityFeatures/#property-animationPolicy
 
 ### Instance Properties
 

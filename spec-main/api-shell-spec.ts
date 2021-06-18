@@ -2,6 +2,7 @@ import { BrowserWindow, app } from 'electron/main';
 import { shell } from 'electron/common';
 import { closeAllWindows } from './window-helpers';
 import { emittedOnce } from './events-helpers';
+import { ifit } from './spec-helpers';
 import * as http from 'http';
 import * as fs from 'fs-extra';
 import * as path from 'path';
@@ -32,7 +33,7 @@ describe('shell module', () => {
 
     it('opens an external link', async () => {
       let url = 'http://127.0.0.1';
-      let requestReceived;
+      let requestReceived: Promise<any>;
       if (process.platform === 'linux') {
         process.env.BROWSER = '/bin/true';
         process.env.DE = 'generic';
@@ -49,12 +50,12 @@ describe('shell module', () => {
         const server = http.createServer((req, res) => {
           res.end();
         });
-        await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
-        requestReceived = new Promise(resolve => server.on('connection', () => resolve()));
+        await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+        requestReceived = new Promise<void>(resolve => server.on('connection', () => resolve()));
         url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
       }
 
-      await Promise.all([
+      await Promise.all<void>([
         shell.openExternal(url),
         requestReceived
       ]);
@@ -62,6 +63,8 @@ describe('shell module', () => {
   });
 
   describe('shell.trashItem()', () => {
+    afterEach(closeAllWindows);
+
     it('moves an item to the trash', async () => {
       const dir = await fs.mkdtemp(path.resolve(app.getPath('temp'), 'electron-shell-spec-'));
       const filename = path.join(dir, 'temp-to-be-deleted');
@@ -73,6 +76,12 @@ describe('shell module', () => {
     it('throws when called with a nonexistent path', async () => {
       const filename = path.join(app.getPath('temp'), 'does-not-exist');
       await expect(shell.trashItem(filename)).to.eventually.be.rejected();
+    });
+
+    ifit(!(process.platform === 'win32' && process.arch === 'ia32'))('works in the renderer process', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+      w.loadURL('about:blank');
+      await expect(w.webContents.executeJavaScript('require(\'electron\').shell.trashItem(\'does-not-exist\')')).to.be.rejectedWith(/does-not-exist|Failed to move item|Failed to create FileOperation/);
     });
   });
 });

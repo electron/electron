@@ -88,7 +88,7 @@ def create_checksum(algorithm, directory, filename, files):
   lines = []
   for path in files:
     h = hashlib.new(algorithm)
-    with open(path, 'r') as f:
+    with open(path, 'rb') as f:
       h.update(f.read())
       lines.append(h.hexdigest() + '  ' + os.path.relpath(path, directory))
 
