@@ -911,11 +911,14 @@ void WebContents::InitWithWebContents(content::WebContents* web_contents,
       web_contents, browser_context->prefs(), is_guest);
   inspectable_web_contents_->SetDelegate(this);
 
-  std::string color_name;
-  if (web_preferences->GetPreference(options::kBackgroundColor, &color_name)) {
-    web_contents->SetPageBaseBackgroundColor(ParseHexColor(color_name));
-  } else {
-    web_contents->SetPageBaseBackgroundColor(SK_ColorTRANSPARENT);
+  if (web_preferences) {
+    std::string color_name;
+    if (web_preferences->GetPreference(options::kBackgroundColor,
+                                       &color_name)) {
+      web_contents->SetPageBaseBackgroundColor(ParseHexColor(color_name));
+    } else {
+      web_contents->SetPageBaseBackgroundColor(SK_ColorTRANSPARENT);
+    }
   }
 }
 
