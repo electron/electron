@@ -1,7 +1,7 @@
 ---
 title: Tray
 description: This guide will take you through the process of creating
-a Tray icon with its own context menu to the system's notification area.
+  a Tray icon with its own context menu to the system's notification area.
 slug: tray
 hide_title: true
 ---
