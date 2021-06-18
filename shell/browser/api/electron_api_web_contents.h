@@ -14,6 +14,7 @@
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "base/observer_list_types.h"
+#include "chrome/browser/devtools/devtools_eye_dropper.h"
 #include "chrome/browser/devtools/devtools_file_system_indexer.h"
 #include "content/common/cursors/webcursor.h"
 #include "content/common/frame.mojom.h"
@@ -409,8 +410,7 @@ class WebContents : public gin::Wrappable<WebContents>,
       blink::CloneableMessage arguments,
       electron::mojom::ElectronBrowser::MessageSyncCallback callback,
       content::RenderFrameHost* render_frame_host);
-  void MessageTo(bool internal,
-                 int32_t web_contents_id,
+  void MessageTo(int32_t web_contents_id,
                  const std::string& channel,
                  blink::CloneableMessage arguments);
   void MessageHost(const std::string& channel,
@@ -658,6 +658,7 @@ class WebContents : public gin::Wrappable<WebContents>,
   void DevToolsSearchInPath(int request_id,
                             const std::string& file_system_path,
                             const std::string& query) override;
+  void DevToolsSetEyeDropperActive(bool active) override;
 
   // InspectableWebContentsViewDelegate:
 #if defined(TOOLKIT_VIEWS) && !defined(OS_MAC)
@@ -667,6 +668,8 @@ class WebContents : public gin::Wrappable<WebContents>,
   void GetDevToolsWindowWMClass(std::string* name,
                                 std::string* class_name) override;
 #endif
+
+  void ColorPickedInEyeDropper(int r, int g, int b, int a);
 
   // DevTools index event callbacks.
   void OnDevToolsIndexingWorkCalculated(int request_id,
@@ -739,6 +742,8 @@ class WebContents : public gin::Wrappable<WebContents>,
   std::unique_ptr<WebDialogHelper> web_dialog_helper_;
 
   scoped_refptr<DevToolsFileSystemIndexer> devtools_file_system_indexer_;
+
+  std::unique_ptr<DevToolsEyeDropper> eye_dropper_;
 
   ElectronBrowserContext* browser_context_;
 
