@@ -42,14 +42,6 @@ gfx::Size WinCaptionButton::CalculatePreferredSize() const {
   return gfx::Size(base_width + GetBetweenButtonSpacing(), height);
 }
 
-SkColor WinCaptionButton::GetBaseColor() const {
-  // TODO(@mlaurencin): For handling light vs dark themed background colors in
-  // future: Get the theme's calculated custom control button background color
-  // (as it takes into account images, etc).  If none is specified (likely when
-  // there is no theme active), fall back to the titlebar color.
-  return color_utils::GetSysSkColor(COLOR_BTNTEXT);
-}
-
 void WinCaptionButton::OnPaintBackground(gfx::Canvas* canvas) {
   // Paint the background of the button (the semi-transparent rectangle that
   // appears when you hover or press the button).
@@ -73,7 +65,7 @@ void WinCaptionButton::OnPaintBackground(gfx::Canvas* canvas) {
     pressed_alpha = 0x98;
   } else {
     // Match the native buttons.
-    base_color = GetBaseColor();
+    base_color = frame_view_->window()->overlay_color();
     hovered_alpha = 0x1A;
     pressed_alpha = 0x33;
 
@@ -147,7 +139,7 @@ void DrawRect(gfx::Canvas* canvas,
 }  // namespace
 
 void WinCaptionButton::PaintSymbol(gfx::Canvas* canvas) {
-  SkColor symbol_color = GetBaseColor();
+  SkColor symbol_color = frame_view_->window()->overlay_text_color();
 
   if (button_type_ == VIEW_ID_CLOSE_BUTTON &&
       hover_animation().is_animating()) {

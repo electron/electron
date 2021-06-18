@@ -183,6 +183,7 @@ class NativeWindowViews : public NativeWindow,
   TitleBarStyle title_bar_style() const { return title_bar_style_; }
   bool IsWindowControlsOverlayEnabled() const;
   SkColor overlay_color() const { return overlay_color_; }
+  SkColor overlay_text_color() const { return overlay_text_color_; }
 #endif
 
  private:
@@ -308,9 +309,10 @@ class NativeWindowViews : public NativeWindow,
   // Whether the window is currently being moved.
   bool is_moving_ = false;
 
-  // The color to use as the theme for Window Controls Overlay if enabled on
-  // Windows.
+  // The color to use as the theme and text colors respectively for Window
+  // Controls Overlay if enabled on Windows.
   SkColor overlay_color_;
+  SkColor overlay_text_color_;
 #endif
 
   // Handles unhandled keyboard messages coming back from the renderer process.

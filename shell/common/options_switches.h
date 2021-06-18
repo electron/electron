@@ -59,6 +59,7 @@ extern const char kTrafficLightPosition[];
 extern const char kRoundedCorners[];
 extern const char ktitleBarOverlay[];
 extern const char kOverlayColor[];
+extern const char kOverlayTextColor[];
 
 // WebPreferences.
 extern const char kZoomFactor[];
