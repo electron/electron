@@ -452,7 +452,7 @@ index 85073b2f5d58d3e071fb6ef30598973b4d00eda8..c81c820d61da3c7d1cfd2c516147c954
  
  NSString * const SQRLUpdaterErrorDomain = @"SQRLUpdaterErrorDomain";
 diff --git a/Squirrel/SQRLZipArchiver.m b/Squirrel/SQRLZipArchiver.m
-index f84127f642516078249925953e97621909265deb..478509cdd528db4fcfa340c6f93fa58a446957e6 100644
+index cbc8fb61c66184c1d76e8b9f52a89292b4e9939c..d0f20f022a4ff392b596bcf0be96ab3e3c835285 100644
 --- a/Squirrel/SQRLZipArchiver.m
 +++ b/Squirrel/SQRLZipArchiver.m
 @@ -7,8 +7,8 @@
