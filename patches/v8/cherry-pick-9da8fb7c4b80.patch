@@ -1,7 +1,10 @@
-From 9da8fb7c4b805b22fb12bc41ea92a4840d43d04e Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Georg Neis <neis@chromium.org>
-Date: Mon, 07 Jun 2021 10:41:38 +0200
-Subject: [PATCH] [M86-LTS]: Squashed multiple commits.
+Date: Mon, 7 Jun 2021 10:41:38 +0200
+Subject: Squashed multiple commits.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
 Merged: Disable left-trimming when optimizing compile jobs exist
 Revision: ac0605a1a486b8d074f116cc365de9d2b6d7c9e5
@@ -29,13 +32,12 @@ Commit-Queue: Victor-Gabriel Savu <vsavu@google.com>
 Cr-Commit-Position: refs/branch-heads/8.6@{#107}
 Cr-Branched-From: a64aed2333abf49e494d2a5ce24bbd14fff19f60-refs/heads/8.6.395@{#1}
 Cr-Branched-From: a626bc036236c9bf92ac7b87dc40c9e538b087e3-refs/heads/master@{#69472}
----
 
 diff --git a/src/compiler-dispatcher/optimizing-compile-dispatcher.cc b/src/compiler-dispatcher/optimizing-compile-dispatcher.cc
-index 6848ca2..1316b3d 100644
+index 528a9babe33041ff85c82e0ba8afbdb975783af8..b47aa5431ca634f677cd4b2441f75d42b3f0a930 100644
 --- a/src/compiler-dispatcher/optimizing-compile-dispatcher.cc
 +++ b/src/compiler-dispatcher/optimizing-compile-dispatcher.cc
-@@ -47,7 +47,6 @@
+@@ -47,7 +47,6 @@ class OptimizingCompileDispatcher::CompileTask : public CancelableTask {
          worker_thread_runtime_call_stats_(
              isolate->counters()->worker_thread_runtime_call_stats()),
          dispatcher_(dispatcher) {
@@ -43,7 +45,7 @@ index 6848ca2..1316b3d 100644
      ++dispatcher_->ref_count_;
    }
  
-@@ -95,12 +94,7 @@
+@@ -95,12 +94,7 @@ class OptimizingCompileDispatcher::CompileTask : public CancelableTask {
  };
  
  OptimizingCompileDispatcher::~OptimizingCompileDispatcher() {
@@ -57,7 +59,7 @@ index 6848ca2..1316b3d 100644
    DCHECK_EQ(0, input_queue_length_);
    DeleteArray(input_queue_);
  }
-@@ -227,6 +221,14 @@
+@@ -227,6 +221,14 @@ void OptimizingCompileDispatcher::InstallOptimizedFunctions() {
    }
  }
  
@@ -73,10 +75,10 @@ index 6848ca2..1316b3d 100644
      OptimizedCompilationJob* job) {
    DCHECK(IsQueueAvailable());
 diff --git a/src/compiler-dispatcher/optimizing-compile-dispatcher.h b/src/compiler-dispatcher/optimizing-compile-dispatcher.h
-index 5180382..390e90b 100644
+index 51803822d15353af31c446b960c3ee43cc7533fe..390e90b4ab8b7d1680545905ac8ef90c3a9099c9 100644
 --- a/src/compiler-dispatcher/optimizing-compile-dispatcher.h
 +++ b/src/compiler-dispatcher/optimizing-compile-dispatcher.h
-@@ -52,6 +52,9 @@
+@@ -52,6 +52,9 @@ class V8_EXPORT_PRIVATE OptimizingCompileDispatcher {
  
    static bool Enabled() { return FLAG_concurrent_recompilation; }
  
@@ -86,7 +88,7 @@ index 5180382..390e90b 100644
   private:
    class CompileTask;
  
-@@ -87,7 +90,7 @@
+@@ -87,7 +90,7 @@ class V8_EXPORT_PRIVATE OptimizingCompileDispatcher {
  
    int blocked_jobs_;
  
@@ -96,18 +98,18 @@ index 5180382..390e90b 100644
    base::ConditionVariable ref_count_zero_;
  
 diff --git a/src/heap/heap.cc b/src/heap/heap.cc
-index 8c3d506..465ee7e 100644
+index 6755a991df16a9c9d0e9efb2f378e4d68463532c..a017905bfcb0059aa12dbd1bd5a477bcca2dd616 100644
 --- a/src/heap/heap.cc
 +++ b/src/heap/heap.cc
-@@ -21,6 +21,7 @@
- #include "src/codegen/assembler-inl.h"
+@@ -22,6 +22,7 @@
  #include "src/codegen/compilation-cache.h"
+ #include "src/common/assert-scope.h"
  #include "src/common/globals.h"
 +#include "src/compiler-dispatcher/optimizing-compile-dispatcher.h"
  #include "src/debug/debug.h"
  #include "src/deoptimizer/deoptimizer.h"
  #include "src/execution/isolate-utils-inl.h"
-@@ -3029,6 +3030,12 @@
+@@ -3036,6 +3037,12 @@ bool Heap::CanMoveObjectStart(HeapObject object) {
  
    if (IsLargeObject(object)) return false;
  
@@ -122,7 +124,7 @@ index 8c3d506..465ee7e 100644
  }
 diff --git a/test/mjsunit/compiler/regress-1215514.js b/test/mjsunit/compiler/regress-1215514.js
 new file mode 100644
-index 0000000..a597b31
+index 0000000000000000000000000000000000000000..a597b310498458fd7219c33ff188ca2a6e543f45
 --- /dev/null
 +++ b/test/mjsunit/compiler/regress-1215514.js
 @@ -0,0 +1,7 @@
