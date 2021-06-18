@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: "ishell@chromium.org" <ishell@chromium.org>
 Date: Tue, 8 Jun 2021 17:33:32 +0200
-Subject: [M90-LTS] Squashed multiple commits.
+Subject: Squashed multiple commits.
 
 Merged: [runtime] Fix handling of interceptors
 Revision: f9857fdf74
