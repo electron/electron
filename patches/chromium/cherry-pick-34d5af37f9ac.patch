@@ -1,7 +1,7 @@
-From 34d5af37f9ac64b3d838facf975065a2d6ebd471 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Asami Doi <asamidoi@chromium.org>
 Date: Thu, 10 Jun 2021 07:03:17 +0000
-Subject: [PATCH] [M90-LTS] BFCache: remove a controllee stored in `bfcached_controllee_map_`
+Subject: BFCache: remove a controllee stored in `bfcached_controllee_map_`
 
 This CL fixes the UAF that happens with the following case:
 Let's assume we have 2 service workers (sw1.js and sw2.js) are
@@ -42,13 +42,12 @@ Reviewed-by: Achuith Bhandarkar <achuith@chromium.org>
 Commit-Queue: Victor-Gabriel Savu <vsavu@google.com>
 Cr-Commit-Position: refs/branch-heads/4430@{#1512}
 Cr-Branched-From: e5ce7dc4f7518237b3d9bb93cccca35d25216cbe-refs/heads/master@{#857950}
----
 
 diff --git a/content/browser/service_worker/service_worker_container_host.cc b/content/browser/service_worker/service_worker_container_host.cc
-index 0b1981e..9a2193a 100644
+index 0b1981efd9eb008caea1c94da138a2ed7c386bc5..9a2193ac5a4e8a738bef8e391145deecef9b9ac2 100644
 --- a/content/browser/service_worker/service_worker_container_host.cc
 +++ b/content/browser/service_worker/service_worker_container_host.cc
-@@ -138,7 +138,7 @@
+@@ -138,7 +138,7 @@ ServiceWorkerContainerHost::~ServiceWorkerContainerHost() {
    }
  
    if (IsContainerForClient() && controller_)
@@ -57,7 +56,7 @@ index 0b1981e..9a2193a 100644
  
    // Remove |this| as an observer of ServiceWorkerRegistrations.
    // TODO(falken): Use ScopedObserver instead of this explicit call.
-@@ -1244,7 +1244,7 @@
+@@ -1244,7 +1244,7 @@ void ServiceWorkerContainerHost::UpdateController(
      }
    }
    if (previous_version)
@@ -67,10 +66,10 @@ index 0b1981e..9a2193a 100644
    // SetController message should be sent only for clients.
    DCHECK(IsContainerForClient());
 diff --git a/content/browser/service_worker/service_worker_version.cc b/content/browser/service_worker/service_worker_version.cc
-index e394eb76..236a866 100644
+index 798d0bd350976cf2724e4d4b726c24d63e0a5ec3..5e268a5331e80ff7c6c93c425171bbd31ddb342a 100644
 --- a/content/browser/service_worker/service_worker_version.cc
 +++ b/content/browser/service_worker/service_worker_version.cc
-@@ -894,8 +894,7 @@
+@@ -886,8 +886,7 @@ void ServiceWorkerVersion::RemoveControlleeFromBackForwardCacheMap(
    bfcached_controllee_map_.erase(client_uuid);
  }
  
@@ -81,10 +80,10 @@ index e394eb76..236a866 100644
      RemoveControllee(client_uuid);
    } else {
 diff --git a/content/browser/service_worker/service_worker_version.h b/content/browser/service_worker/service_worker_version.h
-index 2c14dea..055c46d 100644
+index cb5afe636f45b70fce2ff313641834bf7bddff30..a96d2c4575fa3879cf6133fbe656cb20745bd66a 100644
 --- a/content/browser/service_worker/service_worker_version.h
 +++ b/content/browser/service_worker/service_worker_version.h
-@@ -394,9 +394,12 @@
+@@ -394,9 +394,12 @@ class CONTENT_EXPORT ServiceWorkerVersion
    void RestoreControlleeFromBackForwardCacheMap(const std::string& client_uuid);
    // Called when a back-forward cached controllee is evicted or destroyed.
    void RemoveControlleeFromBackForwardCacheMap(const std::string& client_uuid);
