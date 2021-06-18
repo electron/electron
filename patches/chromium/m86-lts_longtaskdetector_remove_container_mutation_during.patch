@@ -1,8 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Yutaka Hirano <yhirano@chromium.org>
 Date: Fri, 11 Jun 2021 08:07:55 +0000
-Subject: [M86-LTS][LongTaskDetector] Remove container mutation during
- iteration
+Subject: Remove container mutation during iteration
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit

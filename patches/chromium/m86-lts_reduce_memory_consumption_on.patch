@@ -1,8 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Yutaka Hirano <yhirano@chromium.org>
 Date: Fri, 11 Jun 2021 08:42:36 +0000
-Subject: [M86-LTS] Reduce memory consumption on
- LongTaskObserver::DidProcessTask
+Subject: Reduce memory consumption on LongTaskObserver::DidProcessTask
 
 https://crrev.com/c/2909934 fixed a security issue, but it introduced a
 copy operation for each DidProcessTask for a long task. We see a memory
