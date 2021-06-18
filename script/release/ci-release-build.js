@@ -20,16 +20,10 @@ const circleCIPublishWorkflows = [
   'macos-publish'
 ];
 
-const circleCIJobs = circleCIPublishWorkflows.concat([
-  'linux-arm-publish',
-  'linux-arm64-publish',
-  'linux-ia32-publish',
-  'linux-x64-publish',
-  'mas-publish',
-  'mas-publish-arm64',
-  'osx-publish',
-  'osx-publish-arm64'
-]);
+const circleCIPublishIndividualArches = {
+  'macos-publish': ['osx-x64', 'mas-x64', 'osx-arm64', 'mas-arm64'],
+  'linux-publish': ['arm', 'arm64', 'ia32', 'x64']
+};
 
 const vstsArmJobs = [
   'electron-arm-testing',
@@ -68,8 +62,8 @@ async function makeRequest (requestOptions, parseResponse) {
   });
 }
 
-async function circleCIcall (targetBranch, job, options) {
-  console.log(`Triggering CircleCI to run build job: ${job} on branch: ${targetBranch} with release flag.`);
+async function circleCIcall (targetBranch, workflowName, options) {
+  console.log(`Triggering CircleCI to run build job: ${workflowName} on branch: ${targetBranch} with release flag.`);
   const buildRequest = {
     branch: targetBranch,
     parameters: {
@@ -83,7 +77,13 @@ async function circleCIcall (targetBranch, job, options) {
   } else {
     buildRequest.parameters['upload-to-s3'] = '1';
   }
-  buildRequest.parameters[`run-${job}`] = true;
+  buildRequest.parameters[`run-${workflowName}`] = true;
+  if (options.arch) {
+    const validArches = circleCIPublishIndividualArches[workflowName];
+    assert(validArches.includes(options.arch), `Unknown CircleCI architecture "${options.arch}".  Valid values are ${JSON.stringify(validArches)}`);
+    buildRequest.parameters['macos-publish-arch-limit'] = options.arch;
+  }
+
   jobRequestedCount++;
   // The logic below expects that the CircleCI workflows for releases each
   // contain only one job in order to maintain compatibility with sudowoodo.
@@ -91,22 +91,22 @@ async function circleCIcall (targetBranch, job, options) {
   // also need to be changed as well as possibly changing sudowoodo.
   try {
     const circleResponse = await circleCIRequest(CIRCLECI_PIPELINE_URL, 'POST', buildRequest);
-    console.log(`CircleCI release build pipeline ${circleResponse.id} for ${job} triggered.`);
+    console.log(`CircleCI release build pipeline ${circleResponse.id} for ${workflowName} triggered.`);
     const workflowId = await getCircleCIWorkflowId(circleResponse.id);
     if (workflowId === -1) {
       return;
     }
     const workFlowUrl = `https://circleci.com/workflow-run/${workflowId}`;
     if (options.runningPublishWorkflows) {
-      console.log(`CircleCI release workflow request for ${job} successful.  Check ${workFlowUrl} for status.`);
+      console.log(`CircleCI release workflow request for ${workflowName} successful.  Check ${workFlowUrl} for status.`);
     } else {
-      console.log(`CircleCI release build workflow running at https://circleci.com/workflow-run/${workflowId} for ${job}.`);
+      console.log(`CircleCI release build workflow running at https://circleci.com/workflow-run/${workflowId} for ${workflowName}.`);
       const jobNumber = await getCircleCIJobNumber(workflowId);
       if (jobNumber === -1) {
         return;
       }
       const jobUrl = `https://circleci.com/gh/electron/electron/${jobNumber}`;
-      console.log(`CircleCI release build request for ${job} successful.  Check ${jobUrl} for status.`);
+      console.log(`CircleCI release build request for ${workflowName} successful.  Check ${jobUrl} for status.`);
     }
   } catch (err) {
     console.log('Error calling CircleCI: ', err);
@@ -247,9 +247,10 @@ async function callAppVeyor (targetBranch, job, options) {
 
 function buildCircleCI (targetBranch, options) {
   if (options.job) {
-    assert(circleCIJobs.includes(options.job), `Unknown CircleCI job name: ${options.job}. Valid values are: ${circleCIJobs}.`);
+    assert(circleCIPublishWorkflows.includes(options.job), `Unknown CircleCI workflow name: ${options.job}. Valid values are: ${circleCIPublishWorkflows}.`);
     circleCIcall(targetBranch, options.job, options);
   } else {
+    assert(!options.arch, 'Cannot provide a single architecture while building all workflows, please specify a single workflow via --workflow');
     options.runningPublishWorkflows = true;
     circleCIPublishWorkflows.forEach((job) => circleCIcall(targetBranch, job, options));
   }
@@ -364,7 +365,7 @@ if (require.main === module) {
   const targetBranch = args._[0];
   if (args._.length < 1) {
     console.log(`Trigger CI to build release builds of electron.
-    Usage: ci-release-build.js [--job=CI_JOB_NAME] [--ci=CircleCI|AppVeyor|VSTS|DevOps]
+    Usage: ci-release-build.js [--job=CI_JOB_NAME] [--arch=INDIVIDUAL_ARCH] [--ci=CircleCI|AppVeyor|VSTS|DevOps]
     [--ghRelease] [--armTest] [--circleBuildNum=xxx] [--appveyorJobId=xxx] TARGET_BRANCH
     `);
     process.exit(0);

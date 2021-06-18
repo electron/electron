@@ -31,8 +31,7 @@ void ElectronExtensionsDispatcherDelegate::RegisterNativeHandlers(
     extensions::ScriptContext* context) {
   module_system->RegisterNativeHandler(
       "lazy_background_page",
-      std::unique_ptr<NativeHandler>(
-          new extensions::LazyBackgroundPageNativeHandler(context)));
+      std::make_unique<extensions::LazyBackgroundPageNativeHandler>(context));
 }
 
 void ElectronExtensionsDispatcherDelegate::PopulateSourceMap(

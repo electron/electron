@@ -33,7 +33,7 @@ For more detailed information see [#18397](https://github.com/electron/electron/
 
 The optional parameter `frameName` will no longer set the title of the window. This now follows the specification described by the [native documentation](https://developer.mozilla.org/en-US/docs/Web/API/Window/open#parameters) under the corresponding parameter `windowName`.
 
-If you were using this parameter to set the title of a window, you can instead use [win.setTitle(title)](https://www.electronjs.org/docs/api/browser-window#winsettitletitle).
+If you were using this parameter to set the title of a window, you can instead use [win.setTitle(title)](api/browser-window.md#winsettitletitle).
 
 ### Removed: `worldSafeExecuteJavaScript`
 
@@ -246,7 +246,7 @@ value.
 In Electron 12, `contextIsolation` will be enabled by default.  To restore
 the previous behavior, `contextIsolation: false` must be specified in WebPreferences.
 
-We [recommend having contextIsolation enabled](https://github.com/electron/electron/blob/master/docs/tutorial/security.md#3-enable-context-isolation-for-remote-content) for the security of your application.
+We [recommend having contextIsolation enabled](tutorial/security.md#3-enable-context-isolation-for-remote-content) for the security of your application.
 
 Another implication is that `require()` cannot be used in the renderer process unless
 `nodeIntegration` is `true` and `contextIsolation` is `false`.
@@ -809,7 +809,7 @@ In Electron 7, this now returns a `FileList` with a `File` object for:
 
 Note that `webkitdirectory` no longer exposes the path to the selected folder.
 If you require the path to the selected folder rather than the folder contents,
-see the `dialog.showOpenDialog` API ([link](https://github.com/electron/electron/blob/master/docs/api/dialog.md#dialogshowopendialogbrowserwindow-options)).
+see the `dialog.showOpenDialog` API ([link](api/dialog.md#dialogshowopendialogbrowserwindow-options)).
 
 ### API Changed: Callback-based versions of promisified APIs
 

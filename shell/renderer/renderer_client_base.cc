@@ -20,7 +20,6 @@
 #include "content/public/renderer/render_thread.h"
 #include "content/public/renderer/render_view.h"
 #include "electron/buildflags/buildflags.h"
-#include "media/blink/multibuffer_data_source.h"
 #include "printing/buildflags/buildflags.h"
 #include "shell/browser/api/electron_api_protocol.h"
 #include "shell/common/api/electron_api_native_image.h"
@@ -38,6 +37,7 @@
 #include "shell/renderer/electron_autofill_agent.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_registry.h"
 #include "third_party/blink/public/common/web_preferences/web_preferences.h"
+#include "third_party/blink/public/platform/media/multi_buffer_data_source.h"
 #include "third_party/blink/public/web/blink.h"
 #include "third_party/blink/public/web/web_custom_element.h"  // NOLINT(build/include_alpha)
 #include "third_party/blink/public/web/web_frame_widget.h"
@@ -179,7 +179,8 @@ void RendererClientBase::RenderThreadStarted() {
   extensions_client_.reset(CreateExtensionsClient());
   extensions::ExtensionsClient::Set(extensions_client_.get());
 
-  extensions_renderer_client_.reset(new ElectronExtensionsRendererClient);
+  extensions_renderer_client_ =
+      std::make_unique<ElectronExtensionsRendererClient>();
   extensions::ExtensionsRendererClient::Set(extensions_renderer_client_.get());
 
   thread->AddObserver(extensions_renderer_client_->GetDispatcher());
@@ -187,7 +188,7 @@ void RendererClientBase::RenderThreadStarted() {
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
   // Enables printing from Chrome PDF viewer.
-  pdf_print_client_.reset(new ChromePDFPrintClient());
+  pdf_print_client_ = std::make_unique<ChromePDFPrintClient>();
   pdf::PepperPDFHost::SetPrintClient(pdf_print_client_.get());
 #endif
 

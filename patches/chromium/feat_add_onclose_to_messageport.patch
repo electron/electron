@@ -10,7 +10,7 @@ get this standardised, but in lieu of that, this makes MessagePort a
 whole bunch more useful!
 
 diff --git a/third_party/blink/renderer/core/messaging/message_port.cc b/third_party/blink/renderer/core/messaging/message_port.cc
-index bacf27d57927dba10566b4c02ce12c6ed5c876c9..d0247e32a93447cfe3af286ae83bff958e6edcca 100644
+index cc07bc2680c8d287369b626efb0889bf8359b863..dac42ab3a11d1a01e948e979f56502e1525e0727 100644
 --- a/third_party/blink/renderer/core/messaging/message_port.cc
 +++ b/third_party/blink/renderer/core/messaging/message_port.cc
 @@ -159,6 +159,7 @@ void MessagePort::close() {

@@ -172,7 +172,7 @@ void Start(const std::string& submit_url,
   for (const auto& pair : extra)
     electron::crash_keys::SetCrashKey(pair.first, pair.second);
   base::FilePath user_data_dir;
-  base::PathService::Get(DIR_USER_DATA, &user_data_dir);
+  base::PathService::Get(chrome::DIR_USER_DATA, &user_data_dir);
   ::crash_reporter::InitializeCrashpadWithEmbeddedHandler(
       process_type.empty(), process_type,
       base::WideToUTF8(user_data_dir.value()), base::FilePath());
@@ -197,13 +197,13 @@ void GetUploadedReports(
 #else
 scoped_refptr<UploadList> CreateCrashUploadList() {
 #if defined(OS_MAC) || defined(OS_WIN)
-  return new CrashUploadListCrashpad();
+  return base::MakeRefCounted<CrashUploadListCrashpad>();
 #else
   base::FilePath crash_dir_path;
   base::PathService::Get(electron::DIR_CRASH_DUMPS, &crash_dir_path);
   base::FilePath upload_log_path =
       crash_dir_path.AppendASCII(CrashUploadList::kReporterLogFilename);
-  return new TextLogUploadList(upload_log_path);
+  return base::MakeRefCounted<TextLogUploadList>(upload_log_path);
 #endif  // defined(OS_MAC) || defined(OS_WIN)
 }
 

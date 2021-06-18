@@ -391,7 +391,7 @@ std::unique_ptr<base::Value> V8ValueConverter::FromV8Array(
       val->CreationContext() != isolate->GetCurrentContext())
     scope = std::make_unique<v8::Context::Scope>(val->CreationContext());
 
-  std::unique_ptr<base::ListValue> result(new base::ListValue());
+  auto result = std::make_unique<base::ListValue>();
 
   // Only fields with integer keys are carried over to the ListValue.
   for (uint32_t i = 0; i < val->Length(); ++i) {

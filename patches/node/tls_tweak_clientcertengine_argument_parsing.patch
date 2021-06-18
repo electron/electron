@@ -1,0 +1,38 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Wed, 2 Jun 2021 11:19:45 +0200
+Subject: tls: tweak clientCertEngine argument parsing
+
+This PR slightly tweaks the argument parsing within configSecureContext.
+BoringSSL defines OPENSSL_NO_ENGINE and jasnell@35274cb changed behavior
+so that if a bad clientCertEngine argument is passed,
+ERR_CRYPTO_CUSTOM_ENGINE_NOT_SUPPORTED() will be thrown before
+ERR_INVALID_ARG_TYPE.
+
+Upstreamed at https://github.com/nodejs/node/pull/38900.
+
+diff --git a/lib/internal/tls.js b/lib/internal/tls.js
+index 0ebecb57c887798e2475b84b1783721806d4a7d1..40d511a25c5d4bcfb3802a692fa0059f7497b584 100644
+--- a/lib/internal/tls.js
++++ b/lib/internal/tls.js
+@@ -305,15 +305,15 @@ function configSecureContext(context, options = {}, name = 'options') {
+     }
+   }
+ 
+-  if (clientCertEngine !== undefined) {
++  if (typeof clientCertEngine === 'string') {
+     if (typeof context.setClientCertEngine !== 'function')
+       throw new ERR_CRYPTO_CUSTOM_ENGINE_NOT_SUPPORTED();
+-    if (typeof clientCertEngine !== 'string') {
+-      throw new ERR_INVALID_ARG_TYPE(`${name}.clientCertEngine`,
++    else
++      context.setClientCertEngine(clientCertEngine);
++  } else if (clientCertEngine !== undefined) {
++    throw new ERR_INVALID_ARG_TYPE(`${name}.clientCertEngine`,
+                                      ['string', 'null', 'undefined'],
+                                      clientCertEngine);
+-    }
+-    context.setClientCertEngine(clientCertEngine);
+   }
+ 
+   if (ticketKeys !== undefined) {

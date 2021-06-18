@@ -210,9 +210,9 @@ void NotifyIcon::PopUpContextMenu(const gfx::Point& pos,
   if (pos.IsOrigin())
     rect.set_origin(display::Screen::GetScreen()->GetCursorScreenPoint());
 
-  menu_runner_.reset(
-      new views::MenuRunner(menu_model != nullptr ? menu_model : menu_model_,
-                            views::MenuRunner::HAS_MNEMONICS));
+  menu_runner_ = std::make_unique<views::MenuRunner>(
+      menu_model != nullptr ? menu_model : menu_model_,
+      views::MenuRunner::HAS_MNEMONICS);
   menu_runner_->RunMenuAt(nullptr, nullptr, rect,
                           views::MenuAnchorPosition::kTopLeft,
                           ui::MENU_SOURCE_MOUSE);

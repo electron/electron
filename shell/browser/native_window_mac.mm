@@ -460,11 +460,8 @@ void NativeWindowMac::SetContentView(views::View* view) {
   set_content_view(view);
   root_view->AddChildView(content_view());
 
-  if (buttons_view_) {
-    // Ensure the buttons view are always floated on the top.
-    [buttons_view_ removeFromSuperview];
-    [[window_ contentView] addSubview:buttons_view_];
-  }
+  if (buttons_view_)
+    ReorderButtonsView();
 
   root_view->Layout();
 }
@@ -1150,6 +1147,8 @@ void NativeWindowMac::AddBrowserView(NativeBrowserView* view) {
   }
 
   [CATransaction commit];
+
+  ReorderButtonsView();
 }
 
 void NativeWindowMac::RemoveBrowserView(NativeBrowserView* view) {
@@ -1191,6 +1190,8 @@ void NativeWindowMac::SetTopBrowserView(NativeBrowserView* view) {
   }
 
   [CATransaction commit];
+
+  ReorderButtonsView();
 }
 
 void NativeWindowMac::SetParentWindow(NativeWindow* parent) {
@@ -1307,10 +1308,9 @@ void NativeWindowMac::SetAutoHideCursor(bool auto_hide) {
 }
 
 void NativeWindowMac::UpdateVibrancyRadii(bool fullscreen) {
-  NSView* vibrant_view = [window_ vibrantView];
-  NSVisualEffectView* effect_view = (NSVisualEffectView*)vibrant_view;
+  NSVisualEffectView* vibrantView = [window_ vibrantView];
 
-  if (effect_view != nil && !vibrancy_type_.empty()) {
+  if (vibrantView != nil && !vibrancy_type_.empty()) {
     const bool no_rounded_corner =
         [window_ styleMask] & NSWindowStyleMaskFullSizeContentView;
     if (!has_frame() && !is_modal() && !no_rounded_corner) {
@@ -1340,45 +1340,42 @@ void NativeWindowMac::UpdateVibrancyRadii(bool fullscreen) {
 
       [maskImage setCapInsets:NSEdgeInsetsMake(radius, radius, radius, radius)];
       [maskImage setResizingMode:NSImageResizingModeStretch];
-      [effect_view setMaskImage:maskImage];
+      [vibrantView setMaskImage:maskImage];
       [window_ setCornerMask:maskImage];
     }
   }
 }
 
 void NativeWindowMac::SetVibrancy(const std::string& type) {
-  NSView* vibrant_view = [window_ vibrantView];
+  NSVisualEffectView* vibrantView = [window_ vibrantView];
 
   if (type.empty()) {
-    if (vibrant_view == nil)
+    if (vibrantView == nil)
       return;
 
-    [vibrant_view removeFromSuperview];
+    [vibrantView removeFromSuperview];
     [window_ setVibrantView:nil];
 
     return;
   }
 
-  vibrancy_type_ = type;
-
-  NSVisualEffectView* effect_view = (NSVisualEffectView*)vibrant_view;
-  if (effect_view == nil) {
-    effect_view = [[[NSVisualEffectView alloc]
+  if (vibrantView == nil) {
+    vibrantView = [[[NSVisualEffectView alloc]
         initWithFrame:[[window_ contentView] bounds]] autorelease];
-    [window_ setVibrantView:(NSView*)effect_view];
+    [window_ setVibrantView:vibrantView];
 
-    [effect_view setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
-    [effect_view setBlendingMode:NSVisualEffectBlendingModeBehindWindow];
+    [vibrantView setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+    [vibrantView setBlendingMode:NSVisualEffectBlendingModeBehindWindow];
 
     if (visual_effect_state_ == VisualEffectState::kActive) {
-      [effect_view setState:NSVisualEffectStateActive];
+      [vibrantView setState:NSVisualEffectStateActive];
     } else if (visual_effect_state_ == VisualEffectState::kInactive) {
-      [effect_view setState:NSVisualEffectStateInactive];
+      [vibrantView setState:NSVisualEffectStateInactive];
     } else {
-      [effect_view setState:NSVisualEffectStateFollowsWindowActiveState];
+      [vibrantView setState:NSVisualEffectStateFollowsWindowActiveState];
     }
 
-    [[window_ contentView] addSubview:effect_view
+    [[window_ contentView] addSubview:vibrantView
                            positioned:NSWindowBelow
                            relativeTo:nil];
 
@@ -1389,7 +1386,7 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
   node::Environment* env =
       node::Environment::GetCurrent(JavascriptEnvironment::GetIsolate());
 
-  NSVisualEffectMaterial vibrancyType;
+  NSVisualEffectMaterial vibrancyType{};
   if (type == "appearance-based") {
     EmitWarning(env, "NSVisualEffectMaterialAppearanceBased" + dep_warn,
                 "electron");
@@ -1446,8 +1443,10 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
     }
   }
 
-  if (vibrancyType)
-    [effect_view setMaterial:vibrancyType];
+  if (vibrancyType) {
+    vibrancy_type_ = type;
+    [vibrantView setMaterial:vibrancyType];
+  }
 }
 
 void NativeWindowMac::SetWindowButtonVisibility(bool visible) {
@@ -1651,6 +1650,13 @@ void NativeWindowMac::SetActive(bool is_key) {
 
 bool NativeWindowMac::IsActive() const {
   return is_active_;
+}
+
+void NativeWindowMac::ReorderButtonsView() {
+  if (buttons_view_) {
+    [buttons_view_ removeFromSuperview];
+    [[window_ contentView] addSubview:buttons_view_];
+  }
 }
 
 void NativeWindowMac::Cleanup() {

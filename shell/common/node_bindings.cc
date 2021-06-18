@@ -88,6 +88,8 @@
 
 #define ELECTRON_DESKTOP_CAPTURER_MODULE(V) V(electron_browser_desktop_capturer)
 
+#define ELECTRON_TESTING_MODULE(V) V(electron_common_testing)
+
 // This is used to load built-in modules. Instead of using
 // __attribute__((constructor)), we call the _register_<modname>
 // function for each built-in modules explicitly. This is only
@@ -100,6 +102,9 @@ ELECTRON_VIEWS_MODULES(V)
 #endif
 #if BUILDFLAG(ENABLE_DESKTOP_CAPTURER)
 ELECTRON_DESKTOP_CAPTURER_MODULE(V)
+#endif
+#if DCHECK_IS_ON()
+ELECTRON_TESTING_MODULE(V)
 #endif
 #undef V
 
@@ -329,6 +334,9 @@ void NodeBindings::RegisterBuiltinModules() {
 #if BUILDFLAG(ENABLE_DESKTOP_CAPTURER)
   ELECTRON_DESKTOP_CAPTURER_MODULE(V)
 #endif
+#if DCHECK_IS_ON()
+  ELECTRON_TESTING_MODULE(V)
+#endif
 #undef V
 }
 
@@ -362,13 +370,11 @@ void NodeBindings::Initialize() {
 
   int exit_code = node::InitializeNodeWithArgs(&argv, &exec_argv, &errors);
 
-  for (const std::string& error : errors) {
+  for (const std::string& error : errors)
     fprintf(stderr, "%s: %s\n", argv[0].c_str(), error.c_str());
-  }
 
-  if (exit_code != 0) {
+  if (exit_code != 0)
     exit(exit_code);
-  }
 
 #if defined(OS_WIN)
   // uv_init overrides error mode to suppress the default crash dialog, bring
@@ -518,7 +524,7 @@ node::Environment* NodeBindings::CreateEnvironment(
 }
 
 void NodeBindings::LoadEnvironment(node::Environment* env) {
-  node::LoadEnvironment(env);
+  node::LoadEnvironment(env, node::StartExecutionCallback{});
   gin_helper::EmitEvent(env->isolate(), env->process_object(), "loaded");
 }
 

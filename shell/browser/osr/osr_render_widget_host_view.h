@@ -139,6 +139,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   void ImeCompositionRangeChanged(const gfx::Range&,
                                   const std::vector<gfx::Rect>&) override;
   gfx::Size GetCompositorViewportPixelSize() override;
+  ui::Compositor* GetCompositor() override;
 
   content::RenderWidgetHostViewBase* CreateViewForWidget(
       content::RenderWidgetHost*,
@@ -196,7 +197,6 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   void SetFrameRate(int frame_rate);
   int GetFrameRate() const;
 
-  ui::Compositor* GetCompositor() const;
   ui::Layer* GetRootLayer() const;
 
   content::DelegatedFrameHost* GetDelegatedFrameHost() const;

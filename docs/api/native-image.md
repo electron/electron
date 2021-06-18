@@ -215,7 +215,8 @@ where `SYSTEM_IMAGE_NAME` should be replaced with any value from [this list](htt
 
 > Natively wrap images such as tray, dock, and application icons.
 
-Process: [Main](../glossary.md#main-process), [Renderer](../glossary.md#renderer-process)
+Process: [Main](../glossary.md#main-process), [Renderer](../glossary.md#renderer-process)<br />
+_This class is not exported from the `'electron'` module. It is only available as a return value of other methods in the Electron API._
 
 ### Instance Methods
 

@@ -489,63 +489,83 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     }
   };
 
+  function fsReadFileAsar (pathArgument: string, options: any, callback: any) {
+    const pathInfo = splitPath(pathArgument);
+    if (pathInfo.isAsar) {
+      const { asarPath, filePath } = pathInfo;
+
+      if (typeof options === 'function') {
+        callback = options;
+        options = { encoding: null };
+      } else if (typeof options === 'string') {
+        options = { encoding: options };
+      } else if (options === null || options === undefined) {
+        options = { encoding: null };
+      } else if (typeof options !== 'object') {
+        throw new TypeError('Bad arguments');
+      }
+
+      const { encoding } = options;
+      const archive = getOrCreateArchive(asarPath);
+      if (!archive) {
+        const error = createError(AsarError.INVALID_ARCHIVE, { asarPath });
+        nextTick(callback, [error]);
+        return;
+      }
+
+      const info = archive.getFileInfo(filePath);
+      if (!info) {
+        const error = createError(AsarError.NOT_FOUND, { asarPath, filePath });
+        nextTick(callback, [error]);
+        return;
+      }
+
+      if (info.size === 0) {
+        nextTick(callback, [null, encoding ? '' : Buffer.alloc(0)]);
+        return;
+      }
+
+      if (info.unpacked) {
+        const realPath = archive.copyFileOut(filePath);
+        return fs.readFile(realPath, options, callback);
+      }
+
+      const buffer = Buffer.alloc(info.size);
+      const fd = archive.getFd();
+      if (!(fd >= 0)) {
+        const error = createError(AsarError.NOT_FOUND, { asarPath, filePath });
+        nextTick(callback, [error]);
+        return;
+      }
+
+      logASARAccess(asarPath, filePath, info.offset);
+      fs.read(fd, buffer, 0, info.size, info.offset, (error: Error) => {
+        callback(error, encoding ? buffer.toString(encoding) : buffer);
+      });
+    }
+  }
+
   const { readFile } = fs;
   fs.readFile = function (pathArgument: string, options: any, callback: any) {
     const pathInfo = splitPath(pathArgument);
-    if (!pathInfo.isAsar) return readFile.apply(this, arguments);
-    const { asarPath, filePath } = pathInfo;
-
-    if (typeof options === 'function') {
-      callback = options;
-      options = { encoding: null };
-    } else if (typeof options === 'string') {
-      options = { encoding: options };
-    } else if (options === null || options === undefined) {
-      options = { encoding: null };
-    } else if (typeof options !== 'object') {
-      throw new TypeError('Bad arguments');
+    if (!pathInfo.isAsar) {
+      return readFile.apply(this, arguments);
     }
 
-    const { encoding } = options;
-    const archive = getOrCreateArchive(asarPath);
-    if (!archive) {
-      const error = createError(AsarError.INVALID_ARCHIVE, { asarPath });
-      nextTick(callback, [error]);
-      return;
-    }
-
-    const info = archive.getFileInfo(filePath);
-    if (!info) {
-      const error = createError(AsarError.NOT_FOUND, { asarPath, filePath });
-      nextTick(callback, [error]);
-      return;
-    }
-
-    if (info.size === 0) {
-      nextTick(callback, [null, encoding ? '' : Buffer.alloc(0)]);
-      return;
-    }
-
-    if (info.unpacked) {
-      const realPath = archive.copyFileOut(filePath);
-      return fs.readFile(realPath, options, callback);
-    }
-
-    const buffer = Buffer.alloc(info.size);
-    const fd = archive.getFd();
-    if (!(fd >= 0)) {
-      const error = createError(AsarError.NOT_FOUND, { asarPath, filePath });
-      nextTick(callback, [error]);
-      return;
-    }
-
-    logASARAccess(asarPath, filePath, info.offset);
-    fs.read(fd, buffer, 0, info.size, info.offset, (error: Error) => {
-      callback(error, encoding ? buffer.toString(encoding) : buffer);
-    });
+    return fsReadFileAsar(pathArgument, options, callback);
   };
 
-  fs.promises.readFile = util.promisify(fs.readFile);
+  const { readFile: readFilePromise } = fs.promises;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  fs.promises.readFile = function (pathArgument: string, options: any) {
+    const pathInfo = splitPath(pathArgument);
+    if (!pathInfo.isAsar) {
+      return readFilePromise.apply(this, arguments);
+    }
+
+    const p = util.promisify(fsReadFileAsar);
+    return p(pathArgument, options);
+  };
 
   const { readFileSync } = fs;
   fs.readFileSync = function (pathArgument: string, options: any) {

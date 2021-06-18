@@ -145,8 +145,9 @@ class NativeWindowClientView : public views::ClientView {
 NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
                                      NativeWindow* parent)
     : NativeWindow(options, parent),
-      root_view_(new RootView(this)),
-      keyboard_event_handler_(new views::UnhandledKeyboardEventHandler) {
+      root_view_(std::make_unique<RootView>(this)),
+      keyboard_event_handler_(
+          std::make_unique<views::UnhandledKeyboardEventHandler>()) {
   options.Get(options::kTitle, &title_);
 
   bool menu_bar_autohide;
@@ -747,8 +748,8 @@ bool NativeWindowViews::MoveAbove(const std::string& sourceId) {
 }
 
 void NativeWindowViews::MoveTop() {
-  // TODO(julien.isorce): fix chromium in order to use existing
-  // widget()->StackAtTop().
+// TODO(julien.isorce): fix chromium in order to use existing
+// widget()->StackAtTop().
 #if defined(OS_WIN)
   gfx::Point pos = GetPosition();
   gfx::Size size = GetSize();

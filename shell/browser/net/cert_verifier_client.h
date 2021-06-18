@@ -28,7 +28,7 @@ class CertVerifierClient : public network::mojom::CertVerifierClient {
  public:
   using CertVerifyProc =
       base::RepeatingCallback<void(const VerifyRequestParams& request,
-                                   base::RepeatingCallback<void(int)>)>;
+                                   base::OnceCallback<void(int)>)>;
 
   explicit CertVerifierClient(CertVerifyProc proc);
   ~CertVerifierClient() override;

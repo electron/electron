@@ -878,7 +878,7 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessOrCreate() {
 }
 
 void ProcessSingleton::StartListeningOnSocket() {
-  watcher_ = new LinuxWatcher(this);
+  watcher_ = base::MakeRefCounted<LinuxWatcher>(this);
   base::PostTask(FROM_HERE, {BrowserThread::IO},
                  base::BindOnce(&ProcessSingleton::LinuxWatcher::StartListening,
                                 watcher_, sock_));

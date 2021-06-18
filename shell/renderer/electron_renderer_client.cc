@@ -9,6 +9,7 @@
 #include "base/command_line.h"
 #include "content/public/renderer/render_frame.h"
 #include "electron/buildflags/buildflags.h"
+#include "net/http/http_request_headers.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
@@ -35,7 +36,8 @@ bool IsDevToolsExtension(content::RenderFrame* render_frame) {
 ElectronRendererClient::ElectronRendererClient()
     : node_bindings_(
           NodeBindings::Create(NodeBindings::BrowserEnvironment::kRenderer)),
-      electron_bindings_(new ElectronBindings(node_bindings_->uv_loop())) {}
+      electron_bindings_(
+          std::make_unique<ElectronBindings>(node_bindings_->uv_loop())) {}
 
 ElectronRendererClient::~ElectronRendererClient() = default;
 
@@ -111,6 +113,9 @@ void ElectronRendererClient::DidCreateScriptContext(
   // any non-context aware native module
   env->set_force_context_aware(true);
 
+  // We do not want to crash the renderer process on unhandled rejections.
+  env->set_unhandled_rejections_mode("warn");
+
   environments_.insert(env);
 
   // Add Electron extended APIs.
@@ -168,7 +173,7 @@ bool ElectronRendererClient::ShouldFork(blink::WebLocalFrame* frame,
   // FIXME We only support GET here because http method will be ignored when
   // the OpenURLFromTab is triggered, which means form posting would not work,
   // we should solve this by patching Chromium in future.
-  return http_method == "GET";
+  return http_method == net::HttpRequestHeaders::kGetMethod;
 }
 
 void ElectronRendererClient::WorkerScriptReadyForEvaluationOnWorkerThread(

@@ -19,10 +19,10 @@ https://chromium-review.googlesource.com/c/chromium/src/+/1901591, we should try
 re-submitting the patch.
 
 diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
-index 8b557bdeb4b8f3660cb9aa1adaf2bf28b6a326bf..aa8ffdd580292b88ff32ea536d34080c12db1778 100644
+index 7fe69095589d1f12b12ca2e91cf30f89aaf3d986..57d230c76ae5d28bff0bd2eb4be01880189b20bd 100644
 --- a/content/app/content_main_runner_impl.cc
 +++ b/content/app/content_main_runner_impl.cc
-@@ -737,7 +737,7 @@ int ContentMainRunnerImpl::Initialize(const ContentMainParams& params) {
+@@ -738,7 +738,7 @@ int ContentMainRunnerImpl::Initialize(const ContentMainParams& params) {
    }
  #endif
  
@@ -68,7 +68,7 @@ index 3038f9d25798f36811b6398f8cc0e7d83ecc41b0..68189c36c47ef85b345b0ccc40c456f8
  // Re-initializes schemes for tests.
  CONTENT_EXPORT void ReRegisterContentSchemesForTests();
 diff --git a/content/public/app/content_main_delegate.cc b/content/public/app/content_main_delegate.cc
-index 17d256b852b6e7615cf4e52e4a2d7fa326a4df44..bd0512902df4484e8714cda9ab1352b1c672a1cd 100644
+index 8c71a579ee69d77547698c2135e3b4453c126b97..9b7fd8949b13d97982a100a36d9f73c9947b8853 100644
 --- a/content/public/app/content_main_delegate.cc
 +++ b/content/public/app/content_main_delegate.cc
 @@ -42,6 +42,10 @@ bool ContentMainDelegate::ShouldHandleConsoleControlEvents() {
@@ -83,10 +83,10 @@ index 17d256b852b6e7615cf4e52e4a2d7fa326a4df44..bd0512902df4484e8714cda9ab1352b1
    return true;
  }
 diff --git a/content/public/app/content_main_delegate.h b/content/public/app/content_main_delegate.h
-index dd16f2c082665e74cc3c0aaa1ddb53977ce4a7ea..1806baf2d97b36e5c5097516c82d14fce7ca41a5 100644
+index 5e45724edf07ac33c9a423ecb6b6077f19e13b04..84f77390772828554e446d1e6f99198b76e9f835 100644
 --- a/content/public/app/content_main_delegate.h
 +++ b/content/public/app/content_main_delegate.h
-@@ -65,6 +65,20 @@ class CONTENT_EXPORT ContentMainDelegate {
+@@ -69,6 +69,20 @@ class CONTENT_EXPORT ContentMainDelegate {
    // returning initialization error code. Default behavior is CHECK(false).
    virtual int TerminateForFatalInitializationError();
  

@@ -32,10 +32,11 @@ SubmenuButton::SubmenuButton(PressedCallback callback,
     gfx::Canvas::SizeStringInt(GetText(), gfx::FontList(), &text_width_,
                                &text_height_, 0, 0);
 
-  ink_drop()->SetMode(views::InkDropHost::InkDropMode::ON);
-  ink_drop()->SetBaseColor(
+  views::InkDropHost* ink_drop = views::InkDrop::Get(this);
+  ink_drop->SetMode(views::InkDropHost::InkDropMode::ON);
+  ink_drop->SetBaseColor(
       color_utils::BlendTowardMaxContrast(background_color_, 0x81));
-  views::InkDrop::UseInkDropForFloodFillRipple(ink_drop(), false, true);
+  views::InkDrop::UseInkDropForFloodFillRipple(ink_drop, false, true);
 }
 
 SubmenuButton::~SubmenuButton() = default;

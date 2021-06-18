@@ -13,7 +13,6 @@ declare namespace Electron {
   }
 
   interface App {
-    _setDefaultAppPaths(packagePath: string | null): void;
     setVersion(version: string): void;
     setDesktopName(name: string): void;
     setAppPath(path: string | null): void;
@@ -230,11 +229,10 @@ declare namespace ElectronInternal {
     appIcon: Electron.NativeImage | null;
   }
 
-  interface IpcRendererInternal extends Electron.IpcRenderer {
+  interface IpcRendererInternal extends NodeJS.EventEmitter, Pick<Electron.IpcRenderer, 'send' | 'sendSync' | 'invoke'> {
     invoke<T>(channel: string, ...args: any[]): Promise<T>;
   }
 
-  // Internal IPC has _replyInternal and NO reply method
   interface IpcMainInternalEvent extends Omit<Electron.IpcMainEvent, 'reply'> {
   }
 

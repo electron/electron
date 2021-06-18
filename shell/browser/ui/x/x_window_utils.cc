@@ -40,7 +40,7 @@ bool ShouldUseGlobalMenuBar() {
     return false;
 
   dbus::Bus::Options options;
-  scoped_refptr<dbus::Bus> bus(new dbus::Bus(options));
+  auto bus = base::MakeRefCounted<dbus::Bus>(options);
 
   dbus::ObjectProxy* object_proxy =
       bus->GetObjectProxy(DBUS_SERVICE_DBUS, dbus::ObjectPath(DBUS_PATH_DBUS));

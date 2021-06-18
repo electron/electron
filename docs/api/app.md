@@ -698,7 +698,7 @@ Overrides the current application's name.
 Returns `String` - The current application locale, fetched using Chromium's `l10n_util` library.
 Possible return values are documented [here](https://source.chromium.org/chromium/chromium/src/+/master:ui/base/l10n/l10n_util.cc).
 
-To set the locale, you'll want to use a command line switch at app startup, which may be found [here](https://github.com/electron/electron/blob/master/docs/api/command-line-switches.md).
+To set the locale, you'll want to use a command line switch at app startup, which may be found [here](command-line-switches.md).
 
 **Note:** When distributing your packaged app, you have to also ship the
 `locales` folder.

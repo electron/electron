@@ -1,5 +1,6 @@
 import { expect } from 'chai';
 import * as childProcess from 'child_process';
+import * as fs from 'fs';
 import * as path from 'path';
 import * as util from 'util';
 import { emittedOnce } from './events-helpers';
@@ -196,6 +197,17 @@ describe('node feature', () => {
   describe('process.stdout', () => {
     it('is a real Node stream', () => {
       expect((process.stdout as any)._type).to.not.be.undefined();
+    });
+  });
+
+  describe('fs.readFile', () => {
+    it('can accept a FileHandle as the Path argument', async () => {
+      const filePathForHandle = path.resolve(mainFixturesPath, 'dogs-running.txt');
+      const fileHandle = await fs.promises.open(filePathForHandle, 'r');
+
+      const file = await fs.promises.readFile(fileHandle, { encoding: 'utf8' });
+      expect(file).to.not.be.empty();
+      await fileHandle.close();
     });
   });
 

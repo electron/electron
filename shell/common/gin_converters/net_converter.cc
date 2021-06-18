@@ -315,7 +315,7 @@ bool Converter<scoped_refptr<network::ResourceRequestBody>>::FromV8(
   auto list = std::make_unique<base::ListValue>();
   if (!ConvertFromV8(isolate, val, list.get()))
     return false;
-  *out = new network::ResourceRequestBody();
+  *out = base::MakeRefCounted<network::ResourceRequestBody>();
   for (size_t i = 0; i < list->GetSize(); ++i) {
     base::DictionaryValue* dict = nullptr;
     std::string type;
