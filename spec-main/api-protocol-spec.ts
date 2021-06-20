@@ -120,6 +120,24 @@ describe('protocol module', () => {
       const r = await ajax(protocolName + '://fake-host');
       expect(r.data).to.equal(text);
     });
+
+    it('can redirect to the same scheme', async () => {
+      registerStringProtocol(protocolName, (request, callback) => {
+        if (request.url === `${protocolName}://fake-host/redirect`) {
+          callback({
+            statusCode: 302,
+            headers: {
+              Location: `${protocolName}://fake-host`
+            }
+          });
+        } else {
+          expect(request.url).to.equal(`${protocolName}://fake-host`);
+          callback('redirected');
+        }
+      });
+      const r = await ajax(`${protocolName}://fake-host/redirect`);
+      expect(r.data).to.equal('redirected');
+    });
   });
 
   describe('protocol.unregisterProtocol', () => {
