@@ -214,6 +214,18 @@ describe('webRequest module', () => {
       await ajax(defaultURL);
     });
 
+    it('leaves headers unchanged when no requestHeaders in callback', async () => {
+      let originalRequestHeaders: Record<string, string>;
+      ses.webRequest.onBeforeSendHeaders((details, callback) => {
+        originalRequestHeaders = details.requestHeaders;
+        callback({});
+      });
+      ses.webRequest.onSendHeaders((details) => {
+        expect(details.requestHeaders).to.deep.equal(originalRequestHeaders);
+      });
+      await ajax(defaultURL);
+    });
+
     it('works with file:// protocol', async () => {
       const requestHeaders = {
         Test: 'header'
