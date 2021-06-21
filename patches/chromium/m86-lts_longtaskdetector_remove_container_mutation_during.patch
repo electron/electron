@@ -1,0 +1,99 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Yutaka Hirano <yhirano@chromium.org>
+Date: Fri, 11 Jun 2021 08:07:55 +0000
+Subject: Remove container mutation during iteration
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+On LongTaskDetector, we call OnLongTaskDetected for all registered
+observers. Some observers call LongTaskDetector::UnregisterObserver
+in the callback, which is problematic because container mutation is
+not allowed during iteration.
+
+Copy the observer set to avoid the violation.
+
+(cherry picked from commit 702f4d4ddb963cafb0d133972282dfc803510b75)
+
+(cherry picked from commit e88c656a9fb4a7bb1c66ddcedae8049a448ebef4)
+
+Bug: 1210487
+Change-Id: Iccea748ac144def6884be8cf542cdc3572bed81a
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2909934
+Reviewed-by: Deep Roy <dproy@chromium.org>
+Reviewed-by: Nicolás Peña Moreno <npm@chromium.org>
+Commit-Queue: Yutaka Hirano <yhirano@chromium.org>
+Cr-Original-Original-Commit-Position: refs/heads/master@{#885033}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2939704
+Auto-Submit: Yutaka Hirano <yhirano@chromium.org>
+Owners-Override: Prudhvi Kumar Bommana <pbommana@google.com>
+Reviewed-by: Prudhvi Kumar Bommana <pbommana@google.com>
+Cr-Original-Commit-Position: refs/branch-heads/4472@{#1443}
+Cr-Original-Branched-From: 3d60439cfb36485e76a1c5bb7f513d3721b20da1-refs/heads/master@{#870763}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2945787
+Owners-Override: Victor-Gabriel Savu <vsavu@google.com>
+Reviewed-by: Artem Sumaneev <asumaneev@google.com>
+Commit-Queue: Victor-Gabriel Savu <vsavu@google.com>
+Cr-Commit-Position: refs/branch-heads/4240@{#1669}
+Cr-Branched-From: f297677702651916bbf65e59c0d4bbd4ce57d1ee-refs/heads/master@{#800218}
+
+diff --git a/third_party/blink/renderer/core/loader/long_task_detector.cc b/third_party/blink/renderer/core/loader/long_task_detector.cc
+index 7e1499b1ddde30db2344db6fd9a9d3e7be574033..f040ae5053265fb136c629f106aeefa0b01130f1 100644
+--- a/third_party/blink/renderer/core/loader/long_task_detector.cc
++++ b/third_party/blink/renderer/core/loader/long_task_detector.cc
+@@ -43,7 +43,10 @@ void LongTaskDetector::DidProcessTask(base::TimeTicks start_time,
+   if ((end_time - start_time) < LongTaskDetector::kLongTaskThreshold)
+     return;
+ 
+-  for (auto& observer : observers_) {
++  // We copy `observers_` because it might be mutated in OnLongTaskDetected,
++  // and container mutation is not allowed during iteration.
++  const HeapHashSet<Member<LongTaskObserver>> observers = observers_;
++  for (auto& observer : observers) {
+     observer->OnLongTaskDetected(start_time, end_time);
+   }
+ }
+diff --git a/third_party/blink/renderer/core/loader/long_task_detector_test.cc b/third_party/blink/renderer/core/loader/long_task_detector_test.cc
+index 3384fa8ebfb0bd3ad1c408390db3fcb26edc4118..04959d3b682ddbf40577adc5799fe57a9ae9d500 100644
+--- a/third_party/blink/renderer/core/loader/long_task_detector_test.cc
++++ b/third_party/blink/renderer/core/loader/long_task_detector_test.cc
+@@ -27,9 +27,24 @@ class TestLongTaskObserver :
+     last_long_task_start = start_time;
+     last_long_task_end = end_time;
+   }
+-};  // Anonymous namespace
++};
++
++class SelfUnregisteringObserver
++    : public GarbageCollected<SelfUnregisteringObserver>,
++      public LongTaskObserver {
++ public:
++  void OnLongTaskDetected(base::TimeTicks, base::TimeTicks) override {
++    called_ = true;
++    LongTaskDetector::Instance().UnregisterObserver(this);
++  }
++  bool IsCalled() const { return called_; }
++
++ private:
++  bool called_ = false;
++};
+ 
+ }  // namespace
++
+ class LongTaskDetectorTest : public testing::Test {
+  public:
+   // Public because it's executed on a task queue.
+@@ -126,4 +141,13 @@ TEST_F(LongTaskDetectorTest, RegisterSameObserverTwice) {
+             long_task_end_when_registered);
+ }
+ 
++TEST_F(LongTaskDetectorTest, SelfUnregisteringObserver) {
++  auto* observer = MakeGarbageCollected<SelfUnregisteringObserver>();
++
++  LongTaskDetector::Instance().RegisterObserver(observer);
++  SimulateTask(LongTaskDetector::kLongTaskThreshold +
++               base::TimeDelta::FromMilliseconds(10));
++  EXPECT_TRUE(observer->IsCalled());
++}
++
+ }  // namespace blink
