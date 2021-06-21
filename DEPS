@@ -23,7 +23,7 @@ vars = {
     # available.
     '65b32af46e9d7fab2e4ff657751205b3865f4920',
   'squirrel.mac_version':
-    'cdc0729c8bf8576bfef18629186e1e9ecf1b0d9f',
+    '0e5d146ba13101a1302d59ea6e6e0b3cace4ae38',
 
   'pyyaml_version': '3.12',
 
