@@ -1805,10 +1805,15 @@ void NativeWindowMac::InternalSetParentWindow(NativeWindow* parent,
 
   // Set new parent window.
   // Note that this method will force the window to become visible.
-  if (parent && attach)
+  if (parent && attach) {
+    // Attaching a window as a child window resets its window level, so
+    // save and restore it afterwards.
+    NSInteger level = window_.level;
     [parent->GetNativeWindow().GetNativeNSWindow()
         addChildWindow:window_
                ordered:NSWindowAbove];
+    [window_ setLevel:level];
+  }
 }
 
 void NativeWindowMac::SetForwardMouseMessages(bool forward) {
