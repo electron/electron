@@ -31,7 +31,7 @@ if (!gotTheLock) {
   })
   
   app.on('open-url', (event, url) => {
-      dialog.showErrorBox('Welcome Back', `You arrived from: ${url}`)
+    dialog.showErrorBox('Welcome Back', `You arrived from: ${url}`)
   })
 }
 
@@ -56,7 +56,7 @@ app.on('window-all-closed', function () {
 })
 
 // Handle window controls via IPC
-ipcMain.on('shell:open', (ipcEvent) => {
+ipcMain.on('shell:open', () => {
   const pageDirectory = __dirname.replace('app.asar', 'app.asar.unpacked')
   const pagePath = path.join('file://', pageDirectory, 'index.html')
   shell.openExternal(pagePath)
