@@ -5,15 +5,18 @@ slug: launch-app-from-url-in-another-app
 hide_title: true
 ---
 
-# launch-app-from-URL-in-another-app
+# Launching Your Electron App From A URL In Another App
 
 ## Overview
 
 <!-- ✍ Update this section if you want to provide more details -->
 
-This guide will take you through the process of setting your electron app as the default handler for a specific [protocol](https://www.electronjs.org/docs/api/protocol).
+This guide will take you through the process of setting your electron app as the default
+handler for a specific [protocol](https://www.electronjs.org/docs/api/protocol).
 
-By the end of this tutorial, we will have set our app to intercept and handle any clicked URLs that start with a specific protocol. In this guide, the protocol we will use will be "`electron-fiddle://`".
+By the end of this tutorial, we will have set our app to intercept and handle
+any clicked URLs that start with a specific protocol. In this guide, the protocol
+we will use will be "`electron-fiddle://`".
 
 ## Examples
 
