@@ -65,7 +65,7 @@ void WinCaptionButton::OnPaintBackground(gfx::Canvas* canvas) {
     pressed_alpha = 0x98;
   } else {
     // Match the native buttons.
-    base_color = frame_view_->window()->overlay_color();
+    base_color = color_utils::GetSysSkColor(COLOR_BTNFACE);
     hovered_alpha = 0x1A;
     pressed_alpha = 0x33;
 
