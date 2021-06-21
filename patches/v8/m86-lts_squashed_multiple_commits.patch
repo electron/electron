@@ -1,0 +1,299 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: "ishell@chromium.org" <ishell@chromium.org>
+Date: Tue, 8 Jun 2021 17:33:32 +0200
+Subject: Squashed multiple commits.
+
+Merged: [runtime] Fix handling of interceptors
+Revision: f9857fdf74
+
+Merged: [runtime] Fix handling of interceptors, pt.2
+Revision: 1f5113816c
+
+BUG=chromium:1216437
+NOTRY=true
+NOPRESUBMIT=true
+NOTREECHECKS=true
+
+(cherry picked from commit 1936d568193b37d50d99218724ebbb76785a30d2)
+
+Change-Id: Ief3da51866c8d0b5e85c76fad00b25ac2379f615
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2947407
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Cr-Original-Commit-Position: refs/branch-heads/9.1@{#71}
+Cr-Original-Branched-From: 0e4ac64a8cf298b14034a22f9fe7b085d2cb238d-refs/heads/9.1.269@{#1}
+Cr-Original-Branched-From: f565e72d5ba88daae35a59d0f978643e2343e912-refs/heads/master@{#73847}
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2948662
+Reviewed-by: Igor Sheludko <ishell@chromium.org>
+Reviewed-by: Artem Sumaneev <asumaneev@google.com>
+Commit-Queue: Victor-Gabriel Savu <vsavu@google.com>
+Cr-Commit-Position: refs/branch-heads/8.6@{#110}
+Cr-Branched-From: a64aed2333abf49e494d2a5ce24bbd14fff19f60-refs/heads/8.6.395@{#1}
+Cr-Branched-From: a626bc036236c9bf92ac7b87dc40c9e538b087e3-refs/heads/master@{#69472}
+
+diff --git a/src/objects/objects.cc b/src/objects/objects.cc
+index 51b9caef8b3531804f8aa615a4c612c1c2bdf34d..37ac3dd1063a0a750bed4340c360ff7e6fbb3a84 100644
+--- a/src/objects/objects.cc
++++ b/src/objects/objects.cc
+@@ -2488,9 +2488,21 @@ Maybe<bool> Object::SetPropertyInternal(LookupIterator* it,
+           if ((maybe_attributes.FromJust() & READ_ONLY) != 0) {
+             return WriteToReadOnlyProperty(it, value, should_throw);
+           }
+-          if (maybe_attributes.FromJust() == ABSENT) break;
+-          *found = false;
+-          return Nothing<bool>();
++          // At this point we might have called interceptor's query or getter
++          // callback. Assuming that the callbacks have side effects, we use
++          // Object::SetSuperProperty() which works properly regardless on
++          // whether the property was present on the receiver or not when
++          // storing to the receiver.
++          if (maybe_attributes.FromJust() == ABSENT) {
++            // Proceed lookup from the next state.
++            it->Next();
++          } else {
++            // Finish lookup in order to make Object::SetSuperProperty() store
++            // property to the receiver.
++            it->NotFound();
++          }
++          return Object::SetSuperProperty(it, value, store_origin,
++                                          should_throw);
+         }
+         break;
+       }
+@@ -2565,6 +2577,8 @@ Maybe<bool> Object::SetProperty(LookupIterator* it, Handle<Object> value,
+     if (found) return result;
+   }
+ 
++  // TODO(ishell): refactor this: both SetProperty and and SetSuperProperty have
++  // this piece of code.
+   // If the receiver is the JSGlobalObject, the store was contextual. In case
+   // the property did not exist yet on the global object itself, we have to
+   // throw a reference error in strict mode.  In sloppy mode, we continue.
+@@ -2601,6 +2615,8 @@ Maybe<bool> Object::SetSuperProperty(LookupIterator* it, Handle<Object> value,
+   }
+   Handle<JSReceiver> receiver = Handle<JSReceiver>::cast(it->GetReceiver());
+ 
++  // Note, the callers rely on the fact that this code is redoing the full own
++  // lookup from scratch.
+   LookupIterator::Configuration c = LookupIterator::OWN;
+   LookupIterator own_lookup =
+       it->IsElement() ? LookupIterator(isolate, receiver, it->index(), c)
+@@ -2663,6 +2679,25 @@ Maybe<bool> Object::SetSuperProperty(LookupIterator* it, Handle<Object> value,
+     }
+   }
+ 
++  // TODO(ishell): refactor this: both SetProperty and and SetSuperProperty have
++  // this piece of code.
++  // If the receiver is the JSGlobalObject, the store was contextual. In case
++  // the property did not exist yet on the global object itself, we have to
++  // throw a reference error in strict mode.  In sloppy mode, we continue.
++  if (receiver->IsJSGlobalObject() &&
++      (GetShouldThrow(isolate, should_throw) == ShouldThrow::kThrowOnError)) {
++    if (own_lookup.state() == LookupIterator::TRANSITION) {
++      // The property cell that we have created is garbage because we are going
++      // to throw now instead of putting it into the global dictionary. However,
++      // the cell might already have been stored into the feedback vector, so
++      // we must invalidate it nevertheless.
++      own_lookup.transition_cell()->ClearAndInvalidate(ReadOnlyRoots(isolate));
++    }
++    isolate->Throw(*isolate->factory()->NewReferenceError(
++        MessageTemplate::kNotDefined, own_lookup.GetName()));
++    return Nothing<bool>();
++  }
++
+   return AddDataProperty(&own_lookup, value, NONE, should_throw, store_origin);
+ }
+ 
+diff --git a/test/cctest/test-api-interceptors.cc b/test/cctest/test-api-interceptors.cc
+index 812768b461a471075becd83c7c9481d12191ff51..05edb1fdd4c4a3aa21e618269a1a8ad0822788e6 100644
+--- a/test/cctest/test-api-interceptors.cc
++++ b/test/cctest/test-api-interceptors.cc
+@@ -877,9 +877,11 @@ THREADED_TEST(InterceptorHasOwnPropertyCausingGC) {
+   CHECK(!value->BooleanValue(isolate));
+ }
+ 
+-static void CheckInterceptorIC(v8::GenericNamedPropertyGetterCallback getter,
+-                               v8::GenericNamedPropertyQueryCallback query,
+-                               const char* source, int expected) {
++namespace {
++
++void CheckInterceptorIC(v8::GenericNamedPropertyGetterCallback getter,
++                        v8::GenericNamedPropertyQueryCallback query,
++                        const char* source, int expected) {
+   v8::Isolate* isolate = CcTest::isolate();
+   v8::HandleScope scope(isolate);
+   v8::Local<v8::ObjectTemplate> templ = ObjectTemplate::New(isolate);
+@@ -894,14 +896,13 @@ static void CheckInterceptorIC(v8::GenericNamedPropertyGetterCallback getter,
+   CHECK_EQ(expected, value->Int32Value(context.local()).FromJust());
+ }
+ 
+-static void CheckInterceptorLoadIC(
+-    v8::GenericNamedPropertyGetterCallback getter, const char* source,
+-    int expected) {
++void CheckInterceptorLoadIC(v8::GenericNamedPropertyGetterCallback getter,
++                            const char* source, int expected) {
+   CheckInterceptorIC(getter, nullptr, source, expected);
+ }
+ 
+-static void InterceptorLoadICGetter(
+-    Local<Name> name, const v8::PropertyCallbackInfo<v8::Value>& info) {
++void InterceptorLoadICGetter(Local<Name> name,
++                             const v8::PropertyCallbackInfo<v8::Value>& info) {
+   ApiTestFuzzer::Fuzz();
+   v8::Isolate* isolate = CcTest::isolate();
+   CHECK_EQ(isolate, info.GetIsolate());
+@@ -911,6 +912,7 @@ static void InterceptorLoadICGetter(
+   info.GetReturnValue().Set(v8::Integer::New(isolate, 42));
+ }
+ 
++}  // namespace
+ 
+ // This test should hit the load IC for the interceptor case.
+ THREADED_TEST(InterceptorLoadIC) {
+@@ -927,9 +929,23 @@ THREADED_TEST(InterceptorLoadIC) {
+ // configurations of interceptor and explicit fields works fine
+ // (those cases are special cased to get better performance).
+ 
+-static void InterceptorLoadXICGetter(
++namespace {
++
++void InterceptorLoadXICGetter(Local<Name> name,
++                              const v8::PropertyCallbackInfo<v8::Value>& info) {
++  ApiTestFuzzer::Fuzz();
++  info.GetReturnValue().Set(
++      v8_str("x")
++              ->Equals(info.GetIsolate()->GetCurrentContext(), name)
++              .FromJust()
++          ? v8::Local<v8::Value>(v8::Integer::New(info.GetIsolate(), 42))
++          : v8::Local<v8::Value>());
++}
++
++void InterceptorLoadXICGetterWithSideEffects(
+     Local<Name> name, const v8::PropertyCallbackInfo<v8::Value>& info) {
+   ApiTestFuzzer::Fuzz();
++  CompileRun("interceptor_getter_side_effect()");
+   info.GetReturnValue().Set(
+       v8_str("x")
+               ->Equals(info.GetIsolate()->GetCurrentContext(), name)
+@@ -938,6 +954,7 @@ static void InterceptorLoadXICGetter(
+           : v8::Local<v8::Value>());
+ }
+ 
++}  // namespace
+ 
+ THREADED_TEST(InterceptorLoadICWithFieldOnHolder) {
+   CheckInterceptorLoadIC(InterceptorLoadXICGetter,
+@@ -1461,6 +1478,18 @@ void HasICQueryToggle(TKey name,
+       isolate, toggle ? v8::internal::ABSENT : v8::internal::NONE));
+ }
+ 
++template <typename TKey, v8::internal::PropertyAttributes attribute>
++void HasICQuerySideEffect(TKey name,
++                          const v8::PropertyCallbackInfo<v8::Integer>& info) {
++  ApiTestFuzzer::Fuzz();
++  v8::Isolate* isolate = CcTest::isolate();
++  CHECK_EQ(isolate, info.GetIsolate());
++  CompileRun("interceptor_query_side_effect()");
++  if (attribute != v8::internal::ABSENT) {
++    info.GetReturnValue().Set(v8::Integer::New(isolate, attribute));
++  }
++}
++
+ int named_query_counter = 0;
+ void NamedQueryCallback(Local<Name> name,
+                         const v8::PropertyCallbackInfo<v8::Integer>& info) {
+@@ -1526,6 +1555,42 @@ THREADED_TEST(InterceptorHasICQueryToggle) {
+                      500);
+ }
+ 
++THREADED_TEST(InterceptorStoreICWithSideEffectfulCallbacks) {
++  CheckInterceptorIC(EmptyInterceptorGetter,
++                     HasICQuerySideEffect<Local<Name>, v8::internal::ABSENT>,
++                     "let r;"
++                     "let inside_side_effect = false;"
++                     "let interceptor_query_side_effect = function() {"
++                     "  if (!inside_side_effect) {"
++                     "    inside_side_effect = true;"
++                     "    r.x = 153;"
++                     "    inside_side_effect = false;"
++                     "  }"
++                     "};"
++                     "for (var i = 0; i < 20; i++) {"
++                     "  r = { __proto__: o };"
++                     "  r.x = i;"
++                     "}",
++                     19);
++
++  CheckInterceptorIC(InterceptorLoadXICGetterWithSideEffects,
++                     nullptr,  // query callback is not provided
++                     "let r;"
++                     "let inside_side_effect = false;"
++                     "let interceptor_getter_side_effect = function() {"
++                     "  if (!inside_side_effect) {"
++                     "    inside_side_effect = true;"
++                     "    r.y = 153;"
++                     "    inside_side_effect = false;"
++                     "  }"
++                     "};"
++                     "for (var i = 0; i < 20; i++) {"
++                     "  r = { __proto__: o };"
++                     "  r.y = i;"
++                     "}",
++                     19);
++}
++
+ static void InterceptorStoreICSetter(
+     Local<Name> key, Local<Value> value,
+     const v8::PropertyCallbackInfo<v8::Value>& info) {
+@@ -1575,6 +1640,52 @@ THREADED_TEST(InterceptorStoreICWithNoSetter) {
+   CHECK_EQ(239 + 42, value->Int32Value(context.local()).FromJust());
+ }
+ 
++THREADED_TEST(EmptyInterceptorDoesNotShadowReadOnlyProperty) {
++  // Interceptor should not shadow readonly property 'x' on the prototype, and
++  // attempt to store to 'x' must throw.
++  CheckInterceptorIC(EmptyInterceptorGetter,
++                     HasICQuery<Local<Name>, v8::internal::ABSENT>,
++                     "'use strict';"
++                     "let p = {};"
++                     "Object.defineProperty(p, 'x', "
++                     "                      {value: 153, writable: false});"
++                     "o.__proto__ = p;"
++                     "let result = 0;"
++                     "let r;"
++                     "for (var i = 0; i < 20; i++) {"
++                     "  r = { __proto__: o };"
++                     "  try {"
++                     "    r.x = i;"
++                     "  } catch (e) {"
++                     "    result++;"
++                     "  }"
++                     "}"
++                     "result",
++                     20);
++}
++
++THREADED_TEST(InterceptorShadowsReadOnlyProperty) {
++  // Interceptor claims that it has a writable property 'x', so the existence
++  // of the readonly property 'x' on the prototype should not cause exceptions.
++  CheckInterceptorIC(InterceptorLoadXICGetter,
++                     nullptr,  // query callback
++                     "'use strict';"
++                     "let p = {};"
++                     "Object.defineProperty(p, 'x', "
++                     "                      {value: 153, writable: false});"
++                     "o.__proto__ = p;"
++                     "let result = 0;"
++                     "let r;"
++                     "for (var i = 0; i < 20; i++) {"
++                     "  r = { __proto__: o };"
++                     "  try {"
++                     "    r.x = i;"
++                     "    result++;"
++                     "  } catch (e) {}"
++                     "}"
++                     "result",
++                     20);
++}
+ 
+ THREADED_TEST(EmptyInterceptorDoesNotShadowAccessors) {
+   v8::HandleScope scope(CcTest::isolate());
