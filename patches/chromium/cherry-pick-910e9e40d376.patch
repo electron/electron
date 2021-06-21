@@ -1,7 +1,7 @@
-From 910e9e40d3767d416a888d9c12b4c9d8a017750c Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Matt Menke <mmenke@chromium.org>
 Date: Thu, 10 Jun 2021 07:05:07 +0000
-Subject: [PATCH] [M90-LTS] Fix URLLoader cleanup on CorsURLLoaderFactory destruction.
+Subject: Fix URLLoader cleanup on CorsURLLoaderFactory destruction.
 
 Destroying one URLLoader can result in other URLLoaders getting errors,
 due to to cache interconnectedness. CorsURLLoaderFactory's destructor
@@ -36,13 +36,12 @@ Reviewed-by: Matt Menke <mmenke@chromium.org>
 Commit-Queue: Victor-Gabriel Savu <vsavu@google.com>
 Cr-Commit-Position: refs/branch-heads/4430@{#1513}
 Cr-Branched-From: e5ce7dc4f7518237b3d9bb93cccca35d25216cbe-refs/heads/master@{#857950}
----
 
 diff --git a/net/http/http_cache_transaction.cc b/net/http/http_cache_transaction.cc
-index bb0b938..6a1ccb4 100644
+index bb0b938e71f92c2743df2c12824e8f634f6ed5e2..6a1ccb4657f8de1a14396366b560bc11f4cee829 100644
 --- a/net/http/http_cache_transaction.cc
 +++ b/net/http/http_cache_transaction.cc
-@@ -2115,6 +2115,8 @@
+@@ -2115,6 +2115,8 @@ int HttpCache::Transaction::DoHeadersPhaseCannotProceed(int result) {
    entry_ = nullptr;
    new_entry_ = nullptr;
  
@@ -52,10 +51,10 @@ index bb0b938..6a1ccb4 100644
    if (result == ERR_CACHE_LOCK_TIMEOUT)
      effective_load_flags_ |= LOAD_DISABLE_CACHE;
 diff --git a/services/network/cors/cors_url_loader_factory.cc b/services/network/cors/cors_url_loader_factory.cc
-index a9f5d70..6e23074 100644
+index 7e4d57cf7f2f8e4e0aa208f53f83833fc0c68112..bf744d52473e31fb100ccf1644abd5e9122ba669 100644
 --- a/services/network/cors/cors_url_loader_factory.cc
 +++ b/services/network/cors/cors_url_loader_factory.cc
-@@ -220,7 +220,17 @@
+@@ -228,7 +228,17 @@ CorsURLLoaderFactory::CorsURLLoaderFactory(
        &CorsURLLoaderFactory::DeleteIfNeeded, base::Unretained(this)));
  }
  
@@ -75,7 +74,7 @@ index a9f5d70..6e23074 100644
  void CorsURLLoaderFactory::OnLoaderCreated(
      std::unique_ptr<mojom::URLLoader> loader) {
 diff --git a/services/network/cors/cors_url_loader_factory_unittest.cc b/services/network/cors/cors_url_loader_factory_unittest.cc
-index 1381128..dd3361f 100644
+index 13811282f5bc922cce50a2d0c0c041d1cdd586c1..dd3361f818590031b8a843595bea1223e012bf3e 100644
 --- a/services/network/cors/cors_url_loader_factory_unittest.cc
 +++ b/services/network/cors/cors_url_loader_factory_unittest.cc
 @@ -7,7 +7,9 @@
@@ -88,7 +87,7 @@ index 1381128..dd3361f 100644
  #include "net/traffic_annotation/network_traffic_annotation_test_helper.h"
  #include "net/url_request/url_request_context.h"
  #include "net/url_request/url_request_context_builder.h"
-@@ -49,6 +51,9 @@
+@@ -49,6 +51,9 @@ class CorsURLLoaderFactoryTest : public testing::Test {
   protected:
    // testing::Test implementation.
    void SetUp() override {
@@ -98,7 +97,7 @@ index 1381128..dd3361f 100644
      network_service_ = NetworkService::CreateForTesting();
  
      auto context_params = mojom::NetworkContextParams::New();
-@@ -68,7 +73,7 @@
+@@ -68,7 +73,7 @@ class CorsURLLoaderFactoryTest : public testing::Test {
      auto factory_params = network::mojom::URLLoaderFactoryParams::New();
      factory_params->process_id = kProcessId;
      factory_params->request_initiator_origin_lock =
@@ -107,7 +106,7 @@ index 1381128..dd3361f 100644
      auto resource_scheduler_client =
          base::MakeRefCounted<ResourceSchedulerClient>(
              kProcessId, kRouteId, &resource_scheduler_,
-@@ -81,15 +86,25 @@
+@@ -81,15 +86,25 @@ class CorsURLLoaderFactoryTest : public testing::Test {
    }
  
    void CreateLoaderAndStart(const ResourceRequest& request) {
@@ -135,7 +134,7 @@ index 1381128..dd3361f 100644
   private:
    // Test environment.
    base::test::TaskEnvironment task_environment_;
-@@ -99,15 +114,17 @@
+@@ -99,15 +114,17 @@ class CorsURLLoaderFactoryTest : public testing::Test {
    std::unique_ptr<NetworkContext> network_context_;
    mojo::Remote<mojom::NetworkContext> network_context_remote_;
  
@@ -157,7 +156,7 @@ index 1381128..dd3361f 100644
  
    // Holds for allowed origin access lists.
    OriginAccessList origin_access_list_;
-@@ -118,7 +135,7 @@
+@@ -118,7 +135,7 @@ class CorsURLLoaderFactoryTest : public testing::Test {
  // Regression test for https://crbug.com/906305.
  TEST_F(CorsURLLoaderFactoryTest, DestructionOrder) {
    ResourceRequest request;
@@ -166,7 +165,7 @@ index 1381128..dd3361f 100644
    request.mode = mojom::RequestMode::kNoCors;
    request.credentials_mode = mojom::CredentialsMode::kOmit;
    request.method = net::HttpRequestHeaders::kGetMethod;
-@@ -141,5 +158,36 @@
+@@ -141,5 +158,36 @@ TEST_F(CorsURLLoaderFactoryTest, DestructionOrder) {
    ResetFactory();
  }
  
