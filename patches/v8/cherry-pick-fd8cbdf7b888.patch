@@ -1,7 +1,8 @@
-From fd8cbdf7b888a90291d28a2d9260000309ef28d6 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Georg Neis <neis@chromium.org>
 Date: Thu, 27 May 2021 13:04:30 +0200
-Subject: [PATCH] [M86-LTS] Reland "Merged: [compiler] Always record constness dependency for FastDataConstant"
+Subject: Reland "Merged: [compiler] Always record constness dependency for
+ FastDataConstant"
 
 This is a reland of 638d1b238d510a349bdd38648add8d5c85bc5f7d after a
 one-character change. A local variable still has a non-optional type
@@ -45,13 +46,12 @@ Commit-Queue: Victor-Gabriel Savu <vsavu@google.com>
 Cr-Commit-Position: refs/branch-heads/8.6@{#108}
 Cr-Branched-From: a64aed2333abf49e494d2a5ce24bbd14fff19f60-refs/heads/8.6.395@{#1}
 Cr-Branched-From: a626bc036236c9bf92ac7b87dc40c9e538b087e3-refs/heads/master@{#69472}
----
 
 diff --git a/src/compiler/access-info.cc b/src/compiler/access-info.cc
-index 4fb5ebd..b46a9f0 100644
+index 046927e9430e89596bd4077af37fb9374d279282..7f7a8fee63ed8bdd322bbbca8444c9345b3d32f7 100644
 --- a/src/compiler/access-info.cc
 +++ b/src/compiler/access-info.cc
-@@ -876,7 +876,7 @@
+@@ -892,7 +892,7 @@ PropertyAccessInfo AccessInfoFactory::LookupTransition(
    // Transitioning stores *may* store to const fields. The resulting
    // DataConstant access infos can be distinguished from later, i.e. redundant,
    // stores to the same constant field by the presence of a transition map.
