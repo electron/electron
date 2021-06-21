@@ -35,10 +35,10 @@ index 8a1315f7f89588bb21c6d3c21a7de7c07fed9679..51cc790f7e1ba1440a6ffaa56c9e0168
        accelerated_video_decode_enabled(false),
        animation_policy(
 diff --git a/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc b/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
-index ab2d320a4073308c249821a060e870afc0dbc3a5..dedf907f9cd78dc1acf09cfc683c2946fb6ce204 100644
+index 0fbfd605edf37e63740a82ff231789c1759c909a..33ef6c435e660a4ec161dd7e1ac353d0aa5582b6 100644
 --- a/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
 +++ b/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
-@@ -24,6 +24,10 @@ bool StructTraits<blink::mojom::WebPreferencesDataView,
+@@ -23,6 +23,10 @@ bool StructTraits<blink::mojom::WebPreferencesDataView,
        !data.ReadCursiveFontFamilyMap(&out->cursive_font_family_map) ||
        !data.ReadFantasyFontFamilyMap(&out->fantasy_font_family_map) ||
        !data.ReadPictographFontFamilyMap(&out->pictograph_font_family_map) ||
@@ -49,7 +49,7 @@ index ab2d320a4073308c249821a060e870afc0dbc3a5..dedf907f9cd78dc1acf09cfc683c2946
        !data.ReadLazyFrameLoadingDistanceThresholdsPx(
            &out->lazy_frame_loading_distance_thresholds_px) ||
        !data.ReadLazyImageLoadingDistanceThresholdsPx(
-@@ -154,6 +158,21 @@ bool StructTraits<blink::mojom::WebPreferencesDataView,
+@@ -153,6 +157,21 @@ bool StructTraits<blink::mojom::WebPreferencesDataView,
        data.fake_no_alloc_direct_call_for_testing_enabled();
    out->v8_cache_options = data.v8_cache_options();
    out->record_whole_document = data.record_whole_document();

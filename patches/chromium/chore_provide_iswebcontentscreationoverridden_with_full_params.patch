@@ -264,19 +264,19 @@ index c5c5a7b63b5b3b62a9517cbef3ae23ce57a3c89c..4f1b7e88d6d2ae89a60311c8aeb1fcee
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index bb26bf2d42cf49db89d61123483de3d660601b35..30740bc084f8a805f288a24c2525bafcea35b2a3 100644
+index 3a34697962cf2c1a8ed642a025cdf021069a9f8a..d4fd305ca812c071521e5508e4f6d59549acf91a 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3726,8 +3726,7 @@ RenderFrameHostDelegate* WebContentsImpl::CreateNewWindow(
+@@ -3726,8 +3726,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
  
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,
 -                       opener->GetLastCommittedURL(), params.frame_name,
 -                       params.target_url)) {
 +                       opener->GetLastCommittedURL(), params)) {
-     return static_cast<WebContentsImpl*>(delegate_->CreateCustomWebContents(
-         opener, source_site_instance, is_new_browsing_instance,
-         opener->GetLastCommittedURL(), params.frame_name, params.target_url,
+     auto* web_contents_impl =
+         static_cast<WebContentsImpl*>(delegate_->CreateCustomWebContents(
+             opener, source_site_instance, is_new_browsing_instance,
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
 index 98025d50f132dc425f26b982d1a4a2e07b972229..45f2d4d29add5c6ca6c1e5e27a19d1623cc6a4ce 100644
 --- a/content/public/browser/web_contents_delegate.cc
@@ -334,7 +334,7 @@ index 9b293d0df6c634bf44a69d607c4eee839a74b4a1..7e5b9cbdcc232c5e20eae0130d800f50
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
-index 330b9467832a93aade64c962a1715ced6fa4c6a6..babcfb3eee9933a2db39023492095f30c957b21c 100644
+index 2dc016e4be765413b4cef0f5471dcf9240f73ff5..224cd2be71670ac565d02ecb2838123154255dc6 100644
 --- a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
 +++ b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
 @@ -386,8 +386,7 @@ bool MimeHandlerViewGuest::IsWebContentsCreationOverridden(
@@ -348,7 +348,7 @@ index 330b9467832a93aade64c962a1715ced6fa4c6a6..babcfb3eee9933a2db39023492095f30
  }
  
 diff --git a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h
-index 7d27e12c4e9a7f32af8a26f672359057a643dd67..7a30ac31f79871f2a9afa0345e0e88affe7fe72f 100644
+index bb90319f768ed2f3a3e530d64bf622de585ce163..d84de1d218267887f6b8624f913438ebc4aa7a79 100644
 --- a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h
 +++ b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h
 @@ -158,8 +158,7 @@ class MimeHandlerViewGuest
@@ -376,10 +376,10 @@ index 47d77ca9263a4f9029b00393f092f3340f5e8751..e668ba08d6f032abe1e8d26ce755876d
    // can catch bad client behavior while not interfering with normal operation.
    constexpr size_t kMaxPendingWebContentsCount = 10;
 diff --git a/fuchsia/engine/browser/frame_impl.h b/fuchsia/engine/browser/frame_impl.h
-index 08b2a1d7e1a0bc458e478a77bfd2fbaf35865d08..690c4baace675a6f8bbeaa1e7297e3bf0f0a8a50 100644
+index a9e134ba416af9ca27c580892bd1c4599912ec82..39ddf61c9506b6bb12b3fe51e0a1cabacd3ece70 100644
 --- a/fuchsia/engine/browser/frame_impl.h
 +++ b/fuchsia/engine/browser/frame_impl.h
-@@ -241,8 +241,7 @@ class FrameImpl : public fuchsia::web::Frame,
+@@ -242,8 +242,7 @@ class FrameImpl : public fuchsia::web::Frame,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
