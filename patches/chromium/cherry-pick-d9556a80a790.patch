@@ -1,7 +1,7 @@
-From d9556a80a790950b5eee29a68cf4f95bd19d0d88 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Ted Meyer <tmathmeyer@chromium.org>
-Date: Mon, 07 Jun 2021 20:41:16 +0000
-Subject: [PATCH] A few fixes to the D3D11H264Accelerator
+Date: Mon, 7 Jun 2021 20:41:16 +0000
+Subject: A few fixes to the D3D11H264Accelerator
 
  - Adds a AsD3D11H264Picture method to H264Pictures because sometimes
    there can be just normal H264Pictures in the DPB and this could cause
@@ -25,13 +25,12 @@ Commit-Queue: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
 Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
 Cr-Commit-Position: refs/branch-heads/4472@{#1455}
 Cr-Branched-From: 3d60439cfb36485e76a1c5bb7f513d3721b20da1-refs/heads/master@{#870763}
----
 
 diff --git a/media/gpu/h264_dpb.cc b/media/gpu/h264_dpb.cc
-index 8ef3baf..859e184 100644
+index 8ef3bafb255349c6ac602c02a30615f0dd0b7d06..859e184b129f21f6af41b276051ca3a3adc03a7f 100644
 --- a/media/gpu/h264_dpb.cc
 +++ b/media/gpu/h264_dpb.cc
-@@ -55,6 +55,10 @@
+@@ -55,6 +55,10 @@ VaapiH264Picture* H264Picture::AsVaapiH264Picture() {
    return nullptr;
  }
  
@@ -43,10 +42,10 @@ index 8ef3baf..859e184 100644
  H264DPB::~H264DPB() = default;
  
 diff --git a/media/gpu/h264_dpb.h b/media/gpu/h264_dpb.h
-index 1395f9e..36abd4a898 100644
+index 1395f9ecb35302632c49392d11fecb91436cbdf6..36abd4a8984dcb01ce85fc5fffa5ec916ecbf46a 100644
 --- a/media/gpu/h264_dpb.h
 +++ b/media/gpu/h264_dpb.h
-@@ -23,6 +23,7 @@
+@@ -23,6 +23,7 @@ namespace media {
  
  class V4L2H264Picture;
  class VaapiH264Picture;
@@ -54,7 +53,7 @@ index 1395f9e..36abd4a898 100644
  
  // A picture (a frame or a field) in the H.264 spec sense.
  // See spec at http://www.itu.int/rec/T-REC-H.264
-@@ -40,6 +41,7 @@
+@@ -40,6 +41,7 @@ class MEDIA_GPU_EXPORT H264Picture : public CodecPicture {
  
    virtual V4L2H264Picture* AsV4L2H264Picture();
    virtual VaapiH264Picture* AsVaapiH264Picture();
@@ -63,10 +62,10 @@ index 1395f9e..36abd4a898 100644
    // Values calculated per H.264 specification or taken from slice header.
    // See spec for more details on each (some names have been converted from
 diff --git a/media/gpu/windows/d3d11_h264_accelerator.cc b/media/gpu/windows/d3d11_h264_accelerator.cc
-index 20acf54..ba3bf54 100644
+index e87c1ece44f4c2af44e1c626ae69bfede43a0289..82abc9af5ed4255d5e262d539b4462e6e089fc61 100644
 --- a/media/gpu/windows/d3d11_h264_accelerator.cc
 +++ b/media/gpu/windows/d3d11_h264_accelerator.cc
-@@ -54,6 +54,8 @@
+@@ -52,6 +52,8 @@ class D3D11H264Picture : public H264Picture {
    D3D11PictureBuffer* picture;
    size_t picture_index_;
  
@@ -75,7 +74,7 @@ index 20acf54..ba3bf54 100644
   protected:
    ~D3D11H264Picture() override;
  };
-@@ -104,10 +106,12 @@
+@@ -101,10 +103,12 @@ DecoderStatus D3D11H264Accelerator::SubmitFrameMetadata(
  
    HRESULT hr;
    for (;;) {
@@ -91,7 +90,7 @@ index 20acf54..ba3bf54 100644
  
      if (hr == E_PENDING || hr == D3DERR_WASSTILLDRAWING) {
        // Hardware is busy.  We should make the call again.
-@@ -123,7 +127,7 @@
+@@ -119,7 +123,7 @@ DecoderStatus D3D11H264Accelerator::SubmitFrameMetadata(
    }
  
    sps_ = *sps;
@@ -100,7 +99,7 @@ index 20acf54..ba3bf54 100644
      ref_frame_list_[i].bPicEntry = 0xFF;
      field_order_cnt_list_[i][0] = 0;
      field_order_cnt_list_[i][1] = 0;
-@@ -136,8 +140,19 @@
+@@ -132,8 +136,19 @@ DecoderStatus D3D11H264Accelerator::SubmitFrameMetadata(
  
    int i = 0;
    for (auto it = dpb.begin(); it != dpb.end(); i++, it++) {
@@ -122,7 +121,7 @@ index 20acf54..ba3bf54 100644
        continue;
      ref_frame_list_[i].Index7Bits = our_ref_pic->picture_index_;
      ref_frame_list_[i].AssociatedFlag = our_ref_pic->long_term;
-@@ -284,9 +299,8 @@
+@@ -279,9 +294,8 @@ void D3D11H264Accelerator::PicParamsFromSliceHeader(
  }
  
  void D3D11H264Accelerator::PicParamsFromPic(DXVA_PicParams_H264* pic_param,
@@ -134,7 +133,7 @@ index 20acf54..ba3bf54 100644
    pic_param->RefPicFlag = pic->ref;
    pic_param->frame_num = pic->frame_num;
  
-@@ -319,7 +333,11 @@
+@@ -314,7 +328,11 @@ DecoderStatus D3D11H264Accelerator::SubmitSlice(
    if (!PicParamsFromPPS(&pic_param, pps))
      return DecoderStatus::kFail;
    PicParamsFromSliceHeader(&pic_param, slice_hdr);
@@ -147,7 +146,7 @@ index 20acf54..ba3bf54 100644
  
    memcpy(pic_param.RefFrameList, ref_frame_list_,
           sizeof pic_param.RefFrameList);
-@@ -582,9 +600,8 @@
+@@ -573,9 +591,8 @@ void D3D11H264Accelerator::Reset() {
  }
  
  bool D3D11H264Accelerator::OutputPicture(scoped_refptr<H264Picture> pic) {
@@ -160,10 +159,10 @@ index 20acf54..ba3bf54 100644
  
  void D3D11H264Accelerator::RecordFailure(const std::string& reason,
 diff --git a/media/gpu/windows/d3d11_h264_accelerator.h b/media/gpu/windows/d3d11_h264_accelerator.h
-index 39f2532..08ca39f 100644
+index 00e2bd5cecd34f947c15aed1a7f5873b2ba4736c..c927706fb58b0637b6cf27516495028ead95325c 100644
 --- a/media/gpu/windows/d3d11_h264_accelerator.h
 +++ b/media/gpu/windows/d3d11_h264_accelerator.h
-@@ -28,6 +28,8 @@
+@@ -27,6 +27,8 @@
  
  namespace media {
  
@@ -172,7 +171,7 @@ index 39f2532..08ca39f 100644
  class D3D11H264Accelerator;
  class MediaLog;
  
-@@ -75,8 +77,7 @@
+@@ -74,8 +76,7 @@ class D3D11H264Accelerator : public H264Decoder::H264Accelerator {
    void PicParamsFromSliceHeader(DXVA_PicParams_H264* pic_param,
                                  const H264SliceHeader* pps);
  
@@ -182,7 +181,7 @@ index 39f2532..08ca39f 100644
  
    void SetVideoDecoder(ComD3D11VideoDecoder video_decoder);
  
-@@ -98,10 +99,10 @@
+@@ -95,10 +96,10 @@ class D3D11H264Accelerator : public H264Decoder::H264Accelerator {
  
    // This information set at the beginning of a frame and saved for processing
    // all the slices.
