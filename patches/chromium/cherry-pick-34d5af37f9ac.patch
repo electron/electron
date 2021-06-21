@@ -1,0 +1,101 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Asami Doi <asamidoi@chromium.org>
+Date: Thu, 10 Jun 2021 07:03:17 +0000
+Subject: BFCache: remove a controllee stored in `bfcached_controllee_map_`
+
+This CL fixes the UAF that happens with the following case:
+Let's assume we have 2 service workers (sw1.js and sw2.js) are
+registered in the same page. When the second service worker (sw2.js) is
+registered, ServiceWorkerContainerHost::UpdateController() is called
+and the previous SWVersion (sw1.js) removes a controllee from
+`controllee_map_`. If BackForwardCache is enabled, a controllee is
+stored in `bfcached_controllee_map_` instead and the controllee will
+not be removed in ServiceWorkerContainerHost::UpdateController().
+When ServiceWorkerContainerHost::UpdateController() is called and
+keep a controllee in `bfcached_controllee_map_`, and a page navigates to
+a different page (evicts BFCache), use-after-free (UAF) happens.
+
+This CL updates ServiceWorkerContainerHost::UpdateController()
+to remove a controllee from `bfcached_controllee_map_` if it exists.
+
+(cherry picked from commit a2414a05a486ca0ad18ba4caf78e883a668a0555)
+
+(cherry picked from commit 7cd7f6741fc4491c2f7ef21052a370ee23887e37)
+
+Bug: 1212618
+Change-Id: I13e023e6d273268a08ea9276a056f7f5acba39cd
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2919020
+Commit-Queue: Asami Doi <asamidoi@chromium.org>
+Reviewed-by: Matt Falkenhagen <falken@chromium.org>
+Cr-Original-Original-Commit-Position: refs/heads/master@{#887109}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2929401
+Reviewed-by: Krishna Govind <govind@chromium.org>
+Reviewed-by: Ben Mason <benmason@chromium.org>
+Reviewed-by: Prudhvi Kumar Bommana <pbommana@google.com>
+Commit-Queue: Krishna Govind <govind@chromium.org>
+Owners-Override: Krishna Govind <govind@chromium.org>
+Cr-Original-Commit-Position: refs/branch-heads/4472@{#1375}
+Cr-Original-Branched-From: 3d60439cfb36485e76a1c5bb7f513d3721b20da1-refs/heads/master@{#870763}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2944946
+Owners-Override: Victor-Gabriel Savu <vsavu@google.com>
+Reviewed-by: Achuith Bhandarkar <achuith@chromium.org>
+Commit-Queue: Victor-Gabriel Savu <vsavu@google.com>
+Cr-Commit-Position: refs/branch-heads/4430@{#1512}
+Cr-Branched-From: e5ce7dc4f7518237b3d9bb93cccca35d25216cbe-refs/heads/master@{#857950}
+
+diff --git a/content/browser/service_worker/service_worker_container_host.cc b/content/browser/service_worker/service_worker_container_host.cc
+index 0b1981efd9eb008caea1c94da138a2ed7c386bc5..9a2193ac5a4e8a738bef8e391145deecef9b9ac2 100644
+--- a/content/browser/service_worker/service_worker_container_host.cc
++++ b/content/browser/service_worker/service_worker_container_host.cc
+@@ -138,7 +138,7 @@ ServiceWorkerContainerHost::~ServiceWorkerContainerHost() {
+   }
+ 
+   if (IsContainerForClient() && controller_)
+-    controller_->OnControlleeDestroyed(client_uuid());
++    controller_->Uncontrol(client_uuid());
+ 
+   // Remove |this| as an observer of ServiceWorkerRegistrations.
+   // TODO(falken): Use ScopedObserver instead of this explicit call.
+@@ -1244,7 +1244,7 @@ void ServiceWorkerContainerHost::UpdateController(
+     }
+   }
+   if (previous_version)
+-    previous_version->RemoveControllee(client_uuid());
++    previous_version->Uncontrol(client_uuid());
+ 
+   // SetController message should be sent only for clients.
+   DCHECK(IsContainerForClient());
+diff --git a/content/browser/service_worker/service_worker_version.cc b/content/browser/service_worker/service_worker_version.cc
+index 798d0bd350976cf2724e4d4b726c24d63e0a5ec3..5e268a5331e80ff7c6c93c425171bbd31ddb342a 100644
+--- a/content/browser/service_worker/service_worker_version.cc
++++ b/content/browser/service_worker/service_worker_version.cc
+@@ -886,8 +886,7 @@ void ServiceWorkerVersion::RemoveControlleeFromBackForwardCacheMap(
+   bfcached_controllee_map_.erase(client_uuid);
+ }
+ 
+-void ServiceWorkerVersion::OnControlleeDestroyed(
+-    const std::string& client_uuid) {
++void ServiceWorkerVersion::Uncontrol(const std::string& client_uuid) {
+   if (!IsBackForwardCacheEnabled()) {
+     RemoveControllee(client_uuid);
+   } else {
+diff --git a/content/browser/service_worker/service_worker_version.h b/content/browser/service_worker/service_worker_version.h
+index cb5afe636f45b70fce2ff313641834bf7bddff30..a96d2c4575fa3879cf6133fbe656cb20745bd66a 100644
+--- a/content/browser/service_worker/service_worker_version.h
++++ b/content/browser/service_worker/service_worker_version.h
+@@ -394,9 +394,12 @@ class CONTENT_EXPORT ServiceWorkerVersion
+   void RestoreControlleeFromBackForwardCacheMap(const std::string& client_uuid);
+   // Called when a back-forward cached controllee is evicted or destroyed.
+   void RemoveControlleeFromBackForwardCacheMap(const std::string& client_uuid);
+-  // Called when a controllee is destroyed. Remove controllee from whichever
+-  // map it belongs to, or do nothing when it is already removed.
+-  void OnControlleeDestroyed(const std::string& client_uuid);
++  // Called when this version should no longer be the controller of this client.
++  // Called when the controllee is destroyed or it changes controller. Removes
++  // controllee from whichever map it belongs to, or do nothing when it is
++  // already removed. This function is different from RemoveController(), which
++  // can only be called if the controllee is not in the back-forward cache map.
++  void Uncontrol(const std::string& client_uuid);
+ 
+   // Returns true if this version has a controllee.
+   // Note regarding BackForwardCache:
