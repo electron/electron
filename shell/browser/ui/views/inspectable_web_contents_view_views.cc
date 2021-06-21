@@ -33,7 +33,6 @@ class DevToolsWindowDelegate : public views::ClientView,
         shell_(shell),
         view_(view),
         widget_(widget) {
-    // A WidgetDelegate should be deleted on DeleteDelegate.
     set_owned_by_client();
 
     if (shell->GetDelegate())
@@ -42,7 +41,6 @@ class DevToolsWindowDelegate : public views::ClientView,
   ~DevToolsWindowDelegate() override = default;
 
   // views::WidgetDelegate:
-  void DeleteDelegate() override { delete this; }
   views::View* GetInitiallyFocusedView() override { return view_; }
   bool CanMaximize() const override { return true; }
   bool CanMinimize() const override { return true; }

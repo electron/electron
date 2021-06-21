@@ -349,7 +349,7 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   SetOwnedByWidget(false);
   RegisterDeleteDelegateCallback(base::BindOnce(
       [](NativeWindowViews* window) {
-        if (is_modal() && window->parent()) {
+        if (window->is_modal() && window->parent()) {
           auto* parent = window->parent();
           // Enable parent window after current window gets closed.
           static_cast<NativeWindowViews*>(parent)->DecrementChildModals();
