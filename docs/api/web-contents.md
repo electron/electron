@@ -28,6 +28,10 @@ const { webContents } = require('electron')
 console.log(webContents)
 ```
 
+#### `webContents.close()`
+
+Returns `void`. Closes a webContents and cleans up existing instances.
+
 ### `webContents.getAllWebContents()`
 
 Returns `WebContents[]` - An array of all `WebContents` instances. This will contain web contents
