@@ -1,7 +1,7 @@
-From b77b38a3380c7a5aa2a898cbf4b714e34d9baf70 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Brandon Jones <bajones@chromium.org>
 Date: Wed, 16 Jun 2021 21:47:09 +0000
-Subject: [PATCH] Ensure that XRLayer includes base EventTarget in Trace
+Subject: Ensure that XRLayer includes base EventTarget in Trace
 
 Trace was skipping a level in the class hierarchy and calling
 ScriptWrappable::Trace() instead. This was likely the result of the
@@ -22,13 +22,12 @@ Commit-Queue: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
 Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
 Cr-Commit-Position: refs/branch-heads/4472@{#1492}
 Cr-Branched-From: 3d60439cfb36485e76a1c5bb7f513d3721b20da1-refs/heads/master@{#870763}
----
 
 diff --git a/third_party/blink/renderer/modules/xr/xr_layer.cc b/third_party/blink/renderer/modules/xr/xr_layer.cc
-index eaa8603..aa30a4c 100644
+index eaa8603c7354a5c8e71e9a2e6161824063804fb6..aa30a4cec88fa11b342695dc675ab572320e9166 100644
 --- a/third_party/blink/renderer/modules/xr/xr_layer.cc
 +++ b/third_party/blink/renderer/modules/xr/xr_layer.cc
-@@ -21,7 +21,7 @@
+@@ -21,7 +21,7 @@ const AtomicString& XRLayer::InterfaceName() const {
  
  void XRLayer::Trace(Visitor* visitor) const {
    visitor->Trace(session_);
