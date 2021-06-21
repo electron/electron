@@ -32,8 +32,5 @@ function_registration("api_registration") {
     # TODO(brettw) this should be made unnecessary if possible.
     "//electron/shell/common/extensions/api",
   ]
-  deps += [
-    "//extensions/common:mojom",
-    "//extensions/common/api",
-  ]
+  deps += [ "//extensions/common/api" ]
 }
