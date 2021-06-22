@@ -1,0 +1,62 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Georg Neis <neis@chromium.org>
+Date: Thu, 27 May 2021 13:04:30 +0200
+Subject: Reland "Merged: [compiler] Always record constness dependency for
+ FastDataConstant"
+
+This is a reland of 638d1b238d510a349bdd38648add8d5c85bc5f7d after a
+one-character change. A local variable still has a non-optional type
+in this version of V8.
+
+Original change's description:
+> Merged: [compiler] Always record constness dependency for FastDataConstant
+>
+> Revision: 1bfa5139966fe0c9e8036fe6362b61c483675775
+>
+> BUG=chromium:1209558
+> NOTRY=true
+> NOPRESUBMIT=true
+> NOTREECHECKS=true
+>
+> Change-Id: If4f7243647bcc12ed482796c1353f0717630f6b9
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2919823
+> Commit-Queue: Georg Neis <neis@chromium.org>
+> Reviewed-by: Igor Sheludko <ishell@chromium.org>
+> Cr-Commit-Position: refs/branch-heads/9.1@{#59}
+> Cr-Branched-From: 0e4ac64a8cf298b14034a22f9fe7b085d2cb238d-refs/heads/9.1.269@{#1}
+> Cr-Branched-From: f565e72d5ba88daae35a59d0f978643e2343e912-refs/heads/master@{#73847}
+
+NOTRY=true
+NOPRESUBMIT=true
+NOTREECHECKS=true
+
+(cherry picked from commit 73666e3f6d6bdbc93ab81cf8b3803dd04930e293)
+
+Bug: chromium:1209558
+Change-Id: I0c81353882b0f17942fd92ad4181732f941bcb1d
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2939991
+Commit-Queue: Georg Neis <neis@chromium.org>
+Reviewed-by: Igor Sheludko <ishell@chromium.org>
+Cr-Original-Commit-Position: refs/branch-heads/9.1@{#63}
+Cr-Original-Branched-From: 0e4ac64a8cf298b14034a22f9fe7b085d2cb238d-refs/heads/9.1.269@{#1}
+Cr-Original-Branched-From: f565e72d5ba88daae35a59d0f978643e2343e912-refs/heads/master@{#73847}
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2948652
+Reviewed-by: Artem Sumaneev <asumaneev@google.com>
+Commit-Queue: Victor-Gabriel Savu <vsavu@google.com>
+Cr-Commit-Position: refs/branch-heads/8.6@{#108}
+Cr-Branched-From: a64aed2333abf49e494d2a5ce24bbd14fff19f60-refs/heads/8.6.395@{#1}
+Cr-Branched-From: a626bc036236c9bf92ac7b87dc40c9e538b087e3-refs/heads/master@{#69472}
+
+diff --git a/src/compiler/access-info.cc b/src/compiler/access-info.cc
+index 046927e9430e89596bd4077af37fb9374d279282..7f7a8fee63ed8bdd322bbbca8444c9345b3d32f7 100644
+--- a/src/compiler/access-info.cc
++++ b/src/compiler/access-info.cc
+@@ -892,7 +892,7 @@ PropertyAccessInfo AccessInfoFactory::LookupTransition(
+   // Transitioning stores *may* store to const fields. The resulting
+   // DataConstant access infos can be distinguished from later, i.e. redundant,
+   // stores to the same constant field by the presence of a transition map.
+-  switch (details.constness()) {
++  switch (dependencies()->DependOnFieldConstness(transition_map_ref, number)) {
+     case PropertyConstness::kMutable:
+       return PropertyAccessInfo::DataField(
+           zone(), map, std::move(unrecorded_dependencies), field_index,
