@@ -67,7 +67,7 @@ absl::optional<base::FilePath> CreateTemporaryFileOnIO() {
 
 void StopTracing(gin_helper::Promise<base::FilePath> promise,
                  absl::optional<base::FilePath> file_path) {
-  auto resolve_or_reject = base::AdaptCallbackForRepeating(base::BindOnce(
+  auto resolve_or_reject = base::BindOnce(
       [](gin_helper::Promise<base::FilePath> promise,
          const base::FilePath& path, absl::optional<std::string> error) {
         if (error) {
@@ -76,17 +76,21 @@ void StopTracing(gin_helper::Promise<base::FilePath> promise,
           promise.Resolve(path);
         }
       },
-      std::move(promise), *file_path));
+      std::move(promise), *file_path);
   if (file_path) {
+    auto split_callback = base::SplitOnceCallback(std::move(resolve_or_reject));
     auto endpoint = TracingController::CreateFileEndpoint(
-        *file_path, base::BindRepeating(resolve_or_reject, absl::nullopt));
+        *file_path,
+        base::BindOnce(std::move(split_callback.first), absl::nullopt));
     if (!TracingController::GetInstance()->StopTracing(endpoint)) {
-      resolve_or_reject.Run(absl::make_optional(
-          "Failed to stop tracing (was a trace in progress?)"));
+      std::move(split_callback.second)
+          .Run(absl::make_optional(
+              "Failed to stop tracing (was a trace in progress?)"));
     }
   } else {
-    resolve_or_reject.Run(
-        absl::make_optional("Failed to create temporary file for trace data"));
+    std::move(resolve_or_reject)
+        .Run(absl::make_optional(
+            "Failed to create temporary file for trace data"));
   }
 }
 
