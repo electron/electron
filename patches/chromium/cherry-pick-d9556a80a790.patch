@@ -1,0 +1,197 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ted Meyer <tmathmeyer@chromium.org>
+Date: Mon, 7 Jun 2021 20:41:16 +0000
+Subject: A few fixes to the D3D11H264Accelerator
+
+ - Adds a AsD3D11H264Picture method to H264Pictures because sometimes
+   there can be just normal H264Pictures in the DPB and this could cause
+   some invalid variable access as we were statically casting the
+   pointer before.
+
+ - Adds a bounds check just in case there are more than 16 items in the
+   DPB.
+
+(cherry picked from commit 5a3cf91d0f2352e697017e13f4754989f46f2f3e)
+
+Bug: 1194689
+Change-Id: Ief2e1d00b451fbc0585dd0b22b5aff7a6918fa11
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2923118
+Commit-Queue: Ted Meyer <tmathmeyer@chromium.org>
+Reviewed-by: Frank Liberato <liberato@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#888267}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2944579
+Auto-Submit: Ted Meyer <tmathmeyer@chromium.org>
+Commit-Queue: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/4472@{#1455}
+Cr-Branched-From: 3d60439cfb36485e76a1c5bb7f513d3721b20da1-refs/heads/master@{#870763}
+
+diff --git a/media/gpu/h264_dpb.cc b/media/gpu/h264_dpb.cc
+index 8ef3bafb255349c6ac602c02a30615f0dd0b7d06..859e184b129f21f6af41b276051ca3a3adc03a7f 100644
+--- a/media/gpu/h264_dpb.cc
++++ b/media/gpu/h264_dpb.cc
+@@ -55,6 +55,10 @@ VaapiH264Picture* H264Picture::AsVaapiH264Picture() {
+   return nullptr;
+ }
+ 
++D3D11H264Picture* H264Picture::AsD3D11H264Picture() {
++  return nullptr;
++}
++
+ H264DPB::H264DPB() : max_num_pics_(0) {}
+ H264DPB::~H264DPB() = default;
+ 
+diff --git a/media/gpu/h264_dpb.h b/media/gpu/h264_dpb.h
+index 1395f9ecb35302632c49392d11fecb91436cbdf6..36abd4a8984dcb01ce85fc5fffa5ec916ecbf46a 100644
+--- a/media/gpu/h264_dpb.h
++++ b/media/gpu/h264_dpb.h
+@@ -23,6 +23,7 @@ namespace media {
+ 
+ class V4L2H264Picture;
+ class VaapiH264Picture;
++class D3D11H264Picture;
+ 
+ // A picture (a frame or a field) in the H.264 spec sense.
+ // See spec at http://www.itu.int/rec/T-REC-H.264
+@@ -40,6 +41,7 @@ class MEDIA_GPU_EXPORT H264Picture : public CodecPicture {
+ 
+   virtual V4L2H264Picture* AsV4L2H264Picture();
+   virtual VaapiH264Picture* AsVaapiH264Picture();
++  virtual D3D11H264Picture* AsD3D11H264Picture();
+ 
+   // Values calculated per H.264 specification or taken from slice header.
+   // See spec for more details on each (some names have been converted from
+diff --git a/media/gpu/windows/d3d11_h264_accelerator.cc b/media/gpu/windows/d3d11_h264_accelerator.cc
+index e87c1ece44f4c2af44e1c626ae69bfede43a0289..82abc9af5ed4255d5e262d539b4462e6e089fc61 100644
+--- a/media/gpu/windows/d3d11_h264_accelerator.cc
++++ b/media/gpu/windows/d3d11_h264_accelerator.cc
+@@ -52,6 +52,8 @@ class D3D11H264Picture : public H264Picture {
+   D3D11PictureBuffer* picture;
+   size_t picture_index_;
+ 
++  D3D11H264Picture* AsD3D11H264Picture() override { return this; }
++
+  protected:
+   ~D3D11H264Picture() override;
+ };
+@@ -101,10 +103,12 @@ DecoderStatus D3D11H264Accelerator::SubmitFrameMetadata(
+ 
+   HRESULT hr;
+   for (;;) {
++    D3D11H264Picture* d3d11_pic = pic->AsD3D11H264Picture();
++    if (!d3d11_pic)
++      return DecoderStatus::kFail;
+     hr = video_context_->DecoderBeginFrame(
+-        video_decoder_.Get(),
+-        static_cast<D3D11H264Picture*>(pic.get())->picture->output_view().Get(),
+-        0, nullptr);
++        video_decoder_.Get(), d3d11_pic->picture->output_view().Get(), 0,
++        nullptr);
+ 
+     if (hr == E_PENDING || hr == D3DERR_WASSTILLDRAWING) {
+       // Hardware is busy.  We should make the call again.
+@@ -119,7 +123,7 @@ DecoderStatus D3D11H264Accelerator::SubmitFrameMetadata(
+   }
+ 
+   sps_ = *sps;
+-  for (size_t i = 0; i < 16; i++) {
++  for (size_t i = 0; i < media::kRefFrameMaxCount; i++) {
+     ref_frame_list_[i].bPicEntry = 0xFF;
+     field_order_cnt_list_[i][0] = 0;
+     field_order_cnt_list_[i][1] = 0;
+@@ -132,8 +136,19 @@ DecoderStatus D3D11H264Accelerator::SubmitFrameMetadata(
+ 
+   int i = 0;
+   for (auto it = dpb.begin(); it != dpb.end(); i++, it++) {
+-    D3D11H264Picture* our_ref_pic = static_cast<D3D11H264Picture*>(it->get());
+-    if (!our_ref_pic->ref)
++    // The DPB is supposed to have a maximum of 16 pictures in it, but there's
++    // nothing actually stopping it from having more. If we run into this case,
++    // something is clearly wrong, and we should just fail decoding rather than
++    // try to sort out which pictures really shouldn't be included.
++    if (i >= media::kRefFrameMaxCount)
++      return DecoderStatus::kFail;
++
++    D3D11H264Picture* our_ref_pic = it->get()->AsD3D11H264Picture();
++    // How does a non-d3d11 picture get here you might ask? The decoder
++    // inserts blank H264Picture objects that we can't use as part of filling
++    // gaps in frame numbers. If we see one, it's not a reference picture
++    // anyway, so skip it.
++    if (!our_ref_pic || !our_ref_pic->ref)
+       continue;
+     ref_frame_list_[i].Index7Bits = our_ref_pic->picture_index_;
+     ref_frame_list_[i].AssociatedFlag = our_ref_pic->long_term;
+@@ -279,9 +294,8 @@ void D3D11H264Accelerator::PicParamsFromSliceHeader(
+ }
+ 
+ void D3D11H264Accelerator::PicParamsFromPic(DXVA_PicParams_H264* pic_param,
+-                                            scoped_refptr<H264Picture> pic) {
+-  pic_param->CurrPic.Index7Bits =
+-      static_cast<D3D11H264Picture*>(pic.get())->picture_index_;
++                                            D3D11H264Picture* pic) {
++  pic_param->CurrPic.Index7Bits = pic->picture_index_;
+   pic_param->RefPicFlag = pic->ref;
+   pic_param->frame_num = pic->frame_num;
+ 
+@@ -314,7 +328,11 @@ DecoderStatus D3D11H264Accelerator::SubmitSlice(
+   if (!PicParamsFromPPS(&pic_param, pps))
+     return DecoderStatus::kFail;
+   PicParamsFromSliceHeader(&pic_param, slice_hdr);
+-  PicParamsFromPic(&pic_param, std::move(pic));
++
++  D3D11H264Picture* d3d11_pic = pic->AsD3D11H264Picture();
++  if (!d3d11_pic)
++    return DecoderStatus::kFail;
++  PicParamsFromPic(&pic_param, d3d11_pic);
+ 
+   memcpy(pic_param.RefFrameList, ref_frame_list_,
+          sizeof pic_param.RefFrameList);
+@@ -573,9 +591,8 @@ void D3D11H264Accelerator::Reset() {
+ }
+ 
+ bool D3D11H264Accelerator::OutputPicture(scoped_refptr<H264Picture> pic) {
+-  D3D11H264Picture* our_pic = static_cast<D3D11H264Picture*>(pic.get());
+-
+-  return client_->OutputResult(our_pic, our_pic->picture);
++  D3D11H264Picture* our_pic = pic->AsD3D11H264Picture();
++  return our_pic && client_->OutputResult(our_pic, our_pic->picture);
+ }
+ 
+ void D3D11H264Accelerator::RecordFailure(const std::string& reason,
+diff --git a/media/gpu/windows/d3d11_h264_accelerator.h b/media/gpu/windows/d3d11_h264_accelerator.h
+index 00e2bd5cecd34f947c15aed1a7f5873b2ba4736c..c927706fb58b0637b6cf27516495028ead95325c 100644
+--- a/media/gpu/windows/d3d11_h264_accelerator.h
++++ b/media/gpu/windows/d3d11_h264_accelerator.h
+@@ -27,6 +27,8 @@
+ 
+ namespace media {
+ 
++constexpr int kRefFrameMaxCount = 16;
++
+ class D3D11H264Accelerator;
+ class MediaLog;
+ 
+@@ -74,8 +76,7 @@ class D3D11H264Accelerator : public H264Decoder::H264Accelerator {
+   void PicParamsFromSliceHeader(DXVA_PicParams_H264* pic_param,
+                                 const H264SliceHeader* pps);
+ 
+-  void PicParamsFromPic(DXVA_PicParams_H264* pic_param,
+-                        scoped_refptr<H264Picture> pic);
++  void PicParamsFromPic(DXVA_PicParams_H264* pic_param, D3D11H264Picture* pic);
+ 
+   void SetVideoDecoder(ComD3D11VideoDecoder video_decoder);
+ 
+@@ -95,10 +96,10 @@ class D3D11H264Accelerator : public H264Decoder::H264Accelerator {
+ 
+   // This information set at the beginning of a frame and saved for processing
+   // all the slices.
+-  DXVA_PicEntry_H264 ref_frame_list_[16];
++  DXVA_PicEntry_H264 ref_frame_list_[kRefFrameMaxCount];
+   H264SPS sps_;
+-  INT field_order_cnt_list_[16][2];
+-  USHORT frame_num_list_[16];
++  INT field_order_cnt_list_[kRefFrameMaxCount][2];
++  USHORT frame_num_list_[kRefFrameMaxCount];
+   UINT used_for_reference_flags_;
+   USHORT non_existing_frame_flags_;
+ 

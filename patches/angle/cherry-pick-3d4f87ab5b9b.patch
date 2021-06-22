@@ -1,0 +1,59 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jamie Madill <jmadill@chromium.org>
+Date: Thu, 20 May 2021 12:22:46 -0400
+Subject: D3D11: Fix respecifying 3D textures.
+
+The missing check for the "Depth" dimension could lead to a bug
+where we would not recreate a texture when the dimension changed.
+
+Bug: chromium:1210414
+Change-Id: Id59097ad14ae77ff80d27081f61786dad17a77ea
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/2911032
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Commit-Queue: Jamie Madill <jmadill@chromium.org>
+(cherry picked from commit 2697358464cf20576701987f60300b6c4086c11e)
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/2937026
+Reviewed-by: Jamie Madill <jmadill@chromium.org>
+
+diff --git a/src/libANGLE/renderer/d3d/d3d11/Image11.cpp b/src/libANGLE/renderer/d3d/d3d11/Image11.cpp
+index c502d00fac032ea708015bbbf4f51db2dc2b3c59..daa5c3abc3ab4f4460ec48d0aba9649cf66897ac 100644
+--- a/src/libANGLE/renderer/d3d/d3d11/Image11.cpp
++++ b/src/libANGLE/renderer/d3d/d3d11/Image11.cpp
+@@ -223,8 +223,8 @@ bool Image11::redefine(gl::TextureType type,
+                        const gl::Extents &size,
+                        bool forceRelease)
+ {
+-    if (mWidth != size.width || mHeight != size.height || mInternalFormat != internalformat ||
+-        forceRelease)
++    if (mWidth != size.width || mHeight != size.height || mDepth != size.depth ||
++        mInternalFormat != internalformat || forceRelease)
+     {
+         // End the association with the TextureStorage, since that data will be out of date.
+         // Also reset mRecoveredFromStorageCount since this Image is getting completely redefined.
+diff --git a/src/tests/gl_tests/MipmapTest.cpp b/src/tests/gl_tests/MipmapTest.cpp
+index 888088b5e38191e38e07bf50a0d1b6fa0a09db95..372c6645a587563c616a961ed3ac46dc667e9660 100644
+--- a/src/tests/gl_tests/MipmapTest.cpp
++++ b/src/tests/gl_tests/MipmapTest.cpp
+@@ -1991,6 +1991,22 @@ void main()
+     EXPECT_PIXEL_COLOR_EQ(getWindowWidth() / 8, getWindowHeight() / 8, GLColor::green);
+ }
+ 
++// Tests respecifying 3D mipmaps.
++TEST_P(MipmapTestES3, Generate3DMipmapRespecification)
++{
++    std::vector<GLColor> pixels(256 * 256 * 100, GLColor::black);
++
++    GLTexture texture;
++    glBindTexture(GL_TEXTURE_3D, texture);
++    glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA, 256, 256, 100, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 pixels.data());
++    glTexImage3D(GL_TEXTURE_3D, 1, GL_RGBA, 128, 128, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 pixels.data());
++    glGenerateMipmap(GL_TEXTURE_3D);
++
++    ASSERT_GL_NO_ERROR();
++}
++
+ // Use this to select which configurations (e.g. which renderer, which GLES major version) these
+ // tests should be run against.
+ ANGLE_INSTANTIATE_TEST_ES2_AND_ES3(MipmapTest);
