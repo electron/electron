@@ -75,6 +75,7 @@ ipcMainInternal.on(
 
     const browserWindowOptions = (event.sender as any)._callWindowOpenHandler(event, url, frameName, features);
     if (event.defaultPrevented) {
+      event.returnValue = null;
       return;
     }
     const guest = openGuestWindow({
