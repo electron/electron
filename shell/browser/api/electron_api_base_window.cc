@@ -556,10 +556,6 @@ std::string BaseWindow::GetAlwaysOnTopLevel() {
   return window_->GetAlwaysOnTopLevel();
 }
 
-int BaseWindow::GetZOrderLevel() {
-  return static_cast<int>(window_->GetZOrderLevel());
-}
-
 void BaseWindow::Center() {
   window_->Center();
 }
@@ -1227,8 +1223,6 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isClosable", &BaseWindow::IsClosable)
       .SetMethod("setAlwaysOnTop", &BaseWindow::SetAlwaysOnTop)
       .SetMethod("isAlwaysOnTop", &BaseWindow::IsAlwaysOnTop)
-      .SetMethod("getAlwaysOnTopLevel", &BaseWindow::GetAlwaysOnTopLevel)
-      .SetMethod("getZOrderLevel", &BaseWindow::GetZOrderLevel)
       .SetMethod("center", &BaseWindow::Center)
       .SetMethod("setPosition", &BaseWindow::SetPosition)
       .SetMethod("getPosition", &BaseWindow::GetPosition)
@@ -1273,16 +1267,21 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
                  &BaseWindow::SetVisibleOnAllWorkspaces)
       .SetMethod("isVisibleOnAllWorkspaces",
                  &BaseWindow::IsVisibleOnAllWorkspaces)
-      .SetMethod("setVibrancy", &BaseWindow::SetVibrancy)
-      .SetMethod("_setTouchBarItems", &BaseWindow::SetTouchBar)
-      .SetMethod("_refreshTouchBarItem", &BaseWindow::RefreshTouchBarItem)
-      .SetMethod("_setEscapeTouchBarItem", &BaseWindow::SetEscapeTouchBarItem)
 #if defined(OS_MAC)
+      .SetMethod("getAlwaysOnTopLevel", &BaseWindow::GetAlwaysOnTopLevel)
       .SetMethod("setAutoHideCursor", &BaseWindow::SetAutoHideCursor)
+#endif
+      .SetMethod("setVibrancy", &BaseWindow::SetVibrancy)
+#if defined(OS_MAC)
       .SetMethod("setTrafficLightPosition",
                  &BaseWindow::SetTrafficLightPosition)
       .SetMethod("getTrafficLightPosition",
                  &BaseWindow::GetTrafficLightPosition)
+#endif
+      .SetMethod("_setTouchBarItems", &BaseWindow::SetTouchBar)
+      .SetMethod("_refreshTouchBarItem", &BaseWindow::RefreshTouchBarItem)
+      .SetMethod("_setEscapeTouchBarItem", &BaseWindow::SetEscapeTouchBarItem)
+#if defined(OS_MAC)
       .SetMethod("selectPreviousTab", &BaseWindow::SelectPreviousTab)
       .SetMethod("selectNextTab", &BaseWindow::SelectNextTab)
       .SetMethod("mergeAllWindows", &BaseWindow::MergeAllWindows)
