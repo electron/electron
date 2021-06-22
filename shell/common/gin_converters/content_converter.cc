@@ -303,25 +303,7 @@ bool Converter<content::NativeWebKeyboardEvent>::FromV8(
 v8::Local<v8::Value> Converter<content::NativeWebKeyboardEvent>::ToV8(
     v8::Isolate* isolate,
     const content::NativeWebKeyboardEvent& in) {
-  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
-
-  if (in.GetType() == blink::WebInputEvent::Type::kRawKeyDown)
-    dict.Set("type", "keyDown");
-  else if (in.GetType() == blink::WebInputEvent::Type::kKeyUp)
-    dict.Set("type", "keyUp");
-  dict.Set("key", ui::KeycodeConverter::DomKeyToKeyString(in.dom_key));
-  dict.Set("code", ui::KeycodeConverter::DomCodeToCodeString(
-                       static_cast<ui::DomCode>(in.dom_code)));
-
-  using Modifiers = blink::WebInputEvent::Modifiers;
-  dict.Set("isAutoRepeat", (in.GetModifiers() & Modifiers::kIsAutoRepeat) != 0);
-  dict.Set("isComposing", (in.GetModifiers() & Modifiers::kIsComposing) != 0);
-  dict.Set("shift", (in.GetModifiers() & Modifiers::kShiftKey) != 0);
-  dict.Set("control", (in.GetModifiers() & Modifiers::kControlKey) != 0);
-  dict.Set("alt", (in.GetModifiers() & Modifiers::kAltKey) != 0);
-  dict.Set("meta", (in.GetModifiers() & Modifiers::kMetaKey) != 0);
-
-  return dict.GetHandle();
+  return ConvertToV8(isolate, static_cast<blink::WebKeyboardEvent>(in));
 }
 
 }  // namespace gin
