@@ -52,18 +52,10 @@ const createMenu = function (x: number, y: number, items: ContextMenuItem[]) {
   const isEditMenu = useEditMenuItems(x, y, items);
   ipcRendererInternal.invoke<number>(IPC_MESSAGES.INSPECTOR_CONTEXT_MENU, items, isEditMenu).then(id => {
     if (typeof id === 'number') {
-      if (contextIsolationEnabled) {
-        webFrame.executeJavaScript(`window.DevToolsAPI.contextMenuItemSelected(${JSON.stringify(id)})`);
-      } else {
-        window.DevToolsAPI!.contextMenuItemSelected(id);
-      }
+      webFrame.executeJavaScript(`window.DevToolsAPI.contextMenuItemSelected(${JSON.stringify(id)})`);
     }
 
-    if (contextIsolationEnabled) {
-      webFrame.executeJavaScript('window.DevToolsAPI.contextMenuCleared()');
-    } else {
-      window.DevToolsAPI!.contextMenuCleared();
-    }
+    webFrame.executeJavaScript('window.DevToolsAPI.contextMenuCleared()');
   });
 };
 
