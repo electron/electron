@@ -1,6 +1,7 @@
 import { internalContextBridge } from '@electron/internal/renderer/api/context-bridge';
 import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal';
 import * as ipcRendererUtils from '@electron/internal/renderer/ipc-renderer-internal-utils';
+import { webFrame } from 'electron/renderer';
 import { IPC_MESSAGES } from '../common/ipc-messages';
 
 const { contextIsolationEnabled } = internalContextBridge;
@@ -51,9 +52,18 @@ const createMenu = function (x: number, y: number, items: ContextMenuItem[]) {
   const isEditMenu = useEditMenuItems(x, y, items);
   ipcRendererInternal.invoke<number>(IPC_MESSAGES.INSPECTOR_CONTEXT_MENU, items, isEditMenu).then(id => {
     if (typeof id === 'number') {
-      window.DevToolsAPI!.contextMenuItemSelected(id);
+      if (contextIsolationEnabled) {
+        webFrame.executeJavaScript(`window.DevToolsAPI.contextMenuItemSelected(${JSON.stringify(id)})`);
+      } else {
+        window.DevToolsAPI!.contextMenuItemSelected(id);
+      }
     }
-    window.DevToolsAPI!.contextMenuCleared();
+
+    if (contextIsolationEnabled) {
+      webFrame.executeJavaScript('window.DevToolsAPI.contextMenuCleared()');
+    } else {
+      window.DevToolsAPI!.contextMenuCleared();
+    }
   });
 };
 
