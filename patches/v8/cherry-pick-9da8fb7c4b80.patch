@@ -1,0 +1,137 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Georg Neis <neis@chromium.org>
+Date: Mon, 7 Jun 2021 10:41:38 +0200
+Subject: Squashed multiple commits.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Merged: Disable left-trimming when optimizing compile jobs exist
+Revision: ac0605a1a486b8d074f116cc365de9d2b6d7c9e5
+
+Merged: [heap] Don't assume that optimizing-compile-dispatcher exists
+Revision: 022b312d55e75935cfa99cca7729ae2d3f795bd0
+
+BUG=chromium:1211215,chromium:1215514
+NOTRY=true
+NOPRESUBMIT=true
+NOTREECHECKS=true
+
+(cherry picked from commit 8704c7c0b2f79cbe745f293b30d68f4505da7416)
+
+Change-Id: I3b3a37d64402ea464c8e653517928522a1c5e0da
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2940899
+Reviewed-by: Dominik Inführ <dinfuehr@chromium.org>
+Commit-Queue: Georg Neis <neis@chromium.org>
+Cr-Original-Commit-Position: refs/branch-heads/9.1@{#67}
+Cr-Original-Branched-From: 0e4ac64a8cf298b14034a22f9fe7b085d2cb238d-refs/heads/9.1.269@{#1}
+Cr-Original-Branched-From: f565e72d5ba88daae35a59d0f978643e2343e912-refs/heads/master@{#73847}
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2948657
+Reviewed-by: Artem Sumaneev <asumaneev@google.com>
+Commit-Queue: Victor-Gabriel Savu <vsavu@google.com>
+Cr-Commit-Position: refs/branch-heads/8.6@{#107}
+Cr-Branched-From: a64aed2333abf49e494d2a5ce24bbd14fff19f60-refs/heads/8.6.395@{#1}
+Cr-Branched-From: a626bc036236c9bf92ac7b87dc40c9e538b087e3-refs/heads/master@{#69472}
+
+diff --git a/src/compiler-dispatcher/optimizing-compile-dispatcher.cc b/src/compiler-dispatcher/optimizing-compile-dispatcher.cc
+index 528a9babe33041ff85c82e0ba8afbdb975783af8..b47aa5431ca634f677cd4b2441f75d42b3f0a930 100644
+--- a/src/compiler-dispatcher/optimizing-compile-dispatcher.cc
++++ b/src/compiler-dispatcher/optimizing-compile-dispatcher.cc
+@@ -47,7 +47,6 @@ class OptimizingCompileDispatcher::CompileTask : public CancelableTask {
+         worker_thread_runtime_call_stats_(
+             isolate->counters()->worker_thread_runtime_call_stats()),
+         dispatcher_(dispatcher) {
+-    base::MutexGuard lock_guard(&dispatcher_->ref_count_mutex_);
+     ++dispatcher_->ref_count_;
+   }
+ 
+@@ -95,12 +94,7 @@ class OptimizingCompileDispatcher::CompileTask : public CancelableTask {
+ };
+ 
+ OptimizingCompileDispatcher::~OptimizingCompileDispatcher() {
+-#ifdef DEBUG
+-  {
+-    base::MutexGuard lock_guard(&ref_count_mutex_);
+-    DCHECK_EQ(0, ref_count_);
+-  }
+-#endif
++  DCHECK_EQ(0, ref_count_);
+   DCHECK_EQ(0, input_queue_length_);
+   DeleteArray(input_queue_);
+ }
+@@ -227,6 +221,14 @@ void OptimizingCompileDispatcher::InstallOptimizedFunctions() {
+   }
+ }
+ 
++bool OptimizingCompileDispatcher::HasJobs() {
++  DCHECK_EQ(ThreadId::Current(), isolate_->thread_id());
++  // Note: This relies on {output_queue_} being mutated by a background thread
++  // only when {ref_count_} is not zero. Also, {ref_count_} is never incremented
++  // by a background thread.
++  return !(ref_count_ == 0 && output_queue_.empty());
++}
++
+ void OptimizingCompileDispatcher::QueueForOptimization(
+     OptimizedCompilationJob* job) {
+   DCHECK(IsQueueAvailable());
+diff --git a/src/compiler-dispatcher/optimizing-compile-dispatcher.h b/src/compiler-dispatcher/optimizing-compile-dispatcher.h
+index 51803822d15353af31c446b960c3ee43cc7533fe..390e90b4ab8b7d1680545905ac8ef90c3a9099c9 100644
+--- a/src/compiler-dispatcher/optimizing-compile-dispatcher.h
++++ b/src/compiler-dispatcher/optimizing-compile-dispatcher.h
+@@ -52,6 +52,9 @@ class V8_EXPORT_PRIVATE OptimizingCompileDispatcher {
+ 
+   static bool Enabled() { return FLAG_concurrent_recompilation; }
+ 
++  // This method must be called on the main thread.
++  bool HasJobs();
++
+  private:
+   class CompileTask;
+ 
+@@ -87,7 +90,7 @@ class V8_EXPORT_PRIVATE OptimizingCompileDispatcher {
+ 
+   int blocked_jobs_;
+ 
+-  int ref_count_;
++  std::atomic<int> ref_count_;
+   base::Mutex ref_count_mutex_;
+   base::ConditionVariable ref_count_zero_;
+ 
+diff --git a/src/heap/heap.cc b/src/heap/heap.cc
+index 6755a991df16a9c9d0e9efb2f378e4d68463532c..a017905bfcb0059aa12dbd1bd5a477bcca2dd616 100644
+--- a/src/heap/heap.cc
++++ b/src/heap/heap.cc
+@@ -22,6 +22,7 @@
+ #include "src/codegen/compilation-cache.h"
+ #include "src/common/assert-scope.h"
+ #include "src/common/globals.h"
++#include "src/compiler-dispatcher/optimizing-compile-dispatcher.h"
+ #include "src/debug/debug.h"
+ #include "src/deoptimizer/deoptimizer.h"
+ #include "src/execution/isolate-utils-inl.h"
+@@ -3036,6 +3037,12 @@ bool Heap::CanMoveObjectStart(HeapObject object) {
+ 
+   if (IsLargeObject(object)) return false;
+ 
++  // Compilation jobs may have references to the object.
++  if (isolate()->concurrent_recompilation_enabled() &&
++      isolate()->optimizing_compile_dispatcher()->HasJobs()) {
++    return false;
++  }
++
+   // We can move the object start if the page was already swept.
+   return Page::FromHeapObject(object)->SweepingDone();
+ }
+diff --git a/test/mjsunit/compiler/regress-1215514.js b/test/mjsunit/compiler/regress-1215514.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..a597b310498458fd7219c33ff188ca2a6e543f45
+--- /dev/null
++++ b/test/mjsunit/compiler/regress-1215514.js
+@@ -0,0 +1,7 @@
++// Copyright 2021 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --no-concurrent-recompilation
++
++new Array(4242).shift();
