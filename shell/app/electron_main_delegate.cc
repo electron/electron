@@ -86,14 +86,11 @@ bool SubprocessNeedsResourceBundle(const std::string& process_type) {
       process_type == ::switches::kZygoteProcess ||
 #endif
 #if defined(OS_MAC)
-      // Mac needs them for sandbox profiles.
+      // Mac needs them too for scrollbar related images and for sandbox
+      // profiles.
       process_type == ::switches::kGpuProcess ||
 #endif
-#if defined(OS_MAC) || defined(OS_WIN)
-      // Windows needs ppapi for loading pdf metadata, Mac needs it
-      // scrollbar related images
       process_type == ::switches::kPpapiPluginProcess ||
-#endif
       process_type == ::switches::kRendererProcess ||
       process_type == ::switches::kUtilityProcess;
 }
