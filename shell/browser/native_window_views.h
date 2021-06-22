@@ -93,6 +93,7 @@ class NativeWindowViews : public NativeWindow,
   void SetAlwaysOnTop(ui::ZOrderLevel z_order,
                       const std::string& level,
                       int relativeLevel) override;
+  std::string GetAlwaysOnTopLevel() override;
   ui::ZOrderLevel GetZOrderLevel() override;
   void Center() override;
   void Invalidate() override;
