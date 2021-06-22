@@ -142,7 +142,6 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   bool IsClosable();
   void SetAlwaysOnTop(bool top, gin_helper::Arguments* args);
   bool IsAlwaysOnTop();
-  std::string GetAlwaysOnTopLevel();
   void Center();
   void SetPosition(int x, int y, gin_helper::Arguments* args);
   std::vector<int> GetPosition();
@@ -195,6 +194,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   virtual void SetVibrancy(v8::Isolate* isolate, v8::Local<v8::Value> value);
 
 #if defined(OS_MAC)
+  std::string GetAlwaysOnTopLevel();
   void SetWindowButtonVisibility(bool visible);
   bool GetWindowButtonVisibility() const;
   void SetTrafficLightPosition(const gfx::Point& position);
