@@ -441,14 +441,6 @@ void WebContentsPreferences::OverrideWebkitPrefs(
   if (GetAsString(&preference_, "defaultEncoding", &encoding))
     prefs->default_encoding = encoding;
 
-  // --background-color.
-  std::string color;
-  if (GetAsString(&preference_, options::kBackgroundColor, &color)) {
-    prefs->background_color = color;
-  } else if (!IsEnabled(options::kOffscreen)) {
-    prefs->background_color = "#fff";
-  }
-
   // Pass the opener's window id.
   int opener_id;
   if (GetAsInteger(&preference_, options::kOpenerID, &opener_id))
