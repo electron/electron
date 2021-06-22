@@ -1,16 +1,31 @@
+import { internalContextBridge } from '@electron/internal/renderer/api/context-bridge';
 import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal';
 import * as ipcRendererUtils from '@electron/internal/renderer/ipc-renderer-internal-utils';
 import { IPC_MESSAGES } from '../common/ipc-messages';
 
+const { contextIsolationEnabled } = internalContextBridge;
+
+/* Corrects for some Inspector adaptations needed in Electron.
+* 1) Use menu API to show context menu.
+* 2) Correct for Chromium returning undefined for filesystem.
+* 3) Use dialog API to override file chooser dialog.
+*/
 window.onload = function () {
-  // Use menu API to show context menu.
-  window.InspectorFrontendHost!.showContextMenuAtPoint = createMenu;
-
-  // correct for Chromium returning undefined for filesystem
-  window.Persistence!.FileSystemWorkspaceBinding.completeURL = completeURL;
-
-  // Use dialog API to override file chooser dialog.
-  window.UI!.createFileSelectorElement = createFileSelectorElement;
+  if (contextIsolationEnabled) {
+    internalContextBridge.overrideGlobalValueFromIsolatedWorld([
+      'InspectorFrontendHost', 'showContextMenuAtPoint'
+    ], createMenu);
+    internalContextBridge.overrideGlobalValueFromIsolatedWorld([
+      'Persistence', 'FileSystemWorkspaceBinding', 'completeURL'
+    ], completeURL);
+    internalContextBridge.overrideGlobalValueFromIsolatedWorld([
+      'UI', 'createFileSelectorElement'
+    ], createFileSelectorElement);
+  } else {
+    window.InspectorFrontendHost!.showContextMenuAtPoint = createMenu;
+    window.Persistence!.FileSystemWorkspaceBinding.completeURL = completeURL;
+    window.UI!.createFileSelectorElement = createFileSelectorElement;
+  }
 };
 
 // Extra / is needed as a result of MacOS requiring absolute paths
