@@ -1,7 +1,7 @@
-From 50de6a8ddad9461068770783b4b9e626ae6e5b6a Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Kim-Anh Tran <kimanh@chromium.org>
-Date: Thu, 06 May 2021 10:02:01 +0200
-Subject: [PATCH] M90-LTS: [debugger] Return ServerError if debugger agent is disabled
+Date: Thu, 6 May 2021 10:02:01 +0200
+Subject: M90-LTS: [debugger] Return ServerError if debugger agent is disabled
 
 This returns a server error on setting breakpoints if the
 agent is disabled.
@@ -26,13 +26,12 @@ Commit-Queue: Artem Sumaneev <asumaneev@google.com>
 Cr-Commit-Position: refs/branch-heads/9.0@{#59}
 Cr-Branched-From: bd0108b4c88e0d6f2350cb79b5f363fbd02f3eb7-refs/heads/9.0.257@{#1}
 Cr-Branched-From: 349bcc6a075411f1a7ce2d866c3dfeefc2efa39d-refs/heads/master@{#73001}
----
 
 diff --git a/src/inspector/v8-debugger-agent-impl.cc b/src/inspector/v8-debugger-agent-impl.cc
-index 4e0b839..1ea1c6f 100644
+index 4e0b83952e25d01d8d69cc3c51606a7f48c5f6ee..1ea1c6fab3fd5cbe92d4724f938c569605c1cf44 100644
 --- a/src/inspector/v8-debugger-agent-impl.cc
 +++ b/src/inspector/v8-debugger-agent-impl.cc
-@@ -499,6 +499,8 @@
+@@ -499,6 +499,8 @@ Response V8DebuggerAgentImpl::setBreakpointByUrl(
      Maybe<int> optionalColumnNumber, Maybe<String16> optionalCondition,
      String16* outBreakpointId,
      std::unique_ptr<protocol::Array<protocol::Debugger::Location>>* locations) {
@@ -41,7 +40,7 @@ index 4e0b839..1ea1c6f 100644
    *locations = std::make_unique<Array<protocol::Debugger::Location>>();
  
    int specified = (optionalURL.isJust() ? 1 : 0) +
-@@ -587,6 +589,8 @@
+@@ -587,6 +589,8 @@ Response V8DebuggerAgentImpl::setBreakpoint(
    String16 breakpointId = generateBreakpointId(
        BreakpointType::kByScriptId, location->getScriptId(),
        location->getLineNumber(), location->getColumnNumber(0));
@@ -50,7 +49,7 @@ index 4e0b839..1ea1c6f 100644
    if (m_breakpointIdToDebuggerBreakpointIds.find(breakpointId) !=
        m_breakpointIdToDebuggerBreakpointIds.end()) {
      return Response::ServerError(
-@@ -605,6 +609,8 @@
+@@ -605,6 +609,8 @@ Response V8DebuggerAgentImpl::setBreakpoint(
  Response V8DebuggerAgentImpl::setBreakpointOnFunctionCall(
      const String16& functionObjectId, Maybe<String16> optionalCondition,
      String16* outBreakpointId) {
@@ -60,7 +59,7 @@ index 4e0b839..1ea1c6f 100644
    Response response = scope.initialize();
    if (!response.IsSuccess()) return response;
 diff --git a/test/inspector/debugger/set-breakpoint-before-enabling-expected.txt b/test/inspector/debugger/set-breakpoint-before-enabling-expected.txt
-index 02bfe0d..a85aab6 100644
+index 02bfe0d80cdecd96d37988d9d6850b49c5d7e39d..a85aab6fe0c71f3346fe79694d1a334e2cb12fb2 100644
 --- a/test/inspector/debugger/set-breakpoint-before-enabling-expected.txt
 +++ b/test/inspector/debugger/set-breakpoint-before-enabling-expected.txt
 @@ -1,7 +1,13 @@
@@ -82,10 +81,10 @@ index 02bfe0d..a85aab6 100644
 +  "message": "Debugger agent is not enabled"
  }
 diff --git a/test/inspector/debugger/set-breakpoint-before-enabling.js b/test/inspector/debugger/set-breakpoint-before-enabling.js
-index 5af1085..4401466 100644
+index 5af1085c8747089dea15550949130b8ea243b524..4401466a921692bbe94b52e60083d92769407ee3 100644
 --- a/test/inspector/debugger/set-breakpoint-before-enabling.js
 +++ b/test/inspector/debugger/set-breakpoint-before-enabling.js
-@@ -10,12 +10,19 @@
+@@ -10,12 +10,19 @@ function didSetBreakpointByUrlBeforeEnable(message)
  {
    InspectorTest.log("setBreakpointByUrl error: " + JSON.stringify(
        InspectorTest.trimErrorMessage(message).error, null, 2));
