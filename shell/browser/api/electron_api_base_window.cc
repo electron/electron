@@ -552,6 +552,14 @@ bool BaseWindow::IsAlwaysOnTop() {
   return window_->GetZOrderLevel() != ui::ZOrderLevel::kNormal;
 }
 
+std::string BaseWindow::GetAlwaysOnTopLevel() {
+  return window_->GetAlwaysOnTopLevel();
+}
+
+int BaseWindow::GetZOrderLevel() {
+  return static_cast<int>(window_->GetZOrderLevel());
+}
+
 void BaseWindow::Center() {
   window_->Center();
 }
@@ -1219,6 +1227,8 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isClosable", &BaseWindow::IsClosable)
       .SetMethod("setAlwaysOnTop", &BaseWindow::SetAlwaysOnTop)
       .SetMethod("isAlwaysOnTop", &BaseWindow::IsAlwaysOnTop)
+      .SetMethod("getAlwaysOnTopLevel", &BaseWindow::GetAlwaysOnTopLevel)
+      .SetMethod("getZOrderLevel", &BaseWindow::GetZOrderLevel)
       .SetMethod("center", &BaseWindow::Center)
       .SetMethod("setPosition", &BaseWindow::SetPosition)
       .SetMethod("getPosition", &BaseWindow::GetPosition)
@@ -1263,20 +1273,16 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
                  &BaseWindow::SetVisibleOnAllWorkspaces)
       .SetMethod("isVisibleOnAllWorkspaces",
                  &BaseWindow::IsVisibleOnAllWorkspaces)
-#if defined(OS_MAC)
-      .SetMethod("setAutoHideCursor", &BaseWindow::SetAutoHideCursor)
-#endif
       .SetMethod("setVibrancy", &BaseWindow::SetVibrancy)
-#if defined(OS_MAC)
-      .SetMethod("setTrafficLightPosition",
-                 &BaseWindow::SetTrafficLightPosition)
-      .SetMethod("getTrafficLightPosition",
-                 &BaseWindow::GetTrafficLightPosition)
-#endif
       .SetMethod("_setTouchBarItems", &BaseWindow::SetTouchBar)
       .SetMethod("_refreshTouchBarItem", &BaseWindow::RefreshTouchBarItem)
       .SetMethod("_setEscapeTouchBarItem", &BaseWindow::SetEscapeTouchBarItem)
 #if defined(OS_MAC)
+      .SetMethod("setAutoHideCursor", &BaseWindow::SetAutoHideCursor)
+      .SetMethod("setTrafficLightPosition",
+                 &BaseWindow::SetTrafficLightPosition)
+      .SetMethod("getTrafficLightPosition",
+                 &BaseWindow::GetTrafficLightPosition)
       .SetMethod("selectPreviousTab", &BaseWindow::SelectPreviousTab)
       .SetMethod("selectNextTab", &BaseWindow::SelectNextTab)
       .SetMethod("mergeAllWindows", &BaseWindow::MergeAllWindows)
