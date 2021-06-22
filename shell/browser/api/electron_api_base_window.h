@@ -143,7 +143,6 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void SetAlwaysOnTop(bool top, gin_helper::Arguments* args);
   bool IsAlwaysOnTop();
   std::string GetAlwaysOnTopLevel();
-  int GetZOrderLevel();
   void Center();
   void SetPosition(int x, int y, gin_helper::Arguments* args);
   std::vector<int> GetPosition();
