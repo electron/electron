@@ -88,9 +88,9 @@ bool SubprocessNeedsResourceBundle(const std::string& process_type) {
 #if defined(OS_MAC)
       // Mac needs them too for scrollbar related images and for sandbox
       // profiles.
-      process_type == ::switches::kPpapiPluginProcess ||
       process_type == ::switches::kGpuProcess ||
 #endif
+      process_type == ::switches::kPpapiPluginProcess ||
       process_type == ::switches::kRendererProcess ||
       process_type == ::switches::kUtilityProcess;
 }
