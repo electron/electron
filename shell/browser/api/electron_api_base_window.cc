@@ -552,10 +552,6 @@ bool BaseWindow::IsAlwaysOnTop() {
   return window_->GetZOrderLevel() != ui::ZOrderLevel::kNormal;
 }
 
-std::string BaseWindow::GetAlwaysOnTopLevel() {
-  return window_->GetAlwaysOnTopLevel();
-}
-
 void BaseWindow::Center() {
   window_->Center();
 }
@@ -879,6 +875,10 @@ void BaseWindow::SetVibrancy(v8::Isolate* isolate, v8::Local<v8::Value> value) {
 }
 
 #if defined(OS_MAC)
+std::string BaseWindow::GetAlwaysOnTopLevel() {
+  return window_->GetAlwaysOnTopLevel();
+}
+
 void BaseWindow::SetWindowButtonVisibility(bool visible) {
   window_->SetWindowButtonVisibility(visible);
 }
@@ -1268,7 +1268,7 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isVisibleOnAllWorkspaces",
                  &BaseWindow::IsVisibleOnAllWorkspaces)
 #if defined(OS_MAC)
-      .SetMethod("getAlwaysOnTopLevel", &BaseWindow::GetAlwaysOnTopLevel)
+      .SetMethod("_getAlwaysOnTopLevel", &BaseWindow::GetAlwaysOnTopLevel)
       .SetMethod("setAutoHideCursor", &BaseWindow::SetAutoHideCursor)
 #endif
       .SetMethod("setVibrancy", &BaseWindow::SetVibrancy)
