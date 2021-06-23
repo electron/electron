@@ -942,6 +942,10 @@ WebContents::~WebContents() {
   // InspectableWebContents will be automatically destroyed.
 }
 
+void WebContents::Close() {
+  LOG(INFO) << "WebContents::Close()";
+}
+
 void WebContents::Destroy() {
   // The content::WebContents should be destroyed asyncronously when possible
   // as user may choose to destroy WebContents during an event of it.
@@ -3603,6 +3607,7 @@ v8::Local<v8::ObjectTemplate> WebContents::FillObjectTemplate(
   // gin::ObjectTemplateBuilder here to handle the fact that WebContents is
   // destroyable.
   return gin_helper::ObjectTemplateBuilder(isolate, templ)
+      .SetMethod("close", &WebContents::Close)
       .SetMethod("destroy", &WebContents::Destroy)
       .SetMethod("getBackgroundThrottling",
                  &WebContents::GetBackgroundThrottling)

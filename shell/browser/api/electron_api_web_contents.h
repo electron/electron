@@ -146,6 +146,7 @@ class WebContents : public gin::Wrappable<WebContents>,
       v8::Local<v8::ObjectTemplate>);
   const char* GetTypeName() override;
 
+  void Close();
   void Destroy();
   base::WeakPtr<WebContents> GetWeakPtr() { return weak_factory_.GetWeakPtr(); }
 
