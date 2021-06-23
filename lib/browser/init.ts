@@ -129,7 +129,7 @@ if (packageJson.v8Flags != null) {
   require('v8').setFlagsFromString(packageJson.v8Flags);
 }
 
-app._setDefaultAppPaths(packagePath);
+app.setAppPath(packagePath);
 
 // Load the chrome devtools support.
 require('@electron/internal/browser/devtools');

@@ -172,7 +172,7 @@ void Start(const std::string& submit_url,
   for (const auto& pair : extra)
     electron::crash_keys::SetCrashKey(pair.first, pair.second);
   base::FilePath user_data_dir;
-  base::PathService::Get(DIR_USER_DATA, &user_data_dir);
+  base::PathService::Get(chrome::DIR_USER_DATA, &user_data_dir);
   ::crash_reporter::InitializeCrashpadWithEmbeddedHandler(
       process_type.empty(), process_type,
       base::WideToUTF8(user_data_dir.value()), base::FilePath());
