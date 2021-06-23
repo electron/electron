@@ -1384,29 +1384,6 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
     return;
   }
 
-  if (vibrantView == nil) {
-    vibrantView = [[[NSVisualEffectView alloc]
-        initWithFrame:[[window_ contentView] bounds]] autorelease];
-    [window_ setVibrantView:vibrantView];
-
-    [vibrantView setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
-    [vibrantView setBlendingMode:NSVisualEffectBlendingModeBehindWindow];
-
-    if (visual_effect_state_ == VisualEffectState::kActive) {
-      [vibrantView setState:NSVisualEffectStateActive];
-    } else if (visual_effect_state_ == VisualEffectState::kInactive) {
-      [vibrantView setState:NSVisualEffectStateInactive];
-    } else {
-      [vibrantView setState:NSVisualEffectStateFollowsWindowActiveState];
-    }
-
-    [[window_ contentView] addSubview:vibrantView
-                           positioned:NSWindowBelow
-                           relativeTo:nil];
-
-    UpdateVibrancyRadii(IsFullscreen());
-  }
-
   std::string dep_warn = " has been deprecated and removed as of macOS 10.15.";
   node::Environment* env =
       node::Environment::GetCurrent(JavascriptEnvironment::GetIsolate());
@@ -1470,6 +1447,31 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
 
   if (vibrancyType) {
     vibrancy_type_ = type;
+
+    if (vibrantView == nil) {
+      vibrantView = [[[NSVisualEffectView alloc]
+          initWithFrame:[[window_ contentView] bounds]] autorelease];
+      [window_ setVibrantView:vibrantView];
+
+      [vibrantView
+          setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+      [vibrantView setBlendingMode:NSVisualEffectBlendingModeBehindWindow];
+
+      if (visual_effect_state_ == VisualEffectState::kActive) {
+        [vibrantView setState:NSVisualEffectStateActive];
+      } else if (visual_effect_state_ == VisualEffectState::kInactive) {
+        [vibrantView setState:NSVisualEffectStateInactive];
+      } else {
+        [vibrantView setState:NSVisualEffectStateFollowsWindowActiveState];
+      }
+
+      [[window_ contentView] addSubview:vibrantView
+                             positioned:NSWindowBelow
+                             relativeTo:nil];
+
+      UpdateVibrancyRadii(IsFullscreen());
+    }
+
     [vibrantView setMaterial:vibrancyType];
   }
 }
