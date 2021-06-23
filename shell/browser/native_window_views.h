@@ -183,7 +183,6 @@ class NativeWindowViews : public NativeWindow,
   void OnWidgetDestroyed(views::Widget* widget) override;
 
   // views::WidgetDelegate:
-  void DeleteDelegate() override;
   views::View* GetInitiallyFocusedView() override;
   bool CanMaximize() const override;
   bool CanMinimize() const override;
