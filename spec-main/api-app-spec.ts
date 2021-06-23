@@ -322,6 +322,24 @@ describe('app module', () => {
       w.loadURL(secureUrl);
       await emittedOnce(app, 'certificate-error');
     });
+
+    describe('when denied', () => {
+      before(() => {
+        app.on('certificate-error', (event, webContents, url, error, certificate, callback) => {
+          callback(false);
+        });
+      });
+
+      after(() => {
+        app.removeAllListeners('certificate-error');
+      });
+
+      it('causes did-fail-load', async () => {
+        const w = new BrowserWindow({ show: false });
+        w.loadURL(secureUrl);
+        await emittedOnce(w.webContents, 'did-fail-load');
+      });
+    });
   });
 
   // xdescribe('app.importCertificate', () => {

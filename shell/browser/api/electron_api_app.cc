@@ -412,7 +412,7 @@ struct Converter<content::CertificateRequestResultType> {
     if (!ConvertFromV8(isolate, val, &b))
       return false;
     *out = b ? content::CERTIFICATE_REQUEST_RESULT_TYPE_CONTINUE
-             : content::CERTIFICATE_REQUEST_RESULT_TYPE_CANCEL;
+             : content::CERTIFICATE_REQUEST_RESULT_TYPE_DENY;
     return true;
   }
 };
