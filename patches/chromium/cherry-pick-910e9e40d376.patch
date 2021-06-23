@@ -1,0 +1,204 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Matt Menke <mmenke@chromium.org>
+Date: Thu, 10 Jun 2021 07:05:07 +0000
+Subject: Fix URLLoader cleanup on CorsURLLoaderFactory destruction.
+
+Destroying one URLLoader can result in other URLLoaders getting errors,
+due to to cache interconnectedness. CorsURLLoaderFactory's destructor
+was not taking that into account.
+
+Also fix a bonus bug:  HttpCache::Transaction::response_ wasn't being
+cleared in HttpCache::Transaction::DoHeadersPhaseCannotProceed(), which
+could result in DCHECKs when calling GetResponseInfo() when a
+transaction that was waiting on a cached response from another
+transaction ended up failing.
+
+[M90]: Fixed trivial conflict
+
+(cherry picked from commit 2f49a3c69a2184c95f43a395e4f33a3959cb8dbc)
+
+(cherry picked from commit baf23e3c5b1394982cff718a0e055d4f239245ad)
+
+Bug: 1209769
+Change-Id: I2c18caa488767a29011aca1e1b0bace24c1ba8fc
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2922826
+Reviewed-by: Maksim Orlovich <morlovich@chromium.org>
+Commit-Queue: Matt Menke <mmenke@chromium.org>
+Cr-Original-Original-Commit-Position: refs/heads/master@{#887522}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2935241
+Auto-Submit: Matt Menke <mmenke@chromium.org>
+Cr-Original-Commit-Position: refs/branch-heads/4472@{#1433}
+Cr-Original-Branched-From: 3d60439cfb36485e76a1c5bb7f513d3721b20da1-refs/heads/master@{#870763}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2948654
+Owners-Override: Victor-Gabriel Savu <vsavu@google.com>
+Reviewed-by: Artem Sumaneev <asumaneev@google.com>
+Reviewed-by: Matt Menke <mmenke@chromium.org>
+Commit-Queue: Victor-Gabriel Savu <vsavu@google.com>
+Cr-Commit-Position: refs/branch-heads/4430@{#1513}
+Cr-Branched-From: e5ce7dc4f7518237b3d9bb93cccca35d25216cbe-refs/heads/master@{#857950}
+
+diff --git a/net/http/http_cache_transaction.cc b/net/http/http_cache_transaction.cc
+index 663677c5865f6fee039fcd49a0adcd86a94b03ba..610d65e11b6b268d323247927bf2db3869906c90 100644
+--- a/net/http/http_cache_transaction.cc
++++ b/net/http/http_cache_transaction.cc
+@@ -2101,6 +2101,8 @@ int HttpCache::Transaction::DoHeadersPhaseCannotProceed(int result) {
+   entry_ = nullptr;
+   new_entry_ = nullptr;
+ 
++  SetResponse(HttpResponseInfo());
++
+   // Bypass the cache for timeout scenario.
+   if (result == ERR_CACHE_LOCK_TIMEOUT)
+     effective_load_flags_ |= LOAD_DISABLE_CACHE;
+diff --git a/services/network/cors/cors_url_loader_factory.cc b/services/network/cors/cors_url_loader_factory.cc
+index 93328dbcc3f219a92b3ebcc5c0a3b6af37ebd4a1..60f73825b80ef4c27cf5926e33c351d505389631 100644
+--- a/services/network/cors/cors_url_loader_factory.cc
++++ b/services/network/cors/cors_url_loader_factory.cc
+@@ -229,7 +229,17 @@ CorsURLLoaderFactory::CorsURLLoaderFactory(
+       &CorsURLLoaderFactory::DeleteIfNeeded, base::Unretained(this)));
+ }
+ 
+-CorsURLLoaderFactory::~CorsURLLoaderFactory() = default;
++CorsURLLoaderFactory::~CorsURLLoaderFactory() {
++  // Delete loaders one at a time, since deleting one loader can cause another
++  // loader waiting on it to fail synchronously, which could result in the other
++  // loader calling DestroyURLLoader().
++  while (!loaders_.empty()) {
++    // No need to call context_->LoaderDestroyed(), since this method is only
++    // called from the NetworkContext's destructor, or when there are no
++    // remaining URLLoaders.
++    loaders_.erase(loaders_.begin());
++  }
++}
+ 
+ void CorsURLLoaderFactory::OnLoaderCreated(
+     std::unique_ptr<mojom::URLLoader> loader) {
+diff --git a/services/network/cors/cors_url_loader_factory_unittest.cc b/services/network/cors/cors_url_loader_factory_unittest.cc
+index 994d6f091e663a2b12d9002fa12526790fdc14e9..292d77116ceef94633e693009ce1b165c8b0af38 100644
+--- a/services/network/cors/cors_url_loader_factory_unittest.cc
++++ b/services/network/cors/cors_url_loader_factory_unittest.cc
+@@ -8,7 +8,9 @@
+ #include "base/test/scoped_feature_list.h"
+ #include "base/test/task_environment.h"
+ #include "mojo/public/cpp/bindings/remote.h"
++#include "net/base/load_flags.h"
+ #include "net/proxy_resolution/configured_proxy_resolution_service.h"
++#include "net/test/embedded_test_server/embedded_test_server.h"
+ #include "net/traffic_annotation/network_traffic_annotation_test_helper.h"
+ #include "net/url_request/url_request_context.h"
+ #include "net/url_request/url_request_context_builder.h"
+@@ -50,6 +52,9 @@ class CorsURLLoaderFactoryTest : public testing::Test {
+  protected:
+   // testing::Test implementation.
+   void SetUp() override {
++    test_server_.AddDefaultHandlers();
++    ASSERT_TRUE(test_server_.Start());
++
+     network_service_ = NetworkService::CreateForTesting();
+ 
+     auto context_params = mojom::NetworkContextParams::New();
+@@ -69,7 +74,7 @@ class CorsURLLoaderFactoryTest : public testing::Test {
+     auto factory_params = network::mojom::URLLoaderFactoryParams::New();
+     factory_params->process_id = kProcessId;
+     factory_params->request_initiator_origin_lock =
+-        url::Origin::Create(GURL("http://localhost"));
++        url::Origin::Create(test_server_.base_url());
+     auto resource_scheduler_client =
+         base::MakeRefCounted<ResourceSchedulerClient>(
+             kProcessId, kRouteId, &resource_scheduler_,
+@@ -82,15 +87,25 @@ class CorsURLLoaderFactoryTest : public testing::Test {
+   }
+ 
+   void CreateLoaderAndStart(const ResourceRequest& request) {
++    url_loaders_.emplace_back(mojo::Remote<mojom::URLLoader>());
++    test_cors_loader_clients_.emplace_back(
++        std::make_unique<TestURLLoaderClient>());
+     cors_url_loader_factory_->CreateLoaderAndStart(
+-        url_loader_.BindNewPipeAndPassReceiver(), kRouteId, kRequestId,
++        url_loaders_.back().BindNewPipeAndPassReceiver(), kRouteId, kRequestId,
+         mojom::kURLLoadOptionNone, request,
+-        test_cors_loader_client_.CreateRemote(),
++        test_cors_loader_clients_.back()->CreateRemote(),
+         net::MutableNetworkTrafficAnnotationTag(TRAFFIC_ANNOTATION_FOR_TESTS));
+   }
+ 
+   void ResetFactory() { cors_url_loader_factory_.reset(); }
+ 
++  net::test_server::EmbeddedTestServer* test_server() { return &test_server_; }
++
++  std::vector<std::unique_ptr<TestURLLoaderClient>>&
++  test_cors_loader_clients() {
++    return test_cors_loader_clients_;
++  }
++
+  private:
+   // Test environment.
+   base::test::TaskEnvironment task_environment_;
+@@ -100,15 +115,17 @@ class CorsURLLoaderFactoryTest : public testing::Test {
+   std::unique_ptr<NetworkContext> network_context_;
+   mojo::Remote<mojom::NetworkContext> network_context_remote_;
+ 
++  net::test_server::EmbeddedTestServer test_server_;
++
+   // CorsURLLoaderFactory instance under tests.
+   std::unique_ptr<mojom::URLLoaderFactory> cors_url_loader_factory_;
+   mojo::Remote<mojom::URLLoaderFactory> cors_url_loader_factory_remote_;
+ 
+-  // Holds URLLoader that CreateLoaderAndStart() creates.
+-  mojo::Remote<mojom::URLLoader> url_loader_;
++  // Holds the URLLoaders that CreateLoaderAndStart() creates.
++  std::vector<mojo::Remote<mojom::URLLoader>> url_loaders_;
+ 
+-  // TestURLLoaderClient that records callback activities.
+-  TestURLLoaderClient test_cors_loader_client_;
++  // TestURLLoaderClients that record callback activities.
++  std::vector<std::unique_ptr<TestURLLoaderClient>> test_cors_loader_clients_;
+ 
+   // Holds for allowed origin access lists.
+   OriginAccessList origin_access_list_;
+@@ -119,7 +136,7 @@ class CorsURLLoaderFactoryTest : public testing::Test {
+ // Regression test for https://crbug.com/906305.
+ TEST_F(CorsURLLoaderFactoryTest, DestructionOrder) {
+   ResourceRequest request;
+-  GURL url("http://localhost");
++  GURL url = test_server()->GetURL("/hung");
+   request.mode = mojom::RequestMode::kNoCors;
+   request.credentials_mode = mojom::CredentialsMode::kOmit;
+   request.method = net::HttpRequestHeaders::kGetMethod;
+@@ -142,5 +159,36 @@ TEST_F(CorsURLLoaderFactoryTest, DestructionOrder) {
+   ResetFactory();
+ }
+ 
++TEST_F(CorsURLLoaderFactoryTest, CleanupWithSharedCacheObjectInUse) {
++  // Create a loader for a response that hangs after receiving headers, and run
++  // it until headers are received.
++  ResourceRequest request;
++  GURL url = test_server()->GetURL("/hung-after-headers");
++  request.mode = mojom::RequestMode::kNoCors;
++  request.credentials_mode = mojom::CredentialsMode::kOmit;
++  request.method = net::HttpRequestHeaders::kGetMethod;
++  request.url = url;
++  request.request_initiator = url::Origin::Create(url);
++  CreateLoaderAndStart(request);
++  test_cors_loader_clients().back()->RunUntilResponseReceived();
++
++  // Read only requests will fail synchonously on destruction of the request
++  // they're waiting on if they're in the |done_headers_queue| when the other
++  // request fails. Make a large number of such requests, spin the message loop
++  // so they end up blocked on the hung request, and then destroy all loads. A
++  // large number of loaders is needed because they're stored in a set, indexed
++  // by address, so teardown order is random.
++  request.load_flags =
++      net::LOAD_ONLY_FROM_CACHE | net::LOAD_SKIP_CACHE_VALIDATION;
++  for (int i = 0; i < 10; ++i)
++    CreateLoaderAndStart(request);
++  base::RunLoop().RunUntilIdle();
++
++  // This should result in a crash if tearing down one URLLoaderFactory
++  // resulting in a another one failing causes a crash during teardown. See
++  // https://crbug.com/1209769.
++  ResetFactory();
++}
++
+ }  // namespace cors
+ }  // namespace network
