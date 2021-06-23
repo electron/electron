@@ -12,6 +12,18 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
+## Planned Breaking API Changes (15.0)
+
+### Default Changed: `nativeWindowOpen` defaults to `true`
+
+Prior to Electron 15, `window.open` was by default shimmed to use
+`BrowserWindowProxy`. This meant that `window.open('about:blank')` did not work
+to open synchronously scriptable child windows, among other incompatibilities.
+`nativeWindowOpen: true` is no longer experimental, and is now the default.
+
+See the documentation for [window.open in Electron](api/window-open.md)
+for more details.
+
 ## Planned Breaking API Changes (14.0)
 
 ### Removed: `app.allowRendererProcessReuse`

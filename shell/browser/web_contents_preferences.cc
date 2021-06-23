@@ -141,6 +141,15 @@ WebContentsPreferences::WebContentsPreferences(
   SetDefaultBoolIfUndefined(options::kDisableHtmlFullscreenWindowResize, false);
   SetDefaultBoolIfUndefined(options::kWebviewTag, false);
   SetDefaultBoolIfUndefined(options::kSandbox, false);
+  if (IsUndefined(options::kNativeWindowOpen)) {
+    node::Environment* env = node::Environment::GetCurrent(isolate);
+    EmitWarning(env,
+                "The default of nativeWindowOpen is deprecated and will be "
+                "changing from false to true in Electron 15.  "
+                "See https://github.com/electron/electron/issues/28511 for "
+                "more information.",
+                "electron");
+  }
   SetDefaultBoolIfUndefined(options::kNativeWindowOpen, false);
   SetDefaultBoolIfUndefined(options::kContextIsolation, true);
   SetDefaultBoolIfUndefined(options::kJavaScript, true);
