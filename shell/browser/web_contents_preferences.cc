@@ -141,7 +141,7 @@ WebContentsPreferences::WebContentsPreferences(
   SetDefaultBoolIfUndefined(options::kDisableHtmlFullscreenWindowResize, false);
   SetDefaultBoolIfUndefined(options::kWebviewTag, false);
   SetDefaultBoolIfUndefined(options::kSandbox, false);
-  SetDefaultBoolIfUndefined(options::kNativeWindowOpen, true);
+  SetDefaultBoolIfUndefined(options::kNativeWindowOpen, false);
   SetDefaultBoolIfUndefined(options::kContextIsolation, true);
   SetDefaultBoolIfUndefined(options::kJavaScript, true);
   SetDefaultBoolIfUndefined(options::kImages, true);
@@ -467,7 +467,7 @@ void WebContentsPreferences::OverrideWebkitPrefs(
   GetPreloadPath(&prefs->preload);
 
   // Check if nativeWindowOpen is enabled.
-  prefs->native_window_open = IsEnabled(options::kNativeWindowOpen, true);
+  prefs->native_window_open = IsEnabled(options::kNativeWindowOpen);
 
   // Check if we have node integration specified.
   prefs->node_integration = IsEnabled(options::kNodeIntegration);
