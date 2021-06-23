@@ -875,6 +875,31 @@ void NativeWindowMac::SetAlwaysOnTop(ui::ZOrderLevel z_order,
   SetWindowLevel(level + relative_level);
 }
 
+std::string NativeWindowMac::GetAlwaysOnTopLevel() {
+  std::string level_name = "normal";
+
+  int level = [window_ level];
+  if (level == NSFloatingWindowLevel) {
+    level_name = "floating";
+  } else if (level == NSTornOffMenuWindowLevel) {
+    level_name = "torn-off-menu";
+  } else if (level == NSModalPanelWindowLevel) {
+    level_name = "modal-panel";
+  } else if (level == NSMainMenuWindowLevel) {
+    level_name = "main-menu";
+  } else if (level == NSStatusWindowLevel) {
+    level_name = "status";
+  } else if (level == NSPopUpMenuWindowLevel) {
+    level_name = "pop-up-menu";
+  } else if (level == NSScreenSaverWindowLevel) {
+    level_name = "screen-saver";
+  } else if (level == NSDockWindowLevel) {
+    level_name = "dock";
+  }
+
+  return level_name;
+}
+
 void NativeWindowMac::SetWindowLevel(int unbounded_level) {
   int level = std::min(
       std::max(unbounded_level, CGWindowLevelForKey(kCGMinimumWindowLevelKey)),
@@ -1803,10 +1828,15 @@ void NativeWindowMac::InternalSetParentWindow(NativeWindow* parent,
 
   // Set new parent window.
   // Note that this method will force the window to become visible.
-  if (parent && attach)
+  if (parent && attach) {
+    // Attaching a window as a child window resets its window level, so
+    // save and restore it afterwards.
+    NSInteger level = window_.level;
     [parent->GetNativeWindow().GetNativeNSWindow()
         addChildWindow:window_
                ordered:NSWindowAbove];
+    [window_ setLevel:level];
+  }
 }
 
 void NativeWindowMac::SetForwardMouseMessages(bool forward) {
