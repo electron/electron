@@ -149,7 +149,7 @@ export.config = {
 
 ### Run Your Test
 
-To run your tests, just call:
+To run your tests:
 
 ```sh
 $ npx wdio run wdio.conf.js
