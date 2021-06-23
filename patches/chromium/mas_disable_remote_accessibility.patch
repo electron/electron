@@ -87,7 +87,7 @@ index c3a9fbf0f9d2b80c1de42a22ad094a286f0b559b..02493d4b62c98a3aebd3e460c459218a
    DISALLOW_COPY_AND_ASSIGN(RenderWidgetHostNSViewBridgeOwner);
  };
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.h b/content/browser/renderer_host/render_widget_host_view_mac.h
-index 3116e9098aad4fab8d1f8d2bb74b2437548b3566..1bb3ed4c7ec4f03c2512c6321c016face0b45361 100644
+index ffa437e300635290525658642cc83882fd08231a..7616391e80408ce11817c078c0ad280ecda4b4e7 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.h
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.h
 @@ -47,7 +47,9 @@ class ScopedPasswordInputEnabler;
@@ -114,7 +114,7 @@ index 3116e9098aad4fab8d1f8d2bb74b2437548b3566..1bb3ed4c7ec4f03c2512c6321c016fac
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 9ac29edf10f8ffd2e1e4db549a7977d8f26e8c22..4f4e4c0af566570e276090558c8427531a370ff5 100644
+index 9582f6c48320560362903787f7f086c5c3d274e7..e4dd3f09ffb460c6c28b74d4fb13c461f4553f5c 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -240,8 +240,10 @@
@@ -167,7 +167,7 @@ index 9ac29edf10f8ffd2e1e4db549a7977d8f26e8c22..4f4e4c0af566570e276090558c842753
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index a6b721245a5b141b7ee3170b92335a5f89eaebb6..8a370c537f62ee2246f0d64ee1f1f1613e76bf29 100644
+index 9155fa3d991649b6883f378d9fe3833b366ce7ec..6411e43a265dfa7c563ac6c26a0896d8a8e646f2 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -320,6 +320,13 @@ component("base") {

@@ -38,6 +38,13 @@ int FramelessView::ResizingBorderHitTest(const gfx::Point& point) {
   bool can_ever_resize = frame_->widget_delegate()
                              ? frame_->widget_delegate()->CanResize()
                              : false;
+
+  // https://github.com/electron/electron/issues/611
+  // If window isn't resizable, we should always return HTCLIENT, otherwise the
+  // hover state of DOM will not be cleared probably.
+  if (!can_ever_resize)
+    return HTCLIENT;
+
   // Don't allow overlapping resize handles when the window is maximized or
   // fullscreen, as it can't be resized in those states.
   int resize_border = frame_->IsMaximized() || frame_->IsFullscreen()
