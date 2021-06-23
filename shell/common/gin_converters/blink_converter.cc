@@ -144,7 +144,7 @@ struct Converter<blink::WebInputEvent::Modifiers> {
       *out = blink::WebInputEvent::Modifiers::kIsLeft;
     else if (modifier == "right")
       *out = blink::WebInputEvent::Modifiers::kIsRight;
-    // TODO: the rest of the modifiers
+    // TODO(nornagon): the rest of the modifiers
     return true;
   }
 };
@@ -178,7 +178,7 @@ std::vector<std::string> ModifiersToArray(int modifiers) {
     modifier_strings.push_back("left");
   if (modifiers & Modifiers::kIsRight)
     modifier_strings.push_back("right");
-  // TODO: the rest of the modifiers
+  // TODO(nornagon): the rest of the modifiers
   return modifier_strings;
 }
 
