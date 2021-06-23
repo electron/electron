@@ -1,0 +1,38 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Brandon Jones <bajones@chromium.org>
+Date: Wed, 16 Jun 2021 21:47:09 +0000
+Subject: Ensure that XRLayer includes base EventTarget in Trace
+
+Trace was skipping a level in the class hierarchy and calling
+ScriptWrappable::Trace() instead. This was likely the result of the
+class inheritance changing in the spec a while back and getting updated
+elsewhere but not here, since it didn't raise any warnings.
+
+(cherry picked from commit 01b6f7e0a70648d7c7302454993f0bf86d5a0241)
+
+Bug: 1219857
+Change-Id: I4ac9f7b037ac5e5dd0e6d670f1d5a30e6344862f
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2964533
+Commit-Queue: Brandon Jones <bajones@chromium.org>
+Reviewed-by: Alexander Cooper <alcooper@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#892650}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2967199
+Auto-Submit: Brandon Jones <bajones@chromium.org>
+Commit-Queue: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/4472@{#1492}
+Cr-Branched-From: 3d60439cfb36485e76a1c5bb7f513d3721b20da1-refs/heads/master@{#870763}
+
+diff --git a/third_party/blink/renderer/modules/xr/xr_layer.cc b/third_party/blink/renderer/modules/xr/xr_layer.cc
+index eaa8603c7354a5c8e71e9a2e6161824063804fb6..aa30a4cec88fa11b342695dc675ab572320e9166 100644
+--- a/third_party/blink/renderer/modules/xr/xr_layer.cc
++++ b/third_party/blink/renderer/modules/xr/xr_layer.cc
+@@ -21,7 +21,7 @@ const AtomicString& XRLayer::InterfaceName() const {
+ 
+ void XRLayer::Trace(Visitor* visitor) const {
+   visitor->Trace(session_);
+-  ScriptWrappable::Trace(visitor);
++  EventTargetWithInlineData::Trace(visitor);
+ }
+ 
+ }  // namespace blink
