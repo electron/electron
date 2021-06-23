@@ -864,6 +864,10 @@ void BaseWindow::SetVibrancy(v8::Isolate* isolate, v8::Local<v8::Value> value) {
 }
 
 #if defined(OS_MAC)
+std::string BaseWindow::GetAlwaysOnTopLevel() {
+  return window_->GetAlwaysOnTopLevel();
+}
+
 void BaseWindow::SetTrafficLightPosition(const gfx::Point& position) {
   window_->SetTrafficLightPosition(position);
 }
@@ -1244,6 +1248,7 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isVisibleOnAllWorkspaces",
                  &BaseWindow::IsVisibleOnAllWorkspaces)
 #if defined(OS_MAC)
+      .SetMethod("_getAlwaysOnTopLevel", &BaseWindow::GetAlwaysOnTopLevel)
       .SetMethod("setAutoHideCursor", &BaseWindow::SetAutoHideCursor)
 #endif
       .SetMethod("setVibrancy", &BaseWindow::SetVibrancy)

@@ -191,6 +191,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   virtual void SetVibrancy(v8::Isolate* isolate, v8::Local<v8::Value> value);
 
 #if defined(OS_MAC)
+  std::string GetAlwaysOnTopLevel();
   void SetTrafficLightPosition(const gfx::Point& position);
   gfx::Point GetTrafficLightPosition() const;
 #endif
