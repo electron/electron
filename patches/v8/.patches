@@ -32,3 +32,4 @@ reland_compiler_fix_more_truncation_bugs_in_simplifiedlowering.patch
 cherry-pick-9da8fb7c4b80.patch
 m86-lts_squashed_multiple_commits.patch
 cherry-pick-fd8cbdf7b888.patch
+cherry-pick-fd9ce58ecd13.patch

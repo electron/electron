@@ -1,0 +1,107 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kim-Anh Tran <kimanh@chromium.org>
+Date: Thu, 6 May 2021 10:02:01 +0200
+Subject: M86-LTS: [debugger] Return ServerError if debugger agent is disabled
+
+This returns a server error on setting breakpoints if the
+agent is disabled.
+
+(cherry picked from commit 5aa2de8128f885c44df79d38fb4aa5c6a5d94306)
+
+Also-by: bmeurer@chromium.org
+Fixed: chromium:1202534
+No-Try: true
+No-Presubmit: true
+No-Tree-Checks: true
+Change-Id: I87c80a4bd785fa5c59a8dd0d5ac5f4b31b015ed8
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2874662
+Commit-Queue: Kim-Anh Tran <kimanh@chromium.org>
+Commit-Queue: Benedikt Meurer <bmeurer@chromium.org>
+Auto-Submit: Kim-Anh Tran <kimanh@chromium.org>
+Reviewed-by: Benedikt Meurer <bmeurer@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#74399}
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2940882
+Reviewed-by: Achuith Bhandarkar <achuith@chromium.org>
+Commit-Queue: Artem Sumaneev <asumaneev@google.com>
+Cr-Commit-Position: refs/branch-heads/8.6@{#105}
+Cr-Branched-From: a64aed2333abf49e494d2a5ce24bbd14fff19f60-refs/heads/8.6.395@{#1}
+Cr-Branched-From: a626bc036236c9bf92ac7b87dc40c9e538b087e3-refs/heads/master@{#69472}
+
+diff --git a/src/inspector/v8-debugger-agent-impl.cc b/src/inspector/v8-debugger-agent-impl.cc
+index 399fa4c4093450db89309d5aff680a2613614192..bd948cd8ac1c1492df191b63b83298fb9b3c5c5c 100644
+--- a/src/inspector/v8-debugger-agent-impl.cc
++++ b/src/inspector/v8-debugger-agent-impl.cc
+@@ -499,6 +499,8 @@ Response V8DebuggerAgentImpl::setBreakpointByUrl(
+     Maybe<int> optionalColumnNumber, Maybe<String16> optionalCondition,
+     String16* outBreakpointId,
+     std::unique_ptr<protocol::Array<protocol::Debugger::Location>>* locations) {
++  if (!enabled()) return Response::ServerError(kDebuggerNotEnabled);
++
+   *locations = std::make_unique<Array<protocol::Debugger::Location>>();
+ 
+   int specified = (optionalURL.isJust() ? 1 : 0) +
+@@ -587,6 +589,8 @@ Response V8DebuggerAgentImpl::setBreakpoint(
+   String16 breakpointId = generateBreakpointId(
+       BreakpointType::kByScriptId, location->getScriptId(),
+       location->getLineNumber(), location->getColumnNumber(0));
++  if (!enabled()) return Response::ServerError(kDebuggerNotEnabled);
++
+   if (m_breakpointIdToDebuggerBreakpointIds.find(breakpointId) !=
+       m_breakpointIdToDebuggerBreakpointIds.end()) {
+     return Response::ServerError(
+@@ -605,6 +609,8 @@ Response V8DebuggerAgentImpl::setBreakpoint(
+ Response V8DebuggerAgentImpl::setBreakpointOnFunctionCall(
+     const String16& functionObjectId, Maybe<String16> optionalCondition,
+     String16* outBreakpointId) {
++  if (!enabled()) return Response::ServerError(kDebuggerNotEnabled);
++
+   InjectedScript::ObjectScope scope(m_session, functionObjectId);
+   Response response = scope.initialize();
+   if (!response.IsSuccess()) return response;
+diff --git a/test/inspector/debugger/set-breakpoint-before-enabling-expected.txt b/test/inspector/debugger/set-breakpoint-before-enabling-expected.txt
+index 02bfe0d80cdecd96d37988d9d6850b49c5d7e39d..a85aab6fe0c71f3346fe79694d1a334e2cb12fb2 100644
+--- a/test/inspector/debugger/set-breakpoint-before-enabling-expected.txt
++++ b/test/inspector/debugger/set-breakpoint-before-enabling-expected.txt
+@@ -1,7 +1,13 @@
+ Tests that setting breakpoint before enabling debugger produces an error
+-setBreakpointByUrl error: undefined
++setBreakpointByUrl error: {
++  "code": -32000,
++  "message": "Debugger agent is not enabled"
++}
+ setBreakpoint error: {
+-  "code": -32602,
+-  "message": "Invalid parameters",
+-  "data": "Failed to deserialize params.location - BINDINGS: mandatory field missing at <some position>"
++  "code": -32000,
++  "message": "Debugger agent is not enabled"
++}
++setBreakpointOnFunctionCall error: {
++  "code": -32000,
++  "message": "Debugger agent is not enabled"
+ }
+diff --git a/test/inspector/debugger/set-breakpoint-before-enabling.js b/test/inspector/debugger/set-breakpoint-before-enabling.js
+index 5af1085c8747089dea15550949130b8ea243b524..4401466a921692bbe94b52e60083d92769407ee3 100644
+--- a/test/inspector/debugger/set-breakpoint-before-enabling.js
++++ b/test/inspector/debugger/set-breakpoint-before-enabling.js
+@@ -10,12 +10,19 @@ function didSetBreakpointByUrlBeforeEnable(message)
+ {
+   InspectorTest.log("setBreakpointByUrl error: " + JSON.stringify(
+       InspectorTest.trimErrorMessage(message).error, null, 2));
+-  Protocol.Debugger.setBreakpoint().then(didSetBreakpointBeforeEnable);
++  Protocol.Debugger.setBreakpoint({location: { scriptId: "4", lineNumber: 0, columnNumber: 0 }}).then(didSetBreakpointBeforeEnable);
+ }
+ 
+ function didSetBreakpointBeforeEnable(message)
+ {
+   InspectorTest.log("setBreakpoint error: " + JSON.stringify(
+       InspectorTest.trimErrorMessage(message).error, null, 2));
++  Protocol.Debugger.setBreakpointOnFunctionCall({objectId: "4"}).then(didSetBreakpointOnFunctionCallBeforeEnable);
++}
++
++function didSetBreakpointOnFunctionCallBeforeEnable(message)
++{
++  InspectorTest.log("setBreakpointOnFunctionCall error: " + JSON.stringify(
++    InspectorTest.trimErrorMessage(message).error, null, 2));
+   InspectorTest.completeTest();
+ }
