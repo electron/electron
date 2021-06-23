@@ -343,8 +343,8 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       entry in the combo box at the top of the Console tab.
     * `nativeWindowOpen` Boolean (optional) - Whether to use native
       `window.open()`. Defaults to `false`. Child windows will always have node
-      integration disabled unless `nodeIntegrationInSubFrames` is true. **Note:** This option is currently
-      experimental.
+      integration disabled unless `nodeIntegrationInSubFrames` is true. **Note:** The default
+      value will be changing to `true` in Electron 15.
     * `webviewTag` Boolean (optional) - Whether to enable the [`<webview>` tag](webview-tag.md).
       Defaults to `false`. **Note:** The
       `preload` script configured for the `<webview>` will have node integration
