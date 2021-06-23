@@ -108,7 +108,7 @@ driver.quit()
 
 ## Setting up with WebdriverIO
 
-[WebdriverIO](https://webdriver.io/) provides a Node package for testing with WebDriver. It can be used as an automation framework using the WDIO testrunner that comes with various of plugins (e.g. reporter and services) that helps you put together your test setup.
+[WebdriverIO](https://webdriver.io/) provides a Node package for testing with WebDriver. It can be used as an automation framework using the WDIO testrunner that comes with various plugins (e.g. reporter and services) that can help you put together your test setup.
 
 ### 1. Install WDIO Testrunner
 
