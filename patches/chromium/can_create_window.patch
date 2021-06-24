@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 88b7b88dddb93ebd684f6c3d166cfaf5fcedd692..33d91dd924f90dc4b2f697b2d0260bb64f32a88e 100644
+index f050e8863b2412242cb4cd025444abcc1ad85889..f9f15b4b95208cbd9ff0269c882ac4b4b80e4125 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -6004,6 +6004,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -6082,6 +6082,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,7 +21,7 @@ index 88b7b88dddb93ebd684f6c3d166cfaf5fcedd692..33d91dd924f90dc4b2f697b2d0260bb6
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 147f501f5558d8e8ad7c37a2c30e02d3ba03ebd4..934250bffd73c0abec6259c162f358a2902427c5 100644
+index 8b51334cfaff6f8b2de5c969c01c0dfec6e381c3..9fa5062a0eb8754c1a3e560a8d0bcd3098bcdb2e 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -3788,6 +3788,14 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -53,10 +53,10 @@ index 147f501f5558d8e8ad7c37a2c30e02d3ba03ebd4..934250bffd73c0abec6259c162f358a2
                               new_contents_impl, opener, params.target_url,
                               params.referrer.To<Referrer>(), params.disposition,
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index 3c10f5324b8df4be8042a3620e7f291773da5766..9e89cc88789dd0c8677de826cd6b3e2a6e1cb8a0 100644
+index a61f273506fecd8574ffd0bb04d507adef7859c8..3a4a6efca3a66b12409da15e4f360fb8e3a40e2c 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
-@@ -472,6 +472,10 @@ struct CreateNewWindowParams {
+@@ -519,6 +519,10 @@ struct CreateNewWindowParams {
    // The impression associated with the navigation in the new window, if
    // one is specified.
    Impression? impression;
