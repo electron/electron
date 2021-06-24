@@ -11,6 +11,11 @@ and BoringSSL which Electron uses via Chromium. Each incompatibility typically h
 
 Where possible, we should seek to make this patch as minimal as possible.
 
+Upstreams:
+- https://github.com/nodejs/node/pull/39054
+- https://github.com/nodejs/node/pull/39138
+- https://github.com/nodejs/node/pull/39136
+
 diff --git a/src/crypto/crypto_common.cc b/src/crypto/crypto_common.cc
 index f4b7bd3ad8548a0b69943ddea669e6f1991b7a49..221d652fa7de246e5f69fcf392e334087bac0199 100644
 --- a/src/crypto/crypto_common.cc
@@ -332,6 +337,19 @@ index ac95612a0b1a856d7fe07efde59786e811f1b98d..aa62753d7c929027f5265fa4330b0429
  #include <openssl/rsa.h>
  #include <openssl/dsa.h>
  #include <openssl/ssl.h>
+diff --git a/src/node.cc b/src/node.cc
+index c9d491f01651ef57fb793dda108469cb7ddccc5c..6a55535b5c6ef72b1cdb366299840a2e78643911 100644
+--- a/src/node.cc
++++ b/src/node.cc
+@@ -1035,7 +1035,7 @@ InitializationResult InitializeOncePerProcess(
+   }
+ 
+   if (init_flags & kInitOpenSSL) {
+-#if HAVE_OPENSSL
++#if HAVE_OPENSSL && !defined(OPENSSL_IS_BORINGSSL)
+     {
+       std::string extra_ca_certs;
+       if (credentials::SafeGetenv("NODE_EXTRA_CA_CERTS", &extra_ca_certs))
 diff --git a/src/node_metadata.h b/src/node_metadata.h
 index 4486d5af2c1622c7c8f44401dc3ebb986d8e3c2e..db1769f1b3f1617ed8dbbea57b5e324183b42be2 100644
 --- a/src/node_metadata.h
