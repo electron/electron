@@ -1,7 +1,7 @@
-From ee6aee64e24c0b9c8f4cfaa8354af923e17c38ba Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Raymond Toy <rtoy@chromium.org>
-Date: Wed, 09 Jun 2021 16:46:08 +0000
-Subject: [PATCH] [M90-LTS] Add AudioHandler to orphan handlers when context is suspended.
+Date: Wed, 9 Jun 2021 16:46:08 +0000
+Subject: Add AudioHandler to orphan handlers when context is suspended.
 
 If the context is suspended, pulling of the audio graph is stopped.
 But we still need to add the handler in this case so that when the
@@ -12,7 +12,6 @@ suspended.
 Test cases from issue 1176218 manually tested with no failures.  Also
 this doesn't cause any regressions in issue 1003807 and issue 1017961.
 (Manually tested the test cases from those issues.)
-
 
 (cherry picked from commit 4a38ea3f1f78e0a0ffc1464e227cee6c1f2fd90b)
 
@@ -28,13 +27,12 @@ Owners-Override: Artem Sumaneev <asumaneev@google.com>
 Reviewed-by: Achuith Bhandarkar <achuith@chromium.org>
 Cr-Commit-Position: refs/branch-heads/4430@{#1508}
 Cr-Branched-From: e5ce7dc4f7518237b3d9bb93cccca35d25216cbe-refs/heads/master@{#857950}
----
 
 diff --git a/third_party/blink/renderer/modules/webaudio/audio_node.cc b/third_party/blink/renderer/modules/webaudio/audio_node.cc
-index 0b014b6..4264c8d 100644
+index 80a044235e4ff552eb696e8627f74927f622aae0..c036d175f403f239fb67c185f3cef84aabac92f7 100644
 --- a/third_party/blink/renderer/modules/webaudio/audio_node.cc
 +++ b/third_party/blink/renderer/modules/webaudio/audio_node.cc
-@@ -614,13 +614,13 @@
+@@ -614,13 +614,13 @@ void AudioNode::Dispose() {
    BaseAudioContext::GraphAutoLocker locker(context());
    Handler().Dispose();
  
