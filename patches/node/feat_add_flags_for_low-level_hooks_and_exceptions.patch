@@ -24,7 +24,7 @@ Environment on the V8 context of blink, so no new V8 context is created.
 As a result, a renderer process may have multiple Node Environments in it.
 
 diff --git a/src/node.cc b/src/node.cc
-index 6c601fb920a04c564e377a0078d2e274290cf612..5c52ab8081253706d2c643457a5dfcbb8e24e6ac 100644
+index b60be116b6139bd4b7c10485bfdad2c1b905c995..c9d491f01651ef57fb793dda108469cb7ddccc5c 100644
 --- a/src/node.cc
 +++ b/src/node.cc
 @@ -139,6 +139,8 @@ using v8::Undefined;

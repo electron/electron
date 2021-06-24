@@ -22,10 +22,10 @@ index 863d4ef5608bcebc9b49c3988509be9cfb18b6cd..8b70f79d2b278f2f6b15abc2eba5045b
  const nativeModule = internalBinding('native_module');
  
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index 831a4498f4781ec1b901470db01f0a1e4840cf63..abb460f2f16438503e95f04ea07c0b788a6ef0e5 100644
+index 9a304f05cf4e09038531007efff28c4f57218c1d..afb1eca73a2d91b76d098114de18ad7e29846e5c 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
-@@ -86,7 +86,7 @@ const fs = require('fs');
+@@ -84,7 +84,7 @@ const fs = require('fs');
  const internalFS = require('internal/fs/utils');
  const path = require('path');
  const { sep } = path;
@@ -34,7 +34,7 @@ index 831a4498f4781ec1b901470db01f0a1e4840cf63..abb460f2f16438503e95f04ea07c0b78
  const packageJsonReader = require('internal/modules/package_json_reader');
  const { safeGetenv } = internalBinding('credentials');
  const {
-@@ -157,7 +157,7 @@ function stat(filename) {
+@@ -155,7 +155,7 @@ function stat(filename) {
      const result = statCache.get(filename);
      if (result !== undefined) return result;
    }

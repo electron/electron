@@ -11,7 +11,7 @@ initialize it in the browser process. This adds a new
 EnvironmentFlags option which allows preventing that invocation.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 109cd9f7e9eac085206a62dabd2dbe167039a631..db7619935eb522c2a6d2ac548b6d5cb3b6af70ac 100644
+index de29d45adde76587f2a9cd50392ba45b8e24839e..09c0d22ff91856704f61024646c946a39baf53d8 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
 @@ -341,12 +341,14 @@ Environment* CreateEnvironment(
@@ -36,10 +36,10 @@ index 109cd9f7e9eac085206a62dabd2dbe167039a631..db7619935eb522c2a6d2ac548b6d5cb3
  #endif
  
 diff --git a/src/env-inl.h b/src/env-inl.h
-index e0345b0daf22e448d728d96ed2a341993299038b..0cdb6e7f8e4c25c66faaf942d2cb10e34e4cb22e 100644
+index b3b1ea908253b9240cc37931f34b2a8c8c9fa3ab..dc37298aa0e13bb79030123f38070d0254691b28 100644
 --- a/src/env-inl.h
 +++ b/src/env-inl.h
-@@ -867,6 +867,10 @@ inline bool Environment::tracks_unmanaged_fds() const {
+@@ -877,6 +877,10 @@ inline bool Environment::tracks_unmanaged_fds() const {
    return flags_ & EnvironmentFlags::kTrackUnmanagedFds;
  }
  
@@ -51,10 +51,10 @@ index e0345b0daf22e448d728d96ed2a341993299038b..0cdb6e7f8e4c25c66faaf942d2cb10e3
    return emit_filehandle_warning_;
  }
 diff --git a/src/env.h b/src/env.h
-index 4a50227ee8dc2dbb4a43fad65d22c2f9aef59b74..5233d40f0b09f3c6b646be8b789d01f461c4fb3f 100644
+index 7b136f70fbad1e0a90406add90d5e538577e2a2b..eaf8a17c99aa6a4135c54616f68b15e0620e4378 100644
 --- a/src/env.h
 +++ b/src/env.h
-@@ -1189,6 +1189,7 @@ class Environment : public MemoryRetainer {
+@@ -1197,6 +1197,7 @@ class Environment : public MemoryRetainer {
    inline bool owns_process_state() const;
    inline bool owns_inspector() const;
    inline bool tracks_unmanaged_fds() const;

@@ -217,10 +217,10 @@ index 0aa96ada47abe4b66fb616c665101278bbe0afb6..1e9a4863c5faea5f6b275483ca16f3a6
  
  void HKDFConfig::MemoryInfo(MemoryTracker* tracker) const {
 diff --git a/src/crypto/crypto_random.cc b/src/crypto/crypto_random.cc
-index b24f8f32136ffaed54310d5dc02e57b0f69450d6..50a6663966cdb147a702df21240fa449850c3549 100644
+index 7cb4513f9ad0eaadd055b169520ae1e5073b7e2d..50a6663966cdb147a702df21240fa449850c3549 100644
 --- a/src/crypto/crypto_random.cc
 +++ b/src/crypto/crypto_random.cc
-@@ -149,7 +150,7 @@ Maybe<bool> RandomPrimeTraits::AdditionalConfig(
+@@ -150,7 +150,7 @@ Maybe<bool> RandomPrimeTraits::AdditionalConfig(
  
    params->bits = bits;
    params->safe = safe;
@@ -243,7 +243,7 @@ index 7b113a8dcb06b0b0e1329ce0daf7305598ea6545..b04e53a7f24885ffb6639430988d0ffb
      const EC_KEY* ec_key = EVP_PKEY_get0_EC_KEY(pkey.get());
      const EC_GROUP* ec_group = EC_KEY_get0_group(ec_key);
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index 13c40dcb757661220288465c39101de0b4018e90..fe44be28e40d50abdc61d1fe72df5656e583fc00 100644
+index 13c40dcb757661220288465c39101de0b4018e90..7d1d4400319292a8ddf3afe013b5678f84c25576 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
 @@ -139,7 +139,6 @@ void InitCryptoOnce() {
@@ -262,7 +262,7 @@ index 13c40dcb757661220288465c39101de0b4018e90..fe44be28e40d50abdc61d1fe72df5656
    // Turn off compression. Saves memory and protects against CRIME attacks.
    // No-op with OPENSSL_NO_COMP builds of OpenSSL.
    sk_SSL_COMP_zero(SSL_COMP_get_compression_methods());
-@@ -490,24 +492,14 @@ Maybe<bool> Decorate(Environment* env, Local<Object> obj,
+@@ -490,24 +490,14 @@ Maybe<bool> Decorate(Environment* env, Local<Object> obj,
      V(BIO)                                                                    \
      V(PKCS7)                                                                  \
      V(X509V3)                                                                 \
@@ -287,7 +287,7 @@ index 13c40dcb757661220288465c39101de0b4018e90..fe44be28e40d50abdc61d1fe72df5656
      V(USER)                                                                   \
  
  #define V(name) case ERR_LIB_##name: lib = #name "_"; break;
-@@ -667,7 +659,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -667,7 +657,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
    CHECK(args[0]->IsUint32());
    Environment* env = Environment::GetCurrent(args);
    uint32_t len = args[0].As<Uint32>()->Value();
@@ -296,7 +296,7 @@ index 13c40dcb757661220288465c39101de0b4018e90..fe44be28e40d50abdc61d1fe72df5656
    if (data == nullptr) {
      // There's no memory available for the allocation.
      // Return nothing.
-@@ -679,7 +671,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -679,7 +669,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
            data,
            len,
            [](void* data, size_t len, void* deleter_data) {
@@ -305,7 +305,7 @@ index 13c40dcb757661220288465c39101de0b4018e90..fe44be28e40d50abdc61d1fe72df5656
            },
            data);
    Local<ArrayBuffer> buffer = ArrayBuffer::New(env->isolate(), store);
-@@ -687,10 +679,12 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -687,10 +677,12 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
  }
  
  void SecureHeapUsed(const FunctionCallbackInfo<Value>& args) {
@@ -319,7 +319,7 @@ index 13c40dcb757661220288465c39101de0b4018e90..fe44be28e40d50abdc61d1fe72df5656
  }  // namespace
  
 diff --git a/src/crypto/crypto_util.h b/src/crypto/crypto_util.h
-index 94bcb100cca0e213ac19afb2ed30b80716cf27af..1fe961a99b3f115c1381f3641d718a21988e9659 100644
+index ac95612a0b1a856d7fe07efde59786e811f1b98d..aa62753d7c929027f5265fa4330b0429c726f7ef 100644
 --- a/src/crypto/crypto_util.h
 +++ b/src/crypto/crypto_util.h
 @@ -15,7 +15,9 @@
