@@ -13,6 +13,27 @@ process and provide embedder modules (electrons
 renderer/browser/worker/sandboxed bootstrap scripts).  These are loaded
 through LoadEmbedderJavaScriptSource()
 
+diff --git a/lib/internal/fs/watchers.js b/lib/internal/fs/watchers.js
+index b45af42d12ff7df8a9e125e87f51af3456811c23..c84ff7feb07aebf656ada7e37d812d9d8a81300f 100644
+--- a/lib/internal/fs/watchers.js
++++ b/lib/internal/fs/watchers.js
+@@ -290,10 +290,12 @@ function emitCloseNT(self) {
+ 
+ // Legacy alias on the C++ wrapper object. This is not public API, so we may
+ // want to runtime-deprecate it at some point. There's no hurry, though.
+-ObjectDefineProperty(FSEvent.prototype, 'owner', {
+-  get() { return this[owner_symbol]; },
+-  set(v) { return this[owner_symbol] = v; }
+-});
++if (!'owner' in FSEvent.prototype) {
++  ObjectDefineProperty(FSEvent.prototype, 'owner', {
++    get() { return this[owner_symbol]; },
++    set(v) { return this[owner_symbol] = v; }
++  });
++}
+ 
+ async function* watch(filename, options = {}) {
+   const path = toNamespacedPath(getValidatedPath(filename));
 diff --git a/src/node_native_module.cc b/src/node_native_module.cc
 index f788732ae569d460a0e596397e589774ba4be4f1..186c24c0ba37781d8d9d0443d18b4f4bb0e02bef 100644
 --- a/src/node_native_module.cc
