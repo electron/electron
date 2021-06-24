@@ -11,16 +11,6 @@ and BoringSSL which Electron uses via Chromium. Each incompatibility typically h
 
 Where possible, we should seek to make this patch as minimal as possible.
 
-Upstreams for code herein (update when changed):
-* https://boringssl-review.googlesource.com/c/boringssl/+/47824
-* https://boringssl-review.googlesource.com/c/boringssl/+/47844
-* https://github.com/nodejs/node/pull/38926
-* https://github.com/nodejs/node/pull/38925
-* https://github.com/nodejs/node/pull/38901
-* https://github.com/nodejs/node/pull/38900
-* https://github.com/nodejs/node/pull/38864
-* https://github.com/nodejs/node/pull/38744
-
 diff --git a/src/crypto/crypto_common.cc b/src/crypto/crypto_common.cc
 index f4b7bd3ad8548a0b69943ddea669e6f1991b7a49..221d652fa7de246e5f69fcf392e334087bac0199 100644
 --- a/src/crypto/crypto_common.cc
