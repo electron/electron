@@ -428,7 +428,7 @@ bool IsDeviceNameValid(const std::u16string& device_name) {
   return true;
 }
 
-std::u16string GetDefaultPrinterAsync() {
+std::pair<std::string, std::u16string> GetDefaultPrinterAsync() {
 #if defined(OS_WIN)
   // Blocking is needed here because Windows printer drivers are oftentimes
   // not thread-safe and have to be accessed on the UI thread.
@@ -439,18 +439,25 @@ std::u16string GetDefaultPrinterAsync() {
       printing::PrintBackend::CreateInstance(
           g_browser_process->GetApplicationLocale());
   std::string printer_name;
-  print_backend->GetDefaultPrinterName(printer_name);
+  printing::mojom::ResultCode code =
+      print_backend->GetDefaultPrinterName(printer_name);
 
-  // Some devices won't have a default printer, so we should
-  // also check for existing printers and pick the first
-  // one should it exist.
+  // We don't want to return if this fails since some devices won't have a
+  // default printer.
+  if (code != printing::mojom::ResultCode::kSuccess)
+    LOG(ERROR) << "Failed to get default printer name";
+
+  // Check for existing printers and pick the first one should it exist.
   if (printer_name.empty()) {
     printing::PrinterList printers;
-    print_backend->EnumeratePrinters(&printers);
+    if (print_backend->EnumeratePrinters(&printers) !=
+        printing::mojom::ResultCode::kSuccess)
+      return std::make_pair("Failed to enumerate printers", std::u16string());
     if (!printers.empty())
       printer_name = printers.front().printer_name;
   }
-  return base::UTF8ToUTF16(printer_name);
+
+  return std::make_pair(std::string(), base::UTF8ToUTF16(printer_name));
 }
 
 // Copied from
@@ -2426,7 +2433,8 @@ void WebContents::OnGetDefaultPrinter(
     printing::CompletionCallback print_callback,
     std::u16string device_name,
     bool silent,
-    std::u16string default_printer) {
+    // <error, default_printer>
+    std::pair<std::string, std::u16string> info) {
   // The content::WebContents might be already deleted at this point, and the
   // PrintViewManagerElectron class does not do null check.
   if (!web_contents()) {
@@ -2435,8 +2443,14 @@ void WebContents::OnGetDefaultPrinter(
     return;
   }
 
-  std::u16string printer_name =
-      device_name.empty() ? default_printer : device_name;
+  if (!info.first.empty()) {
+    if (print_callback)
+      std::move(print_callback).Run(false, info.first);
+    return;
+  }
+
+  // If the user has passed a deviceName use it, otherwise use default printer.
+  std::u16string printer_name = device_name.empty() ? info.second : device_name;
 
   // If there are no valid printers available on the network, we bail.
   if (printer_name.empty() || !IsDeviceNameValid(printer_name)) {
