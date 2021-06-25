@@ -16,8 +16,6 @@
 #include "extensions/renderer/native_extension_bindings_system.h"
 #include "extensions/renderer/native_handler.h"
 
-using extensions::NativeHandler;
-
 ElectronExtensionsDispatcherDelegate::ElectronExtensionsDispatcherDelegate() =
     default;
 

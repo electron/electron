@@ -19,8 +19,6 @@
 #include "content/public/browser/browser_thread.h"
 #include "shell/browser/browser.h"
 
-using content::BrowserThread;
-
 namespace electron {
 
 namespace {
