@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index f050e8863b2412242cb4cd025444abcc1ad85889..f9f15b4b95208cbd9ff0269c882ac4b4b80e4125 100644
+index 709591bf8d66718736999c66945b302aecf2797f..bdf94fed1df7faf2ef6bfb4add52564335ba7622 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -6082,6 +6082,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -6064,6 +6064,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,10 +21,10 @@ index f050e8863b2412242cb4cd025444abcc1ad85889..f9f15b4b95208cbd9ff0269c882ac4b4
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 8b51334cfaff6f8b2de5c969c01c0dfec6e381c3..9fa5062a0eb8754c1a3e560a8d0bcd3098bcdb2e 100644
+index af4cb8600e2c7e2ce6804e49da239b696ddf2819..98f6ad06bd90aa442c1df602a61fa18312bd91bd 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3788,6 +3788,14 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -3774,6 +3774,14 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    }
    auto* new_contents_impl = new_contents.get();
  
@@ -39,7 +39,7 @@ index 8b51334cfaff6f8b2de5c969c01c0dfec6e381c3..9fa5062a0eb8754c1a3e560a8d0bcd30
    new_contents_impl->GetController().SetSessionStorageNamespace(
        partition_id, session_storage_namespace);
  
-@@ -3830,12 +3838,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -3816,12 +3824,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
@@ -102,7 +102,7 @@ index 6000d0326898e33cdf4b311c88e5400d8be71ed2..7430e483567b227630bc42933820e2d4
        bool opener_suppressed,
        bool* no_javascript_access);
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index 0117e9fb3919e866edc625bb573a2922e4cea866..98025d50f132dc425f26b982d1a4a2e07b972229 100644
+index 9d906c4d2bab5ab152054e6745da850246f340d9..3c059e6e709759fe3f7aba342f9a0f4b36f329ff 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
 @@ -28,6 +28,17 @@ namespace content {
@@ -124,7 +124,7 @@ index 0117e9fb3919e866edc625bb573a2922e4cea866..98025d50f132dc425f26b982d1a4a2e0
                                                   const OpenURLParams& params) {
    return nullptr;
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index af41f0750b58dc714a2587565a6144bf3a2addb4..23342e066586c4fb2cf3843d63d737d33f92669b 100644
+index 0574d390dc94aa1d17dfa9db805f846024b7956f..a2a3550272da12eee911a7ef0d9a21dd85dd23be 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -16,6 +16,7 @@
@@ -135,7 +135,7 @@ index af41f0750b58dc714a2587565a6144bf3a2addb4..23342e066586c4fb2cf3843d63d737d3
  #include "content/public/browser/eye_dropper.h"
  #include "content/public/browser/invalidate_type.h"
  #include "content/public/browser/media_stream_request.h"
-@@ -340,6 +341,13 @@ class CONTENT_EXPORT WebContentsDelegate {
+@@ -338,6 +339,13 @@ class CONTENT_EXPORT WebContentsDelegate {
        const StoragePartitionId& partition_id,
        SessionStorageNamespace* session_storage_namespace);
  

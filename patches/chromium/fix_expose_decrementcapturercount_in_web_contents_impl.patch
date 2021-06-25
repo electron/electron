@@ -8,10 +8,10 @@ we invoke it in order to expose contents.decrementCapturerCount([stayHidden, sta
 to users. We should try to upstream this.
 
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index a804f30ed40830a11228ef94f4dedcdc8f0753ac..77b22dd8d8a2d733eb49d4ed9ef49a8ec88df453 100644
+index 63cf501edf009325637d1c8f882a10b26b699e7d..07bc526da2a3fda47feae3b2f08b6588fe24d72e 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -1768,10 +1768,12 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
+@@ -1766,10 +1766,12 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
    // outermost frame trees in this WebContents.
    std::vector<RenderFrameHostImpl*> GetOutermostMainFrames();
  
