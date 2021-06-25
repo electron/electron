@@ -181,6 +181,26 @@ describe('<webview> tag', function () {
     });
   });
 
+  describe('did-attach event', () => {
+    it('is emitted when a webview has been attached', async () => {
+      const w = new BrowserWindow({
+        webPreferences: {
+          webviewTag: true
+        }
+      });
+      await w.loadURL('about:blank');
+      const message = await w.webContents.executeJavaScript(`new Promise((resolve, reject) => {
+        const webview = new WebView()
+        webview.setAttribute('src', 'about:blank')
+        webview.addEventListener('did-attach', (e) => {
+          resolve('ok')
+        })
+        document.body.appendChild(webview)
+      })`);
+      expect(message).to.equal('ok');
+    });
+  });
+
   describe('did-change-theme-color event', () => {
     it('emits when theme color changes', async () => {
       const w = new BrowserWindow({
