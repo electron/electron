@@ -43,9 +43,7 @@ The following methods are available on instances of `WebRequest`:
 
 #### `webRequest.onBeforeRequest([filter, ]listener)`
 
-* `filter` Object (optional)
-  * `urls` String[] - Array of URL patterns that will be used to filter out the
-        requests that do not match the URL patterns.
+* `filter` [WebRequestFilter](structures/web-request-filter.md) (optional)
 * `listener` Function | null
   * `details` Object
     * `id` Integer
@@ -88,9 +86,7 @@ Some examples of valid `urls`:
 
 #### `webRequest.onBeforeSendHeaders([filter, ]listener)`
 
-* `filter` Object (optional)
-  * `urls` String[] - Array of URL patterns that will be used to filter out the
-        requests that do not match the URL patterns.
+* `filter` [WebRequestFilter](structures/web-request-filter.md) (optional)
 * `listener` Function | null
   * `details` Object
     * `id` Integer
@@ -117,9 +113,7 @@ The `callback` has to be called with a `response` object.
 
 #### `webRequest.onSendHeaders([filter, ]listener)`
 
-* `filter` Object (optional)
-  * `urls` String[] - Array of URL patterns that will be used to filter out the
-        requests that do not match the URL patterns.
+* `filter` [WebRequestFilter](structures/web-request-filter.md) (optional)
 * `listener` Function | null
   * `details` Object
     * `id` Integer
@@ -139,9 +133,7 @@ response are visible by the time this listener is fired.
 
 #### `webRequest.onHeadersReceived([filter, ]listener)`
 
-* `filter` Object (optional)
-  * `urls` String[] - Array of URL patterns that will be used to filter out the
-        requests that do not match the URL patterns.
+* `filter` [WebRequestFilter](structures/web-request-filter.md) (optional)
 * `listener` Function | null
   * `details` Object
     * `id` Integer
@@ -173,9 +165,7 @@ The `callback` has to be called with a `response` object.
 
 #### `webRequest.onResponseStarted([filter, ]listener)`
 
-* `filter` Object (optional)
-  * `urls` String[] - Array of URL patterns that will be used to filter out the
-        requests that do not match the URL patterns.
+* `filter` [WebRequestFilter](structures/web-request-filter.md) (optional)
 * `listener` Function | null
   * `details` Object
     * `id` Integer
@@ -199,9 +189,7 @@ and response headers are available.
 
 #### `webRequest.onBeforeRedirect([filter, ]listener)`
 
-* `filter` Object (optional)
-  * `urls` String[] - Array of URL patterns that will be used to filter out the
-        requests that do not match the URL patterns.
+* `filter` [WebRequestFilter](structures/web-request-filter.md) (optional)
 * `listener` Function | null
   * `details` Object
     * `id` Integer
@@ -226,9 +214,7 @@ redirect is about to occur.
 
 #### `webRequest.onCompleted([filter, ]listener)`
 
-* `filter` Object (optional)
-  * `urls` String[] - Array of URL patterns that will be used to filter out the
-        requests that do not match the URL patterns.
+* `filter` [WebRequestFilter](structures/web-request-filter.md) (optional)
 * `listener` Function | null
   * `details` Object
     * `id` Integer
@@ -251,9 +237,7 @@ completed.
 
 #### `webRequest.onErrorOccurred([filter, ]listener)`
 
-* `filter` Object (optional)
-  * `urls` String[] - Array of URL patterns that will be used to filter out the
-        requests that do not match the URL patterns.
+* `filter` [WebRequestFilter](structures/web-request-filter.md) (optional)
 * `listener` Function | null
   * `details` Object
     * `id` Integer
