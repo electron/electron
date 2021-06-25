@@ -1,0 +1,98 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Juan Cruz Viotti <jv@jviotti.com>
+Date: Fri, 25 Jun 2021 12:27:02 -0400
+Subject: Add and document sccache support for Windows
+
+The two `cl.exe` flags that confused sccache on my setup, and resulted
+in uncacheable calls are the following:
+
+- `/Brepro`
+- `/showIncludes:user`
+
+This CL disables these options if `cc_wrapper` is set and documents that
+`chrome_pgo_phase` must be disabled if sccache will be used.
+
+These settings result in a high number of sccache cache hits and
+significant speed-up when not using Goma:
+
+```
+Compile requests                  27222
+Compile requests executed         27222
+Cache hits                        27218
+Cache hits (C/C++)                27218
+Cache misses                          4
+Cache misses (C/C++)                  4
+```
+
+For the record, this change has been tested on Windows 10 Pro 20H2,
+sccache v0.2.15, and Visual Studio Community 2019 in an Electron.js
+build environment.
+
+Bug: None
+Signed-off-by: Juan Cruz Viotti <jv@jviotti.com>
+
+diff --git a/AUTHORS b/AUTHORS
+index 817719d165eb55a45364c4c744944192ee8144c7..a66b45d5ca95e1b98db8bc7dd59db09e7fd58220 100644
+--- a/AUTHORS
++++ b/AUTHORS
+@@ -548,6 +548,7 @@ Joshua Roesslein <jroesslein@gmail.com>
+ Josué Ratelle <jorat1346@gmail.com>
+ Josyula Venkat Narasimham <venkat.nj@samsung.com>
+ Joyer Huang <collger@gmail.com>
++Juan Cruz Viotti <jv@jviotti.com>
+ Juan Jose Lopez Jaimez <jj.lopezjaimez@gmail.com>
+ Juhui Lee <juhui24.lee@samsung.com>
+ Julian Geppert <spctstr@gmail.com>
+diff --git a/build/config/win/BUILD.gn b/build/config/win/BUILD.gn
+index 813c72c05614295e53ec3c4b70b8ec4630301e30..e01f4f90afac8137233e39373e0bd53201effd9f 100644
+--- a/build/config/win/BUILD.gn
++++ b/build/config/win/BUILD.gn
+@@ -126,7 +126,7 @@ config("compiler") {
+     }
+   }
+ 
+-  if (use_lld && !use_thin_lto && (is_clang || !use_goma)) {
++  if (use_lld && !use_thin_lto && (is_clang || !use_goma) && cc_wrapper == "") {
+     # /Brepro lets the compiler not write the mtime field in the .obj output.
+     # link.exe /incremental relies on this field to work correctly, but lld
+     # never looks at this timestamp, so it's safe to pass this flag with
+diff --git a/build/toolchain/win/BUILD.gn b/build/toolchain/win/BUILD.gn
+index a8137526d343ebca6623b9fb3f961b39d604130a..1ea3db53a239d488e4766df5005ca50736aa8393 100644
+--- a/build/toolchain/win/BUILD.gn
++++ b/build/toolchain/win/BUILD.gn
+@@ -190,7 +190,7 @@ template("msvc_toolchain") {
+       coverage_wrapper = ""
+     }
+ 
+-    if (toolchain_args.is_clang) {
++    if (toolchain_args.is_clang && cc_wrapper == "") {
+       # This flag omits system includes from /showIncludes output, to reduce the
+       # amount of data to parse and store in .ninja_deps. We do this on non-Windows too,
+       # and already make sure rebuilds after win sdk / libc++ / clang header updates happen via
+diff --git a/docs/windows_build_instructions.md b/docs/windows_build_instructions.md
+index be30a8eb4edb4996d65fa79c8ee916fcacd69fa0..370e9be18c10bb4505426654984e486a1cf01710 100644
+--- a/docs/windows_build_instructions.md
++++ b/docs/windows_build_instructions.md
+@@ -186,6 +186,7 @@ $ gn gen out/Default
+   operating system and CPU.
+ * For more info on GN, run `gn help` on the command line or read the [quick
+   start guide](https://gn.googlesource.com/gn/+/master/docs/quick_start.md).
++
+ ### Faster builds
+ 
+ * Reduce file system overhead by excluding build directories from
+@@ -234,6 +235,14 @@ binaries as well.
+ 
+ Still, builds will take many hours on many machines.
+ 
++#### Use SCCACHE
++
++You might be able to use [sccache](https://github.com/mozilla/sccache) for the
++build process by enabling the following arguments:
++
++* `cc_wrapper = "sccache"` - assuming the `sccache` binary is in your `%PATH%`
++* `chrome_pgo_phase = 0`
++
+ ### Why is my build slow?
+ 
+ Many things can make builds slow, with Windows Defender slowing process startups
