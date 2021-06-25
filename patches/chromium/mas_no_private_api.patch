@@ -483,7 +483,7 @@ index c15f3a631292b538698625328fb429ee3c9964f5..37e038753ecf1b82ec92c06b2c0729b5
  }
  
 diff --git a/device/bluetooth/bluetooth_adapter_mac.mm b/device/bluetooth/bluetooth_adapter_mac.mm
-index 717daca205b64ddbaf138f88400683dafac1a270..50ce32674525567b24b387e64b27f815585e61a0 100644
+index 54d902424796eb0687ebeedb6f1a9cd4a926e5b0..9d3ca310a7554c5606f95e9df26ea35ec37879d9 100644
 --- a/device/bluetooth/bluetooth_adapter_mac.mm
 +++ b/device/bluetooth/bluetooth_adapter_mac.mm
 @@ -42,6 +42,7 @@
