@@ -567,7 +567,7 @@ index 6b7fbb6cf13dc8ee6ade0878a9a2c1efc5d4d3f1..e2af75168cb914a7b3b4a6c9b6a28549
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index 7f98032f09be545040af596809c67a86cb7de3b4..e181f6cfe93b4a8e432e0d3ae0dc492aa8642ee1 100644
+index 3c226fe6c61f042942ac6c01e08f95209536470b..67a8a6fd29e93268f960d8e3dde19d563877b09a 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -80,6 +80,7 @@ class DisplayPrivate;

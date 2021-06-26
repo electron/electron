@@ -35,7 +35,7 @@ index 5b4d70991e19edcdfee731c56251932bf43e535f..fe1977c5e6ce0f5b30e8be529b9efa51
  
  #endif  // CHROME_BROWSER_ANDROID_DOCUMENT_DOCUMENT_WEB_CONTENTS_DELEGATE_H_
 diff --git a/chrome/browser/chromeos/first_run/drive_first_run_controller.cc b/chrome/browser/chromeos/first_run/drive_first_run_controller.cc
-index d072e66a2ad8a05c9678c98aa5dbeecd4a925465..3874397a4f3096cc965fc8ce4ee955c763ab3ada 100644
+index da0ad734988065816dc32198d2aaac0062786813..ab83950ac2a90b773635fdfb6016623c0b40c9f9 100644
 --- a/chrome/browser/chromeos/first_run/drive_first_run_controller.cc
 +++ b/chrome/browser/chromeos/first_run/drive_first_run_controller.cc
 @@ -124,8 +124,7 @@ class DriveWebContentsManager : public content::WebContentsObserver,
@@ -48,7 +48,7 @@ index d072e66a2ad8a05c9678c98aa5dbeecd4a925465..3874397a4f3096cc965fc8ce4ee955c7
    content::WebContents* CreateCustomWebContents(
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
-@@ -235,15 +234,14 @@ bool DriveWebContentsManager::IsWebContentsCreationOverridden(
+@@ -239,15 +238,14 @@ bool DriveWebContentsManager::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -264,10 +264,10 @@ index c5c5a7b63b5b3b62a9517cbef3ae23ce57a3c89c..4f1b7e88d6d2ae89a60311c8aeb1fcee
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 684036152b7c0c103b1b4bc1c477fd7d398407b9..9706e3f5d9fcc41fc263077716273dd4136bc00f 100644
+index fed37a4d228e89e658d1ddcd3dc10c419cbb487c..69ea4796e62fc492a3444a92e7dfc14a9e079ce3 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3722,8 +3722,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -3718,8 +3718,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
  
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,
