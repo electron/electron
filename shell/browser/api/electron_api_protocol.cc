@@ -162,7 +162,7 @@ void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
 
 namespace {
 
-const char* kBuiltinSchemes[] = {
+const char* const kBuiltinSchemes[] = {
     "about", "file", "http", "https", "data", "filesystem",
 };
 

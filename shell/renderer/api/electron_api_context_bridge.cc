@@ -41,11 +41,10 @@ namespace api {
 
 namespace context_bridge {
 
-const char* const kProxyFunctionPrivateKey = "electron_contextBridge_proxy_fn";
-const char* const kSupportsDynamicPropertiesPrivateKey =
+const char kProxyFunctionPrivateKey[] = "electron_contextBridge_proxy_fn";
+const char kSupportsDynamicPropertiesPrivateKey[] =
     "electron_contextBridge_supportsDynamicProperties";
-const char* const kOriginalFunctionPrivateKey =
-    "electron_contextBridge_original_fn";
+const char kOriginalFunctionPrivateKey[] = "electron_contextBridge_original_fn";
 
 }  // namespace context_bridge
 
@@ -439,7 +438,7 @@ void ProxyFunctionWrapper(const v8::FunctionCallbackInfo<v8::Value>& info) {
         did_error = true;
         v8::Local<v8::Value> exception = try_catch.Exception();
 
-        const char* err_msg =
+        const char err_msg[] =
             "An unknown exception occurred in the isolated context, an error "
             "occurred but a valid exception was not thrown.";
 

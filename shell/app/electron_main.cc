@@ -116,7 +116,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
 
 #ifdef _DEBUG
   // Don't display assert dialog boxes in CI test runs
-  static const char* kCI = "CI";
+  static const char kCI[] = "CI";
   if (IsEnvSet(kCI)) {
     _CrtSetReportMode(_CRT_ERROR, _CRTDBG_MODE_DEBUG | _CRTDBG_MODE_FILE);
     _CrtSetReportFile(_CRT_ERROR, _CRTDBG_FILE_STDERR);
