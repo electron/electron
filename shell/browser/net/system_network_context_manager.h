@@ -16,10 +16,6 @@
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 
-namespace net_log {
-class NetExportFileWriter;
-}
-
 namespace electron {
 network::mojom::HttpAuthDynamicParamsPtr CreateHttpAuthDynamicParams();
 }

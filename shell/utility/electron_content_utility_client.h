@@ -18,7 +18,7 @@ class PrintingHandler;
 
 namespace mojo {
 class ServiceFactory;
-}  // namespace mojo
+}
 
 namespace electron {
 

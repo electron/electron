@@ -6,7 +6,10 @@
 #define SHELL_RENDERER_GUEST_VIEW_CONTAINER_H_
 
 #include "base/callback.h"
-#include "content/public/renderer/render_frame.h"
+
+namespace content {
+class RenderFrame;
+}
 
 namespace gfx {
 class Size;

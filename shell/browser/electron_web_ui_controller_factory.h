@@ -9,8 +9,11 @@
 
 #include "base/macros.h"
 #include "base/memory/singleton.h"
-#include "content/public/browser/web_ui_controller.h"
 #include "content/public/browser/web_ui_controller_factory.h"
+
+namespace content {
+class WebUIController;
+}
 
 namespace electron {
 

@@ -10,6 +10,7 @@
 
 #include "base/memory/ptr_util.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/values.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/color_util.h"

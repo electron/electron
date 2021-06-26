@@ -10,11 +10,12 @@
 #include "base/observer_list_types.h"
 #include "base/values.h"
 #include "ui/base/window_open_disposition.h"
-#include "url/gurl.h"
 
 #if defined(OS_WIN)
 #include <windows.h>
 #endif
+
+class GURL;
 
 namespace gfx {
 class Rect;

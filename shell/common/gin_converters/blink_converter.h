@@ -17,7 +17,6 @@ class WebMouseEvent;
 class WebMouseWheelEvent;
 class WebKeyboardEvent;
 struct DeviceEmulationParams;
-struct WebSize;
 }  // namespace blink
 
 namespace gin {

@@ -33,10 +33,6 @@ namespace base {
 class FilePath;
 }
 
-namespace gfx {
-class Image;
-}
-
 namespace gin_helper {
 class Arguments;
 }

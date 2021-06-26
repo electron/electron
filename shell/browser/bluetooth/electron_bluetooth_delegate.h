@@ -17,11 +17,11 @@
 
 namespace blink {
 class WebBluetoothDeviceId;
-}  // namespace blink
+}
 
 namespace content {
 class RenderFrameHost;
-}  // namespace content
+}
 
 namespace device {
 class BluetoothDevice;

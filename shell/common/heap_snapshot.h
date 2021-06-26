@@ -5,8 +5,13 @@
 #ifndef SHELL_COMMON_HEAP_SNAPSHOT_H_
 #define SHELL_COMMON_HEAP_SNAPSHOT_H_
 
-#include "base/files/file.h"
-#include "v8/include/v8.h"
+namespace base {
+class File;
+}
+
+namespace v8 {
+class Isolate;
+}
 
 namespace electron {
 
