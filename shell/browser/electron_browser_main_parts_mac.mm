@@ -7,6 +7,7 @@
 #include "base/mac/bundle_locations.h"
 #include "base/mac/foundation_util.h"
 #include "base/path_service.h"
+#include "services/device/public/cpp/geolocation/geolocation_system_permission_mac.h"
 #import "shell/browser/mac/electron_application.h"
 #include "shell/browser/mac/electron_application_delegate.h"
 #include "shell/common/electron_paths.h"
@@ -27,6 +28,9 @@ void ElectronBrowserMainParts::PreMainMessageLoopStart() {
   [[NSUserDefaults standardUserDefaults]
       setObject:@"NO"
          forKey:@"NSTreatUnknownArgumentsAsOpen"];
+
+  location_permission_manager_ =
+      device::GeolocationSystemPermissionManager::Create();
 }
 
 void ElectronBrowserMainParts::FreeAppDelegate() {
