@@ -1,0 +1,49 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Anna Henningsen <anna@addaleax.net>
+Date: Sun, 6 Dec 2020 16:35:06 +0100
+Subject: src: add missing context scopes
+
+Add scopes that ensure that the context associated with the
+current Environment is always entered when working with it.
+
+PR-URL: https://github.com/nodejs/node/pull/36413
+Reviewed-By: Colin Ihrig <cjihrig@gmail.com>
+Reviewed-By: Gus Caplan <me@gus.host>
+Reviewed-By: Benjamin Gruenbaum <benjamingr@gmail.com>
+Reviewed-By: Gireesh Punathil <gpunathi@in.ibm.com>
+Reviewed-By: James M Snell <jasnell@gmail.com>
+Reviewed-By: Rich Trott <rtrott@gmail.com>
+
+diff --git a/src/env.cc b/src/env.cc
+index 3ad13dd94a0954a447f5ce342a47823217d8b135..64266ea264448dfbe63a4ecad3cc784608ef3ffa 100644
+--- a/src/env.cc
++++ b/src/env.cc
+@@ -501,6 +501,8 @@ void Environment::InitializeLibuv() {
+       [](uv_async_t* async) {
+         Environment* env = ContainerOf(
+             &Environment::task_queues_async_, async);
++        HandleScope handle_scope(env->isolate());
++        Context::Scope context_scope(env->context());
+         env->RunAndClearNativeImmediates();
+       });
+   uv_unref(reinterpret_cast<uv_handle_t*>(&task_queues_async_));
+diff --git a/src/node_file.cc b/src/node_file.cc
+index de5c455c7a2a85f0676dfa50238c9bf29446ad58..3baf658961a80f91f08e75d728746c4127dab8bc 100644
+--- a/src/node_file.cc
++++ b/src/node_file.cc
+@@ -288,6 +288,7 @@ inline void FileHandle::Close() {
+ void FileHandle::CloseReq::Resolve() {
+   Isolate* isolate = env()->isolate();
+   HandleScope scope(isolate);
++  Context::Scope context_scope(env()->context());
+   InternalCallbackScope callback_scope(this);
+   Local<Promise> promise = promise_.Get(isolate);
+   Local<Promise::Resolver> resolver = promise.As<Promise::Resolver>();
+@@ -297,6 +298,7 @@ void FileHandle::CloseReq::Resolve() {
+ void FileHandle::CloseReq::Reject(Local<Value> reason) {
+   Isolate* isolate = env()->isolate();
+   HandleScope scope(isolate);
++  Context::Scope context_scope(env()->context());
+   InternalCallbackScope callback_scope(this);
+   Local<Promise> promise = promise_.Get(isolate);
+   Local<Promise::Resolver> resolver = promise.As<Promise::Resolver>();
