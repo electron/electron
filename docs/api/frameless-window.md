@@ -61,15 +61,12 @@ const win = new BrowserWindow({ titleBarStyle: 'customButtonsOnHover', frame: fa
 win.show()
 ```
 
-#### `overlay`
+## Windows Control Overlay
 
-Results in a hidden title bar and a full size content window, yet the title bar still has the standard window controls ("traffic lights" on macOS). These controls are in the top left on macOS and top right for Windows.  If `enableBlinkFeatures: 'WebAppWindowControlsOverlay'` is set, using this value will also enable the Window Controls Overlay [JavaScript APIs][overlay-javascript-apis] and [CSS Environment Variables][overlay-css-env-vars].
-
-```javascript
-const { BrowserWindow } = require('electron')
-const win = new BrowserWindow({ titleBarStyle: 'overlay' })
-win.show()
-```
+On macOS, when using a frameless window in conjuction with `win.setWindowButtonVisibility(true)` or using one of the `titleBarStyle`s described above so
+that the traffic lights are visibile, you can access the Window Controls Overlay [JavaScript APIs][overlay-javascript-apis] and
+[CSS Environment Variables][overlay-css-env-vars] by setting the blink feature `'WebAppWindowControlsOverlay`
+(eg `enableBlinkFeatures: 'WebAppWindowControlsOverlay'`).
 
 ## Transparent window
 

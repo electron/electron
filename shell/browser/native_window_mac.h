@@ -187,7 +187,6 @@ class NativeWindowMac : public NativeWindow,
     kHidden,
     kHiddenInset,
     kCustomButtonsOnHover,
-    kOverlay
   };
   TitleBarStyle title_bar_style() const { return title_bar_style_; }
 
