@@ -20,10 +20,10 @@
 namespace electron {
 
 void SetWMSpecState(x11::Window window, bool enabled, x11::Atom state) {
-  ui::SendClientMessage(window, ui::GetX11RootWindow(),
-                        x11::GetAtom("_NET_WM_STATE"),
-                        {enabled ? 1 : 0, static_cast<uint32_t>(state),
-                         static_cast<uint32_t>(x11::Window::None), 1, 0});
+  ui::SendClientMessage(
+      window, ui::GetX11RootWindow(), x11::GetAtom("_NET_WM_STATE"),
+      {uint32_t{enabled ? 1 : 0}, static_cast<uint32_t>(state),
+       static_cast<uint32_t>(x11::Window::None), 1, 0});
 }
 
 void SetWindowType(x11::Window window, const std::string& type) {
