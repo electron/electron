@@ -882,7 +882,13 @@ ElectronBrowserClient::GetSystemNetworkContext() {
 std::unique_ptr<content::BrowserMainParts>
 ElectronBrowserClient::CreateBrowserMainParts(
     const content::MainFunctionParams& params) {
-  return std::make_unique<ElectronBrowserMainParts>(params);
+  auto browser_main_parts = std::make_unique<ElectronBrowserMainParts>(params);
+
+#if defined(OS_MAC)
+  browser_main_parts_ = browser_main_parts.get();
+#endif
+
+  return browser_main_parts;
 }
 
 void ElectronBrowserClient::WebNotificationAllowed(
@@ -1616,6 +1622,14 @@ void ElectronBrowserClient::RegisterBrowserInterfaceBindersForServiceWorker(
         map) {
   map->Add<blink::mojom::BadgeService>(
       base::BindRepeating(&BindBadgeServiceForServiceWorker));
+}
+
+device::GeolocationManager* ElectronBrowserClient::GetGeolocationManager() {
+#if defined(OS_MAC)
+  return browser_main_parts_->GetGeolocationManager();
+#else
+  return nullptr;
+#endif
 }
 
 }  // namespace electron

@@ -93,6 +93,7 @@
 #endif
 
 #if defined(OS_MAC)
+#include "services/device/public/cpp/geolocation/geolocation_manager.h"
 #include "shell/browser/ui/cocoa/views_delegate_mac.h"
 #else
 #include "shell/browser/ui/views/electron_views_delegate.h"
@@ -552,6 +553,12 @@ ElectronBrowserMainParts::GetGeolocationControl() {
   }
   return geolocation_control_.get();
 }
+
+#if defined(OS_MAC)
+device::GeolocationManager* ElectronBrowserMainParts::GetGeolocationManager() {
+  return geolocation_manager_.get();
+}
+#endif
 
 IconManager* ElectronBrowserMainParts::GetIconManager() {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
