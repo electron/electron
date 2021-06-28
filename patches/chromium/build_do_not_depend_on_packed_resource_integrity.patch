@@ -46,10 +46,10 @@ index 57fa8d4642c61997081cc5c7336e253f019a1390..1d774971cc1557303b9ebfa9c6226bfd
      }
  
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index f3147212d9408a480de7a87139c2443da49893ad..0ed06f521bf2f422e51fcee17ea7776155d61929 100644
+index f51ad2e7b6df421c902c61b5c0f0d3c4ca541cb1..a4c47f966324d75c7b4a9def367b354cf23dfa80 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
-@@ -5213,7 +5213,6 @@ test("unit_tests") {
+@@ -5214,7 +5214,6 @@ test("unit_tests") {
      assert(toolkit_views)
      sources += [ "../browser/ui/startup/credential_provider_signin_info_fetcher_win_unittest.cc" ]
      deps += [
@@ -57,7 +57,7 @@ index f3147212d9408a480de7a87139c2443da49893ad..0ed06f521bf2f422e51fcee17ea77761
        "//chrome/browser:chrome_process_finder",
        "//chrome/browser/safe_browsing/chrome_cleaner",
        "//chrome/browser/safe_browsing/chrome_cleaner:public",
-@@ -5226,6 +5225,12 @@ test("unit_tests") {
+@@ -5227,6 +5226,12 @@ test("unit_tests") {
        "//components/chrome_cleaner/public/proto",
        "//ui/events/devices:test_support",
      ]
@@ -70,7 +70,7 @@ index f3147212d9408a480de7a87139c2443da49893ad..0ed06f521bf2f422e51fcee17ea77761
    }
  
    if (is_win || is_chromeos_ash || is_mac) {
-@@ -5784,7 +5789,6 @@ test("unit_tests") {
+@@ -5785,7 +5790,6 @@ test("unit_tests") {
      }
  
      deps += [
@@ -78,7 +78,7 @@ index f3147212d9408a480de7a87139c2443da49893ad..0ed06f521bf2f422e51fcee17ea77761
        "//chrome/browser:cart_db_content_proto",
        "//chrome/browser/media/router:test_support",
        "//chrome/browser/promo_browser_command:mojo_bindings",
-@@ -5819,6 +5823,9 @@ test("unit_tests") {
+@@ -5820,6 +5824,9 @@ test("unit_tests") {
        "//ui/color:test_support",
        "//ui/native_theme:test_support",
      ]
