@@ -34,6 +34,7 @@ class SSLCertRequestInfo;
 
 namespace electron {
 
+class ElectronBrowserMainParts;
 class NotificationPresenter;
 class PlatformNotificationService;
 
@@ -87,6 +88,8 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   content::SerialDelegate* GetSerialDelegate() override;
 
   content::BluetoothDelegate* GetBluetoothDelegate() override;
+
+  device::GeolocationManager* GetGeolocationManager() override;
 
  protected:
   void RenderProcessWillLaunch(content::RenderProcessHost* host) override;
@@ -297,6 +300,10 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
 
   std::unique_ptr<ElectronSerialDelegate> serial_delegate_;
   std::unique_ptr<ElectronBluetoothDelegate> bluetooth_delegate_;
+
+#if defined(OS_MAC)
+  ElectronBrowserMainParts* browser_main_parts_ = nullptr;
+#endif
 
   DISALLOW_COPY_AND_ASSIGN(ElectronBrowserClient);
 };
