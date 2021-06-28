@@ -76,6 +76,7 @@ ipcMainInternal.on(
     const referrer: Electron.Referrer = { url: '', policy: 'strict-origin-when-cross-origin' };
     const browserWindowOptions = event.sender._callWindowOpenHandler(event, { url, frameName, features, disposition: 'new-window', referrer });
     if (event.defaultPrevented) {
+      event.returnValue = null;
       return;
     }
     const guest = openGuestWindow({
