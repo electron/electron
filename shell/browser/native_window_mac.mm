@@ -179,8 +179,6 @@ struct Converter<electron::NativeWindowMac::TitleBarStyle> {
       *out = TitleBarStyle::kHiddenInset;
     } else if (title_bar_style == "customButtonsOnHover") {
       *out = TitleBarStyle::kCustomButtonsOnHover;
-    } else if (title_bar_style == "overlay") {
-      *out = TitleBarStyle::kOverlay;
     } else {
       return false;
     }
@@ -1798,8 +1796,7 @@ void NativeWindowMac::AddContentViewLayers() {
           [[WindowButtonsView alloc] initWithMargin:traffic_light_position_]);
       if (title_bar_style_ == TitleBarStyle::kCustomButtonsOnHover)
         [buttons_view_ setShowOnHover:YES];
-      if ((title_bar_style_ == TitleBarStyle::kHiddenInset ||
-           title_bar_style_ == TitleBarStyle::kOverlay) &&
+      if (title_bar_style_ == TitleBarStyle::kHiddenInset &&
           !traffic_light_position_)
         [buttons_view_ setMargin:gfx::Point(12, 11)];
 
@@ -1863,7 +1860,7 @@ void NativeWindowMac::SetForwardMouseMessages(bool forward) {
 
 gfx::Rect NativeWindowMac::GetWindowControlsOverlayRect() {
   gfx::Rect bounding_rect;
-  if (title_bar_style_ == TitleBarStyle::kOverlay) {
+  if (!has_frame() && buttons_view_ && ![buttons_view_ isHidden]) {
     NSRect button_frame = [buttons_view_ frame];
     gfx::Point buttons_view_margin = [buttons_view_ getMargin];
     const int overlay_width = GetContentSize().width() - NSWidth(button_frame) -
