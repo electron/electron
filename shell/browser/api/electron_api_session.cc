@@ -1205,9 +1205,6 @@ const char* Session::GetTypeName() {
 
 namespace {
 
-using electron::api::Cookies;
-using electron::api::Protocol;
-using electron::api::ServiceWorkerContext;
 using electron::api::Session;
 
 v8::Local<v8::Value> FromPartition(const std::string& partition,

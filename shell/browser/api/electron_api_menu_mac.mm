@@ -18,8 +18,6 @@
 #include "shell/browser/unresponsive_suppressor.h"
 #include "shell/common/node_includes.h"
 
-using content::BrowserThread;
-
 namespace {
 
 static scoped_nsobject<NSMenu> applicationMenu_;
