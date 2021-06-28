@@ -3115,7 +3115,19 @@ describe('BrowserWindow module', () => {
       expect(url).to.equal('http://example.com/test');
       expect(frameName).to.equal('');
       expect(disposition).to.equal('foreground-tab');
-      expect(options).to.be.an('object').not.null();
+      expect(options).to.deep.equal({
+        show: true,
+        width: 800,
+        height: 600,
+        webPreferences: {
+          contextIsolation: true,
+          nodeIntegration: false,
+          webviewTag: false,
+          nodeIntegrationInSubFrames: false,
+          openerId: options.webPreferences!.openerId
+        },
+        webContents: undefined
+      });
       expect(referrer.policy).to.equal('strict-origin-when-cross-origin');
       expect(referrer.url).to.equal('');
       expect(additionalFeatures).to.deep.equal([]);

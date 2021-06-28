@@ -141,7 +141,16 @@ WebContentsPreferences::WebContentsPreferences(
   SetDefaultBoolIfUndefined(options::kDisableHtmlFullscreenWindowResize, false);
   SetDefaultBoolIfUndefined(options::kWebviewTag, false);
   SetDefaultBoolIfUndefined(options::kSandbox, false);
-  SetDefaultBoolIfUndefined(options::kNativeWindowOpen, true);
+  if (IsUndefined(options::kNativeWindowOpen)) {
+    node::Environment* env = node::Environment::GetCurrent(isolate);
+    EmitWarning(env,
+                "The default of nativeWindowOpen is deprecated and will be "
+                "changing from false to true in Electron 15.  "
+                "See https://github.com/electron/electron/issues/28511 for "
+                "more information.",
+                "electron");
+  }
+  SetDefaultBoolIfUndefined(options::kNativeWindowOpen, false);
   SetDefaultBoolIfUndefined(options::kContextIsolation, true);
   SetDefaultBoolIfUndefined(options::kJavaScript, true);
   SetDefaultBoolIfUndefined(options::kImages, true);
@@ -467,7 +476,7 @@ void WebContentsPreferences::OverrideWebkitPrefs(
   GetPreloadPath(&prefs->preload);
 
   // Check if nativeWindowOpen is enabled.
-  prefs->native_window_open = IsEnabled(options::kNativeWindowOpen, true);
+  prefs->native_window_open = IsEnabled(options::kNativeWindowOpen);
 
   // Check if we have node integration specified.
   prefs->node_integration = IsEnabled(options::kNodeIntegration);

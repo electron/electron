@@ -501,8 +501,7 @@ describe('<webview> tag', function () {
   describe('new-window event', () => {
     it('emits when window.open is called', async () => {
       loadWebView(webview, {
-        src: `file://${fixtures}/pages/window-open.html`,
-        allowpopups: true
+        src: `file://${fixtures}/pages/window-open.html`
       });
       const { url, frameName } = await waitForEvent(webview, 'new-window');
 
@@ -512,8 +511,7 @@ describe('<webview> tag', function () {
 
     it('emits when link with target is called', async () => {
       loadWebView(webview, {
-        src: `file://${fixtures}/pages/target-name.html`,
-        allowpopups: true
+        src: `file://${fixtures}/pages/target-name.html`
       });
       const { url, frameName } = await waitForEvent(webview, 'new-window');
 
