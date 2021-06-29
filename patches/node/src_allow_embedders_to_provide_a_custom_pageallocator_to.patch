@@ -4,7 +4,12 @@ Date: Tue, 3 Nov 2020 16:17:38 -0800
 Subject: src: allow embedders to provide a custom PageAllocator to
  NodePlatform
 
-For certain embedder use cases there are more complex memory allocation requirements that the default V8 page allocator does not handle, for example using MAP_JIT when running under a hardened runtime environment on macOS.  This allows such embedders to provide their own allocator that does handle these cases.
+For certain embedder use cases there are more complex memory allocation requirements that
+the default V8 page allocator does not handle, for example using MAP_JIT when running under
+a hardened runtime environment on macOS.  This allows such embedders to provide their own
+allocator that does handle these cases.
+
+Upstreamed in https://github.com/nodejs/node/pull/38362.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
 index 09c0d22ff91856704f61024646c946a39baf53d8..b060a8e980432637c430bd66a5216095984e4381 100644
