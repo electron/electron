@@ -46,9 +46,6 @@ void WinCaptionButton::OnPaintBackground(gfx::Canvas* canvas) {
   // Paint the background of the button (the semi-transparent rectangle that
   // appears when you hover or press the button).
 
-  // TODO(@mlaurencin): For having non-default button colors in future, bg_color
-  // and theme_alpha can be set to 0x00 so the button is transparent. See
-  // WinCaptionButton::GetBaseColor for the needed button text changes
   const SkColor bg_color = frame_view_->window()->overlay_color();
   const SkAlpha theme_alpha = SkColorGetA(bg_color);
 
@@ -139,7 +136,7 @@ void DrawRect(gfx::Canvas* canvas,
 }  // namespace
 
 void WinCaptionButton::PaintSymbol(gfx::Canvas* canvas) {
-  SkColor symbol_color = frame_view_->window()->overlay_text_color();
+  SkColor symbol_color = frame_view_->window()->overlay_symbol_color();
 
   if (button_type_ == VIEW_ID_CLOSE_BUTTON &&
       hover_animation().is_animating()) {
