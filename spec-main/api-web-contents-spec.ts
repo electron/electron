@@ -2024,6 +2024,19 @@ describe('webContents module', () => {
     });
   });
 
+  describe('page-title-updated event', () => {
+    afterEach(closeAllWindows);
+    it('is emitted with a full title for pages with no navigation', async () => {
+      const bw = new BrowserWindow({ show: false, webPreferences: { nativeWindowOpen: true } });
+      await bw.loadURL('about:blank');
+      bw.webContents.executeJavaScript('child = window.open("", "", "show=no"); null');
+      const [, child] = await emittedOnce(app, 'web-contents-created');
+      bw.webContents.executeJavaScript('child.document.title = "new title"');
+      const [, title] = await emittedOnce(child, 'page-title-updated');
+      expect(title).to.equal('new title');
+    });
+  });
+
   describe('crashed event', () => {
     it('does not crash main process when destroying WebContents in it', (done) => {
       const contents = (webContents as any).create({ nodeIntegration: true });
