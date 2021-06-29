@@ -110,11 +110,11 @@ void ElectronRendererClient::DidCreateScriptContext(
       node_bindings_->CreateEnvironment(renderer_context, nullptr);
 
   // If we have disabled the site instance overrides we should prevent loading
-  // any non-context aware native module
-  env->set_force_context_aware(true);
+  // any non-context aware native module.
+  env->options()->force_context_aware = true;
 
   // We do not want to crash the renderer process on unhandled rejections.
-  env->set_unhandled_rejections_mode("warn");
+  env->options()->unhandled_rejections = "warn";
 
   environments_.insert(env);
 
