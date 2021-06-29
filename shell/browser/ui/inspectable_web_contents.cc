@@ -158,7 +158,7 @@ GURL GetRemoteBaseURL() {
   return GURL(base::StringPrintf("%s%s/%s/",
                                  kChromeUIDevToolsRemoteFrontendBase,
                                  kChromeUIDevToolsRemoteFrontendPath,
-                                 content::GetWebKitRevision().c_str()));
+                                 content::GetChromiumGitRevision().c_str()));
 }
 
 GURL GetDevToolsURL(bool can_dock) {

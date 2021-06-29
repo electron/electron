@@ -352,8 +352,8 @@ describe('web security', () => {
       expect(r).to.equal('WebAssembly.instantiate(): Wasm code generation disallowed by embedder');
     });
 
-    it('wasm codegen is allowed with "wasm-eval" csp', async () => {
-      const r = await loadWasm("'wasm-eval'");
+    it('wasm codegen is allowed with "wasm-unsafe-eval" csp', async () => {
+      const r = await loadWasm("'wasm-unsafe-eval'");
       expect(r).to.equal('loaded');
     });
   });

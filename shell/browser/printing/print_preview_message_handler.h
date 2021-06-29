@@ -14,6 +14,7 @@
 #include "content/public/browser/web_contents_user_data.h"
 #include "mojo/public/cpp/bindings/associated_receiver.h"
 #include "mojo/public/cpp/bindings/associated_remote.h"
+#include "printing/mojom/print.mojom.h"
 #include "shell/common/gin_helper/promise.h"
 #include "v8/include/v8.h"
 
