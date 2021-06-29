@@ -1002,12 +1002,10 @@ ElectronBrowserClient::GetPlatformNotificationService(
 }
 
 base::FilePath ElectronBrowserClient::GetDefaultDownloadDirectory() {
-  // ~/Downloads
-  base::FilePath path;
-  if (base::PathService::Get(base::DIR_HOME, &path))
-    path = path.Append(FILE_PATH_LITERAL("Downloads"));
-
-  return path;
+  base::FilePath download_path;
+  if (base::PathService::Get(chrome::DIR_DEFAULT_DOWNLOADS, &download_path))
+    return download_path;
+  return base::FilePath();
 }
 
 scoped_refptr<network::SharedURLLoaderFactory>
