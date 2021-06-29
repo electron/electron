@@ -13,10 +13,10 @@ uses internally for things like menus and devtools.
 We can remove this patch once it has in some shape been upstreamed.
 
 diff --git a/ui/native_theme/native_theme.cc b/ui/native_theme/native_theme.cc
-index db0681f9278b4a60f6c25faf37fdb2aba41d65a6..58655f4285d3835b51c43e0b55fe15d9d6360a7f 100644
+index cfacc084fe300f0d2863183723b4126f69b1377a..9278659d6b25b55518d2eee41ac845458358912a 100644
 --- a/ui/native_theme/native_theme.cc
 +++ b/ui/native_theme/native_theme.cc
-@@ -135,6 +135,8 @@ absl::optional<SkColor> NativeTheme::GetColorProviderColor(
+@@ -136,6 +136,8 @@ absl::optional<SkColor> NativeTheme::GetColorProviderColor(
  }
  
  bool NativeTheme::ShouldUseDarkColors() const {
@@ -26,7 +26,7 @@ index db0681f9278b4a60f6c25faf37fdb2aba41d65a6..58655f4285d3835b51c43e0b55fe15d9
  }
  
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
-index 2ba7ea70d901b17c3f8f98cb93e2bc8a97ec8853..ad2dc2a217bdc08820fc5311a2bda08e42182620 100644
+index 06c11ef6f03a5de803d9f8d3893d614e763afb16..cd7e6bdbf24c4ee1b5fd0047b83de2c12106d7da 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
 @@ -404,6 +404,22 @@ class NATIVE_THEME_EXPORT NativeTheme {
@@ -52,7 +52,7 @@ index 2ba7ea70d901b17c3f8f98cb93e2bc8a97ec8853..ad2dc2a217bdc08820fc5311a2bda08e
    // Returns a shared instance of the native theme that should be used for web
    // rendering. Do not use it in a normal application context (i.e. browser).
    // The returned object should not be deleted by the caller. This function is
-@@ -578,6 +594,7 @@ class NATIVE_THEME_EXPORT NativeTheme {
+@@ -573,6 +589,7 @@ class NATIVE_THEME_EXPORT NativeTheme {
    bool forced_colors_ = false;
    PreferredColorScheme preferred_color_scheme_ = PreferredColorScheme::kLight;
    PreferredContrast preferred_contrast_ = PreferredContrast::kNoPreference;

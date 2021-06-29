@@ -1294,8 +1294,15 @@ describe('app module', () => {
       });
       const [exitCode] = await emittedOnce(appProcess, 'exit');
       if (exitCode === 0) {
-        // return info data on successful exit
-        return JSON.parse(gpuInfoData);
+        try {
+          const [, json] = /HERE COMES THE JSON: (.+) AND THERE IT WAS/.exec(gpuInfoData)!;
+          // return info data on successful exit
+          return JSON.parse(json);
+        } catch (e) {
+          console.error('Failed to interpret the following as JSON:');
+          console.error(gpuInfoData);
+          throw e;
+        }
       } else {
         // return error if not clean exit
         return Promise.reject(new Error(errorData));

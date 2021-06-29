@@ -8,7 +8,7 @@ needed in chromium but our autofill implementation uses them.  This patch can be
 our autofill implementation to work like Chromium's.
 
 diff --git a/ui/native_theme/common_theme.cc b/ui/native_theme/common_theme.cc
-index 4a526861f54e7c6fffaf76a2457bf418698cdc8b..2335988a186e4a437bbe82a6a113a17755e65cd1 100644
+index 37fe41cb525ebc19a32a592f5695f7a083135116..d70767e072799c15b5ee0c4eeb4c76d82dfb247c 100644
 --- a/ui/native_theme/common_theme.cc
 +++ b/ui/native_theme/common_theme.cc
 @@ -68,6 +68,14 @@ absl::optional<SkColor> GetDarkSchemeColor(NativeTheme::ColorId color_id,
@@ -46,7 +46,7 @@ index 4a526861f54e7c6fffaf76a2457bf418698cdc8b..2335988a186e4a437bbe82a6a113a177
        // Keeping the kColorId_NumColors case instead of using the default case
        // allows ColorId additions to trigger compile error for an incomplete
 diff --git a/ui/native_theme/native_theme_color_id.h b/ui/native_theme/native_theme_color_id.h
-index 083640808cd6a4a5e6e65d715c77ef58d090ba1e..d7d2fe4e0ada417769cbfe8390b8e2b134549962 100644
+index 84848edbbe9de7ef9fe6e2ab0a34d3b9428cde10..5e07980e4793cc3b19140510fb3fd3b23c6a88ef 100644
 --- a/ui/native_theme/native_theme_color_id.h
 +++ b/ui/native_theme/native_theme_color_id.h
 @@ -157,6 +157,11 @@

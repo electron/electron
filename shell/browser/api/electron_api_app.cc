@@ -11,6 +11,7 @@
 
 #include "base/callback_helpers.h"
 #include "base/command_line.h"
+#include "base/containers/span.h"
 #include "base/environment.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
@@ -536,7 +537,8 @@ void OnClientCertificateSelected(
     return;
 
   auto certs = net::X509Certificate::CreateCertificateListFromBytes(
-      data.c_str(), data.length(), net::X509Certificate::FORMAT_AUTO);
+      base::as_bytes(base::make_span(data.c_str(), data.size())),
+      net::X509Certificate::FORMAT_AUTO);
   if (!certs.empty()) {
     scoped_refptr<net::X509Certificate> cert(certs[0].get());
     for (auto& identity : *identities) {
