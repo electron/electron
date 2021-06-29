@@ -1884,10 +1884,10 @@ describe('BrowserWindow module', () => {
         height: 400,
         titleBarStyle: style,
         webPreferences: {
-          enableBlinkFeatures: 'WebAppWindowControlsOverlay',
           nodeIntegration: true,
           contextIsolation: false
-        }
+        },
+        titleBarOverlay: true
       });
       const overlayHTML = path.join(__dirname, 'fixtures', 'pages', 'overlay.html');
       await w.loadFile(overlayHTML);

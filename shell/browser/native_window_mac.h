@@ -282,6 +282,8 @@ class NativeWindowMac : public NativeWindow,
   // The presentation options before entering simple fullscreen mode.
   NSApplicationPresentationOptions simple_fullscreen_options_;
 
+  bool titlebar_overlay_ = false;
+
   DISALLOW_COPY_AND_ASSIGN(NativeWindowMac);
 };
 
