@@ -64,7 +64,7 @@ win.show()
 ## Windows Control Overlay
 
 On macOS, when using a frameless window in conjuction with `win.setWindowButtonVisibility(true)` or using one of the `titleBarStyle`s described above so
-that the traffic lights are visibile, you can access the Window Controls Overlay [JavaScript APIs][overlay-javascript-apis] and
+that the traffic lights are visible, you can access the Window Controls Overlay [JavaScript APIs][overlay-javascript-apis] and
 [CSS Environment Variables][overlay-css-env-vars] by setting the `titleBarOverlay` option to true:
 
 ```javascript
