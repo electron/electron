@@ -80,7 +80,7 @@ Starting with the `index.html` file:
 </html>
 ```
 
-And the `style.css` file:
+And the `styles.css` file:
 
 ```css title='style.css'
 @media (prefers-color-scheme: dark) {
