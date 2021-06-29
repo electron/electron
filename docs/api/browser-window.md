@@ -393,7 +393,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       this will cause the `preferred-size-changed` event to be emitted on the
       `WebContents` when the preferred size changes. Default is `false`.
   * `titleBarOverlay` Boolean (optional) -  On macOS, when using a frameless window in conjunction with
-    `win.setWindowButtonVisibility(true)` or using a `titleBarStyle` so that the traffic lights are visibile,
+    `win.setWindowButtonVisibility(true)` or using a `titleBarStyle` so that the traffic lights are visible,
     this property enables the Window Controls Overlay [JavaScript APIs][overlay-javascript-apis] and
     [CSS Environment Variables][overlay-css-env-vars].  Default is `false`.
 
