@@ -1,0 +1,54 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Raymond Toy <rtoy@chromium.org>
+Date: Wed, 9 Jun 2021 16:46:08 +0000
+Subject: Add AudioHandler to orphan handlers when context is suspended.
+
+If the context is suspended, pulling of the audio graph is stopped.
+But we still need to add the handler in this case so that when the
+context is resumed, the handler is still alive until it can be safely
+removed.  Hence, we must still add the handler if the context is
+suspended.
+
+Test cases from issue 1176218 manually tested with no failures.  Also
+this doesn't cause any regressions in issue 1003807 and issue 1017961.
+(Manually tested the test cases from those issues.)
+
+(cherry picked from commit 4a38ea3f1f78e0a0ffc1464e227cee6c1f2fd90b)
+
+Bug: 1176218
+Change-Id: Icd927c488505dfee9ff716866f98286e286d546a
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2874771
+Reviewed-by: Hongchan Choi <hongchan@chromium.org>
+Commit-Queue: Raymond Toy <rtoy@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#881533}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2944893
+Commit-Queue: Artem Sumaneev <asumaneev@google.com>
+Owners-Override: Artem Sumaneev <asumaneev@google.com>
+Reviewed-by: Achuith Bhandarkar <achuith@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4430@{#1508}
+Cr-Branched-From: e5ce7dc4f7518237b3d9bb93cccca35d25216cbe-refs/heads/master@{#857950}
+
+diff --git a/third_party/blink/renderer/modules/webaudio/audio_node.cc b/third_party/blink/renderer/modules/webaudio/audio_node.cc
+index 80a044235e4ff552eb696e8627f74927f622aae0..c036d175f403f239fb67c185f3cef84aabac92f7 100644
+--- a/third_party/blink/renderer/modules/webaudio/audio_node.cc
++++ b/third_party/blink/renderer/modules/webaudio/audio_node.cc
+@@ -614,13 +614,13 @@ void AudioNode::Dispose() {
+   BaseAudioContext::GraphAutoLocker locker(context());
+   Handler().Dispose();
+ 
+-  // Add the handler to the orphan list if the context is pulling on the audio
+-  // graph.  This keeps the handler alive until it can be deleted at a safe
+-  // point (in pre/post handler task).  If graph isn't being pulled, we can
+-  // delete the handler now since nothing on the audio thread will be touching
+-  // it.
++  // Add the handler to the orphan list.  This keeps the handler alive until it
++  // can be deleted at a safe point (in pre/post handler task).  If the graph is
++  // being processed, the handler must be added.  If the context is suspended,
++  // the handler still needs to be added in case the context is resumed.
+   DCHECK(context());
+-  if (context()->IsPullingAudioGraph()) {
++  if (context()->IsPullingAudioGraph() ||
++      context()->ContextState() == BaseAudioContext::kSuspended) {
+     context()->GetDeferredTaskHandler().AddRenderingOrphanHandler(
+         std::move(handler_));
+   }
