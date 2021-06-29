@@ -40,6 +40,10 @@ class GtkUiPlatform;
 }
 #endif
 
+namespace device {
+class GeolocationManager;
+}  // namespace device
+
 namespace electron {
 
 class ElectronBrowserContext;
@@ -83,6 +87,10 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
   // Returns the connection to GeolocationControl which can be
   // used to enable the location services once per client.
   device::mojom::GeolocationControl* GetGeolocationControl();
+
+#if defined(OS_MAC)
+  device::GeolocationManager* GetGeolocationManager();
+#endif
 
   // Returns handle to the class responsible for extracting file icons.
   IconManager* GetIconManager();
@@ -161,6 +169,10 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
 #endif
 
   mojo::Remote<device::mojom::GeolocationControl> geolocation_control_;
+
+#if defined(OS_MAC)
+  std::unique_ptr<device::GeolocationManager> geolocation_manager_;
+#endif
 
   static ElectronBrowserMainParts* self_;
 
