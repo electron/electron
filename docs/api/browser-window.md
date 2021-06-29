@@ -219,16 +219,9 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       bar.
     * `hidden` - Results in a hidden title bar and a full size content window, yet
       the title bar still has the standard window controls ("traffic lights") in
-      the top left.  If `enableBlinkFeatures: 'WebAppWindowControlsOverlay'` is set,
-      using this value will also enable the Window Controls Overlay
-      [JavaScript APIs][overlay-javascript-apis] and
-      [CSS Environment Variables][overlay-css-env-vars].
+      the top left.
     * `hiddenInset` - Results in a hidden title bar with an alternative look
       where the traffic light buttons are slightly more inset from the window edge.
-      If `enableBlinkFeatures: 'WebAppWindowControlsOverlay'` is set, using this
-      value will also enable the Window Controls Overlay
-      [JavaScript APIs][overlay-javascript-apis] and
-      [CSS Environment Variables][overlay-css-env-vars].
     * `customButtonsOnHover` - Results in a hidden title bar and a full size
       content window, the traffic light buttons will display when being hovered
       over in the top left of the window.  **Note:** This option is currently
@@ -399,6 +392,10 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       contain the layout of the document—without requiring scrolling. Enabling
       this will cause the `preferred-size-changed` event to be emitted on the
       `WebContents` when the preferred size changes. Default is `false`.
+  * `titleBarOverlay` Boolean (optional) -  On macOS, when using a frameless window in conjunction with
+    `win.setWindowButtonVisibility(true)` or using a `titleBarStyle` so that the traffic lights are visibile,
+    this property enables the Window Controls Overlay [JavaScript APIs][overlay-javascript-apis] and
+    [CSS Environment Variables][overlay-css-env-vars].  Default is `false`.
 
 When setting minimum or maximum window size with `minWidth`/`maxWidth`/
 `minHeight`/`maxHeight`, it only constrains the users. It won't prevent you from

@@ -57,6 +57,17 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
     web_preferences.Set(options::kShow, show);
   }
 
+  bool titleBarOverlay = false;
+  options.Get(options::ktitleBarOverlay, &titleBarOverlay);
+  if (titleBarOverlay) {
+    std::string enabled_features = "";
+    if (web_preferences.Get(options::kEnableBlinkFeatures, &enabled_features)) {
+      enabled_features += ",";
+    }
+    enabled_features += "WebAppWindowControlsOverlay";
+    web_preferences.Set(options::kEnableBlinkFeatures, enabled_features);
+  }
+
   // Copy the webContents option to webPreferences. This is only used internally
   // to implement nativeWindowOpen option.
   if (options.Get("webContents", &value)) {

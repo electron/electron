@@ -280,6 +280,7 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   options.Get(options::kSimpleFullScreen, &always_simple_fullscreen_);
   options.GetOptional(options::kTrafficLightPosition, &traffic_light_position_);
   options.Get(options::kVisualEffectState, &visual_effect_state_);
+  options.Get(options::ktitleBarOverlay, &titlebar_overlay_);
 
   if (options.Has(options::kFullscreenWindowTitle)) {
     EmitWarning(
@@ -1813,7 +1814,8 @@ void NativeWindowMac::SetForwardMouseMessages(bool forward) {
 
 gfx::Rect NativeWindowMac::GetWindowControlsOverlayRect() {
   gfx::Rect bounding_rect;
-  if (!has_frame() && buttons_view_ && ![buttons_view_ isHidden]) {
+  if (titlebar_overlay_ && !has_frame() && buttons_view_ &&
+      ![buttons_view_ isHidden]) {
     NSRect button_frame = [buttons_view_ frame];
     gfx::Point buttons_view_margin = [buttons_view_ getMargin];
     const int overlay_width = GetContentSize().width() - NSWidth(button_frame) -
