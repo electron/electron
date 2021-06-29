@@ -28,7 +28,7 @@ You can do so by specifying the `titleBarStyle` option:
 
 #### `overlay`
 
-Results in a hidden title bar and a full size content window, yet the title bar still has the standard window controls ("traffic lights" on macOS). These controls are in the top left of the window on macOS and top right on Windows.  Using this value will also enable the Window Controls Overlay [JavaScript APIs][overlay-javascript-apis] and [CSS Environment Variables][overlay-css-env-vars]. On Windows, the additional parameters `overlayColor` and `overlayTextColor` can be used with CSS style colors to set the button color and text color of the button respectively.
+Results in a hidden title bar and a full size content window, yet the title bar still has the standard window controls ("traffic lights" on macOS). These controls are in the top left of the window on macOS and top right on Windows.  Using this value will also enable the Window Controls Overlay [JavaScript APIs][overlay-javascript-apis] and [CSS Environment Variables][overlay-css-env-vars]. On Windows, the additional parameters `overlayColor` and `overlaySymbolColor` can be used with CSS style colors to set the button color and text color of the button respectively.
 
 ```javascript
 const { BrowserWindow } = require('electron')
