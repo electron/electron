@@ -1107,7 +1107,13 @@ ElectronBrowserClient::GetSystemNetworkContext() {
 std::unique_ptr<content::BrowserMainParts>
 ElectronBrowserClient::CreateBrowserMainParts(
     const content::MainFunctionParams& params) {
-  return std::make_unique<ElectronBrowserMainParts>(params);
+  auto browser_main_parts = std::make_unique<ElectronBrowserMainParts>(params);
+
+#if defined(OS_MAC)
+  browser_main_parts_ = browser_main_parts.get();
+#endif
+
+  return browser_main_parts;
 }
 
 void ElectronBrowserClient::WebNotificationAllowed(
@@ -1815,6 +1821,15 @@ content::BluetoothDelegate* ElectronBrowserClient::GetBluetoothDelegate() {
   if (!bluetooth_delegate_)
     bluetooth_delegate_ = std::make_unique<ElectronBluetoothDelegate>();
   return bluetooth_delegate_.get();
+}
+
+device::GeolocationSystemPermissionManager*
+ElectronBrowserClient::GetLocationPermissionManager() {
+#if defined(OS_MAC)
+  return browser_main_parts_->GetLocationPermissionManager();
+#else
+  return nullptr;
+#endif
 }
 
 }  // namespace electron

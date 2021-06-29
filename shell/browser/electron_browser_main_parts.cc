@@ -95,6 +95,7 @@
 #endif
 
 #if defined(OS_MAC)
+#include "services/device/public/cpp/geolocation/geolocation_system_permission_mac.h"
 #include "shell/browser/ui/cocoa/views_delegate_mac.h"
 #else
 #include "shell/browser/ui/views/electron_views_delegate.h"
@@ -568,6 +569,13 @@ ElectronBrowserMainParts::GetGeolocationControl() {
   }
   return geolocation_control_.get();
 }
+
+#if defined(OS_MAC)
+device::GeolocationSystemPermissionManager*
+ElectronBrowserMainParts::GetLocationPermissionManager() {
+  return location_permission_manager_.get();
+}
+#endif
 
 IconManager* ElectronBrowserMainParts::GetIconManager() {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
