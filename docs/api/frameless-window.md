@@ -69,7 +69,10 @@ that the traffic lights are visible, you can access the Window Controls Overlay 
 
 ```javascript
 const { BrowserWindow } = require('electron')
-const win = new BrowserWindow({ titleBarStyle: 'hiddenInset', titleBarOverlay: true })
+const win = new BrowserWindow({
+  titleBarStyle: 'hiddenInset',
+  titleBarOverlay: true
+})
 win.show()
 ```
 
