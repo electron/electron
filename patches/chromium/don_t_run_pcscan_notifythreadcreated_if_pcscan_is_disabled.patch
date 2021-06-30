@@ -1,0 +1,43 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <jkleinsc@electronjs.org>
+Date: Wed, 16 Jun 2021 11:30:28 -0400
+Subject: Don't run PCScan functions if PCScan is disabled
+
+PCScan should not be invoked if PCScan is disabled.  Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/2916657.
+
+diff --git a/base/allocator/partition_allocator/memory_reclaimer.cc b/base/allocator/partition_allocator/memory_reclaimer.cc
+index 76927a8939b2ead660cf25cecb67a4fa095d98ec..7e922a28b8fa67bb971871c0e54ae59d9086db22 100644
+--- a/base/allocator/partition_allocator/memory_reclaimer.cc
++++ b/base/allocator/partition_allocator/memory_reclaimer.cc
+@@ -7,6 +7,7 @@
+ #include "base/allocator/partition_allocator/partition_alloc.h"
+ #include "base/allocator/partition_allocator/partition_alloc_check.h"
+ #include "base/allocator/partition_allocator/partition_alloc_config.h"
++#include "base/allocator/partition_allocator/partition_alloc_features.h"
+ #include "base/allocator/partition_allocator/starscan/pcscan.h"
+ #include "base/bind.h"
+ #include "base/location.h"
+@@ -121,6 +122,7 @@ void PartitionAllocMemoryReclaimer::Reclaim(int flags) {
+   AutoLock lock(lock_);  // Has to protect from concurrent (Un)Register calls.
+   TRACE_EVENT0("base", "PartitionAllocMemoryReclaimer::Reclaim()");
+ 
++#if PA_ALLOW_PCSCAN
+   // PCScan quarantines freed slots. Trigger the scan first to let it call
+   // FreeNoHooksImmediate on slots that pass the quarantine.
+   //
+@@ -130,13 +132,14 @@ void PartitionAllocMemoryReclaimer::Reclaim(int flags) {
+   //
+   // Lastly decommit empty slot spans and lastly try to discard unused pages at
+   // the end of the remaining active slots.
+-  {
++  if (base::FeatureList::IsEnabled(base::features::kPartitionAllocPCScan)) {
+     using PCScan = internal::PCScan;
+     const auto invocation_mode = flags & PartitionPurgeAggressiveReclaim
+                                      ? PCScan::InvocationMode::kForcedBlocking
+                                      : PCScan::InvocationMode::kBlocking;
+     PCScan::Instance().PerformScanIfNeeded(invocation_mode);
+   }
++#endif
+ 
+ #if defined(PA_THREAD_CACHE_SUPPORTED)
+   // Don't completely empty the thread cache outside of low memory situations,
