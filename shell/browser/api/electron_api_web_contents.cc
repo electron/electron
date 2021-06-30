@@ -99,6 +99,7 @@
 #include "shell/browser/web_contents_zoom_controller.h"
 #include "shell/browser/web_dialog_helper.h"
 #include "shell/browser/web_view_guest_delegate.h"
+#include "shell/browser/web_view_manager.h"
 #include "shell/common/api/electron_api_native_image.h"
 #include "shell/common/color_util.h"
 #include "shell/common/electron_constants.h"
@@ -3552,13 +3553,13 @@ void WebContents::SetHtmlApiFullscreen(bool enter_fullscreen) {
   // Window is already in fullscreen mode, save the state.
   if (enter_fullscreen && owner_window_->IsFullscreen()) {
     native_fullscreen_ = true;
-    html_fullscreen_ = true;
+    UpdateHtmlApiFullscreen(true);
     return;
   }
 
   // Exit html fullscreen state but not window's fullscreen mode.
   if (!enter_fullscreen && native_fullscreen_) {
-    html_fullscreen_ = false;
+    UpdateHtmlApiFullscreen(false);
     return;
   }
 
@@ -3573,8 +3574,39 @@ void WebContents::SetHtmlApiFullscreen(bool enter_fullscreen) {
     owner_window_->SetFullScreen(enter_fullscreen);
   }
 
-  html_fullscreen_ = enter_fullscreen;
+  UpdateHtmlApiFullscreen(enter_fullscreen);
   native_fullscreen_ = false;
+}
+
+void WebContents::UpdateHtmlApiFullscreen(bool fullscreen) {
+  if (fullscreen == html_fullscreen_)
+    return;
+
+  html_fullscreen_ = fullscreen;
+
+  // Notify renderer of the html fullscreen change.
+  web_contents()
+      ->GetRenderViewHost()
+      ->GetWidget()
+      ->SynchronizeVisualProperties();
+
+  // The embedder WebContents is spearated from the frame tree of webview, so
+  // we must manually sync their fullscreen states.
+  if (embedder_)
+    embedder_->SetHtmlApiFullscreen(fullscreen);
+
+  // Make sure all child webviews quit html fullscreen.
+  if (!fullscreen && !IsGuest()) {
+    auto* manager = WebViewManager::GetWebViewManager(web_contents());
+    manager->ForEachGuest(
+        web_contents(), base::BindRepeating([](content::WebContents* guest) {
+          WebContents* api_web_contents = WebContents::From(guest);
+          // Use UpdateHtmlApiFullscreen instead of SetXXX becuase there is no
+          // need to interact with the owner window.
+          api_web_contents->UpdateHtmlApiFullscreen(false);
+          return false;
+        }));
+  }
 }
 
 // static
