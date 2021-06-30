@@ -25,7 +25,6 @@ class WebViewManager : public content::BrowserPluginGuestManager {
 
   static WebViewManager* GetWebViewManager(content::WebContents* web_contents);
 
- protected:
   // content::BrowserPluginGuestManager:
   bool ForEachGuest(content::WebContents* embedder,
                     const GuestCallback& callback) override;
