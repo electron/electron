@@ -78,11 +78,11 @@ void Browser::Focus(gin::Arguments* args) {
 #endif
 
 void Browser::Quit() {
-  if (is_quiting_)
+  if (is_quitting_)
     return;
 
-  is_quiting_ = HandleBeforeQuit();
-  if (!is_quiting_)
+  is_quitting_ = HandleBeforeQuit();
+  if (!is_quitting_)
     return;
 
   if (electron::WindowList::IsEmpty())
@@ -100,7 +100,7 @@ void Browser::Exit(gin::Arguments* args) {
     exit(code);
   } else {
     // Prepare to quit when all windows have been closed.
-    is_quiting_ = true;
+    is_quitting_ = true;
 
     // Remember this caller so that we don't emit unrelated events.
     is_exiting_ = true;
@@ -121,7 +121,7 @@ void Browser::Shutdown() {
     return;
 
   is_shutdown_ = true;
-  is_quiting_ = true;
+  is_quitting_ = true;
 
   for (BrowserObserver& observer : observers_)
     observer.OnQuit();
@@ -242,7 +242,7 @@ void Browser::NotifyAndShutdown() {
     observer.OnWillQuit(&prevent_default);
 
   if (prevent_default) {
-    is_quiting_ = false;
+    is_quitting_ = false;
     return;
   }
 
@@ -258,16 +258,16 @@ bool Browser::HandleBeforeQuit() {
 }
 
 void Browser::OnWindowCloseCancelled(NativeWindow* window) {
-  if (is_quiting_)
+  if (is_quitting_)
     // Once a beforeunload handler has prevented the closing, we think the quit
     // is cancelled too.
-    is_quiting_ = false;
+    is_quitting_ = false;
 }
 
 void Browser::OnWindowAllClosed() {
   if (is_exiting_) {
     Shutdown();
-  } else if (is_quiting_) {
+  } else if (is_quitting_) {
     NotifyAndShutdown();
   } else {
     for (BrowserObserver& observer : observers_)
