@@ -280,7 +280,6 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   options.Get(options::kSimpleFullScreen, &always_simple_fullscreen_);
   options.GetOptional(options::kTrafficLightPosition, &traffic_light_position_);
   options.Get(options::kVisualEffectState, &visual_effect_state_);
-  options.Get(options::ktitleBarOverlay, &titlebar_overlay_);
 
   if (options.Has(options::kFullscreenWindowTitle)) {
     EmitWarning(

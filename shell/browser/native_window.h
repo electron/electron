@@ -347,6 +347,8 @@ class NativeWindow : public base::SupportsUserData,
         [&browser_view](NativeBrowserView* n) { return (n == browser_view); });
   }
 
+  bool titlebar_overlay_ = false;
+
  private:
   std::unique_ptr<views::Widget> widget_;
 

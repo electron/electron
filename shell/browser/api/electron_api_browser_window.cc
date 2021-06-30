@@ -66,7 +66,7 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
     if (web_preferences.Get(options::kEnableBlinkFeatures, &enabled_features)) {
       enabled_features += ",";
     }
-    enabled_features += kWebAppWindowControlsOverlay.name;
+    enabled_features += features::kWebAppWindowControlsOverlay.name;
     web_preferences.Set(options::kEnableBlinkFeatures, enabled_features);
   }
 
