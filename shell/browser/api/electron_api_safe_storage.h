@@ -7,32 +7,34 @@
 
 #include <string>
 
+#include "gin/handle.h"
 #include "gin/wrappable.h"
+#include "shell/browser/event_emitter_mixin.h"
+#include "shell/common/gin_helper/cleaned_up_at_exit.h"
 
 namespace electron {
 
 namespace api {
 
-// TODO: am I using the right thingys here
 class SafeStorage : public gin::Wrappable<SafeStorage>,
-                    public gin_helper::Constructible<Tray>,
                     public gin_helper::CleanedUpAtExit,
-                    public gin_helper::EventEmitterMixin<Cookies> {
+                    public gin_helper::EventEmitterMixin<SafeStorage> {
  public:
+  static gin::Handle<SafeStorage> Create(v8::Isolate* isolate);
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
+  const char* GetTypeName() override;
 
   bool IsEncryptionAvailable();
   bool EncryptString(std::string& plaintext, std::string* ciphertext);
   bool DecryptString(std::string& ciphertext, std::string* plaintext);
 
-  // TODO: private?
  private:
   SafeStorage(v8::Isolate* isolate);
   ~SafeStorage() override;
-}
+};
 
 }  // namespace api
 
