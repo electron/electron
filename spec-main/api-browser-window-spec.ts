@@ -3355,7 +3355,7 @@ describe('BrowserWindow module', () => {
       });
     });
 
-    ifdescribe(process.platform === 'darwin')('BrowserWindow.setFullScreen(false) when HTML fullscreen', () => {
+    describe('BrowserWindow.setFullScreen(false) when HTML fullscreen', () => {
       it('exits HTML fullscreen when window leaves fullscreen', async () => {
         const w = new BrowserWindow();
         await w.loadURL('about:blank');

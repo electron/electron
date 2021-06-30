@@ -305,10 +305,8 @@ void BrowserWindow::OnWindowResize() {
 }
 
 void BrowserWindow::OnWindowLeaveFullScreen() {
-#if defined(OS_MAC)
   if (web_contents()->IsFullscreen())
     web_contents()->ExitFullscreen(true);
-#endif
   BaseWindow::OnWindowLeaveFullScreen();
 }
 
