@@ -53,6 +53,7 @@ NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
   options.Get(options::kFrame, &has_frame_);
   options.Get(options::kTransparent, &transparent_);
   options.Get(options::kEnableLargerThanScreen, &enable_larger_than_screen_);
+  options.Get(options::ktitleBarOverlay, &titlebar_overlay_);
 
   if (parent)
     options.Get("modal", &is_modal_);
