@@ -40,6 +40,5 @@ if (self.location.protocol === 'file:') {
   if (appPath) {
     // Search for module under the app directory.
     global.module.paths = Module._nodeModulePaths(appPath);
-    console.log(global.module.paths);
   }
 }
