@@ -61,6 +61,21 @@ const win = new BrowserWindow({ titleBarStyle: 'customButtonsOnHover', frame: fa
 win.show()
 ```
 
+## Windows Control Overlay
+
+On macOS, when using a frameless window in conjuction with `win.setWindowButtonVisibility(true)` or using one of the `titleBarStyle`s described above so
+that the traffic lights are visible, you can access the Window Controls Overlay [JavaScript APIs][overlay-javascript-apis] and
+[CSS Environment Variables][overlay-css-env-vars] by setting the `titleBarOverlay` option to true:
+
+```javascript
+const { BrowserWindow } = require('electron')
+const win = new BrowserWindow({
+  titleBarStyle: 'hiddenInset',
+  titleBarOverlay: true
+})
+win.show()
+```
+
 ## Transparent window
 
 By setting the `transparent` option to `true`, you can also make the frameless
@@ -186,3 +201,5 @@ behave correctly on all platforms you should never use a custom context menu on
 draggable areas.
 
 [ignore-mouse-events]: browser-window.md#winsetignoremouseeventsignore-options
+[overlay-javascript-apis]: https://github.com/WICG/window-controls-overlay/blob/main/explainer.md#javascript-apis
+[overlay-css-env-vars]: https://github.com/WICG/window-controls-overlay/blob/main/explainer.md#css-environment-variables
