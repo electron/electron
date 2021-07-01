@@ -79,6 +79,7 @@ class NativeWindowMac : public NativeWindow,
   void SetAlwaysOnTop(ui::ZOrderLevel z_order,
                       const std::string& level,
                       int relative_level) override;
+  std::string GetAlwaysOnTopLevel() override;
   ui::ZOrderLevel GetZOrderLevel() override;
   void Center() override;
   void Invalidate() override;

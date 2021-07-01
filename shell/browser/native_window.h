@@ -201,6 +201,7 @@ class NativeWindow : public base::SupportsUserData,
 
   // Traffic Light API
 #if defined(OS_MAC)
+  virtual std::string GetAlwaysOnTopLevel() = 0;
   virtual void SetWindowButtonVisibility(bool visible) = 0;
   virtual bool GetWindowButtonVisibility() const = 0;
   virtual void SetTrafficLightPosition(base::Optional<gfx::Point> position) = 0;
