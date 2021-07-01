@@ -977,12 +977,12 @@ describe('<webview> tag', function () {
     it('emits when a request is made', async () => {
       const didFinishLoad = waitForEvent(webview, 'did-finish-load');
       loadWebView(webview, { src: `file://${fixtures}/pages/content.html` });
+      await didFinishLoad;
       // TODO(deepak1556): With https://codereview.chromium.org/2836973002
       // focus of the webContents is required when triggering the api.
       // Remove this workaround after determining the cause for
       // incorrect focus.
       webview.focus();
-      await didFinishLoad;
 
       const activeMatchOrdinal = [];
 
