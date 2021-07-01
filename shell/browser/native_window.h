@@ -203,6 +203,7 @@ class NativeWindow : public base::SupportsUserData,
 
   // Traffic Light API
 #if defined(OS_MAC)
+  virtual std::string GetAlwaysOnTopLevel() = 0;
   virtual void SetTrafficLightPosition(const gfx::Point& position) = 0;
   virtual gfx::Point GetTrafficLightPosition() const = 0;
   virtual void RedrawTrafficLights() = 0;
