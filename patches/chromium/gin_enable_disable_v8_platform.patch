@@ -38,10 +38,10 @@ index eaf06bd895f3ed390d1b206b2dc5adcca5c87e72..6bd634c4a66999648c51b8867c0d9b0c
    v8::Isolate* isolate() { return isolate_; }
  
 diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
-index f3505f07bdbe7975f64a7d7c3f85db6997aaa808..2735d4f7f6e3c7e6a79b066d699a5c20de53432e 100644
+index 876814b6d7c340bef364836fd984cb8e9f6e88bb..3b6b4171f6999209db2b906f1a2f42951d171262 100644
 --- a/gin/v8_initializer.cc
 +++ b/gin/v8_initializer.cc
-@@ -241,7 +241,8 @@ void RunArrayBufferCageReservationExperiment() {
+@@ -252,7 +252,8 @@ void RunArrayBufferCageReservationExperiment() {
  }  // namespace
  
  // static
@@ -51,7 +51,7 @@ index f3505f07bdbe7975f64a7d7c3f85db6997aaa808..2735d4f7f6e3c7e6a79b066d699a5c20
    static bool v8_is_initialized = false;
    if (v8_is_initialized)
      return;
-@@ -251,7 +252,8 @@ void V8Initializer::Initialize(IsolateHolder::ScriptMode mode) {
+@@ -262,7 +263,8 @@ void V8Initializer::Initialize(IsolateHolder::ScriptMode mode) {
      RunArrayBufferCageReservationExperiment();
    }
  
