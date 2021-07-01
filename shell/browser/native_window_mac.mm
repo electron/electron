@@ -1495,6 +1495,7 @@ void NativeWindowMac::SetWindowButtonVisibility(bool visible) {
     [buttons_proxy_ setVisible:visible];
   else
     InternalSetWindowButtonVisibility(visible);
+  NotifyLayoutWindowControlsOverlay();
 }
 
 bool NativeWindowMac::GetWindowButtonVisibility() const {
@@ -1508,6 +1509,7 @@ void NativeWindowMac::SetTrafficLightPosition(
   traffic_light_position_ = std::move(position);
   if (buttons_proxy_) {
     [buttons_proxy_ setMargin:traffic_light_position_];
+    NotifyLayoutWindowControlsOverlay();
   }
 }
 
@@ -1823,6 +1825,27 @@ void NativeWindowMac::InternalSetParentWindow(NativeWindow* parent,
 
 void NativeWindowMac::SetForwardMouseMessages(bool forward) {
   [window_ setAcceptsMouseMovedEvents:forward];
+}
+
+gfx::Rect NativeWindowMac::GetWindowControlsOverlayRect() {
+  gfx::Rect bounding_rect;
+  if (titlebar_overlay_ && !has_frame() && buttons_proxy_ &&
+      [buttons_proxy_ isVisible]) {
+    NSRect button_frame = [buttons_proxy_ getButtonsBounds];
+    gfx::Point buttons_view_margin = [buttons_proxy_ getMargin];
+    const int overlay_width = GetContentSize().width() - NSWidth(button_frame) -
+                              buttons_view_margin.x();
+    CGFloat overlay_height =
+        NSHeight(button_frame) + buttons_view_margin.y() * 2;
+    if (base::i18n::IsRTL()) {
+      bounding_rect = gfx::Rect(0, 0, overlay_width, overlay_height);
+    } else {
+      bounding_rect =
+          gfx::Rect(button_frame.size.width + buttons_view_margin.x(), 0,
+                    overlay_width, overlay_height);
+    }
+  }
+  return bounding_rect;
 }
 
 // static

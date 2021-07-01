@@ -61,6 +61,9 @@
 
 - (void)redraw;
 - (void)updateTrackingAreas;
+
+- (gfx::Point)getMargin;
+- (NSRect)getButtonsBounds;
 @end
 
 #endif  // SHELL_BROWSER_UI_COCOA_WINDOW_BUTTONS_PROXY_H_

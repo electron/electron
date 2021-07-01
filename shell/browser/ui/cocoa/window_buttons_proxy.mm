@@ -197,4 +197,8 @@
   return result;
 }
 
+- (gfx::Point)getMargin {
+  return margin_;
+}
+
 @end
