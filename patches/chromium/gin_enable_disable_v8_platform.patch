@@ -38,7 +38,7 @@ index eaf06bd895f3ed390d1b206b2dc5adcca5c87e72..6bd634c4a66999648c51b8867c0d9b0c
    v8::Isolate* isolate() { return isolate_; }
  
 diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
-index 3b856e74ddd6b39fb2cf1c0796a5ed0c6b375a32..3843074f130b3b6886981a67f55798076321ac38 100644
+index f3505f07bdbe7975f64a7d7c3f85db6997aaa808..2735d4f7f6e3c7e6a79b066d699a5c20de53432e 100644
 --- a/gin/v8_initializer.cc
 +++ b/gin/v8_initializer.cc
 @@ -241,7 +241,8 @@ void RunArrayBufferCageReservationExperiment() {
