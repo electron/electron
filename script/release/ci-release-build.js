@@ -230,6 +230,7 @@ async function callAppVeyor (targetBranch, job, options) {
       accountName: 'electron-bot',
       projectSlug: appVeyorJobs[job],
       branch: targetBranch,
+      commitId: options.commit || undefined,
       environmentVariables
     }),
     method: 'POST'
@@ -365,7 +366,7 @@ if (require.main === module) {
   if (args._.length < 1) {
     console.log(`Trigger CI to build release builds of electron.
     Usage: ci-release-build.js [--job=CI_JOB_NAME] [--ci=CircleCI|AppVeyor|VSTS|DevOps]
-    [--ghRelease] [--armTest] [--circleBuildNum=xxx] [--appveyorJobId=xxx] TARGET_BRANCH
+    [--ghRelease] [--armTest] [--circleBuildNum=xxx] [--appveyorJobId=xxx] [--commit=sha] TARGET_BRANCH
     `);
     process.exit(0);
   }
