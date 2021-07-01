@@ -57,6 +57,7 @@ extern const char kVibrancyType[];
 extern const char kVisualEffectState[];
 extern const char kTrafficLightPosition[];
 extern const char kRoundedCorners[];
+extern const char ktitleBarOverlay[];
 
 // WebPreferences.
 extern const char kZoomFactor[];
