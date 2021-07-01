@@ -415,7 +415,7 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   // Use an NSEvent monitor to listen for the wheel event.
   BOOL __block began = NO;
   wheel_event_monitor_ = [NSEvent
-      addLocalMonitorForEventsMatchingMask:NSScrollWheelMask
+      addLocalMonitorForEventsMatchingMask:NSEventMaskScrollWheel
                                    handler:^(NSEvent* event) {
                                      if ([[event window] windowNumber] !=
                                          [window_ windowNumber])
@@ -1699,7 +1699,10 @@ void NativeWindowMac::Cleanup() {
   DCHECK(!IsClosed());
   ui::NativeTheme::GetInstanceForNativeUi()->RemoveObserver(this);
   display::Screen::GetScreen()->RemoveObserver(this);
-  [NSEvent removeMonitor:wheel_event_monitor_];
+  if (wheel_event_monitor_) {
+    [NSEvent removeMonitor:wheel_event_monitor_];
+    wheel_event_monitor_ = nil;
+  }
 }
 
 void NativeWindowMac::OverrideNSWindowContentView() {
