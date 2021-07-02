@@ -13,6 +13,7 @@
 #include <sys/resource.h>
 #include <unistd.h>
 
+#include "base/debug/leak_annotations.h"
 #include "base/posix/eintr_wrapper.h"
 #include "base/task/post_task.h"
 #include "content/public/browser/browser_task_traits.h"

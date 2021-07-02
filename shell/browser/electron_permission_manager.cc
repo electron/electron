@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/values.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/global_routing_id.h"
 #include "content/public/browser/permission_controller.h"

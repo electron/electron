@@ -13,7 +13,6 @@
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "base/supports_user_data.h"
-#include "base/values.h"
 #include "content/public/browser/desktop_media_id.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "extensions/browser/app_window/size_constraints.h"
@@ -21,7 +20,9 @@
 #include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/views/widget/widget_delegate.h"
 
-class SkRegion;
+namespace base {
+class DictionaryValue;
+}
 
 namespace content {
 struct NativeWebKeyboardEvent;
@@ -31,7 +32,6 @@ namespace gfx {
 class Image;
 class Point;
 class Rect;
-class RectF;
 enum class ResizeEdge;
 class Size;
 }  // namespace gfx

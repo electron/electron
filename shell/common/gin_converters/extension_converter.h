@@ -11,7 +11,7 @@
 
 namespace extensions {
 class Extension;
-}  // namespace extensions
+}
 
 namespace gin {
 

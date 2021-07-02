@@ -15,7 +15,8 @@
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/ui/file_dialog.h"
 #include "shell/common/gin_helper/pinnable.h"
-#include "url/gurl.h"
+
+class GURL;
 
 namespace electron {
 

@@ -27,10 +27,6 @@ namespace gin {
 class Arguments;
 }
 
-namespace gin_helper {
-class Dictionary;
-}
-
 namespace electron {
 
 namespace api {

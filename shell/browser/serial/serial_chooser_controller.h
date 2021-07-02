@@ -21,7 +21,7 @@
 
 namespace content {
 class RenderFrameHost;
-}  // namespace content
+}
 
 namespace electron {
 

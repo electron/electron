@@ -10,7 +10,8 @@
 #include "extensions/browser/api/execute_code_function.h"
 #include "extensions/browser/extension_function.h"
 #include "extensions/common/extension_resource.h"
-#include "url/gurl.h"
+
+class GURL;
 
 namespace extensions {
 

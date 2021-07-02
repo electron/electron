@@ -5,7 +5,13 @@
 #ifndef SHELL_COMMON_SKIA_UTIL_H_
 #define SHELL_COMMON_SKIA_UTIL_H_
 
-#include "ui/gfx/image/image_skia.h"
+namespace base {
+class FilePath;
+}
+
+namespace gfx {
+class ImageSkia;
+}
 
 namespace electron {
 

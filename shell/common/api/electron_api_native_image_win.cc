@@ -12,7 +12,9 @@
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/skia_util.h"
+#include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/gfx/icon_util.h"
+#include "ui/gfx/image/image_skia.h"
 
 namespace electron {
 

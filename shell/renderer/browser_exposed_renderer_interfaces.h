@@ -7,11 +7,11 @@
 
 namespace mojo {
 class BinderMap;
-}  // namespace mojo
+}
 
 namespace electron {
 class RendererClientBase;
-}  // namespace electron
+}
 
 class ChromeContentRendererClient;
 

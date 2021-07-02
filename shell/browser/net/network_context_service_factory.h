@@ -10,7 +10,7 @@
 
 class KeyedService;
 
-namespace contenet {
+namespace content {
 class BrowserContext;
 }
 

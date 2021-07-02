@@ -16,6 +16,7 @@
 #include "shell/browser/web_contents_zoom_controller.h"
 #include "shell/common/extensions/api/tabs.h"
 #include "third_party/blink/public/common/page/page_zoom.h"
+#include "url/gurl.h"
 
 using electron::WebContentsZoomController;
 

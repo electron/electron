@@ -6,6 +6,7 @@
 
 #include "gin/dictionary.h"
 #include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/node_includes.h"
 
 namespace electron {
 
