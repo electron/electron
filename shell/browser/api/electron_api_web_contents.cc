@@ -1740,6 +1740,8 @@ void WebContents::TitleWasSet(content::NavigationEntry* entry) {
     } else {
       final_title = title;
     }
+  } else {
+    final_title = web_contents()->GetTitle();
   }
   for (ExtendedWebContentsObserver& observer : observers_)
     observer.OnPageTitleUpdated(final_title, explicit_set);
