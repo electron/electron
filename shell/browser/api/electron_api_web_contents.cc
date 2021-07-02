@@ -3134,12 +3134,6 @@ content::RenderFrameHost* WebContents::MainFrame() {
   return web_contents()->GetMainFrame();
 }
 
-void WebContents::GrantOriginAccess(const GURL& url) {
-  content::ChildProcessSecurityPolicy::GetInstance()->GrantCommitOrigin(
-      web_contents()->GetMainFrame()->GetProcess()->GetID(),
-      url::Origin::Create(url));
-}
-
 void WebContents::NotifyUserActivation() {
   content::RenderFrameHost* frame = web_contents()->GetMainFrame();
   if (frame)
@@ -3752,7 +3746,6 @@ v8::Local<v8::ObjectTemplate> WebContents::FillObjectTemplate(
                  &WebContents::SetWebRTCIPHandlingPolicy)
       .SetMethod("getWebRTCIPHandlingPolicy",
                  &WebContents::GetWebRTCIPHandlingPolicy)
-      .SetMethod("_grantOriginAccess", &WebContents::GrantOriginAccess)
       .SetMethod("takeHeapSnapshot", &WebContents::TakeHeapSnapshot)
       .SetMethod("setImageAnimationPolicy",
                  &WebContents::SetImageAnimationPolicy)

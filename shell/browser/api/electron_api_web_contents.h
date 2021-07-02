@@ -310,10 +310,6 @@ class WebContents : public gin::Wrappable<WebContents>,
   // Returns the owner window.
   v8::Local<v8::Value> GetOwnerBrowserWindow(v8::Isolate* isolate) const;
 
-  // Grants the child process the capability to access URLs with the origin of
-  // the specified URL.
-  void GrantOriginAccess(const GURL& url);
-
   // Notifies the web page that there is user interaction.
   void NotifyUserActivation();
 
