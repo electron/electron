@@ -39,7 +39,7 @@ bool Clipboard::Has(const std::string& format_string,
                     gin_helper::Arguments* args) {
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
   ui::ClipboardFormatType format(
-      ui::ClipboardFormatType::GetType(format_string));
+      ui::ClipboardFormatType::GetCustomPlatformType(format_string));
   return clipboard->IsFormatAvailable(format, GetClipboardBuffer(args),
                                       /* data_dst = */ nullptr);
 }
@@ -47,7 +47,7 @@ bool Clipboard::Has(const std::string& format_string,
 std::string Clipboard::Read(const std::string& format_string) {
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
   ui::ClipboardFormatType format(
-      ui::ClipboardFormatType::GetType(format_string));
+      ui::ClipboardFormatType::GetCustomPlatformType(format_string));
 
   std::string data;
   clipboard->ReadData(format, /* data_dst = */ nullptr, &data);
