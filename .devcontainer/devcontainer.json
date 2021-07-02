@@ -2,5 +2,5 @@
   "dockerComposeFile": "docker-compose.yml",
   "service": "buildtools",
   "onCreateCommand": ".devcontainer/on-create-command.sh",
-  "workspaceFolder": "/workspaces/src/electron"
+  "workspaceFolder": "/workspaces/pizza/src/electron"
 }
