@@ -1,7 +1,8 @@
-From cc20b36a58451f02654a45f68a1a9f2ab0f58b1b Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Philip Rogers <pdr@chromium.org>
 Date: Wed, 19 May 2021 16:11:29 +0000
-Subject: [PATCH] Use a 100ms timer in MacScrollbarAnimatorImpl::StartScrollbarPaintTimer
+Subject: Use a 100ms timer in
+ MacScrollbarAnimatorImpl::StartScrollbarPaintTimer
 
 MacScrollbarAnimatorImpl::StartScrollbarPaintTimer has a timer that
 runs while ShouldSuspendScrollAnimations is true. The timer was changed
@@ -18,13 +19,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2903830
 Reviewed-by: Hiroki Nakagawa <nhiroki@chromium.org>
 Commit-Queue: Philip Rogers <pdr@chromium.org>
 Cr-Commit-Position: refs/heads/master@{#884506}
----
 
 diff --git a/third_party/blink/renderer/core/scroll/mac_scrollbar_animator_impl.mm b/third_party/blink/renderer/core/scroll/mac_scrollbar_animator_impl.mm
-index 6756e9c..bbd4417 100644
+index cb3c5b0493410a1cb8d099ec3349e8cbb8dd629d..b7257f954d4f7f85128b5fd24651c27d2ce8bd85 100644
 --- a/third_party/blink/renderer/core/scroll/mac_scrollbar_animator_impl.mm
 +++ b/third_party/blink/renderer/core/scroll/mac_scrollbar_animator_impl.mm
-@@ -818,13 +818,11 @@
+@@ -814,13 +814,11 @@ - (void)invalidate {
  }
  
  void MacScrollbarAnimatorImpl::StartScrollbarPaintTimer() {
