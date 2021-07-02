@@ -84,7 +84,7 @@ namespace api {
 
 namespace {
 
-const char* kUserDataKey = "WebRequest";
+const char kUserDataKey[] = "WebRequest";
 
 // BrowserContext <=> WebRequest relationship.
 struct UserData : public base::SupportsUserData::Data {
