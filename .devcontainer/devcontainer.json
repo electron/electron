@@ -1,4 +1,6 @@
 {
-  "image": "electron.azurecr.io/build:4fc81b50f9c0980699d329bc32062fac20a26701",
-  "onCreateCommand": ".devcontainer/on-create-command.sh"
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "buildtools",
+  "onCreateCommand": ".devcontainer/on-create-command.sh",
+  "workspaceFolder": "/workspaces/src/electron"
 }
