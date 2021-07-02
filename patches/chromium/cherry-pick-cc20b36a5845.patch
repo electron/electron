@@ -1,0 +1,41 @@
+From cc20b36a58451f02654a45f68a1a9f2ab0f58b1b Mon Sep 17 00:00:00 2001
+From: Philip Rogers <pdr@chromium.org>
+Date: Wed, 19 May 2021 16:11:29 +0000
+Subject: [PATCH] Use a 100ms timer in MacScrollbarAnimatorImpl::StartScrollbarPaintTimer
+
+MacScrollbarAnimatorImpl::StartScrollbarPaintTimer has a timer that
+runs while ShouldSuspendScrollAnimations is true. The timer was changed
+from 100ms to 1ms in https://crrev.com/376453. This was later changed to
+0ms in https://crrev.com/434428 which caused a performance regression
+(https://crbug.com/713669). The timer was then changed back to 1ms in
+https://crrev.com/470823 with a comment about giving other tasks time to
+cancel the timer. This patch restores the 100ms timer. The comment has
+been removed because this timer is more of a polling mechanism.
+
+Bug: 1090000
+Change-Id: I4041d9ba5869abbe4ff7d55d56d921c7d90a72ad
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2903830
+Reviewed-by: Hiroki Nakagawa <nhiroki@chromium.org>
+Commit-Queue: Philip Rogers <pdr@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#884506}
+---
+
+diff --git a/third_party/blink/renderer/core/scroll/mac_scrollbar_animator_impl.mm b/third_party/blink/renderer/core/scroll/mac_scrollbar_animator_impl.mm
+index 6756e9c..bbd4417 100644
+--- a/third_party/blink/renderer/core/scroll/mac_scrollbar_animator_impl.mm
++++ b/third_party/blink/renderer/core/scroll/mac_scrollbar_animator_impl.mm
+@@ -818,13 +818,11 @@
+ }
+ 
+ void MacScrollbarAnimatorImpl::StartScrollbarPaintTimer() {
+-  // Post a task with 1 ms delay to give a chance to run other immediate tasks
+-  // that may cancel this.
+   initial_scrollbar_paint_task_handle_ = PostDelayedCancellableTask(
+       *task_runner_, FROM_HERE,
+       WTF::Bind(&MacScrollbarAnimatorImpl::InitialScrollbarPaintTask,
+                 WrapWeakPersistent(this)),
+-      base::TimeDelta::FromMilliseconds(1));
++      base::TimeDelta::FromMilliseconds(100));
+ }
+ 
+ bool MacScrollbarAnimatorImpl::ScrollbarPaintTimerIsActive() const {
