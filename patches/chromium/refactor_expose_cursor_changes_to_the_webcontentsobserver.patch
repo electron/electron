@@ -71,7 +71,7 @@ index f594cfd152ffe5367afd8820606329da928483f5..82a1281fbca9e3995954d4af30c8cf7e
    bool IsShowingContextMenuOnPage() const override;
    void DidChangeScreenOrientation() override;
 diff --git a/content/public/browser/web_contents_observer.h b/content/public/browser/web_contents_observer.h
-index e6bbfa5b9d4003f256dcaf3eadb18faa7785a681..c46dafad4ddde7a64b5ee1d314eee58f8012ad32 100644
+index ee1cfe50d89de9ad200cb82478e82af66b02b35f..6c63df0d8f0caa0b60a802a52b6aec3432802948 100644
 --- a/content/public/browser/web_contents_observer.h
 +++ b/content/public/browser/web_contents_observer.h
 @@ -13,6 +13,7 @@
@@ -80,8 +80,8 @@ index e6bbfa5b9d4003f256dcaf3eadb18faa7785a681..c46dafad4ddde7a64b5ee1d314eee58f
  #include "content/common/content_export.h"
 +#include "content/common/cursors/webcursor.h"
  #include "content/public/browser/allow_service_worker_result.h"
- #include "content/public/browser/cookie_access_details.h"
  #include "content/public/browser/navigation_controller.h"
+ #include "content/public/browser/reload_type.h"
 @@ -456,6 +457,9 @@ class CONTENT_EXPORT WebContentsObserver {
    // Invoked every time the WebContents changes visibility.
    virtual void OnVisibilityChanged(Visibility visibility) {}

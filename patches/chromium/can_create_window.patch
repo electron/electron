@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index da4115462c044066e0ccf4df25fd4b0228ede3a4..6cfcfec34bee0874dd4e7145933bc358267cc07e 100644
+index a8e16393824c78d66b69524b7782cb59ad4efc65..48d266f1de66d2c4d548917bf47ada92579e9504 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -6090,6 +6090,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -6091,6 +6091,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -53,13 +53,13 @@ index 4d28d754c8f8984d6d97761201d79b910cec2ef4..e6beaf5fd385c00749d34e343a35e4d3
                               new_contents_impl, opener, params.target_url,
                               params.referrer.To<Referrer>(), params.disposition,
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index a61f273506fecd8574ffd0bb04d507adef7859c8..3a4a6efca3a66b12409da15e4f360fb8e3a40e2c 100644
+index be6f44b67f0d1b302bcbda2afee45fcef8df4ffc..b124bd5ebc5fef4b464309229c5fb155f955810d 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
-@@ -519,6 +519,10 @@ struct CreateNewWindowParams {
+@@ -520,6 +520,10 @@ struct CreateNewWindowParams {
    // The impression associated with the navigation in the new window, if
    // one is specified.
-   Impression? impression;
+   blink.mojom.Impression? impression;
 +
 +  // Extra fields added by Electron.
 +  string raw_features;
@@ -150,10 +150,10 @@ index 0574d390dc94aa1d17dfa9db805f846024b7956f..a2a3550272da12eee911a7ef0d9a21dd
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index 2f697c7819d8ec0acd04c3c2949c084eb830b341..12e85524a462a1846674e7f01eb8b6d6b3efdc8c 100644
+index 47c22b08e854b4aab1a169b1194753151b06823b..42d28521717035691839610af491ddb8d4065969 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
-@@ -26,6 +26,7 @@
+@@ -27,6 +27,7 @@
  #include "third_party/blink/public/platform/impression_conversions.h"
  #include "third_party/blink/public/platform/modules/video_capture/web_video_capture_impl_manager.h"
  #include "third_party/blink/public/platform/url_conversion.h"
@@ -161,7 +161,7 @@ index 2f697c7819d8ec0acd04c3c2949c084eb830b341..12e85524a462a1846674e7f01eb8b6d6
  #include "third_party/blink/public/web/modules/mediastream/web_media_stream_device_observer.h"
  #include "third_party/blink/public/web/web_frame_widget.h"
  #include "third_party/blink/public/web/web_local_frame.h"
-@@ -284,6 +285,10 @@ WebView* RenderViewImpl::CreateView(
+@@ -285,6 +286,10 @@ WebView* RenderViewImpl::CreateView(
      params->impression = blink::ConvertWebImpressionToImpression(*impression);
    }
  
