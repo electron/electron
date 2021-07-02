@@ -9,6 +9,7 @@ pushd $buildtools
 npx yarn
 popd
 
+export PATH="$PATH:$buildtools/src"
 echo export PATH=\"\$PATH:$buildtools/src\" >> ~/.bashrc
 
 gclient_root=/workspaces/pizza
@@ -50,3 +51,5 @@ echo "
     }
 }
 " > $buildtools/configs/evm.testing.json
+
+e use testing
