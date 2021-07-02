@@ -311,7 +311,7 @@ void ElectronExtensionsBrowserClient::BroadcastEventToRenderers(
   }
 
   auto event = std::make_unique<extensions::Event>(histogram_value, event_name,
-                                                   args->TakeList());
+                                                   std::move(*args).TakeList());
   auto& context_map = ElectronBrowserContext::browser_context_map();
   for (auto const& entry : context_map) {
     if (entry.second) {
