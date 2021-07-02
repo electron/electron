@@ -17,5 +17,7 @@
 
   "src/electron/patches/nan": "src/third_party/nan",
 
-  "src/electron/patches/angle": "src/third_party/angle"
+  "src/electron/patches/angle": "src/third_party/angle",
+
+  "src/electron/patches/usrsctp": "src/third_party/usrsctp/usrsctplib"
 }
