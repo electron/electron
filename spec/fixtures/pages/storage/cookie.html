@@ -1,8 +1,0 @@
-<script>
-  try {
-    document.cookie = "test=123"
-  } catch (e) {
-    const {ipcRenderer} = require('electron')
-    ipcRenderer.send('cookie-response', e.message)
-  }
-</script>

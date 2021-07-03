@@ -1,2 +1,0 @@
-extern "C"
-void foo() { }
