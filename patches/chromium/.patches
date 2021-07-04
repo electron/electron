@@ -114,3 +114,4 @@ cherry-pick-3299d70b7d0f.patch
 support_runtime_configurable_key_storage_on_linux_os_crypto.patch
 make_keychain_service_account_optionally_configurable_at_runtime.patch
 don_t_run_pcscan_notifythreadcreated_if_pcscan_is_disabled.patch
+cherry-pick-cc20b36a5845.patch
