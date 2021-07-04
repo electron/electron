@@ -682,6 +682,26 @@ describe('chromium features', () => {
     });
   });
 
+  describe('web workers', () => {
+    let appProcess: ChildProcess.ChildProcessWithoutNullStreams | undefined;
+
+    afterEach(() => {
+      if (appProcess && !appProcess.killed) {
+        appProcess.kill();
+        appProcess = undefined;
+      }
+    });
+
+    it('Worker with nodeIntegrationInWorker has access to self.module.paths', async () => {
+      const appPath = path.join(__dirname, 'fixtures', 'apps', 'self-module-paths');
+
+      appProcess = ChildProcess.spawn(process.execPath, [appPath]);
+
+      const [code] = await emittedOnce(appProcess, 'exit');
+      expect(code).to.equal(0);
+    });
+  });
+
   describe('form submit', () => {
     let server: http.Server;
     let serverUrl: string;
