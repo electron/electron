@@ -130,14 +130,6 @@ if you exceed that limit.
 
 [apple-notification-guidelines]: https://developer.apple.com/macos/human-interface-guidelines/system-capabilities/notifications/
 
-#### Advanced Notifications
-
-Later versions of macOS allow for notifications with an input field, allowing the user
-to quickly reply to a notification. In order to send notifications with an input field,
-use the userland module [node-mac-notifier][node-mac-notifier].
-
-[node-mac-notifier]: https://github.com/CharlieHess/node-mac-notifier
-
 #### Do not disturb / Session State
 
 To detect whether or not you're allowed to send a notification, use the userland module
