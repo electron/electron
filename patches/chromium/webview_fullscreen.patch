@@ -1,0 +1,35 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 4 Oct 2018 14:57:02 -0700
+Subject: fix: also propagate fullscreen state for outer frame
+
+When entering fullscreen with Element.requestFullscreen in child frames,
+the parent frame should also enter fullscreen mode too. Chromium handles
+this for iframes, but not for webviews as they are essentially main
+frames instead of child frames.
+
+This patch makes webviews propagate the fullscreen state to embedder.
+
+Note that we also need to manually update embedder's
+`api::WebContents::IsFullscreenForTabOrPending` value.
+
+diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
+index 2e222a1bf9cb50efa990f875b102001998691f06..385080e04ed3fb6b82a1ed993889913546f0ba20 100644
+--- a/content/browser/renderer_host/render_frame_host_impl.cc
++++ b/content/browser/renderer_host/render_frame_host_impl.cc
+@@ -4728,6 +4728,15 @@ void RenderFrameHostImpl::EnterFullscreen(
+     notified_instances.insert(parent_site_instance);
+   }
+ 
++  // Entering fullscreen from webview should also notify its outer frame.
++  if (frame_tree_node()->render_manager()->IsMainFrameForInnerDelegate()) {
++    RenderFrameProxyHost* outer_proxy =
++        frame_tree_node()->render_manager()->GetProxyToOuterDelegate();
++    DCHECK(outer_proxy);
++    outer_proxy->GetAssociatedRemoteFrame()->WillEnterFullscreen(
++        options.Clone());
++  }
++
+   delegate_->EnterFullscreenMode(this, *options);
+   delegate_->FullscreenStateChanged(this, true /* is_fullscreen */,
+                                     std::move(options));
