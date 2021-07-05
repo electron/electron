@@ -7,6 +7,7 @@
 #include <map>
 
 #include "base/callback.h"
+#include "base/containers/contains.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "shell/browser/browser.h"

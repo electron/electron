@@ -12,6 +12,7 @@
 #include <tuple>
 #include <vector>
 
+#include "base/containers/contains.h"
 #include "base/lazy_instance.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
@@ -272,19 +273,17 @@ void ShowMessageBox(const MessageBoxSettings& settings,
     hwnd = it.first->second.get();
   }
 
-  dialog_thread::Run(base::BindOnce(&ShowTaskDialogUTF8,
-                                    settings, base::Unretained(hwnd)),
-                     base::BindOnce(
-                         [](MessageBoxCallback callback,
-                            absl::optional<std::string> id,
-                            DialogResult result) {
-                           if (id)
-                             g_dialogs.erase(*id);
-                           std::move(callback).Run(std::get<0>(result),
-                                                   std::get<1>(result),
-                                                   std::get<2>(result));
-                         },
-                         std::move(callback), settings.id));
+  dialog_thread::Run(
+      base::BindOnce(&ShowTaskDialogUTF8, settings, base::Unretained(hwnd)),
+      base::BindOnce(
+          [](MessageBoxCallback callback, absl::optional<std::string> id,
+             DialogResult result) {
+            if (id)
+              g_dialogs.erase(*id);
+            std::move(callback).Run(std::get<0>(result), std::get<1>(result),
+                                    std::get<2>(result));
+          },
+          std::move(callback), settings.id));
 }
 
 bool CloseMessageBox(const std::string& id, std::string* error) {
