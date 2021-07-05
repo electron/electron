@@ -6,11 +6,13 @@
 
 Process: [Main](../glossary.md#main-process)
 
+`Tray` is an [EventEmitter][event-emitter].
+
 ### Methods
 
-The `Menu` class has the following static methods:
+The `Menu` class has the following methods:
 
-#### `SafeStorage.isEncryptionAvailable()`
+#### `safeStorage.isEncryptionAvailable()`
 
 On Linux returns true iff the real secret key (not hardcoded one) is
 available. On MacOS returns true if Keychain is available (for mock
@@ -20,17 +22,15 @@ key is available
 
 Returns `Boolean` - describe.
 
-#### `SafeStorage.encryptString(plainText, cipherText)`
+#### `safeStorage.encryptString(plainText)`
 
 * `plainText` String
-* `cipherText` String
 
 Returns `Boolean` -  Encrypt a string16. The output (second argument) is really an array of bytes, but we're passing it back as a std::string.
 
-#### `SafeStorage.decryptString(cipherText, plainText)`
+#### `safeStorage.decryptString(cipherText)`
 
 * `cipherText` String
-* `plainText` String
 
 Decrypt an array of bytes obtained with EnctryptString back into a string.
 Note that the input (first argument) is a std::string, so you need to first
