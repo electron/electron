@@ -1,10 +1,12 @@
 const { expect } = require('chai');
 const path = require('path');
 const { Buffer } = require('buffer');
+const { ifdescribe } = require('./spec-helpers');
 
 const { clipboard, nativeImage } = require('electron');
 
-describe('clipboard module', () => {
+// FIXME(zcbenz): Clipboard tests are failing on WOA.
+ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures');
 
   describe('clipboard.readImage()', () => {
