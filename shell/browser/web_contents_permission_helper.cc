@@ -94,6 +94,27 @@ bool WebContentsPermissionHelper::CheckPermission(
                                                         details);
 }
 
+bool WebContentsPermissionHelper::CheckDevicePermission(
+    content::PermissionType permission,
+    const url::Origin& origin,
+    const base::Value* device,
+    content::RenderFrameHost* render_frame_host) const {
+  auto* permission_manager = static_cast<ElectronPermissionManager*>(
+      web_contents_->GetBrowserContext()->GetPermissionControllerDelegate());
+  return permission_manager->CheckDevicePermission(
+      permission, web_contents_, origin, device, render_frame_host);
+}
+
+void WebContentsPermissionHelper::GrantDevicePermission(
+    content::PermissionType permission,
+    const url::Origin& origin,
+    const base::Value* device) const {
+  auto* permission_manager = static_cast<ElectronPermissionManager*>(
+      web_contents_->GetBrowserContext()->GetPermissionControllerDelegate());
+  permission_manager->GrantDevicePermission(permission, web_contents_, origin,
+                                            device);
+}
+
 void WebContentsPermissionHelper::RequestFullscreenPermission(
     base::OnceCallback<void(bool)> callback) {
   RequestPermission(
@@ -166,6 +187,31 @@ bool WebContentsPermissionHelper::CheckSerialAccessPermission(
   details.SetString("securityOrigin", embedding_origin.GetURL().spec());
   return CheckPermission(
       static_cast<content::PermissionType>(PermissionType::SERIAL), &details);
+}
+
+bool WebContentsPermissionHelper::CheckHIDAccessPermission(
+    const url::Origin& embedding_origin) const {
+  base::DictionaryValue details;
+  details.SetString("securityOrigin", embedding_origin.GetURL().spec());
+  return CheckPermission(
+      static_cast<content::PermissionType>(PermissionType::HID), &details);
+}
+
+bool WebContentsPermissionHelper::CheckHIDDevicePermission(
+    const url::Origin& origin,
+    base::Value device,
+    content::RenderFrameHost* render_frame_host) const {
+  return CheckDevicePermission(
+      static_cast<content::PermissionType>(PermissionType::HID), origin,
+      &device, render_frame_host);
+}
+
+void WebContentsPermissionHelper::GrantHIDDevicePermission(
+    const url::Origin& origin,
+    base::Value device) const {
+  return GrantDevicePermission(
+      static_cast<content::PermissionType>(PermissionType::HID), origin,
+      &device);
 }
 
 WEB_CONTENTS_USER_DATA_KEY_IMPL(WebContentsPermissionHelper)

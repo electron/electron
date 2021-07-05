@@ -1699,4 +1699,10 @@ device::GeolocationManager* ElectronBrowserClient::GetGeolocationManager() {
 #endif
 }
 
+content::HidDelegate* ElectronBrowserClient::GetHidDelegate() {
+  if (!hid_delegate_)
+    hid_delegate_ = std::make_unique<ElectronHidDelegate>();
+  return hid_delegate_.get();
+}
+
 }  // namespace electron

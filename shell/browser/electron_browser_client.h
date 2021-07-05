@@ -20,6 +20,7 @@
 #include "net/ssl/client_cert_identity.h"
 #include "services/metrics/public/cpp/ukm_source_id.h"
 #include "shell/browser/bluetooth/electron_bluetooth_delegate.h"
+#include "shell/browser/hid/electron_hid_delegate.h"
 #include "shell/browser/serial/electron_serial_delegate.h"
 #include "third_party/blink/public/mojom/badging/badging.mojom-forward.h"
 
@@ -92,6 +93,8 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   content::SerialDelegate* GetSerialDelegate() override;
 
   content::BluetoothDelegate* GetBluetoothDelegate() override;
+
+  content::HidDelegate* GetHidDelegate() override;
 
   device::GeolocationManager* GetGeolocationManager() override;
 
@@ -305,6 +308,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
 
   std::unique_ptr<ElectronSerialDelegate> serial_delegate_;
   std::unique_ptr<ElectronBluetoothDelegate> bluetooth_delegate_;
+  std::unique_ptr<ElectronHidDelegate> hid_delegate_;
 
 #if defined(OS_MAC)
   ElectronBrowserMainParts* browser_main_parts_ = nullptr;

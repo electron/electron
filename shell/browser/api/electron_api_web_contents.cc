@@ -3236,6 +3236,32 @@ v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
   return handle;
 }
 
+void WebContents::GrantDevicePermission(
+    const url::Origin& origin,
+    const base::Value* device,
+    content::PermissionType permissionType) {
+  granted_devices_[permissionType][origin].push_back(
+      std::make_unique<base::Value>(device->Clone()));
+}
+
+std::vector<std::unique_ptr<base::Value>> WebContents::GetGrantedDevices(
+    const url::Origin& origin,
+    content::PermissionType permissionType) {
+  const auto& current_devices_it = granted_devices_.find(permissionType);
+  if (current_devices_it == granted_devices_.end())
+    return {};
+
+  const auto& origin_devices_it = current_devices_it->second.find(origin);
+  if (origin_devices_it == current_devices_it->second.end())
+    return {};
+
+  std::vector<std::unique_ptr<base::Value>> results;
+  for (const auto& object : origin_devices_it->second)
+    results.push_back(std::make_unique<base::Value>(object->Clone()));
+
+  return results;
+}
+
 void WebContents::UpdatePreferredSize(content::WebContents* web_contents,
                                       const gfx::Size& pref_size) {
   Emit("preferred-size-changed", pref_size);

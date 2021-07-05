@@ -20,6 +20,7 @@
 #include "content/common/frame.mojom.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/keyboard_event_processing_result.h"
+#include "content/public/browser/permission_type.h"
 #include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_delegate.h"
@@ -90,6 +91,10 @@ class OffScreenWebContentsView;
 #endif
 
 namespace api {
+
+using DevicePermissionMap =
+    std::map<content::PermissionType,
+             std::map<url::Origin, std::vector<std::unique_ptr<base::Value>>>>;
 
 // Wrapper around the content::WebContents.
 class WebContents : public gin::Wrappable<WebContents>,
@@ -418,6 +423,19 @@ class WebContents : public gin::Wrappable<WebContents>,
   void DoGetZoomLevel(
       electron::mojom::ElectronBrowser::DoGetZoomLevelCallback callback);
   void SetImageAnimationPolicy(const std::string& new_policy);
+
+  // Grants |origin| access to |device|.
+  // To be used in place of ObjectPermissionContextBase::GrantObjectPermission.
+  void GrantDevicePermission(const url::Origin& origin,
+                             const base::Value* device,
+                             content::PermissionType permissionType);
+
+  // Returns the list of devices that |origin| has been granted permission to
+  // access. To be used in place of
+  // ObjectPermissionContextBase::GetGrantedObjects.
+  std::vector<std::unique_ptr<base::Value>> GetGrantedDevices(
+      const url::Origin& origin,
+      content::PermissionType permissionType);
 
  private:
   // Does not manage lifetime of |web_contents|.
@@ -764,6 +782,9 @@ class WebContents : public gin::Wrappable<WebContents>,
 
   // Stores the frame thats currently in fullscreen, nullptr if there is none.
   content::RenderFrameHost* fullscreen_frame_ = nullptr;
+
+  // In-memory cache that holds objects that have been granted permissions.
+  DevicePermissionMap granted_devices_;
 
   base::WeakPtrFactory<WebContents> weak_factory_{this};
 
