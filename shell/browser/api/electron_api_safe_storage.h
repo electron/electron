@@ -1,9 +1,9 @@
-// Copyright (c) 2015 GitHub, Inc.
+// Copyright (c) 2021 Slack Technologies, Inc.
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_ELECTRON_API_SAFESTORAGE_H_
-#define SHELL_BROWSER_API_ELECTRON_API_SAFESTORAGE_H_
+#ifndef SHELL_BROWSER_API_ELECTRON_API_SAFE_STORAGE_H_
+#define SHELL_BROWSER_API_ELECTRON_API_SAFE_STORAGE_H_
 
 #include <string>
 
@@ -40,7 +40,7 @@ class SafeStorage : public gin::Wrappable<SafeStorage>,
 #endif
 
  private:
-  SafeStorage(v8::Isolate* isolate);
+  explicit SafeStorage(v8::Isolate* isolate);
   ~SafeStorage() override;
 };
 
@@ -48,4 +48,4 @@ class SafeStorage : public gin::Wrappable<SafeStorage>,
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_ELECTRON_API_COOKIES_H_
+#endif  // SHELL_BROWSER_API_ELECTRON_API_SAFE_STORAGE_H_

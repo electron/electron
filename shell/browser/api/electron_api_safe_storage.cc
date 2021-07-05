@@ -1,3 +1,7 @@
+// Copyright (c) 2021 Slack Technologies, Inc.
+// Use of this source code is governed by the MIT license that can be
+// found in the LICENSE file.
+
 #include "shell/browser/api/electron_api_safe_storage.h"
 
 #include "components/os_crypt/os_crypt.h"
