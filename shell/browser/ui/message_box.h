@@ -46,13 +46,13 @@ struct MessageBoxSettings {
 
 int ShowMessageBoxSync(const MessageBoxSettings& settings);
 
-using MessageBoxCallback = base::OnceCallback<
-    void(const std::string& error, int code, bool checkbox_checked)>;
+typedef base::OnceCallback<void(int code, bool checkbox_checked)>
+    MessageBoxCallback;
 
 void ShowMessageBox(const MessageBoxSettings& settings,
                     MessageBoxCallback callback);
 
-bool CloseMessageBox(int id, std::string* error);
+void CloseMessageBox(int id);
 
 // Like ShowMessageBox with simplest settings, but safe to call at very early
 // stage of application.

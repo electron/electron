@@ -9,7 +9,7 @@
 #include <commctrl.h>
 
 #include <map>
-#include <tuple>
+#include <utility>
 #include <vector>
 
 #include "base/containers/contains.h"
@@ -34,7 +34,7 @@ MessageBoxSettings::~MessageBoxSettings() = default;
 
 namespace {
 
-using DialogResult = std::tuple<std::string, int, bool>;
+using DialogResult = std::pair<int, bool>;
 
 // <ID, messageBox> map.
 // Note that the HWND is stored in a unique_ptr, because the pointer of HWND
@@ -229,7 +229,7 @@ DialogResult ShowTaskDialogWstr(NativeWindow* parent,
   else
     button_id = cancel_id;
 
-  return std::make_tuple("", button_id, verificationFlagChecked);
+  return std::make_tuple(button_id, verificationFlagChecked);
 }
 
 DialogResult ShowTaskDialogUTF8(const MessageBoxSettings& settings,
@@ -255,8 +255,7 @@ DialogResult ShowTaskDialogUTF8(const MessageBoxSettings& settings,
 int ShowMessageBoxSync(const MessageBoxSettings& settings) {
   electron::UnresponsiveSuppressor suppressor;
   DialogResult result = ShowTaskDialogUTF8(settings, nullptr);
-  DCHECK(std::get<0>(result).empty());  // check if there is error
-  return std::get<1>(result);
+  return result.first;
 }
 
 void ShowMessageBox(const MessageBoxSettings& settings,
@@ -264,10 +263,8 @@ void ShowMessageBox(const MessageBoxSettings& settings,
   // Check if the ID has been taken, and mark it as reserved if not.
   HWND* hwnd = nullptr;
   if (settings.id) {
-    if (base::Contains(g_dialogs, *settings.id)) {
-      std::move(callback).Run("Duplicate ID found", 0, false);
-      return;
-    }
+    if (base::Contains(g_dialogs, *settings.id))
+      CloseMessageBox(*settings.id);
     auto it =
         g_dialogs.emplace(*settings.id, std::make_unique<HWND>(kHwndReserve));
     hwnd = it.first->second.get();
@@ -280,18 +277,16 @@ void ShowMessageBox(const MessageBoxSettings& settings,
              DialogResult result) {
             if (id)
               g_dialogs.erase(*id);
-            std::move(callback).Run(std::get<0>(result), std::get<1>(result),
-                                    std::get<2>(result));
+            std::move(callback).Run(result.first, result.second);
           },
           std::move(callback), settings.id));
 }
 
-bool CloseMessageBox(int id, std::string* error) {
-  DCHECK(error);
+void CloseMessageBox(int id) {
   auto it = g_dialogs.find(id);
   if (it == g_dialogs.end()) {
-    *error = "ID not found";
-    return false;
+    LOG(ERROR) << "CloseMessageBox called with unexist ID";
+    return;
   }
   HWND* hwnd = it->second.get();
   base::AutoLock lock(g_hwnd_lock.Get());
@@ -303,7 +298,6 @@ bool CloseMessageBox(int id, std::string* error) {
     // Otherwise send a message to close it.
     ::PostMessage(*hwnd, WM_CLOSE, 0, 0);
   }
-  return true;
 }
 
 void ShowErrorBox(const std::u16string& title, const std::u16string& content) {

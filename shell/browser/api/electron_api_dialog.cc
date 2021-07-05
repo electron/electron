@@ -25,14 +25,8 @@ int ShowMessageBoxSync(const electron::MessageBoxSettings& settings) {
 }
 
 void ResolvePromiseObject(gin_helper::Promise<gin_helper::Dictionary> promise,
-                          const std::string& error,
                           int result,
                           bool checkbox_checked) {
-  if (!error.empty()) {
-    promise.RejectWithErrorMessage(error);
-    return;
-  }
-
   v8::Isolate* isolate = promise.isolate();
   v8::HandleScope handle_scope(isolate);
   gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
@@ -54,12 +48,6 @@ v8::Local<v8::Promise> ShowMessageBox(
       settings, base::BindOnce(&ResolvePromiseObject, std::move(promise)));
 
   return handle;
-}
-
-void CloseMessageBox(gin_helper::ErrorThrower thrower, int id) {
-  std::string error;
-  if (!electron::CloseMessageBox(id, &error))
-    thrower.ThrowError(error);
 }
 
 void ShowOpenDialogSync(const file_dialog::DialogSettings& settings,
@@ -103,7 +91,7 @@ void Initialize(v8::Local<v8::Object> exports,
   gin_helper::Dictionary dict(isolate, exports);
   dict.SetMethod("showMessageBoxSync", &ShowMessageBoxSync);
   dict.SetMethod("showMessageBox", &ShowMessageBox);
-  dict.SetMethod("closeMessageBox", &CloseMessageBox);
+  dict.SetMethod("_closeMessageBox", &electron::CloseMessageBox);
   dict.SetMethod("showErrorBox", &electron::ShowErrorBox);
   dict.SetMethod("showOpenDialogSync", &ShowOpenDialogSync);
   dict.SetMethod("showOpenDialog", &ShowOpenDialog);

@@ -40,7 +40,6 @@ class ElectronJavaScriptDialogManager
  private:
   void OnMessageBoxCallback(DialogClosedCallback callback,
                             const std::string& origin,
-                            const std::string& error,
                             int code,
                             bool checkbox_checked);
 

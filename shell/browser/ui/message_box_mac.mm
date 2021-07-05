@@ -131,14 +131,11 @@ void ShowMessageBox(const MessageBoxSettings& settings,
   // window to wait for.
   if (!settings.parent_window) {
     int ret = [[alert autorelease] runModal];
-    std::move(callback).Run("", ret,
-                            alert.suppressionButton.state == NSOnState);
+    std::move(callback).Run(ret, alert.suppressionButton.state == NSOnState);
   } else {
     if (settings.id) {
-      if (base::Contains(g_dialogs, *settings.id)) {
-        std::move(callback).Run("Duplicate ID found", 0, false);
-        return;
-      }
+      if (base::Contains(g_dialogs, *settings.id))
+        CloseMessageBox(*settings.id);
       g_dialogs[*settings.id] = alert;
     }
 
@@ -153,33 +150,30 @@ void ShowMessageBox(const MessageBoxSettings& settings,
     __block absl::optional<int> id = std::move(settings.id);
     __block int cancel_id = settings.cancel_id;
 
-    [alert
-        beginSheetModalForWindow:window
-               completionHandler:^(NSModalResponse response) {
-                 if (id)
-                   g_dialogs.erase(*id);
-                 // When the alert is cancelled programmly, the response
-                 // would be something like -1000. This currently only
-                 // happens when users call CloseMessageBox API, and we
-                 // should return cancelId as result.
-                 if (response < 0)
-                   response = cancel_id;
-                 std::move(callback_).Run(
-                     "", response, alert.suppressionButton.state == NSOnState);
-                 [alert release];
-               }];
+    [alert beginSheetModalForWindow:window
+                  completionHandler:^(NSModalResponse response) {
+                    if (id)
+                      g_dialogs.erase(*id);
+                    // When the alert is cancelled programmly, the response
+                    // would be something like -1000. This currently only
+                    // happens when users call CloseMessageBox API, and we
+                    // should return cancelId as result.
+                    if (response < 0)
+                      response = cancel_id;
+                    std::move(callback_).Run(
+                        response, alert.suppressionButton.state == NSOnState);
+                    [alert release];
+                  }];
   }
 }
 
-bool CloseMessageBox(int id, std::string* error) {
-  DCHECK(error);
+void CloseMessageBox(int id) {
   auto it = g_dialogs.find(id);
   if (it == g_dialogs.end()) {
-    *error = "ID not found";
-    return false;
+    LOG(ERROR) << "CloseMessageBox called with unexist ID";
+    return;
   }
   [NSApp endSheet:it->second.window];
-  return true;
 }
 
 void ShowErrorBox(const std::u16string& title, const std::u16string& content) {

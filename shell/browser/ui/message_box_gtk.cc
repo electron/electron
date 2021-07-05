@@ -213,9 +213,9 @@ void GtkMessageBox::OnResponseDialog(GtkWidget* widget, int response) {
   gtk_widget_hide(dialog_);
 
   if (response < 0)
-    std::move(callback_).Run("", cancel_id_, checkbox_checked_);
+    std::move(callback_).Run(cancel_id_, checkbox_checked_);
   else
-    std::move(callback_).Run("", response, checkbox_checked_);
+    std::move(callback_).Run(response, checkbox_checked_);
   delete this;
 }
 
@@ -231,24 +231,18 @@ int ShowMessageBoxSync(const MessageBoxSettings& settings) {
 
 void ShowMessageBox(const MessageBoxSettings& settings,
                     MessageBoxCallback callback) {
-  if (settings.id) {
-    if (base::Contains(g_dialogs, *settings.id)) {
-      std::move(callback).Run("Duplicate ID found", 0, false);
-      return;
-    }
-  }
+  if (settings.id && base::Contains(g_dialogs, *settings.id))
+    CloseMessageBox(*settings.id);
   (new GtkMessageBox(settings))->RunAsynchronous(std::move(callback));
 }
 
-bool CloseMessageBox(int id, std::string* error) {
-  DCHECK(error);
+void CloseMessageBox(int id) {
   auto it = g_dialogs.find(id);
   if (it == g_dialogs.end()) {
-    *error = "ID not found";
-    return false;
+    LOG(ERROR) << "CloseMessageBox called with unexist ID";
+    return;
   }
   gtk_window_close(GTK_WINDOW(it->second));
-  return true;
 }
 
 void ShowErrorBox(const std::u16string& title, const std::u16string& content) {
