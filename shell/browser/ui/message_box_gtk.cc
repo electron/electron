@@ -42,7 +42,7 @@ MessageBoxSettings::~MessageBoxSettings() = default;
 namespace {
 
 // <ID, messageBox> map
-std::map<std::string, GtkWidget*> g_dialogs;
+std::map<int, GtkWidget*> g_dialogs;
 
 class GtkMessageBox : public NativeWindowObserver {
  public:
@@ -193,7 +193,7 @@ class GtkMessageBox : public NativeWindowObserver {
   electron::UnresponsiveSuppressor unresponsive_suppressor_;
 
   // The id of the dialog.
-  absl::optional<std::string> id_;
+  absl::optional<int> id_;
 
   // The id to return when the dialog is closed without pressing buttons.
   int cancel_id_ = 0;
@@ -240,7 +240,7 @@ void ShowMessageBox(const MessageBoxSettings& settings,
   (new GtkMessageBox(settings))->RunAsynchronous(std::move(callback));
 }
 
-bool CloseMessageBox(const std::string& id, std::string* error) {
+bool CloseMessageBox(int id, std::string* error) {
   DCHECK(error);
   auto it = g_dialogs.find(id);
   if (it == g_dialogs.end()) {

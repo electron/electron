@@ -29,7 +29,7 @@ MessageBoxSettings::~MessageBoxSettings() = default;
 namespace {
 
 // <ID, messageBox> map
-std::map<std::string, NSAlert*> g_dialogs;
+std::map<int, NSAlert*> g_dialogs;
 
 NSAlert* CreateNSAlert(const MessageBoxSettings& settings) {
   // Ignore the title; it's the window title on other platforms and ignorable.
@@ -150,7 +150,7 @@ void ShowMessageBox(const MessageBoxSettings& settings,
     // Duplicate the callback object here since c is a reference and gcd would
     // only store the pointer, by duplication we can force gcd to store a copy.
     __block MessageBoxCallback callback_ = std::move(callback);
-    __block absl::optional<std::string> id = std::move(settings.id);
+    __block absl::optional<int> id = std::move(settings.id);
     __block int cancel_id = settings.cancel_id;
 
     [alert
@@ -171,7 +171,7 @@ void ShowMessageBox(const MessageBoxSettings& settings,
   }
 }
 
-bool CloseMessageBox(const std::string& id, std::string* error) {
+bool CloseMessageBox(int id, std::string* error) {
   DCHECK(error);
   auto it = g_dialogs.find(id);
   if (it == g_dialogs.end()) {

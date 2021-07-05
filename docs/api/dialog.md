@@ -273,8 +273,11 @@ If `browserWindow` is not shown dialog will not be attached to it. In such case 
     will result in one button labeled "OK".
   * `defaultId` Integer (optional) - Index of the button in the buttons array which will
     be selected by default when the message box opens.
-  * `id` String (optional) - A custom ID, must not be used by any opened dialog.
-    It can be used by the `closeMessageBox` API to close the message box.
+  * `signal` AbortSignal (optional) - Pass an instance of AbortSignal to
+    optionally close the message box, the message box will behave as if it was
+    cancelled by the user. On macOS, `signal` does not work with message boxes
+    that do not have a parent window, since those message boxes run
+    synchronously due to platform limitations.
   * `title` String (optional) - Title of the message box, some platforms will not show it.
   * `detail` String (optional) - Extra information of the message.
   * `checkboxLabel` String (optional) - If provided, the message box will
@@ -309,23 +312,6 @@ Returns `Promise<Object>` - resolves with a promise containing the following pro
 Shows a message box.
 
 The `browserWindow` argument allows the dialog to attach itself to a parent window, making it modal.
-
-### `dialog.closeMessageBox(id)`
-
-* `id` String - The ID of the message box.
-
-Closes the asynchronous message box with `id`, the message box will behave as
-if it was cancelled by the user.
-
-Before using this API, a custom unique `id` must be passed to the `options` of
-`showMessageBox`. This function will throw if there is no message box with the
-`id` found.
-
-This API does not work with synchronous message boxes created by the
-`showMessageBoxSync` API.
-
-On macOS, this API does not work with message boxes that do not have a parent
-window, since those message boxes run synchronously due to platform limitations.
 
 ### `dialog.showErrorBox(title, content)`
 

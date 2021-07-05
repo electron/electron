@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import { dialog, BrowserWindow } from 'electron/main';
 import { closeAllWindows } from './window-helpers';
-import { ifit } from './spec-helpers';
+import { ifit, delay } from './spec-helpers';
 
 describe('dialog module', () => {
   describe('showOpenDialog', () => {
@@ -108,10 +108,6 @@ describe('dialog module', () => {
       }).to.throw(/Title must be a string/);
 
       expect(() => {
-        dialog.showMessageBox({ id: 300 as any, message: '' });
-      }).to.throw(/ID must be a string/);
-
-      expect(() => {
         dialog.showMessageBox({ message: [] as any });
       }).to.throw(/Message must be a string/);
 
@@ -123,88 +119,61 @@ describe('dialog module', () => {
         dialog.showMessageBox({ checkboxLabel: false as any, message: '' });
       }).to.throw(/checkboxLabel must be a string/);
     });
-
-    it('throws errors when the ID is used', () => {
-      const w = new BrowserWindow();
-      dialog.showMessageBox(w, { id: 'dialog', message: 'i am message' });
-      expect(
-        dialog.showMessageBox(w, { id: 'dialog', message: 'i am message' })
-      ).to.be.rejectedWith(/Duplicate ID found/);
-    });
   });
 
-  describe('closeMessageBox', () => {
+  describe('showMessageBox with signal', () => {
     afterEach(closeAllWindows);
 
-    it('releases message box ID', async () => {
-      const w = new BrowserWindow();
-      const p1 = dialog.showMessageBox(w, { id: 'dialog1', message: 'i am message' });
-      dialog.closeMessageBox('dialog1');
-      await p1;
-      const p2 = dialog.showMessageBox(w, { id: 'dialog1', message: 'i am message' });
-      dialog.closeMessageBox('dialog1');
-      await p2;
-    });
-
-    it('releases message box ID after a while', async () => {
-      const w = new BrowserWindow();
-      const p1 = dialog.showMessageBox(w, { id: 'dialog1', message: 'i am message' });
-      await new Promise(resolve => setTimeout(resolve, 500));
-      dialog.closeMessageBox('dialog1');
-      await p1;
-      const p2 = dialog.showMessageBox(w, { id: 'dialog1', message: 'i am message' });
-      dialog.closeMessageBox('dialog1');
-      await p2;
-    });
-
     it('closes message box immediately', async () => {
+      const controller = new AbortController();
+      const signal = controller.signal;
       const w = new BrowserWindow();
-      const p = dialog.showMessageBox(w, { id: 'dialog2', message: 'i am message' });
-      dialog.closeMessageBox('dialog2');
+      const p = dialog.showMessageBox(w, { signal, message: 'i am message' });
+      controller.abort();
       const result = await p;
       expect(result.response).to.equal(0);
     });
 
     it('closes message box after a while', async () => {
+      const controller = new AbortController();
+      const signal = controller.signal;
       const w = new BrowserWindow();
-      const p = dialog.showMessageBox(w, { id: 'dialog3', message: 'i am message' });
-      await new Promise(resolve => setTimeout(resolve, 500));
-      dialog.closeMessageBox('dialog3');
+      const p = dialog.showMessageBox(w, { signal, message: 'i am message' });
+      await delay(500);
+      controller.abort();
       const result = await p;
       expect(result.response).to.equal(0);
     });
 
     it('cancels message box', async () => {
+      const controller = new AbortController();
+      const signal = controller.signal;
       const w = new BrowserWindow();
       const p = dialog.showMessageBox(w, {
-        id: 'dialog4',
+        signal,
         message: 'i am message',
         buttons: ['OK', 'Cancel'],
         cancelId: 1
       });
-      dialog.closeMessageBox('dialog4');
+      controller.abort();
       const result = await p;
       expect(result.response).to.equal(1);
     });
 
     it('cancels message box after a while', async () => {
+      const controller = new AbortController();
+      const signal = controller.signal;
       const w = new BrowserWindow();
       const p = dialog.showMessageBox(w, {
-        id: 'dialog5',
+        signal,
         message: 'i am message',
         buttons: ['OK', 'Cancel'],
         cancelId: 1
       });
-      await new Promise(resolve => setTimeout(resolve, 500));
-      dialog.closeMessageBox('dialog5');
+      await delay(500);
+      controller.abort();
       const result = await p;
       expect(result.response).to.equal(1);
-    });
-
-    it('throws when ID is not found', () => {
-      expect(() => {
-        dialog.closeMessageBox('not-exist');
-      }).to.throw(/ID not found/);
     });
   });
 

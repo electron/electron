@@ -40,7 +40,7 @@ using DialogResult = std::tuple<std::string, int, bool>;
 // Note that the HWND is stored in a unique_ptr, because the pointer of HWND
 // will be passed between threads and we need to ensure the memory of HWND is
 // not changed while g_dialogs is modified.
-std::map<std::string, std::unique_ptr<HWND>> g_dialogs;
+std::map<int, std::unique_ptr<HWND>> g_dialogs;
 
 // Speical HWND used by the g_dialogs map.
 // - ID is used but window has not been created yet.
@@ -276,7 +276,7 @@ void ShowMessageBox(const MessageBoxSettings& settings,
   dialog_thread::Run(
       base::BindOnce(&ShowTaskDialogUTF8, settings, base::Unretained(hwnd)),
       base::BindOnce(
-          [](MessageBoxCallback callback, absl::optional<std::string> id,
+          [](MessageBoxCallback callback, absl::optional<int> id,
              DialogResult result) {
             if (id)
               g_dialogs.erase(*id);
@@ -286,7 +286,7 @@ void ShowMessageBox(const MessageBoxSettings& settings,
           std::move(callback), settings.id));
 }
 
-bool CloseMessageBox(const std::string& id, std::string* error) {
+bool CloseMessageBox(int id, std::string* error) {
   DCHECK(error);
   auto it = g_dialogs.find(id);
   if (it == g_dialogs.end()) {

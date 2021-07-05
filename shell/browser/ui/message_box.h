@@ -28,7 +28,7 @@ struct MessageBoxSettings {
   electron::NativeWindow* parent_window = nullptr;
   MessageBoxType type = electron::MessageBoxType::kNone;
   std::vector<std::string> buttons;
-  absl::optional<std::string> id;
+  absl::optional<int> id;
   int default_id;
   int cancel_id;
   bool no_link = false;
@@ -52,7 +52,7 @@ using MessageBoxCallback = base::OnceCallback<
 void ShowMessageBox(const MessageBoxSettings& settings,
                     MessageBoxCallback callback);
 
-bool CloseMessageBox(const std::string& id, std::string* error);
+bool CloseMessageBox(int id, std::string* error);
 
 // Like ShowMessageBox with simplest settings, but safe to call at very early
 // stage of application.

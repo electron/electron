@@ -22,6 +22,11 @@ enum OpenFileDialogProperties {
   dontAddToRecent = 1 << 8 // Windows
 }
 
+let nextId = 0;
+const getNextId = function () {
+  return ++nextId;
+};
+
 const normalizeAccessKey = (text: string) => {
   if (typeof text !== 'string') return text;
 
@@ -157,9 +162,9 @@ const messageBox = (sync: boolean, window: BrowserWindow | null, options?: Messa
   let {
     buttons = [],
     cancelId,
+    signal,
     checkboxLabel = '',
     checkboxChecked,
-    id = '',
     defaultId = -1,
     detail = '',
     icon = null,
@@ -173,7 +178,6 @@ const messageBox = (sync: boolean, window: BrowserWindow | null, options?: Messa
   if (messageBoxType === -1) throw new TypeError('Invalid message box type');
   if (!Array.isArray(buttons)) throw new TypeError('Buttons must be an array');
   if (options.normalizeAccessKeys) buttons = buttons.map(normalizeAccessKey);
-  if (typeof id !== 'string') throw new TypeError('ID must be a string');
   if (typeof title !== 'string') throw new TypeError('Title must be a string');
   if (typeof noLink !== 'boolean') throw new TypeError('noLink must be a boolean');
   if (typeof message !== 'string') throw new TypeError('Message must be a string');
@@ -196,6 +200,16 @@ const messageBox = (sync: boolean, window: BrowserWindow | null, options?: Messa
         break;
       }
     }
+  }
+
+  // AbortSignal processing.
+  let id: number | undefined;
+  if (signal) {
+    // Generate an ID used for closing the message box.
+    id = getNextId();
+    // Close the message box when signal is aborted.
+    if (signal.aborted) { return Promise.resolve({ cancelId, checkboxChecked }); }
+    signal.addEventListener('abort', () => dialogBinding.closeMessageBox(id));
   }
 
   const settings = {
@@ -261,10 +275,6 @@ export function showMessageBox (windowOrOptions: BrowserWindow | MessageBoxOptio
   const window = (windowOrOptions && !(windowOrOptions instanceof BrowserWindow) ? null : windowOrOptions);
   const options = (windowOrOptions && !(windowOrOptions instanceof BrowserWindow) ? windowOrOptions : maybeOptions);
   return messageBox(false, window, options);
-}
-
-export function closeMessageBox (id: string) {
-  return dialogBinding.closeMessageBox(id);
 }
 
 export function showMessageBoxSync(window: BrowserWindow, options: MessageBoxOptions): MessageBoxReturnValue;

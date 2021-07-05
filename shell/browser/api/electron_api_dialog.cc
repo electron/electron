@@ -56,7 +56,7 @@ v8::Local<v8::Promise> ShowMessageBox(
   return handle;
 }
 
-void CloseMessageBox(gin_helper::ErrorThrower thrower, const std::string& id) {
+void CloseMessageBox(gin_helper::ErrorThrower thrower, int id) {
   std::string error;
   if (!electron::CloseMessageBox(id, &error))
     thrower.ThrowError(error);
