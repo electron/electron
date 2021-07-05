@@ -37,18 +37,27 @@ namespace {
 using DialogResult = std::pair<int, bool>;
 
 // <ID, messageBox> map.
+//
 // Note that the HWND is stored in a unique_ptr, because the pointer of HWND
 // will be passed between threads and we need to ensure the memory of HWND is
 // not changed while g_dialogs is modified.
 std::map<int, std::unique_ptr<HWND>> g_dialogs;
 
 // Speical HWND used by the g_dialogs map.
+//
 // - ID is used but window has not been created yet.
 HWND kHwndReserve = reinterpret_cast<HWND>(-1);
 // - Notification to cancel message box.
 HWND kHwndCancel = reinterpret_cast<HWND>(-2);
 
 // Lock used for modifying HWND between threads.
+//
+// Note that there might be multiple dialogs being opened at the same time, but
+// we only use one lock for them all, because each dialog is independent from
+// each other and there is no need to use different lock for each one.
+// Also note that the |g_dialogs| is only used in the main thread, what is
+// shared between threads is the memory of HWND, so there is no need to use lock
+// when accessing g_dialogs.
 base::LazyInstance<base::Lock>::Leaky g_hwnd_lock = LAZY_INSTANCE_INITIALIZER;
 
 // Small command ID values are already taken by Windows, we have to start from
@@ -97,15 +106,20 @@ void MapToCommonID(const std::vector<std::wstring>& buttons,
   }
 }
 
-// Callback of the task dialog. Used for storing the hwnd of task dialog when
-// it is created.
+// Callback of the task dialog. The TaskDialogIndirect API does not provide the
+// HWND of the dialog, and we have to listen to the TDN_CREATED message to get
+// it.
+// Note that this callback runs in dialog thread instead of main thread, so it
+// is possible for CloseMessageBox to be called before or all after the dialog
+// window is created.
 HRESULT CALLBACK
 TaskDialogCallback(HWND hwnd, UINT msg, WPARAM, LPARAM, LONG_PTR data) {
   if (msg == TDN_CREATED) {
     HWND* target = reinterpret_cast<HWND*>(data);
+    // Lock since CloseMessageBox might be called.
     base::AutoLock lock(g_hwnd_lock.Get());
     if (*target == kHwndCancel) {
-      // If the dialog is cancelled then close it directly.
+      // The dialog is cancelled before it is created, close it directly.
       ::PostMessage(hwnd, WM_CLOSE, 0, 0);
     } else if (*target == kHwndReserve) {
       // Otherwise save the hwnd.
@@ -229,7 +243,7 @@ DialogResult ShowTaskDialogWstr(NativeWindow* parent,
   else
     button_id = cancel_id;
 
-  return std::make_tuple(button_id, verificationFlagChecked);
+  return std::make_pair(button_id, verificationFlagChecked);
 }
 
 DialogResult ShowTaskDialogUTF8(const MessageBoxSettings& settings,
@@ -260,7 +274,8 @@ int ShowMessageBoxSync(const MessageBoxSettings& settings) {
 
 void ShowMessageBox(const MessageBoxSettings& settings,
                     MessageBoxCallback callback) {
-  // Check if the ID has been taken, and mark it as reserved if not.
+  // The dialog is created in a new thread so we don't know its HWND yet, put
+  // kHwndReserve in the g_dialogs for now.
   HWND* hwnd = nullptr;
   if (settings.id) {
     if (base::Contains(g_dialogs, *settings.id))
@@ -289,6 +304,7 @@ void CloseMessageBox(int id) {
     return;
   }
   HWND* hwnd = it->second.get();
+  // Lock since the TaskDialogCallback might be saving the dialog's HWND.
   base::AutoLock lock(g_hwnd_lock.Get());
   DCHECK(*hwnd != kHwndCancel);
   if (*hwnd == kHwndReserve) {
