@@ -1,18 +1,16 @@
-# SafeStorage
+# safeStorage
 
-## Class: SafeStorage
-
-> blah.
+> Manage cookie encryption.
 
 Process: [Main](../glossary.md#main-process)
 
-`Tray` is an [EventEmitter][event-emitter].
+`safeStorage` is an [EventEmitter][event-emitter].
 
-### Methods
+## Methods
 
-The `Menu` class has the following methods:
+The `safeStorage` module has the following methods:
 
-#### `safeStorage.isEncryptionAvailable()`
+### `safeStorage.isEncryptionAvailable()`
 
 On Linux returns true iff the real secret key (not hardcoded one) is
 available. On MacOS returns true if Keychain is available (for mock
@@ -20,18 +18,20 @@ Keychain it returns true if not using locked Keychain, false if using
 locked mock Keychain). On Windows returns true if non mock encryption
 key is available
 
-Returns `Boolean` - describe.
+Returns `Boolean` - Whether cookie encryption is available.
 
-#### `safeStorage.encryptString(plainText)`
+### `safeStorage.encryptString(plainText)`
 
 * `plainText` String
 
-Returns `Boolean` -  Encrypt a string16. The output (second argument) is really an array of bytes, but we're passing it back as a std::string.
+Encrypt a string.
 
-#### `safeStorage.decryptString(cipherText)`
+Returns `Buffer` -  An array of bytes representing the encrypted string.
 
-* `cipherText` String
+### `safeStorage.decryptString(cipherText)`
 
-Decrypt an array of bytes obtained with EnctryptString back into a string.
-Note that the input (first argument) is a std::string, so you need to first
-get your (binary) data into a string.
+* `cipherText` Buffer
+
+Decrypt buffer obtained with `safeStorage.encryptString` back into a string.
+
+Returns `String` - the decrypted string.
