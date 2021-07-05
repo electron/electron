@@ -241,7 +241,7 @@ index 59b34cdb1dc63b8d239cae5397b2a5a4f607bf1c..e2f556532459b1129465ca2b83aa1485
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 4d35f0e28766afa83e89189d4e9f2c904b52e319..1c3054e07d0981cac2f201f84ad8258b334beef1 100644
+index 65c5fa70ee04fe5285979a93ab67449137dae304..c1192715d78ab9cc4558b398c4fb72a12b1c05cd 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -216,6 +216,7 @@
@@ -315,7 +315,7 @@ index 4d87cdf578fdd2cbde7929e3a8c7cabfbb1fc836..be8550927a7c9cdc001dedef66672453
    // is what the renderer uses if its not threaded.
    settings.enable_checker_imaging =
 diff --git a/ui/gfx/mac/io_surface.cc b/ui/gfx/mac/io_surface.cc
-index 4e22b4cf0bd06955af5fbac32db084f41d547545..087ec6df3e7cf53e0d79c7b3edb581dc426ff3a3 100644
+index 546e43318ee74746a84a70c731e9117c88ea9136..3cc93ff14f3471e99e42d533517df36d16d3cca2 100644
 --- a/ui/gfx/mac/io_surface.cc
 +++ b/ui/gfx/mac/io_surface.cc
 @@ -20,6 +20,7 @@
@@ -358,7 +358,7 @@ index 4e22b4cf0bd06955af5fbac32db084f41d547545..087ec6df3e7cf53e0d79c7b3edb581dc
    if (__builtin_available(macos 10.12, *)) {
      IOSurfaceSetValue(surface, CFSTR("IOSurfaceColorSpace"), kCGColorSpaceSRGB);
 diff --git a/ui/gfx/switches.cc b/ui/gfx/switches.cc
-index 32e9729b7a617e55fbb4b85147b29a0883df5192..a785161728d3c50e1692e9be5646f2cda80a99d2 100644
+index 6733cbef7f7173e0cea4176986b851bad0f18e86..1714e52434f72ff4e3335e37cedb3f452f6b196b 100644
 --- a/ui/gfx/switches.cc
 +++ b/ui/gfx/switches.cc
 @@ -10,6 +10,7 @@ namespace switches {
@@ -370,7 +370,7 @@ index 32e9729b7a617e55fbb4b85147b29a0883df5192..a785161728d3c50e1692e9be5646f2cd
  // Force disables font subpixel positioning. This affects the character glyph
  // sharpness, kerning, hinting and layout.
 diff --git a/ui/gfx/switches.h b/ui/gfx/switches.h
-index aa76f07153e19122a3857db629f834d61afe8155..1d8a84bdf7a41ec9647854f354f0ab001e43e599 100644
+index afb36f3e9ae8b3f38244a5821341d34935283580..f967ae3e9e9c0edcd1b618ab09fc677aa72c0c8d 100644
 --- a/ui/gfx/switches.h
 +++ b/ui/gfx/switches.h
 @@ -12,6 +12,8 @@

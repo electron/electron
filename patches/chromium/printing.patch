@@ -11,24 +11,24 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/chrome/browser/printing/print_job.cc b/chrome/browser/printing/print_job.cc
-index cbe686c86aab691efeca9d104575711fd46037d5..26362670d68e8a6b3297678931ea43a240ae9391 100644
+index 7f35eb191c651294fdf3cb14119bd4895bbc437e..6931a992de9c73bc3d40a7e74e4d009aefa236a8 100644
 --- a/chrome/browser/printing/print_job.cc
 +++ b/chrome/browser/printing/print_job.cc
-@@ -349,18 +349,25 @@ void PrintJob::StartPdfToEmfConversion(
+@@ -350,18 +350,25 @@ void PrintJob::StartPdfToEmfConversion(
    // seems to work with the fix for this bug applied.
    const PrintSettings& settings = document()->settings();
    bool print_text_with_gdi =
--      settings.print_text_with_gdi() && !settings.printer_is_xps() &&
+-      settings.print_text_with_gdi() && !settings.printer_language_is_xps() &&
 +#if defined(OS_WIN)
 +      settings.is_modifiable()
 +#else
 +      settings.print_text_with_gdi()
 +#endif
-+      && !settings.printer_is_xps() &&
++      && !settings.printer_language_is_xps() &&
        base::FeatureList::IsEnabled(::features::kGdiTextPrinting);
  
    // TODO(thestig): Figure out why crbug.com/1083911 occurred, which is likely
-   // because |web_contents| was null. As a result, this section has many more
+   // because `web_contents` was null. As a result, this section has many more
    // pointer checks to avoid crashing.
 +#if 0
    content::WebContents* web_contents = worker_->GetWebContents();
