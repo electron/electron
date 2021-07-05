@@ -685,6 +685,8 @@ class WebContents : public gin::Wrappable<WebContents>,
 
   // Set fullscreen mode triggered by html api.
   void SetHtmlApiFullscreen(bool enter_fullscreen);
+  // Update the html fullscreen flag in both browser and renderer.
+  void UpdateHtmlApiFullscreen(bool fullscreen);
 
   v8::Global<v8::Value> session_;
   v8::Global<v8::Value> devtools_web_contents_;
