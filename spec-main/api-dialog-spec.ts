@@ -108,6 +108,10 @@ describe('dialog module', () => {
       }).to.throw(/Title must be a string/);
 
       expect(() => {
+        dialog.showMessageBox({ id: 300 as any, message: '' });
+      }).to.throw(/ID must be a string/);
+
+      expect(() => {
         dialog.showMessageBox({ message: [] as any });
       }).to.throw(/Message must be a string/);
 
@@ -118,6 +122,32 @@ describe('dialog module', () => {
       expect(() => {
         dialog.showMessageBox({ checkboxLabel: false as any, message: '' });
       }).to.throw(/checkboxLabel must be a string/);
+    });
+
+    it('throws errors when the ID is used', () => {
+      const w = new BrowserWindow();
+      dialog.showMessageBox(w, { id: 'dialog', message: 'i am message' });
+      expect(
+        dialog.showMessageBox(w, { id: 'dialog', message: 'i am message' })
+      ).to.be.rejectedWith(/Duplicate ID found/);
+    });
+  });
+
+  describe('closeMessageBox', () => {
+    afterEach(closeAllWindows);
+
+    it('closes message box', async () => {
+      const w = new BrowserWindow();
+      const p = dialog.showMessageBox(w, { id: 'dialog2', message: 'i am message' });
+      dialog.closeMessageBox('dialog2');
+      const result = await p;
+      expect(result.response).to.equal(-1);
+    });
+
+    it('throws when ID is not found', () => {
+      expect(() => {
+        dialog.closeMessageBox('not-exist');
+      }).to.throw(/ID not found/);
     });
   });
 

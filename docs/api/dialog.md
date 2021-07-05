@@ -273,6 +273,8 @@ If `browserWindow` is not shown dialog will not be attached to it. In such case 
     will result in one button labeled "OK".
   * `defaultId` Integer (optional) - Index of the button in the buttons array which will
     be selected by default when the message box opens.
+  * `id` String (optional) - A custom ID, must not be used by any opened dialog.
+    It can be used by the `closeMessageBox` API to close the message box.
   * `title` String (optional) - Title of the message box, some platforms will not show it.
   * `detail` String (optional) - Extra information of the message.
   * `checkboxLabel` String (optional) - If provided, the message box will
@@ -300,13 +302,23 @@ If `browserWindow` is not shown dialog will not be attached to it. In such case 
 
 Returns `Promise<Object>` - resolves with a promise containing the following properties:
 
-* `response` Number - The index of the clicked button.
+* `response` Number - The index of the clicked button, or -1 if the message
+box was cancelled by the `closeMessageBox` API.
 * `checkboxChecked` Boolean - The checked state of the checkbox if
   `checkboxLabel` was set. Otherwise `false`.
 
 Shows a message box.
 
 The `browserWindow` argument allows the dialog to attach itself to a parent window, making it modal.
+
+### `dialog.closeMessageBox(id)`
+
+* `id` String - The ID of the message box.
+
+Closes the message box with `id`.
+
+The `id` is a custom string passed to the `options` of `showMessageBox`. This
+function will throw if there is no message box with the `id` found.
 
 ### `dialog.showErrorBox(title, content)`
 
