@@ -13,6 +13,7 @@ namespace electron {
 
 namespace api {
 
+bool SafeStorage::electron_crypto_ready = false;
 gin::WrapperInfo SafeStorage::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 electron::api::SafeStorage::SafeStorage(v8::Isolate* isolate) {}
@@ -22,27 +23,41 @@ bool SafeStorage::IsEncryptionAvailable() {
   return OSCrypt::IsEncryptionAvailable();
 }
 
-std::string SafeStorage::EncryptString(v8::Isolate* isolate,
-                                       const std::string& plaintext) {
+v8::Local<v8::Value> SafeStorage::EncryptString(v8::Isolate* isolate,
+                                                const std::string& plaintext) {
+  DCHECK(SafeStorage::electron_crypto_ready);
   std::string ciphertext;
   bool encrypted = OSCrypt::EncryptString(plaintext, &ciphertext);
 
   if (!encrypted) {
     gin_helper::ErrorThrower(isolate).ThrowError(
-        "Error while decrypting the key.");
+        "Error while encrypting the key.");
+    return v8::Local<v8::Value>();
   }
 
-  return ciphertext;
+  return node::Buffer::Copy(isolate, ciphertext.c_str(), ciphertext.size())
+      .ToLocalChecked();
 }
 
 std::string SafeStorage::DecryptString(v8::Isolate* isolate,
-                                       const std::string& ciphertext) {
-  std::string plaintext;
-  bool encrypted = OSCrypt::DecryptString(ciphertext, &plaintext);
+                                       v8::Local<v8::Value> buffer) {
+  if (!node::Buffer::HasInstance(buffer)) {
+    gin_helper::ErrorThrower(isolate).ThrowError(
+        "Expected the first argument of decryptString() to be a buffer");
+    return "";
+  }
 
-  if (!encrypted) {
+  const char* data = node::Buffer::Data(buffer);
+  auto size = node::Buffer::Length(buffer);
+  std::string ciphertext(data, size);
+
+  std::string plaintext;
+  bool decrypted = OSCrypt::DecryptString(ciphertext, &plaintext);
+
+  if (!decrypted) {
     gin_helper::ErrorThrower(isolate).ThrowError(
         "Error while decrypting the key.");
+    return "";
   }
 
   return plaintext;

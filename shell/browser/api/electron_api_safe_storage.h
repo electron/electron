@@ -28,9 +28,16 @@ class SafeStorage : public gin::Wrappable<SafeStorage>,
   const char* GetTypeName() override;
 
   bool IsEncryptionAvailable();
-  std::string EncryptString(v8::Isolate* isolate, const std::string& plaintext);
+  v8::Local<v8::Value> EncryptString(v8::Isolate* isolate,
+                                     const std::string& plaintext);
   std::string DecryptString(v8::Isolate* isolate,
-                            const std::string& ciphertext);
+                            v8::Local<v8::Value> ciphertext);
+  // Used in a DCHECK to validate that our assumption that the network context
+  // manager has initialized before app ready holds true. Only used in the
+  // testing build
+#if DCHECK_IS_ON()
+  static bool electron_crypto_ready;
+#endif
 
  private:
   SafeStorage(v8::Isolate* isolate);

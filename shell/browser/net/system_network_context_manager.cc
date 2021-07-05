@@ -28,6 +28,7 @@
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
 #include "services/network/public/mojom/network_context.mojom.h"
+#include "shell/browser/api/electron_api_safe_storage.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/common/application_info.h"
@@ -233,38 +234,56 @@ void SystemNetworkContextManager::OnNetworkServiceCreated(
       network_context_.BindNewPipeAndPassReceiver(),
       CreateNetworkContextParams());
 
-  if (electron::fuses::IsCookieEncryptionEnabled()) {
-    std::string app_name = electron::Browser::Get()->GetName();
+  std::string app_name = electron::Browser::Get()->GetName();
 #if defined(OS_MAC)
-    *KeychainPassword::service_name = app_name + " Safe Storage";
-    *KeychainPassword::account_name = app_name;
+  *KeychainPassword::service_name = app_name + " Safe Storage";
+  *KeychainPassword::account_name = app_name;
 #endif
-    // The OSCrypt keys are process bound, so if network service is out of
-    // process, send it the required key.
-    if (content::IsOutOfProcessNetworkService()) {
 #if defined(OS_LINUX)
-      // c.f.
-      // https://source.chromium.org/chromium/chromium/src/+/master:chrome/browser/net/system_network_context_manager.cc;l=515;drc=9d82515060b9b75fa941986f5db7390299669ef1;bpv=1;bpt=1
-      const base::CommandLine& command_line =
-          *base::CommandLine::ForCurrentProcess();
+  // c.f.
+  // https://source.chromium.org/chromium/chromium/src/+/master:chrome/browser/net/system_network_context_manager.cc;l=515;drc=9d82515060b9b75fa941986f5db7390299669ef1;bpv=1;bpt=1
+  const base::CommandLine& command_line =
+      *base::CommandLine::ForCurrentProcess();
 
-      network::mojom::CryptConfigPtr config =
-          network::mojom::CryptConfig::New();
-      config->application_name = app_name;
-      config->product_name = app_name;
-      // c.f.
-      // https://source.chromium.org/chromium/chromium/src/+/master:chrome/common/chrome_switches.cc;l=689;drc=9d82515060b9b75fa941986f5db7390299669ef1
-      config->store =
-          command_line.GetSwitchValueASCII(::switches::kPasswordStore);
-      config->should_use_preference =
-          command_line.HasSwitch(::switches::kEnableEncryptionSelection);
-      base::PathService::Get(chrome::DIR_USER_DATA, &config->user_data_path);
-      network_service->SetCryptConfig(std::move(config));
-#else
-      network_service->SetEncryptionKey(OSCrypt::GetRawEncryptionKey());
+  auto config = std::make_unique<os_crypt::Config>();
+  config->store = command_line.GetSwitchValueASCII(::switches::kPasswordStore);
+  config->product_name = app_name;
+  config->application_name = app_name;
+  config->main_thread_runner = base::ThreadTaskRunnerHandle::Get();
+  // c.f.
+  // https://source.chromium.org/chromium/chromium/src/+/master:chrome/common/chrome_switches.cc;l=689;drc=9d82515060b9b75fa941986f5db7390299669ef1
+  config->should_use_preference =
+      command_line.HasSwitch(::switches::kEnableEncryptionSelection);
+  base::PathService::Get(chrome::DIR_USER_DATA, &config->user_data_path);
 #endif
-    }
+
+  // The OSCrypt keys are process bound, so if network service is out of
+  // process, send it the required key.
+  if (content::IsOutOfProcessNetworkService() &&
+      electron::fuses::IsCookieEncryptionEnabled()) {
+#if defined(OS_LINUX)
+    network::mojom::CryptConfigPtr network_crypt_config =
+        network::mojom::CryptConfig::New();
+    network_crypt_config->application_name = config->application_name;
+    network_crypt_config->product_name = config->product_name;
+    network_crypt_config->store = config->store;
+    network_crypt_config->should_use_preference = config->should_use_preference;
+    network_crypt_config->user_data_path = config->user_dath_path;
+
+    network_service->SetCryptConfig(std::move(network_crypt_config));
+
+#else
+    network_service->SetEncryptionKey(OSCrypt::GetRawEncryptionKey());
+#endif
   }
+
+#if defined(OS_LINUX)
+  OSCrypt::SetConfig(std::move(config));
+#endif
+
+#if DCHECK_IS_ON()
+  electron::api::SafeStorage::electron_crypto_ready = true;
+#endif
 }
 
 network::mojom::NetworkContextParamsPtr
