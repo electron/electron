@@ -39,7 +39,7 @@ class SafeStorage : public gin::Wrappable<SafeStorage>,
 #endif
 
  private:
-  SafeStorage(v8::Isolate* isolate);
+  SafeStorage();
   ~SafeStorage() override;
 };
 

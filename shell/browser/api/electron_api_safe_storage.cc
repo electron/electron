@@ -74,7 +74,7 @@ std::string SafeStorage::DecryptString(v8::Isolate* isolate,
 
 gin::ObjectTemplateBuilder SafeStorage::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
-  return gin_helper::GetObjectTemplateBuilder(isolate)
+  return gin::ObjectTemplateBuilder(isolate)
       .SetMethod("isEncryptionAvailable", &SafeStorage::IsEncryptionAvailable)
       .SetMethod("encryptString", &SafeStorage::EncryptString)
       .SetMethod("decryptString", &SafeStorage::DecryptString);
@@ -86,7 +86,7 @@ const char* SafeStorage::GetTypeName() {
 
 // static
 gin::Handle<SafeStorage> SafeStorage::Create(v8::Isolate* isolate) {
-  return gin::CreateHandle(isolate, new SafeStorage(isolate));
+  return gin::CreateHandle(isolate, new SafeStorage());
 }
 
 }  // namespace api
