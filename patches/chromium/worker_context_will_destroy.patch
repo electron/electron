@@ -55,7 +55,7 @@ index cb8770a47a808279d7c1999245d19eae3c941a4e..523a489b89735d77a2d44b5f5d327b20
        const blink::WebSecurityOrigin& script_origin) override;
    blink::ProtocolHandlerSecurityLevel GetProtocolHandlerSecurityLevel()
 diff --git a/third_party/blink/public/platform/platform.h b/third_party/blink/public/platform/platform.h
-index 7691e1e8b3289774f89830fd850c6f6d155dec24..e311411dc9b7074290cff0551fc3ae8043218538 100644
+index cd2ebc947ed03690d7954b4bf6c1d20ebcfaa81b..401bae87ccfdde9a73c42c6e7a3787734c443190 100644
 --- a/third_party/blink/public/platform/platform.h
 +++ b/third_party/blink/public/platform/platform.h
 @@ -728,6 +728,7 @@ class BLINK_PLATFORM_EXPORT Platform {
@@ -67,10 +67,10 @@ index 7691e1e8b3289774f89830fd850c6f6d155dec24..e311411dc9b7074290cff0551fc3ae80
        const WebSecurityOrigin& script_origin) {
      return false;
 diff --git a/third_party/blink/renderer/core/workers/worker_thread.cc b/third_party/blink/renderer/core/workers/worker_thread.cc
-index 314dc76e24dad33d8363cf8ae1f24787c448fb5b..9306fcca19dfaa1ed7a52cafd2e56eed190dd203 100644
+index c694aa7cab116003ec4baeb096cc3e386d99019e..1bfc60026d81fa77f120d26d65d9e852afbe1864 100644
 --- a/third_party/blink/renderer/core/workers/worker_thread.cc
 +++ b/third_party/blink/renderer/core/workers/worker_thread.cc
-@@ -738,6 +738,12 @@ void WorkerThread::PrepareForShutdownOnWorkerThread() {
+@@ -717,6 +717,12 @@ void WorkerThread::PrepareForShutdownOnWorkerThread() {
      nested_runner_->QuitNow();
    }
  

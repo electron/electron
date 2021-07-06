@@ -50,7 +50,7 @@ int FramelessView::ResizingBorderHitTest(const gfx::Point& point) {
   int resize_border = frame_->IsMaximized() || frame_->IsFullscreen()
                           ? 0
                           : kResizeInsideBoundsSize;
-  return GetHTComponentForFrame(point, resize_border, resize_border,
+  return GetHTComponentForFrame(point, gfx::Insets(resize_border),
                                 kResizeAreaCornerSize, kResizeAreaCornerSize,
                                 can_ever_resize);
 }

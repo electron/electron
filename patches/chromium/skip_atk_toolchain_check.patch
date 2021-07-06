@@ -21,11 +21,11 @@ See //ui/accessibility/BUILD.gn:297:20: which caused the file to be included.
 which we don't build
 
 diff --git a/build/config/linux/atk/BUILD.gn b/build/config/linux/atk/BUILD.gn
-index bc8e27894732a6d3e834d6b21f00441eca02dd63..f7381c1d5b5842521e0c35476ae468ab508c0fea 100644
+index 92baff2a9b6eea1bcfaa53a9e70b4857b68cea77..8fd6031dda6afa42e9ed0742ccc4e71a93df7583 100644
 --- a/build/config/linux/atk/BUILD.gn
 +++ b/build/config/linux/atk/BUILD.gn
-@@ -12,7 +12,7 @@ import("//build/config/ui.gni")
- assert(!is_chromeos_ash)
+@@ -11,7 +11,7 @@ import("//build/config/ui.gni")
+ assert(!is_chromeos)
  
  # These packages should _only_ be expected when building for a target.
 -assert(current_toolchain == default_toolchain)

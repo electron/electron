@@ -5,6 +5,7 @@
 #ifndef SHELL_RENDERER_API_CONTEXT_BRIDGE_OBJECT_CACHE_H_
 #define SHELL_RENDERER_API_CONTEXT_BRIDGE_OBJECT_CACHE_H_
 
+#include <forward_list>
 #include <unordered_map>
 #include <utility>
 
