@@ -26,10 +26,10 @@ index 9b1c762c66692d552aaec7c2f24b9104cd623fea..f5de73704cfcaa746ddf6970c3bde72e
    // state into account.
    PageVisibilityState CalculatePageVisibilityState(Visibility visibility) const;
 diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
-index 4d6ba5102935330abc6f2354f4c442ad3a045e09..0afdb3ef00f89cbb2a79b66ed84b829bbbd98ac7 100644
+index b41b96aa106d739317a169d7d685b23a82777ebe..6fe017bd6bc03e203bdc5a685a7249a77249de79 100644
 --- a/content/public/browser/web_contents.h
 +++ b/content/public/browser/web_contents.h
-@@ -630,6 +630,8 @@ class WebContents : public PageNavigator,
+@@ -631,6 +631,8 @@ class WebContents : public PageNavigator,
        bool stay_hidden,
        bool stay_awake) WARN_UNUSED_RESULT = 0;
  
