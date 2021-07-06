@@ -17,8 +17,7 @@ namespace electron {
 namespace api {
 
 class SafeStorage : public gin::Wrappable<SafeStorage>,
-                    public gin_helper::CleanedUpAtExit,
-                    public gin_helper::EventEmitterMixin<SafeStorage> {
+                    public gin_helper::CleanedUpAtExit {
  public:
   static gin::Handle<SafeStorage> Create(v8::Isolate* isolate);
   // gin::Wrappable
@@ -40,7 +39,7 @@ class SafeStorage : public gin::Wrappable<SafeStorage>,
 #endif
 
  private:
-  explicit SafeStorage(v8::Isolate* isolate);
+  SafeStorage(v8::Isolate* isolate);
   ~SafeStorage() override;
 };
 

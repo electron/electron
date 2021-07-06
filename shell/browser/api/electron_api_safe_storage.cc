@@ -17,10 +17,13 @@ namespace electron {
 
 namespace api {
 
+#if DCHECK_IS_ON()
 bool SafeStorage::electron_crypto_ready = false;
+#endif
+
 gin::WrapperInfo SafeStorage::kWrapperInfo = {gin::kEmbedderNativeGin};
 
-electron::api::SafeStorage::SafeStorage(v8::Isolate* isolate) {}
+electron::api::SafeStorage::SafeStorage() {}
 electron::api::SafeStorage::~SafeStorage() = default;
 
 bool SafeStorage::IsEncryptionAvailable() {
@@ -35,7 +38,8 @@ v8::Local<v8::Value> SafeStorage::EncryptString(v8::Isolate* isolate,
 
   if (!encrypted) {
     gin_helper::ErrorThrower(isolate).ThrowError(
-        "Error while encrypting the key.");
+        "Error while encrypting the text provided to "
+        "safeStorage.encryptString.");
     return v8::Local<v8::Value>();
   }
 
@@ -60,7 +64,8 @@ std::string SafeStorage::DecryptString(v8::Isolate* isolate,
 
   if (!decrypted) {
     gin_helper::ErrorThrower(isolate).ThrowError(
-        "Error while decrypting the key.");
+        "Error while decrypting the ciphertext provided to "
+        "safeStorage.decryptString.");
     return "";
   }
 
@@ -69,8 +74,7 @@ std::string SafeStorage::DecryptString(v8::Isolate* isolate,
 
 gin::ObjectTemplateBuilder SafeStorage::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
-  return gin_helper::EventEmitterMixin<SafeStorage>::GetObjectTemplateBuilder(
-             isolate)
+  return gin_helper::GetObjectTemplateBuilder(isolate)
       .SetMethod("isEncryptionAvailable", &SafeStorage::IsEncryptionAvailable)
       .SetMethod("encryptString", &SafeStorage::EncryptString)
       .SetMethod("decryptString", &SafeStorage::DecryptString);
@@ -82,7 +86,6 @@ const char* SafeStorage::GetTypeName() {
 
 // static
 gin::Handle<SafeStorage> SafeStorage::Create(v8::Isolate* isolate) {
-  // CHECK(Browser::Get()->is_ready());
   return gin::CreateHandle(isolate, new SafeStorage(isolate));
 }
 
