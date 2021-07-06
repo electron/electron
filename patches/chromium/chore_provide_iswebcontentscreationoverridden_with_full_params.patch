@@ -140,10 +140,10 @@ index ef84e04d628fb5cdbaf8fbbf84af3bf23e00c522..f1ee0bee5bfd08227a29498f8410d5d3
    }
  
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 8a1af8eb8efd51d51e9ea4155dc55a493673a74b..563a95d6ee87d61b086d7aa822a5c547c4bbaf1e 100644
+index 8fdddbadf5e9a202fc20ac9e326a4631f91f4a0d..4d2dc5f30fd7d17adaa6f05aa5a2b23854c543c6 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -1786,12 +1786,11 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -1785,12 +1785,11 @@ bool Browser::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -159,7 +159,7 @@ index 8a1af8eb8efd51d51e9ea4155dc55a493673a74b..563a95d6ee87d61b086d7aa822a5c547
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index ab9c5fb85f83b2ffb04bf21be631d38cfacd8835..6166d92517629ce17b48845f30c2086ce26ceabf 100644
+index 2908b4b70815d02afff0c78c1aa54ab74c79dd83..4c469294529851a975384657567a62ece4d03f37 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
 @@ -803,8 +803,7 @@ class Browser : public TabStripModelObserver,
