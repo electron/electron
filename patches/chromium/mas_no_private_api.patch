@@ -46,7 +46,7 @@ index e3470fdbf945042a16dcb2affb7859607ca4184a..641d0a0e57ef7903ba9577954f85ae62
      NSArray* node_array,
      const LineIndexer* line_indexer) const {
 diff --git a/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm b/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm
-index 73e440312d01d575a92072b05c4f84f5107242b1..c202a6faa8114b146f4fb51139542ab247f64655 100644
+index 42800aa884846b1590b1df2b4b8a10d20ce24345..41c7bd66791fb81ea65a0e615bc46317012d058e 100644
 --- a/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm
 +++ b/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm
 @@ -140,9 +140,11 @@
@@ -61,7 +61,7 @@ index 73e440312d01d575a92072b05c4f84f5107242b1..c202a6faa8114b146f4fb51139542ab2
  
    if ([target isKindOfClass:[NSArray class]])
      return InvokeForArray(target, property_node);
-@@ -287,6 +289,7 @@
+@@ -303,6 +305,7 @@
        property_name == "AXTextMarkerRangeForUIElement") {  // UIElement
      return OptionalNSObject::NotNilOrError(PropertyNodeToUIElement(arg_node));
    }
@@ -69,7 +69,7 @@ index 73e440312d01d575a92072b05c4f84f5107242b1..c202a6faa8114b146f4fb51139542ab2
    if (property_name == "AXIndexForTextMarker" ||
        property_name == "AXNextWordEndTextMarkerForTextMarker" ||
        property_name ==
-@@ -297,6 +300,7 @@
+@@ -313,6 +316,7 @@
      return OptionalNSObject::NotNilOrError(
          PropertyNodeToTextMarkerRange(arg_node));
    }
@@ -77,7 +77,7 @@ index 73e440312d01d575a92072b05c4f84f5107242b1..c202a6faa8114b146f4fb51139542ab2
  
    return OptionalNSObject::NotApplicable();
  }
-@@ -362,6 +366,7 @@
+@@ -384,6 +388,7 @@
    return uielement;
  }
  
@@ -85,7 +85,7 @@ index 73e440312d01d575a92072b05c4f84f5107242b1..c202a6faa8114b146f4fb51139542ab2
  id AttributeInvoker::DictNodeToTextMarker(
      const AXPropertyNode& dictnode) const {
    if (!dictnode.IsDict()) {
-@@ -469,6 +474,7 @@ OptionalNSObject TextMarkerRangeGetEndMarker(const OptionalNSObject& obj) {
+@@ -491,6 +496,7 @@ OptionalNSObject TextMarkerRangeGetEndMarker(const OptionalNSObject& obj) {
    return OptionalNSObject::NotNilOrError(content::AXTextMarkerFrom(
        cocoa_node, range.focus()->text_offset(), range.focus()->affinity()));
  }
