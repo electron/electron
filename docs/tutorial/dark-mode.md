@@ -80,9 +80,9 @@ Starting with the `index.html` file:
 </html>
 ```
 
-And the `style.css` file:
+And the `styles.css` file:
 
-```css title='style.css'
+```css title='styles.css'
 @media (prefers-color-scheme: dark) {
   body { background: #333; color: white; }
 }
