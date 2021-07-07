@@ -13,7 +13,7 @@
 #include <vector>
 
 #include "base/containers/contains.h"
-#include "base/lazy_instance.h"
+#include "base/no_destructor.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/synchronization/lock.h"
@@ -41,14 +41,14 @@ using DialogResult = std::pair<int, bool>;
 // Note that the HWND is stored in a unique_ptr, because the pointer of HWND
 // will be passed between threads and we need to ensure the memory of HWND is
 // not changed while g_dialogs is modified.
-std::map<int, std::unique_ptr<HWND>> g_dialogs;
+base::NoDestructor<std::map<int, std::unique_ptr<HWND>>> g_dialogs;
 
 // Speical HWND used by the g_dialogs map.
 //
 // - ID is used but window has not been created yet.
-HWND kHwndReserve = reinterpret_cast<HWND>(-1);
+const HWND kHwndReserve = reinterpret_cast<HWND>(-1);
 // - Notification to cancel message box.
-HWND kHwndCancel = reinterpret_cast<HWND>(-2);
+const HWND kHwndCancel = reinterpret_cast<HWND>(-2);
 
 // Lock used for modifying HWND between threads.
 //
@@ -58,7 +58,10 @@ HWND kHwndCancel = reinterpret_cast<HWND>(-2);
 // Also note that the |g_dialogs| is only used in the main thread, what is
 // shared between threads is the memory of HWND, so there is no need to use lock
 // when accessing g_dialogs.
-base::LazyInstance<base::Lock>::Leaky g_hwnd_lock = LAZY_INSTANCE_INITIALIZER;
+base::Lock& GetHWNDLock() {
+  static base::NoDestructor<base::Lock> lock;
+  return *lock;
+}
 
 // Small command ID values are already taken by Windows, we have to start from
 // a large number to avoid conflicts with Windows.
@@ -117,7 +120,7 @@ TaskDialogCallback(HWND hwnd, UINT msg, WPARAM, LPARAM, LONG_PTR data) {
   if (msg == TDN_CREATED) {
     HWND* target = reinterpret_cast<HWND*>(data);
     // Lock since CloseMessageBox might be called.
-    base::AutoLock lock(g_hwnd_lock.Get());
+    base::AutoLock lock(GetHWNDLock());
     if (*target == kHwndCancel) {
       // The dialog is cancelled before it is created, close it directly.
       ::PostMessage(hwnd, WM_CLOSE, 0, 0);
@@ -278,10 +281,10 @@ void ShowMessageBox(const MessageBoxSettings& settings,
   // kHwndReserve in the g_dialogs for now.
   HWND* hwnd = nullptr;
   if (settings.id) {
-    if (base::Contains(g_dialogs, *settings.id))
+    if (base::Contains(*g_dialogs, *settings.id))
       CloseMessageBox(*settings.id);
     auto it =
-        g_dialogs.emplace(*settings.id, std::make_unique<HWND>(kHwndReserve));
+        g_dialogs->emplace(*settings.id, std::make_unique<HWND>(kHwndReserve));
     hwnd = it.first->second.get();
   }
 
@@ -291,21 +294,21 @@ void ShowMessageBox(const MessageBoxSettings& settings,
           [](MessageBoxCallback callback, absl::optional<int> id,
              DialogResult result) {
             if (id)
-              g_dialogs.erase(*id);
+              g_dialogs->erase(*id);
             std::move(callback).Run(result.first, result.second);
           },
           std::move(callback), settings.id));
 }
 
 void CloseMessageBox(int id) {
-  auto it = g_dialogs.find(id);
-  if (it == g_dialogs.end()) {
-    LOG(ERROR) << "CloseMessageBox called with unexist ID";
+  auto it = g_dialogs->find(id);
+  if (it == g_dialogs->end()) {
+    LOG(ERROR) << "CloseMessageBox called with nonexistent ID";
     return;
   }
   HWND* hwnd = it->second.get();
   // Lock since the TaskDialogCallback might be saving the dialog's HWND.
-  base::AutoLock lock(g_hwnd_lock.Get());
+  base::AutoLock lock(GetHWNDLock());
   DCHECK(*hwnd != kHwndCancel);
   if (*hwnd == kHwndReserve) {
     // If the dialog window has not been created yet, tell it to cancel.

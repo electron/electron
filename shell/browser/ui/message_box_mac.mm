@@ -15,6 +15,7 @@
 #include "base/containers/contains.h"
 #include "base/mac/mac_util.h"
 #include "base/mac/scoped_nsobject.h"
+#include "base/no_destructor.h"
 #include "base/strings/sys_string_conversions.h"
 #include "shell/browser/native_window.h"
 #include "skia/ext/skia_utils_mac.h"
@@ -29,7 +30,7 @@ MessageBoxSettings::~MessageBoxSettings() = default;
 namespace {
 
 // <ID, messageBox> map
-std::map<int, NSAlert*> g_dialogs;
+base::NoDestructor<std::map<int, NSAlert*>> g_dialogs;
 
 NSAlert* CreateNSAlert(const MessageBoxSettings& settings) {
   // Ignore the title; it's the window title on other platforms and ignorable.
@@ -134,9 +135,9 @@ void ShowMessageBox(const MessageBoxSettings& settings,
     std::move(callback).Run(ret, alert.suppressionButton.state == NSOnState);
   } else {
     if (settings.id) {
-      if (base::Contains(g_dialogs, *settings.id))
+      if (base::Contains(*g_dialogs, *settings.id))
         CloseMessageBox(*settings.id);
-      g_dialogs[*settings.id] = alert;
+      (*g_dialogs)[*settings.id] = alert;
     }
 
     NSWindow* window =
@@ -153,10 +154,10 @@ void ShowMessageBox(const MessageBoxSettings& settings,
     [alert beginSheetModalForWindow:window
                   completionHandler:^(NSModalResponse response) {
                     if (id)
-                      g_dialogs.erase(*id);
-                    // When the alert is cancelled programmly, the response
-                    // would be something like -1000. This currently only
-                    // happens when users call CloseMessageBox API, and we
+                      g_dialogs->erase(*id);
+                    // When the alert is cancelled programmatically, the
+                    // response would be something like -1000. This currently
+                    // only happens when users call CloseMessageBox API, and we
                     // should return cancelId as result.
                     if (response < 0)
                       response = cancel_id;
@@ -168,9 +169,9 @@ void ShowMessageBox(const MessageBoxSettings& settings,
 }
 
 void CloseMessageBox(int id) {
-  auto it = g_dialogs.find(id);
-  if (it == g_dialogs.end()) {
-    LOG(ERROR) << "CloseMessageBox called with unexist ID";
+  auto it = g_dialogs->find(id);
+  if (it == g_dialogs->end()) {
+    LOG(ERROR) << "CloseMessageBox called with nonexistent ID";
     return;
   }
   [NSApp endSheet:it->second.window];

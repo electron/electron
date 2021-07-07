@@ -8,6 +8,7 @@
 
 #include "base/callback.h"
 #include "base/containers/contains.h"
+#include "base/no_destructor.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "shell/browser/browser.h"
@@ -42,7 +43,7 @@ MessageBoxSettings::~MessageBoxSettings() = default;
 namespace {
 
 // <ID, messageBox> map
-std::map<int, GtkWidget*> g_dialogs;
+base::NoDestructor<std::map<int, GtkWidget*>> g_dialogs;
 
 class GtkMessageBox : public NativeWindowObserver {
  public:
@@ -58,7 +59,7 @@ class GtkMessageBox : public NativeWindowObserver {
                                GTK_BUTTONS_NONE,                // no buttons
                                "%s", settings.message.c_str());
     if (id_)
-      g_dialogs[*id_] = dialog_;
+      (*g_dialogs)[*id_] = dialog_;
     if (!settings.detail.empty())
       gtk_message_dialog_format_secondary_text(GTK_MESSAGE_DIALOG(dialog_),
                                                "%s", settings.detail.c_str());
@@ -209,7 +210,7 @@ class GtkMessageBox : public NativeWindowObserver {
 
 void GtkMessageBox::OnResponseDialog(GtkWidget* widget, int response) {
   if (id_)
-    g_dialogs.erase(*id_);
+    g_dialogs->erase(*id_);
   gtk_widget_hide(dialog_);
 
   if (response < 0)
@@ -231,15 +232,15 @@ int ShowMessageBoxSync(const MessageBoxSettings& settings) {
 
 void ShowMessageBox(const MessageBoxSettings& settings,
                     MessageBoxCallback callback) {
-  if (settings.id && base::Contains(g_dialogs, *settings.id))
+  if (settings.id && base::Contains(*g_dialogs, *settings.id))
     CloseMessageBox(*settings.id);
   (new GtkMessageBox(settings))->RunAsynchronous(std::move(callback));
 }
 
 void CloseMessageBox(int id) {
-  auto it = g_dialogs.find(id);
-  if (it == g_dialogs.end()) {
-    LOG(ERROR) << "CloseMessageBox called with unexist ID";
+  auto it = g_dialogs->find(id);
+  if (it == g_dialogs->end()) {
+    LOG(ERROR) << "CloseMessageBox called with nonexistent ID";
     return;
   }
   gtk_window_close(GTK_WINDOW(it->second));
