@@ -1,10 +1,31 @@
-const { createMachine, sendParent } = require("xstate");
-const https = require("https");
+const { createMachine, sendParent } = require('xstate');
+const https = require('https');
 const {
   PING_STATES,
   PING_EVENTS,
-  CONNECTION_MONITOR_EVENTS,
-} = require("./constants.js");
+  CONNECTION_MONITOR_EVENTS
+} = require('./constants.js');
+
+/**
+ * This function is the core of the Ping Machine. It is a Node.js https.request
+ * call wrapped in a promise. The request itself uses the `HEAD` method to keep
+ * resource consumption low. The internals of this method can be modified as
+ * long as `resolve` means "connect" and `reject` means "disconnect" for the
+ * machine.
+ */
+function pingOperationService (url) {
+  return new Promise((resolve, reject) => {
+    const request = https.request(url, { method: 'HEAD' }, (response) => {
+      if (response.statusCode === 200) {
+        resolve();
+      } else {
+        // eslint-disable-next-line prefer-promise-reject-errors
+        reject();
+      }
+    });
+    request.end();
+  });
+}
 
 /**
  * Create a ping machine for use within the Connection Monitor.
@@ -14,18 +35,18 @@ const {
  * the `pingService` action uses Node.js https module to make a `HEAD`
  * request to the given `url` endpoint to determine connection status.
  */
-function createPingMachine(options) {
+function createPingMachine (options) {
   if (!options.interval) {
     throw new Error(
-      `Ping machine options missing required property 'interval'`
+      "Ping machine options missing required property 'interval'"
     );
   }
   if (!options.url) {
-    throw new Error(`Ping machine options missing required property 'url'`);
+    throw new Error("Ping machine options missing required property 'url'");
   }
 
   return createMachine({
-    id: "pingMachine",
+    id: 'pingMachine',
     initial: PING_STATES.IDLE,
     states: {
       /*
@@ -36,8 +57,8 @@ function createPingMachine(options) {
        */
       [PING_STATES.IDLE]: {
         on: {
-          [PING_EVENTS.TOGGLE]: PING_STATES.PINGING,
-        },
+          [PING_EVENTS.TOGGLE]: PING_STATES.PINGING
+        }
       },
       /*
        * Upon entering the **PINGING** state, the machine invokes a service
@@ -49,35 +70,20 @@ function createPingMachine(options) {
        */
       [PING_STATES.PINGING]: {
         on: {
-          [PING_EVENTS.TOGGLE]: PING_STATES.IDLE,
+          [PING_EVENTS.TOGGLE]: PING_STATES.IDLE
         },
         invoke: {
-          id: "pingService",
-          src: () => {
-            return new Promise((resolve, reject) => {
-              const request = https.request(
-                options.url,
-                { method: "HEAD" },
-                (response) => {
-                  if (response.statusCode === 200) {
-                    resolve();
-                  } else {
-                    reject();
-                  }
-                }
-              );
-              request.end();
-            });
-          },
+          id: 'pingService',
+          src: () => pingOperationService(options.url),
           onDone: {
             actions: sendParent(CONNECTION_MONITOR_EVENTS.CONNECT),
-            target: PING_STATES.TIMEOUT,
+            target: PING_STATES.TIMEOUT
           },
           onError: {
             actions: sendParent(CONNECTION_MONITOR_EVENTS.DISCONNECT),
-            target: PING_STATES.TIMEOUT,
-          },
-        },
+            target: PING_STATES.TIMEOUT
+          }
+        }
       },
       /**
        * Upon entering the **TIMEOUT** state, it waits `options.interval`
@@ -86,16 +92,16 @@ function createPingMachine(options) {
        */
       [PING_STATES.TIMEOUT]: {
         on: {
-          [PING_EVENTS.TOGGLE]: PING_STATES.IDLE,
+          [PING_EVENTS.TOGGLE]: PING_STATES.IDLE
         },
         after: {
-          [options.interval]: { target: PING_STATES.PINGING },
-        },
-      },
-    },
+          [options.interval]: { target: PING_STATES.PINGING }
+        }
+      }
+    }
   });
 }
 
 module.exports = {
-  createPingMachine,
+  createPingMachine
 };

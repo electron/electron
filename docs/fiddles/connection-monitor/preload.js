@@ -1,11 +1,11 @@
-const { contextBridge, ipcRenderer } = require("electron");
+const { contextBridge, ipcRenderer } = require('electron');
 const {
   CONNECTION_MONITOR_IPC_CHANNEL,
   PING_STATES,
   CONNECTION_MONITOR_EVENTS,
   CONNECTION_MONITOR_STATES,
   CONNECTION_MONITOR_IPC_REDUCER_ACTION_TYPES: ACTION_TYPES
-} = require("./constants.js");
+} = require('./constants.js');
 
 /*
  * Using the secure contextBridge, create a "mainAPI" that the
@@ -13,7 +13,7 @@ const {
  * process. This is available on the `window` object on the renderer
  * process, i.e. `window.mainAPI.requestInitState()`
  */
-contextBridge.exposeInMainWorld("mainAPI", {
+contextBridge.exposeInMainWorld('mainAPI', {
   /**
    * Get the current state of the ConnectionMonitor instance. Useful
    * for when the app first starts and the renderer process needs to
@@ -21,7 +21,7 @@ contextBridge.exposeInMainWorld("mainAPI", {
    */
   requestState: () =>
     ipcRenderer.invoke(CONNECTION_MONITOR_IPC_CHANNEL, {
-      type: ACTION_TYPES.MAIN.REQUEST_INIT_STATE,
+      type: ACTION_TYPES.MAIN.REQUEST_INIT_STATE
     }),
   /**
    * Toggle the ping operation. The underlying ping machine is either
@@ -32,7 +32,7 @@ contextBridge.exposeInMainWorld("mainAPI", {
   togglePing: () =>
     ipcRenderer.invoke(CONNECTION_MONITOR_IPC_CHANNEL, {
       type: ACTION_TYPES.MAIN.TRIGGER_EVENT,
-      payload: CONNECTION_MONITOR_EVENTS.TOGGLE_PING,
+      payload: CONNECTION_MONITOR_EVENTS.TOGGLE_PING
     }),
   /**
    * Toggles the authentication state of the connection monitor. This methods
@@ -42,7 +42,7 @@ contextBridge.exposeInMainWorld("mainAPI", {
   toggleAuth: () =>
     ipcRenderer.invoke(CONNECTION_MONITOR_IPC_CHANNEL, {
       type: ACTION_TYPES.MAIN.TRIGGER_EVENT,
-      payload: CONNECTION_MONITOR_EVENTS.TOGGLE_AUTH,
+      payload: CONNECTION_MONITOR_EVENTS.TOGGLE_AUTH
     }),
   /**
    * The renderer process can use this method to listen for state transition
@@ -73,5 +73,5 @@ contextBridge.exposeInMainWorld("mainAPI", {
     CONNECTION_MONITOR_STATES,
     PING_STATES,
     CONNECTION_MONITOR_IPC_REDUCER_ACTION_TYPES: ACTION_TYPES
-  },
+  }
 });
