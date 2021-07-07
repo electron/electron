@@ -716,8 +716,9 @@ void App::OnDidFailToContinueUserActivity(const std::string& type,
 
 void App::OnContinueUserActivity(bool* prevent_default,
                                  const std::string& type,
-                                 const base::DictionaryValue& user_info) {
-  if (Emit("continue-activity", type, user_info)) {
+                                 const base::DictionaryValue& user_info,
+                                 const base::DictionaryValue& details) {
+  if (Emit("continue-activity", type, user_info, details)) {
     *prevent_default = true;
   }
 }
