@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'"
+    />
+    <meta
+      http-equiv="X-Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'"
+    />
+    <link rel="stylesheet" href="style.css" />
+    <title>Connection Monitor</title>
+  </head>
+  <body>
+    <h1>connection monitor with xstate</h1>
+    <p class="error" id="error" hidden>
+      <button id="clear-error">+</button><span id="error-message"></span>
+    </p>
+    <button id="toggle-ping">Toggle Ping</button>
+    <p>Pinging Status: <span id="ping-status"></span></p>
+    <button id="auth-button" disabled>Log In</button>
+    <p>Connection Status: <span id="connection-status"></span></p>
+    <div id="user-details-container" hidden>
+      <h4>User Details</h4>
+      <pre id="user-details"></pre>
+    </div>
+
+    <!-- You can also require other files to run in this process -->
+    <script src="./renderer.js"></script>
+  </body>
+</html>
