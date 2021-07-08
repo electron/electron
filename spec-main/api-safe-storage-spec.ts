@@ -5,11 +5,6 @@ import { emittedOnce } from './events-helpers';
 import * as cp from 'child_process';
 import * as path from 'path';
 
-const { promises: fs } = require('fs');
-// const fixtureDir = path.resolve(__dirname, 'fixtures', 'safe-storage', 'encryption.txt');
-// const readFile = fs.readFile;
-const writeFile = fs.writeFile;
-
 describe('safeStorage module', () => {
   afterEach(() => {
     app.quit();
@@ -64,42 +59,44 @@ describe('safeStorage module', () => {
 
   describe('safeStorage persists encryption key across app relaunch', () => {
     it('can decrypt after closing and reopening app', async () => {
-      // encrypt string; save original decryption for later
-      const encrypted = safeStorage.encryptString('plaintext');
-      expect(Buffer.isBuffer(encrypted)).to.equal(true);
-      const decrypted = safeStorage.decryptString(encrypted);
-
-      // encrypt the string and write it into fixtures. Quit app
-      const encryptionPath = path.resolve(__dirname, 'fixtures', 'api', 'safe-storage', 'encrypted.txt');
-      await writeFile(encryptionPath, encrypted);
-      // app.quit();
-      console.log('storage spec', encrypted.length);
-
-      // spawn second app process to test
       const fixturesPath = path.resolve(__dirname, 'fixtures');
-      const appPath = path.join(fixturesPath, 'api', 'safe-storage');
-      console.log(' BEFORE SPaWN');
+
+      // spawn first app to encrypt string; save original decryption for later\
+      const encryptAppPath = path.join(fixturesPath, 'api', 'safe-storage', 'encrypt-app');
+      const encryptAppProcess = cp.spawn(process.execPath, [encryptAppPath]);
+
+      // note for tomorrow: following commented code will be useful for debugging/ if we un-remove the dcheck
+      // let output = '';
+      // encryptAppProcess.stdout.on('data', data => { output += data; });
+      // encryptAppProcess.stderr.on('data', data => { output += data; });
+      // console.log(output);
+
+      // force encryptor app process to quit
+      // const [exitCode] = await emittedOnce(encryptAppProcess, 'exit');
+      await emittedOnce(encryptAppProcess, 'exit');
+
+      // spawn second app process
+      const appPath = path.join(fixturesPath, 'api', 'safe-storage', 'decrypt-app');
       const relaunchedAppProcess = cp.spawn(process.execPath, [appPath]);
-      console.log('AFTER SPAWN');
 
       // grab new decrypted output to test
       let output = '';
       relaunchedAppProcess.stdout.on('data', data => { output += data; });
       relaunchedAppProcess.stderr.on('data', data => { output += data; });
-      console.log(output);
+
       // force second app process to quit (hopefully)
       const [code] = await emittedOnce(relaunchedAppProcess, 'exit');
-
+      console.log('DECRYPTED, CODE, OUTPUT', code, output);
       // parse fixture output and compare to decrypted
-      if (!output.includes(decrypted)) {
+      if (!output.includes('plaintext')) {
         console.log(code, output);
       }
-      expect(output).to.include(decrypted);
+      expect(output).to.include('plaintext');
     });
   });
 });
 
-// goals for pairing
-// write this above test ^
-// determine whether windows/mac unencrypted string should be able to decrypt or not
-//     apparently windows and mac are giving different errors
+// api-autoupdater-darwin-spec.ts for spawn code example, (refactor into new helper)
+// issue caused by app.name resetting,
+// in our spec file, add another spawn for writing
+// wrote file wihitn test runner but read it within a spawn. if we write file in a spawn, read within child, we will have the same app name!
