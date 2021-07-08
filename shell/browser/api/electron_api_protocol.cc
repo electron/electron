@@ -4,8 +4,6 @@
 
 #include "shell/browser/api/electron_api_protocol.h"
 
-#include <memory>
-#include <utility>
 #include <vector>
 
 #include "base/command_line.h"
@@ -21,6 +19,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
+#include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/process_util.h"
 #include "url/url_util.h"
@@ -164,7 +163,7 @@ void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
 
 namespace {
 
-const char* kBuiltinSchemes[] = {
+const char* const kBuiltinSchemes[] = {
     "about", "file", "http", "https", "data", "filesystem",
 };
 

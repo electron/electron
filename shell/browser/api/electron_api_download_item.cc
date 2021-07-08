@@ -4,7 +4,6 @@
 
 #include "shell/browser/api/electron_api_download_item.h"
 
-#include <map>
 #include <memory>
 
 #include "base/strings/utf_string_conversions.h"
@@ -17,6 +16,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
+#include "url/gurl.h"
 
 namespace gin {
 

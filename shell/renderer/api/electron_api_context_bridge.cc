@@ -4,7 +4,6 @@
 
 #include "shell/renderer/api/electron_api_context_bridge.h"
 
-#include <map>
 #include <memory>
 #include <set>
 #include <string>
@@ -24,6 +23,7 @@
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/world_ids.h"
+#include "third_party/blink/public/web/web_blob.h"
 #include "third_party/blink/public/web/web_element.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 
@@ -41,11 +41,10 @@ namespace api {
 
 namespace context_bridge {
 
-const char* const kProxyFunctionPrivateKey = "electron_contextBridge_proxy_fn";
-const char* const kSupportsDynamicPropertiesPrivateKey =
+const char kProxyFunctionPrivateKey[] = "electron_contextBridge_proxy_fn";
+const char kSupportsDynamicPropertiesPrivateKey[] =
     "electron_contextBridge_supportsDynamicProperties";
-const char* const kOriginalFunctionPrivateKey =
-    "electron_contextBridge_original_fn";
+const char kOriginalFunctionPrivateKey[] = "electron_contextBridge_original_fn";
 
 }  // namespace context_bridge
 
@@ -220,9 +219,9 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
     // Make the promise a shared_ptr so that when the original promise is
     // freed the proxy promise is correctly freed as well instead of being
     // left dangling
-    std::shared_ptr<gin_helper::Promise<v8::Local<v8::Value>>> proxied_promise(
-        new gin_helper::Promise<v8::Local<v8::Value>>(
-            destination_context->GetIsolate()));
+    auto proxied_promise =
+        std::make_shared<gin_helper::Promise<v8::Local<v8::Value>>>(
+            destination_context->GetIsolate());
     v8::Local<v8::Promise> proxied_promise_handle =
         proxied_promise->GetHandle();
 
@@ -346,6 +345,14 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
         destination_context->Global(), destination_context->GetIsolate()));
   }
 
+  // Custom logic to "clone" Blob references
+  blink::WebBlob blob = blink::WebBlob::FromV8Value(value);
+  if (!blob.IsNull()) {
+    v8::Context::Scope destination_context_scope(destination_context);
+    return v8::MaybeLocal<v8::Value>(blob.ToV8Value(
+        destination_context->Global(), destination_context->GetIsolate()));
+  }
+
   // Proxy all objects
   if (IsPlainObject(value)) {
     auto object_value = value.As<v8::Object>();
@@ -431,7 +438,7 @@ void ProxyFunctionWrapper(const v8::FunctionCallbackInfo<v8::Value>& info) {
         did_error = true;
         v8::Local<v8::Value> exception = try_catch.Exception();
 
-        const char* err_msg =
+        const char err_msg[] =
             "An unknown exception occurred in the isolated context, an error "
             "occurred but a valid exception was not thrown.";
 

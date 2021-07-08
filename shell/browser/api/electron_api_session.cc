@@ -5,7 +5,6 @@
 #include "shell/browser/api/electron_api_session.h"
 
 #include <algorithm>
-#include <map>
 #include <memory>
 #include <set>
 #include <string>
@@ -1206,9 +1205,6 @@ const char* Session::GetTypeName() {
 
 namespace {
 
-using electron::api::Cookies;
-using electron::api::Protocol;
-using electron::api::ServiceWorkerContext;
 using electron::api::Session;
 
 v8::Local<v8::Value> FromPartition(const std::string& partition,

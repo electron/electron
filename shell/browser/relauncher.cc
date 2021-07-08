@@ -4,9 +4,7 @@
 
 #include "shell/browser/relauncher.h"
 
-#include <string>
 #include <utility>
-#include <vector>
 
 #include "base/files/file_util.h"
 #include "base/logging.h"

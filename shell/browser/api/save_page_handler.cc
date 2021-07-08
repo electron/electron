@@ -4,7 +4,6 @@
 
 #include "shell/browser/api/save_page_handler.h"
 
-#include <string>
 #include <utility>
 
 #include "base/callback.h"

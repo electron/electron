@@ -10,7 +10,6 @@
 #include <memory>
 #include <queue>
 #include <string>
-#include <tuple>
 #include <vector>
 
 #include "base/mac/scoped_nsobject.h"

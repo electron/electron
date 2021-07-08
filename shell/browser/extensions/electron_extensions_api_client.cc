@@ -51,8 +51,8 @@ class ElectronGuestViewManagerDelegate
 class ElectronMimeHandlerViewGuestDelegate
     : public MimeHandlerViewGuestDelegate {
  public:
-  ElectronMimeHandlerViewGuestDelegate() {}
-  ~ElectronMimeHandlerViewGuestDelegate() override {}
+  ElectronMimeHandlerViewGuestDelegate() = default;
+  ~ElectronMimeHandlerViewGuestDelegate() override = default;
 
   // MimeHandlerViewGuestDelegate.
   bool HandleContextMenu(content::WebContents* web_contents,

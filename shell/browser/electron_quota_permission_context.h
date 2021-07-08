@@ -6,7 +6,10 @@
 #define SHELL_BROWSER_ELECTRON_QUOTA_PERMISSION_CONTEXT_H_
 
 #include "content/public/browser/quota_permission_context.h"
-#include "content/public/common/storage_quota_params.h"
+
+namespace content {
+struct StorageQuotaParams;
+}
 
 namespace electron {
 

@@ -59,7 +59,7 @@ bool GetChildNode(const base::DictionaryValue* root,
                   const std::string& name,
                   const base::DictionaryValue* dir,
                   const base::DictionaryValue** out) {
-  if (name == "") {
+  if (name.empty()) {
     *out = root;
     return true;
   }
@@ -73,7 +73,7 @@ bool GetChildNode(const base::DictionaryValue* root,
 bool GetNodeFromPath(std::string path,
                      const base::DictionaryValue* root,
                      const base::DictionaryValue** out) {
-  if (path == "") {
+  if (path.empty()) {
     *out = root;
     return true;
   }

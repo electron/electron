@@ -6,7 +6,6 @@
 #define SHELL_BROWSER_API_ELECTRON_API_POWER_SAVE_BLOCKER_H_
 
 #include <map>
-#include <memory>
 
 #include "gin/handle.h"
 #include "gin/object_template_builder.h"

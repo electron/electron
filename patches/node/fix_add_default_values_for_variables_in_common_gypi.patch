@@ -1,17 +1,16 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jeremy Apthorp <nornagon@nornagon.net>
 Date: Wed, 19 Sep 2018 12:20:44 -0700
-Subject: fix: add default values for 'enable_lto' and 'build_v8_with_gn' in
- common.gypi
+Subject: fix: add default values for variables in common.gypi
 
 common.gypi is a file that's included in the node header bundle, despite
 the fact that we do not build node with gyp.
 
 diff --git a/common.gypi b/common.gypi
-index aa4279d93ca35c83ad8c417a11292ef5ca91c495..3f305b39cb35a1a36a54cff80476fecba1556d5d 100644
+index aa42c69f96391b72e5e3cbada27fd662cb0cc69d..9481fdb6dd4628833e60ae7099f03eca41edd057 100644
 --- a/common.gypi
 +++ b/common.gypi
-@@ -81,6 +81,22 @@
+@@ -81,6 +81,23 @@
  
      ##### end V8 defaults #####
  
@@ -30,6 +29,7 @@ index aa4279d93ca35c83ad8c417a11292ef5ca91c495..3f305b39cb35a1a36a54cff80476fecb
 +    # these values being accurate.
 +    'build_v8_with_gn': 'false',
 +    'enable_lto%': 'false',
++    'llvm_version': '0.0',
 +
      'conditions': [
        ['OS == "win"', {

@@ -6,7 +6,6 @@
 #define SHELL_BROWSER_API_ELECTRON_API_DOWNLOAD_ITEM_H_
 
 #include <string>
-#include <vector>
 
 #include "base/files/file_path.h"
 #include "base/memory/weak_ptr.h"
@@ -16,7 +15,8 @@
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/ui/file_dialog.h"
 #include "shell/common/gin_helper/pinnable.h"
-#include "url/gurl.h"
+
+class GURL;
 
 namespace electron {
 

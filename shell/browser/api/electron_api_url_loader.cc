@@ -5,7 +5,6 @@
 #include "shell/browser/api/electron_api_url_loader.h"
 
 #include <algorithm>
-#include <map>
 #include <memory>
 #include <string>
 #include <utility>

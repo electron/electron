@@ -18,7 +18,8 @@
 
 namespace gfx {
 class Image;
-}
+class Rect;
+}  // namespace gfx
 
 namespace electron {
 

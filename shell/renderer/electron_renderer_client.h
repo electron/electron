@@ -8,13 +8,12 @@
 #include <memory>
 #include <set>
 #include <string>
-#include <vector>
 
 #include "shell/renderer/renderer_client_base.h"
 
 namespace node {
 class Environment;
-}  // namespace node
+}
 
 namespace electron {
 

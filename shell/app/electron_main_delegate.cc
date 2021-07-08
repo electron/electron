@@ -70,7 +70,11 @@ namespace electron {
 
 namespace {
 
-const char* kRelauncherProcess = "relauncher";
+const char kRelauncherProcess[] = "relauncher";
+
+constexpr base::StringPiece kElectronDisableSandbox("ELECTRON_DISABLE_SANDBOX");
+constexpr base::StringPiece kElectronEnableStackDumping(
+    "ELECTRON_ENABLE_STACK_DUMPING");
 
 constexpr base::StringPiece kElectronDisableSandbox("ELECTRON_DISABLE_SANDBOX");
 constexpr base::StringPiece kElectronEnableStackDumping(

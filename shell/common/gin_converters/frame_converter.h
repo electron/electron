@@ -9,7 +9,7 @@
 
 namespace content {
 class RenderFrameHost;
-}  // namespace content
+}
 
 namespace gin {
 

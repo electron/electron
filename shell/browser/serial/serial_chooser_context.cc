@@ -4,6 +4,7 @@
 
 #include "shell/browser/serial/serial_chooser_context.h"
 
+#include <string>
 #include <utility>
 
 #include "base/base64.h"

@@ -6,7 +6,6 @@
 
 #include <memory>
 #include <string>
-#include <utility>
 
 #include "base/containers/span.h"
 #include "base/strings/utf_string_conversions.h"
@@ -27,9 +26,6 @@
 #include "shell/common/extensions/api/permission_features.h"
 
 namespace extensions {
-
-namespace keys = manifest_keys;
-namespace errors = manifest_errors;
 
 constexpr APIPermissionInfo::InitInfo permissions_to_register[] = {
     {mojom::APIPermissionID::kDevtools, "devtools",

@@ -10,7 +10,6 @@
 
 #include <shlobj.h>
 #include <wrl\wrappers\corewrappers.h>
-#include <vector>
 
 #include "base/environment.h"
 #include "base/strings/utf_string_conversions.h"
@@ -597,7 +596,7 @@ bool WindowsToastNotification::RemoveCallbacks(
 ToastEventHandler::ToastEventHandler(Notification* notification)
     : notification_(notification->GetWeakPtr()) {}
 
-ToastEventHandler::~ToastEventHandler() {}
+ToastEventHandler::~ToastEventHandler() = default;
 
 IFACEMETHODIMP ToastEventHandler::Invoke(
     ABI::Windows::UI::Notifications::IToastNotification* sender,

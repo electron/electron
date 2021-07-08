@@ -7,6 +7,8 @@
 #include "base/path_service.h"
 #include "shell/browser/api/electron_api_app.h"
 #include "shell/common/electron_paths.h"
+#include "shell/common/node_includes.h"
+#include "shell/common/process_util.h"
 
 #import <Cocoa/Cocoa.h>
 #import <sys/sysctl.h>
@@ -60,6 +62,17 @@ void App::SetActivationPolicy(gin_helper::ErrorThrower thrower,
 }
 
 bool App::IsRunningUnderRosettaTranslation() const {
+  node::Environment* env =
+      node::Environment::GetCurrent(JavascriptEnvironment::GetIsolate());
+
+  EmitWarning(env,
+              "The app.runningUnderRosettaTranslation API is deprecated, use "
+              "app.runningUnderARM64Translation instead.",
+              "electron");
+  return IsRunningUnderARM64Translation();
+}
+
+bool App::IsRunningUnderARM64Translation() const {
   int proc_translated = 0;
   size_t size = sizeof(proc_translated);
   if (sysctlbyname("sysctl.proc_translated", &proc_translated, &size, NULL,

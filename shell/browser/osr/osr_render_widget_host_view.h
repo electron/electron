@@ -43,7 +43,7 @@
 
 namespace content {
 class CursorManager;
-}  // namespace content
+}
 
 namespace electron {
 

@@ -4,9 +4,6 @@
 
 #include "shell/browser/ui/views/submenu_button.h"
 
-#include <memory>
-#include <utility>
-
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "ui/accessibility/ax_enums.mojom.h"

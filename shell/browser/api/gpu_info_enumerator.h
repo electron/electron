@@ -17,15 +17,15 @@ namespace electron {
 // This class implements the enumerator for reading all the attributes in
 // GPUInfo into a dictionary.
 class GPUInfoEnumerator final : public gpu::GPUInfo::Enumerator {
-  const char* kGPUDeviceKey = "gpuDevice";
-  const char* kVideoDecodeAcceleratorSupportedProfileKey =
+  const char* const kGPUDeviceKey = "gpuDevice";
+  const char* const kVideoDecodeAcceleratorSupportedProfileKey =
       "videoDecodeAcceleratorSupportedProfile";
-  const char* kVideoEncodeAcceleratorSupportedProfileKey =
+  const char* const kVideoEncodeAcceleratorSupportedProfileKey =
       "videoEncodeAcceleratorSupportedProfile";
-  const char* kImageDecodeAcceleratorSupportedProfileKey =
+  const char* const kImageDecodeAcceleratorSupportedProfileKey =
       "imageDecodeAcceleratorSupportedProfile";
-  const char* kAuxAttributesKey = "auxAttributes";
-  const char* kOverlayInfo = "overlayInfo";
+  const char* const kAuxAttributesKey = "auxAttributes";
+  const char* const kOverlayInfo = "overlayInfo";
 
  public:
   GPUInfoEnumerator();

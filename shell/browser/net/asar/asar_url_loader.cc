@@ -83,7 +83,7 @@ class AsarURLLoader : public network::mojom::URLLoader {
   void ResumeReadingBodyFromNet() override {}
 
  private:
-  AsarURLLoader() {}
+  AsarURLLoader() = default;
   ~AsarURLLoader() override = default;
 
   void Start(const network::ResourceRequest& request,

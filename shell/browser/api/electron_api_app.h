@@ -8,7 +8,6 @@
 #include <map>
 #include <memory>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include "base/task/cancelable_task_tracker.h"
@@ -75,6 +74,8 @@ class App : public ElectronBrowserClient::Delegate,
   base::FilePath GetAppPath() const;
   void RenderProcessReady(content::RenderProcessHost* host);
   void RenderProcessExited(content::RenderProcessHost* host);
+
+  static bool IsPackaged();
 
   App();
 
@@ -222,6 +223,10 @@ class App : public ElectronBrowserClient::Delegate,
   v8::Local<v8::Value> GetDockAPI(v8::Isolate* isolate);
   bool IsRunningUnderRosettaTranslation() const;
   v8::Global<v8::Value> dock_;
+#endif
+
+#if defined(OS_MAC) || defined(OS_WIN)
+  bool IsRunningUnderARM64Translation() const;
 #endif
 
 #if defined(MAS_BUILD)

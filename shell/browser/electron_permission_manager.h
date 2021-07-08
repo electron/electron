@@ -5,14 +5,17 @@
 #ifndef SHELL_BROWSER_ELECTRON_PERMISSION_MANAGER_H_
 #define SHELL_BROWSER_ELECTRON_PERMISSION_MANAGER_H_
 
-#include <map>
 #include <memory>
 #include <vector>
 
 #include "base/callback.h"
 #include "base/containers/id_map.h"
-#include "base/values.h"
 #include "content/public/browser/permission_controller_delegate.h"
+
+namespace base {
+class DictionaryValue;
+class Value;
+}  // namespace base
 
 namespace content {
 class WebContents;

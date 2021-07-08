@@ -10,15 +10,17 @@
 #include "base/observer_list_types.h"
 #include "base/values.h"
 #include "ui/base/window_open_disposition.h"
-#include "url/gurl.h"
 
 #if defined(OS_WIN)
 #include <windows.h>
 #endif
 
+class GURL;
+
 namespace gfx {
 class Rect;
-}
+enum class ResizeEdge;
+}  // namespace gfx
 
 namespace electron {
 
@@ -71,6 +73,7 @@ class NativeWindowObserver : public base::CheckedObserver {
   virtual void OnWindowMinimize() {}
   virtual void OnWindowRestore() {}
   virtual void OnWindowWillResize(const gfx::Rect& new_bounds,
+                                  const gfx::ResizeEdge& edge,
                                   bool* prevent_default) {}
   virtual void OnWindowResize() {}
   virtual void OnWindowResized() {}

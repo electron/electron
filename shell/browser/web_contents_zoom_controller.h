@@ -5,9 +5,6 @@
 #ifndef SHELL_BROWSER_WEB_CONTENTS_ZOOM_CONTROLLER_H_
 #define SHELL_BROWSER_WEB_CONTENTS_ZOOM_CONTROLLER_H_
 
-#include <map>
-#include <string>
-
 #include "base/observer_list_types.h"
 #include "content/public/browser/host_zoom_map.h"
 #include "content/public/browser/web_contents_observer.h"

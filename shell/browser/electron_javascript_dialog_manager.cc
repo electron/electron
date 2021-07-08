@@ -27,7 +27,7 @@ constexpr int kUserWantsNoMoreDialogs = -1;
 
 }  // namespace
 
-ElectronJavaScriptDialogManager::ElectronJavaScriptDialogManager() {}
+ElectronJavaScriptDialogManager::ElectronJavaScriptDialogManager() = default;
 ElectronJavaScriptDialogManager::~ElectronJavaScriptDialogManager() = default;
 
 void ElectronJavaScriptDialogManager::RunJavaScriptDialog(

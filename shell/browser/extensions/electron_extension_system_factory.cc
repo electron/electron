@@ -31,7 +31,7 @@ ElectronExtensionSystemFactory::ElectronExtensionSystemFactory()
   DependsOn(ExtensionRegistryFactory::GetInstance());
 }
 
-ElectronExtensionSystemFactory::~ElectronExtensionSystemFactory() {}
+ElectronExtensionSystemFactory::~ElectronExtensionSystemFactory() = default;
 
 KeyedService* ElectronExtensionSystemFactory::BuildServiceInstanceFor(
     BrowserContext* context) const {

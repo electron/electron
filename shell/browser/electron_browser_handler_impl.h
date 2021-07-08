@@ -16,7 +16,7 @@
 
 namespace content {
 class RenderFrameHost;
-}  // namespace content
+}
 
 namespace electron {
 class ElectronBrowserHandlerImpl : public mojom::ElectronBrowser,

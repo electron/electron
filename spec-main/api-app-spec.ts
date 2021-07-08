@@ -122,12 +122,9 @@ describe('app module', () => {
 
   describe('app.getLocaleCountryCode()', () => {
     it('should be empty or have length of two', () => {
-      let expectedLength = 2;
-      if (process.platform === 'linux' && process.env.CI) {
-        // Linux CI machines have no locale.
-        expectedLength = 0;
-      }
-      expect(app.getLocaleCountryCode()).to.be.a('string').and.have.lengthOf(expectedLength);
+      const localeCountryCode = app.getLocaleCountryCode();
+      expect(localeCountryCode).to.be.a('string');
+      expect(localeCountryCode.length).to.be.oneOf([0, 2]);
     });
   });
 
@@ -1723,6 +1720,19 @@ describe('default behavior', () => {
       w.loadURL(serverUrl);
       const [, webContents] = await emittedOnce(app, 'login');
       expect(webContents).to.equal(w.webContents);
+    });
+  });
+
+  describe('running under ARM64 translation', () => {
+    it('does not throw an error', () => {
+      if (process.platform === 'darwin' || process.platform === 'win32') {
+        expect(app.runningUnderARM64Translation).not.to.be.undefined();
+        expect(() => {
+          return app.runningUnderARM64Translation;
+        }).not.to.throw();
+      } else {
+        expect(app.runningUnderARM64Translation).to.be.undefined();
+      }
     });
   });
 });

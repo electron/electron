@@ -11,12 +11,12 @@ initialize it in the browser process. This adds a new
 EnvironmentFlags option which allows preventing that invocation.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 53b07052e43a09f29f863ee1b2287bdebe7b7a7f..c08fe4b32d4155badb572f15529f903c0ec63146 100644
+index de29d45adde76587f2a9cd50392ba45b8e24839e..09c0d22ff91856704f61024646c946a39baf53d8 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -358,12 +358,14 @@ Environment* CreateEnvironment(
-       thread_id);
- 
+@@ -341,12 +341,14 @@ Environment* CreateEnvironment(
+   Environment* env = new Environment(
+       isolate_data, context, args, exec_args, nullptr, flags, thread_id);
  #if HAVE_INSPECTOR
 -  if (inspector_parent_handle) {
 -    env->InitializeInspector(
@@ -36,10 +36,10 @@ index 53b07052e43a09f29f863ee1b2287bdebe7b7a7f..c08fe4b32d4155badb572f15529f903c
  #endif
  
 diff --git a/src/env-inl.h b/src/env-inl.h
-index 9b2f82cc00e661f139611dd2de53598d6d8ff210..006bcaf4a9a864438cd447dc4235b3a5257cd2a5 100644
+index b3b1ea908253b9240cc37931f34b2a8c8c9fa3ab..dc37298aa0e13bb79030123f38070d0254691b28 100644
 --- a/src/env-inl.h
 +++ b/src/env-inl.h
-@@ -829,6 +829,10 @@ inline bool Environment::tracks_unmanaged_fds() const {
+@@ -877,6 +877,10 @@ inline bool Environment::tracks_unmanaged_fds() const {
    return flags_ & EnvironmentFlags::kTrackUnmanagedFds;
  }
  
@@ -51,10 +51,10 @@ index 9b2f82cc00e661f139611dd2de53598d6d8ff210..006bcaf4a9a864438cd447dc4235b3a5
    return emit_filehandle_warning_;
  }
 diff --git a/src/env.h b/src/env.h
-index 9c435f12db0e2d0a13ebd2b01810f0857c55fe2e..1ea1caf0e327719c39f91ce3c0897dde5034c904 100644
+index 7b136f70fbad1e0a90406add90d5e538577e2a2b..eaf8a17c99aa6a4135c54616f68b15e0620e4378 100644
 --- a/src/env.h
 +++ b/src/env.h
-@@ -1026,6 +1026,7 @@ class Environment : public MemoryRetainer {
+@@ -1197,6 +1197,7 @@ class Environment : public MemoryRetainer {
    inline bool owns_process_state() const;
    inline bool owns_inspector() const;
    inline bool tracks_unmanaged_fds() const;
@@ -63,10 +63,10 @@ index 9c435f12db0e2d0a13ebd2b01810f0857c55fe2e..1ea1caf0e327719c39f91ce3c0897dde
    inline worker::Worker* worker_context() const;
    Environment* worker_parent_env() const;
 diff --git a/src/node.h b/src/node.h
-index a649f52403659fd18898e1e813f97e32f33784e7..b646fdda58ebcbf2dd92ee4fc9cb0d9c039174d1 100644
+index 41f79ef869128636ac04093919e8e5816b39bef9..691c16ba60b0ce8633555825e44c3ace96c5000f 100644
 --- a/src/node.h
 +++ b/src/node.h
-@@ -426,7 +426,11 @@ enum Flags : uint64_t {
+@@ -405,7 +405,11 @@ enum Flags : uint64_t {
    kNoRegisterESMLoader = 1 << 3,
    // Set this flag to make Node.js track "raw" file descriptors, i.e. managed
    // by fs.open() and fs.close(), and close them during FreeEnvironment().

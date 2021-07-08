@@ -8,7 +8,6 @@
 #include "shell/browser/api/electron_api_menu.h"
 
 #include <map>
-#include <string>
 
 #import "shell/browser/ui/cocoa/electron_menu_controller.h"
 

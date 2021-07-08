@@ -6,9 +6,6 @@
 #define SHELL_BROWSER_FILE_SELECT_HELPER_H_
 
 #include <memory>
-
-#include <string>
-#include <utility>
 #include <vector>
 
 #include "base/files/file_path.h"

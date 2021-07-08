@@ -4,10 +4,7 @@
 
 #include "shell/browser/login_handler.h"
 
-#include <memory>
-#include <string>
 #include <utility>
-#include <vector>
 
 #include "base/callback.h"
 #include "base/threading/sequenced_task_runner_handle.h"

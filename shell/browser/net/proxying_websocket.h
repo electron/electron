@@ -5,7 +5,6 @@
 #ifndef SHELL_BROWSER_NET_PROXYING_WEBSOCKET_H_
 #define SHELL_BROWSER_NET_PROXYING_WEBSOCKET_H_
 
-#include <memory>
 #include <set>
 #include <string>
 #include <vector>

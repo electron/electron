@@ -7,7 +7,6 @@
 #include <gio/gdesktopappinfo.h>
 #include <gio/gio.h>
 
-#include <memory>
 #include <string>
 
 #include "base/environment.h"
