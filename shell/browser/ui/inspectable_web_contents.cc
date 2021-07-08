@@ -908,8 +908,9 @@ void InspectableWebContents::HandleMessageFromDevToolsFrontend(
     params = &empty_params;
   }
   int id = message.FindIntKey(kFrontendHostId).value_or(0);
-  base::ListValue* params_list = nullptr;
-  params->GetAsList(&params_list);
+  std::vector<base::Value> params_list;
+  if (params)
+    params_list = std::move(*params).TakeList();
   embedder_message_dispatcher_->Dispatch(
       base::BindRepeating(&InspectableWebContents::SendMessageAck,
                           weak_factory_.GetWeakPtr(), id),
