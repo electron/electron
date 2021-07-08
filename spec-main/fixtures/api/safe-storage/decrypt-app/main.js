@@ -7,9 +7,7 @@ const readFile = fs.readFile;
 
 app.whenReady().then(async () => {
   const encryptedString = await readFile(pathToEncryptedString);
-  const available = safeStorage.isEncryptionAvailable();
   const decrypted = safeStorage.decryptString(encryptedString);
-
-  available ? console.log('DECRYPTED: ', decrypted) : console.log('no');
+  console.log(decrypted);
   app.quit();
 });

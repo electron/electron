@@ -20,6 +20,7 @@ class SafeStorage : public gin::Wrappable<SafeStorage>,
                     public gin_helper::CleanedUpAtExit {
  public:
   static gin::Handle<SafeStorage> Create(v8::Isolate* isolate);
+
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(

@@ -32,7 +32,7 @@ bool SafeStorage::IsEncryptionAvailable() {
 
 v8::Local<v8::Value> SafeStorage::EncryptString(v8::Isolate* isolate,
                                                 const std::string& plaintext) {
-  // DCHECK(SafeStorage::electron_crypto_ready);
+  DCHECK(SafeStorage::electron_crypto_ready);
   std::string ciphertext;
   bool encrypted = OSCrypt::EncryptString(plaintext, &ciphertext);
 
@@ -50,7 +50,6 @@ v8::Local<v8::Value> SafeStorage::EncryptString(v8::Isolate* isolate,
 std::string SafeStorage::DecryptString(v8::Isolate* isolate,
                                        v8::Local<v8::Value> buffer) {
   if (!node::Buffer::HasInstance(buffer)) {
-    LOG(ERROR) << "NOT A BUFFER!";
     gin_helper::ErrorThrower(isolate).ThrowError(
         "Expected the first argument of decryptString() to be a buffer");
     return "";
@@ -59,19 +58,16 @@ std::string SafeStorage::DecryptString(v8::Isolate* isolate,
   const char* data = node::Buffer::Data(buffer);
   auto size = node::Buffer::Length(buffer);
   std::string ciphertext(data, size);
-  LOG(ERROR) << "Stringified buffer!" << ciphertext;
 
   std::string plaintext;
   bool decrypted = OSCrypt::DecryptString(ciphertext, &plaintext);
 
   if (!decrypted) {
-    LOG(ERROR) << "error while decrypting";
     gin_helper::ErrorThrower(isolate).ThrowError(
         "Error while decrypting the ciphertext provided to "
         "safeStorage.decryptString.");
     return "";
   }
-  LOG(ERROR) << "plaintext: decrypt success!" << plaintext;
   return plaintext;
 }
 
@@ -80,8 +76,7 @@ gin::ObjectTemplateBuilder SafeStorage::GetObjectTemplateBuilder(
   return gin::ObjectTemplateBuilder(isolate)
       .SetMethod("isEncryptionAvailable", &SafeStorage::IsEncryptionAvailable)
       .SetMethod("encryptString", &SafeStorage::EncryptString)
-      .SetMethod("decryptString", &SafeStorage::DecryptString)
-      .SetMethod("getRawEncryptionKey", &OSCrypt::GetRawEncryptionKey);
+      .SetMethod("decryptString", &SafeStorage::DecryptString);
 }
 
 const char* SafeStorage::GetTypeName() {

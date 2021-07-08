@@ -1,9 +1,8 @@
+import * as cp from 'child_process';
+import * as path from 'path';
 import { app, safeStorage } from 'electron/main';
 import { expect } from 'chai';
 import { emittedOnce } from './events-helpers';
-
-import * as cp from 'child_process';
-import * as path from 'path';
 
 describe('safeStorage module', () => {
   afterEach(() => {
@@ -61,33 +60,20 @@ describe('safeStorage module', () => {
     it('can decrypt after closing and reopening app', async () => {
       const fixturesPath = path.resolve(__dirname, 'fixtures');
 
-      // spawn first app to encrypt string; save original decryption for later\
       const encryptAppPath = path.join(fixturesPath, 'api', 'safe-storage', 'encrypt-app');
       const encryptAppProcess = cp.spawn(process.execPath, [encryptAppPath]);
 
-      // note for tomorrow: following commented code will be useful for debugging/ if we un-remove the dcheck
-      // let output = '';
-      // encryptAppProcess.stdout.on('data', data => { output += data; });
-      // encryptAppProcess.stderr.on('data', data => { output += data; });
-      // console.log(output);
-
-      // force encryptor app process to quit
-      // const [exitCode] = await emittedOnce(encryptAppProcess, 'exit');
       await emittedOnce(encryptAppProcess, 'exit');
 
-      // spawn second app process
       const appPath = path.join(fixturesPath, 'api', 'safe-storage', 'decrypt-app');
       const relaunchedAppProcess = cp.spawn(process.execPath, [appPath]);
 
-      // grab new decrypted output to test
       let output = '';
       relaunchedAppProcess.stdout.on('data', data => { output += data; });
       relaunchedAppProcess.stderr.on('data', data => { output += data; });
 
-      // force second app process to quit (hopefully)
       const [code] = await emittedOnce(relaunchedAppProcess, 'exit');
-      console.log('DECRYPTED, CODE, OUTPUT', code, output);
-      // parse fixture output and compare to decrypted
+
       if (!output.includes('plaintext')) {
         console.log(code, output);
       }
@@ -95,8 +81,3 @@ describe('safeStorage module', () => {
     });
   });
 });
-
-// api-autoupdater-darwin-spec.ts for spawn code example, (refactor into new helper)
-// issue caused by app.name resetting,
-// in our spec file, add another spawn for writing
-// wrote file wihitn test runner but read it within a spawn. if we write file in a spawn, read within child, we will have the same app name!

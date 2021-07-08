@@ -1,8 +1,12 @@
 # safeStorage
 
-> Manage cookie encryption.
+> Allows access to simple encryption and decryption of strings.
 
 Process: [Main](../glossary.md#main-process)
+
+Note that on Mac, access to the system Keychain is required and
+these calls can block the current thread to collect user input.
+The same is true for Linux, if a password management tool is available.
 
 ## Methods
 
@@ -10,23 +14,21 @@ The `safeStorage` module has the following methods:
 
 ### `safeStorage.isEncryptionAvailable()`
 
-On Linux returns true iff the real secret key (not hardcoded one) is
-available. On MacOS returns true if Keychain is available. On Windows returns true.
-
 Returns `Boolean` - Whether encryption is available.
+
+On Linux, returns true if the secret key is
+available. On MacOS, returns true if Keychain is available.
+On Windows, returns true with no other preconditions.
 
 ### `safeStorage.encryptString(plainText)`
 
 * `plainText` String
 
-Encrypt a string.
-
 Returns `Buffer` -  An array of bytes representing the encrypted string.
 
-### `safeStorage.decryptString(cipherText)`
+### `safeStorage.decryptString(encrypted)`
 
-* `cipherText` Buffer
+* `encrypted` Buffer
 
-Decrypt buffer obtained with `safeStorage.encryptString` back into a string.
-
-Returns `String` - the decrypted string.
+Returns `String` - the decrypted string. Decrypts the encrypted buffer
+obtained  with `safeStorage.encryptString` back into a string.
