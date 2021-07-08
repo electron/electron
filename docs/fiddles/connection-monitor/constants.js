@@ -62,7 +62,7 @@ const PING_EVENTS = {
  */
 const CONNECTION_MONITOR_IPC_REDUCER_ACTION_TYPES = {
   MAIN: {
-    REQUEST_INIT_STATE: 'request init state',
+    REQUEST_STATE: 'request state',
     TRIGGER_EVENT: 'trigger event'
   },
   RENDERER: {

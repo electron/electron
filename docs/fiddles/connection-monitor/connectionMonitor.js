@@ -143,7 +143,7 @@ function createConnectionMonitorMachine (options) {
     context: { user: null },
     initial: STATES.DISCONNECTED,
     /*
-     * upon creation, invoke the pingMachine as a service using the
+     * upon start, invoke the pingMachine as a service using the
      * `PING_SERVICE_ID` constant. This machine will forward along
      * **TOGGLE_PING** events to this service at any time. Additionally, this
      * event does **not** cause this machine to change state. The connection

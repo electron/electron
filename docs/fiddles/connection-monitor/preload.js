@@ -21,7 +21,7 @@ contextBridge.exposeInMainWorld('mainAPI', {
    */
   requestState: () =>
     ipcRenderer.invoke(CONNECTION_MONITOR_IPC_CHANNEL, {
-      type: ACTION_TYPES.MAIN.REQUEST_INIT_STATE
+      type: ACTION_TYPES.MAIN.REQUEST_STATE
     }),
   /**
    * Toggle the ping operation. The underlying ping machine is either

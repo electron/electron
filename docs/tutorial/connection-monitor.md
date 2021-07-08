@@ -355,6 +355,165 @@ the service can reauthenticate the user silently. This example does not
 implement this flow, but it is possible using the MSAL library using
 [caching and silent token retrieval](https://docs.microsoft.com/en-us/azure/active-directory/develop/msal-acquire-cache-tokens#acquiring-tokens-silently-from-the-cache).
 
-### Connection Monitor IPC api
+### Context Bridge `mainAPI`
 
-### HTML Rendering
+As mentioned previously, this example utilizes an IPC based secure context isolation to facilitate communication between the main and renderer processes. While the Connection Monitor runs entirely on the main process, all of its state transitions are broadcasted to the renderer process. Additionally, the api enables the renderer process to initiate certain events for the connection monitor service such as toggling the ping service and the authentication flow. The api follows an action/reducer like pattern where all of the methods invoke or send an object with a `type` and a `payload` that is then handeled by the respective process using a reducer function (that generally switches over the various `type` values to decide what to do). The `CONNECTION_MONITOR_IPC_REDUCER_ACTION_TYPES` constant string map defines the set of available action types for both process. The entries are sub-mapped by their respective processes. For example, the `MAIN.REQUEST_STATE` action type would be invoked by the renderer process and handeled by the main process.
+
+Akin to many Electron v12+ examples, the main browser window defined in `main.js` has a `webPreferences.preload` script aptly named `preload.js`. This script adds the `mainAPI` to the `window` object on the renderer process and exposes a handful of useful methods. These methods make use of the `MAIN` set of action types.
+
+The `requestState` method gets the current state of the connection monitor instance. It is useful for when the app first starts and the renderer process needs to know what the current state of the main process is. It invokes the `MAIN.REQUEST_STATE` action and can expect to recieve the current state of both the connection monitor and ping services in the form of:
+
+```ts
+{
+  connectionMonitor?: { value: string, context: any },
+  ping?: { value: string }
+}
+```
+
+The `togglePing` method toggles the ping operation. The underlying ping service is either on or off; this method switches between the two states by having the connection monitor send a `TOGGLE_PING` event to ping service. Remember that this will no affect the current state of the connection monitor. This method invokes the `MAIN.TRIGGER_EVENT` action with a payload of `CONNECTION_MONITOR_EVENTS.TOGGLE_PING`.
+
+The `toggleAuth` method toggles the authentication state of the connection monitor. It switches between logging in and logging out depending on the relative state of the service. It invokes the `MAIN.TRIGGER_EVENT` action with a payload of `CONNECTION_MONITOR_EVENTS.TOGGLE_AUTH`.
+
+The `addConnectionMonitorListener` method is used to establish a main process to renderer process communication pathway. The listener function passed to this method can expect actions with a similar `type` and `payload` to be passed as the second argument. The action types for this method will use the `RENDERER` constants from the action type constant string map previously mentioned. The renderer process has access to these constant values through the `mainAPI.constants` object defined next.
+
+The `constants` property contains three constant string maps useful for the renderer process, `CONNECTION_MONITOR_STATES`, `PING_STATES`, and `CONNECTION_MONITOR_IPC_REDUCER_ACTION_TYPES`. In a more robust application these would most likely be bundled directly with the renderer process code, but for this example they are shared via the `mainAPI`.
+
+### Main Process
+
+The main process portion of this example is comprised entirely within the `createWindow()` method defined in `main.js`. It begins by instantiating a connection monitor machine using the `createConnectionMonitorMachine` method. The `options` argument uses environment variables for msal related things, and the `mainWindow` is passed through for the authentication window.
+
+```js
+const connectionMonitorMachine = createConnectionMonitorMachine({
+  window: mainWindow,
+  msal: {
+    auth: {
+      clientId: process.env.MSAL_CLIENT_ID,
+      authority: process.env.MSAL_AUTHORITY
+    },
+    redirectUri: process.env.MSAL_REDIRECT_URI
+  }
+})
+```
+
+Once instantiated, the machine is interpreted as a service using the provided `interpret` method from XState.
+
+```js
+const connectionMonitorService = interpret(connectionMonitorMachine)
+```
+
+An `onTransition` handler is added and then the service is started kicking off the connection monitor initial steps of spawning a ping service and moving into the **DISCONNECTED** state. This listener utilizes the `RENDERER.TRANSITION` action type to share the connection monitor's state as it changes.
+
+```js
+function onConnectionMonitorServiceTransition (state) {
+  mainWindow.webContents.send(CONNECTION_MONITOR_IPC_CHANNEL, {
+    type: ACTION_TYPES.RENDERER.TRANSITION,
+    payload: {
+      connectionMonitor: { value: state.value, context: state.context }
+    }
+  })
+}
+
+connectionMonitorService.onTransition(onConnectionMonitorServiceTransition)
+
+connectionMonitorService.start()
+```
+
+Once spawned, the ping service is referenced using the constant `PING_SERVICE_ID` string and a similar `onTransition` handler is established.
+
+```js
+const pingService = connectionMonitorService.children.get(PING_SERVICE_ID)
+
+if (!pingService) {
+  throw new Error('Connection Monitor Service did not spawn a Ping Service')
+}
+
+function onPingServiceTransition (state) {
+  mainWindow.webContents.send(CONNECTION_MONITOR_IPC_CHANNEL, {
+    type: ACTION_TYPES.RENDERER.TRANSITION,
+    payload: {
+      ping: { value: state.value }
+    }
+  })
+}
+
+pingService.onTransition(onPingServiceTransition)
+```
+
+Finally, a main process reducer is defined and hooked up to the constant `CONNECTION_MONITOR_IPC_CHANNEL` handler
+
+```js
+function connectionMonitorMainProcessReducer (_, action) {
+  switch (action.type) {
+    case ACTION_TYPES.MAIN.REQUEST_STATE: {
+      return {
+        connectionMonitor: {
+          value: connectionMonitorService.state.value,
+          context: connectionMonitorService.state.context
+        }
+      }
+    }
+    case ACTION_TYPES.MAIN.TRIGGER_EVENT: {
+      connectionMonitorService.send(action.payload)
+      break
+    }
+    default: {
+      console.log(`Unrecognized action type: ${action.type}`)
+      break
+    }
+  }
+}
+
+ipcMain.handle(
+  CONNECTION_MONITOR_IPC_CHANNEL,
+  connectionMonitorMainProcessReducer
+)
+```
+
+### Renderer Process
+
+The final part of this example is the renderer process. As mentioned previously, it uses HTML, CSS, and ES2020 JavaScript and could be replaced by any frontend framework. The `mainAPI` defined in `preload.js` is available on the global `window` object and used to interact with the main process. The file has a collection of code blocks responsible for updating the UI in response to changes from the main process. The rendering is mainly controlled by two parts.
+
+First, the listener that utilizes the `mainAPI.addConnectionMonitorListener` method to sync with the main process. As defined in the [Context Bridge `mainAPI`](#context-bridge-mainapi) section, this method expects action objects and uses a `switch` statement to handle the different types. The `ERROR` type is used to send connection monitor error messages with the UI, and the `TRANSITION` type is used to initiate a page update when the state of either main process services change.
+
+```js
+function connectionMonitorListener (_, action) {
+  const { CONNECTION_MONITOR_IPC_REDUCER_ACTION_TYPES: ACTION_TYPES } =
+    window.mainAPI.constants
+  switch (action.type) {
+    case ACTION_TYPES.RENDERER.ERROR: {
+      updateError(action.payload)
+      break
+    }
+    case ACTION_TYPES.RENDERER.TRANSITION: {
+      updatePage(action.payload)
+      break
+    }
+    default:
+      console.log(`Unrecognized action ${action.type}`)
+  }
+}
+
+window.mainAPI.addConnectionMonitorListener(connectionMonitorListener)
+```
+
+Second, a `window.onload` method is defined to request the initial state of the main process services so the UI can render respectively. This function is important because the services may start executing before the page finishes loading. Additionally, this kind of method is helpful for fetching the initial state when only the renderer process is reloaded and the main process remains the same.
+
+```js
+window.onload = () => {
+  window.mainAPI.requestState().then((states) => {
+    updatePage(states)
+  })
+}
+```
+
+Finally, at the beginning of the renderer process, a couple of `onclick` handlers are set up for the respective buttons that are used to toggle the ping and authentication flows.
+
+```js
+document.getElementById('toggle-ping').onclick = function onPingButtonClick () {
+  window.mainAPI.togglePing()
+}
+
+document.getElementById('auth-button').onclick = function onAuthButtonClick () {
+  window.mainAPI.toggleAuth()
+}
+```

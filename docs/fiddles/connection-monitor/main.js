@@ -99,7 +99,7 @@ function createWindow () {
    */
   function connectionMonitorMainProcessReducer (_, action) {
     switch (action.type) {
-      case ACTION_TYPES.MAIN.REQUEST_INIT_STATE: {
+      case ACTION_TYPES.MAIN.REQUEST_STATE: {
         return {
           connectionMonitor: {
             value: connectionMonitorService.state.value,
