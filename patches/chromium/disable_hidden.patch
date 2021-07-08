@@ -6,7 +6,7 @@ Subject: disable_hidden.patch
 Electron uses this to disable background throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 0d77511c47610b8f54f9ceab2956c069d54bd4d8..a2227fabbafb9a5e162c063d2aaa494f78cdd610 100644
+index c2356a3d97bfe1c8bad4f8ff24944dc0fe65a2b1..a322cbb59322d81b253f3a261fff37b9a89837ce 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
 @@ -769,6 +769,9 @@ void RenderWidgetHostImpl::WasHidden() {
@@ -20,7 +20,7 @@ index 0d77511c47610b8f54f9ceab2956c069d54bd4d8..a2227fabbafb9a5e162c063d2aaa494f
        blink::mojom::PointerLockResult::kWrongDocument);
  
 diff --git a/content/browser/renderer_host/render_widget_host_impl.h b/content/browser/renderer_host/render_widget_host_impl.h
-index bdba3cf07542d494c45ef9167642898b196f06cc..db5eb3b795ab2442058dbf16375f5f132a80a61f 100644
+index d082d920c4124b38f1e0358f065ab9b6a18baa76..f966eb89e61a56571d8478f385d5623a119956b5 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.h
 +++ b/content/browser/renderer_host/render_widget_host_impl.h
 @@ -855,6 +855,9 @@ class CONTENT_EXPORT RenderWidgetHostImpl
@@ -34,7 +34,7 @@ index bdba3cf07542d494c45ef9167642898b196f06cc..db5eb3b795ab2442058dbf16375f5f13
    // |routing_id| must not be MSG_ROUTING_NONE.
    // If this object outlives |delegate|, DetachDelegate() must be called when
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index 0e606f2383a3352035b40b25c619695fedbe6125..8f36d0d0ede3b5e87dad5350df5e70dc5c254a31 100644
+index 2e653492a9093053b5966c089779c07e2de5fdca..464b99f528f59b94fdecd80db993e6ede6341671 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
 @@ -594,7 +594,7 @@ void RenderWidgetHostViewAura::HideImpl() {
