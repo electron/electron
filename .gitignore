@@ -1,5 +1,5 @@
 .DS_Store
-.env
+**/.env
 .gclient_done
 **/.npmrc
 .tags*
