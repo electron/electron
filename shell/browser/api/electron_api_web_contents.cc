@@ -1673,6 +1673,10 @@ void WebContents::ReadyToCommitNavigation(
 
 void WebContents::DidFinishNavigation(
     content::NavigationHandle* navigation_handle) {
+  if (owner_window_) {
+    owner_window_->NotifyLayoutWindowControlsOverlay();
+  }
+
   if (!navigation_handle->HasCommitted())
     return;
   bool is_main_frame = navigation_handle->IsInMainFrame();
