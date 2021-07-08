@@ -236,6 +236,33 @@ framework without impacting the core functionality of the example.
 
 ### Ping Machine & Service
 
+The `ping.js` file defines and exports a function called `createPingMachine`.
+This function creates a state machine that can be interpreted as a Ping service
+for use within the Connection Monitor. The `options` argument must be passed an
+`interval: number` and an `url: string` for the pinging operation. The
+resulting machine is based on the relative constant string maps `PING_STATES`
+and `PING_EVENTS`. For this sample, the `pingService` action uses Node.js
+[https](https://nodejs.org/api/https.html) module to make a `HEAD` request to
+the given `url` endpoint to determine connection status.
+
+![A state diagram of the Ping machine as detailed by this section](../images/connection-monitor-ping-machine-diagram.png)
+<!-- https://mermaid.ink/img/eyJjb2RlIjoic3RhdGVEaWFncmFtLXYyXG4gICAgWypdIC0tPiBJZGxlXG4gICAgSWRsZSAtLT4gUGluZ2luZyA6IHRvZ2dsZVxuICAgIFBpbmdpbmcgLS0-IFRpbWVvdXQgOiBvbkRvbmUvb25FcnJvclxuICAgIFBpbmdpbmcgLS0-IElkbGUgOiB0b2dnbGVcbiAgICBUaW1lb3V0IC0tPiBQaW5naW5nIDogaW50ZXJ2YWxcbiAgICBUaW1lb3V0IC0tPiBJZGxlIDogdG9nZ2xlXG4gICAgICAgICAgICAiLCJtZXJtYWlkIjp7InRoZW1lIjoiZGVmYXVsdCJ9LCJ1cGRhdGVFZGl0b3IiOmZhbHNlLCJhdXRvU3luYyI6dHJ1ZSwidXBkYXRlRGlhZ3JhbSI6ZmFsc2V9)](https://mermaid-js.github.io/mermaid-live-editor/edit##eyJjb2RlIjoic3RhdGVEaWFncmFtLXYyXG4gICAgWypdIC0tPiBJZGxlXG4gICAgSWRsZSAtLT4gUGluZ2luZyA6IHRvZ2dsZVxuICAgIFBpbmdpbmcgLS0-IFRpbWVvdXQgOiBvbkRvbmUvb25FcnJvclxuICAgIFBpbmdpbmcgLS0-IElkbGUgOiB0b2dnbGVcbiAgICBUaW1lb3V0IC0tPiBQaW5naW5nIDogaW50ZXJ2YWxcbiAgICBUaW1lb3V0IC0tPiBJZGxlIDogdG9nZ2xlXG4gICAgICAgICAgICAiLCJtZXJtYWlkIjoie1xuICBcInRoZW1lXCI6IFwiZGVmYXVsdFwiXG59IiwidXBkYXRlRWRpdG9yIjp0cnVlLCJhdXRvU3luYyI6dHJ1ZSwidXBkYXRlRGlhZ3JhbSI6ZmFsc2V9 -->
+
+Starting in the **IDLE** state, the machine waits for a **TOGGLE** event before
+transitioning to the **PINGING** state. At any time, the **TOGGLE** event will
+transition this machine back to the **IDLE** state.
+
+Upon entering the **PINGING** state, the machine invokes the
+`pingOperationService` method. The service makes a single `HEAD` request to the
+given `options.url`. The method returns a `Promise` that _resolves_ when the
+request is successful (`statusCode === 200`), and _rejects_ otherwise. If the
+service resolves, the machine sends a **CONNECT** event to the parent machine;
+otherwise, if it rejects, it sends a **DISCONNET** event to the parent.
+Regardless, this machine then transitions to the **TIMEOUT** state.
+
+Upon entering the **TIMEOUT** state, it waits `options.interval` milliseconds
+before transitioning back to the **PINGING** state restarting the cycle.
+
 ### Connection Monitor Machine & Service
 
 ### Connection Monitor IPC api
