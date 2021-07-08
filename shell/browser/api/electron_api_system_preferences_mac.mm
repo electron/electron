@@ -406,7 +406,7 @@ std::string SystemPreferences::GetSystemColor(gin_helper::ErrorThrower thrower,
     return "";
   }
 
-  return ToRGBHex(skia::NSSystemColorToSkColor(sysColor));
+  return ToRGBAHex(skia::NSSystemColorToSkColor(sysColor));
 }
 
 bool SystemPreferences::CanPromptTouchID() {
