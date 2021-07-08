@@ -40,10 +40,13 @@ using DialogResult = std::pair<int, bool>;
 //
 // Note that the HWND is stored in a unique_ptr, because the pointer of HWND
 // will be passed between threads and we need to ensure the memory of HWND is
-// not changed while g_dialogs is modified.
-base::NoDestructor<std::map<int, std::unique_ptr<HWND>>> g_dialogs;
+// not changed while dialogs map is modified.
+std::map<int, std::unique_ptr<HWND>>& GetDialogsMap() {
+  static base::NoDestructor<std::map<int, std::unique_ptr<HWND>>> dialogs;
+  return *dialogs;
+}
 
-// Speical HWND used by the g_dialogs map.
+// Speical HWND used by the dialogs map.
 //
 // - ID is used but window has not been created yet.
 const HWND kHwndReserve = reinterpret_cast<HWND>(-1);
@@ -55,9 +58,9 @@ const HWND kHwndCancel = reinterpret_cast<HWND>(-2);
 // Note that there might be multiple dialogs being opened at the same time, but
 // we only use one lock for them all, because each dialog is independent from
 // each other and there is no need to use different lock for each one.
-// Also note that the |g_dialogs| is only used in the main thread, what is
+// Also note that the |GetDialogsMap| is only used in the main thread, what is
 // shared between threads is the memory of HWND, so there is no need to use lock
-// when accessing g_dialogs.
+// when accessing dialogs map.
 base::Lock& GetHWNDLock() {
   static base::NoDestructor<base::Lock> lock;
   return *lock;
@@ -278,13 +281,13 @@ int ShowMessageBoxSync(const MessageBoxSettings& settings) {
 void ShowMessageBox(const MessageBoxSettings& settings,
                     MessageBoxCallback callback) {
   // The dialog is created in a new thread so we don't know its HWND yet, put
-  // kHwndReserve in the g_dialogs for now.
+  // kHwndReserve in the dialogs map for now.
   HWND* hwnd = nullptr;
   if (settings.id) {
-    if (base::Contains(*g_dialogs, *settings.id))
+    if (base::Contains(GetDialogsMap(), *settings.id))
       CloseMessageBox(*settings.id);
-    auto it =
-        g_dialogs->emplace(*settings.id, std::make_unique<HWND>(kHwndReserve));
+    auto it = GetDialogsMap().emplace(*settings.id,
+                                      std::make_unique<HWND>(kHwndReserve));
     hwnd = it.first->second.get();
   }
 
@@ -294,15 +297,15 @@ void ShowMessageBox(const MessageBoxSettings& settings,
           [](MessageBoxCallback callback, absl::optional<int> id,
              DialogResult result) {
             if (id)
-              g_dialogs->erase(*id);
+              GetDialogsMap().erase(*id);
             std::move(callback).Run(result.first, result.second);
           },
           std::move(callback), settings.id));
 }
 
 void CloseMessageBox(int id) {
-  auto it = g_dialogs->find(id);
-  if (it == g_dialogs->end()) {
+  auto it = GetDialogsMap().find(id);
+  if (it == GetDialogsMap().end()) {
     LOG(ERROR) << "CloseMessageBox called with nonexistent ID";
     return;
   }

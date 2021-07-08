@@ -30,7 +30,10 @@ MessageBoxSettings::~MessageBoxSettings() = default;
 namespace {
 
 // <ID, messageBox> map
-base::NoDestructor<std::map<int, NSAlert*>> g_dialogs;
+std::map<int, NSAlert*>& GetDialogsMap() {
+  static base::NoDestructor<std::map<int, NSAlert*>> dialogs;
+  return *dialogs;
+}
 
 NSAlert* CreateNSAlert(const MessageBoxSettings& settings) {
   // Ignore the title; it's the window title on other platforms and ignorable.
@@ -135,9 +138,9 @@ void ShowMessageBox(const MessageBoxSettings& settings,
     std::move(callback).Run(ret, alert.suppressionButton.state == NSOnState);
   } else {
     if (settings.id) {
-      if (base::Contains(*g_dialogs, *settings.id))
+      if (base::Contains(GetDialogsMap(), *settings.id))
         CloseMessageBox(*settings.id);
-      (*g_dialogs)[*settings.id] = alert;
+      GetDialogsMap()[*settings.id] = alert;
     }
 
     NSWindow* window =
@@ -154,7 +157,7 @@ void ShowMessageBox(const MessageBoxSettings& settings,
     [alert beginSheetModalForWindow:window
                   completionHandler:^(NSModalResponse response) {
                     if (id)
-                      g_dialogs->erase(*id);
+                      GetDialogsMap().erase(*id);
                     // When the alert is cancelled programmatically, the
                     // response would be something like -1000. This currently
                     // only happens when users call CloseMessageBox API, and we
@@ -169,8 +172,8 @@ void ShowMessageBox(const MessageBoxSettings& settings,
 }
 
 void CloseMessageBox(int id) {
-  auto it = g_dialogs->find(id);
-  if (it == g_dialogs->end()) {
+  auto it = GetDialogsMap().find(id);
+  if (it == GetDialogsMap().end()) {
     LOG(ERROR) << "CloseMessageBox called with nonexistent ID";
     return;
   }
