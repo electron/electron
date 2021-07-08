@@ -246,7 +246,7 @@ and `PING_EVENTS`. For this sample, the `pingService` action uses Node.js
 the given `url` endpoint to determine connection status.
 
 ![A state diagram of the Ping machine as detailed by this section](../images/connection-monitor-ping-machine-diagram.png)
-<!-- https://mermaid.ink/img/eyJjb2RlIjoic3RhdGVEaWFncmFtLXYyXG4gICAgWypdIC0tPiBJZGxlXG4gICAgSWRsZSAtLT4gUGluZ2luZyA6IHRvZ2dsZVxuICAgIFBpbmdpbmcgLS0-IFRpbWVvdXQgOiBvbkRvbmUvb25FcnJvclxuICAgIFBpbmdpbmcgLS0-IElkbGUgOiB0b2dnbGVcbiAgICBUaW1lb3V0IC0tPiBQaW5naW5nIDogaW50ZXJ2YWxcbiAgICBUaW1lb3V0IC0tPiBJZGxlIDogdG9nZ2xlXG4gICAgICAgICAgICAiLCJtZXJtYWlkIjp7InRoZW1lIjoiZGVmYXVsdCJ9LCJ1cGRhdGVFZGl0b3IiOmZhbHNlLCJhdXRvU3luYyI6dHJ1ZSwidXBkYXRlRGlhZ3JhbSI6ZmFsc2V9)](https://mermaid-js.github.io/mermaid-live-editor/edit##eyJjb2RlIjoic3RhdGVEaWFncmFtLXYyXG4gICAgWypdIC0tPiBJZGxlXG4gICAgSWRsZSAtLT4gUGluZ2luZyA6IHRvZ2dsZVxuICAgIFBpbmdpbmcgLS0-IFRpbWVvdXQgOiBvbkRvbmUvb25FcnJvclxuICAgIFBpbmdpbmcgLS0-IElkbGUgOiB0b2dnbGVcbiAgICBUaW1lb3V0IC0tPiBQaW5naW5nIDogaW50ZXJ2YWxcbiAgICBUaW1lb3V0IC0tPiBJZGxlIDogdG9nZ2xlXG4gICAgICAgICAgICAiLCJtZXJtYWlkIjoie1xuICBcInRoZW1lXCI6IFwiZGVmYXVsdFwiXG59IiwidXBkYXRlRWRpdG9yIjp0cnVlLCJhdXRvU3luYyI6dHJ1ZSwidXBkYXRlRGlhZ3JhbSI6ZmFsc2V9 -->
+<!-- https://mermaid-js.github.io/mermaid-live-editor/edit##eyJjb2RlIjoic3RhdGVEaWFncmFtLXYyXG4gICAgWypdIC0tPiBJZGxlXG4gICAgSWRsZSAtLT4gUGluZ2luZyA6IHRvZ2dsZVxuICAgIFBpbmdpbmcgLS0-IFRpbWVvdXQgOiBvbkRvbmUvb25FcnJvclxuICAgIFBpbmdpbmcgLS0-IElkbGUgOiB0b2dnbGVcbiAgICBUaW1lb3V0IC0tPiBQaW5naW5nIDogaW50ZXJ2YWxcbiAgICBUaW1lb3V0IC0tPiBJZGxlIDogdG9nZ2xlXG4gICAgICAgICAgICAiLCJtZXJtYWlkIjoie1xuICBcInRoZW1lXCI6IFwiZGVmYXVsdFwiXG59IiwidXBkYXRlRWRpdG9yIjp0cnVlLCJhdXRvU3luYyI6dHJ1ZSwidXBkYXRlRGlhZ3JhbSI6ZmFsc2V9 -->
 
 Starting in the **IDLE** state, the machine waits for a **TOGGLE** event before
 transitioning to the **PINGING** state. At any time, the **TOGGLE** event will
@@ -264,6 +264,96 @@ Upon entering the **TIMEOUT** state, it waits `options.interval` milliseconds
 before transitioning back to the **PINGING** state restarting the cycle.
 
 ### Connection Monitor Machine & Service
+
+The Connection Monitor machine is the core of the whole example. It depends on
+the previously described Ping machine. Defined in the `connectionMonitor.js`
+file, the `createConnectionMonitorMachine` function returns a Connection
+Monitor state machine that can be interpreted for use within the application.
+It takes an `options` argument with two required properties `window` and `msal`
+, and one optional property `interval` that is forwarded along the Ping machine
+options object.
+
+```ts
+{
+  window: BrowserWindow,
+  msal: {
+    auth: {
+      cliendId: string,
+      authority: string,
+    },
+    redirectUri: string
+  },
+  interval?: number
+}
+```
+
+This demonstrates how its possible to configure the machine using env vars so
+different environments can use the same interface (i.e. prod, dev, qa).
+
+The method starts by defining the MSAL application for the authentication flow.
+
+```js
+const msalApp = new msal.PublicClientApplication({
+  auth: options.msal.auth,
+  system: {
+    loggerOptions: {
+      loggerCallback: console.log,
+      piiLoggingEnabled: false,
+      logLevel: msal.LogLevel.Info
+    }
+  }
+})
+```
+
+Next, it initializes the Ping machine. In this example, the `url` is set to the
+common Microsoft authentication endpoint `'https://login.microsoftonline.com'`.
+This may change depending on your Azure Active Directory tenant or other
+authentication library.
+
+```js
+const pingMachine = createPingMachine({
+  interval: options.interval || 5000,
+  url: 'https://login.microsoftonline.com'
+})
+```
+
+![A state diagram of the Connection Monitor machine described in this section](../images/connection-monitor-machine-diagram.png)
+<!-- https://mermaid-js.github.io/mermaid-live-editor/edit##eyJjb2RlIjoic3RhdGVEaWFncmFtLXYyXG4gICAgc3RhdGUgQ29ubmVjdGlvbk1vbml0b3Ige1xuICAgICAgICBbKl0gLS0-IERpc2Nvbm5lY3RlZFxuICAgICAgICBEaXNjb25uZWN0ZWQgLS0-IENvbm5lY3RlZCA6IGNvbm5lY3RcbiAgICAgICAgQ29ubmVjdGVkIC0tPiBEaXNjb25uZWN0ZWQgOiBkaXNjb25uZWN0XG4gICAgICAgIENvbm5lY3RlZCAtLT4gQXV0aGVudGljYXRpbmcgOiB0b2dnbGVfYXV0aFxuICAgICAgICBBdXRoZW50aWNhdGluZyAtLT4gQXV0aGVudGljYXRlZCA6IG9uRG9uZVxuICAgICAgICBBdXRoZW50aWNhdGluZyAtLT4gQ29ubmVjdGVkIDogb25FcnJvclxuICAgICAgICBBdXRoZW50aWNhdGVkIC0tPiBEaXNjb25uZWN0ZWQgOiBkaXNjb25uZWN0XG4gICAgfVxuXG4gICAgc3RhdGUgUGluZyB7XG4gICAgICAgIFsqXSAtLT4gSWRsZVxuICAgICAgICBJZGxlIC0tPiBQaW5naW5nIDogdG9nZ2xlXG4gICAgICAgIFBpbmdpbmcgLS0-IFRpbWVvdXQgOiBvbkRvbmUvb25FcnJvclxuICAgICAgICBQaW5naW5nIC0tPiBJZGxlIDogdG9nZ2xlXG4gICAgICAgIFRpbWVvdXQgLS0-IFBpbmdpbmcgOiBpbnRlcnZhbFxuICAgICAgICBUaW1lb3V0IC0tPiBJZGxlIDogdG9nZ2xlXG4gICAgfVxuXG4gICAgQ29ubmVjdGlvbk1vbml0b3IgLS0-IFBpbmcgOiB0b2dnbGVfcGluZ1xuICAgIFBpbmcgLS0-IENvbm5lY3Rpb25Nb25pdG9yIDogY29ubmVjdFxuICAgIFBpbmcgLS0-IENvbm5lY3Rpb25Nb25pdG9yIDogZGljb25uZWN0XG4iLCJtZXJtYWlkIjoie1xuICBcInRoZW1lXCI6IFwiZGVmYXVsdFwiXG59IiwidXBkYXRlRWRpdG9yIjpmYWxzZSwiYXV0b1N5bmMiOnRydWUsInVwZGF0ZURpYWdyYW0iOmZhbHNlfQ -->
+
+Using the msal application and ping machine, the Connection Monitor state
+machine is generated. Upon start, the machine invokes the `pingMachine` as a
+service using the `PING_SERVICE_ID` constant. The connection monitor machine
+will forward along **TOGGLE_PING** events to the spawned ping service at any
+time. Additionally, the **TOGGLE_PING** event does **not** cause this machine
+to change state. The connection monitor will remain in whichever state it is in
+when the ping service is toggled off.
+
+Starting in the **DISCONNECTED** state, the machine is looking for two things
+to happen. First, the **TOGGLE_PING** event which is forwarded along to the
+Ping service. When the ping service establishes a connection it will send back
+to this machine the **CONNECT** event transitioning the machine to the
+**CONNECTED** state.
+
+The **CONNECTED** state waits for either the Ping service to send an
+**DISCONNECT** event or the user to send a **TOGGLE_AUTH** event resulting in a
+transition to the **DISCONNECTED** and **AUTHENTICATING** states respectfully.
+
+The **AUTHENTICATING** state invokes the `authenticationOperationService`
+method similar to how the Ping machine's **PINGING** state invokes the
+`pingOperationService`. The service is expected to return a promise that
+resolves for a successful authentication or reject for a failed auth flow. When
+the auth flow succeeds, the result is assigned to the machine's context and the
+machine transitions to the **AUTHENTICATED** state. If the flow fails, the
+error is sent to the renderer process and the machine transitions back to the
+**CONNECTED** state.
+
+Once authenticated, the user can log out resulting in a transition back to
+**CONNECTED** state. If the Ping service fails to maintain a connection, the
+**DISCONNECT** event will transition the use back to the **DISCONNECTED** state
+, but will not clear the user from context. Ideally, when the App reconnects,
+the service can reauthenticate the user silently. This example does not
+implement this flow, but it is possible using the MSAL library using
+[caching and silent token retrieval](https://docs.microsoft.com/en-us/azure/active-directory/develop/msal-acquire-cache-tokens#acquiring-tokens-silently-from-the-cache).
 
 ### Connection Monitor IPC api
 
