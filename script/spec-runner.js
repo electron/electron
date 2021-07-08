@@ -131,13 +131,13 @@ async function runRemoteBasedElectronTests () {
     exe = 'python3';
   }
 
-  const { status } = childProcess.spawnSync(exe, runnerArgs, {
+  const { status, stderr } = childProcess.spawnSync(exe, runnerArgs, {
     cwd: path.resolve(__dirname, '../..'),
     stdio: 'inherit'
   });
   if (status !== 0) {
     const textStatus = process.platform === 'win32' ? `0x${status.toString(16)}` : status.toString();
-    console.log(`${fail} Electron tests failed with code ${textStatus}.`);
+    console.log(`${fail} Electron tests failed with code ${textStatus}.  Error output was ${stderr}`);
     process.exit(1);
   }
   console.log(`${pass} Electron remote process tests passed.`);
