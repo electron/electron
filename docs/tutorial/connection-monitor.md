@@ -32,34 +32,15 @@ Before getting started with the example, if you intend on running this locally
 with `@azure/msal-node` you'll need to include some environment variables. The
 following section will walk you through everything you need to do.
 
-## Configuring `@azure/msal-node`
-
-> If you are using your own authentication library you may skip this section
-
-In order to run this example locally you'll need an Azure AAD Tenant as well as
-an Azure App Registration. This guide on [Registering your app](https://docs.microsoft.com/en-us/graph/auth-register-app-v2)
-will show you how to do so. You'll need to keep note of 3 things:
-
-1. The App Registration Client ID
-2. Your AAD Tenant Authority (for a majority of users this will be
-`https://login.microsoft.com/common`)
-3. The app authentication redirect URI
-
-When creating the redirect URI, select "Public Client (Mobile & Desktop)". The
-URI should be in the form `msal<APP_CLIENT_ID>://auth`.
-
-Assign the three values to their respective environment variables:
-
-```sh
-MSAL_CLIENT_ID=
-MSAL_AUTHORITY=
-MSAL_REDIRECT_URI=
-```
-
-Or in-line them in the options object passed to the
-`createConnectionMonitorMachine` function call in `main.js`.
-
 ## Example
+
+Once configured, the application should run entirely from Electron Fiddle.
+Later sections of this page will introduce and explain the different parts of
+the example such as the Ping machine, Connection Monitor machine, the IPC
+communication API, and the HTML rendering.
+
+To run this example **without** setting up @azure/msal-node, jump to the
+[Example without @azure/msal-node](#example-without-azuremsal-node) section.
 
 ```javascript fiddle='docs/fiddles/connection-monitor/main.js'
 const { app, BrowserWindow, ipcMain } = require('electron');
@@ -201,3 +182,62 @@ app.on('window-all-closed', function () {
 });
 
 ```
+
+## Configuring `@azure/msal-node`
+
+> If you are using your own authentication library you may skip this section
+
+In order to run this example locally you'll need an Azure AAD Tenant as well as
+an Azure App Registration. This guide on [Registering your app](https://docs.microsoft.com/en-us/graph/auth-register-app-v2)
+will show you how to do so. You'll need to keep note of 3 things:
+
+1. The App Registration Client ID
+2. Your AAD Tenant Authority (for a majority of users this will be
+`https://login.microsoft.com/common`)
+3. The app authentication redirect URI
+
+When creating the redirect URI, select "Public Client (Mobile & Desktop)". The
+URI should be in the form `msal<APP_CLIENT_ID>://auth`.
+
+Assign the three values to their respective environment variables:
+
+```sh
+MSAL_CLIENT_ID=
+MSAL_AUTHORITY=
+MSAL_REDIRECT_URI=
+```
+
+Or in-line them in the options object passed to the
+`createConnectionMonitorMachine` function call in `main.js`.
+
+## Example (without `@azure/msal-node`)
+
+Included within the fiddle repo is a file `connectionMonitor-withoutMSAL.js`.
+Use this file in place of `connectionMonitor.js` to skip configuring Azure AAD.
+
+The only change required is replacing the `require` path in `main.js`. The
+environment variables will return undefined and the app should not throw any
+errors.
+
+The ping service will still use the `'https://login.microsoftonline.com'` URL;
+this can be modified by changing the options object passed to
+`createPingMachine` within `connectionMonitor-withoutMSAL.js` (~line 39).
+
+## Guide
+
+The remainder of the guide will breakdown the example into its various core
+components. The application utilizes [Interprocess Communication](./process-model.md)
+to securely share app state between processes. The core of the example exists
+in the main process. The Connection Monitor and Ping machines run on the main
+process, and they are interacted with by the user using an API exposed through
+the [Context Bridge](./../api/context-bridge.md). The renderer process is built
+using HTML, CSS, and ES2020 JavaScript. This can be replaced with any frontend
+framework without impacting the core functionality of the example.
+
+### Ping Machine & Service
+
+### Connection Monitor Machine & Service
+
+### Connection Monitor IPC api
+
+### HTML Rendering
