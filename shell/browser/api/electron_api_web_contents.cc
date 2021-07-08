@@ -46,7 +46,6 @@
 #include "content/public/browser/navigation_details.h"
 #include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/navigation_handle.h"
-#include "content/public/browser/plugin_service.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
@@ -186,6 +185,10 @@
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
 #include "components/pdf/browser/pdf_web_contents_helper.h"  // nogncheck
 #include "shell/browser/electron_pdf_web_contents_helper_client.h"
+#endif
+
+#if BUILDFLAG(ENABLE_PLUGINS)
+#include "content/public/browser/plugin_service.h"
 #endif
 
 #ifndef MAS_BUILD
