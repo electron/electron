@@ -202,16 +202,16 @@ async function runMainProcessElectronTests () {
     exe = 'python3';
   }
 
-  const { status, signal, stderr } = childProcess.spawnSync(exe, runnerArgs, {
+  const { status, signal } = childProcess.spawnSync(exe, runnerArgs, {
     cwd: path.resolve(__dirname, '../..'),
     stdio: 'inherit'
   });
   if (status !== 0) {
     if (status) {
       const textStatus = process.platform === 'win32' ? `0x${status.toString(16)}` : status.toString();
-      console.log(`${fail} Electron tests failed with code ${textStatus}.  Error output was ${stderr}`);
+      console.log(`${fail} Electron tests failed with code ${textStatus}.`);
     } else {
-      console.log(`${fail} Electron tests failed with kill signal ${signal}.  Error output was ${stderr}`);
+      console.log(`${fail} Electron tests failed with kill signal ${signal}.`);
     }
     process.exit(1);
   }
