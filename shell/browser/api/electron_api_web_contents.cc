@@ -3609,9 +3609,7 @@ void WebContents::UpdateHtmlApiFullscreen(bool fullscreen) {
     manager->ForEachGuest(
         web_contents(), base::BindRepeating([](content::WebContents* guest) {
           WebContents* api_web_contents = WebContents::From(guest);
-          // Use UpdateHtmlApiFullscreen instead of SetXXX becuase there is no
-          // need to interact with the owner window.
-          api_web_contents->UpdateHtmlApiFullscreen(false);
+          api_web_contents->SetHtmlApiFullscreen(false);
           return false;
         }));
   }
