@@ -223,7 +223,7 @@ app.on('window-all-closed', function () {
 
 [node-platform]: https://nodejs.org/api/process.html#process_process_platform
 [window-all-closed]: ../api/app.md#event-window-all-closed
-[window-all-closed]: ../api/app.md#appquit
+[app-quit]: ../api/app.md#appquit
 
 #### Open a window if none are open (macOS)
 
