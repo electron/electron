@@ -1682,8 +1682,6 @@ void NativeWindowMac::NotifyWindowWillLeaveFullScreen() {
 }
 
 void NativeWindowMac::SetActive(bool is_key) {
-  if (is_key)
-    widget()->Activate();
   is_active_ = is_key;
 }
 
