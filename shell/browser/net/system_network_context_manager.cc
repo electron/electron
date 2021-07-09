@@ -40,6 +40,10 @@
 #include "components/os_crypt/keychain_password_mac.h"
 #endif
 
+#if defined(OS_LINUX)
+#include "components/os_crypt/key_storage_config_linux.h"
+#endif
+
 namespace {
 
 // The global instance of the SystemNetworkContextmanager.
