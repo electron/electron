@@ -133,7 +133,7 @@ async function runRemoteBasedElectronTests () {
 
   const { status, stderr } = childProcess.spawnSync(exe, runnerArgs, {
     cwd: path.resolve(__dirname, '../..'),
-    stdio: 'inherit'
+    stdio: ['inherit', 'inherit', 'pipe']
   });
   if (status !== 0) {
     const textStatus = process.platform === 'win32' ? `0x${status.toString(16)}` : status.toString();
@@ -204,7 +204,7 @@ async function runMainProcessElectronTests () {
 
   const { status, signal, stderr } = childProcess.spawnSync(exe, runnerArgs, {
     cwd: path.resolve(__dirname, '../..'),
-    stdio: 'inherit'
+    stdio: ['inherit', 'inherit', 'pipe']
   });
   if (status !== 0) {
     if (status) {
