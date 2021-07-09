@@ -9,7 +9,6 @@
 #include <commctrl.h>
 
 #include <map>
-#include <utility>
 #include <vector>
 
 #include "base/containers/contains.h"
@@ -34,7 +33,10 @@ MessageBoxSettings::~MessageBoxSettings() = default;
 
 namespace {
 
-using DialogResult = std::pair<int, bool>;
+struct DialogResult {
+  int button_id;
+  bool verification_flag_checked;
+};
 
 // <ID, messageBox> map.
 //
@@ -238,8 +240,8 @@ DialogResult ShowTaskDialogWstr(NativeWindow* parent,
   }
 
   int id = 0;
-  BOOL verificationFlagChecked = FALSE;
-  TaskDialogIndirect(&config, &id, nullptr, &verificationFlagChecked);
+  BOOL verification_flag_checked = FALSE;
+  TaskDialogIndirect(&config, &id, nullptr, &verification_flag_checked);
 
   int button_id;
   if (id_map.find(id) != id_map.end())  // common button.
@@ -249,7 +251,7 @@ DialogResult ShowTaskDialogWstr(NativeWindow* parent,
   else
     button_id = cancel_id;
 
-  return std::make_pair(button_id, verificationFlagChecked);
+  return {button_id, static_cast<bool>(verification_flag_checked)};
 }
 
 DialogResult ShowTaskDialogUTF8(const MessageBoxSettings& settings,
@@ -275,7 +277,7 @@ DialogResult ShowTaskDialogUTF8(const MessageBoxSettings& settings,
 int ShowMessageBoxSync(const MessageBoxSettings& settings) {
   electron::UnresponsiveSuppressor suppressor;
   DialogResult result = ShowTaskDialogUTF8(settings, nullptr);
-  return result.first;
+  return result.button_id;
 }
 
 void ShowMessageBox(const MessageBoxSettings& settings,
@@ -298,7 +300,8 @@ void ShowMessageBox(const MessageBoxSettings& settings,
              DialogResult result) {
             if (id)
               GetDialogsMap().erase(*id);
-            std::move(callback).Run(result.first, result.second);
+            std::move(callback).Run(result.button_id,
+                                    result.verification_flag_checked);
           },
           std::move(callback), settings.id));
 }
