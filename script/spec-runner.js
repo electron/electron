@@ -13,7 +13,7 @@ const fail = '✗'.red;
 
 const args = require('minimist')(process.argv, {
   string: ['runners', 'target'],
-  boolean: ['buildNativeTests'],
+  boolean: ['buildNativeTests', 'onlyPrepForRunning'],
   unknown: arg => unknownFlags.push(arg)
 });
 
@@ -69,7 +69,9 @@ async function main () {
     generateTypeDefinitions();
   }
 
-  await runElectronTests();
+  if (!args.onlyPrepForRunning) {
+    await runElectronTests();
+  }
 }
 
 function generateTypeDefinitions () {
