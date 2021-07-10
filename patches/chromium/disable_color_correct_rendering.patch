@@ -48,7 +48,7 @@ index bd5bcf4a03022869fe610015e882ff1980d8a0e8..a3fdd7ae208719bd10ddf1044a501e44
    // Image Decode Service and raster tiles without images until the decode is
    // ready.
 diff --git a/components/viz/common/display/renderer_settings.h b/components/viz/common/display/renderer_settings.h
-index b7c9b29c0888fa77c0ab7b4701d7ed1f1d91352e..a6684ff01cb36ce0a58f1c3c9473066e4807e0e2 100644
+index e58b4023652785fa8ea47236a5ad7237c7ea6ed2..4ec673ea93410ee00b1af4330fdc8b5267ed6dfa 100644
 --- a/components/viz/common/display/renderer_settings.h
 +++ b/components/viz/common/display/renderer_settings.h
 @@ -24,6 +24,7 @@ class VIZ_COMMON_EXPORT RendererSettings {
@@ -81,7 +81,7 @@ index f919df4d79a1168269c1538ac13a2a944586cf4e..fc34cf5d7dab95e7b6fc0576674b3e2b
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  
 diff --git a/components/viz/service/display/gl_renderer.cc b/components/viz/service/display/gl_renderer.cc
-index 2f14ea88d9bba70a0f93bf8507952163226b1191..114379c1065ad2fceba3b46e513048bff2cd1f7a 100644
+index db57099fb73a31fab8dd7e1ee4cd877462ba0684..55865a301be2922dfd42d501637c7c3b5b70ad84 100644
 --- a/components/viz/service/display/gl_renderer.cc
 +++ b/components/viz/service/display/gl_renderer.cc
 @@ -90,6 +90,9 @@
@@ -222,7 +222,7 @@ index 2f14ea88d9bba70a0f93bf8507952163226b1191..114379c1065ad2fceba3b46e513048bf
  
    gfx::Transform render_matrix;
    render_matrix.Translate(0.5 * output_rect.width() + output_rect.x(),
-@@ -4488,3 +4500,5 @@ GLRenderer::OverlayTexture::OverlayTexture() = default;
+@@ -4487,3 +4499,5 @@ GLRenderer::OverlayTexture::OverlayTexture() = default;
  GLRenderer::OverlayTexture::~OverlayTexture() = default;
  
  }  // namespace viz
@@ -241,7 +241,7 @@ index 59b34cdb1dc63b8d239cae5397b2a5a4f607bf1c..e2f556532459b1129465ca2b83aa1485
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 3be4267afd17352a62dac04ca0b07a8e0de34720..209087b2a4654a5fa46517114fd2411cf29f0332 100644
+index 207aaf36193177c9ddcd4afac86a2e3cddc9896f..858fbc2afaa55b51e5c6db0e124379b2601e1391 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -217,6 +217,7 @@

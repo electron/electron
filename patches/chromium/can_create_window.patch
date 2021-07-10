@@ -68,10 +68,10 @@ index be6f44b67f0d1b302bcbda2afee45fcef8df4ffc..b124bd5ebc5fef4b464309229c5fb155
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 0703cbb93d207e8d6529cc6005e5e66091ba03f0..dd18f6b137ae5c724400d4229a2867474824dc56 100644
+index c279e11637bac34cef86c6b693963a6eb7d652e0..087e2b3099425158e8a6e8873dd8b5a0de15f52f 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -562,6 +562,8 @@ bool ContentBrowserClient::CanCreateWindow(
+@@ -563,6 +563,8 @@ bool ContentBrowserClient::CanCreateWindow(
      const std::string& frame_name,
      WindowOpenDisposition disposition,
      const blink::mojom::WindowFeatures& features,

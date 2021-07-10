@@ -7,10 +7,10 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 8dcdcf899ea13be6237f63f425d85eb410c845ff..f513f1c8bc33136f58f7bc3de2bb3590af9a153f 100644
+index 9d9003914d3b17b58d94f457114003f50c466058..ec827a74b562601c87435b0203d3425be17b477a 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
-@@ -117,6 +117,11 @@
+@@ -116,6 +116,11 @@
  #include "services/network/web_transport.h"
  #include "third_party/abseil-cpp/absl/types/optional.h"
  
@@ -22,7 +22,7 @@ index 8dcdcf899ea13be6237f63f425d85eb410c845ff..f513f1c8bc33136f58f7bc3de2bb3590
  #if BUILDFLAG(IS_CT_SUPPORTED)
  #include "components/certificate_transparency/chrome_ct_policy_enforcer.h"
  #include "components/certificate_transparency/chrome_require_ct_delegate.h"
-@@ -400,6 +405,79 @@ void GetCTPolicyConfigForCTLogInfo(
+@@ -399,6 +404,79 @@ void GetCTPolicyConfigForCTLogInfo(
  
  }  // namespace
  
@@ -102,7 +102,7 @@ index 8dcdcf899ea13be6237f63f425d85eb410c845ff..f513f1c8bc33136f58f7bc3de2bb3590
  constexpr uint32_t NetworkContext::kMaxOutstandingRequestsPerProcess;
  
  NetworkContext::PendingCertVerify::PendingCertVerify() = default;
-@@ -599,6 +677,13 @@ void NetworkContext::SetClient(
+@@ -598,6 +676,13 @@ void NetworkContext::SetClient(
    client_.Bind(std::move(client));
  }
  
@@ -116,7 +116,7 @@ index 8dcdcf899ea13be6237f63f425d85eb410c845ff..f513f1c8bc33136f58f7bc3de2bb3590
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -1984,6 +2069,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -1982,6 +2067,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
          std::move(cert_verifier));
      cert_verifier = base::WrapUnique(cert_verifier_with_trust_anchors_);
  #endif  // BUILDFLAG(IS_CHROMEOS_ASH)
