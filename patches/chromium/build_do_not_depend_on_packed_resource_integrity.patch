@@ -33,10 +33,10 @@ index e7dda63b94aebaf45cf25af0bc101698d44fc44b..feb624f77466de6bf1ea398dc8274231
          "//base",
          "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index 315cbd6cfc684ff90cfb7b3691578c53f7b743bc..73a22b4d10f607bc26a915cf76982608c5ea599f 100644
+index ccf633e638576c3bbf59e8818b7c7c9d7cfefffd..a9159ff1e584bd379fca50215bc76f729ad1ff0d 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -4290,7 +4290,7 @@ static_library("browser") {
+@@ -4294,7 +4294,7 @@ static_library("browser") {
  
      # On Windows, the hashes are embedded in //chrome:chrome_initial rather
      # than here in :chrome_dll.
@@ -46,7 +46,7 @@ index 315cbd6cfc684ff90cfb7b3691578c53f7b743bc..73a22b4d10f607bc26a915cf76982608
      }
  
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index 0c285fd94e95f087ebaa43d7086ed94d77237ca9..499939303d6ded2213d09db6c27b79977d80c3f5 100644
+index 812402c862869790ee91d3a7fc1a5b3590e0e939..349f352cb1cafde4e1e87bdfdd73411169161745 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
 @@ -5255,7 +5255,6 @@ test("unit_tests") {
@@ -70,7 +70,7 @@ index 0c285fd94e95f087ebaa43d7086ed94d77237ca9..499939303d6ded2213d09db6c27b7997
    }
  
    if (is_win || is_chromeos_ash || is_mac) {
-@@ -5829,7 +5834,6 @@ test("unit_tests") {
+@@ -5828,7 +5833,6 @@ test("unit_tests") {
      }
  
      deps += [
@@ -78,7 +78,7 @@ index 0c285fd94e95f087ebaa43d7086ed94d77237ca9..499939303d6ded2213d09db6c27b7997
        "//chrome/browser:cart_db_content_proto",
        "//chrome/browser/media/router:test_support",
        "//chrome/browser/promo_browser_command:mojo_bindings",
-@@ -5864,6 +5868,9 @@ test("unit_tests") {
+@@ -5863,6 +5867,9 @@ test("unit_tests") {
        "//ui/color:test_support",
        "//ui/native_theme:test_support",
      ]
