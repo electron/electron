@@ -41,13 +41,12 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
   // Create a new WebFrameMain and return the V8 wrapper of it.
   static gin::Handle<WebFrameMain> New(v8::Isolate* isolate);
 
-  static gin::Handle<WebFrameMain> FromID(v8::Isolate* isolate,
-                                          int render_process_id,
-                                          int render_frame_id);
   static gin::Handle<WebFrameMain> From(
       v8::Isolate* isolate,
       content::RenderFrameHost* render_frame_host);
-  static WebFrameMain* From(content::RenderFrameHost* render_frame_host);
+  static WebFrameMain* FromFrameTreeNodeId(int frame_tree_node_id);
+  static WebFrameMain* FromRenderFrameHost(
+      content::RenderFrameHost* render_frame_host);
 
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
@@ -56,6 +55,8 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
       v8::Local<v8::ObjectTemplate>);
   const char* GetTypeName() override;
 
+  content::RenderFrameHost* render_frame_host() const { return render_frame_; }
+
  protected:
   explicit WebFrameMain(content::RenderFrameHost* render_frame);
   ~WebFrameMain() override;
@@ -63,9 +64,16 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
  private:
   friend class WebContents;
 
+  // Called when FrameTreeNode is deleted.
+  void Destroyed();
+
   // Mark RenderFrameHost as disposed and to no longer access it. This can
-  // occur upon frame navigation.
+  // happen when the WebFrameMain v8 handle is GC'd or when a FrameTreeNode
+  // is removed.
   void MarkRenderFrameDisposed();
+
+  // Swap out the internal RFH when cross-origin navigation occurs.
+  void UpdateRenderFrameHost(content::RenderFrameHost* rfh);
 
   const mojo::Remote<mojom::ElectronRenderer>& GetRendererApi();
 
@@ -103,6 +111,8 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
 
   mojo::Remote<mojom::ElectronRenderer> renderer_api_;
   mojo::PendingReceiver<mojom::ElectronRenderer> pending_receiver_;
+
+  int frame_tree_node_id_;
 
   content::RenderFrameHost* render_frame_ = nullptr;
 
