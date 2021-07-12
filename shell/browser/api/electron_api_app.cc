@@ -27,12 +27,15 @@
 #include "content/public/browser/child_process_data.h"
 #include "content/public/browser/client_certificate_delegate.h"
 #include "content/public/browser/gpu_data_manager.h"
+#include "content/public/browser/network_service_instance.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/common/content_switches.h"
 #include "media/audio/audio_manager.h"
+#include "net/cookies/cookie_util.h"
 #include "net/ssl/client_cert_identity.h"
 #include "net/ssl/ssl_cert_request_info.h"
 #include "sandbox/policy/switches.h"
+#include "services/network/network_service.h"
 #include "shell/browser/api/electron_api_menu.h"
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/api/electron_api_web_contents.h"
@@ -1438,6 +1441,12 @@ void App::SetUserAgentFallback(const std::string& user_agent) {
   ElectronBrowserClient::Get()->SetUserAgent(user_agent);
 }
 
+void SetFirstPartySets(std::string raw_sets) {
+  if (net::cookie_util::IsFirstPartySetsEnabled()) {
+    content::GetNetworkService()->SetFirstPartySets(raw_sets);
+  }
+}
+
 #if defined(OS_WIN)
 
 bool App::IsRunningUnderARM64Translation() const {
@@ -1669,6 +1678,7 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
 #endif
       .SetProperty("userAgentFallback", &App::GetUserAgentFallback,
                    &App::SetUserAgentFallback)
+      .SetMethod("setFirstPartySets", &SetFirstPartySets)
       .SetMethod("enableSandbox", &App::EnableSandbox);
 }
 

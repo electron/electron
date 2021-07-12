@@ -1351,6 +1351,32 @@ details.
 
 **Note:** Enable `Secure Keyboard Entry` only when it is needed and disable it when it is no longer needed.
 
+### `app.setFirstPartySets(rawSets)` _Experimental_
+
+* `rawSets` String - a JSON string describing first-party sets.
+
+This sets the global list of [first-party
+sets](https://github.com/privacycg/first-party-sets) in the network service.
+Only has an effect if the `FirstPartySets` feature is enabled.
+
+This is marked experimental because first-party sets is a feature still in
+development in Chromium, and as such the API may change without warning.
+
+An example `sets` object is:
+
+```json
+[
+    {
+        "owner": "https://acme-corp-landing-page.example",
+        "members": ["https://acme-corp-online-store.example", "https://acme-corp-network.social"]
+    },
+    {
+        "owner": "https://other-owner.example",
+        "members": ["https://other-owner-news.example"]
+    }
+]
+```
+
 ## Properties
 
 ### `app.accessibilitySupportEnabled` _macOS_ _Windows_
