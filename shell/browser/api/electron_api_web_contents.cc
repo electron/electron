@@ -1419,22 +1419,6 @@ void WebContents::RenderFrameDeleted(
     web_frame->MarkRenderFrameDisposed();
 }
 
-void WebContents::RenderFrameHostChanged(content::RenderFrameHost* old_host,
-                                         content::RenderFrameHost* new_host) {
-  // During cross-origin navigation, a FrameTreeNode will swap out its RFH.
-  // If an instance of WebFrameMain exists, it will need to have its RFH
-  // swapped as well.
-  //
-  // |old_host| can be a nullptr in so we use |new_host| for looking up the
-  // WebFrameMain instance.
-  auto* web_frame =
-      WebFrameMain::FromFrameTreeNodeId(new_host->GetFrameTreeNodeId());
-  if (web_frame) {
-    CHECK_EQ(web_frame->render_frame_host(), old_host);
-    web_frame->UpdateRenderFrameHost(new_host);
-  }
-}
-
 void WebContents::FrameDeleted(int frame_tree_node_id) {
   auto* web_frame = WebFrameMain::FromFrameTreeNodeId(frame_tree_node_id);
   if (web_frame)

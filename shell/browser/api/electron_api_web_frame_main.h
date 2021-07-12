@@ -55,7 +55,7 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
       v8::Local<v8::ObjectTemplate>);
   const char* GetTypeName() override;
 
-  content::RenderFrameHost* render_frame_host() const { return render_frame_; }
+  content::RenderFrameHost* render_frame_host() const;
 
  protected:
   explicit WebFrameMain(content::RenderFrameHost* render_frame);
@@ -71,9 +71,6 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
   // happen when the WebFrameMain v8 handle is GC'd or when a FrameTreeNode
   // is removed.
   void MarkRenderFrameDisposed();
-
-  // Swap out the internal RFH when cross-origin navigation occurs.
-  void UpdateRenderFrameHost(content::RenderFrameHost* rfh);
 
   const mojo::Remote<mojom::ElectronRenderer>& GetRendererApi();
 
@@ -113,8 +110,6 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
   mojo::PendingReceiver<mojom::ElectronRenderer> pending_receiver_;
 
   int frame_tree_node_id_;
-
-  content::RenderFrameHost* render_frame_ = nullptr;
 
   // Whether the RenderFrameHost has been removed and that it should no longer
   // be accessed.

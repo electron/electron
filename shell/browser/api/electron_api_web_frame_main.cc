@@ -13,6 +13,7 @@
 #include "base/logging.h"
 #include "content/browser/renderer_host/frame_tree_node.h"  // nogncheck
 #include "content/public/browser/render_frame_host.h"
+#include "content/public/browser/web_contents.h"
 #include "electron/shell/common/api/api.mojom.h"
 #include "gin/object_template_builder.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
@@ -77,7 +78,7 @@ WebFrameMain* WebFrameMain::FromRenderFrameHost(content::RenderFrameHost* rfh) {
 gin::WrapperInfo WebFrameMain::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 WebFrameMain::WebFrameMain(content::RenderFrameHost* rfh)
-    : frame_tree_node_id_(rfh->GetFrameTreeNodeId()), render_frame_(rfh) {
+    : frame_tree_node_id_(rfh->GetFrameTreeNodeId()) {
   g_web_frame_main_id_map.Get().emplace(frame_tree_node_id_, this);
 }
 
@@ -92,14 +93,15 @@ void WebFrameMain::Destroyed() {
 }
 
 void WebFrameMain::MarkRenderFrameDisposed() {
-  render_frame_ = nullptr;
   render_frame_disposed_ = true;
 }
 
-void WebFrameMain::UpdateRenderFrameHost(content::RenderFrameHost* rfh) {
-  // Should only be called when swapping frames.
-  DCHECK(render_frame_);
-  render_frame_ = rfh;
+content::RenderFrameHost* WebFrameMain::render_frame_host() const {
+  content::WebContents* web_contents =
+      content::WebContents::FromFrameTreeNodeId(frame_tree_node_id_);
+  if (!web_contents)
+    return nullptr;
+  return web_contents->UnsafeFindFrameByFrameTreeNodeId(frame_tree_node_id_);
 }
 
 bool WebFrameMain::CheckRenderFrame() const {
@@ -140,13 +142,13 @@ v8::Local<v8::Promise> WebFrameMain::ExecuteJavaScript(
   }
 
   if (user_gesture) {
-    auto* ftn = content::FrameTreeNode::From(render_frame_);
+    auto* ftn = content::FrameTreeNode::GloballyFindByID(frame_tree_node_id_);
     ftn->UpdateUserActivationState(
         blink::mojom::UserActivationUpdateType::kNotifyActivation,
         blink::mojom::UserActivationNotificationType::kTest);
   }
 
-  render_frame_->ExecuteJavaScriptForTests(
+  render_frame_host()->ExecuteJavaScriptForTests(
       code, base::BindOnce([](gin_helper::Promise<base::Value> promise,
                               base::Value value) { promise.Resolve(value); },
                            std::move(promise)));
@@ -157,7 +159,7 @@ v8::Local<v8::Promise> WebFrameMain::ExecuteJavaScript(
 bool WebFrameMain::Reload() {
   if (!CheckRenderFrame())
     return false;
-  return render_frame_->Reload();
+  return render_frame_host()->Reload();
 }
 
 void WebFrameMain::Send(v8::Isolate* isolate,
@@ -181,8 +183,8 @@ void WebFrameMain::Send(v8::Isolate* isolate,
 const mojo::Remote<mojom::ElectronRenderer>& WebFrameMain::GetRendererApi() {
   if (!renderer_api_) {
     pending_receiver_ = renderer_api_.BindNewPipeAndPassReceiver();
-    if (render_frame_->IsRenderFrameCreated()) {
-      render_frame_->GetRemoteInterfaces()->GetInterface(
+    if (render_frame_host()->IsRenderFrameCreated()) {
+      render_frame_host()->GetRemoteInterfaces()->GetInterface(
           std::move(pending_receiver_));
     }
     renderer_api_.set_disconnect_handler(base::BindOnce(
@@ -235,51 +237,51 @@ int WebFrameMain::FrameTreeNodeID() const {
 std::string WebFrameMain::Name() const {
   if (!CheckRenderFrame())
     return std::string();
-  return render_frame_->GetFrameName();
+  return render_frame_host()->GetFrameName();
 }
 
 base::ProcessId WebFrameMain::OSProcessID() const {
   if (!CheckRenderFrame())
     return -1;
   base::ProcessHandle process_handle =
-      render_frame_->GetProcess()->GetProcess().Handle();
+      render_frame_host()->GetProcess()->GetProcess().Handle();
   return base::GetProcId(process_handle);
 }
 
 int WebFrameMain::ProcessID() const {
   if (!CheckRenderFrame())
     return -1;
-  return render_frame_->GetProcess()->GetID();
+  return render_frame_host()->GetProcess()->GetID();
 }
 
 int WebFrameMain::RoutingID() const {
   if (!CheckRenderFrame())
     return -1;
-  return render_frame_->GetRoutingID();
+  return render_frame_host()->GetRoutingID();
 }
 
 GURL WebFrameMain::URL() const {
   if (!CheckRenderFrame())
     return GURL::EmptyGURL();
-  return render_frame_->GetLastCommittedURL();
+  return render_frame_host()->GetLastCommittedURL();
 }
 
 blink::mojom::PageVisibilityState WebFrameMain::VisibilityState() const {
   if (!CheckRenderFrame())
     return blink::mojom::PageVisibilityState::kHidden;
-  return render_frame_->GetVisibilityState();
+  return render_frame_host()->GetVisibilityState();
 }
 
 content::RenderFrameHost* WebFrameMain::Top() const {
   if (!CheckRenderFrame())
     return nullptr;
-  return render_frame_->GetMainFrame();
+  return render_frame_host()->GetMainFrame();
 }
 
 content::RenderFrameHost* WebFrameMain::Parent() const {
   if (!CheckRenderFrame())
     return nullptr;
-  return render_frame_->GetParent();
+  return render_frame_host()->GetParent();
 }
 
 std::vector<content::RenderFrameHost*> WebFrameMain::Frames() const {
@@ -287,8 +289,8 @@ std::vector<content::RenderFrameHost*> WebFrameMain::Frames() const {
   if (!CheckRenderFrame())
     return frame_hosts;
 
-  for (auto* rfh : render_frame_->GetFramesInSubtree()) {
-    if (rfh->GetParent() == render_frame_)
+  for (auto* rfh : render_frame_host()->GetFramesInSubtree()) {
+    if (rfh->GetParent() == render_frame_host())
       frame_hosts.push_back(rfh);
   }
 
@@ -300,7 +302,7 @@ std::vector<content::RenderFrameHost*> WebFrameMain::FramesInSubtree() const {
   if (!CheckRenderFrame())
     return frame_hosts;
 
-  for (auto* rfh : render_frame_->GetFramesInSubtree()) {
+  for (auto* rfh : render_frame_host()->GetFramesInSubtree()) {
     frame_hosts.push_back(rfh);
   }
 
@@ -309,7 +311,7 @@ std::vector<content::RenderFrameHost*> WebFrameMain::FramesInSubtree() const {
 
 void WebFrameMain::Connect() {
   if (pending_receiver_) {
-    render_frame_->GetRemoteInterfaces()->GetInterface(
+    render_frame_host()->GetRemoteInterfaces()->GetInterface(
         std::move(pending_receiver_));
   }
 }
