@@ -4211,8 +4211,10 @@ describe('BrowserWindow module', () => {
         await enterFullScreen;
         expect(w.isFullScreen()).to.be.true('isFullScreen');
         await delay();
-        const w2 = new BrowserWindow();
-        await delay();
+        const w2 = new BrowserWindow({ show: false });
+        const enterFullScreen2 = emittedOnce(w2, 'enter-full-screen');
+        w2.show();
+        await enterFullScreen2;
         expect(w2.isFullScreen()).to.be.true('isFullScreen');
       });
     });
