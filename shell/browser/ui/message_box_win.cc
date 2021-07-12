@@ -82,10 +82,10 @@ DialogResult ShowTaskDialogWstr(NativeWindow* parent,
                                 int default_id,
                                 int cancel_id,
                                 bool no_link,
-                                const std::wstring& title,
-                                const std::wstring& message,
-                                const std::wstring& detail,
-                                const std::wstring& checkbox_label,
+                                const std::u16string& title,
+                                const std::u16string& message,
+                                const std::u16string& detail,
+                                const std::u16string& checkbox_label,
                                 bool checkbox_checked,
                                 const gfx::ImageSkia& icon) {
   TASKDIALOG_FLAGS flags =
@@ -111,7 +111,7 @@ DialogResult ShowTaskDialogWstr(NativeWindow* parent,
     std::wstring app_name = base::UTF8ToWide(Browser::Get()->GetName());
     config.pszWindowTitle = app_name.c_str();
   } else {
-    config.pszWindowTitle = title.c_str();
+    config.pszWindowTitle = base::as_wcstr(title);
   }
 
   base::win::ScopedHICON hicon;
@@ -139,14 +139,14 @@ DialogResult ShowTaskDialogWstr(NativeWindow* parent,
 
   // If "detail" is empty then don't make message highlighted.
   if (detail.empty()) {
-    config.pszContent = message.c_str();
+    config.pszContent = base::as_wcstr(message);
   } else {
-    config.pszMainInstruction = message.c_str();
-    config.pszContent = detail.c_str();
+    config.pszMainInstruction = base::as_wcstr(message);
+    config.pszContent = base::as_wcstr(detail);
   }
 
   if (!checkbox_label.empty()) {
-    config.pszVerificationText = checkbox_label.c_str();
+    config.pszVerificationText = base::as_wcstr(checkbox_label);
     if (checkbox_checked)
       config.dwFlags |= TDF_VERIFICATION_FLAG_CHECKED;
   }
@@ -190,10 +190,11 @@ DialogResult ShowTaskDialogUTF8(const MessageBoxSettings& settings) {
   for (const auto& button : settings.buttons)
     buttons.push_back(base::UTF8ToWide(button));
 
-  const std::wstring title = base::UTF8ToWide(settings.title);
-  const std::wstring message = base::UTF8ToWide(settings.message);
-  const std::wstring detail = base::UTF8ToWide(settings.detail);
-  const std::wstring checkbox_label = base::UTF8ToWide(settings.checkbox_label);
+  const std::u16string title = base::UTF8ToUTF16(settings.title);
+  const std::u16string message = base::UTF8ToUTF16(settings.message);
+  const std::u16string detail = base::UTF8ToUTF16(settings.detail);
+  const std::u16string checkbox_label =
+      base::UTF8ToUTF16(settings.checkbox_label);
 
   return ShowTaskDialogWstr(
       settings.parent_window, settings.type, buttons, settings.default_id,
@@ -222,9 +223,7 @@ void ShowMessageBox(const MessageBoxSettings& settings,
 void ShowErrorBox(const std::u16string& title, const std::u16string& content) {
   electron::UnresponsiveSuppressor suppressor;
   ShowTaskDialogWstr(nullptr, MessageBoxType::kError, {}, -1, 0, false,
-                     base::UTF8ToWide("Error"), base::UTF16ToWide(title),
-                     base::UTF16ToWide(content), base::UTF8ToWide(""), false,
-                     gfx::ImageSkia());
+                     u"Error", title, content, u"", false, gfx::ImageSkia());
 }
 
 }  // namespace electron

@@ -170,7 +170,7 @@ bool FormatCommandLineString(std::wstring* exe,
   if (!launch_args.empty()) {
     std::u16string joined_launch_args = base::JoinString(launch_args, u" ");
     *exe = base::StringPrintf(L"%ls %ls", exe->c_str(),
-                              base::UTF16ToWide(joined_launch_args).c_str());
+                              base::as_wcstr(joined_launch_args));
   }
 
   return true;
@@ -196,7 +196,7 @@ std::vector<Browser::LaunchItem> GetLoginItemSettingsHelper(
         base::CommandLine::FromString(process_exe_path).GetProgram();
   } else {
     lookup_exe_path =
-        base::CommandLine::FromString(base::UTF16ToWide(options.path))
+        base::CommandLine::FromString(base::as_wcstr(options.path))
             .GetProgram();
   }
 
