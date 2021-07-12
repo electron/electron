@@ -21,6 +21,6 @@ except subprocess.CalledProcessError as e:
         + "' failed with code '"
         + str(e.returncode)
         + "':\n"
-        + e.output
+        + e.output.decode('utf8')
     )
     sys.exit(e.returncode)
