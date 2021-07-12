@@ -80,7 +80,6 @@ steps:
     cd src
     set npm_config_nodedir=%cd%\out\Default\gen\node_headers
     set npm_config_arch=arm64
-    cd electron
     out\Default\electron.exe electron\spec-main --enable-logging --disable-features=CalculateNativeWinOcclusion
   displayName: 'Run Electron Remote based tests'
   env:
