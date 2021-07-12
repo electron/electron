@@ -92,8 +92,8 @@ struct Converter<electron::NativeWindowViews::TitleBarStyle> {
     std::string title_bar_style;
     if (!ConvertFromV8(isolate, val, &title_bar_style))
       return false;
-    if (title_bar_style == "overlay") {
-      *out = TitleBarStyle::kOverlay;
+    if (title_bar_style == "hidden") {
+      *out = TitleBarStyle::kHidden;
     } else {
       return false;
     }
@@ -202,6 +202,7 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
                                               &overlay_symbol_color_);
 
   options.Get(options::kTitleBarStyle, &title_bar_style_);
+  options.Get(options::ktitleBarOverlay, &titlebar_overlay_);
 
   if (title_bar_style_ != TitleBarStyle::kNormal)
     set_has_frame(false);
@@ -424,10 +425,6 @@ void NativeWindowViews::SetGTKDarkThemeEnabled(bool use_dark_theme) {
                            x11::GetAtom("UTF8_STRING"), color);
   }
 #endif
-}
-
-bool NativeWindowViews::IsWindowControlsOverlayEnabled() const {
-  return title_bar_style_ == TitleBarStyle::kOverlay;
 }
 
 void NativeWindowViews::SetContentView(views::View* view) {

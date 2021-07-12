@@ -178,10 +178,10 @@ class NativeWindowViews : public NativeWindow,
 #if defined(OS_WIN)
   enum class TitleBarStyle{
       kNormal,
-      kOverlay,
+      kHidden,
   };
   TitleBarStyle title_bar_style() const { return title_bar_style_; }
-  bool IsWindowControlsOverlayEnabled() const;
+  bool IsWindowControlsOverlayEnabled() const { return titlebar_overlay_; }
   SkColor overlay_color() const { return overlay_color_; }
   SkColor overlay_symbol_color() const { return overlay_symbol_color_; }
 #endif
@@ -189,6 +189,7 @@ class NativeWindowViews : public NativeWindow,
  private:
 #if defined(OS_WIN)
   TitleBarStyle title_bar_style_ = TitleBarStyle::kNormal;
+  bool titlebar_overlay_ = false;
 #endif
 
   // views::WidgetObserver:
