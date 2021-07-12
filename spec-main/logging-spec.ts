@@ -7,8 +7,17 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as uuid from 'uuid';
 
+function isTestingBindingAvailable () {
+  try {
+    process._linkedBinding('electron_common_testing');
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // This test depends on functions that are only available when DCHECK_IS_ON.
-ifdescribe(process._linkedBinding('electron_common_testing'))('logging', () => {
+ifdescribe(isTestingBindingAvailable())('logging', () => {
   it('does not log by default', async () => {
     // ELECTRON_ENABLE_LOGGING is turned on in the appveyor config.
     const { ELECTRON_ENABLE_LOGGING: _, ...envWithoutEnableLogging } = process.env;
