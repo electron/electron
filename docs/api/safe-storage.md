@@ -1,8 +1,10 @@
 # safeStorage
 
-> Allows access to simple encryption and decryption of strings.
+> Allows access to simple encryption and decryption of strings for storage on the local machine.
 
 Process: [Main](../glossary.md#main-process)
+
+This module protects data stored on disk from being accessed by other applications or users with full disk access.
 
 Note that on Mac, access to the system Keychain is required and
 these calls can block the current thread to collect user input.

@@ -46,6 +46,8 @@ describe('safeStorage module', () => {
       expect(() => {
         safeStorage.decryptString(plaintextBuffer);
       }).not.to.throw(Error);
+
+      expect(safeStorage.decryptString(plaintextBuffer)).to.equal('I am unencoded!');
     });
 
     it('non-buffer input should throw', () => {
