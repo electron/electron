@@ -987,7 +987,7 @@ describe('<webview> tag', function () {
 
       for (;;) {
         const foundInPage = waitForEvent(webview, 'found-in-page');
-        const requestId = webview.findInPage('virtual', {findNext: isFirstRequest});
+        const requestId = webview.findInPage('virtual', { findNext: isFirstRequest });
         const event = await foundInPage;
         isFirstRequest = false;
 
