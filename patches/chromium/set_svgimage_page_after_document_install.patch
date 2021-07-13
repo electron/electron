@@ -1,0 +1,48 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Fredrik=20S=C3=B6derqvist?= <fs@opera.com>
+Date: Fri, 9 Jul 2021 08:44:55 +0000
+Subject: Set SVGImage::page_ after document install
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+We can end up having the associated ImageResource call
+SVGImage::ResetAnimation() before the Document has been associated with
+the SVGImage's LocalFrame, but after the link to the initial Document
+was severed, if a GC is triggered within that window and ends up
+collecting the last observer of the ImageResource.
+
+By assigning |SVGImage::page_| after the installing the document, we
+close this hole since SVGImage::RootElement() (called by
+SVGImage::ResetAnimation()) will now observe a null Page and return null
+without attempting to dereference the document.
+
+Bug: 1216190
+Change-Id: I26e08848e5b9bd52e3377841eee35e4acc03d320
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3010140
+Reviewed-by: Stephen Chenney <schenney@chromium.org>
+Commit-Queue: Fredrik Söderquist <fs@opera.com>
+Cr-Commit-Position: refs/heads/master@{#899922}
+
+diff --git a/third_party/blink/renderer/core/svg/graphics/svg_image.cc b/third_party/blink/renderer/core/svg/graphics/svg_image.cc
+index 2ce8a78b3537c72206e2d3e6d55f9cc1fc5d3208..0dec91614edb0caa6f8e473f027c3be7b8bf1e4e 100644
+--- a/third_party/blink/renderer/core/svg/graphics/svg_image.cc
++++ b/third_party/blink/renderer/core/svg/graphics/svg_image.cc
+@@ -830,12 +830,15 @@ Image::SizeAvailability SVGImage::DataChanged(bool all_data_received) {
+   // SVG Images are transparent.
+   frame->View()->SetBaseBackgroundColor(Color::kTransparent);
+ 
+-  page_ = page;
+-
+   TRACE_EVENT0("blink", "SVGImage::dataChanged::load");
+ 
+   frame->ForceSynchronousDocumentInstall("image/svg+xml", Data());
+ 
++  // Set up our Page reference after installing our document. This avoids
++  // tripping on a non-existing (null) Document if a GC is triggered during the
++  // set up and ends up collecting the last owner/observer of this image.
++  page_ = page;
++
+   // Intrinsic sizing relies on computed style (e.g. font-size and
+   // writing-mode).
+   frame->GetDocument()->UpdateStyleAndLayoutTree();
