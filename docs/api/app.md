@@ -161,6 +161,8 @@ Returns:
   [`NSUserActivity.activityType`][activity-type].
 * `userInfo` unknown - Contains app-specific state stored by the activity on
   another device.
+* `details` Object
+  * `webpageURL` String - A string identifying the URL of the webpage accessed by the activity on another device.
 
 Emitted during [Handoff][handoff] when an activity from a different device wants
 to be resumed. You should call `event.preventDefault()` if you want to handle
