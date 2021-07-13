@@ -927,6 +927,10 @@ describe('app module', () => {
         expect(app.getPath('recent')).to.equal('C:\\fake-path');
       });
     }
+
+    it('uses the app name in getPath(userData)', () => {
+      expect(app.getPath('userData')).to.include(app.name);
+    });
   });
 
   describe('setPath(name, path)', () => {

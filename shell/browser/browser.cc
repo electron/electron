@@ -136,25 +136,25 @@ void Browser::Shutdown() {
 }
 
 std::string Browser::GetVersion() const {
-  std::string ret = GetOverriddenApplicationVersion();
+  std::string ret = OverriddenApplicationVersion();
   if (ret.empty())
     ret = GetExecutableFileVersion();
   return ret;
 }
 
 void Browser::SetVersion(const std::string& version) {
-  OverrideApplicationVersion(version);
+  OverriddenApplicationVersion() = version;
 }
 
 std::string Browser::GetName() const {
-  std::string ret = GetOverriddenApplicationName();
+  std::string ret = OverriddenApplicationName();
   if (ret.empty())
     ret = GetExecutableFileProductName();
   return ret;
 }
 
 void Browser::SetName(const std::string& name) {
-  OverrideApplicationName(name);
+  OverriddenApplicationName() = name;
 }
 
 int Browser::GetBadgeCount() {
