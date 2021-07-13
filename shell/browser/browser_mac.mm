@@ -277,10 +277,11 @@ void Browser::DidFailToContinueUserActivity(const std::string& type,
 }
 
 bool Browser::ContinueUserActivity(const std::string& type,
-                                   base::DictionaryValue user_info) {
+                                   base::DictionaryValue user_info,
+                                   base::DictionaryValue details) {
   bool prevent_default = false;
   for (BrowserObserver& observer : observers_)
-    observer.OnContinueUserActivity(&prevent_default, type, user_info);
+    observer.OnContinueUserActivity(&prevent_default, type, user_info, details);
   return prevent_default;
 }
 

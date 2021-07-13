@@ -154,13 +154,16 @@ static NSDictionary* UNNotificationResponseToNSDictionary(
 #endif
               restorationHandler {
   std::string activity_type(base::SysNSStringToUTF8(userActivity.activityType));
+  NSURL* url = userActivity.webpageURL;
+  NSDictionary* details = url ? @{@"webpageURL" : [url absoluteString]} : @{};
   if (!userActivity.userInfo)
     return NO;
 
   electron::Browser* browser = electron::Browser::Get();
   return browser->ContinueUserActivity(
              activity_type,
-             electron::NSDictionaryToDictionaryValue(userActivity.userInfo))
+             electron::NSDictionaryToDictionaryValue(userActivity.userInfo),
+             electron::NSDictionaryToDictionaryValue(details))
              ? YES
              : NO;
 }
