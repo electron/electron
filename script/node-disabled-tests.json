@@ -15,6 +15,8 @@
   "parallel/test-child-process-stdio-overlapped",
   "parallel/test-cli-node-print-help",
   "parallel/test-code-cache",
+  "parallel/test-cluster-bind-privileged-port",
+  "parallel/test-cluster-shared-handle-bind-privileged-port",
   "parallel/test-crypto-aes-wrap",
   "parallel/test-crypto-authenticated-stream",
   "parallel/test-crypto-async-sign-verify",
