@@ -783,4 +783,46 @@ describe('<webview> tag', function () {
       })`);
     });
   });
+
+  describe('found-in-page event', () => {
+    let w: BrowserWindow;
+    beforeEach(async () => {
+      w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, webviewTag: true, contextIsolation: false } });
+      await w.loadURL('about:blank');
+    });
+    afterEach(closeAllWindows);
+
+    it('emits when a request is made', async () => {
+      loadWebView(w.webContents, {
+        src: `file://${fixtures}/pages/content.html`
+      });
+      const [, webViewContents] = await emittedOnce(app, 'web-contents-created');
+      // TODO(deepak1556): With https://codereview.chromium.org/2836973002
+      // focus of the webContents is required when triggering the api.
+      // Remove this workaround after determining the cause for
+      // incorrect focus.
+      webViewContents.focus();
+      const activeMatchOrdinal = [];
+      let isFirstRequest = true;
+
+      for (;;) {
+        const foundInPage = emittedOnce(webViewContents, 'found-in-page');
+        const requestId = webViewContents.findInPage('virtual', {findNext: isFirstRequest});
+        const [, result] = await foundInPage;
+        isFirstRequest = false;
+
+        expect(result.requestId).to.equal(requestId);
+        expect(result.matches).to.equal(3);
+
+        activeMatchOrdinal.push(result.activeMatchOrdinal);
+
+        if (result.activeMatchOrdinal === result.matches) {
+          break;
+        }
+      }
+
+      expect(activeMatchOrdinal).to.deep.equal([1, 2, 3]);
+      webViewContents.stopFindInPage('clearSelection');
+    });
+  });
 });
