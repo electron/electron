@@ -37,6 +37,13 @@ tools and resources.
 
 ## Supported Versions
 
+_**Note:** Beginning in September 2021 with Electron 15, the Electron team
+will temporarily support the latest **four** stable major versions. This
+extended support is intended to help Electron developers transition to
+the [new eight week release cadence](https://electronjs.org/blog/8-week-cadence), and will continue until May 2022, with
+the release of Electron 19. At that time, the Electron team will drop support
+back to the latest three stable major versions._
+
 The latest three *stable* major versions are supported by the Electron team.
 For example, if the latest release is 6.1.x, then the 5.0.x as well
 as the 4.2.x series are supported.  We only support the latest minor release
