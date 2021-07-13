@@ -1,14 +1,10 @@
 import * as cp from 'child_process';
 import * as path from 'path';
-import { app, safeStorage } from 'electron/main';
+import { safeStorage } from 'electron/main';
 import { expect } from 'chai';
 import { emittedOnce } from './events-helpers';
 
 describe('safeStorage module', () => {
-  afterEach(() => {
-    app.quit();
-  });
-
   describe('SafeStorage.isEncryptionAvailable()', () => {
     it('should return true when encryption key is available', () => {
       expect(safeStorage.isEncryptionAvailable()).to.equal(true);

@@ -272,7 +272,7 @@ void SystemNetworkContextManager::OnNetworkServiceCreated(
     network_crypt_config->product_name = config->product_name;
     network_crypt_config->store = config->store;
     network_crypt_config->should_use_preference = config->should_use_preference;
-    network_crypt_config->user_data_path = config->user_dath_path;
+    network_crypt_config->user_data_path = config->user_data_path;
 
     network_service->SetCryptConfig(std::move(network_crypt_config));
 
