@@ -975,9 +975,7 @@ describe('<webview> tag', function () {
 
   describe('found-in-page event', () => {
     it('emits when a request is made', async () => {
-      const didFinishLoad = waitForEvent(webview, 'did-finish-load');
-      loadWebView(webview, { src: `file://${fixtures}/pages/content.html` });
-      await didFinishLoad;
+      await loadWebView(webview, { src: `file://${fixtures}/pages/content.html` });
       // TODO(deepak1556): With https://codereview.chromium.org/2836973002
       // focus of the webContents is required when triggering the api.
       // Remove this workaround after determining the cause for
@@ -985,11 +983,13 @@ describe('<webview> tag', function () {
       webview.focus();
 
       const activeMatchOrdinal = [];
+      let isFirstRequest = true;
 
       for (;;) {
         const foundInPage = waitForEvent(webview, 'found-in-page');
-        const requestId = webview.findInPage('virtual');
+        const requestId = webview.findInPage('virtual', {findNext: isFirstRequest});
         const event = await foundInPage;
+        isFirstRequest = false;
 
         expect(event.result.requestId).to.equal(requestId);
         expect(event.result.matches).to.equal(3);
