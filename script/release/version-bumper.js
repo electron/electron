@@ -165,7 +165,7 @@ async function updateWinRC (components) {
 // updates support.md file with new semver values (stable only)
 async function updateSupported (version, filePath) {
   const v = parseInt(version);
-  const newVersions = [`* ${v}.x.y`, `* ${v - 1}.x.y`, `* ${v - 2}.x.y`];
+  const newVersions = [`* ${v}.x.y`, `* ${v - 1}.x.y`, `* ${v - 2}.x.y`, `* ${v - 3}`];
   const contents = await readFile(filePath, 'utf8');
   const previousVersions = contents.split('\n').filter((elem) => {
     return (/[^\n]*\.x\.y[^\n]*/).test(elem);
