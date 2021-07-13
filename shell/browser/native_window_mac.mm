@@ -1689,7 +1689,7 @@ bool NativeWindowMac::IsActive() const {
 }
 
 void NativeWindowMac::ReorderButtonsView() {
-  if (buttons_view_) {
+  if (buttons_view_ && !IsFullscreen()) {
     [buttons_view_ removeFromSuperview];
     [[window_ contentView] addSubview:buttons_view_];
   }
