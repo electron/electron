@@ -25,10 +25,10 @@ Commit-Queue: Fredrik Söderquist <fs@opera.com>
 Cr-Commit-Position: refs/heads/master@{#899922}
 
 diff --git a/third_party/blink/renderer/core/svg/graphics/svg_image.cc b/third_party/blink/renderer/core/svg/graphics/svg_image.cc
-index b23ad2192bec4d1cac9d704074d12c9e00d4d2f5..ff2bf69be27f0afcb6a9909e716495e8d4a127ef 100644
+index 0742d1e2e78b6bb0cd2582afd2133bb5eaf56387..96768e7fed1ba36ef5bba48d540f76e8ce50a608 100644
 --- a/third_party/blink/renderer/core/svg/graphics/svg_image.cc
 +++ b/third_party/blink/renderer/core/svg/graphics/svg_image.cc
-@@ -851,12 +851,15 @@ Image::SizeAvailability SVGImage::DataChanged(bool all_data_received) {
+@@ -853,12 +853,15 @@ Image::SizeAvailability SVGImage::DataChanged(bool all_data_received) {
    // SVG Images are transparent.
    frame->View()->SetBaseBackgroundColor(Color::kTransparent);
  
