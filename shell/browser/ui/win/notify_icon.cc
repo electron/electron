@@ -8,6 +8,7 @@
 
 #include "base/logging.h"
 #include "base/strings/string_number_conversions.h"
+#include "base/strings/string_util_win.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/windows_version.h"
 #include "shell/browser/ui/win/notify_icon_host.h"
@@ -150,10 +151,8 @@ void NotifyIcon::DisplayBalloon(const BalloonOptions& options) {
   NOTIFYICONDATA icon_data;
   InitIconData(&icon_data);
   icon_data.uFlags |= NIF_INFO;
-  wcsncpy_s(icon_data.szInfoTitle, base::UTF16ToWide(options.title).c_str(),
-            _TRUNCATE);
-  wcsncpy_s(icon_data.szInfo, base::UTF16ToWide(options.content).c_str(),
-            _TRUNCATE);
+  wcsncpy_s(icon_data.szInfoTitle, base::as_wcstr(options.title), _TRUNCATE);
+  wcsncpy_s(icon_data.szInfo, base::as_wcstr(options.content), _TRUNCATE);
   icon_data.uTimeout = 0;
   icon_data.hBalloonIcon = options.icon;
   icon_data.dwInfoFlags = ConvertIconType(options.icon_type);

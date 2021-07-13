@@ -11,7 +11,7 @@
 
 namespace node {
 class Environment;
-}  // namespace node
+}
 
 namespace electron {
 

@@ -14,7 +14,7 @@
 
 namespace electron {
 class NativeWindow;
-}  // namespace electron
+}
 
 namespace certificate_trust {
 

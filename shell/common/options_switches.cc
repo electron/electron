@@ -194,6 +194,8 @@ const char kEnableWebSQL[] = "enableWebSQL";
 
 const char kEnablePreferredSizeMode[] = "enablePreferredSizeMode";
 
+const char ktitleBarOverlay[] = "titleBarOverlay";
+
 }  // namespace options
 
 namespace switches {

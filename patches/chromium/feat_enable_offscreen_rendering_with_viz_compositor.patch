@@ -81,7 +81,7 @@ index 1026b739d283f0fc252fa2af83a6d4cf51bc8553..fe562ab60ce98b8bb0c5080a6428deb3
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 7692a2aaf9e4aced560ee4af170e967b7d612eb9..85a2af12aee6eca62b624ae68bccf824750b367b 100644
+index 4e93b8609553ec903fe9a7b48019c6c7e0390bf7..5d67d1c65ed158099372e7e4d263fbf59dfad1af 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -137,6 +137,8 @@ viz_component("service") {
@@ -108,7 +108,7 @@ index 77d463e683d8b8d3a202681a6884eacaab79d70d..05d51cb2637d34c073cd0025e3658036
  
  }  // namespace viz
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.cc b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-index bd64ee19f71691bfaf9be2a523b5f5efbbff5066..dc82c4653b2fe22de0ed4ab73c06b85d8f3ecd35 100644
+index 827084542417d45c9db8082e2c2537e7bdb8ff7f..927b48bbd855fdaebe2b26b8efbb7c48fec0c1a6 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.cc
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.cc
 @@ -25,6 +25,7 @@
@@ -127,7 +127,7 @@ index bd64ee19f71691bfaf9be2a523b5f5efbbff5066..dc82c4653b2fe22de0ed4ab73c06b85d
  #include "ui/base/ui_base_switches.h"
  #include "ui/gl/gl_context.h"
  #include "ui/gl/init/gl_factory.h"
-@@ -131,7 +133,8 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
+@@ -130,7 +132,8 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
      mojom::DisplayClient* display_client,
      DisplayCompositorMemoryAndTaskController* gpu_dependency,
      const RendererSettings& renderer_settings,
@@ -137,7 +137,7 @@ index bd64ee19f71691bfaf9be2a523b5f5efbbff5066..dc82c4653b2fe22de0ed4ab73c06b85d
  #if BUILDFLAG(IS_CHROMEOS_ASH)
    if (surface_handle == gpu::kNullSurfaceHandle)
      return std::make_unique<OutputSurfaceUnified>();
-@@ -143,7 +146,7 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
+@@ -142,7 +145,7 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
  
    if (!gpu_compositing) {
      output_surface = std::make_unique<SoftwareOutputSurface>(
@@ -146,7 +146,7 @@ index bd64ee19f71691bfaf9be2a523b5f5efbbff5066..dc82c4653b2fe22de0ed4ab73c06b85d
    } else if (renderer_settings.use_skia_renderer) {
      DCHECK(gpu_dependency);
      {
-@@ -252,10 +255,22 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
+@@ -251,10 +254,22 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
  std::unique_ptr<SoftwareOutputDevice>
  OutputSurfaceProviderImpl::CreateSoftwareOutputDeviceForPlatform(
      gpu::SurfaceHandle surface_handle,
@@ -497,7 +497,7 @@ index 599b06c1765ef4ddbfeb2fd96e0875098f7c6ae1..2151fc8aa710162a3870639bd6e952df
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index 6ea2c624e1e31414bf8765582ab89dd0551c1111..07248135401dc29d6747c91edd027b0abb433e3e 100644
+index be4b04dc525a548276eed50cbfc83603b1f2095b..d9995ac8b5e832ac329ce113aa837a6a587c39bd 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 @@ -47,7 +47,8 @@ RootCompositorFrameSinkImpl::Create(
@@ -511,7 +511,7 @@ index 6ea2c624e1e31414bf8765582ab89dd0551c1111..07248135401dc29d6747c91edd027b0a
    // Creating output surface failed. The host can send a new request, possibly
    // with a different compositing mode.
 diff --git a/content/browser/compositor/viz_process_transport_factory.cc b/content/browser/compositor/viz_process_transport_factory.cc
-index 83a23404d1c029af6f7e7aa695bfe60e71d86fde..eef92d3366715774670ebcdcb76ad84ddd8a4ed0 100644
+index 50ff2c9facc2a2155bd0882924335294277fe3b6..ef7707d5195bfba3675e5aed6f2bc3b63bec51cf 100644
 --- a/content/browser/compositor/viz_process_transport_factory.cc
 +++ b/content/browser/compositor/viz_process_transport_factory.cc
 @@ -395,8 +395,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
@@ -532,7 +532,7 @@ index 83a23404d1c029af6f7e7aa695bfe60e71d86fde..eef92d3366715774670ebcdcb76ad84d
        compositor_data.display_client->GetBoundRemote(resize_task_runner_);
  
 diff --git a/services/viz/privileged/mojom/compositing/display_private.mojom b/services/viz/privileged/mojom/compositing/display_private.mojom
-index 03ad7c39128fc408d576a23e595021ffa3238423..de1c1f6984f8d81081643415d1724bce333ca940 100644
+index 409115f95787e3cf037f762a33368b173441012f..45a7a1607b8711420ba4e1a5455a61fb7d8b75ac 100644
 --- a/services/viz/privileged/mojom/compositing/display_private.mojom
 +++ b/services/viz/privileged/mojom/compositing/display_private.mojom
 @@ -90,7 +90,6 @@ interface DisplayClient {
@@ -567,10 +567,10 @@ index 6b7fbb6cf13dc8ee6ade0878a9a2c1efc5d4d3f1..e2af75168cb914a7b3b4a6c9b6a28549
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index 5bf36e2873bfb7dfa46ca6f010c780f1f02235ac..0378d1246930c3dc4ac8b4d1886fc5dc497dcb66 100644
+index 3c226fe6c61f042942ac6c01e08f95209536470b..67a8a6fd29e93268f960d8e3dde19d563877b09a 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
-@@ -81,6 +81,7 @@ class DisplayPrivate;
+@@ -80,6 +80,7 @@ class DisplayPrivate;
  class ExternalBeginFrameController;
  }  // namespace mojom
  class ContextProvider;
@@ -578,7 +578,7 @@ index 5bf36e2873bfb7dfa46ca6f010c780f1f02235ac..0378d1246930c3dc4ac8b4d1886fc5dc
  class HostFrameSinkManager;
  class LocalSurfaceId;
  class RasterContextProvider;
-@@ -137,6 +138,16 @@ class COMPOSITOR_EXPORT ContextFactory {
+@@ -136,6 +137,16 @@ class COMPOSITOR_EXPORT ContextFactory {
    virtual viz::HostFrameSinkManager* GetHostFrameSinkManager() = 0;
  };
  
@@ -595,7 +595,7 @@ index 5bf36e2873bfb7dfa46ca6f010c780f1f02235ac..0378d1246930c3dc4ac8b4d1886fc5dc
  // Compositor object to take care of GPU painting.
  // A Browser compositor object is responsible for generating the final
  // displayable form of pixels comprising a single widget's contents. It draws an
-@@ -172,6 +183,9 @@ class COMPOSITOR_EXPORT Compositor : public cc::LayerTreeHostClient,
+@@ -171,6 +182,9 @@ class COMPOSITOR_EXPORT Compositor : public cc::LayerTreeHostClient,
    // Schedules a redraw of the layer tree associated with this compositor.
    void ScheduleDraw();
  
@@ -605,7 +605,7 @@ index 5bf36e2873bfb7dfa46ca6f010c780f1f02235ac..0378d1246930c3dc4ac8b4d1886fc5dc
    // Sets the root of the layer tree drawn by this Compositor. The root layer
    // must have no parent. The compositor's root layer is reset if the root layer
    // is destroyed. NULL can be passed to reset the root layer, in which case the
-@@ -443,6 +457,8 @@ class COMPOSITOR_EXPORT Compositor : public cc::LayerTreeHostClient,
+@@ -442,6 +456,8 @@ class COMPOSITOR_EXPORT Compositor : public cc::LayerTreeHostClient,
  
    std::unique_ptr<PendingBeginFrameArgs> pending_begin_frame_args_;
  

@@ -18,10 +18,10 @@
     esutils "^2.0.2"
     js-tokens "^4.0.0"
 
-"@electron/docs-parser@^0.11.0":
-  version "0.11.0"
-  resolved "https://registry.yarnpkg.com/@electron/docs-parser/-/docs-parser-0.11.0.tgz#182a9732d2fc7b40e3f506d3ab1a06270cdae6e4"
-  integrity sha512-i+OSWXXchoKVorR6cANqPKYJ1ccLAp+YCPTB+IJVWZ+Xtp6V2VXqLsjoy4mD32ss4CdX/6MLX62pb2sjGmmR6w==
+"@electron/docs-parser@^0.12.1":
+  version "0.12.1"
+  resolved "https://registry.yarnpkg.com/@electron/docs-parser/-/docs-parser-0.12.1.tgz#254c324b5953c67cdcce0a8902736778a1788742"
+  integrity sha512-E9/GjNVlFzBM2MNOoLjiKSE0xAMM3KsxvzMKmMeORY7aDbalObFm23XCh8DC8Jn/hfh6BzgVPF3OZO9hKvs5nw==
   dependencies:
     "@types/markdown-it" "^10.0.0"
     chai "^4.2.0"
@@ -33,10 +33,10 @@
     ora "^4.0.3"
     pretty-ms "^5.1.0"
 
-"@electron/typescript-definitions@^8.9.0":
-  version "8.9.0"
-  resolved "https://registry.yarnpkg.com/@electron/typescript-definitions/-/typescript-definitions-8.9.0.tgz#4a446ef875b55f6d3736df2a33bb19257b8146aa"
-  integrity sha512-26ze33/Ip2ivpCMHGRMLR+Dcm7DLNzPJL0iLJNonqPu2ikqnwJce1d2vkTDBBLzAiqUV3litVNTpnNS2Zg42MA==
+"@electron/typescript-definitions@^8.9.4":
+  version "8.9.4"
+  resolved "https://registry.yarnpkg.com/@electron/typescript-definitions/-/typescript-definitions-8.9.4.tgz#ec5c47aad3d45f2da2c40e22536720a9de64c2aa"
+  integrity sha512-KL3ohLe4D5lhJagBEj1Jpoh4BBiJMoCMlc6RSLPT+DaP0odgjEK+Ky6whRDW1cDDpgaSfMisdbN+CdOx3Y7JOg==
   dependencies:
     "@types/node" "^11.13.7"
     chalk "^2.4.2"

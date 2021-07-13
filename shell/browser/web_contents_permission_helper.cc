@@ -104,8 +104,8 @@ void WebContentsPermissionHelper::RequestFullscreenPermission(
 void WebContentsPermissionHelper::RequestMediaAccessPermission(
     const content::MediaStreamRequest& request,
     content::MediaResponseCallback response_callback) {
-  auto callback = base::AdaptCallbackForRepeating(base::BindOnce(
-      &MediaAccessAllowed, request, std::move(response_callback)));
+  auto callback = base::BindOnce(&MediaAccessAllowed, request,
+                                 std::move(response_callback));
 
   base::DictionaryValue details;
   auto media_types = std::make_unique<base::ListValue>();

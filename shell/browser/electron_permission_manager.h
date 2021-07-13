@@ -10,8 +10,12 @@
 
 #include "base/callback.h"
 #include "base/containers/id_map.h"
-#include "base/values.h"
 #include "content/public/browser/permission_controller_delegate.h"
+
+namespace base {
+class DictionaryValue;
+class Value;
+}  // namespace base
 
 namespace content {
 class WebContents;

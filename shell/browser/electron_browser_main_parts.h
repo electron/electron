@@ -6,9 +6,9 @@
 #define SHELL_BROWSER_ELECTRON_BROWSER_MAIN_PARTS_H_
 
 #include <memory>
+#include <string>
 
 #include "base/callback.h"
-#include "base/metrics/field_trial.h"
 #include "base/timer/timer.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_main_parts.h"
@@ -19,8 +19,12 @@
 #include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/views/layout/layout_provider.h"
 
-class BrowserProcess;
+class BrowserProcessImpl;
 class IconManager;
+
+namespace base {
+class FieldTrialList;
+}
 
 #if defined(USE_AURA)
 namespace wm {
@@ -38,15 +42,17 @@ class GtkUiPlatform;
 }
 #endif
 
+namespace device {
+class GeolocationManager;
+}
+
 namespace electron {
 
-class ElectronBrowserContext;
 class Browser;
 class ElectronBindings;
 class JavascriptEnvironment;
 class NodeBindings;
 class NodeEnvironment;
-class BridgeTaskRunner;
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 class ElectronExtensionsClient;
@@ -81,6 +87,10 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
   // Returns the connection to GeolocationControl which can be
   // used to enable the location services once per client.
   device::mojom::GeolocationControl* GetGeolocationControl();
+
+#if defined(OS_MAC)
+  device::GeolocationManager* GetGeolocationManager();
+#endif
 
   // Returns handle to the class responsible for extracting file icons.
   IconManager* GetIconManager();
@@ -159,6 +169,10 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
 #endif
 
   mojo::Remote<device::mojom::GeolocationControl> geolocation_control_;
+
+#if defined(OS_MAC)
+  std::unique_ptr<device::GeolocationManager> geolocation_manager_;
+#endif
 
   static ElectronBrowserMainParts* self_;
 

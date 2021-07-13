@@ -449,7 +449,7 @@ describe('ipc module', () => {
       });
     });
 
-    const generateTests = (title: string, postMessage: (contents: WebContents) => typeof WebContents.prototype.postMessage) => {
+    const generateTests = (title: string, postMessage: (contents: WebContents) => WebContents['postMessage']) => {
       describe(title, () => {
         it('sends a message', async () => {
           const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });

@@ -11,6 +11,7 @@
 #include "base/files/file_path.h"
 #include "base/path_service.h"
 #include "base/process/process_handle.h"
+#include "base/process/process_metrics.h"
 #include "content/public/renderer/render_frame.h"
 #include "electron/buildflags/buildflags.h"
 #include "shell/common/api/electron_bindings.h"
@@ -252,13 +253,6 @@ void ElectronSandboxedRendererClient::WillReleaseScriptContext(
   v8::HandleScope handle_scope(isolate);
   v8::Context::Scope context_scope(context);
   InvokeHiddenCallback(context, kLifecycleKey, "onExit");
-}
-
-bool ElectronSandboxedRendererClient::ShouldFork(blink::WebLocalFrame* frame,
-                                                 const GURL& url,
-                                                 const std::string& http_method,
-                                                 bool is_server_redirect) {
-  return true;
 }
 
 }  // namespace electron

@@ -352,8 +352,8 @@ describe('web security', () => {
       expect(r).to.equal('WebAssembly.instantiate(): Wasm code generation disallowed by embedder');
     });
 
-    it('wasm codegen is allowed with "wasm-eval" csp', async () => {
-      const r = await loadWasm("'wasm-eval'");
+    it('wasm codegen is allowed with "wasm-unsafe-eval" csp', async () => {
+      const r = await loadWasm("'wasm-unsafe-eval'");
       expect(r).to.equal('loaded');
     });
   });
@@ -679,6 +679,26 @@ describe('chromium features', () => {
       w.loadFile(path.join(fixturesPath, 'pages', 'geolocation', 'index.html'));
       const [, channel] = await message;
       expect(channel).to.equal('success', 'unexpected response from geolocation api');
+    });
+  });
+
+  describe('web workers', () => {
+    let appProcess: ChildProcess.ChildProcessWithoutNullStreams | undefined;
+
+    afterEach(() => {
+      if (appProcess && !appProcess.killed) {
+        appProcess.kill();
+        appProcess = undefined;
+      }
+    });
+
+    it('Worker with nodeIntegrationInWorker has access to self.module.paths', async () => {
+      const appPath = path.join(__dirname, 'fixtures', 'apps', 'self-module-paths');
+
+      appProcess = ChildProcess.spawn(process.execPath, [appPath]);
+
+      const [code] = await emittedOnce(appProcess, 'exit');
+      expect(code).to.equal(0);
     });
   });
 

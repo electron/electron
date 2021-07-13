@@ -10,11 +10,11 @@
 
 #include "content/public/browser/javascript_dialog_manager.h"
 
-namespace electron {
-
-namespace api {
+namespace content {
 class WebContents;
 }
+
+namespace electron {
 
 class ElectronJavaScriptDialogManager
     : public content::JavaScriptDialogManager {

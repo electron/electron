@@ -33,7 +33,6 @@ namespace electron {
 namespace api {
 
 class Menu;
-class NativeImage;
 
 class Tray : public gin::Wrappable<Tray>,
              public gin_helper::EventEmitterMixin<Tray>,

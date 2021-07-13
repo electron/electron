@@ -100,6 +100,7 @@
 #include "shell/common/api/api.mojom.h"
 #include "shell/common/application_info.h"
 #include "shell/common/electron_paths.h"
+#include "shell/common/logging.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/platform_util.h"
 #include "third_party/blink/public/common/loader/url_loader_throttle.h"
@@ -565,6 +566,15 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
   }
 #endif
 
+  // The zygote process is booted before JS runs, so DIR_USER_DATA isn't usable
+  // at that time. It doesn't need --user-data-dir to be correct anyway, since
+  // the zygote itself doesn't access anything in that directory.
+  if (process_type != ::switches::kZygoteProcess) {
+    base::FilePath user_data_dir;
+    if (base::PathService::Get(chrome::DIR_USER_DATA, &user_data_dir))
+      command_line->AppendSwitchPath(::switches::kUserDataDir, user_data_dir);
+  }
+
   if (process_type == ::switches::kUtilityProcess ||
       process_type == ::switches::kRendererProcess) {
     // Copy following switches to child process.
@@ -817,6 +827,11 @@ bool ElectronBrowserClient::ArePersistentMediaDeviceIDsAllowed(
   return true;
 }
 
+base::FilePath ElectronBrowserClient::GetLoggingFileName(
+    const base::CommandLine& cmd_line) {
+  return logging::GetLogFileName(cmd_line);
+}
+
 void ElectronBrowserClient::SiteInstanceDeleting(
     content::SiteInstance* site_instance) {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -890,7 +905,13 @@ ElectronBrowserClient::GetSystemNetworkContext() {
 std::unique_ptr<content::BrowserMainParts>
 ElectronBrowserClient::CreateBrowserMainParts(
     const content::MainFunctionParams& params) {
-  return std::make_unique<ElectronBrowserMainParts>(params);
+  auto browser_main_parts = std::make_unique<ElectronBrowserMainParts>(params);
+
+#if defined(OS_MAC)
+  browser_main_parts_ = browser_main_parts.get();
+#endif
+
+  return browser_main_parts;
 }
 
 void ElectronBrowserClient::WebNotificationAllowed(
@@ -963,7 +984,7 @@ void HandleExternalProtocolInUI(
 
 bool ElectronBrowserClient::HandleExternalProtocol(
     const GURL& url,
-    content::WebContents::OnceGetter web_contents_getter,
+    content::WebContents::Getter web_contents_getter,
     int child_id,
     int frame_tree_node_id,
     content::NavigationUIData* navigation_data,
@@ -1019,12 +1040,10 @@ ElectronBrowserClient::GetPlatformNotificationService(
 }
 
 base::FilePath ElectronBrowserClient::GetDefaultDownloadDirectory() {
-  // ~/Downloads
-  base::FilePath path;
-  if (base::PathService::Get(base::DIR_HOME, &path))
-    path = path.Append(FILE_PATH_LITERAL("Downloads"));
-
-  return path;
+  base::FilePath download_path;
+  if (base::PathService::Get(chrome::DIR_DEFAULT_DOWNLOADS, &download_path))
+    return download_path;
+  return base::FilePath();
 }
 
 scoped_refptr<network::SharedURLLoaderFactory>
@@ -1046,7 +1065,7 @@ void ElectronBrowserClient::OnNetworkServiceCreated(
 std::vector<base::FilePath>
 ElectronBrowserClient::GetNetworkContextsParentDirectory() {
   base::FilePath user_data_dir;
-  base::PathService::Get(DIR_USER_DATA, &user_data_dir);
+  base::PathService::Get(chrome::DIR_USER_DATA, &user_data_dir);
   DCHECK(!user_data_dir.empty());
 
   return {user_data_dir};
@@ -1439,7 +1458,7 @@ std::string ElectronBrowserClient::GetApplicationLocale() {
 
 base::FilePath ElectronBrowserClient::GetFontLookupTableCacheDir() {
   base::FilePath user_data_dir;
-  base::PathService::Get(DIR_USER_DATA, &user_data_dir);
+  base::PathService::Get(chrome::DIR_USER_DATA, &user_data_dir);
   DCHECK(!user_data_dir.empty());
   return user_data_dir.Append(FILE_PATH_LITERAL("FontLookupTableCache"));
 }
@@ -1624,6 +1643,14 @@ void ElectronBrowserClient::RegisterBrowserInterfaceBindersForServiceWorker(
         map) {
   map->Add<blink::mojom::BadgeService>(
       base::BindRepeating(&BindBadgeServiceForServiceWorker));
+}
+
+device::GeolocationManager* ElectronBrowserClient::GetGeolocationManager() {
+#if defined(OS_MAC)
+  return browser_main_parts_->GetGeolocationManager();
+#else
+  return nullptr;
+#endif
 }
 
 }  // namespace electron

@@ -9,10 +9,6 @@
 #include "gin/handle.h"
 #include "gin/wrappable.h"
 
-namespace IPC {
-class Message;
-}
-
 namespace gin_helper {
 
 class Event : public gin::Wrappable<Event> {

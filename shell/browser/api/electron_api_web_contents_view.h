@@ -14,8 +14,6 @@ class Dictionary;
 
 namespace electron {
 
-class InspectableWebContents;
-
 namespace api {
 
 class WebContents;

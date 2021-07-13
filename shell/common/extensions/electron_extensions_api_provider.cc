@@ -27,9 +27,6 @@
 
 namespace extensions {
 
-namespace keys = manifest_keys;
-namespace errors = manifest_errors;
-
 constexpr APIPermissionInfo::InitInfo permissions_to_register[] = {
     {mojom::APIPermissionID::kDevtools, "devtools",
      APIPermissionInfo::kFlagImpliesFullURLAccess |

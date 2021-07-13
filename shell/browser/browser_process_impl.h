@@ -26,7 +26,7 @@ namespace printing {
 class PrintJobManager;
 }
 
-// Empty definition for std::unique_ptr
+// Empty definition for std::unique_ptr, rather than a forward declaration
 class BackgroundModeManager {};
 
 // NOT THREAD SAFE, call only from the main thread.

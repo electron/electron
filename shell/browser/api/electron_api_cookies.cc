@@ -26,8 +26,6 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 
-using content::BrowserThread;
-
 namespace gin {
 
 template <>

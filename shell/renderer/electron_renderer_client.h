@@ -13,7 +13,7 @@
 
 namespace node {
 class Environment;
-}  // namespace node
+}
 
 namespace electron {
 
@@ -36,10 +36,6 @@ class ElectronRendererClient : public RendererClientBase {
   void RenderFrameCreated(content::RenderFrame*) override;
   void RunScriptsAtDocumentStart(content::RenderFrame* render_frame) override;
   void RunScriptsAtDocumentEnd(content::RenderFrame* render_frame) override;
-  bool ShouldFork(blink::WebLocalFrame* frame,
-                  const GURL& url,
-                  const std::string& http_method,
-                  bool is_server_redirect) override;
   void WorkerScriptReadyForEvaluationOnWorkerThread(
       v8::Local<v8::Context> context) override;
   void WillDestroyWorkerContextOnWorkerThread(

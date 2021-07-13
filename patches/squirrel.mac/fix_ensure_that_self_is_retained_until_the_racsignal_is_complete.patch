@@ -6,10 +6,10 @@ Subject: fix: ensure that self is retained until the RACSignal is complete
 Looks like the clang that Chromium uses is slightly smarter with ARC than whatever Squirrel was built with previously.  We now need to keep a reference to self to keep it alive into the "then" of the RACSignal.
 
 diff --git a/Squirrel/SQRLZipArchiver.m b/Squirrel/SQRLZipArchiver.m
-index 478509cdd528db4fcfa340c6f93fa58a446957e6..7c279bf73c368453bff4f922d76908c06dc378cd 100644
+index d0f20f022a4ff392b596bcf0be96ab3e3c835285..68f5dac8e553638f41306956df9d38eeda18f8f2 100644
 --- a/Squirrel/SQRLZipArchiver.m
 +++ b/Squirrel/SQRLZipArchiver.m
-@@ -134,7 +134,7 @@ - (RACSignal *)launchWithArguments:(NSArray *)arguments {
+@@ -135,7 +135,7 @@ - (RACSignal *)launchWithArguments:(NSArray *)arguments {
  			return [RACSignal
  				zip:@[ self.taskTerminated, self.standardErrorData ]
  				reduce:^(NSNumber *exitStatus, NSData *errorData) {

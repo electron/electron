@@ -17,6 +17,7 @@
 #include "base/environment.h"
 #include "base/path_service.h"
 #include "base/run_loop.h"
+#include "base/single_thread_task_runner.h"
 #include "base/strings/string_split.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/threading/thread_task_runner_handle.h"
@@ -88,6 +89,8 @@
 
 #define ELECTRON_DESKTOP_CAPTURER_MODULE(V) V(electron_browser_desktop_capturer)
 
+#define ELECTRON_TESTING_MODULE(V) V(electron_common_testing)
+
 // This is used to load built-in modules. Instead of using
 // __attribute__((constructor)), we call the _register_<modname>
 // function for each built-in modules explicitly. This is only
@@ -100,6 +103,9 @@ ELECTRON_VIEWS_MODULES(V)
 #endif
 #if BUILDFLAG(ENABLE_DESKTOP_CAPTURER)
 ELECTRON_DESKTOP_CAPTURER_MODULE(V)
+#endif
+#if DCHECK_IS_ON()
+ELECTRON_TESTING_MODULE(V)
 #endif
 #undef V
 
@@ -329,6 +335,9 @@ void NodeBindings::RegisterBuiltinModules() {
 #if BUILDFLAG(ENABLE_DESKTOP_CAPTURER)
   ELECTRON_DESKTOP_CAPTURER_MODULE(V)
 #endif
+#if DCHECK_IS_ON()
+  ELECTRON_TESTING_MODULE(V)
+#endif
 #undef V
 }
 
@@ -362,13 +371,11 @@ void NodeBindings::Initialize() {
 
   int exit_code = node::InitializeNodeWithArgs(&argv, &exec_argv, &errors);
 
-  for (const std::string& error : errors) {
+  for (const std::string& error : errors)
     fprintf(stderr, "%s: %s\n", argv[0].c_str(), error.c_str());
-  }
 
-  if (exit_code != 0) {
+  if (exit_code != 0)
     exit(exit_code);
-  }
 
 #if defined(OS_WIN)
   // uv_init overrides error mode to suppress the default crash dialog, bring
@@ -476,9 +483,13 @@ node::Environment* NodeBindings::CreateEnvironment(
     // Node.js requires that microtask checkpoints be explicitly invoked.
     is.policy = v8::MicrotasksPolicy::kExplicit;
   } else {
-    // Match Blink's behavior by allowing microtasks invocation to be controlled
-    // by MicrotasksScope objects.
-    is.policy = v8::MicrotasksPolicy::kScoped;
+    // Blink expects the microtasks policy to be kScoped, but Node.js expects it
+    // to be kExplicit. In the renderer, there can be many contexts within the
+    // same isolate, so we don't want to change the existing policy here, which
+    // could be either kExplicit or kScoped depending on whether we're executing
+    // from within a Node.js or a Blink entrypoint. Instead, the policy is
+    // toggled to kExplicit when entering Node.js through UvRunOnce.
+    is.policy = context->GetIsolate()->GetMicrotasksPolicy();
 
     // We do not want to use Node.js' message listener as it interferes with
     // Blink's.
@@ -518,7 +529,7 @@ node::Environment* NodeBindings::CreateEnvironment(
 }
 
 void NodeBindings::LoadEnvironment(node::Environment* env) {
-  node::LoadEnvironment(env);
+  node::LoadEnvironment(env, node::StartExecutionCallback{});
   gin_helper::EmitEvent(env->isolate(), env->process_object(), "loaded");
 }
 

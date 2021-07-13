@@ -7,10 +7,10 @@ This is used so that we can modify the flag at runtime where
 config can only be set at compile time.
 
 diff --git a/lib/internal/bootstrap/node.js b/lib/internal/bootstrap/node.js
-index 5aab40071b68affe602be16d451be598b246faa1..6a55064eac76ee88d3b0b734d4f242da80aca119 100644
+index 8b70f79d2b278f2f6b15abc2eba5045b1ca503b4..bfc6edfae4b4b4f8b7ee2a97209e1801d7c2d4c9 100644
 --- a/lib/internal/bootstrap/node.js
 +++ b/lib/internal/bootstrap/node.js
-@@ -119,7 +119,7 @@ const {
+@@ -193,7 +193,7 @@ const {
    queueMicrotask
  } = require('internal/process/task_queues');
  

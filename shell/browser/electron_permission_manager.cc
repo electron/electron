@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/values.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/global_routing_id.h"
 #include "content/public/browser/permission_controller.h"
@@ -46,7 +47,7 @@ class ElectronPermissionManager::PendingRequest {
                  const std::vector<content::PermissionType>& permissions,
                  StatusesCallback callback)
       : render_process_id_(render_frame_host->GetProcess()->GetID()),
-        render_frame_id_(render_frame_host->GetGlobalFrameRoutingId()),
+        render_frame_id_(render_frame_host->GetGlobalId()),
         callback_(std::move(callback)),
         permissions_(permissions),
         results_(permissions.size(), blink::mojom::PermissionStatus::DENIED),
@@ -86,7 +87,7 @@ class ElectronPermissionManager::PendingRequest {
 
  private:
   int render_process_id_;
-  content::GlobalFrameRoutingId render_frame_id_;
+  content::GlobalRenderFrameHostId render_frame_id_;
   StatusesCallback callback_;
   std::vector<content::PermissionType> permissions_;
   std::vector<blink::mojom::PermissionStatus> results_;

@@ -6,6 +6,8 @@
 
 #include <utility>
 
+#include "components/prefs/persistent_pref_store.h"
+#include "components/prefs/pref_store.h"
 #include "components/prefs/value_map_pref_store.h"
 #include "shell/browser/electron_browser_context.h"
 

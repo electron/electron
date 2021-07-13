@@ -13,7 +13,6 @@
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "base/supports_user_data.h"
-#include "base/values.h"
 #include "content/public/browser/desktop_media_id.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "extensions/browser/app_window/size_constraints.h"
@@ -21,7 +20,9 @@
 #include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/views/widget/widget_delegate.h"
 
-class SkRegion;
+namespace base {
+class DictionaryValue;
+}
 
 namespace content {
 struct NativeWebKeyboardEvent;
@@ -31,7 +32,6 @@ namespace gfx {
 class Image;
 class Point;
 class Rect;
-class RectF;
 enum class ResizeEdge;
 class Size;
 }  // namespace gfx
@@ -135,6 +135,7 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetTitle(const std::string& title) = 0;
   virtual std::string GetTitle() = 0;
 #if defined(OS_MAC)
+  virtual std::string GetAlwaysOnTopLevel() = 0;
   virtual void SetActive(bool is_key) = 0;
   virtual bool IsActive() const = 0;
 #endif
@@ -254,6 +255,9 @@ class NativeWindow : public base::SupportsUserData,
     return weak_factory_.GetWeakPtr();
   }
 
+  virtual gfx::Rect GetWindowControlsOverlayRect();
+  virtual void SetWindowControlsOverlayRect(const gfx::Rect& overlay_rect);
+
   // Methods called by the WebContents.
   virtual void HandleKeyboardEvent(
       content::WebContents*,
@@ -298,6 +302,7 @@ class NativeWindow : public base::SupportsUserData,
                                      const base::DictionaryValue& details);
   void NotifyNewWindowForTab();
   void NotifyWindowSystemContextMenu(int x, int y, bool* prevent_default);
+  void NotifyLayoutWindowControlsOverlay();
 
 #if defined(OS_WIN)
   void NotifyWindowMessage(UINT message, WPARAM w_param, LPARAM l_param);
@@ -341,6 +346,8 @@ class NativeWindow : public base::SupportsUserData,
     browser_views_.remove_if(
         [&browser_view](NativeBrowserView* n) { return (n == browser_view); });
   }
+
+  bool titlebar_overlay_ = false;
 
  private:
   std::unique_ptr<views::Widget> widget_;
@@ -389,6 +396,8 @@ class NativeWindow : public base::SupportsUserData,
 
   // Accessible title.
   std::u16string accessible_title_;
+
+  gfx::Rect overlay_rect_;
 
   base::WeakPtrFactory<NativeWindow> weak_factory_{this};
 

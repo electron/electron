@@ -122,12 +122,9 @@ describe('app module', () => {
 
   describe('app.getLocaleCountryCode()', () => {
     it('should be empty or have length of two', () => {
-      let expectedLength = 2;
-      if (process.platform === 'linux' && process.env.CI) {
-        // Linux CI machines have no locale.
-        expectedLength = 0;
-      }
-      expect(app.getLocaleCountryCode()).to.be.a('string').and.have.lengthOf(expectedLength);
+      const localeCountryCode = app.getLocaleCountryCode();
+      expect(localeCountryCode).to.be.a('string');
+      expect(localeCountryCode.length).to.be.oneOf([0, 2]);
     });
   });
 
@@ -321,6 +318,24 @@ describe('app module', () => {
       const w = new BrowserWindow({ show: false });
       w.loadURL(secureUrl);
       await emittedOnce(app, 'certificate-error');
+    });
+
+    describe('when denied', () => {
+      before(() => {
+        app.on('certificate-error', (event, webContents, url, error, certificate, callback) => {
+          callback(false);
+        });
+      });
+
+      after(() => {
+        app.removeAllListeners('certificate-error');
+      });
+
+      it('causes did-fail-load', async () => {
+        const w = new BrowserWindow({ show: false });
+        w.loadURL(secureUrl);
+        await emittedOnce(w.webContents, 'did-fail-load');
+      });
     });
   });
 
@@ -1276,8 +1291,15 @@ describe('app module', () => {
       });
       const [exitCode] = await emittedOnce(appProcess, 'exit');
       if (exitCode === 0) {
-        // return info data on successful exit
-        return JSON.parse(gpuInfoData);
+        try {
+          const [, json] = /HERE COMES THE JSON: (.+) AND THERE IT WAS/.exec(gpuInfoData)!;
+          // return info data on successful exit
+          return JSON.parse(json);
+        } catch (e) {
+          console.error('Failed to interpret the following as JSON:');
+          console.error(gpuInfoData);
+          throw e;
+        }
       } else {
         // return error if not clean exit
         return Promise.reject(new Error(errorData));

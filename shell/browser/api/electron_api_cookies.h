@@ -23,10 +23,6 @@ namespace gin_helper {
 class Dictionary;
 }
 
-namespace net {
-class URLRequestContextGetter;
-}
-
 namespace electron {
 
 class ElectronBrowserContext;

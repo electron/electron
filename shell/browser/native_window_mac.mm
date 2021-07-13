@@ -38,6 +38,7 @@
 #include "shell/browser/window_list.h"
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/process_util.h"
 #include "skia/ext/skia_utils_mac.h"
@@ -415,7 +416,7 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   // Use an NSEvent monitor to listen for the wheel event.
   BOOL __block began = NO;
   wheel_event_monitor_ = [NSEvent
-      addLocalMonitorForEventsMatchingMask:NSScrollWheelMask
+      addLocalMonitorForEventsMatchingMask:NSEventMaskScrollWheel
                                    handler:^(NSEvent* event) {
                                      if ([[event window] windowNumber] !=
                                          [window_ windowNumber])
@@ -551,6 +552,15 @@ void NativeWindowMac::Hide() {
     [window_ orderOut:nil];
     [parent()->GetNativeWindow().GetNativeNSWindow() endSheet:window_];
     return;
+  }
+
+  // Hide all children of the current window before hiding the window.
+  // components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
+  // expects this when window visibility changes.
+  if ([window_ childWindows]) {
+    for (NSWindow* child in [window_ childWindows]) {
+      [child orderOut:nil];
+    }
   }
 
   // Deattach the window from the parent before.
@@ -867,6 +877,31 @@ void NativeWindowMac::SetAlwaysOnTop(ui::ZOrderLevel z_order,
   }
 
   SetWindowLevel(level + relative_level);
+}
+
+std::string NativeWindowMac::GetAlwaysOnTopLevel() {
+  std::string level_name = "normal";
+
+  int level = [window_ level];
+  if (level == NSFloatingWindowLevel) {
+    level_name = "floating";
+  } else if (level == NSTornOffMenuWindowLevel) {
+    level_name = "torn-off-menu";
+  } else if (level == NSModalPanelWindowLevel) {
+    level_name = "modal-panel";
+  } else if (level == NSMainMenuWindowLevel) {
+    level_name = "main-menu";
+  } else if (level == NSStatusWindowLevel) {
+    level_name = "status";
+  } else if (level == NSPopUpMenuWindowLevel) {
+    level_name = "pop-up-menu";
+  } else if (level == NSScreenSaverWindowLevel) {
+    level_name = "screen-saver";
+  } else if (level == NSDockWindowLevel) {
+    level_name = "dock";
+  }
+
+  return level_name;
 }
 
 void NativeWindowMac::SetWindowLevel(int unbounded_level) {
@@ -1308,10 +1343,9 @@ void NativeWindowMac::SetAutoHideCursor(bool auto_hide) {
 }
 
 void NativeWindowMac::UpdateVibrancyRadii(bool fullscreen) {
-  NSView* vibrant_view = [window_ vibrantView];
-  NSVisualEffectView* effect_view = (NSVisualEffectView*)vibrant_view;
+  NSVisualEffectView* vibrantView = [window_ vibrantView];
 
-  if (effect_view != nil && !vibrancy_type_.empty()) {
+  if (vibrantView != nil && !vibrancy_type_.empty()) {
     const bool no_rounded_corner =
         [window_ styleMask] & NSWindowStyleMaskFullSizeContentView;
     if (!has_frame() && !is_modal() && !no_rounded_corner) {
@@ -1341,56 +1375,30 @@ void NativeWindowMac::UpdateVibrancyRadii(bool fullscreen) {
 
       [maskImage setCapInsets:NSEdgeInsetsMake(radius, radius, radius, radius)];
       [maskImage setResizingMode:NSImageResizingModeStretch];
-      [effect_view setMaskImage:maskImage];
+      [vibrantView setMaskImage:maskImage];
       [window_ setCornerMask:maskImage];
     }
   }
 }
 
 void NativeWindowMac::SetVibrancy(const std::string& type) {
-  NSView* vibrant_view = [window_ vibrantView];
+  NSVisualEffectView* vibrantView = [window_ vibrantView];
 
   if (type.empty()) {
-    if (vibrant_view == nil)
+    if (vibrantView == nil)
       return;
 
-    [vibrant_view removeFromSuperview];
+    [vibrantView removeFromSuperview];
     [window_ setVibrantView:nil];
 
     return;
-  }
-
-  vibrancy_type_ = type;
-
-  NSVisualEffectView* effect_view = (NSVisualEffectView*)vibrant_view;
-  if (effect_view == nil) {
-    effect_view = [[[NSVisualEffectView alloc]
-        initWithFrame:[[window_ contentView] bounds]] autorelease];
-    [window_ setVibrantView:(NSView*)effect_view];
-
-    [effect_view setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
-    [effect_view setBlendingMode:NSVisualEffectBlendingModeBehindWindow];
-
-    if (visual_effect_state_ == VisualEffectState::kActive) {
-      [effect_view setState:NSVisualEffectStateActive];
-    } else if (visual_effect_state_ == VisualEffectState::kInactive) {
-      [effect_view setState:NSVisualEffectStateInactive];
-    } else {
-      [effect_view setState:NSVisualEffectStateFollowsWindowActiveState];
-    }
-
-    [[window_ contentView] addSubview:effect_view
-                           positioned:NSWindowBelow
-                           relativeTo:nil];
-
-    UpdateVibrancyRadii(IsFullscreen());
   }
 
   std::string dep_warn = " has been deprecated and removed as of macOS 10.15.";
   node::Environment* env =
       node::Environment::GetCurrent(JavascriptEnvironment::GetIsolate());
 
-  NSVisualEffectMaterial vibrancyType;
+  NSVisualEffectMaterial vibrancyType{};
   if (type == "appearance-based") {
     EmitWarning(env, "NSVisualEffectMaterialAppearanceBased" + dep_warn,
                 "electron");
@@ -1447,13 +1455,41 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
     }
   }
 
-  if (vibrancyType)
-    [effect_view setMaterial:vibrancyType];
+  if (vibrancyType) {
+    vibrancy_type_ = type;
+
+    if (vibrantView == nil) {
+      vibrantView = [[[NSVisualEffectView alloc]
+          initWithFrame:[[window_ contentView] bounds]] autorelease];
+      [window_ setVibrantView:vibrantView];
+
+      [vibrantView
+          setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+      [vibrantView setBlendingMode:NSVisualEffectBlendingModeBehindWindow];
+
+      if (visual_effect_state_ == VisualEffectState::kActive) {
+        [vibrantView setState:NSVisualEffectStateActive];
+      } else if (visual_effect_state_ == VisualEffectState::kInactive) {
+        [vibrantView setState:NSVisualEffectStateInactive];
+      } else {
+        [vibrantView setState:NSVisualEffectStateFollowsWindowActiveState];
+      }
+
+      [[window_ contentView] addSubview:vibrantView
+                             positioned:NSWindowBelow
+                             relativeTo:nil];
+
+      UpdateVibrancyRadii(IsFullscreen());
+    }
+
+    [vibrantView setMaterial:vibrancyType];
+  }
 }
 
 void NativeWindowMac::SetWindowButtonVisibility(bool visible) {
   window_button_visibility_ = visible;
   InternalSetWindowButtonVisibility(visible);
+  NotifyLayoutWindowControlsOverlay();
 }
 
 bool NativeWindowMac::GetWindowButtonVisibility() const {
@@ -1471,6 +1507,7 @@ void NativeWindowMac::SetTrafficLightPosition(
   if (buttons_view_) {
     [buttons_view_ setMargin:traffic_light_position_];
     [buttons_view_ viewDidMoveToWindow];
+    NotifyLayoutWindowControlsOverlay();
   }
 }
 
@@ -1645,8 +1682,6 @@ void NativeWindowMac::NotifyWindowWillLeaveFullScreen() {
 }
 
 void NativeWindowMac::SetActive(bool is_key) {
-  if (is_key)
-    widget()->Activate();
   is_active_ = is_key;
 }
 
@@ -1665,7 +1700,10 @@ void NativeWindowMac::Cleanup() {
   DCHECK(!IsClosed());
   ui::NativeTheme::GetInstanceForNativeUi()->RemoveObserver(this);
   display::Screen::GetScreen()->RemoveObserver(this);
-  [NSEvent removeMonitor:wheel_event_monitor_];
+  if (wheel_event_monitor_) {
+    [NSEvent removeMonitor:wheel_event_monitor_];
+    wheel_event_monitor_ = nil;
+  }
 }
 
 void NativeWindowMac::OverrideNSWindowContentView() {
@@ -1807,14 +1845,40 @@ void NativeWindowMac::InternalSetParentWindow(NativeWindow* parent,
 
   // Set new parent window.
   // Note that this method will force the window to become visible.
-  if (parent && attach)
+  if (parent && attach) {
+    // Attaching a window as a child window resets its window level, so
+    // save and restore it afterwards.
+    NSInteger level = window_.level;
     [parent->GetNativeWindow().GetNativeNSWindow()
         addChildWindow:window_
                ordered:NSWindowAbove];
+    [window_ setLevel:level];
+  }
 }
 
 void NativeWindowMac::SetForwardMouseMessages(bool forward) {
   [window_ setAcceptsMouseMovedEvents:forward];
+}
+
+gfx::Rect NativeWindowMac::GetWindowControlsOverlayRect() {
+  gfx::Rect bounding_rect;
+  if (titlebar_overlay_ && !has_frame() && buttons_view_ &&
+      ![buttons_view_ isHidden]) {
+    NSRect button_frame = [buttons_view_ frame];
+    gfx::Point buttons_view_margin = [buttons_view_ getMargin];
+    const int overlay_width = GetContentSize().width() - NSWidth(button_frame) -
+                              buttons_view_margin.x();
+    CGFloat overlay_height =
+        NSHeight(button_frame) + buttons_view_margin.y() * 2;
+    if (base::i18n::IsRTL()) {
+      bounding_rect = gfx::Rect(0, 0, overlay_width, overlay_height);
+    } else {
+      bounding_rect =
+          gfx::Rect(button_frame.size.width + buttons_view_margin.x(), 0,
+                    overlay_width, overlay_height);
+    }
+  }
+  return bounding_rect;
 }
 
 // static

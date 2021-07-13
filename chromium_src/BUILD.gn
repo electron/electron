@@ -88,6 +88,10 @@ static_library("chrome") {
     "//components/optimization_guide/proto:optimization_guide_proto",
   ]
 
+  if (enable_basic_printing && is_win) {
+    deps += [ "//chrome/common:cloud_print_utility_mojom" ]
+  }
+
   if (is_linux) {
     sources += [ "//chrome/browser/icon_loader_auralinux.cc" ]
     if (use_x11 || use_ozone) {
@@ -142,6 +146,8 @@ static_library("chrome") {
 
   if (enable_color_chooser) {
     sources += [
+      "//chrome/browser/devtools/devtools_eye_dropper.cc",
+      "//chrome/browser/devtools/devtools_eye_dropper.h",
       "//chrome/browser/platform_util.cc",
       "//chrome/browser/platform_util.h",
       "//chrome/browser/ui/browser_dialogs.h",

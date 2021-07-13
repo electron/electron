@@ -9,6 +9,7 @@
 #include <utility>
 
 #include "base/barrier_closure.h"
+#include "base/base_paths.h"
 #include "base/command_line.h"
 #include "base/files/file_path.h"
 #include "base/no_destructor.h"
@@ -104,7 +105,7 @@ ElectronBrowserContext::ElectronBrowserContext(const std::string& partition,
                                                bool in_memory,
                                                base::DictionaryValue options)
     : storage_policy_(base::MakeRefCounted<SpecialStoragePolicy>()),
-      protocol_registry_(new ProtocolRegistry),
+      protocol_registry_(base::WrapUnique(new ProtocolRegistry)),
       in_memory_(in_memory),
       ssl_config_(network::mojom::SSLConfig::New()) {
   user_agent_ = ElectronBrowserClient::Get()->GetUserAgent();
@@ -117,14 +118,10 @@ ElectronBrowserContext::ElectronBrowserContext(const std::string& partition,
   base::StringToInt(command_line->GetSwitchValueASCII(switches::kDiskCacheSize),
                     &max_cache_size_);
 
-  if (!base::PathService::Get(DIR_USER_DATA, &path_)) {
+  if (!base::PathService::Get(chrome::DIR_USER_DATA, &path_)) {
     base::PathService::Get(DIR_APP_DATA, &path_);
     path_ = path_.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
-    base::PathService::Override(DIR_USER_DATA, path_);
     base::PathService::Override(chrome::DIR_USER_DATA, path_);
-    base::PathService::Override(
-        chrome::DIR_APP_DICTIONARIES,
-        path_.Append(base::FilePath::FromUTF8Unsafe("Dictionaries")));
   }
 
   if (!in_memory && !partition.empty())

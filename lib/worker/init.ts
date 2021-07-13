@@ -12,6 +12,9 @@ require('../common/reset-search-paths');
 // Import common settings.
 require('@electron/internal/common/init');
 
+// Process command line arguments.
+const { hasSwitch, getSwitchValue } = process._linkedBinding('electron_common_command_line');
+
 // Export node bindings to global.
 const { makeRequireFunction } = __non_webpack_require__('internal/modules/cjs/helpers') // eslint-disable-line
 global.module = new Module('electron/js2c/worker_init');
@@ -32,4 +35,10 @@ if (self.location.protocol === 'file:') {
   // For backwards compatibility we fake these two paths here
   global.__filename = path.join(process.resourcesPath, 'electron.asar', 'worker', 'init.js');
   global.__dirname = path.join(process.resourcesPath, 'electron.asar', 'worker');
+
+  const appPath = hasSwitch('app-path') ? getSwitchValue('app-path') : null;
+  if (appPath) {
+    // Search for module under the app directory.
+    global.module.paths = Module._nodeModulePaths(appPath);
+  }
 }

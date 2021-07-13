@@ -18,7 +18,7 @@ class PrintingHandler;
 
 namespace mojo {
 class ServiceFactory;
-}  // namespace mojo
+}
 
 namespace electron {
 
@@ -28,7 +28,6 @@ class ElectronContentUtilityClient : public content::ContentUtilityClient {
   ~ElectronContentUtilityClient() override;
 
   void ExposeInterfacesToBrowser(mojo::BinderMap* binders) override;
-  bool OnMessageReceived(const IPC::Message& message) override;
   void RegisterMainThreadServices(mojo::ServiceFactory& services) override;
   void RegisterIOThreadServices(mojo::ServiceFactory& services) override;
 

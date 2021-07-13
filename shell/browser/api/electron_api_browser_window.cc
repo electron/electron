@@ -57,6 +57,17 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
     web_preferences.Set(options::kShow, show);
   }
 
+  bool titleBarOverlay = false;
+  options.Get(options::ktitleBarOverlay, &titleBarOverlay);
+  if (titleBarOverlay) {
+    std::string enabled_features = "";
+    if (web_preferences.Get(options::kEnableBlinkFeatures, &enabled_features)) {
+      enabled_features += ",";
+    }
+    enabled_features += features::kWebAppWindowControlsOverlay.name;
+    web_preferences.Set(options::kEnableBlinkFeatures, enabled_features);
+  }
+
   // Copy the webContents option to webPreferences. This is only used internally
   // to implement nativeWindowOpen option.
   if (options.Get("webContents", &value)) {
@@ -312,6 +323,11 @@ void BrowserWindow::OnWindowLeaveFullScreen() {
   BaseWindow::OnWindowLeaveFullScreen();
 }
 
+void BrowserWindow::UpdateWindowControlsOverlay(
+    const gfx::Rect& bounding_rect) {
+  web_contents()->UpdateWindowControlsOverlay(bounding_rect);
+}
+
 void BrowserWindow::CloseImmediately() {
   // Close all child windows before closing current window.
   v8::Locker locker(isolate());
@@ -394,6 +410,10 @@ void BrowserWindow::ResetBrowserViews() {
 #if defined(OS_MAC)
   UpdateDraggableRegions(draggable_regions_);
 #endif
+}
+
+void BrowserWindow::OnDevToolsResized() {
+  UpdateDraggableRegions(draggable_regions_);
 }
 
 void BrowserWindow::SetVibrancy(v8::Isolate* isolate,
@@ -509,7 +529,6 @@ v8::Local<v8::Value> BrowserWindow::From(v8::Isolate* isolate,
 
 namespace {
 
-using electron::api::BaseWindow;
 using electron::api::BrowserWindow;
 
 void Initialize(v8::Local<v8::Object> exports,

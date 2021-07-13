@@ -46,7 +46,6 @@
 #include "content/public/browser/navigation_details.h"
 #include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/navigation_handle.h"
-#include "content/public/browser/plugin_service.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
@@ -99,6 +98,7 @@
 #include "shell/browser/web_contents_zoom_controller.h"
 #include "shell/browser/web_dialog_helper.h"
 #include "shell/browser/web_view_guest_delegate.h"
+#include "shell/browser/web_view_manager.h"
 #include "shell/common/api/electron_api_native_image.h"
 #include "shell/common/color_util.h"
 #include "shell/common/electron_constants.h"
@@ -185,6 +185,10 @@
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
 #include "components/pdf/browser/pdf_web_contents_helper.h"  // nogncheck
 #include "shell/browser/electron_pdf_web_contents_helper_client.h"
+#endif
+
+#if BUILDFLAG(ENABLE_PLUGINS)
+#include "content/public/browser/plugin_service.h"
 #endif
 
 #ifndef MAS_BUILD
@@ -419,7 +423,7 @@ bool IsDeviceNameValid(const std::u16string& device_name) {
   return printer_exists;
 #elif defined(OS_WIN)
   printing::ScopedPrinterHandle printer;
-  return printer.OpenPrinterWithName(base::UTF16ToWide(device_name).c_str());
+  return printer.OpenPrinterWithName(base::as_wcstr(device_name));
 #endif
   return true;
 }
@@ -655,7 +659,8 @@ WebContents::WebContents(v8::Isolate* isolate,
     : content::WebContentsObserver(web_contents.get()),
       type_(type),
       id_(GetAllWebContents().Add(this)),
-      devtools_file_system_indexer_(new DevToolsFileSystemIndexer),
+      devtools_file_system_indexer_(
+          base::MakeRefCounted<DevToolsFileSystemIndexer>()),
       file_task_runner_(
           base::ThreadPool::CreateSequencedTaskRunner({base::MayBlock()}))
 #if BUILDFLAG(ENABLE_PRINTING)
@@ -811,14 +816,14 @@ void WebContents::InitWithSessionAndOptions(
 
 #if defined(OS_LINUX) || defined(OS_WIN)
   // Update font settings.
-  static const base::NoDestructor<gfx::FontRenderParams> params(
+  static const gfx::FontRenderParams params(
       gfx::GetFontRenderParams(gfx::FontRenderParamsQuery(), nullptr));
-  prefs->should_antialias_text = params->antialiasing;
-  prefs->use_subpixel_positioning = params->subpixel_positioning;
-  prefs->hinting = params->hinting;
-  prefs->use_autohinter = params->autohinter;
-  prefs->use_bitmaps = params->use_bitmaps;
-  prefs->subpixel_rendering = params->subpixel_rendering;
+  prefs->should_antialias_text = params.antialiasing;
+  prefs->use_subpixel_positioning = params.subpixel_positioning;
+  prefs->hinting = params.hinting;
+  prefs->use_autohinter = params.autohinter;
+  prefs->use_bitmaps = params.use_bitmaps;
+  prefs->subpixel_rendering = params.subpixel_rendering;
 #endif
 
   // Honor the system's cursor blink rate settings
@@ -909,6 +914,16 @@ void WebContents::InitWithWebContents(content::WebContents* web_contents,
   inspectable_web_contents_ = std::make_unique<InspectableWebContents>(
       web_contents, browser_context->prefs(), is_guest);
   inspectable_web_contents_->SetDelegate(this);
+
+  if (web_preferences) {
+    std::string color_name;
+    if (web_preferences->GetPreference(options::kBackgroundColor,
+                                       &color_name)) {
+      web_contents->SetPageBaseBackgroundColor(ParseHexColor(color_name));
+    } else {
+      web_contents->SetPageBaseBackgroundColor(SK_ColorTRANSPARENT);
+    }
+  }
 }
 
 WebContents::~WebContents() {
@@ -1368,18 +1383,6 @@ void WebContents::HandleNewRenderFrame(
   if (!rwhv)
     return;
 
-  // Set the background color of RenderWidgetHostView.
-  auto* web_preferences = WebContentsPreferences::From(web_contents());
-  if (web_preferences) {
-    std::string color_name;
-    if (web_preferences->GetPreference(options::kBackgroundColor,
-                                       &color_name)) {
-      rwhv->SetBackgroundColor(ParseHexColor(color_name));
-    } else {
-      rwhv->SetBackgroundColor(SK_ColorTRANSPARENT);
-    }
-  }
-
   if (!background_throttling_)
     render_frame_host->GetRenderViewHost()->SetSchedulerThrottling(false);
 
@@ -1600,8 +1603,7 @@ void WebContents::MessageSync(
                  internal, channel, std::move(arguments));
 }
 
-void WebContents::MessageTo(bool internal,
-                            int32_t web_contents_id,
+void WebContents::MessageTo(int32_t web_contents_id,
                             const std::string& channel,
                             blink::CloneableMessage arguments) {
   TRACE_EVENT1("electron", "WebContents::MessageTo", "channel", channel);
@@ -1616,7 +1618,7 @@ void WebContents::MessageTo(bool internal,
         WebFrameMain::From(JavascriptEnvironment::GetIsolate(), frame);
 
     int32_t sender_id = ID();
-    web_frame_main->GetRendererApi()->Message(internal, channel,
+    web_frame_main->GetRendererApi()->Message(false /* internal */, channel,
                                               std::move(arguments), sender_id);
   }
 }
@@ -1677,6 +1679,10 @@ void WebContents::ReadyToCommitNavigation(
 
 void WebContents::DidFinishNavigation(
     content::NavigationHandle* navigation_handle) {
+  if (owner_window_) {
+    owner_window_->NotifyLayoutWindowControlsOverlay();
+  }
+
   if (!navigation_handle->HasCommitted())
     return;
   bool is_main_frame = navigation_handle->IsInMainFrame();
@@ -1754,6 +1760,8 @@ void WebContents::TitleWasSet(content::NavigationEntry* entry) {
     } else {
       final_title = title;
     }
+  } else {
+    final_title = web_contents()->GetTitle();
   }
   for (ExtendedWebContentsObserver& observer : observers_)
     observer.OnPageTitleUpdated(final_title, explicit_set);
@@ -3129,12 +3137,6 @@ content::RenderFrameHost* WebContents::MainFrame() {
   return web_contents()->GetMainFrame();
 }
 
-void WebContents::GrantOriginAccess(const GURL& url) {
-  content::ChildProcessSecurityPolicy::GetInstance()->GrantCommitOrigin(
-      web_contents()->GetMainFrame()->GetProcess()->GetID(),
-      url::Origin::Create(url));
-}
-
 void WebContents::NotifyUserActivation() {
   content::RenderFrameHost* frame = web_contents()->GetMainFrame();
   if (frame)
@@ -3472,6 +3474,30 @@ void WebContents::DevToolsSearchInPath(int request_id,
                           file_system_path));
 }
 
+void WebContents::DevToolsSetEyeDropperActive(bool active) {
+  auto* web_contents = GetWebContents();
+  if (!web_contents)
+    return;
+
+  if (active) {
+    eye_dropper_ = std::make_unique<DevToolsEyeDropper>(
+        web_contents, base::BindRepeating(&WebContents::ColorPickedInEyeDropper,
+                                          base::Unretained(this)));
+  } else {
+    eye_dropper_.reset();
+  }
+}
+
+void WebContents::ColorPickedInEyeDropper(int r, int g, int b, int a) {
+  base::DictionaryValue color;
+  color.SetInteger("r", r);
+  color.SetInteger("g", g);
+  color.SetInteger("b", b);
+  color.SetInteger("a", a);
+  inspectable_web_contents_->CallClientFunction(
+      "DevToolsAPI.eyeDropperPickedColor", &color, nullptr, nullptr);
+}
+
 #if defined(TOOLKIT_VIEWS) && !defined(OS_MAC)
 ui::ImageModel WebContents::GetDevToolsWindowIcon() {
   return owner_window() ? owner_window()->GetWindowAppIcon() : ui::ImageModel{};
@@ -3538,13 +3564,13 @@ void WebContents::SetHtmlApiFullscreen(bool enter_fullscreen) {
   // Window is already in fullscreen mode, save the state.
   if (enter_fullscreen && owner_window_->IsFullscreen()) {
     native_fullscreen_ = true;
-    html_fullscreen_ = true;
+    UpdateHtmlApiFullscreen(true);
     return;
   }
 
   // Exit html fullscreen state but not window's fullscreen mode.
   if (!enter_fullscreen && native_fullscreen_) {
-    html_fullscreen_ = false;
+    UpdateHtmlApiFullscreen(false);
     return;
   }
 
@@ -3559,8 +3585,39 @@ void WebContents::SetHtmlApiFullscreen(bool enter_fullscreen) {
     owner_window_->SetFullScreen(enter_fullscreen);
   }
 
-  html_fullscreen_ = enter_fullscreen;
+  UpdateHtmlApiFullscreen(enter_fullscreen);
   native_fullscreen_ = false;
+}
+
+void WebContents::UpdateHtmlApiFullscreen(bool fullscreen) {
+  if (fullscreen == html_fullscreen_)
+    return;
+
+  html_fullscreen_ = fullscreen;
+
+  // Notify renderer of the html fullscreen change.
+  web_contents()
+      ->GetRenderViewHost()
+      ->GetWidget()
+      ->SynchronizeVisualProperties();
+
+  // The embedder WebContents is spearated from the frame tree of webview, so
+  // we must manually sync their fullscreen states.
+  if (embedder_)
+    embedder_->SetHtmlApiFullscreen(fullscreen);
+
+  // Make sure all child webviews quit html fullscreen.
+  if (!fullscreen && !IsGuest()) {
+    auto* manager = WebViewManager::GetWebViewManager(web_contents());
+    manager->ForEachGuest(
+        web_contents(), base::BindRepeating([](content::WebContents* guest) {
+          WebContents* api_web_contents = WebContents::From(guest);
+          // Use UpdateHtmlApiFullscreen instead of SetXXX becuase there is no
+          // need to interact with the owner window.
+          api_web_contents->UpdateHtmlApiFullscreen(false);
+          return false;
+        }));
+  }
 }
 
 // static
@@ -3692,7 +3749,6 @@ v8::Local<v8::ObjectTemplate> WebContents::FillObjectTemplate(
                  &WebContents::SetWebRTCIPHandlingPolicy)
       .SetMethod("getWebRTCIPHandlingPolicy",
                  &WebContents::GetWebRTCIPHandlingPolicy)
-      .SetMethod("_grantOriginAccess", &WebContents::GrantOriginAccess)
       .SetMethod("takeHeapSnapshot", &WebContents::TakeHeapSnapshot)
       .SetMethod("setImageAnimationPolicy",
                  &WebContents::SetImageAnimationPolicy)

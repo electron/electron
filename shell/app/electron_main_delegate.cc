@@ -8,8 +8,8 @@
 #include <memory>
 #include <string>
 
+#include "base/base_switches.h"
 #include "base/command_line.h"
-#include "base/debug/stack_trace.h"
 #include "base/environment.h"
 #include "base/files/file_util.h"
 #include "base/logging.h"
@@ -17,6 +17,7 @@
 #include "base/path_service.h"
 #include "base/strings/string_split.h"
 #include "chrome/common/chrome_paths.h"
+#include "chrome/common/chrome_switches.h"
 #include "components/content_settings/core/common/content_settings_pattern.h"
 #include "components/crash/core/app/crash_switches.h"
 #include "content/public/common/content_switches.h"
@@ -30,8 +31,11 @@
 #include "shell/browser/electron_gpu_client.h"
 #include "shell/browser/feature_list.h"
 #include "shell/browser/relauncher.h"
+#include "shell/common/application_info.h"
 #include "shell/common/electron_paths.h"
+#include "shell/common/logging.h"
 #include "shell/common/options_switches.h"
+#include "shell/common/platform_util.h"
 #include "shell/renderer/electron_renderer_client.h"
 #include "shell/renderer/electron_sandboxed_renderer_client.h"
 #include "shell/utility/electron_content_utility_client.h"
@@ -48,6 +52,7 @@
 #endif
 
 #if defined(OS_LINUX)
+#include "base/nix/xdg_util.h"
 #include "components/crash/core/app/breakpad_linux.h"
 #include "v8/include/v8-wasm-trap-handler-posix.h"
 #include "v8/include/v8.h"
@@ -66,7 +71,11 @@ namespace electron {
 
 namespace {
 
-const char* kRelauncherProcess = "relauncher";
+const char kRelauncherProcess[] = "relauncher";
+
+constexpr base::StringPiece kElectronDisableSandbox("ELECTRON_DISABLE_SANDBOX");
+constexpr base::StringPiece kElectronEnableStackDumping(
+    "ELECTRON_ENABLE_STACK_DUMPING");
 
 bool IsBrowserProcess(base::CommandLine* cmd) {
   std::string process_type = cmd->GetSwitchValueASCII(::switches::kProcessType);
@@ -89,9 +98,9 @@ bool SubprocessNeedsResourceBundle(const std::string& process_type) {
 #if defined(OS_MAC)
       // Mac needs them too for scrollbar related images and for sandbox
       // profiles.
-      process_type == ::switches::kPpapiPluginProcess ||
       process_type == ::switches::kGpuProcess ||
 #endif
+      process_type == ::switches::kPpapiPluginProcess ||
       process_type == ::switches::kRendererProcess ||
       process_type == ::switches::kUtilityProcess;
 }
@@ -108,28 +117,89 @@ void InvalidParameterHandler(const wchar_t*,
 
 // TODO(nornagon): move path provider overriding to its own file in
 // shell/common
-bool GetDefaultCrashDumpsPath(base::FilePath* path) {
+bool ElectronPathProvider(int key, base::FilePath* result) {
+  bool create_dir = false;
   base::FilePath cur;
-  if (!base::PathService::Get(DIR_USER_DATA, &cur))
-    return false;
+  switch (key) {
+    case chrome::DIR_USER_DATA:
+      if (!base::PathService::Get(DIR_APP_DATA, &cur))
+        return false;
+      cur = cur.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
+      create_dir = true;
+      break;
+    case DIR_CRASH_DUMPS:
+      if (!base::PathService::Get(chrome::DIR_USER_DATA, &cur))
+        return false;
 #if defined(OS_MAC) || defined(OS_WIN)
-  cur = cur.Append(FILE_PATH_LITERAL("Crashpad"));
+      cur = cur.Append(FILE_PATH_LITERAL("Crashpad"));
 #else
-  cur = cur.Append(FILE_PATH_LITERAL("Crash Reports"));
+      cur = cur.Append(FILE_PATH_LITERAL("Crash Reports"));
 #endif
+      create_dir = true;
+      break;
+    case chrome::DIR_APP_DICTIONARIES:
+      // TODO(nornagon): can we just default to using Chrome's logic here?
+      if (!base::PathService::Get(chrome::DIR_USER_DATA, &cur))
+        return false;
+      cur = cur.Append(base::FilePath::FromUTF8Unsafe("Dictionaries"));
+      create_dir = true;
+      break;
+    case DIR_USER_CACHE: {
+#if defined(OS_POSIX)
+      int parent_key = base::DIR_CACHE;
+#else
+      // On Windows, there's no OS-level centralized location for caches, so
+      // store the cache in the app data directory.
+      int parent_key = base::DIR_APP_DATA;
+#endif
+      if (!base::PathService::Get(parent_key, &cur))
+        return false;
+      cur = cur.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
+      create_dir = true;
+      break;
+    }
+#if defined(OS_LINUX)
+    case DIR_APP_DATA: {
+      auto env = base::Environment::Create();
+      cur = base::nix::GetXDGDirectory(
+          env.get(), base::nix::kXdgConfigHomeEnvVar, base::nix::kDotConfigDir);
+      break;
+    }
+#endif
+#if defined(OS_WIN)
+    case DIR_RECENT:
+      if (!platform_util::GetFolderPath(DIR_RECENT, &cur))
+        return false;
+      create_dir = true;
+      break;
+#endif
+    case DIR_APP_LOGS:
+#if defined(OS_MAC)
+      if (!base::PathService::Get(base::DIR_HOME, &cur))
+        return false;
+      cur = cur.Append(FILE_PATH_LITERAL("Library"));
+      cur = cur.Append(FILE_PATH_LITERAL("Logs"));
+      cur = cur.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
+#else
+      if (!base::PathService::Get(chrome::DIR_USER_DATA, &cur))
+        return false;
+      cur = cur.Append(base::FilePath::FromUTF8Unsafe("logs"));
+#endif
+      create_dir = true;
+      break;
+    default:
+      return false;
+  }
+
   // TODO(bauerb): http://crbug.com/259796
   base::ThreadRestrictions::ScopedAllowIO allow_io;
-  if (!base::PathExists(cur) && !base::CreateDirectory(cur))
+  if (create_dir && !base::PathExists(cur) && !base::CreateDirectory(cur)) {
     return false;
-  *path = cur;
-  return true;
-}
-
-bool ElectronPathProvider(int key, base::FilePath* path) {
-  if (key == DIR_CRASH_DUMPS) {
-    return GetDefaultCrashDumpsPath(path);
   }
-  return false;
+
+  *result = cur;
+
+  return true;
 }
 
 void RegisterPathProvider() {
@@ -172,7 +242,6 @@ const size_t ElectronMainDelegate::kNonWildcardDomainNonPortSchemesSize =
 bool ElectronMainDelegate::BasicStartupComplete(int* exit_code) {
   auto* command_line = base::CommandLine::ForCurrentProcess();
 
-  logging::LoggingSettings settings;
 #if defined(OS_WIN)
   v8_crashpad_support::SetUp();
 
@@ -180,43 +249,16 @@ bool ElectronMainDelegate::BasicStartupComplete(int* exit_code) {
   // prevent output in the same line as the prompt.
   if (IsBrowserProcess(command_line))
     std::wcout << std::endl;
-#if defined(DEBUG)
-  // Print logging to debug.log on Windows
-  settings.logging_dest = logging::LOG_TO_ALL;
-  base::FilePath log_filename;
-  base::PathService::Get(base::DIR_EXE, &log_filename);
-  log_filename = log_filename.AppendASCII("debug.log");
-  settings.log_file_path = log_filename.value().c_str();
-  settings.lock_log = logging::LOCK_LOG_FILE;
-  settings.delete_old = logging::DELETE_OLD_LOG_FILE;
-#else
-  settings.logging_dest =
-      logging::LOG_TO_SYSTEM_DEBUG_LOG | logging::LOG_TO_STDERR;
-#endif  // defined(DEBUG)
-#else   // defined(OS_WIN)
-  settings.logging_dest =
-      logging::LOG_TO_SYSTEM_DEBUG_LOG | logging::LOG_TO_STDERR;
 #endif  // !defined(OS_WIN)
 
-  // Only enable logging when --enable-logging is specified.
   auto env = base::Environment::Create();
-  if (!command_line->HasSwitch(::switches::kEnableLogging) &&
-      !env->HasVar("ELECTRON_ENABLE_LOGGING")) {
-    settings.logging_dest = logging::LOG_NONE;
-    logging::SetMinLogLevel(logging::LOGGING_NUM_SEVERITIES);
-  }
-
-  logging::InitLogging(settings);
-
-  // Logging with pid and timestamp.
-  logging::SetLogItems(true, false, true, false);
 
   // Enable convenient stack printing. This is enabled by default in
   // non-official builds.
-  if (env->HasVar("ELECTRON_ENABLE_STACK_DUMPING"))
+  if (env->HasVar(kElectronEnableStackDumping))
     base::debug::EnableInProcessStackDumping();
 
-  if (env->HasVar("ELECTRON_DISABLE_SANDBOX"))
+  if (env->HasVar(kElectronDisableSandbox))
     command_line->AppendSwitch(sandbox::policy::switches::kNoSandbox);
 
   tracing_sampler_profiler_ =
@@ -282,6 +324,26 @@ void ElectronMainDelegate::PreSandboxStartup() {
   std::string process_type =
       command_line->GetSwitchValueASCII(::switches::kProcessType);
 
+  base::FilePath user_data_dir =
+      command_line->GetSwitchValuePath(::switches::kUserDataDir);
+  if (!user_data_dir.empty()) {
+    base::PathService::OverrideAndCreateIfNeeded(chrome::DIR_USER_DATA,
+                                                 user_data_dir, false, true);
+  }
+
+#if !defined(OS_WIN)
+  // For windows we call InitLogging later, after the sandbox is initialized.
+  //
+  // On Linux, we force a "preinit" in the zygote (i.e. never log to a default
+  // log file), because the zygote is booted prior to JS running, so it can't
+  // know the correct user-data directory. (And, further, accessing the
+  // application name on Linux can cause glib calls that end up spawning
+  // threads, which if done before the zygote is booted, causes a CHECK().)
+  logging::InitElectronLogging(*command_line,
+                               /* is_preinit = */ process_type.empty() ||
+                                   process_type == ::switches::kZygoteProcess);
+#endif
+
 #if !defined(MAS_BUILD)
   crash_reporter::InitializeCrashKeys();
 #endif
@@ -337,6 +399,13 @@ void ElectronMainDelegate::PreSandboxStartup() {
     command_line->AppendSwitch("enable-avfoundation");
 #endif
   }
+}
+
+void ElectronMainDelegate::SandboxInitialized(const std::string& process_type) {
+#if defined(OS_WIN)
+  logging::InitElectronLogging(*base::CommandLine::ForCurrentProcess(),
+                               /* is_preinit = */ process_type.empty());
+#endif
 }
 
 void ElectronMainDelegate::PreBrowserMain() {
