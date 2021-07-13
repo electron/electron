@@ -23,6 +23,8 @@ class WinFrameView : public FramelessView {
   // buttons) when the window is inactive. They are opaque when active.
   static constexpr SkAlpha kInactiveTitlebarFeatureAlpha = 0x66;
 
+  SkColor GetReadableFeatureColor(SkColor background_color);
+
   // views::NonClientFrameView:
   gfx::Rect GetWindowBoundsForClientBounds(
       const gfx::Rect& client_bounds) const override;

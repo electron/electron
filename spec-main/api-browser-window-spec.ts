@@ -5,6 +5,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as qs from 'querystring';
 import * as http from 'http';
+import * as semver from 'semver';
 import { AddressInfo } from 'net';
 import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersListenerDetails, protocol, screen, webContents, session, WebContents, BrowserWindowConstructorOptions } from 'electron/main';
 
@@ -1875,7 +1876,7 @@ describe('BrowserWindow module', () => {
     });
   });
 
-  ifdescribe(process.platform === 'win32' || (process.platform === 'darwin' && parseInt(os.release().split('.')[0]) >= 14))('"titleBarStyle" option', () => {
+  ifdescribe(process.platform === 'win32' || (process.platform === 'darwin' && semver.gte(os.release(), '14.0.0')))('"titleBarStyle" option', () => {
     const testWindowsOverlay = async (style: any) => {
       const w = new BrowserWindow({
         show: false,

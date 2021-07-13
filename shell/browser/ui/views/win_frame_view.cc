@@ -37,6 +37,18 @@ void WinFrameView::Init(NativeWindowViews* window, views::Widget* frame) {
   }
 }
 
+SkColor WinFrameView::GetReadableFeatureColor(SkColor background_color) {
+  // color_utils::GetColorWithMaxContrast()/IsDark() aren't used here because
+  // they switch based on the Chrome light/dark endpoints, while we want to use
+  // the system native behavior below.
+  const auto windows_luma = [](SkColor c) {
+    return 0.25f * SkColorGetR(c) + 0.625f * SkColorGetG(c) +
+           0.125f * SkColorGetB(c);
+  };
+  return windows_luma(background_color) <= 128.0f ? SK_ColorWHITE
+                                                  : SK_ColorBLACK;
+}
+
 gfx::Rect WinFrameView::GetWindowBoundsForClientBounds(
     const gfx::Rect& client_bounds) const {
   return views::GetWindowBoundsForClientBounds(
