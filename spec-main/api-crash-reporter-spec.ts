@@ -282,7 +282,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
             setTimeout(() => process.crash());
           }, port);
           const crash = await waitForCrash();
-          expect(stitchLongCrashParam(crash, 'longParam')).to.have.lengthOf(160 * 127, 'crash should have truncated longParam');
+          expect(stitchLongCrashParam(crash, 'longParam')).to.have.lengthOf(160 * 127 + (withLinuxCrashpad ? 159 : 0), 'crash should have truncated longParam');
         });
 
         it('should omit extra keys with names longer than the maximum', async () => {
@@ -527,7 +527,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
                 return app.getPath('crashDumps');
               });
               let reportsDir = crashesDir;
-              if (process.platform === 'darwin') {
+              if (process.platform === 'darwin' || (process.platform === 'linux' && withLinuxCrashpad)) {
                 reportsDir = path.join(crashesDir, 'completed');
               } else if (process.platform === 'win32') {
                 reportsDir = path.join(crashesDir, 'reports');
@@ -536,7 +536,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
               crash(crashingProcess, remotely);
               const newFiles = await newFileAppeared;
               expect(newFiles.length).to.be.greaterThan(0);
-              if (process.platform === 'linux') {
+              if (process.platform === 'linux' && !withLinuxCrashpad) {
                 if (crashingProcess === 'main') {
                   expect(newFiles[0]).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{8}-[0-9a-f]{8}\.dmp$/);
                 } else {
