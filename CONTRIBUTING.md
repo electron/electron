@@ -22,7 +22,7 @@ Issues are created [here](https://github.com/electron/electron/issues/new).
 
 ### Issue Closure
 
-Bug reports will be closed if the issue has been inactive and the latest affected version no longer receives support. At the moment, Electron maintains its three latest major versions, with a new major version being released every 12 weeks. (For more information on Electron's release cadence, see [this blog post](https://electronjs.org/blog/12-week-cadence).)
+Bug reports will be closed if the issue has been inactive and the latest affected version no longer receives support. At the moment, Electron maintains its three latest major versions, with a new major version being released every 8 weeks. (For more information on Electron's release cadence, see [this blog post](https://electronjs.org/blog/8-week-cadence).)
 
 _If an issue has been closed and you still feel it's relevant, feel free to ping a maintainer or add a comment!_
 
