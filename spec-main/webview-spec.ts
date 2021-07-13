@@ -797,11 +797,6 @@ describe('<webview> tag', function () {
         src: `file://${fixtures}/pages/content.html`
       });
       const [, webViewContents] = await emittedOnce(app, 'web-contents-created');
-      // TODO(deepak1556): With https://codereview.chromium.org/2836973002
-      // focus of the webContents is required when triggering the api.
-      // Remove this workaround after determining the cause for
-      // incorrect focus.
-      webViewContents.focus();
       const activeMatchOrdinal = [];
       let isFirstRequest = true;
 
