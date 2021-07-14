@@ -1628,7 +1628,7 @@ index 0000000000000000000000000000000000000000..d1d6b51e8c0c5bc6a5d09e217eb30483
 +  args = rebase_path(inputs + outputs, root_build_dir)
 +}
 diff --git a/src/node_version.h b/src/node_version.h
-index 102f9f59e15baaf0ca1b4a61195ae0ff96b96bcd..79bea27a0935b4a39b274fdc2aff1a9d5a994020 100644
+index 0523885212d429ee5c4142137524cb127d8adc97..116815364055a01f0c0619f0f22e9a387c2f2e2e 100644
 --- a/src/node_version.h
 +++ b/src/node_version.h
 @@ -89,7 +89,10 @@
@@ -1768,7 +1768,7 @@ index 0000000000000000000000000000000000000000..3088ae4bdf814ae255c9805ebd393b2e
 +
 +  out_file.writelines(new_contents)
 diff --git a/tools/install.py b/tools/install.py
-index 24cf51e73199e60b4c24700e1074fe9bd0a399e6..ed1a94fdbce58916dcbb606fbd518385a38de0d3 100755
+index 24cf51e73199e60b4c24700e1074fe9bd0a399e6..3cbf4f45fabec1a26e0edebb18fb589fbecfbe68 100755
 --- a/tools/install.py
 +++ b/tools/install.py
 @@ -159,17 +159,18 @@ def files(action):
@@ -1800,7 +1800,7 @@ index 24cf51e73199e60b4c24700e1074fe9bd0a399e6..ed1a94fdbce58916dcbb606fbd518385
      files_arg = [name for name in files_arg if name in v8_headers]
      action(files_arg, dest)
  
-@@ -187,7 +188,7 @@ def headers(action):
+@@ -190,7 +191,7 @@ def headers(action):
    if sys.platform.startswith('aix'):
      action(['out/Release/node.exp'], 'include/node/')
  
@@ -1810,10 +1810,10 @@ index 24cf51e73199e60b4c24700e1074fe9bd0a399e6..ed1a94fdbce58916dcbb606fbd518385
    if 'false' == variables.get('node_shared_libuv'):
      subdir_files('deps/uv/include', 'include/node/', action)
 diff --git a/tools/js2c.py b/tools/js2c.py
-index d40f28ce2bff2b7fc28ceeafc7772831746e7f89..4af54c3fa00602f9d0ce5cc4dca253d425048706 100755
+index d93be2123e0f8c75dd6a0041ef164982db0860e4..4d9317527d46ac8c6d8066bfba707233053b8615 100755
 --- a/tools/js2c.py
 +++ b/tools/js2c.py
-@@ -130,6 +130,14 @@ def NormalizeFileName(filename):
+@@ -131,6 +131,14 @@ def NormalizeFileName(filename):
      split = split[1:]
    if len(split):
      filename = '/'.join(split)

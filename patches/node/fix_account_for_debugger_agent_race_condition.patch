@@ -10,7 +10,7 @@ errors. This is remedied by adding a small timeout to the test.
 We'll either upstream this or figure out a better solution.
 
 diff --git a/test/parallel/test-debugger-address.js b/test/parallel/test-debugger-address.js
-index ff31747016c2d49ac87fa272eba3231e9d4fbae5..e4f7b13aad3c60100e56df00165d1af550f1a117 100644
+index 95dd1c6e3f82835d5ccaf65544d654b71efaa392..ed8dccf91247068455dd593bb3e8c02bddc89ae5 100644
 --- a/test/parallel/test-debugger-address.js
 +++ b/test/parallel/test-debugger-address.js
 @@ -59,6 +59,7 @@ function launchTarget(...args) {

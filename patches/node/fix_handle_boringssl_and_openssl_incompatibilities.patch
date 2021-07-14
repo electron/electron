@@ -235,10 +235,10 @@ index 7b113a8dcb06b0b0e1329ce0daf7305598ea6545..b04e53a7f24885ffb6639430988d0ffb
      const EC_KEY* ec_key = EVP_PKEY_get0_EC_KEY(pkey.get());
      const EC_GROUP* ec_group = EC_KEY_get0_group(ec_key);
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index 13c40dcb757661220288465c39101de0b4018e90..7d1d4400319292a8ddf3afe013b5678f84c25576 100644
+index f18304cd655842e999a39659315c4eb3ce1c0c6e..1aed0e7e88460cea63950f71dac502829d662cff 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
-@@ -490,24 +490,14 @@ Maybe<bool> Decorate(Environment* env, Local<Object> obj,
+@@ -491,24 +491,14 @@ Maybe<bool> Decorate(Environment* env, Local<Object> obj,
      V(BIO)                                                                    \
      V(PKCS7)                                                                  \
      V(X509V3)                                                                 \
@@ -263,7 +263,7 @@ index 13c40dcb757661220288465c39101de0b4018e90..7d1d4400319292a8ddf3afe013b5678f
      V(USER)                                                                   \
  
  #define V(name) case ERR_LIB_##name: lib = #name "_"; break;
-@@ -667,7 +657,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -668,7 +658,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
    CHECK(args[0]->IsUint32());
    Environment* env = Environment::GetCurrent(args);
    uint32_t len = args[0].As<Uint32>()->Value();
@@ -272,7 +272,7 @@ index 13c40dcb757661220288465c39101de0b4018e90..7d1d4400319292a8ddf3afe013b5678f
    if (data == nullptr) {
      // There's no memory available for the allocation.
      // Return nothing.
-@@ -679,7 +669,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -680,7 +670,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
            data,
            len,
            [](void* data, size_t len, void* deleter_data) {
@@ -281,7 +281,7 @@ index 13c40dcb757661220288465c39101de0b4018e90..7d1d4400319292a8ddf3afe013b5678f
            },
            data);
    Local<ArrayBuffer> buffer = ArrayBuffer::New(env->isolate(), store);
-@@ -687,10 +677,12 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -688,10 +678,12 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
  }
  
  void SecureHeapUsed(const FunctionCallbackInfo<Value>& args) {
