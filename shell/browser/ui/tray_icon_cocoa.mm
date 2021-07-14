@@ -121,7 +121,7 @@
                                         weight:NSFontWeightRegular]
       };
       [attributed_title
-          setAttributes:attributes
+          addAttributes:attributes
                   range:NSMakeRange(0, [attributed_title length])];
     }
   } else if ([font_type isEqualToString:@"monospacedDigit"]) {
@@ -132,7 +132,7 @@
                                              weight:NSFontWeightRegular]
       };
       [attributed_title
-          setAttributes:attributes
+          addAttributes:attributes
                   range:NSMakeRange(0, [attributed_title length])];
     }
   }
