@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index e458ba17c5c1f088575904ada306e3a5fbc22b84..f0794597317aa1091fc4bf098ddbaa285f6c9c1e 100644
+index ace74b8c3d0113409df0613b3750f33bfa302e30..118b289ebe50ab249d5af8505fc47952e2db3c75 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -116,6 +116,11 @@
@@ -116,7 +116,7 @@ index e458ba17c5c1f088575904ada306e3a5fbc22b84..f0794597317aa1091fc4bf098ddbaa28
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -1981,6 +2066,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -1982,6 +2067,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
          std::move(cert_verifier));
      cert_verifier = base::WrapUnique(cert_verifier_with_trust_anchors_);
  #endif  // BUILDFLAG(IS_CHROMEOS_ASH)

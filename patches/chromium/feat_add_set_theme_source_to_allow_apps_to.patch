@@ -61,7 +61,7 @@ index 06c11ef6f03a5de803d9f8d3893d614e763afb16..cd7e6bdbf24c4ee1b5fd0047b83de2c1
    SEQUENCE_CHECKER(sequence_checker_);
  
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index eafe512bc90d967eaadddc2e355c418ecd7dd83a..581de5b8a056dc1d529568e7c4c1f5f48555f579 100644
+index c7b96990129262d3b831006af10e85a208bdc581..d4365a3a7e393d5b7ded6030c256176c2858f8f4 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
 @@ -748,6 +748,8 @@ bool NativeThemeWin::ShouldUseDarkColors() const {

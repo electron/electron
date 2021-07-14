@@ -264,7 +264,7 @@ index c5c5a7b63b5b3b62a9517cbef3ae23ce57a3c89c..4f1b7e88d6d2ae89a60311c8aeb1fcee
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 5f7c245379597ee60ff2b7bce5bb8eadc94c51f8..04334dd0f83f87bc56cc4266256a849f203d4ca0 100644
+index db986c44ff470b11cbaca7859f824b26045d8131..fe11e536bac2099148a116904ad7fe77f8b4f935 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -3708,8 +3708,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -404,10 +404,10 @@ index dd1f6129173a0e19023f4ec9b66c44486b080456..d10468c06f84b59387af0a8fd5bc1c06
          ->options()
          ->block_new_web_contents();
 diff --git a/ui/views/controls/webview/web_dialog_view.cc b/ui/views/controls/webview/web_dialog_view.cc
-index 606f82c4e9708c4099425603b6e8c3e6859f088b..b8a2dfb475c0ca9ae24901ca31bb92f328827bf7 100644
+index aba1ecfde2be3371099bf9c729794b22a8849f02..8919bf1cab7a3bc3faac10ed0d86b9390af009b8 100644
 --- a/ui/views/controls/webview/web_dialog_view.cc
 +++ b/ui/views/controls/webview/web_dialog_view.cc
-@@ -438,8 +438,7 @@ bool WebDialogView::IsWebContentsCreationOverridden(
+@@ -426,8 +426,7 @@ bool WebDialogView::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -418,10 +418,10 @@ index 606f82c4e9708c4099425603b6e8c3e6859f088b..b8a2dfb475c0ca9ae24901ca31bb92f3
      return delegate_->HandleShouldOverrideWebContentsCreation();
    return false;
 diff --git a/ui/views/controls/webview/web_dialog_view.h b/ui/views/controls/webview/web_dialog_view.h
-index 978155add287e3ce57ece8db0b142a7154b378b0..7bdfe79c5c77f91cdd59df65761504b1f532b2e4 100644
+index d4d633809610215c589405d20e1137280c55468b..f66a83101c5e5518705c4d23ad963bf0a170241e 100644
 --- a/ui/views/controls/webview/web_dialog_view.h
 +++ b/ui/views/controls/webview/web_dialog_view.h
-@@ -160,8 +160,7 @@ class WEBVIEW_EXPORT WebDialogView : public ClientView,
+@@ -155,8 +155,7 @@ class WEBVIEW_EXPORT WebDialogView : public ClientView,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
