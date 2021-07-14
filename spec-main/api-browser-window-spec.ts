@@ -4204,7 +4204,8 @@ describe('BrowserWindow module', () => {
         expect(w.isFullScreen()).to.be.false('isFullScreen');
       });
 
-      ifit(process.arch === 'x64')('multiple windows inherit correct fullscreen state', async () => {
+      // FIXME: https://github.com/electron/electron/issues/30140
+      xit('multiple windows inherit correct fullscreen state', async () => {
         const w = new BrowserWindow();
         const enterFullScreen = emittedOnce(w, 'enter-full-screen');
         w.setFullScreen(true);
