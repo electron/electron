@@ -787,37 +787,47 @@ describe('<webview> tag', function () {
   describe('found-in-page event', () => {
     let w: BrowserWindow;
     beforeEach(async () => {
-      w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, webviewTag: true, contextIsolation: false } });
+      w = new BrowserWindow({ show: false, webPreferences: { webviewTag: true, contextIsolation: false } });
       await w.loadURL('about:blank');
     });
     afterEach(closeAllWindows);
 
     it('emits when a request is made', async () => {
-      loadWebView(w.webContents, {
+      await loadWebView(w.webContents, {
         src: `file://${fixtures}/pages/content.html`
       });
-      const [, webViewContents] = await emittedOnce(app, 'web-contents-created');
-      const activeMatchOrdinal = [];
-      let isFirstRequest = true;
+      const result = await w.webContents.executeJavaScript(`new Promise((resolve, reject) => {
+        const webview = document.querySelector('webview')
 
-      for (;;) {
-        const foundInPage = emittedOnce(webViewContents, 'found-in-page');
-        const requestId = webViewContents.findInPage('virtual', { findNext: isFirstRequest });
-        const [, result] = await foundInPage;
-        isFirstRequest = false;
-
-        expect(result.requestId).to.equal(requestId);
-        expect(result.matches).to.equal(3);
-
-        activeMatchOrdinal.push(result.activeMatchOrdinal);
-
-        if (result.activeMatchOrdinal === result.matches) {
-          break;
+        const waitForEvent = (target, eventName) => {
+          return new Promise(resolve => {
+            target.addEventListener(eventName, resolve, { once: true })
+          })
         }
-      }
 
-      expect(activeMatchOrdinal).to.deep.equal([1, 2, 3]);
-      webViewContents.stopFindInPage('clearSelection');
+        async function startFind() {
+          const activeMatchOrdinal = []
+          const foundInPage = waitForEvent(webview, 'found-in-page')
+          webview.findInPage('virtual', { findNext: true })
+          const event = await foundInPage
+          if (event.result.matches) {
+            activeMatchOrdinal.push(event.result.activeMatchOrdinal)
+
+            for (let i=1; i < event.result.matches; i++) {
+              const foundInPage = waitForEvent(webview, 'found-in-page')
+              webview.findInPage('virtual', { findNext: false })
+              const event = await foundInPage
+              activeMatchOrdinal.push(event.result.activeMatchOrdinal)
+            }
+          }
+          webview.stopFindInPage('clearSelection')
+          resolve(activeMatchOrdinal)
+        }
+
+        webview.focus()
+        startFind()
+      })`);
+      expect(result).to.deep.equal([1, 2, 3]);
     });
   });
 });
