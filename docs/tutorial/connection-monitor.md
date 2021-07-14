@@ -2,7 +2,7 @@
 
 Many applications require some sort of online/offline detection mechanism.
 As detailed in the [Online/Offline Event Detection](./online-offline-events.md)
-guide, the chromium browser does provide a mechanism for determining
+guide, the Chromium browser does provide a mechanism for determining
 connectivity; however, this mechanism is trivial. It only checks for the
 presance of a _network_ connection on the machine and not if it can actually
 connect to a given resource. This example builds a connection monitoring
