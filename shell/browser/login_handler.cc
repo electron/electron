@@ -70,11 +70,15 @@ void LoginHandler::EmitEvent(
   details.Set("firstAuthAttempt", first_auth_attempt);
   details.Set("responseHeaders", response_headers.get());
 
+  auto weak_this = weak_factory_.GetWeakPtr();
   bool default_prevented =
       api_web_contents->Emit("login", std::move(details), auth_info,
                              base::BindOnce(&LoginHandler::CallbackFromJS,
                                             weak_factory_.GetWeakPtr()));
-  if (!default_prevented && auth_required_callback_) {
+  // ⚠️ NB, if CallbackFromJS is called during Emit(), |this| will have been
+  // deleted. Check the weak ptr before accessing any member variables to
+  // prevent UAF.
+  if (weak_this && !default_prevented && auth_required_callback_) {
     std::move(auth_required_callback_).Run(base::nullopt);
   }
 }
