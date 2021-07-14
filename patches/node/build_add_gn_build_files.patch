@@ -1768,14 +1768,17 @@ index 0000000000000000000000000000000000000000..3088ae4bdf814ae255c9805ebd393b2e
 +
 +  out_file.writelines(new_contents)
 diff --git a/tools/install.py b/tools/install.py
-index 045d406d84be301722f3de62abc448db84e751f8..95aa4c985d33ef37a73eebfca8bb8651e5059d37 100755
+index 24cf51e73199e60b4c24700e1074fe9bd0a399e6..ed1a94fdbce58916dcbb606fbd518385a38de0d3 100755
 --- a/tools/install.py
 +++ b/tools/install.py
-@@ -159,14 +159,15 @@ def files(action):
+@@ -159,17 +159,18 @@ def files(action):
  def headers(action):
    def wanted_v8_headers(files_arg, dest):
      v8_headers = [
 -      'deps/v8/include/cppgc/common.h',
+-      'deps/v8/include/libplatform/libplatform.h',
+-      'deps/v8/include/libplatform/libplatform-export.h',
+-      'deps/v8/include/libplatform/v8-tracing.h',
 -      'deps/v8/include/v8.h',
 -      'deps/v8/include/v8-internal.h',
 -      'deps/v8/include/v8-platform.h',
@@ -1783,6 +1786,9 @@ index 045d406d84be301722f3de62abc448db84e751f8..95aa4c985d33ef37a73eebfca8bb8651
 -      'deps/v8/include/v8-version.h',
 -      'deps/v8/include/v8config.h',
 +      '../../v8/include/cppgc/common.h',
++      '../../v8/include/libplatform/libplatform.h',
++      '../../v8/include/libplatform/libplatform-export.h',
++      '../../v8/include/libplatform/v8-tracing.h',
 +      '../../v8/include/v8.h',
 +      '../../v8/include/v8-internal.h',
 +      '../../v8/include/v8-platform.h',
