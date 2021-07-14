@@ -8,7 +8,6 @@
 #include <map>
 #include <memory>
 #include <string>
-#include <vector>
 
 #include "base/memory/weak_ptr.h"
 #include "chrome/browser/predictors/preconnect_manager.h"
@@ -19,7 +18,6 @@
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
 #include "shell/browser/media/media_device_id_salt.h"
 
-class PrefRegistrySimple;
 class PrefService;
 class ValueMapPrefStore;
 
@@ -44,7 +42,6 @@ class ElectronDownloadManagerDelegate;
 class ElectronPermissionManager;
 class CookieChangeNotifier;
 class ResolveProxyHelper;
-class SpecialStoragePolicy;
 class WebViewManager;
 class ProtocolRegistry;
 

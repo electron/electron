@@ -116,7 +116,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
 
 #ifdef _DEBUG
   // Don't display assert dialog boxes in CI test runs
-  static const char* kCI = "CI";
+  static const char kCI[] = "CI";
   if (IsEnvSet(kCI)) {
     _CrtSetReportMode(_CRT_ERROR, _CRTDBG_MODE_DEBUG | _CRTDBG_MODE_FILE);
     _CrtSetReportFile(_CRT_ERROR, _CRTDBG_FILE_STDERR);
@@ -252,7 +252,7 @@ int main(int argc, char* argv[]) {
     abort();
   }
 
-  std::unique_ptr<char[]> exec_path(new char[exec_path_size]);
+  auto exec_path = std::make_unique<char[]>(exec_path_size);
   rv = _NSGetExecutablePath(exec_path.get(), &exec_path_size);
   if (rv != 0) {
     fprintf(stderr, "_NSGetExecutablePath: get path failed\n");

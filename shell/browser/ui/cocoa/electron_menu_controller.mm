@@ -21,9 +21,9 @@
 #include "shell/browser/ui/electron_menu_model.h"
 #include "shell/browser/window_list.h"
 #include "ui/base/accelerators/accelerator.h"
-#include "ui/base/accelerators/platform_accelerator_cocoa.h"
 #include "ui/base/l10n/l10n_util_mac.h"
 #include "ui/events/cocoa/cocoa_event_utils.h"
+#include "ui/events/keycodes/keyboard_code_conversion_mac.h"
 #include "ui/gfx/image/image.h"
 #include "ui/strings/grit/ui_strings.h"
 
@@ -197,7 +197,7 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
 
   // Locate & retain the recent documents menu item
   if (!recentDocumentsMenuItem_) {
-    std::u16string title = base::ASCIIToUTF16("Open Recent");
+    std::u16string title = u"Open Recent";
     NSString* openTitle = l10n_util::FixUpWindowsStyleLabel(title);
 
     recentDocumentsMenuItem_.reset([[[[[NSApp mainMenu]
@@ -315,11 +315,9 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
   return item.autorelease();
 }
 
-// Adds an item or a hierarchical menu to the item at the |index|,
-// associated with the entry in the model identified by |modelIndex|.
-- (void)addItemToMenu:(NSMenu*)menu
-              atIndex:(NSInteger)index
-            fromModel:(electron::ElectronMenuModel*)model {
+- (base::scoped_nsobject<NSMenuItem>)
+    makeMenuItemForIndex:(NSInteger)index
+               fromModel:(electron::ElectronMenuModel*)model {
   std::u16string label16 = model->GetLabelAt(index);
   NSString* label = l10n_util::FixUpWindowsStyleLabel(label16);
 
@@ -339,8 +337,8 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
   std::u16string role = model->GetRoleAt(index);
   electron::ElectronMenuModel::ItemType type = model->GetTypeAt(index);
 
-  if (role == base::ASCIIToUTF16("services")) {
-    std::u16string title = base::ASCIIToUTF16("Services");
+  if (role == u"services") {
+    std::u16string title = u"Services";
     NSString* label = l10n_util::FixUpWindowsStyleLabel(title);
 
     [item setTarget:nil];
@@ -348,7 +346,7 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
     NSMenu* submenu = [[[NSMenu alloc] initWithTitle:label] autorelease];
     [item setSubmenu:submenu];
     [NSApp setServicesMenu:submenu];
-  } else if (role == base::ASCIIToUTF16("sharemenu")) {
+  } else if (role == u"sharemenu") {
     SharingItem sharing_item;
     model->GetSharingItemAt(index, &sharing_item);
     [item setTarget:nil];
@@ -374,13 +372,11 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
     [item setSubmenu:submenu];
 
     // Set submenu's role.
-    if ((role == base::ASCIIToUTF16("window") ||
-         role == base::ASCIIToUTF16("windowmenu")) &&
-        [submenu numberOfItems])
+    if ((role == u"window" || role == u"windowmenu") && [submenu numberOfItems])
       [NSApp setWindowsMenu:submenu];
-    else if (role == base::ASCIIToUTF16("help"))
+    else if (role == u"help")
       [NSApp setHelpMenu:submenu];
-    else if (role == base::ASCIIToUTF16("recentdocuments"))
+    else if (role == u"recentdocuments")
       [self replaceSubmenuShowingRecentDocuments:item];
   } else {
     // The MenuModel works on indexes so we can't just set the command id as the
@@ -394,11 +390,31 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
     ui::Accelerator accelerator;
     if (model->GetAcceleratorAtWithParams(index, useDefaultAccelerator_,
                                           &accelerator)) {
-      NSString* key_equivalent;
-      NSUInteger modifier_mask;
-      GetKeyEquivalentAndModifierMaskFromAccelerator(
-          accelerator, &key_equivalent, &modifier_mask);
-      [item setKeyEquivalent:key_equivalent];
+      // Note that we are not using Chromium's
+      // GetKeyEquivalentAndModifierMaskFromAccelerator API,
+      // because it will convert Shift+Character to ShiftedCharacter, for
+      // example Shift+/ would be converted to ?, which is against macOS HIG.
+      // See also https://github.com/electron/electron/issues/21790.
+      NSUInteger modifier_mask = 0;
+      if (accelerator.IsCtrlDown())
+        modifier_mask |= NSEventModifierFlagControl;
+      if (accelerator.IsAltDown())
+        modifier_mask |= NSEventModifierFlagOption;
+      if (accelerator.IsCmdDown())
+        modifier_mask |= NSEventModifierFlagCommand;
+      unichar character;
+      if (accelerator.shifted_char) {
+        // When a shifted char is explicitly specified, for example Ctrl+Plus,
+        // use the shifted char directly.
+        character = static_cast<unichar>(*accelerator.shifted_char);
+      } else {
+        // Otherwise use the unshifted combinations, for example Ctrl+Shift+=.
+        if (accelerator.IsShiftDown())
+          modifier_mask |= NSEventModifierFlagShift;
+        ui::MacKeyCodeForWindowsKeyCode(accelerator.key_code(), modifier_mask,
+                                        nullptr, &character);
+      }
+      [item setKeyEquivalent:[NSString stringWithFormat:@"%C", character]];
       [item setKeyEquivalentModifierMask:modifier_mask];
     }
 
@@ -419,7 +435,17 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
       }
     }
   }
-  [menu insertItem:item atIndex:index];
+
+  return item;
+}
+
+// Adds an item or a hierarchical menu to the item at the |index|,
+// associated with the entry in the model identified by |modelIndex|.
+- (void)addItemToMenu:(NSMenu*)menu
+              atIndex:(NSInteger)index
+            fromModel:(electron::ElectronMenuModel*)model {
+  [menu insertItem:[self makeMenuItemForIndex:index fromModel:model]
+           atIndex:index];
 }
 
 // Called before the menu is to be displayed to update the state (enabled,

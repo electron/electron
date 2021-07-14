@@ -68,7 +68,7 @@ void GPUInfoManager::CompleteInfoFetcher(
 
   if (NeedsCompleteGpuInfoCollection()) {
     gpu_data_manager_->RequestDxdiagDx12VulkanGpuInfoIfNeeded(
-        content::kGpuInfoRequestAll, /* delayed */ false);
+        content::GpuDataManagerImpl::kGpuInfoRequestAll, /* delayed */ false);
   } else {
     GPUInfoManager::OnGpuInfoUpdate();
   }

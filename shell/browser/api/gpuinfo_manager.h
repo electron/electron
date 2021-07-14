@@ -6,7 +6,6 @@
 #define SHELL_BROWSER_API_GPUINFO_MANAGER_H_
 
 #include <memory>
-#include <unordered_set>
 #include <vector>
 
 #include "content/browser/gpu/gpu_data_manager_impl.h"  // nogncheck

@@ -16,7 +16,6 @@ you can interact with the community in these locations:
   * Sharing ideas with other Electron app developers
   * And more!
 * [`electron`](https://discuss.atom.io/c/electron) category on the Atom forums
-* `#atom-shell` channel on Freenode
 * `#electron` channel on [Atom's Slack](https://discuss.atom.io/t/join-us-on-slack/16638?source_topic_id=25406)
 * [`electron-ru`](https://telegram.me/electron_ru) *(Russian)*
 * [`electron-br`](https://electron-br.slack.com) *(Brazilian Portuguese)*
@@ -37,6 +36,13 @@ is a community-maintained list of useful example apps,
 tools and resources.
 
 ## Supported Versions
+
+_**Note:** Beginning in September 2021 with Electron 15, the Electron team
+will temporarily support the latest **four** stable major versions. This
+extended support is intended to help Electron developers transition to
+the [new eight week release cadence](https://electronjs.org/blog/8-week-cadence), and will continue until May 2022, with
+the release of Electron 19. At that time, the Electron team will drop support
+back to the latest three stable major versions._
 
 The latest three *stable* major versions are supported by the Electron team.
 For example, if the latest release is 6.1.x, then the 5.0.x as well
@@ -64,9 +70,10 @@ until the maintainers feel the maintenance burden is too high to continue doing 
 
 ### Currently supported versions
 
+* 14.x.y
+* 13.x.y
 * 12.x.y
 * 11.x.y
-* 10.x.y
 
 ### End-of-life
 

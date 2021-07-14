@@ -419,7 +419,7 @@ describe('webContents module', () => {
     const testFn = (process.platform === 'win32' && process.arch === 'arm64' ? it.skip : it);
     testFn('returns the focused web contents', async () => {
       const w = new BrowserWindow({ show: true });
-      await w.loadURL('about:blank');
+      await w.loadFile(path.join(__dirname, 'fixtures', 'blank.html'));
       expect(webContents.getFocusedWebContents().id).to.equal(w.webContents.id);
 
       const devToolsOpened = emittedOnce(w.webContents, 'devtools-opened');
@@ -521,12 +521,13 @@ describe('webContents module', () => {
       w.show();
       await focused;
       expect(w.isFocused()).to.be.true();
+      const blurred = emittedOnce(w, 'blur');
       w.webContents.openDevTools({ mode: 'detach', activate: true });
       await Promise.all([
         emittedOnce(w.webContents, 'devtools-opened'),
         emittedOnce(w.webContents, 'devtools-focused')
       ]);
-      await delay();
+      await blurred;
       expect(w.isFocused()).to.be.false();
     });
 
@@ -2020,6 +2021,19 @@ describe('webContents module', () => {
       await w.loadURL(serverUrl);
       const body = await w.webContents.executeJavaScript('document.documentElement.textContent');
       expect(body).to.equal('401');
+    });
+  });
+
+  describe('page-title-updated event', () => {
+    afterEach(closeAllWindows);
+    it('is emitted with a full title for pages with no navigation', async () => {
+      const bw = new BrowserWindow({ show: false, webPreferences: { nativeWindowOpen: true } });
+      await bw.loadURL('about:blank');
+      bw.webContents.executeJavaScript('child = window.open("", "", "show=no"); null');
+      const [, child] = await emittedOnce(app, 'web-contents-created');
+      bw.webContents.executeJavaScript('child.document.title = "new title"');
+      const [, title] = await emittedOnce(child, 'page-title-updated');
+      expect(title).to.equal('new title');
     });
   });
 

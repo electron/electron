@@ -7,14 +7,12 @@
 
 #include <memory>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
 #include "content/public/renderer/content_renderer_client.h"
 #include "electron/buildflags/buildflags.h"
 #include "printing/buildflags/buildflags.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "third_party/blink/public/web/web_local_frame.h"
 // In SHARED_INTERMEDIATE_DIR.
 #include "widevine_cdm_version.h"  // NOLINT(build/include_directory)
 
@@ -33,18 +31,17 @@
 class SpellCheck;
 #endif
 
+namespace blink {
+class WebLocalFrame;
+}
+
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 namespace extensions {
 class ExtensionsClient;
 }
-namespace content {
-struct WebPluginInfo;
-}
 #endif
 
 namespace electron {
-
-class ElectronApiServiceImpl;
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 class ElectronExtensionsRendererClient;
@@ -60,19 +57,21 @@ class RendererClientBase : public content::ContentRendererClient
   RendererClientBase();
   ~RendererClientBase() override;
 
+  static RendererClientBase* Get();
+
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   // service_manager::LocalInterfaceProvider implementation.
   void GetInterface(const std::string& name,
-                    mojo::ScopedMessagePipeHandle request_handle) override;
+                    mojo::ScopedMessagePipeHandle interface_pipe) override;
 #endif
 
   virtual void DidCreateScriptContext(v8::Handle<v8::Context> context,
-                                      content::RenderFrame* render_frame);
+                                      content::RenderFrame* render_frame) = 0;
   virtual void WillReleaseScriptContext(v8::Handle<v8::Context> context,
                                         content::RenderFrame* render_frame) = 0;
   virtual void DidClearWindowObject(content::RenderFrame* render_frame);
   virtual void SetupMainWorldOverrides(v8::Handle<v8::Context> context,
-                                       content::RenderFrame* render_frame) = 0;
+                                       content::RenderFrame* render_frame);
 
   std::unique_ptr<blink::WebPrescientNetworking> CreatePrescientNetworking(
       content::RenderFrame* render_frame) override;
@@ -80,11 +79,12 @@ class RendererClientBase : public content::ContentRendererClient
   // Get the context that the Electron API is running in.
   v8::Local<v8::Context> GetContext(blink::WebLocalFrame* frame,
                                     v8::Isolate* isolate) const;
-  // Executes a given v8 Script
-  static v8::Local<v8::Value> RunScript(v8::Local<v8::Context> context,
-                                        v8::Local<v8::String> source);
 
-  // v8Util.getHiddenValue(window.frameElement, 'internal')
+  static void AllowGuestViewElementDefinition(
+      v8::Isolate* isolate,
+      v8::Local<v8::Object> context,
+      v8::Local<v8::Function> register_cb);
+
   bool IsWebViewFrame(v8::Handle<v8::Context> context,
                       content::RenderFrame* render_frame) const;
 

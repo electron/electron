@@ -37,7 +37,7 @@ AppIndicatorIconMenu::~AppIndicatorIconMenu() {
 
 void AppIndicatorIconMenu::UpdateClickActionReplacementMenuItem(
     const char* label,
-    const base::Closure& callback) {
+    const base::RepeatingClosure& callback) {
   click_action_replacement_callback_ = callback;
 
   if (click_action_replacement_menu_item_added_) {

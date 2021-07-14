@@ -31,10 +31,6 @@ class SubmenuButton : public views::MenuButton {
   // views::MenuButton:
   void PaintButtonContents(gfx::Canvas* canvas) override;
 
-  // views::InkDropHostView:
-  std::unique_ptr<views::InkDropRipple> CreateInkDropRipple() const override;
-  std::unique_ptr<views::InkDrop> CreateInkDrop() override;
-
  private:
   bool GetUnderlinePosition(const std::u16string& text,
                             char16_t* accelerator,

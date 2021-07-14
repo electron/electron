@@ -64,7 +64,7 @@ gin::WrapperInfo Tray::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 Tray::Tray(v8::Isolate* isolate,
            v8::Local<v8::Value> image,
-           base::Optional<UUID> guid)
+           absl::optional<UUID> guid)
     : tray_icon_(TrayIcon::Create(guid)) {
   SetImage(isolate, image);
   tray_icon_->AddObserver(this);
@@ -75,7 +75,7 @@ Tray::~Tray() = default;
 // static
 gin::Handle<Tray> Tray::New(gin_helper::ErrorThrower thrower,
                             v8::Local<v8::Value> image,
-                            base::Optional<UUID> guid,
+                            absl::optional<UUID> guid,
                             gin::Arguments* args) {
   if (!Browser::Get()->is_ready()) {
     thrower.ThrowError("Cannot create Tray before app is ready");
@@ -226,7 +226,7 @@ void Tray::SetToolTip(const std::string& tool_tip) {
 }
 
 void Tray::SetTitle(const std::string& title,
-                    const base::Optional<gin_helper::Dictionary>& options,
+                    const absl::optional<gin_helper::Dictionary>& options,
                     gin::Arguments* args) {
   if (!CheckAlive())
     return;

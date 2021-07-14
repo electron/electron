@@ -35,7 +35,7 @@ Linux and Windows to define some accelerators.
 Use `Alt` instead of `Option`. The `Option` key only exists on macOS, whereas
 the `Alt` key is available on all platforms.
 
-The `Super` key is mapped to the `Windows` key on Windows and Linux and
+The `Super` (or `Meta`) key is mapped to the `Windows` key on Windows and Linux and
 `Cmd` on macOS.
 
 ## Available modifiers
@@ -48,6 +48,7 @@ The `Super` key is mapped to the `Windows` key on Windows and Linux and
 * `AltGr`
 * `Shift`
 * `Super`
+* `Meta`
 
 ## Available key codes
 

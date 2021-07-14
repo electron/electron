@@ -22,6 +22,8 @@ namespace api {
 
 std::vector<std::string> GetStandardSchemes();
 
+void AddServiceWorkerScheme(const std::string& scheme);
+
 void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
                                  v8::Local<v8::Value> val);
 

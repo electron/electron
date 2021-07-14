@@ -1,4 +1,4 @@
-export const webViewEvents: Record<string, string[]> = {
+export const webViewEvents: Record<string, readonly string[]> = {
   'load-commit': ['url', 'isMainFrame'],
   'did-attach': [],
   'did-finish-load': [],
@@ -18,7 +18,7 @@ export const webViewEvents: Record<string, string[]> = {
   'did-navigate': ['url', 'httpResponseCode', 'httpStatusText'],
   'did-frame-navigate': ['url', 'httpResponseCode', 'httpStatusText', 'isMainFrame', 'frameProcessId', 'frameRoutingId'],
   'did-navigate-in-page': ['url', 'isMainFrame', 'frameProcessId', 'frameRoutingId'],
-  'focus-change': ['focus', 'guestInstanceId'],
+  '-focus-change': ['focus'],
   close: [],
   crashed: [],
   'render-process-gone': ['details'],
@@ -33,4 +33,4 @@ export const webViewEvents: Record<string, string[]> = {
   'found-in-page': ['result'],
   'did-change-theme-color': ['themeColor'],
   'update-target-url': ['url']
-};
+} as const;

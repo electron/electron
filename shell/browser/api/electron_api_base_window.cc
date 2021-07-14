@@ -206,8 +206,15 @@ void BaseWindow::OnWindowRestore() {
 }
 
 void BaseWindow::OnWindowWillResize(const gfx::Rect& new_bounds,
+                                    const gfx::ResizeEdge& edge,
                                     bool* prevent_default) {
-  if (Emit("will-resize", new_bounds)) {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::Locker locker(isolate);
+  v8::HandleScope handle_scope(isolate);
+  gin_helper::Dictionary info = gin::Dictionary::CreateEmpty(isolate);
+  info.Set("edge", edge);
+
+  if (Emit("will-resize", new_bounds, info)) {
     *prevent_default = true;
   }
 }
@@ -875,6 +882,10 @@ void BaseWindow::SetVibrancy(v8::Isolate* isolate, v8::Local<v8::Value> value) {
 }
 
 #if defined(OS_MAC)
+std::string BaseWindow::GetAlwaysOnTopLevel() {
+  return window_->GetAlwaysOnTopLevel();
+}
+
 void BaseWindow::SetWindowButtonVisibility(bool visible) {
   window_->SetWindowButtonVisibility(visible);
 }
@@ -886,7 +897,7 @@ bool BaseWindow::GetWindowButtonVisibility() const {
 void BaseWindow::SetTrafficLightPosition(const gfx::Point& position) {
   // For backward compatibility we treat (0, 0) as resetting to default.
   if (position.IsOrigin())
-    window_->SetTrafficLightPosition(base::nullopt);
+    window_->SetTrafficLightPosition(absl::nullopt);
   else
     window_->SetTrafficLightPosition(position);
 }
@@ -1264,6 +1275,7 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isVisibleOnAllWorkspaces",
                  &BaseWindow::IsVisibleOnAllWorkspaces)
 #if defined(OS_MAC)
+      .SetMethod("_getAlwaysOnTopLevel", &BaseWindow::GetAlwaysOnTopLevel)
       .SetMethod("setAutoHideCursor", &BaseWindow::SetAutoHideCursor)
 #endif
       .SetMethod("setVibrancy", &BaseWindow::SetVibrancy)

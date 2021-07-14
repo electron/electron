@@ -12,8 +12,8 @@ namespace electron {
 struct NotificationData {
   DesktopNotificationController* controller = nullptr;
 
-  std::wstring caption;
-  std::wstring body_text;
+  std::u16string caption;
+  std::u16string body_text;
   HBITMAP image = NULL;
 
   NotificationData() = default;

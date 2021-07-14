@@ -40,6 +40,8 @@ bool Clipboard::Has(const std::string& format_string,
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
   ui::ClipboardFormatType format(
       ui::ClipboardFormatType::GetType(format_string));
+  if (format.GetName().empty())
+    format = ui::ClipboardFormatType::GetCustomPlatformType(format_string);
   return clipboard->IsFormatAvailable(format, GetClipboardBuffer(args),
                                       /* data_dst = */ nullptr);
 }
@@ -47,7 +49,7 @@ bool Clipboard::Has(const std::string& format_string,
 std::string Clipboard::Read(const std::string& format_string) {
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
   ui::ClipboardFormatType format(
-      ui::ClipboardFormatType::GetType(format_string));
+      ui::ClipboardFormatType::GetCustomPlatformType(format_string));
 
   std::string data;
   clipboard->ReadData(format, /* data_dst = */ nullptr, &data);
@@ -181,12 +183,12 @@ void Clipboard::WriteBookmark(const std::u16string& title,
 
 gfx::Image Clipboard::ReadImage(gin_helper::Arguments* args) {
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
-  base::Optional<gfx::Image> image;
+  absl::optional<gfx::Image> image;
   clipboard->ReadImage(
       GetClipboardBuffer(args),
       /* data_dst = */ nullptr,
       base::BindOnce(
-          [](base::Optional<gfx::Image>* image, const SkBitmap& result) {
+          [](absl::optional<gfx::Image>* image, const SkBitmap& result) {
             image->emplace(gfx::Image::CreateFrom1xBitmap(result));
           },
           &image));

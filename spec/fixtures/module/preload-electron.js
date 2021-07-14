@@ -1,0 +1,1 @@
+window.electron = require('electron');

@@ -225,7 +225,7 @@ NativeBrowserViewMac::NativeBrowserViewMac(
   view.autoresizingMask = kDefaultAutoResizingMask;
 }
 
-NativeBrowserViewMac::~NativeBrowserViewMac() {}
+NativeBrowserViewMac::~NativeBrowserViewMac() = default;
 
 void NativeBrowserViewMac::SetAutoResizeFlags(uint8_t flags) {
   NSAutoresizingMaskOptions autoresizing_mask = kDefaultAutoResizingMask;
@@ -347,9 +347,7 @@ void NativeBrowserViewMac::UpdateDraggableRegions(
 
   std::vector<gfx::Rect> drag_exclude_rects;
   if (draggable_regions_.empty()) {
-    const auto bounds = GetBounds();
-    drag_exclude_rects.emplace_back(bounds.x(), bounds.y(), webViewWidth,
-                                    webViewHeight);
+    drag_exclude_rects.emplace_back(0, 0, webViewWidth, webViewHeight);
   } else {
     drag_exclude_rects = CalculateNonDraggableRegions(
         DraggableRegionsToSkRegion(draggable_regions_), webViewWidth,

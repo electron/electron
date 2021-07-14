@@ -1,6 +1,12 @@
 import * as path from 'path';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
+import type * as ipcRendererInternalModule from '@electron/internal/renderer/ipc-renderer-internal';
+import type * as webFrameInitModule from '@electron/internal/renderer/web-frame-init';
+import type * as webViewInitModule from '@electron/internal/renderer/web-view/web-view-init';
+import type * as windowSetupModule from '@electron/internal/renderer/window-setup';
+import type * as securityWarningsModule from '@electron/internal/renderer/security-warnings';
+
 const Module = require('module');
 
 // Make sure globals like "process" and "global" are always available in preload
@@ -39,11 +45,7 @@ require('@electron/internal/common/init');
 // The global variable will be used by ipc for event dispatching
 const v8Util = process._linkedBinding('electron_common_v8_util');
 
-// Expose process.contextId
-const contextId = v8Util.getHiddenValue<string>(global, 'contextId');
-Object.defineProperty(process, 'contextId', { enumerable: true, value: contextId });
-
-const { ipcRendererInternal } = require('@electron/internal/renderer/ipc-renderer-internal');
+const { ipcRendererInternal } = require('@electron/internal/renderer/ipc-renderer-internal') as typeof ipcRendererInternalModule;
 const ipcRenderer = require('@electron/internal/renderer/api/ipc-renderer').default;
 
 v8Util.setHiddenValue(global, 'ipcNative', {
@@ -58,7 +60,7 @@ v8Util.setHiddenValue(global, 'ipcNative', {
 });
 
 // Use electron module after everything is ready.
-const { webFrameInit } = require('@electron/internal/renderer/web-frame-init');
+const { webFrameInit } = require('@electron/internal/renderer/web-frame-init') as typeof webFrameInitModule;
 webFrameInit();
 
 // Process command line arguments.
@@ -70,11 +72,10 @@ const nodeIntegration = mainFrame.getWebPreference('nodeIntegration');
 const webviewTag = mainFrame.getWebPreference('webviewTag');
 const isHiddenPage = mainFrame.getWebPreference('hiddenPage');
 const usesNativeWindowOpen = mainFrame.getWebPreference('nativeWindowOpen');
-const rendererProcessReuseEnabled = mainFrame.getWebPreference('disableElectronSiteInstanceOverrides');
 const preloadScript = mainFrame.getWebPreference('preload');
 const preloadScripts = mainFrame.getWebPreference('preloadScripts');
-const guestInstanceId = mainFrame.getWebPreference('guestInstanceId') || null;
-const openerId = mainFrame.getWebPreference('openerId') || null;
+const guestInstanceId = mainFrame.getWebPreference('guestInstanceId');
+const openerId = mainFrame.getWebPreference('openerId');
 const appPath = hasSwitch('app-path') ? getSwitchValue('app-path') : null;
 
 // The webContents preload script is loaded after the session preload scripts.
@@ -96,14 +97,14 @@ switch (window.location.protocol) {
   }
   default: {
     // Override default web functions.
-    const { windowSetup } = require('@electron/internal/renderer/window-setup');
-    windowSetup(guestInstanceId, openerId, isHiddenPage, usesNativeWindowOpen, rendererProcessReuseEnabled);
+    const { windowSetup } = require('@electron/internal/renderer/window-setup') as typeof windowSetupModule;
+    windowSetup(guestInstanceId, openerId, isHiddenPage, usesNativeWindowOpen);
   }
 }
 
 // Load webview tag implementation.
 if (process.isMainFrame) {
-  const { webViewInit } = require('@electron/internal/renderer/web-view/web-view-init');
+  const { webViewInit } = require('@electron/internal/renderer/web-view/web-view-init') as typeof webViewInitModule;
   webViewInit(contextIsolation, webviewTag, guestInstanceId);
 }
 
@@ -188,6 +189,6 @@ for (const preloadScript of preloadScripts) {
 
 // Warn about security issues
 if (process.isMainFrame) {
-  const { securityWarnings } = require('@electron/internal/renderer/security-warnings');
+  const { securityWarnings } = require('@electron/internal/renderer/security-warnings') as typeof securityWarningsModule;
   securityWarnings(nodeIntegration);
 }

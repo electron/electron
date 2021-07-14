@@ -24,7 +24,7 @@ The `dialog` module has the following methods:
   * `buttonLabel` String (optional) - Custom label for the confirmation button, when
     left empty the default label will be used.
   * `filters` [FileFilter[]](structures/file-filter.md) (optional)
-  * `properties` String[] (optional) - Contains which features the dialog should
+  * `properties` String[]&#32;(optional) - Contains which features the dialog should
     use. The following values are supported:
     * `openFile` - Allow files to be selected.
     * `openDirectory` - Allow directories to be selected.
@@ -87,7 +87,7 @@ dialog.showOpenDialogSync(mainWindow, {
   * `buttonLabel` String (optional) - Custom label for the confirmation button, when
     left empty the default label will be used.
   * `filters` [FileFilter[]](structures/file-filter.md) (optional)
-  * `properties` String[] (optional) - Contains which features the dialog should
+  * `properties` String[]&#32;(optional) - Contains which features the dialog should
     use. The following values are supported:
     * `openFile` - Allow files to be selected.
     * `openDirectory` - Allow directories to be selected.
@@ -112,7 +112,7 @@ Returns `Promise<Object>` - Resolve with an object containing the following:
 
 * `canceled` Boolean - whether or not the dialog was canceled.
 * `filePaths` String[] - An array of file paths chosen by the user. If the dialog is cancelled this will be an empty array.
-* `bookmarks` String[] (optional) _macOS_ _mas_ - An array matching the `filePaths` array of base64 encoded strings which contains security scoped bookmark data. `securityScopedBookmarks` must be enabled for this to be populated. (For return values, see [table here](#bookmarks-array).)
+* `bookmarks` String[]&#32;(optional) _macOS_ _mas_ - An array matching the `filePaths` array of base64 encoded strings which contains security scoped bookmark data. `securityScopedBookmarks` must be enabled for this to be populated. (For return values, see [table here](#bookmarks-array).)
 
 The `browserWindow` argument allows the dialog to attach itself to a parent window, making it modal.
 
@@ -154,7 +154,7 @@ dialog.showOpenDialog(mainWindow, {
 
 * `browserWindow` [BrowserWindow](browser-window.md) (optional)
 * `options` Object
-  * `title` String (optional)
+  * `title` String (optional) - The dialog title. Cannot be displayed on some _Linux_ desktop environments.
   * `defaultPath` String (optional) - Absolute directory path, absolute file
     path, or file name to use by default.
   * `buttonLabel` String (optional) - Custom label for the confirmation button, when
@@ -165,7 +165,7 @@ dialog.showOpenDialog(mainWindow, {
     displayed in front of the filename text field.
   * `showsTagField` Boolean (optional) _macOS_ - Show the tags input box,
     defaults to `true`.
-  * `properties` String[] (optional)
+  * `properties` String[]&#32;(optional)
     * `showHiddenFiles` - Show hidden files in dialog.
     * `createDirectory` _macOS_ - Allow creating new directories from dialog.
     * `treatPackageAsDirectory` _macOS_ - Treat packages, such as `.app` folders,
@@ -185,7 +185,7 @@ The `filters` specifies an array of file types that can be displayed, see
 
 * `browserWindow` [BrowserWindow](browser-window.md) (optional)
 * `options` Object
-  * `title` String (optional)
+  * `title` String (optional) - The dialog title. Cannot be displayed on some _Linux_ desktop environments.
   * `defaultPath` String (optional) - Absolute directory path, absolute file
     path, or file name to use by default.
   * `buttonLabel` String (optional) - Custom label for the confirmation button, when
@@ -195,7 +195,7 @@ The `filters` specifies an array of file types that can be displayed, see
   * `nameFieldLabel` String (optional) _macOS_ - Custom label for the text
     displayed in front of the filename text field.
   * `showsTagField` Boolean (optional) _macOS_ - Show the tags input box, defaults to `true`.
-  * `properties` String[] (optional)
+  * `properties` String[]&#32;(optional)
     * `showHiddenFiles` - Show hidden files in dialog.
     * `createDirectory` _macOS_ - Allow creating new directories from dialog.
     * `treatPackageAsDirectory` _macOS_ - Treat packages, such as `.app` folders,
@@ -227,7 +227,7 @@ expanding and collapsing the dialog.
   `"warning"`. On Windows, `"question"` displays the same icon as `"info"`, unless
   you set an icon using the `"icon"` option. On macOS, both `"warning"` and
   `"error"` display the same warning icon.
-  * `buttons` String[] (optional) - Array of texts for buttons. On Windows, an empty array
+  * `buttons` String[]&#32;(optional) - Array of texts for buttons. On Windows, an empty array
     will result in one button labeled "OK".
   * `defaultId` Integer (optional) - Index of the button in the buttons array which will
     be selected by default when the message box opens.
@@ -269,10 +269,15 @@ If `browserWindow` is not shown dialog will not be attached to it. In such case 
   `"warning"`. On Windows, `"question"` displays the same icon as `"info"`, unless
   you set an icon using the `"icon"` option. On macOS, both `"warning"` and
   `"error"` display the same warning icon.
-  * `buttons` String[] (optional) - Array of texts for buttons. On Windows, an empty array
+  * `buttons` String[]&#32;(optional) - Array of texts for buttons. On Windows, an empty array
     will result in one button labeled "OK".
   * `defaultId` Integer (optional) - Index of the button in the buttons array which will
     be selected by default when the message box opens.
+  * `signal` AbortSignal (optional) - Pass an instance of [AbortSignal][] to
+    optionally close the message box, the message box will behave as if it was
+    cancelled by the user. On macOS, `signal` does not work with message boxes
+    that do not have a parent window, since those message boxes run
+    synchronously due to platform limitations.
   * `title` String (optional) - Title of the message box, some platforms will not show it.
   * `detail` String (optional) - Extra information of the message.
   * `checkboxLabel` String (optional) - If provided, the message box will
@@ -360,3 +365,5 @@ window is provided.
 
 You can call `BrowserWindow.getCurrentWindow().setSheetOffset(offset)` to change
 the offset from the window frame where sheets are attached.
+
+[AbortSignal]: https://nodejs.org/api/globals.html#globals_class_abortsignal

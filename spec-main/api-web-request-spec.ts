@@ -18,7 +18,7 @@ describe('webRequest module', () => {
       res.setHeader('Location', 'http://' + req.rawHeaders[1]);
       res.end();
     } else if (req.url === '/contentDisposition') {
-      res.setHeader('content-disposition', [' attachement; filename=aa%E4%B8%ADaa.txt']);
+      res.setHeader('content-disposition', [' attachment; filename=aa%E4%B8%ADaa.txt']);
       const content = req.url;
       res.end(content);
     } else {
@@ -214,6 +214,18 @@ describe('webRequest module', () => {
       await ajax(defaultURL);
     });
 
+    it('leaves headers unchanged when no requestHeaders in callback', async () => {
+      let originalRequestHeaders: Record<string, string>;
+      ses.webRequest.onBeforeSendHeaders((details, callback) => {
+        originalRequestHeaders = details.requestHeaders;
+        callback({});
+      });
+      ses.webRequest.onSendHeaders((details) => {
+        expect(details.requestHeaders).to.deep.equal(originalRequestHeaders);
+      });
+      await ajax(defaultURL);
+    });
+
     it('works with file:// protocol', async () => {
       const requestHeaders = {
         Test: 'header'
@@ -306,11 +318,11 @@ describe('webRequest module', () => {
 
     it('does not change content-disposition header by default', async () => {
       ses.webRequest.onHeadersReceived((details, callback) => {
-        expect(details.responseHeaders!['content-disposition']).to.deep.equal([' attachement; filename=aa中aa.txt']);
+        expect(details.responseHeaders!['content-disposition']).to.deep.equal([' attachment; filename=aa中aa.txt']);
         callback({});
       });
       const { data, headers } = await ajax(defaultURL + 'contentDisposition');
-      expect(headers).to.match(/^content-disposition: attachement; filename=aa%E4%B8%ADaa.txt$/m);
+      expect(headers).to.match(/^content-disposition: attachment; filename=aa%E4%B8%ADaa.txt$/m);
       expect(data).to.equal('/contentDisposition');
     });
 

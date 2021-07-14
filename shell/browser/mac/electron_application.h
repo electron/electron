@@ -18,12 +18,12 @@
   NSCondition* handoffLock_;
   BOOL updateReceived_;
   BOOL userStoppedShutdown_;
-  base::Callback<bool()> shouldShutdown_;
+  base::RepeatingCallback<bool()> shouldShutdown_;
 }
 
 + (AtomApplication*)sharedApplication;
 
-- (void)setShutdownHandler:(base::Callback<bool()>)handler;
+- (void)setShutdownHandler:(base::RepeatingCallback<bool()>)handler;
 - (void)registerURLHandler;
 
 // Called when macOS itself is shutting down.

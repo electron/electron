@@ -1,18 +1,13 @@
 const { expect } = require('chai');
 const path = require('path');
 const { Buffer } = require('buffer');
+const { ifdescribe } = require('./spec-helpers');
 
 const { clipboard, nativeImage } = require('electron');
 
-describe('clipboard module', () => {
+// FIXME(zcbenz): Clipboard tests are failing on WOA.
+ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures');
-
-  // FIXME(zcbenz): Clipboard tests are failing on WOA.
-  beforeEach(function () {
-    if (process.platform === 'win32' && process.arch === 'arm64') {
-      this.skip();
-    }
-  });
 
   describe('clipboard.readImage()', () => {
     it('returns NativeImage instance', () => {
@@ -115,13 +110,13 @@ describe('clipboard module', () => {
   describe('clipboard.readBuffer(format)', () => {
     it('writes a Buffer for the specified format', function () {
       const buffer = Buffer.from('writeBuffer', 'utf8');
-      clipboard.writeBuffer('public.utf8-plain-text', buffer);
-      expect(buffer.equals(clipboard.readBuffer('public.utf8-plain-text'))).to.equal(true);
+      clipboard.writeBuffer('public/utf8-plain-text', buffer);
+      expect(buffer.equals(clipboard.readBuffer('public/utf8-plain-text'))).to.equal(true);
     });
 
     it('throws an error when a non-Buffer is specified', () => {
       expect(() => {
-        clipboard.writeBuffer('public.utf8-plain-text', 'hello');
+        clipboard.writeBuffer('public/utf8-plain-text', 'hello');
       }).to.throw(/buffer must be a node Buffer/);
     });
   });

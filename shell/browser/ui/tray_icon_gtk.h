@@ -11,10 +11,6 @@
 #include "shell/browser/ui/tray_icon.h"
 #include "ui/views/linux_ui/status_icon_linux.h"
 
-namespace views {
-class StatusIconLinux;
-}
-
 namespace electron {
 
 class TrayIconGtk : public TrayIcon, public views::StatusIconLinux::Delegate {

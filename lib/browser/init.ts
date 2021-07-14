@@ -2,6 +2,8 @@ import { EventEmitter } from 'events';
 import * as fs from 'fs';
 import * as path from 'path';
 
+import type * as defaultMenuModule from '@electron/internal/browser/default-menu';
+
 const Module = require('module');
 
 // We modified the original process.argv to let node.js load the init.js,
@@ -127,7 +129,7 @@ if (packageJson.v8Flags != null) {
   require('v8').setFlagsFromString(packageJson.v8Flags);
 }
 
-app._setDefaultAppPaths(packagePath);
+app.setAppPath(packagePath);
 
 // Load the chrome devtools support.
 require('@electron/internal/browser/devtools');
@@ -172,7 +174,7 @@ app.on('window-all-closed', () => {
   }
 });
 
-const { setDefaultApplicationMenu } = require('@electron/internal/browser/default-menu');
+const { setDefaultApplicationMenu } = require('@electron/internal/browser/default-menu') as typeof defaultMenuModule;
 
 // Create default menu.
 //

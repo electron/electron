@@ -109,13 +109,7 @@ base::win::ScopedHICON ReadICOFromPath(int size, const base::FilePath& path) {
 
 NativeImage::NativeImage(v8::Isolate* isolate, const gfx::Image& image)
     : image_(image), isolate_(isolate) {
-  if (image_.HasRepresentation(gfx::Image::kImageRepSkia)) {
-    auto* const image_skia = image_.ToImageSkia();
-    if (!image_skia->isNull()) {
-      isolate_->AdjustAmountOfExternalAllocatedMemory(
-          image_skia->bitmap()->computeByteSize());
-    }
-  }
+  AdjustAmountOfExternalAllocatedMemory(true);
 }
 
 #if defined(OS_WIN)
@@ -125,21 +119,21 @@ NativeImage::NativeImage(v8::Isolate* isolate, const base::FilePath& hicon_path)
   gfx::ImageSkia image_skia;
   electron::util::ReadImageSkiaFromICO(&image_skia, GetHICON(256));
   image_ = gfx::Image(image_skia);
-  if (image_.HasRepresentation(gfx::Image::kImageRepSkia)) {
-    if (!image_skia.isNull()) {
-      isolate_->AdjustAmountOfExternalAllocatedMemory(
-          image_.ToImageSkia()->bitmap()->computeByteSize());
-    }
-  }
+
+  AdjustAmountOfExternalAllocatedMemory(true);
 }
 #endif
 
 NativeImage::~NativeImage() {
+  AdjustAmountOfExternalAllocatedMemory(false);
+}
+
+void NativeImage::AdjustAmountOfExternalAllocatedMemory(bool add) {
   if (image_.HasRepresentation(gfx::Image::kImageRepSkia)) {
     auto* const image_skia = image_.ToImageSkia();
     if (!image_skia->isNull()) {
-      isolate_->AdjustAmountOfExternalAllocatedMemory(
-          image_skia->bitmap()->computeByteSize());
+      int64_t size = image_skia->bitmap()->computeByteSize();
+      isolate_->AdjustAmountOfExternalAllocatedMemory(add ? size : -size);
     }
   }
 }
@@ -311,7 +305,7 @@ bool NativeImage::IsEmpty() {
   return image_.IsEmpty();
 }
 
-gfx::Size NativeImage::GetSize(const base::Optional<float> scale_factor) {
+gfx::Size NativeImage::GetSize(const absl::optional<float> scale_factor) {
   float sf = scale_factor.value_or(1.0f);
   gfx::ImageSkiaRep image_rep = image_.AsImageSkia().GetRepresentation(sf);
 
@@ -327,7 +321,7 @@ std::vector<float> NativeImage::GetScaleFactors() {
   return scale_factors;
 }
 
-float NativeImage::GetAspectRatio(const base::Optional<float> scale_factor) {
+float NativeImage::GetAspectRatio(const absl::optional<float> scale_factor) {
   float sf = scale_factor.value_or(1.0f);
   gfx::Size size = GetSize(sf);
   if (size.IsEmpty())

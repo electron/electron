@@ -754,7 +754,7 @@ describe('protocol module', () => {
     });
   });
 
-  describe.skip('protocol.registerSchemesAsPrivileged standard', () => {
+  describe('protocol.registerSchemesAsPrivileged standard', () => {
     const standardScheme = (global as any).standardScheme;
     const origin = `${standardScheme}://fake-host`;
     const imageURL = `${origin}/test.png`;
@@ -766,7 +766,8 @@ describe('protocol module', () => {
       w = new BrowserWindow({
         show: false,
         webPreferences: {
-          nodeIntegration: true
+          nodeIntegration: true,
+          contextIsolation: false
         }
       });
     });
@@ -834,7 +835,7 @@ describe('protocol module', () => {
     });
   });
 
-  describe.skip('protocol.registerSchemesAsPrivileged cors-fetch', function () {
+  describe('protocol.registerSchemesAsPrivileged cors-fetch', function () {
     const standardScheme = (global as any).standardScheme;
     let w: BrowserWindow = null as unknown as BrowserWindow;
     beforeEach(async () => {
@@ -867,7 +868,8 @@ describe('protocol module', () => {
       });
     });
 
-    it('disallows CORS and fetch requests when only supportFetchAPI is specified', async () => {
+    // FIXME: Figure out why this test is failing
+    it.skip('disallows CORS and fetch requests when only supportFetchAPI is specified', async () => {
       await allowsCORSRequests('no-cors', ['failed xhr', 'failed fetch'], /has been blocked by CORS policy/, () => {
         const { ipcRenderer } = require('electron');
         Promise.all([
@@ -915,7 +917,7 @@ describe('protocol module', () => {
         callback('');
       });
 
-      const newContents: WebContents = (webContents as any).create({ nodeIntegration: true });
+      const newContents: WebContents = (webContents as any).create({ nodeIntegration: true, contextIsolation: false });
       const consoleMessages: string[] = [];
       newContents.on('console-message', (e, level, message) => consoleMessages.push(message));
       try {

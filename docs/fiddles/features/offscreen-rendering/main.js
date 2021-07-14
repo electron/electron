@@ -1,5 +1,6 @@
 const { app, BrowserWindow } = require('electron')
 const fs = require('fs')
+const path = require('path')
 
 app.disableHardwareAcceleration()
 
@@ -12,7 +13,7 @@ app.whenReady().then(() => {
     fs.writeFileSync('ex.png', image.toPNG())
   })
   win.webContents.setFrameRate(60)
-  console.log(`The screenshot has been successfully saved to ${process.cwd()}/ex.png`)
+  console.log(`The screenshot has been successfully saved to ${path.join(process.cwd(), 'ex.png')}`)
 })
 
 app.on('window-all-closed', () => {

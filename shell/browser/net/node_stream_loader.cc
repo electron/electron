@@ -165,7 +165,7 @@ void NodeStreamLoader::On(const char* event, EventCallback callback) {
   handlers_[event].Reset(isolate_, args[1]);
   node::MakeCallback(isolate_, emitter_.Get(isolate_), "on",
                      node::arraysize(args), args, {0, 0});
-  // No more code bellow, as this class may destruct when subscribing.
+  // No more code below, as this class may destruct when subscribing.
 }
 
 }  // namespace electron

@@ -10,7 +10,8 @@ ElectronExtensionWebContentsObserver::ElectronExtensionWebContentsObserver(
     content::WebContents* web_contents)
     : ExtensionWebContentsObserver(web_contents) {}
 
-ElectronExtensionWebContentsObserver::~ElectronExtensionWebContentsObserver() {}
+ElectronExtensionWebContentsObserver::~ElectronExtensionWebContentsObserver() =
+    default;
 
 void ElectronExtensionWebContentsObserver::CreateForWebContents(
     content::WebContents* web_contents) {

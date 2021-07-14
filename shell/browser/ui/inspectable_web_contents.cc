@@ -27,6 +27,7 @@
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
+#include "content/public/browser/color_chooser.h"
 #include "content/public/browser/file_select_listener.h"
 #include "content/public/browser/file_url_loader.h"
 #include "content/public/browser/host_zoom_map.h"
@@ -38,9 +39,11 @@
 #include "content/public/common/user_agent.h"
 #include "ipc/ipc_channel.h"
 #include "net/http/http_response_headers.h"
+#include "net/http/http_status_code.h"
 #include "services/network/public/cpp/simple_url_loader.h"
 #include "services/network/public/cpp/simple_url_loader_stream_consumer.h"
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
+#include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/net/asar/asar_url_loader_factory.h"
 #include "shell/browser/protocol_registry.h"
 #include "shell/browser/ui/inspectable_web_contents_delegate.h"
@@ -51,6 +54,7 @@
 #include "third_party/blink/public/common/page/page_zoom.h"
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
+#include "v8/include/v8.h"
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "chrome/common/extensions/chrome_manifest_url_handlers.h"
@@ -155,7 +159,7 @@ GURL GetRemoteBaseURL() {
   return GURL(base::StringPrintf("%s%s/%s/",
                                  kChromeUIDevToolsRemoteFrontendBase,
                                  kChromeUIDevToolsRemoteFrontendPath,
-                                 content::GetWebKitRevision().c_str()));
+                                 content::GetChromiumGitRevision().c_str()));
 }
 
 GURL GetDevToolsURL(bool can_dock) {
@@ -287,7 +291,7 @@ class InspectableWebContents::NetworkResourceLoader
       base::DictionaryValue response;
       response.SetInteger("statusCode", response_headers_
                                             ? response_headers_->response_code()
-                                            : 200);
+                                            : net::HTTP_OK);
 
       auto headers = std::make_unique<base::DictionaryValue>();
       size_t iterator = 0;
@@ -450,6 +454,10 @@ void InspectableWebContents::ShowDevTools(bool activate) {
     managed_devtools_web_contents_ = content::WebContents::Create(
         content::WebContents::CreateParams(web_contents_->GetBrowserContext()));
     managed_devtools_web_contents_->SetDelegate(this);
+    v8::Isolate* isolate = v8::Isolate::GetCurrent();
+    v8::HandleScope scope(isolate);
+    api::WebContents::FromOrCreate(isolate,
+                                   managed_devtools_web_contents_.get());
   }
 
   Observe(GetDevToolsWebContents());
@@ -606,8 +614,7 @@ void InspectableWebContents::AddDevToolsExtensionsToClient() {
         web_contents_->GetMainFrame()->GetProcess()->GetID(),
         url::Origin::Create(extension->url()));
 
-    std::unique_ptr<base::DictionaryValue> extension_info(
-        new base::DictionaryValue());
+    auto extension_info = std::make_unique<base::DictionaryValue>();
     extension_info->SetString("startPage", devtools_page_url.spec());
     extension_info->SetString("name", extension->name());
     extension_info->SetBoolean(
@@ -646,7 +653,7 @@ void InspectableWebContents::LoadNetworkResource(DispatchCallback callback,
   GURL gurl(url);
   if (!gurl.is_valid()) {
     base::DictionaryValue response;
-    response.SetInteger("statusCode", 404);
+    response.SetInteger("statusCode", net::HTTP_NOT_FOUND);
     std::move(callback).Run(&response);
     return;
   }
@@ -694,8 +701,9 @@ void InspectableWebContents::LoadNetworkResource(DispatchCallback callback,
         std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
             std::move(pending_remote)));
   } else {
-    auto* partition = content::BrowserContext::GetDefaultStoragePartition(
-        GetDevToolsWebContents()->GetBrowserContext());
+    auto* partition = GetDevToolsWebContents()
+                          ->GetBrowserContext()
+                          ->GetDefaultStoragePartition();
     url_loader_factory = partition->GetURLLoaderFactoryForBrowserProcess();
   }
 
@@ -781,7 +789,10 @@ void InspectableWebContents::SearchInPath(int request_id,
 void InspectableWebContents::SetWhitelistedShortcuts(
     const std::string& message) {}
 
-void InspectableWebContents::SetEyeDropperActive(bool active) {}
+void InspectableWebContents::SetEyeDropperActive(bool active) {
+  if (delegate_)
+    delegate_->DevToolsSetEyeDropperActive(active);
+}
 void InspectableWebContents::ShowCertificateViewer(
     const std::string& cert_chain) {}
 
@@ -874,32 +885,35 @@ void InspectableWebContents::RegisterExtensionsAPI(const std::string& origin,
 }
 
 void InspectableWebContents::HandleMessageFromDevToolsFrontend(
-    const std::string& message) {
+    base::Value message) {
   // TODO(alexeykuzmin): Should we expect it to exist?
   if (!embedder_message_dispatcher_) {
     return;
   }
 
-  std::string method;
-  base::ListValue empty_params;
-  base::ListValue* params = &empty_params;
+  const std::string* method = nullptr;
+  base::Value* params = nullptr;
 
-  base::DictionaryValue* dict = nullptr;
-  std::unique_ptr<base::Value> parsed_message(
-      base::JSONReader::ReadDeprecated(message));
-  if (!parsed_message || !parsed_message->GetAsDictionary(&dict) ||
-      !dict->GetString(kFrontendHostMethod, &method) ||
-      (dict->HasKey(kFrontendHostParams) &&
-       !dict->GetList(kFrontendHostParams, &params))) {
+  if (message.is_dict()) {
+    method = message.FindStringKey(kFrontendHostMethod);
+    params = message.FindKey(kFrontendHostParams);
+  }
+
+  if (!method || (params && !params->is_list())) {
     LOG(ERROR) << "Invalid message was sent to embedder: " << message;
     return;
   }
-  int id = 0;
-  dict->GetInteger(kFrontendHostId, &id);
+  base::Value empty_params(base::Value::Type::LIST);
+  if (!params) {
+    params = &empty_params;
+  }
+  int id = message.FindIntKey(kFrontendHostId).value_or(0);
+  base::ListValue* params_list = nullptr;
+  params->GetAsList(&params_list);
   embedder_message_dispatcher_->Dispatch(
       base::BindRepeating(&InspectableWebContents::SendMessageAck,
                           weak_factory_.GetWeakPtr(), id),
-      method, params);
+      *method, params_list);
 }
 
 void InspectableWebContents::DispatchProtocolMessage(
@@ -983,7 +997,7 @@ void InspectableWebContents::CloseContents(content::WebContents* source) {
   CloseDevTools();
 }
 
-content::ColorChooser* InspectableWebContents::OpenColorChooser(
+std::unique_ptr<content::ColorChooser> InspectableWebContents::OpenColorChooser(
     content::WebContents* source,
     SkColor color,
     const std::vector<blink::mojom::ColorSuggestionPtr>& suggestions) {

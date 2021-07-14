@@ -49,7 +49,8 @@ Returns `WebContents` | undefined - A WebContents instance with the given ID, or
 
 > Render and control the contents of a BrowserWindow instance.
 
-Process: [Main](../glossary.md#main-process)
+Process: [Main](../glossary.md#main-process)<br />
+_This class is not exported from the `'electron'` module. It is only available as a return value of other methods in the Electron API._
 
 ### Instance Events
 
@@ -448,6 +449,8 @@ Returns:
   * `control` Boolean - Equivalent to [KeyboardEvent.controlKey][keyboardevent].
   * `alt` Boolean - Equivalent to [KeyboardEvent.altKey][keyboardevent].
   * `meta` Boolean - Equivalent to [KeyboardEvent.metaKey][keyboardevent].
+  * `location` Number - Equivalent to [KeyboardEvent.location][keyboardevent].
+  * `modifiers` String[] - See [InputEvent.modifiers](structures/input-event.md).
 
 Emitted before dispatching the `keydown` and `keyup` events in the page.
 Calling `event.preventDefault` will prevent the page `keydown`/`keyup` events
@@ -1281,8 +1284,7 @@ Inserts `text` to the focused element.
 * `text` String - Content to be searched, must not be empty.
 * `options` Object (optional)
   * `forward` Boolean (optional) - Whether to search forward or backward, defaults to `true`.
-  * `findNext` Boolean (optional) - Whether the operation is first request or a follow up,
-    defaults to `false`.
+  * `findNext` Boolean (optional) - Whether to begin a new text finding session with this request. Should be `true` for initial requests, and `false` for follow-up requests. Defaults to `false`.
   * `matchCase` Boolean (optional) - Whether search should be case-sensitive,
     defaults to `false`.
 
@@ -1923,6 +1925,20 @@ when the page becomes backgrounded. This also affects the Page Visibility API.
 #### `contents.getType()`
 
 Returns `String` - the type of the webContent. Can be `backgroundPage`, `window`, `browserView`, `remote`, `webview` or `offscreen`.
+
+#### `contents.setImageAnimationPolicy(policy)`
+
+* `policy` String - Can be `animate`, `animateOnce` or `noAnimation`.
+
+Sets the image animation policy for this webContents.  The policy only affects
+_new_ images, existing images that are currently being animated are unaffected.
+This is a known limitation in Chromium, you can force image animation to be
+recalculated with `img.src = img.src` which will result in no network traffic
+but will update the animation policy.
+
+This corresponds to the [animationPolicy][] accessibility feature in Chromium.
+
+[animationPolicy]: https://developer.chrome.com/docs/extensions/reference/accessibilityFeatures/#property-animationPolicy
 
 ### Instance Properties
 

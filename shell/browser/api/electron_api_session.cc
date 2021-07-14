@@ -5,7 +5,6 @@
 #include "shell/browser/api/electron_api_session.h"
 
 #include <algorithm>
-#include <map>
 #include <memory>
 #include <set>
 #include <string>
@@ -17,6 +16,7 @@
 #include "base/guid.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
+#include "base/strings/stringprintf.h"
 #include "base/task/post_task.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/common/chrome_switches.h"
@@ -264,7 +264,7 @@ void DownloadIdCallback(content::DownloadManager* download_manager,
                         uint32_t id) {
   download_manager->CreateDownloadItem(
       base::GenerateGUID(), id, path, path, url_chain, GURL(), GURL(), GURL(),
-      GURL(), base::nullopt, mime_type, mime_type, start_time, base::Time(),
+      GURL(), absl::nullopt, mime_type, mime_type, start_time, base::Time(),
       etag, last_modified, offset, length, std::string(),
       download::DownloadItem::INTERRUPTED,
       download::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
@@ -327,8 +327,7 @@ Session::Session(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
       network_emulation_token_(base::UnguessableToken::Create()),
       browser_context_(browser_context) {
   // Observe DownloadManager to get download notifications.
-  content::BrowserContext::GetDownloadManager(browser_context)
-      ->AddObserver(this);
+  browser_context->GetDownloadManager()->AddObserver(this);
 
   new SessionPreferences(browser_context);
 
@@ -351,8 +350,7 @@ Session::Session(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
 }
 
 Session::~Session() {
-  content::BrowserContext::GetDownloadManager(browser_context())
-      ->RemoveObserver(this);
+  browser_context()->GetDownloadManager()->RemoveObserver(this);
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   SpellcheckService* service =
@@ -420,7 +418,7 @@ v8::Local<v8::Promise> Session::GetCacheSize() {
   gin_helper::Promise<int64_t> promise(isolate_);
   auto handle = promise.GetHandle();
 
-  content::BrowserContext::GetDefaultStoragePartition(browser_context_)
+  browser_context_->GetDefaultStoragePartition()
       ->GetNetworkContext()
       ->ComputeHttpCacheSize(
           base::Time(), base::Time::Max(),
@@ -443,7 +441,7 @@ v8::Local<v8::Promise> Session::ClearCache() {
   gin_helper::Promise<void> promise(isolate_);
   auto handle = promise.GetHandle();
 
-  content::BrowserContext::GetDefaultStoragePartition(browser_context_)
+  browser_context_->GetDefaultStoragePartition()
       ->GetNetworkContext()
       ->ClearHttpCache(base::Time(), base::Time::Max(), nullptr,
                        base::BindOnce(gin_helper::Promise<void>::ResolvePromise,
@@ -460,8 +458,7 @@ v8::Local<v8::Promise> Session::ClearStorageData(gin::Arguments* args) {
   ClearStorageDataOptions options;
   args->GetNext(&options);
 
-  auto* storage_partition =
-      content::BrowserContext::GetStoragePartition(browser_context(), nullptr);
+  auto* storage_partition = browser_context()->GetStoragePartition(nullptr);
   if (options.storage_types & StoragePartition::REMOVE_DATA_MASK_COOKIES) {
     // Reset media device id salt when cookies are cleared.
     // https://w3c.github.io/mediacapture-main/#dom-mediadeviceinfo-deviceid
@@ -477,8 +474,7 @@ v8::Local<v8::Promise> Session::ClearStorageData(gin::Arguments* args) {
 }
 
 void Session::FlushStorageData() {
-  auto* storage_partition =
-      content::BrowserContext::GetStoragePartition(browser_context(), nullptr);
+  auto* storage_partition = browser_context()->GetStoragePartition(nullptr);
   storage_partition->Flush();
 }
 
@@ -551,7 +547,7 @@ v8::Local<v8::Promise> Session::ForceReloadProxyConfig() {
   gin_helper::Promise<void> promise(isolate_);
   auto handle = promise.GetHandle();
 
-  content::BrowserContext::GetDefaultStoragePartition(browser_context_)
+  browser_context_->GetDefaultStoragePartition()
       ->GetNetworkContext()
       ->ForceReloadProxyConfig(base::BindOnce(
           gin_helper::Promise<void>::ResolvePromise, std::move(promise)));
@@ -576,16 +572,14 @@ void Session::EnableNetworkEmulation(const gin_helper::Dictionary& options) {
   }
 
   auto* network_context =
-      content::BrowserContext::GetDefaultStoragePartition(browser_context_)
-          ->GetNetworkContext();
+      browser_context_->GetDefaultStoragePartition()->GetNetworkContext();
   network_context->SetNetworkConditions(network_emulation_token_,
                                         std::move(conditions));
 }
 
 void Session::DisableNetworkEmulation() {
   auto* network_context =
-      content::BrowserContext::GetDefaultStoragePartition(browser_context_)
-          ->GetNetworkContext();
+      browser_context_->GetDefaultStoragePartition()->GetNetworkContext();
   network_context->SetNetworkConditions(
       network_emulation_token_, network::mojom::NetworkConditions::New());
 }
@@ -605,7 +599,7 @@ void Session::SetCertVerifyProc(v8::Local<v8::Value> val,
         std::make_unique<CertVerifierClient>(proc),
         cert_verifier_client_remote.InitWithNewPipeAndPassReceiver());
   }
-  content::BrowserContext::GetDefaultStoragePartition(browser_context_)
+  browser_context_->GetDefaultStoragePartition()
       ->GetNetworkContext()
       ->SetCertVerifierClient(std::move(cert_verifier_client_remote));
 }
@@ -654,7 +648,7 @@ v8::Local<v8::Promise> Session::ClearHostResolverCache(gin::Arguments* args) {
   gin_helper::Promise<void> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  content::BrowserContext::GetDefaultStoragePartition(browser_context_)
+  browser_context_->GetDefaultStoragePartition()
       ->GetNetworkContext()
       ->ClearHostCache(nullptr,
                        base::BindOnce(gin_helper::Promise<void>::ResolvePromise,
@@ -667,7 +661,7 @@ v8::Local<v8::Promise> Session::ClearAuthCache() {
   gin_helper::Promise<void> promise(isolate_);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  content::BrowserContext::GetDefaultStoragePartition(browser_context_)
+  browser_context_->GetDefaultStoragePartition()
       ->GetNetworkContext()
       ->ClearHttpAuthCache(
           base::Time(), base::Time::Max(),
@@ -694,8 +688,7 @@ void Session::SetUserAgent(const std::string& user_agent,
                            gin::Arguments* args) {
   browser_context_->SetUserAgent(user_agent);
   auto* network_context =
-      content::BrowserContext::GetDefaultStoragePartition(browser_context_)
-          ->GetNetworkContext();
+      browser_context_->GetDefaultStoragePartition()->GetNetworkContext();
   network_context->SetUserAgent(user_agent);
 
   std::string accept_lang;
@@ -730,8 +723,7 @@ v8::Local<v8::Promise> Session::GetBlobData(v8::Isolate* isolate,
 }
 
 void Session::DownloadURL(const GURL& url) {
-  auto* download_manager =
-      content::BrowserContext::GetDownloadManager(browser_context());
+  auto* download_manager = browser_context()->GetDownloadManager();
   auto download_params = std::make_unique<download::DownloadUrlParameters>(
       url, MISSING_TRAFFIC_ANNOTATION);
   download_manager->DownloadUrl(std::move(download_params));
@@ -761,8 +753,7 @@ void Session::CreateInterruptedDownload(const gin_helper::Dictionary& options) {
         isolate_, "Must pass an offset value less than length.")));
     return;
   }
-  auto* download_manager =
-      content::BrowserContext::GetDownloadManager(browser_context());
+  auto* download_manager = browser_context()->GetDownloadManager();
   download_manager->GetNextId(base::BindRepeating(
       &DownloadIdCallback, download_manager, path, url_chain, mime_type, offset,
       length, last_modified, etag, base::Time::FromDoubleT(start_time)));
@@ -855,7 +846,7 @@ v8::Local<v8::Value> Session::GetAllExtensions() {
   std::vector<const extensions::Extension*> extensions_vector;
   for (const auto& extension : *installed_extensions) {
     if (extension->location() !=
-        extensions::mojom::ManifestLocation::kExternalComponent)
+        extensions::mojom::ManifestLocation::kComponent)
       extensions_vector.emplace_back(extension.get());
   }
   return gin::ConvertToV8(isolate_, extensions_vector);
@@ -956,12 +947,19 @@ v8::Local<v8::Promise> Session::CloseAllConnections() {
   gin_helper::Promise<void> promise(isolate_);
   auto handle = promise.GetHandle();
 
-  content::BrowserContext::GetDefaultStoragePartition(browser_context_)
+  browser_context_->GetDefaultStoragePartition()
       ->GetNetworkContext()
       ->CloseAllConnections(base::BindOnce(
           gin_helper::Promise<void>::ResolvePromise, std::move(promise)));
 
   return handle;
+}
+
+v8::Local<v8::Value> Session::GetPath(v8::Isolate* isolate) {
+  if (browser_context_->IsOffTheRecord()) {
+    return v8::Null(isolate);
+  }
+  return gin::ConvertToV8(isolate, browser_context_->GetPath());
 }
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
@@ -1188,11 +1186,13 @@ gin::ObjectTemplateBuilder Session::GetObjectTemplateBuilder(
 #endif
       .SetMethod("preconnect", &Session::Preconnect)
       .SetMethod("closeAllConnections", &Session::CloseAllConnections)
+      .SetMethod("getStoragePath", &Session::GetPath)
       .SetProperty("cookies", &Session::Cookies)
       .SetProperty("netLog", &Session::NetLog)
       .SetProperty("protocol", &Session::Protocol)
       .SetProperty("serviceWorkers", &Session::ServiceWorkerContext)
-      .SetProperty("webRequest", &Session::WebRequest);
+      .SetProperty("webRequest", &Session::WebRequest)
+      .SetProperty("storagePath", &Session::GetPath);
 }
 
 const char* Session::GetTypeName() {
@@ -1205,9 +1205,6 @@ const char* Session::GetTypeName() {
 
 namespace {
 
-using electron::api::Cookies;
-using electron::api::Protocol;
-using electron::api::ServiceWorkerContext;
 using electron::api::Session;
 
 v8::Local<v8::Value> FromPartition(const std::string& partition,

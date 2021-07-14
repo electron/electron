@@ -76,7 +76,7 @@ class SpellCheckClient : public blink::WebSpellCheckPanelHostClient,
   // Output variable contraction_words will contain individual
   // words in the contraction.
   bool IsContraction(const SpellCheckScope& scope,
-                     const std::u16string& word,
+                     const std::u16string& contraction,
                      std::vector<std::u16string>* contraction_words);
 
   // Callback for the JS API which returns the list of misspelled words.

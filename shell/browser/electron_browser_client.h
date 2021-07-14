@@ -21,6 +21,7 @@
 #include "services/metrics/public/cpp/ukm_source_id.h"
 #include "shell/browser/bluetooth/electron_bluetooth_delegate.h"
 #include "shell/browser/serial/electron_serial_delegate.h"
+#include "third_party/blink/public/mojom/badging/badging.mojom-forward.h"
 
 namespace content {
 class ClientCertificateDelegate;
@@ -33,6 +34,7 @@ class SSLCertRequestInfo;
 
 namespace electron {
 
+class ElectronBrowserMainParts;
 class NotificationPresenter;
 class PlatformNotificationService;
 
@@ -53,7 +55,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
 
   NotificationPresenter* GetNotificationPresenter();
 
-  void WebNotificationAllowed(int render_process_id,
+  void WebNotificationAllowed(content::RenderFrameHost* rfh,
                               base::OnceCallback<void(bool, bool)> callback);
 
   // content::NavigatorDelegate
@@ -70,10 +72,9 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   void RegisterBrowserInterfaceBindersForFrame(
       content::RenderFrameHost* render_frame_host,
       mojo::BinderMapWithContext<content::RenderFrameHost*>* map) override;
-  void BindBadgeServiceReceiverFromServiceWorker(
-      content::RenderProcessHost* service_worker_process_host,
-      const GURL& service_worker_scope,
-      mojo::PendingReceiver<blink::mojom::BadgeService> receiver) override;
+  void RegisterBrowserInterfaceBindersForServiceWorker(
+      mojo::BinderMapWithContext<const content::ServiceWorkerVersionBaseInfo&>*
+          map) override;
 #if defined(OS_LINUX)
   void GetAdditionalMappedFilesForChildProcess(
       const base::CommandLine& command_line,
@@ -87,6 +88,8 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   content::SerialDelegate* GetSerialDelegate() override;
 
   content::BluetoothDelegate* GetBluetoothDelegate() override;
+
+  device::GeolocationManager* GetGeolocationManager() override;
 
  protected:
   void RenderProcessWillLaunch(content::RenderProcessHost* host) override;
@@ -187,7 +190,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       WebSocketFactory factory,
       const GURL& url,
       const net::SiteForCookies& site_for_cookies,
-      const base::Optional<std::string>& user_agent,
+      const absl::optional<std::string>& user_agent,
       mojo::PendingRemote<network::mojom::WebSocketHandshakeClient>
           handshake_client) override;
   bool WillInterceptWebSocket(content::RenderFrameHost*) override;
@@ -197,7 +200,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       int render_process_id,
       URLLoaderFactoryType type,
       const url::Origin& request_initiator,
-      base::Optional<int64_t> navigation_id,
+      absl::optional<int64_t> navigation_id,
       ukm::SourceIdObj ukm_source_id,
       mojo::PendingReceiver<network::mojom::URLLoaderFactory>* factory_receiver,
       mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>*
@@ -225,14 +228,14 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
 
   bool HandleExternalProtocol(
       const GURL& url,
-      content::WebContents::OnceGetter web_contents_getter,
+      content::WebContents::Getter web_contents_getter,
       int child_id,
       int frame_tree_node_id,
       content::NavigationUIData* navigation_data,
       bool is_main_frame,
       ui::PageTransition page_transition,
       bool has_user_gesture,
-      const base::Optional<url::Origin>& initiating_origin,
+      const absl::optional<url::Origin>& initiating_origin,
       mojo::PendingRemote<network::mojom::URLLoaderFactory>* out_factory)
       override;
   std::unique_ptr<content::LoginDelegate> CreateLoginDelegate(
@@ -262,7 +265,8 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       content::BrowserContext* browser_context,
       const GURL& scope,
       const GURL& site_for_cookies,
-      const base::Optional<url::Origin>& top_frame_origin) override;
+      const absl::optional<url::Origin>& top_frame_origin) override;
+  base::FilePath GetLoggingFileName(const base::CommandLine& cmd_line) override;
 
   // content::RenderProcessHostObserver:
   void RenderProcessHostDestroyed(content::RenderProcessHost* host) override;
@@ -272,19 +276,6 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       const content::ChildProcessTerminationInfo& info) override;
 
  private:
-  struct ProcessPreferences {
-    bool sandbox = false;
-    bool native_window_open = false;
-    bool disable_popups = false;
-    bool web_security = true;
-    content::BrowserContext* browser_context = nullptr;
-  };
-
-  void AddProcessPreferences(int process_id, ProcessPreferences prefs);
-  void RemoveProcessPreferences(int process_id);
-  bool IsProcessObserved(int process_id) const;
-  bool RendererUsesNativeWindowOpen(int process_id) const;
-  bool RendererDisablesPopups(int process_id) const;
   content::SiteInstance* GetSiteInstanceFromAffinity(
       content::BrowserContext* browser_context,
       const GURL& url,
@@ -302,8 +293,6 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
 
   Delegate* delegate_ = nullptr;
 
-  std::map<int, ProcessPreferences> process_preferences_;
-
   std::string user_agent_override_ = "";
 
   // Simple shared ID generator, used by ProxyingURLLoaderFactory and
@@ -312,6 +301,10 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
 
   std::unique_ptr<ElectronSerialDelegate> serial_delegate_;
   std::unique_ptr<ElectronBluetoothDelegate> bluetooth_delegate_;
+
+#if defined(OS_MAC)
+  ElectronBrowserMainParts* browser_main_parts_ = nullptr;
+#endif
 
   DISALLOW_COPY_AND_ASSIGN(ElectronBrowserClient);
 };

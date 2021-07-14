@@ -5,8 +5,6 @@
 #ifndef SHELL_BROWSER_ELECTRON_DOWNLOAD_MANAGER_DELEGATE_H_
 #define SHELL_BROWSER_ELECTRON_DOWNLOAD_MANAGER_DELEGATE_H_
 
-#include <string>
-
 #include "base/memory/weak_ptr.h"
 #include "content/public/browser/download_manager_delegate.h"
 #include "shell/browser/ui/file_dialog.h"
@@ -22,7 +20,7 @@ class ElectronDownloadManagerDelegate
     : public content::DownloadManagerDelegate {
  public:
   using CreateDownloadPathCallback =
-      base::Callback<void(const base::FilePath&)>;
+      base::RepeatingCallback<void(const base::FilePath&)>;
 
   explicit ElectronDownloadManagerDelegate(content::DownloadManager* manager);
   ~ElectronDownloadManagerDelegate() override;

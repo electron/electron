@@ -5,13 +5,10 @@
 #ifndef SHELL_BROWSER_ELECTRON_BROWSER_MAIN_PARTS_H_
 #define SHELL_BROWSER_ELECTRON_BROWSER_MAIN_PARTS_H_
 
-#include <list>
 #include <memory>
 #include <string>
 
 #include "base/callback.h"
-#include "base/metrics/field_trial.h"
-#include "base/optional.h"
 #include "base/timer/timer.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_main_parts.h"
@@ -19,32 +16,43 @@
 #include "electron/buildflags/buildflags.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "services/device/public/mojom/geolocation_control.mojom.h"
+#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/views/layout/layout_provider.h"
 
-class BrowserProcess;
+class BrowserProcessImpl;
 class IconManager;
+
+namespace base {
+class FieldTrialList;
+}
 
 #if defined(USE_AURA)
 namespace wm {
 class WMState;
 }
+
+namespace display {
+class Screen;
+}
 #endif
 
 #if defined(USE_X11)
 namespace ui {
-class GtkUiDelegate;
+class GtkUiPlatform;
 }
 #endif
 
+namespace device {
+class GeolocationManager;
+}
+
 namespace electron {
 
-class ElectronBrowserContext;
 class Browser;
 class ElectronBindings;
 class JavascriptEnvironment;
 class NodeBindings;
 class NodeEnvironment;
-class BridgeTaskRunner;
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 class ElectronExtensionsClient;
@@ -80,6 +88,10 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
   // used to enable the location services once per client.
   device::mojom::GeolocationControl* GetGeolocationControl();
 
+#if defined(OS_MAC)
+  device::GeolocationManager* GetGeolocationManager();
+#endif
+
   // Returns handle to the class responsible for extracting file icons.
   IconManager* GetIconManager();
 
@@ -95,14 +107,14 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
   int PreMainMessageLoopRun() override;
   void WillRunMainMessageLoop(
       std::unique_ptr<base::RunLoop>& run_loop) override;
-  void PostMainMessageLoopStart() override;
+  void PostCreateMainMessageLoop() override;
   void PostMainMessageLoopRun() override;
-  void PreMainMessageLoopStart() override;
+  void PreCreateMainMessageLoop() override;
   void PostCreateThreads() override;
   void PostDestroyThreads() override;
 
  private:
-  void PreMainMessageLoopStartCommon();
+  void PreCreateMainMessageLoopCommon();
 
 #if defined(OS_POSIX)
   // Set signal handlers.
@@ -126,10 +138,7 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
 
 #if defined(USE_AURA)
   std::unique_ptr<wm::WMState> wm_state_;
-#endif
-
-#if defined(USE_X11)
-  std::unique_ptr<ui::GtkUiDelegate> gtk_ui_delegate_;
+  std::unique_ptr<display::Screen> screen_;
 #endif
 
 #if defined(OS_LINUX)
@@ -144,7 +153,7 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
 
   // A place to remember the exit code once the message loop is ready.
   // Before then, we just exit() without any intermediate steps.
-  base::Optional<int> exit_code_;
+  absl::optional<int> exit_code_;
 
   std::unique_ptr<JavascriptEnvironment> js_env_;
   std::unique_ptr<Browser> browser_;
@@ -160,6 +169,10 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
 #endif
 
   mojo::Remote<device::mojom::GeolocationControl> geolocation_control_;
+
+#if defined(OS_MAC)
+  std::unique_ptr<device::GeolocationManager> geolocation_manager_;
+#endif
 
   static ElectronBrowserMainParts* self_;
 

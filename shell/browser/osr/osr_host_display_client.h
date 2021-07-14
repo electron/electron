@@ -17,7 +17,8 @@
 
 namespace electron {
 
-typedef base::Callback<void(const gfx::Rect&, const SkBitmap&)> OnPaintCallback;
+typedef base::RepeatingCallback<void(const gfx::Rect&, const SkBitmap&)>
+    OnPaintCallback;
 
 class LayeredWindowUpdater : public viz::mojom::LayeredWindowUpdater {
  public:

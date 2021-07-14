@@ -10,11 +10,13 @@
 
 #include "base/guid.h"
 #include "base/strings/string_number_conversions.h"
+#include "base/strings/stringprintf.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/storage_partition.h"
 #include "mojo/public/cpp/system/data_pipe_producer.h"
 #include "mojo/public/cpp/system/string_data_source.h"
 #include "net/base/filename_util.h"
+#include "net/http/http_request_headers.h"
 #include "net/http/http_status_code.h"
 #include "net/url_request/redirect_util.h"
 #include "services/network/public/cpp/url_loader_completion_status.h"
@@ -96,15 +98,17 @@ network::mojom::URLResponseHeadPtr ToResponseHead(
   head->mime_type = "text/html";
   head->charset = "utf-8";
   if (dict.IsEmpty()) {
-    head->headers = new net::HttpResponseHeaders("HTTP/1.1 200 OK");
+    head->headers =
+        base::MakeRefCounted<net::HttpResponseHeaders>("HTTP/1.1 200 OK");
     return head;
   }
 
-  int status_code = 200;
+  int status_code = net::HTTP_OK;
   dict.Get("statusCode", &status_code);
-  head->headers = new net::HttpResponseHeaders(base::StringPrintf(
-      "HTTP/1.1 %d %s", status_code,
-      net::GetHttpReasonPhrase(static_cast<net::HttpStatusCode>(status_code))));
+  head->headers = base::MakeRefCounted<net::HttpResponseHeaders>(
+      base::StringPrintf("HTTP/1.1 %d %s", status_code,
+                         net::GetHttpReasonPhrase(
+                             static_cast<net::HttpStatusCode>(status_code))));
 
   dict.Get("charset", &head->charset);
   bool has_mime_type = dict.Get("mimeType", &head->mime_type);
@@ -173,7 +177,7 @@ ElectronURLLoaderFactory::Create(ProtocolType type,
   mojo::PendingRemote<network::mojom::URLLoaderFactory> pending_remote;
 
   // The ElectronURLLoaderFactory will delete itself when there are no more
-  // receivers - see the NonNetworkURLLoaderFactoryBase::OnDisconnect method.
+  // receivers - see the SelfDeletingURLLoaderFactory::OnDisconnect method.
   new ElectronURLLoaderFactory(type, handler,
                                pending_remote.InitWithNewPipeAndPassReceiver());
 
@@ -452,7 +456,8 @@ void ElectronURLLoaderFactory::StartLoadingHttp(
     request->method = original_request.method;
 
   base::DictionaryValue upload_data;
-  if (request->method != "GET" && request->method != "HEAD")
+  if (request->method != net::HttpRequestHeaders::kGetMethod &&
+      request->method != net::HttpRequestHeaders::kHeadMethod)
     dict.Get("uploadData", &upload_data);
 
   ElectronBrowserContext* browser_context =
@@ -543,7 +548,7 @@ void ElectronURLLoaderFactory::SendContents(
   head->headers->AddHeader("Access-Control-Allow-Origin", "*");
   client_remote->OnReceiveResponse(std::move(head));
 
-  // Code bellow follows the pattern of data_url_loader_factory.cc.
+  // Code below follows the pattern of data_url_loader_factory.cc.
   mojo::ScopedDataPipeProducerHandle producer;
   mojo::ScopedDataPipeConsumerHandle consumer;
   if (mojo::CreateDataPipe(nullptr, producer, consumer) != MOJO_RESULT_OK) {

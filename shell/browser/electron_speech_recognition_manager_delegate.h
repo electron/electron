@@ -5,7 +5,6 @@
 #ifndef SHELL_BROWSER_ELECTRON_SPEECH_RECOGNITION_MANAGER_DELEGATE_H_
 #define SHELL_BROWSER_ELECTRON_SPEECH_RECOGNITION_MANAGER_DELEGATE_H_
 
-#include <string>
 #include <vector>
 
 #include "base/macros.h"

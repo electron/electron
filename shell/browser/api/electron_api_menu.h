@@ -68,6 +68,7 @@ class Menu : public gin::Wrappable<Menu>,
   bool GetSharingItemForCommandId(
       int command_id,
       ElectronMenuModel::SharingItem* item) const override;
+  v8::Local<v8::Value> GetUserAcceleratorAt(int command_id) const;
 #endif
   void ExecuteCommand(int command_id, int event_flags) override;
   void OnMenuWillShow(ui::SimpleMenuModel* source) override;
@@ -78,6 +79,9 @@ class Menu : public gin::Wrappable<Menu>,
                        int positioning_item,
                        base::OnceClosure callback) = 0;
   virtual void ClosePopupAt(int32_t window_id) = 0;
+#if DCHECK_IS_ON()
+  virtual std::u16string GetAcceleratorTextAtForTesting(int index) const;
+#endif
 
   std::unique_ptr<ElectronMenuModel> model_;
   Menu* parent_ = nullptr;
@@ -105,13 +109,12 @@ class Menu : public gin::Wrappable<Menu>,
   void SetToolTip(int index, const std::u16string& toolTip);
   void SetRole(int index, const std::u16string& role);
   void Clear();
-  int GetIndexOfCommandId(int command_id);
+  int GetIndexOfCommandId(int command_id) const;
   int GetItemCount() const;
   int GetCommandIdAt(int index) const;
   std::u16string GetLabelAt(int index) const;
   std::u16string GetSublabelAt(int index) const;
   std::u16string GetToolTipAt(int index) const;
-  std::u16string GetAcceleratorTextAt(int index) const;
   bool IsItemCheckedAt(int index) const;
   bool IsEnabledAt(int index) const;
   bool IsVisibleAt(int index) const;

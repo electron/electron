@@ -177,7 +177,7 @@ std::vector<blink::MessagePortChannel> MessagePort::DisentanglePorts(
     v8::Isolate* isolate,
     const std::vector<gin::Handle<MessagePort>>& ports,
     bool* threw_exception) {
-  if (!ports.size())
+  if (ports.empty())
     return std::vector<blink::MessagePortChannel>();
 
   std::unordered_set<MessagePort*> visited;

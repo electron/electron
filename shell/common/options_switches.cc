@@ -171,6 +171,9 @@ const char kJavaScript[] = "javascript";
 // Enables image support.
 const char kImages[] = "images";
 
+// Image animation policy.
+const char kImageAnimationPolicy[] = "imageAnimationPolicy";
+
 // Make TextArea elements resizable.
 const char kTextAreasAreResizable[] = "textAreasAreResizable";
 
@@ -181,9 +184,6 @@ const char kWebGL[] = "webgl";
 // navigation.
 const char kNavigateOnDragDrop[] = "navigateOnDragDrop";
 
-const char kDisableElectronSiteInstanceOverrides[] =
-    "disableElectronSiteInstanceOverrides";
-const char kEnableNodeLeakageInRenderers[] = "enableNodeLeakageInRenderers";
 const char kHiddenPage[] = "hiddenPage";
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
@@ -193,6 +193,8 @@ const char kSpellcheck[] = "spellcheck";
 const char kEnableWebSQL[] = "enableWebSQL";
 
 const char kEnablePreferredSizeMode[] = "enablePreferredSizeMode";
+
+const char ktitleBarOverlay[] = "titleBarOverlay";
 
 }  // namespace options
 

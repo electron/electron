@@ -22,7 +22,7 @@ class PowerObserverLinux {
   explicit PowerObserverLinux(base::PowerSuspendObserver* suspend_observer);
   ~PowerObserverLinux();
 
-  void SetShutdownHandler(base::Callback<bool()> should_shutdown);
+  void SetShutdownHandler(base::RepeatingCallback<bool()> should_shutdown);
 
  private:
   void BlockSleep();

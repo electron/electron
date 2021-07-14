@@ -5,10 +5,8 @@
 #ifndef SHELL_BROWSER_ZOOM_LEVEL_DELEGATE_H_
 #define SHELL_BROWSER_ZOOM_LEVEL_DELEGATE_H_
 
-#include <memory>
 #include <string>
 
-#include "base/files/file_path.h"
 #include "base/macros.h"
 #include "components/prefs/pref_service.h"
 #include "content/public/browser/host_zoom_map.h"
@@ -16,7 +14,8 @@
 
 namespace base {
 class DictionaryValue;
-}
+class FilePath;
+}  // namespace base
 
 class PrefRegistrySimple;
 

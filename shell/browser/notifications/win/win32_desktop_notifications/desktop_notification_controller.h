@@ -21,8 +21,8 @@ class DesktopNotificationController {
   ~DesktopNotificationController();
 
   class Notification;
-  Notification AddNotification(std::wstring caption,
-                               std::wstring body_text,
+  Notification AddNotification(std::u16string caption,
+                               std::u16string body_text,
                                HBITMAP image);
   void CloseNotification(const Notification& notification);
 
@@ -87,7 +87,7 @@ class DesktopNotificationController::Notification {
   bool operator==(const Notification& other) const;
 
   void Close();
-  void Set(std::wstring caption, std::wstring body_text, HBITMAP image);
+  void Set(std::u16string caption, std::u16string body_text, HBITMAP image);
 
  private:
   std::shared_ptr<NotificationData> data_;

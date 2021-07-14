@@ -49,8 +49,6 @@ class ServiceWorkerContext
   ~ServiceWorkerContext() override;
 
  private:
-  ElectronBrowserContext* browser_context_;
-
   content::ServiceWorkerContext* service_worker_context_;
 
   base::WeakPtrFactory<ServiceWorkerContext> weak_ptr_factory_{this};

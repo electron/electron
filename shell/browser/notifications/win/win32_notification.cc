@@ -9,9 +9,7 @@
 #include "shell/browser/notifications/win/win32_notification.h"
 
 #include <windows.h>
-#include <string>
 #include <utility>
-#include <vector>
 
 #include "base/strings/utf_string_conversions.h"
 #include "third_party/skia/include/core/SkBitmap.h"
@@ -50,15 +48,13 @@ void Win32Notification::Show(const NotificationOptions& options) {
     existing->tag_.clear();
 
     this->notification_ref_ = std::move(existing->notification_ref_);
-    this->notification_ref_.Set(base::UTF16ToWide(options.title),
-                                base::UTF16ToWide(options.msg), image);
+    this->notification_ref_.Set(options.title, options.msg, image);
     // Need to remove the entry in the notifications set that
     // NotificationPresenter is holding
     existing->Destroy();
   } else {
     this->notification_ref_ =
-        presenter->AddNotification(base::UTF16ToWide(options.title),
-                                   base::UTF16ToWide(options.msg), image);
+        presenter->AddNotification(options.title, options.msg, image);
   }
 
   this->tag_ = options.tag;

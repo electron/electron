@@ -30,7 +30,8 @@ class ElectronMainDelegate : public content::ContentMainDelegate {
   // content::ContentMainDelegate:
   bool BasicStartupComplete(int* exit_code) override;
   void PreSandboxStartup() override;
-  void PreCreateMainMessageLoop() override;
+  void SandboxInitialized(const std::string& process_type) override;
+  void PreBrowserMain() override;
   content::ContentBrowserClient* CreateContentBrowserClient() override;
   content::ContentGpuClient* CreateContentGpuClient() override;
   content::ContentRendererClient* CreateContentRendererClient() override;

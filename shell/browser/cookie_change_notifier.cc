@@ -4,8 +4,6 @@
 
 #include "shell/browser/cookie_change_notifier.h"
 
-#include <utility>
-
 #include "base/bind.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/storage_partition.h"
@@ -26,7 +24,8 @@ CookieChangeNotifier::~CookieChangeNotifier() = default;
 
 base::CallbackListSubscription
 CookieChangeNotifier::RegisterCookieChangeCallback(
-    const base::Callback<void(const net::CookieChangeInfo& change)>& cb) {
+    const base::RepeatingCallback<void(const net::CookieChangeInfo& change)>&
+        cb) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
   return cookie_change_sub_list_.Add(cb);
@@ -37,7 +36,7 @@ void CookieChangeNotifier::StartListening() {
   DCHECK(!receiver_.is_bound());
 
   network::mojom::CookieManager* cookie_manager =
-      content::BrowserContext::GetDefaultStoragePartition(browser_context_)
+      browser_context_->GetDefaultStoragePartition()
           ->GetCookieManagerForBrowserProcess();
 
   // Cookie manager should be created whenever network context is created,

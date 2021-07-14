@@ -67,15 +67,24 @@ Enables caller stack logging for the following APIs (filtering events):
 
 * `desktopCapturer.getSources()` / `desktop-capturer-get-sources`
 
-### --enable-logging
+### --enable-logging[=file]
 
-Prints Chromium's logging into console.
+Prints Chromium's logging to stderr (or a log file).
 
-This switch can not be used in `app.commandLine.appendSwitch` since it is parsed
-earlier than user's app is loaded, but you can set the `ELECTRON_ENABLE_LOGGING`
-environment variable to achieve the same effect.
+The `ELECTRON_ENABLE_LOGGING` environment variable has the same effect as
+passing `--enable-logging`.
 
-## --force-fieldtrials=`trials`
+Passing `--enable-logging` will result in logs being printed on stderr.
+Passing `--enable-logging=file` will result in logs being saved to the file
+specified by `--log-file=...`, or to `electron_debug.log` in the user-data
+directory if `--log-file` is not specified.
+
+> **Note:** On Windows, logs from child processes cannot be sent to stderr.
+> Logging to a file is the most reliable way to collect logs on Windows.
+
+See also `--log-file`, `--log-level`, `--v`, and `--vmodule`.
+
+### --force-fieldtrials=`trials`
 
 Field trials to be forcefully enabled or disabled.
 
@@ -126,9 +135,36 @@ See the [Node.js documentation][node-cli] or run `node --help` in your terminal 
 
 Set a custom locale.
 
+### --log-file=`path`
+
+If `--enable-logging` is specified, logs will be written to the given path. The
+parent directory must exist.
+
+Setting the `ELECTRON_LOG_FILE` environment variable is equivalent to passing
+this flag. If both are present, the command-line switch takes precedence.
+
 ### --log-net-log=`path`
 
 Enables net log events to be saved and writes them to `path`.
+
+### --log-level=`N`
+
+Sets the verbosity of logging when used together with `--enable-logging`.
+`N` should be one of [Chrome's LogSeverities][severities].
+
+Note that two complimentary logging mechanisms in Chromium -- `LOG()`
+and `VLOG()` -- are controlled by different switches. `--log-level`
+controls `LOG()` messages, while `--v` and `--vmodule` control `VLOG()`
+messages. So you may want to use a combination of these three switches
+depending on the granularity you want and what logging calls are made
+by the code you're trying to watch.
+
+See [Chromium Logging source][logging] for more information on how
+`LOG()` and `VLOG()` interact. Loosely speaking, `VLOG()` can be thought
+of as sub-levels / per-module levels inside `LOG(INFO)` to control the
+firehose of `LOG(INFO)` data.
+
+See also `--enable-logging`, `--log-level`, `--v`, and `--vmodule`.
 
 ### --no-proxy-server
 
@@ -137,7 +173,8 @@ proxy server flags that are passed.
 
 ### --no-sandbox
 
-Disables Chromium sandbox, which is now enabled by default.
+Disables the Chromium [sandbox](https://www.chromium.org/developers/design-documents/sandbox).
+Forces renderer process and Chromium helper processes to run un-sandboxed.
 Should only be used for testing.
 
 ### --proxy-bypass-list=`hosts`
@@ -180,6 +217,8 @@ positive values are used for V-logging levels.
 
 This switch only works when `--enable-logging` is also passed.
 
+See also `--enable-logging`, `--log-level`, and `--vmodule`.
+
 ### --vmodule=`pattern`
 
 Gives the per-module maximal V-logging levels to override the value given by
@@ -191,6 +230,8 @@ whole pathname and not only the module. E.g. `*/foo/bar/*=2` would change the
 logging level for all code in the source files under a `foo/bar` directory.
 
 This switch only works when `--enable-logging` is also passed.
+
+See also `--enable-logging`, `--log-level`, and `--v`.
 
 ### --force_high_performance_gpu
 
@@ -239,4 +280,8 @@ By default inspector websocket url is available in stderr and under /json/list e
 [ready]: app.md#event-ready
 [play-silent-audio]: https://github.com/atom/atom/pull/9485/files
 [debugging-main-process]: ../tutorial/debugging-main-process.md
+[logging]: https://source.chromium.org/chromium/chromium/src/+/master:base/logging.h
 [node-cli]: https://nodejs.org/api/cli.html
+[play-silent-audio]: https://github.com/atom/atom/pull/9485/files
+[ready]: app.md#event-ready
+[severities]: https://source.chromium.org/chromium/chromium/src/+/master:base/logging.h?q=logging::LogSeverity&ss=chromium

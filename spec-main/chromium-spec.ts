@@ -352,8 +352,8 @@ describe('web security', () => {
       expect(r).to.equal('WebAssembly.instantiate(): Wasm code generation disallowed by embedder');
     });
 
-    it('wasm codegen is allowed with "wasm-eval" csp', async () => {
-      const r = await loadWasm("'wasm-eval'");
+    it('wasm codegen is allowed with "wasm-unsafe-eval" csp', async () => {
+      const r = await loadWasm("'wasm-unsafe-eval'");
       expect(r).to.equal('loaded');
     });
   });
@@ -586,6 +586,43 @@ describe('chromium features', () => {
       w.loadFile(path.join(fixturesPath, 'pages', 'service-worker', 'index.html'));
     });
 
+    it('should register for custom scheme', (done) => {
+      const customSession = session.fromPartition('custom-scheme');
+      const { serviceWorkerScheme } = global as any;
+      customSession.protocol.registerFileProtocol(serviceWorkerScheme, (request, callback) => {
+        let file = url.parse(request.url).pathname!;
+        if (file[0] === '/' && process.platform === 'win32') file = file.slice(1);
+
+        callback({ path: path.normalize(file) } as any);
+      });
+
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true,
+          session: customSession,
+          contextIsolation: false
+        }
+      });
+      w.webContents.on('ipc-message', (event, channel, message) => {
+        if (channel === 'reload') {
+          w.webContents.reload();
+        } else if (channel === 'error') {
+          done(`unexpected error : ${message}`);
+        } else if (channel === 'response') {
+          expect(message).to.equal('Hello from serviceWorker!');
+          customSession.clearStorageData({
+            storages: ['serviceworkers']
+          }).then(() => {
+            customSession.protocol.uninterceptProtocol(serviceWorkerScheme);
+            done();
+          });
+        }
+      });
+      w.webContents.on('crashed', () => done(new Error('WebContents crashed.')));
+      w.loadFile(path.join(fixturesPath, 'pages', 'service-worker', 'custom-scheme-index.html'));
+    });
+
     it('should not crash when nodeIntegration is enabled', (done) => {
       const w = new BrowserWindow({
         show: false,
@@ -642,6 +679,26 @@ describe('chromium features', () => {
       w.loadFile(path.join(fixturesPath, 'pages', 'geolocation', 'index.html'));
       const [, channel] = await message;
       expect(channel).to.equal('success', 'unexpected response from geolocation api');
+    });
+  });
+
+  describe('web workers', () => {
+    let appProcess: ChildProcess.ChildProcessWithoutNullStreams | undefined;
+
+    afterEach(() => {
+      if (appProcess && !appProcess.killed) {
+        appProcess.kill();
+        appProcess = undefined;
+      }
+    });
+
+    it('Worker with nodeIntegrationInWorker has access to self.module.paths', async () => {
+      const appPath = path.join(__dirname, 'fixtures', 'apps', 'self-module-paths');
+
+      appProcess = ChildProcess.spawn(process.execPath, [appPath]);
+
+      const [code] = await emittedOnce(appProcess, 'exit');
+      expect(code).to.equal(0);
     });
   });
 
@@ -1382,6 +1439,7 @@ describe('chromium features', () => {
       const w = new BrowserWindow({ show: false });
       w.loadURL(pdfSource);
       const [, contents] = await emittedOnce(app, 'web-contents-created');
+      await emittedOnce(contents, 'did-navigate');
       expect(contents.getURL()).to.equal('chrome-extension://mhjfbmdgcfjbbpaeojofohoefgiehjai/index.html');
     });
 
@@ -1389,6 +1447,7 @@ describe('chromium features', () => {
       const w = new BrowserWindow({ show: false });
       w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'pdf-in-iframe.html'));
       const [, contents] = await emittedOnce(app, 'web-contents-created');
+      await emittedOnce(contents, 'did-navigate');
       expect(contents.getURL()).to.equal('chrome-extension://mhjfbmdgcfjbbpaeojofohoefgiehjai/index.html');
     });
   });
@@ -1429,6 +1488,31 @@ describe('chromium features', () => {
         "window.hasOwnProperty('chrome') && window.chrome.hasOwnProperty('send')"
       );
       expect(pageExists).to.be.true();
+    });
+  });
+
+  describe('document.hasFocus', () => {
+    it('has correct value when multiple windows are opened', async () => {
+      const w1 = new BrowserWindow({ show: true });
+      const w2 = new BrowserWindow({ show: true });
+      const w3 = new BrowserWindow({ show: false });
+      await w1.loadFile(path.join(__dirname, 'fixtures', 'blank.html'));
+      await w2.loadFile(path.join(__dirname, 'fixtures', 'blank.html'));
+      await w3.loadFile(path.join(__dirname, 'fixtures', 'blank.html'));
+      expect(webContents.getFocusedWebContents().id).to.equal(w2.webContents.id);
+      let focus = false;
+      focus = await w1.webContents.executeJavaScript(
+        'document.hasFocus()'
+      );
+      expect(focus).to.be.false();
+      focus = await w2.webContents.executeJavaScript(
+        'document.hasFocus()'
+      );
+      expect(focus).to.be.true();
+      focus = await w3.webContents.executeJavaScript(
+        'document.hasFocus()'
+      );
+      expect(focus).to.be.false();
     });
   });
 });
@@ -1615,7 +1699,6 @@ describe('navigator.clipboard', () => {
   let w: BrowserWindow;
   before(async () => {
     w = new BrowserWindow({
-      show: false,
       webPreferences: {
         enableBlinkFeatures: 'Serial'
       }

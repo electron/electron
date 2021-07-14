@@ -56,7 +56,7 @@ inline void dispatch_sync_main(dispatch_block_t block) {
   electron::Browser::Get()->Quit();
 }
 
-- (void)setShutdownHandler:(base::Callback<bool()>)handler {
+- (void)setShutdownHandler:(base::RepeatingCallback<bool()>)handler {
   shouldShutdown_ = std::move(handler);
 }
 

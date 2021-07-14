@@ -6,7 +6,10 @@
 #define SHELL_RENDERER_GUEST_VIEW_CONTAINER_H_
 
 #include "base/callback.h"
-#include "content/public/renderer/render_frame.h"
+
+namespace content {
+class RenderFrame;
+}
 
 namespace gfx {
 class Size;
@@ -16,7 +19,7 @@ namespace electron {
 
 class GuestViewContainer {
  public:
-  typedef base::Callback<void(const gfx::Size&)> ResizeCallback;
+  typedef base::RepeatingCallback<void(const gfx::Size&)> ResizeCallback;
 
   explicit GuestViewContainer(content::RenderFrame* render_frame);
   virtual ~GuestViewContainer();

@@ -13,13 +13,12 @@
 #include <sys/resource.h>
 #include <unistd.h>
 
+#include "base/debug/leak_annotations.h"
 #include "base/posix/eintr_wrapper.h"
 #include "base/task/post_task.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "shell/browser/browser.h"
-
-using content::BrowserThread;
 
 namespace electron {
 
@@ -60,19 +59,19 @@ void GracefulShutdownHandler(int signal) {
   } while (bytes_written < sizeof(signal));
 }
 
-// See comment in |PostMainMessageLoopStart()|, where sigaction is called.
+// See comment in |PostCreateMainMessageLoop()|, where sigaction is called.
 void SIGHUPHandler(int signal) {
   RAW_CHECK(signal == SIGHUP);
   GracefulShutdownHandler(signal);
 }
 
-// See comment in |PostMainMessageLoopStart()|, where sigaction is called.
+// See comment in |PostCreateMainMessageLoop()|, where sigaction is called.
 void SIGINTHandler(int signal) {
   RAW_CHECK(signal == SIGINT);
   GracefulShutdownHandler(signal);
 }
 
-// See comment in |PostMainMessageLoopStart()|, where sigaction is called.
+// See comment in |PostCreateMainMessageLoop()|, where sigaction is called.
 void SIGTERMHandler(int signal) {
   RAW_CHECK(signal == SIGTERM);
   GracefulShutdownHandler(signal);

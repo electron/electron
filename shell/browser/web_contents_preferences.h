@@ -15,10 +15,6 @@ namespace base {
 class CommandLine;
 }
 
-namespace content {
-struct WebPreferences;
-}
-
 namespace gin_helper {
 class Dictionary;
 }

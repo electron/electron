@@ -16,12 +16,12 @@
 // in the gin_helper namespace.
 namespace gin {
 
-// Support base::Optional as an argument.
+// Support absl::optional as an argument.
 template <typename T>
 bool GetNextArgument(Arguments* args,
                      const InvokerOptions& invoker_options,
                      bool is_first,
-                     base::Optional<T>* result) {
+                     absl::optional<T>* result) {
   T converted;
   // Use gin::Arguments::GetNext which always advances |next| counter.
   if (args->GetNext(&converted))

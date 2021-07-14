@@ -8,13 +8,12 @@
 #include <memory>
 #include <set>
 #include <string>
-#include <vector>
 
 #include "shell/renderer/renderer_client_base.h"
 
 namespace node {
 class Environment;
-}  // namespace node
+}
 
 namespace electron {
 
@@ -26,25 +25,17 @@ class ElectronRendererClient : public RendererClientBase {
   ElectronRendererClient();
   ~ElectronRendererClient() override;
 
-  static ElectronRendererClient* Get();
-
   // electron::RendererClientBase:
   void DidCreateScriptContext(v8::Handle<v8::Context> context,
                               content::RenderFrame* render_frame) override;
   void WillReleaseScriptContext(v8::Handle<v8::Context> context,
                                 content::RenderFrame* render_frame) override;
-  void SetupMainWorldOverrides(v8::Handle<v8::Context> context,
-                               content::RenderFrame* render_frame) override;
 
  private:
   // content::ContentRendererClient:
   void RenderFrameCreated(content::RenderFrame*) override;
   void RunScriptsAtDocumentStart(content::RenderFrame* render_frame) override;
   void RunScriptsAtDocumentEnd(content::RenderFrame* render_frame) override;
-  bool ShouldFork(blink::WebLocalFrame* frame,
-                  const GURL& url,
-                  const std::string& http_method,
-                  bool is_server_redirect) override;
   void WorkerScriptReadyForEvaluationOnWorkerThread(
       v8::Local<v8::Context> context) override;
   void WillDestroyWorkerContextOnWorkerThread(
@@ -67,8 +58,6 @@ class ElectronRendererClient : public RendererClientBase {
   // its script context. Doing so in a web page without scripts would trigger
   // assertion, so we have to keep a book of injected web frames.
   std::set<content::RenderFrame*> injected_frames_;
-
-  static ElectronRendererClient* self_;
 
   DISALLOW_COPY_AND_ASSIGN(ElectronRendererClient);
 };

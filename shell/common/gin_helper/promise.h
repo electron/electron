@@ -133,7 +133,7 @@ class Promise : public PromiseBase {
     v8::Context::Scope context_scope(GetContext());
 
     v8::Local<v8::Value> value = gin::ConvertToV8(isolate(), std::move(cb));
-    v8::Local<v8::Function> handler = v8::Local<v8::Function>::Cast(value);
+    v8::Local<v8::Function> handler = value.As<v8::Function>();
 
     return GetHandle()->Then(GetContext(), handler);
   }

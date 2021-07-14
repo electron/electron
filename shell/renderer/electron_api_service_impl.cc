@@ -11,6 +11,7 @@
 #include "base/environment.h"
 #include "base/macros.h"
 #include "base/threading/thread_restrictions.h"
+#include "base/trace_event/trace_event.h"
 #include "gin/data_object_builder.h"
 #include "mojo/public/cpp/system/platform_handle.h"
 #include "shell/common/electron_constants.h"
@@ -63,7 +64,9 @@ void InvokeIpcCallback(v8::Local<v8::Context> context,
   node::Environment* env = node::Environment::GetCurrent(context);
   std::unique_ptr<node::CallbackScope> callback_scope;
   if (env) {
-    callback_scope.reset(new node::CallbackScope(isolate, ipcNative, {0, 0}));
+    node::async_context async_context = {};
+    callback_scope = std::make_unique<node::CallbackScope>(isolate, ipcNative,
+                                                           async_context);
   }
 
   auto callback_key = gin::ConvertToV8(isolate, callback_name)

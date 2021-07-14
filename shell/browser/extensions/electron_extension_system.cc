@@ -49,7 +49,8 @@ namespace extensions {
 ElectronExtensionSystem::ElectronExtensionSystem(
     BrowserContext* browser_context)
     : browser_context_(browser_context),
-      store_factory_(new ValueStoreFactoryImpl(browser_context->GetPath())) {}
+      store_factory_(base::MakeRefCounted<ValueStoreFactoryImpl>(
+          browser_context->GetPath())) {}
 
 ElectronExtensionSystem::~ElectronExtensionSystem() = default;
 
@@ -92,7 +93,7 @@ void ElectronExtensionSystem::InitForRegularProfile(bool extensions_enabled) {
   if (!browser_context_->IsOffTheRecord())
     LoadComponentExtensions();
 
-  management_policy_.reset(new ManagementPolicy);
+  management_policy_ = std::make_unique<ManagementPolicy>();
 }
 
 std::unique_ptr<base::DictionaryValue> ParseManifest(
@@ -119,8 +120,7 @@ void ElectronExtensionSystem::LoadComponentExtensions() {
     root_directory = root_directory.Append(FILE_PATH_LITERAL("pdf"));
     scoped_refptr<const Extension> pdf_extension =
         extensions::Extension::Create(
-            root_directory,
-            extensions::mojom::ManifestLocation::kExternalComponent,
+            root_directory, extensions::mojom::ManifestLocation::kComponent,
             *pdf_manifest, extensions::Extension::REQUIRE_KEY, &utf8_error);
     extension_loader_->registrar()->AddExtension(pdf_extension);
   }
@@ -161,7 +161,7 @@ scoped_refptr<ValueStoreFactory> ElectronExtensionSystem::store_factory() {
 
 InfoMap* ElectronExtensionSystem::info_map() {
   if (!info_map_.get())
-    info_map_ = new InfoMap;
+    info_map_ = base::MakeRefCounted<InfoMap>();
   return info_map_.get();
 }
 

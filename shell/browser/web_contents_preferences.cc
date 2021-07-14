@@ -28,6 +28,7 @@
 #include "shell/common/process_util.h"
 #include "third_party/blink/public/common/web_preferences/web_preferences.h"
 #include "third_party/blink/public/mojom/v8_cache_options.mojom.h"
+#include "third_party/blink/public/mojom/webpreferences/web_preferences.mojom-blink.h"  // nogncheck
 
 #if defined(OS_WIN)
 #include "ui/gfx/switches.h"
@@ -105,6 +106,26 @@ bool GetAsAutoplayPolicy(const base::Value* val,
       return true;
     }
     return false;
+  }
+  return false;
+}
+
+bool GetImageAnimationPolicy(const base::Value* val,
+                             blink::mojom::ImageAnimationPolicy* out) {
+  std::string policy;
+  if (GetAsString(val, electron::options::kImageAnimationPolicy, &policy)) {
+    if (policy == "animate") {
+      *out = blink::mojom::ImageAnimationPolicy::kImageAnimationPolicyAllowed;
+      return true;
+    } else if (policy == "animateOnce") {
+      *out =
+          blink::mojom::ImageAnimationPolicy::kImageAnimationPolicyAnimateOnce;
+      return true;
+    } else if (policy == "noAnimation") {
+      *out =
+          blink::mojom::ImageAnimationPolicy::kImageAnimationPolicyNoAnimation;
+      return true;
+    }
   }
   return false;
 }
@@ -326,13 +347,6 @@ void WebContentsPreferences::AppendCommandLineSwitches(
     }
   }
 
-  // --offscreen
-  // TODO(loc): Offscreen is duplicated in WebPreferences because it's needed
-  // earlier than we can get WebPreferences at the moment.
-  if (IsEnabled(options::kOffscreen)) {
-    command_line->AppendSwitch(options::kOffscreen);
-  }
-
 #if defined(OS_MAC)
   // Enable scroll bounce.
   if (IsEnabled(options::kScrollBounce))
@@ -375,6 +389,7 @@ void WebContentsPreferences::OverrideWebkitPrefs(
   prefs->javascript_enabled =
       IsEnabled(options::kJavaScript, true /* default_value */);
   prefs->images_enabled = IsEnabled(options::kImages, true /* default_value */);
+  GetImageAnimationPolicy(&preference_, &prefs->animation_policy);
   prefs->text_areas_are_resizable =
       IsEnabled(options::kTextAreasAreResizable, true /* default_value */);
   prefs->navigate_on_drag_drop =
@@ -426,14 +441,6 @@ void WebContentsPreferences::OverrideWebkitPrefs(
   std::string encoding;
   if (GetAsString(&preference_, "defaultEncoding", &encoding))
     prefs->default_encoding = encoding;
-
-  // --background-color.
-  std::string color;
-  if (GetAsString(&preference_, options::kBackgroundColor, &color)) {
-    prefs->background_color = color;
-  } else if (!IsEnabled(options::kOffscreen)) {
-    prefs->background_color = "#fff";
-  }
 
   // Pass the opener's window id.
   int opener_id;
