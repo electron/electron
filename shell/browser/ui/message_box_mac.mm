@@ -4,6 +4,7 @@
 
 #include "shell/browser/ui/message_box.h"
 
+#include <map>
 #include <string>
 #include <utility>
 #include <vector>
@@ -11,8 +12,10 @@
 #import <Cocoa/Cocoa.h>
 
 #include "base/callback.h"
+#include "base/containers/contains.h"
 #include "base/mac/mac_util.h"
 #include "base/mac/scoped_nsobject.h"
+#include "base/no_destructor.h"
 #include "base/strings/sys_string_conversions.h"
 #include "shell/browser/native_window.h"
 #include "skia/ext/skia_utils_mac.h"
@@ -25,6 +28,12 @@ MessageBoxSettings::MessageBoxSettings(const MessageBoxSettings&) = default;
 MessageBoxSettings::~MessageBoxSettings() = default;
 
 namespace {
+
+// <ID, messageBox> map
+std::map<int, NSAlert*>& GetDialogsMap() {
+  static base::NoDestructor<std::map<int, NSAlert*>> dialogs;
+  return *dialogs;
+}
 
 NSAlert* CreateNSAlert(const MessageBoxSettings& settings) {
   // Ignore the title; it's the window title on other platforms and ignorable.
@@ -128,6 +137,12 @@ void ShowMessageBox(const MessageBoxSettings& settings,
     int ret = [[alert autorelease] runModal];
     std::move(callback).Run(ret, alert.suppressionButton.state == NSOnState);
   } else {
+    if (settings.id) {
+      if (base::Contains(GetDialogsMap(), *settings.id))
+        CloseMessageBox(*settings.id);
+      GetDialogsMap()[*settings.id] = alert;
+    }
+
     NSWindow* window =
         settings.parent_window
             ? settings.parent_window->GetNativeWindow().GetNativeNSWindow()
@@ -136,14 +151,33 @@ void ShowMessageBox(const MessageBoxSettings& settings,
     // Duplicate the callback object here since c is a reference and gcd would
     // only store the pointer, by duplication we can force gcd to store a copy.
     __block MessageBoxCallback callback_ = std::move(callback);
+    __block absl::optional<int> id = std::move(settings.id);
+    __block int cancel_id = settings.cancel_id;
 
     [alert beginSheetModalForWindow:window
                   completionHandler:^(NSModalResponse response) {
+                    if (id)
+                      GetDialogsMap().erase(*id);
+                    // When the alert is cancelled programmatically, the
+                    // response would be something like -1000. This currently
+                    // only happens when users call CloseMessageBox API, and we
+                    // should return cancelId as result.
+                    if (response < 0)
+                      response = cancel_id;
                     std::move(callback_).Run(
                         response, alert.suppressionButton.state == NSOnState);
                     [alert release];
                   }];
   }
+}
+
+void CloseMessageBox(int id) {
+  auto it = GetDialogsMap().find(id);
+  if (it == GetDialogsMap().end()) {
+    LOG(ERROR) << "CloseMessageBox called with nonexistent ID";
+    return;
+  }
+  [NSApp endSheet:it->second.window];
 }
 
 void ShowErrorBox(const std::u16string& title, const std::u16string& content) {
