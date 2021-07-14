@@ -59,11 +59,11 @@ index 3be3f2364dd252bcdd668c699a0e7ae1e754e873..b2af1bce312ffca44e7005e11f92327e
  
    bool Exists(const char* id);
 diff --git a/tools/js2c.py b/tools/js2c.py
-index 4af54c3fa00602f9d0ce5cc4dca253d425048706..18f584473fb87f036ce2a67c5172cccaf0caaa5f 100755
+index 4d9317527d46ac8c6d8066bfba707233053b8615..7eb39709abf43bd8475be0f2c701dd8f3a2191a2 100755
 --- a/tools/js2c.py
 +++ b/tools/js2c.py
-@@ -38,6 +38,8 @@ import functools
- import codecs
+@@ -39,6 +39,8 @@ import codecs
+ import utils
  
  def ReadFile(filename):
 +  if filename.startswith("//v8"):
@@ -157,23 +157,24 @@ index 4af54c3fa00602f9d0ce5cc4dca253d425048706..18f584473fb87f036ce2a67c5172ccca
    write_if_chaged(out, target)
  
  
-@@ -213,18 +232,21 @@ def main():
-   )
-   parser.add_argument('--target', help='output file')
+@@ -218,6 +220,7 @@ def main():
+       default=None,
+       help='input file directory')
    parser.add_argument('--verbose', action='store_true', help='output file')
 +  parser.add_argument('--only-js', action='store_true', help='do not require or parse any config.gypi files')
    parser.add_argument('sources', nargs='*', help='input files')
    options = parser.parse_args()
    global is_verbose
-   is_verbose = options.verbose
-   source_files = functools.reduce(SourceFileByExt, options.sources, {})
+@@ -230,12 +233,15 @@ def main():
+ 
+   source_files = functools.reduce(SourceFileByExt, sources, {})
+ 
 -  # Should have exactly 3 types: `.js`, `.mjs` and `.gypi`
 -  assert len(source_files) == 3
 -  # Currently config.gypi is the only `.gypi` file allowed
 -  assert source_files['.gypi'] == ['config.gypi']
 -  source_files['config.gypi'] = source_files.pop('.gypi')[0]
 -  JS2C(source_files, options.target)
--
 +  if options.only_js:
 +    assert len(source_files) == 1
 +  else:
@@ -184,5 +185,5 @@ index 4af54c3fa00602f9d0ce5cc4dca253d425048706..18f584473fb87f036ce2a67c5172ccca
 +    source_files['config.gypi'] = source_files.pop('.gypi')[0]
 +  JS2C(source_files, options.target, options.only_js)
  
+ 
  if __name__ == "__main__":
-   main()
