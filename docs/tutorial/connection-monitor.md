@@ -34,7 +34,7 @@ following section will walk you through everything you need to do.
 
 ## Example
 
-Once configured, the application should run entirely from Electron Fiddle.
+Once configured, the application should run entirely from [Electron Fiddle](https://www.electronjs.org/fiddle).
 Later sections of this page will introduce and explain the different parts of
 the example such as the Ping machine, Connection Monitor machine, the IPC
 communication API, and the HTML rendering.
