@@ -123,7 +123,8 @@ bool ElectronPathProvider(int key, base::FilePath* result) {
     case chrome::DIR_USER_DATA:
       if (!base::PathService::Get(DIR_APP_DATA, &cur))
         return false;
-      cur = cur.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
+      cur = cur.Append(base::FilePath::FromUTF8Unsafe(
+          GetPossiblyOverriddenApplicationName()));
       create_dir = true;
       break;
     case DIR_CRASH_DUMPS:
@@ -153,7 +154,8 @@ bool ElectronPathProvider(int key, base::FilePath* result) {
 #endif
       if (!base::PathService::Get(parent_key, &cur))
         return false;
-      cur = cur.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
+      cur = cur.Append(base::FilePath::FromUTF8Unsafe(
+          GetPossiblyOverriddenApplicationName()));
       create_dir = true;
       break;
     }
@@ -178,7 +180,8 @@ bool ElectronPathProvider(int key, base::FilePath* result) {
         return false;
       cur = cur.Append(FILE_PATH_LITERAL("Library"));
       cur = cur.Append(FILE_PATH_LITERAL("Logs"));
-      cur = cur.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
+      cur = cur.Append(base::FilePath::FromUTF8Unsafe(
+          GetPossiblyOverriddenApplicationName()));
 #else
       if (!base::PathService::Get(chrome::DIR_USER_DATA, &cur))
         return false;
