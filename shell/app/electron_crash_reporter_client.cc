@@ -165,13 +165,6 @@ bool ElectronCrashReporterClient::GetCrashDumpLocation(
 }
 #endif
 
-#if defined(OS_MAC) || defined(OS_LINUX)
-bool ElectronCrashReporterClient::GetCrashMetricsLocation(
-    base::FilePath* metrics_dir) {
-  return base::PathService::Get(chrome::DIR_USER_DATA, metrics_dir);
-}
-#endif  // OS_MAC || OS_LINUX
-
 bool ElectronCrashReporterClient::IsRunningUnattended() {
   return !collect_stats_consent_;
 }
