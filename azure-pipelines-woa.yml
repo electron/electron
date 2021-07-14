@@ -54,6 +54,16 @@ steps:
     APPVEYOR_TOKEN: $(APPVEYOR_TOKEN)
 
 - powershell: |
+    $localArtifactPath = "$pwd\src\pdb.zip"
+    $serverArtifactPath = "$env:APPVEYOR_URL/buildjobs/$env:APPVEYOR_JOB_ID/artifacts/pdb.zip"
+    Invoke-RestMethod -Method Get -Uri $serverArtifactPath -OutFile $localArtifactPath -Headers @{ "Authorization" = "Bearer $env:APPVEYOR_TOKEN" }
+    cd src
+    & "${env:ProgramFiles(x86)}\7-Zip\7z.exe" x -y pdb.zip
+  displayName: 'Download pdb files for detailed stacktraces'
+  env:
+    APPVEYOR_TOKEN: $(APPVEYOR_TOKEN)
+
+- powershell: |
     New-Item src\out\Default\gen\node_headers\Release -Type directory
     Copy-Item -path src\out\Default\electron.lib -destination src\out\Default\gen\node_headers\Release\node.lib
   displayName: 'Setup node headers'
@@ -63,13 +73,10 @@ steps:
     set npm_config_nodedir=%cd%\out\Default\gen\node_headers
     set npm_config_arch=arm64
     cd electron
-    # Use the spec runner to prepare for testing   
-    node script/yarn test --onlyPrepForRunning    
-    cd ..
-    # CalculateNativeWinOcclusion is disabled due to https://bugs.chromium.org/p/chromium/issues/detail?id=1139022
-    out\Default\electron.exe electron\spec --enable-logging --disable-features=CalculateNativeWinOcclusion 
+    node script/yarn test --runners=main --runTestFilesSeperately --enable-logging --disable-features=CalculateNativeWinOcclusion
   displayName: 'Run Electron Main process tests'
   env:
+    ELECTRON_ENABLE_STACK_DUMPING: true
     ELECTRON_OUT_DIR: Default
     IGNORE_YARN_INSTALL_ERROR: 1
     ELECTRON_TEST_RESULTS_DIR: junit
@@ -80,7 +87,8 @@ steps:
     cd src
     set npm_config_nodedir=%cd%\out\Default\gen\node_headers
     set npm_config_arch=arm64
-    out\Default\electron.exe electron\spec-main --enable-logging --disable-features=CalculateNativeWinOcclusion
+    cd electron
+    node script/yarn test --runners=remote --enable-logging --disable-features=CalculateNativeWinOcclusion
   displayName: 'Run Electron Remote based tests'
   env:
     ELECTRON_OUT_DIR: Default
