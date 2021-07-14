@@ -301,6 +301,7 @@ void BrowserWindow::OnWindowIsKeyChanged(bool is_key) {
   auto* rwhv = web_contents()->GetRenderWidgetHostView();
   if (rwhv)
     rwhv->SetActive(is_key);
+  window()->SetActive(is_key);
 #endif
 }
 

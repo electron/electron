@@ -783,4 +783,51 @@ describe('<webview> tag', function () {
       })`);
     });
   });
+
+  describe('found-in-page event', () => {
+    let w: BrowserWindow;
+    beforeEach(async () => {
+      w = new BrowserWindow({ show: false, webPreferences: { webviewTag: true, contextIsolation: false } });
+      await w.loadURL('about:blank');
+    });
+    afterEach(closeAllWindows);
+
+    it('emits when a request is made', async () => {
+      await loadWebView(w.webContents, {
+        src: `file://${fixtures}/pages/content.html`
+      });
+      const result = await w.webContents.executeJavaScript(`new Promise((resolve, reject) => {
+        const webview = document.querySelector('webview')
+
+        const waitForEvent = (target, eventName) => {
+          return new Promise(resolve => {
+            target.addEventListener(eventName, resolve, { once: true })
+          })
+        }
+
+        async function startFind() {
+          const activeMatchOrdinal = []
+          const foundInPage = waitForEvent(webview, 'found-in-page')
+          webview.findInPage('virtual', { findNext: true })
+          const event = await foundInPage
+          if (event.result.matches) {
+            activeMatchOrdinal.push(event.result.activeMatchOrdinal)
+
+            for (let i=1; i < event.result.matches; i++) {
+              const foundInPage = waitForEvent(webview, 'found-in-page')
+              webview.findInPage('virtual', { findNext: false })
+              const event = await foundInPage
+              activeMatchOrdinal.push(event.result.activeMatchOrdinal)
+            }
+          }
+          webview.stopFindInPage('clearSelection')
+          resolve(activeMatchOrdinal)
+        }
+
+        webview.focus()
+        startFind()
+      })`);
+      expect(result).to.deep.equal([1, 2, 3]);
+    });
+  });
 });

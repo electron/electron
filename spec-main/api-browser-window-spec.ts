@@ -4311,6 +4311,20 @@ describe('BrowserWindow module', () => {
         await leaveFullScreen;
         expect(w.isFullScreen()).to.be.false('isFullScreen');
       });
+
+      ifit(process.arch === 'x64')('multiple windows inherit correct fullscreen state', async () => {
+        const w = new BrowserWindow();
+        const enterFullScreen = emittedOnce(w, 'enter-full-screen');
+        w.setFullScreen(true);
+        await enterFullScreen;
+        expect(w.isFullScreen()).to.be.true('isFullScreen');
+        await delay();
+        const w2 = new BrowserWindow({ show: false });
+        const enterFullScreen2 = emittedOnce(w2, 'enter-full-screen');
+        w2.show();
+        await enterFullScreen2;
+        expect(w2.isFullScreen()).to.be.true('isFullScreen');
+      });
     });
 
     describe('closable state', () => {
