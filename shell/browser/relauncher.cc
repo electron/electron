@@ -8,6 +8,10 @@
 #include <utility>
 #include <vector>
 
+#if defined(OS_WIN)
+#include <windows.h>
+#endif
+
 #include "base/files/file_util.h"
 #include "base/logging.h"
 #include "base/path_service.h"
