@@ -3,7 +3,7 @@ import * as url from 'url';
 import { BrowserWindow, session, ipcMain, app, WebContents } from 'electron/main';
 import { closeAllWindows } from './window-helpers';
 import { emittedOnce, emittedUntil } from './events-helpers';
-import { ifdescribe } from './spec-helpers';
+import { ifdescribe, ifit, delay } from './spec-helpers';
 import { expect } from 'chai';
 
 const features = process._linkedBinding('electron_common_features');
@@ -428,6 +428,35 @@ describe('<webview> tag', function () {
       await webview.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
       await parentFullscreen;
       expect(await w.webContents.executeJavaScript('isIframeFullscreen()')).to.be.true();
+    });
+
+    // FIXME(zcbenz): Fullscreen events do not work on Linux.
+    // This test is flaky on arm64 macOS.
+    ifit(process.platform !== 'linux' && process.arch !== 'arm64')('exiting fullscreen should unfullscreen window', async () => {
+      const [w, webview] = await loadWebViewWindow();
+      const enterFullScreen = emittedOnce(w, 'enter-full-screen');
+      await webview.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
+      await enterFullScreen;
+
+      const leaveFullScreen = emittedOnce(w, 'leave-full-screen');
+      await webview.executeJavaScript('document.exitFullscreen()', true);
+      await leaveFullScreen;
+      await delay(0);
+      expect(w.isFullScreen()).to.be.false();
+    });
+
+    // Sending ESC via sendInputEvent only works on Windows.
+    ifit(process.platform === 'win32')('pressing ESC should unfullscreen window', async () => {
+      const [w, webview] = await loadWebViewWindow();
+      const enterFullScreen = emittedOnce(w, 'enter-full-screen');
+      await webview.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
+      await enterFullScreen;
+
+      const leaveFullScreen = emittedOnce(w, 'leave-full-screen');
+      w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
+      await leaveFullScreen;
+      await delay(0);
+      expect(w.isFullScreen()).to.be.false();
     });
   });
 
