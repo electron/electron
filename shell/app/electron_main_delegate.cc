@@ -19,7 +19,6 @@
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/chrome_switches.h"
 #include "components/content_settings/core/common/content_settings_pattern.h"
-#include "components/crash/core/app/crash_switches.h"
 #include "content/public/common/content_switches.h"
 #include "electron/buildflags/buildflags.h"
 #include "extensions/common/constants.h"
@@ -59,6 +58,7 @@
 #endif
 
 #if !defined(MAS_BUILD)
+#include "components/crash/core/app/crash_switches.h"
 #include "components/crash/core/app/crashpad.h"  // nogncheck
 #include "components/crash/core/common/crash_key.h"
 #include "components/crash/core/common/crash_keys.h"
