@@ -718,6 +718,10 @@ Corresponds to the points in time when the spinner of the tab starts spinning.
 
 Corresponds to the points in time when the spinner of the tab stops spinning.
 
+### Event: 'did-attach'
+
+Fired when attached to the embedder web contents.
+
 ### Event: 'dom-ready'
 
 Fired when document in the given frame is loaded.
