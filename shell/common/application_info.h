@@ -13,11 +13,10 @@
 
 namespace electron {
 
-void OverrideApplicationName(const std::string& name);
-std::string GetOverriddenApplicationName();
+std::string& OverriddenApplicationName();
+std::string& OverriddenApplicationVersion();
 
-void OverrideApplicationVersion(const std::string& version);
-std::string GetOverriddenApplicationVersion();
+std::string GetPossiblyOverriddenApplicationName();
 
 std::string GetApplicationName();
 std::string GetApplicationVersion();
