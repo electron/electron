@@ -181,7 +181,10 @@ class NativeWindowViews : public NativeWindow,
       kHidden,
   };
   TitleBarStyle title_bar_style() const { return title_bar_style_; }
-  bool IsWindowControlsOverlayEnabled() const { return titlebar_overlay_; }
+  bool IsWindowControlsOverlayEnabled() const {
+    return (title_bar_style_ == NativeWindowViews::TitleBarStyle::kHidden) &&
+           titlebar_overlay_;
+  }
   SkColor overlay_color() const { return overlay_color_; }
   SkColor overlay_symbol_color() const { return overlay_symbol_color_; }
 #endif

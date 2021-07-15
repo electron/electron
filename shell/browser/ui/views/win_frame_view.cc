@@ -91,8 +91,7 @@ bool WinFrameView::IsMaximized() const {
 }
 
 bool WinFrameView::ShouldCustomDrawSystemTitlebar() const {
-  return window()->title_bar_style() !=
-         NativeWindowViews::TitleBarStyle::kNormal;
+  return window()->IsWindowControlsOverlayEnabled();
 }
 
 void WinFrameView::Layout() {

@@ -191,15 +191,19 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
 
   overlay_color_ = color_utils::GetSysSkColor(COLOR_BTNFACE);
   std::string overlay_color_string;
-  options.Get(options::kOverlayColor, &overlay_color_string);
-  extensions::image_util::ParseCssColorString(overlay_color_string,
-                                              &overlay_color_);
+  if (options.Get(options::kOverlayColor, &overlay_color_string)) {
+    bool success = extensions::image_util::ParseCssColorString(
+        overlay_color_string, &overlay_color_);
+    DCHECK(success);
+  }
 
   overlay_symbol_color_ = color_utils::GetSysSkColor(COLOR_BTNTEXT);
   std::string overlay_symbol_color_string;
-  options.Get(options::kOverlaySymbolColor, &overlay_symbol_color_string);
-  extensions::image_util::ParseCssColorString(overlay_symbol_color_string,
-                                              &overlay_symbol_color_);
+  if (options.Get(options::kOverlaySymbolColor, &overlay_symbol_color_string)) {
+    bool success = extensions::image_util::ParseCssColorString(
+        overlay_symbol_color_string, &overlay_symbol_color_);
+    DCHECK(success);
+  }
 
   options.Get(options::kTitleBarStyle, &title_bar_style_);
   options.Get(options::ktitleBarOverlay, &titlebar_overlay_);

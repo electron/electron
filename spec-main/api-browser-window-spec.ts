@@ -1890,7 +1890,9 @@ describe('BrowserWindow module', () => {
         titleBarOverlay: true
       });
       const overlayHTML = path.join(__dirname, 'fixtures', 'pages', 'overlay.html');
+      const overlayReady = emittedOnce(ipcMain, 'geometrychange');
       await w.loadFile(overlayHTML);
+      await overlayReady;
       const overlayEnabled = await w.webContents.executeJavaScript('navigator.windowControlsOverlay.visible');
       expect(overlayEnabled).to.be.true('overlayEnabled');
       const overlayRect = await w.webContents.executeJavaScript('getJSOverlayProperties()');
