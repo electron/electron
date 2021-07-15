@@ -58,8 +58,8 @@
 #endif
 
 #if !defined(MAS_BUILD)
-#include "components/crash/core/app/crash_switches.h"
-#include "components/crash/core/app/crashpad.h"  // nogncheck
+#include "components/crash/core/app/crash_switches.h"  // nogncheck
+#include "components/crash/core/app/crashpad.h"        // nogncheck
 #include "components/crash/core/common/crash_key.h"
 #include "components/crash/core/common/crash_keys.h"
 #include "shell/app/electron_crash_reporter_client.h"
