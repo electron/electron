@@ -175,6 +175,10 @@ new Promise((resolve, reject) => {
             semver.gt(localVersion, currentTags.beta)) {
         childProcess.execSync(`npm dist-tag add electron@${localVersion} beta --otp=${process.env.ELECTRON_NPM_OTP}`);
       }
+      if (parsedLocalVersion.prerelease[0] === 'alpha' &&
+            semver.gt(localVersion, currentTags.alpha)) {
+        childProcess.execSync(`npm dist-tag add electron@${localVersion} alpha --otp=${process.env.ELECTRON_NPM_OTP}`);
+      }
     }
   })
   .catch((err) => {
