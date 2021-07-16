@@ -33,10 +33,10 @@ index e7dda63b94aebaf45cf25af0bc101698d44fc44b..feb624f77466de6bf1ea398dc8274231
          "//base",
          "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index 06acdd3fba1d254b2d95bf7bafc894bc1b308da9..2edfeb66fbc0d636e005a2bc3b355e8c0177ebaf 100644
+index 17e03f58263b5254cec991386536286de3b41600..65fdfcec6894249996fa12b9471362475620cfd7 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -4300,7 +4300,7 @@ static_library("browser") {
+@@ -4306,7 +4306,7 @@ static_library("browser") {
  
      # On Windows, the hashes are embedded in //chrome:chrome_initial rather
      # than here in :chrome_dll.
@@ -46,10 +46,10 @@ index 06acdd3fba1d254b2d95bf7bafc894bc1b308da9..2edfeb66fbc0d636e005a2bc3b355e8c
      }
  
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index 3605e94a96f1f870a753915b109caf6aa5089878..bc67145477b1a34337ed359c8505b64f0ac729ce 100644
+index 70a4fa14560b92599bcfa4aadc4cda73bb8cc5a0..24814b65e2729a590618733ada151a5e7655b06e 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
-@@ -5256,7 +5256,6 @@ test("unit_tests") {
+@@ -5264,7 +5264,6 @@ test("unit_tests") {
      assert(toolkit_views)
      sources += [ "../browser/ui/startup/credential_provider_signin_info_fetcher_win_unittest.cc" ]
      deps += [
@@ -57,7 +57,7 @@ index 3605e94a96f1f870a753915b109caf6aa5089878..bc67145477b1a34337ed359c8505b64f
        "//chrome/browser:chrome_process_finder",
        "//chrome/browser/safe_browsing/chrome_cleaner",
        "//chrome/browser/safe_browsing/chrome_cleaner:public",
-@@ -5269,6 +5268,12 @@ test("unit_tests") {
+@@ -5277,6 +5276,12 @@ test("unit_tests") {
        "//components/chrome_cleaner/public/proto",
        "//ui/events/devices:test_support",
      ]
@@ -70,7 +70,7 @@ index 3605e94a96f1f870a753915b109caf6aa5089878..bc67145477b1a34337ed359c8505b64f
    }
  
    if (is_win || is_chromeos_ash || is_mac) {
-@@ -5832,7 +5837,6 @@ test("unit_tests") {
+@@ -5840,7 +5845,6 @@ test("unit_tests") {
      }
  
      deps += [
@@ -78,7 +78,7 @@ index 3605e94a96f1f870a753915b109caf6aa5089878..bc67145477b1a34337ed359c8505b64f
        "//chrome/browser:cart_db_content_proto",
        "//chrome/browser/media/router:test_support",
        "//chrome/browser/promo_browser_command:mojo_bindings",
-@@ -5867,6 +5871,9 @@ test("unit_tests") {
+@@ -5875,6 +5879,9 @@ test("unit_tests") {
        "//ui/color:test_support",
        "//ui/native_theme:test_support",
      ]
