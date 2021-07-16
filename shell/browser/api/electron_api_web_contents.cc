@@ -2517,7 +2517,7 @@ void WebContents::Print(gin::Arguments* args) {
   // We don't want to allow the user to enable these settings
   // but we need to set them or a CHECK is hit.
   settings.SetIntKey(printing::kSettingPrinterType,
-                     static_cast<int>(printing::PrinterType::kLocal));
+                     static_cast<int>(printing::mojom::PrinterType::kLocal));
   settings.SetBoolKey(printing::kSettingShouldPrintSelectionOnly, false);
   settings.SetBoolKey(printing::kSettingRasterizePdf, false);
 
