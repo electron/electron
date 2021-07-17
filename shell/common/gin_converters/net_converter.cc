@@ -368,6 +368,7 @@ v8::Local<v8::Value> Converter<electron::VerifyRequestParams>::ToV8(
   dict.Set("hostname", val.hostname);
   dict.Set("certificate", val.certificate);
   dict.Set("validatedCertificate", val.validated_certificate);
+  dict.Set("isIssuedByKnownRoot", val.is_issued_by_known_root);
   dict.Set("verificationResult", val.default_result);
   dict.Set("errorCode", val.error_code);
   return ConvertToV8(isolate, dict);
