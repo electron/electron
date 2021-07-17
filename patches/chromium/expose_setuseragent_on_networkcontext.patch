@@ -51,10 +51,10 @@ index 83fde65c34f12fee6b2ef867f94fdd31252b60cf..c5012949a034f12ca466f5e5e791a1f4
    // This may only be called on NetworkContexts created with the constructor
    // that calls MakeURLRequestContext().
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 1f09e757f9ac7f9f101066beddbd2f540cfd5b7d..43b461c1fa12ed38975a90a08987620088236dad 100644
+index c701d79bbe05f52c03eb0c0c13ad00cdfc3263fb..01e65839c7cb180f9e94f51eda71193fec1f4f30 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
-@@ -255,6 +255,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -256,6 +256,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    void CloseIdleConnections(CloseIdleConnectionsCallback callback) override;
    void SetNetworkConditions(const base::UnguessableToken& throttling_profile_id,
                              mojom::NetworkConditionsPtr conditions) override;

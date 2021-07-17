@@ -127,10 +127,10 @@ index a38eeaf6e58af7bf02fe82b035cc8d9726057965..83fde65c34f12fee6b2ef867f94fdd31
  
    builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 7ecd11bb762d0ccaa104d0cc198b66db2aed8143..1f09e757f9ac7f9f101066beddbd2f540cfd5b7d 100644
+index ecd8081254310bf900552984fe4f37214b70ec1f..c701d79bbe05f52c03eb0c0c13ad00cdfc3263fb 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
-@@ -91,6 +91,7 @@ class DomainReliabilityMonitor;
+@@ -92,6 +92,7 @@ class DomainReliabilityMonitor;
  
  namespace network {
  class CertVerifierWithTrustAnchors;
@@ -138,7 +138,7 @@ index 7ecd11bb762d0ccaa104d0cc198b66db2aed8143..1f09e757f9ac7f9f101066beddbd2f54
  class CookieManager;
  class ExpectCTReporter;
  class HostResolver;
-@@ -195,6 +196,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -196,6 +197,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    void CreateURLLoaderFactory(
        mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
        mojom::URLLoaderFactoryParamsPtr params) override;
@@ -147,7 +147,7 @@ index 7ecd11bb762d0ccaa104d0cc198b66db2aed8143..1f09e757f9ac7f9f101066beddbd2f54
    void ResetURLLoaderFactories() override;
    void GetCookieManager(
        mojo::PendingReceiver<mojom::CookieManager> receiver) override;
-@@ -707,6 +710,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -708,6 +711,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    CertVerifierWithTrustAnchors* cert_verifier_with_trust_anchors_ = nullptr;
  #endif
  

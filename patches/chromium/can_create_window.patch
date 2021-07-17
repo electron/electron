@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index d3401f43eadaf4a74156f1e644d50afd3c12b093..298fdf298e058cd1793135f6552b5ed6e29f55cf 100644
+index 8d3188382cbc27c551f2256de899d8d5f93f32f1..715a9a668bbea6b316e0a2172807dcde32f27933 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -6261,6 +6261,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -6232,6 +6232,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,10 +21,10 @@ index d3401f43eadaf4a74156f1e644d50afd3c12b093..298fdf298e058cd1793135f6552b5ed6
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index ce65fbf4c4e62a1e3e81dbaf9abbb1360551ba9d..26b280ec0aac4d3caf552a94f39f1a1fe798db31 100644
+index d366b6c54c696f8b82bb63deab634297f01e9905..51278cb919b4c83fb45e44099c05ea04061baf92 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3729,6 +3729,14 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -3710,6 +3710,14 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    }
    auto* new_contents_impl = new_contents.get();
  
@@ -39,7 +39,7 @@ index ce65fbf4c4e62a1e3e81dbaf9abbb1360551ba9d..26b280ec0aac4d3caf552a94f39f1a1f
    new_contents_impl->GetController().SetSessionStorageNamespace(
        partition_id, session_storage_namespace);
  
-@@ -3771,12 +3779,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -3752,12 +3760,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
