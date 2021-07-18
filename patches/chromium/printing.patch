@@ -126,7 +126,7 @@ index 2824b97e715a493082734d40f62860c8cafa5f34..584d4ef2b73a0f89458224eb134a8d8a
  }
  
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index 867227684ddba1b1032d7aa4935cbfdca8518309..fbcb81b7dedcf5d9bad949dbf721c0a34a7c8f2b 100644
+index 671dd26655218fdc53daf7520f07ad0f2f67c19d..497cc96ad7e75932dd3e30aaccaa9f699d5d8955 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -28,10 +28,10 @@
@@ -284,7 +284,7 @@ index 867227684ddba1b1032d7aa4935cbfdca8518309..fbcb81b7dedcf5d9bad949dbf721c0a3
    base::ThreadTaskRunnerHandle::Get()->PostTask(
        FROM_HERE, base::BindOnce(&ShowWarningMessageBox,
                                  l10n_util::GetStringUTF16(
-@@ -794,6 +819,11 @@ void PrintViewManagerBase::OnNotifyPrintJobEvent(
+@@ -793,6 +818,11 @@ void PrintViewManagerBase::OnNotifyPrintJobEvent(
  #endif
        break;
      }
@@ -296,7 +296,7 @@ index 867227684ddba1b1032d7aa4935cbfdca8518309..fbcb81b7dedcf5d9bad949dbf721c0a3
      case JobEventDetails::JOB_DONE:
        // Printing is done, we don't need it anymore.
        // print_job_->is_job_pending() may still be true, depending on the order
-@@ -859,8 +889,10 @@ bool PrintViewManagerBase::CreateNewPrintJob(
+@@ -858,8 +888,10 @@ bool PrintViewManagerBase::CreateNewPrintJob(
    DCHECK(!quit_inner_loop_);
    DCHECK(query);
  
@@ -309,7 +309,7 @@ index 867227684ddba1b1032d7aa4935cbfdca8518309..fbcb81b7dedcf5d9bad949dbf721c0a3
  
    // We can't print if there is no renderer.
    if (!web_contents()->GetMainFrame()->GetRenderViewHost() ||
-@@ -881,8 +913,6 @@ bool PrintViewManagerBase::CreateNewPrintJob(
+@@ -880,8 +912,6 @@ bool PrintViewManagerBase::CreateNewPrintJob(
                          /*source_id=*/"");
  #endif
  
@@ -318,7 +318,7 @@ index 867227684ddba1b1032d7aa4935cbfdca8518309..fbcb81b7dedcf5d9bad949dbf721c0a3
    printing_succeeded_ = false;
    return true;
  }
-@@ -931,14 +961,22 @@ void PrintViewManagerBase::ReleasePrintJob() {
+@@ -930,14 +960,22 @@ void PrintViewManagerBase::ReleasePrintJob() {
    content::RenderFrameHost* rfh = printing_rfh_;
    printing_rfh_ = nullptr;
  
@@ -343,7 +343,7 @@ index 867227684ddba1b1032d7aa4935cbfdca8518309..fbcb81b7dedcf5d9bad949dbf721c0a3
    // Don't close the worker thread.
    print_job_ = nullptr;
  }
-@@ -974,7 +1012,7 @@ bool PrintViewManagerBase::RunInnerMessageLoop() {
+@@ -973,7 +1011,7 @@ bool PrintViewManagerBase::RunInnerMessageLoop() {
  }
  
  bool PrintViewManagerBase::OpportunisticallyCreatePrintJob(int cookie) {
