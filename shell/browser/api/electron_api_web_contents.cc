@@ -911,16 +911,6 @@ void WebContents::InitWithWebContents(content::WebContents* web_contents,
   inspectable_web_contents_.reset(new InspectableWebContents(
       web_contents, browser_context->prefs(), is_guest));
   inspectable_web_contents_->SetDelegate(this);
-
-  if (web_preferences) {
-    std::string color_name;
-    if (web_preferences->GetPreference(options::kBackgroundColor,
-                                       &color_name)) {
-      web_contents->SetPageBaseBackgroundColor(ParseHexColor(color_name));
-    } else {
-      web_contents->SetPageBaseBackgroundColor(SK_ColorTRANSPARENT);
-    }
-  }
 }
 
 WebContents::~WebContents() {
@@ -1379,6 +1369,18 @@ void WebContents::HandleNewRenderFrame(
   auto* rwhv = render_frame_host->GetView();
   if (!rwhv)
     return;
+
+  // Set the background color of RenderWidgetHostView.
+  auto* web_preferences = WebContentsPreferences::From(web_contents());
+  if (web_preferences) {
+    std::string color_name;
+    if (web_preferences->GetPreference(options::kBackgroundColor,
+                                       &color_name)) {
+      rwhv->SetBackgroundColor(ParseHexColor(color_name));
+    } else {
+      rwhv->SetBackgroundColor(SK_ColorTRANSPARENT);
+    }
+  }
 
   if (!background_throttling_)
     render_frame_host->GetRenderViewHost()->SetSchedulerThrottling(false);
