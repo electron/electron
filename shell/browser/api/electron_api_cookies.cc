@@ -321,7 +321,8 @@ v8::Local<v8::Promise> Cookies::Set(v8::Isolate* isolate,
       ParseTimeProperty(details.FindDoubleKey("creationDate")),
       ParseTimeProperty(details.FindDoubleKey("expirationDate")),
       ParseTimeProperty(details.FindDoubleKey("lastAccessDate")), secure,
-      http_only, same_site, net::COOKIE_PRIORITY_DEFAULT, same_party);
+      http_only, same_site, net::COOKIE_PRIORITY_DEFAULT, same_party,
+      absl::nullopt);
   if (!canonical_cookie || !canonical_cookie->IsCanonical()) {
     promise.RejectWithErrorMessage(
         InclusionStatusToString(net::CookieInclusionStatus(
