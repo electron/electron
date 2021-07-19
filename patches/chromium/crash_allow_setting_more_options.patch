@@ -74,6 +74,32 @@ index 39557cce474439238255ecd28030215085db0c81..5b3f980837911c710686ab91a2a81c31
  #if defined(OS_ANDROID)
    // Used by WebView to sample crashes without generating the unwanted dumps. If
    // the returned value is less than 100, crash dumping will be sampled to that
+diff --git a/components/crash/core/app/crashpad_linux.cc b/components/crash/core/app/crashpad_linux.cc
+index 5f97c1ef00d9c63a7b16265cc97d9f145adae550..8c3028f228373b5e1145fe3235dc06663f8b087f 100644
+--- a/components/crash/core/app/crashpad_linux.cc
++++ b/components/crash/core/app/crashpad_linux.cc
+@@ -165,6 +165,7 @@ base::FilePath PlatformCrashpadInitialization(
+     // where crash_reporter provides it's own values for lsb-release.
+     annotations["lsb-release"] = base::GetLinuxDistro();
+ #endif
++    crash_reporter_client->GetProcessSimpleAnnotations(&annotations);
+ 
+     std::vector<std::string> arguments;
+     if (crash_reporter_client->ShouldMonitorCrashHandlerExpensively()) {
+@@ -186,6 +187,13 @@ base::FilePath PlatformCrashpadInitialization(
+     }
+ #endif
+ 
++    if (!crash_reporter_client->GetShouldRateLimit()) {
++      arguments.push_back("--no-rate-limit");
++    }
++    if (!crash_reporter_client->GetShouldCompressUploads()) {
++      arguments.push_back("--no-upload-gzip");
++    }
++
+     bool result =
+         client.StartHandler(handler_path, database_path, metrics_path, url,
+                             annotations, arguments, false, false);
 diff --git a/components/crash/core/app/crashpad_mac.mm b/components/crash/core/app/crashpad_mac.mm
 index e3fc1fb2bcab31d6a7cb325a892acb26dc00d4e4..fd654d6e514de416457c283caeb1895dba6286e1 100644
 --- a/components/crash/core/app/crashpad_mac.mm
