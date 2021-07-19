@@ -19,7 +19,7 @@ In sandboxed renderers the `process` object contains only a subset of the APIs:
 * `getBlinkMemoryInfo()`
 * `getProcessMemoryInfo()`
 * `getSystemMemoryInfo()`
-* `getSystemProductType()`
+* `getWindowsVersionType()`
 * `getSystemVersion()`
 * `getCPUUsage()`
 * `getIOCounters()`
@@ -216,9 +216,9 @@ Returns `Object`:
 Returns an object giving memory usage statistics about the entire system. Note
 that all statistics are reported in Kilobytes.
 
-### `process.getSystemProductType()`
+### `process.getWindowsVersionType()`
 
-Returns `String` - Can be `server` or `desktop`.Returns `server` if operating
+Returns `String` - Can be `server` or `desktop`. Returns `server` if operating
 system is Windows Server. Otherwise, returns `desktop`.
 
 ### `process.getSystemVersion()`

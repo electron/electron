@@ -1,6 +1,7 @@
 const { ipcRenderer } = require('electron');
 const fs = require('fs');
 const path = require('path');
+const { ifit } = require('./spec-helpers');
 
 const { expect } = require('chai');
 
@@ -73,9 +74,13 @@ describe('process module', () => {
     });
   });
 
-  describe('process.getSystemProductType()', () => {
-    it('returns a string', () => {
-      expect(process.getSystemProductType()).to.be.a('string');
+  describe('process.getWindowsVersionType()', () => {
+    ifit(process.platform === 'win32')('returns a string', () => {
+      expect(process.getWindowsVersionType()).to.be.a('string');
+    });
+
+    ifit(process.platform !== 'win32')('throws if not on Windows', () => {
+      expect(process.getWindowsVersionType()).to.throw('No Windows version type for non-Windows OSes');
     });
   });
 
