@@ -242,7 +242,7 @@ see our dedicated [Context Isolation](context-isolation.md) document.
 
 ## 4) Enable Sandboxing
 
-[Sandboxing](sandboxing.md) is a Chromium feature that uses the operating system to
+[Sandboxing](sandbox.md) is a Chromium feature that uses the operating system to
 significantly limit what renderer processes have access to. You should enable
 the sandbox in all renderers. Loading, reading or processing any untrusted
 content in an unsandboxed process, including the main process, is not advised.
