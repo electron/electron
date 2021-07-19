@@ -135,6 +135,9 @@ new Promise((resolve, reject) => {
       } else if (!release.prerelease) {
         // Tag the release with a `2-0-x` style tag
         npmTag = currentBranch;
+      } else if (release.tag_name.indexOf('alpha') > 0) {
+        // Tag the release with a `alpha-3-0-x` style tag
+        npmTag = `alpha-${currentBranch}`;
       } else {
         // Tag the release with a `beta-3-0-x` style tag
         npmTag = `beta-${currentBranch}`;

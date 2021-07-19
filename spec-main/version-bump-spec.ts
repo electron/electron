@@ -26,7 +26,7 @@ class GitFake {
 
   setVersion (channel: string, latestTag: string): void {
     const tags = [latestTag];
-    if (channel !== 'stable') {
+    if (channel === 'alpha') {
       const versionStrs = latestTag.split(`${channel}.`);
       const latest = parseInt(versionStrs[1]);
 
@@ -189,25 +189,10 @@ describe('version-bumper', () => {
   ifdescribe(!(process.platform === 'linux' && process.arch.indexOf('arm') === 0) && process.platform !== 'darwin')('nextVersion', () => {
     describe('bump versions', () => {
       const nightlyPattern = /[0-9.]*(-nightly.(\d{4})(\d{2})(\d{2}))$/g;
-      const alphaPattern = /[0-9.]*(-alpha[0-9.]*)/g;
       const betaPattern = /[0-9.]*(-beta[0-9.]*)/g;
-
-      const sandbox = sinon.createSandbox();
-      const gitFake = new GitFake();
-
-      beforeEach(() => {
-        const wrapper = (args: string[], path: string, options?: IGitExecutionOptions | undefined) => gitFake.exec(args, path, options);
-        sandbox.replace(GitProcess, 'exec', wrapper);
-      });
-
-      afterEach(() => {
-        gitFake.branches = {};
-        sandbox.restore();
-      });
 
       it('bumps to nightly from stable', async () => {
         const version = 'v2.0.0';
-        gitFake.setVersion('stable', version);
         const next = await nextVersion('nightly', version);
         const matches = next.match(nightlyPattern);
         expect(matches).to.have.lengthOf(1);
@@ -215,7 +200,6 @@ describe('version-bumper', () => {
 
       it('bumps to nightly from beta', async () => {
         const version = 'v2.0.0-beta.1';
-        gitFake.setVersion('beta', version);
         const next = await nextVersion('nightly', version);
         const matches = next.match(nightlyPattern);
         expect(matches).to.have.lengthOf(1);
@@ -223,7 +207,6 @@ describe('version-bumper', () => {
 
       it('bumps to nightly from nightly', async () => {
         const version = 'v2.0.0-nightly.19950901';
-        gitFake.setVersion('nightly', version);
         const next = await nextVersion('nightly', version);
         const matches = next.match(nightlyPattern);
         expect(matches).to.have.lengthOf(1);
@@ -231,7 +214,6 @@ describe('version-bumper', () => {
 
       it('bumps to a nightly version above our switch from N-0-x to N-x-y branch names', async () => {
         const version = 'v2.0.0-nightly.19950901';
-        gitFake.setVersion('nightly', version);
         const next = await nextVersion('nightly', version);
         // If it starts with v8 then we didn't bump above the 8-x-y branch
         expect(next.startsWith('v8')).to.equal(false);
@@ -239,69 +221,33 @@ describe('version-bumper', () => {
 
       it('throws error when bumping to beta from stable', () => {
         const version = 'v2.0.0';
-        gitFake.setVersion('stable', version);
         return expect(
           nextVersion('beta', version)
         ).to.be.rejectedWith('Cannot bump to beta from stable.');
       });
 
-      it('bumps to alpha from nightly', async () => {
+      // TODO ELECTRON 15: Re-enable after Electron 15 alpha has released
+      it.skip('bumps to beta from nightly', async () => {
         const version = 'v2.0.0-nightly.19950901';
-        gitFake.setVersion('nightly', version);
-        const next = await nextVersion('alpha', version);
-        const matches = next.match(alphaPattern);
-        expect(matches).to.have.lengthOf(1);
-      });
-
-      it('bumps to alpha from alpha', async () => {
-        const version = 'v2.0.0-alpha.8';
-        gitFake.setVersion('alpha', version);
-        const next = await nextVersion('alpha', version);
-        expect(next).to.equal('2.0.0-alpha.9');
-      });
-
-      it('bumps to alpha from alpha if the previous alpha is at least alpha.10', async () => {
-        const version = 'v6.0.0-alpha.15';
-        gitFake.setVersion('alpha', version);
-        const next = await nextVersion('alpha', version);
-        expect(next).to.equal('6.0.0-alpha.16');
-      });
-
-      it('bumps to beta from alpha', async () => {
-        const version = 'v2.0.0-alpha.8';
-        gitFake.setVersion('alpha', version);
         const next = await nextVersion('beta', version);
         const matches = next.match(betaPattern);
         expect(matches).to.have.lengthOf(1);
-        expect(next).to.equal('2.0.0-beta.1');
       });
-
-      // TODO ELECTRON 15: Re-enable after Electron 15 alpha has released
-      // it('bumps to beta from nightly', async () => {
-      //   const version = 'v2.0.0-nightly.19950901';
-      //   gitFake.setVersion('nightly', version);
-      //   const next = await nextVersion('beta', version);
-      //   const matches = next.match(betaPattern);
-      //   expect(matches).to.have.lengthOf(1);
-      // });
 
       it('bumps to beta from beta', async () => {
         const version = 'v2.0.0-beta.8';
-        gitFake.setVersion('beta', version);
         const next = await nextVersion('beta', version);
         expect(next).to.equal('2.0.0-beta.9');
       });
 
       it('bumps to beta from beta if the previous beta is at least beta.10', async () => {
         const version = 'v6.0.0-beta.15';
-        gitFake.setVersion('beta', version);
         const next = await nextVersion('beta', version);
         expect(next).to.equal('6.0.0-beta.16');
       });
 
       it('bumps to stable from beta', async () => {
         const version = 'v2.0.0-beta.1';
-        gitFake.setVersion('beta', version);
         const next = await nextVersion('stable', version);
         expect(next).to.equal('2.0.0');
       });
@@ -320,7 +266,6 @@ describe('version-bumper', () => {
 
       it('bumps to stable from nightly', async () => {
         const version = 'v2.0.0-nightly.19950901';
-        gitFake.setVersion('nightly', version);
         const next = await nextVersion('stable', version);
         expect(next).to.equal('2.0.0');
       });
@@ -338,6 +283,64 @@ describe('version-bumper', () => {
           nextVersion('WRONG', version)
         ).to.be.rejectedWith('Invalid bump type.');
       });
+    });
+  });
+
+  // If we don't plan on continuing to support an alpha channel past Electron 15,
+  // these tests will be removed. Otherwise, integrate into the bump versions tests
+  describe('bump versions - alpha channel', () => {
+    const alphaPattern = /[0-9.]*(-alpha[0-9.]*)/g;
+    const betaPattern = /[0-9.]*(-beta[0-9.]*)/g;
+
+    const sandbox = sinon.createSandbox();
+    const gitFake = new GitFake();
+
+    beforeEach(() => {
+      const wrapper = (args: string[], path: string, options?: IGitExecutionOptions | undefined) => gitFake.exec(args, path, options);
+      sandbox.replace(GitProcess, 'exec', wrapper);
+    });
+
+    afterEach(() => {
+      gitFake.branches = {};
+      sandbox.restore();
+    });
+
+    it('bumps to alpha from nightly', async () => {
+      const version = 'v2.0.0-nightly.19950901';
+      gitFake.setVersion('nightly', version);
+      const next = await nextVersion('alpha', version);
+      const matches = next.match(alphaPattern);
+      expect(matches).to.have.lengthOf(1);
+    });
+
+    it('throws error when bumping to alpha from stable', () => {
+      const version = 'v2.0.0';
+      return expect(
+        nextVersion('alpha', version)
+      ).to.be.rejectedWith('Cannot bump to alpha from stable.');
+    });
+
+    it('bumps to alpha from alpha', async () => {
+      const version = 'v2.0.0-alpha.8';
+      gitFake.setVersion('alpha', version);
+      const next = await nextVersion('alpha', version);
+      expect(next).to.equal('2.0.0-alpha.9');
+    });
+
+    it('bumps to alpha from alpha if the previous alpha is at least alpha.10', async () => {
+      const version = 'v6.0.0-alpha.15';
+      gitFake.setVersion('alpha', version);
+      const next = await nextVersion('alpha', version);
+      expect(next).to.equal('6.0.0-alpha.16');
+    });
+
+    it('bumps to beta from alpha', async () => {
+      const version = 'v2.0.0-alpha.8';
+      gitFake.setVersion('alpha', version);
+      const next = await nextVersion('beta', version);
+      const matches = next.match(betaPattern);
+      expect(matches).to.have.lengthOf(1);
+      expect(next).to.equal('2.0.0-beta.1');
     });
   });
 });
