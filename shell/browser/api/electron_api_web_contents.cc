@@ -3052,14 +3052,6 @@ std::vector<base::FilePath> WebContents::GetPreloadPaths() const {
   return result;
 }
 
-v8::Local<v8::Value> WebContents::GetWebPreferences(
-    v8::Isolate* isolate) const {
-  auto* web_preferences = WebContentsPreferences::From(web_contents());
-  if (!web_preferences)
-    return v8::Null(isolate);
-  return gin::ConvertToV8(isolate, *web_preferences->preference());
-}
-
 v8::Local<v8::Value> WebContents::GetLastWebPreferences(
     v8::Isolate* isolate) const {
   auto* web_preferences = WebContentsPreferences::From(web_contents());
@@ -3719,7 +3711,6 @@ v8::Local<v8::ObjectTemplate> WebContents::FillObjectTemplate(
       .SetMethod("getZoomFactor", &WebContents::GetZoomFactor)
       .SetMethod("getType", &WebContents::GetType)
       .SetMethod("_getPreloadPaths", &WebContents::GetPreloadPaths)
-      .SetMethod("getWebPreferences", &WebContents::GetWebPreferences)
       .SetMethod("getLastWebPreferences", &WebContents::GetLastWebPreferences)
       .SetMethod("getOwnerBrowserWindow", &WebContents::GetOwnerBrowserWindow)
       .SetMethod("inspectServiceWorker", &WebContents::InspectServiceWorker)
