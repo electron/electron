@@ -1,7 +1,7 @@
-From 5487040a284a0cbac172520052e7b54c8e48596e Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Dale Curtis <dalecurtis@chromium.org>
 Date: Mon, 12 Jul 2021 19:29:39 +0000
-Subject: [PATCH] Don't TexImage via GPU when OOP raster is disabled on Windows.
+Subject: Don't TexImage via GPU when OOP raster is disabled on Windows.
 
 For some reason it's much slower than the the non-GPU based path. The
 test page https://koush.github.io/webcodecs/ goes from ~270fps decoding
@@ -16,13 +16,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3018801
 Commit-Queue: Dale Curtis <dalecurtis@chromium.org>
 Reviewed-by: Kenneth Russell <kbr@chromium.org>
 Cr-Commit-Position: refs/heads/master@{#900587}
----
 
 diff --git a/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc b/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc
-index 4b6c92a..901eca9 100644
+index 31a22fa48c001a07d1b848c107d22c7d1342c2a6..f70dd9b9d0eb405736e8830feb9cb32bbdb5af4a 100644
 --- a/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc
 +++ b/third_party/blink/renderer/modules/webgl/webgl_rendering_context_base.cc
-@@ -5981,6 +5981,14 @@
+@@ -5955,6 +5955,14 @@ void WebGLRenderingContextBase::TexImageHelperMediaVideoFrame(
        CanUseTexImageViaGPU(format, type) &&
        transform == media::kNoTransformation;
  
@@ -37,7 +36,7 @@ index 4b6c92a..901eca9 100644
    // Callers may chose to provide a renderer which ensures that generated
    // intermediates will be cached across TexImage calls for the same frame.
    std::unique_ptr<media::PaintCanvasVideoRenderer> local_video_renderer;
-@@ -6026,7 +6034,7 @@
+@@ -6000,7 +6008,7 @@ void WebGLRenderingContextBase::TexImageHelperMediaVideoFrame(
      // TODO(crbug.com/1180879): I420A should be supported, but currently fails
      // conformance/textures/misc/texture-video-transparent.html.
      if (!media_video_frame->HasTextures() &&
@@ -46,7 +45,7 @@ index 4b6c92a..901eca9 100644
          video_renderer->CopyVideoFrameYUVDataToGLTexture(
              raster_context_provider, ContextGL(), media_video_frame, target,
              texture->Object(), adjusted_internalformat, format, type, level,
-@@ -6094,9 +6102,9 @@
+@@ -6068,9 +6076,9 @@ void WebGLRenderingContextBase::TexImageHelperMediaVideoFrame(
        function_id == kTexImage2D || function_id == kTexSubImage2D;
  #endif
  
