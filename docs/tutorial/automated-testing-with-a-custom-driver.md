@@ -88,7 +88,7 @@ if (process.env.APP_TEST_DRIVER) {
   process.on('message', onMessage)
 }
 
-async function onMessage ({ msgId, cmd, args }) {
+const onMessage = async ({ msgId, cmd, args }) => {
   let method = METHODS[cmd]
   if (!method) method = () => new Error('Invalid method: ' + cmd)
   try {

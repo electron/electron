@@ -25,7 +25,7 @@ Starting with a working application from the
 ```javascript fiddle='docs/fiddles/features/macos-dock-menu'
 const { app, BrowserWindow, Menu } = require('electron')
 
-function createWindow () {
+const createWindow = () => {
   const win = new BrowserWindow({
     width: 800,
     height: 600,
