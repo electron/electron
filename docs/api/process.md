@@ -218,8 +218,8 @@ that all statistics are reported in Kilobytes.
 
 ### `process.getWindowsVersionType()`
 
-Returns `String` - Can be `server` or `desktop`. Returns `server` if operating
-system is Windows Server. Otherwise, returns `desktop`.
+Returns `String` - Returns the type of Windows version running on the host operating system.
+Can be `home`, `professional`, `server`, `enterprise`, `education`, or `educationPro`.
 
 ### `process.getSystemVersion()`
 
