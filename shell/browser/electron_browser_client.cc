@@ -707,8 +707,8 @@ bool ElectronBrowserClient::CanCreateWindow(
   content::WebContents* web_contents =
       content::WebContents::FromRenderFrameHost(opener);
   WebContentsPreferences* prefs = WebContentsPreferences::From(web_contents);
-  if (prefs && prefs->IsEnabled(options::kNativeWindowOpen)) {
-    if (prefs->IsEnabled("disablePopups")) {
+  if (prefs && prefs->ShouldUseNativeWindowOpen()) {
+    if (prefs->ShouldDisablePopups()) {
       // <webview> without allowpopups attribute should return
       // null from window.open calls
       return false;
@@ -1411,7 +1411,7 @@ void ElectronBrowserClient::OverrideURLLoaderFactoryParams(
         blink::LocalFrameToken(factory_params->top_frame_id.value()));
     auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
     auto* prefs = WebContentsPreferences::From(web_contents);
-    if (prefs && !prefs->IsEnabled(options::kWebSecurity, true)) {
+    if (prefs && !prefs->IsWebSecurityEnabled()) {
       factory_params->is_corb_enabled = false;
       factory_params->disable_web_security = true;
     }
