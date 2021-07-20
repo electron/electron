@@ -442,7 +442,8 @@ window.addEventListener('DOMContentLoaded', () => {
 </html>
 ```
 
-```fiddle docs/fiddles/quick-start
+```
+fiddle docs/fiddles/quick-start
 ```
 
 To summarize all the steps we've done:
