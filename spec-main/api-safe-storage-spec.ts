@@ -7,8 +7,6 @@ import { emittedOnce } from './events-helpers';
 describe('safeStorage module', () => {
   describe('SafeStorage.isEncryptionAvailable()', () => {
     it('should return true when encryption key is available', () => {
-      const encryption = safeStorage.isEncryptionAvailable();
-      console.log(encryption);
       expect(safeStorage.isEncryptionAvailable()).to.equal(true);
     });
   });

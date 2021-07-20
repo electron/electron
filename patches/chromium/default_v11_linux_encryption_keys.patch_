@@ -1,0 +1,55 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: VerteDinde <keeleymhammond@gmail.com>
+Date: Tue, 20 Jul 2021 10:53:51 -0700
+Subject: fix: only support v10 encryption on Linux
+
+This patch modifies the default encryption for os_crypt on Linux.
+Mac and Windows use v10 by default, whereas Linux uses v11 by default,
+causing confusion and mismatched behavior within the safeStorage API.
+This patch modifies that behavior to make our encryption support
+consistent across all operating systems.
+
+This patch should not be upstreamed, as it is Electron-specific. We
+should re-evaluate the need for this patch and the safeStorage API
+implementation if/when Mac and Windows move to v11 encryption keys
+by default.
+
+diff --git a/components/os_crypt/os_crypt_linux.cc b/components/os_crypt/os_crypt_linux.cc
+index 18b9ac2b44e6deac4b52179a936e6e8bb671f0be..57af106232e31df05bff17d95cc20bfaf8b453c9 100644
+--- a/components/os_crypt/os_crypt_linux.cc
++++ b/components/os_crypt/os_crypt_linux.cc
+@@ -165,13 +165,9 @@ bool OSCrypt::EncryptString(const std::string& plaintext,
+ 
+   // If we are able to create a V11 key (i.e. a KeyStorage was available), then
+   // we'll use it. If not, we'll use V10.
+-  Version version = Version::V11;
++  Version version = Version::V10;
+   std::unique_ptr<crypto::SymmetricKey> encryption_key(
+       GetEncryptionKey(version));
+-  if (!encryption_key) {
+-    version = Version::V10;
+-    encryption_key = GetEncryptionKey(version);
+-  }
+ 
+   if (!encryption_key)
+     return false;
+@@ -204,9 +200,6 @@ bool OSCrypt::DecryptString(const std::string& ciphertext,
+   if (base::StartsWith(ciphertext, kObfuscationPrefix[Version::V10],
+                        base::CompareCase::SENSITIVE)) {
+     version = Version::V10;
+-  } else if (base::StartsWith(ciphertext, kObfuscationPrefix[Version::V11],
+-                              base::CompareCase::SENSITIVE)) {
+-    version = Version::V11;
+   } else {
+     // If the prefix is not found then we'll assume we're dealing with
+     // old data saved as clear text and we'll return it directly.
+@@ -247,7 +240,8 @@ void OSCrypt::SetConfig(std::unique_ptr<os_crypt::Config> config) {
+ 
+ // static
+ bool OSCrypt::IsEncryptionAvailable() {
+-  return g_get_password[Version::V11]();
++  // Electron only supports V10
++  return g_get_password[Version::V10]();
+ }
+ 
+ void ClearCacheForTesting() {
