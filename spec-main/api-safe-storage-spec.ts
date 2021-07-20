@@ -4,7 +4,14 @@ import { safeStorage } from 'electron/main';
 import { expect } from 'chai';
 import { emittedOnce } from './events-helpers';
 
+const { promises: fs } = require('fs');
+
 describe('safeStorage module', () => {
+  after(async () => {
+    const pathToEncryptedString = path.resolve(__dirname, 'fixtures', 'api', 'safe-storage', 'encrypted.txt');
+    await fs.unlink(pathToEncryptedString);
+  });
+
   describe('SafeStorage.isEncryptionAvailable()', () => {
     it('should return true when encryption key is available', () => {
       expect(safeStorage.isEncryptionAvailable()).to.equal(true);
