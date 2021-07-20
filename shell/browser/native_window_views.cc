@@ -83,6 +83,8 @@
 
 namespace gin {
 
+#if defined(OS_WIN)
+
 template <>
 struct Converter<electron::NativeWindowViews::TitleBarStyle> {
   static bool FromV8(v8::Isolate* isolate,
@@ -100,6 +102,9 @@ struct Converter<electron::NativeWindowViews::TitleBarStyle> {
     return true;
   }
 };
+
+#endif
+
 }  // namespace gin
 
 namespace electron {
