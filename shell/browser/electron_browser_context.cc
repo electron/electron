@@ -113,8 +113,6 @@ ElectronBrowserContext::ElectronBrowserContext(const std::string& partition,
       protocol_registry_(base::WrapUnique(new ProtocolRegistry)),
       in_memory_(in_memory),
       ssl_config_(network::mojom::SSLConfig::New()) {
-  user_agent_ = ElectronBrowserClient::Get()->GetUserAgent();
-
   // Read options.
   base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
   use_cache_ = !command_line->HasSwitch(switches::kDisableHttpCache);
@@ -306,7 +304,8 @@ ElectronBrowserContext::GetSpecialStoragePolicy() {
 }
 
 std::string ElectronBrowserContext::GetUserAgent() const {
-  return user_agent_;
+  return user_agent_.value_or(ElectronBrowserClient::Get()->GetUserAgent());
+
 }
 
 predictors::PreconnectManager* ElectronBrowserContext::GetPreconnectManager() {

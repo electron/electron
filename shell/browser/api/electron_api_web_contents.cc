@@ -641,9 +641,11 @@ WebContents::WebContents(v8::Isolate* isolate,
   auto session = Session::CreateFrom(isolate, GetBrowserContext());
   session_.Reset(isolate, session.ToV8());
 
+  /*
   web_contents->SetUserAgentOverride(blink::UserAgentOverride::UserAgentOnly(
                                          GetBrowserContext()->GetUserAgent()),
                                      false);
+                                     */
   web_contents->SetUserData(kElectronApiWebContentsKey,
                             std::make_unique<UserDataLink>(GetWeakPtr()));
   InitZoomController(web_contents, gin::Dictionary::CreateEmpty(isolate));
@@ -846,9 +848,11 @@ void WebContents::InitWithSessionAndOptions(
 
   AutofillDriverFactory::CreateForWebContents(web_contents());
 
+  /*
   web_contents()->SetUserAgentOverride(blink::UserAgentOverride::UserAgentOnly(
                                            GetBrowserContext()->GetUserAgent()),
                                        false);
+                                       */
 
   if (IsGuest()) {
     NativeWindow* owner_window = nullptr;

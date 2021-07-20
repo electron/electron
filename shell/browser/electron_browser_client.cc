@@ -23,6 +23,7 @@
 #include "base/stl_util.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
+#include "components/embedder_support/user_agent_utils.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/post_task.h"
 #include "chrome/browser/browser_process.h"
@@ -1093,6 +1094,10 @@ std::string ElectronBrowserClient::GetUserAgent() {
 
 void ElectronBrowserClient::SetUserAgent(const std::string& user_agent) {
   user_agent_override_ = user_agent;
+}
+
+blink::UserAgentMetadata ElectronBrowserClient::GetUserAgentMetadata() {
+  return embedder_support::GetUserAgentMetadata();
 }
 
 void ElectronBrowserClient::RegisterNonNetworkNavigationURLLoaderFactories(
