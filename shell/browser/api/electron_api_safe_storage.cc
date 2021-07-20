@@ -17,9 +17,7 @@ namespace electron {
 
 namespace api {
 
-#if DCHECK_IS_ON()
 bool SafeStorage::electron_crypto_ready = false;
-#endif
 
 gin::WrapperInfo SafeStorage::kWrapperInfo = {gin::kEmbedderNativeGin};
 
@@ -32,7 +30,6 @@ bool SafeStorage::IsEncryptionAvailable() {
 
 v8::Local<v8::Value> SafeStorage::EncryptString(v8::Isolate* isolate,
                                                 const std::string& plaintext) {
-  DCHECK(SafeStorage::electron_crypto_ready);
   std::string ciphertext;
   bool encrypted = OSCrypt::EncryptString(plaintext, &ciphertext);
 
@@ -55,9 +52,22 @@ std::string SafeStorage::DecryptString(v8::Isolate* isolate,
     return "";
   }
 
+  const char kEncryptionVersionPrefix[] = "v10";
   const char* data = node::Buffer::Data(buffer);
   auto size = node::Buffer::Length(buffer);
   std::string ciphertext(data, size);
+
+  if (ciphertext.empty()) {
+    return "";
+  }
+
+  if (ciphertext.find(kEncryptionVersionPrefix) != 0) {
+    gin_helper::ErrorThrower(isolate).ThrowError(
+        "Error while decrypting the ciphertext provided to "
+        "safeStorage.decryptString. "
+        "Ciphertext may not be encrypted.");
+    return "";
+  }
 
   std::string plaintext;
   bool decrypted = OSCrypt::DecryptString(ciphertext, &plaintext);

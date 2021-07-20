@@ -35,9 +35,7 @@ class SafeStorage : public gin::Wrappable<SafeStorage>,
   // Used in a DCHECK to validate that our assumption that the network context
   // manager has initialized before app ready holds true. Only used in the
   // testing build
-#if DCHECK_IS_ON()
   static bool electron_crypto_ready;
-#endif
 
  private:
   SafeStorage();

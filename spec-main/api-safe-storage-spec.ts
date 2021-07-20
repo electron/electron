@@ -7,6 +7,8 @@ import { emittedOnce } from './events-helpers';
 describe('safeStorage module', () => {
   describe('SafeStorage.isEncryptionAvailable()', () => {
     it('should return true when encryption key is available', () => {
+      const encryption = safeStorage.isEncryptionAvailable();
+      console.log(encryption);
       expect(safeStorage.isEncryptionAvailable()).to.equal(true);
     });
   });
@@ -37,13 +39,11 @@ describe('safeStorage module', () => {
       expect(safeStorage.decryptString(encrypted)).to.equal(plaintext);
     });
 
-    it('unencrypted input should not throw', () => {
+    it('unencrypted input should throw', () => {
       const plaintextBuffer = Buffer.from('I am unencoded!', 'utf-8');
       expect(() => {
         safeStorage.decryptString(plaintextBuffer);
-      }).not.to.throw(Error);
-
-      expect(safeStorage.decryptString(plaintextBuffer)).to.equal('I am unencoded!');
+      }).to.throw(Error);
     });
 
     it('non-buffer input should throw', () => {
@@ -60,6 +60,12 @@ describe('safeStorage module', () => {
 
       const encryptAppPath = path.join(fixturesPath, 'api', 'safe-storage', 'encrypt-app');
       const encryptAppProcess = cp.spawn(process.execPath, [encryptAppPath]);
+      let stdout: string = '';
+      encryptAppProcess.stderr.on('data', data => { stdout += data; });
+      encryptAppProcess.stderr.on('data', data => { stdout += data; });
+
+      // this setTimeout is left here for QOL in case we need to debug this test in the future
+      setTimeout(() => { console.log(stdout); }, 3000);
 
       await emittedOnce(encryptAppProcess, 'exit');
 
