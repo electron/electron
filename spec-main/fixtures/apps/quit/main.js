@@ -1,6 +1,6 @@
 const { app, BrowserWindow } = require('electron');
 
-app.once('ready', () => {
+app.once('ready', async () => {
   const w = new BrowserWindow({
     show: false,
     webPreferences: {
@@ -8,9 +8,13 @@ app.once('ready', () => {
       nodeIntegration: true
     }
   });
-  w.webContents.once('crashed', () => {
-    app.quit();
+  w.webContents.once('render-process-gone', (_, details) => {
+    if (details.reason === 'crashed') {
+      process.exit(0);
+    } else {
+      process.exit(details.exitCode);
+    }
   });
-  w.webContents.loadURL('about:blank');
+  await w.webContents.loadURL('about:blank');
   w.webContents.executeJavaScript('process.crash()');
 });
