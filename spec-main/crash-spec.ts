@@ -13,11 +13,9 @@ const runFixtureAndEnsureCleanExit = (args: string[]) => {
   children.push(child);
   child.stdout.on('data', (chunk: Buffer) => {
     out += chunk.toString();
-    console.error(`stdout: ${out}`);
   });
   child.stderr.on('data', (chunk: Buffer) => {
     out += chunk.toString();
-    console.error(`stderr: ${out}`);
   });
   return new Promise<void>((resolve) => {
     child.on('exit', (code, signal) => {
