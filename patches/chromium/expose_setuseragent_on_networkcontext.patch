@@ -33,10 +33,10 @@ index 0ccfe130f00ec3b6c75cd8ee04d5a2777e1fd00c..653829457d58bf92057cc36aa8a28970
    DISALLOW_COPY_AND_ASSIGN(StaticHttpUserAgentSettings);
  };
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index ec827a74b562601c87435b0203d3425be17b477a..b9d4aa619accfb677c8c3deaa4127572d77644c5 100644
+index 83fde65c34f12fee6b2ef867f94fdd31252b60cf..c5012949a034f12ca466f5e5e791a1f4569d813f 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
-@@ -1182,6 +1182,13 @@ void NetworkContext::SetNetworkConditions(
+@@ -1195,6 +1195,13 @@ void NetworkContext::SetNetworkConditions(
                                        std::move(network_conditions));
  }
  
@@ -63,10 +63,10 @@ index 1f09e757f9ac7f9f101066beddbd2f540cfd5b7d..43b461c1fa12ed38975a90a089876200
    void SetEnableReferrers(bool enable_referrers) override;
  #if BUILDFLAG(IS_CHROMEOS_ASH)
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index ebbdeaa440514740b672bbf722c31d58d254cd8f..a9c8d07092579043b176b78401474080423e112a 100644
+index 5dfc30d2feb37f78dd6eac088366a0dc3e1cf8e4..1da7a1d0103057df3b95f472f3b98c22d081fd8c 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
-@@ -952,6 +952,9 @@ interface NetworkContext {
+@@ -957,6 +957,9 @@ interface NetworkContext {
    SetNetworkConditions(mojo_base.mojom.UnguessableToken throttling_profile_id,
                         NetworkConditions? conditions);
  
