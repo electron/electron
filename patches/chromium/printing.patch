@@ -11,7 +11,7 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/chrome/browser/printing/print_job.cc b/chrome/browser/printing/print_job.cc
-index bca04dcd90921e508fb0e5c8201265532e42e88f..4e094f21cb2c18a51724997522730eead54afe71 100644
+index bca04dcd90921e508fb0e5c8201265532e42e88f..345547f382c8984ea29483b84475c120aa58e19b 100644
 --- a/chrome/browser/printing/print_job.cc
 +++ b/chrome/browser/printing/print_job.cc
 @@ -350,18 +350,25 @@ void PrintJob::StartPdfToEmfConversion(
@@ -42,6 +42,31 @@ index bca04dcd90921e508fb0e5c8201265532e42e88f..4e094f21cb2c18a51724997522730eea
  
    using RenderMode = PdfRenderSettings::Mode;
    RenderMode mode;
+@@ -499,6 +506,10 @@ void PrintJob::OnNotifyPrintJobEvent(const JobEventDetails& event_details) {
+   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+ 
+   switch (event_details.type()) {
++    case JobEventDetails::USER_INIT_CANCELED: {
++      DCHECK_EQ(event_details.document(), document_.get());
++      break;
++    }
+     case JobEventDetails::FAILED:
+       // No need to cancel since the worker already canceled itself.
+       Stop();
+diff --git a/chrome/browser/printing/print_job.h b/chrome/browser/printing/print_job.h
+index b8b83529be4c7da661032d3b941984c02b978047..98ef6cfad5dc46d9dcb65a0ce506db3729410239 100644
+--- a/chrome/browser/printing/print_job.h
++++ b/chrome/browser/printing/print_job.h
+@@ -242,6 +242,9 @@ class JobEventDetails : public base::RefCountedThreadSafe<JobEventDetails> {
+  public:
+   // Event type.
+   enum Type {
++    // Print... dialog box has been closed with CANCEL button.
++    USER_INIT_CANCELED,
++
+     // A new document started printing.
+     NEW_DOC,
+ 
 diff --git a/chrome/browser/printing/print_job_worker.cc b/chrome/browser/printing/print_job_worker.cc
 index 2824b97e715a493082734d40f62860c8cafa5f34..584d4ef2b73a0f89458224eb134a8d8a2b439995 100644
 --- a/chrome/browser/printing/print_job_worker.cc
