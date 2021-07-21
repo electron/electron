@@ -10,10 +10,13 @@
 
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/task/post_task.h"
 #include "base/threading/thread_restrictions.h"
 #include "chrome/browser/media/webrtc/desktop_media_list.h"
 #include "chrome/browser/media/webrtc/window_icon_util.h"
+#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/desktop_capture.h"
+#include "content/public/browser/media_device_request.h"
 #include "gin/object_template_builder.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/api/electron_api_native_image.h"
@@ -236,6 +239,7 @@ void Initialize(v8::Local<v8::Object> exports,
   gin_helper::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("createDesktopCapturer",
                  &electron::api::DesktopCapturer::Create);
+  dict.SetMethod("setSkipCursor", &content::MediaDeviceRequest::SetSkipCursor);
 }
 
 }  // namespace

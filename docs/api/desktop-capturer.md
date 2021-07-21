@@ -97,6 +97,52 @@ which can detected by [`systemPreferences.getMediaAccessStatus`].
 [`navigator.mediaDevices.getUserMedia`]: https://developer.mozilla.org/en/docs/Web/API/MediaDevices/getUserMedia
 [`systemPreferences.getMediaAccessStatus`]: system-preferences.md#systempreferencesgetmediaaccessstatusmediatype-windows-macos
 
+### `desktopCapturer.setSkipCursor(sourceId, skip)`
+
+Used to dynamically show or stop cursor capture in the mediastream when sharing content.
+
+* `sourceId` String - Device id in the format of [`DesktopCapturerSource`](structures/desktop-capturer-source.md) 's id.
+* `skip` Boolean
+
+By default the cursor is captured. Following example shows how to toggle the cursor  capture when sharing content.
+
+```javascript
+// In the renderer process.
+const { desktopCapturer } = require('electron')
+let capturedSourceId
+desktopCapturer.getSources({ types: ['window', 'screen'] }).then(async sources => {
+  for (const source of sources) {
+    if (source.name === 'Electron') {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: false,
+          video: {
+            mandatory: {
+              chromeMediaSource: 'desktop',
+              chromeMediaSourceId: source.id,
+              minWidth: 1280,
+              maxWidth: 1280,
+              minHeight: 720,
+              maxHeight: 720
+            }
+          }
+        })
+        // store the captured source id
+        capturedSourceId = source.id
+        // handle stream
+      } catch (e) {
+        // handle error
+      }
+      return
+    }
+  }
+})
+// On some condition like say button click we want to toggle cursor capture
+function onToggleCursor (isSkipCursor) {
+  desktopCapturer.setSkipCursor(capturedSourceId, isSkipCursor)
+}
+```
+
 ## Caveats
 
 `navigator.mediaDevices.getUserMedia` does not work on macOS for audio capture due to a fundamental limitation whereby apps that want to access the system's audio require a [signed kernel extension](https://developer.apple.com/library/archive/documentation/Security/Conceptual/System_Integrity_Protection_Guide/KernelExtensions/KernelExtensions.html). Chromium, and by extension Electron, does not provide this.

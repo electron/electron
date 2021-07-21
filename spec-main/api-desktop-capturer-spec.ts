@@ -4,6 +4,7 @@ import { desktopCapturer } from 'electron/common';
 import { emittedOnce } from './events-helpers';
 import { ifdescribe, ifit } from './spec-helpers';
 import { closeAllWindows } from './window-helpers';
+import * as path from 'path';
 
 const features = process._linkedBinding('electron_common_features');
 
@@ -236,5 +237,41 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
         }
       });
     }
+  });
+  it('setSkipCursor does not crash', async () => {
+    // test for unknownid
+    expect(() => desktopCapturer.setSkipCursor('unknownid', true)).to.not.throw();
+    // test for empty id
+    expect(() => desktopCapturer.setSkipCursor('', false)).to.not.throw();
+    // test for valid id
+    expect(async () => {
+      const sources = await getSources({
+        types: ['screen']
+      });
+      if (sources.length > 0) {
+        desktopCapturer.setSkipCursor(sources[0].id, true);
+      }
+    }).to.not.throw();
+  });
+
+  it('setSkipCursor called when sharing content', async () => {
+    // test calling set skip cursor when we are sharing content in renderer
+    const win = new BrowserWindow({
+      show: false,
+      width: 200,
+      height: 200,
+      webPreferences: {
+        nodeIntegration: true,
+        contextIsolation: false
+      }
+    });
+    win.loadFile(path.join(__dirname, 'fixtures', 'api', 'desktop-capturer-setskipcursor.html'));
+    win.show();
+
+    const result = await win.webContents.executeJavaScript('testSetSkipCursor()');
+
+    expect(result).to.equal('ok');
+
+    win.destroy();
   });
 });

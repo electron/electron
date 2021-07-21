@@ -73,6 +73,11 @@ if (BUILDFLAG(ENABLE_DESKTOP_CAPTURER)) {
 
     return typeUtils.serialize(await desktopCapturer.getSourcesImpl(event.sender, options));
   });
+
+  ipcMainInternal.handle(IPC_MESSAGES.DESKTOP_CAPTURER_SET_SKIP_CURSOR, function (event, sourceId, skipCursor, stack) {
+    logStack(event.sender, 'desktopCapturer.setSkipCursor()', stack);
+    desktopCapturer.setSkipCursorImpl(event, sourceId, skipCursor);
+  });
 }
 
 const getPreloadScript = async function (preloadPath: string) {

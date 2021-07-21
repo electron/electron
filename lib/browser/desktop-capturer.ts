@@ -1,4 +1,4 @@
-const { createDesktopCapturer } = process._linkedBinding('electron_browser_desktop_capturer');
+const { createDesktopCapturer, setSkipCursor } = process._linkedBinding('electron_browser_desktop_capturer');
 
 const deepEqual = (a: ElectronInternal.GetSourcesOptions, b: ElectronInternal.GetSourcesOptions) => JSON.stringify(a) === JSON.stringify(b);
 
@@ -79,4 +79,8 @@ export const getSourcesImpl = (sender: Electron.WebContents | null, args: Electr
   });
 
   return getSources;
+};
+
+export const setSkipCursorImpl = (event: Electron.IpcMainEvent | null, sourceId: string, skipCursor: boolean) => {
+  setSkipCursor(sourceId, skipCursor);
 };
