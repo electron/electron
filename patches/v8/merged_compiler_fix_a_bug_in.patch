@@ -1,0 +1,35 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Georg Neis <neis@chromium.org>
+Date: Tue, 13 Jul 2021 17:26:47 +0200
+Subject: Merged: [compiler] Fix a bug in
+ CodeGenerator::AddTranslationForOperand
+
+(cherry picked from commit 374354bfe4a30740b96936b33e522d6fcd1cda67)
+
+Bug: chromium:1228407
+No-Try: true
+No-Presubmit: true
+No-Tree-Checks: true
+Change-Id: I358d8736b7b5f87300496cbb39a7689d8207d85f
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3027260
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Reviewed-by: Adam Klein <adamk@chromium.org>
+Commit-Queue: Adam Klein <adamk@chromium.org>
+Cr-Commit-Position: refs/branch-heads/9.1@{#77}
+Cr-Branched-From: 0e4ac64a8cf298b14034a22f9fe7b085d2cb238d-refs/heads/9.1.269@{#1}
+Cr-Branched-From: f565e72d5ba88daae35a59d0f978643e2343e912-refs/heads/master@{#73847}
+
+diff --git a/src/compiler/backend/code-generator.cc b/src/compiler/backend/code-generator.cc
+index 83f8fbc4e8fdbbfea81ae5b368f0dbcf5b32b5bb..647444fa58b559cda4aaf257b0a477282eafd569 100644
+--- a/src/compiler/backend/code-generator.cc
++++ b/src/compiler/backend/code-generator.cc
+@@ -1389,7 +1389,8 @@ void CodeGenerator::AddTranslationForOperand(Translation* translation,
+       default:
+         UNREACHABLE();
+     }
+-    if (literal.object().equals(info()->closure())) {
++    if (literal.object().equals(info()->closure()) &&
++        info()->function_context_specializing()) {
+       translation->StoreJSFrameFunction();
+     } else {
+       int literal_id = DefineDeoptimizationLiteral(literal);
