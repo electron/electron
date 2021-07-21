@@ -8,7 +8,7 @@ app.once('ready', async () => {
       nodeIntegration: true
     }
   });
-  w.webContents.on('render-process-gone', (_, details) => {
+  w.webContents.once('render-process-gone', (_, details) => {
     if (details.reason === 'crashed') {
       process.exit(0);
     } else {
@@ -16,6 +16,5 @@ app.once('ready', async () => {
     }
   });
   await w.webContents.loadURL('about:blank');
-  console.log(await w.webContents.executeJavaScript('42'));
   w.webContents.executeJavaScript('process.crash()');
 });
