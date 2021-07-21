@@ -1,0 +1,65 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Victor Gomes <victorgomes@chromium.org>
+Date: Mon, 31 May 2021 13:16:54 +0200
+Subject: Merged: [JSON] Fix GC issue in BuildJsonObject
+
+We must ensure that the sweeper is not running or has already swept
+mutable_double_buffer. Otherwise the GC can add it to the free list.
+
+Change-Id: If0fc7617acdb6690f0567215b78f8728e1643ec0
+No-Try: true
+No-Presubmit: true
+No-Tree-Checks: true
+Bug: v8:11837, chromium:1214842
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2993033
+Reviewed-by: Michael Lippautz <mlippautz@chromium.org>
+Reviewed-by: Toon Verwaest <verwaest@chromium.org>
+Commit-Queue: Victor Gomes <victorgomes@chromium.org>
+Cr-Commit-Position: refs/branch-heads/9.1@{#75}
+Cr-Branched-From: 0e4ac64a8cf298b14034a22f9fe7b085d2cb238d-refs/heads/9.1.269@{#1}
+Cr-Branched-From: f565e72d5ba88daae35a59d0f978643e2343e912-refs/heads/master@{#73847}
+
+diff --git a/src/heap/heap.cc b/src/heap/heap.cc
+index 3f4348b063995eb5c23ddd8af2aa2ac900a88723..5239523c23d63c2af57a3a9795939bd582d7d10c 100644
+--- a/src/heap/heap.cc
++++ b/src/heap/heap.cc
+@@ -2125,6 +2125,10 @@ void Heap::CompleteSweepingYoung(GarbageCollector collector) {
+   array_buffer_sweeper()->EnsureFinished();
+ }
+ 
++void Heap::EnsureSweepingCompleted() {
++  mark_compact_collector()->EnsureSweepingCompleted();
++}
++
+ void Heap::UpdateCurrentEpoch(GarbageCollector collector) {
+   if (IsYoungGenerationCollector(collector)) {
+     epoch_young_ = next_epoch();
+diff --git a/src/heap/heap.h b/src/heap/heap.h
+index 7dc9ef7d447521012c9b110e4fc94589ada3e6f4..b56641f2e1c51197a68d7c96d5bfca428feb1484 100644
+--- a/src/heap/heap.h
++++ b/src/heap/heap.h
+@@ -1068,6 +1068,8 @@ class Heap {
+   void CompleteSweepingFull();
+   void CompleteSweepingYoung(GarbageCollector collector);
+ 
++  void EnsureSweepingCompleted();
++
+   IncrementalMarking* incremental_marking() {
+     return incremental_marking_.get();
+   }
+diff --git a/src/json/json-parser.cc b/src/json/json-parser.cc
+index c0109bb77a01f7b6e8e23cd1b2f5d85c4473385b..c9844251cc8659587b3de85066cb0ea993d87014 100644
+--- a/src/json/json-parser.cc
++++ b/src/json/json-parser.cc
+@@ -633,6 +633,11 @@ Handle<Object> JsonParser<Char>::BuildJsonObject(
+         DCHECK_EQ(mutable_double_address, end);
+       }
+ #endif
++      // Before setting the length of mutable_double_buffer back to zero, we
++      // must ensure that the sweeper is not running or has already swept the
++      // object's page. Otherwise the GC can add the contents of
++      // mutable_double_buffer to the free list.
++      isolate()->heap()->EnsureSweepingCompleted();
+       mutable_double_buffer->set_length(0);
+     }
+   }
