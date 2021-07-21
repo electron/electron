@@ -1,7 +1,7 @@
-From e60cc80ff744a88da6076297dbb2b3ff3047d29f Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Shrek Shao <shrekshao@google.com>
 Date: Tue, 29 Jun 2021 01:17:03 +0000
-Subject: [PATCH] [M92] Fix multidraw validation drawcount + offset out of bounds
+Subject: Fix multidraw validation drawcount + offset out of bounds
 
 (cherry picked from commit 7d0a12ce19fed024d56b95a692d888fe3ef14e2f)
 
@@ -16,13 +16,12 @@ Reviewed-by: Shrek Shao <shrekshao@google.com>
 Reviewed-by: Austin Eng <enga@chromium.org>
 Cr-Commit-Position: refs/branch-heads/4515@{#1101}
 Cr-Branched-From: 488fc70865ddaa05324ac00a54a6eb783b4bc41c-refs/heads/master@{#885287}
----
 
 diff --git a/third_party/blink/renderer/modules/webgl/webgl_multi_draw_common.cc b/third_party/blink/renderer/modules/webgl/webgl_multi_draw_common.cc
-index fb122d3..e51f2c91 100644
+index 91de853db2b382a7797d22cf741a84f463a2d5f2..c3cae01c63046ce4b8be2c0b03243e9105ed4f23 100644
 --- a/third_party/blink/renderer/modules/webgl/webgl_multi_draw_common.cc
 +++ b/third_party/blink/renderer/modules/webgl/webgl_multi_draw_common.cc
-@@ -37,6 +37,11 @@
+@@ -34,6 +34,11 @@ bool WebGLMultiDrawCommon::ValidateArray(WebGLExtensionScopedContext* scoped,
                                           outOfBoundsDescription);
      return false;
    }
