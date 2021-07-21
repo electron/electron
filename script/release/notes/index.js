@@ -109,6 +109,9 @@ const getPreviousStabilizationBranch = async (current) => {
     if (newestMatch && semver.lte(semverify(branch), semverify(newestMatch))) {
       continue;
     }
+    if ((await getTagsOnBranch(branch)).filter(tag => tagIsStable(tag)).length === 0) {
+      continue;
+    }
     newestMatch = branch;
   }
   return newestMatch;
