@@ -156,7 +156,7 @@ void BrowserWindow::RenderFrameCreated(
 }
 
 void BrowserWindow::DidFirstVisuallyNonEmptyPaint() {
-  if (window()->IsVisible())
+  if (window()->IsClosed() || window()->IsVisible())
     return;
 
   // When there is a non-empty first paint, resize the RenderWidget to force
