@@ -1,7 +1,7 @@
-From e38d55313ad9c726fd20fb4c0baa2ec8a258f6b5 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Clemens Backes <clemensb@chromium.org>
 Date: Tue, 13 Jul 2021 16:56:32 +0200
-Subject: [PATCH] Merged: [liftoff] Fix merges with moves of cache registers
+Subject: Merged: [liftoff] Fix merges with moves of cache registers
 
 On v9.2 we did not have a chached memory start yet, so the patch needed
 major adjustments.
@@ -27,13 +27,12 @@ Reviewed-by: Andreas Haas <ahaas@chromium.org>
 Cr-Commit-Position: refs/branch-heads/9.2@{#35}
 Cr-Branched-From: 51238348f95a1f5e0acc321efac7942d18a687a2-refs/heads/9.2.230@{#1}
 Cr-Branched-From: 587a04f02ab0487d194b55a7137dc2045e071597-refs/heads/master@{#74656}
----
 
 diff --git a/src/wasm/baseline/liftoff-assembler.cc b/src/wasm/baseline/liftoff-assembler.cc
-index a544460..f8b01ac 100644
+index a544460ab986869a4fd30ae360b1dfc39d099f61..f8b01ac960d70e0491bbf27a0e33e4d19d8d597f 100644
 --- a/src/wasm/baseline/liftoff-assembler.cc
 +++ b/src/wasm/baseline/liftoff-assembler.cc
-@@ -738,22 +738,36 @@
+@@ -738,22 +738,36 @@ void LiftoffAssembler::MergeStackWith(CacheState& target, uint32_t arity,
                                  cache_state_.stack_state[stack_base + i]);
    }
  
@@ -81,7 +80,7 @@ index a544460..f8b01ac 100644
  void LiftoffAssembler::Spill(VarState* slot) {
 diff --git a/test/mjsunit/regress/wasm/regress-1217064.js b/test/mjsunit/regress/wasm/regress-1217064.js
 new file mode 100644
-index 0000000..93a8494
+index 0000000000000000000000000000000000000000..93a8494547e389b63112b2faf0f73e2d68254646
 --- /dev/null
 +++ b/test/mjsunit/regress/wasm/regress-1217064.js
 @@ -0,0 +1,32 @@
