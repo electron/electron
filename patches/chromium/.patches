@@ -117,4 +117,5 @@ make_keychain_service_account_optionally_configurable_at_runtime.patch
 don_t_run_pcscan_notifythreadcreated_if_pcscan_is_disabled.patch
 cherry-pick-cc20b36a5845.patch
 set_svgimage_page_after_document_install.patch
+cherry-pick-5487040a284a.patch
 cherry-pick-e60cc80ff744.patch
