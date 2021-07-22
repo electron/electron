@@ -46,7 +46,7 @@ index c50d742ec575d831b4ae3df0220a189c554ea028..b5129cae74f72238160e5cd435ef1c1e
      NSArray* node_array,
      const LineIndexer* line_indexer) const {
 diff --git a/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm b/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm
-index 00d56e735d0e83827a41676a8531d1b5fe755da4..f2ff9587e2889791a91908a01d773c4e34b525aa 100644
+index e919a1eea6915f02b1fe259d48e8f224a1801a2c..b5bc64c4c53ca25457fd980a7fdec7321644a3c2 100644
 --- a/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm
 +++ b/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm
 @@ -170,9 +170,11 @@

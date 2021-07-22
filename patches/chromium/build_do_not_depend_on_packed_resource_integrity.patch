@@ -11,7 +11,7 @@ if we ever align our .pak file generation with Chrome we can remove this
 patch.
 
 diff --git a/chrome/BUILD.gn b/chrome/BUILD.gn
-index 41a3be982c61afe2ead1517dfda014e095ab7a8d..3a619ba712d4b80febf3de8b3f6cd8ee1fcdf6a4 100644
+index 8e91c62655726024b75aefa312bbe2bd1dae1e76..5be231490705a83533e358e85278f959650d1843 100644
 --- a/chrome/BUILD.gn
 +++ b/chrome/BUILD.gn
 @@ -164,11 +164,16 @@ if (!is_android && !is_mac) {
@@ -33,10 +33,10 @@ index 41a3be982c61afe2ead1517dfda014e095ab7a8d..3a619ba712d4b80febf3de8b3f6cd8ee
          "//base",
          "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index 25a253cad84a1ba76c9b42e58a4e8bc8abb19543..d95513971a9eafba2183df5175dc6158e7c76107 100644
+index 61bcfcda1853dd01e581aa1a456799ea9fac69ca..d29254209eaa45855f103bda4207bdef8b495313 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -4308,7 +4308,7 @@ static_library("browser") {
+@@ -4320,7 +4320,7 @@ static_library("browser") {
  
      # On Windows, the hashes are embedded in //chrome:chrome_initial rather
      # than here in :chrome_dll.
@@ -46,10 +46,10 @@ index 25a253cad84a1ba76c9b42e58a4e8bc8abb19543..d95513971a9eafba2183df5175dc6158
      }
  
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index e5f108ddde4c3201fe9534217c3f2ea7c9727a64..c81e258e728705ea6457ba67a714aada028cceb1 100644
+index 5b9bff5bbbd49cb2ae74cf0d3ea563e5217f56e5..90bcc0df695af95aebc120b87be23cb3c86eff73 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
-@@ -5275,7 +5275,6 @@ test("unit_tests") {
+@@ -5303,7 +5303,6 @@ test("unit_tests") {
      assert(toolkit_views)
      sources += [ "../browser/ui/startup/credential_provider_signin_info_fetcher_win_unittest.cc" ]
      deps += [
@@ -57,7 +57,7 @@ index e5f108ddde4c3201fe9534217c3f2ea7c9727a64..c81e258e728705ea6457ba67a714aada
        "//chrome/browser:chrome_process_finder",
        "//chrome/browser/safe_browsing/chrome_cleaner",
        "//chrome/browser/safe_browsing/chrome_cleaner:public",
-@@ -5288,6 +5287,12 @@ test("unit_tests") {
+@@ -5316,6 +5315,12 @@ test("unit_tests") {
        "//components/chrome_cleaner/public/proto",
        "//ui/events/devices:test_support",
      ]
@@ -70,7 +70,7 @@ index e5f108ddde4c3201fe9534217c3f2ea7c9727a64..c81e258e728705ea6457ba67a714aada
    }
  
    if (is_win || is_chromeos_ash || is_mac) {
-@@ -5852,7 +5857,6 @@ test("unit_tests") {
+@@ -5883,7 +5888,6 @@ test("unit_tests") {
      }
  
      deps += [
@@ -78,7 +78,7 @@ index e5f108ddde4c3201fe9534217c3f2ea7c9727a64..c81e258e728705ea6457ba67a714aada
        "//chrome/browser:cart_db_content_proto",
        "//chrome/browser/media/router:test_support",
        "//chrome/browser/promo_browser_command:mojo_bindings",
-@@ -5887,6 +5891,9 @@ test("unit_tests") {
+@@ -5919,6 +5923,9 @@ test("unit_tests") {
        "//ui/color:test_support",
        "//ui/native_theme:test_support",
      ]
