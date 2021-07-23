@@ -37,6 +37,8 @@ static_library("chrome") {
     "//chrome/browser/net/proxy_config_monitor.h",
     "//chrome/browser/net/proxy_service_factory.cc",
     "//chrome/browser/net/proxy_service_factory.h",
+    "//chrome/browser/platform_util.cc",
+    "//chrome/browser/platform_util.h",
     "//chrome/browser/predictors/preconnect_manager.cc",
     "//chrome/browser/predictors/preconnect_manager.h",
     "//chrome/browser/predictors/predictors_features.cc",
@@ -86,8 +88,10 @@ static_library("chrome") {
   }
 
   if (use_aura) {
-    sources +=
-        [ "//chrome/browser/ui/views/eye_dropper/eye_dropper_view_aura.cc" ]
+    sources += [
+      "//chrome/browser/platform_util_aura.cc",
+      "//chrome/browser/ui/views/eye_dropper/eye_dropper_view_aura.cc",
+    ]
   }
 
   public_deps = [
