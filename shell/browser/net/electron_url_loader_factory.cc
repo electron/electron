@@ -116,7 +116,7 @@ network::mojom::URLResponseHeadPtr ToResponseHead(
 
   base::DictionaryValue headers;
   if (dict.Get("headers", &headers)) {
-    for (const auto& iter : headers.DictItems()) {
+    for (const auto iter : headers.DictItems()) {
       if (iter.second.is_string()) {
         // key, value
         head->headers->AddHeader(iter.first, iter.second.GetString());
