@@ -5,6 +5,7 @@
 #ifndef SHELL_BROWSER_WEB_CONTENTS_PREFERENCES_H_
 #define SHELL_BROWSER_WEB_CONTENTS_PREFERENCES_H_
 
+#include <map>
 #include <string>
 #include <vector>
 
