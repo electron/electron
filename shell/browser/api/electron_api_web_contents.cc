@@ -872,8 +872,14 @@ void WebContents::InitWithExtensionView(v8::Isolate* isolate,
                                         extensions::mojom::ViewType view_type) {
   // Must reassign type prior to calling `Init`.
   type_ = GetTypeFromViewType(view_type);
-  if (GetType() == Type::kRemote)
+  if (type_ == Type::kRemote)
     return;
+  if (type_ == Type::kBackgroundPage)
+    // non-background-page WebContents are retained by other classes. We need
+    // to pin here to prevent background-page WebContents from being GC'd.
+    // The background page api::WebContents will live until the underlying
+    // content::WebContents is destroyed.
+    Pin(isolate);
 
   // Allow toggling DevTools for background pages
   Observe(web_contents);
