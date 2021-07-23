@@ -4,6 +4,8 @@
 
 #include "shell/browser/api/electron_api_safe_storage.h"
 
+#include <vector>
+
 #include "components/os_crypt/os_crypt.h"
 #include "shell/browser/browser.h"
 #include "shell/common/gin_converters/base_converter.h"
@@ -52,16 +54,18 @@ std::string SafeStorage::DecryptString(v8::Isolate* isolate,
     return "";
   }
 
-  const char kEncryptionVersionPrefix[] = "v10";
+  // ensures an error is thrown in Mac or Linux on
+  // decryption failure, rather than failing silently
+  std::vector<std::string> kEncryptionVersionPrefix{"v10", "v11"};
   const char* data = node::Buffer::Data(buffer);
   auto size = node::Buffer::Length(buffer);
   std::string ciphertext(data, size);
-
   if (ciphertext.empty()) {
     return "";
   }
 
-  if (ciphertext.find(kEncryptionVersionPrefix) != 0) {
+  if (ciphertext.find(kEncryptionVersionPrefix[0]) != 0 &&
+      ciphertext.find(kEncryptionVersionPrefix[1]) != 0) {
     gin_helper::ErrorThrower(isolate).ThrowError(
         "Error while decrypting the ciphertext provided to "
         "safeStorage.decryptString. "
