@@ -19,6 +19,21 @@
 #include "shell/common/options_switches.h"
 #include "third_party/crashpad/crashpad/client/annotation.h"
 
+#include "gin/wrappable.h"
+#include "shell/browser/api/electron_api_browser_view.h"
+#include "shell/browser/api/electron_api_cookies.h"
+#include "shell/browser/api/electron_api_desktop_capturer.h"
+#include "shell/browser/api/electron_api_menu.h"
+#include "shell/browser/api/electron_api_net_log.h"
+#include "shell/browser/api/electron_api_notification.h"
+#include "shell/browser/api/electron_api_power_monitor.h"
+#include "shell/browser/api/electron_api_protocol.h"
+#include "shell/browser/api/electron_api_service_worker_context.h"
+#include "shell/browser/api/electron_api_web_contents.h"
+#include "shell/browser/api/electron_api_web_frame_main.h"
+#include "shell/browser/api/electron_api_web_request.h"
+#include "shell/common/api/electron_api_native_image.h"
+
 namespace electron {
 
 namespace crash_keys {
@@ -153,6 +168,48 @@ void SetPlatformCrashKey() {
 #else
   platform_key.Set("unknown");
 #endif
+}
+
+void SetCrashKeyForGinWrappable(gin::WrapperInfo* info) {
+  std::string crash_location;
+
+  // Adds a breadcrumb for crashes within gin::WrappableBase::SecondWeakCallback
+  // (see patch: add_gin_wrappable_crash_key.patch)
+  // Compares the pointers for the kWrapperInfo within SecondWeakCallback
+  // with the wrapper info from classes that use gin::Wrappable and
+  // could potentially retain a reference after deletion.
+  if (info == &electron::api::WebContents::kWrapperInfo)
+    crash_location = "WebContents";
+  else if (info == &electron::api::BrowserView::kWrapperInfo)
+    crash_location = "BrowserView";
+  else if (info == &electron::api::Notification::kWrapperInfo)
+    crash_location = "Notification";
+  else if (info == &electron::api::Cookies::kWrapperInfo)
+    crash_location = "Cookies";
+  else if (info == &electron::api::DesktopCapturer::kWrapperInfo)
+    crash_location = "DesktopCapturer";
+  else if (info == &electron::api::NetLog::kWrapperInfo)
+    crash_location = "NetLog";
+  else if (info == &electron::api::NativeImage::kWrapperInfo)
+    crash_location = "NativeImage";
+  else if (info == &electron::api::Menu::kWrapperInfo)
+    crash_location = "Menu";
+  else if (info == &electron::api::PowerMonitor::kWrapperInfo)
+    crash_location = "PowerMonitor";
+  else if (info == &electron::api::Protocol::kWrapperInfo)
+    crash_location = "Protocol";
+  else if (info == &electron::api::ServiceWorkerContext::kWrapperInfo)
+    crash_location = "ServiceWorkerContext";
+  else if (info == &electron::api::WebFrameMain::kWrapperInfo)
+    crash_location = "WebFrameMain";
+  else if (info == &electron::api::WebRequest::kWrapperInfo)
+    crash_location = "WebRequest";
+  else
+    crash_location =
+        "Deleted kWrapperInfo does not match listed component. Please review "
+        "listed crash keys.";
+
+  SetCrashKey("gin-wrappable-fatal.location", crash_location);
 }
 
 }  // namespace crash_keys

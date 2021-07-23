@@ -181,6 +181,42 @@ describe('webRequest module', () => {
       expect(data).to.equal('/header/received');
     });
 
+    it('can change the request headers on a custom protocol redirect', async () => {
+      protocol.registerStringProtocol('custom-scheme', (req, callback) => {
+        if (req.url === 'custom-scheme://fake-host/redirect') {
+          callback({
+            statusCode: 302,
+            headers: {
+              Location: 'custom-scheme://fake-host'
+            }
+          });
+        } else {
+          let content = '';
+          if (req.headers.Accept === '*/*;test/header') {
+            content = 'header-received';
+          }
+          callback(content);
+        }
+      });
+
+      // Note that we need to do navigation every time after a protocol is
+      // registered or unregistered, otherwise the new protocol won't be
+      // recognized by current page when NetworkService is used.
+      await contents.loadFile(path.join(__dirname, 'fixtures', 'pages', 'jquery.html'));
+
+      try {
+        ses.webRequest.onBeforeSendHeaders((details, callback) => {
+          const requestHeaders = details.requestHeaders;
+          requestHeaders.Accept = '*/*;test/header';
+          callback({ requestHeaders: requestHeaders });
+        });
+        const { data } = await ajax('custom-scheme://fake-host/redirect');
+        expect(data).to.equal('header-received');
+      } finally {
+        protocol.unregisterProtocol('custom-scheme');
+      }
+    });
+
     it('can change request origin', async () => {
       ses.webRequest.onBeforeSendHeaders((details, callback) => {
         const requestHeaders = details.requestHeaders;

@@ -57,7 +57,6 @@ declare namespace Electron {
   interface WebContents {
     _loadURL(url: string, options: ElectronInternal.LoadURLOptions): void;
     getOwnerBrowserWindow(): Electron.BrowserWindow;
-    getWebPreferences(): Electron.WebPreferences;
     getLastWebPreferences(): Electron.WebPreferences;
     _getPreloadPaths(): string[];
     equal(other: WebContents): boolean;

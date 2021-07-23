@@ -71,12 +71,19 @@ async function main () {
   console.log(`Bumped to version: ${version}`);
 }
 
-// get next version for release based on [nightly, beta, stable]
+// get next version for release based on [nightly, alpha, beta, stable]
 async function nextVersion (bumpType, version) {
-  if (versionUtils.isNightly(version) || versionUtils.isBeta(version)) {
+  if (
+    versionUtils.isNightly(version) ||
+    versionUtils.isAlpha(version) ||
+    versionUtils.isBeta(version)
+  ) {
     switch (bumpType) {
       case 'nightly':
         version = await versionUtils.nextNightly(version);
+        break;
+      case 'alpha':
+        version = await versionUtils.nextAlpha(version);
         break;
       case 'beta':
         version = await versionUtils.nextBeta(version);
@@ -92,6 +99,8 @@ async function nextVersion (bumpType, version) {
       case 'nightly':
         version = versionUtils.nextNightly(version);
         break;
+      case 'alpha':
+        throw new Error('Cannot bump to alpha from stable.');
       case 'beta':
         throw new Error('Cannot bump to beta from stable.');
       case 'minor':

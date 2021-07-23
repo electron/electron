@@ -503,16 +503,6 @@ describe('webContents module', () => {
     });
   });
 
-  describe('getWebPreferences() API', () => {
-    afterEach(closeAllWindows);
-    it('should not crash when called for devTools webContents', async () => {
-      const w = new BrowserWindow({ show: false });
-      w.webContents.openDevTools();
-      await emittedOnce(w.webContents, 'devtools-opened');
-      expect(w.webContents.devToolsWebContents!.getWebPreferences()).to.be.null();
-    });
-  });
-
   describe('openDevTools() API', () => {
     afterEach(closeAllWindows);
     it('can show window with activation', async () => {

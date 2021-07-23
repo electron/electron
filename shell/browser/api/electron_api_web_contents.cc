@@ -915,16 +915,6 @@ void WebContents::InitWithWebContents(content::WebContents* web_contents,
   inspectable_web_contents_ = std::make_unique<InspectableWebContents>(
       web_contents, browser_context->prefs(), is_guest);
   inspectable_web_contents_->SetDelegate(this);
-
-  if (web_preferences) {
-    std::string color_name;
-    if (web_preferences->GetPreference(options::kBackgroundColor,
-                                       &color_name)) {
-      web_contents->SetPageBaseBackgroundColor(ParseHexColor(color_name));
-    } else {
-      web_contents->SetPageBaseBackgroundColor(SK_ColorTRANSPARENT);
-    }
-  }
 }
 
 WebContents::~WebContents() {
@@ -1383,6 +1373,18 @@ void WebContents::HandleNewRenderFrame(
   auto* rwhv = render_frame_host->GetView();
   if (!rwhv)
     return;
+
+  // Set the background color of RenderWidgetHostView.
+  auto* web_preferences = WebContentsPreferences::From(web_contents());
+  if (web_preferences) {
+    std::string color_name;
+    if (web_preferences->GetPreference(options::kBackgroundColor,
+                                       &color_name)) {
+      rwhv->SetBackgroundColor(ParseHexColor(color_name));
+    } else {
+      rwhv->SetBackgroundColor(SK_ColorTRANSPARENT);
+    }
+  }
 
   if (!background_throttling_)
     render_frame_host->GetRenderViewHost()->SetSchedulerThrottling(false);
@@ -3051,14 +3053,6 @@ std::vector<base::FilePath> WebContents::GetPreloadPaths() const {
   return result;
 }
 
-v8::Local<v8::Value> WebContents::GetWebPreferences(
-    v8::Isolate* isolate) const {
-  auto* web_preferences = WebContentsPreferences::From(web_contents());
-  if (!web_preferences)
-    return v8::Null(isolate);
-  return gin::ConvertToV8(isolate, *web_preferences->preference());
-}
-
 v8::Local<v8::Value> WebContents::GetLastWebPreferences(
     v8::Isolate* isolate) const {
   auto* web_preferences = WebContentsPreferences::From(web_contents());
@@ -3707,7 +3701,6 @@ v8::Local<v8::ObjectTemplate> WebContents::FillObjectTemplate(
       .SetMethod("getZoomFactor", &WebContents::GetZoomFactor)
       .SetMethod("getType", &WebContents::GetType)
       .SetMethod("_getPreloadPaths", &WebContents::GetPreloadPaths)
-      .SetMethod("getWebPreferences", &WebContents::GetWebPreferences)
       .SetMethod("getLastWebPreferences", &WebContents::GetLastWebPreferences)
       .SetMethod("getOwnerBrowserWindow", &WebContents::GetOwnerBrowserWindow)
       .SetMethod("inspectServiceWorker", &WebContents::InspectServiceWorker)

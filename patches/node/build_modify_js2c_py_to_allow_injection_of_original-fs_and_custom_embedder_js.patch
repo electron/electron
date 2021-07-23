@@ -35,10 +35,10 @@ index b45af42d12ff7df8a9e125e87f51af3456811c23..c84ff7feb07aebf656ada7e37d812d9d
  async function* watch(filename, options = {}) {
    const path = toNamespacedPath(getValidatedPath(filename));
 diff --git a/src/node_native_module.cc b/src/node_native_module.cc
-index f788732ae569d460a0e596397e589774ba4be4f1..186c24c0ba37781d8d9d0443d18b4f4bb0e02bef 100644
+index 2642982330e8cff166d10682af3d847105dc5c2e..f5491b416203877b89db69bde44f4ff50901ed8b 100644
 --- a/src/node_native_module.cc
 +++ b/src/node_native_module.cc
-@@ -19,6 +19,7 @@ NativeModuleLoader NativeModuleLoader::instance_;
+@@ -20,6 +20,7 @@ NativeModuleLoader NativeModuleLoader::instance_;
  
  NativeModuleLoader::NativeModuleLoader() : config_(GetConfig()) {
    LoadJavaScriptSource();
@@ -59,11 +59,11 @@ index 3be3f2364dd252bcdd668c699a0e7ae1e754e873..b2af1bce312ffca44e7005e11f92327e
  
    bool Exists(const char* id);
 diff --git a/tools/js2c.py b/tools/js2c.py
-index 4af54c3fa00602f9d0ce5cc4dca253d425048706..18f584473fb87f036ce2a67c5172cccaf0caaa5f 100755
+index 4d9317527d46ac8c6d8066bfba707233053b8615..83225036208b68087a6066adf1d1948b84c5c234 100755
 --- a/tools/js2c.py
 +++ b/tools/js2c.py
-@@ -38,6 +38,8 @@ import functools
- import codecs
+@@ -39,6 +39,8 @@ import codecs
+ import utils
  
  def ReadFile(filename):
 +  if filename.startswith("//v8"):
@@ -71,7 +71,7 @@ index 4af54c3fa00602f9d0ce5cc4dca253d425048706..18f584473fb87f036ce2a67c5172ccca
    if is_verbose:
      print(filename)
    with codecs.open(filename, "r", "utf-8") as f:
-@@ -56,13 +58,15 @@ namespace native_module {{
+@@ -57,13 +59,15 @@ namespace native_module {{
  
  {0}
  
@@ -89,7 +89,7 @@ index 4af54c3fa00602f9d0ce5cc4dca253d425048706..18f584473fb87f036ce2a67c5172ccca
  
  }}  // namespace native_module
  
-@@ -112,8 +116,8 @@ def GetDefinition(var, source, step=30):
+@@ -113,8 +117,8 @@ def GetDefinition(var, source, step=30):
    return definition, len(code_points)
  
  
@@ -100,7 +100,7 @@ index 4af54c3fa00602f9d0ce5cc4dca253d425048706..18f584473fb87f036ce2a67c5172ccca
    name = NormalizeFileName(filename)
    slug = SLUGGER_RE.sub('_', name)
    var = slug + '_raw'
-@@ -123,7 +127,9 @@ def AddModule(filename, definitions, initializers):
+@@ -124,7 +128,9 @@ def AddModule(filename, definitions, initializers):
    initializers.append(initializer)
  
  def NormalizeFileName(filename):
@@ -111,7 +111,7 @@ index 4af54c3fa00602f9d0ce5cc4dca253d425048706..18f584473fb87f036ce2a67c5172ccca
    if split[0] == 'deps':
      split = ['internal'] + split
    else:  # `lib/**/*.js` so drop the 'lib' part
-@@ -141,23 +147,36 @@ def NormalizeFileName(filename):
+@@ -142,23 +148,36 @@ def NormalizeFileName(filename):
    return os.path.splitext(filename)[0]
  
  
@@ -157,23 +157,24 @@ index 4af54c3fa00602f9d0ce5cc4dca253d425048706..18f584473fb87f036ce2a67c5172ccca
    write_if_chaged(out, target)
  
  
-@@ -213,18 +232,21 @@ def main():
-   )
-   parser.add_argument('--target', help='output file')
+@@ -218,6 +237,7 @@ def main():
+       default=None,
+       help='input file directory')
    parser.add_argument('--verbose', action='store_true', help='output file')
 +  parser.add_argument('--only-js', action='store_true', help='do not require or parse any config.gypi files')
    parser.add_argument('sources', nargs='*', help='input files')
    options = parser.parse_args()
    global is_verbose
-   is_verbose = options.verbose
-   source_files = functools.reduce(SourceFileByExt, options.sources, {})
+@@ -230,12 +250,15 @@ def main():
+ 
+   source_files = functools.reduce(SourceFileByExt, sources, {})
+ 
 -  # Should have exactly 3 types: `.js`, `.mjs` and `.gypi`
 -  assert len(source_files) == 3
 -  # Currently config.gypi is the only `.gypi` file allowed
 -  assert source_files['.gypi'] == ['config.gypi']
 -  source_files['config.gypi'] = source_files.pop('.gypi')[0]
 -  JS2C(source_files, options.target)
--
 +  if options.only_js:
 +    assert len(source_files) == 1
 +  else:
@@ -184,5 +185,5 @@ index 4af54c3fa00602f9d0ce5cc4dca253d425048706..18f584473fb87f036ce2a67c5172ccca
 +    source_files['config.gypi'] = source_files.pop('.gypi')[0]
 +  JS2C(source_files, options.target, options.only_js)
  
+ 
  if __name__ == "__main__":
-   main()
