@@ -38,10 +38,10 @@ index 41e516899dccb6352aabadcd66a93d69e13031b6..e476c6b4a58caa30d81d082200bfd8c8
    // Returns whether `Initialize` has already been invoked in the process.
    // Initialization is a one-way operation (i.e., this method cannot return
 diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
-index 876814b6d7c340bef364836fd984cb8e9f6e88bb..3b6b4171f6999209db2b906f1a2f42951d171262 100644
+index 4ba7c59e97fd0c6234c35db3a10bcb51e6088804..32aa9eda0baba8fbe81f98504f2a6c5acc60a2f3 100644
 --- a/gin/v8_initializer.cc
 +++ b/gin/v8_initializer.cc
-@@ -252,7 +252,8 @@ void RunArrayBufferCageReservationExperiment() {
+@@ -267,7 +267,8 @@ void SetV8FlagsIfOverridden(const base::Feature& feature,
  }  // namespace
  
  // static
@@ -51,7 +51,7 @@ index 876814b6d7c340bef364836fd984cb8e9f6e88bb..3b6b4171f6999209db2b906f1a2f4295
    static bool v8_is_initialized = false;
    if (v8_is_initialized)
      return;
-@@ -262,7 +263,8 @@ void V8Initializer::Initialize(IsolateHolder::ScriptMode mode) {
+@@ -277,7 +278,8 @@ void V8Initializer::Initialize(IsolateHolder::ScriptMode mode) {
      RunArrayBufferCageReservationExperiment();
    }
  
