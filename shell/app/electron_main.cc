@@ -11,6 +11,10 @@
 #include <utility>
 #include <vector>
 
+#if defined(OS_POSIX)
+#include <sys/stat.h>
+#endif
+
 #if defined(OS_WIN)
 #include <windows.h>  // windows.h must be included first
 
