@@ -1,7 +1,7 @@
-From cd98d7c0dae974428f2b7692b010dd62aba3d3c4 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Peng Huang <penghuang@chromium.org>
-Date: Wed, 07 Jul 2021 20:50:53 +0000
-Subject: [PATCH] Fix UAF problem in SharedImageInterfaceInProcess
+Date: Wed, 7 Jul 2021 20:50:53 +0000
+Subject: Fix UAF problem in SharedImageInterfaceInProcess
 
 (cherry picked from commit 38b4905f8d877b27bc2d4ccd4cfc0f82b636deea)
 
@@ -18,13 +18,12 @@ Auto-Submit: Mason Freed <masonf@chromium.org>
 Reviewed-by: Peng Huang <penghuang@chromium.org>
 Cr-Commit-Position: refs/branch-heads/4515@{#1369}
 Cr-Branched-From: 488fc70865ddaa05324ac00a54a6eb783b4bc41c-refs/heads/master@{#885287}
----
 
 diff --git a/gpu/ipc/shared_image_interface_in_process.cc b/gpu/ipc/shared_image_interface_in_process.cc
-index caa1cec..6d5409cc 100644
+index d6169e6b04b4ad4fd17b48507331dee059338610..e28ec015c8efce5d7af3c660d29f325869137b65 100644
 --- a/gpu/ipc/shared_image_interface_in_process.cc
 +++ b/gpu/ipc/shared_image_interface_in_process.cc
-@@ -86,6 +86,8 @@
+@@ -93,6 +93,8 @@ void SharedImageInterfaceInProcess::DestroyOnGpu(
      sync_point_client_state_->Destroy();
      sync_point_client_state_ = nullptr;
    }
@@ -34,12 +33,12 @@ index caa1cec..6d5409cc 100644
  }
  
 diff --git a/gpu/ipc/shared_image_interface_in_process.h b/gpu/ipc/shared_image_interface_in_process.h
-index e3a1dff..8657a6eb 100644
+index 7ce2bc3eb52083b2505fb6d648f192cb5c7247e2..23bc32c0b35145c1cf7a14e519f205c66d5e7f47 100644
 --- a/gpu/ipc/shared_image_interface_in_process.h
 +++ b/gpu/ipc/shared_image_interface_in_process.h
-@@ -230,10 +230,7 @@
- 
+@@ -237,10 +237,7 @@ class GL_IN_PROCESS_CONTEXT_EXPORT SharedImageInterfaceInProcess
    // Accessed on GPU thread.
+   // TODO(weiliangc): Check whether can be removed when !UsesSync().
    MailboxManager* mailbox_manager_;
 -  // Used to check if context is lost at destruction time.
 -  // TODO(weiliangc): SharedImageInterface should become active observer of
