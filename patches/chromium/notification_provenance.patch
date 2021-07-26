@@ -67,7 +67,7 @@ index 25a35dc7647d8bcb503c9b023bd912a5c0542877..cea756feb06f1b0ee1f7f5bd8b68fd4d
          /*document_url=*/GURL(),
          notification_service_remote_.BindNewPipeAndPassReceiver());
 diff --git a/content/browser/notifications/platform_notification_context_impl.cc b/content/browser/notifications/platform_notification_context_impl.cc
-index 7cd9f5fdd74d8c7f87ef2ff6f52e354bf5da2dd2..27b83402af20c03eaa6dc2c8b6821f453db327a1 100644
+index 4e194cbe896ff9eecd8963f2d4fc99f4068a11a2..12bd02b217678346f2b851c404a1985086906ff7 100644
 --- a/content/browser/notifications/platform_notification_context_impl.cc
 +++ b/content/browser/notifications/platform_notification_context_impl.cc
 @@ -284,13 +284,14 @@ void PlatformNotificationContextImpl::Shutdown() {
@@ -88,7 +88,7 @@ index 7cd9f5fdd74d8c7f87ef2ff6f52e354bf5da2dd2..27b83402af20c03eaa6dc2c8b6821f45
  
  void PlatformNotificationContextImpl::RemoveService(
 diff --git a/content/browser/notifications/platform_notification_context_impl.h b/content/browser/notifications/platform_notification_context_impl.h
-index b195cb84d8bba3c51b04f8c32cf909d15bf34335..37528715db985d12771ba2dca86dcec87290d386 100644
+index 9ee758d7d7a5abe59e070f65f6381186b3239249..986f20ff7b077203e1ea3c76787e9478d9c1ace1 100644
 --- a/content/browser/notifications/platform_notification_context_impl.h
 +++ b/content/browser/notifications/platform_notification_context_impl.h
 @@ -44,6 +44,7 @@ class BrowserContext;
@@ -108,10 +108,10 @@ index b195cb84d8bba3c51b04f8c32cf909d15bf34335..37528715db985d12771ba2dca86dcec8
        const GURL& document_url,
        mojo::PendingReceiver<blink::mojom::NotificationService> receiver);
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 43c270f82113e75e77b9a0c9f58901eb87ddfea9..f354e09e070591017510ddf2f96785584da937b1 100644
+index 8135d0ff1d476b06cc24abb010ad988eb880b557..55c4e3c2bb0b353724c6a1a2f6f853705d1ba501 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -2296,7 +2296,7 @@ void RenderProcessHostImpl::CreateNotificationService(
+@@ -2301,7 +2301,7 @@ void RenderProcessHostImpl::CreateNotificationService(
      document_url = rfh->GetLastCommittedURL();
  
    storage_partition_impl_->GetPlatformNotificationContext()->CreateService(

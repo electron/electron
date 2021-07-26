@@ -38,7 +38,7 @@ async function main () {
   const cxxflags = [
     '-std=c++14',
     '-nostdinc++',
-    '-D_LIBCPP_HAS_NO_VENDOR_AVAILABILITY_ANNOTATIONS', // needed by next line
+    `-isystem"${path.resolve(BASE, 'buildtools', 'third_party', 'libc++')}"`,
     `-isystem"${path.resolve(BASE, 'buildtools', 'third_party', 'libc++', 'trunk', 'include')}"`,
     `-isystem"${path.resolve(BASE, 'buildtools', 'third_party', 'libc++abi', 'trunk', 'include')}"`,
     '-fPIC'
