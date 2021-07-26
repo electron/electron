@@ -138,8 +138,11 @@ function waitForNewFileInDir (dir: string): Promise<string[]> {
 
 // TODO(nornagon): Fix tests on linux/arm.
 ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_TESTS)('crashReporter module', function () {
-  for (const withLinuxCrashpad of (process.platform === 'linux' ? [false, true] : [false])) {
-    const crashpadExtraArgs = withLinuxCrashpad ? ['--enable-crashpad'] : [];
+  // TODO(nornagon): remove linux/breakpad tests once breakpad support is fully
+  // removed.
+  for (const enableLinuxCrashpad of (process.platform === 'linux' ? [false] : [false])) {
+    const withLinuxCrashpad = enableLinuxCrashpad || (process.platform === 'linux');
+    const crashpadExtraArgs = enableLinuxCrashpad ? ['--enable-crashpad'] : [];
     describe(withLinuxCrashpad ? '(with crashpad)' : '', () => {
       describe('should send minidump', () => {
         it('when renderer crashes', async () => {
