@@ -1,0 +1,574 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dominic Battre <battre@chromium.org>
+Date: Wed, 7 Jul 2021 20:02:45 +0000
+Subject: Replace first of two WaitableEvents in CreditCardAccessManager
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+(cherry picked from commit 48cf01e4039fecbe119d8223d1f6072aaf44f258)
+
+Bug: 1214234
+Change-Id: I38171be7b38982f25abfbb3dff7a41f19a167764
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3001123
+Reviewed-by: Jared Saul <jsaul@google.com>
+Commit-Queue: Dominic Battré <battre@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#898237}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3011066
+Reviewed-by: Dominic Battré <battre@chromium.org>
+Reviewed-by: Prudhvi Kumar Bommana <pbommana@google.com>
+Owners-Override: Prudhvi Kumar Bommana <pbommana@google.com>
+Cr-Commit-Position: refs/branch-heads/4515@{#1366}
+Cr-Branched-From: 488fc70865ddaa05324ac00a54a6eb783b4bc41c-refs/heads/master@{#885287}
+
+diff --git a/components/autofill/core/browser/BUILD.gn b/components/autofill/core/browser/BUILD.gn
+index 5031372d31e25f8f14905ab1be721c4aaefed7c5..d6254700a20445078cc4c4fa0e821cd2fc3b1a7b 100644
+--- a/components/autofill/core/browser/BUILD.gn
++++ b/components/autofill/core/browser/BUILD.gn
+@@ -237,6 +237,8 @@ static_library("browser") {
+     "payments/payments_util.cc",
+     "payments/payments_util.h",
+     "payments/risk_data_loader.h",
++    "payments/wait_for_signal_or_timeout.cc",
++    "payments/wait_for_signal_or_timeout.h",
+     "payments/strike_database.cc",
+     "payments/strike_database.h",
+     "payments/strike_database_integrator_base.cc",
+@@ -680,6 +682,7 @@ source_set("unit_tests") {
+     "payments/payments_client_unittest.cc",
+     "payments/payments_service_url_unittest.cc",
+     "payments/payments_util_unittest.cc",
++    "payments/wait_for_signal_or_timeout_unittest.cc",
+     "payments/strike_database_integrator_test_strike_database_unittest.cc",
+     "payments/strike_database_unittest.cc",
+     "personal_data_manager_unittest.cc",
+diff --git a/components/autofill/core/browser/payments/credit_card_access_manager.cc b/components/autofill/core/browser/payments/credit_card_access_manager.cc
+index 560f30b57c88049842390095ca53eb2e4302bf63..7cab68d4cc6696329dd4739f51e809aa7877cb53 100644
+--- a/components/autofill/core/browser/payments/credit_card_access_manager.cc
++++ b/components/autofill/core/browser/payments/credit_card_access_manager.cc
+@@ -18,7 +18,6 @@
+ #include "base/task/post_task.h"
+ #include "base/task/task_traits.h"
+ #include "base/task/thread_pool.h"
+-#include "base/threading/sequenced_task_runner_handle.h"
+ #include "base/time/time.h"
+ #include "build/build_config.h"
+ #include "components/autofill/core/browser/autofill_client.h"
+@@ -46,12 +45,6 @@ constexpr int64_t kUnmaskDetailsResponseTimeoutMs = 3 * 1000;  // 3 sec
+ // Time to wait between multiple calls to GetUnmaskDetails().
+ constexpr int64_t kDelayForGetUnmaskDetails = 3 * 60 * 1000;  // 3 min
+ 
+-// Used for asynchronously waiting for |event| to be signaled.
+-bool WaitForEvent(base::WaitableEvent* event) {
+-  event->declare_only_used_while_idle();
+-  return event->TimedWait(
+-      base::TimeDelta::FromMilliseconds(kUnmaskDetailsResponseTimeoutMs));
+-}
+ }  // namespace
+ 
+ CreditCardAccessManager::CreditCardAccessManager(
+@@ -64,9 +57,6 @@ CreditCardAccessManager::CreditCardAccessManager(
+       payments_client_(client_->GetPaymentsClient()),
+       personal_data_manager_(personal_data_manager),
+       form_event_logger_(form_event_logger),
+-      ready_to_start_authentication_(
+-          base::WaitableEvent::ResetPolicy::AUTOMATIC,
+-          base::WaitableEvent::InitialState::NOT_SIGNALED),
+       can_fetch_unmask_details_(base::WaitableEvent::ResetPolicy::AUTOMATIC,
+                                 base::WaitableEvent::InitialState::SIGNALED) {
+ }
+@@ -329,12 +319,10 @@ void CreditCardAccessManager::FetchCreditCard(
+ 
+     // Wait for |ready_to_start_authentication_| to be signaled by
+     // OnDidGetUnmaskDetails() or until timeout before calling Authenticate().
+-    auto task_runner = base::ThreadPool::CreateTaskRunner({base::MayBlock()});
+-    cancelable_authenticate_task_tracker_.PostTaskAndReplyWithResult(
+-        task_runner.get(), FROM_HERE,
+-        base::BindOnce(&WaitForEvent, &ready_to_start_authentication_),
++    ready_to_start_authentication_.OnEventOrTimeOut(
+         base::BindOnce(&CreditCardAccessManager::Authenticate,
+-                       weak_ptr_factory_.GetWeakPtr()));
++                       weak_ptr_factory_.GetWeakPtr()),
++        base::TimeDelta::FromMilliseconds(kUnmaskDetailsResponseTimeoutMs));
+   } else {
+     Authenticate(get_unmask_details_returned);
+   }
+@@ -699,7 +687,6 @@ void CreditCardAccessManager::HandleDialogUserResponse(
+     case WebauthnDialogCallbackType::kVerificationCancelled:
+       // TODO(crbug.com/949269): Add tests and logging for canceling verify
+       // pending dialog.
+-      cancelable_authenticate_task_tracker_.TryCancelAll();
+       payments_client_->CancelRequest();
+       SignalCanFetchUnmaskDetails();
+       ready_to_start_authentication_.Reset();
+diff --git a/components/autofill/core/browser/payments/credit_card_access_manager.h b/components/autofill/core/browser/payments/credit_card_access_manager.h
+index 6bdf8b8c647f885aad5784f737e117b3a55bd2be..99f6581b7320312776f52383b8e8e3b7845268a8 100644
+--- a/components/autofill/core/browser/payments/credit_card_access_manager.h
++++ b/components/autofill/core/browser/payments/credit_card_access_manager.h
+@@ -22,6 +22,7 @@
+ #include "components/autofill/core/browser/metrics/credit_card_form_event_logger.h"
+ #include "components/autofill/core/browser/payments/credit_card_cvc_authenticator.h"
+ #include "components/autofill/core/browser/payments/payments_client.h"
++#include "components/autofill/core/browser/payments/wait_for_signal_or_timeout.h"
+ #include "components/autofill/core/browser/personal_data_manager.h"
+ 
+ #if !defined(OS_IOS)
+@@ -295,11 +296,7 @@ class CreditCardAccessManager : public CreditCardCVCAuthenticator::Requester,
+   // Resets when PrepareToFetchCreditCard() is called, if not already reset.
+   // Signaled when OnDidGetUnmaskDetails() is called or after timeout.
+   // Authenticate() is called when signaled.
+-  base::WaitableEvent ready_to_start_authentication_;
+-
+-  // Tracks the Authenticate() task that is signaled by
+-  // |ready_to_start_authentication_|, allowing it to be canceled if necessary.
+-  base::CancelableTaskTracker cancelable_authenticate_task_tracker_;
++  WaitForSignalOrTimeout ready_to_start_authentication_;
+ 
+   // Required to avoid any unnecessary preflight calls to Payments servers.
+   // Initial state is signaled. Resets when PrepareToFetchCreditCard() is
+diff --git a/components/autofill/core/browser/payments/credit_card_access_manager_unittest.cc b/components/autofill/core/browser/payments/credit_card_access_manager_unittest.cc
+index faa396e337d60167d759f9a616f4a901ac5b9db6..39507d6f45e318d632d73583ebaf9048120ae15a 100644
+--- a/components/autofill/core/browser/payments/credit_card_access_manager_unittest.cc
++++ b/components/autofill/core/browser/payments/credit_card_access_manager_unittest.cc
+@@ -139,8 +139,23 @@ class CreditCardAccessManagerTest : public testing::Test {
+  public:
+   CreditCardAccessManagerTest()
+       : task_environment_(
++            base::test::TaskEnvironment::TimeSource::MOCK_TIME,
+             base::test::TaskEnvironment::MainThreadType::DEFAULT,
+-            base::test::TaskEnvironment::ThreadPoolExecutionMode::QUEUED) {}
++            base::test::TaskEnvironment::ThreadPoolExecutionMode::QUEUED) {
++    // Advance the mock clock to 2021-01-01, 00:00:00.000.
++    base::Time year_2021;
++    CHECK(base::Time::FromUTCExploded({.year = 2021,
++                                       .month = 1,
++                                       .day_of_week = 4,
++                                       .day_of_month = 1,
++                                       .hour = 0,
++                                       .minute = 0,
++                                       .second = 0,
++                                       .millisecond = 0},
++                                      &year_2021));
++    task_environment_.AdvanceClock(year_2021 -
++                                   task_environment_.GetMockClock()->Now());
++  }
+ 
+   void SetUp() override {
+     autofill_client_.SetPrefs(test::PrefServiceForTesting());
+@@ -930,6 +945,7 @@ TEST_F(CreditCardAccessManagerTest,
+ 
+       ResetFetchCreditCard();
+       credit_card_access_manager_->PrepareToFetchCreditCard();
++      task_environment_.FastForwardBy(base::TimeDelta::FromSeconds(4));
+       WaitForCallbacks();
+ 
+       credit_card_access_manager_->FetchCreditCard(local_card,
+@@ -950,6 +966,7 @@ TEST_F(CreditCardAccessManagerTest,
+       credit_card_access_manager_->PrepareToFetchCreditCard();
+       credit_card_access_manager_->FetchCreditCard(server_card,
+                                                    accessor_->GetWeakPtr());
++      task_environment_.FastForwardBy(base::TimeDelta::FromSeconds(4));
+       WaitForCallbacks();
+ 
+       histogram_tester.ExpectUniqueSample(
+@@ -1023,6 +1040,8 @@ TEST_F(CreditCardAccessManagerTest, Metrics_LoggingTimedOutCvcFallback) {
+ 
+     // Mock a delayed response.
+     InvokeDelayedGetUnmaskDetailsResponse();
++
++    task_environment_.FastForwardBy(base::TimeDelta::FromSeconds(4));
+     WaitForCallbacks();
+ 
+     histogram_tester.ExpectUniqueSample(
+@@ -1044,6 +1063,7 @@ TEST_F(CreditCardAccessManagerTest, Metrics_LoggingTimedOutCvcFallback) {
+     credit_card_access_manager_->PrepareToFetchCreditCard();
+     credit_card_access_manager_->FetchCreditCard(server_card,
+                                                  accessor_->GetWeakPtr());
++    task_environment_.FastForwardBy(base::TimeDelta::FromSeconds(4));
+     WaitForCallbacks();
+ 
+     histogram_tester.ExpectUniqueSample(
+diff --git a/components/autofill/core/browser/payments/wait_for_signal_or_timeout.cc b/components/autofill/core/browser/payments/wait_for_signal_or_timeout.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..713a53e0f006e51f5d9bd64466712bf75b3ba095
+--- /dev/null
++++ b/components/autofill/core/browser/payments/wait_for_signal_or_timeout.cc
+@@ -0,0 +1,78 @@
++// Copyright 2021 The Chromium Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "components/autofill/core/browser/payments/wait_for_signal_or_timeout.h"
++
++#include "base/threading/sequenced_task_runner_handle.h"
++
++WaitForSignalOrTimeout::WaitForSignalOrTimeout() = default;
++WaitForSignalOrTimeout::~WaitForSignalOrTimeout() = default;
++
++void WaitForSignalOrTimeout::Signal() {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(my_sequence_checker_);
++  SignalHandler(/*triggered_by_signal=*/true);
++}
++
++bool WaitForSignalOrTimeout::IsSignaled() const {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(my_sequence_checker_);
++  return state_ == State::kSignalReceived || state_ == State::kDone;
++}
++
++void WaitForSignalOrTimeout::OnEventOrTimeOut(Callback callback,
++                                              base::TimeDelta timeout) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(my_sequence_checker_);
++  switch (state_) {
++    case State::kInitialState:
++      callback_ = std::move(callback);
++      ++generation_id_;  // Invalidate previous OnTimeOut tasks.
++      base::SequencedTaskRunnerHandle::Get()->PostDelayedTask(
++          FROM_HERE,
++          base::BindOnce(&WaitForSignalOrTimeout::OnTimeOut,
++                         weak_factory_.GetWeakPtr(), generation_id_),
++          timeout);
++      break;
++
++    case State::kSignalReceived:
++      state_ = State::kDone;
++      std::move(callback).Run(
++          /*triggered_by_signal=*/in_state_signal_received_due_to_signal_call_);
++      break;
++
++    case State::kDone:
++      Reset();
++      OnEventOrTimeOut(std::move(callback), timeout);
++      break;
++  }
++}
++
++void WaitForSignalOrTimeout::Reset() {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(my_sequence_checker_);
++  state_ = State::kInitialState;
++  ++generation_id_;
++  callback_ = Callback();
++}
++
++void WaitForSignalOrTimeout::OnTimeOut(int generation_id) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(my_sequence_checker_);
++  if (generation_id == generation_id_)
++    SignalHandler(/*triggered_by_signal=*/false);
++}
++
++void WaitForSignalOrTimeout::SignalHandler(bool triggered_by_signal) {
++  switch (state_) {
++    case State::kInitialState:
++      if (callback_.is_null()) {
++        state_ = State::kSignalReceived;
++        in_state_signal_received_due_to_signal_call_ = triggered_by_signal;
++      } else {
++        state_ = State::kDone;
++        std::move(callback_).Run(triggered_by_signal);
++      }
++      break;
++
++    case State::kSignalReceived:
++    case State::kDone:
++      break;
++  }
++}
+diff --git a/components/autofill/core/browser/payments/wait_for_signal_or_timeout.h b/components/autofill/core/browser/payments/wait_for_signal_or_timeout.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..6b2c451245441f784938e4132e2ab03e7d85f9b6
+--- /dev/null
++++ b/components/autofill/core/browser/payments/wait_for_signal_or_timeout.h
+@@ -0,0 +1,100 @@
++// Copyright 2021 The Chromium Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#ifndef COMPONENTS_AUTOFILL_CORE_BROWSER_PAYMENTS_WAIT_FOR_SIGNAL_OR_TIMEOUT_H_
++#define COMPONENTS_AUTOFILL_CORE_BROWSER_PAYMENTS_WAIT_FOR_SIGNAL_OR_TIMEOUT_H_
++
++#include "base/callback.h"
++#include "base/memory/weak_ptr.h"
++#include "base/sequence_checker.h"
++#include "base/time/time.h"
++
++// A WaitForSignalOrTimeout waits for Signal() or a time out and calls a
++// callback when either of these happens for the first time.
++//
++// The WaitForSignalOrTimeout is Reset()-able and ensures that the callback will
++// be called at most once (unless Reset() resets the state). The
++// WaitForSignalOrTimeout can be destroyed at any time without negative
++// side-effects. The callback won't be called in this case. If the Signal()
++// arrives before a call for OnEventOrTimeOut(), the callback will be called
++// immediately. If a second Signal() arrives, nothing happens. The
++// WaitForSignalOrTimeout must be used on single task sequence.
++//
++// This class provides the bare minimum needed for a Payment task. If there are
++// more use cases, feel free to spice it up and move it to base/.
++class WaitForSignalOrTimeout {
++ public:
++  // The passed boolean is true if the callback happened by a call of Signal()
++  // (as opposed to a timeout).
++  using Callback = base::OnceCallback<void(bool)>;
++
++  WaitForSignalOrTimeout();
++  ~WaitForSignalOrTimeout();
++  WaitForSignalOrTimeout(const WaitForSignalOrTimeout&) = delete;
++  WaitForSignalOrTimeout& operator=(const WaitForSignalOrTimeout&) = delete;
++
++  // Triggers |callback_| if it has not been called before, or registers that
++  // the signal occurred, so that |callback| of OnEventOrTimeOut() can be
++  // called immediately.
++  void Signal();
++
++  // Returns whether Signal() was called at least once or a timeout happened,
++  // and Reset() has not been called afterwards. Note that this function does
++  // not discriminate whether Signal() was called or a timeout happened.
++  // The |callback_|'s parameter has this distinction, though.
++  bool IsSignaled() const;
++
++  // Registers the |callback| and calls it immediately if Signal() was called
++  // already. Starts a timeout task, so that |callback| is called if no call of
++  // Signal() is observed within |timeout|. A previous timeout is replaced by a
++  // new one.
++  void OnEventOrTimeOut(Callback callback, base::TimeDelta timeout);
++
++  // Resets the state machine so that no Signal() was observed, no callback is
++  // registered and no timeout task is running.
++  void Reset();
++
++ private:
++  enum class State {
++    // Signal() has not been called, yet.
++    kInitialState,
++    // Signal() has been called, but callback is not specified.
++    kSignalReceived,
++    // callback has been called.
++    kDone,
++  };
++
++  // Internal callback for the timeout. |generation_id| is a generation counter
++  // to ensure that old, delayed timeout tasks are ignored.
++  void OnTimeOut(int generation_id);
++
++  // Handler for Signal() and OnTimeOut(). Calls |callback_| if appropriate.
++  // The parameter is true if this function is called via Signal() and false if
++  // the function is called via OnTimeOut(). This parameter is passed to
++  // callback.
++  void SignalHandler(bool triggered_by_signal);
++
++  State state_ = State::kInitialState;
++
++  // This variable is only valid if state_ == State::kSignalReceived. It is
++  // true if we moved into this state due to a Signal() call, and false if
++  // we moved into this state due to an OnTimeOut() call.
++  bool in_state_signal_received_due_to_signal_call_;
++
++  // As the base::ThreadPool does not support cancelable tasks, we just rely on
++  // a generation counter. Every time Reset() or OnEventOrTimeOut() are called,
++  // the generation id is incremented. If outdated delayed OnTimeOut() tasks
++  // trickle in, we recognize them as tasks for which the |generation_id|
++  // parameter is less than the current generation_id_ and ignore them.
++  int generation_id_ = 0;
++
++  // Callback to be called in case of a Signal() or a time out.
++  Callback callback_;
++
++  SEQUENCE_CHECKER(my_sequence_checker_);
++
++  base::WeakPtrFactory<WaitForSignalOrTimeout> weak_factory_{this};
++};
++
++#endif  // COMPONENTS_AUTOFILL_CORE_BROWSER_PAYMENTS_WAIT_FOR_SIGNAL_OR_TIMEOUT_H_
+diff --git a/components/autofill/core/browser/payments/wait_for_signal_or_timeout_unittest.cc b/components/autofill/core/browser/payments/wait_for_signal_or_timeout_unittest.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..eda3fd362221cb9c08c893af02ce33a2826c5d6f
+--- /dev/null
++++ b/components/autofill/core/browser/payments/wait_for_signal_or_timeout_unittest.cc
+@@ -0,0 +1,188 @@
++// Copyright 2021 The Chromium Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "components/autofill/core/browser/payments/wait_for_signal_or_timeout.h"
++
++#include "base/test/task_environment.h"
++#include "testing/gtest/include/gtest/gtest.h"
++
++class WaitForSignalOrTimeoutTest : public testing::Test {
++ public:
++  WaitForSignalOrTimeoutTest() = default;
++  ~WaitForSignalOrTimeoutTest() override = default;
++
++  WaitForSignalOrTimeout::Callback GetCallback() {
++    return base::BindOnce(&WaitForSignalOrTimeoutTest::Callback,
++                          base::Unretained(this));
++  }
++
++ protected:
++  void Callback(bool triggered_by_signal) {
++    callbacks_++;
++    last_callback_triggered_by_signal_ = triggered_by_signal;
++  }
++
++  // Number of observed callbacks.
++  int callbacks_ = 0;
++
++  bool last_callback_triggered_by_signal_ = false;
++
++  base::test::TaskEnvironment task_env_{
++      base::test::TaskEnvironment::TimeSource::MOCK_TIME};
++};
++
++// WaitForSignalOrTimeout is initialized with a callback and then the Signal()
++// happens.
++TEST_F(WaitForSignalOrTimeoutTest, InitThenSignal) {
++  WaitForSignalOrTimeout wait;
++  wait.OnEventOrTimeOut(GetCallback(), base::TimeDelta::FromSeconds(30));
++  EXPECT_EQ(0, callbacks_);
++  EXPECT_FALSE(wait.IsSignaled());
++  wait.Signal();
++  EXPECT_EQ(1, callbacks_);
++  EXPECT_TRUE(wait.IsSignaled());
++  EXPECT_TRUE(last_callback_triggered_by_signal_);
++
++  // Another signal call should be ignored.
++  wait.Signal();
++  EXPECT_EQ(1, callbacks_);
++  EXPECT_TRUE(wait.IsSignaled());
++
++  // Also the pending timeout should not trigger further callbacks.
++  task_env_.FastForwardBy(base::TimeDelta::FromSeconds(35));
++  EXPECT_TRUE(wait.IsSignaled());
++  EXPECT_EQ(1, callbacks_);
++}
++
++// A Signal() is registered before the callback.
++TEST_F(WaitForSignalOrTimeoutTest, SignalThenInit) {
++  WaitForSignalOrTimeout wait;
++  EXPECT_FALSE(wait.IsSignaled());
++
++  // Trigger the signal before a callback handler is registered.
++  wait.Signal();
++  EXPECT_TRUE(wait.IsSignaled());
++  EXPECT_EQ(0, callbacks_);
++
++  // Once the callback handler is registered, it should be called immediately.
++  wait.OnEventOrTimeOut(GetCallback(), base::TimeDelta::FromSeconds(30));
++  EXPECT_TRUE(wait.IsSignaled());
++  EXPECT_EQ(1, callbacks_);
++  EXPECT_TRUE(last_callback_triggered_by_signal_);
++
++  // Another signal call should be ignored.
++  wait.Signal();
++  EXPECT_TRUE(wait.IsSignaled());
++  EXPECT_EQ(1, callbacks_);
++
++  // Also the pending timeout should not trigger further callbacks.
++  task_env_.FastForwardBy(base::TimeDelta::FromSeconds(35));
++  EXPECT_TRUE(wait.IsSignaled());
++  EXPECT_EQ(1, callbacks_);
++}
++
++// A timeout occurs before Signal() is called.
++TEST_F(WaitForSignalOrTimeoutTest, InitThenTimeout) {
++  WaitForSignalOrTimeout wait;
++  wait.OnEventOrTimeOut(GetCallback(), base::TimeDelta::FromSeconds(30));
++  EXPECT_FALSE(wait.IsSignaled());
++  EXPECT_EQ(0, callbacks_);
++
++  task_env_.FastForwardBy(base::TimeDelta::FromSeconds(35));
++  EXPECT_TRUE(wait.IsSignaled());
++  EXPECT_EQ(1, callbacks_);
++  EXPECT_FALSE(last_callback_triggered_by_signal_);
++
++  // A late signal will be ignored.
++  wait.Signal();
++  EXPECT_TRUE(wait.IsSignaled());
++  EXPECT_EQ(1, callbacks_);
++}
++
++// The WaitForSignalOrTimeout gets destroyed before a Signal() or timeout
++// happens.
++TEST_F(WaitForSignalOrTimeoutTest, DestroyedBeforeSignal) {
++  {
++    WaitForSignalOrTimeout wait;
++    wait.OnEventOrTimeOut(GetCallback(), base::TimeDelta::FromSeconds(30));
++  }
++  EXPECT_EQ(0, callbacks_);
++  task_env_.FastForwardBy(base::TimeDelta::FromSeconds(35));
++  EXPECT_EQ(0, callbacks_);
++}
++
++// The WaitForSignalOrTimeout gets signaled, reset, and signaled again.
++TEST_F(WaitForSignalOrTimeoutTest, Reset) {
++  WaitForSignalOrTimeout wait;
++  wait.OnEventOrTimeOut(GetCallback(), base::TimeDelta::FromSeconds(30));
++  EXPECT_EQ(0, callbacks_);
++  wait.Signal();
++  EXPECT_EQ(1, callbacks_);
++  EXPECT_TRUE(wait.IsSignaled());
++  EXPECT_TRUE(last_callback_triggered_by_signal_);
++
++  wait.Reset();
++
++  EXPECT_FALSE(wait.IsSignaled());
++
++  // This signal does not trigger a callback because none is registered.
++  wait.Signal();
++  EXPECT_EQ(1, callbacks_);
++  // Now the callback happens immediately.
++  wait.OnEventOrTimeOut(GetCallback(), base::TimeDelta::FromSeconds(30));
++  EXPECT_EQ(2, callbacks_);
++  EXPECT_TRUE(last_callback_triggered_by_signal_);
++
++  wait.Reset();
++
++  // Finally, we simulate a timeout after the reset.
++  EXPECT_FALSE(wait.IsSignaled());
++  wait.OnEventOrTimeOut(GetCallback(), base::TimeDelta::FromSeconds(30));
++  task_env_.FastForwardBy(base::TimeDelta::FromSeconds(35));
++  EXPECT_EQ(3, callbacks_);
++  EXPECT_FALSE(last_callback_triggered_by_signal_);
++}
++
++TEST_F(WaitForSignalOrTimeoutTest, OnEventOrTimeOutCalledTwice) {
++  WaitForSignalOrTimeout wait;
++  wait.OnEventOrTimeOut(GetCallback(), base::TimeDelta::FromSeconds(30));
++  EXPECT_EQ(0, callbacks_);
++
++  // Wait some time but not long enough for the timeout to trigger.
++  task_env_.FastForwardBy(base::TimeDelta::FromSeconds(25));
++  EXPECT_EQ(0, callbacks_);
++  EXPECT_FALSE(wait.IsSignaled());
++
++  // This resets the state machine (currently waiting for a signal or timeout)
++  // and starts a new wait.
++  wait.OnEventOrTimeOut(GetCallback(), base::TimeDelta::FromSeconds(30));
++
++  // Wait some time but not long enough for the timeout to trigger.
++  task_env_.FastForwardBy(base::TimeDelta::FromSeconds(25));
++  // The first timeout should not have triggered anything.
++  EXPECT_EQ(0, callbacks_);
++  EXPECT_FALSE(wait.IsSignaled());
++
++  // Wait some more time for the second timeout to kick in.
++  task_env_.FastForwardBy(base::TimeDelta::FromSeconds(10));
++  EXPECT_EQ(1, callbacks_);
++  EXPECT_TRUE(wait.IsSignaled());
++  EXPECT_FALSE(last_callback_triggered_by_signal_);
++
++  // This resets the state machine (currently in done state) once more and
++  // starts a new wait.
++  wait.OnEventOrTimeOut(GetCallback(), base::TimeDelta::FromSeconds(30));
++
++  // Wait some time but not long enough for the timeout to trigger.
++  task_env_.FastForwardBy(base::TimeDelta::FromSeconds(25));
++  // The first timeout should not have triggered anything.
++  EXPECT_EQ(1, callbacks_);
++  EXPECT_FALSE(wait.IsSignaled());
++
++  // Wait some more time for the second timeout to kick in.
++  task_env_.FastForwardBy(base::TimeDelta::FromSeconds(10));
++  EXPECT_EQ(2, callbacks_);
++  EXPECT_TRUE(wait.IsSignaled());
++  EXPECT_FALSE(last_callback_triggered_by_signal_);
++}
