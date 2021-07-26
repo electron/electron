@@ -4,13 +4,15 @@ import { safeStorage } from 'electron/main';
 import { expect } from 'chai';
 import { emittedOnce } from './events-helpers';
 import { ifit } from './spec-helpers';
-
-const { promises: fs } = require('fs');
+import * as fs from 'fs';
 
 describe('safeStorage module', () => {
   after(async () => {
+    if (process.platform === 'linux') return;
     const pathToEncryptedString = path.resolve(__dirname, 'fixtures', 'api', 'safe-storage', 'encrypted.txt');
-    await fs.unlink(pathToEncryptedString);
+    if (fs.existsSync(pathToEncryptedString)) {
+      await fs.unlinkSync(pathToEncryptedString);
+    }
   });
 
   /* isEncryptionAvailable returns false in Linux when running in headless mode (on CI). Headless mode stops
