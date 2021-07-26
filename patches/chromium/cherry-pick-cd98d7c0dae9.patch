@@ -1,0 +1,50 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Peng Huang <penghuang@chromium.org>
+Date: Wed, 7 Jul 2021 20:50:53 +0000
+Subject: Fix UAF problem in SharedImageInterfaceInProcess
+
+(cherry picked from commit 38b4905f8d877b27bc2d4ccd4cfc0f82b636deea)
+
+Bug: 1216822
+Change-Id: I8ae1f7c406e1899e500ee7ddeaaf18230b1cbcb2
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2971144
+Commit-Queue: Peng Huang <penghuang@chromium.org>
+Commit-Queue: Vasiliy Telezhnikov <vasilyt@chromium.org>
+Auto-Submit: Peng Huang <penghuang@chromium.org>
+Reviewed-by: Vasiliy Telezhnikov <vasilyt@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#893931}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3011895
+Auto-Submit: Mason Freed <masonf@chromium.org>
+Reviewed-by: Peng Huang <penghuang@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4515@{#1369}
+Cr-Branched-From: 488fc70865ddaa05324ac00a54a6eb783b4bc41c-refs/heads/master@{#885287}
+
+diff --git a/gpu/ipc/shared_image_interface_in_process.cc b/gpu/ipc/shared_image_interface_in_process.cc
+index 54f9777201827e4bca5221af373e39dc021ac6a4..53c2dc489c50367986c46a34e8aaf48b68888ec7 100644
+--- a/gpu/ipc/shared_image_interface_in_process.cc
++++ b/gpu/ipc/shared_image_interface_in_process.cc
+@@ -86,6 +86,8 @@ void SharedImageInterfaceInProcess::DestroyOnGpu(
+     sync_point_client_state_->Destroy();
+     sync_point_client_state_ = nullptr;
+   }
++
++  context_state_ = nullptr;
+   completion->Signal();
+ }
+ 
+diff --git a/gpu/ipc/shared_image_interface_in_process.h b/gpu/ipc/shared_image_interface_in_process.h
+index 8d74513f041564a416c20cab5616c9453555c547..c169b5a86af3e02ec869aae9cf1bfb150fa2ad69 100644
+--- a/gpu/ipc/shared_image_interface_in_process.h
++++ b/gpu/ipc/shared_image_interface_in_process.h
+@@ -229,10 +229,7 @@ class GL_IN_PROCESS_CONTEXT_EXPORT SharedImageInterfaceInProcess
+   // Accessed on GPU thread.
+   // TODO(weiliangc): Check whether can be removed when !UsesSync().
+   MailboxManager* mailbox_manager_;
+-  // Used to check if context is lost at destruction time.
+-  // TODO(weiliangc): SharedImageInterface should become active observer of
+-  // whether context is lost.
+-  SharedContextState* context_state_;
++  scoped_refptr<SharedContextState> context_state_;
+   // Created and only used by this SharedImageInterface.
+   SyncPointManager* sync_point_manager_;
+   scoped_refptr<SyncPointClientState> sync_point_client_state_;
