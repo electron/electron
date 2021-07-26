@@ -102,7 +102,8 @@ class App : public ElectronBrowserClient::Delegate,
                                        const std::string& error) override;
   void OnContinueUserActivity(bool* prevent_default,
                               const std::string& type,
-                              const base::DictionaryValue& user_info) override;
+                              const base::DictionaryValue& user_info,
+                              const base::DictionaryValue& details) override;
   void OnUserActivityWasContinued(
       const std::string& type,
       const base::DictionaryValue& user_info) override;

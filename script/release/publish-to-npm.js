@@ -135,6 +135,9 @@ new Promise((resolve, reject) => {
       } else if (!release.prerelease) {
         // Tag the release with a `2-0-x` style tag
         npmTag = currentBranch;
+      } else if (release.tag_name.indexOf('alpha') > 0) {
+        // Tag the release with an `alpha-3-0-x` style tag
+        npmTag = `alpha-${currentBranch}`;
       } else {
         // Tag the release with a `beta-3-0-x` style tag
         npmTag = `beta-${currentBranch}`;
@@ -174,6 +177,10 @@ new Promise((resolve, reject) => {
       if (parsedLocalVersion.prerelease[0] === 'beta' &&
             semver.gt(localVersion, currentTags.beta)) {
         childProcess.execSync(`npm dist-tag add electron@${localVersion} beta --otp=${process.env.ELECTRON_NPM_OTP}`);
+      }
+      if (parsedLocalVersion.prerelease[0] === 'alpha' &&
+            semver.gt(localVersion, currentTags.alpha)) {
+        childProcess.execSync(`npm dist-tag add electron@${localVersion} alpha --otp=${process.env.ELECTRON_NPM_OTP}`);
       }
     }
   })

@@ -40,6 +40,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/skia_util.h"
 #include "skia/ext/legacy_display_globals.h"
+#include "third_party/skia/include/core/SkFont.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/events/keycodes/keyboard_code_conversion_win.h"
 #include "ui/strings/grit/ui_strings.h"
@@ -170,7 +171,7 @@ bool FormatCommandLineString(std::wstring* exe,
   if (!launch_args.empty()) {
     std::u16string joined_launch_args = base::JoinString(launch_args, u" ");
     *exe = base::StringPrintf(L"%ls %ls", exe->c_str(),
-                              base::UTF16ToWide(joined_launch_args).c_str());
+                              base::as_wcstr(joined_launch_args));
   }
 
   return true;
@@ -196,7 +197,7 @@ std::vector<Browser::LaunchItem> GetLoginItemSettingsHelper(
         base::CommandLine::FromString(process_exe_path).GetProgram();
   } else {
     lookup_exe_path =
-        base::CommandLine::FromString(base::UTF16ToWide(options.path))
+        base::CommandLine::FromString(base::as_wcstr(options.path))
             .GetProgram();
   }
 

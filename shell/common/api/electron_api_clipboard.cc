@@ -108,14 +108,14 @@ std::u16string Clipboard::ReadText(gin_helper::Arguments* args) {
   std::u16string data;
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
   auto type = GetClipboardBuffer(args);
-  if (clipboard->IsFormatAvailable(ui::ClipboardFormatType::GetPlainTextType(),
+  if (clipboard->IsFormatAvailable(ui::ClipboardFormatType::PlainTextType(),
                                    type, /* data_dst = */ nullptr)) {
     clipboard->ReadText(type, /* data_dst = */ nullptr, &data);
   } else {
 #if defined(OS_WIN)
-    if (clipboard->IsFormatAvailable(
-            ui::ClipboardFormatType::GetPlainTextAType(), type,
-            /* data_dst = */ nullptr)) {
+    if (clipboard->IsFormatAvailable(ui::ClipboardFormatType::PlainTextAType(),
+                                     type,
+                                     /* data_dst = */ nullptr)) {
       std::string result;
       clipboard->ReadAsciiText(type, /* data_dst = */ nullptr, &result);
       data = base::ASCIIToUTF16(result);

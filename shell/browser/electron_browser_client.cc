@@ -298,6 +298,12 @@ breakpad::CrashHandlerHostLinux* CreateCrashHandlerHost(
 }
 
 int GetCrashSignalFD(const base::CommandLine& command_line) {
+  if (crash_reporter::IsCrashpadEnabled()) {
+    int fd;
+    pid_t pid;
+    return crash_reporter::GetHandlerSocket(&fd, &pid) ? fd : -1;
+  }
+
   // Extensions have the same process type as renderers.
   if (command_line.HasSwitch(extensions::switches::kExtensionProcess)) {
     static breakpad::CrashHandlerHostLinux* crash_handler = nullptr;
@@ -526,20 +532,37 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
 
 #if defined(OS_LINUX)
   bool enable_crash_reporter = false;
-  enable_crash_reporter = breakpad::IsCrashReporterEnabled();
+  if (crash_reporter::IsCrashpadEnabled()) {
+    command_line->AppendSwitch(::switches::kEnableCrashpad);
+    enable_crash_reporter = true;
+
+    int fd;
+    pid_t pid;
+
+    if (crash_reporter::GetHandlerSocket(&fd, &pid)) {
+      command_line->AppendSwitchASCII(
+          crash_reporter::switches::kCrashpadHandlerPid,
+          base::NumberToString(pid));
+    }
+  } else {
+    enable_crash_reporter = breakpad::IsCrashReporterEnabled();
+  }
+
   if (enable_crash_reporter) {
     std::string switch_value =
         api::crash_reporter::GetClientId() + ",no_channel";
     command_line->AppendSwitchASCII(::switches::kEnableCrashReporter,
                                     switch_value);
-    for (const auto& pair : api::crash_reporter::GetGlobalCrashKeys()) {
-      if (!switch_value.empty())
-        switch_value += ",";
-      switch_value += pair.first;
-      switch_value += "=";
-      switch_value += pair.second;
+    if (!crash_reporter::IsCrashpadEnabled()) {
+      for (const auto& pair : api::crash_reporter::GetGlobalCrashKeys()) {
+        if (!switch_value.empty())
+          switch_value += ",";
+        switch_value += pair.first;
+        switch_value += "=";
+        switch_value += pair.second;
+      }
+      command_line->AppendSwitchASCII(switches::kGlobalCrashKeys, switch_value);
     }
-    command_line->AppendSwitchASCII(switches::kGlobalCrashKeys, switch_value);
   }
 #endif
 
@@ -684,8 +707,8 @@ bool ElectronBrowserClient::CanCreateWindow(
   content::WebContents* web_contents =
       content::WebContents::FromRenderFrameHost(opener);
   WebContentsPreferences* prefs = WebContentsPreferences::From(web_contents);
-  if (prefs && prefs->IsEnabled(options::kNativeWindowOpen)) {
-    if (prefs->IsEnabled("disablePopups")) {
+  if (prefs && prefs->ShouldUseNativeWindowOpen()) {
+    if (prefs->ShouldDisablePopups()) {
       // <webview> without allowpopups attribute should return
       // null from window.open calls
       return false;
@@ -1388,7 +1411,7 @@ void ElectronBrowserClient::OverrideURLLoaderFactoryParams(
         blink::LocalFrameToken(factory_params->top_frame_id.value()));
     auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
     auto* prefs = WebContentsPreferences::From(web_contents);
-    if (prefs && !prefs->IsEnabled(options::kWebSecurity, true)) {
+    if (prefs && !prefs->IsWebSecurityEnabled()) {
       factory_params->is_corb_enabled = false;
       factory_params->disable_web_security = true;
     }

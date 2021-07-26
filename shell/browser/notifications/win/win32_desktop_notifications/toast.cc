@@ -17,6 +17,7 @@
 #include <memory>
 
 #include "base/logging.h"
+#include "base/strings/string_util_win.h"
 #include "shell/browser/notifications/win/win32_desktop_notifications/common.h"
 #include "shell/browser/notifications/win/win32_desktop_notifications/toast_uia.h"
 
@@ -479,7 +480,8 @@ void DesktopNotificationController::Toast::Draw() {
 
     SelectFont(hdc_, caption_font);
     SetTextColor(hdc_, fore_color);
-    DrawText(hdc_, data_->caption.data(), (UINT)data_->caption.length(), &rc,
+    DrawText(hdc_, base::as_wcstr(data_->caption),
+             (UINT)data_->caption.length(), &rc,
              DT_SINGLELINE | DT_END_ELLIPSIS | DT_NOPREFIX);
   }
 
@@ -490,8 +492,8 @@ void DesktopNotificationController::Toast::Draw() {
 
     SelectFont(hdc_, body_font);
     SetTextColor(hdc_, dimmed_color);
-    DrawText(hdc_, data_->body_text.data(), (UINT)data_->body_text.length(),
-             &rc,
+    DrawText(hdc_, base::as_wcstr(data_->body_text),
+             (UINT)data_->body_text.length(), &rc,
              DT_LEFT | DT_WORDBREAK | DT_NOPREFIX | DT_END_ELLIPSIS |
                  DT_EDITCONTROL);
   }

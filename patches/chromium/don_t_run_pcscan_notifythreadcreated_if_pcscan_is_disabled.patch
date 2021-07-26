@@ -26,7 +26,7 @@ index fd846ca91cb17638bf07ca35bf695099174f8f00..5b2ab293ade39b2ecd68d0438034da77
  #if defined(PA_THREAD_CACHE_SUPPORTED)
    // Don't completely empty the thread cache outside of low memory situations,
 diff --git a/base/threading/platform_thread_posix.cc b/base/threading/platform_thread_posix.cc
-index d37b50bb563eccc7460698ec7fd2d8a9736ac9f5..19333d4e52bd21e89e60744be7087ccacb876b84 100644
+index e6c8ec66ab837ffa9c47495c170854a6fa000476..3e6eeda6e57a06b680cbfadea6fc886bbccbc247 100644
 --- a/base/threading/platform_thread_posix.cc
 +++ b/base/threading/platform_thread_posix.cc
 @@ -39,6 +39,7 @@

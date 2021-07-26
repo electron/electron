@@ -274,8 +274,8 @@ void DesktopNotificationController::AnimateAll() {
 }
 
 DesktopNotificationController::Notification
-DesktopNotificationController::AddNotification(std::wstring caption,
-                                               std::wstring body_text,
+DesktopNotificationController::AddNotification(std::u16string caption,
+                                               std::u16string body_text,
                                                HBITMAP image) {
   auto data = std::make_shared<NotificationData>();
   data->controller = this;
@@ -395,8 +395,8 @@ void DesktopNotificationController::Notification::Close() {
     data_->controller->CloseNotification(*this);
 }
 
-void DesktopNotificationController::Notification::Set(std::wstring caption,
-                                                      std::wstring body_text,
+void DesktopNotificationController::Notification::Set(std::u16string caption,
+                                                      std::u16string body_text,
                                                       HBITMAP image) {
   // No business calling this when not pointing to a valid instance
   DCHECK(data_);
