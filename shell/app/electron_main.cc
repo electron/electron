@@ -39,6 +39,7 @@
 #elif defined(OS_LINUX)  // defined(OS_WIN)
 #include <unistd.h>
 #include <cstdio>
+#include "base/base_switches.h"
 #include "content/public/app/content_main.h"
 #include "shell/app/electron_main_delegate.h"  // NOLINT
 #else                                          // defined(OS_LINUX)
