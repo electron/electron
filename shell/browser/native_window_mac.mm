@@ -1800,7 +1800,7 @@ void NativeWindowMac::AddContentViewLayers() {
         [buttons_view_ setShowOnHover:YES];
       if (title_bar_style_ == TitleBarStyle::kHiddenInset &&
           !traffic_light_position_)
-        [buttons_view_ setMargin:gfx::Point(12, 11)];
+        [buttons_view_ setMargin:[WindowButtonsView hiddenInsetMargin]];
 
       if (!IsClosable())
         [[buttons_view_ viewWithTag:0] setEnabled:NO];
