@@ -7,7 +7,7 @@ Guard usages in blink of private Mac APIs by MAS_BUILD, so they can be
 excluded for people who want to submit their apps to the Mac App store.
 
 diff --git a/content/browser/accessibility/accessibility_tree_formatter_mac.mm b/content/browser/accessibility/accessibility_tree_formatter_mac.mm
-index c50d742ec575d831b4ae3df0220a189c554ea028..b5129cae74f72238160e5cd435ef1c1e42a49f2a 100644
+index 66fd65fd805e872338f093939ce9bcb3b7343148..60ce4be81c0dd84b58d52cadded5297fd26b3c2c 100644
 --- a/content/browser/accessibility/accessibility_tree_formatter_mac.mm
 +++ b/content/browser/accessibility/accessibility_tree_formatter_mac.mm
 @@ -288,7 +288,7 @@
@@ -27,7 +27,7 @@ index c50d742ec575d831b4ae3df0220a189c554ea028..b5129cae74f72238160e5cd435ef1c1e
  
    // AXValue
    if (CFGetTypeID(value) == AXValueGetTypeID()) {
-@@ -416,7 +417,7 @@
+@@ -418,7 +419,7 @@
                      AXMakeConst(affinity));
    return set;
  }
@@ -36,7 +36,7 @@ index c50d742ec575d831b4ae3df0220a189c554ea028..b5129cae74f72238160e5cd435ef1c1e
  base::Value AccessibilityTreeFormatterMac::PopulateTextMarkerRange(
      id marker_range,
      const LineIndexer* line_indexer) const {
-@@ -432,7 +433,7 @@
+@@ -434,7 +435,7 @@
                 PopulateTextPosition(ax_range.focus()->Clone(), line_indexer));
    return dict;
  }
@@ -557,7 +557,7 @@ index 261596b9b7414e5c732bef945610c0cdf1384da8..f58ac1d55acac1895391579275a12b0f
  }
  
 diff --git a/net/dns/dns_config_service_posix.cc b/net/dns/dns_config_service_posix.cc
-index 2de14574f1b7e848fc03ff1071fddf8307bc9ea2..75a86416bad754f1e9c92afb2fad27a501b9cc6c 100644
+index c9640117214022052aa28f6f5db7a2365c891ff1..78f9dadb51a0be31d1310ac8910b7f611eb82217 100644
 --- a/net/dns/dns_config_service_posix.cc
 +++ b/net/dns/dns_config_service_posix.cc
 @@ -136,8 +136,8 @@ class DnsConfigServicePosix::Watcher : public DnsConfigService::Watcher {
