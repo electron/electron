@@ -413,10 +413,10 @@ index 0000000000000000000000000000000000000000..bd26c3623d3314539609a978270d3ced
 +}
 diff --git a/deps/cares/BUILD.gn b/deps/cares/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..880bc22a44db82ef6bf9766bb2ad5af2a2f6d719
+index 0000000000000000000000000000000000000000..367d537c91be1f62e161a41e737a60cb3522b0f5
 --- /dev/null
 +++ b/deps/cares/BUILD.gn
-@@ -0,0 +1,132 @@
+@@ -0,0 +1,133 @@
 +config("cares_config") {
 +  include_dirs = [ "include" ]
 +}
@@ -431,6 +431,7 @@ index 0000000000000000000000000000000000000000..880bc22a44db82ef6bf9766bb2ad5af2
 +  libs = []
 +  cflags_c = [
 +    "-Wno-logical-not-parentheses",
++    "-Wno-implicit-fallthrough",
 +    "-Wno-sign-compare",
 +  ]
 +
@@ -439,9 +440,15 @@ index 0000000000000000000000000000000000000000..880bc22a44db82ef6bf9766bb2ad5af2
 +    "include/ares_rules.h",
 +    "include/ares_version.h",
 +    "include/nameser.h",
++    "src/ares__close_sockets.c",
++    "src/ares__get_hostent.c",
++    "src/ares__parse_into_addrinfo.c",
++    "src/ares__read_line.c",
++    "src/ares__readaddrinfo.c",
++    "src/ares__sortaddrinfo.c",
++    "src/ares__timeval.c",
 +    "src/ares_android.c",
 +    "src/ares_cancel.c",
-+    "src/ares__close_sockets.c",
 +    "src/ares_create_query.c",
 +    "src/ares_data.c",
 +    "src/ares_data.h",
@@ -453,15 +460,15 @@ index 0000000000000000000000000000000000000000..880bc22a44db82ef6bf9766bb2ad5af2
 +    "src/ares_free_hostent.c",
 +    "src/ares_free_string.c",
 +    "src/ares_freeaddrinfo.c",
-+    "src/ares_getenv.h",
 +    "src/ares_getaddrinfo.c",
++    "src/ares_getenv.h",
 +    "src/ares_gethostbyaddr.c",
 +    "src/ares_gethostbyname.c",
-+    "src/ares__get_hostent.c",
 +    "src/ares_getnameinfo.c",
 +    "src/ares_getopt.c",
 +    "src/ares_getopt.h",
 +    "src/ares_getsock.c",
++    "src/ares_inet_net_pton.h",
 +    "src/ares_init.c",
 +    "src/ares_ipv6.h",
 +    "src/ares_library_init.c",
@@ -472,9 +479,8 @@ index 0000000000000000000000000000000000000000..880bc22a44db82ef6bf9766bb2ad5af2
 +    "src/ares_nowarn.c",
 +    "src/ares_nowarn.h",
 +    "src/ares_options.c",
-+    "src/ares__parse_into_addrinfo.c",
-+    "src/ares_parse_aaaa_reply.c",
 +    "src/ares_parse_a_reply.c",
++    "src/ares_parse_aaaa_reply.c",
 +    "src/ares_parse_caa_reply.c",
 +    "src/ares_parse_mx_reply.c",
 +    "src/ares_parse_naptr_reply.c",
@@ -487,12 +493,9 @@ index 0000000000000000000000000000000000000000..880bc22a44db82ef6bf9766bb2ad5af2
 +    "src/ares_private.h",
 +    "src/ares_process.c",
 +    "src/ares_query.c",
-+    "src/ares__read_line.c",
-+    "src/ares__readaddrinfo.c",
 +    "src/ares_search.c",
 +    "src/ares_send.c",
 +    "src/ares_setup.h",
-+    "src/ares__sortaddrinfo.c",
 +    "src/ares_strcasecmp.c",
 +    "src/ares_strcasecmp.h",
 +    "src/ares_strdup.c",
@@ -500,7 +503,6 @@ index 0000000000000000000000000000000000000000..880bc22a44db82ef6bf9766bb2ad5af2
 +    "src/ares_strerror.c",
 +    "src/ares_strsplit.c",
 +    "src/ares_timeout.c",
-+    "src/ares__timeval.c",
 +    "src/ares_version.c",
 +    "src/ares_writev.c",
 +    "src/ares_writev.h",
@@ -508,7 +510,6 @@ index 0000000000000000000000000000000000000000..880bc22a44db82ef6bf9766bb2ad5af2
 +    "src/bitncmp.h",
 +    "src/inet_net_pton.c",
 +    "src/inet_ntop.c",
-+    "src/ares_inet_net_pton.h",
 +    "src/setup_once.h",
 +  ]
 +
@@ -574,10 +575,10 @@ index 0000000000000000000000000000000000000000..e741a2a9c238a782a674ddcb9a1f98de
 +}
 diff --git a/deps/llhttp/BUILD.gn b/deps/llhttp/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..ce15bc57093caa1bd84ea77e7438e892fb916427
+index 0000000000000000000000000000000000000000..fb000f8ee7647c375bc190d1729d67bb7770d109
 --- /dev/null
 +++ b/deps/llhttp/BUILD.gn
-@@ -0,0 +1,14 @@
+@@ -0,0 +1,15 @@
 +config("llhttp_config") {
 +  include_dirs = [ "include" ]
 +  cflags = [ "-Wno-unreachable-code" ]
@@ -586,6 +587,7 @@ index 0000000000000000000000000000000000000000..ce15bc57093caa1bd84ea77e7438e892
 +static_library("llhttp") {
 +  include_dirs = [ "include" ]
 +  public_configs = [ ":llhttp_config" ]
++  cflags_c = [ "-Wno-implicit-fallthrough" ]
 +  sources = [
 +    "src/api.c",
 +    "src/http.c",
@@ -594,10 +596,10 @@ index 0000000000000000000000000000000000000000..ce15bc57093caa1bd84ea77e7438e892
 +}
 diff --git a/deps/nghttp2/BUILD.gn b/deps/nghttp2/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..cd25ec4a073b45fd80beee829165e0dac4d8c5c1
+index 0000000000000000000000000000000000000000..58eb2f87990d2cbad711aa39f2a73b20232d4035
 --- /dev/null
 +++ b/deps/nghttp2/BUILD.gn
-@@ -0,0 +1,47 @@
+@@ -0,0 +1,48 @@
 +config("nghttp2_config") {
 +  defines = [ "NGHTTP2_STATICLIB" ]
 +  include_dirs = [ "lib/includes" ]
@@ -616,6 +618,7 @@ index 0000000000000000000000000000000000000000..cd25ec4a073b45fd80beee829165e0da
 +
 +  cflags_c = [
 +    "-Wno-implicit-function-declaration",
++    "-Wno-implicit-fallthrough",
 +    "-Wno-string-plus-int",
 +  ]
 +
@@ -647,10 +650,10 @@ index 0000000000000000000000000000000000000000..cd25ec4a073b45fd80beee829165e0da
 +}
 diff --git a/deps/uv/BUILD.gn b/deps/uv/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..565819942513be6b7e9d7ad21c8531ad51a8d557
+index 0000000000000000000000000000000000000000..6f30ab169f24e2d8b1c4ec4e927451d82194018c
 --- /dev/null
 +++ b/deps/uv/BUILD.gn
-@@ -0,0 +1,191 @@
+@@ -0,0 +1,192 @@
 +config("libuv_config") {
 +  include_dirs = [ "include" ]
 +
@@ -688,6 +691,7 @@ index 0000000000000000000000000000000000000000..565819942513be6b7e9d7ad21c8531ad
 +  cflags_c = [
 +    "-Wno-incompatible-pointer-types",
 +    "-Wno-bitwise-op-parentheses",
++    "-Wno-implicit-fallthrough",
 +    "-Wno-implicit-function-declaration",
 +    "-Wno-missing-braces",
 +    "-Wno-sign-compare",
@@ -712,8 +716,8 @@ index 0000000000000000000000000000000000000000..565819942513be6b7e9d7ad21c8531ad
 +    "src/idna.c",
 +    "src/idna.h",
 +    "src/inet.c",
-+    "src/random.c",
 +    "src/queue.h",
++    "src/random.c",
 +    "src/strscpy.c",
 +    "src/strscpy.h",
 +    "src/threadpool.c",
@@ -791,8 +795,8 @@ index 0000000000000000000000000000000000000000..565819942513be6b7e9d7ad21c8531ad
 +      "src/unix/pipe.c",
 +      "src/unix/poll.c",
 +      "src/unix/process.c",
-+      "src/unix/random-devurandom.c",
 +      "src/unix/pthread-fixes.c",
++      "src/unix/random-devurandom.c",
 +      "src/unix/signal.c",
 +      "src/unix/spinlock.h",
 +      "src/unix/stream.c",
@@ -810,9 +814,9 @@ index 0000000000000000000000000000000000000000..565819942513be6b7e9d7ad21c8531ad
 +  if (is_mac) {
 +    sources += [
 +      "src/unix/darwin-proctitle.c",
-+      "src/unix/random-getentropy.c",
 +      "src/unix/darwin.c",
 +      "src/unix/fsevents.c",
++      "src/unix/random-getentropy.c",
 +    ]
 +    defines += [
 +      "_DARWIN_USE_64_BIT_INODE=1",

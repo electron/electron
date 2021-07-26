@@ -22,6 +22,8 @@
   base::scoped_nsobject<NSTrackingArea> tracking_area_;
 }
 
++ (gfx::Point)defaultMargin;
++ (gfx::Point)hiddenInsetMargin;
 - (id)initWithMargin:(const absl::optional<gfx::Point>&)margin;
 - (void)setMargin:(const absl::optional<gfx::Point>&)margin;
 - (void)setShowOnHover:(BOOL)yes;

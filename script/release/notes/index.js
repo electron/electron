@@ -25,8 +25,9 @@ const runGit = async (args) => {
 };
 
 const tagIsSupported = tag => tag && !tag.includes('nightly') && !tag.includes('unsupported');
+const tagIsAlpha = tag => tag && tag.includes('alpha');
 const tagIsBeta = tag => tag && tag.includes('beta');
-const tagIsStable = tag => tagIsSupported(tag) && !tagIsBeta(tag);
+const tagIsStable = tag => tagIsSupported(tag) && !tagIsBeta(tag) && !tagIsAlpha(tag);
 
 const getTagsOf = async (point) => {
   try {

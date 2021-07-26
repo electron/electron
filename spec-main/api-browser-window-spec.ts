@@ -2420,14 +2420,14 @@ describe('BrowserWindow module', () => {
         });
 
         const preloadPath = path.join(fixtures, 'api', 'new-window-preload.js');
-        w.webContents.setWindowOpenHandler(() => ({ action: 'allow', overrideBrowserWindowOptions: { webPreferences: { preload: preloadPath, foo: 'bar' } } }));
+        w.webContents.setWindowOpenHandler(() => ({ action: 'allow', overrideBrowserWindowOptions: { webPreferences: { preload: preloadPath, contextIsolation: false } } }));
         w.loadFile(path.join(fixtures, 'api', 'new-window.html'));
         const [[, childWebContents]] = await Promise.all([
           emittedOnce(app, 'web-contents-created'),
           emittedOnce(ipcMain, 'answer')
         ]);
         const webPreferences = childWebContents.getLastWebPreferences();
-        expect(webPreferences.foo).to.equal('bar');
+        expect(webPreferences.contextIsolation).to.equal(false);
       });
 
       it('should set ipc event sender correctly', async () => {
@@ -2689,7 +2689,7 @@ describe('BrowserWindow module', () => {
           overrideBrowserWindowOptions: {
             webPreferences: {
               preload: preloadPath,
-              foo: 'bar'
+              contextIsolation: false
             }
           }
         }));
@@ -2699,7 +2699,7 @@ describe('BrowserWindow module', () => {
           emittedOnce(ipcMain, 'answer')
         ]);
         const webPreferences = childWebContents.getLastWebPreferences();
-        expect(webPreferences.foo).to.equal('bar');
+        expect(webPreferences.contextIsolation).to.equal(false);
       });
 
       describe('window.location', () => {

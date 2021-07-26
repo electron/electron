@@ -5,6 +5,7 @@
 #ifndef SHELL_BROWSER_WEB_CONTENTS_PERMISSION_HELPER_H_
 #define SHELL_BROWSER_WEB_CONTENTS_PERMISSION_HELPER_H_
 
+#include "base/values.h"
 #include "content/public/browser/media_stream_request.h"
 #include "content/public/browser/permission_type.h"
 #include "content/public/browser/web_contents_user_data.h"

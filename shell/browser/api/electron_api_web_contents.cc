@@ -37,7 +37,6 @@
 #include "content/browser/renderer_host/render_widget_host_impl.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_view_base.h"  // nogncheck
 #include "content/public/browser/child_process_security_policy.h"
-#include "content/public/browser/color_chooser.h"
 #include "content/public/browser/context_menu_params.h"
 #include "content/public/browser/download_request_utils.h"
 #include "content/public/browser/favicon_status.h"
@@ -172,10 +171,6 @@
 #if defined(OS_WIN)
 #include "printing/backend/win_helper.h"
 #endif
-#endif
-
-#if BUILDFLAG(ENABLE_COLOR_CHOOSER)
-#include "chrome/browser/ui/color_chooser.h"
 #endif
 
 #if BUILDFLAG(ENABLE_PICTURE_IN_PICTURE)
@@ -877,8 +872,14 @@ void WebContents::InitWithExtensionView(v8::Isolate* isolate,
                                         extensions::mojom::ViewType view_type) {
   // Must reassign type prior to calling `Init`.
   type_ = GetTypeFromViewType(view_type);
-  if (GetType() == Type::kRemote)
+  if (type_ == Type::kRemote)
     return;
+  if (type_ == Type::kBackgroundPage)
+    // non-background-page WebContents are retained by other classes. We need
+    // to pin here to prevent background-page WebContents from being GC'd.
+    // The background page api::WebContents will live until the underlying
+    // content::WebContents is destroyed.
+    Pin(isolate);
 
   // Allow toggling DevTools for background pages
   Observe(web_contents);
@@ -1191,8 +1192,7 @@ bool WebContents::PlatformHandleKeyboardEvent(
 
   // Check if the webContents has preferences and to ignore shortcuts
   auto* web_preferences = WebContentsPreferences::From(source);
-  if (web_preferences &&
-      web_preferences->IsEnabled("ignoreMenuShortcuts", false))
+  if (web_preferences && web_preferences->ShouldIgnoreMenuShortcuts())
     return false;
 
   // Let the NativeWindow handle other parts.
@@ -2511,7 +2511,7 @@ void WebContents::Print(gin::Arguments* args) {
   // We don't want to allow the user to enable these settings
   // but we need to set them or a CHECK is hit.
   settings.SetIntKey(printing::kSettingPrinterType,
-                     static_cast<int>(printing::PrinterType::kLocal));
+                     static_cast<int>(printing::mojom::PrinterType::kLocal));
   settings.SetBoolKey(printing::kSettingShouldPrintSelectionOnly, false);
   settings.SetBoolKey(printing::kSettingRasterizePdf, false);
 
@@ -3191,17 +3191,6 @@ void WebContents::UpdatePreferredSize(content::WebContents* web_contents,
 
 bool WebContents::CanOverscrollContent() {
   return false;
-}
-
-std::unique_ptr<content::ColorChooser> WebContents::OpenColorChooser(
-    content::WebContents* web_contents,
-    SkColor color,
-    const std::vector<blink::mojom::ColorSuggestionPtr>& suggestions) {
-#if BUILDFLAG(ENABLE_COLOR_CHOOSER)
-  return chrome::ShowColorChooser(web_contents, color);
-#else
-  return nullptr;
-#endif
 }
 
 std::unique_ptr<content::EyeDropper> WebContents::OpenEyeDropper(
