@@ -28,6 +28,53 @@ function sanitizeOptionsForGuest (options: Record<string, any>) {
   return ret;
 }
 
+function makeWebPreferences (embedder: Electron.WebContents, params: Record<string, any>, guestInstanceId: number) {
+  // parse the 'webpreferences' attribute string, if set
+  // this uses the same parsing rules as window.open uses for its features
+  const parsedWebPreferences =
+    typeof params.webpreferences === 'string'
+      ? parseWebViewWebPreferences(params.webpreferences)
+      : null;
+
+  const webPreferences: Electron.WebPreferences = {
+    guestInstanceId,
+    nodeIntegration: params.nodeintegration != null ? params.nodeintegration : false,
+    nodeIntegrationInSubFrames: params.nodeintegrationinsubframes != null ? params.nodeintegrationinsubframes : false,
+    plugins: params.plugins,
+    zoomFactor: embedder.zoomFactor,
+    disablePopups: !params.allowpopups,
+    webSecurity: !params.disablewebsecurity,
+    enableBlinkFeatures: params.blinkfeatures,
+    disableBlinkFeatures: params.disableblinkfeatures,
+    ...parsedWebPreferences
+  };
+
+  if (params.preload) {
+    webPreferences.preloadURL = params.preload;
+  }
+
+  // Security options that guest will always inherit from embedder
+  const inheritedWebPreferences = new Map([
+    ['contextIsolation', true],
+    ['javascript', false],
+    ['nativeWindowOpen', true],
+    ['nodeIntegration', false],
+    ['sandbox', true],
+    ['nodeIntegrationInSubFrames', false],
+    ['enableWebSQL', false]
+  ]);
+
+  // Inherit certain option values from embedder
+  const lastWebPreferences = embedder.getLastWebPreferences()!;
+  for (const [name, value] of inheritedWebPreferences) {
+    if (lastWebPreferences[name as keyof Electron.WebPreferences] === value) {
+      (webPreferences as any)[name] = value;
+    }
+  }
+
+  return webPreferences;
+}
+
 // Create a new guest instance.
 const createGuest = function (embedder: Electron.WebContents, params: Record<string, any>) {
   // eslint-disable-next-line no-undef
@@ -157,48 +204,7 @@ const attachGuest = function (event: Electron.IpcMainInvokeEvent,
     }
   }
 
-  // parse the 'webpreferences' attribute string, if set
-  // this uses the same parsing rules as window.open uses for its features
-  const parsedWebPreferences =
-    typeof params.webpreferences === 'string'
-      ? parseWebViewWebPreferences(params.webpreferences)
-      : null;
-
-  const webPreferences: Electron.WebPreferences = {
-    guestInstanceId,
-    nodeIntegration: params.nodeintegration != null ? params.nodeintegration : false,
-    nodeIntegrationInSubFrames: params.nodeintegrationinsubframes != null ? params.nodeintegrationinsubframes : false,
-    plugins: params.plugins,
-    zoomFactor: embedder.zoomFactor,
-    disablePopups: !params.allowpopups,
-    webSecurity: !params.disablewebsecurity,
-    enableBlinkFeatures: params.blinkfeatures,
-    disableBlinkFeatures: params.disableblinkfeatures,
-    ...parsedWebPreferences
-  };
-
-  if (params.preload) {
-    webPreferences.preloadURL = params.preload;
-  }
-
-  // Security options that guest will always inherit from embedder
-  const inheritedWebPreferences = new Map([
-    ['contextIsolation', true],
-    ['javascript', false],
-    ['nativeWindowOpen', true],
-    ['nodeIntegration', false],
-    ['sandbox', true],
-    ['nodeIntegrationInSubFrames', false],
-    ['enableWebSQL', false]
-  ]);
-
-  // Inherit certain option values from embedder
-  const lastWebPreferences = embedder.getLastWebPreferences()!;
-  for (const [name, value] of inheritedWebPreferences) {
-    if (lastWebPreferences[name as keyof Electron.WebPreferences] === value) {
-      (webPreferences as any)[name] = value;
-    }
-  }
+  const webPreferences = makeWebPreferences(embedder, params, guestInstanceId);
 
   embedder.emit('will-attach-webview', event, webPreferences, params);
   if (event.defaultPrevented) {
