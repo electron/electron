@@ -1404,7 +1404,8 @@ dist_zip("hunspell_dictionaries_zip") {
 }
 
 copy("libcxx_headers") {
-  sources = libcxx_headers + libcxx_licenses
+  sources = libcxx_headers + libcxx_licenses +
+            [ "//buildtools/third_party/libc++/__config_site" ]
   outputs = [ "$target_gen_dir/electron_libcxx_include/{{source_root_relative_dir}}/{{source_file_part}}" ]
 }
 

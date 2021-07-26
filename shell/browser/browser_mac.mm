@@ -501,7 +501,7 @@ void Browser::ShowAboutPanel() {
 void Browser::SetAboutPanelOptions(base::DictionaryValue options) {
   about_panel_options_.Clear();
 
-  for (const auto& pair : options.DictItems()) {
+  for (const auto pair : options.DictItems()) {
     std::string key = std::string(pair.first);
     if (!key.empty() && pair.second.is_string()) {
       key[0] = base::ToUpperASCII(key[0]);

@@ -47,7 +47,8 @@ class MenuDelegate : public views::MenuDelegate {
                           const ui::Event& e) override;
   bool GetAccelerator(int id, ui::Accelerator* accelerator) const override;
   std::u16string GetLabel(int id) const override;
-  void GetLabelStyle(int id, LabelStyle* style) const override;
+  const gfx::FontList* GetLabelFontList(int id) const override;
+  absl::optional<SkColor> GetLabelColor(int id) const override;
   bool IsCommandEnabled(int id) const override;
   bool IsCommandVisible(int id) const override;
   bool IsItemChecked(int id) const override;
