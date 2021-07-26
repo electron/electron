@@ -62,7 +62,7 @@ index 9f80fe6f10515849dd02d580db9852e6fbbbaa30..67f5b76a8141857ba02abd806341f06b
    PMPrintSettings print_settings =
        static_cast<PMPrintSettings>([print_info_.get() PMPrintSettings]);
 diff --git a/printing/printing_context_system_dialog_win.cc b/printing/printing_context_system_dialog_win.cc
-index fe7fc797504dcc7097a3d79a2dab2c18de737048..20c63b1f657f2969850b31eaafdff7e500c60de8 100644
+index 891e9574625bfbaf2a00eeeb54a20834a2a5fa21..4f47ad753c7593c83fdfd832a9d4a53d2094becf 100644
 --- a/printing/printing_context_system_dialog_win.cc
 +++ b/printing/printing_context_system_dialog_win.cc
 @@ -53,14 +53,28 @@ void PrintingContextSystemDialogWin::AskUserForSettings(

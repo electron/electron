@@ -567,10 +567,10 @@ index 6b7fbb6cf13dc8ee6ade0878a9a2c1efc5d4d3f1..e2af75168cb914a7b3b4a6c9b6a28549
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index 3c226fe6c61f042942ac6c01e08f95209536470b..67a8a6fd29e93268f960d8e3dde19d563877b09a 100644
+index dfb0c89dc7bd8edf5787ddab50c54a847e6a0140..316d970d1327755768fd92d7457d8b9b26804503 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
-@@ -80,6 +80,7 @@ class DisplayPrivate;
+@@ -81,6 +81,7 @@ class DisplayPrivate;
  class ExternalBeginFrameController;
  }  // namespace mojom
  class ContextProvider;
@@ -578,7 +578,7 @@ index 3c226fe6c61f042942ac6c01e08f95209536470b..67a8a6fd29e93268f960d8e3dde19d56
  class HostFrameSinkManager;
  class LocalSurfaceId;
  class RasterContextProvider;
-@@ -136,6 +137,16 @@ class COMPOSITOR_EXPORT ContextFactory {
+@@ -137,6 +138,16 @@ class COMPOSITOR_EXPORT ContextFactory {
    virtual viz::HostFrameSinkManager* GetHostFrameSinkManager() = 0;
  };
  
@@ -595,7 +595,7 @@ index 3c226fe6c61f042942ac6c01e08f95209536470b..67a8a6fd29e93268f960d8e3dde19d56
  // Compositor object to take care of GPU painting.
  // A Browser compositor object is responsible for generating the final
  // displayable form of pixels comprising a single widget's contents. It draws an
-@@ -171,6 +182,9 @@ class COMPOSITOR_EXPORT Compositor : public cc::LayerTreeHostClient,
+@@ -172,6 +183,9 @@ class COMPOSITOR_EXPORT Compositor : public cc::LayerTreeHostClient,
    // Schedules a redraw of the layer tree associated with this compositor.
    void ScheduleDraw();
  
@@ -605,7 +605,7 @@ index 3c226fe6c61f042942ac6c01e08f95209536470b..67a8a6fd29e93268f960d8e3dde19d56
    // Sets the root of the layer tree drawn by this Compositor. The root layer
    // must have no parent. The compositor's root layer is reset if the root layer
    // is destroyed. NULL can be passed to reset the root layer, in which case the
-@@ -442,6 +456,8 @@ class COMPOSITOR_EXPORT Compositor : public cc::LayerTreeHostClient,
+@@ -443,6 +457,8 @@ class COMPOSITOR_EXPORT Compositor : public cc::LayerTreeHostClient,
  
    std::unique_ptr<PendingBeginFrameArgs> pending_begin_frame_args_;
  
