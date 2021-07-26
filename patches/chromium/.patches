@@ -120,3 +120,4 @@ set_svgimage_page_after_document_install.patch
 cherry-pick-5487040a284a.patch
 cherry-pick-e60cc80ff744.patch
 cherry-pick-cd98d7c0dae9.patch
+cherry-pick-ac9dc1235e28.patch
