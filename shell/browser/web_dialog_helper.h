@@ -5,9 +5,6 @@
 #ifndef SHELL_BROWSER_WEB_DIALOG_HELPER_H_
 #define SHELL_BROWSER_WEB_DIALOG_HELPER_H_
 
-#include <memory>
-#include <vector>
-
 #include "base/memory/weak_ptr.h"
 #include "third_party/blink/public/mojom/choosers/file_chooser.mojom.h"
 
@@ -35,7 +32,7 @@ class WebDialogHelper {
                       const blink::mojom::FileChooserParams& params);
   void EnumerateDirectory(content::WebContents* web_contents,
                           scoped_refptr<content::FileSelectListener> listener,
-                          const base::FilePath& path);
+                          const base::FilePath& dir);
 
  private:
   NativeWindow* window_;

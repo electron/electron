@@ -26,7 +26,7 @@ namespace printing {
 class PrintJobManager;
 }
 
-// Empty definition for std::unique_ptr
+// Empty definition for std::unique_ptr, rather than a forward declaration
 class BackgroundModeManager {};
 
 // NOT THREAD SAFE, call only from the main thread.
@@ -88,6 +88,7 @@ class BrowserProcessImpl : public BrowserProcess {
   resource_coordinator::ResourceCoordinatorParts* resource_coordinator_parts()
       override;
   resource_coordinator::TabManager* GetTabManager() override;
+  SerialPolicyAllowedPorts* serial_policy_allowed_ports() override;
   void CreateDevToolsProtocolHandler() override {}
   void CreateDevToolsAutoOpener() override {}
   void set_background_mode_manager_for_test(

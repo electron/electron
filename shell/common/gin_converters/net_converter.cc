@@ -9,6 +9,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/containers/span.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/values.h"
@@ -33,7 +34,7 @@ namespace {
 bool CertFromData(const std::string& data,
                   scoped_refptr<net::X509Certificate>* out) {
   auto cert_list = net::X509Certificate::CreateCertificateListFromBytes(
-      data.c_str(), data.length(),
+      base::as_bytes(base::make_span(data)),
       net::X509Certificate::FORMAT_SINGLE_CERTIFICATE);
   if (cert_list.empty())
     return false;
@@ -315,7 +316,7 @@ bool Converter<scoped_refptr<network::ResourceRequestBody>>::FromV8(
   auto list = std::make_unique<base::ListValue>();
   if (!ConvertFromV8(isolate, val, list.get()))
     return false;
-  *out = new network::ResourceRequestBody();
+  *out = base::MakeRefCounted<network::ResourceRequestBody>();
   for (size_t i = 0; i < list->GetSize(); ++i) {
     base::DictionaryValue* dict = nullptr;
     std::string type;

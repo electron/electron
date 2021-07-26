@@ -5,7 +5,6 @@
 #ifndef SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSION_LOADER_H_
 #define SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSION_LOADER_H_
 
-#include <memory>
 #include <string>
 #include <utility>
 
@@ -18,11 +17,11 @@
 
 namespace base {
 class FilePath;
-}  // namespace base
+}
 
 namespace content {
 class BrowserContext;
-}  // namespace content
+}
 
 namespace extensions {
 

@@ -4,8 +4,6 @@
 
 #include "shell/browser/api/electron_api_browser_window.h"
 
-#include <memory>
-
 #include "base/threading/thread_task_runner_handle.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_owner_delegate.h"  // nogncheck
@@ -57,6 +55,17 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
     bool show = true;
     options.Get(options::kShow, &show);
     web_preferences.Set(options::kShow, show);
+  }
+
+  bool titleBarOverlay = false;
+  options.Get(options::ktitleBarOverlay, &titleBarOverlay);
+  if (titleBarOverlay) {
+    std::string enabled_features = "";
+    if (web_preferences.Get(options::kEnableBlinkFeatures, &enabled_features)) {
+      enabled_features += ",";
+    }
+    enabled_features += features::kWebAppWindowControlsOverlay.name;
+    web_preferences.Set(options::kEnableBlinkFeatures, enabled_features);
   }
 
   // Copy the webContents option to webPreferences. This is only used internally
@@ -145,7 +154,7 @@ void BrowserWindow::RenderFrameCreated(
 }
 
 void BrowserWindow::DidFirstVisuallyNonEmptyPaint() {
-  if (window()->IsVisible())
+  if (window()->IsClosed() || window()->IsVisible())
     return;
 
   // When there is a non-empty first paint, resize the RenderWidget to force
@@ -314,6 +323,11 @@ void BrowserWindow::OnWindowLeaveFullScreen() {
   BaseWindow::OnWindowLeaveFullScreen();
 }
 
+void BrowserWindow::UpdateWindowControlsOverlay(
+    const gfx::Rect& bounding_rect) {
+  web_contents()->UpdateWindowControlsOverlay(bounding_rect);
+}
+
 void BrowserWindow::CloseImmediately() {
   // Close all child windows before closing current window.
   v8::Locker locker(isolate());
@@ -355,8 +369,7 @@ void BrowserWindow::SetBackgroundColor(const std::string& color_name) {
     auto* web_preferences =
         WebContentsPreferences::From(api_web_contents_->web_contents());
     if (web_preferences) {
-      web_preferences->preference()->SetStringKey(options::kBackgroundColor,
-                                                  color_name);
+      web_preferences->SetBackgroundColor(ParseHexColor(color_name));
     }
   }
 }
@@ -396,6 +409,10 @@ void BrowserWindow::ResetBrowserViews() {
 #if defined(OS_MAC)
   UpdateDraggableRegions(draggable_regions_);
 #endif
+}
+
+void BrowserWindow::OnDevToolsResized() {
+  UpdateDraggableRegions(draggable_regions_);
 }
 
 void BrowserWindow::SetVibrancy(v8::Isolate* isolate,
@@ -511,7 +528,6 @@ v8::Local<v8::Value> BrowserWindow::From(v8::Isolate* isolate,
 
 namespace {
 
-using electron::api::BaseWindow;
 using electron::api::BrowserWindow;
 
 void Initialize(v8::Local<v8::Object> exports,

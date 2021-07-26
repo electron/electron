@@ -34,6 +34,7 @@ class SSLCertRequestInfo;
 
 namespace electron {
 
+class ElectronBrowserMainParts;
 class NotificationPresenter;
 class PlatformNotificationService;
 
@@ -87,6 +88,8 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   content::SerialDelegate* GetSerialDelegate() override;
 
   content::BluetoothDelegate* GetBluetoothDelegate() override;
+
+  device::GeolocationManager* GetGeolocationManager() override;
 
  protected:
   void RenderProcessWillLaunch(content::RenderProcessHost* host) override;
@@ -187,7 +190,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       WebSocketFactory factory,
       const GURL& url,
       const net::SiteForCookies& site_for_cookies,
-      const base::Optional<std::string>& user_agent,
+      const absl::optional<std::string>& user_agent,
       mojo::PendingRemote<network::mojom::WebSocketHandshakeClient>
           handshake_client) override;
   bool WillInterceptWebSocket(content::RenderFrameHost*) override;
@@ -197,7 +200,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       int render_process_id,
       URLLoaderFactoryType type,
       const url::Origin& request_initiator,
-      base::Optional<int64_t> navigation_id,
+      absl::optional<int64_t> navigation_id,
       ukm::SourceIdObj ukm_source_id,
       mojo::PendingReceiver<network::mojom::URLLoaderFactory>* factory_receiver,
       mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>*
@@ -225,14 +228,14 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
 
   bool HandleExternalProtocol(
       const GURL& url,
-      content::WebContents::OnceGetter web_contents_getter,
+      content::WebContents::Getter web_contents_getter,
       int child_id,
       int frame_tree_node_id,
       content::NavigationUIData* navigation_data,
       bool is_main_frame,
       ui::PageTransition page_transition,
       bool has_user_gesture,
-      const base::Optional<url::Origin>& initiating_origin,
+      const absl::optional<url::Origin>& initiating_origin,
       mojo::PendingRemote<network::mojom::URLLoaderFactory>* out_factory)
       override;
   std::unique_ptr<content::LoginDelegate> CreateLoginDelegate(
@@ -262,7 +265,8 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       content::BrowserContext* browser_context,
       const GURL& scope,
       const GURL& site_for_cookies,
-      const base::Optional<url::Origin>& top_frame_origin) override;
+      const absl::optional<url::Origin>& top_frame_origin) override;
+  base::FilePath GetLoggingFileName(const base::CommandLine& cmd_line) override;
 
   // content::RenderProcessHostObserver:
   void RenderProcessHostDestroyed(content::RenderProcessHost* host) override;
@@ -297,6 +301,10 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
 
   std::unique_ptr<ElectronSerialDelegate> serial_delegate_;
   std::unique_ptr<ElectronBluetoothDelegate> bluetooth_delegate_;
+
+#if defined(OS_MAC)
+  ElectronBrowserMainParts* browser_main_parts_ = nullptr;
+#endif
 
   DISALLOW_COPY_AND_ASSIGN(ElectronBrowserClient);
 };

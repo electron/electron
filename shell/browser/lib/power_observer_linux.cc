@@ -5,7 +5,6 @@
 
 #include <unistd.h>
 #include <uv.h>
-#include <iostream>
 #include <utility>
 
 #include "base/bind.h"

@@ -4,6 +4,7 @@
 
 #include "chrome/browser/process_singleton.h"
 
+#include <windows.h>
 #include <shellapi.h>
 
 #include "base/base_paths.h"

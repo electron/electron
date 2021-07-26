@@ -8,7 +8,10 @@
 
 #include <utility>
 
+#include <vector>
+
 #include "base/barrier_closure.h"
+#include "base/base_paths.h"
 #include "base/command_line.h"
 #include "base/files/file_path.h"
 #include "base/no_destructor.h"
@@ -92,6 +95,9 @@ std::string MakePartitionName(const std::string& input) {
 
 }  // namespace
 
+const char kSerialGrantedDevicesPref[] =
+    "profile.content_settings.exceptions.serial-chooser-data";
+
 // static
 ElectronBrowserContext::BrowserContextMap&
 ElectronBrowserContext::browser_context_map() {
@@ -103,8 +109,8 @@ ElectronBrowserContext::browser_context_map() {
 ElectronBrowserContext::ElectronBrowserContext(const std::string& partition,
                                                bool in_memory,
                                                base::DictionaryValue options)
-    : storage_policy_(new SpecialStoragePolicy),
-      protocol_registry_(new ProtocolRegistry),
+    : storage_policy_(base::MakeRefCounted<SpecialStoragePolicy>()),
+      protocol_registry_(base::WrapUnique(new ProtocolRegistry)),
       in_memory_(in_memory),
       ssl_config_(network::mojom::SSLConfig::New()) {
   user_agent_ = ElectronBrowserClient::Get()->GetUserAgent();
@@ -117,15 +123,7 @@ ElectronBrowserContext::ElectronBrowserContext(const std::string& partition,
   base::StringToInt(command_line->GetSwitchValueASCII(switches::kDiskCacheSize),
                     &max_cache_size_);
 
-  if (!base::PathService::Get(DIR_USER_DATA, &path_)) {
-    base::PathService::Get(DIR_APP_DATA, &path_);
-    path_ = path_.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
-    base::PathService::Override(DIR_USER_DATA, path_);
-    base::PathService::Override(chrome::DIR_USER_DATA, path_);
-    base::PathService::Override(
-        chrome::DIR_APP_DICTIONARIES,
-        path_.Append(base::FilePath::FromUTF8Unsafe("Dictionaries")));
-  }
+  CHECK(base::PathService::Get(chrome::DIR_USER_DATA, &path_));
 
   if (!in_memory && !partition.empty())
     path_ = path_.Append(FILE_PATH_LITERAL("Partitions"))
@@ -154,7 +152,7 @@ ElectronBrowserContext::ElectronBrowserContext(const std::string& partition,
 
 ElectronBrowserContext::~ElectronBrowserContext() {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
-  NotifyWillBeDestroyed(this);
+  NotifyWillBeDestroyed();
   // Notify any keyed services of browser context destruction.
   BrowserContextDependencyManager::GetInstance()->DestroyBrowserContextServices(
       this);
@@ -184,9 +182,9 @@ void ElectronBrowserContext::InitPrefs() {
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS) || \
     BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-  auto registry = WrapRefCounted(new user_prefs::PrefRegistrySyncable);
+  auto registry = base::MakeRefCounted<user_prefs::PrefRegistrySyncable>();
 #else
-  auto registry = WrapRefCounted(new PrefRegistrySimple);
+  auto registry = base::MakeRefCounted<PrefRegistrySimple>();
 #endif
 
   registry->RegisterFilePathPref(prefs::kSelectFileLastDirectory,
@@ -196,6 +194,7 @@ void ElectronBrowserContext::InitPrefs() {
   registry->RegisterFilePathPref(prefs::kDownloadDefaultDirectory,
                                  download_dir);
   registry->RegisterDictionaryPref(prefs::kDevToolsFileSystemPaths);
+  registry->RegisterDictionaryPref(kSerialGrantedDevicesPref);
   InspectableWebContents::RegisterPrefs(registry.get());
   MediaDeviceIDSalt::RegisterPrefs(registry.get());
   ZoomLevelDelegate::RegisterPrefs(registry.get());
@@ -334,7 +333,7 @@ ElectronBrowserContext::GetURLLoaderFactory() {
       ->WillCreateURLLoaderFactory(
           this, nullptr, -1,
           content::ContentBrowserClient::URLLoaderFactoryType::kNavigation,
-          url::Origin(), base::nullopt, ukm::kInvalidSourceIdObj,
+          url::Origin(), absl::nullopt, ukm::kInvalidSourceIdObj,
           &factory_receiver, &header_client, nullptr, nullptr, nullptr);
 
   network::mojom::URLLoaderFactoryParamsPtr params =
@@ -414,6 +413,54 @@ void ElectronBrowserContext::SetSSLConfig(network::mojom::SSLConfigPtr config) {
 void ElectronBrowserContext::SetSSLConfigClient(
     mojo::Remote<network::mojom::SSLConfigClient> client) {
   ssl_config_client_ = std::move(client);
+}
+
+void ElectronBrowserContext::GrantObjectPermission(
+    const url::Origin& origin,
+    base::Value object,
+    const std::string& pref_key) {
+  std::string origin_string = origin.Serialize();
+  DictionaryPrefUpdate update(prefs(), pref_key);
+  base::Value* const current_objects = update.Get();
+  if (!current_objects || !current_objects->is_dict()) {
+    base::ListValue objects_for_origin;
+    objects_for_origin.Append(std::move(object));
+    base::DictionaryValue objects_by_origin;
+    objects_by_origin.SetPath(origin_string, std::move(objects_for_origin));
+    prefs()->Set(pref_key, std::move(objects_by_origin));
+  } else {
+    base::Value* const objects_mutable =
+        current_objects->FindListKey(origin_string);
+    if (objects_mutable) {
+      base::Value::ListStorage objects = std::move(*objects_mutable).TakeList();
+      objects.push_back(std::move(object));
+      *objects_mutable = base::Value(std::move(objects));
+    } else {
+      base::Value new_objects(base::Value::Type::LIST);
+      new_objects.Append(std::move(object));
+      current_objects->SetKey(origin_string, std::move(new_objects));
+    }
+  }
+}
+
+std::vector<std::unique_ptr<base::Value>>
+ElectronBrowserContext::GetGrantedObjects(const url::Origin& origin,
+                                          const std::string& pref_key) {
+  auto* current_objects = prefs()->Get(pref_key);
+  if (!current_objects || !current_objects->is_dict()) {
+    return {};
+  }
+
+  const base::Value* objects_for_origin =
+      current_objects->FindPath(origin.Serialize());
+  if (!objects_for_origin)
+    return {};
+
+  std::vector<std::unique_ptr<base::Value>> results;
+  for (const auto& object : objects_for_origin->GetList())
+    results.push_back(std::make_unique<base::Value>(object.Clone()));
+
+  return results;
 }
 
 // static

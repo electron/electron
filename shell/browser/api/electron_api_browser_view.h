@@ -29,8 +29,6 @@ class Dictionary;
 
 namespace electron {
 
-class NativeBrowserView;
-
 namespace api {
 
 class WebContents;

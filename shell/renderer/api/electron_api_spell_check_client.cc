@@ -4,9 +4,7 @@
 
 #include "shell/renderer/api/electron_api_spell_check_client.h"
 
-#include <map>
 #include <memory>
-
 #include <set>
 #include <unordered_set>
 #include <utility>

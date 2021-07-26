@@ -18,7 +18,8 @@ more information see the [BrowserWindow constructor docs](browser-window.md).
 
 > Display external web content in an isolated frame and process.
 
-Process: [Renderer](../glossary.md#renderer-process)
+Process: [Renderer](../glossary.md#renderer-process)<br />
+_This class is not exported from the `'electron'` module. It is only available as a return value of other methods in the Electron API._
 
 Use the `webview` tag to embed 'guest' content (such as web pages) in your
 Electron app. The guest content is contained within the `webview` container.
@@ -708,6 +709,10 @@ Corresponds to the points in time when the spinner of the tab starts spinning.
 ### Event: 'did-stop-loading'
 
 Corresponds to the points in time when the spinner of the tab stops spinning.
+
+### Event: 'did-attach'
+
+Fired when attached to the embedder web contents.
 
 ### Event: 'dom-ready'
 

@@ -6,9 +6,7 @@
 #define SHELL_BROWSER_SERIAL_SERIAL_CHOOSER_CONTEXT_H_
 
 #include <map>
-#include <memory>
 #include <set>
-#include <string>
 #include <utility>
 #include <vector>
 
@@ -20,6 +18,7 @@
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "services/device/public/mojom/serial.mojom-forward.h"
+#include "shell/browser/electron_browser_context.h"
 #include "third_party/blink/public/mojom/serial/serial.mojom.h"
 #include "url/gurl.h"
 #include "url/origin.h"
@@ -35,15 +34,13 @@ class SerialChooserContext : public KeyedService,
  public:
   using PortObserver = content::SerialDelegate::Observer;
 
-  SerialChooserContext();
+  explicit SerialChooserContext(ElectronBrowserContext* browser_context);
   ~SerialChooserContext() override;
 
   // Serial-specific interface for granting and checking permissions.
-  void GrantPortPermission(const url::Origin& requesting_origin,
-                           const url::Origin& embedding_origin,
+  void GrantPortPermission(const url::Origin& origin,
                            const device::mojom::SerialPortInfo& port);
-  bool HasPortPermission(const url::Origin& requesting_origin,
-                         const url::Origin& embedding_origin,
+  bool HasPortPermission(const url::Origin& origin,
                          const device::mojom::SerialPortInfo& port);
   static bool CanStorePersistentEntry(
       const device::mojom::SerialPortInfo& port);
@@ -64,16 +61,11 @@ class SerialChooserContext : public KeyedService,
   void SetUpPortManagerConnection(
       mojo::PendingRemote<device::mojom::SerialPortManager> manager);
   void OnPortManagerConnectionError();
-  void OnGetPorts(const url::Origin& requesting_origin,
-                  const url::Origin& embedding_origin,
-                  blink::mojom::SerialService::GetPortsCallback callback,
-                  std::vector<device::mojom::SerialPortInfoPtr> ports);
 
-  // Tracks the set of ports to which an origin (potentially embedded in another
-  // origin) has access to. Key is (requesting_origin, embedding_origin).
-  std::map<std::pair<url::Origin, url::Origin>,
-           std::set<base::UnguessableToken>>
-      ephemeral_ports_;
+  ElectronBrowserContext* browser_context_;
+
+  // Tracks the set of ports to which an origin has access to.
+  std::map<url::Origin, std::set<base::UnguessableToken>> ephemeral_ports_;
 
   // Holds information about ports in |ephemeral_ports_|.
   std::map<base::UnguessableToken, base::Value> port_info_;

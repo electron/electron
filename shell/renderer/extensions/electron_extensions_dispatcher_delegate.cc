@@ -16,11 +16,11 @@
 #include "extensions/renderer/native_extension_bindings_system.h"
 #include "extensions/renderer/native_handler.h"
 
-using extensions::NativeHandler;
+ElectronExtensionsDispatcherDelegate::ElectronExtensionsDispatcherDelegate() =
+    default;
 
-ElectronExtensionsDispatcherDelegate::ElectronExtensionsDispatcherDelegate() {}
-
-ElectronExtensionsDispatcherDelegate::~ElectronExtensionsDispatcherDelegate() {}
+ElectronExtensionsDispatcherDelegate::~ElectronExtensionsDispatcherDelegate() =
+    default;
 
 void ElectronExtensionsDispatcherDelegate::RegisterNativeHandlers(
     extensions::Dispatcher* dispatcher,
@@ -29,8 +29,7 @@ void ElectronExtensionsDispatcherDelegate::RegisterNativeHandlers(
     extensions::ScriptContext* context) {
   module_system->RegisterNativeHandler(
       "lazy_background_page",
-      std::unique_ptr<NativeHandler>(
-          new extensions::LazyBackgroundPageNativeHandler(context)));
+      std::make_unique<extensions::LazyBackgroundPageNativeHandler>(context));
 }
 
 void ElectronExtensionsDispatcherDelegate::PopulateSourceMap(

@@ -166,6 +166,9 @@ const char kJavaScript[] = "javascript";
 // Enables image support.
 const char kImages[] = "images";
 
+// Image animation policy.
+const char kImageAnimationPolicy[] = "imageAnimationPolicy";
+
 // Make TextArea elements resizable.
 const char kTextAreasAreResizable[] = "textAreasAreResizable";
 
@@ -185,6 +188,8 @@ const char kSpellcheck[] = "spellcheck";
 const char kEnableWebSQL[] = "enableWebSQL";
 
 const char kEnablePreferredSizeMode[] = "enablePreferredSizeMode";
+
+const char ktitleBarOverlay[] = "titleBarOverlay";
 
 }  // namespace options
 

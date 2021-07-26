@@ -5,7 +5,6 @@
 #ifndef SHELL_BROWSER_API_ELECTRON_API_NOTIFICATION_H_
 #define SHELL_BROWSER_API_ELECTRON_API_NOTIFICATION_H_
 
-#include <memory>
 #include <string>
 #include <vector>
 
@@ -86,7 +85,7 @@ class Notification : public gin::Wrappable<Notification>,
   void SetHasReply(bool new_has_reply);
   void SetUrgency(const std::u16string& new_urgency);
   void SetTimeoutType(const std::u16string& new_timeout_type);
-  void SetReplyPlaceholder(const std::u16string& new_reply_placeholder);
+  void SetReplyPlaceholder(const std::u16string& new_placeholder);
   void SetSound(const std::u16string& sound);
   void SetActions(const std::vector<electron::NotificationAction>& actions);
   void SetCloseButtonText(const std::u16string& text);

@@ -43,7 +43,7 @@
 
 namespace content {
 class CursorManager;
-}  // namespace content
+}
 
 namespace electron {
 
@@ -88,7 +88,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   gfx::Size GetVisibleViewportSize() override;
   void SetInsets(const gfx::Insets&) override;
   void SetBackgroundColor(SkColor color) override;
-  base::Optional<SkColor> GetBackgroundColor() override;
+  absl::optional<SkColor> GetBackgroundColor() override;
   void UpdateBackgroundColor() override;
   blink::mojom::PointerLockResult LockMouse(
       bool request_unadjusted_movement) override;
@@ -113,7 +113,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   // content::RenderWidgetHostViewBase:
 
   void ResetFallbackToFirstNavigationSurface() override;
-  void InitAsPopup(content::RenderWidgetHostView* rwhv,
+  void InitAsPopup(content::RenderWidgetHostView* parent_host_view,
                    const gfx::Rect& rect) override;
   void UpdateCursor(const content::WebCursor&) override;
   void SetIsLoading(bool is_loading) override;
@@ -127,10 +127,10 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
       const gfx::Rect& src_rect,
       const gfx::Size& output_size,
       base::OnceCallback<void(const SkBitmap&)> callback) override;
-  void GetScreenInfo(blink::ScreenInfo* results) override;
+  void GetScreenInfo(display::ScreenInfo* screen_info) override;
   void TransformPointToRootSurface(gfx::PointF* point) override;
   gfx::Rect GetBoundsInRootWindow(void) override;
-  base::Optional<content::DisplayFeature> GetDisplayFeature() override;
+  absl::optional<content::DisplayFeature> GetDisplayFeature() override;
   void SetDisplayFeatureForTesting(
       const content::DisplayFeature* display_feature) override;
   viz::SurfaceId GetCurrentSurfaceId() const override;
@@ -139,6 +139,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   void ImeCompositionRangeChanged(const gfx::Range&,
                                   const std::vector<gfx::Rect>&) override;
   gfx::Size GetCompositorViewportPixelSize() override;
+  ui::Compositor* GetCompositor() override;
 
   content::RenderWidgetHostViewBase* CreateViewForWidget(
       content::RenderWidgetHost*,
@@ -196,7 +197,6 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   void SetFrameRate(int frame_rate);
   int GetFrameRate() const;
 
-  ui::Compositor* GetCompositor() const;
   ui::Layer* GetRootLayer() const;
 
   content::DelegatedFrameHost* GetDelegatedFrameHost() const;

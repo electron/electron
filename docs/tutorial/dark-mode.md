@@ -80,9 +80,9 @@ Starting with the `index.html` file:
 </html>
 ```
 
-And the `style.css` file:
+And the `styles.css` file:
 
-```css title='style.css'
+```css title='styles.css'
 @media (prefers-color-scheme: dark) {
   body { background: #333; color: white; }
 }
@@ -159,7 +159,7 @@ function createWindow () {
   })
 
   ipcMain.handle('dark-mode:system', () => {
-    nativeTheme.themeSouce = 'system'
+    nativeTheme.themeSource = 'system'
   })
 }
 
@@ -200,6 +200,6 @@ Run the example using Electron Fiddle and then click the "Toggle Dark Mode" butt
 [system-wide-dark-mode]: https://developer.apple.com/design/human-interface-guidelines/macos/visual-design/dark-mode/
 [electron-forge]: https://www.electronforge.io/
 [electron-packager]: https://github.com/electron/electron-packager
-[packager-darwindarkmode-api]: https://electron.github.io/electron-packager/master/interfaces/electronpackager.options.html#darwindarkmodesupport
+[packager-darwindarkmode-api]: https://electron.github.io/electron-packager/main/interfaces/electronpackager.options.html#darwindarkmodesupport
 [prefers-color-scheme]: https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-color-scheme
 [event-listeners]: https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener

@@ -11,8 +11,6 @@
 
 namespace electron {
 
-class BrowserContext;
-
 class DevToolsUI : public content::WebUIController {
  public:
   explicit DevToolsUI(content::BrowserContext* browser_context,

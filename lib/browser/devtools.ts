@@ -54,7 +54,7 @@ const isChromeDevTools = function (pageURL: string) {
 };
 
 const assertChromeDevTools = function (contents: Electron.WebContents, api: string) {
-  const pageURL = contents._getURL();
+  const pageURL = contents.getURL();
   if (!isChromeDevTools(pageURL)) {
     console.error(`Blocked ${pageURL} from calling ${api}`);
     throw new Error(`Blocked ${api}`);

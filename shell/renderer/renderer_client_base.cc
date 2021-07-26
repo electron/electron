@@ -20,8 +20,8 @@
 #include "content/public/renderer/render_thread.h"
 #include "content/public/renderer/render_view.h"
 #include "electron/buildflags/buildflags.h"
-#include "media/blink/multibuffer_data_source.h"
 #include "printing/buildflags/buildflags.h"
+#include "shell/browser/api/electron_api_protocol.h"
 #include "shell/common/api/electron_api_native_image.h"
 #include "shell/common/color_util.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -37,9 +37,11 @@
 #include "shell/renderer/electron_autofill_agent.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_registry.h"
 #include "third_party/blink/public/common/web_preferences/web_preferences.h"
+#include "third_party/blink/public/platform/media/multi_buffer_data_source.h"
 #include "third_party/blink/public/web/blink.h"
 #include "third_party/blink/public/web/web_custom_element.h"  // NOLINT(build/include_alpha)
 #include "third_party/blink/public/web/web_frame_widget.h"
+#include "third_party/blink/public/web/web_local_frame.h"
 #include "third_party/blink/public/web/web_plugin_params.h"
 #include "third_party/blink/public/web/web_script_source.h"
 #include "third_party/blink/public/web/web_security_policy.h"
@@ -111,6 +113,11 @@ RendererClientBase* g_renderer_client_base = nullptr;
 
 RendererClientBase::RendererClientBase() {
   auto* command_line = base::CommandLine::ForCurrentProcess();
+  // Parse --service-worker-schemes=scheme1,scheme2
+  std::vector<std::string> service_worker_schemes_list =
+      ParseSchemesCLISwitch(command_line, switches::kServiceWorkerSchemes);
+  for (const std::string& scheme : service_worker_schemes_list)
+    electron::api::AddServiceWorkerScheme(scheme);
   // Parse --standard-schemes=scheme1,scheme2
   std::vector<std::string> standard_schemes_list =
       ParseSchemesCLISwitch(command_line, switches::kStandardSchemes);
@@ -125,7 +132,7 @@ RendererClientBase::RendererClientBase() {
   std::vector<std::string> streaming_schemes_list =
       ParseSchemesCLISwitch(command_line, switches::kStreamingSchemes);
   for (const std::string& scheme : streaming_schemes_list)
-    media::AddStreamingScheme(scheme.c_str());
+    blink::AddStreamingScheme(scheme.c_str());
   // Parse --secure-schemes=scheme1,scheme2
   std::vector<std::string> secure_schemes_list =
       ParseSchemesCLISwitch(command_line, switches::kSecureSchemes);
@@ -173,7 +180,8 @@ void RendererClientBase::RenderThreadStarted() {
   extensions_client_.reset(CreateExtensionsClient());
   extensions::ExtensionsClient::Set(extensions_client_.get());
 
-  extensions_renderer_client_.reset(new ElectronExtensionsRendererClient);
+  extensions_renderer_client_ =
+      std::make_unique<ElectronExtensionsRendererClient>();
   extensions::ExtensionsRendererClient::Set(extensions_renderer_client_.get());
 
   thread->AddObserver(extensions_renderer_client_->GetDispatcher());
@@ -181,7 +189,7 @@ void RendererClientBase::RenderThreadStarted() {
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
   // Enables printing from Chrome PDF viewer.
-  pdf_print_client_.reset(new ChromePDFPrintClient());
+  pdf_print_client_ = std::make_unique<ChromePDFPrintClient>();
   pdf::PepperPDFHost::SetPrintClient(pdf_print_client_.get());
 #endif
 
@@ -465,7 +473,8 @@ v8::Local<v8::Context> RendererClientBase::GetContext(
   auto* render_frame = content::RenderFrame::FromWebFrame(frame);
   DCHECK(render_frame);
   if (render_frame && render_frame->GetBlinkPreferences().context_isolation)
-    return frame->WorldScriptContext(isolate, WorldIDs::ISOLATED_WORLD_ID);
+    return frame->GetScriptContextFromWorldId(isolate,
+                                              WorldIDs::ISOLATED_WORLD_ID);
   else
     return frame->MainWorldScriptContext();
 }

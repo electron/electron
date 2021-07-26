@@ -6,11 +6,11 @@
 
 #include <algorithm>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include "base/memory/ptr_util.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/values.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/color_util.h"
@@ -48,12 +48,13 @@ gfx::Size GetExpandedWindowSize(const NativeWindow* window, gfx::Size size) {
 
 NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
                            NativeWindow* parent)
-    : widget_(new views::Widget), parent_(parent) {
+    : widget_(std::make_unique<views::Widget>()), parent_(parent) {
   ++next_id_;
 
   options.Get(options::kFrame, &has_frame_);
   options.Get(options::kTransparent, &transparent_);
   options.Get(options::kEnableLargerThanScreen, &enable_larger_than_screen_);
+  options.Get(options::ktitleBarOverlay, &titlebar_overlay_);
 
   if (parent)
     options.Get("modal", &is_modal_);
@@ -395,6 +396,14 @@ void NativeWindow::PreviewFile(const std::string& path,
 
 void NativeWindow::CloseFilePreview() {}
 
+gfx::Rect NativeWindow::GetWindowControlsOverlayRect() {
+  return overlay_rect_;
+}
+
+void NativeWindow::SetWindowControlsOverlayRect(const gfx::Rect& overlay_rect) {
+  overlay_rect_ = overlay_rect;
+}
+
 void NativeWindow::NotifyWindowRequestPreferredWith(int* width) {
   for (NativeWindowObserver& observer : observers_)
     observer.RequestPreferredWidth(width);
@@ -481,9 +490,10 @@ void NativeWindow::NotifyWindowRestore() {
 }
 
 void NativeWindow::NotifyWindowWillResize(const gfx::Rect& new_bounds,
+                                          const gfx::ResizeEdge& edge,
                                           bool* prevent_default) {
   for (NativeWindowObserver& observer : observers_)
-    observer.OnWindowWillResize(new_bounds, prevent_default);
+    observer.OnWindowWillResize(new_bounds, edge, prevent_default);
 }
 
 void NativeWindow::NotifyWindowWillMove(const gfx::Rect& new_bounds,
@@ -493,6 +503,7 @@ void NativeWindow::NotifyWindowWillMove(const gfx::Rect& new_bounds,
 }
 
 void NativeWindow::NotifyWindowResize() {
+  NotifyLayoutWindowControlsOverlay();
   for (NativeWindowObserver& observer : observers_)
     observer.OnWindowResize();
 }
@@ -589,6 +600,14 @@ void NativeWindow::NotifyWindowSystemContextMenu(int x,
                                                  bool* prevent_default) {
   for (NativeWindowObserver& observer : observers_)
     observer.OnSystemContextMenu(x, y, prevent_default);
+}
+
+void NativeWindow::NotifyLayoutWindowControlsOverlay() {
+  gfx::Rect bounding_rect = GetWindowControlsOverlayRect();
+  if (!bounding_rect.IsEmpty()) {
+    for (NativeWindowObserver& observer : observers_)
+      observer.UpdateWindowControlsOverlay(bounding_rect);
+  }
 }
 
 #if defined(OS_WIN)

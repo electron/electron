@@ -4,9 +4,12 @@
 
 #include "shell/browser/serial/serial_chooser_context.h"
 
+#include <memory>
+#include <string>
 #include <utility>
 
 #include "base/base64.h"
+#include "base/containers/contains.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
 #include "content/public/browser/device_service.h"
@@ -44,7 +47,7 @@ base::UnguessableToken DecodeToken(base::StringPiece input) {
     return base::UnguessableToken();
   }
 
-  const auto* data = reinterpret_cast<const uint64_t*>(buffer.data());
+  const uint64_t* data = reinterpret_cast<const uint64_t*>(buffer.data());
   return base::UnguessableToken::Deserialize(data[0], data[1]);
 }
 
@@ -80,30 +83,73 @@ base::Value PortInfoToValue(const device::mojom::SerialPortInfo& port) {
   return value;
 }
 
-SerialChooserContext::SerialChooserContext() = default;
+SerialChooserContext::SerialChooserContext(
+    ElectronBrowserContext* browser_context)
+    : browser_context_(browser_context) {}
+
 SerialChooserContext::~SerialChooserContext() = default;
 
 void SerialChooserContext::GrantPortPermission(
-    const url::Origin& requesting_origin,
-    const url::Origin& embedding_origin,
+    const url::Origin& origin,
     const device::mojom::SerialPortInfo& port) {
   base::Value value = PortInfoToValue(port);
   port_info_.insert({port.token, value.Clone()});
 
-  ephemeral_ports_[{requesting_origin, embedding_origin}].insert(port.token);
+  if (CanStorePersistentEntry(port)) {
+    browser_context_->GrantObjectPermission(origin, std::move(value),
+                                            kSerialGrantedDevicesPref);
+    return;
+  }
+
+  ephemeral_ports_[origin].insert(port.token);
 }
 
 bool SerialChooserContext::HasPortPermission(
-    const url::Origin& requesting_origin,
-    const url::Origin& embedding_origin,
+    const url::Origin& origin,
     const device::mojom::SerialPortInfo& port) {
-  auto it = ephemeral_ports_.find({requesting_origin, embedding_origin});
+  auto it = ephemeral_ports_.find(origin);
   if (it != ephemeral_ports_.end()) {
     const std::set<base::UnguessableToken> ports = it->second;
     if (base::Contains(ports, port.token))
       return true;
   }
 
+  if (!CanStorePersistentEntry(port)) {
+    return false;
+  }
+
+  std::vector<std::unique_ptr<base::Value>> object_list =
+      browser_context_->GetGrantedObjects(origin, kSerialGrantedDevicesPref);
+  for (const auto& device : object_list) {
+#if defined(OS_WIN)
+    const std::string& device_instance_id =
+        *device->FindStringKey(kDeviceInstanceIdKey);
+    if (port.device_instance_id == device_instance_id)
+      return true;
+#else
+    const int vendor_id = *device->FindIntKey(kVendorIdKey);
+    const int product_id = *device->FindIntKey(kProductIdKey);
+    const std::string& serial_number = *device->FindStringKey(kSerialNumberKey);
+
+    // Guaranteed by the CanStorePersistentEntry) check above.
+    DCHECK(port.has_vendor_id);
+    DCHECK(port.has_product_id);
+    DCHECK(port.serial_number && !port.serial_number->empty());
+    if (port.vendor_id != vendor_id || port.product_id != product_id ||
+        port.serial_number != serial_number) {
+      continue;
+    }
+
+#if defined(OS_MAC)
+    const std::string& usb_driver_name = *device->FindStringKey(kUsbDriverKey);
+    if (port.usb_driver_name != usb_driver_name) {
+      continue;
+    }
+#endif  // defined(OS_MAC)
+
+    return true;
+#endif  // defined(OS_WIN)
+  }
   return false;
 }
 
@@ -167,14 +213,6 @@ void SerialChooserContext::OnPortRemoved(
     device::mojom::SerialPortInfoPtr port) {
   for (auto& observer : port_observer_list_)
     observer.OnPortRemoved(*port);
-
-  std::vector<std::pair<url::Origin, url::Origin>> revoked_url_pairs;
-  for (auto& map_entry : ephemeral_ports_) {
-    std::set<base::UnguessableToken>& ports = map_entry.second;
-    if (ports.erase(port->token) > 0) {
-      revoked_url_pairs.push_back(map_entry.first);
-    }
-  }
 
   port_info_.erase(port->token);
 }

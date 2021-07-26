@@ -16,6 +16,7 @@
 #include "shell/browser/web_contents_zoom_controller.h"
 #include "shell/common/extensions/api/tabs.h"
 #include "third_party/blink/public/common/page/page_zoom.h"
+#include "url/gurl.h"
 
 using electron::WebContentsZoomController;
 
@@ -57,23 +58,33 @@ void ZoomModeToZoomSettings(WebContentsZoomController::ZoomMode zoom_mode,
 
 ExecuteCodeInTabFunction::ExecuteCodeInTabFunction() : execute_tab_id_(-1) {}
 
-ExecuteCodeInTabFunction::~ExecuteCodeInTabFunction() {}
+ExecuteCodeInTabFunction::~ExecuteCodeInTabFunction() = default;
 
 ExecuteCodeFunction::InitResult ExecuteCodeInTabFunction::Init() {
   if (init_result_)
     return init_result_.value();
 
-  // |tab_id| is optional so it's ok if it's not there.
-  int tab_id = -1;
-  if (args_->GetInteger(0, &tab_id) && tab_id < 0)
+  const auto& list = args_->GetList();
+  if (list.size() < 2)
     return set_init_result(VALIDATION_FAILURE);
 
+  const auto& tab_id_value = list[0];
+  // |tab_id| is optional so it's ok if it's not there.
+  int tab_id = -1;
+  if (tab_id_value.is_int()) {
+    // But if it is present, it needs to be non-negative.
+    tab_id = tab_id_value.GetInt();
+    if (tab_id < 0) {
+      return set_init_result(VALIDATION_FAILURE);
+    }
+  }
+
   // |details| are not optional.
-  base::DictionaryValue* details_value = NULL;
-  if (!args_->GetDictionary(1, &details_value))
+  const base::Value& details_value = list[1];
+  if (!details_value.is_dict())
     return set_init_result(VALIDATION_FAILURE);
   std::unique_ptr<InjectDetails> details(new InjectDetails());
-  if (!InjectDetails::Populate(*details_value, details.get()))
+  if (!InjectDetails::Populate(details_value, details.get()))
     return set_init_result(VALIDATION_FAILURE);
 
   if (tab_id == -1) {
@@ -180,7 +191,7 @@ ExtensionFunction::ResponseAction TabsGetFunction::Run() {
 
   tabs::Tab tab;
 
-  tab.id.reset(new int(tab_id));
+  tab.id = std::make_unique<int>(tab_id);
   // TODO(nornagon): in Chrome, the tab URL is only available to extensions
   // that have the "tabs" (or "activeTab") permission. We should do the same
   // permission check here.
@@ -249,9 +260,8 @@ ExtensionFunction::ResponseAction TabsGetZoomSettingsFunction::Run() {
       contents->GetZoomController()->zoom_mode();
   api::tabs::ZoomSettings zoom_settings;
   ZoomModeToZoomSettings(zoom_mode, &zoom_settings);
-  zoom_settings.default_zoom_factor.reset(
-      new double(blink::PageZoomLevelToZoomFactor(
-          zoom_controller->GetDefaultZoomLevel())));
+  zoom_settings.default_zoom_factor = std::make_unique<double>(
+      blink::PageZoomLevelToZoomFactor(zoom_controller->GetDefaultZoomLevel()));
 
   return RespondNow(
       ArgumentList(api::tabs::GetZoomSettings::Results::Create(zoom_settings)));

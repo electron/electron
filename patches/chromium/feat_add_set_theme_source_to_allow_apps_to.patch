@@ -13,10 +13,10 @@ uses internally for things like menus and devtools.
 We can remove this patch once it has in some shape been upstreamed.
 
 diff --git a/ui/native_theme/native_theme.cc b/ui/native_theme/native_theme.cc
-index db0681f9278b4a60f6c25faf37fdb2aba41d65a6..58655f4285d3835b51c43e0b55fe15d9d6360a7f 100644
+index 7a09fd387933897025f4ff03ca798811aa5013a6..abebf78242030a2c28d9d6b85b1d87cdaabd4884 100644
 --- a/ui/native_theme/native_theme.cc
 +++ b/ui/native_theme/native_theme.cc
-@@ -135,6 +135,8 @@ absl::optional<SkColor> NativeTheme::GetColorProviderColor(
+@@ -144,6 +144,8 @@ absl::optional<SkColor> NativeTheme::GetColorProviderColor(
  }
  
  bool NativeTheme::ShouldUseDarkColors() const {
@@ -26,10 +26,10 @@ index db0681f9278b4a60f6c25faf37fdb2aba41d65a6..58655f4285d3835b51c43e0b55fe15d9
  }
  
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
-index 519e969c3088b9990cbc596aad7b87c5e1bfc133..a414b5a5dbdbf8c05d2a0f543fa498e2563c4566 100644
+index 21624242634805ecb1d66b166eb3d569cab479a8..77338dc6a87b88f536ab7ba7d2081dcd8bf48975 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
-@@ -403,6 +403,22 @@ class NATIVE_THEME_EXPORT NativeTheme {
+@@ -404,6 +404,22 @@ class NATIVE_THEME_EXPORT NativeTheme {
    SkColor GetUnprocessedSystemColor(ColorId color_id,
                                      ColorScheme color_scheme) const;
  
@@ -61,10 +61,10 @@ index 519e969c3088b9990cbc596aad7b87c5e1bfc133..a414b5a5dbdbf8c05d2a0f543fa498e2
    SEQUENCE_CHECKER(sequence_checker_);
  
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index ae908912cd5ea1b2cd43974e1b8ea1bc0c600042..d0a34eca1ded4cbba46fe1d0655a49018b667461 100644
+index c7b96990129262d3b831006af10e85a208bdc581..d4365a3a7e393d5b7ded6030c256176c2858f8f4 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
-@@ -749,6 +749,8 @@ bool NativeThemeWin::ShouldUseDarkColors() const {
+@@ -748,6 +748,8 @@ bool NativeThemeWin::ShouldUseDarkColors() const {
    // ...unless --force-dark-mode was specified in which case caveat emptor.
    if (InForcedColorsMode() && !IsForcedDarkMode())
      return false;

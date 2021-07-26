@@ -4,9 +4,7 @@
 
 #include "shell/browser/protocol_registry.h"
 
-#include <memory>
-#include <utility>
-
+#include "base/stl_util.h"
 #include "content/public/browser/web_contents.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/net/asar/asar_url_loader_factory.h"
@@ -19,7 +17,7 @@ ProtocolRegistry* ProtocolRegistry::FromBrowserContext(
   return static_cast<ElectronBrowserContext*>(context)->protocol_registry();
 }
 
-ProtocolRegistry::ProtocolRegistry() {}
+ProtocolRegistry::ProtocolRegistry() = default;
 
 ProtocolRegistry::~ProtocolRegistry() = default;
 

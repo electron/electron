@@ -68,8 +68,7 @@ SerialChooserController::SerialChooserController(
       filters_(std::move(filters)),
       callback_(std::move(callback)),
       serial_delegate_(serial_delegate) {
-  requesting_origin_ = render_frame_host->GetLastCommittedOrigin();
-  embedding_origin_ = web_contents->GetMainFrame()->GetLastCommittedOrigin();
+  origin_ = web_contents->GetMainFrame()->GetLastCommittedOrigin();
 
   chooser_context_ = SerialChooserContextFactory::GetForBrowserContext(
                          web_contents->GetBrowserContext())
@@ -125,8 +124,7 @@ void SerialChooserController::OnDeviceChosen(const std::string& port_id) {
           return ptr->token.ToString() == port_id;
         });
     if (it != ports_.end()) {
-      chooser_context_->GrantPortPermission(requesting_origin_,
-                                            embedding_origin_, *it->get());
+      chooser_context_->GrantPortPermission(origin_, *it->get());
       RunCallback(it->Clone());
     } else {
       RunCallback(/*port=*/nullptr);

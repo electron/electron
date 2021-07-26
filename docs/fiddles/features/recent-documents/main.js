@@ -5,17 +5,15 @@ const path = require('path')
 function createWindow () {
   const win = new BrowserWindow({
     width: 800,
-    height: 600,
-    webPreferences: {
-      nodeIntegration: true
-    }
+    height: 600
   })
 
   win.loadFile('index.html')
 }
+
 const fileName = 'recently-used.md'
 fs.writeFile(fileName, 'Lorem Ipsum', () => {
-  app.addRecentDocument(path.join(process.cwd(), `${fileName}`))
+  app.addRecentDocument(path.join(__dirname, fileName))
 })
 
 app.whenReady().then(createWindow)

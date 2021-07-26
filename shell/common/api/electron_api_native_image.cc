@@ -305,7 +305,7 @@ bool NativeImage::IsEmpty() {
   return image_.IsEmpty();
 }
 
-gfx::Size NativeImage::GetSize(const base::Optional<float> scale_factor) {
+gfx::Size NativeImage::GetSize(const absl::optional<float> scale_factor) {
   float sf = scale_factor.value_or(1.0f);
   gfx::ImageSkiaRep image_rep = image_.AsImageSkia().GetRepresentation(sf);
 
@@ -321,7 +321,7 @@ std::vector<float> NativeImage::GetScaleFactors() {
   return scale_factors;
 }
 
-float NativeImage::GetAspectRatio(const base::Optional<float> scale_factor) {
+float NativeImage::GetAspectRatio(const absl::optional<float> scale_factor) {
   float sf = scale_factor.value_or(1.0f);
   gfx::Size size = GetSize(sf);
   if (size.IsEmpty())

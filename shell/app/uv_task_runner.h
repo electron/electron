@@ -8,9 +8,12 @@
 #include <map>
 
 #include "base/callback.h"
-#include "base/location.h"
 #include "base/single_thread_task_runner.h"
 #include "uv.h"  // NOLINT(build/include_directory)
+
+namespace base {
+class Location;
+}
 
 namespace electron {
 

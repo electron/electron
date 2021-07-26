@@ -11,6 +11,7 @@
 #include "base/command_line.h"
 #include "base/files/file_path.h"
 #include "base/path_service.h"
+#include "chrome/common/chrome_paths.h"
 #include "chrome/common/chrome_switches.h"
 #include "components/os_crypt/os_crypt.h"
 #include "components/prefs/in_memory_pref_store.h"
@@ -104,7 +105,7 @@ void BrowserProcessImpl::PostEarlyInitialization() {
   // is the only key that needs it
   if (electron::fuses::IsCookieEncryptionEnabled()) {
     base::FilePath prefs_path;
-    CHECK(base::PathService::Get(electron::DIR_USER_DATA, &prefs_path));
+    CHECK(base::PathService::Get(chrome::DIR_USER_DATA, &prefs_path));
     prefs_path = prefs_path.Append(FILE_PATH_LITERAL("Local State"));
     base::ThreadRestrictions::ScopedAllowIO allow_io;
     scoped_refptr<JsonPrefStore> user_pref_store =
@@ -112,8 +113,9 @@ void BrowserProcessImpl::PostEarlyInitialization() {
     user_pref_store->ReadPrefs();
     prefs_factory.set_user_prefs(user_pref_store);
   } else {
-    prefs_factory.set_user_prefs(
-        new OverlayUserPrefStore(new InMemoryPrefStore));
+    auto user_pref_store =
+        base::MakeRefCounted<OverlayUserPrefStore>(new InMemoryPrefStore);
+    prefs_factory.set_user_prefs(user_pref_store);
   }
   local_state_ = prefs_factory.Create(std::move(pref_registry));
 }
@@ -289,6 +291,10 @@ BrowserProcessImpl::resource_coordinator_parts() {
 }
 
 resource_coordinator::TabManager* BrowserProcessImpl::GetTabManager() {
+  return nullptr;
+}
+
+SerialPolicyAllowedPorts* BrowserProcessImpl::serial_policy_allowed_ports() {
   return nullptr;
 }
 

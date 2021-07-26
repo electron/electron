@@ -352,7 +352,6 @@ source_set("electron_lib") {
     "//device/bluetooth",
     "//device/bluetooth/public/cpp",
     "//gin",
-    "//media/blink:blink",
     "//media/capture/mojom:video_capture",
     "//media/mojo/mojom",
     "//net:extras",
@@ -369,6 +368,7 @@ source_set("electron_lib") {
     "//skia",
     "//third_party/blink/public:blink",
     "//third_party/blink/public:blink_devtools_inspector_resources",
+    "//third_party/blink/public/platform/media",
     "//third_party/boringssl",
     "//third_party/electron_node:node_lib",
     "//third_party/inspector_protocol:crdtp",
@@ -1404,7 +1404,8 @@ dist_zip("hunspell_dictionaries_zip") {
 }
 
 copy("libcxx_headers") {
-  sources = libcxx_headers + libcxx_licenses
+  sources = libcxx_headers + libcxx_licenses +
+            [ "//buildtools/third_party/libc++/__config_site" ]
   outputs = [ "$target_gen_dir/electron_libcxx_include/{{source_root_relative_dir}}/{{source_file_part}}" ]
 }
 

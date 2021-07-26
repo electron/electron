@@ -9,9 +9,6 @@
 #include <windows.h>
 #endif  // defined(OS_WIN)
 
-#include <set>
-#include <vector>
-
 #include "base/callback.h"
 #include "base/command_line.h"
 #include "base/files/file_path.h"

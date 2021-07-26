@@ -5,7 +5,6 @@
 #include "shell/browser/api/electron_api_session.h"
 
 #include <algorithm>
-#include <map>
 #include <memory>
 #include <set>
 #include <string>
@@ -265,7 +264,7 @@ void DownloadIdCallback(content::DownloadManager* download_manager,
                         uint32_t id) {
   download_manager->CreateDownloadItem(
       base::GenerateGUID(), id, path, path, url_chain, GURL(), GURL(), GURL(),
-      GURL(), base::nullopt, mime_type, mime_type, start_time, base::Time(),
+      GURL(), absl::nullopt, mime_type, mime_type, start_time, base::Time(),
       etag, last_modified, offset, length, std::string(),
       download::DownloadItem::INTERRUPTED,
       download::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
@@ -1206,9 +1205,6 @@ const char* Session::GetTypeName() {
 
 namespace {
 
-using electron::api::Cookies;
-using electron::api::Protocol;
-using electron::api::ServiceWorkerContext;
 using electron::api::Session;
 
 v8::Local<v8::Value> FromPartition(const std::string& partition,

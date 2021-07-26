@@ -38,6 +38,7 @@
 #include "content/public/common/user_agent.h"
 #include "ipc/ipc_channel.h"
 #include "net/http/http_response_headers.h"
+#include "net/http/http_status_code.h"
 #include "services/network/public/cpp/simple_url_loader.h"
 #include "services/network/public/cpp/simple_url_loader_stream_consumer.h"
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
@@ -157,7 +158,7 @@ GURL GetRemoteBaseURL() {
   return GURL(base::StringPrintf("%s%s/%s/",
                                  kChromeUIDevToolsRemoteFrontendBase,
                                  kChromeUIDevToolsRemoteFrontendPath,
-                                 content::GetWebKitRevision().c_str()));
+                                 content::GetChromiumGitRevision().c_str()));
 }
 
 GURL GetDevToolsURL(bool can_dock) {
@@ -289,7 +290,7 @@ class InspectableWebContents::NetworkResourceLoader
       base::DictionaryValue response;
       response.SetInteger("statusCode", response_headers_
                                             ? response_headers_->response_code()
-                                            : 200);
+                                            : net::HTTP_OK);
 
       auto headers = std::make_unique<base::DictionaryValue>();
       size_t iterator = 0;
@@ -612,8 +613,7 @@ void InspectableWebContents::AddDevToolsExtensionsToClient() {
         web_contents_->GetMainFrame()->GetProcess()->GetID(),
         url::Origin::Create(extension->url()));
 
-    std::unique_ptr<base::DictionaryValue> extension_info(
-        new base::DictionaryValue());
+    auto extension_info = std::make_unique<base::DictionaryValue>();
     extension_info->SetString("startPage", devtools_page_url.spec());
     extension_info->SetString("name", extension->name());
     extension_info->SetBoolean(
@@ -652,7 +652,7 @@ void InspectableWebContents::LoadNetworkResource(DispatchCallback callback,
   GURL gurl(url);
   if (!gurl.is_valid()) {
     base::DictionaryValue response;
-    response.SetInteger("statusCode", 404);
+    response.SetInteger("statusCode", net::HTTP_NOT_FOUND);
     std::move(callback).Run(&response);
     return;
   }
@@ -788,7 +788,10 @@ void InspectableWebContents::SearchInPath(int request_id,
 void InspectableWebContents::SetWhitelistedShortcuts(
     const std::string& message) {}
 
-void InspectableWebContents::SetEyeDropperActive(bool active) {}
+void InspectableWebContents::SetEyeDropperActive(bool active) {
+  if (delegate_)
+    delegate_->DevToolsSetEyeDropperActive(active);
+}
 void InspectableWebContents::ShowCertificateViewer(
     const std::string& cert_chain) {}
 
@@ -904,8 +907,9 @@ void InspectableWebContents::HandleMessageFromDevToolsFrontend(
     params = &empty_params;
   }
   int id = message.FindIntKey(kFrontendHostId).value_or(0);
-  base::ListValue* params_list = nullptr;
-  params->GetAsList(&params_list);
+  std::vector<base::Value> params_list;
+  if (params)
+    params_list = std::move(*params).TakeList();
   embedder_message_dispatcher_->Dispatch(
       base::BindRepeating(&InspectableWebContents::SendMessageAck,
                           weak_factory_.GetWeakPtr(), id),
@@ -991,16 +995,6 @@ bool InspectableWebContents::HandleKeyboardEvent(
 void InspectableWebContents::CloseContents(content::WebContents* source) {
   // This is where the devtools closes itself (by clicking the x button).
   CloseDevTools();
-}
-
-content::ColorChooser* InspectableWebContents::OpenColorChooser(
-    content::WebContents* source,
-    SkColor color,
-    const std::vector<blink::mojom::ColorSuggestionPtr>& suggestions) {
-  auto* delegate = web_contents_->GetDelegate();
-  if (delegate)
-    return delegate->OpenColorChooser(source, color, suggestions);
-  return nullptr;
 }
 
 void InspectableWebContents::RunFileChooser(

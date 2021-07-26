@@ -4,7 +4,6 @@
 
 #include "shell/browser/api/electron_api_screen.h"
 
-#include <algorithm>
 #include <string>
 
 #include "base/bind.h"

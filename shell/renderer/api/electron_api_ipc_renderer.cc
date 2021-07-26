@@ -133,7 +133,7 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer>,
                    gin_helper::ErrorThrower thrower,
                    const std::string& channel,
                    v8::Local<v8::Value> message_value,
-                   base::Optional<v8::Local<v8::Value>> transfer) {
+                   absl::optional<v8::Local<v8::Value>> transfer) {
     if (!electron_browser_remote_) {
       thrower.ThrowError(kIPCMethodCalledAfterContextReleasedError);
       return;
@@ -155,7 +155,7 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer>,
 
     std::vector<blink::MessagePortChannel> ports;
     for (auto& transferable : transferables) {
-      base::Optional<blink::MessagePortChannel> port =
+      absl::optional<blink::MessagePortChannel> port =
           blink::WebMessagePortConverter::
               DisentangleAndExtractMessagePortChannel(isolate, transferable);
       if (!port.has_value()) {
@@ -172,7 +172,6 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer>,
 
   void SendTo(v8::Isolate* isolate,
               gin_helper::ErrorThrower thrower,
-              bool internal,
               int32_t web_contents_id,
               const std::string& channel,
               v8::Local<v8::Value> arguments) {
@@ -184,7 +183,7 @@ class IPCRenderer : public gin::Wrappable<IPCRenderer>,
     if (!electron::SerializeV8Value(isolate, arguments, &message)) {
       return;
     }
-    electron_browser_remote_->MessageTo(internal, web_contents_id, channel,
+    electron_browser_remote_->MessageTo(web_contents_id, channel,
                                         std::move(message));
   }
 

@@ -114,8 +114,8 @@ class NativeImage : public gin::Wrappable<NativeImage> {
   gin::Handle<NativeImage> Crop(v8::Isolate* isolate, const gfx::Rect& rect);
   std::string ToDataURL(gin::Arguments* args);
   bool IsEmpty();
-  gfx::Size GetSize(const base::Optional<float> scale_factor);
-  float GetAspectRatio(const base::Optional<float> scale_factor);
+  gfx::Size GetSize(const absl::optional<float> scale_factor);
+  float GetAspectRatio(const absl::optional<float> scale_factor);
   void AddRepresentation(const gin_helper::Dictionary& options);
 
   void AdjustAmountOfExternalAllocatedMemory(bool add);

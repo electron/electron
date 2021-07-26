@@ -211,7 +211,7 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
           promise_.Resolve(value);
         }
       } else {
-        const char* error_message =
+        const char error_message[] =
             "Script failed to execute, this normally means an error "
             "was thrown. Check the renderer console for the error.";
         if (!callback_.is_null()) {
@@ -226,7 +226,7 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
         promise_.RejectWithErrorMessage(error_message);
       }
     } else {
-      const char* error_message =
+      const char error_message[] =
           "WebFrame was removed before script could run. This normally means "
           "the underlying frame was destroyed";
       if (!callback_.is_null()) {
@@ -259,8 +259,7 @@ class FrameSetSpellChecker : public content::RenderFrameVisitor {
   }
 
   bool Visit(content::RenderFrame* render_frame) override {
-    auto* view = render_frame->GetRenderView();
-    if (view->GetMainRenderFrame() == main_frame_ ||
+    if (render_frame->GetMainRenderFrame() == main_frame_ ||
         (render_frame->IsMainFrame() && render_frame == main_frame_)) {
       render_frame->GetWebFrame()->SetTextCheckClient(spell_check_client_);
     }
@@ -703,7 +702,7 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
       script.Get("startLine", &start_line);
 
       if (!script.Get("code", &code)) {
-        const char* error_message = "Invalid 'code'";
+        const char error_message[] = "Invalid 'code'";
         if (!completion_callback.is_null()) {
           std::move(completion_callback)
               .Run(v8::Undefined(isolate),

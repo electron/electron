@@ -4,7 +4,6 @@
 
 #include "shell/browser/api/electron_api_cookies.h"
 
-#include <memory>
 #include <utility>
 
 #include "base/time/time.h"
@@ -26,8 +25,6 @@
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
-
-using content::BrowserThread;
 
 namespace gin {
 
@@ -132,10 +129,10 @@ bool MatchesCookie(const base::Value& filter,
   if ((str = filter.FindStringKey("domain")) &&
       !MatchesDomain(*str, cookie.Domain()))
     return false;
-  base::Optional<bool> secure_filter = filter.FindBoolKey("secure");
+  absl::optional<bool> secure_filter = filter.FindBoolKey("secure");
   if (secure_filter && *secure_filter == cookie.IsSecure())
     return false;
-  base::Optional<bool> session_filter = filter.FindBoolKey("session");
+  absl::optional<bool> session_filter = filter.FindBoolKey("session");
   if (session_filter && *session_filter != !cookie.IsPersistent())
     return false;
   return true;
@@ -163,7 +160,7 @@ void FilterCookieWithStatuses(
 }
 
 // Parse dictionary property to CanonicalCookie time correctly.
-base::Time ParseTimeProperty(const base::Optional<double>& value) {
+base::Time ParseTimeProperty(const absl::optional<double>& value) {
   if (!value)  // empty time means ignoring the parameter
     return base::Time();
   if (*value == 0)  // FromDoubleT would convert 0 to empty Time
@@ -291,6 +288,7 @@ v8::Local<v8::Promise> Cookies::Set(v8::Isolate* isolate,
   const std::string* url_string = details.FindStringKey("url");
   if (!url_string) {
     promise.RejectWithErrorMessage("Missing required option 'url'");
+    return handle;
   }
   const std::string* name = details.FindStringKey("name");
   const std::string* value = details.FindStringKey("value");
@@ -323,7 +321,8 @@ v8::Local<v8::Promise> Cookies::Set(v8::Isolate* isolate,
       ParseTimeProperty(details.FindDoubleKey("creationDate")),
       ParseTimeProperty(details.FindDoubleKey("expirationDate")),
       ParseTimeProperty(details.FindDoubleKey("lastAccessDate")), secure,
-      http_only, same_site, net::COOKIE_PRIORITY_DEFAULT, same_party);
+      http_only, same_site, net::COOKIE_PRIORITY_DEFAULT, same_party,
+      absl::nullopt);
   if (!canonical_cookie || !canonical_cookie->IsCanonical()) {
     promise.RejectWithErrorMessage(
         InclusionStatusToString(net::CookieInclusionStatus(

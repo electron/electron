@@ -14,7 +14,7 @@
 #include "shell/common/gin_helper/function_template.h"
 #include "shell/common/gin_helper/locker.h"
 #include "shell/common/gin_helper/microtasks_scope.h"
-// Implements safe convertions between JS functions and base::RepeatingCallback.
+// Implements safe conversions between JS functions and base::RepeatingCallback.
 
 namespace gin_helper {
 
@@ -110,7 +110,7 @@ struct V8FunctionInvoker<ReturnType(ArgTypes...)> {
   }
 };
 
-// Helper to pass a C++ funtion to JavaScript.
+// Helper to pass a C++ function to JavaScript.
 using Translater = base::RepeatingCallback<void(gin::Arguments* args)>;
 v8::Local<v8::Value> CreateFunctionFromTranslater(v8::Isolate* isolate,
                                                   const Translater& translater,

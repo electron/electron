@@ -5,7 +5,6 @@
 #ifndef SHELL_BROWSER_API_ELECTRON_API_COOKIES_H_
 #define SHELL_BROWSER_API_ELECTRON_API_COOKIES_H_
 
-#include <memory>
 #include <string>
 
 #include "base/callback_list.h"
@@ -22,10 +21,6 @@ class DictionaryValue;
 
 namespace gin_helper {
 class Dictionary;
-}
-
-namespace net {
-class URLRequestContextGetter;
 }
 
 namespace electron {

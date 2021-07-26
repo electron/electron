@@ -219,9 +219,14 @@ describe('webContents.setWindowOpenHandler', () => {
       const size = await childWindow.webContents.executeJavaScript("getComputedStyle(document.querySelector('body')).fontSize");
       expect(size).to.equal('30px');
       done();
-    });
-
+    })
     browserWindow.webContents.executeJavaScript("window.open('about:blank', '', 'show=no') && true");
+  });
+
+  it('does not hang parent window when denying window.open', async () => {
+    browserWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+    browserWindow.webContents.executeJavaScript("window.open('https://127.0.0.1')");
+    expect(await browserWindow.webContents.executeJavaScript('42')).to.equal(42);
   });
 });
 

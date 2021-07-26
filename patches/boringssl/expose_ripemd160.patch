@@ -80,7 +80,7 @@ index d540144b293297791c087e0b968a47d368a73695..53cb9d2dc8f1962a70dc12b648d27c32
 +  callback(EVP_ripemd160(), "ripemd160", NULL, arg);
  }
 diff --git a/include/openssl/digest.h b/include/openssl/digest.h
-index 66f1b5dcfd8232a697145acb2b6c2efe890d543f..67fc522172dc3ab56787fa5db3c277fd4811474a 100644
+index 12542c18b2563c83f0f37a0cbbab6847060ab180..f96c5c59ddfa7aee63bb0212812dd14c677b59cb 100644
 --- a/include/openssl/digest.h
 +++ b/include/openssl/digest.h
 @@ -90,6 +90,9 @@ OPENSSL_EXPORT const EVP_MD *EVP_blake2b256(void);

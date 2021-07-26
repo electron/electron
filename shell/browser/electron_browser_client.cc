@@ -100,6 +100,7 @@
 #include "shell/common/api/api.mojom.h"
 #include "shell/common/application_info.h"
 #include "shell/common/electron_paths.h"
+#include "shell/common/logging.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/platform_util.h"
 #include "third_party/blink/public/common/loader/url_loader_throttle.h"
@@ -297,6 +298,12 @@ breakpad::CrashHandlerHostLinux* CreateCrashHandlerHost(
 }
 
 int GetCrashSignalFD(const base::CommandLine& command_line) {
+  if (crash_reporter::IsCrashpadEnabled()) {
+    int fd;
+    pid_t pid;
+    return crash_reporter::GetHandlerSocket(&fd, &pid) ? fd : -1;
+  }
+
   // Extensions have the same process type as renderers.
   if (command_line.HasSwitch(extensions::switches::kExtensionProcess)) {
     static breakpad::CrashHandlerHostLinux* crash_handler = nullptr;
@@ -525,22 +532,48 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
 
 #if defined(OS_LINUX)
   bool enable_crash_reporter = false;
-  enable_crash_reporter = breakpad::IsCrashReporterEnabled();
+  if (crash_reporter::IsCrashpadEnabled()) {
+    command_line->AppendSwitch(::switches::kEnableCrashpad);
+    enable_crash_reporter = true;
+
+    int fd;
+    pid_t pid;
+
+    if (crash_reporter::GetHandlerSocket(&fd, &pid)) {
+      command_line->AppendSwitchASCII(
+          crash_reporter::switches::kCrashpadHandlerPid,
+          base::NumberToString(pid));
+    }
+  } else {
+    enable_crash_reporter = breakpad::IsCrashReporterEnabled();
+  }
+
   if (enable_crash_reporter) {
     std::string switch_value =
         api::crash_reporter::GetClientId() + ",no_channel";
     command_line->AppendSwitchASCII(::switches::kEnableCrashReporter,
                                     switch_value);
-    for (const auto& pair : api::crash_reporter::GetGlobalCrashKeys()) {
-      if (!switch_value.empty())
-        switch_value += ",";
-      switch_value += pair.first;
-      switch_value += "=";
-      switch_value += pair.second;
+    if (!crash_reporter::IsCrashpadEnabled()) {
+      for (const auto& pair : api::crash_reporter::GetGlobalCrashKeys()) {
+        if (!switch_value.empty())
+          switch_value += ",";
+        switch_value += pair.first;
+        switch_value += "=";
+        switch_value += pair.second;
+      }
+      command_line->AppendSwitchASCII(switches::kGlobalCrashKeys, switch_value);
     }
-    command_line->AppendSwitchASCII(switches::kGlobalCrashKeys, switch_value);
   }
 #endif
+
+  // The zygote process is booted before JS runs, so DIR_USER_DATA isn't usable
+  // at that time. It doesn't need --user-data-dir to be correct anyway, since
+  // the zygote itself doesn't access anything in that directory.
+  if (process_type != ::switches::kZygoteProcess) {
+    base::FilePath user_data_dir;
+    if (base::PathService::Get(chrome::DIR_USER_DATA, &user_data_dir))
+      command_line->AppendSwitchPath(::switches::kUserDataDir, user_data_dir);
+  }
 
   if (process_type == ::switches::kUtilityProcess ||
       process_type == ::switches::kRendererProcess) {
@@ -572,7 +605,7 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
       command_line->AppendSwitchPath(switches::kAppPath, app_path);
     }
 
-    std::unique_ptr<base::Environment> env(base::Environment::Create());
+    auto env = base::Environment::Create();
     if (env->HasVar("ELECTRON_PROFILE_INIT_SCRIPTS")) {
       command_line->AppendSwitch("profile-electron-init");
     }
@@ -603,7 +636,7 @@ void ElectronBrowserClient::DidCreatePpapiPlugin(
 
 // attempt to get api key from env
 std::string ElectronBrowserClient::GetGeolocationApiKey() {
-  std::unique_ptr<base::Environment> env(base::Environment::Create());
+  auto env = base::Environment::Create();
   std::string api_key;
   env->GetVar("GOOGLE_API_KEY", &api_key);
   return api_key;
@@ -611,7 +644,7 @@ std::string ElectronBrowserClient::GetGeolocationApiKey() {
 
 scoped_refptr<content::QuotaPermissionContext>
 ElectronBrowserClient::CreateQuotaPermissionContext() {
-  return new ElectronQuotaPermissionContext;
+  return base::MakeRefCounted<ElectronQuotaPermissionContext>();
 }
 
 content::GeneratedCodeCacheSettings
@@ -675,7 +708,7 @@ bool ElectronBrowserClient::CanCreateWindow(
       content::WebContents::FromRenderFrameHost(opener);
   WebContentsPreferences* prefs = WebContentsPreferences::From(web_contents);
   if (prefs) {
-    if (prefs->IsEnabled("disablePopups")) {
+    if (prefs->ShouldDisablePopups()) {
       // <webview> without allowpopups attribute should return
       // null from window.open calls
       return false;
@@ -790,8 +823,13 @@ bool ElectronBrowserClient::ArePersistentMediaDeviceIDsAllowed(
     content::BrowserContext* browser_context,
     const GURL& scope,
     const GURL& site_for_cookies,
-    const base::Optional<url::Origin>& top_frame_origin) {
+    const absl::optional<url::Origin>& top_frame_origin) {
   return true;
+}
+
+base::FilePath ElectronBrowserClient::GetLoggingFileName(
+    const base::CommandLine& cmd_line) {
+  return logging::GetLogFileName(cmd_line);
 }
 
 void ElectronBrowserClient::SiteInstanceDeleting(
@@ -867,7 +905,13 @@ ElectronBrowserClient::GetSystemNetworkContext() {
 std::unique_ptr<content::BrowserMainParts>
 ElectronBrowserClient::CreateBrowserMainParts(
     const content::MainFunctionParams& params) {
-  return std::make_unique<ElectronBrowserMainParts>(params);
+  auto browser_main_parts = std::make_unique<ElectronBrowserMainParts>(params);
+
+#if defined(OS_MAC)
+  browser_main_parts_ = browser_main_parts.get();
+#endif
+
+  return browser_main_parts;
 }
 
 void ElectronBrowserClient::WebNotificationAllowed(
@@ -940,14 +984,14 @@ void HandleExternalProtocolInUI(
 
 bool ElectronBrowserClient::HandleExternalProtocol(
     const GURL& url,
-    content::WebContents::OnceGetter web_contents_getter,
+    content::WebContents::Getter web_contents_getter,
     int child_id,
     int frame_tree_node_id,
     content::NavigationUIData* navigation_data,
     bool is_main_frame,
     ui::PageTransition page_transition,
     bool has_user_gesture,
-    const base::Optional<url::Origin>& initiating_origin,
+    const absl::optional<url::Origin>& initiating_origin,
     mojo::PendingRemote<network::mojom::URLLoaderFactory>* out_factory) {
   base::PostTask(
       FROM_HERE, {BrowserThread::UI},
@@ -996,12 +1040,10 @@ ElectronBrowserClient::GetPlatformNotificationService(
 }
 
 base::FilePath ElectronBrowserClient::GetDefaultDownloadDirectory() {
-  // ~/Downloads
-  base::FilePath path;
-  if (base::PathService::Get(base::DIR_HOME, &path))
-    path = path.Append(FILE_PATH_LITERAL("Downloads"));
-
-  return path;
+  base::FilePath download_path;
+  if (base::PathService::Get(chrome::DIR_DEFAULT_DOWNLOADS, &download_path))
+    return download_path;
+  return base::FilePath();
 }
 
 scoped_refptr<network::SharedURLLoaderFactory>
@@ -1023,7 +1065,7 @@ void ElectronBrowserClient::OnNetworkServiceCreated(
 std::vector<base::FilePath>
 ElectronBrowserClient::GetNetworkContextsParentDirectory() {
   base::FilePath user_data_dir;
-  base::PathService::Get(DIR_USER_DATA, &user_data_dir);
+  base::PathService::Get(chrome::DIR_USER_DATA, &user_data_dir);
   DCHECK(!user_data_dir.empty());
 
   return {user_data_dir};
@@ -1087,7 +1129,7 @@ class FileURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
     mojo::PendingRemote<network::mojom::URLLoaderFactory> pending_remote;
 
     // The FileURLLoaderFactory will delete itself when there are no more
-    // receivers - see the NonNetworkURLLoaderFactoryBase::OnDisconnect method.
+    // receivers - see the SelfDeletingURLLoaderFactory::OnDisconnect method.
     new FileURLLoaderFactory(child_id,
                              pending_remote.InitWithNewPipeAndPassReceiver());
 
@@ -1250,7 +1292,7 @@ void ElectronBrowserClient::CreateWebSocket(
     WebSocketFactory factory,
     const GURL& url,
     const net::SiteForCookies& site_for_cookies,
-    const base::Optional<std::string>& user_agent,
+    const absl::optional<std::string>& user_agent,
     mojo::PendingRemote<network::mojom::WebSocketHandshakeClient>
         handshake_client) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
@@ -1288,7 +1330,7 @@ bool ElectronBrowserClient::WillCreateURLLoaderFactory(
     int render_process_id,
     URLLoaderFactoryType type,
     const url::Origin& request_initiator,
-    base::Optional<int64_t> navigation_id,
+    absl::optional<int64_t> navigation_id,
     ukm::SourceIdObj ukm_source_id,
     mojo::PendingReceiver<network::mojom::URLLoaderFactory>* factory_receiver,
     mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>*
@@ -1369,7 +1411,7 @@ void ElectronBrowserClient::OverrideURLLoaderFactoryParams(
         blink::LocalFrameToken(factory_params->top_frame_id.value()));
     auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
     auto* prefs = WebContentsPreferences::From(web_contents);
-    if (prefs && !prefs->IsEnabled(options::kWebSecurity, true)) {
+    if (prefs && !prefs->IsWebSecurityEnabled()) {
       factory_params->is_corb_enabled = false;
       factory_params->disable_web_security = true;
     }
@@ -1416,7 +1458,7 @@ std::string ElectronBrowserClient::GetApplicationLocale() {
 
 base::FilePath ElectronBrowserClient::GetFontLookupTableCacheDir() {
   base::FilePath user_data_dir;
-  base::PathService::Get(DIR_USER_DATA, &user_data_dir);
+  base::PathService::Get(chrome::DIR_USER_DATA, &user_data_dir);
   DCHECK(!user_data_dir.empty());
   return user_data_dir.Append(FILE_PATH_LITERAL("FontLookupTableCache"));
 }
@@ -1601,6 +1643,14 @@ void ElectronBrowserClient::RegisterBrowserInterfaceBindersForServiceWorker(
         map) {
   map->Add<blink::mojom::BadgeService>(
       base::BindRepeating(&BindBadgeServiceForServiceWorker));
+}
+
+device::GeolocationManager* ElectronBrowserClient::GetGeolocationManager() {
+#if defined(OS_MAC)
+  return browser_main_parts_->GetGeolocationManager();
+#else
+  return nullptr;
+#endif
 }
 
 }  // namespace electron

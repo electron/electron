@@ -9,7 +9,10 @@
 
 #include "base/files/file_path.h"
 #include "base/supports_user_data.h"
-#include "content/public/browser/browser_context.h"
+
+namespace content {
+class BrowserContext;
+}
 
 namespace electron {
 

@@ -4,6 +4,7 @@
 
 #include "shell/browser/net/system_network_context_manager.h"
 
+#include <memory>
 #include <string>
 #include <utility>
 
@@ -11,6 +12,7 @@
 #include "base/path_service.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/net/chrome_mojo_proxy_resolver_factory.h"
+#include "chrome/common/chrome_paths.h"
 #include "chrome/common/chrome_switches.h"
 #include "components/os_crypt/os_crypt.h"
 #include "content/public/browser/browser_thread.h"
@@ -213,7 +215,8 @@ void SystemNetworkContextManager::DeleteInstance() {
 SystemNetworkContextManager::SystemNetworkContextManager(
     PrefService* pref_service)
     : proxy_config_monitor_(pref_service) {
-  shared_url_loader_factory_ = new URLLoaderFactoryForSystem(this);
+  shared_url_loader_factory_ =
+      base::MakeRefCounted<URLLoaderFactoryForSystem>(this);
 }
 
 SystemNetworkContextManager::~SystemNetworkContextManager() {
@@ -255,7 +258,7 @@ void SystemNetworkContextManager::OnNetworkServiceCreated(
           command_line.GetSwitchValueASCII(::switches::kPasswordStore);
       config->should_use_preference =
           command_line.HasSwitch(::switches::kEnableEncryptionSelection);
-      base::PathService::Get(electron::DIR_USER_DATA, &config->user_data_path);
+      base::PathService::Get(chrome::DIR_USER_DATA, &config->user_data_path);
       network_service->SetCryptConfig(std::move(config));
 #else
       network_service->SetEncryptionKey(OSCrypt::GetRawEncryptionKey());

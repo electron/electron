@@ -4,7 +4,6 @@
 
 #include "shell/browser/api/electron_api_download_item.h"
 
-#include <map>
 #include <memory>
 
 #include "base/strings/utf_string_conversions.h"
@@ -17,6 +16,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
+#include "url/gurl.h"
 
 namespace gin {
 
@@ -74,17 +74,15 @@ const void* kElectronApiDownloadItemKey = &kElectronApiDownloadItemKey;
 gin::WrapperInfo DownloadItem::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 // static
-DownloadItem* DownloadItem::FromDownloadItem(
-    download::DownloadItem* download_item) {
+DownloadItem* DownloadItem::FromDownloadItem(download::DownloadItem* item) {
   // ^- say that 7 times fast in a row
   auto* data = static_cast<UserDataLink*>(
-      download_item->GetUserData(kElectronApiDownloadItemKey));
+      item->GetUserData(kElectronApiDownloadItemKey));
   return data ? data->download_item.get() : nullptr;
 }
 
-DownloadItem::DownloadItem(v8::Isolate* isolate,
-                           download::DownloadItem* download_item)
-    : download_item_(download_item), isolate_(isolate) {
+DownloadItem::DownloadItem(v8::Isolate* isolate, download::DownloadItem* item)
+    : download_item_(item), isolate_(isolate) {
   download_item_->AddObserver(this);
   download_item_->SetUserData(
       kElectronApiDownloadItemKey,
@@ -119,7 +117,7 @@ void DownloadItem::OnDownloadUpdated(download::DownloadItem* item) {
   }
 }
 
-void DownloadItem::OnDownloadDestroyed(download::DownloadItem* download_item) {
+void DownloadItem::OnDownloadDestroyed(download::DownloadItem* /*item*/) {
   download_item_ = nullptr;
   Unpin();
 }
