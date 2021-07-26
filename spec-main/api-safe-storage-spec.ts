@@ -3,7 +3,7 @@ import * as path from 'path';
 import { safeStorage } from 'electron/main';
 import { expect } from 'chai';
 import { emittedOnce } from './events-helpers';
-import { ifit } from 'spec/spec-helpers';
+import { ifit } from './spec-helpers';
 
 const { promises: fs } = require('fs');
 
