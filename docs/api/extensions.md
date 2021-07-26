@@ -100,6 +100,8 @@ The following methods of `chrome.tabs` are supported:
 
 - `chrome.tabs.sendMessage`
 - `chrome.tabs.executeScript`
+- `chrome.tabs.update` (partial support)
+  - supported properties: `url`, `muted`.
 
 > **Note:** In Chrome, passing `-1` as a tab ID signifies the "currently active
 > tab". Since Electron has no such concept, passing `-1` as a tab ID is not

@@ -419,24 +419,9 @@ ExtensionFunction::ResponseAction TabsUpdateFunction::Run() {
       return RespondNow(Error(std::move(error)));
   }
 
-  /*
-  if (params->update_properties.muted.get() &&
-      !chrome::SetTabAudioMuted(contents, *params->update_properties.muted,
-                                TabMutedReason::EXTENSION, extension()->id())) {
-    return RespondNow(Error(ErrorUtils::FormatErrorMessage(
-        tabs_constants::kCannotUpdateMuteCaptured,
-        base::NumberToString(tab_id))));
+  if (params->update_properties.muted.get()) {
+    contents->SetAudioMuted(*params->update_properties.muted);
   }
-  */
-
-  /*
-  if (params->update_properties.auto_discardable.get()) {
-    bool state = *params->update_properties.auto_discardable;
-    resource_coordinator::TabLifecycleUnitExternal::FromWebContents(
-        web_contents_)
-        ->SetAutoDiscardable(state);
-  }
-  */
 
   return RespondNow(GetResult());
 }
@@ -491,7 +476,9 @@ ExtensionFunction::ResponseValue TabsUpdateFunction::GetResult() {
 
   tabs::Tab tab;
 
-  tab.id = std::make_unique<int>(-1);  // web_contents_->ID());
+  auto* api_web_contents = electron::api::WebContents::From(web_contents_);
+  tab.id =
+      std::make_unique<int>(api_web_contents ? api_web_contents->ID() : -1);
   // TODO(nornagon): in Chrome, the tab URL is only available to extensions
   // that have the "tabs" (or "activeTab") permission. We should do the same
   // permission check here.
