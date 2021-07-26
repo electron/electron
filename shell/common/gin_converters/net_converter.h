@@ -11,6 +11,7 @@
 
 #include "gin/converter.h"
 #include "services/network/public/mojom/fetch_api.mojom.h"
+#include "services/network/public/mojom/url_request.mojom.h"
 #include "shell/browser/net/cert_verifier_client.h"
 
 namespace net {
