@@ -126,8 +126,7 @@ void ElectronDownloadManagerDelegate::OnDownloadPathGenerated(
       settings.default_path = default_path;
 
     auto* web_preferences = WebContentsPreferences::From(web_contents);
-    const bool offscreen =
-        !web_preferences || web_preferences->IsEnabled(options::kOffscreen);
+    const bool offscreen = !web_preferences || web_preferences->IsOffscreen();
     settings.force_detached = offscreen;
 
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
