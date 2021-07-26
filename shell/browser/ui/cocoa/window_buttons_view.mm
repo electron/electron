@@ -23,6 +23,21 @@ const NSWindowButton kButtonTypes[] = {
 
 @implementation WindowButtonsView
 
++ (gfx::Point)defaultMargin {
+  if (@available(macOS 11.0, *)) {
+    return gfx::Point(7, 6);
+  } else {
+    return gfx::Point(7, 3);
+  }
+}
+
++ (gfx::Point)hiddenInsetMargin {
+  // For macOS >= 11, while this value does not match offical macOS apps like
+  // Safari or Notes, it matches titleBarStyle's old implementation before
+  // Electron <= 12.
+  return gfx::Point(12, 11);
+}
+
 - (id)initWithMargin:(const base::Optional<gfx::Point>&)margin {
   self = [super initWithFrame:NSZeroRect];
   [self setMargin:margin];
@@ -51,7 +66,7 @@ const NSWindowButton kButtonTypes[] = {
 }
 
 - (void)setMargin:(const base::Optional<gfx::Point>&)margin {
-  margin_ = margin.value_or(gfx::Point(7, 3));
+  margin_ = margin.value_or([WindowButtonsView defaultMargin]);
 }
 
 - (void)setShowOnHover:(BOOL)yes {
