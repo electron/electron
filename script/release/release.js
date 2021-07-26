@@ -457,4 +457,8 @@ async function verifyShasumsForRemoteFiles (remoteFilesToHash, filesAreNodeJSArt
   }
 }
 
-makeRelease(args.validateRelease);
+makeRelease(args.validateRelease)
+  .catch((err) => {
+    console.error('Error occurred while making release:', err);
+    process.exit(1);
+  });

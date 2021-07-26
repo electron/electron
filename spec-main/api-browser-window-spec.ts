@@ -2431,14 +2431,14 @@ describe('BrowserWindow module', () => {
         });
 
         const preloadPath = path.join(fixtures, 'api', 'new-window-preload.js');
-        w.webContents.setWindowOpenHandler(() => ({ action: 'allow', overrideBrowserWindowOptions: { webPreferences: { preload: preloadPath, foo: 'bar' } } }));
+        w.webContents.setWindowOpenHandler(() => ({ action: 'allow', overrideBrowserWindowOptions: { webPreferences: { preload: preloadPath, contextIsolation: false } } }));
         w.loadFile(path.join(fixtures, 'api', 'new-window.html'));
         const [[, childWebContents]] = await Promise.all([
           emittedOnce(app, 'web-contents-created'),
           emittedOnce(ipcMain, 'answer')
         ]);
         const webPreferences = childWebContents.getLastWebPreferences();
-        expect(webPreferences.foo).to.equal('bar');
+        expect(webPreferences.contextIsolation).to.equal(false);
       });
 
       it('should set ipc event sender correctly', async () => {
@@ -2700,7 +2700,7 @@ describe('BrowserWindow module', () => {
           overrideBrowserWindowOptions: {
             webPreferences: {
               preload: preloadPath,
-              foo: 'bar'
+              contextIsolation: false
             }
           }
         }));
@@ -2710,7 +2710,7 @@ describe('BrowserWindow module', () => {
           emittedOnce(ipcMain, 'answer')
         ]);
         const webPreferences = childWebContents.getLastWebPreferences();
-        expect(webPreferences.foo).to.equal('bar');
+        expect(webPreferences.contextIsolation).to.equal(false);
       });
 
       describe('window.location', () => {
@@ -4215,7 +4215,8 @@ describe('BrowserWindow module', () => {
         expect(w.isFullScreen()).to.be.false('isFullScreen');
       });
 
-      ifit(process.arch === 'x64')('multiple windows inherit correct fullscreen state', async () => {
+      // FIXME: https://github.com/electron/electron/issues/30140
+      xit('multiple windows inherit correct fullscreen state', async () => {
         const w = new BrowserWindow();
         const enterFullScreen = emittedOnce(w, 'enter-full-screen');
         w.setFullScreen(true);

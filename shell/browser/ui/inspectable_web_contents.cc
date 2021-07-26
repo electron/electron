@@ -27,7 +27,6 @@
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
-#include "content/public/browser/color_chooser.h"
 #include "content/public/browser/file_select_listener.h"
 #include "content/public/browser/file_url_loader.h"
 #include "content/public/browser/host_zoom_map.h"
@@ -908,8 +907,9 @@ void InspectableWebContents::HandleMessageFromDevToolsFrontend(
     params = &empty_params;
   }
   int id = message.FindIntKey(kFrontendHostId).value_or(0);
-  base::ListValue* params_list = nullptr;
-  params->GetAsList(&params_list);
+  std::vector<base::Value> params_list;
+  if (params)
+    params_list = std::move(*params).TakeList();
   embedder_message_dispatcher_->Dispatch(
       base::BindRepeating(&InspectableWebContents::SendMessageAck,
                           weak_factory_.GetWeakPtr(), id),
@@ -995,16 +995,6 @@ bool InspectableWebContents::HandleKeyboardEvent(
 void InspectableWebContents::CloseContents(content::WebContents* source) {
   // This is where the devtools closes itself (by clicking the x button).
   CloseDevTools();
-}
-
-std::unique_ptr<content::ColorChooser> InspectableWebContents::OpenColorChooser(
-    content::WebContents* source,
-    SkColor color,
-    const std::vector<blink::mojom::ColorSuggestionPtr>& suggestions) {
-  auto* delegate = web_contents_->GetDelegate();
-  if (delegate)
-    return delegate->OpenColorChooser(source, color, suggestions);
-  return nullptr;
 }
 
 void InspectableWebContents::RunFileChooser(

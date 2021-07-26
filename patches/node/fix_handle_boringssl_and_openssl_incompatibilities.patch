@@ -186,19 +186,6 @@ index 271db427fa8539feb30c1712574976fb1f623e91..b2b6af1f9e6db54bdff0be7a567255f4
    if (EVP_PKEY_paramgen(param_ctx.get(), &raw_params) <= 0)
      return EVPKeyCtxPointer();
  
-diff --git a/src/crypto/crypto_ec.cc b/src/crypto/crypto_ec.cc
-index ea4c70ad5d8c844860ba3480fc7ef4205f0a3cdc..cdf8dd47d6e2a5894066cec01fbe347af079ec22 100644
---- a/src/crypto/crypto_ec.cc
-+++ b/src/crypto/crypto_ec.cc
-@@ -314,7 +314,7 @@ void ECDH::SetPrivateKey(const FunctionCallbackInfo<Value>& args) {
-     return THROW_ERR_CRYPTO_OPERATION_FAILED(env,
-         "Failed to set generated public key");
- 
--  EC_KEY_copy(ecdh->key_.get(), new_key.get());
-+  ecdh->key_.reset(EC_KEY_dup(new_key.get()));
-   ecdh->group_ = EC_KEY_get0_group(ecdh->key_.get());
- }
- 
 diff --git a/src/crypto/crypto_hkdf.cc b/src/crypto/crypto_hkdf.cc
 index 0aa96ada47abe4b66fb616c665101278bbe0afb6..1e9a4863c5faea5f6b275483ca16f3a6e8dac25b 100644
 --- a/src/crypto/crypto_hkdf.cc
@@ -248,26 +235,10 @@ index 7b113a8dcb06b0b0e1329ce0daf7305598ea6545..b04e53a7f24885ffb6639430988d0ffb
      const EC_KEY* ec_key = EVP_PKEY_get0_EC_KEY(pkey.get());
      const EC_GROUP* ec_group = EC_KEY_get0_group(ec_key);
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index 13c40dcb757661220288465c39101de0b4018e90..7d1d4400319292a8ddf3afe013b5678f84c25576 100644
+index f18304cd655842e999a39659315c4eb3ce1c0c6e..1aed0e7e88460cea63950f71dac502829d662cff 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
-@@ -139,7 +139,6 @@ void InitCryptoOnce() {
-   OPENSSL_init_ssl(0, settings);
-   OPENSSL_INIT_free(settings);
-   settings = nullptr;
--#endif
- 
- #ifndef _WIN32
-   if (per_process::cli_options->secure_heap != 0) {
-@@ -160,6 +159,7 @@ void InitCryptoOnce() {
-   }
- #endif
- 
-+#endif
-   // Turn off compression. Saves memory and protects against CRIME attacks.
-   // No-op with OPENSSL_NO_COMP builds of OpenSSL.
-   sk_SSL_COMP_zero(SSL_COMP_get_compression_methods());
-@@ -490,24 +490,14 @@ Maybe<bool> Decorate(Environment* env, Local<Object> obj,
+@@ -491,24 +491,14 @@ Maybe<bool> Decorate(Environment* env, Local<Object> obj,
      V(BIO)                                                                    \
      V(PKCS7)                                                                  \
      V(X509V3)                                                                 \
@@ -292,7 +263,7 @@ index 13c40dcb757661220288465c39101de0b4018e90..7d1d4400319292a8ddf3afe013b5678f
      V(USER)                                                                   \
  
  #define V(name) case ERR_LIB_##name: lib = #name "_"; break;
-@@ -667,7 +657,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -668,7 +658,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
    CHECK(args[0]->IsUint32());
    Environment* env = Environment::GetCurrent(args);
    uint32_t len = args[0].As<Uint32>()->Value();
@@ -301,7 +272,7 @@ index 13c40dcb757661220288465c39101de0b4018e90..7d1d4400319292a8ddf3afe013b5678f
    if (data == nullptr) {
      // There's no memory available for the allocation.
      // Return nothing.
-@@ -679,7 +669,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -680,7 +670,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
            data,
            len,
            [](void* data, size_t len, void* deleter_data) {
@@ -310,7 +281,7 @@ index 13c40dcb757661220288465c39101de0b4018e90..7d1d4400319292a8ddf3afe013b5678f
            },
            data);
    Local<ArrayBuffer> buffer = ArrayBuffer::New(env->isolate(), store);
-@@ -687,10 +677,12 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -688,10 +678,12 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
  }
  
  void SecureHeapUsed(const FunctionCallbackInfo<Value>& args) {
@@ -337,19 +308,6 @@ index ac95612a0b1a856d7fe07efde59786e811f1b98d..aa62753d7c929027f5265fa4330b0429
  #include <openssl/rsa.h>
  #include <openssl/dsa.h>
  #include <openssl/ssl.h>
-diff --git a/src/node.cc b/src/node.cc
-index c9d491f01651ef57fb793dda108469cb7ddccc5c..6a55535b5c6ef72b1cdb366299840a2e78643911 100644
---- a/src/node.cc
-+++ b/src/node.cc
-@@ -1035,7 +1035,7 @@ InitializationResult InitializeOncePerProcess(
-   }
- 
-   if (init_flags & kInitOpenSSL) {
--#if HAVE_OPENSSL
-+#if HAVE_OPENSSL && !defined(OPENSSL_IS_BORINGSSL)
-     {
-       std::string extra_ca_certs;
-       if (credentials::SafeGetenv("NODE_EXTRA_CA_CERTS", &extra_ca_certs))
 diff --git a/src/node_metadata.h b/src/node_metadata.h
 index 4486d5af2c1622c7c8f44401dc3ebb986d8e3c2e..db1769f1b3f1617ed8dbbea57b5e324183b42be2 100644
 --- a/src/node_metadata.h

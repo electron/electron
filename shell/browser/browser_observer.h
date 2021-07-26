@@ -70,7 +70,8 @@ class BrowserObserver : public base::CheckedObserver {
   // The browser wants to resume a user activity via handoff. (macOS only)
   virtual void OnContinueUserActivity(bool* prevent_default,
                                       const std::string& type,
-                                      const base::DictionaryValue& user_info) {}
+                                      const base::DictionaryValue& user_info,
+                                      const base::DictionaryValue& details) {}
   // The browser wants to notify that an user activity was resumed. (macOS only)
   virtual void OnUserActivityWasContinued(
       const std::string& type,

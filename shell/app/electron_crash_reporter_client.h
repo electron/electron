@@ -52,10 +52,6 @@ class ElectronCrashReporterClient : public crash_reporter::CrashReporterClient {
   bool GetCrashDumpLocation(base::FilePath* crash_dir) override;
 #endif
 
-#if defined(OS_MAC) || defined(OS_LINUX)
-  bool GetCrashMetricsLocation(base::FilePath* metrics_dir) override;
-#endif
-
   bool IsRunningUnattended() override;
 
   bool GetCollectStatsConsent() override;

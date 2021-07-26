@@ -1,5 +1,5 @@
 ---
-title: launch-app-from-URL-in-another-app
+title: Launching Your Electron App From A URL In Another App
 description: This guide will take you through the process of setting your electron app as the default handler for a specific protocol.
 slug: launch-app-from-url-in-another-app
 hide_title: true
@@ -168,7 +168,7 @@ After you start your electron app, you can now enter in a URL in your browser th
     can leave it empty.
 -->
 
-```fiddle docs/fiddles/system/protocol-handler/launch-app-from-url-in-another-app
+```fiddle docs/fiddles/system/protocol-handler/launch-app-from-URL-in-another-app
 
 ```
 

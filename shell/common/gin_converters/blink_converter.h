@@ -36,6 +36,8 @@ struct Converter<blink::WebKeyboardEvent> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      blink::WebKeyboardEvent* out);
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const blink::WebKeyboardEvent& in);
 };
 
 template <>

@@ -4,9 +4,9 @@
 
 #include "shell/browser/ui/cocoa/window_buttons_view.h"
 
+#include "base/cxx17_backports.h"
 #include "base/i18n/rtl.h"
 #include "base/logging.h"
-#include "base/stl_util.h"
 #include "ui/gfx/mac/coordinate_conversion.h"
 
 namespace {
@@ -22,6 +22,21 @@ const NSWindowButton kButtonTypes[] = {
 }  // namespace
 
 @implementation WindowButtonsView
+
++ (gfx::Point)defaultMargin {
+  if (@available(macOS 11.0, *)) {
+    return gfx::Point(7, 6);
+  } else {
+    return gfx::Point(7, 3);
+  }
+}
+
++ (gfx::Point)hiddenInsetMargin {
+  // For macOS >= 11, while this value does not match offical macOS apps like
+  // Safari or Notes, it matches titleBarStyle's old implementation before
+  // Electron <= 12.
+  return gfx::Point(12, 11);
+}
 
 - (id)initWithMargin:(const absl::optional<gfx::Point>&)margin {
   self = [super initWithFrame:NSZeroRect];
@@ -51,7 +66,7 @@ const NSWindowButton kButtonTypes[] = {
 }
 
 - (void)setMargin:(const absl::optional<gfx::Point>&)margin {
-  margin_ = margin.value_or(gfx::Point(7, 3));
+  margin_ = margin.value_or([WindowButtonsView defaultMargin]);
 }
 
 - (void)setShowOnHover:(BOOL)yes {

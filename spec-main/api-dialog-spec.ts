@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import { dialog, BrowserWindow } from 'electron/main';
 import { closeAllWindows } from './window-helpers';
-import { ifit } from './spec-helpers';
+import { ifit, delay } from './spec-helpers';
 
 describe('dialog module', () => {
   describe('showOpenDialog', () => {
@@ -118,6 +118,62 @@ describe('dialog module', () => {
       expect(() => {
         dialog.showMessageBox({ checkboxLabel: false as any, message: '' });
       }).to.throw(/checkboxLabel must be a string/);
+    });
+  });
+
+  describe('showMessageBox with signal', () => {
+    afterEach(closeAllWindows);
+
+    it('closes message box immediately', async () => {
+      const controller = new AbortController();
+      const signal = controller.signal;
+      const w = new BrowserWindow();
+      const p = dialog.showMessageBox(w, { signal, message: 'i am message' });
+      controller.abort();
+      const result = await p;
+      expect(result.response).to.equal(0);
+    });
+
+    it('closes message box after a while', async () => {
+      const controller = new AbortController();
+      const signal = controller.signal;
+      const w = new BrowserWindow();
+      const p = dialog.showMessageBox(w, { signal, message: 'i am message' });
+      await delay(500);
+      controller.abort();
+      const result = await p;
+      expect(result.response).to.equal(0);
+    });
+
+    it('cancels message box', async () => {
+      const controller = new AbortController();
+      const signal = controller.signal;
+      const w = new BrowserWindow();
+      const p = dialog.showMessageBox(w, {
+        signal,
+        message: 'i am message',
+        buttons: ['OK', 'Cancel'],
+        cancelId: 1
+      });
+      controller.abort();
+      const result = await p;
+      expect(result.response).to.equal(1);
+    });
+
+    it('cancels message box after a while', async () => {
+      const controller = new AbortController();
+      const signal = controller.signal;
+      const w = new BrowserWindow();
+      const p = dialog.showMessageBox(w, {
+        signal,
+        message: 'i am message',
+        buttons: ['OK', 'Cancel'],
+        cancelId: 1
+      });
+      await delay(500);
+      controller.abort();
+      const result = await p;
+      expect(result.response).to.equal(1);
     });
   });
 

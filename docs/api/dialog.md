@@ -273,6 +273,11 @@ If `browserWindow` is not shown dialog will not be attached to it. In such case 
     will result in one button labeled "OK".
   * `defaultId` Integer (optional) - Index of the button in the buttons array which will
     be selected by default when the message box opens.
+  * `signal` AbortSignal (optional) - Pass an instance of [AbortSignal][] to
+    optionally close the message box, the message box will behave as if it was
+    cancelled by the user. On macOS, `signal` does not work with message boxes
+    that do not have a parent window, since those message boxes run
+    synchronously due to platform limitations.
   * `title` String (optional) - Title of the message box, some platforms will not show it.
   * `detail` String (optional) - Extra information of the message.
   * `checkboxLabel` String (optional) - If provided, the message box will
@@ -360,3 +365,5 @@ window is provided.
 
 You can call `BrowserWindow.getCurrentWindow().setSheetOffset(offset)` to change
 the offset from the window frame where sheets are attached.
+
+[AbortSignal]: https://nodejs.org/api/globals.html#globals_class_abortsignal

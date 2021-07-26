@@ -187,7 +187,8 @@ class Browser : public WindowListObserver {
 
   // Resumes an activity via hand-off.
   bool ContinueUserActivity(const std::string& type,
-                            base::DictionaryValue user_info);
+                            base::DictionaryValue user_info,
+                            base::DictionaryValue details);
 
   // Indicates that an activity was continued on another device.
   void UserActivityWasContinued(const std::string& type,

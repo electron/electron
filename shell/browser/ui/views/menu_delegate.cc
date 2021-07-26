@@ -74,8 +74,12 @@ std::u16string MenuDelegate::GetLabel(int id) const {
   return adapter_->GetLabel(id);
 }
 
-void MenuDelegate::GetLabelStyle(int id, LabelStyle* style) const {
-  return adapter_->GetLabelStyle(id, style);
+const gfx::FontList* MenuDelegate::GetLabelFontList(int id) const {
+  return adapter_->GetLabelFontList(id);
+}
+
+absl::optional<SkColor> MenuDelegate::GetLabelColor(int id) const {
+  return adapter_->GetLabelColor(id);
 }
 
 bool MenuDelegate::IsCommandEnabled(int id) const {

@@ -277,10 +277,11 @@ void Browser::DidFailToContinueUserActivity(const std::string& type,
 }
 
 bool Browser::ContinueUserActivity(const std::string& type,
-                                   base::DictionaryValue user_info) {
+                                   base::DictionaryValue user_info,
+                                   base::DictionaryValue details) {
   bool prevent_default = false;
   for (BrowserObserver& observer : observers_)
-    observer.OnContinueUserActivity(&prevent_default, type, user_info);
+    observer.OnContinueUserActivity(&prevent_default, type, user_info, details);
   return prevent_default;
 }
 
@@ -500,7 +501,7 @@ void Browser::ShowAboutPanel() {
 void Browser::SetAboutPanelOptions(base::DictionaryValue options) {
   about_panel_options_.Clear();
 
-  for (const auto& pair : options.DictItems()) {
+  for (const auto pair : options.DictItems()) {
     std::string key = std::string(pair.first);
     if (!key.empty() && pair.second.is_string()) {
       key[0] = base::ToUpperASCII(key[0]);
