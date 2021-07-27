@@ -1,14 +1,11 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: drh <>
 Date: Wed, 19 May 2021 21:55:56 +0000
-Subject: =?UTF-8?q?When=20constructing=20the=20synthensized=20SELECT=20sta?=
- =?UTF-8?q?tement=20that=20is=20used=20to=20choose=0Athe=20rows=20in=20an?=
- =?UTF-8?q?=20UPDATE=20FROM,=20make=20sure=20the=20first=20table=20is=20re?=
- =?UTF-8?q?ally=20the=20table=0Abeing=20updated,=20and=20not=20some=20comm?=
- =?UTF-8?q?on-table=20expression=20that=20happens=20to=20have=20the=0Asame?=
- =?UTF-8?q?=20name.=20=20[forum:/forumpost/a274248080|forum=20post=20a2742?=
- =?UTF-8?q?48080].=20=20More=0Achanges=20associated=20with=20CTE=20name=20?=
- =?UTF-8?q?resolution=20are=20pending.?=
+Subject: When constructing the synthensized SELECT statement that is used to
+ choose the rows in an UPDATE FROM, make sure the first table is really the
+ table being updated, and not some common-table expression that happens to
+ have the same name. [forum:/forumpost/a274248080|forum post a274248080]. More
+ changes associated with CTE name resolution are pending.
 
 FossilOrigin-Name: 0f0959c6f95046e8e7887716e0a7de95da18d1e926ab1f919527083a56541db5
 (cherry picked from commit 1168f810929ede4d8d323a6acf721ff9cd89de90)
