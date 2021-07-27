@@ -478,7 +478,310 @@ document.getElementById('clear-error').onclick =
   }
 ```
 
-###
+## Adding Authentication
+
+Thus far, the code so far is fully functional and should run without issue. This section will demonstrate how to expand the existing services to support an authentication flow. The authentication flow shared in this example is trivial and for demonstration purposes only. The logic for the service will need to be adapted for your authentication provider of choice.
+
+### Implementing the `AUTHENTICATED` state
+
+The first change is in `constants.js` file. Add an `AUTHENTICATING` and `AUTHENTICATED` state, and a `TOGGLE_AUTH` event to the relative constant string maps:
+
+```diff
+const CM_EVENTS = {
+  TOGGLE_PING: 'toggle ping',
+  CONNECT: 'connect',
+  DISCONNECT: 'disconnect',
++ TOGGLE_AUTH: 'toggle auth'
+};
+
+const CM_STATES = {
+  CONNECTED: 'connected',
+  DISCONNECTED: 'disconnected',
++ AUTHENTICATING: 'authenticating',
++ AUTHENTICATED: 'authenticated'
+};
+```
+
+Next, update the `connectionMonitor.js` file to support the new states and events.
+
+```diff
+const { BrowserWindow } = require('electron');
+-const { createMachine, send } = require('xstate');
++const { createMachine, send, assign } = require('xstate');
+const {
+  CM_STATES: STATES,
+  CM_EVENTS: EVENTS,
+  PING_EVENTS,
+  PING_SERVICE_ID,
++ CM_IPC_CHANNEL,
++ CM_ACTION_TYPES,
+} = require('./constants.js');
+const { createPingMachine } = require('./ping.js');
+
++function authOperationService () {
++  return new Promise((resolve, reject) => {
++    setTimeout(() => {
++      const r = Math.random();
++      if (r < 0.5) {
++        resolve({
++          id: 'xyz57',
++          username: 'Clippy'
++        });
++      } else {
++        reject(new Error('Auth flow failed'));
++      }
++    }, 3000).unref();
++  });
++}
+
+function createConnectionMonitorMachine (options) {
+  if (typeof options.url !== 'string') {
+    throw new TypeError('options.url must be a string');
+  }
+  if (!options.window) {
+    throw new TypeError('options.window must exist');
+  }
+
+  const pingMachine = createPingMachine({
+    interval: options.interval || 5000,
+    url: options.url,
+    window: options.window
+  });
+
+  return createMachine({
+    id: 'connectionMonitor',
+    initial: STATES.DISCONNECTED,
++   context: { user: undefined },
+    invoke: { id: PING_SERVICE_ID, src: pingMachine },
+    states: {
+      [STATES.DISCONNECTED]: {
+        on: {
+          [EVENTS.TOGGLE_PING]: {
+            actions: send(
+              { type: PING_EVENTS.TOGGLE },
+              { to: PING_SERVICE_ID }
+            )
+          },
+          [EVENTS.CONNECT]: {
+            target: STATES.CONNECTED
+          }
+        }
+      },
+      [STATES.CONNECTED]: {
+        on: {
+          [EVENTS.TOGGLE_PING]: {
+            actions: send(
+              { type: PING_EVENTS.TOGGLE },
+              { to: PING_SERVICE_ID }
+            )
+          },
+          [EVENTS.DISCONNECT]: {
+            target: STATES.DISCONNECTED
+          },
++         [EVENTS.TOGGLE_AUTH]: {
++           target: STATES.AUTHENTICATING
++         }
+        }
+      },
++     [STATES.AUTHENTICATING]: {
++       invoke: {
++         id: 'authOperationService',
++         src: () => authOperationService(),
++         onDone: {
++           target: STATES.AUTHENTICATED,
++           actions: assign({ user: (_, event) => event.data })
++         },
++         onError: {
++           target: STATES.CONNECTED,
++           actions: (_, event) => {
++             options.window.webContents.send(CM_IPC_CHANNEL, {
++               type: CM_ACTION_TYPES.RENDERER.ERROR,
++               payload: {
++                 error: event.data
++               }
++             });
++           }
++         }
++       }
++     },
++     [STATES.AUTHENTICATED]: {
++       on: {
++         [EVENTS.TOGGLE_PING]: {
++           actions: send(
++             { type: PING_EVENTS.TOGGLE },
++             { to: PING_SERVICE_ID }
++           )
++         },
++         [EVENTS.TOGGLE_AUTH]: {
++           target: STATES.CONNECTED
++         },
++         [EVENTS.DISCONNECT]: {
++           target: STATES.DISCONNECTED
++         }
++       }
++     }
+    }
+  });
+}
+
+module.exports = {
+  createConnectionMonitorMachine
+};
+```
+
+These changes make the connection monitor machine look a lot like the ping machine. The `AUTHENTICATING` state invokes the `authOperationService` method. This method returns a promise that resolves for a successful authentication and rejects otherwise. This trivial example simulates a couple second delay with `setTimeout`, and relies on a random value from `Math.random` to determine authentication success. This enables the application to demonstrate both possible authentication flow outcomes. If the flow succeeds, the connection monitor transitions to the `AUTHENTICATED` state and sets the returned `user` to the service `context`. If the flow fails, the connection monitor transitions back to the `CONNECTED` state and sends the error to the renderer process using the same method the ping service does to communicate errors. From the `AUTHENTICATED` state, the connecion monitor can toggle the ping service, disconnect, and toggle the authentication. The following state machine diagram shows the new complete flow of the connection monitor machine.
+
+![A state diagram of the Connection Monitor machine with authentication described in this section](../images/connection-monitor-with-auth-machine-diagram.png)
+
+Now that the connection monitor machine is storing the `user` context, it needs to be included with the `state` when the service communicates with the renderer process. In `main.js`, update the `onConnectionMonitorServiceTransition` and `connectionMonitorMainProcessReducer` methods:
+
+```diff
+// ...
+
+function onConnectionMonitorServiceTransition (state) {
+  mainWindow.webContents.send(CM_IPC_CHANNEL, {
+    type: CM_ACTION_TYPES.RENDERER.TRANSITION,
+    payload: {
+-     connectionMonitor: { value: state.value }
++     connectionMonitor: { value: state.value, context: state.context }
+    }
+  });
+}
+
+// ...
+
+function connectionMonitorMainProcessReducer (_, action) {
+  switch (action.type) {
+    case CM_ACTION_TYPES.MAIN.REQUEST_STATE: {
+      return {
+        connectionMonitor: {
+-         value: connectionMonitorService.state.value
++         value: connectionMonitorService.state.value,
++         context: conectionMonitorService.state.context
+        },
+        ping: {
+          value: pingService.state.value
+        }
+      };
+    }
+    case CM_ACTION_TYPES.MAIN.TRIGGER_EVENT: {
+      connectionMonitorService.send(action.payload);
+      break;
+    }
+    default: {
+      console.log(`Unrecognized action type: ${action.type}`);
+      break;
+    }
+  }
+}
+
+// ...
+```
+
+With the main process set up to forward along the connection monitor context, the next change is in `preload.js`. Add a new method to the `mainAPI` called `toggleAuth`. This method should mimic the `togglePing` method but use the `TOGGLE_AUTH` event instead.
+
+```diff
+{
+  // ...
++ toggleAuth: () =>
++   ipcRenderer.invoke(CM_IPC_CHANNEL, {
++     type: CM_ACTION_TYPES.MAIN.TRIGGER_EVENT,
++     payload: CM_EVENTS.TOGGLE_AUTH
++   })
+}
+```
+
+The last remaining changes are for the renderer process. Add two elements to `index.html`. A `button` for toggling the authentication operation, and a `div` for displaying the `user` details.
+
+```diff
+<body>
+  <h1>connection monitor with xstate</h1>
+  <p class="error" id="error" hidden>
+    <button id="clear-error">+</button><span id="error-message"></span>
+  </p>
+  <button id="toggle-ping">Toggle Ping</button>
++ <button id="toggle-auth">Toggle Auth</button>
+  <p>Pinging Status: <span id="ping-status"></span></p>
+  <p>Connection Status: <span id="connection-status"></span></p>
++ <div id="user-details-container" hidden>
++   <h4>User Details</h4>
++   <pre id="user-details"></pre>
++ </div>
+
+  <!-- You can also require other files to run in this process -->
+  <script src="./renderer.js"></script>
+</body>
+```
+
+Finally, update the `renderer.js` file. There a couple of changes to make here.
+
+First, add an `onclick` handler for the auth button that calls the `mainAPI.toggleAuth` method:
+
+```diff
++ document.getElementById('toggle-auth').onclick =
++   function onAuthButtonClick () {
++     window.mainAPI.toggleAuth();
++   };
+```
+
+Then, inside the `updateConnectionMonitorElements` method, add a switch statement that handles different element rendering based on the various connection monitor service states.
+
+```diff
+-function updateConnectionMonitorElements ({ value }) {
++function updateConnectionMonitorElements ({ value, context }) {
++ const { CM_STATES } = window.mainAPI.constants;
+
+  const connectionStatus = document.getElementById('connection-status');
++ const authButton = document.getElementById('toggle-auth');
++ const userDetailsContainer = document.getElementById(
++   'user-details-container'
++ );
++ const userDetails = document.getElementById('user-details');
+
+  connectionStatus.innerHTML = value;
++ switch (value) {
++   case CM_STATES.DISCONNECTED: {
++     authButton.disabled = true;
++     authButton.innerHTML = 'Log In';
++     userDetailsContainer.hidden = true;
++     break;
++   }
++   case CM_STATES.CONNECTED: {
++     authButton.disabled = false;
++     authButton.innerHTML = 'Log In';
++     userDetailsContainer.hidden = true;
++     break;
++   }
++   case CM_STATES.AUTHENTICATING: {
++     authButton.disabled = true;
++     authButton.innerHTML = 'Authenticating...';
++     userDetailsContainer.hidden = true;
++     break;
++   }
++   case CM_STATES.AUTHENTICATED: {
++     authButton.disabled = false;
++     authButton.innerHTML = 'Log Out';
++     userDetailsContainer.hidden = false;
++     userDetails.innerHTML = JSON.stringify(
++       {
++         id: context.user.id,
++         username: context.user.username
++       },
++       0,
++       2
++     );
++     break;
++   }
++   default: {
++     console.error(`Unrecognized state ${value}`);
++   }
++ }
+}
+```
+
+As stated previously, you could replace this rendering logic with any frontend framework. It becomes increasingly complex to handle all the various element states in this manner, but it is suitable for this example.
+
+Now with all of these changes together the application should display a new button next to `toggle ping`. When the application is in the `connected` state, the button will be enabled, and when clicked it will trigger the authentication flow changing the state to `authenticating`. If it succeeds the `user` details will be displayed and the state will change to `authenticated`; otherwise, an error will display and the state will change back to `connected`.
 
 ## Conclusion
 

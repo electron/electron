@@ -1,0 +1,15 @@
+{
+  "name": "connection-monitor-example",
+  "version": "0.0.1",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "electron": "^13.1.7",
+    "xstate": "^4.23.0"
+  }
+}

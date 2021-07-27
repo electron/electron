@@ -1,0 +1,16 @@
+body {
+  font-family: sans-serif;
+}
+
+.error {
+  color: red;
+}
+
+.error > button {
+  display: inline-block;
+  transform: rotate(45deg);
+  border: none;
+  background: none;
+  color: inherit;
+  font-size: inherit;
+}
