@@ -133,7 +133,7 @@ are likely using [`electron-packager`], which includes [`electron-osx-sign`] and
 
 If you're using Packager's API, you can pass [in configuration that both signs
 and notarizes your
-application](https://electron.github.io/electron-packager/master/interfaces/electronpackager.options.html).
+application](https://electron.github.io/electron-packager/main/interfaces/electronpackager.options.html).
 
 ```js
 const packager = require('electron-packager')
