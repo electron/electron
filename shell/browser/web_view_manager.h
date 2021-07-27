@@ -20,7 +20,6 @@ class WebViewManager : public content::BrowserPluginGuestManager {
                 content::WebContents* embedder,
                 content::WebContents* web_contents);
   void RemoveGuest(int guest_instance_id);
-  content::WebContents* GetEmbedder(content::WebContents* web_contents);
 
   static WebViewManager* GetWebViewManager(content::WebContents* web_contents);
 

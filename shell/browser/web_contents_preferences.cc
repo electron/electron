@@ -19,8 +19,8 @@
 #include "content/public/common/content_switches.h"
 #include "net/base/filename_util.h"
 #include "sandbox/policy/switches.h"
+#include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/native_window.h"
-#include "shell/browser/web_view_manager.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/options_switches.h"
@@ -103,15 +103,12 @@ WebContentsPreferences::WebContentsPreferences(
 
   // If this is a <webview> tag, and the embedder is offscreen-rendered, then
   // this WebContents is also offscreen-rendered.
-  if (is_webview_) {
-    auto* manager = WebViewManager::GetWebViewManager(web_contents);
-    if (manager) {
-      auto* embedder = manager->GetEmbedder(web_contents);
-      if (embedder) {
-        auto* embedder_preferences = WebContentsPreferences::From(embedder);
-        if (embedder_preferences && embedder_preferences->IsOffscreen()) {
-          offscreen_ = true;
-        }
+  if (auto* api_web_contents = api::WebContents::From(web_contents_)) {
+    if (electron::api::WebContents* embedder = api_web_contents->embedder()) {
+      auto* embedder_preferences =
+          WebContentsPreferences::From(embedder->web_contents());
+      if (embedder_preferences && embedder_preferences->IsOffscreen()) {
+        offscreen_ = true;
       }
     }
   }
@@ -466,21 +463,16 @@ void WebContentsPreferences::OverrideWebkitPrefs(
   prefs->is_webview = is_webview_;
 
   prefs->hidden_page = false;
-  if (is_webview_) {
-    // Webview `document.visibilityState` tracks window visibility so we need
-    // to let it know if the window happens to be hidden right now.
-    auto* manager = WebViewManager::GetWebViewManager(web_contents_);
-    if (manager) {
-      auto* embedder = manager->GetEmbedder(web_contents_);
-      if (embedder) {
-        auto* relay = NativeWindowRelay::FromWebContents(embedder);
-        if (relay) {
-          auto* window = relay->GetNativeWindow();
-          if (window) {
-            const bool visible = window->IsVisible() && !window->IsMinimized();
-            if (!visible) {
-              prefs->hidden_page = true;
-            }
+  // Webview `document.visibilityState` tracks window visibility so we need
+  // to let it know if the window happens to be hidden right now.
+  if (auto* api_web_contents = api::WebContents::From(web_contents_)) {
+    if (electron::api::WebContents* embedder = api_web_contents->embedder()) {
+      if (auto* relay =
+              NativeWindowRelay::FromWebContents(embedder->web_contents())) {
+        if (auto* window = relay->GetNativeWindow()) {
+          const bool visible = window->IsVisible() && !window->IsMinimized();
+          if (!visible) {
+            prefs->hidden_page = true;
           }
         }
       }
