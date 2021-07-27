@@ -9,13 +9,13 @@ connect to a given resource. This example builds a connection monitoring
 service that pings a given resource over a given interval. Depending on the
 result of that request, the service changes its state from **CONNECTED** to
 **DISCONNECTED** and shares this information with the rest of application.
-Additionally, the example includes an secondary guide for adding an
-authentication flow using [@azure/msal-node](https://www.npmjs.com/package/@azure/msal-node).
+Additionally, the example includes an secondary guide for adding a trivial
+authentication flow.
 
 This example was built with the intent to be a starting point for other
 projects. You'll most likely have to change things to suit your own needs.
 Certain parts of the example were designed for this exact reason. For example,
-the `pingOperationService` and the additional `authenticationOperationService`
+the `pingOperationService` and the additional `authOperationService`
 functions are generalized in a way where you may only need to modify the
 internal logic of the function and the state machine can remain the same (more
 details later).
@@ -183,7 +183,6 @@ module to make a `HEAD` request to the given `url` endpoint to determine
 connection status.
 
 ![A state diagram of the ping machine as detailed by this section](../images/connection-monitor-ping-machine-diagram.png)
-<!-- https://mermaid-js.github.io/mermaid-live-editor/edit##eyJjb2RlIjoic3RhdGVEaWFncmFtLXYyXG4gICAgWypdIC0tPiBJZGxlXG4gICAgSWRsZSAtLT4gUGluZ2luZyA6IHRvZ2dsZVxuICAgIFBpbmdpbmcgLS0-IFRpbWVvdXQgOiBvbkRvbmUvb25FcnJvclxuICAgIFBpbmdpbmcgLS0-IElkbGUgOiB0b2dnbGVcbiAgICBUaW1lb3V0IC0tPiBQaW5naW5nIDogaW50ZXJ2YWxcbiAgICBUaW1lb3V0IC0tPiBJZGxlIDogdG9nZ2xlXG4gICAgICAgICAgICAiLCJtZXJtYWlkIjoie1xuICBcInRoZW1lXCI6IFwiZGVmYXVsdFwiXG59IiwidXBkYXRlRWRpdG9yIjp0cnVlLCJhdXRvU3luYyI6dHJ1ZSwidXBkYXRlRGlhZ3JhbSI6ZmFsc2V9 -->
 
 Starting in the `IDLE` state, the machine waits for a `TOGGLE` event before
 transitioning to the `PINGING` state. At any time, the `TOGGLE` event will
@@ -205,7 +204,13 @@ before transitioning back to the `PINGING` state restarting the cycle.
 
 ### Connection Monitor Machine
 
-The connection monitor machine is defined in `base/connectionMonitor.js`. Similar to the ping machine, it is instantiated using the `createConnectionMonitorMachine` function and can be interpreted as a service using the XState `interpret` method. The `options` object for this method expects the same arguments as the `options` object for the ping machine since all of the properties are forwarded along. The machine initially instantiates a ping machine instance:
+The connection monitor machine is defined in `base/connectionMonitor.js`.
+Similar to the ping machine, it is instantiated using the
+`createConnectionMonitorMachine` function and can be interpreted as a service
+using the XState `interpret` method. The `options` object for this method
+expects the same arguments as the `options` object for the ping machine since
+all of the properties are forwarded along. The machine initially instantiates a
+ping machine instance:
 
 ```js
 const pingMachine = createPingMachine({
@@ -215,20 +220,52 @@ const pingMachine = createPingMachine({
 })
 ```
 
-This machine is immediately invoked by the connection monitor machine and is assigned the `PING_SERVICE_ID` constant so that it can be referenced later in the application. The rest of the connection monitor machine defines the various states and events using `CM_STATES` and `CM_EVENTS` constants.
+This machine is immediately invoked by the connection monitor machine and is
+assigned the `PING_SERVICE_ID` constant so that it can be referenced later in
+the application. The rest of the connection monitor machine defines the various
+states and events using `CM_STATES` and `CM_EVENTS` constants.
 
 ![A state diagram of the Connection Monitor machine described in this section](../images/connection-monitor-machine-diagram.png)
-<!--https://mermaid-js.github.io/mermaid-live-editor/edit/#eyJjb2RlIjoic3RhdGVEaWFncmFtLXYyXG4gICAgc3RhdGUgQ29ubmVjdGlvbk1vbml0b3Ige1xuICAgICAgICBbKl0gLS0-IERpc2Nvbm5lY3RlZFxuICAgICAgICBEaXNjb25uZWN0ZWQgLS0-IENvbm5lY3RlZCA6IGNvbm5lY3RcbiAgICAgICAgQ29ubmVjdGVkIC0tPiBEaXNjb25uZWN0ZWQgOiBkaXNjb25uZWN0XG4gICAgfVxuXG4gICAgc3RhdGUgUGluZyB7XG4gICAgICAgIFsqXSAtLT4gSWRsZVxuICAgICAgICBJZGxlIC0tPiBQaW5naW5nIDogdG9nZ2xlXG4gICAgICAgIFBpbmdpbmcgLS0-IFRpbWVvdXQgOiBvbkRvbmUvb25FcnJvclxuICAgICAgICBQaW5naW5nIC0tPiBJZGxlIDogdG9nZ2xlXG4gICAgICAgIFRpbWVvdXQgLS0-IFBpbmdpbmcgOiBpbnRlcnZhbFxuICAgICAgICBUaW1lb3V0IC0tPiBJZGxlIDogdG9nZ2xlXG4gICAgfVxuXG4gICAgQ29ubmVjdGlvbk1vbml0b3IgLS0-IFBpbmcgOiB0b2dnbGVfcGluZ1xuICAgIFBpbmcgLS0-IENvbm5lY3Rpb25Nb25pdG9yIDogY29ubmVjdFxuICAgIFBpbmcgLS0-IENvbm5lY3Rpb25Nb25pdG9yIDogZGlzY29ubmVjdFxuIiwibWVybWFpZCI6IntcbiAgXCJ0aGVtZVwiOiBcImRlZmF1bHRcIlxufSIsInVwZGF0ZUVkaXRvciI6dHJ1ZSwiYXV0b1N5bmMiOnRydWUsInVwZGF0ZURpYWdyYW0iOnRydWV9-->
 
-The connection monitor machine starts in the `DISCONNECTED` state and invokes the ping machine as a service making it enter the `IDLE` state. When the `TOGGLE_PING` event is triggered, the connection monitor sends a `TOGGLE` event to the ping service. When the ping service successfully _connects_ to the `url`, it will send a `CONNECT` event back to the connection monitor. The connection monitor then enters the `CONNECTED` state and the ping service continues to make requests. At any time, the connection monitor can send a `TOGGLE_PING` event to the ping service turning it off or on. The connection monitor will **not** change state when this happens. Finally, if the ping service ever fails to connect to the `url`, it will send a `DISCONNECT` event to the connection monitor. And if the connection monitor is in the `CONNECTED` state it will transition to the `DISCONNECTED` state.
+The connection monitor machine starts in the `DISCONNECTED` state and invokes
+the ping machine as a service making it enter the `IDLE` state. When the
+`TOGGLE_PING` event is triggered, the connection monitor sends a `TOGGLE` event
+to the ping service. When the ping service successfully _connects_ to the `url`
+, it will send a `CONNECT` event back to the connection monitor. The connection
+monitor then enters the `CONNECTED` state and the ping service continues to
+make requests. At any time, the connection monitor can send a `TOGGLE_PING`
+event to the ping service turning it off or on. The connection monitor will
+**not** change state when this happens. Finally, if the ping service ever fails
+to connect to the `url`, it will send a `DISCONNECT` event to the connection
+monitor. And if the connection monitor is in the `CONNECTED` state it will
+transition to the `DISCONNECTED` state.
 
-Since the connection monitor will only change state from `CONNECTED` to `DISCONNECTED` using the `DISCONNECT` event (and vice-versa with the `CONNECT` event), the ping service can _connect_ or _disconnect_ as much as it would like, but the connection monitor will not emit a state change. This composition enables a better application design since the remainder of the application only has to listen to the state change of the connection monitor service and respond to those events when they occur.
+Since the connection monitor will only change state from `CONNECTED` to
+`DISCONNECTED` using the `DISCONNECT` event (and vice-versa with the `CONNECT`
+event), the ping service can _connect_ or _disconnect_ as much as it would
+like, but the connection monitor will not emit a state change. This composition
+enables a better application design since the remainder of the application only
+has to listen to the state change of the connection monitor service and respond
+to those events when they occur.
 
 ### Context Bridge `mainAPI`
 
-As mentioned previously, this example utilizes an IPC based secure context isolation to facilitate communication between the main and renderer processes. While the connection monitor runs entirely on the main process, all of its state transitions are broadcasted to the renderer process. Additionally, the api enables the renderer process to initiate certain events for the connection monitor service such as toggling the ping service. The api follows an action/reducer like pattern where all of the methods invoke or send an object with a `type` and a `payload` that is then handeled by the respective process using a reducer function (that generally switches over the various `type` values to decide what to do). The `CM_ACTION_TYPES` constant defines the set of available action types for both process. The entries are sub-mapped by their respective processes. For example, the `MAIN.REQUEST_STATE` action type would be invoked by the renderer process and handeled by the main process.
+As mentioned previously, this example utilizes an IPC based secure context
+isolation to facilitate communication between the main and renderer processes.
+While the connection monitor runs entirely on the main process, all of its
+state transitions are broadcasted to the renderer process. Additionally, the
+api enables the renderer process to initiate certain events for the connection
+monitor service such as toggling the ping service. The api follows an
+action/reducer like pattern where all of the methods invoke or send an object
+with a `type` and a `payload` that is then handeled by the respective process
+using a reducer function (that generally switches over the various `type`
+values to decide what to do). The `CM_ACTION_TYPES` constant defines the set of
+available action types for both process. The entries are sub-mapped by their
+respective processes. For example, the `MAIN.REQUEST_STATE` action type would
+be invoked by the renderer process and handeled by the main process.
 
-Akin to many Electron v12+ examples, the main browser window defined in `main.js` has a `webPreferences.preload` script aptly named `preload.js`. 
+Akin to many Electron v12+ examples, the main browser window defined in
+`main.js` has a `webPreferences.preload` script aptly named `preload.js`.
 
 ```js
 contextBridge.exposeInMainWorld('mainAPI', {
@@ -236,11 +273,14 @@ contextBridge.exposeInMainWorld('mainAPI', {
 })
 ```
 
-This script adds the `mainAPI` to the `window` object on the renderer process and exposes a handful of useful methods. These methods make use of the `MAIN` set of action types.
+This script adds the `mainAPI` to the `window` object on the renderer process
+and exposes a handful of useful methods. These methods make use of the `MAIN`
+set of action types.
 
 #### `mainAPI.requestState`
 
-The `requestState` method gets the current state of the connection monitor service.
+The `requestState` method gets the current state of the connection monitor
+service.
 
 ```js
 {
@@ -253,7 +293,10 @@ The `requestState` method gets the current state of the connection monitor servi
 }
 ```
 
-It is useful for when the app first starts and the renderer process needs to know what the current state of the main process is. It invokes the `MAIN.REQUEST_STATE` action and can expect to recieve the current state of both the connection monitor and ping services in the form of:
+It is useful for when the app first starts and the renderer process needs to
+know what the current state of the main process is. It invokes the
+`MAIN.REQUEST_STATE` action and can expect to recieve the current state of both
+the connection monitor and ping services in the form of:
 
 ```ts
 {
@@ -264,7 +307,7 @@ It is useful for when the app first starts and the renderer process needs to kno
 
 #### `mainAPI.togglePing`
 
-The `togglePing` method toggles the ping operation. 
+The `togglePing` method toggles the ping operation.
 
 ```js
 {
@@ -278,11 +321,16 @@ The `togglePing` method toggles the ping operation.
 }
 ```
 
-The underlying ping service is either on or off; this method switches between the two states by having the connection monitor send a `TOGGLE_PING` event to ping service. Remember that this will have no affect on the current state of the connection monitor. This method invokes the `MAIN.TRIGGER_EVENT` action with a payload of `CM_EVENTS.TOGGLE_PING`.
+The underlying ping service is either on or off; this method switches between
+the two states by having the connection monitor send a `TOGGLE_PING` event to
+ping service. Remember that this will have no affect on the current state of
+the connection monitor. This method invokes the `MAIN.TRIGGER_EVENT` action
+with a payload of `CM_EVENTS.TOGGLE_PING`.
 
 #### `mainAPI.addConnectionMonitorListener`
 
-The `addConnectionMonitorListener` method is used to establish a main process to renderer process communication pathway.
+The `addConnectionMonitorListener` method is used to establish a main process
+to renderer process communication pathway.
 
 ```js
 {
@@ -297,11 +345,18 @@ The `addConnectionMonitorListener` method is used to establish a main process to
 }
 ```
 
-The listener function passed to this method can expect actions with a similar `type` and `payload` to be passed as the second argument. The action types for this method will use the `RENDERER` constants from the action type constant previously mentioned. The renderer process has access to these constant values through the `mainAPI.constants` object defined next.
+The listener function passed to this method can expect actions with a similar
+`type` and `payload` to be passed as the second argument. The action types for
+this method will use the `RENDERER` constants from the action type constant
+previously mentioned. The renderer process has access to these constant values
+through the `mainAPI.constants` object defined next.
 
 #### `mainAPI.constants`
 
-The `constants` property contains three constant string maps useful for the renderer process, `CM_STATES`, `PING_STATES`, and `CM_ACTION_TYPES`. In a more robust application these would most likely be bundled directly with the renderer process code, but for this example they are shared via the `mainAPI`.
+The `constants` property contains three constant string maps useful for the
+renderer process, `CM_STATES`, `PING_STATES`, and `CM_ACTION_TYPES`. In a more
+robust application these would most likely be bundled directly with the
+renderer process code, but for this example they are shared via the `mainAPI`.
 
 ```js
 {
@@ -316,7 +371,9 @@ The `constants` property contains three constant string maps useful for the rend
 
 ### Main Process
 
-The main process portion of this example is comprised entirely within the `createWindow()` method defined in `main.js`. It begins by instantiating a connection monitor machine using the `createConnectionMonitorMachine` method.
+The main process portion of this example is comprised entirely within the
+`createWindow()` method defined in `main.js`. It begins by instantiating a
+connection monitor machine using the `createConnectionMonitorMachine` method.
 
 ```js
 const connectionMonitorMachine = createConnectionMonitorMachine({
@@ -325,13 +382,17 @@ const connectionMonitorMachine = createConnectionMonitorMachine({
 })
 ```
 
-Once instantiated, the machine is interpreted as a service using the provided `interpret` method from XState.
+Once instantiated, the machine is interpreted as a service using the provided
+`interpret` method from XState.
 
 ```js
 const connectionMonitorService = interpret(connectionMonitorMachine)
 ```
 
-An `onTransition` handler is added and then the service is started, kicking off the connection monitor initial steps of spawning a ping service and moving into the **DISCONNECTED** state. This listener utilizes the `RENDERER.TRANSITION` action type to share the connection monitor's state as it changes.
+An `onTransition` handler is added and then the service is started, kicking off
+the connection monitor initial steps of spawning a ping service and moving into
+the **DISCONNECTED** state. This listener utilizes the `RENDERER.TRANSITION`
+action type to share the connection monitor's state as it changes.
 
 ```js
 function onConnectionMonitorServiceTransition (state) {
@@ -348,7 +409,8 @@ connectionMonitorService.onTransition(onConnectionMonitorServiceTransition)
 connectionMonitorService.start()
 ```
 
-Once spawned, the ping service is referenced using the constant `PING_SERVICE_ID` string and a similar `onTransition` handler is established.
+Once spawned, the ping service is referenced using the constant
+`PING_SERVICE_ID` string and a similar `onTransition` handler is established.
 
 ```js
 const pingService = connectionMonitorService.children.get(PING_SERVICE_ID)
@@ -369,7 +431,8 @@ function onPingServiceTransition (state) {
 pingService.onTransition(onPingServiceTransition)
 ```
 
-Finally, a main process reducer is defined and hooked up to the constant `CM_IPC_CHANNEL` handler
+Finally, a main process reducer is defined and hooked up to the constant
+`CM_IPC_CHANNEL` handler
 
 ```js
 function connectionMonitorMainProcessReducer (_, action) {
@@ -403,9 +466,20 @@ ipcMain.handle(
 
 ### Renderer Process
 
-The final part of this example is the renderer process. As mentioned previously, it uses HTML, CSS, and ES2020 JavaScript and could be replaced by any frontend framework. The `mainAPI` defined in `preload.js` is available on the global `window` object and used to interact with the main process. The file has a collection of code blocks responsible for updating the UI in response to changes from the main process. The rendering is mainly controlled by two parts.
+The final part of this example is the renderer process. As mentioned previously
+, it uses HTML, CSS, and ES2020 JavaScript and could be replaced by any
+frontend framework. The `mainAPI` defined in `preload.js` is available on the
+global `window` object and used to interact with the main process. The file has
+a collection of code blocks responsible for updating the UI in response to
+changes from the main process. The rendering is mainly controlled by two parts.
 
-First, the listener that utilizes the `mainAPI.addConnectionMonitorListener` method to sync with the main process. As defined in the [Context Bridge `mainAPI`](#context-bridge-mainapi) section, this method expects action objects and uses a `switch` statement to handle the different types. The `ERROR` type is used to send connection monitor error messages with the UI, and the `TRANSITION` type is used to initiate a page update when the state of either main process services change.
+First, the listener that utilizes the `mainAPI.addConnectionMonitorListener`
+method to sync with the main process. As defined in the
+[Context Bridge `mainAPI`](#context-bridge-mainapi) section, this method
+expects action objects and uses a `switch` statement to handle the different
+types. The `ERROR` type is used to send connection monitor error messages with
+the UI, and the `TRANSITION` type is used to initiate a page update when the
+state of either main process services change.
 
 ```js
 function connectionMonitorListener (_, action) {
@@ -427,7 +501,12 @@ function connectionMonitorListener (_, action) {
 window.mainAPI.addConnectionMonitorListener(connectionMonitorListener)
 ```
 
-Second, a `window.onload` method is defined to request the initial state of the main process services so the UI can render respectively. This function is important because the services may start executing before the page finishes loading. Additionally, this kind of method is helpful for fetching the initial state when only the renderer process is reloaded and the main process remains the same.
+Second, a `window.onload` method is defined to request the initial state of the
+main process services so the UI can render respectively. This function is
+important because the services may start executing before the page finishes
+loading. Additionally, this kind of method is helpful for fetching the initial
+state when only the renderer process is reloaded and the main process remains
+the same.
 
 ```js
 window.onload = () => {
@@ -437,7 +516,8 @@ window.onload = () => {
 }
 ```
 
-Finally, at the end of the renderer process code, a series of DOM-related methods are defined for modifying the UI based on the service updates.
+Finally, at the end of the renderer process code, a series of DOM-related
+methods are defined for modifying the UI based on the service updates.
 
 ```js
 function updatePage (states) {
@@ -480,11 +560,17 @@ document.getElementById('clear-error').onclick =
 
 ## Adding Authentication
 
-Thus far, the code so far is fully functional and should run without issue. This section will demonstrate how to expand the existing services to support an authentication flow. The authentication flow shared in this example is trivial and for demonstration purposes only. The logic for the service will need to be adapted for your authentication provider of choice.
+Thus far, the code so far is fully functional and should run without issue.
+This section will demonstrate how to expand the existing services to support an
+authentication flow. The authentication flow shared in this example is trivial
+and for demonstration purposes only. The logic for the service will need to be
+adapted for your authentication provider of choice.
 
 ### Implementing the `AUTHENTICATED` state
 
-The first change is in `constants.js` file. Add an `AUTHENTICATING` and `AUTHENTICATED` state, and a `TOGGLE_AUTH` event to the relative constant string maps:
+The first change is in `constants.js` file. Add an `AUTHENTICATING` and
+`AUTHENTICATED` state, and a `TOGGLE_AUTH` event to the relative constant
+string maps:
 
 ```diff
 const CM_EVENTS = {
@@ -502,7 +588,8 @@ const CM_STATES = {
 };
 ```
 
-Next, update the `connectionMonitor.js` file to support the new states and events.
+Next, update the `connectionMonitor.js` file to support the new states and
+events.
 
 ```diff
 const { BrowserWindow } = require('electron');
@@ -629,11 +716,27 @@ module.exports = {
 };
 ```
 
-These changes make the connection monitor machine look a lot like the ping machine. The `AUTHENTICATING` state invokes the `authOperationService` method. This method returns a promise that resolves for a successful authentication and rejects otherwise. This trivial example simulates a couple second delay with `setTimeout`, and relies on a random value from `Math.random` to determine authentication success. This enables the application to demonstrate both possible authentication flow outcomes. If the flow succeeds, the connection monitor transitions to the `AUTHENTICATED` state and sets the returned `user` to the service `context`. If the flow fails, the connection monitor transitions back to the `CONNECTED` state and sends the error to the renderer process using the same method the ping service does to communicate errors. From the `AUTHENTICATED` state, the connecion monitor can toggle the ping service, disconnect, and toggle the authentication. The following state machine diagram shows the new complete flow of the connection monitor machine.
+These changes make the connection monitor machine look a lot like the ping
+machine. The `AUTHENTICATING` state invokes the `authOperationService` method.
+This method returns a promise that resolves for a successful authentication and
+rejects otherwise. This trivial example simulates a couple second delay with
+`setTimeout`, and relies on a random value from `Math.random` to determine
+authentication success. This enables the application to demonstrate both
+possible authentication flow outcomes. If the flow succeeds, the connection
+monitor transitions to the `AUTHENTICATED` state and sets the returned `user`
+to the service `context`. If the flow fails, the connection monitor transitions
+back to the `CONNECTED` state and sends the error to the renderer process using
+the same method the ping service does to communicate errors. From the
+`AUTHENTICATED` state, the connecion monitor can toggle the ping service,
+disconnect, and toggle the authentication. The following state machine diagram
+shows the new complete flow of the connection monitor machine.
 
 ![A state diagram of the Connection Monitor machine with authentication described in this section](../images/connection-monitor-with-auth-machine-diagram.png)
 
-Now that the connection monitor machine is storing the `user` context, it needs to be included with the `state` when the service communicates with the renderer process. In `main.js`, update the `onConnectionMonitorServiceTransition` and `connectionMonitorMainProcessReducer` methods:
+Now that the connection monitor machine is storing the `user` context, it needs
+to be included with the `state` when the service communicates with the renderer
+process. In `main.js`, update the `onConnectionMonitorServiceTransition` and
+`connectionMonitorMainProcessReducer` methods:
 
 ```diff
 // ...
@@ -678,7 +781,10 @@ function connectionMonitorMainProcessReducer (_, action) {
 // ...
 ```
 
-With the main process set up to forward along the connection monitor context, the next change is in `preload.js`. Add a new method to the `mainAPI` called `toggleAuth`. This method should mimic the `togglePing` method but use the `TOGGLE_AUTH` event instead.
+With the main process set up to forward along the connection monitor context,
+the next change is in `preload.js`. Add a new method to the `mainAPI` called
+`toggleAuth`. This method should mimic the `togglePing` method but use the
+`TOGGLE_AUTH` event instead.
 
 ```diff
 {
@@ -691,7 +797,9 @@ With the main process set up to forward along the connection monitor context, th
 }
 ```
 
-The last remaining changes are for the renderer process. Add two elements to `index.html`. A `button` for toggling the authentication operation, and a `div` for displaying the `user` details.
+The last remaining changes are for the renderer process. Add two elements to
+`index.html`. A `button` for toggling the authentication operation, and a `div`
+for displaying the `user` details.
 
 ```diff
 <body>
@@ -715,7 +823,8 @@ The last remaining changes are for the renderer process. Add two elements to `in
 
 Finally, update the `renderer.js` file. There a couple of changes to make here.
 
-First, add an `onclick` handler for the auth button that calls the `mainAPI.toggleAuth` method:
+First, add an `onclick` handler for the auth button that calls the
+`mainAPI.toggleAuth` method:
 
 ```diff
 + document.getElementById('toggle-auth').onclick =
@@ -724,7 +833,9 @@ First, add an `onclick` handler for the auth button that calls the `mainAPI.togg
 +   };
 ```
 
-Then, inside the `updateConnectionMonitorElements` method, add a switch statement that handles different element rendering based on the various connection monitor service states.
+Then, inside the `updateConnectionMonitorElements` method, add a switch
+statement that handles different element rendering based on the various
+connection monitor service states.
 
 ```diff
 -function updateConnectionMonitorElements ({ value }) {
@@ -779,10 +890,19 @@ Then, inside the `updateConnectionMonitorElements` method, add a switch statemen
 }
 ```
 
-As stated previously, you could replace this rendering logic with any frontend framework. It becomes increasingly complex to handle all the various element states in this manner, but it is suitable for this example.
+As stated previously, you could replace this rendering logic with any frontend
+framework. It becomes increasingly complex to handle all the various element
+states in this manner, but it is suitable for this example.
 
-Now with all of these changes together the application should display a new button next to `toggle ping`. When the application is in the `connected` state, the button will be enabled, and when clicked it will trigger the authentication flow changing the state to `authenticating`. If it succeeds the `user` details will be displayed and the state will change to `authenticated`; otherwise, an error will display and the state will change back to `connected`.
+Now with all of these changes together the application should display a new
+button next to `toggle ping`. When the application is in the `connected` state,
+the button will be enabled, and when clicked it will trigger the authentication
+flow changing the state to `authenticating`. If it succeeds the `user` details
+will be displayed and the state will change to `authenticated`; otherwise, an
+error will display and the state will change back to `connected`.
 
 ## Conclusion
 
-This guide introduces a connection monitoring service for Electron applications. As the authentication example demonstrates, the state machines are adaptable to fit your project's specific needs as well.
+This guide introduces a connection monitoring service for Electron applications.
+As the authentication example demonstrates, the state machines are adaptable to
+fit your project's specific needs as well.
