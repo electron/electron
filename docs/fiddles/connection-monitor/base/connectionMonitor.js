@@ -1,5 +1,4 @@
 const { createMachine, send } = require('xstate');
-const { BrowserWindow } = require('electron');
 const {
   CM_STATES: STATES,
   CM_EVENTS: EVENTS,

@@ -1,22 +1,4 @@
 /**
- * Adds an onlick handler for the toggle ping button. See the `togglePing`
- * documentation in `preload.js` for more details.
- */
-document.getElementById('toggle-ping').onclick = function onPingButtonClick () {
-  window.mainAPI.togglePing();
-};
-
-/**
- * Adds an onclick handler for the clear error button. This is only present
- * when an error is being rendered.
- */
-document.getElementById('clear-error').onclick =
-  function onClearErrorButtonClick () {
-    document.getElementById('error-message').innerHTML = '';
-    document.getElementById('error').hidden = true;
-  };
-
-/**
  * Add a listener function for the connection monitor state transitions. See
  * the `addConnectionMonitorListener` documentation in `preload.js` for more
  * details. Messages transmitted from the main process to the renderer process
@@ -91,3 +73,21 @@ function updateError ({ error }) {
   document.getElementById('error').hidden = false;
   document.getElementById('error-message').innerHTML = error.message;
 }
+
+/**
+ * Adds an onlick handler for the toggle ping button. See the `togglePing`
+ * documentation in `preload.js` for more details.
+ */
+document.getElementById('toggle-ping').onclick = function onPingButtonClick () {
+  window.mainAPI.togglePing();
+};
+
+/**
+ * Adds an onclick handler for the clear error button. This is only present
+ * when an error is being rendered.
+ */
+document.getElementById('clear-error').onclick =
+  function onClearErrorButtonClick () {
+    document.getElementById('error-message').innerHTML = '';
+    document.getElementById('error').hidden = true;
+  };
