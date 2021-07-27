@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Brian Ryner <bryner@google.com>
+Date: Thu, 22 Jul 2021 18:54:22 +0000
+Subject: Update the "py" wheel to a version that is compatible with
+ pytest-6.2.2.
+
+Bug: 1231439
+
+Change-Id: Iaf68a72c01aa0efe2a6007a8fc1060afe69598c6
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3044950
+Commit-Queue: Brian Ryner <bryner@google.com>
+Commit-Queue: Robbie Iannucci <iannucci@chromium.org>
+Auto-Submit: Brian Ryner <bryner@google.com>
+Reviewed-by: Robbie Iannucci <iannucci@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#904417}
+
+diff --git a/.vpython3 b/.vpython3
+index 14faab39343e82ff6706e625f948f97163863bb8..0aeeb03f79bdd6cbfb62a47391f4a996619b0594 100644
+--- a/.vpython3
++++ b/.vpython3
+@@ -204,7 +204,7 @@ wheel <
+ 
+ wheel <
+   name: "infra/python/wheels/py-py2_py3"
+-  version: "version:1.5.3"
++  version: "version:1.10.0"
+ >
+ 
+ wheel <
