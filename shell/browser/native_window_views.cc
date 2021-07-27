@@ -15,6 +15,7 @@
 #include "base/numerics/ranges.h"
 #include "base/stl_util.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/win/windows_version.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/desktop_media_id.h"
 #include "shell/browser/api/electron_api_web_contents.h"
@@ -118,6 +119,29 @@ gfx::Rect DIPToScreenRect(HWND hwnd, const gfx::Rect& pixel_bounds) {
       display::win::ScreenWin::DIPToScreenRect(hwnd, pixel_bounds).origin());
   return screen_rect;
 }
+
+enum WindowCompositionAttribute { WCA_ACCENT_POLICY = 19 };
+
+enum AccentState {
+  ACCENT_DISABLED = 0,
+  ACCENT_ENABLE_GRADIENT = 1,
+  ACCENT_ENABLE_TRANSPARENTGRADIENT = 2,
+  ACCENT_ENABLE_BLURBEHIND = 3,
+  ACCENT_ENABLE_ACRYLICBLURBEHIND = 4,
+};
+
+struct WINCOMPATTRDATA {
+  int nAttribute;
+  PVOID pData;
+  ULONG ulDataSize;
+};
+
+struct AccentPolicy {
+  int accentState;
+  int flags;
+  int color;
+  int animationId;
+};
 
 #endif
 
@@ -1316,6 +1340,51 @@ bool NativeWindowViews::IsVisibleOnAllWorkspaces() {
   }
 #endif
   return false;
+}
+
+void NativeWindowViews::SetVibrancy(const std::string& type) {
+#if defined(OS_WIN)
+  auto version = base::win::GetVersion();
+  if (version >= base::win::Version::WIN10) {
+    std::vector<uint8_t> bytes;
+    int gradientColor = 0;
+
+    // Acrylic blur is supported on Windows RS3 and above.
+    AccentState state = version >= base::win::Version::WIN10_RS3
+                            ? ACCENT_ENABLE_ACRYLICBLURBEHIND
+                            : ACCENT_ENABLE_BLURBEHIND;
+
+    // Disable vibrancy if an empty string is passed.
+    if (type.empty()) {
+      state = ACCENT_DISABLED;
+      // Allow setting a colored vibrancy from an #AARRGGBB hex string.
+    } else if (type[0] == '#') {
+      std::string color_string = type.substr(1);
+      if (!base::HexStringToBytes(color_string, &bytes))
+        return;
+      // Windows uses ABGR & HexStringToBytes returns ARBG so index accordingly.
+      gradientColor =
+          (bytes[0] << 24) | (bytes[3] << 16) | (bytes[2] << 8) | bytes[1];
+      // Allow forcing blur.
+    } else if (type == "blur") {
+      state = ACCENT_ENABLE_BLURBEHIND;
+    } else {
+      return;
+    }
+
+    AccentPolicy policy = {state, 2, gradientColor, 0};
+    WINCOMPATTRDATA data = {WCA_ACCENT_POLICY, &policy, sizeof(AccentPolicy)};
+
+    typedef BOOL(WINAPI * pSetWindowCompositionAttribute)(HWND,
+                                                          WINCOMPATTRDATA*);
+    const pSetWindowCompositionAttribute SetWindowCompositionAttribute =
+        (pSetWindowCompositionAttribute)GetProcAddress(
+            GetModuleHandle(L"user32.dll"), "SetWindowCompositionAttribute");
+
+    if (SetWindowCompositionAttribute)
+      SetWindowCompositionAttribute(GetAcceleratedWidget(), &data);
+  }
+#endif
 }
 
 content::DesktopMediaID NativeWindowViews::GetDesktopMediaID() const {

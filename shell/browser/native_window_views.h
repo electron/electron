@@ -137,6 +137,8 @@ class NativeWindowViews : public NativeWindow,
 
   bool IsVisibleOnAllWorkspaces() override;
 
+  void SetVibrancy(const std::string& type) override;
+
   void SetGTKDarkThemeEnabled(bool use_dark_theme) override;
 
   content::DesktopMediaID GetDesktopMediaID() const override;

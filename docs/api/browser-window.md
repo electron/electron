@@ -1742,17 +1742,47 @@ there is only one tab in the current window.
 
 Adds a window as a tab on this window, after the tab for the window instance.
 
-#### `win.setVibrancy(type)` _macOS_
+#### `win.setVibrancy(type)` _macOS_ _Windows_
 
 * `type` String | null - Can be `appearance-based`, `light`, `dark`, `titlebar`,
-  `selection`, `menu`, `popover`, `sidebar`, `medium-light`, `ultra-dark`, `header`, `sheet`, `window`, `hud`, `fullscreen-ui`, `tooltip`, `content`, `under-window`, or `under-page`. See
-  the [macOS documentation][vibrancy-docs] for more details.
+  `selection`, `menu`, `popover`, `sidebar`, `medium-light`, `ultra-dark`, `header`, `sheet`, `window`, `hud`, `fullscreen-ui`, `tooltip`, `content`, `under-window`, `under-page`, `gradient`, `transparentGradient`, `blur`, or a hex color string with alpha (`#AARRGGBB`).
 
 Adds a vibrancy effect to the browser window. Passing `null` or an empty string
 will remove the vibrancy effect on the window.
 
+The following work exclusively on macOS:
+
+* `appearance-based`
+* `light`
+* `dark`
+* `titlebar`
+* `selection`
+* `menu`
+* `popover`
+* `sidebar`
+* `medium-light`
+* `ultra-dark`
+* `header`
+* `sheet`
+* `window`
+* `hud`
+* `fullscreen-ui`
+* `tooltip`
+* `content`
+* `under-window`
+* `under-page`
+
+See the [macOS documentation][vibrancy-docs] for more details.
+
 Note that `appearance-based`, `light`, `dark`, `medium-light`, and `ultra-dark` have been
 deprecated and will be removed in an upcoming version of macOS.
+
+The following work exclusively on Windows 10 and above:
+
+* `blur`
+* a hex color string with alpha (`#AARRGGBB` e.g. `#18A558FF`)
+
+Note that the newer [acrylic blur style](https://docs.microsoft.com/en-us/windows/apps/design/style/acrylic) only works on Windows 10 RS3 and above - if a hex string is passed, this method will use the acrylic style if it is supported, otherwise it will fall back to `blur`.
 
 #### `win.setTrafficLightPosition(position)` _macOS_
 
