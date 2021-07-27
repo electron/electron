@@ -90,7 +90,6 @@ declare namespace Electron {
   }
 
   interface WebPreferences {
-    guestInstanceId?: number;
     openerId?: number | null;
     disablePopups?: boolean;
     preloadURL?: string;

@@ -110,7 +110,7 @@ class WebContentsPreferences
   absl::optional<int> minimum_font_size_;
   absl::optional<std::string> default_encoding_;
   int opener_id_;
-  int guest_instance_id_;
+  bool is_webview_;
   std::vector<std::string> custom_args_;
   std::vector<std::string> custom_switches_;
   absl::optional<std::string> enable_blink_features_;

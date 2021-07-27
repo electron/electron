@@ -23,10 +23,13 @@ void WebViewManager::RemoveGuest(int guest_instance_id) {
   web_contents_embedder_map_.erase(guest_instance_id);
 }
 
-content::WebContents* WebViewManager::GetEmbedder(int guest_instance_id) {
-  const auto iter = web_contents_embedder_map_.find(guest_instance_id);
-  return iter == std::end(web_contents_embedder_map_) ? nullptr
-                                                      : iter->second.embedder;
+content::WebContents* WebViewManager::GetEmbedder(
+    content::WebContents* web_contents) {
+  for (auto& item : web_contents_embedder_map_) {
+    if (item.second.web_contents == web_contents)
+      return item.second.embedder;
+  }
+  return nullptr;
 }
 
 bool WebViewManager::ForEachGuest(content::WebContents* embedder_web_contents,

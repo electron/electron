@@ -493,9 +493,8 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
       return gin::ConvertToV8(isolate, prefs.opener_id);
     } else if (pref_name == options::kContextIsolation) {
       return gin::ConvertToV8(isolate, prefs.context_isolation);
-    } else if (pref_name == options::kGuestInstanceID) {
-      // NOTE: guestInstanceId is internal-only.
-      return gin::ConvertToV8(isolate, prefs.guest_instance_id);
+    } else if (pref_name == "isWebView") {
+      return gin::ConvertToV8(isolate, prefs.is_webview);
     } else if (pref_name == options::kHiddenPage) {
       // NOTE: hiddenPage is internal-only.
       return gin::ConvertToV8(isolate, prefs.hidden_page);
