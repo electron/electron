@@ -103,3 +103,4 @@ refactor_restore_base_adaptcallbackforrepeating.patch
 hack_to_allow_gclient_sync_with_host_os_mac_on_linux_in_ci.patch
 set_svgimage_page_after_document_install.patch
 add_gin_wrappable_crash_key.patch
+revert_roll_clang_llvmorg-13-init-14732-g8a7b5ebf-2.patch
