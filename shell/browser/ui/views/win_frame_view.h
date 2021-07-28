@@ -1,6 +1,11 @@
 // Copyright (c) 2014 GitHub, Inc.
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
+//
+// Portions of this file are sourced from
+// chrome/browser/ui/views/frame/glass_browser_frame_view.h,
+// Copyright (c) 2012 The Chromium Authors,
+// which is governed by a BSD-style license
 
 #ifndef SHELL_BROWSER_UI_VIEWS_WIN_FRAME_VIEW_H_
 #define SHELL_BROWSER_UI_VIEWS_WIN_FRAME_VIEW_H_

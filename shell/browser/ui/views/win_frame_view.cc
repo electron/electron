@@ -1,6 +1,11 @@
 // Copyright (c) 2014 GitHub, Inc.
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
+//
+// Portions of this file are sourced from
+// chrome/browser/ui/views/frame/glass_browser_frame_view.cc,
+// Copyright (c) 2012 The Chromium Authors,
+// which is governed by a BSD-style license
 
 #include "shell/browser/ui/views/win_frame_view.h"
 
@@ -225,10 +230,10 @@ void WinFrameView::LayoutCaptionButtons() {
   height = IsMaximized() ? TitlebarMaximizedVisualHeight()
                          : TitlebarHeight(false) - WindowTopY();
 
-  // TODO(@mlaurencin): This -1 creates a 1 pixel gap between the right
+  // TODO(mlaurencin): This -1 creates a 1 pixel gap between the right
   // edge of the overlay and the edge of the window, allowing for this edge
-  // portion to be manually resized properly by returning the correct hit
-  // test. Alternative can be explored, but the differences in view structures
+  // portion to return the correct hit test and be manually resized properly.
+  // Alternatives can be explored, but the differences in view structures
   // between Electron and Chromium may result in this as the best option.
   caption_button_container_->SetBounds(width() - preferred_size.width(),
                                        WindowTopY(), preferred_size.width() - 1,
