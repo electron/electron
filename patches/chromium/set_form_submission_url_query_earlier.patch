@@ -1,0 +1,49 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: clavin <cwatford@slack-corp.com>
+Date: Tue, 27 Jul 2021 18:31:52 -0600
+Subject: set form submission url query earlier
+
+This patch is to revert part of a change from a small refactor in Chromium that
+made form submissions asynchronous:
+https://chromium-review.googlesource.com/c/chromium/src/+/1922699
+
+For form submissions that would add a query to the request url, i.e. forms with
+the attribute `method="GET"`, that addition to the URL is being set too late
+for some of our features, e.g. the window open handler (it would see the raw
+action URL without the query args set). This patch moves it earlier so we get
+the right URL on the initial request.
+
+This patch can be removed when either this change (or a similar one) is
+upstreamed. It is not clear how a refactor on our end would eliminate this
+patch, shy of creating special handling for form submissions.
+
+diff --git a/third_party/blink/renderer/core/loader/form_submission.cc b/third_party/blink/renderer/core/loader/form_submission.cc
+index d66574161ae54c4125d6525daac4c7a33845b3e1..e3ac0f750081e498c79309d477f6f23c6ff15962 100644
+--- a/third_party/blink/renderer/core/loader/form_submission.cc
++++ b/third_party/blink/renderer/core/loader/form_submission.cc
+@@ -281,6 +281,11 @@ FormSubmission* FormSubmission::Create(HTMLFormElement* form,
+                                            ? document.BaseTarget()
+                                            : copied_attributes.Target();
+ 
++  if (copied_attributes.Method() != FormSubmission::kPostMethod &&
++      !action_url.ProtocolIsJavaScript()) {
++    action_url.SetQuery(form_data->FlattenToString());
++  }
++
+   std::unique_ptr<ResourceRequest> resource_request =
+       std::make_unique<ResourceRequest>(action_url);
+   ClientNavigationReason reason = ClientNavigationReason::kFormSubmissionGet;
+@@ -353,13 +358,6 @@ void FormSubmission::Trace(Visitor* visitor) const {
+ }
+ 
+ void FormSubmission::Navigate() {
+-  KURL request_url = action_;
+-  if (method_ != FormSubmission::kPostMethod &&
+-      !action_.ProtocolIsJavaScript()) {
+-    request_url.SetQuery(form_data_->FlattenToString());
+-  }
+-  resource_request_->SetUrl(request_url);
+-
+   FrameLoadRequest frame_request(origin_window_.Get(), *resource_request_);
+   frame_request.SetNavigationPolicy(navigation_policy_);
+   frame_request.SetClientRedirectReason(reason_);
