@@ -775,6 +775,30 @@ describe('chromium features', () => {
           const res = await newWin.webContents.executeJavaScript('document.body.innerText');
           expect(res).to.equal('body:greeting=hello');
         });
+
+        it('includes the url query when the method is GET', async () => {
+          const w = new BrowserWindow({
+            show: false,
+            webPreferences: {
+              sandbox: isSandboxEnabled
+            }
+          });
+
+          await w.loadFile(path.join(fixturesPath, 'pages', 'form-with-data.html'));
+
+          const windowCreatedPromise = emittedOnce(w.webContents, 'new-window');
+
+          w.webContents.executeJavaScript(`
+            const form = document.querySelector('form');
+            form.method = 'GET';
+            form.target = '_blank';
+            form.submit();
+          `);
+
+          const [, windowUrl] = await windowCreatedPromise;
+
+          expect(url.parse(windowUrl).query).to.equal('greeting=hello');
+        });
       })
     );
   });
