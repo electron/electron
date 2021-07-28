@@ -1,0 +1,68 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Antoine du Hamel <duhamelantoine1995@gmail.com>
+Date: Wed, 18 Nov 2020 10:57:14 +0100
+Subject: errors: refactor to use more primordials
+
+PR-URL: https://github.com/nodejs/node/pull/36167
+Reviewed-By: James M Snell <jasnell@gmail.com>
+Reviewed-By: Trivikram Kamat <trivikr.dev@gmail.com>
+(cherry picked from commit 893d8a60cbf7ae3d42655547beb703249b96d895)
+
+diff --git a/lib/internal/errors.js b/lib/internal/errors.js
+index 447db182eb2ee3d8cb8df0bd929a7244bf20ab9d..2abfe5800835dccb83698e93b51ccb3bb7dad0c9 100644
+--- a/lib/internal/errors.js
++++ b/lib/internal/errors.js
+@@ -12,6 +12,7 @@
+ 
+ const {
+   ArrayIsArray,
++  ArrayPrototypeJoin,
+   Error,
+   ErrorCaptureStackTrace,
+   ErrorPrototypeToString,
+@@ -23,7 +24,9 @@ const {
+   ObjectDefineProperty,
+   ObjectKeys,
+   RangeError,
++  ReflectApply,
+   String,
++  StringPrototypeMatch,
+   StringPrototypeStartsWith,
+   Symbol,
+   SymbolFor,
+@@ -78,7 +81,7 @@ const prepareStackTrace = (globalThis, error, trace) => {
+   if (trace.length === 0) {
+     return errorString;
+   }
+-  return `${errorString}\n    at ${trace.join('\n    at ')}`;
++  return `${errorString}\n    at ${ArrayPrototypeJoin(trace, '\n    at ')}`;
+ };
+ 
+ const maybeOverridePrepareStackTrace = (globalThis, error, trace) => {
+@@ -354,10 +357,11 @@ function getMessage(key, args, self) {
+       `Code: ${key}; The provided arguments length (${args.length}) does not ` +
+         `match the required ones (${msg.length}).`
+     );
+-    return msg.apply(self, args);
++    return ReflectApply(msg, self, args);
+   }
+ 
+-  const expectedLength = (msg.match(/%[dfijoOs]/g) || []).length;
++  const expectedLength =
++    (StringPrototypeMatch(msg, /%[dfijoOs]/g) || []).length;
+   assert(
+     expectedLength === args.length,
+     `Code: ${key}; The provided arguments length (${args.length}) does not ` +
+diff --git a/test/parallel/test-errors-systemerror.js b/test/parallel/test-errors-systemerror.js
+index e801871f40af2c2f09215e78ad8196cf4e6b070c..2a20588e75b386e199f4c42d133273a50d29785d 100644
+--- a/test/parallel/test-errors-systemerror.js
++++ b/test/parallel/test-errors-systemerror.js
+@@ -9,7 +9,7 @@ assert.throws(
+   () => { new SystemError(); },
+   {
+     name: 'TypeError',
+-    message: 'Cannot read property \'match\' of undefined'
++    message: 'String.prototype.match called on null or undefined'
+   }
+ );
+ 
