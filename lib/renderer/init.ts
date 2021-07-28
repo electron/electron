@@ -74,7 +74,7 @@ const isHiddenPage = mainFrame.getWebPreference('hiddenPage');
 const usesNativeWindowOpen = mainFrame.getWebPreference('nativeWindowOpen');
 const preloadScript = mainFrame.getWebPreference('preload');
 const preloadScripts = mainFrame.getWebPreference('preloadScripts');
-const guestInstanceId = mainFrame.getWebPreference('guestInstanceId');
+const isWebView = mainFrame.getWebPreference('isWebView');
 const openerId = mainFrame.getWebPreference('openerId');
 const appPath = hasSwitch('app-path') ? getSwitchValue('app-path') : null;
 
@@ -98,14 +98,14 @@ switch (window.location.protocol) {
   default: {
     // Override default web functions.
     const { windowSetup } = require('@electron/internal/renderer/window-setup') as typeof windowSetupModule;
-    windowSetup(guestInstanceId, openerId, isHiddenPage, usesNativeWindowOpen);
+    windowSetup(isWebView, openerId, isHiddenPage, usesNativeWindowOpen);
   }
 }
 
 // Load webview tag implementation.
 if (process.isMainFrame) {
   const { webViewInit } = require('@electron/internal/renderer/web-view/web-view-init') as typeof webViewInitModule;
-  webViewInit(contextIsolation, webviewTag, guestInstanceId);
+  webViewInit(contextIsolation, webviewTag, isWebView);
 }
 
 if (nodeIntegration) {

@@ -28,7 +28,7 @@ function sanitizeOptionsForGuest (options: Record<string, any>) {
   return ret;
 }
 
-function makeWebPreferences (embedder: Electron.WebContents, params: Record<string, any>, guestInstanceId: number) {
+function makeWebPreferences (embedder: Electron.WebContents, params: Record<string, any>) {
   // parse the 'webpreferences' attribute string, if set
   // this uses the same parsing rules as window.open uses for its features
   const parsedWebPreferences =
@@ -37,7 +37,6 @@ function makeWebPreferences (embedder: Electron.WebContents, params: Record<stri
       : null;
 
   const webPreferences: Electron.WebPreferences = {
-    guestInstanceId,
     nodeIntegration: params.nodeintegration != null ? params.nodeintegration : false,
     nodeIntegrationInSubFrames: params.nodeintegrationinsubframes != null ? params.nodeintegrationinsubframes : false,
     plugins: params.plugins,
@@ -204,7 +203,7 @@ const attachGuest = function (event: Electron.IpcMainInvokeEvent,
     }
   }
 
-  const webPreferences = makeWebPreferences(embedder, params, guestInstanceId);
+  const webPreferences = makeWebPreferences(embedder, params);
 
   embedder.emit('will-attach-webview', event, webPreferences, params);
   if (event.defaultPrevented) {

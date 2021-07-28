@@ -19,8 +19,8 @@
 #include "content/public/common/content_switches.h"
 #include "net/base/filename_util.h"
 #include "sandbox/policy/switches.h"
+#include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/native_window.h"
-#include "shell/browser/web_view_manager.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/options_switches.h"
@@ -103,15 +103,12 @@ WebContentsPreferences::WebContentsPreferences(
 
   // If this is a <webview> tag, and the embedder is offscreen-rendered, then
   // this WebContents is also offscreen-rendered.
-  if (guest_instance_id_) {
-    auto* manager = WebViewManager::GetWebViewManager(web_contents);
-    if (manager) {
-      auto* embedder = manager->GetEmbedder(guest_instance_id_);
-      if (embedder) {
-        auto* embedder_preferences = WebContentsPreferences::From(embedder);
-        if (embedder_preferences && embedder_preferences->IsOffscreen()) {
-          offscreen_ = true;
-        }
+  if (auto* api_web_contents = api::WebContents::From(web_contents_)) {
+    if (electron::api::WebContents* embedder = api_web_contents->embedder()) {
+      auto* embedder_preferences =
+          WebContentsPreferences::From(embedder->web_contents());
+      if (embedder_preferences && embedder_preferences->IsOffscreen()) {
+        offscreen_ = true;
       }
     }
   }
@@ -150,7 +147,7 @@ void WebContentsPreferences::Clear() {
   minimum_font_size_ = absl::nullopt;
   default_encoding_ = absl::nullopt;
   opener_id_ = 0;
-  guest_instance_id_ = 0;
+  is_webview_ = false;
   custom_args_.clear();
   custom_switches_.clear();
   enable_blink_features_ = absl::nullopt;
@@ -223,7 +220,6 @@ void WebContentsPreferences::Merge(
   if (web_preferences.Get("defaultEncoding", &encoding))
     default_encoding_ = encoding;
   web_preferences.Get(options::kOpenerID, &opener_id_);
-  web_preferences.Get(options::kGuestInstanceID, &guest_instance_id_);
   web_preferences.Get(options::kCustomArgs, &custom_args_);
   web_preferences.Get("commandLineSwitches", &custom_switches_);
   web_preferences.Get("disablePopups", &disable_popups_);
@@ -261,6 +257,11 @@ void WebContentsPreferences::Merge(
     } else {
       LOG(ERROR) << "preload url must be file:// protocol.";
     }
+  }
+
+  std::string type;
+  if (web_preferences.Get(options::kType, &type)) {
+    is_webview_ = type == "webview";
   }
 
   web_preferences.Get("v8CacheOptions", &v8_cache_options_);
@@ -459,24 +460,19 @@ void WebContentsPreferences::OverrideWebkitPrefs(
 
   // Run Electron APIs and preload script in isolated world
   prefs->context_isolation = context_isolation_;
-  prefs->guest_instance_id = guest_instance_id_;
+  prefs->is_webview = is_webview_;
 
   prefs->hidden_page = false;
-  if (guest_instance_id_) {
-    // Webview `document.visibilityState` tracks window visibility so we need
-    // to let it know if the window happens to be hidden right now.
-    auto* manager = WebViewManager::GetWebViewManager(web_contents_);
-    if (manager) {
-      auto* embedder = manager->GetEmbedder(guest_instance_id_);
-      if (embedder) {
-        auto* relay = NativeWindowRelay::FromWebContents(embedder);
-        if (relay) {
-          auto* window = relay->GetNativeWindow();
-          if (window) {
-            const bool visible = window->IsVisible() && !window->IsMinimized();
-            if (!visible) {
-              prefs->hidden_page = true;
-            }
+  // Webview `document.visibilityState` tracks window visibility so we need
+  // to let it know if the window happens to be hidden right now.
+  if (auto* api_web_contents = api::WebContents::From(web_contents_)) {
+    if (electron::api::WebContents* embedder = api_web_contents->embedder()) {
+      if (auto* relay =
+              NativeWindowRelay::FromWebContents(embedder->web_contents())) {
+        if (auto* window = relay->GetNativeWindow()) {
+          const bool visible = window->IsVisible() && !window->IsMinimized();
+          if (!visible) {
+            prefs->hidden_page = true;
           }
         }
       }

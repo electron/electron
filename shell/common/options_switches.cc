@@ -121,9 +121,6 @@ const char kNodeIntegration[] = "nodeIntegration";
 // Enable context isolation of Electron APIs and preload script
 const char kContextIsolation[] = "contextIsolation";
 
-// Instance ID of guest WebContents.
-const char kGuestInstanceID[] = "guestInstanceId";
-
 // Web runtime features.
 const char kExperimentalFeatures[] = "experimentalFeatures";
 
