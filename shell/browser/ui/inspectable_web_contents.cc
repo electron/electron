@@ -9,7 +9,6 @@
 #include <utility>
 
 #include "base/base64.h"
-#include "base/feature_list.h"
 #include "base/guid.h"
 #include "base/json/json_reader.h"
 #include "base/json/json_writer.h"
@@ -28,7 +27,6 @@
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
-#include "content/public/browser/console_message.h"
 #include "content/public/browser/file_select_listener.h"
 #include "content/public/browser/file_url_loader.h"
 #include "content/public/browser/host_zoom_map.h"
@@ -37,8 +35,6 @@
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/shared_cors_origin_access_list.h"
 #include "content/public/browser/storage_partition.h"
-#include "content/public/common/content_features.h"
-#include "content/public/common/url_utils.h"
 #include "content/public/common/user_agent.h"
 #include "ipc/ipc_channel.h"
 #include "net/http/http_response_headers.h"
@@ -973,29 +969,6 @@ void InspectableWebContents::WebContentsDestroyed() {
 
   if (view_ && view_->GetDelegate())
     view_->GetDelegate()->DevToolsClosed();
-}
-
-bool InspectableWebContents::DidAddMessageToConsole(
-    content::WebContents* source,
-    blink::mojom::ConsoleMessageLevel level,
-    const std::u16string& message,
-    int32_t line_no,
-    const std::u16string& source_id) {
-  // cf.
-  // https://source.chromium.org/chromium/chromium/src/+/main:content/browser/log_console_message.cc;l=15;drc=e99bf3c8e0f35f1f82a12338cd1f9f064b5408c5
-  bool is_builtin_component = HasWebUIScheme(source->GetLastCommittedURL());
-  const int32_t resolved_level =
-      is_builtin_component
-          ? content::ConsoleMessageLevelToLogSeverity(log_level)
-          : ::logging::LOG_INFO;
-  if (::logging::GetMinLogLevel() > resolved_level)
-    return;
-  if (!base::FeatureList::IsEnabled(features::kLogJsConsoleMessages))
-    return;
-  logging::LogMessage("CONSOLE", line_no, resolved_level).stream()
-      << "\"" << message << "\", source: " << source_id << " (" << line_no
-      << ")";
-  return true;
 }
 
 bool InspectableWebContents::HandleKeyboardEvent(
