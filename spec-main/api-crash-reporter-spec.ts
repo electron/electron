@@ -3,7 +3,7 @@ import * as childProcess from 'child_process';
 import * as http from 'http';
 import * as Busboy from 'busboy';
 import * as path from 'path';
-import { ifdescribe, ifit, defer, startRemoteControlApp, delay } from './spec-helpers';
+import { ifdescribe, ifit, defer, startRemoteControlApp, delay, repeatedly } from './spec-helpers';
 import { app } from 'electron/main';
 import { crashReporter } from 'electron/common';
 import { AddressInfo } from 'net';
@@ -401,7 +401,9 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
           });
           await waitForCrash();
           // 3. get the crash from getLastCrashReport.
-          const firstReport = await remotely(() => require('electron').crashReporter.getLastCrashReport());
+          const firstReport = await repeatedly(
+            () => remotely(() => require('electron').crashReporter.getLastCrashReport())
+          );
           expect(firstReport).to.not.be.null();
           expect(firstReport.date).to.be.an.instanceOf(Date);
           expect((+new Date()) - (+firstReport.date)).to.be.lessThan(30000);
