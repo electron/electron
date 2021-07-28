@@ -61,7 +61,7 @@ index 7b711bdbaf4afddd6ccf300af7bab26487942243..987a60b81554b676661d8f1a53facbc9
  #include "ui/base/l10n/l10n_util.h"
  #include "ui/gfx/paint_vector_icon.h"
 diff --git a/chrome/browser/ui/views/overlay/overlay_window_views.cc b/chrome/browser/ui/views/overlay/overlay_window_views.cc
-index 72a70d9e356dc7c5ac80bdc9954a0c03dda809c5..7700d386e39dd511abb1c53cd4871bd51e04cd46 100644
+index d437976fa81a9b8f35f8649631b1c29594e214e2..f151f3054e7e6e14749264382b8377f9e42d12a5 100644
 --- a/chrome/browser/ui/views/overlay/overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/overlay_window_views.cc
 @@ -16,9 +16,11 @@
@@ -76,16 +76,16 @@ index 72a70d9e356dc7c5ac80bdc9954a0c03dda809c5..7700d386e39dd511abb1c53cd4871bd5
  #include "chrome/browser/ui/views/overlay/back_to_tab_image_button.h"
  #include "chrome/browser/ui/views/overlay/back_to_tab_label_button.h"
  #include "chrome/browser/ui/views/overlay/close_image_button.h"
-@@ -29,7 +31,7 @@
- #include "chrome/browser/ui/views/overlay/toggle_camera_button.h"
+@@ -30,6 +32,8 @@
  #include "chrome/browser/ui/views/overlay/toggle_microphone_button.h"
  #include "chrome/browser/ui/views/overlay/track_image_button.h"
--#include "chrome/grit/generated_resources.h"
+ #include "chrome/grit/generated_resources.h"
 +#include "electron/grit/electron_resources.h"
- #include "components/url_formatter/url_formatter.h"
++#include "components/url_formatter/url_formatter.h"
  #include "components/vector_icons/vector_icons.h"
  #include "content/public/browser/picture_in_picture_window_controller.h"
-@@ -58,7 +60,7 @@
+ #include "content/public/browser/web_contents.h"
+@@ -57,7 +61,7 @@
  #include "ui/aura/window.h"
  #endif
  
@@ -94,7 +94,7 @@ index 72a70d9e356dc7c5ac80bdc9954a0c03dda809c5..7700d386e39dd511abb1c53cd4871bd5
  #include "chrome/browser/shell_integration_win.h"
  #include "ui/aura/window.h"
  #include "ui/aura/window_tree_host.h"
-@@ -247,7 +249,7 @@ std::unique_ptr<OverlayWindowViews> OverlayWindowViews::Create(
+@@ -246,7 +250,7 @@ std::unique_ptr<OverlayWindowViews> OverlayWindowViews::Create(
    overlay_window->Init(std::move(params));
    overlay_window->OnRootViewReady();
  
