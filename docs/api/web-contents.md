@@ -1134,7 +1134,7 @@ Ignore application menu shortcuts while this web contents is focused.
   * `details` Object
     * `url` String - The _resolved_ version of the URL passed to `window.open()`. e.g. opening a window with `window.open('foo')` will yield something like `https://the-origin/the/current/path/foo`.
     * `frameName` String - Name of the window provided in `window.open()`
-    * `features` String - Comma separated list of window features provided to `window.open()`.
+    * `features` String - Third argument provided to `window.open()`, usually a comma separated list of window features.
     * `disposition` String - Can be `default`, `foreground-tab`, `background-tab`,
       `new-window`, `save-to-disk` or `other`.
     * `referrer` [Referrer](structures/referrer.md) - The referrer that will be
