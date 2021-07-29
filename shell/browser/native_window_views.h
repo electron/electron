@@ -176,11 +176,6 @@ class NativeWindowViews : public NativeWindow,
 #endif
 
 #if defined(OS_WIN)
-  enum class TitleBarStyle{
-      kNormal,
-      kHidden,
-  };
-  TitleBarStyle title_bar_style() const { return title_bar_style_; }
   bool IsWindowControlsOverlayEnabled() const {
     return (title_bar_style_ == NativeWindowViews::TitleBarStyle::kHidden) &&
            titlebar_overlay_;
@@ -190,10 +185,6 @@ class NativeWindowViews : public NativeWindow,
 #endif
 
  private:
-#if defined(OS_WIN)
-  TitleBarStyle title_bar_style_ = TitleBarStyle::kNormal;
-#endif
-
   // views::WidgetObserver:
   void OnWidgetActivationChanged(views::Widget* widget, bool active) override;
   void OnWidgetBoundsChanged(views::Widget* widget,

@@ -81,32 +81,6 @@
 #include "ui/views/widget/desktop_aura/desktop_native_widget_aura.h"
 #endif
 
-namespace gin {
-
-#if defined(OS_WIN)
-
-template <>
-struct Converter<electron::NativeWindowViews::TitleBarStyle> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Handle<v8::Value> val,
-                     electron::NativeWindowViews::TitleBarStyle* out) {
-    using TitleBarStyle = electron::NativeWindowViews::TitleBarStyle;
-    std::string title_bar_style;
-    if (!ConvertFromV8(isolate, val, &title_bar_style))
-      return false;
-    if (title_bar_style == "hidden") {
-      *out = TitleBarStyle::kHidden;
-    } else {
-      return false;
-    }
-    return true;
-  }
-};
-
-#endif
-
-}  // namespace gin
-
 namespace electron {
 
 #if defined(OS_WIN)
@@ -221,8 +195,6 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
       DCHECK(success);
     }
   }
-
-  options.Get(options::kTitleBarStyle, &title_bar_style_);
 
   if (title_bar_style_ != TitleBarStyle::kNormal)
     set_has_frame(false);

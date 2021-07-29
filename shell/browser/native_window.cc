@@ -24,6 +24,36 @@
 #include "ui/display/win/screen_win.h"
 #endif
 
+namespace gin {
+
+template <>
+struct Converter<electron::NativeWindow::TitleBarStyle> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Handle<v8::Value> val,
+                     electron::NativeWindow::TitleBarStyle* out) {
+    using TitleBarStyle = electron::NativeWindow::TitleBarStyle;
+    std::string title_bar_style;
+    if (!ConvertFromV8(isolate, val, &title_bar_style))
+      return false;
+    if (title_bar_style == "hidden") {
+      *out = TitleBarStyle::kHidden;
+    }
+#if defined(OS_MAC)
+    else if (title_bar_style == "hiddenInset") {
+      *out = TitleBarStyle::kHiddenInset;
+    } else if (title_bar_style == "customButtonsOnHover") {
+      *out = TitleBarStyle::kCustomButtonsOnHover;
+    }
+#endif
+    else {
+      return false;
+    }
+    return true;
+  }
+};
+
+}  // namespace gin
+
 namespace electron {
 
 namespace {
@@ -57,6 +87,7 @@ NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
 
   v8::Local<v8::Value> titlebar_overlay;
   options.Get(options::ktitleBarOverlay, &titlebar_overlay);
+  options.Get(options::kTitleBarStyle, &title_bar_style_);
 
   if (titlebar_overlay->IsBoolean()) {
     options.Get(options::ktitleBarOverlay, &titlebar_overlay_);
