@@ -185,14 +185,13 @@ class NativeWindowViews : public NativeWindow,
     return (title_bar_style_ == NativeWindowViews::TitleBarStyle::kHidden) &&
            titlebar_overlay_;
   }
-  SkColor overlay_color() const { return overlay_color_; }
+  SkColor overlay_button_color() const { return overlay_button_color_; }
   SkColor overlay_symbol_color() const { return overlay_symbol_color_; }
 #endif
 
  private:
 #if defined(OS_WIN)
   TitleBarStyle title_bar_style_ = TitleBarStyle::kNormal;
-  bool titlebar_overlay_ = false;
 #endif
 
   // views::WidgetObserver:
@@ -315,7 +314,7 @@ class NativeWindowViews : public NativeWindow,
 
   // The color to use as the theme and symbol colors respectively for Window
   // Controls Overlay if enabled on Windows.
-  SkColor overlay_color_;
+  SkColor overlay_button_color_;
   SkColor overlay_symbol_color_;
 #endif
 

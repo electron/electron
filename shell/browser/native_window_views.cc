@@ -194,24 +194,35 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   if (transparent())
     thick_frame_ = false;
 
-  overlay_color_ = color_utils::GetSysSkColor(COLOR_BTNFACE);
-  std::string overlay_color_string;
-  if (options.Get(options::kOverlayColor, &overlay_color_string)) {
-    bool success = extensions::image_util::ParseCssColorString(
-        overlay_color_string, &overlay_color_);
-    DCHECK(success);
-  }
-
+  v8::Local<v8::Value> titlebar_overlay;
+  options.Get(options::ktitleBarOverlay, &titlebar_overlay);
+  overlay_button_color_ = color_utils::GetSysSkColor(COLOR_BTNFACE);
   overlay_symbol_color_ = color_utils::GetSysSkColor(COLOR_BTNTEXT);
-  std::string overlay_symbol_color_string;
-  if (options.Get(options::kOverlaySymbolColor, &overlay_symbol_color_string)) {
-    bool success = extensions::image_util::ParseCssColorString(
-        overlay_symbol_color_string, &overlay_symbol_color_);
-    DCHECK(success);
+
+  if (titlebar_overlay->IsObject()) {
+    v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+    gin_helper::Dictionary titlebar_overlay_obj =
+        gin::Dictionary::CreateEmpty(isolate);
+    options.Get(options::ktitleBarOverlay, &titlebar_overlay_obj);
+
+    std::string overlay_color_string;
+    if (titlebar_overlay_obj.Get(options::kOverlayButtonColor,
+                                 &overlay_color_string)) {
+      bool success = extensions::image_util::ParseCssColorString(
+          overlay_color_string, &overlay_button_color_);
+      DCHECK(success);
+    }
+
+    std::string overlay_symbol_color_string;
+    if (titlebar_overlay_obj.Get(options::kOverlaySymbolColor,
+                                 &overlay_symbol_color_string)) {
+      bool success = extensions::image_util::ParseCssColorString(
+          overlay_symbol_color_string, &overlay_symbol_color_);
+      DCHECK(success);
+    }
   }
 
   options.Get(options::kTitleBarStyle, &title_bar_style_);
-  options.Get(options::ktitleBarOverlay, &titlebar_overlay_);
 
   if (title_bar_style_ != TitleBarStyle::kNormal)
     set_has_frame(false);

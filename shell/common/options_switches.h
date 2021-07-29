@@ -58,7 +58,7 @@ extern const char kVisualEffectState[];
 extern const char kTrafficLightPosition[];
 extern const char kRoundedCorners[];
 extern const char ktitleBarOverlay[];
-extern const char kOverlayColor[];
+extern const char kOverlayButtonColor[];
 extern const char kOverlaySymbolColor[];
 
 // WebPreferences.

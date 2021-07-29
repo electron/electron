@@ -46,7 +46,7 @@ void WinCaptionButton::OnPaintBackground(gfx::Canvas* canvas) {
   // Paint the background of the button (the semi-transparent rectangle that
   // appears when you hover or press the button).
 
-  const SkColor bg_color = frame_view_->window()->overlay_color();
+  const SkColor bg_color = frame_view_->window()->overlay_button_color();
   const SkAlpha theme_alpha = SkColorGetA(bg_color);
 
   gfx::Rect bounds = GetContentsBounds();
