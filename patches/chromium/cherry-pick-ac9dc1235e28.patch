@@ -1,0 +1,103 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ilya Nikolaevskiy <ilnik@chromium.org>
+Date: Mon, 17 May 2021 08:34:41 +0000
+Subject: Add locks and empty string checks to FakeV4L2Impl
+
+FakeV4L2Impl is crashed by fuzzer with some weird ASAN errors, which
+turned out to be a threading issue.
+
+Bug: 1205059,1196302
+Change-Id: Ieb3a917c9a4549b655862e69214774e183a70bc3
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2883613
+Reviewed-by: Ricky Liang <jcliang@chromium.org>
+Commit-Queue: Ilya Nikolaevskiy <ilnik@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#883390}
+
+diff --git a/media/capture/video/linux/fake_v4l2_impl.cc b/media/capture/video/linux/fake_v4l2_impl.cc
+index 4a976815d009e68b3740aa71e8c8fd641bf91493..09647474bed3c7c7b34cd9fb161edd2a7d2e170f 100644
+--- a/media/capture/video/linux/fake_v4l2_impl.cc
++++ b/media/capture/video/linux/fake_v4l2_impl.cc
+@@ -380,10 +380,16 @@ FakeV4L2Impl::~FakeV4L2Impl() = default;
+ 
+ void FakeV4L2Impl::AddDevice(const std::string& device_name,
+                              const FakeV4L2DeviceConfig& config) {
++  base::AutoLock lock(lock_);
+   device_configs_.emplace(device_name, config);
+ }
+ 
+ int FakeV4L2Impl::open(const char* device_name, int flags) {
++  if (!device_name)
++    return kInvalidId;
++
++  base::AutoLock lock(lock_);
++
+   std::string device_name_as_string(device_name);
+   auto device_configs_iter = device_configs_.find(device_name_as_string);
+   if (device_configs_iter == device_configs_.end())
+@@ -403,6 +409,7 @@ int FakeV4L2Impl::open(const char* device_name, int flags) {
+ }
+ 
+ int FakeV4L2Impl::close(int fd) {
++  base::AutoLock lock(lock_);
+   auto device_iter = opened_devices_.find(fd);
+   if (device_iter == opened_devices_.end())
+     return kErrorReturnValue;
+@@ -412,6 +419,7 @@ int FakeV4L2Impl::close(int fd) {
+ }
+ 
+ int FakeV4L2Impl::ioctl(int fd, int request, void* argp) {
++  base::AutoLock lock(lock_);
+   auto device_iter = opened_devices_.find(fd);
+   if (device_iter == opened_devices_.end())
+     return EBADF;
+@@ -518,6 +526,7 @@ void* FakeV4L2Impl::mmap(void* /*start*/,
+                          int flags,
+                          int fd,
+                          off_t offset) {
++  base::AutoLock lock(lock_);
+   if (flags & MAP_FIXED) {
+     errno = EINVAL;
+     return MAP_FAILED;
+@@ -543,10 +552,12 @@ void* FakeV4L2Impl::mmap(void* /*start*/,
+ }
+ 
+ int FakeV4L2Impl::munmap(void* start, size_t length) {
++  base::AutoLock lock(lock_);
+   return kSuccessReturnValue;
+ }
+ 
+ int FakeV4L2Impl::poll(struct pollfd* ufds, unsigned int nfds, int timeout) {
++  base::AutoLock lock(lock_);
+   if (nfds != 1) {
+     // We only support polling of a single device.
+     errno = EINVAL;
+diff --git a/media/capture/video/linux/fake_v4l2_impl.h b/media/capture/video/linux/fake_v4l2_impl.h
+index 0a035a97dd8761b08eb4cfdbe2865efc346f0e23..ae7167f95163581c756ab4951717fd4352c67757 100644
+--- a/media/capture/video/linux/fake_v4l2_impl.h
++++ b/media/capture/video/linux/fake_v4l2_impl.h
+@@ -10,6 +10,7 @@
+ 
+ #include <linux/videodev2.h>
+ 
++#include "base/synchronization/lock.h"
+ #include "media/capture/capture_export.h"
+ #include "media/capture/video/linux/v4l2_capture_device.h"
+ #include "media/capture/video/video_capture_device_descriptor.h"
+@@ -52,11 +53,13 @@ class CAPTURE_EXPORT FakeV4L2Impl : public V4L2CaptureDevice {
+  private:
+   class OpenedDevice;
+ 
+-  int next_id_to_return_from_open_;
+-  std::map<std::string, FakeV4L2DeviceConfig> device_configs_;
+-  std::map<std::string, int> device_name_to_open_id_map_;
++  base::Lock lock_;
++
++  int next_id_to_return_from_open_ GUARDED_BY(lock_);
++  std::map<std::string, FakeV4L2DeviceConfig> device_configs_ GUARDED_BY(lock_);
++  std::map<std::string, int> device_name_to_open_id_map_ GUARDED_BY(lock_);
+   std::map<int /*value returned by open()*/, std::unique_ptr<OpenedDevice>>
+-      opened_devices_;
++      opened_devices_ GUARDED_BY(lock_);
+ };
+ 
+ }  // namespace media

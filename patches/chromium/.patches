@@ -175,6 +175,9 @@ cherry-pick-b77b38a3380c.patch
 cherry-pick-d9556a80a790.patch
 cherry-pick-910e9e40d376.patch
 cherry-pick-ff0d013f60fa.patch
+cherry-pick-e60cc80ff744.patch
+fix_use-after-free_with_xslt_strip-space.patch
 cherry-pick-3feda0244490.patch
 cherry-pick-cd98d7c0dae9.patch
 replace_first_of_two_waitableevents_in_creditcardaccessmanager.patch
+cherry-pick-ac9dc1235e28.patch

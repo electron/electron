@@ -1,0 +1,431 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Joey Arhar <jarhar@chromium.org>
+Date: Wed, 16 Jun 2021 02:41:13 +0000
+Subject: Fix use-after-free with XSLT strip-space
+
+Fixed: 1219209
+Change-Id: I3baab9d1b419407d964a80f10c6ca05e0294554f
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2965632
+Commit-Queue: Joey Arhar <jarhar@chromium.org>
+Reviewed-by: Stephen Chenney <schenney@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#892861}
+
+diff --git a/third_party/blink/web_tests/external/wpt/xslt/strip-space-crash.xml b/third_party/blink/web_tests/external/wpt/xslt/strip-space-crash.xml
+new file mode 100644
+index 0000000000000000000000000000000000000000..61a906a5e74b9c88061c565615187f9970baff72
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/xslt/strip-space-crash.xml
+@@ -0,0 +1,33 @@
++<?xml-stylesheet type="text/xsl" href="#style"?>
++<xsl:stylesheet
++    version="1.0"
++    xml:id="style"
++    xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
++    xmlns:exsl="http://exslt.org/common"
++    extension-element-prefixes="exsl"
++>
++    <xsl:strip-space elements="s"/>
++
++    <xsl:template match="/">
++        <xsl:variable name="space">
++            <s>
++                <xsl:text> </xsl:text>
++                <e/>
++                <xsl:text> </xsl:text>
++                <e/>
++                <xsl:text> </xsl:text>
++            </s>
++        </xsl:variable>
++        <xsl:apply-templates select="exsl:node-set($space)/s"/>
++    </xsl:template>
++
++    <xsl:template match="s">
++        <r>
++            <xsl:variable name="text-nodes" select="text()"/>
++            <xsl:apply-templates/>
++            <xsl:copy-of select="$text-nodes"/>
++        </r>
++    </xsl:template>
++
++    <xsl:template match="node()"/>
++</xsl:stylesheet>
+diff --git a/third_party/libxslt/chromium/Fix-use-after-free-in-xsltApplyTemplates.patch b/third_party/libxslt/chromium/Fix-use-after-free-in-xsltApplyTemplates.patch
+new file mode 100644
+index 0000000000000000000000000000000000000000..9b4c28d8756d6cf95027fc105ec875be5f71d952
+--- /dev/null
++++ b/third_party/libxslt/chromium/Fix-use-after-free-in-xsltApplyTemplates.patch
+@@ -0,0 +1,195 @@
++From: Nick Wellnhofer <wellnhofer@aevum.de>
++Date: Sat, 12 Jun 2021 20:02:53 +0200
++Subject: [PATCH] Fix use-after-free in xsltApplyTemplates
++
++xsltApplyTemplates without a select expression could delete nodes in
++the source document.
++
++1. Text nodes with strippable whitespace
++
++Whitespace from input documents is already stripped, so there's no
++need to strip it again. Under certain circumstances, xsltApplyTemplates
++could be fooled into deleting text nodes that are still referenced,
++resulting in a use-after-free.
++
++2. The DTD
++
++The DTD was only unlinked, but there's no good reason to do this just
++now. Maybe it was meant as a micro-optimization.
++
++3. Unknown nodes
++
++Useless and dangerous as well, especially with XInclude nodes.
++See https://gitlab.gnome.org/GNOME/libxml2/-/issues/268
++
++Simply stop trying to uselessly delete nodes when applying a template.
++This part of the code is probably a leftover from a time where
++xsltApplyStripSpaces wasn't implemented yet. Also note that
++xsltApplyTemplates with a select expression never tried to delete
++nodes.
++
++Also stop xsltDefaultProcessOneNode from deleting nodes for the same
++reasons.
++---
++ libxslt/transform.c | 119 +++-----------------------------------------
++ 1 file changed, 7 insertions(+), 112 deletions(-)
++
++diff --git a/libxslt/transform.c b/libxslt/transform.c
++index 04522154..3aba354f 100644
++--- a/libxslt/transform.c
+++++ b/libxslt/transform.c
++@@ -1895,7 +1895,7 @@ static void
++ xsltDefaultProcessOneNode(xsltTransformContextPtr ctxt, xmlNodePtr node,
++ 			  xsltStackElemPtr params) {
++     xmlNodePtr copy;
++-    xmlNodePtr delete = NULL, cur;
+++    xmlNodePtr cur;
++     int nbchild = 0, oldSize;
++     int childno = 0, oldPos;
++     xsltTemplatePtr template;
++@@ -1968,54 +1968,13 @@ xsltDefaultProcessOneNode(xsltTransformContextPtr ctxt, xmlNodePtr node,
++ 	    return;
++     }
++     /*
++-     * Handling of Elements: first pass, cleanup and counting
+++     * Handling of Elements: first pass, counting
++      */
++     cur = node->children;
++     while (cur != NULL) {
++-	switch (cur->type) {
++-	    case XML_TEXT_NODE:
++-	    case XML_CDATA_SECTION_NODE:
++-	    case XML_DOCUMENT_NODE:
++-	    case XML_HTML_DOCUMENT_NODE:
++-	    case XML_ELEMENT_NODE:
++-	    case XML_PI_NODE:
++-	    case XML_COMMENT_NODE:
++-		nbchild++;
++-		break;
++-            case XML_DTD_NODE:
++-		/* Unlink the DTD, it's still reachable using doc->intSubset */
++-		if (cur->next != NULL)
++-		    cur->next->prev = cur->prev;
++-		if (cur->prev != NULL)
++-		    cur->prev->next = cur->next;
++-		break;
++-	    default:
++-#ifdef WITH_XSLT_DEBUG_PROCESS
++-		XSLT_TRACE(ctxt,XSLT_TRACE_PROCESS_NODE,xsltGenericDebug(xsltGenericDebugContext,
++-		 "xsltDefaultProcessOneNode: skipping node type %d\n",
++-		                 cur->type));
++-#endif
++-		delete = cur;
++-	}
+++	if (IS_XSLT_REAL_NODE(cur))
+++	    nbchild++;
++ 	cur = cur->next;
++-	if (delete != NULL) {
++-#ifdef WITH_XSLT_DEBUG_PROCESS
++-	    XSLT_TRACE(ctxt,XSLT_TRACE_PROCESS_NODE,xsltGenericDebug(xsltGenericDebugContext,
++-		 "xsltDefaultProcessOneNode: removing ignorable blank node\n"));
++-#endif
++-	    xmlUnlinkNode(delete);
++-	    xmlFreeNode(delete);
++-	    delete = NULL;
++-	}
++-    }
++-    if (delete != NULL) {
++-#ifdef WITH_XSLT_DEBUG_PROCESS
++-	XSLT_TRACE(ctxt,XSLT_TRACE_PROCESS_NODE,xsltGenericDebug(xsltGenericDebugContext,
++-	     "xsltDefaultProcessOneNode: removing ignorable blank node\n"));
++-#endif
++-	xmlUnlinkNode(delete);
++-	xmlFreeNode(delete);
++-	delete = NULL;
++     }
++ 
++     /*
++@@ -4864,7 +4823,7 @@ xsltApplyTemplates(xsltTransformContextPtr ctxt, xmlNodePtr node,
++     xsltStylePreCompPtr comp = (xsltStylePreCompPtr) castedComp;
++ #endif
++     int i;
++-    xmlNodePtr cur, delNode = NULL, oldContextNode;
+++    xmlNodePtr cur, oldContextNode;
++     xmlNodeSetPtr list = NULL, oldList;
++     xsltStackElemPtr withParams = NULL;
++     int oldXPProximityPosition, oldXPContextSize;
++@@ -4998,73 +4957,9 @@ xsltApplyTemplates(xsltTransformContextPtr ctxt, xmlNodePtr node,
++ 	else
++ 	    cur = NULL;
++ 	while (cur != NULL) {
++-	    switch (cur->type) {
++-		case XML_TEXT_NODE:
++-		    if ((IS_BLANK_NODE(cur)) &&
++-			(cur->parent != NULL) &&
++-			(cur->parent->type == XML_ELEMENT_NODE) &&
++-			(ctxt->style->stripSpaces != NULL)) {
++-			const xmlChar *val;
++-
++-			if (cur->parent->ns != NULL) {
++-			    val = (const xmlChar *)
++-				  xmlHashLookup2(ctxt->style->stripSpaces,
++-						 cur->parent->name,
++-						 cur->parent->ns->href);
++-			    if (val == NULL) {
++-				val = (const xmlChar *)
++-				  xmlHashLookup2(ctxt->style->stripSpaces,
++-						 BAD_CAST "*",
++-						 cur->parent->ns->href);
++-			    }
++-			} else {
++-			    val = (const xmlChar *)
++-				  xmlHashLookup2(ctxt->style->stripSpaces,
++-						 cur->parent->name, NULL);
++-			}
++-			if ((val != NULL) &&
++-			    (xmlStrEqual(val, (xmlChar *) "strip"))) {
++-			    delNode = cur;
++-			    break;
++-			}
++-		    }
++-		    /* Intentional fall-through */
++-		case XML_ELEMENT_NODE:
++-		case XML_DOCUMENT_NODE:
++-		case XML_HTML_DOCUMENT_NODE:
++-		case XML_CDATA_SECTION_NODE:
++-		case XML_PI_NODE:
++-		case XML_COMMENT_NODE:
++-		    xmlXPathNodeSetAddUnique(list, cur);
++-		    break;
++-		case XML_DTD_NODE:
++-		    /* Unlink the DTD, it's still reachable
++-		     * using doc->intSubset */
++-		    if (cur->next != NULL)
++-			cur->next->prev = cur->prev;
++-		    if (cur->prev != NULL)
++-			cur->prev->next = cur->next;
++-		    break;
++-		case XML_NAMESPACE_DECL:
++-		    break;
++-		default:
++-#ifdef WITH_XSLT_DEBUG_PROCESS
++-		    XSLT_TRACE(ctxt,XSLT_TRACE_APPLY_TEMPLATES,xsltGenericDebug(xsltGenericDebugContext,
++-		     "xsltApplyTemplates: skipping cur type %d\n",
++-				     cur->type));
++-#endif
++-		    delNode = cur;
++-	    }
+++            if (IS_XSLT_REAL_NODE(cur))
+++		xmlXPathNodeSetAddUnique(list, cur);
++ 	    cur = cur->next;
++-	    if (delNode != NULL) {
++-#ifdef WITH_XSLT_DEBUG_PROCESS
++-		XSLT_TRACE(ctxt,XSLT_TRACE_APPLY_TEMPLATES,xsltGenericDebug(xsltGenericDebugContext,
++-		     "xsltApplyTemplates: removing ignorable blank cur\n"));
++-#endif
++-		xmlUnlinkNode(delNode);
++-		xmlFreeNode(delNode);
++-		delNode = NULL;
++-	    }
++ 	}
++     }
++ 
++-- 
++2.20.1 (Apple Git-117)
++
+diff --git a/third_party/libxslt/chromium/roll.py b/third_party/libxslt/chromium/roll.py
+index 352bbd6d937f19c5cbb409f184f5b4e0abf4b7b3..c438a9eb96dcc62ca827fb4a647fb2cf1cc8cc0b 100755
+--- a/third_party/libxslt/chromium/roll.py
++++ b/third_party/libxslt/chromium/roll.py
+@@ -67,6 +67,7 @@ import tempfile
+ PATCHES = [
+     'get-file-attributes-a.patch',
+     'xslt-locale.patch',
++    'Fix-use-after-free-in-xsltApplyTemplates.patch',
+ ]
+ 
+ 
+diff --git a/third_party/libxslt/src/libxslt.spec b/third_party/libxslt/src/libxslt.spec
+index 80b320fb86980367cddc579c386c24a2a1708f7c..7fb51e275fa4cc4a2bfc613ffb3868f464deeb5a 100644
+--- a/third_party/libxslt/src/libxslt.spec
++++ b/third_party/libxslt/src/libxslt.spec
+@@ -128,5 +128,5 @@ rm -fr %{buildroot}
+ %doc python/tests/*.xsl
+ 
+ %changelog
+-* Fri Nov  8 2019 Daniel Veillard <veillard@redhat.com>
++* Tue Jun 15 2021 Daniel Veillard <veillard@redhat.com>
+ - upstream release 1.1.34 see http://xmlsoft.org/XSLT/news.html
+diff --git a/third_party/libxslt/src/libxslt/transform.c b/third_party/libxslt/src/libxslt/transform.c
+index d1c479320eca266c7b0996e3c16d47e7d6c5aaa9..265f5b3856f785f565691e2f5939c99275183e7f 100644
+--- a/third_party/libxslt/src/libxslt/transform.c
++++ b/third_party/libxslt/src/libxslt/transform.c
+@@ -1895,7 +1895,7 @@ static void
+ xsltDefaultProcessOneNode(xsltTransformContextPtr ctxt, xmlNodePtr node,
+ 			  xsltStackElemPtr params) {
+     xmlNodePtr copy;
+-    xmlNodePtr delete = NULL, cur;
++    xmlNodePtr cur;
+     int nbchild = 0, oldSize;
+     int childno = 0, oldPos;
+     xsltTemplatePtr template;
+@@ -1968,54 +1968,13 @@ xsltDefaultProcessOneNode(xsltTransformContextPtr ctxt, xmlNodePtr node,
+ 	    return;
+     }
+     /*
+-     * Handling of Elements: first pass, cleanup and counting
++     * Handling of Elements: first pass, counting
+      */
+     cur = node->children;
+     while (cur != NULL) {
+-	switch (cur->type) {
+-	    case XML_TEXT_NODE:
+-	    case XML_CDATA_SECTION_NODE:
+-	    case XML_DOCUMENT_NODE:
+-	    case XML_HTML_DOCUMENT_NODE:
+-	    case XML_ELEMENT_NODE:
+-	    case XML_PI_NODE:
+-	    case XML_COMMENT_NODE:
+-		nbchild++;
+-		break;
+-            case XML_DTD_NODE:
+-		/* Unlink the DTD, it's still reachable using doc->intSubset */
+-		if (cur->next != NULL)
+-		    cur->next->prev = cur->prev;
+-		if (cur->prev != NULL)
+-		    cur->prev->next = cur->next;
+-		break;
+-	    default:
+-#ifdef WITH_XSLT_DEBUG_PROCESS
+-		XSLT_TRACE(ctxt,XSLT_TRACE_PROCESS_NODE,xsltGenericDebug(xsltGenericDebugContext,
+-		 "xsltDefaultProcessOneNode: skipping node type %d\n",
+-		                 cur->type));
+-#endif
+-		delete = cur;
+-	}
++	if (IS_XSLT_REAL_NODE(cur))
++	    nbchild++;
+ 	cur = cur->next;
+-	if (delete != NULL) {
+-#ifdef WITH_XSLT_DEBUG_PROCESS
+-	    XSLT_TRACE(ctxt,XSLT_TRACE_PROCESS_NODE,xsltGenericDebug(xsltGenericDebugContext,
+-		 "xsltDefaultProcessOneNode: removing ignorable blank node\n"));
+-#endif
+-	    xmlUnlinkNode(delete);
+-	    xmlFreeNode(delete);
+-	    delete = NULL;
+-	}
+-    }
+-    if (delete != NULL) {
+-#ifdef WITH_XSLT_DEBUG_PROCESS
+-	XSLT_TRACE(ctxt,XSLT_TRACE_PROCESS_NODE,xsltGenericDebug(xsltGenericDebugContext,
+-	     "xsltDefaultProcessOneNode: removing ignorable blank node\n"));
+-#endif
+-	xmlUnlinkNode(delete);
+-	xmlFreeNode(delete);
+-	delete = NULL;
+     }
+ 
+     /*
+@@ -4864,7 +4823,7 @@ xsltApplyTemplates(xsltTransformContextPtr ctxt, xmlNodePtr node,
+     xsltStylePreCompPtr comp = (xsltStylePreCompPtr) castedComp;
+ #endif
+     int i;
+-    xmlNodePtr cur, delNode = NULL, oldContextNode;
++    xmlNodePtr cur, oldContextNode;
+     xmlNodeSetPtr list = NULL, oldList;
+     xsltStackElemPtr withParams = NULL;
+     int oldXPProximityPosition, oldXPContextSize;
+@@ -4998,73 +4957,9 @@ xsltApplyTemplates(xsltTransformContextPtr ctxt, xmlNodePtr node,
+ 	else
+ 	    cur = NULL;
+ 	while (cur != NULL) {
+-	    switch (cur->type) {
+-		case XML_TEXT_NODE:
+-		    if ((IS_BLANK_NODE(cur)) &&
+-			(cur->parent != NULL) &&
+-			(cur->parent->type == XML_ELEMENT_NODE) &&
+-			(ctxt->style->stripSpaces != NULL)) {
+-			const xmlChar *val;
+-
+-			if (cur->parent->ns != NULL) {
+-			    val = (const xmlChar *)
+-				  xmlHashLookup2(ctxt->style->stripSpaces,
+-						 cur->parent->name,
+-						 cur->parent->ns->href);
+-			    if (val == NULL) {
+-				val = (const xmlChar *)
+-				  xmlHashLookup2(ctxt->style->stripSpaces,
+-						 BAD_CAST "*",
+-						 cur->parent->ns->href);
+-			    }
+-			} else {
+-			    val = (const xmlChar *)
+-				  xmlHashLookup2(ctxt->style->stripSpaces,
+-						 cur->parent->name, NULL);
+-			}
+-			if ((val != NULL) &&
+-			    (xmlStrEqual(val, (xmlChar *) "strip"))) {
+-			    delNode = cur;
+-			    break;
+-			}
+-		    }
+-		    /* Intentional fall-through */
+-		case XML_ELEMENT_NODE:
+-		case XML_DOCUMENT_NODE:
+-		case XML_HTML_DOCUMENT_NODE:
+-		case XML_CDATA_SECTION_NODE:
+-		case XML_PI_NODE:
+-		case XML_COMMENT_NODE:
+-		    xmlXPathNodeSetAddUnique(list, cur);
+-		    break;
+-		case XML_DTD_NODE:
+-		    /* Unlink the DTD, it's still reachable
+-		     * using doc->intSubset */
+-		    if (cur->next != NULL)
+-			cur->next->prev = cur->prev;
+-		    if (cur->prev != NULL)
+-			cur->prev->next = cur->next;
+-		    break;
+-		case XML_NAMESPACE_DECL:
+-		    break;
+-		default:
+-#ifdef WITH_XSLT_DEBUG_PROCESS
+-		    XSLT_TRACE(ctxt,XSLT_TRACE_APPLY_TEMPLATES,xsltGenericDebug(xsltGenericDebugContext,
+-		     "xsltApplyTemplates: skipping cur type %d\n",
+-				     cur->type));
+-#endif
+-		    delNode = cur;
+-	    }
++            if (IS_XSLT_REAL_NODE(cur))
++		xmlXPathNodeSetAddUnique(list, cur);
+ 	    cur = cur->next;
+-	    if (delNode != NULL) {
+-#ifdef WITH_XSLT_DEBUG_PROCESS
+-		XSLT_TRACE(ctxt,XSLT_TRACE_APPLY_TEMPLATES,xsltGenericDebug(xsltGenericDebugContext,
+-		     "xsltApplyTemplates: removing ignorable blank cur\n"));
+-#endif
+-		xmlUnlinkNode(delNode);
+-		xmlFreeNode(delNode);
+-		delNode = NULL;
+-	    }
+ 	}
+     }
+ 
