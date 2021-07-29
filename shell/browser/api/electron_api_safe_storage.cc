@@ -20,6 +20,7 @@ namespace electron {
 namespace api {
 
 bool SafeStorage::electron_crypto_ready = false;
+static const char* const kEncryptionVersionPrefix[] = {"v10", "v11"};
 
 gin::WrapperInfo SafeStorage::kWrapperInfo = {gin::kEmbedderNativeGin};
 
@@ -34,6 +35,14 @@ v8::Local<v8::Value> SafeStorage::EncryptString(v8::Isolate* isolate,
                                                 const std::string& plaintext) {
   std::string ciphertext;
   bool encrypted = OSCrypt::EncryptString(plaintext, &ciphertext);
+
+  if (!OSCrypt::IsEncryptionAvailable()) {
+    gin_helper::ErrorThrower(isolate).ThrowError(
+        "Error while decrypting the ciphertext provided to "
+        "safeStorage.decryptString. "
+        "Encryption is not available.");
+    return v8::Local<v8::Value>();
+  }
 
   if (!encrypted) {
     gin_helper::ErrorThrower(isolate).ThrowError(
@@ -56,7 +65,6 @@ std::string SafeStorage::DecryptString(v8::Isolate* isolate,
 
   // ensures an error is thrown in Mac or Linux on
   // decryption failure, rather than failing silently
-  std::vector<std::string> kEncryptionVersionPrefix{"v10", "v11"};
   const char* data = node::Buffer::Data(buffer);
   auto size = node::Buffer::Length(buffer);
   std::string ciphertext(data, size);
@@ -69,13 +77,19 @@ std::string SafeStorage::DecryptString(v8::Isolate* isolate,
     gin_helper::ErrorThrower(isolate).ThrowError(
         "Error while decrypting the ciphertext provided to "
         "safeStorage.decryptString. "
-        "Ciphertext may not be encrypted.");
+        "Ciphertext does not appear to be encrypted.");
     return "";
   }
 
   std::string plaintext;
   bool decrypted = OSCrypt::DecryptString(ciphertext, &plaintext);
-
+  if (!OSCrypt::IsEncryptionAvailable()) {
+    gin_helper::ErrorThrower(isolate).ThrowError(
+        "Error while decrypting the ciphertext provided to "
+        "safeStorage.decryptString. "
+        "Decryption is not available.");
+    return "";
+  }
   if (!decrypted) {
     gin_helper::ErrorThrower(isolate).ThrowError(
         "Error while decrypting the ciphertext provided to "
