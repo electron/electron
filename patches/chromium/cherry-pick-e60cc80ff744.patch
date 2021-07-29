@@ -1,0 +1,35 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shrek Shao <shrekshao@google.com>
+Date: Tue, 29 Jun 2021 01:17:03 +0000
+Subject: Fix multidraw validation drawcount + offset out of bounds
+
+(cherry picked from commit 7d0a12ce19fed024d56b95a692d888fe3ef14e2f)
+
+Bug: 1219886
+Change-Id: I8a84664150758370d9a77ee22ac5549bead0e37e
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2977850
+Reviewed-by: Kenneth Russell <kbr@chromium.org>
+Commit-Queue: Kenneth Russell <kbr@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#895423}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2988885
+Reviewed-by: Shrek Shao <shrekshao@google.com>
+Reviewed-by: Austin Eng <enga@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4515@{#1101}
+Cr-Branched-From: 488fc70865ddaa05324ac00a54a6eb783b4bc41c-refs/heads/master@{#885287}
+
+diff --git a/third_party/blink/renderer/modules/webgl/webgl_multi_draw_common.cc b/third_party/blink/renderer/modules/webgl/webgl_multi_draw_common.cc
+index 91de853db2b382a7797d22cf741a84f463a2d5f2..c3cae01c63046ce4b8be2c0b03243e9105ed4f23 100644
+--- a/third_party/blink/renderer/modules/webgl/webgl_multi_draw_common.cc
++++ b/third_party/blink/renderer/modules/webgl/webgl_multi_draw_common.cc
+@@ -34,6 +34,11 @@ bool WebGLMultiDrawCommon::ValidateArray(WebGLExtensionScopedContext* scoped,
+                                          outOfBoundsDescription);
+     return false;
+   }
++  if (static_cast<uint64_t>(drawcount) + offset > size) {
++    scoped->Context()->SynthesizeGLError(GL_INVALID_OPERATION, function_name,
++                                         "drawcount plus offset out of bounds");
++    return false;
++  }
+   return true;
+ }
+ 
