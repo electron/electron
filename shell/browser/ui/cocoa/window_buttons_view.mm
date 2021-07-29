@@ -4,9 +4,9 @@
 
 #include "shell/browser/ui/cocoa/window_buttons_view.h"
 
+#include "base/cxx17_backports.h"
 #include "base/i18n/rtl.h"
 #include "base/logging.h"
-#include "base/stl_util.h"
 #include "ui/gfx/mac/coordinate_conversion.h"
 
 namespace {

@@ -131,7 +131,7 @@ RendererClientBase::RendererClientBase() {
   std::vector<std::string> streaming_schemes_list =
       ParseSchemesCLISwitch(command_line, switches::kStreamingSchemes);
   for (const std::string& scheme : streaming_schemes_list)
-    media::AddStreamingScheme(scheme.c_str());
+    blink::AddStreamingScheme(scheme.c_str());
   // Parse --secure-schemes=scheme1,scheme2
   std::vector<std::string> secure_schemes_list =
       ParseSchemesCLISwitch(command_line, switches::kSecureSchemes);

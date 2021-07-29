@@ -143,7 +143,7 @@ ServiceWorkerManager* ElectronExtensionSystem::service_worker_manager() {
 }
 
 UserScriptManager* ElectronExtensionSystem::user_script_manager() {
-  return new UserScriptManager(browser_context_);
+  return user_script_manager_.get();
 }
 
 StateStore* ElectronExtensionSystem::state_store() {

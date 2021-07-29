@@ -7,10 +7,10 @@ Guard usages in blink of private Mac APIs by MAS_BUILD, so they can be
 excluded for people who want to submit their apps to the Mac App store.
 
 diff --git a/content/browser/accessibility/accessibility_tree_formatter_mac.mm b/content/browser/accessibility/accessibility_tree_formatter_mac.mm
-index e3470fdbf945042a16dcb2affb7859607ca4184a..641d0a0e57ef7903ba9577954f85ae62a6dd6d6d 100644
+index c50d742ec575d831b4ae3df0220a189c554ea028..b5129cae74f72238160e5cd435ef1c1e42a49f2a 100644
 --- a/content/browser/accessibility/accessibility_tree_formatter_mac.mm
 +++ b/content/browser/accessibility/accessibility_tree_formatter_mac.mm
-@@ -273,7 +273,7 @@
+@@ -288,7 +288,7 @@
        return PopulateSize([value sizeValue]);
      }
    }
@@ -19,7 +19,7 @@ index e3470fdbf945042a16dcb2affb7859607ca4184a..641d0a0e57ef7903ba9577954f85ae62
    // AXTextMarker
    if (content::IsAXTextMarker(value)) {
      return PopulateTextPosition(content::AXTextMarkerToAXPosition(value),
-@@ -284,6 +284,7 @@
+@@ -299,6 +299,7 @@
    if (content::IsAXTextMarkerRange(value)) {
      return PopulateTextMarkerRange(value, line_indexer);
    }
@@ -27,7 +27,7 @@ index e3470fdbf945042a16dcb2affb7859607ca4184a..641d0a0e57ef7903ba9577954f85ae62
  
    // AXValue
    if (CFGetTypeID(value) == AXValueGetTypeID()) {
-@@ -401,7 +402,7 @@
+@@ -416,7 +417,7 @@
                      AXMakeConst(affinity));
    return set;
  }
@@ -36,7 +36,7 @@ index e3470fdbf945042a16dcb2affb7859607ca4184a..641d0a0e57ef7903ba9577954f85ae62
  base::Value AccessibilityTreeFormatterMac::PopulateTextMarkerRange(
      id marker_range,
      const LineIndexer* line_indexer) const {
-@@ -417,7 +418,7 @@
+@@ -432,7 +433,7 @@
                 PopulateTextPosition(ax_range.focus()->Clone(), line_indexer));
    return dict;
  }
@@ -46,10 +46,10 @@ index e3470fdbf945042a16dcb2affb7859607ca4184a..641d0a0e57ef7903ba9577954f85ae62
      NSArray* node_array,
      const LineIndexer* line_indexer) const {
 diff --git a/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm b/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm
-index 42800aa884846b1590b1df2b4b8a10d20ce24345..41c7bd66791fb81ea65a0e615bc46317012d058e 100644
+index 1bc15f169aca1a42db0713472eab0791260e0000..007b2b8337b90d549c96d32d8a72629a72ae9337 100644
 --- a/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm
 +++ b/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm
-@@ -140,9 +140,11 @@
+@@ -151,9 +151,11 @@
    if (IsBrowserAccessibilityCocoa(target) || IsAXUIElement(target))
      return InvokeForAXElement(target, property_node);
  
@@ -61,7 +61,7 @@ index 42800aa884846b1590b1df2b4b8a10d20ce24345..41c7bd66791fb81ea65a0e615bc46317
  
    if ([target isKindOfClass:[NSArray class]])
      return InvokeForArray(target, property_node);
-@@ -303,6 +305,7 @@
+@@ -329,6 +331,7 @@
        property_name == "AXTextMarkerRangeForUIElement") {  // UIElement
      return OptionalNSObject::NotNilOrError(PropertyNodeToUIElement(arg_node));
    }
@@ -69,7 +69,7 @@ index 42800aa884846b1590b1df2b4b8a10d20ce24345..41c7bd66791fb81ea65a0e615bc46317
    if (property_name == "AXIndexForTextMarker" ||
        property_name == "AXNextWordEndTextMarkerForTextMarker" ||
        property_name ==
-@@ -313,6 +316,7 @@
+@@ -340,6 +343,7 @@
      return OptionalNSObject::NotNilOrError(
          PropertyNodeToTextMarkerRange(arg_node));
    }
@@ -77,7 +77,7 @@ index 42800aa884846b1590b1df2b4b8a10d20ce24345..41c7bd66791fb81ea65a0e615bc46317
  
    return OptionalNSObject::NotApplicable();
  }
-@@ -384,6 +388,7 @@
+@@ -431,6 +435,7 @@
    return uielement;
  }
  
@@ -85,7 +85,7 @@ index 42800aa884846b1590b1df2b4b8a10d20ce24345..41c7bd66791fb81ea65a0e615bc46317
  id AttributeInvoker::DictNodeToTextMarker(
      const AXPropertyNode& dictnode) const {
    if (!dictnode.IsDict()) {
-@@ -491,6 +496,7 @@ OptionalNSObject TextMarkerRangeGetEndMarker(const OptionalNSObject& obj) {
+@@ -538,6 +543,7 @@ OptionalNSObject TextMarkerRangeGetEndMarker(const OptionalNSObject& obj) {
    return OptionalNSObject::NotNilOrError(content::AXTextMarkerFrom(
        cocoa_node, range.focus()->text_offset(), range.focus()->affinity()));
  }

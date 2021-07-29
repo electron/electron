@@ -1,0 +1,82 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Nico Weber <thakis@chromium.org>
+Date: Mon, 12 Jul 2021 18:41:05 +0000
+Subject: Revert "Roll clang llvmorg-13-init-14732-g8a7b5ebf-2 :
+ llvmorg-13-init-15040-gc10947b5-1"
+
+This reverts commit 1745624daa79670ba500e4567b8e9362ead7c441.
+
+Reason for revert: Somewhat speculative, see
+https://bugs.chromium.org/p/chromium/issues/detail?id=1228392
+
+Original change's description:
+> Roll clang llvmorg-13-init-14732-g8a7b5ebf-2 : llvmorg-13-init-15040-gc10947b5-1
+>
+> Ran `tools/clang/scripts/upload_revision.py c10947b5f808af312e9f904096ae1dbaf95ad9f6`.
+>
+> Bug: 1227195
+> Change-Id: I471547ef3d31806b3016b2243ea0098b910cbb12
+> Cq-Include-Trybots: chromium/try:chromeos-amd64-generic-cfi-thin-lto-rel
+> Cq-Include-Trybots: chromium/try:dawn-win10-x86-deps-rel
+> Cq-Include-Trybots: chromium/try:linux-chromeos-dbg
+> Cq-Include-Trybots: chromium/try:linux_angle_deqp_rel_ng
+> Cq-Include-Trybots: chromium/try:linux_chromium_cfi_rel_ng
+> Cq-Include-Trybots: chromium/try:linux_chromium_chromeos_msan_rel_ng
+> Cq-Include-Trybots: chromium/try:linux_chromium_compile_dbg_32_ng
+> Cq-Include-Trybots: chromium/try:linux_chromium_msan_rel_ng
+> Cq-Include-Trybots: chromium/try:mac-arm64-rel,mac_chromium_asan_rel_ng
+> Cq-Include-Trybots: chromium/try:win-asan,win7-rel
+> Cq-Include-Trybots: chromium/try:android-official,fuchsia-official
+> Cq-Include-Trybots: chromium/try:mac-official,linux-official
+> Cq-Include-Trybots: chromium/try:win-official,win32-official
+> Cq-Include-Trybots: chrome/try:iphone-device,ipad-device
+> Cq-Include-Trybots: chrome/try:linux-chromeos-chrome
+> Cq-Include-Trybots: chrome/try:win-chrome,win64-chrome,mac-chrome
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3019458
+> Auto-Submit: Nico Weber <thakis@chromium.org>
+> Commit-Queue: Hans Wennborg <hans@chromium.org>
+> Reviewed-by: Hans Wennborg <hans@chromium.org>
+> Cr-Commit-Position: refs/heads/master@{#900373}
+
+Bug: 1227195
+Change-Id: Ic48878632e844411eae89b04d78253df08eee6df
+Cq-Include-Trybots: chromium/try:chromeos-amd64-generic-cfi-thin-lto-rel
+Cq-Include-Trybots: chromium/try:dawn-win10-x86-deps-rel
+Cq-Include-Trybots: chromium/try:linux-chromeos-dbg
+Cq-Include-Trybots: chromium/try:linux_angle_deqp_rel_ng
+Cq-Include-Trybots: chromium/try:linux_chromium_cfi_rel_ng
+Cq-Include-Trybots: chromium/try:linux_chromium_chromeos_msan_rel_ng
+Cq-Include-Trybots: chromium/try:linux_chromium_compile_dbg_32_ng
+Cq-Include-Trybots: chromium/try:linux_chromium_msan_rel_ng
+Cq-Include-Trybots: chromium/try:mac-arm64-rel,mac_chromium_asan_rel_ng
+Cq-Include-Trybots: chromium/try:win-asan,win7-rel
+Cq-Include-Trybots: chromium/try:android-official,fuchsia-official
+Cq-Include-Trybots: chromium/try:mac-official,linux-official
+Cq-Include-Trybots: chromium/try:win-official,win32-official
+Cq-Include-Trybots: chrome/try:iphone-device,ipad-device
+Cq-Include-Trybots: chrome/try:linux-chromeos-chrome
+Cq-Include-Trybots: chrome/try:win-chrome,win64-chrome,mac-chrome
+No-Presubmit: true
+No-Tree-Checks: true
+No-Try: true
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3022043
+Auto-Submit: Nico Weber <thakis@chromium.org>
+Commit-Queue: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/heads/master@{#900568}
+
+diff --git a/tools/clang/scripts/update.py b/tools/clang/scripts/update.py
+index 93947d92c483def78f0ebbeb1a6f6921a174237d..23127877b276aefbb443686a8295a42d149768e0 100755
+--- a/tools/clang/scripts/update.py
++++ b/tools/clang/scripts/update.py
+@@ -39,8 +39,8 @@ import zipfile
+ # https://chromium.googlesource.com/chromium/src/+/main/docs/updating_clang.md
+ # Reverting problematic clang rolls is safe, though.
+ # This is the output of `git describe` and is usable as a commit-ish.
+-CLANG_REVISION = 'llvmorg-13-init-15163-g98033fdc'
+-CLANG_SUB_REVISION = 1
++CLANG_REVISION = 'llvmorg-13-init-14732-g8a7b5ebf'
++CLANG_SUB_REVISION = 2
+ 
+ PACKAGE_VERSION = '%s-%s' % (CLANG_REVISION, CLANG_SUB_REVISION)
+ RELEASE_VERSION = '13.0.0'
