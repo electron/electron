@@ -1,0 +1,38 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Reilly Grant <reillyg@chromium.org>
+Date: Mon, 28 Jun 2021 21:55:24 +0000
+Subject: serial: Fix parent class tracing for SerialPort
+
+When SerialPort was updated to be ActiveScriptWrappable and an
+EventTarget the Trace method was not updated to call the parent class
+trace methods.
+
+(cherry picked from commit 4059ecc3a5352601a4d79196f90c8ca19262afe1)
+
+Bug: 1220078
+Change-Id: If6967a913268bce86d4488359a9418a814530f84
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2965255
+Auto-Submit: Reilly Grant <reillyg@chromium.org>
+Commit-Queue: Tom Sepez <tsepez@chromium.org>
+Reviewed-by: Tom Sepez <tsepez@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#893039}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2992740
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: Reilly Grant <reillyg@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4472@{#1531}
+Cr-Branched-From: 3d60439cfb36485e76a1c5bb7f513d3721b20da1-refs/heads/master@{#870763}
+
+diff --git a/third_party/blink/renderer/modules/serial/serial_port.cc b/third_party/blink/renderer/modules/serial/serial_port.cc
+index b485935f6cfd1b397d86acb90ebf344e22e18a2c..835ac5f3526d1a933f81e3546344aa409a5eec09 100644
+--- a/third_party/blink/renderer/modules/serial/serial_port.cc
++++ b/third_party/blink/renderer/modules/serial/serial_port.cc
+@@ -508,7 +508,8 @@ void SerialPort::Trace(Visitor* visitor) const {
+   visitor->Trace(open_resolver_);
+   visitor->Trace(signal_resolvers_);
+   visitor->Trace(close_resolver_);
+-  ScriptWrappable::Trace(visitor);
++  EventTargetWithInlineData::Trace(visitor);
++  ActiveScriptWrappable<SerialPort>::Trace(visitor);
+ }
+ 
+ bool SerialPort::HasPendingActivity() const {
