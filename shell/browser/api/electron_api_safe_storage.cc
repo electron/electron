@@ -19,7 +19,10 @@ namespace electron {
 
 namespace api {
 
+#if DCHECK_IS_ON()
 bool SafeStorage::electron_crypto_ready = false;
+#endif
+
 static const char* const kEncryptionVersionPrefix[] = {"v10", "v11"};
 
 gin::WrapperInfo SafeStorage::kWrapperInfo = {gin::kEmbedderNativeGin};
@@ -33,9 +36,6 @@ bool SafeStorage::IsEncryptionAvailable() {
 
 v8::Local<v8::Value> SafeStorage::EncryptString(v8::Isolate* isolate,
                                                 const std::string& plaintext) {
-  std::string ciphertext;
-  bool encrypted = OSCrypt::EncryptString(plaintext, &ciphertext);
-
   if (!OSCrypt::IsEncryptionAvailable()) {
     gin_helper::ErrorThrower(isolate).ThrowError(
         "Error while decrypting the ciphertext provided to "
@@ -43,6 +43,9 @@ v8::Local<v8::Value> SafeStorage::EncryptString(v8::Isolate* isolate,
         "Encryption is not available.");
     return v8::Local<v8::Value>();
   }
+
+  std::string ciphertext;
+  bool encrypted = OSCrypt::EncryptString(plaintext, &ciphertext);
 
   if (!encrypted) {
     gin_helper::ErrorThrower(isolate).ThrowError(
@@ -57,6 +60,14 @@ v8::Local<v8::Value> SafeStorage::EncryptString(v8::Isolate* isolate,
 
 std::string SafeStorage::DecryptString(v8::Isolate* isolate,
                                        v8::Local<v8::Value> buffer) {
+  if (!OSCrypt::IsEncryptionAvailable()) {
+    gin_helper::ErrorThrower(isolate).ThrowError(
+        "Error while decrypting the ciphertext provided to "
+        "safeStorage.decryptString. "
+        "Decryption is not available.");
+    return "";
+  }
+
   if (!node::Buffer::HasInstance(buffer)) {
     gin_helper::ErrorThrower(isolate).ThrowError(
         "Expected the first argument of decryptString() to be a buffer");
@@ -83,13 +94,6 @@ std::string SafeStorage::DecryptString(v8::Isolate* isolate,
 
   std::string plaintext;
   bool decrypted = OSCrypt::DecryptString(ciphertext, &plaintext);
-  if (!OSCrypt::IsEncryptionAvailable()) {
-    gin_helper::ErrorThrower(isolate).ThrowError(
-        "Error while decrypting the ciphertext provided to "
-        "safeStorage.decryptString. "
-        "Decryption is not available.");
-    return "";
-  }
   if (!decrypted) {
     gin_helper::ErrorThrower(isolate).ThrowError(
         "Error while decrypting the ciphertext provided to "

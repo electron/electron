@@ -15,7 +15,7 @@ describe('safeStorage module', () => {
     }
   });
 
-  /* isEncryptionAvailable returns false in Linux when running in headless mode (on CI). Headless mode stops
+  /* isEncryptionAvailable returns false in Linux when running CI due to a mocked dbus. This stops
    * Chrome from reaching the system's keyring or libsecret. When running the tests with config.store
    * set to basic-text, a nullptr is returned from chromium,  defaulting the available encryption to false.
    * Thus, we expect false here when the operating system is Linux.
