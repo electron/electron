@@ -1,0 +1,118 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Clemens Backes <clemensb@chromium.org>
+Date: Tue, 13 Jul 2021 16:56:32 +0200
+Subject: Merged: [liftoff] Fix merges with moves of cache registers
+
+On v9.2 we did not have a chached memory start yet, so the patch needed
+major adjustments.
+
+This is the original CL description:
+We did not handle conflicts between regular register moves and the
+cached instance / cached memory start correctly. This could lead to us
+overwriting a regular register when restoring the cached instance, which
+results in either crashes or miscalculations afterwards.
+
+R=ahaas@chromium.org
+
+(cherry picked from commit cb6218cab029d7ab08bc6d24200a9a966db826ae)
+
+Bug: chromium:1217064
+No-Try: true
+No-Tree-Checks: true
+No-Presubmit: true
+Change-Id: Iea849950ed1209efdb965ec49e921a0a26513fef
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3024151
+Commit-Queue: Clemens Backes <clemensb@chromium.org>
+Reviewed-by: Andreas Haas <ahaas@chromium.org>
+Cr-Commit-Position: refs/branch-heads/9.2@{#35}
+Cr-Branched-From: 51238348f95a1f5e0acc321efac7942d18a687a2-refs/heads/9.2.230@{#1}
+Cr-Branched-From: 587a04f02ab0487d194b55a7137dc2045e071597-refs/heads/master@{#74656}
+
+diff --git a/src/wasm/baseline/liftoff-assembler.cc b/src/wasm/baseline/liftoff-assembler.cc
+index a544460ab986869a4fd30ae360b1dfc39d099f61..f8b01ac960d70e0491bbf27a0e33e4d19d8d597f 100644
+--- a/src/wasm/baseline/liftoff-assembler.cc
++++ b/src/wasm/baseline/liftoff-assembler.cc
+@@ -738,22 +738,36 @@ void LiftoffAssembler::MergeStackWith(CacheState& target, uint32_t arity,
+                                 cache_state_.stack_state[stack_base + i]);
+   }
+ 
++  // Check whether the cached instance needs to be moved to another register.
++  // Register moves are executed as part of the {StackTransferRecipe}. Remember
++  // whether the register content has to be reloaded after executing the stack
++  // transfers.
++  bool reload_instance = false;
++  // If the registers match, or the destination has no cache register, nothing
++  // needs to be done.
+   if (cache_state_.cached_instance != target.cached_instance &&
+       target.cached_instance != no_reg) {
++    // On forward jumps, just reset the cached register in the target state.
+     if (jump_direction == kForwardJump) {
+-      // On forward jumps, just reset the cached instance in the target state.
+       target.ClearCachedInstanceRegister();
++    } else if (cache_state_.cached_instance != no_reg) {
++      // If the source has the content but in the wrong register, execute a
++      // register move as part of the stack transfer.
++      transfers.MoveRegister(LiftoffRegister{target.cached_instance},
++                             LiftoffRegister{cache_state_.cached_instance},
++                             kPointerKind);
+     } else {
+-      // On backward jumps, we already generated code assuming that the instance
+-      // is available in that register. Thus move it there.
+-      if (cache_state_.cached_instance == no_reg) {
+-        LoadInstanceFromFrame(target.cached_instance);
+-      } else {
+-        Move(target.cached_instance, cache_state_.cached_instance,
+-             kPointerKind);
+-      }
++      // Otherwise (the source state has no cached content), we reload later.
++      reload_instance = true;
+     }
+   }
++
++  // Now execute stack transfers and register moves/loads.
++  transfers.Execute();
++
++  if (reload_instance) {
++    LoadInstanceFromFrame(target.cached_instance);
++  }
+ }
+ 
+ void LiftoffAssembler::Spill(VarState* slot) {
+diff --git a/test/mjsunit/regress/wasm/regress-1217064.js b/test/mjsunit/regress/wasm/regress-1217064.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..93a8494547e389b63112b2faf0f73e2d68254646
+--- /dev/null
++++ b/test/mjsunit/regress/wasm/regress-1217064.js
+@@ -0,0 +1,32 @@
++// Copyright 2021 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++load('test/mjsunit/wasm/wasm-module-builder.js');
++
++const builder = new WasmModuleBuilder();
++builder.addMemory(16, 32, false);
++builder.addType(makeSig([kWasmI32, kWasmI32, kWasmI32], [kWasmI32]));
++builder.addFunction(undefined, 0 /* sig */).addBody([
++  kExprI64Const,    0x7a,                          // i64.const
++  kExprI64Const,    0x42,                          // i64.const
++  kExprI64Const,    0xb4, 0xbd, 0xeb, 0xb5, 0x72,  // i64.const
++  kExprI32Const,    0x37,                          // i32.const
++  kExprI32Const,    0x67,                          // i32.const
++  kExprI32Const,    0x45,                          // i32.const
++  kExprLoop,        0,                             // loop
++  kExprLocalGet,    0,                             // local.get
++  kExprBrIf,        1,                             // br_if depth=1
++  kExprLocalGet,    1,                             // local.get
++  kExprLocalGet,    0,                             // local.get
++  kExprMemorySize,  0,                             // memory.size
++  kExprLocalTee,    0,                             // local.tee
++  kExprLocalGet,    0,                             // local.get
++  kExprBrIf,        0,                             // br_if depth=0
++  kExprUnreachable,                                // unreachable
++  kExprEnd,                                        // end
++  kExprUnreachable,                                // unreachable
++]);
++builder.addExport('main', 0);
++const instance = builder.instantiate();
++assertEquals(16, instance.exports.main(0, 0, 0));
