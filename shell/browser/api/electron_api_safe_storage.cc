@@ -23,8 +23,8 @@ namespace api {
 bool SafeStorage::electron_crypto_ready = false;
 #endif
 
-static const char* const kEncryptionVersionPrefix[] = {"v10", "v11"};
-
+static const char* kEncryptionVersionPrefixV10 = "v10";
+static const char* kEncryptionVersionPrefixV11 = "v11";
 gin::WrapperInfo SafeStorage::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 electron::api::SafeStorage::SafeStorage() {}
@@ -83,8 +83,8 @@ std::string SafeStorage::DecryptString(v8::Isolate* isolate,
     return "";
   }
 
-  if (ciphertext.find(kEncryptionVersionPrefix[0]) != 0 &&
-      ciphertext.find(kEncryptionVersionPrefix[1]) != 0) {
+  if (ciphertext.find(kEncryptionVersionPrefixV10) != 0 &&
+      ciphertext.find(kEncryptionVersionPrefixV11) != 0) {
     gin_helper::ErrorThrower(isolate).ThrowError(
         "Error while decrypting the ciphertext provided to "
         "safeStorage.decryptString. "

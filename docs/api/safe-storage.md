@@ -28,9 +28,13 @@ On Windows, returns true with no other preconditions.
 
 Returns `Buffer` -  An array of bytes representing the encrypted string.
 
+This function will throw an error if encryption fails.
+
 ### `safeStorage.decryptString(encrypted)`
 
 * `encrypted` Buffer
 
 Returns `String` - the decrypted string. Decrypts the encrypted buffer
 obtained  with `safeStorage.encryptString` back into a string.
+
+This function will throw an error if decryption fails.

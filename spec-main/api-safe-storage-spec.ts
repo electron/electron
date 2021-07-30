@@ -3,10 +3,21 @@ import * as path from 'path';
 import { safeStorage } from 'electron/main';
 import { expect } from 'chai';
 import { emittedOnce } from './events-helpers';
-import { ifit } from './spec-helpers';
+import { ifdescribe } from './spec-helpers';
 import * as fs from 'fs';
 
-describe('safeStorage module', () => {
+/* isEncryptionAvailable returns false in Linux when running CI due to a mocked dbus. This stops
+* Chrome from reaching the system's keyring or libsecret. When running the tests with config.store
+* set to basic-text, a nullptr is returned from chromium,  defaulting the available encryption to false.
+*
+* this results in the entire test suite failing on the OS. For this reason, we do not run this suite on Linux.
+*
+* The Chromium codebase uses mocks to ensure that OS_Crypt.isEncryptionAvailable returns
+* true in headless mode- as they have ensured corect functionality there is no need to
+* test this on electron's side.
+*/
+
+ifdescribe(process.platform !== 'linux')('safeStorage module', () => {
   after(async () => {
     if (process.platform === 'linux') return;
     const pathToEncryptedString = path.resolve(__dirname, 'fixtures', 'api', 'safe-storage', 'encrypted.txt');
@@ -15,22 +26,9 @@ describe('safeStorage module', () => {
     }
   });
 
-  /* isEncryptionAvailable returns false in Linux when running CI due to a mocked dbus. This stops
-   * Chrome from reaching the system's keyring or libsecret. When running the tests with config.store
-   * set to basic-text, a nullptr is returned from chromium,  defaulting the available encryption to false.
-   * Thus, we expect false here when the operating system is Linux.
-   *
-   * The Chromium codebase uses mocks to ensure that OS_Crypt.isEncryptionAvailable returns
-   * true in headless mode- as they have ensured corect functionality there is no need to
-   * test this on electron's side.
-  */
   describe('SafeStorage.isEncryptionAvailable()', () => {
-    ifit(process.platform !== 'linux')('should return true when encryption key is available (macOS, Windows)', () => {
+    it('should return true when encryption key is available (macOS, Windows)', () => {
       expect(safeStorage.isEncryptionAvailable()).to.equal(true);
-    });
-
-    ifit(process.platform === 'linux')('should return true when encryption key is available (Linux)', () => {
-      expect(safeStorage.isEncryptionAvailable()).to.equal(false);
     });
   });
 
@@ -74,14 +72,8 @@ describe('safeStorage module', () => {
       }).to.throw(Error);
     });
   });
-
-  /* This test cannot be run in Linux on headless mode, as it depends on the use of the system's keyring
-   * or secret storage. These are stateful system libraries which can hurt tests by reducing isolation,
-   * reducing speed and introducing flakiness due to their own bugs. Chromium does not recommend running
-   * on Linux.
-  */
   describe('safeStorage persists encryption key across app relaunch', () => {
-    ifit(process.platform !== 'linux')('can decrypt after closing and reopening app', async () => {
+    it('can decrypt after closing and reopening app', async () => {
       const fixturesPath = path.resolve(__dirname, 'fixtures');
 
       const encryptAppPath = path.join(fixturesPath, 'api', 'safe-storage', 'encrypt-app');
