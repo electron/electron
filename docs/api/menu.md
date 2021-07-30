@@ -157,12 +157,12 @@ const template = [
   ...(isMac ? [{
     label: app.name,
     submenu: [
-      { role: 'about' },
-      { type: 'separator' },
-      { role: 'services' },
-      { type: 'separator' },
-      { role: 'hide' },
-      { role: 'hideothers' },
+      { role: 'about' },      // Typescript generalizes here 'about' to type string which
+      { type: 'separator' },  // conflicts with the type definition of MenuItemConstructorOptions.
+      { role: 'services' },   // For TS add "as const" after all role/type identifiers like:
+      { type: 'separator' },  // { type: 'separator' as const },
+      { role: 'hide' },       // in all sub-menus using the "...(isXXX ? [{}] : [])" pattern.
+      { role: 'hideOthers' },
       { role: 'unhide' },
       { type: 'separator' },
       { role: 'quit' }
