@@ -10,11 +10,8 @@ import * as fs from 'fs';
 * Chrome from reaching the system's keyring or libsecret. When running the tests with config.store
 * set to basic-text, a nullptr is returned from chromium,  defaulting the available encryption to false.
 *
-* this results in the entire test suite failing on the OS. For this reason, we do not run this suite on Linux.
-*
-* The Chromium codebase uses mocks to ensure that OS_Crypt.isEncryptionAvailable returns
-* true in headless mode- as they have ensured corect functionality there is no need to
-* test this on electron's side.
+* Because all encryption methods are gated by isEncryptionAvailable, the methods will never return the correct values
+* when run on CI and linux.
 */
 
 ifdescribe(process.platform !== 'linux')('safeStorage module', () => {
