@@ -1,0 +1,204 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: drh <>
+Date: Wed, 19 May 2021 21:55:56 +0000
+Subject: When constructing the synthensized SELECT statement that is used to
+ choose the rows in an UPDATE FROM, make sure the first table is really the
+ table being updated, and not some common-table expression that happens to
+ have the same name. [forum:/forumpost/a274248080|forum post a274248080]. More
+ changes associated with CTE name resolution are pending.
+
+FossilOrigin-Name: 0f0959c6f95046e8e7887716e0a7de95da18d1e926ab1f919527083a56541db5
+(cherry picked from commit 1168f810929ede4d8d323a6acf721ff9cd89de90)
+
+diff --git a/amalgamation/sqlite3.c b/amalgamation/sqlite3.c
+index 776580f23b89df04fa9ae4c94a3d5979affc2f7b..40790c87ff02261fa27a88f76d7a7189ac439a78 100644
+--- a/amalgamation/sqlite3.c
++++ b/amalgamation/sqlite3.c
+@@ -1188,7 +1188,7 @@ extern "C" {
+ */
+ #define SQLITE_VERSION        "3.35.5"
+ #define SQLITE_VERSION_NUMBER 3035005
+-#define SQLITE_SOURCE_ID      "2021-04-19 18:32:05 1b256d97b553a9611efca188a3d995a2fff712759044ba480f9a0c9e98fae886"
++#define SQLITE_SOURCE_ID      "2021-04-19 18:32:05 93ff5d94082afd4f420263e04ebcda7b000d0885de3dbc98519a0fbbed9e4932"
+ 
+ /*
+ ** CAPI3REF: Run-Time Library Version Numbers
+@@ -112047,7 +112047,7 @@ SQLITE_PRIVATE Table *sqlite3LocateTableItem(
+   SrcItem *p
+ ){
+   const char *zDb;
+-  assert( p->pSchema==0 || p->zDatabase==0 );
++  /*  assert( p->pSchema==0 || p->zDatabase==0 ); FIX-ME */
+   if( p->pSchema ){
+     int iDb = sqlite3SchemaToIndex(pParse->db, p->pSchema);
+     zDb = pParse->db->aDb[iDb].zDbSName;
+@@ -140132,6 +140132,10 @@ static void updateFromSelect(
+ 
+   assert( pTabList->nSrc>1 );
+   if( pSrc ){
++    if( pSrc->a[0].zDatabase==0 ){
++      int iSchema = sqlite3SchemaToIndex(db, pTab->pSchema);
++      pSrc->a[0].zDatabase = sqlite3DbStrDup(db, db->aDb[iSchema].zDbSName);
++    }
+     pSrc->a[0].iCursor = -1;
+     pSrc->a[0].pTab->nTabRef--;
+     pSrc->a[0].pTab = 0;
+@@ -228795,7 +228799,7 @@ static void fts5SourceIdFunc(
+ ){
+   assert( nArg==0 );
+   UNUSED_PARAM2(nArg, apUnused);
+-  sqlite3_result_text(pCtx, "fts5: 2021-04-19 18:32:05 1b256d97b553a9611efca188a3d995a2fff712759044ba480f9a0c9e98fae886", -1, SQLITE_TRANSIENT);
++  sqlite3_result_text(pCtx, "fts5: 2021-04-19 18:32:05 0000000000000000000000000000000000000000000000000000000000000000", -1, SQLITE_TRANSIENT);
+ }
+ 
+ /*
+@@ -233721,9 +233725,9 @@ SQLITE_API int sqlite3_stmt_init(
+ #endif /* !defined(SQLITE_CORE) || defined(SQLITE_ENABLE_STMTVTAB) */
+ 
+ /************** End of stmt.c ************************************************/
+-#if __LINE__!=233724
++#if __LINE__!=233728
+ #undef SQLITE_SOURCE_ID
+-#define SQLITE_SOURCE_ID      "2021-04-19 18:32:05 1b256d97b553a9611efca188a3d995a2fff712759044ba480f9a0c9e98faalt2"
++#define SQLITE_SOURCE_ID      "2021-04-19 18:32:05 93ff5d94082afd4f420263e04ebcda7b000d0885de3dbc98519a0fbbed9ealt2"
+ #endif
+ /* Return the source-id for this library */
+ SQLITE_API const char *sqlite3_sourceid(void){ return SQLITE_SOURCE_ID; }
+diff --git a/amalgamation/sqlite3.h b/amalgamation/sqlite3.h
+index 19ee767fe865799e38237e748aabb1f5c372f815..5ae341b624aa06fc74db0e433ea7fcba22ecffb2 100644
+--- a/amalgamation/sqlite3.h
++++ b/amalgamation/sqlite3.h
+@@ -125,7 +125,7 @@ extern "C" {
+ */
+ #define SQLITE_VERSION        "3.35.5"
+ #define SQLITE_VERSION_NUMBER 3035005
+-#define SQLITE_SOURCE_ID      "2021-04-19 18:32:05 1b256d97b553a9611efca188a3d995a2fff712759044ba480f9a0c9e98fae886"
++#define SQLITE_SOURCE_ID      "2021-04-19 18:32:05 93ff5d94082afd4f420263e04ebcda7b000d0885de3dbc98519a0fbbed9e4932"
+ 
+ /*
+ ** CAPI3REF: Run-Time Library Version Numbers
+diff --git a/amalgamation_dev/sqlite3.c b/amalgamation_dev/sqlite3.c
+index df53e437baa4b1fe9d31da34516a511f731d8d5b..71eb18c397f1af2f347e702bd6cf9edfe27af95b 100644
+--- a/amalgamation_dev/sqlite3.c
++++ b/amalgamation_dev/sqlite3.c
+@@ -1188,7 +1188,7 @@ extern "C" {
+ */
+ #define SQLITE_VERSION        "3.35.5"
+ #define SQLITE_VERSION_NUMBER 3035005
+-#define SQLITE_SOURCE_ID      "2021-04-19 18:32:05 1b256d97b553a9611efca188a3d995a2fff712759044ba480f9a0c9e98fae886"
++#define SQLITE_SOURCE_ID      "2021-04-19 18:32:05 93ff5d94082afd4f420263e04ebcda7b000d0885de3dbc98519a0fbbed9e4932"
+ 
+ /*
+ ** CAPI3REF: Run-Time Library Version Numbers
+@@ -112060,7 +112060,7 @@ SQLITE_PRIVATE Table *sqlite3LocateTableItem(
+   SrcItem *p
+ ){
+   const char *zDb;
+-  assert( p->pSchema==0 || p->zDatabase==0 );
++  /*  assert( p->pSchema==0 || p->zDatabase==0 ); FIX-ME */
+   if( p->pSchema ){
+     int iDb = sqlite3SchemaToIndex(pParse->db, p->pSchema);
+     zDb = pParse->db->aDb[iDb].zDbSName;
+@@ -140145,6 +140145,10 @@ static void updateFromSelect(
+ 
+   assert( pTabList->nSrc>1 );
+   if( pSrc ){
++    if( pSrc->a[0].zDatabase==0 ){
++      int iSchema = sqlite3SchemaToIndex(db, pTab->pSchema);
++      pSrc->a[0].zDatabase = sqlite3DbStrDup(db, db->aDb[iSchema].zDbSName);
++    }
+     pSrc->a[0].iCursor = -1;
+     pSrc->a[0].pTab->nTabRef--;
+     pSrc->a[0].pTab = 0;
+@@ -229306,7 +229310,7 @@ static void fts5SourceIdFunc(
+ ){
+   assert( nArg==0 );
+   UNUSED_PARAM2(nArg, apUnused);
+-  sqlite3_result_text(pCtx, "fts5: 2021-04-19 18:32:05 1b256d97b553a9611efca188a3d995a2fff712759044ba480f9a0c9e98fae886", -1, SQLITE_TRANSIENT);
++  sqlite3_result_text(pCtx, "fts5: 2021-04-19 18:32:05 0000000000000000000000000000000000000000000000000000000000000000", -1, SQLITE_TRANSIENT);
+ }
+ 
+ /*
+@@ -234232,9 +234236,9 @@ SQLITE_API int sqlite3_stmt_init(
+ #endif /* !defined(SQLITE_CORE) || defined(SQLITE_ENABLE_STMTVTAB) */
+ 
+ /************** End of stmt.c ************************************************/
+-#if __LINE__!=234235
++#if __LINE__!=234239
+ #undef SQLITE_SOURCE_ID
+-#define SQLITE_SOURCE_ID      "2021-04-19 18:32:05 1b256d97b553a9611efca188a3d995a2fff712759044ba480f9a0c9e98faalt2"
++#define SQLITE_SOURCE_ID      "2021-04-19 18:32:05 93ff5d94082afd4f420263e04ebcda7b000d0885de3dbc98519a0fbbed9ealt2"
+ #endif
+ /* Return the source-id for this library */
+ SQLITE_API const char *sqlite3_sourceid(void){ return SQLITE_SOURCE_ID; }
+diff --git a/amalgamation_dev/sqlite3.h b/amalgamation_dev/sqlite3.h
+index 19ee767fe865799e38237e748aabb1f5c372f815..5ae341b624aa06fc74db0e433ea7fcba22ecffb2 100644
+--- a/amalgamation_dev/sqlite3.h
++++ b/amalgamation_dev/sqlite3.h
+@@ -125,7 +125,7 @@ extern "C" {
+ */
+ #define SQLITE_VERSION        "3.35.5"
+ #define SQLITE_VERSION_NUMBER 3035005
+-#define SQLITE_SOURCE_ID      "2021-04-19 18:32:05 1b256d97b553a9611efca188a3d995a2fff712759044ba480f9a0c9e98fae886"
++#define SQLITE_SOURCE_ID      "2021-04-19 18:32:05 93ff5d94082afd4f420263e04ebcda7b000d0885de3dbc98519a0fbbed9e4932"
+ 
+ /*
+ ** CAPI3REF: Run-Time Library Version Numbers
+diff --git a/manifest b/manifest
+index 4007a5dd73912bda08bdbc89041ec1562d719afe..8e55f50dd5660f9d7f65db57311981cfaab1fd38 100644
+--- a/manifest
++++ b/manifest
+@@ -486,7 +486,7 @@ F src/btmutex.c 8acc2f464ee76324bf13310df5692a262b801808984c1b79defb2503bbafadb6
+ F src/btree.c cfd2a37794532d765e235a2550ad2732924a6d06b07a3bc9f6a71750e3b3cca1
+ F src/btree.h 096cc53baa58be22b02c896d1cf933c38cfc6d65f9253c1367ece8cc88a24de5
+ F src/btreeInt.h 7bc15a24a02662409ebcd6aeaa1065522d14b7fda71573a2b0568b458f514ae0
+-F src/build.c 066c44421bf7b73c6fa47f6fb0c0fcf1357c10552bcf8f3f94c6ebede581cd01
++F src/build.c 69cb3c8a65de7fdfaca1b586247a27c24cfbeabfb04fa74ae327d56a81d1f80a
+ F src/callback.c d0b853dd413255d2e337b34545e54d888ea02f20da5ad0e63585b389624c4a6c
+ F src/complete.c a3634ab1e687055cd002e11b8f43eb75c17da23e
+ F src/ctime.c 2a322b9a3d75771fb4d99e0702851f4f68dda982507a0f798eefb0712969a410
+@@ -609,7 +609,7 @@ F src/threads.c 4ae07fa022a3dc7c5beb373cf744a85d3c5c6c3c
+ F src/tokenize.c 0b9c82fa628b5adce93e2bcaf935a24d43eb83344fb51551f7835526d0693fc4
+ F src/treeview.c c6260e1fa5f41c361b2409edc9b0050bcaef5bc4d6abc467fbc45f0d7ccf3d84
+ F src/trigger.c bce0908f714a5b89360c01e444521a648997425e2a91ff9b92b899cf8d53c20b
+-F src/update.c 0f5a61f0787199983530a33f6fffe4f52742f35fcdf6ccfad1078b1a8bc17723
++F src/update.c 837d782fa99a69021f97516a626b76206fe68677ce050643f64a54f70c1d4391
+ F src/upsert.c df8f1727d62b5987c4fd302cd4d7c0c84ae57cd65683c5a34a740dfe24039235
+ F src/utf.c ee39565f0843775cc2c81135751ddd93eceb91a673ea2c57f61c76f288b041a0
+ F src/util.c 41c7a72da1df47864faa378a1c720b38adb288c6838cb6be5594511b6287a048
+diff --git a/manifest.uuid b/manifest.uuid
+index f85c5071b9694f8e00e6b1960c3467d3a9496490..cd09bbf164ef5a0d555a222499be733c36bd405d 100644
+--- a/manifest.uuid
++++ b/manifest.uuid
+@@ -1 +1 @@
+-1b256d97b553a9611efca188a3d995a2fff712759044ba480f9a0c9e98fae886
+\ No newline at end of file
++0000000000000000000000000000000000000000000000000000000000000000
+diff --git a/src/build.c b/src/build.c
+index b6faf080d5332048f5fd2a2fb9502a74e6ac1ff0..fb6f561e7d9cace6e1c1fd367bc00e6c1a2cdf1f 100644
+--- a/src/build.c
++++ b/src/build.c
+@@ -481,7 +481,7 @@ Table *sqlite3LocateTableItem(
+   SrcItem *p
+ ){
+   const char *zDb;
+-  assert( p->pSchema==0 || p->zDatabase==0 );
++  /*  assert( p->pSchema==0 || p->zDatabase==0 ); FIX-ME */
+   if( p->pSchema ){
+     int iDb = sqlite3SchemaToIndex(pParse->db, p->pSchema);
+     zDb = pParse->db->aDb[iDb].zDbSName;
+diff --git a/src/update.c b/src/update.c
+index b360766b68acd1aabf141cbe8ffc1df15bac611c..d22fd683e3942ed1426cb37fde5ea8691baa8397 100644
+--- a/src/update.c
++++ b/src/update.c
+@@ -220,6 +220,10 @@ static void updateFromSelect(
+ 
+   assert( pTabList->nSrc>1 );
+   if( pSrc ){
++    if( pSrc->a[0].zDatabase==0 ){
++      int iSchema = sqlite3SchemaToIndex(db, pTab->pSchema);
++      pSrc->a[0].zDatabase = sqlite3DbStrDup(db, db->aDb[iSchema].zDbSName);
++    }
+     pSrc->a[0].iCursor = -1;
+     pSrc->a[0].pTab->nTabRef--;
+     pSrc->a[0].pTab = 0;
