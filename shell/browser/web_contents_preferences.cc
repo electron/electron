@@ -20,6 +20,7 @@
 #include "net/base/filename_util.h"
 #include "sandbox/policy/switches.h"
 #include "shell/browser/native_window.h"
+#include "shell/browser/session_preferences.h"
 #include "shell/browser/web_view_manager.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -315,9 +316,10 @@ bool WebContentsPreferences::GetPreloadPath(base::FilePath* path) const {
 bool WebContentsPreferences::IsSandboxed() const {
   if (sandbox_)
     return *sandbox_;
-  bool sandbox_disabled_by_default = node_integration_ ||
-                                     node_integration_in_worker_ ||
-                                     !web_contents_->GetPreloadPaths().empty();
+  bool sandbox_disabled_by_default =
+      node_integration_ || node_integration_in_worker_ || preload_path_ ||
+      !SessionPreferences::GetValidPreloads(web_contents_->GetBrowserContext())
+           .empty();
   return !sandbox_disabled_by_default;
 }
 
