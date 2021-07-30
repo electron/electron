@@ -180,7 +180,7 @@ Emitted when a hunspell dictionary file download fails.  For details
 on the failure you should collect a netlog and inspect the download
 request.
 
-#### Event: 'select-serial-port' _Experimental_
+#### Event: 'select-serial-port'
 
 Returns:
 
@@ -197,14 +197,10 @@ cancel the request.  Additionally, permissioning on `navigator.serial` can
 be managed by using [ses.setPermissionCheckHandler(handler)](#sessetpermissioncheckhandlerhandler)
 with the `serial` permission.
 
-Because this is an experimental feature it is disabled by default.  To enable this feature, you
-will need to use the `--enable-features=ElectronSerialChooser` command line switch.
-
 ```javascript
 const { app, BrowserWindow } = require('electron')
 
 let win = null
-app.commandLine.appendSwitch('enable-features', 'ElectronSerialChooser')
 
 app.whenReady().then(() => {
   win = new BrowserWindow({
@@ -225,7 +221,7 @@ app.whenReady().then(() => {
 })
 ```
 
-#### Event: 'serial-port-added' _Experimental_
+#### Event: 'serial-port-added'
 
 Returns:
 
@@ -235,7 +231,7 @@ Returns:
 
 Emitted after `navigator.serial.requestPort` has been called and `select-serial-port` has fired if a new serial port becomes available.  For example, this event will fire when a new USB device is plugged in.
 
-#### Event: 'serial-port-removed' _Experimental_
+#### Event: 'serial-port-removed'
 
 Returns:
 
