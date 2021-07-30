@@ -389,9 +389,9 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       contain the layout of the document—without requiring scrolling. Enabling
       this will cause the `preferred-size-changed` event to be emitted on the
       `WebContents` when the preferred size changes. Default is `false`.
-  * `titleBarOverlay` Boolean (optional) -  When using a frameless window in conjuction with `win.setWindowButtonVisibility(true)` on macOS or using a `titleBarStyle` so that the standard window controls ("traffic lights" on macOS) are visible, this property enables the Window Controls Overlay [JavaScript APIs][overlay-javascript-apis] and [CSS Environment Variables][overlay-css-env-vars]. Default is `false`.
-  * `overlayColor` String (optional) - The CSS color of the Window Controls Overlay when enabled on Windows. Default is the system color.
-  * `overlaySymbolColor` String (optional) - The CSS color of the symbols on the Window Controls Overlay when enabled on Windows. Default is the system color.
+  * `titleBarOverlay` Object | Boolean (optional) -  When using a frameless window in conjuction with `win.setWindowButtonVisibility(true)` on macOS or using a `titleBarStyle` so that the standard window controls ("traffic lights" on macOS) are visible, this property enables the Window Controls Overlay [JavaScript APIs][overlay-javascript-apis] and [CSS Environment Variables][overlay-css-env-vars]. Default is `false`.
+    * `color` String (optional) - The CSS color of the Window Controls Overlay when enabled on Windows. Default is the system color.
+    * `symbolColor` String (optional) - The CSS color of the symbols on the Window Controls Overlay when enabled on Windows. Default is the system color.
 
 When setting minimum or maximum window size with `minWidth`/`maxWidth`/
 `minHeight`/`maxHeight`, it only constrains the users. It won't prevent you from
