@@ -1,0 +1,26 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: VerteDinde <keeleymhammond@gmail.com>
+Date: Fri, 30 Jul 2021 23:03:10 -0700
+Subject: chore: allow GetInstanceForNativeUi
+
+Broken here: 3043661: [views] Fix global NativeTheme access in
+MenuItemView |
+https://chromium-review.googlesource.com/c/chromium/src/+/3043661
+
+This breaks setting menus for Windows and Linux, which require a
+reference to the native UI before a parent or widget is set. This patch
+can be removed when the setMenu function is refactored.
+
+diff --git a/ui/views/view.cc b/ui/views/view.cc
+index 99bfc06c0c94b3f8e825f03620579c1cf414e5c9..9d5a7ddcc98a283f547262f00d11d13d417dfb4d 100644
+--- a/ui/views/view.cc
++++ b/ui/views/view.cc
+@@ -1236,7 +1236,7 @@ const ui::NativeTheme* View::GetNativeTheme() const {
+ 
+   // CHECK here to ensure we catch fallthrough to the global NativeTheme
+   // instance on all Chromium builds (crbug.com/1056756).
+-  CHECK(false);
++  // CHECK(false);
+ 
+   return ui::NativeTheme::GetInstanceForNativeUi();
+ }
