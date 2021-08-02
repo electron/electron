@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jeremy Rose <jeremya@chromium.org>
 Date: Mon, 2 Aug 2021 15:56:56 -0700
-Subject: [logging/win32] only create a console if logging to stderr
+Subject: only create a console if logging to stderr
 
 This fixes an issue on Windows where, when `--enable-logging=file` is
 passed and the app was not run from the console, a console window would
