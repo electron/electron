@@ -70,7 +70,7 @@ class MenuBar : public views::AccessiblePaneView,
 
   void RebuildChildren();
   void UpdateViewColors();
-  void RefreshColorCache();
+  void RefreshColorCache(const ui::NativeTheme* theme);
   View* FindAccelChild(char16_t key);
 
   SkColor background_color_;
