@@ -14,6 +14,7 @@
 #include "base/strings/string_split.h"
 #include "components/crash/core/common/crash_key.h"
 #include "content/public/common/content_switches.h"
+#include "electron/buildflags/buildflags.h"
 #include "electron/fuses.h"
 #include "shell/common/electron_constants.h"
 #include "shell/common/options_switches.h"
@@ -186,8 +187,10 @@ void SetCrashKeyForGinWrappable(gin::WrapperInfo* info) {
     crash_location = "Notification";
   else if (info == &electron::api::Cookies::kWrapperInfo)
     crash_location = "Cookies";
+#if BUILDFLAG(ENABLE_DESKTOP_CAPTURER)
   else if (info == &electron::api::DesktopCapturer::kWrapperInfo)
     crash_location = "DesktopCapturer";
+#endif
   else if (info == &electron::api::NetLog::kWrapperInfo)
     crash_location = "NetLog";
   else if (info == &electron::api::NativeImage::kWrapperInfo)
