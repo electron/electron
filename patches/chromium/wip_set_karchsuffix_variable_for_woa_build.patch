@@ -1,0 +1,22 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: VerteDinde <khammond@slack-corp.com>
+Date: Mon, 2 Aug 2021 13:40:23 -0700
+Subject: wip: set kArchSuffix variable for WOA build
+
+Changed here: https://chromium-review.googlesource.com/c/chromium/src/+/3038536
+
+Breaks the MAS build, by making the kArchSuffix variable undefined.
+This patch is a test to see if setting the variable passes the build.
+
+diff --git a/chrome/installer/util/additional_parameters.cc b/chrome/installer/util/additional_parameters.cc
+index 275c635154111521a27a174b590685062021a09d..4aed1b265f804cd5effc9d64bbae2a1a8555baa1 100644
+--- a/chrome/installer/util/additional_parameters.cc
++++ b/chrome/installer/util/additional_parameters.cc
+@@ -203,6 +203,7 @@ std::wstring GetChannelIdentifier(version_info::Channel channel,
+   static constexpr base::WStringPiece kArchSuffix = L"-arch_x86";
+ #else
+ #error unsupported processor architecture.
++  static constexpr base::WStringPiece kArchSuffix = L"";
+ #endif
+ 
+   switch (channel) {
