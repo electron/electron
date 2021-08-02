@@ -17,14 +17,16 @@ void BrowserWindow::UpdateDraggableRegions(
     return;
 
   if (&draggable_regions_ != &regions) {
-    auto const offset =
-        web_contents()->GetNativeView()->GetBoundsInRootWindow();
-    auto snapped_regions = mojo::Clone(regions);
-    for (auto& snapped_region : snapped_regions) {
-      snapped_region->bounds.Offset(offset.x(), offset.y());
-    }
+    auto* nv = web_contents()->GetNativeView();
+    if (nv) {
+      auto const offset = nv->GetBoundsInRootWindow();
+      auto snapped_regions = mojo::Clone(regions);
+      for (auto& snapped_region : snapped_regions) {
+        snapped_region->bounds.Offset(offset.x(), offset.y());
+      }
 
-    draggable_regions_ = mojo::Clone(snapped_regions);
+      draggable_regions_ = mojo::Clone(snapped_regions);
+    }
   }
 
   static_cast<NativeWindowViews*>(window_.get())
