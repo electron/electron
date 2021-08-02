@@ -1641,10 +1641,7 @@ describe('navigator.serial', () => {
   let w: BrowserWindow;
   before(async () => {
     w = new BrowserWindow({
-      show: false,
-      webPreferences: {
-        enableBlinkFeatures: 'Serial'
-      }
+      show: false
     });
     await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
   });
