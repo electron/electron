@@ -168,12 +168,12 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   if (transparent())
     thick_frame_ = false;
 
-  v8::Local<v8::Value> titlebar_overlay;
-  options.Get(options::ktitleBarOverlay, &titlebar_overlay);
   overlay_button_color_ = color_utils::GetSysSkColor(COLOR_BTNFACE);
   overlay_symbol_color_ = color_utils::GetSysSkColor(COLOR_BTNTEXT);
 
-  if (!titlebar_overlay.IsEmpty() && titlebar_overlay->IsObject()) {
+  v8::Local<v8::Value> titlebar_overlay;
+  if (options.Get(options::ktitleBarOverlay, &titlebar_overlay) &&
+      titlebar_overlay->IsObject()) {
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
     gin_helper::Dictionary titlebar_overlay_obj =
         gin::Dictionary::CreateEmpty(isolate);

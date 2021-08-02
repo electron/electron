@@ -84,18 +84,18 @@ NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
   options.Get(options::kFrame, &has_frame_);
   options.Get(options::kTransparent, &transparent_);
   options.Get(options::kEnableLargerThanScreen, &enable_larger_than_screen_);
-
-  v8::Local<v8::Value> titlebar_overlay;
-  options.Get(options::ktitleBarOverlay, &titlebar_overlay);
   options.Get(options::kTitleBarStyle, &title_bar_style_);
 
-  if (!titlebar_overlay.IsEmpty() && titlebar_overlay->IsBoolean()) {
-    options.Get(options::ktitleBarOverlay, &titlebar_overlay_);
-  } else if (!titlebar_overlay.IsEmpty() && titlebar_overlay->IsObject()) {
-    titlebar_overlay_ = true;
+  v8::Local<v8::Value> titlebar_overlay;
+  if (options.Get(options::ktitleBarOverlay, &titlebar_overlay)) {
+    if (titlebar_overlay->IsBoolean()) {
+      options.Get(options::ktitleBarOverlay, &titlebar_overlay_);
+    } else if (titlebar_overlay->IsObject()) {
+      titlebar_overlay_ = true;
 #if !defined(OS_WIN)
-    DCHECK(false);
+      DCHECK(false);
 #endif
+    }
   }
 
   if (parent)
