@@ -48,11 +48,7 @@ export function deregisterEvents (viewInstanceId: number) {
   ipcRendererInternal.removeAllListeners(`${IPC_MESSAGES.GUEST_VIEW_INTERNAL_IPC_MESSAGE}-${viewInstanceId}`);
 }
 
-export function createGuest (params: Record<string, any>): Promise<number> {
-  return ipcRendererInternal.invoke(IPC_MESSAGES.GUEST_VIEW_MANAGER_CREATE_GUEST, params);
-}
-
-export function attachGuest (iframe: HTMLIFrameElement, elementInstanceId: number, guestInstanceId: number, params: Record<string, any>) {
+export function createGuest (iframe: HTMLIFrameElement, elementInstanceId: number, params: Record<string, any>): Promise<number> {
   if (!(iframe instanceof HTMLIFrameElement)) {
     throw new Error('Invalid embedder frame');
   }
@@ -62,7 +58,7 @@ export function attachGuest (iframe: HTMLIFrameElement, elementInstanceId: numbe
     throw new Error('Invalid embedder frame');
   }
 
-  return ipcRendererInternal.invoke(IPC_MESSAGES.GUEST_VIEW_MANAGER_ATTACH_GUEST, embedderFrameId, elementInstanceId, guestInstanceId, params);
+  return ipcRendererInternal.invoke(IPC_MESSAGES.GUEST_VIEW_MANAGER_CREATE_AND_ATTACH_GUEST, embedderFrameId, elementInstanceId, params);
 }
 
 export function detachGuest (guestInstanceId: number) {
