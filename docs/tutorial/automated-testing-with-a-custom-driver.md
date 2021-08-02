@@ -84,8 +84,12 @@ class TestDriver {
 In the app, you'd need to write a simple handler for the RPC calls:
 
 ```js
-if (process.env.APP_TEST_DRIVER) {
-  process.on('message', onMessage)
+const METHODS = {
+  isReady () {
+    // do any setup needed
+    return true
+  }
+  // define your RPC-able methods here
 }
 
 const onMessage = async ({ msgId, cmd, args }) => {
@@ -104,12 +108,8 @@ const onMessage = async ({ msgId, cmd, args }) => {
   }
 }
 
-const METHODS = {
-  isReady () {
-    // do any setup needed
-    return true
-  }
-  // define your RPC-able methods here
+if (process.env.APP_TEST_DRIVER) {
+  process.on('message', onMessage)
 }
 ```
 
