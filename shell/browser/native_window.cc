@@ -89,9 +89,9 @@ NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
   options.Get(options::ktitleBarOverlay, &titlebar_overlay);
   options.Get(options::kTitleBarStyle, &title_bar_style_);
 
-  if (titlebar_overlay->IsBoolean()) {
+  if (!titlebar_overlay.IsEmpty() && titlebar_overlay->IsBoolean()) {
     options.Get(options::ktitleBarOverlay, &titlebar_overlay_);
-  } else if (titlebar_overlay->IsObject()) {
+  } else if (!titlebar_overlay.IsEmpty() && titlebar_overlay->IsObject()) {
     titlebar_overlay_ = true;
 #if !defined(OS_WIN)
     DCHECK(false);
