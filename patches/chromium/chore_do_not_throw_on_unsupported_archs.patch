@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: VerteDinde <keeleymhammond@gmail.com>
+Date: Tue, 3 Aug 2021 16:04:26 -0700
+Subject: chore: do not throw on unsupported archs
+
+don't do it.
+
+diff --git a/chrome/installer/util/additional_parameters.cc b/chrome/installer/util/additional_parameters.cc
+index 275c635154111521a27a174b590685062021a09d..c9266987a89c710a14761d28a8c1781616f58a62 100644
+--- a/chrome/installer/util/additional_parameters.cc
++++ b/chrome/installer/util/additional_parameters.cc
+@@ -202,7 +202,7 @@ std::wstring GetChannelIdentifier(version_info::Channel channel,
+ #elif defined(ARCH_CPU_X86)
+   static constexpr base::WStringPiece kArchSuffix = L"-arch_x86";
+ #else
+-#error unsupported processor architecture.
++// #error unsupported processor architecture.
+ #endif
+ 
+   switch (channel) {
+@@ -237,7 +237,7 @@ std::wstring GetChannelIdentifier(version_info::Channel channel,
+ #elif defined(ARCH_CPU_X86)
+       return L"stable-arch_x86";
+ #else
+-#error unsupported processor architecture.
++// #error unsupported processor architecture.
+ #endif
+   }
+ }
