@@ -68,6 +68,7 @@ class WebContentsPreferences
   bool ShouldUseNativeWindowOpen() const { return native_window_open_; }
   bool IsWebSecurityEnabled() const { return web_security_; }
   bool GetPreloadPath(base::FilePath* path) const;
+  bool IsSandboxed() const;
 
  private:
   friend class content::WebContentsUserData<WebContentsPreferences>;
@@ -88,7 +89,7 @@ class WebContentsPreferences
   bool node_integration_in_worker_;
   bool disable_html_fullscreen_window_resize_;
   bool webview_tag_;
-  bool sandbox_;
+  absl::optional<bool> sandbox_;
   bool native_window_open_;
   bool context_isolation_;
   bool javascript_;

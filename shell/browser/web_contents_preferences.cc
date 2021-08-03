@@ -21,6 +21,7 @@
 #include "sandbox/policy/switches.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/native_window.h"
+#include "shell/browser/session_preferences.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/options_switches.h"
@@ -127,7 +128,7 @@ void WebContentsPreferences::Clear() {
   node_integration_in_worker_ = false;
   disable_html_fullscreen_window_resize_ = false;
   webview_tag_ = false;
-  sandbox_ = false;
+  sandbox_ = absl::nullopt;
   native_window_open_ = true;
   context_isolation_ = true;
   javascript_ = true;
@@ -185,7 +186,9 @@ void WebContentsPreferences::SetFromDictionary(
   web_preferences.Get(options::kDisableHtmlFullscreenWindowResize,
                       &disable_html_fullscreen_window_resize_);
   web_preferences.Get(options::kWebviewTag, &webview_tag_);
-  web_preferences.Get(options::kSandbox, &sandbox_);
+  bool sandbox;
+  if (web_preferences.Get(options::kSandbox, &sandbox))
+    sandbox_ = sandbox;
   web_preferences.Get(options::kNativeWindowOpen, &native_window_open_);
   web_preferences.Get(options::kContextIsolation, &context_isolation_);
   web_preferences.Get(options::kJavaScript, &javascript_);
@@ -307,6 +310,16 @@ bool WebContentsPreferences::GetPreloadPath(base::FilePath* path) const {
   return false;
 }
 
+bool WebContentsPreferences::IsSandboxed() const {
+  if (sandbox_)
+    return *sandbox_;
+  bool sandbox_disabled_by_default =
+      node_integration_ || node_integration_in_worker_ || preload_path_ ||
+      !SessionPreferences::GetValidPreloads(web_contents_->GetBrowserContext())
+           .empty();
+  return !sandbox_disabled_by_default;
+}
+
 // static
 content::WebContents* WebContentsPreferences::GetWebContentsFromProcessID(
     int process_id) {
@@ -338,7 +351,7 @@ void WebContentsPreferences::AppendCommandLineSwitches(
   // unless nodeIntegrationInSubFrames is enabled
   bool can_sandbox_frame = is_subframe && !node_integration_in_sub_frames_;
 
-  if (sandbox_ || can_sandbox_frame) {
+  if (IsSandboxed() || can_sandbox_frame) {
     command_line->AppendSwitch(switches::kEnableSandbox);
   } else if (!command_line->HasSwitch(switches::kEnableSandbox)) {
     command_line->AppendSwitch(sandbox::policy::switches::kNoSandbox);
@@ -387,7 +400,7 @@ void WebContentsPreferences::SaveLastPreferences() {
                                base::Value(node_integration_in_sub_frames_));
   last_web_preferences_.SetKey(options::kNativeWindowOpen,
                                base::Value(native_window_open_));
-  last_web_preferences_.SetKey(options::kSandbox, base::Value(sandbox_));
+  last_web_preferences_.SetKey(options::kSandbox, base::Value(IsSandboxed()));
   last_web_preferences_.SetKey(options::kContextIsolation,
                                base::Value(context_isolation_));
   last_web_preferences_.SetKey(options::kJavaScript, base::Value(javascript_));
