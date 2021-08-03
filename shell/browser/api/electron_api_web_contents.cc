@@ -57,6 +57,7 @@
 #include "content/public/browser/storage_partition.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/referrer_type_converters.h"
+#include "content/public/common/resource_usage_reporter.mojom.h"
 #include "content/public/common/webplugininfo.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/shell/common/api/api.mojom.h"
@@ -3123,6 +3124,49 @@ content::RenderFrameHost* WebContents::MainFrame() {
   return web_contents()->GetMainFrame();
 }
 
+v8::Local<v8::Promise> WebContents::GetResourceUsage(v8::Isolate* isolate) {
+  gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  // This helper is to handle the failure case, where the renderer process dies
+  // before responding to the GetUsageData request. In that case, the promise
+  // will be rejected.
+  struct GetResourceUsageHelper {
+    gin_helper::Promise<v8::Local<v8::Value>> promise;
+    mojo::Remote<content::mojom::ResourceUsageReporter> service;
+
+    void OnResponse(content::mojom::ResourceUsageDataPtr data) {
+      v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+      v8::HandleScope handle_scope(isolate);
+
+      promise.Resolve(gin::DataObjectBuilder(isolate)
+                          .Set("v8BytesAllocated", data->v8_bytes_allocated)
+                          .Set("v8BytesUsed", data->v8_bytes_used)
+                          .Build());
+      delete this;
+    }
+
+    void OnDisconnect() {
+      promise.RejectWithErrorMessage("Failed to get resource usage");
+      delete this;
+    }
+  };
+
+  content::RenderProcessHost* rph =
+      web_contents()->GetMainFrame()->GetProcess();
+  mojo::Remote<content::mojom::ResourceUsageReporter> service;
+  rph->BindReceiver(service.BindNewPipeAndPassReceiver());
+
+  auto* helper =
+      new GetResourceUsageHelper{std::move(promise), std::move(service)};
+  helper->service.set_disconnect_handler(base::BindOnce(
+      &GetResourceUsageHelper::OnDisconnect, base::Unretained(helper)));
+  helper->service->GetUsageData(base::BindOnce(
+      &GetResourceUsageHelper::OnResponse, base::Unretained(helper)));
+
+  return handle;
+}
+
 void WebContents::NotifyUserActivation() {
   content::RenderFrameHost* frame = web_contents()->GetMainFrame();
   if (frame)
@@ -3723,6 +3767,7 @@ v8::Local<v8::ObjectTemplate> WebContents::FillObjectTemplate(
       .SetMethod("takeHeapSnapshot", &WebContents::TakeHeapSnapshot)
       .SetMethod("setImageAnimationPolicy",
                  &WebContents::SetImageAnimationPolicy)
+      .SetMethod("getResourceUsage", &WebContents::GetResourceUsage)
       .SetProperty("id", &WebContents::ID)
       .SetProperty("session", &WebContents::Session)
       .SetProperty("hostWebContents", &WebContents::HostWebContents)
