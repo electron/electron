@@ -12,6 +12,21 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
+## Planned Breaking API Changes (15.0)
+
+### Behavior Changed: `crashReporter` implementation switched to Crashpad on Linux
+
+The underlying implementation of the `crashReporter` API on Linux has changed
+from Breakpad to Crashpad, bringing it in line with Windows and Mac. As a
+result of this, child processes are now automatically monitored, and calling
+`process.crashReporter.start` in Node child processes is no longer needed (and
+is not advisable, as it will start a second instance of the Crashpad reporter).
+
+There are also some subtle changes to how annotations will be reported on
+Linux, including that long values will no longer be split between annotations
+appended with `__1`, `__2` and so on, and instead will be truncated at the
+(new, longer) annotation value limit.
+
 ## Planned Breaking API Changes (14.0)
 
 ### Removed: `app.allowRendererProcessReuse`
