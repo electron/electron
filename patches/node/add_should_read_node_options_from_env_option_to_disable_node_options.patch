@@ -34,7 +34,7 @@ index 45210f074a0ca4d57f9fdc5019e8e82540b28b72..33dad5ec51b7bc8ec21e2fb3243da470
    inline std::vector<double>* destroy_async_id_list();
  
 diff --git a/src/node.cc b/src/node.cc
-index 6302bb925339d709a54151a8fc8b58f1a2253881..4545638fc0e13694a3bae6dab6b62e2284aa534a 100644
+index 6302bb925339d709a54151a8fc8b58f1a2253881..f4da28cb93d6aff072d41610d16254629569d559 100644
 --- a/src/node.cc
 +++ b/src/node.cc
 @@ -882,7 +882,7 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
