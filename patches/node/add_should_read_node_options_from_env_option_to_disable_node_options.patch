@@ -42,7 +42,7 @@ index 6302bb925339d709a54151a8fc8b58f1a2253881..4545638fc0e13694a3bae6dab6b62e22
    std::string node_options;
  
 -  if (credentials::SafeGetenv("NODE_OPTIONS", &node_options)) {
-+  if (credentials::SafeGetenv("NODE_OPTIONS", &node_options) && Environment::should_read_node_options_from_env) {
++  if (Environment::should_read_node_options_from_env && credentials::SafeGetenv("NODE_OPTIONS", &node_options)) {
      std::vector<std::string> env_argv =
          ParseNodeOptionsEnvVar(node_options, errors);
  
