@@ -1,0 +1,157 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Darwin Huang <huangdarwin@chromium.org>
+Date: Wed, 19 May 2021 14:13:15 -0700
+Subject: sqlite: Fix an undefined-integer-overflow problem in fts3.c.
+
+Original change: https://sqlite.org/src/info/a0bf931bd712037e
+
+Bug: 1204066
+Change-Id: I34704f1cfe36672d10065f4103c91fb4f35d3895
+
+diff --git a/amalgamation/sqlite3.c b/amalgamation/sqlite3.c
+index d19e25f98d37686a7fd1bfefe4bd044575abf5d4..175c55f86fa02cbe443b53f656519879f9192765 100644
+--- a/amalgamation/sqlite3.c
++++ b/amalgamation/sqlite3.c
+@@ -169123,7 +169123,7 @@ static int fts3ScanInteriorNode(
+   char *zBuffer = 0;              /* Buffer to load terms into */
+   i64 nAlloc = 0;                 /* Size of allocated buffer */
+   int isFirstTerm = 1;            /* True when processing first term on page */
+-  sqlite3_int64 iChild;           /* Block id of child node to descend to */
++  u64 iChild;                     /* Block id of child node to descend to */
+   int nBuffer = 0;                /* Total term size */
+ 
+   /* Skip over the 'height' varint that occurs at the start of every
+@@ -169139,8 +169139,8 @@ static int fts3ScanInteriorNode(
+   ** table, then there are always 20 bytes of zeroed padding following the
+   ** nNode bytes of content (see sqlite3Fts3ReadBlock() for details).
+   */
+-  zCsr += sqlite3Fts3GetVarint(zCsr, &iChild);
+-  zCsr += sqlite3Fts3GetVarint(zCsr, &iChild);
++  zCsr += sqlite3Fts3GetVarintU(zCsr, &iChild);
++  zCsr += sqlite3Fts3GetVarintU(zCsr, &iChild);
+   if( zCsr>zEnd ){
+     return FTS_CORRUPT_VTAB;
+   }
+@@ -169193,20 +169193,20 @@ static int fts3ScanInteriorNode(
+     */
+     cmp = memcmp(zTerm, zBuffer, (nBuffer>nTerm ? nTerm : nBuffer));
+     if( piFirst && (cmp<0 || (cmp==0 && nBuffer>nTerm)) ){
+-      *piFirst = iChild;
++      *piFirst = (i64)iChild;
+       piFirst = 0;
+     }
+ 
+     if( piLast && cmp<0 ){
+-      *piLast = iChild;
++      *piLast = (i64)iChild;
+       piLast = 0;
+     }
+ 
+     iChild++;
+   };
+ 
+-  if( piFirst ) *piFirst = iChild;
+-  if( piLast ) *piLast = iChild;
++  if( piFirst ) *piFirst = (i64)iChild;
++  if( piLast ) *piLast = (i64)iChild;
+ 
+  finish_scan:
+   sqlite3_free(zBuffer);
+diff --git a/amalgamation_dev/sqlite3.c b/amalgamation_dev/sqlite3.c
+index f4c985513fb7cac3930fe9706ddfc5c440dd3e85..c3ec02ed9124d59ee008548491b2b30e996472ef 100644
+--- a/amalgamation_dev/sqlite3.c
++++ b/amalgamation_dev/sqlite3.c
+@@ -169636,7 +169636,7 @@ static int fts3ScanInteriorNode(
+   char *zBuffer = 0;              /* Buffer to load terms into */
+   i64 nAlloc = 0;                 /* Size of allocated buffer */
+   int isFirstTerm = 1;            /* True when processing first term on page */
+-  sqlite3_int64 iChild;           /* Block id of child node to descend to */
++  u64 iChild;                     /* Block id of child node to descend to */
+   int nBuffer = 0;                /* Total term size */
+ 
+   /* Skip over the 'height' varint that occurs at the start of every
+@@ -169652,8 +169652,8 @@ static int fts3ScanInteriorNode(
+   ** table, then there are always 20 bytes of zeroed padding following the
+   ** nNode bytes of content (see sqlite3Fts3ReadBlock() for details).
+   */
+-  zCsr += sqlite3Fts3GetVarint(zCsr, &iChild);
+-  zCsr += sqlite3Fts3GetVarint(zCsr, &iChild);
++  zCsr += sqlite3Fts3GetVarintU(zCsr, &iChild);
++  zCsr += sqlite3Fts3GetVarintU(zCsr, &iChild);
+   if( zCsr>zEnd ){
+     return FTS_CORRUPT_VTAB;
+   }
+@@ -169706,20 +169706,20 @@ static int fts3ScanInteriorNode(
+     */
+     cmp = memcmp(zTerm, zBuffer, (nBuffer>nTerm ? nTerm : nBuffer));
+     if( piFirst && (cmp<0 || (cmp==0 && nBuffer>nTerm)) ){
+-      *piFirst = iChild;
++      *piFirst = (i64)iChild;
+       piFirst = 0;
+     }
+ 
+     if( piLast && cmp<0 ){
+-      *piLast = iChild;
++      *piLast = (i64)iChild;
+       piLast = 0;
+     }
+ 
+     iChild++;
+   };
+ 
+-  if( piFirst ) *piFirst = iChild;
+-  if( piLast ) *piLast = iChild;
++  if( piFirst ) *piFirst = (i64)iChild;
++  if( piLast ) *piLast = (i64)iChild;
+ 
+  finish_scan:
+   sqlite3_free(zBuffer);
+diff --git a/ext/fts3/fts3.c b/ext/fts3/fts3.c
+index 79dc5c88ceacb823d16889bd36250597361d6186..62b31373c3c3e9b61b3e1daae8d87d9393779b61 100644
+--- a/ext/fts3/fts3.c
++++ b/ext/fts3/fts3.c
+@@ -1897,7 +1897,7 @@ static int fts3ScanInteriorNode(
+   char *zBuffer = 0;              /* Buffer to load terms into */
+   i64 nAlloc = 0;                 /* Size of allocated buffer */
+   int isFirstTerm = 1;            /* True when processing first term on page */
+-  sqlite3_int64 iChild;           /* Block id of child node to descend to */
++  u64 iChild;                     /* Block id of child node to descend to */
+   int nBuffer = 0;                /* Total term size */
+ 
+   /* Skip over the 'height' varint that occurs at the start of every 
+@@ -1913,8 +1913,8 @@ static int fts3ScanInteriorNode(
+   ** table, then there are always 20 bytes of zeroed padding following the
+   ** nNode bytes of content (see sqlite3Fts3ReadBlock() for details).
+   */
+-  zCsr += sqlite3Fts3GetVarint(zCsr, &iChild);
+-  zCsr += sqlite3Fts3GetVarint(zCsr, &iChild);
++  zCsr += sqlite3Fts3GetVarintU(zCsr, &iChild);
++  zCsr += sqlite3Fts3GetVarintU(zCsr, &iChild);
+   if( zCsr>zEnd ){
+     return FTS_CORRUPT_VTAB;
+   }
+@@ -1967,20 +1967,20 @@ static int fts3ScanInteriorNode(
+     */
+     cmp = memcmp(zTerm, zBuffer, (nBuffer>nTerm ? nTerm : nBuffer));
+     if( piFirst && (cmp<0 || (cmp==0 && nBuffer>nTerm)) ){
+-      *piFirst = iChild;
++      *piFirst = (i64)iChild;
+       piFirst = 0;
+     }
+ 
+     if( piLast && cmp<0 ){
+-      *piLast = iChild;
++      *piLast = (i64)iChild;
+       piLast = 0;
+     }
+ 
+     iChild++;
+   };
+ 
+-  if( piFirst ) *piFirst = iChild;
+-  if( piLast ) *piLast = iChild;
++  if( piFirst ) *piFirst = (i64)iChild;
++  if( piLast ) *piLast = (i64)iChild;
+ 
+  finish_scan:
+   sqlite3_free(zBuffer);
