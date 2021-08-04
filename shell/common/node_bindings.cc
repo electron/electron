@@ -380,7 +380,7 @@ void NodeBindings::Initialize() {
 
   auto env = base::Environment::Create();
   SetNodeOptions(env.get());
-  node::Environment::should_read_node_options_from_env =
+  node::Environment::should_read_node_options_from_env_ =
       fuses::IsNodeOptionsEnabled();
 
   std::vector<std::string> argv = {"electron"};
