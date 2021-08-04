@@ -37,15 +37,13 @@ struct Converter<electron::NativeWindow::TitleBarStyle> {
       return false;
     if (title_bar_style == "hidden") {
       *out = TitleBarStyle::kHidden;
-    }
 #if defined(OS_MAC)
-    else if (title_bar_style == "hiddenInset") {
+    } else if (title_bar_style == "hiddenInset") {
       *out = TitleBarStyle::kHiddenInset;
     } else if (title_bar_style == "customButtonsOnHover") {
       *out = TitleBarStyle::kCustomButtonsOnHover;
-    }
 #endif
-    else {
+    } else {
       return false;
     }
     return true;
