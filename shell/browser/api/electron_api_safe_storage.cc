@@ -21,6 +21,14 @@ namespace safestorage {
 static const char* kEncryptionVersionPrefixV10 = "v10";
 static const char* kEncryptionVersionPrefixV11 = "v11";
 
+#if DCHECK_IS_ON()
+static bool electron_crypto_ready = false;
+
+void SetElectronCryptoReady(bool ready) {
+  electron_crypto_ready = ready;
+}
+#endif
+
 bool IsEncryptionAvailable() {
   return OSCrypt::IsEncryptionAvailable();
 }

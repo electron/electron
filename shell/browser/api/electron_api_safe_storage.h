@@ -17,7 +17,7 @@ namespace safestorage {
 // manager has initialized before app ready holds true. Only used in the
 // testing build
 #if DCHECK_IS_ON()
-static bool electron_crypto_ready = false;
+void SetElectronCryptoReady(bool ready);
 #endif
 
 }  // namespace safestorage
