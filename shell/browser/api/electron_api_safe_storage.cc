@@ -11,31 +11,22 @@
 #include "shell/common/gin_converters/base_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/platform_util.h"
 
 namespace electron {
 
-namespace api {
-
-#if DCHECK_IS_ON()
-bool SafeStorage::electron_crypto_ready = false;
-#endif
+namespace safestorage {
 
 static const char* kEncryptionVersionPrefixV10 = "v10";
 static const char* kEncryptionVersionPrefixV11 = "v11";
-gin::WrapperInfo SafeStorage::kWrapperInfo = {gin::kEmbedderNativeGin};
 
-electron::api::SafeStorage::SafeStorage() {}
-electron::api::SafeStorage::~SafeStorage() = default;
-
-bool SafeStorage::IsEncryptionAvailable() {
+bool IsEncryptionAvailable() {
   return OSCrypt::IsEncryptionAvailable();
 }
 
-v8::Local<v8::Value> SafeStorage::EncryptString(v8::Isolate* isolate,
-                                                const std::string& plaintext) {
+v8::Local<v8::Value> EncryptString(v8::Isolate* isolate,
+                                   const std::string& plaintext) {
   if (!OSCrypt::IsEncryptionAvailable()) {
     gin_helper::ErrorThrower(isolate).ThrowError(
         "Error while decrypting the ciphertext provided to "
@@ -58,8 +49,7 @@ v8::Local<v8::Value> SafeStorage::EncryptString(v8::Isolate* isolate,
       .ToLocalChecked();
 }
 
-std::string SafeStorage::DecryptString(v8::Isolate* isolate,
-                                       v8::Local<v8::Value> buffer) {
+std::string DecryptString(v8::Isolate* isolate, v8::Local<v8::Value> buffer) {
   if (!OSCrypt::IsEncryptionAvailable()) {
     gin_helper::ErrorThrower(isolate).ThrowError(
         "Error while decrypting the ciphertext provided to "
@@ -103,28 +93,9 @@ std::string SafeStorage::DecryptString(v8::Isolate* isolate,
   return plaintext;
 }
 
-gin::ObjectTemplateBuilder SafeStorage::GetObjectTemplateBuilder(
-    v8::Isolate* isolate) {
-  return gin::ObjectTemplateBuilder(isolate)
-      .SetMethod("isEncryptionAvailable", &SafeStorage::IsEncryptionAvailable)
-      .SetMethod("encryptString", &SafeStorage::EncryptString)
-      .SetMethod("decryptString", &SafeStorage::DecryptString);
-}
-
-const char* SafeStorage::GetTypeName() {
-  return "SafeStorage";
-}
-
-// static
-gin::Handle<SafeStorage> SafeStorage::Create(v8::Isolate* isolate) {
-  return gin::CreateHandle(isolate, new SafeStorage());
-}
-
-}  // namespace api
+}  // namespace safestorage
 
 }  // namespace electron
-
-namespace {
 
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
@@ -132,9 +103,10 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   gin_helper::Dictionary dict(isolate, exports);
-  dict.Set("safeStorage", electron::api::SafeStorage::Create(isolate));
+  dict.SetMethod("isEncryptionAvailable",
+                 &electron::safestorage::IsEncryptionAvailable);
+  dict.SetMethod("encryptString", &electron::safestorage::EncryptString);
+  dict.SetMethod("decryptString", &electron::safestorage::DecryptString);
 }
-
-}  // namespace
 
 NODE_LINKED_MODULE_CONTEXT_AWARE(electron_browser_safe_storage, Initialize)

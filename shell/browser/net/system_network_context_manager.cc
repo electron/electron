@@ -286,7 +286,7 @@ void SystemNetworkContextManager::OnNetworkServiceCreated(
 #endif
 
 #if DCHECK_IS_ON()
-  electron::api::SafeStorage::electron_crypto_ready = true;
+  electron::safestorage::electron_crypto_ready = true;
 #endif
 }
 

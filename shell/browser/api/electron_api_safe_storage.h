@@ -7,44 +7,20 @@
 
 #include <string>
 
-#include "gin/handle.h"
-#include "gin/wrappable.h"
-#include "shell/browser/event_emitter_mixin.h"
-#include "shell/common/gin_helper/cleaned_up_at_exit.h"
+#include "base/dcheck_is_on.h"
 
 namespace electron {
 
-namespace api {
+namespace safestorage {
 
-class SafeStorage : public gin::Wrappable<SafeStorage>,
-                    public gin_helper::CleanedUpAtExit {
- public:
-  static gin::Handle<SafeStorage> Create(v8::Isolate* isolate);
-
-  // gin::Wrappable
-  static gin::WrapperInfo kWrapperInfo;
-  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
-      v8::Isolate* isolate) override;
-  const char* GetTypeName() override;
-
-  bool IsEncryptionAvailable();
-  v8::Local<v8::Value> EncryptString(v8::Isolate* isolate,
-                                     const std::string& plaintext);
-  std::string DecryptString(v8::Isolate* isolate,
-                            v8::Local<v8::Value> ciphertext);
-  // Used in a DCHECK to validate that our assumption that the network context
-  // manager has initialized before app ready holds true. Only used in the
-  // testing build
+// Used in a DCHECK to validate that our assumption that the network context
+// manager has initialized before app ready holds true. Only used in the
+// testing build
 #if DCHECK_IS_ON()
-  static bool electron_crypto_ready;
+static bool electron_crypto_ready = false;
 #endif
 
- private:
-  SafeStorage();
-  ~SafeStorage() override;
-};
-
-}  // namespace api
+}  // namespace safestorage
 
 }  // namespace electron
 
