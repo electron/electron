@@ -1581,13 +1581,14 @@ describe('BrowserWindow module', () => {
       expect(w._getWindowButtonVisibility()).to.equal(true);
     });
 
-    it('changes window button visibility for customButtonsOnHover window', () => {
+    // Buttons of customButtonsOnHover are always hidden unless hovered.
+    it('does not change window button visibility for customButtonsOnHover window', () => {
       const w = new BrowserWindow({ show: false, frame: false, titleBarStyle: 'customButtonsOnHover' });
-      expect(w._getWindowButtonVisibility()).to.equal(true);
-      w.setWindowButtonVisibility(false);
       expect(w._getWindowButtonVisibility()).to.equal(false);
       w.setWindowButtonVisibility(true);
-      expect(w._getWindowButtonVisibility()).to.equal(true);
+      expect(w._getWindowButtonVisibility()).to.equal(false);
+      w.setWindowButtonVisibility(false);
+      expect(w._getWindowButtonVisibility()).to.equal(false);
     });
   });
 
