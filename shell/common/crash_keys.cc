@@ -21,18 +21,32 @@
 #include "third_party/crashpad/crashpad/client/annotation.h"
 
 #include "gin/wrappable.h"
+#include "shell/browser/api/electron_api_app.h"
+#include "shell/browser/api/electron_api_auto_updater.h"
 #include "shell/browser/api/electron_api_browser_view.h"
 #include "shell/browser/api/electron_api_cookies.h"
+#include "shell/browser/api/electron_api_data_pipe_holder.h"
+#include "shell/browser/api/electron_api_debugger.h"
 #include "shell/browser/api/electron_api_desktop_capturer.h"
+#include "shell/browser/api/electron_api_download_item.h"
+#include "shell/browser/api/electron_api_global_shortcut.h"
+#include "shell/browser/api/electron_api_in_app_purchase.h"
 #include "shell/browser/api/electron_api_menu.h"
+#include "shell/browser/api/electron_api_native_theme.h"
 #include "shell/browser/api/electron_api_net_log.h"
 #include "shell/browser/api/electron_api_notification.h"
 #include "shell/browser/api/electron_api_power_monitor.h"
+#include "shell/browser/api/electron_api_power_save_blocker.h"
 #include "shell/browser/api/electron_api_protocol.h"
 #include "shell/browser/api/electron_api_service_worker_context.h"
+#include "shell/browser/api/electron_api_session.h"
+#include "shell/browser/api/electron_api_system_preferences.h"
+#include "shell/browser/api/electron_api_tray.h"
+#include "shell/browser/api/electron_api_url_loader.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/api/electron_api_web_frame_main.h"
 #include "shell/browser/api/electron_api_web_request.h"
+#include "shell/browser/api/event.h"
 #include "shell/common/api/electron_api_native_image.h"
 
 namespace electron {
@@ -207,6 +221,36 @@ void SetCrashKeyForGinWrappable(gin::WrapperInfo* info) {
     crash_location = "WebFrameMain";
   else if (info == &electron::api::WebRequest::kWrapperInfo)
     crash_location = "WebRequest";
+  else if (info == &electron::api::SystemPreferences::kWrapperInfo)
+    crash_location = "SystemPreferences";
+  else if (info == &electron::api::Session::kWrapperInfo)
+    crash_location = "Session";
+  else if (info == &electron::api::DownloadItem::kWrapperInfo)
+    crash_location = "DownloadItem";
+  else if (info == &electron::api::NativeTheme::kWrapperInfo)
+    crash_location = "NativeTheme";
+  else if (info == &electron::api::Debugger::kWrapperInfo)
+    crash_location = "Debugger";
+  else if (info == &electron::api::GlobalShortcut::kWrapperInfo)
+    crash_location = "GlobalShortcut";
+  else if (info == &electron::api::InAppPurchase::kWrapperInfo)
+    crash_location = "InAppPurchase";
+  else if (info == &electron::api::Tray::kWrapperInfo)
+    crash_location = "Tray";
+  else if (info == &electron::api::DataPipeHolder::kWrapperInfo)
+    crash_location = "DataPipeHolder";
+  else if (info == &electron::api::AutoUpdater::kWrapperInfo)
+    crash_location = "AutoUpdater";
+  else if (info == &electron::api::AutoUpdater::kWrapperInfo)
+    crash_location = "AutoUpdater";
+  else if (info == &electron::api::SimpleURLLoaderWrapper::kWrapperInfo)
+    crash_location = "SimpleURLLoaderWrapper";
+  else if (info == &electron::api::Event::kWrapperInfo)
+    crash_location = "Event";
+  else if (info == &electron::api::PowerSaveBlocker::kWrapperInfo)
+    crash_location = "PowerSaveBlocker";
+  else if (info == &electron::api::App::kWrapperInfo)
+    crash_location = "App";
   else
     crash_location =
         "Deleted kWrapperInfo does not match listed component. Please review "
