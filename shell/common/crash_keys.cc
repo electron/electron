@@ -245,7 +245,7 @@ void SetCrashKeyForGinWrappable(gin::WrapperInfo* info) {
     crash_location = "AutoUpdater";
   else if (info == &electron::api::SimpleURLLoaderWrapper::kWrapperInfo)
     crash_location = "SimpleURLLoaderWrapper";
-  else if (info == &electron::api::Event::kWrapperInfo)
+  else if (info == &gin_helper::Event::kWrapperInfo)
     crash_location = "Event";
   else if (info == &electron::api::PowerSaveBlocker::kWrapperInfo)
     crash_location = "PowerSaveBlocker";
