@@ -9,10 +9,10 @@ Bug: 1204066
 Change-Id: I34704f1cfe36672d10065f4103c91fb4f35d3895
 
 diff --git a/amalgamation/sqlite3.c b/amalgamation/sqlite3.c
-index d19e25f98d37686a7fd1bfefe4bd044575abf5d4..175c55f86fa02cbe443b53f656519879f9192765 100644
+index 9e3a46624d09f7abe645d1d9e4b2c430c8acc99e..8dff8dcb9be5fd5d1010a44d30d27461659f89c0 100644
 --- a/amalgamation/sqlite3.c
 +++ b/amalgamation/sqlite3.c
-@@ -169123,7 +169123,7 @@ static int fts3ScanInteriorNode(
+@@ -168279,7 +168279,7 @@ static int fts3ScanInteriorNode(
    char *zBuffer = 0;              /* Buffer to load terms into */
    i64 nAlloc = 0;                 /* Size of allocated buffer */
    int isFirstTerm = 1;            /* True when processing first term on page */
@@ -21,7 +21,7 @@ index d19e25f98d37686a7fd1bfefe4bd044575abf5d4..175c55f86fa02cbe443b53f656519879
    int nBuffer = 0;                /* Total term size */
  
    /* Skip over the 'height' varint that occurs at the start of every
-@@ -169139,8 +169139,8 @@ static int fts3ScanInteriorNode(
+@@ -168295,8 +168295,8 @@ static int fts3ScanInteriorNode(
    ** table, then there are always 20 bytes of zeroed padding following the
    ** nNode bytes of content (see sqlite3Fts3ReadBlock() for details).
    */
@@ -32,7 +32,7 @@ index d19e25f98d37686a7fd1bfefe4bd044575abf5d4..175c55f86fa02cbe443b53f656519879
    if( zCsr>zEnd ){
      return FTS_CORRUPT_VTAB;
    }
-@@ -169193,20 +169193,20 @@ static int fts3ScanInteriorNode(
+@@ -168349,20 +168349,20 @@ static int fts3ScanInteriorNode(
      */
      cmp = memcmp(zTerm, zBuffer, (nBuffer>nTerm ? nTerm : nBuffer));
      if( piFirst && (cmp<0 || (cmp==0 && nBuffer>nTerm)) ){
@@ -58,10 +58,10 @@ index d19e25f98d37686a7fd1bfefe4bd044575abf5d4..175c55f86fa02cbe443b53f656519879
   finish_scan:
    sqlite3_free(zBuffer);
 diff --git a/amalgamation_dev/sqlite3.c b/amalgamation_dev/sqlite3.c
-index f4c985513fb7cac3930fe9706ddfc5c440dd3e85..c3ec02ed9124d59ee008548491b2b30e996472ef 100644
+index 689d52d5f51e8f552d4191b6811f556a2b997303..5e56254000b0225d24b332cb4fa6b2b0507c68ea 100644
 --- a/amalgamation_dev/sqlite3.c
 +++ b/amalgamation_dev/sqlite3.c
-@@ -169636,7 +169636,7 @@ static int fts3ScanInteriorNode(
+@@ -168779,7 +168779,7 @@ static int fts3ScanInteriorNode(
    char *zBuffer = 0;              /* Buffer to load terms into */
    i64 nAlloc = 0;                 /* Size of allocated buffer */
    int isFirstTerm = 1;            /* True when processing first term on page */
@@ -70,7 +70,7 @@ index f4c985513fb7cac3930fe9706ddfc5c440dd3e85..c3ec02ed9124d59ee008548491b2b30e
    int nBuffer = 0;                /* Total term size */
  
    /* Skip over the 'height' varint that occurs at the start of every
-@@ -169652,8 +169652,8 @@ static int fts3ScanInteriorNode(
+@@ -168795,8 +168795,8 @@ static int fts3ScanInteriorNode(
    ** table, then there are always 20 bytes of zeroed padding following the
    ** nNode bytes of content (see sqlite3Fts3ReadBlock() for details).
    */
@@ -81,7 +81,7 @@ index f4c985513fb7cac3930fe9706ddfc5c440dd3e85..c3ec02ed9124d59ee008548491b2b30e
    if( zCsr>zEnd ){
      return FTS_CORRUPT_VTAB;
    }
-@@ -169706,20 +169706,20 @@ static int fts3ScanInteriorNode(
+@@ -168849,20 +168849,20 @@ static int fts3ScanInteriorNode(
      */
      cmp = memcmp(zTerm, zBuffer, (nBuffer>nTerm ? nTerm : nBuffer));
      if( piFirst && (cmp<0 || (cmp==0 && nBuffer>nTerm)) ){
