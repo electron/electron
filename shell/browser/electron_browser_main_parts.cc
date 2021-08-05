@@ -536,13 +536,11 @@ void ElectronBrowserMainParts::PreCreateMainMessageLoopCommon() {
   media::SetLocalizedStringProvider(MediaStringProvider);
 
 #if defined(OS_WIN)
-  if (electron::fuses::IsCookieEncryptionEnabled()) {
-    auto* local_state = g_browser_process->local_state();
-    DCHECK(local_state);
+  auto* local_state = g_browser_process->local_state();
+  DCHECK(local_state);
 
-    bool os_crypt_init = OSCrypt::Init(local_state);
-    DCHECK(os_crypt_init);
-  }
+  bool os_crypt_init = OSCrypt::Init(local_state);
+  DCHECK(os_crypt_init);
 #endif
 }
 
