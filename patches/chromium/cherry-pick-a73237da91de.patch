@@ -14,7 +14,7 @@ Cr-Commit-Position: refs/heads/master@{#901110}
 ---
 
 diff --git a/third_party/blink/renderer/core/exported/web_plugin_container_impl.cc b/third_party/blink/renderer/core/exported/web_plugin_container_impl.cc
-index b21bc31..d13f05e 100644
+index 1901d2128035abdcdefcf9747db0c18580ec2073..55dccfbe7d9046a479afc9c0b141accd0b998c87 100644
 --- a/third_party/blink/renderer/core/exported/web_plugin_container_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_plugin_container_impl.cc
 @@ -95,6 +95,7 @@
@@ -25,7 +25,7 @@ index b21bc31..d13f05e 100644
  #include "third_party/blink/renderer/platform/exported/wrapped_resource_response.h"
  #include "third_party/blink/renderer/platform/geometry/layout_rect.h"
  #include "third_party/blink/renderer/platform/graphics/graphics_context.h"
-@@ -786,6 +787,8 @@
+@@ -803,6 +804,8 @@ void WebPluginContainerImpl::Dispose() {
    }
  
    if (web_plugin_) {
@@ -35,10 +35,10 @@ index b21bc31..d13f05e 100644
      web_plugin_->Destroy();
      web_plugin_ = nullptr;
 diff --git a/third_party/blink/renderer/core/frame/local_frame_view.cc b/third_party/blink/renderer/core/frame/local_frame_view.cc
-index e4d8388..b4ff8c6 100644
+index 30c2b00056873410c46177ccfe5fba1f7155dbb2..ba5bc57dbd912a1b9edd5405180c9fd4d4e806fb 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_view.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame_view.cc
-@@ -2372,6 +2372,7 @@
+@@ -2539,6 +2539,7 @@ bool LocalFrameView::UpdateLifecyclePhases(
  
  void LocalFrameView::UpdateLifecyclePhasesInternal(
      DocumentLifecycle::LifecycleState target_state) {
@@ -46,7 +46,7 @@ index e4d8388..b4ff8c6 100644
    // RunScrollTimelineSteps must not run more than once.
    bool should_run_scroll_timeline_steps = true;
  
-@@ -2473,6 +2474,10 @@
+@@ -2636,6 +2637,10 @@ void LocalFrameView::UpdateLifecyclePhasesInternal(
          continue;
      }
  
@@ -57,51 +57,62 @@ index e4d8388..b4ff8c6 100644
      // ResizeObserver and post-layout IntersectionObserver observation
      // deliveries may dirty style and layout. RunResizeObserverSteps will return
      // true if any observer ran that may have dirtied style or layout;
-@@ -2724,6 +2729,7 @@
+@@ -2894,6 +2899,8 @@ bool LocalFrameView::AnyFrameIsPrintingOrPaintingPreview() {
  }
  
  void LocalFrameView::RunPaintLifecyclePhase(PaintBenchmarkMode benchmark_mode) {
 +  DCHECK(ScriptForbiddenScope::IsScriptForbidden());
-   DCHECK(LocalFrameTreeAllowsThrottling());
++  DCHECK(LocalFrameTreeAllowsThrottling());
    TRACE_EVENT0("blink,benchmark", "LocalFrameView::RunPaintLifecyclePhase");
    // While printing or capturing a paint preview of a document, the paint walk
-@@ -2763,15 +2769,9 @@
+   // is done into a special canvas. There is no point doing a normal paint step
+@@ -2925,18 +2932,10 @@ void LocalFrameView::RunPaintLifecyclePhase(PaintBenchmarkMode benchmark_mode) {
+           for (PaintLayerScrollableArea* area : *animating_scrollable_areas)
              area->UpdateCompositorScrollAnimations();
          }
-         Document& document = frame_view.GetLayoutView()->GetDocument();
 -        {
 -          // Updating animations can notify ready promises which could mutate
 -          // the DOM. We should delay these until we have finished the lifecycle
 -          // update. https://crbug.com/1196781
 -          ScriptForbiddenScope forbid_script;
--          document.GetDocumentAnimations().UpdateAnimations(
--              DocumentLifecycle::kPaintClean, paint_artifact_compositor_.get(),
--              needed_update);
+-          frame_view.GetLayoutView()
+-              ->GetDocument()
+-              .GetDocumentAnimations()
+-              .UpdateAnimations(DocumentLifecycle::kPaintClean,
+-                                paint_artifact_compositor_.get());
 -        }
+         Document& document = frame_view.GetLayoutView()->GetDocument();
 +        document.GetDocumentAnimations().UpdateAnimations(
 +            DocumentLifecycle::kPaintClean, paint_artifact_compositor_.get(),
 +            needed_update);
          total_animations_count +=
              document.GetDocumentAnimations().GetAnimationsCount();
-       });
-@@ -4422,6 +4422,7 @@
+         current_frame_had_raf |= document.CurrentFrameHadRAF();
+@@ -4512,7 +4511,8 @@ void LocalFrameView::RenderThrottlingStatusChanged() {
      // so painting the tree should just clear the previous painted output.
      DCHECK(!IsUpdatingLifecycle());
      AllowThrottlingScope allow_throtting(*this);
+-    RunPaintLifecyclePhase();
 +    ScriptForbiddenScope forbid_script;
-     RunPaintLifecyclePhase(PaintBenchmarkMode::kNormal);
++    RunPaintLifecyclePhase(PaintBenchmarkMode::kNormal);
    }
  
-@@ -4950,6 +4951,7 @@
+ #if DCHECK_IS_ON()
+@@ -5018,6 +5018,12 @@ void LocalFrameView::RunPaintBenchmark(int repeat_count,
        // quantization when the time is very small.
        base::LapTimer timer(kWarmupRuns, kTimeLimit, kTimeCheckInterval);
        do {
 +        ScriptForbiddenScope forbid_script;
-         // Force a paint with everything cached before a small invalidation
-         // test to better simulate real-world scenarios.
-         if (mode == PaintBenchmarkMode::kSmallInvalidation)
++        // Force a paint with everything cached before a small invalidation
++        // test to better simulate real-world scenarios.
++        if (mode == PaintBenchmarkMode::kSmallInvalidation)
++          RunPaintLifecyclePhase(PaintBenchmarkMode::kForcePaint);
++
+         RunPaintLifecyclePhase(mode);
+         timer.NextLap();
+       } while (!timer.HasTimeLimitExpired());
 diff --git a/third_party/blink/renderer/modules/csspaint/paint_worklet.cc b/third_party/blink/renderer/modules/csspaint/paint_worklet.cc
-index e6e0c5b..618e08f 100644
+index e6e0c5b909c4d073963bcbb074bfb091a6ccb83b..618e08fbb5157c06348feee5f0120bd28ed0bc44 100644
 --- a/third_party/blink/renderer/modules/csspaint/paint_worklet.cc
 +++ b/third_party/blink/renderer/modules/csspaint/paint_worklet.cc
 @@ -17,6 +17,7 @@
@@ -112,7 +123,7 @@ index e6e0c5b..618e08f 100644
  #include "third_party/blink/renderer/platform/graphics/paint_generated_image.h"
  
  namespace blink {
-@@ -126,6 +127,10 @@
+@@ -126,6 +127,10 @@ scoped_refptr<Image> PaintWorklet::Paint(const String& name,
            layout_object.GetDocument(), layout_object.StyleRef(),
            paint_definition->NativeInvalidationProperties(),
            paint_definition->CustomInvalidationProperties());
