@@ -241,8 +241,6 @@ void SetCrashKeyForGinWrappable(gin::WrapperInfo* info) {
     crash_location = "DataPipeHolder";
   else if (info == &electron::api::AutoUpdater::kWrapperInfo)
     crash_location = "AutoUpdater";
-  else if (info == &electron::api::AutoUpdater::kWrapperInfo)
-    crash_location = "AutoUpdater";
   else if (info == &electron::api::SimpleURLLoaderWrapper::kWrapperInfo)
     crash_location = "SimpleURLLoaderWrapper";
   else if (info == &gin_helper::Event::kWrapperInfo)
