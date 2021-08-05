@@ -15,7 +15,7 @@ index 1cc7da1ce15f43905ce607adcc1a23ed9d92948a..613fa9a5e2ea5b6cb3a53110dec437f0
  }
  
 +/* static */
-+bool Environment::should_read_node_options_from_env = true;
++bool Environment::should_read_node_options_from_env_ = true;
 +
  Environment::Environment(IsolateData* isolate_data,
                           Isolate* isolate,
@@ -28,7 +28,7 @@ index 45210f074a0ca4d57f9fdc5019e8e82540b28b72..33dad5ec51b7bc8ec21e2fb3243da470
    inline double trigger_async_id();
    inline double get_default_trigger_async_id();
  
-+  static bool should_read_node_options_from_env;
++  static bool should_read_node_options_from_env_;
 +
    // List of id's that have been destroyed and need the destroy() cb called.
    inline std::vector<double>* destroy_async_id_list();
@@ -42,7 +42,7 @@ index 6302bb925339d709a54151a8fc8b58f1a2253881..f4da28cb93d6aff072d41610d1625462
    std::string node_options;
  
 -  if (credentials::SafeGetenv("NODE_OPTIONS", &node_options)) {
-+  if (Environment::should_read_node_options_from_env && credentials::SafeGetenv("NODE_OPTIONS", &node_options)) {
++  if (Environment::should_read_node_options_from_env_ && credentials::SafeGetenv("NODE_OPTIONS", &node_options)) {
      std::vector<std::string> env_argv =
          ParseNodeOptionsEnvVar(node_options, errors);
  
@@ -54,7 +54,7 @@ index 43a3862cc69dc39b95b329f713691b19de3b8d7e..eedaecee9a6980192118aa8adbaf7839
      });
  
  #ifndef NODE_WITHOUT_NODE_OPTIONS
-+    if (Environment::should_read_node_options_from_env) {
++    if (Environment::should_read_node_options_from_env_) {
      MaybeLocal<String> maybe_node_opts =
          env_vars->Get(isolate, OneByteString(isolate, "NODE_OPTIONS"));
      Local<String> node_opts;
