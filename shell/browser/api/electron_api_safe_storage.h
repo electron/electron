@@ -5,8 +5,6 @@
 #ifndef SHELL_BROWSER_API_ELECTRON_API_SAFE_STORAGE_H_
 #define SHELL_BROWSER_API_ELECTRON_API_SAFE_STORAGE_H_
 
-#include <string>
-
 #include "base/dcheck_is_on.h"
 
 namespace electron {

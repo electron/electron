@@ -4,6 +4,7 @@
 
 #include "shell/browser/api/electron_api_safe_storage.h"
 
+#include <string>
 #include <vector>
 
 #include "components/os_crypt/os_crypt.h"

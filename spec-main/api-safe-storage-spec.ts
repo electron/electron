@@ -16,7 +16,6 @@ import * as fs from 'fs';
 
 ifdescribe(process.platform !== 'linux')('safeStorage module', () => {
   after(async () => {
-    if (process.platform === 'linux') return;
     const pathToEncryptedString = path.resolve(__dirname, 'fixtures', 'api', 'safe-storage', 'encrypted.txt');
     if (fs.existsSync(pathToEncryptedString)) {
       await fs.unlinkSync(pathToEncryptedString);
@@ -79,24 +78,26 @@ ifdescribe(process.platform !== 'linux')('safeStorage module', () => {
       encryptAppProcess.stderr.on('data', data => { stdout += data; });
       encryptAppProcess.stderr.on('data', data => { stdout += data; });
 
-      // this setTimeout is left here for QOL in case we need to debug this test in the future
-      setTimeout(() => { console.log(stdout); }, 3000);
+      try {
+        await emittedOnce(encryptAppProcess, 'exit');
 
-      await emittedOnce(encryptAppProcess, 'exit');
+        const appPath = path.join(fixturesPath, 'api', 'safe-storage', 'decrypt-app');
+        const relaunchedAppProcess = cp.spawn(process.execPath, [appPath]);
 
-      const appPath = path.join(fixturesPath, 'api', 'safe-storage', 'decrypt-app');
-      const relaunchedAppProcess = cp.spawn(process.execPath, [appPath]);
+        let output = '';
+        relaunchedAppProcess.stdout.on('data', data => { output += data; });
+        relaunchedAppProcess.stderr.on('data', data => { output += data; });
 
-      let output = '';
-      relaunchedAppProcess.stdout.on('data', data => { output += data; });
-      relaunchedAppProcess.stderr.on('data', data => { output += data; });
+        const [code] = await emittedOnce(relaunchedAppProcess, 'exit');
 
-      const [code] = await emittedOnce(relaunchedAppProcess, 'exit');
-
-      if (!output.includes('plaintext')) {
-        console.log(code, output);
+        if (!output.includes('plaintext')) {
+          console.log(code, output);
+        }
+        expect(output).to.include('plaintext');
+      } catch (e) {
+        console.log(stdout);
+        throw e;
       }
-      expect(output).to.include('plaintext');
     });
   });
 });
