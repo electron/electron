@@ -1,7 +1,7 @@
-From a73237da91de8aa49aaa5d9479bae51cf387f090 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Robert Flack <flackr@chromium.org>
 Date: Tue, 13 Jul 2021 18:36:42 +0000
-Subject: [PATCH] Forbid script execution for entire lifecycle update
+Subject: Forbid script execution for entire lifecycle update
 
 We should not execute script during the lifecycle update except in cases where we we know it is safe to do so, either because we will rerun the lifecycle steps if anything is invalidated (resize observers, intersection observers) or because the script does not have access to invalidate the DOM (e.g. paint worklets).
 
@@ -11,7 +11,6 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2815619
 Reviewed-by: Stefan Zager <szager@chromium.org>
 Commit-Queue: Robert Flack <flackr@chromium.org>
 Cr-Commit-Position: refs/heads/master@{#901110}
----
 
 diff --git a/third_party/blink/renderer/core/exported/web_plugin_container_impl.cc b/third_party/blink/renderer/core/exported/web_plugin_container_impl.cc
 index 1901d2128035abdcdefcf9747db0c18580ec2073..55dccfbe7d9046a479afc9c0b141accd0b998c87 100644
