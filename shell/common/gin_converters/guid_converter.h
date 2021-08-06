@@ -9,6 +9,12 @@
 
 #include "gin/converter.h"
 
+#ifdef _REFGUID_DEFINED
+#undef REFGUID
+#endif
+#define REFGUID const ::GUID&
+#define _REFGUID_DEFINED
+
 #if defined(OS_WIN)
 #include <rpc.h>
 
