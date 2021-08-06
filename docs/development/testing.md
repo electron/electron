@@ -34,7 +34,7 @@ by coding style rules. `npm run lint-py` will check all Python, using
 
 If you are not using [build-tools](https://github.com/electron/build-tools),
 ensure that that name you have configured for your
-local build of Electron is one of `Testing`, `Release`, `Default`, `Debug`, or
+local build of Electron developer is one of `Testing`, `Release`, `Default`, `Debug`, or
 you have set `process.env.ELECTRON_OUT_DIR`. Without these set, Electron will fail
 to perform some pre-testing steps.
 
@@ -47,6 +47,7 @@ To run only specific tests matching a pattern, run `npm run test --
 -g=PATTERN`, replacing the `PATTERN` with a regex that matches the tests
 you would like to run. As an example: If you want to run only IPC tests, you
 would run `npm run test -- -g ipc`.
+[standard-addons]: https://standardjs.com/#are-there-developer-plugins
 
 [standard-addons]: https://standardjs.com/#are-there-text-editor-plugins
 
