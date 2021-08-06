@@ -256,6 +256,8 @@ static_library("chrome") {
 
   if (enable_electron_extensions) {
     sources += [
+      "//chrome/browser/extensions/chrome_extension_function_details.cc",
+      "//chrome/browser/extensions/chrome_extension_function_details.h",
       "//chrome/browser/extensions/chrome_url_request_util.cc",
       "//chrome/browser/extensions/chrome_url_request_util.h",
       "//chrome/browser/plugins/plugin_response_interceptor_url_loader_throttle.cc",

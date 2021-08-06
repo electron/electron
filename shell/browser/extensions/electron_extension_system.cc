@@ -22,6 +22,7 @@
 #include "content/public/browser/notification_service.h"
 #include "content/public/browser/notification_source.h"
 #include "electron/buildflags/buildflags.h"
+#include "electron/grit/electron_resources.h"
 #include "extensions/browser/api/app_runtime/app_runtime_api.h"
 #include "extensions/browser/extension_registry.h"
 #include "extensions/browser/info_map.h"
@@ -36,6 +37,7 @@
 #include "extensions/common/constants.h"
 #include "extensions/common/file_util.h"
 #include "shell/browser/extensions/electron_extension_loader.h"
+#include "ui/base/resource/resource_bundle.h"
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
 #include "chrome/browser/pdf/pdf_extension_util.h"  // nogncheck
@@ -45,6 +47,18 @@ using content::BrowserContext;
 using content::BrowserThread;
 
 namespace extensions {
+
+namespace {
+
+std::string GetCryptoTokenManifest() {
+  std::string manifest_contents(
+      ui::ResourceBundle::GetSharedInstance().GetRawDataResource(
+          IDR_CRYPTOTOKEN_MANIFEST));
+
+  return manifest_contents;
+}
+
+}  // namespace
 
 ElectronExtensionSystem::ElectronExtensionSystem(
     BrowserContext* browser_context)
@@ -109,8 +123,8 @@ std::unique_ptr<base::DictionaryValue> ParseManifest(
 }
 
 void ElectronExtensionSystem::LoadComponentExtensions() {
-#if BUILDFLAG(ENABLE_PDF_VIEWER)
   std::string utf8_error;
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
   std::string pdf_manifest_string = pdf_extension_util::GetManifest();
   std::unique_ptr<base::DictionaryValue> pdf_manifest =
       ParseManifest(pdf_manifest_string);
@@ -125,6 +139,23 @@ void ElectronExtensionSystem::LoadComponentExtensions() {
     extension_loader_->registrar()->AddExtension(pdf_extension);
   }
 #endif
+
+  std::string cryptotoken_manifest_string = GetCryptoTokenManifest();
+  std::unique_ptr<base::DictionaryValue> cryptotoken_manifest =
+      ParseManifest(cryptotoken_manifest_string);
+  DCHECK(cryptotoken_manifest);
+  LOG(ERROR) << cryptotoken_manifest_string;
+  if (cryptotoken_manifest) {
+    base::FilePath root_directory;
+    CHECK(base::PathService::Get(chrome::DIR_RESOURCES, &root_directory));
+    root_directory = root_directory.Append(FILE_PATH_LITERAL("cryptotoken"));
+    scoped_refptr<const Extension> cryptotoken_extension =
+        extensions::Extension::Create(
+            root_directory, extensions::mojom::ManifestLocation::kComponent,
+            *cryptotoken_manifest, extensions::Extension::REQUIRE_KEY,
+            &utf8_error);
+    extension_loader_->registrar()->AddExtension(cryptotoken_extension);
+  }
 }
 
 ExtensionService* ElectronExtensionSystem::extension_service() {
