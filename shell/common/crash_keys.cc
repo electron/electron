@@ -41,13 +41,15 @@
 #include "shell/browser/api/electron_api_service_worker_context.h"
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/api/electron_api_system_preferences.h"
-#include "shell/browser/api/electron_api_tray.h"
 #include "shell/browser/api/electron_api_url_loader.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/api/electron_api_web_frame_main.h"
 #include "shell/browser/api/electron_api_web_request.h"
 #include "shell/browser/api/event.h"
 #include "shell/common/api/electron_api_native_image.h"
+#if !defined(OS_WIN)
+#include "shell/browser/api/electron_api_tray.h"
+#endif
 
 namespace electron {
 
@@ -205,6 +207,10 @@ void SetCrashKeyForGinWrappable(gin::WrapperInfo* info) {
   else if (info == &electron::api::DesktopCapturer::kWrapperInfo)
     crash_location = "DesktopCapturer";
 #endif
+#if !defined(OS_WIN)
+  else if (info == &electron::api::Tray::kWrapperInfo)
+    crash_location = "Tray";
+#endif  // OS_WIN
   else if (info == &electron::api::NetLog::kWrapperInfo)
     crash_location = "NetLog";
   else if (info == &electron::api::NativeImage::kWrapperInfo)
@@ -235,8 +241,6 @@ void SetCrashKeyForGinWrappable(gin::WrapperInfo* info) {
     crash_location = "GlobalShortcut";
   else if (info == &electron::api::InAppPurchase::kWrapperInfo)
     crash_location = "InAppPurchase";
-  else if (info == &electron::api::Tray::kWrapperInfo)
-    crash_location = "Tray";
   else if (info == &electron::api::DataPipeHolder::kWrapperInfo)
     crash_location = "DataPipeHolder";
   else if (info == &electron::api::AutoUpdater::kWrapperInfo)
