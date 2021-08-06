@@ -2,10 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef CHROME_BROWSER_EXTENSIONS_API_CRYPTOTOKEN_PRIVATE_CRYPTOTOKEN_PRIVATE_API_H_
-#define CHROME_BROWSER_EXTENSIONS_API_CRYPTOTOKEN_PRIVATE_CRYPTOTOKEN_PRIVATE_API_H_
+#ifndef SHELL_BROWSER_EXTENSIONS_API_CRYPTOTOKEN_PRIVATE_CRYPTOTOKEN_PRIVATE_API_H_
+#define SHELL_BROWSER_EXTENSIONS_API_CRYPTOTOKEN_PRIVATE_CRYPTOTOKEN_PRIVATE_API_H_
 
-#include "chrome/browser/extensions/chrome_extension_function_details.h"
 #include "chrome/common/extensions/api/cryptotoken_private.h"
 #include "extensions/browser/extension_function.h"
 
@@ -18,8 +17,8 @@ class PrefRegistrySyncable;
 namespace extensions {
 namespace api {
 
-void CryptotokenRegisterProfilePrefs(
-    user_prefs::PrefRegistrySyncable* registry);
+// void CryptotokenRegisterProfilePrefs(
+//     user_prefs::PrefRegistrySyncable* registry);
 
 class CryptotokenPrivateCanOriginAssertAppIdFunction
     : public ExtensionFunction {
@@ -84,4 +83,4 @@ class CryptotokenPrivateRecordSignRequestFunction : public ExtensionFunction {
 }  // namespace api
 }  // namespace extensions
 
-#endif  // CHROME_BROWSER_EXTENSIONS_API_CRYPTOTOKEN_PRIVATE_CRYPTOTOKEN_PRIVATE_API_H_
+#endif  // SHELL_BROWSER_EXTENSIONS_API_CRYPTOTOKEN_PRIVATE_CRYPTOTOKEN_PRIVATE_API_H_

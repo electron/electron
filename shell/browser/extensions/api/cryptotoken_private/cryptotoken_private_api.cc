@@ -5,6 +5,9 @@
 #include "shell/browser/extensions/api/cryptotoken_private/cryptotoken_private_api.h"
 
 #include <stddef.h>
+#include <memory>
+#include <string>
+#include <vector>
 
 #include "base/bind.h"
 #include "base/callback.h"
@@ -87,10 +90,10 @@ content::RenderFrameHost* RenderFrameHostForTabAndFrameId(
 
 }  // namespace
 
-void CryptotokenRegisterProfilePrefs(
-    user_prefs::PrefRegistrySyncable* registry) {
-  registry->RegisterListPref(prefs::kSecurityKeyPermitAttestation);
-}
+// void CryptotokenRegisterProfilePrefs(
+//     user_prefs::PrefRegistrySyncable* registry) {
+//   registry->RegisterListPref(prefs::kSecurityKeyPermitAttestation);
+// }
 
 CryptotokenPrivateCanOriginAssertAppIdFunction::
     CryptotokenPrivateCanOriginAssertAppIdFunction() = default;
