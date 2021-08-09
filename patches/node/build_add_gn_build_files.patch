@@ -7,10 +7,10 @@ This adds GN build files for Node, so we don't have to build with GYP.
 
 diff --git a/BUILD.gn b/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..bd26c3623d3314539609a978270d3ced1d167777
+index 0000000000000000000000000000000000000000..52fb22305bb67c75c9a1cf4bc39cd901420cf7a9
 --- /dev/null
 +++ b/BUILD.gn
-@@ -0,0 +1,400 @@
+@@ -0,0 +1,401 @@
 +import("//electron/build/asar.gni")
 +import("//v8/gni/v8.gni")
 +
@@ -205,6 +205,7 @@ index 0000000000000000000000000000000000000000..bd26c3623d3314539609a978270d3ced
 +    ":node_js2c",
 +    "deps/cares",
 +    "deps/histogram",
++    "deps/googletest:gtest",
 +    "deps/llhttp",
 +    "deps/nghttp2",
 +    "deps/uvwasi",
@@ -549,6 +550,72 @@ index 0000000000000000000000000000000000000000..367d537c91be1f62e161a41e737a60cb
 +    include_dirs += [ "config/darwin" ]
 +    sources += [ "config/darwin/ares_config.h" ]
 +  }
++}
+diff --git a/deps/googletest/BUILD.gn b/deps/googletest/BUILD.gn
+new file mode 100644
+index 0000000000000000000000000000000000000000..bdc102f9c400cc8bb1788d1ca5a2953b234f83b7
+--- /dev/null
++++ b/deps/googletest/BUILD.gn
+@@ -0,0 +1,60 @@
++config("gtest_config") {
++  include_dirs = [ "include" ]
++  defines = [ "UNIT_TEST" ]
++}
++
++static_library("gtest") {
++  include_dirs = [
++    "include",
++    "." # src
++  ]
++
++  public_configs = [ ":gtest_config" ]
++
++  cflags_cc = [ "-Wno-c++98-compat-extra-semi" ]
++
++  defines = [
++    "GTEST_HAS_POSIX_RE=0",
++    "GTEST_LANG_CXX11=1",
++  ]
++
++  sources = [
++    "include/gtest/gtest_pred_impl.h",
++    "include/gtest/gtest_prod.h",
++    "include/gtest/gtest-death-test.h",
++    "include/gtest/gtest-matchers.h",
++    "include/gtest/gtest-message.h",
++    "include/gtest/gtest-param-test.h",
++    "include/gtest/gtest-printers.h",
++    "include/gtest/gtest-spi.h",
++    "include/gtest/gtest-test-part.h",
++    "include/gtest/gtest-typed-test.h",
++    "include/gtest/gtest.h",
++    "include/gtest/internal/gtest-death-test-internal.h",
++    "include/gtest/internal/gtest-filepath.h",
++    "include/gtest/internal/gtest-internal.h",
++    "include/gtest/internal/gtest-param-util.h",
++    "include/gtest/internal/gtest-port-arch.h",
++    "include/gtest/internal/gtest-port.h",
++    "include/gtest/internal/gtest-string.h",
++    "include/gtest/internal/gtest-type-util.h",
++    "include/gtest/internal/custom/gtest-port.h",
++    "include/gtest/internal/custom/gtest-printers.h",
++    "include/gtest/internal/custom/gtest.h",
++    "src/gtest-all.cc",
++    "src/gtest-death-test.cc",
++    "src/gtest-filepath.cc",
++    "src/gtest-internal-inl.h",
++    "src/gtest-matchers.cc",
++    "src/gtest-port.cc",
++    "src/gtest-printers.cc",
++    "src/gtest-test-part.cc",
++    "src/gtest-typed-test.cc",
++    "src/gtest.cc",
++  ]
++}
++
++static_library("gtest_main") {
++  deps = [ ":gtest" ]
++  sources = [ "src/gtest_main.cc" ]
 +}
 diff --git a/deps/histogram/BUILD.gn b/deps/histogram/BUILD.gn
 new file mode 100644
