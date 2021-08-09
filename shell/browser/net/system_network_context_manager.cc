@@ -240,8 +240,8 @@ void SystemNetworkContextManager::OnNetworkServiceCreated(
 
   std::string app_name = electron::Browser::Get()->GetName();
 #if defined(OS_MAC)
-    KeychainPassword::GetServiceName() = app_name + " Safe Storage";
-    KeychainPassword::GetAccountName() = app_name;
+  KeychainPassword::GetServiceName() = app_name + " Safe Storage";
+  KeychainPassword::GetAccountName() = app_name;
 #endif
 #if defined(OS_LINUX)
   // c.f.
