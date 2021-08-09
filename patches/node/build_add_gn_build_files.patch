@@ -1646,7 +1646,7 @@ index 0000000000000000000000000000000000000000..d1d6b51e8c0c5bc6a5d09e217eb30483
 +  args = rebase_path(inputs + outputs, root_build_dir)
 +}
 diff --git a/src/node_version.h b/src/node_version.h
-index 0523885212d429ee5c4142137524cb127d8adc97..116815364055a01f0c0619f0f22e9a387c2f2e2e 100644
+index a695efb145e402394864a4dd7606ed50b1159d4a..a6b3a6aefcd4b60f5e6ba07abaeca0de5c2f7936 100644
 --- a/src/node_version.h
 +++ b/src/node_version.h
 @@ -89,7 +89,10 @@
@@ -1679,7 +1679,7 @@ index 0000000000000000000000000000000000000000..01f62d4ae6e3b9d539444e3dff069f00
 +  main(sys.argv[1:])
 diff --git a/tools/generate_gn_filenames_json.py b/tools/generate_gn_filenames_json.py
 new file mode 100755
-index 0000000000000000000000000000000000000000..ece315d915f0a7b2c8e823caccba7ffec8420fdf
+index 0000000000000000000000000000000000000000..8f884a41f57630ac432eb85ebfc9b8bc82cddaca
 --- /dev/null
 +++ b/tools/generate_gn_filenames_json.py
 @@ -0,0 +1,75 @@
@@ -1689,16 +1689,17 @@ index 0000000000000000000000000000000000000000..ece315d915f0a7b2c8e823caccba7ffe
 +import sys
 +
 +import install
-+import subprocess
++
++from utils import SearchFiles
 +
 +def LoadPythonDictionary(path):
 +  file_string = open(path).read()
 +  try:
 +    file_data = eval(file_string, {'__builtins__': None}, None)
-+  except SyntaxError, e:
++  except SyntaxError as e:
 +    e.filename = path
 +    raise
-+  except Exception, e:
++  except Exception as e:
 +    raise Exception("Unexpected error while reading %s: %s" % (path, str(e)))
 +
 +  assert isinstance(file_data, dict), "%s does not eval to a dictionary" % path
@@ -1732,8 +1733,7 @@ index 0000000000000000000000000000000000000000..ece315d915f0a7b2c8e823caccba7ffe
 +      files = [f.replace('deps/v8/', '//v8/', 1) for f in files]
 +    return files
 +
-+  cwd = os.path.join(os.getcwd(), 'tools/search_files.py')
-+  lib_files = subprocess.check_output('{} {} --ext js lib'.format('python3', cwd), shell=True).split()
++  lib_files = SearchFiles('lib', 'js')
 +  out['library_files'] = filter_v8_files(lib_files)
 +  out['library_files'] += filter_v8_files(node_gyp['variables']['deps_files'])
 +
