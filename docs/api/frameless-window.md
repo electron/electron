@@ -36,9 +36,9 @@ const win = new BrowserWindow({ titleBarStyle: 'hidden' })
 win.show()
 ```
 
-## Alternatives on macOS
+### Alternatives on macOS
 
-### `hiddenInset`
+#### `hiddenInset`
 
 Results in a hidden title bar with an alternative look where the traffic light buttons are slightly more inset from the window edge.
 
