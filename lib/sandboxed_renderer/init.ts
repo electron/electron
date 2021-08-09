@@ -127,7 +127,7 @@ const contextIsolation = mainFrame.getWebPreference('contextIsolation');
 const webviewTag = mainFrame.getWebPreference('webviewTag');
 const isHiddenPage = mainFrame.getWebPreference('hiddenPage');
 const usesNativeWindowOpen = true;
-const guestInstanceId = mainFrame.getWebPreference('guestInstanceId');
+const isWebView = mainFrame.getWebPreference('isWebView');
 const openerId = mainFrame.getWebPreference('openerId');
 
 switch (window.location.protocol) {
@@ -145,14 +145,14 @@ switch (window.location.protocol) {
   default: {
     // Override default web functions.
     const { windowSetup } = require('@electron/internal/renderer/window-setup') as typeof windowSetupModule;
-    windowSetup(guestInstanceId, openerId, isHiddenPage, usesNativeWindowOpen);
+    windowSetup(isWebView, openerId, isHiddenPage, usesNativeWindowOpen);
   }
 }
 
 // Load webview tag implementation.
 if (process.isMainFrame) {
   const { webViewInit } = require('@electron/internal/renderer/web-view/web-view-init') as typeof webViewInitModule;
-  webViewInit(contextIsolation, webviewTag, guestInstanceId);
+  webViewInit(contextIsolation, webviewTag, isWebView);
 }
 
 // Wrap the script into a function executed in global scope. It won't have

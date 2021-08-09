@@ -36,8 +36,6 @@ class WebContentsPreferences
                          const gin_helper::Dictionary& web_preferences);
   ~WebContentsPreferences() override;
 
-  void Merge(const gin_helper::Dictionary& new_web_preferences);
-
   void SetFromDictionary(const gin_helper::Dictionary& new_web_preferences);
 
   // Append command paramters according to preferences.
@@ -70,6 +68,7 @@ class WebContentsPreferences
   bool ShouldUseNativeWindowOpen() const { return native_window_open_; }
   bool IsWebSecurityEnabled() const { return web_security_; }
   bool GetPreloadPath(base::FilePath* path) const;
+  bool IsSandboxed() const;
 
  private:
   friend class content::WebContentsUserData<WebContentsPreferences>;
@@ -90,7 +89,7 @@ class WebContentsPreferences
   bool node_integration_in_worker_;
   bool disable_html_fullscreen_window_resize_;
   bool webview_tag_;
-  bool sandbox_;
+  absl::optional<bool> sandbox_;
   bool native_window_open_;
   bool context_isolation_;
   bool javascript_;
@@ -110,7 +109,7 @@ class WebContentsPreferences
   absl::optional<int> minimum_font_size_;
   absl::optional<std::string> default_encoding_;
   int opener_id_;
-  int guest_instance_id_;
+  bool is_webview_;
   std::vector<std::string> custom_args_;
   std::vector<std::string> custom_switches_;
   absl::optional<std::string> enable_blink_features_;

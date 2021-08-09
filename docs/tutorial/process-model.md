@@ -84,7 +84,7 @@ uses `app` APIs to create a more native application window experience.
 
 ```js title='main.js'
 // quitting the app when no windows are open on macOS
-app.on('window-all-closed', function () {
+app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
 })
 ```

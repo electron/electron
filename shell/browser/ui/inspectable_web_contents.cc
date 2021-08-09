@@ -971,20 +971,6 @@ void InspectableWebContents::WebContentsDestroyed() {
     view_->GetDelegate()->DevToolsClosed();
 }
 
-bool InspectableWebContents::DidAddMessageToConsole(
-    content::WebContents* source,
-    blink::mojom::ConsoleMessageLevel level,
-    const std::u16string& message,
-    int32_t line_no,
-    const std::u16string& source_id) {
-  logging::LogMessage("CONSOLE", line_no,
-                      blink::ConsoleMessageLevelToLogSeverity(level))
-          .stream()
-      << "\"" << message << "\", source: " << source_id << " (" << line_no
-      << ")";
-  return true;
-}
-
 bool InspectableWebContents::HandleKeyboardEvent(
     content::WebContents* source,
     const content::NativeWebKeyboardEvent& event) {
