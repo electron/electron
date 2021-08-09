@@ -1,7 +1,7 @@
-From e2123a8e0943b4399814bd530df401ed071b6d0f Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Tal Pressman <talp@chromium.org>
 Date: Wed, 21 Jul 2021 09:11:13 +0000
-Subject: [PATCH] Manually post task to bind FileUtilitiesHost.
+Subject: Manually post task to bind FileUtilitiesHost.
 
 The FileUtilitiesHost binder is posted to a separate sequence, and the
 ServiceWorkerHost may be destroyed by the time the it runs, causing a
@@ -21,13 +21,12 @@ Reviewed-by: Kinuko Yasuda <kinuko@chromium.org>
 Reviewed-by: Kouhei Ueno <kouhei@chromium.org>
 Commit-Queue: Tal Pressman <talp@google.com>
 Cr-Commit-Position: refs/heads/master@{#903832}
----
 
 diff --git a/content/browser/browser_interface_binders.cc b/content/browser/browser_interface_binders.cc
-index a29f5e6..46274c1 100644
+index 9fbd499d113784dda58a5470510acbdb65c1c119..2b297d200277e857579deff7f41affca6fc7877a 100644
 --- a/content/browser/browser_interface_binders.cc
 +++ b/content/browser/browser_interface_binders.cc
-@@ -349,10 +349,22 @@
+@@ -376,10 +376,22 @@ void BindTextSuggestionHostForFrame(
  }
  #endif
  
@@ -52,7 +51,7 @@ index a29f5e6..46274c1 100644
  }
  
  template <typename WorkerHost, typename Interface>
-@@ -1228,9 +1240,7 @@
+@@ -1175,9 +1187,7 @@ void PopulateServiceWorkerBinders(ServiceWorkerHost* host,
  
    // static binders
    map->Add<blink::mojom::FileUtilitiesHost>(
