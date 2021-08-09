@@ -213,10 +213,10 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     * `followWindow` - The backdrop should automatically appear active when the window is active, and inactive when it is not. This is the default.
     * `active` - The backdrop should always appear active.
     * `inactive` - The backdrop should always appear inactive.
-  * `titleBarStyle` String (optional) - The style of window title bar on macOS or Windows.
+  * `titleBarStyle` String (optional) _macOS_ _Windows_ - The style of window title bar.
     Default is `default`. Possible values are:
     * `default` - Results in the standard title bar for macOS or Windows respectively.
-    * `hidden` - Results in a hidden title bar and a full size content window. On macOs, the title bar still has the standard window controls (“traffic lights”) in the top left. On Windows, when combined with `titleBarOverlay: true` it will activate the Window Controls Overlay (see `titleBarOverlay` for more information).
+    * `hidden` - Results in a hidden title bar and a full size content window. On macOS, the window still has the standard window controls (“traffic lights”) in the top left. On Windows, when combined with `titleBarOverlay: true` it will activate the Window Controls Overlay (see `titleBarOverlay` for more information), otherwise no window controls will be shown.
     * `hiddenInset` - Only on macOS, results in a hidden title bar with an alternative look
       where the traffic light buttons are slightly more inset from the window edge.
     * `customButtonsOnHover` - Only on macOS, results in a hidden title bar and a full size
@@ -390,8 +390,8 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       this will cause the `preferred-size-changed` event to be emitted on the
       `WebContents` when the preferred size changes. Default is `false`.
   * `titleBarOverlay` Object | Boolean (optional) -  When using a frameless window in conjuction with `win.setWindowButtonVisibility(true)` on macOS or using a `titleBarStyle` so that the standard window controls ("traffic lights" on macOS) are visible, this property enables the Window Controls Overlay [JavaScript APIs][overlay-javascript-apis] and [CSS Environment Variables][overlay-css-env-vars]. Default is `false`.
-    * `color` String (optional) - The CSS color of the Window Controls Overlay when enabled on Windows. Default is the system color.
-    * `symbolColor` String (optional) - The CSS color of the symbols on the Window Controls Overlay when enabled on Windows. Default is the system color.
+    * `color` String (optional) _Windows_ - The CSS color of the Window Controls Overlay when enabled. Default is the system color.
+    * `symbolColor` String (optional) _Windows_ - The CSS color of the symbols on the Window Controls Overlay when enabled. Default is the system color.
 
 When setting minimum or maximum window size with `minWidth`/`maxWidth`/
 `minHeight`/`maxHeight`, it only constrains the users. It won't prevent you from

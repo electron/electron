@@ -28,7 +28,7 @@ You can do so by specifying the `titleBarStyle` option:
 
 #### `hidden`
 
-Results in a hidden title bar and a full size content window. On macOs, the title bar still has the standard window controls (“traffic lights”) in the top left.
+Results in a hidden title bar and a full size content window. On macOS, the title bar still has the standard window controls (“traffic lights”) in the top left.
 
 ```javascript
 const { BrowserWindow } = require('electron')
