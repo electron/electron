@@ -39,6 +39,8 @@
 #elif defined(OS_LINUX)  // defined(OS_WIN)
 #include <unistd.h>
 #include <cstdio>
+#include "base/base_switches.h"
+#include "base/command_line.h"
 #include "content/public/app/content_main.h"
 #include "shell/app/electron_main_delegate.h"  // NOLINT
 #else                                          // defined(OS_LINUX)
@@ -304,9 +306,14 @@ int main(int argc, char* argv[]) {
 
   electron::ElectronMainDelegate delegate;
   content::ContentMainParams params(&delegate);
+  electron::ElectronCommandLine::Init(argc, argv);
   params.argc = argc;
   params.argv = const_cast<const char**>(argv);
-  electron::ElectronCommandLine::Init(argc, argv);
+  base::CommandLine::Init(params.argc, params.argv);
+  // TODO(https://crbug.com/1176772): Remove when Chrome Linux is fully migrated
+  // to Crashpad.
+  base::CommandLine::ForCurrentProcess()->AppendSwitch(
+      ::switches::kEnableCrashpad);
   return content::ContentMain(params);
 }
 

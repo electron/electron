@@ -2,8 +2,8 @@ declare let standardScheme: string;
 
 declare namespace Electron {
   interface WebContents {
-    getOwnerBrowserWindow(): BrowserWindow;
-    getWebPreferences(): any;
+    getOwnerBrowserWindow(): BrowserWindow | null;
+    getWebPreferences(): WebPreferences | null;
   }
 
   interface Session {

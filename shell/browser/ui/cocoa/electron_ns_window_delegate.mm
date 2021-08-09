@@ -168,6 +168,7 @@ using FullScreenTransitionState =
 - (void)windowDidResize:(NSNotification*)notification {
   [super windowDidResize:notification];
   shell_->NotifyWindowResize();
+  shell_->RedrawTrafficLights();
 }
 
 - (void)windowWillMove:(NSNotification*)notification {

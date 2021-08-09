@@ -33,6 +33,7 @@ void CertVerifierClient::Verify(
   params.error_code = default_error;
   params.certificate = certificate;
   params.validated_certificate = default_result.verified_cert;
+  params.is_issued_by_known_root = default_result.is_issued_by_known_root;
   cert_verify_proc_.Run(
       params,
       base::BindOnce(

@@ -41,6 +41,9 @@ class InspectableWebContentsViewViews : public InspectableWebContentsView,
       const DevToolsContentsResizingStrategy& strategy) override;
   void SetTitle(const std::u16string& title) override;
 
+  // views::View:
+  void Layout() override;
+
   InspectableWebContents* inspectable_web_contents() {
     return inspectable_web_contents_;
   }
@@ -48,9 +51,6 @@ class InspectableWebContentsViewViews : public InspectableWebContentsView,
   const std::u16string& GetTitle() const { return title_; }
 
  private:
-  // views::View:
-  void Layout() override;
-
   // Owns us.
   InspectableWebContents* inspectable_web_contents_;
 

@@ -103,20 +103,14 @@ void BrowserProcessImpl::PostEarlyInitialization() {
 
   // Only use a persistent prefs store when cookie encryption is enabled as that
   // is the only key that needs it
-  if (electron::fuses::IsCookieEncryptionEnabled()) {
-    base::FilePath prefs_path;
-    CHECK(base::PathService::Get(chrome::DIR_USER_DATA, &prefs_path));
-    prefs_path = prefs_path.Append(FILE_PATH_LITERAL("Local State"));
-    base::ThreadRestrictions::ScopedAllowIO allow_io;
-    scoped_refptr<JsonPrefStore> user_pref_store =
-        base::MakeRefCounted<JsonPrefStore>(prefs_path);
-    user_pref_store->ReadPrefs();
-    prefs_factory.set_user_prefs(user_pref_store);
-  } else {
-    auto user_pref_store =
-        base::MakeRefCounted<OverlayUserPrefStore>(new InMemoryPrefStore);
-    prefs_factory.set_user_prefs(user_pref_store);
-  }
+  base::FilePath prefs_path;
+  CHECK(base::PathService::Get(chrome::DIR_USER_DATA, &prefs_path));
+  prefs_path = prefs_path.Append(FILE_PATH_LITERAL("Local State"));
+  base::ThreadRestrictions::ScopedAllowIO allow_io;
+  scoped_refptr<JsonPrefStore> user_pref_store =
+      base::MakeRefCounted<JsonPrefStore>(prefs_path);
+  user_pref_store->ReadPrefs();
+  prefs_factory.set_user_prefs(user_pref_store);
   local_state_ = prefs_factory.Create(std::move(pref_registry));
 }
 

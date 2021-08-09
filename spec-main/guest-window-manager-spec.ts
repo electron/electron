@@ -33,7 +33,11 @@ describe('new-window event', () => {
     proxy: {
       snapshotFileName: 'proxy-window-open.snapshot.txt',
       browserWindowOptions: {
-        show: false
+        show: false,
+        webPreferences: {
+          nativeWindowOpen: false,
+          sandbox: false
+        }
       }
     }
   };
