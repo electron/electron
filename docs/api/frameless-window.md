@@ -48,7 +48,7 @@ const win = new BrowserWindow({ titleBarStyle: 'hiddenInset' })
 win.show()
 ```
 
-### `customButtonsOnHover`
+#### `customButtonsOnHover`
 
 Uses custom drawn close, and miniaturize buttons that display
 when hovering in the top left of the window. The fullscreen button
