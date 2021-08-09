@@ -23,7 +23,7 @@
 @class ElectronNSWindowDelegate;
 @class ElectronPreviewItem;
 @class ElectronTouchBar;
-@class WindowButtonsView;
+@class WindowButtonsProxy;
 
 namespace electron {
 
@@ -155,9 +155,6 @@ class NativeWindowMac : public NativeWindow,
   void NotifyWindowWillEnterFullScreen();
   void NotifyWindowWillLeaveFullScreen();
 
-  // Ensure the buttons view are always floated on the top.
-  void ReorderButtonsView();
-
   // Cleanup observers when window is getting closed. Note that the destructor
   // can be called much later after window gets closed, so we should not do
   // cleanup in destructor.
@@ -215,7 +212,6 @@ class NativeWindowMac : public NativeWindow,
   void AddContentViewLayers();
 
   void InternalSetWindowButtonVisibility(bool visible);
-  void InternalSetStandardButtonsVisibility(bool visible);
   void InternalSetParentWindow(NativeWindow* parent, bool attach);
   void SetForwardMouseMessages(bool forward);
 
@@ -224,7 +220,6 @@ class NativeWindowMac : public NativeWindow,
   base::scoped_nsobject<ElectronNSWindowDelegate> window_delegate_;
   base::scoped_nsobject<ElectronPreviewItem> preview_item_;
   base::scoped_nsobject<ElectronTouchBar> touch_bar_;
-  base::scoped_nsobject<WindowButtonsView> buttons_view_;
 
   // Event monitor for scroll wheel event.
   id wheel_event_monitor_;
@@ -263,6 +258,9 @@ class NativeWindowMac : public NativeWindow,
   // The visibility mode of window button controls when explicitly set through
   // setWindowButtonVisibility().
   base::Optional<bool> window_button_visibility_;
+
+  // Controls the position and visibility of window buttons.
+  base::scoped_nsobject<WindowButtonsProxy> buttons_proxy_;
 
   // Maximizable window state; necessary for persistence through redraws.
   bool maximizable_ = true;
