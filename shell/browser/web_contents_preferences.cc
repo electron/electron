@@ -423,7 +423,7 @@ void WebContentsPreferences::OverrideWebkitPrefs(
     blink::web_pref::WebPreferences* prefs) {
   prefs->javascript_enabled = javascript_;
   prefs->images_enabled = images_;
-  // GetImageAnimationPolicy(&preference_, &prefs->animation_policy);
+  prefs->animation_policy = image_animation_policy_;
   prefs->text_areas_are_resizable = text_areas_are_resizable_;
   prefs->navigate_on_drag_drop = navigate_on_drag_drop_;
   prefs->autoplay_policy = autoplay_policy_;
