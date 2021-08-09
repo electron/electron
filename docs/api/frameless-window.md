@@ -26,7 +26,7 @@ you may want to have the title bar hidden and your content extend to the full wi
 yet still preserve the window controls ("traffic lights" on macOS) for standard window actions.
 You can do so by specifying the `titleBarStyle` option:
 
-### `hidden`
+#### `hidden`
 
 Results in a hidden title bar and a full size content window. On macOs, the title bar still has the standard window controls (“traffic lights”) in the top left.
 
