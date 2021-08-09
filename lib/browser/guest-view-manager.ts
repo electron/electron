@@ -136,27 +136,30 @@ const createGuest = function (embedder: Electron.WebContents, embedderFrameId: n
     }
   };
 
-  // Dispatch events to embedder.
-  const fn = function (event: string) {
-    guest.on(event as any, function (_, ...args: any[]) {
-      sendToEmbedder(IPC_MESSAGES.GUEST_VIEW_INTERNAL_DISPATCH_EVENT, event, ...args);
+  const makeProps = (eventKey: string, args: any[]) => {
+    const props: Record<string, any> = {};
+    webViewEvents[eventKey].forEach((prop, index) => {
+      props[prop] = args[index];
     });
+    return props;
   };
+
+  // Dispatch events to embedder.
   for (const event of supportedWebViewEvents) {
-    if (event !== 'new-window') {
-      fn(event);
-    }
+    guest.on(event as any, function (_, ...args: any[]) {
+      sendToEmbedder(IPC_MESSAGES.GUEST_VIEW_INTERNAL_DISPATCH_EVENT, event, makeProps(event, args));
+    });
   }
 
   guest.on('new-window', function (event, url, frameName, disposition, options, additionalFeatures, referrer) {
-    sendToEmbedder(IPC_MESSAGES.GUEST_VIEW_INTERNAL_DISPATCH_EVENT, 'new-window', url,
-      frameName, disposition, sanitizeOptionsForGuest(options),
-      additionalFeatures, referrer);
+    sendToEmbedder(IPC_MESSAGES.GUEST_VIEW_INTERNAL_DISPATCH_EVENT, 'new-window', {
+      url, frameName, disposition, options: sanitizeOptionsForGuest(options), additionalFeatures, referrer
+    });
   });
 
   // Dispatch guest's IPC messages to embedder.
   guest.on('ipc-message-host' as any, function (_: Electron.Event, channel: string, args: any[]) {
-    sendToEmbedder(IPC_MESSAGES.GUEST_VIEW_INTERNAL_IPC_MESSAGE, channel, ...args);
+    sendToEmbedder(IPC_MESSAGES.GUEST_VIEW_INTERNAL_DISPATCH_EVENT, 'ipc-message', { channel, args });
   });
 
   // Notify guest of embedder window visibility when it is ready

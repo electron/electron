@@ -1,6 +1,5 @@
 import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal';
 import * as ipcRendererUtils from '@electron/internal/renderer/ipc-renderer-internal-utils';
-import { webViewEvents } from '@electron/internal/common/web-view-events';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
 const { mainFrame: webFrame } = process._linkedBinding('electron_renderer_web_frame');
@@ -13,32 +12,18 @@ const DEPRECATED_EVENTS: Record<string, string> = {
   'page-title-updated': 'page-title-set'
 } as const;
 
-const dispatchEvent = function (delegate: GuestViewDelegate, eventName: string, eventKey: string, ...args: Array<any>) {
-  if (DEPRECATED_EVENTS[eventName] != null) {
-    dispatchEvent(delegate, DEPRECATED_EVENTS[eventName], eventKey, ...args);
-  }
-
-  const props: Record<string, any> = {};
-  webViewEvents[eventKey].forEach((prop, index) => {
-    props[prop] = args[index];
-  });
-
-  delegate.dispatchEvent(eventName, props);
-};
-
 export function registerEvents (viewInstanceId: number, delegate: GuestViewDelegate) {
-  ipcRendererInternal.on(`${IPC_MESSAGES.GUEST_VIEW_INTERNAL_DISPATCH_EVENT}-${viewInstanceId}`, function (event, eventName, ...args) {
-    dispatchEvent(delegate, eventName, eventName, ...args);
-  });
+  ipcRendererInternal.on(`${IPC_MESSAGES.GUEST_VIEW_INTERNAL_DISPATCH_EVENT}-${viewInstanceId}`, function (event, eventName, props) {
+    if (DEPRECATED_EVENTS[eventName] != null) {
+      delegate.dispatchEvent(DEPRECATED_EVENTS[eventName], props);
+    }
 
-  ipcRendererInternal.on(`${IPC_MESSAGES.GUEST_VIEW_INTERNAL_IPC_MESSAGE}-${viewInstanceId}`, function (event, channel, ...args) {
-    delegate.dispatchEvent('ipc-message', { channel, args });
+    delegate.dispatchEvent(eventName, props);
   });
 }
 
 export function deregisterEvents (viewInstanceId: number) {
   ipcRendererInternal.removeAllListeners(`${IPC_MESSAGES.GUEST_VIEW_INTERNAL_DISPATCH_EVENT}-${viewInstanceId}`);
-  ipcRendererInternal.removeAllListeners(`${IPC_MESSAGES.GUEST_VIEW_INTERNAL_IPC_MESSAGE}-${viewInstanceId}`);
 }
 
 export function createGuest (iframe: HTMLIFrameElement, elementInstanceId: number, params: Record<string, any>): Promise<number> {
