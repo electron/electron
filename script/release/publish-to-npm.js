@@ -92,15 +92,16 @@ new Promise((resolve, reject) => {
       throw new Error(`cannot find electron.d.ts from v${rootPackageJson.version} release assets`);
     }
     return new Promise((resolve, reject) => {
+      const { url } = tsdAsset;
       request.get({
-        url: tsdAsset.url,
+        url,
         headers: {
           accept: 'application/octet-stream',
           'user-agent': 'electron-npm-publisher'
         }
       }, (err, response, body) => {
         if (err || response.statusCode !== 200) {
-          reject(err || new Error('Cannot download electron.d.ts'));
+          reject(err || new Error(`Cannot download ${url}: ${response.status}`));
         } else {
           fs.writeFileSync(path.join(tempDir, 'electron.d.ts'), body);
           resolve(release);
