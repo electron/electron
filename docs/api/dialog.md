@@ -234,6 +234,7 @@ expanding and collapsing the dialog.
   * `title` String (optional) - Title of the message box, some platforms will not show it.
   * `detail` String (optional) - Extra information of the message.
   * `icon` ([NativeImage](native-image.md) | String) (optional)
+  * `textWidth` Integer (optional) _macOS_ - Custom width of the text in the message box.
   * `cancelId` Integer (optional) - The index of the button to be used to cancel the dialog, via
     the `Esc` key. By default this is assigned to the first button with "cancel" or "no" as the
     label. If no such labeled buttons exist and this option is not set, `0` will be used as the
@@ -285,6 +286,7 @@ If `browserWindow` is not shown dialog will not be attached to it. In such case 
   * `checkboxChecked` Boolean (optional) - Initial checked state of the
     checkbox. `false` by default.
   * `icon` [NativeImage](native-image.md) (optional)
+  * `textWidth` Integer (optional) _macOS_ - Custom width of the text in the message box.
   * `cancelId` Integer (optional) - The index of the button to be used to cancel the dialog, via
     the `Esc` key. By default this is assigned to the first button with "cancel" or "no" as the
     label. If no such labeled buttons exist and this option is not set, `0` will be used as the
