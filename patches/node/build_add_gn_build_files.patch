@@ -553,10 +553,10 @@ index 0000000000000000000000000000000000000000..367d537c91be1f62e161a41e737a60cb
 +}
 diff --git a/deps/googletest/BUILD.gn b/deps/googletest/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..bdc102f9c400cc8bb1788d1ca5a2953b234f83b7
+index 0000000000000000000000000000000000000000..34c4289eb35af910a470db6ef40abc91954ed848
 --- /dev/null
 +++ b/deps/googletest/BUILD.gn
-@@ -0,0 +1,60 @@
+@@ -0,0 +1,63 @@
 +config("gtest_config") {
 +  include_dirs = [ "include" ]
 +  defines = [ "UNIT_TEST" ]
@@ -570,7 +570,10 @@ index 0000000000000000000000000000000000000000..bdc102f9c400cc8bb1788d1ca5a2953b
 +
 +  public_configs = [ ":gtest_config" ]
 +
-+  cflags_cc = [ "-Wno-c++98-compat-extra-semi" ]
++  cflags_cc = [
++    "-Wno-c++98-compat-extra-semi",
++    "-Wno-unused-const-variable"
++  ]
 +
 +  defines = [
 +    "GTEST_HAS_POSIX_RE=0",
@@ -619,10 +622,10 @@ index 0000000000000000000000000000000000000000..bdc102f9c400cc8bb1788d1ca5a2953b
 +}
 diff --git a/deps/histogram/BUILD.gn b/deps/histogram/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..cbb0bdb5e8713ee4743576223314af007bdc098c
+index 0000000000000000000000000000000000000000..8ba89a379fa2937b4b2fa5092f18727c7d0788a6
 --- /dev/null
 +++ b/deps/histogram/BUILD.gn
-@@ -0,0 +1,18 @@
+@@ -0,0 +1,19 @@
 +config("histogram_config") {
 +  include_dirs = [ "src" ]
 +
@@ -630,6 +633,7 @@ index 0000000000000000000000000000000000000000..cbb0bdb5e8713ee4743576223314af00
 +    "-Wno-implicit-function-declaration",
 +    "-Wno-incompatible-pointer-types",
 +    "-Wno-unused-function",
++    "-Wno-atomic-alignment",
 +  ]
 +}
 +
