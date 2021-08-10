@@ -152,16 +152,16 @@ const { app, Menu } = require('electron')
 
 const isMac = process.platform === 'darwin'
 
-const template = [            // TypeScript: const template : MenuItemConstructorOptions[] = [
+const template = [
   // { role: 'appMenu' }
   ...(isMac ? [{
     label: app.name,
     submenu: [
-      { role: 'about' },      // TypeScript generalizes here 'about' to type string which
-      { type: 'separator' },  // conflicts with the type definition of MenuItemConstructorOptions.
-      { role: 'services' },   // For TS add "as const" after all role/type identifiers like:
-      { type: 'separator' },  // { type: 'separator' as const },
-      { role: 'hide' },       // in all sub-menus using the "...(isXXX ? [{}] : [])" pattern.
+      { role: 'about' },
+      { type: 'separator' },
+      { role: 'services' },
+      { type: 'separator' },
+      { role: 'hide' },
       { role: 'hideOthers' },
       { role: 'unhide' },
       { type: 'separator' },
