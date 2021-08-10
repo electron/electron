@@ -101,6 +101,10 @@ new Promise((resolve, reject) => {
         }
       }, (err, response, body) => {
         if (err || response.statusCode !== 200) {
+          if (err) console.error(err);
+          console.error('statusCode', response.statusCode);
+          console.error('headers', JSON.stringify(response.headers));
+          console.error('body', body.toString());
           reject(err || new Error(`Cannot download ${url}: ${response.status}`));
         } else {
           fs.writeFileSync(path.join(tempDir, 'electron.d.ts'), body);
