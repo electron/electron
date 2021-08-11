@@ -9,8 +9,8 @@
 #include <utility>
 #include <vector>
 
-#include "base/lazy_instance.h"
 #include "base/logging.h"
+#include "base/no_destructor.h"
 #include "content/browser/renderer_host/frame_tree_node.h"  // nogncheck
 #include "content/public/browser/render_frame_host.h"
 #include "electron/shell/common/api/api.mojom.h"
@@ -58,12 +58,14 @@ namespace api {
 
 typedef std::unordered_map<int, WebFrameMain*> WebFrameMainIdMap;
 
-base::LazyInstance<WebFrameMainIdMap>::DestructorAtExit
-    g_web_frame_main_id_map = LAZY_INSTANCE_INITIALIZER;
+WebFrameMainIdMap& GetWebFrameMainMap() {
+  static base::NoDestructor<WebFrameMainIdMap> instance;
+  return *instance;
+}
 
 // static
 WebFrameMain* WebFrameMain::FromFrameTreeNodeId(int frame_tree_node_id) {
-  auto frame_map = g_web_frame_main_id_map.Get();
+  auto frame_map = GetWebFrameMainMap();
   auto iter = frame_map.find(frame_tree_node_id);
   auto* web_frame = iter == frame_map.end() ? nullptr : iter->second;
   return web_frame;
@@ -78,7 +80,7 @@ gin::WrapperInfo WebFrameMain::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 WebFrameMain::WebFrameMain(content::RenderFrameHost* rfh)
     : frame_tree_node_id_(rfh->GetFrameTreeNodeId()), render_frame_(rfh) {
-  g_web_frame_main_id_map.Get().emplace(frame_tree_node_id_, this);
+  GetWebFrameMainMap().emplace(frame_tree_node_id_, this);
 }
 
 WebFrameMain::~WebFrameMain() {
@@ -87,7 +89,7 @@ WebFrameMain::~WebFrameMain() {
 
 void WebFrameMain::Destroyed() {
   MarkRenderFrameDisposed();
-  g_web_frame_main_id_map.Get().erase(frame_tree_node_id_);
+  GetWebFrameMainMap().erase(frame_tree_node_id_);
   Unpin();
 }
 
