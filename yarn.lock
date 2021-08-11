@@ -33,10 +33,10 @@
     ora "^4.0.3"
     pretty-ms "^5.1.0"
 
-"@electron/typescript-definitions@^8.9.4":
-  version "8.9.4"
-  resolved "https://registry.yarnpkg.com/@electron/typescript-definitions/-/typescript-definitions-8.9.4.tgz#ec5c47aad3d45f2da2c40e22536720a9de64c2aa"
-  integrity sha512-KL3ohLe4D5lhJagBEj1Jpoh4BBiJMoCMlc6RSLPT+DaP0odgjEK+Ky6whRDW1cDDpgaSfMisdbN+CdOx3Y7JOg==
+"@electron/typescript-definitions@^8.9.5":
+  version "8.9.5"
+  resolved "https://registry.yarnpkg.com/@electron/typescript-definitions/-/typescript-definitions-8.9.5.tgz#e6cb08e0e7c9656e178b892eab50866a8a80bf7a"
+  integrity sha512-xDLFl6joGpA8c9cGSPWC3DFHyIGf9+OWZmDrPbGJW1URt6C1ukdQWKSmjb1Rttb94QQxBrGuUlSyz27IQgLFsw==
   dependencies:
     "@types/node" "^11.13.7"
     chalk "^2.4.2"
@@ -5576,9 +5576,9 @@ path-key@^3.0.0, path-key@^3.1.0:
   integrity sha512-ojmeN0qd+y0jszEtoY48r0Peq5dwMEkIlCOu6Q5f41lfkswXuKtYrhgoTpLnyIcHm24Uhqx+5Tqm2InSwLhE6Q==
 
 path-parse@^1.0.6:
-  version "1.0.6"
-  resolved "https://registry.yarnpkg.com/path-parse/-/path-parse-1.0.6.tgz#d62dbb5679405d72c4737ec58600e9ddcf06d24c"
-  integrity sha512-GSmOT2EbHrINBf9SR7CDELwlJ8AENk3Qn7OikK4nFYAu3Ote2+JYNVvkpAEQm3/TLNEJFD/xZJjzyxg3KBWOzw==
+  version "1.0.7"
+  resolved "https://registry.yarnpkg.com/path-parse/-/path-parse-1.0.7.tgz#fbc114b60ca42b30d9daf5858e4bd68bbedb6735"
+  integrity sha512-LDJzPVEEEPR+y48z93A0Ed0yXb8pAByGWo/k5YYdYgpY2/2EsOsksJrq7lOHxryrVOn1ejG6oAp8ahvOIQD8sw==
 
 path-to-regexp@0.1.7:
   version "0.1.7"
