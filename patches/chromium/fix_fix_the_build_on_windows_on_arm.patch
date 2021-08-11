@@ -1,0 +1,34 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Charles Kerr <charles@charleskerr.com>
+Date: Tue, 10 Aug 2021 11:54:41 -0500
+Subject: fix: Fix the build on Windows on ARM
+
+https://chromium-review.googlesource.com/c/chromium/src/+/3056003
+
+Cherry-picking this upstream fix because the roll has been paused for
+a long time and this appears to be the only blocker remaining before the
+current roller-bot PR goes green, so the risk/reward of bumping DEPS
+leans in favor of merging what we've got before unpausing.
+
+diff --git a/chrome/installer/util/additional_parameters.cc b/chrome/installer/util/additional_parameters.cc
+index 275c635154111521a27a174b590685062021a09d..ddddd5bbfb4058b10d6cb21f69216b5fd5940e21 100644
+--- a/chrome/installer/util/additional_parameters.cc
++++ b/chrome/installer/util/additional_parameters.cc
+@@ -201,6 +201,8 @@ std::wstring GetChannelIdentifier(version_info::Channel channel,
+   static constexpr base::WStringPiece kArchSuffix = L"-arch_x64";
+ #elif defined(ARCH_CPU_X86)
+   static constexpr base::WStringPiece kArchSuffix = L"-arch_x86";
++#elif defined(ARCH_CPU_ARM64)
++  static constexpr base::WStringPiece kArchSuffix = L"-arch_arm64";
+ #else
+ #error unsupported processor architecture.
+ #endif
+@@ -236,6 +238,8 @@ std::wstring GetChannelIdentifier(version_info::Channel channel,
+       return L"x64-stable";
+ #elif defined(ARCH_CPU_X86)
+       return L"stable-arch_x86";
++#elif defined(ARCH_CPU_ARM64)
++      return L"stable-arch_arm64";
+ #else
+ #error unsupported processor architecture.
+ #endif

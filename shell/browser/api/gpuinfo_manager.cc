@@ -67,7 +67,7 @@ void GPUInfoManager::CompleteInfoFetcher(
   complete_info_promise_set_.emplace_back(std::move(promise));
 
   if (NeedsCompleteGpuInfoCollection()) {
-    gpu_data_manager_->RequestDxdiagDx12VulkanGpuInfoIfNeeded(
+    gpu_data_manager_->RequestDxdiagDx12VulkanVideoGpuInfoIfNeeded(
         content::GpuDataManagerImpl::kGpuInfoRequestAll, /* delayed */ false);
   } else {
     GPUInfoManager::OnGpuInfoUpdate();

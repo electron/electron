@@ -26,15 +26,14 @@ index 3a116703a77ef03715c8e3afca77b90205b32d63..e2bfe736c76d2c35ab5a0533b7569d86
  // in-memory sliding window.
  //
 diff --git a/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc b/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc
-index 4b37d8de877ad9ff94f11152eefb01117d1afe66..7db4a9c407d18279603c16b3b58f2456cc1e86fa 100644
+index fa51f3f0c43a4b2e33fb8dc94bba18462903a051..e1ec6fe15613a55aa71b31d136a3c12b461cb784 100644
 --- a/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc
 +++ b/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc
-@@ -9,9 +9,11 @@
- #include "base/bind.h"
+@@ -10,8 +10,10 @@
  #include "base/callback_helpers.h"
+ #include "base/cxx17_backports.h"
  #include "base/location.h"
 +#include "base/no_destructor.h"
- #include "base/numerics/ranges.h"
  #include "base/numerics/safe_conversions.h"
  #include "base/single_thread_task_runner.h"
 +#include "base/strings/string_util.h"
