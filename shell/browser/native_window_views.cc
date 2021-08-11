@@ -217,9 +217,7 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
 #endif
 
   widget()->Init(std::move(params));
-#if defined(OS_WIN)
   SetCanResize(resizable_);
-#endif
 
   bool fullscreen = false;
   options.Get(options::kFullscreen, &fullscreen);
