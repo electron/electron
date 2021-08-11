@@ -32,10 +32,10 @@ index 095bc943529c38c4f469bf69b79006ca48a4e0d5..0e358e2d140bccf2e987db234cd59227
  
  #if !defined(OS_ANDROID)
 diff --git a/content/common/url_schemes.cc b/content/common/url_schemes.cc
-index dc37f121130d83e200d73dd1ad566847548ac0fd..63080c1bc486a488841fc5d2081f4d5d4a00bde3 100644
+index 29d38782f197cb72a875effab00ffc7960435ac1..694fe67ef751b2a84d8fc3f5ad82854fe2287a11 100644
 --- a/content/common/url_schemes.cc
 +++ b/content/common/url_schemes.cc
-@@ -49,7 +49,7 @@ std::vector<std::string>& GetMutableServiceWorkerSchemes() {
+@@ -50,7 +50,7 @@ std::vector<std::string>& GetMutableServiceWorkerSchemes() {
  
  }  // namespace
  
@@ -44,7 +44,7 @@ index dc37f121130d83e200d73dd1ad566847548ac0fd..63080c1bc486a488841fc5d2081f4d5d
    // On Android and in tests, schemes may have been registered already.
    if (g_registered_url_schemes)
      return;
-@@ -106,7 +106,8 @@ void RegisterContentSchemes() {
+@@ -110,7 +110,8 @@ void RegisterContentSchemes() {
    // threadsafe so must be called when GURL isn't used on any other thread. This
    // is really easy to mess up, so we say that all calls to Add*Scheme in Chrome
    // must be inside this function.

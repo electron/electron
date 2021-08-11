@@ -23,10 +23,10 @@ index e24c169444c699f295de2c1f1f42683eeca73436..4675cdccb1876a318a9a0253cdf552bb
                                          int32_t world_id) {}
    virtual void DidClearWindowObject() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index b0d68dc86bfb32f528bb392c6fe8d5c60805a41b..8c0fb0274650b2a4a36a446a1b0ce01e93c6304b 100644
+index dab9185e742cf427295ea57cd85d6d83c7cc28c2..a035649b36e1175cd6f7f12d84d1911a4c192eed 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -4413,6 +4413,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
+@@ -4430,6 +4430,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
      observer.DidCreateScriptContext(context, world_id);
  }
  
@@ -40,10 +40,10 @@ index b0d68dc86bfb32f528bb392c6fe8d5c60805a41b..8c0fb0274650b2a4a36a446a1b0ce01e
                                                 int world_id) {
    for (auto& observer : observers_)
 diff --git a/content/renderer/render_frame_impl.h b/content/renderer/render_frame_impl.h
-index 73ad48a8f044ee4ffc795d3aeed17fc921eb44ee..27ade0af23c48dd9875d78113e6d5bb03c964fe1 100644
+index 79a92f0cfd56fb70ad3bf4e688119d817a3df1d1..23914c1d2daf6cd1603dbd0abb09b556e811d00a 100644
 --- a/content/renderer/render_frame_impl.h
 +++ b/content/renderer/render_frame_impl.h
-@@ -587,6 +587,8 @@ class CONTENT_EXPORT RenderFrameImpl
+@@ -588,6 +588,8 @@ class CONTENT_EXPORT RenderFrameImpl
        blink::WebLocalFrameClient::LazyLoadBehavior lazy_load_behavior) override;
    void DidCreateScriptContext(v8::Local<v8::Context> context,
                                int world_id) override;
@@ -67,10 +67,10 @@ index 99ddb8f449481647a499a5bb3fd7f5d5272ae414..00d7f0bbb8dc3afdc2303668481cf17f
    virtual void WillReleaseScriptContext(v8::Local<v8::Context>,
                                          int32_t world_id) {}
 diff --git a/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc b/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
-index 82750b58500681015be4cd75e9362d235a54c82f..497179aa9b4da053a44513103cdb93fd3fbc94e4 100644
+index fbef5207c921a5443f26083a860becc48eb497c1..5a25ce658f3115325e2213063ac502c855d878ca 100644
 --- a/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
-@@ -187,6 +187,7 @@ void LocalWindowProxy::Initialize() {
+@@ -200,6 +200,7 @@ void LocalWindowProxy::Initialize() {
    }
  
    InstallConditionalFeatures();
