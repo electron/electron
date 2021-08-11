@@ -43,7 +43,7 @@ WebFrameMainIdMap& GetWebFrameMainMap() {
 
 // static
 WebFrameMain* WebFrameMain::FromFrameTreeNodeId(int frame_tree_node_id) {
-  auto frame_map = GetWebFrameMainMap();
+  WebFrameMainIdMap& frame_map = GetWebFrameMainMap();
   auto iter = frame_map.find(frame_tree_node_id);
   auto* web_frame = iter == frame_map.end() ? nullptr : iter->second;
   return web_frame;
