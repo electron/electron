@@ -151,12 +151,14 @@ const createGuest = function (embedder: Electron.WebContents, embedderFrameId: n
     });
   }
 
-  guest.on('new-window', function (event, url, frameName, disposition, options) {
+  guest.on('new-window', function (event, url, frameName, disposition, options, additionalFeatures, referrer) {
     sendToEmbedder(IPC_MESSAGES.GUEST_VIEW_INTERNAL_DISPATCH_EVENT, 'new-window', {
       url,
       frameName,
       disposition,
-      options: sanitizeOptionsForGuest(options)
+      options: sanitizeOptionsForGuest(options),
+      additionalFeatures,
+      referrer
     });
   });
 

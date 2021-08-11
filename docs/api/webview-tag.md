@@ -799,6 +799,12 @@ Returns:
   `new-window`, `save-to-disk` and `other`.
 * `options` BrowserWindowConstructorOptions - The options which should be used for creating the new
   [`BrowserWindow`](browser-window.md).
+* `additionalFeatures` String[] - The non-standard features (features not handled
+  by Chromium or Electron) given to `window.open()`. Deprecated, and will now
+  always be the empty array `[]`.
+* `referrer` [Referrer](structures/referrer.md) - The referrer that will be
+  passed to the new window. May or may not result in the `Referer` header being
+  sent, depending on the referrer policy.
 
 Fired when the guest page attempts to open a new browser window.
 
