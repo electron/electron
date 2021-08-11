@@ -6,6 +6,7 @@
 #define SHELL_BROWSER_NET_ASAR_ASAR_URL_LOADER_H_
 
 #include "mojo/public/cpp/bindings/pending_remote.h"
+#include "services/network/public/cpp/resource_request.h"
 #include "services/network/public/mojom/url_loader.mojom.h"
 
 namespace asar {

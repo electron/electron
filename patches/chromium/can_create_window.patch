@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 6162f83c8dd9b081a12cdb3079a6d0b6d51b3bce..8b5e24a52b3c89c29440406472b52224d83a015e 100644
+index c58f10aadf159d30531b6d3ad53cc735ca3868d0..8b7cc22096230163a1c1212c37b65b24add07474 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -6233,6 +6233,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -6266,6 +6266,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,10 +21,10 @@ index 6162f83c8dd9b081a12cdb3079a6d0b6d51b3bce..8b5e24a52b3c89c29440406472b52224
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 330c9beb1216f21e4b600b4ed2e41035031f1e36..1409770828f88d990d11d5a022b10bea5dadf35c 100644
+index a55a44e2a72f3245211fe6afe8fb827c06da8a2e..fb42b663cf63c38de27c7da98630951be77c3ee1 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3723,6 +3723,14 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -3735,6 +3735,14 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    }
    auto* new_contents_impl = new_contents.get();
  
@@ -39,7 +39,7 @@ index 330c9beb1216f21e4b600b4ed2e41035031f1e36..1409770828f88d990d11d5a022b10bea
    new_contents_impl->GetController().SetSessionStorageNamespace(
        partition_id, session_storage_namespace);
  
-@@ -3765,12 +3773,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -3777,12 +3785,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
@@ -150,10 +150,10 @@ index 78d340f66b5573fd9039956c9aa9f54a206055cd..a5c1cd18896881066cc4a8954092ab85
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index 30882aa4a8082a6597e1c8c0c26cc98c4e75bff7..612656c87f3565c5cfa7c0a52feff84a48d7334b 100644
+index afec7767d905488a51b2dbba031b8a85d6d0138a..57f970d15bf03f817680982fa8605c333485804b 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
-@@ -27,6 +27,7 @@
+@@ -31,6 +31,7 @@
  #include "third_party/blink/public/platform/impression_conversions.h"
  #include "third_party/blink/public/platform/modules/video_capture/web_video_capture_impl_manager.h"
  #include "third_party/blink/public/platform/url_conversion.h"
@@ -161,7 +161,7 @@ index 30882aa4a8082a6597e1c8c0c26cc98c4e75bff7..612656c87f3565c5cfa7c0a52feff84a
  #include "third_party/blink/public/web/modules/mediastream/web_media_stream_device_observer.h"
  #include "third_party/blink/public/web/web_frame_widget.h"
  #include "third_party/blink/public/web/web_local_frame.h"
-@@ -285,6 +286,10 @@ WebView* RenderViewImpl::CreateView(
+@@ -289,6 +290,10 @@ WebView* RenderViewImpl::CreateView(
      params->impression = blink::ConvertWebImpressionToImpression(*impression);
    }
  
