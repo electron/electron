@@ -144,7 +144,6 @@ void ElectronExtensionSystem::LoadComponentExtensions() {
   std::unique_ptr<base::DictionaryValue> cryptotoken_manifest =
       ParseManifest(cryptotoken_manifest_string);
   DCHECK(cryptotoken_manifest);
-  LOG(ERROR) << cryptotoken_manifest_string;
   if (cryptotoken_manifest) {
     base::FilePath root_directory;
     CHECK(base::PathService::Get(chrome::DIR_RESOURCES, &root_directory));

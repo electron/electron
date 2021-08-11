@@ -182,6 +182,8 @@ CryptotokenPrivateCanAppIdGetAttestationFunction::Run() {
       cryptotoken_private::CanAppIdGetAttestation::Params::Create(*args_);
   EXTENSION_FUNCTION_VALIDATE(params);
 
+  return RespondNow(Error("API not supported in Electron"));
+#if 0
   const GURL origin_url(params->options.origin);
   if (!origin_url.is_valid()) {
     return RespondNow(Error(extensions::ErrorUtils::FormatErrorMessage(
@@ -263,6 +265,7 @@ CryptotokenPrivateCanAppIdGetAttestationFunction::Run() {
   //             &CryptotokenPrivateCanAppIdGetAttestationFunction::Complete,
   //             this)));
   // return RespondLater();
+#endif
 }
 
 void CryptotokenPrivateCanAppIdGetAttestationFunction::Complete(bool result) {
