@@ -70,12 +70,14 @@
 
 #elif defined(OS_WIN)
 #include "base/win/win_util.h"
+#include "extensions/common/image_util.h"
 #include "shell/browser/ui/views/win_frame_view.h"
 #include "shell/browser/ui/win/electron_desktop_native_widget_aura.h"
 #include "skia/ext/skia_utils_win.h"
 #include "ui/base/win/shell.h"
 #include "ui/display/screen.h"
 #include "ui/display/win/screen_win.h"
+#include "ui/gfx/color_utils.h"
 #include "ui/views/widget/desktop_aura/desktop_native_widget_aura.h"
 #endif
 
@@ -165,6 +167,37 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   options.Get("thickFrame", &thick_frame_);
   if (transparent())
     thick_frame_ = false;
+
+  overlay_button_color_ = color_utils::GetSysSkColor(COLOR_BTNFACE);
+  overlay_symbol_color_ = color_utils::GetSysSkColor(COLOR_BTNTEXT);
+
+  v8::Local<v8::Value> titlebar_overlay;
+  if (options.Get(options::ktitleBarOverlay, &titlebar_overlay) &&
+      titlebar_overlay->IsObject()) {
+    v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+    gin_helper::Dictionary titlebar_overlay_obj =
+        gin::Dictionary::CreateEmpty(isolate);
+    options.Get(options::ktitleBarOverlay, &titlebar_overlay_obj);
+
+    std::string overlay_color_string;
+    if (titlebar_overlay_obj.Get(options::kOverlayButtonColor,
+                                 &overlay_color_string)) {
+      bool success = extensions::image_util::ParseCssColorString(
+          overlay_color_string, &overlay_button_color_);
+      DCHECK(success);
+    }
+
+    std::string overlay_symbol_color_string;
+    if (titlebar_overlay_obj.Get(options::kOverlaySymbolColor,
+                                 &overlay_symbol_color_string)) {
+      bool success = extensions::image_util::ParseCssColorString(
+          overlay_symbol_color_string, &overlay_symbol_color_);
+      DCHECK(success);
+    }
+  }
+
+  if (title_bar_style_ != TitleBarStyle::kNormal)
+    set_has_frame(false);
 #endif
 
   if (enable_larger_than_screen())

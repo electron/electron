@@ -18,23 +18,25 @@ const win = new BrowserWindow({ width: 800, height: 600, frame: false })
 win.show()
 ```
 
-### Alternatives on macOS
+### Alternatives
 
-There's an alternative way to specify a chromeless window.
+There's an alternative way to specify a chromeless window on macOS and Windows.
 Instead of setting `frame` to `false` which disables both the titlebar and window controls,
 you may want to have the title bar hidden and your content extend to the full window size,
-yet still preserve the window controls ("traffic lights") for standard window actions.
+yet still preserve the window controls ("traffic lights" on macOS) for standard window actions.
 You can do so by specifying the `titleBarStyle` option:
 
 #### `hidden`
 
-Results in a hidden title bar and a full size content window, yet the title bar still has the standard window controls (“traffic lights”) in the top left.
+Results in a hidden title bar and a full size content window. On macOS, the title bar still has the standard window controls (“traffic lights”) in the top left.
 
 ```javascript
 const { BrowserWindow } = require('electron')
 const win = new BrowserWindow({ titleBarStyle: 'hidden' })
 win.show()
 ```
+
+### Alternatives on macOS
 
 #### `hiddenInset`
 
@@ -63,15 +65,29 @@ win.show()
 
 ## Windows Control Overlay
 
-On macOS, when using a frameless window in conjuction with `win.setWindowButtonVisibility(true)` or using one of the `titleBarStyle`s described above so
-that the traffic lights are visible, you can access the Window Controls Overlay [JavaScript APIs][overlay-javascript-apis] and
-[CSS Environment Variables][overlay-css-env-vars] by setting the `titleBarOverlay` option to true:
+When using a frameless window in conjuction with `win.setWindowButtonVisibility(true)` on macOS, using one of the `titleBarStyle`s as described above so
+that the traffic lights are visible, or using `titleBarStyle: hidden` on Windows, you can access the Window Controls Overlay [JavaScript APIs][overlay-javascript-apis] and
+[CSS Environment Variables][overlay-css-env-vars] by setting the `titleBarOverlay` option to true. Specifying `true` will result in an overlay with default system colors.
+
+On Windows, you can also specify the color of the overlay and its symbols by setting `titleBarOverlay` to an object with the options `color` and `symbolColor`. If an option is not specified, the color will default to its system color for the window control buttons:
 
 ```javascript
 const { BrowserWindow } = require('electron')
 const win = new BrowserWindow({
-  titleBarStyle: 'hiddenInset',
+  titleBarStyle: 'hidden',
   titleBarOverlay: true
+})
+win.show()
+```
+
+```javascript
+const { BrowserWindow } = require('electron')
+const win = new BrowserWindow({
+  titleBarStyle: 'hidden',
+  titleBarOverlay: {
+    color: '#2f3241',
+    symbolColor: '#74b1be'
+  }
 })
 win.show()
 ```
