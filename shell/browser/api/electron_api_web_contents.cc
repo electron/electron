@@ -1393,15 +1393,15 @@ void WebContents::HandleNewRenderFrame(
       static_cast<content::RenderWidgetHostImpl*>(rwhv->GetRenderWidgetHost());
   if (rwh_impl)
     rwh_impl->disable_hidden_ = !background_throttling_;
+
+  auto* web_frame = WebFrameMain::FromRenderFrameHost(render_frame_host);
+  if (web_frame)
+    web_frame->Connect();
 }
 
 void WebContents::RenderFrameCreated(
     content::RenderFrameHost* render_frame_host) {
   HandleNewRenderFrame(render_frame_host);
-
-  auto* web_frame = WebFrameMain::FromRenderFrameHost(render_frame_host);
-  if (web_frame)
-    web_frame->Connect();
 }
 
 void WebContents::RenderFrameDeleted(
