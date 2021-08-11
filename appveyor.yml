@@ -94,8 +94,7 @@ build_script:
             $env:RUN_GCLIENT_SYNC="true"
             if ($env:TARGET_ARCH -ne 'ia32') {
               # only save on x64/woa to avoid contention saving
-              # TODO: Re-enable gclient src caching
-              # $env:SAVE_GCLIENT_SRC="true"
+              $env:SAVE_GCLIENT_SRC="true"
             }
           } else {
             # update angle
@@ -109,8 +108,7 @@ build_script:
           $env:RUN_GCLIENT_SYNC="true"
           if ($env:TARGET_ARCH -ne 'ia32') {
             # only save on x64/woa to avoid contention saving
-            # TODO: Re-enable gclient src caching
-            # $env:SAVE_GCLIENT_SRC="true"
+            $env:SAVE_GCLIENT_SRC="true"
           }
         }
       }

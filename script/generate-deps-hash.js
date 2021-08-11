@@ -8,7 +8,7 @@ const FALLBACK_HASH_VERSION = 3;
 // Per platform hash versions to bust the cache on different platforms
 const HASH_VERSIONS = {
   darwin: 3,
-  win32: 5,
+  win32: 4,
   linux: 3
 };
 
