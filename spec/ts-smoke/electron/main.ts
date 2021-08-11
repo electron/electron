@@ -1104,7 +1104,7 @@ shell.writeShortcutLink('/home/user/Desktop/shortcut.lnk', 'update', shell.readS
 
 session.defaultSession.on('will-download', (event, item, webContents) => {
   event.preventDefault()
-  require('request')(item.getURL(), (data: any) => {
+  require('got')(item.getURL()).then((data: any) => {
     require('fs').writeFileSync('/somewhere', data)
   })
 })
