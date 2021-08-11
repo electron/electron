@@ -7,10 +7,10 @@ Guard usages in blink of private Mac APIs by MAS_BUILD, so they can be
 excluded for people who want to submit their apps to the Mac App store.
 
 diff --git a/content/browser/accessibility/accessibility_tree_formatter_mac.mm b/content/browser/accessibility/accessibility_tree_formatter_mac.mm
-index cc78b48b37e52ca32d0bb2fc1331cf5e0e3c2d09..daf60b60b13c2a0729323583a4ee9a0fd7d10d3f 100644
+index 6d3ddaf426f170431f68ed05f863a0913df89208..8630e3b40611fd92cd71d5e895c8091c8356e211 100644
 --- a/content/browser/accessibility/accessibility_tree_formatter_mac.mm
 +++ b/content/browser/accessibility/accessibility_tree_formatter_mac.mm
-@@ -293,7 +293,7 @@
+@@ -294,7 +294,7 @@
        return PopulateSize([value sizeValue]);
      }
    }
@@ -19,7 +19,7 @@ index cc78b48b37e52ca32d0bb2fc1331cf5e0e3c2d09..daf60b60b13c2a0729323583a4ee9a0f
    // AXTextMarker
    if (content::IsAXTextMarker(value)) {
      return PopulateTextPosition(content::AXTextMarkerToAXPosition(value),
-@@ -304,6 +304,7 @@
+@@ -305,6 +305,7 @@
    if (content::IsAXTextMarkerRange(value)) {
      return PopulateTextMarkerRange(value, line_indexer);
    }
@@ -27,7 +27,7 @@ index cc78b48b37e52ca32d0bb2fc1331cf5e0e3c2d09..daf60b60b13c2a0729323583a4ee9a0f
  
    // AXValue
    if (CFGetTypeID(value) == AXValueGetTypeID()) {
-@@ -423,7 +424,7 @@
+@@ -424,7 +425,7 @@
                      AXMakeConst(affinity));
    return set;
  }
@@ -36,7 +36,7 @@ index cc78b48b37e52ca32d0bb2fc1331cf5e0e3c2d09..daf60b60b13c2a0729323583a4ee9a0f
  base::Value AccessibilityTreeFormatterMac::PopulateTextMarkerRange(
      id marker_range,
      const LineIndexer* line_indexer) const {
-@@ -439,7 +440,7 @@
+@@ -440,7 +441,7 @@
                 PopulateTextPosition(ax_range.focus()->Clone(), line_indexer));
    return dict;
  }
@@ -446,10 +446,10 @@ index febb3c5e24f6e1d82f5d48cae5d92ed26c051748..528188e527a169e261aab4d6f174b0ff
  
  - (id)accessibilityFocusedUIElement {
 diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-index a6b5a26aab2467ae074070d2ddee4ef8ac05922c..c737936326d455422d81497e1f544ca5f1e3aee0 100644
+index 91e7c04b310eedb4fa4e6aa4c186a7f8a80b1e3c..37508b4566c8ffd6a6f2996138f875e3cc2245cf 100644
 --- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
 +++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-@@ -500,7 +500,7 @@ void PostAnnouncementNotification(NSString* announcement) {
+@@ -501,7 +501,7 @@ void PostAnnouncementNotification(NSString* announcement) {
    if (native_focus_object && [native_focus_object instanceActive]) {
      [user_info setObject:native_focus_object
                    forKey:ui::NSAccessibilityTextChangeElement];
@@ -458,7 +458,7 @@ index a6b5a26aab2467ae074070d2ddee4ef8ac05922c..c737936326d455422d81497e1f544ca5
      id selected_text = [native_focus_object selectedTextMarkerRange];
      if (selected_text) {
        NSString* const NSAccessibilitySelectedTextMarkerRangeAttribute =
-@@ -508,6 +508,7 @@ void PostAnnouncementNotification(NSString* announcement) {
+@@ -509,6 +509,7 @@ void PostAnnouncementNotification(NSString* announcement) {
        [user_info setObject:selected_text
                      forKey:NSAccessibilitySelectedTextMarkerRangeAttribute];
      }
@@ -581,7 +581,7 @@ index 54d902424796eb0687ebeedb6f1a9cd4a926e5b0..9d3ca310a7554c5606f95e9df26ea35e
  
  void BluetoothAdapterMac::RemovePairingDelegateInternal(
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index d7a46d050eb2ab63849397cf0d36a23f193a8413..1396a4b8ed4d5ec761d4026a564447ccb4cd168b 100644
+index 9c8628a08045c7793f088200b58b492b9f0581cf..1c5b6e85bce201fc13c34671b076176793ae053c 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
 @@ -175,6 +175,12 @@ source_set("audio") {
@@ -611,7 +611,7 @@ index 261596b9b7414e5c732bef945610c0cdf1384da8..f58ac1d55acac1895391579275a12b0f
  }
  
 diff --git a/net/dns/dns_config_service_posix.cc b/net/dns/dns_config_service_posix.cc
-index c9640117214022052aa28f6f5db7a2365c891ff1..78f9dadb51a0be31d1310ac8910b7f611eb82217 100644
+index 2de14574f1b7e848fc03ff1071fddf8307bc9ea2..75a86416bad754f1e9c92afb2fad27a501b9cc6c 100644
 --- a/net/dns/dns_config_service_posix.cc
 +++ b/net/dns/dns_config_service_posix.cc
 @@ -136,8 +136,8 @@ class DnsConfigServicePosix::Watcher : public DnsConfigService::Watcher {

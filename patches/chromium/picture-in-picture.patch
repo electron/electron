@@ -22,7 +22,7 @@ index 3afa0d34a6aff1d8882592fc4a3720698124a9c4..18de9f4e9c3c9599d1ab83a638bbd887
  #include "ui/base/metadata/metadata_impl_macros.h"
  #include "ui/gfx/color_palette.h"
 diff --git a/chrome/browser/ui/views/overlay/back_to_tab_label_button.cc b/chrome/browser/ui/views/overlay/back_to_tab_label_button.cc
-index 4a6cb79a1589c0be623277accc17142d501b50b4..5af6119affd28eff7e3547965bac8e52752638db 100644
+index 701d21200fe38870d08c2da93a1b8d139af79b5b..c5fc046b16e927efb017e40d980d98fa830b5bd4 100644
 --- a/chrome/browser/ui/views/overlay/back_to_tab_label_button.cc
 +++ b/chrome/browser/ui/views/overlay/back_to_tab_label_button.cc
 @@ -5,7 +5,7 @@
@@ -61,7 +61,7 @@ index 7b711bdbaf4afddd6ccf300af7bab26487942243..987a60b81554b676661d8f1a53facbc9
  #include "ui/base/l10n/l10n_util.h"
  #include "ui/gfx/paint_vector_icon.h"
 diff --git a/chrome/browser/ui/views/overlay/overlay_window_views.cc b/chrome/browser/ui/views/overlay/overlay_window_views.cc
-index d437976fa81a9b8f35f8649631b1c29594e214e2..28663e10cd36b96b554621afa3876e2acefc3869 100644
+index 5464e3e8ced91bbeba197d5d31e37b6c3e993076..1e2295b1611df0091cad60ec2bf7371e9536c9b5 100644
 --- a/chrome/browser/ui/views/overlay/overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/overlay_window_views.cc
 @@ -16,9 +16,11 @@

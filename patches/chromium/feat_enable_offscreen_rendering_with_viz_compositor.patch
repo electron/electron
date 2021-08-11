@@ -37,10 +37,10 @@ index 3b00759e513dc7e19fd68398e853c8ce6ac73905..47f4e7cc2e8b3141dcaf9e7a498fec32
  // TODO(crbug.com/1052397): Revisit the macro expression once build flag switch
  // of lacros-chrome is complete.
 diff --git a/components/viz/host/host_display_client.h b/components/viz/host/host_display_client.h
-index 5e260e13762f61971c99f755e93d73aa794d9175..a57770718b71def04fa35c7655d9368a58f39f20 100644
+index 94c5293d528a60c16ec209b68da93217d030e068..e833b204d02869b57d888d6e9480a6a484013581 100644
 --- a/components/viz/host/host_display_client.h
 +++ b/components/viz/host/host_display_client.h
-@@ -39,10 +39,9 @@ class VIZ_HOST_EXPORT HostDisplayClient : public mojom::DisplayClient {
+@@ -38,10 +38,9 @@ class VIZ_HOST_EXPORT HostDisplayClient : public mojom::DisplayClient {
        const gfx::CALayerParams& ca_layer_params) override;
  #endif
  
@@ -81,7 +81,7 @@ index 1026b739d283f0fc252fa2af83a6d4cf51bc8553..fe562ab60ce98b8bb0c5080a6428deb3
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index ab57419ebec4ea33d7063a803af97c5adda71b52..607669250e9525fd565063cbb253481e454778b8 100644
+index f0eb025056501c5d87a0ef814ec4070a3df29bcc..148adf8b17209eeb142c02674a2a24312e588e80 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -137,6 +137,8 @@ viz_component("service") {
@@ -544,10 +544,10 @@ index 409115f95787e3cf037f762a33368b173441012f..45a7a1607b8711420ba4e1a5455a61fb
  
    // Notifies that a swap has occurred and provides information about the pixel
 diff --git a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
-index 8d7cfe54e819f3d6c362c62db2f183c901bea991..e08c4556240f0f566a91c3fb9ba142170b4b0c3a 100644
+index e33e5de0bfb59afe9b21ee27bb6dad5d898932b6..55aff8c8d05ce55bef8440185ac73f48f589d06c 100644
 --- a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
 +++ b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
-@@ -30,6 +30,7 @@ struct RootCompositorFrameSinkParams {
+@@ -32,6 +32,7 @@ struct RootCompositorFrameSinkParams {
    // Disables begin frame rate limiting for the display compositor.
    bool disable_frame_rate_limit = false;
    bool use_preferred_interval_for_video = false;
