@@ -10,6 +10,17 @@
 #include "gin/converter.h"
 
 #if defined(OS_WIN)
+// c.f.:
+// https://chromium-review.googlesource.com/c/chromium/src/+/3076480
+// REFGUID is currently incorrectly inheriting its type
+// from base::GUID, when it should be inheriting from ::GUID.
+// This workaround prevents build errors until the CL is merged
+#ifdef _REFGUID_DEFINED
+#undef REFGUID
+#endif
+#define REFGUID const ::GUID&
+#define _REFGUID_DEFINED
+
 #include <rpc.h>
 
 #include "base/strings/sys_string_conversions.h"
@@ -18,7 +29,6 @@
 
 #if defined(OS_WIN)
 typedef GUID UUID;
-const GUID GUID_NULL = {};
 #else
 typedef struct {
 } UUID;
@@ -58,6 +68,7 @@ struct Converter<UUID> {
   }
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, UUID val) {
 #if defined(OS_WIN)
+    const GUID GUID_NULL = {};
     if (val == GUID_NULL) {
       return StringToV8(isolate, "");
     } else {
