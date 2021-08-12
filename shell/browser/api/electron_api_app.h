@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "base/task/cancelable_task_tracker.h"
+#include "base/values.h"
 #include "chrome/browser/icon_manager.h"
 #include "chrome/browser/process_singleton.h"
 #include "content/public/browser/browser_child_process_observer.h"
@@ -188,11 +189,16 @@ class App : public ElectronBrowserClient::Delegate,
   void SetDesktopName(const std::string& desktop_name);
   std::string GetLocale();
   std::string GetLocaleCountryCode();
-  void OnSecondInstance(const base::CommandLine& cmd,
-                        const base::FilePath& cwd);
+  void OnSecondInstance(const base::CommandLine::StringVector& cmd,
+                        const base::FilePath& cwd,
+                        const base::Value* data);
+  void OnFirstInstanceAck(const base::CommandLine::StringVector& cmd,
+                          const base::FilePath& cwd,
+                          const base::Value* data);
   bool HasSingleInstanceLock() const;
-  bool RequestSingleInstanceLock();
+  bool RequestSingleInstanceLock(gin::Arguments* args);
   void ReleaseSingleInstanceLock();
+  void SendDataToSecondInstance(gin::Arguments* args);
   bool Relaunch(gin::Arguments* args);
   void DisableHardwareAcceleration(gin_helper::ErrorThrower thrower);
   void DisableDomainBlockingFor3DAPIs(gin_helper::ErrorThrower thrower);
