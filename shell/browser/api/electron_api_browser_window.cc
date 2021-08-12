@@ -4,7 +4,10 @@
 
 #include "shell/browser/api/electron_api_browser_window.h"
 
+#include "base/json/json_string_value_serializer.h"
+#include "base/logging.h"
 #include "base/threading/thread_task_runner_handle.h"
+#include "base/values.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_owner_delegate.h"  // nogncheck
 #include "content/browser/web_contents/web_contents_impl.h"  // nogncheck
