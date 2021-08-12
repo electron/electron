@@ -484,6 +484,7 @@ Returns:
 * `argv` string[] - An array of the second instance's command line arguments
 * `workingDirectory` string - The second instance's working directory
 * `additionalData` unknown - A JSON object of additional data passed from the second instance
+* `ackCallback` unknown - A function that can be used to send data back to the second instance
 
 This event will be emitted inside the primary instance of your application
 when a second instance has been executed and calls `app.requestSingleInstanceLock()`.
@@ -495,11 +496,29 @@ non-minimized.
 
 **Note:** If the second instance is started by a different user than the first, the `argv` array will not include the arguments.
 
+**Note:** `ackCallback` allows the user to send data back to the
+second instance during the `app.requestSingleInstanceLock()` flow.
+This callback can be used for cases where the second instance
+needs to obtain additional information from the first instance
+before quitting.
+In order to call the callback, `event.preventDefault()` must be called
+Then, the `ackCallback` callback can be called.
+If the callback is not called in either case, `null` will be sent back.
+
 This event is guaranteed to be emitted after the `ready` event of `app`
 gets emitted.
 
 **Note:** Extra command line arguments might be added by Chromium,
 such as `--original-process-start-time`.
+
+### Event: 'first-instance-ack'
+
+Returns:
+
+* `event` Event
+* `additionalData` unknown - A JSON object of additional data passed from the first instance, in response to the first instance's `second-instance` event.
+
+This event will be emitted within the second instance during the call to `app.requestSingleInstanceLock()`, when the first instance calls the `ackCallback` provided by the `second-instance` event handler.
 
 ## Methods
 
