@@ -1239,31 +1239,29 @@ void WebContents::OnEnterFullscreenModeForTab(
     content::RenderFrameHost* requesting_frame,
     const blink::mojom::FullscreenOptions& options,
     bool allowed) {
-  if (!allowed)
+  if (!allowed || !owner_window_)
     return;
-  if (!owner_window_)
-    return;
+
   auto* source = content::WebContents::FromRenderFrameHost(requesting_frame);
   if (IsFullscreenForTabOrPending(source)) {
     DCHECK_EQ(fullscreen_frame_, source->GetFocusedFrame());
     return;
   }
+
   SetHtmlApiFullscreen(true);
-  owner_window_->NotifyWindowEnterHtmlFullScreen();
 
   if (native_fullscreen_) {
     // Explicitly trigger a view resize, as the size is not actually changing if
     // the browser is fullscreened, too.
     source->GetRenderViewHost()->GetWidget()->SynchronizeVisualProperties();
   }
-  Emit("enter-html-full-screen");
 }
 
 void WebContents::ExitFullscreenModeForTab(content::WebContents* source) {
   if (!owner_window_)
     return;
+
   SetHtmlApiFullscreen(false);
-  owner_window_->NotifyWindowLeaveHtmlFullScreen();
 
   if (native_fullscreen_) {
     // Explicitly trigger a view resize, as the size is not actually changing if
@@ -1271,7 +1269,6 @@ void WebContents::ExitFullscreenModeForTab(content::WebContents* source) {
     // `chrome/browser/ui/exclusive_access/fullscreen_controller.cc`.
     source->GetRenderViewHost()->GetWidget()->SynchronizeVisualProperties();
   }
-  Emit("leave-html-full-screen");
 }
 
 void WebContents::RendererUnresponsive(
@@ -3564,7 +3561,7 @@ void WebContents::SetHtmlApiFullscreen(bool enter_fullscreen) {
 }
 
 void WebContents::UpdateHtmlApiFullscreen(bool fullscreen) {
-  if (fullscreen == html_fullscreen_)
+  if (fullscreen == is_html_fullscreen())
     return;
 
   html_fullscreen_ = fullscreen;
@@ -3575,10 +3572,18 @@ void WebContents::UpdateHtmlApiFullscreen(bool fullscreen) {
       ->GetWidget()
       ->SynchronizeVisualProperties();
 
-  // The embedder WebContents is spearated from the frame tree of webview, so
+  // The embedder WebContents is separated from the frame tree of webview, so
   // we must manually sync their fullscreen states.
   if (embedder_)
     embedder_->SetHtmlApiFullscreen(fullscreen);
+
+  if (fullscreen) {
+    Emit("enter-html-full-screen");
+    owner_window_->NotifyWindowEnterHtmlFullScreen();
+  } else {
+    Emit("leave-html-full-screen");
+    owner_window_->NotifyWindowLeaveHtmlFullScreen();
+  }
 
   // Make sure all child webviews quit html fullscreen.
   if (!fullscreen && !IsGuest()) {
