@@ -80,7 +80,7 @@ describe('process module', () => {
     });
 
     ifit(process.platform !== 'win32')('throws if not on Windows', () => {
-      expect(process.getWindowsVersionType()).to.throw('No Windows version type for non-Windows OSes');
+      expect(() => { process.getWindowsVersionType(); }).to.throw('No Windows version type for non-Windows OSes');
     });
   });
 
