@@ -3415,7 +3415,7 @@ void WebContents::DevToolsRemoveFileSystem(
 
   auto* pref_service = GetPrefService(GetDevToolsWebContents());
   DictionaryPrefUpdate update(pref_service, prefs::kDevToolsFileSystemPaths);
-  update.Get()->RemoveWithoutPathExpansion(path, nullptr);
+  update.Get()->RemoveKey(path);
 
   base::Value file_system_path_value(path);
   inspectable_web_contents_->CallClientFunction("DevToolsAPI.fileSystemRemoved",

@@ -94,7 +94,7 @@ void ZoomLevelDelegate::OnZoomLevelChanged(
   }
 
   if (modification_is_removal)
-    host_zoom_dictionary->RemoveWithoutPathExpansion(change.host, nullptr);
+    host_zoom_dictionary->RemoveKey(change.host);
   else
     host_zoom_dictionary->SetKey(change.host, base::Value(level));
 }
@@ -134,7 +134,7 @@ void ZoomLevelDelegate::ExtractPerHostZoomLevels(
     host_zoom_dictionaries->GetDictionary(partition_key_,
                                           &sanitized_host_zoom_dictionary);
     for (const std::string& s : keys_to_remove)
-      sanitized_host_zoom_dictionary->RemoveWithoutPathExpansion(s, nullptr);
+      sanitized_host_zoom_dictionary->RemoveKey(s);
   }
 }
 
