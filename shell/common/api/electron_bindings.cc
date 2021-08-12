@@ -5,6 +5,7 @@
 #include "shell/common/api/electron_bindings.h"
 
 #include <algorithm>
+#include <map>
 #include <string>
 #include <utility>
 #include <vector>
