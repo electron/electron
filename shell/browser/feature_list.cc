@@ -30,14 +30,7 @@ void InitializeFeatureList() {
   // Can be reenabled when our site instance policy is aligned with chromium
   // when node integration is enabled.
   disable_features +=
-      std::string(",") + features::kSpareRendererForSitePerProcess.name +
-      // Disable SameSite-by-default, this will be a breaking change for many
-      // apps which cannot land in master until 11-x-y is branched out. For more
-      // info
-      // https://groups.google.com/a/chromium.org/g/embedder-dev/c/4yJi4Twj2NM/m/9bhpWureCAAJ
-      std::string(",") + net::features::kSameSiteByDefaultCookies.name +
-      std::string(",") +
-      net::features::kCookiesWithoutSameSiteMustBeSecure.name;
+      std::string(",") + features::kSpareRendererForSitePerProcess.name;
 
 #if !BUILDFLAG(ENABLE_PICTURE_IN_PICTURE)
   disable_features += std::string(",") + media::kPictureInPicture.name;
