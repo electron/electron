@@ -81,7 +81,7 @@ void NetworkContextService::ConfigureNetworkContextParams(
     network_context_params->enable_encrypted_cookies =
         electron::fuses::IsCookieEncryptionEnabled();
 
-    network_context_params->transport_security_persister_path = path;
+    network_context_params->transport_security_persister_file_path = path;
   }
 
 #if !BUILDFLAG(DISABLE_FTP_SUPPORT)
