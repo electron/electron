@@ -37,12 +37,15 @@ let jobRequestedCount = 0;
 
 async function makeRequest ({ auth, url, headers, body, method }) {
   const response = await got(url, {
-    headers,
+    headers: {
+      Authorization: auth && auth.bearer ? `Bearer ${auth.bearer}` : undefined,
+      ...(headers || {})
+    },
     body,
     method,
-    auth: auth ? `${auth.username}:${auth.password}` : undefined
+    auth: auth && auth.password ? `${auth.username}:${auth.password}` : undefined
   });
-  if (response.statusCode !== 200) {
+  if (response.statusCode < 200 || response.statusCode >= 300) {
     console.error('Error: ', `(status ${response.statusCode})`, response.body);
     throw new Error(`Unexpected status code ${response.statusCode} from ${url}`);
   }
