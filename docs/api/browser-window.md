@@ -187,9 +187,9 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   * `parent` BrowserWindow (optional) - Specify parent window. Default is `null`.
   * `modal` Boolean (optional) - Whether this is a modal window. This only works when the
     window is a child window. Default is `false`.
-  * `acceptFirstMouse` Boolean (optional) - Whether the web view accepts a single
-    mouse-down event that simultaneously activates the window. Default is
-    `false`.
+  * `acceptFirstMouse` Boolean (optional) - Whether clicking an inactive window will also
+  click through to the web contents. Default is `false` on macOS. This option is not
+  configurable on other platforms.
   * `disableAutoHideCursor` Boolean (optional) - Whether to hide cursor when typing.
     Default is `false`.
   * `autoHideMenuBar` Boolean (optional) - Auto hide the menu bar unless the `Alt`
