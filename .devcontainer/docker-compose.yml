@@ -2,7 +2,7 @@ version: '3'
 
 services:
   buildtools:
-    image: electron.azurecr.io/build:d818f06a9b1540c7fd38f75ad5a2c493dd6843b6
+    image: ghcr.io/electron/build:afff0fe88a106dfd7cd7839388fd4a8944ab9640
 
     volumes:
       - ..:/workspaces/gclient/src/electron:cached
