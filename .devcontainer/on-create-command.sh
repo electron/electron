@@ -11,8 +11,9 @@ popd
 
 export PATH="$PATH:$buildtools/src"
 echo export PATH=\"\$PATH:$buildtools/src\" >> ~/.bashrc
+echo "cd "
 
-gclient_root=/workspaces/pizza
+gclient_root=/workspaces/gclient
 
 echo "
 solutions = [
@@ -31,7 +32,7 @@ mkdir -p $buildtools/configs
 
 echo "
 {
-    \"root\": \"/workspaces/pizza\",
+    \"root\": \"/workspaces/gclient\",
     \"goma\": \"cache-only\",
     \"gen\": {
         \"args\": [
@@ -41,8 +42,8 @@ echo "
         \"out\": \"Testing\"
     },
     \"env\": {
-        \"CHROMIUM_BUILDTOOLS_PATH\": \"/workspaces/pizza/src/buildtools\",
-        \"GIT_CACHE_PATH\": \"/workspaces/pizza/.git-cache\"
+        \"CHROMIUM_BUILDTOOLS_PATH\": \"/workspaces/gclient/src/buildtools\",
+        \"GIT_CACHE_PATH\": \"/workspaces/gclient/.git-cache\"
     },
     \"remotes\": {
         \"electron\": {
