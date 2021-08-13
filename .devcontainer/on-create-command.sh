@@ -11,7 +11,7 @@ popd
 
 export PATH="$PATH:$buildtools/src"
 echo export PATH=\"\$PATH:$buildtools/src\" >> ~/.bashrc
-echo "cd "
+echo "cd /workspaces/gclient/src/electron" >> ~/.bashrc
 
 gclient_root=/workspaces/gclient
 
@@ -37,7 +37,7 @@ echo "
     \"gen\": {
         \"args\": [
             \"import(\\\"//electron/build/args/testing.gn\\\")\",
-            \"import(\\\"/home/samuel/projects/electron/gn-scripts/third_party/goma.gn\\\")\"
+            \"import(\\\"/home/builduser/.electron_build_tools/third_party/goma.gn\\\")\"
         ],
         \"out\": \"Testing\"
     },
