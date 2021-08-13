@@ -11,6 +11,7 @@
 #include "base/command_line.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
+#include "base/json/json_string_value_serializer.h"
 #include "base/logging.h"
 #include "base/numerics/safe_conversions.h"
 #include "base/process/process.h"
@@ -35,13 +36,9 @@ HWND FindRunningChromeWindow(const base::FilePath& user_data_dir) {
   return base::win::MessageWindow::FindWindow(user_data_dir.value());
 }
 
-typedef struct tagMYREC {
-  std::wstring string_data;
-  base::Value* obj_data;
-} MYREC;
-
-NotifyChromeResult AttemptToNotifyRunningChrome(HWND remote_window,
-                                                base::Value* data) {
+NotifyChromeResult AttemptToNotifyRunningChrome(
+    HWND remote_window,
+    const std::wstring& additional_data) {
   DCHECK(remote_window);
   DWORD process_id = 0;
   DWORD thread_id = GetWindowThreadProcessId(remote_window, &process_id);
@@ -59,33 +56,18 @@ NotifyChromeResult AttemptToNotifyRunningChrome(HWND remote_window,
   to_send.append(
       base::CommandLine::ForCurrentProcess()->GetCommandLineString());
   to_send.append(L"\0", 1);  // Null separator.
-  // to_send.append(data);
-  // to_send.append(L"\0", 1);  // Null separator.
+  to_send.append(additional_data);
+  to_send.append(L"\0", 1);  // Null separator.
 
   // Allow the current running browser window to make itself the foreground
   // window (otherwise it will just flash in the taskbar).
   ::AllowSetForegroundWindow(process_id);
 
-  /*
-  // Fill the COPYDATA structure
-  //
-     MyCDS.dwData = MYPRINT;          // function identifier
-     MyCDS.cbData = sizeof( MyRec );  // size of data
-     MyCDS.lpData = &MyRec;           // data structure
-  //
-  */
-  MYREC data_to_send;
-  data_to_send.string_data = to_send;
-  data_to_send.obj_data = data;
-
   COPYDATASTRUCT cds;
   cds.dwData = 0;
-  cds.cbData = sizeof(data_to_send);  // static_cast<DWORD>((to_send.length() +
-                                      // 1) * sizeof(wchar_t));
-  cds.lpData = &data_to_send;         // const_cast<wchar_t*>(to_send.c_str());
+  cds.cbData = static_cast<DWORD>((to_send.length() + 1) * sizeof(wchar_t));
+  cds.lpData = const_cast<wchar_t*>(to_send.c_str());
   DWORD_PTR result = 0;
-  DLOG(ERROR) << "Data: " << data;
-  DLOG(ERROR) << "DebugString: " << data->DebugString();
   if (::SendMessageTimeout(remote_window, WM_COPYDATA, NULL,
                            reinterpret_cast<LPARAM>(&cds), SMTO_ABORTIFHUNG,
                            g_timeout_in_milliseconds, &result)) {
@@ -96,7 +78,6 @@ NotifyChromeResult AttemptToNotifyRunningChrome(HWND remote_window,
   // If SendMessageTimeout failed to send message consider this as
   // NOTIFY_FAILED.
   if (::GetLastError() != ERROR_TIMEOUT) {
-    DLOG(ERROR) << "Sending msg failed";
     return NOTIFY_FAILED;
   }
 
