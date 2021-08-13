@@ -46,7 +46,7 @@ async function makeRequest ({ auth, url, headers, body, method }) {
     headers: clonedHeaders,
     body,
     method,
-    auth: auth && auth.password ? `${auth.username}:${auth.password}` : undefined
+    auth: auth && (auth.username || auth.password) ? `${auth.username}:${auth.password}` : undefined
   });
   if (response.statusCode < 200 || response.statusCode >= 300) {
     console.error('Error: ', `(status ${response.statusCode})`, response.body);
