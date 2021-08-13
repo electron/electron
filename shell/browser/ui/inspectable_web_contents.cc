@@ -787,7 +787,10 @@ void InspectableWebContents::SearchInPath(int request_id,
 void InspectableWebContents::SetWhitelistedShortcuts(
     const std::string& message) {}
 
-void InspectableWebContents::SetEyeDropperActive(bool active) {}
+void InspectableWebContents::SetEyeDropperActive(bool active) {
+  if (delegate_)
+    delegate_->DevToolsSetEyeDropperActive(active);
+}
 void InspectableWebContents::ShowCertificateViewer(
     const std::string& cert_chain) {}
 

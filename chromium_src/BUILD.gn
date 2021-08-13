@@ -139,6 +139,8 @@ static_library("chrome") {
 
   if (enable_color_chooser) {
     sources += [
+      "//chrome/browser/devtools/devtools_eye_dropper.cc",
+      "//chrome/browser/devtools/devtools_eye_dropper.h",
       "//chrome/browser/platform_util.cc",
       "//chrome/browser/platform_util.h",
       "//chrome/browser/ui/browser_dialogs.h",
