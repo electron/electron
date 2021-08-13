@@ -100,6 +100,8 @@ new Promise((resolve, reject) => {
     );
 
     fs.writeFileSync(path.join(tempDir, 'electron.d.ts'), typingsContent);
+
+    return release;
   })
   .then(async (release) => {
     const checksumsAsset = release.assets.find((asset) => asset.name === 'SHASUMS256.txt');

@@ -30,7 +30,7 @@ async function getAssetContents (repo, assetId) {
   }
 
   const fileResponse = await got(response.headers.location);
-  if (fileResponse.status !== 200) {
+  if (fileResponse.statusCode !== 200) {
     console.error(fileResponse.headers, `${fileResponse.body}`.slice(0, 300));
     throw new Error(`cannot download asset[${assetId}] from ${response.headers.location}, got status: ${fileResponse.status}`);
   }
