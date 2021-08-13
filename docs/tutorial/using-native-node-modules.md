@@ -1,4 +1,4 @@
-# Using Native Node Modules
+# Native Node Modules
 
 Native Node.js modules are supported by Electron, but since Electron has a different
 [application binary interface (ABI)][abi] from a given Node.js binary (due to
