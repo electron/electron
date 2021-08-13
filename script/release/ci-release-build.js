@@ -36,11 +36,14 @@ const vstsArmJobs = [
 let jobRequestedCount = 0;
 
 async function makeRequest ({ auth, url, headers, body, method }) {
+  const clonedHeaders = {
+    ...(headers || {})
+  };
+  if (auth && auth.bearer) {
+    clonedHeaders.Authorization = `Bearer ${auth.bearer}`;
+  }
   const response = await got(url, {
-    headers: {
-      Authorization: auth && auth.bearer ? `Bearer ${auth.bearer}` : undefined,
-      ...(headers || {})
-    },
+    headers: clonedHeaders,
     body,
     method,
     auth: auth && auth.password ? `${auth.username}:${auth.password}` : undefined
