@@ -88,7 +88,7 @@ new Promise((resolve, reject) => {
     }
     return release;
   })
-  .then((release) => {
+  .then(async (release) => {
     const tsdAsset = release.assets.find((asset) => asset.name === 'electron.d.ts');
     if (!tsdAsset) {
       throw new Error(`cannot find electron.d.ts from v${rootPackageJson.version} release assets`);
