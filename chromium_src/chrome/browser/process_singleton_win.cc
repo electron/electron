@@ -79,23 +79,25 @@ BOOL CALLBACK BrowserWindowEnumeration(HWND window, LPARAM param) {
   return !*result;
 }
 
-bool ParseCommandLine(const std::wstring& msg,
+bool ParseCommandLine(const COPYDATASTRUCT* cds,
                       base::CommandLine::StringVector* parsed_command_line,
-                      base::FilePath* current_directory) {
+                      base::FilePath* current_directory,
+                      std::unique_ptr<base::Value>* additional_data) {
   // We should have enough room for the shortest command (min_message_size)
   // and also be a multiple of wchar_t bytes. The shortest command
   // possible is L"START\0\0\0" (empty current directory and command line and
-  // process env). static const int min_message_size = 8; if (cds->cbData <
-  // min_message_size * sizeof(wchar_t) ||
-  //     cds->cbData % sizeof(wchar_t) != 0) {
-  //   LOG(WARNING) << "Invalid WM_COPYDATA, length = " << cds->cbData;
-  //   return false;
-  // }
+  // process env).
+  static const int min_message_size = 8;
+  if (cds->cbData < min_message_size * sizeof(wchar_t) ||
+      cds->cbData % sizeof(wchar_t) != 0) {
+    LOG(WARNING) << "Invalid WM_COPYDATA, length = " << cds->cbData;
+    return false;
+  }
 
   // We split the string into 5 parts on NULLs.
-  // DCHECK(cds->lpData);
-  // const std::wstring msg(static_cast<wchar_t*>(cds->lpData),
-  //                        cds->cbData / sizeof(wchar_t));
+  DCHECK(cds->lpData);
+  const std::wstring msg(static_cast<wchar_t*>(cds->lpData),
+                         cds->cbData / sizeof(wchar_t));
   const std::wstring::size_type first_null = msg.find_first_of(L'\0');
   if (first_null == 0 || first_null == std::wstring::npos) {
     // no NULL byte, don't know what to do
@@ -135,47 +137,39 @@ bool ParseCommandLine(const std::wstring& msg,
     *parsed_command_line = base::CommandLine::FromString(cmd_line).argv();
 
     // Get additional data.
-    //     const std::wstring::size_type fourth_null =
-    //         msg.find_first_of(L'\0', third_null + 1);
-    //     if (fourth_null == std::wstring::npos || fourth_null == msg.length())
-    //     {
-    //       LOG(WARNING) << "Invalid format for start command, we need a string
-    //       in 5 "
-    //                       "parts separated by NULLs";
-    //     }
-    //
-    //     const std::wstring wide_data =
-    //       msg.substr(third_null + 1, fourth_null - third_null);
-    //
-    //     if (wide_data.length()) {
-    //       std::string unwide_data = base::WideToUTF8(wide_data);
-    //       if (unwide_data[unwide_data.length() - 1] == '\0') {
-    //         unwide_data = unwide_data.substr(0, unwide_data.length() - 1);
-    //       }
-    //       JSONStringValueDeserializer deserializer(unwide_data);
-    //       int error_code =
-    //       base::ValueDeserializer::ErrorCode::kErrorCodeNoError; std::string
-    //       error_message; auto deserialized_data =
-    //       deserializer.Deserialize(&error_code, &error_message); if
-    //       (error_code ==
-    //       base::ValueDeserializer::ErrorCode::kErrorCodeNoError) {
-    //         *additional_data = std::move(deserialized_data);
-    //       } else {
-    //         LOG(WARNING) << "Error deserializing JSON: " << error_message;
-    //         DLOG(ERROR) << "Error deserializing JSON: " << error_message;
-    //         DLOG(ERROR) << "Error code: " << error_code;
-    //       }
-    //     }
+    const std::wstring::size_type fourth_null =
+        msg.find_first_of(L'\0', third_null + 1);
+    if (fourth_null == std::wstring::npos || fourth_null == msg.length()) {
+      LOG(WARNING) << "Invalid format for start command, we need a string in 5 "
+                      "parts separated by NULLs";
+    }
+
+    const std::wstring wide_data =
+        msg.substr(third_null + 1, fourth_null - third_null);
+
+    if (wide_data.length()) {
+      std::string unwide_data = base::WideToUTF8(wide_data);
+      if (unwide_data[unwide_data.length() - 1] == '\0') {
+        unwide_data = unwide_data.substr(0, unwide_data.length() - 1);
+      }
+      JSONStringValueDeserializer deserializer(unwide_data);
+      int error_code = base::ValueDeserializer::ErrorCode::kErrorCodeNoError;
+      std::string error_message;
+      auto deserialized_data =
+          deserializer.Deserialize(&error_code, &error_message);
+      if (error_code == base::ValueDeserializer::ErrorCode::kErrorCodeNoError) {
+        *additional_data = std::move(deserialized_data);
+      } else {
+        LOG(WARNING) << "Error deserializing JSON: " << error_message;
+        DLOG(ERROR) << "Error deserializing JSON: " << error_message;
+        DLOG(ERROR) << "Error code: " << error_code;
+      }
+    }
 
     return true;
   }
   return false;
 }
-
-typedef struct tagMYREC {
-  std::wstring string_data;
-  base::Value* obj_data;
-} MYREC;
 
 bool ProcessLaunchNotification(
     const ProcessSingleton::NotificationCallback& notification_callback,
@@ -188,34 +182,21 @@ bool ProcessLaunchNotification(
 
   // Handle the WM_COPYDATA message from another process.
   const COPYDATASTRUCT* cds = reinterpret_cast<COPYDATASTRUCT*>(lparam);
-  DLOG(ERROR) << "First reinterpret done";
-
   base::CommandLine::StringVector parsed_command_line;
-  MYREC* bundle = reinterpret_cast<MYREC*>(cds->lpData);
-  DLOG(ERROR) << "Second reinterpret done";
-
   base::FilePath current_directory;
-  base::Value* data = bundle->obj_data;
-  if (data) {
-    DLOG(ERROR) << "Data: " << data;
-    DLOG(ERROR) << "Got data before callback: " << data->DebugString();
-  } else {
-    DLOG(ERROR) << "Got null data";
-  }
-
-  // std::unique_ptr<base::Value> data = std::make_unique();
-  if (!ParseCommandLine(bundle->string_data, &parsed_command_line,
-                        &current_directory)) {
+  std::unique_ptr<base::Value> additional_data;
+  if (!ParseCommandLine(cds, &parsed_command_line, &current_directory,
+                        &additional_data)) {
     *result = TRUE;
     DLOG(ERROR) << "ParseCommandLine failed";
     return true;
   }
 
   DLOG(ERROR) << "Running callback now";
-  *result =
-      notification_callback.Run(parsed_command_line, current_directory, nullptr)
-          ? TRUE
-          : FALSE;
+  *result = notification_callback.Run(parsed_command_line, current_directory,
+                                      additional_data.get())
+                ? TRUE
+                : FALSE;
   return true;
 }
 
@@ -237,7 +218,7 @@ ProcessSingleton::ProcessSingleton(
       should_kill_remote_process_callback_(
           base::BindRepeating(&TerminateAppWithError)) {
   // The user_data_dir may have not been created yet.
-  // base::CreateDirectoryAndGetError(user_data_dir, nullptr);
+  base::CreateDirectoryAndGetError(user_data_dir, nullptr);
 }
 
 ProcessSingleton::~ProcessSingleton() {
@@ -256,15 +237,14 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
     return PROCESS_NONE;
   }
 
-  // std::wstring wide_data;
-  // if (additional_data_) {
-  //   std::string serialized_data;
-  //   JSONStringValueSerializer serializer(&serialized_data);
-  //   serializer.Serialize(*additional_data_);
-  //   wide_data = base::UTF8ToWide(serialized_data);
-  // }
-  switch (
-      chrome::AttemptToNotifyRunningChrome(remote_window_, additional_data_)) {
+  std::wstring wide_data;
+  if (additional_data_) {
+    std::string serialized_data;
+    JSONStringValueSerializer serializer(&serialized_data);
+    serializer.Serialize(*additional_data_);
+    wide_data = base::UTF8ToWide(serialized_data);
+  }
+  switch (chrome::AttemptToNotifyRunningChrome(remote_window_, wide_data)) {
     case chrome::NOTIFY_SUCCESS:
       return PROCESS_NOTIFIED;
     case chrome::NOTIFY_FAILED:

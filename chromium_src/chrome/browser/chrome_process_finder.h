@@ -9,7 +9,6 @@
 #include <string>
 
 #include "base/time/time.h"
-#include "base/values.h"
 
 namespace base {
 class FilePath;
@@ -29,8 +28,9 @@ HWND FindRunningChromeWindow(const base::FilePath& user_data_dir);
 // Attempts to send the current command line to an already running instance of
 // Chrome via a WM_COPYDATA message.
 // Returns true if a running Chrome is found and successfully notified.
-NotifyChromeResult AttemptToNotifyRunningChrome(HWND remote_window,
-                                                base::Value* data);
+NotifyChromeResult AttemptToNotifyRunningChrome(
+    HWND remote_window,
+    const std::wstring& additional_data);
 
 // Changes the notification timeout to |new_timeout|, returns the old timeout.
 base::TimeDelta SetNotificationTimeoutForTesting(base::TimeDelta new_timeout);
