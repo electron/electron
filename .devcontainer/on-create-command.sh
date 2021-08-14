@@ -3,17 +3,9 @@
 set -eo pipefail
 
 buildtools=$HOME/.electron_build_tools
-rm -rf $buildtools
-git clone https://github.com/electron/build-tools.git $buildtools
-pushd $buildtools
-npx --yes yarn
-popd
+gclient_root=/workspaces/gclient
 
 export PATH="$PATH:$buildtools/src"
-echo export PATH=\"\$PATH:$buildtools/src\" >> ~/.bashrc
-echo "cd /workspaces/gclient/src/electron" >> ~/.bashrc
-
-gclient_root=/workspaces/gclient
 
 echo "
 solutions = [
