@@ -1,6 +1,19 @@
 {
-  "dockerComposeFile": "docker-compose.yml",
-  "service": "buildtools",
-  "onCreateCommand": ".devcontainer/on-create-command.sh",
-  "workspaceFolder": "/workspaces/gclient/src/electron"
+	"dockerComposeFile": "docker-compose.yml",
+	"service": "buildtools",
+	"onCreateCommand": ".devcontainer/on-create-command.sh",
+	"workspaceFolder": "/workspaces/gclient/src/electron",
+	"extensions": [
+		"joeleinbinder.mojom-language",
+		"rafaelmaiolla.diff",
+		"surajbarkale.ninja",
+		"ms-vscode.cpptools",
+		"msedge-dev.gnls"
+	],
+	"settings": {
+		"[gn]": {
+			"editor.formatOnSave": true
+		},
+		"editor.tabSize": 2
+	}
 }
