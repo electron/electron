@@ -45,7 +45,7 @@ executors:
         type: enum
         enum: ["medium", "xlarge", "2xlarge+"]
     docker:
-      - image: electron.azurecr.io/build:ca93c6a7bc49e7d2a7b8c62ed04e0b870f3dfd1e
+      - image: electron.azurecr.io/build:d818f06a9b1540c7fd38f75ad5a2c493dd6843b6
     resource_class: << parameters.size >>
 
   macos:
