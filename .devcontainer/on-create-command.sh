@@ -6,7 +6,7 @@ buildtools=$HOME/.electron_build_tools
 rm -rf $buildtools
 git clone https://github.com/electron/build-tools.git $buildtools
 pushd $buildtools
-npx yarn
+npx --yes yarn
 popd
 
 export PATH="$PATH:$buildtools/src"
