@@ -7,8 +7,9 @@
 		"joeleinbinder.mojom-language",
 		"rafaelmaiolla.diff",
 		"surajbarkale.ninja",
-		"ms-vscode.cpptools",
-		"msedge-dev.gnls"
+		// This works locally but not on codespaces
+		// "msedge-dev.gnls",
+		"ms-vscode.cpptools"
 	],
 	"settings": {
 		"[gn]": {
