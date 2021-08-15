@@ -10,13 +10,16 @@
 		// This works locally but not on codespaces
 		// "msedge-dev.gnls",
 		"ms-vscode.cpptools",
-		"mutantdino.resourcemonitor"
+		"mutantdino.resourcemonitor",
+		"dbaeumer.vscode-eslint",
+		"shakram02.bash-beautify"
 	],
 	"settings": {
 		"[gn]": {
 			"editor.formatOnSave": true
 		},
-		"editor.tabSize": 2
+		"editor.tabSize": 2,
+		"bashBeautify.tabSize": 2
 	},
 	"forwardPorts": [8088, 6080, 5901],
 	"portsAttributes": {
