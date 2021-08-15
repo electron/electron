@@ -1,7 +1,7 @@
 resources:
   containers:
   - container: arm32v7-test-container
-    image: ghcr.io/electron/build:arm32v7-c03ffbb65dff64b9778820ce96b56079f91856f8
+    image: ghcr.io/electron/build:arm32v7-aeb9a5a20bcb81a026f02c357174c38fa036eea8
     options: --shm-size 128m
 
 jobs:
