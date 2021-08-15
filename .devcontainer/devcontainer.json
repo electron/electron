@@ -9,12 +9,33 @@
 		"surajbarkale.ninja",
 		// This works locally but not on codespaces
 		// "msedge-dev.gnls",
-		"ms-vscode.cpptools"
+		"ms-vscode.cpptools",
+		"mutantdino.resourcemonitor"
 	],
 	"settings": {
 		"[gn]": {
 			"editor.formatOnSave": true
 		},
 		"editor.tabSize": 2
-	}
+	},
+	"forwardPorts": [8088, 6080, 5901],
+	"portsAttributes": {
+		"8088": {
+			"label": "Goma Control Panel",
+			"onAutoForward": "silent"
+		},
+		"6080": {
+			"label": "VNC web client (noVNC)",
+			"onAutoForward": "silent"
+		},
+		"5901": {
+			"label": "VNC TCP port",
+			"onAutoForward": "silent"
+		}
+	},
+	"hostRequirements": {
+		"storage": "32gb",
+		"cpus": 8
+	},
+	"remoteUser": "builduser"
 }
