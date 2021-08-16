@@ -4,6 +4,7 @@
 
 #include "shell/browser/api/electron_api_browser_window.h"
 
+#include "content/browser/web_contents/web_contents_impl.h"
 #include "shell/browser/native_window_views.h"
 #include "ui/aura/window.h"
 
@@ -17,8 +18,10 @@ void BrowserWindow::UpdateDraggableRegions(
     return;
 
   if (&draggable_regions_ != &regions) {
-    auto* nv = web_contents()->GetNativeView();
-    if (nv) {
+    auto* view =
+        static_cast<content::WebContentsImpl*>(web_contents())->GetView();
+    if (view) {
+      const gfx::NativeView nv = view->GetNativeView();
       auto const offset = nv->GetBoundsInRootWindow();
       auto snapped_regions = mojo::Clone(regions);
       for (auto& snapped_region : snapped_regions) {
