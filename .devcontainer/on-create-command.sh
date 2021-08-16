@@ -15,8 +15,7 @@ ln -s $buildtools_configs $buildtools/configs
 
 # Write the gclient config if it does not already exist
 if [ ! -f $gclient_root/.gclient ]; then
-  echo "
-    solutions = [
+  echo "solutions = [
       { \"name\"        : \"src/electron\",
           \"url\"         : \"https://github.com/electron/electron\",
           \"deps_file\"   : \"DEPS\",
