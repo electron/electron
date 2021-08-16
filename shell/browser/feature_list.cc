@@ -49,6 +49,12 @@ void InitializeFeatureList() {
   disable_features +=
       std::string(",") + spellcheck::kWinRetrieveSuggestionsOnlyOnDemand.name;
 #endif
+#if defined(OS_MAC)
+  // Disable kWindowCaptureMacV2, which causes the wrong window id to
+  // be returned (this has been disabled in upstream Chromium here):
+  // https://chromium-review.googlesource.com/c/chromium/src/+/3069272
+  disable_features += std::string(",") + features::kWindowCaptureMacV2.name;
+#endif
   base::FeatureList::InitializeInstance(enable_features, disable_features);
 }
 
