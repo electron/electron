@@ -951,9 +951,9 @@ void ElectronBrowserClient::RenderProcessReady(
 void ElectronBrowserClient::RenderProcessExited(
     content::RenderProcessHost* host,
     const content::ChildProcessTerminationInfo& info) {
-  if (delegate_) {
+  if (delegate_)
     static_cast<api::App*>(delegate_)->RenderProcessExited(host);
-  }
+  host->RemoveObserver(this);
 }
 
 void OnOpenExternal(const GURL& escaped_url, bool allowed) {
