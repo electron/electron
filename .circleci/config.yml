@@ -45,7 +45,7 @@ executors:
         type: enum
         enum: ["medium", "xlarge", "2xlarge+"]
     docker:
-      - image: ghcr.io/electron/build:db8f93b0dcafa252ab5a9fcbb4e4a35277e94314
+      - image: ghcr.io/electron/build:c1eda51b40a46a81e061ef53b065d019933bdf47
     resource_class: << parameters.size >>
 
   macos:
