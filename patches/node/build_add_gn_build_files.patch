@@ -414,18 +414,18 @@ index 0000000000000000000000000000000000000000..52fb22305bb67c75c9a1cf4bc39cd901
 +}
 diff --git a/deps/cares/BUILD.gn b/deps/cares/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..a947e32b45462b8ab8aee7329c1bc8593ba793d4
+index 0000000000000000000000000000000000000000..8e0aa4b7a858ab432dca9da9ead9fcf44f6009f4
 --- /dev/null
 +++ b/deps/cares/BUILD.gn
-@@ -0,0 +1,134 @@
+@@ -0,0 +1,133 @@
 +config("cares_config") {
-+  include_dirs = [ "include" ]
++  include_dirs = [ "include", "src/lib" ]
 +}
 +static_library("cares") {
 +  defines = [ "CARES_STATICLIB" ]
 +  include_dirs = [
 +    "include",
-+    "src/lib/lib",
++    "src/lib",
 +  ]
 +  public_configs = [ ":cares_config" ]
 +
@@ -441,34 +441,26 @@ index 0000000000000000000000000000000000000000..a947e32b45462b8ab8aee7329c1bc859
 +    "include/ares_dns.h",
 +    "include/ares_rules.h",
 +    "include/ares_version.h",
-+    "include/nameser.h",
-+    "src/lib/ares__close_sockets.c",
-+    "src/lib/ares__get_hostent.c",
-+    "src/lib/ares__parse_into_addrinfo.c",
-+    "src/lib/ares__read_line.c",
-+    "src/lib/ares__readaddrinfo.c",
-+    "src/lib/ares__sortaddrinfo.c",
-+    "src/lib/ares__timeval.c",
 +    "src/lib/ares_android.c",
 +    "src/lib/ares_cancel.c",
++    "src/lib/ares__close_sockets.c",
 +    "src/lib/ares_create_query.c",
 +    "src/lib/ares_data.c",
 +    "src/lib/ares_data.h",
 +    "src/lib/ares_destroy.c",
-+    "src/lib/ares_dns.h",
 +    "src/lib/ares_expand_name.c",
 +    "src/lib/ares_expand_string.c",
 +    "src/lib/ares_fds.c",
 +    "src/lib/ares_free_hostent.c",
 +    "src/lib/ares_free_string.c",
 +    "src/lib/ares_freeaddrinfo.c",
-+    "src/lib/ares_getaddrinfo.c",
 +    "src/lib/ares_getenv.h",
++    "src/lib/ares_getaddrinfo.c",
 +    "src/lib/ares_gethostbyaddr.c",
 +    "src/lib/ares_gethostbyname.c",
++    "src/lib/ares__get_hostent.c",
 +    "src/lib/ares_getnameinfo.c",
 +    "src/lib/ares_getsock.c",
-+    "src/lib/ares_inet_net_pton.h",
 +    "src/lib/ares_init.c",
 +    "src/lib/ares_ipv6.h",
 +    "src/lib/ares_library_init.c",
@@ -476,11 +468,13 @@ index 0000000000000000000000000000000000000000..a947e32b45462b8ab8aee7329c1bc859
 +    "src/lib/ares_llist.c",
 +    "src/lib/ares_llist.h",
 +    "src/lib/ares_mkquery.c",
++    "src/lib/ares_nameser.h",
 +    "src/lib/ares_nowarn.c",
 +    "src/lib/ares_nowarn.h",
 +    "src/lib/ares_options.c",
-+    "src/lib/ares_parse_a_reply.c",
++    "src/lib/ares__parse_into_addrinfo.c",
 +    "src/lib/ares_parse_aaaa_reply.c",
++    "src/lib/ares_parse_a_reply.c",
 +    "src/lib/ares_parse_caa_reply.c",
 +    "src/lib/ares_parse_mx_reply.c",
 +    "src/lib/ares_parse_naptr_reply.c",
@@ -493,9 +487,12 @@ index 0000000000000000000000000000000000000000..a947e32b45462b8ab8aee7329c1bc859
 +    "src/lib/ares_private.h",
 +    "src/lib/ares_process.c",
 +    "src/lib/ares_query.c",
++    "src/lib/ares__read_line.c",
++    "src/lib/ares__readaddrinfo.c",
 +    "src/lib/ares_search.c",
 +    "src/lib/ares_send.c",
 +    "src/lib/ares_setup.h",
++    "src/lib/ares__sortaddrinfo.c",
 +    "src/lib/ares_strcasecmp.c",
 +    "src/lib/ares_strcasecmp.h",
 +    "src/lib/ares_strdup.c",
@@ -503,6 +500,7 @@ index 0000000000000000000000000000000000000000..a947e32b45462b8ab8aee7329c1bc859
 +    "src/lib/ares_strerror.c",
 +    "src/lib/ares_strsplit.c",
 +    "src/lib/ares_timeout.c",
++    "src/lib/ares__timeval.c",
 +    "src/lib/ares_version.c",
 +    "src/lib/ares_writev.c",
 +    "src/lib/ares_writev.h",
@@ -510,6 +508,7 @@ index 0000000000000000000000000000000000000000..a947e32b45462b8ab8aee7329c1bc859
 +    "src/lib/bitncmp.h",
 +    "src/lib/inet_net_pton.c",
 +    "src/lib/inet_ntop.c",
++    "src/lib/ares_inet_net_pton.h",
 +    "src/lib/setup_once.h",
 +    "src/tools/ares_getopt.c",
 +    "src/tools/ares_getopt.h",
