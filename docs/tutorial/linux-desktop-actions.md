@@ -1,4 +1,4 @@
-# Custom Linux Desktop Launcher Actions
+# Desktop Launcher Actions (Linux)
 
 ## Overview
 
