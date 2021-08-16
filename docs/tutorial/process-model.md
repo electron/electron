@@ -148,7 +148,9 @@ A preload script can be attached to the main process in the `BrowserWindow` cons
 const { BrowserWindow } = require('electron')
 //...
 const win = new BrowserWindow({
-  preload: 'path/to/preload.js'
+  webPreferences: {
+    preload: 'path/to/preload.js'
+  }
 })
 //...
 ```
