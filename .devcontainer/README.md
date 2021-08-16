@@ -4,7 +4,7 @@ Welcome to the Codespaces Electron Developer Environment.
 
 ## Quick Start
 
-Upon creation of your codespace you should have [build tools]() installed and an initialized gclient checkout of Electron.  In order to build electron you'll need to run the following commands.
+Upon creation of your codespace you should have [build tools](https://github.com/electron/build-tools) installed and an initialized gclient checkout of Electron.  In order to build electron you'll need to run the following commands.
 
 ```bash
 e sync -vv
@@ -19,7 +19,7 @@ Codespaces doesn't lean very well into gclient based checkouts, the directory st
 
 ```graphql
 # Primary gclient checkout container
-/workspaces/gclient/* 
+/workspaces/gclient/*
   └─ src/* - # Chromium checkout
      └─ electron - # Electron checkout
 # Symlinked Electron checkout (identical to the above)
@@ -28,7 +28,7 @@ Codespaces doesn't lean very well into gclient based checkouts, the directory st
 
 ## Goma
 
-If you are a maintainer [with Goma access]() it should be automatically configured and authenticated when you spin up a new codespaces instance.  You can validate this by checking `e d goma_auth info` or by checking that your build-tools configuration has a goma mode of `cluster`.
+If you are a maintainer [with Goma access](../docs/development/goma.md) it should be automatically configured and authenticated when you spin up a new codespaces instance.  You can validate this by checking `e d goma_auth info` or by checking that your build-tools configuration has a goma mode of `cluster`.
 
 ## Running Electron
 
