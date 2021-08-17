@@ -127,9 +127,6 @@ can add the flag `--extend-info` with a path to the `plist` you've created. The 
 ### Plist
 
 ```XML
-  <p>
-  <h5>macOS plist</h5>
-  <pre><code>
     <?xml version="1.0" encoding="UTF-8"?>
         <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
             <plist version="1.0">
@@ -149,9 +146,6 @@ can add the flag `--extend-info` with a path to the `plist` you've created. The 
                     <string>VEKTX9H2N7</string>
                 </dict>
             </plist>
-        </code>
-    </pre>
-  <p>
 ```
 
 ## Conclusion
