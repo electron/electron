@@ -22,10 +22,10 @@ However, the patch would need to be reviewed by the security team, as it
 does touch a security-sensitive class.
 
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 1b57a1fb942378d9ffafd18a19549a5ece67cbae..ded990f502c3689310912b2d0d614112b45ec53a 100644
+index 60e2189e1e930a67e722b19dc9e29a2caab4ce84..52f00aea275b1b22b9a279a59409432daacddcfa 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -430,10 +430,18 @@ class RendererSandboxedProcessLauncherDelegate
+@@ -431,10 +431,18 @@ class RendererSandboxedProcessLauncherDelegate
   public:
    RendererSandboxedProcessLauncherDelegate() = default;
  
@@ -44,7 +44,7 @@ index 1b57a1fb942378d9ffafd18a19549a5ece67cbae..ded990f502c3689310912b2d0d614112
      const base::CommandLine& browser_command_line =
          *base::CommandLine::ForCurrentProcess();
      base::CommandLine::StringType renderer_prefix =
-@@ -451,6 +459,11 @@ class RendererSandboxedProcessLauncherDelegate
+@@ -452,6 +460,11 @@ class RendererSandboxedProcessLauncherDelegate
    sandbox::policy::SandboxType GetSandboxType() override {
      return sandbox::policy::SandboxType::kRenderer;
    }
@@ -56,7 +56,7 @@ index 1b57a1fb942378d9ffafd18a19549a5ece67cbae..ded990f502c3689310912b2d0d614112
  };
  
  #if defined(OS_WIN)
-@@ -462,6 +475,9 @@ class RendererSandboxedProcessLauncherDelegateWin
+@@ -463,6 +476,9 @@ class RendererSandboxedProcessLauncherDelegateWin
                                                bool is_jit_disabled)
        : renderer_code_integrity_enabled_(
              GetContentClient()->browser()->IsRendererCodeIntegrityEnabled()) {
@@ -66,7 +66,7 @@ index 1b57a1fb942378d9ffafd18a19549a5ece67cbae..ded990f502c3689310912b2d0d614112
      if (is_jit_disabled) {
        dynamic_code_can_be_disabled_ = true;
        return;
-@@ -2001,9 +2017,15 @@ bool RenderProcessHostImpl::Init() {
+@@ -2014,9 +2030,15 @@ bool RenderProcessHostImpl::Init() {
      std::unique_ptr<SandboxedProcessLauncherDelegate> sandbox_delegate =
          std::make_unique<RendererSandboxedProcessLauncherDelegateWin>(
              cmd_line.get(), IsJitDisabled());

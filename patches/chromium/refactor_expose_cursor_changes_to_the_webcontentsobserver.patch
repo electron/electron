@@ -43,10 +43,10 @@ index 4bec6c3593de51f6098c632a08793508106ec21d..c59146ea61717f260292efcc04f72398
  
  void RenderWidgetHostImpl::ShowContextMenuAtPoint(
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 50879dadaf0345540d3064e837bc25161a58c250..523c2f5d4e2e845395e6edb68d599e788b2e3fe9 100644
+index 5052815f5464e39ebd686bb3b97127defde30808..dc274e4e5bd449961ad745c1be953e81049ba9c1 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4279,6 +4279,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
+@@ -4283,6 +4283,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
    return text_input_manager_.get();
  }
  
@@ -59,10 +59,10 @@ index 50879dadaf0345540d3064e837bc25161a58c250..523c2f5d4e2e845395e6edb68d599e78
      RenderWidgetHostImpl* render_widget_host) {
    return render_widget_host == GetMainFrame()->GetRenderWidgetHost();
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 01ac163df7ce9718ddf5b4d21ddd0595a03102ed..2b53623480b441b7deda0b614559917d5a539cdb 100644
+index 59fcd30e80b9f96b9bb3d863b9def609001c99f1..daf14617fcde03f946b61b0fd32263125c4b0ba9 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -950,6 +950,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
+@@ -947,6 +947,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
        blink::mojom::FrameVisibility visibility) override;
    void SendScreenRects() override;
    TextInputManager* GetTextInputManager() override;
@@ -71,7 +71,7 @@ index 01ac163df7ce9718ddf5b4d21ddd0595a03102ed..2b53623480b441b7deda0b614559917d
    bool IsShowingContextMenuOnPage() const override;
    void DidChangeScreenOrientation() override;
 diff --git a/content/public/browser/web_contents_observer.h b/content/public/browser/web_contents_observer.h
-index 264f4fa3ded252c7ed13e12c7a5e196855ef215c..ffc8d299b50634c944e2ab5c93a1bcecf6a67800 100644
+index d6f20a6c8d28359b09ee12cb72eb67f89000d141..5d5aec942b04c721361bf6e3649ba88e7fb28cee 100644
 --- a/content/public/browser/web_contents_observer.h
 +++ b/content/public/browser/web_contents_observer.h
 @@ -13,6 +13,7 @@

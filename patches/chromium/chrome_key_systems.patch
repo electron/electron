@@ -7,7 +7,7 @@ Disable persiste licence support check for widevine cdm,
 as its not supported in the current version of chrome.
 
 diff --git a/chrome/renderer/media/chrome_key_systems.cc b/chrome/renderer/media/chrome_key_systems.cc
-index 56364b00faf445e2ec8ee4a4299e13ce44af012e..688af353b488fb178b7f335899b330ba86eb1edd 100644
+index cd3216164a0541bb82453af827908a8e18708b1e..1f3e6c3df4cbd19500e44b490116ec7433bcf042 100644
 --- a/chrome/renderer/media/chrome_key_systems.cc
 +++ b/chrome/renderer/media/chrome_key_systems.cc
 @@ -17,7 +17,9 @@

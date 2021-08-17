@@ -191,7 +191,7 @@ index c786676b3758d004601b786c4de87f1b874f2fb7..6ae540b44f2ce1ce8aea1c43d86b600f
  // is concerned.
  @property(nonatomic, readonly) NSString* subrole;
 diff --git a/content/browser/accessibility/browser_accessibility_cocoa.mm b/content/browser/accessibility/browser_accessibility_cocoa.mm
-index 3595439809da1f2ead581b50f94d076d88234511..b7d1eced43a5222db91b0e61d62bcbbe99608ec5 100644
+index f3cb26f6310ad95edba124828be17939e3b36fa9..ab6c0c2010a2aac4cf94349ca446fbb94423f672 100644
 --- a/content/browser/accessibility/browser_accessibility_cocoa.mm
 +++ b/content/browser/accessibility/browser_accessibility_cocoa.mm
 @@ -205,6 +205,7 @@
@@ -281,7 +281,7 @@ index 3595439809da1f2ead581b50f94d076d88234511..b7d1eced43a5222db91b0e61d62bcbbe
        {NSAccessibilitySizeAttribute, @"size"},
        {NSAccessibilitySortDirectionAttribute, @"sortDirection"},
        {NSAccessibilitySubroleAttribute, @"subrole"},
-@@ -1382,6 +1396,7 @@ - (NSNumber*)enabled {
+@@ -1383,6 +1397,7 @@ - (NSNumber*)enabled {
             ax::mojom::Restriction::kDisabled);
  }
  
@@ -289,7 +289,7 @@ index 3595439809da1f2ead581b50f94d076d88234511..b7d1eced43a5222db91b0e61d62bcbbe
  // Returns a text marker that points to the last character in the document that
  // can be selected with VoiceOver.
  - (id)endTextMarker {
-@@ -1390,6 +1405,7 @@ - (id)endTextMarker {
+@@ -1391,6 +1406,7 @@ - (id)endTextMarker {
    BrowserAccessibility::AXPosition position = _owner->CreateTextPositionAt(0);
    return CreateTextMarker(position->CreatePositionAtEndOfContent());
  }
@@ -297,7 +297,7 @@ index 3595439809da1f2ead581b50f94d076d88234511..b7d1eced43a5222db91b0e61d62bcbbe
  
  - (NSNumber*)expanded {
    if (![self instanceActive])
-@@ -1590,6 +1606,7 @@ - (bool)findRowIndex:(BrowserAccessibilityCocoa*)toFind
+@@ -1591,6 +1607,7 @@ - (bool)findRowIndex:(BrowserAccessibilityCocoa*)toFind
    return false;
  }
  
@@ -305,7 +305,7 @@ index 3595439809da1f2ead581b50f94d076d88234511..b7d1eced43a5222db91b0e61d62bcbbe
  - (NSNumber*)insertionPointLineNumber {
    if (![self instanceActive])
      return nil;
-@@ -1615,6 +1632,7 @@ - (NSNumber*)insertionPointLineNumber {
+@@ -1616,6 +1633,7 @@ - (NSNumber*)insertionPointLineNumber {
                         caretPosition->AsTextPosition()->text_offset());
    return @(std::distance(lineBreaks.begin(), iterator));
  }
@@ -313,7 +313,7 @@ index 3595439809da1f2ead581b50f94d076d88234511..b7d1eced43a5222db91b0e61d62bcbbe
  
  // Returns whether or not this node should be ignored in the
  // accessibility tree.
-@@ -1973,8 +1991,12 @@ - (BOOL)shouldExposeTitleUIElement {
+@@ -1974,8 +1992,12 @@ - (BOOL)shouldExposeTitleUIElement {
        return content::AXTextEdit(newValue, std::u16string(), nil);
      }
    }
@@ -326,7 +326,7 @@ index 3595439809da1f2ead581b50f94d076d88234511..b7d1eced43a5222db91b0e61d62bcbbe
  }
  
  - (BOOL)instanceActive {
-@@ -2300,6 +2322,7 @@ - (NSArray*)selectedChildren {
+@@ -2301,6 +2323,7 @@ - (NSArray*)selectedChildren {
    return ret;
  }
  
@@ -334,7 +334,7 @@ index 3595439809da1f2ead581b50f94d076d88234511..b7d1eced43a5222db91b0e61d62bcbbe
  - (NSString*)selectedText {
    if (![self instanceActive])
      return nil;
-@@ -2311,11 +2334,13 @@ - (NSString*)selectedText {
+@@ -2312,11 +2335,13 @@ - (NSString*)selectedText {
      return nil;
    return base::SysUTF16ToNSString(range.GetText());
  }
@@ -348,7 +348,7 @@ index 3595439809da1f2ead581b50f94d076d88234511..b7d1eced43a5222db91b0e61d62bcbbe
  - (NSValue*)selectedTextRange {
    if (![self instanceActive])
      return nil;
-@@ -2340,7 +2365,9 @@ - (NSValue*)selectedTextRange {
+@@ -2341,7 +2366,9 @@ - (NSValue*)selectedTextRange {
    int selLength = range.GetText().length();
    return [NSValue valueWithRange:NSMakeRange(selStart, selLength)];
  }
@@ -358,7 +358,7 @@ index 3595439809da1f2ead581b50f94d076d88234511..b7d1eced43a5222db91b0e61d62bcbbe
  - (id)selectedTextMarkerRange {
    if (![self instanceActive])
      return nil;
-@@ -2352,6 +2379,7 @@ - (id)selectedTextMarkerRange {
+@@ -2353,6 +2380,7 @@ - (id)selectedTextMarkerRange {
    // words correctly.
    return CreateTextMarkerRange(ax_range.AsBackwardRange());
  }
@@ -366,7 +366,7 @@ index 3595439809da1f2ead581b50f94d076d88234511..b7d1eced43a5222db91b0e61d62bcbbe
  
  - (NSValue*)size {
    if (![self instanceActive])
-@@ -2384,6 +2412,7 @@ - (NSString*)sortDirection {
+@@ -2385,6 +2413,7 @@ - (NSString*)sortDirection {
    return nil;
  }
  
@@ -374,7 +374,7 @@ index 3595439809da1f2ead581b50f94d076d88234511..b7d1eced43a5222db91b0e61d62bcbbe
  // Returns a text marker that points to the first character in the document that
  // can be selected with VoiceOver.
  - (id)startTextMarker {
-@@ -2392,6 +2421,7 @@ - (id)startTextMarker {
+@@ -2393,6 +2422,7 @@ - (id)startTextMarker {
    BrowserAccessibility::AXPosition position = _owner->CreateTextPositionAt(0);
    return CreateTextMarker(position->CreatePositionAtStartOfContent());
  }
@@ -382,7 +382,7 @@ index 3595439809da1f2ead581b50f94d076d88234511..b7d1eced43a5222db91b0e61d62bcbbe
  
  // Returns a subrole based upon the role.
  - (NSString*)subrole {
-@@ -2725,12 +2755,14 @@ - (NSAttributedString*)attributedValueForRange:(NSRange)range {
+@@ -2726,12 +2756,14 @@ - (NSAttributedString*)attributedValueForRange:(NSRange)range {
    NSMutableAttributedString* attributedInnerText =
        [[[NSMutableAttributedString alloc]
            initWithString:base::SysUTF16ToNSString(innerText)] autorelease];
@@ -397,7 +397,7 @@ index 3595439809da1f2ead581b50f94d076d88234511..b7d1eced43a5222db91b0e61d62bcbbe
  
    return [attributedInnerText attributedSubstringFromRange:range];
  }
-@@ -2843,6 +2875,7 @@ - (id)accessibilityAttributeValue:(NSString*)attribute
+@@ -2844,6 +2876,7 @@ - (id)accessibilityAttributeValue:(NSString*)attribute
        return ToBrowserAccessibilityCocoa(cell);
    }
  
@@ -405,7 +405,7 @@ index 3595439809da1f2ead581b50f94d076d88234511..b7d1eced43a5222db91b0e61d62bcbbe
    if ([attribute
            isEqualToString:
                NSAccessibilityUIElementForTextMarkerParameterizedAttribute]) {
-@@ -3166,6 +3199,7 @@ - (id)accessibilityAttributeValue:(NSString*)attribute
+@@ -3167,6 +3200,7 @@ - (id)accessibilityAttributeValue:(NSString*)attribute
  
      return CreateTextMarker(root->CreateTextPositionAt(index));
    }
@@ -413,7 +413,7 @@ index 3595439809da1f2ead581b50f94d076d88234511..b7d1eced43a5222db91b0e61d62bcbbe
  
    if ([attribute isEqualToString:
                       NSAccessibilityBoundsForRangeParameterizedAttribute]) {
-@@ -3196,6 +3230,7 @@ - (id)accessibilityAttributeValue:(NSString*)attribute
+@@ -3197,6 +3231,7 @@ - (id)accessibilityAttributeValue:(NSString*)attribute
      return nil;
    }
  
@@ -421,7 +421,7 @@ index 3595439809da1f2ead581b50f94d076d88234511..b7d1eced43a5222db91b0e61d62bcbbe
    if ([attribute
            isEqualToString:
                NSAccessibilityLineTextMarkerRangeForTextMarkerParameterizedAttribute]) {
-@@ -3315,6 +3350,7 @@ - (id)accessibilityAttributeValue:(NSString*)attribute
+@@ -3316,6 +3351,7 @@ - (id)accessibilityAttributeValue:(NSString*)attribute
  
      return @(child->GetIndexInParent());
    }
@@ -429,7 +429,7 @@ index 3595439809da1f2ead581b50f94d076d88234511..b7d1eced43a5222db91b0e61d62bcbbe
  
    return nil;
  }
-@@ -3851,6 +3887,7 @@ - (void)accessibilitySetValue:(id)value forAttribute:(NSString*)attribute {
+@@ -3852,6 +3888,7 @@ - (void)accessibilitySetValue:(id)value forAttribute:(NSString*)attribute {
                ->AsTextSelectionPosition()));
      }
    }
@@ -437,7 +437,7 @@ index 3595439809da1f2ead581b50f94d076d88234511..b7d1eced43a5222db91b0e61d62bcbbe
    if ([attribute
            isEqualToString:NSAccessibilitySelectedTextMarkerRangeAttribute]) {
      BrowserAccessibility::AXRange range = CreateRangeFromTextMarkerRange(value);
-@@ -3861,6 +3898,7 @@ - (void)accessibilitySetValue:(id)value forAttribute:(NSString*)attribute {
+@@ -3862,6 +3899,7 @@ - (void)accessibilitySetValue:(id)value forAttribute:(NSString*)attribute {
          range.anchor()->AsTextSelectionPosition(),
          range.focus()->AsTextSelectionPosition()));
    }
