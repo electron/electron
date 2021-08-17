@@ -212,7 +212,7 @@ int NodeMain(int argc, char* argv[]) {
 
       env = node::CreateEnvironment(isolate_data, gin_env.context(),
                                     result.args, result.exec_args);
-      CHECK_NOT_NULL(env);
+      CHECK_NE(nullptr, env);
 
       node::IsolateSettings is;
       node::SetIsolateUpForNode(isolate, is);
