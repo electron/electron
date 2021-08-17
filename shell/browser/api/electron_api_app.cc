@@ -19,6 +19,7 @@
 #include "base/system/sys_info.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/icon_manager.h"
+#include "chrome/common/chrome_features.h"
 #include "chrome/common/chrome_paths.h"
 #include "content/browser/gpu/compositor_util.h"        // nogncheck
 #include "content/browser/gpu/gpu_data_manager_impl.h"  // nogncheck
@@ -27,12 +28,15 @@
 #include "content/public/browser/child_process_data.h"
 #include "content/public/browser/client_certificate_delegate.h"
 #include "content/public/browser/gpu_data_manager.h"
+#include "content/public/browser/network_service_instance.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/common/content_switches.h"
 #include "media/audio/audio_manager.h"
+#include "net/dns/public/util.h"
 #include "net/ssl/client_cert_identity.h"
 #include "net/ssl/ssl_cert_request_info.h"
 #include "sandbox/policy/switches.h"
+#include "services/network/network_service.h"
 #include "shell/browser/api/electron_api_menu.h"
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/api/electron_api_web_contents.h"
@@ -418,6 +422,27 @@ struct Converter<content::CertificateRequestResultType> {
   }
 };
 
+template <>
+struct Converter<net::SecureDnsMode> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     net::SecureDnsMode* out) {
+    std::string s;
+    if (!ConvertFromV8(isolate, val, &s))
+      return false;
+    if (s == "off") {
+      *out = net::SecureDnsMode::kOff;
+      return true;
+    } else if (s == "automatic") {
+      *out = net::SecureDnsMode::kAutomatic;
+      return true;
+    } else if (s == "secure") {
+      *out = net::SecureDnsMode::kSecure;
+      return true;
+    }
+    return false;
+  }
+};
 }  // namespace gin
 
 namespace electron {
@@ -1524,6 +1549,108 @@ v8::Local<v8::Value> App::GetDockAPI(v8::Isolate* isolate) {
 }
 #endif
 
+void ConfigureHostResolver(v8::Isolate* isolate,
+                           const gin_helper::Dictionary& opts) {
+  gin_helper::ErrorThrower thrower(isolate);
+  net::SecureDnsMode secure_dns_mode = net::SecureDnsMode::kOff;
+  std::string default_doh_templates;
+  if (base::FeatureList::IsEnabled(features::kDnsOverHttps)) {
+    if (features::kDnsOverHttpsFallbackParam.Get()) {
+      secure_dns_mode = net::SecureDnsMode::kAutomatic;
+    } else {
+      secure_dns_mode = net::SecureDnsMode::kSecure;
+    }
+    default_doh_templates = features::kDnsOverHttpsTemplatesParam.Get();
+  }
+  std::string server_method;
+  std::vector<net::DnsOverHttpsServerConfig> dns_over_https_servers;
+  absl::optional<std::vector<network::mojom::DnsOverHttpsServerPtr>>
+      servers_mojo;
+  if (!default_doh_templates.empty() &&
+      secure_dns_mode != net::SecureDnsMode::kOff) {
+    for (base::StringPiece server_template :
+         SplitStringPiece(default_doh_templates, " ", base::TRIM_WHITESPACE,
+                          base::SPLIT_WANT_NONEMPTY)) {
+      if (!net::dns_util::IsValidDohTemplate(server_template, &server_method)) {
+        continue;
+      }
+
+      bool use_post = server_method == "POST";
+      dns_over_https_servers.emplace_back(std::string(server_template),
+                                          use_post);
+
+      if (!servers_mojo.has_value()) {
+        servers_mojo = absl::make_optional<
+            std::vector<network::mojom::DnsOverHttpsServerPtr>>();
+      }
+
+      network::mojom::DnsOverHttpsServerPtr server_mojo =
+          network::mojom::DnsOverHttpsServer::New();
+      server_mojo->server_template = std::string(server_template);
+      server_mojo->use_post = use_post;
+      servers_mojo->emplace_back(std::move(server_mojo));
+    }
+  }
+
+  bool enable_built_in_resolver =
+      base::FeatureList::IsEnabled(features::kAsyncDns);
+  bool additional_dns_query_types_enabled = true;
+
+  if (opts.Has("enableBuiltInResolver") &&
+      !opts.Get("enableBuiltInResolver", &enable_built_in_resolver)) {
+    thrower.ThrowTypeError("enableBuiltInResolver must be a boolean");
+    return;
+  }
+
+  if (opts.Has("secureDnsMode") &&
+      !opts.Get("secureDnsMode", &secure_dns_mode)) {
+    thrower.ThrowTypeError(
+        "secureDnsMode must be one of: off, automatic, secure");
+    return;
+  }
+
+  std::vector<std::string> secure_dns_server_strings;
+  if (opts.Has("secureDnsServers")) {
+    if (!opts.Get("secureDnsServers", &secure_dns_server_strings)) {
+      thrower.ThrowTypeError("secureDnsServers must be an array of strings");
+      return;
+    }
+    servers_mojo = absl::nullopt;
+    for (const std::string& server_template : secure_dns_server_strings) {
+      std::string server_method;
+      if (!net::dns_util::IsValidDohTemplate(server_template, &server_method)) {
+        thrower.ThrowTypeError(std::string("not a valid DoH template: ") +
+                               server_template);
+        return;
+      }
+      bool use_post = server_method == "POST";
+      if (!servers_mojo.has_value()) {
+        servers_mojo = absl::make_optional<
+            std::vector<network::mojom::DnsOverHttpsServerPtr>>();
+      }
+
+      network::mojom::DnsOverHttpsServerPtr server_mojo =
+          network::mojom::DnsOverHttpsServer::New();
+      server_mojo->server_template = std::string(server_template);
+      server_mojo->use_post = use_post;
+      servers_mojo->emplace_back(std::move(server_mojo));
+    }
+  }
+
+  if (opts.Has("enableAdditionalDnsQueryTypes") &&
+      !opts.Get("enableAdditionalDnsQueryTypes",
+                &additional_dns_query_types_enabled)) {
+    thrower.ThrowTypeError("enableAdditionalDnsQueryTypes must be a boolean");
+    return;
+  }
+
+  // Configure the stub resolver. This must be done after the system
+  // NetworkContext is created, but before anything has the chance to use it.
+  content::GetNetworkService()->ConfigureStubHostResolver(
+      enable_built_in_resolver, secure_dns_mode, std::move(servers_mojo),
+      additional_dns_query_types_enabled);
+}
+
 // static
 App* App::Get() {
   static base::NoDestructor<App> app;
@@ -1670,6 +1797,7 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
 #endif
       .SetProperty("userAgentFallback", &App::GetUserAgentFallback,
                    &App::SetUserAgentFallback)
+      .SetMethod("configureHostResolver", &ConfigureHostResolver)
       .SetMethod("enableSandbox", &App::EnableSandbox);
 }
 
