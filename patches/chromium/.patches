@@ -106,3 +106,4 @@ logging_win32_only_create_a_console_if_logging_to_stderr.patch
 disable_use_lld_for_macos.patch
 fix_fix_the_build_on_windows_on_arm.patch
 fix_media_key_usage_with_globalshortcuts.patch
+add_dumps_without_crashing_crash_key
