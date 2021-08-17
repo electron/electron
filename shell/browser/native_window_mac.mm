@@ -235,7 +235,7 @@ void ViewDidMoveToSuperview(NSView* self, SEL _cmd) {
 }
 
 // Refs https://github.com/electron/electron/pull/30507
-// TODO: Enable this flag to match upstream
+// TODO(deepak1556): Enable this flag to match upstream
 const base::Feature kWindowCaptureMacV2{"WindowCaptureMacV2",
                                         base::FEATURE_DISABLED_BY_DEFAULT};
 
