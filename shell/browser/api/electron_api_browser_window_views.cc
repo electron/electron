@@ -17,7 +17,7 @@ void BrowserWindow::UpdateDraggableRegions(
   if (window_->has_frame())
     return;
 
-  if (&draggable_regions_ != &regions) {
+  if (&draggable_regions_ != &regions && web_contents()) {
     auto* view =
         static_cast<content::WebContentsImpl*>(web_contents())->GetView();
     if (view) {
