@@ -126,7 +126,7 @@ index 2824b97e715a493082734d40f62860c8cafa5f34..584d4ef2b73a0f89458224eb134a8d8a
  }
  
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index e4cacbf9a82da8dca062cc33df885a0575e74830..69f6a0947679a474d12dcc179e400ebd5c77e147 100644
+index e4cacbf9a82da8dca062cc33df885a0575e74830..143ee383668965ba04da092e3445fc9f4a33a433 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -28,10 +28,10 @@
@@ -249,7 +249,7 @@ index e4cacbf9a82da8dca062cc33df885a0575e74830..69f6a0947679a474d12dcc179e400ebd
    content::RenderFrameHost* render_frame_host = GetCurrentTargetFrame();
    auto callback_wrapper =
        base::BindOnce(&PrintViewManagerBase::GetDefaultPrintSettingsReply,
-@@ -662,12 +681,13 @@ void PrintViewManagerBase::UpdatePrintSettings(
+@@ -662,18 +681,20 @@ void PrintViewManagerBase::UpdatePrintSettings(
      base::Value job_settings,
      UpdatePrintSettingsCallback callback) {
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
@@ -264,7 +264,22 @@ index e4cacbf9a82da8dca062cc33df885a0575e74830..69f6a0947679a474d12dcc179e400ebd
    if (!job_settings.FindIntKey(kSettingPrinterType)) {
      UpdatePrintSettingsReply(std::move(callback),
                               CreateEmptyPrintPagesParamsPtr(), false);
-@@ -722,13 +742,17 @@ void PrintViewManagerBase::PrintingFailed(int32_t cookie) {
+     return;
+   }
+ 
++#if 0
+   content::BrowserContext* context =
+       web_contents() ? web_contents()->GetBrowserContext() : nullptr;
+   PrefService* prefs =
+@@ -683,6 +704,7 @@ void PrintViewManagerBase::UpdatePrintSettings(
+     if (value > 0)
+       job_settings.SetIntKey(kSettingRasterizePdfDpi, value);
+   }
++#endif
+ 
+   content::RenderFrameHost* render_frame_host = GetCurrentTargetFrame();
+   auto callback_wrapper =
+@@ -722,13 +744,17 @@ void PrintViewManagerBase::PrintingFailed(int32_t cookie) {
    PrintManager::PrintingFailed(cookie);
  
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
@@ -283,7 +298,7 @@ index e4cacbf9a82da8dca062cc33df885a0575e74830..69f6a0947679a474d12dcc179e400ebd
    base::ThreadTaskRunnerHandle::Get()->PostTask(
        FROM_HERE, base::BindOnce(&ShowWarningMessageBox,
                                  l10n_util::GetStringUTF16(
-@@ -807,6 +831,11 @@ void PrintViewManagerBase::OnNotifyPrintJobEvent(
+@@ -807,6 +833,11 @@ void PrintViewManagerBase::OnNotifyPrintJobEvent(
  #endif
        break;
      }
@@ -295,7 +310,7 @@ index e4cacbf9a82da8dca062cc33df885a0575e74830..69f6a0947679a474d12dcc179e400ebd
      case JobEventDetails::JOB_DONE:
        // Printing is done, we don't need it anymore.
        // print_job_->is_job_pending() may still be true, depending on the order
-@@ -876,7 +905,10 @@ bool PrintViewManagerBase::CreateNewPrintJob(
+@@ -876,7 +907,10 @@ bool PrintViewManagerBase::CreateNewPrintJob(
  
    // Disconnect the current |print_job_|.
    auto weak_this = weak_ptr_factory_.GetWeakPtr();
@@ -307,7 +322,7 @@ index e4cacbf9a82da8dca062cc33df885a0575e74830..69f6a0947679a474d12dcc179e400ebd
    if (!weak_this)
      return false;
  
-@@ -899,8 +931,6 @@ bool PrintViewManagerBase::CreateNewPrintJob(
+@@ -899,8 +933,6 @@ bool PrintViewManagerBase::CreateNewPrintJob(
                          /*source_id=*/"");
  #endif
  
@@ -316,7 +331,7 @@ index e4cacbf9a82da8dca062cc33df885a0575e74830..69f6a0947679a474d12dcc179e400ebd
    printing_succeeded_ = false;
    return true;
  }
-@@ -952,14 +982,22 @@ void PrintViewManagerBase::ReleasePrintJob() {
+@@ -952,14 +984,22 @@ void PrintViewManagerBase::ReleasePrintJob() {
    content::RenderFrameHost* rfh = printing_rfh_;
    printing_rfh_ = nullptr;
  
@@ -341,7 +356,7 @@ index e4cacbf9a82da8dca062cc33df885a0575e74830..69f6a0947679a474d12dcc179e400ebd
    // Don't close the worker thread.
    print_job_ = nullptr;
  }
-@@ -998,7 +1036,7 @@ bool PrintViewManagerBase::RunInnerMessageLoop() {
+@@ -998,7 +1038,7 @@ bool PrintViewManagerBase::RunInnerMessageLoop() {
  }
  
  bool PrintViewManagerBase::OpportunisticallyCreatePrintJob(int cookie) {
