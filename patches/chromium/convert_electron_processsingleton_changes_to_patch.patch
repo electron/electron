@@ -16,9 +16,12 @@ This patch adds a few changes to the Chromium code:
 3. It adds a `ChangeWindowMessageFilterEx` call to the Windows
    implementation to handle the case when the primary app is run with
    admin permissions.
+4. It adds an `OnBrowserReady` function to allow
+   requestSingleInstanceLock to start listening to the socket later
+   in the posix implementation.
 
 diff --git a/chrome/browser/process_singleton.h b/chrome/browser/process_singleton.h
-index 0291db0f919aa7868d345f4f0712c42c6ad7ee17..1c34b939e85543aba6801c45ba81fe626aad65fe 100644
+index 0291db0f919aa7868d345f4f0712c42c6ad7ee17..7873d389222ec7533e754519a4be6687e860b133 100644
 --- a/chrome/browser/process_singleton.h
 +++ b/chrome/browser/process_singleton.h
 @@ -103,7 +103,8 @@ class ProcessSingleton {
@@ -31,7 +34,16 @@ index 0291db0f919aa7868d345f4f0712c42c6ad7ee17..1c34b939e85543aba6801c45ba81fe62
                     const NotificationCallback& notification_callback);
    ~ProcessSingleton();
  
-@@ -166,6 +167,7 @@ class ProcessSingleton {
+@@ -115,6 +116,8 @@ class ProcessSingleton {
+   // TODO(brettw): Make the implementation of this method non-platform-specific
+   // by making Linux re-use the Windows implementation.
+   NotifyResult NotifyOtherProcessOrCreate();
++  void StartListeningOnSocket();
++  void OnBrowserReady();
+ 
+   // Sets ourself up as the singleton instance.  Returns true on success.  If
+   // false is returned, we are not the singleton instance and the caller must
+@@ -166,6 +169,7 @@ class ProcessSingleton {
  
   private:
    NotificationCallback notification_callback_;  // Handler for notifications.
@@ -39,8 +51,17 @@ index 0291db0f919aa7868d345f4f0712c42c6ad7ee17..1c34b939e85543aba6801c45ba81fe62
  
  #if defined(OS_WIN)
    bool EscapeVirtualization(const base::FilePath& user_data_dir);
+@@ -219,6 +223,8 @@ class ProcessSingleton {
+   // because it posts messages between threads.
+   class LinuxWatcher;
+   scoped_refptr<LinuxWatcher> watcher_;
++  int sock_ = -1;
++  bool listen_on_ready_ = false;
+ #endif
+ 
+ #if defined(OS_MAC)
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index dc9c1b76a1c7c8b3fa83fc83788eef36d2cfa4a5..c65419336ace0cf7b4a975ebb2d2307fefbe966d 100644
+index dc9c1b76a1c7c8b3fa83fc83788eef36d2cfa4a5..630503e4ca94a90af6669ee5e7841b0166c56e09 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
 @@ -348,6 +348,21 @@ bool CheckCookie(const base::FilePath& path, const base::FilePath& cookie) {
@@ -77,7 +98,28 @@ index dc9c1b76a1c7c8b3fa83fc83788eef36d2cfa4a5..c65419336ace0cf7b4a975ebb2d2307f
        current_pid_(base::GetCurrentProcId()),
        watcher_(new LinuxWatcher(this)) {
    socket_path_ = user_data_dir.Append(chrome::kSingletonSocketFilename);
-@@ -997,12 +1014,26 @@ bool ProcessSingleton::Create() {
+@@ -895,6 +912,20 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessOrCreate() {
+       base::TimeDelta::FromSeconds(kTimeoutInSeconds));
+ }
+ 
++void ProcessSingleton::StartListeningOnSocket() {
++  watcher_ = base::MakeRefCounted<LinuxWatcher>(this);
++  base::PostTask(FROM_HERE, {BrowserThread::IO},
++                 base::BindOnce(&ProcessSingleton::LinuxWatcher::StartListening,
++                                watcher_, sock_));
++}
++
++void ProcessSingleton::OnBrowserReady() {
++  if (listen_on_ready_) {
++    StartListeningOnSocket();
++    listen_on_ready_ = false;
++  }
++}
++
+ ProcessSingleton::NotifyResult
+ ProcessSingleton::NotifyOtherProcessWithTimeoutOrCreate(
+     const base::CommandLine& command_line,
+@@ -997,12 +1028,26 @@ bool ProcessSingleton::Create() {
  #endif
    }
  
@@ -110,8 +152,26 @@ index dc9c1b76a1c7c8b3fa83fc83788eef36d2cfa4a5..c65419336ace0cf7b4a975ebb2d2307f
    }
  
    // Check that the directory was created with the correct permissions.
+@@ -1044,10 +1089,13 @@ bool ProcessSingleton::Create() {
+   if (listen(sock, 5) < 0)
+     NOTREACHED() << "listen failed: " << base::safe_strerror(errno);
+ 
+-  DCHECK(BrowserThread::IsThreadInitialized(BrowserThread::IO));
+-  content::GetIOThreadTaskRunner({})->PostTask(
+-      FROM_HERE, base::BindOnce(&ProcessSingleton::LinuxWatcher::StartListening,
+-                                watcher_, sock));
++  sock_ = sock;
++
++  if (BrowserThread::IsThreadInitialized(BrowserThread::IO)) {
++    StartListeningOnSocket();
++  } else {
++    listen_on_ready_ = true;
++  }
+ 
+   return true;
+ }
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index f1732f042c3bfd9d5d95a4208664f9252b2aab73..c7527b9339f59a2159e34c63f0e4452e447b7433 100644
+index f1732f042c3bfd9d5d95a4208664f9252b2aab73..a7f36b45bed51d0e8129d7b56f419a59e2a2c337 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
 @@ -260,9 +260,11 @@ bool ProcessSingleton::EscapeVirtualization(
@@ -126,7 +186,14 @@ index f1732f042c3bfd9d5d95a4208664f9252b2aab73..c7527b9339f59a2159e34c63f0e4452e
        is_virtualized_(false),
        lock_file_(INVALID_HANDLE_VALUE),
        user_data_dir_(user_data_dir),
-@@ -370,7 +372,7 @@ ProcessSingleton::NotifyOtherProcessOrCreate() {
+@@ -366,11 +368,14 @@ ProcessSingleton::NotifyOtherProcessOrCreate() {
+   return PROFILE_IN_USE;
+ }
+ 
++void ProcessSingleton::StartListeningOnSocket() {}
++void ProcessSingleton::OnBrowserReady() {}
++
+ // Look for a Chrome instance that uses the same profile directory. If there
  // isn't one, create a message window with its title set to the profile
  // directory path.
  bool ProcessSingleton::Create() {
@@ -135,7 +202,7 @@ index f1732f042c3bfd9d5d95a4208664f9252b2aab73..c7527b9339f59a2159e34c63f0e4452e
  
    remote_window_ = chrome::FindRunningChromeWindow(user_data_dir_);
    if (!remote_window_ && !EscapeVirtualization(user_data_dir_)) {
-@@ -379,7 +381,7 @@ bool ProcessSingleton::Create() {
+@@ -379,7 +384,7 @@ bool ProcessSingleton::Create() {
      // access. As documented, it's clearer to NOT request ownership on creation
      // since it isn't guaranteed we will get it. It is better to create it
      // without ownership and explicitly get the ownership afterward.
@@ -144,7 +211,7 @@ index f1732f042c3bfd9d5d95a4208664f9252b2aab73..c7527b9339f59a2159e34c63f0e4452e
      if (!only_me.IsValid()) {
        DPLOG(FATAL) << "CreateMutex failed";
        return false;
-@@ -418,6 +420,12 @@ bool ProcessSingleton::Create() {
+@@ -418,6 +423,12 @@ bool ProcessSingleton::Create() {
              window_.CreateNamed(base::BindRepeating(&ProcessLaunchNotification,
                                                      notification_callback_),
                                  user_data_dir_.value());
