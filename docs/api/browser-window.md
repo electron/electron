@@ -187,9 +187,9 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   * `parent` BrowserWindow (optional) - Specify parent window. Default is `null`.
   * `modal` Boolean (optional) - Whether this is a modal window. This only works when the
     window is a child window. Default is `false`.
-  * `acceptFirstMouse` Boolean (optional) - Whether the web view accepts a single
-    mouse-down event that simultaneously activates the window. Default is
-    `false`.
+  * `acceptFirstMouse` Boolean (optional) - Whether clicking an inactive window will also
+  click through to the web contents. Default is `false` on macOS. This option is not
+  configurable on other platforms.
   * `disableAutoHideCursor` Boolean (optional) - Whether to hide cursor when typing.
     Default is `false`.
   * `autoHideMenuBar` Boolean (optional) - Auto hide the menu bar unless the `Alt`
@@ -213,16 +213,13 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     * `followWindow` - The backdrop should automatically appear active when the window is active, and inactive when it is not. This is the default.
     * `active` - The backdrop should always appear active.
     * `inactive` - The backdrop should always appear inactive.
-  * `titleBarStyle` String (optional) - The style of window title bar.
+  * `titleBarStyle` String (optional) _macOS_ _Windows_ - The style of window title bar.
     Default is `default`. Possible values are:
-    * `default` - Results in the standard gray opaque Mac title
-      bar.
-    * `hidden` - Results in a hidden title bar and a full size content window, yet
-      the title bar still has the standard window controls ("traffic lights") in
-      the top left.
-    * `hiddenInset` - Results in a hidden title bar with an alternative look
+    * `default` - Results in the standard title bar for macOS or Windows respectively.
+    * `hidden` - Results in a hidden title bar and a full size content window. On macOS, the window still has the standard window controls (“traffic lights”) in the top left. On Windows, when combined with `titleBarOverlay: true` it will activate the Window Controls Overlay (see `titleBarOverlay` for more information), otherwise no window controls will be shown.
+    * `hiddenInset` - Only on macOS, results in a hidden title bar with an alternative look
       where the traffic light buttons are slightly more inset from the window edge.
-    * `customButtonsOnHover` - Results in a hidden title bar and a full size
+    * `customButtonsOnHover` - Only on macOS, results in a hidden title bar and a full size
       content window, the traffic light buttons will display when being hovered
       over in the top left of the window.  **Note:** This option is currently
       experimental.
@@ -392,10 +389,9 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       contain the layout of the document—without requiring scrolling. Enabling
       this will cause the `preferred-size-changed` event to be emitted on the
       `WebContents` when the preferred size changes. Default is `false`.
-  * `titleBarOverlay` Boolean (optional) -  On macOS, when using a frameless window in conjunction with
-    `win.setWindowButtonVisibility(true)` or using a `titleBarStyle` so that the traffic lights are visible,
-    this property enables the Window Controls Overlay [JavaScript APIs][overlay-javascript-apis] and
-    [CSS Environment Variables][overlay-css-env-vars].  Default is `false`.
+  * `titleBarOverlay` Object | Boolean (optional) -  When using a frameless window in conjuction with `win.setWindowButtonVisibility(true)` on macOS or using a `titleBarStyle` so that the standard window controls ("traffic lights" on macOS) are visible, this property enables the Window Controls Overlay [JavaScript APIs][overlay-javascript-apis] and [CSS Environment Variables][overlay-css-env-vars]. Specifying `true` will result in an overlay with default system colors. Default is `false`.
+    * `color` String (optional) _Windows_ - The CSS color of the Window Controls Overlay when enabled. Default is the system color.
+    * `symbolColor` String (optional) _Windows_ - The CSS color of the symbols on the Window Controls Overlay when enabled. Default is the system color.
 
 When setting minimum or maximum window size with `minWidth`/`maxWidth`/
 `minHeight`/`maxHeight`, it only constrains the users. It won't prevent you from

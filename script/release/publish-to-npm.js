@@ -2,12 +2,14 @@ const temp = require('temp');
 const fs = require('fs');
 const path = require('path');
 const childProcess = require('child_process');
-const { getCurrentBranch, ELECTRON_DIR } = require('../lib/utils');
-const request = require('request');
+const got = require('got');
 const semver = require('semver');
+
+const { getCurrentBranch, ELECTRON_DIR } = require('../lib/utils');
 const rootPackageJson = require('../../package.json');
 
 const { Octokit } = require('@octokit/rest');
+const { getAssetContents } = require('./get-asset');
 const octokit = new Octokit({
   userAgent: 'electron-npm-publisher',
   auth: process.env.ELECTRON_GITHUB_TOKEN
@@ -86,27 +88,20 @@ new Promise((resolve, reject) => {
     }
     return release;
   })
-  .then((release) => {
+  .then(async (release) => {
     const tsdAsset = release.assets.find((asset) => asset.name === 'electron.d.ts');
     if (!tsdAsset) {
       throw new Error(`cannot find electron.d.ts from v${rootPackageJson.version} release assets`);
     }
-    return new Promise((resolve, reject) => {
-      request.get({
-        url: tsdAsset.url,
-        headers: {
-          accept: 'application/octet-stream',
-          'user-agent': 'electron-npm-publisher'
-        }
-      }, (err, response, body) => {
-        if (err || response.statusCode !== 200) {
-          reject(err || new Error('Cannot download electron.d.ts'));
-        } else {
-          fs.writeFileSync(path.join(tempDir, 'electron.d.ts'), body);
-          resolve(release);
-        }
-      });
-    });
+
+    const typingsContent = await getAssetContents(
+      rootPackageJson.version.indexOf('nightly') > 0 ? 'nightlies' : 'electron',
+      tsdAsset.id
+    );
+
+    fs.writeFileSync(path.join(tempDir, 'electron.d.ts'), typingsContent);
+
+    return release;
   })
   .then(async (release) => {
     const currentBranch = await getCurrentBranch();
