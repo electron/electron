@@ -39,10 +39,10 @@ index cea1fb864ab46b4b0eabf1db11a0392d6cd575c1..df033f65d50b088778268827e506963a
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 0c0f52fdba85b3a7a5d256e6649763d436b74ee3..92c96b4b693d59ea393bff98a50567e631fdc804 100644
+index e65e1a74ca0bd8f2aa4b7c939343ebf412109a1b..94074f4ccdff523609363a810f1566d19342454f 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
-@@ -1259,6 +1259,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
+@@ -1258,6 +1258,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
    response_ = network::mojom::URLResponseHead::New();
    PopulateResourceResponse(url_request_.get(), is_load_timing_enabled_,
                             options_, response_.get());
