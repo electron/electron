@@ -1330,6 +1330,13 @@ describe('webContents module', () => {
         w.webContents.reload();
         expect(w.webContents.isCrashed()).to.equal(false);
       });
+
+      it('does not crash when a new page is loaded after forcefullyCrashRenderer()', async () => {
+        expect(w.webContents.isCrashed()).to.equal(false);
+        w.webContents.forcefullyCrashRenderer();
+        await w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
+        expect(w.webContents.isCrashed()).to.equal(false);
+      });
     });
   }
 
