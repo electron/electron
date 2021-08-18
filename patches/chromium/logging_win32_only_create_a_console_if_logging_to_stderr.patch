@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Rose <jeremya@chromium.org>
+Date: Mon, 2 Aug 2021 15:56:56 -0700
+Subject: only create a console if logging to stderr
+
+This fixes an issue on Windows where, when `--enable-logging=file` is
+passed and the app was not run from the console, a console window would
+be created for each child process, despite logs being redirected to a
+file.
+
+diff --git a/content/app/content_main.cc b/content/app/content_main.cc
+index a26c5c2e053eddb4c70afb166a4643f38eb3c7f6..265b9af981454ab09ed34542ca845fb566b4a75d 100644
+--- a/content/app/content_main.cc
++++ b/content/app/content_main.cc
+@@ -370,8 +370,12 @@ RunContentProcess(const ContentMainParams& params,
+ 
+ #if defined(OS_WIN)
+     // Route stdio to parent console (if any) or create one.
+-    if (base::CommandLine::ForCurrentProcess()->HasSwitch(
+-            switches::kEnableLogging)) {
++    auto* cmd_line = base::CommandLine::ForCurrentProcess();
++    bool log_to_stderr =
++        cmd_line->HasSwitch(switches::kEnableLogging) &&
++        cmd_line->GetSwitchValueASCII(switches::kEnableLogging) != "file" &&
++        !cmd_line->HasSwitch(switches::kLogFile);
++    if (log_to_stderr) {
+       base::RouteStdioToConsole(true);
+     }
+ #endif

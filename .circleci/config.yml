@@ -45,7 +45,7 @@ executors:
         type: enum
         enum: ["medium", "xlarge", "2xlarge+"]
     docker:
-      - image: electron.azurecr.io/build:ca93c6a7bc49e7d2a7b8c62ed04e0b870f3dfd1e
+      - image: electron.azurecr.io/build:d818f06a9b1540c7fd38f75ad5a2c493dd6843b6
     resource_class: << parameters.size >>
 
   macos:
@@ -219,6 +219,8 @@ step-maybe-cleanup-arm64-mac: &step-maybe-cleanup-arm64-mac
         killall Safari || echo "No Safari processes left running"
         rm -rf ~/Library/Application\ Support/Electron*
         rm -rf ~/Library/Application\ Support/electron*
+        security delete-generic-password -l "Chromium Safe Storage" || echo "✓ Keychain does not contain password from tests"
+        security delete-generic-password -l "Electron Test Main Safe Storage" || echo "✓ Keychain does not contain password from tests"
       elif [ "$TARGET_ARCH" == "arm" ] || [ "$TARGET_ARCH" == "arm64" ]; then
         XVFB=/usr/bin/Xvfb
         /sbin/start-stop-daemon --stop --exec $XVFB || echo "Xvfb not running"
@@ -312,6 +314,7 @@ step-setup-goma-for-build: &step-setup-goma-for-build
       npm install
       mkdir third_party
       node -e "require('./src/utils/goma.js').downloadAndPrepare({ gomaOneForAll: true })"
+      export GOMA_FALLBACK_ON_AUTH_FAILURE=true
       third_party/goma/goma_ctl.py ensure_start
       echo 'export GN_GOMA_FILE='`node -e "console.log(require('./src/utils/goma.js').gnFilePath)"` >> $BASH_ENV
       echo 'export LOCAL_GOMA_DIR='`node -e "console.log(require('./src/utils/goma.js').dir)"` >> $BASH_ENV
