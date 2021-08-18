@@ -1,0 +1,64 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tal Pressman <talp@chromium.org>
+Date: Wed, 21 Jul 2021 09:11:13 +0000
+Subject: Manually post task to bind FileUtilitiesHost.
+
+The FileUtilitiesHost binder is posted to a separate sequence, and the
+ServiceWorkerHost may be destroyed by the time the it runs, causing a
+UAF.
+This CL changes it so that, when we try to bind a new receiver, the
+host's worker_process_id() is obtained first (on the service worker's
+core thread) and then a task is posted to do the actual binding on a
+USER_VISIBLE task runner.
+
+Credit: This issue was first reported (with analysis) by
+soulchen8650@gmail.com.
+
+Bug: 1229298
+Change-Id: I6d5c05a830ba30f6cb98bf2df70a3df3333f3dd9
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3041006
+Reviewed-by: Kinuko Yasuda <kinuko@chromium.org>
+Reviewed-by: Kouhei Ueno <kouhei@chromium.org>
+Commit-Queue: Tal Pressman <talp@google.com>
+Cr-Commit-Position: refs/heads/master@{#903832}
+
+diff --git a/content/browser/browser_interface_binders.cc b/content/browser/browser_interface_binders.cc
+index a45f9d3db09dbc4827c41c254b2b532968930e96..b6f69c1813fc9c66cc6a20205c02cb6e5d810fc5 100644
+--- a/content/browser/browser_interface_binders.cc
++++ b/content/browser/browser_interface_binders.cc
+@@ -367,10 +367,22 @@ void BindTextSuggestionHostForFrame(
+ }
+ #endif
+ 
++// Get the service worker's worker process ID and post a task to bind the
++// receiver on a USER_VISIBLE task runner.
++// This is necessary because:
++// - Binding the host itself and checking the ID on the task's thread may cause
++//   a UAF if the host has been deleted in the meantime.
++// - The process ID is not yet populated at the time `PopulateInterfaceBinders`
++//   is called.
+ void BindFileUtilitiesHost(
+-    const ServiceWorkerHost* host,
++    ServiceWorkerHost* host,
+     mojo::PendingReceiver<blink::mojom::FileUtilitiesHost> receiver) {
+-  FileUtilitiesHostImpl::Create(host->worker_process_id(), std::move(receiver));
++  auto task_runner = base::ThreadPool::CreateSequencedTaskRunner(
++      {base::MayBlock(), base::TaskPriority::USER_VISIBLE});
++  task_runner->PostTask(
++      FROM_HERE,
++      base::BindOnce(&FileUtilitiesHostImpl::Create, host->worker_process_id(),
++                     std::move(receiver)));
+ }
+ 
+ template <typename WorkerHost, typename Interface>
+@@ -1122,9 +1134,7 @@ void PopulateServiceWorkerBinders(ServiceWorkerHost* host,
+ 
+   // static binders
+   map->Add<blink::mojom::FileUtilitiesHost>(
+-      base::BindRepeating(&BindFileUtilitiesHost, host),
+-      base::ThreadPool::CreateSequencedTaskRunner(
+-          {base::MayBlock(), base::TaskPriority::USER_VISIBLE}));
++      base::BindRepeating(&BindFileUtilitiesHost, host));
+   map->Add<shape_detection::mojom::BarcodeDetectionProvider>(
+       base::BindRepeating(&BindBarcodeDetectionProvider));
+   map->Add<shape_detection::mojom::FaceDetectionProvider>(
