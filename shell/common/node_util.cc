@@ -3,9 +3,9 @@
 // found in the LICENSE file.
 
 #include "shell/common/node_util.h"
+
 #include "base/logging.h"
 #include "shell/common/node_includes.h"
-#include "third_party/electron_node/src/node_native_module_env.h"
 
 namespace electron {
 
