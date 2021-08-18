@@ -25,13 +25,13 @@ async function getAssetContents (repo, assetId) {
     headers
   });
   if (!response.headers.location) {
-    console.error(response.headers, response.body);
+    console.error(response.headers, `${response.body}`.slice(0, 300));
     throw new Error(`cannot find asset[${assetId}], asset download did not redirect`);
   }
 
   const fileResponse = await got(response.headers.location);
-  if (fileResponse.status !== 200) {
-    console.error(fileResponse.headers, fileResponse.body);
+  if (fileResponse.statusCode !== 200) {
+    console.error(fileResponse.headers, `${fileResponse.body}`.slice(0, 300));
     throw new Error(`cannot download asset[${assetId}] from ${response.headers.location}, got status: ${fileResponse.status}`);
   }
 

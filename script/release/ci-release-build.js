@@ -36,13 +36,19 @@ const vstsArmJobs = [
 let jobRequestedCount = 0;
 
 async function makeRequest ({ auth, url, headers, body, method }) {
+  const clonedHeaders = {
+    ...(headers || {})
+  };
+  if (auth && auth.bearer) {
+    clonedHeaders.Authorization = `Bearer ${auth.bearer}`;
+  }
   const response = await got(url, {
-    headers,
+    headers: clonedHeaders,
     body,
     method,
-    auth: auth ? `${auth.username}:${auth.password}` : undefined
+    auth: auth && (auth.username || auth.password) ? `${auth.username}:${auth.password}` : undefined
   });
-  if (response.statusCode !== 200) {
+  if (response.statusCode < 200 || response.statusCode >= 300) {
     console.error('Error: ', `(status ${response.statusCode})`, response.body);
     throw new Error(`Unexpected status code ${response.statusCode} from ${url}`);
   }
