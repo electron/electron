@@ -1,6 +1,6 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Koji Ishii <kojii@chromium.org>
-Date: Mon Jul 26 07:09:18 2021 +0000
+Date: Mon, 26 Jul 2021 07:09:18 +0000
 Subject: Fix nested inline box fragmentation
 
 This patch fixes when nested inline boxes are fragmented in a
@@ -39,7 +39,7 @@ Cr-Commit-Position: refs/branch-heads/4577@{#145}
 Cr-Branched-From: 761ddde228655e313424edec06497d0c56b0f3c4-refs/heads/master@{#902210}
 
 diff --git a/third_party/blink/renderer/core/layout/ng/inline/ng_inline_box_state.cc b/third_party/blink/renderer/core/layout/ng/inline/ng_inline_box_state.cc
-index b257014513cb881d4531694b86c05fd21edb6732..ad7be2730fe88bbbfd3a9e78598cb5e123e58c76 100644
+index b257014513cb881d4531694b86c05fd21edb6732..9a3f6f3af7839ebed24f7d8a32b7f95fba66cd9a 100644
 --- a/third_party/blink/renderer/core/layout/ng/inline/ng_inline_box_state.cc
 +++ b/third_party/blink/renderer/core/layout/ng/inline/ng_inline_box_state.cc
 @@ -4,6 +4,7 @@
