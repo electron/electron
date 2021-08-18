@@ -1,6 +1,6 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Kenneth Russell <kbr@chromium.org>
-Date: Wed Aug 4 18:15:51 2021 -0700
+Date: Wed, 4 Aug 2021 18:15:51 -0700
 Subject: In WebGL, constrain base level of compressed textures.
 
 Enforce that if a mipmap level > 0 is specified for a compressed
@@ -21,7 +21,7 @@ Reviewed-by: Jamie Madill <jmadill@chromium.org>
 Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
 
 diff --git a/src/libANGLE/validationES.cpp b/src/libANGLE/validationES.cpp
-index 656e51f17..412b9aa0f 100644
+index 656e51f17724af9e0959fcd741ceeebf25ee0f24..412b9aa0f1d75c40ce02522589c53e943d049228 100644
 --- a/src/libANGLE/validationES.cpp
 +++ b/src/libANGLE/validationES.cpp
 @@ -1006,6 +1006,15 @@ bool ValidCompressedDimension(GLsizei size, GLuint blockSize, GLint level)
@@ -73,7 +73,7 @@ index 656e51f17..412b9aa0f 100644
      }
  
 diff --git a/src/tests/gl_tests/WebGLCompatibilityTest.cpp b/src/tests/gl_tests/WebGLCompatibilityTest.cpp
-index 40c9a02e3..fabaefbe3 100644
+index 40c9a02e3eafe9d437e20e72a391bad73c783516..fabaefbe33c94a048ec7c974951ac9ef886826ef 100644
 --- a/src/tests/gl_tests/WebGLCompatibilityTest.cpp
 +++ b/src/tests/gl_tests/WebGLCompatibilityTest.cpp
 @@ -296,6 +296,16 @@ void main()
