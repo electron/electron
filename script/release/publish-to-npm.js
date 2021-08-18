@@ -119,13 +119,11 @@ new Promise((resolve, reject) => {
       checksumsAsset.id
     );
 
-    const checksumsObject = checksumsContent.trim().split('\n').reduce((checksums, line) => {
+    const checksumsObject = {};
+    for (const line of checksumsContent.trim().split('\n')) {
       const [checksum, file] = line.split(' *');
-      return {
-        [file]: checksum,
-        ...checksums
-      };
-    }, {});
+      checksumsObject[file] = checksum;
+    }
 
     fs.writeFileSync(path.join(tempDir, 'checksums.json'), JSON.stringify(checksumsObject, null, 2));
 
