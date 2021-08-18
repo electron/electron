@@ -23,10 +23,10 @@ Commit-Queue: Tal Pressman <talp@google.com>
 Cr-Commit-Position: refs/heads/master@{#903832}
 
 diff --git a/content/browser/browser_interface_binders.cc b/content/browser/browser_interface_binders.cc
-index 9fbd499d113784dda58a5470510acbdb65c1c119..2b297d200277e857579deff7f41affca6fc7877a 100644
+index a45f9d3db09dbc4827c41c254b2b532968930e96..b6f69c1813fc9c66cc6a20205c02cb6e5d810fc5 100644
 --- a/content/browser/browser_interface_binders.cc
 +++ b/content/browser/browser_interface_binders.cc
-@@ -376,10 +376,22 @@ void BindTextSuggestionHostForFrame(
+@@ -367,10 +367,22 @@ void BindTextSuggestionHostForFrame(
  }
  #endif
  
@@ -51,7 +51,7 @@ index 9fbd499d113784dda58a5470510acbdb65c1c119..2b297d200277e857579deff7f41affca
  }
  
  template <typename WorkerHost, typename Interface>
-@@ -1175,9 +1187,7 @@ void PopulateServiceWorkerBinders(ServiceWorkerHost* host,
+@@ -1122,9 +1134,7 @@ void PopulateServiceWorkerBinders(ServiceWorkerHost* host,
  
    // static binders
    map->Add<blink::mojom::FileUtilitiesHost>(
