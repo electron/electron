@@ -912,7 +912,7 @@ static void StartPreconnectOnUI(ElectronBrowserContext* browser_context,
                                 int num_sockets_to_preconnect) {
   std::vector<predictors::PreconnectRequest> requests = {
       {url::Origin::Create(url), num_sockets_to_preconnect,
-       net::NetworkIsolationKey()}};
+       net::NetworkIsolationKey::CreateTransient()}};
   browser_context->GetPreconnectManager()->Start(url, requests);
 }
 
