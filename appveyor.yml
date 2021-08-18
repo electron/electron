@@ -112,7 +112,7 @@ build_script:
           }
         }
       }
-  - if "%RUN_GCLIENT_SYNC%"=="true" ( gclient sync --with_branch_heads --with_tags --ignore_locks)
+  - if "%RUN_GCLIENT_SYNC%"=="true" ( gclient sync )
   - ps: >-
       if ($env:SAVE_GCLIENT_SRC -eq 'true') {
         # archive current source for future use 
