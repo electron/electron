@@ -20,6 +20,7 @@
 #include "services/network/public/cpp/resource_request.h"
 #include "services/network/public/cpp/simple_url_loader.h"
 #include "services/network/public/mojom/chunked_data_pipe_getter.mojom.h"
+#include "services/network/public/mojom/http_raw_headers.mojom-blink-forward.h"
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/electron_browser_context.h"
@@ -277,17 +278,6 @@ SimpleURLLoaderWrapper::SimpleURLLoaderWrapper(
       url_loader_network_observer_remote.InitWithNewPipeAndPassReceiver());
   request->trusted_params->url_loader_network_observer =
       std::move(url_loader_network_observer_remote);
-  // Chromium filters headers using browser rules, while for net module we have
-  // every header passed. Setting the following id will allow us to capture the
-  // raw headers via the observer.
-  devtools_request_id_ = base::UnguessableToken::Create().ToString();
-  request->devtools_request_id = devtools_request_id_;
-  mojo::PendingRemote<network::mojom::DevToolsObserver>
-      devtools_observer_remote;
-  devtools_observer_receivers_.Add(
-      this, devtools_observer_remote.InitWithNewPipeAndPassReceiver());
-  request->trusted_params->devtools_observer =
-      std::move(devtools_observer_remote);
   // SimpleURLLoader wants to control the request body itself. We have other
   // ideas.
   auto request_body = std::move(request->request_body);
@@ -379,27 +369,10 @@ void SimpleURLLoaderWrapper::OnLoadingStateUpdate(
   std::move(callback).Run();
 }
 
-void SimpleURLLoaderWrapper::OnRawResponse(
-    const std::string& devtools_request_id,
-    const net::CookieAndLineAccessResultList& cookies_with_access_result,
-    std::vector<network::mojom::HttpRawHeaderPairPtr> headers,
-    const absl::optional<std::string>& raw_response_headers,
-    network::mojom::IPAddressSpace resource_address_space,
-    int32_t http_status_code) {
-  if (devtools_request_id_ == devtools_request_id) {
-    raw_response_headers_ = std::move(headers);
-  }
-}
-
 void SimpleURLLoaderWrapper::Clone(
     mojo::PendingReceiver<network::mojom::URLLoaderNetworkServiceObserver>
         observer) {
   url_loader_network_observer_receivers_.Add(this, std::move(observer));
-}
-
-void SimpleURLLoaderWrapper::Clone(
-    mojo::PendingReceiver<network::mojom::DevToolsObserver> observer) {
-  devtools_observer_receivers_.Add(this, std::move(observer));
 }
 
 void SimpleURLLoaderWrapper::Cancel() {
@@ -517,6 +490,10 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
     options |= network::mojom::kURLLoadOptionBlockAllCookies;
   }
 
+  // Chromium filters headers using browser rules, while for net module we have
+  // every header passed.
+  request->report_raw_headers = true;
+
   v8::Local<v8::Value> body;
   v8::Local<v8::Value> chunk_pipe_getter;
   if (opts.Get("body", &body)) {
@@ -601,8 +578,9 @@ void SimpleURLLoaderWrapper::OnResponseStarted(
   dict.Set("httpVersion", response_head.headers->GetHttpVersion());
   // Note that |response_head.headers| are filtered by Chromium and should not
   // be used here.
-  DCHECK(!raw_response_headers_.empty());
-  dict.Set("rawHeaders", raw_response_headers_);
+  DCHECK(response_head.raw_request_response_info);
+  dict.Set("rawHeaders",
+           response_head.raw_request_response_info->response_headers);
   Emit("response-started", final_url, dict);
 }
 
