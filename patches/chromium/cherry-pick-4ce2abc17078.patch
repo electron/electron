@@ -20,10 +20,10 @@ Cr-Commit-Position: refs/branch-heads/4472@{#1588}
 Cr-Branched-From: 3d60439cfb36485e76a1c5bb7f513d3721b20da1-refs/heads/master@{#870763}
 
 diff --git a/third_party/blink/renderer/core/exported/web_plugin_container_impl.cc b/third_party/blink/renderer/core/exported/web_plugin_container_impl.cc
-index 1901d2128035abdcdefcf9747db0c18580ec2073..55dccfbe7d9046a479afc9c0b141accd0b998c87 100644
+index d3512edd4cad7b7dafbb1c3a6da5cd45ea367e79..69f8e8a598a4aefef652e603f1590c702e288b59 100644
 --- a/third_party/blink/renderer/core/exported/web_plugin_container_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_plugin_container_impl.cc
-@@ -95,6 +95,7 @@
+@@ -96,6 +96,7 @@
  #include "third_party/blink/renderer/core/script/classic_script.h"
  #include "third_party/blink/renderer/core/scroll/scroll_animator_base.h"
  #include "third_party/blink/renderer/core/scroll/scrollbar_theme.h"
@@ -31,7 +31,7 @@ index 1901d2128035abdcdefcf9747db0c18580ec2073..55dccfbe7d9046a479afc9c0b141accd
  #include "third_party/blink/renderer/platform/exported/wrapped_resource_response.h"
  #include "third_party/blink/renderer/platform/geometry/layout_rect.h"
  #include "third_party/blink/renderer/platform/graphics/graphics_context.h"
-@@ -803,6 +804,8 @@ void WebPluginContainerImpl::Dispose() {
+@@ -804,6 +805,8 @@ void WebPluginContainerImpl::Dispose() {
    }
  
    if (web_plugin_) {
@@ -41,10 +41,10 @@ index 1901d2128035abdcdefcf9747db0c18580ec2073..55dccfbe7d9046a479afc9c0b141accd
      web_plugin_->Destroy();
      web_plugin_ = nullptr;
 diff --git a/third_party/blink/renderer/core/frame/local_frame_view.cc b/third_party/blink/renderer/core/frame/local_frame_view.cc
-index 30c2b00056873410c46177ccfe5fba1f7155dbb2..3538b4841a9f752fa0c5e8966cd10ab78d369f5c 100644
+index dd320dd900b7f556c9216c7faedc2ad35588b0d7..a9e724432440c05d1b3bb9863acb4345e07f77b4 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_view.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame_view.cc
-@@ -2539,6 +2539,7 @@ bool LocalFrameView::UpdateLifecyclePhases(
+@@ -2484,6 +2484,7 @@ bool LocalFrameView::UpdateLifecyclePhases(
  
  void LocalFrameView::UpdateLifecyclePhasesInternal(
      DocumentLifecycle::LifecycleState target_state) {
@@ -52,7 +52,7 @@ index 30c2b00056873410c46177ccfe5fba1f7155dbb2..3538b4841a9f752fa0c5e8966cd10ab7
    // RunScrollTimelineSteps must not run more than once.
    bool should_run_scroll_timeline_steps = true;
  
-@@ -2636,6 +2637,10 @@ void LocalFrameView::UpdateLifecyclePhasesInternal(
+@@ -2564,6 +2565,10 @@ void LocalFrameView::UpdateLifecyclePhasesInternal(
          continue;
      }
  
@@ -63,7 +63,7 @@ index 30c2b00056873410c46177ccfe5fba1f7155dbb2..3538b4841a9f752fa0c5e8966cd10ab7
      // ResizeObserver and post-layout IntersectionObserver observation
      // deliveries may dirty style and layout. RunResizeObserverSteps will return
      // true if any observer ran that may have dirtied style or layout;
-@@ -2894,6 +2899,7 @@ bool LocalFrameView::AnyFrameIsPrintingOrPaintingPreview() {
+@@ -2816,6 +2821,7 @@ bool LocalFrameView::AnyFrameIsPrintingOrPaintingPreview() {
  }
  
  void LocalFrameView::RunPaintLifecyclePhase(PaintBenchmarkMode benchmark_mode) {
@@ -71,7 +71,7 @@ index 30c2b00056873410c46177ccfe5fba1f7155dbb2..3538b4841a9f752fa0c5e8966cd10ab7
    TRACE_EVENT0("blink,benchmark", "LocalFrameView::RunPaintLifecyclePhase");
    // While printing or capturing a paint preview of a document, the paint walk
    // is done into a special canvas. There is no point doing a normal paint step
-@@ -2925,17 +2931,11 @@ void LocalFrameView::RunPaintLifecyclePhase(PaintBenchmarkMode benchmark_mode) {
+@@ -2850,17 +2856,11 @@ void LocalFrameView::RunPaintLifecyclePhase(PaintBenchmarkMode benchmark_mode) {
            for (PaintLayerScrollableArea* area : *animating_scrollable_areas)
              area->UpdateCompositorScrollAnimations();
          }
@@ -94,7 +94,7 @@ index 30c2b00056873410c46177ccfe5fba1f7155dbb2..3538b4841a9f752fa0c5e8966cd10ab7
          Document& document = frame_view.GetLayoutView()->GetDocument();
          total_animations_count +=
              document.GetDocumentAnimations().GetAnimationsCount();
-@@ -4512,6 +4512,7 @@ void LocalFrameView::RenderThrottlingStatusChanged() {
+@@ -4454,6 +4454,7 @@ void LocalFrameView::RenderThrottlingStatusChanged() {
      // so painting the tree should just clear the previous painted output.
      DCHECK(!IsUpdatingLifecycle());
      AllowThrottlingScope allow_throtting(*this);
@@ -102,7 +102,7 @@ index 30c2b00056873410c46177ccfe5fba1f7155dbb2..3538b4841a9f752fa0c5e8966cd10ab7
      RunPaintLifecyclePhase();
    }
  
-@@ -5018,6 +5019,7 @@ void LocalFrameView::RunPaintBenchmark(int repeat_count,
+@@ -4989,6 +4990,7 @@ void LocalFrameView::RunPaintBenchmark(int repeat_count,
        // quantization when the time is very small.
        base::LapTimer timer(kWarmupRuns, kTimeLimit, kTimeCheckInterval);
        do {
