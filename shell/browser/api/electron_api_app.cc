@@ -511,9 +511,9 @@ int GetPathConstant(const std::string& name) {
 
 bool NotificationCallbackWrapper(
     const base::RepeatingCallback<
-        void(const base::CommandLine::StringVector& command_line,
+        void(const base::CommandLine& command_line,
              const base::FilePath& current_directory)>& callback,
-    const base::CommandLine::StringVector& cmd,
+    const base::CommandLine& cmd,
     const base::FilePath& cwd) {
   // Make sure the callback is called after app gets ready.
   if (Browser::Get()->is_ready()) {
@@ -703,9 +703,6 @@ void App::OnFinishLaunching(const base::DictionaryValue& launch_info) {
 
 void App::OnPreMainMessageLoopRun() {
   content::BrowserChildProcessObserver::Add(this);
-  if (process_singleton_) {
-    process_singleton_->OnBrowserReady();
-  }
 }
 
 void App::OnPreCreateThreads() {
@@ -1067,9 +1064,9 @@ std::string App::GetLocaleCountryCode() {
   return region.size() == 2 ? region : std::string();
 }
 
-void App::OnSecondInstance(const base::CommandLine::StringVector& cmd,
+void App::OnSecondInstance(const base::CommandLine& cmd,
                            const base::FilePath& cwd) {
-  Emit("second-instance", cmd, cwd);
+  Emit("second-instance", cmd.argv(), cwd);
 }
 
 bool App::HasSingleInstanceLock() const {
@@ -1082,13 +1079,15 @@ bool App::RequestSingleInstanceLock() {
   if (HasSingleInstanceLock())
     return true;
 
+  std::string program_name = electron::Browser::Get()->GetName();
+
   base::FilePath user_dir;
   base::PathService::Get(chrome::DIR_USER_DATA, &user_dir);
 
   auto cb = base::BindRepeating(&App::OnSecondInstance, base::Unretained(this));
-
   process_singleton_ = std::make_unique<ProcessSingleton>(
-      user_dir, base::BindRepeating(NotificationCallbackWrapper, cb));
+      program_name, user_dir,
+      base::BindRepeating(NotificationCallbackWrapper, cb));
 
   switch (process_singleton_->NotifyOtherProcessOrCreate()) {
     case ProcessSingleton::NotifyResult::LOCK_ERROR:
