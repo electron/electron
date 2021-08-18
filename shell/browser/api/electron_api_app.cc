@@ -38,6 +38,7 @@
 #include "net/ssl/ssl_private_key.h"
 #include "sandbox/policy/switches.h"
 #include "services/network/network_service.h"
+#include "shell/app/command_line_args.h"
 #include "shell/browser/api/electron_api_menu.h"
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/api/electron_api_web_contents.h"
@@ -703,6 +704,9 @@ void App::OnFinishLaunching(const base::DictionaryValue& launch_info) {
 
 void App::OnPreMainMessageLoopRun() {
   content::BrowserChildProcessObserver::Add(this);
+  if (process_singleton_) {
+    process_singleton_->OnBrowserReady();
+  }
 }
 
 void App::OnPreCreateThreads() {
@@ -1084,9 +1088,11 @@ bool App::RequestSingleInstanceLock() {
   base::FilePath user_dir;
   base::PathService::Get(chrome::DIR_USER_DATA, &user_dir);
 
+  bool app_is_sandboxed =
+      IsSandboxEnabled(base::CommandLine::ForCurrentProcess());
   auto cb = base::BindRepeating(&App::OnSecondInstance, base::Unretained(this));
   process_singleton_ = std::make_unique<ProcessSingleton>(
-      program_name, user_dir,
+      program_name, user_dir, app_is_sandboxed,
       base::BindRepeating(NotificationCallbackWrapper, cb));
 
   switch (process_singleton_->NotifyOtherProcessOrCreate()) {
