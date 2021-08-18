@@ -1,8 +1,8 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Georg Neis <neis@chromium.org>
-Date: Mon Aug 9 09:57:12 2021 +0200
-
-Subject: Merged: [compiler] Fix a bug in MachineOperatorReducer's BitfieldCheck
+Date: Mon, 9 Aug 2021 09:57:12 +0200
+Subject: Merged: [compiler] Fix a bug in MachineOperatorReducer's
+ BitfieldCheck
 
 Revision: 574ca6b71c6160d38b5fcf4b8e133bc7f6ba2387
 
@@ -21,7 +21,7 @@ Cr-Branched-From: 7744dce208a555494e4a33e24fadc71ea20b3895-refs/heads/9.3.345@{#
 Cr-Branched-From: 4b6b4cabf3b6a20cdfda72b369df49f3311c4344-refs/heads/master@{#75728}
 
 diff --git a/src/compiler/machine-operator-reducer.cc b/src/compiler/machine-operator-reducer.cc
-index 5d61dfac6a..b4b16f931f 100644
+index 5d61dfac6ab46687b0adde2ff9777a0252e16494..b4b16f931f0927e9b683f38b393b0d275727f25e 100644
 --- a/src/compiler/machine-operator-reducer.cc
 +++ b/src/compiler/machine-operator-reducer.cc
 @@ -1718,11 +1718,21 @@ Reduction MachineOperatorReducer::ReduceWordNAnd(Node* node) {
