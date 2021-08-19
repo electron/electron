@@ -175,10 +175,34 @@ index dc9c1b76a1c7c8b3fa83fc83788eef36d2cfa4a5..c8e04548c4f5221140290d894f8b0076
    return true;
  }
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index f1732f042c3bfd9d5d95a4208664f9252b2aab73..eb4ada5427ab8badaf99396d230ea6bc1686ce35 100644
+index f1732f042c3bfd9d5d95a4208664f9252b2aab73..49075cd6064e5189b96221aff51be1c5af176d18 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
-@@ -260,9 +260,13 @@ bool ProcessSingleton::EscapeVirtualization(
+@@ -27,7 +27,6 @@
+ #include "base/win/windows_version.h"
+ #include "base/win/wmi.h"
+ #include "chrome/browser/shell_integration.h"
+-#include "chrome/browser/ui/simple_message_box.h"
+ #include "chrome/browser/win/chrome_process_finder.h"
+ #include "chrome/common/chrome_constants.h"
+ #include "chrome/common/chrome_paths.h"
+@@ -174,11 +173,10 @@ bool ProcessLaunchNotification(
+   return true;
+ }
+ 
+-bool DisplayShouldKillMessageBox() {
+-  return chrome::ShowQuestionMessageBoxSync(
+-             NULL, l10n_util::GetStringUTF16(IDS_PRODUCT_NAME),
+-             l10n_util::GetStringUTF16(IDS_BROWSER_HUNGBROWSER_MESSAGE)) !=
+-         chrome::MESSAGE_BOX_RESULT_NO;
++bool TerminateAppWithError() {
++  // This is called when the secondary process can't ping the primary
++  // process.
++  return false;
+ }
+ 
+ void SendRemoteProcessInteractionResultHistogram(
+@@ -260,14 +258,18 @@ bool ProcessSingleton::EscapeVirtualization(
  }
  
  ProcessSingleton::ProcessSingleton(
@@ -192,7 +216,13 @@ index f1732f042c3bfd9d5d95a4208664f9252b2aab73..eb4ada5427ab8badaf99396d230ea6bc
        is_virtualized_(false),
        lock_file_(INVALID_HANDLE_VALUE),
        user_data_dir_(user_data_dir),
-@@ -366,11 +370,14 @@ ProcessSingleton::NotifyOtherProcessOrCreate() {
+       should_kill_remote_process_callback_(
+-          base::BindRepeating(&DisplayShouldKillMessageBox)) {}
++          base::BindRepeating(&TerminateAppWithError)) {}
+ 
+ ProcessSingleton::~ProcessSingleton() {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+@@ -366,11 +368,14 @@ ProcessSingleton::NotifyOtherProcessOrCreate() {
    return PROFILE_IN_USE;
  }
  
@@ -208,7 +238,7 @@ index f1732f042c3bfd9d5d95a4208664f9252b2aab73..eb4ada5427ab8badaf99396d230ea6bc
  
    remote_window_ = chrome::FindRunningChromeWindow(user_data_dir_);
    if (!remote_window_ && !EscapeVirtualization(user_data_dir_)) {
-@@ -379,7 +386,7 @@ bool ProcessSingleton::Create() {
+@@ -379,7 +384,7 @@ bool ProcessSingleton::Create() {
      // access. As documented, it's clearer to NOT request ownership on creation
      // since it isn't guaranteed we will get it. It is better to create it
      // without ownership and explicitly get the ownership afterward.
@@ -217,7 +247,7 @@ index f1732f042c3bfd9d5d95a4208664f9252b2aab73..eb4ada5427ab8badaf99396d230ea6bc
      if (!only_me.IsValid()) {
        DPLOG(FATAL) << "CreateMutex failed";
        return false;
-@@ -418,6 +425,14 @@ bool ProcessSingleton::Create() {
+@@ -418,6 +423,14 @@ bool ProcessSingleton::Create() {
              window_.CreateNamed(base::BindRepeating(&ProcessLaunchNotification,
                                                      notification_callback_),
                                  user_data_dir_.value());
