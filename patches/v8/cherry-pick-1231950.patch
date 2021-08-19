@@ -1,0 +1,192 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Clemens Backes <clemensb@chromium.org>
+Date: Sat, 24 Jul 2021 09:07:34 +0200
+Subject: Reland "[liftoff][arm64] Zero-extend offsets also for SIMD"
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+This is a reland of b99fe75c6db86d86ad8989458d28978b001d9234.
+The test is now skipped on non-SIMD hardware.
+
+Original change's description:
+> [liftoff][arm64] Zero-extend offsets also for SIMD
+>
+> This extends https://crrev.com/c/2917612 also for SIMD, which
+> (sometimes) uses the special {GetMemOpWithImmOffsetZero} method.
+> As part of this CL, that method is renamed to {GetEffectiveAddress}
+> which IMO is a better name. Also, it just returns a register to make the
+> semantic of that function obvious in the signature.
+>
+> Drive-by: When sign extending to 32 bit, only write to the W portion of
+>           the register. This is a bit cleaner, and I first thought that
+>           this would be the bug.
+>
+> R=jkummerow@chromium.org
+> CC=​thibaudm@chromium.org
+>
+> Bug: chromium:1231950, v8:12018
+> Change-Id: Ifaefe1f18e3a00534a30c99e3c37ed09d9508f6e
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3049073
+> Reviewed-by: Zhi An Ng <zhin@chromium.org>
+> Commit-Queue: Clemens Backes <clemensb@chromium.org>
+> Cr-Commit-Position: refs/heads/master@{#75898}
+
+TBR=thibaudm@chromium.org
+
+(cherry picked from commit 5e90a612f56109f611b7e32117f41b10a845186e)
+
+Bug: chromium:1231950
+Change-Id: I33916616bb736cd254ebf121463257a0584bf513
+No-Try: true
+No-Tree-Checks: true
+No-Presubmit: true
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3059694
+Reviewed-by: Clemens Backes <clemensb@chromium.org>
+Commit-Queue: Clemens Backes <clemensb@chromium.org>
+Cr-Commit-Position: refs/branch-heads/9.2@{#43}
+Cr-Branched-From: 51238348f95a1f5e0acc321efac7942d18a687a2-refs/heads/9.2.230@{#1}
+Cr-Branched-From: 587a04f02ab0487d194b55a7137dc2045e071597-refs/heads/master@{#74656}
+
+diff --git a/src/wasm/baseline/arm64/liftoff-assembler-arm64.h b/src/wasm/baseline/arm64/liftoff-assembler-arm64.h
+index 39ef8528e5267a76f69a251d358ed5a9259246e0..17b2b840f236c249e5a9d2a5fa61098ba3c9f35a 100644
+--- a/src/wasm/baseline/arm64/liftoff-assembler-arm64.h
++++ b/src/wasm/baseline/arm64/liftoff-assembler-arm64.h
+@@ -137,27 +137,23 @@ inline MemOperand GetMemOp(LiftoffAssembler* assm,
+   return MemOperand(addr.X(), offset_imm);
+ }
+ 
+-// Certain load instructions do not support offset (register or immediate).
+-// This creates a MemOperand that is suitable for such instructions by adding
+-// |addr|, |offset| (if needed), and |offset_imm| into a temporary.
+-inline MemOperand GetMemOpWithImmOffsetZero(LiftoffAssembler* assm,
+-                                            UseScratchRegisterScope* temps,
+-                                            Register addr, Register offset,
+-                                            uintptr_t offset_imm) {
++// Compute the effective address (sum of |addr|, |offset| (if given) and
++// |offset_imm|) into a temporary register. This is needed for certain load
++// instructions that do not support an offset (register or immediate).
++// Returns |addr| if both |offset| and |offset_imm| are zero.
++inline Register GetEffectiveAddress(LiftoffAssembler* assm,
++                                    UseScratchRegisterScope* temps,
++                                    Register addr, Register offset,
++                                    uintptr_t offset_imm) {
++  if (!offset.is_valid() && offset_imm == 0) return addr;
+   Register tmp = temps->AcquireX();
+   if (offset.is_valid()) {
+-    // offset has passed BoundsCheckMem in liftoff-compiler, and been unsigned
+-    // extended, so it is fine to use the full width of the register.
+-    assm->Add(tmp, addr, offset);
+-    if (offset_imm != 0) {
+-      assm->Add(tmp, tmp, offset_imm);
+-    }
+-  } else {
+-    if (offset_imm != 0) {
+-      assm->Add(tmp, addr, offset_imm);
+-    }
++    // TODO(clemensb): This needs adaption for memory64.
++    assm->Add(tmp, addr, Operand(offset, UXTW));
++    addr = tmp;
+   }
+-  return MemOperand(tmp.X(), 0);
++  if (offset_imm != 0) assm->Add(tmp, addr, offset_imm);
++  return tmp;
+ }
+ 
+ enum class ShiftDirection : bool { kLeft, kRight };
+@@ -1491,11 +1487,11 @@ bool LiftoffAssembler::emit_type_conversion(WasmOpcode opcode,
+ }
+ 
+ void LiftoffAssembler::emit_i32_signextend_i8(Register dst, Register src) {
+-  sxtb(dst, src);
++  sxtb(dst.W(), src.W());
+ }
+ 
+ void LiftoffAssembler::emit_i32_signextend_i16(Register dst, Register src) {
+-  sxth(dst, src);
++  sxth(dst.W(), src.W());
+ }
+ 
+ void LiftoffAssembler::emit_i64_signextend_i8(LiftoffRegister dst,
+@@ -1629,8 +1625,8 @@ void LiftoffAssembler::LoadTransform(LiftoffRegister dst, Register src_addr,
+   UseScratchRegisterScope temps(this);
+   MemOperand src_op =
+       transform == LoadTransformationKind::kSplat
+-          ? liftoff::GetMemOpWithImmOffsetZero(this, &temps, src_addr,
+-                                               offset_reg, offset_imm)
++          ? MemOperand{liftoff::GetEffectiveAddress(this, &temps, src_addr,
++                                                    offset_reg, offset_imm)}
+           : liftoff::GetMemOp(this, &temps, src_addr, offset_reg, offset_imm);
+   *protected_load_pc = pc_offset();
+   MachineType memtype = type.mem_type();
+@@ -1681,8 +1677,8 @@ void LiftoffAssembler::LoadLane(LiftoffRegister dst, LiftoffRegister src,
+                                 uintptr_t offset_imm, LoadType type,
+                                 uint8_t laneidx, uint32_t* protected_load_pc) {
+   UseScratchRegisterScope temps(this);
+-  MemOperand src_op = liftoff::GetMemOpWithImmOffsetZero(
+-      this, &temps, addr, offset_reg, offset_imm);
++  MemOperand src_op{
++      liftoff::GetEffectiveAddress(this, &temps, addr, offset_reg, offset_imm)};
+   *protected_load_pc = pc_offset();
+ 
+   MachineType mem_type = type.mem_type();
+@@ -1708,8 +1704,8 @@ void LiftoffAssembler::StoreLane(Register dst, Register offset,
+                                  StoreType type, uint8_t lane,
+                                  uint32_t* protected_store_pc) {
+   UseScratchRegisterScope temps(this);
+-  MemOperand dst_op =
+-      liftoff::GetMemOpWithImmOffsetZero(this, &temps, dst, offset, offset_imm);
++  MemOperand dst_op{
++      liftoff::GetEffectiveAddress(this, &temps, dst, offset, offset_imm)};
+   if (protected_store_pc) *protected_store_pc = pc_offset();
+ 
+   MachineRepresentation rep = type.mem_rep();
+diff --git a/test/mjsunit/mjsunit.status b/test/mjsunit/mjsunit.status
+index b6dd59ec697547fa5c56c2ecdb679186ca7f80c7..bb860434536ebc2d5296c5bbf979a4f2f87bc6dd 100644
+--- a/test/mjsunit/mjsunit.status
++++ b/test/mjsunit/mjsunit.status
+@@ -1447,7 +1447,8 @@
+   'regress/wasm/regress-1161954': [SKIP],
+   'regress/wasm/regress-1165966': [SKIP],
+   'regress/wasm/regress-1187831': [SKIP],
+-}],  # no_simd_sse == True
++  'regress/wasm/regress-1231950': [SKIP],
++}],  # no_simd_hardware == True
+ 
+ ##############################################################################
+ # TODO(v8:11421): Port baseline compiler to other architectures.
+@@ -1465,4 +1466,10 @@
+   'concurrent-initial-prototype-change-1': [SKIP],
+ }],  # variant == concurrent_inlining
+ 
++##############################################################################
++['variant == instruction_scheduling or variant == stress_instruction_scheduling', {
++  # BUG(12018): This test currently fails with --turbo-instruction-scheduling.
++  'regress/wasm/regress-1231950': [SKIP],
++}],  # variant == instruction_scheduling or variant == stress_instruction_scheduling
++
+ ]
+diff --git a/test/mjsunit/regress/wasm/regress-1231950.js b/test/mjsunit/regress/wasm/regress-1231950.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..972754c6d52094727a93dae4c0847f013b6c7675
+--- /dev/null
++++ b/test/mjsunit/regress/wasm/regress-1231950.js
+@@ -0,0 +1,18 @@
++// Copyright 2021 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++load('test/mjsunit/wasm/wasm-module-builder.js');
++
++const builder = new WasmModuleBuilder();
++builder.addMemory(1, 1);
++builder.addFunction('main', kSig_d_v)
++    .addBody([
++      ...wasmI32Const(-3),                            // i32.const
++      kExprI32SExtendI8,                              // i32.extend8_s
++      kSimdPrefix, kExprS128Load32Splat, 0x01, 0x02,  // s128.load32_splat
++      kExprUnreachable,                               // unreachable
++    ])
++    .exportFunc();
++const instance = builder.instantiate();
++assertTraps(kTrapMemOutOfBounds, instance.exports.main);

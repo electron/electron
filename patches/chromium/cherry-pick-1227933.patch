@@ -1,0 +1,215 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Koji Ishii <kojii@chromium.org>
+Date: Mon, 26 Jul 2021 07:09:18 +0000
+Subject: Fix nested inline box fragmentation
+
+This patch fixes when nested inline boxes are fragmented in a
+line due to bidi reordering.
+
+Before this change, the fragmented boxes are appended to the
+end of |box_data_list_|. Then when |NGInlineLayoutStateStack::
+CreateBoxFragments| creates inline boxes in the ascending
+order of |box_data_list_|, it failed to add the fragmented
+boxes into their parent inline boxes.
+
+This is critical for out-of-flow positioned objects whose
+containing block is an inline box, because they expect to be
+propagated through all ancestor inline boxes.
+
+|UpdateBoxDataFragmentRange| is a little tricky by appending
+to a vector it is iterating. Changing it to insert to the
+correct position makes the function even trickier. This patch
+changes it to add fragmented boxes to a separate vector, and
+let later process |UpdateFragmentedBoxDataEdges| to merge the
+vector to |box_data_list_|.
+
+(cherry picked from commit 9c8a39c14a9c80556468593cddf436f5047a16ce)
+
+Bug: 1227933, 1229999
+Change-Id: I7edcd209e1fdac06bab01b16d660383e7e9c37bd
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3038308
+Commit-Queue: Koji Ishii <kojii@chromium.org>
+Reviewed-by: Yoshifumi Inoue <yosin@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#903356}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3053212
+Commit-Queue: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: Koji Ishii <kojii@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4577@{#145}
+Cr-Branched-From: 761ddde228655e313424edec06497d0c56b0f3c4-refs/heads/master@{#902210}
+
+diff --git a/third_party/blink/renderer/core/layout/ng/inline/ng_inline_box_state.cc b/third_party/blink/renderer/core/layout/ng/inline/ng_inline_box_state.cc
+index b257014513cb881d4531694b86c05fd21edb6732..9a3f6f3af7839ebed24f7d8a32b7f95fba66cd9a 100644
+--- a/third_party/blink/renderer/core/layout/ng/inline/ng_inline_box_state.cc
++++ b/third_party/blink/renderer/core/layout/ng/inline/ng_inline_box_state.cc
+@@ -4,6 +4,7 @@
+ 
+ #include "third_party/blink/renderer/core/layout/ng/inline/ng_inline_box_state.h"
+ 
++#include "base/containers/adapters.h"
+ #include "third_party/blink/renderer/core/layout/geometry/logical_offset.h"
+ #include "third_party/blink/renderer/core/layout/geometry/logical_size.h"
+ #include "third_party/blink/renderer/core/layout/ng/inline/ng_inline_item_result.h"
+@@ -387,13 +388,14 @@ void NGInlineLayoutStateStack::UpdateAfterReorder(
+     box_data.fragment_start = box_data.fragment_end = 0;
+ 
+   // Scan children and update start/end from their box_data_index.
+-  unsigned box_count = box_data_list_.size();
++  Vector<BoxData> fragmented_boxes;
+   for (unsigned index = 0; index < line_box->size();)
+-    index = UpdateBoxDataFragmentRange(line_box, index);
++    index = UpdateBoxDataFragmentRange(line_box, index, &fragmented_boxes);
+ 
+-  // If any inline fragmentation due to BiDi reorder, adjust box edges.
+-  if (box_count != box_data_list_.size())
+-    UpdateFragmentedBoxDataEdges();
++  // If any inline fragmentation occurred due to BiDi reorder, append them and
++  // adjust box edges.
++  if (UNLIKELY(!fragmented_boxes.IsEmpty()))
++    UpdateFragmentedBoxDataEdges(&fragmented_boxes);
+ 
+ #if DCHECK_IS_ON()
+   // Check all BoxData have ranges.
+@@ -410,7 +412,8 @@ void NGInlineLayoutStateStack::UpdateAfterReorder(
+ 
+ unsigned NGInlineLayoutStateStack::UpdateBoxDataFragmentRange(
+     NGLogicalLineItems* line_box,
+-    unsigned index) {
++    unsigned index,
++    Vector<BoxData>* fragmented_boxes) {
+   // Find the first line box item that should create a box fragment.
+   for (; index < line_box->size(); index++) {
+     NGLogicalLineItem* start = &(*line_box)[index];
+@@ -438,7 +441,7 @@ unsigned NGInlineLayoutStateStack::UpdateBoxDataFragmentRange(
+       // It also changes other BoxData, but not the one we're dealing with here
+       // because the update is limited only when its |box_data_index| is lower.
+       while (end->box_data_index && end->box_data_index < box_data_index) {
+-        UpdateBoxDataFragmentRange(line_box, index);
++        UpdateBoxDataFragmentRange(line_box, index, fragmented_boxes);
+       }
+ 
+       if (box_data_index != end->box_data_index)
+@@ -453,14 +456,9 @@ unsigned NGInlineLayoutStateStack::UpdateBoxDataFragmentRange(
+     } else {
+       // This box is fragmented by BiDi reordering. Add a new BoxData for the
+       // fragmented range.
+-      box_data_list_[box_data_index - 1].fragmented_box_data_index =
+-          box_data_list_.size();
+-      // Do not use `emplace_back()` here because adding to |box_data_list_| may
+-      // reallocate the buffer, but the `BoxData` ctor must run before the
+-      // reallocation. Create a new instance and |push_back()| instead.
+-      BoxData fragmented_box_data(box_data_list_[box_data_index - 1],
+-                                  start_index, index);
+-      box_data_list_.push_back(fragmented_box_data);
++      BoxData& fragmented_box = fragmented_boxes->emplace_back(
++          box_data_list_[box_data_index - 1], start_index, index);
++      fragmented_box.fragmented_box_data_index = box_data_index;
+     }
+     // If this box has parent boxes, we need to process it again.
+     if (box_data_list_[box_data_index - 1].parent_box_data_index)
+@@ -470,7 +468,43 @@ unsigned NGInlineLayoutStateStack::UpdateBoxDataFragmentRange(
+   return index;
+ }
+ 
+-void NGInlineLayoutStateStack::UpdateFragmentedBoxDataEdges() {
++void NGInlineLayoutStateStack::UpdateFragmentedBoxDataEdges(
++    Vector<BoxData>* fragmented_boxes) {
++  DCHECK(!fragmented_boxes->IsEmpty());
++  // Append in the descending order of |fragmented_box_data_index| because the
++  // indices will change as boxes are inserted into |box_data_list_|.
++  std::sort(fragmented_boxes->begin(), fragmented_boxes->end(),
++            [](const BoxData& a, const BoxData& b) {
++              if (a.fragmented_box_data_index != b.fragmented_box_data_index) {
++                return a.fragmented_box_data_index <
++                       b.fragmented_box_data_index;
++              }
++              DCHECK_NE(a.fragment_start, b.fragment_start);
++              return a.fragment_start < b.fragment_start;
++            });
++  for (BoxData& fragmented_box : base::Reversed(*fragmented_boxes)) {
++    // Insert the fragmented box to right after the box it was fragmented from.
++    // The order in the |box_data_list_| is critical when propagating child
++    // fragment data such as OOF to ancestors.
++    const unsigned insert_at = fragmented_box.fragmented_box_data_index;
++    DCHECK_GT(insert_at, 0u);
++    fragmented_box.fragmented_box_data_index = 0;
++    box_data_list_.insert(insert_at, fragmented_box);
++
++    // Adjust box data indices by the insertion.
++    for (BoxData& box_data : box_data_list_) {
++      if (box_data.fragmented_box_data_index >= insert_at)
++        ++box_data.fragmented_box_data_index;
++    }
++
++    // Set the index of the last fragment to the original box. This is needed to
++    // update fragment edges.
++    const unsigned fragmented_from = insert_at - 1;
++    if (!box_data_list_[fragmented_from].fragmented_box_data_index)
++      box_data_list_[fragmented_from].fragmented_box_data_index = insert_at;
++  }
++
++  // Move the line-right edge to the last fragment.
+   for (BoxData& box_data : box_data_list_) {
+     if (box_data.fragmented_box_data_index)
+       box_data.UpdateFragmentEdges(box_data_list_);
+diff --git a/third_party/blink/renderer/core/layout/ng/inline/ng_inline_box_state.h b/third_party/blink/renderer/core/layout/ng/inline/ng_inline_box_state.h
+index 82ecfef8fe4d404d5713f0f67d83b38ecfbfca4c..9d079266efd7f2ccc43cef40d8d89e4fc6edda9e 100644
+--- a/third_party/blink/renderer/core/layout/ng/inline/ng_inline_box_state.h
++++ b/third_party/blink/renderer/core/layout/ng/inline/ng_inline_box_state.h
+@@ -156,17 +156,6 @@ class CORE_EXPORT NGInlineLayoutStateStack {
+   // reordering.
+   void UpdateAfterReorder(NGLogicalLineItems*);
+ 
+-  // Update start/end of the first BoxData found at |index|.
+-  //
+-  // If inline fragmentation is found, a new BoxData is added.
+-  //
+-  // Returns the index to process next. It should be given to the next call to
+-  // this function.
+-  unsigned UpdateBoxDataFragmentRange(NGLogicalLineItems*, unsigned index);
+-
+-  // Update edges of inline fragmented boxes.
+-  void UpdateFragmentedBoxDataEdges();
+-
+   // Compute inline positions of fragments and boxes.
+   LayoutUnit ComputeInlinePositions(NGLogicalLineItems*, LayoutUnit position);
+ 
+@@ -259,6 +248,19 @@ class CORE_EXPORT NGInlineLayoutStateStack {
+     scoped_refptr<const NGLayoutResult> CreateBoxFragment(NGLogicalLineItems*);
+   };
+ 
++  // Update start/end of the first BoxData found at |index|.
++  //
++  // If inline fragmentation is found, a new BoxData is added.
++  //
++  // Returns the index to process next. It should be given to the next call to
++  // this function.
++  unsigned UpdateBoxDataFragmentRange(NGLogicalLineItems*,
++                                      unsigned index,
++                                      Vector<BoxData>* fragmented_boxes);
++
++  // Update edges of inline fragmented boxes.
++  void UpdateFragmentedBoxDataEdges(Vector<BoxData>* fragmented_boxes);
++
+   Vector<NGInlineBoxState, 4> stack_;
+   Vector<BoxData, 4> box_data_list_;
+ 
+diff --git a/third_party/blink/web_tests/external/wpt/css/CSS2/text/crashtests/bidi-inline-fragment-oof-crash.html b/third_party/blink/web_tests/external/wpt/css/CSS2/text/crashtests/bidi-inline-fragment-oof-crash.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..b701d2b5688ace54aa99530c12fa8143f1e6a508
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/css/CSS2/text/crashtests/bidi-inline-fragment-oof-crash.html
+@@ -0,0 +1,13 @@
++<!DOCTYPE html>
++<link rel="author" href="mailto:mstensho@chromium.org">
++<link rel="help" href="https://crbug.com/1229999">
++<div style="direction:rtl; width:500px">
++  <span style="border:solid">
++    <span style="position:relative">
++      <div style="display:inline-block; width:1000%; height:10px"></div>
++      <span dir="ltr">
++        <div style="position:absolute"></div>
++      </span>
++    </span>
++  </span>
++</div>
