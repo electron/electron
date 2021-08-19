@@ -33,3 +33,7 @@ is_cfi = false
 allow_runtime_configurable_key_storage = true
 
 enable_cet_shadow_stack = false
+
+# TODO(deepak1556): remove once https://bugs.chromium.org/p/chromium/issues/detail?id=1241610
+# is fixed.
+enable_blink_heap_use_v8_oilpan = false
