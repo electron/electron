@@ -84,10 +84,6 @@ void NetworkContextService::ConfigureNetworkContextParams(
     network_context_params->transport_security_persister_file_path = path;
   }
 
-#if !BUILDFLAG(DISABLE_FTP_SUPPORT)
-  network_context_params->enable_ftp_url_support = true;
-#endif  // !BUILDFLAG(DISABLE_FTP_SUPPORT)
-
   proxy_config_monitor_.AddToNetworkContextParams(network_context_params);
 
   BrowserProcessImpl::ApplyProxyModeFromCommandLine(
