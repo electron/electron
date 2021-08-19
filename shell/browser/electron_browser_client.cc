@@ -1313,16 +1313,15 @@ void ElectronBrowserClient::CreateWebSocket(
 
     if (web_request_api && web_request_api->MayHaveProxies()) {
       web_request_api->ProxyWebSocket(frame, std::move(factory), url,
-                                      site_for_cookies.RepresentativeUrl(),
-                                      user_agent, std::move(handshake_client));
+                                      site_for_cookies, user_agent,
+                                      std::move(handshake_client));
       return;
     }
   }
 #endif
 
   ProxyingWebSocket::StartProxying(
-      web_request.get(), std::move(factory), url,
-      site_for_cookies.RepresentativeUrl(), user_agent,
+      web_request.get(), std::move(factory), url, site_for_cookies, user_agent,
       std::move(handshake_client), true, frame->GetProcess()->GetID(),
       frame->GetRoutingID(), frame->GetLastCommittedOrigin(), browser_context,
       &next_id_);
