@@ -21,10 +21,10 @@ Reviewed-by: Jamie Madill <jmadill@chromium.org>
 Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
 
 diff --git a/src/libANGLE/validationES.cpp b/src/libANGLE/validationES.cpp
-index 656e51f17724af9e0959fcd741ceeebf25ee0f24..412b9aa0f1d75c40ce02522589c53e943d049228 100644
+index 74acb9e0c4d87c08478dd334a1b38124fab9f94f..4ed0ea4f47c89090d06f706199d32bb0f5b745b9 100644
 --- a/src/libANGLE/validationES.cpp
 +++ b/src/libANGLE/validationES.cpp
-@@ -1006,6 +1006,15 @@ bool ValidCompressedDimension(GLsizei size, GLuint blockSize, GLint level)
+@@ -985,6 +985,15 @@ bool ValidCompressedDimension(GLsizei size, GLuint blockSize, GLint level)
      return (level > 0) || (size % blockSize == 0);
  }
  
@@ -40,7 +40,7 @@ index 656e51f17724af9e0959fcd741ceeebf25ee0f24..412b9aa0f1d75c40ce02522589c53e94
  bool ValidCompressedImageSize(const Context *context,
                                GLenum internalFormat,
                                GLint level,
-@@ -1043,11 +1052,27 @@ bool ValidCompressedImageSize(const Context *context,
+@@ -1005,11 +1014,27 @@ bool ValidCompressedImageSize(const Context *context,
  
      if (CompressedTextureFormatRequiresExactSize(internalFormat))
      {
@@ -73,7 +73,7 @@ index 656e51f17724af9e0959fcd741ceeebf25ee0f24..412b9aa0f1d75c40ce02522589c53e94
      }
  
 diff --git a/src/tests/gl_tests/WebGLCompatibilityTest.cpp b/src/tests/gl_tests/WebGLCompatibilityTest.cpp
-index 40c9a02e3eafe9d437e20e72a391bad73c783516..fabaefbe33c94a048ec7c974951ac9ef886826ef 100644
+index bfa8f3066fa418c87477dd553e66a34b79974455..89eb4d639a3853636524ad112a24f15d46fa1119 100644
 --- a/src/tests/gl_tests/WebGLCompatibilityTest.cpp
 +++ b/src/tests/gl_tests/WebGLCompatibilityTest.cpp
 @@ -296,6 +296,16 @@ void main()
@@ -93,7 +93,7 @@ index 40c9a02e3eafe9d437e20e72a391bad73c783516..fabaefbe33c94a048ec7c974951ac9ef
  };
  
  class WebGL2CompatibilityTest : public WebGLCompatibilityTest
-@@ -3040,6 +3050,84 @@ TEST_P(WebGLCompatibilityTest, CompressedTextureS3TC)
+@@ -3056,6 +3066,84 @@ TEST_P(WebGLCompatibilityTest, CompressedTextureS3TC)
      ASSERT_GL_ERROR(GL_INVALID_OPERATION);
  }
  
@@ -178,7 +178,7 @@ index 40c9a02e3eafe9d437e20e72a391bad73c783516..fabaefbe33c94a048ec7c974951ac9ef
  TEST_P(WebGLCompatibilityTest, L32FTextures)
  {
      constexpr float textureData[]   = {15.1f, 0.0f, 0.0f, 0.0f};
-@@ -4937,6 +5025,119 @@ void WebGLCompatibilityTest::validateCompressedTexImageExtensionFormat(GLenum fo
+@@ -4887,6 +4975,119 @@ void WebGLCompatibilityTest::validateCompressedTexImageExtensionFormat(GLenum fo
      }
  }
  
