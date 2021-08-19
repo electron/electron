@@ -1391,12 +1391,54 @@ void WebContents::HandleNewRenderFrame(
   if (rwh_impl)
     rwh_impl->disable_hidden_ = !background_throttling_;
 
-  WebFrameMain::RenderFrameCreated(render_frame_host);
+  auto* web_frame = WebFrameMain::FromRenderFrameHost(render_frame_host);
+  if (web_frame)
+    web_frame->Connect();
 }
 
 void WebContents::RenderFrameCreated(
     content::RenderFrameHost* render_frame_host) {
   HandleNewRenderFrame(render_frame_host);
+}
+
+void WebContents::RenderFrameDeleted(
+    content::RenderFrameHost* render_frame_host) {
+  // A RenderFrameHost can be deleted when:
+  // - A WebContents is removed and its containing frames are disposed.
+  // - An <iframe> is removed from the DOM.
+  // - Cross-origin navigation creates a new RFH in a separate process which
+  //   is swapped by content::RenderFrameHostManager.
+  //
+  // WebFrameMain::FromRenderFrameHost(rfh) will use the RFH's FrameTreeNode ID
+  // to find an existing instance of WebFrameMain. During a cross-origin
+  // navigation, the deleted RFH will be the old host which was swapped out. In
+  // this special case, we need to also ensure that WebFrameMain's internal RFH
+  // matches before marking it as disposed.
+  auto* web_frame = WebFrameMain::FromRenderFrameHost(render_frame_host);
+  if (web_frame && web_frame->render_frame_host() == render_frame_host)
+    web_frame->MarkRenderFrameDisposed();
+}
+
+void WebContents::RenderFrameHostChanged(content::RenderFrameHost* old_host,
+                                         content::RenderFrameHost* new_host) {
+  // During cross-origin navigation, a FrameTreeNode will swap out its RFH.
+  // If an instance of WebFrameMain exists, it will need to have its RFH
+  // swapped as well.
+  //
+  // |old_host| can be a nullptr in so we use |new_host| for looking up the
+  // WebFrameMain instance.
+  auto* web_frame =
+      WebFrameMain::FromFrameTreeNodeId(new_host->GetFrameTreeNodeId());
+  if (web_frame) {
+    CHECK_EQ(web_frame->render_frame_host(), old_host);
+    web_frame->UpdateRenderFrameHost(new_host);
+  }
+}
+
+void WebContents::FrameDeleted(int frame_tree_node_id) {
+  auto* web_frame = WebFrameMain::FromFrameTreeNodeId(frame_tree_node_id);
+  if (web_frame)
+    web_frame->Destroyed();
 }
 
 void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
@@ -1637,13 +1679,6 @@ void WebContents::UpdateDraggableRegions(
     std::vector<mojom::DraggableRegionPtr> regions) {
   for (ExtendedWebContentsObserver& observer : observers_)
     observer.OnDraggableRegionsUpdated(regions);
-}
-
-void WebContents::RenderFrameDeleted(
-    content::RenderFrameHost* render_frame_host) {
-  // A WebFrameMain can outlive its RenderFrameHost so we need to mark it as
-  // disposed to prevent access to it.
-  WebFrameMain::RenderFrameDeleted(render_frame_host);
 }
 
 void WebContents::DidStartNavigation(
