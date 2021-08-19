@@ -255,12 +255,6 @@ void ViewDidMoveToSuperview(NSView* self, SEL _cmd) {
   [self setFrame:[[self superview] bounds]];
 }
 
-// Refs https://github.com/electron/electron/pull/30507
-// TODO(deepak1556): Enable this flag to match upstream
-#if 0
-const base::Feature kWindowCaptureMacV2{"WindowCaptureMacV2",
-                                        base::FEATURE_DISABLED_BY_DEFAULT};
-#endif
 }  // namespace
 
 NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
@@ -1261,14 +1255,12 @@ content::DesktopMediaID NativeWindowMac::GetDesktopMediaID() const {
       content::DesktopMediaID::TYPE_WINDOW, GetAcceleratedWidget());
   // c.f.
   // https://source.chromium.org/chromium/chromium/src/+/master:chrome/browser/media/webrtc/native_desktop_media_list.cc;l=372?q=kWindowCaptureMacV2&ss=chromium
-// Refs https://github.com/electron/electron/pull/30507
-// TODO(deepak1556): Enable this flag to match upstream WindowCaptureMacV2"
+  // Refs https://github.com/electron/electron/pull/30507
+  // TODO(deepak1556): Match upstream for `kWindowCaptureMacV2`
 #if 0
-  if (base::FeatureList::IsEnabled(kWindowCaptureMacV2)) {
     if (remote_cocoa::ScopedCGWindowID::Get(desktop_media_id.id)) {
       desktop_media_id.window_id = desktop_media_id.id;
     }
-  }
 #endif
   return desktop_media_id;
 }
