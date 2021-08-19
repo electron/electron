@@ -185,7 +185,7 @@ void SetPlatformCrashKey() {
 #endif
 }
 
-void SetCrashKeyForGinWrappable(gin::WrapperInfo* info) {
+std::string GetCrashValueForGinWrappable(gin::WrapperInfo* info) {
   std::string crash_location;
 
   // Adds a breadcrumb for crashes within gin::WrappableBase::SecondWeakCallback
@@ -254,7 +254,7 @@ void SetCrashKeyForGinWrappable(gin::WrapperInfo* info) {
         "Deleted kWrapperInfo does not match listed component. Please review "
         "listed crash keys.";
 
-  SetCrashKey("gin-wrappable-fatal.location", crash_location);
+  return crash_location;
 }
 
 }  // namespace crash_keys

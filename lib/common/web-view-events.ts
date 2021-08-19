@@ -12,7 +12,6 @@ export const webViewEvents: Record<string, readonly string[]> = {
   'devtools-opened': [],
   'devtools-closed': [],
   'devtools-focused': [],
-  'new-window': ['url', 'frameName', 'disposition', 'options'],
   'will-navigate': ['url'],
   'did-start-navigation': ['url', 'isInPlace', 'isMainFrame', 'frameProcessId', 'frameRoutingId'],
   'did-navigate': ['url', 'httpResponseCode', 'httpStatusText'],
