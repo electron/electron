@@ -102,6 +102,7 @@ void WebFrameMain::UpdateRenderFrameHost(content::RenderFrameHost* rfh) {
   // Should only be called when swapping frames.
   DCHECK(render_frame_);
   render_frame_ = rfh;
+  renderer_api_.reset();
 }
 
 bool WebFrameMain::CheckRenderFrame() const {
