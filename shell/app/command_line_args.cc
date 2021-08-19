@@ -3,7 +3,11 @@
 // found in the LICENSE file.
 
 #include "shell/app/command_line_args.h"
+
 #include <locale>
+
+#include "sandbox/policy/switches.h"
+#include "shell/common/options_switches.h"
 
 namespace {
 
