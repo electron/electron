@@ -1,0 +1,135 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Robert Flack <flackr@chromium.org>
+Date: Fri, 30 Jul 2021 18:51:38 +0000
+Subject: Forbid script execution for entire lifecycle update
+
+We should not execute script during the lifecycle update except in cases where we we know it is safe to do so, either because we will rerun the lifecycle steps if anything is invalidated (resize observers, intersection observers) or because the script does not have access to invalidate the DOM (e.g. paint worklets).
+
+(cherry picked from commit a73237da91de8aa49aaa5d9479bae51cf387f090)
+
+Bug: 1196853
+Change-Id: Id1fdbbb25107cfdc6c234123f845406c28d32914
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2815619
+Reviewed-by: Stefan Zager <szager@chromium.org>
+Commit-Queue: Robert Flack <flackr@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#901110}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3058973
+Auto-Submit: Robert Flack <flackr@chromium.org>
+Commit-Queue: Stefan Zager <szager@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4472@{#1588}
+Cr-Branched-From: 3d60439cfb36485e76a1c5bb7f513d3721b20da1-refs/heads/master@{#870763}
+
+diff --git a/third_party/blink/renderer/core/exported/web_plugin_container_impl.cc b/third_party/blink/renderer/core/exported/web_plugin_container_impl.cc
+index d3512edd4cad7b7dafbb1c3a6da5cd45ea367e79..69f8e8a598a4aefef652e603f1590c702e288b59 100644
+--- a/third_party/blink/renderer/core/exported/web_plugin_container_impl.cc
++++ b/third_party/blink/renderer/core/exported/web_plugin_container_impl.cc
+@@ -96,6 +96,7 @@
+ #include "third_party/blink/renderer/core/script/classic_script.h"
+ #include "third_party/blink/renderer/core/scroll/scroll_animator_base.h"
+ #include "third_party/blink/renderer/core/scroll/scrollbar_theme.h"
++#include "third_party/blink/renderer/platform/bindings/script_forbidden_scope.h"
+ #include "third_party/blink/renderer/platform/exported/wrapped_resource_response.h"
+ #include "third_party/blink/renderer/platform/geometry/layout_rect.h"
+ #include "third_party/blink/renderer/platform/graphics/graphics_context.h"
+@@ -804,6 +805,8 @@ void WebPluginContainerImpl::Dispose() {
+   }
+ 
+   if (web_plugin_) {
++    // Plugins may execute script on being detached during the lifecycle update.
++    ScriptForbiddenScope::AllowUserAgentScript allow_script;
+     CHECK(web_plugin_->Container() == this);
+     web_plugin_->Destroy();
+     web_plugin_ = nullptr;
+diff --git a/third_party/blink/renderer/core/frame/local_frame_view.cc b/third_party/blink/renderer/core/frame/local_frame_view.cc
+index dd320dd900b7f556c9216c7faedc2ad35588b0d7..a9e724432440c05d1b3bb9863acb4345e07f77b4 100644
+--- a/third_party/blink/renderer/core/frame/local_frame_view.cc
++++ b/third_party/blink/renderer/core/frame/local_frame_view.cc
+@@ -2484,6 +2484,7 @@ bool LocalFrameView::UpdateLifecyclePhases(
+ 
+ void LocalFrameView::UpdateLifecyclePhasesInternal(
+     DocumentLifecycle::LifecycleState target_state) {
++  ScriptForbiddenScope forbid_script;
+   // RunScrollTimelineSteps must not run more than once.
+   bool should_run_scroll_timeline_steps = true;
+ 
+@@ -2564,6 +2565,10 @@ void LocalFrameView::UpdateLifecyclePhasesInternal(
+         continue;
+     }
+ 
++    // At this point in time, script is allowed to run as we will repeat the
++    // lifecycle update if anything is invalidated.
++    ScriptForbiddenScope::AllowUserAgentScript allow_script;
++
+     // ResizeObserver and post-layout IntersectionObserver observation
+     // deliveries may dirty style and layout. RunResizeObserverSteps will return
+     // true if any observer ran that may have dirtied style or layout;
+@@ -2816,6 +2821,7 @@ bool LocalFrameView::AnyFrameIsPrintingOrPaintingPreview() {
+ }
+ 
+ void LocalFrameView::RunPaintLifecyclePhase(PaintBenchmarkMode benchmark_mode) {
++  DCHECK(ScriptForbiddenScope::IsScriptForbidden());
+   TRACE_EVENT0("blink,benchmark", "LocalFrameView::RunPaintLifecyclePhase");
+   // While printing or capturing a paint preview of a document, the paint walk
+   // is done into a special canvas. There is no point doing a normal paint step
+@@ -2850,17 +2856,11 @@ void LocalFrameView::RunPaintLifecyclePhase(PaintBenchmarkMode benchmark_mode) {
+           for (PaintLayerScrollableArea* area : *animating_scrollable_areas)
+             area->UpdateCompositorScrollAnimations();
+         }
+-        {
+-          // Updating animations can notify ready promises which could mutate
+-          // the DOM. We should delay these until we have finished the lifecycle
+-          // update. https://crbug.com/1196781
+-          ScriptForbiddenScope forbid_script;
+-          frame_view.GetLayoutView()
+-              ->GetDocument()
+-              .GetDocumentAnimations()
+-              .UpdateAnimations(DocumentLifecycle::kPaintClean,
+-                                paint_artifact_compositor_.get());
+-        }
++        frame_view.GetLayoutView()
++          ->GetDocument()
++          .GetDocumentAnimations()
++          .UpdateAnimations(DocumentLifecycle::kPaintClean,
++                            paint_artifact_compositor_.get());
+         Document& document = frame_view.GetLayoutView()->GetDocument();
+         total_animations_count +=
+             document.GetDocumentAnimations().GetAnimationsCount();
+@@ -4454,6 +4454,7 @@ void LocalFrameView::RenderThrottlingStatusChanged() {
+     // so painting the tree should just clear the previous painted output.
+     DCHECK(!IsUpdatingLifecycle());
+     AllowThrottlingScope allow_throtting(*this);
++    ScriptForbiddenScope forbid_script;
+     RunPaintLifecyclePhase();
+   }
+ 
+@@ -4989,6 +4990,7 @@ void LocalFrameView::RunPaintBenchmark(int repeat_count,
+       // quantization when the time is very small.
+       base::LapTimer timer(kWarmupRuns, kTimeLimit, kTimeCheckInterval);
+       do {
++        ScriptForbiddenScope forbid_script;
+         RunPaintLifecyclePhase(mode);
+         timer.NextLap();
+       } while (!timer.HasTimeLimitExpired());
+diff --git a/third_party/blink/renderer/modules/csspaint/paint_worklet.cc b/third_party/blink/renderer/modules/csspaint/paint_worklet.cc
+index e6e0c5b909c4d073963bcbb074bfb091a6ccb83b..618e08fbb5157c06348feee5f0120bd28ed0bc44 100644
+--- a/third_party/blink/renderer/modules/csspaint/paint_worklet.cc
++++ b/third_party/blink/renderer/modules/csspaint/paint_worklet.cc
+@@ -17,6 +17,7 @@
+ #include "third_party/blink/renderer/modules/csspaint/paint_worklet_global_scope.h"
+ #include "third_party/blink/renderer/modules/csspaint/paint_worklet_id_generator.h"
+ #include "third_party/blink/renderer/modules/csspaint/paint_worklet_messaging_proxy.h"
++#include "third_party/blink/renderer/platform/bindings/script_forbidden_scope.h"
+ #include "third_party/blink/renderer/platform/graphics/paint_generated_image.h"
+ 
+ namespace blink {
+@@ -126,6 +127,10 @@ scoped_refptr<Image> PaintWorklet::Paint(const String& name,
+           layout_object.GetDocument(), layout_object.StyleRef(),
+           paint_definition->NativeInvalidationProperties(),
+           paint_definition->CustomInvalidationProperties());
++  // The PaintWorkletGlobalScope is sufficiently isolated that it is safe to
++  // run during the lifecycle update without concern for it causing
++  // invalidations to the lifecycle.
++  ScriptForbiddenScope::AllowUserAgentScript allow_script;
+   sk_sp<PaintRecord> paint_record = paint_definition->Paint(
+       container_size, zoom, style_map, data, device_scale_factor);
+   if (!paint_record)
