@@ -21,10 +21,10 @@ Cr-Branched-From: 7744dce208a555494e4a33e24fadc71ea20b3895-refs/heads/9.3.345@{#
 Cr-Branched-From: 4b6b4cabf3b6a20cdfda72b369df49f3311c4344-refs/heads/master@{#75728}
 
 diff --git a/src/compiler/machine-operator-reducer.cc b/src/compiler/machine-operator-reducer.cc
-index 5d61dfac6ab46687b0adde2ff9777a0252e16494..b4b16f931f0927e9b683f38b393b0d275727f25e 100644
+index 918caaf8fd446750d9d4c38350b3af2f25c9a91f..facfadc3ca99f9d2a554f17b577a3833a9974470 100644
 --- a/src/compiler/machine-operator-reducer.cc
 +++ b/src/compiler/machine-operator-reducer.cc
-@@ -1718,11 +1718,21 @@ Reduction MachineOperatorReducer::ReduceWordNAnd(Node* node) {
+@@ -1706,11 +1706,21 @@ Reduction MachineOperatorReducer::ReduceWordNAnd(Node* node) {
  namespace {
  
  // Represents an operation of the form `(source & mask) == masked_value`.
@@ -50,7 +50,7 @@ index 5d61dfac6ab46687b0adde2ff9777a0252e16494..b4b16f931f0927e9b683f38b393b0d27
  
    static base::Optional<BitfieldCheck> Detect(Node* node) {
      // There are two patterns to check for here:
-@@ -1737,14 +1747,16 @@ struct BitfieldCheck {
+@@ -1725,14 +1735,16 @@ struct BitfieldCheck {
        if (eq.left().IsWord32And()) {
          Uint32BinopMatcher mand(eq.left().node());
          if (mand.right().HasResolvedValue() && eq.right().HasResolvedValue()) {
