@@ -162,10 +162,12 @@ CryptotokenPrivateIsAppIdHashInEnterpriseContextFunction::Run() {
               *args_));
   EXTENSION_FUNCTION_VALIDATE(params);
 
-  // Profile* const profile = Profile::FromBrowserContext(browser_context());
-  // const PrefService* const prefs = profile->GetPrefs();
-  // const base::ListValue* const permit_attestation =
-  //     prefs->GetList(prefs::kSecurityKeyPermitAttestation);
+#if 0
+  Profile* const profile = Profile::FromBrowserContext(browser_context());
+  const PrefService* const prefs = profile->GetPrefs();
+  const base::ListValue* const permit_attestation =
+      prefs->GetList(prefs::kSecurityKeyPermitAttestation);
+#endif
   const base::ListValue permit_attestation;
 
   return RespondNow(ArgumentList(
