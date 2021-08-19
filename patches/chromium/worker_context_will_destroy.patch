@@ -55,7 +55,7 @@ index 918400762b2bf2de641ec3c7a88d9e15184d30ca..c59f582cf7349e825a39a2f1ae9293cd
        const blink::WebSecurityOrigin& script_origin) override;
    blink::ProtocolHandlerSecurityLevel GetProtocolHandlerSecurityLevel()
 diff --git a/third_party/blink/public/platform/platform.h b/third_party/blink/public/platform/platform.h
-index 1fc4708c4ac128df9fb22b52a1661eee816c3972..4ee93ad2ea20e5d85c5433fa0f564b8109605129 100644
+index 1928e045f12383d6ce10fc785c50d6e4919cd563..672a29fd5fe78839d6b8f754d1228d8fcf9b88b3 100644
 --- a/third_party/blink/public/platform/platform.h
 +++ b/third_party/blink/public/platform/platform.h
 @@ -728,6 +728,7 @@ class BLINK_PLATFORM_EXPORT Platform {

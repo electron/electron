@@ -106,4 +106,3 @@ logging_win32_only_create_a_console_if_logging_to_stderr.patch
 disable_use_lld_for_macos.patch
 fix_media_key_usage_with_globalshortcuts.patch
 feat_expose_raw_response_headers_from_urlloader.patch
-remove_--no-untrusted-code-mitigations_from_content_and_gin.patch

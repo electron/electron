@@ -65,7 +65,7 @@ index c59f582cf7349e825a39a2f1ae9293cd87233e73..9e242a25a6b6cea72a6ed48cb986ebbf
    bool AllowScriptExtensionForServiceWorker(
        const blink::WebSecurityOrigin& script_origin) override;
 diff --git a/third_party/blink/public/platform/platform.h b/third_party/blink/public/platform/platform.h
-index 4ee93ad2ea20e5d85c5433fa0f564b8109605129..fd09c15a3ec18866e11583b9867255058feb3437 100644
+index 672a29fd5fe78839d6b8f754d1228d8fcf9b88b3..71d533bd0923a74e1029596d27d215c0a69d16b4 100644
 --- a/third_party/blink/public/platform/platform.h
 +++ b/third_party/blink/public/platform/platform.h
 @@ -728,6 +728,8 @@ class BLINK_PLATFORM_EXPORT Platform {

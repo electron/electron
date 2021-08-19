@@ -21,7 +21,7 @@ index ac98459fd07c4daee384c50e2ac4b19da14ccaf6..b5f7104ffde611652c55ebe85e396939
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 357c6a58efccf30481be6e12b5aa8248f3728e56..5052815f5464e39ebd686bb3b97127defde30808 100644
+index 6f0d2cee13b39ef0fb60ceec0bbf25f17f8b1152..183fa12d38d28f3de40bdd9f26155388658e8ffe 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -3727,6 +3727,14 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -53,7 +53,7 @@ index 357c6a58efccf30481be6e12b5aa8248f3728e56..5052815f5464e39ebd686bb3b97127de
                               new_contents_impl, opener, params.target_url,
                               params.referrer.To<Referrer>(), params.disposition,
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index 192a5084eac3e9426ac8ddc4984b572d55c7a88a..63f53ff39240ea59a03f1a6f9d032444b0e4214d 100644
+index 72fd11b1733aa5433c1905933c357aa58c02578d..d6cdf5cfe1287cddf29279e28ce878cf11616cca 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
 @@ -523,6 +523,10 @@ struct CreateNewWindowParams {
@@ -150,7 +150,7 @@ index a0da74d5cbe4ab8be84d6f1a92f444e858320745..5936fa4bce09895595ccb294504f5b89
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index afec7767d905488a51b2dbba031b8a85d6d0138a..57f970d15bf03f817680982fa8605c333485804b 100644
+index 092352d96858b45a46ac1eddd162a63b1e468031..aa1cf3dfca39c4443311895a3d7abfc89aad8951 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
 @@ -31,6 +31,7 @@

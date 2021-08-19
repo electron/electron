@@ -8,7 +8,7 @@ we invoke it in order to expose contents.decrementCapturerCount([stayHidden, sta
 to users. We should try to upstream this.
 
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index daf14617fcde03f946b61b0fd32263125c4b0ba9..994d504e17d553f16895a2dc67b7140bc39df32b 100644
+index 6240a5a997894055bd5f7c2d9ceb741cd9bfe1e4..cbf2121193b63d1bcf9018e65f06f4fc4f7eae47 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
 @@ -1769,10 +1769,12 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
@@ -26,7 +26,7 @@ index daf14617fcde03f946b61b0fd32263125c4b0ba9..994d504e17d553f16895a2dc67b7140b
    // state into account.
    PageVisibilityState CalculatePageVisibilityState(Visibility visibility) const;
 diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
-index a723fb6e5bb54acc114c90937b0a2f61679e44c5..0b7eda5f37a4f462911bf5b4610a549622a73040 100644
+index 383d0fd95d7e807b83f4cd972c107fa27fefaac6..ae7a7f187b24bb3ec97bea37881f85ede8689936 100644
 --- a/content/public/browser/web_contents.h
 +++ b/content/public/browser/web_contents.h
 @@ -633,6 +633,8 @@ class WebContents : public PageNavigator,

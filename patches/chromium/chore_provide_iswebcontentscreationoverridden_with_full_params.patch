@@ -108,10 +108,10 @@ index ef84e04d628fb5cdbaf8fbbf84af3bf23e00c522..f1ee0bee5bfd08227a29498f8410d5d3
    }
  
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index b6a5989bbee666a32b61e0232f5295e9744e3343..76a4ca3da9d0afa51aae3aea955c20e9c2d9572e 100644
+index c522e51369fbcdf482a467475abce309bd8195c5..f7c95b019f4a19c94ec95234e7bdda84d8bfcf51 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -1786,12 +1786,11 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -1788,12 +1788,11 @@ bool Browser::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -232,7 +232,7 @@ index c5c5a7b63b5b3b62a9517cbef3ae23ce57a3c89c..4f1b7e88d6d2ae89a60311c8aeb1fcee
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index dc274e4e5bd449961ad745c1be953e81049ba9c1..de68acbbe1545967b31b2a81be501813a2a1a03b 100644
+index 1e38a16e950a4ee5ed63405576b57185fe7b9e3c..8b9e76ad6eee5e03bfa97a2f5c6c7d8898f0dfe5 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -3675,8 +3675,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -330,7 +330,7 @@ index bb90319f768ed2f3a3e530d64bf622de585ce163..d84de1d218267887f6b8624f913438eb
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/fuchsia/engine/browser/frame_impl.cc b/fuchsia/engine/browser/frame_impl.cc
-index 02bb56f98c17cf56641596390403ebead140e1eb..dee4356deda692a591d0a74171d061704f462d66 100644
+index 2863abb239a77b96e638c83f47ae7219cf0ccec8..5675ad386efa99383067eb404b385cf2ec46142e 100644
 --- a/fuchsia/engine/browser/frame_impl.cc
 +++ b/fuchsia/engine/browser/frame_impl.cc
 @@ -388,8 +388,7 @@ bool FrameImpl::IsWebContentsCreationOverridden(
