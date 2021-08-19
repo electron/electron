@@ -1,0 +1,90 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Alexey Knyazev <lexa.knyazev@gmail.com>
+Date: Tue, 3 Aug 2021 01:57:49 +0400
+Subject: Validate texStorage dimensions with compressed formats
+
+Bug: angleproject:6230
+Change-Id: I501ec1e6974bdc7e6731dcb88045edb0aa22b888
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3067329
+Commit-Queue: Alexey Knyazev <lexa.knyazev@gmail.com>
+Reviewed-by: Kenneth Russell <kbr@chromium.org>
+Reviewed-by: Jamie Madill <jmadill@chromium.org>
+
+diff --git a/src/libANGLE/validationES3.cpp b/src/libANGLE/validationES3.cpp
+index 53e1afd6e26ef8cc099e51c66457a968ca82b1c8..5c69d568ee45b9e8bf1d4d0da7b9a48b123a47c0 100644
+--- a/src/libANGLE/validationES3.cpp
++++ b/src/libANGLE/validationES3.cpp
+@@ -1339,17 +1339,26 @@ bool ValidateES3TexStorageParametersBase(const Context *context,
+         return false;
+     }
+ 
+-    if (formatInfo.compressed && target == TextureType::Rectangle)
++    if (formatInfo.compressed)
+     {
+-        context->validationError(GL_INVALID_ENUM, kRectangleTextureCompressed);
+-        return false;
+-    }
++        if (target == TextureType::Rectangle)
++        {
++            context->validationError(GL_INVALID_ENUM, kRectangleTextureCompressed);
++            return false;
++        }
+ 
+-    if (formatInfo.compressed && target == TextureType::_3D)
+-    {
+-        if (!ValidateES3CompressedFormatForTexture3D(context, formatInfo.internalFormat))
++        if (target == TextureType::_3D)
+         {
+-            // Error already generated.
++            if (!ValidateES3CompressedFormatForTexture3D(context, formatInfo.internalFormat))
++            {
++                // Error already generated.
++                return false;
++            }
++        }
++
++        if (!ValidCompressedImageSize(context, formatInfo.internalFormat, 0, width, height, depth))
++        {
++            context->validationError(GL_INVALID_OPERATION, kInvalidCompressedImageSize);
+             return false;
+         }
+     }
+diff --git a/src/tests/gl_tests/SRGBTextureTest.cpp b/src/tests/gl_tests/SRGBTextureTest.cpp
+index 271fe6dbaa1d5684f7c2e16bdef18bce30943e8b..a0eab1af9e34a5de75e226efef9c0af4a50c63ff 100644
+--- a/src/tests/gl_tests/SRGBTextureTest.cpp
++++ b/src/tests/gl_tests/SRGBTextureTest.cpp
+@@ -340,7 +340,7 @@ TEST_P(SRGBTextureTestES3, SRGBOverrideFormats)
+     {
+         GLTexture tex;
+         glBindTexture(GL_TEXTURE_2D, tex.get());
+-        glTexStorage2D(GL_TEXTURE_2D, 1, format, 1, 1);
++        glTexStorage2D(GL_TEXTURE_2D, 1, format, 4, 4);
+         GLenum error = glGetError();
+         if (error == GL_INVALID_ENUM)
+         {
+diff --git a/src/tests/gl_tests/WebGLCompatibilityTest.cpp b/src/tests/gl_tests/WebGLCompatibilityTest.cpp
+index fabaefbe33c94a048ec7c974951ac9ef886826ef..efbd9ebdb2bb29cf9673750e1e3e7b492bfbf87e 100644
+--- a/src/tests/gl_tests/WebGLCompatibilityTest.cpp
++++ b/src/tests/gl_tests/WebGLCompatibilityTest.cpp
+@@ -5073,6 +5073,21 @@ void WebGLCompatibilityTest::testCompressedTexLevelDimension(GLenum format,
+     {
+         EXPECT_GL_ERROR(expectedError) << explanation;
+     }
++
++    if (level == 0 && width > 0 && getClientMajorVersion() >= 3)
++    {
++        GLTexture sourceTextureStorage;
++        glBindTexture(GL_TEXTURE_2D, sourceTextureStorage);
++        glTexStorage2D(GL_TEXTURE_2D, 1, format, width, height);
++        if (expectedError == 0)
++        {
++            EXPECT_GL_NO_ERROR() << explanation << " (texStorage)";
++        }
++        else
++        {
++            EXPECT_GL_ERROR(expectedError) << explanation << " (texStorage)";
++        }
++    }
+ }
+ 
+ void WebGLCompatibilityTest::testCompressedTexImage(GLenum format)
