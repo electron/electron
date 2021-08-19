@@ -1,6 +1,6 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Hongchan Choi <hongchan@chromium.org>
-Date: Mon Aug 9 18:43:22 2021 +0000
+Date: Mon, 9 Aug 2021 18:43:22 +0000
 Subject: Protect HRTF database loader thread from access by different threads
 
 This patch add a new mutex locker around the HRTF database loader
@@ -23,7 +23,7 @@ Cr-Commit-Position: refs/branch-heads/4577@{#601}
 Cr-Branched-From: 761ddde228655e313424edec06497d0c56b0f3c4-refs/heads/master@{#902210}
 
 diff --git a/third_party/blink/renderer/platform/audio/hrtf_database_loader.cc b/third_party/blink/renderer/platform/audio/hrtf_database_loader.cc
-index 034ded03d11f..01cb98a1116f 100644
+index 034ded03d11fa42f0d0f62c6a91f6e20ee5f93e1..01cb98a1116fe1eb6a13ff6345b6bdf4e136badc 100644
 --- a/third_party/blink/renderer/platform/audio/hrtf_database_loader.cc
 +++ b/third_party/blink/renderer/platform/audio/hrtf_database_loader.cc
 @@ -86,6 +86,8 @@ void HRTFDatabaseLoader::LoadTask() {
@@ -47,7 +47,7 @@ index 034ded03d11f..01cb98a1116f 100644
      return;
  
 diff --git a/third_party/blink/renderer/platform/audio/hrtf_database_loader.h b/third_party/blink/renderer/platform/audio/hrtf_database_loader.h
-index 3ce476fa68e0..a94997b4f7e0 100644
+index 3ce476fa68e066d6faf40011e94203f0fb778e71..a94997b4f7e06f96018187967faa524d4acfd5f6 100644
 --- a/third_party/blink/renderer/platform/audio/hrtf_database_loader.h
 +++ b/third_party/blink/renderer/platform/audio/hrtf_database_loader.h
 @@ -64,8 +64,8 @@ class PLATFORM_EXPORT HRTFDatabaseLoader final
