@@ -4,6 +4,8 @@
 
 #include "shell/common/api/electron_api_clipboard.h"
 
+#include <map>
+
 #include "base/strings/utf_string_conversions.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
