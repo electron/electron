@@ -48,8 +48,20 @@ bool Clipboard::Has(const std::string& format_string,
 
 std::string Clipboard::Read(const std::string& format_string) {
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
-  ui::ClipboardFormatType format(
-      ui::ClipboardFormatType::CustomPlatformType(format_string));
+  std::map<std::string, std::string> custom_format_names;
+  custom_format_names =
+      clipboard->ExtractCustomPlatformNames(ui::ClipboardBuffer::kCopyPaste,
+                                            /* data_dst = */ nullptr);
+#if defined(OS_LINUX)
+  if (custom_format_names.find(format_string) == custom_format_names.end()) {
+    custom_format_names =
+        clipboard->ExtractCustomPlatformNames(ui::ClipboardBuffer::kSelection,
+                                              /* data_dst = */ nullptr);
+  }
+#endif
+  CHECK(custom_format_names.find(format_string) != custom_format_names.end());
+  ui::ClipboardFormatType format(ui::ClipboardFormatType::CustomPlatformType(
+      custom_format_names[format_string]));
 
   std::string data;
   clipboard->ReadData(format, /* data_dst = */ nullptr, &data);
