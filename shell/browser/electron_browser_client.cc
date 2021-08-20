@@ -196,6 +196,10 @@
 #include "shell/browser/printing/print_view_manager_electron.h"
 #endif
 
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+#include "components/pdf/browser/pdf_web_contents_helper.h"  // nogncheck
+#endif
+
 using content::BrowserThread;
 
 namespace electron {
@@ -1462,6 +1466,15 @@ bool ElectronBrowserClient::BindAssociatedReceiverFromFrame(
   if (interface_name == extensions::mojom::LocalFrameHost::Name_) {
     extensions::ExtensionWebContentsObserver::BindLocalFrameHost(
         mojo::PendingAssociatedReceiver<extensions::mojom::LocalFrameHost>(
+            std::move(*handle)),
+        render_frame_host);
+    return true;
+  }
+#endif
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+  if (interface_name == pdf::mojom::PdfService::Name_) {
+    pdf::PDFWebContentsHelper::BindPdfService(
+        mojo::PendingAssociatedReceiver<pdf::mojom::PdfService>(
             std::move(*handle)),
         render_frame_host);
     return true;
