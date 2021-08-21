@@ -553,10 +553,10 @@ index 0000000000000000000000000000000000000000..8e0aa4b7a858ab432dca9da9ead9fcf4
 +}
 diff --git a/deps/googletest/BUILD.gn b/deps/googletest/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..34c4289eb35af910a470db6ef40abc91954ed848
+index 0000000000000000000000000000000000000000..0daf8c006cef89e76d7eccec3e924bd2718021c9
 --- /dev/null
 +++ b/deps/googletest/BUILD.gn
-@@ -0,0 +1,63 @@
+@@ -0,0 +1,64 @@
 +config("gtest_config") {
 +  include_dirs = [ "include" ]
 +  defines = [ "UNIT_TEST" ]
@@ -572,7 +572,8 @@ index 0000000000000000000000000000000000000000..34c4289eb35af910a470db6ef40abc91
 +
 +  cflags_cc = [
 +    "-Wno-c++98-compat-extra-semi",
-+    "-Wno-unused-const-variable"
++    "-Wno-unused-const-variable",
++    "-Wno-unreachable-code-return",
 +  ]
 +
 +  defines = [
