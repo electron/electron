@@ -419,8 +419,9 @@ bool IsDeviceNameValid(const std::u16string& device_name) {
 #elif defined(OS_WIN)
   printing::ScopedPrinterHandle printer;
   return printer.OpenPrinterWithName(base::as_wcstr(device_name));
-#endif
+#else
   return true;
+#endif
 }
 
 std::u16string GetDefaultPrinterAsync() {
