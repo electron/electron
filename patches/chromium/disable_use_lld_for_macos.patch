@@ -7,15 +7,15 @@ This patch disables use_lld on macOS, in order to prevent a linking bug
 that occurs when building for arm64.
 
 diff --git a/build/config/compiler/compiler.gni b/build/config/compiler/compiler.gni
-index 4a714ab0a5cdafded76bba553205f94599c27a30..d2723dd224a8afd2b6dd99ec11e9e71b7f76fe4a 100644
+index 995ee26e64fb65310e50442b0e5922a756e10a05..0bce1708a755405daa28a59c56231679e3e3d6f1 100644
 --- a/build/config/compiler/compiler.gni
 +++ b/build/config/compiler/compiler.gni
-@@ -201,7 +201,7 @@ declare_args() {
-   # In late bring-up on macOS (see docs/mac_lld.md), and not functional at all for
-   # iOS. The default linker everywhere else.
-   use_lld =
--      is_clang && (!is_apple || (target_os == "mac" && chrome_pgo_phase != 1))
-+      is_clang && !is_apple
+@@ -200,7 +200,7 @@ declare_args() {
+   # Set to true to use lld, the LLVM linker.
+   # The default linker everywhere except on iOS.
+   # TODO(https://crbug.com/1233174): Make work in mac PGO builds.
+-  use_lld = is_clang && !is_ios && !(is_mac && chrome_pgo_phase == 1)
++  use_lld = is_clang && !is_ios
  }
  
  declare_args() {

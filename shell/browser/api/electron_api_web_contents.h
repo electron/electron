@@ -543,9 +543,12 @@ class WebContents : public gin::Wrappable<WebContents>,
   void BeforeUnloadFired(bool proceed,
                          const base::TimeTicks& proceed_time) override;
   void RenderFrameCreated(content::RenderFrameHost* render_frame_host) override;
+  void RenderFrameDeleted(content::RenderFrameHost* render_frame_host) override;
+  void RenderFrameHostChanged(content::RenderFrameHost* old_host,
+                              content::RenderFrameHost* new_host) override;
+  void FrameDeleted(int frame_tree_node_id) override;
   void RenderViewDeleted(content::RenderViewHost*) override;
   void RenderProcessGone(base::TerminationStatus status) override;
-  void RenderFrameDeleted(content::RenderFrameHost* render_frame_host) override;
   void DOMContentLoaded(content::RenderFrameHost* render_frame_host) override;
   void DidFinishLoad(content::RenderFrameHost* render_frame_host,
                      const GURL& validated_url) override;

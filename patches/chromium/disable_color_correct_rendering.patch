@@ -20,10 +20,10 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index bc0b6cae531402000f783861077363777f6ab8ac..f3b75991c76dbdda138d64a24666243329de47c3 100644
+index e1a99c0a66bfc4fcc6af07632543066a592b9cff..359be58dcba64bb9cfa1b1b543b1c576c27826ae 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
-@@ -1799,6 +1799,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
+@@ -1783,6 +1783,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
  
  gfx::ColorSpace LayerTreeHostImpl::GetRasterColorSpace(
      gfx::ContentColorUsage content_color_usage) const {
@@ -35,10 +35,10 @@ index bc0b6cae531402000f783861077363777f6ab8ac..f3b75991c76dbdda138d64a246662433
  
    // If we are likely to software composite the resource, we use sRGB because
 diff --git a/cc/trees/layer_tree_settings.h b/cc/trees/layer_tree_settings.h
-index bd5bcf4a03022869fe610015e882ff1980d8a0e8..a3fdd7ae208719bd10ddf1044a501e44e0897ae8 100644
+index e38646f8834e07e02845ea96f60f9b067c3bc09a..50a1c9884fa181524dd14e4cce61b0ec0921e4e6 100644
 --- a/cc/trees/layer_tree_settings.h
 +++ b/cc/trees/layer_tree_settings.h
-@@ -95,6 +95,8 @@ class CC_EXPORT LayerTreeSettings {
+@@ -93,6 +93,8 @@ class CC_EXPORT LayerTreeSettings {
    bool use_rgba_4444 = false;
    bool unpremultiply_and_dither_low_bit_depth_tiles = false;
  
@@ -229,10 +229,10 @@ index 2cd58b05621c11ccda6163cb471b719015b74379..1911003301766cbf05ce0f0b828b8faf
 +
 +#undef PATCH_CS
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index f82f2836f270e4f924c0bdc761eb028a05ea504e..d27017508a5f4afdacfcf4757da46bcc26be40c3 100644
+index 90cfcd777422e9e4a0ab3aa5216305102b2c4f35..621e300402ff646bafbf6d5d8101012cef24121d 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
-@@ -225,6 +225,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
+@@ -224,6 +224,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
  
  // Command-line switches to propagate to the GPU process.
  static const char* const kSwitchNames[] = {
@@ -241,10 +241,10 @@ index f82f2836f270e4f924c0bdc761eb028a05ea504e..d27017508a5f4afdacfcf4757da46bcc
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 224e23ad3584dd4511a4173d632547d4a2ee4e9c..0dbb7fad5c9f3b3889b0825d553992d6fe2745f9 100644
+index bad0a564a81fc45d86558be449d83dbc6d7c073f..bfe45bdb892f610304e0b3a10ce160d2aa8da29d 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -217,6 +217,7 @@
+@@ -219,6 +219,7 @@
  #include "ui/accessibility/accessibility_switches.h"
  #include "ui/base/ui_base_switches.h"
  #include "ui/display/display_switches.h"
@@ -252,7 +252,7 @@ index 224e23ad3584dd4511a4173d632547d4a2ee4e9c..0dbb7fad5c9f3b3889b0825d553992d6
  #include "ui/gl/gl_switches.h"
  #include "ui/native_theme/native_theme_features.h"
  #include "url/origin.h"
-@@ -3368,6 +3369,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3356,6 +3357,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -293,7 +293,7 @@ index 94ca8fd75212fa5c7b90823a112309dd7961353b..566393827ef739eb8fc0e24e6ee505e1
  }
  
 diff --git a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
-index 4d87cdf578fdd2cbde7929e3a8c7cabfbb1fc836..be8550927a7c9cdc001dedef66672453846c5dfa 100644
+index 083e7c6d49574ae5d1beeba02b334ae864d60afb..85626cd2354b0c13caceb8a1b4f7d585f400cb2c 100644
 --- a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 +++ b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 @@ -25,6 +25,7 @@

@@ -167,7 +167,7 @@ std::u16string ElectronContentClient::GetLocalizedString(int message_id) {
 
 base::StringPiece ElectronContentClient::GetDataResource(
     int resource_id,
-    ui::ScaleFactor scale_factor) {
+    ui::ResourceScaleFactor scale_factor) {
   return ui::ResourceBundle::GetSharedInstance().GetRawDataResourceForScale(
       resource_id, scale_factor);
 }
