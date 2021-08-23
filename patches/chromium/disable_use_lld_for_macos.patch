@@ -1,0 +1,21 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: mlaurencin <mlaurencin@electronjs.org>
+Date: Fri, 6 Aug 2021 15:29:48 -0700
+Subject: disable use_lld for macOS
+
+This patch disables use_lld on macOS, in order to prevent a linking bug
+that occurs when building for arm64.
+
+diff --git a/build/config/compiler/compiler.gni b/build/config/compiler/compiler.gni
+index 995ee26e64fb65310e50442b0e5922a756e10a05..0bce1708a755405daa28a59c56231679e3e3d6f1 100644
+--- a/build/config/compiler/compiler.gni
++++ b/build/config/compiler/compiler.gni
+@@ -200,7 +200,7 @@ declare_args() {
+   # Set to true to use lld, the LLVM linker.
+   # The default linker everywhere except on iOS.
+   # TODO(https://crbug.com/1233174): Make work in mac PGO builds.
+-  use_lld = is_clang && !is_ios && !(is_mac && chrome_pgo_phase == 1)
++  use_lld = is_clang && !is_ios
+ }
+ 
+ declare_args() {

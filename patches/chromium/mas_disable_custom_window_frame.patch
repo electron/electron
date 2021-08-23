@@ -95,7 +95,7 @@ index 5a23ea7558814eec59eda349bc7194afcb70d01e..c9147bbe5a225291552082434e5db342
  // The NSWindow used by BridgedNativeWidget. Provides hooks into AppKit that
  // can only be accomplished by overriding methods.
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index f4104fe938bb8c5d35e3396506ce0a6163a738da..7eb9070dc96b27dfe02046f75b45dee3e868d83a 100644
+index 83e08e8e56f8fdfe5c321c33b451b9bde8ee819a..f48d8ac4816e2d775c16758e086eb56ad456bd01 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 @@ -16,7 +16,9 @@
