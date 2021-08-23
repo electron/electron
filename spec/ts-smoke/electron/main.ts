@@ -172,7 +172,6 @@ app.whenReady().then(() => {
 app.getLocale()
 
 // Desktop environment integration
-// https://github.com/electron/electron/blob/master/docs/tutorial/desktop-environment-integration.md
 
 app.addRecentDocument('/Users/USERNAME/Desktop/work.type')
 app.clearRecentDocuments()
