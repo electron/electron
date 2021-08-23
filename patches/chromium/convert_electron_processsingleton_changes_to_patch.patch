@@ -63,10 +63,18 @@ index 0291db0f919aa7868d345f4f0712c42c6ad7ee17..6ca9cd0605fe8b2bfb039177a15498a6
  
  #if defined(OS_MAC)
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index dc9c1b76a1c7c8b3fa83fc83788eef36d2cfa4a5..c8e04548c4f5221140290d894f8b007653495bb5 100644
+index dc9c1b76a1c7c8b3fa83fc83788eef36d2cfa4a5..30aeb3367ab6495a5538af2b90396832e1b146e7 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
-@@ -348,6 +348,21 @@ bool CheckCookie(const base::FilePath& path, const base::FilePath& cookie) {
+@@ -80,6 +80,7 @@
+ #include "base/strings/stringprintf.h"
+ #include "base/strings/sys_string_conversions.h"
+ #include "base/strings/utf_string_conversions.h"
++#include "base/task/post_task.h"
+ #include "base/threading/platform_thread.h"
+ #include "base/threading/thread_task_runner_handle.h"
+ #include "base/time/time.h"
+@@ -348,6 +349,21 @@ bool CheckCookie(const base::FilePath& path, const base::FilePath& cookie) {
    return (cookie == ReadLink(path));
  }
  
@@ -88,7 +96,7 @@ index dc9c1b76a1c7c8b3fa83fc83788eef36d2cfa4a5..c8e04548c4f5221140290d894f8b0076
  bool ConnectSocket(ScopedSocket* socket,
                     const base::FilePath& socket_path,
                     const base::FilePath& cookie_path) {
-@@ -712,9 +727,13 @@ void ProcessSingleton::LinuxWatcher::SocketReader::FinishWithACK(
+@@ -712,9 +728,13 @@ void ProcessSingleton::LinuxWatcher::SocketReader::FinishWithACK(
  // ProcessSingleton
  //
  ProcessSingleton::ProcessSingleton(
@@ -102,7 +110,7 @@ index dc9c1b76a1c7c8b3fa83fc83788eef36d2cfa4a5..c8e04548c4f5221140290d894f8b0076
        current_pid_(base::GetCurrentProcId()),
        watcher_(new LinuxWatcher(this)) {
    socket_path_ = user_data_dir.Append(chrome::kSingletonSocketFilename);
-@@ -895,6 +914,20 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessOrCreate() {
+@@ -895,6 +915,20 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessOrCreate() {
        base::TimeDelta::FromSeconds(kTimeoutInSeconds));
  }
  
@@ -123,7 +131,7 @@ index dc9c1b76a1c7c8b3fa83fc83788eef36d2cfa4a5..c8e04548c4f5221140290d894f8b0076
  ProcessSingleton::NotifyResult
  ProcessSingleton::NotifyOtherProcessWithTimeoutOrCreate(
      const base::CommandLine& command_line,
-@@ -997,12 +1030,26 @@ bool ProcessSingleton::Create() {
+@@ -997,12 +1031,26 @@ bool ProcessSingleton::Create() {
  #endif
    }
  
@@ -156,7 +164,7 @@ index dc9c1b76a1c7c8b3fa83fc83788eef36d2cfa4a5..c8e04548c4f5221140290d894f8b0076
    }
  
    // Check that the directory was created with the correct permissions.
-@@ -1044,10 +1091,13 @@ bool ProcessSingleton::Create() {
+@@ -1044,10 +1092,13 @@ bool ProcessSingleton::Create() {
    if (listen(sock, 5) < 0)
      NOTREACHED() << "listen failed: " << base::safe_strerror(errno);
  
