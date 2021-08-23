@@ -48,6 +48,8 @@ static_library("chrome") {
     "//chrome/browser/predictors/resolve_host_client_impl.cc",
     "//chrome/browser/predictors/resolve_host_client_impl.h",
     "//chrome/browser/process_singleton.h",
+    "//chrome/browser/ui/browser_dialogs.cc",
+    "//chrome/browser/ui/browser_dialogs.h",
     "//chrome/browser/ui/views/autofill/autofill_popup_view_utils.cc",
     "//chrome/browser/ui/views/autofill/autofill_popup_view_utils.h",
     "//chrome/browser/ui/views/eye_dropper/eye_dropper.cc",
