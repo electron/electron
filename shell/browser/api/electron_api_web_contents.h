@@ -41,6 +41,7 @@
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/error_thrower.h"
+#include "shell/common/gin_helper/pinnable.h"
 #include "ui/base/models/image_model.h"
 #include "ui/gfx/image/image.h"
 
@@ -95,6 +96,7 @@ namespace api {
 class WebContents : public gin::Wrappable<WebContents>,
                     public gin_helper::EventEmitterMixin<WebContents>,
                     public gin_helper::Constructible<WebContents>,
+                    public gin_helper::Pinnable<WebContents>,
                     public gin_helper::CleanedUpAtExit,
                     public content::WebContentsObserver,
                     public content::WebContentsDelegate,
@@ -309,10 +311,6 @@ class WebContents : public gin::Wrappable<WebContents>,
 
   // Returns the owner window.
   v8::Local<v8::Value> GetOwnerBrowserWindow(v8::Isolate* isolate) const;
-
-  // Grants the child process the capability to access URLs with the origin of
-  // the specified URL.
-  void GrantOriginAccess(const GURL& url);
 
   // Notifies the web page that there is user interaction.
   void NotifyUserActivation();
@@ -545,9 +543,12 @@ class WebContents : public gin::Wrappable<WebContents>,
   void BeforeUnloadFired(bool proceed,
                          const base::TimeTicks& proceed_time) override;
   void RenderFrameCreated(content::RenderFrameHost* render_frame_host) override;
+  void RenderFrameDeleted(content::RenderFrameHost* render_frame_host) override;
+  void RenderFrameHostChanged(content::RenderFrameHost* old_host,
+                              content::RenderFrameHost* new_host) override;
+  void FrameDeleted(int frame_tree_node_id) override;
   void RenderViewDeleted(content::RenderViewHost*) override;
   void RenderProcessGone(base::TerminationStatus status) override;
-  void RenderFrameDeleted(content::RenderFrameHost* render_frame_host) override;
   void DOMContentLoaded(content::RenderFrameHost* render_frame_host) override;
   void DidFinishLoad(content::RenderFrameHost* render_frame_host,
                      const GURL& validated_url) override;
@@ -615,11 +616,6 @@ class WebContents : public gin::Wrappable<WebContents>,
 
   // content::WebContentsDelegate:
   bool CanOverscrollContent() override;
-  std::unique_ptr<content::ColorChooser> OpenColorChooser(
-      content::WebContents* web_contents,
-      SkColor color,
-      const std::vector<blink::mojom::ColorSuggestionPtr>& suggestions)
-      override;
   std::unique_ptr<content::EyeDropper> OpenEyeDropper(
       content::RenderFrameHost* frame,
       content::EyeDropperListener* listener) override;
@@ -686,6 +682,8 @@ class WebContents : public gin::Wrappable<WebContents>,
 
   // Set fullscreen mode triggered by html api.
   void SetHtmlApiFullscreen(bool enter_fullscreen);
+  // Update the html fullscreen flag in both browser and renderer.
+  void UpdateHtmlApiFullscreen(bool fullscreen);
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   v8::Local<v8::Value> GetExtensionTabDetails(gin::Arguments* args);

@@ -30,19 +30,6 @@
 namespace gin {
 
 template <>
-struct Converter<URLPattern> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     URLPattern* out) {
-    std::string pattern;
-    if (!ConvertFromV8(isolate, val, &pattern))
-      return false;
-    *out = URLPattern(URLPattern::SCHEME_ALL);
-    return out->Parse(pattern) == URLPattern::ParseResult::kSuccess;
-  }
-};
-
-template <>
 struct Converter<extensions::WebRequestResourceType> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    extensions::WebRequestResourceType type) {
@@ -63,11 +50,26 @@ struct Converter<extensions::WebRequestResourceType> {
       case extensions::WebRequestResourceType::IMAGE:
         result = "image";
         break;
+      case extensions::WebRequestResourceType::FONT:
+        result = "font";
+        break;
       case extensions::WebRequestResourceType::OBJECT:
         result = "object";
         break;
       case extensions::WebRequestResourceType::XHR:
         result = "xhr";
+        break;
+      case extensions::WebRequestResourceType::PING:
+        result = "ping";
+        break;
+      case extensions::WebRequestResourceType::CSP_REPORT:
+        result = "cspReport";
+        break;
+      case extensions::WebRequestResourceType::MEDIA:
+        result = "media";
+        break;
+      case extensions::WebRequestResourceType::WEB_SOCKET:
+        result = "webSocket";
         break;
       default:
         result = "other";
@@ -84,7 +86,7 @@ namespace api {
 
 namespace {
 
-const char* kUserDataKey = "WebRequest";
+const char kUserDataKey[] = "WebRequest";
 
 // BrowserContext <=> WebRequest relationship.
 struct UserData : public base::SupportsUserData::Data {
@@ -214,8 +216,11 @@ void ReadFromResponse(v8::Isolate* isolate,
 void ReadFromResponse(v8::Isolate* isolate,
                       gin::Dictionary* response,
                       net::HttpRequestHeaders* headers) {
-  headers->Clear();
-  response->Get("requestHeaders", headers);
+  v8::Local<v8::Value> value;
+  if (response->Get("requestHeaders", &value) && value->IsObject()) {
+    headers->Clear();
+    gin::Converter<net::HttpRequestHeaders>::FromV8(isolate, value, headers);
+  }
 }
 
 void ReadFromResponse(v8::Isolate* isolate,

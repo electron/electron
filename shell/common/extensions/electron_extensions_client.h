@@ -17,7 +17,6 @@ class APIPermissionSet;
 class Extension;
 class PermissionMessageProvider;
 class PermissionIDSet;
-class ScriptingWhitelist;
 class URLPatternSet;
 }  // namespace extensions
 

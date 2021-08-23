@@ -21,6 +21,7 @@
 #include "shell/common/gin_helper/microtasks_scope.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/world_ids.h"
+#include "shell/renderer/renderer_client_base.h"
 #include "third_party/blink/public/common/browser_interface_broker_proxy.h"
 #include "third_party/blink/public/common/web_preferences/web_preferences.h"
 #include "third_party/blink/public/platform/web_isolated_world_info.h"

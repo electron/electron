@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Wed, 18 Aug 2021 11:25:39 +0200
+Subject: fix: _ReadBarrier undefined symbol error on WOA arm64
+
+The _ReadBarrier compiler intrinsic isn't present on WOA arm64 devices
+and as such is crashing in CI. This fixes the issue by defining them
+if they're missing.
+
+We should upstream or otherwise handle this.
+
+diff --git a/deps/histogram/src/hdr_atomic.h b/deps/histogram/src/hdr_atomic.h
+index ae1056a83612af5e370ce12fea82f334fce0c62c..9acc5c2d78d7f3d718e8b0f69e9a5e17d9609835 100644
+--- a/deps/histogram/src/hdr_atomic.h
++++ b/deps/histogram/src/hdr_atomic.h
+@@ -14,6 +14,13 @@
+ #include <intrin.h>
+ #include <stdbool.h>
+ 
++#if !defined(_ReadBarrier) || !defined(_WriteBarrier)
++
++#define _ReadBarrier() __asm__ __volatile__("" ::: "memory")
++#define _WriteBarrier() __asm__ __volatile__("" ::: "memory")
++
++#endif
++
+ static void __inline * hdr_atomic_load_pointer(void** pointer)
+ {
+ 	_ReadBarrier();

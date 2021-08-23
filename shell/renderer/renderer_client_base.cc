@@ -41,6 +41,7 @@
 #include "third_party/blink/public/web/blink.h"
 #include "third_party/blink/public/web/web_custom_element.h"  // NOLINT(build/include_alpha)
 #include "third_party/blink/public/web/web_frame_widget.h"
+#include "third_party/blink/public/web/web_local_frame.h"
 #include "third_party/blink/public/web/web_plugin_params.h"
 #include "third_party/blink/public/web/web_script_source.h"
 #include "third_party/blink/public/web/web_security_policy.h"
@@ -131,7 +132,7 @@ RendererClientBase::RendererClientBase() {
   std::vector<std::string> streaming_schemes_list =
       ParseSchemesCLISwitch(command_line, switches::kStreamingSchemes);
   for (const std::string& scheme : streaming_schemes_list)
-    media::AddStreamingScheme(scheme.c_str());
+    blink::AddStreamingScheme(scheme.c_str());
   // Parse --secure-schemes=scheme1,scheme2
   std::vector<std::string> secure_schemes_list =
       ParseSchemesCLISwitch(command_line, switches::kSecureSchemes);

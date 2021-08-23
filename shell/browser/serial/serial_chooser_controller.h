@@ -21,7 +21,7 @@
 
 namespace content {
 class RenderFrameHost;
-}  // namespace content
+}
 
 namespace electron {
 
@@ -53,8 +53,7 @@ class SerialChooserController final : public SerialChooserContext::PortObserver,
 
   std::vector<blink::mojom::SerialPortFilterPtr> filters_;
   content::SerialChooser::Callback callback_;
-  url::Origin requesting_origin_;
-  url::Origin embedding_origin_;
+  url::Origin origin_;
 
   base::WeakPtr<SerialChooserContext> chooser_context_;
 

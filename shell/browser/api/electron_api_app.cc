@@ -11,6 +11,7 @@
 
 #include "base/callback_helpers.h"
 #include "base/command_line.h"
+#include "base/containers/span.h"
 #include "base/environment.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
@@ -412,7 +413,7 @@ struct Converter<content::CertificateRequestResultType> {
     if (!ConvertFromV8(isolate, val, &b))
       return false;
     *out = b ? content::CERTIFICATE_REQUEST_RESULT_TYPE_CONTINUE
-             : content::CERTIFICATE_REQUEST_RESULT_TYPE_CANCEL;
+             : content::CERTIFICATE_REQUEST_RESULT_TYPE_DENY;
     return true;
   }
 };
@@ -536,7 +537,8 @@ void OnClientCertificateSelected(
     return;
 
   auto certs = net::X509Certificate::CreateCertificateListFromBytes(
-      data.c_str(), data.length(), net::X509Certificate::FORMAT_AUTO);
+      base::as_bytes(base::make_span(data.c_str(), data.size())),
+      net::X509Certificate::FORMAT_AUTO);
   if (!certs.empty()) {
     scoped_refptr<net::X509Certificate> cert(certs[0].get());
     for (auto& identity : *identities) {
@@ -714,8 +716,9 @@ void App::OnDidFailToContinueUserActivity(const std::string& type,
 
 void App::OnContinueUserActivity(bool* prevent_default,
                                  const std::string& type,
-                                 const base::DictionaryValue& user_info) {
-  if (Emit("continue-activity", type, user_info)) {
+                                 const base::DictionaryValue& user_info,
+                                 const base::DictionaryValue& details) {
+  if (Emit("continue-activity", type, user_info, details)) {
     *prevent_default = true;
   }
 }

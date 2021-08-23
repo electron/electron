@@ -58,7 +58,8 @@
 #endif
 
 #if !defined(MAS_BUILD)
-#include "components/crash/core/app/crashpad.h"  // nogncheck
+#include "components/crash/core/app/crash_switches.h"  // nogncheck
+#include "components/crash/core/app/crashpad.h"        // nogncheck
 #include "components/crash/core/common/crash_key.h"
 #include "components/crash/core/common/crash_keys.h"
 #include "shell/app/electron_crash_reporter_client.h"
@@ -70,7 +71,7 @@ namespace electron {
 
 namespace {
 
-const char* kRelauncherProcess = "relauncher";
+const char kRelauncherProcess[] = "relauncher";
 
 constexpr base::StringPiece kElectronDisableSandbox("ELECTRON_DISABLE_SANDBOX");
 constexpr base::StringPiece kElectronEnableStackDumping(
@@ -97,9 +98,9 @@ bool SubprocessNeedsResourceBundle(const std::string& process_type) {
 #if defined(OS_MAC)
       // Mac needs them too for scrollbar related images and for sandbox
       // profiles.
-      process_type == ::switches::kPpapiPluginProcess ||
       process_type == ::switches::kGpuProcess ||
 #endif
+      process_type == ::switches::kPpapiPluginProcess ||
       process_type == ::switches::kRendererProcess ||
       process_type == ::switches::kUtilityProcess;
 }
@@ -123,7 +124,8 @@ bool ElectronPathProvider(int key, base::FilePath* result) {
     case chrome::DIR_USER_DATA:
       if (!base::PathService::Get(DIR_APP_DATA, &cur))
         return false;
-      cur = cur.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
+      cur = cur.Append(base::FilePath::FromUTF8Unsafe(
+          GetPossiblyOverriddenApplicationName()));
       create_dir = true;
       break;
     case DIR_CRASH_DUMPS:
@@ -153,7 +155,8 @@ bool ElectronPathProvider(int key, base::FilePath* result) {
 #endif
       if (!base::PathService::Get(parent_key, &cur))
         return false;
-      cur = cur.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
+      cur = cur.Append(base::FilePath::FromUTF8Unsafe(
+          GetPossiblyOverriddenApplicationName()));
       create_dir = true;
       break;
     }
@@ -178,7 +181,8 @@ bool ElectronPathProvider(int key, base::FilePath* result) {
         return false;
       cur = cur.Append(FILE_PATH_LITERAL("Library"));
       cur = cur.Append(FILE_PATH_LITERAL("Logs"));
-      cur = cur.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
+      cur = cur.Append(base::FilePath::FromUTF8Unsafe(
+          GetPossiblyOverriddenApplicationName()));
 #else
       if (!base::PathService::Get(chrome::DIR_USER_DATA, &cur))
         return false;
@@ -366,9 +370,19 @@ void ElectronMainDelegate::PreSandboxStartup() {
 #endif
 
 #if defined(OS_LINUX)
+  // Zygote needs to call InitCrashReporter() in RunZygote().
   if (process_type != ::switches::kZygoteProcess && !process_type.empty()) {
     ElectronCrashReporterClient::Create();
-    breakpad::InitCrashReporter(process_type);
+    if (crash_reporter::IsCrashpadEnabled()) {
+      if (command_line->HasSwitch(
+              crash_reporter::switches::kCrashpadHandlerPid)) {
+        crash_reporter::InitializeCrashpad(false, process_type);
+        crash_reporter::SetFirstChanceExceptionHandler(
+            v8::TryHandleWebAssemblyTrapPosix);
+      }
+    } else {
+      breakpad::InitCrashReporter(process_type);
+    }
   }
 #endif
 
@@ -463,7 +477,16 @@ void ElectronMainDelegate::ZygoteForked() {
       base::CommandLine::ForCurrentProcess();
   std::string process_type =
       command_line->GetSwitchValueASCII(::switches::kProcessType);
-  breakpad::InitCrashReporter(process_type);
+  if (crash_reporter::IsCrashpadEnabled()) {
+    if (command_line->HasSwitch(
+            crash_reporter::switches::kCrashpadHandlerPid)) {
+      crash_reporter::InitializeCrashpad(false, process_type);
+      crash_reporter::SetFirstChanceExceptionHandler(
+          v8::TryHandleWebAssemblyTrapPosix);
+    }
+  } else {
+    breakpad::InitCrashReporter(process_type);
+  }
 
   // Reset the command line for the newly spawned process.
   crash_keys::SetCrashKeysFromCommandLine(*command_line);

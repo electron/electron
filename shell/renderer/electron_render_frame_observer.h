@@ -9,14 +9,11 @@
 
 #include "content/public/renderer/render_frame_observer.h"
 #include "ipc/ipc_platform_file.h"
-#include "shell/renderer/renderer_client_base.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 
-namespace base {
-class ListValue;
-}
-
 namespace electron {
+
+class RendererClientBase;
 
 // Helper class to forward the messages to the client.
 class ElectronRenderFrameObserver : public content::RenderFrameObserver {

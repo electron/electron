@@ -24,10 +24,10 @@ the implementation in a given frame.
 This patch allows us to get the one-shot effect with the above classes.
 
 diff --git a/chrome/browser/media/webrtc/desktop_media_list.h b/chrome/browser/media/webrtc/desktop_media_list.h
-index d7b52b0d1b8cfb823513303ec0f6322d8dc8d153..f2dbf39f81abfc6fde4064345ab0d222ee98438c 100644
+index 9663606890f30c82500118b8338ced4e84a69423..ff3d103e35c9809d4291942f1bb56a535870aad4 100644
 --- a/chrome/browser/media/webrtc/desktop_media_list.h
 +++ b/chrome/browser/media/webrtc/desktop_media_list.h
-@@ -52,6 +52,9 @@ class DesktopMediaList {
+@@ -49,6 +49,9 @@ class DesktopMediaList {
  
    virtual ~DesktopMediaList() {}
  
@@ -37,7 +37,7 @@ index d7b52b0d1b8cfb823513303ec0f6322d8dc8d153..f2dbf39f81abfc6fde4064345ab0d222
    // Sets time interval between updates. By default list of sources and their
    // thumbnail are updated once per second. If called after StartUpdating() then
    // it will take effect only after the next update.
-@@ -83,6 +86,7 @@ class DesktopMediaList {
+@@ -80,6 +83,7 @@ class DesktopMediaList {
  
    virtual int GetSourceCount() const = 0;
    virtual const Source& GetSource(int index) const = 0;

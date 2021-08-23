@@ -2,6 +2,7 @@
 
 const { version } = require('./package');
 
+const childProcess = require('child_process');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -18,14 +19,31 @@ if (isInstalled()) {
   process.exit(0);
 }
 
+const platform = process.env.npm_config_platform || process.platform;
+let arch = process.env.npm_config_arch || process.arch;
+
+if (platform === 'darwin' && process.platform === 'darwin' && arch === 'x64') {
+  // When downloading for macOS ON macOS and we think we need x64 we should
+  // check if we're running under rosetta and download the arm64 version if appropriate
+  try {
+    const output = childProcess.execSync('sysctl -in sysctl.proc_translated');
+    if (output.toString().trim() === '1') {
+      arch = 'arm64';
+    }
+  } catch {
+    // Ignore failure
+  }
+}
+
 // downloads if not cached
 downloadArtifact({
   version,
   artifactName: 'electron',
   force: process.env.force_no_cache === 'true',
   cacheRoot: process.env.electron_config_cache,
-  platform: process.env.npm_config_platform || process.platform,
-  arch: process.env.npm_config_arch || process.arch
+  checksums: process.env.electron_use_remote_checksums ? undefined : require('./checksums.json'),
+  platform,
+  arch
 }).then(extractFile).catch(err => {
   console.error(err.stack);
   process.exit(1);

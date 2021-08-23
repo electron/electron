@@ -76,7 +76,7 @@ class DesktopNotificationController::Toast::UIAutomationInterface
  private:
   volatile LONG cref_ = 0;
   HWND hwnd_;
-  std::wstring text_;
+  std::u16string text_;
 };
 
 }  // namespace electron

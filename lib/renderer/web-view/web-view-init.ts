@@ -20,9 +20,9 @@ function handleFocusBlur () {
   });
 }
 
-export function webViewInit (contextIsolation: boolean, webviewTag: boolean, guestInstanceId: number) {
+export function webViewInit (contextIsolation: boolean, webviewTag: boolean, isWebView: boolean) {
   // Don't allow recursive `<webview>`.
-  if (webviewTag && !guestInstanceId) {
+  if (webviewTag && !isWebView) {
     const guestViewInternal = require('@electron/internal/renderer/web-view/guest-view-internal') as typeof guestViewInternalModule;
     if (contextIsolation) {
       v8Util.setHiddenValue(window, 'guestViewInternal', guestViewInternal);
@@ -36,7 +36,7 @@ export function webViewInit (contextIsolation: boolean, webviewTag: boolean, gue
     }
   }
 
-  if (guestInstanceId) {
+  if (isWebView) {
     // Report focus/blur events of webview to browser.
     handleFocusBlur();
   }

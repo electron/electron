@@ -13,7 +13,6 @@
 #include "electron/buildflags/buildflags.h"
 #include "printing/buildflags/buildflags.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "third_party/blink/public/web/web_local_frame.h"
 // In SHARED_INTERMEDIATE_DIR.
 #include "widevine_cdm_version.h"  // NOLINT(build/include_directory)
 
@@ -32,18 +31,17 @@
 class SpellCheck;
 #endif
 
+namespace blink {
+class WebLocalFrame;
+}
+
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 namespace extensions {
 class ExtensionsClient;
 }
-namespace content {
-struct WebPluginInfo;
-}
 #endif
 
 namespace electron {
-
-class ElectronApiServiceImpl;
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 class ElectronExtensionsRendererClient;

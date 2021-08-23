@@ -37,7 +37,6 @@
 #include "content/browser/renderer_host/render_widget_host_impl.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_view_base.h"  // nogncheck
 #include "content/public/browser/child_process_security_policy.h"
-#include "content/public/browser/color_chooser.h"
 #include "content/public/browser/context_menu_params.h"
 #include "content/public/browser/download_request_utils.h"
 #include "content/public/browser/favicon_status.h"
@@ -46,7 +45,6 @@
 #include "content/public/browser/navigation_details.h"
 #include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/navigation_handle.h"
-#include "content/public/browser/plugin_service.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
@@ -100,6 +98,7 @@
 #include "shell/browser/web_contents_zoom_controller.h"
 #include "shell/browser/web_dialog_helper.h"
 #include "shell/browser/web_view_guest_delegate.h"
+#include "shell/browser/web_view_manager.h"
 #include "shell/common/api/electron_api_native_image.h"
 #include "shell/common/color_util.h"
 #include "shell/common/electron_constants.h"
@@ -176,10 +175,6 @@
 #endif
 #endif
 
-#if BUILDFLAG(ENABLE_COLOR_CHOOSER)
-#include "chrome/browser/ui/color_chooser.h"
-#endif
-
 #if BUILDFLAG(ENABLE_PICTURE_IN_PICTURE)
 #include "chrome/browser/picture_in_picture/picture_in_picture_window_manager.h"
 #endif
@@ -187,6 +182,10 @@
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
 #include "components/pdf/browser/pdf_web_contents_helper.h"  // nogncheck
 #include "shell/browser/electron_pdf_web_contents_helper_client.h"
+#endif
+
+#if BUILDFLAG(ENABLE_PLUGINS)
+#include "content/public/browser/plugin_service.h"
 #endif
 
 #ifndef MAS_BUILD
@@ -421,7 +420,7 @@ bool IsDeviceNameValid(const std::u16string& device_name) {
   return printer_exists;
 #elif defined(OS_WIN)
   printing::ScopedPrinterHandle printer;
-  return printer.OpenPrinterWithName(base::UTF16ToWide(device_name).c_str());
+  return printer.OpenPrinterWithName(base::as_wcstr(device_name));
 #endif
   return true;
 }
@@ -814,14 +813,14 @@ void WebContents::InitWithSessionAndOptions(
 
 #if defined(OS_LINUX) || defined(OS_WIN)
   // Update font settings.
-  static const base::NoDestructor<gfx::FontRenderParams> params(
+  static const gfx::FontRenderParams params(
       gfx::GetFontRenderParams(gfx::FontRenderParamsQuery(), nullptr));
-  prefs->should_antialias_text = params->antialiasing;
-  prefs->use_subpixel_positioning = params->subpixel_positioning;
-  prefs->hinting = params->hinting;
-  prefs->use_autohinter = params->autohinter;
-  prefs->use_bitmaps = params->use_bitmaps;
-  prefs->subpixel_rendering = params->subpixel_rendering;
+  prefs->should_antialias_text = params.antialiasing;
+  prefs->use_subpixel_positioning = params.subpixel_positioning;
+  prefs->hinting = params.hinting;
+  prefs->use_autohinter = params.autohinter;
+  prefs->use_bitmaps = params.use_bitmaps;
+  prefs->subpixel_rendering = params.subpixel_rendering;
 #endif
 
   // Honor the system's cursor blink rate settings
@@ -875,8 +874,14 @@ void WebContents::InitWithExtensionView(v8::Isolate* isolate,
                                         extensions::mojom::ViewType view_type) {
   // Must reassign type prior to calling `Init`.
   type_ = GetTypeFromViewType(view_type);
-  if (GetType() == Type::kRemote)
+  if (type_ == Type::kRemote)
     return;
+  if (type_ == Type::kBackgroundPage)
+    // non-background-page WebContents are retained by other classes. We need
+    // to pin here to prevent background-page WebContents from being GC'd.
+    // The background page api::WebContents will live until the underlying
+    // content::WebContents is destroyed.
+    Pin(isolate);
 
   // Allow toggling DevTools for background pages
   Observe(web_contents);
@@ -905,8 +910,7 @@ void WebContents::InitWithWebContents(content::WebContents* web_contents,
 
   // Determine whether the WebContents is offscreen.
   auto* web_preferences = WebContentsPreferences::From(web_contents);
-  offscreen_ =
-      web_preferences && web_preferences->IsEnabled(options::kOffscreen);
+  offscreen_ = web_preferences && web_preferences->IsOffscreen();
 
   // Create InspectableWebContents.
   inspectable_web_contents_ = std::make_unique<InspectableWebContents>(
@@ -1190,8 +1194,7 @@ bool WebContents::PlatformHandleKeyboardEvent(
 
   // Check if the webContents has preferences and to ignore shortcuts
   auto* web_preferences = WebContentsPreferences::From(source);
-  if (web_preferences &&
-      web_preferences->IsEnabled("ignoreMenuShortcuts", false))
+  if (web_preferences && web_preferences->ShouldIgnoreMenuShortcuts())
     return false;
 
   // Let the NativeWindow handle other parts.
@@ -1238,31 +1241,29 @@ void WebContents::OnEnterFullscreenModeForTab(
     content::RenderFrameHost* requesting_frame,
     const blink::mojom::FullscreenOptions& options,
     bool allowed) {
-  if (!allowed)
+  if (!allowed || !owner_window_)
     return;
-  if (!owner_window_)
-    return;
+
   auto* source = content::WebContents::FromRenderFrameHost(requesting_frame);
   if (IsFullscreenForTabOrPending(source)) {
     DCHECK_EQ(fullscreen_frame_, source->GetFocusedFrame());
     return;
   }
+
   SetHtmlApiFullscreen(true);
-  owner_window_->NotifyWindowEnterHtmlFullScreen();
 
   if (native_fullscreen_) {
     // Explicitly trigger a view resize, as the size is not actually changing if
     // the browser is fullscreened, too.
     source->GetRenderViewHost()->GetWidget()->SynchronizeVisualProperties();
   }
-  Emit("enter-html-full-screen");
 }
 
 void WebContents::ExitFullscreenModeForTab(content::WebContents* source) {
   if (!owner_window_)
     return;
+
   SetHtmlApiFullscreen(false);
-  owner_window_->NotifyWindowLeaveHtmlFullScreen();
 
   if (native_fullscreen_) {
     // Explicitly trigger a view resize, as the size is not actually changing if
@@ -1270,7 +1271,6 @@ void WebContents::ExitFullscreenModeForTab(content::WebContents* source) {
     // `chrome/browser/ui/exclusive_access/fullscreen_controller.cc`.
     source->GetRenderViewHost()->GetWidget()->SynchronizeVisualProperties();
   }
-  Emit("leave-html-full-screen");
 }
 
 void WebContents::RendererUnresponsive(
@@ -1375,12 +1375,7 @@ void WebContents::HandleNewRenderFrame(
   auto* web_preferences = WebContentsPreferences::From(web_contents());
   if (web_preferences) {
     std::string color_name;
-    if (web_preferences->GetPreference(options::kBackgroundColor,
-                                       &color_name)) {
-      rwhv->SetBackgroundColor(ParseHexColor(color_name));
-    } else {
-      rwhv->SetBackgroundColor(SK_ColorTRANSPARENT);
-    }
+    rwhv->SetBackgroundColor(web_preferences->GetBackgroundColor());
   }
 
   if (!background_throttling_)
@@ -1391,12 +1386,54 @@ void WebContents::HandleNewRenderFrame(
   if (rwh_impl)
     rwh_impl->disable_hidden_ = !background_throttling_;
 
-  WebFrameMain::RenderFrameCreated(render_frame_host);
+  auto* web_frame = WebFrameMain::FromRenderFrameHost(render_frame_host);
+  if (web_frame)
+    web_frame->Connect();
 }
 
 void WebContents::RenderFrameCreated(
     content::RenderFrameHost* render_frame_host) {
   HandleNewRenderFrame(render_frame_host);
+}
+
+void WebContents::RenderFrameDeleted(
+    content::RenderFrameHost* render_frame_host) {
+  // A RenderFrameHost can be deleted when:
+  // - A WebContents is removed and its containing frames are disposed.
+  // - An <iframe> is removed from the DOM.
+  // - Cross-origin navigation creates a new RFH in a separate process which
+  //   is swapped by content::RenderFrameHostManager.
+  //
+  // WebFrameMain::FromRenderFrameHost(rfh) will use the RFH's FrameTreeNode ID
+  // to find an existing instance of WebFrameMain. During a cross-origin
+  // navigation, the deleted RFH will be the old host which was swapped out. In
+  // this special case, we need to also ensure that WebFrameMain's internal RFH
+  // matches before marking it as disposed.
+  auto* web_frame = WebFrameMain::FromRenderFrameHost(render_frame_host);
+  if (web_frame && web_frame->render_frame_host() == render_frame_host)
+    web_frame->MarkRenderFrameDisposed();
+}
+
+void WebContents::RenderFrameHostChanged(content::RenderFrameHost* old_host,
+                                         content::RenderFrameHost* new_host) {
+  // During cross-origin navigation, a FrameTreeNode will swap out its RFH.
+  // If an instance of WebFrameMain exists, it will need to have its RFH
+  // swapped as well.
+  //
+  // |old_host| can be a nullptr in so we use |new_host| for looking up the
+  // WebFrameMain instance.
+  auto* web_frame =
+      WebFrameMain::FromFrameTreeNodeId(new_host->GetFrameTreeNodeId());
+  if (web_frame) {
+    CHECK_EQ(web_frame->render_frame_host(), old_host);
+    web_frame->UpdateRenderFrameHost(new_host);
+  }
+}
+
+void WebContents::FrameDeleted(int frame_tree_node_id) {
+  auto* web_frame = WebFrameMain::FromFrameTreeNodeId(frame_tree_node_id);
+  if (web_frame)
+    web_frame->Destroyed();
 }
 
 void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
@@ -1511,8 +1548,7 @@ void WebContents::DidStartLoading() {
 
 void WebContents::DidStopLoading() {
   auto* web_preferences = WebContentsPreferences::From(web_contents());
-  if (web_preferences &&
-      web_preferences->IsEnabled(options::kEnablePreferredSizeMode))
+  if (web_preferences && web_preferences->ShouldUsePreferredSizeMode())
     web_contents()->GetRenderViewHost()->EnablePreferredSizeMode();
 
   Emit("did-stop-loading");
@@ -1639,13 +1675,6 @@ void WebContents::UpdateDraggableRegions(
     observer.OnDraggableRegionsUpdated(regions);
 }
 
-void WebContents::RenderFrameDeleted(
-    content::RenderFrameHost* render_frame_host) {
-  // A WebFrameMain can outlive its RenderFrameHost so we need to mark it as
-  // disposed to prevent access to it.
-  WebFrameMain::RenderFrameDeleted(render_frame_host);
-}
-
 void WebContents::DidStartNavigation(
     content::NavigationHandle* navigation_handle) {
   EmitNavigationEvent("did-start-navigation", navigation_handle);
@@ -1679,6 +1708,10 @@ void WebContents::ReadyToCommitNavigation(
 
 void WebContents::DidFinishNavigation(
     content::NavigationHandle* navigation_handle) {
+  if (owner_window_) {
+    owner_window_->NotifyLayoutWindowControlsOverlay();
+  }
+
   if (!navigation_handle->HasCommitted())
     return;
   bool is_main_frame = navigation_handle->IsInMainFrame();
@@ -1756,6 +1789,8 @@ void WebContents::TitleWasSet(content::NavigationEntry* entry) {
     } else {
       final_title = title;
     }
+  } else {
+    final_title = web_contents()->GetTitle();
   }
   for (ExtendedWebContentsObserver& observer : observers_)
     observer.OnPageTitleUpdated(final_title, explicit_set);
@@ -2335,8 +2370,7 @@ void WebContents::InspectServiceWorker() {
 void WebContents::SetIgnoreMenuShortcuts(bool ignore) {
   auto* web_preferences = WebContentsPreferences::From(web_contents());
   DCHECK(web_preferences);
-  web_preferences->preference()->SetKey("ignoreMenuShortcuts",
-                                        base::Value(ignore));
+  web_preferences->SetIgnoreMenuShortcuts(ignore);
 }
 
 void WebContents::SetAudioMuted(bool muted) {
@@ -2511,7 +2545,7 @@ void WebContents::Print(gin::Arguments* args) {
   // We don't want to allow the user to enable these settings
   // but we need to set them or a CHECK is hit.
   settings.SetIntKey(printing::kSettingPrinterType,
-                     static_cast<int>(printing::PrinterType::kLocal));
+                     static_cast<int>(printing::mojom::PrinterType::kLocal));
   settings.SetBoolKey(printing::kSettingShouldPrintSelectionOnly, false);
   settings.SetBoolKey(printing::kSettingRasterizePdf, false);
 
@@ -3044,14 +3078,6 @@ std::vector<base::FilePath> WebContents::GetPreloadPaths() const {
   return result;
 }
 
-v8::Local<v8::Value> WebContents::GetWebPreferences(
-    v8::Isolate* isolate) const {
-  auto* web_preferences = WebContentsPreferences::From(web_contents());
-  if (!web_preferences)
-    return v8::Null(isolate);
-  return gin::ConvertToV8(isolate, *web_preferences->preference());
-}
-
 v8::Local<v8::Value> WebContents::GetLastWebPreferences(
     v8::Isolate* isolate) const {
   auto* web_preferences = WebContentsPreferences::From(web_contents());
@@ -3131,12 +3157,6 @@ content::RenderFrameHost* WebContents::MainFrame() {
   return web_contents()->GetMainFrame();
 }
 
-void WebContents::GrantOriginAccess(const GURL& url) {
-  content::ChildProcessSecurityPolicy::GetInstance()->GrantCommitOrigin(
-      web_contents()->GetMainFrame()->GetProcess()->GetID(),
-      url::Origin::Create(url));
-}
-
 void WebContents::NotifyUserActivation() {
   content::RenderFrameHost* frame = web_contents()->GetMainFrame();
   if (frame)
@@ -3146,8 +3166,7 @@ void WebContents::NotifyUserActivation() {
 
 void WebContents::SetImageAnimationPolicy(const std::string& new_policy) {
   auto* web_preferences = WebContentsPreferences::From(web_contents());
-  web_preferences->preference()->SetKey(options::kImageAnimationPolicy,
-                                        base::Value(new_policy));
+  web_preferences->SetImageAnimationPolicy(new_policy);
   web_contents()->OnWebPreferencesChanged();
 }
 
@@ -3206,17 +3225,6 @@ void WebContents::UpdatePreferredSize(content::WebContents* web_contents,
 
 bool WebContents::CanOverscrollContent() {
   return false;
-}
-
-std::unique_ptr<content::ColorChooser> WebContents::OpenColorChooser(
-    content::WebContents* web_contents,
-    SkColor color,
-    const std::vector<blink::mojom::ColorSuggestionPtr>& suggestions) {
-#if BUILDFLAG(ENABLE_COLOR_CHOOSER)
-  return chrome::ShowColorChooser(web_contents, color);
-#else
-  return nullptr;
-#endif
 }
 
 std::unique_ptr<content::EyeDropper> WebContents::OpenEyeDropper(
@@ -3564,28 +3572,28 @@ void WebContents::SetHtmlApiFullscreen(bool enter_fullscreen) {
   // Window is already in fullscreen mode, save the state.
   if (enter_fullscreen && owner_window_->IsFullscreen()) {
     native_fullscreen_ = true;
-    html_fullscreen_ = true;
+    UpdateHtmlApiFullscreen(true);
     return;
   }
 
   // Exit html fullscreen state but not window's fullscreen mode.
   if (!enter_fullscreen && native_fullscreen_) {
-    html_fullscreen_ = false;
+    UpdateHtmlApiFullscreen(false);
     return;
   }
 
   // Set fullscreen on window if allowed.
   auto* web_preferences = WebContentsPreferences::From(GetWebContents());
   bool html_fullscreenable =
-      web_preferences ? !web_preferences->IsEnabled(
-                            options::kDisableHtmlFullscreenWindowResize)
-                      : true;
+      web_preferences
+          ? !web_preferences->ShouldDisableHtmlFullscreenWindowResize()
+          : true;
 
   if (html_fullscreenable) {
     owner_window_->SetFullScreen(enter_fullscreen);
   }
 
-  html_fullscreen_ = enter_fullscreen;
+  UpdateHtmlApiFullscreen(enter_fullscreen);
   native_fullscreen_ = false;
 }
 
@@ -3602,6 +3610,43 @@ v8::Local<v8::Value> WebContents::GetExtensionTabDetails(gin::Arguments* args) {
                                ->ToValue());
 }
 #endif
+
+void WebContents::UpdateHtmlApiFullscreen(bool fullscreen) {
+  if (fullscreen == is_html_fullscreen())
+    return;
+
+  html_fullscreen_ = fullscreen;
+
+  // Notify renderer of the html fullscreen change.
+  web_contents()
+      ->GetRenderViewHost()
+      ->GetWidget()
+      ->SynchronizeVisualProperties();
+
+  // The embedder WebContents is separated from the frame tree of webview, so
+  // we must manually sync their fullscreen states.
+  if (embedder_)
+    embedder_->SetHtmlApiFullscreen(fullscreen);
+
+  if (fullscreen) {
+    Emit("enter-html-full-screen");
+    owner_window_->NotifyWindowEnterHtmlFullScreen();
+  } else {
+    Emit("leave-html-full-screen");
+    owner_window_->NotifyWindowLeaveHtmlFullScreen();
+  }
+
+  // Make sure all child webviews quit html fullscreen.
+  if (!fullscreen && !IsGuest()) {
+    auto* manager = WebViewManager::GetWebViewManager(web_contents());
+    manager->ForEachGuest(
+        web_contents(), base::BindRepeating([](content::WebContents* guest) {
+          WebContents* api_web_contents = WebContents::From(guest);
+          api_web_contents->SetHtmlApiFullscreen(false);
+          return false;
+        }));
+  }
+}
 
 // static
 v8::Local<v8::ObjectTemplate> WebContents::FillObjectTemplate(
@@ -3702,7 +3747,6 @@ v8::Local<v8::ObjectTemplate> WebContents::FillObjectTemplate(
       .SetMethod("getZoomFactor", &WebContents::GetZoomFactor)
       .SetMethod("getType", &WebContents::GetType)
       .SetMethod("_getPreloadPaths", &WebContents::GetPreloadPaths)
-      .SetMethod("getWebPreferences", &WebContents::GetWebPreferences)
       .SetMethod("getLastWebPreferences", &WebContents::GetLastWebPreferences)
       .SetMethod("getOwnerBrowserWindow", &WebContents::GetOwnerBrowserWindow)
       .SetMethod("inspectServiceWorker", &WebContents::InspectServiceWorker)
@@ -3735,7 +3779,6 @@ v8::Local<v8::ObjectTemplate> WebContents::FillObjectTemplate(
                  &WebContents::SetWebRTCIPHandlingPolicy)
       .SetMethod("getWebRTCIPHandlingPolicy",
                  &WebContents::GetWebRTCIPHandlingPolicy)
-      .SetMethod("_grantOriginAccess", &WebContents::GrantOriginAccess)
       .SetMethod("takeHeapSnapshot", &WebContents::TakeHeapSnapshot)
       .SetMethod("setImageAnimationPolicy",
                  &WebContents::SetImageAnimationPolicy)
@@ -3824,11 +3867,10 @@ gin::Handle<WebContents> WebContents::CreateFromWebPreferences(
     // render processes.
     auto* existing_preferences =
         WebContentsPreferences::From(web_contents->web_contents());
-    base::DictionaryValue web_preferences_dict;
+    gin_helper::Dictionary web_preferences_dict;
     if (gin::ConvertFromV8(isolate, web_preferences.GetHandle(),
                            &web_preferences_dict)) {
-      existing_preferences->Clear();
-      existing_preferences->Merge(web_preferences_dict);
+      existing_preferences->SetFromDictionary(web_preferences_dict);
     }
   } else {
     // Create one if not.

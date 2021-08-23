@@ -178,8 +178,9 @@ int NodeMain(int argc, char* argv[]) {
     if (flags_exit_code != 0)
       exit(flags_exit_code);
 
+    node::InitializationSettingsFlags flags = node::kRunPlatformInit;
     node::InitializationResult result =
-        node::InitializeOncePerProcess(argc, argv);
+        node::InitializeOncePerProcess(argc, argv, flags);
 
     if (result.early_return)
       exit(result.exit_code);
@@ -211,7 +212,7 @@ int NodeMain(int argc, char* argv[]) {
 
       env = node::CreateEnvironment(isolate_data, gin_env.context(),
                                     result.args, result.exec_args);
-      CHECK_NOT_NULL(env);
+      CHECK_NE(nullptr, env);
 
       node::IsolateSettings is;
       node::SetIsolateUpForNode(isolate, is);

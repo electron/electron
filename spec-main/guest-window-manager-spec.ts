@@ -33,7 +33,11 @@ describe('new-window event', () => {
     proxy: {
       snapshotFileName: 'proxy-window-open.snapshot.txt',
       browserWindowOptions: {
-        show: false
+        show: false,
+        webPreferences: {
+          nativeWindowOpen: false,
+          sandbox: false
+        }
       }
     }
   };
@@ -262,6 +266,12 @@ describe('webContents.setWindowOpenHandler', () => {
         });
 
         browserWindow.webContents.executeJavaScript("window.open('about:blank', '', 'show=no') && true");
+      });
+
+      it('does not hang parent window when denying window.open', async () => {
+        browserWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+        browserWindow.webContents.executeJavaScript("window.open('https://127.0.0.1')");
+        expect(await browserWindow.webContents.executeJavaScript('42')).to.equal(42);
       });
     });
   }

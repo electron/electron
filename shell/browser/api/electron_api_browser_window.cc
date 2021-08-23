@@ -57,6 +57,17 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
     web_preferences.Set(options::kShow, show);
   }
 
+  bool titleBarOverlay = false;
+  options.Get(options::ktitleBarOverlay, &titleBarOverlay);
+  if (titleBarOverlay) {
+    std::string enabled_features = "";
+    if (web_preferences.Get(options::kEnableBlinkFeatures, &enabled_features)) {
+      enabled_features += ",";
+    }
+    enabled_features += features::kWebAppWindowControlsOverlay.name;
+    web_preferences.Set(options::kEnableBlinkFeatures, enabled_features);
+  }
+
   // Copy the webContents option to webPreferences. This is only used internally
   // to implement nativeWindowOpen option.
   if (options.Get("webContents", &value)) {
@@ -143,7 +154,7 @@ void BrowserWindow::RenderFrameCreated(
 }
 
 void BrowserWindow::DidFirstVisuallyNonEmptyPaint() {
-  if (window()->IsVisible())
+  if (window()->IsClosed() || window()->IsVisible())
     return;
 
   // When there is a non-empty first paint, resize the RenderWidget to force
@@ -312,6 +323,11 @@ void BrowserWindow::OnWindowLeaveFullScreen() {
   BaseWindow::OnWindowLeaveFullScreen();
 }
 
+void BrowserWindow::UpdateWindowControlsOverlay(
+    const gfx::Rect& bounding_rect) {
+  web_contents()->UpdateWindowControlsOverlay(bounding_rect);
+}
+
 void BrowserWindow::CloseImmediately() {
   // Close all child windows before closing current window.
   v8::Locker locker(isolate());
@@ -353,8 +369,7 @@ void BrowserWindow::SetBackgroundColor(const std::string& color_name) {
     auto* web_preferences =
         WebContentsPreferences::From(api_web_contents_->web_contents());
     if (web_preferences) {
-      web_preferences->preference()->SetStringKey(options::kBackgroundColor,
-                                                  color_name);
+      web_preferences->SetBackgroundColor(ParseHexColor(color_name));
     }
   }
 }
@@ -513,7 +528,6 @@ v8::Local<v8::Value> BrowserWindow::From(v8::Isolate* isolate,
 
 namespace {
 
-using electron::api::BaseWindow;
 using electron::api::BrowserWindow;
 
 void Initialize(v8::Local<v8::Object> exports,

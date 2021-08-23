@@ -7,7 +7,9 @@
 
 #include <string>
 
-#include "shell/common/node_includes.h"
+namespace node {
+class Environment;
+}
 
 namespace electron {
 

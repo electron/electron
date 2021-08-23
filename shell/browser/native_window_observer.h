@@ -10,11 +10,12 @@
 #include "base/observer_list_types.h"
 #include "base/values.h"
 #include "ui/base/window_open_disposition.h"
-#include "url/gurl.h"
 
 #if defined(OS_WIN)
 #include <windows.h>
 #endif
+
+class GURL;
 
 namespace gfx {
 class Rect;
@@ -104,6 +105,8 @@ class NativeWindowObserver : public base::CheckedObserver {
   // Called on Windows when App Commands arrive (WM_APPCOMMAND)
   // Some commands are implemented on on other platforms as well
   virtual void OnExecuteAppCommand(const std::string& command_name) {}
+
+  virtual void UpdateWindowControlsOverlay(const gfx::Rect& bounding_rect) {}
 };
 
 }  // namespace electron

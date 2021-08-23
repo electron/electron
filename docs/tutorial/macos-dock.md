@@ -1,4 +1,4 @@
-# Configuring the macOS Dock
+# Dock (macOS)
 
 Electron has APIs to configure the app's icon in the macOS Dock. A macOS-only
 API exists to create a custom dock menu, but Electron also uses the app dock
@@ -25,7 +25,7 @@ Starting with a working application from the
 ```javascript fiddle='docs/fiddles/features/macos-dock-menu'
 const { app, BrowserWindow, Menu } = require('electron')
 
-function createWindow () {
+const createWindow = () => {
   const win = new BrowserWindow({
     width: 800,
     height: 600,

@@ -33,10 +33,6 @@ namespace base {
 class FilePath;
 }
 
-namespace gfx {
-class Image;
-}
-
 namespace gin_helper {
 class Arguments;
 }
@@ -191,7 +187,8 @@ class Browser : public WindowListObserver {
 
   // Resumes an activity via hand-off.
   bool ContinueUserActivity(const std::string& type,
-                            base::DictionaryValue user_info);
+                            base::DictionaryValue user_info,
+                            base::DictionaryValue details);
 
   // Indicates that an activity was continued on another device.
   void UserActivityWasContinued(const std::string& type,
@@ -309,7 +306,7 @@ class Browser : public WindowListObserver {
 #endif
 
   bool is_shutting_down() const { return is_shutdown_; }
-  bool is_quiting() const { return is_quiting_; }
+  bool is_quitting() const { return is_quitting_; }
   bool is_ready() const { return is_ready_; }
   v8::Local<v8::Value> WhenReady(v8::Isolate* isolate);
 
@@ -326,7 +323,7 @@ class Browser : public WindowListObserver {
   // Send the before-quit message and start closing windows.
   bool HandleBeforeQuit();
 
-  bool is_quiting_ = false;
+  bool is_quitting_ = false;
 
  private:
   // WindowListObserver implementations:

@@ -8,7 +8,7 @@ needed in chromium but our autofill implementation uses them.  This patch can be
 our autofill implementation to work like Chromium's.
 
 diff --git a/ui/native_theme/common_theme.cc b/ui/native_theme/common_theme.cc
-index 4a526861f54e7c6fffaf76a2457bf418698cdc8b..2335988a186e4a437bbe82a6a113a17755e65cd1 100644
+index 52daef274c283eed9334e1dfc010dd488938b608..6c03311271820689ba1106443d975155a20526b4 100644
 --- a/ui/native_theme/common_theme.cc
 +++ b/ui/native_theme/common_theme.cc
 @@ -68,6 +68,14 @@ absl::optional<SkColor> GetDarkSchemeColor(NativeTheme::ColorId color_id,
@@ -26,7 +26,7 @@ index 4a526861f54e7c6fffaf76a2457bf418698cdc8b..2335988a186e4a437bbe82a6a113a177
      // Button
      case NativeTheme::kColorId_ProminentButtonColor:
        return gfx::kGoogleBlue300;
-@@ -587,6 +595,18 @@ SkColor GetDefaultColor(NativeTheme::ColorId color_id,
+@@ -595,6 +603,18 @@ SkColor GetDefaultColor(NativeTheme::ColorId color_id,
      case NativeTheme::kColorId_WindowBackground:
        return SK_ColorWHITE;
  
@@ -46,10 +46,10 @@ index 4a526861f54e7c6fffaf76a2457bf418698cdc8b..2335988a186e4a437bbe82a6a113a177
        // Keeping the kColorId_NumColors case instead of using the default case
        // allows ColorId additions to trigger compile error for an incomplete
 diff --git a/ui/native_theme/native_theme_color_id.h b/ui/native_theme/native_theme_color_id.h
-index 083640808cd6a4a5e6e65d715c77ef58d090ba1e..d7d2fe4e0ada417769cbfe8390b8e2b134549962 100644
+index 0f970863cafee4ba28d953c89de4c36a44c04ef5..0b78adbea861faf3d4735d87a4a1f00c754a897e 100644
 --- a/ui/native_theme/native_theme_color_id.h
 +++ b/ui/native_theme/native_theme_color_id.h
-@@ -157,6 +157,11 @@
+@@ -159,6 +159,11 @@
    OP(kColorId_TableHeaderText),                                                \
    OP(kColorId_TableHeaderBackground),                                          \
    OP(kColorId_TableHeaderSeparator),                                           \
@@ -62,7 +62,7 @@ index 083640808cd6a4a5e6e65d715c77ef58d090ba1e..d7d2fe4e0ada417769cbfe8390b8e2b1
    OP(kColorId_ThrobberSpinningColor),                                          \
    OP(kColorId_ThrobberWaitingColor),                                           \
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index a02662fb29ff297a55afdb0d6e2dc336137a749d..eafe512bc90d967eaadddc2e355c418ecd7dd83a 100644
+index 40d441fff4794867f6d3a5bf10d7f6b0d9343716..c7b96990129262d3b831006af10e85a208bdc581 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
 @@ -658,6 +658,18 @@ absl::optional<SkColor> NativeThemeWin::GetPlatformHighContrastColor(

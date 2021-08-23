@@ -21,7 +21,7 @@ In the testing framework Spectron, you can now audit each window and `<webview>`
 tag in your application. For example:
 
 ```javascript
-app.client.auditAccessibility().then(function (audit) {
+app.client.auditAccessibility().then((audit) => {
   if (audit.failed) {
     console.error(audit.message)
   }

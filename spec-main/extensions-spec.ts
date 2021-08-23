@@ -337,6 +337,12 @@ describe('chrome extensions', () => {
   });
 
   describe('chrome.tabs', () => {
+    let customSession: Session;
+    before(async () => {
+      customSession = session.fromPartition(`persist:${uuid.v4()}`);
+      await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-api'));
+    });
+
     const callTabsAPI = async (webContents: Electron.WebContents, name: string, ...args: any[]) => {
       return webContents.executeJavaScript(`new Promise((resolve) => { chrome.tabs.${name}(${args.concat(['resolve']).join(', ')}) })`);
     };
@@ -365,8 +371,6 @@ describe('chrome extensions', () => {
     });
 
     it('executeScript', async () => {
-      const customSession = session.fromPartition(`persist:${uuid.v4()}`);
-      await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-api'));
       const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } });
       await w.loadURL(url);
 
@@ -389,8 +393,6 @@ describe('chrome extensions', () => {
     });
 
     it('connect', async () => {
-      const customSession = session.fromPartition(`persist:${uuid.v4()}`);
-      await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-api'));
       const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } });
       await w.loadURL(url);
 
@@ -404,9 +406,7 @@ describe('chrome extensions', () => {
       expect(response[1]).to.equal('howdy');
     });
 
-    it('sendMessage receives the response', async function () {
-      const customSession = session.fromPartition(`persist:${uuid.v4()}`);
-      await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-api'));
+    it('sendMessage receives the response', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } });
       await w.loadURL(url);
 
@@ -466,6 +466,28 @@ describe('chrome extensions', () => {
       callTabsAPI(window.webContents, 'get', window.webContents.id);
       await p;
     });
+
+    it('update', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } });
+      await w.loadURL(url);
+
+      const w2 = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
+      await w2.loadURL('about:blank');
+
+      const w2Navigated = emittedOnce(w2.webContents, 'did-navigate');
+
+      const message = { method: 'update', args: [w2.webContents.id, { url }] };
+      w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+
+      const [,, responseString] = await emittedOnce(w.webContents, 'console-message');
+      const response = JSON.parse(responseString);
+
+      await w2Navigated;
+
+      expect(new URL(w2.getURL()).toString()).to.equal(new URL(url).toString());
+
+      expect(response.id).to.equal(w2.webContents.id);
+    });
   });
 
   describe('background pages', () => {
@@ -515,12 +537,11 @@ describe('chrome extensions', () => {
     it('has session in background page', async () => {
       const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
       const promise = emittedOnce(app, 'web-contents-created');
-      await customSession.loadExtension(path.join(fixtures, 'extensions', 'persistent-background-page'));
-      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
-      await w.loadURL('about:blank');
+      const { id } = await customSession.loadExtension(path.join(fixtures, 'extensions', 'persistent-background-page'));
       const [, bgPageContents] = await promise;
       expect(bgPageContents.getType()).to.equal('backgroundPage');
-      expect(bgPageContents.getURL()).to.match(/^chrome-extension:\/\/.+\/_generated_background_page.html$/);
+      await emittedOnce(bgPageContents, 'did-finish-load');
+      expect(bgPageContents.getURL()).to.equal(`chrome-extension://${id}/_generated_background_page.html`);
       expect(bgPageContents.session).to.not.equal(undefined);
     });
 
@@ -528,8 +549,6 @@ describe('chrome extensions', () => {
       const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
       const promise = emittedOnce(app, 'web-contents-created');
       await customSession.loadExtension(path.join(fixtures, 'extensions', 'persistent-background-page'));
-      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
-      await w.loadURL('about:blank');
       const [, bgPageContents] = await promise;
       expect(bgPageContents.getType()).to.equal('backgroundPage');
       bgPageContents.openDevTools();

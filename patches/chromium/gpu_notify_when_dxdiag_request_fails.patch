@@ -12,7 +12,7 @@ rendering and there is no signal from browser process on this event
 to identify it.
 
 diff --git a/content/browser/gpu/gpu_data_manager_impl.cc b/content/browser/gpu/gpu_data_manager_impl.cc
-index 6f778baa0c1f3d34f3b744ed37696af57df6aa01..fb802b880994e31e445ef98c646c001ba87ed073 100644
+index 7821945da13ece57529c1de14d1cbd7f645d19ab..9be940f4ee047279f5969a6c572d6acbd408ddc5 100644
 --- a/content/browser/gpu/gpu_data_manager_impl.cc
 +++ b/content/browser/gpu/gpu_data_manager_impl.cc
 @@ -229,6 +229,11 @@ void GpuDataManagerImpl::TerminateInfoCollectionGpuProcess() {
@@ -26,27 +26,28 @@ index 6f778baa0c1f3d34f3b744ed37696af57df6aa01..fb802b880994e31e445ef98c646c001b
 +}
  #endif
  
- void GpuDataManagerImpl::UpdateGpuFeatureInfo(
+ void GpuDataManagerImpl::UpdateDawnInfo(
 diff --git a/content/browser/gpu/gpu_data_manager_impl.h b/content/browser/gpu/gpu_data_manager_impl.h
-index 9b75a03bb11bb9e9338017a1a287209bdb0636c5..aab43444bdb1a968d9c880028144ac81b1bd1ac7 100644
+index a8c0d59cb825a791c44c54e55ad7f295ad07a309..a1ef53aa46fb0cfc7bcac121244f77af64a7539f 100644
 --- a/content/browser/gpu/gpu_data_manager_impl.h
 +++ b/content/browser/gpu/gpu_data_manager_impl.h
-@@ -102,6 +102,7 @@ class CONTENT_EXPORT GpuDataManagerImpl : public GpuDataManager,
+@@ -122,6 +122,7 @@ class CONTENT_EXPORT GpuDataManagerImpl : public GpuDataManager,
    // BrowserMainParts override instead.
    void PostCreateThreads();
    void TerminateInfoCollectionGpuProcess();
 +  bool DxdiagDx12VulkanRequested() const;
  #endif
-   // Update the GPU feature info. This updates the blocklist and enabled status
-   // of GPU rasterization. In the future this will be used for more features.
+   void UpdateDawnInfo(const std::vector<std::string>& dawn_info_list);
+ 
 diff --git a/content/browser/gpu/gpu_data_manager_impl_private.cc b/content/browser/gpu/gpu_data_manager_impl_private.cc
-index 420dbbdfab57b18edc0ea646acac6d9d8748471d..7f00895f75177016045cbd016bc55cbec0a5f4ee 100644
+index 569c179aed6ab7b68b484f55d0abf9562044c389..9612ed45ed7d987c5d4e8f7ef348860ab4fc4252 100644
 --- a/content/browser/gpu/gpu_data_manager_impl_private.cc
 +++ b/content/browser/gpu/gpu_data_manager_impl_private.cc
-@@ -1082,6 +1082,11 @@ void GpuDataManagerImplPrivate::TerminateInfoCollectionGpuProcess() {
+@@ -1219,6 +1219,12 @@ void GpuDataManagerImplPrivate::TerminateInfoCollectionGpuProcess() {
+   if (host)
      host->ForceShutdown();
  }
- 
++
 +bool GpuDataManagerImplPrivate::DxdiagDx12VulkanRequested() const {
 +  return !(gpu_info_vulkan_request_failed_ ||
 +           gpu_info_dx12_request_failed_ ||
@@ -54,16 +55,16 @@ index 420dbbdfab57b18edc0ea646acac6d9d8748471d..7f00895f75177016045cbd016bc55cbe
 +}
  #endif
  
- void GpuDataManagerImplPrivate::UpdateGpuFeatureInfo(
+ void GpuDataManagerImplPrivate::UpdateDawnInfo(
 diff --git a/content/browser/gpu/gpu_data_manager_impl_private.h b/content/browser/gpu/gpu_data_manager_impl_private.h
-index c679229beae9440a9fc92f39be76a1d37065d586..a0468d452604a5dee05f5dd5d0bb6256d2808aea 100644
+index afd9e892bd94314b5dc979dadf6fd91f8ad9ff04..02134414e3bab125697b5f3080af2c90d4cee07c 100644
 --- a/content/browser/gpu/gpu_data_manager_impl_private.h
 +++ b/content/browser/gpu/gpu_data_manager_impl_private.h
-@@ -77,6 +77,7 @@ class CONTENT_EXPORT GpuDataManagerImplPrivate {
+@@ -84,6 +84,7 @@ class CONTENT_EXPORT GpuDataManagerImplPrivate {
    bool VulkanRequested() const;
    void PostCreateThreads();
    void TerminateInfoCollectionGpuProcess();
 +  bool DxdiagDx12VulkanRequested() const;
  #endif
-   void UpdateGpuFeatureInfo(const gpu::GpuFeatureInfo& gpu_feature_info,
-                             const absl::optional<gpu::GpuFeatureInfo>&
+   void UpdateDawnInfo(const std::vector<std::string>& dawn_info_list);
+ 

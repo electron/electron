@@ -298,6 +298,12 @@ breakpad::CrashHandlerHostLinux* CreateCrashHandlerHost(
 }
 
 int GetCrashSignalFD(const base::CommandLine& command_line) {
+  if (crash_reporter::IsCrashpadEnabled()) {
+    int fd;
+    pid_t pid;
+    return crash_reporter::GetHandlerSocket(&fd, &pid) ? fd : -1;
+  }
+
   // Extensions have the same process type as renderers.
   if (command_line.HasSwitch(extensions::switches::kExtensionProcess)) {
     static breakpad::CrashHandlerHostLinux* crash_handler = nullptr;
@@ -526,20 +532,37 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
 
 #if defined(OS_LINUX)
   bool enable_crash_reporter = false;
-  enable_crash_reporter = breakpad::IsCrashReporterEnabled();
+  if (crash_reporter::IsCrashpadEnabled()) {
+    command_line->AppendSwitch(::switches::kEnableCrashpad);
+    enable_crash_reporter = true;
+
+    int fd;
+    pid_t pid;
+
+    if (crash_reporter::GetHandlerSocket(&fd, &pid)) {
+      command_line->AppendSwitchASCII(
+          crash_reporter::switches::kCrashpadHandlerPid,
+          base::NumberToString(pid));
+    }
+  } else {
+    enable_crash_reporter = breakpad::IsCrashReporterEnabled();
+  }
+
   if (enable_crash_reporter) {
     std::string switch_value =
         api::crash_reporter::GetClientId() + ",no_channel";
     command_line->AppendSwitchASCII(::switches::kEnableCrashReporter,
                                     switch_value);
-    for (const auto& pair : api::crash_reporter::GetGlobalCrashKeys()) {
-      if (!switch_value.empty())
-        switch_value += ",";
-      switch_value += pair.first;
-      switch_value += "=";
-      switch_value += pair.second;
+    if (!crash_reporter::IsCrashpadEnabled()) {
+      for (const auto& pair : api::crash_reporter::GetGlobalCrashKeys()) {
+        if (!switch_value.empty())
+          switch_value += ",";
+        switch_value += pair.first;
+        switch_value += "=";
+        switch_value += pair.second;
+      }
+      command_line->AppendSwitchASCII(switches::kGlobalCrashKeys, switch_value);
     }
-    command_line->AppendSwitchASCII(switches::kGlobalCrashKeys, switch_value);
   }
 #endif
 
@@ -684,8 +707,8 @@ bool ElectronBrowserClient::CanCreateWindow(
   content::WebContents* web_contents =
       content::WebContents::FromRenderFrameHost(opener);
   WebContentsPreferences* prefs = WebContentsPreferences::From(web_contents);
-  if (prefs && prefs->IsEnabled(options::kNativeWindowOpen)) {
-    if (prefs->IsEnabled("disablePopups")) {
+  if (prefs && prefs->ShouldUseNativeWindowOpen()) {
+    if (prefs->ShouldDisablePopups()) {
       // <webview> without allowpopups attribute should return
       // null from window.open calls
       return false;
@@ -882,7 +905,13 @@ ElectronBrowserClient::GetSystemNetworkContext() {
 std::unique_ptr<content::BrowserMainParts>
 ElectronBrowserClient::CreateBrowserMainParts(
     const content::MainFunctionParams& params) {
-  return std::make_unique<ElectronBrowserMainParts>(params);
+  auto browser_main_parts = std::make_unique<ElectronBrowserMainParts>(params);
+
+#if defined(OS_MAC)
+  browser_main_parts_ = browser_main_parts.get();
+#endif
+
+  return browser_main_parts;
 }
 
 void ElectronBrowserClient::WebNotificationAllowed(
@@ -1011,12 +1040,10 @@ ElectronBrowserClient::GetPlatformNotificationService(
 }
 
 base::FilePath ElectronBrowserClient::GetDefaultDownloadDirectory() {
-  // ~/Downloads
-  base::FilePath path;
-  if (base::PathService::Get(base::DIR_HOME, &path))
-    path = path.Append(FILE_PATH_LITERAL("Downloads"));
-
-  return path;
+  base::FilePath download_path;
+  if (base::PathService::Get(chrome::DIR_DEFAULT_DOWNLOADS, &download_path))
+    return download_path;
+  return base::FilePath();
 }
 
 scoped_refptr<network::SharedURLLoaderFactory>
@@ -1384,7 +1411,7 @@ void ElectronBrowserClient::OverrideURLLoaderFactoryParams(
         blink::LocalFrameToken(factory_params->top_frame_id.value()));
     auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
     auto* prefs = WebContentsPreferences::From(web_contents);
-    if (prefs && !prefs->IsEnabled(options::kWebSecurity, true)) {
+    if (prefs && !prefs->IsWebSecurityEnabled()) {
       factory_params->is_corb_enabled = false;
       factory_params->disable_web_security = true;
     }
@@ -1616,6 +1643,14 @@ void ElectronBrowserClient::RegisterBrowserInterfaceBindersForServiceWorker(
         map) {
   map->Add<blink::mojom::BadgeService>(
       base::BindRepeating(&BindBadgeServiceForServiceWorker));
+}
+
+device::GeolocationManager* ElectronBrowserClient::GetGeolocationManager() {
+#if defined(OS_MAC)
+  return browser_main_parts_->GetGeolocationManager();
+#else
+  return nullptr;
+#endif
 }
 
 }  // namespace electron

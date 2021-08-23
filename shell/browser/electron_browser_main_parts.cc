@@ -11,6 +11,7 @@
 #include "base/base_switches.h"
 #include "base/command_line.h"
 #include "base/feature_list.h"
+#include "base/metrics/field_trial.h"
 #include "base/path_service.h"
 #include "base/run_loop.h"
 #include "base/strings/string_number_conversions.h"
@@ -93,6 +94,7 @@
 #endif
 
 #if defined(OS_MAC)
+#include "services/device/public/cpp/geolocation/geolocation_manager.h"
 #include "shell/browser/ui/cocoa/views_delegate_mac.h"
 #else
 #include "shell/browser/ui/views/electron_views_delegate.h"
@@ -249,7 +251,7 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
   env->set_trace_sync_io(env->options()->trace_sync_io);
 
   // We do not want to crash the main process on unhandled rejections.
-  env->set_unhandled_rejections_mode("warn");
+  env->options()->unhandled_rejections = "warn";
 
   // Add Electron extended APIs.
   electron_bindings_->BindTo(js_env_->isolate(), env->process_object());
@@ -534,13 +536,11 @@ void ElectronBrowserMainParts::PreCreateMainMessageLoopCommon() {
   media::SetLocalizedStringProvider(MediaStringProvider);
 
 #if defined(OS_WIN)
-  if (electron::fuses::IsCookieEncryptionEnabled()) {
-    auto* local_state = g_browser_process->local_state();
-    DCHECK(local_state);
+  auto* local_state = g_browser_process->local_state();
+  DCHECK(local_state);
 
-    bool os_crypt_init = OSCrypt::Init(local_state);
-    DCHECK(os_crypt_init);
-  }
+  bool os_crypt_init = OSCrypt::Init(local_state);
+  DCHECK(os_crypt_init);
 #endif
 }
 
@@ -552,6 +552,12 @@ ElectronBrowserMainParts::GetGeolocationControl() {
   }
   return geolocation_control_.get();
 }
+
+#if defined(OS_MAC)
+device::GeolocationManager* ElectronBrowserMainParts::GetGeolocationManager() {
+  return geolocation_manager_.get();
+}
+#endif
 
 IconManager* ElectronBrowserMainParts::GetIconManager() {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);

@@ -1,4 +1,4 @@
-# Notifications (Windows, Linux, macOS)
+# Notifications
 
 ## Overview
 
@@ -54,7 +54,7 @@ const { Notification } = require('electron')
 const NOTIFICATION_TITLE = 'Basic Notification'
 const NOTIFICATION_BODY = 'Notification from the Main process'
 
-function showNotification () {
+const showNotification = () => {
   new Notification({ title: NOTIFICATION_TITLE, body: NOTIFICATION_BODY }).show()
 }
 
@@ -129,14 +129,6 @@ Note that notifications are limited to 256 bytes in size and will be truncated
 if you exceed that limit.
 
 [apple-notification-guidelines]: https://developer.apple.com/macos/human-interface-guidelines/system-capabilities/notifications/
-
-#### Advanced Notifications
-
-Later versions of macOS allow for notifications with an input field, allowing the user
-to quickly reply to a notification. In order to send notifications with an input field,
-use the userland module [node-mac-notifier][node-mac-notifier].
-
-[node-mac-notifier]: https://github.com/CharlieHess/node-mac-notifier
 
 #### Do not disturb / Session State
 

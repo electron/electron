@@ -4,9 +4,9 @@
 
 #include "shell/common/gin_converters/message_box_converter.h"
 
-#include "gin/dictionary.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_converters/native_window_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
 
 namespace gin {
 
@@ -14,7 +14,7 @@ bool Converter<electron::MessageBoxSettings>::FromV8(
     v8::Isolate* isolate,
     v8::Local<v8::Value> val,
     electron::MessageBoxSettings* out) {
-  gin::Dictionary dict(nullptr);
+  gin_helper::Dictionary dict;
   int type = 0;
   if (!ConvertFromV8(isolate, val, &dict))
     return false;
@@ -22,6 +22,7 @@ bool Converter<electron::MessageBoxSettings>::FromV8(
   dict.Get("messageBoxType", &type);
   out->type = static_cast<electron::MessageBoxType>(type);
   dict.Get("buttons", &out->buttons);
+  dict.GetOptional("id", &out->id);
   dict.Get("defaultId", &out->default_id);
   dict.Get("cancelId", &out->cancel_id);
   dict.Get("title", &out->title);

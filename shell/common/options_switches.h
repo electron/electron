@@ -57,6 +57,9 @@ extern const char kVibrancyType[];
 extern const char kVisualEffectState[];
 extern const char kTrafficLightPosition[];
 extern const char kRoundedCorners[];
+extern const char ktitleBarOverlay[];
+extern const char kOverlayButtonColor[];
+extern const char kOverlaySymbolColor[];
 
 // WebPreferences.
 extern const char kZoomFactor[];
@@ -65,7 +68,6 @@ extern const char kPreloadScripts[];
 extern const char kPreloadURL[];
 extern const char kNodeIntegration[];
 extern const char kContextIsolation[];
-extern const char kGuestInstanceID[];
 extern const char kExperimentalFeatures[];
 extern const char kOpenerID[];
 extern const char kScrollBounce[];

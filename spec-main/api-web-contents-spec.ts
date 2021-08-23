@@ -532,16 +532,6 @@ describe('webContents module', () => {
     });
   });
 
-  describe('getWebPreferences() API', () => {
-    afterEach(closeAllWindows);
-    it('should not crash when called for devTools webContents', async () => {
-      const w = new BrowserWindow({ show: false });
-      w.webContents.openDevTools();
-      await emittedOnce(w.webContents, 'devtools-opened');
-      expect(w.webContents.devToolsWebContents!.getWebPreferences()).to.be.null();
-    });
-  });
-
   describe('openDevTools() API', () => {
     afterEach(closeAllWindows);
     it('can show window with activation', async () => {
@@ -2050,6 +2040,19 @@ describe('webContents module', () => {
       await w.loadURL(serverUrl);
       const body = await w.webContents.executeJavaScript('document.documentElement.textContent');
       expect(body).to.equal('401');
+    });
+  });
+
+  describe('page-title-updated event', () => {
+    afterEach(closeAllWindows);
+    it('is emitted with a full title for pages with no navigation', async () => {
+      const bw = new BrowserWindow({ show: false, webPreferences: { nativeWindowOpen: true } });
+      await bw.loadURL('about:blank');
+      bw.webContents.executeJavaScript('child = window.open("", "", "show=no"); null');
+      const [, child] = await emittedOnce(app, 'web-contents-created');
+      bw.webContents.executeJavaScript('child.document.title = "new title"');
+      const [, title] = await emittedOnce(child, 'page-title-updated');
+      expect(title).to.equal('new title');
     });
   });
 

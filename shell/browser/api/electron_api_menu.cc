@@ -212,7 +212,7 @@ void Menu::Clear() {
   model_->Clear();
 }
 
-int Menu::GetIndexOfCommandId(int command_id) {
+int Menu::GetIndexOfCommandId(int command_id) const {
   return model_->GetIndexOfCommandId(command_id);
 }
 
@@ -299,6 +299,9 @@ v8::Local<v8::ObjectTemplate> Menu::FillObjectTemplate(
       .SetMethod("closePopupAt", &Menu::ClosePopupAt)
 #if DCHECK_IS_ON()
       .SetMethod("getAcceleratorTextAt", &Menu::GetAcceleratorTextAtForTesting)
+#endif
+#if defined(OS_MAC)
+      .SetMethod("_getUserAcceleratorAt", &Menu::GetUserAcceleratorAt)
 #endif
       .Build();
 }

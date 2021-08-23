@@ -33,7 +33,7 @@ void CocoaNotification::Show(const NotificationOptions& options) {
   NSString* identifier =
       [NSString stringWithFormat:@"%@:notification:%@",
                                  [[NSBundle mainBundle] bundleIdentifier],
-                                 [[[NSUUID alloc] init] UUIDString]];
+                                 [[NSUUID UUID] UUIDString]];
 
   [notification_ setTitle:base::SysUTF16ToNSString(options.title)];
   [notification_ setSubtitle:base::SysUTF16ToNSString(options.subtitle)];

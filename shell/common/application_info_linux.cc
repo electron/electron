@@ -33,7 +33,7 @@ namespace electron {
 
 std::string GetApplicationName() {
   // attempt #1: the string set in app.setName()
-  std::string ret = GetOverriddenApplicationName();
+  std::string ret = OverriddenApplicationName();
 
   // attempt #2: the 'Name' entry from .desktop file's [Desktop] section
   if (ret.empty()) {
@@ -64,7 +64,7 @@ std::string GetApplicationVersion() {
 
   // try to use the string set in app.setVersion()
   if (ret.empty())
-    ret = GetOverriddenApplicationVersion();
+    ret = OverriddenApplicationVersion();
 
   // no known version number; return some safe fallback
   if (ret.empty()) {

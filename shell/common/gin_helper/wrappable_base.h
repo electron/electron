@@ -9,7 +9,7 @@
 
 namespace gin {
 class Arguments;
-}  // namespace gin
+}
 
 namespace gin_helper {
 

@@ -6,10 +6,10 @@
 #define SHELL_BROWSER_UI_MESSAGE_BOX_H_
 
 #include <string>
-#include <utility>
 #include <vector>
 
 #include "base/callback_forward.h"
+#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/gfx/image/image_skia.h"
 
 namespace electron {
@@ -24,12 +24,11 @@ enum class MessageBoxType {
   kQuestion,
 };
 
-using DialogResult = std::pair<int, bool>;
-
 struct MessageBoxSettings {
   electron::NativeWindow* parent_window = nullptr;
   MessageBoxType type = electron::MessageBoxType::kNone;
   std::vector<std::string> buttons;
+  absl::optional<int> id;
   int default_id;
   int cancel_id;
   bool no_link = false;
@@ -52,6 +51,8 @@ typedef base::OnceCallback<void(int code, bool checkbox_checked)>
 
 void ShowMessageBox(const MessageBoxSettings& settings,
                     MessageBoxCallback callback);
+
+void CloseMessageBox(int id);
 
 // Like ShowMessageBox with simplest settings, but safe to call at very early
 // stage of application.

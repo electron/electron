@@ -211,7 +211,7 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
           promise_.Resolve(value);
         }
       } else {
-        const char* error_message =
+        const char error_message[] =
             "Script failed to execute, this normally means an error "
             "was thrown. Check the renderer console for the error.";
         if (!callback_.is_null()) {
@@ -226,7 +226,7 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
         promise_.RejectWithErrorMessage(error_message);
       }
     } else {
-      const char* error_message =
+      const char error_message[] =
           "WebFrame was removed before script could run. This normally means "
           "the underlying frame was destroyed";
       if (!callback_.is_null()) {
@@ -259,8 +259,7 @@ class FrameSetSpellChecker : public content::RenderFrameVisitor {
   }
 
   bool Visit(content::RenderFrame* render_frame) override {
-    auto* view = render_frame->GetRenderView();
-    if (view->GetMainRenderFrame() == main_frame_ ||
+    if (render_frame->GetMainRenderFrame() == main_frame_ ||
         (render_frame->IsMainFrame() && render_frame == main_frame_)) {
       render_frame->GetWebFrame()->SetTextCheckClient(spell_check_client_);
     }
@@ -489,16 +488,13 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
 
     if (pref_name == options::kPreloadScripts) {
       return gin::ConvertToV8(isolate, prefs.preloads);
-    } else if (pref_name == options::kBackgroundColor) {
-      return gin::ConvertToV8(isolate, prefs.background_color);
     } else if (pref_name == options::kOpenerID) {
       // NOTE: openerId is internal-only.
       return gin::ConvertToV8(isolate, prefs.opener_id);
     } else if (pref_name == options::kContextIsolation) {
       return gin::ConvertToV8(isolate, prefs.context_isolation);
-    } else if (pref_name == options::kGuestInstanceID) {
-      // NOTE: guestInstanceId is internal-only.
-      return gin::ConvertToV8(isolate, prefs.guest_instance_id);
+    } else if (pref_name == "isWebView") {
+      return gin::ConvertToV8(isolate, prefs.is_webview);
     } else if (pref_name == options::kHiddenPage) {
       // NOTE: hiddenPage is internal-only.
       return gin::ConvertToV8(isolate, prefs.hidden_page);
@@ -708,7 +704,7 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
       script.Get("startLine", &start_line);
 
       if (!script.Get("code", &code)) {
-        const char* error_message = "Invalid 'code'";
+        const char error_message[] = "Invalid 'code'";
         if (!completion_callback.is_null()) {
           std::move(completion_callback)
               .Run(v8::Undefined(isolate),
