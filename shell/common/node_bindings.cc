@@ -440,6 +440,15 @@ node::Environment* NodeBindings::CreateEnvironment(
   if (browser_env_ != BrowserEnvironment::kBrowser)
     global.Set("_noBrowserGlobals", true);
 
+  if (browser_env_ == BrowserEnvironment::kBrowser) {
+    const std::vector<std::string> search_paths = {"app.asar", "app",
+                                                   "default_app.asar"};
+    const std::vector<std::string> app_asar_search_paths = {"app.asar"};
+    global.Set("_appSearchPaths", electron::fuses::IsNonAsarAppLoadingEnabled()
+                                      ? search_paths
+                                      : app_asar_search_paths);
+  }
+
   std::vector<std::string> exec_args;
   base::FilePath resources_path = GetResourcesPath();
   std::string init_script = "electron/js2c/" + process_type + "_init";

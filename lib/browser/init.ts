@@ -83,7 +83,8 @@ require('@electron/internal/browser/guest-window-proxy');
 // Now we try to load app's package.json.
 let packagePath = null;
 let packageJson = null;
-const searchPaths = ['app', 'app.asar', 'default_app.asar'];
+const searchPaths = (global as any)._appSearchPaths;
+delete (global as any)._appSearchPaths;
 
 if (process.resourcesPath) {
   for (packagePath of searchPaths) {
