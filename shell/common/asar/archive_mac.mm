@@ -4,13 +4,15 @@
 
 #include "shell/common/asar/archive.h"
 
+#include <CoreFoundation/CoreFoundation.h>
+#include <Foundation/Foundation.h>
+
+#include <string>
+
 #include "base/logging.h"
 #include "base/mac/foundation_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "electron/fuses.h"
-
-#include <CoreFoundation/CoreFoundation.h>
-#include <Foundation/Foundation.h>
 
 namespace asar {
 
