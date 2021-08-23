@@ -216,7 +216,7 @@ Returns `Object`:
 Returns an object giving memory usage statistics about the entire system. Note
 that all statistics are reported in Kilobytes.
 
-### `process.getWindowsVersionType()`
+### `process.getWindowsVersionType()` _Windows_
 
 Returns `String` - Returns the type of Windows version running on the host operating system.
 Can be `home`, `professional`, `server`, `enterprise`, `education`, or `educationPro`.
