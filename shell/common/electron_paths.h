@@ -35,11 +35,11 @@ enum {
 #endif
 
   DIR_CRASH_DUMPS,  // c.f. chrome::DIR_CRASH_DUMPS
-  
+
   PATH_END,  // End of new paths. Those that follow redirect to base::DIR_*
 
 #if !defined(OS_WIN)
-  DIR_CACHE = base:DIR_CACHE
+  DIR_CACHE = base:DIR_CACHE,
 #endif
 
 #if defined(OS_WIN)
