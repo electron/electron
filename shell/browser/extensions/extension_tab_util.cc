@@ -7,6 +7,7 @@
 #include <iostream>
 #include <memory>
 #include <utility>
+#include <string>
 
 #include "base/stl_util.h"
 #include "base/strings/pattern.h"
