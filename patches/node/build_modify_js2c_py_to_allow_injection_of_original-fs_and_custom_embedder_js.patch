@@ -35,7 +35,7 @@ index b45af42d12ff7df8a9e125e87f51af3456811c23..c84ff7feb07aebf656ada7e37d812d9d
  async function* watch(filename, options = {}) {
    const path = toNamespacedPath(getValidatedPath(filename));
 diff --git a/src/node_native_module.cc b/src/node_native_module.cc
-index 2642982330e8cff166d10682af3d847105dc5c2e..f5491b416203877b89db69bde44f4ff50901ed8b 100644
+index c4fd96c75c1862289d9cabccfbc9bfc3a5ee523d..3c9e5498e6b9c62813ef93ca77558ead753ac797 100644
 --- a/src/node_native_module.cc
 +++ b/src/node_native_module.cc
 @@ -20,6 +20,7 @@ NativeModuleLoader NativeModuleLoader::instance_;

@@ -7,10 +7,10 @@ This adds GN build files for Node, so we don't have to build with GYP.
 
 diff --git a/BUILD.gn b/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..bd26c3623d3314539609a978270d3ced1d167777
+index 0000000000000000000000000000000000000000..52fb22305bb67c75c9a1cf4bc39cd901420cf7a9
 --- /dev/null
 +++ b/BUILD.gn
-@@ -0,0 +1,400 @@
+@@ -0,0 +1,401 @@
 +import("//electron/build/asar.gni")
 +import("//v8/gni/v8.gni")
 +
@@ -205,6 +205,7 @@ index 0000000000000000000000000000000000000000..bd26c3623d3314539609a978270d3ced
 +    ":node_js2c",
 +    "deps/cares",
 +    "deps/histogram",
++    "deps/googletest:gtest",
 +    "deps/llhttp",
 +    "deps/nghttp2",
 +    "deps/uvwasi",
@@ -413,18 +414,18 @@ index 0000000000000000000000000000000000000000..bd26c3623d3314539609a978270d3ced
 +}
 diff --git a/deps/cares/BUILD.gn b/deps/cares/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..367d537c91be1f62e161a41e737a60cb3522b0f5
+index 0000000000000000000000000000000000000000..8e0aa4b7a858ab432dca9da9ead9fcf44f6009f4
 --- /dev/null
 +++ b/deps/cares/BUILD.gn
 @@ -0,0 +1,133 @@
 +config("cares_config") {
-+  include_dirs = [ "include" ]
++  include_dirs = [ "include", "src/lib" ]
 +}
 +static_library("cares") {
 +  defines = [ "CARES_STATICLIB" ]
 +  include_dirs = [
 +    "include",
-+    "src",
++    "src/lib",
 +  ]
 +  public_configs = [ ":cares_config" ]
 +
@@ -437,80 +438,80 @@ index 0000000000000000000000000000000000000000..367d537c91be1f62e161a41e737a60cb
 +
 +  sources = [
 +    "include/ares.h",
++    "include/ares_dns.h",
 +    "include/ares_rules.h",
 +    "include/ares_version.h",
-+    "include/nameser.h",
-+    "src/ares__close_sockets.c",
-+    "src/ares__get_hostent.c",
-+    "src/ares__parse_into_addrinfo.c",
-+    "src/ares__read_line.c",
-+    "src/ares__readaddrinfo.c",
-+    "src/ares__sortaddrinfo.c",
-+    "src/ares__timeval.c",
-+    "src/ares_android.c",
-+    "src/ares_cancel.c",
-+    "src/ares_create_query.c",
-+    "src/ares_data.c",
-+    "src/ares_data.h",
-+    "src/ares_destroy.c",
-+    "src/ares_dns.h",
-+    "src/ares_expand_name.c",
-+    "src/ares_expand_string.c",
-+    "src/ares_fds.c",
-+    "src/ares_free_hostent.c",
-+    "src/ares_free_string.c",
-+    "src/ares_freeaddrinfo.c",
-+    "src/ares_getaddrinfo.c",
-+    "src/ares_getenv.h",
-+    "src/ares_gethostbyaddr.c",
-+    "src/ares_gethostbyname.c",
-+    "src/ares_getnameinfo.c",
-+    "src/ares_getopt.c",
-+    "src/ares_getopt.h",
-+    "src/ares_getsock.c",
-+    "src/ares_inet_net_pton.h",
-+    "src/ares_init.c",
-+    "src/ares_ipv6.h",
-+    "src/ares_library_init.c",
-+    "src/ares_library_init.h",
-+    "src/ares_llist.c",
-+    "src/ares_llist.h",
-+    "src/ares_mkquery.c",
-+    "src/ares_nowarn.c",
-+    "src/ares_nowarn.h",
-+    "src/ares_options.c",
-+    "src/ares_parse_a_reply.c",
-+    "src/ares_parse_aaaa_reply.c",
-+    "src/ares_parse_caa_reply.c",
-+    "src/ares_parse_mx_reply.c",
-+    "src/ares_parse_naptr_reply.c",
-+    "src/ares_parse_ns_reply.c",
-+    "src/ares_parse_ptr_reply.c",
-+    "src/ares_parse_soa_reply.c",
-+    "src/ares_parse_srv_reply.c",
-+    "src/ares_parse_txt_reply.c",
-+    "src/ares_platform.h",
-+    "src/ares_private.h",
-+    "src/ares_process.c",
-+    "src/ares_query.c",
-+    "src/ares_search.c",
-+    "src/ares_send.c",
-+    "src/ares_setup.h",
-+    "src/ares_strcasecmp.c",
-+    "src/ares_strcasecmp.h",
-+    "src/ares_strdup.c",
-+    "src/ares_strdup.h",
-+    "src/ares_strerror.c",
-+    "src/ares_strsplit.c",
-+    "src/ares_timeout.c",
-+    "src/ares_version.c",
-+    "src/ares_writev.c",
-+    "src/ares_writev.h",
-+    "src/bitncmp.c",
-+    "src/bitncmp.h",
-+    "src/inet_net_pton.c",
-+    "src/inet_ntop.c",
-+    "src/setup_once.h",
++    "src/lib/ares_android.c",
++    "src/lib/ares_cancel.c",
++    "src/lib/ares__close_sockets.c",
++    "src/lib/ares_create_query.c",
++    "src/lib/ares_data.c",
++    "src/lib/ares_data.h",
++    "src/lib/ares_destroy.c",
++    "src/lib/ares_expand_name.c",
++    "src/lib/ares_expand_string.c",
++    "src/lib/ares_fds.c",
++    "src/lib/ares_free_hostent.c",
++    "src/lib/ares_free_string.c",
++    "src/lib/ares_freeaddrinfo.c",
++    "src/lib/ares_getenv.h",
++    "src/lib/ares_getaddrinfo.c",
++    "src/lib/ares_gethostbyaddr.c",
++    "src/lib/ares_gethostbyname.c",
++    "src/lib/ares__get_hostent.c",
++    "src/lib/ares_getnameinfo.c",
++    "src/lib/ares_getsock.c",
++    "src/lib/ares_init.c",
++    "src/lib/ares_ipv6.h",
++    "src/lib/ares_library_init.c",
++    "src/lib/ares_library_init.h",
++    "src/lib/ares_llist.c",
++    "src/lib/ares_llist.h",
++    "src/lib/ares_mkquery.c",
++    "src/lib/ares_nameser.h",
++    "src/lib/ares_nowarn.c",
++    "src/lib/ares_nowarn.h",
++    "src/lib/ares_options.c",
++    "src/lib/ares__parse_into_addrinfo.c",
++    "src/lib/ares_parse_aaaa_reply.c",
++    "src/lib/ares_parse_a_reply.c",
++    "src/lib/ares_parse_caa_reply.c",
++    "src/lib/ares_parse_mx_reply.c",
++    "src/lib/ares_parse_naptr_reply.c",
++    "src/lib/ares_parse_ns_reply.c",
++    "src/lib/ares_parse_ptr_reply.c",
++    "src/lib/ares_parse_soa_reply.c",
++    "src/lib/ares_parse_srv_reply.c",
++    "src/lib/ares_parse_txt_reply.c",
++    "src/lib/ares_platform.h",
++    "src/lib/ares_private.h",
++    "src/lib/ares_process.c",
++    "src/lib/ares_query.c",
++    "src/lib/ares__read_line.c",
++    "src/lib/ares__readaddrinfo.c",
++    "src/lib/ares_search.c",
++    "src/lib/ares_send.c",
++    "src/lib/ares_setup.h",
++    "src/lib/ares__sortaddrinfo.c",
++    "src/lib/ares_strcasecmp.c",
++    "src/lib/ares_strcasecmp.h",
++    "src/lib/ares_strdup.c",
++    "src/lib/ares_strdup.h",
++    "src/lib/ares_strerror.c",
++    "src/lib/ares_strsplit.c",
++    "src/lib/ares_timeout.c",
++    "src/lib/ares__timeval.c",
++    "src/lib/ares_version.c",
++    "src/lib/ares_writev.c",
++    "src/lib/ares_writev.h",
++    "src/lib/bitncmp.c",
++    "src/lib/bitncmp.h",
++    "src/lib/inet_net_pton.c",
++    "src/lib/inet_ntop.c",
++    "src/lib/ares_inet_net_pton.h",
++    "src/lib/setup_once.h",
++    "src/tools/ares_getopt.c",
++    "src/tools/ares_getopt.h",
 +  ]
 +
 +  if (!is_win) {
@@ -526,11 +527,11 @@ index 0000000000000000000000000000000000000000..367d537c91be1f62e161a41e737a60cb
 +    defines += [ "CARES_PULL_WS2TCPIP_H=1" ]
 +    include_dirs += [ "config/win32" ]
 +    sources += [
-+      "src/ares_getenv.c",
-+      "src/ares_iphlpapi.h",
-+      "src/ares_platform.c",
-+      "src/config-win32.h",
-+      "src/windows_port.c",
++      "src/lib/ares_getenv.c",
++      "src/lib/ares_iphlpapi.h",
++      "src/lib/ares_platform.c",
++      "src/lib/config-win32.h",
++      "src/lib/windows_port.c",
 +    ]
 +    libs += [
 +      "ws2_32.lib",
@@ -550,18 +551,89 @@ index 0000000000000000000000000000000000000000..367d537c91be1f62e161a41e737a60cb
 +    sources += [ "config/darwin/ares_config.h" ]
 +  }
 +}
+diff --git a/deps/googletest/BUILD.gn b/deps/googletest/BUILD.gn
+new file mode 100644
+index 0000000000000000000000000000000000000000..34c4289eb35af910a470db6ef40abc91954ed848
+--- /dev/null
++++ b/deps/googletest/BUILD.gn
+@@ -0,0 +1,63 @@
++config("gtest_config") {
++  include_dirs = [ "include" ]
++  defines = [ "UNIT_TEST" ]
++}
++
++static_library("gtest") {
++  include_dirs = [
++    "include",
++    "." # src
++  ]
++
++  public_configs = [ ":gtest_config" ]
++
++  cflags_cc = [
++    "-Wno-c++98-compat-extra-semi",
++    "-Wno-unused-const-variable"
++  ]
++
++  defines = [
++    "GTEST_HAS_POSIX_RE=0",
++    "GTEST_LANG_CXX11=1",
++  ]
++
++  sources = [
++    "include/gtest/gtest_pred_impl.h",
++    "include/gtest/gtest_prod.h",
++    "include/gtest/gtest-death-test.h",
++    "include/gtest/gtest-matchers.h",
++    "include/gtest/gtest-message.h",
++    "include/gtest/gtest-param-test.h",
++    "include/gtest/gtest-printers.h",
++    "include/gtest/gtest-spi.h",
++    "include/gtest/gtest-test-part.h",
++    "include/gtest/gtest-typed-test.h",
++    "include/gtest/gtest.h",
++    "include/gtest/internal/gtest-death-test-internal.h",
++    "include/gtest/internal/gtest-filepath.h",
++    "include/gtest/internal/gtest-internal.h",
++    "include/gtest/internal/gtest-param-util.h",
++    "include/gtest/internal/gtest-port-arch.h",
++    "include/gtest/internal/gtest-port.h",
++    "include/gtest/internal/gtest-string.h",
++    "include/gtest/internal/gtest-type-util.h",
++    "include/gtest/internal/custom/gtest-port.h",
++    "include/gtest/internal/custom/gtest-printers.h",
++    "include/gtest/internal/custom/gtest.h",
++    "src/gtest-all.cc",
++    "src/gtest-death-test.cc",
++    "src/gtest-filepath.cc",
++    "src/gtest-internal-inl.h",
++    "src/gtest-matchers.cc",
++    "src/gtest-port.cc",
++    "src/gtest-printers.cc",
++    "src/gtest-test-part.cc",
++    "src/gtest-typed-test.cc",
++    "src/gtest.cc",
++  ]
++}
++
++static_library("gtest_main") {
++  deps = [ ":gtest" ]
++  sources = [ "src/gtest_main.cc" ]
++}
 diff --git a/deps/histogram/BUILD.gn b/deps/histogram/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..e741a2a9c238a782a674ddcb9a1f98de5b36db79
+index 0000000000000000000000000000000000000000..8ba89a379fa2937b4b2fa5092f18727c7d0788a6
 --- /dev/null
 +++ b/deps/histogram/BUILD.gn
-@@ -0,0 +1,17 @@
+@@ -0,0 +1,19 @@
 +config("histogram_config") {
 +  include_dirs = [ "src" ]
 +
 +  cflags = [
 +    "-Wno-implicit-function-declaration",
 +    "-Wno-incompatible-pointer-types",
++    "-Wno-unused-function",
++    "-Wno-atomic-alignment",
 +  ]
 +}
 +
@@ -650,10 +722,10 @@ index 0000000000000000000000000000000000000000..58eb2f87990d2cbad711aa39f2a73b20
 +}
 diff --git a/deps/uv/BUILD.gn b/deps/uv/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..6f30ab169f24e2d8b1c4ec4e927451d82194018c
+index 0000000000000000000000000000000000000000..11a65c2334acc653614577fa1f95791dad72e9e3
 --- /dev/null
 +++ b/deps/uv/BUILD.gn
-@@ -0,0 +1,192 @@
+@@ -0,0 +1,193 @@
 +config("libuv_config") {
 +  include_dirs = [ "include" ]
 +
@@ -826,6 +898,7 @@ index 0000000000000000000000000000000000000000..6f30ab169f24e2d8b1c4ec4e927451d8
 +  if (is_linux) {
 +    defines += [ "_GNU_SOURCE" ]
 +    sources += [
++      "src/unix/epoll.c",
 +      "src/unix/linux-core.c",
 +      "src/unix/linux-inotify.c",
 +      "src/unix/linux-syscalls.c",
@@ -892,10 +965,10 @@ index 0000000000000000000000000000000000000000..2c9d2826c85bdd033f1df1d6188df636
 +}
 diff --git a/filenames.json b/filenames.json
 new file mode 100644
-index 0000000000000000000000000000000000000000..6ce2f7899ffc39e145a767685a51597fa4473e50
+index 0000000000000000000000000000000000000000..4f5588c17cf9720dab05a82ee64ba56b1860ab78
 --- /dev/null
 +++ b/filenames.json
-@@ -0,0 +1,544 @@
+@@ -0,0 +1,548 @@
 +// This file is automatically generated by generate_gn_filenames_json.py
 +// DO NOT EDIT
 +{
@@ -910,12 +983,6 @@ index 0000000000000000000000000000000000000000..6ce2f7899ffc39e145a767685a51597f
 +        "src/node_api_types.h",
 +        "src/node_buffer.h",
 +        "src/node_object_wrap.h"
-+      ]
-+    },
-+    {
-+      "dest_dir": "include/node//cppgc/",
-+      "files": [
-+        "//v8/include/cppgc/common.h"
 +      ]
 +    },
 +    {
@@ -938,6 +1005,18 @@ index 0000000000000000000000000000000000000000..6ce2f7899ffc39e145a767685a51597f
 +      ]
 +    },
 +    {
++      "dest_dir": "include/node//cppgc/",
++      "files": [
++        "//v8/include/cppgc/common.h"
++      ]
++    },
++    {
++      "dest_dir": "include/node//",
++      "files": [
++        "deps/uv/include/uv.h"
++      ]
++    },
++    {
 +      "dest_dir": "include/node//uv/",
 +      "files": [
 +        "deps/uv/include/uv/aix.h",
@@ -955,12 +1034,6 @@ index 0000000000000000000000000000000000000000..6ce2f7899ffc39e145a767685a51597f
 +        "deps/uv/include/uv/unix.h",
 +        "deps/uv/include/uv/version.h",
 +        "deps/uv/include/uv/win.h"
-+      ]
-+    },
-+    {
-+      "dest_dir": "include/node//",
-+      "files": [
-+        "deps/uv/include/uv.h"
 +      ]
 +    }
 +  ],
@@ -1025,6 +1098,7 @@ index 0000000000000000000000000000000000000000..6ce2f7899ffc39e145a767685a51597f
 +    "lib/timers/promises.js",
 +    "lib/path/win32.js",
 +    "lib/path/posix.js",
++    "lib/stream/consumers.js",
 +    "lib/stream/promises.js",
 +    "lib/stream/web.js",
 +    "lib/internal/constants.js",
@@ -1100,6 +1174,7 @@ index 0000000000000000000000000000000000000000..6ce2f7899ffc39e145a767685a51597f
 +    "lib/internal/webstreams/writablestream.js",
 +    "lib/internal/webstreams/readablestream.js",
 +    "lib/internal/webstreams/queuingstrategies.js",
++    "lib/internal/webstreams/encoding.js",
 +    "lib/internal/webstreams/transformstream.js",
 +    "lib/internal/webstreams/transfer.js",
 +    "lib/internal/bootstrap/loaders.js",
@@ -1155,7 +1230,7 @@ index 0000000000000000000000000000000000000000..6ce2f7899ffc39e145a767685a51597f
 +    "lib/internal/child_process/serialization.js",
 +    "lib/internal/debugger/inspect_repl.js",
 +    "lib/internal/debugger/inspect_client.js",
-+    "lib/internal/debugger/_inspect.js",
++    "lib/internal/debugger/inspect.js",
 +    "lib/internal/worker/io.js",
 +    "lib/internal/worker/js_transferable.js",
 +    "lib/internal/main/repl.js",
@@ -1193,6 +1268,8 @@ index 0000000000000000000000000000000000000000..6ce2f7899ffc39e145a767685a51597f
 +    "lib/internal/fs/dir.js",
 +    "lib/internal/fs/streams.js",
 +    "lib/internal/fs/utils.js",
++    "lib/internal/fs/cp/cp.js",
++    "lib/internal/fs/cp/cp-sync.js",
 +    "lib/internal/perf/nodetiming.js",
 +    "lib/internal/perf/usertiming.js",
 +    "lib/internal/perf/performance_entry.js",
@@ -1646,7 +1723,7 @@ index 0000000000000000000000000000000000000000..d1d6b51e8c0c5bc6a5d09e217eb30483
 +  args = rebase_path(inputs + outputs, root_build_dir)
 +}
 diff --git a/src/node_version.h b/src/node_version.h
-index 0523885212d429ee5c4142137524cb127d8adc97..116815364055a01f0c0619f0f22e9a387c2f2e2e 100644
+index ee1263b8eaaab696b213b308d4aeb01359a289c8..5c4bda9aa24ee8f5db89d20772c28e66d574bcaa 100644
 --- a/src/node_version.h
 +++ b/src/node_version.h
 @@ -89,7 +89,10 @@
@@ -1679,7 +1756,7 @@ index 0000000000000000000000000000000000000000..01f62d4ae6e3b9d539444e3dff069f00
 +  main(sys.argv[1:])
 diff --git a/tools/generate_gn_filenames_json.py b/tools/generate_gn_filenames_json.py
 new file mode 100755
-index 0000000000000000000000000000000000000000..ece315d915f0a7b2c8e823caccba7ffec8420fdf
+index 0000000000000000000000000000000000000000..8f884a41f57630ac432eb85ebfc9b8bc82cddaca
 --- /dev/null
 +++ b/tools/generate_gn_filenames_json.py
 @@ -0,0 +1,75 @@
@@ -1689,16 +1766,17 @@ index 0000000000000000000000000000000000000000..ece315d915f0a7b2c8e823caccba7ffe
 +import sys
 +
 +import install
-+import subprocess
++
++from utils import SearchFiles
 +
 +def LoadPythonDictionary(path):
 +  file_string = open(path).read()
 +  try:
 +    file_data = eval(file_string, {'__builtins__': None}, None)
-+  except SyntaxError, e:
++  except SyntaxError as e:
 +    e.filename = path
 +    raise
-+  except Exception, e:
++  except Exception as e:
 +    raise Exception("Unexpected error while reading %s: %s" % (path, str(e)))
 +
 +  assert isinstance(file_data, dict), "%s does not eval to a dictionary" % path
@@ -1732,8 +1810,7 @@ index 0000000000000000000000000000000000000000..ece315d915f0a7b2c8e823caccba7ffe
 +      files = [f.replace('deps/v8/', '//v8/', 1) for f in files]
 +    return files
 +
-+  cwd = os.path.join(os.getcwd(), 'tools/search_files.py')
-+  lib_files = subprocess.check_output('{} {} --ext js lib'.format('python3', cwd), shell=True).split()
++  lib_files = SearchFiles('lib', 'js')
 +  out['library_files'] = filter_v8_files(lib_files)
 +  out['library_files'] += filter_v8_files(node_gyp['variables']['deps_files'])
 +
