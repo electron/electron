@@ -1024,6 +1024,13 @@ void App::SetPath(gin_helper::ErrorThrower thrower,
   if (key < 0 || !base::PathService::OverrideAndCreateIfNeeded(
                      key, path, /* is_absolute = */ true, /* create = */ false))
     thrower.ThrowError("Failed to set path");
+
+  // Some of the paths in `app.getPath()` are based on `name` and should
+  // update when `name` is changed before `app.ready` is fired. So if app
+  // isn't ready yet, invalidate the PathService cache to ensure a refresh.
+  if (Browser::Get()->is_ready()) {
+    base::PathService::InvalidateCache();
+  }
 }
 
 void App::SetDesktopName(const std::string& desktop_name) {

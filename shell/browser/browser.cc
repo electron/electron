@@ -155,6 +155,13 @@ std::string Browser::GetName() const {
 
 void Browser::SetName(const std::string& name) {
   OverriddenApplicationName() = name;
+
+  // Some of the paths in `app.getPath()` are based on `name` and should
+  // update when `name` is changed before `app.ready` is fired. So if app
+  // isn't ready yet, invalidate the PathService cache to ensure a refresh.
+  if (!is_ready()) {
+    base::PathService::InvalidateCache();
+  }
 }
 
 int Browser::GetBadgeCount() {
@@ -190,6 +197,9 @@ void Browser::DidFinishLaunching(base::DictionaryValue launch_info) {
   base::FilePath user_data;
   if (base::PathService::Get(chrome::DIR_USER_DATA, &user_data))
     base::CreateDirectoryAndGetError(user_data, nullptr);
+  base::FilePath user_cache;
+  if (base::PathService::Get(DIR_USER_CACHE, &user_cache))
+    base::CreateDirectoryAndGetError(user_cache, nullptr);
 
   is_ready_ = true;
   if (ready_promise_) {
