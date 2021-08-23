@@ -195,6 +195,7 @@ filenames = {
     "shell/browser/ui/tray_icon_cocoa.mm",
     "shell/common/api/electron_api_clipboard_mac.mm",
     "shell/common/api/electron_api_native_image_mac.mm",
+    "shell/common/asar/archive_mac.mm",
     "shell/common/application_info_mac.mm",
     "shell/common/language_util_mac.mm",
     "shell/common/mac/main_application_bundle.h",

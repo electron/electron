@@ -13,6 +13,15 @@
 #include "base/files/file_path.h"
 #include "base/synchronization/lock.h"
 
+#if defined(OS_MAC)
+#include <Security/Security.h>
+
+extern "C" OSStatus SecCodeValidateFileResource(SecStaticCodeRef code,
+                                                CFStringRef relativePath,
+                                                CFDataRef fileData,
+                                                SecCSFlags flags);
+#endif
+
 namespace base {
 class DictionaryValue;
 }
@@ -45,6 +54,12 @@ class Archive {
 
   // Read and parse the header.
   bool Init();
+
+#if defined(OS_MAC)
+  // On Mac, we can potentially validate the archives signature
+  // if it does not match this method will hard exit the process.
+  void MaybeValidateArchiveSignature();
+#endif
 
   // Get the info of a file.
   bool GetFileInfo(const base::FilePath& path, FileInfo* info) const;

@@ -154,6 +154,10 @@ bool Archive::Init() {
     return false;
   }
 
+#if defined(OS_MAC)
+  MaybeValidateArchiveSignature();
+#endif
+
   std::vector<char> buf;
   int len;
 
