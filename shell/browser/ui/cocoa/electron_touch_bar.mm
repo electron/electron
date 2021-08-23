@@ -735,7 +735,10 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 
   bool showsArrowButtons = false;
   settings.Get("showArrowButtons", &showsArrowButtons);
-  scrubber.showsArrowButtons = showsArrowButtons;
+  // The scrubber will crash if the user tries to scroll
+  // and there are no items.
+  if ([self numberOfItemsForScrubber:scrubber] > 0)
+    scrubber.showsArrowButtons = showsArrowButtons;
 
   std::string selectedStyle;
   std::string overlayStyle;
