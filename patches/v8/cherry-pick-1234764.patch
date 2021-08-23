@@ -21,10 +21,10 @@ Cr-Branched-From: 51238348f95a1f5e0acc321efac7942d18a687a2-refs/heads/9.2.230@{#
 Cr-Branched-From: 587a04f02ab0487d194b55a7137dc2045e071597-refs/heads/master@{#74656}
 
 diff --git a/src/compiler/js-call-reducer.cc b/src/compiler/js-call-reducer.cc
-index bb7a11d16dc70ef5747b3c0b9f1d99acb0be7adf..459c7fcfab156026f383abe086646e1046abd5cc 100644
+index b77094b7e1f0c57552fc7c8d3cea1f9d9ed7a269..a34b33e3a88b72f3ef6ca665f67cf3e9c7fff173 100644
 --- a/src/compiler/js-call-reducer.cc
 +++ b/src/compiler/js-call-reducer.cc
-@@ -5947,11 +5947,12 @@ Reduction JSCallReducer::ReduceArrayIteratorPrototypeNext(Node* node) {
+@@ -5826,11 +5826,12 @@ Reduction JSCallReducer::ReduceArrayIteratorPrototypeNext(Node* node) {
    Node* etrue = effect;
    Node* if_true = graph()->NewNode(common()->IfTrue(), branch);
    {
