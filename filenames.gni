@@ -288,6 +288,8 @@ filenames = {
     "shell/browser/api/electron_api_printing.cc",
     "shell/browser/api/electron_api_protocol.cc",
     "shell/browser/api/electron_api_protocol.h",
+    "shell/browser/api/electron_api_safe_storage.cc",
+    "shell/browser/api/electron_api_safe_storage.h",
     "shell/browser/api/electron_api_screen.cc",
     "shell/browser/api/electron_api_screen.h",
     "shell/browser/api/electron_api_service_worker_context.cc",
