@@ -23,7 +23,8 @@ enum {
   PATH_START = 11000,
 
   DIR_USER_CACHE = PATH_START,  // Directory where user cache can be written.
-  DIR_APP_LOGS,                 // Directory where app logs live
+  DIR_APP_LOGS,                 // Directory where app logs live.
+  DIR_BROWSER_DATA,             // Where cookies, localStorage are stored.
 
 #if BUILDFLAG(IS_WIN)
   DIR_RECENT,  // Directory where recent files live

@@ -190,6 +190,9 @@ void Browser::DidFinishLaunching(base::DictionaryValue launch_info) {
   base::FilePath user_data;
   if (base::PathService::Get(chrome::DIR_USER_DATA, &user_data))
     base::CreateDirectoryAndGetError(user_data, nullptr);
+  base::FilePath browser_data;
+  if (base::PathService::Get(DIR_BROWSER_DATA, &browser_data))
+    base::CreateDirectoryAndGetError(browser_data, nullptr);
 
   is_ready_ = true;
   if (ready_promise_) {

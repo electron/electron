@@ -637,6 +637,7 @@ Returns `string` - The current application directory.
     * `~/Library/Application Support` on macOS
   * `userData` The directory for storing your app's configuration files, which by
     default it is the `appData` directory appended with your app's name.
+  * `browserData` The directory for storing browsing data.
   * `temp` Temporary directory.
   * `exe` The current executable file.
   * `module` The `libchromiumcontent` library.
@@ -686,9 +687,9 @@ In that case, the directory should be created with `fs.mkdirSync` or similar.
 
 You can only override paths of a `name` defined in `app.getPath`.
 
-By default, web pages' cookies and caches will be stored under the `userData`
+By default, web pages' cookies and caches will be stored under the `browserData`
 directory. If you want to change this location, you have to override the
-`userData` path before the `ready` event of the `app` module is emitted.
+`browserData` path before the `ready` event of the `app` module is emitted.
 
 ### `app.getVersion()`
 

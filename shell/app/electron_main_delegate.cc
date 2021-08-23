@@ -134,11 +134,18 @@ bool ElectronPathProvider(int key, base::FilePath* result) {
       break;
     case chrome::DIR_APP_DICTIONARIES:
       // TODO(nornagon): can we just default to using Chrome's logic here?
-      if (!base::PathService::Get(chrome::DIR_USER_DATA, &cur))
+      if (!base::PathService::Get(DIR_BROWSER_DATA, &cur))
         return false;
       cur = cur.Append(base::FilePath::FromUTF8Unsafe("Dictionaries"));
       create_dir = true;
       break;
+    case DIR_BROWSER_DATA: {
+      // By default and for backward, equivalent to DIR_USER_DATA.
+      if (!base::PathService::Get(chrome::DIR_USER_DATA, &cur))
+        return false;
+      create_dir = true;
+      break;
+    }
     case DIR_USER_CACHE: {
 #if BUILDFLAG(IS_POSIX)
       int parent_key = base::DIR_CACHE;
