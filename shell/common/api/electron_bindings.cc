@@ -210,8 +210,8 @@ v8::Local<v8::Value> ElectronBindings::GetSystemMemoryInfo(
 // static
 v8::Local<v8::Value> ElectronBindings::GetWindowsVersionType(
     v8::Isolate* isolate) {
-#if defined(OS_WIN)
   std::string type;
+#if defined(OS_WIN)
   auto* os_info = base::win::OSInfo::GetInstance();
   switch (os_info->version_type()) {
     case base::win::SUITE_HOME:
@@ -235,11 +235,12 @@ v8::Local<v8::Value> ElectronBindings::GetWindowsVersionType(
     default:
       type = "invalid";
   }
-  return v8::String::NewFromUtf8(isolate, type.c_str()).ToLocalChecked();
 #else
   gin_helper::ErrorThrower(isolate).ThrowError(
       "No Windows version type for non-Windows OSes");
+  type = "invalid";
 #endif
+  return v8::String::NewFromUtf8(isolate, type.c_str()).ToLocalChecked();
 }
 
 // static
