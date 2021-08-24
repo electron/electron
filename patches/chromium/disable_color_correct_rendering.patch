@@ -20,7 +20,7 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index 63f61838cbfa9733b0a0f6831ccf0d9a1958e81e..a6fb9b69ba52af1b0d76cf8110c784058e2599d7 100644
+index 3be9e62159ad6ac98e1cd0790c7c06921effe5e3..356a8f451061b0bddeb1fcc1b64d7e48b7e8c8a6 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
 @@ -1802,6 +1802,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
@@ -229,7 +229,7 @@ index 1e2ad6423a5e316a9a1713abab7579ea0d2a82f9..22df5e1728e5dc2879c9b96911f6e734
 +
 +#undef PATCH_CS
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index 20c70c62a8e085a50cef7b90ef859efd014d16c9..8a780e2324935f196db9720649ff974ee43f3d3a 100644
+index 8d0e6bc81ce4f56439e4d84a02540ca2978d6a82..5c82c28f63e68c444685eace7de52022cefe5af5 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
 @@ -224,6 +224,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
@@ -241,18 +241,18 @@ index 20c70c62a8e085a50cef7b90ef859efd014d16c9..8a780e2324935f196db9720649ff974e
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 8c61ce5f2035a63675d17fda429b839c1e1e8e3b..b6b26ce465407a75dd8e15138187d614a3415941 100644
+index e4c083795d19ede0c840398915628fdb429f7af6..cdc0b501603945dadd7fb2e9c8e409581cb1fd1e 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -219,6 +219,7 @@
+@@ -220,6 +220,7 @@
  #include "ui/accessibility/accessibility_switches.h"
  #include "ui/base/ui_base_switches.h"
  #include "ui/display/display_switches.h"
 +#include "ui/gfx/switches.h"
  #include "ui/gl/gl_switches.h"
  #include "ui/native_theme/native_theme_features.h"
- #include "url/origin.h"
-@@ -3381,6 +3382,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+ #include "url/gurl.h"
+@@ -3412,6 +3413,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -315,10 +315,10 @@ index 083e7c6d49574ae5d1beeba02b334ae864d60afb..85626cd2354b0c13caceb8a1b4f7d585
    // is what the renderer uses if its not threaded.
    settings.enable_checker_imaging =
 diff --git a/ui/gfx/mac/io_surface.cc b/ui/gfx/mac/io_surface.cc
-index 546e43318ee74746a84a70c731e9117c88ea9136..3cc93ff14f3471e99e42d533517df36d16d3cca2 100644
+index 7a199bc598eb6ec3a90ca7a6209e6598e48b79d5..eb368323105f7232c1e3ac79b7db56525f2d906f 100644
 --- a/ui/gfx/mac/io_surface.cc
 +++ b/ui/gfx/mac/io_surface.cc
-@@ -20,6 +20,7 @@
+@@ -21,6 +21,7 @@
  #include "ui/gfx/buffer_format_util.h"
  #include "ui/gfx/color_space.h"
  #include "ui/gfx/icc_profile.h"
@@ -326,7 +326,7 @@ index 546e43318ee74746a84a70c731e9117c88ea9136..3cc93ff14f3471e99e42d533517df36d
  
  namespace gfx {
  
-@@ -131,6 +132,14 @@ void IOSurfaceMachPortTraits::Release(mach_port_t port) {
+@@ -132,6 +133,14 @@ void IOSurfaceMachPortTraits::Release(mach_port_t port) {
  // Common method used by IOSurfaceSetColorSpace and IOSurfaceCanSetColorSpace.
  bool IOSurfaceSetColorSpace(IOSurfaceRef io_surface,
                              const ColorSpace& color_space) {
@@ -341,7 +341,7 @@ index 546e43318ee74746a84a70c731e9117c88ea9136..3cc93ff14f3471e99e42d533517df36d
    // Allow but ignore invalid color spaces.
    if (!color_space.IsValid())
      return true;
-@@ -297,6 +306,15 @@ IOSurfaceRef CreateIOSurface(const gfx::Size& size,
+@@ -302,6 +311,15 @@ IOSurfaceRef CreateIOSurface(const gfx::Size& size,
      DCHECK_EQ(kIOReturnSuccess, r);
    }
  
