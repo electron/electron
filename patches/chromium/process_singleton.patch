@@ -72,7 +72,7 @@ index 0291db0f919aa7868d345f4f0712c42c6ad7ee17..9418bbacb11094628c4468d0a7b735a0
  
  #if defined(OS_MAC)
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index dc9c1b76a1c7c8b3fa83fc83788eef36d2cfa4a5..52a711e2b6fecac9b43544f03c206c0005468ff5 100644
+index dc9c1b76a1c7c8b3fa83fc83788eef36d2cfa4a5..c54733efc399911280e34d2dfc0fb440b6a76333 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
 @@ -80,6 +80,7 @@
@@ -83,7 +83,37 @@ index dc9c1b76a1c7c8b3fa83fc83788eef36d2cfa4a5..52a711e2b6fecac9b43544f03c206c00
  #include "base/threading/platform_thread.h"
  #include "base/threading/thread_task_runner_handle.h"
  #include "base/time/time.h"
-@@ -348,6 +349,21 @@ bool CheckCookie(const base::FilePath& path, const base::FilePath& cookie) {
+@@ -95,9 +96,11 @@
+ #include "net/base/network_interfaces.h"
+ #include "ui/base/l10n/l10n_util.h"
+ 
++#if 0
+ #if defined(OS_LINUX) || defined(OS_CHROMEOS)
+ #include "chrome/browser/ui/process_singleton_dialog_linux.h"
+ #endif
++#endif
+ 
+ #if defined(TOOLKIT_VIEWS) && \
+     (defined(OS_LINUX) || BUILDFLAG(IS_CHROMEOS_LACROS))
+@@ -289,6 +292,9 @@ bool SymlinkPath(const base::FilePath& target, const base::FilePath& path) {
+ bool DisplayProfileInUseError(const base::FilePath& lock_path,
+                               const std::string& hostname,
+                               int pid) {
++  return true;
++
++#if 0
+   std::u16string error = l10n_util::GetStringFUTF16(
+       IDS_PROFILE_IN_USE_POSIX, base::NumberToString16(pid),
+       base::ASCIIToUTF16(hostname));
+@@ -308,6 +314,7 @@ bool DisplayProfileInUseError(const base::FilePath& lock_path,
+ 
+   NOTREACHED();
+   return false;
++#endif
+ }
+ 
+ bool IsChromeProcess(pid_t pid) {
+@@ -348,6 +355,21 @@ bool CheckCookie(const base::FilePath& path, const base::FilePath& cookie) {
    return (cookie == ReadLink(path));
  }
  
@@ -105,7 +135,7 @@ index dc9c1b76a1c7c8b3fa83fc83788eef36d2cfa4a5..52a711e2b6fecac9b43544f03c206c00
  bool ConnectSocket(ScopedSocket* socket,
                     const base::FilePath& socket_path,
                     const base::FilePath& cookie_path) {
-@@ -895,6 +911,20 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessOrCreate() {
+@@ -895,6 +917,20 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessOrCreate() {
        base::TimeDelta::FromSeconds(kTimeoutInSeconds));
  }
  
@@ -126,7 +156,7 @@ index dc9c1b76a1c7c8b3fa83fc83788eef36d2cfa4a5..52a711e2b6fecac9b43544f03c206c00
  ProcessSingleton::NotifyResult
  ProcessSingleton::NotifyOtherProcessWithTimeoutOrCreate(
      const base::CommandLine& command_line,
-@@ -997,12 +1027,26 @@ bool ProcessSingleton::Create() {
+@@ -997,12 +1033,26 @@ bool ProcessSingleton::Create() {
  #endif
    }
  
@@ -159,7 +189,7 @@ index dc9c1b76a1c7c8b3fa83fc83788eef36d2cfa4a5..52a711e2b6fecac9b43544f03c206c00
    }
  
    // Check that the directory was created with the correct permissions.
-@@ -1044,10 +1088,13 @@ bool ProcessSingleton::Create() {
+@@ -1044,10 +1094,13 @@ bool ProcessSingleton::Create() {
    if (listen(sock, 5) < 0)
      NOTREACHED() << "listen failed: " << base::safe_strerror(errno);
  
@@ -178,7 +208,7 @@ index dc9c1b76a1c7c8b3fa83fc83788eef36d2cfa4a5..52a711e2b6fecac9b43544f03c206c00
    return true;
  }
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index f1732f042c3bfd9d5d95a4208664f9252b2aab73..f10ba4a28864c6808b131d88cc79af9ff5c30efc 100644
+index f1732f042c3bfd9d5d95a4208664f9252b2aab73..875269776e45c96ac43a3430768f1406c9608dd3 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
 @@ -27,7 +27,9 @@
@@ -207,7 +237,7 @@ index f1732f042c3bfd9d5d95a4208664f9252b2aab73..f10ba4a28864c6808b131d88cc79af9f
  }
  
  void SendRemoteProcessInteractionResultHistogram(
-@@ -260,14 +267,18 @@ bool ProcessSingleton::EscapeVirtualization(
+@@ -260,9 +267,13 @@ bool ProcessSingleton::EscapeVirtualization(
  }
  
  ProcessSingleton::ProcessSingleton(
@@ -221,12 +251,6 @@ index f1732f042c3bfd9d5d95a4208664f9252b2aab73..f10ba4a28864c6808b131d88cc79af9f
        is_virtualized_(false),
        lock_file_(INVALID_HANDLE_VALUE),
        user_data_dir_(user_data_dir),
-       should_kill_remote_process_callback_(
--          base::BindRepeating(&DisplayShouldKillMessageBox)) {}
-+          base::BindRepeating(&TerminateAppWithError)) {}
- 
- ProcessSingleton::~ProcessSingleton() {
-   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 @@ -366,11 +377,14 @@ ProcessSingleton::NotifyOtherProcessOrCreate() {
    return PROFILE_IN_USE;
  }
