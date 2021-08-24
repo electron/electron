@@ -1,8 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Georg Neis <neis@chromium.org>
 Date: Tue, 3 Aug 2021 09:04:09 +0200
-Subject: [M90-LTS][compiler] Fix bug in
- MachineOperatorReducer::TryMatchWord32Ror
+Subject: Fix bug in MachineOperatorReducer::TryMatchWord32Ror
 
 (cherry picked from commit ca386a4b383165ccaed628c19a1366a273fa371e)
 

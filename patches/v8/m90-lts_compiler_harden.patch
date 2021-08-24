@@ -1,8 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Georg Neis <neis@chromium.org>
 Date: Mon, 2 Aug 2021 22:14:20 +0200
-Subject: [M90-LTS][compiler] Harden
- JSCallReducer::ReduceArrayIteratorPrototypeNext
+Subject: Harden JSCallReducer::ReduceArrayIteratorPrototypeNext
 
 (cherry picked from commit 65b20a0e65e1078f5dd230a5203e231bec790ab4)
 
