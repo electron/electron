@@ -11,6 +11,7 @@
 
 #include "base/logging.h"
 #include "base/mac/foundation_util.h"
+#include "base/mac/scoped_cftyperef.h"
 #include "base/strings/sys_string_conversions.h"
 #include "electron/fuses.h"
 
@@ -24,51 +25,45 @@ void Archive::MaybeValidateArchiveSignature() {
   if (!electron::fuses::IsEmbeddedAsarSignatureValidationEnabled())
     return;
 
-  NSURL* bundle_url =
+  NSURL* exec_url =
       [NSURL URLWithString:[[NSBundle mainBundle] executablePath]];
-  // /Stuff/Electron.app/Contents/MacOS/Electron is the bundle url.
-  NSURL* contents_url = [[bundle_url URLByDeletingLastPathComponent]
-      URLByDeletingLastPathComponent];
-  const std::string abs_path = path_.value();
+  NSURL* bundle_url = [[[NSBundle mainBundle] bundleURL]
+      URLByAppendingPathComponent:@"Contents"];
 
   // If the path to the app.asar file is not contained by the bundle we can't
   // validate the signature.
-  if (abs_path.rfind(base::SysNSStringToUTF8([contents_url absoluteString]),
-                     0) != 0)
+  base::FilePath relative_path;
+  if (!base::mac::NSStringToFilePath([bundle_url path])
+           .AppendRelativePath(path_, &relative_path))
     return;
 
-  SecStaticCodeRef ref = NULL;
+  base::ScopedCFTypeRef<SecStaticCodeRef> ref;
 
   OSStatus status;
-  status = SecStaticCodeCreateWithPath((CFURLRef)bundle_url, kSecCSDefaultFlags,
-                                       &ref);
+  status = SecStaticCodeCreateWithPath((CFURLRef)exec_url, kSecCSDefaultFlags,
+                                       ref.InitializeInto());
 
-  if (ref == NULL) {
-    LOG(FATAL) << "Failed to create static code reference for " << bundle_url;
+  if (!ref) {
+    LOG(FATAL) << "Failed to create static code reference for " << exec_url;
     return;
   }
 
   if (status != noErr) {
-    CFRelease(ref);
-    LOG(FATAL) << "Failed to create static code reference for " << bundle_url;
+    LOG(FATAL) << "Failed to create static code reference for " << exec_url;
     return;
   }
 
-  NSString* archive_path = base::mac::FilePathToNSString(path_);
-  NSString* relative_path =
-      [archive_path substringFromIndex:[[contents_url absoluteString] length]];
-  NSData* data = [NSData dataWithContentsOfFile:archive_path];
-  status = SecCodeValidateFileResource(ref, (CFStringRef)relative_path,
+  NSString* ns_archive_path = base::mac::FilePathToNSString(path_);
+  NSString* ns_relative_path = base::mac::FilePathToNSString(relative_path);
+  NSData* data = [NSData dataWithContentsOfFile:ns_archive_path];
+  status = SecCodeValidateFileResource(ref, (CFStringRef)ns_relative_path,
                                        (CFDataRef)data, kSecCSDefaultFlags);
 
   if (status != noErr) {
-    CFRelease(ref);
     LOG(FATAL) << "Failed to validate archive signature for " << relative_path
                << ". Got error: " << status;
     return;
   }
-
-  CFRelease(ref);
 #endif
 }
 

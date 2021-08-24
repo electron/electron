@@ -433,7 +433,8 @@ node::Environment* NodeBindings::CreateEnvironment(
       break;
   }
 
-  gin_helper::Dictionary global(context->GetIsolate(), context->Global());
+  v8::Isolate* isolate = context->GetIsolate();
+  gin_helper::Dictionary global(isolate, context->Global());
   // Do not set DOM globals for renderer process.
   // We must set this before the node bootstrapper which is run inside
   // CreateEnvironment
@@ -444,9 +445,15 @@ node::Environment* NodeBindings::CreateEnvironment(
     const std::vector<std::string> search_paths = {"app.asar", "app",
                                                    "default_app.asar"};
     const std::vector<std::string> app_asar_search_paths = {"app.asar"};
-    global.Set("_appSearchPaths", electron::fuses::IsNonAsarAppLoadingEnabled()
-                                      ? search_paths
-                                      : app_asar_search_paths);
+    context->Global()->SetPrivate(
+        context,
+        v8::Private::ForApi(
+            isolate,
+            gin::ConvertToV8(isolate, "appSearchPaths").As<v8::String>()),
+        gin::ConvertToV8(isolate,
+                         electron::fuses::IsOnlyLoadAppFromAsarEnabled()
+                             ? app_asar_search_paths
+                             : search_paths));
   }
 
   std::vector<std::string> exec_args;
