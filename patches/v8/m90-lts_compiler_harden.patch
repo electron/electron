@@ -1,0 +1,45 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Georg Neis <neis@chromium.org>
+Date: Mon, 2 Aug 2021 22:14:20 +0200
+Subject: [M90-LTS][compiler] Harden
+ JSCallReducer::ReduceArrayIteratorPrototypeNext
+
+(cherry picked from commit 65b20a0e65e1078f5dd230a5203e231bec790ab4)
+
+Bug: chromium:1234764
+No-Try: true
+No-Presubmit: true
+No-Tree-Checks: true
+Change-Id: I5b1053accf77331687939c789b7ed94df1219287
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3067327
+Commit-Queue: Georg Neis <neis@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#76052}
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3099689
+Reviewed-by: Georg Neis <neis@chromium.org>
+Reviewed-by: Artem Sumaneev <asumaneev@google.com>
+Commit-Queue: Roger Felipe Zanoni da Silva <rzanoni@google.com>
+Cr-Commit-Position: refs/branch-heads/9.0@{#73}
+Cr-Branched-From: bd0108b4c88e0d6f2350cb79b5f363fbd02f3eb7-refs/heads/9.0.257@{#1}
+Cr-Branched-From: 349bcc6a075411f1a7ce2d866c3dfeefc2efa39d-refs/heads/master@{#73001}
+
+diff --git a/src/compiler/js-call-reducer.cc b/src/compiler/js-call-reducer.cc
+index 2c7b6788953092ffb3cf6fa75501dcbb02dce581..56f0ca99e252e715c9792222f95397950a451149 100644
+--- a/src/compiler/js-call-reducer.cc
++++ b/src/compiler/js-call-reducer.cc
+@@ -5854,11 +5854,12 @@ Reduction JSCallReducer::ReduceArrayIteratorPrototypeNext(Node* node) {
+   Node* etrue = effect;
+   Node* if_true = graph()->NewNode(common()->IfTrue(), branch);
+   {
+-    // We know that the {index} is range of the {length} now.
++    // This extra check exists to refine the type of {index} but also to break
++    // an exploitation technique that abuses typer mismatches.
+     index = etrue = graph()->NewNode(
+-        common()->TypeGuard(
+-            Type::Range(0.0, length_access.type.Max() - 1.0, graph()->zone())),
+-        index, etrue, if_true);
++        simplified()->CheckBounds(p.feedback(),
++                                  CheckBoundsFlag::kAbortOnOutOfBounds),
++        index, length, etrue, if_true);
+ 
+     done_true = jsgraph()->FalseConstant();
+     if (iteration_kind == IterationKind::kKeys) {
