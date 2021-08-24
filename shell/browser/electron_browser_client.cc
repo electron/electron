@@ -192,6 +192,14 @@
 #include "ui/views/widget/widget.h"
 #endif
 
+#if BUILDFLAG(ENABLE_PRINTING)
+#include "shell/browser/printing/print_view_manager_electron.h"
+#endif
+
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+#include "components/pdf/browser/pdf_web_contents_helper.h"  // nogncheck
+#endif
+
 using content::BrowserThread;
 
 namespace electron {
@@ -1309,16 +1317,15 @@ void ElectronBrowserClient::CreateWebSocket(
 
     if (web_request_api && web_request_api->MayHaveProxies()) {
       web_request_api->ProxyWebSocket(frame, std::move(factory), url,
-                                      site_for_cookies.RepresentativeUrl(),
-                                      user_agent, std::move(handshake_client));
+                                      site_for_cookies, user_agent,
+                                      std::move(handshake_client));
       return;
     }
   }
 #endif
 
   ProxyingWebSocket::StartProxying(
-      web_request.get(), std::move(factory), url,
-      site_for_cookies.RepresentativeUrl(), user_agent,
+      web_request.get(), std::move(factory), url, site_for_cookies, user_agent,
       std::move(handshake_client), true, frame->GetProcess()->GetID(),
       frame->GetRoutingID(), frame->GetLastCommittedOrigin(), browser_context,
       &next_id_);
@@ -1446,6 +1453,33 @@ bool ElectronBrowserClient::BindAssociatedReceiverFromFrame(
         render_frame_host);
     return true;
   }
+#if BUILDFLAG(ENABLE_PRINTING)
+  if (interface_name == printing::mojom::PrintManagerHost::Name_) {
+    mojo::PendingAssociatedReceiver<printing::mojom::PrintManagerHost> receiver(
+        std::move(*handle));
+    PrintViewManagerElectron::BindPrintManagerHost(std::move(receiver),
+                                                   render_frame_host);
+    return true;
+  }
+#endif
+#if BUILDFLAG(ENABLE_EXTENSIONS)
+  if (interface_name == extensions::mojom::LocalFrameHost::Name_) {
+    extensions::ExtensionWebContentsObserver::BindLocalFrameHost(
+        mojo::PendingAssociatedReceiver<extensions::mojom::LocalFrameHost>(
+            std::move(*handle)),
+        render_frame_host);
+    return true;
+  }
+#endif
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+  if (interface_name == pdf::mojom::PdfService::Name_) {
+    pdf::PDFWebContentsHelper::BindPdfService(
+        mojo::PendingAssociatedReceiver<pdf::mojom::PdfService>(
+            std::move(*handle)),
+        render_frame_host);
+    return true;
+  }
+#endif
 
   return false;
 }

@@ -419,8 +419,9 @@ bool IsDeviceNameValid(const std::u16string& device_name) {
 #elif defined(OS_WIN)
   printing::ScopedPrinterHandle printer;
   return printer.OpenPrinterWithName(base::as_wcstr(device_name));
-#endif
+#else
   return true;
+#endif
 }
 
 std::u16string GetDefaultPrinterAsync() {
@@ -1495,13 +1496,6 @@ void WebContents::DidChangeThemeColor() {
   } else {
     Emit("did-change-theme-color", nullptr);
   }
-}
-
-void WebContents::OnInterfaceRequestFromFrame(
-    content::RenderFrameHost* render_frame_host,
-    const std::string& interface_name,
-    mojo::ScopedMessagePipeHandle* interface_pipe) {
-  registry_.TryBindInterface(interface_name, interface_pipe, render_frame_host);
 }
 
 void WebContents::DidAcquireFullscreen(content::RenderFrameHost* rfh) {
@@ -3415,7 +3409,7 @@ void WebContents::DevToolsRemoveFileSystem(
 
   auto* pref_service = GetPrefService(GetDevToolsWebContents());
   DictionaryPrefUpdate update(pref_service, prefs::kDevToolsFileSystemPaths);
-  update.Get()->RemoveWithoutPathExpansion(path, nullptr);
+  update.Get()->RemoveKey(path);
 
   base::Value file_system_path_value(path);
   inspectable_web_contents_->CallClientFunction("DevToolsAPI.fileSystemRemoved",

@@ -4,6 +4,8 @@
 
 #include "shell/common/api/electron_api_clipboard.h"
 
+#include <map>
+
 #include "base/strings/utf_string_conversions.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -41,15 +43,27 @@ bool Clipboard::Has(const std::string& format_string,
   ui::ClipboardFormatType format(
       ui::ClipboardFormatType::GetType(format_string));
   if (format.GetName().empty())
-    format = ui::ClipboardFormatType::GetCustomPlatformType(format_string);
+    format = ui::ClipboardFormatType::CustomPlatformType(format_string);
   return clipboard->IsFormatAvailable(format, GetClipboardBuffer(args),
                                       /* data_dst = */ nullptr);
 }
 
 std::string Clipboard::Read(const std::string& format_string) {
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
-  ui::ClipboardFormatType format(
-      ui::ClipboardFormatType::GetCustomPlatformType(format_string));
+  std::map<std::string, std::string> custom_format_names;
+  custom_format_names =
+      clipboard->ExtractCustomPlatformNames(ui::ClipboardBuffer::kCopyPaste,
+                                            /* data_dst = */ nullptr);
+#if defined(OS_LINUX)
+  if (custom_format_names.find(format_string) == custom_format_names.end()) {
+    custom_format_names =
+        clipboard->ExtractCustomPlatformNames(ui::ClipboardBuffer::kSelection,
+                                              /* data_dst = */ nullptr);
+  }
+#endif
+  CHECK(custom_format_names.find(format_string) != custom_format_names.end());
+  ui::ClipboardFormatType format(ui::ClipboardFormatType::CustomPlatformType(
+      custom_format_names[format_string]));
 
   std::string data;
   clipboard->ReadData(format, /* data_dst = */ nullptr, &data);

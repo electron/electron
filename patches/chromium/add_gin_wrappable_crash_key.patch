@@ -14,6 +14,21 @@ help determine where the crash originated from.
 This patch should not be upstreamed, and can be removed in Electron 15 and
 beyond once we identify the cause of the crash.
 
+diff --git a/gin/BUILD.gn b/gin/BUILD.gn
+index c6059fdb0e0f74ee3ef78c5517634ed5a36f1b10..e16b2ec43b98c3b8724fd85085a33fe52a1e1979 100644
+--- a/gin/BUILD.gn
++++ b/gin/BUILD.gn
+@@ -88,6 +88,10 @@ component("gin") {
+     frameworks = [ "CoreFoundation.framework" ]
+   }
+ 
++  if (!is_mas_build) {
++    public_deps += [ "//components/crash/core/common:crash_key" ]
++  }
++
+   configs += [
+     "//tools/v8_context_snapshot:use_v8_context_snapshot",
+     "//v8:external_startup_data",
 diff --git a/gin/wrappable.cc b/gin/wrappable.cc
 index fe07eb94a8e679859bba6d76ff0d6ee86bd0c67e..ecb0aa2c4ec57e1814f4c94194e775440f4e35ee 100644
 --- a/gin/wrappable.cc

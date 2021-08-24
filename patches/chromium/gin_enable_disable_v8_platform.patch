@@ -38,7 +38,7 @@ index 41e516899dccb6352aabadcd66a93d69e13031b6..e476c6b4a58caa30d81d082200bfd8c8
    // Returns whether `Initialize` has already been invoked in the process.
    // Initialization is a one-way operation (i.e., this method cannot return
 diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
-index 4ba7c59e97fd0c6234c35db3a10bcb51e6088804..32aa9eda0baba8fbe81f98504f2a6c5acc60a2f3 100644
+index 042ce4e6d0cb20686d3493ba034dcf41edcd658c..a9b2c43bacdf851b12c24b53080b40585405c4ae 100644
 --- a/gin/v8_initializer.cc
 +++ b/gin/v8_initializer.cc
 @@ -267,7 +267,8 @@ void SetV8FlagsIfOverridden(const base::Feature& feature,

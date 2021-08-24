@@ -191,10 +191,6 @@ void SystemNetworkContextManager::ConfigureDefaultNetworkContextParams(
 
   network_context_params->proxy_resolver_factory =
       ChromeMojoProxyResolverFactory::CreateWithSelfOwnedReceiver();
-
-#if !BUILDFLAG(DISABLE_FTP_SUPPORT)
-  network_context_params->enable_ftp_url_support = true;
-#endif
 }
 
 // static

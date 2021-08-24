@@ -229,7 +229,7 @@ std::string LoadResourceBundle(const std::string& locale) {
       locale, nullptr, ui::ResourceBundle::LOAD_COMMON_RESOURCES);
   ui::ResourceBundle& bundle = ui::ResourceBundle::GetSharedInstance();
   bundle.AddDataPackFromPath(pak_dir.Append(FILE_PATH_LITERAL("resources.pak")),
-                             ui::SCALE_FACTOR_NONE);
+                             ui::kScaleFactorNone);
   return loaded_locale;
 }
 

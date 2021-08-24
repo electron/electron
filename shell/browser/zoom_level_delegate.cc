@@ -94,7 +94,7 @@ void ZoomLevelDelegate::OnZoomLevelChanged(
   }
 
   if (modification_is_removal)
-    host_zoom_dictionary->RemoveWithoutPathExpansion(change.host, nullptr);
+    host_zoom_dictionary->RemoveKey(change.host);
   else
     host_zoom_dictionary->SetKey(change.host, base::Value(level));
 }
@@ -107,9 +107,7 @@ void ZoomLevelDelegate::ExtractPerHostZoomLevels(
   for (base::DictionaryValue::Iterator i(*host_zoom_dictionary_copy);
        !i.IsAtEnd(); i.Advance()) {
     const std::string& host(i.key());
-    double zoom_level = 0;
-
-    bool has_valid_zoom_level = i.value().GetAsDouble(&zoom_level);
+    const absl::optional<double> zoom_level = i.value().GetIfDouble();
 
     // Filter out A) the empty host, B) zoom levels equal to the default; and
     // remember them, so that we can later erase them from Prefs.
@@ -117,14 +115,14 @@ void ZoomLevelDelegate::ExtractPerHostZoomLevels(
     // level was set to its current value. In either case, SetZoomLevelForHost
     // will ignore type B values, thus, to have consistency with HostZoomMap's
     // internal state, these values must also be removed from Prefs.
-    if (host.empty() || !has_valid_zoom_level ||
-        blink::PageZoomValuesEqual(zoom_level,
+    if (host.empty() || !zoom_level ||
+        blink::PageZoomValuesEqual(*zoom_level,
                                    host_zoom_map_->GetDefaultZoomLevel())) {
       keys_to_remove.push_back(host);
       continue;
     }
 
-    host_zoom_map_->SetZoomLevelForHost(host, zoom_level);
+    host_zoom_map_->SetZoomLevelForHost(host, *zoom_level);
   }
 
   // Sanitize prefs to remove entries that match the default zoom level and/or
@@ -136,7 +134,7 @@ void ZoomLevelDelegate::ExtractPerHostZoomLevels(
     host_zoom_dictionaries->GetDictionary(partition_key_,
                                           &sanitized_host_zoom_dictionary);
     for (const std::string& s : keys_to_remove)
-      sanitized_host_zoom_dictionary->RemoveWithoutPathExpansion(s, nullptr);
+      sanitized_host_zoom_dictionary->RemoveKey(s);
   }
 }
 

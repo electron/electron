@@ -553,10 +553,10 @@ index 0000000000000000000000000000000000000000..8e0aa4b7a858ab432dca9da9ead9fcf4
 +}
 diff --git a/deps/googletest/BUILD.gn b/deps/googletest/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..34c4289eb35af910a470db6ef40abc91954ed848
+index 0000000000000000000000000000000000000000..0daf8c006cef89e76d7eccec3e924bd2718021c9
 --- /dev/null
 +++ b/deps/googletest/BUILD.gn
-@@ -0,0 +1,63 @@
+@@ -0,0 +1,64 @@
 +config("gtest_config") {
 +  include_dirs = [ "include" ]
 +  defines = [ "UNIT_TEST" ]
@@ -572,7 +572,8 @@ index 0000000000000000000000000000000000000000..34c4289eb35af910a470db6ef40abc91
 +
 +  cflags_cc = [
 +    "-Wno-c++98-compat-extra-semi",
-+    "-Wno-unused-const-variable"
++    "-Wno-unused-const-variable",
++    "-Wno-unreachable-code-return",
 +  ]
 +
 +  defines = [
@@ -668,10 +669,10 @@ index 0000000000000000000000000000000000000000..fb000f8ee7647c375bc190d1729d67bb
 +}
 diff --git a/deps/nghttp2/BUILD.gn b/deps/nghttp2/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..58eb2f87990d2cbad711aa39f2a73b20232d4035
+index 0000000000000000000000000000000000000000..e90a1416f5b0106e5886564061d48f32b730b1c2
 --- /dev/null
 +++ b/deps/nghttp2/BUILD.gn
-@@ -0,0 +1,48 @@
+@@ -0,0 +1,49 @@
 +config("nghttp2_config") {
 +  defines = [ "NGHTTP2_STATICLIB" ]
 +  include_dirs = [ "lib/includes" ]
@@ -692,6 +693,7 @@ index 0000000000000000000000000000000000000000..58eb2f87990d2cbad711aa39f2a73b20
 +    "-Wno-implicit-function-declaration",
 +    "-Wno-implicit-fallthrough",
 +    "-Wno-string-plus-int",
++    "-Wno-unreachable-code-return",
 +  ]
 +
 +  sources = [
@@ -722,10 +724,10 @@ index 0000000000000000000000000000000000000000..58eb2f87990d2cbad711aa39f2a73b20
 +}
 diff --git a/deps/uv/BUILD.gn b/deps/uv/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..11a65c2334acc653614577fa1f95791dad72e9e3
+index 0000000000000000000000000000000000000000..b7002dfebb68199511b63a650c734d3493ccce48
 --- /dev/null
 +++ b/deps/uv/BUILD.gn
-@@ -0,0 +1,193 @@
+@@ -0,0 +1,194 @@
 +config("libuv_config") {
 +  include_dirs = [ "include" ]
 +
@@ -773,6 +775,7 @@ index 0000000000000000000000000000000000000000..11a65c2334acc653614577fa1f95791d
 +    "-Wno-unused-function",
 +    "-Wno-unused-variable",
 +    "-Wno-unreachable-code",
++    "-Wno-unreachable-code-return",
 +  ]
 +
 +  libs = []
