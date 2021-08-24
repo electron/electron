@@ -81,10 +81,10 @@ require('@electron/internal/browser/guest-view-manager');
 require('@electron/internal/browser/guest-window-proxy');
 
 // Now we try to load app's package.json.
+const v8Util = process._linkedBinding('electron_common_v8_util');
 let packagePath = null;
 let packageJson = null;
-const searchPaths = (global as any)._appSearchPaths;
-delete (global as any)._appSearchPaths;
+const searchPaths: string[] = v8Util.getHiddenValue(global, 'appSearchPaths');
 
 if (process.resourcesPath) {
   for (packagePath of searchPaths) {

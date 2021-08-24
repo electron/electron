@@ -13,7 +13,7 @@
 #include "base/files/file_path.h"
 #include "base/synchronization/lock.h"
 
-#if defined(OS_MAC)
+#if defined(OS_MAC) && !defined(MAS_BUILD)
 #include <Security/Security.h>
 
 extern "C" OSStatus SecCodeValidateFileResource(SecStaticCodeRef code,
