@@ -8,10 +8,10 @@ we invoke it in order to expose contents.decrementCapturerCount([stayHidden, sta
 to users. We should try to upstream this.
 
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 6ddba0914379d2f1135144447f2cf6c990f34e94..19dbad406dcffad2ef588358fcef6ed7f7cbfaca 100644
+index 2b53623480b441b7deda0b614559917d5a539cdb..6aa1dce2b30401fcb9c8d73f49b55b3245f75d35 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -1782,10 +1782,12 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
+@@ -1772,10 +1772,12 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
    // outermost frame trees in this WebContents.
    std::vector<RenderFrameHostImpl*> GetOutermostMainFrames();
  
@@ -26,10 +26,10 @@ index 6ddba0914379d2f1135144447f2cf6c990f34e94..19dbad406dcffad2ef588358fcef6ed7
    // state into account.
    PageVisibilityState CalculatePageVisibilityState(Visibility visibility) const;
 diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
-index 529b8008f0247dcff819e3178312776d0d46d372..0fecccfd3f7d9a8b464d24a0ab0bd504fc898de3 100644
+index 9c141d116fb3fc64c51798e71a86ea0bcb606a7f..296629ed93986b53c45841c62b2bc9569f342df2 100644
 --- a/content/public/browser/web_contents.h
 +++ b/content/public/browser/web_contents.h
-@@ -623,6 +623,8 @@ class WebContents : public PageNavigator,
+@@ -629,6 +629,8 @@ class WebContents : public PageNavigator,
        bool stay_hidden,
        bool stay_awake) WARN_UNUSED_RESULT = 0;
  

@@ -192,6 +192,10 @@
 #include "ui/views/widget/widget.h"
 #endif
 
+#if BUILDFLAG(ENABLE_PRINTING)
+#include "shell/browser/printing/print_view_manager_electron.h"
+#endif
+
 using content::BrowserThread;
 
 namespace electron {
@@ -1446,6 +1450,24 @@ bool ElectronBrowserClient::BindAssociatedReceiverFromFrame(
         render_frame_host);
     return true;
   }
+#if BUILDFLAG(ENABLE_PRINTING)
+  if (interface_name == printing::mojom::PrintManagerHost::Name_) {
+    mojo::PendingAssociatedReceiver<printing::mojom::PrintManagerHost> receiver(
+        std::move(*handle));
+    PrintViewManagerElectron::BindPrintManagerHost(std::move(receiver),
+                                                   render_frame_host);
+    return true;
+  }
+#endif
+#if BUILDFLAG(ENABLE_EXTENSIONS)
+  if (interface_name == extensions::mojom::LocalFrameHost::Name_) {
+    extensions::ExtensionWebContentsObserver::BindLocalFrameHost(
+        mojo::PendingAssociatedReceiver<extensions::mojom::LocalFrameHost>(
+            std::move(*handle)),
+        render_frame_host);
+    return true;
+  }
+#endif
 
   return false;
 }

@@ -269,7 +269,8 @@ void DownloadIdCallback(content::DownloadManager* download_manager,
       download::DownloadItem::INTERRUPTED,
       download::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
       download::DOWNLOAD_INTERRUPT_REASON_NETWORK_TIMEOUT, false, base::Time(),
-      false, std::vector<download::DownloadItem::ReceivedSlice>());
+      false, std::vector<download::DownloadItem::ReceivedSlice>(),
+      download::DownloadItemRerouteInfo());
 }
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
@@ -911,7 +912,7 @@ static void StartPreconnectOnUI(ElectronBrowserContext* browser_context,
                                 int num_sockets_to_preconnect) {
   std::vector<predictors::PreconnectRequest> requests = {
       {url::Origin::Create(url), num_sockets_to_preconnect,
-       net::NetworkIsolationKey()}};
+       net::NetworkIsolationKey::CreateTransient()}};
   browser_context->GetPreconnectManager()->Start(url, requests);
 }
 

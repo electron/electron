@@ -43,10 +43,10 @@ bool GetFilesNode(const base::DictionaryValue* root,
                   const base::DictionaryValue* dir,
                   const base::DictionaryValue** out) {
   // Test for symbol linked directory.
-  std::string link;
-  if (dir->GetStringWithoutPathExpansion("link", &link)) {
+  const std::string* link = dir->FindStringKey("link");
+  if (link != nullptr) {
     const base::DictionaryValue* linked_node = nullptr;
-    if (!GetNodeFromPath(link, root, &linked_node))
+    if (!GetNodeFromPath(*link, root, &linked_node))
       return false;
     dir = linked_node;
   }

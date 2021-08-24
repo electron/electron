@@ -1,0 +1,64 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Tue, 17 Aug 2021 22:42:42 -0700
+Subject: feat: expose raw response headers from URLLoader
+
+With https://chromium-review.googlesource.com/c/chromium/src/+/2856099
+unfiltered response headers are only available via trusted channel
+through //services/network/public/mojom/devtools_observer.mojom.
+https://github.com/electron/electron/pull/30503/commits/28f4da1582d046e96cb58f3cbb590503e89dfd0d
+was an attempt to use this interface but given the original response is
+signalled on a different interface via URLLoaderClient::OnReceiveResponse
+it is harder to sync these data from two different channels for a synchronous
+event emitted on the SimpleURLLoaderWrapper::OnResponseStarted.
+
+This patch does the minimal approach to add back the raw response
+headers, moving forward we should find a way in upstream to provide
+access to these headers for loader clients created on the browser process.
+
+diff --git a/services/network/public/mojom/url_response_head.mojom b/services/network/public/mojom/url_response_head.mojom
+index cea1fb864ab46b4b0eabf1db11a0392d6cd575c1..df033f65d50b088778268827e506963afebe0a23 100644
+--- a/services/network/public/mojom/url_response_head.mojom
++++ b/services/network/public/mojom/url_response_head.mojom
+@@ -7,6 +7,7 @@ module network.mojom;
+ import "mojo/public/mojom/base/time.mojom";
+ import "mojo/public/mojom/base/unguessable_token.mojom";
+ import "services/network/public/mojom/fetch_api.mojom";
++import "services/network/public/mojom/http_raw_headers.mojom";
+ import "services/network/public/mojom/ip_endpoint.mojom";
+ import "services/network/public/mojom/load_timing_info.mojom";
+ import "services/network/public/mojom/network_param.mojom";
+@@ -28,6 +29,9 @@ struct URLResponseHead {
+   // The response headers or NULL if the URL type does not support headers.
+   HttpResponseHeaders headers;
+ 
++  // Actual response headers, as obtained from the network stack.
++  array<HttpRawHeaderPair> raw_response_headers;
++
+   // The mime type of the response.  This may be a derived value.
+   string mime_type;
+ 
+diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
+index e65e1a74ca0bd8f2aa4b7c939343ebf412109a1b..94074f4ccdff523609363a810f1566d19342454f 100644
+--- a/services/network/url_loader.cc
++++ b/services/network/url_loader.cc
+@@ -1258,6 +1258,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
+   response_ = network::mojom::URLResponseHead::New();
+   PopulateResourceResponse(url_request_.get(), is_load_timing_enabled_,
+                            options_, response_.get());
++  if (raw_response_headers_ && devtools_request_id()) {
++    std::vector<network::mojom::HttpRawHeaderPairPtr> header_array;
++    size_t iterator = 0;
++    std::string name, value;
++    while (raw_response_headers_->EnumerateHeaderLines(&iterator, &name, &value)) {
++      network::mojom::HttpRawHeaderPairPtr pair =
++          network::mojom::HttpRawHeaderPair::New();
++      pair->key = name;
++      pair->value = value;
++      header_array.push_back(std::move(pair));
++    }
++    response_->raw_response_headers = std::move(header_array);
++  }
+ 
+   // Parse and remove the Trust Tokens response headers, if any are expected,
+   // potentially failing the request if an error occurs.

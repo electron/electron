@@ -330,14 +330,16 @@ bool Converter<scoped_refptr<network::ResourceRequestBody>>::FromV8(
           reinterpret_cast<const char*>(bytes->GetBlob().data()),
           base::checked_cast<int>(bytes->GetBlob().size()));
     } else if (type == "file") {
-      std::string file;
+      const std::string* file = dict->FindStringKey("filePath");
+      if (file == nullptr) {
+        return false;
+      }
       int offset = 0, length = -1;
       double modification_time = 0.0;
-      dict->GetStringWithoutPathExpansion("filePath", &file);
       dict->GetInteger("offset", &offset);
       dict->GetInteger("file", &length);
       dict->GetDouble("modificationTime", &modification_time);
-      (*out)->AppendFileRange(base::FilePath::FromUTF8Unsafe(file),
+      (*out)->AppendFileRange(base::FilePath::FromUTF8Unsafe(*file),
                               static_cast<uint64_t>(offset),
                               static_cast<uint64_t>(length),
                               base::Time::FromDoubleT(modification_time));
