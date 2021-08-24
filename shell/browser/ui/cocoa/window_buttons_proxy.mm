@@ -34,25 +34,6 @@
   show_on_hover_ = NO;
   mouse_inside_ = NO;
 
-  // Save the sequence of the buttons for later computation.
-  if (base::i18n::IsRTL()) {
-    left_ = [window_ standardWindowButton:NSWindowZoomButton];
-    right_ = [window_ standardWindowButton:NSWindowCloseButton];
-  } else {
-    left_ = [window_ standardWindowButton:NSWindowCloseButton];
-    right_ = [window_ standardWindowButton:NSWindowZoomButton];
-  }
-  middle_ = [window_ standardWindowButton:NSWindowMiniaturizeButton];
-
-  // Safety check just in case Apple changes the view structure in a macOS
-  // upgrade.
-  if (!left_.superview || !left_.superview.superview) {
-    NOTREACHED() << "macOS has changed its window buttons view structure.";
-    titlebar_container_ = nullptr;
-    return self;
-  }
-  titlebar_container_ = left_.superview.superview;
-
   // Remember the default margin.
   margin_ = default_margin_ = [self getCurrentMargin];
 
@@ -66,19 +47,22 @@
 }
 
 - (void)setVisible:(BOOL)visible {
-  if (!titlebar_container_)
+  NSView* titleBarContainer = [self titleBarContainer];
+  if (!titleBarContainer)
     return;
-  [titlebar_container_ setHidden:!visible];
+  [titleBarContainer setHidden:!visible];
 }
 
 - (BOOL)isVisible {
-  if (!titlebar_container_)
+  NSView* titleBarContainer = [self titleBarContainer];
+  if (!titleBarContainer)
     return YES;
-  return ![titlebar_container_ isHidden];
+  return ![titleBarContainer isHidden];
 }
 
 - (void)setShowOnHover:(BOOL)yes {
-  if (!titlebar_container_)
+  NSView* titleBarContainer = [self titleBarContainer];
+  if (!titleBarContainer)
     return;
   show_on_hover_ = yes;
   // Put a transparent view above the window buttons so we can track mouse
@@ -86,7 +70,7 @@
   if (show_on_hover_) {
     hover_view_.reset([[ButtonsAreaHoverView alloc] initWithProxy:self]);
     [hover_view_ setFrame:[self getButtonsBounds]];
-    [titlebar_container_ addSubview:hover_view_.get()];
+    [titleBarContainer addSubview:hover_view_.get()];
   } else {
     [hover_view_ removeFromSuperview];
     hover_view_.reset();
@@ -107,12 +91,17 @@
 }
 
 - (void)redraw {
-  if (!titlebar_container_)
+  NSView* titleBarContainer = [self titleBarContainer];
+  if (!titleBarContainer)
     return;
 
-  float button_width = NSWidth(left_.frame);
-  float button_height = NSHeight(left_.frame);
-  float padding = NSMinX(middle_.frame) - NSMaxX(left_.frame);
+  NSView* left = [self leftButton];
+  NSView* middle = [self middleButton];
+  NSView* right = [self rightButton];
+
+  float button_width = NSWidth(left.frame);
+  float button_height = NSHeight(left.frame);
+  float padding = NSMinX(middle.frame) - NSMaxX(left.frame);
   float start;
   if (base::i18n::IsRTL())
     start =
@@ -120,16 +109,16 @@
   else
     start = margin_.x();
 
-  NSRect cbounds = titlebar_container_.frame;
+  NSRect cbounds = titleBarContainer.frame;
   cbounds.size.height = button_height + 2 * margin_.y();
   cbounds.origin.y = NSHeight(window_.frame) - NSHeight(cbounds);
-  [titlebar_container_ setFrame:cbounds];
+  [titleBarContainer setFrame:cbounds];
 
-  [left_ setFrameOrigin:NSMakePoint(start, margin_.y())];
+  [left setFrameOrigin:NSMakePoint(start, margin_.y())];
   start += button_width + padding;
-  [middle_ setFrameOrigin:NSMakePoint(start, margin_.y())];
+  [middle setFrameOrigin:NSMakePoint(start, margin_.y())];
   start += button_width + padding;
-  [right_ setFrameOrigin:NSMakePoint(start, margin_.y())];
+  [right setFrameOrigin:NSMakePoint(start, margin_.y())];
 
   if (hover_view_)
     [hover_view_ setFrame:[self getButtonsBounds]];
@@ -176,25 +165,59 @@
 
 // Return the bounds of all 3 buttons.
 - (NSRect)getButtonsBounds {
-  return NSMakeRect(NSMinX(left_.frame), NSMinY(left_.frame),
-                    NSMaxX(right_.frame) - NSMinX(left_.frame),
-                    NSHeight(left_.frame));
+  NSView* left = [self leftButton];
+  NSView* right = [self rightButton];
+  return NSMakeRect(NSMinX(left.frame), NSMinY(left.frame),
+                    NSMaxX(right.frame) - NSMinX(left.frame),
+                    NSHeight(left.frame));
 }
 
 // Compute margin from position of current buttons.
 - (gfx::Point)getCurrentMargin {
   gfx::Point result;
-  if (!titlebar_container_)
+  NSView* titleBarContainer = [self titleBarContainer];
+  if (!titleBarContainer)
     return result;
 
-  result.set_y((NSHeight(titlebar_container_.frame) - NSHeight(left_.frame)) /
-               2);
+  NSView* left = [self leftButton];
+  NSView* right = [self rightButton];
+
+  result.set_y((NSHeight(titleBarContainer.frame) - NSHeight(left.frame)) / 2);
 
   if (base::i18n::IsRTL())
-    result.set_x(NSWidth(window_.frame) - NSMaxX(right_.frame));
+    result.set_x(NSWidth(window_.frame) - NSMaxX(right.frame));
   else
-    result.set_x(NSMinX(left_.frame));
+    result.set_x(NSMinX(left.frame));
   return result;
+}
+
+// Receive the titlebar container, which might be nil if the window does not
+// have the NSWindowStyleMaskTitled style.
+- (NSView*)titleBarContainer {
+  NSView* left = [self leftButton];
+  if (!left.superview)
+    return nil;
+  return left.superview.superview;
+}
+
+// Receive the window buttons, note that the buttons might be removed and
+// re-added on the fly so we should not cache them.
+- (NSButton*)leftButton {
+  if (base::i18n::IsRTL())
+    return [window_ standardWindowButton:NSWindowZoomButton];
+  else
+    return [window_ standardWindowButton:NSWindowCloseButton];
+}
+
+- (NSButton*)middleButton {
+  return [window_ standardWindowButton:NSWindowMiniaturizeButton];
+}
+
+- (NSButton*)rightButton {
+  if (base::i18n::IsRTL())
+    return [window_ standardWindowButton:NSWindowCloseButton];
+  else
+    return [window_ standardWindowButton:NSWindowZoomButton];
 }
 
 @end
