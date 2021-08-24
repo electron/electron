@@ -183,14 +183,6 @@ class NativeWindowMac : public NativeWindow,
     kInactive,
   };
 
-  enum class TitleBarStyle {
-    kNormal,
-    kHidden,
-    kHiddenInset,
-    kCustomButtonsOnHover,
-  };
-  TitleBarStyle title_bar_style() const { return title_bar_style_; }
-
   ElectronPreviewItem* preview_item() const { return preview_item_.get(); }
   ElectronTouchBar* touch_bar() const { return touch_bar_.get(); }
   bool zoom_to_page_width() const { return zoom_to_page_width_; }
@@ -247,9 +239,6 @@ class NativeWindowMac : public NativeWindow,
 
   // The presentation options before entering kiosk mode.
   NSApplicationPresentationOptions kiosk_options_;
-
-  // The "titleBarStyle" option.
-  TitleBarStyle title_bar_style_ = TitleBarStyle::kNormal;
 
   // The "visualEffectState" option.
   VisualEffectState visual_effect_state_ = VisualEffectState::kFollowWindow;
