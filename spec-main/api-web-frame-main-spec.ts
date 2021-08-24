@@ -263,23 +263,25 @@ describe('webFrameMain module', () => {
       expect(nestedDetails.frame).to.equal(w.webContents.mainFrame.frames[0]);
     });
 
-    it('emits after navigating cross-domain', async () => {
-      const [serverA, serverB] = await Promise.all([createServer(), createServer()]);
+    it('is not emitted upon cross-origin navigation', async () => {
+      const server = await createServer();
 
       // HACK: Use 'localhost' instead of '127.0.0.1' so Chromium treats it as
-      // a separate origin because differing ports aren't enough :thinking:
-      const secondUrl = `http://localhost:${new URL(serverB.url).port}`;
+      // a separate origin because differing ports aren't enough 🤔
+      const secondUrl = `http://localhost:${new URL(server.url).port}`;
 
       const w = new BrowserWindow({ show: false });
-      await w.webContents.loadURL(serverA.url);
+      await w.webContents.loadURL(server.url);
 
-      // NOTE: Second navigation is cross-origin which leads to Chromium
-      // swapping RenderFrameHosts. This is maybe not what we want for this
-      // API...
-      const promise = emittedOnce(w.webContents, 'frame-created');
+      let frameCreatedEmitted = false;
+
+      w.webContents.once('frame-created', () => {
+        frameCreatedEmitted = true;
+      });
+
       await w.webContents.loadURL(secondUrl);
-      const [, mainDetails] = await promise;
-      expect(mainDetails.frame).to.equal(w.webContents.mainFrame);
+
+      expect(frameCreatedEmitted).to.be.false();
     });
   });
 
