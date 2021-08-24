@@ -25,13 +25,6 @@
 @interface WindowButtonsProxy : NSObject {
  @private
   NSWindow* window_;
-  // The view that contains the window buttons and title.
-  NSView* titlebar_container_;
-
-  // The window buttons.
-  NSButton* left_;
-  NSButton* right_;
-  NSButton* middle_;
 
   // Current left-top margin of buttons.
   gfx::Point margin_;
