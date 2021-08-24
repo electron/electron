@@ -210,27 +210,36 @@ v8::Local<v8::Value> ElectronBindings::GetSystemMemoryInfo(
 // static
 v8::Local<v8::Value> ElectronBindings::GetWindowsVersionType(
     v8::Isolate* isolate) {
-  std::string type;
-  std::map<base::win::VersionType, std::string> versionMap{
-      {base::win::SUITE_HOME, "home"},
-      {base::win::SUITE_PROFESSIONAL, "professional"},
-      {base::win::SUITE_SERVER, "server"},
-      {base::win::SUITE_ENTERPRISE, "enterprise"},
-      {base::win::SUITE_EDUCATION, "education"},
-      {base::win::SUITE_EDUCATION_PRO, "educationPro"},
-      {base::win::SUITE_LAST, "invalid"}};
-
 #if defined(OS_WIN)
+  std::string type;
   auto* os_info = base::win::OSInfo::GetInstance();
-  type = versionMap[os_info->version_type()];
+  switch (os_info->version_type()) {
+    case base::win::SUITE_HOME:
+      type = "home";
+      break;
+    case base::win::SUITE_PROFESSIONAL:
+      type = "professional";
+      break;
+    case base::win::SUITE_SERVER:
+      type = "server";
+      break;
+    case base::win::SUITE_ENTERPRISE:
+      type = "enterprise";
+      break;
+    case base::win::SUITE_EDUCATION:
+      type = "education";
+      break;
+    case base::win::SUITE_EDUCATION_PRO:
+      type = "educationPro";
+      break;
+    default:
+      type = "invalid";
+  }
+  return v8::String::NewFromUtf8(isolate, type.c_str()).ToLocalChecked();
 #else
   gin_helper::ErrorThrower(isolate).ThrowError(
       "No Windows version type for non-Windows OSes");
-  // enum boundary value
-  type = versionMap[base::win::SUITE_LAST];
 #endif
-
-  return v8::String::NewFromUtf8(isolate, type.c_str()).ToLocalChecked();
 }
 
 // static
