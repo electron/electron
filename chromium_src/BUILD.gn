@@ -64,8 +64,11 @@ static_library("chrome") {
       "//chrome/browser/extensions/global_shortcut_listener_win.cc",
       "//chrome/browser/extensions/global_shortcut_listener_win.h",
       "//chrome/browser/icon_loader_win.cc",
+      "//chrome/browser/ui/frame/window_frame_util.h",
+      "//chrome/browser/ui/view_ids.h",
       "//chrome/browser/win/chrome_process_finder.cc",
       "//chrome/browser/win/chrome_process_finder.h",
+      "//chrome/browser/win/titlebar_config.h",
       "//chrome/child/v8_crashpad_support_win.cc",
       "//chrome/child/v8_crashpad_support_win.h",
     ]
