@@ -466,6 +466,24 @@ index 8f70e52a7253ab83be5e597e34f2697a5aea076c..5ede08c350716bbb0bd7d39d218a29c4
    }
  
    return user_info;
+diff --git a/content/common/pseudonymization_salt.cc b/content/common/pseudonymization_salt.cc
+index 28e003bef910abff022def659fe18d4cd0549f8a..530bcbdb5d350f6486dc1e8536f7b279be69e241 100644
+--- a/content/common/pseudonymization_salt.cc
++++ b/content/common/pseudonymization_salt.cc
+@@ -41,11 +41,13 @@ uint32_t GetPseudonymizationSalt() {
+   uint32_t salt = g_salt.load();
+ 
+   if (salt == 0) {
++#ifndef MAS_BUILD
+ #if DCHECK_IS_ON()
+     // Only the Browser process needs to initialize the `salt` on demand.
+     // Other processes (identified via the IsProcessSandboxed heuristic) should
+     // receive the salt from their parent processes.
+     DCHECK(!sandbox::policy::Sandbox::IsProcessSandboxed());
++#endif
+ #endif
+     salt = InitializeSalt();
+   }
 diff --git a/content/renderer/renderer_main_platform_delegate_mac.mm b/content/renderer/renderer_main_platform_delegate_mac.mm
 index 894ac47e596c1c96a7e0659be80ed8a5629d0304..eca797a24df79b8502b9698e6ed8830ad1c5cb59 100644
 --- a/content/renderer/renderer_main_platform_delegate_mac.mm
