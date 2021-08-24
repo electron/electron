@@ -884,7 +884,7 @@ Returns:
 * `details` Object
   * `frame` WebFrameMain
 
-Emitted when an `<iframe>` is loaded within the main page or a nested `<iframe>`.
+Emitted when the [mainFrame](web-contents.md#contentsmainframe-readonly), an `<iframe>`, or a nested `<iframe>` is loaded within the page.
 
 ### Instance Methods
 
