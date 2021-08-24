@@ -268,7 +268,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   bool ArePersistentMediaDeviceIDsAllowed(
       content::BrowserContext* browser_context,
       const GURL& scope,
-      const GURL& site_for_cookies,
+      const net::SiteForCookies& site_for_cookies,
       const absl::optional<url::Origin>& top_frame_origin) override;
   base::FilePath GetLoggingFileName(const base::CommandLine& cmd_line) override;
 
