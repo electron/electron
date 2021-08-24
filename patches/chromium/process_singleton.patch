@@ -8,34 +8,43 @@ onto the Chromium files, so that Electron doesn't need to maintain
 separate copies of those files.
 
 This patch adds a few changes to the Chromium code:
-1. It adds a parameter `program_name` to the constructor so that
-   the generated mutex name on the Windows-side is program-dependent,
+1. It adds a parameter `program_name` to the Windows constructor, making
+   the generated mutex name on the Windows-side program-dependent,
    rather than shared between all Electron applications.
 2. It adds an `IsAppSandboxed` check to the posix side so that
    sandboxed posix applications generate shorter temp paths.
 3. It adds a `ChangeWindowMessageFilterEx` call to the Windows
-   implementation to handle the case when the primary app is run with
+   implementation, along with a parameter `is_app_sandboxed` in the
+   constructor, to handle the case when the primary app is run with
    admin permissions.
 4. It adds an `OnBrowserReady` function to allow
-   requestSingleInstanceLock to start listening to the socket later
-   in the posix implementation.
+   `requestSingleInstanceLock` to start listening to the socket later
+   in the posix implementation. This function is necessary, because
+   otherwise, users calling `requestSingleInstanceLock` create a
+   `ProcessSingleton` instance that tries to connect to the socket
+   before the browser thread is ready.
 
 diff --git a/chrome/browser/process_singleton.h b/chrome/browser/process_singleton.h
-index 0291db0f919aa7868d345f4f0712c42c6ad7ee17..6ca9cd0605fe8b2bfb039177a15498a695419a5f 100644
+index 0291db0f919aa7868d345f4f0712c42c6ad7ee17..9418bbacb11094628c4468d0a7b735a0f742e5f2 100644
 --- a/chrome/browser/process_singleton.h
 +++ b/chrome/browser/process_singleton.h
-@@ -103,7 +103,9 @@ class ProcessSingleton {
+@@ -103,8 +103,15 @@ class ProcessSingleton {
        base::RepeatingCallback<bool(const base::CommandLine& command_line,
                                     const base::FilePath& current_directory)>;
  
--  ProcessSingleton(const base::FilePath& user_data_dir,
++#if defined(OS_WIN)
 +  ProcessSingleton(const std::string& program_name,
 +                   const base::FilePath& user_data_dir,
 +                   bool is_sandboxed,
++                   const NotificationCallback& notification_callback);
++#else
+   ProcessSingleton(const base::FilePath& user_data_dir,
                     const NotificationCallback& notification_callback);
++#endif
    ~ProcessSingleton();
  
-@@ -115,6 +117,8 @@ class ProcessSingleton {
+   // Notify another process, if available. Otherwise sets ourselves as the
+@@ -115,6 +122,8 @@ class ProcessSingleton {
    // TODO(brettw): Make the implementation of this method non-platform-specific
    // by making Linux re-use the Windows implementation.
    NotifyResult NotifyOtherProcessOrCreate();
@@ -44,16 +53,16 @@ index 0291db0f919aa7868d345f4f0712c42c6ad7ee17..6ca9cd0605fe8b2bfb039177a15498a6
  
    // Sets ourself up as the singleton instance.  Returns true on success.  If
    // false is returned, we are not the singleton instance and the caller must
-@@ -166,6 +170,8 @@ class ProcessSingleton {
- 
-  private:
-   NotificationCallback notification_callback_;  // Handler for notifications.
-+  std::string program_name_; // Used for mutexName in the Windows impl.
-+  bool is_app_sandboxed_; // Used for the Windows impl.
- 
+@@ -170,6 +179,8 @@ class ProcessSingleton {
  #if defined(OS_WIN)
    bool EscapeVirtualization(const base::FilePath& user_data_dir);
-@@ -219,6 +225,8 @@ class ProcessSingleton {
+ 
++  std::string program_name_; // Used for mutexName.
++  bool is_app_sandboxed_; // Whether the Electron app is sandboxed.
+   HWND remote_window_;  // The HWND_MESSAGE of another browser.
+   base::win::MessageWindow window_;  // The message-only window.
+   bool is_virtualized_;  // Stuck inside Microsoft Softricity VM environment.
+@@ -219,6 +230,8 @@ class ProcessSingleton {
    // because it posts messages between threads.
    class LinuxWatcher;
    scoped_refptr<LinuxWatcher> watcher_;
@@ -63,7 +72,7 @@ index 0291db0f919aa7868d345f4f0712c42c6ad7ee17..6ca9cd0605fe8b2bfb039177a15498a6
  
  #if defined(OS_MAC)
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index dc9c1b76a1c7c8b3fa83fc83788eef36d2cfa4a5..30aeb3367ab6495a5538af2b90396832e1b146e7 100644
+index dc9c1b76a1c7c8b3fa83fc83788eef36d2cfa4a5..52a711e2b6fecac9b43544f03c206c0005468ff5 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
 @@ -80,6 +80,7 @@
@@ -96,21 +105,7 @@ index dc9c1b76a1c7c8b3fa83fc83788eef36d2cfa4a5..30aeb3367ab6495a5538af2b90396832
  bool ConnectSocket(ScopedSocket* socket,
                     const base::FilePath& socket_path,
                     const base::FilePath& cookie_path) {
-@@ -712,9 +728,13 @@ void ProcessSingleton::LinuxWatcher::SocketReader::FinishWithACK(
- // ProcessSingleton
- //
- ProcessSingleton::ProcessSingleton(
-+    const std::string& program_name,
-     const base::FilePath& user_data_dir,
-+    bool is_app_sandboxed,
-     const NotificationCallback& notification_callback)
-     : notification_callback_(notification_callback),
-+      program_name_(program_name),
-+      is_app_sandboxed_(is_app_sandboxed),
-       current_pid_(base::GetCurrentProcId()),
-       watcher_(new LinuxWatcher(this)) {
-   socket_path_ = user_data_dir.Append(chrome::kSingletonSocketFilename);
-@@ -895,6 +915,20 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessOrCreate() {
+@@ -895,6 +911,20 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessOrCreate() {
        base::TimeDelta::FromSeconds(kTimeoutInSeconds));
  }
  
@@ -131,7 +126,7 @@ index dc9c1b76a1c7c8b3fa83fc83788eef36d2cfa4a5..30aeb3367ab6495a5538af2b90396832
  ProcessSingleton::NotifyResult
  ProcessSingleton::NotifyOtherProcessWithTimeoutOrCreate(
      const base::CommandLine& command_line,
-@@ -997,12 +1031,26 @@ bool ProcessSingleton::Create() {
+@@ -997,12 +1027,26 @@ bool ProcessSingleton::Create() {
  #endif
    }
  
@@ -164,7 +159,7 @@ index dc9c1b76a1c7c8b3fa83fc83788eef36d2cfa4a5..30aeb3367ab6495a5538af2b90396832
    }
  
    // Check that the directory was created with the correct permissions.
-@@ -1044,10 +1092,13 @@ bool ProcessSingleton::Create() {
+@@ -1044,10 +1088,13 @@ bool ProcessSingleton::Create() {
    if (listen(sock, 5) < 0)
      NOTREACHED() << "listen failed: " << base::safe_strerror(errno);
  
@@ -183,34 +178,36 @@ index dc9c1b76a1c7c8b3fa83fc83788eef36d2cfa4a5..30aeb3367ab6495a5538af2b90396832
    return true;
  }
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index f1732f042c3bfd9d5d95a4208664f9252b2aab73..49075cd6064e5189b96221aff51be1c5af176d18 100644
+index f1732f042c3bfd9d5d95a4208664f9252b2aab73..f10ba4a28864c6808b131d88cc79af9ff5c30efc 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
-@@ -27,7 +27,6 @@
+@@ -27,7 +27,9 @@
  #include "base/win/windows_version.h"
  #include "base/win/wmi.h"
  #include "chrome/browser/shell_integration.h"
--#include "chrome/browser/ui/simple_message_box.h"
++#if 0
+ #include "chrome/browser/ui/simple_message_box.h"
++#endif
  #include "chrome/browser/win/chrome_process_finder.h"
  #include "chrome/common/chrome_constants.h"
  #include "chrome/common/chrome_paths.h"
-@@ -174,11 +173,10 @@ bool ProcessLaunchNotification(
-   return true;
+@@ -175,10 +177,15 @@ bool ProcessLaunchNotification(
  }
  
--bool DisplayShouldKillMessageBox() {
--  return chrome::ShowQuestionMessageBoxSync(
--             NULL, l10n_util::GetStringUTF16(IDS_PRODUCT_NAME),
--             l10n_util::GetStringUTF16(IDS_BROWSER_HUNGBROWSER_MESSAGE)) !=
--         chrome::MESSAGE_BOX_RESULT_NO;
-+bool TerminateAppWithError() {
+ bool DisplayShouldKillMessageBox() {
++#if 0
+   return chrome::ShowQuestionMessageBoxSync(
+              NULL, l10n_util::GetStringUTF16(IDS_PRODUCT_NAME),
+              l10n_util::GetStringUTF16(IDS_BROWSER_HUNGBROWSER_MESSAGE)) !=
+          chrome::MESSAGE_BOX_RESULT_NO;
++#endif
 +  // This is called when the secondary process can't ping the primary
 +  // process.
 +  return false;
  }
  
  void SendRemoteProcessInteractionResultHistogram(
-@@ -260,14 +258,18 @@ bool ProcessSingleton::EscapeVirtualization(
+@@ -260,14 +267,18 @@ bool ProcessSingleton::EscapeVirtualization(
  }
  
  ProcessSingleton::ProcessSingleton(
@@ -230,7 +227,7 @@ index f1732f042c3bfd9d5d95a4208664f9252b2aab73..49075cd6064e5189b96221aff51be1c5
  
  ProcessSingleton::~ProcessSingleton() {
    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-@@ -366,11 +368,14 @@ ProcessSingleton::NotifyOtherProcessOrCreate() {
+@@ -366,11 +377,14 @@ ProcessSingleton::NotifyOtherProcessOrCreate() {
    return PROFILE_IN_USE;
  }
  
@@ -246,7 +243,7 @@ index f1732f042c3bfd9d5d95a4208664f9252b2aab73..49075cd6064e5189b96221aff51be1c5
  
    remote_window_ = chrome::FindRunningChromeWindow(user_data_dir_);
    if (!remote_window_ && !EscapeVirtualization(user_data_dir_)) {
-@@ -379,7 +384,7 @@ bool ProcessSingleton::Create() {
+@@ -379,7 +393,7 @@ bool ProcessSingleton::Create() {
      // access. As documented, it's clearer to NOT request ownership on creation
      // since it isn't guaranteed we will get it. It is better to create it
      // without ownership and explicitly get the ownership afterward.
@@ -255,11 +252,14 @@ index f1732f042c3bfd9d5d95a4208664f9252b2aab73..49075cd6064e5189b96221aff51be1c5
      if (!only_me.IsValid()) {
        DPLOG(FATAL) << "CreateMutex failed";
        return false;
-@@ -418,6 +423,14 @@ bool ProcessSingleton::Create() {
+@@ -418,6 +432,17 @@ bool ProcessSingleton::Create() {
              window_.CreateNamed(base::BindRepeating(&ProcessLaunchNotification,
                                                      notification_callback_),
                                  user_data_dir_.value());
 +
++        // When the app is sandboxed, firstly, the app should not be in
++        // admin mode, and even if it somehow is, messages from an unelevated
++        // instance should not be able to be sent to it.
 +        if (!is_app_sandboxed_) {
 +          // NB: Ensure that if the primary app gets started as elevated
 +          // admin inadvertently, secondary windows running not as elevated

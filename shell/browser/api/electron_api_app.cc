@@ -1088,12 +1088,18 @@ bool App::RequestSingleInstanceLock() {
   base::FilePath user_dir;
   base::PathService::Get(chrome::DIR_USER_DATA, &user_dir);
 
+  auto cb = base::BindRepeating(&App::OnSecondInstance, base::Unretained(this));
+
+#if defined(OS_WIN)
   bool app_is_sandboxed =
       IsSandboxEnabled(base::CommandLine::ForCurrentProcess());
-  auto cb = base::BindRepeating(&App::OnSecondInstance, base::Unretained(this));
   process_singleton_ = std::make_unique<ProcessSingleton>(
       program_name, user_dir, app_is_sandboxed,
       base::BindRepeating(NotificationCallbackWrapper, cb));
+#else
+  process_singleton_ = std::make_unique<ProcessSingleton>(
+      user_dir, base::BindRepeating(NotificationCallbackWrapper, cb));
+#endif
 
   switch (process_singleton_->NotifyOtherProcessOrCreate()) {
     case ProcessSingleton::NotifyResult::LOCK_ERROR:
