@@ -267,6 +267,24 @@ describe('<webview> tag', function () {
       expect(args).to.deep.equal([message]);
     });
 
+    it('<webview>.sendToFrame()', async () => {
+      loadWebView(webview, {
+        nodeintegration: 'on',
+        webpreferences: 'contextIsolation=no',
+        preload: `${fixtures}/module/preload-ipc.js`,
+        src: `file://${fixtures}/pages/ipc-message.html`
+      });
+
+      const { frameId } = await waitForEvent(webview, 'ipc-message');
+
+      const message = 'boom!';
+      webview.sendToFrame(frameId, 'ping', message);
+
+      const { channel, args } = await waitForEvent(webview, 'ipc-message');
+      expect(channel).to.equal('pong');
+      expect(args).to.deep.equal([message]);
+    });
+
     it('works without script tag in page', async () => {
       const message = await startLoadingWebViewAndWaitForMessage(webview, {
         preload: `${fixtures}/module/preload.js`,
@@ -529,8 +547,9 @@ describe('<webview> tag', function () {
         webpreferences: 'contextIsolation=no',
         src: `file://${fixtures}/pages/ipc-message.html`
       });
-      const { channel, args } = await waitForEvent(webview, 'ipc-message');
+      const { frameId, channel, args } = await waitForEvent(webview, 'ipc-message');
 
+      expect(frameId).to.be.an('array').that.has.lengthOf(2);
       expect(channel).to.equal('channel');
       expect(args).to.deep.equal(['arg1', 'arg2']);
     });
