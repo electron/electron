@@ -1,0 +1,122 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Georg Neis <neis@chromium.org>
+Date: Tue, 3 Aug 2021 09:04:09 +0200
+Subject: [M90-LTS][compiler] Fix bug in
+ MachineOperatorReducer::TryMatchWord32Ror
+
+(cherry picked from commit ca386a4b383165ccaed628c19a1366a273fa371e)
+
+Bug: chromium:1234764
+No-Try: true
+No-Presubmit: true
+No-Tree-Checks: true
+Change-Id: Ie899f00e9247bdf67b59aa3ebb7def2948ccdb6a
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3067332
+Commit-Queue: Georg Neis <neis@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#76050}
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3099688
+Reviewed-by: Georg Neis <neis@chromium.org>
+Reviewed-by: Artem Sumaneev <asumaneev@google.com>
+Commit-Queue: Roger Felipe Zanoni da Silva <rzanoni@google.com>
+Cr-Commit-Position: refs/branch-heads/9.0@{#71}
+Cr-Branched-From: bd0108b4c88e0d6f2350cb79b5f363fbd02f3eb7-refs/heads/9.0.257@{#1}
+Cr-Branched-From: 349bcc6a075411f1a7ce2d866c3dfeefc2efa39d-refs/heads/master@{#73001}
+
+diff --git a/src/compiler/machine-operator-reducer.cc b/src/compiler/machine-operator-reducer.cc
+index 55f39d76e80e0f4f73e99ba12c8ec85722d3b279..cdfa5a42ae80b9aeb566b0abf840bbc2cc8176a5 100644
+--- a/src/compiler/machine-operator-reducer.cc
++++ b/src/compiler/machine-operator-reducer.cc
+@@ -1757,17 +1757,20 @@ Reduction MachineOperatorReducer::ReduceWord64And(Node* node) {
+ }
+ 
+ Reduction MachineOperatorReducer::TryMatchWord32Ror(Node* node) {
++  // Recognize rotation, we are matching and transforming as follows:
++  //   x << y         |  x >>> (32 - y)    =>  x ror (32 - y)
++  //   x << (32 - y)  |  x >>> y           =>  x ror y
++  //   x << y         ^  x >>> (32 - y)    =>  x ror (32 - y)   if y & 31 != 0
++  //   x << (32 - y)  ^  x >>> y           =>  x ror y          if y & 31 != 0
++  // (As well as the commuted forms.)
++  // Note the side condition for XOR: the optimization doesn't hold for
++  // multiples of 32.
++
+   DCHECK(IrOpcode::kWord32Or == node->opcode() ||
+          IrOpcode::kWord32Xor == node->opcode());
+   Int32BinopMatcher m(node);
+   Node* shl = nullptr;
+   Node* shr = nullptr;
+-  // Recognize rotation, we are matching:
+-  //  * x << y | x >>> (32 - y) => x ror (32 - y), i.e  x rol y
+-  //  * x << (32 - y) | x >>> y => x ror y
+-  //  * x << y ^ x >>> (32 - y) => x ror (32 - y), i.e. x rol y
+-  //  * x << (32 - y) ^ x >>> y => x ror y
+-  // as well as their commuted form.
+   if (m.left().IsWord32Shl() && m.right().IsWord32Shr()) {
+     shl = m.left().node();
+     shr = m.right().node();
+@@ -1784,7 +1787,13 @@ Reduction MachineOperatorReducer::TryMatchWord32Ror(Node* node) {
+ 
+   if (mshl.right().HasValue() && mshr.right().HasValue()) {
+     // Case where y is a constant.
+-    if (mshl.right().Value() + mshr.right().Value() != 32) return NoChange();
++    if (mshl.right().Value() + mshr.right().Value() != 32) {
++      return NoChange();
++    }
++    if (node->opcode() == IrOpcode::kWord32Xor &&
++        (mshl.right().Value() & 31) == 0) {
++      return NoChange();
++    }
+   } else {
+     Node* sub = nullptr;
+     Node* y = nullptr;
+@@ -1800,6 +1809,9 @@ Reduction MachineOperatorReducer::TryMatchWord32Ror(Node* node) {
+ 
+     Int32BinopMatcher msub(sub);
+     if (!msub.left().Is(32) || msub.right().node() != y) return NoChange();
++    if (node->opcode() == IrOpcode::kWord32Xor) {
++      return NoChange();  // Can't guarantee y & 31 != 0.
++    }
+   }
+ 
+   node->ReplaceInput(0, mshl.left().node());
+diff --git a/test/unittests/compiler/machine-operator-reducer-unittest.cc b/test/unittests/compiler/machine-operator-reducer-unittest.cc
+index 358771f6d44651d6a128f017c6a203c3dd730c53..857b36946804cab434f12489fc43328af061ce94 100644
+--- a/test/unittests/compiler/machine-operator-reducer-unittest.cc
++++ b/test/unittests/compiler/machine-operator-reducer-unittest.cc
+@@ -956,16 +956,12 @@ TEST_F(MachineOperatorReducerTest, ReduceToWord32RorWithParameters) {
+   // (x << y) ^ (x >>> (32 - y)) => x ror (32 - y)
+   Node* node3 = graph()->NewNode(machine()->Word32Xor(), shl_l, shr_l);
+   Reduction reduction3 = Reduce(node3);
+-  EXPECT_TRUE(reduction3.Changed());
+-  EXPECT_EQ(reduction3.replacement(), node3);
+-  EXPECT_THAT(reduction3.replacement(), IsWord32Ror(value, sub));
++  EXPECT_FALSE(reduction3.Changed());
+ 
+   // (x >>> (32 - y)) ^ (x << y) => x ror (32 - y)
+   Node* node4 = graph()->NewNode(machine()->Word32Xor(), shr_l, shl_l);
+   Reduction reduction4 = Reduce(node4);
+-  EXPECT_TRUE(reduction4.Changed());
+-  EXPECT_EQ(reduction4.replacement(), node4);
+-  EXPECT_THAT(reduction4.replacement(), IsWord32Ror(value, sub));
++  EXPECT_FALSE(reduction4.Changed());
+ 
+   // Testing rotate right.
+   Node* shl_r = graph()->NewNode(machine()->Word32Shl(), value, sub);
+@@ -988,16 +984,12 @@ TEST_F(MachineOperatorReducerTest, ReduceToWord32RorWithParameters) {
+   // (x << (32 - y)) ^ (x >>> y) => x ror y
+   Node* node7 = graph()->NewNode(machine()->Word32Xor(), shl_r, shr_r);
+   Reduction reduction7 = Reduce(node7);
+-  EXPECT_TRUE(reduction7.Changed());
+-  EXPECT_EQ(reduction7.replacement(), node7);
+-  EXPECT_THAT(reduction7.replacement(), IsWord32Ror(value, shift));
++  EXPECT_FALSE(reduction7.Changed());
+ 
+   // (x >>> y) ^ (x << (32 - y)) => x ror y
+   Node* node8 = graph()->NewNode(machine()->Word32Xor(), shr_r, shl_r);
+   Reduction reduction8 = Reduce(node8);
+-  EXPECT_TRUE(reduction8.Changed());
+-  EXPECT_EQ(reduction8.replacement(), node8);
+-  EXPECT_THAT(reduction8.replacement(), IsWord32Ror(value, shift));
++  EXPECT_FALSE(reduction8.Changed());
+ }
+ 
+ TEST_F(MachineOperatorReducerTest, ReduceToWord32RorWithConstant) {

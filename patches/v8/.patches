@@ -35,3 +35,5 @@ cherry-pick-fd8cbdf7b888.patch
 cherry-pick-fd9ce58ecd13.patch
 merged_json_fix_gc_issue_in_buildjsonobject.patch
 merged_compiler_fix_a_bug_in.patch
+m90-lts_compiler_fix_bug_in.patch
+m90-lts_compiler_harden.patch
