@@ -75,10 +75,6 @@ _This class is not exported from the `'electron'` module. It is only available a
 
 #### Event: 'dom-ready'
 
-Returns:
-
-* `event` Event
-
 Emitted when the document is loaded.
 
 ### Instance Methods
