@@ -3899,9 +3899,10 @@ gin::Handle<WebContents> WebContentsFromDevToolsTargetID(
     v8::Isolate* isolate,
     std::string target_id) {
   auto agent_host = content::DevToolsAgentHost::GetForId(target_id);
-  return agent_host
-             ? WebContents::FromOrCreate(isolate, agent_host->GetWebContents())
-             : gin::Handle<WebContents>();
+  WebContents* contents =
+      agent_host ? WebContents::From(agent_host->GetWebContents()) : nullptr;
+  return contents ? gin::CreateHandle(isolate, contents)
+                  : gin::Handle<WebContents>();
 }
 
 std::vector<gin::Handle<WebContents>> GetAllWebContentsAsV8(
