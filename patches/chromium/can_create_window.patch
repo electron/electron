@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 59ba7abff93424b22e117a6fcc098ae0e91c02ae..e200d31160cc12d1ce31cf06db7e48dde6a52911 100644
+index 5dc479d29127ed0ec00b820ee6952b04a3b55523..7399595f346a570db59b6ec37d6eaaa8f637311e 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -6386,6 +6386,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -6390,6 +6390,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -220,7 +220,7 @@ index 84d32491a56528a84b4395fba1d54cdbb38d522b..09998a83c449ef8cd9f360fbcdcf7edc
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index a68fa9e224a9c0fe52e66e35055588a372bb5f4c..97eb2c8bf5670acdd59ac8f63d2df638ae3201d8 100644
+index 0d0ec1bcfde90ed1294922399cf1fdb7ef6244a2..8d33a4f0e1cdfec934025f4865d070d802c42908 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
 @@ -2008,6 +2008,7 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
