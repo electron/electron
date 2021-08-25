@@ -553,6 +553,44 @@ session.fromPartition('some-partition').setPermissionCheckHandler((webContents, 
 })
 ```
 
+#### `ses.setMediaRequestHandler(handler)`
+
+* `handler` Function | null
+  * `request` Object
+    * `frame` [WebFrameMain](web-frame-main.md) - frame that is requesting access to media
+    * `type` String - Type of request. Can be 'deviceAccess', 'deviceUpdate', 'generateStream' or 'openDevicePepperOnly'.
+    * `audioType` String - can be 'deviceAudioCapture', 'displayAudioCapture' or 'noService'.
+    * `videoType` String - can be 'deviceVideoCapture', 'displayVideoCapture', 'displayVideoCaptureThisTab' or 'noService'.
+    * `requestedAudioDeviceId` String -
+    * `requestedVideoDeviceId` String -
+    * `userGesture` Boolean - whether a user gesture was active when this request was triggered.
+  * `callback` Function
+    * `devices` Object[]
+      * `id` String - the id of the device being granted
+      * `name` String - the name of the device being granted
+      * `type` String - the type of the device being granted
+    * `result` String - the result of the request. Can be 'ok',
+      'permissionDenied', 'permissionDismissed', 'noHardware', or 'notSupported'.
+
+This handler will be called when web content requests access to media devices
+via the `navigator.mediaDevices` API. Use the
+[desktopCapturer](desktop-capturer.md) API to choose a device or devices to
+grant access to.
+
+```javascript
+const { session, desktopCapturer } = require('electron')
+
+session.defaultSession.setMediaRequestHandler((request, callback) => {
+  if (request.videoType === 'displayVideoCapture') {
+    desktopCapturer.getSources({ types: ['screen'] }).then((sources) => {
+      // Grant access to the first screen found.
+      const { id, name } = sources[0]
+      callback([{ id, name, type: request.type }], 'ok')
+    })
+  }
+})
+```
+
 #### `ses.clearHostResolverCache()`
 
 Returns `Promise<void>` - Resolves when the operation is complete.

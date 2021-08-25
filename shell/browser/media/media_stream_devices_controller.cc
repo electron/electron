@@ -7,9 +7,15 @@
 #include <memory>
 #include <utility>
 
+#include "chrome/browser/media/webrtc/desktop_media_list.h"
+#include "chrome/browser/media/webrtc/native_desktop_media_list.h"
+#include "content/public/browser/desktop_capture.h"
 #include "content/public/browser/desktop_media_id.h"
 #include "content/public/browser/media_stream_request.h"
+#include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/media/media_capture_devices_dispatcher.h"
+#include "third_party/blink/public/mojom/mediastream/media_stream.mojom.h"
+#include "third_party/webrtc/modules/desktop_capture/desktop_capturer.h"
 
 namespace electron {
 
@@ -21,7 +27,7 @@ bool HasAnyAvailableDevice() {
   const blink::MediaStreamDevices& video_devices =
       MediaCaptureDevicesDispatcher::GetInstance()->GetVideoCaptureDevices();
 
-  return !audio_devices.empty() || !video_devices.empty();
+  return !(audio_devices.empty() && video_devices.empty());
 }
 
 }  // namespace
@@ -51,7 +57,7 @@ MediaStreamDevicesController::~MediaStreamDevicesController() {
   }
 }
 
-bool MediaStreamDevicesController::TakeAction() {
+void MediaStreamDevicesController::TakeAction() {
   // Do special handling of desktop screen cast.
   if (request_.audio_type ==
           blink::mojom::MediaStreamType::GUM_TAB_AUDIO_CAPTURE ||
@@ -62,17 +68,24 @@ bool MediaStreamDevicesController::TakeAction() {
       request_.video_type ==
           blink::mojom::MediaStreamType::GUM_DESKTOP_VIDEO_CAPTURE) {
     HandleUserMediaRequest();
-    return true;
+    return;
   }
+
+  content::RenderFrameHost* rfh = content::RenderFrameHost::FromID(
+      request_.render_process_id, request_.render_frame_id);
+  if (!rfh)
+    return;
+
+  content::BrowserContext* browser_context = rfh->GetBrowserContext();
+  api::Session* session = api::Session::FromBrowserContext(browser_context);
+  if (session->ChooseMediaDevice(request_, std::move(callback_)))
+    return;
 
   // Deny the request if there is no device attached to the OS.
-  if (!HasAnyAvailableDevice()) {
+  if (HasAnyAvailableDevice())
+    Accept();
+  else
     Deny(blink::mojom::MediaStreamRequestResult::NO_HARDWARE);
-    return true;
-  }
-
-  Accept();
-  return true;
 }
 
 void MediaStreamDevicesController::Accept() {
