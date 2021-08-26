@@ -391,25 +391,25 @@ void ElectronAccessibilityUIMessageHandler::RequestNativeUITree(
 void ElectronAccessibilityUIMessageHandler::RegisterMessages() {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
-  web_ui()->RegisterMessageCallback(
+  web_ui()->RegisterDeprecatedMessageCallback(
       "toggleAccessibility",
       base::BindRepeating(&AccessibilityUIMessageHandler::ToggleAccessibility,
                           base::Unretained(this)));
-  web_ui()->RegisterMessageCallback(
+  web_ui()->RegisterDeprecatedMessageCallback(
       "setGlobalFlag",
       base::BindRepeating(&AccessibilityUIMessageHandler::SetGlobalFlag,
                           base::Unretained(this)));
-  web_ui()->RegisterMessageCallback(
+  web_ui()->RegisterDeprecatedMessageCallback(
       "requestWebContentsTree",
       base::BindRepeating(
           &AccessibilityUIMessageHandler::RequestWebContentsTree,
           base::Unretained(this)));
-  web_ui()->RegisterMessageCallback(
+  web_ui()->RegisterDeprecatedMessageCallback(
       "requestNativeUITree",
       base::BindRepeating(
           &ElectronAccessibilityUIMessageHandler::RequestNativeUITree,
           base::Unretained(this)));
-  web_ui()->RegisterMessageCallback(
+  web_ui()->RegisterDeprecatedMessageCallback(
       "requestAccessibilityEvents",
       base::BindRepeating(
           &AccessibilityUIMessageHandler::RequestAccessibilityEvents,
