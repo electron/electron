@@ -108,7 +108,7 @@ index ef84e04d628fb5cdbaf8fbbf84af3bf23e00c522..f1ee0bee5bfd08227a29498f8410d5d3
    }
  
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 1fd6194f3ccb440d11ce9dce8ef2ac3cf27391ca..06eb916a2d7e81ed32128ca94845e7136bf754c2 100644
+index 61724ab53609f80cf5a0139c8bdb2ad1fb0413b2..b8647710bf9a16e8ffc3ca3b25aa4f6c584fa9be 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
 @@ -1789,12 +1789,11 @@ bool Browser::IsWebContentsCreationOverridden(
@@ -232,10 +232,10 @@ index c5c5a7b63b5b3b62a9517cbef3ae23ce57a3c89c..4f1b7e88d6d2ae89a60311c8aeb1fcee
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 219ad8734c2cc1ab2deb59d5231d419fc809b540..77b98107f8c075b005c935cca1538d59269ec2c2 100644
+index 8e5561df425b9462e51dc1b5339aaa82da444709..02983a5220c9dcf1e61735f32269d99875860505 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3675,8 +3675,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -3687,8 +3687,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
  
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,
@@ -302,10 +302,10 @@ index 9b293d0df6c634bf44a69d607c4eee839a74b4a1..7e5b9cbdcc232c5e20eae0130d800f50
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
-index 2dc016e4be765413b4cef0f5471dcf9240f73ff5..224cd2be71670ac565d02ecb2838123154255dc6 100644
+index b794ee4204fb8eaf90084e762f80988af13609b4..ac4e00f2ef1d2a722851d88531c28e65dea0341e 100644
 --- a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
 +++ b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
-@@ -386,8 +386,7 @@ bool MimeHandlerViewGuest::IsWebContentsCreationOverridden(
+@@ -385,8 +385,7 @@ bool MimeHandlerViewGuest::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,

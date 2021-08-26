@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 5dc479d29127ed0ec00b820ee6952b04a3b55523..7399595f346a570db59b6ec37d6eaaa8f637311e 100644
+index fc3166ff11745de4bdf16e46cf8ae4321bda9bff..f44e64516caa4a0520073145828e54025f647163 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -6390,6 +6390,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -6402,6 +6402,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,10 +21,10 @@ index 5dc479d29127ed0ec00b820ee6952b04a3b55523..7399595f346a570db59b6ec37d6eaaa8
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index ab94a424595242c127d7fa06c5f427aa9313c201..bcdf3167d622c0571b434809296e5474a0916ec0 100644
+index 20c34c6b3786777a823b5340758a98a4c71ea26d..ec797e55994fa5b301fd88517b9b68af5e8b6e50 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3727,6 +3727,14 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -3739,6 +3739,14 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    }
    auto* new_contents_impl = new_contents.get();
  
@@ -39,7 +39,7 @@ index ab94a424595242c127d7fa06c5f427aa9313c201..bcdf3167d622c0571b434809296e5474
    new_contents_impl->GetController().SetSessionStorageNamespace(
        partition_id, session_storage_namespace);
  
-@@ -3769,12 +3777,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -3781,12 +3789,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
@@ -53,10 +53,10 @@ index ab94a424595242c127d7fa06c5f427aa9313c201..bcdf3167d622c0571b434809296e5474
                               new_contents_impl, opener, params.target_url,
                               params.referrer.To<Referrer>(), params.disposition,
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index c1f257467b08fb6477830254dcb5c9ad02145e4d..fd434793316a6da12285104421b08ed467501eb8 100644
+index 056488bfef9a2f26832c8a78f0da4193998c66fd..801f51256528db2c28dab3864be0afb45e81d011 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
-@@ -524,6 +524,10 @@ struct CreateNewWindowParams {
+@@ -529,6 +529,10 @@ struct CreateNewWindowParams {
    // The impression associated with the navigation in the new window, if
    // one is specified.
    blink.mojom.Impression? impression;
@@ -81,10 +81,10 @@ index e436cea9ff80063fe5eb5f7fdbf4b39fc9840fca..7405793f0df25674d7e20ec381d706cf
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 6ccd4f3741bc5a3716d194b2984105b06aeee82f..dd7d21f566453b6af59e88b3cdd0c910033c96af 100644
+index 2363de710811748c1be0ea6d36d1214ea798de7e..e3657b9a16517a3ea7acdb48f9d8b043d818a954 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -164,6 +164,7 @@ class NetworkService;
+@@ -165,6 +165,7 @@ class NetworkService;
  class TrustedURLLoaderHeaderClient;
  }  // namespace mojom
  struct ResourceRequest;
@@ -92,7 +92,7 @@ index 6ccd4f3741bc5a3716d194b2984105b06aeee82f..dd7d21f566453b6af59e88b3cdd0c910
  }  // namespace network
  
  namespace sandbox {
-@@ -921,6 +922,8 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -923,6 +924,8 @@ class CONTENT_EXPORT ContentBrowserClient {
        const std::string& frame_name,
        WindowOpenDisposition disposition,
        const blink::mojom::WindowFeatures& features,
