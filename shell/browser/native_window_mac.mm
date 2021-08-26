@@ -1028,6 +1028,13 @@ void NativeWindowMac::SetSimpleFullScreen(bool simple_fullscreen) {
       window.level = NSPopUpMenuWindowLevel;
     }
 
+    // Always hide the titlebar in simple fullscreen mode.
+    //
+    // Note that we must remove the NSWindowStyleMaskTitled style instead of
+    // using the [window_ setTitleVisibility:], as the latter would leave the
+    // window with rounded corners.
+    SetStyleMask(false, NSWindowStyleMaskTitled);
+
     if (!window_button_visibility_.has_value()) {
       // Lets keep previous behaviour - hide window controls in titled
       // fullscreen mode when not specified otherwise.
@@ -1044,16 +1051,6 @@ void NativeWindowMac::SetSimpleFullScreen(bool simple_fullscreen) {
   } else if (!simple_fullscreen && is_simple_fullscreen_) {
     is_simple_fullscreen_ = false;
 
-    // Restore default window controls visibility state.
-    if (!window_button_visibility_.has_value()) {
-      bool visibility;
-      if (has_frame())
-        visibility = true;
-      else
-        visibility = title_bar_style_ != TitleBarStyle::kNormal;
-      InternalSetWindowButtonVisibility(visibility);
-    }
-
     [window setFrame:original_frame_ display:YES animate:YES];
     window.level = original_level_;
 
@@ -1066,6 +1063,19 @@ void NativeWindowMac::SetSimpleFullScreen(bool simple_fullscreen) {
     // Restore window manipulation abilities
     SetMaximizable(was_maximizable_);
     SetMovable(was_movable_);
+
+    // Restore default window controls visibility state.
+    if (!window_button_visibility_.has_value()) {
+      bool visibility;
+      if (has_frame())
+        visibility = true;
+      else
+        visibility = title_bar_style_ != TitleBarStyle::kNormal;
+      InternalSetWindowButtonVisibility(visibility);
+    }
+
+    if (buttons_proxy_)
+      [buttons_proxy_ redraw];
   }
 }
 
