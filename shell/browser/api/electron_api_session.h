@@ -10,7 +10,6 @@
 
 #include "base/values.h"
 #include "content/public/browser/download_manager.h"
-#include "content/public/browser/media_stream_request.h"
 #include "electron/buildflags/buildflags.h"
 #include "gin/handle.h"
 #include "gin/wrappable.h"
@@ -154,9 +153,6 @@ class Session : public gin::Wrappable<Session>,
                            extensions::UnloadedExtensionReason reason) override;
 #endif
 
-  bool ChooseMediaDevice(const content::MediaStreamRequest& request,
-                         content::MediaResponseCallback callback);
-
  protected:
   Session(v8::Isolate* isolate, ElectronBrowserContext* browser_context);
   ~Session() override;
@@ -176,21 +172,14 @@ class Session : public gin::Wrappable<Session>,
 #endif
 
  private:
+  void SetMediaRequestHandler(gin::Arguments* args);
+
   // Cached gin_helper::Wrappable objects.
   v8::Global<v8::Value> cookies_;
   v8::Global<v8::Value> protocol_;
   v8::Global<v8::Value> net_log_;
   v8::Global<v8::Value> service_worker_context_;
   v8::Global<v8::Value> web_request_;
-
-  using MediaResponseCallbackJs =
-      base::OnceCallback<void(const blink::MediaStreamDevices& devices,
-                              blink::mojom::MediaStreamRequestResult result)>;
-  using MediaRequestHandler =
-      base::RepeatingCallback<void(const content::MediaStreamRequest&,
-                                   MediaResponseCallbackJs)>;
-  void SetMediaRequestHandler(MediaRequestHandler handler);
-  MediaRequestHandler media_request_handler_;
 
   v8::Isolate* isolate_;
 

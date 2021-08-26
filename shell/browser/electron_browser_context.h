@@ -13,6 +13,7 @@
 #include "base/memory/weak_ptr.h"
 #include "chrome/browser/predictors/preconnect_manager.h"
 #include "content/public/browser/browser_context.h"
+#include "content/public/browser/media_stream_request.h"
 #include "content/public/browser/resource_context.h"
 #include "electron/buildflags/buildflags.h"
 #include "mojo/public/cpp/bindings/remote.h"
@@ -49,6 +50,13 @@ class ProtocolRegistry;
 
 // Preference keys for device apis
 extern const char kSerialGrantedDevicesPref[];
+
+using MediaResponseCallbackJs =
+    base::OnceCallback<void(const blink::MediaStreamDevices& devices,
+                            blink::mojom::MediaStreamRequestResult result)>;
+using MediaRequestHandler =
+    base::RepeatingCallback<void(const content::MediaStreamRequest&,
+                                 MediaResponseCallbackJs)>;
 
 class ElectronBrowserContext : public content::BrowserContext {
  public:
@@ -157,6 +165,10 @@ class ElectronBrowserContext : public content::BrowserContext {
       const url::Origin& origin,
       const std::string& pref_key);
 
+  bool ChooseMediaDevice(const content::MediaStreamRequest& request,
+                         content::MediaResponseCallback callback);
+  void SetMediaRequestHandler(MediaRequestHandler handler);
+
   ~ElectronBrowserContext() override;
 
  private:
@@ -197,6 +209,8 @@ class ElectronBrowserContext : public content::BrowserContext {
 
   network::mojom::SSLConfigPtr ssl_config_;
   mojo::Remote<network::mojom::SSLConfigClient> ssl_config_client_;
+
+  MediaRequestHandler media_request_handler_;
 
   base::WeakPtrFactory<ElectronBrowserContext> weak_factory_{this};
 

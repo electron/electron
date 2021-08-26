@@ -463,6 +463,27 @@ ElectronBrowserContext::GetGrantedObjects(const url::Origin& origin,
   return results;
 }
 
+void ElectronBrowserContext::SetMediaRequestHandler(
+    MediaRequestHandler handler) {
+  media_request_handler_ = handler;
+}
+
+bool ElectronBrowserContext::ChooseMediaDevice(
+    const content::MediaStreamRequest& request,
+    content::MediaResponseCallback callback) {
+  if (!media_request_handler_)
+    return false;
+  MediaResponseCallbackJs callbackJs = base::BindOnce(
+      [](content::MediaResponseCallback callback,
+         const blink::MediaStreamDevices& devices,
+         blink::mojom::MediaStreamRequestResult result) {
+        std::move(callback).Run(devices, result, nullptr);
+      },
+      std::move(callback));
+  media_request_handler_.Run(request, std::move(callbackJs));
+  return true;
+}
+
 // static
 ElectronBrowserContext* ElectronBrowserContext::From(
     const std::string& partition,
