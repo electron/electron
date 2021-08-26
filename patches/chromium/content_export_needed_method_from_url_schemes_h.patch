@@ -1,0 +1,30 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Romain Pokrzywka <rpokrzywka@nvidia.com>
+Date: Thu, 26 Aug 2021 11:37:31 -0500
+Subject: content: export needed method from url_schemes.h
+
+GetServiceWorkerSchemes() is accessed inside electron::api,
+but it breaks component builds on Windows because the symbol
+isn't exported by content.dll (since it's not a public API).
+
+The proper way would be to expose a method from content/public
+instead of calling GetServiceWorkerSchemes() directly, which
+is a layering violation, but for the purpose of fixing the build
+simply adding the export macro is simpler and safer.
+
+No behavior change at runtime, only modifies the generated .lib
+when building content as a dll (static builds are unchanged).
+
+diff --git a/content/common/url_schemes.h b/content/common/url_schemes.h
+index 68189c36c47ef85b345b0ccc40c456f889977bee..759e728491486461773d3e9748e8dd05ac51bc7e 100644
+--- a/content/common/url_schemes.h
++++ b/content/common/url_schemes.h
+@@ -24,7 +24,7 @@ CONTENT_EXPORT void ReRegisterContentSchemesForTests();
+ // See comment in ContentClient::AddAdditionalSchemes for explanations. These
+ // getters can be invoked on any thread.
+ const std::vector<std::string>& GetSavableSchemes();
+-const std::vector<std::string>& GetServiceWorkerSchemes();
++CONTENT_EXPORT const std::vector<std::string>& GetServiceWorkerSchemes();
+ 
+ }  // namespace content
+ 
