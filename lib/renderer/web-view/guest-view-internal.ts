@@ -43,7 +43,7 @@ export function detachGuest (guestInstanceId: number) {
   return ipcRendererUtils.invokeSync(IPC_MESSAGES.GUEST_VIEW_MANAGER_DETACH_GUEST, guestInstanceId);
 }
 
-export function capturePage (guestInstanceId: number, args: any[]) {
+export function capturePage (guestInstanceId: number, args: any[]): Promise<Electron.NativeImage> {
   return ipcRendererInternal.invoke(IPC_MESSAGES.GUEST_VIEW_MANAGER_CAPTURE_PAGE, guestInstanceId, args);
 }
 
