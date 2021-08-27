@@ -1086,14 +1086,21 @@ indicates success while any other value indicates failure according to Chromium 
     DNS. Has no effect on Secure DNS which always allows additional types.
     Defaults to true.
 
-Configures host resolution (DNS and DNS-over-HTTPS). By default, DNS-over-HTTPS
-will be used only if the [DNS provider supports it][doh-providers], and the
-system's DNS resolver will always be used as a fallback.
+Configures host resolution (DNS and DNS-over-HTTPS). By default, the following
+resolvers will be used, in order:
 
-To disable insecure DNS, you can specify a `secureDnsMode` of `"secure"`. If
-you do so, you should make sure to provide a list of DNS-over-HTTPS servers to
-use, in case the user's DNS configuration does not inclued a provider that
-supports DoH.
+1. DNS-over-HTTPS, if the [DNS provider supports it][doh-providers], then
+2. the built-in resolver (enabled on macOS only by default), then
+3. the system's resolver (e.g. `getaddrinfo`).
+
+This can be configured to either restrict usage of non-encrypted DNS
+(`secureDnsMode: "secure"`), or disable DNS-over-HTTPS (`secureDnsMode:
+"off"`). It is also possible to enable or disable the built-in resolver.
+
+To disable insecure DNS, you specify a `secureDnsMode` of `"secure"`. If you do
+so, you should make sure to provide a list of DNS-over-HTTPS servers to use, in
+case the user's DNS configuration does not include a provider that supports
+DoH.
 
 ```js
 app.configureHostResolver({
