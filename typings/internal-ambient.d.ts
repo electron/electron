@@ -6,7 +6,6 @@ declare var isolatedApi: {
   guestViewInternal: any;
   allowGuestViewElementDefinition: NodeJS.InternalWebFrame['allowGuestViewElementDefinition'];
   setIsWebView: (iframe: HTMLIFrameElement) => void;
-  createNativeImage: typeof Electron.nativeImage['createEmpty'];
 }
 
 declare const BUILDFLAG: (flag: boolean) => boolean;
