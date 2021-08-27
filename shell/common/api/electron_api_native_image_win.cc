@@ -12,6 +12,7 @@
 #include <string>
 #include <vector>
 
+#include "base/win/scoped_com_initializer.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/skia_util.h"
@@ -26,6 +27,8 @@ v8::Local<v8::Promise> NativeImage::CreateThumbnailFromPath(
     v8::Isolate* isolate,
     const base::FilePath& path,
     const gfx::Size& size) {
+  base::win::ScopedCOMInitializer scoped_com_initializer;
+
   gin_helper::Promise<gfx::Image> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
   HRESULT hr;
