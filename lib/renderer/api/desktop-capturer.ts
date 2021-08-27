@@ -1,6 +1,6 @@
 import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal';
 import { deserialize } from '@electron/internal/common/type-utils';
-import { deprecate } from '@electron/internal/common/api/deprecate';
+import deprecate from '@electron/internal/common/api/deprecate';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
 const { hasSwitch } = process._linkedBinding('electron_common_command_line');
