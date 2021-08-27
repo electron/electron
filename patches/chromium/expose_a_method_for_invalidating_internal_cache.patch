@@ -28,10 +28,10 @@ index d1c9bb1045a5d4cff7ded79ebced53ce4c2daa3c..01ef3fd68bd1683b973a9545639c3d2a
  void PathService::DisableCache() {
    PathData* path_data = GetPathData();
 diff --git a/base/path_service.h b/base/path_service.h
-index 14779f16481c1c6592471b771f9547316551d39c..f4ca101cea460f5eef9313fd94eccfb868d10cac 100644
+index c0cb678df47647a4bb0866d0b82c80e44f0dc021..a22505ca0e652d51faa2d0075b4fe3ed167e74b9 100644
 --- a/base/path_service.h
 +++ b/base/path_service.h
-@@ -78,6 +78,9 @@ class BASE_EXPORT PathService {
+@@ -76,6 +76,9 @@ class BASE_EXPORT PathService {
    // Disable internal cache.
    static void DisableCache();
  
