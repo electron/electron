@@ -3,7 +3,6 @@ import { WEB_VIEW_CONSTANTS } from '@electron/internal/renderer/web-view/web-vie
 import { syncMethods, asyncMethods, properties } from '@electron/internal/common/web-view-methods';
 import type { WebViewAttribute, PartitionAttribute } from '@electron/internal/renderer/web-view/web-view-attributes';
 import { setupWebViewAttributes } from '@electron/internal/renderer/web-view/web-view-attributes';
-import { deserialize } from '@electron/internal/common/type-utils';
 
 // ID generator.
 let nextId = 0;
@@ -16,7 +15,6 @@ export interface WebViewImplHooks {
   readonly guestViewInternal: typeof guestViewInternalModule;
   readonly allowGuestViewElementDefinition: NodeJS.InternalWebFrame['allowGuestViewElementDefinition'];
   readonly setIsWebView: (iframe: HTMLIFrameElement) => void;
-  readonly createNativeImage?: typeof Electron.nativeImage['createEmpty'];
 }
 
 // Represents the internal state of the WebView node.
@@ -236,7 +234,7 @@ export const setupMethods = (WebViewElement: typeof ElectronInternal.WebViewElem
   }
 
   WebViewElement.prototype.capturePage = async function (...args) {
-    return deserialize(await hooks.guestViewInternal.capturePage(this.getWebContentsId(), args), hooks.createNativeImage);
+    return await hooks.guestViewInternal.capturePage(this.getWebContentsId(), args);
   };
 
   const createPropertyGetter = function (property: string) {

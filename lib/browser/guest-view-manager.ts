@@ -4,7 +4,6 @@ import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-util
 import { parseWebViewWebPreferences } from '@electron/internal/common/parse-features-string';
 import { syncMethods, asyncMethods, properties } from '@electron/internal/common/web-view-methods';
 import { webViewEvents } from '@electron/internal/common/web-view-events';
-import { serialize } from '@electron/internal/common/type-utils';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
 interface GuestInstance {
@@ -333,7 +332,7 @@ handleMessageSync(IPC_MESSAGES.GUEST_VIEW_MANAGER_PROPERTY_SET, function (event,
 handleMessage(IPC_MESSAGES.GUEST_VIEW_MANAGER_CAPTURE_PAGE, async function (event, guestInstanceId: number, args: any[]) {
   const guest = getGuestForWebContents(guestInstanceId, event.sender);
 
-  return serialize(await guest.capturePage(...args));
+  return await guest.capturePage(...args);
 });
 
 // Returns WebContents from its guest id hosted in given webContents.
