@@ -233,10 +233,6 @@ export const setupMethods = (WebViewElement: typeof ElectronInternal.WebViewElem
     };
   }
 
-  WebViewElement.prototype.capturePage = async function (...args) {
-    return await hooks.guestViewInternal.capturePage(this.getWebContentsId(), args);
-  };
-
   const createPropertyGetter = function (property: string) {
     return function (this: ElectronInternal.WebViewElement) {
       return hooks.guestViewInternal.propertyGet(this.getWebContentsId(), property);

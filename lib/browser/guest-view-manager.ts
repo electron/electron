@@ -329,12 +329,6 @@ handleMessageSync(IPC_MESSAGES.GUEST_VIEW_MANAGER_PROPERTY_SET, function (event,
   (guest as any)[property] = val;
 });
 
-handleMessage(IPC_MESSAGES.GUEST_VIEW_MANAGER_CAPTURE_PAGE, async function (event, guestInstanceId: number, args: any[]) {
-  const guest = getGuestForWebContents(guestInstanceId, event.sender);
-
-  return await guest.capturePage(...args);
-});
-
 // Returns WebContents from its guest id hosted in given webContents.
 const getGuestForWebContents = function (guestInstanceId: number, contents: Electron.WebContents) {
   const guestInstance = guestInstances.get(guestInstanceId);
