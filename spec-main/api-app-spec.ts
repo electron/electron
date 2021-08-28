@@ -1660,11 +1660,9 @@ describe('app module', () => {
         electronNet.request({
           method: 'HEAD',
           url: 'https://www.electronjs.org'
-        }).on('response', (response) => {
-          resolve(response);
-        }).on('error', (err) => {
-          reject(err);
-        }).end();
+        }).on('response', resolve)
+          .on('error', reject)
+          .end();
       })).to.eventually.be.fulfilled();
       // 2. change the host resolver configuration to something that will
       // always fail
@@ -1679,11 +1677,9 @@ describe('app module', () => {
           // Needs to be a slightly different domain to above, otherwise the
           // response will come from the cache.
           url: 'https://electronjs.org'
-        }).on('response', (response) => {
-          resolve(response);
-        }).on('error', (err) => {
-          reject(err);
-        }).end();
+        }).on('response', resolve)
+          .on('error', reject)
+          .end();
       })).to.eventually.be.rejectedWith(/ERR_NAME_NOT_RESOLVED/);
     });
   });
