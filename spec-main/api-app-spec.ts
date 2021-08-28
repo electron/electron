@@ -6,7 +6,7 @@ import * as net from 'net';
 import * as fs from 'fs';
 import * as path from 'path';
 import { promisify } from 'util';
-import { app, BrowserWindow, Menu, session } from 'electron/main';
+import { app, BrowserWindow, Menu, session, net as electronNet } from 'electron/main';
 import { emittedOnce } from './events-helpers';
 import { closeWindow, closeAllWindows } from './window-helpers';
 import { ifdescribe, ifit } from './spec-helpers';
@@ -1629,6 +1629,62 @@ describe('app module', () => {
       expect(app.isSecureKeyboardEntryEnabled()).to.equal(true);
       app.setSecureKeyboardEntryEnabled(false);
       expect(app.isSecureKeyboardEntryEnabled()).to.equal(false);
+    });
+  });
+
+  describe('configureHostResolver', () => {
+    after(() => {
+      // Returns to the default configuration.
+      app.configureHostResolver({});
+    });
+
+    it('fails on bad arguments', () => {
+      expect(() => {
+        (app.configureHostResolver as any)();
+      }).to.throw();
+      expect(() => {
+        app.configureHostResolver({
+          secureDnsMode: 'notAValidValue' as any
+        });
+      }).to.throw();
+      expect(() => {
+        app.configureHostResolver({
+          secureDnsServers: [123 as any]
+        });
+      }).to.throw();
+    });
+
+    it('affects dns lookup behavior', async () => {
+      // 1. resolve a domain name to check that things are working
+      await expect(new Promise((resolve, reject) => {
+        electronNet.request({
+          method: 'HEAD',
+          url: 'https://www.electronjs.org'
+        }).on('response', (response) => {
+          resolve(response);
+        }).on('error', (err) => {
+          reject(err);
+        }).end();
+      })).to.eventually.be.fulfilled();
+      // 2. change the host resolver configuration to something that will
+      // always fail
+      app.configureHostResolver({
+        secureDnsMode: 'secure',
+        secureDnsServers: ['https://127.0.0.1:1234']
+      });
+      // 3. check that resolving domain names now fails
+      await expect(new Promise((resolve, reject) => {
+        electronNet.request({
+          method: 'HEAD',
+          // Needs to be a slightly different domain to above, otherwise the
+          // response will come from the cache.
+          url: 'https://electronjs.org'
+        }).on('response', (response) => {
+          resolve(response);
+        }).on('error', (err) => {
+          reject(err);
+        }).end();
+      })).to.eventually.be.rejectedWith(/ERR_NAME_NOT_RESOLVED/);
     });
   });
 });

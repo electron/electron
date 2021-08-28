@@ -1080,7 +1080,7 @@ indicates success while any other value indicates failure according to Chromium 
     simply a URI. Note that for [some DNS providers][doh-providers], the
     resolver will automatically upgrade to DoH unless DoH is explicitly
     disabled, even if there are no DoH servers provided in this list.
-  * `enableAdditionalDnsQueryTypes` Boolean - Controls whether additional DNS
+  * `enableAdditionalDnsQueryTypes` Boolean (optional) - Controls whether additional DNS
     query types, e.g. HTTPS (DNS type 65) will be allowed besides the
     traditional A and AAAA queries when a request is being made via insecure
     DNS. Has no effect on Secure DNS which always allows additional types.
