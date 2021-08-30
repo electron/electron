@@ -1,0 +1,77 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Hongchan Choi <hongchan@chromium.org>
+Date: Mon, 9 Aug 2021 18:43:22 +0000
+Subject: Protect HRTF database loader thread from access by different threads
+
+This patch add a new mutex locker around the HRTF database loader
+thread to ensure the safe exclusive access of the loader thread
+and the HRTF database.
+
+(cherry picked from commit 6811e850ee10847da16c4d5fdc0f845494586b65)
+
+Bug: 1233564
+Change-Id: Ie12b99ffe520d3747e34af387a37637a10aab38a
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3068260
+Auto-Submit: Hongchan Choi <hongchan@chromium.org>
+Commit-Queue: Kentaro Hara <haraken@chromium.org>
+Reviewed-by: Kentaro Hara <haraken@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#908269}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3082114
+Reviewed-by: Chris Mumford <cmumford@google.com>
+Commit-Queue: Hongchan Choi <hongchan@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4577@{#601}
+Cr-Branched-From: 761ddde228655e313424edec06497d0c56b0f3c4-refs/heads/master@{#902210}
+
+diff --git a/third_party/blink/renderer/platform/audio/hrtf_database_loader.cc b/third_party/blink/renderer/platform/audio/hrtf_database_loader.cc
+index 034ded03d11fa42f0d0f62c6a91f6e20ee5f93e1..01cb98a1116fe1eb6a13ff6345b6bdf4e136badc 100644
+--- a/third_party/blink/renderer/platform/audio/hrtf_database_loader.cc
++++ b/third_party/blink/renderer/platform/audio/hrtf_database_loader.cc
+@@ -86,6 +86,8 @@ void HRTFDatabaseLoader::LoadTask() {
+ void HRTFDatabaseLoader::LoadAsynchronously() {
+   DCHECK(IsMainThread());
+ 
++  MutexLocker locker(lock_);
++
+   // m_hrtfDatabase and m_thread should both be unset because this should be a
+   // new HRTFDatabaseLoader object that was just created by
+   // createAndLoadAsynchronouslyIfNecessary and because we haven't started
+@@ -122,6 +124,10 @@ void HRTFDatabaseLoader::CleanupTask(base::WaitableEvent* sync) {
+ }
+ 
+ void HRTFDatabaseLoader::WaitForLoaderThreadCompletion() {
++  // We can lock this because this is called from either the main thread or
++  // the offline audio rendering thread.
++  MutexLocker locker(lock_);
++
+   if (!thread_)
+     return;
+ 
+diff --git a/third_party/blink/renderer/platform/audio/hrtf_database_loader.h b/third_party/blink/renderer/platform/audio/hrtf_database_loader.h
+index 3ce476fa68e066d6faf40011e94203f0fb778e71..a94997b4f7e06f96018187967faa524d4acfd5f6 100644
+--- a/third_party/blink/renderer/platform/audio/hrtf_database_loader.h
++++ b/third_party/blink/renderer/platform/audio/hrtf_database_loader.h
+@@ -64,8 +64,8 @@ class PLATFORM_EXPORT HRTFDatabaseLoader final
+   // must be called from the audio thread.
+   bool IsLoaded() { return Database(); }
+ 
+-  // waitForLoaderThreadCompletion() may be called more than once and is
+-  // thread-safe.
++  // May be called from both main and audio thread, and also can be called more
++  // than once.
+   void WaitForLoaderThreadCompletion();
+ 
+   // Returns the database or nullptr if the database doesn't yet exist.  Must
+@@ -87,11 +87,10 @@ class PLATFORM_EXPORT HRTFDatabaseLoader final
+   void LoadTask();
+   void CleanupTask(base::WaitableEvent*);
+ 
+-  // Holding a m_lock is required when accessing m_hrtfDatabase since we access
+-  // it from multiple threads.
++  // |lock_| MUST be held when accessing |hrtf_database_| or |thread_| because
++  // it can be accessed by multiple threads (e.g multiple AudioContexts).
+   Mutex lock_;
+   std::unique_ptr<HRTFDatabase> hrtf_database_;
+-
+   std::unique_ptr<Thread> thread_;
+ 
+   float database_sample_rate_;
