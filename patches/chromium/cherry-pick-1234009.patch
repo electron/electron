@@ -23,7 +23,7 @@ Cr-Commit-Position: refs/branch-heads/4577@{#648}
 Cr-Branched-From: 761ddde228655e313424edec06497d0c56b0f3c4-refs/heads/master@{#902210}
 
 diff --git a/extensions/browser/api/file_system/file_system_api.cc b/extensions/browser/api/file_system/file_system_api.cc
-index e9023c877b7b35c0067642f05bc540858cbd7706..110f768c12d94fcfae0ac509fd0ce61c0e6049b8 100644
+index a739091fbdeb269648d0bfe28fa457c7f4310d50..e530ac389f6fa883078f237ca870dce9e35f76e1 100644
 --- a/extensions/browser/api/file_system/file_system_api.cc
 +++ b/extensions/browser/api/file_system/file_system_api.cc
 @@ -197,6 +197,9 @@ void PassFileInfoToUIThread(FileInfoOptCallback callback,
