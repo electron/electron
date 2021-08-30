@@ -101,6 +101,7 @@ auto_filenames = {
     "docs/api/structures/new-window-web-contents-event.md",
     "docs/api/structures/notification-action.md",
     "docs/api/structures/notification-response.md",
+    "docs/api/structures/overlay-options.md",
     "docs/api/structures/point.md",
     "docs/api/structures/post-body.md",
     "docs/api/structures/printer-info.md",
