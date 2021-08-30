@@ -11,5 +11,13 @@
     "extension_types": [
       "extension"
     ]
+  },
+  "cryptotokenPrivate": {
+    "channel": "stable",
+    "extension_types": ["extension"],
+    "location": "component",
+    "allowlist": [
+      "E24F1786D842E91E74C27929B0B3715A4689A473"  // Cryptotoken
+    ]
   }
 }

@@ -153,7 +153,7 @@ describe('chrome extensions', () => {
     const extension = await customSession.loadExtension(path.join(fixtures, 'extensions', 'red-bg'));
     const [, loadedExtension] = await loadedPromise;
     const [, readyExtension] = await emittedUntil(customSession, 'extension-ready', (event: Event, extension: Extension) => {
-      return extension.name !== 'Chromium PDF Viewer';
+      return extension.name !== 'Chromium PDF Viewer' && extension.name !== 'CryptoTokenExtension';
     });
 
     expect(loadedExtension).to.deep.equal(extension);
