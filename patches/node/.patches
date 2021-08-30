@@ -35,3 +35,4 @@ fix_handle_new_tostring_behavior_in_v8_serdes_test.patch
 node-api_faster_threadsafe_function.patch
 src_remove_extra_semi_after_member_fn.patch
 errors_refactor_to_use_more_primordials.patch
+repl_fix_crash_when_sharedarraybuffer_disabled.patch
