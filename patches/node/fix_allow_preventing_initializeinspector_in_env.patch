@@ -11,10 +11,10 @@ initialize it in the browser process. This adds a new
 EnvironmentFlags option which allows preventing that invocation.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index de29d45adde76587f2a9cd50392ba45b8e24839e..09c0d22ff91856704f61024646c946a39baf53d8 100644
+index 523d252e08974a10f9a53fb46d3345669cec3380..5bf19a0dda42849159d954181058897c45d280fd 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -341,12 +341,14 @@ Environment* CreateEnvironment(
+@@ -344,12 +344,14 @@ Environment* CreateEnvironment(
    Environment* env = new Environment(
        isolate_data, context, args, exec_args, nullptr, flags, thread_id);
  #if HAVE_INSPECTOR
