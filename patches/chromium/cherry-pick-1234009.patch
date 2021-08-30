@@ -1,0 +1,138 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sam McNally <sammc@chromium.org>
+Date: Tue, 10 Aug 2021 02:14:43 +0000
+Subject: Defer looking up the WebContents for the directory confirmation
+ dialog.
+
+Look up the WebContents to use for the sensitive directory confirmation
+dialog immediately before it's used instead of before performing some
+blocking file access to determine whether it's necessary.
+
+(cherry picked from commit 18236a0db8341302120c60781ae3129e94fbaf1c)
+
+Bug: 1234009
+Change-Id: I5e00c7fa199b3da522e1fdb73242891d7f5f7423
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3063743
+Reviewed-by: Alex Danilo <adanilo@chromium.org>
+Reviewed-by: Ben Wells <benwells@chromium.org>
+Commit-Queue: Sam McNally <sammc@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#907467}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3083204
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/4577@{#648}
+Cr-Branched-From: 761ddde228655e313424edec06497d0c56b0f3c4-refs/heads/master@{#902210}
+
+diff --git a/extensions/browser/api/file_system/file_system_api.cc b/extensions/browser/api/file_system/file_system_api.cc
+index e9023c877b7b35c0067642f05bc540858cbd7706..110f768c12d94fcfae0ac509fd0ce61c0e6049b8 100644
+--- a/extensions/browser/api/file_system/file_system_api.cc
++++ b/extensions/browser/api/file_system/file_system_api.cc
+@@ -197,6 +197,9 @@ void PassFileInfoToUIThread(FileInfoOptCallback callback,
+ content::WebContents* GetWebContentsForRenderFrameHost(
+     content::BrowserContext* browser_context,
+     content::RenderFrameHost* render_frame_host) {
++  if (!render_frame_host)
++    return nullptr;
++
+   content::WebContents* web_contents =
+       content::WebContents::FromRenderFrameHost(render_frame_host);
+   // Check if there is an app window associated with the web contents; if not,
+@@ -508,15 +511,6 @@ void FileSystemChooseEntryFunction::FilesSelected(
+   }
+ 
+   if (is_directory_) {
+-    // Get the WebContents for the app window to be the parent window of the
+-    // confirmation dialog if necessary.
+-    content::WebContents* const web_contents = GetWebContentsForRenderFrameHost(
+-        browser_context(), render_frame_host());
+-    if (!web_contents) {
+-      Respond(Error(kInvalidCallingPage));
+-      return;
+-    }
+-
+     DCHECK_EQ(paths.size(), 1u);
+     bool non_native_path = false;
+ #if BUILDFLAG(IS_CHROMEOS_ASH)
+@@ -530,7 +524,7 @@ void FileSystemChooseEntryFunction::FilesSelected(
+         FROM_HERE, {base::MayBlock(), base::TaskPriority::BEST_EFFORT},
+         base::BindOnce(
+             &FileSystemChooseEntryFunction::ConfirmDirectoryAccessAsync, this,
+-            non_native_path, paths, web_contents));
++            non_native_path, paths));
+     return;
+   }
+ 
+@@ -543,8 +537,7 @@ void FileSystemChooseEntryFunction::FileSelectionCanceled() {
+ 
+ void FileSystemChooseEntryFunction::ConfirmDirectoryAccessAsync(
+     bool non_native_path,
+-    const std::vector<base::FilePath>& paths,
+-    content::WebContents* web_contents) {
++    const std::vector<base::FilePath>& paths) {
+   const base::FilePath check_path =
+       non_native_path ? paths[0] : base::MakeAbsoluteFilePath(paths[0]);
+   if (check_path.empty()) {
+@@ -576,7 +569,7 @@ void FileSystemChooseEntryFunction::ConfirmDirectoryAccessAsync(
+         FROM_HERE,
+         base::BindOnce(
+             &FileSystemChooseEntryFunction::ConfirmSensitiveDirectoryAccess,
+-            this, paths, web_contents));
++            this, paths));
+     return;
+   }
+ 
+@@ -587,8 +580,7 @@ void FileSystemChooseEntryFunction::ConfirmDirectoryAccessAsync(
+ }
+ 
+ void FileSystemChooseEntryFunction::ConfirmSensitiveDirectoryAccess(
+-    const std::vector<base::FilePath>& paths,
+-    content::WebContents* web_contents) {
++    const std::vector<base::FilePath>& paths) {
+   if (ExtensionsBrowserClient::Get()->IsShuttingDown()) {
+     FileSelectionCanceled();
+     return;
+@@ -601,6 +593,13 @@ void FileSystemChooseEntryFunction::ConfirmSensitiveDirectoryAccess(
+     return;
+   }
+ 
++  content::WebContents* const web_contents =
++      GetWebContentsForRenderFrameHost(browser_context(), render_frame_host());
++  if (!web_contents) {
++    Respond(Error(kInvalidCallingPage));
++    return;
++  }
++
+   delegate->ConfirmSensitiveDirectoryAccess(
+       app_file_handler_util::HasFileSystemWritePermission(extension_.get()),
+       base::UTF8ToUTF16(extension_->name()), web_contents,
+diff --git a/extensions/browser/api/file_system/file_system_api.h b/extensions/browser/api/file_system/file_system_api.h
+index ae1588ce8536e4cee5474c3d4db370e95018c52e..0895a174a0dd1ba031fa358fe6451a1ebf198594 100644
+--- a/extensions/browser/api/file_system/file_system_api.h
++++ b/extensions/browser/api/file_system/file_system_api.h
+@@ -19,10 +19,6 @@
+ #include "extensions/common/api/file_system.h"
+ #include "ui/shell_dialogs/select_file_dialog.h"
+ 
+-namespace content {
+-class WebContents;
+-}  // namespace content
+-
+ namespace extensions {
+ class ExtensionPrefs;
+ 
+@@ -168,13 +164,12 @@ class FileSystemChooseEntryFunction : public FileSystemEntryFunction {
+   // directory. If so, calls ConfirmSensitiveDirectoryAccess. Otherwise, calls
+   // OnDirectoryAccessConfirmed.
+   void ConfirmDirectoryAccessAsync(bool non_native_path,
+-                                   const std::vector<base::FilePath>& paths,
+-                                   content::WebContents* web_contents);
++                                   const std::vector<base::FilePath>& paths);
+ 
+   // Shows a dialog to confirm whether the user wants to open the directory.
+   // Calls OnDirectoryAccessConfirmed or FileSelectionCanceled.
+-  void ConfirmSensitiveDirectoryAccess(const std::vector<base::FilePath>& paths,
+-                                       content::WebContents* web_contents);
++  void ConfirmSensitiveDirectoryAccess(
++      const std::vector<base::FilePath>& paths);
+ 
+   void OnDirectoryAccessConfirmed(const std::vector<base::FilePath>& paths);
+ 

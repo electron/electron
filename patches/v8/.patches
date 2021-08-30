@@ -7,4 +7,7 @@ workaround_an_undefined_symbol_error.patch
 do_not_export_private_v8_symbols_on_windows.patch
 fix_build_deprecated_attirbute_for_older_msvc_versions.patch
 cherry-pick-e38d55313ad9.patch
+cherry-pick-1234770.patch
 cherry-pick-1231950.patch
+cherry-pick-1228036.patch
+cherry-pick-1234764.patch

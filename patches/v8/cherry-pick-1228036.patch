@@ -1,0 +1,40 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Georg Neis <neis@chromium.org>
+Date: Mon, 26 Jul 2021 16:40:39 +0200
+Subject: Finish concurrent sweeping before overwriting ByteArrays
+
+Bug: chromium:1228036
+Change-Id: I5abe7009920d2c8f81f024c9ae7bb6b13607da1a
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3054119
+Commit-Queue: Georg Neis <neis@chromium.org>
+Reviewed-by: Hannes Payer <hpayer@chromium.org>
+
+diff --git a/src/deoptimizer/translated-state.cc b/src/deoptimizer/translated-state.cc
+index 02c473d22b18a0a4c288e655afdb73340a0d0ffc..b5378a553a49e41c96713cf3f2ed901f7cfe4626 100644
+--- a/src/deoptimizer/translated-state.cc
++++ b/src/deoptimizer/translated-state.cc
+@@ -514,6 +514,12 @@ Handle<Object> TranslatedValue::GetValue() {
+     //    pass the verifier.
+     container_->EnsureObjectAllocatedAt(this);
+ 
++    // Finish any sweeping so that it becomes safe to overwrite the ByteArray
++    // headers.
++    // TODO(hpayer): Find a cleaner way to support a group of
++    // non-fully-initialized objects.
++    isolate()->heap()->mark_compact_collector()->EnsureSweepingCompleted();
++
+     // 2. Initialize the objects. If we have allocated only byte arrays
+     //    for some objects, we now overwrite the byte arrays with the
+     //    correct object fields. Note that this phase does not allocate
+@@ -1397,9 +1403,9 @@ TranslatedValue* TranslatedState::GetValueByObjectIndex(int object_index) {
+ }
+ 
+ Handle<HeapObject> TranslatedState::InitializeObjectAt(TranslatedValue* slot) {
+-  slot = ResolveCapturedObject(slot);
+-
+   DisallowGarbageCollection no_gc;
++
++  slot = ResolveCapturedObject(slot);
+   if (slot->materialization_state() != TranslatedValue::kFinished) {
+     std::stack<int> worklist;
+     worklist.push(slot->object_index());
