@@ -23,10 +23,10 @@ Cr-Commit-Position: refs/branch-heads/4577@{#648}
 Cr-Branched-From: 761ddde228655e313424edec06497d0c56b0f3c4-refs/heads/master@{#902210}
 
 diff --git a/extensions/browser/api/file_system/file_system_api.cc b/extensions/browser/api/file_system/file_system_api.cc
-index e9023c877b7b35c0067642f05bc540858cbd7706..110f768c12d94fcfae0ac509fd0ce61c0e6049b8 100644
+index a128893387beac06fb1256416ae234af251378db..870298116be17a2bb0874f8b32c8926ec19ed0d4 100644
 --- a/extensions/browser/api/file_system/file_system_api.cc
 +++ b/extensions/browser/api/file_system/file_system_api.cc
-@@ -197,6 +197,9 @@ void PassFileInfoToUIThread(FileInfoOptCallback callback,
+@@ -196,6 +196,9 @@ void PassFileInfoToUIThread(FileInfoOptCallback callback,
  content::WebContents* GetWebContentsForRenderFrameHost(
      content::BrowserContext* browser_context,
      content::RenderFrameHost* render_frame_host) {
@@ -51,7 +51,7 @@ index e9023c877b7b35c0067642f05bc540858cbd7706..110f768c12d94fcfae0ac509fd0ce61c
 -
      DCHECK_EQ(paths.size(), 1u);
      bool non_native_path = false;
- #if BUILDFLAG(IS_CHROMEOS_ASH)
+ #if defined(OS_CHROMEOS)
 @@ -530,7 +524,7 @@ void FileSystemChooseEntryFunction::FilesSelected(
          FROM_HERE, {base::MayBlock(), base::TaskPriority::BEST_EFFORT},
          base::BindOnce(
@@ -105,10 +105,10 @@ index e9023c877b7b35c0067642f05bc540858cbd7706..110f768c12d94fcfae0ac509fd0ce61c
        app_file_handler_util::HasFileSystemWritePermission(extension_.get()),
        base::UTF8ToUTF16(extension_->name()), web_contents,
 diff --git a/extensions/browser/api/file_system/file_system_api.h b/extensions/browser/api/file_system/file_system_api.h
-index ae1588ce8536e4cee5474c3d4db370e95018c52e..0895a174a0dd1ba031fa358fe6451a1ebf198594 100644
+index 2a95c4d89fd2746aec0792f231bd20eac1b82d63..95ae48b3338ca90c25c098cd23655a84236aa6e6 100644
 --- a/extensions/browser/api/file_system/file_system_api.h
 +++ b/extensions/browser/api/file_system/file_system_api.h
-@@ -19,10 +19,6 @@
+@@ -18,10 +18,6 @@
  #include "extensions/common/api/file_system.h"
  #include "ui/shell_dialogs/select_file_dialog.h"
  
@@ -119,7 +119,7 @@ index ae1588ce8536e4cee5474c3d4db370e95018c52e..0895a174a0dd1ba031fa358fe6451a1e
  namespace extensions {
  class ExtensionPrefs;
  
-@@ -168,13 +164,12 @@ class FileSystemChooseEntryFunction : public FileSystemEntryFunction {
+@@ -167,13 +163,12 @@ class FileSystemChooseEntryFunction : public FileSystemEntryFunction {
    // directory. If so, calls ConfirmSensitiveDirectoryAccess. Otherwise, calls
    // OnDirectoryAccessConfirmed.
    void ConfirmDirectoryAccessAsync(bool non_native_path,
