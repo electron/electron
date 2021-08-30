@@ -56,10 +56,10 @@ diff --git a/content/common/frame.mojom b/content/common/frame.mojom
 index 056488bfef9a2f26832c8a78f0da4193998c66fd..801f51256528db2c28dab3864be0afb45e81d011 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
-@@ -529,6 +529,10 @@ struct CreateNewWindowParams {
-   // The impression associated with the navigation in the new window, if
-   // one is specified.
-   blink.mojom.Impression? impression;
+@@ -533,6 +533,10 @@ struct CreateNewWindowParams {
+ 
+   // Governs how downloads are handled if `target_url` results in a download.
+   blink.mojom.NavigationDownloadPolicy download_policy;
 +
 +  // Extra fields added by Electron.
 +  string raw_features;
@@ -161,7 +161,7 @@ index 092352d96858b45a46ac1eddd162a63b1e468031..aa1cf3dfca39c4443311895a3d7abfc8
  #include "third_party/blink/public/web/modules/mediastream/web_media_stream_device_observer.h"
  #include "third_party/blink/public/web/web_frame_widget.h"
  #include "third_party/blink/public/web/web_local_frame.h"
-@@ -289,6 +290,10 @@ WebView* RenderViewImpl::CreateView(
+@@ -289,6 +289,10 @@ WebView* RenderViewImpl::CreateView(
      params->impression = blink::ConvertWebImpressionToImpression(*impression);
    }
  
@@ -169,9 +169,9 @@ index 092352d96858b45a46ac1eddd162a63b1e468031..aa1cf3dfca39c4443311895a3d7abfc8
 +      WTF::UTF8ConversionMode::kStrictUTF8ConversionReplacingUnpairedSurrogatesWithFFFD);
 +  params->body = GetRequestBodyForWebURLRequest(request);
 +
-   // We preserve this information before sending the message since |params| is
-   // moved on send.
-   bool is_background_tab =
+   params->download_policy.ApplyDownloadFramePolicy(
+       /*is_opener_navigation=*/false, request.HasUserGesture(),
+       // `openee_can_access_opener_origin` only matters for opener navigations,
 diff --git a/content/web_test/browser/web_test_content_browser_client.cc b/content/web_test/browser/web_test_content_browser_client.cc
 index c6872573086e628a894f482877db2d417552c6a1..5e67b6a59c3e3d6881f738985ab947a2d7902f0a 100644
 --- a/content/web_test/browser/web_test_content_browser_client.cc
