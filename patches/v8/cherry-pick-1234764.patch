@@ -1,0 +1,43 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Georg Neis <neis@chromium.org>
+Date: Tue, 10 Aug 2021 09:29:33 +0200
+Subject: Merged: [compiler] Harden
+ JSCallReducer::ReduceArrayIteratorPrototypeNext
+
+Revision: 65b20a0e65e1078f5dd230a5203e231bec790ab4
+
+BUG=chromium:1234764
+NOTRY=true
+NOPRESUBMIT=true
+NOTREECHECKS=true
+R=vahl@chromium.org
+
+Change-Id: I45faf253695011092de144c8e29bafac5337adec
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3084363
+Reviewed-by: Lutz Vahl <vahl@chromium.org>
+Commit-Queue: Georg Neis <neis@chromium.org>
+Cr-Commit-Position: refs/branch-heads/9.2@{#53}
+Cr-Branched-From: 51238348f95a1f5e0acc321efac7942d18a687a2-refs/heads/9.2.230@{#1}
+Cr-Branched-From: 587a04f02ab0487d194b55a7137dc2045e071597-refs/heads/master@{#74656}
+
+diff --git a/src/compiler/js-call-reducer.cc b/src/compiler/js-call-reducer.cc
+index 2c7b6788953092ffb3cf6fa75501dcbb02dce581..56f0ca99e252e715c9792222f95397950a451149 100644
+--- a/src/compiler/js-call-reducer.cc
++++ b/src/compiler/js-call-reducer.cc
+@@ -5854,11 +5854,12 @@ Reduction JSCallReducer::ReduceArrayIteratorPrototypeNext(Node* node) {
+   Node* etrue = effect;
+   Node* if_true = graph()->NewNode(common()->IfTrue(), branch);
+   {
+-    // We know that the {index} is range of the {length} now.
++    // This extra check exists to refine the type of {index} but also to break
++    // an exploitation technique that abuses typer mismatches.
+     index = etrue = graph()->NewNode(
+-        common()->TypeGuard(
+-            Type::Range(0.0, length_access.type.Max() - 1.0, graph()->zone())),
+-        index, etrue, if_true);
++        simplified()->CheckBounds(p.feedback(),
++                                  CheckBoundsFlag::kAbortOnOutOfBounds),
++        index, length, etrue, if_true);
+ 
+     done_true = jsgraph()->FalseConstant();
+     if (iteration_kind == IterationKind::kKeys) {
