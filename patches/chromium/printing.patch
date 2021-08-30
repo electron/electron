@@ -632,19 +632,23 @@ diff --git a/printing/printing_context.h b/printing/printing_context.h
 index 5c300fa414fbb8688674aed114543e602cdb96db..ba6d0bbce4edcb1a6e05108e4e83fc6ba5894bb4 100644
 --- a/printing/printing_context.h
 +++ b/printing/printing_context.h
-@@ -133,12 +133,12 @@ class COMPONENT_EXPORT(PRINTING) PrintingContext {
+@@ -145,6 +145,9 @@ class COMPONENT_EXPORT(PRINTING) PrintingContext {
  
    int job_id() const { return job_id_; }
  
-- protected:
--  explicit PrintingContext(Delegate* delegate);
--
-   // Reinitializes the settings for object reuse.
-   void ResetSettings();
- 
-+ protected:
-+  explicit PrintingContext(Delegate* delegate);
++  // Reinitializes the settings for object reuse.
++  void ResetSettings();
 +
+  protected:
+   explicit PrintingContext(Delegate* delegate);
+ 
+@@ -152,9 +155,6 @@ class COMPONENT_EXPORT(PRINTING) PrintingContext {
+   // implement this method to create an object of their implementation.
+   static std::unique_ptr<PrintingContext> CreateImpl(Delegate* delegate);
+ 
+-  // Reinitializes the settings for object reuse.
+-  void ResetSettings();
+-
    // Does bookkeeping when an error occurs.
    PrintingContext::Result OnError();
- 
+
