@@ -23,7 +23,6 @@
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/desktop_media_id.h"
-#include "content/public/common/content_features.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_browser_view_mac.h"
 #include "shell/browser/ui/cocoa/electron_native_widget_mac.h"
@@ -165,28 +164,6 @@
 namespace gin {
 
 template <>
-struct Converter<electron::NativeWindowMac::TitleBarStyle> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Handle<v8::Value> val,
-                     electron::NativeWindowMac::TitleBarStyle* out) {
-    using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
-    std::string title_bar_style;
-    if (!ConvertFromV8(isolate, val, &title_bar_style))
-      return false;
-    if (title_bar_style == "hidden") {
-      *out = TitleBarStyle::kHidden;
-    } else if (title_bar_style == "hiddenInset") {
-      *out = TitleBarStyle::kHiddenInset;
-    } else if (title_bar_style == "customButtonsOnHover") {
-      *out = TitleBarStyle::kCustomButtonsOnHover;
-    } else {
-      return false;
-    }
-    return true;
-  }
-};
-
-template <>
 struct Converter<electron::NativeWindowMac::VisualEffectState> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Handle<v8::Value> val,
@@ -275,7 +252,6 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
 
   bool resizable = true;
   options.Get(options::kResizable, &resizable);
-  options.Get(options::kTitleBarStyle, &title_bar_style_);
   options.Get(options::kZoomToPageWidth, &zoom_to_page_width_);
   options.Get(options::kSimpleFullScreen, &always_simple_fullscreen_);
   options.GetOptional(options::kTrafficLightPosition, &traffic_light_position_);
@@ -1029,6 +1005,13 @@ void NativeWindowMac::SetSimpleFullScreen(bool simple_fullscreen) {
       window.level = NSPopUpMenuWindowLevel;
     }
 
+    // Always hide the titlebar in simple fullscreen mode.
+    //
+    // Note that we must remove the NSWindowStyleMaskTitled style instead of
+    // using the [window_ setTitleVisibility:], as the latter would leave the
+    // window with rounded corners.
+    SetStyleMask(false, NSWindowStyleMaskTitled);
+
     if (!window_button_visibility_.has_value()) {
       // Lets keep previous behaviour - hide window controls in titled
       // fullscreen mode when not specified otherwise.
@@ -1045,16 +1028,6 @@ void NativeWindowMac::SetSimpleFullScreen(bool simple_fullscreen) {
   } else if (!simple_fullscreen && is_simple_fullscreen_) {
     is_simple_fullscreen_ = false;
 
-    // Restore default window controls visibility state.
-    if (!window_button_visibility_.has_value()) {
-      bool visibility;
-      if (has_frame())
-        visibility = true;
-      else
-        visibility = title_bar_style_ != TitleBarStyle::kNormal;
-      InternalSetWindowButtonVisibility(visibility);
-    }
-
     [window setFrame:original_frame_ display:YES animate:YES];
     window.level = original_level_;
 
@@ -1067,6 +1040,19 @@ void NativeWindowMac::SetSimpleFullScreen(bool simple_fullscreen) {
     // Restore window manipulation abilities
     SetMaximizable(was_maximizable_);
     SetMovable(was_movable_);
+
+    // Restore default window controls visibility state.
+    if (!window_button_visibility_.has_value()) {
+      bool visibility;
+      if (has_frame())
+        visibility = true;
+      else
+        visibility = title_bar_style_ != TitleBarStyle::kNormal;
+      InternalSetWindowButtonVisibility(visibility);
+    }
+
+    if (buttons_proxy_)
+      [buttons_proxy_ redraw];
   }
 }
 
@@ -1139,6 +1125,8 @@ std::string NativeWindowMac::GetRepresentedFilename() {
 
 void NativeWindowMac::SetDocumentEdited(bool edited) {
   [window_ setDocumentEdited:edited];
+  if (buttons_proxy_)
+    [buttons_proxy_ redraw];
 }
 
 bool NativeWindowMac::IsDocumentEdited() {
@@ -1256,11 +1244,13 @@ content::DesktopMediaID NativeWindowMac::GetDesktopMediaID() const {
       content::DesktopMediaID::TYPE_WINDOW, GetAcceleratedWidget());
   // c.f.
   // https://source.chromium.org/chromium/chromium/src/+/master:chrome/browser/media/webrtc/native_desktop_media_list.cc;l=372?q=kWindowCaptureMacV2&ss=chromium
-  if (base::FeatureList::IsEnabled(features::kWindowCaptureMacV2)) {
+  // Refs https://github.com/electron/electron/pull/30507
+  // TODO(deepak1556): Match upstream for `kWindowCaptureMacV2`
+#if 0
     if (remote_cocoa::ScopedCGWindowID::Get(desktop_media_id.id)) {
       desktop_media_id.window_id = desktop_media_id.id;
     }
-  }
+#endif
   return desktop_media_id;
 }
 

@@ -46,7 +46,7 @@ index 17e03f58263b5254cec991386536286de3b41600..65fdfcec6894249996fa12b947136247
      }
  
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index 1625f8917ac257f11f4637ea60eca586ec2492a3..dc0f43e955994fba9dc597c08133a4438ebf1c45 100644
+index 139a04d6cbc1376340cf73a395e051fd2c7c9b11..73f0b275da7fef57f6c9956a16b5370f6771feac 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
 @@ -5281,7 +5281,6 @@ test("unit_tests") {

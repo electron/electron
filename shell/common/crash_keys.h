@@ -24,7 +24,8 @@ void GetCrashKeys(std::map<std::string, std::string>* keys);
 
 void SetCrashKeysFromCommandLine(const base::CommandLine& command_line);
 void SetPlatformCrashKey();
-void SetCrashKeyForGinWrappable(gin::WrapperInfo* info);
+
+std::string GetCrashValueForGinWrappable(gin::WrapperInfo* info);
 
 }  // namespace crash_keys
 

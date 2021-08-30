@@ -49,7 +49,7 @@ update server.
 Depending on your needs, you can choose from one of these:
 
 - [Hazel][hazel] – Update server for private or open-source apps which can be
-deployed for free on [Now][now]. It pulls from [GitHub Releases][gh-releases]
+deployed for free on [Vercel][vercel]. It pulls from [GitHub Releases][gh-releases]
 and leverages the power of GitHub's CDN.
 - [Nuts][nuts] – Also uses [GitHub Releases][gh-releases], but caches app
 updates on disk and supports private repositories.
@@ -64,7 +64,7 @@ to minify server cost.
 Once you've deployed your update server, continue with importing the required
 modules in your code. The following code might vary for different server
 software, but it works like described when using
-[Hazel](https://github.com/zeit/hazel).
+[Hazel][hazel].
 
 **Important:** Please ensure that the code below will only be executed in
 your packaged app, and not in development. You can use
@@ -136,8 +136,8 @@ autoUpdater.on('error', message => {
 
 Because the requests made by Auto Update aren't under your direct control, you may find situations that are difficult to handle (such as if the update server is behind authentication). The `url` field does support files, which means that with some effort, you can sidestep the server-communication aspect of the process. [Here's an example of how this could work](https://github.com/electron/electron/issues/5020#issuecomment-477636990).
 
-[now]: https://zeit.co/now
-[hazel]: https://github.com/zeit/hazel
+[vercel]: https://vercel.com
+[hazel]: https://github.com/vercel/hazel
 [nuts]: https://github.com/GitbookIO/nuts
 [gh-releases]: https://help.github.com/articles/creating-releases/
 [electron-release-server]: https://github.com/ArekSredzki/electron-release-server
