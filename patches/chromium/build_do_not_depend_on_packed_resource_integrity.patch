@@ -49,7 +49,7 @@ diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
 index 3fddc69a1b9a80e36246e60ea160a08de8cfe4ee..93fa9a51d6fdda86c6ebbb6f0e70be1b2f29f957 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
-@@ -5349,7 +5349,6 @@ test("unit_tests") {
+@@ -5355,7 +5355,6 @@ test("unit_tests") {
      assert(toolkit_views)
      sources += [ "../browser/ui/startup/credential_provider_signin_info_fetcher_win_unittest.cc" ]
      deps += [
@@ -57,7 +57,7 @@ index 3fddc69a1b9a80e36246e60ea160a08de8cfe4ee..93fa9a51d6fdda86c6ebbb6f0e70be1b
        "//chrome/browser:chrome_process_finder",
        "//chrome/browser/safe_browsing/chrome_cleaner",
        "//chrome/browser/safe_browsing/chrome_cleaner:public",
-@@ -5362,6 +5361,12 @@ test("unit_tests") {
+@@ -5368,6 +5367,12 @@ test("unit_tests") {
        "//components/chrome_cleaner/public/proto",
        "//ui/events/devices:test_support",
      ]
@@ -70,17 +70,17 @@ index 3fddc69a1b9a80e36246e60ea160a08de8cfe4ee..93fa9a51d6fdda86c6ebbb6f0e70be1b
    }
  
    # TODO(crbug.com/931218): Ninja cannot handle certain characters appearing
-@@ -5949,7 +5954,6 @@ test("unit_tests") {
+@@ -5955,7 +5955,6 @@ test("unit_tests") {
      }
  
      deps += [
 -      "//chrome:packed_resources_integrity_hash",
        "//chrome/browser:cart_db_content_proto",
        "//chrome/browser/media/router:test_support",
-       "//chrome/browser/promo_browser_command:mojo_bindings",
-@@ -5985,6 +5989,9 @@ test("unit_tests") {
-       "//ui/color:test_support",
+       "//chrome/browser/resource_coordinator:intervention_policy_database_proto",
+@@ -5991,6 +5990,9 @@ test("unit_tests") {
        "//ui/native_theme:test_support",
+       "//ui/webui/resources/js/browser_command:mojo_bindings",
      ]
 +    if (!is_electron_build) {
 +      deps += [ "//chrome:packed_resources_integrity_hash" ]
