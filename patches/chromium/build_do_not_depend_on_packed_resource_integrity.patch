@@ -33,10 +33,10 @@ index d4436b93723cac8b33a6ffab1437b221446a1fb0..3aef47b5f85c11845962e48efd75a1d5
          "//base",
          "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index 2176e80e5e27a7c602338292601c5268d1601728..43bc86fa467c35df0241728d98f5d492687a7016 100644
+index be9c64aa2c9653251fa7cbbc1e005df0fa3156af..a367e12253a7d880c9eb6c6726e53c0a2f494f3a 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -4387,7 +4387,7 @@ static_library("browser") {
+@@ -4400,7 +4400,7 @@ static_library("browser") {
  
      # On Windows, the hashes are embedded in //chrome:chrome_initial rather
      # than here in :chrome_dll.
@@ -46,7 +46,7 @@ index 2176e80e5e27a7c602338292601c5268d1601728..43bc86fa467c35df0241728d98f5d492
      }
  
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index 3fddc69a1b9a80e36246e60ea160a08de8cfe4ee..93fa9a51d6fdda86c6ebbb6f0e70be1b2f29f957 100644
+index ea4051011844bfee0332908d2132630a605c212b..8675662dca8e42594859d3be44f80ff29aeba798 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
 @@ -5355,7 +5355,6 @@ test("unit_tests") {
@@ -70,7 +70,7 @@ index 3fddc69a1b9a80e36246e60ea160a08de8cfe4ee..93fa9a51d6fdda86c6ebbb6f0e70be1b
    }
  
    # TODO(crbug.com/931218): Ninja cannot handle certain characters appearing
-@@ -5955,7 +5955,6 @@ test("unit_tests") {
+@@ -5955,7 +5960,6 @@ test("unit_tests") {
      }
  
      deps += [
@@ -78,7 +78,7 @@ index 3fddc69a1b9a80e36246e60ea160a08de8cfe4ee..93fa9a51d6fdda86c6ebbb6f0e70be1b
        "//chrome/browser:cart_db_content_proto",
        "//chrome/browser/media/router:test_support",
        "//chrome/browser/resource_coordinator:intervention_policy_database_proto",
-@@ -5991,6 +5990,9 @@ test("unit_tests") {
+@@ -5991,6 +5995,9 @@ test("unit_tests") {
        "//ui/native_theme:test_support",
        "//ui/webui/resources/js/browser_command:mojo_bindings",
      ]

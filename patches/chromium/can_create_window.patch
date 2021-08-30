@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index fc3166ff11745de4bdf16e46cf8ae4321bda9bff..f44e64516caa4a0520073145828e54025f647163 100644
+index 6fff25355dace5ca497f140a0e35ac7264202568..3eba04e21f771c4ee8e2c1bff7192ba14f97a253 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -6402,6 +6402,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -6406,6 +6406,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,7 +21,7 @@ index fc3166ff11745de4bdf16e46cf8ae4321bda9bff..f44e64516caa4a0520073145828e5402
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 20c34c6b3786777a823b5340758a98a4c71ea26d..ec797e55994fa5b301fd88517b9b68af5e8b6e50 100644
+index afee3ed1f21aa9b95e2dc48191445d0f18049bbb..0ba0990cf02624cc7cf1b304a0d9b63692cd464d 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -3739,6 +3739,14 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -53,7 +53,7 @@ index 20c34c6b3786777a823b5340758a98a4c71ea26d..ec797e55994fa5b301fd88517b9b68af
                               new_contents_impl, opener, params.target_url,
                               params.referrer.To<Referrer>(), params.disposition,
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index 056488bfef9a2f26832c8a78f0da4193998c66fd..801f51256528db2c28dab3864be0afb45e81d011 100644
+index 790ef8a616e3d1a74d022457ea1d827313e08bdf..fb8c57610bc2b032107a391d90eb01b2e129084d 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
 @@ -533,6 +533,10 @@ struct CreateNewWindowParams {
@@ -68,7 +68,7 @@ index 056488bfef9a2f26832c8a78f0da4193998c66fd..801f51256528db2c28dab3864be0afb4
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index e436cea9ff80063fe5eb5f7fdbf4b39fc9840fca..7405793f0df25674d7e20ec381d706cfeae70592 100644
+index 9f8dbbc7a63cf8a1a8166dd67efd452eab791426..8a45f8c39fe160829de316c513e73327dabfc391 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -557,6 +557,8 @@ bool ContentBrowserClient::CanCreateWindow(
@@ -81,10 +81,10 @@ index e436cea9ff80063fe5eb5f7fdbf4b39fc9840fca..7405793f0df25674d7e20ec381d706cf
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 2363de710811748c1be0ea6d36d1214ea798de7e..e3657b9a16517a3ea7acdb48f9d8b043d818a954 100644
+index 4db050cb8e5e328f84d4a5fc92aee7d743ee16c4..bb30bb3604a793cbe37d20a3a18b21d5abfd6530 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -165,6 +165,7 @@ class NetworkService;
+@@ -166,6 +166,7 @@ class NetworkService;
  class TrustedURLLoaderHeaderClient;
  }  // namespace mojom
  struct ResourceRequest;
@@ -92,7 +92,7 @@ index 2363de710811748c1be0ea6d36d1214ea798de7e..e3657b9a16517a3ea7acdb48f9d8b043
  }  // namespace network
  
  namespace sandbox {
-@@ -923,6 +924,8 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -924,6 +925,8 @@ class CONTENT_EXPORT ContentBrowserClient {
        const std::string& frame_name,
        WindowOpenDisposition disposition,
        const blink::mojom::WindowFeatures& features,
@@ -150,7 +150,7 @@ index a0da74d5cbe4ab8be84d6f1a92f444e858320745..5936fa4bce09895595ccb294504f5b89
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_view_impl.cc b/content/renderer/render_view_impl.cc
-index 092352d96858b45a46ac1eddd162a63b1e468031..aa1cf3dfca39c4443311895a3d7abfc89aad8951 100644
+index ea22a86dc1a6e5cdb3e3dfa31a929a3dd14b9e61..88dd89df94a111b673db51fedb05c482270ff6a7 100644
 --- a/content/renderer/render_view_impl.cc
 +++ b/content/renderer/render_view_impl.cc
 @@ -31,6 +31,7 @@
@@ -161,7 +161,7 @@ index 092352d96858b45a46ac1eddd162a63b1e468031..aa1cf3dfca39c4443311895a3d7abfc8
  #include "third_party/blink/public/web/modules/mediastream/web_media_stream_device_observer.h"
  #include "third_party/blink/public/web/web_frame_widget.h"
  #include "third_party/blink/public/web/web_local_frame.h"
-@@ -289,6 +289,10 @@ WebView* RenderViewImpl::CreateView(
+@@ -289,6 +290,10 @@ WebView* RenderViewImpl::CreateView(
      params->impression = blink::ConvertWebImpressionToImpression(*impression);
    }
  
@@ -220,10 +220,10 @@ index 84d32491a56528a84b4395fba1d54cdbb38d522b..09998a83c449ef8cd9f360fbcdcf7edc
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index 0d0ec1bcfde90ed1294922399cf1fdb7ef6244a2..8d33a4f0e1cdfec934025f4865d070d802c42908 100644
+index 10e40d408bb0b1526534918add49906e65d17368..b6a0473ad93f8ef1adc53536411e8fd62c106b5d 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
-@@ -2008,6 +2008,7 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
+@@ -2022,6 +2022,7 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
  
    WebWindowFeatures window_features =
        GetWindowFeaturesFromString(features, incumbent_window);
