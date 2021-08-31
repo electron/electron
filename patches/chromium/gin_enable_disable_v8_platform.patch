@@ -7,10 +7,10 @@ We don't use gin to create the V8 platform, because we need to inject Node
 things.
 
 diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
-index 08815f12ad8088353a2bd704c513263876c39856..9fd05f22c4f6d484c5cedfa1f38a147158726d42 100644
+index f86478fb8652255fa30252d027bfed2121ed138e..5eed541856097c2edf12c49a6a04dc583a9cceb6 100644
 --- a/gin/isolate_holder.cc
 +++ b/gin/isolate_holder.cc
-@@ -105,9 +105,10 @@ IsolateHolder::~IsolateHolder() {
+@@ -108,9 +108,10 @@ IsolateHolder::~IsolateHolder() {
  // static
  void IsolateHolder::Initialize(ScriptMode mode,
                                 v8::ArrayBuffer::Allocator* allocator,
@@ -24,7 +24,7 @@ index 08815f12ad8088353a2bd704c513263876c39856..9fd05f22c4f6d484c5cedfa1f38a1471
    g_reference_table = reference_table;
  }
 diff --git a/gin/public/isolate_holder.h b/gin/public/isolate_holder.h
-index eaf06bd895f3ed390d1b206b2dc5adcca5c87e72..6bd634c4a66999648c51b8867c0d9b0ccbda78f1 100644
+index 41e516899dccb6352aabadcd66a93d69e13031b6..e476c6b4a58caa30d81d082200bfd8c80904857a 100644
 --- a/gin/public/isolate_holder.h
 +++ b/gin/public/isolate_holder.h
 @@ -89,7 +89,8 @@ class GIN_EXPORT IsolateHolder {
@@ -35,13 +35,13 @@ index eaf06bd895f3ed390d1b206b2dc5adcca5c87e72..6bd634c4a66999648c51b8867c0d9b0c
 +                         const intptr_t* reference_table = nullptr,
 +                         bool create_v8_platform = true);
  
-   v8::Isolate* isolate() { return isolate_; }
- 
+   // Returns whether `Initialize` has already been invoked in the process.
+   // Initialization is a one-way operation (i.e., this method cannot return
 diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
-index 876814b6d7c340bef364836fd984cb8e9f6e88bb..3b6b4171f6999209db2b906f1a2f42951d171262 100644
+index 042ce4e6d0cb20686d3493ba034dcf41edcd658c..a9b2c43bacdf851b12c24b53080b40585405c4ae 100644
 --- a/gin/v8_initializer.cc
 +++ b/gin/v8_initializer.cc
-@@ -252,7 +252,8 @@ void RunArrayBufferCageReservationExperiment() {
+@@ -267,7 +267,8 @@ void SetV8FlagsIfOverridden(const base::Feature& feature,
  }  // namespace
  
  // static
@@ -51,7 +51,7 @@ index 876814b6d7c340bef364836fd984cb8e9f6e88bb..3b6b4171f6999209db2b906f1a2f4295
    static bool v8_is_initialized = false;
    if (v8_is_initialized)
      return;
-@@ -262,7 +263,8 @@ void V8Initializer::Initialize(IsolateHolder::ScriptMode mode) {
+@@ -277,7 +278,8 @@ void V8Initializer::Initialize(IsolateHolder::ScriptMode mode) {
      RunArrayBufferCageReservationExperiment();
    }
  

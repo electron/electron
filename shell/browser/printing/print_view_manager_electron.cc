@@ -16,6 +16,19 @@ PrintViewManagerElectron::PrintViewManagerElectron(
 
 PrintViewManagerElectron::~PrintViewManagerElectron() = default;
 
+// static
+void PrintViewManagerElectron::BindPrintManagerHost(
+    mojo::PendingAssociatedReceiver<printing::mojom::PrintManagerHost> receiver,
+    content::RenderFrameHost* rfh) {
+  auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
+  if (!web_contents)
+    return;
+  auto* print_manager = PrintViewManagerElectron::FromWebContents(web_contents);
+  if (!print_manager)
+    return;
+  print_manager->BindReceiver(std::move(receiver), rfh);
+}
+
 void PrintViewManagerElectron::SetupScriptedPrintPreview(
     SetupScriptedPrintPreviewCallback callback) {
   std::move(callback).Run();

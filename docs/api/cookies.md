@@ -93,7 +93,7 @@ the response.
   * `domain` String (optional) - The domain of the cookie; this will be normalized with a preceding dot so that it's also valid for subdomains. Empty by default if omitted.
   * `path` String (optional) - The path of the cookie. Empty by default if omitted.
   * `secure` Boolean (optional) - Whether the cookie should be marked as Secure. Defaults to
-    false.
+    false unless [Same Site=None](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie/SameSite#samesitenone_requires_secure) attribute is used.
   * `httpOnly` Boolean (optional) - Whether the cookie should be marked as HTTP only.
     Defaults to false.
   * `expirationDate` Double (optional) - The expiration date of the cookie as the number of

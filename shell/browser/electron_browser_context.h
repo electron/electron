@@ -8,12 +8,14 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "base/memory/weak_ptr.h"
 #include "chrome/browser/predictors/preconnect_manager.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/resource_context.h"
 #include "electron/buildflags/buildflags.h"
+#include "mojo/public/cpp/bindings/remote.h"
 #include "services/network/public/mojom/network_context.mojom.h"
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
 #include "shell/browser/media/media_device_id_salt.h"
@@ -44,6 +46,9 @@ class CookieChangeNotifier;
 class ResolveProxyHelper;
 class WebViewManager;
 class ProtocolRegistry;
+
+// Preference keys for device apis
+extern const char kSerialGrantedDevicesPref[];
 
 class ElectronBrowserContext : public content::BrowserContext {
  public:
@@ -138,6 +143,19 @@ class ElectronBrowserContext : public content::BrowserContext {
   void SetSSLConfig(network::mojom::SSLConfigPtr config);
   network::mojom::SSLConfigPtr GetSSLConfig();
   void SetSSLConfigClient(mojo::Remote<network::mojom::SSLConfigClient> client);
+
+  // Grants |origin| access to |object| by writing it into the browser context.
+  // To be used in place of ObjectPermissionContextBase::GrantObjectPermission.
+  void GrantObjectPermission(const url::Origin& origin,
+                             base::Value object,
+                             const std::string& pref_key);
+
+  // Returns the list of objects that |origin| has been granted permission to
+  // access. To be used in place of
+  // ObjectPermissionContextBase::GetGrantedObjects.
+  std::vector<std::unique_ptr<base::Value>> GetGrantedObjects(
+      const url::Origin& origin,
+      const std::string& pref_key);
 
   ~ElectronBrowserContext() override;
 

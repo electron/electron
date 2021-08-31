@@ -31,6 +31,11 @@ const char kFullscreen[] = "fullscreen";
 const char kTrafficLightPosition[] = "trafficLightPosition";
 const char kRoundedCorners[] = "roundedCorners";
 
+// The color to use as the theme and symbol colors respectively for Window
+// Controls Overlay if enabled on Windows.
+const char kOverlayButtonColor[] = "color";
+const char kOverlaySymbolColor[] = "symbolColor";
+
 // Whether the window should show in taskbar.
 const char kSkipTaskbar[] = "skipTaskbar";
 
@@ -120,9 +125,6 @@ const char kNodeIntegration[] = "nodeIntegration";
 
 // Enable context isolation of Electron APIs and preload script
 const char kContextIsolation[] = "contextIsolation";
-
-// Instance ID of guest WebContents.
-const char kGuestInstanceID[] = "guestInstanceId";
 
 // Web runtime features.
 const char kExperimentalFeatures[] = "experimentalFeatures";

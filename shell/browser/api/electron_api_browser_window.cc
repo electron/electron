@@ -154,7 +154,7 @@ void BrowserWindow::RenderFrameCreated(
 }
 
 void BrowserWindow::DidFirstVisuallyNonEmptyPaint() {
-  if (window()->IsVisible())
+  if (window()->IsClosed() || window()->IsVisible())
     return;
 
   // When there is a non-empty first paint, resize the RenderWidget to force
@@ -369,8 +369,7 @@ void BrowserWindow::SetBackgroundColor(const std::string& color_name) {
     auto* web_preferences =
         WebContentsPreferences::From(api_web_contents_->web_contents());
     if (web_preferences) {
-      web_preferences->preference()->SetStringKey(options::kBackgroundColor,
-                                                  color_name);
+      web_preferences->SetBackgroundColor(ParseHexColor(color_name));
     }
   }
 }

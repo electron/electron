@@ -48,6 +48,8 @@ class FramelessView : public views::NonClientFrameView {
   NativeWindowViews* window_ = nullptr;
   views::Widget* frame_ = nullptr;
 
+  friend class NativeWindowsViews;
+
  private:
   DISALLOW_COPY_AND_ASSIGN(FramelessView);
 };

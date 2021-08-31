@@ -230,7 +230,7 @@ void ProxyingWebSocket::StartProxying(
     WebRequestAPI* web_request_api,
     WebSocketFactory factory,
     const GURL& url,
-    const GURL& site_for_cookies,
+    const net::SiteForCookies& site_for_cookies,
     const absl::optional<std::string>& user_agent,
     mojo::PendingRemote<network::mojom::WebSocketHandshakeClient>
         handshake_client,
@@ -243,7 +243,7 @@ void ProxyingWebSocket::StartProxying(
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   network::ResourceRequest request;
   request.url = url;
-  request.site_for_cookies = net::SiteForCookies::FromUrl(site_for_cookies);
+  request.site_for_cookies = site_for_cookies;
   if (user_agent) {
     request.headers.SetHeader(net::HttpRequestHeaders::kUserAgent, *user_agent);
   }

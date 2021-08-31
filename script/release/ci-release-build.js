@@ -1,7 +1,7 @@
 if (!process.env.CI) require('dotenv-safe').load();
 
 const assert = require('assert');
-const request = require('request');
+const got = require('got');
 
 const BUILD_APPVEYOR_URL = 'https://ci.appveyor.com/api/builds';
 const CIRCLECI_PIPELINE_URL = 'https://circleci.com/api/v2/project/gh/electron/electron/pipeline';
@@ -35,31 +35,24 @@ const vstsArmJobs = [
 
 let jobRequestedCount = 0;
 
-async function makeRequest (requestOptions, parseResponse) {
-  return new Promise((resolve, reject) => {
-    request(requestOptions, (err, res, body) => {
-      if (!err && res.statusCode >= 200 && res.statusCode < 300) {
-        if (parseResponse) {
-          const build = JSON.parse(body);
-          resolve(build);
-        } else {
-          resolve(body);
-        }
-      } else {
-        console.error('Error occurred while requesting:', requestOptions.url);
-        if (parseResponse) {
-          try {
-            console.log('Error: ', `(status ${res.statusCode})`, err || JSON.parse(res.body));
-          } catch (err) {
-            console.log('Error: ', `(status ${res.statusCode})`, res.body);
-          }
-        } else {
-          console.log('Error: ', `(status ${res.statusCode})`, err || res.body);
-        }
-        reject(err);
-      }
-    });
+async function makeRequest ({ auth, url, headers, body, method }) {
+  const clonedHeaders = {
+    ...(headers || {})
+  };
+  if (auth && auth.bearer) {
+    clonedHeaders.Authorization = `Bearer ${auth.bearer}`;
+  }
+  const response = await got(url, {
+    headers: clonedHeaders,
+    body,
+    method,
+    auth: auth && (auth.username || auth.password) ? `${auth.username}:${auth.password}` : undefined
   });
+  if (response.statusCode < 200 || response.statusCode >= 300) {
+    console.error('Error: ', `(status ${response.statusCode})`, response.body);
+    throw new Error(`Unexpected status code ${response.statusCode} from ${url}`);
+  }
+  return JSON.parse(response.body);
 }
 
 async function circleCIcall (targetBranch, workflowName, options) {

@@ -1,52 +1,23 @@
 const args = require('minimist')(process.argv.slice(2));
-const nugget = require('nugget');
-const request = require('request');
+const fs = require('fs');
+const got = require('got');
+const stream = require('stream');
+const { promisify } = require('util');
 
-async function makeRequest (requestOptions, parseResponse) {
-  return new Promise((resolve, reject) => {
-    request(requestOptions, (err, res, body) => {
-      if (!err && res.statusCode >= 200 && res.statusCode < 300) {
-        if (parseResponse) {
-          const build = JSON.parse(body);
-          resolve(build);
-        } else {
-          resolve(body);
-        }
-      } else {
-        if (args.verbose) {
-          console.error('Error occurred while requesting:', requestOptions.url);
-          if (parseResponse) {
-            try {
-              console.log('Error: ', `(status ${res.statusCode})`, err || JSON.parse(res.body), requestOptions);
-            } catch (err) {
-              console.log('Error: ', `(status ${res.statusCode})`, err || res.body, requestOptions);
-            }
-          } else {
-            console.log('Error: ', `(status ${res.statusCode})`, err || res.body, requestOptions);
-          }
-        }
-        reject(err);
-      }
-    });
-  });
-}
+const pipeline = promisify(stream.pipeline);
 
 async function downloadArtifact (name, buildNum, dest) {
   const circleArtifactUrl = `https://circleci.com/api/v1.1/project/github/electron/electron/${args.buildNum}/artifacts?circle-token=${process.env.CIRCLE_TOKEN}`;
-  const artifacts = await makeRequest({
-    method: 'GET',
-    url: circleArtifactUrl,
+  const responsePromise = got(circleArtifactUrl, {
     headers: {
       'Content-Type': 'application/json',
       Accept: 'application/json'
     }
-  }, true).catch(err => {
-    if (args.verbose) {
-      console.log('Error calling CircleCI:', err);
-    } else {
-      console.error('Error calling CircleCI to get artifact details');
-    }
   });
+  const [response, artifacts] = await Promise.all([responsePromise, responsePromise.json()]);
+  if (response.statusCode !== 200) {
+    console.error('Could not fetch circleci artifact list, got status code:', response.statusCode);
+  }
   const artifactToDownload = artifacts.find(artifact => {
     return (artifact.path === name);
   });
@@ -86,19 +57,10 @@ async function downloadWithRetry (url, directory) {
 }
 
 function downloadFile (url, directory) {
-  return new Promise((resolve, reject) => {
-    const nuggetOpts = {
-      dir: directory,
-      quiet: args.verbose
-    };
-    nugget(url, nuggetOpts, (err) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve();
-      }
-    });
-  });
+  return pipeline(
+    got.stream(url),
+    fs.createWriteStream(directory)
+  );
 }
 
 if (!args.name || !args.buildNum || !args.dest) {

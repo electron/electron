@@ -37,4 +37,4 @@ body:
     label: Additional Information
     description: Add any other context about the problem here.
   validations:
-    required: true
+    required: false

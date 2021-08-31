@@ -267,6 +267,24 @@ describe('<webview> tag', function () {
       expect(args).to.deep.equal([message]);
     });
 
+    it('<webview>.sendToFrame()', async () => {
+      loadWebView(webview, {
+        nodeintegration: 'on',
+        webpreferences: 'contextIsolation=no',
+        preload: `${fixtures}/module/preload-ipc.js`,
+        src: `file://${fixtures}/pages/ipc-message.html`
+      });
+
+      const { frameId } = await waitForEvent(webview, 'ipc-message');
+
+      const message = 'boom!';
+      webview.sendToFrame(frameId, 'ping', message);
+
+      const { channel, args } = await waitForEvent(webview, 'ipc-message');
+      expect(channel).to.equal('pong');
+      expect(args).to.deep.equal([message]);
+    });
+
     it('works without script tag in page', async () => {
       const message = await startLoadingWebViewAndWaitForMessage(webview, {
         preload: `${fixtures}/module/preload.js`,
@@ -529,8 +547,9 @@ describe('<webview> tag', function () {
         webpreferences: 'contextIsolation=no',
         src: `file://${fixtures}/pages/ipc-message.html`
       });
-      const { channel, args } = await waitForEvent(webview, 'ipc-message');
+      const { frameId, channel, args } = await waitForEvent(webview, 'ipc-message');
 
+      expect(frameId).to.be.an('array').that.has.lengthOf(2);
       expect(channel).to.equal('channel');
       expect(args).to.deep.equal(['arg1', 'arg2']);
     });
@@ -561,6 +580,45 @@ describe('<webview> tag', function () {
       } else {
         expect(favicons[0]).to.equal('file:///favicon.png');
       }
+    });
+  });
+
+  describe('did-redirect-navigation event', () => {
+    let server = null;
+    let uri = null;
+
+    before((done) => {
+      server = http.createServer((req, res) => {
+        if (req.url === '/302') {
+          res.setHeader('Location', '/200');
+          res.statusCode = 302;
+          res.end();
+        } else {
+          res.end();
+        }
+      });
+      server.listen(0, '127.0.0.1', () => {
+        uri = `http://127.0.0.1:${(server.address()).port}`;
+        done();
+      });
+    });
+
+    after(() => {
+      server.close();
+    });
+
+    it('is emitted on redirects', async () => {
+      loadWebView(webview, {
+        src: `${uri}/302`
+      });
+
+      const event = await waitForEvent(webview, 'did-redirect-navigation');
+
+      expect(event.url).to.equal(`${uri}/200`);
+      expect(event.isInPlace).to.be.false();
+      expect(event.isMainFrame).to.be.true();
+      expect(event.frameProcessId).to.be.a('number');
+      expect(event.frameRoutingId).to.be.a('number');
     });
   });
 

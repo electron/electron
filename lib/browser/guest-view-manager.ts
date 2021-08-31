@@ -8,13 +8,14 @@ import { serialize } from '@electron/internal/common/type-utils';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
 interface GuestInstance {
-  elementInstanceId?: number;
+  elementInstanceId: number;
   visibilityState?: VisibilityState;
   embedder: Electron.WebContents;
   guest: Electron.WebContents;
 }
 
 const webViewManager = process._linkedBinding('electron_browser_web_view_manager');
+const eventBinding = process._linkedBinding('electron_browser_event');
 
 const supportedWebViewEvents = Object.keys(webViewEvents);
 
@@ -28,16 +29,73 @@ function sanitizeOptionsForGuest (options: Record<string, any>) {
   return ret;
 }
 
+function makeWebPreferences (embedder: Electron.WebContents, params: Record<string, any>) {
+  // parse the 'webpreferences' attribute string, if set
+  // this uses the same parsing rules as window.open uses for its features
+  const parsedWebPreferences =
+    typeof params.webpreferences === 'string'
+      ? parseWebViewWebPreferences(params.webpreferences)
+      : null;
+
+  const webPreferences: Electron.WebPreferences = {
+    nodeIntegration: params.nodeintegration != null ? params.nodeintegration : false,
+    nodeIntegrationInSubFrames: params.nodeintegrationinsubframes != null ? params.nodeintegrationinsubframes : false,
+    plugins: params.plugins,
+    zoomFactor: embedder.zoomFactor,
+    disablePopups: !params.allowpopups,
+    webSecurity: !params.disablewebsecurity,
+    enableBlinkFeatures: params.blinkfeatures,
+    disableBlinkFeatures: params.disableblinkfeatures,
+    partition: params.partition,
+    ...parsedWebPreferences
+  };
+
+  if (params.preload) {
+    webPreferences.preloadURL = params.preload;
+  }
+
+  // Security options that guest will always inherit from embedder
+  const inheritedWebPreferences = new Map([
+    ['contextIsolation', true],
+    ['javascript', false],
+    ['nativeWindowOpen', true],
+    ['nodeIntegration', false],
+    ['sandbox', true],
+    ['nodeIntegrationInSubFrames', false],
+    ['enableWebSQL', false]
+  ]);
+
+  // Inherit certain option values from embedder
+  const lastWebPreferences = embedder.getLastWebPreferences()!;
+  for (const [name, value] of inheritedWebPreferences) {
+    if (lastWebPreferences[name as keyof Electron.WebPreferences] === value) {
+      (webPreferences as any)[name] = value;
+    }
+  }
+
+  return webPreferences;
+}
+
 // Create a new guest instance.
-const createGuest = function (embedder: Electron.WebContents, params: Record<string, any>) {
+const createGuest = function (embedder: Electron.WebContents, embedderFrameId: number, elementInstanceId: number, params: Record<string, any>) {
+  const webPreferences = makeWebPreferences(embedder, params);
+  const event = eventBinding.createWithSender(embedder);
+
+  embedder.emit('will-attach-webview', event, webPreferences, params);
+  if (event.defaultPrevented) {
+    return -1;
+  }
+
   // eslint-disable-next-line no-undef
   const guest = (webContents as typeof ElectronInternal.WebContents).create({
+    ...webPreferences,
     type: 'webview',
-    partition: params.partition,
     embedder
   });
+
   const guestInstanceId = guest.id;
   guestInstances.set(guestInstanceId, {
+    elementInstanceId,
     guest,
     embedder
   });
@@ -51,9 +109,6 @@ const createGuest = function (embedder: Electron.WebContents, params: Record<str
 
   // Init guest web view after attached.
   guest.once('did-attach' as any, function (this: Electron.WebContents, event: Electron.Event) {
-    params = this.attachParams!;
-    delete this.attachParams;
-
     const previouslyAttached = this.viewInstanceId != null;
     this.viewInstanceId = params.instanceId;
 
@@ -81,27 +136,37 @@ const createGuest = function (embedder: Electron.WebContents, params: Record<str
     }
   };
 
-  // Dispatch events to embedder.
-  const fn = function (event: string) {
-    guest.on(event as any, function (_, ...args: any[]) {
-      sendToEmbedder(IPC_MESSAGES.GUEST_VIEW_INTERNAL_DISPATCH_EVENT, event, ...args);
+  const makeProps = (eventKey: string, args: any[]) => {
+    const props: Record<string, any> = {};
+    webViewEvents[eventKey].forEach((prop, index) => {
+      props[prop] = args[index];
     });
+    return props;
   };
+
+  // Dispatch events to embedder.
   for (const event of supportedWebViewEvents) {
-    if (event !== 'new-window') {
-      fn(event);
-    }
+    guest.on(event as any, function (_, ...args: any[]) {
+      sendToEmbedder(IPC_MESSAGES.GUEST_VIEW_INTERNAL_DISPATCH_EVENT, event, makeProps(event, args));
+    });
   }
 
-  guest.on('new-window', function (event, url, frameName, disposition, options, additionalFeatures, referrer) {
-    sendToEmbedder(IPC_MESSAGES.GUEST_VIEW_INTERNAL_DISPATCH_EVENT, 'new-window', url,
-      frameName, disposition, sanitizeOptionsForGuest(options),
-      additionalFeatures, referrer);
+  guest.on('new-window', function (event, url, frameName, disposition, options) {
+    sendToEmbedder(IPC_MESSAGES.GUEST_VIEW_INTERNAL_DISPATCH_EVENT, 'new-window', {
+      url,
+      frameName,
+      disposition,
+      options: sanitizeOptionsForGuest(options)
+    });
   });
 
   // Dispatch guest's IPC messages to embedder.
-  guest.on('ipc-message-host' as any, function (_: Electron.Event, channel: string, args: any[]) {
-    sendToEmbedder(IPC_MESSAGES.GUEST_VIEW_INTERNAL_IPC_MESSAGE, channel, ...args);
+  guest.on('ipc-message-host' as any, function (event: Electron.IpcMainEvent, channel: string, args: any[]) {
+    sendToEmbedder(IPC_MESSAGES.GUEST_VIEW_INTERNAL_DISPATCH_EVENT, 'ipc-message', {
+      frameId: [event.processId, event.frameId],
+      channel,
+      args
+    });
   });
 
   // Notify guest of embedder window visibility when it is ready
@@ -113,111 +178,25 @@ const createGuest = function (embedder: Electron.WebContents, params: Record<str
     }
   });
 
-  return guestInstanceId;
-};
-
-// Attach the guest to an element of embedder.
-const attachGuest = function (event: Electron.IpcMainInvokeEvent,
-  embedderFrameId: number, elementInstanceId: number, guestInstanceId: number, params: Record<string, any>) {
-  const embedder = event.sender;
   // Destroy the old guest when attaching.
   const key = `${embedder.id}-${elementInstanceId}`;
   const oldGuestInstanceId = embedderElementsMap.get(key);
   if (oldGuestInstanceId != null) {
-    // Reattachment to the same guest is just a no-op.
-    if (oldGuestInstanceId === guestInstanceId) {
-      return;
-    }
-
     const oldGuestInstance = guestInstances.get(oldGuestInstanceId);
     if (oldGuestInstance) {
       oldGuestInstance.guest.detachFromOuterFrame();
     }
   }
 
-  const guestInstance = guestInstances.get(guestInstanceId);
-  // If this isn't a valid guest instance then do nothing.
-  if (!guestInstance) {
-    throw new Error(`Invalid guestInstanceId: ${guestInstanceId}`);
-  }
-  const { guest } = guestInstance;
-  if (guest.hostWebContents !== embedder) {
-    throw new Error(`Access denied to guestInstanceId: ${guestInstanceId}`);
-  }
-
-  // If this guest is already attached to an element then remove it
-  if (guestInstance.elementInstanceId) {
-    const oldKey = `${guestInstance.embedder.id}-${guestInstance.elementInstanceId}`;
-    embedderElementsMap.delete(oldKey);
-
-    // Remove guest from embedder if moving across web views
-    if (guest.viewInstanceId !== params.instanceId) {
-      webViewManager.removeGuest(guestInstance.embedder, guestInstanceId);
-      guestInstance.embedder._sendInternal(`${IPC_MESSAGES.GUEST_VIEW_INTERNAL_DESTROY_GUEST}-${guest.viewInstanceId}`);
-    }
-  }
-
-  // parse the 'webpreferences' attribute string, if set
-  // this uses the same parsing rules as window.open uses for its features
-  const parsedWebPreferences =
-    typeof params.webpreferences === 'string'
-      ? parseWebViewWebPreferences(params.webpreferences)
-      : null;
-
-  const webPreferences: Electron.WebPreferences = {
-    guestInstanceId,
-    nodeIntegration: params.nodeintegration != null ? params.nodeintegration : false,
-    nodeIntegrationInSubFrames: params.nodeintegrationinsubframes != null ? params.nodeintegrationinsubframes : false,
-    plugins: params.plugins,
-    zoomFactor: embedder.zoomFactor,
-    disablePopups: !params.allowpopups,
-    webSecurity: !params.disablewebsecurity,
-    enableBlinkFeatures: params.blinkfeatures,
-    disableBlinkFeatures: params.disableblinkfeatures,
-    ...parsedWebPreferences
-  };
-
-  if (params.preload) {
-    webPreferences.preloadURL = params.preload;
-  }
-
-  // Security options that guest will always inherit from embedder
-  const inheritedWebPreferences = new Map([
-    ['contextIsolation', true],
-    ['javascript', false],
-    ['nativeWindowOpen', true],
-    ['nodeIntegration', false],
-    ['sandbox', true],
-    ['nodeIntegrationInSubFrames', false],
-    ['enableWebSQL', false]
-  ]);
-
-  // Inherit certain option values from embedder
-  const lastWebPreferences = embedder.getLastWebPreferences();
-  for (const [name, value] of inheritedWebPreferences) {
-    if (lastWebPreferences[name as keyof Electron.WebPreferences] === value) {
-      (webPreferences as any)[name] = value;
-    }
-  }
-
-  embedder.emit('will-attach-webview', event, webPreferences, params);
-  if (event.defaultPrevented) {
-    if (guest.viewInstanceId == null) guest.viewInstanceId = params.instanceId;
-    guest.destroy();
-    return;
-  }
-
-  guest.attachParams = params;
   embedderElementsMap.set(key, guestInstanceId);
-
   guest.setEmbedder(embedder);
-  guestInstance.embedder = embedder;
-  guestInstance.elementInstanceId = elementInstanceId;
 
   watchEmbedder(embedder);
 
   webViewManager.addGuest(guestInstanceId, embedder, guest, webPreferences);
   guest.attachToIframe(embedder, embedderFrameId);
+
+  return guestInstanceId;
 };
 
 // Remove an guest-embedder relationship.
@@ -302,16 +281,8 @@ const handleMessageSync = function (channel: string, handler: (event: ElectronIn
   ipcMainUtils.handleSync(channel, makeSafeHandler(channel, handler));
 };
 
-handleMessage(IPC_MESSAGES.GUEST_VIEW_MANAGER_CREATE_GUEST, function (event, params) {
-  return createGuest(event.sender, params);
-});
-
-handleMessage(IPC_MESSAGES.GUEST_VIEW_MANAGER_ATTACH_GUEST, function (event, embedderFrameId: number, elementInstanceId: number, guestInstanceId: number, params) {
-  try {
-    attachGuest(event, embedderFrameId, elementInstanceId, guestInstanceId, params);
-  } catch (error) {
-    console.error(`Guest attach failed: ${error}`);
-  }
+handleMessage(IPC_MESSAGES.GUEST_VIEW_MANAGER_CREATE_AND_ATTACH_GUEST, function (event, embedderFrameId: number, elementInstanceId: number, params) {
+  return createGuest(event.sender, embedderFrameId, elementInstanceId, params);
 });
 
 handleMessageSync(IPC_MESSAGES.GUEST_VIEW_MANAGER_DETACH_GUEST, function (event, guestInstanceId: number) {

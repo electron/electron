@@ -1,1 +1,2 @@
 feat_implement_dynamic_setskipcursor_feature.patch
+add_thread_local_to_x_error_trap_cc.patch

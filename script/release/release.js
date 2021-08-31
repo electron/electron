@@ -384,7 +384,7 @@ async function verifyDraftGitHubReleaseAssets (release) {
   console.log('Fetching authenticated GitHub artifact URLs to verify shasums');
 
   const remoteFilesToHash = await Promise.all(release.assets.map(async asset => {
-    const requestOptions = await octokit.repos.getReleaseAsset.endpoint({
+    const requestOptions = octokit.repos.getReleaseAsset.endpoint({
       owner: 'electron',
       repo: targetRepo,
       asset_id: asset.id,

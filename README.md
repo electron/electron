@@ -60,7 +60,6 @@ npm start
 - [electronjs.org/community#boilerplates](https://electronjs.org/community#boilerplates) - Sample starter apps created by the community
 - [electron/simple-samples](https://github.com/electron/simple-samples) - Small applications with ideas for taking them further
 - [electron/electron-api-demos](https://github.com/electron/electron-api-demos) - An Electron app that teaches you how to use Electron
-- [hokein/electron-sample-apps](https://github.com/hokein/electron-sample-apps) - Small demo apps for the various Electron APIs
 
 ## Programmatic usage
 

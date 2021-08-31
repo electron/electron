@@ -33,7 +33,10 @@ const char MenuBar::kViewClassName[] = "ElectronMenuBar";
 
 MenuBar::MenuBar(NativeWindow* window, RootView* root_view)
     : background_color_(kDefaultColor), window_(window), root_view_(root_view) {
-  RefreshColorCache();
+  const ui::NativeTheme* theme = root_view_->GetNativeTheme();
+  if (theme) {
+    RefreshColorCache(theme);
+  }
   UpdateViewColors();
   SetFocusBehavior(FocusBehavior::ALWAYS);
   SetLayoutManager(std::make_unique<views::BoxLayout>(
@@ -147,7 +150,10 @@ bool MenuBar::SetPaneFocusAndFocusDefault() {
 
 void MenuBar::OnThemeChanged() {
   views::AccessiblePaneView::OnThemeChanged();
-  RefreshColorCache();
+  const ui::NativeTheme* theme = root_view_->GetNativeTheme();
+  if (theme) {
+    RefreshColorCache(theme);
+  }
   UpdateViewColors();
 }
 
@@ -196,8 +202,7 @@ void MenuBar::ButtonPressed(int id, const ui::Event& event) {
   menu_delegate->AddObserver(this);
 }
 
-void MenuBar::RefreshColorCache() {
-  const ui::NativeTheme* theme = GetNativeTheme();
+void MenuBar::RefreshColorCache(const ui::NativeTheme* theme) {
   if (theme) {
 #if defined(OS_LINUX)
     background_color_ = gtk::GetBgColor("GtkMenuBar#menubar");
@@ -213,7 +218,7 @@ void MenuBar::RefreshColorCache() {
 }
 
 void MenuBar::RebuildChildren() {
-  RemoveAllChildViews(true);
+  RemoveAllChildViews();
   for (int i = 0, n = GetItemCount(); i < n; ++i) {
     auto* button = new SubmenuButton(
         base::BindRepeating(&MenuBar::ButtonPressed, base::Unretained(this), i),

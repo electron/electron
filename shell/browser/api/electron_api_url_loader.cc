@@ -20,6 +20,7 @@
 #include "services/network/public/cpp/resource_request.h"
 #include "services/network/public/cpp/simple_url_loader.h"
 #include "services/network/public/mojom/chunked_data_pipe_getter.mojom.h"
+#include "services/network/public/mojom/http_raw_headers.mojom.h"
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/electron_browser_context.h"
@@ -277,6 +278,10 @@ SimpleURLLoaderWrapper::SimpleURLLoaderWrapper(
       url_loader_network_observer_remote.InitWithNewPipeAndPassReceiver());
   request->trusted_params->url_loader_network_observer =
       std::move(url_loader_network_observer_remote);
+  // Chromium filters headers using browser rules, while for net module we have
+  // every header passed. Setting the following id will allow us to capture the
+  // raw headers in the URLLoader.
+  request->devtools_request_id = base::UnguessableToken::Create().ToString();
   // SimpleURLLoader wants to control the request body itself. We have other
   // ideas.
   auto request_body = std::move(request->request_body);
@@ -489,10 +494,6 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
     options |= network::mojom::kURLLoadOptionBlockAllCookies;
   }
 
-  // Chromium filters headers using browser rules, while for net module we have
-  // every header passed.
-  request->report_raw_headers = true;
-
   v8::Local<v8::Value> body;
   v8::Local<v8::Value> chunk_pipe_getter;
   if (opts.Get("body", &body)) {
@@ -577,9 +578,8 @@ void SimpleURLLoaderWrapper::OnResponseStarted(
   dict.Set("httpVersion", response_head.headers->GetHttpVersion());
   // Note that |response_head.headers| are filtered by Chromium and should not
   // be used here.
-  DCHECK(response_head.raw_request_response_info);
-  dict.Set("rawHeaders",
-           response_head.raw_request_response_info->response_headers);
+  DCHECK(!response_head.raw_response_headers.empty());
+  dict.Set("rawHeaders", response_head.raw_response_headers);
   Emit("response-started", final_url, dict);
 }
 

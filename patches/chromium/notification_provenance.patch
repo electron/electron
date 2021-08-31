@@ -67,7 +67,7 @@ index 25a35dc7647d8bcb503c9b023bd912a5c0542877..cea756feb06f1b0ee1f7f5bd8b68fd4d
          /*document_url=*/GURL(),
          notification_service_remote_.BindNewPipeAndPassReceiver());
 diff --git a/content/browser/notifications/platform_notification_context_impl.cc b/content/browser/notifications/platform_notification_context_impl.cc
-index 7cd9f5fdd74d8c7f87ef2ff6f52e354bf5da2dd2..27b83402af20c03eaa6dc2c8b6821f453db327a1 100644
+index 0a967ad0f3e649e997e596dde2368a2309779874..0e52ad1497b6b787a7db3253083da45ffddb7736 100644
 --- a/content/browser/notifications/platform_notification_context_impl.cc
 +++ b/content/browser/notifications/platform_notification_context_impl.cc
 @@ -284,13 +284,14 @@ void PlatformNotificationContextImpl::Shutdown() {
@@ -88,10 +88,10 @@ index 7cd9f5fdd74d8c7f87ef2ff6f52e354bf5da2dd2..27b83402af20c03eaa6dc2c8b6821f45
  
  void PlatformNotificationContextImpl::RemoveService(
 diff --git a/content/browser/notifications/platform_notification_context_impl.h b/content/browser/notifications/platform_notification_context_impl.h
-index b195cb84d8bba3c51b04f8c32cf909d15bf34335..37528715db985d12771ba2dca86dcec87290d386 100644
+index 78f9ab684d2eeef9a647d82ccb39c1b208e999d4..d55a4e51a0d263ec07ca115715cccc30f89bd9e0 100644
 --- a/content/browser/notifications/platform_notification_context_impl.h
 +++ b/content/browser/notifications/platform_notification_context_impl.h
-@@ -44,6 +44,7 @@ class BrowserContext;
+@@ -48,6 +48,7 @@ class BrowserContext;
  struct NotificationDatabaseData;
  class PlatformNotificationServiceProxy;
  class ServiceWorkerContextWrapper;
@@ -99,7 +99,7 @@ index b195cb84d8bba3c51b04f8c32cf909d15bf34335..37528715db985d12771ba2dca86dcec8
  
  // Implementation of the Web Notification storage context. The public methods
  // defined in this interface must only be called on the UI thread.
-@@ -68,6 +69,7 @@ class CONTENT_EXPORT PlatformNotificationContextImpl
+@@ -72,6 +73,7 @@ class CONTENT_EXPORT PlatformNotificationContextImpl
    // Creates a BlinkNotificationServiceImpl that is owned by this context.
    // |document_url| is empty when originating from a worker.
    void CreateService(
@@ -108,10 +108,10 @@ index b195cb84d8bba3c51b04f8c32cf909d15bf34335..37528715db985d12771ba2dca86dcec8
        const GURL& document_url,
        mojo::PendingReceiver<blink::mojom::NotificationService> receiver);
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 43c270f82113e75e77b9a0c9f58901eb87ddfea9..f354e09e070591017510ddf2f96785584da937b1 100644
+index 36a63aac2ea769a75d596ad74310cf168de1be48..80826440781926cb6a244c62117f8e2964c701d0 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -2296,7 +2296,7 @@ void RenderProcessHostImpl::CreateNotificationService(
+@@ -2299,7 +2299,7 @@ void RenderProcessHostImpl::CreateNotificationService(
      document_url = rfh->GetLastCommittedURL();
  
    storage_partition_impl_->GetPlatformNotificationContext()->CreateService(

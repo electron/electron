@@ -21,7 +21,6 @@
 #include "shell/browser/microtasks_runner.h"
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/node_includes.h"
-#include "tracing/trace_event.h"
 
 namespace {
 v8::Isolate* g_isolate;

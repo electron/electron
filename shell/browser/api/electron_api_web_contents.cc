@@ -37,7 +37,6 @@
 #include "content/browser/renderer_host/render_widget_host_impl.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_view_base.h"  // nogncheck
 #include "content/public/browser/child_process_security_policy.h"
-#include "content/public/browser/color_chooser.h"
 #include "content/public/browser/context_menu_params.h"
 #include "content/public/browser/download_request_utils.h"
 #include "content/public/browser/favicon_status.h"
@@ -172,10 +171,6 @@
 #if defined(OS_WIN)
 #include "printing/backend/win_helper.h"
 #endif
-#endif
-
-#if BUILDFLAG(ENABLE_COLOR_CHOOSER)
-#include "chrome/browser/ui/color_chooser.h"
 #endif
 
 #if BUILDFLAG(ENABLE_PICTURE_IN_PICTURE)
@@ -424,8 +419,9 @@ bool IsDeviceNameValid(const std::u16string& device_name) {
 #elif defined(OS_WIN)
   printing::ScopedPrinterHandle printer;
   return printer.OpenPrinterWithName(base::as_wcstr(device_name));
-#endif
+#else
   return true;
+#endif
 }
 
 std::u16string GetDefaultPrinterAsync() {
@@ -877,8 +873,14 @@ void WebContents::InitWithExtensionView(v8::Isolate* isolate,
                                         extensions::mojom::ViewType view_type) {
   // Must reassign type prior to calling `Init`.
   type_ = GetTypeFromViewType(view_type);
-  if (GetType() == Type::kRemote)
+  if (type_ == Type::kRemote)
     return;
+  if (type_ == Type::kBackgroundPage)
+    // non-background-page WebContents are retained by other classes. We need
+    // to pin here to prevent background-page WebContents from being GC'd.
+    // The background page api::WebContents will live until the underlying
+    // content::WebContents is destroyed.
+    Pin(isolate);
 
   // Allow toggling DevTools for background pages
   Observe(web_contents);
@@ -907,8 +909,7 @@ void WebContents::InitWithWebContents(content::WebContents* web_contents,
 
   // Determine whether the WebContents is offscreen.
   auto* web_preferences = WebContentsPreferences::From(web_contents);
-  offscreen_ =
-      web_preferences && web_preferences->IsEnabled(options::kOffscreen);
+  offscreen_ = web_preferences && web_preferences->IsOffscreen();
 
   // Create InspectableWebContents.
   inspectable_web_contents_ = std::make_unique<InspectableWebContents>(
@@ -1192,8 +1193,7 @@ bool WebContents::PlatformHandleKeyboardEvent(
 
   // Check if the webContents has preferences and to ignore shortcuts
   auto* web_preferences = WebContentsPreferences::From(source);
-  if (web_preferences &&
-      web_preferences->IsEnabled("ignoreMenuShortcuts", false))
+  if (web_preferences && web_preferences->ShouldIgnoreMenuShortcuts())
     return false;
 
   // Let the NativeWindow handle other parts.
@@ -1240,31 +1240,29 @@ void WebContents::OnEnterFullscreenModeForTab(
     content::RenderFrameHost* requesting_frame,
     const blink::mojom::FullscreenOptions& options,
     bool allowed) {
-  if (!allowed)
+  if (!allowed || !owner_window_)
     return;
-  if (!owner_window_)
-    return;
+
   auto* source = content::WebContents::FromRenderFrameHost(requesting_frame);
   if (IsFullscreenForTabOrPending(source)) {
     DCHECK_EQ(fullscreen_frame_, source->GetFocusedFrame());
     return;
   }
+
   SetHtmlApiFullscreen(true);
-  owner_window_->NotifyWindowEnterHtmlFullScreen();
 
   if (native_fullscreen_) {
     // Explicitly trigger a view resize, as the size is not actually changing if
     // the browser is fullscreened, too.
     source->GetRenderViewHost()->GetWidget()->SynchronizeVisualProperties();
   }
-  Emit("enter-html-full-screen");
 }
 
 void WebContents::ExitFullscreenModeForTab(content::WebContents* source) {
   if (!owner_window_)
     return;
+
   SetHtmlApiFullscreen(false);
-  owner_window_->NotifyWindowLeaveHtmlFullScreen();
 
   if (native_fullscreen_) {
     // Explicitly trigger a view resize, as the size is not actually changing if
@@ -1272,7 +1270,6 @@ void WebContents::ExitFullscreenModeForTab(content::WebContents* source) {
     // `chrome/browser/ui/exclusive_access/fullscreen_controller.cc`.
     source->GetRenderViewHost()->GetWidget()->SynchronizeVisualProperties();
   }
-  Emit("leave-html-full-screen");
 }
 
 void WebContents::RendererUnresponsive(
@@ -1377,12 +1374,7 @@ void WebContents::HandleNewRenderFrame(
   auto* web_preferences = WebContentsPreferences::From(web_contents());
   if (web_preferences) {
     std::string color_name;
-    if (web_preferences->GetPreference(options::kBackgroundColor,
-                                       &color_name)) {
-      rwhv->SetBackgroundColor(ParseHexColor(color_name));
-    } else {
-      rwhv->SetBackgroundColor(SK_ColorTRANSPARENT);
-    }
+    rwhv->SetBackgroundColor(web_preferences->GetBackgroundColor());
   }
 
   if (!background_throttling_)
@@ -1393,12 +1385,54 @@ void WebContents::HandleNewRenderFrame(
   if (rwh_impl)
     rwh_impl->disable_hidden_ = !background_throttling_;
 
-  WebFrameMain::RenderFrameCreated(render_frame_host);
+  auto* web_frame = WebFrameMain::FromRenderFrameHost(render_frame_host);
+  if (web_frame)
+    web_frame->Connect();
 }
 
 void WebContents::RenderFrameCreated(
     content::RenderFrameHost* render_frame_host) {
   HandleNewRenderFrame(render_frame_host);
+}
+
+void WebContents::RenderFrameDeleted(
+    content::RenderFrameHost* render_frame_host) {
+  // A RenderFrameHost can be deleted when:
+  // - A WebContents is removed and its containing frames are disposed.
+  // - An <iframe> is removed from the DOM.
+  // - Cross-origin navigation creates a new RFH in a separate process which
+  //   is swapped by content::RenderFrameHostManager.
+  //
+  // WebFrameMain::FromRenderFrameHost(rfh) will use the RFH's FrameTreeNode ID
+  // to find an existing instance of WebFrameMain. During a cross-origin
+  // navigation, the deleted RFH will be the old host which was swapped out. In
+  // this special case, we need to also ensure that WebFrameMain's internal RFH
+  // matches before marking it as disposed.
+  auto* web_frame = WebFrameMain::FromRenderFrameHost(render_frame_host);
+  if (web_frame && web_frame->render_frame_host() == render_frame_host)
+    web_frame->MarkRenderFrameDisposed();
+}
+
+void WebContents::RenderFrameHostChanged(content::RenderFrameHost* old_host,
+                                         content::RenderFrameHost* new_host) {
+  // During cross-origin navigation, a FrameTreeNode will swap out its RFH.
+  // If an instance of WebFrameMain exists, it will need to have its RFH
+  // swapped as well.
+  //
+  // |old_host| can be a nullptr in so we use |new_host| for looking up the
+  // WebFrameMain instance.
+  auto* web_frame =
+      WebFrameMain::FromFrameTreeNodeId(new_host->GetFrameTreeNodeId());
+  if (web_frame) {
+    CHECK_EQ(web_frame->render_frame_host(), old_host);
+    web_frame->UpdateRenderFrameHost(new_host);
+  }
+}
+
+void WebContents::FrameDeleted(int frame_tree_node_id) {
+  auto* web_frame = WebFrameMain::FromFrameTreeNodeId(frame_tree_node_id);
+  if (web_frame)
+    web_frame->Destroyed();
 }
 
 void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
@@ -1464,13 +1498,6 @@ void WebContents::DidChangeThemeColor() {
   }
 }
 
-void WebContents::OnInterfaceRequestFromFrame(
-    content::RenderFrameHost* render_frame_host,
-    const std::string& interface_name,
-    mojo::ScopedMessagePipeHandle* interface_pipe) {
-  registry_.TryBindInterface(interface_name, interface_pipe, render_frame_host);
-}
-
 void WebContents::DidAcquireFullscreen(content::RenderFrameHost* rfh) {
   set_fullscreen_frame(rfh);
 }
@@ -1513,8 +1540,7 @@ void WebContents::DidStartLoading() {
 
 void WebContents::DidStopLoading() {
   auto* web_preferences = WebContentsPreferences::From(web_contents());
-  if (web_preferences &&
-      web_preferences->IsEnabled(options::kEnablePreferredSizeMode))
+  if (web_preferences && web_preferences->ShouldUsePreferredSizeMode())
     web_contents()->GetRenderViewHost()->EnablePreferredSizeMode();
 
   Emit("did-stop-loading");
@@ -1639,13 +1665,6 @@ void WebContents::UpdateDraggableRegions(
     std::vector<mojom::DraggableRegionPtr> regions) {
   for (ExtendedWebContentsObserver& observer : observers_)
     observer.OnDraggableRegionsUpdated(regions);
-}
-
-void WebContents::RenderFrameDeleted(
-    content::RenderFrameHost* render_frame_host) {
-  // A WebFrameMain can outlive its RenderFrameHost so we need to mark it as
-  // disposed to prevent access to it.
-  WebFrameMain::RenderFrameDeleted(render_frame_host);
 }
 
 void WebContents::DidStartNavigation(
@@ -2343,8 +2362,7 @@ void WebContents::InspectServiceWorker() {
 void WebContents::SetIgnoreMenuShortcuts(bool ignore) {
   auto* web_preferences = WebContentsPreferences::From(web_contents());
   DCHECK(web_preferences);
-  web_preferences->preference()->SetKey("ignoreMenuShortcuts",
-                                        base::Value(ignore));
+  web_preferences->SetIgnoreMenuShortcuts(ignore);
 }
 
 void WebContents::SetAudioMuted(bool muted) {
@@ -2519,7 +2537,7 @@ void WebContents::Print(gin::Arguments* args) {
   // We don't want to allow the user to enable these settings
   // but we need to set them or a CHECK is hit.
   settings.SetIntKey(printing::kSettingPrinterType,
-                     static_cast<int>(printing::PrinterType::kLocal));
+                     static_cast<int>(printing::mojom::PrinterType::kLocal));
   settings.SetBoolKey(printing::kSettingShouldPrintSelectionOnly, false);
   settings.SetBoolKey(printing::kSettingRasterizePdf, false);
 
@@ -3140,8 +3158,7 @@ void WebContents::NotifyUserActivation() {
 
 void WebContents::SetImageAnimationPolicy(const std::string& new_policy) {
   auto* web_preferences = WebContentsPreferences::From(web_contents());
-  web_preferences->preference()->SetKey(options::kImageAnimationPolicy,
-                                        base::Value(new_policy));
+  web_preferences->SetImageAnimationPolicy(new_policy);
   web_contents()->OnWebPreferencesChanged();
 }
 
@@ -3200,17 +3217,6 @@ void WebContents::UpdatePreferredSize(content::WebContents* web_contents,
 
 bool WebContents::CanOverscrollContent() {
   return false;
-}
-
-std::unique_ptr<content::ColorChooser> WebContents::OpenColorChooser(
-    content::WebContents* web_contents,
-    SkColor color,
-    const std::vector<blink::mojom::ColorSuggestionPtr>& suggestions) {
-#if BUILDFLAG(ENABLE_COLOR_CHOOSER)
-  return chrome::ShowColorChooser(web_contents, color);
-#else
-  return nullptr;
-#endif
 }
 
 std::unique_ptr<content::EyeDropper> WebContents::OpenEyeDropper(
@@ -3403,7 +3409,7 @@ void WebContents::DevToolsRemoveFileSystem(
 
   auto* pref_service = GetPrefService(GetDevToolsWebContents());
   DictionaryPrefUpdate update(pref_service, prefs::kDevToolsFileSystemPaths);
-  update.Get()->RemoveWithoutPathExpansion(path, nullptr);
+  update.Get()->RemoveKey(path);
 
   base::Value file_system_path_value(path);
   inspectable_web_contents_->CallClientFunction("DevToolsAPI.fileSystemRemoved",
@@ -3571,9 +3577,9 @@ void WebContents::SetHtmlApiFullscreen(bool enter_fullscreen) {
   // Set fullscreen on window if allowed.
   auto* web_preferences = WebContentsPreferences::From(GetWebContents());
   bool html_fullscreenable =
-      web_preferences ? !web_preferences->IsEnabled(
-                            options::kDisableHtmlFullscreenWindowResize)
-                      : true;
+      web_preferences
+          ? !web_preferences->ShouldDisableHtmlFullscreenWindowResize()
+          : true;
 
   if (html_fullscreenable) {
     owner_window_->SetFullScreen(enter_fullscreen);
@@ -3584,7 +3590,7 @@ void WebContents::SetHtmlApiFullscreen(bool enter_fullscreen) {
 }
 
 void WebContents::UpdateHtmlApiFullscreen(bool fullscreen) {
-  if (fullscreen == html_fullscreen_)
+  if (fullscreen == is_html_fullscreen())
     return;
 
   html_fullscreen_ = fullscreen;
@@ -3595,10 +3601,18 @@ void WebContents::UpdateHtmlApiFullscreen(bool fullscreen) {
       ->GetWidget()
       ->SynchronizeVisualProperties();
 
-  // The embedder WebContents is spearated from the frame tree of webview, so
+  // The embedder WebContents is separated from the frame tree of webview, so
   // we must manually sync their fullscreen states.
   if (embedder_)
     embedder_->SetHtmlApiFullscreen(fullscreen);
+
+  if (fullscreen) {
+    Emit("enter-html-full-screen");
+    owner_window_->NotifyWindowEnterHtmlFullScreen();
+  } else {
+    Emit("leave-html-full-screen");
+    owner_window_->NotifyWindowLeaveHtmlFullScreen();
+  }
 
   // Make sure all child webviews quit html fullscreen.
   if (!fullscreen && !IsGuest()) {
@@ -3828,11 +3842,10 @@ gin::Handle<WebContents> WebContents::CreateFromWebPreferences(
     // render processes.
     auto* existing_preferences =
         WebContentsPreferences::From(web_contents->web_contents());
-    base::DictionaryValue web_preferences_dict;
+    gin_helper::Dictionary web_preferences_dict;
     if (gin::ConvertFromV8(isolate, web_preferences.GetHandle(),
                            &web_preferences_dict)) {
-      existing_preferences->Clear();
-      existing_preferences->Merge(web_preferences_dict);
+      existing_preferences->SetFromDictionary(web_preferences_dict);
     }
   } else {
     // Create one if not.
@@ -3865,6 +3878,16 @@ gin::Handle<WebContents> WebContentsFromID(v8::Isolate* isolate, int32_t id) {
                   : gin::Handle<WebContents>();
 }
 
+gin::Handle<WebContents> WebContentsFromDevToolsTargetID(
+    v8::Isolate* isolate,
+    std::string target_id) {
+  auto agent_host = content::DevToolsAgentHost::GetForId(target_id);
+  WebContents* contents =
+      agent_host ? WebContents::From(agent_host->GetWebContents()) : nullptr;
+  return contents ? gin::CreateHandle(isolate, contents)
+                  : gin::Handle<WebContents>();
+}
+
 std::vector<gin::Handle<WebContents>> GetAllWebContentsAsV8(
     v8::Isolate* isolate) {
   std::vector<gin::Handle<WebContents>> list;
@@ -3883,6 +3906,7 @@ void Initialize(v8::Local<v8::Object> exports,
   gin_helper::Dictionary dict(isolate, exports);
   dict.Set("WebContents", WebContents::GetConstructor(context));
   dict.SetMethod("fromId", &WebContentsFromID);
+  dict.SetMethod("fromDevToolsTargetId", &WebContentsFromDevToolsTargetID);
   dict.SetMethod("getAllWebContents", &GetAllWebContentsAsV8);
 }
 

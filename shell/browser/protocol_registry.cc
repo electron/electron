@@ -4,6 +4,7 @@
 
 #include "shell/browser/protocol_registry.h"
 
+#include "base/stl_util.h"
 #include "content/public/browser/web_contents.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/net/asar/asar_url_loader_factory.h"

@@ -1,4 +1,4 @@
-# In-App Purchase (macOS)
+# In-App Purchases (macOS)
 
 ## Preparing
 
@@ -39,7 +39,7 @@ inAppPurchase.on('transactions-updated', (event, transactions) => {
   }
 
   // Check each transaction.
-  transactions.forEach(function (transaction) {
+  transactions.forEach((transaction) => {
     const payment = transaction.payment
 
     switch (transaction.transactionState) {
