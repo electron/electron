@@ -54,11 +54,17 @@ steps:
     APPVEYOR_TOKEN: $(APPVEYOR_TOKEN)
 
 - powershell: |
-    $localArtifactPath = "$pwd\src\pdb.zip"
-    $serverArtifactPath = "$env:APPVEYOR_URL/buildjobs/$env:APPVEYOR_JOB_ID/artifacts/pdb.zip"
-    Invoke-RestMethod -Method Get -Uri $serverArtifactPath -OutFile $localArtifactPath -Headers @{ "Authorization" = "Bearer $env:APPVEYOR_TOKEN" }
-    cd src
-    & "${env:ProgramFiles(x86)}\7-Zip\7z.exe" x -y pdb.zip
+    try {
+      $localArtifactPath = "$pwd\src\pdb.zip"
+      $serverArtifactPath = "$env:APPVEYOR_URL/buildjobs/$env:APPVEYOR_JOB_ID/artifacts/pdb.zip"
+      Invoke-RestMethod -Method Get -Uri $serverArtifactPath -OutFile $localArtifactPath -Headers @{ "Authorization" = "Bearer $env:APPVEYOR_TOKEN" }
+      cd src
+      & "${env:ProgramFiles(x86)}\7-Zip\7z.exe" x -y pdb.zip
+    } catch {
+      Write-Host "There was an exception encountered while downloading pdb files:" $_.Exception.Message
+    } finally {
+      $global:LASTEXITCODE = 0
+    }
   displayName: 'Download pdb files for detailed stacktraces'
   env:
     APPVEYOR_TOKEN: $(APPVEYOR_TOKEN)
