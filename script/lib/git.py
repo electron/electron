@@ -229,6 +229,14 @@ def remove_patch_filename(patch):
     force_keep_next_line = l.startswith('Subject: ')
 
 
+def to_utf8(patch):
+  """Python 2/3 compatibility: unicode has been renamed to str in Python3"""
+  if sys.version_info[0] >= 3:
+    return str(patch, "utf-8")
+  else:
+    return unicode(patch, "utf-8")
+
+
 def export_patches(repo, out_dir, patch_range=None, dry_run=False):
   if patch_range is None:
     patch_range, num_patches = guess_base_commit(repo)
@@ -250,7 +258,7 @@ def export_patches(repo, out_dir, patch_range=None, dry_run=False):
     for patch in patches:
       filename = get_file_name(patch)
       filepath = posixpath.join(out_dir, filename)
-      existing_patch = unicode(io.open(filepath, 'rb').read(), "utf-8")
+      existing_patch = to_utf8(io.open(filepath, 'rb').read())
       formatted_patch = join_patch(patch)
       if formatted_patch != existing_patch:
         bad_patches.append(filename)
