@@ -26,6 +26,25 @@ for more details.
 
 ## Planned Breaking API Changes (14.0)
 
+### Removed: `remote` module
+
+The `remote` module was deprecated in Electron 12, and will be removed in
+Electron 14. It is replaced by the
+[`@electron/remote`](https://github.com/electron/remote) module.
+
+```js
+// Deprecated in Electron 12:
+const { BrowserWindow } = require('electron').remote
+```
+
+```js
+// Replace with:
+const { BrowserWindow } = require('@electron/remote')
+
+// In the main process:
+require('@electron/remote/main').initialize()
+```
+
 ### Removed: `app.allowRendererProcessReuse`
 
 The `app.allowRendererProcessReuse` property will be removed as part of our plan to
