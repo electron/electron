@@ -1097,7 +1097,7 @@ This can be configured to either restrict usage of non-encrypted DNS
 (`secureDnsMode: "secure"`), or disable DNS-over-HTTPS (`secureDnsMode:
 "off"`). It is also possible to enable or disable the built-in resolver.
 
-To disable insecure DNS, you specify a `secureDnsMode` of `"secure"`. If you do
+To disable insecure DNS, you can specify a `secureDnsMode` of `"secure"`. If you do
 so, you should make sure to provide a list of DNS-over-HTTPS servers to use, in
 case the user's DNS configuration does not include a provider that supports
 DoH.
