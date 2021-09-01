@@ -832,7 +832,7 @@ bool ElectronBrowserClient::ShouldUseProcessPerSite(
 bool ElectronBrowserClient::ArePersistentMediaDeviceIDsAllowed(
     content::BrowserContext* browser_context,
     const GURL& scope,
-    const GURL& site_for_cookies,
+    const net::SiteForCookies& site_for_cookies,
     const absl::optional<url::Origin>& top_frame_origin) {
   return true;
 }

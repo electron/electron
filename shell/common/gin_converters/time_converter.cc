@@ -5,6 +5,7 @@
 #include "shell/common/gin_converters/time_converter.h"
 
 #include "base/time/time.h"
+#include "v8/include/v8-date.h"
 
 namespace gin {
 

@@ -68,12 +68,17 @@ void NetworkContextService::ConfigureNetworkContextParams(
     network_context_params->http_cache_max_size =
         browser_context_->GetMaxCacheSize();
 
+    network_context_params->file_paths =
+        network::mojom::NetworkContextFilePaths::New();
+    network_context_params->file_paths->data_path = path;
+
     // Currently this just contains HttpServerProperties
-    network_context_params->http_server_properties_path =
-        path.Append(chrome::kNetworkPersistentStateFilename);
+    network_context_params->file_paths->http_server_properties_file_name =
+        base::FilePath(chrome::kNetworkPersistentStateFilename);
 
     // Configure persistent cookie path.
-    network_context_params->cookie_path = path.Append(chrome::kCookieFilename);
+    network_context_params->file_paths->cookie_database_name =
+        base::FilePath(chrome::kCookieFilename);
 
     network_context_params->restore_old_session_cookies = false;
     network_context_params->persist_session_cookies = false;
@@ -81,7 +86,8 @@ void NetworkContextService::ConfigureNetworkContextParams(
     network_context_params->enable_encrypted_cookies =
         electron::fuses::IsCookieEncryptionEnabled();
 
-    network_context_params->transport_security_persister_file_path = path;
+    network_context_params->file_paths->transport_security_persister_file_name =
+        base::FilePath(chrome::kTransportSecurityPersisterFilename);
   }
 
   proxy_config_monitor_.AddToNetworkContextParams(network_context_params);

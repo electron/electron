@@ -396,7 +396,8 @@ void OffScreenRenderWidgetHostView::ResetFallbackToFirstNavigationSurface() {
 
 void OffScreenRenderWidgetHostView::InitAsPopup(
     content::RenderWidgetHostView* parent_host_view,
-    const gfx::Rect& pos) {
+    const gfx::Rect& pos,
+    const gfx::Rect& anchor_rect) {
   DCHECK_EQ(parent_host_view_, parent_host_view);
   DCHECK_EQ(widget_type_, content::WidgetType::kPopup);
 
