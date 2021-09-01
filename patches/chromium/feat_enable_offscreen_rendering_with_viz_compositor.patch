@@ -544,7 +544,7 @@ index 409115f95787e3cf037f762a33368b173441012f..45a7a1607b8711420ba4e1a5455a61fb
  
    // Notifies that a swap has occurred and provides information about the pixel
 diff --git a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
-index e33e5de0bfb59afe9b21ee27bb6dad5d898932b6..55aff8c8d05ce55bef8440185ac73f48f589d06c 100644
+index 83e7682b14367571a2d52bb3a6f2f63918d8efe9..3b6f2627196170e3a17992ad36534ac9bc178e4a 100644
 --- a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
 +++ b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
 @@ -32,6 +32,7 @@ struct RootCompositorFrameSinkParams {

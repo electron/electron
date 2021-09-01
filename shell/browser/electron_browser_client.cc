@@ -142,6 +142,7 @@
 #include "extensions/browser/api/mime_handler_private/mime_handler_private.h"
 #include "extensions/browser/api/web_request/web_request_api.h"
 #include "extensions/browser/browser_context_keyed_api_factory.h"
+#include "extensions/browser/event_router.h"
 #include "extensions/browser/extension_host.h"
 #include "extensions/browser/extension_message_filter.h"
 #include "extensions/browser/extension_navigation_throttle.h"
@@ -163,6 +164,7 @@
 #include "shell/browser/extensions/electron_extension_message_filter.h"
 #include "shell/browser/extensions/electron_extension_system.h"
 #include "shell/browser/extensions/electron_extension_web_contents_observer.h"
+#include "third_party/blink/public/common/associated_interfaces/associated_interface_registry.h"
 #endif
 
 #if BUILDFLAG(ENABLE_PLUGINS)
@@ -830,7 +832,7 @@ bool ElectronBrowserClient::ShouldUseProcessPerSite(
 bool ElectronBrowserClient::ArePersistentMediaDeviceIDsAllowed(
     content::BrowserContext* browser_context,
     const GURL& scope,
-    const GURL& site_for_cookies,
+    const net::SiteForCookies& site_for_cookies,
     const absl::optional<url::Origin>& top_frame_origin) {
   return true;
 }
@@ -1550,6 +1552,16 @@ void BindBeforeUnloadControl(
   guest_view->FuseBeforeUnloadControl(std::move(receiver));
 }
 #endif
+
+void ElectronBrowserClient::ExposeInterfacesToRenderer(
+    service_manager::BinderRegistry* registry,
+    blink::AssociatedInterfaceRegistry* associated_registry,
+    content::RenderProcessHost* render_process_host) {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  associated_registry->AddInterface(base::BindRepeating(
+      &extensions::EventRouter::BindForRenderer, render_process_host->GetID()));
+#endif
+}
 
 void ElectronBrowserClient::RegisterBrowserInterfaceBindersForFrame(
     content::RenderFrameHost* render_frame_host,

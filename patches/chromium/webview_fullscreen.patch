@@ -14,10 +14,10 @@ Note that we also need to manually update embedder's
 `api::WebContents::IsFullscreenForTabOrPending` value.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index b5f7104ffde611652c55ebe85e3969394dbf76fc..1001c3c9e486ba17466d23168ad7df6aecc8eeee 100644
+index ea22c655ae4e5c1e023d68fbedb2a684edabe1fe..0a4be87c33dcd6f6952288ce5f19f2263299e68f 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -5771,6 +5771,15 @@ void RenderFrameHostImpl::EnterFullscreen(
+@@ -5830,6 +5830,15 @@ void RenderFrameHostImpl::EnterFullscreen(
      notified_instances.insert(parent_site_instance);
    }
  
@@ -31,5 +31,5 @@ index b5f7104ffde611652c55ebe85e3969394dbf76fc..1001c3c9e486ba17466d23168ad7df6a
 +  }
 +
    delegate_->EnterFullscreenMode(this, *options);
-   delegate_->FullscreenStateChanged(this, true /* is_fullscreen */,
+   delegate_->FullscreenStateChanged(this, /*is_fullscreen=*/true,
                                      std::move(options));

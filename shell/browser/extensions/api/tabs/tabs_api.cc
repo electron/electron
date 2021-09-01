@@ -200,6 +200,8 @@ ExtensionFunction::ResponseAction TabsGetFunction::Run() {
   tab.url = std::make_unique<std::string>(
       contents->web_contents()->GetLastCommittedURL().spec());
 
+  tab.active = contents->IsFocused();
+
   return RespondNow(ArgumentList(tabs::Get::Results::Create(std::move(tab))));
 }
 
