@@ -1079,10 +1079,9 @@ arrify@^1.0.0:
   resolved "https://registry.yarnpkg.com/arrify/-/arrify-1.0.1.tgz#898508da2226f380df904728456849c1501a4b0d"
   integrity sha1-iYUI2iIm84DfkEcoRWhJwVAaSw0=
 
-asar@^3.0.3:
-  version "3.0.3"
-  resolved "https://registry.yarnpkg.com/asar/-/asar-3.0.3.tgz#1fef03c2d6d2de0cbad138788e4f7ae03b129c7b"
-  integrity sha512-k7zd+KoR+n8pl71PvgElcoKHrVNiSXtw7odKbyNpmgKe7EGRF9Pnu3uLOukD37EvavKwVFxOUpqXTIZC5B5Pmw==
+"asar@git://github.com/electron/asar.git#add-file-hash-to-header":
+  version "0.0.0-development"
+  resolved "git://github.com/electron/asar.git#eeaa9107c14d2be5490266c6482c996c13fa95f5"
   dependencies:
     chromium-pickle-js "^0.2.0"
     commander "^5.0.0"

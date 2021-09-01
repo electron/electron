@@ -13,6 +13,7 @@
 #include "base/task/post_task.h"
 #include "base/task/thread_pool.h"
 #include "content/public/browser/file_url_loader.h"
+#include "electron/fuses.h"
 #include "mojo/public/cpp/bindings/receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "mojo/public/cpp/system/data_pipe_producer.h"
@@ -23,6 +24,7 @@
 #include "net/http/http_byte_range.h"
 #include "net/http/http_util.h"
 #include "services/network/public/mojom/url_response_head.mojom.h"
+#include "shell/browser/net/asar/asar_file_validator.h"
 #include "shell/common/asar/archive.h"
 #include "shell/common/asar/asar_util.h"
 
@@ -150,11 +152,17 @@ class AsarURLLoader : public network::mojom::URLLoader {
                     base::File::FLAG_OPEN | base::File::FLAG_READ);
     auto file_data_source =
         std::make_unique<mojo::FileDataSource>(std::move(file));
-    mojo::DataPipeProducer::DataSource* data_source = file_data_source.get();
+    mojo::FileDataSource* file_data_source_raw = file_data_source.get();
+    auto filtered_data_source = std::make_unique<mojo::FilteredDataSource>(
+        std::move(file_data_source),
+        std::make_unique<AsarFileValidator>(info.integrity));
 
-    std::vector<char> initial_read_buffer(net::kMaxBytesToSniff);
+    std::vector<char> initial_read_buffer(
+        std::min(static_cast<uint32_t>(net::kMaxBytesToSniff), info.size));
     auto read_result =
-        data_source->Read(info.offset, base::span<char>(initial_read_buffer));
+        static_cast<mojo::DataPipeProducer::DataSource*>(
+            filtered_data_source.get())
+            ->Read(info.offset, base::span<char>(initial_read_buffer));
     if (read_result.result != MOJO_RESULT_OK) {
       OnClientComplete(ConvertMojoResultToNetError(read_result.result));
       return;
@@ -243,14 +251,14 @@ class AsarURLLoader : public network::mojom::URLLoader {
     // (i.e., no range request) this Seek is effectively a no-op.
     //
     // Note that in Electron we also need to add file offset.
-    file_data_source->SetRange(
+    file_data_source_raw->SetRange(
         first_byte_to_send + info.offset,
         first_byte_to_send + info.offset + total_bytes_to_send);
 
     data_producer_ =
         std::make_unique<mojo::DataPipeProducer>(std::move(producer_handle));
     data_producer_->Write(
-        std::move(file_data_source),
+        std::move(filtered_data_source),
         base::BindOnce(&AsarURLLoader::OnFileWritten, base::Unretained(this)));
   }
 
