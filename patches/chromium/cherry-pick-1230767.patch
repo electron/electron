@@ -1,0 +1,115 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Harald Alvestrand <hta@chromium.org>
+Date: Tue, 10 Aug 2021 10:49:27 +0000
+Subject: Protect candidate better from garbage collection during negotiation.
+
+Includes a test that was reliably observed to produce an UAF on Linux
+when compiled with ASAN before the fix.
+
+Bug: chromium:1230767
+Change-Id: I02dd29332a6d00790dcace41b6584b96413ef6f4
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3057049
+Reviewed-by: Florent Castelli <orphis@chromium.org>
+Commit-Queue: Harald Alvestrand <hta@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#910244}
+
+diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection_handler.cc b/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection_handler.cc
+index 9265e14be8f86d2f1a2d888a789c121ddb514e88..84a8825ec87bcd9f1c0d7c502034bfbc3bfcafd1 100644
+--- a/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection_handler.cc
++++ b/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection_handler.cc
+@@ -1629,7 +1629,8 @@ void RTCPeerConnectionHandler::AddICECandidate(
+        handler_weak_ptr = weak_factory_.GetWeakPtr(),
+        tracker_weak_ptr =
+            WrapCrossThreadWeakPersistent(peer_connection_tracker_.Get()),
+-       candidate, persistent_request = WrapCrossThreadPersistent(request),
++       persistent_candidate = WrapCrossThreadPersistent(candidate),
++       persistent_request = WrapCrossThreadPersistent(request),
+        callback_on_task_runner =
+            std::move(callback_on_task_runner)](webrtc::RTCError result) {
+         // Grab a snapshot of all the session descriptions. AddIceCandidate may
+@@ -1657,7 +1658,7 @@ void RTCPeerConnectionHandler::AddICECandidate(
+                 std::move(current_local_description),
+                 std::move(pending_remote_description),
+                 std::move(current_remote_description),
+-                WrapCrossThreadPersistent(candidate), std::move(result),
++                std::move(persistent_candidate), std::move(result),
+                 std::move(persistent_request)));
+       });
+ }
+diff --git a/third_party/blink/web_tests/fast/peerconnection/poc-123067.html b/third_party/blink/web_tests/fast/peerconnection/poc-123067.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..ff169f1d1e1333b9ccfcae7eaa833ec645779218
+--- /dev/null
++++ b/third_party/blink/web_tests/fast/peerconnection/poc-123067.html
+@@ -0,0 +1,71 @@
++<!DOCTYPE html>
++<html>
++
++  <head>
++    <script src="../../resources/testharness.js"></script>
++    <script src="../../resources/testharnessreport.js"></script>
++    <script src="../../resources/gc.js"></script>
++  </head>
++  <body>
++  <script>
++    'use strict';
++  promise_test(async t => {
++    const var_caller_1 = new RTCPeerConnection();
++    const var_callee_1 = new RTCPeerConnection();
++    var_caller_1.addTransceiver('audio');
++    const var_prom_1 = new Promise(resolve => {
++      var_caller_1.onicecandidate = e => resolve(e.candidate);
++    });
++    await var_caller_1.setLocalDescription(await var_caller_1.createOffer());
++    await var_callee_1.setRemoteDescription(var_caller_1.localDescription);
++    const candidate = await var_prom_1;
++    var arrProm = [];
++    gc();
++    var_callee_1.setLocalDescription().then(() => {
++    })
++    var_callee_1.setLocalDescription().then(() => {
++    })
++    var_callee_1.setLocalDescription().then(() => {
++    })
++    var_callee_1.setLocalDescription().then(() => {
++    })
++    var_callee_1.setLocalDescription().then(() => {
++    })
++    var_callee_1.setLocalDescription().then(() => {
++    })
++    var_callee_1.setLocalDescription().then(() => {
++    })
++    var_callee_1.setLocalDescription().then(() => {
++    })
++    var_callee_1.setLocalDescription().then(() => {
++    })
++    var_callee_1.setLocalDescription().then(() => {
++    })
++    var_callee_1.setLocalDescription().then(() => {
++    })
++    var_callee_1.setLocalDescription().then(() => {
++    })
++    var_callee_1.setLocalDescription().then(() => {
++    })
++    var_callee_1.setLocalDescription().then(() => {
++    })
++    var_callee_1.setLocalDescription().then(() => {
++    })
++    var_callee_1.setLocalDescription().then(() => {
++    })
++    var_callee_1.setLocalDescription().then(() => {
++    })
++    var_callee_1.setLocalDescription().then(() => {
++    })
++    var_callee_1.setLocalDescription().then(() => {
++    })
++    var_callee_1.addIceCandidate(candidate).then(() => {
++    })
++    await Promise.all(arrProm);
++  }, 'Running this script does not cause an UAF');
++  </script>
++</head>
++
++<body></body>
++
++</html>
