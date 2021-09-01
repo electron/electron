@@ -344,10 +344,10 @@ index 2863abb239a77b96e638c83f47ae7219cf0ccec8..5675ad386efa99383067eb404b385cf2
    // can catch bad client behavior while not interfering with normal operation.
    constexpr size_t kMaxPendingWebContentsCount = 10;
 diff --git a/fuchsia/engine/browser/frame_impl.h b/fuchsia/engine/browser/frame_impl.h
-index e2736c5329d9516fdd417df4dff8039f991e800e..11081373e0d70e7ec366c6917c21db61c4e18cca 100644
+index 3e65c4e8faf63ab1d42e3f57457a071e322383dc..5f4d859f8f3ebb58336485a0a39837eec2c46294 100644
 --- a/fuchsia/engine/browser/frame_impl.h
 +++ b/fuchsia/engine/browser/frame_impl.h
-@@ -245,8 +245,7 @@ class FrameImpl : public fuchsia::web::Frame,
+@@ -246,8 +246,7 @@ class FrameImpl : public fuchsia::web::Frame,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
