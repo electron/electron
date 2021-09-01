@@ -1584,8 +1584,17 @@ void NativeWindowViews::OnMouseEvent(ui::MouseEvent* event) {
 }
 
 ui::WindowShowState NativeWindowViews::GetRestoredState() {
-  if (IsMaximized())
+  if (IsMaximized()) {
+#if defined(OS_WIN)
+    // Only restore Maximized state when window is NOT transparent style
+    if (!transparent()) {
+      return ui::SHOW_STATE_MAXIMIZED;
+    }
+#else
     return ui::SHOW_STATE_MAXIMIZED;
+#endif
+  }
+
   if (IsFullscreen())
     return ui::SHOW_STATE_FULLSCREEN;
 
