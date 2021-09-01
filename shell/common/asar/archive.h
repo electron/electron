@@ -6,21 +6,14 @@
 #define SHELL_COMMON_ASAR_ARCHIVE_H_
 
 #include <memory>
+#include <string>
 #include <unordered_map>
 #include <vector>
 
 #include "base/files/file.h"
 #include "base/files/file_path.h"
 #include "base/synchronization/lock.h"
-
-#if defined(OS_MAC) && !defined(MAS_BUILD)
-#include <Security/Security.h>
-
-extern "C" OSStatus SecCodeValidateFileResource(SecStaticCodeRef code,
-                                                CFStringRef relativePath,
-                                                CFDataRef fileData,
-                                                SecCSFlags flags);
-#endif
+#include "third_party/abseil-cpp/absl/types/optional.h"
 
 namespace base {
 class DictionaryValue;
@@ -29,6 +22,18 @@ class DictionaryValue;
 namespace asar {
 
 class ScopedTemporaryFile;
+
+enum HashAlgorithm {
+  SHA256,
+  NONE,
+};
+
+struct IntegrityPayload {
+  HashAlgorithm algorithm;
+  std::string hash;
+  int block_size;
+  std::vector<std::string> blocks;
+};
 
 // This class represents an asar package, and provides methods to read
 // information from it. It is thread-safe after |Init| has been called.
@@ -40,6 +45,7 @@ class Archive {
     bool executable;
     uint32_t size;
     uint64_t offset;
+    absl::optional<IntegrityPayload> integrity;
   };
 
   struct Stats : public FileInfo {
@@ -55,11 +61,8 @@ class Archive {
   // Read and parse the header.
   bool Init();
 
-#if defined(OS_MAC)
-  // On Mac, we can potentially validate the archives signature
-  // if it does not match this method will hard exit the process.
-  void MaybeValidateArchiveSignature();
-#endif
+  absl::optional<IntegrityPayload> HeaderIntegrity() const;
+  absl::optional<base::FilePath> RelativePath() const;
 
   // Get the info of a file.
   bool GetFileInfo(const base::FilePath& path, FileInfo* info) const;
@@ -79,7 +82,10 @@ class Archive {
   bool CopyFileOut(const base::FilePath& path, base::FilePath* out);
 
   // Returns the file's fd.
-  int GetFD() const;
+  // Using this fd will not validate the integrity of any files
+  // you read out of the ASAR manually.  Callers are responsible
+  // for integrity validation after this fd is handed over.
+  int GetUnsafeFD() const;
 
   base::FilePath path() const { return path_; }
 

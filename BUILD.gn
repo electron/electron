@@ -1006,6 +1006,12 @@ if (is_mac) {
     outputs = [ "{{bundle_resources_dir}}/{{source_file_part}}" ]
   }
 
+  asar_hashed_info_plist("electron_app_plist") {
+    keys = [ "DEFAULT_APP_ASAR_HEADER_SHA" ]
+    hash_targets = [ ":default_app_asar_header_hash" ]
+    plist_file = "shell/browser/resources/mac/Info.plist"
+  }
+
   mac_app_bundle("electron_app") {
     output_name = electron_product_name
     sources = filenames.app_sources
@@ -1013,6 +1019,7 @@ if (is_mac) {
     include_dirs = [ "." ]
     deps = [
       ":electron_app_framework_bundle_data",
+      ":electron_app_plist",
       ":electron_app_resources",
       ":electron_fuses",
       "//base",
@@ -1021,7 +1028,7 @@ if (is_mac) {
     if (is_mas_build) {
       deps += [ ":electron_login_helper_app" ]
     }
-    info_plist = "shell/browser/resources/mac/Info.plist"
+    info_plist_target = ":electron_app_plist"
     extra_substitutions = [
       "ELECTRON_BUNDLE_ID=$electron_mac_bundle_id",
       "ELECTRON_VERSION=$electron_version",

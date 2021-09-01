@@ -130,9 +130,27 @@ bool ReadFileToString(const base::FilePath& path, std::string* contents) {
     return false;
 
   contents->resize(info.size);
-  return static_cast<int>(info.size) ==
-         src.Read(info.offset, const_cast<char*>(contents->data()),
-                  contents->size());
+  if (static_cast<int>(info.size) !=
+      src.Read(info.offset, const_cast<char*>(contents->data()),
+               contents->size())) {
+    return false;
+  }
+
+  if (info.integrity.has_value()) {
+    ValidateIntegrityOrDie(contents->data(), contents->size(),
+                           info.integrity.value());
+  }
+
+  return true;
 }
+
+#if !defined(OS_MAC)
+void ValidateIntegrityOrDie(const char* data,
+                            const IntegrityPayload& integrity) {
+  LOG(FATAL) << "ValidateIntegrityOrDie is not implemented on this platform, "
+                "terminating "
+                "out of caution, this method should not have been called";
+}
+#endif
 
 }  // namespace asar
