@@ -48,8 +48,13 @@ class WebContentsPreferences
   base::Value* last_preference() { return &last_web_preferences_; }
 
   bool IsOffscreen() const { return offscreen_; }
-  SkColor GetBackgroundColor() const { return background_color_; }
-  void SetBackgroundColor(SkColor color) { background_color_ = color; }
+  bool IsTransparent() const { return transparent_; }
+  absl::optional<SkColor> GetBackgroundColor() const {
+    return background_color_;
+  }
+  void SetBackgroundColor(absl::optional<SkColor> color) {
+    background_color_ = color;
+  }
   bool ShouldUsePreferredSizeMode() const {
     return enable_preferred_size_mode_;
   }
@@ -119,7 +124,8 @@ class WebContentsPreferences
   bool safe_dialogs_;
   absl::optional<std::string> safe_dialogs_message_;
   bool ignore_menu_shortcuts_;
-  SkColor background_color_;
+  bool transparent_;
+  absl::optional<SkColor> background_color_;
   blink::mojom::ImageAnimationPolicy image_animation_policy_;
   absl::optional<base::FilePath> preload_path_;
   blink::mojom::V8CacheOptions v8_cache_options_;

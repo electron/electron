@@ -22,6 +22,7 @@
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/session_preferences.h"
+#include "shell/common/color_util.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/options_switches.h"
@@ -158,7 +159,8 @@ void WebContentsPreferences::Clear() {
   safe_dialogs_ = false;
   safe_dialogs_message_ = absl::nullopt;
   ignore_menu_shortcuts_ = false;
-  background_color_ = SK_ColorTRANSPARENT;
+  transparent_ = false;
+  background_color_ = absl::nullopt;
   image_animation_policy_ =
       blink::mojom::ImageAnimationPolicy::kImageAnimationPolicyAllowed;
   preload_path_ = absl::nullopt;
@@ -224,7 +226,10 @@ void WebContentsPreferences::SetFromDictionary(
   web_preferences.Get("disablePopups", &disable_popups_);
   web_preferences.Get("disableDialogs", &disable_dialogs_);
   web_preferences.Get("safeDialogs", &safe_dialogs_);
-  web_preferences.Get(options::kBackgroundColor, &background_color_);
+  web_preferences.Get(options::kTransparent, &transparent_);
+  std::string background_color;
+  if (web_preferences.Get(options::kBackgroundColor, &background_color))
+    background_color_ = ParseHexColor(background_color);
   std::string safe_dialogs_message;
   if (web_preferences.Get("safeDialogsMessage", &safe_dialogs_message))
     safe_dialogs_message_ = safe_dialogs_message;

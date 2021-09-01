@@ -44,8 +44,8 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
 
   // Copy the transparent setting to webContents
   v8::Local<v8::Value> transparent;
-  if (options.Get("transparent", &transparent))
-    web_preferences.Set("transparent", transparent);
+  if (options.Get(options::kTransparent, &transparent))
+    web_preferences.Set(options::kTransparent, transparent);
 
   // Copy the show setting to webContents, but only if we don't want to paint
   // when initially hidden
@@ -360,9 +360,7 @@ void BrowserWindow::Blur() {
 
 void BrowserWindow::SetBackgroundColor(const std::string& color_name) {
   BaseWindow::SetBackgroundColor(color_name);
-  auto* view = web_contents()->GetRenderWidgetHostView();
-  if (view)
-    view->SetBackgroundColor(ParseHexColor(color_name));
+  web_contents()->SetPageBaseBackgroundColor(ParseHexColor(color_name));
   // Also update the web preferences object otherwise the view will be reset on
   // the next load URL call
   if (api_web_contents_) {
