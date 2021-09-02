@@ -1399,6 +1399,29 @@ void WebContents::HandleNewRenderFrame(
 void WebContents::RenderFrameCreated(
     content::RenderFrameHost* render_frame_host) {
   HandleNewRenderFrame(render_frame_host);
+
+  // RenderFrameCreated is called for speculative frames which may not be
+  // used in certain cross-origin navigations. Invoking
+  // RenderFrameHost::GetLifecycleState currently crashes when called for
+  // speculative frames so we need to filter it out for now. Check
+  // https://crbug.com/1183639 for details on when this can be removed.
+  auto* rfh_impl =
+      static_cast<content::RenderFrameHostImpl*>(render_frame_host);
+  if (rfh_impl->lifecycle_state() ==
+      content::RenderFrameHostImpl::LifecycleStateImpl::kSpeculative) {
+    return;
+  }
+
+  content::RenderFrameHost::LifecycleState lifecycle_state =
+      render_frame_host->GetLifecycleState();
+  if (lifecycle_state == content::RenderFrameHost::LifecycleState::kActive) {
+    v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+    v8::HandleScope handle_scope(isolate);
+    gin_helper::Dictionary details =
+        gin_helper::Dictionary::CreateEmpty(isolate);
+    details.SetGetter("frame", render_frame_host);
+    Emit("frame-created", details);
+  }
 }
 
 void WebContents::RenderFrameDeleted(
@@ -1425,12 +1448,11 @@ void WebContents::RenderFrameHostChanged(content::RenderFrameHost* old_host,
   // If an instance of WebFrameMain exists, it will need to have its RFH
   // swapped as well.
   //
-  // |old_host| can be a nullptr in so we use |new_host| for looking up the
+  // |old_host| can be a nullptr so we use |new_host| for looking up the
   // WebFrameMain instance.
   auto* web_frame =
       WebFrameMain::FromFrameTreeNodeId(new_host->GetFrameTreeNodeId());
   if (web_frame) {
-    CHECK_EQ(web_frame->render_frame_host(), old_host);
     web_frame->UpdateRenderFrameHost(new_host);
   }
 }
@@ -1517,6 +1539,10 @@ void WebContents::DidAcquireFullscreen(content::RenderFrameHost* rfh) {
 
 void WebContents::DOMContentLoaded(
     content::RenderFrameHost* render_frame_host) {
+  auto* web_frame = WebFrameMain::FromRenderFrameHost(render_frame_host);
+  if (web_frame)
+    web_frame->DOMContentLoaded();
+
   if (!render_frame_host->GetParent())
     Emit("dom-ready");
 }
