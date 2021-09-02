@@ -450,13 +450,15 @@ node::Environment* NodeBindings::CreateEnvironment(
       node::CreateIsolateData(context->GetIsolate(), uv_loop_, platform);
 
   node::Environment* env;
+  uint64_t flags = node::EnvironmentFlags::kDefaultFlags |
+                   node::EnvironmentFlags::kHideConsoleWindows;
+
   if (browser_env_ != BrowserEnvironment::kBrowser) {
     // Only one ESM loader can be registered per isolate -
     // in renderer processes this should be blink. We need to tell Node.js
     // not to register its handler (overriding blinks) in non-browser processes.
-    uint64_t flags = node::EnvironmentFlags::kDefaultFlags |
-                     node::EnvironmentFlags::kNoRegisterESMLoader |
-                     node::EnvironmentFlags::kNoInitializeInspector;
+    flags |= node::EnvironmentFlags::kNoRegisterESMLoader |
+             node::EnvironmentFlags::kNoInitializeInspector;
     v8::TryCatch try_catch(context->GetIsolate());
     env = node::CreateEnvironment(
         isolate_data_, context, args, exec_args,
@@ -470,7 +472,9 @@ node::Environment* NodeBindings::CreateEnvironment(
                  << process_type;
     }
   } else {
-    env = node::CreateEnvironment(isolate_data_, context, args, exec_args);
+    env = node::CreateEnvironment(
+        isolate_data_, context, args, exec_args,
+        static_cast<node::EnvironmentFlags::Flags>(flags));
     DCHECK(env);
   }
 
