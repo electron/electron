@@ -241,7 +241,7 @@ index 20c70c62a8e085a50cef7b90ef859efd014d16c9..8a780e2324935f196db9720649ff974e
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 52f00aea275b1b22b9a279a59409432daacddcfa..8c6a0d9362c01f448496d55a7702e294a66061d8 100644
+index ad72c8dbe7768f9a09412b87a06f1a3f62ddcd3b..1ca7025f2271edb28229877f37337369340cf5cc 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -219,6 +219,7 @@
