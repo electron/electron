@@ -1,0 +1,75 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Georg Neis <neis@chromium.org>
+Date: Mon, 9 Aug 2021 09:57:12 +0200
+Subject: Merged: [compiler] Fix a bug in MachineOperatorReducer's
+ BitfieldCheck
+
+Revision: 574ca6b71c6160d38b5fcf4b8e133bc7f6ba2387
+
+BUG=chromium:1234770
+NOTRY=true
+NOPRESUBMIT=true
+NOTREECHECKS=true
+R=nicohartmann@chromium.org
+
+Change-Id: I15af5a94e89b54c2a540442c3544ed459b832e0a
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3080564
+Reviewed-by: Lutz Vahl <vahl@chromium.org>
+Commit-Queue: Georg Neis <neis@chromium.org>
+Cr-Commit-Position: refs/branch-heads/9.3@{#21}
+Cr-Branched-From: 7744dce208a555494e4a33e24fadc71ea20b3895-refs/heads/9.3.345@{#1}
+Cr-Branched-From: 4b6b4cabf3b6a20cdfda72b369df49f3311c4344-refs/heads/master@{#75728}
+
+diff --git a/src/compiler/machine-operator-reducer.cc b/src/compiler/machine-operator-reducer.cc
+index 918caaf8fd446750d9d4c38350b3af2f25c9a91f..facfadc3ca99f9d2a554f17b577a3833a9974470 100644
+--- a/src/compiler/machine-operator-reducer.cc
++++ b/src/compiler/machine-operator-reducer.cc
+@@ -1706,11 +1706,21 @@ Reduction MachineOperatorReducer::ReduceWordNAnd(Node* node) {
+ namespace {
+ 
+ // Represents an operation of the form `(source & mask) == masked_value`.
++// where each bit set in masked_value also has to be set in mask.
+ struct BitfieldCheck {
+-  Node* source;
+-  uint32_t mask;
+-  uint32_t masked_value;
+-  bool truncate_from_64_bit;
++  Node* const source;
++  uint32_t const mask;
++  uint32_t const masked_value;
++  bool const truncate_from_64_bit;
++
++  BitfieldCheck(Node* source, uint32_t mask, uint32_t masked_value,
++                bool truncate_from_64_bit)
++      : source(source),
++        mask(mask),
++        masked_value(masked_value),
++        truncate_from_64_bit(truncate_from_64_bit) {
++    CHECK_EQ(masked_value & ~mask, 0);
++  }
+ 
+   static base::Optional<BitfieldCheck> Detect(Node* node) {
+     // There are two patterns to check for here:
+@@ -1725,14 +1735,16 @@ struct BitfieldCheck {
+       if (eq.left().IsWord32And()) {
+         Uint32BinopMatcher mand(eq.left().node());
+         if (mand.right().HasResolvedValue() && eq.right().HasResolvedValue()) {
+-          BitfieldCheck result{mand.left().node(), mand.right().ResolvedValue(),
+-                               eq.right().ResolvedValue(), false};
++          uint32_t mask = mand.right().ResolvedValue();
++          uint32_t masked_value = eq.right().ResolvedValue();
++          if ((masked_value & ~mask) != 0) return {};
+           if (mand.left().IsTruncateInt64ToInt32()) {
+-            result.truncate_from_64_bit = true;
+-            result.source =
+-                NodeProperties::GetValueInput(mand.left().node(), 0);
++            return BitfieldCheck(
++                NodeProperties::GetValueInput(mand.left().node(), 0), mask,
++                masked_value, true);
++          } else {
++            return BitfieldCheck(mand.left().node(), mask, masked_value, false);
+           }
+-          return result;
+         }
+       }
+     } else {
