@@ -446,7 +446,7 @@ index 3595439809da1f2ead581b50f94d076d88234511..b7d1eced43a5222db91b0e61d62bcbbe
  
  - (id)accessibilityFocusedUIElement {
 diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-index 91e7c04b310eedb4fa4e6aa4c186a7f8a80b1e3c..37508b4566c8ffd6a6f2996138f875e3cc2245cf 100644
+index 92c9ef9fbb375134a2e3db9c42155195bed160af..aad2e9bfe0a073e3a5387bc291c8c309a926e089 100644
 --- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
 +++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
 @@ -501,7 +501,7 @@ void PostAnnouncementNotification(NSString* announcement) {
