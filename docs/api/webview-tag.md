@@ -862,6 +862,19 @@ Returns:
 Emitted when any frame (including main) starts navigating. `isInPlace` will be
 `true` for in-page navigations.
 
+### Event: 'did-redirect-navigation'
+
+Returns:
+
+* `url` String
+* `isInPlace` Boolean
+* `isMainFrame` Boolean
+* `frameProcessId` Integer
+* `frameRoutingId` Integer
+
+Emitted after a server side redirect occurs during navigation. For example a 302
+redirect.
+
 ### Event: 'did-navigate'
 
 Returns:

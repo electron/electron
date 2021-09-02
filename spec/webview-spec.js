@@ -583,6 +583,45 @@ describe('<webview> tag', function () {
     });
   });
 
+  describe('did-redirect-navigation event', () => {
+    let server = null;
+    let uri = null;
+
+    before((done) => {
+      server = http.createServer((req, res) => {
+        if (req.url === '/302') {
+          res.setHeader('Location', '/200');
+          res.statusCode = 302;
+          res.end();
+        } else {
+          res.end();
+        }
+      });
+      server.listen(0, '127.0.0.1', () => {
+        uri = `http://127.0.0.1:${(server.address()).port}`;
+        done();
+      });
+    });
+
+    after(() => {
+      server.close();
+    });
+
+    it('is emitted on redirects', async () => {
+      loadWebView(webview, {
+        src: `${uri}/302`
+      });
+
+      const event = await waitForEvent(webview, 'did-redirect-navigation');
+
+      expect(event.url).to.equal(`${uri}/200`);
+      expect(event.isInPlace).to.be.false();
+      expect(event.isMainFrame).to.be.true();
+      expect(event.frameProcessId).to.be.a('number');
+      expect(event.frameRoutingId).to.be.a('number');
+    });
+  });
+
   describe('will-navigate event', () => {
     it('emits when a url that leads to oustide of the page is clicked', async () => {
       loadWebView(webview, {

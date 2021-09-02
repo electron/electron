@@ -15,6 +15,7 @@ export const webViewEvents: Record<string, readonly string[]> = {
   'new-window': ['url', 'frameName', 'disposition', 'options'],
   'will-navigate': ['url'],
   'did-start-navigation': ['url', 'isInPlace', 'isMainFrame', 'frameProcessId', 'frameRoutingId'],
+  'did-redirect-navigation': ['url', 'isInPlace', 'isMainFrame', 'frameProcessId', 'frameRoutingId'],
   'did-navigate': ['url', 'httpResponseCode', 'httpStatusText'],
   'did-frame-navigate': ['url', 'httpResponseCode', 'httpStatusText', 'isMainFrame', 'frameProcessId', 'frameRoutingId'],
   'did-navigate-in-page': ['url', 'isMainFrame', 'frameProcessId', 'frameRoutingId'],
