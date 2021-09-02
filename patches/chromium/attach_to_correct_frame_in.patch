@@ -1,0 +1,353 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kevin McNee <mcnee@chromium.org>
+Date: Fri, 4 Jun 2021 22:52:55 +0000
+Subject: Attach to correct frame in
+ WebContentsImplBrowserTest.AttachNestedInnerWebContents
+
+This test attempts to attach an inner contents at the outer contents'
+main frame which is incorrect. This appears to have been done for
+testing convenience rather than being part of the repro case based on
+the comments on the CL that introduced it [1]. Indeed, the inner
+contents don't render with the test as is.
+
+We adjust the test, enforce the assumption of a subframe in
+|AttachInnerWebContents|, and remove a bail-out from a
+WebContentsObserver that was confused by this.
+
+Furthermore, in the corrected version of the test, we experience a bad
+cast on Mac and Android, but not Aura, as replacing the platform
+WebContentsView does not necessarily destroy the platform
+RenderWidgetHostView which is later assumed to be a
+RenderWidgetHostViewChildFrame. We now perform that destruction if
+needed.
+
+[1] https://chromium-review.googlesource.com/c/chromium/src/+/1498458/6#message-c6af19c82b27d707044a5c1cbbecf48f491bc1bd
+
+Bug: 1133361, 1208438, 1216595
+Change-Id: I4de002ab25726f1c05044c764156b69a15bdde41
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2895924
+Commit-Queue: Kevin McNee <mcnee@chromium.org>
+Reviewed-by: Chris Hamilton <chrisha@chromium.org>
+Reviewed-by: Alex Moshchuk <alexmos@chromium.org>
+Reviewed-by: W. James MacLean <wjmaclean@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#889495}
+
+diff --git a/components/performance_manager/performance_manager_tab_helper.cc b/components/performance_manager/performance_manager_tab_helper.cc
+index 7b2672713e705060ea3d2100492f29d6aa4ad35b..7463423c065e0b74b65b41c2bcf80e9b2025d574 100644
+--- a/components/performance_manager/performance_manager_tab_helper.cc
++++ b/components/performance_manager/performance_manager_tab_helper.cc
+@@ -394,16 +394,7 @@ void PerformanceManagerTabHelper::InnerWebContentsAttached(
+     // severed.
+   }
+   DCHECK_NE(PageNode::OpenedType::kInvalid, opened_type);
+-  if (!frame) {
+-    DCHECK(!render_frame_host->IsRenderFrameCreated());
+-    DCHECK(!inner_web_contents->IsPortal());
+-    // TODO(crbug.com/1133361):
+-    // WebContentsImplBrowserTest.AttachNestedInnerWebContents calls
+-    // WebContents::AttachInnerWebContents without creating RenderFrame.
+-    // Removing this conditional once either the test is fixed or this function
+-    // is adjusted to handle the case without the render frame.
+-    return;
+-  }
++  DCHECK(frame);
+ 
+   PerformanceManagerImpl::CallOnGraphImpl(
+       FROM_HERE, base::BindOnce(&PageNodeImpl::SetOpenerFrameNodeAndOpenedType,
+diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
+index 4af3384ebbd000926a1f7606511fd6b94dc8aabe..29571b8ab59518fe93e35c1cc7f113e65ed39420 100644
+--- a/content/browser/renderer_host/render_frame_host_impl.cc
++++ b/content/browser/renderer_host/render_frame_host_impl.cc
+@@ -5714,11 +5714,10 @@ void RenderFrameHostImpl::AdoptPortal(const blink::PortalToken& portal_token,
+ 
+   // |frame_sink_id| should be set to the associated frame. See
+   // https://crbug.com/966119 for details.
+-  viz::FrameSinkId frame_sink_id =
+-      static_cast<RenderWidgetHostViewBase*>(proxy_host->frame_tree_node()
+-                                                 ->render_manager()
+-                                                 ->GetRenderWidgetHostView())
+-          ->GetFrameSinkId();
++  viz::FrameSinkId frame_sink_id = proxy_host->frame_tree_node()
++                                       ->render_manager()
++                                       ->GetRenderWidgetHostView()
++                                       ->GetFrameSinkId();
+   proxy_host->GetAssociatedRemoteFrame()->SetFrameSinkId(frame_sink_id);
+ 
+   std::move(callback).Run(
+diff --git a/content/browser/renderer_host/render_frame_host_manager.cc b/content/browser/renderer_host/render_frame_host_manager.cc
+index 74f9fe3a0a0de20d48bc8b2d397109381ea66481..ce524db677e36ca60f3f9be5493d974975eb82c5 100644
+--- a/content/browser/renderer_host/render_frame_host_manager.cc
++++ b/content/browser/renderer_host/render_frame_host_manager.cc
+@@ -43,6 +43,8 @@
+ #include "content/browser/renderer_host/render_view_host_factory.h"
+ #include "content/browser/renderer_host/render_view_host_impl.h"
+ #include "content/browser/renderer_host/render_widget_host_impl.h"
++#include "content/browser/renderer_host/render_widget_host_view_base.h"
++#include "content/browser/renderer_host/render_widget_host_view_child_frame.h"
+ #include "content/browser/site_instance_impl.h"
+ #include "content/browser/webui/web_ui_controller_factory_registry.h"
+ #include "content/common/content_navigation_policy.h"
+@@ -282,9 +284,11 @@ void RenderFrameHostManager::InitChild(
+       /*renderer_initiated_creation=*/false));
+ }
+ 
+-RenderWidgetHostView* RenderFrameHostManager::GetRenderWidgetHostView() const {
++RenderWidgetHostViewBase* RenderFrameHostManager::GetRenderWidgetHostView()
++    const {
+   if (render_frame_host_)
+-    return render_frame_host_->GetView();
++    return static_cast<RenderWidgetHostViewBase*>(
++        render_frame_host_->GetView());
+   return nullptr;
+ }
+ 
+@@ -2793,8 +2797,9 @@ void RenderFrameHostManager::SwapOuterDelegateFrame(
+ }
+ 
+ void RenderFrameHostManager::SetRWHViewForInnerContents(
+-    RenderWidgetHostView* child_rwhv) {
++    RenderWidgetHostViewChildFrame* child_rwhv) {
+   DCHECK(IsMainFrameForInnerDelegate());
++  DCHECK(GetProxyToOuterDelegate());
+   GetProxyToOuterDelegate()->SetChildRWHView(child_rwhv, nullptr);
+ }
+ 
+@@ -3400,8 +3405,11 @@ void RenderFrameHostManager::CommitPending(
+   // Note: We do this after unloading the old RFH because that may create
+   // the proxy we're looking for.
+   RenderFrameProxyHost* proxy_to_parent = GetProxyToParent();
+-  if (proxy_to_parent)
+-    proxy_to_parent->SetChildRWHView(new_view, old_size ? &*old_size : nullptr);
++  if (proxy_to_parent) {
++    proxy_to_parent->SetChildRWHView(
++        static_cast<RenderWidgetHostViewChildFrame*>(new_view),
++        old_size ? &*old_size : nullptr);
++  }
+ 
+   if (render_frame_host_->is_local_root()) {
+     // RenderFrames are created with a hidden RenderWidgetHost. When navigation
+diff --git a/content/browser/renderer_host/render_frame_host_manager.h b/content/browser/renderer_host/render_frame_host_manager.h
+index f4ff686226002e926190829a192993cb92ed0a3e..6ca00c16ac6031bb0357cf8a43e6b77e63455807 100644
+--- a/content/browser/renderer_host/render_frame_host_manager.h
++++ b/content/browser/renderer_host/render_frame_host_manager.h
+@@ -44,7 +44,8 @@ class RenderFrameHostManagerTest;
+ class RenderFrameProxyHost;
+ class RenderViewHost;
+ class RenderViewHostImpl;
+-class RenderWidgetHostView;
++class RenderWidgetHostViewBase;
++class RenderWidgetHostViewChildFrame;
+ class TestWebContents;
+ 
+ using PageBroadcastMethodCallback =
+@@ -196,7 +197,7 @@ class CONTENT_EXPORT RenderFrameHostManager
+ 
+   // Returns the view associated with the current RenderViewHost, or null if
+   // there is no current one.
+-  RenderWidgetHostView* GetRenderWidgetHostView() const;
++  RenderWidgetHostViewBase* GetRenderWidgetHostView() const;
+ 
+   // Returns whether this manager is a main frame and belongs to a FrameTreeNode
+   // that belongs to an inner WebContents.
+@@ -453,7 +454,7 @@ class CONTENT_EXPORT RenderFrameHostManager
+ 
+   // Sets the child RenderWidgetHostView for this frame, which must be part of
+   // an inner WebContents.
+-  void SetRWHViewForInnerContents(RenderWidgetHostView* child_rwhv);
++  void SetRWHViewForInnerContents(RenderWidgetHostViewChildFrame* child_rwhv);
+ 
+   // Returns the number of RenderFrameProxyHosts for this frame.
+   size_t GetProxyCount();
+diff --git a/content/browser/renderer_host/render_frame_proxy_host.cc b/content/browser/renderer_host/render_frame_proxy_host.cc
+index 54fa3b7a788de7f80a096badeac11a2b6f9b9771..343ea5e1821f55cdea16ae93a055302016d2198f 100644
+--- a/content/browser/renderer_host/render_frame_proxy_host.cc
++++ b/content/browser/renderer_host/render_frame_proxy_host.cc
+@@ -214,10 +214,9 @@ RenderFrameProxyHost::~RenderFrameProxyHost() {
+ }
+ 
+ void RenderFrameProxyHost::SetChildRWHView(
+-    RenderWidgetHostView* view,
++    RenderWidgetHostViewChildFrame* view,
+     const gfx::Size* initial_frame_size) {
+-  cross_process_frame_connector_->SetView(
+-      static_cast<RenderWidgetHostViewChildFrame*>(view));
++  cross_process_frame_connector_->SetView(view);
+   if (initial_frame_size)
+     cross_process_frame_connector_->SetLocalFrameSize(*initial_frame_size);
+ }
+@@ -226,13 +225,6 @@ RenderViewHostImpl* RenderFrameProxyHost::GetRenderViewHost() {
+   return render_view_host_.get();
+ }
+ 
+-RenderWidgetHostView* RenderFrameProxyHost::GetRenderWidgetHostView() {
+-  return frame_tree_node_->parent()
+-      ->frame_tree_node()
+-      ->render_manager()
+-      ->GetRenderWidgetHostView();
+-}
+-
+ bool RenderFrameProxyHost::Send(IPC::Message* msg) {
+   return GetAgentSchedulingGroup().Send(msg);
+ }
+diff --git a/content/browser/renderer_host/render_frame_proxy_host.h b/content/browser/renderer_host/render_frame_proxy_host.h
+index cd6c90f3b7f77de0df9de1228628cde8c4333b98..e414a1665d43cc773850b23b6fcd568f9baa494a 100644
+--- a/content/browser/renderer_host/render_frame_proxy_host.h
++++ b/content/browser/renderer_host/render_frame_proxy_host.h
+@@ -36,7 +36,7 @@ class CrossProcessFrameConnector;
+ class FrameTreeNode;
+ class RenderProcessHost;
+ class RenderViewHostImpl;
+-class RenderWidgetHostView;
++class RenderWidgetHostViewChildFrame;
+ 
+ // When a page's frames are rendered by multiple processes, each renderer has a
+ // full copy of the frame tree. It has full RenderFrames for the frames it is
+@@ -121,11 +121,10 @@ class CONTENT_EXPORT RenderFrameProxyHost
+   // the child frame will wait until the CrossProcessFrameConnector
+   // receives its size from the parent via FrameHostMsg_UpdateResizeParams
+   // before it begins parsing the content.
+-  void SetChildRWHView(RenderWidgetHostView* view,
++  void SetChildRWHView(RenderWidgetHostViewChildFrame* view,
+                        const gfx::Size* initial_frame_size);
+ 
+   RenderViewHostImpl* GetRenderViewHost();
+-  RenderWidgetHostView* GetRenderWidgetHostView();
+ 
+   // IPC::Sender
+   bool Send(IPC::Message* msg) override;
+diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
+index 14eadcb063b2b9d4734db3d6160f320ab26ffe04..ca51a8a45570fafc0dfe2b400cbb7172a9be632d 100644
+--- a/content/browser/web_contents/web_contents_impl.cc
++++ b/content/browser/web_contents/web_contents_impl.cc
+@@ -2164,6 +2164,7 @@ void WebContentsImpl::AttachInnerWebContents(
+   auto* render_frame_host_impl =
+       static_cast<RenderFrameHostImpl*>(render_frame_host);
+   DCHECK_EQ(&frame_tree_, render_frame_host_impl->frame_tree());
++  DCHECK(render_frame_host_impl->GetParent());
+ 
+   // Mark |render_frame_host_impl| as outer delegate frame.
+   render_frame_host_impl->SetIsOuterDelegateFrame(true);
+@@ -2184,6 +2185,16 @@ void WebContentsImpl::AttachInnerWebContents(
+       GetContentClient()->browser()->GetWebContentsViewDelegate(
+           inner_web_contents_impl),
+       &inner_web_contents_impl->render_view_host_delegate_view_);
++  // On platforms where destroying the WebContents' view does not also destroy
++  // the platform RenderWidgetHostView, we need to destroy it if it exists.
++  // TODO(mcnee): Should all platforms' WebContentsView destroy the platform
++  // RWHV?
++  if (RenderWidgetHostViewBase* prev_rwhv =
++          inner_render_manager->GetRenderWidgetHostView()) {
++    if (!prev_rwhv->IsRenderWidgetHostViewChildFrame()) {
++      prev_rwhv->Destroy();
++    }
++  }
+ 
+   // When the WebContents being initialized has an opener, the  browser side
+   // Render{View,Frame}Host must be initialized and the RenderWidgetHostView
+@@ -2330,8 +2341,11 @@ void WebContentsImpl::ReattachToOuterWebContentsFrame() {
+   auto* render_manager = GetRenderManager();
+   auto* parent_frame =
+       node_.OuterContentsFrameTreeNode()->current_frame_host()->GetParent();
++  auto* child_rwhv = render_manager->GetRenderWidgetHostView();
++  DCHECK(child_rwhv);
++  DCHECK(child_rwhv->IsRenderWidgetHostViewChildFrame());
+   render_manager->SetRWHViewForInnerContents(
+-      render_manager->GetRenderWidgetHostView());
++      static_cast<RenderWidgetHostViewChildFrame*>(child_rwhv));
+ 
+   RecursivelyRegisterFrameSinkIds();
+ 
+diff --git a/content/browser/web_contents/web_contents_impl_browsertest.cc b/content/browser/web_contents/web_contents_impl_browsertest.cc
+index cd32d333d2810fde1fc25c80b2bc443b04568c8d..2e75cbf168dbfa48d9f094ed84398197fd0487aa 100644
+--- a/content/browser/web_contents/web_contents_impl_browsertest.cc
++++ b/content/browser/web_contents/web_contents_impl_browsertest.cc
+@@ -3550,44 +3550,70 @@ IN_PROC_BROWSER_TEST_F(WebContentsImplBrowserTest, SetVisibilityBeforeLoad) {
+ IN_PROC_BROWSER_TEST_F(WebContentsImplBrowserTest,
+                        AttachNestedInnerWebContents) {
+   ASSERT_TRUE(embedded_test_server()->Start());
+-  GURL main_url(embedded_test_server()->GetURL(
++  const GURL url_a(embedded_test_server()->GetURL(
+       "a.com", "/cross_site_iframe_factory.html?a(a)"));
+-  EXPECT_TRUE(NavigateToURL(shell(), main_url));
+-
++  const GURL url_b(embedded_test_server()->GetURL(
++      "b.com", "/cross_site_iframe_factory.html?b(b)"));
++  ASSERT_TRUE(NavigateToURL(shell(), url_a));
+   auto* root_web_contents =
+       static_cast<WebContentsImpl*>(shell()->web_contents());
+-  FrameTreeNode* root = root_web_contents->GetFrameTree()->root();
+-  ASSERT_EQ(1u, root->child_count());
+-  FrameTreeNode* child_to_replace = root->child_at(0);
+-  auto* child_to_replace_rfh = child_to_replace->current_frame_host();
+ 
++  // Create a child WebContents but don't attach it to the root contents yet.
+   WebContents::CreateParams inner_params(
+       root_web_contents->GetBrowserContext());
+-
+   std::unique_ptr<WebContents> child_contents_ptr =
+       WebContents::Create(inner_params);
+-  auto* child_rfh =
+-      static_cast<RenderFrameHostImpl*>(child_contents_ptr->GetMainFrame());
++  WebContents* child_contents = child_contents_ptr.get();
++  // Navigate the child to a page with a subframe, at which we will attach the
++  // grandchild.
++  ASSERT_TRUE(NavigateToURL(child_contents, url_b));
+ 
++  // Create and attach grandchild to child.
+   std::unique_ptr<WebContents> grandchild_contents_ptr =
+       WebContents::Create(inner_params);
+-
+-  // Attach grandchild to child.
+-  child_contents_ptr->AttachInnerWebContents(
+-      std::move(grandchild_contents_ptr), child_rfh, false /* is_full_page */);
++  WebContents* grandchild_contents = grandchild_contents_ptr.get();
++  RenderFrameHost* child_contents_subframe =
++      ChildFrameAt(child_contents->GetMainFrame(), 0);
++  ASSERT_TRUE(child_contents_subframe);
++  child_contents->AttachInnerWebContents(std::move(grandchild_contents_ptr),
++                                         child_contents_subframe,
++                                         false /* is_full_page */);
+ 
+   // At this point the child hasn't been attached to the root.
+-  EXPECT_EQ(1U, root_web_contents->GetInputEventRouter()
+-                    ->RegisteredViewCountForTesting());
++  {
++    auto* root_view = static_cast<RenderWidgetHostViewBase*>(
++        root_web_contents->GetRenderWidgetHostView());
++    ASSERT_TRUE(root_view);
++    auto* root_event_router = root_web_contents->GetInputEventRouter();
++    EXPECT_EQ(1U, root_event_router->RegisteredViewCountForTesting());
++    EXPECT_TRUE(root_event_router->IsViewInMap(root_view));
++  }
+ 
+   // Attach child+grandchild subtree to root.
++  RenderFrameHost* root_contents_subframe =
++      ChildFrameAt(root_web_contents->GetMainFrame(), 0);
++  ASSERT_TRUE(root_contents_subframe);
+   root_web_contents->AttachInnerWebContents(std::move(child_contents_ptr),
+-                                            child_to_replace_rfh,
++                                            root_contents_subframe,
+                                             false /* is_full_page */);
+ 
+   // Verify views registered for both child and grandchild.
+-  EXPECT_EQ(3U, root_web_contents->GetInputEventRouter()
+-                    ->RegisteredViewCountForTesting());
++  {
++    auto* root_view = static_cast<RenderWidgetHostViewBase*>(
++        root_web_contents->GetRenderWidgetHostView());
++    auto* child_view = static_cast<RenderWidgetHostViewBase*>(
++        child_contents->GetRenderWidgetHostView());
++    auto* grandchild_view = static_cast<RenderWidgetHostViewBase*>(
++        grandchild_contents->GetRenderWidgetHostView());
++    ASSERT_TRUE(root_view);
++    ASSERT_TRUE(child_view);
++    ASSERT_TRUE(grandchild_view);
++    auto* root_event_router = root_web_contents->GetInputEventRouter();
++    EXPECT_EQ(3U, root_event_router->RegisteredViewCountForTesting());
++    EXPECT_TRUE(root_event_router->IsViewInMap(root_view));
++    EXPECT_TRUE(root_event_router->IsViewInMap(child_view));
++    EXPECT_TRUE(root_event_router->IsViewInMap(grandchild_view));
++  }
+ }
+ 
+ IN_PROC_BROWSER_TEST_F(WebContentsImplBrowserTest,
