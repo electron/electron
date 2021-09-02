@@ -100,8 +100,12 @@ const createGuest = function (embedder: Electron.WebContents, params: Record<str
   });
 
   // Dispatch guest's IPC messages to embedder.
-  guest.on('ipc-message-host' as any, function (_: Electron.Event, channel: string, args: any[]) {
-    sendToEmbedder(IPC_MESSAGES.GUEST_VIEW_INTERNAL_IPC_MESSAGE, channel, ...args);
+  guest.on('ipc-message-host' as any, function (event: Electron.IpcMainEvent, channel: string, args: any[]) {
+    sendToEmbedder(IPC_MESSAGES.GUEST_VIEW_INTERNAL_IPC_MESSAGE, {
+      frameId: [event.processId, event.frameId],
+      channel,
+      args
+    });
   });
 
   // Notify guest of embedder window visibility when it is ready

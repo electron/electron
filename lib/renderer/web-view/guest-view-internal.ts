@@ -37,8 +37,8 @@ export function registerEvents (viewInstanceId: number, delegate: GuestViewDeleg
     dispatchEvent(delegate, eventName, eventName, ...args);
   });
 
-  ipcRendererInternal.on(`${IPC_MESSAGES.GUEST_VIEW_INTERNAL_IPC_MESSAGE}-${viewInstanceId}`, function (event, channel, ...args) {
-    delegate.dispatchEvent('ipc-message', { channel, args });
+  ipcRendererInternal.on(`${IPC_MESSAGES.GUEST_VIEW_INTERNAL_IPC_MESSAGE}-${viewInstanceId}`, function (event, data) {
+    delegate.dispatchEvent('ipc-message', data);
   });
 }
 
