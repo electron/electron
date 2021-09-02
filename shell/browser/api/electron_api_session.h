@@ -172,7 +172,7 @@ class Session : public gin::Wrappable<Session>,
 #endif
 
  private:
-  void SetMediaRequestHandler(gin::Arguments* args);
+  void SetMediaRequestHandler(v8::Isolate* isolate, v8::Local<v8::Value> val);
 
   // Cached gin_helper::Wrappable objects.
   v8::Global<v8::Value> cookies_;

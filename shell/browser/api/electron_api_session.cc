@@ -646,9 +646,12 @@ void Session::SetPermissionCheckHandler(v8::Local<v8::Value> val,
   permission_manager->SetPermissionCheckHandler(handler);
 }
 
-void Session::SetMediaRequestHandler(gin::Arguments* args) {
+void Session::SetMediaRequestHandler(v8::Isolate* isolate,
+                                     v8::Local<v8::Value> val) {
+  if (val->IsNull())
+    browser_context_->SetMediaRequestHandler(MediaRequestHandler());
   MediaRequestHandler handler;
-  if (!args->GetNext(&handler))
+  if (!gin::ConvertToV8(isolate, val, &handler))
     return;
   browser_context_->SetMediaRequestHandler(handler);
 }
