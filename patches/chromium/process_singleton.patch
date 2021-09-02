@@ -11,8 +11,8 @@ This patch adds a few changes to the Chromium code:
 1. It adds a parameter `program_name` to the Windows constructor, making
    the generated mutex name on the Windows-side program-dependent,
    rather than shared between all Electron applications.
-2. It adds an `IsAppSandboxed` check to the posix side so that
-   sandboxed posix applications generate shorter temp paths.
+2. It adds an `IsAppSandboxed` check for macOS so that
+   sandboxed applications generate shorter temp paths.
 3. It adds a `ChangeWindowMessageFilterEx` call to the Windows
    implementation, along with a parameter `is_app_sandboxed` in the
    constructor, to handle the case when the primary app is run with
@@ -72,7 +72,7 @@ index 0291db0f919aa7868d345f4f0712c42c6ad7ee17..9418bbacb11094628c4468d0a7b735a0
  
  #if defined(OS_MAC)
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index dc9c1b76a1c7c8b3fa83fc83788eef36d2cfa4a5..c54733efc399911280e34d2dfc0fb440b6a76333 100644
+index dc9c1b76a1c7c8b3fa83fc83788eef36d2cfa4a5..31b387ca3cae53c94d8a7baefaeb17f3dbffe5e0 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
 @@ -80,6 +80,7 @@
@@ -135,7 +135,18 @@ index dc9c1b76a1c7c8b3fa83fc83788eef36d2cfa4a5..c54733efc399911280e34d2dfc0fb440
  bool ConnectSocket(ScopedSocket* socket,
                     const base::FilePath& socket_path,
                     const base::FilePath& cookie_path) {
-@@ -895,6 +917,20 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessOrCreate() {
+@@ -727,6 +749,10 @@ ProcessSingleton::ProcessSingleton(
+ 
+ ProcessSingleton::~ProcessSingleton() {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++  // Manually free resources with IO explicitly allowed.
++  base::ThreadRestrictions::ScopedAllowIO allow_io;
++  watcher_ = nullptr;
++  ignore_result(socket_dir_.Delete());
+ }
+ 
+ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
+@@ -895,6 +921,20 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessOrCreate() {
        base::TimeDelta::FromSeconds(kTimeoutInSeconds));
  }
  
@@ -156,7 +167,7 @@ index dc9c1b76a1c7c8b3fa83fc83788eef36d2cfa4a5..c54733efc399911280e34d2dfc0fb440
  ProcessSingleton::NotifyResult
  ProcessSingleton::NotifyOtherProcessWithTimeoutOrCreate(
      const base::CommandLine& command_line,
-@@ -997,12 +1033,26 @@ bool ProcessSingleton::Create() {
+@@ -997,12 +1037,26 @@ bool ProcessSingleton::Create() {
  #endif
    }
  
@@ -189,7 +200,7 @@ index dc9c1b76a1c7c8b3fa83fc83788eef36d2cfa4a5..c54733efc399911280e34d2dfc0fb440
    }
  
    // Check that the directory was created with the correct permissions.
-@@ -1044,10 +1094,13 @@ bool ProcessSingleton::Create() {
+@@ -1044,10 +1098,13 @@ bool ProcessSingleton::Create() {
    if (listen(sock, 5) < 0)
      NOTREACHED() << "listen failed: " << base::safe_strerror(errno);
  
