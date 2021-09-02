@@ -1375,14 +1375,6 @@ void WebContents::HandleNewRenderFrame(
   if (web_preferences) {
     web_contents()->SetPageBaseBackgroundColor(
         web_preferences->GetBackgroundColor());
-
-    // When a page base background color is set, transparency needs to be
-    // explicitly set by calling
-    // RenderWidgetHostOwnerDelegate::SetBackgroundOpaque(false).
-    // RenderWidgetHostViewBase::SetBackgroundColor() will do this for us.
-    if (web_preferences->IsTransparent()) {
-      rwhv->SetBackgroundColor(SK_ColorTRANSPARENT);
-    }
   }
 
   if (!background_throttling_)

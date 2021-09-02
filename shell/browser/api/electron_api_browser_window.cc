@@ -39,13 +39,15 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
 
   // Copy the backgroundColor to webContents.
   v8::Local<v8::Value> value;
-  if (options.Get(options::kBackgroundColor, &value))
-    web_preferences.Set(options::kBackgroundColor, value);
-
-  // Copy the transparent setting to webContents
-  v8::Local<v8::Value> transparent;
-  if (options.Get(options::kTransparent, &transparent))
-    web_preferences.Set(options::kTransparent, transparent);
+  bool transparent = false;
+  if (options.Get(options::kBackgroundColor, &value)) {
+    web_preferences.SetHidden(options::kBackgroundColor, value);
+  } else if (options.Get(options::kTransparent, &transparent) && transparent) {
+    // If the BrowserWindow is transparent, also propagate transparency to the
+    // WebContents unless a separate backgroundColor has been set.
+    web_preferences.SetHidden(options::kBackgroundColor,
+                              ToRGBAHex(SK_ColorTRANSPARENT));
+  }
 
   // Copy the show setting to webContents, but only if we don't want to paint
   // when initially hidden

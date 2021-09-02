@@ -48,7 +48,6 @@ class WebContentsPreferences
   base::Value* last_preference() { return &last_web_preferences_; }
 
   bool IsOffscreen() const { return offscreen_; }
-  bool IsTransparent() const { return transparent_; }
   absl::optional<SkColor> GetBackgroundColor() const {
     return background_color_;
   }
@@ -124,7 +123,6 @@ class WebContentsPreferences
   bool safe_dialogs_;
   absl::optional<std::string> safe_dialogs_message_;
   bool ignore_menu_shortcuts_;
-  bool transparent_;
   absl::optional<SkColor> background_color_;
   blink::mojom::ImageAnimationPolicy image_animation_policy_;
   absl::optional<base::FilePath> preload_path_;
