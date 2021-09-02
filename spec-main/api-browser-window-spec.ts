@@ -4680,7 +4680,7 @@ describe('BrowserWindow module', () => {
       expect(w.isMaximized()).to.be.true();
 
       // Fails when the transparent HWND is in an invalid maximized state.
-      expect(w.getBounds()).to.deep.equal(display.bounds);
+      expect(w.getBounds()).to.deep.equal(display.workArea);
 
       const newBounds = { width: 256, height: 256, x: 0, y: 0 };
       w.setBounds(newBounds);
