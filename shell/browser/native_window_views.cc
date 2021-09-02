@@ -222,6 +222,7 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   params.delegate = this;
   params.type = views::Widget::InitParams::TYPE_WINDOW;
   params.remove_standard_frame = !has_frame();
+  params.can_resize = resizable_;
 
   if (transparent())
     params.opacity = views::Widget::InitParams::WindowOpacity::kTranslucent;
