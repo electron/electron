@@ -1,8 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Clark DuVall <cduvall@chromium.org>
 Date: Fri, 20 Aug 2021 00:52:03 +0000
-Subject: [Merge M92] Speculative fix for crash in
- URLLoader::OnBeforeSendHeadersComplete
+Subject: Speculative fix for crash in URLLoader::OnBeforeSendHeadersComplete
 
 I wasn't able to reproduce the crash, but this should prevent crashing
 when accessing an invalid pointer for the HttpRequestHeaders. Instead of
