@@ -43,8 +43,6 @@ class DevToolsWindowDelegate : public views::ClientView,
 
   // views::WidgetDelegate:
   views::View* GetInitiallyFocusedView() override { return view_; }
-  bool CanMaximize() const override { return true; }
-  bool CanMinimize() const override { return true; }
   std::u16string GetWindowTitle() const override { return shell_->GetTitle(); }
   ui::ImageModel GetWindowAppIcon() override { return GetWindowIcon(); }
   ui::ImageModel GetWindowIcon() override { return icon_; }
@@ -193,6 +191,7 @@ void InspectableWebContentsViewViews::SetIsDocked(bool docked, bool activate) {
 
     devtools_window_->Init(std::move(params));
     devtools_window_->UpdateWindowIcon();
+    devtools_window_->widget_delegate()->SetHasWindowSizeControls(true);
   }
 
   ShowDevTools(activate);
