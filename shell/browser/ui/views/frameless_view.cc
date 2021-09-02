@@ -35,14 +35,13 @@ void FramelessView::Init(NativeWindowViews* window, views::Widget* frame) {
 int FramelessView::ResizingBorderHitTest(const gfx::Point& point) {
   // Check the frame first, as we allow a small area overlapping the contents
   // to be used for resize handles.
-  bool can_ever_resize = frame_->widget_delegate()
-                             ? frame_->widget_delegate()->CanResize()
-                             : false;
+  bool resizable = frame_->widget_delegate()
+                       ? frame_->widget_delegate()->CanResize()
+                       : false;
 
-  // https://github.com/electron/electron/issues/611
-  // If window isn't resizable, we should always return HTCLIENT, otherwise the
-  // hover state of DOM will not be cleared probably.
-  if (!can_ever_resize)
+  // Return HTCLIENT if the window isn't resizable to ensure the DOM hover state
+  // is reset.
+  if (!resizable)
     return HTCLIENT;
 
   // Don't allow overlapping resize handles when the window is maximized or
@@ -52,7 +51,7 @@ int FramelessView::ResizingBorderHitTest(const gfx::Point& point) {
                           : kResizeInsideBoundsSize;
   return GetHTComponentForFrame(point, gfx::Insets(resize_border),
                                 kResizeAreaCornerSize, kResizeAreaCornerSize,
-                                can_ever_resize);
+                                resizable);
 }
 
 gfx::Rect FramelessView::GetBoundsForClientView() const {
@@ -76,7 +75,7 @@ int FramelessView::NonClientHitTest(const gfx::Point& cursor) {
   if (frame_->IsFullscreen())
     return HTCLIENT;
 
-  // Check attached BrowserViews for potential draggable areas.
+  // Check for potential draggable areas in attached BrowserViews.
   for (auto* view : window_->browser_views()) {
     auto* native_view = static_cast<NativeBrowserViewViews*>(view);
     auto* view_draggable_region = native_view->draggable_region();
@@ -85,16 +84,15 @@ int FramelessView::NonClientHitTest(const gfx::Point& cursor) {
       return HTCAPTION;
   }
 
+  // Check for possible draggable region in the client area.
+  SkRegion* draggable_region = window_->draggable_region();
+  if (draggable_region && draggable_region->contains(cursor.x(), cursor.y()))
+    return HTCAPTION;
+
   // Support resizing frameless window by dragging the border.
   int frame_component = ResizingBorderHitTest(cursor);
   if (frame_component != HTNOWHERE)
     return frame_component;
-
-  // Check for possible draggable region in the client area for the frameless
-  // window.
-  SkRegion* draggable_region = window_->draggable_region();
-  if (draggable_region && draggable_region->contains(cursor.x(), cursor.y()))
-    return HTCAPTION;
 
   return HTCLIENT;
 }
