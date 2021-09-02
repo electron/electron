@@ -128,3 +128,4 @@ cherry-pick-1227933.patch
 cherry-pick-1231134.patch
 cherry-pick-1233564.patch
 cherry-pick-1234009.patch
+merge_m92_speculative_fix_for_crash_in.patch
