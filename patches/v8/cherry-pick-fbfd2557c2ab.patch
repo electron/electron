@@ -1,7 +1,7 @@
-From fbfd2557c2ab4ff9908b166fb14ce11c69118e57 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Mythri A <mythria@chromium.org>
 Date: Fri, 21 May 2021 11:12:41 +0100
-Subject: [PATCH] Return early when initializing feedback cell for AsmWasm functions
+Subject: Return early when initializing feedback cell for AsmWasm functions
 
 AsmWasmFunctions don't allocate / use feedback vectors.
 
@@ -11,13 +11,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2909854
 Commit-Queue: Mythri Alle <mythria@chromium.org>
 Reviewed-by: Ross McIlroy <rmcilroy@chromium.org>
 Cr-Commit-Position: refs/heads/master@{#74708}
----
 
 diff --git a/src/objects/js-function.cc b/src/objects/js-function.cc
-index ddf7624..14c7056 100644
+index 35010be838ea1a5a3bebbb8a86d3358092da5199..b17550a29668d3dab082a515c7287b219becd01d 100644
 --- a/src/objects/js-function.cc
 +++ b/src/objects/js-function.cc
-@@ -352,6 +352,14 @@
+@@ -361,6 +361,14 @@ void JSFunction::InitializeFeedbackCell(
      Handle<JSFunction> function, IsCompiledScope* is_compiled_scope,
      bool reset_budget_for_feedback_allocation) {
    Isolate* const isolate = function->GetIsolate();
