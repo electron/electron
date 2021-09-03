@@ -25,6 +25,7 @@
 #include "ipc/ipc_buildflags.h"
 #include "sandbox/policy/switches.h"
 #include "services/tracing/public/cpp/stack_sampling/tracing_sampler_profiler.h"
+#include "shell/app/command_line_args.h"
 #include "shell/app/electron_content_client.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/browser/electron_gpu_client.h"
@@ -80,11 +81,6 @@ constexpr base::StringPiece kElectronEnableStackDumping(
 bool IsBrowserProcess(base::CommandLine* cmd) {
   std::string process_type = cmd->GetSwitchValueASCII(::switches::kProcessType);
   return process_type.empty();
-}
-
-bool IsSandboxEnabled(base::CommandLine* command_line) {
-  return command_line->HasSwitch(switches::kEnableSandbox) ||
-         !command_line->HasSwitch(sandbox::policy::switches::kNoSandbox);
 }
 
 // Returns true if this subprocess type needs the ResourceBundle initialized

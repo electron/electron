@@ -10,6 +10,7 @@
 namespace electron {
 
 bool CheckCommandLineArguments(int argc, base::CommandLine::CharType** argv);
+bool IsSandboxEnabled(base::CommandLine* command_line);
 
 }  // namespace electron
 

@@ -47,6 +47,7 @@ static_library("chrome") {
     "//chrome/browser/predictors/proxy_lookup_client_impl.h",
     "//chrome/browser/predictors/resolve_host_client_impl.cc",
     "//chrome/browser/predictors/resolve_host_client_impl.h",
+    "//chrome/browser/process_singleton.h",
     "//chrome/browser/ui/views/autofill/autofill_popup_view_utils.cc",
     "//chrome/browser/ui/views/autofill/autofill_popup_view_utils.h",
     "//chrome/browser/ui/views/eye_dropper/eye_dropper.cc",
@@ -57,6 +58,10 @@ static_library("chrome") {
     "//extensions/browser/app_window/size_constraints.h",
   ]
 
+  if (is_posix) {
+    sources += [ "//chrome/browser/process_singleton_posix.cc" ]
+  }
+
   if (is_mac) {
     sources += [
       "//chrome/browser/extensions/global_shortcut_listener_mac.h",
@@ -65,6 +70,7 @@ static_library("chrome") {
       "//chrome/browser/media/webrtc/system_media_capture_permissions_mac.h",
       "//chrome/browser/media/webrtc/system_media_capture_permissions_mac.mm",
       "//chrome/browser/media/webrtc/window_icon_util_mac.mm",
+      "//chrome/browser/process_singleton_mac.mm",
       "//chrome/browser/ui/views/eye_dropper/eye_dropper_view_mac.h",
       "//chrome/browser/ui/views/eye_dropper/eye_dropper_view_mac.mm",
     ]
@@ -76,6 +82,7 @@ static_library("chrome") {
       "//chrome/browser/extensions/global_shortcut_listener_win.h",
       "//chrome/browser/icon_loader_win.cc",
       "//chrome/browser/media/webrtc/window_icon_util_win.cc",
+      "//chrome/browser/process_singleton_win.cc",
       "//chrome/browser/ui/frame/window_frame_util.h",
       "//chrome/browser/ui/view_ids.h",
       "//chrome/browser/win/chrome_process_finder.cc",
