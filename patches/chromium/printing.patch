@@ -617,7 +617,7 @@ index 90236920457c931c86426049c6cbc30b592b597f..353178863eba37b9112e784ffa4b3519
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Set options for print preset from source PDF document.
 diff --git a/printing/printing_context.cc b/printing/printing_context.cc
-index 7f617267b4eefd6d7cf9db6a56aaffad5035bab4..df79c62570f02f581ecb69ab3c03eeebfc43c50e 100644
+index 744c3acfb9637aa64785dabd041ee416d56c3e43..9dadda9dfecdcf7826a3766064530a10126df66b 100644
 --- a/printing/printing_context.cc
 +++ b/printing/printing_context.cc
 @@ -115,7 +115,6 @@ PrintingContext::Result PrintingContext::UsePdfSettings() {
@@ -629,10 +629,10 @@ index 7f617267b4eefd6d7cf9db6a56aaffad5035bab4..df79c62570f02f581ecb69ab3c03eeeb
      std::unique_ptr<PrintSettings> settings =
          PrintSettingsFromJobSettings(job_settings);
 diff --git a/printing/printing_context.h b/printing/printing_context.h
-index 3f83f961ca953d1a6fe544a49e3a3d7addaf6c50..7a639e7d2975fa8d033ea32f371e3b6539ea0c7e 100644
+index 753bc1d564d607b4be671c3c618e1b60f8e7bb3f..c60136097403e9b5930917433064b57ba5771a3b 100644
 --- a/printing/printing_context.h
 +++ b/printing/printing_context.h
-@@ -145,6 +145,9 @@ class COMPONENT_EXPORT(PRINTING) PrintingContext {
+@@ -149,6 +149,9 @@ class COMPONENT_EXPORT(PRINTING) PrintingContext {
  
    int job_id() const { return job_id_; }
  
@@ -642,7 +642,7 @@ index 3f83f961ca953d1a6fe544a49e3a3d7addaf6c50..7a639e7d2975fa8d033ea32f371e3b65
   protected:
    explicit PrintingContext(Delegate* delegate);
  
-@@ -152,9 +155,6 @@ class COMPONENT_EXPORT(PRINTING) PrintingContext {
+@@ -156,9 +159,6 @@ class COMPONENT_EXPORT(PRINTING) PrintingContext {
    // implement this method to create an object of their implementation.
    static std::unique_ptr<PrintingContext> CreateImpl(Delegate* delegate);
  
