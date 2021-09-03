@@ -2,8 +2,11 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_NET_ASAR_ASAR_FILE_VALIDATOR_H
-#define SHELL_BROWSER_NET_ASAR_ASAR_FILE_VALIDATOR_H
+#ifndef SHELL_BROWSER_NET_ASAR_ASAR_FILE_VALIDATOR_H_
+#define SHELL_BROWSER_NET_ASAR_ASAR_FILE_VALIDATOR_H_
+
+#include <algorithm>
+#include <memory>
 
 #include "crypto/secure_hash.h"
 #include "crypto/sha2.h"
@@ -57,4 +60,4 @@ class AsarFileValidator : public mojo::FilteredDataSource::Filter {
 
 }  // namespace asar
 
-#endif  // SHELL_BROWSER_NET_ASAR_ASAR_FILE_VALIDATOR_H
+#endif  // SHELL_BROWSER_NET_ASAR_ASAR_FILE_VALIDATOR_H_

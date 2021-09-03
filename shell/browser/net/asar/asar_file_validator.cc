@@ -4,6 +4,11 @@
 
 #include "shell/browser/net/asar/asar_file_validator.h"
 
+#include <algorithm>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include "base/logging.h"
 #include "base/notreached.h"
 #include "base/strings/string_number_conversions.h"
@@ -28,7 +33,7 @@ void AsarFileValidator::OnRead(base::span<char> buffer,
   DCHECK(!done_reading_);
 
   uint64_t buffer_size = result->bytes_read;
-  DCHECK(buffer_size >= 0);
+  DCHECK_GE(buffer_size, static_cast<uint64_t>(0));
 
   // Compute how many bytes we should hash, and add them to the current hash.
   int block_size = integrity_.value().block_size;

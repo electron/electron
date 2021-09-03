@@ -4,6 +4,7 @@
 
 #include "shell/browser/net/asar/asar_url_loader.h"
 
+#include <algorithm>
 #include <memory>
 #include <string>
 #include <utility>
