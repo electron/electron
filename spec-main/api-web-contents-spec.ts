@@ -2056,6 +2056,28 @@ describe('webContents module', () => {
     });
   });
 
+  describe('context-menu event', () => {
+    afterEach(closeAllWindows);
+    it('emits when right-clicked in page', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
+
+      const promise = emittedOnce(w.webContents, 'context-menu');
+
+      // Simulate right-click to create context-menu event.
+      const opts = { x: 0, y: 0, button: 'right' as any };
+      w.webContents.sendInputEvent({ ...opts, type: 'mouseDown' });
+      w.webContents.sendInputEvent({ ...opts, type: 'mouseUp' });
+
+      const [, params] = await promise;
+
+      expect(params.pageURL).to.equal(w.webContents.getURL());
+      expect(params.frame).to.be.an('object');
+      expect(params.x).to.be.a('number');
+      expect(params.y).to.be.a('number');
+    });
+  });
+
   it('emits a cancelable event before creating a child webcontents', async () => {
     const w = new BrowserWindow({
       show: false,
