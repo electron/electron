@@ -3929,6 +3929,16 @@ gin::Handle<WebContents> WebContentsFromID(v8::Isolate* isolate, int32_t id) {
                   : gin::Handle<WebContents>();
 }
 
+gin::Handle<WebContents> WebContentsFromDevToolsTargetID(
+    v8::Isolate* isolate,
+    std::string target_id) {
+  auto agent_host = content::DevToolsAgentHost::GetForId(target_id);
+  WebContents* contents =
+      agent_host ? WebContents::From(agent_host->GetWebContents()) : nullptr;
+  return contents ? gin::CreateHandle(isolate, contents)
+                  : gin::Handle<WebContents>();
+}
+
 std::vector<gin::Handle<WebContents>> GetAllWebContentsAsV8(
     v8::Isolate* isolate) {
   std::vector<gin::Handle<WebContents>> list;
@@ -3947,6 +3957,7 @@ void Initialize(v8::Local<v8::Object> exports,
   gin_helper::Dictionary dict(isolate, exports);
   dict.Set("WebContents", WebContents::GetConstructor(context));
   dict.SetMethod("fromId", &WebContentsFromID);
+  dict.SetMethod("fromDevToolsTargetId", &WebContentsFromDevToolsTargetID);
   dict.SetMethod("getAllWebContents", &GetAllWebContentsAsV8);
 }
 
