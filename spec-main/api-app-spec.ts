@@ -240,11 +240,12 @@ describe('app module', () => {
       expect(code1).to.equal(0);
       const data2 = (await data2Promise)[0].toString('ascii');
       const secondInstanceArgsReceived: string[] = JSON.parse(data2.toString('ascii'));
-      const expected = process.platform === 'darwin'
-        ? [process.execPath, '--some-switch', '--allow-file-access-from-files', '--enable-avfoundation', appPath, 'some-arg']
-        : [process.execPath, '--some-switch', '--allow-file-access-from-files', appPath, 'some-arg'];
-      expect(secondInstanceArgsReceived).to.eql(expected,
-        `expected ${JSON.stringify(expected)} but got ${data2.toString('ascii')}`);
+
+      // Ensure secondInstanceArgs is a subset of secondInstanceArgsReceived
+      for (const arg of secondInstanceArgs) {
+        expect(secondInstanceArgsReceived).to.include(arg,
+          `argument ${arg} is missing from received second args`);
+      }
     });
   });
 
