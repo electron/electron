@@ -651,7 +651,7 @@ void Session::SetMediaRequestHandler(v8::Isolate* isolate,
   if (val->IsNull())
     browser_context_->SetMediaRequestHandler(MediaRequestHandler());
   MediaRequestHandler handler;
-  if (!gin::ConvertToV8(isolate, val, &handler))
+  if (!gin::ConvertFromV8(isolate, val, &handler))
     return;
   browser_context_->SetMediaRequestHandler(handler);
 }

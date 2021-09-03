@@ -53,6 +53,7 @@
 #include "shell/browser/zoom_level_delegate.h"
 #include "shell/common/application_info.h"
 #include "shell/common/electron_paths.h"
+#include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/options_switches.h"
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -477,6 +478,14 @@ bool ElectronBrowserContext::ChooseMediaDevice(
       [](content::MediaResponseCallback callback,
          const blink::MediaStreamDevices& devices,
          blink::mojom::MediaStreamRequestResult result) {
+        for (const auto& device : devices) {
+          if (device.id.empty()) {
+            v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+            gin_helper::ErrorThrower thrower(isolate);
+            thrower.ThrowTypeError("Device id cannot be empty");
+            return;
+          }
+        }
         std::move(callback).Run(devices, result, nullptr);
       },
       std::move(callback));
