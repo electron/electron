@@ -1015,7 +1015,7 @@ arrify@^1.0.0:
 
 "asar@git://github.com/electron/asar.git#add-file-hash-to-header":
   version "0.0.0-development"
-  resolved "git://github.com/electron/asar.git#eeaa9107c14d2be5490266c6482c996c13fa95f5"
+  resolved "git://github.com/electron/asar.git#94606dd4d00d800eaeb3f08e0aa0df4cf91b08fc"
   dependencies:
     chromium-pickle-js "^0.2.0"
     commander "^5.0.0"
