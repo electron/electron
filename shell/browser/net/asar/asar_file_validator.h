@@ -16,25 +16,40 @@ namespace asar {
 
 class AsarFileValidator : public mojo::FilteredDataSource::Filter {
  public:
-  AsarFileValidator(absl::optional<IntegrityPayload> integrity);
+  AsarFileValidator(absl::optional<IntegrityPayload> integrity,
+                    base::File file);
 
   void OnRead(base::span<char> buffer,
               mojo::FileDataSource::ReadResult* result);
 
   void OnDone();
 
+  void SetRange(uint64_t read_start, uint64_t extra_read, uint64_t read_max);
+  void SetCurrentBlock(int current_block);
+
  protected:
   bool FinishBlock();
 
  private:
   bool should_validate_ = false;
+  base::File file_;
   absl::optional<IntegrityPayload> integrity_;
 
+  // The offset in the file_ that the underlying file reader is starting at
+  uint64_t read_start_ = 0;
+  // The number of bytes this DataSourceFilter will have seen that aren't used
+  // by the DataProducer.  These extra bytes are exclusively for hash validation
+  // but we need to know how many we've used so we know when we're done.
+  uint64_t extra_read_ = 0;
+  // The maximum offset in the file_ that we should read to, used to determine
+  // which bytes we're missing or if we need to read up to a block boundary in
+  // OnDone
+  uint64_t read_max_ = 0;
   bool done_reading_ = false;
   int current_block_;
-  int min_block_;
   int max_block_;
-  int current_hash_byte_count_ = 0;
+  uint64_t current_hash_byte_count_ = 0;
+  uint64_t total_hash_byte_count_ = 0;
   std::unique_ptr<crypto::SecureHash> current_hash_;
 
   DISALLOW_COPY_AND_ASSIGN(AsarFileValidator);
