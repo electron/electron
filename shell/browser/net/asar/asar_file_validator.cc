@@ -22,7 +22,9 @@ AsarFileValidator::AsarFileValidator(absl::optional<IntegrityPayload> integrity,
       file_(std::move(file)),
       integrity_(std::move(integrity)) {
   current_block_ = 0;
-  max_block_ = integrity_.value().blocks.size() - 1;
+  if (should_validate_) {
+    max_block_ = integrity_.value().blocks.size() - 1;
+  }
 }
 
 void AsarFileValidator::OnRead(base::span<char> buffer,
