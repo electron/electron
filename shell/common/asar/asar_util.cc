@@ -147,6 +147,7 @@ bool ReadFileToString(const base::FilePath& path, std::string* contents) {
 
 #if !defined(OS_MAC)
 void ValidateIntegrityOrDie(const char* data,
+                            size_t size,
                             const IntegrityPayload& integrity) {
   LOG(FATAL) << "ValidateIntegrityOrDie is not implemented on this platform, "
                 "terminating "
