@@ -1373,8 +1373,16 @@ void WebContents::HandleNewRenderFrame(
     std::string color_name;
     if (web_preferences->GetPreference(options::kBackgroundColor,
                                        &color_name)) {
-      rwhv->SetBackgroundColor(ParseHexColor(color_name));
+      web_contents()->SetPageBaseBackgroundColor(ParseHexColor(color_name));
     } else {
+      web_contents()->SetPageBaseBackgroundColor(absl::nullopt);
+    }
+
+    // When a page base background color is set, transparency needs to be
+    // explicitly set by calling
+    // RenderWidgetHostOwnerDelegate::SetBackgroundOpaque(false).
+    // RenderWidgetHostViewBase::SetBackgroundColor() will do this for us.
+    if (web_preferences->IsEnabled(options::kTransparent)) {
       rwhv->SetBackgroundColor(SK_ColorTRANSPARENT);
     }
   }
