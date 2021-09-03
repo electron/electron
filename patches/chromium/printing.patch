@@ -617,10 +617,10 @@ index 90236920457c931c86426049c6cbc30b592b597f..353178863eba37b9112e784ffa4b3519
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Set options for print preset from source PDF document.
 diff --git a/printing/printing_context.cc b/printing/printing_context.cc
-index 24cf547a45b76705ec4094bec219c53785781059..b81e7bcee4139dbfb4c5211f4164c53b864768bd 100644
+index 7f617267b4eefd6d7cf9db6a56aaffad5035bab4..df79c62570f02f581ecb69ab3c03eeebfc43c50e 100644
 --- a/printing/printing_context.cc
 +++ b/printing/printing_context.cc
-@@ -97,7 +97,6 @@ PrintingContext::Result PrintingContext::UsePdfSettings() {
+@@ -115,7 +115,6 @@ PrintingContext::Result PrintingContext::UsePdfSettings() {
  
  PrintingContext::Result PrintingContext::UpdatePrintSettings(
      base::Value job_settings) {
@@ -629,22 +629,26 @@ index 24cf547a45b76705ec4094bec219c53785781059..b81e7bcee4139dbfb4c5211f4164c53b
      std::unique_ptr<PrintSettings> settings =
          PrintSettingsFromJobSettings(job_settings);
 diff --git a/printing/printing_context.h b/printing/printing_context.h
-index 5c300fa414fbb8688674aed114543e602cdb96db..ba6d0bbce4edcb1a6e05108e4e83fc6ba5894bb4 100644
+index 3f83f961ca953d1a6fe544a49e3a3d7addaf6c50..7a639e7d2975fa8d033ea32f371e3b6539ea0c7e 100644
 --- a/printing/printing_context.h
 +++ b/printing/printing_context.h
-@@ -133,12 +133,12 @@ class COMPONENT_EXPORT(PRINTING) PrintingContext {
+@@ -145,6 +145,9 @@ class COMPONENT_EXPORT(PRINTING) PrintingContext {
  
    int job_id() const { return job_id_; }
  
-- protected:
--  explicit PrintingContext(Delegate* delegate);
--
-   // Reinitializes the settings for object reuse.
-   void ResetSettings();
- 
-+ protected:
-+  explicit PrintingContext(Delegate* delegate);
++  // Reinitializes the settings for object reuse.
++  void ResetSettings();
 +
+  protected:
+   explicit PrintingContext(Delegate* delegate);
+ 
+@@ -152,9 +155,6 @@ class COMPONENT_EXPORT(PRINTING) PrintingContext {
+   // implement this method to create an object of their implementation.
+   static std::unique_ptr<PrintingContext> CreateImpl(Delegate* delegate);
+ 
+-  // Reinitializes the settings for object reuse.
+-  void ResetSettings();
+-
    // Does bookkeeping when an error occurs.
    PrintingContext::Result OnError();
  

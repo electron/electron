@@ -10,6 +10,7 @@
 #include "base/macros.h"
 #include "gin/public/isolate_holder.h"
 #include "uv.h"  // NOLINT(build/include_directory)
+#include "v8/include/v8-locker.h"
 
 namespace node {
 class Environment;

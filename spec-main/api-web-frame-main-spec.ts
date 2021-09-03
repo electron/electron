@@ -244,4 +244,68 @@ describe('webFrameMain module', () => {
       }
     });
   });
+
+  describe('"frame-created" event', () => {
+    it('emits when the main frame is created', async () => {
+      const w = new BrowserWindow({ show: false });
+      const promise = emittedOnce(w.webContents, 'frame-created');
+      w.webContents.loadFile(path.join(subframesPath, 'frame.html'));
+      const [, details] = await promise;
+      expect(details.frame).to.equal(w.webContents.mainFrame);
+    });
+
+    it('emits when nested frames are created', async () => {
+      const w = new BrowserWindow({ show: false });
+      const promise = emittedNTimes(w.webContents, 'frame-created', 2);
+      w.webContents.loadFile(path.join(subframesPath, 'frame-container.html'));
+      const [[, mainDetails], [, nestedDetails]] = await promise;
+      expect(mainDetails.frame).to.equal(w.webContents.mainFrame);
+      expect(nestedDetails.frame).to.equal(w.webContents.mainFrame.frames[0]);
+    });
+
+    it('is not emitted upon cross-origin navigation', async () => {
+      const server = await createServer();
+
+      // HACK: Use 'localhost' instead of '127.0.0.1' so Chromium treats it as
+      // a separate origin because differing ports aren't enough 🤔
+      const secondUrl = `http://localhost:${new URL(server.url).port}`;
+
+      const w = new BrowserWindow({ show: false });
+      await w.webContents.loadURL(server.url);
+
+      let frameCreatedEmitted = false;
+
+      w.webContents.once('frame-created', () => {
+        frameCreatedEmitted = true;
+      });
+
+      await w.webContents.loadURL(secondUrl);
+
+      expect(frameCreatedEmitted).to.be.false();
+    });
+  });
+
+  describe('"dom-ready" event', () => {
+    it('emits for top-level frame', async () => {
+      const w = new BrowserWindow({ show: false });
+      const promise = emittedOnce(w.webContents.mainFrame, 'dom-ready');
+      w.webContents.loadURL('about:blank');
+      await promise;
+    });
+
+    it('emits for sub frame', async () => {
+      const w = new BrowserWindow({ show: false });
+      const promise = new Promise<void>(resolve => {
+        w.webContents.on('frame-created', (e, { frame }) => {
+          frame.on('dom-ready', () => {
+            if (frame.name === 'frameA') {
+              resolve();
+            }
+          });
+        });
+      });
+      w.webContents.loadFile(path.join(subframesPath, 'frame-with-frame.html'));
+      await promise;
+    });
+  });
 });

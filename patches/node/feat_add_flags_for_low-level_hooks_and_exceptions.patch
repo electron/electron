@@ -67,7 +67,7 @@ index 3ee25ebbd67a01d607456e5158c98ca2fdea396b..6302bb925339d709a54151a8fc8b58f1
    std::string tz;
    if (credentials::SafeGetenv("TZ", &tz) && !tz.empty()) {
 diff --git a/src/node.h b/src/node.h
-index 4348dfba5b2be8973eda7f36bfb9479a744a07f6..4e533cab0b74221219752aea7533866830067c09 100644
+index 049163bf27cc7c1d6433b65becab0d7761491f09..09cb7a317cc46e88e5d214996dc87dc6e8730b1a 100644
 --- a/src/node.h
 +++ b/src/node.h
 @@ -213,6 +213,8 @@ namespace node {

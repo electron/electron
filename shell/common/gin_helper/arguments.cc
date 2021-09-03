@@ -4,6 +4,7 @@
 
 #include "shell/common/gin_helper/arguments.h"
 
+#include "v8/include/v8-exception.h"
 namespace gin_helper {
 
 void Arguments::ThrowError() const {

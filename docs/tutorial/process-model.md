@@ -83,7 +83,7 @@ As a practical example, the app shown in the [quick start guide][quick-start-lif
 uses `app` APIs to create a more native application window experience.
 
 ```js title='main.js'
-// quitting the app when no windows are open on macOS
+// quitting the app when no windows are open on non-macOS platforms
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
 })
@@ -148,7 +148,9 @@ A preload script can be attached to the main process in the `BrowserWindow` cons
 const { BrowserWindow } = require('electron')
 //...
 const win = new BrowserWindow({
-  preload: 'path/to/preload.js'
+  webPreferences: {
+    preload: 'path/to/preload.js'
+  }
 })
 //...
 ```
