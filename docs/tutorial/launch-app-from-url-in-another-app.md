@@ -122,15 +122,18 @@ app.on('window-all-closed', () => {
 
 ### Packaging
 
-On macOS, this feature will only work when your app is packaged. It will not work when you're
-launching it in development from the command-line. When you package your app you'll need to make
-sure the macOS `Info.plist` for the app is updated to include the new protocol handler. Some of the
-Electron tooling handles this for you.
+On macOS and Linux, this feature will only work when your app is packaged. It will not work when
+you're launching it in development from the command-line. When you package your app you'll need to
+make sure the macOS `Info.plist` and the Linux `.desktop` files for the app are updated to include
+the new protocol handler. Some of the Electron tools for bundling and distributing apps handle
+this for you.
 
 #### [Electron Forge](https://electronforge.io)
 
-If you're using Electron Forge, add the following to your `packagerConfig` in your [Forge
-configuration](https://www.electronforge.io/configuration):
+If you're using Electron Forge, adjust `packagerConfig` for macOS support, and the configuration for
+the appropriate Linux makers for Linux support, in your [Forge
+configuration](https://www.electronforge.io/configuration) _(please note the following example only
+shows the bare minimum needed to add the configuration changes)_:
 
 ```json
 {
@@ -143,7 +146,15 @@ configuration](https://www.electronforge.io/configuration):
             "schemes": ["electron-fiddle"]
           }
         ]
-      }
+      },
+      "makers": [
+        {
+          "name": "@electron-forge/maker-deb",
+          "config": {
+            "mimeType": ["x-scheme-handler/electron-fiddle"]
+          }
+        }
+      ]
     }
   }
 }
@@ -151,9 +162,11 @@ configuration](https://www.electronforge.io/configuration):
 
 #### [Electron Packager](https://github.com/electron/electron-packager)
 
-If you're using Electron Packager's API, it's similar to how [Electron
-Forge](launch-app-from-url-in-another-app.md#electron-forge) is handled, except `protocols` is part
-of the Packager options passed to the `packager` function.
+For macOS support:
+
+If you're using Electron Packager's API, adding support for protocol handlers is similar to how
+Electron Forge is handled, except
+`protocols` is part of the Packager options passed to the `packager` function.
 
 ```javascript
 const packager = require('electron-packager')
