@@ -37,12 +37,12 @@ base::ListValue NSArrayToListValue(NSArray* arr) {
       const char* objc_type = [value objCType];
       if (strcmp(objc_type, @encode(BOOL)) == 0 ||
           strcmp(objc_type, @encode(char)) == 0)
-        result.AppendBoolean([value boolValue]);
+        result.Append([value boolValue]);
       else if (strcmp(objc_type, @encode(double)) == 0 ||
                strcmp(objc_type, @encode(float)) == 0)
         result.Append([value doubleValue]);
       else
-        result.AppendInteger([value intValue]);
+        result.Append([value intValue]);
     } else if ([value isKindOfClass:[NSArray class]]) {
       result.Append(NSArrayToListValue(value));
     } else if ([value isKindOfClass:[NSDictionary class]]) {
