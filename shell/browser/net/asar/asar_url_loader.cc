@@ -129,6 +129,7 @@ class AsarURLLoader : public network::mojom::URLLoader {
       OnClientComplete(net::ERR_FILE_NOT_FOUND);
       return;
     }
+    bool is_verifying_file = info.integrity.has_value();
 
     // For unpacked path, read like normal file.
     base::FilePath real_path;
@@ -150,12 +151,18 @@ class AsarURLLoader : public network::mojom::URLLoader {
     // requests at the same time.
     base::File file(info.unpacked ? real_path : archive->path(),
                     base::File::FLAG_OPEN | base::File::FLAG_READ);
+    // The validator also needs a file handle so it can independently read
+    // additional bytes to validate hashes
+    base::File validator_file(info.unpacked ? real_path : archive->path(),
+                              base::File::FLAG_OPEN | base::File::FLAG_READ);
     auto file_data_source =
         std::make_unique<mojo::FileDataSource>(std::move(file));
+    auto asar_validator = std::make_unique<AsarFileValidator>(
+        info.integrity, std::move(validator_file));
     mojo::FileDataSource* file_data_source_raw = file_data_source.get();
+    AsarFileValidator* file_validator_raw = asar_validator.get();
     auto filtered_data_source = std::make_unique<mojo::FilteredDataSource>(
-        std::move(file_data_source),
-        std::make_unique<AsarFileValidator>(info.integrity));
+        std::move(file_data_source), std::move(asar_validator));
 
     std::vector<char> initial_read_buffer(
         std::min(static_cast<uint32_t>(net::kMaxBytesToSniff), info.size));
@@ -191,6 +198,7 @@ class AsarURLLoader : public network::mojom::URLLoader {
     }
 
     uint64_t first_byte_to_send = 0;
+    uint64_t total_bytes_dropped_from_head = initial_read_buffer.size();
     uint64_t total_bytes_to_send = info.size;
 
     if (byte_range.IsValid()) {
@@ -222,6 +230,28 @@ class AsarURLLoader : public network::mojom::URLLoader {
       // Discount the bytes we just sent from the total range.
       first_byte_to_send = read_result.bytes_read;
       total_bytes_to_send -= write_size;
+    } else if (is_verifying_file &&
+               first_byte_to_send >=
+                   static_cast<uint64_t>(info.integrity.value().block_size)) {
+      // If validation is active and the range of bytes the request wants starts
+      // beyond the first block we need to read the next 4MB-1KB to validate
+      // that block. Then we can skip ahead to the target block in the SetRange
+      // call below If we hit this case it is assumed that none of the data read
+      // will be needed by the producer
+      uint64_t bytes_to_drop =
+          info.integrity.value().block_size - net::kMaxBytesToSniff;
+      total_bytes_dropped_from_head += bytes_to_drop;
+      std::vector<char> abandoned_buffer(bytes_to_drop);
+      auto abandon_read_result =
+          static_cast<mojo::DataPipeProducer::DataSource*>(
+              filtered_data_source.get())
+              ->Read(info.offset + net::kMaxBytesToSniff,
+                     base::span<char>(abandoned_buffer));
+      if (abandon_read_result.result != MOJO_RESULT_OK) {
+        OnClientComplete(
+            ConvertMojoResultToNetError(abandon_read_result.result));
+        return;
+      }
     }
 
     if (!net::GetMimeTypeFromFile(path, &head->mime_type)) {
@@ -242,8 +272,50 @@ class AsarURLLoader : public network::mojom::URLLoader {
 
     if (total_bytes_to_send == 0) {
       // There's definitely no more data, so we're already done.
+      // We provide the range data to the file validator so that
+      // it can validate the tiny amount of data we did send
+      file_validator_raw->SetRange(info.offset + first_byte_to_send,
+                                   total_bytes_dropped_from_head,
+                                   info.offset + info.size);
       OnFileWritten(MOJO_RESULT_OK);
       return;
+    }
+
+    if (is_verifying_file) {
+      int block_size = info.integrity.value().block_size;
+      int start_block = first_byte_to_send / block_size;
+
+      // If we're starting from the first block, we might not be starting from
+      // where we sniffed. We might be a few KB into a file so we need to read
+      // the data in the middle so it gets hashed.
+      //
+      // If we're starting from a later block we might be starting half-way
+      // through the block regardless of what was sniffed.  We need to read the
+      // data from the start of our initial block up to the start of our actual
+      // read point so it gets hashed.
+      uint64_t bytes_to_drop =
+          start_block == 0 ? first_byte_to_send - net::kMaxBytesToSniff
+                           : first_byte_to_send - (start_block * block_size);
+      file_validator_raw->SetCurrentBlock(start_block);
+
+      if (bytes_to_drop > 0) {
+        uint64_t dropped_bytes_offset =
+            info.offset + (start_block * block_size);
+        if (start_block == 0)
+          dropped_bytes_offset += net::kMaxBytesToSniff;
+        total_bytes_dropped_from_head += bytes_to_drop;
+        std::vector<char> abandoned_buffer(bytes_to_drop);
+        auto abandon_read_result =
+            static_cast<mojo::DataPipeProducer::DataSource*>(
+                filtered_data_source.get())
+                ->Read(dropped_bytes_offset,
+                       base::span<char>(abandoned_buffer));
+        if (abandon_read_result.result != MOJO_RESULT_OK) {
+          OnClientComplete(
+              ConvertMojoResultToNetError(abandon_read_result.result));
+          return;
+        }
+      }
     }
 
     // In case of a range request, seek to the appropriate position before
@@ -254,6 +326,9 @@ class AsarURLLoader : public network::mojom::URLLoader {
     file_data_source_raw->SetRange(
         first_byte_to_send + info.offset,
         first_byte_to_send + info.offset + total_bytes_to_send);
+    file_validator_raw->SetRange(info.offset + first_byte_to_send,
+                                 total_bytes_dropped_from_head,
+                                 info.offset + info.size);
 
     data_producer_ =
         std::make_unique<mojo::DataPipeProducer>(std::move(producer_handle));
