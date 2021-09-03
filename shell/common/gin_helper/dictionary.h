@@ -10,6 +10,7 @@
 
 #include "gin/dictionary.h"
 #include "shell/common/gin_converters/std_converter.h"
+#include "shell/common/gin_helper/accessor.h"
 #include "shell/common/gin_helper/function_template.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 
@@ -106,6 +107,36 @@ class Dictionary : public gin::Dictionary {
     return GetHandle()
         ->Set(context, gin::StringToV8(isolate(), key),
               templ->GetFunction(context).ToLocalChecked())
+        .ToChecked();
+  }
+
+  template <typename K, typename V>
+  bool SetGetter(const K& key, const V& val) {
+    AccessorValue<V> acc_value;
+    acc_value.Value = val;
+
+    v8::Local<v8::Value> v8_value_accessor;
+    if (!gin::TryConvertToV8(isolate(), acc_value, &v8_value_accessor))
+      return false;
+
+    auto context = isolate()->GetCurrentContext();
+
+    return GetHandle()
+        ->SetAccessor(
+            context, gin::StringToV8(isolate(), key),
+            [](v8::Local<v8::Name> property_name,
+               const v8::PropertyCallbackInfo<v8::Value>& info) {
+              AccessorValue<V> acc_value;
+              if (!gin::ConvertFromV8(info.GetIsolate(), info.Data(),
+                                      &acc_value))
+                return;
+
+              V val = acc_value.Value;
+              v8::Local<v8::Value> v8_value;
+              if (gin::TryConvertToV8(info.GetIsolate(), val, &v8_value))
+                info.GetReturnValue().Set(v8_value);
+            },
+            NULL, v8_value_accessor)
         .ToChecked();
   }
 
