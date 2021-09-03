@@ -97,6 +97,7 @@ bool GetNodeFromPath(std::string path,
 
 bool FillFileInfoWithNode(Archive::FileInfo* info,
                           uint32_t header_size,
+                          bool load_integrity,
                           const base::DictionaryValue* node) {
   int size;
   if (!node->GetInteger("size", &size))
@@ -116,7 +117,8 @@ bool FillFileInfoWithNode(Archive::FileInfo* info,
   node->GetBoolean("executable", &info->executable);
 
 #if defined(OS_MAC)
-  if (electron::fuses::IsEmbeddedAsarIntegrityValidationEnabled()) {
+  if (load_integrity &&
+      electron::fuses::IsEmbeddedAsarIntegrityValidationEnabled()) {
     const base::DictionaryValue* integrity;
     if (node->GetDictionary("integrity", &integrity)) {
       IntegrityPayload integrity_payload;
@@ -247,6 +249,8 @@ bool Archive::Init() {
       LOG(FATAL) << "No eligible hash for validatable asar archive: "
                  << RelativePath().value();
     }
+
+    header_validated_ = true;
   }
 #endif
 
@@ -284,7 +288,7 @@ bool Archive::GetFileInfo(const base::FilePath& path, FileInfo* info) const {
   if (node->GetString("link", &link))
     return GetFileInfo(base::FilePath::FromUTF8Unsafe(link), info);
 
-  return FillFileInfoWithNode(info, header_size_, node);
+  return FillFileInfoWithNode(info, header_size_, header_validated_, node);
 }
 
 bool Archive::Stat(const base::FilePath& path, Stats* stats) const {
@@ -307,7 +311,7 @@ bool Archive::Stat(const base::FilePath& path, Stats* stats) const {
     return true;
   }
 
-  return FillFileInfoWithNode(stats, header_size_, node);
+  return FillFileInfoWithNode(stats, header_size_, header_validated_, node);
 }
 
 bool Archive::Readdir(const base::FilePath& path,
