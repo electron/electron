@@ -31,7 +31,7 @@ index 786a5d5fb13d7ceafc9b7d58c0aaccb88552506d..5ede89f9f0761d1da1baa899e9a02b77
      return EVP_aes_128_ctr();
    } else if (OPENSSL_strcasecmp(name, "aes-192-ctr") == 0) {
 diff --git a/decrepit/evp/evp_do_all.c b/decrepit/evp/evp_do_all.c
-index 5a41a7b7dc9afee65d9004c497da735073715bd3..c6c901eaff474eaa3f06128ea825b8203d064a52 100644
+index 852b76bea69988e0b3ac76a17b603128f239dde0..d443f4dc2daea0b7aa86ae75d31d995fae667ba9 100644
 --- a/decrepit/evp/evp_do_all.c
 +++ b/decrepit/evp/evp_do_all.c
 @@ -20,8 +20,10 @@ void EVP_CIPHER_do_all_sorted(void (*callback)(const EVP_CIPHER *cipher,
