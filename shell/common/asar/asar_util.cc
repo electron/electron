@@ -11,6 +11,7 @@
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/lazy_instance.h"
+#include "base/logging.h"
 #include "base/no_destructor.h"
 #include "base/stl_util.h"
 #include "base/synchronization/lock.h"
