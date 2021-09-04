@@ -910,9 +910,10 @@ v8::Local<v8::Value> Session::NetLog(v8::Isolate* isolate) {
 static void StartPreconnectOnUI(ElectronBrowserContext* browser_context,
                                 const GURL& url,
                                 int num_sockets_to_preconnect) {
+  url::Origin origin = url::Origin::Create(url);
   std::vector<predictors::PreconnectRequest> requests = {
       {url::Origin::Create(url), num_sockets_to_preconnect,
-       net::NetworkIsolationKey::CreateTransient()}};
+       net::NetworkIsolationKey(origin, origin)}};
   browser_context->GetPreconnectManager()->Start(url, requests);
 }
 
