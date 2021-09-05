@@ -12,10 +12,10 @@ allocator that does handle these cases.
 Upstreamed in https://github.com/nodejs/node/pull/38362.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 09c0d22ff91856704f61024646c946a39baf53d8..b060a8e980432637c430bd66a5216095984e4381 100644
+index 5bf19a0dda42849159d954181058897c45d280fd..03078ff3869fcd17101f1cdaf77f725dbbfa43e8 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -472,8 +472,9 @@ MultiIsolatePlatform* CreatePlatform(
+@@ -475,8 +475,9 @@ MultiIsolatePlatform* CreatePlatform(
  
  MultiIsolatePlatform* CreatePlatform(
      int thread_pool_size,
@@ -27,7 +27,7 @@ index 09c0d22ff91856704f61024646c946a39baf53d8..b060a8e980432637c430bd66a5216095
        .release();
  }
  
-@@ -483,8 +484,9 @@ void FreePlatform(MultiIsolatePlatform* platform) {
+@@ -486,8 +487,9 @@ void FreePlatform(MultiIsolatePlatform* platform) {
  
  std::unique_ptr<MultiIsolatePlatform> MultiIsolatePlatform::Create(
      int thread_pool_size,
@@ -40,7 +40,7 @@ index 09c0d22ff91856704f61024646c946a39baf53d8..b060a8e980432637c430bd66a5216095
  
  MaybeLocal<Object> GetPerContextExports(Local<Context> context) {
 diff --git a/src/node.h b/src/node.h
-index 691c16ba60b0ce8633555825e44c3ace96c5000f..ccb452bbe941c30fdc8c4eb616eb6f0259aa8b8e 100644
+index 48e378079f6d05e7cc1141a8875450b125028789..22e095804bca9d73d22707169c5aff2b13994344 100644
 --- a/src/node.h
 +++ b/src/node.h
 @@ -313,7 +313,8 @@ class NODE_EXTERN MultiIsolatePlatform : public v8::Platform {
@@ -53,7 +53,7 @@ index 691c16ba60b0ce8633555825e44c3ace96c5000f..ccb452bbe941c30fdc8c4eb616eb6f02
  };
  
  enum IsolateSettingsFlags {
-@@ -494,7 +495,8 @@ NODE_EXTERN node::tracing::Agent* CreateAgent();
+@@ -498,7 +499,8 @@ NODE_EXTERN node::tracing::Agent* CreateAgent();
  NODE_DEPRECATED("Use MultiIsolatePlatform::Create() instead",
      NODE_EXTERN MultiIsolatePlatform* CreatePlatform(
          int thread_pool_size,
