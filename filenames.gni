@@ -44,8 +44,8 @@ filenames = {
   ]
 
   lib_sources_linux_x11 = [
-    "chromium_src/chrome/browser/ui/views/frame/global_menu_bar_registrar_x11.cc",
-    "chromium_src/chrome/browser/ui/views/frame/global_menu_bar_registrar_x11.h",
+    "shell/browser/ui/views/global_menu_bar_registrar_x11.cc",
+    "shell/browser/ui/views/global_menu_bar_registrar_x11.h",
     "shell/browser/ui/views/global_menu_bar_x11.cc",
     "shell/browser/ui/views/global_menu_bar_x11.h",
     "shell/browser/ui/x/event_disabler.cc",
