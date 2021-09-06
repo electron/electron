@@ -16,7 +16,6 @@ export const browserModuleList: ElectronInternal.ModuleEntry[] = [
   { name: 'Menu', loader: () => require('./menu') },
   { name: 'MenuItem', loader: () => require('./menu-item') },
   { name: 'MessageChannelMain', loader: () => require('./message-channel') },
-  { name: 'nativeImage', loader: () => require('./native-image') },
   { name: 'nativeTheme', loader: () => require('./native-theme') },
   { name: 'net', loader: () => require('./net') },
   { name: 'netLog', loader: () => require('./net-log') },
