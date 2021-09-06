@@ -1,0 +1,85 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Henrik=20Bostr=C3=B6m?= <hbos@chromium.org>
+Date: Thu, 8 Jul 2021 12:16:10 +0000
+Subject: Fix UAF in VideoCaptureDeviceAVFoundation's dealloc.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Despite dealloc performing stopCapture prior to clearing variables like
+_sampleBufferTransformer, it appears possible for callbacks that are
+already running concurrently to be using these variables, resulting in
+rare use-after-free races. By grabbing the _lock, we avoid this issue.
+
+We also have to introduce a new lock, _destructionLock, to ensure |this|
+is not destroyed while -captureOutput is still running.
+
+Bug: chromium:1227228
+Change-Id: I8c2c4d9834ee995d3f4154fae13e262398e6f2e2
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3013796
+Reviewed-by: Evan Shrubsole <eshr@google.com>
+Reviewed-by: Ilya Nikolaevskiy <ilnik@chromium.org>
+Commit-Queue: Henrik Boström <hbos@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#899503}
+
+diff --git a/media/capture/video/mac/video_capture_device_avfoundation_mac.h b/media/capture/video/mac/video_capture_device_avfoundation_mac.h
+index 4ecd25491967d001f71e01f88ca415c5bbe788c7..134423d6bee933ab4bebcd7bb99b874b93eb847c 100644
+--- a/media/capture/video/mac/video_capture_device_avfoundation_mac.h
++++ b/media/capture/video/mac/video_capture_device_avfoundation_mac.h
+@@ -52,6 +52,8 @@ CAPTURE_EXPORT
+   // Protects concurrent setting and using |frameReceiver_|. Note that the
+   // GUARDED_BY decoration below does not have any effect.
+   base::Lock _lock;
++  // Used to avoid UAF in -captureOutput.
++  base::Lock _destructionLock;
+   media::VideoCaptureDeviceAVFoundationFrameReceiver* _frameReceiver
+       GUARDED_BY(_lock);  // weak.
+ 
+diff --git a/media/capture/video/mac/video_capture_device_avfoundation_mac.mm b/media/capture/video/mac/video_capture_device_avfoundation_mac.mm
+index 7367fbdb4b9216f012c263007170fbc70b1ad823..d1a7997a08ec9ce87278822c8f4c6156db489e7c 100644
+--- a/media/capture/video/mac/video_capture_device_avfoundation_mac.mm
++++ b/media/capture/video/mac/video_capture_device_avfoundation_mac.mm
+@@ -180,12 +180,26 @@ - (id)initWithFrameReceiver:
+ }
+ 
+ - (void)dealloc {
+-  [self stopStillImageOutput];
+-  [self stopCapture];
+-  _sampleBufferTransformer.reset();
+-  _weakPtrFactoryForTakePhoto = nullptr;
+-  _mainThreadTaskRunner = nullptr;
+-  _sampleQueue.reset();
++  {
++    // To avoid races with concurrent callbacks, grab the lock before stopping
++    // capture and clearing all the variables.
++    base::AutoLock lock(_lock);
++    [self stopStillImageOutput];
++    [self stopCapture];
++    _frameReceiver = nullptr;
++    _sampleBufferTransformer.reset();
++    _weakPtrFactoryForTakePhoto = nullptr;
++    _mainThreadTaskRunner = nullptr;
++    _sampleQueue.reset();
++  }
++  {
++    // Ensures -captureOutput has finished before we continue the destruction
++    // steps. If -captureOutput grabbed the destruction lock before us this
++    // prevents UAF. If -captureOutput grabbed the destruction lock after us
++    // it will exit early because |_frameReceiver| is already null at this
++    // point.
++    base::AutoLock destructionLock(_destructionLock);
++  }
+   [super dealloc];
+ }
+ 
+@@ -709,7 +723,9 @@ - (void)captureOutput:(AVCaptureOutput*)captureOutput
+   VLOG(3) << __func__;
+ 
+   // Concurrent calls into |_frameReceiver| are not supported, so take |_lock|
+-  // before any of the subsequent paths.
++  // before any of the subsequent paths. The |_destructionLock| must be grabbed
++  // first to avoid races with -dealloc.
++  base::AutoLock destructionLock(_destructionLock);
+   base::AutoLock lock(_lock);
+   if (!_frameReceiver)
+     return;
