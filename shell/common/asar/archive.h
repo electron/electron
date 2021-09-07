@@ -91,7 +91,7 @@ class Archive {
 
  private:
   bool initialized_;
-  bool header_validated_;
+  bool header_validated_ = false;
   const base::FilePath path_;
   base::File file_;
   int fd_ = -1;
