@@ -4,7 +4,6 @@ import { clipboard } from 'electron/common';
 import * as fs from 'fs';
 import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
 import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-utils';
-import * as typeUtils from '@electron/internal/common/type-utils';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
 import type * as desktopCapturerModule from '@electron/internal/browser/desktop-capturer';
@@ -56,7 +55,7 @@ ipcMainUtils.handleSync(IPC_MESSAGES.BROWSER_CLIPBOARD_SYNC, function (event, me
     throw new Error(`Invalid method: ${method}`);
   }
 
-  return typeUtils.serialize((clipboard as any)[method](...typeUtils.deserialize(args)));
+  return (clipboard as any)[method](...args);
 });
 
 if (BUILDFLAG(ENABLE_DESKTOP_CAPTURER)) {
@@ -71,7 +70,7 @@ if (BUILDFLAG(ENABLE_DESKTOP_CAPTURER)) {
       return [];
     }
 
-    return typeUtils.serialize(await desktopCapturer.getSourcesImpl(event.sender, options));
+    return await desktopCapturer.getSourcesImpl(event.sender, options);
   });
 }
 

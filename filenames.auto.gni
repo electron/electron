@@ -138,7 +138,6 @@ auto_filenames = {
     "lib/common/api/native-image.ts",
     "lib/common/define-properties.ts",
     "lib/common/ipc-messages.ts",
-    "lib/common/type-utils.ts",
     "lib/common/web-view-methods.ts",
     "lib/renderer/api/context-bridge.ts",
     "lib/renderer/api/crash-reporter.ts",
@@ -168,7 +167,6 @@ auto_filenames = {
   ]
 
   isolated_bundle_deps = [
-    "lib/common/type-utils.ts",
     "lib/common/web-view-methods.ts",
     "lib/isolated_renderer/init.ts",
     "lib/renderer/web-view/web-view-attributes.ts",
@@ -246,7 +244,6 @@ auto_filenames = {
     "lib/common/ipc-messages.ts",
     "lib/common/parse-features-string.ts",
     "lib/common/reset-search-paths.ts",
-    "lib/common/type-utils.ts",
     "lib/common/web-view-events.ts",
     "lib/common/web-view-methods.ts",
     "lib/common/webpack-globals-provider.ts",
@@ -269,7 +266,6 @@ auto_filenames = {
     "lib/common/init.ts",
     "lib/common/ipc-messages.ts",
     "lib/common/reset-search-paths.ts",
-    "lib/common/type-utils.ts",
     "lib/common/web-view-methods.ts",
     "lib/common/webpack-provider.ts",
     "lib/renderer/api/context-bridge.ts",
@@ -309,7 +305,6 @@ auto_filenames = {
     "lib/common/init.ts",
     "lib/common/ipc-messages.ts",
     "lib/common/reset-search-paths.ts",
-    "lib/common/type-utils.ts",
     "lib/common/webpack-provider.ts",
     "lib/renderer/api/context-bridge.ts",
     "lib/renderer/api/crash-reporter.ts",

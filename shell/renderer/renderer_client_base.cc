@@ -524,7 +524,6 @@ void RendererClientBase::SetupMainWorldOverrides(
   isolated_api.SetMethod("allowGuestViewElementDefinition",
                          &AllowGuestViewElementDefinition);
   isolated_api.SetMethod("setIsWebView", &SetIsWebView);
-  isolated_api.SetMethod("createNativeImage", &api::NativeImage::CreateEmpty);
 
   auto source_context = GetContext(render_frame->GetWebFrame(), isolate);
   gin_helper::Dictionary global(isolate, source_context->Global());
