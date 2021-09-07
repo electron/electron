@@ -1,0 +1,50 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Michael Lippautz <mlippautz@chromium.org>
+Date: Tue, 24 Aug 2021 12:34:24 +0200
+Subject: cppgc-js: Fix snapshot node merging
+
+In Blink, WindowProxy may be referred from two diffrent JS wrapper
+objects during page refresh (same site navigation reusing parts of the
+DOM). In this intermediate state, the old frame state is not yet
+reclaimed while the new state is already being added.
+
+We would like to only merge nodes when there's a 1:1 relation between
+C++ and JS objects. Unfortunately, WindowProxy breaks that assumption
+in that the C++ object doesn't directly point to the wrapper. In
+addition, merging this case is important as otherwise detachedness
+would not be propagated to the Window object (JS wrapper) which is the
+main user of detachedness.
+
+The CL allows overriding merged nodes, picking a random merged state
+during pageload while still resulting in the regular snapshot behavior
+outside of reloading the same page.
+
+The proper fix is addressing chromium:1218404 and only create merged
+nodes when the back reference points to the same object.
+
+Bug: chromium:1241610
+Change-Id: Ie77b51a56ce90ef377124304bb025342a724c600
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3114139
+Reviewed-by: Anton Bikineev <bikineev@chromium.org>
+Commit-Queue: Michael Lippautz <mlippautz@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#76453}
+
+diff --git a/src/heap/cppgc-js/cpp-snapshot.cc b/src/heap/cppgc-js/cpp-snapshot.cc
+index 28859d84f66aafa6b90325086d2289f2ef43a704..e72c6ad46998bb40ba91d37a740dc0ecfee2838b 100644
+--- a/src/heap/cppgc-js/cpp-snapshot.cc
++++ b/src/heap/cppgc-js/cpp-snapshot.cc
+@@ -47,7 +47,13 @@ class EmbedderNode : public v8::EmbedderGraph::Node {
+   void SetWrapperNode(v8::EmbedderGraph::Node* wrapper_node) {
+     // An embedder node may only be merged with a single wrapper node, as
+     // consumers of the graph may merge a node and its wrapper node.
+-    DCHECK_NULL(wrapper_node_);
++    //
++    // TODO(chromium:1218404): Add a DCHECK() to avoid overriding an already
++    // set `wrapper_node_`. This can currently happen with global proxies that
++    // are rewired (and still kept alive) after reloading a page, see
++    // `CreateMergedNode`. We accept overriding the wrapper node in such cases,
++    // leading to a random merged node and separated nodes for all other
++    // proxies.
+     wrapper_node_ = wrapper_node;
+   }
+   Node* WrapperNode() final { return wrapper_node_; }
