@@ -8,10 +8,10 @@ we invoke it in order to expose contents.decrementCapturerCount([stayHidden, sta
 to users. We should try to upstream this.
 
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 0442fa68765ee57ccdf00464dba6334f3bc7d3e0..4973a546d21909d2cc7e51940d394451223f4dd6 100644
+index a1c292f1788319d53b4657b140014ec4378aa7f8..60e8f313c8470f1ac016e60fd09220080e8ccb11 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -1770,7 +1770,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
+@@ -1771,7 +1771,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
  
    // Called when the base::ScopedClosureRunner returned by
    // IncrementCapturerCount() is destructed.

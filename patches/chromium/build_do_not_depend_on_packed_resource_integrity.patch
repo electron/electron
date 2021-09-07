@@ -33,10 +33,10 @@ index 75cce1f099f9b1fa5f0b975118ee581e3e19d934..dfb249e97356a233955a75f9aa55f476
          "//base",
          "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index 7b1b231983db6e5123ac7da1e74925f255eefaf2..6cb4a40da4debc43989fd740f64bd071ddf30817 100644
+index c0a08e1dcef39d1184ef909452e6c5226f9c88ce..dcdfba122845d434da2fa8c80049d4705fde4557 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -4408,7 +4408,7 @@ static_library("browser") {
+@@ -4412,7 +4412,7 @@ static_library("browser") {
  
      # On Windows, the hashes are embedded in //chrome:chrome_initial rather
      # than here in :chrome_dll.
@@ -46,10 +46,10 @@ index 7b1b231983db6e5123ac7da1e74925f255eefaf2..6cb4a40da4debc43989fd740f64bd071
      }
  
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index 84ed3dc3494381b085d3ac396812750f5e85429e..f14ab3bc41b736562d02e6445e14e72f1d5865df 100644
+index aad153860af8730909ec2d87d8175dc4ab214e90..77eec3d18e98f57fc4b792534d1dd05166de99d4 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
-@@ -5353,7 +5353,6 @@ test("unit_tests") {
+@@ -5365,7 +5365,6 @@ test("unit_tests") {
      assert(toolkit_views)
      sources += [ "../browser/ui/startup/credential_provider_signin_info_fetcher_win_unittest.cc" ]
      deps += [
@@ -57,7 +57,7 @@ index 84ed3dc3494381b085d3ac396812750f5e85429e..f14ab3bc41b736562d02e6445e14e72f
        "//chrome/browser:chrome_process_finder",
        "//chrome/browser/safe_browsing/chrome_cleaner",
        "//chrome/browser/safe_browsing/chrome_cleaner:public",
-@@ -5366,6 +5365,12 @@ test("unit_tests") {
+@@ -5378,6 +5377,12 @@ test("unit_tests") {
        "//components/chrome_cleaner/public/proto",
        "//ui/events/devices:test_support",
      ]
@@ -70,7 +70,7 @@ index 84ed3dc3494381b085d3ac396812750f5e85429e..f14ab3bc41b736562d02e6445e14e72f
    }
  
    # TODO(crbug.com/931218): Ninja cannot handle certain characters appearing
-@@ -5953,7 +5958,6 @@ test("unit_tests") {
+@@ -5965,7 +5970,6 @@ test("unit_tests") {
      }
  
      deps += [
@@ -78,7 +78,7 @@ index 84ed3dc3494381b085d3ac396812750f5e85429e..f14ab3bc41b736562d02e6445e14e72f
        "//chrome/browser:cart_db_content_proto",
        "//chrome/browser/media/router:test_support",
        "//chrome/browser/resource_coordinator:intervention_policy_database_proto",
-@@ -5989,6 +5993,9 @@ test("unit_tests") {
+@@ -6001,6 +6005,9 @@ test("unit_tests") {
        "//ui/native_theme:test_support",
        "//ui/webui/resources/js/browser_command:mojo_bindings",
      ]
