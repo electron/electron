@@ -29,9 +29,10 @@ enum HashAlgorithm {
 };
 
 struct IntegrityPayload {
+  IntegrityPayload() : algorithm(HashAlgorithm::NONE), block_size(0) {}
   HashAlgorithm algorithm;
   std::string hash;
-  int block_size;
+  uint32_t block_size;
   std::vector<std::string> blocks;
 };
 

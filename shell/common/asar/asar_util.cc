@@ -14,9 +14,13 @@
 #include "base/logging.h"
 #include "base/no_destructor.h"
 #include "base/stl_util.h"
+#include "base/strings/string_number_conversions.h"
+#include "base/strings/string_util.h"
 #include "base/synchronization/lock.h"
 #include "base/threading/thread_local.h"
 #include "base/threading/thread_restrictions.h"
+#include "crypto/secure_hash.h"
+#include "crypto/sha2.h"
 #include "shell/common/asar/archive.h"
 
 namespace asar {
@@ -145,14 +149,24 @@ bool ReadFileToString(const base::FilePath& path, std::string* contents) {
   return true;
 }
 
-#if !defined(OS_MAC)
 void ValidateIntegrityOrDie(const char* data,
                             size_t size,
                             const IntegrityPayload& integrity) {
-  LOG(FATAL) << "ValidateIntegrityOrDie is not implemented on this platform, "
-                "terminating "
-                "out of caution, this method should not have been called";
+  if (integrity.algorithm == HashAlgorithm::SHA256) {
+    uint8_t hash[crypto::kSHA256Length];
+    auto hasher = crypto::SecureHash::Create(crypto::SecureHash::SHA256);
+    hasher->Update(data, size);
+    hasher->Finish(hash, sizeof(hash));
+    const std::string hex_hash =
+        base::ToLowerASCII(base::HexEncode(hash, sizeof(hash)));
+
+    if (integrity.hash != hex_hash) {
+      LOG(FATAL) << "Integrity check failed for asar archive ("
+                 << integrity.hash << " vs " << hex_hash << ")";
+    }
+  } else {
+    LOG(FATAL) << "Unsupported hashing algorithm in ValidateIntegrityOrDie";
+  }
 }
-#endif
 
 }  // namespace asar

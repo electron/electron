@@ -13,32 +13,25 @@
 #include "base/notreached.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
+#include "crypto/sha2.h"
 
 namespace asar {
 
-AsarFileValidator::AsarFileValidator(absl::optional<IntegrityPayload> integrity,
+AsarFileValidator::AsarFileValidator(IntegrityPayload integrity,
                                      base::File file)
-    : should_validate_(integrity.has_value()),
-      file_(std::move(file)),
-      integrity_(std::move(integrity)) {
+    : file_(std::move(file)), integrity_(std::move(integrity)) {
   current_block_ = 0;
-  if (should_validate_) {
-    max_block_ = integrity_.value().blocks.size() - 1;
-  }
+  max_block_ = integrity_.blocks.size() - 1;
 }
 
 void AsarFileValidator::OnRead(base::span<char> buffer,
                                mojo::FileDataSource::ReadResult* result) {
-  if (!should_validate_)
-    return;
-
   DCHECK(!done_reading_);
 
   uint64_t buffer_size = result->bytes_read;
-  DCHECK_GE(buffer_size, static_cast<uint64_t>(0));
 
   // Compute how many bytes we should hash, and add them to the current hash.
-  int block_size = integrity_.value().block_size;
+  uint32_t block_size = integrity_.block_size;
   uint64_t bytes_added = 0;
   while (bytes_added < buffer_size) {
     if (current_block_ > max_block_) {
@@ -50,18 +43,20 @@ void AsarFileValidator::OnRead(base::span<char> buffer,
     // Create a hash if we don't have one yet
     if (!current_hash_) {
       current_hash_byte_count_ = 0;
-      switch (integrity_.value().algorithm) {
+      switch (integrity_.algorithm) {
         case HashAlgorithm::SHA256:
           current_hash_ =
               crypto::SecureHash::Create(crypto::SecureHash::SHA256);
           break;
-        default:
+        case HashAlgorithm::NONE:
           NOTREACHED();
           break;
       }
     }
 
     // Compute how many bytes we should hash, and add them to the current hash.
+    // We need to either add just enough bytes to fill up a block (block_size -
+    // current_bytes) or use every remaining byte (buffer_size - bytes_added)
     int bytes_to_hash = std::min(block_size - current_hash_byte_count_,
                                  buffer_size - bytes_added);
     DCHECK_GT(bytes_to_hash, 0);
@@ -70,10 +65,9 @@ void AsarFileValidator::OnRead(base::span<char> buffer,
     current_hash_byte_count_ += bytes_to_hash;
     total_hash_byte_count_ += bytes_to_hash;
 
-    if (current_hash_byte_count_ == static_cast<uint64_t>(block_size) &&
-        !FinishBlock()) {
+    if (current_hash_byte_count_ == block_size && !FinishBlock()) {
       LOG(FATAL) << "Failed to validate block while streaming ASAR file: "
-                 << current_block_ - 1;
+                 << current_block_;
       return;
     }
   }
@@ -102,9 +96,8 @@ bool AsarFileValidator::FinishBlock() {
   // validate the hash still.
   if (done_reading_ &&
       total_hash_byte_count_ - extra_read_ != read_max_ - read_start_) {
-    int block_size = integrity_.value().block_size;
     uint64_t bytes_needed = std::min(
-        block_size - current_hash_byte_count_,
+        integrity_.block_size - current_hash_byte_count_,
         read_max_ - read_start_ - total_hash_byte_count_ + extra_read_);
     uint64_t offset = read_start_ + total_hash_byte_count_ - extra_read_;
     std::vector<uint8_t> abandoned_buffer(bytes_needed);
@@ -120,27 +113,25 @@ bool AsarFileValidator::FinishBlock() {
   current_hash_.reset();
   current_hash_byte_count_ = 0;
 
-  int block = current_block_++;
-
-  const std::string expected_hash = integrity_.value().blocks[block];
+  const std::string expected_hash = integrity_.blocks[current_block_];
   const std::string actual_hex_hash =
       base::ToLowerASCII(base::HexEncode(actual, sizeof(actual)));
+
   if (expected_hash != actual_hex_hash) {
     return false;
   }
+
+  current_block_++;
 
   return true;
 }
 
 void AsarFileValidator::OnDone() {
-  if (!should_validate_)
-    return;
-
   DCHECK(!done_reading_);
   done_reading_ = true;
   if (!FinishBlock()) {
     LOG(FATAL) << "Failed to validate block while ending ASAR file stream: "
-               << current_block_ - 1;
+               << current_block_;
   }
 }
 

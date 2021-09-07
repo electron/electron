@@ -63,7 +63,7 @@ class Archive : public gin::Wrappable<Archive> {
         case asar::HashAlgorithm::SHA256:
           integrity.Set("algorithm", "SHA256");
           break;
-        default:
+        case asar::HashAlgorithm::NONE:
           NOTREACHED();
           break;
       }

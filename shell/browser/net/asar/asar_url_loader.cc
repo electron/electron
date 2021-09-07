@@ -152,25 +152,25 @@ class AsarURLLoader : public network::mojom::URLLoader {
     // requests at the same time.
     base::File file(info.unpacked ? real_path : archive->path(),
                     base::File::FLAG_OPEN | base::File::FLAG_READ);
-    // The validator also needs a file handle so it can independently read
-    // additional bytes to validate hashes
-    base::File validator_file(info.unpacked ? real_path : archive->path(),
-                              base::File::FLAG_OPEN | base::File::FLAG_READ);
     auto file_data_source =
-        std::make_unique<mojo::FileDataSource>(std::move(file));
-    auto asar_validator = std::make_unique<AsarFileValidator>(
-        info.integrity, std::move(validator_file));
+        std::make_unique<mojo::FileDataSource>(file.Duplicate());
+    std::unique_ptr<mojo::DataPipeProducer::DataSource> readable_data_source;
     mojo::FileDataSource* file_data_source_raw = file_data_source.get();
-    AsarFileValidator* file_validator_raw = asar_validator.get();
-    auto filtered_data_source = std::make_unique<mojo::FilteredDataSource>(
-        std::move(file_data_source), std::move(asar_validator));
+    AsarFileValidator* file_validator_raw = nullptr;
+    if (info.integrity.has_value()) {
+      auto asar_validator = std::make_unique<AsarFileValidator>(
+          std::move(info.integrity.value()), std::move(file));
+      file_validator_raw = asar_validator.get();
+      readable_data_source.reset(new mojo::FilteredDataSource(
+          std::move(file_data_source), std::move(asar_validator)));
+    } else {
+      readable_data_source.reset(file_data_source.release());
+    }
 
     std::vector<char> initial_read_buffer(
         std::min(static_cast<uint32_t>(net::kMaxBytesToSniff), info.size));
-    auto read_result =
-        static_cast<mojo::DataPipeProducer::DataSource*>(
-            filtered_data_source.get())
-            ->Read(info.offset, base::span<char>(initial_read_buffer));
+    auto read_result = readable_data_source.get()->Read(
+        info.offset, base::span<char>(initial_read_buffer));
     if (read_result.result != MOJO_RESULT_OK) {
       OnClientComplete(ConvertMojoResultToNetError(read_result.result));
       return;
@@ -244,10 +244,8 @@ class AsarURLLoader : public network::mojom::URLLoader {
       total_bytes_dropped_from_head += bytes_to_drop;
       std::vector<char> abandoned_buffer(bytes_to_drop);
       auto abandon_read_result =
-          static_cast<mojo::DataPipeProducer::DataSource*>(
-              filtered_data_source.get())
-              ->Read(info.offset + net::kMaxBytesToSniff,
-                     base::span<char>(abandoned_buffer));
+          readable_data_source.get()->Read(info.offset + net::kMaxBytesToSniff,
+                                           base::span<char>(abandoned_buffer));
       if (abandon_read_result.result != MOJO_RESULT_OK) {
         OnClientComplete(
             ConvertMojoResultToNetError(abandon_read_result.result));
@@ -275,15 +273,16 @@ class AsarURLLoader : public network::mojom::URLLoader {
       // There's definitely no more data, so we're already done.
       // We provide the range data to the file validator so that
       // it can validate the tiny amount of data we did send
-      file_validator_raw->SetRange(info.offset + first_byte_to_send,
-                                   total_bytes_dropped_from_head,
-                                   info.offset + info.size);
+      if (file_validator_raw)
+        file_validator_raw->SetRange(info.offset + first_byte_to_send,
+                                     total_bytes_dropped_from_head,
+                                     info.offset + info.size);
       OnFileWritten(MOJO_RESULT_OK);
       return;
     }
 
     if (is_verifying_file) {
-      int block_size = info.integrity.value().block_size;
+      uint32_t block_size = info.integrity.value().block_size;
       int start_block = first_byte_to_send / block_size;
 
       // If we're starting from the first block, we might not be starting from
@@ -297,7 +296,8 @@ class AsarURLLoader : public network::mojom::URLLoader {
       uint64_t bytes_to_drop =
           start_block == 0 ? first_byte_to_send - net::kMaxBytesToSniff
                            : first_byte_to_send - (start_block * block_size);
-      file_validator_raw->SetCurrentBlock(start_block);
+      if (file_validator_raw)
+        file_validator_raw->SetCurrentBlock(start_block);
 
       if (bytes_to_drop > 0) {
         uint64_t dropped_bytes_offset =
@@ -306,11 +306,8 @@ class AsarURLLoader : public network::mojom::URLLoader {
           dropped_bytes_offset += net::kMaxBytesToSniff;
         total_bytes_dropped_from_head += bytes_to_drop;
         std::vector<char> abandoned_buffer(bytes_to_drop);
-        auto abandon_read_result =
-            static_cast<mojo::DataPipeProducer::DataSource*>(
-                filtered_data_source.get())
-                ->Read(dropped_bytes_offset,
-                       base::span<char>(abandoned_buffer));
+        auto abandon_read_result = readable_data_source.get()->Read(
+            dropped_bytes_offset, base::span<char>(abandoned_buffer));
         if (abandon_read_result.result != MOJO_RESULT_OK) {
           OnClientComplete(
               ConvertMojoResultToNetError(abandon_read_result.result));
@@ -327,14 +324,15 @@ class AsarURLLoader : public network::mojom::URLLoader {
     file_data_source_raw->SetRange(
         first_byte_to_send + info.offset,
         first_byte_to_send + info.offset + total_bytes_to_send);
-    file_validator_raw->SetRange(info.offset + first_byte_to_send,
-                                 total_bytes_dropped_from_head,
-                                 info.offset + info.size);
+    if (file_validator_raw)
+      file_validator_raw->SetRange(info.offset + first_byte_to_send,
+                                   total_bytes_dropped_from_head,
+                                   info.offset + info.size);
 
     data_producer_ =
         std::make_unique<mojo::DataPipeProducer>(std::move(producer_handle));
     data_producer_->Write(
-        std::move(filtered_data_source),
+        std::move(readable_data_source),
         base::BindOnce(&AsarURLLoader::OnFileWritten, base::Unretained(this)));
   }
 
