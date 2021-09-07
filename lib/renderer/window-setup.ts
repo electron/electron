@@ -4,8 +4,8 @@ import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
 const { contextIsolationEnabled } = internalContextBridge;
 
-export const windowSetup = (guestInstanceId: number, isHiddenPage: boolean) => {
-  if (!process.sandboxed && !guestInstanceId) {
+export const windowSetup = (isWebView: boolean, isHiddenPage: boolean) => {
+  if (!process.sandboxed && !isWebView) {
     // Override default window.close.
     window.close = function () {
       ipcRendererInternal.send(IPC_MESSAGES.BROWSER_WINDOW_CLOSE);
@@ -19,7 +19,7 @@ export const windowSetup = (guestInstanceId: number, isHiddenPage: boolean) => {
   };
   if (contextIsolationEnabled) internalContextBridge.overrideGlobalValueFromIsolatedWorld(['prompt'], window.prompt);
 
-  if (guestInstanceId) {
+  if (isWebView) {
     // Webview `document.visibilityState` tracks window visibility (and ignores
     // the actual <webview> element visibility) for backwards compatibility.
     // See discussion in #9178.

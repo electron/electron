@@ -2,7 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "chrome/browser/ui/views/frame/global_menu_bar_registrar_x11.h"
+#include "shell/browser/ui/views/global_menu_bar_registrar_x11.h"
+
+#include <string>
 
 #include "base/bind.h"
 #include "base/debug/leak_annotations.h"
@@ -49,7 +51,7 @@ GlobalMenuBarRegistrarX11::GlobalMenuBarRegistrarX11() {
                                    G_DBUS_PROXY_FLAGS_DO_NOT_AUTO_START),
       nullptr, kAppMenuRegistrarName, kAppMenuRegistrarPath,
       kAppMenuRegistrarName,
-      nullptr,  // TODO: Probalby want a real cancelable.
+      nullptr,  // Probably want a real cancelable.
       static_cast<GAsyncReadyCallback>(OnProxyCreatedThunk), this);
 }
 

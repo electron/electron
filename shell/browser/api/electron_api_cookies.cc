@@ -294,7 +294,6 @@ v8::Local<v8::Promise> Cookies::Set(v8::Isolate* isolate,
   const std::string* value = details.FindStringKey("value");
   const std::string* domain = details.FindStringKey("domain");
   const std::string* path = details.FindStringKey("path");
-  bool secure = details.FindBoolKey("secure").value_or(false);
   bool http_only = details.FindBoolKey("httpOnly").value_or(false);
   const std::string* same_site_string = details.FindStringKey("sameSite");
   net::CookieSameSite same_site;
@@ -303,6 +302,8 @@ v8::Local<v8::Promise> Cookies::Set(v8::Isolate* isolate,
     promise.RejectWithErrorMessage(error);
     return handle;
   }
+  bool secure = details.FindBoolKey("secure").value_or(
+      same_site == net::CookieSameSite::NO_RESTRICTION);
   bool same_party =
       details.FindBoolKey("sameParty")
           .value_or(secure && same_site != net::CookieSameSite::STRICT_MODE);

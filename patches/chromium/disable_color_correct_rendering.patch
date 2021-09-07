@@ -20,10 +20,10 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index bc0b6cae531402000f783861077363777f6ab8ac..f3b75991c76dbdda138d64a24666243329de47c3 100644
+index 3be9e62159ad6ac98e1cd0790c7c06921effe5e3..356a8f451061b0bddeb1fcc1b64d7e48b7e8c8a6 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
-@@ -1799,6 +1799,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
+@@ -1802,6 +1802,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
  
  gfx::ColorSpace LayerTreeHostImpl::GetRasterColorSpace(
      gfx::ContentColorUsage content_color_usage) const {
@@ -35,10 +35,10 @@ index bc0b6cae531402000f783861077363777f6ab8ac..f3b75991c76dbdda138d64a246662433
  
    // If we are likely to software composite the resource, we use sRGB because
 diff --git a/cc/trees/layer_tree_settings.h b/cc/trees/layer_tree_settings.h
-index bd5bcf4a03022869fe610015e882ff1980d8a0e8..a3fdd7ae208719bd10ddf1044a501e44e0897ae8 100644
+index e38646f8834e07e02845ea96f60f9b067c3bc09a..50a1c9884fa181524dd14e4cce61b0ec0921e4e6 100644
 --- a/cc/trees/layer_tree_settings.h
 +++ b/cc/trees/layer_tree_settings.h
-@@ -95,6 +95,8 @@ class CC_EXPORT LayerTreeSettings {
+@@ -93,6 +93,8 @@ class CC_EXPORT LayerTreeSettings {
    bool use_rgba_4444 = false;
    bool unpremultiply_and_dither_low_bit_depth_tiles = false;
  
@@ -81,7 +81,7 @@ index f919df4d79a1168269c1538ac13a2a944586cf4e..fc34cf5d7dab95e7b6fc0576674b3e2b
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  
 diff --git a/components/viz/service/display/gl_renderer.cc b/components/viz/service/display/gl_renderer.cc
-index 2cd58b05621c11ccda6163cb471b719015b74379..1911003301766cbf05ce0f0b828b8faf971a1dbc 100644
+index 1e2ad6423a5e316a9a1713abab7579ea0d2a82f9..22df5e1728e5dc2879c9b96911f6e7340d455b2a 100644
 --- a/components/viz/service/display/gl_renderer.cc
 +++ b/components/viz/service/display/gl_renderer.cc
 @@ -90,6 +90,9 @@
@@ -187,7 +187,7 @@ index 2cd58b05621c11ccda6163cb471b719015b74379..1911003301766cbf05ce0f0b828b8faf
                  /*adjust_src_white_level=*/draw_cache_.is_video_frame,
                  locked_quad.hdr_metadata());
  
-@@ -3692,7 +3702,9 @@ void GLRenderer::SetUseProgram(const ProgramKey& program_key_no_color,
+@@ -3694,7 +3704,9 @@ void GLRenderer::SetUseProgram(const ProgramKey& program_key_no_color,
                                 const gfx::ColorSpace& dst_color_space,
                                 bool adjust_src_white_level,
                                 absl::optional<gfx::HDRMetadata> hdr_metadata) {
@@ -198,7 +198,7 @@ index 2cd58b05621c11ccda6163cb471b719015b74379..1911003301766cbf05ce0f0b828b8faf
    gfx::ColorSpace adjusted_src_color_space = src_color_space;
    if (adjust_src_white_level && src_color_space.IsHDR()) {
      // TODO(b/183236148): consider using the destination's HDR static metadata
-@@ -4075,9 +4087,9 @@ void GLRenderer::CopyRenderPassDrawQuadToOverlayResource(
+@@ -4077,9 +4089,9 @@ void GLRenderer::CopyRenderPassDrawQuadToOverlayResource(
          cc::MathUtil::CheckedRoundUp(iosurface_height, iosurface_multiple);
    }
  
@@ -211,7 +211,7 @@ index 2cd58b05621c11ccda6163cb471b719015b74379..1911003301766cbf05ce0f0b828b8faf
    *new_bounds = gfx::RectF(updated_dst_rect.origin(),
                             gfx::SizeF((*overlay_texture)->texture.size()));
  
-@@ -4297,8 +4309,8 @@ void GLRenderer::FlushOverdrawFeedback(const gfx::Rect& output_rect) {
+@@ -4299,8 +4311,8 @@ void GLRenderer::FlushOverdrawFeedback(const gfx::Rect& output_rect) {
  
    PrepareGeometry(SHARED_BINDING);
  
@@ -222,17 +222,17 @@ index 2cd58b05621c11ccda6163cb471b719015b74379..1911003301766cbf05ce0f0b828b8faf
  
    gfx::Transform render_matrix;
    render_matrix.Translate(0.5 * output_rect.width() + output_rect.x(),
-@@ -4487,3 +4499,5 @@ GLRenderer::OverlayTexture::OverlayTexture() = default;
+@@ -4489,3 +4501,5 @@ GLRenderer::OverlayTexture::OverlayTexture() = default;
  GLRenderer::OverlayTexture::~OverlayTexture() = default;
  
  }  // namespace viz
 +
 +#undef PATCH_CS
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index f82f2836f270e4f924c0bdc761eb028a05ea504e..d27017508a5f4afdacfcf4757da46bcc26be40c3 100644
+index cc90e0aae77c0ca80eeab84eee8ff89a1295dbd2..fa96e7fa8c4f5d14da548398e533b10f153723ed 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
-@@ -225,6 +225,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
+@@ -224,6 +224,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
  
  // Command-line switches to propagate to the GPU process.
  static const char* const kSwitchNames[] = {
@@ -241,18 +241,18 @@ index f82f2836f270e4f924c0bdc761eb028a05ea504e..d27017508a5f4afdacfcf4757da46bcc
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 224e23ad3584dd4511a4173d632547d4a2ee4e9c..0dbb7fad5c9f3b3889b0825d553992d6fe2745f9 100644
+index 0a53d80feb2cdaa599da3ea87a8a6a8f8327ae92..532e82ca5145853b218c1e835d0b71bc1b158564 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -217,6 +217,7 @@
+@@ -183,6 +183,7 @@
  #include "ui/accessibility/accessibility_switches.h"
  #include "ui/base/ui_base_switches.h"
  #include "ui/display/display_switches.h"
 +#include "ui/gfx/switches.h"
  #include "ui/gl/gl_switches.h"
- #include "ui/native_theme/native_theme_features.h"
+ #include "url/gurl.h"
  #include "url/origin.h"
-@@ -3368,6 +3369,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3375,6 +3376,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -293,7 +293,7 @@ index 94ca8fd75212fa5c7b90823a112309dd7961353b..566393827ef739eb8fc0e24e6ee505e1
  }
  
 diff --git a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
-index 4d87cdf578fdd2cbde7929e3a8c7cabfbb1fc836..be8550927a7c9cdc001dedef66672453846c5dfa 100644
+index 083e7c6d49574ae5d1beeba02b334ae864d60afb..85626cd2354b0c13caceb8a1b4f7d585f400cb2c 100644
 --- a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 +++ b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 @@ -25,6 +25,7 @@
@@ -315,10 +315,10 @@ index 4d87cdf578fdd2cbde7929e3a8c7cabfbb1fc836..be8550927a7c9cdc001dedef66672453
    // is what the renderer uses if its not threaded.
    settings.enable_checker_imaging =
 diff --git a/ui/gfx/mac/io_surface.cc b/ui/gfx/mac/io_surface.cc
-index 546e43318ee74746a84a70c731e9117c88ea9136..3cc93ff14f3471e99e42d533517df36d16d3cca2 100644
+index 7a199bc598eb6ec3a90ca7a6209e6598e48b79d5..eb368323105f7232c1e3ac79b7db56525f2d906f 100644
 --- a/ui/gfx/mac/io_surface.cc
 +++ b/ui/gfx/mac/io_surface.cc
-@@ -20,6 +20,7 @@
+@@ -21,6 +21,7 @@
  #include "ui/gfx/buffer_format_util.h"
  #include "ui/gfx/color_space.h"
  #include "ui/gfx/icc_profile.h"
@@ -326,7 +326,7 @@ index 546e43318ee74746a84a70c731e9117c88ea9136..3cc93ff14f3471e99e42d533517df36d
  
  namespace gfx {
  
-@@ -131,6 +132,14 @@ void IOSurfaceMachPortTraits::Release(mach_port_t port) {
+@@ -132,6 +133,14 @@ void IOSurfaceMachPortTraits::Release(mach_port_t port) {
  // Common method used by IOSurfaceSetColorSpace and IOSurfaceCanSetColorSpace.
  bool IOSurfaceSetColorSpace(IOSurfaceRef io_surface,
                              const ColorSpace& color_space) {
@@ -341,7 +341,7 @@ index 546e43318ee74746a84a70c731e9117c88ea9136..3cc93ff14f3471e99e42d533517df36d
    // Allow but ignore invalid color spaces.
    if (!color_space.IsValid())
      return true;
-@@ -297,6 +306,15 @@ IOSurfaceRef CreateIOSurface(const gfx::Size& size,
+@@ -302,6 +311,15 @@ IOSurfaceRef CreateIOSurface(const gfx::Size& size,
      DCHECK_EQ(kIOReturnSuccess, r);
    }
  

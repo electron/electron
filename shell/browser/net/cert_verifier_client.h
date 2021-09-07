@@ -18,6 +18,7 @@ struct VerifyRequestParams {
   int error_code;
   scoped_refptr<net::X509Certificate> certificate;
   scoped_refptr<net::X509Certificate> validated_certificate;
+  bool is_issued_by_known_root;
 
   VerifyRequestParams();
   VerifyRequestParams(const VerifyRequestParams&);

@@ -868,7 +868,7 @@ void InspectableWebContents::SetPreference(const std::string& name,
 
 void InspectableWebContents::RemovePreference(const std::string& name) {
   DictionaryPrefUpdate update(pref_service_, kDevToolsPreferences);
-  update.Get()->RemoveWithoutPathExpansion(name, nullptr);
+  update.Get()->RemoveKey(name);
 }
 
 void InspectableWebContents::ClearPreferences() {
@@ -969,20 +969,6 @@ void InspectableWebContents::WebContentsDestroyed() {
 
   if (view_ && view_->GetDelegate())
     view_->GetDelegate()->DevToolsClosed();
-}
-
-bool InspectableWebContents::DidAddMessageToConsole(
-    content::WebContents* source,
-    blink::mojom::ConsoleMessageLevel level,
-    const std::u16string& message,
-    int32_t line_no,
-    const std::u16string& source_id) {
-  logging::LogMessage("CONSOLE", line_no,
-                      blink::ConsoleMessageLevelToLogSeverity(level))
-          .stream()
-      << "\"" << message << "\", source: " << source_id << " (" << line_no
-      << ")";
-  return true;
 }
 
 bool InspectableWebContents::HandleKeyboardEvent(

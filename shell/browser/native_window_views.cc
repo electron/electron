@@ -12,7 +12,7 @@
 #include <utility>
 #include <vector>
 
-#include "base/numerics/ranges.h"
+#include "base/cxx17_backports.h"
 #include "base/stl_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/browser_thread.h"
@@ -70,12 +70,14 @@
 
 #elif defined(OS_WIN)
 #include "base/win/win_util.h"
+#include "extensions/common/image_util.h"
 #include "shell/browser/ui/views/win_frame_view.h"
 #include "shell/browser/ui/win/electron_desktop_native_widget_aura.h"
 #include "skia/ext/skia_utils_win.h"
 #include "ui/base/win/shell.h"
 #include "ui/display/screen.h"
 #include "ui/display/win/screen_win.h"
+#include "ui/gfx/color_utils.h"
 #include "ui/views/widget/desktop_aura/desktop_native_widget_aura.h"
 #endif
 
@@ -165,6 +167,37 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   options.Get("thickFrame", &thick_frame_);
   if (transparent())
     thick_frame_ = false;
+
+  overlay_button_color_ = color_utils::GetSysSkColor(COLOR_BTNFACE);
+  overlay_symbol_color_ = color_utils::GetSysSkColor(COLOR_BTNTEXT);
+
+  v8::Local<v8::Value> titlebar_overlay;
+  if (options.Get(options::ktitleBarOverlay, &titlebar_overlay) &&
+      titlebar_overlay->IsObject()) {
+    v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+    gin_helper::Dictionary titlebar_overlay_obj =
+        gin::Dictionary::CreateEmpty(isolate);
+    options.Get(options::ktitleBarOverlay, &titlebar_overlay_obj);
+
+    std::string overlay_color_string;
+    if (titlebar_overlay_obj.Get(options::kOverlayButtonColor,
+                                 &overlay_color_string)) {
+      bool success = extensions::image_util::ParseCssColorString(
+          overlay_color_string, &overlay_button_color_);
+      DCHECK(success);
+    }
+
+    std::string overlay_symbol_color_string;
+    if (titlebar_overlay_obj.Get(options::kOverlaySymbolColor,
+                                 &overlay_symbol_color_string)) {
+      bool success = extensions::image_util::ParseCssColorString(
+          overlay_symbol_color_string, &overlay_symbol_color_);
+      DCHECK(success);
+    }
+  }
+
+  if (title_bar_style_ != TitleBarStyle::kNormal)
+    set_has_frame(false);
 #endif
 
   if (enable_larger_than_screen())
@@ -217,9 +250,7 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
 #endif
 
   widget()->Init(std::move(params));
-#if defined(OS_WIN)
   SetCanResize(resizable_);
-#endif
 
   bool fullscreen = false;
   options.Get(options::kFullscreen, &fullscreen);
@@ -1025,7 +1056,7 @@ bool NativeWindowViews::HasShadow() {
 
 void NativeWindowViews::SetOpacity(const double opacity) {
 #if defined(OS_WIN)
-  const double boundedOpacity = base::ClampToRange(opacity, 0.0, 1.0);
+  const double boundedOpacity = base::clamp(opacity, 0.0, 1.0);
   HWND hwnd = GetAcceleratedWidget();
   if (!layered_) {
     LONG ex_style = ::GetWindowLong(hwnd, GWL_EXSTYLE);
@@ -1598,8 +1629,17 @@ void NativeWindowViews::OnMouseEvent(ui::MouseEvent* event) {
 }
 
 ui::WindowShowState NativeWindowViews::GetRestoredState() {
-  if (IsMaximized())
+  if (IsMaximized()) {
+#if defined(OS_WIN)
+    // Only restore Maximized state when window is NOT transparent style
+    if (!transparent()) {
+      return ui::SHOW_STATE_MAXIMIZED;
+    }
+#else
     return ui::SHOW_STATE_MAXIMIZED;
+#endif
+  }
+
   if (IsFullscreen())
     return ui::SHOW_STATE_FULLSCREEN;
 

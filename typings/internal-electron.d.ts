@@ -56,8 +56,8 @@ declare namespace Electron {
 
   interface WebContents {
     _loadURL(url: string, options: ElectronInternal.LoadURLOptions): void;
-    getOwnerBrowserWindow(): Electron.BrowserWindow;
-    getLastWebPreferences(): Electron.WebPreferences;
+    getOwnerBrowserWindow(): Electron.BrowserWindow | null;
+    getLastWebPreferences(): Electron.WebPreferences | null;
     _getPreloadPaths(): string[];
     equal(other: WebContents): boolean;
     browserWindowOptions: BrowserWindowConstructorOptions;
@@ -79,7 +79,6 @@ declare namespace Electron {
     attachToIframe(embedderWebContents: Electron.WebContents, embedderFrameId: number): void;
     detachFromOuterFrame(): void;
     setEmbedder(embedder: Electron.WebContents): void;
-    attachParams?: Record<string, any>;
     viewInstanceId: number;
   }
 
@@ -90,7 +89,6 @@ declare namespace Electron {
   }
 
   interface WebPreferences {
-    guestInstanceId?: number;
     disablePopups?: boolean;
     preloadURL?: string;
     embedder?: Electron.WebContents;

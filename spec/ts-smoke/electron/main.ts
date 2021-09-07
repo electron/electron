@@ -172,7 +172,6 @@ app.whenReady().then(() => {
 app.getLocale()
 
 // Desktop environment integration
-// https://github.com/electron/electron/blob/master/docs/tutorial/desktop-environment-integration.md
 
 app.addRecentDocument('/Users/USERNAME/Desktop/work.type')
 app.clearRecentDocuments()
@@ -1104,7 +1103,7 @@ shell.writeShortcutLink('/home/user/Desktop/shortcut.lnk', 'update', shell.readS
 
 session.defaultSession.on('will-download', (event, item, webContents) => {
   event.preventDefault()
-  require('request')(item.getURL(), (data: any) => {
+  require('got')(item.getURL()).then((data: any) => {
     require('fs').writeFileSync('/somewhere', data)
   })
 })

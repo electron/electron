@@ -1061,6 +1061,61 @@ Imports the certificate in pkcs12 format into the platform certificate store.
 `callback` is called with the `result` of import operation, a value of `0`
 indicates success while any other value indicates failure according to Chromium [net_error_list](https://source.chromium.org/chromium/chromium/src/+/master:net/base/net_error_list.h).
 
+### `app.configureHostResolver(options)`
+
+* `options` Object
+  * `enableBuiltInResolver` Boolean (optional) - Whether the built-in host
+    resolver is used in preference to getaddrinfo. When enabled, the built-in
+    resolver will attempt to use the system's DNS settings to do DNS lookups
+    itself. Enabled by default on macOS, disabled by default on Windows and
+    Linux.
+  * `secureDnsMode` String (optional) - Can be "off", "automatic" or "secure".
+    Configures the DNS-over-HTTP mode. When "off", no DoH lookups will be
+    performed. When "automatic", DoH lookups will be peformed first if DoH is
+    available, and insecure DNS lookups will be performed as a fallback. When
+    "secure", only DoH lookups will be performed. Defaults to "automatic".
+  * `secureDnsServers` String[]&#32;(optional) - A list of DNS-over-HTTP
+    server templates. See [RFC8484 § 3][] for details on the template format.
+    Most servers support the POST method; the template for such servers is
+    simply a URI. Note that for [some DNS providers][doh-providers], the
+    resolver will automatically upgrade to DoH unless DoH is explicitly
+    disabled, even if there are no DoH servers provided in this list.
+  * `enableAdditionalDnsQueryTypes` Boolean (optional) - Controls whether additional DNS
+    query types, e.g. HTTPS (DNS type 65) will be allowed besides the
+    traditional A and AAAA queries when a request is being made via insecure
+    DNS. Has no effect on Secure DNS which always allows additional types.
+    Defaults to true.
+
+Configures host resolution (DNS and DNS-over-HTTPS). By default, the following
+resolvers will be used, in order:
+
+1. DNS-over-HTTPS, if the [DNS provider supports it][doh-providers], then
+2. the built-in resolver (enabled on macOS only by default), then
+3. the system's resolver (e.g. `getaddrinfo`).
+
+This can be configured to either restrict usage of non-encrypted DNS
+(`secureDnsMode: "secure"`), or disable DNS-over-HTTPS (`secureDnsMode:
+"off"`). It is also possible to enable or disable the built-in resolver.
+
+To disable insecure DNS, you can specify a `secureDnsMode` of `"secure"`. If you do
+so, you should make sure to provide a list of DNS-over-HTTPS servers to use, in
+case the user's DNS configuration does not include a provider that supports
+DoH.
+
+```js
+app.configureHostResolver({
+  secureDnsMode: 'secure',
+  secureDnsServers: [
+    'https://cloudflare-dns.com/dns-query'
+  ]
+})
+```
+
+This API must be called after the `ready` event is emitted.
+
+[doh-providers]: https://source.chromium.org/chromium/chromium/src/+/main:net/dns/public/doh_provider_entry.cc;l=31?q=%22DohProviderEntry::GetList()%22&ss=chromium%2Fchromium%2Fsrc
+[RFC8484 § 3]: https://datatracker.ietf.org/doc/html/rfc8484#section-3
+
 ### `app.disableHardwareAcceleration()`
 
 Disables hardware acceleration for current app.
@@ -1137,8 +1192,8 @@ badge.
 
 On macOS, it shows on the dock icon. On Linux, it only works for Unity launcher.
 
-**Note:** Unity launcher requires the existence of a `.desktop` file to work,
-for more information please read [Desktop Environment Integration][unity-requirement].
+**Note:** Unity launcher requires a `.desktop` file to work. For more information,
+please read the [Unity integration documentation][unity-requirement].
 
 ### `app.getBadgeCount()` _Linux_ _macOS_
 
@@ -1376,8 +1431,8 @@ An `Integer` property that returns the badge count for current app. Setting the 
 
 On macOS, setting this with any nonzero integer shows on the dock icon. On Linux, this property only works for Unity launcher.
 
-**Note:** Unity launcher requires the existence of a `.desktop` file to work,
-for more information please read [Desktop Environment Integration][unity-requirement].
+**Note:** Unity launcher requires a `.desktop` file to work. For more information,
+please read the [Unity integration documentation][unity-requirement].
 
 **Note:** On macOS, you need to ensure that your application has the permission
 to display notifications for this property to take effect.
@@ -1405,7 +1460,7 @@ A `Boolean` property that returns  `true` if the app is packaged, `false` otherw
 [LSCopyDefaultHandlerForURLScheme]: https://developer.apple.com/library/mac/documentation/Carbon/Reference/LaunchServicesReference/#//apple_ref/c/func/LSCopyDefaultHandlerForURLScheme
 [handoff]: https://developer.apple.com/library/ios/documentation/UserExperience/Conceptual/Handoff/HandoffFundamentals/HandoffFundamentals.html
 [activity-type]: https://developer.apple.com/library/ios/documentation/Foundation/Reference/NSUserActivity_Class/index.html#//apple_ref/occ/instp/NSUserActivity/activityType
-[unity-requirement]: ../tutorial/desktop-environment-integration.md#unity-launcher
+[unity-requirement]: https://help.ubuntu.com/community/UnityLaunchersAndDesktopFiles#Adding_shortcuts_to_a_launcher
 [mas-builds]: ../tutorial/mac-app-store-submission-guide.md
 [Squirrel-Windows]: https://github.com/Squirrel/Squirrel.Windows
 [JumpListBeginListMSDN]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378398(v=vs.85).aspx

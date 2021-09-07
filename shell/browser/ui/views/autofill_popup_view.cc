@@ -213,7 +213,7 @@ void AutofillPopupView::CreateChildViews() {
   if (!popup_)
     return;
 
-  RemoveAllChildViews(true);
+  RemoveAllChildViews();
 
   for (int i = 0; i < popup_->GetLineCount(); ++i) {
     auto* child_view = new AutofillPopupChildView(popup_->GetValueAt(i));

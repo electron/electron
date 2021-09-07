@@ -12,9 +12,9 @@
 #include <utility>
 #include <vector>
 
+#include "base/cxx17_backports.h"
 #include "base/mac/mac_util.h"
 #include "base/mac/scoped_cftyperef.h"
-#include "base/numerics/ranges.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/task/post_task.h"
 #include "components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h"
@@ -23,7 +23,6 @@
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/desktop_media_id.h"
-#include "content/public/common/content_features.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_browser_view_mac.h"
 #include "shell/browser/ui/cocoa/electron_native_widget_mac.h"
@@ -32,7 +31,7 @@
 #include "shell/browser/ui/cocoa/electron_preview_item.h"
 #include "shell/browser/ui/cocoa/electron_touch_bar.h"
 #include "shell/browser/ui/cocoa/root_view_mac.h"
-#include "shell/browser/ui/cocoa/window_buttons_view.h"
+#include "shell/browser/ui/cocoa/window_buttons_proxy.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "shell/browser/window_list.h"
@@ -166,28 +165,6 @@
 namespace gin {
 
 template <>
-struct Converter<electron::NativeWindowMac::TitleBarStyle> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Handle<v8::Value> val,
-                     electron::NativeWindowMac::TitleBarStyle* out) {
-    using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
-    std::string title_bar_style;
-    if (!ConvertFromV8(isolate, val, &title_bar_style))
-      return false;
-    if (title_bar_style == "hidden") {
-      *out = TitleBarStyle::kHidden;
-    } else if (title_bar_style == "hiddenInset") {
-      *out = TitleBarStyle::kHiddenInset;
-    } else if (title_bar_style == "customButtonsOnHover") {
-      *out = TitleBarStyle::kCustomButtonsOnHover;
-    } else {
-      return false;
-    }
-    return true;
-  }
-};
-
-template <>
 struct Converter<electron::NativeWindowMac::VisualEffectState> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Handle<v8::Value> val,
@@ -276,7 +253,6 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
 
   bool resizable = true;
   options.Get(options::kResizable, &resizable);
-  options.Get(options::kTitleBarStyle, &title_bar_style_);
   options.Get(options::kZoomToPageWidth, &zoom_to_page_width_);
   options.Get(options::kSimpleFullScreen, &always_simple_fullscreen_);
   options.GetOptional(options::kTrafficLightPosition, &traffic_light_position_);
@@ -381,8 +357,26 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
     [window_ setTitleVisibility:NSWindowTitleHidden];
     // Remove non-transparent corners, see http://git.io/vfonD.
     [window_ setOpaque:NO];
-    // Hide the window buttons.
-    InternalSetStandardButtonsVisibility(false);
+    // Show window buttons if titleBarStyle is not "normal".
+    if (title_bar_style_ == TitleBarStyle::kNormal) {
+      InternalSetWindowButtonVisibility(false);
+    } else {
+      buttons_proxy_.reset([[WindowButtonsProxy alloc] initWithWindow:window_]);
+      if (traffic_light_position_) {
+        [buttons_proxy_ setMargin:*traffic_light_position_];
+      } else if (title_bar_style_ == TitleBarStyle::kHiddenInset) {
+        // For macOS >= 11, while this value does not match offical macOS apps
+        // like Safari or Notes, it matches titleBarStyle's old implementation
+        // before Electron <= 12.
+        [buttons_proxy_ setMargin:gfx::Point(12, 11)];
+      }
+      if (title_bar_style_ == TitleBarStyle::kCustomButtonsOnHover) {
+        [buttons_proxy_ setShowOnHover:YES];
+      } else {
+        // customButtonsOnHover does not show buttons initialiy.
+        InternalSetWindowButtonVisibility(true);
+      }
+    }
   }
 
   // Create a tab only if tabbing identifier is specified and window has
@@ -460,9 +454,6 @@ void NativeWindowMac::SetContentView(views::View* view) {
 
   set_content_view(view);
   root_view->AddChildView(content_view());
-
-  if (buttons_view_)
-    ReorderButtonsView();
 
   root_view->Layout();
 }
@@ -806,8 +797,6 @@ bool NativeWindowMac::IsMovable() {
 
 void NativeWindowMac::SetMinimizable(bool minimizable) {
   SetStyleMask(minimizable, NSMiniaturizableWindowMask);
-  if (buttons_view_)
-    [[buttons_view_ viewWithTag:1] setEnabled:minimizable];
 }
 
 bool NativeWindowMac::IsMinimizable() {
@@ -829,8 +818,6 @@ void NativeWindowMac::SetFullScreenable(bool fullscreenable) {
   // On EL Capitan this flag is required to hide fullscreen button.
   SetCollectionBehavior(!fullscreenable,
                         NSWindowCollectionBehaviorFullScreenAuxiliary);
-  if (buttons_view_)
-    [[buttons_view_ viewWithTag:2] setEnabled:fullscreenable];
 }
 
 bool NativeWindowMac::IsFullScreenable() {
@@ -840,8 +827,6 @@ bool NativeWindowMac::IsFullScreenable() {
 
 void NativeWindowMac::SetClosable(bool closable) {
   SetStyleMask(closable, NSWindowStyleMaskClosable);
-  if (buttons_view_)
-    [[buttons_view_ viewWithTag:0] setEnabled:closable];
 }
 
 bool NativeWindowMac::IsClosable() {
@@ -947,6 +932,8 @@ void NativeWindowMac::Invalidate() {
 
 void NativeWindowMac::SetTitle(const std::string& title) {
   [window_ setTitle:base::SysUTF8ToNSString(title)];
+  if (buttons_proxy_)
+    [buttons_proxy_ redraw];
 }
 
 std::string NativeWindowMac::GetTitle() {
@@ -1019,6 +1006,13 @@ void NativeWindowMac::SetSimpleFullScreen(bool simple_fullscreen) {
       window.level = NSPopUpMenuWindowLevel;
     }
 
+    // Always hide the titlebar in simple fullscreen mode.
+    //
+    // Note that we must remove the NSWindowStyleMaskTitled style instead of
+    // using the [window_ setTitleVisibility:], as the latter would leave the
+    // window with rounded corners.
+    SetStyleMask(false, NSWindowStyleMaskTitled);
+
     if (!window_button_visibility_.has_value()) {
       // Lets keep previous behaviour - hide window controls in titled
       // fullscreen mode when not specified otherwise.
@@ -1035,16 +1029,6 @@ void NativeWindowMac::SetSimpleFullScreen(bool simple_fullscreen) {
   } else if (!simple_fullscreen && is_simple_fullscreen_) {
     is_simple_fullscreen_ = false;
 
-    // Restore default window controls visibility state.
-    if (!window_button_visibility_.has_value()) {
-      bool visibility;
-      if (has_frame())
-        visibility = true;
-      else
-        visibility = title_bar_style_ != TitleBarStyle::kNormal;
-      InternalSetWindowButtonVisibility(visibility);
-    }
-
     [window setFrame:original_frame_ display:YES animate:YES];
     window.level = original_level_;
 
@@ -1057,6 +1041,19 @@ void NativeWindowMac::SetSimpleFullScreen(bool simple_fullscreen) {
     // Restore window manipulation abilities
     SetMaximizable(was_maximizable_);
     SetMovable(was_movable_);
+
+    // Restore default window controls visibility state.
+    if (!window_button_visibility_.has_value()) {
+      bool visibility;
+      if (has_frame())
+        visibility = true;
+      else
+        visibility = title_bar_style_ != TitleBarStyle::kNormal;
+      InternalSetWindowButtonVisibility(visibility);
+    }
+
+    if (buttons_proxy_)
+      [buttons_proxy_ redraw];
   }
 }
 
@@ -1111,7 +1108,7 @@ bool NativeWindowMac::HasShadow() {
 }
 
 void NativeWindowMac::SetOpacity(const double opacity) {
-  const double boundedOpacity = base::ClampToRange(opacity, 0.0, 1.0);
+  const double boundedOpacity = base::clamp(opacity, 0.0, 1.0);
   [window_ setAlphaValue:boundedOpacity];
 }
 
@@ -1129,6 +1126,8 @@ std::string NativeWindowMac::GetRepresentedFilename() {
 
 void NativeWindowMac::SetDocumentEdited(bool edited) {
   [window_ setDocumentEdited:edited];
+  if (buttons_proxy_)
+    [buttons_proxy_ redraw];
 }
 
 bool NativeWindowMac::IsDocumentEdited() {
@@ -1182,8 +1181,6 @@ void NativeWindowMac::AddBrowserView(NativeBrowserView* view) {
   }
 
   [CATransaction commit];
-
-  ReorderButtonsView();
 }
 
 void NativeWindowMac::RemoveBrowserView(NativeBrowserView* view) {
@@ -1225,8 +1222,6 @@ void NativeWindowMac::SetTopBrowserView(NativeBrowserView* view) {
   }
 
   [CATransaction commit];
-
-  ReorderButtonsView();
 }
 
 void NativeWindowMac::SetParentWindow(NativeWindow* parent) {
@@ -1250,11 +1245,13 @@ content::DesktopMediaID NativeWindowMac::GetDesktopMediaID() const {
       content::DesktopMediaID::TYPE_WINDOW, GetAcceleratedWidget());
   // c.f.
   // https://source.chromium.org/chromium/chromium/src/+/master:chrome/browser/media/webrtc/native_desktop_media_list.cc;l=372?q=kWindowCaptureMacV2&ss=chromium
-  if (base::FeatureList::IsEnabled(features::kWindowCaptureMacV2)) {
+  // Refs https://github.com/electron/electron/pull/30507
+  // TODO(deepak1556): Match upstream for `kWindowCaptureMacV2`
+#if 0
     if (remote_cocoa::ScopedCGWindowID::Get(desktop_media_id.id)) {
       desktop_media_id.window_id = desktop_media_id.id;
     }
-  }
+#endif
   return desktop_media_id;
 }
 
@@ -1488,25 +1485,26 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
 
 void NativeWindowMac::SetWindowButtonVisibility(bool visible) {
   window_button_visibility_ = visible;
-  InternalSetWindowButtonVisibility(visible);
+  // The visibility of window buttons are managed by |buttons_proxy_| if the
+  // style is customButtonsOnHover.
+  if (title_bar_style_ == TitleBarStyle::kCustomButtonsOnHover)
+    [buttons_proxy_ setVisible:visible];
+  else
+    InternalSetWindowButtonVisibility(visible);
   NotifyLayoutWindowControlsOverlay();
 }
 
 bool NativeWindowMac::GetWindowButtonVisibility() const {
-  if (buttons_view_)
-    return ![buttons_view_ isHidden];
-  else
-    return ![window_ standardWindowButton:NSWindowZoomButton].hidden ||
-           ![window_ standardWindowButton:NSWindowMiniaturizeButton].hidden ||
-           ![window_ standardWindowButton:NSWindowCloseButton].hidden;
+  return ![window_ standardWindowButton:NSWindowZoomButton].hidden ||
+         ![window_ standardWindowButton:NSWindowMiniaturizeButton].hidden ||
+         ![window_ standardWindowButton:NSWindowCloseButton].hidden;
 }
 
 void NativeWindowMac::SetTrafficLightPosition(
     absl::optional<gfx::Point> position) {
   traffic_light_position_ = std::move(position);
-  if (buttons_view_) {
-    [buttons_view_ setMargin:traffic_light_position_];
-    [buttons_view_ viewDidMoveToWindow];
+  if (buttons_proxy_) {
+    [buttons_proxy_ setMargin:traffic_light_position_];
     NotifyLayoutWindowControlsOverlay();
   }
 }
@@ -1516,8 +1514,8 @@ absl::optional<gfx::Point> NativeWindowMac::GetTrafficLightPosition() const {
 }
 
 void NativeWindowMac::RedrawTrafficLights() {
-  if (buttons_view_)
-    [buttons_view_ setNeedsDisplayForButtons];
+  if (buttons_proxy_ && !IsFullscreen())
+    [buttons_proxy_ redraw];
 }
 
 // In simpleFullScreen mode, update the frame for new bounds.
@@ -1601,7 +1599,7 @@ void NativeWindowMac::SetAspectRatio(double aspect_ratio,
 
   // Reset the behaviour to default if aspect_ratio is set to 0 or less.
   if (aspect_ratio > 0.0)
-    [window_ setAspectRatio:NSMakeSize(aspect_ratio, 1.0)];
+    [window_ setContentAspectRatio:NSMakeSize(aspect_ratio, 1.0)];
   else
     [window_ setResizeIncrements:NSMakeSize(1.0, 1.0)];
 }
@@ -1649,35 +1647,30 @@ gfx::Rect NativeWindowMac::WindowBoundsToContentBounds(
 void NativeWindowMac::NotifyWindowEnterFullScreen() {
   NativeWindow::NotifyWindowEnterFullScreen();
   // Restore the window title under fullscreen mode.
-  if (buttons_view_)
+  if (buttons_proxy_)
     [window_ setTitleVisibility:NSWindowTitleVisible];
-  RedrawTrafficLights();
 }
 
 void NativeWindowMac::NotifyWindowLeaveFullScreen() {
   NativeWindow::NotifyWindowLeaveFullScreen();
+  // Restore window buttons.
+  if (buttons_proxy_ && window_button_visibility_.value_or(true)) {
+    [buttons_proxy_ redraw];
+    [buttons_proxy_ setVisible:YES];
+  }
 }
 
 void NativeWindowMac::NotifyWindowWillEnterFullScreen() {
-  // Remove the buttonsView otherwise window buttons won't show under
-  // fullscreen mode.
-  if (buttons_view_) {
-    [buttons_view_ removeFromSuperview];
-    InternalSetStandardButtonsVisibility(true);
-  }
-
   UpdateVibrancyRadii(true);
 }
 
 void NativeWindowMac::NotifyWindowWillLeaveFullScreen() {
-  // Hide window title and restore buttonsView when leaving fullscreen.
-  if (buttons_view_) {
+  if (buttons_proxy_) {
+    // Hide window title when leaving fullscreen.
     [window_ setTitleVisibility:NSWindowTitleHidden];
-    InternalSetStandardButtonsVisibility(false);
-    [[window_ contentView] addSubview:buttons_view_];
+    // Hide the container otherwise traffic light buttons jump.
+    [buttons_proxy_ setVisible:NO];
   }
-
-  RedrawTrafficLights();
   UpdateVibrancyRadii(false);
 }
 
@@ -1687,13 +1680,6 @@ void NativeWindowMac::SetActive(bool is_key) {
 
 bool NativeWindowMac::IsActive() const {
   return is_active_;
-}
-
-void NativeWindowMac::ReorderButtonsView() {
-  if (buttons_view_ && !IsFullscreen()) {
-    [buttons_view_ removeFromSuperview];
-    [[window_ contentView] addSubview:buttons_view_];
-  }
 }
 
 void NativeWindowMac::Cleanup() {
@@ -1791,37 +1777,10 @@ void NativeWindowMac::AddContentViewLayers() {
                               (IMP)ViewDidMoveToSuperview, "v@:");
       [[window_ contentView] viewDidMoveToWindow];
     }
-
-    // Create a custom window buttons view.
-    if (title_bar_style_ != TitleBarStyle::kNormal) {
-      buttons_view_.reset(
-          [[WindowButtonsView alloc] initWithMargin:traffic_light_position_]);
-      if (title_bar_style_ == TitleBarStyle::kCustomButtonsOnHover)
-        [buttons_view_ setShowOnHover:YES];
-      if (title_bar_style_ == TitleBarStyle::kHiddenInset &&
-          !traffic_light_position_)
-        [buttons_view_ setMargin:[WindowButtonsView hiddenInsetMargin]];
-
-      if (!IsClosable())
-        [[buttons_view_ viewWithTag:0] setEnabled:NO];
-      if (!IsMinimizable())
-        [[buttons_view_ viewWithTag:1] setEnabled:NO];
-      if (!IsFullScreenable())
-        [[buttons_view_ viewWithTag:2] setEnabled:NO];
-
-      [[window_ contentView] addSubview:buttons_view_];
-    }
   }
 }
 
 void NativeWindowMac::InternalSetWindowButtonVisibility(bool visible) {
-  if (buttons_view_)
-    [buttons_view_ setHidden:!visible];
-  else
-    InternalSetStandardButtonsVisibility(visible);
-}
-
-void NativeWindowMac::InternalSetStandardButtonsVisibility(bool visible) {
   [[window_ standardWindowButton:NSWindowCloseButton] setHidden:!visible];
   [[window_ standardWindowButton:NSWindowMiniaturizeButton] setHidden:!visible];
   [[window_ standardWindowButton:NSWindowZoomButton] setHidden:!visible];
@@ -1861,24 +1820,17 @@ void NativeWindowMac::SetForwardMouseMessages(bool forward) {
 }
 
 gfx::Rect NativeWindowMac::GetWindowControlsOverlayRect() {
-  gfx::Rect bounding_rect;
-  if (titlebar_overlay_ && !has_frame() && buttons_view_ &&
-      ![buttons_view_ isHidden]) {
-    NSRect button_frame = [buttons_view_ frame];
-    gfx::Point buttons_view_margin = [buttons_view_ getMargin];
-    const int overlay_width = GetContentSize().width() - NSWidth(button_frame) -
-                              buttons_view_margin.x();
-    CGFloat overlay_height =
-        NSHeight(button_frame) + buttons_view_margin.y() * 2;
-    if (base::i18n::IsRTL()) {
-      bounding_rect = gfx::Rect(0, 0, overlay_width, overlay_height);
-    } else {
-      bounding_rect =
-          gfx::Rect(button_frame.size.width + buttons_view_margin.x(), 0,
-                    overlay_width, overlay_height);
-    }
+  if (titlebar_overlay_ && buttons_proxy_ &&
+      window_button_visibility_.value_or(true)) {
+    NSRect buttons = [buttons_proxy_ getButtonsContainerBounds];
+    gfx::Rect overlay;
+    overlay.set_width(GetContentSize().width() - NSWidth(buttons));
+    overlay.set_height(NSHeight(buttons));
+    if (!base::i18n::IsRTL())
+      overlay.set_x(NSMaxX(buttons));
+    return overlay;
   }
-  return bounding_rect;
+  return gfx::Rect();
 }
 
 // static

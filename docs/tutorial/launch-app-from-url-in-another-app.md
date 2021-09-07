@@ -44,7 +44,7 @@ if (process.defaultApp) {
 We will now define the function in charge of creating our browser window and load our application's `index.html` file.
 
 ```js
-function createWindow () {
+const createWindow = () => {
   // Create the browser window.
   mainWindow = new BrowserWindow({
     width: 800,
@@ -112,7 +112,7 @@ Finally, we will add some additional code to handle when someone closes our appl
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
-app.on('window-all-closed', function () {
+app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
 })
 ```
@@ -127,31 +127,25 @@ can add the flag `--extend-info` with a path to the `plist` you've created. The 
 ### Plist
 
 ```XML
-  <p>
-  <h5>macOS plist</h5>
-  <pre><code>
-    <?xml version="1.0" encoding="UTF-8"?>
-        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-            <plist version="1.0">
-                <dict>
-                    <key>CFBundleURLTypes</key>
-                    <array>
-                        <dict>
-                            <key>CFBundleURLSchemes</key>
-                            <array>
-                                <string>electron-api-demos</string>
-                            </array>
-                            <key>CFBundleURLName</key>
-                            <string>Electron API Demos Protocol</string>
-                        </dict>
-                    </array>
-                    <key>ElectronTeamID</key>
-                    <string>VEKTX9H2N7</string>
-                </dict>
-            </plist>
-        </code>
-    </pre>
-  <p>
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+    <dict>
+        <key>CFBundleURLTypes</key>
+        <array>
+            <dict>
+                <key>CFBundleURLSchemes</key>
+                <array>
+                    <string>electron-api-demos</string>
+                </array>
+                <key>CFBundleURLName</key>
+                <string>Electron API Demos Protocol</string>
+            </dict>
+        </array>
+        <key>ElectronTeamID</key>
+        <string>VEKTX9H2N7</string>
+    </dict>
+</plist>
 ```
 
 ## Conclusion

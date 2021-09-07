@@ -1,4 +1,4 @@
-# Represented File for macOS BrowserWindows
+# Representing Files in a BrowserWindow (macOS)
 
 ## Overview
 
@@ -24,7 +24,7 @@ To set the represented file of window, you can use the
 const { app, BrowserWindow } = require('electron')
 const os = require('os');
 
-function createWindow () {
+const createWindow = () => {
   const win = new BrowserWindow({
     width: 800,
     height: 600

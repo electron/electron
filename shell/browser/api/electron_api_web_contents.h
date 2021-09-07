@@ -30,7 +30,6 @@
 #include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/receiver_set.h"
 #include "printing/buildflags/buildflags.h"
-#include "services/service_manager/public/cpp/binder_registry.h"
 #include "shell/browser/api/frame_subscriber.h"
 #include "shell/browser/api/save_page_handler.h"
 #include "shell/browser/event_emitter_mixin.h"
@@ -543,9 +542,12 @@ class WebContents : public gin::Wrappable<WebContents>,
   void BeforeUnloadFired(bool proceed,
                          const base::TimeTicks& proceed_time) override;
   void RenderFrameCreated(content::RenderFrameHost* render_frame_host) override;
+  void RenderFrameDeleted(content::RenderFrameHost* render_frame_host) override;
+  void RenderFrameHostChanged(content::RenderFrameHost* old_host,
+                              content::RenderFrameHost* new_host) override;
+  void FrameDeleted(int frame_tree_node_id) override;
   void RenderViewDeleted(content::RenderViewHost*) override;
   void RenderProcessGone(base::TerminationStatus status) override;
-  void RenderFrameDeleted(content::RenderFrameHost* render_frame_host) override;
   void DOMContentLoaded(content::RenderFrameHost* render_frame_host) override;
   void DidFinishLoad(content::RenderFrameHost* render_frame_host,
                      const GURL& validated_url) override;
@@ -578,10 +580,6 @@ class WebContents : public gin::Wrappable<WebContents>,
       const content::MediaPlayerId& id,
       content::WebContentsObserver::MediaStoppedReason reason) override;
   void DidChangeThemeColor() override;
-  void OnInterfaceRequestFromFrame(
-      content::RenderFrameHost* render_frame_host,
-      const std::string& interface_name,
-      mojo::ScopedMessagePipeHandle* interface_pipe) override;
   void OnCursorChanged(const content::WebCursor& cursor) override;
   void DidAcquireFullscreen(content::RenderFrameHost* rfh) override;
 
@@ -766,8 +764,6 @@ class WebContents : public gin::Wrappable<WebContents>,
 
   // Stores the frame thats currently in fullscreen, nullptr if there is none.
   content::RenderFrameHost* fullscreen_frame_ = nullptr;
-
-  service_manager::BinderRegistryWithArgs<content::RenderFrameHost*> registry_;
 
   base::WeakPtrFactory<WebContents> weak_factory_{this};
 

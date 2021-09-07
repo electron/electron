@@ -126,7 +126,7 @@ if (hasSwitch('unsafely-expose-electron-internals-for-testing')) {
 const contextIsolation = mainFrame.getWebPreference('contextIsolation');
 const webviewTag = mainFrame.getWebPreference('webviewTag');
 const isHiddenPage = mainFrame.getWebPreference('hiddenPage');
-const guestInstanceId = mainFrame.getWebPreference('guestInstanceId');
+const isWebView = mainFrame.getWebPreference('isWebView');
 
 switch (window.location.protocol) {
   case 'devtools:': {
@@ -143,14 +143,14 @@ switch (window.location.protocol) {
   default: {
     // Override default web functions.
     const { windowSetup } = require('@electron/internal/renderer/window-setup') as typeof windowSetupModule;
-    windowSetup(guestInstanceId, isHiddenPage);
+    windowSetup(isWebView, isHiddenPage);
   }
 }
 
 // Load webview tag implementation.
 if (process.isMainFrame) {
   const { webViewInit } = require('@electron/internal/renderer/web-view/web-view-init') as typeof webViewInitModule;
-  webViewInit(contextIsolation, webviewTag, guestInstanceId);
+  webViewInit(contextIsolation, webviewTag, isWebView);
 }
 
 // Wrap the script into a function executed in global scope. It won't have

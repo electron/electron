@@ -8,7 +8,7 @@ WebPreferences of in-process child windows, rather than relying on
 process-level command line switches, as before.
 
 diff --git a/third_party/blink/common/web_preferences/web_preferences.cc b/third_party/blink/common/web_preferences/web_preferences.cc
-index 8a1315f7f89588bb21c6d3c21a7de7c07fed9679..51cc790f7e1ba1440a6ffaa56c9e01687fc35c06 100644
+index 8a1315f7f89588bb21c6d3c21a7de7c07fed9679..c23443c7816e38836b2f4233ca3a742693888f39 100644
 --- a/third_party/blink/common/web_preferences/web_preferences.cc
 +++ b/third_party/blink/common/web_preferences/web_preferences.cc
 @@ -148,6 +148,22 @@ WebPreferences::WebPreferences()
@@ -18,7 +18,7 @@ index 8a1315f7f89588bb21c6d3c21a7de7c07fed9679..51cc790f7e1ba1440a6ffaa56c9e0168
 +      // Begin Electron-specific WebPreferences.
 +      background_color(base::EmptyString()),
 +      context_isolation(false),
-+      guest_instance_id(0),
++      is_webview(false),
 +      hidden_page(false),
 +      offscreen(false),
 +      preload(base::FilePath::StringType()),
@@ -34,7 +34,7 @@ index 8a1315f7f89588bb21c6d3c21a7de7c07fed9679..51cc790f7e1ba1440a6ffaa56c9e0168
        accelerated_video_decode_enabled(false),
        animation_policy(
 diff --git a/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc b/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
-index ab2d320a4073308c249821a060e870afc0dbc3a5..7437cf37421814ce99cf9062c91e17b2cb62f41e 100644
+index a264ef99beb81dd6b1f55c1b0f57f6055b4ab771..16b734cb371d22dbe99b4ae397126f240b9f686c 100644
 --- a/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
 +++ b/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
 @@ -23,6 +23,10 @@ bool StructTraits<blink::mojom::WebPreferencesDataView,
@@ -54,7 +54,7 @@ index ab2d320a4073308c249821a060e870afc0dbc3a5..7437cf37421814ce99cf9062c91e17b2
    out->record_whole_document = data.record_whole_document();
 +  // Begin Electron-specific WebPreferences.
 +  out->context_isolation = data.context_isolation();
-+  out->guest_instance_id = data.guest_instance_id();
++  out->is_webview = data.is_webview();
 +  out->hidden_page = data.hidden_page();
 +  out->offscreen = data.offscreen();
 +  out->node_integration = data.node_integration();
@@ -69,7 +69,7 @@ index ab2d320a4073308c249821a060e870afc0dbc3a5..7437cf37421814ce99cf9062c91e17b2
    out->accelerated_video_decode_enabled =
        data.accelerated_video_decode_enabled();
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences.h b/third_party/blink/public/common/web_preferences/web_preferences.h
-index 84736bea7ac7b6fcc85782ba9faecb23a0d6574c..ae86a2e467e9fe7e59284d755f983bec663655d9 100644
+index 4517bf43c1b80f1aa0f3ba8e67e78b8b91e19f8a..5dc73459f424ad0a01b4ea18e4de196e20d24ae5 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences.h
 @@ -10,6 +10,7 @@
@@ -88,7 +88,7 @@ index 84736bea7ac7b6fcc85782ba9faecb23a0d6574c..ae86a2e467e9fe7e59284d755f983bec
 +  std::vector<base::FilePath> preloads;
 +  std::string background_color;
 +  bool context_isolation;
-+  int guest_instance_id;
++  bool is_webview;
 +  bool hidden_page;
 +  bool offscreen;
 +  base::FilePath preload;
@@ -105,7 +105,7 @@ index 84736bea7ac7b6fcc85782ba9faecb23a0d6574c..ae86a2e467e9fe7e59284d755f983bec
    // only controls whether or not the "document.cookie" field is properly
    // connected to the backing store, for instance if you wanted to be able to
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
-index 90a2bb1a13afd749b540545fff22ba2134917b5d..9bb9b6eb35ce5c03dd8f22e7288f76a26d0f78e7 100644
+index 9dbbb581a8876430c3e0a39df1ff655d3ddc6d2d..98c5c4ac5ee3130581c8576e5ef810a78939f50e 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
 @@ -6,6 +6,7 @@
@@ -133,8 +133,8 @@ index 90a2bb1a13afd749b540545fff22ba2134917b5d..9bb9b6eb35ce5c03dd8f22e7288f76a2
 +    return r.context_isolation;
 +  }
 +
-+  static int guest_instance_id(const blink::web_pref::WebPreferences& r) {
-+    return r.guest_instance_id;
++  static int is_webview(const blink::web_pref::WebPreferences& r) {
++    return r.is_webview;
 +  }
 +
 +  static bool hidden_page(const blink::web_pref::WebPreferences& r) {
@@ -182,7 +182,7 @@ index 90a2bb1a13afd749b540545fff22ba2134917b5d..9bb9b6eb35ce5c03dd8f22e7288f76a2
      return r.cookie_enabled;
    }
 diff --git a/third_party/blink/public/mojom/webpreferences/web_preferences.mojom b/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
-index db9994ca72f244d6e626d8793ec0cc181a582ea4..a35d5fba071f10bf9c55cf62cd782a5212cddaa9 100644
+index eaecb8c2b7dadaf7650bc8ac85cbad4383035e67..64d83af36d384d2eb7fdd89a3a0d3665a40354a1 100644
 --- a/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
 +++ b/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
 @@ -10,6 +10,7 @@ import "third_party/blink/public/mojom/v8_cache_options.mojom";
@@ -201,7 +201,7 @@ index db9994ca72f244d6e626d8793ec0cc181a582ea4..a35d5fba071f10bf9c55cf62cd782a52
 +  array<mojo_base.mojom.FilePath> preloads;
 +  string background_color;
 +  bool context_isolation;
-+  int32 guest_instance_id;
++  bool is_webview;
 +  bool hidden_page;
 +  bool offscreen;
 +  mojo_base.mojom.FilePath preload;

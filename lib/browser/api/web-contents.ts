@@ -768,6 +768,10 @@ export function fromId (id: string) {
   return binding.fromId(id);
 }
 
+export function fromDevToolsTargetId (targetId: string) {
+  return binding.fromDevToolsTargetId(targetId);
+}
+
 export function getFocusedWebContents () {
   let focused = null;
   for (const contents of binding.getAllWebContents()) {

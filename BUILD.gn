@@ -307,6 +307,23 @@ action("electron_fuses") {
   args = rebase_path(outputs)
 }
 
+action("electron_generate_node_defines") {
+  script = "build/generate_node_defines.py"
+
+  inputs = [
+    "//third_party/electron_node/src/tracing/trace_event_common.h",
+    "//third_party/electron_node/src/tracing/trace_event.h",
+    "//third_party/electron_node/src/util.h",
+  ]
+
+  outputs = [
+    "$target_gen_dir/push_and_undef_node_defines.h",
+    "$target_gen_dir/pop_node_defines.h",
+  ]
+
+  args = [ rebase_path(target_gen_dir) ] + rebase_path(inputs)
+}
+
 source_set("electron_lib") {
   configs += [ "//v8:external_startup_data" ]
   configs += [ "//third_party/electron_node:node_internals" ]
@@ -318,6 +335,7 @@ source_set("electron_lib") {
 
   deps = [
     ":electron_fuses",
+    ":electron_generate_node_defines",
     ":electron_js2c",
     ":electron_version_header",
     ":resources",
@@ -1131,6 +1149,7 @@ if (is_mac) {
     ]
 
     data = []
+    data_deps = []
 
     data += [ "$root_out_dir/resources.pak" ]
     data += [ "$root_out_dir/chrome_100_percent.pak" ]
@@ -1147,6 +1166,10 @@ if (is_mac) {
 
     if (use_v8_context_snapshot) {
       public_deps = [ "//tools/v8_context_snapshot:v8_context_snapshot" ]
+    }
+
+    if (is_linux) {
+      data_deps += [ "//components/crash/core/app:chrome_crashpad_handler" ]
     }
 
     if (is_win) {

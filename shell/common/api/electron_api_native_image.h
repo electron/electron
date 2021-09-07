@@ -45,6 +45,12 @@ namespace api {
 
 class NativeImage : public gin::Wrappable<NativeImage> {
  public:
+  NativeImage(v8::Isolate* isolate, const gfx::Image& image);
+#if defined(OS_WIN)
+  NativeImage(v8::Isolate* isolate, const base::FilePath& hicon_path);
+#endif
+  ~NativeImage() override;
+
   static gin::Handle<NativeImage> CreateEmpty(v8::Isolate* isolate);
   static gin::Handle<NativeImage> Create(v8::Isolate* isolate,
                                          const gfx::Image& image);
@@ -94,13 +100,6 @@ class NativeImage : public gin::Wrappable<NativeImage> {
 #endif
 
   const gfx::Image& image() const { return image_; }
-
- protected:
-  NativeImage(v8::Isolate* isolate, const gfx::Image& image);
-#if defined(OS_WIN)
-  NativeImage(v8::Isolate* isolate, const base::FilePath& hicon_path);
-#endif
-  ~NativeImage() override;
 
  private:
   v8::Local<v8::Value> ToPNG(gin::Arguments* args);

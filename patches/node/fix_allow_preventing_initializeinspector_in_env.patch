@@ -11,10 +11,10 @@ initialize it in the browser process. This adds a new
 EnvironmentFlags option which allows preventing that invocation.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index de29d45adde76587f2a9cd50392ba45b8e24839e..09c0d22ff91856704f61024646c946a39baf53d8 100644
+index 523d252e08974a10f9a53fb46d3345669cec3380..5bf19a0dda42849159d954181058897c45d280fd 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -341,12 +341,14 @@ Environment* CreateEnvironment(
+@@ -344,12 +344,14 @@ Environment* CreateEnvironment(
    Environment* env = new Environment(
        isolate_data, context, args, exec_args, nullptr, flags, thread_id);
  #if HAVE_INSPECTOR
@@ -36,11 +36,11 @@ index de29d45adde76587f2a9cd50392ba45b8e24839e..09c0d22ff91856704f61024646c946a3
  #endif
  
 diff --git a/src/env-inl.h b/src/env-inl.h
-index b3b1ea908253b9240cc37931f34b2a8c8c9fa3ab..dc37298aa0e13bb79030123f38070d0254691b28 100644
+index 061897d95d8b5f61968c59260e609d7be724b88f..7c7ee3207089bf3e51db646a367bdd6deba18628 100644
 --- a/src/env-inl.h
 +++ b/src/env-inl.h
-@@ -877,6 +877,10 @@ inline bool Environment::tracks_unmanaged_fds() const {
-   return flags_ & EnvironmentFlags::kTrackUnmanagedFds;
+@@ -881,6 +881,10 @@ inline bool Environment::hide_console_windows() const {
+   return flags_ & EnvironmentFlags::kHideConsoleWindows;
  }
  
 +inline bool Environment::should_initialize_inspector() const {
@@ -51,31 +51,31 @@ index b3b1ea908253b9240cc37931f34b2a8c8c9fa3ab..dc37298aa0e13bb79030123f38070d02
    return emit_filehandle_warning_;
  }
 diff --git a/src/env.h b/src/env.h
-index e1b89261fcb1e94220424aae2273db9fba010331..45210f074a0ca4d57f9fdc5019e8e82540b28b72 100644
+index 8760bc4361f199a2e3471c4ca435f8e178c78e7e..33f34ed79452b004b5fb40e70cda6e3d0ee2d1e2 100644
 --- a/src/env.h
 +++ b/src/env.h
 @@ -1199,6 +1199,7 @@ class Environment : public MemoryRetainer {
-   inline bool owns_process_state() const;
    inline bool owns_inspector() const;
    inline bool tracks_unmanaged_fds() const;
+   inline bool hide_console_windows() const;
 +  inline bool should_initialize_inspector() const;
    inline uint64_t thread_id() const;
    inline worker::Worker* worker_context() const;
    Environment* worker_parent_env() const;
 diff --git a/src/node.h b/src/node.h
-index 41f79ef869128636ac04093919e8e5816b39bef9..691c16ba60b0ce8633555825e44c3ace96c5000f 100644
+index b7f3e97873ef90b635e0648639f1a287a0bd88fa..48e378079f6d05e7cc1141a8875450b125028789 100644
 --- a/src/node.h
 +++ b/src/node.h
-@@ -405,7 +405,11 @@ enum Flags : uint64_t {
-   kNoRegisterESMLoader = 1 << 3,
-   // Set this flag to make Node.js track "raw" file descriptors, i.e. managed
-   // by fs.open() and fs.close(), and close them during FreeEnvironment().
--  kTrackUnmanagedFds = 1 << 4
-+  kTrackUnmanagedFds = 1 << 4,
+@@ -409,7 +409,11 @@ enum Flags : uint64_t {
+   // Set this flag to force hiding console windows when spawning child
+   // processes. This is usually used when embedding Node.js in GUI programs on
+   // Windows.
+-  kHideConsoleWindows = 1 << 5
++  kHideConsoleWindows = 1 << 5,
 +  // Controls whether or not the Environment should call InitializeInspector.
 +  // This control is needed by embedders who may not want to initialize the V8
 +  // inspector in situations where it already exists.
-+  kNoInitializeInspector = 1 << 5
++  kNoInitializeInspector = 1 << 6
  };
  }  // namespace EnvironmentFlags
  

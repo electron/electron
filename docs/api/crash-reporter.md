@@ -19,6 +19,9 @@ following projects:
 * [socorro](https://github.com/mozilla/socorro)
 * [mini-breakpad-server](https://github.com/electron/mini-breakpad-server)
 
+> **Note:** Electron uses Crashpad, not Breakpad, to collect and upload
+> crashes, but for the time being, the [upload protocol is the same](https://chromium.googlesource.com/crashpad/crashpad/+/HEAD/doc/overview_design.md#Upload-to-collection-server).
+
 Or use a 3rd party hosted solution:
 
 * [Backtrace](https://backtrace.io/electron/)
@@ -26,49 +29,12 @@ Or use a 3rd party hosted solution:
 * [BugSplat](https://www.bugsplat.com/docs/platforms/electron)
 
 Crash reports are stored temporarily before being uploaded in a directory
-underneath the app's user data directory (called 'Crashpad' on Windows and Mac,
-or 'Crash Reports' on Linux). You can override this directory by calling
-`app.setPath('crashDumps', '/path/to/crashes')` before starting the crash
-reporter.
+underneath the app's user data directory, called 'Crashpad'. You can override
+this directory by calling `app.setPath('crashDumps', '/path/to/crashes')`
+before starting the crash reporter.
 
-On Windows and macOS, Electron uses
-[crashpad](https://chromium.googlesource.com/crashpad/crashpad/+/master/README.md)
-to monitor and report crashes. On Linux, Electron uses
-[breakpad](https://chromium.googlesource.com/breakpad/breakpad/+/master/). This
-is an implementation detail driven by Chromium, and it may change in future. In
-particular, crashpad is newer and will likely eventually replace breakpad on
-all platforms.
-
-### Note about Node child processes on Linux
-
-If you are using the Node.js `child_process` module and want to report crashes
-from those processes on Linux, there is an extra step you will need to take to
-properly initialize the crash reporter in the child process. This is not
-necessary on Mac or Windows, as those platforms use Crashpad, which
-automatically monitors child processes.
-
-Since `require('electron')` is not available in Node child processes, the
-following APIs are available on the `process` object in Node child processes.
-Note that, on Linux, each Node child process has its own separate instance of
-the breakpad crash reporter. This is dissimilar to renderer child processes,
-which have a "stub" breakpad reporter which returns information to the main
-process for reporting.
-
-#### `process.crashReporter.start(options)`
-
-See [`crashReporter.start()`](#crashreporterstartoptions).
-
-#### `process.crashReporter.getParameters()`
-
-See [`crashReporter.getParameters()`](#crashreportergetparameters).
-
-#### `process.crashReporter.addExtraParameter(key, value)`
-
-See [`crashReporter.addExtraParameter(key, value)`](#crashreporteraddextraparameterkey-value).
-
-#### `process.crashReporter.removeExtraParameter(key)`
-
-See [`crashReporter.removeExtraParameter(key)`](#crashreporterremoveextraparameterkey).
+Electron uses [crashpad](https://chromium.googlesource.com/crashpad/crashpad/+/refs/heads/main/README.md)
+to monitor and report crashes.
 
 ## Methods
 
@@ -186,12 +152,6 @@ names must be no longer than 39 bytes, and values must be no longer than 20320
 bytes. Keys with names longer than the maximum will be silently ignored. Key
 values longer than the maximum length will be truncated.
 
-**Note:** On linux values that are longer than 127 bytes will be chunked into
-multiple keys, each 127 bytes in length.  E.g. `addExtraParameter('foo', 'a'.repeat(130))`
-will result in two chunked keys `foo__1` and `foo__2`, the first will contain
-the first 127 bytes and the second will contain the remaining 3 bytes.  On
-your crash reporting backend you should stitch together keys in this format.
-
 ### `crashReporter.removeExtraParameter(key)`
 
 * `key` String - Parameter key, must be no longer than 39 bytes.
@@ -202,6 +162,32 @@ will not include this parameter.
 ### `crashReporter.getParameters()`
 
 Returns `Record<String, String>` - The current 'extra' parameters of the crash reporter.
+
+## In Node child processes
+
+Since `require('electron')` is not available in Node child processes, the
+following APIs are available on the `process` object in Node child processes.
+
+#### `process.crashReporter.start(options)`
+
+See [`crashReporter.start()`](#crashreporterstartoptions).
+
+Note that if the crash reporter is started in the main process, it will
+automatically monitor child processes, so it should not be started in the child
+process. Only use this method if the main process does not initialize the crash
+reporter.
+
+#### `process.crashReporter.getParameters()`
+
+See [`crashReporter.getParameters()`](#crashreportergetparameters).
+
+#### `process.crashReporter.addExtraParameter(key, value)`
+
+See [`crashReporter.addExtraParameter(key, value)`](#crashreporteraddextraparameterkey-value).
+
+#### `process.crashReporter.removeExtraParameter(key)`
+
+See [`crashReporter.removeExtraParameter(key)`](#crashreporterremoveextraparameterkey).
 
 ## Crash Report Payload
 

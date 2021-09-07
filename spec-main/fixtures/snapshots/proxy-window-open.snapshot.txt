@@ -2,7 +2,9 @@
   [
     "top=5,left=10,resizable=no",
     {
-      "sender": "[WebContents]"
+      "sender": "[WebContents]",
+      "frameId": 1,
+      "processId": "placeholder-process-id"
     },
     "about:blank",
     "frame-name",
@@ -21,7 +23,7 @@
         "nodeIntegration": false,
         "webviewTag": false,
         "nodeIntegrationInSubFrames": false,
-        "openerId": null
+        "openerId": "placeholder-opener-id"
       },
       "webContents": "[WebContents]"
     },
@@ -35,7 +37,9 @@
   [
     "zoomFactor=2,resizable=0,x=0,y=10",
     {
-      "sender": "[WebContents]"
+      "sender": "[WebContents]",
+      "frameId": 1,
+      "processId": "placeholder-process-id"
     },
     "about:blank",
     "frame-name",
@@ -53,7 +57,7 @@
         "nodeIntegration": false,
         "webviewTag": false,
         "nodeIntegrationInSubFrames": false,
-        "openerId": null
+        "openerId": "placeholder-opener-id"
       },
       "webContents": "[WebContents]"
     },
@@ -67,7 +71,9 @@
   [
     "backgroundColor=gray,webPreferences=0,x=100,y=100",
     {
-      "sender": "[WebContents]"
+      "sender": "[WebContents]",
+      "frameId": 1,
+      "processId": "placeholder-process-id"
     },
     "about:blank",
     "frame-name",
@@ -82,8 +88,7 @@
         "nodeIntegration": false,
         "webviewTag": false,
         "nodeIntegrationInSubFrames": false,
-        "openerId": null,
-        "backgroundColor": "gray"
+        "openerId": "placeholder-opener-id"
       },
       "x": 100,
       "y": 100,
@@ -99,7 +104,9 @@
   [
     "x=50,y=20,title=sup",
     {
-      "sender": "[WebContents]"
+      "sender": "[WebContents]",
+      "frameId": 1,
+      "processId": "placeholder-process-id"
     },
     "about:blank",
     "frame-name",
@@ -116,7 +123,7 @@
         "nodeIntegration": false,
         "webviewTag": false,
         "nodeIntegrationInSubFrames": false,
-        "openerId": null
+        "openerId": "placeholder-opener-id"
       },
       "webContents": "[WebContents]"
     },
@@ -130,7 +137,9 @@
   [
     "show=false,top=1,left=1",
     {
-      "sender": "[WebContents]"
+      "sender": "[WebContents]",
+      "frameId": 1,
+      "processId": "placeholder-process-id"
     },
     "about:blank",
     "frame-name",
@@ -148,7 +157,7 @@
         "nodeIntegration": false,
         "webviewTag": false,
         "nodeIntegrationInSubFrames": false,
-        "openerId": null
+        "openerId": "placeholder-opener-id"
       },
       "webContents": "[WebContents]"
     },

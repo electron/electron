@@ -83,7 +83,6 @@
         "sandbox": true,
         "webviewTag": false,
         "nodeIntegrationInSubFrames": false,
-        "backgroundColor": "gray"
       },
       "x": 100,
       "y": 100,

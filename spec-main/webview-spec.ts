@@ -255,7 +255,7 @@ describe('<webview> tag', function () {
           if (!webContents.isDestroyed() && webContents.devToolsWebContents) {
             webContents.devToolsWebContents.executeJavaScript('(' + function () {
               const { UI } = (window as any);
-              const tabs = UI.inspectorView._tabbedPane._tabs;
+              const tabs = UI.inspectorView.tabbedPane.tabs;
               const lastPanelId: any = tabs[tabs.length - 1].id;
               UI.inspectorView.showPanel(lastPanelId);
             }.toString() + ')()');
@@ -455,6 +455,34 @@ describe('<webview> tag', function () {
       await leaveFullScreen;
       await delay(0);
       expect(w.isFullScreen()).to.be.false();
+    });
+
+    it('pressing ESC should emit the leave-html-full-screen event', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          webviewTag: true,
+          nodeIntegration: true,
+          contextIsolation: false
+        }
+      });
+
+      const didAttachWebview = emittedOnce(w.webContents, 'did-attach-webview');
+      w.loadFile(path.join(fixtures, 'pages', 'webview-did-attach-event.html'));
+
+      const [, webContents] = await didAttachWebview;
+
+      const enterFSWindow = emittedOnce(w, 'enter-html-full-screen');
+      const enterFSWebview = emittedOnce(webContents, 'enter-html-full-screen');
+      await webContents.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
+      await enterFSWindow;
+      await enterFSWebview;
+
+      const leaveFSWindow = emittedOnce(w, 'leave-html-full-screen');
+      const leaveFSWebview = emittedOnce(webContents, 'leave-html-full-screen');
+      webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
+      await leaveFSWindow;
+      await leaveFSWebview;
     });
   });
 

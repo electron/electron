@@ -13,10 +13,10 @@ uses internally for things like menus and devtools.
 We can remove this patch once it has in some shape been upstreamed.
 
 diff --git a/ui/native_theme/native_theme.cc b/ui/native_theme/native_theme.cc
-index 7a09fd387933897025f4ff03ca798811aa5013a6..abebf78242030a2c28d9d6b85b1d87cdaabd4884 100644
+index 6471581569072714141e1ccea083f5600def6c4f..b203baecad684f37d9f193da12647767ffc938ef 100644
 --- a/ui/native_theme/native_theme.cc
 +++ b/ui/native_theme/native_theme.cc
-@@ -144,6 +144,8 @@ absl::optional<SkColor> NativeTheme::GetColorProviderColor(
+@@ -149,6 +149,8 @@ absl::optional<SkColor> NativeTheme::GetColorProviderColor(
  }
  
  bool NativeTheme::ShouldUseDarkColors() const {
@@ -26,10 +26,10 @@ index 7a09fd387933897025f4ff03ca798811aa5013a6..abebf78242030a2c28d9d6b85b1d87cd
  }
  
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
-index 21624242634805ecb1d66b166eb3d569cab479a8..77338dc6a87b88f536ab7ba7d2081dcd8bf48975 100644
+index 44cd465c17b509b247b2257b1c978504e2eb2254..7e5666964836c71e587ba230320afe70b69afe24 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
-@@ -404,6 +404,22 @@ class NATIVE_THEME_EXPORT NativeTheme {
+@@ -405,6 +405,22 @@ class NATIVE_THEME_EXPORT NativeTheme {
    SkColor GetUnprocessedSystemColor(ColorId color_id,
                                      ColorScheme color_scheme) const;
  
@@ -52,7 +52,7 @@ index 21624242634805ecb1d66b166eb3d569cab479a8..77338dc6a87b88f536ab7ba7d2081dcd
    // Returns a shared instance of the native theme that should be used for web
    // rendering. Do not use it in a normal application context (i.e. browser).
    // The returned object should not be deleted by the caller. This function is
-@@ -577,6 +593,7 @@ class NATIVE_THEME_EXPORT NativeTheme {
+@@ -580,6 +596,7 @@ class NATIVE_THEME_EXPORT NativeTheme {
    bool forced_colors_ = false;
    PreferredColorScheme preferred_color_scheme_ = PreferredColorScheme::kLight;
    PreferredContrast preferred_contrast_ = PreferredContrast::kNoPreference;
@@ -61,7 +61,7 @@ index 21624242634805ecb1d66b166eb3d569cab479a8..77338dc6a87b88f536ab7ba7d2081dcd
    SEQUENCE_CHECKER(sequence_checker_);
  
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index c7b96990129262d3b831006af10e85a208bdc581..d4365a3a7e393d5b7ded6030c256176c2858f8f4 100644
+index f9772f86a1e233bbf3cc429e36dac8c62f61cd20..2615af462feed395974e76a4fbaf8ee4b3b4c0a1 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
 @@ -748,6 +748,8 @@ bool NativeThemeWin::ShouldUseDarkColors() const {

@@ -5,6 +5,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as qs from 'querystring';
 import * as http from 'http';
+import * as semver from 'semver';
 import { AddressInfo } from 'net';
 import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersListenerDetails, protocol, screen, webContents, session, WebContents, BrowserWindowConstructorOptions } from 'electron/main';
 
@@ -1594,13 +1595,14 @@ describe('BrowserWindow module', () => {
       expect(w._getWindowButtonVisibility()).to.equal(true);
     });
 
-    it('changes window button visibility for customButtonsOnHover window', () => {
+    // Buttons of customButtonsOnHover are always hidden unless hovered.
+    it('does not change window button visibility for customButtonsOnHover window', () => {
       const w = new BrowserWindow({ show: false, frame: false, titleBarStyle: 'customButtonsOnHover' });
-      expect(w._getWindowButtonVisibility()).to.equal(true);
-      w.setWindowButtonVisibility(false);
       expect(w._getWindowButtonVisibility()).to.equal(false);
       w.setWindowButtonVisibility(true);
-      expect(w._getWindowButtonVisibility()).to.equal(true);
+      expect(w._getWindowButtonVisibility()).to.equal(false);
+      w.setWindowButtonVisibility(false);
+      expect(w._getWindowButtonVisibility()).to.equal(false);
     });
   });
 
@@ -1876,7 +1878,7 @@ describe('BrowserWindow module', () => {
     });
   });
 
-  ifdescribe(process.platform === 'darwin' && parseInt(os.release().split('.')[0]) >= 14)('"titleBarStyle" option', () => {
+  ifdescribe(process.platform === 'win32' || (process.platform === 'darwin' && semver.gte(os.release(), '14.0.0')))('"titleBarStyle" option', () => {
     const testWindowsOverlay = async (style: any) => {
       const w = new BrowserWindow({
         show: false,
@@ -1890,12 +1892,22 @@ describe('BrowserWindow module', () => {
         titleBarOverlay: true
       });
       const overlayHTML = path.join(__dirname, 'fixtures', 'pages', 'overlay.html');
-      await w.loadFile(overlayHTML);
+      if (process.platform === 'darwin') {
+        await w.loadFile(overlayHTML);
+      } else {
+        const overlayReady = emittedOnce(ipcMain, 'geometrychange');
+        await w.loadFile(overlayHTML);
+        await overlayReady;
+      }
       const overlayEnabled = await w.webContents.executeJavaScript('navigator.windowControlsOverlay.visible');
       expect(overlayEnabled).to.be.true('overlayEnabled');
       const overlayRect = await w.webContents.executeJavaScript('getJSOverlayProperties()');
       expect(overlayRect.y).to.equal(0);
-      expect(overlayRect.x).to.be.greaterThan(0);
+      if (process.platform === 'darwin') {
+        expect(overlayRect.x).to.be.greaterThan(0);
+      } else {
+        expect(overlayRect.x).to.equal(0);
+      }
       expect(overlayRect.width).to.be.greaterThan(0);
       expect(overlayRect.height).to.be.greaterThan(0);
       const cssOverlayRect = await w.webContents.executeJavaScript('getCssOverlayProperties();');
@@ -1917,7 +1929,7 @@ describe('BrowserWindow module', () => {
       const contentSize = w.getContentSize();
       expect(contentSize).to.deep.equal([400, 400]);
     });
-    it('creates browser window with hidden inset title bar', () => {
+    ifit(process.platform === 'darwin')('creates browser window with hidden inset title bar', () => {
       const w = new BrowserWindow({
         show: false,
         width: 400,
@@ -1930,7 +1942,7 @@ describe('BrowserWindow module', () => {
     it('sets Window Control Overlay with hidden title bar', async () => {
       await testWindowsOverlay('hidden');
     });
-    it('sets Window Control Overlay with hidden inset title bar', async () => {
+    ifit(process.platform === 'darwin')('sets Window Control Overlay with hidden inset title bar', async () => {
       await testWindowsOverlay('hiddenInset');
     });
   });
@@ -4608,6 +4620,34 @@ describe('BrowserWindow module', () => {
         await emittedOnce(w.webContents, 'paint');
         expect(w.webContents.frameRate).to.equal(30);
       });
+    });
+  });
+
+  describe('"transparent" option', () => {
+    afterEach(closeAllWindows);
+
+    // Only applicable on Windows where transparent windows can't be maximized.
+    ifit(process.platform === 'win32')('can show maximized frameless window', async () => {
+      const display = screen.getPrimaryDisplay();
+
+      const w = new BrowserWindow({
+        ...display.bounds,
+        frame: false,
+        transparent: true,
+        show: true
+      });
+
+      w.loadURL('about:blank');
+      await emittedOnce(w, 'ready-to-show');
+
+      expect(w.isMaximized()).to.be.true();
+
+      // Fails when the transparent HWND is in an invalid maximized state.
+      expect(w.getBounds()).to.deep.equal(display.workArea);
+
+      const newBounds = { width: 256, height: 256, x: 0, y: 0 };
+      w.setBounds(newBounds);
+      expect(w.getBounds()).to.deep.equal(newBounds);
     });
   });
 });

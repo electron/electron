@@ -7,7 +7,7 @@ Subject: feat: allow embedders to add observers on created hunspell
 This patch is used by Electron to implement spellchecker events.
 
 diff --git a/chrome/browser/spellchecker/spellcheck_service.cc b/chrome/browser/spellchecker/spellcheck_service.cc
-index 6ba3efb81955c5f4cb43d99314790b2dd2d0ac8c..5ed5c24a5494fa4c954ee40d930dc9b49cb7161a 100644
+index 23980dfd5e35ac9160b82bd0d29bd98762897d1f..aece7fe0a4d45a40afbc0339073ffffb2c0d4f5e 100644
 --- a/chrome/browser/spellchecker/spellcheck_service.cc
 +++ b/chrome/browser/spellchecker/spellcheck_service.cc
 @@ -466,6 +466,9 @@ void SpellcheckService::LoadDictionaries() {

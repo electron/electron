@@ -21,7 +21,6 @@
 #include "shell/browser/microtasks_runner.h"
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/node_includes.h"
-#include "tracing/trace_event.h"
 
 namespace {
 v8::Isolate* g_isolate;
@@ -76,7 +75,7 @@ class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
     allocator_->init({base::PartitionOptions::AlignedAlloc::kDisallowed,
                       base::PartitionOptions::ThreadCache::kDisabled,
                       base::PartitionOptions::Quarantine::kAllowed,
-                      base::PartitionOptions::Cookies::kAllowed,
+                      base::PartitionOptions::Cookie::kAllowed,
                       base::PartitionOptions::RefCount::kDisallowed});
   }
 

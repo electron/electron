@@ -1,4 +1,4 @@
-# Progress Bar in Taskbar (Windows, macOS, Unity)
+# Taskbar Progress Bar (Windows & macOS)
 
 ## Overview
 
@@ -48,7 +48,7 @@ const { app, BrowserWindow } = require('electron')
 
 let progressInterval
 
-function createWindow () {
+const createWindow = () => {
   const win = new BrowserWindow({
     width: 800,
     height: 600

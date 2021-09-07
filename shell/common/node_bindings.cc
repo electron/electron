@@ -25,6 +25,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/common/content_paths.h"
 #include "electron/buildflags/buildflags.h"
+#include "electron/fuses.h"
 #include "shell/browser/api/electron_api_app.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/electron_command_line.h"
@@ -59,6 +60,7 @@
   V(electron_browser_power_save_blocker) \
   V(electron_browser_protocol)           \
   V(electron_browser_printing)           \
+  V(electron_browser_safe_storage)       \
   V(electron_browser_session)            \
   V(electron_browser_system_preferences) \
   V(electron_browser_base_window)        \
@@ -188,16 +190,26 @@ void ErrorMessageListener(v8::Local<v8::Message> message,
   }
 }
 
+const std::unordered_set<base::StringPiece, base::StringPieceHash>
+GetAllowedDebugOptions() {
+  if (electron::fuses::IsNodeCliInspectEnabled()) {
+    // Only allow DebugOptions in non-ELECTRON_RUN_AS_NODE mode
+    return {
+        "--inspect",          "--inspect-brk",
+        "--inspect-port",     "--debug",
+        "--debug-brk",        "--debug-port",
+        "--inspect-brk-node", "--inspect-publish-uid",
+    };
+  }
+  // If node CLI inspect support is disabled, allow no debug options.
+  return {};
+}
+
 // Initialize Node.js cli options to pass to Node.js
 // See https://nodejs.org/api/cli.html#cli_options
 void SetNodeCliFlags() {
-  // Only allow DebugOptions in non-ELECTRON_RUN_AS_NODE mode
-  const std::unordered_set<base::StringPiece, base::StringPieceHash> allowed = {
-      "--inspect",          "--inspect-brk",
-      "--inspect-port",     "--debug",
-      "--debug-brk",        "--debug-port",
-      "--inspect-brk-node", "--inspect-publish-uid",
-  };
+  const std::unordered_set<base::StringPiece, base::StringPieceHash> allowed =
+      GetAllowedDebugOptions();
 
   const auto argv = base::CommandLine::ForCurrentProcess()->argv();
   std::vector<std::string> args;
@@ -231,7 +243,7 @@ void SetNodeCliFlags() {
   } else if (!errors.empty()) {
     LOG(ERROR) << err_str << base::JoinString(errors, " ");
   }
-}  // namespace
+}
 
 // Initialize NODE_OPTIONS to pass to Node.js
 // See https://nodejs.org/api/cli.html#cli_node_options_options
@@ -246,34 +258,39 @@ void SetNodeOptions(base::Environment* env) {
                                                      "--http-parser"};
 
   if (env->HasVar("NODE_OPTIONS")) {
-    std::string options;
-    env->GetVar("NODE_OPTIONS", &options);
-    std::vector<std::string> parts = base::SplitString(
-        options, " ", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
+    if (electron::fuses::IsNodeOptionsEnabled()) {
+      std::string options;
+      env->GetVar("NODE_OPTIONS", &options);
+      std::vector<std::string> parts = base::SplitString(
+          options, " ", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
 
-    bool is_packaged_app = electron::api::App::IsPackaged();
+      bool is_packaged_app = electron::api::App::IsPackaged();
 
-    for (const auto& part : parts) {
-      // Strip off values passed to individual NODE_OPTIONs
-      std::string option = part.substr(0, part.find('='));
+      for (const auto& part : parts) {
+        // Strip off values passed to individual NODE_OPTIONs
+        std::string option = part.substr(0, part.find('='));
 
-      if (is_packaged_app &&
-          allowed_in_packaged.find(option) == allowed_in_packaged.end()) {
-        // Explicitly disallow majority of NODE_OPTIONS in packaged apps
-        LOG(ERROR) << "Most NODE_OPTIONs are not supported in packaged apps."
-                   << " See documentation for more details.";
-        options.erase(options.find(option), part.length());
-      } else if (disallowed.find(option) != disallowed.end()) {
-        // Remove NODE_OPTIONS specifically disallowed for use in Node.js
-        // through Electron owing to constraints like BoringSSL.
-        LOG(ERROR) << "The NODE_OPTION " << option
-                   << " is not supported in Electron";
-        options.erase(options.find(option), part.length());
+        if (is_packaged_app &&
+            allowed_in_packaged.find(option) == allowed_in_packaged.end()) {
+          // Explicitly disallow majority of NODE_OPTIONS in packaged apps
+          LOG(ERROR) << "Most NODE_OPTIONs are not supported in packaged apps."
+                     << " See documentation for more details.";
+          options.erase(options.find(option), part.length());
+        } else if (disallowed.find(option) != disallowed.end()) {
+          // Remove NODE_OPTIONS specifically disallowed for use in Node.js
+          // through Electron owing to constraints like BoringSSL.
+          LOG(ERROR) << "The NODE_OPTION " << option
+                     << " is not supported in Electron";
+          options.erase(options.find(option), part.length());
+        }
       }
-    }
 
-    // overwrite new NODE_OPTIONS without unsupported variables
-    env->SetVar("NODE_OPTIONS", options);
+      // overwrite new NODE_OPTIONS without unsupported variables
+      env->SetVar("NODE_OPTIONS", options);
+    } else {
+      LOG(ERROR) << "NODE_OPTIONS have been disabled in this app";
+      env->SetVar("NODE_OPTIONS", "");
+    }
   }
 }
 
@@ -364,6 +381,8 @@ void NodeBindings::Initialize() {
 
   auto env = base::Environment::Create();
   SetNodeOptions(env.get());
+  node::Environment::should_read_node_options_from_env_ =
+      fuses::IsNodeOptionsEnabled();
 
   std::vector<std::string> argv = {"electron"};
   std::vector<std::string> exec_argv;
@@ -431,13 +450,15 @@ node::Environment* NodeBindings::CreateEnvironment(
       node::CreateIsolateData(context->GetIsolate(), uv_loop_, platform);
 
   node::Environment* env;
+  uint64_t flags = node::EnvironmentFlags::kDefaultFlags |
+                   node::EnvironmentFlags::kHideConsoleWindows;
+
   if (browser_env_ != BrowserEnvironment::kBrowser) {
     // Only one ESM loader can be registered per isolate -
     // in renderer processes this should be blink. We need to tell Node.js
     // not to register its handler (overriding blinks) in non-browser processes.
-    uint64_t flags = node::EnvironmentFlags::kDefaultFlags |
-                     node::EnvironmentFlags::kNoRegisterESMLoader |
-                     node::EnvironmentFlags::kNoInitializeInspector;
+    flags |= node::EnvironmentFlags::kNoRegisterESMLoader |
+             node::EnvironmentFlags::kNoInitializeInspector;
     v8::TryCatch try_catch(context->GetIsolate());
     env = node::CreateEnvironment(
         isolate_data_, context, args, exec_args,
@@ -451,7 +472,9 @@ node::Environment* NodeBindings::CreateEnvironment(
                  << process_type;
     }
   } else {
-    env = node::CreateEnvironment(isolate_data_, context, args, exec_args);
+    env = node::CreateEnvironment(
+        isolate_data_, context, args, exec_args,
+        static_cast<node::EnvironmentFlags::Flags>(flags));
     DCHECK(env);
   }
 
