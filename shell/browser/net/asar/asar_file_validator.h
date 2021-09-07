@@ -9,7 +9,6 @@
 #include <memory>
 
 #include "crypto/secure_hash.h"
-#include "crypto/sha2.h"
 #include "mojo/public/cpp/system/file_data_source.h"
 #include "mojo/public/cpp/system/filtered_data_source.h"
 #include "shell/common/asar/archive.h"
@@ -19,8 +18,7 @@ namespace asar {
 
 class AsarFileValidator : public mojo::FilteredDataSource::Filter {
  public:
-  AsarFileValidator(absl::optional<IntegrityPayload> integrity,
-                    base::File file);
+  AsarFileValidator(IntegrityPayload integrity, base::File file);
 
   void OnRead(base::span<char> buffer,
               mojo::FileDataSource::ReadResult* result);
@@ -34,9 +32,8 @@ class AsarFileValidator : public mojo::FilteredDataSource::Filter {
   bool FinishBlock();
 
  private:
-  bool should_validate_ = false;
   base::File file_;
-  absl::optional<IntegrityPayload> integrity_;
+  IntegrityPayload integrity_;
 
   // The offset in the file_ that the underlying file reader is starting at
   uint64_t read_start_ = 0;

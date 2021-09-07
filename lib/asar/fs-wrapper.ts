@@ -199,7 +199,8 @@ let crypto: typeof Crypto;
 function validateBufferIntegrity (buffer: Buffer, integrity: NodeJS.AsarFileInfo['integrity']) {
   if (!integrity) return;
 
-  // Delay load crypto
+  // Delay load crypto to improve app boot performance
+  // when integrity protection is not enabled
   crypto = crypto || require('crypto');
   const actual = crypto.createHash(integrity.algorithm).update(buffer).digest('hex');
   if (actual !== integrity.hash) {

@@ -124,10 +124,12 @@ bool FillFileInfoWithNode(Archive::FileInfo* info,
       IntegrityPayload integrity_payload;
       std::string algorithm;
       const base::ListValue* blocks;
+      int block_size;
       if (integrity->GetString("algorithm", &algorithm) &&
           integrity->GetString("hash", &integrity_payload.hash) &&
-          integrity->GetInteger("blockSize", &integrity_payload.block_size) &&
-          integrity->GetList("blocks", &blocks)) {
+          integrity->GetInteger("blockSize", &block_size) &&
+          integrity->GetList("blocks", &blocks) && block_size > 0) {
+        integrity_payload.block_size = static_cast<uint32_t>(block_size);
         for (size_t i = 0; i < blocks->GetSize(); i++) {
           std::string block;
           if (!blocks->GetString(i, &block)) {

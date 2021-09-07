@@ -12,6 +12,7 @@
 #include <string>
 
 #include "base/logging.h"
+#include "base/mac/bundle_locations.h"
 #include "base/mac/foundation_util.h"
 #include "base/mac/scoped_cftyperef.h"
 #include "base/strings/sys_string_conversions.h"
@@ -20,13 +21,11 @@
 namespace asar {
 
 absl::optional<base::FilePath> Archive::RelativePath() const {
-  NSURL* bundle_url = [[[NSBundle mainBundle] bundleURL]
-      URLByAppendingPathComponent:@"Contents"];
+  base::FilePath bundle_path = base::mac::MainBundlePath().Append("Contents");
 
   base::FilePath relative_path;
-  if (!base::mac::NSStringToFilePath([bundle_url path])
-           .AppendRelativePath(path_, &relative_path))
-    return absl::optional<base::FilePath>();
+  if (!bundle_path.AppendRelativePath(path_, &relative_path))
+    return absl::nullopt;
 
   return relative_path;
 }
@@ -41,7 +40,7 @@ absl::optional<IntegrityPayload> Archive::HeaderIntegrity() const {
 
   // Integrity not provided
   if (!integrity)
-    return absl::optional<IntegrityPayload>();
+    return absl::nullopt;
 
   NSString* ns_relative_path =
       base::mac::FilePathToNSString(relative_path.value());
@@ -49,7 +48,7 @@ absl::optional<IntegrityPayload> Archive::HeaderIntegrity() const {
   NSDictionary* integrity_payload = [integrity objectForKey:ns_relative_path];
 
   if (!integrity_payload)
-    return absl::optional<IntegrityPayload>();
+    return absl::nullopt;
 
   NSString* algorithm = [integrity_payload objectForKey:@"algorithm"];
   NSString* hash = [integrity_payload objectForKey:@"hash"];
@@ -60,7 +59,7 @@ absl::optional<IntegrityPayload> Archive::HeaderIntegrity() const {
     return header_integrity;
   }
 
-  return absl::optional<IntegrityPayload>();
+  return absl::nullopt;
 }
 
 }  // namespace asar
