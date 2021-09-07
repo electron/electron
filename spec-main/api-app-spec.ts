@@ -238,14 +238,25 @@ describe('app module', () => {
       expect(code2).to.equal(1);
       const [code1] = await firstExited;
       expect(code1).to.equal(0);
-      const data2 = (await data2Promise)[0].toString('ascii');
-      const secondInstanceArgsReceived: string[] = JSON.parse(data2.toString('ascii'));
+      const [data21, data22] = (await data2Promise)[0].toString('ascii').split('=====');
+      const secondInstanceArgsReceived: string[] = JSON.parse(data21.toString('ascii'));
+      const secondInstanceDataReceived = JSON.parse(data22.toString('ascii'));
+      const expectedSecondInstanceData = {
+        level: 1,
+        testkey: 'testvalue1',
+        inner: {
+          level: 2,
+          testkey: 'testvalue2'
+        }
+      };
 
       // Ensure secondInstanceArgs is a subset of secondInstanceArgsReceived
       for (const arg of secondInstanceArgs) {
         expect(secondInstanceArgsReceived).to.include(arg,
           `argument ${arg} is missing from received second args`);
       }
+      expect(secondInstanceDataReceived).to.be.deep.equal(expectedSecondInstanceData,
+        `received data ${JSON.stringify(secondInstanceDataReceived)} is not equal to expected data ${JSON.stringify(expectedSecondInstanceData)}.`);
     });
   });
 
