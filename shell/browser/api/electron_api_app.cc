@@ -64,6 +64,7 @@
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/platform_util.h"
+#include "shell/common/v8_value_serializer.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/gfx/image/image.h"
 
@@ -515,19 +516,19 @@ bool NotificationCallbackWrapper(
     const base::RepeatingCallback<
         void(const base::CommandLine& command_line,
              const base::FilePath& current_directory,
-             const base::Value* data)>& callback,
-    const base::CommandLine::StringVector& cmd,
+             const base::span<const uint8_t>& additional_data)>& callback,
+    const base::CommandLine& cmd,
     const base::FilePath& cwd,
-    const base::Value* data) {
+    const base::span<const uint8_t>& additional_data) {
   // Make sure the callback is called after app gets ready.
   if (Browser::Get()->is_ready()) {
-    callback.Run(cmd, cwd, data);
+    callback.Run(cmd, cwd, additional_data);
   } else {
     scoped_refptr<base::SingleThreadTaskRunner> task_runner(
         base::ThreadTaskRunnerHandle::Get());
-    task_runner->PostTask(
-        FROM_HERE,
-        base::BindOnce(base::IgnoreResult(callback), cmd, cwd, data));
+    task_runner->PostTask(FROM_HERE,
+                          base::BindOnce(base::IgnoreResult(callback), cmd, cwd,
+                                         additional_data));
   }
   // ProcessSingleton needs to know whether current process is quiting.
   return !Browser::Get()->is_shutting_down();
@@ -1074,14 +1075,16 @@ std::string App::GetLocaleCountryCode() {
 
 void App::OnSecondInstance(const base::CommandLine& cmd,
                            const base::FilePath& cwd,
-                           const base::Value* data) {
-  Emit("second-instance", cmd.argv(), cwd, *data);
-}
-
-void App::OnFirstInstanceAck(const base::CommandLine& cmd,
-                             const base::FilePath& cwd,
-                             const base::Value* data) {
-  Emit("first-instance-ack", cmd.argv(), cwd, *data);
+                           const base::span<const uint8_t>& additional_data) {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::Locker locker(isolate);
+  v8::HandleScope handle_scope(isolate);
+  v8::Local<v8::Value> val = DeserializeV8Value(isolate, additional_data);
+  base::Value data_to_send;
+  if (!val.IsEmpty()) {
+    gin::Converter<base::Value>::FromV8(isolate, val, &data_to_send);
+  }
+  Emit("second-instance", cmd.argv(), cwd, data_to_send);
 }
 
 bool App::HasSingleInstanceLock() const {
@@ -1101,19 +1104,22 @@ bool App::RequestSingleInstanceLock(gin::Arguments* args) {
 
   auto cb = base::BindRepeating(&App::OnSecondInstance, base::Unretained(this));
 
-  base::Value additional_data;
-  if (args && args->Length() == 1) {
-    args->GetNext(&additional_data);
+  v8::Isolate* isolate = args->isolate();
+  v8::Local<v8::Value> data_arg = args->PeekNext();
+  blink::CloneableMessage additional_data_message;
+  if (!data_arg.IsEmpty()) {
+    SerializeV8Value(isolate, data_arg, &additional_data_message);
   }
 #if defined(OS_WIN)
   bool app_is_sandboxed =
       IsSandboxEnabled(base::CommandLine::ForCurrentProcess());
   process_singleton_ = std::make_unique<ProcessSingleton>(
-      program_name, user_dir, app_is_sandboxed, &additional_data,
-      base::BindRepeating(NotificationCallbackWrapper, cb));
+      program_name, user_dir, additional_data_message.encoded_message,
+      app_is_sandboxed, base::BindRepeating(NotificationCallbackWrapper, cb));
 #else
   process_singleton_ = std::make_unique<ProcessSingleton>(
-      user_dir, &additional_data, base::BindRepeating(NotificationCallbackWrapper, cb));
+      user_dir, &additional_data,
+      base::BindRepeating(NotificationCallbackWrapper, cb));
 #endif
 
   switch (process_singleton_->NotifyOtherProcessOrCreate()) {
@@ -1133,35 +1139,6 @@ void App::ReleaseSingleInstanceLock() {
   if (process_singleton_) {
     process_singleton_->Cleanup();
     process_singleton_.reset();
-  }
-}
-
-void App::SendDataToSecondInstance(gin::Arguments* args) {
-  base::FilePath user_dir;
-  base::PathService::Get(chrome::DIR_USER_DATA, &user_dir);
-
-  auto cb =
-      base::BindRepeating(&App::OnFirstInstanceAck, base::Unretained(this));
-
-  base::Value additional_data;
-  if (args && args->Length() == 1) {
-    args->GetNext(&additional_data);
-  }
-
-  process_singleton_ = std::make_unique<ProcessSingleton>(
-      user_dir, &additional_data,
-      base::BindRepeating(NotificationCallbackWrapper, cb));
-
-  switch (process_singleton_->NotifyOtherProcessOrCreate()) {
-    case ProcessSingleton::NotifyResult::LOCK_ERROR:
-    case ProcessSingleton::NotifyResult::PROFILE_IN_USE:
-    case ProcessSingleton::NotifyResult::PROCESS_NOTIFIED: {
-      process_singleton_.reset();
-      break;
-    }
-    case ProcessSingleton::NotifyResult::PROCESS_NONE:
-    default:  // Shouldn't be needed, but VS warns if it is not there.
-      break;
   }
 }
 
@@ -1825,7 +1802,6 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetMethod("hasSingleInstanceLock", &App::HasSingleInstanceLock)
       .SetMethod("requestSingleInstanceLock", &App::RequestSingleInstanceLock)
       .SetMethod("releaseSingleInstanceLock", &App::ReleaseSingleInstanceLock)
-      .SetMethod("sendDataToSecondInstance", &App::SendDataToSecondInstance)
       .SetMethod("relaunch", &App::Relaunch)
       .SetMethod("isAccessibilitySupportEnabled",
                  &App::IsAccessibilitySupportEnabled)

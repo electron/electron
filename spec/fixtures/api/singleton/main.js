@@ -4,11 +4,21 @@ app.whenReady().then(() => {
   console.log('started'); // ping parent
 });
 
-const gotTheLock = app.requestSingleInstanceLock();
+const obj = {
+  level: 1,
+  testkey: 'testvalue1',
+  inner: {
+    level: 2,
+    testkey: 'testvalue2'
+  }
+};
+const gotTheLock = app.requestSingleInstanceLock(obj);
 
-app.on('second-instance', (event, args) => {
+app.on('second-instance', (event, args, data) => {
   setImmediate(() => {
     console.log(JSON.stringify(args));
+    console.log('=====');
+    console.log(JSON.stringify(data));
     app.exit(0);
   });
 });

@@ -189,16 +189,12 @@ class App : public ElectronBrowserClient::Delegate,
   void SetDesktopName(const std::string& desktop_name);
   std::string GetLocale();
   std::string GetLocaleCountryCode();
-  void OnSecondInstance(const base::CommandLine::StringVector& cmd,
+  void OnSecondInstance(const base::CommandLine& cmd,
                         const base::FilePath& cwd,
-                        const base::Value* data);
-  void OnFirstInstanceAck(const base::CommandLine::StringVector& cmd,
-                          const base::FilePath& cwd,
-                          const base::Value* data);
+                        const base::span<const uint8_t>& additional_data);
   bool HasSingleInstanceLock() const;
   bool RequestSingleInstanceLock(gin::Arguments* args);
   void ReleaseSingleInstanceLock();
-  void SendDataToSecondInstance(gin::Arguments* args);
   bool Relaunch(gin::Arguments* args);
   void DisableHardwareAcceleration(gin_helper::ErrorThrower thrower);
   void DisableDomainBlockingFor3DAPIs(gin_helper::ErrorThrower thrower);
