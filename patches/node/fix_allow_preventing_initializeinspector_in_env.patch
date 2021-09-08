@@ -51,10 +51,10 @@ index 061897d95d8b5f61968c59260e609d7be724b88f..7c7ee3207089bf3e51db646a367bdd6d
    return emit_filehandle_warning_;
  }
 diff --git a/src/env.h b/src/env.h
-index 8760bc4361f199a2e3471c4ca435f8e178c78e7e..33f34ed79452b004b5fb40e70cda6e3d0ee2d1e2 100644
+index 4fd5be8e15029b65d61982aa32eba2cd27957fce..b38a69fc06a189569524df767dbbbe5c1985aa20 100644
 --- a/src/env.h
 +++ b/src/env.h
-@@ -1199,6 +1199,7 @@ class Environment : public MemoryRetainer {
+@@ -1202,6 +1202,7 @@ class Environment : public MemoryRetainer {
    inline bool owns_inspector() const;
    inline bool tracks_unmanaged_fds() const;
    inline bool hide_console_windows() const;

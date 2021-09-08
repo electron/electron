@@ -489,7 +489,7 @@ index af2146982c7a3bf7bd7527f44e4b17a3b605026e..f6b91f675cfea367c608892dee078b56
    // Non-XOF hash functions should accept valid outputLength options as well.
    assert.strictEqual(crypto.createHash('sha224', { outputLength: 28 })
 diff --git a/test/parallel/test-crypto-key-objects.js b/test/parallel/test-crypto-key-objects.js
-index aa03a0379a291a4632b68d428d4e1875d60166a3..a6862ace1fa73473b406fe4513b9e7a99296d365 100644
+index c2c47a9ce72f124c78f2743cf88ccd96d714fa1b..fcdbad0262fa1dd8a7858f255d0e5e45a470f72a 100644
 --- a/test/parallel/test-crypto-key-objects.js
 +++ b/test/parallel/test-crypto-key-objects.js
 @@ -307,11 +307,11 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
@@ -572,7 +572,7 @@ index aa03a0379a291a4632b68d428d4e1875d60166a3..a6862ace1fa73473b406fe4513b9e7a9
  {
    // Test RSA-PSS.
    {
-@@ -715,7 +717,7 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
+@@ -767,7 +769,7 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
      }
    }
  }
@@ -729,7 +729,6 @@ index 09d43317426e712f60d4eba380cd4e044e3f3cf8..7dbe07c493dd092a88bffb8ccf6a0fbf
  
        // Encrypting with an empty passphrase is not the same as not encrypting
        // the key, and not specifying a passphrase should fail when decoding it.
-
 diff --git a/test/parallel/test-crypto-padding-aes256.js b/test/parallel/test-crypto-padding-aes256.js
 index 14d853bdfd0a5dcc5bdb6e00cb20fdbeaabd2aff..3ae6fc47d4c6a8296a2c3c70daf464fad886a88d 100644
 --- a/test/parallel/test-crypto-padding-aes256.js
@@ -832,7 +831,7 @@ index 9afcb38616dafd6da1ab7b5843d68f4f796ca9a6..00d3381056a5a40c549f06d74c130149
  }
 +*/
 diff --git a/test/parallel/test-crypto-sign-verify.js b/test/parallel/test-crypto-sign-verify.js
-index 444135538ccff8a705806941843717be954ed143..fe07bbbf0b18ae4ff344cb972600d5ee3bd8ede3 100644
+index 6893f0c0e6d49a8e171ec9f156f74656dab9fd06..4c8ccd10e0dcd64669cccca1e8c2e5279d683595 100644
 --- a/test/parallel/test-crypto-sign-verify.js
 +++ b/test/parallel/test-crypto-sign-verify.js
 @@ -29,6 +29,7 @@ const keySize = 2048;
