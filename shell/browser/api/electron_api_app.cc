@@ -817,10 +817,10 @@ void App::AllowCertificateError(
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
-  bool prevent_default =
-      Emit("certificate-error",
-           WebContents::FromOrCreate(isolate, web_contents), request_url,
-           net::ErrorToString(cert_error), ssl_info.cert, adapted_callback);
+  bool prevent_default = Emit(
+      "certificate-error", WebContents::FromOrCreate(isolate, web_contents),
+      request_url, net::ErrorToString(cert_error), ssl_info.cert,
+      adapted_callback, is_main_frame_request);
 
   // Deny the certificate by default.
   if (!prevent_default)
