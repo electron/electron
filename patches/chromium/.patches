@@ -108,5 +108,3 @@ chore_do_not_use_chrome_windows_in_cryptotoken_webrequestsender.patch
 fix_chrome_root_store_codegen_for_cross-compile_builds.patch
 process_singleton.patch
 fix_expose_decrementcapturercount_in_web_contents_impl.patch
-revert_roll_clang_llvmorg-14-init-1002-gb5e470aa-1.patch
-fix_missing_shell_dialog_include.patch
