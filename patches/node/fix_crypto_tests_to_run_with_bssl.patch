@@ -582,7 +582,7 @@ index c2c47a9ce72f124c78f2743cf88ccd96d714fa1b..fcdbad0262fa1dd8a7858f255d0e5e45
    // Exporting an encrypted private key requires a cipher
    const privateKey = createPrivateKey(privatePem);
 diff --git a/test/parallel/test-crypto-keygen.js b/test/parallel/test-crypto-keygen.js
-index 09d43317426e712f60d4eba380cd4e044e3f3cf8..7dbe07c493dd092a88bffb8ccf6a0fbfcd280662 100644
+index 09d43317426e712f60d4eba380cd4e044e3f3cf8..43c274b96fbb1c4d8398e2d32b625da21e85d6a6 100644
 --- a/test/parallel/test-crypto-keygen.js
 +++ b/test/parallel/test-crypto-keygen.js
 @@ -297,6 +297,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
@@ -613,15 +613,42 @@ index 09d43317426e712f60d4eba380cd4e044e3f3cf8..7dbe07c493dd092a88bffb8ccf6a0fbf
  {
    const privateKeyEncoding = {
      type: 'pkcs8',
-@@ -438,6 +443,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
+@@ -417,6 +422,9 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
+     });
+   }));
+ }
++*/
++
++/*
+ {
+   // Test async DSA key object generation.
+   generateKeyPair('dsa', {
+@@ -438,7 +446,9 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
      });
    }));
  }
 +*/
  
++/*
  {
    // Test async elliptic curve key generation, e.g. for ECDSA, with a SEC1
-@@ -593,6 +599,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
+   // private key.
+@@ -552,8 +562,10 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
+     testSignVerify(publicKey, { key: privateKey, passphrase: 'secret' });
+   }));
+ }
++*/
+ 
+ {
++  /*
+   // Test async elliptic curve key generation, e.g. for ECDSA, with an encrypted
+   // private key.
+   generateKeyPair('ec', {
+@@ -590,9 +602,11 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
+       passphrase: 'top secret'
+     });
+   }));
++  */
  
    // Test async elliptic curve key generation, e.g. for ECDSA, with an encrypted
    // private key with paramEncoding explicit.
@@ -629,7 +656,7 @@ index 09d43317426e712f60d4eba380cd4e044e3f3cf8..7dbe07c493dd092a88bffb8ccf6a0fbf
    generateKeyPair('ec', {
      namedCurve: 'P-256',
      paramEncoding: 'explicit',
-@@ -627,6 +634,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
+@@ -627,15 +641,16 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
        passphrase: 'top secret'
      });
    }));
@@ -637,7 +664,19 @@ index 09d43317426e712f60d4eba380cd4e044e3f3cf8..7dbe07c493dd092a88bffb8ccf6a0fbf
  
    // Test async elliptic curve key generation with 'jwk' encoding
    [
-@@ -738,6 +746,8 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
+-    ['ec', ['P-384', 'P-256', 'P-521', 'secp256k1']],
++  ['ec', ['P-384', 'P-256', 'P-521', /*'secp256k1'*/]],
+     ['rsa'],
+     ['ed25519'],
+-    ['ed448'],
++    // ['ed448'],
+     ['x25519'],
+-    ['x448'],
++    // ['x448'],
+   ].forEach((types) => {
+     const [type, options] = types;
+     switch (type) {
+@@ -738,6 +753,8 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
      message: "The property 'options.paramEncoding' is invalid. " +
        "Received 'otherEncoding'"
    });
@@ -646,7 +685,7 @@ index 09d43317426e712f60d4eba380cd4e044e3f3cf8..7dbe07c493dd092a88bffb8ccf6a0fbf
    assert.throws(() => generateKeyPairSync('dsa', {
      modulusLength: 4096,
      publicKeyEncoding: {
-@@ -751,6 +761,8 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
+@@ -751,6 +768,8 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
      code: 'ERR_CRYPTO_JWK_UNSUPPORTED_KEY_TYPE',
      message: 'Unsupported JWK Key Type.'
    });
@@ -655,7 +694,7 @@ index 09d43317426e712f60d4eba380cd4e044e3f3cf8..7dbe07c493dd092a88bffb8ccf6a0fbf
    assert.throws(() => generateKeyPairSync('ec', {
      namedCurve: 'secp224r1',
      publicKeyEncoding: {
-@@ -1089,6 +1101,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
+@@ -1089,6 +1108,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
    }
  }
  
@@ -663,7 +702,7 @@ index 09d43317426e712f60d4eba380cd4e044e3f3cf8..7dbe07c493dd092a88bffb8ccf6a0fbf
  // Test DSA parameters.
  {
    // Test invalid modulus lengths.
-@@ -1116,6 +1129,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
+@@ -1116,6 +1136,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
      });
    }
  }
@@ -671,7 +710,7 @@ index 09d43317426e712f60d4eba380cd4e044e3f3cf8..7dbe07c493dd092a88bffb8ccf6a0fbf
  
  // Test EC parameters.
  {
-@@ -1160,13 +1174,13 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
+@@ -1160,13 +1181,13 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
    }));
  
    generateKeyPair('ec', {
@@ -688,7 +727,7 @@ index 09d43317426e712f60d4eba380cd4e044e3f3cf8..7dbe07c493dd092a88bffb8ccf6a0fbf
      });
    }));
  }
-@@ -1174,7 +1188,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
+@@ -1174,7 +1195,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
  // Test EdDSA key generation.
  {
    if (!/^1\.1\.0/.test(process.versions.openssl)) {
@@ -697,7 +736,7 @@ index 09d43317426e712f60d4eba380cd4e044e3f3cf8..7dbe07c493dd092a88bffb8ccf6a0fbf
        generateKeyPair(keyType, common.mustSucceed((publicKey, privateKey) => {
          assert.strictEqual(publicKey.type, 'public');
          assert.strictEqual(publicKey.asymmetricKeyType, keyType);
-@@ -1188,6 +1202,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
+@@ -1188,6 +1209,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
    }
  }
  
@@ -705,7 +744,7 @@ index 09d43317426e712f60d4eba380cd4e044e3f3cf8..7dbe07c493dd092a88bffb8ccf6a0fbf
  // Test classic Diffie-Hellman key generation.
  {
    generateKeyPair('dh', {
-@@ -1300,6 +1315,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
+@@ -1300,6 +1322,7 @@ const sec1EncExp = (cipher) => getRegExpForPEM('EC PRIVATE KEY', cipher);
      });
    }
  }
@@ -713,7 +752,7 @@ index 09d43317426e712f60d4eba380cd4e044e3f3cf8..7dbe07c493dd092a88bffb8ccf6a0fbf
  
  // Test invalid key encoding types.
  {
-@@ -1500,6 +1516,7 @@ if (!common.hasOpenSSL3) {
+@@ -1500,6 +1523,7 @@ if (!common.hasOpenSSL3) {
      }, common.mustSucceed((publicKey, privateKey) => {
        assert.strictEqual(publicKey.type, 'public');
  
@@ -721,7 +760,7 @@ index 09d43317426e712f60d4eba380cd4e044e3f3cf8..7dbe07c493dd092a88bffb8ccf6a0fbf
        for (const passphrase of ['', Buffer.alloc(0)]) {
          const privateKeyObject = createPrivateKey({
            passphrase,
-@@ -1507,6 +1524,7 @@ if (!common.hasOpenSSL3) {
+@@ -1507,6 +1531,7 @@ if (!common.hasOpenSSL3) {
          });
          assert.strictEqual(privateKeyObject.asymmetricKeyType, 'rsa');
        }
@@ -1200,6 +1239,23 @@ index 151eebd36c9765df086a020ba42920b2442b1b77..efe97ff2499cba909ac5500d827364fa
      });
  }
  
+diff --git a/test/parallel/test-webcrypto-export-import-rsa.js b/test/parallel/test-webcrypto-export-import-rsa.js
+index 04cf6388fc739d3eab0a8d47857590c7a9b84342..d111e697db652b98dd8a9eb7869b1a98ba6bca79 100644
+--- a/test/parallel/test-webcrypto-export-import-rsa.js
++++ b/test/parallel/test-webcrypto-export-import-rsa.js
+@@ -480,6 +480,7 @@ const testVectors = [
+   await Promise.all(variations);
+ })().then(common.mustCall());
+ 
++/*
+ {
+   const publicPem = fixtures.readKey('rsa_pss_public_2048.pem', 'ascii');
+   const privatePem = fixtures.readKey('rsa_pss_private_2048.pem', 'ascii');
+@@ -521,3 +522,4 @@ const testVectors = [
+     assert.strictEqual(jwk.alg, 'PS256');
+   })().then(common.mustCall());
+ }
++*/
 diff --git a/test/parallel/test-webcrypto-wrap-unwrap.js b/test/parallel/test-webcrypto-wrap-unwrap.js
 index 1094845c73e14313860ad476fb7baba2a11b5af4..51972b4b34b191ac59145889dbf2da5c0d407dbe 100644
 --- a/test/parallel/test-webcrypto-wrap-unwrap.js
