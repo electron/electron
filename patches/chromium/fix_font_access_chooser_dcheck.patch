@@ -1,0 +1,33 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Mon, 13 Sep 2021 16:06:52 +0200
+Subject: Fix: font access chooser DCHECK
+
+This patch is necessary to prevent a crash when navigator.fonts.query()
+in the intermediary period prior to Electron actually implementing the
+feature. Chromium relies on a user choice via a UI they pop up to run
+the callback, and in contrast we don't really have a way to run the
+closure post-construction of the FontAccessChooser and therefore must
+run it in the constructor, which makes it such that
+FontAccessManagerImpl::DidChooseLocalFonts runs before the FontAccessChooser
+is assigned in the choosers_ map and DCHECKS.
+
+As we don't yet have a standardized permissions model
+for this and similar APIs, this just mediates the crash and adds
+appropriate simple scaffolding for a proper implementation.
+
+diff --git a/content/browser/font_access/font_access_manager_impl.cc b/content/browser/font_access/font_access_manager_impl.cc
+index 518854d5370cdb5dc5131ad47442ac2bc748eae5..8b2b6ab23d1d12a0bb202dd1227ba5a28236a934 100644
+--- a/content/browser/font_access/font_access_manager_impl.cc
++++ b/content/browser/font_access/font_access_manager_impl.cc
+@@ -262,8 +262,8 @@ void FontAccessManagerImpl::DidChooseLocalFonts(
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+ 
+   // The chooser has fulfilled its purpose. It's safe to dispose of it.
+-  size_t erased = choosers_.erase(frame_id);
+-  DCHECK_EQ(erased, 1u);
++  // size_t erased = choosers_.erase(frame_id);
++  // DCHECK_EQ(erased, 1u);
+ 
+   std::move(callback).Run(std::move(status), std::move(fonts));
+ }
