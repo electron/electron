@@ -126,13 +126,6 @@ components through an automated service.
 
 See also: [code signing](#code-signing)
 
-### NSIS
-
-Nullsoft Scriptable Install System is a script-driven Installer
-authoring tool for Microsoft Windows. It is released under a combination of
-free software licenses, and is a widely-used alternative to commercial
-proprietary products like InstallShield.
-
 ### OSR
 
 OSR (offscreen rendering) can be used for loading heavy page in
