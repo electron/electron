@@ -12,6 +12,7 @@ import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersLi
 import { emittedOnce, emittedUntil, emittedNTimes } from './events-helpers';
 import { ifit, ifdescribe, defer, delay } from './spec-helpers';
 import { closeWindow, closeAllWindows } from './window-helpers';
+import { CHROMA_COLOR_HEX, colorAtPoint } from './screen-helpers';
 
 const features = process._linkedBinding('electron_common_features');
 const fixtures = path.resolve(__dirname, '..', 'spec', 'fixtures');
@@ -4935,6 +4936,68 @@ describe('BrowserWindow module', () => {
       const newBounds = { width: 256, height: 256, x: 0, y: 0 };
       w.setBounds(newBounds);
       expect(w.getBounds()).to.deep.equal(newBounds);
+    });
+
+    it('should not display a visible background', async () => {
+      const display = screen.getPrimaryDisplay();
+
+      const backgroundWindow = new BrowserWindow({
+        ...display.bounds,
+        frame: false,
+        backgroundColor: CHROMA_COLOR_HEX
+      });
+
+      await backgroundWindow.loadURL('about:blank');
+
+      const w = new BrowserWindow({
+        ...display.bounds,
+        show: true,
+        transparent: true,
+        frame: false
+      });
+
+      w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'half-background-color.html'));
+      await emittedOnce(w, 'ready-to-show');
+
+      const leftHalfColor = await colorAtPoint({
+        x: display.size.width / 4,
+        y: display.size.height / 2
+      });
+
+      const rightHalfColor = await colorAtPoint({
+        x: display.size.width - (display.size.width / 4),
+        y: display.size.height / 2
+      });
+
+      expect(leftHalfColor).to.equal(CHROMA_COLOR_HEX);
+      expect(rightHalfColor).to.equal('#ff0000');
+    });
+  });
+
+  describe('"backgroundColor" option', () => {
+    afterEach(closeAllWindows);
+
+    it('should display the set color', async () => {
+      const display = screen.getPrimaryDisplay();
+
+      const w = new BrowserWindow({
+        ...display.bounds,
+        show: true,
+        backgroundColor: CHROMA_COLOR_HEX
+      });
+
+      w.loadURL('about:blank');
+      await emittedOnce(w, 'ready-to-show');
+
+      // Need to wait for frame to paint sometimes :(
+      await new Promise(resolve => setTimeout(resolve, 1));
+
+      const centerColor = await colorAtPoint({
+        x: display.size.width / 2,
+        y: display.size.height / 2
+      });
+
+      expect(centerColor).to.equal(CHROMA_COLOR_HEX);
     });
   });
 });
