@@ -11,14 +11,13 @@ class SkBitmap;
 
 namespace gtk_util {
 
-/* These are `const char*` rather than the project-preferred `const char[]`
-   because they must fit the type of an external dependency */
-extern const char* const kCancelLabel;
-extern const char* const kNoLabel;
-extern const char* const kOkLabel;
-extern const char* const kOpenLabel;
-extern const char* const kSaveLabel;
-extern const char* const kYesLabel;
+const char* GettextPackage();
+const char* GtkGettext(const char* str);
+
+const char* GetCancelLabel();
+const char* GetOkLabel();
+const char* GetNoLabel();
+const char* GetYesLabel();
 
 // Convert and copy a SkBitmap to a GdkPixbuf. NOTE: this uses BGRAToRGBA, so
 // it is an expensive operation.  The returned GdkPixbuf will have a refcount of
