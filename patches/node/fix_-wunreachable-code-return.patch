@@ -5,6 +5,8 @@ Subject: fix: -Wunreachable-code-return
 
 Should be upstreamed.
 
+Upstreamed in https://github.com/nodejs/node/pull/40034.
+
 diff --git a/src/inspector_agent.cc b/src/inspector_agent.cc
 index 612ce2b78b41badccbbce0616dffd86de042738f..c4a3322c6d972fc2052af75b79389c522924d9c5 100644
 --- a/src/inspector_agent.cc
