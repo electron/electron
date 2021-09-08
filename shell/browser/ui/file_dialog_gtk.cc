@@ -5,6 +5,7 @@
 #include <gmodule.h>
 
 #include <memory>
+#include <string>
 
 #include "base/callback.h"
 #include "base/files/file_util.h"
@@ -131,24 +132,25 @@ class FileChooserDialog {
       : parent_(
             static_cast<electron::NativeWindowViews*>(settings.parent_window)),
         filters_(settings.filters) {
-    const char* confirm_text = gtk_util::kOkLabel;
-
-    if (!settings.button_label.empty())
-      confirm_text = settings.button_label.c_str();
-    else if (action == GTK_FILE_CHOOSER_ACTION_SAVE)
-      confirm_text = gtk_util::kSaveLabel;
-    else if (action == GTK_FILE_CHOOSER_ACTION_OPEN)
-      confirm_text = gtk_util::kOpenLabel;
-
     InitGtkFileChooserNativeSupport();
 
+    auto label = settings.button_label;
+
     if (*supports_gtk_file_chooser_native) {
-      dialog_ = GTK_FILE_CHOOSER(
-          dl_gtk_file_chooser_native_new(settings.title.c_str(), NULL, action,
-                                         confirm_text, gtk_util::kCancelLabel));
+      dialog_ = GTK_FILE_CHOOSER(dl_gtk_file_chooser_native_new(
+          settings.title.c_str(), NULL, action,
+          label.empty() ? nullptr : label.c_str(), nullptr));
     } else {
+      const char* confirm_text = gtk_util::GetOkLabel();
+      if (!label.empty())
+        confirm_text = label.c_str();
+      else if (action == GTK_FILE_CHOOSER_ACTION_SAVE)
+        confirm_text = gtk_util::GetSaveLabel();
+      else if (action == GTK_FILE_CHOOSER_ACTION_OPEN)
+        confirm_text = gtk_util::GetOpenLabel();
+
       dialog_ = GTK_FILE_CHOOSER(gtk_file_chooser_dialog_new(
-          settings.title.c_str(), NULL, action, gtk_util::kCancelLabel,
+          settings.title.c_str(), NULL, action, gtk_util::GetCancelLabel(),
           GTK_RESPONSE_CANCEL, confirm_text, GTK_RESPONSE_ACCEPT, NULL));
     }
 
