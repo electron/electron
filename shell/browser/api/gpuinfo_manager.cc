@@ -31,9 +31,7 @@ GPUInfoManager::~GPUInfoManager() {
 // Based on
 // https://chromium.googlesource.com/chromium/src.git/+/69.0.3497.106/content/browser/gpu/gpu_data_manager_impl_private.cc#838
 bool GPUInfoManager::NeedsCompleteGpuInfoCollection() const {
-#if defined(OS_MAC)
-  return gpu_data_manager_->GetGPUInfo().gl_vendor.empty();
-#elif defined(OS_WIN)
+#if defined(OS_WIN)
   return gpu_data_manager_->DxdiagDx12VulkanRequested() &&
          gpu_data_manager_->GetGPUInfo().dx_diagnostics.IsEmpty();
 #else
