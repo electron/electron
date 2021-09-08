@@ -221,6 +221,35 @@ index 7cb4513f9ad0eaadd055b169520ae1e5073b7e2d..50a6663966cdb147a702df21240fa449
    if (!params->prime) {
      THROW_ERR_CRYPTO_OPERATION_FAILED(env, "could not generate prime");
      return Nothing<bool>();
+diff --git a/src/crypto/crypto_rsa.cc b/src/crypto/crypto_rsa.cc
+index 1bbf9a1753e4e2d82c55c4187489c22867d1d9bb..585af1674e129dc4d1c918d29fe9915bac8b4163 100644
+--- a/src/crypto/crypto_rsa.cc
++++ b/src/crypto/crypto_rsa.cc
+@@ -566,7 +566,7 @@ Maybe<bool> GetRsaKeyDetail(
+     // In that case, RSA_get0_pss_params does not return nullptr but all fields
+     // of the returned RSA_PSS_PARAMS will be set to nullptr.
+ 
+-    const RSA_PSS_PARAMS* params = RSA_get0_pss_params(rsa);
++    const RSA_PSS_PARAMS* params = nullptr; // RSA_get0_pss_params(rsa);
+     if (params != nullptr) {
+       int hash_nid = NID_sha1;
+       int mgf_nid = NID_mgf1;
+@@ -607,10 +607,11 @@ Maybe<bool> GetRsaKeyDetail(
+       }
+ 
+       if (params->saltLength != nullptr) {
+-        if (ASN1_INTEGER_get_int64(&salt_length, params->saltLength) != 1) {
+-          ThrowCryptoError(env, ERR_get_error(), "ASN1_INTEGER_get_in64 error");
+-          return Nothing<bool>();
+-        }
++        // TODO(codebytere): Upstream a shim to BoringSSL?
++        // if (ASN1_INTEGER_get_int64(&salt_length, params->saltLength) != 1) {
++        //   ThrowCryptoError(env, ERR_get_error(), "ASN1_INTEGER_get_in64 error");
++        //   return Nothing<bool>();
++        // }
+       }
+ 
+       if (target
 diff --git a/src/crypto/crypto_sig.cc b/src/crypto/crypto_sig.cc
 index 7846df17ffbe8b5ea3a685c46f73b5d28ad64b1f..2bf12b8b4a7e16adf9c1f58d72ae4f59a0b2b2a4 100644
 --- a/src/crypto/crypto_sig.cc
