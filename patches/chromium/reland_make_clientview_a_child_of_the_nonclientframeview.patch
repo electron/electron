@@ -1,0 +1,1727 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Amanda Baker <ambake@microsoft.com>
+Date: Sat, 10 Apr 2021 00:00:15 +0000
+Subject: Reland "Make ClientView a child of the NonClientFrameView"
+
+This is a reland of ec39b1ddb4cca45bf582ca55ad1585ceb51d9306
+
+Original change's description:
+> Make ClientView a child of the NonClientFrameView
+>
+> This refactor changes the hierarchy of views under
+> NonClientView. Previously, NonClientFrameView and ClientView were
+> siblings under NonClientView. This will change the hierarchy to:
+> NonClientView > NonClientFrameView > ClientView.
+>
+> This change also enables a cleaner implementation of the Window
+> Controls Overlay (see before (https://crrev.com/c/2504573) vs
+> after (https://crrev.com/c/2545685))
+>
+> Window controls overlay links:
+> Explainer: https://github.com/WICG/window-controls-overlay/blob/master/explainer.md
+> Design Doc: https://docs.google.com/document/d/1k0YL_-VMLIfjYCgJ2v6cMvuUv2qMKg4BgLI2tJ4qtyo/edit?usp=sharing
+> I2P: https://groups.google.com/a/chromium.org/forum/#!msg/blink-dev/cper6nNLFRQ/hU91kfCWBQAJ
+>
+> Bug: 1175276, 937121
+> Change-Id: If16de54a858f571c628b66c7801ef3777c6cc924
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2522616
+> Commit-Queue: Amanda Baker <ambake@microsoft.com>
+> Reviewed-by: Mitsuru Oshima <oshima@chromium.org>
+> Reviewed-by: Matt Giuca <mgiuca@chromium.org>
+> Reviewed-by: David Tseng <dtseng@chromium.org>
+> Reviewed-by: Leonard Grey <lgrey@chromium.org>
+> Reviewed-by: Peter Kasting <pkasting@chromium.org>
+> Cr-Commit-Position: refs/heads/master@{#864068}
+
+Bug: 1175276
+Bug: 937121
+Change-Id: Ib8919739dd685a4ea20b56fd241750678c38a9c0
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2780032
+Reviewed-by: Leonard Grey <lgrey@chromium.org>
+Reviewed-by: Mitsuru Oshima <oshima@chromium.org>
+Reviewed-by: Peter Kasting <pkasting@chromium.org>
+Reviewed-by: Matt Giuca <mgiuca@chromium.org>
+Reviewed-by: David Tseng <dtseng@chromium.org>
+Commit-Queue: Amanda Baker <ambake@microsoft.com>
+Cr-Commit-Position: refs/heads/master@{#871173}
+
+diff --git a/apps/ui/views/app_window_frame_view.cc b/apps/ui/views/app_window_frame_view.cc
+index 1a73ae216937d4329ff38f3af8ca2c8f395fa1aa..f96d7bec703431ddc2ba67c4a8e588c361d859c9 100644
+--- a/apps/ui/views/app_window_frame_view.cc
++++ b/apps/ui/views/app_window_frame_view.cc
+@@ -249,8 +249,11 @@ gfx::Size AppWindowFrameView::CalculatePreferredSize() const {
+ }
+ 
+ void AppWindowFrameView::Layout() {
++  NonClientFrameView::Layout();
++
+   if (!draw_frame_)
+     return;
++
+   gfx::Size close_size = close_button_->GetPreferredSize();
+   const int kButtonOffsetY = 0;
+   const int kButtonSpacing = 1;
+diff --git a/ash/app_list/views/search_box_view_unittest.cc b/ash/app_list/views/search_box_view_unittest.cc
+index 8e548da40dd51e15df17bc8550340ebcf0ca4cad..748307a88e512e8237cb124ddb31d1f6129e2ff2 100644
+--- a/ash/app_list/views/search_box_view_unittest.cc
++++ b/ash/app_list/views/search_box_view_unittest.cc
+@@ -92,9 +92,9 @@ class SearchBoxViewTest : public views::test::WidgetTest,
+   }
+ 
+   void TearDown() override {
+-    view_.reset();
+     app_list_view_->GetWidget()->Close();
+     widget_->CloseNow();
++    view_.reset();
+     views::test::WidgetTest::TearDown();
+   }
+ 
+diff --git a/ash/frame/default_frame_header_unittest.cc b/ash/frame/default_frame_header_unittest.cc
+index 1299e1993e7d0986a553e69865bf950a1313afd5..28b5ccfb5900c0c1240e1debdde95174bf752a54 100644
+--- a/ash/frame/default_frame_header_unittest.cc
++++ b/ash/frame/default_frame_header_unittest.cc
+@@ -277,7 +277,7 @@ TEST_F(DefaultFrameHeaderTest, ResizeAndReorderDuringAnimation) {
+     LayerDestroyedChecker checker(animating_layer);
+ 
+     // Change the view's stacking order should stop the animation.
+-    ASSERT_EQ(2u, frame_view_1->children().size());
++    ASSERT_EQ(3u, frame_view_1->children().size());
+     frame_view_1->ReorderChildView(extra_view_1, 0);
+ 
+     EXPECT_EQ(
+diff --git a/ash/frame/non_client_frame_view_ash.cc b/ash/frame/non_client_frame_view_ash.cc
+index 1f8a6931448f9fe7b7e364c02c01f6782c0873a3..bc73d9da6b020b39da1b56a9e42d3aac9ae5ea12 100644
+--- a/ash/frame/non_client_frame_view_ash.cc
++++ b/ash/frame/non_client_frame_view_ash.cc
+@@ -327,16 +327,16 @@ gfx::Size NonClientFrameViewAsh::CalculatePreferredSize() const {
+ }
+ 
+ void NonClientFrameViewAsh::Layout() {
+-  if (!GetEnabled())
+-    return;
+   views::NonClientFrameView::Layout();
++  if (!GetFrameEnabled())
++    return;
+   aura::Window* frame_window = frame_->GetNativeWindow();
+   frame_window->SetProperty(aura::client::kTopViewInset,
+                             NonClientTopBorderHeight());
+ }
+ 
+ gfx::Size NonClientFrameViewAsh::GetMinimumSize() const {
+-  if (!GetEnabled())
++  if (!GetFrameEnabled())
+     return gfx::Size();
+ 
+   gfx::Size min_client_view_size(frame_->client_view()->GetMinimumSize());
+@@ -358,13 +358,6 @@ gfx::Size NonClientFrameViewAsh::GetMaximumSize() const {
+   return gfx::Size(width, height);
+ }
+ 
+-void NonClientFrameViewAsh::SetVisible(bool visible) {
+-  overlay_view_->SetVisible(visible);
+-  views::View::SetVisible(visible);
+-  // We need to re-layout so that client view will occupy entire window.
+-  InvalidateLayout();
+-}
+-
+ void NonClientFrameViewAsh::SetShouldPaintHeader(bool paint) {
+   header_view_->SetShouldPaintHeader(paint);
+ }
+@@ -372,7 +365,7 @@ void NonClientFrameViewAsh::SetShouldPaintHeader(bool paint) {
+ int NonClientFrameViewAsh::NonClientTopBorderHeight() const {
+   // The frame should not occupy the window area when it's in fullscreen,
+   // not visible or disabled.
+-  if (frame_->IsFullscreen() || !GetVisible() || !GetEnabled() ||
++  if (frame_->IsFullscreen() || !GetFrameEnabled() ||
+       header_view_->in_immersive_mode()) {
+     return 0;
+   }
+@@ -395,6 +388,15 @@ SkColor NonClientFrameViewAsh::GetInactiveFrameColorForTest() const {
+   return frame_->GetNativeWindow()->GetProperty(kFrameInactiveColorKey);
+ }
+ 
++void NonClientFrameViewAsh::SetFrameEnabled(bool enabled) {
++  if (enabled == frame_enabled_)
++    return;
++
++  frame_enabled_ = enabled;
++  overlay_view_->SetVisible(frame_enabled_);
++  InvalidateLayout();
++}
++
+ void NonClientFrameViewAsh::OnDidSchedulePaint(const gfx::Rect& r) {
+   // We may end up here before |header_view_| has been added to the Widget.
+   if (header_view_->GetWidget()) {
+@@ -410,9 +412,18 @@ void NonClientFrameViewAsh::OnDidSchedulePaint(const gfx::Rect& r) {
+ bool NonClientFrameViewAsh::DoesIntersectRect(const views::View* target,
+                                               const gfx::Rect& rect) const {
+   CHECK_EQ(target, this);
+-  // NonClientView hit tests the NonClientFrameView first instead of going in
+-  // z-order. Return false so that events get to the OverlayView.
+-  return false;
++
++  // Give the OverlayView the first chance to handle events.
++  if (frame_enabled_ && overlay_view_->HitTestRect(rect))
++    return false;
++
++  // Handle the event if it's within the bounds of the ClientView.
++  gfx::RectF rect_in_client_view_coords_f(rect);
++  View::ConvertRectToTarget(this, frame_->client_view(),
++                            &rect_in_client_view_coords_f);
++  gfx::Rect rect_in_client_view_coords =
++      gfx::ToEnclosingRect(rect_in_client_view_coords_f);
++  return frame_->client_view()->HitTestRect(rect_in_client_view_coords);
+ }
+ 
+ chromeos::FrameCaptionButtonContainerView*
+diff --git a/ash/frame/non_client_frame_view_ash.h b/ash/frame/non_client_frame_view_ash.h
+index ac2633a19af8939d9655a09549d7c6c567e00a6e..c5efb7933d3077f75ccb7296ac873cdd1a1c9ea4 100644
+--- a/ash/frame/non_client_frame_view_ash.h
++++ b/ash/frame/non_client_frame_view_ash.h
+@@ -90,7 +90,6 @@ class ASH_EXPORT NonClientFrameViewAsh : public views::NonClientFrameView {
+   void Layout() override;
+   gfx::Size GetMinimumSize() const override;
+   gfx::Size GetMaximumSize() const override;
+-  void SetVisible(bool visible) override;
+ 
+   // If |paint| is false, we should not paint the header. Used for overview mode
+   // with OnOverviewModeStarting() and OnOverviewModeEnded() to hide/show the
+@@ -111,6 +110,9 @@ class ASH_EXPORT NonClientFrameViewAsh : public views::NonClientFrameView {
+ 
+   views::Widget* frame() { return frame_; }
+ 
++  bool GetFrameEnabled() const { return frame_enabled_; }
++  virtual void SetFrameEnabled(bool enabled);
++
+  protected:
+   // views::View:
+   void OnDidSchedulePaint(const gfx::Rect& r) override;
+@@ -141,6 +143,8 @@ class ASH_EXPORT NonClientFrameViewAsh : public views::NonClientFrameView {
+ 
+   OverlayView* overlay_view_ = nullptr;
+ 
++  bool frame_enabled_ = true;
++
+   std::unique_ptr<NonClientFrameViewAshImmersiveHelper> immersive_helper_;
+ 
+   base::CallbackListSubscription paint_as_active_subscription_ =
+diff --git a/ash/frame/non_client_frame_view_ash_unittest.cc b/ash/frame/non_client_frame_view_ash_unittest.cc
+index 67093a915488503984e01a43d47964ad7eafc89c..b1b0f64e0b47d558ae06d4e444b531efd54ab5e3 100644
+--- a/ash/frame/non_client_frame_view_ash_unittest.cc
++++ b/ash/frame/non_client_frame_view_ash_unittest.cc
+@@ -543,19 +543,19 @@ TEST_F(NonClientFrameViewAshTest, FrameVisibility) {
+       delegate->non_client_frame_view();
+   EXPECT_EQ(client_bounds, widget->client_view()->GetLocalBounds().size());
+ 
+-  non_client_frame_view->SetVisible(false);
++  non_client_frame_view->SetFrameEnabled(false);
+   widget->GetRootView()->Layout();
+   EXPECT_EQ(gfx::Size(200, 100),
+             widget->client_view()->GetLocalBounds().size());
+-  EXPECT_FALSE(widget->non_client_view()->frame_view()->GetVisible());
++  EXPECT_FALSE(non_client_frame_view->GetFrameEnabled());
+   EXPECT_EQ(
+       window_bounds,
+       non_client_frame_view->GetClientBoundsForWindowBounds(window_bounds));
+ 
+-  non_client_frame_view->SetVisible(true);
++  non_client_frame_view->SetFrameEnabled(true);
+   widget->GetRootView()->Layout();
+   EXPECT_EQ(client_bounds, widget->client_view()->GetLocalBounds().size());
+-  EXPECT_TRUE(widget->non_client_view()->frame_view()->GetVisible());
++  EXPECT_TRUE(non_client_frame_view->GetFrameEnabled());
+   EXPECT_EQ(32, delegate->GetNonClientFrameViewTopBorderHeight());
+   EXPECT_EQ(
+       gfx::Rect(gfx::Point(10, 42), client_bounds),
+diff --git a/ash/hud_display/hud_display.cc b/ash/hud_display/hud_display.cc
+index ad7d615f0cd2cf4e897f98deac7aa08915f4434f..d9ba5e54e6de749f846a6376e25e746eafa013cc 100644
+--- a/ash/hud_display/hud_display.cc
++++ b/ash/hud_display/hud_display.cc
+@@ -6,6 +6,7 @@
+ 
+ #include "ash/fast_ink/view_tree_host_root_view.h"
+ #include "ash/fast_ink/view_tree_host_widget.h"
++#include "ash/frame/non_client_frame_view_ash.h"
+ #include "ash/hud_display/graphs_container_view.h"
+ #include "ash/hud_display/hud_constants.h"
+ #include "ash/hud_display/hud_header_view.h"
+@@ -82,12 +83,11 @@ std::unique_ptr<views::ClientView> MakeClientView(views::Widget* widget) {
+ }
+ 
+ void InitializeFrameView(views::WidgetDelegate* delegate) {
+-  auto* frame_view = delegate->GetWidget()->non_client_view()->frame_view();
++  auto* frame_view = static_cast<NonClientFrameViewAsh*>(
++      delegate->GetWidget()->non_client_view()->frame_view());
+   // TODO(oshima): support component type with TYPE_WINDOW_FLAMELESS widget.
+-  if (frame_view) {
+-    frame_view->SetEnabled(false);
+-    frame_view->SetVisible(false);
+-  }
++  if (frame_view)
++    frame_view->SetFrameEnabled(false);
+ }
+ 
+ }  // namespace
+diff --git a/ash/system/holding_space/holding_space_tray_bubble.cc b/ash/system/holding_space/holding_space_tray_bubble.cc
+index 1ffb354110867722be54898d2f045f1707af7f4b..5e55fbe7b361f9e9ca6ffaa1d20fbab79090724a 100644
+--- a/ash/system/holding_space/holding_space_tray_bubble.cc
++++ b/ash/system/holding_space/holding_space_tray_bubble.cc
+@@ -319,6 +319,8 @@ HoldingSpaceTrayBubble::HoldingSpaceTrayBubble(
+ 
+   // Create and customize bubble view.
+   TrayBubbleView* bubble_view = new TrayBubbleView(init_params);
++  // Ensure bubble frame does not draw background behind bubble view.
++  bubble_view->set_color(SK_ColorTRANSPARENT);
+   child_bubble_container_ =
+       bubble_view->AddChildView(std::make_unique<ChildBubbleContainer>());
+   child_bubble_container_->SetMaxHeight(CalculateMaxHeight());
+@@ -339,12 +341,6 @@ HoldingSpaceTrayBubble::HoldingSpaceTrayBubble(
+   bubble_wrapper_ =
+       std::make_unique<TrayBubbleWrapper>(holding_space_tray, bubble_view);
+ 
+-  // Set bubble frame to be invisible.
+-  bubble_wrapper_->GetBubbleWidget()
+-      ->non_client_view()
+-      ->frame_view()
+-      ->SetVisible(false);
+-
+   event_handler_ =
+       std::make_unique<HoldingSpaceTrayBubbleEventHandler>(this, &delegate_);
+ 
+diff --git a/ash/wm/system_modal_container_layout_manager_unittest.cc b/ash/wm/system_modal_container_layout_manager_unittest.cc
+index 1723e7ea3ddaf9dd232765b07ccbce0d88bdf4c4..e8a5f8db3583782e139341d5bf7f791aaa98709e 100644
+--- a/ash/wm/system_modal_container_layout_manager_unittest.cc
++++ b/ash/wm/system_modal_container_layout_manager_unittest.cc
+@@ -547,11 +547,12 @@ TEST_F(SystemModalContainerLayoutManagerTest, ShowModalWhileHidden) {
+ TEST_F(SystemModalContainerLayoutManagerTest, ChangeCapture) {
+   std::unique_ptr<aura::Window> widget_window(ShowToplevelTestWindow(false));
+   views::test::CaptureTrackingView* view = new views::test::CaptureTrackingView;
+-  views::View* contents_view =
++  views::View* client_view =
+       views::Widget::GetWidgetForNativeView(widget_window.get())
+-          ->GetContentsView();
+-  contents_view->AddChildView(view);
+-  view->SetBoundsRect(contents_view->bounds());
++          ->non_client_view()
++          ->client_view();
++  client_view->AddChildView(view);
++  view->SetBoundsRect(client_view->bounds());
+ 
+   gfx::Point center(view->width() / 2, view->height() / 2);
+   views::View::ConvertPointToScreen(view, &center);
+diff --git a/chrome/browser/resources/chromeos/accessibility/chromevox/background/background_test.js b/chrome/browser/resources/chromeos/accessibility/chromevox/background/background_test.js
+index c790c2b55c3a1757bb9d6afe200796e4cc66178f..9d6a58dfc034413a36646ea8520ed62faa609e93 100644
+--- a/chrome/browser/resources/chromeos/accessibility/chromevox/background/background_test.js
++++ b/chrome/browser/resources/chromeos/accessibility/chromevox/background/background_test.js
+@@ -3047,7 +3047,7 @@ TEST_F('ChromeVoxBackgroundTest', 'ImageAnnotations', function() {
+ 
+ TEST_F('ChromeVoxBackgroundTest', 'VolumeChanges', function() {
+   const mockFeedback = this.createMockFeedback();
+-  this.runWithLoadedTree(``, function() {
++  this.runWithLoadedTree('<p>test</p>', function() {
+     const bounds = ChromeVoxState.instance.getFocusBounds();
+     mockFeedback.call(press(KeyCode.VOLUME_UP))
+         .expectSpeech('Volume', 'Slider', /\d+%/)
+diff --git a/chrome/browser/ui/views/apps/app_info_dialog/app_info_dialog_container.cc b/chrome/browser/ui/views/apps/app_info_dialog/app_info_dialog_container.cc
+index 180167b310fdfe5392c8b0f919cc2ce0d6556b3d..c32e8027d855505b5413c884b341bdf542ebcc42 100644
+--- a/chrome/browser/ui/views/apps/app_info_dialog/app_info_dialog_container.cc
++++ b/chrome/browser/ui/views/apps/app_info_dialog/app_info_dialog_container.cc
+@@ -89,21 +89,6 @@ class FullSizeBubbleFrameView : public views::BubbleFrameView {
+   ~FullSizeBubbleFrameView() override = default;
+ 
+  private:
+-  // Overridden from views::ViewTargeterDelegate:
+-  bool DoesIntersectRect(const View* target,
+-                         const gfx::Rect& rect) const override {
+-    // Make sure click events can still reach the close button, even if the
+-    // ClientView overlaps it.
+-    // NOTE: |rect| is in the mirrored coordinate space, so we must use the
+-    // close button's mirrored bounds to correctly target the close button when
+-    // in RTL mode.
+-    if (IsCloseButtonVisible() &&
+-        GetCloseButtonMirroredBounds().Intersects(rect)) {
+-      return true;
+-    }
+-    return views::BubbleFrameView::DoesIntersectRect(target, rect);
+-  }
+-
+   // Overridden from views::BubbleFrameView:
+   bool ExtendClientIntoTitle() const override { return true; }
+ };
+diff --git a/chrome/browser/ui/views/frame/browser_non_client_frame_view.cc b/chrome/browser/ui/views/frame/browser_non_client_frame_view.cc
+index ca4a6ad167418b234bdae1e07ef398a7b6b97ed4..361cab54d78f5c0a9a6c6cdde0d002af6b358a9a 100644
+--- a/chrome/browser/ui/views/frame/browser_non_client_frame_view.cc
++++ b/chrome/browser/ui/views/frame/browser_non_client_frame_view.cc
+@@ -66,6 +66,11 @@ BrowserNonClientFrameView::~BrowserNonClientFrameView() {
+     g_browser_process->profile_manager()->
+         GetProfileAttributesStorage().RemoveObserver(this);
+   }
++
++  // WebAppFrameToolbarView::ToolbarButtonContainer is an
++  // ImmersiveModeController::Observer, so it must be destroyed before the
++  // BrowserView destroys the ImmersiveModeController.
++  delete web_app_frame_toolbar_;
+ }
+ 
+ void BrowserNonClientFrameView::OnBrowserViewInitViewsComplete() {
+@@ -294,68 +299,6 @@ void BrowserNonClientFrameView::ChildPreferredSizeChanged(views::View* child) {
+     Layout();
+ }
+ 
+-bool BrowserNonClientFrameView::DoesIntersectRect(const views::View* target,
+-                                                  const gfx::Rect& rect) const {
+-  DCHECK_EQ(target, this);
+-  if (!views::ViewTargeterDelegate::DoesIntersectRect(this, rect)) {
+-    // |rect| is outside the frame's bounds.
+-    return false;
+-  }
+-
+-  bool should_leave_to_top_container = false;
+-#if BUILDFLAG(IS_CHROMEOS_ASH) || BUILDFLAG(IS_CHROMEOS_LACROS)
+-  // In immersive mode, the caption buttons container is reparented to the
+-  // TopContainerView and hence |rect| should not be claimed here.  See
+-  // BrowserNonClientFrameViewChromeOS::OnImmersiveRevealStarted().
+-  should_leave_to_top_container =
+-      browser_view_->immersive_mode_controller()->IsRevealed();
+-#endif
+-
+-  if (!browser_view_->GetTabStripVisible()) {
+-    // Claim |rect| if it is above the top of the topmost client area view.
+-    return !should_leave_to_top_container && (rect.y() < GetTopInset(false));
+-  }
+-
+-  // If the rect is outside the bounds of the client area, claim it.
+-  gfx::RectF rect_in_client_view_coords_f(rect);
+-  View::ConvertRectToTarget(this, frame_->client_view(),
+-                            &rect_in_client_view_coords_f);
+-  gfx::Rect rect_in_client_view_coords =
+-      gfx::ToEnclosingRect(rect_in_client_view_coords_f);
+-  if (!frame_->client_view()->HitTestRect(rect_in_client_view_coords))
+-    return true;
+-
+-  // Otherwise, claim |rect| only if it is above the bottom of the tab strip
+-  // region view in a non-tab portion.
+-  TabStripRegionView* tab_strip_region_view =
+-      browser_view_->tab_strip_region_view();
+-
+-  // The |tab_strip_region_view| may not be in a Widget (e.g. when switching
+-  // into immersive reveal the BrowserView's TopContainerView is reparented).
+-  if (tab_strip_region_view->GetWidget()) {
+-    gfx::RectF rect_in_region_view_coords_f(rect);
+-    View::ConvertRectToTarget(this, tab_strip_region_view,
+-                              &rect_in_region_view_coords_f);
+-    gfx::Rect rect_in_region_view_coords =
+-        gfx::ToEnclosingRect(rect_in_region_view_coords_f);
+-    if (rect_in_region_view_coords.y() >=
+-        tab_strip_region_view->GetLocalBounds().bottom()) {
+-      // |rect| is below the tab_strip_region_view.
+-      return false;
+-    }
+-
+-    if (tab_strip_region_view->HitTestRect(rect_in_region_view_coords)) {
+-      // Claim |rect| if it is in a non-tab portion of the tabstrip.
+-      return tab_strip_region_view->IsRectInWindowCaption(
+-          rect_in_region_view_coords);
+-    }
+-  }
+-
+-  // We claim |rect| because it is above the bottom of the tabstrip, but
+-  // not in the tabstrip itself.
+-  return !should_leave_to_top_container;
+-}
+-
+ void BrowserNonClientFrameView::OnProfileAdded(
+     const base::FilePath& profile_path) {
+   OnProfileAvatarChanged(profile_path);
+diff --git a/chrome/browser/ui/views/frame/browser_non_client_frame_view.h b/chrome/browser/ui/views/frame/browser_non_client_frame_view.h
+index 8760b6b6239e7bc102305ab9280860ac847fedc3..875ba7daf98a8d59390fe3c2f0281f29d43f964d 100644
+--- a/chrome/browser/ui/views/frame/browser_non_client_frame_view.h
++++ b/chrome/browser/ui/views/frame/browser_non_client_frame_view.h
+@@ -157,8 +157,6 @@ class BrowserNonClientFrameView : public views::NonClientFrameView,
+ 
+   // views::NonClientFrameView:
+   void ChildPreferredSizeChanged(views::View* child) override;
+-  bool DoesIntersectRect(const views::View* target,
+-                         const gfx::Rect& rect) const override;
+ 
+   // ProfileAttributesStorage::Observer:
+   void OnProfileAdded(const base::FilePath& profile_path) override;
+diff --git a/chrome/browser/ui/views/frame/browser_non_client_frame_view_chromeos.cc b/chrome/browser/ui/views/frame/browser_non_client_frame_view_chromeos.cc
+index 945848b668620c5f037b219b6c76d35d851af291..05b1a9917da90ac9c2077f9fe39ce1418b04db1f 100644
+--- a/chrome/browser/ui/views/frame/browser_non_client_frame_view_chromeos.cc
++++ b/chrome/browser/ui/views/frame/browser_non_client_frame_view_chromeos.cc
+@@ -401,6 +401,27 @@ void BrowserNonClientFrameViewChromeOS::ChildPreferredSizeChanged(
+   }
+ }
+ 
++bool BrowserNonClientFrameViewChromeOS::DoesIntersectRect(
++    const views::View* target,
++    const gfx::Rect& rect) const {
++  DCHECK_EQ(target, this);
++  if (!views::ViewTargeterDelegate::DoesIntersectRect(this, rect)) {
++    // |rect| is outside the frame's bounds.
++    return false;
++  }
++
++  bool should_leave_to_top_container = false;
++#if BUILDFLAG(IS_CHROMEOS_ASH) || BUILDFLAG(IS_CHROMEOS_LACROS)
++  // In immersive mode, the caption buttons container is reparented to the
++  // TopContainerView and hence |rect| should not be claimed here.  See
++  // BrowserNonClientFrameViewChromeOS::OnImmersiveRevealStarted().
++  should_leave_to_top_container =
++      browser_view()->immersive_mode_controller()->IsRevealed();
++#endif
++
++  return !should_leave_to_top_container;
++}
++
+ SkColor BrowserNonClientFrameViewChromeOS::GetTitleColor() {
+   return browser_view()->GetRegularOrGuestSession()
+              ? kNormalWindowTitleTextColor
+@@ -561,7 +582,13 @@ void BrowserNonClientFrameViewChromeOS::OnImmersiveRevealStarted() {
+ }
+ 
+ void BrowserNonClientFrameViewChromeOS::OnImmersiveRevealEnded() {
+-  AddChildViewAt(caption_button_container_, 0);
++  // Ensure the caption button container receives events before the browser view
++  // by placing it higher in the z-order.
++  // [0] - FrameAnimatorView
++  // [1] - BrowserView
++  // [2] - FrameCaptionButtonContainerView
++  const int kCaptionButtonContainerIndex = 2;
++  AddChildViewAt(caption_button_container_, kCaptionButtonContainerIndex);
+   if (web_app_frame_toolbar())
+     AddChildViewAt(web_app_frame_toolbar(), 0);
+   Layout();
+diff --git a/chrome/browser/ui/views/frame/browser_non_client_frame_view_chromeos.h b/chrome/browser/ui/views/frame/browser_non_client_frame_view_chromeos.h
+index 97df69a7209fafdaf2597b46536da0743f87b7fd..4bbc1a599464e3556f0da4da917bae9b9e03884c 100644
+--- a/chrome/browser/ui/views/frame/browser_non_client_frame_view_chromeos.h
++++ b/chrome/browser/ui/views/frame/browser_non_client_frame_view_chromeos.h
+@@ -79,6 +79,8 @@ class BrowserNonClientFrameViewChromeOS
+   gfx::Size GetMinimumSize() const override;
+   void OnThemeChanged() override;
+   void ChildPreferredSizeChanged(views::View* child) override;
++  bool DoesIntersectRect(const views::View* target,
++                         const gfx::Rect& rect) const override;
+ 
+   // BrowserFrameHeaderChromeOS::AppearanceProvider:
+   SkColor GetTitleColor() override;
+diff --git a/chrome/browser/ui/views/frame/browser_non_client_frame_view_mac.mm b/chrome/browser/ui/views/frame/browser_non_client_frame_view_mac.mm
+index 387e4c46a90d3f365fee56388a60805a35f61fa1..1eeda0de0520fba7ef6a6d8606e3aef27601599c 100644
+--- a/chrome/browser/ui/views/frame/browser_non_client_frame_view_mac.mm
++++ b/chrome/browser/ui/views/frame/browser_non_client_frame_view_mac.mm
+@@ -338,6 +338,8 @@ FullscreenToolbarStyle GetUserPreferredToolbarStyle(bool always_show) {
+ }
+ 
+ void BrowserNonClientFrameViewMac::Layout() {
++  NonClientFrameView::Layout();
++
+   const int available_height = GetTopInset(true);
+   int leading_x = kFramePaddingLeft;
+   int trailing_x = width();
+diff --git a/chrome/browser/ui/views/frame/browser_non_client_frame_view_unittest.cc b/chrome/browser/ui/views/frame/browser_non_client_frame_view_unittest.cc
+index 58cb7172a89c054175f04e5d031b3114d638ed26..f62322371d905b5eabd64b0e5bd63c8784c4341b 100644
+--- a/chrome/browser/ui/views/frame/browser_non_client_frame_view_unittest.cc
++++ b/chrome/browser/ui/views/frame/browser_non_client_frame_view_unittest.cc
+@@ -61,12 +61,15 @@ class BrowserNonClientFrameViewPopupTest
+ #define MAYBE_HitTestPopupTopChrome HitTestPopupTopChrome
+ #endif
+ TEST_F(BrowserNonClientFrameViewPopupTest, MAYBE_HitTestPopupTopChrome) {
+-  EXPECT_FALSE(frame_view_->HitTestRect(gfx::Rect(-1, 4, 1, 1)));
+-  EXPECT_FALSE(frame_view_->HitTestRect(gfx::Rect(4, -1, 1, 1)));
++  constexpr gfx::Rect kLeftOfFrame(-1, 4, 1, 1);
++  EXPECT_FALSE(frame_view_->HitTestRect(kLeftOfFrame));
++
++  constexpr gfx::Rect kAboveFrame(4, -1, 1, 1);
++  EXPECT_FALSE(frame_view_->HitTestRect(kAboveFrame));
++
+   const int top_inset = frame_view_->GetTopInset(false);
+-  EXPECT_FALSE(frame_view_->HitTestRect(gfx::Rect(4, top_inset, 1, 1)));
+-  if (top_inset > 0)
+-    EXPECT_TRUE(frame_view_->HitTestRect(gfx::Rect(4, top_inset - 1, 1, 1)));
++  const gfx::Rect in_browser_view(4, top_inset, 1, 1);
++  EXPECT_TRUE(frame_view_->HitTestRect(in_browser_view));
+ }
+ 
+ class BrowserNonClientFrameViewTabbedTest
+@@ -108,7 +111,9 @@ TEST_F(BrowserNonClientFrameViewTabbedTest, MAYBE_HitTestTabstrip) {
+ 
+   // Hits client portions of the tabstrip (near the bottom left corner of the
+   // first tab).
+-  EXPECT_FALSE(frame_view_->HitTestRect(gfx::Rect(
++  EXPECT_TRUE(frame_view_->HitTestRect(gfx::Rect(
++      tabstrip_bounds.x() + 10, tabstrip_bounds.bottom() - 10, 1, 1)));
++  EXPECT_TRUE(frame_view_->browser_view()->HitTestRect(gfx::Rect(
+       tabstrip_bounds.x() + 10, tabstrip_bounds.bottom() - 10, 1, 1)));
+ 
+ // Tabs extend to the top of the tabstrip everywhere in this test context on
+diff --git a/chrome/browser/ui/views/frame/browser_view.cc b/chrome/browser/ui/views/frame/browser_view.cc
+index c33c4327974e7a5d80ac8da0af06a7cc7c271b63..58a0cec1d400fcd987d9a7873df5638c9c29e066 100644
+--- a/chrome/browser/ui/views/frame/browser_view.cc
++++ b/chrome/browser/ui/views/frame/browser_view.cc
+@@ -2928,6 +2928,12 @@ void BrowserView::ViewHierarchyChanged(
+ }
+ 
+ void BrowserView::AddedToWidget() {
++  // BrowserView may be added to a widget more than once if the user changes
++  // themes after starting the browser. Do not re-initialize BrowserView in
++  // this case.
++  if (initialized_)
++    return;
++
+   views::ClientView::AddedToWidget();
+ 
+   widget_observation_.Observe(GetWidget());
+diff --git a/chrome/browser/ui/views/frame/glass_browser_frame_view.cc b/chrome/browser/ui/views/frame/glass_browser_frame_view.cc
+index 3ae9bc2369f3327c258a0ea080ba9c2aee0e1c3b..452070396204ca6fd6b231a8dc98ff132f55aa2f 100644
+--- a/chrome/browser/ui/views/frame/glass_browser_frame_view.cc
++++ b/chrome/browser/ui/views/frame/glass_browser_frame_view.cc
+@@ -403,6 +403,7 @@ void GlassBrowserFrameView::Layout() {
+   LayoutCaptionButtons();
+   LayoutTitleBar();
+   LayoutClientView();
++  NonClientFrameView::Layout();
+ }
+ 
+ ///////////////////////////////////////////////////////////////////////////////
+diff --git a/chrome/browser/ui/views/frame/opaque_browser_frame_view_layout.cc b/chrome/browser/ui/views/frame/opaque_browser_frame_view_layout.cc
+index c788b1cf970cceefb82b36c2a24de5bdf1432119..843f8f87b82862c1030b96976b4a99e29f0f7aa4 100644
+--- a/chrome/browser/ui/views/frame/opaque_browser_frame_view_layout.cc
++++ b/chrome/browser/ui/views/frame/opaque_browser_frame_view_layout.cc
+@@ -18,6 +18,7 @@
+ #include "ui/gfx/font.h"
+ #include "ui/views/controls/button/image_button.h"
+ #include "ui/views/controls/label.h"
++#include "ui/views/view_utils.h"
+ #include "ui/views/window/caption_button_layout_constants.h"
+ #include "ui/views/window/frame_caption_button.h"
+ 
+@@ -606,10 +607,20 @@ gfx::Size OpaqueBrowserFrameViewLayout::GetPreferredSize(
+ 
+ void OpaqueBrowserFrameViewLayout::ViewAdded(views::View* host,
+                                              views::View* view) {
++  if (views::IsViewClass<views::ClientView>(view)) {
++    client_view_ = static_cast<views::ClientView*>(view);
++    return;
++  }
++
+   SetView(view->GetID(), view);
+ }
+ 
+ void OpaqueBrowserFrameViewLayout::ViewRemoved(views::View* host,
+                                                views::View* view) {
++  if (views::IsViewClass<views::ClientView>(view)) {
++    client_view_ = nullptr;
++    return;
++  }
++
+   SetView(view->GetID(), nullptr);
+ }
+diff --git a/chrome/browser/ui/views/frame/opaque_browser_frame_view_layout.h b/chrome/browser/ui/views/frame/opaque_browser_frame_view_layout.h
+index 3a8d8905cb1f68a89d36ac6fe53fb6fe5d581dfc..ec7d845fede82b43de7009ee7eb965097cf3d3f6 100644
+--- a/chrome/browser/ui/views/frame/opaque_browser_frame_view_layout.h
++++ b/chrome/browser/ui/views/frame/opaque_browser_frame_view_layout.h
+@@ -217,6 +217,8 @@ class OpaqueBrowserFrameViewLayout : public views::LayoutManager {
+   std::vector<views::FrameButton> leading_buttons_;
+   std::vector<views::FrameButton> trailing_buttons_;
+ 
++  views::ClientView* client_view_ = nullptr;
++
+   DISALLOW_COPY_AND_ASSIGN(OpaqueBrowserFrameViewLayout);
+ };
+ 
+diff --git a/chrome/browser/ui/views/web_apps/frame_toolbar/web_app_frame_toolbar_view.cc b/chrome/browser/ui/views/web_apps/frame_toolbar/web_app_frame_toolbar_view.cc
+index c0a4ab3705b813fedd0155b37934c807e30119cc..c6d8c62fd09ec82db897fe0bb2bf13ab03c0fc95 100644
+--- a/chrome/browser/ui/views/web_apps/frame_toolbar/web_app_frame_toolbar_view.cc
++++ b/chrome/browser/ui/views/web_apps/frame_toolbar/web_app_frame_toolbar_view.cc
+@@ -29,6 +29,7 @@ WebAppFrameToolbarView::WebAppFrameToolbarView(views::Widget* widget,
+   DCHECK(browser_view_);
+   DCHECK(web_app::AppBrowserController::IsWebApp(browser_view_->browser()));
+   SetID(VIEW_ID_WEB_APP_FRAME_TOOLBAR);
++  SetEventTargeter(std::make_unique<views::ViewTargeter>(this));
+ 
+   {
+     // TODO(tluk) fix the need for both LayoutInContainer() and a layout
+@@ -219,6 +220,24 @@ ReloadButton* WebAppFrameToolbarView::GetReloadButton() {
+   return left_container_ ? left_container_->reload_button() : nullptr;
+ }
+ 
++bool WebAppFrameToolbarView::DoesIntersectRect(const View* target,
++                                               const gfx::Rect& rect) const {
++  DCHECK_EQ(target, this);
++  if (!views::ViewTargeterDelegate::DoesIntersectRect(this, rect))
++    return false;
++
++  // If the rect is inside the bounds of the center_container, do not claim it.
++  // There is no actionable content in the center_container, and it overlaps
++  // tabs in tabbed PWA windows.
++  gfx::RectF rect_in_center_container_coords_f(rect);
++  View::ConvertRectToTarget(this, center_container_,
++                            &rect_in_center_container_coords_f);
++  gfx::Rect rect_in_client_view_coords =
++      gfx::ToEnclosingRect(rect_in_center_container_coords_f);
++
++  return !center_container_->HitTestRect(rect_in_client_view_coords);
++}
++
+ PageActionIconController*
+ WebAppFrameToolbarView::GetPageActionIconControllerForTesting() {
+   return right_container_->page_action_icon_controller();
+diff --git a/chrome/browser/ui/views/web_apps/frame_toolbar/web_app_frame_toolbar_view.h b/chrome/browser/ui/views/web_apps/frame_toolbar/web_app_frame_toolbar_view.h
+index 8d3f6ad1375d86bcca05c603a9dab01481e752e1..0bca228da4e73319f424b2ae2409bcaabe82f775 100644
+--- a/chrome/browser/ui/views/web_apps/frame_toolbar/web_app_frame_toolbar_view.h
++++ b/chrome/browser/ui/views/web_apps/frame_toolbar/web_app_frame_toolbar_view.h
+@@ -15,9 +15,11 @@
+ #include "ui/gfx/color_palette.h"
+ #include "ui/views/accessible_pane_view.h"
+ #include "ui/views/metadata/metadata_header_macros.h"
++#include "ui/views/view_targeter_delegate.h"
+ 
+ namespace views {
+ class View;
++class ViewTargeterDelegate;
+ class Widget;
+ }  // namespace views
+ 
+@@ -29,7 +31,8 @@ class WebAppToolbarButtonContainer;
+ 
+ // A container for web app buttons in the title bar.
+ class WebAppFrameToolbarView : public views::AccessiblePaneView,
+-                               public ToolbarButtonProvider {
++                               public ToolbarButtonProvider,
++                               public views::ViewTargeterDelegate {
+  public:
+   METADATA_HEADER(WebAppFrameToolbarView);
+   WebAppFrameToolbarView(views::Widget* widget, BrowserView* browser_view);
+@@ -71,6 +74,10 @@ class WebAppFrameToolbarView : public views::AccessiblePaneView,
+   ToolbarButton* GetBackButton() override;
+   ReloadButton* GetReloadButton() override;
+ 
++  // views::ViewTargeterDelegate
++  bool DoesIntersectRect(const View* target,
++                         const gfx::Rect& rect) const override;
++
+   WebAppNavigationButtonContainer* get_left_container_for_testing() {
+     return left_container_;
+   }
+diff --git a/components/exo/client_controlled_shell_surface.cc b/components/exo/client_controlled_shell_surface.cc
+index 2efee6195ef3dae4a8cbd4c35ebeb809c88c1bc3..39fb793b30c99b0c6b9ee3ba64c54820d456418f 100644
+--- a/components/exo/client_controlled_shell_surface.cc
++++ b/components/exo/client_controlled_shell_surface.cc
+@@ -1024,7 +1024,7 @@ void ClientControlledShellSurface::SetWidgetBounds(const gfx::Rect& bounds) {
+ gfx::Rect ClientControlledShellSurface::GetShadowBounds() const {
+   gfx::Rect shadow_bounds = ShellSurfaceBase::GetShadowBounds();
+   const ash::NonClientFrameViewAsh* frame_view = GetFrameView();
+-  if (frame_view->GetVisible()) {
++  if (frame_view->GetFrameEnabled()) {
+     // The client controlled geometry is only for the client
+     // area. When the chrome side frame is enabled, the shadow height
+     // has to include the height of the frame, and the total height is
+@@ -1083,7 +1083,7 @@ float ClientControlledShellSurface::GetScale() const {
+ base::Optional<gfx::Rect> ClientControlledShellSurface::GetWidgetBounds()
+     const {
+   const ash::NonClientFrameViewAsh* frame_view = GetFrameView();
+-  if (frame_view->GetVisible()) {
++  if (frame_view->GetFrameEnabled()) {
+     gfx::Rect visible_bounds = ShellSurfaceBase::GetVisibleBounds();
+     if (widget_->IsMaximized() && frame_type_ == SurfaceFrameType::NORMAL) {
+       // When the widget is maximized in clamshell mode, client sends
+@@ -1262,7 +1262,7 @@ void ClientControlledShellSurface::UpdateFrame() {
+           .work_area();
+ 
+   ash::WindowState* window_state = GetWindowState();
+-  bool enable_wide_frame = GetFrameView()->GetVisible() &&
++  bool enable_wide_frame = GetFrameView()->GetFrameEnabled() &&
+                            window_state->IsMaximizedOrFullscreenOrPinned() &&
+                            work_area.width() != geometry().width();
+   bool update_frame = state_changed_;
+diff --git a/components/exo/client_controlled_shell_surface_unittest.cc b/components/exo/client_controlled_shell_surface_unittest.cc
+index dc4756c4a80c0521a4367ad0a76e0bba9e195869..20d4d7cdbf746bfc323c6ecef2e68c22972f1e80 100644
+--- a/components/exo/client_controlled_shell_surface_unittest.cc
++++ b/components/exo/client_controlled_shell_surface_unittest.cc
+@@ -517,7 +517,7 @@ TEST_F(ClientControlledShellSurfaceTest, Frame) {
+ 
+   // Normal state.
+   widget->LayoutRootViewIfNecessary();
+-  EXPECT_TRUE(frame_view->GetVisible());
++  EXPECT_TRUE(frame_view->GetFrameEnabled());
+   EXPECT_EQ(normal_window_bounds, widget->GetWindowBoundsInScreen());
+   EXPECT_EQ(client_bounds,
+             frame_view->GetClientBoundsForWindowBounds(normal_window_bounds));
+@@ -528,7 +528,7 @@ TEST_F(ClientControlledShellSurfaceTest, Frame) {
+   surface->Commit();
+ 
+   widget->LayoutRootViewIfNecessary();
+-  EXPECT_TRUE(frame_view->GetVisible());
++  EXPECT_TRUE(frame_view->GetFrameEnabled());
+   EXPECT_EQ(fullscreen_bounds, widget->GetWindowBoundsInScreen());
+   EXPECT_EQ(
+       gfx::Size(800, 568),
+@@ -541,7 +541,7 @@ TEST_F(ClientControlledShellSurfaceTest, Frame) {
+   surface->Commit();
+ 
+   widget->LayoutRootViewIfNecessary();
+-  EXPECT_TRUE(frame_view->GetVisible());
++  EXPECT_TRUE(frame_view->GetFrameEnabled());
+   EXPECT_EQ(gfx::Rect(0, 200, 800, 400), widget->GetWindowBoundsInScreen());
+ 
+   display_manager->UpdateWorkAreaOfDisplay(display_id, gfx::Insets(0, 0, 0, 0));
+@@ -552,7 +552,7 @@ TEST_F(ClientControlledShellSurfaceTest, Frame) {
+   surface->Commit();
+ 
+   widget->LayoutRootViewIfNecessary();
+-  EXPECT_TRUE(frame_view->GetVisible());
++  EXPECT_TRUE(frame_view->GetFrameEnabled());
+   EXPECT_EQ(fullscreen_bounds, widget->GetWindowBoundsInScreen());
+   EXPECT_EQ(fullscreen_bounds,
+             frame_view->GetClientBoundsForWindowBounds(fullscreen_bounds));
+@@ -562,7 +562,7 @@ TEST_F(ClientControlledShellSurfaceTest, Frame) {
+   surface->Commit();
+ 
+   widget->LayoutRootViewIfNecessary();
+-  EXPECT_TRUE(frame_view->GetVisible());
++  EXPECT_TRUE(frame_view->GetFrameEnabled());
+   EXPECT_EQ(fullscreen_bounds, widget->GetWindowBoundsInScreen());
+   EXPECT_EQ(fullscreen_bounds,
+             frame_view->GetClientBoundsForWindowBounds(fullscreen_bounds));
+@@ -587,7 +587,7 @@ TEST_F(ClientControlledShellSurfaceTest, Frame) {
+   surface->Commit();
+ 
+   widget->LayoutRootViewIfNecessary();
+-  EXPECT_TRUE(frame_view->GetVisible());
++  EXPECT_TRUE(frame_view->GetFrameEnabled());
+   EXPECT_EQ(normal_window_bounds, widget->GetWindowBoundsInScreen());
+   EXPECT_EQ(client_bounds,
+             frame_view->GetClientBoundsForWindowBounds(normal_window_bounds));
+@@ -599,7 +599,7 @@ TEST_F(ClientControlledShellSurfaceTest, Frame) {
+   surface->Commit();
+ 
+   widget->LayoutRootViewIfNecessary();
+-  EXPECT_FALSE(frame_view->GetVisible());
++  EXPECT_FALSE(frame_view->GetFrameEnabled());
+   EXPECT_EQ(client_bounds, widget->GetWindowBoundsInScreen());
+   EXPECT_EQ(client_bounds,
+             frame_view->GetClientBoundsForWindowBounds(client_bounds));
+@@ -611,14 +611,14 @@ TEST_F(ClientControlledShellSurfaceTest, Frame) {
+   surface->Commit();
+ 
+   widget->LayoutRootViewIfNecessary();
+-  EXPECT_TRUE(frame_view->GetVisible());
++  EXPECT_TRUE(frame_view->GetFrameEnabled());
+   EXPECT_TRUE(frame_view->GetHeaderView()->in_immersive_mode());
+ 
+   surface->SetFrame(SurfaceFrameType::NONE);
+   surface->Commit();
+ 
+   widget->LayoutRootViewIfNecessary();
+-  EXPECT_FALSE(frame_view->GetVisible());
++  EXPECT_FALSE(frame_view->GetFrameEnabled());
+   EXPECT_FALSE(frame_view->GetHeaderView()->in_immersive_mode());
+ }
+ 
+@@ -2015,7 +2015,7 @@ TEST_F(ClientControlledShellSurfaceTest, SnappedInTabletMode) {
+   // Snapped window can also use auto hide.
+   surface->SetFrame(SurfaceFrameType::AUTOHIDE);
+   surface->Commit();
+-  EXPECT_TRUE(frame_view->GetVisible());
++  EXPECT_TRUE(frame_view->GetFrameEnabled());
+   EXPECT_TRUE(frame_view->GetHeaderView()->in_immersive_mode());
+ }
+ 
+diff --git a/components/exo/shell_surface_base.cc b/components/exo/shell_surface_base.cc
+index b123d175c82cde0121860c2763f8c2da0c1f3b51..ba83bbd01676e75a65f30743a95622a3c5c0e9fc 100644
+--- a/components/exo/shell_surface_base.cc
++++ b/components/exo/shell_surface_base.cc
+@@ -111,8 +111,7 @@ class CustomFrameView : public ash::NonClientFrameViewAsh {
+                   ShellSurfaceBase* shell_surface,
+                   bool enabled)
+       : NonClientFrameViewAsh(widget), shell_surface_(shell_surface) {
+-    SetEnabled(enabled);
+-    SetVisible(enabled);
++    SetFrameEnabled(enabled);
+     if (!enabled)
+       NonClientFrameViewAsh::SetShouldPaintHeader(false);
+   }
+@@ -121,7 +120,7 @@ class CustomFrameView : public ash::NonClientFrameViewAsh {
+ 
+   // Overridden from ash::NonClientFrameViewAsh:
+   void SetShouldPaintHeader(bool paint) override {
+-    if (GetVisible()) {
++    if (GetFrameEnabled()) {
+       NonClientFrameViewAsh::SetShouldPaintHeader(paint);
+       return;
+     }
+@@ -129,46 +128,46 @@ class CustomFrameView : public ash::NonClientFrameViewAsh {
+ 
+   // Overridden from views::NonClientFrameView:
+   gfx::Rect GetBoundsForClientView() const override {
+-    if (GetVisible())
++    if (GetFrameEnabled())
+       return ash::NonClientFrameViewAsh::GetBoundsForClientView();
+     return bounds();
+   }
+   gfx::Rect GetWindowBoundsForClientBounds(
+       const gfx::Rect& client_bounds) const override {
+-    if (GetVisible()) {
++    if (GetFrameEnabled()) {
+       return ash::NonClientFrameViewAsh::GetWindowBoundsForClientBounds(
+           client_bounds);
+     }
+     return client_bounds;
+   }
+   int NonClientHitTest(const gfx::Point& point) override {
+-    if (GetVisible() || shell_surface_->server_side_resize())
++    if (GetFrameEnabled() || shell_surface_->server_side_resize())
+       return ash::NonClientFrameViewAsh::NonClientHitTest(point);
+     return GetWidget()->client_view()->NonClientHitTest(point);
+   }
+   void GetWindowMask(const gfx::Size& size, SkPath* window_mask) override {
+-    if (GetVisible())
++    if (GetFrameEnabled())
+       return ash::NonClientFrameViewAsh::GetWindowMask(size, window_mask);
+   }
+   void ResetWindowControls() override {
+-    if (GetVisible())
++    if (GetFrameEnabled())
+       return ash::NonClientFrameViewAsh::ResetWindowControls();
+   }
+   void UpdateWindowIcon() override {
+-    if (GetVisible())
++    if (GetFrameEnabled())
+       return ash::NonClientFrameViewAsh::ResetWindowControls();
+   }
+   void UpdateWindowTitle() override {
+-    if (GetVisible())
++    if (GetFrameEnabled())
+       return ash::NonClientFrameViewAsh::UpdateWindowTitle();
+   }
+   void SizeConstraintsChanged() override {
+-    if (GetVisible())
++    if (GetFrameEnabled())
+       return ash::NonClientFrameViewAsh::SizeConstraintsChanged();
+   }
+   gfx::Size GetMinimumSize() const override {
+     gfx::Size minimum_size = shell_surface_->GetMinimumSize();
+-    if (GetVisible()) {
++    if (GetFrameEnabled()) {
+       return ash::NonClientFrameViewAsh::GetWindowBoundsForClientBounds(
+                  gfx::Rect(minimum_size))
+           .size();
+@@ -177,7 +176,7 @@ class CustomFrameView : public ash::NonClientFrameViewAsh {
+   }
+   gfx::Size GetMaximumSize() const override {
+     gfx::Size maximum_size = shell_surface_->GetMaximumSize();
+-    if (GetVisible() && !maximum_size.IsEmpty()) {
++    if (GetFrameEnabled() && !maximum_size.IsEmpty()) {
+       return ash::NonClientFrameViewAsh::GetWindowBoundsForClientBounds(
+                  gfx::Rect(maximum_size))
+           .size();
+@@ -710,11 +709,10 @@ void ShellSurfaceBase::OnSetFrame(SurfaceFrameType frame_type) {
+ 
+   CustomFrameView* frame_view =
+       static_cast<CustomFrameView*>(widget_->non_client_view()->frame_view());
+-  if (frame_view->GetEnabled() == frame_enabled())
++  if (frame_view->GetFrameEnabled() == frame_enabled())
+     return;
+ 
+-  frame_view->SetEnabled(frame_enabled());
+-  frame_view->SetVisible(frame_enabled());
++  frame_view->SetFrameEnabled(frame_enabled());
+   frame_view->SetShouldPaintHeader(frame_enabled());
+   widget_->GetRootView()->Layout();
+   // TODO(oshima): We probably should wait applying these if the
+diff --git a/components/ui_devtools/views/overlay_agent_unittest.cc b/components/ui_devtools/views/overlay_agent_unittest.cc
+index 00c8f36619857e7e7b44a1d0c9382ae74b0dbb2a..9e6494d76eccb835a1b253e779542d9c9941d5e7 100644
+--- a/components/ui_devtools/views/overlay_agent_unittest.cc
++++ b/components/ui_devtools/views/overlay_agent_unittest.cc
+@@ -114,12 +114,14 @@ class OverlayAgentTest : public views::ViewsTestBase {
+   }
+ #endif
+ 
+-  void CreateWidget(const gfx::Rect& bounds) {
++  void CreateWidget(const gfx::Rect& bounds,
++                    views::Widget::InitParams::Type type) {
+     widget_ = std::make_unique<views::Widget>();
+     views::Widget::InitParams params;
+     params.delegate = nullptr;
+     params.ownership = views::Widget::InitParams::WIDGET_OWNS_NATIVE_WIDGET;
+     params.bounds = bounds;
++    params.type = type;
+ #if defined(USE_AURA)
+     params.parent = GetContext();
+ #endif
+@@ -129,7 +131,8 @@ class OverlayAgentTest : public views::ViewsTestBase {
+ 
+   void CreateWidget() {
+     // Create a widget with default bounds.
+-    return CreateWidget(gfx::Rect(0, 0, 400, 400));
++    return CreateWidget(gfx::Rect(0, 0, 400, 400),
++                        views::Widget::InitParams::Type::TYPE_WINDOW);
+   }
+ 
+   views::Widget* widget() { return widget_.get(); }
+@@ -176,13 +179,14 @@ TEST_F(OverlayAgentTest, FindElementIdTargetedByPointWindow) {
+ #endif
+ 
+ TEST_F(OverlayAgentTest, FindElementIdTargetedByPointViews) {
+-  CreateWidget();
++  // Use a frameless window instead of deleting all children of |contents_view|
++  CreateWidget(gfx::Rect(0, 0, 400, 400),
++               views::Widget::InitParams::Type::TYPE_WINDOW_FRAMELESS);
+ 
+   std::unique_ptr<protocol::DOM::Node> root;
+   dom_agent()->getDocument(&root);
+ 
+-  views::View* contents_view = widget()->GetContentsView();
+-  contents_view->RemoveAllChildViews(true);
++  views::View* contents_view = widget()->GetRootView();
+ 
+   views::View* child_1 = new views::View;
+   views::View* child_2 = new views::View;
+@@ -203,7 +207,7 @@ TEST_F(OverlayAgentTest, FindElementIdTargetedByPointViews) {
+   child_1->SetBounds(20, 20, 100, 100);
+   child_2->SetBounds(90, 50, 100, 100);
+ 
+-  EXPECT_EQ(GetViewAtPoint(1, 1), widget()->GetContentsView());
++  EXPECT_EQ(GetViewAtPoint(1, 1), widget()->GetRootView());
+   EXPECT_EQ(GetViewAtPoint(21, 21), child_1);
+   EXPECT_EQ(GetViewAtPoint(170, 130), child_2);
+   // At the overlap.
+@@ -237,7 +241,7 @@ TEST_F(OverlayAgentTest, HighlightRects) {
+ 
+   for (const auto& test_case : kTestCases) {
+     SCOPED_TRACE(testing::Message() << "Case: " << test_case.name);
+-    CreateWidget(kWidgetBounds);
++    CreateWidget(kWidgetBounds, views::Widget::InitParams::Type::TYPE_WINDOW);
+     // Can't just use kWidgetBounds because of Mac's menu bar.
+     gfx::Vector2d widget_screen_offset =
+         widget()->GetClientAreaBoundsInScreen().OffsetFromOrigin();
+diff --git a/third_party/wayland/features.gni b/third_party/wayland/features.gni
+index ecdc2c72ff2b267ea180ddb04ad2c6e6842653ea..424be6e75be0e0da3d00e42ee82d596912acd7a1 100644
+--- a/third_party/wayland/features.gni
++++ b/third_party/wayland/features.gni
+@@ -18,5 +18,5 @@ declare_args() {
+ 
+   # This may be set by Chromium packagers who do not wish to use the bundled
+   # wayland scanner.
+-  use_system_wayland_scanner = (host_toolchain == default_toolchain && is_msan)
++  use_system_wayland_scanner = host_toolchain == default_toolchain && is_msan
+ }
+diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
+index c0e55a44f12a63a8a4a989b0de96df616cbb0709..d5dd660994324ef282b3affe7ed1d0da8892111f 100644
+--- a/ui/views/BUILD.gn
++++ b/ui/views/BUILD.gn
+@@ -1196,7 +1196,6 @@ test("views_unittests") {
+     "window/dialog_delegate_unittest.cc",
+     "window/frame_caption_button_unittest.cc",
+     "window/hit_test_utils_unittest.cc",
+-    "window/non_client_view_unittest.cc",
+   ]
+ 
+   configs += [ "//build/config:precompiled_headers" ]
+diff --git a/ui/views/accessibility/view_ax_platform_node_delegate_unittest.cc b/ui/views/accessibility/view_ax_platform_node_delegate_unittest.cc
+index d34d57d14514a799eca3a1cef2c07b513c5034fd..0cca80545e2d53caa3999c68529af9d32f20b2f5 100644
+--- a/ui/views/accessibility/view_ax_platform_node_delegate_unittest.cc
++++ b/ui/views/accessibility/view_ax_platform_node_delegate_unittest.cc
+@@ -115,7 +115,8 @@ class ViewAXPlatformNodeDelegateTest : public ViewsTestBase {
+     ui::AXPlatformNode::NotifyAddAXModeFlags(ui::kAXModeComplete);
+ 
+     widget_ = new Widget;
+-    Widget::InitParams params = CreateParams(Widget::InitParams::TYPE_WINDOW);
++    Widget::InitParams params =
++        CreateParams(Widget::InitParams::TYPE_WINDOW_FRAMELESS);
+     params.bounds = gfx::Rect(0, 0, 200, 200);
+     widget_->Init(std::move(params));
+ 
+@@ -127,7 +128,7 @@ class ViewAXPlatformNodeDelegateTest : public ViewsTestBase {
+     label_->SetID(DEFAULT_VIEW_ID);
+     button_->AddChildView(label_);
+ 
+-    widget_->GetContentsView()->AddChildView(button_);
++    widget_->GetRootView()->AddChildView(button_);
+     widget_->Show();
+   }
+ 
+@@ -163,7 +164,7 @@ class ViewAXPlatformNodeDelegateTest : public ViewsTestBase {
+   // child Views.
+   View::Views SetUpExtraViews() {
+     View* parent_view =
+-        widget_->GetContentsView()->AddChildView(std::make_unique<View>());
++        widget_->GetRootView()->AddChildView(std::make_unique<View>());
+     View::Views views{parent_view};
+     for (int i = 0; i < 4; i++)
+       views.push_back(parent_view->AddChildView(std::make_unique<View>()));
+@@ -223,7 +224,7 @@ class ViewAXPlatformNodeDelegateTableTest
+     auto table =
+         std::make_unique<TableView>(model_.get(), columns, TEXT_ONLY, true);
+     table_ = table.get();
+-    widget_->GetContentsView()->AddChildView(
++    widget_->GetRootView()->AddChildView(
+         TableView::CreateScrollViewWithTable(std::move(table)));
+   }
+ 
+@@ -536,12 +537,12 @@ TEST_F(ViewAXPlatformNodeDelegateTest, TreeNavigation) {
+   ViewAXPlatformNodeDelegate* child_view_3 = view_accessibility(extra_views[3]);
+   ViewAXPlatformNodeDelegate* child_view_4 = view_accessibility(extra_views[4]);
+ 
+-  EXPECT_EQ(view_accessibility(widget_->GetContentsView())->GetNativeObject(),
++  EXPECT_EQ(view_accessibility(widget_->GetRootView())->GetNativeObject(),
+             parent_view->GetParent());
+   EXPECT_EQ(4, parent_view->GetChildCount());
+ 
+-  EXPECT_EQ(2, button_accessibility()->GetIndexInParent());
+-  EXPECT_EQ(3, parent_view->GetIndexInParent());
++  EXPECT_EQ(0, button_accessibility()->GetIndexInParent());
++  EXPECT_EQ(1, parent_view->GetIndexInParent());
+ 
+   EXPECT_EQ(child_view_1->GetNativeObject(), parent_view->ChildAtIndex(0));
+   EXPECT_EQ(child_view_2->GetNativeObject(), parent_view->ChildAtIndex(1));
+@@ -585,8 +586,6 @@ TEST_F(ViewAXPlatformNodeDelegateTest, TreeNavigationWithLeafViews) {
+   // view is added as the next sibling of the already present button view.
+   //
+   // Widget
+-  // ++NonClientView
+-  // ++NonClientFrameView
+   // ++Button
+   // ++++Label
+   // 0 = ++ParentView
+@@ -596,7 +595,7 @@ TEST_F(ViewAXPlatformNodeDelegateTest, TreeNavigationWithLeafViews) {
+   // 4 = ++++ChildView4
+   View::Views extra_views = SetUpExtraViews();
+   ViewAXPlatformNodeDelegate* contents_view =
+-      view_accessibility(widget_->GetContentsView());
++      view_accessibility(widget_->GetRootView());
+   ViewAXPlatformNodeDelegate* parent_view = view_accessibility(extra_views[0]);
+   ViewAXPlatformNodeDelegate* child_view_1 = view_accessibility(extra_views[1]);
+   ViewAXPlatformNodeDelegate* child_view_2 = view_accessibility(extra_views[2]);
+@@ -610,12 +609,12 @@ TEST_F(ViewAXPlatformNodeDelegateTest, TreeNavigationWithLeafViews) {
+   parent_view->OverrideIsLeaf(true);
+   child_view_2->OverrideIsLeaf(true);
+ 
+-  EXPECT_EQ(4, contents_view->GetChildCount());
++  EXPECT_EQ(2, contents_view->GetChildCount());
+   EXPECT_EQ(contents_view->GetNativeObject(), parent_view->GetParent());
+   EXPECT_EQ(0, parent_view->GetChildCount());
+ 
+-  EXPECT_EQ(2, button_accessibility()->GetIndexInParent());
+-  EXPECT_EQ(3, parent_view->GetIndexInParent());
++  EXPECT_EQ(0, button_accessibility()->GetIndexInParent());
++  EXPECT_EQ(1, parent_view->GetIndexInParent());
+ 
+   EXPECT_FALSE(contents_view->IsIgnored());
+   EXPECT_FALSE(parent_view->IsIgnored());
+@@ -647,12 +646,12 @@ TEST_F(ViewAXPlatformNodeDelegateTest, TreeNavigationWithLeafViews) {
+   // have no effect.
+   parent_view->OverrideIsLeaf(false);
+ 
+-  EXPECT_EQ(4, contents_view->GetChildCount());
++  EXPECT_EQ(2, contents_view->GetChildCount());
+   EXPECT_EQ(contents_view->GetNativeObject(), parent_view->GetParent());
+   EXPECT_EQ(4, parent_view->GetChildCount());
+ 
+-  EXPECT_EQ(2, button_accessibility()->GetIndexInParent());
+-  EXPECT_EQ(3, parent_view->GetIndexInParent());
++  EXPECT_EQ(0, button_accessibility()->GetIndexInParent());
++  EXPECT_EQ(1, parent_view->GetIndexInParent());
+ 
+   EXPECT_FALSE(contents_view->IsIgnored());
+   EXPECT_FALSE(parent_view->IsIgnored());
+@@ -691,8 +690,6 @@ TEST_F(ViewAXPlatformNodeDelegateTest, TreeNavigationWithIgnoredViews) {
+   // view is added as the next sibling of the already present button view.
+   //
+   // Widget
+-  // ++NonClientView
+-  // ++NonClientFrameView
+   // ++Button
+   // ++++Label
+   // 0 = ++ParentView
+@@ -702,7 +699,7 @@ TEST_F(ViewAXPlatformNodeDelegateTest, TreeNavigationWithIgnoredViews) {
+   // 4 = ++++ChildView4
+   View::Views extra_views = SetUpExtraViews();
+   ViewAXPlatformNodeDelegate* contents_view =
+-      view_accessibility(widget_->GetContentsView());
++      view_accessibility(widget_->GetRootView());
+   ViewAXPlatformNodeDelegate* parent_view = view_accessibility(extra_views[0]);
+   ViewAXPlatformNodeDelegate* child_view_1 = view_accessibility(extra_views[1]);
+   ViewAXPlatformNodeDelegate* child_view_2 = view_accessibility(extra_views[2]);
+@@ -716,7 +713,7 @@ TEST_F(ViewAXPlatformNodeDelegateTest, TreeNavigationWithIgnoredViews) {
+   EXPECT_EQ(contents_view->GetNativeObject(), parent_view->GetParent());
+   EXPECT_EQ(3, parent_view->GetChildCount());
+ 
+-  EXPECT_EQ(2, button_accessibility()->GetIndexInParent());
++  EXPECT_EQ(0, button_accessibility()->GetIndexInParent());
+   EXPECT_EQ(-1, parent_view->GetIndexInParent());
+ 
+   EXPECT_EQ(child_view_1->GetNativeObject(), parent_view->ChildAtIndex(0));
+@@ -724,17 +721,17 @@ TEST_F(ViewAXPlatformNodeDelegateTest, TreeNavigationWithIgnoredViews) {
+   EXPECT_EQ(child_view_4->GetNativeObject(), parent_view->ChildAtIndex(2));
+ 
+   EXPECT_EQ(button_accessibility()->GetNativeObject(),
+-            contents_view->ChildAtIndex(2));
+-  EXPECT_EQ(child_view_1->GetNativeObject(), contents_view->ChildAtIndex(3));
+-  EXPECT_EQ(child_view_3->GetNativeObject(), contents_view->ChildAtIndex(4));
+-  EXPECT_EQ(child_view_4->GetNativeObject(), contents_view->ChildAtIndex(5));
++            contents_view->ChildAtIndex(0));
++  EXPECT_EQ(child_view_1->GetNativeObject(), contents_view->ChildAtIndex(1));
++  EXPECT_EQ(child_view_3->GetNativeObject(), contents_view->ChildAtIndex(2));
++  EXPECT_EQ(child_view_4->GetNativeObject(), contents_view->ChildAtIndex(3));
+ 
+   EXPECT_EQ(nullptr, parent_view->GetNextSibling());
+   EXPECT_EQ(nullptr, parent_view->GetPreviousSibling());
+ 
+   EXPECT_EQ(contents_view->GetNativeObject(), child_view_1->GetParent());
+   EXPECT_EQ(0, child_view_1->GetChildCount());
+-  EXPECT_EQ(3, child_view_1->GetIndexInParent());
++  EXPECT_EQ(1, child_view_1->GetIndexInParent());
+   EXPECT_EQ(child_view_3->GetNativeObject(), child_view_1->GetNextSibling());
+   EXPECT_EQ(button_accessibility()->GetNativeObject(),
+             child_view_1->GetPreviousSibling());
+@@ -747,14 +744,14 @@ TEST_F(ViewAXPlatformNodeDelegateTest, TreeNavigationWithIgnoredViews) {
+ 
+   EXPECT_EQ(contents_view->GetNativeObject(), child_view_3->GetParent());
+   EXPECT_EQ(0, child_view_3->GetChildCount());
+-  EXPECT_EQ(4, child_view_3->GetIndexInParent());
++  EXPECT_EQ(2, child_view_3->GetIndexInParent());
+   EXPECT_EQ(child_view_4->GetNativeObject(), child_view_3->GetNextSibling());
+   EXPECT_EQ(child_view_1->GetNativeObject(),
+             child_view_3->GetPreviousSibling());
+ 
+   EXPECT_EQ(contents_view->GetNativeObject(), child_view_4->GetParent());
+   EXPECT_EQ(0, child_view_4->GetChildCount());
+-  EXPECT_EQ(5, child_view_4->GetIndexInParent());
++  EXPECT_EQ(3, child_view_4->GetIndexInParent());
+   EXPECT_EQ(nullptr, child_view_4->GetNextSibling());
+   EXPECT_EQ(child_view_3->GetNativeObject(),
+             child_view_4->GetPreviousSibling());
+diff --git a/ui/views/bubble/bubble_frame_view.cc b/ui/views/bubble/bubble_frame_view.cc
+index a2380fa3ac51d01c1858893d88df8ca25ea4adf4..95a4b1df05fba900db6116360bbdedf864f78e2a 100644
+--- a/ui/views/bubble/bubble_frame_view.cc
++++ b/ui/views/bubble/bubble_frame_view.cc
+@@ -391,8 +391,20 @@ void BubbleFrameView::Layout() {
+     header_bottom = header_view_->bounds().bottom();
+   }
+ 
+-  if (bounds.IsEmpty())
++  // Only account for footnote_container_'s height if it's visible, because
++  // content_margins_ adds extra padding even if all child views are invisible.
++  if (footnote_container_ && footnote_container_->GetVisible()) {
++    const int width = contents_bounds.width();
++    const int height = footnote_container_->GetHeightForWidth(width);
++    footnote_container_->SetBounds(
++        contents_bounds.x(), contents_bounds.bottom() - height, width, height);
++  }
++
++  NonClientFrameView::Layout();
++
++  if (bounds.IsEmpty()) {
+     return;
++  }
+ 
+   // The buttons are positioned somewhat closer to the edge of the bubble.
+   const int close_margin =
+@@ -442,15 +454,6 @@ void BubbleFrameView::Layout() {
+ 
+   title_icon_->SetBounds(bounds.x(), bounds.y(), title_icon_pref_size.width(),
+                          title_height);
+-
+-  // Only account for footnote_container_'s height if it's visible, because
+-  // content_margins_ adds extra padding even if all child views are invisible.
+-  if (footnote_container_ && footnote_container_->GetVisible()) {
+-    const int width = contents_bounds.width();
+-    const int height = footnote_container_->GetHeightForWidth(width);
+-    footnote_container_->SetBounds(
+-        contents_bounds.x(), contents_bounds.bottom() - height, width, height);
+-  }
+ }
+ 
+ void BubbleFrameView::OnThemeChanged() {
+diff --git a/ui/views/cocoa/drag_drop_client_mac_unittest.mm b/ui/views/cocoa/drag_drop_client_mac_unittest.mm
+index 0f1881bd1fea1827d8c972c41817bc72b09efcd2..9966491dcd41da16521951424adb14f06134cc0c 100644
+--- a/ui/views/cocoa/drag_drop_client_mac_unittest.mm
++++ b/ui/views/cocoa/drag_drop_client_mac_unittest.mm
+@@ -195,7 +195,7 @@ void SetUp() override {
+     widget_->Show();
+ 
+     target_ = new DragDropView();
+-    widget_->GetContentsView()->AddChildView(target_);
++    widget_->non_client_view()->frame_view()->AddChildView(target_);
+     target_->SetBoundsRect(bounds);
+ 
+     drag_drop_client()->source_operation_ = ui::DragDropTypes::DRAG_COPY;
+@@ -329,7 +329,7 @@ DragOperation OnPerformDrop(const ui::DropTargetEvent& event) override {
+   SetData(data);
+ 
+   target_ = new DragDropCloseView();
+-  widget_->GetContentsView()->AddChildView(target_);
++  widget_->non_client_view()->frame_view()->AddChildView(target_);
+   target_->SetBoundsRect(gfx::Rect(0, 0, 100, 100));
+   target_->set_formats(ui::OSExchangeData::STRING | ui::OSExchangeData::URL);
+ 
+diff --git a/ui/views/controls/table/table_view_unittest.cc b/ui/views/controls/table/table_view_unittest.cc
+index 12cb14b36c6798f7151b7bb67841db53a30e29fb..f377aff61222583149a7fd615e3fc0ef806c13b3 100644
+--- a/ui/views/controls/table/table_view_unittest.cc
++++ b/ui/views/controls/table/table_view_unittest.cc
+@@ -444,12 +444,13 @@ class TableViewTest : public ViewsTestBase,
+     helper_ = std::make_unique<TableViewTestHelper>(table_);
+ 
+     widget_ = std::make_unique<Widget>();
+-    Widget::InitParams params = CreateParams(Widget::InitParams::TYPE_WINDOW);
++    Widget::InitParams params =
++        CreateParams(Widget::InitParams::TYPE_WINDOW_FRAMELESS);
+     params.ownership = views::Widget::InitParams::WIDGET_OWNS_NATIVE_WIDGET;
+     params.bounds = gfx::Rect(0, 0, 650, 650);
+     params.delegate = GetWidgetDelegate(widget_.get());
+     widget_->Init(std::move(params));
+-    widget_->GetContentsView()->AddChildView(std::move(scroll_view));
++    widget_->GetRootView()->AddChildView(std::move(scroll_view));
+     widget_->Show();
+   }
+ 
+diff --git a/ui/views/view_unittest_mac.mm b/ui/views/view_unittest_mac.mm
+index f2e3724183b02739983cb1bcce06f7f222efc536..a3f5c3e28fc9ec48017e17dc4c6a1ac1150a57f6 100644
+--- a/ui/views/view_unittest_mac.mm
++++ b/ui/views/view_unittest_mac.mm
+@@ -117,7 +117,7 @@ void SetUp() override {
+ 
+     view_ = new ThreeFingerSwipeView;
+     view_->SetSize(widget_->GetClientAreaBoundsInScreen().size());
+-    widget_->GetContentsView()->AddChildView(view_);
++    widget_->non_client_view()->frame_view()->AddChildView(view_);
+   }
+ 
+   void TearDown() override {
+diff --git a/ui/views/widget/native_widget_mac_unittest.mm b/ui/views/widget/native_widget_mac_unittest.mm
+index 15e1197030b3f1e93ed617b9cb8ff2feaf3d35d8..7233e122869034a0db15908f2c8a8869000c04b5 100644
+--- a/ui/views/widget/native_widget_mac_unittest.mm
++++ b/ui/views/widget/native_widget_mac_unittest.mm
+@@ -573,8 +573,10 @@ void WaitForPaintCount(int target) {
+ 
+   Widget* widget = CreateTopLevelPlatformWidget();
+   widget->SetBounds(gfx::Rect(0, 0, 300, 300));
+-  widget->GetContentsView()->AddChildView(new CursorView(0, hand));
+-  widget->GetContentsView()->AddChildView(new CursorView(100, ibeam));
++  widget->non_client_view()->frame_view()->AddChildView(
++      new CursorView(0, hand));
++  widget->non_client_view()->frame_view()->AddChildView(
++      new CursorView(100, ibeam));
+   widget->Show();
+   NSWindow* widget_window = widget->GetNativeWindow().GetNativeNSWindow();
+ 
+@@ -879,8 +881,8 @@ void WaitForPaintCount(int target) {
+   const std::u16string long_tooltip(2000, 'W');
+ 
+   // Create a nested layout to test corner cases.
+-  LabelButton* back =
+-      widget->GetContentsView()->AddChildView(std::make_unique<LabelButton>());
++  LabelButton* back = widget->non_client_view()->frame_view()->AddChildView(
++      std::make_unique<LabelButton>());
+   back->SetBounds(10, 10, 80, 80);
+   widget->Show();
+ 
+@@ -944,7 +946,7 @@ void WaitForPaintCount(int target) {
+ 
+   CustomTooltipView* view_below = new CustomTooltipView(u"Back", view_above);
+   view_below->SetBoundsRect(widget_below->GetContentsView()->bounds());
+-  widget_below->GetContentsView()->AddChildView(view_below);
++  widget_below->non_client_view()->frame_view()->AddChildView(view_below);
+ 
+   widget_below->Show();
+   widget_above->Show();
+diff --git a/ui/views/widget/widget_unittest.cc b/ui/views/widget/widget_unittest.cc
+index 3ae33afe803df33138861760f455edc10c4022fa..66bdbb121ec2eb170fd2c423cfc21eddea05604c 100644
+--- a/ui/views/widget/widget_unittest.cc
++++ b/ui/views/widget/widget_unittest.cc
+@@ -3808,7 +3808,7 @@ TEST_F(WidgetTest, MouseWheelEvent) {
+   WidgetAutoclosePtr widget(CreateTopLevelPlatformWidget());
+   widget->SetBounds(gfx::Rect(0, 0, 600, 600));
+   EventCountView* event_count_view = new EventCountView();
+-  widget->GetContentsView()->AddChildView(event_count_view);
++  widget->client_view()->AddChildView(event_count_view);
+   event_count_view->SetBounds(0, 0, 600, 600);
+   widget->Show();
+ 
+@@ -3819,81 +3819,6 @@ TEST_F(WidgetTest, MouseWheelEvent) {
+   EXPECT_EQ(1, event_count_view->GetEventCount(ui::ET_MOUSEWHEEL));
+ }
+ 
+-class LayoutCountingView : public View {
+- public:
+-  LayoutCountingView() = default;
+-  ~LayoutCountingView() override = default;
+-
+-  void set_layout_closure(base::OnceClosure layout_closure) {
+-    layout_closure_ = std::move(layout_closure);
+-  }
+-
+-  size_t GetAndClearLayoutCount() {
+-    const size_t count = layout_count_;
+-    layout_count_ = 0u;
+-    return count;
+-  }
+-
+-  // View:
+-  void Layout() override {
+-    ++layout_count_;
+-    View::Layout();
+-    if (layout_closure_)
+-      std::move(layout_closure_).Run();
+-  }
+-
+- private:
+-  size_t layout_count_ = 0u;
+-
+-  // If valid, this is run when Layout() is called.
+-  base::OnceClosure layout_closure_;
+-
+-  DISALLOW_COPY_AND_ASSIGN(LayoutCountingView);
+-};
+-
+-using WidgetInvalidateLayoutTest = ViewsTestBaseWithNativeWidgetType;
+-
+-TEST_P(WidgetInvalidateLayoutTest, InvalidateLayout) {
+-  std::unique_ptr<Widget> widget =
+-      CreateTestWidget(Widget::InitParams::TYPE_WINDOW);
+-  LayoutCountingView* view =
+-      widget->widget_delegate()->GetContentsView()->AddChildView(
+-          std::make_unique<LayoutCountingView>());
+-  view->parent()->SetLayoutManager(std::make_unique<FillLayout>());
+-  // Force an initial Layout().
+-  // TODO(sky): this shouldn't be necessary, adding a child view should trigger
+-  // ScheduleLayout().
+-  view->Layout();
+-  widget->Show();
+-
+-  ui::Compositor* compositor = widget->GetCompositor();
+-  ASSERT_TRUE(compositor);
+-  compositor->ScheduleDraw();
+-  ui::DrawWaiterForTest::WaitForCompositingEnded(compositor);
+-
+-  base::RunLoop run_loop;
+-  view->GetAndClearLayoutCount();
+-  // Don't use WaitForCompositingEnded() here as it's entirely possible nothing
+-  // will be drawn (which means WaitForCompositingEnded() isn't run). Instead
+-  // wait for Layout() to be called.
+-  view->set_layout_closure(run_loop.QuitClosure());
+-  EXPECT_FALSE(ViewTestApi(view).needs_layout());
+-  EXPECT_FALSE(ViewTestApi(widget->GetRootView()).needs_layout());
+-  view->InvalidateLayout();
+-  EXPECT_TRUE(ViewTestApi(view).needs_layout());
+-  EXPECT_TRUE(ViewTestApi(widget->GetRootView()).needs_layout());
+-  run_loop.Run();
+-  EXPECT_EQ(1u, view->GetAndClearLayoutCount());
+-  EXPECT_FALSE(ViewTestApi(view).needs_layout());
+-  EXPECT_FALSE(ViewTestApi(widget->GetRootView()).needs_layout());
+-}
+-
+-INSTANTIATE_TEST_SUITE_P(
+-    WidgetInvalidateLayoutTest,
+-    WidgetInvalidateLayoutTest,
+-    ::testing::Values(ViewsTestBase::NativeWidgetType::kDefault,
+-                      ViewsTestBase::NativeWidgetType::kDesktop));
+-
+ class WidgetShadowTest : public WidgetTest {
+  public:
+   WidgetShadowTest() = default;
+diff --git a/ui/views/window/client_view.cc b/ui/views/window/client_view.cc
+index 5527e26da2710ecfc50d361c5834495d622a935d..227efb29047d87b39e2e9b7e0b45b027000ea761 100644
+--- a/ui/views/window/client_view.cc
++++ b/ui/views/window/client_view.cc
+@@ -87,8 +87,6 @@ void ClientView::ViewHierarchyChanged(
+     // TODO(weili): This seems fragile and can be refactored.
+     // Tracked at https://crbug.com/1012466.
+     AddChildViewAt(contents_view_, 0);
+-  } else if (!details.is_add && details.child == contents_view_) {
+-    contents_view_ = nullptr;
+   }
+ }
+ 
+diff --git a/ui/views/window/custom_frame_view.cc b/ui/views/window/custom_frame_view.cc
+index eda68f689da621422ce17d7e1d50fe0ba4efe771..9c2f931e0e4d37c4653c9a7a7f34ea4d8b8a49b1 100644
+--- a/ui/views/window/custom_frame_view.cc
++++ b/ui/views/window/custom_frame_view.cc
+@@ -211,6 +211,7 @@ void CustomFrameView::Layout() {
+   }
+ 
+   LayoutClientView();
++  NonClientFrameView::Layout();
+ }
+ 
+ gfx::Size CustomFrameView::CalculatePreferredSize() const {
+diff --git a/ui/views/window/non_client_view.cc b/ui/views/window/non_client_view.cc
+index 73170394a794489dd4c409a29d7b0f47a887e1dd..7d8bb5d42ca2730810f8384463058014c2aa2259 100644
+--- a/ui/views/window/non_client_view.cc
++++ b/ui/views/window/non_client_view.cc
+@@ -11,6 +11,7 @@
+ #include "ui/accessibility/ax_node_data.h"
+ #include "ui/base/hit_test.h"
+ #include "ui/gfx/geometry/rect_conversions.h"
++#include "ui/views/layout/fill_layout.h"
+ #include "ui/views/metadata/metadata_impl_macros.h"
+ #include "ui/views/rect_based_targeting_utils.h"
+ #include "ui/views/view_targeter.h"
+@@ -24,18 +25,6 @@
+ 
+ namespace views {
+ 
+-namespace {
+-
+-// The frame view and the client view are always at these specific indices,
+-// because the RootView message dispatch sends messages to items higher in the
+-// z-order first and we always want the client view to have first crack at
+-// handling mouse messages.
+-constexpr int kFrameViewIndex = 0;
+-constexpr int kClientViewIndex = 1;
+-// The overlay view is always on top (view == children().back()).
+-
+-}  // namespace
+-
+ NonClientFrameView::~NonClientFrameView() = default;
+ 
+ bool NonClientFrameView::ShouldPaintAsActive() const {
+@@ -129,18 +118,19 @@ void NonClientFrameView::OnThemeChanged() {
+   SchedulePaint();
+ }
+ 
+-NonClientFrameView::NonClientFrameView() {
+-  SetEventTargeter(std::make_unique<views::ViewTargeter>(this));
+-}
++void NonClientFrameView::Layout() {
++  if (GetLayoutManager())
++    GetLayoutManager()->Layout(this);
+ 
+-// ViewTargeterDelegate:
+-bool NonClientFrameView::DoesIntersectRect(const View* target,
+-                                           const gfx::Rect& rect) const {
+-  CHECK_EQ(target, this);
++  views::ClientView* client_view = GetWidget()->client_view();
++  client_view->SetBoundsRect(GetBoundsForClientView());
++  SkPath client_clip;
++  if (GetClientMask(client_view->size(), &client_clip))
++    client_view->SetClipPath(client_clip);
++}
+ 
+-  // For the default case, we assume the non-client frame view never overlaps
+-  // the client view.
+-  return !GetWidget()->client_view()->bounds().Intersects(rect);
++NonClientFrameView::NonClientFrameView() {
++  SetEventTargeter(std::make_unique<views::ViewTargeter>(this));
+ }
+ 
+ #if defined(OS_WIN)
+@@ -165,13 +155,18 @@ NonClientView::~NonClientView() {
+ 
+ void NonClientView::SetFrameView(
+     std::unique_ptr<NonClientFrameView> frame_view) {
+-  // See comment in header about ownership.
+-  frame_view->set_owned_by_client();
+-  if (frame_view_.get())
++  // If there is an existing frame view, remove the client view before removing
++  // the frame view to prevent the client view from being deleted.
++  if (frame_view_.get()) {
++    frame_view_->RemoveChildView(client_view_);
+     RemoveChildView(frame_view_.get());
++  }
++
+   frame_view_ = std::move(frame_view);
+-  if (parent())
+-    AddChildViewAt(frame_view_.get(), kFrameViewIndex);
++  if (parent()) {
++    AddChildViewAt(frame_view_.get(), 0);
++    frame_view_->AddChildViewAt(client_view_, 0);
++  }
+ }
+ 
+ void NonClientView::SetOverlayView(View* view) {
+@@ -262,11 +257,6 @@ void NonClientView::Layout() {
+   // into a View hierarchy once" ( http://codereview.chromium.org/27317 ), but
+   // where that is still the case it should simply be fixed.
+   frame_view_->SetBoundsRect(GetLocalBounds());
+-  client_view_->SetBoundsRect(frame_view_->GetBoundsForClientView());
+-
+-  SkPath client_clip;
+-  if (frame_view_->GetClientMask(client_view_->size(), &client_clip))
+-    client_view_->SetClipPath(client_clip);
+ 
+   if (overlay_view_)
+     overlay_view_->SetBoundsRect(GetLocalBounds());
+@@ -302,8 +292,8 @@ void NonClientView::ViewHierarchyChanged(
+   // the various setters, and create and add children directly in the
+   // constructor.
+   if (details.is_add && GetWidget() && details.child == this) {
+-    AddChildViewAt(frame_view_.get(), kFrameViewIndex);
+-    AddChildViewAt(client_view_, kClientViewIndex);
++    AddChildViewAt(frame_view_.get(), 0);
++    frame_view_->AddChildViewAt(client_view_, 0);
+     if (overlay_view_)
+       AddChildView(overlay_view_);
+   }
+diff --git a/ui/views/window/non_client_view.h b/ui/views/window/non_client_view.h
+index 58558cc0df457ba3c077784906c5ea4093c301c9..c47c5b6353cbf242e6790651d8382d813cb58250 100644
+--- a/ui/views/window/non_client_view.h
++++ b/ui/views/window/non_client_view.h
+@@ -101,11 +101,7 @@ class VIEWS_EXPORT NonClientFrameView : public View,
+   // View:
+   void GetAccessibleNodeData(ui::AXNodeData* node_data) override;
+   void OnThemeChanged() override;
+-
+- protected:
+-  // ViewTargeterDelegate:
+-  bool DoesIntersectRect(const View* target,
+-                         const gfx::Rect& rect) const override;
++  void Layout() override;
+ 
+  private:
+ #if defined(OS_WIN)
+@@ -121,10 +117,11 @@ class VIEWS_EXPORT NonClientFrameView : public View,
+ //
+ //  The NonClientView is the logical root of all Views contained within a
+ //  Window, except for the RootView which is its parent and of which it is the
+-//  sole child. The NonClientView has two children, the NonClientFrameView which
++//  sole child. The NonClientView has one child, the NonClientFrameView which
+ //  is responsible for painting and responding to events from the non-client
+-//  portions of the window, and the ClientView, which is responsible for the
+-//  same for the client area of the window:
++//  portions of the window, and for forwarding events to its child, the
++//  ClientView, which is responsible for the same for the client area of the
++//  window:
+ //
+ //  +- views::Widget ------------------------------------+
+ //  | +- views::RootView ------------------------------+ |
+@@ -135,23 +132,17 @@ class VIEWS_EXPORT NonClientFrameView : public View,
+ //  | | | | << of the non-client areas of a     >> | | | |
+ //  | | | | << views::Widget.                   >> | | | |
+ //  | | | |                                        | | | |
+-//  | | | +----------------------------------------+ | | |
+-//  | | | +- views::ClientView or subclass --------+ | | |
+-//  | | | |                                        | | | |
+-//  | | | | << all painting and event receiving >> | | | |
+-//  | | | | << of the client areas of a         >> | | | |
+-//  | | | | << views::Widget.                   >> | | | |
+-//  | | | |                                        | | | |
++//  | | | | +- views::ClientView or subclass ----+ | | | |
++//  | | | | |                                    | | | | |
++//  | | | | | << all painting and event       >> | | | | |
++//  | | | | | << receiving of the client      >> | | | | |
++//  | | | | | << areas of a views::Widget.    >> | | | | |
++//  | | | | +----------------------------------+ | | | | |
+ //  | | | +----------------------------------------+ | | |
+ //  | | +--------------------------------------------+ | |
+ //  | +------------------------------------------------+ |
+ //  +----------------------------------------------------+
+ //
+-// The NonClientFrameView and ClientView are siblings because due to theme
+-// changes the NonClientFrameView may be replaced with different
+-// implementations (e.g. during the switch from DWM/Aero-Glass to Vista Basic/
+-// Classic rendering).
+-//
+ class VIEWS_EXPORT NonClientView : public View, public ViewTargeterDelegate {
+  public:
+   METADATA_HEADER(NonClientView);
+diff --git a/ui/views/window/non_client_view_unittest.cc b/ui/views/window/non_client_view_unittest.cc
+deleted file mode 100644
+index fd66cb2c607fe47102fc14f5cc4d946863ac274c..0000000000000000000000000000000000000000
+--- a/ui/views/window/non_client_view_unittest.cc
++++ /dev/null
+@@ -1,102 +0,0 @@
+-// Copyright 2018 The Chromium Authors. All rights reserved.
+-// Use of this source code is governed by a BSD-style license that can be
+-// found in the LICENSE file.
+-
+-#include "ui/views/window/non_client_view.h"
+-
+-#include <memory>
+-
+-#include "ui/views/test/views_test_base.h"
+-#include "ui/views/widget/widget_delegate.h"
+-#include "ui/views/window/client_view.h"
+-#include "ui/views/window/native_frame_view.h"
+-
+-namespace views {
+-namespace test {
+-
+-namespace {
+-
+-class NonClientFrameTestView : public NativeFrameView {
+- public:
+-  using NativeFrameView::NativeFrameView;
+-  int layout_count() const { return layout_count_; }
+-
+-  // NativeFrameView:
+-  void Layout() override {
+-    NativeFrameView::Layout();
+-    ++layout_count_;
+-  }
+-
+- private:
+-  int layout_count_ = 0;
+-};
+-
+-class ClientTestView : public ClientView {
+- public:
+-  using ClientView::ClientView;
+-  int layout_count() const { return layout_count_; }
+-
+-  // ClientView:
+-  void Layout() override {
+-    ClientView::Layout();
+-    ++layout_count_;
+-  }
+-
+- private:
+-  int layout_count_ = 0;
+-};
+-
+-class TestWidgetDelegate : public WidgetDelegateView {
+- public:
+-  // WidgetDelegateView:
+-  std::unique_ptr<NonClientFrameView> CreateNonClientFrameView(
+-      Widget* widget) override {
+-    return std::make_unique<NonClientFrameTestView>(widget);
+-  }
+-
+-  views::ClientView* CreateClientView(Widget* widget) override {
+-    return new ClientTestView(widget, this);
+-  }
+-};
+-
+-class NonClientViewTest : public ViewsTestBase {
+- public:
+-  Widget::InitParams CreateParams(Widget::InitParams::Type type) override {
+-    Widget::InitParams params = ViewsTestBase::CreateParams(type);
+-    params.delegate = new TestWidgetDelegate;
+-    return params;
+-  }
+-};
+-
+-}  // namespace
+-
+-// Ensure Layout() is not called excessively on a ClientView when Widget bounds
+-// are changing.
+-TEST_F(NonClientViewTest, OnlyLayoutChildViewsOnce) {
+-  std::unique_ptr<views::Widget> widget =
+-      CreateTestWidget(Widget::InitParams::TYPE_WINDOW);
+-
+-  NonClientView* non_client_view = widget->non_client_view();
+-  non_client_view->Layout();
+-
+-  auto* frame_view =
+-      static_cast<NonClientFrameTestView*>(non_client_view->frame_view());
+-  auto* client_view =
+-      static_cast<ClientTestView*>(non_client_view->client_view());
+-
+-  int initial_frame_view_layouts = frame_view->layout_count();
+-  int initial_client_view_layouts = client_view->layout_count();
+-
+-  // Make sure it does no layout when nothing has changed.
+-  non_client_view->Layout();
+-  EXPECT_EQ(frame_view->layout_count(), initial_frame_view_layouts);
+-  EXPECT_EQ(client_view->layout_count(), initial_client_view_layouts);
+-
+-  // Ensure changing bounds triggers a (single) layout.
+-  widget->SetBounds(gfx::Rect(0, 0, 161, 100));
+-  EXPECT_EQ(frame_view->layout_count(), initial_frame_view_layouts + 1);
+-  EXPECT_EQ(client_view->layout_count(), initial_client_view_layouts + 1);
+-}
+-
+-}  // namespace test
+-}  // namespace views

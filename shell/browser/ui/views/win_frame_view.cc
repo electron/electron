@@ -127,7 +127,10 @@ int WinFrameView::NonClientHitTest(const gfx::Point& point) {
     // pixels at the end of the top and bottom edges trigger diagonal resizing.
     constexpr int kResizeCornerWidth = 16;
     int window_component = GetHTComponentForFrame(
-        point, gfx::Insets(top_border_thickness, 0, 0, 0), top_border_thickness,
+        point,
+        top_border_thickness,
+        top_border_thickness,
+        top_border_thickness,
         kResizeCornerWidth - FrameBorderThickness(),
         frame()->widget_delegate()->CanResize());
     if (window_component != HTNOWHERE)
@@ -235,6 +238,7 @@ void WinFrameView::LayoutCaptionButtons() {
   // portion to return the correct hit test and be manually resized properly.
   // Alternatives can be explored, but the differences in view structures
   // between Electron and Chromium may result in this as the best option.
+
   caption_button_container_->SetBounds(width() - preferred_size.width(),
                                        WindowTopY(), preferred_size.width() - 1,
                                        height);
