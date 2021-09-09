@@ -11,7 +11,6 @@
 #include <vector>
 
 #include "base/task/cancelable_task_tracker.h"
-#include "base/values.h"
 #include "chrome/browser/icon_manager.h"
 #include "chrome/browser/process_singleton.h"
 #include "content/public/browser/browser_child_process_observer.h"
