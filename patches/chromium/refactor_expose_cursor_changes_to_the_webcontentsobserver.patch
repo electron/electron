@@ -8,7 +8,7 @@ Chrome moved the SetCursor IPC message to mojo, which we use to tell OSR about `
 Refs: https://chromium-review.googlesource.com/c/chromium/src/+/2172779
 
 diff --git a/content/browser/renderer_host/render_widget_host_delegate.h b/content/browser/renderer_host/render_widget_host_delegate.h
-index 0abf9abd6a02dd13742148596d4729af8b8d967b..23560bbf3acf688045cc25f1e4289ef4c1f6552b 100644
+index f540ea381e9b80fd4a8e1e6a4fe4ed577396feb2..b7328fa53fa1c241dc90e9613b33a38cd2810706 100644
 --- a/content/browser/renderer_host/render_widget_host_delegate.h
 +++ b/content/browser/renderer_host/render_widget_host_delegate.h
 @@ -14,6 +14,7 @@
@@ -19,7 +19,7 @@ index 0abf9abd6a02dd13742148596d4729af8b8d967b..23560bbf3acf688045cc25f1e4289ef4
  #include "content/public/common/drop_data.h"
  #include "services/metrics/public/cpp/ukm_recorder.h"
  #include "third_party/abseil-cpp/absl/types/optional.h"
-@@ -242,6 +243,9 @@ class CONTENT_EXPORT RenderWidgetHostDelegate {
+@@ -247,6 +248,9 @@ class CONTENT_EXPORT RenderWidgetHostDelegate {
    // Returns the associated RenderViewHostDelegateView*, if possible.
    virtual RenderViewHostDelegateView* GetDelegateView();
  
@@ -43,10 +43,10 @@ index dc264a454761467ddd752d445f93f327b8c7c2af..034c8d338d48e42bcb3ef371df113a39
  
  void RenderWidgetHostImpl::ShowContextMenuAtPoint(
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index d5f1cadcdfd06984627c1f67d2c44f063db88d5b..eec8cbcec164ddba7924796381fe6ebb2483dc22 100644
+index 27661324b35d141b4f5f0e7363c43544a5ad3451..57072628e8dbcdce8264ad614fc225b873e9437f 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4306,6 +4306,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
+@@ -4313,6 +4313,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
    return text_input_manager_.get();
  }
  
@@ -59,7 +59,7 @@ index d5f1cadcdfd06984627c1f67d2c44f063db88d5b..eec8cbcec164ddba7924796381fe6ebb
      RenderWidgetHostImpl* render_widget_host) {
    return render_widget_host == GetMainFrame()->GetRenderWidgetHost();
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 05895703355a88d748a6b34f08bf4b771595f17b..a1c292f1788319d53b4657b140014ec4378aa7f8 100644
+index a42791e00d3034607c80cb81e567e249bd9ddae6..1ce5882ed7805da2450e17104bd3252562e51bbb 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
 @@ -947,6 +947,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,

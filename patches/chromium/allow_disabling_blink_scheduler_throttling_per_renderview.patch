@@ -6,7 +6,7 @@ Subject: allow disabling blink scheduler throttling per RenderView
 This allows us to disable throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/render_view_host_impl.cc b/content/browser/renderer_host/render_view_host_impl.cc
-index e4f71e2ce9cf7cce68c0b2c336d6a7329a7cd564..30bd888e778d27c738eb67df2316db191a3c3066 100644
+index 0445973cc539ee72356bebebe9c96ac893e45e31..e36e52f8eca31b91219dc33ee5378eaab40dac4d 100644
 --- a/content/browser/renderer_host/render_view_host_impl.cc
 +++ b/content/browser/renderer_host/render_view_host_impl.cc
 @@ -616,6 +616,11 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
@@ -22,10 +22,10 @@ index e4f71e2ce9cf7cce68c0b2c336d6a7329a7cd564..30bd888e778d27c738eb67df2316db19
    return is_active();
  }
 diff --git a/content/browser/renderer_host/render_view_host_impl.h b/content/browser/renderer_host/render_view_host_impl.h
-index b9a91d4cf22379408c296742f8ec66eb20c34f7e..f110151e555fc90f9ad863a43b6185c7481cf3b3 100644
+index 7977db2a4c7d693df5094786a59aba9583cdc65b..b1fb7399da3d5e6cfda21db82759241d2c421da1 100644
 --- a/content/browser/renderer_host/render_view_host_impl.h
 +++ b/content/browser/renderer_host/render_view_host_impl.h
-@@ -137,6 +137,7 @@ class CONTENT_EXPORT RenderViewHostImpl
+@@ -136,6 +136,7 @@ class CONTENT_EXPORT RenderViewHostImpl
    bool IsRenderViewLive() override;
    void WriteIntoTrace(perfetto::TracedValue context) override;
  
@@ -34,10 +34,10 @@ index b9a91d4cf22379408c296742f8ec66eb20c34f7e..f110151e555fc90f9ad863a43b6185c7
    void SendRendererPreferencesToRenderer(
        const blink::RendererPreferences& preferences);
 diff --git a/content/public/browser/render_view_host.h b/content/public/browser/render_view_host.h
-index 740d1c322b740d374dd0287d99daebc1fe39ceda..f6ed1402120c0d8b30356c87a52d88fe39ed08d9 100644
+index 722a9b00fe854d3f3d9be8f044ce3dd19d4bbc85..5fbb9f7abfd762423142d98ad97b69ef2fb2ae2e 100644
 --- a/content/public/browser/render_view_host.h
 +++ b/content/public/browser/render_view_host.h
-@@ -90,6 +90,9 @@ class CONTENT_EXPORT RenderViewHost {
+@@ -87,6 +87,9 @@ class CONTENT_EXPORT RenderViewHost {
    // Write a representation of this object into a trace.
    virtual void WriteIntoTrace(perfetto::TracedValue context) = 0;
  
