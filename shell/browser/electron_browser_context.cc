@@ -229,7 +229,7 @@ void ElectronBrowserContext::InitPrefs() {
         base::i18n::GetConfiguredLocale());
     if (!default_code.empty()) {
       base::ListValue language_codes;
-      language_codes.AppendString(default_code);
+      language_codes.Append(default_code);
       prefs()->Set(spellcheck::prefs::kSpellCheckDictionaries, language_codes);
     }
   }
@@ -291,6 +291,11 @@ content::BrowserPluginGuestManager* ElectronBrowserContext::GetGuestManager() {
   if (!guest_manager_)
     guest_manager_ = std::make_unique<WebViewManager>();
   return guest_manager_.get();
+}
+
+content::PlatformNotificationService*
+ElectronBrowserContext::GetPlatformNotificationService() {
+  return ElectronBrowserClient::Get()->GetPlatformNotificationService();
 }
 
 content::PermissionControllerDelegate*

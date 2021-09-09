@@ -106,6 +106,8 @@ class ElectronBrowserContext : public content::BrowserContext {
   std::string GetMediaDeviceIDSalt() override;
   content::DownloadManagerDelegate* GetDownloadManagerDelegate() override;
   content::BrowserPluginGuestManager* GetGuestManager() override;
+  content::PlatformNotificationService* GetPlatformNotificationService()
+      override;
   content::PermissionControllerDelegate* GetPermissionControllerDelegate()
       override;
   storage::SpecialStoragePolicy* GetSpecialStoragePolicy() override;
