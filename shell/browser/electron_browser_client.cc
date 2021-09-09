@@ -1040,8 +1040,7 @@ NotificationPresenter* ElectronBrowserClient::GetNotificationPresenter() {
 }
 
 content::PlatformNotificationService*
-ElectronBrowserClient::GetPlatformNotificationService(
-    content::BrowserContext* browser_context) {
+ElectronBrowserClient::GetPlatformNotificationService() {
   if (!notification_service_) {
     notification_service_ = std::make_unique<PlatformNotificationService>(this);
   }
