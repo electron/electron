@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Bartek Nowierski <bartekn@chromium.org>
 Date: Thu, 29 Jul 2021 10:38:19 +0000
-Subject: [PA] Make GetUsableSize() handle nullptr gracefully
+Subject: Make GetUsableSize() handle nullptr gracefully
 
 malloc_usable_size() is expected to not crush on NULL and return 0.
 
