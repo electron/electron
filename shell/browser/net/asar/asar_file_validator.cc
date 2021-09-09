@@ -49,7 +49,7 @@ void AsarFileValidator::OnRead(base::span<char> buffer,
               crypto::SecureHash::Create(crypto::SecureHash::SHA256);
           break;
         case HashAlgorithm::NONE:
-          NOTREACHED();
+          CHECK(false);
           break;
       }
     }
