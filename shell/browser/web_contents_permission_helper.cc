@@ -133,11 +133,11 @@ void WebContentsPermissionHelper::RequestMediaAccessPermission(
   auto media_types = std::make_unique<base::ListValue>();
   if (request.audio_type ==
       blink::mojom::MediaStreamType::DEVICE_AUDIO_CAPTURE) {
-    media_types->AppendString("audio");
+    media_types->Append("audio");
   }
   if (request.video_type ==
       blink::mojom::MediaStreamType::DEVICE_VIDEO_CAPTURE) {
-    media_types->AppendString("video");
+    media_types->Append("video");
   }
   details.SetList("mediaTypes", std::move(media_types));
 
