@@ -24,6 +24,8 @@ AsarFileValidator::AsarFileValidator(IntegrityPayload integrity,
   max_block_ = integrity_.blocks.size() - 1;
 }
 
+AsarFileValidator::~AsarFileValidator() = default;
+
 void AsarFileValidator::OnRead(base::span<char> buffer,
                                mojo::FileDataSource::ReadResult* result) {
   DCHECK(!done_reading_);

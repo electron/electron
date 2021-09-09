@@ -19,11 +19,12 @@ namespace asar {
 class AsarFileValidator : public mojo::FilteredDataSource::Filter {
  public:
   AsarFileValidator(IntegrityPayload integrity, base::File file);
+  ~AsarFileValidator() override;
 
   void OnRead(base::span<char> buffer,
-              mojo::FileDataSource::ReadResult* result);
+              mojo::FileDataSource::ReadResult* result) override;
 
-  void OnDone();
+  void OnDone() override;
 
   void SetRange(uint64_t read_start, uint64_t extra_read, uint64_t read_max);
   void SetCurrentBlock(int current_block);
