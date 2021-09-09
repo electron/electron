@@ -29,7 +29,9 @@ enum HashAlgorithm {
 };
 
 struct IntegrityPayload {
-  IntegrityPayload() : algorithm(HashAlgorithm::NONE), block_size(0) {}
+  IntegrityPayload();
+  ~IntegrityPayload();
+  IntegrityPayload(const IntegrityPayload& other);
   HashAlgorithm algorithm;
   std::string hash;
   uint32_t block_size;
@@ -41,7 +43,8 @@ struct IntegrityPayload {
 class Archive {
  public:
   struct FileInfo {
-    FileInfo() : unpacked(false), executable(false), size(0), offset(0) {}
+    FileInfo();
+    ~FileInfo();
     bool unpacked;
     bool executable;
     uint32_t size;

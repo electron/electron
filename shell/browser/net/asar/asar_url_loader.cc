@@ -157,7 +157,9 @@ class AsarURLLoader : public network::mojom::URLLoader {
     std::unique_ptr<mojo::DataPipeProducer::DataSource> readable_data_source;
     mojo::FileDataSource* file_data_source_raw = file_data_source.get();
     AsarFileValidator* file_validator_raw = nullptr;
+    uint32_t block_size = 0;
     if (info.integrity.has_value()) {
+      block_size = info.integrity.value().block_size;
       auto asar_validator = std::make_unique<AsarFileValidator>(
           std::move(info.integrity.value()), std::move(file));
       file_validator_raw = asar_validator.get();
@@ -232,15 +234,13 @@ class AsarURLLoader : public network::mojom::URLLoader {
       first_byte_to_send = read_result.bytes_read;
       total_bytes_to_send -= write_size;
     } else if (is_verifying_file &&
-               first_byte_to_send >=
-                   static_cast<uint64_t>(info.integrity.value().block_size)) {
+               first_byte_to_send >= static_cast<uint64_t>(block_size)) {
       // If validation is active and the range of bytes the request wants starts
       // beyond the first block we need to read the next 4MB-1KB to validate
       // that block. Then we can skip ahead to the target block in the SetRange
       // call below If we hit this case it is assumed that none of the data read
       // will be needed by the producer
-      uint64_t bytes_to_drop =
-          info.integrity.value().block_size - net::kMaxBytesToSniff;
+      uint64_t bytes_to_drop = block_size - net::kMaxBytesToSniff;
       total_bytes_dropped_from_head += bytes_to_drop;
       std::vector<char> abandoned_buffer(bytes_to_drop);
       auto abandon_read_result =
@@ -282,7 +282,6 @@ class AsarURLLoader : public network::mojom::URLLoader {
     }
 
     if (is_verifying_file) {
-      uint32_t block_size = info.integrity.value().block_size;
       int start_block = first_byte_to_send / block_size;
 
       // If we're starting from the first block, we might not be starting from
