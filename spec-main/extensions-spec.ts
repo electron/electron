@@ -153,7 +153,7 @@ describe('chrome extensions', () => {
     const extension = await customSession.loadExtension(path.join(fixtures, 'extensions', 'red-bg'));
     const [, loadedExtension] = await loadedPromise;
     const [, readyExtension] = await emittedUntil(customSession, 'extension-ready', (event: Event, extension: Extension) => {
-      return extension.name !== 'Chromium PDF Viewer';
+      return extension.name !== 'Chromium PDF Viewer' && extension.name !== 'CryptoTokenExtension';
     });
 
     expect(loadedExtension).to.deep.equal(extension);
@@ -573,7 +573,7 @@ describe('chrome extensions', () => {
           const showLastPanel = () => {
             // this is executed in the devtools context, where UI is a global
             const { UI } = (window as any);
-            const tabs = UI.inspectorView._tabbedPane._tabs;
+            const tabs = UI.inspectorView.tabbedPane.tabs;
             const lastPanelId = tabs[tabs.length - 1].id;
             UI.inspectorView.showPanel(lastPanelId);
           };

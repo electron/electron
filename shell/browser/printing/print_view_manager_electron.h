@@ -18,6 +18,11 @@ class PrintViewManagerElectron
  public:
   ~PrintViewManagerElectron() override;
 
+  static void BindPrintManagerHost(
+      mojo::PendingAssociatedReceiver<printing::mojom::PrintManagerHost>
+          receiver,
+      content::RenderFrameHost* rfh);
+
   void SetupScriptedPrintPreview(
       SetupScriptedPrintPreviewCallback callback) override;
   void ShowScriptedPrintPreview(bool source_is_modifiable) override;

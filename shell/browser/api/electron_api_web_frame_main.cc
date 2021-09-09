@@ -317,6 +317,10 @@ void WebFrameMain::Connect() {
   }
 }
 
+void WebFrameMain::DOMContentLoaded() {
+  Emit("dom-ready");
+}
+
 // static
 gin::Handle<WebFrameMain> WebFrameMain::New(v8::Isolate* isolate) {
   return gin::Handle<WebFrameMain>();

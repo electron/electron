@@ -4,7 +4,6 @@ import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-util
 import { parseWebViewWebPreferences } from '@electron/internal/common/parse-features-string';
 import { syncMethods, asyncMethods, properties } from '@electron/internal/common/web-view-methods';
 import { webViewEvents } from '@electron/internal/common/web-view-events';
-import { serialize } from '@electron/internal/common/type-utils';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
 interface GuestInstance {
@@ -161,8 +160,12 @@ const createGuest = function (embedder: Electron.WebContents, embedderFrameId: n
   });
 
   // Dispatch guest's IPC messages to embedder.
-  guest.on('ipc-message-host' as any, function (_: Electron.Event, channel: string, args: any[]) {
-    sendToEmbedder(IPC_MESSAGES.GUEST_VIEW_INTERNAL_DISPATCH_EVENT, 'ipc-message', { channel, args });
+  guest.on('ipc-message-host' as any, function (event: Electron.IpcMainEvent, channel: string, args: any[]) {
+    sendToEmbedder(IPC_MESSAGES.GUEST_VIEW_INTERNAL_DISPATCH_EVENT, 'ipc-message', {
+      frameId: [event.processId, event.frameId],
+      channel,
+      args
+    });
   });
 
   // Notify guest of embedder window visibility when it is ready
@@ -324,12 +327,6 @@ handleMessageSync(IPC_MESSAGES.GUEST_VIEW_MANAGER_PROPERTY_SET, function (event,
   }
 
   (guest as any)[property] = val;
-});
-
-handleMessage(IPC_MESSAGES.GUEST_VIEW_MANAGER_CAPTURE_PAGE, async function (event, guestInstanceId: number, args: any[]) {
-  const guest = getGuestForWebContents(guestInstanceId, event.sender);
-
-  return serialize(await guest.capturePage(...args));
 });
 
 // Returns WebContents from its guest id hosted in given webContents.

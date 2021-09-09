@@ -7,11 +7,14 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "base/command_line.h"
 #include "base/path_service.h"
+#include "base/strings/string_split.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/net/chrome_mojo_proxy_resolver_factory.h"
+#include "chrome/common/chrome_features.h"
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/chrome_switches.h"
 #include "components/os_crypt/os_crypt.h"
@@ -21,6 +24,7 @@
 #include "content/public/common/network_service_util.h"
 #include "electron/fuses.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
+#include "net/dns/public/util.h"
 #include "net/net_buildflags.h"
 #include "services/cert_verifier/public/mojom/cert_verifier_service_factory.mojom.h"
 #include "services/network/network_service.h"
@@ -191,10 +195,6 @@ void SystemNetworkContextManager::ConfigureDefaultNetworkContextParams(
 
   network_context_params->proxy_resolver_factory =
       ChromeMojoProxyResolverFactory::CreateWithSelfOwnedReceiver();
-
-#if !BUILDFLAG(DISABLE_FTP_SUPPORT)
-  network_context_params->enable_ftp_url_support = true;
-#endif
 }
 
 // static
@@ -237,6 +237,52 @@ void SystemNetworkContextManager::OnNetworkServiceCreated(
   network_service->CreateNetworkContext(
       network_context_.BindNewPipeAndPassReceiver(),
       CreateNetworkContextParams());
+
+  net::SecureDnsMode default_secure_dns_mode = net::SecureDnsMode::kOff;
+  std::string default_doh_templates;
+  if (base::FeatureList::IsEnabled(features::kDnsOverHttps)) {
+    if (features::kDnsOverHttpsFallbackParam.Get()) {
+      default_secure_dns_mode = net::SecureDnsMode::kAutomatic;
+    } else {
+      default_secure_dns_mode = net::SecureDnsMode::kSecure;
+    }
+    default_doh_templates = features::kDnsOverHttpsTemplatesParam.Get();
+  }
+  std::string server_method;
+  absl::optional<std::vector<network::mojom::DnsOverHttpsServerPtr>>
+      servers_mojo;
+  if (!default_doh_templates.empty() &&
+      default_secure_dns_mode != net::SecureDnsMode::kOff) {
+    for (base::StringPiece server_template :
+         SplitStringPiece(default_doh_templates, " ", base::TRIM_WHITESPACE,
+                          base::SPLIT_WANT_NONEMPTY)) {
+      if (!net::dns_util::IsValidDohTemplate(server_template, &server_method)) {
+        continue;
+      }
+
+      bool use_post = server_method == "POST";
+
+      if (!servers_mojo.has_value()) {
+        servers_mojo = absl::make_optional<
+            std::vector<network::mojom::DnsOverHttpsServerPtr>>();
+      }
+
+      network::mojom::DnsOverHttpsServerPtr server_mojo =
+          network::mojom::DnsOverHttpsServer::New();
+      server_mojo->server_template = std::string(server_template);
+      server_mojo->use_post = use_post;
+      servers_mojo->emplace_back(std::move(server_mojo));
+    }
+  }
+
+  bool additional_dns_query_types_enabled = true;
+
+  // Configure the stub resolver. This must be done after the system
+  // NetworkContext is created, but before anything has the chance to use it.
+  content::GetNetworkService()->ConfigureStubHostResolver(
+      base::FeatureList::IsEnabled(features::kAsyncDns),
+      default_secure_dns_mode, std::move(servers_mojo),
+      additional_dns_query_types_enabled);
 
   std::string app_name = electron::Browser::Get()->GetName();
 #if defined(OS_MAC)

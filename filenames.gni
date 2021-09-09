@@ -44,8 +44,8 @@ filenames = {
   ]
 
   lib_sources_linux_x11 = [
-    "chromium_src/chrome/browser/ui/views/frame/global_menu_bar_registrar_x11.cc",
-    "chromium_src/chrome/browser/ui/views/frame/global_menu_bar_registrar_x11.h",
+    "shell/browser/ui/views/global_menu_bar_registrar_x11.cc",
+    "shell/browser/ui/views/global_menu_bar_registrar_x11.h",
     "shell/browser/ui/views/global_menu_bar_x11.cc",
     "shell/browser/ui/views/global_menu_bar_x11.h",
     "shell/browser/ui/x/event_disabler.cc",
@@ -56,13 +56,9 @@ filenames = {
     "shell/browser/ui/x/x_window_utils.h",
   ]
 
-  lib_sources_posix = [
-    "chromium_src/chrome/browser/process_singleton_posix.cc",
-    "shell/browser/electron_browser_main_parts_posix.cc",
-  ]
+  lib_sources_posix = [ "shell/browser/electron_browser_main_parts_posix.cc" ]
 
   lib_sources_win = [
-    "chromium_src/chrome/browser/process_singleton_win.cc",
     "shell/browser/api/electron_api_power_monitor_win.cc",
     "shell/browser/api/electron_api_system_preferences_win.cc",
     "shell/browser/browser_win.cc",
@@ -236,7 +232,6 @@ filenames = {
   ]
 
   lib_sources = [
-    "chromium_src/chrome/browser/process_singleton.h",
     "shell/app/command_line_args.cc",
     "shell/app/command_line_args.h",
     "shell/app/electron_content_client.cc",
@@ -677,6 +672,8 @@ filenames = {
   lib_sources_extensions = [
     "shell/browser/extensions/api/i18n/i18n_api.cc",
     "shell/browser/extensions/api/i18n/i18n_api.h",
+    "shell/browser/extensions/api/cryptotoken_private/cryptotoken_private_api.cc",
+    "shell/browser/extensions/api/cryptotoken_private/cryptotoken_private_api.h",
     "shell/browser/extensions/api/management/electron_management_api_delegate.cc",
     "shell/browser/extensions/api/management/electron_management_api_delegate.h",
     "shell/browser/extensions/api/resources_private/resources_private_api.cc",

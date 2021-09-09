@@ -255,7 +255,7 @@ describe('<webview> tag', function () {
           if (!webContents.isDestroyed() && webContents.devToolsWebContents) {
             webContents.devToolsWebContents.executeJavaScript('(' + function () {
               const { UI } = (window as any);
-              const tabs = UI.inspectorView._tabbedPane._tabs;
+              const tabs = UI.inspectorView.tabbedPane.tabs;
               const lastPanelId: any = tabs[tabs.length - 1].id;
               UI.inspectorView.showPanel(lastPanelId);
             }.toString() + ')()');

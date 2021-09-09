@@ -142,6 +142,7 @@
 #include "extensions/browser/api/mime_handler_private/mime_handler_private.h"
 #include "extensions/browser/api/web_request/web_request_api.h"
 #include "extensions/browser/browser_context_keyed_api_factory.h"
+#include "extensions/browser/event_router.h"
 #include "extensions/browser/extension_host.h"
 #include "extensions/browser/extension_message_filter.h"
 #include "extensions/browser/extension_navigation_throttle.h"
@@ -163,6 +164,7 @@
 #include "shell/browser/extensions/electron_extension_message_filter.h"
 #include "shell/browser/extensions/electron_extension_system.h"
 #include "shell/browser/extensions/electron_extension_web_contents_observer.h"
+#include "third_party/blink/public/common/associated_interfaces/associated_interface_registry.h"
 #endif
 
 #if BUILDFLAG(ENABLE_PLUGINS)
@@ -190,6 +192,14 @@
 #include "ui/aura/window_tree_host.h"
 #include "ui/base/win/shell.h"
 #include "ui/views/widget/widget.h"
+#endif
+
+#if BUILDFLAG(ENABLE_PRINTING)
+#include "shell/browser/printing/print_view_manager_electron.h"
+#endif
+
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+#include "components/pdf/browser/pdf_web_contents_helper.h"  // nogncheck
 #endif
 
 using content::BrowserThread;
@@ -822,7 +832,7 @@ bool ElectronBrowserClient::ShouldUseProcessPerSite(
 bool ElectronBrowserClient::ArePersistentMediaDeviceIDsAllowed(
     content::BrowserContext* browser_context,
     const GURL& scope,
-    const GURL& site_for_cookies,
+    const net::SiteForCookies& site_for_cookies,
     const absl::optional<url::Origin>& top_frame_origin) {
   return true;
 }
@@ -1309,16 +1319,15 @@ void ElectronBrowserClient::CreateWebSocket(
 
     if (web_request_api && web_request_api->MayHaveProxies()) {
       web_request_api->ProxyWebSocket(frame, std::move(factory), url,
-                                      site_for_cookies.RepresentativeUrl(),
-                                      user_agent, std::move(handshake_client));
+                                      site_for_cookies, user_agent,
+                                      std::move(handshake_client));
       return;
     }
   }
 #endif
 
   ProxyingWebSocket::StartProxying(
-      web_request.get(), std::move(factory), url,
-      site_for_cookies.RepresentativeUrl(), user_agent,
+      web_request.get(), std::move(factory), url, site_for_cookies, user_agent,
       std::move(handshake_client), true, frame->GetProcess()->GetID(),
       frame->GetRoutingID(), frame->GetLastCommittedOrigin(), browser_context,
       &next_id_);
@@ -1446,6 +1455,33 @@ bool ElectronBrowserClient::BindAssociatedReceiverFromFrame(
         render_frame_host);
     return true;
   }
+#if BUILDFLAG(ENABLE_PRINTING)
+  if (interface_name == printing::mojom::PrintManagerHost::Name_) {
+    mojo::PendingAssociatedReceiver<printing::mojom::PrintManagerHost> receiver(
+        std::move(*handle));
+    PrintViewManagerElectron::BindPrintManagerHost(std::move(receiver),
+                                                   render_frame_host);
+    return true;
+  }
+#endif
+#if BUILDFLAG(ENABLE_EXTENSIONS)
+  if (interface_name == extensions::mojom::LocalFrameHost::Name_) {
+    extensions::ExtensionWebContentsObserver::BindLocalFrameHost(
+        mojo::PendingAssociatedReceiver<extensions::mojom::LocalFrameHost>(
+            std::move(*handle)),
+        render_frame_host);
+    return true;
+  }
+#endif
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+  if (interface_name == pdf::mojom::PdfService::Name_) {
+    pdf::PDFWebContentsHelper::BindPdfService(
+        mojo::PendingAssociatedReceiver<pdf::mojom::PdfService>(
+            std::move(*handle)),
+        render_frame_host);
+    return true;
+  }
+#endif
 
   return false;
 }
@@ -1516,6 +1552,16 @@ void BindBeforeUnloadControl(
   guest_view->FuseBeforeUnloadControl(std::move(receiver));
 }
 #endif
+
+void ElectronBrowserClient::ExposeInterfacesToRenderer(
+    service_manager::BinderRegistry* registry,
+    blink::AssociatedInterfaceRegistry* associated_registry,
+    content::RenderProcessHost* render_process_host) {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  associated_registry->AddInterface(base::BindRepeating(
+      &extensions::EventRouter::BindForRenderer, render_process_host->GetID()));
+#endif
+}
 
 void ElectronBrowserClient::RegisterBrowserInterfaceBindersForFrame(
     content::RenderFrameHost* render_frame_host,

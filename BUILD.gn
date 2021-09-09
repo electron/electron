@@ -1149,6 +1149,7 @@ if (is_mac) {
     ]
 
     data = []
+    data_deps = []
 
     data += [ "$root_out_dir/resources.pak" ]
     data += [ "$root_out_dir/chrome_100_percent.pak" ]
@@ -1165,6 +1166,10 @@ if (is_mac) {
 
     if (use_v8_context_snapshot) {
       public_deps = [ "//tools/v8_context_snapshot:v8_context_snapshot" ]
+    }
+
+    if (is_linux) {
+      data_deps += [ "//components/crash/core/app:chrome_crashpad_handler" ]
     }
 
     if (is_win) {

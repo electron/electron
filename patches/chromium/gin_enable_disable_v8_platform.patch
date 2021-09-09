@@ -7,10 +7,10 @@ We don't use gin to create the V8 platform, because we need to inject Node
 things.
 
 diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
-index f86478fb8652255fa30252d027bfed2121ed138e..5eed541856097c2edf12c49a6a04dc583a9cceb6 100644
+index e93824463817a71903631dd722ffdfddb65bab3e..366e105c968b1be51eb0f26709486d086cf12eca 100644
 --- a/gin/isolate_holder.cc
 +++ b/gin/isolate_holder.cc
-@@ -108,9 +108,10 @@ IsolateHolder::~IsolateHolder() {
+@@ -110,9 +110,10 @@ IsolateHolder::~IsolateHolder() {
  // static
  void IsolateHolder::Initialize(ScriptMode mode,
                                 v8::ArrayBuffer::Allocator* allocator,
@@ -24,10 +24,10 @@ index f86478fb8652255fa30252d027bfed2121ed138e..5eed541856097c2edf12c49a6a04dc58
    g_reference_table = reference_table;
  }
 diff --git a/gin/public/isolate_holder.h b/gin/public/isolate_holder.h
-index 41e516899dccb6352aabadcd66a93d69e13031b6..e476c6b4a58caa30d81d082200bfd8c80904857a 100644
+index f0a7d0c05fa3c68b22b1d36e2c0810fe70f5a8a0..8ecce17b5bb8b5106de913a2d0197fd3affb1c08 100644
 --- a/gin/public/isolate_holder.h
 +++ b/gin/public/isolate_holder.h
-@@ -89,7 +89,8 @@ class GIN_EXPORT IsolateHolder {
+@@ -94,7 +94,8 @@ class GIN_EXPORT IsolateHolder {
    // reference pointers. Otherwise, it can be nullptr.
    static void Initialize(ScriptMode mode,
                           v8::ArrayBuffer::Allocator* allocator,
@@ -38,10 +38,10 @@ index 41e516899dccb6352aabadcd66a93d69e13031b6..e476c6b4a58caa30d81d082200bfd8c8
    // Returns whether `Initialize` has already been invoked in the process.
    // Initialization is a one-way operation (i.e., this method cannot return
 diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
-index 4ba7c59e97fd0c6234c35db3a10bcb51e6088804..32aa9eda0baba8fbe81f98504f2a6c5acc60a2f3 100644
+index 941ced089ed7e201d348b58b38d9d0d74bc843b1..9c78e04219e5bcd8d8044e576367833d0891f7d6 100644
 --- a/gin/v8_initializer.cc
 +++ b/gin/v8_initializer.cc
-@@ -267,7 +267,8 @@ void SetV8FlagsIfOverridden(const base::Feature& feature,
+@@ -269,7 +269,8 @@ void SetV8FlagsIfOverridden(const base::Feature& feature,
  }  // namespace
  
  // static
@@ -51,7 +51,7 @@ index 4ba7c59e97fd0c6234c35db3a10bcb51e6088804..32aa9eda0baba8fbe81f98504f2a6c5a
    static bool v8_is_initialized = false;
    if (v8_is_initialized)
      return;
-@@ -277,7 +278,8 @@ void V8Initializer::Initialize(IsolateHolder::ScriptMode mode) {
+@@ -279,7 +280,8 @@ void V8Initializer::Initialize(IsolateHolder::ScriptMode mode) {
      RunArrayBufferCageReservationExperiment();
    }
  
@@ -62,10 +62,10 @@ index 4ba7c59e97fd0c6234c35db3a10bcb51e6088804..32aa9eda0baba8fbe81f98504f2a6c5a
    if (!base::FeatureList::IsEnabled(features::kV8OptimizeJavascript)) {
      // We avoid explicitly passing --opt if kV8OptimizeJavascript is enabled
 diff --git a/gin/v8_initializer.h b/gin/v8_initializer.h
-index 2918c6235688ee4eb7c43387296e6d24145c14aa..069c2c96d5067f0444dac3c6ce6d83f75e770129 100644
+index 955be10e118e1c54515dd0ee19edec7504419bdc..699f84c73b71a6d870ae93f2fce98174c924e2fa 100644
 --- a/gin/v8_initializer.h
 +++ b/gin/v8_initializer.h
-@@ -20,7 +20,8 @@ namespace gin {
+@@ -24,7 +24,8 @@ namespace gin {
  class GIN_EXPORT V8Initializer {
   public:
    // This should be called by IsolateHolder::Initialize().

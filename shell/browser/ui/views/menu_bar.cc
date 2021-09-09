@@ -218,7 +218,7 @@ void MenuBar::RefreshColorCache(const ui::NativeTheme* theme) {
 }
 
 void MenuBar::RebuildChildren() {
-  RemoveAllChildViews(true);
+  RemoveAllChildViews();
   for (int i = 0, n = GetItemCount(); i < n; ++i) {
     auto* button = new SubmenuButton(
         base::BindRepeating(&MenuBar::ButtonPressed, base::Unretained(this), i),

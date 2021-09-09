@@ -143,12 +143,16 @@ browser plugins. Plugins are disabled by default.
 ### `preload`
 
 ```html
+<!-- from a file -->
 <webview src="https://www.github.com/" preload="./test.js"></webview>
+<!-- or if you want to load from an asar archive -->
+<webview src="https://www.github.com/" preload="./app.asar/test.js"></webview>
 ```
 
 A `String` that specifies a script that will be loaded before other scripts run in the guest
-page. The protocol of script's URL must be either `file:` or `asar:`, because it
-will be loaded by `require` in guest page under the hood.
+page. The protocol of script's URL must be `file:` (even when using `asar:` archives) because
+it will be loaded by Node's `require` under the hood, which treats `asar:` archives as virtual
+directories.
 
 When the guest page doesn't have node integration this script will still have
 access to all Node APIs, but global objects injected by Node will be deleted
@@ -606,6 +610,21 @@ listening to the `channel` event with the [`ipcRenderer`](ipc-renderer.md) modul
 See [webContents.send](web-contents.md#contentssendchannel-args) for
 examples.
 
+### `<webview>.sendToFrame(frameId, channel, ...args)`
+
+* `frameId` [number, number] - `[processId, frameId]`
+* `channel` String
+* `...args` any[]
+
+Returns `Promise<void>`
+
+Send an asynchronous message to renderer process via `channel`, you can also
+send arbitrary arguments. The renderer process can handle the message by
+listening to the `channel` event with the [`ipcRenderer`](ipc-renderer.md) module.
+
+See [webContents.sendToFrame](web-contents.md#contentssendtoframeframeid-channel-args) for
+examples.
+
 ### `<webview>.sendInputEvent(event)`
 
 * `event`  [MouseInputEvent](structures/mouse-input-event.md) | [MouseWheelInputEvent](structures/mouse-wheel-input-event.md) | [KeyboardInputEvent](structures/keyboard-input-event.md)
@@ -920,6 +939,7 @@ webview.addEventListener('close', () => {
 
 Returns:
 
+* `frameId` [number, number] - pair of `[processId, frameId]`.
 * `channel` String
 * `args` any[]
 

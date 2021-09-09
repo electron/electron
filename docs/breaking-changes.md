@@ -12,6 +12,39 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
+## Planned Breaking API Changes (17.0)
+
+### Removed: `desktopCapturer.getSources` in the renderer
+
+The `desktopCapturer.getSources` API is now only available in the main process.
+This has been changed in order to improve the default security of Electron
+apps.
+
+If you need this functionality, it can be replaced as follows:
+
+```js
+// Main process
+const { ipcMain, desktopCapturer } = require('electron')
+
+ipcMain.handle(
+  'DESKTOP_CAPTURER_GET_SOURCES',
+  (event, opts) => desktopCapturer.getSources(opts)
+)
+```
+
+```js
+// Renderer process
+const { ipcRenderer } = require('electron')
+
+const desktopCapturer = {
+  getSources: (opts) => ipcRenderer.invoke('DESKTOP_CAPTURER_GET_SOURCES', opts)
+}
+```
+
+However, you should consider further restricting the information returned to
+the renderer; for instance, displaying a source selector to the user and only
+returning the selected source.
+
 ## Planned Breaking API Changes (16.0)
 
 ### Behavior Changed: `crashReporter` implementation switched to Crashpad on Linux
@@ -27,7 +60,35 @@ Linux, including that long values will no longer be split between annotations
 appended with `__1`, `__2` and so on, and instead will be truncated at the
 (new, longer) annotation value limit.
 
+### Deprecated: `desktopCapturer.getSources` in the renderer
+
+Usage of the `desktopCapturer.getSources` API in the renderer has been
+deprecated and will be removed. This change improves the default security of
+Electron apps.
+
+See [here](#removed-desktopcapturergetsources-in-the-renderer) for details on
+how to replace this API in your app.
+
 ## Planned Breaking API Changes (14.0)
+
+### Removed: `remote` module
+
+The `remote` module was deprecated in Electron 12, and will be removed in
+Electron 14. It is replaced by the
+[`@electron/remote`](https://github.com/electron/remote) module.
+
+```js
+// Deprecated in Electron 12:
+const { BrowserWindow } = require('electron').remote
+```
+
+```js
+// Replace with:
+const { BrowserWindow } = require('@electron/remote')
+
+// In the main process:
+require('@electron/remote/main').initialize()
+```
 
 ### Removed: `app.allowRendererProcessReuse`
 

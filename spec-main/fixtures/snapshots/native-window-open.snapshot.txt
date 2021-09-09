@@ -88,8 +88,7 @@
         "sandbox": true,
         "webviewTag": false,
         "nodeIntegrationInSubFrames": false,
-        "openerId": null,
-        "backgroundColor": "gray"
+        "openerId": null
       },
       "x": 100,
       "y": 100,

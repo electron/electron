@@ -421,8 +421,9 @@ bool IsDeviceNameValid(const std::u16string& device_name) {
 #elif defined(OS_WIN)
   printing::ScopedPrinterHandle printer;
   return printer.OpenPrinterWithName(base::as_wcstr(device_name));
-#endif
+#else
   return true;
+#endif
 }
 
 std::u16string GetDefaultPrinterAsync() {
@@ -749,7 +750,7 @@ WebContents::WebContents(v8::Isolate* isolate,
     }
   } else if (IsOffScreen()) {
     bool transparent = false;
-    options.Get("transparent", &transparent);
+    options.Get(options::kTransparent, &transparent);
 
     content::WebContents::CreateParams params(session->browser_context());
     auto* view = new OffScreenWebContentsView(
@@ -1374,8 +1375,8 @@ void WebContents::HandleNewRenderFrame(
   // Set the background color of RenderWidgetHostView.
   auto* web_preferences = WebContentsPreferences::From(web_contents());
   if (web_preferences) {
-    std::string color_name;
-    rwhv->SetBackgroundColor(web_preferences->GetBackgroundColor());
+    web_contents()->SetPageBaseBackgroundColor(
+        web_preferences->GetBackgroundColor());
   }
 
   if (!background_throttling_)
@@ -1394,6 +1395,29 @@ void WebContents::HandleNewRenderFrame(
 void WebContents::RenderFrameCreated(
     content::RenderFrameHost* render_frame_host) {
   HandleNewRenderFrame(render_frame_host);
+
+  // RenderFrameCreated is called for speculative frames which may not be
+  // used in certain cross-origin navigations. Invoking
+  // RenderFrameHost::GetLifecycleState currently crashes when called for
+  // speculative frames so we need to filter it out for now. Check
+  // https://crbug.com/1183639 for details on when this can be removed.
+  auto* rfh_impl =
+      static_cast<content::RenderFrameHostImpl*>(render_frame_host);
+  if (rfh_impl->lifecycle_state() ==
+      content::RenderFrameHostImpl::LifecycleStateImpl::kSpeculative) {
+    return;
+  }
+
+  content::RenderFrameHost::LifecycleState lifecycle_state =
+      render_frame_host->GetLifecycleState();
+  if (lifecycle_state == content::RenderFrameHost::LifecycleState::kActive) {
+    v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+    v8::HandleScope handle_scope(isolate);
+    gin_helper::Dictionary details =
+        gin_helper::Dictionary::CreateEmpty(isolate);
+    details.SetGetter("frame", render_frame_host);
+    Emit("frame-created", details);
+  }
 }
 
 void WebContents::RenderFrameDeleted(
@@ -1420,12 +1444,11 @@ void WebContents::RenderFrameHostChanged(content::RenderFrameHost* old_host,
   // If an instance of WebFrameMain exists, it will need to have its RFH
   // swapped as well.
   //
-  // |old_host| can be a nullptr in so we use |new_host| for looking up the
+  // |old_host| can be a nullptr so we use |new_host| for looking up the
   // WebFrameMain instance.
   auto* web_frame =
       WebFrameMain::FromFrameTreeNodeId(new_host->GetFrameTreeNodeId());
   if (web_frame) {
-    CHECK_EQ(web_frame->render_frame_host(), old_host);
     web_frame->UpdateRenderFrameHost(new_host);
   }
 }
@@ -1499,19 +1522,16 @@ void WebContents::DidChangeThemeColor() {
   }
 }
 
-void WebContents::OnInterfaceRequestFromFrame(
-    content::RenderFrameHost* render_frame_host,
-    const std::string& interface_name,
-    mojo::ScopedMessagePipeHandle* interface_pipe) {
-  registry_.TryBindInterface(interface_name, interface_pipe, render_frame_host);
-}
-
 void WebContents::DidAcquireFullscreen(content::RenderFrameHost* rfh) {
   set_fullscreen_frame(rfh);
 }
 
 void WebContents::DOMContentLoaded(
     content::RenderFrameHost* render_frame_host) {
+  auto* web_frame = WebFrameMain::FromRenderFrameHost(render_frame_host);
+  if (web_frame)
+    web_frame->DOMContentLoaded();
+
   if (!render_frame_host->GetParent())
     Emit("dom-ready");
 }
@@ -3417,7 +3437,7 @@ void WebContents::DevToolsRemoveFileSystem(
 
   auto* pref_service = GetPrefService(GetDevToolsWebContents());
   DictionaryPrefUpdate update(pref_service, prefs::kDevToolsFileSystemPaths);
-  update.Get()->RemoveWithoutPathExpansion(path, nullptr);
+  update.Get()->RemoveKey(path);
 
   base::Value file_system_path_value(path);
   inspectable_web_contents_->CallClientFunction("DevToolsAPI.fileSystemRemoved",
@@ -3903,6 +3923,16 @@ gin::Handle<WebContents> WebContentsFromID(v8::Isolate* isolate, int32_t id) {
                   : gin::Handle<WebContents>();
 }
 
+gin::Handle<WebContents> WebContentsFromDevToolsTargetID(
+    v8::Isolate* isolate,
+    std::string target_id) {
+  auto agent_host = content::DevToolsAgentHost::GetForId(target_id);
+  WebContents* contents =
+      agent_host ? WebContents::From(agent_host->GetWebContents()) : nullptr;
+  return contents ? gin::CreateHandle(isolate, contents)
+                  : gin::Handle<WebContents>();
+}
+
 std::vector<gin::Handle<WebContents>> GetAllWebContentsAsV8(
     v8::Isolate* isolate) {
   std::vector<gin::Handle<WebContents>> list;
@@ -3921,6 +3951,7 @@ void Initialize(v8::Local<v8::Object> exports,
   gin_helper::Dictionary dict(isolate, exports);
   dict.Set("WebContents", WebContents::GetConstructor(context));
   dict.SetMethod("fromId", &WebContentsFromID);
+  dict.SetMethod("fromDevToolsTargetId", &WebContentsFromDevToolsTargetID);
   dict.SetMethod("getAllWebContents", &GetAllWebContentsAsV8);
 }
 
