@@ -164,7 +164,7 @@ class AsarURLLoader : public network::mojom::URLLoader {
       readable_data_source.reset(new mojo::FilteredDataSource(
           std::move(file_data_source), std::move(asar_validator)));
     } else {
-      readable_data_source.reset(file_data_source.release());
+      readable_data_source = std::move(file_data_source);
     }
 
     std::vector<char> initial_read_buffer(
