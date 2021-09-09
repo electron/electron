@@ -238,9 +238,10 @@ describe('app module', () => {
       expect(code2).to.equal(1);
       const [code1] = await firstExited;
       expect(code1).to.equal(0);
-      const [data21, data22] = (await data2Promise)[0].toString('ascii').split('=====');
-      const secondInstanceArgsReceived: string[] = JSON.parse(data21.toString('ascii'));
-      const secondInstanceDataReceived = JSON.parse(data22.toString('ascii'));
+      const received = await data2Promise;
+      const [args, additionalData] = received[0].toString('ascii').split('||');
+      const secondInstanceArgsReceived: string[] = JSON.parse(args.toString('ascii'));
+      const secondInstanceDataReceived = JSON.parse(additionalData.toString('ascii'));
       const expectedSecondInstanceData = {
         level: 1,
         testkey: 'testvalue1',

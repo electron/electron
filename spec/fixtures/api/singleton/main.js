@@ -14,11 +14,9 @@ const obj = {
 };
 const gotTheLock = app.requestSingleInstanceLock(obj);
 
-app.on('second-instance', (event, args, data) => {
+app.on('second-instance', (event, args, workingDirectory, data) => {
   setImmediate(() => {
-    console.log(JSON.stringify(args));
-    console.log('=====');
-    console.log(JSON.stringify(data));
+    console.log([JSON.stringify(args), JSON.stringify(data)].join('||'));
     app.exit(0);
   });
 });
