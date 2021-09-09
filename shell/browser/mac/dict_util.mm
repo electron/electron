@@ -32,7 +32,7 @@ base::ListValue NSArrayToListValue(NSArray* arr) {
 
   for (id value in arr) {
     if ([value isKindOfClass:[NSString class]]) {
-      result.AppendString(base::SysNSStringToUTF8(value));
+      result.Append(base::SysNSStringToUTF8(value));
     } else if ([value isKindOfClass:[NSNumber class]]) {
       const char* objc_type = [value objCType];
       if (strcmp(objc_type, @encode(BOOL)) == 0 ||
@@ -48,7 +48,7 @@ base::ListValue NSArrayToListValue(NSArray* arr) {
     } else if ([value isKindOfClass:[NSDictionary class]]) {
       result.Append(NSDictionaryToDictionaryValue(value));
     } else {
-      result.AppendString(base::SysNSStringToUTF8([value description]));
+      result.Append(base::SysNSStringToUTF8([value description]));
     }
   }
 

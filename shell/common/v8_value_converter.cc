@@ -202,10 +202,10 @@ v8::Local<v8::Value> V8ValueConverter::ToV8ValueImpl(
 v8::Local<v8::Value> V8ValueConverter::ToV8Array(
     v8::Isolate* isolate,
     const base::ListValue* val) const {
-  v8::Local<v8::Array> result(v8::Array::New(isolate, val->GetSize()));
+  v8::Local<v8::Array> result(v8::Array::New(isolate, val->GetList().size()));
   auto context = isolate->GetCurrentContext();
 
-  for (size_t i = 0; i < val->GetSize(); ++i) {
+  for (size_t i = 0; i < val->GetList().size(); ++i) {
     const base::Value* child = nullptr;
     val->Get(i, &child);
 
