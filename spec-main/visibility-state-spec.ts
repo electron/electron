@@ -5,7 +5,8 @@ import * as path from 'path';
 
 import { emittedOnce } from './events-helpers';
 import { closeWindow } from './window-helpers';
-import { ifdescribe, delay } from './spec-helpers';
+import { ifdescribe } from './spec-helpers';
+import { setTimeout as delay } from 'timers/promises';
 
 // visibilityState specs pass on linux with a real window manager but on CI
 // the environment does not let these specs pass

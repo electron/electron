@@ -2,7 +2,8 @@ import { expect } from 'chai';
 import { app, contentTracing, TraceConfig, TraceCategoriesAndOptions } from 'electron/main';
 import * as fs from 'fs';
 import * as path from 'path';
-import { ifdescribe, delay } from './spec-helpers';
+import { ifdescribe } from './spec-helpers';
+import { setTimeout as delay } from 'timers/promises';
 
 // FIXME: The tests are skipped on arm/arm64.
 ifdescribe(!(['arm', 'arm64'].includes(process.arch)))('contentTracing', () => {

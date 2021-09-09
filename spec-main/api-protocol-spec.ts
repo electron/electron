@@ -12,7 +12,7 @@ import { EventEmitter } from 'events';
 import { closeWindow } from './window-helpers';
 import { emittedOnce } from './events-helpers';
 import { WebmGenerator } from './video-helpers';
-import { delay } from './spec-helpers';
+import { setTimeout as delay } from 'timers/promises';
 
 const fixturesPath = path.resolve(__dirname, '..', 'spec', 'fixtures');
 

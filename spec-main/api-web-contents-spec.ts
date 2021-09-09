@@ -7,7 +7,8 @@ import { BrowserWindow, ipcMain, webContents, session, WebContents, app, Browser
 import { clipboard } from 'electron/common';
 import { emittedOnce } from './events-helpers';
 import { closeAllWindows } from './window-helpers';
-import { ifdescribe, ifit, delay, defer } from './spec-helpers';
+import { ifdescribe, ifit, defer } from './spec-helpers';
+import { setTimeout as delay } from 'timers/promises';
 
 const pdfjs = require('pdfjs-dist');
 const fixturesPath = path.resolve(__dirname, '..', 'spec', 'fixtures');

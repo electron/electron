@@ -7,6 +7,7 @@ import { closeAllWindows } from './window-helpers';
 import { emittedOnce, emittedNTimes } from './events-helpers';
 import { AddressInfo } from 'net';
 import { waitUntil } from './spec-helpers';
+import { setTimeout as delay } from 'timers/promises';
 
 describe('webFrameMain module', () => {
   const fixtures = path.resolve(__dirname, '..', 'spec-main', 'fixtures');
@@ -206,7 +207,7 @@ describe('webFrameMain module', () => {
       const { mainFrame } = w.webContents;
       w.destroy();
       // Wait for WebContents, and thus RenderFrameHost, to be destroyed.
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await delay(0);
       expect(() => mainFrame.url).to.throw();
     });
 

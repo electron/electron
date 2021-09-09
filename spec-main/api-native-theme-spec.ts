@@ -4,9 +4,10 @@ import * as os from 'os';
 import * as path from 'path';
 import * as semver from 'semver';
 
-import { delay, ifdescribe } from './spec-helpers';
+import { ifdescribe } from './spec-helpers';
 import { emittedOnce } from './events-helpers';
 import { closeAllWindows } from './window-helpers';
+import { setTimeout as delay } from 'timers/promises';
 
 describe('nativeTheme module', () => {
   describe('nativeTheme.shouldUseDarkColors', () => {

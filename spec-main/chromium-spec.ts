@@ -10,7 +10,8 @@ import * as url from 'url';
 import * as ChildProcess from 'child_process';
 import { EventEmitter } from 'events';
 import { promisify } from 'util';
-import { ifit, ifdescribe, delay, defer } from './spec-helpers';
+import { ifit, ifdescribe, defer } from './spec-helpers';
+import { setTimeout as delay } from 'timers/promises';
 import { AddressInfo } from 'net';
 import { PipeTransport } from './pipe-transport';
 
@@ -1759,7 +1760,7 @@ ifdescribe((process.platform !== 'linux' || app.isUnityRunning()))('navigator.se
   async function waitForBadgeCount (value: number) {
     let badgeCount = app.getBadgeCount();
     while (badgeCount !== value) {
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await delay(10);
       badgeCount = app.getBadgeCount();
     }
     return badgeCount;

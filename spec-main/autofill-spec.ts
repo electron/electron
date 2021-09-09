@@ -1,6 +1,6 @@
 import { BrowserWindow } from 'electron';
 import * as path from 'path';
-import { delay } from './spec-helpers';
+import { setTimeout as delay } from 'timers/promises';
 import { expect } from 'chai';
 import { closeAllWindows } from './window-helpers';
 

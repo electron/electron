@@ -16,8 +16,6 @@ const addOnly = <T>(fn: Function): T => {
 export const ifit = (condition: boolean) => (condition ? it : addOnly<TestFunction>(it.skip));
 export const ifdescribe = (condition: boolean) => (condition ? describe : addOnly<SuiteFunction>(describe.skip));
 
-export const delay = (time: number = 0) => new Promise(resolve => setTimeout(resolve, time));
-
 type CleanupFunction = (() => void) | (() => Promise<void>)
 const cleanupFunctions: CleanupFunction[] = [];
 export async function runCleanupFunctions () {

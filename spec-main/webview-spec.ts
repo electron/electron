@@ -3,7 +3,8 @@ import * as url from 'url';
 import { BrowserWindow, session, ipcMain, app, WebContents } from 'electron/main';
 import { closeAllWindows } from './window-helpers';
 import { emittedOnce, emittedUntil } from './events-helpers';
-import { ifit, delay } from './spec-helpers';
+import { ifit } from './spec-helpers';
+import { setTimeout as delay } from 'timers/promises';
 import { expect } from 'chai';
 
 async function loadWebView (w: WebContents, attributes: Record<string, string>, openDevTools: boolean = false): Promise<void> {

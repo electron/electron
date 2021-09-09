@@ -10,8 +10,9 @@ import { AddressInfo } from 'net';
 import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersListenerDetails, protocol, screen, webContents, session, WebContents, BrowserWindowConstructorOptions } from 'electron/main';
 
 import { emittedOnce, emittedUntil, emittedNTimes } from './events-helpers';
-import { ifit, ifdescribe, defer, delay } from './spec-helpers';
+import { ifit, ifdescribe, defer } from './spec-helpers';
 import { closeWindow, closeAllWindows } from './window-helpers';
+import { setTimeout as delay } from 'timers/promises';
 
 const features = process._linkedBinding('electron_common_features');
 const fixtures = path.resolve(__dirname, '..', 'spec', 'fixtures');

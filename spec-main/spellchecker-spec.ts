@@ -7,7 +7,8 @@ import * as http from 'http';
 import { AddressInfo } from 'net';
 import { closeWindow } from './window-helpers';
 import { emittedOnce } from './events-helpers';
-import { ifit, ifdescribe, delay } from './spec-helpers';
+import { ifit, ifdescribe } from './spec-helpers';
+import { setTimeout as delay } from 'timers/promises';
 
 const features = process._linkedBinding('electron_common_features');
 const v8Util = process._linkedBinding('electron_common_v8_util');

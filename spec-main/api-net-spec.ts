@@ -4,7 +4,8 @@ import * as http from 'http';
 import * as url from 'url';
 import { AddressInfo, Socket } from 'net';
 import { emittedOnce } from './events-helpers';
-import { defer, delay } from './spec-helpers';
+import { defer } from './spec-helpers';
+import { setTimeout as delay } from 'timers/promises';
 
 const kOneKiloByte = 1024;
 const kOneMegaByte = kOneKiloByte * kOneKiloByte;
