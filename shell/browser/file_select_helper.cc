@@ -183,6 +183,7 @@ void FileSelectHelper::OnOpenDialogDone(gin_helper::Dictionary result) {
         browser_context->prefs()->SetFilePath(prefs::kSelectFileLastDirectory,
                                               paths[0].DirName());
       }
+      RunFileChooserEnd();
     }
   }
 }
@@ -214,6 +215,7 @@ void FileSelectHelper::OnSaveDialogDone(gin_helper::Dictionary result) {
     }
     // We should only call this if we have not cancelled the dialog.
     OnFilesSelected(std::move(file_info), base::FilePath());
+    RunFileChooserEnd();
   }
 }
 
@@ -224,10 +226,6 @@ void FileSelectHelper::OnFilesSelected(
     listener_->FileSelected(std::move(file_info), base_dir, mode_);
     listener_.reset();
   }
-
-  render_frame_host_ = nullptr;
-
-  delete this;
 }
 
 void FileSelectHelper::RenderWidgetHostDestroyed(
