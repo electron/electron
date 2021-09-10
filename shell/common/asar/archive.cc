@@ -157,6 +157,15 @@ bool FillFileInfoWithNode(Archive::FileInfo* info,
 
 }  // namespace
 
+IntegrityPayload::IntegrityPayload()
+    : algorithm(HashAlgorithm::NONE), block_size(0) {}
+IntegrityPayload::~IntegrityPayload() = default;
+IntegrityPayload::IntegrityPayload(const IntegrityPayload& other) = default;
+
+Archive::FileInfo::FileInfo()
+    : unpacked(false), executable(false), size(0), offset(0) {}
+Archive::FileInfo::~FileInfo() = default;
+
 Archive::Archive(const base::FilePath& path)
     : initialized_(false), path_(path), file_(base::File::FILE_OK) {
   base::ThreadRestrictions::ScopedAllowIO allow_io;
@@ -270,11 +279,11 @@ bool Archive::Init() {
 
 #if !defined(OS_MAC)
 absl::optional<IntegrityPayload> Archive::HeaderIntegrity() const {
-  return absl::optional<IntegrityPayload>();
+  return absl::nullopt;
 }
 
 absl::optional<base::FilePath> Archive::RelativePath() const {
-  return absl::optional<base::FilePath>();
+  return absl::nullopt;
 }
 #endif
 
