@@ -129,8 +129,7 @@ electron::api::WebContents* GetTabsAPIDefaultWebContents(
   return web_contents;
 }
 
-std::unique_ptr<api::tabs::Tab> 
-(
+std::unique_ptr<api::tabs::Tab> CreateTabObjectHelper(
     electron::api::WebContents* contents,
     electron::api::ExtensionTabDetails tab,
     const Extension* extension,
