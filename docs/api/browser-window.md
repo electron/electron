@@ -24,10 +24,11 @@ you can use the [Frameless Window](frameless-window.md) API.
 
 ## Showing window gracefully
 
-When loading a page in the window directly, users may see the page load incrementally, which is not a good experience for a native app. To make the window display
-without visual flash, there are two solutions for different situations.
+When loading a page in the window directly, users may see the page load incrementally,
+which is not a good experience for a native app. To make the window display
+without a visual flash, there are two solutions for different situations.
 
-## Using `ready-to-show` event
+### Using `ready-to-show` event
 
 While loading the page, the `ready-to-show` event will be emitted when the renderer
 process has rendered the page for the first time if the window has not been shown yet. Showing
@@ -48,7 +49,7 @@ event.
 Please note that using this event implies that the renderer will be considered "visible" and
 paint even though `show` is false.  This event will never fire if you use `paintWhenInitiallyHidden: false`
 
-## Setting `backgroundColor`
+### Setting `backgroundColor`
 
 For a complex app, the `ready-to-show` event could be emitted too late, making
 the app feel slow. In this case, it is recommended to show the window
