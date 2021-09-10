@@ -1118,7 +1118,7 @@ bool App::RequestSingleInstanceLock(gin::Arguments* args) {
       app_is_sandboxed, base::BindRepeating(NotificationCallbackWrapper, cb));
 #else
   process_singleton_ = std::make_unique<ProcessSingleton>(
-      user_dir, &additional_data,
+      user_dir, additional_data_message.encoded_message,
       base::BindRepeating(NotificationCallbackWrapper, cb));
 #endif
 

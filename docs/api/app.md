@@ -483,6 +483,7 @@ Returns:
 * `event` Event
 * `argv` String[] - An array of the second instance's command line arguments
 * `workingDirectory` String - The second instance's working directory
+* `additionalData` unknown - A JSON object of additional data passed from the second instance
 
 This event will be emitted inside the primary instance of your application
 when a second instance has been executed and calls `app.requestSingleInstanceLock()`.
@@ -931,7 +932,9 @@ app.setJumpList([
 
 ### `app.requestSingleInstanceLock()`
 
-Returns `Boolean`
+Returns `Boolean`:
+
+* `additionalData` unknown (optional) - A JSON object containing additional data to send to the first instance.
 
 The return value of this method indicates whether or not this instance of your
 application successfully obtained the lock.  If it failed to obtain the lock,
@@ -956,7 +959,8 @@ starts:
 const { app } = require('electron')
 let myWindow = null
 
-const gotTheLock = app.requestSingleInstanceLock()
+const additionalData = { myKey: 'myValue' }
+const gotTheLock = app.requestSingleInstanceLock(additionalData)
 
 if (!gotTheLock) {
   app.quit()
