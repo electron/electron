@@ -21,6 +21,7 @@
 #include "base/strings/stringprintf.h"
 #include "base/strings/sys_string_conversions.h"
 #include "net/base/mac/url_conversions.h"
+#include "ui/views/widget/widget.h"
 #include "url/gurl.h"
 
 namespace {
@@ -115,6 +116,17 @@ void OpenExternal(const GURL& url,
                      std::move(c).Run(error);
                    });
                  });
+}
+
+gfx::NativeView GetViewForWindow(gfx::NativeWindow native_window) {
+  NSWindow* window = native_window.GetNativeNSWindow();
+  DCHECK(window);
+  DCHECK([window contentView]);
+  return gfx::NativeView([window contentView]);
+}
+
+gfx::NativeView GetParent(gfx::NativeView view) {
+  return gfx::NativeView(nil);
 }
 
 bool MoveItemToTrashWithError(const base::FilePath& full_path,
