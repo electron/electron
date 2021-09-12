@@ -784,10 +784,7 @@ void WebContents::InitWithSessionAndOptions(
     gin::Handle<api::Session> session,
     const gin_helper::Dictionary& options) {
   Observe(owned_web_contents.get());
-  // TODO(zcbenz): Make InitWithWebContents take unique_ptr.
-  // At the time of writing we are going through a refactoring and I don't want
-  // to make other people's work harder.
-  InitWithWebContents(owned_web_contents.release(), session->browser_context(),
+  InitWithWebContents(std::move(owned_web_contents), session->browser_context(),
                       IsGuest());
 
   inspectable_web_contents_->GetView()->SetDelegate(this);
@@ -884,36 +881,39 @@ void WebContents::InitWithExtensionView(v8::Isolate* isolate,
 
   // Allow toggling DevTools for background pages
   Observe(web_contents);
-  InitWithWebContents(web_contents, GetBrowserContext(), IsGuest());
+  InitWithWebContents(std::unique_ptr<content::WebContents>(web_contents),
+                      GetBrowserContext(), IsGuest());
   inspectable_web_contents_->GetView()->SetDelegate(this);
 }
 #endif
 
-void WebContents::InitWithWebContents(content::WebContents* web_contents,
-                                      ElectronBrowserContext* browser_context,
-                                      bool is_guest) {
+void WebContents::InitWithWebContents(
+    std::unique_ptr<content::WebContents> web_contents,
+    ElectronBrowserContext* browser_context,
+    bool is_guest) {
   browser_context_ = browser_context;
   web_contents->SetDelegate(this);
 
 #if BUILDFLAG(ENABLE_PRINTING)
-  PrintPreviewMessageHandler::CreateForWebContents(web_contents);
-  PrintViewManagerElectron::CreateForWebContents(web_contents);
-  printing::CreateCompositeClientIfNeeded(web_contents,
+  PrintPreviewMessageHandler::CreateForWebContents(web_contents.get());
+  PrintViewManagerElectron::CreateForWebContents(web_contents.get());
+  printing::CreateCompositeClientIfNeeded(web_contents.get(),
                                           browser_context->GetUserAgent());
 #endif
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
   pdf::PDFWebContentsHelper::CreateForWebContentsWithClient(
-      web_contents, std::make_unique<ElectronPDFWebContentsHelperClient>());
+      web_contents.get(),
+      std::make_unique<ElectronPDFWebContentsHelperClient>());
 #endif
 
   // Determine whether the WebContents is offscreen.
-  auto* web_preferences = WebContentsPreferences::From(web_contents);
+  auto* web_preferences = WebContentsPreferences::From(web_contents.get());
   offscreen_ = web_preferences && web_preferences->IsOffscreen();
 
   // Create InspectableWebContents.
   inspectable_web_contents_ = std::make_unique<InspectableWebContents>(
-      web_contents, browser_context->prefs(), is_guest);
+      web_contents.release(), browser_context->prefs(), is_guest);
   inspectable_web_contents_->SetDelegate(this);
 }
 
