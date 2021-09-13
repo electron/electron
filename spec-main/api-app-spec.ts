@@ -207,7 +207,7 @@ describe('app module', () => {
   describe('app.requestSingleInstanceLock', () => {
     it('prevents the second launch of app', async function () {
       this.timeout(120000);
-      const appPath = path.join(fixturesPath, 'api', 'singleton');
+      const appPath = path.join(fixturesPath, 'api', 'singleton-data');
       const first = cp.spawn(process.execPath, [appPath]);
       await emittedOnce(first.stdout, 'data');
       // Start second app when received output.
@@ -218,8 +218,8 @@ describe('app module', () => {
       expect(code1).to.equal(0);
     });
 
-    it('passes arguments to the second-instance event', async () => {
-      const appPath = path.join(fixturesPath, 'api', 'singleton');
+    async function testArgumentPassing (fixtureName: string, expectedSecondInstanceData: unknown) {
+      const appPath = path.join(fixturesPath, 'api', fixtureName);
       const first = cp.spawn(process.execPath, [appPath]);
       const firstExited = emittedOnce(first, 'exit');
 
@@ -240,14 +240,6 @@ describe('app module', () => {
       const [args, additionalData] = received[0].toString('ascii').split('||');
       const secondInstanceArgsReceived: string[] = JSON.parse(args.toString('ascii'));
       const secondInstanceDataReceived = JSON.parse(additionalData.toString('ascii'));
-      const expectedSecondInstanceData = {
-        level: 1,
-        testkey: 'testvalue1',
-        inner: {
-          level: 2,
-          testkey: 'testvalue2'
-        }
-      };
 
       // Ensure secondInstanceArgs is a subset of secondInstanceArgsReceived
       for (const arg of secondInstanceArgs) {
@@ -256,6 +248,22 @@ describe('app module', () => {
       }
       expect(secondInstanceDataReceived).to.be.deep.equal(expectedSecondInstanceData,
         `received data ${JSON.stringify(secondInstanceDataReceived)} is not equal to expected data ${JSON.stringify(expectedSecondInstanceData)}.`);
+    }
+
+    it('passes arguments to the second-instance event', async () => {
+      const expectedSecondInstanceData = {
+        level: 1,
+        testkey: 'testvalue1',
+        inner: {
+          level: 2,
+          testkey: 'testvalue2'
+        }
+      };
+      await testArgumentPassing('singleton-data', expectedSecondInstanceData);
+    });
+
+    it('passes arguments to the second-instance event no additional data', async () => {
+      await testArgumentPassing('singleton', null);
     });
   });
 
