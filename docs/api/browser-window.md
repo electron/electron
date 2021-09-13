@@ -28,7 +28,7 @@ When loading a page in the window directly, users may see the page load incremen
 which is not a good experience for a native app. To make the window display
 without a visual flash, there are two solutions for different situations.
 
-### Using `ready-to-show` event
+### Using the `ready-to-show` event
 
 While loading the page, the `ready-to-show` event will be emitted when the renderer
 process has rendered the page for the first time if the window has not been shown yet. Showing
