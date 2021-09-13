@@ -213,7 +213,7 @@ app.whenReady().then(() => {
     }
   })
 
-  // Retrieve previously persisted devices from an (optional) persistent store
+  // Optionally, retrieve previously persisted devices from a persistent store
   const grantedDevices = fetchGrantedDevices()
 
   win.webContents.session.setDevicePermissionHandler((details) => {

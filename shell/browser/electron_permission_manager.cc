@@ -346,7 +346,9 @@ void ElectronPermissionManager::GrantDevicePermission(
     const url::Origin& origin,
     const base::Value* device) const {
   api::WebContents* api_web_contents = api::WebContents::From(web_contents);
-  api_web_contents->GrantDevicePermission(origin, device, permission);
+  DCHECK(api_web_contents);
+  if (api_web_contents)
+    api_web_contents->GrantDevicePermission(origin, device, permission);
 }
 
 blink::mojom::PermissionStatus
