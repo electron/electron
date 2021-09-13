@@ -8,12 +8,14 @@
 #include <gtk/gtk.h>
 #include <stdint.h>
 
+#include <string>
+
 #include "base/no_destructor.h"
 #include "base/strings/string_number_conversions.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "third_party/skia/include/core/SkColor.h"
 #include "third_party/skia/include/core/SkUnPreMultiply.h"
-#include "ui/gtk/gtk_compat.h"
+#include "ui/gtk/gtk_compat.h"  // nogncheck
 
 namespace gtk_util {
 
@@ -35,6 +37,20 @@ const char* GetCancelLabel() {
     return "gtk-cancel";  // In GTK3, this is GTK_STOCK_CANCEL.
   static const char* cancel = GtkGettext("_Cancel");
   return cancel;
+}
+
+const char* GetOpenLabel() {
+  if (!gtk::GtkCheckVersion(4))
+    return "gtk-open";  // In GTK3, this is GTK_STOCK_OPEN.
+  static const char* open = GtkGettext("_Open");
+  return open;
+}
+
+const char* GetSaveLabel() {
+  if (!gtk::GtkCheckVersion(4))
+    return "gtk-save";  // In GTK3, this is GTK_STOCK_SAVE.
+  static const char* save = GtkGettext("_Save");
+  return save;
 }
 
 const char* GetOkLabel() {
