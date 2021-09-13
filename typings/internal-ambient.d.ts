@@ -64,6 +64,10 @@ declare namespace NodeJS {
     size: number;
     unpacked: boolean;
     offset: number;
+    integrity?: {
+      algorithm: 'SHA256';
+      hash: string;
+    }
   };
 
   type AsarFileStat = {
@@ -75,13 +79,12 @@ declare namespace NodeJS {
   }
 
   interface AsarArchive {
-    readonly path: string;
     getFileInfo(path: string): AsarFileInfo | false;
     stat(path: string): AsarFileStat | false;
     readdir(path: string): string[] | false;
     realpath(path: string): string | false;
     copyFileOut(path: string): string | false;
-    getFd(): number | -1;
+    getFdAndValidateIntegrityLater(): number | -1;
   }
 
   interface AsarBinding {
