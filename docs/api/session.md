@@ -193,7 +193,7 @@ Returns:
 
 Emitted when a HID device needs to be selected when a call to
 `navigator.hid.requestDevice` is made. `callback` should be called with
-`deviceId` to be selected; passing an empty argument to `callback` will
+`deviceId` to be selected; passing no arguments to `callback` will
 cancel the request.  Additionally, permissioning on `navigator.hid` can
 be further managed by using [ses.setPermissionCheckHandler(handler)](#sessetpermissioncheckhandlerhandler)
 and [ses.setDevicePermissionHandler(handler)`](#sessetdevicepermissionhandlerhandler).
@@ -211,6 +211,7 @@ app.whenReady().then(() => {
       // Add logic here to determine if permission should be given to allow HID selection
       return true
     }
+    return false
   })
 
   // Optionally, retrieve previously persisted devices from a persistent store
@@ -674,9 +675,10 @@ app.whenReady().then(() => {
       // Add logic here to determine if permission should be given to allow HID selection
       return true
     }
+    return false
   })
 
-  // Retrieve previously persisted devices from an (optional) persistent store
+  // Optionally, retrieve previously persisted devices from a persistent store
   const grantedDevices = fetchGrantedDevices()
 
   win.webContents.session.setDevicePermissionHandler((details) => {

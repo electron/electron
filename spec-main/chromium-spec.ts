@@ -1923,6 +1923,7 @@ describe('navigator.hid', () => {
     let haveDevices = false;
     let selectFired = false;
     w.webContents.session.on('select-hid-device', (event, details, callback) => {
+      expect(details.frame).to.have.ownProperty('frameTreeNodeId').that.is.a('number');
       selectFired = true;
       if (details.deviceList.length > 0) {
         haveDevices = true;

@@ -87,7 +87,6 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
                                   const base::DictionaryValue* details) const;
 
   bool CheckDevicePermission(content::PermissionType permission,
-                             content::WebContents* web_contents,
                              const url::Origin& origin,
                              const base::Value* object,
                              content::RenderFrameHost* render_frame_host) const;

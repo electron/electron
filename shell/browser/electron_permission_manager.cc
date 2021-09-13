@@ -297,27 +297,28 @@ bool ElectronPermissionManager::CheckPermissionWithDetails(
 
 bool ElectronPermissionManager::CheckDevicePermission(
     content::PermissionType permission,
-    content::WebContents* web_contents,
     const url::Origin& origin,
     const base::Value* device,
     content::RenderFrameHost* render_frame_host) const {
+  auto* web_contents =
+      content::WebContents::FromRenderFrameHost(render_frame_host);
   api::WebContents* api_web_contents = api::WebContents::From(web_contents);
   if (device_permission_handler_.is_null()) {
-    std::vector<std::unique_ptr<base::Value>> granted_devices =
+    std::vector<base::Value> granted_devices =
         api_web_contents->GetGrantedDevices(origin, permission);
 
     for (const auto& granted_device : granted_devices) {
       if (permission == static_cast<content::PermissionType>(
                             WebContentsPermissionHelper::PermissionType::HID)) {
         if (device->FindIntKey(kHidVendorIdKey) !=
-                *granted_device->FindIntKey(kHidVendorIdKey) ||
+                granted_device.FindIntKey(kHidVendorIdKey) ||
             device->FindIntKey(kHidProductIdKey) !=
-                *granted_device->FindIntKey(kHidProductIdKey)) {
+                granted_device.FindIntKey(kHidProductIdKey)) {
           continue;
         }
 
         const auto* serial_number =
-            granted_device->FindStringKey(kHidSerialNumberKey);
+            granted_device.FindStringKey(kHidSerialNumberKey);
         const auto* device_serial_number =
             device->FindStringKey(kHidSerialNumberKey);
 
@@ -345,10 +346,12 @@ void ElectronPermissionManager::GrantDevicePermission(
     content::WebContents* web_contents,
     const url::Origin& origin,
     const base::Value* device) const {
-  api::WebContents* api_web_contents = api::WebContents::From(web_contents);
-  DCHECK(api_web_contents);
-  if (api_web_contents)
-    api_web_contents->GrantDevicePermission(origin, device, permission);
+  if (device_permission_handler_.is_null()) {
+    api::WebContents* api_web_contents = api::WebContents::From(web_contents);
+    DCHECK(api_web_contents);
+    if (api_web_contents)
+      api_web_contents->GrantDevicePermission(origin, device, permission);
+  }
 }
 
 blink::mojom::PermissionStatus

@@ -3244,7 +3244,7 @@ void WebContents::GrantDevicePermission(
       std::make_unique<base::Value>(device->Clone()));
 }
 
-std::vector<std::unique_ptr<base::Value>> WebContents::GetGrantedDevices(
+std::vector<base::Value> WebContents::GetGrantedDevices(
     const url::Origin& origin,
     content::PermissionType permissionType) {
   const auto& current_devices_it = granted_devices_.find(permissionType);
@@ -3255,9 +3255,9 @@ std::vector<std::unique_ptr<base::Value>> WebContents::GetGrantedDevices(
   if (origin_devices_it == current_devices_it->second.end())
     return {};
 
-  std::vector<std::unique_ptr<base::Value>> results;
+  std::vector<base::Value> results;
   for (const auto& object : origin_devices_it->second)
-    results.push_back(std::make_unique<base::Value>(object->Clone()));
+    results.push_back(object->Clone());
 
   return results;
 }

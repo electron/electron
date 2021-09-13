@@ -124,11 +124,12 @@ void HidChooserController::OnDeviceRemoved(
     return;
   api::Session* session = GetSession();
   if (session) {
+    auto* rfh = content::RenderFrameHost::FromID(render_frame_host_id_);
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
     v8::HandleScope scope(isolate);
     v8::Local<v8::Object> details = gin::DataObjectBuilder(isolate)
                                         .Set("device", device.Clone())
-                                        .Set("webContents", web_contents())
+                                        .Set("frame", rfh)
                                         .Build();
     session->Emit("hid-device-removed", details);
   }
@@ -208,11 +209,12 @@ void HidChooserController::OnGotDevices(
   bool prevent_default = false;
   api::Session* session = GetSession();
   if (session) {
+    auto* rfh = content::RenderFrameHost::FromID(render_frame_host_id_);
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
     v8::HandleScope scope(isolate);
     v8::Local<v8::Object> details = gin::DataObjectBuilder(isolate)
                                         .Set("deviceList", devicesToDisplay)
-                                        .Set("webContents", web_contents())
+                                        .Set("frame", rfh)
                                         .Build();
     prevent_default =
         session->Emit("select-hid-device", details,

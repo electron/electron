@@ -433,7 +433,7 @@ class WebContents : public gin::Wrappable<WebContents>,
   // Returns the list of devices that |origin| has been granted permission to
   // access. To be used in place of
   // ObjectPermissionContextBase::GetGrantedObjects.
-  std::vector<std::unique_ptr<base::Value>> GetGrantedDevices(
+  std::vector<base::Value> GetGrantedDevices(
       const url::Origin& origin,
       content::PermissionType permissionType);
 
