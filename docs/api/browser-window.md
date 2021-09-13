@@ -22,7 +22,7 @@ win.loadFile('index.html')
 To create a window without chrome, or a transparent window in arbitrary shape,
 you can use the [Frameless Window](frameless-window.md) API.
 
-## Showing window gracefully
+## Showing the window gracefully
 
 When loading a page in the window directly, users may see the page load incrementally,
 which is not a good experience for a native app. To make the window display
