@@ -183,7 +183,9 @@ void FileSelectHelper::OnOpenDialogDone(gin_helper::Dictionary result) {
         browser_context->prefs()->SetFilePath(prefs::kSelectFileLastDirectory,
                                               paths[0].DirName());
       }
+#if !defined(OS_MAC)
       RunFileChooserEnd();
+#endif
     }
   }
 }
