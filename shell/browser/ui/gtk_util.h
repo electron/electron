@@ -15,6 +15,8 @@ const char* GettextPackage();
 const char* GtkGettext(const char* str);
 
 const char* GetCancelLabel();
+const char* GetOpenLabel();
+const char* GetSaveLabel();
 const char* GetOkLabel();
 const char* GetNoLabel();
 const char* GetYesLabel();
