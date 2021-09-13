@@ -258,6 +258,7 @@ declare namespace NodeJS {
     _firstFileName?: string;
 
     helperExecPath: string;
+    readonly resourcesPath: string;
     mainModule: NodeJS.Module;
   }
 }

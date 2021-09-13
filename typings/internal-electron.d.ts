@@ -16,6 +16,7 @@ declare namespace Electron {
     setVersion(version: string): void;
     setDesktopName(name: string): void;
     setAppPath(path: string | null): void;
+    getAppPath(): string;
   }
 
   type TouchBarItemType = NonNullable<Electron.TouchBarConstructorOptions['items']>[0];
