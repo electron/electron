@@ -49,7 +49,7 @@ event.
 Please note that using this event implies that the renderer will be considered "visible" and
 paint even though `show` is false.  This event will never fire if you use `paintWhenInitiallyHidden: false`
 
-### Setting `backgroundColor`
+### Setting the `backgroundColor` property
 
 For a complex app, the `ready-to-show` event could be emitted too late, making
 the app feel slow. In this case, it is recommended to show the window
