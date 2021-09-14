@@ -118,15 +118,16 @@ void OpenExternal(const GURL& url,
                  });
 }
 
+// The following function helps with debug builds on the Mac
 gfx::NativeView GetViewForWindow(gfx::NativeWindow native_window) {
-  NSWindow* window = native_window.GetNativeNSWindow();
-  DCHECK(window);
-  DCHECK([window contentView]);
-  return gfx::NativeView([window contentView]);
+  NOTREACHED();
+  return nil;
 }
 
+// The following function helps with debug builds on the Mac
 gfx::NativeView GetParent(gfx::NativeView view) {
-  return gfx::NativeView(nil);
+  NOTREACHED();
+  return nil;
 }
 
 bool MoveItemToTrashWithError(const base::FilePath& full_path,
