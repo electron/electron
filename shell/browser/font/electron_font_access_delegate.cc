@@ -6,16 +6,20 @@
 
 #include "shell/browser/font/electron_font_access_delegate.h"
 
+#include "base/task/post_task.h"
+#include "chrome/browser/browser_process.h"
+#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/font_access_chooser.h"
 #include "content/public/browser/render_frame_host.h"
-
-// #include <memory>
-// #include <string>
 
 class ElectronFontAccessChooser : public content::FontAccessChooser {
  public:
   explicit ElectronFontAccessChooser(base::OnceClosure close_callback) {
-    std::move(close_callback).Run();
+    base::PostTask(
+        FROM_HERE, {content::BrowserThread::UI},
+        base::BindOnce(
+            [](base::OnceClosure closure) { std::move(closure).Run(); },
+            std::move(close_callback)));
   }
   ~ElectronFontAccessChooser() override = default;
 };
