@@ -1945,7 +1945,9 @@ describe('navigator.hid', () => {
       // Verify that navigation will clear device permissions
       const grantedDevices = await w.webContents.executeJavaScript('navigator.hid.getDevices()');
       expect(grantedDevices).to.not.be.empty();
-      await w.loadFile(path.join(fixturesPath, 'pages', 'a.html'));
+      const altFixturesPath = path.resolve(__dirname, 'fixtures');
+      w.loadFile(path.join(altFixturesPath, 'blank.html'));
+      await emittedOnce(w.webContents, 'did-navigate');
       const grantedDevicesOnNewPage = await w.webContents.executeJavaScript('navigator.hid.getDevices()');
       expect(grantedDevicesOnNewPage).to.be.empty();
     }
