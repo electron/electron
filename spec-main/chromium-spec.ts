@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { BrowserWindow, WebContents, session, ipcMain, app, protocol, webContents } from 'electron/main';
+import { BrowserWindow, WebContents, webFrameMain, session, ipcMain, app, protocol, webContents } from 'electron/main';
 import { emittedOnce } from './events-helpers';
 import { closeAllWindows } from './window-helpers';
 import * as https from 'https';
@@ -1947,9 +1947,13 @@ describe('navigator.hid', () => {
       expect(grantedDevices).to.not.be.empty();
       const altFixturesPath = path.resolve(__dirname, 'fixtures');
       w.loadFile(path.join(altFixturesPath, 'blank.html'));
-      await emittedOnce(w.webContents, 'did-navigate');
-      const grantedDevicesOnNewPage = await w.webContents.executeJavaScript('navigator.hid.getDevices()');
-      expect(grantedDevicesOnNewPage).to.be.empty();
+      const [,,,,, frameProcessId, frameRoutingId] = await emittedOnce(w.webContents, 'did-frame-navigate');
+      const frame = webFrameMain.fromId(frameProcessId, frameRoutingId);
+      expect(frame).to.not.be.empty();
+      if (frame) {
+        const grantedDevicesOnNewPage = await frame.executeJavaScript('navigator.hid.getDevices()');
+        expect(grantedDevicesOnNewPage).to.be.empty();
+      }
     }
   });
 
