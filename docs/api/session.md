@@ -189,7 +189,7 @@ Returns:
   * `deviceList` [HIDDevice[]](structures/hid-device.md)
   * `frame` [WebFrameMain](web-frame-main.md)
 * `callback` Function
-  * `deviceId` String (optional)
+  * `deviceId` String | null (optional)
 
 Emitted when a HID device needs to be selected when a call to
 `navigator.hid.requestDevice` is made. `callback` should be called with
