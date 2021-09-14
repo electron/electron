@@ -1,7 +1,8 @@
-From 6048fcd52f421e135fbacc33438244748056fcff Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Koji Ishii <kojii@chromium.org>
-Date: Thu, 09 Sep 2021 23:25:48 +0000
-Subject: [PATCH] Merge 4577: Apply list item quirks only when the nested list is block-level
+Date: Thu, 9 Sep 2021 23:25:48 +0000
+Subject: Merge 4577: Apply list item quirks only when the nested list is
+ block-level
 
 This patch changes to apply quirks for a list-item occupying
 the whole line only if the nested list is block-level.
@@ -33,13 +34,12 @@ Auto-Submit: Koji Ishii <kojii@chromium.org>
 Reviewed-by: Ian Kilpatrick <ikilpatrick@chromium.org>
 Cr-Commit-Position: refs/branch-heads/4577@{#1225}
 Cr-Branched-From: 761ddde228655e313424edec06497d0c56b0f3c4-refs/heads/master@{#902210}
----
 
 diff --git a/third_party/blink/renderer/core/layout/ng/list/layout_ng_outside_list_marker.cc b/third_party/blink/renderer/core/layout/ng/list/layout_ng_outside_list_marker.cc
-index c7c2f19..928116f7 100644
+index 15a3c0a3018301e40d336c8893e987b491da66d3..9b7c0e075cb5a89108c22824c5522de26eb904da 100644
 --- a/third_party/blink/renderer/core/layout/ng/list/layout_ng_outside_list_marker.cc
 +++ b/third_party/blink/renderer/core/layout/ng/list/layout_ng_outside_list_marker.cc
-@@ -35,8 +35,11 @@
+@@ -26,8 +26,11 @@ bool LayoutNGOutsideListMarker::NeedsOccupyWholeLine() const {
    if (!GetDocument().InQuirksMode())
      return false;
  
@@ -54,7 +54,7 @@ index c7c2f19..928116f7 100644
      return true;
 diff --git a/third_party/blink/web_tests/external/wpt/quirks/crashtests/list-item-whole-line-quirks-crash.html b/third_party/blink/web_tests/external/wpt/quirks/crashtests/list-item-whole-line-quirks-crash.html
 new file mode 100644
-index 0000000..b91b09d
+index 0000000000000000000000000000000000000000..b91b09db0e37727e2d3a3e13ca2c7cae25b8d761
 --- /dev/null
 +++ b/third_party/blink/web_tests/external/wpt/quirks/crashtests/list-item-whole-line-quirks-crash.html
 @@ -0,0 +1,5 @@
