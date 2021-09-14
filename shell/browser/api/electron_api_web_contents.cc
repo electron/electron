@@ -1726,6 +1726,9 @@ void WebContents::ReadyToCommitNavigation(
 
 void WebContents::DidFinishNavigation(
     content::NavigationHandle* navigation_handle) {
+  // clear out objects that have been granted permissions
+  granted_devices_.clear();
+
   if (owner_window_) {
     owner_window_->NotifyLayoutWindowControlsOverlay();
   }

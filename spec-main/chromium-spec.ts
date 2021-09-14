@@ -1934,14 +1934,20 @@ describe('navigator.hid', () => {
     });
     const device = await getDevices();
     expect(selectFired).to.be.true();
-    if (process.arch === 'arm64' || process.arch === 'arm') {
-      // arm CI returns HID devices - this line may need to change if CI hardware changes.
-      expect(haveDevices).to.be.true();
-    }
     if (haveDevices) {
       expect(device).to.contain('[object HIDDevice]');
     } else {
       expect(device).to.equal('');
+    }
+    if (process.arch === 'arm64' || process.arch === 'arm') {
+      // arm CI returns HID devices - this block may need to change if CI hardware changes.
+      expect(haveDevices).to.be.true();
+      // Verify that navigation will clear device permissions
+      const grantedDevices = await w.webContents.executeJavaScript('navigator.hid.getDevices()');
+      expect(grantedDevices).to.not.be.empty();
+      await w.loadFile(path.join(fixturesPath, 'pages', 'a.html'));
+      const grantedDevicesOnNewPage = await w.webContents.executeJavaScript('navigator.hid.getDevices()');
+      expect(grantedDevicesOnNewPage).to.be.empty();
     }
   });
 
