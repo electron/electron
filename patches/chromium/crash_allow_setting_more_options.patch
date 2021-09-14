@@ -75,10 +75,10 @@ index 39557cce474439238255ecd28030215085db0c81..5b3f980837911c710686ab91a2a81c31
    // Used by WebView to sample crashes without generating the unwanted dumps. If
    // the returned value is less than 100, crash dumping will be sampled to that
 diff --git a/components/crash/core/app/crashpad_linux.cc b/components/crash/core/app/crashpad_linux.cc
-index 1abde7faf44a4526d7c622e6ce2d6fafe957a4c8..68d745567c1a0e37fa4ebc9e7e705d2a24f3e1fe 100644
+index 99e5ee6eeadb9ff12b7b027ceba4c838a8fedc6d..838ccd82b5828c1c58b3089064b7baeb35982f7e 100644
 --- a/components/crash/core/app/crashpad_linux.cc
 +++ b/components/crash/core/app/crashpad_linux.cc
-@@ -165,6 +165,7 @@ base::FilePath PlatformCrashpadInitialization(
+@@ -178,6 +178,7 @@ base::FilePath PlatformCrashpadInitialization(
      // where crash_reporter provides it's own values for lsb-release.
      annotations["lsb-release"] = base::GetLinuxDistro();
  #endif
@@ -86,7 +86,7 @@ index 1abde7faf44a4526d7c622e6ce2d6fafe957a4c8..68d745567c1a0e37fa4ebc9e7e705d2a
  
      std::vector<std::string> arguments;
      if (crash_reporter_client->ShouldMonitorCrashHandlerExpensively()) {
-@@ -186,6 +187,13 @@ base::FilePath PlatformCrashpadInitialization(
+@@ -199,6 +200,13 @@ base::FilePath PlatformCrashpadInitialization(
      }
  #endif
  

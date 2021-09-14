@@ -108,7 +108,7 @@ index ef84e04d628fb5cdbaf8fbbf84af3bf23e00c522..f1ee0bee5bfd08227a29498f8410d5d3
    }
  
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 2beb437bedf1da48c7fb788f5e77258c36bcd780..c5929642bfe856831e975512f8003feabee49b59 100644
+index c8d3c04475fe3ee60ec4671ee47c18aa78840dd1..e5d95132b4f20f17f328e41cf6d0cf839787222a 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
 @@ -1790,12 +1790,11 @@ bool Browser::IsWebContentsCreationOverridden(
@@ -232,10 +232,10 @@ index c5c5a7b63b5b3b62a9517cbef3ae23ce57a3c89c..4f1b7e88d6d2ae89a60311c8aeb1fcee
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 57072628e8dbcdce8264ad614fc225b873e9437f..dab7df116f7a420f9f676ea039a933144d15805f 100644
+index adc849b5239ea651bba8ae61674757c3b0d769e1..85f704dfc8e8643d8342cac809daedfaa2d669a7 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3693,8 +3693,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -3672,8 +3672,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
  
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,
@@ -316,10 +316,10 @@ index b794ee4204fb8eaf90084e762f80988af13609b4..ac4e00f2ef1d2a722851d88531c28e65
  }
  
 diff --git a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h
-index bb90319f768ed2f3a3e530d64bf622de585ce163..d84de1d218267887f6b8624f913438ebc4aa7a79 100644
+index 647a9bdf39c60f61cf3c9520bc7e57e206678cd0..59860dc143467168e2ce596f26c84ed8a26be6ed 100644
 --- a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h
 +++ b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h
-@@ -158,8 +158,7 @@ class MimeHandlerViewGuest
+@@ -167,8 +167,7 @@ class MimeHandlerViewGuest
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,

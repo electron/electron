@@ -11,10 +11,10 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/chrome/browser/printing/print_job.cc b/chrome/browser/printing/print_job.cc
-index bca04dcd90921e508fb0e5c8201265532e42e88f..345547f382c8984ea29483b84475c120aa58e19b 100644
+index 5e44b586937c4100e9cb55f152338a11f24eed8c..a59a948d36f2bd7939530c6cb53a1435186b0eac 100644
 --- a/chrome/browser/printing/print_job.cc
 +++ b/chrome/browser/printing/print_job.cc
-@@ -350,18 +350,25 @@ void PrintJob::StartPdfToEmfConversion(
+@@ -381,11 +381,18 @@ void PrintJob::StartPdfToEmfConversion(
    // seems to work with the fix for this bug applied.
    const PrintSettings& settings = document()->settings();
    bool print_text_with_gdi =
@@ -27,22 +27,15 @@ index bca04dcd90921e508fb0e5c8201265532e42e88f..345547f382c8984ea29483b84475c120
 +      && !settings.printer_language_is_xps() &&
        base::FeatureList::IsEnabled(::features::kGdiTextPrinting);
  
-   // TODO(thestig): Figure out why crbug.com/1083911 occurred, which is likely
-   // because `web_contents` was null. As a result, this section has many more
-   // pointer checks to avoid crashing.
 +#if 0
-   content::WebContents* web_contents = worker_->GetWebContents();
-   content::BrowserContext* context =
-       web_contents ? web_contents->GetBrowserContext() : nullptr;
-   PrefService* prefs =
-       context ? Profile::FromBrowserContext(context)->GetPrefs() : nullptr;
+   PrefService* prefs = GetPrefsForWebContents(worker_->GetWebContents());
 -  bool print_with_reduced_rasterization = PrintWithReducedRasterization(prefs);
 +#endif
 +  bool print_with_reduced_rasterization = PrintWithReducedRasterization(nullptr);
  
    using RenderMode = PdfRenderSettings::Mode;
    RenderMode mode;
-@@ -499,6 +506,10 @@ void PrintJob::OnNotifyPrintJobEvent(const JobEventDetails& event_details) {
+@@ -531,6 +538,10 @@ void PrintJob::OnNotifyPrintJobEvent(const JobEventDetails& event_details) {
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
  
    switch (event_details.type()) {
