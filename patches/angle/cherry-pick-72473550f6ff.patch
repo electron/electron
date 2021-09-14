@@ -1,7 +1,7 @@
-From 72473550f6ff98af986371f01820fefb2d6e164b Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jamie Madill <jmadill@chromium.org>
-Date: Wed, 01 Sep 2021 12:17:26 -0400
-Subject: [PATCH] D3D11: Fix overflow in GenerateInitialTextureData.
+Date: Wed, 1 Sep 2021 12:17:26 -0400
+Subject: D3D11: Fix overflow in GenerateInitialTextureData.
 
 Our use of unchecked math was causing OOB accesses with very large
 textures. Unfortunately it's not easy to make a passing test that
@@ -15,13 +15,12 @@ Commit-Queue: Jamie Madill <jmadill@chromium.org>
 (cherry picked from commit 794b13ce9f874d472729ebd69897bc7ab9340a4b)
 Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3149277
 Reviewed-by: Jamie Madill <jmadill@chromium.org>
----
 
 diff --git a/src/libANGLE/renderer/d3d/d3d11/renderer11_utils.cpp b/src/libANGLE/renderer/d3d/d3d11/renderer11_utils.cpp
-index 3915a89..6d721bd 100644
+index 8321bb60cd947349d278167ea2d0343282963268..7588a161ebae2690edc51b755981f6613ca5bb43 100644
 --- a/src/libANGLE/renderer/d3d/d3d11/renderer11_utils.cpp
 +++ b/src/libANGLE/renderer/d3d/d3d11/renderer11_utils.cpp
-@@ -2181,28 +2181,35 @@
+@@ -2179,28 +2179,35 @@ angle::Result GenerateInitialTextureData(
      const d3d11::DXGIFormatSize &dxgiFormatInfo =
          d3d11::GetDXGIFormatSizeInfo(d3dFormatInfo.texFormat);
  
