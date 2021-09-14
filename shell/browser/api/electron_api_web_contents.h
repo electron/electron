@@ -731,9 +731,6 @@ class WebContents : public gin::Wrappable<WebContents>,
   // Whether window is fullscreened by window api.
   bool native_fullscreen_ = false;
 
-  // UI related helper classes.
-  std::unique_ptr<WebDialogHelper> web_dialog_helper_;
-
   scoped_refptr<DevToolsFileSystemIndexer> devtools_file_system_indexer_;
 
   std::unique_ptr<DevToolsEyeDropper> eye_dropper_;
