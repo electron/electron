@@ -159,7 +159,7 @@ void WebContentsPreferences::Clear() {
   safe_dialogs_ = false;
   safe_dialogs_message_ = absl::nullopt;
   ignore_menu_shortcuts_ = false;
-  background_color_ = absl::nullopt;
+  background_color_ = SK_ColorTRANSPARENT;
   image_animation_policy_ =
       blink::mojom::ImageAnimationPolicy::kImageAnimationPolicyAllowed;
   preload_path_ = absl::nullopt;
