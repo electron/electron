@@ -2,3 +2,4 @@ d3d11_skip_blits_if_there_is_no_intersection_of_dest_areas.patch
 cherry-pick-3d4f87ab5b9b.patch
 cherry-pick-d8cb996.patch
 cherry-pick-1fb846c.patch
+cherry-pick-72473550f6ff.patch
