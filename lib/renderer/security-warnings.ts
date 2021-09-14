@@ -1,4 +1,3 @@
-import { webFrame } from 'electron';
 import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
@@ -70,22 +69,6 @@ const isLocalhost = function () {
   }
 
   return window.location.hostname === 'localhost';
-};
-
-/**
- * Tries to determine whether a CSP without `unsafe-eval` is set.
- *
- * @returns {boolean} Is a CSP with `unsafe-eval` set?
- */
-const isUnsafeEvalEnabled: () => Promise<boolean> = function () {
-  return webFrame.executeJavaScript(`(${(() => {
-    try {
-      eval(window.trustedTypes.emptyScript); // eslint-disable-line no-eval
-    } catch {
-      return false;
-    }
-    return true;
-  }).toString()})()`, false);
 };
 
 const moreInformation = `\nFor more information and help, consult
@@ -161,25 +144,6 @@ const warnAboutDisabledWebSecurity = function (webPreferences?: Electron.WebPref
 
   console.warn('%cElectron Security Warning (Disabled webSecurity)',
     'font-weight: bold;', warning);
-};
-
-/**
- * #6 on the checklist: Define a Content-Security-Policy and use restrictive
- * rules (i.e. script-src 'self')
- *
- * Logs a warning message about unset or insecure CSP
- */
-const warnAboutInsecureCSP = function () {
-  isUnsafeEvalEnabled().then((enabled) => {
-    if (!enabled) return;
-
-    const warning = `This renderer process has either no Content Security
-    Policy set or a policy with "unsafe-eval" enabled. This exposes users of
-    this app to unnecessary security risks.\n${moreInformation}`;
-
-    console.warn('%cElectron Security Warning (Insecure Content-Security-Policy)',
-      'font-weight: bold;', warning);
-  }).catch(() => {});
 };
 
 /**
@@ -274,7 +238,6 @@ const logSecurityWarnings = function (
   warnAboutInsecureContentAllowed(webPreferences);
   warnAboutExperimentalFeatures(webPreferences);
   warnAboutEnableBlinkFeatures(webPreferences);
-  warnAboutInsecureCSP();
   warnAboutAllowedPopups();
 };
 
