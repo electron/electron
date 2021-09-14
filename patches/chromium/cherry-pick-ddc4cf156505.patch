@@ -1,7 +1,7 @@
-From ddc4cf156505d62cb74868766c15628664cee4d8 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jiewei Qian <qjw@chromium.org>
-Date: Fri, 03 Sep 2021 04:38:53 +0000
-Subject: [PATCH] [M93 merge] webui: make WebUIAllowlist and WebUIAllowlistProvider thread-safe
+Date: Fri, 3 Sep 2021 04:38:53 +0000
+Subject: webui: make WebUIAllowlist and WebUIAllowlistProvider thread-safe
 
 This CL adds synchronization lock to WebUIAllowlist, and expose it as
 scoped_refptr, so it provides thread-safety when used in
@@ -27,10 +27,9 @@ Cr-Original-Branched-From: 35b0d5a9dc8362adfd44e2614f0d5b7402ef63d0-refs/heads/m
 Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3141052
 Cr-Commit-Position: refs/branch-heads/4577@{#1170}
 Cr-Branched-From: 761ddde228655e313424edec06497d0c56b0f3c4-refs/heads/master@{#902210}
----
 
 diff --git a/ui/webui/webui_allowlist.cc b/ui/webui/webui_allowlist.cc
-index 525848a..cd23155 100644
+index 525848a9d2f9baccc95b59581ad2aa53494c449e..cd231550094e410d26a5267427bcb578af451530 100644
 --- a/ui/webui/webui_allowlist.cc
 +++ b/ui/webui/webui_allowlist.cc
 @@ -6,7 +6,11 @@
@@ -45,7 +44,7 @@ index 525848a..cd23155 100644
  #include "content/public/common/url_constants.h"
  #include "ui/webui/webui_allowlist_provider.h"
  #include "url/gurl.h"
-@@ -19,15 +23,27 @@
+@@ -19,15 +23,27 @@ class AllowlistRuleIterator : public content_settings::RuleIterator {
    using MapType = std::map<url::Origin, ContentSetting>;
  
   public:
@@ -77,7 +76,7 @@ index 525848a..cd23155 100644
      const auto& origin = it_->first;
      const auto& setting = it_->second;
      it_++;
-@@ -38,8 +54,18 @@
+@@ -38,8 +54,18 @@ class AllowlistRuleIterator : public content_settings::RuleIterator {
    }
  
   private:
@@ -98,7 +97,7 @@ index 525848a..cd23155 100644
  };
  
  }  // namespace
-@@ -48,11 +74,14 @@
+@@ -48,11 +74,14 @@ class AllowlistRuleIterator : public content_settings::RuleIterator {
  WebUIAllowlist* WebUIAllowlist::GetOrCreate(
      content::BrowserContext* browser_context) {
    if (!browser_context->GetUserData(kWebUIAllowlistKeyName)) {
@@ -117,7 +116,7 @@ index 525848a..cd23155 100644
  }
  
  WebUIAllowlist::WebUIAllowlist() = default;
-@@ -62,6 +91,9 @@
+@@ -62,6 +91,9 @@ WebUIAllowlist::~WebUIAllowlist() = default;
  void WebUIAllowlist::RegisterAutoGrantedPermission(const url::Origin& origin,
                                                     ContentSettingsType type,
                                                     ContentSetting setting) {
@@ -127,7 +126,7 @@ index 525848a..cd23155 100644
    // It doesn't make sense to grant a default content setting.
    DCHECK_NE(CONTENT_SETTING_DEFAULT, setting);
  
-@@ -70,13 +102,16 @@
+@@ -70,13 +102,16 @@ void WebUIAllowlist::RegisterAutoGrantedPermission(const url::Origin& origin,
    DCHECK(origin.scheme() == content::kChromeUIScheme ||
           origin.scheme() == content::kChromeUIUntrustedScheme ||
           origin.scheme() == content::kChromeDevToolsScheme);
@@ -149,7 +148,7 @@ index 525848a..cd23155 100644
  
    // Notify the provider. |provider_| can be nullptr if
    // HostContentSettingsRegistry is shutting down i.e. when Chrome shuts down.
-@@ -92,25 +127,36 @@
+@@ -92,25 +127,36 @@ void WebUIAllowlist::RegisterAutoGrantedPermission(const url::Origin& origin,
  void WebUIAllowlist::RegisterAutoGrantedPermissions(
      const url::Origin& origin,
      std::initializer_list<ContentSettingsType> types) {
@@ -191,7 +190,7 @@ index 525848a..cd23155 100644
  
    return nullptr;
 diff --git a/ui/webui/webui_allowlist.h b/ui/webui/webui_allowlist.h
-index b1623b8..9c6ab47 100644
+index b1623b89f5ed12416e71d5f1505d57b74073f764..9c6ab47b16a4fcc6478e6ad4672ce5c95166156f 100644
 --- a/ui/webui/webui_allowlist.h
 +++ b/ui/webui/webui_allowlist.h
 @@ -8,7 +8,9 @@
@@ -205,7 +204,7 @@ index b1623b8..9c6ab47 100644
  #include "components/content_settings/core/browser/content_settings_rule.h"
  #include "components/content_settings/core/common/content_settings.h"
  #include "components/content_settings/core/common/content_settings_types.h"
-@@ -23,14 +25,13 @@
+@@ -23,14 +25,13 @@ class WebUIAllowlistProvider;
  // list of origins and permissions to be auto-granted to WebUIs. This class is
  // created before HostContentSettingsMap is registered and has the same lifetime
  // as the profile it's attached to. It outlives WebUIAllowlistProvider.
@@ -221,7 +220,7 @@ index b1623b8..9c6ab47 100644
  
    // Register auto-granted |type| permission for |origin|.
    //
-@@ -53,16 +54,29 @@
+@@ -53,16 +54,29 @@ class WebUIAllowlist : public base::SupportsUserData::Data {
        const url::Origin& origin,
        std::initializer_list<ContentSettingsType> types);
  
@@ -255,7 +254,7 @@ index b1623b8..9c6ab47 100644
  
  #endif  // UI_WEBUI_WEBUI_ALLOWLIST_H_
 diff --git a/ui/webui/webui_allowlist_provider.cc b/ui/webui/webui_allowlist_provider.cc
-index 779e802..055a3cf3 100644
+index 779e8022fce378d2a64c78e6e20c36202e9261ac..055a3cf3934ed43373a4a3fdd4166bd3c096e922 100644
 --- a/ui/webui/webui_allowlist_provider.cc
 +++ b/ui/webui/webui_allowlist_provider.cc
 @@ -7,8 +7,9 @@
@@ -270,7 +269,7 @@ index 779e802..055a3cf3 100644
    DCHECK(allowlist_);
    allowlist_->SetWebUIAllowlistProvider(this);
  }
-@@ -16,12 +17,8 @@
+@@ -16,12 +17,8 @@ WebUIAllowlistProvider::WebUIAllowlistProvider(WebUIAllowlist* allowlist)
  WebUIAllowlistProvider::~WebUIAllowlistProvider() = default;
  
  std::unique_ptr<content_settings::RuleIterator>
@@ -285,7 +284,7 @@ index 779e802..055a3cf3 100644
    return allowlist_->GetRuleIterator(content_type);
  }
  
-@@ -48,7 +45,8 @@
+@@ -48,7 +45,8 @@ void WebUIAllowlistProvider::ClearAllContentSettingsRules(
  }
  
  void WebUIAllowlistProvider::ShutdownOnUIThread() {
@@ -296,7 +295,7 @@ index 779e802..055a3cf3 100644
 -  allowlist_ = nullptr;
  }
 diff --git a/ui/webui/webui_allowlist_provider.h b/ui/webui/webui_allowlist_provider.h
-index 9f7f977..c18f64e 100644
+index 9f7f9776fd6e8212d3dbd196698b036f24f75f2e..c18f64e6f2051091f40504c2ba47feb62103aee3 100644
 --- a/ui/webui/webui_allowlist_provider.h
 +++ b/ui/webui/webui_allowlist_provider.h
 @@ -5,6 +5,8 @@
@@ -308,7 +307,7 @@ index 9f7f977..c18f64e 100644
  #include "components/content_settings/core/browser/content_settings_observable_provider.h"
  #include "components/content_settings/core/common/content_settings.h"
  #include "ui/webui/webui_allowlist.h"
-@@ -15,8 +17,7 @@
+@@ -15,8 +17,7 @@ class ContentSettingsPattern;
  // permissions from the underlying WebUIAllowlist.
  class WebUIAllowlistProvider : public content_settings::ObservableProvider {
   public:
@@ -318,7 +317,7 @@ index 9f7f977..c18f64e 100644
    WebUIAllowlistProvider(const WebUIAllowlistProvider&) = delete;
    void operator=(const WebUIAllowlistProvider&) = delete;
    ~WebUIAllowlistProvider() override;
-@@ -27,6 +28,7 @@
+@@ -27,6 +28,7 @@ class WebUIAllowlistProvider : public content_settings::ObservableProvider {
        ContentSettingsType content_type);
  
    // content_settings::ObservableProvider:
@@ -326,7 +325,7 @@ index 9f7f977..c18f64e 100644
    std::unique_ptr<content_settings::RuleIterator> GetRuleIterator(
        ContentSettingsType content_type,
        bool incognito) const override;
-@@ -40,7 +42,7 @@
+@@ -40,7 +42,7 @@ class WebUIAllowlistProvider : public content_settings::ObservableProvider {
    void ClearAllContentSettingsRules(ContentSettingsType content_type) override;
  
   private:
