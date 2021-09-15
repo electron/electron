@@ -101,10 +101,10 @@ index fc8916ac6dc76968e0cbd06877ffb80c95f3abf4..18f0ea3b8ea34f6287e92299ef147bcc
  
  void RenderWidgetHostImpl::AutoscrollStart(const gfx::PointF& position) {
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 14eadcb063b2b9d4734db3d6160f320ab26ffe04..812b46c79c708be046332949b83de6f87c2fee7a 100644
+index ca51a8a45570fafc0dfe2b400cbb7172a9be632d..835a100a98882e3fff1e679ed596171ce865a653 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -7858,10 +7858,22 @@ gfx::Size WebContentsImpl::GetSize() {
+@@ -7872,10 +7872,22 @@ gfx::Size WebContentsImpl::GetSize() {
  
  #endif  // !defined(OS_MAC)
  
@@ -155,7 +155,7 @@ index 17034e75d2ab5bd4e716e9c72277c77a53387808..3e32a9b4e17bb515066acaf014d1fe65
    // preferred contrast. Used to notify the renderer of preferred color scheme
    // and preferred contrast changes.
 diff --git a/content/browser/web_contents/web_contents_impl_browsertest.cc b/content/browser/web_contents/web_contents_impl_browsertest.cc
-index cd32d333d2810fde1fc25c80b2bc443b04568c8d..15c05ce95a0e4df1003bea6992258a1d0a81950e 100644
+index 2e75cbf168dbfa48d9f094ed84398197fd0487aa..73dc93a8afd6fa1ff38e900590681e22d43f7ca4 100644
 --- a/content/browser/web_contents/web_contents_impl_browsertest.cc
 +++ b/content/browser/web_contents/web_contents_impl_browsertest.cc
 @@ -43,6 +43,7 @@
@@ -174,7 +174,7 @@ index cd32d333d2810fde1fc25c80b2bc443b04568c8d..15c05ce95a0e4df1003bea6992258a1d
  #include "third_party/blink/public/mojom/frame/fullscreen.mojom.h"
  #include "ui/base/clipboard/clipboard_format_type.h"
  #include "url/gurl.h"
-@@ -4440,19 +4442,74 @@ class WebContentsImplBrowserTestWindowControlsOverlay
+@@ -4466,19 +4468,74 @@ class WebContentsImplBrowserTestWindowControlsOverlay
    }
  
    void ValidateTitlebarAreaCSSValue(const std::string& name,
@@ -254,7 +254,7 @@ index cd32d333d2810fde1fc25c80b2bc443b04568c8d..15c05ce95a0e4df1003bea6992258a1d
   private:
    base::test::ScopedFeatureList scoped_feature_list_;
  };
-@@ -4474,24 +4531,12 @@ IN_PROC_BROWSER_TEST_F(WebContentsImplBrowserTestWindowControlsOverlay,
+@@ -4500,24 +4557,12 @@ IN_PROC_BROWSER_TEST_F(WebContentsImplBrowserTestWindowControlsOverlay,
    // empty.
    int empty_rect_value = 0;
  
@@ -285,7 +285,7 @@ index cd32d333d2810fde1fc25c80b2bc443b04568c8d..15c05ce95a0e4df1003bea6992258a1d
  
    // When the overlay is not visble, the environment variables should be
    // undefined, and the the fallback value of 50px should be used.
-@@ -4509,31 +4554,15 @@ IN_PROC_BROWSER_TEST_F(WebContentsImplBrowserTestWindowControlsOverlay,
+@@ -4535,31 +4580,15 @@ IN_PROC_BROWSER_TEST_F(WebContentsImplBrowserTestWindowControlsOverlay,
    gfx::Rect bounding_client_rect =
        gfx::Rect(new_x, new_y, new_width, new_height);
  
@@ -326,7 +326,7 @@ index cd32d333d2810fde1fc25c80b2bc443b04568c8d..15c05ce95a0e4df1003bea6992258a1d
  }
  
  IN_PROC_BROWSER_TEST_F(WebContentsImplBrowserTestWindowControlsOverlay,
-@@ -4542,14 +4571,16 @@ IN_PROC_BROWSER_TEST_F(WebContentsImplBrowserTestWindowControlsOverlay,
+@@ -4568,14 +4597,16 @@ IN_PROC_BROWSER_TEST_F(WebContentsImplBrowserTestWindowControlsOverlay,
  
    GURL url(url::kAboutBlankURL);
    EXPECT_TRUE(NavigateToURL(shell(), url));
@@ -351,7 +351,7 @@ index cd32d333d2810fde1fc25c80b2bc443b04568c8d..15c05ce95a0e4df1003bea6992258a1d
  
    WaitForLoadStop(web_contents);
  
-@@ -4558,23 +4589,107 @@ IN_PROC_BROWSER_TEST_F(WebContentsImplBrowserTestWindowControlsOverlay,
+@@ -4584,23 +4615,107 @@ IN_PROC_BROWSER_TEST_F(WebContentsImplBrowserTestWindowControlsOverlay,
    EXPECT_EQ(0, EvalJs(web_contents, "geometrychangeCount"));
  
    // Information about the bounds should be updated.

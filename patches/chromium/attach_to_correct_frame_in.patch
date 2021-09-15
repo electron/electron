@@ -216,7 +216,7 @@ index cd6c90f3b7f77de0df9de1228628cde8c4333b98..e414a1665d43cc773850b23b6fcd568f
    // IPC::Sender
    bool Send(IPC::Message* msg) override;
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 812b46c79c708be046332949b83de6f87c2fee7a..835a100a98882e3fff1e679ed596171ce865a653 100644
+index 14eadcb063b2b9d4734db3d6160f320ab26ffe04..ca51a8a45570fafc0dfe2b400cbb7172a9be632d 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -2164,6 +2164,7 @@ void WebContentsImpl::AttachInnerWebContents(
@@ -258,10 +258,10 @@ index 812b46c79c708be046332949b83de6f87c2fee7a..835a100a98882e3fff1e679ed596171c
    RecursivelyRegisterFrameSinkIds();
  
 diff --git a/content/browser/web_contents/web_contents_impl_browsertest.cc b/content/browser/web_contents/web_contents_impl_browsertest.cc
-index 15c05ce95a0e4df1003bea6992258a1d0a81950e..73dc93a8afd6fa1ff38e900590681e22d43f7ca4 100644
+index cd32d333d2810fde1fc25c80b2bc443b04568c8d..2e75cbf168dbfa48d9f094ed84398197fd0487aa 100644
 --- a/content/browser/web_contents/web_contents_impl_browsertest.cc
 +++ b/content/browser/web_contents/web_contents_impl_browsertest.cc
-@@ -3552,44 +3552,70 @@ IN_PROC_BROWSER_TEST_F(WebContentsImplBrowserTest, SetVisibilityBeforeLoad) {
+@@ -3550,44 +3550,70 @@ IN_PROC_BROWSER_TEST_F(WebContentsImplBrowserTest, SetVisibilityBeforeLoad) {
  IN_PROC_BROWSER_TEST_F(WebContentsImplBrowserTest,
                         AttachNestedInnerWebContents) {
    ASSERT_TRUE(embedded_test_server()->Start());
