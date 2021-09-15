@@ -63,8 +63,11 @@ using FullScreenTransitionState =
 // menu to determine the "standard size" of the window.
 - (NSRect)windowWillUseStandardFrame:(NSWindow*)window
                         defaultFrame:(NSRect)frame {
-  if (!shell_->zoom_to_page_width())
+  if (!shell_->zoom_to_page_width()) {
+    if (shell_->GetAspectRatio() > 0.0)
+      shell_->set_default_frame_for_zoom(frame);
     return frame;
+  }
 
   // If the shift key is down, maximize.
   if ([[NSApp currentEvent] modifierFlags] & NSShiftKeyMask)
@@ -88,6 +91,9 @@ using FullScreenTransitionState =
 
   // Set the width. Don't touch y or height.
   frame.size.width = zoomed_width;
+
+  if (shell_->GetAspectRatio() > 0.0)
+    shell_->set_default_frame_for_zoom(frame);
 
   return frame;
 }
