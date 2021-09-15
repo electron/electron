@@ -21,8 +21,6 @@ const isLoaded = (event: Event, level: number, message: string) => {
 describe('security warnings', () => {
   let server: http.Server;
   let w: BrowserWindow;
-  let useCsp = true;
-  let useTrustedTypes = false;
   let serverUrl: string;
 
   before((done) => {
@@ -49,11 +47,6 @@ describe('security warnings', () => {
             return;
           }
 
-          const cspHeaders = [
-            ...(useCsp ? ['script-src \'self\' \'unsafe-inline\''] : []),
-            ...(useTrustedTypes ? ['require-trusted-types-for \'script\'; trusted-types *'] : [])
-          ];
-          response.writeHead(200, { 'Content-Security-Policy': cspHeaders });
           response.write(file, 'binary');
           response.end();
         });
@@ -71,8 +64,6 @@ describe('security warnings', () => {
   });
 
   afterEach(async () => {
-    useCsp = true;
-    useTrustedTypes = false;
     await closeWindow(w);
     w = null as unknown as any;
   });
@@ -118,31 +109,6 @@ describe('security warnings', () => {
         w.loadURL(`${serverUrl}/base-page-security.html`);
         const [,, message] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning);
         expect(message).to.include('Disabled webSecurity');
-      });
-
-      it('should warn about insecure Content-Security-Policy', async () => {
-        w = new BrowserWindow({
-          show: false,
-          webPreferences
-        });
-
-        useCsp = false;
-        w.loadURL(`${serverUrl}/base-page-security.html`);
-        const [,, message] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning);
-        expect(message).to.include('Insecure Content-Security-Policy');
-      });
-
-      it('should warn about insecure Content-Security-Policy (Trusted Types)', async () => {
-        w = new BrowserWindow({
-          show: false,
-          webPreferences
-        });
-
-        useCsp = false;
-        useTrustedTypes = true;
-        w.loadURL(`${serverUrl}/base-page-security.html`);
-        const [,, message] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning);
-        expect(message).to.include('Insecure Content-Security-Policy');
       });
 
       it('should warn about allowRunningInsecureContent', async () => {
