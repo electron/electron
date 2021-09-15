@@ -90,6 +90,10 @@ declare namespace Electron {
     _postMessage(channel: string, message: any, transfer?: any[]): void;
   }
 
+  interface WebFrame {
+    _isEvalAllowed(): boolean;
+  }
+
   interface WebPreferences {
     openerId?: number | null;
     disablePopups?: boolean;
