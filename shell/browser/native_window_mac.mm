@@ -630,16 +630,20 @@ void NativeWindowMac::Unmaximize() {
 }
 
 bool NativeWindowMac::IsMaximized() {
-  if (([window_ styleMask] & NSWindowStyleMaskResizable) != 0) {
+  if (([window_ styleMask] & NSWindowStyleMaskResizable) != 0)
     return [window_ isZoomed];
-  } else {
-    NSRect rectScreen = [[NSScreen mainScreen] visibleFrame];
-    NSRect rectWindow = [window_ frame];
-    return (rectScreen.origin.x == rectWindow.origin.x &&
-            rectScreen.origin.y == rectWindow.origin.y &&
-            rectScreen.size.width == rectWindow.size.width &&
-            rectScreen.size.height == rectWindow.size.height);
-  }
+
+  NSRect rectScreen = [[NSScreen mainScreen] visibleFrame];
+  NSRect rectWindow = [window_ frame];
+
+  // If there's an aspect ratio set, update the maximum bounds of the screen.
+  if (GetAspectRatio() > 0.0)
+    rectScreen = default_frame_for_zoom();
+
+  return (rectScreen.origin.x == rectWindow.origin.x &&
+          rectScreen.origin.y == rectWindow.origin.y &&
+          rectScreen.size.width == rectWindow.size.width &&
+          rectScreen.size.height == rectWindow.size.height);
 }
 
 void NativeWindowMac::Minimize() {
