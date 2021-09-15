@@ -11,10 +11,10 @@ if we ever align our .pak file generation with Chrome we can remove this
 patch.
 
 diff --git a/chrome/BUILD.gn b/chrome/BUILD.gn
-index 75cce1f099f9b1fa5f0b975118ee581e3e19d934..dfb249e97356a233955a75f9aa55f476d712056f 100644
+index b33742b1f94341b413b10c663a50e0e13bb9751d..d6519234efa49630d3caa1ad296ec60b66aaaa79 100644
 --- a/chrome/BUILD.gn
 +++ b/chrome/BUILD.gn
-@@ -165,11 +165,16 @@ if (!is_android && !is_mac) {
+@@ -171,11 +171,16 @@ if (!is_android && !is_mac) {
          "common/crash_keys.h",
        ]
  
@@ -33,10 +33,10 @@ index 75cce1f099f9b1fa5f0b975118ee581e3e19d934..dfb249e97356a233955a75f9aa55f476
          "//base",
          "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index 29adb224cf04856649e3a294f5854c4d5008a123..a40c5809396ebe85901ce283b911d8b4134aa86c 100644
+index 539493512ea31fdbe4deac8cdfa5ec67b07cb7ce..ee3fb3ebe6ef84c5337f70b39b6f9bc81bacabcd 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -4414,7 +4414,7 @@ static_library("browser") {
+@@ -4411,7 +4411,7 @@ static_library("browser") {
  
      # On Windows, the hashes are embedded in //chrome:chrome_initial rather
      # than here in :chrome_dll.
@@ -46,7 +46,7 @@ index 29adb224cf04856649e3a294f5854c4d5008a123..a40c5809396ebe85901ce283b911d8b4
      }
  
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index db636e64f4b7bf63ac239dead4ee2cf28d99f82f..0b5894c633740db81123734c4d9aa495cc05ff9e 100644
+index 72b9ba5d7eb4f41473c596edb59c4e16fe114cfa..e6da521f16c57d01b7ce34cb83d64a7ea489bba9 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
 @@ -5450,7 +5450,6 @@ test("unit_tests") {
@@ -70,7 +70,7 @@ index db636e64f4b7bf63ac239dead4ee2cf28d99f82f..0b5894c633740db81123734c4d9aa495
    }
  
    # TODO(crbug.com/931218): Ninja cannot handle certain characters appearing
-@@ -6048,7 +6053,6 @@ test("unit_tests") {
+@@ -6053,7 +6058,6 @@ test("unit_tests") {
      }
  
      deps += [
@@ -78,7 +78,7 @@ index db636e64f4b7bf63ac239dead4ee2cf28d99f82f..0b5894c633740db81123734c4d9aa495
        "//chrome/browser:cart_db_content_proto",
        "//chrome/browser/media/router:test_support",
        "//chrome/browser/resource_coordinator:intervention_policy_database_proto",
-@@ -6084,6 +6088,9 @@ test("unit_tests") {
+@@ -6089,6 +6093,9 @@ test("unit_tests") {
        "//ui/native_theme:test_support",
        "//ui/webui/resources/js/browser_command:mojo_bindings",
      ]
