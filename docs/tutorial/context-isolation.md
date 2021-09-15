@@ -14,7 +14,7 @@ Context isolation has been enabled by default since Electron 12, and it is a rec
 
 ### Before: context isolation disabled
 
-Exposing APIs from your preload script to loaded website in the renderer process is a common usecase. With context isolation disabled, your preload script would share a common global `window` object with the renderer. You could then attach arbritrary properties to a preload script like so:
+Exposing APIs from your preload script to a loaded website in the renderer process is a common use-case. With context isolation disabled, your preload script would share a common global `window` object with the renderer. You could then attach arbitrary properties to a preload script:
 
 ```javascript title='preload.js'
 // preload with contextIsolation disabled
@@ -48,7 +48,7 @@ contextBridge.exposeInMainWorld('myAPI', {
 window.myAPI.doAThing()
 ```
 
-You should read the `contextBridge` documentation linked above to fully understand its limitations. For instance, you can't send custom prototypes or symbols over the bridge.
+Please read the `contextBridge` documentation linked above to fully understand its limitations. For instance, you can't send custom prototypes or symbols over the bridge.
 
 ## Security considerations
 
@@ -85,7 +85,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 You can create a `renderer.d.ts` declaration file and globally augment the `Window` interface:
 
 ```typescript title='renderer.d.ts'
-export interface ElectronAPI {
+export interface IElectronAPI {
   loadPreferences: () => Promise<void>,
 }
 
