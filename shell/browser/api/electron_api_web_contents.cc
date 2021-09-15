@@ -1426,6 +1426,10 @@ void WebContents::RenderFrameDeleted(
   // - Cross-origin navigation creates a new RFH in a separate process which
   //   is swapped by content::RenderFrameHostManager.
   //
+
+  // clear out objects that have been granted permissions
+  granted_devices_.clear();
+
   // WebFrameMain::FromRenderFrameHost(rfh) will use the RFH's FrameTreeNode ID
   // to find an existing instance of WebFrameMain. During a cross-origin
   // navigation, the deleted RFH will be the old host which was swapped out. In
@@ -1438,6 +1442,8 @@ void WebContents::RenderFrameDeleted(
 
 void WebContents::RenderFrameHostChanged(content::RenderFrameHost* old_host,
                                          content::RenderFrameHost* new_host) {
+  // clear out objects that have been granted permissions
+  granted_devices_.clear();
   // During cross-origin navigation, a FrameTreeNode will swap out its RFH.
   // If an instance of WebFrameMain exists, it will need to have its RFH
   // swapped as well.
@@ -1726,9 +1732,6 @@ void WebContents::ReadyToCommitNavigation(
 
 void WebContents::DidFinishNavigation(
     content::NavigationHandle* navigation_handle) {
-  // clear out objects that have been granted permissions
-  granted_devices_.clear();
-
   if (owner_window_) {
     owner_window_->NotifyLayoutWindowControlsOverlay();
   }

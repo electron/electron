@@ -1881,11 +1881,19 @@ describe('navigator.bluetooth', () => {
 
 describe('navigator.hid', () => {
   let w: BrowserWindow;
+  let server: http.Server;
+  let serverUrl: string;
   before(async () => {
     w = new BrowserWindow({
       show: false
     });
     await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+    server = http.createServer((req, res) => {
+      res.setHeader('Content-Type', 'text/html');
+      res.end('<body>');
+    });
+    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+    serverUrl = `http://localhost:${(server.address() as any).port}`;
   });
 
   const getDevices: any = () => {
@@ -1894,7 +1902,10 @@ describe('navigator.hid', () => {
     `, true);
   };
 
-  after(closeAllWindows);
+  after(() => {
+    server.close();
+    closeAllWindows();
+  });
   afterEach(() => {
     session.defaultSession.setPermissionCheckHandler(null);
     session.defaultSession.setDevicePermissionHandler(null);
@@ -1945,8 +1956,7 @@ describe('navigator.hid', () => {
       // Verify that navigation will clear device permissions
       const grantedDevices = await w.webContents.executeJavaScript('navigator.hid.getDevices()');
       expect(grantedDevices).to.not.be.empty();
-      const altFixturesPath = path.resolve(__dirname, 'fixtures');
-      w.loadFile(path.join(altFixturesPath, 'blank.html'));
+      w.loadURL(serverUrl);
       const [,,,,, frameProcessId, frameRoutingId] = await emittedOnce(w.webContents, 'did-frame-navigate');
       const frame = webFrameMain.fromId(frameProcessId, frameRoutingId);
       expect(frame).to.not.be.empty();
