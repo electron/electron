@@ -1435,7 +1435,7 @@ void WebContents::RenderFrameDeleted(
 
   // clear out objects that have been granted permissions
   if (!granted_devices_.empty()) {
-    granted_devices_[render_frame_host->GetFrameTreeNodeId()].clear();
+    granted_devices_.erase(render_frame_host->GetFrameTreeNodeId());
   }
 
   // WebFrameMain::FromRenderFrameHost(rfh) will use the RFH's FrameTreeNode ID
