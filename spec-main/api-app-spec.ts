@@ -12,8 +12,6 @@ import { closeWindow, closeAllWindows } from './window-helpers';
 import { ifdescribe, ifit } from './spec-helpers';
 import split = require('split')
 
-const features = process._linkedBinding('electron_common_features');
-
 const fixturesPath = path.resolve(__dirname, '../spec/fixtures');
 
 describe('electron module', () => {
@@ -461,25 +459,6 @@ describe('app module', () => {
       const [, webContents, details] = await emitted;
       expect(webContents).to.equal(w.webContents);
       expect(details.reason).to.be.oneOf(['crashed', 'abnormal-exit']);
-    });
-
-    ifdescribe(features.isDesktopCapturerEnabled())('desktopCapturer module filtering', () => {
-      it('should emit desktop-capturer-get-sources event when desktopCapturer.getSources() is invoked', async () => {
-        w = new BrowserWindow({
-          show: false,
-          webPreferences: {
-            nodeIntegration: true,
-            contextIsolation: false
-          }
-        });
-        await w.loadURL('about:blank');
-
-        const promise = emittedOnce(app, 'desktop-capturer-get-sources');
-        w.webContents.executeJavaScript('require(\'electron\').desktopCapturer.getSources({ types: [\'screen\'] })');
-
-        const [, webContents] = await promise;
-        expect(webContents).to.equal(w.webContents);
-      });
     });
   });
 
