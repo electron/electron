@@ -1,0 +1,119 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Vladimir Levin <vmpstr@chromium.org>
+Date: Tue, 7 Sep 2021 21:32:03 +0000
+Subject: content-visibility: Force range base/extent when computing visual
+ selection.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Some of the code that does visual selection ends up updating style and
+layout for node. This means that it will temporarily unlock c-v nodes
+and may cause a state rewind from layout clean to visual update pending.
+
+That's not an operation we support, verified by DCHECKs. So, instead
+we should unlock any c-v nodes prior to getting to layout clean.
+
+R=​chrishtr@chromium.org, yosin@chromium.org
+
+(cherry picked from commit 484bc1abffcdee33648695244c86daca15ab6539)
+
+Bug: 1237533
+Change-Id: Ib30036c4536bea3da2ae4fa54c19ad5684829597
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3114230
+Commit-Queue: Yoshifumi Inoue <yosin@chromium.org>
+Reviewed-by: Chris Harrelson <chrishtr@chromium.org>
+Reviewed-by: Yoshifumi Inoue <yosin@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#914631}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3145452
+Auto-Submit: vmpstr <vmpstr@chromium.org>
+Commit-Queue: Chris Harrelson <chrishtr@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4515@{#2115}
+Cr-Branched-From: 488fc70865ddaa05324ac00a54a6eb783b4bc41c-refs/heads/master@{#885287}
+
+diff --git a/third_party/blink/renderer/core/display_lock/display_lock_utilities.cc b/third_party/blink/renderer/core/display_lock/display_lock_utilities.cc
+index bebc5dbeb82cdbe5803b547686b246229d9b41b8..1106cb73f0ffe789c48d2048006771effa0f01ae 100644
+--- a/third_party/blink/renderer/core/display_lock/display_lock_utilities.cc
++++ b/third_party/blink/renderer/core/display_lock/display_lock_utilities.cc
+@@ -173,6 +173,9 @@ DisplayLockUtilities::ScopedForcedUpdate::Impl::Impl(const Node* node,
+   if (!RuntimeEnabledFeatures::CSSContentVisibilityEnabled())
+     return;
+ 
++  if (!node_)
++    return;
++
+   auto* owner_node = GetFrameOwnerNode(node);
+   if (owner_node)
+     parent_frame_impl_ = MakeGarbageCollected<Impl>(owner_node, true);
+@@ -215,6 +218,8 @@ DisplayLockUtilities::ScopedForcedUpdate::Impl::Impl(const Node* node,
+ }
+ 
+ void DisplayLockUtilities::ScopedForcedUpdate::Impl::Destroy() {
++  if (!node_)
++    return;
+   if (RuntimeEnabledFeatures::CSSContentVisibilityEnabled())
+     node_->GetDocument().GetDisplayLockDocumentState().EndNodeForcedScope(this);
+   if (parent_frame_impl_)
+diff --git a/third_party/blink/renderer/core/display_lock/display_lock_utilities.h b/third_party/blink/renderer/core/display_lock/display_lock_utilities.h
+index 6e6839e2c1222a6f05d89dca97e7513989476165..022ac073ca6eb92023014933f2f1d12d774f8a30 100644
+--- a/third_party/blink/renderer/core/display_lock/display_lock_utilities.h
++++ b/third_party/blink/renderer/core/display_lock/display_lock_utilities.h
+@@ -8,6 +8,7 @@
+ #include "third_party/blink/renderer/core/core_export.h"
+ #include "third_party/blink/renderer/core/display_lock/display_lock_context.h"
+ #include "third_party/blink/renderer/core/editing/ephemeral_range.h"
++#include "third_party/blink/renderer/core/editing/frame_selection.h"
+ #include "third_party/blink/renderer/platform/wtf/allocator/allocator.h"
+ 
+ namespace blink {
+@@ -51,6 +52,8 @@ class CORE_EXPORT DisplayLockUtilities {
+     friend void Document::EnsurePaintLocationDataValidForNode(
+         const Node* node,
+         DocumentUpdateReason reason);
++    friend VisibleSelection
++    FrameSelection::ComputeVisibleSelectionInDOMTreeDeprecated() const;
+ 
+     friend class DisplayLockContext;
+ 
+diff --git a/third_party/blink/renderer/core/editing/frame_selection.cc b/third_party/blink/renderer/core/editing/frame_selection.cc
+index d0133cc8da39300c4fc3b5ae225afd9e3aeceeca..f59557caeb9fa1bc460e199a7dae8d218d27c089 100644
+--- a/third_party/blink/renderer/core/editing/frame_selection.cc
++++ b/third_party/blink/renderer/core/editing/frame_selection.cc
+@@ -158,6 +158,10 @@ VisibleSelection FrameSelection::ComputeVisibleSelectionInDOMTreeDeprecated()
+     const {
+   // TODO(editing-dev): Hoist UpdateStyleAndLayout
+   // to caller. See http://crbug.com/590369 for more details.
++  DisplayLockUtilities::ScopedForcedUpdate base_scope(
++      GetSelectionInDOMTree().Base().AnchorNode());
++  DisplayLockUtilities::ScopedForcedUpdate extent_scope(
++      GetSelectionInDOMTree().Extent().AnchorNode());
+   GetDocument().UpdateStyleAndLayout(DocumentUpdateReason::kSelection);
+   return ComputeVisibleSelectionInDOMTree();
+ }
+diff --git a/third_party/blink/web_tests/external/wpt/css/css-contain/content-visibility/meter-selection-crash.html b/third_party/blink/web_tests/external/wpt/css/css-contain/content-visibility/meter-selection-crash.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..9edca97568e288c0231ac942eeadfe397ea9e00f
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/css/css-contain/content-visibility/meter-selection-crash.html
+@@ -0,0 +1,21 @@
++<!doctype HTML>
++<link rel=author href="mailto:vmpstr@chromium.org">
++<link rel="help" href="https://drafts.csswg.org/css-contain/#content-visibility">
++<meta name="assert" content="meter, iframe, and selection API should not crash">
++
++<style>
++* {
++  all: initial;
++  content-visibility: hidden;
++}
++</style>
++
++<meter></meter><iframe id="frame"></iframe>
++<script>
++function runTest() {
++  var range_beadc = window.getSelection();
++  var elem1 = document.getElementById("frame");
++  range_beadc.setBaseAndExtent(elem1, 0, document.getElementById("none"), 0);
++}
++onload = runTest;
++</script>
