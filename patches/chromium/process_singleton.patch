@@ -219,10 +219,10 @@ index dc9c1b76a1c7c8b3fa83fc83788eef36d2cfa4a5..31b387ca3cae53c94d8a7baefaeb17f3
    return true;
  }
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index f1732f042c3bfd9d5d95a4208664f9252b2aab73..875269776e45c96ac43a3430768f1406c9608dd3 100644
+index 8a72b51937bd6dea0b1d6f5f5faebb6106d2692f..5d30f70c4cf6e9d6bcef96941a46d96ad51b4f34 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
-@@ -27,7 +27,9 @@
+@@ -28,7 +28,9 @@
  #include "base/win/windows_version.h"
  #include "base/win/wmi.h"
  #include "chrome/browser/shell_integration.h"
@@ -232,7 +232,7 @@ index f1732f042c3bfd9d5d95a4208664f9252b2aab73..875269776e45c96ac43a3430768f1406
  #include "chrome/browser/win/chrome_process_finder.h"
  #include "chrome/common/chrome_constants.h"
  #include "chrome/common/chrome_paths.h"
-@@ -175,10 +177,15 @@ bool ProcessLaunchNotification(
+@@ -176,10 +178,15 @@ bool ProcessLaunchNotification(
  }
  
  bool DisplayShouldKillMessageBox() {
@@ -248,7 +248,7 @@ index f1732f042c3bfd9d5d95a4208664f9252b2aab73..875269776e45c96ac43a3430768f1406
  }
  
  void SendRemoteProcessInteractionResultHistogram(
-@@ -260,9 +267,13 @@ bool ProcessSingleton::EscapeVirtualization(
+@@ -261,9 +268,13 @@ bool ProcessSingleton::EscapeVirtualization(
  }
  
  ProcessSingleton::ProcessSingleton(
@@ -262,7 +262,7 @@ index f1732f042c3bfd9d5d95a4208664f9252b2aab73..875269776e45c96ac43a3430768f1406
        is_virtualized_(false),
        lock_file_(INVALID_HANDLE_VALUE),
        user_data_dir_(user_data_dir),
-@@ -366,11 +377,14 @@ ProcessSingleton::NotifyOtherProcessOrCreate() {
+@@ -368,11 +379,14 @@ ProcessSingleton::NotifyOtherProcessOrCreate() {
    return PROFILE_IN_USE;
  }
  
@@ -278,7 +278,7 @@ index f1732f042c3bfd9d5d95a4208664f9252b2aab73..875269776e45c96ac43a3430768f1406
  
    remote_window_ = chrome::FindRunningChromeWindow(user_data_dir_);
    if (!remote_window_ && !EscapeVirtualization(user_data_dir_)) {
-@@ -379,7 +393,7 @@ bool ProcessSingleton::Create() {
+@@ -381,7 +395,7 @@ bool ProcessSingleton::Create() {
      // access. As documented, it's clearer to NOT request ownership on creation
      // since it isn't guaranteed we will get it. It is better to create it
      // without ownership and explicitly get the ownership afterward.
@@ -287,7 +287,7 @@ index f1732f042c3bfd9d5d95a4208664f9252b2aab73..875269776e45c96ac43a3430768f1406
      if (!only_me.IsValid()) {
        DPLOG(FATAL) << "CreateMutex failed";
        return false;
-@@ -418,6 +432,17 @@ bool ProcessSingleton::Create() {
+@@ -420,6 +434,17 @@ bool ProcessSingleton::Create() {
              window_.CreateNamed(base::BindRepeating(&ProcessLaunchNotification,
                                                      notification_callback_),
                                  user_data_dir_.value());
