@@ -350,17 +350,13 @@ source_set("plugins") {
   sources += [
     "//chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc",
     "//chrome/renderer/pepper/chrome_renderer_pepper_host_factory.h",
+    "//chrome/renderer/pepper/pepper_flash_font_file_host.cc",
+    "//chrome/renderer/pepper/pepper_flash_font_file_host.h",
     "//chrome/renderer/pepper/pepper_shared_memory_message_filter.cc",
     "//chrome/renderer/pepper/pepper_shared_memory_message_filter.h",
   ]
   if (enable_pdf_viewer) {
-    sources += [
-      "//chrome/renderer/pepper/pepper_flash_font_file_host.cc",
-      "//chrome/renderer/pepper/pepper_flash_font_file_host.h",
-    ]
-    if (enable_pdf_viewer) {
-      deps += [ "//components/pdf/renderer" ]
-    }
+    deps += [ "//components/pdf/renderer" ]
   }
   deps += [
     "//components/strings",
