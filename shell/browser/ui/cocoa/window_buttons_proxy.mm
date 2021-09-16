@@ -191,6 +191,10 @@
   return result;
 }
 
+- (gfx::Point)getMargin {
+  return margin_;
+}
+
 // Receive the titlebar container, which might be nil if the window does not
 // have the NSWindowStyleMaskTitled style.
 - (NSView*)titleBarContainer {

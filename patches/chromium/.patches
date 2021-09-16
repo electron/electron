@@ -135,3 +135,4 @@ cherry-pick-d727013bb543.patch
 pa_make_getusablesize_handle_nullptr_gracefully.patch
 m93_indexeddb_add_browser-side_checks_for_committing_transactions.patch
 m93_indexeddb_don_t_reportbadmessage_for_commit_calls.patch
+cherry-pick-8623d711677d.patch
