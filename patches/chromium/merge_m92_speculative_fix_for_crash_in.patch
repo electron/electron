@@ -1,0 +1,527 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Clark DuVall <cduvall@chromium.org>
+Date: Fri, 20 Aug 2021 00:52:03 +0000
+Subject: Speculative fix for crash in URLLoader::OnBeforeSendHeadersComplete
+
+I wasn't able to reproduce the crash, but this should prevent crashing
+when accessing an invalid pointer for the HttpRequestHeaders. Instead of
+passing a raw pointer, OnBeforeStartTransaction will now take optional
+headers in the callback to modify the extra headers. If the job has been
+destroyed, the callback will not be run since it was bound with a
+WeakPtr to the job.
+
+(cherry picked from commit c06b3928469bfd0e0a9fa6045b95a7be70ef393f)
+
+Bug: 1221047
+Change-Id: I93d5838b778e7283f7043fd2c841844941f52a85
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3042975
+Commit-Queue: Clark DuVall <cduvall@chromium.org>
+Reviewed-by: Matt Mueller <mattm@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#905539}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3108058
+Auto-Submit: Clark DuVall <cduvall@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4515@{#2070}
+Cr-Branched-From: 488fc70865ddaa05324ac00a54a6eb783b4bc41c-refs/heads/master@{#885287}
+
+diff --git a/net/base/network_delegate.cc b/net/base/network_delegate.cc
+index 02e2fba808247bbe6379c236fec158e7d50e4ed8..be05286516cef07fe39c453fa811ff15a23e0e40 100644
+--- a/net/base/network_delegate.cc
++++ b/net/base/network_delegate.cc
+@@ -35,14 +35,13 @@ int NetworkDelegate::NotifyBeforeURLRequest(URLRequest* request,
+ 
+ int NetworkDelegate::NotifyBeforeStartTransaction(
+     URLRequest* request,
+-    CompletionOnceCallback callback,
+-    HttpRequestHeaders* headers) {
++    const HttpRequestHeaders& headers,
++    OnBeforeStartTransactionCallback callback) {
+   TRACE_EVENT0(NetTracingCategory(),
+                "NetworkDelegate::NotifyBeforeStartTransation");
+   DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
+-  DCHECK(headers);
+   DCHECK(!callback.is_null());
+-  return OnBeforeStartTransaction(request, std::move(callback), headers);
++  return OnBeforeStartTransaction(request, headers, std::move(callback));
+ }
+ 
+ int NetworkDelegate::NotifyHeadersReceived(
+diff --git a/net/base/network_delegate.h b/net/base/network_delegate.h
+index c00f0ccd3b5a8bf8973b359cfc7880355292be03..8992bb63a5cfd8d577b36a29ee35ba4c8e9867c1 100644
+--- a/net/base/network_delegate.h
++++ b/net/base/network_delegate.h
+@@ -56,9 +56,11 @@ class NET_EXPORT NetworkDelegate {
+   int NotifyBeforeURLRequest(URLRequest* request,
+                              CompletionOnceCallback callback,
+                              GURL* new_url);
++  using OnBeforeStartTransactionCallback =
++      base::OnceCallback<void(int, const base::Optional<HttpRequestHeaders>&)>;
+   int NotifyBeforeStartTransaction(URLRequest* request,
+-                                   CompletionOnceCallback callback,
+-                                   HttpRequestHeaders* headers);
++                                   const HttpRequestHeaders& headers,
++                                   OnBeforeStartTransactionCallback callback);
+   int NotifyHeadersReceived(
+       URLRequest* request,
+       CompletionOnceCallback callback,
+@@ -133,7 +135,8 @@ class NET_EXPORT NetworkDelegate {
+                                  GURL* new_url) = 0;
+ 
+   // Called right before the network transaction starts. Allows the delegate to
+-  // read/write |headers| before they get sent out.
++  // read |headers| and modify them by passing a new copy to |callback| before
++  // they get sent out.
+   //
+   // Returns OK to continue with the request, ERR_IO_PENDING if the result is
+   // not ready yet, and any other status code to cancel the request. If
+@@ -142,11 +145,11 @@ class NET_EXPORT NetworkDelegate {
+   // or OnCompleted. Once cancelled, |request| and |headers| become invalid and
+   // |callback| may not be called.
+   //
+-  // The default implementation returns OK (continue with request) without
+-  // modifying |headers|.
+-  virtual int OnBeforeStartTransaction(URLRequest* request,
+-                                       CompletionOnceCallback callback,
+-                                       HttpRequestHeaders* headers) = 0;
++  // The default implementation returns OK (continue with request).
++  virtual int OnBeforeStartTransaction(
++      URLRequest* request,
++      const HttpRequestHeaders& headers,
++      OnBeforeStartTransactionCallback callback) = 0;
+ 
+   // Called for HTTP requests when the headers have been received.
+   // |original_response_headers| contains the headers as received over the
+diff --git a/net/base/network_delegate_impl.cc b/net/base/network_delegate_impl.cc
+index 822bedc22a827a6ae06e7212111bf075298e9e5c..67e43fa2f764506ba7dc6e114570da54045a91f6 100644
+--- a/net/base/network_delegate_impl.cc
++++ b/net/base/network_delegate_impl.cc
+@@ -16,8 +16,8 @@ int NetworkDelegateImpl::OnBeforeURLRequest(URLRequest* request,
+ 
+ int NetworkDelegateImpl::OnBeforeStartTransaction(
+     URLRequest* request,
+-    CompletionOnceCallback callback,
+-    HttpRequestHeaders* headers) {
++    const HttpRequestHeaders& headers,
++    OnBeforeStartTransactionCallback callback) {
+   return OK;
+ }
+ 
+diff --git a/net/base/network_delegate_impl.h b/net/base/network_delegate_impl.h
+index 323dade2a5affcd9123de0ef7d4b04e32445a149..78f658ba84da26ab7a22ad23f8944f1157fe0450 100644
+--- a/net/base/network_delegate_impl.h
++++ b/net/base/network_delegate_impl.h
+@@ -39,9 +39,10 @@ class NET_EXPORT NetworkDelegateImpl : public NetworkDelegate {
+                          CompletionOnceCallback callback,
+                          GURL* new_url) override;
+ 
+-  int OnBeforeStartTransaction(URLRequest* request,
+-                               CompletionOnceCallback callback,
+-                               HttpRequestHeaders* headers) override;
++  int OnBeforeStartTransaction(
++      URLRequest* request,
++      const HttpRequestHeaders& headers,
++      OnBeforeStartTransactionCallback callback) override;
+ 
+   int OnHeadersReceived(
+       URLRequest* request,
+diff --git a/net/proxy_resolution/network_delegate_error_observer_unittest.cc b/net/proxy_resolution/network_delegate_error_observer_unittest.cc
+index c9448fd2a4c665bd91d2a6714a1def2404d4f446..665bb592b892457dc313c2f92148dfecc4930916 100644
+--- a/net/proxy_resolution/network_delegate_error_observer_unittest.cc
++++ b/net/proxy_resolution/network_delegate_error_observer_unittest.cc
+@@ -35,9 +35,10 @@ class TestNetworkDelegate : public NetworkDelegateImpl {
+                          GURL* new_url) override {
+     return OK;
+   }
+-  int OnBeforeStartTransaction(URLRequest* request,
+-                               CompletionOnceCallback callback,
+-                               HttpRequestHeaders* headers) override {
++  int OnBeforeStartTransaction(
++      URLRequest* request,
++      const HttpRequestHeaders& headers,
++      OnBeforeStartTransactionCallback callback) override {
+     return OK;
+   }
+   int OnHeadersReceived(
+diff --git a/net/proxy_resolution/pac_file_fetcher_impl_unittest.cc b/net/proxy_resolution/pac_file_fetcher_impl_unittest.cc
+index 8d9fa8344f3febfcd9ba1e3933546d24cc1f1ae3..c10aee9e925c0eea44cc89a2dbfa5ee4c0495917 100644
+--- a/net/proxy_resolution/pac_file_fetcher_impl_unittest.cc
++++ b/net/proxy_resolution/pac_file_fetcher_impl_unittest.cc
+@@ -146,9 +146,10 @@ class BasicNetworkDelegate : public NetworkDelegateImpl {
+     return OK;
+   }
+ 
+-  int OnBeforeStartTransaction(URLRequest* request,
+-                               CompletionOnceCallback callback,
+-                               HttpRequestHeaders* headers) override {
++  int OnBeforeStartTransaction(
++      URLRequest* request,
++      const HttpRequestHeaders& headers,
++      OnBeforeStartTransactionCallback callback) override {
+     return OK;
+   }
+ 
+diff --git a/net/url_request/url_request_context_builder.cc b/net/url_request/url_request_context_builder.cc
+index d6f1215fa15971199b9e7020b99c830120beab4b..1eec76ef7ebc44137a3f954a0a80d6f9dcfd676b 100644
+--- a/net/url_request/url_request_context_builder.cc
++++ b/net/url_request/url_request_context_builder.cc
+@@ -79,9 +79,10 @@ class BasicNetworkDelegate : public NetworkDelegateImpl {
+     return OK;
+   }
+ 
+-  int OnBeforeStartTransaction(URLRequest* request,
+-                               CompletionOnceCallback callback,
+-                               HttpRequestHeaders* headers) override {
++  int OnBeforeStartTransaction(
++      URLRequest* request,
++      const HttpRequestHeaders& headers,
++      OnBeforeStartTransactionCallback callback) override {
+     return OK;
+   }
+ 
+diff --git a/net/url_request/url_request_http_job.cc b/net/url_request/url_request_http_job.cc
+index 9d993cce5e0e01936d1e4c9837f6bc129ca41e67..5a9873dc9b8b9e390c72d5d01eeb35136b3d0824 100644
+--- a/net/url_request/url_request_http_job.cc
++++ b/net/url_request/url_request_http_job.cc
+@@ -379,15 +379,10 @@ void URLRequestHttpJob::StartTransaction() {
+   if (network_delegate) {
+     OnCallToDelegate(
+         NetLogEventType::NETWORK_DELEGATE_BEFORE_START_TRANSACTION);
+-    // The NetworkDelegate must watch for OnRequestDestroyed and not modify
+-    // |extra_headers| after it's called.
+-    // TODO(mattm): change the API to remove the out-params and take the
+-    // results as params of the callback.
+     int rv = network_delegate->NotifyBeforeStartTransaction(
+-        request_,
++        request_, request_info_.extra_headers,
+         base::BindOnce(&URLRequestHttpJob::NotifyBeforeStartTransactionCallback,
+-                       weak_factory_.GetWeakPtr()),
+-        &request_info_.extra_headers);
++                       weak_factory_.GetWeakPtr()));
+     // If an extension blocks the request, we rely on the callback to
+     // MaybeStartTransactionInternal().
+     if (rv == ERR_IO_PENDING)
+@@ -398,10 +393,14 @@ void URLRequestHttpJob::StartTransaction() {
+   StartTransactionInternal();
+ }
+ 
+-void URLRequestHttpJob::NotifyBeforeStartTransactionCallback(int result) {
++void URLRequestHttpJob::NotifyBeforeStartTransactionCallback(
++    int result,
++    const base::Optional<HttpRequestHeaders>& headers) {
+   // The request should not have been cancelled or have already completed.
+   DCHECK(!is_done());
+ 
++  if (headers)
++    request_info_.extra_headers = headers.value();
+   MaybeStartTransactionInternal(result);
+ }
+ 
+diff --git a/net/url_request/url_request_http_job.h b/net/url_request/url_request_http_job.h
+index c026834af2c910315f4b37b578a59f8596b299f1..988db0d80576c542b92c460d4f00838fb06e8632 100644
+--- a/net/url_request/url_request_http_job.h
++++ b/net/url_request/url_request_http_job.h
+@@ -121,7 +121,9 @@ class NET_EXPORT_PRIVATE URLRequestHttpJob : public URLRequestJob {
+   void OnHeadersReceivedCallback(int result);
+   void OnStartCompleted(int result);
+   void OnReadCompleted(int result);
+-  void NotifyBeforeStartTransactionCallback(int result);
++  void NotifyBeforeStartTransactionCallback(
++      int result,
++      const base::Optional<HttpRequestHeaders>& headers);
+   // This just forwards the call to URLRequestJob::NotifyConnected().
+   // We need it because that method is protected and cannot be bound in a
+   // callback in this class.
+diff --git a/net/url_request/url_request_test_util.cc b/net/url_request/url_request_test_util.cc
+index d0a70f24f44906e22c917ebae4e69ab10245540a..85941d92df12178ef5e71070e12f195b8bd04443 100644
+--- a/net/url_request/url_request_test_util.cc
++++ b/net/url_request/url_request_test_util.cc
+@@ -440,8 +440,8 @@ int TestNetworkDelegate::OnBeforeURLRequest(URLRequest* request,
+ 
+ int TestNetworkDelegate::OnBeforeStartTransaction(
+     URLRequest* request,
+-    CompletionOnceCallback callback,
+-    HttpRequestHeaders* headers) {
++    const HttpRequestHeaders& headers,
++    OnBeforeStartTransactionCallback callback) {
+   if (before_start_transaction_fails_)
+     return ERR_FAILED;
+ 
+diff --git a/net/url_request/url_request_test_util.h b/net/url_request/url_request_test_util.h
+index 7cfed610a55fc4bf69e48875e06e41019281829b..98a218115359a38a10e6e2dd623e26195745de0e 100644
+--- a/net/url_request/url_request_test_util.h
++++ b/net/url_request/url_request_test_util.h
+@@ -338,9 +338,10 @@ class TestNetworkDelegate : public NetworkDelegateImpl {
+   int OnBeforeURLRequest(URLRequest* request,
+                          CompletionOnceCallback callback,
+                          GURL* new_url) override;
+-  int OnBeforeStartTransaction(URLRequest* request,
+-                               CompletionOnceCallback callback,
+-                               HttpRequestHeaders* headers) override;
++  int OnBeforeStartTransaction(
++      URLRequest* request,
++      const HttpRequestHeaders& headers,
++      OnBeforeStartTransactionCallback callback) override;
+   int OnHeadersReceived(
+       URLRequest* request,
+       CompletionOnceCallback callback,
+diff --git a/net/url_request/url_request_unittest.cc b/net/url_request/url_request_unittest.cc
+index a45042e543c6d76425a09851943d5d2a8c27a504..f63730b854be33d8d03dd223209919fd2b637230 100644
+--- a/net/url_request/url_request_unittest.cc
++++ b/net/url_request/url_request_unittest.cc
+@@ -443,9 +443,10 @@ class BlockingNetworkDelegate : public TestNetworkDelegate {
+                          CompletionOnceCallback callback,
+                          GURL* new_url) override;
+ 
+-  int OnBeforeStartTransaction(URLRequest* request,
+-                               CompletionOnceCallback callback,
+-                               HttpRequestHeaders* headers) override;
++  int OnBeforeStartTransaction(
++      URLRequest* request,
++      const HttpRequestHeaders& headers,
++      OnBeforeStartTransactionCallback callback) override;
+ 
+   int OnHeadersReceived(
+       URLRequest* request,
+@@ -544,13 +545,19 @@ int BlockingNetworkDelegate::OnBeforeURLRequest(URLRequest* request,
+ 
+ int BlockingNetworkDelegate::OnBeforeStartTransaction(
+     URLRequest* request,
+-    CompletionOnceCallback callback,
+-    HttpRequestHeaders* headers) {
++    const HttpRequestHeaders& headers,
++    OnBeforeStartTransactionCallback callback) {
+   // TestNetworkDelegate always completes synchronously.
+   CHECK_NE(ERR_IO_PENDING, TestNetworkDelegate::OnBeforeStartTransaction(
+-                               request, base::NullCallback(), headers));
++                               request, headers, base::NullCallback()));
+ 
+-  return MaybeBlockStage(ON_BEFORE_SEND_HEADERS, std::move(callback));
++  return MaybeBlockStage(
++      ON_BEFORE_SEND_HEADERS,
++      base::BindOnce(
++          [](OnBeforeStartTransactionCallback callback, int result) {
++            std::move(callback).Run(result, absl::nullopt);
++          },
++          std::move(callback)));
+ }
+ 
+ int BlockingNetworkDelegate::OnHeadersReceived(
+@@ -4175,13 +4182,19 @@ class AsyncLoggingNetworkDelegate : public TestNetworkDelegate {
+     return RunCallbackAsynchronously(request, std::move(callback));
+   }
+ 
+-  int OnBeforeStartTransaction(URLRequest* request,
+-                               CompletionOnceCallback callback,
+-                               HttpRequestHeaders* headers) override {
++  int OnBeforeStartTransaction(
++      URLRequest* request,
++      const HttpRequestHeaders& headers,
++      OnBeforeStartTransactionCallback callback) override {
+     // TestNetworkDelegate always completes synchronously.
+     CHECK_NE(ERR_IO_PENDING, TestNetworkDelegate::OnBeforeStartTransaction(
+-                                 request, base::NullCallback(), headers));
+-    return RunCallbackAsynchronously(request, std::move(callback));
++                                 request, headers, base::NullCallback()));
++    return RunCallbackAsynchronously(
++        request, base::BindOnce(
++                     [](OnBeforeStartTransactionCallback callback, int result) {
++                       std::move(callback).Run(result, absl::nullopt);
++                     },
++                     std::move(callback)));
+   }
+ 
+   int OnHeadersReceived(
+diff --git a/services/network/network_service_network_delegate.cc b/services/network/network_service_network_delegate.cc
+index 25e64eb7c66c3087ba187cc06685294f29c08ccd..85ce0aa207985f7aba758f149d9a330ee0b29d23 100644
+--- a/services/network/network_service_network_delegate.cc
++++ b/services/network/network_service_network_delegate.cc
+@@ -104,16 +104,16 @@ int NetworkServiceNetworkDelegate::OnBeforeURLRequest(
+ 
+ int NetworkServiceNetworkDelegate::OnBeforeStartTransaction(
+     net::URLRequest* request,
+-    net::CompletionOnceCallback callback,
+-    net::HttpRequestHeaders* headers) {
++    const net::HttpRequestHeaders& headers,
++    OnBeforeStartTransactionCallback callback) {
+   URLLoader* url_loader = URLLoader::ForRequest(*request);
+   if (url_loader)
+-    return url_loader->OnBeforeStartTransaction(std::move(callback), headers);
++    return url_loader->OnBeforeStartTransaction(headers, std::move(callback));
+ 
+ #if !defined(OS_IOS)
+   WebSocket* web_socket = WebSocket::ForRequest(*request);
+   if (web_socket)
+-    return web_socket->OnBeforeStartTransaction(std::move(callback), headers);
++    return web_socket->OnBeforeStartTransaction(headers, std::move(callback));
+ #endif  // !defined(OS_IOS)
+ 
+   return net::OK;
+diff --git a/services/network/network_service_network_delegate.h b/services/network/network_service_network_delegate.h
+index 0926327d2a009550d91824ef87f06aa7c4482c64..811589027df710e46314198c0aa60d188ad1128c 100644
+--- a/services/network/network_service_network_delegate.h
++++ b/services/network/network_service_network_delegate.h
+@@ -38,9 +38,10 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkServiceNetworkDelegate
+   int OnBeforeURLRequest(net::URLRequest* request,
+                          net::CompletionOnceCallback callback,
+                          GURL* new_url) override;
+-  int OnBeforeStartTransaction(net::URLRequest* request,
+-                               net::CompletionOnceCallback callback,
+-                               net::HttpRequestHeaders* headers) override;
++  int OnBeforeStartTransaction(
++      net::URLRequest* request,
++      const net::HttpRequestHeaders& headers,
++      OnBeforeStartTransactionCallback callback) override;
+   int OnHeadersReceived(
+       net::URLRequest* request,
+       net::CompletionOnceCallback callback,
+diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
+index 4c87980dbad41372f3f23a9493877801ab4ed3d8..6a58f03258deab5ade6c2f1f8b837c6f2710145f 100644
+--- a/services/network/url_loader.cc
++++ b/services/network/url_loader.cc
+@@ -1622,13 +1622,14 @@ void URLLoader::OnReadCompleted(net::URLRequest* url_request, int bytes_read) {
+   // |this| may have been deleted.
+ }
+ 
+-int URLLoader::OnBeforeStartTransaction(net::CompletionOnceCallback callback,
+-                                        net::HttpRequestHeaders* headers) {
++int URLLoader::OnBeforeStartTransaction(
++    const net::HttpRequestHeaders& headers,
++    net::NetworkDelegate::OnBeforeStartTransactionCallback callback) {
+   if (header_client_) {
+     header_client_->OnBeforeSendHeaders(
+-        *headers, base::BindOnce(&URLLoader::OnBeforeSendHeadersComplete,
+-                                 weak_ptr_factory_.GetWeakPtr(),
+-                                 std::move(callback), headers));
++        headers,
++        base::BindOnce(&URLLoader::OnBeforeSendHeadersComplete,
++                       weak_ptr_factory_.GetWeakPtr(), std::move(callback)));
+     return net::ERR_IO_PENDING;
+   }
+   return net::OK;
+@@ -2005,13 +2006,10 @@ void URLLoader::ResumeStart() {
+ }
+ 
+ void URLLoader::OnBeforeSendHeadersComplete(
+-    net::CompletionOnceCallback callback,
+-    net::HttpRequestHeaders* out_headers,
++    net::NetworkDelegate::OnBeforeStartTransactionCallback callback,
+     int result,
+     const base::Optional<net::HttpRequestHeaders>& headers) {
+-  if (headers)
+-    *out_headers = headers.value();
+-  std::move(callback).Run(result);
++  std::move(callback).Run(result, headers);
+ }
+ 
+ void URLLoader::OnHeadersReceivedComplete(
+diff --git a/services/network/url_loader.h b/services/network/url_loader.h
+index e2fcaeea674b3012d428911637748bb819aaf3e8..2f3b1df33eee12b14a51883e33e596ef5bb2cd64 100644
+--- a/services/network/url_loader.h
++++ b/services/network/url_loader.h
+@@ -24,6 +24,7 @@
+ #include "mojo/public/cpp/system/data_pipe.h"
+ #include "mojo/public/cpp/system/simple_watcher.h"
+ #include "net/base/load_states.h"
++#include "net/base/network_delegate.h"
+ #include "net/http/http_raw_request_headers.h"
+ #include "net/traffic_annotation/network_traffic_annotation.h"
+ #include "net/url_request/url_request.h"
+@@ -167,8 +168,9 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
+ 
+   // These methods are called by the network delegate to forward these events to
+   // the |header_client_|.
+-  int OnBeforeStartTransaction(net::CompletionOnceCallback callback,
+-                               net::HttpRequestHeaders* headers);
++  int OnBeforeStartTransaction(
++      const net::HttpRequestHeaders& headers,
++      net::NetworkDelegate::OnBeforeStartTransactionCallback callback);
+   int OnHeadersReceived(
+       net::CompletionOnceCallback callback,
+       const net::HttpResponseHeaders* original_response_headers,
+@@ -327,8 +329,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
+   void RecordBodyReadFromNetBeforePausedIfNeeded();
+   void ResumeStart();
+   void OnBeforeSendHeadersComplete(
+-      net::CompletionOnceCallback callback,
+-      net::HttpRequestHeaders* out_headers,
++      net::NetworkDelegate::OnBeforeStartTransactionCallback callback,
+       int result,
+       const base::Optional<net::HttpRequestHeaders>& headers);
+   void OnHeadersReceivedComplete(
+diff --git a/services/network/websocket.cc b/services/network/websocket.cc
+index 66406b297bbb5371acbc7d19327be3331ce7acdd..8d2afaf498207ff5b5edb7b3f99e40df62e9b6e7 100644
+--- a/services/network/websocket.cc
++++ b/services/network/websocket.cc
+@@ -535,13 +535,14 @@ bool WebSocket::AllowCookies(const GURL& url) const {
+              url, site_for_cookies_) == net::OK;
+ }
+ 
+-int WebSocket::OnBeforeStartTransaction(net::CompletionOnceCallback callback,
+-                                        net::HttpRequestHeaders* headers) {
++int WebSocket::OnBeforeStartTransaction(
++    const net::HttpRequestHeaders& headers,
++    net::NetworkDelegate::OnBeforeStartTransactionCallback callback) {
+   if (header_client_) {
+     header_client_->OnBeforeSendHeaders(
+-        *headers, base::BindOnce(&WebSocket::OnBeforeSendHeadersComplete,
+-                                 weak_ptr_factory_.GetWeakPtr(),
+-                                 std::move(callback), headers));
++        headers,
++        base::BindOnce(&WebSocket::OnBeforeSendHeadersComplete,
++                       weak_ptr_factory_.GetWeakPtr(), std::move(callback)));
+     return net::ERR_IO_PENDING;
+   }
+   return net::OK;
+@@ -838,17 +839,14 @@ void WebSocket::OnAuthRequiredComplete(
+ }
+ 
+ void WebSocket::OnBeforeSendHeadersComplete(
+-    net::CompletionOnceCallback callback,
+-    net::HttpRequestHeaders* out_headers,
++    net::NetworkDelegate::OnBeforeStartTransactionCallback callback,
+     int result,
+     const base::Optional<net::HttpRequestHeaders>& headers) {
+   if (!channel_) {
+     // Something happened before the OnBeforeSendHeaders response arrives.
+     return;
+   }
+-  if (headers)
+-    *out_headers = headers.value();
+-  std::move(callback).Run(result);
++  std::move(callback).Run(result, headers);
+ }
+ 
+ void WebSocket::OnHeadersReceivedComplete(
+diff --git a/services/network/websocket.h b/services/network/websocket.h
+index e14c5616eb59f11c31a3f05984f038e6fc72c4b8..e4d8af33cdb8835316f5b0dc4d40000afe4b2e2e 100644
+--- a/services/network/websocket.h
++++ b/services/network/websocket.h
+@@ -22,6 +22,7 @@
+ #include "base/types/strong_alias.h"
+ #include "mojo/public/cpp/bindings/receiver.h"
+ #include "mojo/public/cpp/bindings/remote.h"
++#include "net/base/network_delegate.h"
+ #include "net/traffic_annotation/network_traffic_annotation.h"
+ #include "net/websockets/websocket_event_interface.h"
+ #include "services/network/network_service.h"
+@@ -89,8 +90,9 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) WebSocket : public mojom::WebSocket {
+ 
+   // These methods are called by the network delegate to forward these events to
+   // the |header_client_|.
+-  int OnBeforeStartTransaction(net::CompletionOnceCallback callback,
+-                               net::HttpRequestHeaders* headers);
++  int OnBeforeStartTransaction(
++      const net::HttpRequestHeaders& headers,
++      net::NetworkDelegate::OnBeforeStartTransactionCallback callback);
+   int OnHeadersReceived(
+       net::CompletionOnceCallback callback,
+       const net::HttpResponseHeaders* original_response_headers,
+@@ -149,8 +151,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) WebSocket : public mojom::WebSocket {
+       base::OnceCallback<void(const net::AuthCredentials*)> callback,
+       const base::Optional<net::AuthCredentials>& credential);
+   void OnBeforeSendHeadersComplete(
+-      net::CompletionOnceCallback callback,
+-      net::HttpRequestHeaders* out_headers,
++      net::NetworkDelegate::OnBeforeStartTransactionCallback callback,
+       int result,
+       const base::Optional<net::HttpRequestHeaders>& headers);
+   void OnHeadersReceivedComplete(

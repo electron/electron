@@ -1,0 +1,163 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Lei Zhang <thestig@chromium.org>
+Date: Tue, 10 Aug 2021 21:38:36 +0000
+Subject: Do more class validity checks in PrintViewManagerBase.
+
+PrintViewManagerBase runs a nested loop. In some situations,
+PrintViewManagerBase and related classes like PrintViewManager and
+PrintPreviewHandler can get deleted while the nested loop is running.
+When this happens, the nested loop exists to a PrintViewManagerBase
+that is no longer valid.
+
+Use base::WeakPtrs liberally to check for this condition and exit
+safely.
+
+(cherry picked from commit a2cb1fb333d2faacb2fe1380f8d2621b5ee6af7e)
+
+Bug: 1231134
+Change-Id: I21ec131574331ce973d22594c11e70088147e149
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3057880
+Reviewed-by: Alan Screen <awscreen@chromium.org>
+Commit-Queue: Lei Zhang <thestig@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#906269}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3086110
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/4515@{#2024}
+Cr-Branched-From: 488fc70865ddaa05324ac00a54a6eb783b4bc41c-refs/heads/master@{#885287}
+
+diff --git a/chrome/browser/printing/print_view_manager.cc b/chrome/browser/printing/print_view_manager.cc
+index 2153c11769e0c015bdfb5f54b4706b40b7c7ec96..6f65d6d968461a3001eeafa6b117852d6efe4a39 100644
+--- a/chrome/browser/printing/print_view_manager.cc
++++ b/chrome/browser/printing/print_view_manager.cc
+@@ -101,7 +101,11 @@ bool PrintViewManager::PrintForSystemDialogNow(
+   DCHECK(!on_print_dialog_shown_callback_);
+   on_print_dialog_shown_callback_ = std::move(dialog_shown_callback);
+   is_switching_to_system_dialog_ = true;
++
++  auto weak_this = weak_factory_.GetWeakPtr();
+   DisconnectFromCurrentPrintJob();
++  if (!weak_this)
++    return false;
+ 
+   // Don't print / print preview crashed tabs.
+   if (IsCrashed())
+diff --git a/chrome/browser/printing/print_view_manager.h b/chrome/browser/printing/print_view_manager.h
+index 6ee0600dc5fd598cdc63ab3469ee0d23f3f2c463..55ff9ef5e86514b3e65326eef473af16269438b7 100644
+--- a/chrome/browser/printing/print_view_manager.h
++++ b/chrome/browser/printing/print_view_manager.h
+@@ -133,6 +133,11 @@ class PrintViewManager : public PrintViewManagerBase,
+ 
+   WEB_CONTENTS_USER_DATA_KEY_DECL();
+ 
++  // Keep this last so that all weak pointers will be invalidated at the
++  // beginning of destruction. Note that PrintViewManagerBase has its own
++  // base::WeakPtrFactory as well, but PrintViewManager should use this one.
++  base::WeakPtrFactory<PrintViewManager> weak_factory_{this};
++
+   DISALLOW_COPY_AND_ASSIGN(PrintViewManager);
+ };
+ 
+diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
+index 3a7eff03f034e71d8f493b425ea2a922c1e6106d..7bced11a564332e3973ac818ece3a203dd4722bc 100644
+--- a/chrome/browser/printing/print_view_manager_base.cc
++++ b/chrome/browser/printing/print_view_manager_base.cc
+@@ -373,7 +373,10 @@ bool PrintViewManagerBase::PrintNow(content::RenderFrameHost* rfh,
+                                     bool silent,
+                                     base::Value settings,
+                                     CompletionCallback callback)  {
++  auto weak_this = weak_ptr_factory_.GetWeakPtr();
+   DisconnectFromCurrentPrintJob();
++  if (!weak_this)
++    return false;
+ 
+   // Don't print / print preview crashed tabs.
+   if (IsCrashed())
+@@ -858,6 +861,8 @@ bool PrintViewManagerBase::RenderAllMissingPagesNow() {
+   // or in DidPrintDocument(). The check is done in
+   // ShouldQuitFromInnerMessageLoop().
+   // BLOCKS until all the pages are received. (Need to enable recursive task)
++  // WARNING: Do not do any work after RunInnerMessageLoop() returns, as `this`
++  // may have gone away.
+   if (!RunInnerMessageLoop()) {
+     // This function is always called from DisconnectFromCurrentPrintJob() so we
+     // know that the job will be stopped/canceled in any case.
+@@ -884,8 +889,11 @@ bool PrintViewManagerBase::CreateNewPrintJob(
+   DCHECK(query);
+ 
+   if (callback_.is_null()) {
++    auto weak_this = weak_ptr_factory_.GetWeakPtr();
+     // Disconnect the current |print_job_| only when calling window.print()
+     DisconnectFromCurrentPrintJob();
++    if (!weak_this)
++      return false;
+   }
+ 
+   // We can't print if there is no renderer.
+@@ -917,7 +925,10 @@ bool PrintViewManagerBase::CreateNewPrintJob(
+ void PrintViewManagerBase::DisconnectFromCurrentPrintJob() {
+   // Make sure all the necessary rendered page are done. Don't bother with the
+   // return value.
++  auto weak_this = weak_ptr_factory_.GetWeakPtr();
+   bool result = RenderAllMissingPagesNow();
++  if (!weak_this)
++    return;
+ 
+   // Verify that assertion.
+   if (print_job_ && print_job_->document() &&
+@@ -999,7 +1010,10 @@ bool PrintViewManagerBase::RunInnerMessageLoop() {
+ 
+   quit_inner_loop_ = run_loop.QuitClosure();
+ 
++  auto weak_this = weak_ptr_factory_.GetWeakPtr();
+   run_loop.Run();
++  if (!weak_this)
++    return false;
+ 
+   // If the inner-loop quit closure is still set then we timed out.
+   bool success = !quit_inner_loop_;
+diff --git a/chrome/browser/printing/print_view_manager_base.h b/chrome/browser/printing/print_view_manager_base.h
+index fcbf4c69d1b6cd30124444158e3f2c6da3371977..652f8a54dca556d74fd405691593f805373d8bba 100644
+--- a/chrome/browser/printing/print_view_manager_base.h
++++ b/chrome/browser/printing/print_view_manager_base.h
+@@ -122,6 +122,8 @@ class PrintViewManagerBase : public content::NotificationObserver,
+ 
+   // Makes sure the current print_job_ has all its data before continuing, and
+   // disconnect from it.
++  // WARNING: `this` may not be alive after DisconnectFromCurrentPrintJob()
++  // returns.
+   void DisconnectFromCurrentPrintJob();
+ 
+   // Manages the low-level talk to the printer.
+@@ -168,6 +170,7 @@ class PrintViewManagerBase : public content::NotificationObserver,
+   // Requests the RenderView to render all the missing pages for the print job.
+   // No-op if no print job is pending. Returns true if at least one page has
+   // been requested to the renderer.
++  // WARNING: `this` may not be alive after RenderAllMissingPagesNow() returns.
+   bool RenderAllMissingPagesNow();
+ 
+   // Checks that synchronization is correct with |print_job_| based on |cookie|.
+@@ -201,6 +204,7 @@ class PrintViewManagerBase : public content::NotificationObserver,
+   // while the blocking inner message loop is running. This is useful in cases
+   // where the RenderView is about to be destroyed while a printing job isn't
+   // finished.
++  // WARNING: `this` may not be alive after RunInnerMessageLoop() returns.
+   bool RunInnerMessageLoop();
+ 
+   // In the case of Scripted Printing, where the renderer is controlling the
+diff --git a/chrome/browser/ui/webui/print_preview/print_preview_handler.cc b/chrome/browser/ui/webui/print_preview/print_preview_handler.cc
+index 67aa6bc0d76ef8d830bb7d9f49a70480748b61cb..8b5436c93fe146f04f0c63d4d8e8ee536ef6e866 100644
+--- a/chrome/browser/ui/webui/print_preview/print_preview_handler.cc
++++ b/chrome/browser/ui/webui/print_preview/print_preview_handler.cc
+@@ -749,9 +749,12 @@ void PrintPreviewHandler::HandleShowSystemDialog(
+   if (!initiator)
+     return;
+ 
++  auto weak_this = weak_factory_.GetWeakPtr();
+   auto* print_view_manager = PrintViewManager::FromWebContents(initiator);
+   print_view_manager->PrintForSystemDialogNow(base::BindOnce(
+       &PrintPreviewHandler::ClosePreviewDialog, weak_factory_.GetWeakPtr()));
++  if (!weak_this)
++    return;
+ 
+   // Cancel the pending preview request if exists.
+   print_preview_ui()->OnCancelPendingPreviewRequest();
