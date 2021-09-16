@@ -1,0 +1,56 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Georg Neis <neis@chromium.org>
+Date: Thu, 9 Sep 2021 14:41:58 +0200
+Subject: Merged: [compiler] Fix a bug in global property access reduction
+
+Bug: chromium:1247763
+(cherry picked from commit 6391d7a58d0c58cd5d096d22453b954b3ecc6fec)
+
+Change-Id: Ifa775224ed30a2d680c6e3653063483c733de831
+No-Try: true
+No-Presubmit: true
+No-Tree-Checks: true
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3151960
+Commit-Queue: Nico Hartmann <nicohartmann@chromium.org>
+Reviewed-by: Toon Verwaest <verwaest@chromium.org>
+Reviewed-by: Michael Hablich <hablich@chromium.org>
+Cr-Commit-Position: refs/branch-heads/9.3@{#37}
+Cr-Branched-From: 7744dce208a555494e4a33e24fadc71ea20b3895-refs/heads/9.3.345@{#1}
+Cr-Branched-From: 4b6b4cabf3b6a20cdfda72b369df49f3311c4344-refs/heads/master@{#75728}
+
+diff --git a/src/compiler/js-native-context-specialization.cc b/src/compiler/js-native-context-specialization.cc
+index 68d9fa05f0d68270af6e567e152497400d649b0a..1b926c4bcbe98f344952da0f77be52bd0bc1d430 100644
+--- a/src/compiler/js-native-context-specialization.cc
++++ b/src/compiler/js-native-context-specialization.cc
+@@ -829,6 +829,12 @@ Reduction JSNativeContextSpecialization::ReduceGlobalAccess(
+       return NoChange();
+     } else if (property_cell_type == PropertyCellType::kUndefined) {
+       return NoChange();
++    } else if (property_cell_type == PropertyCellType::kConstantType) {
++      // We rely on stability further below.
++      if (property_cell_value.IsHeapObject() &&
++          !property_cell_value.AsHeapObject().map().is_stable()) {
++        return NoChange();
++      }
+     }
+   } else if (access_mode == AccessMode::kHas) {
+     DCHECK_EQ(receiver, lookup_start_object);
+@@ -949,17 +955,7 @@ Reduction JSNativeContextSpecialization::ReduceGlobalAccess(
+         if (property_cell_value.IsHeapObject()) {
+           MapRef property_cell_value_map =
+               property_cell_value.AsHeapObject().map();
+-          if (property_cell_value_map.is_stable()) {
+-            dependencies()->DependOnStableMap(property_cell_value_map);
+-          } else {
+-            // The value's map is already unstable. If this store were to go
+-            // through the C++ runtime, it would transition the PropertyCell to
+-            // kMutable. We don't want to change the cell type from generated
+-            // code (to simplify concurrent heap access), however, so we keep
+-            // it as kConstantType and do the store anyways (if the new value's
+-            // map matches). This is safe because it merely prolongs the limbo
+-            // state that we are in already.
+-          }
++          dependencies()->DependOnStableMap(property_cell_value_map);
+ 
+           // Check that the {value} is a HeapObject.
+           value = effect = graph()->NewNode(simplified()->CheckHeapObject(),

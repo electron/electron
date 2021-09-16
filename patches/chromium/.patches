@@ -151,3 +151,4 @@ cherry-pick-d727013bb543.patch
 cherry-pick-1231134.patch
 merge_m92_speculative_fix_for_crash_in.patch
 cherry-pick-6048fcd52f42.patch
+content-visibility_force_range_base_extent_when_computing_visual.patch
