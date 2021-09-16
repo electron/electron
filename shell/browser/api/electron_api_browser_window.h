@@ -69,6 +69,7 @@ class BrowserWindow : public BaseWindow,
   void RequestPreferredWidth(int* width) override;
   void OnCloseButtonClicked(bool* prevent_default) override;
   void OnWindowIsKeyChanged(bool is_key) override;
+  void UpdateWindowControlsOverlay(const gfx::Rect& bounding_rect) override;
 
   // BaseWindow:
   void OnWindowClosed() override;
