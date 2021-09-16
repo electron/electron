@@ -1729,25 +1729,25 @@ void NativeWindowMac::SetStyleMask(bool on, NSUInteger flag) {
   // we explicitly disable resizing while setting it.
   ScopedDisableResize disable_resize;
 
-  bool was_maximizable = IsMaximizable();
   if (on)
     [window_ setStyleMask:[window_ styleMask] | flag];
   else
     [window_ setStyleMask:[window_ styleMask] & (~flag)];
+
   // Change style mask will make the zoom button revert to default, probably
   // a bug of Cocoa or macOS.
-  SetMaximizable(was_maximizable);
+  SetMaximizable(maximizable_);
 }
 
 void NativeWindowMac::SetCollectionBehavior(bool on, NSUInteger flag) {
-  bool was_maximizable = IsMaximizable();
   if (on)
     [window_ setCollectionBehavior:[window_ collectionBehavior] | flag];
   else
     [window_ setCollectionBehavior:[window_ collectionBehavior] & (~flag)];
+
   // Change collectionBehavior will make the zoom button revert to default,
   // probably a bug of Cocoa or macOS.
-  SetMaximizable(was_maximizable);
+  SetMaximizable(maximizable_);
 }
 
 bool NativeWindowMac::CanResize() const {
@@ -1756,6 +1756,10 @@ bool NativeWindowMac::CanResize() const {
 
 views::View* NativeWindowMac::GetContentsView() {
   return root_view_.get();
+}
+
+bool NativeWindowMac::CanMaximize() const {
+  return maximizable_;
 }
 
 void NativeWindowMac::OnNativeThemeUpdated(ui::NativeTheme* observed_theme) {

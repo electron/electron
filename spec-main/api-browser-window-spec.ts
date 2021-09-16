@@ -3801,6 +3801,18 @@ describe('BrowserWindow module', () => {
         }
       });
 
+      // On Linux there is no "resizable" property of a window.
+      ifit(process.platform !== 'linux')('does affect maximizability when disabled and enabled', () => {
+        const w = new BrowserWindow({ show: false });
+        expect(w.resizable).to.be.true('resizable');
+
+        expect(w.maximizable).to.be.true('maximizable');
+        w.resizable = false;
+        expect(w.maximizable).to.be.false('not maximizable');
+        w.resizable = true;
+        expect(w.maximizable).to.be.true('maximizable');
+      });
+
       ifit(process.platform === 'win32')('works for a window smaller than 64x64', () => {
         const w = new BrowserWindow({
           show: false,
