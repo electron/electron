@@ -134,3 +134,4 @@ merge_m92_speculative_fix_for_crash_in.patch
 cherry-pick-d727013bb543.patch
 pa_make_getusablesize_handle_nullptr_gracefully.patch
 contentindex_add_origin_checks_to_mojo_methods.patch
+cherry-pick-8623d711677d.patch

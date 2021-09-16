@@ -54,6 +54,7 @@ NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
   options.Get(options::kFrame, &has_frame_);
   options.Get(options::kTransparent, &transparent_);
   options.Get(options::kEnableLargerThanScreen, &enable_larger_than_screen_);
+  options.Get(options::ktitleBarOverlay, &titlebar_overlay_);
 
   if (parent)
     options.Get("modal", &is_modal_);
@@ -391,6 +392,14 @@ void NativeWindow::PreviewFile(const std::string& path,
 
 void NativeWindow::CloseFilePreview() {}
 
+gfx::Rect NativeWindow::GetWindowControlsOverlayRect() {
+  return overlay_rect_;
+}
+
+void NativeWindow::SetWindowControlsOverlayRect(const gfx::Rect& overlay_rect) {
+  overlay_rect_ = overlay_rect;
+}
+
 void NativeWindow::NotifyWindowRequestPreferredWith(int* width) {
   for (NativeWindowObserver& observer : observers_)
     observer.RequestPreferredWidth(width);
@@ -489,6 +498,7 @@ void NativeWindow::NotifyWindowWillMove(const gfx::Rect& new_bounds,
 }
 
 void NativeWindow::NotifyWindowResize() {
+  NotifyLayoutWindowControlsOverlay();
   for (NativeWindowObserver& observer : observers_)
     observer.OnWindowResize();
 }
@@ -585,6 +595,14 @@ void NativeWindow::NotifyWindowSystemContextMenu(int x,
                                                  bool* prevent_default) {
   for (NativeWindowObserver& observer : observers_)
     observer.OnSystemContextMenu(x, y, prevent_default);
+}
+
+void NativeWindow::NotifyLayoutWindowControlsOverlay() {
+  gfx::Rect bounding_rect = GetWindowControlsOverlayRect();
+  if (!bounding_rect.IsEmpty()) {
+    for (NativeWindowObserver& observer : observers_)
+      observer.UpdateWindowControlsOverlay(bounding_rect);
+  }
 }
 
 #if defined(OS_WIN)
