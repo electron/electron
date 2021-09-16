@@ -92,8 +92,8 @@ void HidChooserContext::GrantDevicePermission(
         content::WebContents::FromRenderFrameHost(render_frame_host);
     auto* permission_helper =
         WebContentsPermissionHelper::FromWebContents(web_contents);
-    permission_helper->GrantHIDDevicePermission(origin,
-                                                DeviceInfoToValue(device));
+    permission_helper->GrantHIDDevicePermission(
+        origin, DeviceInfoToValue(device), render_frame_host);
   } else {
     ephemeral_devices_[origin].insert(device.guid);
   }

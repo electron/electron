@@ -92,9 +92,9 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
                              content::RenderFrameHost* render_frame_host) const;
 
   void GrantDevicePermission(content::PermissionType permission,
-                             content::WebContents* web_contents,
                              const url::Origin& origin,
-                             const base::Value* object) const;
+                             const base::Value* object,
+                             content::RenderFrameHost* render_frame_host) const;
 
  protected:
   void OnPermissionResponse(int request_id,

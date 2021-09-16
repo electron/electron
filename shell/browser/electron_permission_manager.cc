@@ -305,7 +305,8 @@ bool ElectronPermissionManager::CheckDevicePermission(
   api::WebContents* api_web_contents = api::WebContents::From(web_contents);
   if (device_permission_handler_.is_null()) {
     std::vector<base::Value> granted_devices =
-        api_web_contents->GetGrantedDevices(origin, permission);
+        api_web_contents->GetGrantedDevices(origin, permission,
+                                            render_frame_host);
 
     for (const auto& granted_device : granted_devices) {
       if (permission == static_cast<content::PermissionType>(
@@ -343,14 +344,17 @@ bool ElectronPermissionManager::CheckDevicePermission(
 
 void ElectronPermissionManager::GrantDevicePermission(
     content::PermissionType permission,
-    content::WebContents* web_contents,
     const url::Origin& origin,
-    const base::Value* device) const {
+    const base::Value* device,
+    content::RenderFrameHost* render_frame_host) const {
   if (device_permission_handler_.is_null()) {
+    auto* web_contents =
+        content::WebContents::FromRenderFrameHost(render_frame_host);
     api::WebContents* api_web_contents = api::WebContents::From(web_contents);
     DCHECK(api_web_contents);
     if (api_web_contents)
-      api_web_contents->GrantDevicePermission(origin, device, permission);
+      api_web_contents->GrantDevicePermission(origin, device, permission,
+                                              render_frame_host);
   }
 }
 

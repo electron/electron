@@ -47,8 +47,10 @@ class WebContentsPermissionHelper
       const url::Origin& origin,
       base::Value device,
       content::RenderFrameHost* render_frame_host) const;
-  void GrantHIDDevicePermission(const url::Origin& origin,
-                                base::Value device) const;
+  void GrantHIDDevicePermission(
+      const url::Origin& origin,
+      base::Value device,
+      content::RenderFrameHost* render_frame_host) const;
 
  private:
   explicit WebContentsPermissionHelper(content::WebContents* web_contents);
@@ -69,7 +71,8 @@ class WebContentsPermissionHelper
 
   void GrantDevicePermission(content::PermissionType permission,
                              const url::Origin& origin,
-                             const base::Value* device) const;
+                             const base::Value* device,
+                             content::RenderFrameHost* render_frame_host) const;
 
   content::WebContents* web_contents_;
 

@@ -92,9 +92,10 @@ class OffScreenWebContentsView;
 
 namespace api {
 
-using DevicePermissionMap =
+using DevicePermissionMap = std::map<
+    int,
     std::map<content::PermissionType,
-             std::map<url::Origin, std::vector<std::unique_ptr<base::Value>>>>;
+             std::map<url::Origin, std::vector<std::unique_ptr<base::Value>>>>>;
 
 // Wrapper around the content::WebContents.
 class WebContents : public gin::Wrappable<WebContents>,
@@ -428,14 +429,16 @@ class WebContents : public gin::Wrappable<WebContents>,
   // To be used in place of ObjectPermissionContextBase::GrantObjectPermission.
   void GrantDevicePermission(const url::Origin& origin,
                              const base::Value* device,
-                             content::PermissionType permissionType);
+                             content::PermissionType permissionType,
+                             content::RenderFrameHost* render_frame_host);
 
   // Returns the list of devices that |origin| has been granted permission to
   // access. To be used in place of
   // ObjectPermissionContextBase::GetGrantedObjects.
   std::vector<base::Value> GetGrantedDevices(
       const url::Origin& origin,
-      content::PermissionType permissionType);
+      content::PermissionType permissionType,
+      content::RenderFrameHost* render_frame_host);
 
  private:
   // Does not manage lifetime of |web_contents|.

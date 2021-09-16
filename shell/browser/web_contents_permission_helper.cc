@@ -108,11 +108,12 @@ bool WebContentsPermissionHelper::CheckDevicePermission(
 void WebContentsPermissionHelper::GrantDevicePermission(
     content::PermissionType permission,
     const url::Origin& origin,
-    const base::Value* device) const {
+    const base::Value* device,
+    content::RenderFrameHost* render_frame_host) const {
   auto* permission_manager = static_cast<ElectronPermissionManager*>(
       web_contents_->GetBrowserContext()->GetPermissionControllerDelegate());
-  permission_manager->GrantDevicePermission(permission, web_contents_, origin,
-                                            device);
+  permission_manager->GrantDevicePermission(permission, origin, device,
+                                            render_frame_host);
 }
 
 void WebContentsPermissionHelper::RequestFullscreenPermission(
@@ -208,10 +209,11 @@ bool WebContentsPermissionHelper::CheckHIDDevicePermission(
 
 void WebContentsPermissionHelper::GrantHIDDevicePermission(
     const url::Origin& origin,
-    base::Value device) const {
+    base::Value device,
+    content::RenderFrameHost* render_frame_host) const {
   return GrantDevicePermission(
       static_cast<content::PermissionType>(PermissionType::HID), origin,
-      &device);
+      &device, render_frame_host);
 }
 
 WEB_CONTENTS_USER_DATA_KEY_IMPL(WebContentsPermissionHelper)
