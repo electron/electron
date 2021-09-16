@@ -191,7 +191,10 @@
   return result;
 }
 
-<<<<<<< HEAD
+- (gfx::Point)getMargin {
+  return margin_;
+}
+
 // Receive the titlebar container, which might be nil if the window does not
 // have the NSWindowStyleMaskTitled style.
 - (NSView*)titleBarContainer {
@@ -219,10 +222,6 @@
     return [window_ standardWindowButton:NSWindowCloseButton];
   else
     return [window_ standardWindowButton:NSWindowZoomButton];
-=======
-- (gfx::Point)getMargin {
-  return margin_;
->>>>>>> 82fd782e9... feat: enable window controls overlay on macOS (#29253)
 }
 
 @end
