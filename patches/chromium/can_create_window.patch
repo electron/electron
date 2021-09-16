@@ -21,10 +21,10 @@ index 9a5af722b2f07a6851b4bacce3239172abd8b446..2b41902c973d3c4659ecc03b5f996fcd
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 8145f99bd2cb9a5dcdf1cafc584cbdb863c8ddec..ec5a129c06dbbc8328524ac75073901c3d06ec95 100644
+index f510a3072dc778f361bd802e04c82770aa6f1f6d..c21876e8925d3aa264d9271daead197882557619 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3726,6 +3726,14 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -3733,6 +3733,14 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    }
    auto* new_contents_impl = new_contents.get();
  
@@ -39,7 +39,7 @@ index 8145f99bd2cb9a5dcdf1cafc584cbdb863c8ddec..ec5a129c06dbbc8328524ac75073901c
    new_contents_impl->GetController().SetSessionStorageNamespace(
        partition_id, session_storage_namespace);
  
-@@ -3768,12 +3776,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -3775,12 +3783,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
@@ -81,10 +81,10 @@ index 0cf1f777dc5ffbca606fff558ef6a41e8ed60a99..40bd443cb3c82d9671c4716900a1f19b
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index bafb4cc0e7cdf40bc86497a006fbce314eda21f4..2799246e6742a0687841866bc2eb30cd0cb7e5c9 100644
+index e1d16b151ff70fbe22457de25d0e097806914938..c2da2371a2ff2b8ff29fd4ccef40a4d98a879b11 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -166,6 +166,7 @@ class NetworkService;
+@@ -167,6 +167,7 @@ class NetworkService;
  class TrustedURLLoaderHeaderClient;
  }  // namespace mojom
  struct ResourceRequest;
@@ -220,10 +220,10 @@ index 84d32491a56528a84b4395fba1d54cdbb38d522b..09998a83c449ef8cd9f360fbcdcf7edc
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index 2dfcb1a98bf280d1f860d18dd47471ac02692080..cb5064e2fb795ea72251b27395842c129f008a82 100644
+index fa62382e4c9b36fb65898fb6dc651761912e5935..8d2ddd982cf57446753014ac35231969232b406f 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
-@@ -1994,6 +1994,7 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
+@@ -1991,6 +1991,7 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
  
    WebWindowFeatures window_features =
        GetWindowFeaturesFromString(features, incumbent_window);
