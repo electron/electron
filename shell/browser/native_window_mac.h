@@ -191,6 +191,7 @@ class NativeWindowMac : public NativeWindow,
  protected:
   // views::WidgetDelegate:
   views::View* GetContentsView() override;
+  bool CanMaximize() const override;
 
   // ui::NativeThemeObserver:
   void OnNativeThemeUpdated(ui::NativeTheme* observed_theme) override;
