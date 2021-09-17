@@ -167,7 +167,7 @@ index 922e51e7debac09e5444027c87603d40b972ffc7..5aac5fcfe781e282b748630c07341d1b
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index f9048306993ac82df2e191c10313c97a71a56d42..0d5f54e75889679bc807082be2a64014ee241db1 100644
+index ae61e09deae53071c3a00d054cde3c57a8ac143a..7f91c46cd437f269b76fda383fd2d6ab990d310c 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -322,6 +322,13 @@ component("base") {
@@ -205,7 +205,7 @@ index e7adfee3210ec723c687adfcc4bee8827ef643e7..25a924a47eeb30d783ef83dbb4896c4b
 +
  #endif  // UI_BASE_COCOA_REMOTE_ACCESSIBILITY_API_H_
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.h b/ui/views/cocoa/native_widget_mac_ns_window_host.h
-index 7277159ea1fae7778b6725bc97278a6721872a7e..787f5e072ea9e615bbd67b83ab0e9cc57d05549a 100644
+index 2d6816834ac6ca1f487d889e2a2a1715b8047beb..6369db1564d6f48d5290f356725ccfcafbc045c4 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.h
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.h
 @@ -30,7 +30,9 @@
@@ -218,7 +218,7 @@ index 7277159ea1fae7778b6725bc97278a6721872a7e..787f5e072ea9e615bbd67b83ab0e9cc5
  @class NSView;
  
  namespace remote_cocoa {
-@@ -425,11 +427,13 @@ class VIEWS_EXPORT NativeWidgetMacNSWindowHost
+@@ -430,11 +432,13 @@ class VIEWS_EXPORT NativeWidgetMacNSWindowHost
    mojo::AssociatedRemote<remote_cocoa::mojom::NativeWidgetNSWindow>
        remote_ns_window_remote_;
  
