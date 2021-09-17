@@ -9,7 +9,7 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 9a5af722b2f07a6851b4bacce3239172abd8b446..2b41902c973d3c4659ecc03b5f996fcdb091b418 100644
+index 9a491adae45a59800f07a296d558f11b65bc57b8..8d58efab7e0eaae0422ff37b2d03295ed8542ad7 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
 @@ -6492,6 +6492,7 @@ void RenderFrameHostImpl::CreateNewWindow(
@@ -81,7 +81,7 @@ index 0cf1f777dc5ffbca606fff558ef6a41e8ed60a99..40bd443cb3c82d9671c4716900a1f19b
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index e1d16b151ff70fbe22457de25d0e097806914938..c2da2371a2ff2b8ff29fd4ccef40a4d98a879b11 100644
+index b6dae0082a297a6dbafd63bd56729b77ffb832fc..66ff9593b8f3d62c486ef83c4c682edf73081d88 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -167,6 +167,7 @@ class NetworkService;
