@@ -86,6 +86,7 @@
 #include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/electron_javascript_dialog_manager.h"
 #include "shell/browser/electron_navigation_throttle.h"
+#include "shell/browser/file_select_helper.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/session_preferences.h"
 #include "shell/browser/ui/drag_util.h"
@@ -95,7 +96,6 @@
 #include "shell/browser/web_contents_permission_helper.h"
 #include "shell/browser/web_contents_preferences.h"
 #include "shell/browser/web_contents_zoom_controller.h"
-#include "shell/browser/web_dialog_helper.h"
 #include "shell/browser/web_view_guest_delegate.h"
 #include "shell/browser/web_view_manager.h"
 #include "shell/common/api/electron_api_native_image.h"
@@ -3255,21 +3255,15 @@ void WebContents::RunFileChooser(
     content::RenderFrameHost* render_frame_host,
     scoped_refptr<content::FileSelectListener> listener,
     const blink::mojom::FileChooserParams& params) {
-  if (!web_dialog_helper_)
-    web_dialog_helper_ =
-        std::make_unique<WebDialogHelper>(owner_window(), offscreen_);
-  web_dialog_helper_->RunFileChooser(render_frame_host, std::move(listener),
-                                     params);
+  FileSelectHelper::RunFileChooser(render_frame_host, std::move(listener),
+                                   params);
 }
 
 void WebContents::EnumerateDirectory(
-    content::WebContents* guest,
+    content::WebContents* web_contents,
     scoped_refptr<content::FileSelectListener> listener,
     const base::FilePath& path) {
-  if (!web_dialog_helper_)
-    web_dialog_helper_ =
-        std::make_unique<WebDialogHelper>(owner_window(), offscreen_);
-  web_dialog_helper_->EnumerateDirectory(guest, std::move(listener), path);
+  FileSelectHelper::EnumerateDirectory(web_contents, std::move(listener), path);
 }
 
 bool WebContents::IsFullscreenForTabOrPending(

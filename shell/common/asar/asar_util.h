@@ -15,6 +15,7 @@ class FilePath;
 namespace asar {
 
 class Archive;
+struct IntegrityPayload;
 
 // Gets or creates and caches a new Archive from the path.
 std::shared_ptr<Archive> GetOrCreateAsarArchive(const base::FilePath& path);
@@ -30,6 +31,10 @@ bool GetAsarArchivePath(const base::FilePath& full_path,
 
 // Same with base::ReadFileToString but supports asar Archive.
 bool ReadFileToString(const base::FilePath& path, std::string* contents);
+
+void ValidateIntegrityOrDie(const char* data,
+                            size_t size,
+                            const IntegrityPayload& integrity);
 
 }  // namespace asar
 
