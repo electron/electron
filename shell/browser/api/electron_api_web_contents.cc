@@ -1375,8 +1375,7 @@ void WebContents::HandleNewRenderFrame(
   if (web_preferences) {
     absl::optional<SkColor> color = web_preferences->GetBackgroundColor();
     web_contents()->SetPageBaseBackgroundColor(color);
-    web_contents()->GetRenderWidgetHostView()->SetBackgroundColor(
-        color.value_or(SK_ColorWHITE));
+    rwhv->SetBackgroundColor(color.value_or(SK_ColorWHITE));
   }
 
   if (!background_throttling_)
