@@ -913,7 +913,7 @@ void WebContents::InitWithWebContents(
 
   // Create InspectableWebContents.
   inspectable_web_contents_ = std::make_unique<InspectableWebContents>(
-      web_contents.release(), browser_context->prefs(), is_guest);
+      std::move(web_contents), browser_context->prefs(), is_guest);
   inspectable_web_contents_->SetDelegate(this);
 }
 
