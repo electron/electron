@@ -21,14 +21,14 @@ index e5da06566ffef8d0b394c0d7fde3916ce49da06e..76bbdf35f4751c87a6d25cc5e8db7aeb
  #endif
  
 diff --git a/gin/v8_platform.cc b/gin/v8_platform.cc
-index 44f8ffeda27cbfebcfc57e1312e9e9f4ca3ab576..005dfd075a0e008c59bbc9269a558195b1e4f232 100644
+index 44f8ffeda27cbfebcfc57e1312e9e9f4ca3ab576..356b5a7c8f39fab97ff434850038f8f6cee750c8 100644
 --- a/gin/v8_platform.cc
 +++ b/gin/v8_platform.cc
 @@ -368,6 +368,10 @@ PageAllocator* V8Platform::GetPageAllocator() {
    return g_page_allocator.Pointer();
  }
  
-+v8::PageAllocator* V8Platform::PageAllocator() {
++PageAllocator* V8Platform::PageAllocator() {
 +  return g_page_allocator.Pointer();
 +}
 +
