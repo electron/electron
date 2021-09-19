@@ -61,7 +61,7 @@ index b8b83529be4c7da661032d3b941984c02b978047..98ef6cfad5dc46d9dcb65a0ce506db37
      NEW_DOC,
  
 diff --git a/chrome/browser/printing/print_job_worker.cc b/chrome/browser/printing/print_job_worker.cc
-index 2824b97e715a493082734d40f62860c8cafa5f34..584d4ef2b73a0f89458224eb134a8d8a2b439995 100644
+index 4305943435c15275084f0a9bb5490831d893870f..a048c0c11b3a8a06401ddf4d6e15700bf05600c3 100644
 --- a/chrome/browser/printing/print_job_worker.cc
 +++ b/chrome/browser/printing/print_job_worker.cc
 @@ -21,13 +21,13 @@
@@ -79,7 +79,7 @@ index 2824b97e715a493082734d40f62860c8cafa5f34..584d4ef2b73a0f89458224eb134a8d8a
  #include "printing/backend/print_backend.h"
  #include "printing/mojom/print.mojom.h"
  #include "printing/print_job_constants.h"
-@@ -238,16 +238,21 @@ void PrintJobWorker::UpdatePrintSettings(base::Value new_settings,
+@@ -240,16 +240,21 @@ void PrintJobWorker::UpdatePrintSettings(base::Value new_settings,
  #endif  // defined(OS_LINUX) && defined(USE_CUPS)
    }
  
@@ -104,7 +104,7 @@ index 2824b97e715a493082734d40f62860c8cafa5f34..584d4ef2b73a0f89458224eb134a8d8a
  }
  
  #if defined(OS_CHROMEOS)
-@@ -263,6 +268,13 @@ void PrintJobWorker::UpdatePrintSettingsFromPOD(
+@@ -265,6 +270,13 @@ void PrintJobWorker::UpdatePrintSettingsFromPOD(
  
  void PrintJobWorker::GetSettingsDone(SettingsCallback callback,
                                       PrintingContext::Result result) {
@@ -359,7 +359,7 @@ index e4cacbf9a82da8dca062cc33df885a0575e74830..143ee383668965ba04da092e3445fc9f
  
    if (!cookie) {
 diff --git a/chrome/browser/printing/print_view_manager_base.h b/chrome/browser/printing/print_view_manager_base.h
-index eaa0e162a339ba68d42c920fdd30869d259b4f27..8381f5171970aa89fc5c406d57d2665e16c6678b 100644
+index 24ffeb0a87b2e324f84260eb4ec65021998ee2c3..872008c7ffd5298dc3cc8d1b52be6113104ce49c 100644
 --- a/chrome/browser/printing/print_view_manager_base.h
 +++ b/chrome/browser/printing/print_view_manager_base.h
 @@ -38,6 +38,8 @@ class PrintJob;
@@ -371,7 +371,7 @@ index eaa0e162a339ba68d42c920fdd30869d259b4f27..8381f5171970aa89fc5c406d57d2665e
  // Base class for managing the print commands for a WebContents.
  class PrintViewManagerBase : public content::NotificationObserver,
                               public PrintManager {
-@@ -47,7 +49,10 @@ class PrintViewManagerBase : public content::NotificationObserver,
+@@ -50,7 +52,10 @@ class PrintViewManagerBase : public content::NotificationObserver,
    // Prints the current document immediately. Since the rendering is
    // asynchronous, the actual printing will not be completed on the return of
    // this function. Returns false if printing is impossible at the moment.
@@ -383,7 +383,7 @@ index eaa0e162a339ba68d42c920fdd30869d259b4f27..8381f5171970aa89fc5c406d57d2665e
  
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Prints the document in |print_data| with settings specified in
-@@ -234,9 +239,15 @@ class PrintViewManagerBase : public content::NotificationObserver,
+@@ -237,9 +242,15 @@ class PrintViewManagerBase : public content::NotificationObserver,
    // The current RFH that is printing with a system printing dialog.
    content::RenderFrameHost* printing_rfh_ = nullptr;
  

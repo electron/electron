@@ -213,7 +213,7 @@ index 60cfd89dfd18eced6f6d103267b80d547d2e9f26..95d36e99832f434d878a2a2fc3101a61
    return nullptr;
  }
 diff --git a/chrome/renderer/pepper/pepper_helper.h b/chrome/renderer/pepper/pepper_helper.h
-index e021c964da3d467530775164a67d5cadaf6dc741..e035f0fb9e2baa6a9148b43765b09c52bc45599b 100644
+index 0f67ff54227f1a49314592188d719feeb27ae2cf..14fce2e8f9dcbd5273784aaf561a45cb1df19d42 100644
 --- a/chrome/renderer/pepper/pepper_helper.h
 +++ b/chrome/renderer/pepper/pepper_helper.h
 @@ -6,12 +6,14 @@
@@ -231,4 +231,4 @@ index e021c964da3d467530775164a67d5cadaf6dc741..e035f0fb9e2baa6a9148b43765b09c52
 +    : public content::RenderFrameObserver {
   public:
    explicit PepperHelper(content::RenderFrame* render_frame);
-   ~PepperHelper() override;
+ 

@@ -22,10 +22,10 @@ index af75828e89e8cb1cca20c8acd64c9f864c0ffab7..182a6ebdf1ccad6b6ef7a2d45791bc0f
    return is_active();
  }
 diff --git a/content/browser/renderer_host/render_view_host_impl.h b/content/browser/renderer_host/render_view_host_impl.h
-index 67b4c9226e5687dd83a1651c2960eb8df7988190..a0ede4295e43f5ab8d464901fa1cb5b42bb1afff 100644
+index b51bd8160bf63a75066d23514b727eb365a3918c..48413119621f6b118b80d681f777e74af8dc8ab7 100644
 --- a/content/browser/renderer_host/render_view_host_impl.h
 +++ b/content/browser/renderer_host/render_view_host_impl.h
-@@ -136,6 +136,7 @@ class CONTENT_EXPORT RenderViewHostImpl
+@@ -135,6 +135,7 @@ class CONTENT_EXPORT RenderViewHostImpl
    bool IsRenderViewLive() override;
    void WriteIntoTrace(perfetto::TracedValue context) override;
  
@@ -34,10 +34,10 @@ index 67b4c9226e5687dd83a1651c2960eb8df7988190..a0ede4295e43f5ab8d464901fa1cb5b4
    void SendRendererPreferencesToRenderer(
        const blink::RendererPreferences& preferences);
 diff --git a/content/public/browser/render_view_host.h b/content/public/browser/render_view_host.h
-index 722a9b00fe854d3f3d9be8f044ce3dd19d4bbc85..5fbb9f7abfd762423142d98ad97b69ef2fb2ae2e 100644
+index 8bb06dec16fbf205230a10e0e52daa787338bc23..9ebc42788391e838e78af75e2449dde4f1107f22 100644
 --- a/content/public/browser/render_view_host.h
 +++ b/content/public/browser/render_view_host.h
-@@ -87,6 +87,9 @@ class CONTENT_EXPORT RenderViewHost {
+@@ -84,6 +84,9 @@ class CONTENT_EXPORT RenderViewHost {
    // Write a representation of this object into a trace.
    virtual void WriteIntoTrace(perfetto::TracedValue context) = 0;
  
