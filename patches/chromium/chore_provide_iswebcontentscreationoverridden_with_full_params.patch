@@ -35,10 +35,10 @@ index 5b4d70991e19edcdfee731c56251932bf43e535f..fe1977c5e6ce0f5b30e8be529b9efa51
  
  #endif  // CHROME_BROWSER_ANDROID_DOCUMENT_DOCUMENT_WEB_CONTENTS_DELEGATE_H_
 diff --git a/chrome/browser/media/offscreen_tab.cc b/chrome/browser/media/offscreen_tab.cc
-index d6295d809381f4f4a86a9948762079232ba6c93c..ad429250984cf367e1194bda67bc56a886f650ae 100644
+index c0823105ecc86ce2e60ede44be29a14889dad887..bb0f2672c6e565657500e617b4eb416c0575dac7 100644
 --- a/chrome/browser/media/offscreen_tab.cc
 +++ b/chrome/browser/media/offscreen_tab.cc
-@@ -283,8 +283,7 @@ bool OffscreenTab::IsWebContentsCreationOverridden(
+@@ -284,8 +284,7 @@ bool OffscreenTab::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -49,10 +49,10 @@ index d6295d809381f4f4a86a9948762079232ba6c93c..ad429250984cf367e1194bda67bc56a8
    // uses this to spawn new windows/tabs, which is also not allowed for
    // offscreen tabs.
 diff --git a/chrome/browser/media/offscreen_tab.h b/chrome/browser/media/offscreen_tab.h
-index 3fd38bcb861174f99369d0e53b9946c632baf21a..de1a4df623538cc2857f8bb85b05e17d411c45a0 100644
+index c80128b816cc77b95af215384fdc36b2150f95ea..3fe773e671d1c087eaf1303ca60883597c0c3907 100644
 --- a/chrome/browser/media/offscreen_tab.h
 +++ b/chrome/browser/media/offscreen_tab.h
-@@ -103,8 +103,7 @@ class OffscreenTab final : public ProfileObserver,
+@@ -107,8 +107,7 @@ class OffscreenTab final : public ProfileObserver,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -94,10 +94,10 @@ index 07014765f33bdddebcc5bc32a2713d6523faf394..f866f69f9c810d89f1a0e9e4952293f6
        content::WebContents* source,
        const content::OpenURLParams& params) override;
 diff --git a/chrome/browser/ui/ash/keyboard/chrome_keyboard_web_contents.cc b/chrome/browser/ui/ash/keyboard/chrome_keyboard_web_contents.cc
-index ef84e04d628fb5cdbaf8fbbf84af3bf23e00c522..f1ee0bee5bfd08227a29498f8410d5d3582e02c3 100644
+index ba376cca99e6b8b367c6a4cfc9925b940728b9fc..f1b831507d628d35cc65f697ffc832568fc28193 100644
 --- a/chrome/browser/ui/ash/keyboard/chrome_keyboard_web_contents.cc
 +++ b/chrome/browser/ui/ash/keyboard/chrome_keyboard_web_contents.cc
-@@ -66,8 +66,7 @@ class ChromeKeyboardContentsDelegate : public content::WebContentsDelegate,
+@@ -72,8 +72,7 @@ class ChromeKeyboardContentsDelegate : public content::WebContentsDelegate,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -155,10 +155,10 @@ index ff97ac6e97c688d677053a5f01546a4c2d91ff1d..1da6a9c32b883a17975e61d603639182
    // uses this to spawn new windows/tabs, which is also not allowed for
    // local presentations.
 diff --git a/chrome/browser/ui/media_router/presentation_receiver_window_controller.h b/chrome/browser/ui/media_router/presentation_receiver_window_controller.h
-index 058ec72442d59989c4d6df4a7c791ecfeff0ef99..f7c8c2139382cb2e290c561624291afe647383cf 100644
+index 45cd02ecf7b7acb107f95656b3fa07a5fca2ea95..b06ca2dbdd0c21554802ab3b99576b381d0e4ddb 100644
 --- a/chrome/browser/ui/media_router/presentation_receiver_window_controller.h
 +++ b/chrome/browser/ui/media_router/presentation_receiver_window_controller.h
-@@ -99,8 +99,7 @@ class PresentationReceiverWindowController final
+@@ -104,8 +104,7 @@ class PresentationReceiverWindowController final
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -232,10 +232,10 @@ index c5c5a7b63b5b3b62a9517cbef3ae23ce57a3c89c..4f1b7e88d6d2ae89a60311c8aeb1fcee
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 00baade07d692f73dfb45bcdebc5657c131bd7ba..fe09ee9004c7ff93ef53d2f0479391f1d7dfce2f 100644
+index ad1b4abe0390215e007ad2db8d972661470e94ed..d3593a6f3e9f6cba5823169d36fd93a6f97608ae 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3681,8 +3681,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -3682,8 +3682,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
  
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,

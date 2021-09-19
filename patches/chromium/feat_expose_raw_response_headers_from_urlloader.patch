@@ -17,10 +17,10 @@ headers, moving forward we should find a way in upstream to provide
 access to these headers for loader clients created on the browser process.
 
 diff --git a/services/network/public/cpp/resource_request.cc b/services/network/public/cpp/resource_request.cc
-index 290e69ee01addee46ff9d30c96ca72b03faad92c..5e0e82599374969ea742e91b61f556ad1329fb1c 100644
+index b405a82fd2bfed451f86907e66ae3a4ab5838fbb..988aa62b2d78b736b34e947e42f965fd6b2b563f 100644
 --- a/services/network/public/cpp/resource_request.cc
 +++ b/services/network/public/cpp/resource_request.cc
-@@ -230,6 +230,7 @@ bool ResourceRequest::EqualsForTesting(const ResourceRequest& request) const {
+@@ -231,6 +231,7 @@ bool ResourceRequest::EqualsForTesting(const ResourceRequest& request) const {
           do_not_prompt_for_login == request.do_not_prompt_for_login &&
           is_main_frame == request.is_main_frame &&
           transition_type == request.transition_type &&
@@ -29,10 +29,10 @@ index 290e69ee01addee46ff9d30c96ca72b03faad92c..5e0e82599374969ea742e91b61f556ad
           upgrade_if_insecure == request.upgrade_if_insecure &&
           is_revalidating == request.is_revalidating &&
 diff --git a/services/network/public/cpp/resource_request.h b/services/network/public/cpp/resource_request.h
-index a9cfd5e97c61e98a20e3070cd6e62b12e03d5b13..0bb7fdabcfe8ebf7aadbb1c705fbb621a12a96ff 100644
+index 2b7832dd2c2d006bf8ef382cdf3f7f52e0edd385..f872596bc1236323ecdf1de699c513e40c42592c 100644
 --- a/services/network/public/cpp/resource_request.h
 +++ b/services/network/public/cpp/resource_request.h
-@@ -159,6 +159,7 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE) ResourceRequest {
+@@ -160,6 +160,7 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE) ResourceRequest {
    bool do_not_prompt_for_login = false;
    bool is_main_frame = false;
    int transition_type = 0;
@@ -103,7 +103,7 @@ index cea1fb864ab46b4b0eabf1db11a0392d6cd575c1..df033f65d50b088778268827e506963a
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 9c4532dcda237ab63b18087118bcf8d33b7841eb..8c3c9b88f6fd4bdc5af7860f59364e219d6dac5f 100644
+index e8d83ecd221e28182be3443fca89ba6a125622a1..9206c91efe2b08d9b2a4c829fa0135d31244b3fc 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
 @@ -490,6 +490,7 @@ URLLoader::URLLoader(
@@ -114,7 +114,7 @@ index 9c4532dcda237ab63b18087118bcf8d33b7841eb..8c3c9b88f6fd4bdc5af7860f59364e21
        devtools_request_id_(request.devtools_request_id),
        request_mode_(request.mode),
        request_credentials_mode_(request.credentials_mode),
-@@ -627,7 +628,7 @@ URLLoader::URLLoader(
+@@ -632,7 +633,7 @@ URLLoader::URLLoader(
    url_request_->SetRequestHeadersCallback(base::BindRepeating(
        &URLLoader::SetRawRequestHeadersAndNotify, base::Unretained(this)));
  
@@ -123,7 +123,7 @@ index 9c4532dcda237ab63b18087118bcf8d33b7841eb..8c3c9b88f6fd4bdc5af7860f59364e21
      url_request_->SetResponseHeadersCallback(base::BindRepeating(
          &URLLoader::SetRawResponseHeaders, base::Unretained(this)));
    }
-@@ -1250,6 +1251,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
+@@ -1255,6 +1256,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
    response_ = network::mojom::URLResponseHead::New();
    PopulateResourceResponse(url_request_.get(), is_load_timing_enabled_,
                             options_, response_.get());

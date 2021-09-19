@@ -157,11 +157,11 @@ index 9339c55c5e818a2a7bd8800d9b1cb64553369c24..049c8e5e0e34454f03a823b31a5f7755
    // CertNetFetcher is not used by the current platform, or if the actual
    // net::CertVerifier is instantiated outside of the network service.
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 087bd2f2faa45645f0c6c38e705921b001f4ce0b..319e566e9e27efce32d2eb5ef9ccbe1743d3ed64 100644
+index 6d2ab194fd2330426f56602cd2e586f096750acd..d8e7d0d35317fe1124bf81f60faf2b35ae19a3d7 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
-@@ -247,6 +247,17 @@ struct NetworkContextFilePaths {
-   mojo_base.mojom.FilePath? reporting_and_nel_store_database_name;
+@@ -265,6 +265,17 @@ struct NetworkContextFilePaths {
+   bool trigger_migration = false;
  };
  
 +interface CertVerifierClient {
@@ -178,7 +178,7 @@ index 087bd2f2faa45645f0c6c38e705921b001f4ce0b..319e566e9e27efce32d2eb5ef9ccbe17
  // Parameters for constructing a network context.
  struct NetworkContextParams {
    // The user agent string.
-@@ -755,6 +766,9 @@ interface NetworkContext {
+@@ -773,6 +784,9 @@ interface NetworkContext {
    // Sets a client for this network context.
    SetClient(pending_remote<NetworkContextClient> client);
  

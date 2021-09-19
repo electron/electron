@@ -136,7 +136,7 @@ index 541c38f0048b609327cae88370d5123d9d9a3796..b48ffcf7fcc62aefc2d1146ed9d87ad6
 +#endif
  }
 diff --git a/chrome/browser/accessibility/accessibility_ui.h b/chrome/browser/accessibility/accessibility_ui.h
-index c0453b9f8603ba99a83a747666a1b05b9c36ca14..b0c610de6322177baf5a7ba44b632a9658756ce8 100644
+index 8343169078d15f697bbf7aea86eb46cc9b991ef8..96665569cebe6f0c3bb0b074db96620773ee2d81 100644
 --- a/chrome/browser/accessibility/accessibility_ui.h
 +++ b/chrome/browser/accessibility/accessibility_ui.h
 @@ -24,6 +24,8 @@ struct AXEventNotificationDetails;
@@ -148,7 +148,7 @@ index c0453b9f8603ba99a83a747666a1b05b9c36ca14..b0c610de6322177baf5a7ba44b632a96
  namespace user_prefs {
  class PrefRegistrySyncable;
  }  // namespace user_prefs
-@@ -60,6 +62,8 @@ class AccessibilityUIMessageHandler : public content::WebUIMessageHandler {
+@@ -65,6 +67,8 @@ class AccessibilityUIMessageHandler : public content::WebUIMessageHandler {
    static void RegisterProfilePrefs(user_prefs::PrefRegistrySyncable* registry);
  
   private:
