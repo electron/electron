@@ -612,17 +612,11 @@ bool NativeWindowMac::IsMaximized() {
   if (([window_ styleMask] & NSWindowStyleMaskResizable) != 0)
     return [window_ isZoomed];
 
-  NSRect rectScreen = [[NSScreen mainScreen] visibleFrame];
-  NSRect rectWindow = [window_ frame];
+  NSRect rectScreen = GetAspectRatio() > 0.0
+                          ? default_frame_for_zoom()
+                          : [[NSScreen mainScreen] visibleFrame];
 
-  // If there's an aspect ratio set, update the maximum bounds of the screen.
-  if (GetAspectRatio() > 0.0)
-    rectScreen = default_frame_for_zoom();
-
-  return (rectScreen.origin.x == rectWindow.origin.x &&
-          rectScreen.origin.y == rectWindow.origin.y &&
-          rectScreen.size.width == rectWindow.size.width &&
-          rectScreen.size.height == rectWindow.size.height);
+  return NSEqualRects([window_ frame], rectScreen);
 }
 
 void NativeWindowMac::Minimize() {
