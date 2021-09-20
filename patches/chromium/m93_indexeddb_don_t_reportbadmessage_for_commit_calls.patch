@@ -1,0 +1,39 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Victor Costan <pwnall@chromium.org>
+Date: Fri, 10 Sep 2021 22:37:26 +0000
+Subject: M93: [IndexedDB] Don't ReportBadMessage for Commit calls.
+
+We do seem to be getting commit calls quite a lot even after a
+transaction has already started to be committed or aborted, so for now
+just avoid killing the renderer until we figure out where these calls
+are coming from.
+
+(cherry picked from commit f9bf7be854ed80a792953e94dd56e1269a5bbe98)
+
+Bug: 1247766
+Change-Id: If7a4d4b12574c894addddbfcaf336295bd90e0a3
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3154398
+Reviewed-by: Daniel Murphy <dmurph@chromium.org>
+Commit-Queue: Marijn Kruisselbrink <mek@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#920304}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3154726
+Commit-Queue: Victor Costan <pwnall@chromium.org>
+Reviewed-by: enne <enne@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4577@{#1235}
+Cr-Branched-From: 761ddde228655e313424edec06497d0c56b0f3c4-refs/heads/master@{#902210}
+
+diff --git a/content/browser/indexed_db/transaction_impl.cc b/content/browser/indexed_db/transaction_impl.cc
+index a6e040a32718af0d995cf87aadaeef2a9e3fadbc..7add046bb8d0a47cfbf9bf99048f3cec2fece260 100644
+--- a/content/browser/indexed_db/transaction_impl.cc
++++ b/content/browser/indexed_db/transaction_impl.cc
+@@ -298,8 +298,8 @@ void TransactionImpl::Commit(int64_t num_errors_handled) {
+     return;
+ 
+   if (!transaction_->IsAcceptingRequests()) {
+-    mojo::ReportBadMessage(
+-        "Commit was called after committing or aborting the transaction");
++    // This really shouldn't be happening, but seems to be happening anyway. So
++    // rather than killing the renderer, simply ignore the request.
+     return;
+   }
+ 
