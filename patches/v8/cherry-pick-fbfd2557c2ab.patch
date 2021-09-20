@@ -1,0 +1,33 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Mythri A <mythria@chromium.org>
+Date: Fri, 21 May 2021 11:12:41 +0100
+Subject: Return early when initializing feedback cell for AsmWasm functions
+
+AsmWasmFunctions don't allocate / use feedback vectors.
+
+Bug: chromium:1206289
+Change-Id: I970d5eaba6603809a844c2fc5753efba411cd719
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/2909854
+Commit-Queue: Mythri Alle <mythria@chromium.org>
+Reviewed-by: Ross McIlroy <rmcilroy@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#74708}
+
+diff --git a/src/objects/js-function.cc b/src/objects/js-function.cc
+index 2e657d28266e8b8cb3f6db0ba268d34d6818c784..2247c608762034508561f7bda9a320f9e916992c 100644
+--- a/src/objects/js-function.cc
++++ b/src/objects/js-function.cc
+@@ -314,6 +314,14 @@ void JSFunction::EnsureFeedbackVector(Handle<JSFunction> function,
+ void JSFunction::InitializeFeedbackCell(Handle<JSFunction> function,
+                                         IsCompiledScope* is_compiled_scope) {
+   Isolate* const isolate = function->GetIsolate();
++#if V8_ENABLE_WEBASSEMBLY
++  // The following checks ensure that the feedback vectors are compatible with
++  // the feedback metadata. For Asm / Wasm functions we never allocate / use
++  // feedback vectors, so a mismatch between the metadata and feedback vector is
++  // harmless. The checks could fail for functions that has has_asm_wasm_broken
++  // set at runtime (for ex: failed instantiation).
++  if (function->shared().HasAsmWasmData()) return;
++#endif  // V8_ENABLE_WEBASSEMBLY
+ 
+   if (function->has_feedback_vector()) {
+     CHECK_EQ(function->feedback_vector().length(),
