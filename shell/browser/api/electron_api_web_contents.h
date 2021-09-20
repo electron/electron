@@ -92,10 +92,10 @@ class OffScreenWebContentsView;
 
 namespace api {
 
-using DevicePermissionMap = std::map<
-    int,
-    std::map<content::PermissionType,
-             std::map<url::Origin, std::vector<std::unique_ptr<base::Value>>>>>;
+using DevicePermissionMap =
+    std::map<int,
+             std::map<content::PermissionType,
+                      std::map<url::Origin, std::vector<base::Value>>>>;
 
 // Wrapper around the content::WebContents.
 class WebContents : public gin::Wrappable<WebContents>,
