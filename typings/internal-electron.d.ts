@@ -316,7 +316,7 @@ declare namespace ElectronInternal {
 
 declare namespace Chrome {
   namespace Tabs {
-    // https://developer.chrome.com/extensions/tabs#method-executeScript
+    // https://developer.chrome.com/docs/extensions/tabs#method-executeScript
     interface ExecuteScriptDetails {
       code?: string;
       file?: string;
@@ -329,7 +329,7 @@ declare namespace Chrome {
 
     type ExecuteScriptCallback = (result: Array<any>) => void;
 
-    // https://developer.chrome.com/extensions/tabs#method-sendMessage
+    // https://developer.chrome.com/docs/extensions/tabs#method-sendMessage
     interface SendMessageDetails {
       frameId?: number;
     }
