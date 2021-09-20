@@ -1369,11 +1369,19 @@ Decrease the capturer count by one. The page will be set to hidden or occluded s
 browser window is hidden or occluded and the capturer count reaches zero. If you want to
 decrease the hidden capturer count instead you should set `stayHidden` to true.
 
-#### `contents.getPrinters()`
+#### `contents.getPrinters()` _Deprecated_
 
 Get the system printer list.
 
 Returns [`PrinterInfo[]`](structures/printer-info.md)
+
+**Deprecated:** Should use the new [`contents.getPrintersAsync`](web-contents.md#contentsgetprintersasync) API.
+
+#### `contents.getPrintersAsync()`
+
+Get the system printer list.
+
+Returns `Promise<PrinterInfo[]>` - Resolves with a [`PrinterInfo[]`](structures/printer-info.md)
 
 #### `contents.print([options], [callback])`
 
