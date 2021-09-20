@@ -339,11 +339,11 @@ void InspectableWebContents::RegisterPrefs(PrefRegistrySimple* registry) {
 }
 
 InspectableWebContents::InspectableWebContents(
-    content::WebContents* web_contents,
+    std::unique_ptr<content::WebContents> web_contents,
     PrefService* pref_service,
     bool is_guest)
     : pref_service_(pref_service),
-      web_contents_(web_contents),
+      web_contents_(std::move(web_contents)),
       is_guest_(is_guest),
       view_(CreateInspectableContentsView(this)) {
   const base::Value* bounds_dict = pref_service_->Get(kDevToolsBoundsPref);
@@ -356,9 +356,9 @@ InspectableWebContents::InspectableWebContents(
     }
     if (!IsPointInScreen(devtools_bounds_.origin())) {
       gfx::Rect display;
-      if (!is_guest && web_contents->GetNativeView()) {
+      if (!is_guest && web_contents_->GetNativeView()) {
         display = display::Screen::GetScreen()
-                      ->GetDisplayNearestView(web_contents->GetNativeView())
+                      ->GetDisplayNearestView(web_contents_->GetNativeView())
                       .bounds();
       } else {
         display = display::Screen::GetScreen()->GetPrimaryDisplay().bounds();
