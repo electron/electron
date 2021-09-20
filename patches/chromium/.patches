@@ -150,4 +150,6 @@ cherry-pick-1227933.patch
 cherry-pick-d727013bb543.patch
 cherry-pick-1231134.patch
 merge_m92_speculative_fix_for_crash_in.patch
+m93_indexeddb_add_browser-side_checks_for_committing_transactions.patch
+m93_indexeddb_don_t_reportbadmessage_for_commit_calls.patch
 content-visibility_force_range_base_extent_when_computing_visual.patch
