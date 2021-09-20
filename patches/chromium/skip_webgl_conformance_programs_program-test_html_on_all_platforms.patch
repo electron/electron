@@ -1,0 +1,55 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Yuly Novikov <ynovikov@chromium.org>
+Date: Thu, 9 Sep 2021 20:00:43 +0000
+Subject: Skip WebGL conformance/programs/program-test.html on all platforms
+
+To unblock ANGLE CL http://crrev.com/c/3140496, which modifies behaviour
+to make it an error to draw after the current program fails to re-link.
+
+(cherry picked from commit 8ef1e4544ed5214608039d969940347d8f98e543)
+
+Bug: 1241123
+Bug: angleproject:6358
+Change-Id: I40a1f4843f902533745cc9527379def9d777a578
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3140226
+Auto-Submit: Yuly Novikov <ynovikov@chromium.org>
+Commit-Queue: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Original-Commit-Position: refs/heads/main@{#918281}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3150594
+Auto-Submit: Jamie Madill <jmadill@chromium.org>
+Commit-Queue: Yuly Novikov <ynovikov@chromium.org>
+Reviewed-by: Yuly Novikov <ynovikov@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4515@{#2117}
+Cr-Branched-From: 488fc70865ddaa05324ac00a54a6eb783b4bc41c-refs/heads/master@{#885287}
+
+diff --git a/content/test/gpu/gpu_tests/test_expectations/webgl2_conformance_expectations.txt b/content/test/gpu/gpu_tests/test_expectations/webgl2_conformance_expectations.txt
+index 6b91c94495f2aea1b1cc6fa1c5962cea0b94b2a6..4e97412e4873b0ed5b7de6a417dd5e5f1e86f8d3 100644
+--- a/content/test/gpu/gpu_tests/test_expectations/webgl2_conformance_expectations.txt
++++ b/content/test/gpu/gpu_tests/test_expectations/webgl2_conformance_expectations.txt
+@@ -187,6 +187,10 @@ crbug.com/1085222 [ linux intel-0x5912 ] deqp/functional/gles3/shadermatrix/add_
+ crbug.com/1085222 [ catalina intel-0xa2e ] deqp/functional/gles3/shaderoperator/binary_operator_* [ RetryOnFailure ]
+ crbug.com/1085222 [ catalina intel-0xa2e ] deqp/functional/gles3/shaderoperator/unary_operator_* [ RetryOnFailure ]
+ 
++# Temporary suppression while we wait for a spec update.
++# TODO(jmadill): Remove when possible.
++crbug.com/angleproject/6358 conformance/programs/program-test.html [ Failure ]
++
+ ####################
+ # Win failures     #
+ ####################
+diff --git a/content/test/gpu/gpu_tests/test_expectations/webgl_conformance_expectations.txt b/content/test/gpu/gpu_tests/test_expectations/webgl_conformance_expectations.txt
+index 9e2aee0cebecbe83bc6df45fd6e006d95513b2f9..b8ff50068fc419630cab86fb4eb925b0f5e3a05b 100644
+--- a/content/test/gpu/gpu_tests/test_expectations/webgl_conformance_expectations.txt
++++ b/content/test/gpu/gpu_tests/test_expectations/webgl_conformance_expectations.txt
+@@ -238,6 +238,10 @@ crbug.com/1163292 [ win nvidia angle-d3d9 ] conformance/textures/misc/texture-co
+ crbug.com/1105129 [ linux ] conformance/context/context-creation.html [ RetryOnFailure ]
+ crbug.com/1105129 [ win ] conformance/context/context-creation.html [ RetryOnFailure ]
+ 
++# Temporary suppression while we wait for a spec update.
++# TODO(jmadill): Remove when possible.
++crbug.com/angleproject/6358 conformance/programs/program-test.html [ Failure ]
++
+ # Win / AMD / Passthrough command decoder / D3D11
+ crbug.com/772037 [ win amd angle-d3d11 passthrough ] conformance/textures/misc/texture-sub-image-cube-maps.html [ RetryOnFailure ]
+ 
