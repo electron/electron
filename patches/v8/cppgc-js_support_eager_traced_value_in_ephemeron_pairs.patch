@@ -28,7 +28,7 @@ Commit-Queue: Michael Lippautz <mlippautz@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#76658}
 
 diff --git a/src/heap/cppgc-js/cpp-snapshot.cc b/src/heap/cppgc-js/cpp-snapshot.cc
-index e72c6ad46998bb40ba91d37a740dc0ecfee2838b..f64a7de116ac69221e3610370c7e2a5f0b7c60e5 100644
+index dc55753ff625a135b6e494344ee49105eb59121e..9b20b5c0a7831ea026819f90ea80c10eb2324282 100644
 --- a/src/heap/cppgc-js/cpp-snapshot.cc
 +++ b/src/heap/cppgc-js/cpp-snapshot.cc
 @@ -264,6 +264,10 @@ class State final : public StateBase {
@@ -82,7 +82,7 @@ index e72c6ad46998bb40ba91d37a740dc0ecfee2838b..f64a7de116ac69221e3610370c7e2a5f
      DCHECK(parent.IsVisibleNotDependent());
      auto& current = states_.GetExistingState(header);
      if (!current.IsVisibleNotDependent()) return;
-@@ -449,7 +466,8 @@ class CppGraphBuilderImpl final {
+@@ -443,7 +460,8 @@ class CppGraphBuilderImpl final {
      }
    }
  
@@ -92,7 +92,7 @@ index e72c6ad46998bb40ba91d37a740dc0ecfee2838b..f64a7de116ac69221e3610370c7e2a5f
      DCHECK(parent.IsVisibleNotDependent());
      v8::Local<v8::Value> v8_value = ref.Get(cpp_heap_.isolate());
      if (!v8_value.IsEmpty()) {
-@@ -457,12 +475,19 @@ class CppGraphBuilderImpl final {
+@@ -451,12 +469,19 @@ class CppGraphBuilderImpl final {
          parent.set_node(AddNode(*parent.header()));
        }
        auto* v8_node = graph_.V8Node(v8_value);
@@ -114,7 +114,7 @@ index e72c6ad46998bb40ba91d37a740dc0ecfee2838b..f64a7de116ac69221e3610370c7e2a5f
  
        void* back_reference_object = ExtractEmbedderDataBackref(
            reinterpret_cast<v8::internal::Isolate*>(cpp_heap_.isolate()),
-@@ -612,8 +637,18 @@ class WeakVisitor : public JSVisitor {
+@@ -598,8 +623,18 @@ class WeakVisitor : public JSVisitor {
    void VisitEphemeron(const void* key, const void* value,
                        cppgc::TraceDescriptor value_desc) final {
      // For ephemerons, the key retains the value.
@@ -134,7 +134,7 @@ index e72c6ad46998bb40ba91d37a740dc0ecfee2838b..f64a7de116ac69221e3610370c7e2a5f
    }
  
   protected:
-@@ -659,7 +694,7 @@ class GraphBuildingVisitor final : public JSVisitor {
+@@ -645,7 +680,7 @@ class GraphBuildingVisitor final : public JSVisitor {
    void Visit(const void*, cppgc::TraceDescriptor desc) final {
      graph_builder_.AddEdge(
          parent_scope_.ParentAsRegularState(),
@@ -143,7 +143,7 @@ index e72c6ad46998bb40ba91d37a740dc0ecfee2838b..f64a7de116ac69221e3610370c7e2a5f
    }
    void VisitWeakContainer(const void* object,
                            cppgc::TraceDescriptor strong_desc,
-@@ -669,7 +704,8 @@ class GraphBuildingVisitor final : public JSVisitor {
+@@ -655,7 +690,8 @@ class GraphBuildingVisitor final : public JSVisitor {
      // container itself.
      graph_builder_.AddEdge(
          parent_scope_.ParentAsRegularState(),
@@ -153,7 +153,7 @@ index e72c6ad46998bb40ba91d37a740dc0ecfee2838b..f64a7de116ac69221e3610370c7e2a5f
    }
    void VisitRoot(const void*, cppgc::TraceDescriptor desc,
                   const cppgc::SourceLocation& loc) final {
-@@ -681,12 +717,18 @@ class GraphBuildingVisitor final : public JSVisitor {
+@@ -667,12 +703,18 @@ class GraphBuildingVisitor final : public JSVisitor {
                       const void*, const cppgc::SourceLocation&) final {}
    // JS handling.
    void Visit(const TracedReferenceBase& ref) final {
@@ -173,7 +173,7 @@ index e72c6ad46998bb40ba91d37a740dc0ecfee2838b..f64a7de116ac69221e3610370c7e2a5f
  };
  
  // Base class for transforming recursion into iteration. Items are processed
-@@ -779,6 +821,19 @@ void CppGraphBuilderImpl::VisitForVisibility(State* parent,
+@@ -765,6 +807,19 @@ void CppGraphBuilderImpl::VisitForVisibility(State* parent,
    }
  }
  
@@ -193,7 +193,7 @@ index e72c6ad46998bb40ba91d37a740dc0ecfee2838b..f64a7de116ac69221e3610370c7e2a5f
  void CppGraphBuilderImpl::VisitEphemeronForVisibility(
      const HeapObjectHeader& key, const HeapObjectHeader& value) {
    auto& key_state = states_.GetOrCreateState(key);
-@@ -834,6 +889,12 @@ void CppGraphBuilderImpl::Run() {
+@@ -820,6 +875,12 @@ void CppGraphBuilderImpl::Run() {
      state.ForAllEphemeronEdges([this, &state](const HeapObjectHeader& value) {
        AddEdge(state, value, "part of key -> value pair in ephemeron table");
      });
