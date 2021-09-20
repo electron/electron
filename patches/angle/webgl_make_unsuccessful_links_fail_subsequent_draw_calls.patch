@@ -1,0 +1,34 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jamie Madill <jmadill@chromium.org>
+Date: Fri, 3 Sep 2021 09:34:10 -0400
+Subject: WebGL: Make unsuccessful links fail subsequent draw calls.
+
+This protects against incomplete state updates during a failed
+link call that can interfere with draw calls.
+
+Bug: angleproject:6358
+Bug: chromium:1241123
+Change-Id: Ie892654c3a58c69d6e35ba3c41758ab6269d8193
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3140496
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Commit-Queue: Yuly Novikov <ynovikov@chromium.org>
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3152556
+Reviewed-by: Jamie Madill <jmadill@chromium.org>
+
+diff --git a/src/libANGLE/validationES.cpp b/src/libANGLE/validationES.cpp
+index 4ed0ea4f47c89090d06f706199d32bb0f5b745b9..40574e58d20363710a1312ddaa39ba2eb685b6b8 100644
+--- a/src/libANGLE/validationES.cpp
++++ b/src/libANGLE/validationES.cpp
+@@ -3881,6 +3881,12 @@ const char *ValidateDrawStates(const Context *context)
+             {
+                 return kVertexBufferBoundForTransformFeedback;
+             }
++
++            // Validate that we are rendering with a linked program.
++            if (!program->isLinked())
++            {
++                return kProgramNotLinked;
++            }
+         }
+     }
+ 

@@ -1,0 +1,290 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Marijn Kruisselbrink <mek@chromium.org>
+Date: Fri, 10 Sep 2021 21:31:17 +0000
+Subject: M93: [IndexedDB] Add browser-side checks for committing transactions.
+
+No new IPCs should come in for a transaction after it starts committing.
+This CL adds browser-side checks in addition to the existing
+renderer-side checks for this.
+
+(cherry picked from commit ec3ddd67bae4c491ec1faba7be7cc988c425506c)
+
+Bug: 1247766
+Change-Id: If9d69d5a0320bfd3b615446710358dd439074795
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3149409
+Commit-Queue: Marijn Kruisselbrink <mek@chromium.org>
+Reviewed-by: Joshua Bell <jsbell@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#919898}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3154684
+Auto-Submit: Victor Costan <pwnall@chromium.org>
+Commit-Queue: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/4577@{#1234}
+Cr-Branched-From: 761ddde228655e313424edec06497d0c56b0f3c4-refs/heads/master@{#902210}
+
+diff --git a/content/browser/indexed_db/database_impl.cc b/content/browser/indexed_db/database_impl.cc
+index 1bfbd8263fafc4cb727a01fdcf8dbd093c5bff4e..004b6e587b8525b8a0d1a91857a128c982273e23 100644
+--- a/content/browser/indexed_db/database_impl.cc
++++ b/content/browser/indexed_db/database_impl.cc
+@@ -86,6 +86,13 @@ void DatabaseImpl::RenameObjectStore(int64_t transaction_id,
+     return;
+   }
+ 
++  if (!transaction->IsAcceptingRequests()) {
++    mojo::ReportBadMessage(
++        "RenameObjectStore was called after committing or aborting the "
++        "transaction");
++    return;
++  }
++
+   transaction->ScheduleTask(
+       blink::mojom::IDBTaskType::Preemptive,
+       BindWeakOperation(&IndexedDBDatabase::RenameObjectStoreOperation,
+@@ -203,6 +210,12 @@ void DatabaseImpl::Get(int64_t transaction_id,
+     return;
+   }
+ 
++  if (!transaction->IsAcceptingRequests()) {
++    mojo::ReportBadMessage(
++        "Get was called after committing or aborting the transaction");
++    return;
++  }
++
+   blink::mojom::IDBDatabase::GetCallback aborting_callback =
+       CreateCallbackAbortOnDestruct<blink::mojom::IDBDatabase::GetCallback,
+                                     blink::mojom::IDBDatabaseGetResultPtr>(
+@@ -253,6 +266,12 @@ void DatabaseImpl::GetAll(int64_t transaction_id,
+     return;
+   }
+ 
++  if (!transaction->IsAcceptingRequests()) {
++    mojo::ReportBadMessage(
++        "GetAll was called after committing or aborting the transaction");
++    return;
++  }
++
+   // Hypothetically, this could pass the receiver to the callback immediately.
+   // However, for result ordering issues, we need to PostTask to mimic
+   // all of the other operations.
+@@ -292,6 +311,12 @@ void DatabaseImpl::SetIndexKeys(
+     return;
+   }
+ 
++  if (!transaction->IsAcceptingRequests()) {
++    mojo::ReportBadMessage(
++        "SetIndexKeys was called after committing or aborting the transaction");
++    return;
++  }
++
+   transaction->ScheduleTask(
+       blink::mojom::IDBTaskType::Preemptive,
+       BindWeakOperation(&IndexedDBDatabase::SetIndexKeysOperation,
+@@ -318,6 +343,13 @@ void DatabaseImpl::SetIndexesReady(int64_t transaction_id,
+     return;
+   }
+ 
++  if (!transaction->IsAcceptingRequests()) {
++    mojo::ReportBadMessage(
++        "SetIndexesReady was called after committing or aborting the "
++        "transaction");
++    return;
++  }
++
+   transaction->ScheduleTask(
+       blink::mojom::IDBTaskType::Preemptive,
+       BindWeakOperation(&IndexedDBDatabase::SetIndexesReadyOperation,
+@@ -355,6 +387,12 @@ void DatabaseImpl::OpenCursor(
+     return;
+   }
+ 
++  if (!transaction->IsAcceptingRequests()) {
++    mojo::ReportBadMessage(
++        "OpenCursor was called after committing or aborting the transaction");
++    return;
++  }
++
+   blink::mojom::IDBDatabase::OpenCursorCallback aborting_callback =
+       CreateCallbackAbortOnDestruct<
+           blink::mojom::IDBDatabase::OpenCursorCallback,
+@@ -404,6 +442,12 @@ void DatabaseImpl::Count(
+   if (!transaction)
+     return;
+ 
++  if (!transaction->IsAcceptingRequests()) {
++    mojo::ReportBadMessage(
++        "Count was called after committing or aborting the transaction");
++    return;
++  }
++
+   transaction->ScheduleTask(BindWeakOperation(
+       &IndexedDBDatabase::CountOperation, connection_->database()->AsWeakPtr(),
+       object_store_id, index_id,
+@@ -429,6 +473,12 @@ void DatabaseImpl::DeleteRange(
+   if (!transaction)
+     return;
+ 
++  if (!transaction->IsAcceptingRequests()) {
++    mojo::ReportBadMessage(
++        "DeleteRange was called after committing or aborting the transaction");
++    return;
++  }
++
+   transaction->ScheduleTask(BindWeakOperation(
+       &IndexedDBDatabase::DeleteRangeOperation,
+       connection_->database()->AsWeakPtr(), object_store_id,
+@@ -452,6 +502,13 @@ void DatabaseImpl::GetKeyGeneratorCurrentNumber(
+   if (!transaction)
+     return;
+ 
++  if (!transaction->IsAcceptingRequests()) {
++    mojo::ReportBadMessage(
++        "GetKeyGeneratorCurrentNumber was called after committing or aborting "
++        "the transaction");
++    return;
++  }
++
+   transaction->ScheduleTask(BindWeakOperation(
+       &IndexedDBDatabase::GetKeyGeneratorCurrentNumberOperation,
+       connection_->database()->AsWeakPtr(), object_store_id,
+@@ -475,6 +532,12 @@ void DatabaseImpl::Clear(
+   if (!transaction)
+     return;
+ 
++  if (!transaction->IsAcceptingRequests()) {
++    mojo::ReportBadMessage(
++        "Clear was called after committing or aborting the transaction");
++    return;
++  }
++
+   transaction->ScheduleTask(BindWeakOperation(
+       &IndexedDBDatabase::ClearOperation, connection_->database()->AsWeakPtr(),
+       object_store_id, std::move(callbacks)));
+@@ -502,6 +565,12 @@ void DatabaseImpl::CreateIndex(int64_t transaction_id,
+     return;
+   }
+ 
++  if (!transaction->IsAcceptingRequests()) {
++    mojo::ReportBadMessage(
++        "CreateIndex was called after committing or aborting the transaction");
++    return;
++  }
++
+   transaction->ScheduleTask(
+       blink::mojom::IDBTaskType::Preemptive,
+       BindWeakOperation(&IndexedDBDatabase::CreateIndexOperation,
+@@ -527,6 +596,12 @@ void DatabaseImpl::DeleteIndex(int64_t transaction_id,
+     return;
+   }
+ 
++  if (!transaction->IsAcceptingRequests()) {
++    mojo::ReportBadMessage(
++        "DeleteIndex was called after committing or aborting the transaction");
++    return;
++  }
++
+   transaction->ScheduleTask(BindWeakOperation(
+       &IndexedDBDatabase::DeleteIndexOperation,
+       connection_->database()->AsWeakPtr(), object_store_id, index_id));
+@@ -551,6 +626,12 @@ void DatabaseImpl::RenameIndex(int64_t transaction_id,
+     return;
+   }
+ 
++  if (!transaction->IsAcceptingRequests()) {
++    mojo::ReportBadMessage(
++        "RenameIndex was called after committing or aborting the transaction");
++    return;
++  }
++
+   transaction->ScheduleTask(
+       BindWeakOperation(&IndexedDBDatabase::RenameIndexOperation,
+                         connection_->database()->AsWeakPtr(), object_store_id,
+diff --git a/content/browser/indexed_db/indexed_db_transaction.h b/content/browser/indexed_db/indexed_db_transaction.h
+index 10f708590aac7138db16631c56c716363ba5678f..bb73a18830ea0391fc5b89567f5ab78a682d85f7 100644
+--- a/content/browser/indexed_db/indexed_db_transaction.h
++++ b/content/browser/indexed_db/indexed_db_transaction.h
+@@ -69,6 +69,14 @@ class CONTENT_EXPORT IndexedDBTransaction {
+   // Signals the transaction for commit.
+   void SetCommitFlag();
+ 
++  // Returns false if the transaction has been signalled to commit, is in the
++  // process of committing, or finished committing or was aborted. Essentially
++  // when this returns false no tasks should be scheduled that try to modify
++  // the transaction.
++  bool IsAcceptingRequests() {
++    return !is_commit_pending_ && state_ != COMMITTING && state_ != FINISHED;
++  }
++
+   // This transaction is ultimately backed by a LevelDBScope. Aborting a
+   // transaction rolls back the LevelDBScopes, which (if LevelDBScopes is in
+   // single-sequence mode) can fail. This returns the result of that rollback,
+diff --git a/content/browser/indexed_db/transaction_impl.cc b/content/browser/indexed_db/transaction_impl.cc
+index 9f97786f09fdd0768e015abb1c85d4e17ad4a374..a6e040a32718af0d995cf87aadaeef2a9e3fadbc 100644
+--- a/content/browser/indexed_db/transaction_impl.cc
++++ b/content/browser/indexed_db/transaction_impl.cc
+@@ -57,6 +57,13 @@ void TransactionImpl::CreateObjectStore(int64_t object_store_id,
+     return;
+   }
+ 
++  if (!transaction_->IsAcceptingRequests()) {
++    mojo::ReportBadMessage(
++        "CreateObjectStore was called after committing or aborting the "
++        "transaction");
++    return;
++  }
++
+   IndexedDBConnection* connection = transaction_->connection();
+   if (!connection->IsConnected())
+     return;
+@@ -79,6 +86,13 @@ void TransactionImpl::DeleteObjectStore(int64_t object_store_id) {
+     return;
+   }
+ 
++  if (!transaction_->IsAcceptingRequests()) {
++    mojo::ReportBadMessage(
++        "DeleteObjectStore was called after committing or aborting the "
++        "transaction");
++    return;
++  }
++
+   IndexedDBConnection* connection = transaction_->connection();
+   if (!connection->IsConnected())
+     return;
+@@ -114,6 +128,12 @@ void TransactionImpl::Put(
+     return;
+   }
+ 
++  if (!transaction_->IsAcceptingRequests()) {
++    mojo::ReportBadMessage(
++        "Put was called after committing or aborting the transaction");
++    return;
++  }
++
+   IndexedDBConnection* connection = transaction_->connection();
+   if (!connection->IsConnected()) {
+     IndexedDBDatabaseError error(blink::mojom::IDBException::kUnknownError,
+@@ -173,6 +193,12 @@ void TransactionImpl::PutAll(int64_t object_store_id,
+     return;
+   }
+ 
++  if (!transaction_->IsAcceptingRequests()) {
++    mojo::ReportBadMessage(
++        "PutAll was called after committing or aborting the transaction");
++    return;
++  }
++
+   std::vector<std::vector<IndexedDBExternalObject>> external_objects_per_put(
+       puts.size());
+   for (size_t i = 0; i < puts.size(); i++) {
+@@ -271,6 +297,12 @@ void TransactionImpl::Commit(int64_t num_errors_handled) {
+   if (!transaction_)
+     return;
+ 
++  if (!transaction_->IsAcceptingRequests()) {
++    mojo::ReportBadMessage(
++        "Commit was called after committing or aborting the transaction");
++    return;
++  }
++
+   IndexedDBConnection* connection = transaction_->connection();
+   if (!connection->IsConnected())
+     return;
