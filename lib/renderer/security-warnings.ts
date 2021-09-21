@@ -104,10 +104,14 @@ const warnAboutInsecureResources = function () {
     return;
   }
 
+  const isLocal = (url: URL): boolean =>
+    ['localhost', '127.0.0.1', '[::1]', ''].includes(url.hostname);
+  const isInsecure = (url: URL): boolean =>
+    ['http:', 'ftp:'].includes(url.protocol) && !isLocal(url);
+
   const resources = window.performance
     .getEntriesByType('resource')
-    .filter(({ name }) => /^(http|ftp):/gi.test(name || ''))
-    .filter(({ name }) => new URL(name).hostname !== 'localhost')
+    .filter(({ name }) => isInsecure(new URL(name)))
     .map(({ name }) => `- ${name}`)
     .join('\n');
 
