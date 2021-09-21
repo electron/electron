@@ -1,4 +1,4 @@
-# Introduction
+# Introduction 
 
 Welcome to the Electron documentation! If this is your first time developing
 an Electron app, read through this Getting Started section to get familiar with the
