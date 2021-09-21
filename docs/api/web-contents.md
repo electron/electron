@@ -1825,7 +1825,8 @@ End subscribing for frame presentation events.
 #### `contents.startDrag(item)`
 
 * `item` Object
-  * `file` String[] | String - The path(s) to the file(s) being dragged.
+  * `file` String - The path to the file being dragged.
+  * `files` String[] (optional) - The paths to the files being dragged. (`files` will override `file` field)
   * `icon` [NativeImage](native-image.md) | String - The image must be
     non-empty on macOS.
 
