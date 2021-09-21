@@ -1,0 +1,65 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Koji Ishii <kojii@chromium.org>
+Date: Thu, 9 Sep 2021 23:25:48 +0000
+Subject: Merge 4577: Apply list item quirks only when the nested list is
+ block-level
+
+This patch changes to apply quirks for a list-item occupying
+the whole line only if the nested list is block-level.
+
+When applying this quirks, list markers are handled like a
+regular child. r883403 crrev.com/c/2885398 changed to handle
+list markers at |NGBlockLayoutAlgorithm| to support NG block
+fragmentation. These two when combined causes the list marker
+not laid out if the nested list is not block-level.
+
+This may change some visual behaviors, but I think this is ok:
+a) This quirks is not in the quirks spec[1] and not
+   implemented in Gecko.
+b) The previous CL had a visual difference in this case in M92
+   but no reports so far.
+
+[1]: https://quirks.spec.whatwg.org/
+
+(cherry picked from commit 6f5d97da873f0e193a732fb7281d3484258aef6d)
+
+Bug: 1246932, 1206409
+Change-Id: Ia58a1b788313d3d9f221fd010cdd1a906551ab8b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3145018
+Reviewed-by: Yoshifumi Inoue <yosin@chromium.org>
+Commit-Queue: Koji Ishii <kojii@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#919158}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3151681
+Auto-Submit: Koji Ishii <kojii@chromium.org>
+Reviewed-by: Ian Kilpatrick <ikilpatrick@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4577@{#1225}
+Cr-Branched-From: 761ddde228655e313424edec06497d0c56b0f3c4-refs/heads/master@{#902210}
+
+diff --git a/third_party/blink/renderer/core/layout/ng/list/layout_ng_outside_list_marker.cc b/third_party/blink/renderer/core/layout/ng/list/layout_ng_outside_list_marker.cc
+index a05731c51149ce7ee9f3a62bb2a50742d420f95a..e8c55dedcd3e731cc231d37a78883d9efad1071e 100644
+--- a/third_party/blink/renderer/core/layout/ng/list/layout_ng_outside_list_marker.cc
++++ b/third_party/blink/renderer/core/layout/ng/list/layout_ng_outside_list_marker.cc
+@@ -26,8 +26,11 @@ bool LayoutNGOutsideListMarker::NeedsOccupyWholeLine() const {
+   if (!GetDocument().InQuirksMode())
+     return false;
+ 
++  // Apply the quirks when the next sibling is a block-level `<ul>` or `<ol>`.
+   LayoutObject* next_sibling = NextSibling();
+-  if (next_sibling && next_sibling->GetNode() &&
++  if (next_sibling && !next_sibling->IsInline() &&
++      !next_sibling->IsFloatingOrOutOfFlowPositioned() &&
++      next_sibling->GetNode() &&
+       (IsA<HTMLUListElement>(*next_sibling->GetNode()) ||
+        IsA<HTMLOListElement>(*next_sibling->GetNode())))
+     return true;
+diff --git a/third_party/blink/web_tests/external/wpt/quirks/crashtests/list-item-whole-line-quirks-crash.html b/third_party/blink/web_tests/external/wpt/quirks/crashtests/list-item-whole-line-quirks-crash.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..b91b09db0e37727e2d3a3e13ca2c7cae25b8d761
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/quirks/crashtests/list-item-whole-line-quirks-crash.html
+@@ -0,0 +1,5 @@
++<!-- quirks -->
++<div>a<ul><li><ul style='float: left'></ul></li></ul></div>
++<div>a<ul><li><ul style='position: absolute'></ul></li></ul></div>
++<div>a<ul><li><ul style='display: inline'></ul></li></ul></div>
++<div>a<ul><li><ul style='display: inline-block'></ul></li></ul></div>
