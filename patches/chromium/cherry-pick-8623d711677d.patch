@@ -1,0 +1,274 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ian Kilpatrick <ikilpatrick@chromium.org>
+Date: Thu, 9 Sep 2021 23:20:48 +0000
+Subject: Remove limit from LayoutInline::SplitInlines.
+
+After 200 elements the code "gave up" causing the layout tree to be
+"strange".
+
+This caused a To<LayoutInline> to fail in the OOF code. Relaxing this
+To<> to a DynamicTo<> caused additional CHECKs / DCHECKs all over the
+place (not just in NG but in Legacy as well).
+
+This patch removes the limit at which we "give up". This may cause
+additional render hangs.
+
+However we currently have a project "block-in-inline" which will (for
+most cases) stop inline-splitting for occuring (except in legacy
+fallback).
+
+(cherry picked from commit bbd315efb49a4ae257509dd0f0d85c6b5906e0e4)
+
+(cherry picked from commit d760d2ae1d51c0b4fda87a0a3af4e7ed30d2ff4c)
+
+Bug: 1245786
+Change-Id: I5f1c4d6a4b81a8345974de40c0c50a27a839b7b4
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3140144
+Reviewed-by: Koji Ishii <kojii@chromium.org>
+Commit-Queue: Ian Kilpatrick <ikilpatrick@chromium.org>
+Cr-Original-Original-Commit-Position: refs/heads/main@{#917771}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3149698
+Cr-Original-Commit-Position: refs/branch-heads/4606@{#876}
+Cr-Original-Branched-From: 35b0d5a9dc8362adfd44e2614f0d5b7402ef63d0-refs/heads/master@{#911515}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3152301
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/4577@{#1224}
+Cr-Branched-From: 761ddde228655e313424edec06497d0c56b0f3c4-refs/heads/master@{#902210}
+
+diff --git a/third_party/blink/renderer/core/layout/layout_inline.cc b/third_party/blink/renderer/core/layout/layout_inline.cc
+index 06497bec8c4d774539693c45c6cc2f038ce5a160..7b599014ba2ac8ec5403a48aefd39b639034d60e 100644
+--- a/third_party/blink/renderer/core/layout/layout_inline.cc
++++ b/third_party/blink/renderer/core/layout/layout_inline.cc
+@@ -577,15 +577,13 @@ void LayoutInline::SplitInlines(LayoutBlockFlow* from_block,
+   // nest to a much greater depth (see bugzilla bug 13430) but for now we have a
+   // limit. This *will* result in incorrect rendering, but the alternative is to
+   // hang forever.
+-  const unsigned kCMaxSplitDepth = 200;
+   Vector<LayoutInline*> inlines_to_clone;
+   LayoutInline* top_most_inline = this;
+   for (LayoutObject* o = this; o != from_block; o = o->Parent()) {
+     if (o->IsLayoutNGInsideListMarker())
+       continue;
+     top_most_inline = To<LayoutInline>(o);
+-    if (inlines_to_clone.size() < kCMaxSplitDepth)
+-      inlines_to_clone.push_back(top_most_inline);
++    inlines_to_clone.push_back(top_most_inline);
+     // Keep walking up the chain to ensure |topMostInline| is a child of
+     // |fromBlock|, to avoid assertion failure when |fromBlock|'s children are
+     // moved to |toBlock| below.
+diff --git a/third_party/blink/web_tests/external/wpt/css/css-inline/inline-crash.html b/third_party/blink/web_tests/external/wpt/css/css-inline/inline-crash.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..65008f74ce6e0b4397a5b333099c692382d64353
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/css/css-inline/inline-crash.html
+@@ -0,0 +1,210 @@
++<!DOCTYPE html>
++<link rel="help" href="https://bugs.chromium.org/p/chromium/issues/detail?id=1245786">
++<style>
++  nav{ position: absolute; }
++  body > * { position: relative; }
++</style>
++<body>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<span>
++<div>
++<nav>
