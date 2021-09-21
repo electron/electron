@@ -1,0 +1,121 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Scott Violet <sky@chromium.org>
+Date: Wed, 8 Sep 2021 18:45:42 +0000
+Subject: compositor: fix bug in sending damage regions
+
+Specifically if a layer is added when sending damaged regions the
+iterator would be invalidated. This converts to iterating over the
+size.
+
+BUG=1242257
+TEST=CompositorTestWithMessageLoop.AddLayerDuringUpdateVisualState
+
+(cherry picked from commit 7c0b0577c3ac1060945b7d05ad69f0dec33479b4)
+
+Change-Id: I09f2bd34afce5d3c9402ef470f14923bbc76b8ae
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3140178
+Reviewed-by: Ian Vollick <vollick@chromium.org>
+Commit-Queue: Scott Violet <sky@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#917886}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3149110
+Commit-Queue: enne <enne@chromium.org>
+Auto-Submit: Scott Violet <sky@chromium.org>
+Reviewed-by: enne <enne@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4577@{#1206}
+Cr-Branched-From: 761ddde228655e313424edec06497d0c56b0f3c4-refs/heads/master@{#902210}
+
+diff --git a/ui/compositor/compositor.cc b/ui/compositor/compositor.cc
+index 98fd0921a422da7c211eecda361ead41ace85911..e80c49d63346fdbb083b251a2d3e2a1739286eff 100644
+--- a/ui/compositor/compositor.cc
++++ b/ui/compositor/compositor.cc
+@@ -646,8 +646,10 @@ void Compositor::BeginMainFrameNotExpectedUntil(base::TimeTicks time) {}
+ 
+ static void SendDamagedRectsRecursive(ui::Layer* layer) {
+   layer->SendDamagedRects();
+-  for (auto* child : layer->children())
+-    SendDamagedRectsRecursive(child);
++  // Iterate using the size for the case of mutation during sending damaged
++  // regions. https://crbug.com/1242257.
++  for (size_t i = 0; i < layer->children().size(); ++i)
++    SendDamagedRectsRecursive(layer->children()[i]);
+ }
+ 
+ void Compositor::UpdateLayerTreeHost() {
+diff --git a/ui/compositor/compositor_unittest.cc b/ui/compositor/compositor_unittest.cc
+index 242a508436d752893540d992c08f13a6e53ad2d5..952f13bcc2654c411c0f0a965bb7835a34bc5b71 100644
+--- a/ui/compositor/compositor_unittest.cc
++++ b/ui/compositor/compositor_unittest.cc
+@@ -12,12 +12,14 @@
+ #include "base/test/test_mock_time_task_runner.h"
+ #include "base/threading/thread_task_runner_handle.h"
+ #include "base/time/time.h"
++#include "build/build_config.h"
+ #include "cc/metrics/frame_sequence_tracker.h"
+ #include "components/viz/common/surfaces/parent_local_surface_id_allocator.h"
+ #include "testing/gmock/include/gmock/gmock.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+ #include "ui/compositor/compositor.h"
+ #include "ui/compositor/layer.h"
++#include "ui/compositor/layer_delegate.h"
+ #include "ui/compositor/test/draw_waiter_for_test.h"
+ #include "ui/compositor/test/in_process_context_factory.h"
+ #include "ui/compositor/test/test_context_factories.h"
+@@ -311,4 +313,58 @@ TEST_F(CompositorTestWithMessageLoop, MAYBE_CreateAndReleaseOutputSurface) {
+   compositor()->SetRootLayer(nullptr);
+ }
+ 
++class LayerDelegateThatAddsDuringUpdateVisualState : public LayerDelegate {
++ public:
++  explicit LayerDelegateThatAddsDuringUpdateVisualState(Layer* parent)
++      : parent_(parent) {}
++
++  bool update_visual_state_called() const {
++    return update_visual_state_called_;
++  }
++
++  // LayerDelegate:
++  void UpdateVisualState() override {
++    added_layers_.push_back(std::make_unique<Layer>(ui::LAYER_SOLID_COLOR));
++    parent_->Add(added_layers_.back().get());
++    update_visual_state_called_ = true;
++  }
++  void OnPaintLayer(const PaintContext& context) override {}
++  void OnDeviceScaleFactorChanged(float old_device_scale_factor,
++                                  float new_device_scale_factor) override {}
++
++ private:
++  Layer* parent_;
++  std::vector<std::unique_ptr<Layer>> added_layers_;
++  bool update_visual_state_called_ = false;
++};
++
++TEST_F(CompositorTestWithMessageLoop, AddLayerDuringUpdateVisualState) {
++  std::unique_ptr<Layer> root_layer =
++      std::make_unique<Layer>(ui::LAYER_SOLID_COLOR);
++  std::unique_ptr<Layer> child_layer =
++      std::make_unique<Layer>(ui::LAYER_TEXTURED);
++  std::unique_ptr<Layer> child_layer2 =
++      std::make_unique<Layer>(ui::LAYER_SOLID_COLOR);
++  LayerDelegateThatAddsDuringUpdateVisualState child_layer_delegate(
++      root_layer.get());
++  child_layer->set_delegate(&child_layer_delegate);
++  root_layer->Add(child_layer.get());
++  root_layer->Add(child_layer2.get());
++
++  viz::ParentLocalSurfaceIdAllocator allocator;
++  allocator.GenerateId();
++  root_layer->SetBounds(gfx::Rect(10, 10));
++  compositor()->SetRootLayer(root_layer.get());
++  compositor()->SetScaleAndSize(1.0f, gfx::Size(10, 10),
++                                allocator.GetCurrentLocalSurfaceId());
++  ASSERT_TRUE(compositor()->IsVisible());
++  compositor()->ScheduleDraw();
++  DrawWaiterForTest::WaitForCompositingEnded(compositor());
++  EXPECT_TRUE(child_layer_delegate.update_visual_state_called());
++  compositor()->SetRootLayer(nullptr);
++  child_layer2.reset();
++  child_layer.reset();
++  root_layer.reset();
++}
++
+ }  // namespace ui
