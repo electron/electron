@@ -1373,8 +1373,9 @@ void WebContents::HandleNewRenderFrame(
   // Set the background color of RenderWidgetHostView.
   auto* web_preferences = WebContentsPreferences::From(web_contents());
   if (web_preferences) {
-    web_contents()->SetPageBaseBackgroundColor(
-        web_preferences->GetBackgroundColor());
+    absl::optional<SkColor> color = web_preferences->GetBackgroundColor();
+    web_contents()->SetPageBaseBackgroundColor(color);
+    rwhv->SetBackgroundColor(color.value_or(SK_ColorWHITE));
   }
 
   if (!background_throttling_)
@@ -3866,6 +3867,12 @@ gin::Handle<WebContents> WebContents::CreateFromWebPreferences(
     if (gin::ConvertFromV8(isolate, web_preferences.GetHandle(),
                            &web_preferences_dict)) {
       existing_preferences->SetFromDictionary(web_preferences_dict);
+      absl::optional<SkColor> color =
+          existing_preferences->GetBackgroundColor();
+      web_contents->web_contents()->SetPageBaseBackgroundColor(color);
+      auto* rwhv = web_contents->web_contents()->GetRenderWidgetHostView();
+      if (rwhv)
+        rwhv->SetBackgroundColor(color.value_or(SK_ColorWHITE));
     }
   } else {
     // Create one if not.
