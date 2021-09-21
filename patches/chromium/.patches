@@ -138,4 +138,5 @@ contentindex_add_origin_checks_to_mojo_methods.patch
 m93_indexeddb_add_browser-side_checks_for_committing_transactions.patch
 m93_indexeddb_don_t_reportbadmessage_for_commit_calls.patch
 cherry-pick-8623d711677d.patch
+cherry-pick-ddc4cf156505.patch
 skip_webgl_conformance_programs_program-test_html_on_all_platforms.patch
