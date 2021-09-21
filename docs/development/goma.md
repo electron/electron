@@ -25,16 +25,14 @@ in your config file.
 When you are using Goma you can run `ninja` with a substantially higher `j`
 value than would normally be supported by your machine.
 
-Please do not set a value higher than **200** on Windows or Linux and
-**50** on macOS. We monitor Goma system usage, and users found to be abusing
-it with unreasonable concurrency will be de-activated.
+Please do not set a value higher than **200**. We monitor Goma system usage, and users
+found to be abusing it with unreasonable concurrency will be de-activated.
 
 ```bash
 ninja -C out/Testing electron -j 200
 ```
 
-If you're using `build-tools`, appropriate `-j` values will automatically
-be used for you.
+If you're using `build-tools`, appropriate `-j` values will automatically be used for you.
 
 ## Monitoring Goma
 
