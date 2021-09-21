@@ -3255,7 +3255,8 @@ void WebContents::GrantDevicePermission(
     content::RenderFrameHost* render_frame_host) {
   granted_devices_[render_frame_host->GetFrameTreeNodeId()][permissionType]
                   [origin]
-                      .push_back(device->Clone());
+                      .push_back(
+                          std::make_unique<base::Value>(device->Clone()));
 }
 
 std::vector<base::Value> WebContents::GetGrantedDevices(
@@ -3278,7 +3279,7 @@ std::vector<base::Value> WebContents::GetGrantedDevices(
 
   std::vector<base::Value> results;
   for (const auto& object : origin_devices_it->second)
-    results.push_back(object.Clone());
+    results.push_back(object->Clone());
 
   return results;
 }
