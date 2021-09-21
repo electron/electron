@@ -1,0 +1,69 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jamie Madill <jmadill@chromium.org>
+Date: Wed, 1 Sep 2021 12:17:26 -0400
+Subject: D3D11: Fix overflow in GenerateInitialTextureData.
+
+Our use of unchecked math was causing OOB accesses with very large
+textures. Unfortunately it's not easy to make a passing test that
+reproduces this OOB access.
+
+Bug: chromium:1241036
+Change-Id: Icd2749f5b3116bb51390ce769fef22c49a11f307
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3136733
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Commit-Queue: Jamie Madill <jmadill@chromium.org>
+(cherry picked from commit 794b13ce9f874d472729ebd69897bc7ab9340a4b)
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3149277
+Reviewed-by: Jamie Madill <jmadill@chromium.org>
+
+diff --git a/src/libANGLE/renderer/d3d/d3d11/renderer11_utils.cpp b/src/libANGLE/renderer/d3d/d3d11/renderer11_utils.cpp
+index 8321bb60cd947349d278167ea2d0343282963268..7588a161ebae2690edc51b755981f6613ca5bb43 100644
+--- a/src/libANGLE/renderer/d3d/d3d11/renderer11_utils.cpp
++++ b/src/libANGLE/renderer/d3d/d3d11/renderer11_utils.cpp
+@@ -2179,28 +2179,35 @@ angle::Result GenerateInitialTextureData(
+     const d3d11::DXGIFormatSize &dxgiFormatInfo =
+         d3d11::GetDXGIFormatSizeInfo(d3dFormatInfo.texFormat);
+ 
+-    unsigned int rowPitch     = dxgiFormatInfo.pixelBytes * width;
+-    unsigned int depthPitch   = rowPitch * height;
+-    unsigned int maxImageSize = depthPitch * depth;
++    using CheckedSize        = angle::CheckedNumeric<size_t>;
++    CheckedSize rowPitch     = CheckedSize(dxgiFormatInfo.pixelBytes) * CheckedSize(width);
++    CheckedSize depthPitch   = rowPitch * CheckedSize(height);
++    CheckedSize maxImageSize = depthPitch * CheckedSize(depth);
++
++    Context11 *context11 = GetImplAs<Context11>(context);
++    ANGLE_CHECK_GL_ALLOC(context11, maxImageSize.IsValid());
+ 
+     angle::MemoryBuffer *scratchBuffer = nullptr;
+-    ANGLE_CHECK_GL_ALLOC(GetImplAs<Context11>(context),
+-                         context->getScratchBuffer(maxImageSize, &scratchBuffer));
++    ANGLE_CHECK_GL_ALLOC(context11,
++                         context->getScratchBuffer(maxImageSize.ValueOrDie(), &scratchBuffer));
+ 
+-    d3dFormatInfo.dataInitializerFunction(width, height, depth, scratchBuffer->data(), rowPitch,
+-                                          depthPitch);
++    d3dFormatInfo.dataInitializerFunction(width, height, depth, scratchBuffer->data(),
++                                          rowPitch.ValueOrDie(), depthPitch.ValueOrDie());
+ 
+     for (unsigned int i = 0; i < mipLevels; i++)
+     {
+         unsigned int mipWidth  = std::max(width >> i, 1U);
+         unsigned int mipHeight = std::max(height >> i, 1U);
+ 
+-        unsigned int mipRowPitch   = dxgiFormatInfo.pixelBytes * mipWidth;
+-        unsigned int mipDepthPitch = mipRowPitch * mipHeight;
++        using CheckedUINT         = angle::CheckedNumeric<UINT>;
++        CheckedUINT mipRowPitch   = CheckedUINT(dxgiFormatInfo.pixelBytes) * CheckedUINT(mipWidth);
++        CheckedUINT mipDepthPitch = mipRowPitch * CheckedUINT(mipHeight);
++
++        ANGLE_CHECK_GL_ALLOC(context11, mipRowPitch.IsValid() && mipDepthPitch.IsValid());
+ 
+         outSubresourceData->at(i).pSysMem          = scratchBuffer->data();
+-        outSubresourceData->at(i).SysMemPitch      = mipRowPitch;
+-        outSubresourceData->at(i).SysMemSlicePitch = mipDepthPitch;
++        outSubresourceData->at(i).SysMemPitch      = mipRowPitch.ValueOrDie();
++        outSubresourceData->at(i).SysMemSlicePitch = mipDepthPitch.ValueOrDie();
+     }
+ 
+     return angle::Result::Continue;
