@@ -251,8 +251,7 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
                    round((NSHeight(main_screen_rect) - height) / 2), width,
                    height);
 
-  bool resizable = true;
-  options.Get(options::kResizable, &resizable);
+  options.Get(options::kResizable, &resizable_);
   options.Get(options::kZoomToPageWidth, &zoom_to_page_width_);
   options.Get(options::kSimpleFullScreen, &always_simple_fullscreen_);
   options.GetOptional(options::kTrafficLightPosition, &traffic_light_position_);
