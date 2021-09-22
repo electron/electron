@@ -13,6 +13,7 @@
 #include "shell/browser/web_contents_permission_helper.h"
 #include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_converters/frame_converter.h"
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -73,11 +74,13 @@ v8::Local<v8::Value> Converter<blink::mojom::MenuItem::Type>::ToV8(
 }
 
 // static
-v8::Local<v8::Value> Converter<ContextMenuParamsWithWebContents>::ToV8(
+v8::Local<v8::Value> Converter<ContextMenuParamsWithRenderFrameHost>::ToV8(
     v8::Isolate* isolate,
-    const ContextMenuParamsWithWebContents& val) {
+    const ContextMenuParamsWithRenderFrameHost& val) {
   const auto& params = val.first;
+  content::RenderFrameHost* render_frame_host = val.second;
   gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  dict.SetGetter("frame", render_frame_host);
   dict.Set("x", params.x);
   dict.Set("y", params.y);
   dict.Set("linkURL", params.link_url);
