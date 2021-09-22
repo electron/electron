@@ -6,7 +6,7 @@ Subject: Revert "Add INLINE and INLINE_ORIGIN records to symbol file."
 This reverts commit 4f5b814790301e7b8252535e0732bee11f4bb801.
 
 diff --git a/src/common/dwarf_cu_to_module.cc b/src/common/dwarf_cu_to_module.cc
-index c51514b7575c2e961aaae3ff883be00d80e3ec15..d129fba4fde3227d191b18bfcb2f23dbb58904c7 100644
+index 5b85c07978b0da3d4b1beabf032db528e79c775d..413c20c193d0fce7d422f1640ff2a527f83ac9f4 100644
 --- a/src/common/dwarf_cu_to_module.cc
 +++ b/src/common/dwarf_cu_to_module.cc
 @@ -44,7 +44,6 @@
@@ -336,12 +336,12 @@ index c51514b7575c2e961aaae3ff883be00d80e3ec15..d129fba4fde3227d191b18bfcb2f23db
        : GenericDIEHandler(cu_context, parent_context, offset),
          low_pc_(0), high_pc_(0), high_pc_form_(DW_FORM_addr),
          ranges_form_(DW_FORM_sec_offset), ranges_data_(0),
--        decl_file_data_(UINT64_MAX), inline_(false) { }
-+        abstract_origin_(NULL), inline_(false) { }
+-        decl_file_data_(UINT64_MAX), inline_(false), 
++        abstract_origin_(NULL), inline_(false),
+         handle_inline_(handle_inline) { }
  
    void ProcessAttributeUnsigned(enum DwarfAttribute attr,
-                                 enum DwarfForm form,
-@@ -788,7 +535,10 @@ class DwarfCUToModule::FuncHandler: public GenericDIEHandler {
+@@ -789,7 +536,10 @@ class DwarfCUToModule::FuncHandler: public GenericDIEHandler {
    void ProcessAttributeSigned(enum DwarfAttribute attr,
                                enum DwarfForm form,
                                int64_t data);
@@ -353,7 +353,7 @@ index c51514b7575c2e961aaae3ff883be00d80e3ec15..d129fba4fde3227d191b18bfcb2f23db
    bool EndAttributes();
    void Finish();
  
-@@ -800,10 +550,8 @@ class DwarfCUToModule::FuncHandler: public GenericDIEHandler {
+@@ -801,8 +551,7 @@ class DwarfCUToModule::FuncHandler: public GenericDIEHandler {
    DwarfForm high_pc_form_; // DW_AT_high_pc can be length or address.
    DwarfForm ranges_form_; // DW_FORM_sec_offset or DW_FORM_rnglistx
    uint64_t ranges_data_; // DW_AT_ranges
@@ -361,11 +361,9 @@ index c51514b7575c2e961aaae3ff883be00d80e3ec15..d129fba4fde3227d191b18bfcb2f23db
 -  uint64_t decl_file_data_;
 +  const AbstractOrigin* abstract_origin_;
    bool inline_;
--  vector<unique_ptr<Module::Inline>> child_inlines_;
- };
- 
- void DwarfCUToModule::FuncHandler::ProcessAttributeUnsigned(
-@@ -825,9 +573,7 @@ void DwarfCUToModule::FuncHandler::ProcessAttributeUnsigned(
+   vector<unique_ptr<Module::Inline>> child_inlines_;
+   bool handle_inline_;
+@@ -827,9 +576,7 @@ void DwarfCUToModule::FuncHandler::ProcessAttributeUnsigned(
        ranges_data_ = data;
        ranges_form_ = form;
        break;
@@ -376,7 +374,7 @@ index c51514b7575c2e961aaae3ff883be00d80e3ec15..d129fba4fde3227d191b18bfcb2f23db
      default:
        GenericDIEHandler::ProcessAttributeUnsigned(attr, form, data);
        break;
-@@ -849,15 +595,27 @@ void DwarfCUToModule::FuncHandler::ProcessAttributeSigned(
+@@ -851,16 +598,26 @@ void DwarfCUToModule::FuncHandler::ProcessAttributeSigned(
    }
  }
  
@@ -385,8 +383,11 @@ index c51514b7575c2e961aaae3ff883be00d80e3ec15..d129fba4fde3227d191b18bfcb2f23db
 -    enum DwarfTag tag) {
 -  switch (tag) {
 -    case DW_TAG_inlined_subroutine:
--      return new InlineHandler(cu_context_, new DIEContext(), offset, 0,
--                               child_inlines_);
+-      if (handle_inline_)
+-        return new InlineHandler(cu_context_, new DIEContext(), offset, 0,
+-                                 child_inlines_);
+-    default:
+-      return NULL;
 +void DwarfCUToModule::FuncHandler::ProcessAttributeReference(
 +    enum DwarfAttribute attr,
 +    enum DwarfForm form,
@@ -405,14 +406,12 @@ index c51514b7575c2e961aaae3ff883be00d80e3ec15..d129fba4fde3227d191b18bfcb2f23db
 +      }
 +      break;
 +    }
-     default:
--      return NULL;
 +      GenericDIEHandler::ProcessAttributeReference(attr, form, data);
 +      break;
    }
  }
  
-@@ -870,6 +628,16 @@ bool DwarfCUToModule::FuncHandler::EndAttributes() {
+@@ -873,6 +630,16 @@ bool DwarfCUToModule::FuncHandler::EndAttributes() {
    return true;
  }
  
@@ -429,7 +428,7 @@ index c51514b7575c2e961aaae3ff883be00d80e3ec15..d129fba4fde3227d191b18bfcb2f23db
  void DwarfCUToModule::FuncHandler::Finish() {
    vector<Module::Range> ranges;
  
-@@ -915,12 +683,11 @@ void DwarfCUToModule::FuncHandler::Finish() {
+@@ -918,12 +685,11 @@ void DwarfCUToModule::FuncHandler::Finish() {
      }
    }
  
@@ -443,7 +442,7 @@ index c51514b7575c2e961aaae3ff883be00d80e3ec15..d129fba4fde3227d191b18bfcb2f23db
      low_pc_ = ranges.front().address;
  
      // Malformed DWARF may omit the name, but all Module::Functions must
-@@ -954,27 +721,11 @@ void DwarfCUToModule::FuncHandler::Finish() {
+@@ -957,28 +723,11 @@ void DwarfCUToModule::FuncHandler::Finish() {
          cu_context_->spec_function_offsets[cu_context_->functions.back()] =
              forward_ref_die_offset_;
        }
@@ -457,7 +456,8 @@ index c51514b7575c2e961aaae3ff883be00d80e3ec15..d129fba4fde3227d191b18bfcb2f23db
 -
 -  // Only keep track of DW_TAG_subprogram which have the attributes we are
 -  // interested.
--  if (!empty_range || inline_ || decl_file_data_ != UINT64_MAX) {
+-  if (handle_inline_ &&
+-      (!empty_range || inline_ || decl_file_data_ != UINT64_MAX)) {
 -    uint64_t offset =
 -        specification_offset_ != 0 ? specification_offset_ : offset_;
 -    cu_context_->file_context->file_private_->inline_origin_map.SetReference(
@@ -471,7 +471,7 @@ index c51514b7575c2e961aaae3ff883be00d80e3ec15..d129fba4fde3227d191b18bfcb2f23db
  }
  
  // A handler for DIEs that contain functions and contribute a
-@@ -1290,7 +1041,7 @@ void DwarfCUToModule::ReadSourceLines(uint64_t offset) {
+@@ -1300,7 +1049,7 @@ void DwarfCUToModule::ReadSourceLines(uint64_t offset) {
        line_section_start, line_section_length,
        string_section_start, string_section_length,
        line_string_section_start, line_string_section_length,
@@ -480,7 +480,7 @@ index c51514b7575c2e961aaae3ff883be00d80e3ec15..d129fba4fde3227d191b18bfcb2f23db
  }
  
  namespace {
-@@ -1549,14 +1300,6 @@ void DwarfCUToModule::AssignLinesToFunctions() {
+@@ -1559,14 +1308,6 @@ void DwarfCUToModule::AssignLinesToFunctions() {
    }
  }
  
@@ -495,7 +495,7 @@ index c51514b7575c2e961aaae3ff883be00d80e3ec15..d129fba4fde3227d191b18bfcb2f23db
  void DwarfCUToModule::Finish() {
    // Assembly language files have no function data, and that gives us
    // no place to store our line numbers (even though the GNU toolchain
-@@ -1575,8 +1318,6 @@ void DwarfCUToModule::Finish() {
+@@ -1585,8 +1326,6 @@ void DwarfCUToModule::Finish() {
    // Dole out lines to the appropriate functions.
    AssignLinesToFunctions();
  
@@ -505,7 +505,7 @@ index c51514b7575c2e961aaae3ff883be00d80e3ec15..d129fba4fde3227d191b18bfcb2f23db
    // to module_, and remove duplicate functions.
    for (Module::Function* func : *functions)
 diff --git a/src/common/dwarf_cu_to_module.h b/src/common/dwarf_cu_to_module.h
-index 99dcd879181aac4018080e8d0cb2c413efc67ebe..1320ccc2c885b5d591a877b41fd7d2af5a2ab65f 100644
+index 2873101a97ece0a4cbf816e1fb8620aa1c0d6bb5..f72f5fe3827aaa7a099c5c914eff25a18eae807c 100644
 --- a/src/common/dwarf_cu_to_module.h
 +++ b/src/common/dwarf_cu_to_module.h
 @@ -156,8 +156,7 @@ class DwarfCUToModule: public RootDIEHandler {
@@ -518,7 +518,7 @@ index 99dcd879181aac4018080e8d0cb2c413efc67ebe..1320ccc2c885b5d591a877b41fd7d2af
    };
  
    // The interface DwarfCUToModule uses to report warnings. The member
-@@ -290,7 +289,6 @@ class DwarfCUToModule: public RootDIEHandler {
+@@ -291,7 +290,6 @@ class DwarfCUToModule: public RootDIEHandler {
    struct Specification;
    class GenericDIEHandler;
    class FuncHandler;
@@ -526,7 +526,7 @@ index 99dcd879181aac4018080e8d0cb2c413efc67ebe..1320ccc2c885b5d591a877b41fd7d2af
    class NamedScopeHandler;
  
    // A map from section offsets to specifications.
-@@ -311,8 +309,6 @@ class DwarfCUToModule: public RootDIEHandler {
+@@ -312,8 +310,6 @@ class DwarfCUToModule: public RootDIEHandler {
    // lines belong to which functions, beyond their addresses.)
    void AssignLinesToFunctions();
  
@@ -535,7 +535,7 @@ index 99dcd879181aac4018080e8d0cb2c413efc67ebe..1320ccc2c885b5d591a877b41fd7d2af
    // The only reason cu_context_ and child_context_ are pointers is
    // that we want to keep their definitions private to
    // dwarf_cu_to_module.cc, instead of listing them all here. They are
-@@ -339,9 +335,6 @@ class DwarfCUToModule: public RootDIEHandler {
+@@ -340,9 +336,6 @@ class DwarfCUToModule: public RootDIEHandler {
    // during parsing.  Then, in Finish, we call AssignLinesToFunctions
    // to dole them out to the appropriate functions.
    vector<Module::Line> lines_;
@@ -870,7 +870,7 @@ index 34cb02ed486e33c8b45685529a29c7666e0ed319..90b6570d8ddebb2f6caf384e7b23901c
    h.DefineFile("filename1", 1, 0, 0, 0);
    h.AddLine(0,           0xf2, 1, 58802211, 0);   // should be omitted
 diff --git a/src/common/linux/dump_symbols.cc b/src/common/linux/dump_symbols.cc
-index 92a260baf3187db55043eb8c3f3fb36d13276cdd..5909d6ba1f9840a5f649e8530b9a97d4c9380c50 100644
+index ac53ea286e801c71363dbcd662d1fbdb0bbb25b3..e444d04f7686189f46b025e0eff1144893c1a519 100644
 --- a/src/common/linux/dump_symbols.cc
 +++ b/src/common/linux/dump_symbols.cc
 @@ -260,16 +260,13 @@ class DumperLineToModule: public DwarfCUToModule::LineToModuleHandler {
@@ -894,7 +894,7 @@ index 92a260baf3187db55043eb8c3f3fb36d13276cdd..5909d6ba1f9840a5f649e8530b9a97d4
                                    string_section, string_section_length,
                                    line_string_section,
 diff --git a/src/common/mac/dump_syms.cc b/src/common/mac/dump_syms.cc
-index 3592e4bb1afee19979054ff1551563520174594b..e30d8ea952c76f59028763dbc823e08575267c3c 100644
+index 6df32bc10bfac5dcae71af62d567689b2468a6ca..ef351dce616b91774ea8d10b48851f3c5fbbf71f 100644
 --- a/src/common/mac/dump_syms.cc
 +++ b/src/common/mac/dump_syms.cc
 @@ -351,18 +351,15 @@ class DumpSymbols::DumperLineToModule:
@@ -922,7 +922,7 @@ index 3592e4bb1afee19979054ff1551563520174594b..e30d8ea952c76f59028763dbc823e085
    }
   private:
 diff --git a/src/common/module.cc b/src/common/module.cc
-index eccd01f0957eaf623dcf417fffe379cbfa76322c..0ecf6ca6eb8611e0a06d3631fd76b9f73957c6b6 100644
+index 7dfd6a3e6e5ceb9db7987871cab8860c41ecc0b6..0ecf6ca6eb8611e0a06d3631fd76b9f73957c6b6 100644
 --- a/src/common/module.cc
 +++ b/src/common/module.cc
 @@ -38,16 +38,14 @@
@@ -991,27 +991,24 @@ index eccd01f0957eaf623dcf417fffe379cbfa76322c..0ecf6ca6eb8611e0a06d3631fd76b9f7
  bool Module::ReportError() {
    fprintf(stderr, "error writing symbol file: %s\n",
            strerror(errno));
-@@ -303,8 +267,6 @@ bool Module::Write(std::ostream& stream, SymbolData symbol_data) {
+@@ -303,7 +267,6 @@ bool Module::Write(std::ostream& stream, SymbolData symbol_data) {
    }
  
    if (symbol_data & SYMBOLS_AND_FILES) {
--    if (symbol_data & INLINES)
--      CreateInlineOrigins();
+-    CreateInlineOrigins();
      AssignSourceIds();
  
      // Write out files.
-@@ -317,17 +279,8 @@ bool Module::Write(std::ostream& stream, SymbolData symbol_data) {
+@@ -316,15 +279,8 @@ bool Module::Write(std::ostream& stream, SymbolData symbol_data) {
            return ReportError();
        }
      }
 -    // Write out inline origins.
--    if (symbol_data & INLINES) {
--      for (InlineOrigin* origin : inline_origins_) {
--        stream << "INLINE_ORIGIN " << origin->id << " " << origin->getFileID()
--               << " " << origin->name << "\n";
--        if (!stream.good())
--          return ReportError();
--      }
+-    for (InlineOrigin* origin : inline_origins_) {
+-      stream << "INLINE_ORIGIN " << origin->id << " " << origin->getFileID()
+-             << " " << origin->name << "\n";
+-      if (!stream.good())
+-        return ReportError();
 -    }
  
 -    // Write out functions and their inlines and lines.
@@ -1019,24 +1016,22 @@ index eccd01f0957eaf623dcf417fffe379cbfa76322c..0ecf6ca6eb8611e0a06d3631fd76b9f7
      for (FunctionSet::const_iterator func_it = functions_.begin();
           func_it != functions_.end(); ++func_it) {
        Function* func = *func_it;
-@@ -343,21 +296,6 @@ bool Module::Write(std::ostream& stream, SymbolData symbol_data) {
+@@ -340,19 +296,6 @@ bool Module::Write(std::ostream& stream, SymbolData symbol_data) {
          if (!stream.good())
            return ReportError();
  
 -        // Write out inlines.
--        if (symbol_data & INLINES) {
--          auto write_inline = [&](unique_ptr<Inline>& in) {
--            stream << "INLINE ";
--            stream << in->inline_nest_level << " " << in->call_site_line << " "
--                   << in->origin->id << hex;
--            for (const Range& r : in->ranges)
--              stream << " " << (r.address - load_address_) << " " << r.size;
--            stream << dec << "\n";
--          };
--          InlineDFS(func->inlines, write_inline);
--          if (!stream.good())
--            return ReportError();
--        }
+-        auto write_inline = [&](unique_ptr<Inline>& in) {
+-          stream << "INLINE ";
+-          stream << in->inline_nest_level << " " << in->call_site_line << " "
+-                 << in->origin->id << hex;
+-          for (const Range& r : in->ranges)
+-            stream << " " << (r.address - load_address_) << " " << r.size;
+-          stream << dec << "\n";
+-        };
+-        InlineDFS(func->inlines, write_inline);
+-        if (!stream.good())
+-          return ReportError();
 -
          while ((line_it != func->lines.end()) &&
                 (line_it->address >= range_it->address) &&
