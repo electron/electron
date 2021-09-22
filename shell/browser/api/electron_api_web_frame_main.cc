@@ -6,6 +6,7 @@
 
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -290,11 +291,10 @@ std::vector<content::RenderFrameHost*> WebFrameMain::Frames() const {
   if (!CheckRenderFrame())
     return frame_hosts;
 
-  for (auto* rfh : render_frame_->GetFramesInSubtree()) {
+  for (auto* rfh : FramesInSubtree()) {
     if (rfh->GetParent() == render_frame_)
       frame_hosts.push_back(rfh);
   }
-
   return frame_hosts;
 }
 
@@ -303,9 +303,14 @@ std::vector<content::RenderFrameHost*> WebFrameMain::FramesInSubtree() const {
   if (!CheckRenderFrame())
     return frame_hosts;
 
-  for (auto* rfh : render_frame_->GetFramesInSubtree()) {
-    frame_hosts.push_back(rfh);
-  }
+  auto append_frame = [](std::unordered_set<content::RenderFrameHost*>* frames,
+                         content::RenderFrameHost* frame) {
+    frames->insert(frame);
+  };
+  std::unordered_set<content::RenderFrameHost*> hosts;
+  render_frame_->ForEachRenderFrameHost(
+      base::BindRepeating(append_frame, &hosts));
+  frame_hosts.assign(std::begin(hosts), std::end(hosts));
 
   return frame_hosts;
 }
