@@ -62,6 +62,10 @@ const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
   return NO;
 }
 
+- (BOOL)acceptsFirstMouse:(NSEvent*)event {
+  return YES;
+}
+
 - (BOOL)shouldIgnoreMouseEvent {
   NSEventType type = [[NSApp currentEvent] type];
   return type != NSEventTypeLeftMouseDragged &&
