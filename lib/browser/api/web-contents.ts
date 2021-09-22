@@ -4,6 +4,7 @@ import type { BrowserWindowConstructorOptions, LoadURLOptions } from 'electron/m
 import * as url from 'url';
 import * as path from 'path';
 import { openGuestWindow, makeWebPreferences, parseContentTypeFormat } from '@electron/internal/browser/guest-window-manager';
+import { parseFeatures } from '@electron/internal/common/parse-features-string';
 import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
 import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-utils';
 import { MessagePortMain } from '@electron/internal/browser/message-port-main';
@@ -665,6 +666,16 @@ WebContents.prototype._init = function () {
         postBody
       };
       windowOpenOverriddenOptions = this._callWindowOpenHandler(event, details);
+      // if attempting to use this API with the deprecated window.open event,
+      // windowOpenOverriddenOptions will always return null. This ensures
+      // short-term backwards compatibility until window.open is removed.
+      const parsedFeatures = parseFeatures(rawFeatures);
+      const overriddenFeatures: BrowserWindowConstructorOptions = {
+        ...parsedFeatures.options,
+        webPreferences: parsedFeatures.webPreferences
+      };
+      windowOpenOverriddenOptions = windowOpenOverriddenOptions || overriddenFeatures;
+
       if (!event.defaultPrevented) {
         const secureOverrideWebPreferences = windowOpenOverriddenOptions ? {
           // Allow setting of backgroundColor as a webPreference even though
