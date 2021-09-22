@@ -1101,6 +1101,24 @@ describe('BrowserWindow module', () => {
           await unmaximize;
           expect(w.isMaximized()).to.equal(false);
         });
+        it('returns the correct value for windows with an aspect ratio', async () => {
+          w.destroy();
+          w = new BrowserWindow({
+            show: false,
+            fullscreenable: false
+          });
+
+          w.setAspectRatio(16 / 11);
+
+          const maximize = emittedOnce(w, 'resize');
+          w.show();
+          w.maximize();
+          await maximize;
+
+          expect(w.isMaximized()).to.equal(true);
+          w.resizable = false;
+          expect(w.isMaximized()).to.equal(true);
+        });
       });
 
       ifdescribe(process.platform !== 'linux')('Minimized state', () => {

@@ -62,7 +62,7 @@ describe('security warnings', () => {
         });
       });
     }).listen(0, '127.0.0.1', () => {
-      serverUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+      serverUrl = `http://localhost2:${(server.address() as AddressInfo).port}`;
       done();
     });
   });
