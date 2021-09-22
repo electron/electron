@@ -666,9 +666,9 @@ WebContents.prototype._init = function () {
         postBody
       };
       windowOpenOverriddenOptions = this._callWindowOpenHandler(event, details);
-      // if attempting to use this API with the deprecated window.open event,
+      // if attempting to use this API with the deprecated new-window event,
       // windowOpenOverriddenOptions will always return null. This ensures
-      // short-term backwards compatibility until window.open is removed.
+      // short-term backwards compatibility until new-window is removed.
       const parsedFeatures = parseFeatures(rawFeatures);
       const overriddenFeatures: BrowserWindowConstructorOptions = {
         ...parsedFeatures.options,
