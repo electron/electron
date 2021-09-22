@@ -988,7 +988,7 @@ the player itself we would call this function with arguments of 16/9 and
 are within the content view--only that they exist. Sum any extra width and
 height areas you have within the overall content view.
 
-The aspect ratio is not respected when window is resized programmingly with
+The aspect ratio is not respected when window is resized programmatically with
 APIs like `win.setSize`.
 
 #### `win.setBackgroundColor(backgroundColor)`
