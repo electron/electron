@@ -76,7 +76,7 @@ class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
                       base::PartitionOptions::ThreadCache::kDisabled,
                       base::PartitionOptions::Quarantine::kAllowed,
                       base::PartitionOptions::Cookie::kAllowed,
-                      base::PartitionOptions::RefCount::kDisallowed});
+                      base::PartitionOptions::BackupRefPtr::kDisabled});
   }
 
   // Allocate() methods return null to signal allocation failure to V8, which
