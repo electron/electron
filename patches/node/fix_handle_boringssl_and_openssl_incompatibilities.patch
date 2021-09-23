@@ -250,19 +250,6 @@ index 1bbf9a1753e4e2d82c55c4187489c22867d1d9bb..585af1674e129dc4d1c918d29fe9915b
        }
  
        if (target
-diff --git a/src/crypto/crypto_sig.cc b/src/crypto/crypto_sig.cc
-index 7846df17ffbe8b5ea3a685c46f73b5d28ad64b1f..2bf12b8b4a7e16adf9c1f58d72ae4f59a0b2b2a4 100644
---- a/src/crypto/crypto_sig.cc
-+++ b/src/crypto/crypto_sig.cc
-@@ -110,7 +110,7 @@ unsigned int GetBytesOfRS(const ManagedEVPPKey& pkey) {
-   if (base_id == EVP_PKEY_DSA) {
-     const DSA* dsa_key = EVP_PKEY_get0_DSA(pkey.get());
-     // Both r and s are computed mod q, so their width is limited by that of q.
--    bits = BN_num_bits(DSA_get0_q(dsa_key));
-+    bits = BN_num_bits(dsa_key->q);
-   } else if (base_id == EVP_PKEY_EC) {
-     const EC_KEY* ec_key = EVP_PKEY_get0_EC_KEY(pkey.get());
-     const EC_GROUP* ec_group = EC_KEY_get0_group(ec_key);
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
 index f18304cd655842e999a39659315c4eb3ce1c0c6e..1aed0e7e88460cea63950f71dac502829d662cff 100644
 --- a/src/crypto/crypto_util.cc
