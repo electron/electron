@@ -84,6 +84,7 @@ auto_filenames = {
     "docs/api/structures/file-filter.md",
     "docs/api/structures/file-path-with-headers.md",
     "docs/api/structures/gpu-feature-status.md",
+    "docs/api/structures/hid-device.md",
     "docs/api/structures/input-event.md",
     "docs/api/structures/io-counters.md",
     "docs/api/structures/ipc-main-event.md",
