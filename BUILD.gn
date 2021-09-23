@@ -361,6 +361,7 @@ source_set("electron_lib") {
     "//ppapi/shared_impl",
     "//printing/buildflags",
     "//services/device/public/cpp/geolocation",
+    "//services/device/public/cpp/hid",
     "//services/device/public/mojom",
     "//services/proxy_resolver:lib",
     "//services/video_capture/public/mojom:constants",
