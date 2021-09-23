@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Matthew Denton <mpdenton@chromium.org>
+Date: Thu, 3 Jun 2021 20:06:13 +0000
+Subject: Linux sandbox: return ENOSYS for clone3
+
+Because clone3 uses a pointer argument rather than a flags argument, we
+cannot examine the contents with seccomp, which is essential to
+preventing sandboxed processes from starting other processes. So, we
+won't be able to support clone3 in Chromium. This CL modifies the
+BPF policy to return ENOSYS for clone3 so glibc always uses the fallback
+to clone.
+
+Bug: 1213452
+Change-Id: I7c7c585a319e0264eac5b1ebee1a45be2d782303
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2936184
+Reviewed-by: Robert Sesek <rsesek@chromium.org>
+Commit-Queue: Matthew Denton <mpdenton@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#888980}
+
+diff --git a/sandbox/linux/seccomp-bpf-helpers/baseline_policy.cc b/sandbox/linux/seccomp-bpf-helpers/baseline_policy.cc
+index 05c39f0f564e3fc67abcf9941094b67be3257771..086c56a2be46120767db716b5e4376d68bd00581 100644
+--- a/sandbox/linux/seccomp-bpf-helpers/baseline_policy.cc
++++ b/sandbox/linux/seccomp-bpf-helpers/baseline_policy.cc
+@@ -178,6 +178,12 @@ ResultExpr EvaluateSyscallImpl(int fs_denied_errno,
+     return RestrictCloneToThreadsAndEPERMFork();
+   }
+ 
++  // clone3 takes a pointer argument which we cannot examine, so return ENOSYS
++  // to force the libc to use clone. See https://crbug.com/1213452.
++  if (sysno == __NR_clone3) {
++    return Error(ENOSYS);
++  }
++
+   if (sysno == __NR_fcntl)
+     return RestrictFcntlCommands();
+ 
