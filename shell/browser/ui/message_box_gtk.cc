@@ -145,13 +145,13 @@ class GtkMessageBox : public NativeWindowObserver {
   const char* TranslateToStock(int id, const std::string& text) {
     const std::string lower = base::ToLowerASCII(text);
     if (lower == "cancel")
-      return gtk_util::kCancelLabel;
+      return gtk_util::GetCancelLabel();
     if (lower == "no")
-      return gtk_util::kNoLabel;
+      return gtk_util::GetNoLabel();
     if (lower == "ok")
-      return gtk_util::kOkLabel;
+      return gtk_util::GetOkLabel();
     if (lower == "yes")
-      return gtk_util::kYesLabel;
+      return gtk_util::GetYesLabel();
     return text.c_str();
   }
 
