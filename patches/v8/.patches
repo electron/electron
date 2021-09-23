@@ -13,3 +13,8 @@ cherry-pick-1228036.patch
 cherry-pick-1234764.patch
 cherry-pick-fbfd2557c2ab.patch
 cherry-pick-034c2003be31.patch
+fix_disable_implies_dcheck_for_node_stream_array_buffers.patch
+cppgc-js_support_eager_traced_value_in_ephemeron_pairs.patch
+regexp_add_a_currently_failing_cctest_for_irregexp_reentrancy.patch
+regexp_allow_reentrant_irregexp_execution.patch
+regexp_remove_the_stack_parameter_from_regexp_matchers.patch
