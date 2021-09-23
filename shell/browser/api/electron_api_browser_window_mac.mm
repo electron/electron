@@ -39,10 +39,7 @@ void BrowserWindow::OverrideNSWindowContentView(
 
 void BrowserWindow::UpdateDraggableRegions(
     const std::vector<mojom::DraggableRegionPtr>& regions) {
-  if (window_->has_frame())
-    return;
-
-  if (!web_contents())
+  if (window_->has_frame() || !web_contents())
     return;
 
   // All ControlRegionViews should be added as children of the WebContentsView,

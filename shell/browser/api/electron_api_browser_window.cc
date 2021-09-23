@@ -382,21 +382,32 @@ void BrowserWindow::SetBrowserView(v8::Local<v8::Value> value) {
   BaseWindow::ResetBrowserViews();
   BaseWindow::AddBrowserView(value);
 #if defined(OS_MAC)
-  UpdateDraggableRegions(draggable_regions_);
+  if (!draggable_regions_.empty())
+    UpdateDraggableRegions(draggable_regions_);
 #endif
 }
 
 void BrowserWindow::AddBrowserView(v8::Local<v8::Value> value) {
   BaseWindow::AddBrowserView(value);
 #if defined(OS_MAC)
-  UpdateDraggableRegions(draggable_regions_);
+  if (!draggable_regions_.empty()) {
+    UpdateDraggableRegions(draggable_regions_);
+  } else {
+    // It could be the case that there is a BrowserView but that the main
+    // window does not have a webContents. In this case, the view's own
+    // draggable regions might not be properly updated and so we do that here.
+    for (NativeBrowserView* view : window_->browser_views()) {
+      view->UpdateDraggableRegions(view->GetDraggableRegions());
+    }
+  }
 #endif
 }
 
 void BrowserWindow::RemoveBrowserView(v8::Local<v8::Value> value) {
   BaseWindow::RemoveBrowserView(value);
 #if defined(OS_MAC)
-  UpdateDraggableRegions(draggable_regions_);
+  if (!draggable_regions_.empty())
+    UpdateDraggableRegions(draggable_regions_);
 #endif
 }
 
@@ -404,19 +415,38 @@ void BrowserWindow::SetTopBrowserView(v8::Local<v8::Value> value,
                                       gin_helper::Arguments* args) {
   BaseWindow::SetTopBrowserView(value, args);
 #if defined(OS_MAC)
-  UpdateDraggableRegions(draggable_regions_);
+  if (!draggable_regions_.empty()) {
+    UpdateDraggableRegions(draggable_regions_);
+  } else {
+    // It could be the case that there is a BrowserView but that the main
+    // window does not have a webContents. In this case, the view's own
+    // draggable regions might not be properly updated and so we do that here.
+    for (NativeBrowserView* view : window_->browser_views()) {
+      view->UpdateDraggableRegions(view->GetDraggableRegions());
+    }
+  }
 #endif
 }
 
 void BrowserWindow::ResetBrowserViews() {
   BaseWindow::ResetBrowserViews();
 #if defined(OS_MAC)
-  UpdateDraggableRegions(draggable_regions_);
+  if (!draggable_regions_.empty())
+    UpdateDraggableRegions(draggable_regions_);
 #endif
 }
 
 void BrowserWindow::OnDevToolsResized() {
-  UpdateDraggableRegions(draggable_regions_);
+  if (!draggable_regions_.empty()) {
+    UpdateDraggableRegions(draggable_regions_);
+  } else {
+    // It could be the case that there is a BrowserView but that the main
+    // window does not have a webContents. In this case, the view's own
+    // draggable regions might not be properly updated and so we do that here.
+    for (NativeBrowserView* view : window_->browser_views()) {
+      view->UpdateDraggableRegions(view->GetDraggableRegions());
+    }
+  }
 }
 
 void BrowserWindow::SetVibrancy(v8::Isolate* isolate,
