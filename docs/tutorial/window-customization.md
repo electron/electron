@@ -1,7 +1,7 @@
 # Window Customization
 
 The `BrowserWindow` module is the foundation of your Electron application, and it exposes
-many APIs that can change the look and behaviour of your browser windows. In this
+many APIs that can change the look and behavior of your browser windows. In this
 tutorial, we will be going over the various use-cases for window customization on
 macOS, Windows, and Linux.
 
@@ -137,7 +137,7 @@ const win = new BrowserWindow({
 
 By setting the `transparent` option to `true`, you can make a fully transparent window,
 
-```javascript
+```javascript title='main.js'
 const { BrowserWindow } = require('electron')
 const win = new BrowserWindow({ transparent: true })
 ```
@@ -185,7 +185,9 @@ const { BrowserWindow, ipcMain } = require('electron')
 const path = require('path')
 
 const win = new BrowserWindow({
-  preload: path.join(__dirname, 'preload.js)
+  webPreferences: {
+    preload: path.join(__dirname, 'preload.js')
+  }
 })
 
 ipcMain.on('set-ignore-mouse-events', (event, ...args) => {
@@ -220,10 +222,10 @@ By default, the frameless window is non-draggable. Apps need to specify
 To make the whole window draggable, you can add `-webkit-app-region: drag` as
 `body`'s style:
 
-```html
-<body style="-webkit-app-region: drag">
-</body>
-```
+```css title='styles.css'
+body {
+  -webkit-app-region: drag;
+}
 
 And note that if you have made the whole window draggable, you must also mark
 buttons as non-draggable, otherwise it would be impossible for users to click on
