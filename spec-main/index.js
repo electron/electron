@@ -31,6 +31,7 @@ app.on('window-all-closed', () => null);
 
 // Use fake device for Media Stream to replace actual camera and microphone.
 app.commandLine.appendSwitch('use-fake-device-for-media-stream');
+app.commandLine.appendSwitch('host-rules', 'MAP localhost2 127.0.0.1');
 
 global.standardScheme = 'app';
 global.zoomScheme = 'zoom';

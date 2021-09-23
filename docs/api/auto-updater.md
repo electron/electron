@@ -43,7 +43,7 @@ The installer generated with Squirrel will create a shortcut icon with an
 same ID for your app with `app.setAppUserModelId` API, otherwise Windows will
 not be able to pin your app properly in task bar.
 
-Unlike Squirrel.Mac, Windows can host updates on S3 or any other static file host.
+Like Squirrel.Mac, Windows can host updates on S3 or any other static file host.
 You can read the documents of [Squirrel.Windows][squirrel-windows] to get more details
 about how Squirrel.Windows works.
 

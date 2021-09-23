@@ -1,0 +1,50 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Bartek Nowierski <bartekn@chromium.org>
+Date: Thu, 29 Jul 2021 10:38:19 +0000
+Subject: Make GetUsableSize() handle nullptr gracefully
+
+malloc_usable_size() is expected to not crush on NULL and return 0.
+
+(cherry picked from commit 61e16c92ff24bb71b9b7309a9d6d470ee91738bc)
+
+Bug: 1221442
+Change-Id: I6a3b90dcf3a8ad18114c206d87b98f60d5f50eb1
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3042177
+Commit-Queue: Bartek Nowierski <bartekn@chromium.org>
+Commit-Queue: Kentaro Hara <haraken@chromium.org>
+Auto-Submit: Bartek Nowierski <bartekn@chromium.org>
+Reviewed-by: Kentaro Hara <haraken@chromium.org>
+Cr-Original-Commit-Position: refs/heads/master@{#903900}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3060345
+Cr-Commit-Position: refs/branch-heads/4515@{#1905}
+Cr-Branched-From: 488fc70865ddaa05324ac00a54a6eb783b4bc41c-refs/heads/master@{#885287}
+
+diff --git a/base/allocator/partition_allocator/partition_alloc_unittest.cc b/base/allocator/partition_allocator/partition_alloc_unittest.cc
+index bb6faf759ed9829c7fa644a09521674d89898abc..d494f02d4e9db705823e92c670fb4d352ad7f8ea 100644
+--- a/base/allocator/partition_allocator/partition_alloc_unittest.cc
++++ b/base/allocator/partition_allocator/partition_alloc_unittest.cc
+@@ -2752,6 +2752,10 @@ TEST_F(PartitionAllocTest, OptimizedGetSlotNumber) {
+   }
+ }
+ 
++TEST_F(PartitionAllocTest, GetUsableSizeNull) {
++  EXPECT_EQ(0ULL, PartitionRoot<ThreadSafe>::GetUsableSize(nullptr));
++}
++
+ TEST_F(PartitionAllocTest, GetUsableSize) {
+   size_t delta = SystemPageSize() + 1;
+   for (size_t size = 1; size <= kMinDirectMappedDownsize; size += delta) {
+diff --git a/base/allocator/partition_allocator/partition_root.h b/base/allocator/partition_allocator/partition_root.h
+index 742ac8937c495811e0694157ca49b35afe4a06d3..de427e66bfb3c910bf7fbc638feff61b4d3ed418 100644
+--- a/base/allocator/partition_allocator/partition_root.h
++++ b/base/allocator/partition_allocator/partition_root.h
+@@ -1164,6 +1164,9 @@ ALWAYS_INLINE bool PartitionRoot<thread_safe>::TryRecommitSystemPagesForData(
+ // PartitionAlloc's internal data. Used as malloc_usable_size.
+ template <bool thread_safe>
+ ALWAYS_INLINE size_t PartitionRoot<thread_safe>::GetUsableSize(void* ptr) {
++  // malloc_usable_size() is expected to handle NULL gracefully and return 0.
++  if (!ptr)
++    return 0;
+   auto* slot_span = SlotSpan::FromSlotInnerPtr(ptr);
+   auto* root = FromSlotSpan(slot_span);
+   return slot_span->GetUsableSize(root);

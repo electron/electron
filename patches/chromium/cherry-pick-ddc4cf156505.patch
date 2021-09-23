@@ -1,0 +1,336 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jiewei Qian <qjw@chromium.org>
+Date: Fri, 3 Sep 2021 04:38:53 +0000
+Subject: webui: make WebUIAllowlist and WebUIAllowlistProvider thread-safe
+
+This CL adds synchronization lock to WebUIAllowlist, and expose it as
+scoped_refptr, so it provides thread-safety when used in
+WebUIAllowlistProvider (per requirements of HostContentSettingsMap).
+
+(cherry picked from commit 56489e04b7c39e7b6d2b3fb33549d2657dad23a9)
+
+(cherry picked from commit 58eda7adb82e7fcc8001482334bfa6f9482aee78)
+
+Fixed: 1238178
+Change-Id: I4d8112f7792a7113b412af2eb67cbcef0bdcec1d
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3102499
+Commit-Queue: Jiewei Qian  <qjw@chromium.org>
+Reviewed-by: Christian Dullweber <dullweber@chromium.org>
+Reviewed-by: calamity <calamity@chromium.org>
+Reviewed-by: Victor Costan <pwnall@chromium.org>
+Cr-Original-Original-Commit-Position: refs/heads/main@{#914567}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3115817
+Auto-Submit: Jiewei Qian  <qjw@chromium.org>
+Commit-Queue: calamity <calamity@chromium.org>
+Cr-Original-Commit-Position: refs/branch-heads/4606@{#340}
+Cr-Original-Branched-From: 35b0d5a9dc8362adfd44e2614f0d5b7402ef63d0-refs/heads/master@{#911515}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3141052
+Cr-Commit-Position: refs/branch-heads/4577@{#1170}
+Cr-Branched-From: 761ddde228655e313424edec06497d0c56b0f3c4-refs/heads/master@{#902210}
+
+diff --git a/ui/webui/webui_allowlist.cc b/ui/webui/webui_allowlist.cc
+index 525848a9d2f9baccc95b59581ad2aa53494c449e..cd231550094e410d26a5267427bcb578af451530 100644
+--- a/ui/webui/webui_allowlist.cc
++++ b/ui/webui/webui_allowlist.cc
+@@ -6,7 +6,11 @@
+ 
+ #include <memory>
+ 
++#include "base/memory/scoped_refptr.h"
++#include "base/sequence_checker.h"
++#include "base/supports_user_data.h"
+ #include "content/public/browser/browser_context.h"
++#include "content/public/browser/browser_thread.h"
+ #include "content/public/common/url_constants.h"
+ #include "ui/webui/webui_allowlist_provider.h"
+ #include "url/gurl.h"
+@@ -19,15 +23,27 @@ class AllowlistRuleIterator : public content_settings::RuleIterator {
+   using MapType = std::map<url::Origin, ContentSetting>;
+ 
+  public:
+-  explicit AllowlistRuleIterator(const MapType& map)
+-      : it_(map.cbegin()), end_(map.cend()) {}
++  // Hold a reference to `allowlist` to keep it alive during iteration.
++  explicit AllowlistRuleIterator(scoped_refptr<const WebUIAllowlist> allowlist,
++                                 const MapType& map,
++                                 std::unique_ptr<base::AutoLock> auto_lock)
++      : auto_lock_(std::move(auto_lock)),
++        allowlist_(std::move(allowlist)),
++        it_(map.cbegin()),
++        end_(map.cend()) {}
+   AllowlistRuleIterator(const AllowlistRuleIterator&) = delete;
+   void operator=(const AllowlistRuleIterator&) = delete;
+-  ~AllowlistRuleIterator() override = default;
++  ~AllowlistRuleIterator() override {
++    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++  }
+ 
+-  bool HasNext() const override { return it_ != end_; }
++  bool HasNext() const override {
++    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++    return it_ != end_;
++  }
+ 
+   content_settings::Rule Next() override {
++    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+     const auto& origin = it_->first;
+     const auto& setting = it_->second;
+     it_++;
+@@ -38,8 +54,18 @@ class AllowlistRuleIterator : public content_settings::RuleIterator {
+   }
+ 
+  private:
+-  MapType::const_iterator it_;
+-  const MapType::const_iterator end_;
++  const std::unique_ptr<base::AutoLock> auto_lock_;
++  const scoped_refptr<const WebUIAllowlist> allowlist_;
++
++  SEQUENCE_CHECKER(sequence_checker_);
++  MapType::const_iterator it_ GUARDED_BY_CONTEXT(sequence_checker_);
++  MapType::const_iterator end_ GUARDED_BY_CONTEXT(sequence_checker_);
++};
++
++struct WebUIAllowlistHolder : base::SupportsUserData::Data {
++  explicit WebUIAllowlistHolder(scoped_refptr<WebUIAllowlist> list)
++      : allow_list(std::move(list)) {}
++  const scoped_refptr<WebUIAllowlist> allow_list;
+ };
+ 
+ }  // namespace
+@@ -48,11 +74,14 @@ class AllowlistRuleIterator : public content_settings::RuleIterator {
+ WebUIAllowlist* WebUIAllowlist::GetOrCreate(
+     content::BrowserContext* browser_context) {
+   if (!browser_context->GetUserData(kWebUIAllowlistKeyName)) {
+-    browser_context->SetUserData(kWebUIAllowlistKeyName,
+-                                 std::make_unique<WebUIAllowlist>());
++    auto list = base::MakeRefCounted<WebUIAllowlist>();
++    browser_context->SetUserData(
++        kWebUIAllowlistKeyName,
++        std::make_unique<WebUIAllowlistHolder>(std::move(list)));
+   }
+-  return static_cast<WebUIAllowlist*>(
+-      browser_context->GetUserData(kWebUIAllowlistKeyName));
++  return static_cast<WebUIAllowlistHolder*>(
++             browser_context->GetUserData(kWebUIAllowlistKeyName))
++      ->allow_list.get();
+ }
+ 
+ WebUIAllowlist::WebUIAllowlist() = default;
+@@ -62,6 +91,9 @@ WebUIAllowlist::~WebUIAllowlist() = default;
+ void WebUIAllowlist::RegisterAutoGrantedPermission(const url::Origin& origin,
+                                                    ContentSettingsType type,
+                                                    ContentSetting setting) {
++  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
++  DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
++
+   // It doesn't make sense to grant a default content setting.
+   DCHECK_NE(CONTENT_SETTING_DEFAULT, setting);
+ 
+@@ -70,13 +102,16 @@ void WebUIAllowlist::RegisterAutoGrantedPermission(const url::Origin& origin,
+   DCHECK(origin.scheme() == content::kChromeUIScheme ||
+          origin.scheme() == content::kChromeUIUntrustedScheme ||
+          origin.scheme() == content::kChromeDevToolsScheme);
++  {
++    base::AutoLock auto_lock(lock_);
+ 
+-  // If the same permission is already registered, do nothing. We don't want to
+-  // notify the provider of ContentSettingChange when it is unnecessary.
+-  if (permissions_[type][origin] == setting)
+-    return;
++    // If the same permission is already registered, do nothing. We don't want
++    // to notify the provider of ContentSettingChange when it is unnecessary.
++    if (permissions_[type][origin] == setting)
++      return;
+ 
+-  permissions_[type][origin] = setting;
++    permissions_[type][origin] = setting;
++  }
+ 
+   // Notify the provider. |provider_| can be nullptr if
+   // HostContentSettingsRegistry is shutting down i.e. when Chrome shuts down.
+@@ -92,25 +127,36 @@ void WebUIAllowlist::RegisterAutoGrantedPermission(const url::Origin& origin,
+ void WebUIAllowlist::RegisterAutoGrantedPermissions(
+     const url::Origin& origin,
+     std::initializer_list<ContentSettingsType> types) {
++  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
++  DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
++
+   for (const ContentSettingsType& type : types)
+     RegisterAutoGrantedPermission(origin, type);
+ }
+ 
+ void WebUIAllowlist::SetWebUIAllowlistProvider(
+     WebUIAllowlistProvider* provider) {
++  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
++  DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
++
+   provider_ = provider;
+ }
+ 
+ void WebUIAllowlist::ResetWebUIAllowlistProvider() {
++  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
++  DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
++
+   provider_ = nullptr;
+ }
+ 
+ std::unique_ptr<content_settings::RuleIterator> WebUIAllowlist::GetRuleIterator(
+     ContentSettingsType content_type) const {
+-  const auto& type_to_origin_rules = permissions_.find(content_type);
+-  if (type_to_origin_rules != permissions_.cend()) {
+-    return std::make_unique<AllowlistRuleIterator>(
+-        type_to_origin_rules->second);
++  auto auto_lock_ = std::make_unique<base::AutoLock>(lock_);
++
++  auto permissions_it = permissions_.find(content_type);
++  if (permissions_it != permissions_.end()) {
++    return std::make_unique<AllowlistRuleIterator>(this, permissions_it->second,
++                                                   std::move(auto_lock_));
+   }
+ 
+   return nullptr;
+diff --git a/ui/webui/webui_allowlist.h b/ui/webui/webui_allowlist.h
+index b1623b89f5ed12416e71d5f1505d57b74073f764..9c6ab47b16a4fcc6478e6ad4672ce5c95166156f 100644
+--- a/ui/webui/webui_allowlist.h
++++ b/ui/webui/webui_allowlist.h
+@@ -8,7 +8,9 @@
+ #include <initializer_list>
+ #include <map>
+ 
+-#include "base/supports_user_data.h"
++#include "base/memory/ref_counted.h"
++#include "base/thread_annotations.h"
++#include "base/threading/thread_checker.h"
+ #include "components/content_settings/core/browser/content_settings_rule.h"
+ #include "components/content_settings/core/common/content_settings.h"
+ #include "components/content_settings/core/common/content_settings_types.h"
+@@ -23,14 +25,13 @@ class WebUIAllowlistProvider;
+ // list of origins and permissions to be auto-granted to WebUIs. This class is
+ // created before HostContentSettingsMap is registered and has the same lifetime
+ // as the profile it's attached to. It outlives WebUIAllowlistProvider.
+-class WebUIAllowlist : public base::SupportsUserData::Data {
++class WebUIAllowlist : public base::RefCountedThreadSafe<WebUIAllowlist> {
+  public:
+   static WebUIAllowlist* GetOrCreate(content::BrowserContext* browser_context);
+ 
+   WebUIAllowlist();
+   WebUIAllowlist(const WebUIAllowlist&) = delete;
+   void operator=(const WebUIAllowlist&) = delete;
+-  ~WebUIAllowlist() override;
+ 
+   // Register auto-granted |type| permission for |origin|.
+   //
+@@ -53,16 +54,29 @@ class WebUIAllowlist : public base::SupportsUserData::Data {
+       const url::Origin& origin,
+       std::initializer_list<ContentSettingsType> types);
+ 
++  // Returns a content_settings::RuleIterator, this method is thread-safe.
++  //
++  // This method acquires `lock_` and transfers it to the returned iterator.
++  // NO_THREAD_SAFETY_ANALYSIS because the analyzer doesn't recognize acquiring
++  // the lock in a unique_ptr.
+   std::unique_ptr<content_settings::RuleIterator> GetRuleIterator(
+-      ContentSettingsType content_type) const;
++      ContentSettingsType content_type) const NO_THREAD_SAFETY_ANALYSIS;
+ 
+   void SetWebUIAllowlistProvider(WebUIAllowlistProvider* provider);
+   void ResetWebUIAllowlistProvider();
+ 
+  private:
++  friend class base::RefCountedThreadSafe<WebUIAllowlist>;
++  ~WebUIAllowlist();
++
++  THREAD_CHECKER(thread_checker_);
++
++  mutable base::Lock lock_;
+   std::map<ContentSettingsType, std::map<url::Origin, ContentSetting>>
+-      permissions_;
+-  WebUIAllowlistProvider* provider_ = nullptr;
++      permissions_ GUARDED_BY(lock_);
++
++  WebUIAllowlistProvider* provider_ GUARDED_BY_CONTEXT(thread_checker_) =
++      nullptr;
+ };
+ 
+ #endif  // UI_WEBUI_WEBUI_ALLOWLIST_H_
+diff --git a/ui/webui/webui_allowlist_provider.cc b/ui/webui/webui_allowlist_provider.cc
+index 779e8022fce378d2a64c78e6e20c36202e9261ac..055a3cf3934ed43373a4a3fdd4166bd3c096e922 100644
+--- a/ui/webui/webui_allowlist_provider.cc
++++ b/ui/webui/webui_allowlist_provider.cc
+@@ -7,8 +7,9 @@
+ #include "components/content_settings/core/common/content_settings_pattern.h"
+ #include "ui/webui/webui_allowlist.h"
+ 
+-WebUIAllowlistProvider::WebUIAllowlistProvider(WebUIAllowlist* allowlist)
+-    : allowlist_(allowlist) {
++WebUIAllowlistProvider::WebUIAllowlistProvider(
++    scoped_refptr<WebUIAllowlist> allowlist)
++    : allowlist_(std::move(allowlist)) {
+   DCHECK(allowlist_);
+   allowlist_->SetWebUIAllowlistProvider(this);
+ }
+@@ -16,12 +17,8 @@ WebUIAllowlistProvider::WebUIAllowlistProvider(WebUIAllowlist* allowlist)
+ WebUIAllowlistProvider::~WebUIAllowlistProvider() = default;
+ 
+ std::unique_ptr<content_settings::RuleIterator>
+-WebUIAllowlistProvider::GetRuleIterator(
+-    ContentSettingsType content_type,
+-    bool incognito) const {
+-  if (!allowlist_)
+-    return nullptr;
+-
++WebUIAllowlistProvider::GetRuleIterator(ContentSettingsType content_type,
++                                        bool incognito) const {
+   return allowlist_->GetRuleIterator(content_type);
+ }
+ 
+@@ -48,7 +45,8 @@ void WebUIAllowlistProvider::ClearAllContentSettingsRules(
+ }
+ 
+ void WebUIAllowlistProvider::ShutdownOnUIThread() {
++  DCHECK(CalledOnValidThread());
++
+   RemoveAllObservers();
+   allowlist_->ResetWebUIAllowlistProvider();
+-  allowlist_ = nullptr;
+ }
+diff --git a/ui/webui/webui_allowlist_provider.h b/ui/webui/webui_allowlist_provider.h
+index 9f7f9776fd6e8212d3dbd196698b036f24f75f2e..c18f64e6f2051091f40504c2ba47feb62103aee3 100644
+--- a/ui/webui/webui_allowlist_provider.h
++++ b/ui/webui/webui_allowlist_provider.h
+@@ -5,6 +5,8 @@
+ #ifndef UI_WEBUI_WEBUI_ALLOWLIST_PROVIDER_H_
+ #define UI_WEBUI_WEBUI_ALLOWLIST_PROVIDER_H_
+ 
++#include "base/synchronization/lock.h"
++#include "base/thread_annotations.h"
+ #include "components/content_settings/core/browser/content_settings_observable_provider.h"
+ #include "components/content_settings/core/common/content_settings.h"
+ #include "ui/webui/webui_allowlist.h"
+@@ -15,8 +17,7 @@ class ContentSettingsPattern;
+ // permissions from the underlying WebUIAllowlist.
+ class WebUIAllowlistProvider : public content_settings::ObservableProvider {
+  public:
+-  // Note, |allowlist| must outlive this instance.
+-  explicit WebUIAllowlistProvider(WebUIAllowlist* allowlist);
++  explicit WebUIAllowlistProvider(scoped_refptr<WebUIAllowlist> allowlist);
+   WebUIAllowlistProvider(const WebUIAllowlistProvider&) = delete;
+   void operator=(const WebUIAllowlistProvider&) = delete;
+   ~WebUIAllowlistProvider() override;
+@@ -27,6 +28,7 @@ class WebUIAllowlistProvider : public content_settings::ObservableProvider {
+       ContentSettingsType content_type);
+ 
+   // content_settings::ObservableProvider:
++  // The following methods are thread-safe.
+   std::unique_ptr<content_settings::RuleIterator> GetRuleIterator(
+       ContentSettingsType content_type,
+       bool incognito) const override;
+@@ -40,7 +42,7 @@ class WebUIAllowlistProvider : public content_settings::ObservableProvider {
+   void ClearAllContentSettingsRules(ContentSettingsType content_type) override;
+ 
+  private:
+-  WebUIAllowlist* allowlist_;
++  const scoped_refptr<WebUIAllowlist> allowlist_;
+ };
+ 
+ #endif  // UI_WEBUI_WEBUI_ALLOWLIST_PROVIDER_H_

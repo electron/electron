@@ -1,0 +1,214 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rayan Kanso <rayankans@google.com>
+Date: Thu, 9 Sep 2021 11:16:13 +0000
+Subject: Add Origin checks to mojo methods.
+
+(cherry picked from commit 6ef569fd764a8e5f8fba4dcff830d460e406362b)
+
+Bug: 1244568
+Change-Id: I5a63a2e478577913a3b35154464c1808f7291f40
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3140385
+Reviewed-by: Richard Knoll <knollr@chromium.org>
+Commit-Queue: Rayan Kanso <rayankans@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#918606}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3149996
+Reviewed-by: Michael van Ouwerkerk <mvanouwerkerk@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4577@{#1220}
+Cr-Branched-From: 761ddde228655e313424edec06497d0c56b0f3c4-refs/heads/master@{#902210}
+
+diff --git a/content/browser/content_index/content_index_database.cc b/content/browser/content_index/content_index_database.cc
+index 2ce59c40e2d8e319b68d9df61a496606f4bf5bb6..438798fe658bf148c09a9bcf65c3b40dbf96325e 100644
+--- a/content/browser/content_index/content_index_database.cc
++++ b/content/browser/content_index/content_index_database.cc
+@@ -183,6 +183,11 @@ void ContentIndexDatabase::AddEntryOnCoreThread(
+     return;
+   }
+ 
++  if (!service_worker_registration->origin().IsSameOriginWith(origin)) {
++    std::move(callback).Run(blink::mojom::ContentIndexError::STORAGE_ERROR);
++    return;
++  }
++
+   auto serialized_icons = std::make_unique<proto::SerializedIcons>();
+   proto::SerializedIcons* serialized_icons_ptr = serialized_icons.get();
+ 
+@@ -284,6 +289,15 @@ void ContentIndexDatabase::DeleteEntryOnCoreThread(
+     blink::mojom::ContentIndexService::DeleteCallback callback) {
+   DCHECK_CURRENTLY_ON(ServiceWorkerContext::GetCoreThreadId());
+ 
++  scoped_refptr<ServiceWorkerRegistration> service_worker_registration =
++      service_worker_context_->GetLiveRegistration(
++          service_worker_registration_id);
++  if (!service_worker_registration ||
++      !service_worker_registration->origin().IsSameOriginWith(origin)) {
++    std::move(callback).Run(blink::mojom::ContentIndexError::STORAGE_ERROR);
++    return;
++  }
++
+   service_worker_context_->ClearRegistrationUserData(
+       service_worker_registration_id, {EntryKey(entry_id), IconsKey(entry_id)},
+       base::BindOnce(&ContentIndexDatabase::DidDeleteEntry,
+@@ -316,6 +330,7 @@ void ContentIndexDatabase::DidDeleteEntry(
+ 
+ void ContentIndexDatabase::GetDescriptions(
+     int64_t service_worker_registration_id,
++    const url::Origin& origin,
+     blink::mojom::ContentIndexService::GetDescriptionsCallback callback) {
+   DCHECK_CURRENTLY_ON(BrowserThread::UI);
+ 
+@@ -333,15 +348,26 @@ void ContentIndexDatabase::GetDescriptions(
+       FROM_HERE, ServiceWorkerContext::GetCoreThreadId(),
+       base::BindOnce(&ContentIndexDatabase::GetDescriptionsOnCoreThread,
+                      weak_ptr_factory_core_.GetWeakPtr(),
+-                     service_worker_registration_id,
++                     service_worker_registration_id, origin,
+                      std::move(wrapped_callback)));
+ }
+ 
+ void ContentIndexDatabase::GetDescriptionsOnCoreThread(
+     int64_t service_worker_registration_id,
++    const url::Origin& origin,
+     blink::mojom::ContentIndexService::GetDescriptionsCallback callback) {
+   DCHECK_CURRENTLY_ON(ServiceWorkerContext::GetCoreThreadId());
+ 
++  scoped_refptr<ServiceWorkerRegistration> service_worker_registration =
++      service_worker_context_->GetLiveRegistration(
++          service_worker_registration_id);
++  if (!service_worker_registration ||
++      !service_worker_registration->origin().IsSameOriginWith(origin)) {
++    std::move(callback).Run(blink::mojom::ContentIndexError::STORAGE_ERROR,
++                            /* descriptions= */ {});
++    return;
++  }
++
+   service_worker_context_->GetRegistrationUserDataByKeyPrefix(
+       service_worker_registration_id, kEntryPrefix,
+       base::BindOnce(&ContentIndexDatabase::DidGetDescriptions,
+diff --git a/content/browser/content_index/content_index_database.h b/content/browser/content_index/content_index_database.h
+index 89c23e8d3595a114c3a24530c8afd1e3a67b79a3..86a7830a72b25fc4a76575138e29284a2debba52 100644
+--- a/content/browser/content_index/content_index_database.h
++++ b/content/browser/content_index/content_index_database.h
+@@ -51,6 +51,7 @@ class CONTENT_EXPORT ContentIndexDatabase {
+ 
+   void GetDescriptions(
+       int64_t service_worker_registration_id,
++      const url::Origin& origin,
+       blink::mojom::ContentIndexService::GetDescriptionsCallback callback);
+ 
+   // Gets the icon for |description_id| and invokes |callback| on the UI
+@@ -95,6 +96,7 @@ class CONTENT_EXPORT ContentIndexDatabase {
+       blink::mojom::ContentIndexService::DeleteCallback callback);
+   void GetDescriptionsOnCoreThread(
+       int64_t service_worker_registration_id,
++      const url::Origin& origin,
+       blink::mojom::ContentIndexService::GetDescriptionsCallback callback);
+   void GetIconsOnCoreThread(int64_t service_worker_registration_id,
+                             const std::string& description_id,
+diff --git a/content/browser/content_index/content_index_database_unittest.cc b/content/browser/content_index/content_index_database_unittest.cc
+index 3787ffbff591410f90065b78fd5c177567e335b3..4058a334ee229c0e2bf58e78f3884e6ad910eb7e 100644
+--- a/content/browser/content_index/content_index_database_unittest.cc
++++ b/content/browser/content_index/content_index_database_unittest.cc
+@@ -114,7 +114,7 @@ class ContentIndexDatabaseTest : public ::testing::Test {
+ 
+   void SetUp() override {
+     // Register Service Worker.
+-    service_worker_registration_id_ = RegisterServiceWorker();
++    service_worker_registration_id_ = RegisterServiceWorker(origin_);
+     ASSERT_NE(service_worker_registration_id_,
+               blink::mojom::kInvalidServiceWorkerRegistrationId);
+     database_ = std::make_unique<ContentIndexDatabase>(
+@@ -164,7 +164,7 @@ class ContentIndexDatabaseTest : public ::testing::Test {
+     base::RunLoop run_loop;
+     std::vector<blink::mojom::ContentDescriptionPtr> descriptions;
+     database_->GetDescriptions(
+-        service_worker_registration_id_,
++        service_worker_registration_id_, origin_,
+         base::BindOnce(&GetDescriptionsCallback, run_loop.QuitClosure(),
+                        out_error, &descriptions));
+     run_loop.Run();
+@@ -222,6 +222,11 @@ class ContentIndexDatabaseTest : public ::testing::Test {
+     return service_worker_registration_id_;
+   }
+ 
++  void set_service_worker_registration_id(
++      int64_t service_worker_registration_id) {
++    service_worker_registration_id_ = service_worker_registration_id;
++  }
++
+   ContentIndexDatabase* database() { return database_.get(); }
+ 
+   BrowserTaskEnvironment& task_environment() { return task_environment_; }
+@@ -230,15 +235,14 @@ class ContentIndexDatabaseTest : public ::testing::Test {
+ 
+   GURL launch_url() { return origin_.GetURL(); }
+ 
+- private:
+-  int64_t RegisterServiceWorker() {
+-    GURL script_url(origin_.GetURL().spec() + "sw.js");
++  int64_t RegisterServiceWorker(const url::Origin& origin) {
++    GURL script_url(origin.GetURL().spec() + "sw.js");
+     int64_t service_worker_registration_id =
+         blink::mojom::kInvalidServiceWorkerRegistrationId;
+ 
+     {
+       blink::mojom::ServiceWorkerRegistrationOptions options;
+-      options.scope = origin_.GetURL();
++      options.scope = origin.GetURL();
+       base::RunLoop run_loop;
+       embedded_worker_test_helper_.context()->RegisterServiceWorker(
+           script_url, options, blink::mojom::FetchClientSettingsObject::New(),
+@@ -258,7 +262,7 @@ class ContentIndexDatabaseTest : public ::testing::Test {
+     {
+       base::RunLoop run_loop;
+       embedded_worker_test_helper_.context()->registry()->FindRegistrationForId(
+-          service_worker_registration_id, origin_,
++          service_worker_registration_id, origin,
+           base::BindOnce(&DidFindServiceWorkerRegistration,
+                          &service_worker_registration_,
+                          run_loop.QuitClosure()));
+@@ -276,6 +280,7 @@ class ContentIndexDatabaseTest : public ::testing::Test {
+     return service_worker_registration_id;
+   }
+ 
++ private:
+   BrowserTaskEnvironment task_environment_;  // Must be first member.
+   ContentIndexTestBrowserContext browser_context_;
+   url::Origin origin_ = url::Origin::Create(GURL("https://example.com"));
+@@ -314,6 +319,24 @@ TEST_F(ContentIndexDatabaseTest, DatabaseOperations) {
+   EXPECT_TRUE(descriptions[0]->Equals(*expected_description));
+ }
+ 
++TEST_F(ContentIndexDatabaseTest, DatabaseOperationsBadSWID) {
++  url::Origin other_origin = url::Origin::Create(GURL("https://other.com"));
++  int64_t other_service_worker_registration_id =
++      RegisterServiceWorker(other_origin);
++  ASSERT_NE(other_service_worker_registration_id,
++            blink::mojom::kInvalidServiceWorkerRegistrationId);
++  set_service_worker_registration_id(other_service_worker_registration_id);
++
++  blink::mojom::ContentIndexError error;
++  auto descriptions = GetDescriptions(&error);
++  EXPECT_TRUE(descriptions.empty());
++  EXPECT_EQ(error, blink::mojom::ContentIndexError::STORAGE_ERROR);
++
++  EXPECT_EQ(AddEntry(CreateDescription("id1")),
++            blink::mojom::ContentIndexError::STORAGE_ERROR);
++  EXPECT_EQ(DeleteEntry("id2"), blink::mojom::ContentIndexError::STORAGE_ERROR);
++}
++
+ TEST_F(ContentIndexDatabaseTest, AddDuplicateIdWillOverwrite) {
+   auto description1 = CreateDescription("id");
+   description1->title = "title1";
+diff --git a/content/browser/content_index/content_index_service_impl.cc b/content/browser/content_index/content_index_service_impl.cc
+index 81135e8b431d87ee371c0ca8912ee5dc93adfc17..73d54a16bb759156eb2869d2e8a6293f9cf0de0a 100644
+--- a/content/browser/content_index/content_index_service_impl.cc
++++ b/content/browser/content_index/content_index_service_impl.cc
+@@ -153,7 +153,7 @@ void ContentIndexServiceImpl::GetDescriptions(
+   DCHECK_CURRENTLY_ON(BrowserThread::UI);
+ 
+   content_index_context_->database().GetDescriptions(
+-      service_worker_registration_id, std::move(callback));
++      service_worker_registration_id, origin_, std::move(callback));
+ }
+ 
+ }  // namespace content

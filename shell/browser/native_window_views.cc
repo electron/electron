@@ -110,6 +110,11 @@ void FlipWindowStyle(HWND handle, bool on, DWORD flag) {
   else
     style &= ~flag;
   ::SetWindowLong(handle, GWL_STYLE, style);
+  // Window's frame styles are cached so we need to call SetWindowPos
+  // with the SWP_FRAMECHANGED flag to update cache properly.
+  ::SetWindowPos(handle, 0, 0, 0, 0, 0,  // ignored
+                 SWP_FRAMECHANGED | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER |
+                     SWP_NOACTIVATE | SWP_NOOWNERZORDER);
 }
 
 gfx::Rect DIPToScreenRect(HWND hwnd, const gfx::Rect& pixel_bounds) {
@@ -1584,8 +1589,17 @@ void NativeWindowViews::OnMouseEvent(ui::MouseEvent* event) {
 }
 
 ui::WindowShowState NativeWindowViews::GetRestoredState() {
-  if (IsMaximized())
+  if (IsMaximized()) {
+#if defined(OS_WIN)
+    // Only restore Maximized state when window is NOT transparent style
+    if (!transparent()) {
+      return ui::SHOW_STATE_MAXIMIZED;
+    }
+#else
     return ui::SHOW_STATE_MAXIMIZED;
+#endif
+  }
+
   if (IsFullscreen())
     return ui::SHOW_STATE_FULLSCREEN;
 

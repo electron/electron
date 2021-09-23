@@ -1100,6 +1100,24 @@ describe('BrowserWindow module', () => {
           await unmaximize;
           expect(w.isMaximized()).to.equal(false);
         });
+        it('returns the correct value for windows with an aspect ratio', async () => {
+          w.destroy();
+          w = new BrowserWindow({
+            show: false,
+            fullscreenable: false
+          });
+
+          w.setAspectRatio(16 / 11);
+
+          const maximize = emittedOnce(w, 'resize');
+          w.show();
+          w.maximize();
+          await maximize;
+
+          expect(w.isMaximized()).to.equal(true);
+          w.resizable = false;
+          expect(w.isMaximized()).to.equal(true);
+        });
       });
 
       ifdescribe(process.platform !== 'linux')('Minimized state', () => {
@@ -1865,7 +1883,36 @@ describe('BrowserWindow module', () => {
   });
 
   ifdescribe(process.platform === 'darwin' && parseInt(os.release().split('.')[0]) >= 14)('"titleBarStyle" option', () => {
+    const testWindowsOverlay = async (style: any) => {
+      const w = new BrowserWindow({
+        show: false,
+        width: 400,
+        height: 400,
+        titleBarStyle: style,
+        webPreferences: {
+          nodeIntegration: true,
+          contextIsolation: false
+        },
+        titleBarOverlay: true
+      });
+      const overlayHTML = path.join(__dirname, 'fixtures', 'pages', 'overlay.html');
+      await w.loadFile(overlayHTML);
+      const overlayEnabled = await w.webContents.executeJavaScript('navigator.windowControlsOverlay.visible');
+      expect(overlayEnabled).to.be.true('overlayEnabled');
+      const overlayRect = await w.webContents.executeJavaScript('getJSOverlayProperties()');
+      expect(overlayRect.y).to.equal(0);
+      expect(overlayRect.x).to.be.greaterThan(0);
+      expect(overlayRect.width).to.be.greaterThan(0);
+      expect(overlayRect.height).to.be.greaterThan(0);
+      const cssOverlayRect = await w.webContents.executeJavaScript('getCssOverlayProperties();');
+      expect(cssOverlayRect).to.deep.equal(overlayRect);
+      const geometryChange = emittedOnce(ipcMain, 'geometrychange');
+      w.setBounds({ width: 800 });
+      const [, newOverlayRect] = await geometryChange;
+      expect(newOverlayRect.width).to.equal(overlayRect.width + 400);
+    };
     afterEach(closeAllWindows);
+    afterEach(() => { ipcMain.removeAllListeners('geometrychange'); });
     it('creates browser window with hidden title bar', () => {
       const w = new BrowserWindow({
         show: false,
@@ -1885,6 +1932,12 @@ describe('BrowserWindow module', () => {
       });
       const contentSize = w.getContentSize();
       expect(contentSize).to.deep.equal([400, 400]);
+    });
+    it('sets Window Control Overlay with hidden title bar', async () => {
+      await testWindowsOverlay('hidden');
+    });
+    it('sets Window Control Overlay with hidden inset title bar', async () => {
+      await testWindowsOverlay('hiddenInset');
     });
   });
 
@@ -4743,6 +4796,34 @@ describe('BrowserWindow module', () => {
         await emittedOnce(w.webContents, 'paint');
         expect(w.webContents.frameRate).to.equal(30);
       });
+    });
+  });
+
+  describe('"transparent" option', () => {
+    afterEach(closeAllWindows);
+
+    // Only applicable on Windows where transparent windows can't be maximized.
+    ifit(process.platform === 'win32')('can show maximized frameless window', async () => {
+      const display = screen.getPrimaryDisplay();
+
+      const w = new BrowserWindow({
+        ...display.bounds,
+        frame: false,
+        transparent: true,
+        show: true
+      });
+
+      w.loadURL('about:blank');
+      await emittedOnce(w, 'ready-to-show');
+
+      expect(w.isMaximized()).to.be.true();
+
+      // Fails when the transparent HWND is in an invalid maximized state.
+      expect(w.getBounds()).to.deep.equal(display.workArea);
+
+      const newBounds = { width: 256, height: 256, x: 0, y: 0 };
+      w.setBounds(newBounds);
+      expect(w.getBounds()).to.deep.equal(newBounds);
     });
   });
 });

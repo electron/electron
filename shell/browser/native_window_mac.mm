@@ -630,16 +630,14 @@ void NativeWindowMac::Unmaximize() {
 }
 
 bool NativeWindowMac::IsMaximized() {
-  if (([window_ styleMask] & NSWindowStyleMaskResizable) != 0) {
+  if (([window_ styleMask] & NSWindowStyleMaskResizable) != 0)
     return [window_ isZoomed];
-  } else {
-    NSRect rectScreen = [[NSScreen mainScreen] visibleFrame];
-    NSRect rectWindow = [window_ frame];
-    return (rectScreen.origin.x == rectWindow.origin.x &&
-            rectScreen.origin.y == rectWindow.origin.y &&
-            rectScreen.size.width == rectWindow.size.width &&
-            rectScreen.size.height == rectWindow.size.height);
-  }
+
+  NSRect rectScreen = GetAspectRatio() > 0.0
+                          ? default_frame_for_zoom()
+                          : [[NSScreen mainScreen] visibleFrame];
+
+  return NSEqualRects([window_ frame], rectScreen);
 }
 
 void NativeWindowMac::Minimize() {
@@ -1505,6 +1503,7 @@ void NativeWindowMac::SetWindowButtonVisibility(bool visible) {
     [buttons_proxy_ setVisible:visible];
   else
     InternalSetWindowButtonVisibility(visible);
+  NotifyLayoutWindowControlsOverlay();
 }
 
 bool NativeWindowMac::GetWindowButtonVisibility() const {
@@ -1518,6 +1517,7 @@ void NativeWindowMac::SetTrafficLightPosition(
   traffic_light_position_ = std::move(position);
   if (buttons_proxy_) {
     [buttons_proxy_ setMargin:traffic_light_position_];
+    NotifyLayoutWindowControlsOverlay();
   }
 }
 
@@ -1833,6 +1833,27 @@ void NativeWindowMac::InternalSetParentWindow(NativeWindow* parent,
 
 void NativeWindowMac::SetForwardMouseMessages(bool forward) {
   [window_ setAcceptsMouseMovedEvents:forward];
+}
+
+gfx::Rect NativeWindowMac::GetWindowControlsOverlayRect() {
+  gfx::Rect bounding_rect;
+  if (titlebar_overlay_ && !has_frame() && buttons_proxy_ &&
+      [buttons_proxy_ isVisible]) {
+    NSRect button_frame = [buttons_proxy_ getButtonsBounds];
+    gfx::Point buttons_view_margin = [buttons_proxy_ getMargin];
+    const int overlay_width = GetContentSize().width() - NSWidth(button_frame) -
+                              buttons_view_margin.x();
+    CGFloat overlay_height =
+        NSHeight(button_frame) + buttons_view_margin.y() * 2;
+    if (base::i18n::IsRTL()) {
+      bounding_rect = gfx::Rect(0, 0, overlay_width, overlay_height);
+    } else {
+      bounding_rect =
+          gfx::Rect(button_frame.size.width + buttons_view_margin.x(), 0,
+                    overlay_width, overlay_height);
+    }
+  }
+  return bounding_rect;
 }
 
 // static

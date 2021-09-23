@@ -403,6 +403,10 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
       contain the layout of the document—without requiring scrolling. Enabling
       this will cause the `preferred-size-changed` event to be emitted on the
       `WebContents` when the preferred size changes. Default is `false`.
+  * `titleBarOverlay` Boolean (optional) -  On macOS, when using a frameless window in conjunction with
+    `win.setWindowButtonVisibility(true)` or using a `titleBarStyle` so that the traffic lights are visible,
+    this property enables the Window Controls Overlay [JavaScript APIs][overlay-javascript-apis] and
+    [CSS Environment Variables][overlay-css-env-vars].  Default is `false`.
 
 When setting minimum or maximum window size with `minWidth`/`maxWidth`/
 `minHeight`/`maxHeight`, it only constrains the users. It won't prevent you from
@@ -985,7 +989,7 @@ the player itself we would call this function with arguments of 16/9 and
 are within the content view--only that they exist. Sum any extra width and
 height areas you have within the overall content view.
 
-The aspect ratio is not respected when window is resized programmingly with
+The aspect ratio is not respected when window is resized programmatically with
 APIs like `win.setSize`.
 
 #### `win.setBackgroundColor(backgroundColor)`
@@ -1809,3 +1813,5 @@ removed in future Electron releases.
 [window-levels]: https://developer.apple.com/documentation/appkit/nswindow/level
 [chrome-content-scripts]: https://developer.chrome.com/extensions/content_scripts#execution-environment
 [event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter
+[overlay-javascript-apis]: https://github.com/WICG/window-controls-overlay/blob/main/explainer.md#javascript-apis
+[overlay-css-env-vars]: https://github.com/WICG/window-controls-overlay/blob/main/explainer.md#css-environment-variables
