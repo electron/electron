@@ -530,6 +530,7 @@ Returns:
 * `certificate` [Certificate](structures/certificate.md)
 * `callback` Function
   * `isTrusted` Boolean - Indicates whether the certificate can be considered trusted.
+* `isMainFrame` Boolean
 
 Emitted when failed to verify the `certificate` for `url`.
 
