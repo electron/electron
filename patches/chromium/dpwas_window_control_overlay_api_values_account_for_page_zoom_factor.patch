@@ -1,0 +1,701 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Mike Jackson <mjackson@microsoft.com>
+Date: Wed, 9 Jun 2021 16:48:30 +0000
+Subject: dpwas: Window Control Overlay API values account for page zoom factor
+
+The overlay's bounding rect passed from the browser process
+to the render process doesn't take the page's zoom factor
+(browser zoom - Ctrl+/-) into account. The bounding rect is
+exposed via a JS API/Event and CSS environment variables, so
+we need to convert from Frame space coordinates to unzoomed
+CSS pixels. When calculating the new rect, ensure that we return
+a slightly larger rect if needed to avoid rendering contents
+smaller than the Window Control Overlay. e.g. If the height of
+the Window Control Overlay is 32, and page's zoom factor is 500%
+we will return a height of 7, instead of 6.
+
+LocalFrame is notified of page zoom change via
+SynchronizeVisualProperties, to ensure we are only computing this
+in a single pass, we also add the Window Control Overlay rect
+to the SynchronizeVisualProperties message.
+
+Manual testing:
+
+1) Enable 'Desktop PWA Window Controls Overlay' flags
+2) Install https://amandabaker.github.io/pwa/windowControlsOverlay-newCSSVars/index.html
+3) Toggle Window Control Overlay on
+4) Change zoom level for PWA via the 3 dots menu
+5) As you increase the zoom level, the values returned should decrease
+6) As you decrease the zoom level, the values returned should increase
+
+Screenshots:
+  100%: https://imgur.com/a/L4MV4RW
+   80%: https://imgur.com/a/xH79oZg
+  125%: https://imgur.com/a/CcqlkPV
+
+Explainer: https://github.com/WICG/window-controls-overlay/blob/master/explainer.md
+Design Doc: https://docs.google.com/document/d/1k0YL_-VMLIfjYCgJ2v6cMvuUv2qMKg4BgLI2tJ4qtyo/edit?usp=sharing
+I2P: https://groups.google.com/a/chromium.org/forum/#!msg/blink-dev/cper6nNLFRQ/hU91kfCWBQAJ
+
+Bug: 937121, 1213123
+Change-Id: I6744bb5a64b4021195734464b9a024e15277baa7
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2918946
+Commit-Queue: Mike Jackson <mjackson@microsoft.com>
+Reviewed-by: Daniel Cheng <dcheng@chromium.org>
+Reviewed-by: Avi Drissman <avi@chromium.org>
+Reviewed-by: danakj <danakj@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#890815}
+
+diff --git a/content/browser/renderer_host/render_widget_host_delegate.cc b/content/browser/renderer_host/render_widget_host_delegate.cc
+index 26c7a93644bb2b9f58817294265b80de33e9ef1b..3780835536c56f076831aadac63878133f21a0cd 100644
+--- a/content/browser/renderer_host/render_widget_host_delegate.cc
++++ b/content/browser/renderer_host/render_widget_host_delegate.cc
+@@ -91,6 +91,10 @@ blink::mojom::DisplayMode RenderWidgetHostDelegate::GetDisplayMode() const {
+   return blink::mojom::DisplayMode::kBrowser;
+ }
+ 
++gfx::Rect RenderWidgetHostDelegate::GetWindowsControlsOverlayRect() const {
++  return gfx::Rect();
++}
++
+ bool RenderWidgetHostDelegate::HasMouseLock(
+     RenderWidgetHostImpl* render_widget_host) {
+   return false;
+diff --git a/content/browser/renderer_host/render_widget_host_delegate.h b/content/browser/renderer_host/render_widget_host_delegate.h
+index 51bcc78ecd8f5f40e90a5e9077ac59b37c5c3e13..74d81a2a91ef515c3b89e2ceaa197b894c9fd9b7 100644
+--- a/content/browser/renderer_host/render_widget_host_delegate.h
++++ b/content/browser/renderer_host/render_widget_host_delegate.h
+@@ -215,6 +215,10 @@ class CONTENT_EXPORT RenderWidgetHostDelegate {
+   // to frame-based widgets. Other widgets are always kBrowser.
+   virtual blink::mojom::DisplayMode GetDisplayMode() const;
+ 
++  // Returns the Window Control Overlay rectangle. Only applies to an
++  // outermost main frame's widget. Other widgets always returns an empty rect.
++  virtual gfx::Rect GetWindowsControlsOverlayRect() const;
++
+   // Notification that the widget has lost capture.
+   virtual void LostCapture(RenderWidgetHostImpl* render_widget_host) {}
+ 
+diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
+index fc8916ac6dc76968e0cbd06877ffb80c95f3abf4..18f0ea3b8ea34f6287e92299ef147bccaedd302a 100644
+--- a/content/browser/renderer_host/render_widget_host_impl.cc
++++ b/content/browser/renderer_host/render_widget_host_impl.cc
+@@ -879,6 +879,8 @@ blink::VisualProperties RenderWidgetHostImpl::GetVisualProperties() {
+   auto& current_screen_info = visual_properties.screen_infos.mutable_current();
+ 
+   visual_properties.is_fullscreen_granted = delegate_->IsFullscreen();
++  visual_properties.window_controls_overlay_rect =
++      delegate_->GetWindowsControlsOverlayRect();
+ 
+   if (is_frame_widget)
+     visual_properties.display_mode = delegate_->GetDisplayMode();
+@@ -2659,7 +2661,9 @@ bool RenderWidgetHostImpl::StoredVisualPropertiesNeedsUpdate(
+          old_visual_properties->is_pinch_gesture_active !=
+              new_visual_properties.is_pinch_gesture_active ||
+          old_visual_properties->root_widget_window_segments !=
+-             new_visual_properties.root_widget_window_segments;
++             new_visual_properties.root_widget_window_segments ||
++         old_visual_properties->window_controls_overlay_rect !=
++             new_visual_properties.window_controls_overlay_rect;
+ }
+ 
+ void RenderWidgetHostImpl::AutoscrollStart(const gfx::PointF& position) {
+diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
+index ca51a8a45570fafc0dfe2b400cbb7172a9be632d..835a100a98882e3fff1e679ed596171ce865a653 100644
+--- a/content/browser/web_contents/web_contents_impl.cc
++++ b/content/browser/web_contents/web_contents_impl.cc
+@@ -7872,10 +7872,22 @@ gfx::Size WebContentsImpl::GetSize() {
+ 
+ #endif  // !defined(OS_MAC)
+ 
++gfx::Rect WebContentsImpl::GetWindowsControlsOverlayRect() const {
++  return window_controls_overlay_rect_;
++}
++
+ void WebContentsImpl::UpdateWindowControlsOverlay(
+     const gfx::Rect& bounding_rect) {
+-  GetMainFrame()->GetAssociatedLocalMainFrame()->UpdateWindowControlsOverlay(
+-      bounding_rect);
++  if (window_controls_overlay_rect_ == bounding_rect)
++    return;
++
++  window_controls_overlay_rect_ = bounding_rect;
++
++  // Updates to the |window_controls_overlay_rect_| are sent via
++  // the VisualProperties message.
++  if (RenderWidgetHost* render_widget_host =
++          GetMainFrame()->GetRenderWidgetHost())
++    render_widget_host->SynchronizeVisualProperties();
+ }
+ 
+ BrowserPluginEmbedder* WebContentsImpl::GetBrowserPluginEmbedder() const {
+diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
+index 17034e75d2ab5bd4e716e9c72277c77a53387808..3e32a9b4e17bb515066acaf014d1fe659cc83772 100644
+--- a/content/browser/web_contents/web_contents_impl.h
++++ b/content/browser/web_contents/web_contents_impl.h
+@@ -960,6 +960,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
+   bool IsWidgetForMainFrame(RenderWidgetHostImpl* render_widget_host) override;
+   bool IsShowingContextMenuOnPage() const override;
+   void DidChangeScreenOrientation() override;
++  gfx::Rect GetWindowsControlsOverlayRect() const override;
+ 
+   // RenderFrameHostManager::Delegate ------------------------------------------
+ 
+@@ -2091,6 +2092,12 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
+   // with OOPIF renderers.
+   blink::mojom::TextAutosizerPageInfo text_autosizer_page_info_;
+ 
++  // Stores the rect of the Windows Control Overlay, which contains system UX
++  // affordances (e.g. close), for installed desktop Progress Web Apps (PWAs),
++  // if the app specifies the 'window-controls-overlay' DisplayMode in its
++  // manifest. This is in frame space coordinates.
++  gfx::Rect window_controls_overlay_rect_;
++
+   // Observe native theme for changes to dark mode, preferred color scheme, and
+   // preferred contrast. Used to notify the renderer of preferred color scheme
+   // and preferred contrast changes.
+diff --git a/content/browser/web_contents/web_contents_impl_browsertest.cc b/content/browser/web_contents/web_contents_impl_browsertest.cc
+index 2e75cbf168dbfa48d9f094ed84398197fd0487aa..73dc93a8afd6fa1ff38e900590681e22d43f7ca4 100644
+--- a/content/browser/web_contents/web_contents_impl_browsertest.cc
++++ b/content/browser/web_contents/web_contents_impl_browsertest.cc
+@@ -43,6 +43,7 @@
+ #include "content/public/browser/back_forward_cache.h"
+ #include "content/public/browser/browser_thread.h"
+ #include "content/public/browser/file_select_listener.h"
++#include "content/public/browser/host_zoom_map.h"
+ #include "content/public/browser/invalidate_type.h"
+ #include "content/public/browser/javascript_dialog_manager.h"
+ #include "content/public/browser/load_notification_details.h"
+@@ -88,6 +89,7 @@
+ #include "testing/gmock/include/gmock/gmock.h"
+ #include "third_party/blink/public/common/client_hints/client_hints.h"
+ #include "third_party/blink/public/common/features.h"
++#include "third_party/blink/public/common/page/page_zoom.h"
+ #include "third_party/blink/public/mojom/frame/fullscreen.mojom.h"
+ #include "ui/base/clipboard/clipboard_format_type.h"
+ #include "url/gurl.h"
+@@ -4466,19 +4468,74 @@ class WebContentsImplBrowserTestWindowControlsOverlay
+   }
+ 
+   void ValidateTitlebarAreaCSSValue(const std::string& name,
+-                                    const std::string& expected_result) {
++                                    int expected_result) {
+     SCOPED_TRACE(name);
+-
+     EXPECT_EQ(
+         expected_result,
+         EvalJs(shell()->web_contents(),
+                JsReplace(
+-                   "(() => {const e = document.getElementById('target');const "
+-                   "style = window.getComputedStyle(e, null); return "
+-                   "style.getPropertyValue($1);})();",
++                   "(() => {"
++                   "const e = document.getElementById('target');"
++                   "const style = window.getComputedStyle(e, null);"
++                   "return Math.round(style.getPropertyValue($1).replace('px', "
++                   "''));"
++                   "})();",
+                    name)));
+   }
+ 
++
++  void ValidateWindowsControlOverlayState(WebContents* web_contents,
++                                          const gfx::Rect& expected_rect,
++                                          int css_fallback_value) {
++    EXPECT_EQ(!expected_rect.IsEmpty(),
++              EvalJs(web_contents, "navigator.windowControlsOverlay.visible"));
++    EXPECT_EQ(
++        expected_rect.x(),
++        EvalJs(web_contents,
++               "navigator.windowControlsOverlay.getBoundingClientRect().x"));
++    EXPECT_EQ(
++        expected_rect.y(),
++        EvalJs(web_contents,
++               "navigator.windowControlsOverlay.getBoundingClientRect().y"));
++    EXPECT_EQ(
++        expected_rect.width(),
++        EvalJs(
++            web_contents,
++            "navigator.windowControlsOverlay.getBoundingClientRect().width"));
++    EXPECT_EQ(
++        expected_rect.height(),
++        EvalJs(
++            web_contents,
++            "navigator.windowControlsOverlay.getBoundingClientRect().height"));
++
++    // When the overlay is not visible, the environment variables should be
++    // undefined, and the the fallback value should be used.
++    gfx::Rect css_rect = expected_rect;
++    if (css_rect.IsEmpty()) {
++      css_rect.SetRect(css_fallback_value, css_fallback_value,
++                       css_fallback_value, css_fallback_value);
++    }
++
++    ValidateTitlebarAreaCSSValue("left", css_rect.x());
++    ValidateTitlebarAreaCSSValue("top", css_rect.y());
++    ValidateTitlebarAreaCSSValue("width", css_rect.width());
++    ValidateTitlebarAreaCSSValue("height", css_rect.height());
++  }
++
++  void WaitForWindowControlsOverlayUpdate(
++      WebContents* web_contents,
++      const gfx::Rect& bounding_client_rect) {
++    EXPECT_TRUE(
++        ExecJs(web_contents->GetMainFrame(),
++               "navigator.windowControlsOverlay.ongeometrychange = (e) => {"
++               "  document.title = 'ongeometrychange'"
++               "}"));
++
++    web_contents->UpdateWindowControlsOverlay(bounding_client_rect);
++    TitleWatcher title_watcher(web_contents, u"ongeometrychange");
++    ignore_result(title_watcher.WaitAndGetTitle());
++  }
++
+  private:
+   base::test::ScopedFeatureList scoped_feature_list_;
+ };
+@@ -4500,24 +4557,12 @@ IN_PROC_BROWSER_TEST_F(WebContentsImplBrowserTestWindowControlsOverlay,
+   // empty.
+   int empty_rect_value = 0;
+ 
+-  EXPECT_EQ(false,
+-            EvalJs(web_contents, "navigator.windowControlsOverlay.visible"));
+-  EXPECT_EQ(
+-      empty_rect_value,
+-      EvalJs(web_contents,
+-             "navigator.windowControlsOverlay.getBoundingClientRect().x"));
+-  EXPECT_EQ(
+-      empty_rect_value,
+-      EvalJs(web_contents,
+-             "navigator.windowControlsOverlay.getBoundingClientRect().y"));
+-  EXPECT_EQ(
+-      empty_rect_value,
+-      EvalJs(web_contents,
+-             "navigator.windowControlsOverlay.getBoundingClientRect().width"));
+-  EXPECT_EQ(
+-      empty_rect_value,
+-      EvalJs(web_contents,
+-             "navigator.windowControlsOverlay.getBoundingClientRect().height"));
++
++  // Update bounds and ensure that JS APIs and CSS variables are updated.
++  gfx::Rect bounding_client_rect(1, 2, 3, 4);
++  WaitForWindowControlsOverlayUpdate(web_contents, bounding_client_rect);
++  ValidateWindowsControlOverlayState(web_contents, bounding_client_rect, 50);
++}
+ 
+   // When the overlay is not visble, the environment variables should be
+   // undefined, and the the fallback value of 50px should be used.
+@@ -4535,31 +4580,15 @@ IN_PROC_BROWSER_TEST_F(WebContentsImplBrowserTestWindowControlsOverlay,
+   gfx::Rect bounding_client_rect =
+       gfx::Rect(new_x, new_y, new_width, new_height);
+ 
+-  web_contents->UpdateWindowControlsOverlay(bounding_client_rect);
+-
+-  EXPECT_EQ(true,
+-            EvalJs(web_contents, "navigator.windowControlsOverlay.visible"));
+-  EXPECT_EQ(
+-      new_x,
+-      EvalJs(web_contents,
+-             "navigator.windowControlsOverlay.getBoundingClientRect().x"));
+-  EXPECT_EQ(
+-      new_y,
+-      EvalJs(web_contents,
+-             "navigator.windowControlsOverlay.getBoundingClientRect().y"));
+-  EXPECT_EQ(
+-      new_width,
+-      EvalJs(web_contents,
+-             "navigator.windowControlsOverlay.getBoundingClientRect().width"));
+-  EXPECT_EQ(
+-      new_height,
+-      EvalJs(web_contents,
+-             "navigator.windowControlsOverlay.getBoundingClientRect().height"));
+-
+-  ValidateTitlebarAreaCSSValue("left", "1px");
+-  ValidateTitlebarAreaCSSValue("top", "2px");
+-  ValidateTitlebarAreaCSSValue("width", "3px");
+-  ValidateTitlebarAreaCSSValue("height", "4px");
++  // Update bounds and ensure that JS APIs and CSS variables are updated.
++  gfx::Rect bounding_client_rect(0, 0, 100, 32);
++  WaitForWindowControlsOverlayUpdate(web_contents, bounding_client_rect);
++  ValidateWindowsControlOverlayState(web_contents, bounding_client_rect, 55);
++
++  // Now toggle Windows Controls Overlay off.
++  gfx::Rect empty_rect;
++  WaitForWindowControlsOverlayUpdate(web_contents, empty_rect);
++  ValidateWindowsControlOverlayState(web_contents, empty_rect, 55);
+ }
+ 
+ IN_PROC_BROWSER_TEST_F(WebContentsImplBrowserTestWindowControlsOverlay,
+@@ -4568,14 +4597,16 @@ IN_PROC_BROWSER_TEST_F(WebContentsImplBrowserTestWindowControlsOverlay,
+ 
+   GURL url(url::kAboutBlankURL);
+   EXPECT_TRUE(NavigateToURL(shell(), url));
+-  EXPECT_TRUE(ExecuteScript(
+-      web_contents->GetMainFrame(),
+-      "geometrychangeCount = 0;"
+-      "navigator.windowControlsOverlay.ongeometrychange = (e) => {"
+-      "  geometrychangeCount++;"
+-      "  rect = e.boundingRect;"
+-      "  visible = e.visible;"
+-      "}"));
++
++  EXPECT_TRUE(
++      ExecJs(web_contents->GetMainFrame(),
++             "geometrychangeCount = 0;"
++             "navigator.windowControlsOverlay.ongeometrychange = (e) => {"
++             "  geometrychangeCount++;"
++             "  rect = e.boundingRect;"
++             "  visible = e.visible;"
++             "  document.title = 'ongeometrychange' + geometrychangeCount"
++             "}"));
+ 
+   WaitForLoadStop(web_contents);
+ 
+@@ -4584,23 +4615,107 @@ IN_PROC_BROWSER_TEST_F(WebContentsImplBrowserTestWindowControlsOverlay,
+   EXPECT_EQ(0, EvalJs(web_contents, "geometrychangeCount"));
+ 
+   // Information about the bounds should be updated.
+-  const int x = 2;
+-  const int y = 2;
+-  const int width = 2;
+-  const int height = 2;
+-
+-  gfx::Rect bounding_client_rect = gfx::Rect(x, y, width, height);
+-
++  gfx::Rect bounding_client_rect = gfx::Rect(2, 3, 4, 5);
+   web_contents->UpdateWindowControlsOverlay(bounding_client_rect);
++  TitleWatcher title_watcher(web_contents, u"ongeometrychange1");
++  ignore_result(title_watcher.WaitAndGetTitle());
+ 
+   // Expect the "geometrychange" event to have fired once.
+   EXPECT_EQ(1, EvalJs(web_contents, "geometrychangeCount"));
+ 
+   // Validate the event payload.
+   EXPECT_EQ(true, EvalJs(web_contents, "visible"));
+-  EXPECT_EQ(x, EvalJs(web_contents, "rect.x;"));
+-  EXPECT_EQ(y, EvalJs(web_contents, "rect.y"));
+-  EXPECT_EQ(width, EvalJs(web_contents, "rect.width"));
+-  EXPECT_EQ(height, EvalJs(web_contents, "rect.height"));
++  EXPECT_EQ(bounding_client_rect.x(), EvalJs(web_contents, "rect.x;"));
++  EXPECT_EQ(bounding_client_rect.y(), EvalJs(web_contents, "rect.y"));
++  EXPECT_EQ(bounding_client_rect.width(), EvalJs(web_contents, "rect.width"));
++  EXPECT_EQ(bounding_client_rect.height(), EvalJs(web_contents, "rect.height"));
++}
++
++#if !defined(OS_ANDROID)
++IN_PROC_BROWSER_TEST_F(WebContentsImplBrowserTestWindowControlsOverlay,
++                       ValidatePageScaleChangesInfoAndFiresEvent) {
++  auto* web_contents = shell()->web_contents();
++  GURL url(
++      R"(data:text/html,<body><div id=target style="position=absolute;
++      left: env(titlebar-area-x, 60px);
++      top: env(titlebar-area-y, 60px);
++      width: env(titlebar-area-width, 60px);
++      height: env(titlebar-area-height, 60px);"></div></body>)");
++
++  EXPECT_TRUE(NavigateToURL(shell(), url));
++  WaitForLoadStop(web_contents);
++
++  gfx::Rect bounding_client_rect = gfx::Rect(5, 10, 15, 20);
++  WaitForWindowControlsOverlayUpdate(web_contents, bounding_client_rect);
++
++  // Update zoom level, confirm the "geometrychange" event is fired,
++  // and CSS variables are updated
++  EXPECT_TRUE(
++      ExecJs(web_contents->GetMainFrame(),
++             "geometrychangeCount = 0;"
++             "navigator.windowControlsOverlay.ongeometrychange = (e) => {"
++             "  geometrychangeCount++;"
++             "  rect = e.boundingRect;"
++             "  visible = e.visible;"
++             "  document.title = 'ongeometrychangefromzoomlevel'"
++             "}"));
++  content::HostZoomMap::SetZoomLevel(web_contents, 1.5);
++  TitleWatcher title_watcher(web_contents, u"ongeometrychangefromzoomlevel");
++  ignore_result(title_watcher.WaitAndGetTitle());
++
++  // Validate the event payload.
++  double zoom_factor = blink::PageZoomLevelToZoomFactor(
++      content::HostZoomMap::GetZoomLevel(web_contents));
++  gfx::Rect scaled_rect =
++      gfx::ScaleToEnclosingRectSafe(bounding_client_rect, 1.0f / zoom_factor);
++
++  EXPECT_EQ(true, EvalJs(web_contents, "visible"));
++  EXPECT_EQ(scaled_rect.x(), EvalJs(web_contents, "rect.x"));
++  EXPECT_EQ(scaled_rect.y(), EvalJs(web_contents, "rect.y"));
++  EXPECT_EQ(scaled_rect.width(), EvalJs(web_contents, "rect.width"));
++  EXPECT_EQ(scaled_rect.height(), EvalJs(web_contents, "rect.height"));
++  ValidateWindowsControlOverlayState(web_contents, scaled_rect, 60);
++}
++#endif
++
++class WebContentsImplBrowserTestWindowControlsOverlayNonOneDeviceScaleFactor
++    : public WebContentsImplBrowserTestWindowControlsOverlay {
++ public:
++  void SetUp() override {
++#if defined(OS_MAC)
++    // Device scale factor on MacOSX is always an integer.
++    EnablePixelOutput(2.0f);
++#else
++    EnablePixelOutput(1.25f);
++#endif
++    WebContentsImplBrowserTestWindowControlsOverlay::SetUp();
++  }
++};
++
++IN_PROC_BROWSER_TEST_F(
++    WebContentsImplBrowserTestWindowControlsOverlayNonOneDeviceScaleFactor,
++    ValidateScaledCorrectly) {
++  auto* web_contents = shell()->web_contents();
++  GURL url(
++      R"(data:text/html,<body><div id=target style="position=absolute;
++      left: env(titlebar-area-x, 70px);
++      top: env(titlebar-area-y, 70px);
++      width: env(titlebar-area-width, 70px);
++      height: env(titlebar-area-height, 70px);"></div></body>)");
++
++  EXPECT_TRUE(NavigateToURL(shell(), url));
++  WaitForLoadStop(web_contents);
++#if defined(OS_MAC)
++  // Device scale factor on MacOSX is always an integer.
++  ASSERT_EQ(2.0f,
++            web_contents->GetRenderWidgetHostView()->GetDeviceScaleFactor());
++#else
++  ASSERT_EQ(1.25f,
++            web_contents->GetRenderWidgetHostView()->GetDeviceScaleFactor());
++#endif
++
++  gfx::Rect bounding_client_rect = gfx::Rect(5, 10, 15, 20);
++  WaitForWindowControlsOverlayUpdate(web_contents, bounding_client_rect);
++  ValidateWindowsControlOverlayState(web_contents, bounding_client_rect, 70);
+ }
+ }  // namespace content
+diff --git a/third_party/blink/common/widget/visual_properties.cc b/third_party/blink/common/widget/visual_properties.cc
+index 433ca5954c9f316905f289948ab2e4ebe66b7833..55932091bafe8959c855529d49b9f66cd6e386f0 100644
+--- a/third_party/blink/common/widget/visual_properties.cc
++++ b/third_party/blink/common/widget/visual_properties.cc
+@@ -33,7 +33,8 @@ bool VisualProperties::operator==(const VisualProperties& other) const {
+          page_scale_factor == other.page_scale_factor &&
+          compositing_scale_factor == other.compositing_scale_factor &&
+          root_widget_window_segments == other.root_widget_window_segments &&
+-         is_pinch_gesture_active == other.is_pinch_gesture_active;
++         is_pinch_gesture_active == other.is_pinch_gesture_active &&
++         window_controls_overlay_rect == other.window_controls_overlay_rect;
+ }
+ 
+ bool VisualProperties::operator!=(const VisualProperties& other) const {
+diff --git a/third_party/blink/common/widget/visual_properties_mojom_traits.cc b/third_party/blink/common/widget/visual_properties_mojom_traits.cc
+index d378def431a2643de08951ff861b68868b1d7250..262eec364918a668a2f5e65af2044c24d3380aa7 100644
+--- a/third_party/blink/common/widget/visual_properties_mojom_traits.cc
++++ b/third_party/blink/common/widget/visual_properties_mojom_traits.cc
+@@ -24,6 +24,7 @@ bool StructTraits<
+       !data.ReadBrowserControlsParams(&out->browser_controls_params) ||
+       !data.ReadLocalSurfaceId(&out->local_surface_id) ||
+       !data.ReadRootWidgetWindowSegments(&out->root_widget_window_segments) ||
++      !data.ReadWindowControlsOverlayRect(&out->window_controls_overlay_rect) ||
+       data.page_scale_factor() <= 0 || data.compositing_scale_factor() <= 0)
+     return false;
+   out->auto_resize_enabled = data.auto_resize_enabled();
+diff --git a/third_party/blink/public/common/widget/visual_properties.h b/third_party/blink/public/common/widget/visual_properties.h
+index 3c16c86e704558b40e00b40264a4d7018d89fb5e..e020adae74d1f061bbbfc5bc10e8a40a69f93410 100644
+--- a/third_party/blink/public/common/widget/visual_properties.h
++++ b/third_party/blink/public/common/widget/visual_properties.h
+@@ -129,6 +129,13 @@ struct BLINK_COMMON_EXPORT VisualProperties {
+   // main frame's renderer, and needs to be shared with subframes.
+   bool is_pinch_gesture_active = false;
+ 
++  // The rect of the Windows Control Overlay, which contains system UX
++  // affordances (e.g. close), for installed desktop Progress Web Apps (PWAs),
++  // if the app specifies the 'window-controls-overlay' DisplayMode in its
++  // manifest. This is only valid and to be consumed by the outermost main
++  // frame.
++  gfx::Rect window_controls_overlay_rect;
++
+   VisualProperties();
+   VisualProperties(const VisualProperties& other);
+   ~VisualProperties();
+diff --git a/third_party/blink/public/common/widget/visual_properties_mojom_traits.h b/third_party/blink/public/common/widget/visual_properties_mojom_traits.h
+index f6634310fd17acc7299db892d68aea770578a0f1..8d7ab89e5d434e4098a55c6b78d06bfb6f3faa29 100644
+--- a/third_party/blink/public/common/widget/visual_properties_mojom_traits.h
++++ b/third_party/blink/public/common/widget/visual_properties_mojom_traits.h
+@@ -97,6 +97,11 @@ struct BLINK_COMMON_EXPORT StructTraits<blink::mojom::VisualPropertiesDataView,
+     return r.is_pinch_gesture_active;
+   }
+ 
++  static const gfx::Rect& window_controls_overlay_rect(
++      const blink::VisualProperties& r) {
++    return r.window_controls_overlay_rect;
++  }
++
+   static bool Read(blink::mojom::VisualPropertiesDataView r,
+                    blink::VisualProperties* out);
+ };
+diff --git a/third_party/blink/public/mojom/frame/frame.mojom b/third_party/blink/public/mojom/frame/frame.mojom
+index add4a22fe76818d5fa7c124f85a781da387ba3f4..cbbbdfd799135d8c86f9f2eecd558771627991f2 100644
+--- a/third_party/blink/public/mojom/frame/frame.mojom
++++ b/third_party/blink/public/mojom/frame/frame.mojom
+@@ -1116,10 +1116,6 @@ interface LocalMainFrame {
+   UpdateBrowserControlsState(cc.mojom.BrowserControlsState constraints,
+                              cc.mojom.BrowserControlsState current,
+                              bool animate);
+-
+-  // Notify renderer that the window controls overlay has changed size or
+-  // visibility.
+-  UpdateWindowControlsOverlay(gfx.mojom.Rect window_controls_overlay_rect);
+ };
+ 
+ // Implemented in Blink, this interface defines remote main-frame-specific
+diff --git a/third_party/blink/public/mojom/widget/visual_properties.mojom b/third_party/blink/public/mojom/widget/visual_properties.mojom
+index b2fe7bf659bcfdc183e57ad7c4e45f1c422a246f..43a4874cfae908754c476a508544154e1088634e 100644
+--- a/third_party/blink/public/mojom/widget/visual_properties.mojom
++++ b/third_party/blink/public/mojom/widget/visual_properties.mojom
+@@ -92,4 +92,12 @@ struct VisualProperties {
+   // Indicates whether a pinch gesture is currently active. Originates in the
+   // main frame's renderer, and needs to be shared with subframes.
+   bool is_pinch_gesture_active;
++
++  // The rect of the Windows Control Overlay, which contains system UX
++  // affordances (e.g. close), for installed desktop Progress Web Apps (PWAs),
++  // if the app specifies the 'window-controls-overlay' DisplayMode in its
++  // manifest. This is only valid and to be consumed by the outermost main
++  // frame.
++  gfx.mojom.Rect window_controls_overlay_rect;
++
+ };
+diff --git a/third_party/blink/renderer/core/frame/local_frame.cc b/third_party/blink/renderer/core/frame/local_frame.cc
+index d6cf1cbb0beb65f0003051f67d5fa5b723c77a74..5f991049ea325368543d134cbe95614625b30004 100644
+--- a/third_party/blink/renderer/core/frame/local_frame.cc
++++ b/third_party/blink/renderer/core/frame/local_frame.cc
+@@ -2930,31 +2930,71 @@ void LocalFrame::UpdateBrowserControlsState(
+ }
+ 
+ void LocalFrame::UpdateWindowControlsOverlay(
+-    const gfx::Rect& window_controls_overlay_rect) {
++
++    const gfx::Rect& bounding_rect_in_dips) {
++  if (!RuntimeEnabledFeatures::WebAppWindowControlsOverlayEnabled(nullptr))
++    return;
++
++  // The rect passed to us from content is in DIP screen space, relative to the
++  // main frame, and needs to move to CSS space. This doesn't take the page's
++  // zoom factor into account so we must scale by the inverse of the page zoom
++  // in order to get correct CSS space coordinates. Note that when
++  // use-zoom-for-dsf is enabled, WindowToViewportScalar will be the true device
++  // scale factor, and PageZoomFactor will be the combination of the device
++  // scale factor and the zoom percent of the page. It is preferable to compute
++  // a rect that is slightly larger than one that would render smaller than the
++  // window control overlay.
++  LocalFrame& local_frame_root = LocalFrameRoot();
++  const float window_to_viewport_factor =
++      GetPage()->GetChromeClient().WindowToViewportScalar(&local_frame_root,
++                                                          1.0f);
++  const float zoom_factor = local_frame_root.PageZoomFactor();
++  const float scale_factor = zoom_factor / window_to_viewport_factor;
++  gfx::Rect window_controls_overlay_rect =
++      gfx::ScaleToEnclosingRectSafe(bounding_rect_in_dips, 1.0f / scale_factor);
++
++  bool fire_event =
++      (window_controls_overlay_rect != window_controls_overlay_rect_);
++
+   is_window_controls_overlay_visible_ = !window_controls_overlay_rect.IsEmpty();
+   window_controls_overlay_rect_ = window_controls_overlay_rect;
+ 
+   DocumentStyleEnvironmentVariables& vars =
+       GetDocument()->GetStyleEngine().EnsureEnvironmentVariables();
+-  vars.SetVariable(
+-      UADefinedVariable::kTitlebarAreaX,
+-      StyleEnvironmentVariables::FormatPx(window_controls_overlay_rect_.x()));
+-  vars.SetVariable(
+-      UADefinedVariable::kTitlebarAreaY,
+-      StyleEnvironmentVariables::FormatPx(window_controls_overlay_rect_.y()));
+-  vars.SetVariable(UADefinedVariable::kTitlebarAreaWidth,
+-                   StyleEnvironmentVariables::FormatPx(
+-                       window_controls_overlay_rect_.width()));
+-  vars.SetVariable(UADefinedVariable::kTitlebarAreaHeight,
+-                   StyleEnvironmentVariables::FormatPx(
+-                       window_controls_overlay_rect_.height()));
+-
+-  auto* window_controls_overlay =
+-      WindowControlsOverlay::FromIfExists(*DomWindow()->navigator());
+-
+-  if (window_controls_overlay) {
+-    window_controls_overlay->WindowControlsOverlayChanged(
+-        window_controls_overlay_rect);
++
++  if (is_window_controls_overlay_visible_) {
++    vars.SetVariable(
++        UADefinedVariable::kTitlebarAreaX,
++        StyleEnvironmentVariables::FormatPx(window_controls_overlay_rect_.x()));
++    vars.SetVariable(
++        UADefinedVariable::kTitlebarAreaY,
++        StyleEnvironmentVariables::FormatPx(window_controls_overlay_rect_.y()));
++    vars.SetVariable(UADefinedVariable::kTitlebarAreaWidth,
++                     StyleEnvironmentVariables::FormatPx(
++                         window_controls_overlay_rect_.width()));
++    vars.SetVariable(UADefinedVariable::kTitlebarAreaHeight,
++                     StyleEnvironmentVariables::FormatPx(
++                         window_controls_overlay_rect_.height()));
++  } else {
++    const UADefinedVariable vars_to_remove[] = {
++        UADefinedVariable::kTitlebarAreaX,
++        UADefinedVariable::kTitlebarAreaY,
++        UADefinedVariable::kTitlebarAreaWidth,
++        UADefinedVariable::kTitlebarAreaHeight,
++    };
++    for (auto var_to_remove : vars_to_remove) {
++      vars.RemoveVariable(StyleEnvironmentVariables::GetVariableName(var_to_remove));
++    }
++  }
++
++  if (fire_event) {
++    auto* window_controls_overlay =
++        WindowControlsOverlay::FromIfExists(*DomWindow()->navigator());
++
++    if (window_controls_overlay) {
++      window_controls_overlay->WindowControlsOverlayChanged(
++          window_controls_overlay_rect_);
++    }
+   }
+ }
+ 
+diff --git a/third_party/blink/renderer/core/frame/local_frame.h b/third_party/blink/renderer/core/frame/local_frame.h
+index 38ad1f729ffc7416ae56c771f5b518fb63520c08..d725460b26f25ca5746126f76efdfc8722943492 100644
+--- a/third_party/blink/renderer/core/frame/local_frame.h
++++ b/third_party/blink/renderer/core/frame/local_frame.h
+@@ -732,8 +732,7 @@ class CORE_EXPORT LocalFrame final
+   void UpdateBrowserControlsState(cc::BrowserControlsState constraints,
+                                   cc::BrowserControlsState current,
+                                   bool animate) override;
+-  void UpdateWindowControlsOverlay(
+-      const gfx::Rect& window_controls_overlay_rect) override;
++  void UpdateWindowControlsOverlay(const gfx::Rect& bounding_rect_in_dips);
+ 
+   // mojom::FullscreenVideoElementHandler implementation:
+   void RequestFullscreenVideoElement() final;
+diff --git a/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc b/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc
+index 1f13dc8bce4a41b96bb2bfce776d6b55500db5b6..d33496ce445cb2af4b21cdd23bdc011d6214b352 100644
+--- a/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc
++++ b/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc
+@@ -1516,6 +1516,10 @@ void WebFrameWidgetImpl::ApplyVisualPropertiesSizing(
+               widget_base_->VisibleViewportSizeInDIPs()),
+           visual_properties.browser_controls_params);
+     }
++
++    LocalRootImpl()->GetFrame()->UpdateWindowControlsOverlay(
++        visual_properties.window_controls_overlay_rect);
++
+   } else {
+     // Widgets in a WebView's frame tree without a local main frame
+     // set the size of the WebView to be the |visible_viewport_size|, in order
+diff --git a/third_party/blink/tools/blinkpy/presubmit/audit_non_blink_usage.py b/third_party/blink/tools/blinkpy/presubmit/audit_non_blink_usage.py
+index 2816268f68d8910b11c5b6ea6d0c2a1a92bd2e1a..ac95c2f8e18081cca7a2c14899c9d7a9444fa565 100755
+--- a/third_party/blink/tools/blinkpy/presubmit/audit_non_blink_usage.py
++++ b/third_party/blink/tools/blinkpy/presubmit/audit_non_blink_usage.py
+@@ -279,6 +279,7 @@ _CONFIG = [
+             'gfx::RectF',
+             'gfx::RRectF',
+             'gfx::ScaleToCeiledSize',
++            'gfx::ScaleToEnclosingRectSafe',
+             'gfx::ScaleVector2d',
+             'gfx::Size',
+             'gfx::SizeF',

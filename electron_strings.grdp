@@ -1,5 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <grit-part>
+  <!-- Windows Caption Buttons -->
+  <message name="IDS_APP_ACCNAME_CLOSE" desc="The accessible name for the Close button.">
+    Close
+  </message>
+  <message name="IDS_APP_ACCNAME_MINIMIZE" desc="The accessible name for the Minimize button.">
+    Minimize
+  </message>
+  <message name="IDS_APP_ACCNAME_MAXIMIZE" desc="The accessible name for the Maximize button.">
+    Maximize
+  </message>
+  <message name="IDS_APP_ACCNAME_RESTORE" desc="The accessible name for the Restore button.">
+    Restore
+  </message>
+
   <!-- Printing Service -->
   <message name="IDS_UTILITY_PROCESS_PRINTING_SERVICE_NAME" desc="The name of the utility process used for printing conversions.">
     Printing Service
