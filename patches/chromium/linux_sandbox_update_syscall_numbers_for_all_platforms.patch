@@ -1,0 +1,437 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Matthew Denton <mpdenton@chromium.org>
+Date: Thu, 3 Jun 2021 19:02:10 +0000
+Subject: Linux sandbox: update syscall numbers for all platforms.
+
+This includes clone3 and the landlock system calls.
+
+Bug: 1213452
+Change-Id: Iaf14a7c9d455c7a22ad179b13541a60dcabaac09
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/2934620
+Auto-Submit: Matthew Denton <mpdenton@chromium.org>
+Commit-Queue: Robert Sesek <rsesek@chromium.org>
+Reviewed-by: Robert Sesek <rsesek@chromium.org>
+Cr-Commit-Position: refs/heads/master@{#888958}
+
+diff --git a/sandbox/linux/system_headers/arm64_linux_syscalls.h b/sandbox/linux/system_headers/arm64_linux_syscalls.h
+index a242c18c84213edb2f17443cb5a3e437add9d4c2..ab86b36353c22330241b0fc9b9be904490212313 100644
+--- a/sandbox/linux/system_headers/arm64_linux_syscalls.h
++++ b/sandbox/linux/system_headers/arm64_linux_syscalls.h
+@@ -1119,4 +1119,100 @@
+ #define __NR_rseq 293
+ #endif
+ 
++#if !defined(__NR_kexec_file_load)
++#define __NR_kexec_file_load 294
++#endif
++
++#if !defined(__NR_pidfd_send_signal)
++#define __NR_pidfd_send_signal 424
++#endif
++
++#if !defined(__NR_io_uring_setup)
++#define __NR_io_uring_setup 425
++#endif
++
++#if !defined(__NR_io_uring_enter)
++#define __NR_io_uring_enter 426
++#endif
++
++#if !defined(__NR_io_uring_register)
++#define __NR_io_uring_register 427
++#endif
++
++#if !defined(__NR_open_tree)
++#define __NR_open_tree 428
++#endif
++
++#if !defined(__NR_move_mount)
++#define __NR_move_mount 429
++#endif
++
++#if !defined(__NR_fsopen)
++#define __NR_fsopen 430
++#endif
++
++#if !defined(__NR_fsconfig)
++#define __NR_fsconfig 431
++#endif
++
++#if !defined(__NR_fsmount)
++#define __NR_fsmount 432
++#endif
++
++#if !defined(__NR_fspick)
++#define __NR_fspick 433
++#endif
++
++#if !defined(__NR_pidfd_open)
++#define __NR_pidfd_open 434
++#endif
++
++#if !defined(__NR_clone3)
++#define __NR_clone3 435
++#endif
++
++#if !defined(__NR_close_range)
++#define __NR_close_range 436
++#endif
++
++#if !defined(__NR_openat2)
++#define __NR_openat2 437
++#endif
++
++#if !defined(__NR_pidfd_getfd)
++#define __NR_pidfd_getfd 438
++#endif
++
++#if !defined(__NR_faccessat2)
++#define __NR_faccessat2 439
++#endif
++
++#if !defined(__NR_process_madvise)
++#define __NR_process_madvise 440
++#endif
++
++#if !defined(__NR_epoll_pwait2)
++#define __NR_epoll_pwait2 441
++#endif
++
++#if !defined(__NR_mount_setattr)
++#define __NR_mount_setattr 442
++#endif
++
++#if !defined(__NR_quotactl_path)
++#define __NR_quotactl_path 443
++#endif
++
++#if !defined(__NR_landlock_create_ruleset)
++#define __NR_landlock_create_ruleset 444
++#endif
++
++#if !defined(__NR_landlock_add_rule)
++#define __NR_landlock_add_rule 445
++#endif
++
++#if !defined(__NR_landlock_restrict_self)
++#define __NR_landlock_restrict_self 446
++#endif
++
+ #endif  // SANDBOX_LINUX_SYSTEM_HEADERS_ARM64_LINUX_SYSCALLS_H_
+diff --git a/sandbox/linux/system_headers/arm_linux_syscalls.h b/sandbox/linux/system_headers/arm_linux_syscalls.h
+index 85da6f41c669969f43734ffbc9b50ddffb553066..9c44368a8eeaa5e755856af446229662287db927 100644
+--- a/sandbox/linux/system_headers/arm_linux_syscalls.h
++++ b/sandbox/linux/system_headers/arm_linux_syscalls.h
+@@ -1605,6 +1605,18 @@
+ #define __NR_mount_setattr (__NR_SYSCALL_BASE + 442)
+ #endif
+ 
++#if !defined(__NR_landlock_create_ruleset)
++#define __NR_landlock_create_ruleset (__NR_SYSCALL_BASE + 444)
++#endif
++
++#if !defined(__NR_landlock_add_rule)
++#define __NR_landlock_add_rule (__NR_SYSCALL_BASE + 445)
++#endif
++
++#if !defined(__NR_landlock_restrict_self)
++#define __NR_landlock_restrict_self (__NR_SYSCALL_BASE + 446)
++#endif
++
+ // ARM private syscalls.
+ #if !defined(__ARM_NR_BASE)
+ #define __ARM_NR_BASE (__NR_SYSCALL_BASE + 0xF0000)
+diff --git a/sandbox/linux/system_headers/mips64_linux_syscalls.h b/sandbox/linux/system_headers/mips64_linux_syscalls.h
+index ec75815a8424f94da18ea5fd5b419b1704ef4bfe..ae7cb48f57cc9b4cabca5ab28481780658bb8847 100644
+--- a/sandbox/linux/system_headers/mips64_linux_syscalls.h
++++ b/sandbox/linux/system_headers/mips64_linux_syscalls.h
+@@ -1271,4 +1271,148 @@
+ #define __NR_memfd_create (__NR_Linux + 314)
+ #endif
+ 
++#if !defined(__NR_bpf)
++#define __NR_bpf (__NR_Linux + 315)
++#endif
++
++#if !defined(__NR_execveat)
++#define __NR_execveat (__NR_Linux + 316)
++#endif
++
++#if !defined(__NR_userfaultfd)
++#define __NR_userfaultfd (__NR_Linux + 317)
++#endif
++
++#if !defined(__NR_membarrier)
++#define __NR_membarrier (__NR_Linux + 318)
++#endif
++
++#if !defined(__NR_mlock2)
++#define __NR_mlock2 (__NR_Linux + 319)
++#endif
++
++#if !defined(__NR_copy_file_range)
++#define __NR_copy_file_range (__NR_Linux + 320)
++#endif
++
++#if !defined(__NR_preadv2)
++#define __NR_preadv2 (__NR_Linux + 321)
++#endif
++
++#if !defined(__NR_pwritev2)
++#define __NR_pwritev2 (__NR_Linux + 322)
++#endif
++
++#if !defined(__NR_pkey_mprotect)
++#define __NR_pkey_mprotect (__NR_Linux + 323)
++#endif
++
++#if !defined(__NR_pkey_alloc)
++#define __NR_pkey_alloc (__NR_Linux + 324)
++#endif
++
++#if !defined(__NR_pkey_free)
++#define __NR_pkey_free (__NR_Linux + 325)
++#endif
++
++#if !defined(__NR_statx)
++#define __NR_statx (__NR_Linux + 326)
++#endif
++
++#if !defined(__NR_rseq)
++#define __NR_rseq (__NR_Linux + 327)
++#endif
++
++#if !defined(__NR_io_pgetevents)
++#define __NR_io_pgetevents (__NR_Linux + 328)
++#endif
++
++#if !defined(__NR_pidfd_send_signal)
++#define __NR_pidfd_send_signal (__NR_Linux + 424)
++#endif
++
++#if !defined(__NR_io_uring_setup)
++#define __NR_io_uring_setup (__NR_Linux + 425)
++#endif
++
++#if !defined(__NR_io_uring_enter)
++#define __NR_io_uring_enter (__NR_Linux + 426)
++#endif
++
++#if !defined(__NR_io_uring_register)
++#define __NR_io_uring_register (__NR_Linux + 427)
++#endif
++
++#if !defined(__NR_open_tree)
++#define __NR_open_tree (__NR_Linux + 428)
++#endif
++
++#if !defined(__NR_move_mount)
++#define __NR_move_mount (__NR_Linux + 429)
++#endif
++
++#if !defined(__NR_fsopen)
++#define __NR_fsopen (__NR_Linux + 430)
++#endif
++
++#if !defined(__NR_fsconfig)
++#define __NR_fsconfig (__NR_Linux + 431)
++#endif
++
++#if !defined(__NR_fsmount)
++#define __NR_fsmount (__NR_Linux + 432)
++#endif
++
++#if !defined(__NR_fspick)
++#define __NR_fspick (__NR_Linux + 433)
++#endif
++
++#if !defined(__NR_pidfd_open)
++#define __NR_pidfd_open (__NR_Linux + 434)
++#endif
++
++#if !defined(__NR_clone3)
++#define __NR_clone3 (__NR_Linux + 435)
++#endif
++
++#if !defined(__NR_close_range)
++#define __NR_close_range (__NR_Linux + 436)
++#endif
++
++#if !defined(__NR_openat2)
++#define __NR_openat2 (__NR_Linux + 437)
++#endif
++
++#if !defined(__NR_pidfd_getfd)
++#define __NR_pidfd_getfd (__NR_Linux + 438)
++#endif
++
++#if !defined(__NR_faccessat2)
++#define __NR_faccessat2 (__NR_Linux + 439)
++#endif
++
++#if !defined(__NR_process_madvise)
++#define __NR_process_madvise (__NR_Linux + 440)
++#endif
++
++#if !defined(__NR_epoll_pwait2)
++#define __NR_epoll_pwait2 (__NR_Linux + 441)
++#endif
++
++#if !defined(__NR_mount_setattr)
++#define __NR_mount_setattr (__NR_Linux + 442)
++#endif
++
++#if !defined(__NR_landlock_create_ruleset)
++#define __NR_landlock_create_ruleset (__NR_Linux + 444)
++#endif
++
++#if !defined(__NR_landlock_add_rule)
++#define __NR_landlock_add_rule (__NR_Linux + 445)
++#endif
++
++#if !defined(__NR_landlock_restrict_self)
++#define __NR_landlock_restrict_self (__NR_Linux + 446)
++#endif
++
+ #endif  // SANDBOX_LINUX_SYSTEM_HEADERS_MIPS64_LINUX_SYSCALLS_H_
+diff --git a/sandbox/linux/system_headers/mips_linux_syscalls.h b/sandbox/linux/system_headers/mips_linux_syscalls.h
+index 50d9ea11bfa48e8aff37b6c81214c4e72cb9fe5b..093778288bbbeb35305eac5ac1a1cfcd6e67c1dc 100644
+--- a/sandbox/linux/system_headers/mips_linux_syscalls.h
++++ b/sandbox/linux/system_headers/mips_linux_syscalls.h
+@@ -1685,4 +1685,16 @@
+ #define __NR_mount_setattr (__NR_Linux + 442)
+ #endif
+ 
++#if !defined(__NR_landlock_create_ruleset)
++#define __NR_landlock_create_ruleset (__NR_Linux + 444)
++#endif
++
++#if !defined(__NR_landlock_add_rule)
++#define __NR_landlock_add_rule (__NR_Linux + 445)
++#endif
++
++#if !defined(__NR_landlock_restrict_self)
++#define __NR_landlock_restrict_self (__NR_Linux + 446)
++#endif
++
+ #endif  // SANDBOX_LINUX_SYSTEM_HEADERS_MIPS_LINUX_SYSCALLS_H_
+diff --git a/sandbox/linux/system_headers/x86_32_linux_syscalls.h b/sandbox/linux/system_headers/x86_32_linux_syscalls.h
+index 1720edb18103f93d009f5745ebda7fd52b7eba26..2c81a9301381812f4625d2a8b70d703c12a2df0f 100644
+--- a/sandbox/linux/system_headers/x86_32_linux_syscalls.h
++++ b/sandbox/linux/system_headers/x86_32_linux_syscalls.h
+@@ -1738,5 +1738,17 @@
+ #define __NR_mount_setattr 442
+ #endif
+ 
++#if !defined(__NR_landlock_create_ruleset)
++#define __NR_landlock_create_ruleset 444
++#endif
++
++#if !defined(__NR_landlock_add_rule)
++#define __NR_landlock_add_rule 445
++#endif
++
++#if !defined(__NR_landlock_restrict_self)
++#define __NR_landlock_restrict_self 446
++#endif
++
+ #endif  // SANDBOX_LINUX_SYSTEM_HEADERS_X86_32_LINUX_SYSCALLS_H_
+ 
+diff --git a/sandbox/linux/system_headers/x86_64_linux_syscalls.h b/sandbox/linux/system_headers/x86_64_linux_syscalls.h
+index b0ae0a2edf6fd60f6f67440e6c2f32a9b9d33af0..e618c6237b068c5bcb85f03f24deccd6fcecf30b 100644
+--- a/sandbox/linux/system_headers/x86_64_linux_syscalls.h
++++ b/sandbox/linux/system_headers/x86_64_linux_syscalls.h
+@@ -1350,5 +1350,93 @@
+ #define __NR_rseq 334
+ #endif
+ 
++#if !defined(__NR_pidfd_send_signal)
++#define __NR_pidfd_send_signal 424
++#endif
++
++#if !defined(__NR_io_uring_setup)
++#define __NR_io_uring_setup 425
++#endif
++
++#if !defined(__NR_io_uring_enter)
++#define __NR_io_uring_enter 426
++#endif
++
++#if !defined(__NR_io_uring_register)
++#define __NR_io_uring_register 427
++#endif
++
++#if !defined(__NR_open_tree)
++#define __NR_open_tree 428
++#endif
++
++#if !defined(__NR_move_mount)
++#define __NR_move_mount 429
++#endif
++
++#if !defined(__NR_fsopen)
++#define __NR_fsopen 430
++#endif
++
++#if !defined(__NR_fsconfig)
++#define __NR_fsconfig 431
++#endif
++
++#if !defined(__NR_fsmount)
++#define __NR_fsmount 432
++#endif
++
++#if !defined(__NR_fspick)
++#define __NR_fspick 433
++#endif
++
++#if !defined(__NR_pidfd_open)
++#define __NR_pidfd_open 434
++#endif
++
++#if !defined(__NR_clone3)
++#define __NR_clone3 435
++#endif
++
++#if !defined(__NR_close_range)
++#define __NR_close_range 436
++#endif
++
++#if !defined(__NR_openat2)
++#define __NR_openat2 437
++#endif
++
++#if !defined(__NR_pidfd_getfd)
++#define __NR_pidfd_getfd 438
++#endif
++
++#if !defined(__NR_faccessat2)
++#define __NR_faccessat2 439
++#endif
++
++#if !defined(__NR_process_madvise)
++#define __NR_process_madvise 440
++#endif
++
++#if !defined(__NR_epoll_pwait2)
++#define __NR_epoll_pwait2 441
++#endif
++
++#if !defined(__NR_mount_setattr)
++#define __NR_mount_setattr 442
++#endif
++
++#if !defined(__NR_landlock_create_ruleset)
++#define __NR_landlock_create_ruleset 444
++#endif
++
++#if !defined(__NR_landlock_add_rule)
++#define __NR_landlock_add_rule 445
++#endif
++
++#if !defined(__NR_landlock_restrict_self)
++#define __NR_landlock_restrict_self 446
++#endif
++
+ #endif  // SANDBOX_LINUX_SYSTEM_HEADERS_X86_64_LINUX_SYSCALLS_H_
+ 
