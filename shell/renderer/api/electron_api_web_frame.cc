@@ -49,6 +49,7 @@
 #include "third_party/blink/public/web/web_script_execution_callback.h"
 #include "third_party/blink/public/web/web_script_source.h"
 #include "third_party/blink/public/web/web_view.h"
+#include "third_party/blink/renderer/platform/bindings/dom_wrapper_world.h"
 #include "ui/base/ime/ime_text_span.h"
 #include "url/url_util.h"
 
@@ -651,17 +652,20 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
       return handle;
     }
 
+    const blink::WebScriptSource source{blink::WebString::FromUTF16(code)};
+
     bool has_user_gesture = false;
     args->GetNext(&has_user_gesture);
 
     ScriptExecutionCallback::CompletionCallback completion_callback;
     args->GetNext(&completion_callback);
 
-    render_frame->GetWebFrame()->RequestExecuteScriptAndReturnValue(
-        blink::WebScriptSource(blink::WebString::FromUTF16(code)),
-        has_user_gesture,
+    render_frame->GetWebFrame()->RequestExecuteScript(
+        blink::DOMWrapperWorld::kMainWorldId, base::make_span(&source, 1),
+        has_user_gesture, blink::WebLocalFrame::kSynchronous,
         new ScriptExecutionCallback(std::move(promise),
-                                    std::move(completion_callback)));
+                                    std::move(completion_callback)),
+        blink::BackForwardCacheAware::kAllow);
 
     return handle;
   }
@@ -695,6 +699,7 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
     args->GetNext(&completion_callback);
 
     std::vector<blink::WebScriptSource> sources;
+    sources.reserve(scripts.size());
 
     for (const auto& script : scripts) {
       std::u16string code;
@@ -716,13 +721,12 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
         return handle;
       }
 
-      sources.emplace_back(
-          blink::WebScriptSource(blink::WebString::FromUTF16(code),
-                                 blink::WebURL(GURL(url)), start_line));
+      sources.emplace_back(blink::WebString::FromUTF16(code),
+                           blink::WebURL(GURL(url)), start_line);
     }
 
-    render_frame->GetWebFrame()->RequestExecuteScriptInIsolatedWorld(
-        world_id, &sources.front(), sources.size(), has_user_gesture,
+    render_frame->GetWebFrame()->RequestExecuteScript(
+        world_id, base::make_span(sources), has_user_gesture,
         scriptExecutionType,
         new ScriptExecutionCallback(std::move(promise),
                                     std::move(completion_callback)),
