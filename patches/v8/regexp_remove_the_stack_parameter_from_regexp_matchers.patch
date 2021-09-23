@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jakob Gruber <jgruber@chromium.org>
 Date: Wed, 22 Sep 2021 14:42:48 +0200
-Subject: [regexp] Remove the `stack` parameter from regexp matchers
+Subject: Remove the `stack` parameter from regexp matchers
 
 The argument is no longer in use.
 
