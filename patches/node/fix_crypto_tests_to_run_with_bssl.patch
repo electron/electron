@@ -960,7 +960,7 @@ index 151eebd36c9765df086a020ba42920b2442b1b77..efe97ff2499cba909ac5500d827364fa
  }
  
 diff --git a/test/parallel/test-webcrypto-export-import-rsa.js b/test/parallel/test-webcrypto-export-import-rsa.js
-index 04cf6388fc739d3eab0a8d47857590c7a9b84342..d111e697db652b98dd8a9eb7869b1a98ba6bca79 100644
+index ab7aa77394ac9989514b7a184900092bd6753996..b0104ac45867a923a8c651e01e8c6975a62f7c61 100644
 --- a/test/parallel/test-webcrypto-export-import-rsa.js
 +++ b/test/parallel/test-webcrypto-export-import-rsa.js
 @@ -481,6 +481,7 @@ const testVectors = [
@@ -979,7 +979,6 @@ index 04cf6388fc739d3eab0a8d47857590c7a9b84342..d111e697db652b98dd8a9eb7869b1a98
  
  {
    const ecPublic = crypto.createPublicKey(
-
 diff --git a/test/parallel/test-webcrypto-wrap-unwrap.js b/test/parallel/test-webcrypto-wrap-unwrap.js
 index 1094845c73e14313860ad476fb7baba2a11b5af4..51972b4b34b191ac59145889dbf2da5c0d407dbe 100644
 --- a/test/parallel/test-webcrypto-wrap-unwrap.js
