@@ -39,10 +39,7 @@ void BrowserWindow::OverrideNSWindowContentView(
 
 void BrowserWindow::UpdateDraggableRegions(
     const std::vector<mojom::DraggableRegionPtr>& regions) {
-  if (window_->has_frame())
-    return;
-
-  if (!web_contents())
+  if (window_->has_frame() || !web_contents())
     return;
 
   // All ControlRegionViews should be added as children of the WebContentsView,
@@ -78,8 +75,13 @@ void BrowserWindow::UpdateDraggableRegions(
         DraggableRegionsToSkRegion(regions), webViewWidth, webViewHeight);
   }
 
+  // Draggable regions on BrowserViews are independent from those of
+  // BrowserWindows, so if a BrowserView with different draggable regions than
+  // the BrowserWindow it belongs to is superimposed on top of that window, the
+  // draggable regions of the BrowserView take precedence over those of the
+  // BrowserWindow.
   for (NativeBrowserView* view : window_->browser_views()) {
-    view->UpdateDraggableRegions(drag_exclude_rects);
+    view->UpdateDraggableRegions(view->GetDraggableRegions());
   }
 
   // Create and add a ControlRegionView for each region that needs to be
