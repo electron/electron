@@ -223,7 +223,6 @@ auto_filenames = {
     "lib/browser/api/web-contents.ts",
     "lib/browser/api/web-frame-main.ts",
     "lib/browser/default-menu.ts",
-    "lib/browser/desktop-capturer.ts",
     "lib/browser/devtools.ts",
     "lib/browser/guest-view-manager.ts",
     "lib/browser/guest-window-manager.ts",
