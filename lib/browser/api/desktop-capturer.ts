@@ -13,7 +13,7 @@ function isValid (options: Electron.SourcesOptions) {
   return Array.isArray(types);
 }
 
-export const getSources = (args: Electron.SourcesOptions) => {
+export async function getSources (args: Electron.SourcesOptions) {
   if (!isValid(args)) throw new Error('Invalid options');
 
   const captureWindow = args.types.includes('window');
@@ -69,4 +69,4 @@ export const getSources = (args: Electron.SourcesOptions) => {
   });
 
   return getSources;
-};
+}
