@@ -953,18 +953,31 @@ WebContents::~WebContents() {
   // InspectableWebContents will be automatically destroyed.
 }
 
+void WebContents::DeleteThisIfAlive() {
+  // It is possible that the FirstWeakCallback has been called but the
+  // SecondWeakCallback has not, in this case the garbage collection of
+  // WebContents has already started and we should not |delete this|.
+  // Calling |GetWrapper| can detect this corner case.
+  auto* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
+  v8::Local<v8::Object> wrapper;
+  if (!GetWrapper(isolate).ToLocal(&wrapper))
+    return;
+  delete this;
+}
+
 void WebContents::Destroy() {
   // The content::WebContents should be destroyed asyncronously when possible
   // as user may choose to destroy WebContents during an event of it.
   if (Browser::Get()->is_shutting_down() || IsGuest() ||
       type_ == Type::kBrowserView) {
-    delete this;
+    DeleteThisIfAlive();
   } else {
     base::PostTask(FROM_HERE, {content::BrowserThread::UI},
                    base::BindOnce(
                        [](base::WeakPtr<WebContents> contents) {
                          if (contents)
-                           delete contents.get();
+                           contents->DeleteThisIfAlive();
                        },
                        GetWeakPtr()));
   }
