@@ -10,6 +10,26 @@ This should be upstreamed in some form, though it may need to be tweaked
 before it's acceptable to upstream, as this patch comments out a couple
 of tests that upstream probably cares about.
 
+diff --git a/test/parallel/test-crypto-async-sign-verify.js b/test/parallel/test-crypto-async-sign-verify.js
+index 4e3c32fdcd23fbe3e74bd5e624b739d224689f33..19d65aae7fa8ec9f9b907733ead17a208ed47909 100644
+--- a/test/parallel/test-crypto-async-sign-verify.js
++++ b/test/parallel/test-crypto-async-sign-verify.js
+@@ -88,6 +88,7 @@ test('rsa_public.pem', 'rsa_private.pem', 'sha256', false,
+ // ED25519
+ test('ed25519_public.pem', 'ed25519_private.pem', undefined, true);
+ // ED448
++/*
+ test('ed448_public.pem', 'ed448_private.pem', undefined, true);
+ 
+ // ECDSA w/ der signature encoding
+@@ -109,6 +110,7 @@ test('dsa_public.pem', 'dsa_private.pem', 'sha256',
+ // DSA w/ ieee-p1363 signature encoding
+ test('dsa_public.pem', 'dsa_private.pem', 'sha256', false,
+      { dsaEncoding: 'ieee-p1363' });
++*/
+ 
+ // Test Parallel Execution w/ KeyObject is threadsafe in openssl3
+ {
 diff --git a/test/parallel/test-crypto-authenticated.js b/test/parallel/test-crypto-authenticated.js
 index 21c5af6cfe3e5eef64fc2d4dcc63c55b1d79ad51..b21eb4b97ad778304b3a4e8d549e109614350dfb 100644
 --- a/test/parallel/test-crypto-authenticated.js
