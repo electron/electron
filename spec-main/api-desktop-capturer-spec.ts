@@ -87,14 +87,6 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
   generateSpecs('in renderer process', getSources);
   generateSpecs('in main process', desktopCapturer.getSources);
 
-  ifit(process.platform !== 'linux')('returns an empty source list if blocked by the main process', async () => {
-    w.webContents.once('desktop-capturer-get-sources', (event) => {
-      event.preventDefault();
-    });
-    const sources = await getSources({ types: ['screen'] });
-    expect(sources).to.be.empty();
-  });
-
   it('disabling thumbnail should return empty images', async () => {
     const w2 = new BrowserWindow({ show: false, width: 200, height: 200, webPreferences: { contextIsolation: false } });
     const wShown = emittedOnce(w2, 'show');
