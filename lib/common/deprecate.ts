@@ -13,7 +13,7 @@ function warnOnce (oldName: string, newName?: string) {
   };
 }
 
-const deprecate: ElectronInternal.DeprecationUtil = {
+export const deprecate: ElectronInternal.DeprecationUtil = {
   warnOnce,
   setHandler: (handler) => { deprecationHandler = handler; },
   getHandler: () => deprecationHandler,
@@ -131,5 +131,3 @@ const deprecate: ElectronInternal.DeprecationUtil = {
     });
   }
 };
-
-export default deprecate;
