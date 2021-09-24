@@ -65,8 +65,8 @@ origin URLs.
 $ cd src/electron
 $ git remote remove origin
 $ git remote add origin https://github.com/electron/electron
-$ git checkout master
-$ git branch --set-upstream-to=origin/master
+$ git checkout main
+$ git branch --set-upstream-to=origin/main
 $ cd -
 ```
 
