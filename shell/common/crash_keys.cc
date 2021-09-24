@@ -16,40 +16,12 @@
 #include "content/public/common/content_switches.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/fuses.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/common/electron_constants.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/process_util.h"
 #include "third_party/crashpad/crashpad/client/annotation.h"
-
-#include "gin/wrappable.h"
-#include "shell/browser/api/electron_api_app.h"
-#include "shell/browser/api/electron_api_auto_updater.h"
-#include "shell/browser/api/electron_api_browser_view.h"
-#include "shell/browser/api/electron_api_cookies.h"
-#include "shell/browser/api/electron_api_data_pipe_holder.h"
-#include "shell/browser/api/electron_api_debugger.h"
-#include "shell/browser/api/electron_api_desktop_capturer.h"
-#include "shell/browser/api/electron_api_download_item.h"
-#include "shell/browser/api/electron_api_global_shortcut.h"
-#include "shell/browser/api/electron_api_in_app_purchase.h"
-#include "shell/browser/api/electron_api_menu.h"
-#include "shell/browser/api/electron_api_native_theme.h"
-#include "shell/browser/api/electron_api_net_log.h"
-#include "shell/browser/api/electron_api_notification.h"
-#include "shell/browser/api/electron_api_power_monitor.h"
-#include "shell/browser/api/electron_api_power_save_blocker.h"
-#include "shell/browser/api/electron_api_protocol.h"
-#include "shell/browser/api/electron_api_service_worker_context.h"
-#include "shell/browser/api/electron_api_session.h"
-#include "shell/browser/api/electron_api_system_preferences.h"
-#include "shell/browser/api/electron_api_tray.h"
-#include "shell/browser/api/electron_api_url_loader.h"
-#include "shell/browser/api/electron_api_web_contents.h"
-#include "shell/browser/api/electron_api_web_frame_main.h"
-#include "shell/browser/api/electron_api_web_request.h"
-#include "shell/browser/api/event.h"
-#include "shell/common/api/electron_api_native_image.h"
 
 namespace electron {
 
@@ -193,78 +165,6 @@ void SetPlatformCrashKey() {
 #else
   platform_key.Set("unknown");
 #endif
-}
-
-std::string GetCrashValueForGinWrappable(gin::WrapperInfo* info) {
-  std::string crash_location;
-
-  // Adds a breadcrumb for crashes within gin::WrappableBase::SecondWeakCallback
-  // (see patch: add_gin_wrappable_crash_key.patch)
-  // Compares the pointers for the kWrapperInfo within SecondWeakCallback
-  // with the wrapper info from classes that use gin::Wrappable and
-  // could potentially retain a reference after deletion.
-  if (info == &electron::api::WebContents::kWrapperInfo)
-    crash_location = "WebContents";
-  else if (info == &electron::api::BrowserView::kWrapperInfo)
-    crash_location = "BrowserView";
-  else if (info == &electron::api::Notification::kWrapperInfo)
-    crash_location = "Notification";
-  else if (info == &electron::api::Cookies::kWrapperInfo)
-    crash_location = "Cookies";
-#if BUILDFLAG(ENABLE_DESKTOP_CAPTURER)
-  else if (info == &electron::api::DesktopCapturer::kWrapperInfo)
-    crash_location = "DesktopCapturer";
-#endif
-  else if (info == &electron::api::Tray::kWrapperInfo)
-    crash_location = "Tray";
-  else if (info == &electron::api::NetLog::kWrapperInfo)
-    crash_location = "NetLog";
-  else if (info == &electron::api::NativeImage::kWrapperInfo)
-    crash_location = "NativeImage";
-  else if (info == &electron::api::Menu::kWrapperInfo)
-    crash_location = "Menu";
-  else if (info == &electron::api::PowerMonitor::kWrapperInfo)
-    crash_location = "PowerMonitor";
-  else if (info == &electron::api::Protocol::kWrapperInfo)
-    crash_location = "Protocol";
-  else if (info == &electron::api::ServiceWorkerContext::kWrapperInfo)
-    crash_location = "ServiceWorkerContext";
-  else if (info == &electron::api::WebFrameMain::kWrapperInfo)
-    crash_location = "WebFrameMain";
-  else if (info == &electron::api::WebRequest::kWrapperInfo)
-    crash_location = "WebRequest";
-  else if (info == &electron::api::SystemPreferences::kWrapperInfo)
-    crash_location = "SystemPreferences";
-  else if (info == &electron::api::Session::kWrapperInfo)
-    crash_location = "Session";
-  else if (info == &electron::api::DownloadItem::kWrapperInfo)
-    crash_location = "DownloadItem";
-  else if (info == &electron::api::NativeTheme::kWrapperInfo)
-    crash_location = "NativeTheme";
-  else if (info == &electron::api::Debugger::kWrapperInfo)
-    crash_location = "Debugger";
-  else if (info == &electron::api::GlobalShortcut::kWrapperInfo)
-    crash_location = "GlobalShortcut";
-  else if (info == &electron::api::InAppPurchase::kWrapperInfo)
-    crash_location = "InAppPurchase";
-  else if (info == &electron::api::DataPipeHolder::kWrapperInfo)
-    crash_location = "DataPipeHolder";
-  else if (info == &electron::api::AutoUpdater::kWrapperInfo)
-    crash_location = "AutoUpdater";
-  else if (info == &electron::api::SimpleURLLoaderWrapper::kWrapperInfo)
-    crash_location = "SimpleURLLoaderWrapper";
-  else if (info == &gin_helper::Event::kWrapperInfo)
-    crash_location = "Event";
-  else if (info == &electron::api::PowerSaveBlocker::kWrapperInfo)
-    crash_location = "PowerSaveBlocker";
-  else if (info == &electron::api::App::kWrapperInfo)
-    crash_location = "App";
-  else
-    crash_location =
-        "Deleted kWrapperInfo does not match listed component. Please review "
-        "listed crash keys.";
-
-  return crash_location;
 }
 
 }  // namespace crash_keys
