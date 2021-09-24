@@ -431,6 +431,9 @@ class WebContents : public gin::Wrappable<WebContents>,
   WebContents(v8::Isolate* isolate, const gin_helper::Dictionary& options);
   ~WebContents() override;
 
+  // Delete this if garbage collection has not started.
+  void DeleteThisIfAlive();
+
   // Creates a InspectableWebContents object and takes ownership of
   // |web_contents|.
   void InitWithWebContents(content::WebContents* web_contents,
