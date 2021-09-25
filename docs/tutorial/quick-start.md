@@ -66,7 +66,7 @@ Your `package.json` file should look something like this:
 Then, install the `electron` package into your app's `devDependencies`.
 
 ```sh npm2yarn
-$ npm install --save-dev electron
+npm install --save-dev electron
 ```
 
 > Note: If you're encountering any issues with installing Electron, please
