@@ -932,9 +932,9 @@ app.setJumpList([
 
 ### `app.requestSingleInstanceLock()`
 
-Returns `Boolean`:
-
 * `additionalData` unknown (optional) - A JSON object containing additional data to send to the first instance.
+
+Returns `Boolean`
 
 The return value of this method indicates whether or not this instance of your
 application successfully obtained the lock.  If it failed to obtain the lock,
@@ -965,7 +965,10 @@ const gotTheLock = app.requestSingleInstanceLock(additionalData)
 if (!gotTheLock) {
   app.quit()
 } else {
-  app.on('second-instance', (event, commandLine, workingDirectory) => {
+  app.on('second-instance', (event, commandLine, workingDirectory, additionalData) => {
+    // Print out received data from the second instance
+    console.log(additionalData)
+
     // Someone tried to run a second instance, we should focus our window.
     if (myWindow) {
       if (myWindow.isMinimized()) myWindow.restore()
