@@ -48,7 +48,8 @@ def main():
     # FIXME: Enable after ELECTRON_ENABLE_LOGGING works again
     # env['ELECTRON_ENABLE_LOGGING'] = 'true'
     testargs = [electron, test_path]
-    if sys.platform != 'linux' and (platform.machine() == 'ARM64' or os.environ.get('TARGET_ARCH') == 'arm64'):
+    if sys.platform != 'linux' and (platform.machine() == 'ARM64' or
+        os.environ.get('TARGET_ARCH') == 'arm64'):
       testargs.append('--disable-accelerated-video-decode')
     subprocess.check_call(testargs, env=env)
   except subprocess.CalledProcessError as e:
