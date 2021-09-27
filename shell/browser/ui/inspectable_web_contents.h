@@ -44,7 +44,7 @@ class InspectableWebContents
   static const List& GetAll();
   static void RegisterPrefs(PrefRegistrySimple* pref_registry);
 
-  InspectableWebContents(content::WebContents* web_contents,
+  InspectableWebContents(std::unique_ptr<content::WebContents> web_contents,
                          PrefService* pref_service,
                          bool is_guest);
   ~InspectableWebContents() override;
