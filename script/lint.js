@@ -34,6 +34,7 @@ function spawnAndCheckExitCode (cmd, args, opts) {
 }
 
 function cpplint (args) {
+  args.unshift(`--project_root=${SOURCE_ROOT}`);
   const result = childProcess.spawnSync(IS_WINDOWS ? 'cpplint.bat' : 'cpplint.py', args, { encoding: 'utf8', shell: true });
   // cpplint.py writes EVERYTHING to stderr, including status messages
   if (result.stderr) {
