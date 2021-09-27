@@ -107,7 +107,6 @@ bool IsSameOrigin(const GURL& l, const GURL& r) {
   return url::Origin::Create(l).IsSameOriginWith(url::Origin::Create(r));
 }
 
-#if DCHECK_IS_ON()
 std::vector<v8::Global<v8::Value>> weakly_tracked_values;
 
 void WeaklyTrackValue(v8::Isolate* isolate, v8::Local<v8::Value> value) {
@@ -142,7 +141,6 @@ void TriggerFatalErrorForTesting(v8::Isolate* isolate) {
 void RunUntilIdle() {
   base::RunLoop().RunUntilIdle();
 }
-#endif
 
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
