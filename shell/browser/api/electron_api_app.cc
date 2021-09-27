@@ -1079,12 +1079,9 @@ void App::OnSecondInstance(const base::CommandLine& cmd,
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
-  v8::Local<v8::Value> val = DeserializeV8Value(isolate, additional_data);
-  base::Value data_to_send;
-  if (!val.IsEmpty()) {
-    gin::Converter<base::Value>::FromV8(isolate, val, &data_to_send);
-  }
-  Emit("second-instance", cmd.argv(), cwd, data_to_send);
+  v8::Local<v8::Value> data_value =
+      DeserializeV8Value(isolate, additional_data);
+  Emit("second-instance", cmd.argv(), cwd, data_value);
 }
 
 bool App::HasSingleInstanceLock() const {

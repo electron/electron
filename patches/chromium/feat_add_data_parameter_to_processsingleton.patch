@@ -54,7 +54,7 @@ index 9418bbacb11094628c4468d0a7b735a0f742e5f2..c942be131f6f41b60276579ef78d291f
  #if defined(OS_WIN)
    bool EscapeVirtualization(const base::FilePath& user_data_dir);
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index 31b387ca3cae53c94d8a7baefaeb17f3dbffe5e0..b04a8806c813c5b1834fb09102ac940e808403f2 100644
+index 31b387ca3cae53c94d8a7baefaeb17f3dbffe5e0..9a1bcae5c11e0d01968ff6fbfc88a02658445da5 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
 @@ -563,6 +563,7 @@ class ProcessSingleton::LinuxWatcher
@@ -106,7 +106,7 @@ index 31b387ca3cae53c94d8a7baefaeb17f3dbffe5e0..b04a8806c813c5b1834fb09102ac940e
      LOG(ERROR) << "Wrong message format: " << str;
      CleanupAndDeleteSelf();
      return;
-@@ -698,15 +704,23 @@ void ProcessSingleton::LinuxWatcher::SocketReader::
+@@ -698,15 +704,25 @@ void ProcessSingleton::LinuxWatcher::SocketReader::
    timer_.Stop();
  
    std::string current_dir = tokens[1];
@@ -117,9 +117,11 @@ index 31b387ca3cae53c94d8a7baefaeb17f3dbffe5e0..b04a8806c813c5b1834fb09102ac940e
    tokens.erase(tokens.begin());
 +#endif
 +
-+  size_t num_args = static_cast<size_t>(std::stoul(tokens[2]));
++  size_t num_args;
++  base::NumberToSizeT(tokens[2], &num_args);
 +  std::vector<std::string> command_line(tokens.begin() + 3, tokens.begin() + 3 + num_args);
-+  size_t additional_data_size = static_cast<size_t>(std::stoul(tokens[3 + num_args]));
++  size_t additional_data_size;
++  base::NumberToSizeT(tokens[3 + num_args], &additional_data_size);;
 +  const uint8_t* additional_data_bits = reinterpret_cast<const uint8_t*>(tokens[4 + num_args].c_str());
 +  std::vector<const uint8_t> additional_data(additional_data_bits, additional_data_bits + additional_data_size);
  
@@ -131,7 +133,7 @@ index 31b387ca3cae53c94d8a7baefaeb17f3dbffe5e0..b04a8806c813c5b1834fb09102ac940e
    fd_watch_controller_.reset();
  
    // LinuxWatcher::HandleMessage() is in charge of destroying this SocketReader
-@@ -735,8 +749,10 @@ void ProcessSingleton::LinuxWatcher::SocketReader::FinishWithACK(
+@@ -735,8 +751,10 @@ void ProcessSingleton::LinuxWatcher::SocketReader::FinishWithACK(
  //
  ProcessSingleton::ProcessSingleton(
      const base::FilePath& user_data_dir,
@@ -142,7 +144,7 @@ index 31b387ca3cae53c94d8a7baefaeb17f3dbffe5e0..b04a8806c813c5b1834fb09102ac940e
        current_pid_(base::GetCurrentProcId()),
        watcher_(new LinuxWatcher(this)) {
    socket_path_ = user_data_dir.Append(chrome::kSingletonSocketFilename);
-@@ -853,7 +869,8 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
+@@ -853,7 +871,8 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
               sizeof(socket_timeout));
  
    // Found another process, prepare our command line
@@ -152,19 +154,19 @@ index 31b387ca3cae53c94d8a7baefaeb17f3dbffe5e0..b04a8806c813c5b1834fb09102ac940e
    std::string to_send(kStartToken);
    to_send.push_back(kTokenDelimiter);
  
-@@ -863,11 +880,18 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
+@@ -863,11 +882,18 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
    to_send.append(current_dir.value());
  
    const std::vector<std::string>& argv = cmd_line.argv();
 +  to_send.push_back(kTokenDelimiter);
-+  to_send.append(std::to_string(argv.size()));
++  to_send.append(base::NumberToString(argv.size()));
    for (auto it = argv.begin(); it != argv.end(); ++it) {
      to_send.push_back(kTokenDelimiter);
      to_send.append(*it);
    }
  
 +  to_send.push_back(kTokenDelimiter);
-+  to_send.append(std::to_string(additional_data_.size_bytes()));
++  to_send.append(base::NumberToString(additional_data_.size_bytes()));
 +  to_send.push_back(kTokenDelimiter);
 +  to_send.append(reinterpret_cast<const char*>(additional_data_.data()), additional_data_.size_bytes());
 +
@@ -172,10 +174,10 @@ index 31b387ca3cae53c94d8a7baefaeb17f3dbffe5e0..b04a8806c813c5b1834fb09102ac940e
    if (!WriteToSocket(socket.fd(), to_send.data(), to_send.length())) {
      // Try to kill the other process, because it might have been dead.
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index 875269776e45c96ac43a3430768f1406c9608dd3..caaebad93c23cfd0037a1555032dce6a842a2864 100644
+index 875269776e45c96ac43a3430768f1406c9608dd3..653dbb1ee24d707153a263fc3abd47cb3a5f8d8c 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
-@@ -94,18 +94,20 @@ BOOL CALLBACK BrowserWindowEnumeration(HWND window, LPARAM param) {
+@@ -94,10 +94,12 @@ BOOL CALLBACK BrowserWindowEnumeration(HWND window, LPARAM param) {
  
  bool ParseCommandLine(const COPYDATASTRUCT* cds,
                        base::CommandLine* parsed_command_line,
@@ -185,40 +187,12 @@ index 875269776e45c96ac43a3430768f1406c9608dd3..caaebad93c23cfd0037a1555032dce6a
    // We should have enough room for the shortest command (min_message_size)
    // and also be a multiple of wchar_t bytes. The shortest command
 -  // possible is L"START\0\0" (empty current directory and command line).
--  static const int min_message_size = 7;
-+  // possible is L"START\0\0\00\0" (empty command line, current directory,
++  // possible is L"START\0\0" (empty command line, current directory,
 +  // and additional data).
-+  static const int min_message_size = 10;
+   static const int min_message_size = 7;
    if (cds->cbData < min_message_size * sizeof(wchar_t) ||
        cds->cbData % sizeof(wchar_t) != 0) {
-     LOG(WARNING) << "Invalid WM_COPYDATA, length = " << cds->cbData;
-     return false;
-   }
- 
--  // We split the string into 4 parts on NULLs.
-+  // We split the string into 6 parts on NULLs.
-   DCHECK(cds->lpData);
-   const std::wstring msg(static_cast<wchar_t*>(cds->lpData),
-                          cds->cbData / sizeof(wchar_t));
-@@ -126,7 +128,7 @@ bool ParseCommandLine(const COPYDATASTRUCT* cds,
-         msg.find_first_of(L'\0', first_null + 1);
-     if (second_null == std::wstring::npos ||
-         first_null == msg.length() - 1 || second_null == msg.length()) {
--      LOG(WARNING) << "Invalid format for start command, we need a string in 4 "
-+      LOG(WARNING) << "Invalid format for start command, we need a string in 6 "
-         "parts separated by NULLs";
-       return false;
-     }
-@@ -139,7 +141,7 @@ bool ParseCommandLine(const COPYDATASTRUCT* cds,
-         msg.find_first_of(L'\0', second_null + 1);
-     if (third_null == std::wstring::npos ||
-         third_null == msg.length()) {
--      LOG(WARNING) << "Invalid format for start command, we need a string in 4 "
-+      LOG(WARNING) << "Invalid format for start command, we need a string in 6 "
-         "parts separated by NULLs";
-     }
- 
-@@ -147,6 +149,34 @@ bool ParseCommandLine(const COPYDATASTRUCT* cds,
+@@ -147,6 +149,35 @@ bool ParseCommandLine(const COPYDATASTRUCT* cds,
      const std::wstring cmd_line =
          msg.substr(second_null + 1, third_null - second_null);
      *parsed_command_line = base::CommandLine::FromString(cmd_line);
@@ -227,14 +201,15 @@ index 875269776e45c96ac43a3430768f1406c9608dd3..caaebad93c23cfd0037a1555032dce6a
 +        msg.find_first_of(L'\0', third_null + 1);
 +    if (fourth_null == std::wstring::npos ||
 +        fourth_null == msg.length()) {
-+      LOG(WARNING) << "Invalid format for start command, we need a string in 6 "
-+        "parts separated by NULLs";
++      // No additional data was provided.
++      return true;
 +    }
 +
 +    // Get length of the additional data.
 +    const std::wstring additional_data_length_string =
 +        msg.substr(third_null + 1, fourth_null - third_null);
-+    size_t additional_data_length = static_cast<size_t>(std::stoul(additional_data_length_string));
++    size_t additional_data_length;
++    base::StringToSizeT(additional_data_length_string, &additional_data_length);
 +
 +    const std::wstring::size_type fifth_null =
 +        msg.find_first_of(L'\0', fourth_null + 1);
@@ -253,7 +228,7 @@ index 875269776e45c96ac43a3430768f1406c9608dd3..caaebad93c23cfd0037a1555032dce6a
      return true;
    }
    return false;
-@@ -163,15 +193,17 @@ bool ProcessLaunchNotification(
+@@ -163,15 +194,17 @@ bool ProcessLaunchNotification(
  
    // Handle the WM_COPYDATA message from another process.
    const COPYDATASTRUCT* cds = reinterpret_cast<COPYDATASTRUCT*>(lparam);
@@ -274,7 +249,7 @@ index 875269776e45c96ac43a3430768f1406c9608dd3..caaebad93c23cfd0037a1555032dce6a
        TRUE : FALSE;
    return true;
  }
-@@ -269,9 +301,11 @@ bool ProcessSingleton::EscapeVirtualization(
+@@ -269,9 +302,11 @@ bool ProcessSingleton::EscapeVirtualization(
  ProcessSingleton::ProcessSingleton(
      const std::string& program_name,
      const base::FilePath& user_data_dir,
@@ -286,7 +261,7 @@ index 875269776e45c96ac43a3430768f1406c9608dd3..caaebad93c23cfd0037a1555032dce6a
        program_name_(program_name),
        is_app_sandboxed_(is_app_sandboxed),
        is_virtualized_(false),
-@@ -296,7 +330,7 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
+@@ -296,7 +331,7 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
      return PROCESS_NONE;
    }
  
@@ -296,7 +271,7 @@ index 875269776e45c96ac43a3430768f1406c9608dd3..caaebad93c23cfd0037a1555032dce6a
        return PROCESS_NOTIFIED;
      case chrome::NOTIFY_FAILED:
 diff --git a/chrome/browser/win/chrome_process_finder.cc b/chrome/browser/win/chrome_process_finder.cc
-index 788abf9a04f2a3725d67f7f8d84615016b241c8e..5b45d59916f837dff4885aa7c6a14ac13d2c5a7b 100644
+index 788abf9a04f2a3725d67f7f8d84615016b241c8e..7a787c086dd0e28abc3af41eb9304f3fea125cc3 100644
 --- a/chrome/browser/win/chrome_process_finder.cc
 +++ b/chrome/browser/win/chrome_process_finder.cc
 @@ -34,7 +34,9 @@ HWND FindRunningChromeWindow(const base::FilePath& user_data_dir) {
@@ -310,30 +285,36 @@ index 788abf9a04f2a3725d67f7f8d84615016b241c8e..5b45d59916f837dff4885aa7c6a14ac1
    DCHECK(remote_window);
    DWORD process_id = 0;
    DWORD thread_id = GetWindowThreadProcessId(remote_window, &process_id);
-@@ -42,7 +44,7 @@ NotifyChromeResult AttemptToNotifyRunningChrome(HWND remote_window) {
+@@ -42,7 +44,8 @@ NotifyChromeResult AttemptToNotifyRunningChrome(HWND remote_window) {
      return NOTIFY_FAILED;
  
    // Send the command line to the remote chrome window.
 -  // Format is "START\0<<<current directory>>>\0<<<commandline>>>".
-+  // Format is "START\0<current-directory>\0<command-line>\0<additional-data-length>\0<additional-data>".
++  // Format is
++  // "START\0<current-directory>\0<command-line>\0<additional-data-length>\0<additional-data>".
    std::wstring to_send(L"START\0", 6);  // want the NULL in the string.
    base::FilePath cur_dir;
    if (!base::GetCurrentDirectory(&cur_dir))
-@@ -53,6 +55,12 @@ NotifyChromeResult AttemptToNotifyRunningChrome(HWND remote_window) {
+@@ -53,6 +56,17 @@ NotifyChromeResult AttemptToNotifyRunningChrome(HWND remote_window) {
        base::CommandLine::ForCurrentProcess()->GetCommandLineString());
    to_send.append(L"\0", 1);  // Null separator.
  
-+  // Send over the size, because the reinterpret cast to wchar_t could add padding
-+  to_send.append(std::to_wstring(additional_data.size_bytes()));
-+  to_send.append(L"\0", 1);  // Null separator.
-+  to_send.append(reinterpret_cast<const wchar_t*>(additional_data.data()), (additional_data.size_bytes() + 1) / sizeof(wchar_t));
-+  to_send.append(L"\0", 1);  // Null separator.
++  size_t additional_data_size = additional_data.size_bytes();
++  if (additional_data_size) {
++    // Send over the size, because the reinterpret cast to wchar_t could
++    // add padding.
++    to_send.append(base::UTF8ToWide(base::NumberToString(additional_data_size)));
++    to_send.append(L"\0", 1);  // Null separator.
++    to_send.append(reinterpret_cast<const wchar_t*>(additional_data.data()),
++                   (additional_data_size + 1) / sizeof(wchar_t));
++    to_send.append(L"\0", 1);  // Null separator.
++  }
 +
    // Allow the current running browser window to make itself the foreground
    // window (otherwise it will just flash in the taskbar).
    ::AllowSetForegroundWindow(process_id);
 diff --git a/chrome/browser/win/chrome_process_finder.h b/chrome/browser/win/chrome_process_finder.h
-index 5516673cee019f6060077091e59498bf9038cd6e..bf6ee92e91657256054455dc01debbc6212cf64f 100644
+index 5516673cee019f6060077091e59498bf9038cd6e..32097fda3d96b3e6e038e979089637a54801db52 100644
 --- a/chrome/browser/win/chrome_process_finder.h
 +++ b/chrome/browser/win/chrome_process_finder.h
 @@ -7,6 +7,7 @@
@@ -344,12 +325,14 @@ index 5516673cee019f6060077091e59498bf9038cd6e..bf6ee92e91657256054455dc01debbc6
  #include "base/time/time.h"
  
  namespace base {
-@@ -27,7 +28,7 @@ HWND FindRunningChromeWindow(const base::FilePath& user_data_dir);
+@@ -27,7 +28,9 @@ HWND FindRunningChromeWindow(const base::FilePath& user_data_dir);
  // Attempts to send the current command line to an already running instance of
  // Chrome via a WM_COPYDATA message.
  // Returns true if a running Chrome is found and successfully notified.
 -NotifyChromeResult AttemptToNotifyRunningChrome(HWND remote_window);
-+NotifyChromeResult AttemptToNotifyRunningChrome(HWND remote_window, const base::span<const uint8_t>& additional_data);
++NotifyChromeResult AttemptToNotifyRunningChrome(
++    HWND remote_window,
++    const base::span<const uint8_t>& additional_data);
  
  // Changes the notification timeout to |new_timeout|, returns the old timeout.
  base::TimeDelta SetNotificationTimeoutForTesting(base::TimeDelta new_timeout);
