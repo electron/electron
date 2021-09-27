@@ -19,10 +19,10 @@ JavaScript level and throwing an error if the function returns false.
 This patch will be upstreamed in some form.
 
 diff --git a/lib/internal/crypto/keys.js b/lib/internal/crypto/keys.js
-index 4d5545ab1aae1ad392ac1fea878b887f4a8736c4..bde806e71a7b299ec2855de8e78c3e9ab449f508 100644
+index ce053fbb4b800a67adcd5642a6ef09f8f2a21ce6..1b0e4b8791cf422bba331b242cd7df29b18c9da8 100644
 --- a/lib/internal/crypto/keys.js
 +++ b/lib/internal/crypto/keys.js
-@@ -437,15 +437,19 @@ function getKeyObjectHandleFromJwk(key, ctx) {
+@@ -436,15 +436,19 @@ function getKeyObjectHandleFromJwk(key, ctx) {
  
      const handle = new KeyObjectHandle();
      if (isPublic) {
