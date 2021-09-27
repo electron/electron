@@ -28,6 +28,7 @@
 #include "components/proxy_config/proxy_config_dictionary.h"
 #include "components/proxy_config/proxy_config_pref_names.h"
 #include "components/proxy_config/proxy_prefs.h"
+#include "content/browser/code_cache/generated_code_cache_context.h"  // nogncheck
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/download_item_utils.h"
@@ -976,6 +977,40 @@ v8::Local<v8::Value> Session::GetPath(v8::Isolate* isolate) {
   return gin::ConvertToV8(isolate, browser_context_->GetPath());
 }
 
+void Session::SetCodeCachePath(const base::FilePath& code_cache_path) {
+  auto* storage_partition = browser_context_->GetDefaultStoragePartition();
+  auto* code_cache_context = storage_partition->GetGeneratedCodeCacheContext();
+  if (code_cache_context && !code_cache_path.empty()) {
+    code_cache_context->Initialize(
+        code_cache_path, 0 /* allows disk_cache to choose the size */);
+  }
+}
+
+v8::Local<v8::Promise> Session::ClearCodeCaches(
+    const gin_helper::Dictionary& options) {
+  auto* isolate = JavascriptEnvironment::GetIsolate();
+  gin_helper::Promise<void> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  std::set<GURL> url_list;
+  base::RepeatingCallback<bool(const GURL&)> url_matcher = base::NullCallback();
+  if (options.Get("urls", &url_list) && !url_list.empty()) {
+    url_matcher = base::BindRepeating(
+        [](const std::set<GURL>& url_list, const GURL& url) {
+          auto it = url_list.find(url);
+          return it != url_list.end();
+        },
+        url_list);
+  }
+
+  browser_context_->GetDefaultStoragePartition()->ClearCodeCaches(
+      base::Time(), base::Time::Max(), url_matcher,
+      base::BindOnce(gin_helper::Promise<void>::ResolvePromise,
+                     std::move(promise)));
+
+  return handle;
+}
+
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 base::Value Session::GetSpellCheckerLanguages() {
   return browser_context_->prefs()
@@ -1203,6 +1238,8 @@ gin::ObjectTemplateBuilder Session::GetObjectTemplateBuilder(
       .SetMethod("preconnect", &Session::Preconnect)
       .SetMethod("closeAllConnections", &Session::CloseAllConnections)
       .SetMethod("getStoragePath", &Session::GetPath)
+      .SetMethod("setCodeCachePath", &Session::SetCodeCachePath)
+      .SetMethod("clearCodeCaches", &Session::ClearCodeCaches)
       .SetProperty("cookies", &Session::Cookies)
       .SetProperty("netLog", &Session::NetLog)
       .SetProperty("protocol", &Session::Protocol)
