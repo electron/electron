@@ -13,10 +13,10 @@ Reviewed-by: Patrick Thier <pthier@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#77017}
 
 diff --git a/src/builtins/builtins-regexp-gen.cc b/src/builtins/builtins-regexp-gen.cc
-index 6e4307b404405c4c78614a956c64b4a86f5fe0fe..6c2d3b44a39a6bcce4e48ac621b21f54371e9b6f 100644
+index 535188c567ee3eafee2333a45e9d41c4cf3b4a0b..bb7512fbfa26678110a2a26a717975beddd369b8 100644
 --- a/src/builtins/builtins-regexp-gen.cc
 +++ b/src/builtins/builtins-regexp-gen.cc
-@@ -436,8 +436,6 @@ TNode<HeapObject> RegExpBuiltinsAssembler::RegExpExecInternal(
+@@ -435,8 +435,6 @@ TNode<HeapObject> RegExpBuiltinsAssembler::RegExpExecInternal(
    // External constants.
    TNode<ExternalReference> isolate_address =
        ExternalConstant(ExternalReference::isolate_address(isolate()));
@@ -25,7 +25,7 @@ index 6e4307b404405c4c78614a956c64b4a86f5fe0fe..6c2d3b44a39a6bcce4e48ac621b21f54
    TNode<ExternalReference> static_offsets_vector_address = ExternalConstant(
        ExternalReference::address_of_static_offsets_vector(isolate()));
  
-@@ -606,26 +604,18 @@ TNode<HeapObject> RegExpBuiltinsAssembler::RegExpExecInternal(
+@@ -605,26 +603,18 @@ TNode<HeapObject> RegExpBuiltinsAssembler::RegExpExecInternal(
      MachineType arg5_type = type_int32;
      TNode<Int32T> arg5 = SmiToInt32(register_count);
  
@@ -61,7 +61,7 @@ index 6e4307b404405c4c78614a956c64b4a86f5fe0fe..6c2d3b44a39a6bcce4e48ac621b21f54
  
      // TODO(v8:11880): avoid roundtrips between cdc and code.
      TNode<RawPtrT> code_entry = LoadCodeObjectEntry(code);
-@@ -640,8 +630,7 @@ TNode<HeapObject> RegExpBuiltinsAssembler::RegExpExecInternal(
+@@ -639,8 +629,7 @@ TNode<HeapObject> RegExpBuiltinsAssembler::RegExpExecInternal(
              std::make_pair(arg1_type, arg1), std::make_pair(arg2_type, arg2),
              std::make_pair(arg3_type, arg3), std::make_pair(arg4_type, arg4),
              std::make_pair(arg5_type, arg5), std::make_pair(arg6_type, arg6),
@@ -123,7 +123,7 @@ index a76f9dea70264d79d57ebd6c60b100bc9e0a499d..5aad6c1d85d574f4db307b6edcdda89e
  
    // Below the frame pointer.
 diff --git a/src/regexp/arm64/regexp-macro-assembler-arm64.cc b/src/regexp/arm64/regexp-macro-assembler-arm64.cc
-index 6192461fa32879469d56d36fb788b5de33038d77..4611a323afacb5accfb3886581879e60eb1c9f12 100644
+index 911744b8b1c6d8a49100d88b53f8d9aedb943e2a..ca21530f99b618e5c46511d06ef93121a7e3c23e 100644
 --- a/src/regexp/arm64/regexp-macro-assembler-arm64.cc
 +++ b/src/regexp/arm64/regexp-macro-assembler-arm64.cc
 @@ -66,14 +66,12 @@ namespace internal {
@@ -154,7 +154,7 @@ index 6192461fa32879469d56d36fb788b5de33038d77..4611a323afacb5accfb3886581879e60
   *              bool direct_call = false,
   *              Isolate* isolate,
   *              Address regexp);
-@@ -750,11 +747,10 @@ Handle<HeapObject> RegExpMacroAssemblerARM64::GetCode(Handle<String> source) {
+@@ -751,11 +748,10 @@ Handle<HeapObject> RegExpMacroAssemblerARM64::GetCode(Handle<String> source) {
    // x3:  byte*    input_end
    // x4:  int*     output array
    // x5:  int      output array size
@@ -195,7 +195,7 @@ index 204ee68dc868142693e9959170c71df3f72f97ce..f3869a72b631f9fb42b275d2edd8f3cf
    // When adding local variables remember to push space for them in
    // the frame in GetCode.
 diff --git a/src/regexp/experimental/experimental.cc b/src/regexp/experimental/experimental.cc
-index c05a010d06f34405128ffb9a9d67d86a20fcb83d..c3d701715aa88be3f5a8009319a09b032c85f4ad 100644
+index bff2d7da6645d6023fc218daf370a51a9d404495..def43dc2c167fd463947cbbbc507da664d38aead 100644
 --- a/src/regexp/experimental/experimental.cc
 +++ b/src/regexp/experimental/experimental.cc
 @@ -192,8 +192,7 @@ int32_t ExperimentalRegExp::ExecRaw(Isolate* isolate,
@@ -209,10 +209,10 @@ index c05a010d06f34405128ffb9a9d67d86a20fcb83d..c3d701715aa88be3f5a8009319a09b03
    DCHECK_NOT_NULL(isolate);
    DCHECK_NOT_NULL(output_registers);
 diff --git a/src/regexp/experimental/experimental.h b/src/regexp/experimental/experimental.h
-index 5987fb4d7732f47c5f31cc0fab7b11e252c864f8..cdc683e97e901bd3e63332a04f69c6d31f964931 100644
+index 1b44100cc88bed7825c0a30fb05e8477c47860ec..671792e5ef82919af652f431c5f6b325fea08d77 100644
 --- a/src/regexp/experimental/experimental.h
 +++ b/src/regexp/experimental/experimental.h
-@@ -34,7 +34,6 @@ class ExperimentalRegExp final : public AllStatic {
+@@ -33,7 +33,6 @@ class ExperimentalRegExp final : public AllStatic {
                                      Address input_start, Address input_end,
                                      int* output_registers,
                                      int32_t output_register_count,
@@ -256,10 +256,10 @@ index 861795da900d91111386e4f8e660f7f94ea46a33..01914a6b8b5abb96a4eec8d844e2d1ae
    // Below the frame pointer - local stack variables.
    // When adding local variables remember to push space for them in
 diff --git a/src/regexp/regexp-interpreter.cc b/src/regexp/regexp-interpreter.cc
-index f9a959d2582a25cd60a97453e696f8f1f0560ce8..a2f23f78c308162240c5adf8904e732ce3bf6159 100644
+index 02fc3349208b7127d967a8b25763b3951f2c9dde..c9dd403e751502750cbb8bc4b4e820eb1136c9ea 100644
 --- a/src/regexp/regexp-interpreter.cc
 +++ b/src/regexp/regexp-interpreter.cc
-@@ -1111,7 +1111,7 @@ IrregexpInterpreter::Result IrregexpInterpreter::MatchInternal(
+@@ -1110,7 +1110,7 @@ IrregexpInterpreter::Result IrregexpInterpreter::MatchInternal(
  // builtin.
  IrregexpInterpreter::Result IrregexpInterpreter::MatchForCallFromJs(
      Address subject, int32_t start_position, Address, Address,
@@ -269,10 +269,10 @@ index f9a959d2582a25cd60a97453e696f8f1f0560ce8..a2f23f78c308162240c5adf8904e732c
    DCHECK_NOT_NULL(isolate);
    DCHECK_NOT_NULL(output_registers);
 diff --git a/src/regexp/regexp-interpreter.h b/src/regexp/regexp-interpreter.h
-index a4d79184b08963598bbc42a91541c8df695bf4c5..e9dedd781b5b83d4017f8b2bd4353f1d57013a67 100644
+index 9b4a8c6c307266a78a35f52ef4ef0afe5b6af6fe..19f9513acc2c7d309179ca5e18ca7ef2165e74f4 100644
 --- a/src/regexp/regexp-interpreter.h
 +++ b/src/regexp/regexp-interpreter.h
-@@ -36,9 +36,8 @@ class V8_EXPORT_PRIVATE IrregexpInterpreter : public AllStatic {
+@@ -34,9 +34,8 @@ class V8_EXPORT_PRIVATE IrregexpInterpreter : public AllStatic {
    // RETRY is returned if a retry through the runtime is needed (e.g. when
    // interrupts have been scheduled or the regexp is marked for tier-up).
    //
@@ -284,7 +284,7 @@ index a4d79184b08963598bbc42a91541c8df695bf4c5..e9dedd781b5b83d4017f8b2bd4353f1d
    //
    // Arguments output_registers and output_register_count describe the results
    // array, which will contain register values of all captures if SUCCESS is
-@@ -47,7 +46,6 @@ class V8_EXPORT_PRIVATE IrregexpInterpreter : public AllStatic {
+@@ -45,7 +44,6 @@ class V8_EXPORT_PRIVATE IrregexpInterpreter : public AllStatic {
                                     Address input_start, Address input_end,
                                     int* output_registers,
                                     int32_t output_register_count,
@@ -293,10 +293,10 @@ index a4d79184b08963598bbc42a91541c8df695bf4c5..e9dedd781b5b83d4017f8b2bd4353f1d
                                     Isolate* isolate, Address regexp);
  
 diff --git a/src/regexp/regexp-macro-assembler.cc b/src/regexp/regexp-macro-assembler.cc
-index 1f5875afb8850da4136da6633d5b0ad9f52803e3..ced89ad4386b9d037851529f098c8aa111f2a478 100644
+index 27590fac36cea92f557dc0c149d9cbed6efef8b5..73313f95ec1d6e5bd7e5479e45c6b1980c638aa9 100644
 --- a/src/regexp/regexp-macro-assembler.cc
 +++ b/src/regexp/regexp-macro-assembler.cc
-@@ -306,23 +306,21 @@ int NativeRegExpMacroAssembler::Execute(
+@@ -300,23 +300,21 @@ int NativeRegExpMacroAssembler::Execute(
      String input,  // This needs to be the unpacked (sliced, cons) string.
      int start_offset, const byte* input_start, const byte* input_end,
      int* output, int output_size, Isolate* isolate, JSRegExp regexp) {

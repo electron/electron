@@ -14,7 +14,7 @@ Reviewed-by: Patrick Thier <pthier@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#76667}
 
 diff --git a/test/cctest/cctest.status b/test/cctest/cctest.status
-index 0a6626ce332ae3ad3e49cb99404646c22c866b71..9c28520ed56998173c105b9d8a2ca3c4489b916e 100644
+index 9b369044754443ccf5ce07c3612f0a928e565ad6..21afa5310647eb67f3fe3fc4f2e0721b4bb4e0f6 100644
 --- a/test/cctest/cctest.status
 +++ b/test/cctest/cctest.status
 @@ -136,6 +136,9 @@
@@ -27,7 +27,7 @@ index 0a6626ce332ae3ad3e49cb99404646c22c866b71..9c28520ed56998173c105b9d8a2ca3c4
  }],  # ALWAYS
  
  ##############################################################################
-@@ -670,6 +673,9 @@
+@@ -666,6 +669,9 @@
  
    # Instruction cache flushing is disabled in jitless mode.
    'test-icache/*': [SKIP],
@@ -38,10 +38,10 @@ index 0a6626ce332ae3ad3e49cb99404646c22c866b71..9c28520ed56998173c105b9d8a2ca3c4
  
  ##############################################################################
 diff --git a/test/cctest/test-api.cc b/test/cctest/test-api.cc
-index dc5e2ea50898fbf684f5f4655d8b50982d4ebbbd..f7cbc54499464acf1a7de45251a6118340ec51fd 100644
+index 25fba193bbcc41d127d36949e103cb59688bfed7..b21222f14c533cb630946b6066bfe24d1be49f93 100644
 --- a/test/cctest/test-api.cc
 +++ b/test/cctest/test-api.cc
-@@ -21734,10 +21734,6 @@ TEST(RegExpInterruptAndMakeSubjectTwoByteExternal) {
+@@ -21658,10 +21658,6 @@ TEST(RegExpInterruptAndMakeSubjectTwoByteExternal) {
    // experimental engine.
    i::FLAG_enable_experimental_regexp_engine_on_excessive_backtracks = false;
    RegExpInterruptTest test;
@@ -53,10 +53,10 @@ index dc5e2ea50898fbf684f5f4655d8b50982d4ebbbd..f7cbc54499464acf1a7de45251a61183
  }
  
 diff --git a/test/cctest/test-regexp.cc b/test/cctest/test-regexp.cc
-index 27204f7f519229cc4c21a10dd0a44222d4b6edd6..2692748e623d3d52780ff89a97f4300bcd981cbd 100644
+index aa24fe3dd230ecc06d9eea2920826dc123979c58..2fb5b3d056f78d3eef3a0a1032ee99df1b2f35c5 100644
 --- a/test/cctest/test-regexp.cc
 +++ b/test/cctest/test-regexp.cc
-@@ -2346,6 +2346,50 @@ TEST(UnicodePropertyEscapeCodeSize) {
+@@ -2348,6 +2348,50 @@ TEST(UnicodePropertyEscapeCodeSize) {
    }
  }
  
