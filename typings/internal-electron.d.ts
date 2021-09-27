@@ -128,7 +128,7 @@ declare namespace Electron {
     insertSeparator(index: number): void;
     insertSubMenu(index: number, commandId: number, label: string, submenu?: Menu): void;
     delegate?: any;
-    getAcceleratorTextAt(index: number): string;
+    _getAcceleratorTextAt(index: number): string;
   }
 
   interface MenuItem {
