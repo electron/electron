@@ -156,13 +156,11 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("requestGarbageCollectionForTesting",
                  &RequestGarbageCollectionForTesting);
   dict.SetMethod("isSameOrigin", &IsSameOrigin);
-#if DCHECK_IS_ON()
   dict.SetMethod("triggerFatalErrorForTesting", &TriggerFatalErrorForTesting);
   dict.SetMethod("getWeaklyTrackedValues", &GetWeaklyTrackedValues);
   dict.SetMethod("clearWeaklyTrackedValues", &ClearWeaklyTrackedValues);
   dict.SetMethod("weaklyTrackValue", &WeaklyTrackValue);
   dict.SetMethod("runUntilIdle", &RunUntilIdle);
-#endif
 }
 
 }  // namespace
