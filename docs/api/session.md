@@ -868,6 +868,21 @@ this session just before normal `preload` scripts run.
 Returns `string[]` an array of paths to preload scripts that have been
 registered.
 
+#### `ses.setCodeCachePath(path)`
+
+* `path` String - The Code cache location.
+
+Sets code cache directory. By default, the directory will be `Code Cache` under the
+respective user data folder.
+
+#### `ses.clearCodeCaches()`
+
+* `options` Object
+  * `urls` String[] (optional) - An array of url corresponding to the resource that needs to
+    be removed. If the list is empty then all entries in the cache will be removed.
+
+Returns `Promise<void>` - resolves when the code cache clear operation is complete.
+
 #### `ses.setSpellCheckerEnabled(enable)`
 
 * `enable` boolean
