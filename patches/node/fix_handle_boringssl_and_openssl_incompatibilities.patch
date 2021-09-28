@@ -222,10 +222,10 @@ index 7cb4513f9ad0eaadd055b169520ae1e5073b7e2d..50a6663966cdb147a702df21240fa449
      THROW_ERR_CRYPTO_OPERATION_FAILED(env, "could not generate prime");
      return Nothing<bool>();
 diff --git a/src/crypto/crypto_rsa.cc b/src/crypto/crypto_rsa.cc
-index 1bbf9a1753e4e2d82c55c4187489c22867d1d9bb..585af1674e129dc4d1c918d29fe9915bac8b4163 100644
+index d2307c33f5de8733b1343225a3fe6a700d1f51e4..fd31caa1355cd7be98992411b9cda2dbb500f211 100644
 --- a/src/crypto/crypto_rsa.cc
 +++ b/src/crypto/crypto_rsa.cc
-@@ -566,7 +566,7 @@ Maybe<bool> GetRsaKeyDetail(
+@@ -580,7 +580,7 @@ Maybe<bool> GetRsaKeyDetail(
      // In that case, RSA_get0_pss_params does not return nullptr but all fields
      // of the returned RSA_PSS_PARAMS will be set to nullptr.
  
@@ -234,7 +234,7 @@ index 1bbf9a1753e4e2d82c55c4187489c22867d1d9bb..585af1674e129dc4d1c918d29fe9915b
      if (params != nullptr) {
        int hash_nid = NID_sha1;
        int mgf_nid = NID_mgf1;
-@@ -607,10 +607,11 @@ Maybe<bool> GetRsaKeyDetail(
+@@ -621,10 +621,11 @@ Maybe<bool> GetRsaKeyDetail(
        }
  
        if (params->saltLength != nullptr) {
@@ -251,7 +251,7 @@ index 1bbf9a1753e4e2d82c55c4187489c22867d1d9bb..585af1674e129dc4d1c918d29fe9915b
  
        if (target
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index f18304cd655842e999a39659315c4eb3ce1c0c6e..1aed0e7e88460cea63950f71dac502829d662cff 100644
+index 7e0c8ba3eb60db88af8ba75e41e593dab86d2714..5c528c810256872c76dc7ba5a673d28652c405e1 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
 @@ -491,24 +491,14 @@ Maybe<bool> Decorate(Environment* env, Local<Object> obj,
