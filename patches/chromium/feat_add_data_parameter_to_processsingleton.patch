@@ -54,59 +54,47 @@ index 9418bbacb11094628c4468d0a7b735a0f742e5f2..c942be131f6f41b60276579ef78d291f
  #if defined(OS_WIN)
    bool EscapeVirtualization(const base::FilePath& user_data_dir);
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index 31b387ca3cae53c94d8a7baefaeb17f3dbffe5e0..9a1bcae5c11e0d01968ff6fbfc88a02658445da5 100644
+index 31b387ca3cae53c94d8a7baefaeb17f3dbffe5e0..c2857dbed8d930629cbe83959d9fb62a6a7db56d 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
 @@ -563,6 +563,7 @@ class ProcessSingleton::LinuxWatcher
    // |reader| is for sending back ACK message.
    void HandleMessage(const std::string& current_dir,
                       const std::vector<std::string>& argv,
-+                     const std::vector<const uint8_t>& additional_data,
++                     const base::span<const uint8_t>& additional_data,
                       SocketReader* reader);
  
   private:
-@@ -619,13 +620,18 @@ void ProcessSingleton::LinuxWatcher::StartListening(int socket) {
+@@ -619,13 +620,16 @@ void ProcessSingleton::LinuxWatcher::StartListening(int socket) {
  }
  
  void ProcessSingleton::LinuxWatcher::HandleMessage(
 -    const std::string& current_dir, const std::vector<std::string>& argv,
 +    const std::string& current_dir,
 +    const std::vector<std::string>& argv,
-+    const std::vector<const uint8_t>& additional_data,
++    const base::span<const uint8_t>& additional_data,
      SocketReader* reader) {
    DCHECK(ui_task_runner_->BelongsToCurrentThread());
    DCHECK(reader);
  
-+  base::span<const uint8_t> additional_data_span = base::make_span(additional_data.begin(), additional_data.end());
-+
    if (parent_->notification_callback_.Run(base::CommandLine(argv),
 -                                          base::FilePath(current_dir))) {
 +                                          base::FilePath(current_dir),
-+                                          additional_data_span)) {
++                                          additional_data)) {
      // Send back "ACK" message to prevent the client process from starting up.
      reader->FinishWithACK(kACKToken, base::size(kACKToken) - 1);
    } else {
-@@ -673,8 +679,8 @@ void ProcessSingleton::LinuxWatcher::SocketReader::
+@@ -673,7 +677,8 @@ void ProcessSingleton::LinuxWatcher::SocketReader::
      }
    }
  
 -  // Validate the message.  The shortest message is kStartToken\0x\0x
--  const size_t kMinMessageLength = base::size(kStartToken) + 4;
-+  // Validate the message.  The shortest message is kStartToken\0\00\00\0
-+  const size_t kMinMessageLength = base::size(kStartToken) + 6;
++  // Validate the message.  The shortest message kStartToken\0\00
++  // The shortest message with additional data is kStartToken\0\00\00\0.
+   const size_t kMinMessageLength = base::size(kStartToken) + 4;
    if (bytes_read_ < kMinMessageLength) {
      buf_[bytes_read_] = 0;
-     LOG(ERROR) << "Invalid socket message (wrong length):" << buf_;
-@@ -687,7 +693,7 @@ void ProcessSingleton::LinuxWatcher::SocketReader::
-       str, std::string(1, kTokenDelimiter),
-       base::TRIM_WHITESPACE, base::SPLIT_WANT_ALL);
- 
--  if (tokens.size() < 3 || tokens[0] != kStartToken) {
-+  if (tokens.size() < 5 || tokens[0] != kStartToken) {
-     LOG(ERROR) << "Wrong message format: " << str;
-     CleanupAndDeleteSelf();
-     return;
-@@ -698,15 +704,25 @@ void ProcessSingleton::LinuxWatcher::SocketReader::
+@@ -698,15 +703,29 @@ void ProcessSingleton::LinuxWatcher::SocketReader::
    timer_.Stop();
  
    std::string current_dir = tokens[1];
@@ -118,12 +106,16 @@ index 31b387ca3cae53c94d8a7baefaeb17f3dbffe5e0..9a1bcae5c11e0d01968ff6fbfc88a026
 +#endif
 +
 +  size_t num_args;
-+  base::NumberToSizeT(tokens[2], &num_args);
++  base::StringToSizeT(tokens[2], &num_args);
 +  std::vector<std::string> command_line(tokens.begin() + 3, tokens.begin() + 3 + num_args);
-+  size_t additional_data_size;
-+  base::NumberToSizeT(tokens[3 + num_args], &additional_data_size);;
-+  const uint8_t* additional_data_bits = reinterpret_cast<const uint8_t*>(tokens[4 + num_args].c_str());
-+  std::vector<const uint8_t> additional_data(additional_data_bits, additional_data_bits + additional_data_size);
++
++  base::span<const uint8_t> additional_data;
++  if (tokens.size() == 5 + num_args) {
++    size_t additional_data_size;
++    base::StringToSizeT(tokens[3 + num_args], &additional_data_size);
++    const uint8_t* additional_data_bits = reinterpret_cast<const uint8_t*>(tokens[4 + num_args].c_str());
++    additional_data = base::span<const uint8_t>(additional_data_bits, additional_data_bits + additional_data_size);
++  }
  
    // Return to the UI thread to handle opening a new browser tab.
    ui_task_runner_->PostTask(
@@ -133,7 +125,7 @@ index 31b387ca3cae53c94d8a7baefaeb17f3dbffe5e0..9a1bcae5c11e0d01968ff6fbfc88a026
    fd_watch_controller_.reset();
  
    // LinuxWatcher::HandleMessage() is in charge of destroying this SocketReader
-@@ -735,8 +751,10 @@ void ProcessSingleton::LinuxWatcher::SocketReader::FinishWithACK(
+@@ -735,8 +754,10 @@ void ProcessSingleton::LinuxWatcher::SocketReader::FinishWithACK(
  //
  ProcessSingleton::ProcessSingleton(
      const base::FilePath& user_data_dir,
@@ -144,7 +136,7 @@ index 31b387ca3cae53c94d8a7baefaeb17f3dbffe5e0..9a1bcae5c11e0d01968ff6fbfc88a026
        current_pid_(base::GetCurrentProcId()),
        watcher_(new LinuxWatcher(this)) {
    socket_path_ = user_data_dir.Append(chrome::kSingletonSocketFilename);
-@@ -853,7 +871,8 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
+@@ -853,7 +874,8 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
               sizeof(socket_timeout));
  
    // Found another process, prepare our command line
@@ -154,7 +146,7 @@ index 31b387ca3cae53c94d8a7baefaeb17f3dbffe5e0..9a1bcae5c11e0d01968ff6fbfc88a026
    std::string to_send(kStartToken);
    to_send.push_back(kTokenDelimiter);
  
-@@ -863,11 +882,18 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
+@@ -863,11 +885,21 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
    to_send.append(current_dir.value());
  
    const std::vector<std::string>& argv = cmd_line.argv();
@@ -165,10 +157,13 @@ index 31b387ca3cae53c94d8a7baefaeb17f3dbffe5e0..9a1bcae5c11e0d01968ff6fbfc88a026
      to_send.append(*it);
    }
  
-+  to_send.push_back(kTokenDelimiter);
-+  to_send.append(base::NumberToString(additional_data_.size_bytes()));
-+  to_send.push_back(kTokenDelimiter);
-+  to_send.append(reinterpret_cast<const char*>(additional_data_.data()), additional_data_.size_bytes());
++  size_t data_to_send_size = additional_data_.size_bytes();
++  if (data_to_send_size) {
++    to_send.push_back(kTokenDelimiter);
++    to_send.append(base::NumberToString(data_to_send_size));
++    to_send.push_back(kTokenDelimiter);
++    to_send.append(reinterpret_cast<const char*>(additional_data_.data()), data_to_send_size);
++  }
 +
    // Send the message
    if (!WriteToSocket(socket.fd(), to_send.data(), to_send.length())) {

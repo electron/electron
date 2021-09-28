@@ -966,7 +966,7 @@ if (!gotTheLock) {
   app.quit()
 } else {
   app.on('second-instance', (event, commandLine, workingDirectory, additionalData) => {
-    // Print out received data from the second instance
+    // Print out data received from the second instance.
     console.log(additionalData)
 
     // Someone tried to run a second instance, we should focus our window.
