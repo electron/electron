@@ -14,10 +14,10 @@ Reviewed-by: Patrick Thier <pthier@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#76667}
 
 diff --git a/test/cctest/cctest.status b/test/cctest/cctest.status
-index 0a6626ce332ae3ad3e49cb99404646c22c866b71..9c28520ed56998173c105b9d8a2ca3c4489b916e 100644
+index f7a7726b30f72887bcd5c1abf3705f67ebeb2231..f9e2c5cd399b1787c6554d362699e8bf27c7e125 100644
 --- a/test/cctest/cctest.status
 +++ b/test/cctest/cctest.status
-@@ -136,6 +136,9 @@
+@@ -139,6 +139,9 @@
    'test-strings/Traverse': [PASS, HEAVY],
    'test-swiss-name-dictionary-csa/DeleteAtBoundaries': [PASS, HEAVY],
    'test-swiss-name-dictionary-csa/SameH2': [PASS, HEAVY],
@@ -38,10 +38,10 @@ index 0a6626ce332ae3ad3e49cb99404646c22c866b71..9c28520ed56998173c105b9d8a2ca3c4
  
  ##############################################################################
 diff --git a/test/cctest/test-api.cc b/test/cctest/test-api.cc
-index dc5e2ea50898fbf684f5f4655d8b50982d4ebbbd..f7cbc54499464acf1a7de45251a6118340ec51fd 100644
+index cb32668ac5b02a5f9e187335a6609ac910a92841..5a12729d929a36fbcc89d0d2586c0cbfee72309c 100644
 --- a/test/cctest/test-api.cc
 +++ b/test/cctest/test-api.cc
-@@ -21734,10 +21734,6 @@ TEST(RegExpInterruptAndMakeSubjectTwoByteExternal) {
+@@ -21658,10 +21658,6 @@ TEST(RegExpInterruptAndMakeSubjectTwoByteExternal) {
    // experimental engine.
    i::FLAG_enable_experimental_regexp_engine_on_excessive_backtracks = false;
    RegExpInterruptTest test;
@@ -53,10 +53,10 @@ index dc5e2ea50898fbf684f5f4655d8b50982d4ebbbd..f7cbc54499464acf1a7de45251a61183
  }
  
 diff --git a/test/cctest/test-regexp.cc b/test/cctest/test-regexp.cc
-index 27204f7f519229cc4c21a10dd0a44222d4b6edd6..2692748e623d3d52780ff89a97f4300bcd981cbd 100644
+index aa24fe3dd230ecc06d9eea2920826dc123979c58..2fb5b3d056f78d3eef3a0a1032ee99df1b2f35c5 100644
 --- a/test/cctest/test-regexp.cc
 +++ b/test/cctest/test-regexp.cc
-@@ -2346,6 +2346,50 @@ TEST(UnicodePropertyEscapeCodeSize) {
+@@ -2348,6 +2348,50 @@ TEST(UnicodePropertyEscapeCodeSize) {
    }
  }
  
