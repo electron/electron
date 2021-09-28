@@ -14,20 +14,20 @@ Reviewed-by: Patrick Thier <pthier@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#76667}
 
 diff --git a/test/cctest/cctest.status b/test/cctest/cctest.status
-index 0a6626ce332ae3ad3e49cb99404646c22c866b71..9c28520ed56998173c105b9d8a2ca3c4489b916e 100644
+index 7b1bf8caa5e3f3975a457e061d966fd60c5ef441..d6691b5e861d29100d0f1c15c887dd824f3929cb 100644
 --- a/test/cctest/cctest.status
 +++ b/test/cctest/cctest.status
-@@ -136,6 +136,9 @@
-   'test-strings/Traverse': [PASS, HEAVY],
-   'test-swiss-name-dictionary-csa/DeleteAtBoundaries': [PASS, HEAVY],
-   'test-swiss-name-dictionary-csa/SameH2': [PASS, HEAVY],
+@@ -126,6 +126,9 @@
+   'test-strings/StringOOM*': [PASS, ['mode == debug', SKIP]],
+   'test-serialize/CustomSnapshotDataBlobImmortalImmovableRoots': [PASS, ['mode == debug', SKIP]],
+   'test-parsing/ObjectRestNegativeTestSlow': [PASS, ['mode == debug', SKIP]],
 +
 +  # TODO(v8:11382): Reenable once irregexp is reentrant.
 +  'test-regexp/RegExpInterruptReentrantExecution': [FAIL],
  }],  # ALWAYS
  
  ##############################################################################
-@@ -670,6 +673,9 @@
+@@ -606,6 +609,9 @@
  
    # Instruction cache flushing is disabled in jitless mode.
    'test-icache/*': [SKIP],
@@ -38,10 +38,10 @@ index 0a6626ce332ae3ad3e49cb99404646c22c866b71..9c28520ed56998173c105b9d8a2ca3c4
  
  ##############################################################################
 diff --git a/test/cctest/test-api.cc b/test/cctest/test-api.cc
-index dc5e2ea50898fbf684f5f4655d8b50982d4ebbbd..f7cbc54499464acf1a7de45251a6118340ec51fd 100644
+index 5eafa420bc21f40a2eb0caaa76ad2ffd4bd8db85..db0fb3c965c66e7d5a173559c52deca36bc47ebd 100644
 --- a/test/cctest/test-api.cc
 +++ b/test/cctest/test-api.cc
-@@ -21734,10 +21734,6 @@ TEST(RegExpInterruptAndMakeSubjectTwoByteExternal) {
+@@ -21581,10 +21581,6 @@ TEST(RegExpInterruptAndMakeSubjectTwoByteExternal) {
    // experimental engine.
    i::FLAG_enable_experimental_regexp_engine_on_excessive_backtracks = false;
    RegExpInterruptTest test;
@@ -53,10 +53,10 @@ index dc5e2ea50898fbf684f5f4655d8b50982d4ebbbd..f7cbc54499464acf1a7de45251a61183
  }
  
 diff --git a/test/cctest/test-regexp.cc b/test/cctest/test-regexp.cc
-index 27204f7f519229cc4c21a10dd0a44222d4b6edd6..2692748e623d3d52780ff89a97f4300bcd981cbd 100644
+index 63495194d4fbce61abbe9a7e83a446341f6f3dd6..fa02c23c47dcefb4ee77c9fc4c8222f52653e576 100644
 --- a/test/cctest/test-regexp.cc
 +++ b/test/cctest/test-regexp.cc
-@@ -2346,6 +2346,50 @@ TEST(UnicodePropertyEscapeCodeSize) {
+@@ -2340,6 +2340,50 @@ TEST(UnicodePropertyEscapeCodeSize) {
    }
  }
  

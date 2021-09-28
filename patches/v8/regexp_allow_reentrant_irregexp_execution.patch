@@ -21,10 +21,10 @@ Auto-Submit: Jakob Gruber <jgruber@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#77013}
 
 diff --git a/src/api/api.cc b/src/api/api.cc
-index 97b0804562c7cd60791901fa9a8d48ff07c1abbf..f43dfaf5ef10f83416a915952439c0e97656904d 100644
+index 1ac347ede7e51559917f09442ac4824f138075de..65f400ff50a31e14a2140056d05c5cb6edc6cd55 100644
 --- a/src/api/api.cc
 +++ b/src/api/api.cc
-@@ -107,7 +107,6 @@
+@@ -96,7 +96,6 @@
  #include "src/profiler/heap-snapshot-generator-inl.h"
  #include "src/profiler/profile-generator-inl.h"
  #include "src/profiler/tick-sample.h"
@@ -33,10 +33,10 @@ index 97b0804562c7cd60791901fa9a8d48ff07c1abbf..f43dfaf5ef10f83416a915952439c0e9
  #include "src/runtime/runtime.h"
  #include "src/snapshot/code-serializer.h"
 diff --git a/src/codegen/external-reference.cc b/src/codegen/external-reference.cc
-index 2c7748f223c9359079b2c35b55aeaa04810eff85..770653d50ce129452829c43ef5cee3648f2f52aa 100644
+index 454b04e89356e9ba611fa68c0bda2268ce54f2c4..cd959702a95ca922b34ba6be859f944b97e30f05 100644
 --- a/src/codegen/external-reference.cc
 +++ b/src/codegen/external-reference.cc
-@@ -740,6 +740,11 @@ ExternalReference ExternalReference::address_of_regexp_stack_memory_top_address(
+@@ -736,6 +736,11 @@ ExternalReference ExternalReference::address_of_regexp_stack_memory_top_address(
        isolate->regexp_stack()->memory_top_address_address());
  }
  
@@ -45,14 +45,14 @@ index 2c7748f223c9359079b2c35b55aeaa04810eff85..770653d50ce129452829c43ef5cee364
 +  return ExternalReference(isolate->regexp_stack()->stack_pointer_address());
 +}
 +
- ExternalReference ExternalReference::javascript_execution_assert(
-     Isolate* isolate) {
-   return ExternalReference(isolate->javascript_execution_assert_address());
+ FUNCTION_REFERENCE_WITH_TYPE(ieee754_acos_function, base::ieee754::acos,
+                              BUILTIN_FP_CALL)
+ FUNCTION_REFERENCE_WITH_TYPE(ieee754_acosh_function, base::ieee754::acosh,
 diff --git a/src/codegen/external-reference.h b/src/codegen/external-reference.h
-index cbc3463841332fbd3a9d40f5a1b3d3d1c3d382f7..86deb275f8b179eef7784cb30139b3c9735b7db7 100644
+index f53db401c9e5c2aed3427f2ca9c4a68e2b7c0ddf..cf632b6d32411fbe8c039db6f3ceb1110be973f4 100644
 --- a/src/codegen/external-reference.h
 +++ b/src/codegen/external-reference.h
-@@ -72,6 +72,8 @@ class StatsCounter;
+@@ -77,6 +77,8 @@ class StatsCounter;
      "RegExpStack::limit_address_address()")                                    \
    V(address_of_regexp_stack_memory_top_address,                                \
      "RegExpStack::memory_top_address_address()")                               \
@@ -62,18 +62,18 @@ index cbc3463841332fbd3a9d40f5a1b3d3d1c3d382f7..86deb275f8b179eef7784cb30139b3c9
    V(thread_in_wasm_flag_address_address,                                       \
      "Isolate::thread_in_wasm_flag_address_address")                            \
 diff --git a/src/debug/debug-interface.cc b/src/debug/debug-interface.cc
-index 9c25064572112b649c108a89df3c83b29ac603a0..229e4ca8d8770a698dfb21606b29ac7ac0018dc2 100644
+index bf74d379b6ad1124c7e852a6e2136854d14d7ade..d92da19a6f34b9b377897dc50fcf9accd4e4e453 100644
 --- a/src/debug/debug-interface.cc
 +++ b/src/debug/debug-interface.cc
-@@ -17,7 +17,6 @@
+@@ -12,7 +12,6 @@
+ #include "src/debug/debug.h"
+ #include "src/execution/vm-state-inl.h"
  #include "src/objects/js-generator-inl.h"
- #include "src/objects/stack-frame-info-inl.h"
- #include "src/profiler/heap-profiler.h"
 -#include "src/regexp/regexp-stack.h"
- #include "src/strings/string-builder-inl.h"
  
  #if V8_ENABLE_WEBASSEMBLY
-@@ -304,10 +303,7 @@ void SetTerminateOnResume(Isolate* v8_isolate) {
+ #include "src/debug/debug-wasm-objects-inl.h"
+@@ -250,10 +249,7 @@ void SetTerminateOnResume(Isolate* v8_isolate) {
  bool CanBreakProgram(Isolate* v8_isolate) {
    i::Isolate* isolate = reinterpret_cast<i::Isolate*>(v8_isolate);
    ENTER_V8_DO_NOT_USE(isolate);
@@ -86,10 +86,10 @@ index 9c25064572112b649c108a89df3c83b29ac603a0..229e4ca8d8770a698dfb21606b29ac7a
  
  Isolate* Script::GetIsolate() const {
 diff --git a/src/execution/isolate.cc b/src/execution/isolate.cc
-index eaf3096ac6bb05d61d93012d5b7abec503a3259e..051e58263cb66b1ad2dc1b59143d5826e0dfe376 100644
+index 6f133ece117f2d4fca4e99219b098fe06ff95209..9781cf29d93ded1344f5d37ce0e0fd04dd17a0c1 100644
 --- a/src/execution/isolate.cc
 +++ b/src/execution/isolate.cc
-@@ -3591,7 +3591,6 @@ bool Isolate::Init(SnapshotData* startup_snapshot_data,
+@@ -3517,7 +3517,6 @@ bool Isolate::Init(SnapshotData* startup_snapshot_data,
    store_stub_cache_ = new StubCache(this);
    materialized_object_store_ = new MaterializedObjectStore(this);
    regexp_stack_ = new RegExpStack();
@@ -98,7 +98,7 @@ index eaf3096ac6bb05d61d93012d5b7abec503a3259e..051e58263cb66b1ad2dc1b59143d5826
    heap_profiler_ = new HeapProfiler(heap());
    interpreter_ = new interpreter::Interpreter(this);
 diff --git a/src/regexp/arm/regexp-macro-assembler-arm.cc b/src/regexp/arm/regexp-macro-assembler-arm.cc
-index 6c90e00817342a115ec49a21b561a7014e0ce8f8..10766db4cf1d41ad0fee0754c6eaeebe46ace500 100644
+index 48e8fae663bc1e8138b14f4c8b7547b14f78f5c7..9827fc7a166775920a6d7bd91f0aec5be7e370b8 100644
 --- a/src/regexp/arm/regexp-macro-assembler-arm.cc
 +++ b/src/regexp/arm/regexp-macro-assembler-arm.cc
 @@ -6,15 +6,13 @@
@@ -136,7 +136,7 @@ index 6c90e00817342a115ec49a21b561a7014e0ce8f8..10766db4cf1d41ad0fee0754c6eaeebe
    DCHECK_EQ(0, registers_to_save % 2);
    __ jmp(&entry_label_);   // We'll write the entry code later.
    __ bind(&start_label_);  // And then continue from here.
-@@ -619,6 +616,42 @@ void RegExpMacroAssemblerARM::Fail() {
+@@ -631,6 +628,42 @@ void RegExpMacroAssemblerARM::Fail() {
    __ jmp(&exit_label_);
  }
  
@@ -179,7 +179,7 @@ index 6c90e00817342a115ec49a21b561a7014e0ce8f8..10766db4cf1d41ad0fee0754c6eaeebe
  
  Handle<HeapObject> RegExpMacroAssemblerARM::GetCode(Handle<String> source) {
    Label return_r0;
-@@ -654,6 +687,13 @@ Handle<HeapObject> RegExpMacroAssemblerARM::GetCode(Handle<String> source) {
+@@ -666,6 +699,13 @@ Handle<HeapObject> RegExpMacroAssemblerARM::GetCode(Handle<String> source) {
    __ push(r0);  // Make room for "string start - 1" constant.
    STATIC_ASSERT(kBacktrackCount == kStringStartMinusOne - kSystemPointerSize);
    __ push(r0);  // The backtrack counter.
@@ -193,7 +193,7 @@ index 6c90e00817342a115ec49a21b561a7014e0ce8f8..10766db4cf1d41ad0fee0754c6eaeebe
  
    // Check if we have space on the stack for registers.
    Label stack_limit_hit;
-@@ -736,7 +776,7 @@ Handle<HeapObject> RegExpMacroAssemblerARM::GetCode(Handle<String> source) {
+@@ -748,7 +788,7 @@ Handle<HeapObject> RegExpMacroAssemblerARM::GetCode(Handle<String> source) {
    }
  
    // Initialize backtrack stack pointer.
@@ -202,7 +202,7 @@ index 6c90e00817342a115ec49a21b561a7014e0ce8f8..10766db4cf1d41ad0fee0754c6eaeebe
  
    __ jmp(&start_label_);
  
-@@ -834,6 +874,10 @@ Handle<HeapObject> RegExpMacroAssemblerARM::GetCode(Handle<String> source) {
+@@ -847,6 +887,10 @@ Handle<HeapObject> RegExpMacroAssemblerARM::GetCode(Handle<String> source) {
    }
  
    __ bind(&return_r0);
@@ -213,7 +213,7 @@ index 6c90e00817342a115ec49a21b561a7014e0ce8f8..10766db4cf1d41ad0fee0754c6eaeebe
    // Skip sp past regexp registers and local variables..
    __ mov(sp, frame_pointer());
    // Restore registers r4..r11 and return (restoring lr to pc).
-@@ -851,12 +895,16 @@ Handle<HeapObject> RegExpMacroAssemblerARM::GetCode(Handle<String> source) {
+@@ -864,12 +908,16 @@ Handle<HeapObject> RegExpMacroAssemblerARM::GetCode(Handle<String> source) {
    if (check_preempt_label_.is_linked()) {
      SafeCallTarget(&check_preempt_label_);
  
@@ -230,7 +230,7 @@ index 6c90e00817342a115ec49a21b561a7014e0ce8f8..10766db4cf1d41ad0fee0754c6eaeebe
      // String might have moved: Reload end of string from frame.
      __ ldr(end_of_input_address(), MemOperand(frame_pointer(), kInputEnd));
      SafeReturn();
-@@ -867,17 +915,18 @@ Handle<HeapObject> RegExpMacroAssemblerARM::GetCode(Handle<String> source) {
+@@ -880,17 +928,18 @@ Handle<HeapObject> RegExpMacroAssemblerARM::GetCode(Handle<String> source) {
      SafeCallTarget(&stack_overflow_label_);
      // Reached if the backtrack-stack limit has been hit.
  
@@ -258,7 +258,7 @@ index 6c90e00817342a115ec49a21b561a7014e0ce8f8..10766db4cf1d41ad0fee0754c6eaeebe
      __ cmp(r0, Operand::Zero());
      __ b(eq, &exit_with_exception);
      // Otherwise use return value as new stack pointer.
-@@ -984,14 +1033,24 @@ void RegExpMacroAssemblerARM::ReadCurrentPositionFromRegister(int reg) {
+@@ -997,14 +1046,24 @@ void RegExpMacroAssemblerARM::ReadCurrentPositionFromRegister(int reg) {
    __ ldr(current_input_offset(), register_location(reg));
  }
  
@@ -286,7 +286,7 @@ index 6c90e00817342a115ec49a21b561a7014e0ce8f8..10766db4cf1d41ad0fee0754c6eaeebe
  void RegExpMacroAssemblerARM::SetCurrentPositionFromEnd(int by) {
    Label after_position;
    __ cmp(current_input_offset(), Operand(-by * char_size()));
-@@ -1037,14 +1096,6 @@ void RegExpMacroAssemblerARM::ClearRegisters(int reg_from, int reg_to) {
+@@ -1050,14 +1109,6 @@ void RegExpMacroAssemblerARM::ClearRegisters(int reg_from, int reg_to) {
    }
  }
  
@@ -302,19 +302,18 @@ index 6c90e00817342a115ec49a21b561a7014e0ce8f8..10766db4cf1d41ad0fee0754c6eaeebe
  
  void RegExpMacroAssemblerARM::CallCheckStackGuardState() {
 diff --git a/src/regexp/arm/regexp-macro-assembler-arm.h b/src/regexp/arm/regexp-macro-assembler-arm.h
-index a02a4dc2af546e53a89161aad9f3500a51c062f8..a76f9dea70264d79d57ebd6c60b100bc9e0a499d 100644
+index 92cac644e59811f18dd5ef48b00aa06c8893ff8f..da7f44f3e56278a72e470f7a4658758d220a1818 100644
 --- a/src/regexp/arm/regexp-macro-assembler-arm.h
 +++ b/src/regexp/arm/regexp-macro-assembler-arm.h
-@@ -5,8 +5,6 @@
+@@ -5,7 +5,6 @@
  #ifndef V8_REGEXP_ARM_REGEXP_MACRO_ASSEMBLER_ARM_H_
  #define V8_REGEXP_ARM_REGEXP_MACRO_ASSEMBLER_ARM_H_
  
--#include "src/base/strings.h"
 -#include "src/codegen/arm/assembler-arm.h"
  #include "src/codegen/macro-assembler.h"
  #include "src/regexp/regexp-macro-assembler.h"
  
-@@ -115,8 +113,14 @@ class V8_EXPORT_PRIVATE RegExpMacroAssemblerARM
+@@ -118,8 +117,14 @@ class V8_EXPORT_PRIVATE RegExpMacroAssemblerARM
    static const int kSuccessfulCaptures = kInputString - kPointerSize;
    static const int kStringStartMinusOne = kSuccessfulCaptures - kPointerSize;
    static const int kBacktrackCount = kStringStartMinusOne - kSystemPointerSize;
@@ -330,7 +329,7 @@ index a02a4dc2af546e53a89161aad9f3500a51c062f8..a76f9dea70264d79d57ebd6c60b100bc
  
    // Initial size of code buffer.
    static const int kRegExpCodeSize = 1024;
-@@ -129,7 +133,6 @@ class V8_EXPORT_PRIVATE RegExpMacroAssemblerARM
+@@ -132,7 +137,6 @@ class V8_EXPORT_PRIVATE RegExpMacroAssemblerARM
    // Check whether we are exceeding the stack limit on the backtrack stack.
    void CheckStackLimit();
  
@@ -338,7 +337,7 @@ index a02a4dc2af546e53a89161aad9f3500a51c062f8..a76f9dea70264d79d57ebd6c60b100bc
    // Generate a call to CheckStackGuardState.
    void CallCheckStackGuardState();
  
-@@ -138,27 +141,27 @@ class V8_EXPORT_PRIVATE RegExpMacroAssemblerARM
+@@ -141,27 +145,27 @@ class V8_EXPORT_PRIVATE RegExpMacroAssemblerARM
  
    // Register holding the current input position as negative offset from
    // the end of the string.
@@ -373,7 +372,7 @@ index a02a4dc2af546e53a89161aad9f3500a51c062f8..a76f9dea70264d79d57ebd6c60b100bc
  
    // Equivalent to a conditional branch to the label, unless the label
    // is nullptr, in which case it is a conditional Backtrack.
-@@ -178,19 +181,25 @@ class V8_EXPORT_PRIVATE RegExpMacroAssemblerARM
+@@ -181,19 +185,25 @@ class V8_EXPORT_PRIVATE RegExpMacroAssemblerARM
    // and increments it by a word size.
    inline void Pop(Register target);
  
@@ -403,7 +402,7 @@ index a02a4dc2af546e53a89161aad9f3500a51c062f8..a76f9dea70264d79d57ebd6c60b100bc
    // Labels used internally.
    Label entry_label_;
 diff --git a/src/regexp/arm64/regexp-macro-assembler-arm64.cc b/src/regexp/arm64/regexp-macro-assembler-arm64.cc
-index 67793ffc411ccb9c32f67fff393e6b77d094b325..6192461fa32879469d56d36fb788b5de33038d77 100644
+index 0441fe29763a02113b1c9184f312db6608d62647..2f064c0e1671f71fa877c3b67d3779e43483afa5 100644
 --- a/src/regexp/arm64/regexp-macro-assembler-arm64.cc
 +++ b/src/regexp/arm64/regexp-macro-assembler-arm64.cc
 @@ -113,6 +113,7 @@ RegExpMacroAssemblerARM64::RegExpMacroAssemblerARM64(Isolate* isolate,
@@ -423,7 +422,7 @@ index 67793ffc411ccb9c32f67fff393e6b77d094b325..6192461fa32879469d56d36fb788b5de
    DCHECK_EQ(0, registers_to_save % 2);
    // We can cache at most 16 W registers in x0-x7.
    STATIC_ASSERT(kNumCachedRegisters <= 16);
-@@ -699,6 +698,42 @@ void RegExpMacroAssemblerARM64::Fail() {
+@@ -716,6 +715,42 @@ void RegExpMacroAssemblerARM64::Fail() {
    __ B(&exit_label_);
  }
  
@@ -466,7 +465,7 @@ index 67793ffc411ccb9c32f67fff393e6b77d094b325..6192461fa32879469d56d36fb788b5de
  
  Handle<HeapObject> RegExpMacroAssemblerARM64::GetCode(Handle<String> source) {
    Label return_w0;
-@@ -744,22 +779,27 @@ Handle<HeapObject> RegExpMacroAssemblerARM64::GetCode(Handle<String> source) {
+@@ -761,22 +796,27 @@ Handle<HeapObject> RegExpMacroAssemblerARM64::GetCode(Handle<String> source) {
    __ Mov(input_end(), x3);
    __ Mov(output_array(), x4);
  
@@ -508,7 +507,7 @@ index 67793ffc411ccb9c32f67fff393e6b77d094b325..6192461fa32879469d56d36fb788b5de
  
    // Check if we have space on the stack.
    Label stack_limit_hit;
-@@ -839,9 +879,9 @@ Handle<HeapObject> RegExpMacroAssemblerARM64::GetCode(Handle<String> source) {
+@@ -856,9 +896,9 @@ Handle<HeapObject> RegExpMacroAssemblerARM64::GetCode(Handle<String> source) {
    }
  
    // Initialize backtrack stack pointer.
@@ -520,7 +519,7 @@ index 67793ffc411ccb9c32f67fff393e6b77d094b325..6192461fa32879469d56d36fb788b5de
    __ B(&start_label_);
  
    if (backtrack_label_.is_linked()) {
-@@ -1013,7 +1053,7 @@ Handle<HeapObject> RegExpMacroAssemblerARM64::GetCode(Handle<String> source) {
+@@ -1031,7 +1071,7 @@ Handle<HeapObject> RegExpMacroAssemblerARM64::GetCode(Handle<String> source) {
    }
  
    if (exit_label_.is_linked()) {
@@ -529,7 +528,7 @@ index 67793ffc411ccb9c32f67fff393e6b77d094b325..6192461fa32879469d56d36fb788b5de
      __ Bind(&exit_label_);
      if (global()) {
        __ Ldr(w0, MemOperand(frame_pointer(), kSuccessCounter));
-@@ -1021,8 +1061,11 @@ Handle<HeapObject> RegExpMacroAssemblerARM64::GetCode(Handle<String> source) {
+@@ -1039,8 +1079,11 @@ Handle<HeapObject> RegExpMacroAssemblerARM64::GetCode(Handle<String> source) {
    }
  
    __ Bind(&return_w0);
@@ -542,7 +541,7 @@ index 67793ffc411ccb9c32f67fff393e6b77d094b325..6192461fa32879469d56d36fb788b5de
    __ Mov(sp, fp);
    __ Pop<TurboAssembler::kAuthLR>(fp, lr);
  
-@@ -1039,6 +1082,9 @@ Handle<HeapObject> RegExpMacroAssemblerARM64::GetCode(Handle<String> source) {
+@@ -1057,6 +1100,9 @@ Handle<HeapObject> RegExpMacroAssemblerARM64::GetCode(Handle<String> source) {
  
    if (check_preempt_label_.is_linked()) {
      __ Bind(&check_preempt_label_);
@@ -552,7 +551,7 @@ index 67793ffc411ccb9c32f67fff393e6b77d094b325..6192461fa32879469d56d36fb788b5de
      SaveLinkRegister();
      // The cached registers need to be retained.
      __ PushCPURegList(cached_registers);
-@@ -1048,26 +1094,30 @@ Handle<HeapObject> RegExpMacroAssemblerARM64::GetCode(Handle<String> source) {
+@@ -1066,26 +1112,30 @@ Handle<HeapObject> RegExpMacroAssemblerARM64::GetCode(Handle<String> source) {
      __ Cbnz(w0, &return_w0);
      // Reset the cached registers.
      __ PopCPURegList(cached_registers);
@@ -594,7 +593,7 @@ index 67793ffc411ccb9c32f67fff393e6b77d094b325..6192461fa32879469d56d36fb788b5de
      __ Cbz(w0, &exit_with_exception);
      // Otherwise use return value as new stack pointer.
      __ Mov(backtrack_stackpointer(), x0);
-@@ -1191,14 +1241,29 @@ void RegExpMacroAssemblerARM64::ReadCurrentPositionFromRegister(int reg) {
+@@ -1209,14 +1259,29 @@ void RegExpMacroAssemblerARM64::ReadCurrentPositionFromRegister(int reg) {
    }
  }
  
@@ -626,7 +625,7 @@ index 67793ffc411ccb9c32f67fff393e6b77d094b325..6192461fa32879469d56d36fb788b5de
  void RegExpMacroAssemblerARM64::SetCurrentPositionFromEnd(int by) {
    Label after_position;
    __ Cmp(current_input_offset(), -by * char_size());
-@@ -1300,19 +1365,6 @@ void RegExpMacroAssemblerARM64::ClearRegisters(int reg_from, int reg_to) {
+@@ -1318,19 +1383,6 @@ void RegExpMacroAssemblerARM64::ClearRegisters(int reg_from, int reg_to) {
    }
  }
  
@@ -634,7 +633,7 @@ index 67793ffc411ccb9c32f67fff393e6b77d094b325..6192461fa32879469d56d36fb788b5de
 -void RegExpMacroAssemblerARM64::WriteStackPointerToRegister(int reg) {
 -  __ Ldr(x10, MemOperand(frame_pointer(), kStackBase));
 -  __ Sub(x10, backtrack_stackpointer(), x10);
--  if (FLAG_debug_code) {
+-  if (masm_->emit_debug_code()) {
 -    __ Cmp(x10, Operand(w10, SXTW));
 -    // The stack offset needs to fit in a W register.
 -    __ Check(eq, AbortReason::kOffsetOutOfRange);
@@ -647,10 +646,10 @@ index 67793ffc411ccb9c32f67fff393e6b77d094b325..6192461fa32879469d56d36fb788b5de
  template <typename T>
  static T& frame_entry(Address re_frame, int frame_offset) {
 diff --git a/src/regexp/arm64/regexp-macro-assembler-arm64.h b/src/regexp/arm64/regexp-macro-assembler-arm64.h
-index 80931e3ca42f7d85a3dea067ca203b252a0f78f0..204ee68dc868142693e9959170c71df3f72f97ce 100644
+index ad4695b164ee8777cd440e6e201fd4b57b573d42..c5249625928b2cd8d08da52c219075c79cdbf880 100644
 --- a/src/regexp/arm64/regexp-macro-assembler-arm64.h
 +++ b/src/regexp/arm64/regexp-macro-assembler-arm64.h
-@@ -110,18 +110,28 @@ class V8_EXPORT_PRIVATE RegExpMacroAssemblerARM64
+@@ -114,18 +114,28 @@ class V8_EXPORT_PRIVATE RegExpMacroAssemblerARM64
    // Below the frame pointer.
    // Register parameters stored by setup code.
    static const int kDirectCall = -kSystemPointerSize;
@@ -683,7 +682,7 @@ index 80931e3ca42f7d85a3dea067ca203b252a0f78f0..204ee68dc868142693e9959170c71df3
  
    // Initial size of code buffer.
    static const int kRegExpCodeSize = 1024;
-@@ -152,43 +162,43 @@ class V8_EXPORT_PRIVATE RegExpMacroAssemblerARM64
+@@ -156,43 +166,43 @@ class V8_EXPORT_PRIVATE RegExpMacroAssemblerARM64
  
    // Register holding the current input position as negative offset from
    // the end of the string.
@@ -739,7 +738,7 @@ index 80931e3ca42f7d85a3dea067ca203b252a0f78f0..204ee68dc868142693e9959170c71df3
  
    // Equivalent to a conditional branch to the label, unless the label
    // is nullptr, in which case it is a conditional Backtrack.
-@@ -254,19 +264,25 @@ class V8_EXPORT_PRIVATE RegExpMacroAssemblerARM64
+@@ -258,19 +268,25 @@ class V8_EXPORT_PRIVATE RegExpMacroAssemblerARM64
    // This assumes that the state of the register is not STACKED.
    inline Register GetCachedRegister(int register_index);
  
@@ -769,7 +768,7 @@ index 80931e3ca42f7d85a3dea067ca203b252a0f78f0..204ee68dc868142693e9959170c71df3
    // Labels used internally.
    Label entry_label_;
 diff --git a/src/regexp/ia32/regexp-macro-assembler-ia32.cc b/src/regexp/ia32/regexp-macro-assembler-ia32.cc
-index 6af1d02eed36af46a7e0d819d006361f51411ba6..51d63b2531e2bc85fb115de23d7b6a6f40b36f11 100644
+index 27c1300cedc09766b2f703320af13f4ff83ef52d..036fd62185f2b5338d512d7ea441a4c74f9727ee 100644
 --- a/src/regexp/ia32/regexp-macro-assembler-ia32.cc
 +++ b/src/regexp/ia32/regexp-macro-assembler-ia32.cc
 @@ -90,6 +90,7 @@ RegExpMacroAssemblerIA32::RegExpMacroAssemblerIA32(Isolate* isolate, Zone* zone,
@@ -790,7 +789,7 @@ index 6af1d02eed36af46a7e0d819d006361f51411ba6..51d63b2531e2bc85fb115de23d7b6a6f
    DCHECK_EQ(0, registers_to_save % 2);
    __ jmp(&entry_label_);   // We'll write the entry code later.
    __ bind(&start_label_);  // And then continue from here.
-@@ -655,6 +653,38 @@ void RegExpMacroAssemblerIA32::Fail() {
+@@ -668,6 +666,38 @@ void RegExpMacroAssemblerIA32::Fail() {
    __ jmp(&exit_label_);
  }
  
@@ -829,7 +828,7 @@ index 6af1d02eed36af46a7e0d819d006361f51411ba6..51d63b2531e2bc85fb115de23d7b6a6f
  
  Handle<HeapObject> RegExpMacroAssemblerIA32::GetCode(Handle<String> source) {
    Label return_eax;
-@@ -676,14 +706,23 @@ Handle<HeapObject> RegExpMacroAssemblerIA32::GetCode(Handle<String> source) {
+@@ -689,14 +719,23 @@ Handle<HeapObject> RegExpMacroAssemblerIA32::GetCode(Handle<String> source) {
    __ push(esi);
    __ push(edi);
    __ push(ebx);  // Callee-save on MacOS.
@@ -854,7 +853,7 @@ index 6af1d02eed36af46a7e0d819d006361f51411ba6..51d63b2531e2bc85fb115de23d7b6a6f
  
    // Check if we have space on the stack for registers.
    Label stack_limit_hit;
-@@ -769,7 +808,7 @@ Handle<HeapObject> RegExpMacroAssemblerIA32::GetCode(Handle<String> source) {
+@@ -782,7 +821,7 @@ Handle<HeapObject> RegExpMacroAssemblerIA32::GetCode(Handle<String> source) {
    }
  
    // Initialize backtrack stack pointer.
@@ -863,7 +862,7 @@ index 6af1d02eed36af46a7e0d819d006361f51411ba6..51d63b2531e2bc85fb115de23d7b6a6f
  
    __ jmp(&start_label_);
  
-@@ -855,8 +894,12 @@ Handle<HeapObject> RegExpMacroAssemblerIA32::GetCode(Handle<String> source) {
+@@ -868,8 +907,12 @@ Handle<HeapObject> RegExpMacroAssemblerIA32::GetCode(Handle<String> source) {
    }
  
    __ bind(&return_eax);
@@ -877,7 +876,7 @@ index 6af1d02eed36af46a7e0d819d006361f51411ba6..51d63b2531e2bc85fb115de23d7b6a6f
    // Restore callee-save registers.
    __ pop(ebx);
    __ pop(edi);
-@@ -877,7 +920,8 @@ Handle<HeapObject> RegExpMacroAssemblerIA32::GetCode(Handle<String> source) {
+@@ -890,7 +933,8 @@ Handle<HeapObject> RegExpMacroAssemblerIA32::GetCode(Handle<String> source) {
    if (check_preempt_label_.is_linked()) {
      SafeCallTarget(&check_preempt_label_);
  
@@ -887,7 +886,7 @@ index 6af1d02eed36af46a7e0d819d006361f51411ba6..51d63b2531e2bc85fb115de23d7b6a6f
      __ push(edi);
  
      CallCheckStackGuardState(ebx);
-@@ -887,7 +931,9 @@ Handle<HeapObject> RegExpMacroAssemblerIA32::GetCode(Handle<String> source) {
+@@ -900,7 +944,9 @@ Handle<HeapObject> RegExpMacroAssemblerIA32::GetCode(Handle<String> source) {
      __ j(not_zero, &return_eax);
  
      __ pop(edi);
@@ -898,7 +897,7 @@ index 6af1d02eed36af46a7e0d819d006361f51411ba6..51d63b2531e2bc85fb115de23d7b6a6f
      // String might have moved: Reload esi from frame.
      __ mov(esi, Operand(ebp, kInputEnd));
      SafeReturn();
-@@ -898,21 +944,19 @@ Handle<HeapObject> RegExpMacroAssemblerIA32::GetCode(Handle<String> source) {
+@@ -911,21 +957,19 @@ Handle<HeapObject> RegExpMacroAssemblerIA32::GetCode(Handle<String> source) {
      SafeCallTarget(&stack_overflow_label_);
      // Reached if the backtrack-stack limit has been hit.
  
@@ -929,7 +928,7 @@ index 6af1d02eed36af46a7e0d819d006361f51411ba6..51d63b2531e2bc85fb115de23d7b6a6f
      // If return nullptr, we have failed to grow the stack, and
      // must exit with a stack-overflow exception.
      __ or_(eax, eax);
-@@ -1019,10 +1063,21 @@ void RegExpMacroAssemblerIA32::ReadCurrentPositionFromRegister(int reg) {
+@@ -1032,10 +1076,21 @@ void RegExpMacroAssemblerIA32::ReadCurrentPositionFromRegister(int reg) {
    __ mov(edi, register_location(reg));
  }
  
@@ -953,7 +952,7 @@ index 6af1d02eed36af46a7e0d819d006361f51411ba6..51d63b2531e2bc85fb115de23d7b6a6f
  }
  
  void RegExpMacroAssemblerIA32::SetCurrentPositionFromEnd(int by)  {
-@@ -1069,14 +1124,6 @@ void RegExpMacroAssemblerIA32::ClearRegisters(int reg_from, int reg_to) {
+@@ -1082,14 +1137,6 @@ void RegExpMacroAssemblerIA32::ClearRegisters(int reg_from, int reg_to) {
    }
  }
  
@@ -969,10 +968,10 @@ index 6af1d02eed36af46a7e0d819d006361f51411ba6..51d63b2531e2bc85fb115de23d7b6a6f
  
  void RegExpMacroAssemblerIA32::CallCheckStackGuardState(Register scratch) {
 diff --git a/src/regexp/ia32/regexp-macro-assembler-ia32.h b/src/regexp/ia32/regexp-macro-assembler-ia32.h
-index 93fb2c9aba32ab48e335c41dd9dbe0bac94d73ed..861795da900d91111386e4f8e660f7f94ea46a33 100644
+index 0cb29979d7e3552162a63029a33b29dd12394de6..f02cb564ad507f95c688fbcdad6db4ed47f85c11 100644
 --- a/src/regexp/ia32/regexp-macro-assembler-ia32.h
 +++ b/src/regexp/ia32/regexp-macro-assembler-ia32.h
-@@ -114,12 +114,20 @@ class V8_EXPORT_PRIVATE RegExpMacroAssemblerIA32
+@@ -116,12 +116,20 @@ class V8_EXPORT_PRIVATE RegExpMacroAssemblerIA32
    static const int kBackup_esi = kFramePointer - kSystemPointerSize;
    static const int kBackup_edi = kBackup_esi - kSystemPointerSize;
    static const int kBackup_ebx = kBackup_edi - kSystemPointerSize;
@@ -995,7 +994,7 @@ index 93fb2c9aba32ab48e335c41dd9dbe0bac94d73ed..861795da900d91111386e4f8e660f7f9
  
    // Initial size of code buffer.
    static const int kRegExpCodeSize = 1024;
-@@ -137,14 +145,14 @@ class V8_EXPORT_PRIVATE RegExpMacroAssemblerIA32
+@@ -139,14 +147,14 @@ class V8_EXPORT_PRIVATE RegExpMacroAssemblerIA32
    Operand register_location(int register_index);
  
    // The register containing the current character after LoadCurrentCharacter.
@@ -1013,7 +1012,7 @@ index 93fb2c9aba32ab48e335c41dd9dbe0bac94d73ed..861795da900d91111386e4f8e660f7f9
  
    // Equivalent to a conditional branch to the label, unless the label
    // is nullptr, in which case it is a conditional Backtrack.
-@@ -168,19 +176,25 @@ class V8_EXPORT_PRIVATE RegExpMacroAssemblerIA32
+@@ -170,19 +178,25 @@ class V8_EXPORT_PRIVATE RegExpMacroAssemblerIA32
    // (ecx) and increments it by a word size.
    inline void Pop(Register target);
  
@@ -1044,10 +1043,10 @@ index 93fb2c9aba32ab48e335c41dd9dbe0bac94d73ed..861795da900d91111386e4f8e660f7f9
    // Labels used internally.
    Label entry_label_;
 diff --git a/src/regexp/regexp-macro-assembler.cc b/src/regexp/regexp-macro-assembler.cc
-index 891079b357a0191e20ea31b68df3a123b4d1b8d2..1f5875afb8850da4136da6633d5b0ad9f52803e3 100644
+index db45e21ca0424d102a6f48df5d5a0f4a756d965a..0275558eba45d6090f61f51c3de08f81481c1aee 100644
 --- a/src/regexp/regexp-macro-assembler.cc
 +++ b/src/regexp/regexp-macro-assembler.cc
-@@ -308,7 +308,7 @@ int NativeRegExpMacroAssembler::Execute(
+@@ -302,7 +302,7 @@ int NativeRegExpMacroAssembler::Execute(
      int* output, int output_size, Isolate* isolate, JSRegExp regexp) {
    // Ensure that the minimum stack has been allocated.
    RegExpStackScope stack_scope(isolate);
@@ -1055,8 +1054,8 @@ index 891079b357a0191e20ea31b68df3a123b4d1b8d2..1f5875afb8850da4136da6633d5b0ad9
 +  Address stack_base = stack_scope.stack()->memory_top();
  
    bool is_one_byte = String::IsOneByteRepresentationUnderneath(input);
-   Code code = FromCodeT(CodeT::cast(regexp.Code(is_one_byte)));
-@@ -382,22 +382,23 @@ const byte NativeRegExpMacroAssembler::word_character_map[] = {
+   Code code = Code::cast(regexp.Code(is_one_byte));
+@@ -377,22 +377,23 @@ const byte NativeRegExpMacroAssembler::word_character_map[] = {
  };
  // clang-format on
  
@@ -1096,10 +1095,10 @@ index 891079b357a0191e20ea31b68df3a123b4d1b8d2..1f5875afb8850da4136da6633d5b0ad9
  
  }  // namespace internal
 diff --git a/src/regexp/regexp-macro-assembler.h b/src/regexp/regexp-macro-assembler.h
-index 9bd9ba615e32ad9e34e246a7c4788fdf89375476..af3cc2f5caab97a3a57589d0c54011c07269227f 100644
+index 789624299b4bd5b0b570573258526e55c4236339..f8bf728f27029777fa0c19b8c4da9a887fe8fe4f 100644
 --- a/src/regexp/regexp-macro-assembler.h
 +++ b/src/regexp/regexp-macro-assembler.h
-@@ -281,13 +281,11 @@ class NativeRegExpMacroAssembler: public RegExpMacroAssembler {
+@@ -280,13 +280,11 @@ class NativeRegExpMacroAssembler: public RegExpMacroAssembler {
                     int* offsets_vector, int offsets_vector_length,
                     int previous_index, Isolate* isolate);
  
@@ -1337,7 +1336,7 @@ index adca683ff890c82d7cfdf9e10c7a5d7e78d2d650..d52ca3e1d079d8953a753e2db1e835f2
  };
  
 diff --git a/src/regexp/x64/regexp-macro-assembler-x64.cc b/src/regexp/x64/regexp-macro-assembler-x64.cc
-index 6f0cb53e8f52e4cad5997993b7fb00f2d8b8127a..abcbed18aaa9bdc4a497962714bffde74d581173 100644
+index 79574ca9932868db40ce9d7f7478a14bed7dac37..42b79f1a9fd0e296ace1148dacedb4ff474a4139 100644
 --- a/src/regexp/x64/regexp-macro-assembler-x64.cc
 +++ b/src/regexp/x64/regexp-macro-assembler-x64.cc
 @@ -6,13 +6,13 @@
@@ -1356,7 +1355,7 @@ index 6f0cb53e8f52e4cad5997993b7fb00f2d8b8127a..abcbed18aaa9bdc4a497962714bffde7
  
  namespace v8 {
  namespace internal {
-@@ -664,31 +664,64 @@ void RegExpMacroAssemblerX64::Fail() {
+@@ -677,31 +677,64 @@ void RegExpMacroAssemblerX64::Fail() {
    __ jmp(&exit_label_);
  }
  
@@ -1432,7 +1431,7 @@ index 6f0cb53e8f52e4cad5997993b7fb00f2d8b8127a..abcbed18aaa9bdc4a497962714bffde7
    __ pushq(rsi);
    __ pushq(rdi);
    __ pushq(rbx);
-@@ -701,14 +734,15 @@ Handle<HeapObject> RegExpMacroAssemblerX64::GetCode(Handle<String> source) {
+@@ -714,14 +747,15 @@ Handle<HeapObject> RegExpMacroAssemblerX64::GetCode(Handle<String> source) {
    DCHECK_EQ(kInputEnd, -4 * kSystemPointerSize);
    DCHECK_EQ(kRegisterOutput, -5 * kSystemPointerSize);
    DCHECK_EQ(kNumOutputRegisters, -6 * kSystemPointerSize);
@@ -1453,7 +1452,7 @@ index 6f0cb53e8f52e4cad5997993b7fb00f2d8b8127a..abcbed18aaa9bdc4a497962714bffde7
  #endif
  
    STATIC_ASSERT(kSuccessfulCaptures ==
-@@ -719,6 +753,13 @@ Handle<HeapObject> RegExpMacroAssemblerX64::GetCode(Handle<String> source) {
+@@ -732,6 +766,13 @@ Handle<HeapObject> RegExpMacroAssemblerX64::GetCode(Handle<String> source) {
    __ Push(Immediate(0));  // Make room for "string start - 1" constant.
    STATIC_ASSERT(kBacktrackCount == kStringStartMinusOne - kSystemPointerSize);
    __ Push(Immediate(0));  // The backtrack counter.
@@ -1467,7 +1466,7 @@ index 6f0cb53e8f52e4cad5997993b7fb00f2d8b8127a..abcbed18aaa9bdc4a497962714bffde7
  
    // Check if we have space on the stack for registers.
    Label stack_limit_hit;
-@@ -808,7 +849,9 @@ Handle<HeapObject> RegExpMacroAssemblerX64::GetCode(Handle<String> source) {
+@@ -821,7 +862,9 @@ Handle<HeapObject> RegExpMacroAssemblerX64::GetCode(Handle<String> source) {
    }
  
    // Initialize backtrack stack pointer.
@@ -1478,7 +1477,7 @@ index 6f0cb53e8f52e4cad5997993b7fb00f2d8b8127a..abcbed18aaa9bdc4a497962714bffde7
  
    __ jmp(&start_label_);
  
-@@ -894,19 +937,26 @@ Handle<HeapObject> RegExpMacroAssemblerX64::GetCode(Handle<String> source) {
+@@ -907,19 +950,26 @@ Handle<HeapObject> RegExpMacroAssemblerX64::GetCode(Handle<String> source) {
    }
  
    __ bind(&return_rax);
@@ -1505,7 +1504,7 @@ index 6f0cb53e8f52e4cad5997993b7fb00f2d8b8127a..abcbed18aaa9bdc4a497962714bffde7
    // Exit function frame, restore previous one.
    __ popq(rbp);
    __ ret(0);
-@@ -923,9 +973,10 @@ Handle<HeapObject> RegExpMacroAssemblerX64::GetCode(Handle<String> source) {
+@@ -936,9 +986,10 @@ Handle<HeapObject> RegExpMacroAssemblerX64::GetCode(Handle<String> source) {
    if (check_preempt_label_.is_linked()) {
      SafeCallTarget(&check_preempt_label_);
  
@@ -1517,7 +1516,7 @@ index 6f0cb53e8f52e4cad5997993b7fb00f2d8b8127a..abcbed18aaa9bdc4a497962714bffde7
      CallCheckStackGuardState();
      __ testq(rax, rax);
      // If returning non-zero, we should end execution with the given
-@@ -935,7 +986,9 @@ Handle<HeapObject> RegExpMacroAssemblerX64::GetCode(Handle<String> source) {
+@@ -948,7 +999,9 @@ Handle<HeapObject> RegExpMacroAssemblerX64::GetCode(Handle<String> source) {
      // Restore registers.
      __ Move(code_object_pointer(), masm_.CodeObject());
      __ popq(rdi);
@@ -1528,7 +1527,7 @@ index 6f0cb53e8f52e4cad5997993b7fb00f2d8b8127a..abcbed18aaa9bdc4a497962714bffde7
      // String might have moved: Reload esi from frame.
      __ movq(rsi, Operand(rbp, kInputEnd));
      SafeReturn();
-@@ -953,25 +1006,19 @@ Handle<HeapObject> RegExpMacroAssemblerX64::GetCode(Handle<String> source) {
+@@ -966,25 +1019,19 @@ Handle<HeapObject> RegExpMacroAssemblerX64::GetCode(Handle<String> source) {
      __ pushq(rdi);
  #endif
  
@@ -1565,7 +1564,7 @@ index 6f0cb53e8f52e4cad5997993b7fb00f2d8b8127a..abcbed18aaa9bdc4a497962714bffde7
      __ testq(rax, rax);
      __ j(equal, &exit_with_exception);
      // Otherwise use return value as new stack pointer.
-@@ -1085,13 +1132,25 @@ void RegExpMacroAssemblerX64::ReadPositionFromRegister(Register dst, int reg) {
+@@ -1098,13 +1145,25 @@ void RegExpMacroAssemblerX64::ReadPositionFromRegister(Register dst, int reg) {
    __ movq(dst, register_location(reg));
  }
  
@@ -1594,7 +1593,7 @@ index 6f0cb53e8f52e4cad5997993b7fb00f2d8b8127a..abcbed18aaa9bdc4a497962714bffde7
  void RegExpMacroAssemblerX64::SetCurrentPositionFromEnd(int by) {
    Label after_position;
    __ cmpq(rdi, Immediate(-by * char_size()));
-@@ -1136,14 +1195,6 @@ void RegExpMacroAssemblerX64::ClearRegisters(int reg_from, int reg_to) {
+@@ -1149,14 +1208,6 @@ void RegExpMacroAssemblerX64::ClearRegisters(int reg_from, int reg_to) {
    }
  }
  
@@ -1610,20 +1609,18 @@ index 6f0cb53e8f52e4cad5997993b7fb00f2d8b8127a..abcbed18aaa9bdc4a497962714bffde7
  
  void RegExpMacroAssemblerX64::CallCheckStackGuardState() {
 diff --git a/src/regexp/x64/regexp-macro-assembler-x64.h b/src/regexp/x64/regexp-macro-assembler-x64.h
-index c3a3cb90f2a9d865057af80801e2a95bbb873140..74a3c95b06c771078ab03e6787e5912315421bb2 100644
+index 517a05d93900bd4d13b68e0e2b48061d4801f397..ff9ce0a43daa591343e8cebb25b5fdda8190a222 100644
 --- a/src/regexp/x64/regexp-macro-assembler-x64.h
 +++ b/src/regexp/x64/regexp-macro-assembler-x64.h
-@@ -5,9 +5,7 @@
- #ifndef V8_REGEXP_X64_REGEXP_MACRO_ASSEMBLER_X64_H_
+@@ -6,7 +6,6 @@
  #define V8_REGEXP_X64_REGEXP_MACRO_ASSEMBLER_X64_H_
  
--#include "src/base/strings.h"
  #include "src/codegen/macro-assembler.h"
 -#include "src/codegen/x64/assembler-x64.h"
  #include "src/regexp/regexp-macro-assembler.h"
  #include "src/zone/zone-chunk-list.h"
  
-@@ -133,18 +131,17 @@ class V8_EXPORT_PRIVATE RegExpMacroAssemblerX64
+@@ -130,18 +129,17 @@ class V8_EXPORT_PRIVATE RegExpMacroAssemblerX64
    static const int kIsolate = kDirectCall + kSystemPointerSize;
  #endif
  
@@ -1646,7 +1643,7 @@ index c3a3cb90f2a9d865057af80801e2a95bbb873140..74a3c95b06c771078ab03e6787e59123
    static const int kLastCalleeSaveRegister = kBackup_rbx;
  #endif
  
-@@ -155,9 +152,14 @@ class V8_EXPORT_PRIVATE RegExpMacroAssemblerX64
+@@ -152,9 +150,14 @@ class V8_EXPORT_PRIVATE RegExpMacroAssemblerX64
    static const int kStringStartMinusOne =
        kSuccessfulCaptures - kSystemPointerSize;
    static const int kBacktrackCount = kStringStartMinusOne - kSystemPointerSize;
@@ -1662,7 +1659,7 @@ index c3a3cb90f2a9d865057af80801e2a95bbb873140..74a3c95b06c771078ab03e6787e59123
  
    // Initial size of code buffer.
    static const int kRegExpCodeSize = 1024;
-@@ -175,14 +177,14 @@ class V8_EXPORT_PRIVATE RegExpMacroAssemblerX64
+@@ -172,14 +175,14 @@ class V8_EXPORT_PRIVATE RegExpMacroAssemblerX64
    Operand register_location(int register_index);
  
    // The register containing the current character after LoadCurrentCharacter.
@@ -1680,7 +1677,7 @@ index c3a3cb90f2a9d865057af80801e2a95bbb873140..74a3c95b06c771078ab03e6787e59123
  
    // Byte size of chars in the string to match (decided by the Mode argument)
    inline int char_size() { return static_cast<int>(mode_); }
-@@ -224,24 +226,36 @@ class V8_EXPORT_PRIVATE RegExpMacroAssemblerX64
+@@ -221,24 +224,36 @@ class V8_EXPORT_PRIVATE RegExpMacroAssemblerX64
    // Increments the stack pointer (rcx) by a word size.
    inline void Drop();
  
@@ -1721,13 +1718,13 @@ index c3a3cb90f2a9d865057af80801e2a95bbb873140..74a3c95b06c771078ab03e6787e59123
    // Labels used internally.
    Label entry_label_;
 diff --git a/test/cctest/cctest.status b/test/cctest/cctest.status
-index 9c28520ed56998173c105b9d8a2ca3c4489b916e..e092d3b74c79d5dfc2bbf056881164c16ebb7cda 100644
+index d6691b5e861d29100d0f1c15c887dd824f3929cb..8f6df5f58a2989068b4aec95a8ed7e0343e4ded4 100644
 --- a/test/cctest/cctest.status
 +++ b/test/cctest/cctest.status
-@@ -136,9 +136,6 @@
-   'test-strings/Traverse': [PASS, HEAVY],
-   'test-swiss-name-dictionary-csa/DeleteAtBoundaries': [PASS, HEAVY],
-   'test-swiss-name-dictionary-csa/SameH2': [PASS, HEAVY],
+@@ -126,9 +126,6 @@
+   'test-strings/StringOOM*': [PASS, ['mode == debug', SKIP]],
+   'test-serialize/CustomSnapshotDataBlobImmortalImmovableRoots': [PASS, ['mode == debug', SKIP]],
+   'test-parsing/ObjectRestNegativeTestSlow': [PASS, ['mode == debug', SKIP]],
 -
 -  # TODO(v8:11382): Reenable once irregexp is reentrant.
 -  'test-regexp/RegExpInterruptReentrantExecution': [FAIL],
