@@ -102,10 +102,6 @@ const device::mojom::HidDeviceInfo* ElectronHidDelegate::GetDeviceInfo(
   return chooser_context->GetDeviceInfo(guid);
 }
 
-bool ElectronHidDelegate::IsFidoAllowedForOrigin(const url::Origin& origin) {
-  return false;
-}
-
 void ElectronHidDelegate::OnDeviceAdded(
     const device::mojom::HidDeviceInfo& device_info) {
   for (auto& observer : observer_list_)
