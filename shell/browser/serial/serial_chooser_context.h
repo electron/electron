@@ -30,6 +30,20 @@ class Value;
 
 namespace electron {
 
+extern const char kHidVendorIdKey[];
+extern const char kHidProductIdKey[];
+
+#if defined(OS_WIN)
+extern const char kDeviceInstanceIdKey[];
+#else
+extern const char kVendorIdKey[];
+extern const char kProductIdKey[];
+extern const char kSerialNumberKey[];
+#if defined(OS_MAC)
+extern const char kUsbDriverKey[];
+#endif  // defined(OS_MAC)
+#endif  // defined(OS_WIN)
+
 class SerialChooserContext : public KeyedService,
                              public device::mojom::SerialPortManagerClient {
  public:
@@ -39,12 +53,12 @@ class SerialChooserContext : public KeyedService,
   ~SerialChooserContext() override;
 
   // Serial-specific interface for granting and checking permissions.
-  void GrantPortPermission(const url::Origin& requesting_origin,
-                           const url::Origin& embedding_origin,
-                           const device::mojom::SerialPortInfo& port);
-  bool HasPortPermission(const url::Origin& requesting_origin,
-                         const url::Origin& embedding_origin,
-                         const device::mojom::SerialPortInfo& port);
+  void GrantPortPermission(const url::Origin& origin,
+                           const device::mojom::SerialPortInfo& port,
+                           content::RenderFrameHost* render_frame_host);
+  bool HasPortPermission(const url::Origin& origin,
+                         const device::mojom::SerialPortInfo& port,
+                         content::RenderFrameHost* render_frame_host);
   static bool CanStorePersistentEntry(
       const device::mojom::SerialPortInfo& port);
 
@@ -69,11 +83,8 @@ class SerialChooserContext : public KeyedService,
                   blink::mojom::SerialService::GetPortsCallback callback,
                   std::vector<device::mojom::SerialPortInfoPtr> ports);
 
-  // Tracks the set of ports to which an origin (potentially embedded in another
-  // origin) has access to. Key is (requesting_origin, embedding_origin).
-  std::map<std::pair<url::Origin, url::Origin>,
-           std::set<base::UnguessableToken>>
-      ephemeral_ports_;
+  // Tracks the set of ports to which an origin has access to.
+  std::map<url::Origin, std::set<base::UnguessableToken>> ephemeral_ports_;
 
   // Holds information about ports in |ephemeral_ports_|.
   std::map<base::UnguessableToken, base::Value> port_info_;
