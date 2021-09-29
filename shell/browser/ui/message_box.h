@@ -38,6 +38,7 @@ struct MessageBoxSettings {
   std::string checkbox_label;
   bool checkbox_checked = false;
   gfx::ImageSkia icon;
+  int text_width = 0;
 
   MessageBoxSettings();
   MessageBoxSettings(const MessageBoxSettings&);
