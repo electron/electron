@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'">
+    <title>WebHID API</title>
+  </head>
+  <body>
+    <h1>WebHID API</h1>
+
+    <button id="clickme">Test WebHID</button>
+
+    <h3>HID devices automatically granted access via <i>setDevicePermissionHandler</i></h3>
+    <div id="granted-devices"></div>
+    
+    <h3>HID devices automatically granted access via <i>select-hid-device</i></h3>
+    <div id="granted-devices2"></div>
+
+    <script src="./renderer.js"></script>
+  </body>
+</html>
