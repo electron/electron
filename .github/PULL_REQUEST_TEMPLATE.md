@@ -3,7 +3,7 @@
 Thank you for your Pull Request. Please provide a description above and review
 the requirements below.
 
-Contributors guide: https://github.com/electron/electron/blob/master/CONTRIBUTING.md
+Contributors guide: https://github.com/electron/electron/blob/main/CONTRIBUTING.md
 -->
 
 #### Checklist
@@ -11,7 +11,7 @@ Contributors guide: https://github.com/electron/electron/blob/master/CONTRIBUTIN
 
 - [ ] PR description included and stakeholders cc'd
 - [ ] `npm test` passes
-- [ ] tests are [changed or added](https://github.com/electron/electron/blob/master/docs/development/testing.md)
+- [ ] tests are [changed or added](https://github.com/electron/electron/blob/main/docs/development/testing.md)
 - [ ] relevant documentation is changed or added
 - [ ] [PR release notes](https://github.com/electron/clerk/blob/master/README.md) describe the change in a way relevant to app developers, and are [capitalized, punctuated, and past tense](https://github.com/electron/clerk/blob/master/README.md#examples).
 
