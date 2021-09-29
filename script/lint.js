@@ -29,8 +29,21 @@ const IS_WINDOWS = process.platform === 'win32';
 
 function spawnAndCheckExitCode (cmd, args, opts) {
   opts = Object.assign({ stdio: 'inherit' }, opts);
-  const status = childProcess.spawnSync(cmd, args, opts).status;
-  if (status) process.exit(status);
+  const { error, status, signal } = childProcess.spawnSync(cmd, args, opts);
+  if (error) {
+    // the subsprocess failed or timed out
+    console.error(error);
+    process.exit(1);
+  }
+  if (status === null) {
+    // the subprocess terminated due to a signal
+    console.error(signal);
+    process.exit(1);
+  }
+  if (status !== 0) {
+    // `status` is an exit code
+    process.exit(status);
+  }
 }
 
 function cpplint (args) {
@@ -91,7 +104,7 @@ const LINTERS = [{
     const rcfile = path.join(DEPOT_TOOLS, 'pylintrc');
     const args = ['--rcfile=' + rcfile, ...filenames];
     const env = Object.assign({ PYTHONPATH: path.join(SOURCE_ROOT, 'script') }, process.env);
-    spawnAndCheckExitCode('pylint.py', args, { env });
+    spawnAndCheckExitCode('pylint', args, { env });
   }
 }, {
   key: 'javascript',
