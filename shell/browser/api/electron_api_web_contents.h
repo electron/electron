@@ -457,7 +457,7 @@ class WebContents : public gin::Wrappable<WebContents>,
 
   // Creates a InspectableWebContents object and takes ownership of
   // |web_contents|.
-  void InitWithWebContents(content::WebContents* web_contents,
+  void InitWithWebContents(std::unique_ptr<content::WebContents> web_contents,
                            ElectronBrowserContext* browser_context,
                            bool is_guest);
 
