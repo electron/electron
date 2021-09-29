@@ -8,8 +8,6 @@
 #include <map>
 #include <string>
 
-#include "gin/wrappable.h"
-
 namespace base {
 class CommandLine;
 }
@@ -24,8 +22,6 @@ void GetCrashKeys(std::map<std::string, std::string>* keys);
 
 void SetCrashKeysFromCommandLine(const base::CommandLine& command_line);
 void SetPlatformCrashKey();
-
-std::string GetCrashValueForGinWrappable(gin::WrapperInfo* info);
 
 }  // namespace crash_keys
 
