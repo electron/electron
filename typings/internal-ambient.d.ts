@@ -42,9 +42,6 @@ declare namespace NodeJS {
     setHiddenValue<T>(obj: any, key: string, value: T): void;
     deleteHiddenValue(obj: any, key: string): void;
     requestGarbageCollectionForTesting(): void;
-    weaklyTrackValue(value: any): void;
-    clearWeaklyTrackedValues(): void;
-    getWeaklyTrackedValues(): any[];
     addRemoteObjectRef(contextId: string, id: number): void;
     runUntilIdle(): void;
     isSameOrigin(a: string, b: string): boolean;
