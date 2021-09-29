@@ -133,10 +133,8 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("requestGarbageCollectionForTesting",
                  &RequestGarbageCollectionForTesting);
   dict.SetMethod("isSameOrigin", &IsSameOrigin);
-#if DCHECK_IS_ON()
   dict.SetMethod("triggerFatalErrorForTesting", &TriggerFatalErrorForTesting);
   dict.SetMethod("runUntilIdle", &RunUntilIdle);
-#endif
 }
 
 }  // namespace
