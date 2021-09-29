@@ -10,6 +10,7 @@
 
 #include "base/macros.h"
 #include "base/memory/weak_ptr.h"
+#include "content/public/browser/global_routing_id.h"
 #include "content/public/browser/serial_chooser.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_observer.h"
@@ -53,14 +54,15 @@ class SerialChooserController final : public SerialChooserContext::PortObserver,
 
   std::vector<blink::mojom::SerialPortFilterPtr> filters_;
   content::SerialChooser::Callback callback_;
-  url::Origin requesting_origin_;
-  url::Origin embedding_origin_;
+  url::Origin origin_;
 
   base::WeakPtr<SerialChooserContext> chooser_context_;
 
   std::vector<device::mojom::SerialPortInfoPtr> ports_;
 
   base::WeakPtr<ElectronSerialDelegate> serial_delegate_;
+
+  content::GlobalFrameRoutingId render_frame_host_id_;
 
   base::WeakPtrFactory<SerialChooserController> weak_factory_{this};
 
