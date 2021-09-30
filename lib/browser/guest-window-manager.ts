@@ -64,7 +64,7 @@ export function openGuestWindow ({ event, embedder, guest, referrer, disposition
   // spec parlance) will reuse the previous window.
   // https://html.spec.whatwg.org/multipage/window-object.html#apis-for-creating-and-navigating-browsing-contexts-by-name
   const existingWindow = getGuestWindowByFrameName(frameName);
-  if (existingWindow) {
+  if (existingWindow && !existingWindow.isDestroyed()) {
     existingWindow.loadURL(url);
     return existingWindow;
   }
