@@ -38,6 +38,10 @@ gfx::Size WinCaptionButton::CalculatePreferredSize() const {
   // TODO(bsep): The sizes in this function are for 1x device scale and don't
   // match Windows button sizes at hidpi.
   int height = WindowFrameUtil::kWindows10GlassCaptionButtonHeightRestored;
+  int custom_height = frame_view_->window()->titlebar_overlay_height();
+  if (custom_height > 0)
+    height = custom_height;
+
   int base_width = WindowFrameUtil::kWindows10GlassCaptionButtonWidth;
   return gfx::Size(base_width + GetBetweenButtonSpacing(), height);
 }

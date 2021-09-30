@@ -36,6 +36,9 @@ const char kRoundedCorners[] = "roundedCorners";
 const char kOverlayButtonColor[] = "color";
 const char kOverlaySymbolColor[] = "symbolColor";
 
+// The custom height for Window Controls Overlay.
+const char kOverlayHeight[] = "height";
+
 // Whether the window should show in taskbar.
 const char kSkipTaskbar[] = "skipTaskbar";
 

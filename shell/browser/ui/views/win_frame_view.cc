@@ -196,8 +196,10 @@ int WinFrameView::TitlebarMaximizedVisualHeight() const {
 int WinFrameView::TitlebarHeight(bool restored) const {
   if (frame()->IsFullscreen() && !restored)
     return 0;
-
-  return TitlebarMaximizedVisualHeight() + FrameTopBorderThickness(false);
+  int custom_height = window()->titlebar_overlay_height();
+  if (custom_height > 0)
+    return custom_height + FrameTopBorderThickness(true);
+  return TitlebarMaximizedVisualHeight() + FrameTopBorderThickness(true);
 }
 
 int WinFrameView::WindowTopY() const {
@@ -227,8 +229,13 @@ void WinFrameView::LayoutCaptionButtons() {
       caption_button_container_->GetPreferredSize();
   int height = preferred_size.height();
 
-  height = IsMaximized() ? TitlebarMaximizedVisualHeight()
-                         : TitlebarHeight(false) - WindowTopY();
+  int custom_height = window()->titlebar_overlay_height();
+  if (custom_height > 0) {
+    height = IsMaximized() ? custom_height : custom_height - WindowTopY();
+  } else {
+    height = IsMaximized() ? TitlebarMaximizedVisualHeight()
+                           : TitlebarHeight(true) - WindowTopY();
+  }
 
   // TODO(mlaurencin): This -1 creates a 1 pixel gap between the right
   // edge of the overlay and the edge of the window, allowing for this edge
@@ -242,7 +249,10 @@ void WinFrameView::LayoutCaptionButtons() {
 }
 
 void WinFrameView::LayoutWindowControlsOverlay() {
-  int overlay_height = caption_button_container_->size().height();
+  int overlay_height = window()->titlebar_overlay_height();
+  if (overlay_height == 0) {
+    overlay_height = caption_button_container_->size().height();
+  }
   int overlay_width = caption_button_container_->size().width();
   int bounding_rect_width = width() - overlay_width;
   auto bounding_rect =

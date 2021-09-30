@@ -184,6 +184,10 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
         gin::Dictionary::CreateEmpty(isolate);
     options.Get(options::ktitleBarOverlay, &titlebar_overlay_obj);
 
+    int height;
+    if (titlebar_overlay_obj.Get(options::kOverlayHeight, &height))
+      titlebar_overlay_height_ = height;
+
     std::string overlay_color_string;
     if (titlebar_overlay_obj.Get(options::kOverlayButtonColor,
                                  &overlay_color_string)) {
