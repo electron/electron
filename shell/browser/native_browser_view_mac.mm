@@ -63,6 +63,10 @@ const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
       [self.window respondsToSelector:@selector(performWindowDragWithEvent:)];
 }
 
+- (BOOL)acceptsFirstMouse:(NSEvent*)event {
+  return YES;
+}
+
 - (BOOL)shouldIgnoreMouseEvent {
   NSEventType type = [[NSApp currentEvent] type];
   return type != NSEventTypeLeftMouseDragged &&
