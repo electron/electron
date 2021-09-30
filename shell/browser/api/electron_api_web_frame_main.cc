@@ -6,7 +6,6 @@
 
 #include <string>
 #include <unordered_map>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -291,10 +290,15 @@ std::vector<content::RenderFrameHost*> WebFrameMain::Frames() const {
   if (!CheckRenderFrame())
     return frame_hosts;
 
-  for (auto* rfh : FramesInSubtree()) {
-    if (rfh->GetParent() == render_frame_)
-      frame_hosts.push_back(rfh);
-  }
+  render_frame_->ForEachRenderFrameHost(base::BindRepeating(
+      [](std::vector<content::RenderFrameHost*>* frame_hosts,
+         content::RenderFrameHost* current_frame,
+         content::RenderFrameHost* rfh) {
+        if (rfh->GetParent() == current_frame)
+          frame_hosts->push_back(rfh);
+      },
+      &frame_hosts, render_frame_));
+
   return frame_hosts;
 }
 
@@ -303,14 +307,10 @@ std::vector<content::RenderFrameHost*> WebFrameMain::FramesInSubtree() const {
   if (!CheckRenderFrame())
     return frame_hosts;
 
-  auto append_frame = [](std::unordered_set<content::RenderFrameHost*>* frames,
-                         content::RenderFrameHost* frame) {
-    frames->insert(frame);
-  };
-  std::unordered_set<content::RenderFrameHost*> hosts;
-  render_frame_->ForEachRenderFrameHost(
-      base::BindRepeating(append_frame, &hosts));
-  frame_hosts.assign(std::begin(hosts), std::end(hosts));
+  render_frame_->ForEachRenderFrameHost(base::BindRepeating(
+      [](std::vector<content::RenderFrameHost*>* frame_hosts,
+         content::RenderFrameHost* rfh) { frame_hosts->push_back(rfh); },
+      &frame_hosts));
 
   return frame_hosts;
 }
