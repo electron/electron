@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { globalShortcut } from 'electron/main';
+import { globalShortcut, BrowserWindow } from 'electron/main';
 import { ifdescribe } from './spec-helpers';
 
 ifdescribe(process.platform !== 'win32')('globalShortcut module', () => {
@@ -54,5 +54,21 @@ ifdescribe(process.platform !== 'win32')('globalShortcut module', () => {
     }).to.not.throw();
 
     globalShortcut.unregisterAll();
+  });
+
+  it('successfully registers and calls the callback for media keys', function (done) {
+    let robotjs;
+    try {
+      robotjs = require('robotjs');
+    } catch (err) {
+      this.skip();
+    }
+
+    globalShortcut.register('MediaPlayPause', () => done());
+
+    const w = new BrowserWindow({ show: false });
+    w.loadURL('about:blank');
+
+    robotjs.keyTap('audio_play');
   });
 });
