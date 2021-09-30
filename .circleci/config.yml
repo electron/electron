@@ -1,16 +1,26 @@
 version: 2.1
 
 # required for dynamic configuration feature
-setup: true
+# setup: true
+setup: << pipeline.parameters.run-setup >>
 
-# the continuation orb: required to use dynamic configuration
 orbs:
-  continuation: circleci/continuation@0.1.2
+  # continuation: circleci/continuation@0.1.2
+  path-filtering: circleci/path-filtering@0.0.2
+
+parameters:
+  run-setup:
+    type: boolean
+    default: true
+  run-docs-only:
+    type: boolean
+    default: false
+  run-full-build:
+    type: boolean
+    default: False
 
 # TODO: Use only the necessary parts of the doc-only steps
 # to trigger the right configuration
-# Path 1: Doc Only, echo "I am docs only change"
-# Path 2: Non-Doc Only, echo "I am the full build process"
 step-check-for-doc-only-change: &step-check-for-doc-only-change
   run:
     name: Check if commit is doc only change
@@ -31,37 +41,64 @@ step-persist-doc-only-change: &step-persist-doc-only-change
     paths:
       - src/electron/.skip-ci-build
 
-step-maybe-early-exit-doc-only-change: &step-maybe-early-exit-doc-only-change
-  run:
-    name: Shortcircuit build if doc only change
-    command: |
-      if [ -s src/electron/.skip-ci-build ]; then
-        circleci-agent step halt
-      fi
-
-step-maybe-early-exit-no-doc-change: &step-maybe-early-exit-no-doc-change
-  run:
-    name: Shortcircuit job if change is not doc only
-    command: |
-      if [ ! -s src/electron/.skip-ci-build ]; then
-        circleci-agent step halt
-      fi
-
-# our defined job, and its steps
 jobs:
-  setup:
-    executor: continuation/default
+  docs-only:
+    docker:
+      - image: alpine
     steps:
-      - checkout # checkout code
-      - run: # run a command
-          name: Generate config
-          command: |
-            ./generate-config > generated_config.yml
-      - continuation/continue:
-          configuration_path: generated_config.yml # use newly generated config to continue
+      - checkout
+      - *step-check-for-doc-only-change
+      - run: "echo 'Checking for docs only changes!'"
 
-# our single workflow, that triggers the setup job defined above
+  full-build:
+    machine: true
+    steps:
+      - checkout
+      - run: "echo 'We're completing a full Electron build!'"
+
+  full-build-post:
+    docker:
+      - image: alpine
+    steps:
+      - run: "echo 'We're completing a full Electron build!'"
+
 workflows:
-  setup:
+  pre:
+    when: << pipeline.parameters.run-setup >>
     jobs:
-      - setup
+      - path-filtering/filter:
+          # Compare files on main
+          base-revision: main
+          # Config for continuation; herein we reuse this config itself
+          config-path: .circleci/config.yml
+          # 3-column space-separated table for mapping; `path-to-test parameter-to-set value-for-parameter` for each row
+          mapping: |
+            .* run-setup false
+            docs-only/.* run-docs-only true
+  docs-only:
+    when: << pipeline.parameters.run-docs-only >>
+    jobs:
+      - docs-only
+  full-build:
+    when: << pipeline.parameters.run-full-build >>
+    jobs:
+      - full-build
+      - full-build-post:
+          requires:
+            - full-build
+
+# step-maybe-early-exit-doc-only-change: &step-maybe-early-exit-doc-only-change
+#   run:
+#     name: Shortcircuit build if doc only change
+#     command: |
+#       if [ -s src/electron/.skip-ci-build ]; then
+#         circleci-agent step halt
+#       fi
+
+# step-maybe-early-exit-no-doc-change: &step-maybe-early-exit-no-doc-change
+#   run:
+#     name: Shortcircuit job if change is not doc only
+#     command: |
+#       if [ ! -s src/electron/.skip-ci-build ]; then
+#         circleci-agent step halt
+#       fi
