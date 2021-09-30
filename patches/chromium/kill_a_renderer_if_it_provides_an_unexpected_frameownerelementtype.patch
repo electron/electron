@@ -1,0 +1,72 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jorge Lucangeli Obes <jorgelo@chromium.org>
+Date: Wed, 22 Sep 2021 20:27:54 +0000
+Subject: Kill a renderer if it provides an unexpected FrameOwnerElementType
+
+(Merge to M93.)
+
+Portals and MPArch based Fenced Frames are not created as normal
+subframes.
+
+(cherry picked from commit beebc8aec0f8f9e627e69ad67ef311903924b384)
+
+Bug: 1251727
+Change-Id: I81326d2caf2038aec2f77cf577161a24bb9b65b2
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3174272
+Commit-Queue: Kevin McNee <mcnee@chromium.org>
+Commit-Queue: Adrian Taylor <adetaylor@chromium.org>
+Reviewed-by: Alex Moshchuk <alexmos@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#923644}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3174713
+Auto-Submit: Jorge Lucangeli Obes <jorgelo@chromium.org>
+Reviewed-by: Dominic Farolino <dom@chromium.org>
+Reviewed-by: Kevin McNee <mcnee@chromium.org>
+Commit-Queue: Jorge Lucangeli Obes <jorgelo@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4577@{#1266}
+Cr-Branched-From: 761ddde228655e313424edec06497d0c56b0f3c4-refs/heads/master@{#902210}
+
+diff --git a/content/browser/bad_message.h b/content/browser/bad_message.h
+index e198d661c711dc648a4e4c2249e0a60f69c406da..d1821c863d998cb010d8f5d12c12d79b18075a9d 100644
+--- a/content/browser/bad_message.h
++++ b/content/browser/bad_message.h
+@@ -269,6 +269,8 @@ enum BadMessageReason {
+   PAYMENTS_WITHOUT_PERMISSION = 241,
+   WEB_BUNDLE_INVALID_NAVIGATION_URL = 242,
+   WCI_INVALID_DOWNLOAD_IMAGE_RESULT = 243,
++  FARI_LOGOUT_BAD_ENDPOINT = 250,
++  RFH_CHILD_FRAME_UNEXPECTED_OWNER_ELEMENT_TYPE = 251,
+ 
+   // Please add new elements here. The naming convention is abbreviated class
+   // name (e.g. RenderFrameHost becomes RFH) plus a unique description of the
+diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
+index 385080e04ed3fb6b82a1ed993889913546f0ba20..85f18081e82e730edd2883e5f75fe35179f8ac82 100644
+--- a/content/browser/renderer_host/render_frame_host_impl.cc
++++ b/content/browser/renderer_host/render_frame_host_impl.cc
+@@ -2629,6 +2629,14 @@ void RenderFrameHostImpl::OnCreateChildFrame(
+     // is invalid.
+     bad_message::ReceivedBadMessage(
+         GetProcess(), bad_message::RFH_CHILD_FRAME_NEEDS_OWNER_ELEMENT_TYPE);
++    return;
++  }
++  if (owner_type == blink::mojom::FrameOwnerElementType::kPortal) {
++    // Portals are not created through this child frame code path.
++    bad_message::ReceivedBadMessage(
++        GetProcess(),
++        bad_message::RFH_CHILD_FRAME_UNEXPECTED_OWNER_ELEMENT_TYPE);
++    return;
+   }
+ 
+   DCHECK(frame_token);
+diff --git a/tools/metrics/histograms/enums.xml b/tools/metrics/histograms/enums.xml
+index 37c0027b6581d498413acb114cfc8ac05d3ff52e..0cb62e228ba2497276b40ba272e9ac52255ecb63 100644
+--- a/tools/metrics/histograms/enums.xml
++++ b/tools/metrics/histograms/enums.xml
+@@ -6796,6 +6796,8 @@ Called by update_bad_message_reasons.py.-->
+   <int value="238" label="CSDH_BAD_OWNER"/>
+   <int value="239" label="SYNC_COMPOSITOR_NO_LOCAL_SURFACE_ID"/>
+   <int value="240" label="WCI_INVALID_FULLSCREEN_OPTIONS"/>
++  <int value="250" label="FARI_LOGOUT_BAD_ENDPOINT"/>
++  <int value="251" label="RFH_CHILD_FRAME_UNEXPECTED_OWNER_ELEMENT_TYPE"/>
+ </enum>
+ 
+ <enum name="BadMessageReasonExtensions">
