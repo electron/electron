@@ -13,6 +13,7 @@
 #include "base/containers/id_map.h"
 #include "base/values.h"
 #include "content/public/browser/permission_controller_delegate.h"
+#include "gin/dictionary.h"
 
 namespace content {
 class WebContents;
@@ -39,9 +40,13 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
                                    const GURL& requesting_origin,
                                    const base::Value&)>;
 
+  using DeviceCheckHandler =
+      base::RepeatingCallback<bool(const v8::Local<v8::Object>&)>;
+
   // Handler to dispatch permission requests in JS.
   void SetPermissionRequestHandler(const RequestHandler& handler);
   void SetPermissionCheckHandler(const CheckHandler& handler);
+  void SetDevicePermissionHandler(const DeviceCheckHandler& handler);
 
   // content::PermissionControllerDelegate:
   void RequestPermission(content::PermissionType permission,
@@ -78,6 +83,16 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
                                   const GURL& requesting_origin,
                                   const base::DictionaryValue* details) const;
 
+  bool CheckDevicePermission(content::PermissionType permission,
+                             const url::Origin& origin,
+                             const base::Value* object,
+                             content::RenderFrameHost* render_frame_host) const;
+
+  void GrantDevicePermission(content::PermissionType permission,
+                             const url::Origin& origin,
+                             const base::Value* object,
+                             content::RenderFrameHost* render_frame_host) const;
+
  protected:
   void OnPermissionResponse(int request_id,
                             int permission_id,
@@ -105,6 +120,7 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
 
   RequestHandler request_handler_;
   CheckHandler check_handler_;
+  DeviceCheckHandler device_permission_handler_;
 
   PendingRequestsMap pending_requests_;
 
