@@ -212,6 +212,7 @@ static_library("chrome") {
       "//components/services/print_compositor",
       "//components/services/print_compositor/public/cpp",
       "//components/services/print_compositor/public/mojom",
+      "//printing/backend",
     ]
 
     deps += [
