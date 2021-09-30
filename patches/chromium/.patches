@@ -146,3 +146,4 @@ cherry-pick-ddc4cf156505.patch
 skip_webgl_conformance_programs_program-test_html_on_all_platforms.patch
 linux_sandbox_update_syscall_numbers_for_all_platforms.patch
 linux_sandbox_return_enosys_for_clone3.patch
+content-visibility_add_a_clipper_fix_for_content-visibility.patch
