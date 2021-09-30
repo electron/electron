@@ -14,6 +14,4 @@
   "src/electron/patches/Mantle": "src/third_party/squirrel.mac/vendor/Mantle",
 
   "src/electron/patches/ReactiveObjC": "src/third_party/squirrel.mac/vendor/ReactiveObjC",
-
-  "src/electron/patches/breakpad": "src/third_party/breakpad/breakpad"
 }
