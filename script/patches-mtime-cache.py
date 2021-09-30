@@ -135,7 +135,7 @@ def main():
                 json.load(f)  # Make sure it's not an empty file
                 print("Using existing mtime cache for patches")
                 return 0
-        except:
+        except Exception:
             pass
 
         try:
