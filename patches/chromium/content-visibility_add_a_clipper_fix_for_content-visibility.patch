@@ -1,0 +1,292 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Vladimir Levin <vmpstr@chromium.org>
+Date: Tue, 14 Sep 2021 00:06:00 +0000
+Subject: content-visibility: Add a clipper fix for content-visibility.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+This patch adds a few checks in the svg painting code which may access
+a content-visibility locked element via an svg reference.
+
+R=​fs@opera.com,jarhar@chromium.org
+
+(cherry picked from commit e0d8a4f20bf98bbda2dc58199fca5caf0add1b00)
+
+Bug: 1247196
+Change-Id: I4dcb4ef298fb8d51aa0ec1a3b3bc130cfb560791
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3149811
+Reviewed-by: Fredrik Söderquist <fs@opera.com>
+Reviewed-by: Joey Arhar <jarhar@chromium.org>
+Commit-Queue: vmpstr <vmpstr@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#920209}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3158958
+Commit-Queue: Joey Arhar <jarhar@chromium.org>
+Commit-Queue: Mason Freed <masonf@chromium.org>
+Auto-Submit: Joey Arhar <jarhar@chromium.org>
+Reviewed-by: Mason Freed <masonf@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4606@{#1011}
+Cr-Branched-From: 35b0d5a9dc8362adfd44e2614f0d5b7402ef63d0-refs/heads/master@{#911515}
+
+diff --git a/third_party/blink/renderer/core/layout/svg/layout_svg_container_test.cc b/third_party/blink/renderer/core/layout/svg/layout_svg_container_test.cc
+index 57e3540f9dc9419261ed7be84bd951df75380009..a625a03d0cc3e120e26f104d564db10ef78601e4 100644
+--- a/third_party/blink/renderer/core/layout/svg/layout_svg_container_test.cc
++++ b/third_party/blink/renderer/core/layout/svg/layout_svg_container_test.cc
+@@ -117,4 +117,34 @@ TEST_F(LayoutSVGContainerTest,
+   EXPECT_TRUE(use->SlowFirstChild()->TransformAffectsVectorEffect());
+ }
+ 
++TEST_F(LayoutSVGContainerTest, PatternWithContentVisibility) {
++  SetBodyInnerHTML(R"HTML(
++    <svg viewBox="0 0 230 100" xmlns="http://www.w3.org/2000/svg">
++      <defs>
++        <pattern id="pattern" viewBox="0,0,10,10" width="10%" height="10%">
++          <polygon id="polygon" points="0,0 2,5 0,10 5,8 10,10 8,5 10,0 5,2"/>
++        </pattern>
++      </defs>
++
++      <circle id="circle" cx="50"  cy="50" r="50" fill="url(#pattern)"/>
++    </svg>
++  )HTML");
++
++  auto* pattern = GetDocument().getElementById("pattern");
++  auto* polygon = GetDocument().getElementById("polygon");
++
++  pattern->setAttribute("style", "contain: strict; content-visibility: hidden");
++
++  UpdateAllLifecyclePhasesForTest();
++
++  polygon->setAttribute("points", "0,0 2,5 0,10");
++
++  // This shouldn't cause a DCHECK, even though the pattern needs layout because
++  // it's under a content-visibility: hidden subtree.
++  UpdateAllLifecyclePhasesForTest();
++
++  EXPECT_TRUE(pattern->GetLayoutObject()->NeedsLayout());
++  EXPECT_FALSE(pattern->GetLayoutObject()->SelfNeedsLayout());
++}
++
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/core/layout/svg/layout_svg_resource_clipper.cc b/third_party/blink/renderer/core/layout/svg/layout_svg_resource_clipper.cc
+index f00325cb831e7037a7c61e8e185c73d6a09cb34c..d3d6fa311d3e22b5d9256d2d737d33f770ce4f4f 100644
+--- a/third_party/blink/renderer/core/layout/svg/layout_svg_resource_clipper.cc
++++ b/third_party/blink/renderer/core/layout/svg/layout_svg_resource_clipper.cc
+@@ -22,6 +22,7 @@
+ 
+ #include "third_party/blink/renderer/core/layout/svg/layout_svg_resource_clipper.h"
+ 
++#include "third_party/blink/renderer/core/display_lock/display_lock_utilities.h"
+ #include "third_party/blink/renderer/core/dom/element_traversal.h"
+ #include "third_party/blink/renderer/core/layout/hit_test_result.h"
+ #include "third_party/blink/renderer/core/layout/layout_box_model_object.h"
+@@ -54,6 +55,8 @@ ClipStrategy DetermineClipStrategy(const SVGGraphicsElement& element) {
+   const LayoutObject* layout_object = element.GetLayoutObject();
+   if (!layout_object)
+     return ClipStrategy::kNone;
++  if (DisplayLockUtilities::LockedAncestorPreventingLayout(*layout_object))
++    return ClipStrategy::kNone;
+   const ComputedStyle& style = layout_object->StyleRef();
+   if (style.Display() == EDisplay::kNone ||
+       style.Visibility() != EVisibility::kVisible)
+@@ -74,8 +77,12 @@ ClipStrategy DetermineClipStrategy(const SVGElement& element) {
+   // (https://drafts.fxtf.org/css-masking/#ClipPathElement)
+   if (auto* svg_use_element = DynamicTo<SVGUseElement>(element)) {
+     const LayoutObject* use_layout_object = element.GetLayoutObject();
+-    if (!use_layout_object ||
+-        use_layout_object->StyleRef().Display() == EDisplay::kNone)
++    if (!use_layout_object)
++      return ClipStrategy::kNone;
++    if (DisplayLockUtilities::LockedAncestorPreventingLayout(
++            *use_layout_object))
++      return ClipStrategy::kNone;
++    if (use_layout_object->StyleRef().Display() == EDisplay::kNone)
+       return ClipStrategy::kNone;
+     const SVGGraphicsElement* shape_element =
+         svg_use_element->VisibleTargetGraphicsElementForClipping();
+@@ -271,7 +278,7 @@ bool LayoutSVGResourceClipper::HitTestClipContent(
+ FloatRect LayoutSVGResourceClipper::ResourceBoundingBox(
+     const FloatRect& reference_box) {
+   NOT_DESTROYED();
+-  DCHECK(!NeedsLayout());
++  DCHECK(!SelfNeedsLayout());
+ 
+   if (local_clip_bounds_.IsEmpty())
+     CalculateLocalClipBounds();
+diff --git a/third_party/blink/renderer/core/layout/svg/layout_svg_resource_masker.cc b/third_party/blink/renderer/core/layout/svg/layout_svg_resource_masker.cc
+index d20bb36c00b84e200e518d2282a9db69072ca5f0..0b598d713f03e574dbd390225e81781b86e53d5e 100644
+--- a/third_party/blink/renderer/core/layout/svg/layout_svg_resource_masker.cc
++++ b/third_party/blink/renderer/core/layout/svg/layout_svg_resource_masker.cc
+@@ -19,6 +19,7 @@
+ 
+ #include "third_party/blink/renderer/core/layout/svg/layout_svg_resource_masker.h"
+ 
++#include "third_party/blink/renderer/core/display_lock/display_lock_utilities.h"
+ #include "third_party/blink/renderer/core/dom/element_traversal.h"
+ #include "third_party/blink/renderer/core/layout/svg/svg_layout_support.h"
+ #include "third_party/blink/renderer/core/paint/svg_object_painter.h"
+@@ -65,7 +66,9 @@ sk_sp<const PaintRecord> LayoutSVGResourceMasker::CreatePaintRecord(
+   for (const SVGElement& child_element :
+        Traversal<SVGElement>::ChildrenOf(*GetElement())) {
+     const LayoutObject* layout_object = child_element.GetLayoutObject();
+-    if (!layout_object ||
++    if (!layout_object)
++      continue;
++    if (DisplayLockUtilities::LockedAncestorPreventingLayout(*layout_object) ||
+         layout_object->StyleRef().Display() == EDisplay::kNone)
+       continue;
+     SVGObjectPainter(*layout_object).PaintResourceSubtree(builder.Context());
+@@ -91,7 +94,7 @@ FloatRect LayoutSVGResourceMasker::ResourceBoundingBox(
+     const FloatRect& reference_box,
+     float reference_box_zoom) {
+   NOT_DESTROYED();
+-  DCHECK(!NeedsLayout());
++  DCHECK(!SelfNeedsLayout());
+   auto* mask_element = To<SVGMaskElement>(GetElement());
+   DCHECK(mask_element);
+ 
+diff --git a/third_party/blink/renderer/core/layout/svg/layout_svg_resource_pattern.cc b/third_party/blink/renderer/core/layout/svg/layout_svg_resource_pattern.cc
+index 1b9f67bc9e186654bfd03410b8e2d73654a7f1e2..c246bcd5a1d524302586cd145f39a1a2b47adef8 100644
+--- a/third_party/blink/renderer/core/layout/svg/layout_svg_resource_pattern.cc
++++ b/third_party/blink/renderer/core/layout/svg/layout_svg_resource_pattern.cc
+@@ -24,6 +24,7 @@
+ #include <memory>
+ 
+ #include "base/memory/ptr_util.h"
++#include "third_party/blink/renderer/core/display_lock/display_lock_utilities.h"
+ #include "third_party/blink/renderer/core/layout/svg/svg_layout_support.h"
+ #include "third_party/blink/renderer/core/layout/svg/svg_resources.h"
+ #include "third_party/blink/renderer/core/paint/svg_object_painter.h"
+@@ -205,8 +206,20 @@ sk_sp<PaintRecord> LayoutSVGResourcePattern::AsPaintRecord(
+     content_transform = tile_transform;
+ 
+   FloatRect bounds(FloatPoint(), size);
++  PaintRecorder paint_recorder;
++  cc::PaintCanvas* canvas = paint_recorder.beginRecording(bounds);
++
++  auto* pattern_content_element = Attributes().PatternContentElement();
++  DCHECK(pattern_content_element);
++  // If the element or some of its ancestor prevents us from doing paint, we can
++  // early out. Note that any locked ancestor would prevent paint.
++  if (DisplayLockUtilities::NearestLockedInclusiveAncestor(
++          *pattern_content_element)) {
++    return paint_recorder.finishRecordingAsPicture();
++  }
++
+   const auto* pattern_layout_object = To<LayoutSVGResourceContainer>(
+-      Attributes().PatternContentElement()->GetLayoutObject());
++      pattern_content_element->GetLayoutObject());
+   DCHECK(pattern_layout_object);
+   DCHECK(!pattern_layout_object->NeedsLayout());
+ 
+@@ -216,8 +229,6 @@ sk_sp<PaintRecord> LayoutSVGResourcePattern::AsPaintRecord(
+   for (LayoutObject* child = pattern_layout_object->FirstChild(); child;
+        child = child->NextSibling())
+     SVGObjectPainter(*child).PaintResourceSubtree(builder.Context());
+-  PaintRecorder paint_recorder;
+-  cc::PaintCanvas* canvas = paint_recorder.beginRecording(bounds);
+   canvas->save();
+   canvas->concat(AffineTransformToSkMatrix(tile_transform));
+   builder.EndRecording(*canvas);
+diff --git a/third_party/blink/renderer/core/paint/clip_path_clipper.cc b/third_party/blink/renderer/core/paint/clip_path_clipper.cc
+index 66b6d44961aa7e2b534dcd402d9e9eede4447b52..7a7fa937d96641284ebbfc8b083965d7eb6e287d 100644
+--- a/third_party/blink/renderer/core/paint/clip_path_clipper.cc
++++ b/third_party/blink/renderer/core/paint/clip_path_clipper.cc
+@@ -4,6 +4,7 @@
+ 
+ #include "third_party/blink/renderer/core/paint/clip_path_clipper.h"
+ 
++#include "third_party/blink/renderer/core/display_lock/display_lock_utilities.h"
+ #include "third_party/blink/renderer/core/dom/element_traversal.h"
+ #include "third_party/blink/renderer/core/layout/layout_box.h"
+ #include "third_party/blink/renderer/core/layout/layout_inline.h"
+@@ -42,10 +43,14 @@ LayoutSVGResourceClipper* ResolveElementReference(
+     return nullptr;
+   LayoutSVGResourceClipper* resource_clipper =
+       GetSVGResourceAsType(*client, reference_clip_path_operation);
+-  if (resource_clipper) {
+-    SECURITY_DCHECK(!resource_clipper->NeedsLayout());
+-    resource_clipper->ClearInvalidationMask();
+-  }
++  if (!resource_clipper)
++    return nullptr;
++
++  resource_clipper->ClearInvalidationMask();
++  if (DisplayLockUtilities::LockedAncestorPreventingLayout(*resource_clipper))
++    return nullptr;
++
++  SECURITY_DCHECK(!resource_clipper->SelfNeedsLayout());
+   return resource_clipper;
+ }
+ 
+diff --git a/third_party/blink/renderer/core/paint/svg_mask_painter.cc b/third_party/blink/renderer/core/paint/svg_mask_painter.cc
+index d049d3e18eed09ed4755ef483e9cd4b60925232c..2d40adb1ff99f3d29dce027995871cba399af3fb 100644
+--- a/third_party/blink/renderer/core/paint/svg_mask_painter.cc
++++ b/third_party/blink/renderer/core/paint/svg_mask_painter.cc
+@@ -4,6 +4,7 @@
+ 
+ #include "third_party/blink/renderer/core/paint/svg_mask_painter.h"
+ 
++#include "third_party/blink/renderer/core/display_lock/display_lock_utilities.h"
+ #include "third_party/blink/renderer/core/layout/svg/layout_svg_resource_masker.h"
+ #include "third_party/blink/renderer/core/layout/svg/svg_resources.h"
+ #include "third_party/blink/renderer/core/paint/object_paint_properties.h"
+@@ -46,7 +47,9 @@ void SVGMaskPainter::Paint(GraphicsContext& context,
+   auto* masker = GetSVGResourceAsType<LayoutSVGResourceMasker>(
+       *client, svg_style.MaskerResource());
+   DCHECK(masker);
+-  SECURITY_DCHECK(!masker->NeedsLayout());
++  if (DisplayLockUtilities::LockedAncestorPreventingLayout(*masker))
++    return;
++  SECURITY_DCHECK(!masker->SelfNeedsLayout());
+   masker->ClearInvalidationMask();
+ 
+   FloatRect reference_box = SVGResources::ReferenceBoxForEffects(layout_object);
+diff --git a/third_party/blink/renderer/core/paint/svg_object_painter.cc b/third_party/blink/renderer/core/paint/svg_object_painter.cc
+index 8454ad348bd7d3daf8e24a0e8e7360c0888ca0e6..56d8732423028bf9850ee2b640dd335de5f2c67a 100644
+--- a/third_party/blink/renderer/core/paint/svg_object_painter.cc
++++ b/third_party/blink/renderer/core/paint/svg_object_painter.cc
+@@ -31,7 +31,7 @@ void CopyStateFromGraphicsContext(GraphicsContext& context, PaintFlags& flags) {
+ }  // namespace
+ 
+ void SVGObjectPainter::PaintResourceSubtree(GraphicsContext& context) {
+-  DCHECK(!layout_object_.NeedsLayout());
++  DCHECK(!layout_object_.SelfNeedsLayout());
+ 
+   PaintInfo info(context, LayoutRect::InfiniteIntRect(),
+                  PaintPhase::kForeground,
+diff --git a/third_party/blink/web_tests/external/wpt/css/css-contain/content-visibility/content-visibility-in-svg-000-crash.html b/third_party/blink/web_tests/external/wpt/css/css-contain/content-visibility/content-visibility-in-svg-000-crash.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..d1084f7216510386f159033e2f7b0e3966bd2758
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/css/css-contain/content-visibility/content-visibility-in-svg-000-crash.html
+@@ -0,0 +1,30 @@
++<!DOCTYPE html>
++<html class="test-wait">
++<link rel="author" title="Vladimir Levin" href="mailto:vmpstr@chromium.org">
++<link rel="help" href="https://crbug.com/1247196">
++<meta name="assert" content="Clip path with content-visibility does not cause an assert">
++
++<svg width="138">
++  <defs>
++    <clipPath id="snowglobe_clipPath">
++      <circle cx="34" />
++    </clipPath>
++  </defs>
++  <circle />
++  <g class="group-snow" clip-path="url(#snowglobe_clipPath)">
++    <g class="snowContainer">
++      <circle class="snow" />
++    </g>
++  </g>
++</svg>
++<script type="text/javascript">
++onload = () => {
++  var test0 = document.getElementById("snowglobe_clipPath");
++  test0.style.setProperty("content-visibility", "auto ", "important");
++  test0.innerHTML = "";
++  test0.offsetHeight;
++
++  requestAnimationFrame(() => document.documentElement.classList.remove('test-wait'));
++};
++</script>
++</html>

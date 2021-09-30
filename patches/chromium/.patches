@@ -160,3 +160,4 @@ cherry-pick-8623d711677d.patch
 contentindex_add_origin_checks_to_mojo_methods.patch
 skip_webgl_conformance_programs_program-test_html_on_all_platforms.patch
 cherry-pick-ddc4cf156505.patch
+content-visibility_add_a_clipper_fix_for_content-visibility.patch
