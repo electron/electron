@@ -162,3 +162,4 @@ skip_webgl_conformance_programs_program-test_html_on_all_platforms.patch
 cherry-pick-ddc4cf156505.patch
 content-visibility_add_a_clipper_fix_for_content-visibility.patch
 kill_a_renderer_if_it_provides_an_unexpected_frameownerelementtype.patch
+cherry-pick-e8a5cefd1aac.patch
