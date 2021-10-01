@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Austin Sullivan <asully@chromium.org>
 Date: Wed, 29 Sep 2021 08:20:51 +0000
-Subject: [M90-LTS] FSA: Fix race condition in manager
+Subject: FSA: Fix race condition in manager
 
 (cherry picked from commit 951339b41022b08a67ad94ba5960b05c84bf4cf2)
 
