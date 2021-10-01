@@ -1,7 +1,7 @@
-From 4e528a5a8d839f8b382d25821a2807546f97d2cc Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Austin Sullivan <asully@chromium.org>
 Date: Wed, 15 Sep 2021 23:57:27 +0000
-Subject: [PATCH] FSA: Fix race condition in manager
+Subject: FSA: Fix race condition in manager
 
 (cherry picked from commit 951339b41022b08a67ad94ba5960b05c84bf4cf2)
 
@@ -16,13 +16,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3160301
 Commit-Queue: Austin Sullivan <asully@chromium.org>
 Cr-Commit-Position: refs/branch-heads/4606@{#1077}
 Cr-Branched-From: 35b0d5a9dc8362adfd44e2614f0d5b7402ef63d0-refs/heads/master@{#911515}
----
 
 diff --git a/content/browser/file_system_access/file_system_access_manager_impl.cc b/content/browser/file_system_access/file_system_access_manager_impl.cc
-index 6784239..647ab6c 100644
+index e317b6609026444e1b7cef4c27c33e44099aab75..0cd44a57e525cceb1b087ffd6a1351ed7dea6a7d 100644
 --- a/content/browser/file_system_access/file_system_access_manager_impl.cc
 +++ b/content/browser/file_system_access/file_system_access_manager_impl.cc
-@@ -454,6 +454,11 @@
+@@ -454,6 +454,11 @@ void FileSystemAccessManagerImpl::ResolveDefaultDirectory(
                    std::move(callback))));
  }
  
@@ -35,10 +34,10 @@ index 6784239..647ab6c 100644
      const BindingContext& context,
      blink::mojom::FilePickerOptionsPtr options,
 diff --git a/content/browser/file_system_access/file_system_access_manager_impl.h b/content/browser/file_system_access/file_system_access_manager_impl.h
-index b07a102..a60d0f3 100644
+index 82b2625ce7b22975e80114ce21ba53e298106977..29d53b2a25a13f0d36cf72cfd9f5f30abdd2976e 100644
 --- a/content/browser/file_system_access/file_system_access_manager_impl.h
 +++ b/content/browser/file_system_access/file_system_access_manager_impl.h
-@@ -267,6 +267,8 @@
+@@ -260,6 +260,8 @@ class CONTENT_EXPORT FileSystemAccessManagerImpl
        PathType path_type,
        const base::FilePath& path);
  
@@ -48,10 +47,10 @@ index b07a102..a60d0f3 100644
    friend class FileSystemAccessFileHandleImpl;
  
 diff --git a/content/browser/storage_partition_impl.cc b/content/browser/storage_partition_impl.cc
-index 5edf24182..ba015b7 100644
+index ba5ab2ff3ef437a6aa364753e5cc680f4545b282..86c6de60739a0c5aa49ed63f1546b478d7f58054 100644
 --- a/content/browser/storage_partition_impl.cc
 +++ b/content/browser/storage_partition_impl.cc
-@@ -1128,6 +1128,9 @@
+@@ -1091,6 +1091,9 @@ StoragePartitionImpl::~StoragePartitionImpl() {
                                    std::move(database_tracker)));
    }
  
