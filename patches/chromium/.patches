@@ -105,3 +105,4 @@ revert_roll_clang_llvmorg-13-init-14732-g8a7b5ebf-2.patch
 logging_win32_only_create_a_console_if_logging_to_stderr.patch
 fix_media_key_usage_with_globalshortcuts.patch
 cherry-pick-f8a74d72f328.patch
+cherry-pick-f2fd53c6d706.patch
