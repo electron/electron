@@ -1,7 +1,7 @@
-From 6a8a2098f9fad2f0c1652d159fce563ede7d2ea8 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Erik Chen <erikchen@chromium.org>
 Date: Wed, 29 Sep 2021 21:16:47 +0000
-Subject: [PATCH] [Merge to M94] Prevents non-browser processes from requesting memory dumps.
+Subject: Prevents non-browser processes from requesting memory dumps.
 
 This CL makes several changes:
 
@@ -35,13 +35,12 @@ Commit-Queue: Krishna Govind <govind@chromium.org>
 Owners-Override: Krishna Govind <govind@chromium.org>
 Cr-Commit-Position: refs/branch-heads/4606@{#1253}
 Cr-Branched-From: 35b0d5a9dc8362adfd44e2614f0d5b7402ef63d0-refs/heads/master@{#911515}
----
 
 diff --git a/content/browser/browser_child_process_host_impl.cc b/content/browser/browser_child_process_host_impl.cc
-index 9a83620..ed1d10a 100644
+index 9a836207989b19ae041a3ec700b55185d63f9a4c..ed1d10aae4470c9aac28cfce67d97f351b8266d5 100644
 --- a/content/browser/browser_child_process_host_impl.cc
 +++ b/content/browser/browser_child_process_host_impl.cc
-@@ -708,6 +708,9 @@
+@@ -708,6 +708,9 @@ void BrowserChildProcessHostImpl::RegisterCoordinatorClient(
      mojo::PendingReceiver<memory_instrumentation::mojom::Coordinator> receiver,
      mojo::PendingRemote<memory_instrumentation::mojom::ClientProcess>
          client_process) {
@@ -52,10 +51,10 @@ index 9a83620..ed1d10a 100644
    // dispatched. We do nothing in that case.
    if (!IsProcessLaunched())
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index dba7f1d..2d3775b 100644
+index bd24cb0f6edc37bf23c40f0a7839a2f5d85c9a01..09d883fba5167ea254e8e463bb6e79026bf61f50 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -2797,6 +2797,9 @@
+@@ -2860,6 +2860,9 @@ void RenderProcessHostImpl::RegisterCoordinatorClient(
      mojo::PendingReceiver<memory_instrumentation::mojom::Coordinator> receiver,
      mojo::PendingRemote<memory_instrumentation::mojom::ClientProcess>
          client_process) {
@@ -66,10 +65,10 @@ index dba7f1d..2d3775b 100644
      // If the process dies before we get this message. we have no valid PID
      // and there's nothing to register.
 diff --git a/services/resource_coordinator/memory_instrumentation/coordinator_impl.cc b/services/resource_coordinator/memory_instrumentation/coordinator_impl.cc
-index e838c6a..fc8983e 100644
+index 741e35dc3df4f2e6b73a8873b034bd9fc7fdc6cc..0f4551f6c4f6cc6d3285149411d851936dda3c8c 100644
 --- a/services/resource_coordinator/memory_instrumentation/coordinator_impl.cc
 +++ b/services/resource_coordinator/memory_instrumentation/coordinator_impl.cc
-@@ -108,7 +108,8 @@
+@@ -105,7 +105,8 @@ void CoordinatorImpl::RegisterClientProcess(
      const absl::optional<std::string>& service_name) {
    DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
    mojo::Remote<mojom::ClientProcess> process(std::move(client_process));
@@ -80,10 +79,10 @@ index e838c6a..fc8983e 100644
        base::BindOnce(&CoordinatorImpl::UnregisterClientProcess,
                       base::Unretained(this), process_id));
 diff --git a/services/resource_coordinator/public/cpp/memory_instrumentation/client_process_impl.cc b/services/resource_coordinator/public/cpp/memory_instrumentation/client_process_impl.cc
-index fea3e99..1afe539a 100644
+index fea3e999ee0c624948445421829a731879c4fe74..1afe539a08287a81cd2590a2c4901fa528a37df3 100644
 --- a/services/resource_coordinator/public/cpp/memory_instrumentation/client_process_impl.cc
 +++ b/services/resource_coordinator/public/cpp/memory_instrumentation/client_process_impl.cc
-@@ -24,6 +24,11 @@
+@@ -24,6 +24,11 @@ void ClientProcessImpl::CreateInstance(
      mojo::PendingReceiver<mojom::ClientProcess> receiver,
      mojo::PendingRemote<mojom::Coordinator> coordinator,
      bool is_browser_process) {
@@ -95,7 +94,7 @@ index fea3e99..1afe539a 100644
    static ClientProcessImpl* instance = nullptr;
    if (!instance) {
      instance = new ClientProcessImpl(
-@@ -39,10 +44,12 @@
+@@ -39,10 +44,12 @@ ClientProcessImpl::ClientProcessImpl(
      mojo::PendingRemote<mojom::Coordinator> coordinator,
      bool is_browser_process,
      bool initialize_memory_instrumentation)
@@ -110,7 +109,7 @@ index fea3e99..1afe539a 100644
    } else {
      coordinator_.Bind(std::move(coordinator));
    }
-@@ -110,6 +117,8 @@
+@@ -110,6 +117,8 @@ void ClientProcessImpl::OnChromeMemoryDumpDone(
  void ClientProcessImpl::RequestGlobalMemoryDump_NoCallback(
      base::trace_event::MemoryDumpType dump_type,
      base::trace_event::MemoryDumpLevelOfDetail level_of_detail) {
@@ -120,10 +119,10 @@ index fea3e99..1afe539a 100644
      task_runner_->PostTask(
          FROM_HERE,
 diff --git a/services/resource_coordinator/public/cpp/memory_instrumentation/client_process_impl.h b/services/resource_coordinator/public/cpp/memory_instrumentation/client_process_impl.h
-index d41651d..aef7f5a0 100644
+index d41651d9bef7bbc8ec1685e68cfd77993f0d4551..aef7f5a03091a0c42168cb2154edabf41d28d829 100644
 --- a/services/resource_coordinator/public/cpp/memory_instrumentation/client_process_impl.h
 +++ b/services/resource_coordinator/public/cpp/memory_instrumentation/client_process_impl.h
-@@ -96,6 +96,9 @@
+@@ -96,6 +96,9 @@ class COMPONENT_EXPORT(RESOURCE_COORDINATOR_PUBLIC_MEMORY_INSTRUMENTATION)
    mojo::Remote<mojom::Coordinator> coordinator_;
    scoped_refptr<base::SingleThreadTaskRunner> task_runner_;
  
@@ -134,10 +133,10 @@ index d41651d..aef7f5a0 100644
    // MemoryDumpManager in each process. Setting up MemoryDumpManager should
    // be moved away from TracingObserver.
 diff --git a/services/resource_coordinator/public/cpp/memory_instrumentation/memory_instrumentation.cc b/services/resource_coordinator/public/cpp/memory_instrumentation/memory_instrumentation.cc
-index c81d5f8..ec90ab9 100644
+index c81d5f83bf9e1ad5e7a77d7c187fa33bd02812d5..ec90ab9211ede586d441f40e3e2bc2c820658fb1 100644
 --- a/services/resource_coordinator/public/cpp/memory_instrumentation/memory_instrumentation.cc
 +++ b/services/resource_coordinator/public/cpp/memory_instrumentation/memory_instrumentation.cc
-@@ -21,10 +21,11 @@
+@@ -21,10 +21,11 @@ void WrapGlobalMemoryDump(
  
  // static
  void MemoryInstrumentation::CreateInstance(
@@ -152,7 +151,7 @@ index c81d5f8..ec90ab9 100644
  }
  
  // static
-@@ -33,8 +34,10 @@
+@@ -33,8 +34,10 @@ MemoryInstrumentation* MemoryInstrumentation::GetInstance() {
  }
  
  MemoryInstrumentation::MemoryInstrumentation(
@@ -165,7 +164,7 @@ index c81d5f8..ec90ab9 100644
  
  MemoryInstrumentation::~MemoryInstrumentation() {
    g_instance = nullptr;
-@@ -43,6 +46,7 @@
+@@ -43,6 +46,7 @@ MemoryInstrumentation::~MemoryInstrumentation() {
  void MemoryInstrumentation::RequestGlobalDump(
      const std::vector<std::string>& allocator_dump_names,
      RequestGlobalDumpCallback callback) {
@@ -173,7 +172,7 @@ index c81d5f8..ec90ab9 100644
    coordinator_->RequestGlobalMemoryDump(
        MemoryDumpType::SUMMARY_ONLY, MemoryDumpLevelOfDetail::BACKGROUND,
        MemoryDumpDeterminism::NONE, allocator_dump_names,
-@@ -52,6 +56,7 @@
+@@ -52,6 +56,7 @@ void MemoryInstrumentation::RequestGlobalDump(
  void MemoryInstrumentation::RequestPrivateMemoryFootprint(
      base::ProcessId pid,
      RequestGlobalDumpCallback callback) {
@@ -181,7 +180,7 @@ index c81d5f8..ec90ab9 100644
    coordinator_->RequestPrivateMemoryFootprint(
        pid, base::BindOnce(&WrapGlobalMemoryDump, std::move(callback)));
  }
-@@ -60,6 +65,7 @@
+@@ -60,6 +65,7 @@ void MemoryInstrumentation::RequestGlobalDumpForPid(
      base::ProcessId pid,
      const std::vector<std::string>& allocator_dump_names,
      RequestGlobalDumpCallback callback) {
@@ -189,7 +188,7 @@ index c81d5f8..ec90ab9 100644
    coordinator_->RequestGlobalMemoryDumpForPid(
        pid, allocator_dump_names,
        base::BindOnce(&WrapGlobalMemoryDump, std::move(callback)));
-@@ -70,6 +76,7 @@
+@@ -70,6 +76,7 @@ void MemoryInstrumentation::RequestGlobalDumpAndAppendToTrace(
      MemoryDumpLevelOfDetail level_of_detail,
      MemoryDumpDeterminism determinism,
      RequestGlobalMemoryDumpAndAppendToTraceCallback callback) {
@@ -198,10 +197,10 @@ index c81d5f8..ec90ab9 100644
        dump_type, level_of_detail, determinism, std::move(callback));
  }
 diff --git a/services/resource_coordinator/public/cpp/memory_instrumentation/memory_instrumentation.h b/services/resource_coordinator/public/cpp/memory_instrumentation/memory_instrumentation.h
-index 3264917..72157b5 100644
+index 3264917890cc30179c4477657158fd359a9d1e01..72157b5345fb003452f67045e2b2c984e748958a 100644
 --- a/services/resource_coordinator/public/cpp/memory_instrumentation/memory_instrumentation.h
 +++ b/services/resource_coordinator/public/cpp/memory_instrumentation/memory_instrumentation.h
-@@ -34,7 +34,8 @@
+@@ -34,7 +34,8 @@ class COMPONENT_EXPORT(RESOURCE_COORDINATOR_PUBLIC_MEMORY_INSTRUMENTATION)
  
    static void CreateInstance(
        mojo::PendingRemote<memory_instrumentation::mojom::Coordinator>
@@ -211,7 +210,7 @@ index 3264917..72157b5 100644
    static MemoryInstrumentation* GetInstance();
  
    // Retrieves a Coordinator interface to communicate with the service. This is
-@@ -100,12 +101,16 @@
+@@ -100,12 +101,16 @@ class COMPONENT_EXPORT(RESOURCE_COORDINATOR_PUBLIC_MEMORY_INSTRUMENTATION)
   private:
    explicit MemoryInstrumentation(
        mojo::PendingRemote<memory_instrumentation::mojom::Coordinator>
