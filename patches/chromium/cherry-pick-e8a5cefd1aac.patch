@@ -1,7 +1,7 @@
-From e8a5cefd1aac01a460129a800c88c3acc59a0a29 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Rayan Kanso <rayankans@google.com>
 Date: Wed, 29 Sep 2021 14:40:47 +0000
-Subject: [PATCH] [M90-LTS][BackgroundFetch] Use less-specific error codes for CORS-failing fetches
+Subject: Use less-specific error codes for CORS-failing fetches
 
 (cherry picked from commit 26be5702dab1d98e4d4b076a73d4688d20c043be)
 
@@ -17,13 +17,12 @@ Owners-Override: Victor-Gabriel Savu <vsavu@google.com>
 Commit-Queue: Zakhar Voit <voit@google.com>
 Cr-Commit-Position: refs/branch-heads/4430@{#1628}
 Cr-Branched-From: e5ce7dc4f7518237b3d9bb93cccca35d25216cbe-refs/heads/master@{#857950}
----
 
 diff --git a/content/browser/background_fetch/background_fetch_job_controller.cc b/content/browser/background_fetch/background_fetch_job_controller.cc
-index f424cad..0d08d1f7 100644
+index f424cadba0f42ce007c85a50b2bdb37a3a3a3499..0d08d1f744edd432c9615be811a60daff3b3c541 100644
 --- a/content/browser/background_fetch/background_fetch_job_controller.cc
 +++ b/content/browser/background_fetch/background_fetch_job_controller.cc
-@@ -173,6 +173,8 @@
+@@ -173,6 +173,8 @@ void BackgroundFetchJobController::DidStartRequest(
    // TODO(crbug.com/884672): Stop the fetch if the cross origin filter fails.
    BackgroundFetchCrossOriginFilter filter(registration_id_.origin(), *request);
    request->set_can_populate_body(filter.CanPopulateBody());
@@ -32,7 +31,7 @@ index f424cad..0d08d1f7 100644
  }
  
  void BackgroundFetchJobController::DidUpdateRequest(const std::string& guid,
-@@ -253,7 +255,14 @@
+@@ -253,7 +255,14 @@ uint64_t BackgroundFetchJobController::GetInProgressUploadedBytes() {
  
  void BackgroundFetchJobController::AbortFromDelegate(
      BackgroundFetchFailureReason failure_reason) {
@@ -49,10 +48,10 @@ index f424cad..0d08d1f7 100644
    Finish(failure_reason_, base::DoNothing());
  }
 diff --git a/content/browser/background_fetch/background_fetch_job_controller.h b/content/browser/background_fetch/background_fetch_job_controller.h
-index e635c86..66a1c94 100644
+index e635c86c1eb4237e2b107e3d6fae0242e99dcb4c..66a1c94e9dd79663fbc301c1c91918ef4ac67036 100644
 --- a/content/browser/background_fetch/background_fetch_job_controller.h
 +++ b/content/browser/background_fetch/background_fetch_job_controller.h
-@@ -210,6 +210,10 @@
+@@ -210,6 +210,10 @@ class CONTENT_EXPORT BackgroundFetchJobController
    blink::mojom::BackgroundFetchFailureReason failure_reason_ =
        blink::mojom::BackgroundFetchFailureReason::NONE;
  
@@ -64,10 +63,10 @@ index e635c86..66a1c94 100644
    FinishedCallback finished_callback_;
  
 diff --git a/content/browser/background_fetch/background_fetch_job_controller_unittest.cc b/content/browser/background_fetch/background_fetch_job_controller_unittest.cc
-index ad9a313..eb0e8fc3 100644
+index b36154c40a7013bbd02e5a57a2a3c33f7d86775a..d98b2f13b4fdaec84cd4fc21117a38397219deed 100644
 --- a/content/browser/background_fetch/background_fetch_job_controller_unittest.cc
 +++ b/content/browser/background_fetch/background_fetch_job_controller_unittest.cc
-@@ -433,6 +433,39 @@
+@@ -434,6 +434,39 @@ TEST_F(BackgroundFetchJobControllerTest, Abort) {
              GetCompletionStatus(registration_id));
  }
  
