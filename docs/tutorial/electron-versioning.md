@@ -14,17 +14,7 @@ To update an existing project to use the latest stable version:
 npm install --save-dev electron@latest
 ```
 
-## Historical versioning (Electron 1.X)
-
-Electron versions *< 2.0* did not conform to the [SemVer](https://semver.org) spec: major versions corresponded to end-user API changes, minor versions corresponded to Chromium major releases, and patch versions corresponded to new features and bug fixes. While convenient for developers merging features, it creates problems for developers of client-facing applications. The QA testing cycles of major apps like Slack, Teams, Skype, VS Code, and GitHub Desktop can be lengthy and stability is a highly desired outcome. There is a high risk in adopting new features while trying to absorb bug fixes.
-
-Here is an example of the 1.x strategy:
-
-![1.x Versioning](../images/versioning-sketch-0.png)
-
-An app developed with `1.8.1` cannot take the `1.8.3` bug fix without either absorbing the `1.8.2` feature, or by backporting the fix and maintaining a new release line.
-
-## Current versioning scheme
+## Versioning scheme
 
 There are several major changes from our 1.x strategy outlined below. Each change is intended to satisfy the needs and priorities of developers/maintainers and app developers.
 
@@ -141,3 +131,13 @@ The `electron/electron` repository also enforces squash merging, so you only nee
 * Release branches are never merged back to `main`.
 * Release branches _do_ contain the correct version in their `package.json`.
 * As soon as a release branch is cut for a major, `main` must be bumped to the next major (i.e. `main` is always versioned as the next theoretical release branch).
+
+## Historical versioning (Electron 1.X)
+
+Electron versions *< 2.0* did not conform to the [SemVer](https://semver.org) spec: major versions corresponded to end-user API changes, minor versions corresponded to Chromium major releases, and patch versions corresponded to new features and bug fixes. While convenient for developers merging features, it creates problems for developers of client-facing applications. The QA testing cycles of major apps like Slack, Teams, Skype, VS Code, and GitHub Desktop can be lengthy and stability is a highly desired outcome. There is a high risk in adopting new features while trying to absorb bug fixes.
+
+Here is an example of the 1.x strategy:
+
+![1.x Versioning](../images/versioning-sketch-0.png)
+
+An app developed with `1.8.1` cannot take the `1.8.3` bug fix without either absorbing the `1.8.2` feature, or by backporting the fix and maintaining a new release line.
