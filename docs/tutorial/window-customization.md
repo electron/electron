@@ -21,7 +21,7 @@ const win = new BrowserWindow({ frame: false })
 
 ## Apply custom title bar styles _macOS_ _Windows_
 
-Title bar styles allow you to hide most of a Browser Window's chrome while keeping the
+Title bar styles allow you to hide most of a BrowserWindow's chrome while keeping the
 system's native window controls intact and can be configured with the `titleBarStyle`
 option in the `BrowserWindow` constructor.
 
