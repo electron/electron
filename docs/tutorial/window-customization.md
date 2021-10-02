@@ -144,7 +144,7 @@ const win = new BrowserWindow({ transparent: true })
 
 ### Limitations
 
-* You can not click through the transparent area. See
+* You cannot click through the transparent area. See
   [#1335](https://github.com/electron/electron/issues/1335) for details.
 * Transparent windows are not resizable. Setting `resizable` to `true` may make
   a transparent window stop working on some platforms.
