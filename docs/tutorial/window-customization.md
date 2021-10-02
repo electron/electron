@@ -85,7 +85,7 @@ const win = new BrowserWindow()
 win.setWindowButtonVisibility(false)
 ```
 
-> Note: Given the number of APIs available, there are many ways of achieving. For instance,
+> Note: Given the number of APIs available, there are many ways of achieving this. For instance,
 > combining `frame: false` with `win.setWindowButtonVisibility(true)` will yield the same
 > layout outcome as setting `titleBarStyle: 'hidden'`.
 
