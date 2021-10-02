@@ -154,7 +154,7 @@ const win = new BrowserWindow({ transparent: true })
 * The window will not be transparent when DevTools is opened.
 * On _Windows_:
   * Transparent windows will not work when DWM is disabled.
-  * transparent windows can not be maximized using the Windows system menu or by double
+  * Transparent windows can not be maximized using the Windows system menu or by double
   clicking the title bar. The reasoning behind this can be seen on
   PR [#28207](https://github.com/electron/electron/pull/28207).
 * On _macOS_:
