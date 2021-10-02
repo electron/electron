@@ -68,7 +68,7 @@ constructor.
 const { BrowserWindow } = require('electron')
 const win = new BrowserWindow({
   titleBarStyle: 'hidden',
-  trafficLightPosition: {x: 10, y: 10}
+  trafficLightPosition: { x: 10, y: 10 }
 })
 ```
 
