@@ -93,7 +93,7 @@ win.setWindowButtonVisibility(false)
 
 The [Window Controls Overlay API] is a web standard that gives web apps the ability to
 customize their title bar region when installed on desktop. Electron exposes this API
-through the `BrowserWindow` class' `titleBarOverlay` constructor option.
+through the `BrowserWindow` constructor option `titleBarOverlay`.
 
 This option only works whenever a custom `titlebarStyle` is applied on macOS or Windows.
 When `titleBarOverlay` is enabled, the window controls become exposed in their default
