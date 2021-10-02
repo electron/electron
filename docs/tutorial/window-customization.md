@@ -40,7 +40,9 @@ controls (“traffic lights”) in the top left.
 
 #### Customize the look of your traffic lights _macOS_
 
-The `customButtonsOnHover` title bar style will.
+The `customButtonsOnHover` title bar style will hide the traffic lights until you hover
+over them. This is useful if you want to create custom traffic lights in your HTML but still
+use the native UI to control the window.
 
 ```javascript
 const { BrowserWindow } = require('electron')
@@ -225,12 +227,13 @@ To make the whole window draggable, you can add `-webkit-app-region: drag` as
 body {
   -webkit-app-region: drag;
 }
+```
 
 And note that if you have made the whole window draggable, you must also mark
 buttons as non-draggable, otherwise it would be impossible for users to click on
 them:
 
-```css
+```css title='styles.css'
 button {
   -webkit-app-region: no-drag;
 }
