@@ -20,7 +20,7 @@ win.loadFile('index.html')
 ## Window customization
 
 The `BrowserWindow` class exposes various ways to modify the look and behaviour of
-your app's windows. For more detais, see the [Window Customization](../tutorial/window-customization.md)
+your app's windows. For more details, see the [Window Customization](../tutorial/window-customization.md)
 tutorial.
 
 ## Showing the window gracefully
