@@ -25,8 +25,8 @@ Title bar styles allow you to hide most of a BrowserWindow's chrome while keepin
 system's native window controls intact and can be configured with the `titleBarStyle`
 option in the `BrowserWindow` constructor.
 
-Applying the `hidden` title bar style results in a hidden title bar and a full
-size content window.
+Applying the `hidden` title bar style results in a hidden title bar and a full-size
+content window.
 
 ```javascript title='main.js'
 const { BrowserWindow } = require('electron')
