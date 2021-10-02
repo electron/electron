@@ -135,7 +135,7 @@ const win = new BrowserWindow({
 
 ## Create transparent windows
 
-By setting the `transparent` option to `true`, you can make a fully transparent window,
+By setting the `transparent` option to `true`, you can make a fully transparent window.
 
 ```javascript title='main.js'
 const { BrowserWindow } = require('electron')
