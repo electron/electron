@@ -16,7 +16,7 @@ constructor.
 
 ```javascript title='main.js'
 const { BrowserWindow } = require('electron')
-const win = new BrowserWindow({frame: false })
+const win = new BrowserWindow({ frame: false })
 ```
 
 ## Apply custom title bar styles _macOS_ _Windows_
