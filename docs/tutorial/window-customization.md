@@ -158,7 +158,7 @@ const win = new BrowserWindow({ transparent: true })
   clicking the title bar. The reasoning behind this can be seen on
   PR [#28207](https://github.com/electron/electron/pull/28207).
 * On _macOS_:
-  * the native window shadow will not be shown on a transparent window.
+  * The native window shadow will not be shown on a transparent window.
 
 ## Create click-through windows
 
