@@ -21,13 +21,6 @@ const supportedWebViewEvents = Object.keys(webViewEvents);
 const guestInstances = new Map<number, GuestInstance>();
 const embedderElementsMap = new Map<string, number>();
 
-function sanitizeOptionsForGuest (options: Record<string, any>) {
-  const ret = { ...options };
-  // WebContents values can't be sent over IPC.
-  delete ret.webContents;
-  return ret;
-}
-
 function makeWebPreferences (embedder: Electron.WebContents, params: Record<string, any>) {
   // parse the 'webpreferences' attribute string, if set
   // this uses the same parsing rules as window.open uses for its features
@@ -138,7 +131,12 @@ const createGuest = function (embedder: Electron.WebContents, embedderFrameId: n
   const makeProps = (eventKey: string, args: any[]) => {
     const props: Record<string, any> = {};
     webViewEvents[eventKey].forEach((prop, index) => {
-      props[prop] = args[index];
+      if (Array.isArray(prop)) {
+        const [name, sanitizer] = prop;
+        props[name] = sanitizer(args[index]);
+      } else {
+        props[prop as string] = args[index];
+      }
     });
     return props;
   };
@@ -149,15 +147,6 @@ const createGuest = function (embedder: Electron.WebContents, embedderFrameId: n
       sendToEmbedder(IPC_MESSAGES.GUEST_VIEW_INTERNAL_DISPATCH_EVENT, event, makeProps(event, args));
     });
   }
-
-  guest.on('new-window', function (event, url, frameName, disposition, options) {
-    sendToEmbedder(IPC_MESSAGES.GUEST_VIEW_INTERNAL_DISPATCH_EVENT, 'new-window', {
-      url,
-      frameName,
-      disposition,
-      options: sanitizeOptionsForGuest(options)
-    });
-  });
 
   // Dispatch guest's IPC messages to embedder.
   guest.on('ipc-message-host' as any, function (event: Electron.IpcMainEvent, channel: string, args: any[]) {

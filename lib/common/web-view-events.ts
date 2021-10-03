@@ -1,4 +1,16 @@
-export const webViewEvents: Record<string, readonly string[]> = {
+type Sanitizer = (obj: Record<string, any>) => Record<string, any>;
+
+function makeSanitizer (names: string[]): Sanitizer {
+  return (obj: Record<string, any>) => {
+    const ret = { ...obj };
+    for (const name of names) {
+      delete ret[name];
+    }
+    return ret;
+  };
+}
+
+export const webViewEvents: Record<string, readonly (string | readonly [string, Sanitizer])[]> = {
   'load-commit': ['url', 'isMainFrame'],
   'did-attach': [],
   'did-finish-load': [],
@@ -8,7 +20,8 @@ export const webViewEvents: Record<string, readonly string[]> = {
   'did-stop-loading': [],
   'dom-ready': [],
   'console-message': ['level', 'message', 'line', 'sourceId'],
-  'context-menu': ['params'],
+  'context-menu': [['params', makeSanitizer(['frame'])]],
+  'new-window': ['url', 'frameName', 'disposition', ['options', makeSanitizer(['webContents'])]],
   'devtools-opened': [],
   'devtools-closed': [],
   'devtools-focused': [],
