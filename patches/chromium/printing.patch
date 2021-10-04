@@ -11,10 +11,26 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/chrome/browser/printing/print_job.cc b/chrome/browser/printing/print_job.cc
-index 5e44b586937c4100e9cb55f152338a11f24eed8c..a59a948d36f2bd7939530c6cb53a1435186b0eac 100644
+index 5e44b586937c4100e9cb55f152338a11f24eed8c..879add3dc328cea225b9f4c91bd103939429beeb 100644
 --- a/chrome/browser/printing/print_job.cc
 +++ b/chrome/browser/printing/print_job.cc
-@@ -381,11 +381,18 @@ void PrintJob::StartPdfToEmfConversion(
+@@ -89,6 +89,7 @@ bool PrintWithReducedRasterization(PrefService* prefs) {
+   return base::FeatureList::IsEnabled(features::kPrintWithReducedRasterization);
+ }
+ 
++#if 0
+ PrefService* GetPrefsForWebContents(content::WebContents* web_contents) {
+   // TODO(thestig): Figure out why crbug.com/1083911 occurred, which is likely
+   // because `web_contents` was null. As a result, this section has many more
+@@ -97,6 +98,7 @@ PrefService* GetPrefsForWebContents(content::WebContents* web_contents) {
+       web_contents ? web_contents->GetBrowserContext() : nullptr;
+   return context ? Profile::FromBrowserContext(context)->GetPrefs() : nullptr;
+ }
++#endif
+ 
+ #endif  // defined(OS_WIN)
+ 
+@@ -381,11 +383,18 @@ void PrintJob::StartPdfToEmfConversion(
    // seems to work with the fix for this bug applied.
    const PrintSettings& settings = document()->settings();
    bool print_text_with_gdi =
@@ -35,7 +51,19 @@ index 5e44b586937c4100e9cb55f152338a11f24eed8c..a59a948d36f2bd7939530c6cb53a1435
  
    using RenderMode = PdfRenderSettings::Mode;
    RenderMode mode;
-@@ -531,6 +538,10 @@ void PrintJob::OnNotifyPrintJobEvent(const JobEventDetails& event_details) {
+@@ -480,8 +489,10 @@ void PrintJob::StartPdfToPostScriptConversion(
+   if (ps_level2) {
+     mode = PdfRenderSettings::Mode::POSTSCRIPT_LEVEL2;
+   } else {
++#if 0
+     PrefService* prefs = GetPrefsForWebContents(worker_->GetWebContents());
+-    mode = PrintWithPostScriptType42Fonts(prefs)
++#endif
++    mode = PrintWithPostScriptType42Fonts(nullptr)
+                ? PdfRenderSettings::Mode::POSTSCRIPT_LEVEL3_WITH_TYPE42_FONTS
+                : PdfRenderSettings::Mode::POSTSCRIPT_LEVEL3;
+   }
+@@ -531,6 +542,10 @@ void PrintJob::OnNotifyPrintJobEvent(const JobEventDetails& event_details) {
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
  
    switch (event_details.type()) {
