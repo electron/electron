@@ -1,0 +1,42 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Fri, 1 Oct 2021 08:03:08 +0900
+Subject: fix: remove expired DST Root CA X3
+
+The alternative ISRG Root X1 trusted certificate is
+already available in this bundle.
+
+https://letsencrypt.org/docs/certificate-compatibility/
+https://www.openssl.org/blog/blog/2021/09/13/LetsEncryptRootCertExpire/
+
+diff --git a/src/node_root_certs.h b/src/node_root_certs.h
+index 47beb730f4b853f1bf248a7fd1b1cd7d726bdf7e..94ac882ec7e4e2eb61d1f0094f79fb6f603d978c 100644
+--- a/src/node_root_certs.h
++++ b/src/node_root_certs.h
+@@ -525,26 +525,6 @@
+ "yx5DaMkHJ8HSXPfqIbloEpw8nL+e/IBcm2PN7EeqJSdnoDfzAIJ9VNep+OkuE6N36B9K\n"
+ "-----END CERTIFICATE-----",
+ 
+-/* DST Root CA X3 */
+-"-----BEGIN CERTIFICATE-----\n"
+-"MIIDSjCCAjKgAwIBAgIQRK+wgNajJ7qJMDmGLvhAazANBgkqhkiG9w0BAQUFADA/MSQwIgYD\n"
+-"VQQKExtEaWdpdGFsIFNpZ25hdHVyZSBUcnVzdCBDby4xFzAVBgNVBAMTDkRTVCBSb290IENB\n"
+-"IFgzMB4XDTAwMDkzMDIxMTIxOVoXDTIxMDkzMDE0MDExNVowPzEkMCIGA1UEChMbRGlnaXRh\n"
+-"bCBTaWduYXR1cmUgVHJ1c3QgQ28uMRcwFQYDVQQDEw5EU1QgUm9vdCBDQSBYMzCCASIwDQYJ\n"
+-"KoZIhvcNAQEBBQADggEPADCCAQoCggEBAN+v6ZdQCINXtMxiZfaQguzH0yxrMMpb7NnDfcdA\n"
+-"wRgUi+DoM3ZJKuM/IUmTrE4Orz5Iy2Xu/NMhD2XSKtkyj4zl93ewEnu1lcCJo6m67XMuegwG\n"
+-"MoOifooUMM0RoOEqOLl5CjH9UL2AZd+3UWODyOKIYepLYYHsUmu5ouJLGiifSKOeDNoJjj4X\n"
+-"Lh7dIN9bxiqKqy69cK3FCxolkHRyxXtqqzTWMIn/5WgTe1QLyNau7Fqckh49ZLOMxt+/yUFw\n"
+-"7BZy1SbsOFU5Q9D8/RhcQPGX69Wam40dutolucbY38EVAjqr2m7xPi71XAicPNaDaeQQmxkq\n"
+-"tilX4+U9m5/wAl0CAwEAAaNCMEAwDwYDVR0TAQH/BAUwAwEB/zAOBgNVHQ8BAf8EBAMCAQYw\n"
+-"HQYDVR0OBBYEFMSnsaR7LHH62+FLkHX/xBVghYkQMA0GCSqGSIb3DQEBBQUAA4IBAQCjGiyb\n"
+-"FwBcqR7uKGY3Or+Dxz9LwwmglSBd49lZRNI+DT69ikugdB/OEIKcdBodfpga3csTS7MgROSR\n"
+-"6cz8faXbauX+5v3gTt23ADq1cEmv8uXrAvHRAosZy5Q6XkjEGB5YGV8eAlrwDPGxrancWYaL\n"
+-"bumR9YbK+rlmM6pZW87ipxZzR8srzJmwN0jP41ZL9c8PDHIyh8bwRLtTcm1D9SZImlJnt1ir\n"
+-"/md2cXjbDaJWFBM5JDGFoqgCWjBH4d1QB7wCCZAA62RjYJsWvIjJEubSfZGL+T0yjWW06Xyx\n"
+-"V3bqxbYoOb8VZRzI9neWagqNdwvYkQsEjgfbKbYK7p2CNTUQ\n"
+-"-----END CERTIFICATE-----",
+-
+ /* SwissSign Gold CA - G2 */
+ "-----BEGIN CERTIFICATE-----\n"
+ "MIIFujCCA6KgAwIBAgIJALtAHEP1Xk+wMA0GCSqGSIb3DQEBBQUAMEUxCzAJBgNVBAYTAkNI\n"
