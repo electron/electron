@@ -5,10 +5,3 @@ export const rendererModuleList: ElectronInternal.ModuleEntry[] = [
   { name: 'ipcRenderer', loader: () => require('./ipc-renderer') },
   { name: 'webFrame', loader: () => require('./web-frame') }
 ];
-
-if (BUILDFLAG(ENABLE_DESKTOP_CAPTURER)) {
-  rendererModuleList.push({
-    name: 'desktopCapturer',
-    loader: () => require('@electron/internal/renderer/api/desktop-capturer')
-  });
-}

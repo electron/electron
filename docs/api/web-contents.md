@@ -856,15 +856,6 @@ Returns:
 
 Emitted when the renderer process sends a synchronous message via `ipcRenderer.sendSync()`.
 
-#### Event: 'desktop-capturer-get-sources'
-
-Returns:
-
-* `event` Event
-
-Emitted when `desktopCapturer.getSources()` is called in the renderer process.
-Calling `event.preventDefault()` will make it return empty sources.
-
 #### Event: 'preferred-size-changed'
 
 Returns:
