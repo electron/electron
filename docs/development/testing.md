@@ -43,7 +43,7 @@ would run `npm run test -- -g ipc`.
 ## Node.js Smoke Tests
 
 If you've made changes that might affect the way Node.js is embedded into Electron,
-we have a test runner that runs all of Node.js' own tests with Electron's custom fork
+we have a test runner that runs all of the tests from Node.js, using Electron's custom fork
 of Node.js.
 
 To run all of the Node.js tests:
