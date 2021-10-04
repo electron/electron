@@ -3,7 +3,7 @@
 If you experience crashes or issues in Electron that you believe are not caused
 by your JavaScript application, but instead by Electron itself, debugging can
 be a little bit tricky especially for developers not used to native/C++
-debugging. However, using lldb, and the Electron source code, you can enable
+debugging. However, using `lldb` and the Electron source code, you can enable
 step-through debugging with breakpoints inside Electron's source code.
 You can also use [XCode for debugging](debugging-with-xcode.md) if you prefer a graphical interface.
 
