@@ -1004,3 +1004,78 @@ Emitted when DevTools is focused / opened.
 
 [runtime-enabled-features]: https://cs.chromium.org/chromium/src/third_party/blink/renderer/platform/runtime_enabled_features.json5?l=70
 [chrome-webview]: https://developer.chrome.com/docs/extensions/reference/webviewTag/
+
+### Event: 'context-menu'
+
+Returns:
+
+* `params` Object
+  * `x` Integer - x coordinate.
+  * `y` Integer - y coordinate.
+  * `linkURL` String - URL of the link that encloses the node the context menu
+    was invoked on.
+  * `linkText` String - Text associated with the link. May be an empty
+    string if the contents of the link are an image.
+  * `pageURL` String - URL of the top level page that the context menu was
+    invoked on.
+  * `frameURL` String - URL of the subframe that the context menu was invoked
+    on.
+  * `srcURL` String - Source URL for the element that the context menu
+    was invoked on. Elements with source URLs are images, audio and video.
+  * `mediaType` String - Type of the node the context menu was invoked on. Can
+    be `none`, `image`, `audio`, `video`, `canvas`, `file` or `plugin`.
+  * `hasImageContents` Boolean - Whether the context menu was invoked on an image
+    which has non-empty contents.
+  * `isEditable` Boolean - Whether the context is editable.
+  * `selectionText` String - Text of the selection that the context menu was
+    invoked on.
+  * `titleText` String - Title text of the selection that the context menu was
+    invoked on.
+  * `altText` String - Alt text of the selection that the context menu was
+    invoked on.
+  * `suggestedFilename` String - Suggested filename to be used when saving file through 'Save
+    Link As' option of context menu.
+  * `selectionRect` [Rectangle](structures/rectangle.md) - Rect representing the coordinates in the document space of the selection.
+  * `selectionStartOffset` Number - Start position of the selection text.
+  * `referrerPolicy` [Referrer](structures/referrer.md) - The referrer policy of the frame on which the menu is invoked.
+  * `misspelledWord` String - The misspelled word under the cursor, if any.
+  * `dictionarySuggestions` String[] - An array of suggested words to show the
+    user to replace the `misspelledWord`.  Only available if there is a misspelled
+    word and spellchecker is enabled.
+  * `frameCharset` String - The character encoding of the frame on which the
+    menu was invoked.
+  * `inputFieldType` String - If the context menu was invoked on an input
+    field, the type of that field. Possible values are `none`, `plainText`,
+    `password`, `other`.
+  * `spellcheckEnabled` Boolean - If the context is editable, whether or not spellchecking is enabled.
+  * `menuSourceType` String - Input source that invoked the context menu.
+    Can be `none`, `mouse`, `keyboard`, `touch`, `touchMenu`, `longPress`, `longTap`, `touchHandle`, `stylus`, `adjustSelection`, or `adjustSelectionReset`.
+  * `mediaFlags` Object - The flags for the media element the context menu was
+    invoked on.
+    * `inError` Boolean - Whether the media element has crashed.
+    * `isPaused` Boolean - Whether the media element is paused.
+    * `isMuted` Boolean - Whether the media element is muted.
+    * `hasAudio` Boolean - Whether the media element has audio.
+    * `isLooping` Boolean - Whether the media element is looping.
+    * `isControlsVisible` Boolean - Whether the media element's controls are
+      visible.
+    * `canToggleControls` Boolean - Whether the media element's controls are
+      toggleable.
+    * `canPrint` Boolean - Whether the media element can be printed.
+    * `canSave` Boolean - Whether or not the media element can be downloaded.
+    * `canShowPictureInPicture` Boolean - Whether the media element can show picture-in-picture.
+    * `isShowingPictureInPicture` Boolean - Whether the media element is currently showing picture-in-picture.
+    * `canRotate` Boolean - Whether the media element can be rotated.
+    * `canLoop` Boolean - Whether the media element can be looped.
+  * `editFlags` Object - These flags indicate whether the renderer believes it
+    is able to perform the corresponding action.
+    * `canUndo` Boolean - Whether the renderer believes it can undo.
+    * `canRedo` Boolean - Whether the renderer believes it can redo.
+    * `canCut` Boolean - Whether the renderer believes it can cut.
+    * `canCopy` Boolean - Whether the renderer believes it can copy.
+    * `canPaste` Boolean - Whether the renderer believes it can paste.
+    * `canDelete` Boolean - Whether the renderer believes it can delete.
+    * `canSelectAll` Boolean - Whether the renderer believes it can select all.
+    * `canEditRichly` Boolean - Whether the renderer believes it can edit text richly.
+
+Emitted when there is a new context menu that needs to be handled.
