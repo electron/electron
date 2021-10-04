@@ -111,7 +111,9 @@ class Dictionary : public gin::Dictionary {
   }
 
   template <typename K, typename V>
-  bool SetGetter(const K& key, const V& val) {
+  bool SetGetter(const K& key,
+                 const V& val,
+                 v8::PropertyAttribute attribute = v8::None) {
     AccessorValue<V> acc_value;
     acc_value.Value = val;
 
@@ -136,7 +138,7 @@ class Dictionary : public gin::Dictionary {
               if (gin::TryConvertToV8(info.GetIsolate(), val, &v8_value))
                 info.GetReturnValue().Set(v8_value);
             },
-            NULL, v8_value_accessor)
+            nullptr, v8_value_accessor, v8::DEFAULT, attribute)
         .ToChecked();
   }
 
