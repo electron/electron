@@ -1,0 +1,112 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Alexis Hetu <sugoi@google.com>
+Date: Wed, 15 Sep 2021 13:40:28 -0400
+Subject: Fix integer overflow in BlockLayoutEncoder
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+BlockLayoutEncoder::mCurrentOffset's computation had the
+possibility of causing integer overflows in multiple places,
+so this CL adds CheckedNumeric variables in a number of
+these occurrences in order to prevent integer overflows and
+causing issues.
+
+The issue in this case was an integer overflow causing the
+code in ValidateTypeSizeLimitations.cpp to use an invalid
+result from "layoutEncoder.getCurrentOffset()", which ended
+up compiling a shader which would later cause an OOM error.
+
+Bug: chromium:1248665
+Change-Id: I688d669f21c6dc2957e43bdf91f8f8f08180a6f7
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3163356
+Reviewed-by: Jamie Madill <jmadill@chromium.org>
+Reviewed-by: Kenneth Russell <kbr@chromium.org>
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Commit-Queue: Alexis Hétu <sugoi@chromium.org>
+(cherry picked from commit 158ef351fc8b827c201e056a8ddba50fd4235671)
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3194392
+
+diff --git a/src/compiler/translator/blocklayout.cpp b/src/compiler/translator/blocklayout.cpp
+index 65a729e05d9f9abca5ca1ca72466f68751ed602b..f523da7de61a156212ac578481b679fd626b5046 100644
+--- a/src/compiler/translator/blocklayout.cpp
++++ b/src/compiler/translator/blocklayout.cpp
+@@ -198,6 +198,13 @@ BlockMemberInfo BlockLayoutEncoder::encodeType(GLenum type,
+     return memberInfo;
+ }
+ 
++size_t BlockLayoutEncoder::getCurrentOffset() const
++{
++    angle::base::CheckedNumeric<size_t> checkedOffset(mCurrentOffset);
++    checkedOffset *= kBytesPerComponent;
++    return checkedOffset.ValueOrDefault(std::numeric_limits<size_t>::max());
++}
++
+ size_t BlockLayoutEncoder::getShaderVariableSize(const ShaderVariable &structVar, bool isRowMajor)
+ {
+     size_t currentOffset = mCurrentOffset;
+@@ -225,7 +232,13 @@ size_t BlockLayoutEncoder::GetBlockRegisterElement(const BlockMemberInfo &info)
+ 
+ void BlockLayoutEncoder::align(size_t baseAlignment)
+ {
+-    mCurrentOffset = rx::roundUp<size_t>(mCurrentOffset, baseAlignment);
++    angle::base::CheckedNumeric<size_t> checkedOffset(mCurrentOffset);
++    checkedOffset += baseAlignment;
++    checkedOffset -= 1;
++    angle::base::CheckedNumeric<size_t> checkedAlignmentOffset = checkedOffset;
++    checkedAlignmentOffset %= baseAlignment;
++    checkedOffset -= checkedAlignmentOffset.ValueOrDefault(std::numeric_limits<size_t>::max());
++    mCurrentOffset = checkedOffset.ValueOrDefault(std::numeric_limits<size_t>::max());
+ }
+ 
+ // StubBlockEncoder implementation.
+@@ -288,7 +301,7 @@ void Std140BlockEncoder::getBlockLayoutInfo(GLenum type,
+         baseAlignment              = ComponentAlignment(numComponents);
+     }
+ 
+-    mCurrentOffset = rx::roundUp(mCurrentOffset, baseAlignment);
++    align(baseAlignment);
+ 
+     *matrixStrideOut = matrixStride;
+     *arrayStrideOut  = arrayStride;
+@@ -302,16 +315,23 @@ void Std140BlockEncoder::advanceOffset(GLenum type,
+ {
+     if (!arraySizes.empty())
+     {
+-        mCurrentOffset += arrayStride * gl::ArraySizeProduct(arraySizes);
++        angle::base::CheckedNumeric<size_t> checkedOffset(arrayStride);
++        checkedOffset *= gl::ArraySizeProduct(arraySizes);
++        checkedOffset += mCurrentOffset;
++        mCurrentOffset = checkedOffset.ValueOrDefault(std::numeric_limits<size_t>::max());
+     }
+     else if (gl::IsMatrixType(type))
+     {
+-        const int numRegisters = gl::MatrixRegisterCount(type, isRowMajorMatrix);
+-        mCurrentOffset += matrixStride * numRegisters;
++        angle::base::CheckedNumeric<size_t> checkedOffset(matrixStride);
++        checkedOffset *= gl::MatrixRegisterCount(type, isRowMajorMatrix);
++        checkedOffset += mCurrentOffset;
++        mCurrentOffset = checkedOffset.ValueOrDefault(std::numeric_limits<size_t>::max());
+     }
+     else
+     {
+-        mCurrentOffset += gl::VariableComponentCount(type);
++        angle::base::CheckedNumeric<size_t> checkedOffset(mCurrentOffset);
++        checkedOffset += gl::VariableComponentCount(type);
++        mCurrentOffset = checkedOffset.ValueOrDefault(std::numeric_limits<size_t>::max());
+     }
+ }
+ 
+diff --git a/src/compiler/translator/blocklayout.h b/src/compiler/translator/blocklayout.h
+index 27b2247cb5f14c77577d46c9deec7308bcf1e73c..5004a5c206a6148faba29983044207046de1dcd4 100644
+--- a/src/compiler/translator/blocklayout.h
++++ b/src/compiler/translator/blocklayout.h
+@@ -80,7 +80,7 @@ class BlockLayoutEncoder
+                                const std::vector<unsigned int> &arraySizes,
+                                bool isRowMajorMatrix);
+ 
+-    size_t getCurrentOffset() const { return mCurrentOffset * kBytesPerComponent; }
++    size_t getCurrentOffset() const;
+     size_t getShaderVariableSize(const ShaderVariable &structVar, bool isRowMajor);
+ 
+     // Called when entering/exiting a structure variable.
