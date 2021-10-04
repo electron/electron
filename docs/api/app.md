@@ -1072,7 +1072,7 @@ indicates success while any other value indicates failure according to Chromium 
     Linux.
   * `secureDnsMode` String (optional) - Can be "off", "automatic" or "secure".
     Configures the DNS-over-HTTP mode. When "off", no DoH lookups will be
-    performed. When "automatic", DoH lookups will be peformed first if DoH is
+    performed. When "automatic", DoH lookups will be performed first if DoH is
     available, and insecure DNS lookups will be performed as a fallback. When
     "secure", only DoH lookups will be performed. Defaults to "automatic".
   * `secureDnsServers` String[]&#32;(optional) - A list of DNS-over-HTTP
