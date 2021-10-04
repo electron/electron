@@ -46,7 +46,7 @@ If you've made changes that might affect the way Node.js is embedded into Electr
 we have a test runner that runs all of Node.js' own tests with Electron's custom fork
 of Node.js.
 
-To run all of Node.js' tests:
+To run all of the Node.js tests:
 
 ```bash
 $ node script/node-spec-runner.js
