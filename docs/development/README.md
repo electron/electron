@@ -35,8 +35,7 @@ of what each directory is responsible for. The [source code directory structure]
 
 ## Opening Issues on Electron
 
-For any issue, there are generally three ways an individual can
-contribute:
+For any issue, there are generally three ways an individual can contribute:
 
 1. By opening the issue for discussion
     * If you believe that you have found a new bug in Electron, you should report it by creating a new issue in
