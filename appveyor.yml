@@ -71,6 +71,7 @@ build_script:
       --unmanaged
       %GCLIENT_EXTRA_ARGS%
       "https://github.com/electron/electron"
+  - gclient sync --with_branch_heads --with_tags
 after_build:
 - ps: |
     if ($env:TARGET_ARCH -eq 'x64') {
