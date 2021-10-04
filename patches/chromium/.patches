@@ -149,4 +149,5 @@ linux_sandbox_update_syscall_numbers_for_all_platforms.patch
 linux_sandbox_return_enosys_for_clone3.patch
 content-visibility_add_a_clipper_fix_for_content-visibility.patch
 kill_a_renderer_if_it_provides_an_unexpected_frameownerelementtype.patch
+cherry-pick-096afc1c5428.patch
 cherry-pick-4e528a5a8d83.patch
