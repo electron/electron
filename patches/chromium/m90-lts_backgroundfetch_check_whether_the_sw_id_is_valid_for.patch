@@ -1,8 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Zakhar Voit <voit@google.com>
 Date: Wed, 29 Sep 2021 14:24:18 +0000
-Subject: [M90-LTS][BackgroundFetch] Check whether the SW ID is valid for
- GetIds().
+Subject: Check whether the SW ID is valid for GetIds().
 
 M90-LTS merge conflicts solved by using origin instead of storage key
 because the storage key migration happened after M90.
