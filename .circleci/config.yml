@@ -6,75 +6,75 @@ setup: << pipeline.parameters.run-setup >>
 
 orbs:
   # continuation: circleci/continuation@0.1.2
-  path-filtering: circleci/path-filtering@0.0.2
+  path-filtering: circleci/path-filtering@0.0.3
 
 parameters:
   run-setup:
     type: boolean
     default: true
+
   run-docs-only:
     type: boolean
     default: false
+
   run-full-build:
     type: boolean
-    default: False
+    default: false
 
-# TODO: Use only the necessary parts of the doc-only steps
-# to trigger the right configuration
-step-check-for-doc-only-change: &step-check-for-doc-only-change
+step-checkout-electron: &step-checkout-electron
+  checkout:
+    path: src/electron
+
+step-checkout-doc-only-change: &step-checkout-doc-only-change
   run:
     name: Check if commit is doc only change
     command: |
       cd src/electron
       node script/yarn install --frozen-lockfile
-      if node script/doc-only-change.js --prNumber=$CIRCLE_PR_NUMBER --prURL=$CIRCLE_PULL_REQUEST --prBranch=$CIRCLE_BRANCH; then
-        #PR is doc only change; save file with value true to indicate doc only change
-        echo "true" > .skip-ci-build
-      else
-        #PR is not a doc only change; create empty file to indicate check has been done
-        touch .skip-ci-build
-      fi
 
-step-persist-doc-only-change: &step-persist-doc-only-change
-  persist_to_workspace:
-    root: .
-    paths:
-      - src/electron/.skip-ci-build
+step-ts-compile: &step-ts-compile
+  run:
+    name: Run TS/JS compile on doc only change
+    command: |
+      cd src
+      ninja -C out/Default electron:default_app_js -j $NUMBER_OF_NINJA_PROCESSES
+      ninja -C out/Default electron:electron_js2c -j $NUMBER_OF_NINJA_PROCESSES
 
 jobs:
+  electron-checkout:
+    docker:
+      - image: alpine
+    steps:
+      - *step-checkout-electron
+
   docs-only:
     docker:
       - image: alpine
     steps:
-      - checkout
-      - *step-check-for-doc-only-change
-      - run: "echo 'Checking for docs only changes!'"
+      - *step-checkout-electron
+      - *step-checkout-doc-only-change
+      - run: "echo 'Running only a docs change'"
 
   full-build:
-    machine: true
-    steps:
-      - checkout
-      - run: "echo 'We're completing a full Electron build!'"
-
-  full-build-post:
     docker:
       - image: alpine
     steps:
-      - run: "echo 'We're completing a full Electron build!'"
+      - run: "echo 'Running a full Electron build.'"
 
 workflows:
   pre:
     when: << pipeline.parameters.run-setup >>
     jobs:
+      - electron-checkout
       - path-filtering/filter:
-          # Compare files on main
-          base-revision: main
-          # Config for continuation; herein we reuse this config itself
+          # Compare files on all branches, using the webhook payload from Github
+          base-revision: << pipeline.git.branch >>
           config-path: .circleci/config.yml
-          # 3-column space-separated table for mapping; `path-to-test parameter-to-set value-for-parameter` for each row
+          # Params for mapping; `path-to-test parameter-to-set value-for-parameter` for each row
           mapping: |
             .* run-setup false
-            docs-only/.* run-docs-only true
+            ^((?!docs/).)*$ run-full-build true
+            project/src/electron/docs/.* run-docs-only true
   docs-only:
     when: << pipeline.parameters.run-docs-only >>
     jobs:
@@ -83,22 +83,3 @@ workflows:
     when: << pipeline.parameters.run-full-build >>
     jobs:
       - full-build
-      - full-build-post:
-          requires:
-            - full-build
-
-# step-maybe-early-exit-doc-only-change: &step-maybe-early-exit-doc-only-change
-#   run:
-#     name: Shortcircuit build if doc only change
-#     command: |
-#       if [ -s src/electron/.skip-ci-build ]; then
-#         circleci-agent step halt
-#       fi
-
-# step-maybe-early-exit-no-doc-change: &step-maybe-early-exit-no-doc-change
-#   run:
-#     name: Shortcircuit job if change is not doc only
-#     command: |
-#       if [ ! -s src/electron/.skip-ci-build ]; then
-#         circleci-agent step halt
-#       fi
