@@ -31,7 +31,7 @@ In order to contribute to Electron, the first thing you'll want to do is get the
 If you would prefer to build Electron manually, see the [build instructions](build-instructions-gn.md).
 
 Once you've checked out and built the code, you may want to take a look around the source tree to get a better idea
-of what each directory is responsible for. [Source code directory structure](source-code-directory-structure.md) gives a good overview of the purpose of each directory.
+of what each directory is responsible for. The [source code directory structure](source-code-directory-structure.md) gives a good overview of the purpose of each directory.
 
 ## Opening Issues on Electron
 
