@@ -36,3 +36,4 @@ node-api_faster_threadsafe_function.patch
 src_remove_extra_semi_after_member_fn.patch
 errors_refactor_to_use_more_primordials.patch
 repl_fix_crash_when_sharedarraybuffer_disabled.patch
+fix_remove_expired_dst_root_ca_x3.patch
