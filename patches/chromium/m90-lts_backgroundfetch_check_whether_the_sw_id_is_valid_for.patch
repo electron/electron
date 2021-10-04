@@ -1,7 +1,11 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
-From: Rayan Kanso <rayankans@google.com>
-Date: Tue, 7 Sep 2021 19:35:02 +0000
-Subject: Check whether the SW ID is valid for GetIds().
+From: Zakhar Voit <voit@google.com>
+Date: Wed, 29 Sep 2021 14:24:18 +0000
+Subject: [M90-LTS][BackgroundFetch] Check whether the SW ID is valid for
+ GetIds().
+
+M90-LTS merge conflicts solved by using origin instead of storage key
+because the storage key migration happened after M90.
 
 (cherry picked from commit d97b8b86be732448cbc57b47f6b46547c9866df3)
 
@@ -11,11 +15,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3135479
 Reviewed-by: Richard Knoll <knollr@chromium.org>
 Commit-Queue: Rayan Kanso <rayankans@chromium.org>
 Cr-Original-Commit-Position: refs/heads/main@{#917314}
-Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3143705
-Reviewed-by: Rayan Kanso <rayankans@chromium.org>
-Commit-Queue: Richard Knoll <knollr@chromium.org>
-Cr-Commit-Position: refs/branch-heads/4606@{#828}
-Cr-Branched-From: 35b0d5a9dc8362adfd44e2614f0d5b7402ef63d0-refs/heads/master@{#911515}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3190253
+Reviewed-by: Victor-Gabriel Savu <vsavu@google.com>
+Owners-Override: Victor-Gabriel Savu <vsavu@google.com>
+Commit-Queue: Zakhar Voit <voit@google.com>
+Cr-Commit-Position: refs/branch-heads/4430@{#1627}
+Cr-Branched-From: e5ce7dc4f7518237b3d9bb93cccca35d25216cbe-refs/heads/master@{#857950}
 
 diff --git a/content/browser/background_fetch/background_fetch_service_unittest.cc b/content/browser/background_fetch/background_fetch_service_unittest.cc
 index 6f9c4e466cbec3fa76dc68ac921ec27a9d5ab88b..bbab50e4f4771596cadba107bafe4a5ca0e55c72 100644
@@ -49,7 +54,7 @@ index 6f9c4e466cbec3fa76dc68ac921ec27a9d5ab88b..bbab50e4f4771596cadba107bafe4a5c
  }
  
 diff --git a/content/browser/background_fetch/storage/get_developer_ids_task.cc b/content/browser/background_fetch/storage/get_developer_ids_task.cc
-index 57114a79379a605105d10633e2658103cb5af2aa..46ea4b8db5efd64ca72917a35ef209d509764928 100644
+index 57114a79379a605105d10633e2658103cb5af2aa..53b9062c2d7da82b48d36d6d9eb8af01262b2dd0 100644
 --- a/content/browser/background_fetch/storage/get_developer_ids_task.cc
 +++ b/content/browser/background_fetch/storage/get_developer_ids_task.cc
 @@ -9,6 +9,7 @@
@@ -80,7 +85,7 @@ index 57114a79379a605105d10633e2658103cb5af2aa..46ea4b8db5efd64ca72917a35ef209d5
 +  }
 +
 +  // TODO(crbug.com/1199077): Move this check into the SW context.
-+  if (registration->key() != storage_key_) {
++  if (registration->origin() != origin_) {
 +    SetStorageErrorAndFinish(
 +        BackgroundFetchStorageError::kServiceWorkerStorageError);
 +    return;
