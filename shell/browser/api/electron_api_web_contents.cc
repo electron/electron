@@ -3713,7 +3713,9 @@ void WebContents::UpdateHtmlApiFullscreen(bool fullscreen) {
 std::string WebContents::GetMediaSourceID(
     content::WebContents* request_web_contents) {
   auto* frame_host = web_contents()->GetMainFrame();
-  DCHECK(frame_host);
+  if (!frame_host)
+    return std::string();
+
   content::DesktopMediaID media_id(
       content::DesktopMediaID::TYPE_WEB_CONTENTS,
       content::DesktopMediaID::kNullId,
@@ -3721,7 +3723,8 @@ std::string WebContents::GetMediaSourceID(
                                          frame_host->GetRoutingID()));
 
   auto* request_frame_host = request_web_contents->GetMainFrame();
-  DCHECK(request_frame_host);
+  if (!request_frame_host)
+    return std::string();
 
   std::string id =
       content::DesktopStreamsRegistry::GetInstance()->RegisterStream(
