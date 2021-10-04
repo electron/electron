@@ -71,8 +71,7 @@ bool ElectronSerialDelegate::HasPortPermission(
   auto* chooser_context =
       SerialChooserContextFactory::GetForBrowserContext(browser_context);
   return chooser_context->HasPortPermission(
-      frame->GetLastCommittedOrigin(),
-      web_contents->GetMainFrame()->GetLastCommittedOrigin(), port);
+      web_contents->GetMainFrame()->GetLastCommittedOrigin(), port, frame);
 }
 
 device::mojom::SerialPortManager* ElectronSerialDelegate::GetPortManager(

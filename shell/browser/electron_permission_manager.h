@@ -13,6 +13,7 @@
 #include "base/containers/id_map.h"
 #include "base/values.h"
 #include "content/public/browser/permission_controller_delegate.h"
+#include "gin/dictionary.h"
 
 namespace content {
 class WebContents;
@@ -76,6 +77,16 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
                                   content::RenderFrameHost* render_frame_host,
                                   const GURL& requesting_origin,
                                   const base::DictionaryValue* details) const;
+
+  bool CheckDevicePermission(content::PermissionType permission,
+                             const url::Origin& origin,
+                             const base::Value* object,
+                             content::RenderFrameHost* render_frame_host) const;
+
+  void GrantDevicePermission(content::PermissionType permission,
+                             const url::Origin& origin,
+                             const base::Value* object,
+                             content::RenderFrameHost* render_frame_host) const;
 
  protected:
   void OnPermissionResponse(int request_id,

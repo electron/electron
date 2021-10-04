@@ -34,3 +34,4 @@ fix_parallel_test-crypto-ecdh-convert-key_to_use_compatible_group.patch
 src_inline_asynccleanuphookhandle_in_headers.patch
 node-api_faster_threadsafe_function.patch
 src_add_missing_context_scopes.patch
+fix_remove_expired_dst_root_ca_x3.patch

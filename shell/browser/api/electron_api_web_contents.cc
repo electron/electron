@@ -906,6 +906,12 @@ void WebContents::InitWithWebContents(content::WebContents* web_contents,
 }
 
 WebContents::~WebContents() {
+  // clear out objects that have been granted permissions so that when
+  // WebContents::RenderFrameDeleted is called as a result of WebContents
+  // destruction it doesn't try to clear out a granted_devices_
+  // on a destructed object.
+  granted_devices_.clear();
+
   MarkDestroyed();
   // The destroy() is called.
   if (inspectable_web_contents_) {
@@ -1638,6 +1644,11 @@ void WebContents::UpdateDraggableRegions(
 
 void WebContents::RenderFrameDeleted(
     content::RenderFrameHost* render_frame_host) {
+  // clear out objects that have been granted permissions
+  if (!granted_devices_.empty()) {
+    granted_devices_.erase(render_frame_host->GetFrameTreeNodeId());
+  }
+
   // A WebFrameMain can outlive its RenderFrameHost so we need to mark it as
   // disposed to prevent access to it.
   WebFrameMain::RenderFrameDeleted(render_frame_host);
@@ -3185,6 +3196,42 @@ v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
           },
           base::Owned(std::move(electron_renderer)), std::move(promise)));
   return handle;
+}
+
+void WebContents::GrantDevicePermission(
+    const url::Origin& origin,
+    const base::Value* device,
+    content::PermissionType permissionType,
+    content::RenderFrameHost* render_frame_host) {
+  granted_devices_[render_frame_host->GetFrameTreeNodeId()][permissionType]
+                  [origin]
+                      .push_back(
+                          std::make_unique<base::Value>(device->Clone()));
+}
+
+std::vector<base::Value> WebContents::GetGrantedDevices(
+    const url::Origin& origin,
+    content::PermissionType permissionType,
+    content::RenderFrameHost* render_frame_host) {
+  const auto& devices_for_frame_host_it =
+      granted_devices_.find(render_frame_host->GetFrameTreeNodeId());
+  if (devices_for_frame_host_it == granted_devices_.end())
+    return {};
+
+  const auto& current_devices_it =
+      devices_for_frame_host_it->second.find(permissionType);
+  if (current_devices_it == devices_for_frame_host_it->second.end())
+    return {};
+
+  const auto& origin_devices_it = current_devices_it->second.find(origin);
+  if (origin_devices_it == current_devices_it->second.end())
+    return {};
+
+  std::vector<base::Value> results;
+  for (const auto& object : origin_devices_it->second)
+    results.push_back(object->Clone());
+
+  return results;
 }
 
 void WebContents::UpdatePreferredSize(content::WebContents* web_contents,
