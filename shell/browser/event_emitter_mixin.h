@@ -30,7 +30,7 @@ class EventEmitterMixin {
     v8::Local<v8::Object> wrapper;
     if (!static_cast<T*>(this)->GetWrapper(isolate).ToLocal(&wrapper))
       return false;
-    v8::Local<v8::Object> event = internal::CreateEvent(isolate, wrapper);
+    v8::Local<v8::Object> event = internal::CreateCustomEvent(isolate, wrapper);
     return EmitWithEvent(isolate, wrapper, name, event,
                          std::forward<Args>(args)...);
   }
