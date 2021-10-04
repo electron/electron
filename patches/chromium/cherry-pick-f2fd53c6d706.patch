@@ -1,0 +1,115 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rayan Kanso <rayankans@google.com>
+Date: Tue, 7 Sep 2021 19:35:02 +0000
+Subject: Check whether the SW ID is valid for GetIds().
+
+(cherry picked from commit d97b8b86be732448cbc57b47f6b46547c9866df3)
+
+Bug: 1243622
+Change-Id: I93a40db0e71c7a087d279653e741800015232d7f
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3135479
+Reviewed-by: Richard Knoll <knollr@chromium.org>
+Commit-Queue: Rayan Kanso <rayankans@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#917314}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3143705
+Reviewed-by: Rayan Kanso <rayankans@chromium.org>
+Commit-Queue: Richard Knoll <knollr@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4606@{#828}
+Cr-Branched-From: 35b0d5a9dc8362adfd44e2614f0d5b7402ef63d0-refs/heads/master@{#911515}
+
+diff --git a/content/browser/background_fetch/background_fetch_service_unittest.cc b/content/browser/background_fetch/background_fetch_service_unittest.cc
+index 5a93282ec4bcae6c68cf19ff7bf60e5a5db47a86..8a9953859b56af33df739dfd37ad71f561e6dea8 100644
+--- a/content/browser/background_fetch/background_fetch_service_unittest.cc
++++ b/content/browser/background_fetch/background_fetch_service_unittest.cc
+@@ -1115,12 +1115,8 @@ TEST_F(BackgroundFetchServiceTest, GetDeveloperIds) {
+     std::vector<std::string> developer_ids;
+ 
+     GetDeveloperIds(service_worker_registration_id, &error, &developer_ids);
+-    ASSERT_EQ(error, blink::mojom::BackgroundFetchError::NONE);
+-
+-    // TODO(crbug.com/850076): The Storage Worker Database access is not
+-    // checking the origin. In a non-test environment this won't happen since a
+-    // ServiceWorker registration ID is tied to the origin.
+-    ASSERT_EQ(developer_ids.size(), 2u);
++    EXPECT_EQ(error, blink::mojom::BackgroundFetchError::STORAGE_ERROR);
++    EXPECT_TRUE(developer_ids.empty());
+   }
+ 
+   // Verify that using the wrong service worker id does not return developer ids
+@@ -1134,9 +1130,8 @@ TEST_F(BackgroundFetchServiceTest, GetDeveloperIds) {
+ 
+     GetDeveloperIds(bogus_service_worker_registration_id, &error,
+                     &developer_ids);
+-    ASSERT_EQ(error, blink::mojom::BackgroundFetchError::NONE);
+-
+-    ASSERT_EQ(developer_ids.size(), 0u);
++    EXPECT_EQ(error, blink::mojom::BackgroundFetchError::STORAGE_ERROR);
++    EXPECT_TRUE(developer_ids.empty());
+   }
+ }
+ 
+diff --git a/content/browser/background_fetch/storage/get_developer_ids_task.cc b/content/browser/background_fetch/storage/get_developer_ids_task.cc
+index c7413fdab5413bae2eca8d4451d53856f7ba464e..7851f5ee07aea9036055578e7d72876bf42fefdc 100644
+--- a/content/browser/background_fetch/storage/get_developer_ids_task.cc
++++ b/content/browser/background_fetch/storage/get_developer_ids_task.cc
+@@ -9,6 +9,7 @@
+ #include "base/bind.h"
+ #include "content/browser/background_fetch/storage/database_helpers.h"
+ #include "content/browser/service_worker/service_worker_context_wrapper.h"
++#include "content/browser/service_worker/service_worker_registration.h"
+ 
+ namespace content {
+ namespace background_fetch {
+@@ -26,6 +27,28 @@ GetDeveloperIdsTask::GetDeveloperIdsTask(
+ GetDeveloperIdsTask::~GetDeveloperIdsTask() = default;
+ 
+ void GetDeveloperIdsTask::Start() {
++  service_worker_context()->FindReadyRegistrationForIdOnly(
++      service_worker_registration_id_,
++      base::BindOnce(&GetDeveloperIdsTask::DidGetServiceWorkerRegistration,
++                     weak_factory_.GetWeakPtr()));
++}
++
++void GetDeveloperIdsTask::DidGetServiceWorkerRegistration(
++    blink::ServiceWorkerStatusCode status,
++    scoped_refptr<ServiceWorkerRegistration> registration) {
++  if (ToDatabaseStatus(status) != DatabaseStatus::kOk || !registration) {
++    SetStorageErrorAndFinish(
++        BackgroundFetchStorageError::kServiceWorkerStorageError);
++    return;
++  }
++
++  // TODO(crbug.com/1199077): Move this check into the SW context.
++  if (registration->key() != storage_key_) {
++    SetStorageErrorAndFinish(
++        BackgroundFetchStorageError::kServiceWorkerStorageError);
++    return;
++  }
++
+   service_worker_context()->GetRegistrationUserKeysAndDataByKeyPrefix(
+       service_worker_registration_id_, {kActiveRegistrationUniqueIdKeyPrefix},
+       base::BindOnce(&GetDeveloperIdsTask::DidGetUniqueIds,
+diff --git a/content/browser/background_fetch/storage/get_developer_ids_task.h b/content/browser/background_fetch/storage/get_developer_ids_task.h
+index b5b3e8c4ab82ca46382e05464a7afe3dc3e5f3cc..e273ecfc622260cdf14aa7a0cf86410de3406fc9 100644
+--- a/content/browser/background_fetch/storage/get_developer_ids_task.h
++++ b/content/browser/background_fetch/storage/get_developer_ids_task.h
+@@ -16,6 +16,9 @@
+ #include "third_party/blink/public/mojom/background_fetch/background_fetch.mojom.h"
+ 
+ namespace content {
++
++class ServiceWorkerRegistration;
++
+ namespace background_fetch {
+ 
+ // Gets the developer ids for all active registrations - registrations that have
+@@ -34,6 +37,9 @@ class GetDeveloperIdsTask : public DatabaseTask {
+   void Start() override;
+ 
+  private:
++  void DidGetServiceWorkerRegistration(
++      blink::ServiceWorkerStatusCode status,
++      scoped_refptr<ServiceWorkerRegistration> registration);
+   void DidGetUniqueIds(
+       blink::ServiceWorkerStatusCode status,
+       const base::flat_map<std::string, std::string>& data_map);
