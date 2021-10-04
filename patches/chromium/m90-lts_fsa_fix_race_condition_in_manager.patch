@@ -1,0 +1,65 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Austin Sullivan <asully@chromium.org>
+Date: Wed, 29 Sep 2021 08:20:51 +0000
+Subject: FSA: Fix race condition in manager
+
+(cherry picked from commit 951339b41022b08a67ad94ba5960b05c84bf4cf2)
+
+Bug: 1248030
+Change-Id: I1ea819d1d6ac63ec8f400a45c893da49596235ef
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3154425
+Commit-Queue: Marijn Kruisselbrink <mek@chromium.org>
+Auto-Submit: Austin Sullivan <asully@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#920376}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3182123
+Reviewed-by: Austin Sullivan <asully@chromium.org>
+Reviewed-by: Victor-Gabriel Savu <vsavu@google.com>
+Owners-Override: Victor-Gabriel Savu <vsavu@google.com>
+Commit-Queue: Roger Felipe Zanoni da Silva <rzanoni@google.com>
+Cr-Commit-Position: refs/branch-heads/4430@{#1624}
+Cr-Branched-From: e5ce7dc4f7518237b3d9bb93cccca35d25216cbe-refs/heads/master@{#857950}
+
+diff --git a/content/browser/file_system_access/native_file_system_manager_impl.cc b/content/browser/file_system_access/native_file_system_manager_impl.cc
+index 060855d387ad18daf23015c52642742e128e49e8..0c1347fdad9db0bea27bd9db509d2f1b476e4272 100644
+--- a/content/browser/file_system_access/native_file_system_manager_impl.cc
++++ b/content/browser/file_system_access/native_file_system_manager_impl.cc
+@@ -357,6 +357,11 @@ void NativeFileSystemManagerImpl::ChooseEntries(
+           base::SequencedTaskRunnerHandle::Get()));
+ }
+ 
++void NativeFileSystemManagerImpl::Shutdown() {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++  permission_context_ = nullptr;
++}
++
+ void NativeFileSystemManagerImpl::SetDefaultPathAndShowPicker(
+     const BindingContext& context,
+     blink::mojom::ChooseFileSystemEntryType type,
+diff --git a/content/browser/file_system_access/native_file_system_manager_impl.h b/content/browser/file_system_access/native_file_system_manager_impl.h
+index 2a0085c06ef869f741be1a0821d79dbb71f7794a..313c6ed9f9e11e63869ba003f5a04ad17065593d 100644
+--- a/content/browser/file_system_access/native_file_system_manager_impl.h
++++ b/content/browser/file_system_access/native_file_system_manager_impl.h
+@@ -259,6 +259,8 @@ class CONTENT_EXPORT NativeFileSystemManagerImpl
+       PathType path_type,
+       const base::FilePath& path);
+ 
++  void Shutdown();
++
+  private:
+   friend class NativeFileSystemFileHandleImpl;
+ 
+diff --git a/content/browser/storage_partition_impl.cc b/content/browser/storage_partition_impl.cc
+index c28ce91036fb99fbcd08d2a64c6b67f79f57b0d8..8eaf276f741482e5000110b11f965c6451ab6ef1 100644
+--- a/content/browser/storage_partition_impl.cc
++++ b/content/browser/storage_partition_impl.cc
+@@ -1086,6 +1086,10 @@ StoragePartitionImpl::~StoragePartitionImpl() {
+                                   GetDatabaseTracker()));
+   }
+ 
++  if (GetNativeFileSystemManager()) {
++    GetNativeFileSystemManager()->Shutdown();
++  }
++
+   if (GetFileSystemContext())
+     GetFileSystemContext()->Shutdown();
+ 

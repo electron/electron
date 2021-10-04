@@ -1,0 +1,319 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Adam Klein <adamk@chromium.org>
+Date: Wed, 29 Sep 2021 14:56:46 -0700
+Subject: Merged: [heap] Improve ephemeron processing
+
+Revision: 1054ee7f349d6be22e9518cf9b794b206d0e5818
+
+Bug: chromium:1252918
+Change-Id: I0764cb78d4a0d4b5859c0edf383c2827321db398
+No-Try: true
+No-Presubmit: true
+No-Tree-Checks: true
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3195062
+Reviewed-by: Shu-yu Guo <syg@chromium.org>
+Cr-Commit-Position: refs/branch-heads/9.4@{#37}
+Cr-Branched-From: 3b51863bc25492549a8bf96ff67ce481b1a3337b-refs/heads/9.4.146@{#1}
+Cr-Branched-From: 2890419fc8fb9bdb507fdd801d76fa7dd9f022b5-refs/heads/master@{#76233}
+
+diff --git a/src/heap/concurrent-marking.cc b/src/heap/concurrent-marking.cc
+index 9377dad3e4b9fa313c83ffc0128c39d698d741e5..5aa1eef8abe0dfd250655b92a63c925f5f42462c 100644
+--- a/src/heap/concurrent-marking.cc
++++ b/src/heap/concurrent-marking.cc
+@@ -426,7 +426,7 @@ void ConcurrentMarking::Run(JobDelegate* delegate,
+     isolate->PrintWithTimestamp("Starting concurrent marking task %d\n",
+                                 task_id);
+   }
+-  bool ephemeron_marked = false;
++  bool another_ephemeron_iteration = false;
+ 
+   {
+     TimedScope scope(&time_ms);
+@@ -436,7 +436,7 @@ void ConcurrentMarking::Run(JobDelegate* delegate,
+ 
+       while (weak_objects_->current_ephemerons.Pop(task_id, &ephemeron)) {
+         if (visitor.ProcessEphemeron(ephemeron.key, ephemeron.value)) {
+-          ephemeron_marked = true;
++          another_ephemeron_iteration = true;
+         }
+       }
+     }
+@@ -477,6 +477,7 @@ void ConcurrentMarking::Run(JobDelegate* delegate,
+           current_marked_bytes += visited_size;
+         }
+       }
++      if (objects_processed > 0) another_ephemeron_iteration = true;
+       marked_bytes += current_marked_bytes;
+       base::AsAtomicWord::Relaxed_Store<size_t>(&task_state->marked_bytes,
+                                                 marked_bytes);
+@@ -492,7 +493,7 @@ void ConcurrentMarking::Run(JobDelegate* delegate,
+ 
+       while (weak_objects_->discovered_ephemerons.Pop(task_id, &ephemeron)) {
+         if (visitor.ProcessEphemeron(ephemeron.key, ephemeron.value)) {
+-          ephemeron_marked = true;
++          another_ephemeron_iteration = true;
+         }
+       }
+     }
+@@ -512,8 +513,8 @@ void ConcurrentMarking::Run(JobDelegate* delegate,
+     base::AsAtomicWord::Relaxed_Store<size_t>(&task_state->marked_bytes, 0);
+     total_marked_bytes_ += marked_bytes;
+ 
+-    if (ephemeron_marked) {
+-      set_ephemeron_marked(true);
++    if (another_ephemeron_iteration) {
++      set_another_ephemeron_iteration(true);
+     }
+   }
+   if (FLAG_trace_concurrent_marking) {
+diff --git a/src/heap/concurrent-marking.h b/src/heap/concurrent-marking.h
+index c685f5cca6de44ca910c5b19c7dce4aa7412e845..54f6057f58b12354629126380452c29c5427c695 100644
+--- a/src/heap/concurrent-marking.h
++++ b/src/heap/concurrent-marking.h
+@@ -91,10 +91,12 @@ class V8_EXPORT_PRIVATE ConcurrentMarking {
+ 
+   size_t TotalMarkedBytes();
+ 
+-  void set_ephemeron_marked(bool ephemeron_marked) {
+-    ephemeron_marked_.store(ephemeron_marked);
++  void set_another_ephemeron_iteration(bool another_ephemeron_iteration) {
++    another_ephemeron_iteration_.store(another_ephemeron_iteration);
++  }
++  bool another_ephemeron_iteration() {
++    return another_ephemeron_iteration_.load();
+   }
+-  bool ephemeron_marked() { return ephemeron_marked_.load(); }
+ 
+  private:
+   struct TaskState {
+@@ -115,7 +117,7 @@ class V8_EXPORT_PRIVATE ConcurrentMarking {
+   WeakObjects* const weak_objects_;
+   TaskState task_state_[kMaxTasks + 1];
+   std::atomic<size_t> total_marked_bytes_{0};
+-  std::atomic<bool> ephemeron_marked_{false};
++  std::atomic<bool> another_ephemeron_iteration_{false};
+ };
+ 
+ }  // namespace internal
+diff --git a/src/heap/incremental-marking.cc b/src/heap/incremental-marking.cc
+index 7b6b01855d608f6dca506bb91b181525b0394e26..6104f2146c4c91d7e3d92698189db5dc3103ecb3 100644
+--- a/src/heap/incremental-marking.cc
++++ b/src/heap/incremental-marking.cc
+@@ -927,7 +927,8 @@ StepResult IncrementalMarking::Step(double max_step_size_in_ms,
+     // This ignores that case where the embedder finds new V8-side objects. The
+     // assumption is that large graphs are well connected and can mostly be
+     // processed on their own. For small graphs, helping is not necessary.
+-    v8_bytes_processed = collector_->ProcessMarkingWorklist(bytes_to_process);
++    std::tie(v8_bytes_processed, std::ignore) =
++        collector_->ProcessMarkingWorklist(bytes_to_process);
+     StepResult v8_result = local_marking_worklists()->IsEmpty()
+                                ? StepResult::kNoImmediateWork
+                                : StepResult::kMoreWorkRemaining;
+diff --git a/src/heap/mark-compact.cc b/src/heap/mark-compact.cc
+index 780d3dc6ca7a936080f817342c066db604b89303..f4e8356823131b4ac39ef37e580dd46cceac30ef 100644
+--- a/src/heap/mark-compact.cc
++++ b/src/heap/mark-compact.cc
+@@ -1604,24 +1604,24 @@ void MarkCompactCollector::MarkDescriptorArrayFromWriteBarrier(
+       descriptors, number_of_own_descriptors);
+ }
+ 
+-void MarkCompactCollector::ProcessEphemeronsUntilFixpoint() {
+-  bool work_to_do = true;
++bool MarkCompactCollector::ProcessEphemeronsUntilFixpoint() {
+   int iterations = 0;
+   int max_iterations = FLAG_ephemeron_fixpoint_iterations;
+ 
+-  while (work_to_do) {
++  bool another_ephemeron_iteration_main_thread;
++
++  do {
+     PerformWrapperTracing();
+ 
+     if (iterations >= max_iterations) {
+       // Give up fixpoint iteration and switch to linear algorithm.
+-      ProcessEphemeronsLinear();
+-      break;
++      return false;
+     }
+ 
+     // Move ephemerons from next_ephemerons into current_ephemerons to
+     // drain them in this iteration.
+     weak_objects_.current_ephemerons.Swap(weak_objects_.next_ephemerons);
+-    heap()->concurrent_marking()->set_ephemeron_marked(false);
++    heap()->concurrent_marking()->set_another_ephemeron_iteration(false);
+ 
+     {
+       TRACE_GC(heap()->tracer(),
+@@ -1632,47 +1632,54 @@ void MarkCompactCollector::ProcessEphemeronsUntilFixpoint() {
+             TaskPriority::kUserBlocking);
+       }
+ 
+-      work_to_do = ProcessEphemerons();
++      another_ephemeron_iteration_main_thread = ProcessEphemerons();
+       FinishConcurrentMarking();
+     }
+ 
+     CHECK(weak_objects_.current_ephemerons.IsEmpty());
+     CHECK(weak_objects_.discovered_ephemerons.IsEmpty());
+ 
+-    work_to_do = work_to_do || !local_marking_worklists()->IsEmpty() ||
+-                 heap()->concurrent_marking()->ephemeron_marked() ||
+-                 !local_marking_worklists()->IsEmbedderEmpty() ||
+-                 !heap()->local_embedder_heap_tracer()->IsRemoteTracingDone();
+     ++iterations;
+-  }
++  } while (another_ephemeron_iteration_main_thread ||
++           heap()->concurrent_marking()->another_ephemeron_iteration() ||
++           !local_marking_worklists()->IsEmpty() ||
++           !local_marking_worklists()->IsEmbedderEmpty() ||
++           !heap()->local_embedder_heap_tracer()->IsRemoteTracingDone());
+ 
+   CHECK(local_marking_worklists()->IsEmpty());
+   CHECK(weak_objects_.current_ephemerons.IsEmpty());
+   CHECK(weak_objects_.discovered_ephemerons.IsEmpty());
++  return true;
+ }
+ 
+ bool MarkCompactCollector::ProcessEphemerons() {
+   Ephemeron ephemeron;
+-  bool ephemeron_marked = false;
++  bool another_ephemeron_iteration = false;
+ 
+   // Drain current_ephemerons and push ephemerons where key and value are still
+   // unreachable into next_ephemerons.
+   while (weak_objects_.current_ephemerons.Pop(kMainThreadTask, &ephemeron)) {
+     if (ProcessEphemeron(ephemeron.key, ephemeron.value)) {
+-      ephemeron_marked = true;
++      another_ephemeron_iteration = true;
+     }
+   }
+ 
+   // Drain marking worklist and push discovered ephemerons into
+   // discovered_ephemerons.
+-  DrainMarkingWorklist();
++  size_t objects_processed;
++  std::tie(std::ignore, objects_processed) = ProcessMarkingWorklist(0);
++
++  // As soon as a single object was processed and potentially marked another
++  // object we need another iteration. Otherwise we might miss to apply
++  // ephemeron semantics on it.
++  if (objects_processed > 0) another_ephemeron_iteration = true;
+ 
+   // Drain discovered_ephemerons (filled in the drain MarkingWorklist-phase
+   // before) and push ephemerons where key and value are still unreachable into
+   // next_ephemerons.
+   while (weak_objects_.discovered_ephemerons.Pop(kMainThreadTask, &ephemeron)) {
+     if (ProcessEphemeron(ephemeron.key, ephemeron.value)) {
+-      ephemeron_marked = true;
++      another_ephemeron_iteration = true;
+     }
+   }
+ 
+@@ -1680,7 +1687,7 @@ bool MarkCompactCollector::ProcessEphemerons() {
+   weak_objects_.ephemeron_hash_tables.FlushToGlobal(kMainThreadTask);
+   weak_objects_.next_ephemerons.FlushToGlobal(kMainThreadTask);
+ 
+-  return ephemeron_marked;
++  return another_ephemeron_iteration;
+ }
+ 
+ void MarkCompactCollector::ProcessEphemeronsLinear() {
+@@ -1766,6 +1773,12 @@ void MarkCompactCollector::ProcessEphemeronsLinear() {
+   ephemeron_marking_.newly_discovered.shrink_to_fit();
+ 
+   CHECK(local_marking_worklists()->IsEmpty());
++  CHECK(weak_objects_.current_ephemerons.IsEmpty());
++  CHECK(weak_objects_.discovered_ephemerons.IsEmpty());
++
++  // Flush local ephemerons for main task to global pool.
++  weak_objects_.ephemeron_hash_tables.FlushToGlobal(kMainThreadTask);
++  weak_objects_.next_ephemerons.FlushToGlobal(kMainThreadTask);
+ }
+ 
+ void MarkCompactCollector::PerformWrapperTracing() {
+@@ -1787,9 +1800,11 @@ void MarkCompactCollector::PerformWrapperTracing() {
+ void MarkCompactCollector::DrainMarkingWorklist() { ProcessMarkingWorklist(0); }
+ 
+ template <MarkCompactCollector::MarkingWorklistProcessingMode mode>
+-size_t MarkCompactCollector::ProcessMarkingWorklist(size_t bytes_to_process) {
++std::pair<size_t, size_t> MarkCompactCollector::ProcessMarkingWorklist(
++    size_t bytes_to_process) {
+   HeapObject object;
+   size_t bytes_processed = 0;
++  size_t objects_processed = 0;
+   bool is_per_context_mode = local_marking_worklists()->IsPerContextMode();
+   Isolate* isolate = heap()->isolate();
+   while (local_marking_worklists()->Pop(&object) ||
+@@ -1829,18 +1844,19 @@ size_t MarkCompactCollector::ProcessMarkingWorklist(size_t bytes_to_process) {
+                                           map, object, visited_size);
+     }
+     bytes_processed += visited_size;
++    objects_processed++;
+     if (bytes_to_process && bytes_processed >= bytes_to_process) {
+       break;
+     }
+   }
+-  return bytes_processed;
++  return std::make_pair(bytes_processed, objects_processed);
+ }
+ 
+ // Generate definitions for use in other files.
+-template size_t MarkCompactCollector::ProcessMarkingWorklist<
++template std::pair<size_t, size_t> MarkCompactCollector::ProcessMarkingWorklist<
+     MarkCompactCollector::MarkingWorklistProcessingMode::kDefault>(
+     size_t bytes_to_process);
+-template size_t MarkCompactCollector::ProcessMarkingWorklist<
++template std::pair<size_t, size_t> MarkCompactCollector::ProcessMarkingWorklist<
+     MarkCompactCollector::MarkingWorklistProcessingMode::
+         kTrackNewlyDiscoveredObjects>(size_t bytes_to_process);
+ 
+@@ -1865,7 +1881,23 @@ void MarkCompactCollector::ProcessEphemeronMarking() {
+   // buffer, flush it into global pool.
+   weak_objects_.next_ephemerons.FlushToGlobal(kMainThreadTask);
+ 
+-  ProcessEphemeronsUntilFixpoint();
++  if (!ProcessEphemeronsUntilFixpoint()) {
++    // Fixpoint iteration needed too many iterations and was cancelled. Use the
++    // guaranteed linear algorithm.
++    ProcessEphemeronsLinear();
++  }
++
++#ifdef VERIFY_HEAP
++  if (FLAG_verify_heap) {
++    Ephemeron ephemeron;
++
++    weak_objects_.current_ephemerons.Swap(weak_objects_.next_ephemerons);
++
++    while (weak_objects_.current_ephemerons.Pop(kMainThreadTask, &ephemeron)) {
++      CHECK(!ProcessEphemeron(ephemeron.key, ephemeron.value));
++    }
++  }
++#endif
+ 
+   CHECK(local_marking_worklists()->IsEmpty());
+   CHECK(heap()->local_embedder_heap_tracer()->IsRemoteTracingDone());
+diff --git a/src/heap/mark-compact.h b/src/heap/mark-compact.h
+index 08d9a5bcb6b444f3ce0f7c66f5be8df9bdd5324e..fbdb74c30c19cae1d0a568178d15666ec9318cc9 100644
+--- a/src/heap/mark-compact.h
++++ b/src/heap/mark-compact.h
+@@ -590,7 +590,7 @@ class MarkCompactCollector final : public MarkCompactCollectorBase {
+   // is drained until it is empty.
+   template <MarkingWorklistProcessingMode mode =
+                 MarkingWorklistProcessingMode::kDefault>
+-  size_t ProcessMarkingWorklist(size_t bytes_to_process);
++  std::pair<size_t, size_t> ProcessMarkingWorklist(size_t bytes_to_process);
+ 
+  private:
+   void ComputeEvacuationHeuristics(size_t area_size,
+@@ -636,8 +636,9 @@ class MarkCompactCollector final : public MarkCompactCollectorBase {
+   bool ProcessEphemeron(HeapObject key, HeapObject value);
+ 
+   // Marks ephemerons and drains marking worklist iteratively
+-  // until a fixpoint is reached.
+-  void ProcessEphemeronsUntilFixpoint();
++  // until a fixpoint is reached. Returns false if too many iterations have been
++  // tried and the linear approach should be used.
++  bool ProcessEphemeronsUntilFixpoint();
+ 
+   // Drains ephemeron and marking worklists. Single iteration of the
+   // fixpoint iteration.

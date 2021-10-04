@@ -163,3 +163,4 @@ cherry-pick-ddc4cf156505.patch
 content-visibility_add_a_clipper_fix_for_content-visibility.patch
 kill_a_renderer_if_it_provides_an_unexpected_frameownerelementtype.patch
 cherry-pick-e8a5cefd1aac.patch
+m90-lts_fsa_fix_race_condition_in_manager.patch
