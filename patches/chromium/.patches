@@ -106,3 +106,4 @@ logging_win32_only_create_a_console_if_logging_to_stderr.patch
 fix_media_key_usage_with_globalshortcuts.patch
 cherry-pick-f8a74d72f328.patch
 cherry-pick-f2fd53c6d706.patch
+cherry-pick-4e528a5a8d83.patch
