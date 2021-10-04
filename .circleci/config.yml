@@ -88,14 +88,14 @@ workflows:
           base-revision: << pipeline.git.branch >>
           config-path: .circleci/config.yml
           # Params for mapping; `path-to-test parameter-to-set value-for-parameter` for each row
+          # project/docs/.* run-docs-only true
+          # project/src/docs/.* run-docs-only true
+          # project/src/electron/docs/.* run-docs-only true
+          # src/electron/docs/.* run-docs-only true
           mapping: |
             .* run-setup false
             ^((?!docs/).)*$ run-full-build true
             docs/.* run-docs-only true
-            project/docs/.* run-docs-only true
-            project/src/docs/.* run-docs-only true
-            project/src/electron/docs/.* run-docs-only true
-            src/electron/docs/.* run-docs-only true
   docs-only:
     when: << pipeline.parameters.run-docs-only >>
     jobs:
