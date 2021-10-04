@@ -1,7 +1,8 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Erik Chen <erikchen@chromium.org>
-Date: Wed, 29 Sep 2021 21:16:47 +0000
-Subject: Prevents non-browser processes from requesting memory dumps.
+Date: Fri, 1 Oct 2021 12:44:24 +0000
+Subject: [M90-LTS] Prevents non-browser processes from requesting memory
+ dumps.
 
 This CL makes several changes:
 
@@ -23,18 +24,15 @@ will trigger a nullptr dereference, which is undefined behavior.
 Bug: 1251787
 Change-Id: Ifbe9610cc0e373edaaa60fad46b447e8bdb3ec04
 Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3174305
-Reviewed-by: Kinuko Yasuda <kinuko@chromium.org>
-Reviewed-by: ssid <ssid@chromium.org>
 Auto-Submit: Erik Chen <erikchen@chromium.org>
 Commit-Queue: Erik Chen <erikchen@chromium.org>
 Cr-Original-Commit-Position: refs/heads/main@{#923693}
-Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3194811
-Reviewed-by: Avi Drissman <avi@chromium.org>
-Reviewed-by: Krishna Govind <govind@chromium.org>
-Commit-Queue: Krishna Govind <govind@chromium.org>
-Owners-Override: Krishna Govind <govind@chromium.org>
-Cr-Commit-Position: refs/branch-heads/4606@{#1253}
-Cr-Branched-From: 35b0d5a9dc8362adfd44e2614f0d5b7402ef63d0-refs/heads/master@{#911515}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3197813
+Reviewed-by: Achuith Bhandarkar <achuith@chromium.org>
+Owners-Override: Achuith Bhandarkar <achuith@chromium.org>
+Commit-Queue: Roger Felipe Zanoni da Silva <rzanoni@google.com>
+Cr-Commit-Position: refs/branch-heads/4430@{#1631}
+Cr-Branched-From: e5ce7dc4f7518237b3d9bb93cccca35d25216cbe-refs/heads/master@{#857950}
 
 diff --git a/content/browser/browser_child_process_host_impl.cc b/content/browser/browser_child_process_host_impl.cc
 index 9a836207989b19ae041a3ec700b55185d63f9a4c..ed1d10aae4470c9aac28cfce67d97f351b8266d5 100644
