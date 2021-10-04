@@ -9,12 +9,17 @@
 
 namespace {
 
+v8::Local<v8::Object> CreateWithSender(v8::Isolate* isolate,
+                                       v8::Local<v8::Object> sender) {
+  return gin_helper::internal::CreateCustomEvent(isolate, sender);
+}
+
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
   gin_helper::Dictionary dict(context->GetIsolate(), exports);
-  dict.SetMethod("createWithSender", &gin_helper::internal::CreateCustomEvent);
+  dict.SetMethod("createWithSender", &CreateWithSender);
   dict.SetMethod("createEmpty", &gin_helper::Event::Create);
 }
 
