@@ -1,0 +1,62 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Austin Sullivan <asully@chromium.org>
+Date: Wed, 15 Sep 2021 23:57:27 +0000
+Subject: FSA: Fix race condition in manager
+
+(cherry picked from commit 951339b41022b08a67ad94ba5960b05c84bf4cf2)
+
+Bug: 1248030
+Change-Id: I1ea819d1d6ac63ec8f400a45c893da49596235ef
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3154425
+Commit-Queue: Marijn Kruisselbrink <mek@chromium.org>
+Auto-Submit: Austin Sullivan <asully@chromium.org>
+Reviewed-by: Marijn Kruisselbrink <mek@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#920376}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3160301
+Commit-Queue: Austin Sullivan <asully@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4606@{#1077}
+Cr-Branched-From: 35b0d5a9dc8362adfd44e2614f0d5b7402ef63d0-refs/heads/master@{#911515}
+
+diff --git a/content/browser/file_system_access/file_system_access_manager_impl.cc b/content/browser/file_system_access/file_system_access_manager_impl.cc
+index e58be73ae495dbc3c04802caf8fd163bcafaf992..a47eceba374b2c589fe8a0d007e4e1c803baab32 100644
+--- a/content/browser/file_system_access/file_system_access_manager_impl.cc
++++ b/content/browser/file_system_access/file_system_access_manager_impl.cc
+@@ -448,6 +448,11 @@ void FileSystemAccessManagerImpl::ResolveDefaultDirectory(
+                   std::move(callback))));
+ }
+ 
++void FileSystemAccessManagerImpl::Shutdown() {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++  permission_context_ = nullptr;
++}
++
+ void FileSystemAccessManagerImpl::SetDefaultPathAndShowPicker(
+     const BindingContext& context,
+     blink::mojom::FilePickerOptionsPtr options,
+diff --git a/content/browser/file_system_access/file_system_access_manager_impl.h b/content/browser/file_system_access/file_system_access_manager_impl.h
+index 4c9303aa11349f8de5181ca1dcd92f20f2b74a99..e06a3d347f2af5f62ade1fc70e8ad49ca878628f 100644
+--- a/content/browser/file_system_access/file_system_access_manager_impl.h
++++ b/content/browser/file_system_access/file_system_access_manager_impl.h
+@@ -257,6 +257,8 @@ class CONTENT_EXPORT FileSystemAccessManagerImpl
+       PathType path_type,
+       const base::FilePath& path);
+ 
++  void Shutdown();
++
+  private:
+   friend class FileSystemAccessFileHandleImpl;
+ 
+diff --git a/content/browser/storage_partition_impl.cc b/content/browser/storage_partition_impl.cc
+index 7ffcbd0ac22164d5e268f28e0e434a08e3eb120b..f851627cf33ac4bc2aa56eb3d7b21170eb5c0d16 100644
+--- a/content/browser/storage_partition_impl.cc
++++ b/content/browser/storage_partition_impl.cc
+@@ -1078,6 +1078,9 @@ StoragePartitionImpl::~StoragePartitionImpl() {
+                                   GetDatabaseTracker()));
+   }
+ 
++  if (GetFileSystemAccessManager())
++    GetFileSystemAccessManager()->Shutdown();
++
+   if (GetFileSystemContext())
+     GetFileSystemContext()->Shutdown();
+ 

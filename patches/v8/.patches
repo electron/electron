@@ -16,3 +16,4 @@ cherry-pick-034c2003be31.patch
 regexp_add_a_currently_failing_cctest_for_irregexp_reentrancy.patch
 regexp_allow_reentrant_irregexp_execution.patch
 regexp_remove_the_stack_parameter_from_regexp_matchers.patch
+cherry-pick-5c4acf2ae64a.patch
