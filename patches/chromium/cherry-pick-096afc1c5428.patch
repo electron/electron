@@ -1,0 +1,106 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rayan Kanso <rayankans@google.com>
+Date: Tue, 7 Sep 2021 20:14:30 +0000
+Subject: Use less-specific error codes for CORS-failing fetches
+
+(cherry picked from commit 26be5702dab1d98e4d4b076a73d4688d20c043be)
+
+Bug: 1245053
+Change-Id: If0343157a3ba41a6c946b5f7401a9d114f834779
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3135676
+Commit-Queue: Rayan Kanso <rayankans@chromium.org>
+Reviewed-by: Richard Knoll <knollr@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#918109}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3143786
+Commit-Queue: Richard Knoll <knollr@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4606@{#833}
+Cr-Branched-From: 35b0d5a9dc8362adfd44e2614f0d5b7402ef63d0-refs/heads/master@{#911515}
+
+diff --git a/content/browser/background_fetch/background_fetch_job_controller.cc b/content/browser/background_fetch/background_fetch_job_controller.cc
+index 221e3731ef4de60279cb74fb112d3724e97d4670..4cd4ca92b401d19a8113d72bc51c2b9f170226f3 100644
+--- a/content/browser/background_fetch/background_fetch_job_controller.cc
++++ b/content/browser/background_fetch/background_fetch_job_controller.cc
+@@ -178,6 +178,8 @@ void BackgroundFetchJobController::DidStartRequest(
+   BackgroundFetchCrossOriginFilter filter(
+       registration_id_.storage_key().origin(), *request);
+   request->set_can_populate_body(filter.CanPopulateBody());
++  if (!request->can_populate_body())
++    has_failed_cors_request_ = true;
+ }
+ 
+ void BackgroundFetchJobController::DidUpdateRequest(const std::string& guid,
+@@ -258,7 +260,14 @@ uint64_t BackgroundFetchJobController::GetInProgressUploadedBytes() {
+ 
+ void BackgroundFetchJobController::AbortFromDelegate(
+     BackgroundFetchFailureReason failure_reason) {
+-  failure_reason_ = failure_reason;
++  if (failure_reason == BackgroundFetchFailureReason::DOWNLOAD_TOTAL_EXCEEDED &&
++      has_failed_cors_request_) {
++    // Don't expose that the download total has been exceeded. Use a less
++    // specific error.
++    failure_reason_ = BackgroundFetchFailureReason::FETCH_ERROR;
++  } else {
++    failure_reason_ = failure_reason;
++  }
+ 
+   Finish(failure_reason_, base::DoNothing());
+ }
+diff --git a/content/browser/background_fetch/background_fetch_job_controller.h b/content/browser/background_fetch/background_fetch_job_controller.h
+index 0d041d21e9caf5b7f94e2366c85dc27f52bc5787..28863399f9fbad451e60d5f55bc6dc9888092e4a 100644
+--- a/content/browser/background_fetch/background_fetch_job_controller.h
++++ b/content/browser/background_fetch/background_fetch_job_controller.h
+@@ -210,6 +210,10 @@ class CONTENT_EXPORT BackgroundFetchJobController
+   blink::mojom::BackgroundFetchFailureReason failure_reason_ =
+       blink::mojom::BackgroundFetchFailureReason::NONE;
+ 
++  // Whether one of the requests handled by the controller failed
++  // the CORS checks and should not have its response exposed.
++  bool has_failed_cors_request_ = false;
++
+   // Custom callback that runs after the controller is finished.
+   FinishedCallback finished_callback_;
+ 
+diff --git a/content/browser/background_fetch/background_fetch_job_controller_unittest.cc b/content/browser/background_fetch/background_fetch_job_controller_unittest.cc
+index f42b363139d33e50e57433982df6b2cf4b08e811..1dc386051f030ee033fd06616fef9f54ce46172a 100644
+--- a/content/browser/background_fetch/background_fetch_job_controller_unittest.cc
++++ b/content/browser/background_fetch/background_fetch_job_controller_unittest.cc
+@@ -430,6 +430,39 @@ TEST_F(BackgroundFetchJobControllerTest, Abort) {
+             GetCompletionStatus(registration_id));
+ }
+ 
++TEST_F(BackgroundFetchJobControllerTest, AbortDownloadExceededCrossOrigin) {
++  BackgroundFetchRegistrationId registration_id;
++
++  auto requests = CreateRegistrationForRequests(
++      &registration_id, {{GURL("https://example2.com/funny_cat.png"), "GET"}},
++      /* auto_complete_requests= */ true);
++
++  EXPECT_EQ(JobCompletionStatus::kRunning,
++            GetCompletionStatus(registration_id));
++
++  std::unique_ptr<BackgroundFetchJobController> controller =
++      CreateJobController(registration_id, requests.size());
++
++  controller->StartRequest(requests[0], base::DoNothing());
++
++  controller->DidStartRequest(
++      requests[0]->download_guid(),
++      std::make_unique<BackgroundFetchResponse>(
++          std::vector<GURL>{GURL("https://example2.com/funny_cat.png")},
++          nullptr));
++  EXPECT_FALSE(requests[0]->can_populate_body());
++
++  controller->AbortFromDelegate(
++      blink::mojom::BackgroundFetchFailureReason::DOWNLOAD_TOTAL_EXCEEDED);
++
++  base::RunLoop().RunUntilIdle();
++
++  EXPECT_EQ(JobCompletionStatus::kAborted,
++            GetCompletionStatus(registration_id));
++  EXPECT_EQ(finished_requests_[registration_id],
++            blink::mojom::BackgroundFetchFailureReason::FETCH_ERROR);
++}
++
+ TEST_F(BackgroundFetchJobControllerTest, Progress) {
+   BackgroundFetchRegistrationId registration_id;
+ 
