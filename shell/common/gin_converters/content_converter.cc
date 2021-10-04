@@ -80,7 +80,7 @@ v8::Local<v8::Value> Converter<ContextMenuParamsWithRenderFrameHost>::ToV8(
   const auto& params = val.first;
   content::RenderFrameHost* render_frame_host = val.second;
   gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
-  dict.SetGetter("frame", render_frame_host);
+  dict.SetGetter("frame", render_frame_host, v8::DontEnum);
   dict.Set("x", params.x);
   dict.Set("y", params.y);
   dict.Set("linkURL", params.link_url);
