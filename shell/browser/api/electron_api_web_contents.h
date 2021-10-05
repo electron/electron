@@ -323,6 +323,7 @@ class WebContents : public gin::Wrappable<WebContents>,
 
   v8::Local<v8::Promise> TakeHeapSnapshot(v8::Isolate* isolate,
                                           const base::FilePath& file_path);
+  v8::Local<v8::Promise> GetProcessMemoryInfo(v8::Isolate* isolate);
 
   // Properties.
   int32_t ID() const { return id_; }
