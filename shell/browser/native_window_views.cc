@@ -1324,8 +1324,9 @@ bool NativeWindowViews::IsVisibleOnAllWorkspaces() {
                    x11::GetAtom("_NET_WM_STATE"), &wm_states);
   return std::find(wm_states.begin(), wm_states.end(), sticky_atom) !=
          wm_states.end();
-#endif
+#else
   return false;
+#endif
 }
 
 content::DesktopMediaID NativeWindowViews::GetDesktopMediaID() const {
