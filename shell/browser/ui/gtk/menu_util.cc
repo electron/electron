@@ -226,14 +226,12 @@ void BuildSubmenuFromModel(ui::MenuModel* model,
     }
 
 #if defined(USE_X11)
-    if (!features::IsUsingOzonePlatform()) {
-      ui::Accelerator accelerator;
-      if (model->GetAcceleratorAt(i, &accelerator)) {
-        gtk_widget_add_accelerator(menu_item, "activate", nullptr,
-                                   GetGdkKeyCodeForAccelerator(accelerator),
-                                   GetGdkModifierForAccelerator(accelerator),
-                                   GTK_ACCEL_VISIBLE);
-      }
+    ui::Accelerator accelerator;
+    if (model->GetAcceleratorAt(i, &accelerator)) {
+      gtk_widget_add_accelerator(menu_item, "activate", nullptr,
+                                 GetGdkKeyCodeForAccelerator(accelerator),
+                                 GetGdkModifierForAccelerator(accelerator),
+                                 GTK_ACCEL_VISIBLE);
     }
 #endif
 
