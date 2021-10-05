@@ -59,6 +59,7 @@ declare namespace Electron {
     getOwnerBrowserWindow(): Electron.BrowserWindow;
     getWebPreferences(): Electron.WebPreferences;
     getLastWebPreferences(): Electron.WebPreferences;
+    _getProcessMemoryInfo(): Electron.ProcessMemoryInfo;
     _getPreloadPaths(): string[];
     equal(other: WebContents): boolean;
     browserWindowOptions: BrowserWindowConstructorOptions;
