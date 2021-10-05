@@ -108,3 +108,4 @@ fix_chrome_root_store_codegen_for_cross-compile_builds.patch
 process_singleton.patch
 fix_expose_decrementcapturercount_in_web_contents_impl.patch
 cherry-pick-ec42dfd3545f.patch
+cherry-pick-39090918efac.patch
