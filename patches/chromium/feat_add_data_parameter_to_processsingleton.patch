@@ -162,7 +162,7 @@ index 31b387ca3cae53c94d8a7baefaeb17f3dbffe5e0..f35ae7f7527fd6ea40a9ed224b93318c
    if (!WriteToSocket(socket.fd(), to_send.data(), to_send.length())) {
      // Try to kill the other process, because it might have been dead.
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index 875269776e45c96ac43a3430768f1406c9608dd3..653dbb1ee24d707153a263fc3abd47cb3a5f8d8c 100644
+index 875269776e45c96ac43a3430768f1406c9608dd3..2e4bbb4092e82dd5cf387e9a05e16eb2211d13d6 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
 @@ -94,10 +94,12 @@ BOOL CALLBACK BrowserWindowEnumeration(HWND window, LPARAM param) {
@@ -171,7 +171,7 @@ index 875269776e45c96ac43a3430768f1406c9608dd3..653dbb1ee24d707153a263fc3abd47cb
                        base::CommandLine* parsed_command_line,
 -                      base::FilePath* current_directory) {
 +                      base::FilePath* current_directory,
-+                      std::vector<const uint8_t>* parsed_additional_data) {
++                      base::span<const uint8_t>* parsed_additional_data) {
    // We should have enough room for the shortest command (min_message_size)
    // and also be a multiple of wchar_t bytes. The shortest command
 -  // possible is L"START\0\0" (empty current directory and command line).
@@ -210,13 +210,13 @@ index 875269776e45c96ac43a3430768f1406c9608dd3..653dbb1ee24d707153a263fc3abd47cb
 +    // Get the actual additional data.
 +    const std::wstring additional_data =
 +        msg.substr(fourth_null + 1, fifth_null - fourth_null);
-+
 +    const uint8_t* additional_data_bytes = reinterpret_cast<const uint8_t*>(additional_data.c_str());
-+    *parsed_additional_data = std::vector<const uint8_t>(additional_data_bytes, additional_data_bytes + additional_data_length);
++    *parsed_additional_data = base::make_span(additional_data_bytes, additional_data_bytes + additional_data_length);
++
      return true;
    }
    return false;
-@@ -163,15 +194,17 @@ bool ProcessLaunchNotification(
+@@ -163,15 +194,15 @@ bool ProcessLaunchNotification(
  
    // Handle the WM_COPYDATA message from another process.
    const COPYDATASTRUCT* cds = reinterpret_cast<COPYDATASTRUCT*>(lparam);
@@ -224,20 +224,18 @@ index 875269776e45c96ac43a3430768f1406c9608dd3..653dbb1ee24d707153a263fc3abd47cb
    base::CommandLine parsed_command_line(base::CommandLine::NO_PROGRAM);
    base::FilePath current_directory;
 -  if (!ParseCommandLine(cds, &parsed_command_line, &current_directory)) {
-+  std::vector<const uint8_t> additional_data;
-+
++  base::span<const uint8_t> additional_data;
 +  if (!ParseCommandLine(cds, &parsed_command_line, &current_directory, &additional_data)) {
      *result = TRUE;
      return true;
    }
  
 -  *result = notification_callback.Run(parsed_command_line, current_directory) ?
-+  base::span<const uint8_t> additional_data_span = base::make_span(additional_data.begin(), additional_data.end());
-+  *result = notification_callback.Run(parsed_command_line, current_directory, additional_data_span) ?
++  *result = notification_callback.Run(parsed_command_line, current_directory, additional_data) ?
        TRUE : FALSE;
    return true;
  }
-@@ -269,9 +302,11 @@ bool ProcessSingleton::EscapeVirtualization(
+@@ -269,9 +300,11 @@ bool ProcessSingleton::EscapeVirtualization(
  ProcessSingleton::ProcessSingleton(
      const std::string& program_name,
      const base::FilePath& user_data_dir,
@@ -249,7 +247,7 @@ index 875269776e45c96ac43a3430768f1406c9608dd3..653dbb1ee24d707153a263fc3abd47cb
        program_name_(program_name),
        is_app_sandboxed_(is_app_sandboxed),
        is_virtualized_(false),
-@@ -296,7 +331,7 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
+@@ -296,7 +329,7 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
      return PROCESS_NONE;
    }
  
@@ -259,7 +257,7 @@ index 875269776e45c96ac43a3430768f1406c9608dd3..653dbb1ee24d707153a263fc3abd47cb
        return PROCESS_NOTIFIED;
      case chrome::NOTIFY_FAILED:
 diff --git a/chrome/browser/win/chrome_process_finder.cc b/chrome/browser/win/chrome_process_finder.cc
-index 788abf9a04f2a3725d67f7f8d84615016b241c8e..7a787c086dd0e28abc3af41eb9304f3fea125cc3 100644
+index 788abf9a04f2a3725d67f7f8d84615016b241c8e..08059b9139490d766b9ab39d72a43f40eee4e954 100644
 --- a/chrome/browser/win/chrome_process_finder.cc
 +++ b/chrome/browser/win/chrome_process_finder.cc
 @@ -34,7 +34,9 @@ HWND FindRunningChromeWindow(const base::FilePath& user_data_dir) {
@@ -283,7 +281,7 @@ index 788abf9a04f2a3725d67f7f8d84615016b241c8e..7a787c086dd0e28abc3af41eb9304f3f
    std::wstring to_send(L"START\0", 6);  // want the NULL in the string.
    base::FilePath cur_dir;
    if (!base::GetCurrentDirectory(&cur_dir))
-@@ -53,6 +56,17 @@ NotifyChromeResult AttemptToNotifyRunningChrome(HWND remote_window) {
+@@ -53,6 +56,22 @@ NotifyChromeResult AttemptToNotifyRunningChrome(HWND remote_window) {
        base::CommandLine::ForCurrentProcess()->GetCommandLineString());
    to_send.append(L"\0", 1);  // Null separator.
  
@@ -293,8 +291,13 @@ index 788abf9a04f2a3725d67f7f8d84615016b241c8e..7a787c086dd0e28abc3af41eb9304f3f
 +    // add padding.
 +    to_send.append(base::UTF8ToWide(base::NumberToString(additional_data_size)));
 +    to_send.append(L"\0", 1);  // Null separator.
++
++    size_t padded_size = additional_data_size / sizeof(wchar_t);
++    if (additional_data_size % sizeof(wchar_t) != 0) {
++      padded_size++;
++    }
 +    to_send.append(reinterpret_cast<const wchar_t*>(additional_data.data()),
-+                   (additional_data_size + 1) / sizeof(wchar_t));
++                   padded_size);
 +    to_send.append(L"\0", 1);  // Null separator.
 +  }
 +
