@@ -431,8 +431,7 @@ int ElectronBrowserMainParts::PreMainMessageLoopRun() {
 #endif
 
 #if defined(USE_X11)
-  if (!features::IsUsingOzonePlatform())
-    ui::TouchFactory::SetTouchDeviceListFromCommandLine();
+  ui::TouchFactory::SetTouchDeviceListFromCommandLine();
 #endif
 
   content::WebUIControllerFactory::RegisterFactory(
