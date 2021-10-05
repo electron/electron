@@ -37,6 +37,10 @@ ipcMainInternal.handle(IPC_MESSAGES.BROWSER_GET_LAST_WEB_PREFERENCES, function (
   return event.sender.getLastWebPreferences();
 });
 
+ipcMainInternal.handle(IPC_MESSAGES.BROWSER_GET_PROCESS_MEMORY_INFO, function (event) {
+  return event.sender._getProcessMemoryInfo();
+});
+
 // Methods not listed in this set are called directly in the renderer process.
 const allowedClipboardMethods = (() => {
   switch (process.platform) {

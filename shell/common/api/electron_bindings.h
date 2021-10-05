@@ -49,6 +49,13 @@ class ElectronBindings {
 
   static void Crash();
 
+  static void DidReceiveMemoryDump(
+      v8::Global<v8::Context> context,
+      gin_helper::Promise<gin_helper::Dictionary> promise,
+      base::ProcessId target_pid,
+      bool success,
+      std::unique_ptr<memory_instrumentation::GlobalMemoryDump> dump);
+
  private:
   static void Hang();
   static v8::Local<v8::Value> GetHeapStatistics(v8::Isolate* isolate);
@@ -66,12 +73,6 @@ class ElectronBindings {
   void ActivateUVLoop(v8::Isolate* isolate);
 
   static void OnCallNextTick(uv_async_t* handle);
-
-  static void DidReceiveMemoryDump(
-      v8::Global<v8::Context> context,
-      gin_helper::Promise<gin_helper::Dictionary> promise,
-      bool success,
-      std::unique_ptr<memory_instrumentation::GlobalMemoryDump> dump);
 
   UvHandle<uv_async_t> call_next_tick_async_;
   std::list<node::Environment*> pending_next_ticks_;
