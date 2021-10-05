@@ -85,3 +85,5 @@ after_build:
 on_image_bake:
 - ps: >-
     echo "Baking image: $env:APPVEYOR_BAKE_IMAGE at dir $PWD"
+    Remove-Item $pwd\depot_tools
+    Remove-Item $pwd\src\electron
