@@ -221,7 +221,8 @@ class WebContents : public gin::Wrappable<WebContents>,
                            printing::CompletionCallback print_callback,
                            std::u16string device_name,
                            bool silent,
-                           std::u16string default_printer);
+                           // <error, default_printer_name>
+                           std::pair<std::string, std::u16string> info);
   void Print(gin::Arguments* args);
   // Print current page as PDF.
   v8::Local<v8::Promise> PrintToPDF(base::DictionaryValue settings);
