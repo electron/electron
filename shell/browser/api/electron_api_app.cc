@@ -53,6 +53,7 @@
 #include "shell/common/electron_command_line.h"
 #include "shell/common/electron_paths.h"
 #include "shell/common/gin_converters/base_converter.h"
+#include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
@@ -1105,12 +1106,8 @@ bool App::RequestSingleInstanceLock(gin::Arguments* args) {
 
   auto cb = base::BindRepeating(&App::OnSecondInstance, base::Unretained(this));
 
-  v8::Isolate* isolate = args->isolate();
-  v8::Local<v8::Value> data_arg = args->PeekNext();
   blink::CloneableMessage additional_data_message;
-  if (!data_arg.IsEmpty()) {
-    SerializeV8Value(isolate, data_arg, &additional_data_message);
-  }
+  args->GetNext(&additional_data_message);
 #if defined(OS_WIN)
   bool app_is_sandboxed =
       IsSandboxEnabled(base::CommandLine::ForCurrentProcess());
