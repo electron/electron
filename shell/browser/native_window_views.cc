@@ -520,8 +520,10 @@ bool NativeWindowViews::IsEnabled() {
 #if defined(OS_WIN)
   return ::IsWindowEnabled(GetAcceleratedWidget());
 #elif defined(OS_LINUX)
-#if BUILDFLAG(USE_VAAPI_X11)
-  return !event_disabler_.get();
+#if defined(USE_X11)
+  if (!features::IsUsingOzonePlatform()) {
+    return !event_disabler_.get();
+  }
 #endif
   NOTIMPLEMENTED();
   return true;
