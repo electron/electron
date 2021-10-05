@@ -526,9 +526,13 @@ bool NotificationCallbackWrapper(
   } else {
     scoped_refptr<base::SingleThreadTaskRunner> task_runner(
         base::ThreadTaskRunnerHandle::Get());
+
+    // Make a copy of the span so that the data isn't lost.
+    auto additional_data_vec = std::vector<const uint8_t>(
+        additional_data.begin(), additional_data.end());
     task_runner->PostTask(FROM_HERE,
                           base::BindOnce(base::IgnoreResult(callback), cmd, cwd,
-                                         additional_data));
+                                         base::make_span(additional_data_vec)));
   }
   // ProcessSingleton needs to know whether current process is quiting.
   return !Browser::Get()->is_shutting_down();
