@@ -13,7 +13,7 @@ app.requestSingleInstanceLock API so that users can pass in a JSON
 object for the second instance to send to the first instance.
 
 diff --git a/chrome/browser/process_singleton.h b/chrome/browser/process_singleton.h
-index 9418bbacb11094628c4468d0a7b735a0f742e5f2..c942be131f6f41b60276579ef78d291f9c92afd6 100644
+index 9418bbacb11094628c4468d0a7b735a0f742e5f2..388465aed2c7affa3551f0dc145b65a5f6d14021 100644
 --- a/chrome/browser/process_singleton.h
 +++ b/chrome/browser/process_singleton.h
 @@ -19,6 +19,7 @@
@@ -30,7 +30,7 @@ index 9418bbacb11094628c4468d0a7b735a0f742e5f2..c942be131f6f41b60276579ef78d291f
        base::RepeatingCallback<bool(const base::CommandLine& command_line,
 -                                   const base::FilePath& current_directory)>;
 +                                   const base::FilePath& current_directory,
-+                                   const base::span<const uint8_t>& additional_data)>;
++                                   const base::span<const uint8_t> additional_data)>;
  
  #if defined(OS_WIN)
    ProcessSingleton(const std::string& program_name,
@@ -162,7 +162,7 @@ index 31b387ca3cae53c94d8a7baefaeb17f3dbffe5e0..f35ae7f7527fd6ea40a9ed224b93318c
    if (!WriteToSocket(socket.fd(), to_send.data(), to_send.length())) {
      // Try to kill the other process, because it might have been dead.
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index 875269776e45c96ac43a3430768f1406c9608dd3..2e4bbb4092e82dd5cf387e9a05e16eb2211d13d6 100644
+index 875269776e45c96ac43a3430768f1406c9608dd3..439f4221cae932822bc8682731374272e15ed40b 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
 @@ -94,10 +94,12 @@ BOOL CALLBACK BrowserWindowEnumeration(HWND window, LPARAM param) {
@@ -171,7 +171,7 @@ index 875269776e45c96ac43a3430768f1406c9608dd3..2e4bbb4092e82dd5cf387e9a05e16eb2
                        base::CommandLine* parsed_command_line,
 -                      base::FilePath* current_directory) {
 +                      base::FilePath* current_directory,
-+                      base::span<const uint8_t>* parsed_additional_data) {
++                      std::vector<const uint8_t>* parsed_additional_data) {
    // We should have enough room for the shortest command (min_message_size)
    // and also be a multiple of wchar_t bytes. The shortest command
 -  // possible is L"START\0\0" (empty current directory and command line).
@@ -211,7 +211,7 @@ index 875269776e45c96ac43a3430768f1406c9608dd3..2e4bbb4092e82dd5cf387e9a05e16eb2
 +    const std::wstring additional_data =
 +        msg.substr(fourth_null + 1, fifth_null - fourth_null);
 +    const uint8_t* additional_data_bytes = reinterpret_cast<const uint8_t*>(additional_data.c_str());
-+    *parsed_additional_data = base::make_span(additional_data_bytes, additional_data_bytes + additional_data_length);
++    *parsed_additional_data = std::vector<const uint8_t>(additional_data_bytes, additional_data_bytes + additional_data_length);
 +
      return true;
    }
@@ -224,14 +224,14 @@ index 875269776e45c96ac43a3430768f1406c9608dd3..2e4bbb4092e82dd5cf387e9a05e16eb2
    base::CommandLine parsed_command_line(base::CommandLine::NO_PROGRAM);
    base::FilePath current_directory;
 -  if (!ParseCommandLine(cds, &parsed_command_line, &current_directory)) {
-+  base::span<const uint8_t> additional_data;
++  std::vector<const uint8_t> additional_data;
 +  if (!ParseCommandLine(cds, &parsed_command_line, &current_directory, &additional_data)) {
      *result = TRUE;
      return true;
    }
  
 -  *result = notification_callback.Run(parsed_command_line, current_directory) ?
-+  *result = notification_callback.Run(parsed_command_line, current_directory, additional_data) ?
++  *result = notification_callback.Run(parsed_command_line, current_directory, base::make_span(additional_data)) ?
        TRUE : FALSE;
    return true;
  }

@@ -516,10 +516,10 @@ bool NotificationCallbackWrapper(
     const base::RepeatingCallback<
         void(const base::CommandLine& command_line,
              const base::FilePath& current_directory,
-             const base::span<const uint8_t>& additional_data)>& callback,
+             const base::span<const uint8_t> additional_data)>& callback,
     const base::CommandLine& cmd,
     const base::FilePath& cwd,
-    const base::span<const uint8_t>& additional_data) {
+    const base::span<const uint8_t> additional_data) {
   // Make sure the callback is called after app gets ready.
   if (Browser::Get()->is_ready()) {
     callback.Run(cmd, cwd, additional_data);
@@ -528,11 +528,11 @@ bool NotificationCallbackWrapper(
         base::ThreadTaskRunnerHandle::Get());
 
     // Make a copy of the span so that the data isn't lost.
-    auto additional_data_vec = std::vector<const uint8_t>(
+    auto additional_data_copy = std::vector<const uint8_t>(
         additional_data.begin(), additional_data.end());
-    task_runner->PostTask(FROM_HERE,
-                          base::BindOnce(base::IgnoreResult(callback), cmd, cwd,
-                                         base::make_span(additional_data_vec)));
+    task_runner->PostTask(
+        FROM_HERE, base::BindOnce(base::IgnoreResult(callback), cmd, cwd,
+                                  base::make_span(additional_data_copy)));
   }
   // ProcessSingleton needs to know whether current process is quiting.
   return !Browser::Get()->is_shutting_down();
@@ -1079,7 +1079,7 @@ std::string App::GetLocaleCountryCode() {
 
 void App::OnSecondInstance(const base::CommandLine& cmd,
                            const base::FilePath& cwd,
-                           const base::span<const uint8_t>& additional_data) {
+                           const base::span<const uint8_t> additional_data) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
