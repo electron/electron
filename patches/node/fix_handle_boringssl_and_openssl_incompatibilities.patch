@@ -225,15 +225,6 @@ diff --git a/src/crypto/crypto_rsa.cc b/src/crypto/crypto_rsa.cc
 index d2307c33f5de8733b1343225a3fe6a700d1f51e4..fd31caa1355cd7be98992411b9cda2dbb500f211 100644
 --- a/src/crypto/crypto_rsa.cc
 +++ b/src/crypto/crypto_rsa.cc
-@@ -580,7 +580,7 @@ Maybe<bool> GetRsaKeyDetail(
-     // In that case, RSA_get0_pss_params does not return nullptr but all fields
-     // of the returned RSA_PSS_PARAMS will be set to nullptr.
- 
--    const RSA_PSS_PARAMS* params = RSA_get0_pss_params(rsa);
-+    const RSA_PSS_PARAMS* params = nullptr; // RSA_get0_pss_params(rsa);
-     if (params != nullptr) {
-       int hash_nid = NID_sha1;
-       int mgf_nid = NID_mgf1;
 @@ -621,10 +621,11 @@ Maybe<bool> GetRsaKeyDetail(
        }
  
