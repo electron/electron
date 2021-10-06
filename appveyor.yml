@@ -62,6 +62,7 @@ build_script:
       %GCLIENT_EXTRA_ARGS%
       "https://github.com/electron/electron"
   - gclient sync --with_branch_heads --with_tags
+  - ps: >-
       if (Test-Path 'env:RAW_GOMA_AUTH') {
         $env:GOMA_OAUTH2_CONFIG_FILE = "$pwd\.goma_oauth2_config"
         $env:RAW_GOMA_AUTH | Set-Content $env:GOMA_OAUTH2_CONFIG_FILE
