@@ -467,7 +467,8 @@ node::Environment* NodeBindings::CreateEnvironment(
 
   node::Environment* env;
   uint64_t flags = node::EnvironmentFlags::kDefaultFlags |
-                   node::EnvironmentFlags::kHideConsoleWindows;
+                   node::EnvironmentFlags::kHideConsoleWindows |
+                   node::EnvironmentFlags::kNoGlobalSearchPaths;
 
   if (browser_env_ != BrowserEnvironment::kBrowser) {
     // Only one ESM loader can be registered per isolate -

@@ -1,15 +1,17 @@
-const Module = require('module');
 const path = require('path');
 const v8 = require('v8');
 
-Module.globalPaths.push(path.resolve(__dirname, '../spec/node_modules'));
+module.paths.push(path.resolve(__dirname, '../spec/node_modules'));
 
 // Extra module paths which can be used to load Mocha reporters
 if (process.env.ELECTRON_TEST_EXTRA_MODULE_PATHS) {
   for (const modulePath of process.env.ELECTRON_TEST_EXTRA_MODULE_PATHS.split(':')) {
-    Module.globalPaths.push(modulePath);
+    module.paths.push(modulePath);
   }
 }
+
+// Add search paths for loaded spec files
+require('../spec/global-paths')(module.paths);
 
 // We want to terminate on errors, not throw up a dialog
 process.on('uncaughtException', (err) => {

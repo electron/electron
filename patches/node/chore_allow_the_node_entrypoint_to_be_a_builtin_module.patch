@@ -29,7 +29,7 @@ index 9d2799c3c9ac3b216c2289ae4e037dd228844d23..5b31df1207d4417a6f9b784574e37796
  
    // TODO(joyeecheung): most of these should be deprecated and removed,
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index 40655b66fd2a50dac01f88d38457de4602022381..95147ec8a95761b0654e8403578c2c67191834ad 100644
+index 5d75a0e6cb9692a303be6599226f20783e7863b8..eb7f4346035f0897d0f2b140277e48b3c7bb7546 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
 @@ -1075,6 +1075,13 @@ Module.prototype._compile = function(content, filename) {
