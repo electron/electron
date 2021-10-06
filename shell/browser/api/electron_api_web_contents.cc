@@ -2186,6 +2186,33 @@ void WebContents::SetWebRTCIPHandlingPolicy(
   web_contents()->SyncRendererPrefs();
 }
 
+std::string WebContents::GetMediaSourceID(
+    content::WebContents* request_web_contents) {
+  auto* frame_host = web_contents()->GetMainFrame();
+  if (!frame_host)
+    return std::string();
+
+  content::DesktopMediaID media_id(
+      content::DesktopMediaID::TYPE_WEB_CONTENTS,
+      content::DesktopMediaID::kNullId,
+      content::WebContentsMediaCaptureId(frame_host->GetProcess()->GetID(),
+                                         frame_host->GetRoutingID()));
+
+  auto* request_frame_host = request_web_contents->GetMainFrame();
+  if (!request_frame_host)
+    return std::string();
+
+  std::string id =
+      content::DesktopStreamsRegistry::GetInstance()->RegisterStream(
+          request_frame_host->GetProcess()->GetID(),
+          request_frame_host->GetRoutingID(),
+          url::Origin::Create(
+              request_frame_host->GetLastCommittedURL().GetOrigin()),
+          media_id, "", content::kRegistryStreamTypeTab);
+
+  return id;
+}
+
 bool WebContents::IsCrashed() const {
   return web_contents()->IsCrashed();
 }
@@ -3710,33 +3737,6 @@ void WebContents::UpdateHtmlApiFullscreen(bool fullscreen) {
   }
 }
 
-std::string WebContents::GetMediaSourceID(
-    content::WebContents* request_web_contents) {
-  auto* frame_host = web_contents()->GetMainFrame();
-  if (!frame_host)
-    return std::string();
-
-  content::DesktopMediaID media_id(
-      content::DesktopMediaID::TYPE_WEB_CONTENTS,
-      content::DesktopMediaID::kNullId,
-      content::WebContentsMediaCaptureId(frame_host->GetProcess()->GetID(),
-                                         frame_host->GetRoutingID()));
-
-  auto* request_frame_host = request_web_contents->GetMainFrame();
-  if (!request_frame_host)
-    return std::string();
-
-  std::string id =
-      content::DesktopStreamsRegistry::GetInstance()->RegisterStream(
-          request_frame_host->GetProcess()->GetID(),
-          request_frame_host->GetRoutingID(),
-          url::Origin::Create(
-              request_frame_host->GetLastCommittedURL().GetOrigin()),
-          media_id, "", content::kRegistryStreamTypeTab);
-
-  return id;
-}
-
 // static
 v8::Local<v8::ObjectTemplate> WebContents::FillObjectTemplate(
     v8::Isolate* isolate,
@@ -3863,12 +3863,12 @@ v8::Local<v8::ObjectTemplate> WebContents::FillObjectTemplate(
       .SetMethod("isBeingCaptured", &WebContents::IsBeingCaptured)
       .SetMethod("setWebRTCIPHandlingPolicy",
                  &WebContents::SetWebRTCIPHandlingPolicy)
+      .SetMethod("getMediaSourceId", &WebContents::GetMediaSourceID)
       .SetMethod("getWebRTCIPHandlingPolicy",
                  &WebContents::GetWebRTCIPHandlingPolicy)
       .SetMethod("takeHeapSnapshot", &WebContents::TakeHeapSnapshot)
       .SetMethod("setImageAnimationPolicy",
                  &WebContents::SetImageAnimationPolicy)
-      .SetMethod("getMediaSourceId", &WebContents::GetMediaSourceID)
       .SetProperty("id", &WebContents::ID)
       .SetProperty("session", &WebContents::Session)
       .SetProperty("hostWebContents", &WebContents::HostWebContents)
