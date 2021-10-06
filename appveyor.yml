@@ -24,13 +24,13 @@
 # https://www.appveyor.com/docs/build-configuration/#custom-environment-variables
 
 # Uncomment these lines to enable RDP
-#on_finish:
-#  - ps: >-
-#      if ($env:TARGET_ARCH -eq 'x64') {
-#        echo "SETTING BAKE IMAGE"
-#        $env:APPVEYOR_RDP_PASSWORD = "electron"
-#        $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
-#      }
+on_finish:
+  - ps: >-
+      if ($env:TARGET_ARCH -eq 'x64') {
+        echo "SETTING BAKE IMAGE"
+        $env:APPVEYOR_RDP_PASSWORD = "electron"
+        $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+      }
 version: 1.0.{build}
 build_cloud: electron-16-core2
 image: electron-test-bake-image
