@@ -11,10 +11,26 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/chrome/browser/printing/print_job.cc b/chrome/browser/printing/print_job.cc
-index bca04dcd90921e508fb0e5c8201265532e42e88f..345547f382c8984ea29483b84475c120aa58e19b 100644
+index 5e44b586937c4100e9cb55f152338a11f24eed8c..879add3dc328cea225b9f4c91bd103939429beeb 100644
 --- a/chrome/browser/printing/print_job.cc
 +++ b/chrome/browser/printing/print_job.cc
-@@ -350,18 +350,25 @@ void PrintJob::StartPdfToEmfConversion(
+@@ -89,6 +89,7 @@ bool PrintWithReducedRasterization(PrefService* prefs) {
+   return base::FeatureList::IsEnabled(features::kPrintWithReducedRasterization);
+ }
+ 
++#if 0
+ PrefService* GetPrefsForWebContents(content::WebContents* web_contents) {
+   // TODO(thestig): Figure out why crbug.com/1083911 occurred, which is likely
+   // because `web_contents` was null. As a result, this section has many more
+@@ -97,6 +98,7 @@ PrefService* GetPrefsForWebContents(content::WebContents* web_contents) {
+       web_contents ? web_contents->GetBrowserContext() : nullptr;
+   return context ? Profile::FromBrowserContext(context)->GetPrefs() : nullptr;
+ }
++#endif
+ 
+ #endif  // defined(OS_WIN)
+ 
+@@ -381,11 +383,18 @@ void PrintJob::StartPdfToEmfConversion(
    // seems to work with the fix for this bug applied.
    const PrintSettings& settings = document()->settings();
    bool print_text_with_gdi =
@@ -27,22 +43,27 @@ index bca04dcd90921e508fb0e5c8201265532e42e88f..345547f382c8984ea29483b84475c120
 +      && !settings.printer_language_is_xps() &&
        base::FeatureList::IsEnabled(::features::kGdiTextPrinting);
  
-   // TODO(thestig): Figure out why crbug.com/1083911 occurred, which is likely
-   // because `web_contents` was null. As a result, this section has many more
-   // pointer checks to avoid crashing.
 +#if 0
-   content::WebContents* web_contents = worker_->GetWebContents();
-   content::BrowserContext* context =
-       web_contents ? web_contents->GetBrowserContext() : nullptr;
-   PrefService* prefs =
-       context ? Profile::FromBrowserContext(context)->GetPrefs() : nullptr;
+   PrefService* prefs = GetPrefsForWebContents(worker_->GetWebContents());
 -  bool print_with_reduced_rasterization = PrintWithReducedRasterization(prefs);
 +#endif
 +  bool print_with_reduced_rasterization = PrintWithReducedRasterization(nullptr);
  
    using RenderMode = PdfRenderSettings::Mode;
    RenderMode mode;
-@@ -499,6 +506,10 @@ void PrintJob::OnNotifyPrintJobEvent(const JobEventDetails& event_details) {
+@@ -480,8 +489,10 @@ void PrintJob::StartPdfToPostScriptConversion(
+   if (ps_level2) {
+     mode = PdfRenderSettings::Mode::POSTSCRIPT_LEVEL2;
+   } else {
++#if 0
+     PrefService* prefs = GetPrefsForWebContents(worker_->GetWebContents());
+-    mode = PrintWithPostScriptType42Fonts(prefs)
++#endif
++    mode = PrintWithPostScriptType42Fonts(nullptr)
+                ? PdfRenderSettings::Mode::POSTSCRIPT_LEVEL3_WITH_TYPE42_FONTS
+                : PdfRenderSettings::Mode::POSTSCRIPT_LEVEL3;
+   }
+@@ -531,6 +542,10 @@ void PrintJob::OnNotifyPrintJobEvent(const JobEventDetails& event_details) {
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
  
    switch (event_details.type()) {
@@ -68,7 +89,7 @@ index b8b83529be4c7da661032d3b941984c02b978047..98ef6cfad5dc46d9dcb65a0ce506db37
      NEW_DOC,
  
 diff --git a/chrome/browser/printing/print_job_worker.cc b/chrome/browser/printing/print_job_worker.cc
-index 2824b97e715a493082734d40f62860c8cafa5f34..584d4ef2b73a0f89458224eb134a8d8a2b439995 100644
+index 4305943435c15275084f0a9bb5490831d893870f..a048c0c11b3a8a06401ddf4d6e15700bf05600c3 100644
 --- a/chrome/browser/printing/print_job_worker.cc
 +++ b/chrome/browser/printing/print_job_worker.cc
 @@ -21,13 +21,13 @@
@@ -86,7 +107,7 @@ index 2824b97e715a493082734d40f62860c8cafa5f34..584d4ef2b73a0f89458224eb134a8d8a
  #include "printing/backend/print_backend.h"
  #include "printing/mojom/print.mojom.h"
  #include "printing/print_job_constants.h"
-@@ -238,16 +238,21 @@ void PrintJobWorker::UpdatePrintSettings(base::Value new_settings,
+@@ -240,16 +240,21 @@ void PrintJobWorker::UpdatePrintSettings(base::Value new_settings,
  #endif  // defined(OS_LINUX) && defined(USE_CUPS)
    }
  
@@ -111,7 +132,7 @@ index 2824b97e715a493082734d40f62860c8cafa5f34..584d4ef2b73a0f89458224eb134a8d8a
  }
  
  #if defined(OS_CHROMEOS)
-@@ -263,6 +268,13 @@ void PrintJobWorker::UpdatePrintSettingsFromPOD(
+@@ -265,6 +270,13 @@ void PrintJobWorker::UpdatePrintSettingsFromPOD(
  
  void PrintJobWorker::GetSettingsDone(SettingsCallback callback,
                                       PrintingContext::Result result) {
@@ -366,7 +387,7 @@ index e4cacbf9a82da8dca062cc33df885a0575e74830..143ee383668965ba04da092e3445fc9f
  
    if (!cookie) {
 diff --git a/chrome/browser/printing/print_view_manager_base.h b/chrome/browser/printing/print_view_manager_base.h
-index eaa0e162a339ba68d42c920fdd30869d259b4f27..8381f5171970aa89fc5c406d57d2665e16c6678b 100644
+index 24ffeb0a87b2e324f84260eb4ec65021998ee2c3..872008c7ffd5298dc3cc8d1b52be6113104ce49c 100644
 --- a/chrome/browser/printing/print_view_manager_base.h
 +++ b/chrome/browser/printing/print_view_manager_base.h
 @@ -38,6 +38,8 @@ class PrintJob;
@@ -378,7 +399,7 @@ index eaa0e162a339ba68d42c920fdd30869d259b4f27..8381f5171970aa89fc5c406d57d2665e
  // Base class for managing the print commands for a WebContents.
  class PrintViewManagerBase : public content::NotificationObserver,
                               public PrintManager {
-@@ -47,7 +49,10 @@ class PrintViewManagerBase : public content::NotificationObserver,
+@@ -50,7 +52,10 @@ class PrintViewManagerBase : public content::NotificationObserver,
    // Prints the current document immediately. Since the rendering is
    // asynchronous, the actual printing will not be completed on the return of
    // this function. Returns false if printing is impossible at the moment.
@@ -390,7 +411,7 @@ index eaa0e162a339ba68d42c920fdd30869d259b4f27..8381f5171970aa89fc5c406d57d2665e
  
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Prints the document in |print_data| with settings specified in
-@@ -234,9 +239,15 @@ class PrintViewManagerBase : public content::NotificationObserver,
+@@ -237,9 +242,15 @@ class PrintViewManagerBase : public content::NotificationObserver,
    // The current RFH that is printing with a system printing dialog.
    content::RenderFrameHost* printing_rfh_ = nullptr;
  
@@ -617,7 +638,7 @@ index 90236920457c931c86426049c6cbc30b592b597f..353178863eba37b9112e784ffa4b3519
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Set options for print preset from source PDF document.
 diff --git a/printing/printing_context.cc b/printing/printing_context.cc
-index 7f617267b4eefd6d7cf9db6a56aaffad5035bab4..df79c62570f02f581ecb69ab3c03eeebfc43c50e 100644
+index 744c3acfb9637aa64785dabd041ee416d56c3e43..9dadda9dfecdcf7826a3766064530a10126df66b 100644
 --- a/printing/printing_context.cc
 +++ b/printing/printing_context.cc
 @@ -115,7 +115,6 @@ PrintingContext::Result PrintingContext::UsePdfSettings() {
@@ -629,10 +650,10 @@ index 7f617267b4eefd6d7cf9db6a56aaffad5035bab4..df79c62570f02f581ecb69ab3c03eeeb
      std::unique_ptr<PrintSettings> settings =
          PrintSettingsFromJobSettings(job_settings);
 diff --git a/printing/printing_context.h b/printing/printing_context.h
-index 3f83f961ca953d1a6fe544a49e3a3d7addaf6c50..7a639e7d2975fa8d033ea32f371e3b6539ea0c7e 100644
+index 753bc1d564d607b4be671c3c618e1b60f8e7bb3f..c60136097403e9b5930917433064b57ba5771a3b 100644
 --- a/printing/printing_context.h
 +++ b/printing/printing_context.h
-@@ -145,6 +145,9 @@ class COMPONENT_EXPORT(PRINTING) PrintingContext {
+@@ -149,6 +149,9 @@ class COMPONENT_EXPORT(PRINTING) PrintingContext {
  
    int job_id() const { return job_id_; }
  
@@ -642,7 +663,7 @@ index 3f83f961ca953d1a6fe544a49e3a3d7addaf6c50..7a639e7d2975fa8d033ea32f371e3b65
   protected:
    explicit PrintingContext(Delegate* delegate);
  
-@@ -152,9 +155,6 @@ class COMPONENT_EXPORT(PRINTING) PrintingContext {
+@@ -156,9 +159,6 @@ class COMPONENT_EXPORT(PRINTING) PrintingContext {
    // implement this method to create an object of their implementation.
    static std::unique_ptr<PrintingContext> CreateImpl(Delegate* delegate);
  

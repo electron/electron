@@ -3669,7 +3669,7 @@ void WebContents::OnDevToolsSearchCompleted(
     const std::vector<std::string>& file_paths) {
   base::ListValue file_paths_value;
   for (const auto& file_path : file_paths) {
-    file_paths_value.AppendString(file_path);
+    file_paths_value.Append(file_path);
   }
   base::Value request_id_value(request_id);
   base::Value file_system_path_value(file_system_path);

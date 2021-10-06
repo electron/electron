@@ -11,7 +11,7 @@ namespace {
 
 v8::Local<v8::Object> CreateWithSender(v8::Isolate* isolate,
                                        v8::Local<v8::Object> sender) {
-  return gin_helper::internal::CreateEvent(isolate, sender);
+  return gin_helper::internal::CreateCustomEvent(isolate, sender);
 }
 
 void Initialize(v8::Local<v8::Object> exports,

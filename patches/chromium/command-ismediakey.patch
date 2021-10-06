@@ -52,10 +52,10 @@ index d6d896b87bb327bd7387335bd5bbac4616316f1e..ec0293ba8b66df5c9a34435cb2a0c9a3
    NotifyKeyPressed(ui::Accelerator(key_code, modifiers));
  }
 diff --git a/chrome/browser/extensions/global_shortcut_listener_ozone.h b/chrome/browser/extensions/global_shortcut_listener_ozone.h
-index 27655641551afe9763cd76afe366f04e56efbbc6..14ff891a057464a1bd570cb14e127ce865d9ba91 100644
+index 866c4e6c1ff8c1a2399d943837fce1753c8ea1a5..ecde46fe5f8c5f250a7cb505c86ae59cfa1bd623 100644
 --- a/chrome/browser/extensions/global_shortcut_listener_ozone.h
 +++ b/chrome/browser/extensions/global_shortcut_listener_ozone.h
-@@ -41,7 +41,8 @@ class GlobalShortcutListenerOzone
+@@ -46,7 +46,8 @@ class GlobalShortcutListenerOzone
    void OnKeyPressed(ui::KeyboardCode key_code,
                      bool is_alt_down,
                      bool is_ctrl_down,

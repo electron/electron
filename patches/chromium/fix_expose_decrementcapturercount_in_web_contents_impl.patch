@@ -8,10 +8,10 @@ we invoke it in order to expose contents.decrementCapturerCount([stayHidden, sta
 to users. We should try to upstream this.
 
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 4fa272275ba3883d105ddfd8deeb4987071d1b06..7e7fb60540a113b8213a5a1b266b57f18d67b4a4 100644
+index 97e6ccbfbd58482299a831c63573890d1f7d46f3..1e6b5ed19688993a750af0fd1fee72a4f67eab28 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -1773,7 +1773,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
+@@ -1765,7 +1765,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
  
    // Called when the base::ScopedClosureRunner returned by
    // IncrementCapturerCount() is destructed.
@@ -21,10 +21,10 @@ index 4fa272275ba3883d105ddfd8deeb4987071d1b06..7e7fb60540a113b8213a5a1b266b57f1
    // Calculates the PageVisibilityState for |visibility|, taking the capturing
    // state into account.
 diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
-index 383d0fd95d7e807b83f4cd972c107fa27fefaac6..ae7a7f187b24bb3ec97bea37881f85ede8689936 100644
+index 95bcea15ea704f11e8daab49de6d958fb2d15127..f2e9a772fe9449fe0e4be55567019c46ef2d8c6a 100644
 --- a/content/public/browser/web_contents.h
 +++ b/content/public/browser/web_contents.h
-@@ -633,6 +633,8 @@ class WebContents : public PageNavigator,
+@@ -645,6 +645,8 @@ class WebContents : public PageNavigator,
        bool stay_hidden,
        bool stay_awake) WARN_UNUSED_RESULT = 0;
  
