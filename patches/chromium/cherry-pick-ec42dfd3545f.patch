@@ -1,7 +1,7 @@
-From ec42dfd3545f1c40f643c90954368efbd7a4d0b4 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Shuran Huang <shuuran@chromium.org>
 Date: Fri, 24 Sep 2021 00:47:47 +0000
-Subject: [PATCH] Add functions to pass in persisted FPSs and compute diffs.
+Subject: Add functions to pass in persisted FPSs and compute diffs.
 
 Pass the persisted FPSs and a callback that takes a FPSs into Network
 Service. The persisted FPSs is parsed and compared to the current FPSs
@@ -17,10 +17,9 @@ Reviewed-by: Will Harris <wfh@chromium.org>
 Reviewed-by: Matt Menke <mmenke@chromium.org>
 Reviewed-by: Chris Fredrickson <cfredric@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#924570}
----
 
 diff --git a/services/network/first_party_sets/first_party_sets.cc b/services/network/first_party_sets/first_party_sets.cc
-index f7e732e..1650c28d 100644
+index f7e732e88d6e6ebc5daed9169d5eee336a9de8c1..1650c28d8b6c61b30531e1e2ef3e2869d8450360 100644
 --- a/services/network/first_party_sets/first_party_sets.cc
 +++ b/services/network/first_party_sets/first_party_sets.cc
 @@ -13,6 +13,7 @@
@@ -31,7 +30,7 @@ index f7e732e..1650c28d 100644
  #include "net/base/schemeful_site.h"
  #include "net/cookies/cookie_constants.h"
  #include "net/cookies/same_party_context.h"
-@@ -72,12 +73,16 @@
+@@ -72,12 +73,16 @@ void FirstPartySets::SetManuallySpecifiedSet(const std::string& flag_value) {
        flag_value, ",", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY));
  
    ApplyManuallySpecifiedSet();
@@ -48,7 +47,7 @@ index f7e732e..1650c28d 100644
    return &sets_;
  }
  
-@@ -218,4 +223,48 @@
+@@ -218,4 +223,48 @@ void FirstPartySets::ApplyManuallySpecifiedSet() {
    sets_.emplace(manual_owner, manual_owner);
  }
  
@@ -98,7 +97,7 @@ index f7e732e..1650c28d 100644
 +
  }  // namespace network
 diff --git a/services/network/first_party_sets/first_party_sets.h b/services/network/first_party_sets/first_party_sets.h
-index 81e0e10..8158b55 100644
+index 81e0e1080d965947a2ebc1635638c25ad75a1bf7..8158b555856526170051cba72a08312a5528de51 100644
 --- a/services/network/first_party_sets/first_party_sets.h
 +++ b/services/network/first_party_sets/first_party_sets.h
 @@ -9,6 +9,7 @@
@@ -109,7 +108,7 @@ index 81e0e10..8158b55 100644
  #include "base/containers/flat_map.h"
  #include "base/containers/flat_set.h"
  #include "net/base/schemeful_site.h"
-@@ -87,6 +88,14 @@
+@@ -87,6 +88,14 @@ class FirstPartySets {
    // the members of the set includes the owner.
    base::flat_map<net::SchemefulSite, std::set<net::SchemefulSite>> Sets() const;
  
@@ -124,7 +123,7 @@ index 81e0e10..8158b55 100644
   private:
    // Returns a pointer to `site`'s owner (optionally inferring a singleton set
    // if necessary), or `nullptr` if `site` has no owner. Must not return
-@@ -101,6 +110,19 @@
+@@ -101,6 +110,19 @@ class FirstPartySets {
    // `manually_specified_set_`.
    void ApplyManuallySpecifiedSet();
  
@@ -144,7 +143,7 @@ index 81e0e10..8158b55 100644
    // Represents the mapping of site -> site, where keys are members of sets, and
    // values are owners of the sets. Owners are explicitly represented as members
    // of the set.
-@@ -108,6 +130,22 @@
+@@ -108,6 +130,22 @@ class FirstPartySets {
    absl::optional<
        std::pair<net::SchemefulSite, base::flat_set<net::SchemefulSite>>>
        manually_specified_set_;
@@ -168,7 +167,7 @@ index 81e0e10..8158b55 100644
  
  }  // namespace network
 diff --git a/services/network/first_party_sets/first_party_sets_unittest.cc b/services/network/first_party_sets/first_party_sets_unittest.cc
-index b929315..2055619 100644
+index b929315d9b857e0f86d1d726f7cefefb7ad8e54c..2055619f4c999cbfd5a5ee4780e2eb5c1dad5816 100644
 --- a/services/network/first_party_sets/first_party_sets_unittest.cc
 +++ b/services/network/first_party_sets/first_party_sets_unittest.cc
 @@ -7,6 +7,7 @@
@@ -179,7 +178,7 @@ index b929315..2055619 100644
  #include "net/base/schemeful_site.h"
  #include "net/cookies/cookie_constants.h"
  #include "net/cookies/same_party_context.h"
-@@ -204,6 +205,30 @@
+@@ -204,6 +205,30 @@ TEST(FirstPartySets, SetsManuallySpecified_Invalid_RegisteredDomain_Member) {
    EXPECT_THAT(sets.ParseAndSet("[]"), Pointee(IsEmpty()));
  }
  
@@ -210,7 +209,7 @@ index b929315..2055619 100644
  TEST(FirstPartySets, SetsManuallySpecified_Valid_SingleMember) {
    FirstPartySets sets;
    sets.SetManuallySpecifiedSet("https://example.test,https://member.test");
-@@ -469,6 +494,311 @@
+@@ -469,6 +494,311 @@ TEST(FirstPartySets, SetsManuallySpecified_PrunesInducedSingletons) {
                         SerializesTo("https://example.test")))));
  }
  
@@ -523,10 +522,10 @@ index b929315..2055619 100644
   public:
    FirstPartySetsTest() {
 diff --git a/services/network/network_service.cc b/services/network/network_service.cc
-index 5d598ff..c850d69 100644
+index 5d598ff6c626510bf1da00d35bc9ba4179bac93e..c850d6950aa7777cdc5c2056d4b80c9dd44d3af9 100644
 --- a/services/network/network_service.cc
 +++ b/services/network/network_service.cc
-@@ -343,8 +343,7 @@
+@@ -343,8 +343,7 @@ void NetworkService::Initialize(mojom::NetworkServiceParamsPtr params,
    }
  
    first_party_sets_ = std::make_unique<FirstPartySets>();
@@ -536,7 +535,7 @@ index 5d598ff..c850d69 100644
      first_party_sets_->SetManuallySpecifiedSet(
          command_line->GetSwitchValueASCII(switches::kUseFirstPartySet));
    }
-@@ -785,6 +784,14 @@
+@@ -785,6 +784,14 @@ void NetworkService::SetFirstPartySets(const std::string& raw_sets) {
    first_party_sets_->ParseAndSet(raw_sets);
  }
  
@@ -552,10 +551,10 @@ index 5d598ff..c850d69 100644
      const std::vector<uint16_t>& ports) {
    net::SetExplicitlyAllowedPorts(ports);
 diff --git a/services/network/network_service.h b/services/network/network_service.h
-index e8c984a..a848746 100644
+index 1da4505fc9fe478e00353cd55e615878ea875aa0..963e22f6d5e957684dc56dd6e3ae31fa430a355e 100644
 --- a/services/network/network_service.h
 +++ b/services/network/network_service.h
-@@ -207,6 +207,10 @@
+@@ -204,6 +204,10 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkService
    void BindTestInterface(
        mojo::PendingReceiver<mojom::NetworkServiceTest> receiver) override;
    void SetFirstPartySets(const std::string& raw_sets) override;
@@ -567,10 +566,10 @@ index e8c984a..a848746 100644
  
    // Returns an HttpAuthHandlerFactory for the given NetworkContext.
 diff --git a/services/network/network_service_unittest.cc b/services/network/network_service_unittest.cc
-index 5f23863..369509a 100644
+index bd8ed7abe5870d23e3b0430f29f0448cf425fabc..dffa318ab85d6851c54d0f3c38ab6bb72f274f40 100644
 --- a/services/network/network_service_unittest.cc
 +++ b/services/network/network_service_unittest.cc
-@@ -930,6 +930,7 @@
+@@ -925,6 +925,7 @@ class NetworkServiceTestWithService : public testing::Test {
    void SetUp() override {
      test_server_.AddDefaultHandlers(base::FilePath(kServicesTestData));
      ASSERT_TRUE(test_server_.Start());
@@ -578,16 +577,16 @@ index 5f23863..369509a 100644
      service_ = NetworkService::CreateForTesting();
      service_->Bind(network_service_.BindNewPipeAndPassReceiver());
    }
-@@ -993,6 +994,8 @@
-   mojo::Remote<mojom::NetworkService> network_service_;
+@@ -989,7 +990,7 @@ class NetworkServiceTestWithService : public testing::Test {
    mojo::Remote<mojom::NetworkContext> network_context_;
    mojo::Remote<mojom::URLLoader> loader_;
-+
+ 
+-  DISALLOW_COPY_AND_ASSIGN(NetworkServiceTestWithService);
 +  base::test::ScopedFeatureList scoped_features_;
  };
  
  // Verifies that loading a URL through the network service's mojo interface
-@@ -1172,6 +1175,18 @@
+@@ -1169,6 +1170,18 @@ TEST_F(NetworkServiceTestWithService, GetNetworkList) {
    run_loop.Run();
  }
  
@@ -607,10 +606,10 @@ index 5f23863..369509a 100644
      : public mojom::NetworkChangeManagerClient {
   public:
 diff --git a/services/network/public/mojom/network_service.mojom b/services/network/public/mojom/network_service.mojom
-index fe5450b..59fbbde6 100644
+index fe5450b20b3c4a8490e853dd236bf6baefa90b81..59fbbde6ffc30d51304a72f402eee7c664ea111b 100644
 --- a/services/network/public/mojom/network_service.mojom
 +++ b/services/network/public/mojom/network_service.mojom
-@@ -373,6 +373,14 @@
+@@ -373,6 +373,14 @@ interface NetworkService {
    // cleared (except for the manually-specified set, if one exists).
    SetFirstPartySets(string raw_sets);
  
