@@ -1,5 +1,6 @@
 import * as path from 'path';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
+import type * as ipcRendererInternalModule from '@electron/internal/renderer/ipc-renderer-internal';
 
 const Module = require('module');
 
@@ -39,7 +40,7 @@ require('@electron/internal/common/init');
 // The global variable will be used by ipc for event dispatching
 const v8Util = process._linkedBinding('electron_common_v8_util');
 
-const { ipcRendererInternal } = require('@electron/internal/renderer/ipc-renderer-internal');
+const { ipcRendererInternal } = require('@electron/internal/renderer/ipc-renderer-internal') as typeof ipcRendererInternalModule;
 const ipcRenderer = require('@electron/internal/renderer/api/ipc-renderer').default;
 
 v8Util.setHiddenValue(global, 'ipcNative', {
@@ -48,6 +49,10 @@ v8Util.setHiddenValue(global, 'ipcNative', {
     sender.emit(channel, { sender, senderId, ports }, ...args);
   }
 });
+
+process.getProcessMemoryInfo = () => {
+  return ipcRendererInternal.invoke<Electron.ProcessMemoryInfo>(IPC_MESSAGES.BROWSER_GET_PROCESS_MEMORY_INFO);
+};
 
 // Use electron module after everything is ready.
 const { webFrameInit } = require('@electron/internal/renderer/web-frame-init');
