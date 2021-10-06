@@ -1,11 +1,12 @@
 import { expect } from 'chai';
+import * as assert from 'assert';
 import * as childProcess from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as qs from 'querystring';
 import * as http from 'http';
 import { AddressInfo } from 'net';
-import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersListenerDetails, protocol, screen, webContents, session, WebContents } from 'electron/main';
+import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersListenerDetails, protocol, screen, webContents, webFrameMain, session, WebContents } from 'electron/main';
 
 import { emittedOnce, emittedUntil, emittedNTimes } from './events-helpers';
 import { ifit, ifdescribe, defer, delay } from './spec-helpers';
@@ -587,6 +588,208 @@ describe('BrowserWindow module', () => {
           });
           await emittedOnce(w.webContents, 'did-navigate');
           expect(willNavigateEmitted).to.be.true();
+        });
+      });
+
+      describe('will-frame-navigate event', () => {
+        let server = null as unknown as http.Server;
+        let url = null as unknown as string;
+        before((done) => {
+          server = http.createServer((req, res) => {
+            if (req.url === '/navigate-top') {
+              res.end('<a target=_top href="/">navigate _top</a>');
+            } else if (req.url === '/navigate-iframe') {
+              res.end('<a href="/test">navigate iframe</a>');
+            } else if (req.url === '/navigate-iframe?navigated') {
+              res.end('Successfully navigated');
+            } else if (req.url === '/navigate-iframe-immediately') {
+              res.end(`
+                <script type="text/javascript" charset="utf-8">
+                  location.href += '?navigated'
+                </script>
+              `);
+            } else if (req.url === '/navigate-iframe-immediately?navigated') {
+              res.end('Successfully navigated');
+            } else {
+              res.end('');
+            }
+          });
+          server.listen(0, '127.0.0.1', () => {
+            url = `http://127.0.0.1:${(server.address() as AddressInfo).port}/`;
+            done();
+          });
+        });
+
+        after(() => {
+          server.close();
+        });
+
+        it('allows the window to be closed from the event listener', (done) => {
+          w.webContents.once('will-frame-navigate', () => {
+            w.close();
+            done();
+          });
+          w.loadFile(path.join(fixtures, 'pages', 'will-navigate.html'));
+        });
+
+        it('can be prevented', (done) => {
+          let willNavigate = false;
+          w.webContents.once('will-frame-navigate', (e) => {
+            willNavigate = true;
+            e.preventDefault();
+          });
+          w.webContents.on('did-stop-loading', () => {
+            if (willNavigate) {
+              // i.e. it shouldn't have had '?navigated' appended to it.
+              try {
+                expect(w.webContents.getURL().endsWith('will-navigate.html')).to.be.true();
+                done();
+              } catch (e) {
+                done(e);
+              }
+            }
+          });
+          w.loadFile(path.join(fixtures, 'pages', 'will-navigate.html'));
+        });
+
+        it('can be prevented when navigating subframe', (done) => {
+          let willNavigate = false;
+          w.webContents.on('did-frame-navigate', (_event, _url, _httpResponseCode, _httpStatusText, isMainFrame, frameProcessId, frameRoutingId) => {
+            if (isMainFrame) return;
+
+            w.webContents.once('will-frame-navigate', (e) => {
+              willNavigate = true;
+              e.preventDefault();
+            });
+
+            w.webContents.on('did-stop-loading', () => {
+              const frame = webFrameMain.fromId(frameProcessId, frameRoutingId);
+              if (frame === undefined) {
+                assert.fail('Failed to find embedded frame');
+              } else {
+                if (willNavigate) {
+                  // i.e. it shouldn't have had '?navigated' appended to it.
+                  try {
+                    expect(frame.url.endsWith('/navigate-iframe-immediately')).to.be.true();
+                    done();
+                  } catch (e) {
+                    done(e);
+                  }
+                }
+              }
+            });
+          });
+          w.loadURL(`data:text/html,<iframe src="http://127.0.0.1:${(server.address() as AddressInfo).port}/navigate-iframe-immediately"></iframe>`);
+        });
+
+        it('is triggered when navigating from file: to http:', async () => {
+          await w.loadFile(path.join(fixtures, 'api', 'blank.html'));
+          w.webContents.executeJavaScript(`location.href = ${JSON.stringify(url)}`);
+          const navigatedTo = await new Promise(resolve => {
+            w.webContents.once('will-frame-navigate', (e, url) => {
+              e.preventDefault();
+              resolve(url);
+            });
+          });
+          expect(navigatedTo).to.equal(url);
+          expect(w.webContents.getURL()).to.match(/^file:/);
+        });
+
+        it('is triggered when navigating from about:blank to http:', async () => {
+          await w.loadURL('about:blank');
+          w.webContents.executeJavaScript(`location.href = ${JSON.stringify(url)}`);
+          const navigatedTo = await new Promise(resolve => {
+            w.webContents.once('will-frame-navigate', (e, url) => {
+              e.preventDefault();
+              resolve(url);
+            });
+          });
+          expect(navigatedTo).to.equal(url);
+          expect(w.webContents.getURL()).to.equal('about:blank');
+        });
+
+        it('is triggered when a cross-origin iframe navigates _top', async () => {
+          await w.loadURL(`data:text/html,<iframe src="http://127.0.0.1:${(server.address() as AddressInfo).port}/navigate-top"></iframe>`);
+          await delay(1000);
+
+          let willFrameNavigateEmitted = false;
+          let isMainFrameValue;
+          w.webContents.on('will-frame-navigate', (_event, _url, _isInPlace, isMainFrame) => {
+            willFrameNavigateEmitted = true;
+            isMainFrameValue = isMainFrame;
+          });
+          const didNavigatePromise = emittedOnce(w.webContents, 'did-navigate');
+
+          w.webContents.debugger.attach('1.1');
+          const targets = await w.webContents.debugger.sendCommand('Target.getTargets');
+          const iframeTarget = targets.targetInfos.find((t: any) => t.type === 'iframe');
+          const { sessionId } = await w.webContents.debugger.sendCommand('Target.attachToTarget', {
+            targetId: iframeTarget.targetId,
+            flatten: true
+          });
+          await w.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
+            type: 'mousePressed',
+            x: 10,
+            y: 10,
+            clickCount: 1,
+            button: 'left'
+          }, sessionId);
+          await w.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
+            type: 'mouseReleased',
+            x: 10,
+            y: 10,
+            clickCount: 1,
+            button: 'left'
+          }, sessionId);
+
+          await didNavigatePromise;
+
+          expect(willFrameNavigateEmitted).to.be.true();
+          expect(isMainFrameValue).to.be.true();
+        });
+
+        it('is triggered when a cross-origin iframe navigates itself', async () => {
+          await w.loadURL(`data:text/html,<iframe src="http://127.0.0.1:${(server.address() as AddressInfo).port}/navigate-iframe"></iframe>`);
+          await delay(1000);
+
+          let willNavigateEmitted = false;
+          let isMainFrameValue;
+          w.webContents.on('will-frame-navigate', (_event, _url, _isInPlace, isMainFrame) => {
+            willNavigateEmitted = true;
+            isMainFrameValue = isMainFrame;
+          });
+          const didNavigatePromise = emittedOnce(w.webContents, 'did-frame-navigate');
+
+          w.webContents.debugger.attach('1.1');
+          const targets = await w.webContents.debugger.sendCommand('Target.getTargets');
+          const iframeTarget = targets.targetInfos.find((t: any) => t.type === 'iframe');
+          const { sessionId } = await w.webContents.debugger.sendCommand('Target.attachToTarget', {
+            targetId: iframeTarget.targetId,
+            flatten: true
+          });
+          await w.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
+            type: 'mousePressed',
+            x: 10,
+            y: 10,
+            clickCount: 1,
+            button: 'left'
+          }, sessionId);
+          await w.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
+            type: 'mouseReleased',
+            x: 10,
+            y: 10,
+            clickCount: 1,
+            button: 'left'
+          }, sessionId);
+
+          await didNavigatePromise;
+
+          expect(willNavigateEmitted).to.be.true();
+          expect(isMainFrameValue).to.be.false();
+        });
+
+        it('can cancel when a cross-origin iframe navigates itself', async () => {
+
         });
       });
 

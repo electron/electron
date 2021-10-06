@@ -1480,12 +1480,31 @@ describe('<webview> tag', function () {
     });
 
     describe('will-navigate event', () => {
-      it('emits when a url that leads to outside of the page is clicked', async () => {
+      it('emits when a url that leads to outside of the page is loaded', async () => {
         const { url } = await loadWebViewAndWaitForEvent(w, {
           src: `file://${fixtures}/pages/webview-will-navigate.html`
         }, 'will-navigate');
 
         expect(url).to.equal('http://host/');
+      });
+    });
+
+    describe('will-frame-navigate event', () => {
+      it('emits when a url that leads to outside of the page is loaded', async () => {
+        await loadWebView(w, {
+          src: `file://${fixtures}/pages/webview-will-navigate.html`
+        });
+
+        let hasFrameNavigatedOnce = false; 
+        const navigationEvents = await emittedUntil(w, 'will-frame-navigate', (details: any) => {
+          if (details.isMainFrame) return false;
+          if (hasFrameNavigatedOnce) return true;
+
+          hasFrameNavigatedOnce = true;
+          return false;
+        });
+
+        expect(navigationEvents[navigationEvents.length-1].url).to.equal('http://host/');
       });
     });
 

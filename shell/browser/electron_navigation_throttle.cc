@@ -41,6 +41,10 @@ ElectronNavigationThrottle::WillStartRequest() {
       api_contents->EmitNavigationEvent("will-navigate", handle)) {
     return CANCEL;
   }
+  if (handle->IsRendererInitiated() &&
+      api_contents->EmitNavigationEvent("will-frame-navigate", handle)) {
+    return CANCEL;
+  }
   return PROCEED;
 }
 
