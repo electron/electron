@@ -16,11 +16,9 @@ ifdescribe(!(['arm', 'arm64'].includes(process.arch)))('contentTracing', () => {
     return resultFilePath;
   };
 
-  const outputFilePath = path.join(app.getPath('temp'), 'trace.json');
+  let outputFilePath: string;
   beforeEach(() => {
-    if (fs.existsSync(outputFilePath)) {
-      fs.unlinkSync(outputFilePath);
-    }
+    outputFilePath = path.join(app.getPath('temp'), `trace${new Date().getTime()}.json`);
   });
 
   describe('startRecording', function () {
