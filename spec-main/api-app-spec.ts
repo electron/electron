@@ -1603,6 +1603,21 @@ describe('app module', () => {
     });
   });
 
+  describe('commandLine.removeSwitch', () => {
+    it('no-ops a non-existent switch', async () => {
+      expect(app.commandLine.hasSwitch('foobar3')).to.equal(false);
+      app.commandLine.removeSwitch('foobar3');
+      expect(app.commandLine.hasSwitch('foobar3')).to.equal(false);
+    });
+
+    it('removes an existing switch', async () => {
+      app.commandLine.appendSwitch('foobar3', 'test');
+      expect(app.commandLine.hasSwitch('foobar3')).to.equal(true);
+      app.commandLine.removeSwitch('foobar3');
+      expect(app.commandLine.hasSwitch('foobar3')).to.equal(false);
+    });
+  });
+
   ifdescribe(process.platform === 'darwin')('app.setSecureKeyboardEntryEnabled', () => {
     it('changes Secure Keyboard Entry is enabled', () => {
       app.setSecureKeyboardEntryEnabled(true);
