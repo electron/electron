@@ -190,7 +190,7 @@ class App : public ElectronBrowserClient::Delegate,
   std::string GetLocaleCountryCode();
   void OnSecondInstance(const base::CommandLine& cmd,
                         const base::FilePath& cwd,
-                        const base::span<const uint8_t> additional_data);
+                        const std::vector<const uint8_t> additional_data);
   bool HasSingleInstanceLock() const;
   bool RequestSingleInstanceLock(gin::Arguments* args);
   void ReleaseSingleInstanceLock();
