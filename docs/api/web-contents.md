@@ -1924,6 +1924,14 @@ Setting the WebRTC IP handling policy allows you to control which IPs are
 exposed via WebRTC. See [BrowserLeaks](https://browserleaks.com/webrtc) for
 more details.
 
+#### `contents.getMediaSourceId(requestWebContents)`
+
+* `requestWebContents` WebContents - Web contents that the id will be registered to.
+
+Returns `String` - The identifier of a WebContents stream. This identifier can be used
+with `navigator.mediaDevices.getUserMedia` using a `chromeMediaSource` of `tab`.
+The identifier is restricted to the web contents that it is registered to and is only valid for 10 seconds.
+
 #### `contents.getOSProcessId()`
 
 Returns `Integer` - The operating system `pid` of the associated renderer
@@ -1934,14 +1942,6 @@ process.
 Returns `Integer` - The Chromium internal `pid` of the associated renderer. Can
 be compared to the `frameProcessId` passed by frame specific navigation events
 (e.g. `did-frame-navigate`)
-
-#### `contents.getMediaSourceId(requestWebContents)`
-
-* `requestWebContents` WebContents - Web contents that the id will be registered to.
-
-Returns `String` - The identifier of a WebContents stream. This identifier can be used
-with `navigator.mediaDevices.getUserMedia` using a `chromeMediaSource` of `tab`.
-The identifier is restricted to the web contents that it is registered to and is only valid for 10 seconds.
 
 #### `contents.takeHeapSnapshot(filePath)`
 
