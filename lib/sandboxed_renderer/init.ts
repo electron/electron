@@ -86,6 +86,10 @@ Object.assign(preloadProcess, processProps);
 Object.assign(process, binding.process);
 Object.assign(process, processProps);
 
+process.getProcessMemoryInfo = preloadProcess.getProcessMemoryInfo = () => {
+  return ipcRendererInternal.invoke<Electron.ProcessMemoryInfo>(IPC_MESSAGES.BROWSER_GET_PROCESS_MEMORY_INFO);
+};
+
 Object.defineProperty(preloadProcess, 'noDeprecation', {
   get () {
     return process.noDeprecation;
