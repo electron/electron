@@ -103,8 +103,11 @@ const handleWindowLifecycleEvents = function ({ embedder, guest, frameName, clos
   };
 
   const closedByUser = function () {
-    if (closeWithOpener) {
-      embedder.removeListener('current-render-view-deleted' as any, closedByEmbedder);
+    // Embedder might have been closed
+    if (!embedder.isDestroyed()) {
+      if (closeWithOpener) {
+        embedder.removeListener('current-render-view-deleted' as any, closedByEmbedder);
+      }
     }
   };
   if (closeWithOpener) {
@@ -170,7 +173,7 @@ function emitDeprecatedNewWindowEvent ({ event, embedder, guest, windowOpenArgs,
         embedder: event.sender,
         guest: newGuest,
         frameName,
-        closeWithOpener: true,
+        closeWithOpener: true
       });
     }
     return true;
