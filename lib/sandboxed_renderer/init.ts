@@ -2,6 +2,7 @@
 /* global binding */
 import * as events from 'events';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
+import type * as ipcRendererInternalModule from '@electron/internal/renderer/ipc-renderer-internal';
 
 const { EventEmitter } = events;
 
@@ -20,7 +21,7 @@ for (const prop of Object.keys(EventEmitter.prototype) as (keyof typeof process)
 }
 Object.setPrototypeOf(process, EventEmitter.prototype);
 
-const { ipcRendererInternal } = require('@electron/internal/renderer/ipc-renderer-internal');
+const { ipcRendererInternal } = require('@electron/internal/renderer/ipc-renderer-internal') as typeof ipcRendererInternalModule;;
 const ipcRendererUtils = require('@electron/internal/renderer/ipc-renderer-internal-utils');
 
 const { preloadScripts, process: processProps } = ipcRendererUtils.invokeSync(IPC_MESSAGES.BROWSER_SANDBOX_LOAD);
