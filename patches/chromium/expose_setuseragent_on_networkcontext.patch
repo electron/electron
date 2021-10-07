@@ -10,10 +10,10 @@ patch may be merged upstream, at which point this patch should be
 removed.
 
 diff --git a/net/url_request/static_http_user_agent_settings.h b/net/url_request/static_http_user_agent_settings.h
-index 0ccfe130f00ec3b6c75cd8ee04d5a2777e1fd00c..653829457d58bf92057cc36aa8a289703d8b0577 100644
+index ab97cbf061c89be9f11dde42b7371668658208a6..718209098ee4fb6cfc9aaa1ef4af691cf8d79366 100644
 --- a/net/url_request/static_http_user_agent_settings.h
 +++ b/net/url_request/static_http_user_agent_settings.h
-@@ -26,13 +26,17 @@ class NET_EXPORT StaticHttpUserAgentSettings : public HttpUserAgentSettings {
+@@ -31,13 +31,17 @@ class NET_EXPORT StaticHttpUserAgentSettings : public HttpUserAgentSettings {
      accept_language_ = new_accept_language;
    }
  
@@ -29,9 +29,9 @@ index 0ccfe130f00ec3b6c75cd8ee04d5a2777e1fd00c..653829457d58bf92057cc36aa8a28970
    std::string accept_language_;
 -  const std::string user_agent_;
 +  std::string user_agent_;
- 
-   DISALLOW_COPY_AND_ASSIGN(StaticHttpUserAgentSettings);
  };
+ 
+ }  // namespace net
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
 index 7bd73dae3a77cb16cf282d2df7f4ff7a8f412805..3d3795cd1911647f026addf0d6e6bcc18325f641 100644
 --- a/services/network/network_context.cc
@@ -51,10 +51,10 @@ index 7bd73dae3a77cb16cf282d2df7f4ff7a8f412805..3d3795cd1911647f026addf0d6e6bcc1
    // This may only be called on NetworkContexts created with the constructor
    // that calls MakeURLRequestContext().
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 049c8e5e0e34454f03a823b31a5f7755d67cfb07..d928b8c314f8c3384215a87aacd01a7f570316c9 100644
+index 97f9512dbc7ffe94df2d39d373e0e21c304cb9ef..3a4673b0d9b2b9f62f3d1839fba8156c1c2ed41b 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
-@@ -271,6 +271,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -274,6 +274,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    void CloseIdleConnections(CloseIdleConnectionsCallback callback) override;
    void SetNetworkConditions(const base::UnguessableToken& throttling_profile_id,
                              mojom::NetworkConditionsPtr conditions) override;

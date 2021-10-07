@@ -11,7 +11,7 @@ If removing this patch causes no sync failures, it's safe to delete :+1:
 Ref https://chromium-review.googlesource.com/c/chromium/src/+/2953903
 
 diff --git a/tools/clang/scripts/update.py b/tools/clang/scripts/update.py
-index addc389948378353edb1f24e7416a2a9fbafed14..de2e861859efdcb99a5fd18a6d94efa0d2e17832 100755
+index bbb3089f382b193b121e42416ee72e0e1bcdf794..70dc5eafdbf00c4ef76bc0fdb3ff2f93a3f9dbdf 100755
 --- a/tools/clang/scripts/update.py
 +++ b/tools/clang/scripts/update.py
 @@ -286,6 +286,8 @@ def main():

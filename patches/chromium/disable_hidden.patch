@@ -6,10 +6,10 @@ Subject: disable_hidden.patch
 Electron uses this to disable background throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 3ec7188cc015df085e46d3dac1374af1d92ae4d3..a1632e19959d163eecafef484204aa0dba919897 100644
+index c0e64d9308718eca333feea632e7b03fae86cbf2..4e63df5c3bd5369b7c3e2968ce639656460947b3 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -776,6 +776,9 @@ void RenderWidgetHostImpl::WasHidden() {
+@@ -778,6 +778,9 @@ void RenderWidgetHostImpl::WasHidden() {
    if (is_hidden_)
      return;
  
@@ -20,10 +20,10 @@ index 3ec7188cc015df085e46d3dac1374af1d92ae4d3..a1632e19959d163eecafef484204aa0d
        blink::mojom::PointerLockResult::kWrongDocument);
  
 diff --git a/content/browser/renderer_host/render_widget_host_impl.h b/content/browser/renderer_host/render_widget_host_impl.h
-index b7a3b2bc9032934a8537a49b8e1fd895eae721dd..aa864537cf2c3002623427ecd10ff62c88e75aba 100644
+index da1bc9c7e01c6eef07b1066976e7487767d716f2..5d123c6c48b299745f7524ea8927043e1bd430a3 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.h
 +++ b/content/browser/renderer_host/render_widget_host_impl.h
-@@ -864,6 +864,9 @@ class CONTENT_EXPORT RenderWidgetHostImpl
+@@ -865,6 +865,9 @@ class CONTENT_EXPORT RenderWidgetHostImpl
    void OnLocalSurfaceIdChanged(
        const cc::RenderFrameMetadata& metadata) override;
  
@@ -34,10 +34,10 @@ index b7a3b2bc9032934a8537a49b8e1fd895eae721dd..aa864537cf2c3002623427ecd10ff62c
    // |routing_id| must not be MSG_ROUTING_NONE.
    // If this object outlives |delegate|, DetachDelegate() must be called when
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index afdd5aa89be899a1176a770c7a4c06f7fa2579ef..0ea6f2ee5bfd41bfb36db6de19a42128b4894dd8 100644
+index 5bd506d3cb37de5d2ce7647e061c23c66e526f20..073f167ea9553373cc9459ac0e476ab19b2c33b5 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
-@@ -605,7 +605,7 @@ void RenderWidgetHostViewAura::HideImpl() {
+@@ -609,7 +609,7 @@ void RenderWidgetHostViewAura::HideImpl() {
    DCHECK(visibility_ == Visibility::HIDDEN ||
           visibility_ == Visibility::OCCLUDED);
  
