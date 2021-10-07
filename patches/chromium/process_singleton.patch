@@ -76,7 +76,7 @@ index 0d7c1db6489d95a40c66808c3f838b0740e46ff6..eec994c4252f17d9c9c41e66d5dae650
  
  #if defined(OS_MAC)
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index 6ae3d8b4a2aef0852fa5cec5a8800aa534da06a1..05c86df6c871ca7d0926836edc2f6137fcf229cb 100644
+index 4547eb8563e1af57aad991d9d1e2cf02c778380a..727333dd6abec99643e31bc77ed2cc8f3d5a0a0b 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
 @@ -80,6 +80,7 @@
@@ -139,7 +139,7 @@ index 6ae3d8b4a2aef0852fa5cec5a8800aa534da06a1..05c86df6c871ca7d0926836edc2f6137
  bool ConnectSocket(ScopedSocket* socket,
                     const base::FilePath& socket_path,
                     const base::FilePath& cookie_path) {
-@@ -728,6 +750,10 @@ ProcessSingleton::ProcessSingleton(
+@@ -729,6 +751,10 @@ ProcessSingleton::ProcessSingleton(
  
  ProcessSingleton::~ProcessSingleton() {
    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
@@ -150,8 +150,8 @@ index 6ae3d8b4a2aef0852fa5cec5a8800aa534da06a1..05c86df6c871ca7d0926836edc2f6137
  }
  
  ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
-@@ -896,6 +922,20 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessOrCreate() {
-       base::TimeDelta::FromSeconds(kTimeoutInSeconds));
+@@ -897,6 +923,20 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessOrCreate() {
+       base::Seconds(kTimeoutInSeconds));
  }
  
 +void ProcessSingleton::StartListeningOnSocket() {
@@ -171,7 +171,7 @@ index 6ae3d8b4a2aef0852fa5cec5a8800aa534da06a1..05c86df6c871ca7d0926836edc2f6137
  ProcessSingleton::NotifyResult
  ProcessSingleton::NotifyOtherProcessWithTimeoutOrCreate(
      const base::CommandLine& command_line,
-@@ -998,12 +1038,26 @@ bool ProcessSingleton::Create() {
+@@ -999,12 +1039,26 @@ bool ProcessSingleton::Create() {
  #endif
    }
  
@@ -204,7 +204,7 @@ index 6ae3d8b4a2aef0852fa5cec5a8800aa534da06a1..05c86df6c871ca7d0926836edc2f6137
    }
  
    // Check that the directory was created with the correct permissions.
-@@ -1045,10 +1099,13 @@ bool ProcessSingleton::Create() {
+@@ -1046,10 +1100,13 @@ bool ProcessSingleton::Create() {
    if (listen(sock, 5) < 0)
      NOTREACHED() << "listen failed: " << base::safe_strerror(errno);
  

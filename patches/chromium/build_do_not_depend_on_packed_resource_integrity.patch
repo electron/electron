@@ -11,10 +11,10 @@ if we ever align our .pak file generation with Chrome we can remove this
 patch.
 
 diff --git a/chrome/BUILD.gn b/chrome/BUILD.gn
-index abab9c8e8c60a6d1690acca5133b3c54d0ccc793..f4378acd7c92193c6e6ac2785cd8a670bd9c650c 100644
+index 5a35396df314ab547990a53c90ebb75d337bcc77..537d746e8828089e88a8d42e86d482ee00b46e6b 100644
 --- a/chrome/BUILD.gn
 +++ b/chrome/BUILD.gn
-@@ -165,11 +165,16 @@ if (!is_android && !is_mac) {
+@@ -171,11 +171,16 @@ if (!is_android && !is_mac) {
          "common/crash_keys.h",
        ]
  
@@ -33,10 +33,10 @@ index abab9c8e8c60a6d1690acca5133b3c54d0ccc793..f4378acd7c92193c6e6ac2785cd8a670
          "//base",
          "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index 27f4f83da31dbd3a1e754279e760dddf00224e1b..5cdcad53c32d7f25fe041344cb7441bdd6c524a5 100644
+index a47b2dc1d8e50408801fffeb66358418298377d8..ff5bb5d5953b6e0c35a88578d593011c7ef7ad6e 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -4415,7 +4415,7 @@ static_library("browser") {
+@@ -4471,7 +4471,7 @@ static_library("browser") {
  
      # On Windows, the hashes are embedded in //chrome:chrome_initial rather
      # than here in :chrome_dll.
@@ -46,10 +46,10 @@ index 27f4f83da31dbd3a1e754279e760dddf00224e1b..5cdcad53c32d7f25fe041344cb7441bd
      }
  
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index a7e09cea9b71e810e08790d109e805a8119c0825..52f9f2b0d4e3ee7d3221f04f122f41e1429f6016 100644
+index 04ca0d7229a4a81b6631583d47c2acb4316e6cd3..239eb839e35b1cbde9f828c20c3f365d559710d7 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
-@@ -5482,7 +5482,6 @@ test("unit_tests") {
+@@ -5492,7 +5492,6 @@ test("unit_tests") {
      assert(toolkit_views)
      sources += [ "../browser/ui/startup/credential_provider_signin_info_fetcher_win_unittest.cc" ]
      deps += [
@@ -57,7 +57,7 @@ index a7e09cea9b71e810e08790d109e805a8119c0825..52f9f2b0d4e3ee7d3221f04f122f41e1
        "//chrome/browser:chrome_process_finder",
        "//chrome/browser/safe_browsing/chrome_cleaner",
        "//chrome/browser/safe_browsing/chrome_cleaner:public",
-@@ -5495,6 +5494,12 @@ test("unit_tests") {
+@@ -5505,6 +5504,12 @@ test("unit_tests") {
        "//components/chrome_cleaner/public/proto",
        "//ui/events/devices:test_support",
      ]
@@ -70,15 +70,15 @@ index a7e09cea9b71e810e08790d109e805a8119c0825..52f9f2b0d4e3ee7d3221f04f122f41e1
    }
  
    # TODO(crbug.com/931218): Ninja cannot handle certain characters appearing
-@@ -6088,7 +6093,6 @@ test("unit_tests") {
+@@ -6100,7 +6105,6 @@ test("unit_tests") {
      }
  
      deps += [
 -      "//chrome:packed_resources_integrity_hash",
        "//chrome/browser:cart_db_content_proto",
+       "//chrome/browser:coupon_db_content_proto",
        "//chrome/browser/media/router:test_support",
-       "//chrome/browser/resource_coordinator:intervention_policy_database_proto",
-@@ -6124,6 +6128,9 @@ test("unit_tests") {
+@@ -6140,6 +6144,9 @@ test("unit_tests") {
        "//ui/native_theme:test_support",
        "//ui/webui/resources/js/browser_command:mojo_bindings",
      ]
