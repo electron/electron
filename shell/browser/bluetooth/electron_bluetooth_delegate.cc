@@ -46,6 +46,14 @@ ElectronBluetoothDelegate::ShowBluetoothScanningPrompt(
   return nullptr;
 }
 
+void ElectronBluetoothDelegate::ShowDeviceCredentialsPrompt(
+    content::RenderFrameHost* frame,
+    const std::u16string& device_identifier,
+    CredentialsCallback callback) {
+  // TODO (jkleinsc) implement this
+  std::move(callback).Run(DeviceCredentialsPromptResult::kCancelled, u"");
+}
+
 WebBluetoothDeviceId ElectronBluetoothDelegate::GetWebBluetoothDeviceId(
     RenderFrameHost* frame,
     const std::string& device_address) {
