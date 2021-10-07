@@ -59,7 +59,6 @@ class ElectronExtensionSystem : public ExtensionSystem {
   // ExtensionSystem implementation:
   void InitForRegularProfile(bool extensions_enabled) override;
   ExtensionService* extension_service() override;
-  RuntimeData* runtime_data() override;
   ManagementPolicy* management_policy() override;
   ServiceWorkerManager* service_worker_manager() override;
   UserScriptManager* user_script_manager() override;
@@ -102,7 +101,6 @@ class ElectronExtensionSystem : public ExtensionSystem {
   scoped_refptr<InfoMap> info_map_;
 
   std::unique_ptr<ServiceWorkerManager> service_worker_manager_;
-  std::unique_ptr<RuntimeData> runtime_data_;
   std::unique_ptr<QuotaService> quota_service_;
   std::unique_ptr<UserScriptManager> user_script_manager_;
   std::unique_ptr<AppSorting> app_sorting_;
