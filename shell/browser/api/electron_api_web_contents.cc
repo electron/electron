@@ -1706,6 +1706,9 @@ void WebContents::MessageTo(int32_t web_contents_id,
     gin::Handle<WebFrameMain> web_frame_main =
         WebFrameMain::From(JavascriptEnvironment::GetIsolate(), frame);
 
+    if (!web_frame_main->CheckRenderFrame())
+      return;
+
     int32_t sender_id = ID();
     web_frame_main->GetRendererApi()->Message(false /* internal */, channel,
                                               std::move(arguments), sender_id);
