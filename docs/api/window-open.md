@@ -73,6 +73,11 @@ creating the window. Note that this is more powerful than passing options
 through the feature string, as the renderer has more limited privileges in
 deciding security preferences than the main process.
 
+Additionally to `{ action: 'allow', overrideBrowserWindowOptions: { ... } }`,
+`closeWithOpener` can be passed like: `{ action: 'allow', closeWithOpener: false,
+overrideBrowserWindowOptions: { ... } }`. If set to `false`, child windows will not
+be closed when the opener window closes. The default value is `true`.
+
 ### Native `Window` example
 
 ```javascript
