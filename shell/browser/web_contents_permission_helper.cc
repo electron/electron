@@ -235,6 +235,6 @@ void WebContentsPermissionHelper::GrantHIDDevicePermission(
       &device, render_frame_host);
 }
 
-WEB_CONTENTS_USER_DATA_KEY_IMPL(WebContentsPermissionHelper)
+WEB_CONTENTS_USER_DATA_KEY_IMPL(WebContentsPermissionHelper);
 
 }  // namespace electron

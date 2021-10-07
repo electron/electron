@@ -513,6 +513,6 @@ void WebContentsPreferences::OverrideWebkitPrefs(
   prefs->v8_cache_options = v8_cache_options_;
 }
 
-WEB_CONTENTS_USER_DATA_KEY_IMPL(WebContentsPreferences)
+WEB_CONTENTS_USER_DATA_KEY_IMPL(WebContentsPreferences);
 
 }  // namespace electron
