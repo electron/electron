@@ -178,6 +178,10 @@ StateStore* ElectronExtensionSystem::rules_store() {
   return nullptr;
 }
 
+StateStore* ElectronExtensionSystem::dynamic_user_scripts_store() {
+  return nullptr;
+}
+
 scoped_refptr<value_store::ValueStoreFactory>
 ElectronExtensionSystem::store_factory() {
   return store_factory_;
