@@ -119,7 +119,6 @@ static_library("chrome") {
 
   deps = [
     "//chrome/browser:resource_prefetch_predictor_proto",
-    "//chrome/services/speech:buildflags",
     "//components/optimization_guide/proto:optimization_guide_proto",
   ]
 
