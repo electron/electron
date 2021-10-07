@@ -499,7 +499,7 @@ WebContents.prototype.setWindowOpenHandler = function (handler: (details: Electr
 WebContents.prototype._callWindowOpenHandler = function (event: Electron.Event, details: Electron.HandlerDetails): {browserWindowConstructorOptions: BrowserWindowConstructorOptions | null, closeWithOpener: boolean} {
   const defaultResponse = {
     browserWindowConstructorOptions: null,
-    closeWithOpener: true,
+    closeWithOpener: true
   };
   if (!this._windowOpenHandler) {
     return defaultResponse;
@@ -525,12 +525,12 @@ WebContents.prototype._callWindowOpenHandler = function (event: Electron.Event, 
     if (typeof response.overrideBrowserWindowOptions === 'object' && response.overrideBrowserWindowOptions !== null) {
       return {
         browserWindowConstructorOptions: response.overrideBrowserWindowOptions,
-        closeWithOpener: typeof response.closeWithOpener === "boolean" ? response.closeWithOpener : true,
+        closeWithOpener: typeof response.closeWithOpener === 'boolean' ? response.closeWithOpener : true
       };
     } else {
       return {
         browserWindowConstructorOptions: {},
-        closeWithOpener: typeof response.closeWithOpener === "boolean" ? response.closeWithOpener : true,
+        closeWithOpener: typeof response.closeWithOpener === 'boolean' ? response.closeWithOpener : true
       };
     }
   } else {
@@ -672,7 +672,7 @@ WebContents.prototype._init = function () {
           postData,
           overrideBrowserWindowOptions: options || {},
           windowOpenArgs: details,
-          closeWithOpener: result.closeWithOpener,
+          closeWithOpener: result.closeWithOpener
         });
       }
     });
@@ -725,6 +725,7 @@ WebContents.prototype._init = function () {
       _userGesture: boolean, _left: number, _top: number, _width: number, _height: number, url: string, frameName: string,
       referrer: Electron.Referrer, rawFeatures: string, postData: PostData) => {
       const overriddenOptions = windowOpenOverriddenOptions || undefined;
+      const closeWithOpener = windowOpenCloseWithOpenerOption;
       windowOpenOverriddenOptions = null;
       // true is the default
       windowOpenCloseWithOpenerOption = true;
@@ -748,7 +749,7 @@ WebContents.prototype._init = function () {
           frameName,
           features: rawFeatures
         },
-        closeWithOpener: windowOpenCloseWithOpenerOption,
+        closeWithOpener
       });
     });
   }
