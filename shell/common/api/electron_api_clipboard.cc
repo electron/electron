@@ -198,14 +198,15 @@ void Clipboard::WriteBookmark(const std::u16string& title,
 gfx::Image Clipboard::ReadImage(gin_helper::Arguments* args) {
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
   absl::optional<gfx::Image> image;
-  clipboard->ReadImage(
-      GetClipboardBuffer(args),
-      /* data_dst = */ nullptr,
-      base::BindOnce(
-          [](absl::optional<gfx::Image>* image, const SkBitmap& result) {
-            image->emplace(gfx::Image::CreateFrom1xBitmap(result));
-          },
-          &image));
+  clipboard->ReadPng(GetClipboardBuffer(args),
+                     /* data_dst = */ nullptr,
+                     base::BindOnce(
+                         [](absl::optional<gfx::Image>* image,
+                            const std::vector<uint8_t>& result) {
+                           image->emplace(gfx::Image::CreateFrom1xPNGBytes(
+                               result.data(), result.size()));
+                         },
+                         &image));
   DCHECK(image.has_value());
   return image.value();
 }
