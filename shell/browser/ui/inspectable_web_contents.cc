@@ -343,6 +343,10 @@ void InspectableWebContents::RegisterPrefs(PrefRegistrySimple* registry) {
                                    RectToDictionary(gfx::Rect(0, 0, 800, 600)));
   registry->RegisterDoublePref(kDevToolsZoomPref, 0.);
   registry->RegisterDictionaryPref(kDevToolsPreferences);
+  registry->RegisterBooleanPref(kDevToolsSyncPreferences,
+                              kSyncDevToolsPreferencesDefault);
+  registry->RegisterDictionaryPref(kDevToolsSyncedPreferencesSyncEnabled);
+  registry->RegisterDictionaryPref(kDevToolsSyncedPreferencesSyncDisabled);
 }
 
 InspectableWebContents::InspectableWebContents(
