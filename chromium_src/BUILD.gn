@@ -25,6 +25,7 @@ static_library("chrome") {
     "//chrome/browser/devtools/devtools_eye_dropper.h",
     "//chrome/browser/devtools/devtools_file_system_indexer.cc",
     "//chrome/browser/devtools/devtools_file_system_indexer.h",
+    "//chrome/browser/devtools/devtools_settings.h",
     "//chrome/browser/extensions/global_shortcut_listener.cc",
     "//chrome/browser/extensions/global_shortcut_listener.h",
     "//chrome/browser/icon_loader.cc",
