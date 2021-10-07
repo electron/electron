@@ -13,7 +13,7 @@ app.requestSingleInstanceLock API so that users can pass in a JSON
 object for the second instance to send to the first instance.
 
 diff --git a/chrome/browser/process_singleton.h b/chrome/browser/process_singleton.h
-index 9418bbacb11094628c4468d0a7b735a0f742e5f2..be980f1c3c4f48b98992b8935d8eb0f9da9c4687 100644
+index eec994c4252f17d9c9c41e66d5dae6509ed98a18..e538c9b76da4d4435e10cd3848438446c2cc2cc8 100644
 --- a/chrome/browser/process_singleton.h
 +++ b/chrome/browser/process_singleton.h
 @@ -19,6 +19,7 @@
@@ -24,7 +24,7 @@ index 9418bbacb11094628c4468d0a7b735a0f742e5f2..be980f1c3c4f48b98992b8935d8eb0f9
  #include "ui/gfx/native_widget_types.h"
  
  #if defined(OS_POSIX) && !defined(OS_ANDROID)
-@@ -101,15 +102,18 @@ class ProcessSingleton {
+@@ -101,21 +102,24 @@ class ProcessSingleton {
    // should handle it (i.e., because the current process is shutting down).
    using NotificationCallback =
        base::RepeatingCallback<bool(const base::CommandLine& command_line,
@@ -42,9 +42,16 @@ index 9418bbacb11094628c4468d0a7b735a0f742e5f2..be980f1c3c4f48b98992b8935d8eb0f9
    ProcessSingleton(const base::FilePath& user_data_dir,
 +                   const base::span<const uint8_t> additional_data,
                     const NotificationCallback& notification_callback);
- #endif
++#endif
+ 
+   ProcessSingleton(const ProcessSingleton&) = delete;
+   ProcessSingleton& operator=(const ProcessSingleton&) = delete;
+ 
+-#endif
    ~ProcessSingleton();
-@@ -175,6 +179,8 @@ class ProcessSingleton {
+ 
+   // Notify another process, if available. Otherwise sets ourselves as the
+@@ -179,6 +183,8 @@ class ProcessSingleton {
  
   private:
    NotificationCallback notification_callback_;  // Handler for notifications.
@@ -54,10 +61,10 @@ index 9418bbacb11094628c4468d0a7b735a0f742e5f2..be980f1c3c4f48b98992b8935d8eb0f9
  #if defined(OS_WIN)
    bool EscapeVirtualization(const base::FilePath& user_data_dir);
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index 31b387ca3cae53c94d8a7baefaeb17f3dbffe5e0..15bc269b9252d862d566c1c7c08d3cb19067cd82 100644
+index 05c86df6c871ca7d0926836edc2f6137fcf229cb..01627f6b46c64a24870fa05b9efeaf949203c2ac 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
-@@ -563,6 +563,7 @@ class ProcessSingleton::LinuxWatcher
+@@ -564,6 +564,7 @@ class ProcessSingleton::LinuxWatcher
    // |reader| is for sending back ACK message.
    void HandleMessage(const std::string& current_dir,
                       const std::vector<std::string>& argv,
@@ -65,7 +72,7 @@ index 31b387ca3cae53c94d8a7baefaeb17f3dbffe5e0..15bc269b9252d862d566c1c7c08d3cb1
                       SocketReader* reader);
  
   private:
-@@ -619,13 +620,16 @@ void ProcessSingleton::LinuxWatcher::StartListening(int socket) {
+@@ -620,13 +621,16 @@ void ProcessSingleton::LinuxWatcher::StartListening(int socket) {
  }
  
  void ProcessSingleton::LinuxWatcher::HandleMessage(
@@ -84,7 +91,7 @@ index 31b387ca3cae53c94d8a7baefaeb17f3dbffe5e0..15bc269b9252d862d566c1c7c08d3cb1
      // Send back "ACK" message to prevent the client process from starting up.
      reader->FinishWithACK(kACKToken, base::size(kACKToken) - 1);
    } else {
-@@ -673,7 +677,8 @@ void ProcessSingleton::LinuxWatcher::SocketReader::
+@@ -674,7 +678,8 @@ void ProcessSingleton::LinuxWatcher::SocketReader::
      }
    }
  
@@ -94,7 +101,7 @@ index 31b387ca3cae53c94d8a7baefaeb17f3dbffe5e0..15bc269b9252d862d566c1c7c08d3cb1
    const size_t kMinMessageLength = base::size(kStartToken) + 4;
    if (bytes_read_ < kMinMessageLength) {
      buf_[bytes_read_] = 0;
-@@ -703,10 +708,25 @@ void ProcessSingleton::LinuxWatcher::SocketReader::
+@@ -704,10 +709,25 @@ void ProcessSingleton::LinuxWatcher::SocketReader::
    tokens.erase(tokens.begin());
    tokens.erase(tokens.begin());
  
@@ -121,7 +128,7 @@ index 31b387ca3cae53c94d8a7baefaeb17f3dbffe5e0..15bc269b9252d862d566c1c7c08d3cb1
    fd_watch_controller_.reset();
  
    // LinuxWatcher::HandleMessage() is in charge of destroying this SocketReader
-@@ -735,8 +755,10 @@ void ProcessSingleton::LinuxWatcher::SocketReader::FinishWithACK(
+@@ -736,8 +756,10 @@ void ProcessSingleton::LinuxWatcher::SocketReader::FinishWithACK(
  //
  ProcessSingleton::ProcessSingleton(
      const base::FilePath& user_data_dir,
@@ -132,7 +139,7 @@ index 31b387ca3cae53c94d8a7baefaeb17f3dbffe5e0..15bc269b9252d862d566c1c7c08d3cb1
        current_pid_(base::GetCurrentProcId()),
        watcher_(new LinuxWatcher(this)) {
    socket_path_ = user_data_dir.Append(chrome::kSingletonSocketFilename);
-@@ -853,7 +875,8 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
+@@ -854,7 +876,8 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
               sizeof(socket_timeout));
  
    // Found another process, prepare our command line
@@ -142,7 +149,7 @@ index 31b387ca3cae53c94d8a7baefaeb17f3dbffe5e0..15bc269b9252d862d566c1c7c08d3cb1
    std::string to_send(kStartToken);
    to_send.push_back(kTokenDelimiter);
  
-@@ -863,11 +886,21 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
+@@ -864,11 +887,21 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
    to_send.append(current_dir.value());
  
    const std::vector<std::string>& argv = cmd_line.argv();
@@ -165,10 +172,10 @@ index 31b387ca3cae53c94d8a7baefaeb17f3dbffe5e0..15bc269b9252d862d566c1c7c08d3cb1
    if (!WriteToSocket(socket.fd(), to_send.data(), to_send.length())) {
      // Try to kill the other process, because it might have been dead.
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index 875269776e45c96ac43a3430768f1406c9608dd3..a3869ecd9c7cd0aa5111ea8356d4ad953d7bbc76 100644
+index 19d5659d665321da54e05cee01be7da02e0c283b..600ff701b025ba190d05bc30994e3d3e8847df55 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
-@@ -94,10 +94,12 @@ BOOL CALLBACK BrowserWindowEnumeration(HWND window, LPARAM param) {
+@@ -99,10 +99,12 @@ BOOL CALLBACK BrowserWindowEnumeration(HWND window, LPARAM param) {
  
  bool ParseCommandLine(const COPYDATASTRUCT* cds,
                        base::CommandLine* parsed_command_line,
@@ -183,7 +190,7 @@ index 875269776e45c96ac43a3430768f1406c9608dd3..a3869ecd9c7cd0aa5111ea8356d4ad95
    static const int min_message_size = 7;
    if (cds->cbData < min_message_size * sizeof(wchar_t) ||
        cds->cbData % sizeof(wchar_t) != 0) {
-@@ -147,6 +149,37 @@ bool ParseCommandLine(const COPYDATASTRUCT* cds,
+@@ -152,6 +154,37 @@ bool ParseCommandLine(const COPYDATASTRUCT* cds,
      const std::wstring cmd_line =
          msg.substr(second_null + 1, third_null - second_null);
      *parsed_command_line = base::CommandLine::FromString(cmd_line);
@@ -221,7 +228,7 @@ index 875269776e45c96ac43a3430768f1406c9608dd3..a3869ecd9c7cd0aa5111ea8356d4ad95
      return true;
    }
    return false;
-@@ -163,16 +196,16 @@ bool ProcessLaunchNotification(
+@@ -168,16 +201,16 @@ bool ProcessLaunchNotification(
  
    // Handle the WM_COPYDATA message from another process.
    const COPYDATASTRUCT* cds = reinterpret_cast<COPYDATASTRUCT*>(lparam);
@@ -242,7 +249,7 @@ index 875269776e45c96ac43a3430768f1406c9608dd3..a3869ecd9c7cd0aa5111ea8356d4ad95
    return true;
  }
  
-@@ -269,9 +302,11 @@ bool ProcessSingleton::EscapeVirtualization(
+@@ -274,9 +307,11 @@ bool ProcessSingleton::EscapeVirtualization(
  ProcessSingleton::ProcessSingleton(
      const std::string& program_name,
      const base::FilePath& user_data_dir,
@@ -254,7 +261,7 @@ index 875269776e45c96ac43a3430768f1406c9608dd3..a3869ecd9c7cd0aa5111ea8356d4ad95
        program_name_(program_name),
        is_app_sandboxed_(is_app_sandboxed),
        is_virtualized_(false),
-@@ -296,7 +331,7 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
+@@ -301,7 +336,7 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
      return PROCESS_NONE;
    }
  
