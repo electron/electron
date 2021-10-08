@@ -168,6 +168,7 @@ static_library("chrome") {
 
   if (enable_desktop_capturer) {
     sources += [
+      "//chrome/browser/media/webrtc/desktop_media_list.cc",
       "//chrome/browser/media/webrtc/desktop_media_list.h",
       "//chrome/browser/media/webrtc/desktop_media_list_base.cc",
       "//chrome/browser/media/webrtc/desktop_media_list_base.h",
