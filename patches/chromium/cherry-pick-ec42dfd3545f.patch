@@ -1,0 +1,625 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shuran Huang <shuuran@chromium.org>
+Date: Fri, 24 Sep 2021 00:47:47 +0000
+Subject: Add functions to pass in persisted FPSs and compute diffs.
+
+Pass the persisted FPSs and a callback that takes a FPSs into Network
+Service. The persisted FPSs is parsed and compared to the current FPSs
+in the FirstPartySets class, then call the callback with the current
+FPSs. The function that passes in the persisted FPSs and the callback
+has not been called anywhere yet.
+
+Bug: 1219656
+Change-Id: I08c531aa08d3aeeb772c1eb9a3a453a07b0349d3
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3103693
+Commit-Queue: Shuran Huang <shuuran@chromium.org>
+Reviewed-by: Will Harris <wfh@chromium.org>
+Reviewed-by: Matt Menke <mmenke@chromium.org>
+Reviewed-by: Chris Fredrickson <cfredric@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#924570}
+
+diff --git a/services/network/first_party_sets/first_party_sets.cc b/services/network/first_party_sets/first_party_sets.cc
+index f7e732e88d6e6ebc5daed9169d5eee336a9de8c1..1650c28d8b6c61b30531e1e2ef3e2869d8450360 100644
+--- a/services/network/first_party_sets/first_party_sets.cc
++++ b/services/network/first_party_sets/first_party_sets.cc
+@@ -13,6 +13,7 @@
+ #include "base/logging.h"
+ #include "base/ranges/algorithm.h"
+ #include "base/strings/string_split.h"
++#include "base/task/post_task.h"
+ #include "net/base/schemeful_site.h"
+ #include "net/cookies/cookie_constants.h"
+ #include "net/cookies/same_party_context.h"
+@@ -72,12 +73,16 @@ void FirstPartySets::SetManuallySpecifiedSet(const std::string& flag_value) {
+       flag_value, ",", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY));
+ 
+   ApplyManuallySpecifiedSet();
++  manual_sets_ready_ = true;
++  ClearSiteDataOnChangedSetsIfReady();
+ }
+ 
+ base::flat_map<net::SchemefulSite, net::SchemefulSite>*
+ FirstPartySets::ParseAndSet(base::StringPiece raw_sets) {
+   sets_ = FirstPartySetParser::ParseSetsFromComponentUpdater(raw_sets);
+   ApplyManuallySpecifiedSet();
++  component_sets_ready_ = true;
++  ClearSiteDataOnChangedSetsIfReady();
+   return &sets_;
+ }
+ 
+@@ -218,4 +223,48 @@ void FirstPartySets::ApplyManuallySpecifiedSet() {
+   sets_.emplace(manual_owner, manual_owner);
+ }
+ 
++void FirstPartySets::SetPersistedSets(base::StringPiece raw_sets) {
++  raw_persisted_sets_ = std::string(raw_sets);
++  persisted_sets_ready_ = true;
++  ClearSiteDataOnChangedSetsIfReady();
++}
++
++void FirstPartySets::SetOnSiteDataCleared(
++    base::OnceCallback<void(const std::string&)> callback) {
++  on_site_data_cleared_ = std::move(callback);
++  ClearSiteDataOnChangedSetsIfReady();
++}
++
++base::flat_set<net::SchemefulSite> FirstPartySets::ComputeSetsDiff(
++    const base::flat_map<net::SchemefulSite, net::SchemefulSite>& old_sets) {
++  if (old_sets.empty())
++    return {};
++
++  base::flat_set<net::SchemefulSite> result;
++  for (const auto& old_pair : old_sets) {
++    const net::SchemefulSite& old_member = old_pair.first;
++    const net::SchemefulSite& old_owner = old_pair.second;
++    const net::SchemefulSite* current_owner = FindOwner(old_member, false);
++    // Look for the removed sites and the ones have owner changed.
++    if (!current_owner || *current_owner != old_owner) {
++      result.emplace(old_member);
++    }
++  }
++  return result;
++}
++
++void FirstPartySets::ClearSiteDataOnChangedSetsIfReady() {
++  if (!persisted_sets_ready_ || !component_sets_ready_ || !manual_sets_ready_ ||
++      on_site_data_cleared_.is_null())
++    return;
++
++  base::flat_set<net::SchemefulSite> diff = ComputeSetsDiff(
++      FirstPartySetParser::DeserializeFirstPartySets(raw_persisted_sets_));
++
++  // TODO(shuuran@chromium.org): Implement site state clearing.
++
++  std::move(on_site_data_cleared_)
++      .Run(FirstPartySetParser::SerializeFirstPartySets(sets_));
++}
++
+ }  // namespace network
+diff --git a/services/network/first_party_sets/first_party_sets.h b/services/network/first_party_sets/first_party_sets.h
+index 81e0e1080d965947a2ebc1635638c25ad75a1bf7..8158b555856526170051cba72a08312a5528de51 100644
+--- a/services/network/first_party_sets/first_party_sets.h
++++ b/services/network/first_party_sets/first_party_sets.h
+@@ -9,6 +9,7 @@
+ #include <memory>
+ #include <set>
+ 
++#include "base/callback.h"
+ #include "base/containers/flat_map.h"
+ #include "base/containers/flat_set.h"
+ #include "net/base/schemeful_site.h"
+@@ -87,6 +88,14 @@ class FirstPartySets {
+   // the members of the set includes the owner.
+   base::flat_map<net::SchemefulSite, std::set<net::SchemefulSite>> Sets() const;
+ 
++  // Sets the `raw_persisted_sets_`, which is a JSON-encoded
++  // string representation of a map of site -> site.
++  void SetPersistedSets(base::StringPiece persisted_sets);
++  // Sets the `on_site_data_cleared_` callback, which takes input of a
++  // JSON-encoded string representation of a map of site -> site.
++  void SetOnSiteDataCleared(
++      base::OnceCallback<void(const std::string&)> callback);
++
+  private:
+   // Returns a pointer to `site`'s owner (optionally inferring a singleton set
+   // if necessary), or `nullptr` if `site` has no owner. Must not return
+@@ -101,6 +110,19 @@ class FirstPartySets {
+   // `manually_specified_set_`.
+   void ApplyManuallySpecifiedSet();
+ 
++  // Compares the map `old_sets` to `sets_` and returns the set of sites that:
++  // 1) were in `old_sets` but are no longer in `sets_`, i.e. leave the FPSs;
++  // or, 2) mapped to a different owner site.
++  base::flat_set<net::SchemefulSite> ComputeSetsDiff(
++      const base::flat_map<net::SchemefulSite, net::SchemefulSite>& old_sets);
++
++  // Checks the required inputs have been received, and if so, computes the diff
++  // between the `sets_` and the parsed `raw_persisted_sets_`, and clears the
++  // site data of the set of sites based on the diff.
++  //
++  // TODO(shuuran@chromium.org): Implement the code to clear site state.
++  void ClearSiteDataOnChangedSetsIfReady();
++
+   // Represents the mapping of site -> site, where keys are members of sets, and
+   // values are owners of the sets. Owners are explicitly represented as members
+   // of the set.
+@@ -108,6 +130,22 @@ class FirstPartySets {
+   absl::optional<
+       std::pair<net::SchemefulSite, base::flat_set<net::SchemefulSite>>>
+       manually_specified_set_;
++
++  std::string raw_persisted_sets_;
++
++  bool persisted_sets_ready_ = false;
++  bool component_sets_ready_ = false;
++  bool manual_sets_ready_ = false;
++
++  // The callback runs after the site state clearing is completed.
++  base::OnceCallback<void(const std::string&)> on_site_data_cleared_;
++
++  FRIEND_TEST_ALL_PREFIXES(FirstPartySets, ComputeSetsDiff_SitesJoined);
++  FRIEND_TEST_ALL_PREFIXES(FirstPartySets, ComputeSetsDiff_SitesLeft);
++  FRIEND_TEST_ALL_PREFIXES(FirstPartySets, ComputeSetsDiff_OwnerChanged);
++  FRIEND_TEST_ALL_PREFIXES(FirstPartySets, ComputeSetsDiff_OwnerLeft);
++  FRIEND_TEST_ALL_PREFIXES(FirstPartySets, ComputeSetsDiff_OwnerMemberRotate);
++  FRIEND_TEST_ALL_PREFIXES(FirstPartySets, ComputeSetsDiff_EmptySets);
+ };
+ 
+ }  // namespace network
+diff --git a/services/network/first_party_sets/first_party_sets_unittest.cc b/services/network/first_party_sets/first_party_sets_unittest.cc
+index b929315d9b857e0f86d1d726f7cefefb7ad8e54c..2055619f4c999cbfd5a5ee4780e2eb5c1dad5816 100644
+--- a/services/network/first_party_sets/first_party_sets_unittest.cc
++++ b/services/network/first_party_sets/first_party_sets_unittest.cc
+@@ -7,6 +7,7 @@
+ #include <initializer_list>
+ 
+ #include "base/json/json_reader.h"
++#include "base/test/bind.h"
+ #include "net/base/schemeful_site.h"
+ #include "net/cookies/cookie_constants.h"
+ #include "net/cookies/same_party_context.h"
+@@ -204,6 +205,30 @@ TEST(FirstPartySets, SetsManuallySpecified_Invalid_RegisteredDomain_Member) {
+   EXPECT_THAT(sets.ParseAndSet("[]"), Pointee(IsEmpty()));
+ }
+ 
++TEST(FirstPartySets, SetsManuallySpecified_Valid_EmptyValue) {
++  FirstPartySets sets;
++  sets.SetManuallySpecifiedSet("");
++
++  // Set non-empty existing sets to distinguish the failure case from the no-op
++  // case when processing the manually-specified sets.
++  const std::string existing_sets = R"(
++  [
++    {
++      "owner": "https://example.test",
++      "members": ["https://member.test"]
++    }
++  ]
++  )";
++  ASSERT_TRUE(base::JSONReader::Read(existing_sets));
++
++  EXPECT_THAT(sets.ParseAndSet(existing_sets),
++              Pointee(UnorderedElementsAre(
++                  Pair(SerializesTo("https://example.test"),
++                       SerializesTo("https://example.test")),
++                  Pair(SerializesTo("https://member.test"),
++                       SerializesTo("https://example.test")))));
++}
++
+ TEST(FirstPartySets, SetsManuallySpecified_Valid_SingleMember) {
+   FirstPartySets sets;
+   sets.SetManuallySpecifiedSet("https://example.test,https://member.test");
+@@ -469,6 +494,311 @@ TEST(FirstPartySets, SetsManuallySpecified_PrunesInducedSingletons) {
+                        SerializesTo("https://example.test")))));
+ }
+ 
++TEST(FirstPartySets, ComputeSetsDiff_SitesJoined) {
++  auto old_sets = base::flat_map<net::SchemefulSite, net::SchemefulSite>{
++      {net::SchemefulSite(GURL("https://example.test")),
++       net::SchemefulSite(GURL("https://example.test"))},
++      {net::SchemefulSite(GURL("https://member1.test")),
++       net::SchemefulSite(GURL("https://example.test"))},
++      {net::SchemefulSite(GURL("https://member3.test")),
++       net::SchemefulSite(GURL("https://example.test"))}};
++
++  // Consistency check the reviewer-friendly JSON format matches the input.
++  ASSERT_THAT(FirstPartySets().ParseAndSet(R"(
++    [
++      {
++        "owner": "https://example.test",
++        "members": ["https://member1.test", "https://member3.test"]
++      }
++    ]
++  )"),
++              Pointee(old_sets));
++
++  FirstPartySets sets;
++  sets.ParseAndSet(R"(
++    [
++      {
++        "owner": "https://example.test",
++        "members": ["https://member1.test", "https://member3.test"]
++      },
++      {
++        "owner": "https://foo.test",
++        "members": ["https://member2.test"]
++      }
++    ]
++  )");
++  // "https://foo.test" and "https://member2.test" joined FPSs. We don't clear
++  // site data upon joining, so the computed diff should be empty set.
++  EXPECT_THAT(sets.ComputeSetsDiff(old_sets), IsEmpty());
++}
++
++TEST(FirstPartySets, ComputeSetsDiff_SitesLeft) {
++  auto old_sets = base::flat_map<net::SchemefulSite, net::SchemefulSite>{
++      {net::SchemefulSite(GURL("https://example.test")),
++       net::SchemefulSite(GURL("https://example.test"))},
++      {net::SchemefulSite(GURL("https://member1.test")),
++       net::SchemefulSite(GURL("https://example.test"))},
++      {net::SchemefulSite(GURL("https://member3.test")),
++       net::SchemefulSite(GURL("https://example.test"))},
++      {net::SchemefulSite(GURL("https://foo.test")),
++       net::SchemefulSite(GURL("https://foo.test"))},
++      {net::SchemefulSite(GURL("https://member2.test")),
++       net::SchemefulSite(GURL("https://foo.test"))}};
++
++  // Consistency check the reviewer-friendly JSON format matches the input.
++  ASSERT_THAT(FirstPartySets().ParseAndSet(R"(
++    [
++      {
++        "owner": "https://example.test",
++        "members": ["https://member1.test", "https://member3.test"]
++      },
++      {
++        "owner": "https://foo.test",
++        "members": ["https://member2.test"]
++      },
++    ]
++  )"),
++              Pointee(old_sets));
++
++  FirstPartySets sets;
++  sets.ParseAndSet(R"(
++    [
++      {
++        "owner": "https://example.test",
++        "members": ["https://member1.test"]
++      },
++    ]
++  )");
++  // Expected diff: "https://foo.test", "https://member2.test" and
++  // "https://member3.test" left FPSs.
++  EXPECT_THAT(sets.ComputeSetsDiff(old_sets),
++              UnorderedElementsAre(SerializesTo("https://foo.test"),
++                                   SerializesTo("https://member2.test"),
++                                   SerializesTo("https://member3.test")));
++}
++
++TEST(FirstPartySets, ComputeSetsDiff_OwnerChanged) {
++  auto old_sets = base::flat_map<net::SchemefulSite, net::SchemefulSite>{
++      {net::SchemefulSite(GURL("https://example.test")),
++       net::SchemefulSite(GURL("https://example.test"))},
++      {net::SchemefulSite(GURL("https://member1.test")),
++       net::SchemefulSite(GURL("https://example.test"))},
++      {net::SchemefulSite(GURL("https://foo.test")),
++       net::SchemefulSite(GURL("https://foo.test"))},
++      {net::SchemefulSite(GURL("https://member2.test")),
++       net::SchemefulSite(GURL("https://foo.test"))},
++      {net::SchemefulSite(GURL("https://member3.test")),
++       net::SchemefulSite(GURL("https://foo.test"))}};
++
++  // Consistency check the reviewer-friendly JSON format matches the input.
++  ASSERT_THAT(FirstPartySets().ParseAndSet(R"(
++    [
++      {
++        "owner": "https://example.test",
++        "members": ["https://member1.test"]
++      },
++      {
++        "owner": "https://foo.test",
++        "members": ["https://member2.test", "https://member3.test"]
++      },
++    ]
++  )"),
++              Pointee(old_sets));
++
++  FirstPartySets sets;
++  sets.ParseAndSet(R"(
++    [
++      {
++        "owner": "https://example.test",
++        "members": ["https://member1.test", "https://member3.test"]
++      },
++      {
++        "owner": "https://foo.test",
++        "members": ["https://member2.test"]
++      }
++    ]
++  )");
++  // Expected diff: "https://member3.test" changed owner.
++  EXPECT_THAT(sets.ComputeSetsDiff(old_sets),
++              UnorderedElementsAre(SerializesTo("https://member3.test")));
++}
++
++TEST(FirstPartySets, ComputeSetsDiff_OwnerLeft) {
++  auto old_sets = base::flat_map<net::SchemefulSite, net::SchemefulSite>{
++      {net::SchemefulSite(GURL("https://example.test")),
++       net::SchemefulSite(GURL("https://example.test"))},
++      {net::SchemefulSite(GURL("https://foo.test")),
++       net::SchemefulSite(GURL("https://example.test"))},
++      {net::SchemefulSite(GURL("https://bar.test")),
++       net::SchemefulSite(GURL("https://example.test"))}};
++
++  // Consistency check the reviewer-friendly JSON format matches the input.
++  ASSERT_THAT(FirstPartySets().ParseAndSet(R"(
++    [
++      {
++        "owner": "https://example.test",
++        "members": ["https://foo.test", "https://bar.test"]
++      }
++    ]
++  )"),
++              Pointee(old_sets));
++
++  FirstPartySets sets;
++  sets.ParseAndSet(R"(
++    [
++      {
++        "owner": "https://foo.test",
++        "members": ["https://bar.test"]
++      }
++    ]
++  )");
++  // Expected diff: "https://example.test" left FPSs, "https://foo.test" and
++  // "https://bar.test" changed owner.
++  // It would be valid to only have example.test in the diff, but our logic
++  // isn't sophisticated enough yet to know that foo.test and bar.test don't
++  // need to be included in the result.
++  EXPECT_THAT(sets.ComputeSetsDiff(old_sets),
++              UnorderedElementsAre(SerializesTo("https://example.test"),
++                                   SerializesTo("https://foo.test"),
++                                   SerializesTo("https://bar.test")));
++}
++
++TEST(FirstPartySets, ComputeSetsDiff_OwnerMemberRotate) {
++  auto old_sets = base::flat_map<net::SchemefulSite, net::SchemefulSite>{
++      {net::SchemefulSite(GURL("https://example.test")),
++       net::SchemefulSite(GURL("https://example.test"))},
++      {net::SchemefulSite(GURL("https://foo.test")),
++       net::SchemefulSite(GURL("https://example.test"))}};
++
++  // Consistency check the reviewer-friendly JSON format matches the input.
++  ASSERT_THAT(FirstPartySets().ParseAndSet(R"(
++    [
++      {
++        "owner": "https://example.test",
++        "members": ["https://foo.test"]
++      }
++    ]
++  )"),
++              Pointee(old_sets));
++
++  FirstPartySets sets;
++  sets.ParseAndSet(R"(
++    [
++      {
++        "owner": "https://foo.test",
++        "members": ["https://example.test"]
++      }
++    ]
++  )");
++  // Expected diff: "https://example.test" and "https://foo.test" changed owner.
++  // It would be valid to not include example.test and foo.test in the result,
++  // but our logic isn't sophisticated enough yet to know that.ß
++  EXPECT_THAT(sets.ComputeSetsDiff(old_sets),
++              UnorderedElementsAre(SerializesTo("https://example.test"),
++                                   SerializesTo("https://foo.test")));
++}
++
++TEST(FirstPartySets, ComputeSetsDiff_EmptySets) {
++  // Empty old_sets.
++  FirstPartySets sets;
++  sets.ParseAndSet(R"(
++    [
++      {
++        "owner": "https://example.test",
++        "members": ["https://member1.test"]
++      },
++    ]
++  )");
++  EXPECT_THAT(sets.ComputeSetsDiff({}), IsEmpty());
++
++  // Empty current sets.
++  auto old_sets = base::flat_map<net::SchemefulSite, net::SchemefulSite>{
++      {net::SchemefulSite(GURL("https://example.test")),
++       net::SchemefulSite(GURL("https://example.test"))},
++      {net::SchemefulSite(GURL("https://member1.test")),
++       net::SchemefulSite(GURL("https://example.test"))}};
++  // Consistency check the reviewer-friendly JSON format matches the input.
++  ASSERT_THAT(FirstPartySets().ParseAndSet(R"(
++    [
++      {
++        "owner": "https://example.test",
++        "members": ["https://member1.test"]
++      }
++    ]
++  )"),
++              Pointee(old_sets));
++  EXPECT_THAT(FirstPartySets().ComputeSetsDiff(old_sets),
++              UnorderedElementsAre(SerializesTo("https://example.test"),
++                                   SerializesTo("https://member1.test")));
++}
++
++TEST(FirstPartySets, ClearSiteDataOnChangedSetsIfReady_NotReady) {
++  int callback_calls = 0;
++  auto callback = base::BindLambdaForTesting(
++      [&](const std::string& got) { callback_calls++; });
++  // component sets not ready.
++  {
++    FirstPartySets sets;
++    callback_calls = 0;
++    sets.SetPersistedSets("{}");
++    sets.SetManuallySpecifiedSet("");
++    sets.SetOnSiteDataCleared(callback);
++    EXPECT_EQ(callback_calls, 0);
++  }
++  // manual sets not ready.
++  {
++    FirstPartySets sets;
++    callback_calls = 0;
++    sets.ParseAndSet("[]");
++    sets.SetPersistedSets("{}");
++    sets.SetOnSiteDataCleared(callback);
++    EXPECT_EQ(callback_calls, 0);
++  }
++  // persisted sets not ready.
++  {
++    FirstPartySets sets;
++    callback_calls = 0;
++    sets.ParseAndSet("[]");
++    sets.SetManuallySpecifiedSet("");
++    sets.SetOnSiteDataCleared(callback);
++    EXPECT_EQ(callback_calls, 0);
++  }
++  // callback not set.
++  {
++    FirstPartySets sets;
++    callback_calls = 0;
++    sets.ParseAndSet("[]");
++    sets.SetManuallySpecifiedSet("");
++    sets.SetPersistedSets("{}");
++    EXPECT_EQ(callback_calls, 0);
++  }
++}
++
++// The callback only runs when `old_sets` is generated and `sets` has merged the
++// inputs from Component Updater and command line flag.
++TEST(FirstPartySets, ClearSiteDataOnChangedSetsIfReady_Ready) {
++  FirstPartySets sets;
++  int callback_calls = 0;
++  sets.ParseAndSet(R"([
++       {
++         "owner": "https://example.test",
++         "members": ["https://member1.test"]
++       }
++     ])");
++  sets.SetManuallySpecifiedSet("https://example2.test,https://member2.test");
++  sets.SetPersistedSets(
++      R"({"https://example.test":"https://example.test",
++            "https://member1.test":"https://example.test"})");
++  sets.SetOnSiteDataCleared(base::BindLambdaForTesting([&](const std::string&
++                                                               got) {
++    EXPECT_EQ(
++        got,
++        R"({"https://member1.test":"https://example.test","https://member2.test":"https://example2.test"})");
++    callback_calls++;
++  }));
++  EXPECT_EQ(callback_calls, 1);
++}
++
+ class FirstPartySetsTest : public ::testing::Test {
+  public:
+   FirstPartySetsTest() {
+diff --git a/services/network/network_service.cc b/services/network/network_service.cc
+index 3f34171edf0c96df3b08de77e4e2be5b26eeca67..975eedaff9c38d0ee20d0fe617cc6391ea083d70 100644
+--- a/services/network/network_service.cc
++++ b/services/network/network_service.cc
+@@ -343,8 +343,7 @@ void NetworkService::Initialize(mojom::NetworkServiceParamsPtr params,
+   }
+ 
+   first_party_sets_ = std::make_unique<FirstPartySets>();
+-  if (net::cookie_util::IsFirstPartySetsEnabled() &&
+-      command_line->HasSwitch(switches::kUseFirstPartySet)) {
++  if (net::cookie_util::IsFirstPartySetsEnabled()) {
+     first_party_sets_->SetManuallySpecifiedSet(
+         command_line->GetSwitchValueASCII(switches::kUseFirstPartySet));
+   }
+@@ -785,6 +784,14 @@ void NetworkService::SetFirstPartySets(const std::string& raw_sets) {
+   first_party_sets_->ParseAndSet(raw_sets);
+ }
+ 
++void NetworkService::SetPersistedFirstPartySetsAndGetCurrentSets(
++    const std::string& persisted_sets,
++    mojom::NetworkService::SetPersistedFirstPartySetsAndGetCurrentSetsCallback
++        callback) {
++  first_party_sets_->SetPersistedSets(persisted_sets);
++  first_party_sets_->SetOnSiteDataCleared(std::move(callback));
++}
++
+ void NetworkService::SetExplicitlyAllowedPorts(
+     const std::vector<uint16_t>& ports) {
+   net::SetExplicitlyAllowedPorts(ports);
+diff --git a/services/network/network_service.h b/services/network/network_service.h
+index 1da4505fc9fe478e00353cd55e615878ea875aa0..963e22f6d5e957684dc56dd6e3ae31fa430a355e 100644
+--- a/services/network/network_service.h
++++ b/services/network/network_service.h
+@@ -204,6 +204,10 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkService
+   void BindTestInterface(
+       mojo::PendingReceiver<mojom::NetworkServiceTest> receiver) override;
+   void SetFirstPartySets(const std::string& raw_sets) override;
++  void SetPersistedFirstPartySetsAndGetCurrentSets(
++      const std::string& persisted_sets,
++      mojom::NetworkService::SetPersistedFirstPartySetsAndGetCurrentSetsCallback
++          callback) override;
+   void SetExplicitlyAllowedPorts(const std::vector<uint16_t>& ports) override;
+ 
+   // Returns an HttpAuthHandlerFactory for the given NetworkContext.
+diff --git a/services/network/network_service_unittest.cc b/services/network/network_service_unittest.cc
+index 7c8cbbbba3dd2084095d91b9195d69c335809263..6d1fdfd9b236c7129548fe626143636cfdb56bd5 100644
+--- a/services/network/network_service_unittest.cc
++++ b/services/network/network_service_unittest.cc
+@@ -927,6 +927,7 @@ class NetworkServiceTestWithService : public testing::Test {
+   void SetUp() override {
+     test_server_.AddDefaultHandlers(base::FilePath(kServicesTestData));
+     ASSERT_TRUE(test_server_.Start());
++    scoped_features_.InitAndEnableFeature(net::features::kFirstPartySets);
+     service_ = NetworkService::CreateForTesting();
+     service_->Bind(network_service_.BindNewPipeAndPassReceiver());
+   }
+@@ -992,6 +993,7 @@ class NetworkServiceTestWithService : public testing::Test {
+   mojo::Remote<mojom::URLLoader> loader_;
+ 
+   DISALLOW_COPY_AND_ASSIGN(NetworkServiceTestWithService);
++  base::test::ScopedFeatureList scoped_features_;
+ };
+ 
+ // Verifies that loading a URL through the network service's mojo interface
+@@ -1171,6 +1173,18 @@ TEST_F(NetworkServiceTestWithService, GetNetworkList) {
+   run_loop.Run();
+ }
+ 
++TEST_F(NetworkServiceTestWithService,
++       SetPersistedFirstPartySetsAndGetCurrentSets) {
++  base::RunLoop run_loop;
++  network_service_->SetPersistedFirstPartySetsAndGetCurrentSets(
++      "", base::BindLambdaForTesting([&](const std::string& got) {
++        EXPECT_EQ(got, "{}");
++        run_loop.Quit();
++      }));
++  network_service_->SetFirstPartySets("");
++  run_loop.Run();
++}
++
+ class TestNetworkChangeManagerClient
+     : public mojom::NetworkChangeManagerClient {
+  public:
+diff --git a/services/network/public/mojom/network_service.mojom b/services/network/public/mojom/network_service.mojom
+index fe5450b20b3c4a8490e853dd236bf6baefa90b81..59fbbde6ffc30d51304a72f402eee7c664ea111b 100644
+--- a/services/network/public/mojom/network_service.mojom
++++ b/services/network/public/mojom/network_service.mojom
+@@ -373,6 +373,14 @@ interface NetworkService {
+   // cleared (except for the manually-specified set, if one exists).
+   SetFirstPartySets(string raw_sets);
+ 
++  // Sets the First-Party Sets data that was persisted to compare it with the
++  // current First-Party Sets data set by `SetFirstPartySets()`, which is
++  // considered more up-to-date, and returns a serialized version of the current
++  // one. Both input and output are in format of the JSON-encoded string
++  // representation of a map of site -> site.
++  SetPersistedFirstPartySetsAndGetCurrentSets(string persisted_sets)
++      => (string up_to_date_sets);
++
+   // Sets the list of ports which will be permitted even if they normally would
+   // be restricted.
+   SetExplicitlyAllowedPorts(array<uint16> ports);

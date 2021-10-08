@@ -1,0 +1,457 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: cfredric <cfredric@chromium.org>
+Date: Mon, 27 Sep 2021 22:14:18 +0000
+Subject: Consider HTTPS and WSS schemes identically for FPS.
+
+This modifies the FPS implementation to normalize wss:// URLs into
+https:// URLs when determining the same-partiness of a request.
+
+This allows SameParty cookies to be sent on same-party WSS connection
+requests. A browsertest is included to verify this.
+
+Bug: 1251688
+Change-Id: Id277288982805e0d29c6683e0c13d4b7c7cfe359
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3182786
+Reviewed-by: Maksim Orlovich <morlovich@chromium.org>
+Reviewed-by: Shuran Huang <shuuran@chromium.org>
+Commit-Queue: Chris Fredrickson <cfredric@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#925457}
+
+diff --git a/chrome/browser/net/websocket_browsertest.cc b/chrome/browser/net/websocket_browsertest.cc
+index 0714f0d0231d677edd0f0cdf82f4129ddc43a5c2..6f2f101743fbd470bafe90d7e5d14351ee0ff708 100644
+--- a/chrome/browser/net/websocket_browsertest.cc
++++ b/chrome/browser/net/websocket_browsertest.cc
+@@ -21,6 +21,7 @@
+ #include "base/test/bind.h"
+ #include "build/build_config.h"
+ #include "chrome/browser/chrome_notification_types.h"
++#include "chrome/browser/profiles/profile.h"
+ #include "chrome/browser/ui/browser.h"
+ #include "chrome/browser/ui/login/login_handler.h"
+ #include "chrome/browser/ui/login/login_handler_test_utils.h"
+@@ -45,25 +46,31 @@
+ #include "mojo/public/cpp/system/data_pipe.h"
+ #include "net/base/network_isolation_key.h"
+ #include "net/cookies/site_for_cookies.h"
++#include "net/dns/mock_host_resolver.h"
+ #include "net/test/embedded_test_server/embedded_test_server.h"
+ #include "net/test/spawned_test_server/spawned_test_server.h"
+ #include "net/test/test_data_directory.h"
+ #include "net/traffic_annotation/network_traffic_annotation_test_helper.h"
++#include "services/network/public/cpp/network_switches.h"
+ #include "services/network/public/mojom/network_context.mojom.h"
+ #include "services/network/public/mojom/websocket.mojom.h"
++#include "testing/gmock/include/gmock/gmock.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+ #include "url/gurl.h"
+ #include "url/origin.h"
+ 
+ namespace {
+ 
++using SSLOptions = net::SpawnedTestServer::SSLOptions;
++
+ class WebSocketBrowserTest : public InProcessBrowserTest {
+  public:
+-  WebSocketBrowserTest()
++  explicit WebSocketBrowserTest(
++      SSLOptions::ServerCertificate cert = SSLOptions::CERT_OK)
+       : ws_server_(net::SpawnedTestServer::TYPE_WS,
+                    net::GetWebSocketTestDataDirectory()),
+         wss_server_(net::SpawnedTestServer::TYPE_WSS,
+-                    SSLOptions(SSLOptions::CERT_OK),
++                    SSLOptions(cert),
+                     net::GetWebSocketTestDataDirectory()) {}
+ 
+  protected:
+@@ -145,7 +152,6 @@ class WebSocketBrowserTest : public InProcessBrowserTest {
+   net::SpawnedTestServer wss_server_;
+ 
+  private:
+-  typedef net::SpawnedTestServer::SSLOptions SSLOptions;
+   std::unique_ptr<content::TitleWatcher> watcher_;
+ 
+   DISALLOW_COPY_AND_ASSIGN(WebSocketBrowserTest);
+@@ -162,37 +168,72 @@ class WebSocketBrowserTestWithAllowFileAccessFromFiles
+ };
+ 
+ // Framework for tests using the connect_to.html page served by a separate HTTP
+-// server.
++// or HTTPS server.
+ class WebSocketBrowserConnectToTest : public WebSocketBrowserTest {
+  protected:
+-  WebSocketBrowserConnectToTest() {
+-    http_server_.ServeFilesFromSourceDirectory(
+-        net::GetWebSocketTestDataDirectory());
+-  }
++  explicit WebSocketBrowserConnectToTest(
++      SSLOptions::ServerCertificate cert = SSLOptions::CERT_OK)
++      : WebSocketBrowserTest(cert) {}
+ 
+   // The title watcher and HTTP server are set up automatically by the test
+   // framework. Each test case still needs to configure and start the
+   // WebSocket server(s) it needs.
+   void SetUpOnMainThread() override {
++    server().ServeFilesFromSourceDirectory(
++        net::GetWebSocketTestDataDirectory());
+     WebSocketBrowserTest::SetUpOnMainThread();
+-    ASSERT_TRUE(http_server_.Start());
++    ASSERT_TRUE(server().Start());
+   }
+ 
+-  // Supply a ws: or wss: URL to connect to.
+-  void ConnectTo(GURL url) {
+-    ASSERT_TRUE(http_server_.Started());
++  // Supply a ws: or wss: URL to connect to. Serves connect_to.html from the
++  // server's default host.
++  void ConnectTo(const GURL& url) {
++    ConnectTo(server().base_url().host(), url);
++  }
++
++  // Supply a ws: or wss: URL to connect to via loading `host`/connect_to.html.
++  void ConnectTo(const std::string& host, const GURL& url) {
++    ASSERT_TRUE(server().Started());
+     std::string query("url=" + url.spec());
+     GURL::Replacements replacements;
+     replacements.SetQueryStr(query);
+-    ui_test_utils::NavigateToURL(browser(),
+-                                 http_server_.GetURL("/connect_to.html")
+-                                     .ReplaceComponents(replacements));
++    ASSERT_TRUE(ui_test_utils::NavigateToURL(
++        browser(), server()
++                       .GetURL(host, "/connect_to.html")
++                       .ReplaceComponents(replacements)));
+   }
+ 
+- private:
++  virtual net::EmbeddedTestServer& server() = 0;
++};
++
++// Concrete impl for tests that use connect_to.html over HTTP.
++class WebSocketBrowserHTTPConnectToTest : public WebSocketBrowserConnectToTest {
++ protected:
++  net::EmbeddedTestServer& server() override { return http_server_; }
++
+   net::EmbeddedTestServer http_server_;
+ };
+ 
++// Concrete impl for tests that use connect_to.html over HTTPS.
++class WebSocketBrowserHTTPSConnectToTest
++    : public WebSocketBrowserConnectToTest {
++ protected:
++  explicit WebSocketBrowserHTTPSConnectToTest(
++      SSLOptions::ServerCertificate cert = SSLOptions::CERT_OK)
++      : WebSocketBrowserConnectToTest(cert),
++        https_server_(net::test_server::EmbeddedTestServer::TYPE_HTTPS) {}
++
++  void SetUpOnMainThread() override {
++    host_resolver()->AddRule("*", "127.0.0.1");
++    server().SetSSLConfig(net::EmbeddedTestServer::CERT_TEST_NAMES);
++    WebSocketBrowserConnectToTest::SetUpOnMainThread();
++  }
++
++  net::EmbeddedTestServer& server() override { return https_server_; }
++
++  net::EmbeddedTestServer https_server_;
++};
++
+ // Automatically fill in any login prompts that appear with the supplied
+ // credentials.
+ class AutoLogin : public content::NotificationObserver {
+@@ -352,7 +393,7 @@ IN_PROC_BROWSER_TEST_F(WebSocketBrowserTest,
+   EXPECT_EQ("PASS", WaitAndGetTitle());
+ }
+ 
+-IN_PROC_BROWSER_TEST_F(WebSocketBrowserConnectToTest,
++IN_PROC_BROWSER_TEST_F(WebSocketBrowserHTTPConnectToTest,
+                        WebSocketBasicAuthInWSURL) {
+   // Launch a basic-auth-protected WebSocket server.
+   ws_server_.set_websocket_basic_auth(true);
+@@ -364,7 +405,7 @@ IN_PROC_BROWSER_TEST_F(WebSocketBrowserConnectToTest,
+   EXPECT_EQ("PASS", WaitAndGetTitle());
+ }
+ 
+-IN_PROC_BROWSER_TEST_F(WebSocketBrowserConnectToTest,
++IN_PROC_BROWSER_TEST_F(WebSocketBrowserHTTPConnectToTest,
+                        WebSocketBasicAuthInWSURLBadCreds) {
+   // Launch a basic-auth-protected WebSocket server.
+   ws_server_.set_websocket_basic_auth(true);
+@@ -376,7 +417,7 @@ IN_PROC_BROWSER_TEST_F(WebSocketBrowserConnectToTest,
+   EXPECT_EQ("FAIL", WaitAndGetTitle());
+ }
+ 
+-IN_PROC_BROWSER_TEST_F(WebSocketBrowserConnectToTest,
++IN_PROC_BROWSER_TEST_F(WebSocketBrowserHTTPConnectToTest,
+                        WebSocketBasicAuthNoCreds) {
+   // Launch a basic-auth-protected WebSocket server.
+   ws_server_.set_websocket_basic_auth(true);
+@@ -420,8 +461,7 @@ IN_PROC_BROWSER_TEST_F(WebSocketBrowserTest, MAYBE_WebSocketAppliesHSTS) {
+   https_server.ServeFilesFromSourceDirectory(GetChromeTestDataDir());
+   net::SpawnedTestServer wss_server(
+       net::SpawnedTestServer::TYPE_WSS,
+-      net::SpawnedTestServer::SSLOptions(
+-          net::SpawnedTestServer::SSLOptions::CERT_COMMON_NAME_IS_DOMAIN),
++      SSLOptions(SSLOptions::CERT_COMMON_NAME_IS_DOMAIN),
+       net::GetWebSocketTestDataDirectory());
+   // This test sets HSTS on localhost. To avoid being redirected to https, start
+   // the http server on 127.0.0.1 instead.
+@@ -711,4 +751,43 @@ IN_PROC_BROWSER_TEST_F(WebSocketBrowserTestWithAllowFileAccessFromFiles,
+   EXPECT_EQ("FILE", WaitAndGetTitle());
+ }
+ 
++// A test fixture that enables First-Party Sets.
++class FirstPartySetsWebSocketBrowserTest
++    : public WebSocketBrowserHTTPSConnectToTest {
++ public:
++  FirstPartySetsWebSocketBrowserTest()
++      : WebSocketBrowserHTTPSConnectToTest(SSLOptions::CERT_TEST_NAMES) {}
++
++  void SetUpCommandLine(base::CommandLine* command_line) override {
++    WebSocketBrowserTest::SetUpCommandLine(command_line);
++    command_line->AppendSwitchASCII(
++        network::switches::kUseFirstPartySet,
++        "https://a.test,https://b.test,https://c.test");
++  }
++};
++
++IN_PROC_BROWSER_TEST_F(FirstPartySetsWebSocketBrowserTest,
++                       SendsSamePartyCookies) {
++  ASSERT_TRUE(wss_server_.Start());
++
++  ASSERT_TRUE(content::SetCookie(browser()->profile(),
++                                 server().GetURL("a.test", "/"),
++                                 "same-party-cookie=1; SameParty; Secure"));
++  ASSERT_TRUE(content::SetCookie(browser()->profile(),
++                                 server().GetURL("a.test", "/"),
++                                 "same-site-cookie=1; SameSite=Lax; Secure"));
++
++  content::DOMMessageQueue message_queue;
++  ConnectTo("b.test", wss_server_.GetURL("a.test", "echo-request-headers"));
++
++  std::string message;
++  EXPECT_TRUE(message_queue.WaitForMessage(&message));
++  // Only the SameParty cookie should have been sent, since it was a cross-site
++  // but same-party connection.
++  EXPECT_THAT(message, testing::HasSubstr("same-party-cookie=1"));
++  EXPECT_THAT(message, testing::Not(testing::HasSubstr("same-site-cookie=1")));
++
++  EXPECT_EQ("PASS", WaitAndGetTitle());
++}
++
+ }  // namespace
+diff --git a/net/data/websocket/connect_to.html b/net/data/websocket/connect_to.html
+index 05c653fc5d2ab9a333efea5b4c5eee83a03bbe07..8a6d78214fe5974cbb0ec62b61f4d7fdcdf42c3b 100644
+--- a/net/data/websocket/connect_to.html
++++ b/net/data/websocket/connect_to.html
+@@ -29,6 +29,17 @@ ws.onclose = function()
+   document.title = 'FAIL';
+ }
+ 
++ws.onmessage = function(evt)
++{
++  domAutomationController.send(evt.data);
++}
++
++ws.onerror = function(evt)
++{
++  console.error(`WebSocket error: '${evt.message}'`);
++}
++
++
+ </script>
+ </head>
+ </html>
+diff --git a/net/test/spawned_test_server/base_test_server.cc b/net/test/spawned_test_server/base_test_server.cc
+index 9caaf0ad501322f480be9867909e2e6cb8c56503..54c84e4d0bbd51640b374532fd92903b2e01de58 100644
+--- a/net/test/spawned_test_server/base_test_server.cc
++++ b/net/test/spawned_test_server/base_test_server.cc
+@@ -156,6 +156,8 @@ base::FilePath BaseTestServer::SSLOptions::GetCertificateFile() const {
+           FILE_PATH_LITERAL("key_usage_rsa_digitalsignature.pem"));
+     case CERT_AUTO:
+       return base::FilePath();
++    case CERT_TEST_NAMES:
++      return base::FilePath(FILE_PATH_LITERAL("test_names.pem"));
+     default:
+       NOTREACHED();
+   }
+@@ -249,6 +251,14 @@ GURL BaseTestServer::GetURL(const std::string& path) const {
+   return GURL(GetScheme() + "://" + host_port_pair_.ToString() + "/" + path);
+ }
+ 
++GURL BaseTestServer::GetURL(const std::string& hostname,
++                            const std::string& relative_url) const {
++  GURL local_url = GetURL(relative_url);
++  GURL::Replacements replace_host;
++  replace_host.SetHostStr(hostname);
++  return local_url.ReplaceComponents(replace_host);
++}
++
+ GURL BaseTestServer::GetURLWithUser(const std::string& path,
+                                 const std::string& user) const {
+   return GURL(GetScheme() + "://" + user + "@" + host_port_pair_.ToString() +
+diff --git a/net/test/spawned_test_server/base_test_server.h b/net/test/spawned_test_server/base_test_server.h
+index 6c209afcdeeed129ec58f4c55a78501d707fd8f3..848698160b6eba1a02618bfaa968114d10776395 100644
+--- a/net/test/spawned_test_server/base_test_server.h
++++ b/net/test/spawned_test_server/base_test_server.h
+@@ -82,6 +82,11 @@ class BaseTestServer {
+       // A certificate with invalid notBefore and notAfter times. Windows'
+       // certificate library will not parse this certificate.
+       CERT_BAD_VALIDITY,
++
++      // A certificate that covers a number of test names. See [test_names] in
++      // net/data/ssl/scripts/ee.cnf. More may be added by editing this list and
++      // and rerunning net/data/ssl/scripts/generate-test-certs.sh.
++      CERT_TEST_NAMES,
+     };
+ 
+     // Bitmask of key exchange algorithms that the test server supports and that
+@@ -277,6 +282,8 @@ class BaseTestServer {
+   bool GetAddressList(AddressList* address_list) const WARN_UNUSED_RESULT;
+ 
+   GURL GetURL(const std::string& path) const;
++  GURL GetURL(const std::string& hostname,
++              const std::string& relative_url) const;
+ 
+   GURL GetURLWithUser(const std::string& path,
+                       const std::string& user) const;
+diff --git a/services/network/first_party_sets/first_party_sets.cc b/services/network/first_party_sets/first_party_sets.cc
+index 1650c28d8b6c61b30531e1e2ef3e2869d8450360..826b403a2a9702c255ee9b7ea38dc74b9e18791d 100644
+--- a/services/network/first_party_sets/first_party_sets.cc
++++ b/services/network/first_party_sets/first_party_sets.cc
+@@ -91,16 +91,17 @@ bool FirstPartySets::IsContextSamePartyWithSite(
+     const net::SchemefulSite* top_frame_site,
+     const std::set<net::SchemefulSite>& party_context,
+     bool infer_singleton_sets) const {
+-  const net::SchemefulSite* site_owner = FindOwner(site, infer_singleton_sets);
+-  if (!site_owner)
++  const absl::optional<net::SchemefulSite> site_owner =
++      FindOwner(site, infer_singleton_sets);
++  if (!site_owner.has_value())
+     return false;
+ 
+   const auto is_owned_by_site_owner =
+-      [this, site_owner,
++      [this, &site_owner,
+        infer_singleton_sets](const net::SchemefulSite& context_site) -> bool {
+-    const net::SchemefulSite* context_owner =
++    const absl::optional<net::SchemefulSite> context_owner =
+         FindOwner(context_site, infer_singleton_sets);
+-    return context_owner && *context_owner == *site_owner;
++    return context_owner.has_value() && *context_owner == *site_owner;
+   };
+ 
+   if (top_frame_site && !is_owned_by_site_owner(*top_frame_site))
+@@ -131,7 +132,8 @@ net::FirstPartySetsContextType FirstPartySets::ComputeContextType(
+     const absl::optional<net::SchemefulSite>& top_frame_site,
+     const std::set<net::SchemefulSite>& party_context) const {
+   constexpr bool infer_singleton_sets = true;
+-  const net::SchemefulSite* site_owner = FindOwner(site, infer_singleton_sets);
++  const absl::optional<net::SchemefulSite> site_owner =
++      FindOwner(site, infer_singleton_sets);
+   // Note: the `party_context` consists of the intermediate frames (for frame
+   // requests) or intermediate frames and current frame for subresource
+   // requests.
+@@ -152,18 +154,22 @@ net::FirstPartySetsContextType FirstPartySets::ComputeContextType(
+              : net::FirstPartySetsContextType::kTopResourceMatchMixed;
+ }
+ 
+-const net::SchemefulSite* FirstPartySets::FindOwner(
++const absl::optional<net::SchemefulSite> FirstPartySets::FindOwner(
+     const net::SchemefulSite& site,
+     bool infer_singleton_sets) const {
+-  const auto it = sets_.find(site);
+-  if (it == sets_.end())
+-    return infer_singleton_sets ? &site : nullptr;
+-  return &it->second;
++  net::SchemefulSite normalized_site = site;
++  normalized_site.ConvertWebSocketToHttp();
++  const auto it = sets_.find(normalized_site);
++  if (it != sets_.end())
++    return it->second;
++  if (infer_singleton_sets)
++    return normalized_site;
++  return absl::nullopt;
+ }
+ 
+ bool FirstPartySets::IsInNontrivialFirstPartySet(
+     const net::SchemefulSite& site) const {
+-  return base::Contains(sets_, site);
++  return FindOwner(site, /*infer_singleton_sets=*/false).has_value();
+ }
+ 
+ base::flat_map<net::SchemefulSite, std::set<net::SchemefulSite>>
+@@ -244,7 +250,8 @@ base::flat_set<net::SchemefulSite> FirstPartySets::ComputeSetsDiff(
+   for (const auto& old_pair : old_sets) {
+     const net::SchemefulSite& old_member = old_pair.first;
+     const net::SchemefulSite& old_owner = old_pair.second;
+-    const net::SchemefulSite* current_owner = FindOwner(old_member, false);
++    const absl::optional<net::SchemefulSite> current_owner =
++        FindOwner(old_member, false);
+     // Look for the removed sites and the ones have owner changed.
+     if (!current_owner || *current_owner != old_owner) {
+       result.emplace(old_member);
+diff --git a/services/network/first_party_sets/first_party_sets.h b/services/network/first_party_sets/first_party_sets.h
+index 8158b555856526170051cba72a08312a5528de51..fc87e5155667befc5a94bbe539ca71dc47d5f7d1 100644
+--- a/services/network/first_party_sets/first_party_sets.h
++++ b/services/network/first_party_sets/first_party_sets.h
+@@ -97,11 +97,12 @@ class FirstPartySets {
+       base::OnceCallback<void(const std::string&)> callback);
+ 
+  private:
+-  // Returns a pointer to `site`'s owner (optionally inferring a singleton set
+-  // if necessary), or `nullptr` if `site` has no owner. Must not return
+-  // `nullptr` if `infer_singleton_sets` is true.
+-  const net::SchemefulSite* FindOwner(const net::SchemefulSite& site,
+-                                      bool infer_singleton_sets) const;
++  // Returns `site`'s owner (optionally inferring a singleton set if necessary),
++  // or `nullopt` if `site` has no owner. Must not return `nullopt` if
++  // `infer_singleton_sets` is true.
++  const absl::optional<net::SchemefulSite> FindOwner(
++      const net::SchemefulSite& site,
++      bool infer_singleton_sets) const;
+ 
+   // We must ensure there's no intersection between the manually-specified set
+   // and the sets that came from Component Updater. (When reconciling the
+diff --git a/services/network/first_party_sets/first_party_sets_unittest.cc b/services/network/first_party_sets/first_party_sets_unittest.cc
+index 2055619f4c999cbfd5a5ee4780e2eb5c1dad5816..52eb8e8a3d87172353c64bba972311db2889c693 100644
+--- a/services/network/first_party_sets/first_party_sets_unittest.cc
++++ b/services/network/first_party_sets/first_party_sets_unittest.cc
+@@ -1167,6 +1167,8 @@ TEST_F(FirstPartySetsTest, ComputeContext) {
+   net::SchemefulSite nonmember1(GURL("https://nonmember1.test"));
+   net::SchemefulSite member(GURL("https://member1.test"));
+   net::SchemefulSite owner(GURL("https://example.test"));
++  net::SchemefulSite wss_member(GURL("wss://member1.test"));
++  net::SchemefulSite wss_nonmember(GURL("wss://nonmember.test"));
+ 
+   // Works as usual for sites that are in First-Party sets.
+   EXPECT_THAT(sets().ComputeContext(member, &member, {member}),
+@@ -1180,10 +1182,17 @@ TEST_F(FirstPartySetsTest, ComputeContext) {
+   EXPECT_THAT(sets().ComputeContext(member, &member, {member, owner}),
+               net::SamePartyContext(SamePartyContextType::kSameParty));
+ 
++  // Works if the site is provided with WSS scheme instead of HTTPS.
++  EXPECT_THAT(sets().ComputeContext(wss_member, &member, {member, owner}),
++              net::SamePartyContext(SamePartyContextType::kSameParty));
++
+   EXPECT_THAT(sets().ComputeContext(nonmember, &member, {member}),
+               net::SamePartyContext(SamePartyContextType::kCrossParty));
+   EXPECT_THAT(sets().ComputeContext(member, &nonmember, {member}),
+               net::SamePartyContext(SamePartyContextType::kCrossParty));
++  EXPECT_THAT(
++      sets().ComputeContext(wss_nonmember, &wss_member, {member, owner}),
++      net::SamePartyContext(SamePartyContextType::kCrossParty));
+ 
+   // Top&resource differs from Ancestors.
+   EXPECT_THAT(sets().ComputeContext(member, &member, {nonmember}),
+@@ -1225,6 +1234,12 @@ TEST_F(FirstPartySetsTest, IsInNontrivialFirstPartySet) {
+   EXPECT_TRUE(sets().IsInNontrivialFirstPartySet(
+       net::SchemefulSite(GURL("https://member1.test"))));
+ 
++  EXPECT_TRUE(sets().IsInNontrivialFirstPartySet(
++      net::SchemefulSite(GURL("wss://member1.test"))));
++
++  EXPECT_FALSE(sets().IsInNontrivialFirstPartySet(
++      net::SchemefulSite(GURL("ws://member1.test"))));
++
+   EXPECT_FALSE(sets().IsInNontrivialFirstPartySet(
+       net::SchemefulSite(GURL("https://nonmember.test"))));
+ }
