@@ -506,6 +506,7 @@ win.webContents.session.setCertificateVerifyProc((request, callback) => {
     * `permissionGranted` Boolean - Allow or deny the permission.
   * `details` Object - Some properties are only available on certain permission types.
     * `externalURL` String (optional) - The url of the `openExternal` request.
+    * `securityOrigin` String (optional) - The security origin of the `media` request.
     * `mediaTypes` String[] (optional) - The types of media access being requested, elements can be `video`
       or `audio`
     * `requestingUrl` String - The last URL the requesting frame loaded
