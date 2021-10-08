@@ -140,6 +140,7 @@ void WebContentsPermissionHelper::RequestMediaAccessPermission(
     media_types->Append("video");
   }
   details.SetList("mediaTypes", std::move(media_types));
+  details.SetString("securityOrigin", request.security_origin.spec());
 
   // The permission type doesn't matter here, AUDIO_CAPTURE/VIDEO_CAPTURE
   // are presented as same type in content_converter.h.
