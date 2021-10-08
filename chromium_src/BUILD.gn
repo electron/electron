@@ -206,6 +206,13 @@ static_library("chrome") {
       "//chrome/browser/printing/printing_service.h",
     ]
 
+    if (enable_oop_printing) {
+      sources += [
+        "//chrome/browser/printing/print_backend_service_manager.cc",
+        "//chrome/browser/printing/print_backend_service_manager.h",
+      ]
+    }
+
     public_deps += [
       "//chrome/services/printing:lib",
       "//components/printing/browser",
