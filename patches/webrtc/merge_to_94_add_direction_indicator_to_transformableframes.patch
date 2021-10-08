@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Tony Herre <toprice@chromium.org>
 Date: Mon, 4 Oct 2021 10:02:51 +0000
-Subject: [Merge to 94] Add Direction indicator to TransformableFrames
+Subject: Add Direction indicator to TransformableFrames
 
 Currently the implementation of FrameTransformers uses distinct,
 incompatible types for recevied vs about-to-be-sent frames. This adds a
