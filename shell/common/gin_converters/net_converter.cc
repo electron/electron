@@ -324,11 +324,9 @@ bool Converter<scoped_refptr<network::ResourceRequestBody>>::FromV8(
       return false;
     dict->GetString("type", &type);
     if (type == "rawData") {
-      base::Value* bytes = nullptr;
-      dict->GetBinary("bytes", &bytes);
-      (*out)->AppendBytes(
-          reinterpret_cast<const char*>(bytes->GetBlob().data()),
-          base::checked_cast<int>(bytes->GetBlob().size()));
+      const base::Value::BlobStorage* bytes = dict->FindBlobKey("bytes");
+      (*out)->AppendBytes(reinterpret_cast<const char*>(bytes->data()),
+                          base::checked_cast<int>(bytes->size()));
     } else if (type == "file") {
       const std::string* file = dict->FindStringKey("filePath");
       if (file == nullptr) {
