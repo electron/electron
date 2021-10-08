@@ -33,7 +33,7 @@ index 5a35396df314ab547990a53c90ebb75d337bcc77..537d746e8828089e88a8d42e86d482ee
          "//base",
          "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index a47b2dc1d8e50408801fffeb66358418298377d8..ff5bb5d5953b6e0c35a88578d593011c7ef7ad6e 100644
+index 37e8fdf8adb078c07e561b5e8cef4051ae4cc75f..ee501be37ff597fee5e060c4bebdf0bd6d3e1ae6 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
 @@ -4471,7 +4471,7 @@ static_library("browser") {
@@ -46,10 +46,10 @@ index a47b2dc1d8e50408801fffeb66358418298377d8..ff5bb5d5953b6e0c35a88578d593011c
      }
  
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index 04ca0d7229a4a81b6631583d47c2acb4316e6cd3..239eb839e35b1cbde9f828c20c3f365d559710d7 100644
+index 335c7d208a563870058d6c260f50c12d80d8d66f..4573f9298c9e32a6805b425e12d60823cf020527 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
-@@ -5492,7 +5492,6 @@ test("unit_tests") {
+@@ -5494,7 +5494,6 @@ test("unit_tests") {
      assert(toolkit_views)
      sources += [ "../browser/ui/startup/credential_provider_signin_info_fetcher_win_unittest.cc" ]
      deps += [
@@ -57,7 +57,7 @@ index 04ca0d7229a4a81b6631583d47c2acb4316e6cd3..239eb839e35b1cbde9f828c20c3f365d
        "//chrome/browser:chrome_process_finder",
        "//chrome/browser/safe_browsing/chrome_cleaner",
        "//chrome/browser/safe_browsing/chrome_cleaner:public",
-@@ -5505,6 +5504,12 @@ test("unit_tests") {
+@@ -5507,6 +5506,12 @@ test("unit_tests") {
        "//components/chrome_cleaner/public/proto",
        "//ui/events/devices:test_support",
      ]
@@ -70,7 +70,7 @@ index 04ca0d7229a4a81b6631583d47c2acb4316e6cd3..239eb839e35b1cbde9f828c20c3f365d
    }
  
    # TODO(crbug.com/931218): Ninja cannot handle certain characters appearing
-@@ -6100,7 +6105,6 @@ test("unit_tests") {
+@@ -6104,7 +6109,6 @@ test("unit_tests") {
      }
  
      deps += [
@@ -78,7 +78,7 @@ index 04ca0d7229a4a81b6631583d47c2acb4316e6cd3..239eb839e35b1cbde9f828c20c3f365d
        "//chrome/browser:cart_db_content_proto",
        "//chrome/browser:coupon_db_content_proto",
        "//chrome/browser/media/router:test_support",
-@@ -6140,6 +6144,9 @@ test("unit_tests") {
+@@ -6144,6 +6148,9 @@ test("unit_tests") {
        "//ui/native_theme:test_support",
        "//ui/webui/resources/js/browser_command:mojo_bindings",
      ]

@@ -8,7 +8,7 @@ needed in chromium but our autofill implementation uses them.  This patch can be
 our autofill implementation to work like Chromium's.
 
 diff --git a/ui/native_theme/common_theme.cc b/ui/native_theme/common_theme.cc
-index 079908dba7d8239d136da1b9ff27add2e7c7b2da..721e7ccb3bc5a19f32ab7138cbb07b3a48ed9d38 100644
+index a8d95abb69da8d42aed26d3b215cc05d79ba676b..74fc4d9bb7f183765b05e94b7133599ccf714042 100644
 --- a/ui/native_theme/common_theme.cc
 +++ b/ui/native_theme/common_theme.cc
 @@ -32,6 +32,7 @@ absl::optional<SkColor> GetHighContrastColor(
@@ -88,7 +88,7 @@ index a1b39a03776c287bc2b1f9a0a6ce11d0d9efde79..9132ff83b672b51c5f2f7ed95da877be
    OP(kColorId_ThrobberWaitingColor),                                           \
    OP(kColorId_WindowBackground)
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index 5df8ed77b0e665ee82c1b3d67f31e722f357fba2..d2cc008b62b957edb5dc40826bb2bf17cc2faf76 100644
+index 99256ffaf918e9d12a7c21b89d66cd41a0d29ac2..07852493fd23b8c1f057dc7ad830b6884db50a88 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
 @@ -623,10 +623,23 @@ absl::optional<SkColor> NativeThemeWin::GetPlatformHighContrastColor(

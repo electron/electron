@@ -33,10 +33,10 @@ index ab97cbf061c89be9f11dde42b7371668658208a6..718209098ee4fb6cfc9aaa1ef4af691c
  
  }  // namespace net
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 7bd73dae3a77cb16cf282d2df7f4ff7a8f412805..3d3795cd1911647f026addf0d6e6bcc18325f641 100644
+index 39ff43884fbc2b6768d7ddb6e9d63031a973b8fa..5d985fc94f35a1258ecee212c56561d56a9a3ff6 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
-@@ -1292,6 +1292,13 @@ void NetworkContext::SetNetworkConditions(
+@@ -1295,6 +1295,13 @@ void NetworkContext::SetNetworkConditions(
                                        std::move(network_conditions));
  }
  
@@ -51,7 +51,7 @@ index 7bd73dae3a77cb16cf282d2df7f4ff7a8f412805..3d3795cd1911647f026addf0d6e6bcc1
    // This may only be called on NetworkContexts created with the constructor
    // that calls MakeURLRequestContext().
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 97f9512dbc7ffe94df2d39d373e0e21c304cb9ef..3a4673b0d9b2b9f62f3d1839fba8156c1c2ed41b 100644
+index 8362af824a8dd4f721eebdbff2d544f7f5093d16..28a9ce2bfc0d84bb15b5e40d9697fbdeaa57a96a 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -274,6 +274,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
@@ -63,10 +63,10 @@ index 97f9512dbc7ffe94df2d39d373e0e21c304cb9ef..3a4673b0d9b2b9f62f3d1839fba8156c
    void SetEnableReferrers(bool enable_referrers) override;
  #if BUILDFLAG(IS_CHROMEOS_ASH)
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index d8e7d0d35317fe1124bf81f60faf2b35ae19a3d7..eed5109002dd99a6e65c8882530a5fd2a69ce28c 100644
+index 8f8b496324265b25046a88cbac7decec056f061e..d7c20f76f96d43df71b503ca7a2a14446e9bbe96 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
-@@ -1029,6 +1029,9 @@ interface NetworkContext {
+@@ -1030,6 +1030,9 @@ interface NetworkContext {
    SetNetworkConditions(mojo_base.mojom.UnguessableToken throttling_profile_id,
                         NetworkConditions? conditions);
  
@@ -77,7 +77,7 @@ index d8e7d0d35317fe1124bf81f60faf2b35ae19a3d7..eed5109002dd99a6e65c8882530a5fd2
    SetAcceptLanguage(string new_accept_language);
  
 diff --git a/services/network/test/test_network_context.h b/services/network/test/test_network_context.h
-index f1fbbf10df01876e8ae3418b72cd0f4fcbda542b..780ccbe1a9ff8ab91b39fdcef74cd5805ba8583d 100644
+index e41a44deca2e33b8c3f2c9c2123326b832246529..5bdc6b5a75eae0f3fb049998a7c1671753d17285 100644
 --- a/services/network/test/test_network_context.h
 +++ b/services/network/test/test_network_context.h
 @@ -134,6 +134,7 @@ class TestNetworkContext : public mojom::NetworkContext {
