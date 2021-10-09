@@ -1,7 +1,7 @@
-From b2c4e4dc21e509207bfa4cfc6a32bd24fa3423d9 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Reilly Grant <reillyg@chromium.org>
-Date: Mon, 04 Oct 2021 23:02:19 +0000
-Subject: [PATCH] [Merge M-94] mojo: CHECK when array has too many elements to serialize
+Date: Mon, 4 Oct 2021 23:02:19 +0000
+Subject: mojo: CHECK when array has too many elements to serialize
 
 This change turns an early return into a CHECK because the surrounding
 code expects memory allocation to succeed.
@@ -19,13 +19,12 @@ Cr-Original-Commit-Position: refs/heads/main@{#917908}
 Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3203131
 Cr-Commit-Position: refs/branch-heads/4606@{#1301}
 Cr-Branched-From: 35b0d5a9dc8362adfd44e2614f0d5b7402ef63d0-refs/heads/master@{#911515}
----
 
 diff --git a/mojo/public/cpp/bindings/lib/message_fragment.h b/mojo/public/cpp/bindings/lib/message_fragment.h
-index e466d62..748d3bf 100644
+index e466d62250e0b1052ef0d5a8cb6e1abe165147ae..748d3bf409984637f3e824f12e85bf38ffbffe24 100644
 --- a/mojo/public/cpp/bindings/lib/message_fragment.h
 +++ b/mojo/public/cpp/bindings/lib/message_fragment.h
-@@ -149,8 +149,7 @@
+@@ -149,8 +149,7 @@ class MessageFragment<Array_Data<T>> {
      static_assert(
          std::numeric_limits<uint32_t>::max() > Traits::kMaxNumElements,
          "Max num elements castable to 32bit");
