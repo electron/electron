@@ -1,7 +1,7 @@
-From 3a5bafa35defbaf3fd82bd2220034bd403e76243 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Alex Gough <ajgo@chromium.org>
-Date: Fri, 01 Oct 2021 23:30:09 +0000
-Subject: [PATCH] Tell clang not to devirtualize TargetServices
+Date: Fri, 1 Oct 2021 23:30:09 +0000
+Subject: Tell clang not to devirtualize TargetServices
 
 Before this change in official builds a child process's delayed
 integrity level was not being set correctly. With this change
@@ -20,13 +20,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3200146
 Commit-Queue: Alex Gough <ajgo@chromium.org>
 Cr-Commit-Position: refs/branch-heads/4606@{#1285}
 Cr-Branched-From: 35b0d5a9dc8362adfd44e2614f0d5b7402ef63d0-refs/heads/master@{#911515}
----
 
 diff --git a/sandbox/win/src/sandbox.h b/sandbox/win/src/sandbox.h
-index e4e6c37..3e280ad3 100644
+index 35996c1726e4767f04fff38e2efb655250e17e41..a53a347007212f79063044263c5703b014e2c4d2 100644
 --- a/sandbox/win/src/sandbox.h
 +++ b/sandbox/win/src/sandbox.h
-@@ -144,7 +144,7 @@
+@@ -143,7 +143,7 @@ class [[clang::lto_visibility_public]] BrokerServices {
  //   }
  //
  // For more information see the BrokerServices API documentation.
