@@ -17,7 +17,7 @@ vars = {
   'chromium_version':
     '96.0.4647.0',
   'node_version':
-    'v16.10.0',
+    'v16.11.0',
   'nan_version':
     # The following commit hash of NAN is v2.14.2 with *only* changes to the
     # test suite. This should be updated to a specific tag when one becomes
