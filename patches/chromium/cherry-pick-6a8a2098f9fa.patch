@@ -1,0 +1,230 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Erik Chen <erikchen@chromium.org>
+Date: Wed, 29 Sep 2021 21:16:47 +0000
+Subject: Prevents non-browser processes from requesting memory dumps.
+
+This CL makes several changes:
+
+(1) Causes the browser to reset non-browser
+mojo::PendingReceiver<Coordinator>. This means that non-browser
+processes will never be able to use the Coordinator interface.
+
+(2) Add CHECKs to existing code to prevent non-browser processes from
+attempting to use the Coordinator interface.
+
+A code audit shows that all Coordinator usages should already only be
+from the browser process.
+
+Note that (2) is important since attempting to use an unbound interface
+will trigger a nullptr dereference, which is undefined behavior.
+
+(cherry picked from commit d9cc471e122e9a2391a68fa7cd72ea50587d8d97)
+
+Bug: 1251787
+Change-Id: Ifbe9610cc0e373edaaa60fad46b447e8bdb3ec04
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3174305
+Reviewed-by: Kinuko Yasuda <kinuko@chromium.org>
+Reviewed-by: ssid <ssid@chromium.org>
+Auto-Submit: Erik Chen <erikchen@chromium.org>
+Commit-Queue: Erik Chen <erikchen@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#923693}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3194811
+Reviewed-by: Avi Drissman <avi@chromium.org>
+Reviewed-by: Krishna Govind <govind@chromium.org>
+Commit-Queue: Krishna Govind <govind@chromium.org>
+Owners-Override: Krishna Govind <govind@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4606@{#1253}
+Cr-Branched-From: 35b0d5a9dc8362adfd44e2614f0d5b7402ef63d0-refs/heads/master@{#911515}
+
+diff --git a/content/browser/browser_child_process_host_impl.cc b/content/browser/browser_child_process_host_impl.cc
+index e3a67915c8a828524da64e88f1e07c7bc960d36f..dd89731d031a2092bc7eb0fe5af16ad535b12957 100644
+--- a/content/browser/browser_child_process_host_impl.cc
++++ b/content/browser/browser_child_process_host_impl.cc
+@@ -662,6 +662,9 @@ void BrowserChildProcessHostImpl::RegisterCoordinatorClient(
+     mojo::PendingReceiver<memory_instrumentation::mojom::Coordinator> receiver,
+     mojo::PendingRemote<memory_instrumentation::mojom::ClientProcess>
+         client_process) {
++  // Intentionally disallow non-browser processes from getting a Coordinator.
++  receiver.reset();
++
+   // The child process may have already terminated by the time this message is
+   // dispatched. We do nothing in that case.
+   if (!IsProcessLaunched())
+diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
+index 34a066bf4ec85ec4ec5606861320b0e1a1f9793b..f27b2eb04487cbabe499e70319643f64db7812be 100644
+--- a/content/browser/renderer_host/render_process_host_impl.cc
++++ b/content/browser/renderer_host/render_process_host_impl.cc
+@@ -2592,6 +2592,9 @@ void RenderProcessHostImpl::RegisterCoordinatorClient(
+     mojo::PendingReceiver<memory_instrumentation::mojom::Coordinator> receiver,
+     mojo::PendingRemote<memory_instrumentation::mojom::ClientProcess>
+         client_process) {
++  // Intentionally disallow non-browser processes from getting a Coordinator.
++  receiver.reset();
++
+   if (!GetProcess().IsValid()) {
+     // If the process dies before we get this message. we have no valid PID
+     // and there's nothing to register.
+diff --git a/services/resource_coordinator/memory_instrumentation/coordinator_impl.cc b/services/resource_coordinator/memory_instrumentation/coordinator_impl.cc
+index d78430c058b429c5abd8f3e533d7c108b34d2010..fdc67aef27ec4bfb0f59ff1c40d005259bd2699e 100644
+--- a/services/resource_coordinator/memory_instrumentation/coordinator_impl.cc
++++ b/services/resource_coordinator/memory_instrumentation/coordinator_impl.cc
+@@ -105,7 +105,8 @@ void CoordinatorImpl::RegisterClientProcess(
+     const base::Optional<std::string>& service_name) {
+   DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
+   mojo::Remote<mojom::ClientProcess> process(std::move(client_process));
+-  coordinator_receivers_.Add(this, std::move(receiver), process_id);
++  if (receiver.is_valid())
++    coordinator_receivers_.Add(this, std::move(receiver), process_id);
+   process.set_disconnect_handler(
+       base::BindOnce(&CoordinatorImpl::UnregisterClientProcess,
+                      base::Unretained(this), process_id));
+diff --git a/services/resource_coordinator/public/cpp/memory_instrumentation/client_process_impl.cc b/services/resource_coordinator/public/cpp/memory_instrumentation/client_process_impl.cc
+index ca0e8d8441a53fce370b375930b149a0b8dd6974..ae9ef93eafe0196c7a16743211f04eebe2c87d34 100644
+--- a/services/resource_coordinator/public/cpp/memory_instrumentation/client_process_impl.cc
++++ b/services/resource_coordinator/public/cpp/memory_instrumentation/client_process_impl.cc
+@@ -24,6 +24,11 @@ void ClientProcessImpl::CreateInstance(
+     mojo::PendingReceiver<mojom::ClientProcess> receiver,
+     mojo::PendingRemote<mojom::Coordinator> coordinator,
+     bool is_browser_process) {
++  // Intentionally disallow non-browser processes from ever holding a
++  // Coordinator.
++  if (!is_browser_process)
++    coordinator.reset();
++
+   static ClientProcessImpl* instance = nullptr;
+   if (!instance) {
+     instance = new ClientProcessImpl(
+@@ -39,10 +44,12 @@ ClientProcessImpl::ClientProcessImpl(
+     mojo::PendingRemote<mojom::Coordinator> coordinator,
+     bool is_browser_process,
+     bool initialize_memory_instrumentation)
+-    : receiver_(this, std::move(receiver)) {
++    : receiver_(this, std::move(receiver)),
++      is_browser_process_(is_browser_process) {
+   if (initialize_memory_instrumentation) {
+     // Initialize the public-facing MemoryInstrumentation helper.
+-    MemoryInstrumentation::CreateInstance(std::move(coordinator));
++    MemoryInstrumentation::CreateInstance(std::move(coordinator),
++                                          is_browser_process);
+   } else {
+     coordinator_.Bind(std::move(coordinator));
+   }
+@@ -109,6 +116,8 @@ void ClientProcessImpl::OnChromeMemoryDumpDone(
+ void ClientProcessImpl::RequestGlobalMemoryDump_NoCallback(
+     base::trace_event::MemoryDumpType dump_type,
+     base::trace_event::MemoryDumpLevelOfDetail level_of_detail) {
++  CHECK(is_browser_process_);
++
+   if (!task_runner_->RunsTasksInCurrentSequence()) {
+     task_runner_->PostTask(
+         FROM_HERE,
+diff --git a/services/resource_coordinator/public/cpp/memory_instrumentation/client_process_impl.h b/services/resource_coordinator/public/cpp/memory_instrumentation/client_process_impl.h
+index 6dd8c55823de34ccef4244036b4d4c8cda92f74a..8c2c20c449a2e3bf8c7465ccbc2fba6fd1cb402b 100644
+--- a/services/resource_coordinator/public/cpp/memory_instrumentation/client_process_impl.h
++++ b/services/resource_coordinator/public/cpp/memory_instrumentation/client_process_impl.h
+@@ -96,6 +96,9 @@ class COMPONENT_EXPORT(RESOURCE_COORDINATOR_PUBLIC_MEMORY_INSTRUMENTATION)
+   mojo::Remote<mojom::Coordinator> coordinator_;
+   scoped_refptr<base::SingleThreadTaskRunner> task_runner_;
+ 
++  // Only browser process is allowed to request memory dumps.
++  const bool is_browser_process_;
++
+   // TODO(crbug.com/728199): The observer is only used to setup and tear down
+   // MemoryDumpManager in each process. Setting up MemoryDumpManager should
+   // be moved away from TracingObserver.
+diff --git a/services/resource_coordinator/public/cpp/memory_instrumentation/memory_instrumentation.cc b/services/resource_coordinator/public/cpp/memory_instrumentation/memory_instrumentation.cc
+index c81d5f83bf9e1ad5e7a77d7c187fa33bd02812d5..ec90ab9211ede586d441f40e3e2bc2c820658fb1 100644
+--- a/services/resource_coordinator/public/cpp/memory_instrumentation/memory_instrumentation.cc
++++ b/services/resource_coordinator/public/cpp/memory_instrumentation/memory_instrumentation.cc
+@@ -21,10 +21,11 @@ void WrapGlobalMemoryDump(
+ 
+ // static
+ void MemoryInstrumentation::CreateInstance(
+-    mojo::PendingRemote<memory_instrumentation::mojom::Coordinator>
+-        coordinator) {
++    mojo::PendingRemote<memory_instrumentation::mojom::Coordinator> coordinator,
++    bool is_browser_process) {
+   DCHECK(!g_instance);
+-  g_instance = new MemoryInstrumentation(std::move(coordinator));
++  g_instance =
++      new MemoryInstrumentation(std::move(coordinator), is_browser_process);
+ }
+ 
+ // static
+@@ -33,8 +34,10 @@ MemoryInstrumentation* MemoryInstrumentation::GetInstance() {
+ }
+ 
+ MemoryInstrumentation::MemoryInstrumentation(
+-    mojo::PendingRemote<memory_instrumentation::mojom::Coordinator> coordinator)
+-    : coordinator_(std::move(coordinator)) {}
++    mojo::PendingRemote<memory_instrumentation::mojom::Coordinator> coordinator,
++    bool is_browser_process)
++    : coordinator_(std::move(coordinator)),
++      is_browser_process_(is_browser_process) {}
+ 
+ MemoryInstrumentation::~MemoryInstrumentation() {
+   g_instance = nullptr;
+@@ -43,6 +46,7 @@ MemoryInstrumentation::~MemoryInstrumentation() {
+ void MemoryInstrumentation::RequestGlobalDump(
+     const std::vector<std::string>& allocator_dump_names,
+     RequestGlobalDumpCallback callback) {
++  CHECK(is_browser_process_);
+   coordinator_->RequestGlobalMemoryDump(
+       MemoryDumpType::SUMMARY_ONLY, MemoryDumpLevelOfDetail::BACKGROUND,
+       MemoryDumpDeterminism::NONE, allocator_dump_names,
+@@ -52,6 +56,7 @@ void MemoryInstrumentation::RequestGlobalDump(
+ void MemoryInstrumentation::RequestPrivateMemoryFootprint(
+     base::ProcessId pid,
+     RequestGlobalDumpCallback callback) {
++  CHECK(is_browser_process_);
+   coordinator_->RequestPrivateMemoryFootprint(
+       pid, base::BindOnce(&WrapGlobalMemoryDump, std::move(callback)));
+ }
+@@ -60,6 +65,7 @@ void MemoryInstrumentation::RequestGlobalDumpForPid(
+     base::ProcessId pid,
+     const std::vector<std::string>& allocator_dump_names,
+     RequestGlobalDumpCallback callback) {
++  CHECK(is_browser_process_);
+   coordinator_->RequestGlobalMemoryDumpForPid(
+       pid, allocator_dump_names,
+       base::BindOnce(&WrapGlobalMemoryDump, std::move(callback)));
+@@ -70,6 +76,7 @@ void MemoryInstrumentation::RequestGlobalDumpAndAppendToTrace(
+     MemoryDumpLevelOfDetail level_of_detail,
+     MemoryDumpDeterminism determinism,
+     RequestGlobalMemoryDumpAndAppendToTraceCallback callback) {
++  CHECK(is_browser_process_);
+   coordinator_->RequestGlobalMemoryDumpAndAppendToTrace(
+       dump_type, level_of_detail, determinism, std::move(callback));
+ }
+diff --git a/services/resource_coordinator/public/cpp/memory_instrumentation/memory_instrumentation.h b/services/resource_coordinator/public/cpp/memory_instrumentation/memory_instrumentation.h
+index 3264917890cc30179c4477657158fd359a9d1e01..72157b5345fb003452f67045e2b2c984e748958a 100644
+--- a/services/resource_coordinator/public/cpp/memory_instrumentation/memory_instrumentation.h
++++ b/services/resource_coordinator/public/cpp/memory_instrumentation/memory_instrumentation.h
+@@ -34,7 +34,8 @@ class COMPONENT_EXPORT(RESOURCE_COORDINATOR_PUBLIC_MEMORY_INSTRUMENTATION)
+ 
+   static void CreateInstance(
+       mojo::PendingRemote<memory_instrumentation::mojom::Coordinator>
+-          coordinator);
++          coordinator,
++      bool is_browser_process);
+   static MemoryInstrumentation* GetInstance();
+ 
+   // Retrieves a Coordinator interface to communicate with the service. This is
+@@ -100,12 +101,16 @@ class COMPONENT_EXPORT(RESOURCE_COORDINATOR_PUBLIC_MEMORY_INSTRUMENTATION)
+  private:
+   explicit MemoryInstrumentation(
+       mojo::PendingRemote<memory_instrumentation::mojom::Coordinator>
+-          coordinator);
++          coordinator,
++      bool is_browser_process);
+   ~MemoryInstrumentation();
+ 
+   const mojo::SharedRemote<memory_instrumentation::mojom::Coordinator>
+       coordinator_;
+ 
++  // Only browser process is allowed to request memory dumps.
++  const bool is_browser_process_;
++
+   DISALLOW_COPY_AND_ASSIGN(MemoryInstrumentation);
+ };
+ 
