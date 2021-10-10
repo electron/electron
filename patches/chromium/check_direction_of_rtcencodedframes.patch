@@ -1,0 +1,188 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tony Herre <toprice@chromium.org>
+Date: Fri, 1 Oct 2021 19:18:45 +0000
+Subject: Check direction of RTCEncodedFrames
+
+Add a check to RTCEncodedVideoUnderlyingSink of the direction of the
+underlying webrtc frame, to make sure a web app doesn't take a received
+encoded frame and pass it into a sender insertable stream, which is as
+yet unsupported in WebRTC.
+
+Bug: 1247260
+Change-Id: I9ed5bd8b2bd5e5ee461f3b553f8a91f6cc2e9ed7
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3190473
+Commit-Queue: Tony Herre <toprice@chromium.org>
+Reviewed-by: Harald Alvestrand <hta@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#927323}
+
+diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_underlying_sink.cc b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_underlying_sink.cc
+index c390ab72418194cb10c3b0bc5a83b95de8dd19f6..775b837fee46836fd292b17ac8d80e4c83bd08a8 100644
+--- a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_underlying_sink.cc
++++ b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_underlying_sink.cc
+@@ -14,8 +14,10 @@ namespace blink {
+ 
+ RTCEncodedVideoUnderlyingSink::RTCEncodedVideoUnderlyingSink(
+     ScriptState* script_state,
+-    TransformerCallback transformer_callback)
+-    : transformer_callback_(std::move(transformer_callback)) {
++    TransformerCallback transformer_callback,
++    webrtc::TransformableFrameInterface::Direction expected_direction)
++    : transformer_callback_(std::move(transformer_callback)),
++      expected_direction_(expected_direction) {
+   DCHECK(transformer_callback_);
+ }
+ 
+@@ -53,6 +55,12 @@ ScriptPromise RTCEncodedVideoUnderlyingSink::write(
+     return ScriptPromise();
+   }
+ 
++  if (webrtc_frame->GetDirection() != expected_direction_) {
++    exception_state.ThrowDOMException(DOMExceptionCode::kOperationError,
++                                      "Invalid frame");
++    return ScriptPromise();
++  }
++
+   RTCEncodedVideoStreamTransformer* transformer = transformer_callback_.Run();
+   if (!transformer) {
+     exception_state.ThrowDOMException(DOMExceptionCode::kInvalidStateError,
+diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_underlying_sink.h b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_underlying_sink.h
+index dd1cad227eb7947dd0bf2ec7ba217956cb7a8787..8591fcc6eb1c78d0e107e4f097d3133d111ab959 100644
+--- a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_underlying_sink.h
++++ b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_underlying_sink.h
+@@ -7,6 +7,7 @@
+ 
+ #include "third_party/blink/renderer/core/streams/underlying_sink_base.h"
+ #include "third_party/blink/renderer/modules/modules_export.h"
++#include "third_party/webrtc/api/frame_transformer_interface.h"
+ 
+ namespace blink {
+ 
+@@ -18,7 +19,9 @@ class MODULES_EXPORT RTCEncodedVideoUnderlyingSink final
+  public:
+   using TransformerCallback =
+       base::RepeatingCallback<RTCEncodedVideoStreamTransformer*()>;
+-  RTCEncodedVideoUnderlyingSink(ScriptState*, TransformerCallback);
++  RTCEncodedVideoUnderlyingSink(ScriptState*,
++                                TransformerCallback,
++                                webrtc::TransformableFrameInterface::Direction);
+ 
+   // UnderlyingSinkBase
+   ScriptPromise start(ScriptState*,
+@@ -37,6 +40,7 @@ class MODULES_EXPORT RTCEncodedVideoUnderlyingSink final
+ 
+  private:
+   TransformerCallback transformer_callback_;
++  webrtc::TransformableFrameInterface::Direction expected_direction_;
+ };
+ 
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_underlying_sink_test.cc b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_underlying_sink_test.cc
+index d06c1a735767c936d25e68e23c15a4aca7ef901a..8238bd13f9a7c3276468c76bd3aee4c56345e83a 100644
+--- a/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_underlying_sink_test.cc
++++ b/third_party/blink/renderer/modules/peerconnection/rtc_encoded_video_underlying_sink_test.cc
+@@ -75,11 +75,15 @@ class RTCEncodedVideoUnderlyingSinkTest : public testing::Test {
+     EXPECT_FALSE(transformer_.HasTransformedFrameSinkCallback(kSSRC));
+   }
+ 
+-  RTCEncodedVideoUnderlyingSink* CreateSink(ScriptState* script_state) {
++  RTCEncodedVideoUnderlyingSink* CreateSink(
++      ScriptState* script_state,
++      webrtc::TransformableFrameInterface::Direction expected_direction =
++          webrtc::TransformableFrameInterface::Direction::kSender) {
+     return MakeGarbageCollected<RTCEncodedVideoUnderlyingSink>(
+         script_state,
+         WTF::BindRepeating(&RTCEncodedVideoUnderlyingSinkTest::GetTransformer,
+-                           WTF::Unretained(this)));
++                           WTF::Unretained(this)),
++        expected_direction);
+   }
+ 
+   RTCEncodedVideoUnderlyingSink* CreateNullCallbackSink(
+@@ -87,14 +91,20 @@ class RTCEncodedVideoUnderlyingSinkTest : public testing::Test {
+     return MakeGarbageCollected<RTCEncodedVideoUnderlyingSink>(
+         script_state,
+         WTF::BindRepeating(
+-            []() -> RTCEncodedVideoStreamTransformer* { return nullptr; }));
++            []() -> RTCEncodedVideoStreamTransformer* { return nullptr; }),
++        webrtc::TransformableFrameInterface::Direction::kSender);
+   }
+ 
+   RTCEncodedVideoStreamTransformer* GetTransformer() { return &transformer_; }
+ 
+-  ScriptValue CreateEncodedVideoFrameChunk(ScriptState* script_state) {
++  ScriptValue CreateEncodedVideoFrameChunk(
++      ScriptState* script_state,
++      webrtc::TransformableFrameInterface::Direction direction =
++          webrtc::TransformableFrameInterface::Direction::kSender) {
+     auto mock_frame = std::make_unique<NiceMock<MockTransformableVideoFrame>>();
++
+     ON_CALL(*mock_frame.get(), GetSsrc).WillByDefault(Return(kSSRC));
++    ON_CALL(*mock_frame.get(), GetDirection).WillByDefault(Return(direction));
+     RTCEncodedVideoFrame* frame =
+         MakeGarbageCollected<RTCEncodedVideoFrame>(std::move(mock_frame));
+     return ScriptValue(script_state->GetIsolate(),
+@@ -175,4 +185,21 @@ TEST_F(RTCEncodedVideoUnderlyingSinkTest, WriteToNullCallbackSinkFails) {
+                              DOMExceptionCode::kInvalidStateError));
+ }
+ 
++TEST_F(RTCEncodedVideoUnderlyingSinkTest, WriteInvalidDirectionFails) {
++  V8TestingScope v8_scope;
++  ScriptState* script_state = v8_scope.GetScriptState();
++  auto* sink = CreateSink(
++      script_state, webrtc::TransformableFrameInterface::Direction::kSender);
++
++  // Write an encoded chunk with direction set to Receiver should fail as it
++  // doesn't match the expected direction of our sink.
++  DummyExceptionStateForTesting dummy_exception_state;
++  sink->write(script_state,
++              CreateEncodedVideoFrameChunk(
++                  script_state,
++                  webrtc::TransformableFrameInterface::Direction::kReceiver),
++              nullptr, dummy_exception_state);
++  EXPECT_TRUE(dummy_exception_state.HadException());
++}
++
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_rtp_receiver.cc b/third_party/blink/renderer/modules/peerconnection/rtc_rtp_receiver.cc
+index 9291c4f8a10f6d822bbda0ed47c2e206eb7955eb..1838055f829337c5f9c302ad0b0703899693be25 100644
+--- a/third_party/blink/renderer/modules/peerconnection/rtc_rtp_receiver.cc
++++ b/third_party/blink/renderer/modules/peerconnection/rtc_rtp_receiver.cc
+@@ -595,7 +595,8 @@ void RTCRtpReceiver::InitializeEncodedVideoStreams(ScriptState* script_state) {
+                                       ->GetEncodedVideoStreamTransformer()
+                                 : nullptr;
+               },
+-              WrapWeakPersistent(this)));
++              WrapWeakPersistent(this)),
++          webrtc::TransformableFrameInterface::Direction::kReceiver);
+   // The high water mark for the stream is set to 1 so that the stream seems
+   // ready to write, but without queuing frames.
+   WritableStream* writable_stream =
+diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_rtp_sender.cc b/third_party/blink/renderer/modules/peerconnection/rtc_rtp_sender.cc
+index 9adbd0b2ba67af5cb416e95685e0993200a4bbbc..293714421b4f00b8561bf637313b5041f15d0875 100644
+--- a/third_party/blink/renderer/modules/peerconnection/rtc_rtp_sender.cc
++++ b/third_party/blink/renderer/modules/peerconnection/rtc_rtp_sender.cc
+@@ -950,7 +950,8 @@ void RTCRtpSender::InitializeEncodedVideoStreams(ScriptState* script_state) {
+                                     ->GetEncodedVideoStreamTransformer()
+                               : nullptr;
+               },
+-              WrapWeakPersistent(this)));
++              WrapWeakPersistent(this)),
++          webrtc::TransformableFrameInterface::Direction::kSender);
+   // The high water mark for the stream is set to 1 so that the stream is
+   // ready to write, but without queuing frames.
+   WritableStream* writable_stream =
+diff --git a/third_party/blink/renderer/modules/peerconnection/testing/mock_transformable_video_frame.h b/third_party/blink/renderer/modules/peerconnection/testing/mock_transformable_video_frame.h
+index 4780d43ca327c3b65125ccb855cdad618c3fc6ec..1e0b12eac7bfd70247b1a74c237a63c805303c16 100644
+--- a/third_party/blink/renderer/modules/peerconnection/testing/mock_transformable_video_frame.h
++++ b/third_party/blink/renderer/modules/peerconnection/testing/mock_transformable_video_frame.h
+@@ -27,6 +27,10 @@ class MockTransformableVideoFrame
+               GetMetadata,
+               (),
+               (const, override));
++  MOCK_METHOD(webrtc::TransformableFrameInterface::Direction,
++              GetDirection,
++              (),
++              (const, override));
+ };
+ 
+ }  // namespace blink
