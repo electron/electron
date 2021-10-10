@@ -152,3 +152,4 @@ kill_a_renderer_if_it_provides_an_unexpected_frameownerelementtype.patch
 m90-lts_backgroundfetch_check_whether_the_sw_id_is_valid_for.patch
 cherry-pick-096afc1c5428.patch
 cherry-pick-4e528a5a8d83.patch
+cherry-pick-6a8a2098f9fa.patch
