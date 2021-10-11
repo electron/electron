@@ -1,0 +1,60 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <jkleinsc@github.com>
+Date: Mon, 11 Oct 2021 12:33:54 -0400
+Subject: chore: debug large trace file
+
+Try to figure out why the test
+contentTracing startRecording accepts a trace config - accepts a trace config
+is failing.
+
+diff --git a/base/trace_event/trace_config_category_filter.cc b/base/trace_event/trace_config_category_filter.cc
+index 4934eea86b1881e632aea10ea7b514dc8ad725dc..1aa00c35b140bf9cc7f12652d1fc6fc41f6d8745 100644
+--- a/base/trace_event/trace_config_category_filter.cc
++++ b/base/trace_event/trace_config_category_filter.cc
+@@ -4,6 +4,8 @@
+ 
+ #include "base/trace_event/trace_config_category_filter.h"
+ 
++
++#include "base/logging.h"
+ #include "base/memory/ptr_util.h"
+ #include "base/strings/pattern.h"
+ #include "base/strings/string_piece.h"
+@@ -73,11 +75,15 @@ bool TraceConfigCategoryFilter::IsCategoryGroupEnabled(
+     // Don't allow empty tokens, nor tokens with leading or trailing space.
+     DCHECK(IsCategoryNameAllowed(category_group_token))
+         << "Disallowed category string";
+-    if (IsCategoryEnabled(category_group_token))
++    if (IsCategoryEnabled(category_group_token)) {
++      LOG(INFO) << category_group_name << " IS enabled because IsCategoryEnabled for " << category_group_token;
+       return true;
++    }
+ 
+-    if (!MatchPattern(category_group_token, TRACE_DISABLED_BY_DEFAULT("*")))
++    if (!MatchPattern(category_group_token, TRACE_DISABLED_BY_DEFAULT("*"))) {
+       had_enabled_by_default = true;
++      LOG(INFO) << category_group_name << " setting had_enabled_by_default because of " << category_group_token;
++    }
+   }
+   // Do a second pass to check for explicitly disabled categories
+   // (those explicitly enabled have priority due to first pass).
+@@ -98,8 +104,10 @@ bool TraceConfigCategoryFilter::IsCategoryGroupEnabled(
+       // excluded_ list. So, if it's not a disabled-by-default category,
+       // it has to be included_ list. Enable the category_group_name
+       // for recording.
+-      if (!MatchPattern(category_group_token, TRACE_DISABLED_BY_DEFAULT("*")))
++      if (!MatchPattern(category_group_token, TRACE_DISABLED_BY_DEFAULT("*"))) {
++        LOG(INFO) << category_group_name << " setting !category_group_disabled because of " << category_group_token;
+         category_group_disabled = false;
++      }
+     }
+     // One of the categories present in category_group_name is not present in
+     // excluded_ list. Implies this category_group_name group can be enabled
+@@ -110,6 +118,7 @@ bool TraceConfigCategoryFilter::IsCategoryGroupEnabled(
+   // If the category group is not excluded, and there are no included patterns
+   // we consider this category group enabled, as long as it had categories
+   // other than disabled-by-default.
++
+   return !category_group_disabled && had_enabled_by_default &&
+          included_categories_.empty();
+ }
