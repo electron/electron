@@ -97,7 +97,7 @@ static_library("chrome") {
   }
 
   if (is_linux) {
-    sources += [ "//chrome/browser/media/webrtc/window_icon_util_linux.cc" ]
+    sources += [ "//chrome/browser/media/webrtc/window_icon_util_ozone.cc" ]
   }
 
   if (use_aura) {
@@ -129,16 +129,6 @@ static_library("chrome") {
 
   if (is_linux) {
     sources += [ "//chrome/browser/icon_loader_auralinux.cc" ]
-    if (use_x11 || use_ozone) {
-      sources +=
-          [ "//chrome/browser/extensions/global_shortcut_listener_linux.cc" ]
-    }
-    if (use_x11) {
-      sources += [
-        "//chrome/browser/extensions/global_shortcut_listener_x11.cc",
-        "//chrome/browser/extensions/global_shortcut_listener_x11.h",
-      ]
-    }
     if (use_ozone) {
       deps += [ "//ui/ozone" ]
       sources += [
