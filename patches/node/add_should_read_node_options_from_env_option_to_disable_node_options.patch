@@ -21,7 +21,7 @@ index 1cc7da1ce15f43905ce607adcc1a23ed9d92948a..16af6aec3791df1363682f1ed024c522
                           Isolate* isolate,
                           const std::vector<std::string>& args,
 diff --git a/src/env.h b/src/env.h
-index d31512ae37fba212a20cf306be46f7dfadeabd6a..8286ea06cc5c4e836921b06b37cf19d4508f4832 100644
+index e0deca497feb111622b257b952c9ed9161c7d001..ab8334bf0e3405fee4d21a4b541bd1164d92ca89 100644
 --- a/src/env.h
 +++ b/src/env.h
 @@ -1145,6 +1145,8 @@ class Environment : public MemoryRetainer {
