@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Reilly Grant <reillyg@chromium.org>
+Date: Mon, 4 Oct 2021 23:02:19 +0000
+Subject: mojo: CHECK when array has too many elements to serialize
+
+This change turns an early return into a CHECK because the surrounding
+code expects memory allocation to succeed.
+
+(cherry picked from commit 588cb74f661269a5b2b69f52619c0f7a09867d6f)
+
+Bug: 1236318
+Change-Id: Ib11e0564fb0fa653cb50c82e1973c76ec0c9c725
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3139712
+Commit-Queue: Reilly Grant <reillyg@chromium.org>
+Commit-Queue: Ken Rockot <rockot@google.com>
+Auto-Submit: Reilly Grant <reillyg@chromium.org>
+Reviewed-by: Ken Rockot <rockot@google.com>
+Cr-Original-Commit-Position: refs/heads/main@{#917908}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3203131
+Cr-Commit-Position: refs/branch-heads/4606@{#1301}
+Cr-Branched-From: 35b0d5a9dc8362adfd44e2614f0d5b7402ef63d0-refs/heads/master@{#911515}
+
+diff --git a/mojo/public/cpp/bindings/lib/message_fragment.h b/mojo/public/cpp/bindings/lib/message_fragment.h
+index 226c3644689fd10bfc47b4bd86f4d2cca58adbf1..b380da4131b538e185cc2e326bbe2f38c1810953 100644
+--- a/mojo/public/cpp/bindings/lib/message_fragment.h
++++ b/mojo/public/cpp/bindings/lib/message_fragment.h
+@@ -149,8 +149,7 @@ class MessageFragment<Array_Data<T>> {
+     static_assert(
+         std::numeric_limits<uint32_t>::max() > Traits::kMaxNumElements,
+         "Max num elements castable to 32bit");
+-    if (num_elements > Traits::kMaxNumElements)
+-      return;
++    CHECK_LE(num_elements, Traits::kMaxNumElements);
+ 
+     const uint32_t num_bytes =
+         Traits::GetStorageSize(static_cast<uint32_t>(num_elements));
