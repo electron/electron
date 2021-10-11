@@ -939,8 +939,6 @@ WebContents::~WebContents() {
   }
 
   inspectable_web_contents_->GetView()->SetDelegate(nullptr);
-  if (guest_delegate_)
-    guest_delegate_->WillDestroy();
 
   // This event is only for internal use, which is emitted when WebContents is
   // being destroyed.
@@ -1956,6 +1954,10 @@ void WebContents::WebContentsDestroyed() {
   if (!GetWrapper(isolate).ToLocal(&wrapper))
     return;
   wrapper->SetAlignedPointerInInternalField(0, nullptr);
+
+  // Tell WebViewGuestDelegate that the WebContents has been destroyed.
+  if (guest_delegate_)
+    guest_delegate_->WillDestroy();
 
   Observe(nullptr);
   Emit("destroyed");
