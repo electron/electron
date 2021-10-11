@@ -17,7 +17,7 @@ Upstreams:
 - https://github.com/nodejs/node/pull/39136
 
 diff --git a/src/crypto/crypto_common.cc b/src/crypto/crypto_common.cc
-index f4b7bd3ad8548a0b69943ddea669e6f1991b7a49..221d652fa7de246e5f69fcf392e334087bac0199 100644
+index f4b7bd3ad8548a0b69943ddea669e6f1991b7a49..dc4f6737d7709fda9bb1350a0d3ed342d83b7044 100644
 --- a/src/crypto/crypto_common.cc
 +++ b/src/crypto/crypto_common.cc
 @@ -242,7 +242,7 @@ const char* GetClientHelloALPN(const SSLPointer& ssl) {
@@ -62,7 +62,7 @@ index f4b7bd3ad8548a0b69943ddea669e6f1991b7a49..221d652fa7de246e5f69fcf392e33408
 +#ifndef OPENSSL_IS_BORINGSSL
    return SSL_CTX_set1_groups_list(**sc, groups) == 1;
 +#endif
-+  return false;
++  return SSL_CTX_set1_curves_list(**sc, groups) == 1;
  }
  
  const char* X509ErrorCode(long err) {  // NOLINT(runtime/int)
