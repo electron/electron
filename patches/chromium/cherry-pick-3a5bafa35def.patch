@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Alex Gough <ajgo@chromium.org>
+Date: Fri, 1 Oct 2021 23:30:09 +0000
+Subject: Tell clang not to devirtualize TargetServices
+
+Before this change in official builds a child process's delayed
+integrity level was not being set correctly. With this change
+renderers run at Untrusted IL as intended.
+
+(cherry picked from commit 19d2be5d47e0edc406ef7d93096f54009e47937f)
+
+Tests: https://bugs.chromium.org/p/chromium/issues/detail?id=1254631#c13
+Bug: 1254631
+Change-Id: I52c149cca3de5218033ed0f37d9f76782b9a6302
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3198382
+Reviewed-by: Will Harris <wfh@chromium.org>
+Commit-Queue: Will Harris <wfh@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#926934}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3200146
+Commit-Queue: Alex Gough <ajgo@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4606@{#1285}
+Cr-Branched-From: 35b0d5a9dc8362adfd44e2614f0d5b7402ef63d0-refs/heads/master@{#911515}
+
+diff --git a/sandbox/win/src/sandbox.h b/sandbox/win/src/sandbox.h
+index 9dfebfcc1721a2c2c34397666976e67b78812d7b..d4ab27f084aeb1b9db54eacf227250cf2364c4e2 100644
+--- a/sandbox/win/src/sandbox.h
++++ b/sandbox/win/src/sandbox.h
+@@ -140,7 +140,7 @@ class BrokerServices {
+ //   }
+ //
+ // For more information see the BrokerServices API documentation.
+-class TargetServices {
++class [[clang::lto_visibility_public]] TargetServices {
+  public:
+   // Initializes the target. Must call this function before any other.
+   // returns ALL_OK if successful. All other return values imply failure.
