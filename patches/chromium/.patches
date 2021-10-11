@@ -108,3 +108,4 @@ process_singleton.patch
 fix_expose_decrementcapturercount_in_web_contents_impl.patch
 feat_add_data_parameter_to_processsingleton.patch
 mas_gate_private_enterprise_APIs
+load_v8_snapshot_in_browser_process.patch
