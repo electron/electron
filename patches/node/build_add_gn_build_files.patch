@@ -1797,7 +1797,7 @@ index a572d9b95853730a29a67349b46d47d6180586f3..888a95f93411a9168b75751e0af12c74
  // which the Node binary being built supports.
 diff --git a/tools/generate_config_gypi.py b/tools/generate_config_gypi.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..01f62d4ae6e3b9d539444e3dff069f0011353caa
+index 0000000000000000000000000000000000000000..d8b279f590c115108d5dca879747de7b0c9f1934
 --- /dev/null
 +++ b/tools/generate_config_gypi.py
 @@ -0,0 +1,11 @@
