@@ -17,7 +17,7 @@ Upstreams:
 - https://github.com/nodejs/node/pull/39136
 
 diff --git a/src/crypto/crypto_common.cc b/src/crypto/crypto_common.cc
-index cc03fddd464b09dd3647e3f5183dc3c49affc94f..09f207debe3a3001b3c271ff3e2200516772ba7c 100644
+index cc03fddd464b09dd3647e3f5183dc3c49affc94f..9cbe78c05b1c86c0d4a4b8b1f8771862dd3002e5 100644
 --- a/src/crypto/crypto_common.cc
 +++ b/src/crypto/crypto_common.cc
 @@ -244,7 +244,7 @@ const char* GetClientHelloALPN(const SSLPointer& ssl) {
