@@ -6,7 +6,7 @@
 
 #include <memory>
 
-#include "ui/gfx/geometry/skia_conversions.cc"
+#include "ui/gfx/geometry/skia_conversions.h"
 
 namespace electron {
 
