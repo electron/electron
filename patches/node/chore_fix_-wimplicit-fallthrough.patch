@@ -17,7 +17,6 @@ index b7a9daa0d099be8ce1b594cd5128e54ab88d1f25..3872f5fd74f9ae569bf5043b33ff4b52
      "-Wno-string-plus-int",
      "-Wno-unreachable-code-return",
    ]
-
 diff --git a/deps/nghttp2/lib/nghttp2_hd.c b/deps/nghttp2/lib/nghttp2_hd.c
 index 5e8693152599215261e47b152d565bbd9a0083e7..6d54e91dea6d77ad8925ad0452fd2a0a36f35f73 100644
 --- a/deps/nghttp2/lib/nghttp2_hd.c
