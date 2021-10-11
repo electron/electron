@@ -31,7 +31,7 @@ Example Use Case:
         * Use default destination container name `(images)`
         * Also, when naming the copy, use a name that indicates what the new image will contain (if that has changed) and date stamp.
             * Ex. `libcc-20core-vs2017-15.9-2019-04-15.vhd`
-    * Go into Azure and get the URI for the newly created image as described in a previous step
+    * Go into Azure and get the URI for the newly created image as described in a previous step.
 
 5. Spin up a new VM using the [Create Master VM from VHD PowerShell](https://github.com/appveyor/ci/blob/master/scripts/enterprise/create_master_vm_from_vhd.ps1).
     * From PowerShell, execute `ps1` file with `./create_master_vm_from_vhd.ps1`
@@ -43,11 +43,11 @@ Example Use Case:
             * Subscription ID
             * Resource Group
             * Virtual Network
-    * You will also need to specify
-        * Master VM name - just a unique name to identify the temporary VM
-        * Master VM size - use `Standard_F32s_v2`
-        * Master VHD URI - use URI obtained @ end of previous step
-        * Location use `East US`
+    * You will also need to specify:
+        * Master VM name - just a unique name to identify the temporary VM.
+        * Master VM size - use `Standard_F32s_v2`.
+        * Master VHD URI - use URI obtained @ end of previous step.
+        * Location use `East US`.
 
 6. Log back into Azure and find the VM you just created in Home < Virtual Machines < `$YOUR_NEW_VM`
     * You can download a RDP (Remote Desktop) file to access the VM.
