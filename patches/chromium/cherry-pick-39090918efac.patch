@@ -18,7 +18,7 @@ Commit-Queue: Chris Fredrickson <cfredric@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#925457}
 
 diff --git a/chrome/browser/net/websocket_browsertest.cc b/chrome/browser/net/websocket_browsertest.cc
-index 0714f0d0231d677edd0f0cdf82f4129ddc43a5c2..6f2f101743fbd470bafe90d7e5d14351ee0ff708 100644
+index 8a9fe6db3b0030496d00cf57d96a90ee899babaf..de48b97b96c22eeae5fe680868c48381d9a13cc2 100644
 --- a/chrome/browser/net/websocket_browsertest.cc
 +++ b/chrome/browser/net/websocket_browsertest.cc
 @@ -21,6 +21,7 @@
@@ -113,13 +113,11 @@ index 0714f0d0231d677edd0f0cdf82f4129ddc43a5c2..6f2f101743fbd470bafe90d7e5d14351
      std::string query("url=" + url.spec());
      GURL::Replacements replacements;
      replacements.SetQueryStr(query);
--    ui_test_utils::NavigateToURL(browser(),
--                                 http_server_.GetURL("/connect_to.html")
--                                     .ReplaceComponents(replacements));
-+    ASSERT_TRUE(ui_test_utils::NavigateToURL(
+     ASSERT_TRUE(ui_test_utils::NavigateToURL(
+-        browser(), http_server_.GetURL("/connect_to.html")
 +        browser(), server()
 +                       .GetURL(host, "/connect_to.html")
-+                       .ReplaceComponents(replacements)));
+                        .ReplaceComponents(replacements)));
    }
  
 - private:
@@ -261,19 +259,19 @@ index 05c653fc5d2ab9a333efea5b4c5eee83a03bbe07..8a6d78214fe5974cbb0ec62b61f4d7fd
  </head>
  </html>
 diff --git a/net/test/spawned_test_server/base_test_server.cc b/net/test/spawned_test_server/base_test_server.cc
-index 5157cde07dc141f64509a50df848013c0b60dac5..4d947a6f7211b265a22e8e1d2445a9977572d6ac 100644
+index 71199ca12a6b805f288349b0d702b834d4e51df7..90626857ea6452a04e872d13f4474c67a905353c 100644
 --- a/net/test/spawned_test_server/base_test_server.cc
 +++ b/net/test/spawned_test_server/base_test_server.cc
-@@ -156,6 +156,8 @@ base::FilePath BaseTestServer::SSLOptions::GetCertificateFile() const {
+@@ -137,6 +137,8 @@ base::FilePath BaseTestServer::SSLOptions::GetCertificateFile() const {
+     case CERT_KEY_USAGE_RSA_DIGITAL_SIGNATURE:
+       return base::FilePath(
            FILE_PATH_LITERAL("key_usage_rsa_digitalsignature.pem"));
-     case CERT_AUTO:
-       return base::FilePath();
 +    case CERT_TEST_NAMES:
 +      return base::FilePath(FILE_PATH_LITERAL("test_names.pem"));
      default:
        NOTREACHED();
    }
-@@ -247,6 +249,14 @@ GURL BaseTestServer::GetURL(const std::string& path) const {
+@@ -228,6 +230,14 @@ GURL BaseTestServer::GetURL(const std::string& path) const {
    return GURL(GetScheme() + "://" + host_port_pair_.ToString() + "/" + path);
  }
  
@@ -289,10 +287,10 @@ index 5157cde07dc141f64509a50df848013c0b60dac5..4d947a6f7211b265a22e8e1d2445a997
                                  const std::string& user) const {
    return GURL(GetScheme() + "://" + user + "@" + host_port_pair_.ToString() +
 diff --git a/net/test/spawned_test_server/base_test_server.h b/net/test/spawned_test_server/base_test_server.h
-index a3854cb9d81bcccae33a67b3952517a8d82521e9..aab6ab6c3e9d1480c74a46a8a97d2be112685ff1 100644
+index e16c548686fd00517493a33ad390dfd2a4ead380..091c5b3ea3f910bfe188c82bc1be85f75dd7dc78 100644
 --- a/net/test/spawned_test_server/base_test_server.h
 +++ b/net/test/spawned_test_server/base_test_server.h
-@@ -81,6 +81,11 @@ class BaseTestServer {
+@@ -77,6 +77,11 @@ class BaseTestServer {
        // A certificate with invalid notBefore and notAfter times. Windows'
        // certificate library will not parse this certificate.
        CERT_BAD_VALIDITY,
@@ -303,8 +301,8 @@ index a3854cb9d81bcccae33a67b3952517a8d82521e9..aab6ab6c3e9d1480c74a46a8a97d2be1
 +      CERT_TEST_NAMES,
      };
  
-     // Bitmask of key exchange algorithms that the test server supports and that
-@@ -276,6 +281,8 @@ class BaseTestServer {
+     // NOTE: the values of these enumerators are passed to the the Python test
+@@ -206,6 +211,8 @@ class BaseTestServer {
    bool GetAddressList(AddressList* address_list) const WARN_UNUSED_RESULT;
  
    GURL GetURL(const std::string& path) const;
