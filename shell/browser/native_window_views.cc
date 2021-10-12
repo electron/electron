@@ -179,14 +179,9 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   v8::Local<v8::Value> titlebar_overlay;
   if (options.Get(options::ktitleBarOverlay, &titlebar_overlay) &&
       titlebar_overlay->IsObject()) {
-    v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
     gin_helper::Dictionary titlebar_overlay_obj =
-        gin::Dictionary::CreateEmpty(isolate);
+        gin::Dictionary::CreateEmpty(options.isolate());
     options.Get(options::ktitleBarOverlay, &titlebar_overlay_obj);
-
-    int height;
-    if (titlebar_overlay_obj.Get(options::kOverlayHeight, &height))
-      titlebar_overlay_height_ = height;
 
     std::string overlay_color_string;
     if (titlebar_overlay_obj.Get(options::kOverlayButtonColor,

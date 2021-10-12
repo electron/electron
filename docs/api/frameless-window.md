@@ -69,7 +69,7 @@ When using a frameless window in conjuction with `win.setWindowButtonVisibility(
 that the traffic lights are visible, or using `titleBarStyle: hidden` on Windows, you can access the Window Controls Overlay [JavaScript APIs][overlay-javascript-apis] and
 [CSS Environment Variables][overlay-css-env-vars] by setting the `titleBarOverlay` option to true. Specifying `true` will result in an overlay with default system colors.
 
-On Windows, you can also specify the color of the overlay and its symbols by setting `titleBarOverlay` to an object with the options `color` and `symbolColor`. If an option is not specified, the color will default to its system color for the window control buttons:
+You can specify the height of the overlay by setting `titleBarOverlay` to an object with the option `height`. On Windows, you can also specify the color of the overlay and its symbols with the options `color` and `symbolColor`. If the `height` option is not specified, the default title bar height for that system is used. And if a color option is not specified, its system color for the window control buttons is used:
 
 ```javascript
 const { BrowserWindow } = require('electron')
@@ -85,6 +85,7 @@ const { BrowserWindow } = require('electron')
 const win = new BrowserWindow({
   titleBarStyle: 'hidden',
   titleBarOverlay: {
+    height: 40,
     color: '#2f3241',
     symbolColor: '#74b1be'
   }
