@@ -297,6 +297,35 @@ app.whenReady().then(() => {
     width: 800,
     height: 600
   })
+
+  win.webContents.session.setPermissionCheckHandler((webContents, permission, requestingOrigin, details) => {
+    if (permission === 'serial') {
+      // Add logic here to determine if permission should be given to allow serial selection
+      return true
+    }
+    return false
+  })
+
+  // Optionally, retrieve previously persisted devices from a persistent store
+  const grantedDevices = fetchGrantedDevices()
+
+  win.webContents.session.setDevicePermissionHandler((details) => {
+    if (new URL(details.origin).hostname === 'some-host' && details.deviceType === 'serial') {
+      if (details.device.vendorId === 123 && details.device.productId === 345) {
+        // Always allow this type of device (this allows skipping the call to `navigator.serial.requestPort` first)
+        return true
+      }
+
+      // Search through the list of devices that have previously been granted permission
+      return grantedDevices.some((grantedDevice) => {
+        return grantedDevice.vendorId === details.device.vendorId &&
+              grantedDevice.productId === details.device.productId &&
+              grantedDevice.serialNumber && grantedDevice.serialNumber === details.device.serialNumber
+      })
+    }
+    return false
+  })
+
   win.webContents.session.on('select-serial-port', (event, portList, webContents, callback) => {
     event.preventDefault()
     const selectedPort = portList.find((device) => {
@@ -647,9 +676,9 @@ session.fromPartition('some-partition').setPermissionCheckHandler((webContents, 
 
 * `handler` Function\<Boolean> | null
   * `details` Object
-    * `deviceType` String - The type of device that permission is being requested on, can be `hid`.
+    * `deviceType` String - The type of device that permission is being requested on, can be `hid` or `serial`.
     * `origin` String - The origin URL of the device permission check.
-    * `device` [HIDDevice](structures/hid-device.md) - the device that permission is being requested for.
+    * `device` [HIDDevice](structures/hid-device.md) | [SerialPort](structures/serial-port.md)- the device that permission is being requested for.
     * `frame` [WebFrameMain](web-frame-main.md) - WebFrameMain checking the device permission.
 
 Sets the handler which can be used to respond to device permission checks for the `session`.
@@ -674,6 +703,8 @@ app.whenReady().then(() => {
     if (permission === 'hid') {
       // Add logic here to determine if permission should be given to allow HID selection
       return true
+    } else if (permission === 'serial') {
+      // Add logic here to determine if permission should be given to allow serial port selection
     }
     return false
   })
@@ -694,6 +725,11 @@ app.whenReady().then(() => {
               grantedDevice.productId === details.device.productId &&
               grantedDevice.serialNumber && grantedDevice.serialNumber === details.device.serialNumber
       })
+    } else if (details.deviceType === 'serial') {
+      if (details.device.vendorId === 123 && details.device.productId === 345) {
+        // Always allow this type of device (this allows skipping the call to `navigator.hid.requestDevice` first)
+        return true
+      }
     }
     return false
   })

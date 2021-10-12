@@ -29,19 +29,35 @@ class Value;
 
 namespace electron {
 
+extern const char kHidVendorIdKey[];
+extern const char kHidProductIdKey[];
+
+#if defined(OS_WIN)
+extern const char kDeviceInstanceIdKey[];
+#else
+extern const char kVendorIdKey[];
+extern const char kProductIdKey[];
+extern const char kSerialNumberKey[];
+#if defined(OS_MAC)
+extern const char kUsbDriverKey[];
+#endif  // defined(OS_MAC)
+#endif  // defined(OS_WIN)
+
 class SerialChooserContext : public KeyedService,
                              public device::mojom::SerialPortManagerClient {
  public:
   using PortObserver = content::SerialDelegate::Observer;
 
-  explicit SerialChooserContext(ElectronBrowserContext* browser_context);
+  SerialChooserContext();
   ~SerialChooserContext() override;
 
   // Serial-specific interface for granting and checking permissions.
   void GrantPortPermission(const url::Origin& origin,
-                           const device::mojom::SerialPortInfo& port);
+                           const device::mojom::SerialPortInfo& port,
+                           content::RenderFrameHost* render_frame_host);
   bool HasPortPermission(const url::Origin& origin,
-                         const device::mojom::SerialPortInfo& port);
+                         const device::mojom::SerialPortInfo& port,
+                         content::RenderFrameHost* render_frame_host);
   static bool CanStorePersistentEntry(
       const device::mojom::SerialPortInfo& port);
 
@@ -61,8 +77,6 @@ class SerialChooserContext : public KeyedService,
   void SetUpPortManagerConnection(
       mojo::PendingRemote<device::mojom::SerialPortManager> manager);
   void OnPortManagerConnectionError();
-
-  ElectronBrowserContext* browser_context_;
 
   // Tracks the set of ports to which an origin has access to.
   std::map<url::Origin, std::set<base::UnguessableToken>> ephemeral_ports_;
