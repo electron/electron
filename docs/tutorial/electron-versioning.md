@@ -2,43 +2,31 @@
 
 > A detailed look at our versioning policy and implementation.
 
-As of version 2.0.0, Electron follows [SemVer](#semver). The following command will install the most recent stable build of Electron:
+As of version 2.0.0, Electron follows the [SemVer](#semver) spec. The following command will install the most recent stable build of Electron:
 
-```sh
+```sh npm2yarn
 npm install --save-dev electron
 ```
 
 To update an existing project to use the latest stable version:
 
-```sh
+```sh npm2yarn
 npm install --save-dev electron@latest
 ```
 
-## Version 1.x
-
-Electron versions *< 2.0* did not conform to the [SemVer](https://semver.org) spec: major versions corresponded to end-user API changes, minor versions corresponded to Chromium major releases, and patch versions corresponded to new features and bug fixes. While convenient for developers merging features, it creates problems for developers of client-facing applications. The QA testing cycles of major apps like Slack, Stride, Teams, Skype, VS Code, Atom, and Desktop can be lengthy and stability is a highly desired outcome. There is a high risk in adopting new features while trying to absorb bug fixes.
-
-Here is an example of the 1.x strategy:
-
-![1.x Versioning](../images/versioning-sketch-0.png)
-
-An app developed with `1.8.1` cannot take the `1.8.3` bug fix without either absorbing the `1.8.2` feature, or by backporting the fix and maintaining a new release line.
-
-## Version 2.0 and Beyond
+## Versioning scheme
 
 There are several major changes from our 1.x strategy outlined below. Each change is intended to satisfy the needs and priorities of developers/maintainers and app developers.
 
-1. Strict use of SemVer
+1. Strict use of the the [SemVer](#semver) spec
 2. Introduction of semver-compliant `-beta` tags
 3. Introduction of [conventional commit messages](https://conventionalcommits.org/)
 4. Well-defined stabilization branches
-5. The `master` branch is versionless; only stabilization branches contain version information
+5. The `main` branch is versionless; only stabilization branches contain version information
 
 We will cover in detail how git branching works, how npm tagging works, what developers should expect to see, and how one can backport changes.
 
-# SemVer
-
-From 2.0 onward, Electron will follow SemVer.
+## SemVer
 
 Below is a table explicitly mapping types of changes to their corresponding category of SemVer (e.g. Major, Minor, Patch).
 
@@ -48,22 +36,25 @@ Below is a table explicitly mapping types of changes to their corresponding cate
 | Node.js major version updates   | Node.js minor version updates      | Node.js patch version updates |
 | Chromium version updates        |                                    | fix-related chromium patches  |
 
+For more information, see the [Semantic Versioning 2.0.0](https://semver.org/) spec.
+
 Note that most Chromium updates will be considered breaking. Fixes that can be backported will likely be cherry-picked as patches.
 
-# Stabilization Branches
+## Stabilization branches
 
-Stabilization branches are branches that run parallel to master, taking in only cherry-picked commits that are related to security or stability. These branches are never merged back to master.
+Stabilization branches are branches that run parallel to `main`, taking in only cherry-picked commits that are related to security or stability. These branches are never merged back to `main`.
 
 ![Stabilization Branches](../images/versioning-sketch-1.png)
 
-Since Electron 8, stabilization branches are always **major** version lines, and named against the following template `$MAJOR-x-y` e.g. `8-x-y`.  Prior to that we used **minor** version lines and named them as `$MAJOR-$MINOR-x` e.g. `2-0-x`
+Since Electron 8, stabilization branches are always **major** version lines, and named against the following template `$MAJOR-x-y` e.g. `8-x-y`.  Prior to that we used **minor** version lines and named them as `$MAJOR-$MINOR-x` e.g. `2-0-x`.
 
-We allow for multiple stabilization branches to exist simultaneously, and intend to support at least two in parallel at all times, backporting security fixes as necessary.
+We allow for multiple stabilization branches to exist simultaneously, one for each supported version. For more details on which versions are supported, see our [Electron Release Timelines](./electron-timelines.md) doc.
+
 ![Multiple Stability Branches](../images/versioning-sketch-2.png)
 
-Older lines will not be supported by GitHub, but other groups can take ownership and backport stability and security fixes on their own. We discourage this, but recognize that it makes life easier for many app developers.
+Older lines will not be supported by the Electron project, but other groups can take ownership and backport stability and security fixes on their own. We discourage this, but recognize that it makes life easier for many app developers.
 
-# Beta Releases and Bug Fixes
+## Beta releases and bug fixes
 
 Developers want to know which releases are _safe_ to use. Even seemingly innocent features can introduce regressions in complex applications. At the same time, locking to a fixed version is dangerous because you’re ignoring security patches and bug fixes that may have come out since your version. Our goal is to allow the following standard semver ranges in `package.json` :
 
@@ -116,15 +107,7 @@ A few examples of how various SemVer ranges will pick up new releases:
 
 ![Semvers and Releases](../images/versioning-sketch-7.png)
 
-# Missing Features: Alphas
-
-Our strategy has a few tradeoffs, which for now we feel are appropriate. Most importantly that new features in master may take a while before reaching a stable release line. If you want to try a new feature immediately, you will have to build Electron yourself.
-
-As a future consideration, we may introduce one or both of the following:
-
-* alpha releases that have looser stability constraints to betas; for example it would be allowable to admit new features while a stability channel is in _alpha_
-
-# Feature Flags
+## Feature flags
 
 Feature flags are a common practice in Chromium, and are well-established in the web-development ecosystem. In the context of Electron, a feature flag or **soft branch** must have the following properties:
 
@@ -132,20 +115,29 @@ Feature flags are a common practice in Chromium, and are well-established in the
 * it completely segments new and old code paths; refactoring old code to support a new feature _violates_ the feature-flag contract
 * feature flags are eventually removed after the feature is released
 
-# Semantic Commits
+## Semantic commits
 
-We seek to increase clarity at all levels of the update and releases process. Starting with `2.0.0` we will require pull requests adhere to the [Conventional Commits](https://conventionalcommits.org/) spec, which can be summarized as follows:
+All pull requests must adhere to the [Conventional Commits](https://conventionalcommits.org/) spec, which can be summarized as follows:
 
 * Commits that would result in a SemVer **major** bump must start their body with `BREAKING CHANGE:`.
 * Commits that would result in a SemVer **minor** bump must start with `feat:`.
 * Commits that would result in a SemVer **patch** bump must start with `fix:`.
 
-* We allow squashing of commits, provided that the squashed message adheres to the above message format.
-* It is acceptable for some commits in a pull request to not include a semantic prefix, as long as the pull request title contains a meaningful encompassing semantic message.
+The `electron/electron` repository also enforces squash merging, so you only need to make sure that your pull request has the correct title prefix.
 
-# Versioned `master`
+## Versioned `main` branch
 
-* The `master` branch will always contain the next major version `X.0.0-nightly.DATE` in its `package.json`
-* Release branches are never merged back to master
-* Release branches _do_ contain the correct version in their `package.json`
-* As soon as a release branch is cut for a major, master must be bumped to the next major.  I.e. `master` is always versioned as the next theoretical release branch
+* The `main` branch will always contain the next major version `X.0.0-nightly.DATE` in its `package.json`.
+* Release branches are never merged back to `main`.
+* Release branches _do_ contain the correct version in their `package.json`.
+* As soon as a release branch is cut for a major, `main` must be bumped to the next major (i.e. `main` is always versioned as the next theoretical release branch).
+
+## Historical versioning (Electron 1.X)
+
+Electron versions *< 2.0* did not conform to the [SemVer](https://semver.org) spec: major versions corresponded to end-user API changes, minor versions corresponded to Chromium major releases, and patch versions corresponded to new features and bug fixes. While convenient for developers merging features, it creates problems for developers of client-facing applications. The QA testing cycles of major apps like Slack, Teams, Skype, VS Code, and GitHub Desktop can be lengthy and stability is a highly desired outcome. There is a high risk in adopting new features while trying to absorb bug fixes.
+
+Here is an example of the 1.x strategy:
+
+![1.x Versioning](../images/versioning-sketch-0.png)
+
+An app developed with `1.8.1` cannot take the `1.8.3` bug fix without either absorbing the `1.8.2` feature, or by backporting the fix and maintaining a new release line.
