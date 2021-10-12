@@ -1,0 +1,222 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tony Herre <toprice@chromium.org>
+Date: Mon, 4 Oct 2021 10:02:51 +0000
+Subject: Add Direction indicator to TransformableFrames
+
+Currently the implementation of FrameTransformers uses distinct,
+incompatible types for recevied vs about-to-be-sent frames. This adds a
+flag in the interface so we can at least check that we are being given
+the correct type. crbug.com/1250638 tracks removing the need for this.
+
+Chrome will be updated after this to check the direction flag and provide
+a javascript error if the wrong type of frame is written into the
+encoded insertable streams writable stream, rather than crashing.
+
+(cherry picked from commit 8fb41a39e1a2d151d1c00c409630dcee80adeb76)
+
+Bug: chromium:1247260
+Change-Id: I9cbb66962ea0718ed47c5e5dba19a8ff9635b0b1
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/232301
+Reviewed-by: Harald Alvestrand <hta@webrtc.org>
+Commit-Queue: Tony Herre <toprice@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#35100}
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/233943
+Commit-Queue: Harald Alvestrand <hta@webrtc.org>
+Cr-Commit-Position: refs/branch-heads/4606@{#4}
+Cr-Branched-From: 8b18304e66524060eca390f143033ba51322b3a2-refs/heads/master@{#34737}
+
+diff --git a/api/frame_transformer_interface.h b/api/frame_transformer_interface.h
+index 2cfe6edb884b53b0b3fa87afad264aa411d112bd..d04acc098cb564c161f87c87d68511429895757c 100644
+--- a/api/frame_transformer_interface.h
++++ b/api/frame_transformer_interface.h
+@@ -35,6 +35,16 @@ class TransformableFrameInterface {
+ 
+   virtual uint32_t GetTimestamp() const = 0;
+   virtual uint32_t GetSsrc() const = 0;
++
++  enum class Direction {
++    kUnknown,
++    kReceiver,
++    kSender,
++  };
++  // TODO(crbug.com/1250638): Remove this distinction between receiver and
++  // sender frames to allow received frames to be directly re-transmitted on
++  // other PeerConnectionss.
++  virtual Direction GetDirection() const { return Direction::kUnknown; }
+ };
+ 
+ class TransformableVideoFrameInterface : public TransformableFrameInterface {
+diff --git a/audio/channel_receive_frame_transformer_delegate.cc b/audio/channel_receive_frame_transformer_delegate.cc
+index 261afbb10075c443b8627846a8434d7ef5b19a15..ec744bc61e28a8b72a6c6bb78893962cdd5f22e2 100644
+--- a/audio/channel_receive_frame_transformer_delegate.cc
++++ b/audio/channel_receive_frame_transformer_delegate.cc
+@@ -18,15 +18,16 @@
+ namespace webrtc {
+ namespace {
+ 
+-class TransformableAudioFrame : public TransformableAudioFrameInterface {
++class TransformableIncomingAudioFrame
++    : public TransformableAudioFrameInterface {
+  public:
+-  TransformableAudioFrame(rtc::ArrayView<const uint8_t> payload,
+-                          const RTPHeader& header,
+-                          uint32_t ssrc)
++  TransformableIncomingAudioFrame(rtc::ArrayView<const uint8_t> payload,
++                                  const RTPHeader& header,
++                                  uint32_t ssrc)
+       : payload_(payload.data(), payload.size()),
+         header_(header),
+         ssrc_(ssrc) {}
+-  ~TransformableAudioFrame() override = default;
++  ~TransformableIncomingAudioFrame() override = default;
+   rtc::ArrayView<const uint8_t> GetData() const override { return payload_; }
+ 
+   void SetData(rtc::ArrayView<const uint8_t> data) override {
+@@ -36,6 +37,7 @@ class TransformableAudioFrame : public TransformableAudioFrameInterface {
+   uint32_t GetTimestamp() const override { return header_.timestamp; }
+   uint32_t GetSsrc() const override { return ssrc_; }
+   const RTPHeader& GetHeader() const override { return header_; }
++  Direction GetDirection() const override { return Direction::kReceiver; }
+ 
+  private:
+   rtc::Buffer payload_;
+@@ -71,7 +73,7 @@ void ChannelReceiveFrameTransformerDelegate::Transform(
+     uint32_t ssrc) {
+   RTC_DCHECK_RUN_ON(&sequence_checker_);
+   frame_transformer_->Transform(
+-      std::make_unique<TransformableAudioFrame>(packet, header, ssrc));
++      std::make_unique<TransformableIncomingAudioFrame>(packet, header, ssrc));
+ }
+ 
+ void ChannelReceiveFrameTransformerDelegate::OnTransformedFrame(
+@@ -88,7 +90,10 @@ void ChannelReceiveFrameTransformerDelegate::ReceiveFrame(
+   RTC_DCHECK_RUN_ON(&sequence_checker_);
+   if (!receive_frame_callback_)
+     return;
+-  auto* transformed_frame = static_cast<TransformableAudioFrame*>(frame.get());
++  RTC_CHECK_EQ(frame->GetDirection(),
++               TransformableFrameInterface::Direction::kReceiver);
++  auto* transformed_frame =
++      static_cast<TransformableIncomingAudioFrame*>(frame.get());
+   receive_frame_callback_(transformed_frame->GetData(),
+                           transformed_frame->GetHeader());
+ }
+diff --git a/audio/channel_send_frame_transformer_delegate.cc b/audio/channel_send_frame_transformer_delegate.cc
+index 72a459d89783f9b7bc498aabc15cd7c7b45f3783..5597e7553e956c9dc20e311f5e16d163d9a7119e 100644
+--- a/audio/channel_send_frame_transformer_delegate.cc
++++ b/audio/channel_send_frame_transformer_delegate.cc
+@@ -15,16 +15,16 @@
+ namespace webrtc {
+ namespace {
+ 
+-class TransformableAudioFrame : public TransformableFrameInterface {
++class TransformableOutgoingAudioFrame : public TransformableFrameInterface {
+  public:
+-  TransformableAudioFrame(AudioFrameType frame_type,
+-                          uint8_t payload_type,
+-                          uint32_t rtp_timestamp,
+-                          uint32_t rtp_start_timestamp,
+-                          const uint8_t* payload_data,
+-                          size_t payload_size,
+-                          int64_t absolute_capture_timestamp_ms,
+-                          uint32_t ssrc)
++  TransformableOutgoingAudioFrame(AudioFrameType frame_type,
++                                  uint8_t payload_type,
++                                  uint32_t rtp_timestamp,
++                                  uint32_t rtp_start_timestamp,
++                                  const uint8_t* payload_data,
++                                  size_t payload_size,
++                                  int64_t absolute_capture_timestamp_ms,
++                                  uint32_t ssrc)
+       : frame_type_(frame_type),
+         payload_type_(payload_type),
+         rtp_timestamp_(rtp_timestamp),
+@@ -32,7 +32,7 @@ class TransformableAudioFrame : public TransformableFrameInterface {
+         payload_(payload_data, payload_size),
+         absolute_capture_timestamp_ms_(absolute_capture_timestamp_ms),
+         ssrc_(ssrc) {}
+-  ~TransformableAudioFrame() override = default;
++  ~TransformableOutgoingAudioFrame() override = default;
+   rtc::ArrayView<const uint8_t> GetData() const override { return payload_; }
+   void SetData(rtc::ArrayView<const uint8_t> data) override {
+     payload_.SetData(data.data(), data.size());
+@@ -48,6 +48,7 @@ class TransformableAudioFrame : public TransformableFrameInterface {
+   int64_t GetAbsoluteCaptureTimestampMs() const {
+     return absolute_capture_timestamp_ms_;
+   }
++  Direction GetDirection() const override { return Direction::kSender; }
+ 
+  private:
+   AudioFrameType frame_type_;
+@@ -90,9 +91,10 @@ void ChannelSendFrameTransformerDelegate::Transform(
+     size_t payload_size,
+     int64_t absolute_capture_timestamp_ms,
+     uint32_t ssrc) {
+-  frame_transformer_->Transform(std::make_unique<TransformableAudioFrame>(
+-      frame_type, payload_type, rtp_timestamp, rtp_start_timestamp,
+-      payload_data, payload_size, absolute_capture_timestamp_ms, ssrc));
++  frame_transformer_->Transform(
++      std::make_unique<TransformableOutgoingAudioFrame>(
++          frame_type, payload_type, rtp_timestamp, rtp_start_timestamp,
++          payload_data, payload_size, absolute_capture_timestamp_ms, ssrc));
+ }
+ 
+ void ChannelSendFrameTransformerDelegate::OnTransformedFrame(
+@@ -111,9 +113,12 @@ void ChannelSendFrameTransformerDelegate::SendFrame(
+     std::unique_ptr<TransformableFrameInterface> frame) const {
+   MutexLock lock(&send_lock_);
+   RTC_DCHECK_RUN_ON(encoder_queue_);
++  RTC_CHECK_EQ(frame->GetDirection(),
++               TransformableFrameInterface::Direction::kSender);
+   if (!send_frame_callback_)
+     return;
+-  auto* transformed_frame = static_cast<TransformableAudioFrame*>(frame.get());
++  auto* transformed_frame =
++      static_cast<TransformableOutgoingAudioFrame*>(frame.get());
+   send_frame_callback_(transformed_frame->GetFrameType(),
+                        transformed_frame->GetPayloadType(),
+                        transformed_frame->GetTimestamp() -
+diff --git a/modules/rtp_rtcp/source/rtp_sender_video_frame_transformer_delegate.cc b/modules/rtp_rtcp/source/rtp_sender_video_frame_transformer_delegate.cc
+index 074b64086a6cb2ff5014319b53305dd8385d8de6..8fe275e71984983fa248c1b9fb6e66c90a91ed3f 100644
+--- a/modules/rtp_rtcp/source/rtp_sender_video_frame_transformer_delegate.cc
++++ b/modules/rtp_rtcp/source/rtp_sender_video_frame_transformer_delegate.cc
+@@ -75,6 +75,8 @@ class TransformableVideoSenderFrame : public TransformableVideoFrameInterface {
+     return expected_retransmission_time_ms_;
+   }
+ 
++  Direction GetDirection() const override { return Direction::kSender; }
++
+  private:
+   rtc::scoped_refptr<EncodedImageBufferInterface> encoded_data_;
+   const RTPVideoHeader header_;
+@@ -143,6 +145,8 @@ void RTPSenderVideoFrameTransformerDelegate::OnTransformedFrame(
+ void RTPSenderVideoFrameTransformerDelegate::SendVideo(
+     std::unique_ptr<TransformableFrameInterface> transformed_frame) const {
+   RTC_CHECK(encoder_queue_->IsCurrent());
++  RTC_CHECK_EQ(transformed_frame->GetDirection(),
++               TransformableFrameInterface::Direction::kSender);
+   MutexLock lock(&sender_lock_);
+   if (!sender_)
+     return;
+diff --git a/video/rtp_video_stream_receiver_frame_transformer_delegate.cc b/video/rtp_video_stream_receiver_frame_transformer_delegate.cc
+index 31eb344d5b6ca9664297004aea469398ac578479..69a64ffaa9e852949663703a64429cd0cafdd838 100644
+--- a/video/rtp_video_stream_receiver_frame_transformer_delegate.cc
++++ b/video/rtp_video_stream_receiver_frame_transformer_delegate.cc
+@@ -59,6 +59,8 @@ class TransformableVideoReceiverFrame
+     return std::move(frame_);
+   }
+ 
++  Direction GetDirection() const override { return Direction::kReceiver; }
++
+  private:
+   std::unique_ptr<video_coding::RtpFrameObject> frame_;
+   const VideoFrameMetadata metadata_;
+@@ -111,6 +113,8 @@ void RtpVideoStreamReceiverFrameTransformerDelegate::OnTransformedFrame(
+ void RtpVideoStreamReceiverFrameTransformerDelegate::ManageFrame(
+     std::unique_ptr<TransformableFrameInterface> frame) {
+   RTC_DCHECK_RUN_ON(&network_sequence_checker_);
++  RTC_CHECK_EQ(frame->GetDirection(),
++               TransformableFrameInterface::Direction::kReceiver);
+   if (!receiver_)
+     return;
+   auto transformed_frame = absl::WrapUnique(
