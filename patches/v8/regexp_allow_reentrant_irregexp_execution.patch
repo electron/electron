@@ -21,10 +21,10 @@ Auto-Submit: Jakob Gruber <jgruber@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#77013}
 
 diff --git a/src/api/api.cc b/src/api/api.cc
-index 97b0804562c7cd60791901fa9a8d48ff07c1abbf..f43dfaf5ef10f83416a915952439c0e97656904d 100644
+index d09a84023ba633d3506ba0d49860da015b9104a6..882581b69ea0c46690e9971f73f76f014b3279f0 100644
 --- a/src/api/api.cc
 +++ b/src/api/api.cc
-@@ -107,7 +107,6 @@
+@@ -108,7 +108,6 @@
  #include "src/profiler/heap-snapshot-generator-inl.h"
  #include "src/profiler/profile-generator-inl.h"
  #include "src/profiler/tick-sample.h"
@@ -33,10 +33,10 @@ index 97b0804562c7cd60791901fa9a8d48ff07c1abbf..f43dfaf5ef10f83416a915952439c0e9
  #include "src/runtime/runtime.h"
  #include "src/snapshot/code-serializer.h"
 diff --git a/src/codegen/external-reference.cc b/src/codegen/external-reference.cc
-index 2c7748f223c9359079b2c35b55aeaa04810eff85..770653d50ce129452829c43ef5cee3648f2f52aa 100644
+index b58157b16357040dd11fa4a4b8dbcd9d12244e81..b9a6cb6def990c8cc6c61b64f548964fa2483a37 100644
 --- a/src/codegen/external-reference.cc
 +++ b/src/codegen/external-reference.cc
-@@ -740,6 +740,11 @@ ExternalReference ExternalReference::address_of_regexp_stack_memory_top_address(
+@@ -761,6 +761,11 @@ ExternalReference ExternalReference::address_of_regexp_stack_memory_top_address(
        isolate->regexp_stack()->memory_top_address_address());
  }
  
@@ -49,7 +49,7 @@ index 2c7748f223c9359079b2c35b55aeaa04810eff85..770653d50ce129452829c43ef5cee364
      Isolate* isolate) {
    return ExternalReference(isolate->javascript_execution_assert_address());
 diff --git a/src/codegen/external-reference.h b/src/codegen/external-reference.h
-index cbc3463841332fbd3a9d40f5a1b3d3d1c3d382f7..86deb275f8b179eef7784cb30139b3c9735b7db7 100644
+index ca62ff9d7a32b6782e86b1b2bf24dddf69a0be6d..9f112240d215e3288a3dfb4051ae69d36dd340c1 100644
 --- a/src/codegen/external-reference.h
 +++ b/src/codegen/external-reference.h
 @@ -72,6 +72,8 @@ class StatsCounter;
@@ -62,7 +62,7 @@ index cbc3463841332fbd3a9d40f5a1b3d3d1c3d382f7..86deb275f8b179eef7784cb30139b3c9
    V(thread_in_wasm_flag_address_address,                                       \
      "Isolate::thread_in_wasm_flag_address_address")                            \
 diff --git a/src/debug/debug-interface.cc b/src/debug/debug-interface.cc
-index 9c25064572112b649c108a89df3c83b29ac603a0..229e4ca8d8770a698dfb21606b29ac7ac0018dc2 100644
+index add2b3dbb4dc2e71a6dec717c29d957809797abf..e6ae32f9d2c11152c5184775f26e48a6870091ab 100644
 --- a/src/debug/debug-interface.cc
 +++ b/src/debug/debug-interface.cc
 @@ -17,7 +17,6 @@
@@ -86,10 +86,10 @@ index 9c25064572112b649c108a89df3c83b29ac603a0..229e4ca8d8770a698dfb21606b29ac7a
  
  Isolate* Script::GetIsolate() const {
 diff --git a/src/execution/isolate.cc b/src/execution/isolate.cc
-index eaf3096ac6bb05d61d93012d5b7abec503a3259e..051e58263cb66b1ad2dc1b59143d5826e0dfe376 100644
+index 474ea612bda4bf44776b919fd20e86e85ba3e3ce..ffcf10e4d282b85f1a22fa656113709f09ef34f2 100644
 --- a/src/execution/isolate.cc
 +++ b/src/execution/isolate.cc
-@@ -3591,7 +3591,6 @@ bool Isolate::Init(SnapshotData* startup_snapshot_data,
+@@ -3596,7 +3596,6 @@ bool Isolate::Init(SnapshotData* startup_snapshot_data,
    store_stub_cache_ = new StubCache(this);
    materialized_object_store_ = new MaterializedObjectStore(this);
    regexp_stack_ = new RegExpStack();
@@ -1721,7 +1721,7 @@ index c3a3cb90f2a9d865057af80801e2a95bbb873140..74a3c95b06c771078ab03e6787e59123
    // Labels used internally.
    Label entry_label_;
 diff --git a/test/cctest/cctest.status b/test/cctest/cctest.status
-index 9c28520ed56998173c105b9d8a2ca3c4489b916e..e092d3b74c79d5dfc2bbf056881164c16ebb7cda 100644
+index e87644e89b7d87fb95917a58fef5f019d3ce7fc9..597ee4248bdd9e2dbb1ce05b322cd253dd403603 100644
 --- a/test/cctest/cctest.status
 +++ b/test/cctest/cctest.status
 @@ -136,9 +136,6 @@
