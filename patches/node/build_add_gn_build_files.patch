@@ -1780,7 +1780,7 @@ index 0000000000000000000000000000000000000000..d1d6b51e8c0c5bc6a5d09e217eb30483
 +  args = rebase_path(inputs + outputs, root_build_dir)
 +}
 diff --git a/src/node_version.h b/src/node_version.h
-index 974af72379d2b1e3757ccbaba45a10401c60f0d1..831be24cfae249be627fc7d597dcadf66289103d 100644
+index 119a341d8dc5bc11c3f0db69d489ae60f4a33923..938ca353d332b3ca599b19cdc763c93a98eb8854 100644
 --- a/src/node_version.h
 +++ b/src/node_version.h
 @@ -89,7 +89,10 @@
