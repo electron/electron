@@ -78,11 +78,7 @@ void WebFrameMain::MarkRenderFrameDisposed() {
 
 void WebFrameMain::UpdateRenderFrameHost(content::RenderFrameHost* rfh) {
   // Should only be called when swapping frames.
-  if (!render_frame_disposed_) {
-    DCHECK(render_frame_);
-  } else {
-    render_frame_disposed_ = false;
-  }
+  render_frame_disposed_ = false;
   render_frame_ = rfh;
   renderer_api_.reset();
 }
@@ -140,7 +136,7 @@ v8::Local<v8::Promise> WebFrameMain::ExecuteJavaScript(
 }
 
 bool WebFrameMain::Reload() {
-  if (render_frame_disposed_)
+  if (!CheckRenderFrame())
     return false;
   return render_frame_->Reload();
 }
@@ -156,7 +152,7 @@ void WebFrameMain::Send(v8::Isolate* isolate,
     return;
   }
 
-  if (render_frame_disposed_)
+  if (!CheckRenderFrame())
     return;
 
   GetRendererApi()->Message(internal, channel, std::move(message),
