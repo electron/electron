@@ -7,7 +7,11 @@ WebFrameMain.prototype.send = function (channel, ...args) {
     throw new Error('Missing required channel argument');
   }
 
-  return this._send(false /* internal */, channel, args);
+  try {
+    return this._send(false /* internal */, channel, args);
+  } catch (e) {
+    console.error('Error sending from webFrameMain: ', e);
+  }
 };
 
 WebFrameMain.prototype._sendInternal = function (channel, ...args) {
@@ -15,7 +19,11 @@ WebFrameMain.prototype._sendInternal = function (channel, ...args) {
     throw new Error('Missing required channel argument');
   }
 
-  return this._send(true /* internal */, channel, args);
+  try {
+    return this._send(true /* internal */, channel, args);
+  } catch (e) {
+    console.error('Error sending from webFrameMain: ', e);
+  }
 };
 
 WebFrameMain.prototype.postMessage = function (...args) {
