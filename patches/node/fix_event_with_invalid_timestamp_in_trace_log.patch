@@ -10,19 +10,21 @@ trace log. With this change we log v8's start time only when
 it was initialized by node.
 
 diff --git a/src/env.cc b/src/env.cc
-index 16af6aec3791df1363682f1ed024c52208b9a8f6..ada0faa93bc223ffbea79a4308796df73ea8ae4e 100644
+index 7155ae67ac625b0d1503dbb8e5cd0a61a90dce24..28fbe05c6f9e41cb2a43fb3a99fd801a31fbdf23 100644
 --- a/src/env.cc
 +++ b/src/env.cc
-@@ -461,8 +461,10 @@ void Environment::InitializeMainContext(Local<Context> context,
-                            environment_start_time_);
+@@ -377,9 +377,11 @@ Environment::Environment(IsolateData* isolate_data,
+       performance::NODE_PERFORMANCE_MILESTONE_ENVIRONMENT);
    performance_state_->Mark(performance::NODE_PERFORMANCE_MILESTONE_NODE_START,
                             per_process::node_start_time);
--  performance_state_->Mark(performance::NODE_PERFORMANCE_MILESTONE_V8_START,
--                           performance::performance_v8_start);
+-  performance_state_->Mark(
+-      performance::NODE_PERFORMANCE_MILESTONE_V8_START,
+-      performance::performance_v8_start);
 +  if (per_process::v8_initialized) {
-+    performance_state_->Mark(performance::NODE_PERFORMANCE_MILESTONE_V8_START,
-+                             performance::performance_v8_start);
++    performance_state_->Mark(
++        performance::NODE_PERFORMANCE_MILESTONE_V8_START,
++        performance::performance_v8_start);
 +  }
- }
  
- Environment::~Environment() {
+   if (*TRACE_EVENT_API_GET_CATEGORY_GROUP_ENABLED(
+           TRACING_CATEGORY_NODE1(environment)) != 0) {
