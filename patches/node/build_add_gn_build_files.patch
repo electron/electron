@@ -7,10 +7,10 @@ This adds GN build files for Node, so we don't have to build with GYP.
 
 diff --git a/BUILD.gn b/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..52fb22305bb67c75c9a1cf4bc39cd901420cf7a9
+index 0000000000000000000000000000000000000000..d0641c5cbc3c527ce7a73d12118fb42db325be01
 --- /dev/null
 +++ b/BUILD.gn
-@@ -0,0 +1,401 @@
+@@ -0,0 +1,393 @@
 +import("//electron/build/asar.gni")
 +import("//v8/gni/v8.gni")
 +
@@ -75,20 +75,12 @@ index 0000000000000000000000000000000000000000..52fb22305bb67c75c9a1cf4bc39cd901
 +  ]
 +}
 +
-+action("generate_config_gypi") {
-+  outputs = [
-+    "$target_gen_dir/config.gypi",
-+  ]
-+  script = "tools/generate_config_gypi.py"
-+  args = rebase_path(outputs, root_build_dir)
-+}
-+
 +chdir_action("node_js2c") {
 +  deps = [
-+    ":generate_config_gypi",
++    "//electron:generate_config_gypi",
 +    ":node_js2c_inputs",
 +  ]
-+  config_gypi = [ "$target_gen_dir/config.gypi" ]
++  config_gypi = [ "$root_gen_dir/config.gypi" ]
 +  inputs = library_files + config_gypi
 +  outputs = [
 +    "$target_gen_dir/node_javascript.cc",
@@ -360,10 +352,10 @@ index 0000000000000000000000000000000000000000..52fb22305bb67c75c9a1cf4bc39cd901
 +
 +copy("node_gypi_headers") {
 +  deps = [
-+    ":generate_config_gypi",
++    "//electron:generate_config_gypi",
 +  ]
 +  sources = [
-+    "$target_gen_dir/config.gypi",
++    "$root_gen_dir/config.gypi",
 +    "common.gypi",
 +  ]
 +  outputs = [
@@ -1794,34 +1786,6 @@ index 119a341d8dc5bc11c3f0db69d489ae60f4a33923..938ca353d332b3ca599b19cdc763c93a
  
  // The NAPI_VERSION provided by this version of the runtime. This is the version
  // which the Node binary being built supports.
-diff --git a/tools/generate_config_gypi.py b/tools/generate_config_gypi.py
-new file mode 100755
-index 0000000000000000000000000000000000000000..c12dcb2b844f7f415318d81115ff697fd8eb4689
---- /dev/null
-+++ b/tools/generate_config_gypi.py
-@@ -0,0 +1,22 @@
-+import sys
-+import json
-+
-+def main(args):
-+  out = args[0]
-+  output = {
-+    'variables': {
-+      'built_with_electron': 1,
-+      'v8_enable_i18n_support': 1,
-+    },
-+    'include_dirs': [],
-+    'libraries': [],
-+    'defines': [],
-+    'cflags': [],
-+  }
-+
-+  with open(out, 'w') as f:
-+    f.write(json.dumps(output))
-+    f.write("\n")
-+
-+if __name__ == '__main__':
-+  main(sys.argv[1:])
 diff --git a/tools/generate_gn_filenames_json.py b/tools/generate_gn_filenames_json.py
 new file mode 100755
 index 0000000000000000000000000000000000000000..8f884a41f57630ac432eb85ebfc9b8bc82cddaca
