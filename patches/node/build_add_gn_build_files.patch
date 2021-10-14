@@ -669,10 +669,10 @@ index 0000000000000000000000000000000000000000..fb000f8ee7647c375bc190d1729d67bb
 +}
 diff --git a/deps/nghttp2/BUILD.gn b/deps/nghttp2/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..e90a1416f5b0106e5886564061d48f32b730b1c2
+index 0000000000000000000000000000000000000000..b7a9daa0d099be8ce1b594cd5128e54ab88d1f25
 --- /dev/null
 +++ b/deps/nghttp2/BUILD.gn
-@@ -0,0 +1,49 @@
+@@ -0,0 +1,48 @@
 +config("nghttp2_config") {
 +  defines = [ "NGHTTP2_STATICLIB" ]
 +  include_dirs = [ "lib/includes" ]
@@ -706,7 +706,6 @@ index 0000000000000000000000000000000000000000..e90a1416f5b0106e5886564061d48f32
 +    "lib/nghttp2_hd_huffman_data.c",
 +    "lib/nghttp2_helper.c",
 +    "lib/nghttp2_http.c",
-+    "lib/nghttp2_ksl.c",
 +    "lib/nghttp2_map.c",
 +    "lib/nghttp2_mem.c",
 +    "lib/nghttp2_npn.c",
@@ -1781,7 +1780,7 @@ index 0000000000000000000000000000000000000000..d1d6b51e8c0c5bc6a5d09e217eb30483
 +  args = rebase_path(inputs + outputs, root_build_dir)
 +}
 diff --git a/src/node_version.h b/src/node_version.h
-index a572d9b95853730a29a67349b46d47d6180586f3..888a95f93411a9168b75751e0af12c74fc5f0ba9 100644
+index 119a341d8dc5bc11c3f0db69d489ae60f4a33923..938ca353d332b3ca599b19cdc763c93a98eb8854 100644
 --- a/src/node_version.h
 +++ b/src/node_version.h
 @@ -89,7 +89,10 @@

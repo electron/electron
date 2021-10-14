@@ -330,7 +330,7 @@ describe('node feature', () => {
 
       expect(() => {
         crypto.createPrivateKey({ key: ed448, format: 'jwk' });
-      }).to.throw(/Failed to create key - unsupported algorithm/);
+      }).to.throw(/Invalid JWK data/);
     });
   });
 

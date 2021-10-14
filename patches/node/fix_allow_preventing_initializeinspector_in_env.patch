@@ -36,10 +36,10 @@ index 523d252e08974a10f9a53fb46d3345669cec3380..5bf19a0dda42849159d954181058897c
  #endif
  
 diff --git a/src/env-inl.h b/src/env-inl.h
-index 2b000ed9ace5f73bfe0e8cab3e83ce94804f9c55..a1690712c457534d70db777cb722537913f86a0e 100644
+index 1e85bc07a4cc29f3b380da3c0e217a85309eb3a5..845e00208af4b12960ed8b3f3926323af7685185 100644
 --- a/src/env-inl.h
 +++ b/src/env-inl.h
-@@ -891,6 +891,10 @@ inline bool Environment::no_global_search_paths() const {
+@@ -892,6 +892,10 @@ inline bool Environment::no_global_search_paths() const {
           !options_->global_search_paths;
  }
  
@@ -51,7 +51,7 @@ index 2b000ed9ace5f73bfe0e8cab3e83ce94804f9c55..a1690712c457534d70db777cb7225379
    return emit_filehandle_warning_;
  }
 diff --git a/src/env.h b/src/env.h
-index f055e6b45013d9f8c039c662981bfd54f08266f6..d31512ae37fba212a20cf306be46f7dfadeabd6a 100644
+index 0c3715151488f425a723618252e1277b78fafe5f..e0deca497feb111622b257b952c9ed9161c7d001 100644
 --- a/src/env.h
 +++ b/src/env.h
 @@ -1204,6 +1204,7 @@ class Environment : public MemoryRetainer {
