@@ -10,7 +10,7 @@ new file mode 100644
 index 0000000000000000000000000000000000000000..446119163d1f7bad577cb0b7b217ecf24b994526
 --- /dev/null
 +++ b/BUILD.gn
-@@ -0,0 +1,360 @@
+@@ -0,0 +1,352 @@
 +import("//electron/build/asar.gni")
 +import("//v8/gni/v8.gni")
 +
@@ -75,20 +75,12 @@ index 0000000000000000000000000000000000000000..446119163d1f7bad577cb0b7b217ecf2
 +  ]
 +}
 +
-+action("generate_config_gypi") {
-+  outputs = [
-+    "$target_gen_dir/config.gypi",
-+  ]
-+  script = "tools/generate_config_gypi.py"
-+  args = rebase_path(outputs, root_build_dir)
-+}
-+
 +chdir_action("node_js2c") {
 +  deps = [
-+    ":generate_config_gypi",
++    "//electron:generate_config_gypi",
 +    ":node_js2c_inputs",
 +  ]
-+  config_gypi = [ "$target_gen_dir/config.gypi" ]
++  config_gypi = [ "$root_gen_dir/config.gypi" ]
 +  inputs = library_files + config_gypi
 +  outputs = [
 +    "$target_gen_dir/node_javascript.cc",
@@ -319,10 +311,10 @@ index 0000000000000000000000000000000000000000..446119163d1f7bad577cb0b7b217ecf2
 +
 +copy("node_gypi_headers") {
 +  deps = [
-+    ":generate_config_gypi",
++    "//electron:generate_config_gypi",
 +  ]
 +  sources = [
-+    "$target_gen_dir/config.gypi",
++    "$root_gen_dir/config.gypi",
 +    "common.gypi",
 +  ]
 +  outputs = [
@@ -1647,23 +1639,6 @@ index 0f72abc0bf0302e1f535f71803f5aa063424f8b9..c6a76e408312d8fcfc48490827273319
  
  // The NAPI_VERSION provided by this version of the runtime. This is the version
  // which the Node binary being built supports.
-diff --git a/tools/generate_config_gypi.py b/tools/generate_config_gypi.py
-new file mode 100644
-index 0000000000000000000000000000000000000000..01f62d4ae6e3b9d539444e3dff069f0011353caa
---- /dev/null
-+++ b/tools/generate_config_gypi.py
-@@ -0,0 +1,11 @@
-+# TODO: assess which if any of the config variables are important to include in
-+# the js2c'd config.gypi.
-+import sys
-+
-+def main(args):
-+  out = args[0]
-+  with open(out, 'w') as f:
-+    f.write("{'variables':{}}\n")
-+
-+if __name__ == '__main__':
-+  main(sys.argv[1:])
 diff --git a/tools/generate_gn_filenames_json.py b/tools/generate_gn_filenames_json.py
 new file mode 100755
 index 0000000000000000000000000000000000000000..e5fd79da5323e7039730fd8cca66caae8c84e903
