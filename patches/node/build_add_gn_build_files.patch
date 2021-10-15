@@ -7,10 +7,10 @@ This adds GN build files for Node, so we don't have to build with GYP.
 
 diff --git a/BUILD.gn b/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..bd26c3623d3314539609a978270d3ced1d167777
+index 0000000000000000000000000000000000000000..1cbc0b10057bf6244caef4d1f8ea606b7d9479cb
 --- /dev/null
 +++ b/BUILD.gn
-@@ -0,0 +1,400 @@
+@@ -0,0 +1,392 @@
 +import("//electron/build/asar.gni")
 +import("//v8/gni/v8.gni")
 +
@@ -75,20 +75,12 @@ index 0000000000000000000000000000000000000000..bd26c3623d3314539609a978270d3ced
 +  ]
 +}
 +
-+action("generate_config_gypi") {
-+  outputs = [
-+    "$target_gen_dir/config.gypi",
-+  ]
-+  script = "tools/generate_config_gypi.py"
-+  args = rebase_path(outputs, root_build_dir)
-+}
-+
 +chdir_action("node_js2c") {
 +  deps = [
-+    ":generate_config_gypi",
++    "//electron:generate_config_gypi",
 +    ":node_js2c_inputs",
 +  ]
-+  config_gypi = [ "$target_gen_dir/config.gypi" ]
++  config_gypi = [ "$root_gen_dir/config.gypi" ]
 +  inputs = library_files + config_gypi
 +  outputs = [
 +    "$target_gen_dir/node_javascript.cc",
@@ -359,10 +351,10 @@ index 0000000000000000000000000000000000000000..bd26c3623d3314539609a978270d3ced
 +
 +copy("node_gypi_headers") {
 +  deps = [
-+    ":generate_config_gypi",
++    "//electron:generate_config_gypi",
 +  ]
 +  sources = [
-+    "$target_gen_dir/config.gypi",
++    "$root_gen_dir/config.gypi",
 +    "common.gypi",
 +  ]
 +  outputs = [
@@ -1660,23 +1652,6 @@ index 0523885212d429ee5c4142137524cb127d8adc97..116815364055a01f0c0619f0f22e9a38
  
  // The NAPI_VERSION provided by this version of the runtime. This is the version
  // which the Node binary being built supports.
-diff --git a/tools/generate_config_gypi.py b/tools/generate_config_gypi.py
-new file mode 100644
-index 0000000000000000000000000000000000000000..01f62d4ae6e3b9d539444e3dff069f0011353caa
---- /dev/null
-+++ b/tools/generate_config_gypi.py
-@@ -0,0 +1,11 @@
-+# TODO: assess which if any of the config variables are important to include in
-+# the js2c'd config.gypi.
-+import sys
-+
-+def main(args):
-+  out = args[0]
-+  with open(out, 'w') as f:
-+    f.write("{'variables':{}}\n")
-+
-+if __name__ == '__main__':
-+  main(sys.argv[1:])
 diff --git a/tools/generate_gn_filenames_json.py b/tools/generate_gn_filenames_json.py
 new file mode 100755
 index 0000000000000000000000000000000000000000..ece315d915f0a7b2c8e823caccba7ffec8420fdf
