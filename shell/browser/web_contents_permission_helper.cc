@@ -190,6 +190,24 @@ bool WebContentsPermissionHelper::CheckSerialAccessPermission(
       static_cast<content::PermissionType>(PermissionType::SERIAL), &details);
 }
 
+bool WebContentsPermissionHelper::CheckSerialPortPermission(
+    const url::Origin& origin,
+    base::Value device,
+    content::RenderFrameHost* render_frame_host) const {
+  return CheckDevicePermission(
+      static_cast<content::PermissionType>(PermissionType::SERIAL), origin,
+      &device, render_frame_host);
+}
+
+void WebContentsPermissionHelper::GrantSerialPortPermission(
+    const url::Origin& origin,
+    base::Value device,
+    content::RenderFrameHost* render_frame_host) const {
+  return GrantDevicePermission(
+      static_cast<content::PermissionType>(PermissionType::SERIAL), origin,
+      &device, render_frame_host);
+}
+
 bool WebContentsPermissionHelper::CheckHIDAccessPermission(
     const url::Origin& embedding_origin) const {
   base::DictionaryValue details;
