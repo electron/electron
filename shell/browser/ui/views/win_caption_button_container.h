@@ -35,6 +35,9 @@ class WinCaptionButtonContainer : public views::View,
   // See also ClientView::NonClientHitTest.
   int NonClientHitTest(const gfx::Point& point) const;
 
+  gfx::Size GetButtonSize() const;
+  void SetButtonSize(gfx::Size size);
+
  private:
   // views::View:
   void AddedToWidget() override;

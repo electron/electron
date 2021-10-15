@@ -96,6 +96,18 @@ int WinCaptionButtonContainer::NonClientHitTest(const gfx::Point& point) const {
   return HTCAPTION;
 }
 
+gfx::Size WinCaptionButtonContainer::GetButtonSize() const {
+  // Close button size is set the same as all the buttons
+  return close_button_->GetSize();
+}
+
+void WinCaptionButtonContainer::SetButtonSize(gfx::Size size) {
+  minimize_button_->SetSize(size);
+  maximize_button_->SetSize(size);
+  restore_button_->SetSize(size);
+  close_button_->SetSize(size);
+}
+
 void WinCaptionButtonContainer::ResetWindowControls() {
   minimize_button_->SetState(views::Button::STATE_NORMAL);
   maximize_button_->SetState(views::Button::STATE_NORMAL);

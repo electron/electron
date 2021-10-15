@@ -8,7 +8,6 @@
 
 #include "base/i18n/rtl.h"
 #include "base/numerics/safe_conversions.h"
-#include "chrome/browser/ui/frame/window_frame_util.h"
 #include "chrome/grit/theme_resources.h"
 #include "shell/browser/ui/views/win_frame_view.h"
 #include "shell/common/color_util.h"
@@ -37,13 +36,8 @@ WinCaptionButton::WinCaptionButton(PressedCallback callback,
 gfx::Size WinCaptionButton::CalculatePreferredSize() const {
   // TODO(bsep): The sizes in this function are for 1x device scale and don't
   // match Windows button sizes at hidpi.
-  int height = WindowFrameUtil::kWindows10GlassCaptionButtonHeightRestored;
-  int custom_height = frame_view_->window()->titlebar_overlay_height();
-  if (custom_height > 0)
-    height = custom_height;
 
-  int base_width = WindowFrameUtil::kWindows10GlassCaptionButtonWidth;
-  return gfx::Size(base_width + GetBetweenButtonSpacing(), height);
+  return gfx::Size(base_width_ + GetBetweenButtonSpacing(), height_);
 }
 
 void WinCaptionButton::OnPaintBackground(gfx::Canvas* canvas) {
@@ -90,6 +84,20 @@ void WinCaptionButton::OnPaintBackground(gfx::Canvas* canvas) {
 
 void WinCaptionButton::PaintButtonContents(gfx::Canvas* canvas) {
   PaintSymbol(canvas);
+}
+
+gfx::Size WinCaptionButton::GetSize() const {
+  return gfx::Size(base_width_, height_);
+}
+
+void WinCaptionButton::SetSize(gfx::Size size) {
+  int width = size.width();
+  int height = size.height();
+
+  if (width > 0)
+    base_width_ = width;
+  if (height > 0)
+    height_ = height;
 }
 
 int WinCaptionButton::GetBetweenButtonSpacing() const {
