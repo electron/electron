@@ -1485,8 +1485,8 @@ win.loadURL('http://github.com')
 
 win.webContents.on('did-finish-load', () => {
   // Use default printing options
+  const pdfPath = path.join(os.homedir(), 'Desktop', 'temp.pdf')
   win.webContents.printToPDF({}).then(data => {
-    const pdfPath = path.join(os.homedir(), 'Desktop', 'temp.pdf')
     fs.writeFile(pdfPath, data, (error) => {
       if (error) throw error
       console.log(`Wrote PDF successfully to ${pdfPath}`)
