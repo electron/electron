@@ -48,10 +48,10 @@ index 71a07a63a3636ab211746004ebab24a0058b08fc..e3ce67987ee3185a93750ebad72beab3
        if (currentCounter === lastCounter)
          return cachedCwd;
 diff --git a/lib/internal/worker.js b/lib/internal/worker.js
-index d59399bfefed10f85e0adac7ef9fefc0cb1ae67c..ad70afa311d0a0418d788920b42259f94c283006 100644
+index 1d2cd8cefd2996c6a4f84ea08e6b4c53a22dc418..28b1a9a53b13036297a2ed3271c36cbe14c51a32 100644
 --- a/lib/internal/worker.js
 +++ b/lib/internal/worker.js
-@@ -91,7 +91,8 @@ let cwdCounter;
+@@ -90,7 +90,8 @@ let cwdCounter;
  
  const environmentData = new SafeMap();
  

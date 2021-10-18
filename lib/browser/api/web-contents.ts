@@ -593,6 +593,9 @@ WebContents.prototype._init = function () {
       ipcMainInternal.emit(channel, event, ...args);
     } else {
       addReplyToEvent(event);
+      if (this.listenerCount('ipc-message-sync') === 0 && ipcMain.listenerCount(channel) === 0) {
+        console.warn(`WebContents #${this.id} called ipcRenderer.sendSync() with '${channel}' channel without listeners.`);
+      }
       this.emit('ipc-message-sync', event, channel, ...args);
       ipcMain.emit(channel, event, ...args);
     }
@@ -666,9 +669,9 @@ WebContents.prototype._init = function () {
         postBody
       };
       windowOpenOverriddenOptions = this._callWindowOpenHandler(event, details);
-      // if attempting to use this API with the deprecated window.open event,
+      // if attempting to use this API with the deprecated new-window event,
       // windowOpenOverriddenOptions will always return null. This ensures
-      // short-term backwards compatibility until window.open is removed.
+      // short-term backwards compatibility until new-window is removed.
       const parsedFeatures = parseFeatures(rawFeatures);
       const overriddenFeatures: BrowserWindowConstructorOptions = {
         ...parsedFeatures.options,

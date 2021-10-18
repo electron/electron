@@ -651,6 +651,7 @@ Returns:
 * `params` Object
   * `x` Integer - x coordinate.
   * `y` Integer - y coordinate.
+  * `frame` WebFrameMain - Frame from which the context menu was invoked.
   * `linkURL` String - URL of the link that encloses the node the context menu
     was invoked on.
   * `linkText` String - Text associated with the link. May be an empty
@@ -854,15 +855,6 @@ Returns:
 * `...args` any[]
 
 Emitted when the renderer process sends a synchronous message via `ipcRenderer.sendSync()`.
-
-#### Event: 'desktop-capturer-get-sources'
-
-Returns:
-
-* `event` Event
-
-Emitted when `desktopCapturer.getSources()` is called in the renderer process.
-Calling `event.preventDefault()` will make it return empty sources.
 
 #### Event: 'preferred-size-changed'
 
@@ -1826,7 +1818,8 @@ End subscribing for frame presentation events.
 #### `contents.startDrag(item)`
 
 * `item` Object
-  * `file` String[] | String - The path(s) to the file(s) being dragged.
+  * `file` String - The path to the file being dragged.
+  * `files` String[] (optional) - The paths to the files being dragged. (`files` will override `file` field)
   * `icon` [NativeImage](native-image.md) | String - The image must be
     non-empty on macOS.
 

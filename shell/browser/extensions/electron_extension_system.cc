@@ -15,6 +15,7 @@
 #include "base/path_service.h"
 #include "base/task/post_task.h"
 #include "chrome/common/chrome_paths.h"
+#include "components/value_store/value_store_factory_impl.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
@@ -33,7 +34,6 @@
 #include "extensions/browser/runtime_data.h"
 #include "extensions/browser/service_worker_manager.h"
 #include "extensions/browser/user_script_manager.h"
-#include "extensions/browser/value_store/value_store_factory_impl.h"
 #include "extensions/common/constants.h"
 #include "extensions/common/file_util.h"
 #include "shell/browser/extensions/electron_extension_loader.h"
@@ -63,7 +63,7 @@ std::string GetCryptoTokenManifest() {
 ElectronExtensionSystem::ElectronExtensionSystem(
     BrowserContext* browser_context)
     : browser_context_(browser_context),
-      store_factory_(base::MakeRefCounted<ValueStoreFactoryImpl>(
+      store_factory_(base::MakeRefCounted<value_store::ValueStoreFactoryImpl>(
           browser_context->GetPath())) {}
 
 ElectronExtensionSystem::~ElectronExtensionSystem() = default;
@@ -185,7 +185,8 @@ StateStore* ElectronExtensionSystem::rules_store() {
   return nullptr;
 }
 
-scoped_refptr<ValueStoreFactory> ElectronExtensionSystem::store_factory() {
+scoped_refptr<value_store::ValueStoreFactory>
+ElectronExtensionSystem::store_factory() {
   return store_factory_;
 }
 

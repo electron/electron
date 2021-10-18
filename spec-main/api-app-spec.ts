@@ -12,8 +12,6 @@ import { closeWindow, closeAllWindows } from './window-helpers';
 import { ifdescribe, ifit } from './spec-helpers';
 import split = require('split')
 
-const features = process._linkedBinding('electron_common_features');
-
 const fixturesPath = path.resolve(__dirname, '../spec/fixtures');
 
 describe('electron module', () => {
@@ -209,7 +207,7 @@ describe('app module', () => {
   describe('app.requestSingleInstanceLock', () => {
     it('prevents the second launch of app', async function () {
       this.timeout(120000);
-      const appPath = path.join(fixturesPath, 'api', 'singleton');
+      const appPath = path.join(fixturesPath, 'api', 'singleton-data');
       const first = cp.spawn(process.execPath, [appPath]);
       await emittedOnce(first.stdout, 'data');
       // Start second app when received output.
@@ -220,8 +218,8 @@ describe('app module', () => {
       expect(code1).to.equal(0);
     });
 
-    it('passes arguments to the second-instance event', async () => {
-      const appPath = path.join(fixturesPath, 'api', 'singleton');
+    async function testArgumentPassing (fixtureName: string, expectedSecondInstanceData: unknown) {
+      const appPath = path.join(fixturesPath, 'api', fixtureName);
       const first = cp.spawn(process.execPath, [appPath]);
       const firstExited = emittedOnce(first, 'exit');
 
@@ -238,14 +236,34 @@ describe('app module', () => {
       expect(code2).to.equal(1);
       const [code1] = await firstExited;
       expect(code1).to.equal(0);
-      const data2 = (await data2Promise)[0].toString('ascii');
-      const secondInstanceArgsReceived: string[] = JSON.parse(data2.toString('ascii'));
+      const received = await data2Promise;
+      const [args, additionalData] = received[0].toString('ascii').split('||');
+      const secondInstanceArgsReceived: string[] = JSON.parse(args.toString('ascii'));
+      const secondInstanceDataReceived = JSON.parse(additionalData.toString('ascii'));
 
       // Ensure secondInstanceArgs is a subset of secondInstanceArgsReceived
       for (const arg of secondInstanceArgs) {
         expect(secondInstanceArgsReceived).to.include(arg,
           `argument ${arg} is missing from received second args`);
       }
+      expect(secondInstanceDataReceived).to.be.deep.equal(expectedSecondInstanceData,
+        `received data ${JSON.stringify(secondInstanceDataReceived)} is not equal to expected data ${JSON.stringify(expectedSecondInstanceData)}.`);
+    }
+
+    it('passes arguments to the second-instance event', async () => {
+      const expectedSecondInstanceData = {
+        level: 1,
+        testkey: 'testvalue1',
+        inner: {
+          level: 2,
+          testkey: 'testvalue2'
+        }
+      };
+      await testArgumentPassing('singleton-data', expectedSecondInstanceData);
+    });
+
+    it('passes arguments to the second-instance event no additional data', async () => {
+      await testArgumentPassing('singleton', null);
     });
   });
 
@@ -461,25 +479,6 @@ describe('app module', () => {
       const [, webContents, details] = await emitted;
       expect(webContents).to.equal(w.webContents);
       expect(details.reason).to.be.oneOf(['crashed', 'abnormal-exit']);
-    });
-
-    ifdescribe(features.isDesktopCapturerEnabled())('desktopCapturer module filtering', () => {
-      it('should emit desktop-capturer-get-sources event when desktopCapturer.getSources() is invoked', async () => {
-        w = new BrowserWindow({
-          show: false,
-          webPreferences: {
-            nodeIntegration: true,
-            contextIsolation: false
-          }
-        });
-        await w.loadURL('about:blank');
-
-        const promise = emittedOnce(app, 'desktop-capturer-get-sources');
-        w.webContents.executeJavaScript('require(\'electron\').desktopCapturer.getSources({ types: [\'screen\'] })');
-
-        const [, webContents] = await promise;
-        expect(webContents).to.equal(w.webContents);
-      });
     });
   });
 
@@ -1621,6 +1620,21 @@ describe('app module', () => {
     it('returns an empty string when not present', async () => {
       const { getSwitchValue } = await runTestApp('command-line');
       expect(getSwitchValue).to.equal('');
+    });
+  });
+
+  describe('commandLine.removeSwitch', () => {
+    it('no-ops a non-existent switch', async () => {
+      expect(app.commandLine.hasSwitch('foobar3')).to.equal(false);
+      app.commandLine.removeSwitch('foobar3');
+      expect(app.commandLine.hasSwitch('foobar3')).to.equal(false);
+    });
+
+    it('removes an existing switch', async () => {
+      app.commandLine.appendSwitch('foobar3', 'test');
+      expect(app.commandLine.hasSwitch('foobar3')).to.equal(true);
+      app.commandLine.removeSwitch('foobar3');
+      expect(app.commandLine.hasSwitch('foobar3')).to.equal(false);
     });
   });
 

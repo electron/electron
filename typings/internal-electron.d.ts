@@ -58,6 +58,7 @@ declare namespace Electron {
     _loadURL(url: string, options: ElectronInternal.LoadURLOptions): void;
     getOwnerBrowserWindow(): Electron.BrowserWindow | null;
     getLastWebPreferences(): Electron.WebPreferences | null;
+    _getProcessMemoryInfo(): Electron.ProcessMemoryInfo;
     _getPreloadPaths(): string[];
     equal(other: WebContents): boolean;
     browserWindowOptions: BrowserWindowConstructorOptions;
@@ -123,7 +124,7 @@ declare namespace Electron {
     insertSeparator(index: number): void;
     insertSubMenu(index: number, commandId: number, label: string, submenu?: Menu): void;
     delegate?: any;
-    getAcceleratorTextAt(index: number): string;
+    _getAcceleratorTextAt(index: number): string;
   }
 
   interface MenuItem {

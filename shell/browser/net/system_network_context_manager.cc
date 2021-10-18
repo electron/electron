@@ -342,8 +342,6 @@ SystemNetworkContextManager::CreateNetworkContextParams() {
   network::mojom::NetworkContextParamsPtr network_context_params =
       CreateDefaultNetworkContextParams();
 
-  network_context_params->context_name = std::string("system");
-
   network_context_params->user_agent =
       electron::ElectronBrowserClient::Get()->GetUserAgent();
 

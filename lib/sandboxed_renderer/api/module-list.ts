@@ -26,10 +26,3 @@ export const moduleList: ElectronInternal.ModuleEntry[] = [
     private: true
   }
 ];
-
-if (BUILDFLAG(ENABLE_DESKTOP_CAPTURER)) {
-  moduleList.push({
-    name: 'desktopCapturer',
-    loader: () => require('@electron/internal/renderer/api/desktop-capturer')
-  });
-}

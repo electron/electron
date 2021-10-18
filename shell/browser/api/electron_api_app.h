@@ -189,9 +189,10 @@ class App : public ElectronBrowserClient::Delegate,
   std::string GetLocale();
   std::string GetLocaleCountryCode();
   void OnSecondInstance(const base::CommandLine& cmd,
-                        const base::FilePath& cwd);
+                        const base::FilePath& cwd,
+                        const std::vector<const uint8_t> additional_data);
   bool HasSingleInstanceLock() const;
-  bool RequestSingleInstanceLock();
+  bool RequestSingleInstanceLock(gin::Arguments* args);
   void ReleaseSingleInstanceLock();
   bool Relaunch(gin::Arguments* args);
   void DisableHardwareAcceleration(gin_helper::ErrorThrower thrower);

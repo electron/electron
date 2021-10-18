@@ -53,3 +53,12 @@ Returns `Boolean` - Whether the command-line switch is present.
 Returns `String` - The command-line switch value.
 
 **Note:** When the switch is not present or has no value, it returns empty string.
+
+#### `commandLine.removeSwitch(switch)`
+
+* `switch` String - A command-line switch
+
+Removes the specified switch from Chromium's command line.
+
+**Note:** This will not affect `process.argv`. The intended usage of this function is to
+control Chromium's behavior.

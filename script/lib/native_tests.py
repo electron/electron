@@ -4,7 +4,7 @@ import os
 import subprocess
 import sys
 
-from util import SRC_DIR
+from lib.util import SRC_DIR
 
 PYYAML_LIB_DIR = os.path.join(SRC_DIR, 'third_party', 'pyyaml', 'lib')
 sys.path.append(PYYAML_LIB_DIR)

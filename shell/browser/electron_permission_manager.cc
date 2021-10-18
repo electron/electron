@@ -17,9 +17,18 @@
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/web_contents.h"
+#include "gin/data_object_builder.h"
+#include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/browser/electron_browser_main_parts.h"
+#include "shell/browser/hid/hid_chooser_context.h"
+#include "shell/browser/serial/serial_chooser_context.h"
+#include "shell/browser/web_contents_permission_helper.h"
 #include "shell/browser/web_contents_preferences.h"
+#include "shell/common/gin_converters/content_converter.h"
+#include "shell/common/gin_converters/frame_converter.h"
+#include "shell/common/gin_converters/value_converter.h"
+#include "shell/common/gin_helper/event_emitter_caller.h"
 
 namespace electron {
 
@@ -115,6 +124,11 @@ void ElectronPermissionManager::SetPermissionRequestHandler(
 void ElectronPermissionManager::SetPermissionCheckHandler(
     const CheckHandler& handler) {
   check_handler_ = handler;
+}
+
+void ElectronPermissionManager::SetDevicePermissionHandler(
+    const DeviceCheckHandler& handler) {
+  device_permission_handler_ = handler;
 }
 
 void ElectronPermissionManager::RequestPermission(
@@ -280,6 +294,96 @@ bool ElectronPermissionManager::CheckPermissionWithDetails(
   }
   return check_handler_.Run(web_contents, permission, requesting_origin,
                             mutable_details);
+}
+
+bool ElectronPermissionManager::CheckDevicePermission(
+    content::PermissionType permission,
+    const url::Origin& origin,
+    const base::Value* device,
+    content::RenderFrameHost* render_frame_host) const {
+  auto* web_contents =
+      content::WebContents::FromRenderFrameHost(render_frame_host);
+  api::WebContents* api_web_contents = api::WebContents::From(web_contents);
+  if (device_permission_handler_.is_null()) {
+    if (api_web_contents) {
+      std::vector<base::Value> granted_devices =
+          api_web_contents->GetGrantedDevices(origin, permission,
+                                              render_frame_host);
+
+      for (const auto& granted_device : granted_devices) {
+        if (permission ==
+            static_cast<content::PermissionType>(
+                WebContentsPermissionHelper::PermissionType::HID)) {
+          if (device->FindIntKey(kHidVendorIdKey) !=
+                  granted_device.FindIntKey(kHidVendorIdKey) ||
+              device->FindIntKey(kHidProductIdKey) !=
+                  granted_device.FindIntKey(kHidProductIdKey)) {
+            continue;
+          }
+
+          const auto* serial_number =
+              granted_device.FindStringKey(kHidSerialNumberKey);
+          const auto* device_serial_number =
+              device->FindStringKey(kHidSerialNumberKey);
+
+          if (serial_number && device_serial_number &&
+              *device_serial_number == *serial_number)
+            return true;
+        } else if (permission ==
+                   static_cast<content::PermissionType>(
+                       WebContentsPermissionHelper::PermissionType::SERIAL)) {
+#if defined(OS_WIN)
+          if (device->FindStringKey(kDeviceInstanceIdKey) ==
+              granted_device.FindStringKey(kDeviceInstanceIdKey))
+            return true;
+#else
+          if (device->FindIntKey(kVendorIdKey) !=
+                  granted_device.FindIntKey(kVendorIdKey) ||
+              device->FindIntKey(kProductIdKey) !=
+                  granted_device.FindIntKey(kProductIdKey) ||
+              *device->FindStringKey(kSerialNumberKey) !=
+                  *granted_device.FindStringKey(kSerialNumberKey)) {
+            continue;
+          }
+
+#if defined(OS_MAC)
+          if (*device->FindStringKey(kUsbDriverKey) !=
+              *granted_device.FindStringKey(kUsbDriverKey)) {
+            continue;
+          }
+#endif  // defined(OS_MAC)
+          return true;
+#endif  // defined(OS_WIN)
+        }
+      }
+    }
+    return false;
+  } else {
+    v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+    v8::HandleScope scope(isolate);
+    v8::Local<v8::Object> details = gin::DataObjectBuilder(isolate)
+                                        .Set("deviceType", permission)
+                                        .Set("origin", origin.Serialize())
+                                        .Set("device", device->Clone())
+                                        .Set("frame", render_frame_host)
+                                        .Build();
+    return device_permission_handler_.Run(details);
+  }
+}
+
+void ElectronPermissionManager::GrantDevicePermission(
+    content::PermissionType permission,
+    const url::Origin& origin,
+    const base::Value* device,
+    content::RenderFrameHost* render_frame_host) const {
+  if (device_permission_handler_.is_null()) {
+    auto* web_contents =
+        content::WebContents::FromRenderFrameHost(render_frame_host);
+    api::WebContents* api_web_contents = api::WebContents::From(web_contents);
+    if (api_web_contents)
+      api_web_contents->GrantDevicePermission(origin, device, permission,
+                                              render_frame_host);
+  }
 }
 
 blink::mojom::PermissionStatus

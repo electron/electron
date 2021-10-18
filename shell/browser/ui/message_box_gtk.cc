@@ -145,13 +145,13 @@ class GtkMessageBox : public NativeWindowObserver {
   const char* TranslateToStock(int id, const std::string& text) {
     const std::string lower = base::ToLowerASCII(text);
     if (lower == "cancel")
-      return gtk_util::kCancelLabel;
+      return gtk_util::GetCancelLabel();
     if (lower == "no")
-      return gtk_util::kNoLabel;
+      return gtk_util::GetNoLabel();
     if (lower == "ok")
-      return gtk_util::kOkLabel;
+      return gtk_util::GetOkLabel();
     if (lower == "yes")
-      return gtk_util::kYesLabel;
+      return gtk_util::GetYesLabel();
     return text.c_str();
   }
 
@@ -159,13 +159,11 @@ class GtkMessageBox : public NativeWindowObserver {
     gtk_widget_show(dialog_);
 
 #if defined(USE_X11)
-    if (!features::IsUsingOzonePlatform()) {
-      // We need to call gtk_window_present after making the widgets visible to
-      // make sure window gets correctly raised and gets focus.
-      x11::Time time = ui::X11EventSource::GetInstance()->GetTimestamp();
-      gtk_window_present_with_time(GTK_WINDOW(dialog_),
-                                   static_cast<uint32_t>(time));
-    }
+    // We need to call gtk_window_present after making the widgets visible to
+    // make sure window gets correctly raised and gets focus.
+    x11::Time time = ui::X11EventSource::GetInstance()->GetTimestamp();
+    gtk_window_present_with_time(GTK_WINDOW(dialog_),
+                                 static_cast<uint32_t>(time));
 #endif
   }
 
