@@ -92,6 +92,19 @@ Returns [`NativeImage`](native-image.md) - The image content in the clipboard.
 
 Writes `image` to the clipboard.
 
+### `clipboard.readSvg([type])`
+
+* `type` String (optional) - Can be `selection` or `clipboard`; default is 'clipboard'. `selection` is only available on Linux.
+
+Returns `String` - the content in the clipboard as SVG vector image data.
+
+### `clipboard.writeSvg(data, [type])`
+
+* `data` String
+* `type` String (optional) - Can be `selection` or `clipboard`; default is 'clipboard'. `selection` is only available on Linux.
+
+Write SVG vector `data` to the clipboard.
+
 ### `clipboard.readRTF([type])`
 
 * `type` String (optional) - Can be `selection` or `clipboard`; default is 'clipboard'. `selection` is only available on Linux.
@@ -253,6 +266,7 @@ clipboard.writeBuffer('public/utf8-plain-text', buffer)
   * `image` [NativeImage](native-image.md) (optional)
   * `rtf` String (optional)
   * `bookmark` String (optional) - The title of the URL at `text`.
+  * `svg` String (optional)
 * `type` String (optional) - Can be `selection` or `clipboard`; default is 'clipboard'. `selection` is only available on Linux.
 
 Writes `data` to the clipboard.

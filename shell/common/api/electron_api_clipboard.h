@@ -53,6 +53,9 @@ class Clipboard {
   static gfx::Image ReadImage(gin_helper::Arguments* args);
   static void WriteImage(const gfx::Image& image, gin_helper::Arguments* args);
 
+  static std::u16string ReadSvg(gin_helper::Arguments* args);
+  static void WriteSvg(const std::u16string& text, gin_helper::Arguments* args);
+
   static std::u16string ReadFindText();
   static void WriteFindText(const std::u16string& text);
 

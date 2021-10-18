@@ -1,5 +1,6 @@
 const { expect } = require('chai');
 const path = require('path');
+const fs = require('fs');
 const { Buffer } = require('buffer');
 const { ifdescribe } = require('./spec-helpers');
 
@@ -16,6 +17,16 @@ ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard 
       clipboard.writeImage(p);
       const readImage = clipboard.readImage();
       expect(readImage.toDataURL()).to.equal(i.toDataURL());
+    });
+  });
+
+  describe('clipboard.readSvg()', () => {
+    it('returns vector image data as string', () => {
+      const p = path.join(fixtures, 'assets', 'rabbit.svg');
+      const data = fs.readFileSync(p).toString();
+      clipboard.writeText(data);
+      const svgData = clipboard.readText();
+      expect(svgData).to.equal(data);
     });
   });
 
@@ -72,8 +83,10 @@ ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard 
     it('returns data correctly', () => {
       const text = 'test';
       const rtf = '{\\rtf1\\utf8 text}';
-      const p = path.join(fixtures, 'assets', 'logo.png');
-      const i = nativeImage.createFromPath(p);
+      const imgPath = path.join(fixtures, 'assets', 'logo.png');
+      const i = nativeImage.createFromPath(imgPath);
+      const svgPath = path.join(fixtures, 'assets', 'rabbit.svg');
+      const svg = fs.readFileSync(svgPath).toString();
       const markup = process.platform === 'darwin' ? "<meta charset='utf-8'><b>Hi</b>" : '<b>Hi</b>';
       const bookmark = { title: 'a title', url: 'test' };
       clipboard.write({
@@ -81,7 +94,8 @@ ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard 
         html: '<b>Hi</b>',
         rtf: '{\\rtf1\\utf8 text}',
         bookmark: 'a title',
-        image: p
+        image: imgPath,
+        svg
       });
 
       expect(clipboard.readText()).to.equal(text);
@@ -89,6 +103,7 @@ ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard 
       expect(clipboard.readRTF()).to.equal(rtf);
       const readImage = clipboard.readImage();
       expect(readImage.toDataURL()).to.equal(i.toDataURL());
+      expect(clipboard.readSvg()).to.equal(svg);
 
       if (process.platform !== 'linux') {
         if (process.platform !== 'win32') {

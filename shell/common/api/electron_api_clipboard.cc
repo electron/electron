@@ -96,7 +96,7 @@ void Clipboard::WriteBuffer(const std::string& format,
 void Clipboard::Write(const gin_helper::Dictionary& data,
                       gin_helper::Arguments* args) {
   ui::ScopedClipboardWriter writer(GetClipboardBuffer(args));
-  std::u16string text, html, bookmark;
+  std::u16string text, html, bookmark, svg;
   gfx::Image image;
 
   if (data.Get("text", &text)) {
@@ -106,16 +106,17 @@ void Clipboard::Write(const gin_helper::Dictionary& data,
       writer.WriteBookmark(bookmark, base::UTF16ToUTF8(text));
   }
 
-  if (data.Get("rtf", &text)) {
-    std::string rtf = base::UTF16ToUTF8(text);
-    writer.WriteRTF(rtf);
-  }
+  if (data.Get("rtf", &text))
+    writer.WriteRTF(base::UTF16ToUTF8(text));
 
   if (data.Get("html", &html))
     writer.WriteHTML(html, std::string());
 
   if (data.Get("image", &image))
     writer.WriteImage(image.AsBitmap());
+
+  if (data.Get("svg", &svg))
+    writer.WriteSvg(svg);
 }
 
 std::u16string Clipboard::ReadText(gin_helper::Arguments* args) {
@@ -222,6 +223,19 @@ void Clipboard::WriteImage(const gfx::Image& image,
   }
 }
 
+std::u16string Clipboard::ReadSvg(gin_helper::Arguments* args) {
+  ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
+  std::u16string data;
+  clipboard->ReadSvg(GetClipboardBuffer(args), nullptr, &data);
+  return data;
+}
+
+void Clipboard::WriteSvg(const std::u16string& text,
+                         gin_helper::Arguments* args) {
+  ui::ScopedClipboardWriter writer(GetClipboardBuffer(args));
+  writer.WriteSvg(text);
+}
+
 #if !defined(OS_MAC)
 void Clipboard::WriteFindText(const std::u16string& text) {}
 std::u16string Clipboard::ReadFindText() {
@@ -259,6 +273,8 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("writeBookmark", &electron::api::Clipboard::WriteBookmark);
   dict.SetMethod("readImage", &electron::api::Clipboard::ReadImage);
   dict.SetMethod("writeImage", &electron::api::Clipboard::WriteImage);
+  dict.SetMethod("readSvg", &electron::api::Clipboard::ReadSvg);
+  dict.SetMethod("writeSvg", &electron::api::Clipboard::WriteSvg);
   dict.SetMethod("readFindText", &electron::api::Clipboard::ReadFindText);
   dict.SetMethod("writeFindText", &electron::api::Clipboard::WriteFindText);
   dict.SetMethod("readBuffer", &electron::api::Clipboard::ReadBuffer);
