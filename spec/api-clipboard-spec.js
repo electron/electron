@@ -127,14 +127,24 @@ ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard 
     });
 
     it('writes a Buffer using a raw format that is used by native apps', function () {
+      if (process.platform === 'win32') {
+        // setting CF_TEXT alone isn't sufficient for clipboard.readText()
+        this.skip();
+      }
+
       const message = 'Hello from Electron!';
-      const buffer = Buffer.from(message);
+      let buffer = Buffer.from(message);
       let rawFormat = 'TEXT';
       switch (process.platform) {
-        case 'darwin': rawFormat = 'public.utf8-plain-text'; break;
-        case 'win32': rawFormat = 'CF_TEXT'; break;
+        case 'darwin':
+          rawFormat = 'public.utf8-plain-text';
+          break;
+        case 'win32':
+          rawFormat = 'CF_TEXT';
+          buffer = Buffer.from(message + '\x00');
+          break;
       }
-      clipboard.writeBuffer(rawFormat, Buffer.from(buffer));
+      clipboard.writeBuffer(rawFormat, buffer);
       expect(clipboard.readText()).to.equal(message);
     });
   });
