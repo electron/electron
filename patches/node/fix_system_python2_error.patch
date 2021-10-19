@@ -1,0 +1,81 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: himself65 <himself65@mask.io>
+Date: Thu, 8 Jul 2021 00:19:00 +0800
+Subject: build: add `library_files` to gyp variables
+
+GYP uses the system path when parsing node.gyp;
+However, if system python is different from our
+gyp runtime python, like '2.7', gyp would crash.
+
+PR-URL: https://github.com/nodejs/node/pull/39293
+
+diff --git a/configure.py b/configure.py
+index d69c52521d80fb3a24f79bcc4d4a364aceb6fa81..1e9ee8adf3cc687c2f832da42dbae78cf5de9da9 100755
+--- a/configure.py
++++ b/configure.py
+@@ -45,6 +45,7 @@ import getmoduleversion
+ import getnapibuildversion
+ import getsharedopensslhasquic
+ from gyp_node import run_gyp
++from utils import SearchFiles
+ 
+ # parse our options
+ parser = argparse.ArgumentParser()
+@@ -1155,6 +1156,8 @@ def gcc_version_ge(version_checked):
+       return False
+   return True
+ 
++def configure_node_lib_files(o):
++  o['variables']['node_library_files'] = SearchFiles('lib', 'js')
+ 
+ def configure_node(o):
+   if options.dest_os == 'android':
+@@ -1903,6 +1906,7 @@ if (options.dest_os):
+ flavor = GetFlavor(flavor_params)
+ 
+ configure_node(output)
++configure_node_lib_files(output)
+ configure_napi(output)
+ configure_library('zlib', output)
+ configure_library('http_parser', output)
+diff --git a/node.gyp b/node.gyp
+index 691ce22ff3d664f9a7a9fb8a6885d68e2e84e23c..be50b280fc59467e5668561bc61422c1c7ca4492 100644
+--- a/node.gyp
++++ b/node.gyp
+@@ -33,7 +33,7 @@
+     # Windows command length limit or there would be an error.
+     # See https://docs.microsoft.com/en-us/troubleshoot/windows-client/shell-experience/command-line-string-limitation
+     'library_files': [
+-      '<!@(python tools/search_files.py --ext js lib)',
++      '<@(node_library_files)',
+     ],
+     'deps_files': [
+       'deps/v8/tools/splaytree.mjs',
+diff --git a/tools/search_files.py b/tools/search_files.py
+deleted file mode 100644
+index e236eee47dc8522c99a3b9d5d0c6c058e855a0e2..0000000000000000000000000000000000000000
+--- a/tools/search_files.py
++++ /dev/null
+@@ -1,22 +0,0 @@
+-#!/usr/bin/env python
+-
+-"""
+-This is a utility for recursively searching files under
+-a specified directory
+-"""
+-
+-import argparse
+-import utils
+-
+-def main():
+-  parser = argparse.ArgumentParser(
+-    description='Search files with a specific extension under a directory',
+-    fromfile_prefix_chars='@'
+-  )
+-  parser.add_argument('--ext', required=True, help='extension to search for')
+-  parser.add_argument('directory', help='input directory')
+-  options = parser.parse_args()
+-  print('\n'.join(utils.SearchFiles(options.directory, options.ext)))
+-
+-if __name__ == "__main__":
+-  main()
