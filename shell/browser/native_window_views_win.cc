@@ -158,7 +158,6 @@ gfx::ResizeEdge GetWindowResizeEdge(WPARAM param) {
     case WMSZ_BOTTOMRIGHT:
       return gfx::ResizeEdge::kBottomRight;
     default:
-      NOTREACHED();
       return gfx::ResizeEdge::kBottomRight;
   }
 }
