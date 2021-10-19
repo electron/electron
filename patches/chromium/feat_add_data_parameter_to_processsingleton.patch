@@ -61,10 +61,10 @@ index eec994c4252f17d9c9c41e66d5dae6509ed98a18..e538c9b76da4d4435e10cd3848438446
  #if defined(OS_WIN)
    bool EscapeVirtualization(const base::FilePath& user_data_dir);
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index 05c86df6c871ca7d0926836edc2f6137fcf229cb..01627f6b46c64a24870fa05b9efeaf949203c2ac 100644
+index 727333dd6abec99643e31bc77ed2cc8f3d5a0a0b..e5361397f78636816507355e7db6a9e55e6ed234 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
-@@ -564,6 +564,7 @@ class ProcessSingleton::LinuxWatcher
+@@ -567,6 +567,7 @@ class ProcessSingleton::LinuxWatcher
    // |reader| is for sending back ACK message.
    void HandleMessage(const std::string& current_dir,
                       const std::vector<std::string>& argv,
@@ -72,7 +72,7 @@ index 05c86df6c871ca7d0926836edc2f6137fcf229cb..01627f6b46c64a24870fa05b9efeaf94
                       SocketReader* reader);
  
   private:
-@@ -620,13 +621,16 @@ void ProcessSingleton::LinuxWatcher::StartListening(int socket) {
+@@ -621,13 +622,16 @@ void ProcessSingleton::LinuxWatcher::StartListening(int socket) {
  }
  
  void ProcessSingleton::LinuxWatcher::HandleMessage(
@@ -91,7 +91,7 @@ index 05c86df6c871ca7d0926836edc2f6137fcf229cb..01627f6b46c64a24870fa05b9efeaf94
      // Send back "ACK" message to prevent the client process from starting up.
      reader->FinishWithACK(kACKToken, base::size(kACKToken) - 1);
    } else {
-@@ -674,7 +678,8 @@ void ProcessSingleton::LinuxWatcher::SocketReader::
+@@ -675,7 +679,8 @@ void ProcessSingleton::LinuxWatcher::SocketReader::
      }
    }
  
@@ -101,7 +101,7 @@ index 05c86df6c871ca7d0926836edc2f6137fcf229cb..01627f6b46c64a24870fa05b9efeaf94
    const size_t kMinMessageLength = base::size(kStartToken) + 4;
    if (bytes_read_ < kMinMessageLength) {
      buf_[bytes_read_] = 0;
-@@ -704,10 +709,25 @@ void ProcessSingleton::LinuxWatcher::SocketReader::
+@@ -705,10 +710,25 @@ void ProcessSingleton::LinuxWatcher::SocketReader::
    tokens.erase(tokens.begin());
    tokens.erase(tokens.begin());
  
@@ -128,7 +128,7 @@ index 05c86df6c871ca7d0926836edc2f6137fcf229cb..01627f6b46c64a24870fa05b9efeaf94
    fd_watch_controller_.reset();
  
    // LinuxWatcher::HandleMessage() is in charge of destroying this SocketReader
-@@ -736,8 +756,10 @@ void ProcessSingleton::LinuxWatcher::SocketReader::FinishWithACK(
+@@ -737,8 +757,10 @@ void ProcessSingleton::LinuxWatcher::SocketReader::FinishWithACK(
  //
  ProcessSingleton::ProcessSingleton(
      const base::FilePath& user_data_dir,
@@ -139,7 +139,7 @@ index 05c86df6c871ca7d0926836edc2f6137fcf229cb..01627f6b46c64a24870fa05b9efeaf94
        current_pid_(base::GetCurrentProcId()),
        watcher_(new LinuxWatcher(this)) {
    socket_path_ = user_data_dir.Append(chrome::kSingletonSocketFilename);
-@@ -854,7 +876,8 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
+@@ -855,7 +877,8 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
               sizeof(socket_timeout));
  
    // Found another process, prepare our command line
@@ -149,7 +149,7 @@ index 05c86df6c871ca7d0926836edc2f6137fcf229cb..01627f6b46c64a24870fa05b9efeaf94
    std::string to_send(kStartToken);
    to_send.push_back(kTokenDelimiter);
  
-@@ -864,11 +887,21 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
+@@ -865,11 +888,21 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
    to_send.append(current_dir.value());
  
    const std::vector<std::string>& argv = cmd_line.argv();
@@ -271,7 +271,7 @@ index 19d5659d665321da54e05cee01be7da02e0c283b..600ff701b025ba190d05bc30994e3d3e
        return PROCESS_NOTIFIED;
      case chrome::NOTIFY_FAILED:
 diff --git a/chrome/browser/win/chrome_process_finder.cc b/chrome/browser/win/chrome_process_finder.cc
-index 788abf9a04f2a3725d67f7f8d84615016b241c8e..6ae6d97708e18c25c59a0b1e3d2d58f27d980ffb 100644
+index b4fec8878c37b9d157ea768e3b6d99399a988c75..e1cb0f21f752aaeee2c360ce9c5fd08bfede26e3 100644
 --- a/chrome/browser/win/chrome_process_finder.cc
 +++ b/chrome/browser/win/chrome_process_finder.cc
 @@ -34,7 +34,9 @@ HWND FindRunningChromeWindow(const base::FilePath& user_data_dir) {
