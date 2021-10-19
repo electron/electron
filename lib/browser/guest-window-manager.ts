@@ -65,8 +65,13 @@ export function openGuestWindow ({ event, embedder, guest, referrer, disposition
   // https://html.spec.whatwg.org/multipage/window-object.html#apis-for-creating-and-navigating-browsing-contexts-by-name
   const existingWindow = getGuestWindowByFrameName(frameName);
   if (existingWindow) {
-    existingWindow.loadURL(url);
-    return existingWindow;
+    if (existingWindow.isDestroyed() || existingWindow.webContents.isDestroyed()) {
+      // FIXME(t57ser): The webContents is destroyed for some reason, unregister the frame name
+      unregisterFrameName(frameName);
+    } else {
+      existingWindow.loadURL(url);
+      return existingWindow;
+    }
   }
 
   const window = new BrowserWindow({
