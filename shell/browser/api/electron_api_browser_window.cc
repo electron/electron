@@ -37,14 +37,22 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
       gin::Dictionary::CreateEmpty(isolate);
   options.Get(options::kWebPreferences, &web_preferences);
 
-  // Copy the backgroundColor to webContents.
   v8::Local<v8::Value> value;
   bool transparent = false;
+  options.Get(options::kTransparent, &transparent);
+
+  std::string vibrancy_type;
+#if defined(OS_MAC)
+  options.Get(options::kVibrancyType, &vibrancy_type);
+#endif
+
+  // Copy the backgroundColor to webContents.
   if (options.Get(options::kBackgroundColor, &value)) {
     web_preferences.SetHidden(options::kBackgroundColor, value);
-  } else if (options.Get(options::kTransparent, &transparent) && transparent) {
-    // If the BrowserWindow is transparent, also propagate transparency to the
-    // WebContents unless a separate backgroundColor has been set.
+  } else if (!vibrancy_type.empty() || transparent) {
+    // If the BrowserWindow is transparent or a vibrancy type has been set,
+    // also propagate transparency to the WebContents unless a separate
+    // backgroundColor has been set.
     web_preferences.SetHidden(options::kBackgroundColor,
                               ToRGBAHex(SK_ColorTRANSPARENT));
   }
