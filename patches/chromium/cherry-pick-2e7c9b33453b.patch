@@ -1,7 +1,7 @@
-From 2e7c9b33453b999317c410730c8290ddf869648a Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Ionel Popescu <iopopesc@microsoft.com>
 Date: Wed, 15 Sep 2021 18:16:16 +0000
-Subject: [PATCH] Speculative fix for eye dropper getColor crash.
+Subject: Speculative fix for eye dropper getColor crash.
 
 There seems to be a situation where the captured frame coordinates
 are different than the ones accessible by moving the mouse.
@@ -24,13 +24,12 @@ Commit-Queue: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
 Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
 Cr-Commit-Position: refs/branch-heads/4638@{#75}
 Cr-Branched-From: 159257cab5585bc8421abf347984bb32fdfe9eb9-refs/heads/main@{#920003}
----
 
 diff --git a/chrome/browser/ui/views/eye_dropper/eye_dropper_view.cc b/chrome/browser/ui/views/eye_dropper/eye_dropper_view.cc
-index 46cfbf3..112b734 100644
+index 46cfbf3f497fa824a112165450d5cc98883a58c3..112b734be608802a33acff0aa790ce7e829b7bb4 100644
 --- a/chrome/browser/ui/views/eye_dropper/eye_dropper_view.cc
 +++ b/chrome/browser/ui/views/eye_dropper/eye_dropper_view.cc
-@@ -65,6 +65,7 @@
+@@ -65,6 +65,7 @@ class EyeDropperView::ScreenCapturer
                         std::unique_ptr<webrtc::DesktopFrame> frame) override;
  
    SkBitmap GetBitmap() const;
@@ -38,7 +37,7 @@ index 46cfbf3..112b734 100644
    int original_offset_x() const;
    int original_offset_y() const;
  
-@@ -125,6 +126,13 @@
+@@ -125,6 +126,13 @@ SkBitmap EyeDropperView::ScreenCapturer::GetBitmap() const {
    return frame_;
  }
  
@@ -52,7 +51,7 @@ index 46cfbf3..112b734 100644
  int EyeDropperView::ScreenCapturer::original_offset_x() const {
    return original_offset_x_;
  }
-@@ -224,7 +232,8 @@
+@@ -224,7 +232,8 @@ void EyeDropperView::OnPaint(gfx::Canvas* view_canvas) {
  
    // Store the pixel color under the cursor as it is the last color seen
    // by the user before selection.
