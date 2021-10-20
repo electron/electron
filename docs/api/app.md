@@ -660,9 +660,9 @@ In that case, the directory should be created with `fs.mkdirSync` or similar.
 
 You can only override paths of a `name` defined in `app.getPath`.
 
-By default, web pages' cookies and caches will be stored under the `userData`
+By default, web pages' cookies and caches will be stored under the `browserData`
 directory. If you want to change this location, you have to override the
-`userData` path before the `ready` event of the `app` module is emitted.
+`browserData` path before the `ready` event of the `app` module is emitted.
 
 ### `app.getVersion()`
 
