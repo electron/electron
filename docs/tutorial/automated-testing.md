@@ -1,6 +1,8 @@
 # Automated Testing
 
-Automated tests are 
+Test automation is an efficient way of validating that your application code works as intended.
+While Electron doesn't actively maintain its own testing solution, this guide will go over a couple
+ways you can run end-to-end automated tests on your Electron app.
 
 ## Using WebDriver with WebDriver.IO
 
