@@ -24,10 +24,10 @@ enum {
 
   DIR_USER_CACHE = PATH_START,  // Directory where user cache can be written.
   DIR_APP_LOGS,                 // Directory where app logs live
+  DIR_BROWSER_DATA,
 
 #if defined(OS_WIN)
   DIR_RECENT,  // Directory where recent files live
-  DIR_CACHE,
 #endif
 
 #if defined(OS_LINUX)
@@ -37,10 +37,6 @@ enum {
   DIR_CRASH_DUMPS,  // c.f. chrome::DIR_CRASH_DUMPS
 
   PATH_END,  // End of new paths. Those that follow redirect to base::DIR_*
-
-#if !defined(OS_WIN)
-  DIR_CACHE = base::DIR_CACHE,
-#endif
 
 #if defined(OS_WIN)
   DIR_APP_DATA = base::DIR_ROAMING_APP_DATA,

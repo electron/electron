@@ -610,6 +610,7 @@ Returns `string` - The current application directory.
   * `userData` The directory for storing your app's configuration files, which by
     default it is the `appData` directory appended with your app's name.
   * `cache`
+  * `browserData` The directory for storing browsing data.
   * `temp` Temporary directory.
   * `exe` The current executable file.
   * `module` The `libchromiumcontent` library.

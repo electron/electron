@@ -133,24 +133,37 @@ bool ElectronPathProvider(int key, base::FilePath* result) {
       break;
     case chrome::DIR_APP_DICTIONARIES:
       // TODO(nornagon): can we just default to using Chrome's logic here?
-      if (!base::PathService::Get(DIR_USER_CACHE, &cur))
+      if (!base::PathService::Get(DIR_BROWSER_DATA, &cur))
         return false;
       cur = cur.Append(base::FilePath::FromUTF8Unsafe("Dictionaries"));
       create_dir = true;
       break;
 
-      // On Windows, there's no OS-level centralized location for caches, so
-      // store the cache in the app data directory by default.
-      int parent_key = base::DIR_ROAMING_APP_DATA;
+    case DIR_BROWSER_DATA: {
+
+      if (!base::PathService::Get(DIR_APP_DATA, &cur))
+        return false;
+      cur = cur.Append(base::FilePath::FromUTF8Unsafe(
+          GetPossiblyOverriddenApplicationName()));
+      create_dir = true;
+      break;
+    }
+     int parent_key = base::DIR_ROAMING_APP_DATA;
     case DIR_CACHE:
       if (!base::PathService::Get(DIR_APP_DATA, &cur))
         return false;
       create_dir = true;
       break;
 #endif
-
     case DIR_USER_CACHE: {
-      if (!base::PathService::Get(DIR_CACHE, &cur))
+#if defined(OS_POSIX)
+      int parent_key = base::DIR_CACHE;
+#else
+      // On Windows, there's no OS-level centralized location for caches, so
+      // store the cache in the app data directory.
+      int parent_key = base::DIR_APP_DATA;
+#endif
+      if (!base::PathService::Get(parent_key, &cur))
         return false;
       cur = cur.Append(base::FilePath::FromUTF8Unsafe(
           GetPossiblyOverriddenApplicationName()));
