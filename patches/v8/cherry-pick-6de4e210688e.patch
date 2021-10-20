@@ -1,7 +1,10 @@
-From 6de4e210688e68318670dc5a2863ebcfcd71788e Mon Sep 17 00:00:00 2001
-From: Marja Hölttä <marja@chromium.org>
-Date: Fri, 03 Sep 2021 11:46:26 +0200
-Subject: [PATCH] [parser] Fix class variable redeclaration
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marja=20H=C3=B6ltt=C3=A4?= <marja@chromium.org>
+Date: Fri, 3 Sep 2021 11:46:26 +0200
+Subject: Fix class variable redeclaration
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
 ParserBase::ParseClassLiteral and BaseConsumedPreparseData::RestoreDataForScope
 both declare the class variable, but the logic is so complex
@@ -20,13 +23,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3140596
 Commit-Queue: Marja Hölttä <marja@chromium.org>
 Reviewed-by: Leszek Swirski <leszeks@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#76654}
----
 
 diff --git a/src/parsing/preparse-data.cc b/src/parsing/preparse-data.cc
-index 1643c6b..f368a11 100644
+index 1643c6ba1a648e53f8b75bb9c910ed605ce82183..f368a11f9ab09c745feaffa8f406771bc3f858ea 100644
 --- a/src/parsing/preparse-data.cc
 +++ b/src/parsing/preparse-data.cc
-@@ -666,12 +666,13 @@
+@@ -666,12 +666,13 @@ void BaseConsumedPreparseData<Data>::RestoreDataForScope(
      scope->AsDeclarationScope()->RecordNeedsPrivateNameContextChainRecalc();
    }
    if (ShouldSaveClassVariableIndexField::decode(scope_data_flags)) {
@@ -43,7 +45,7 @@ index 1643c6b..f368a11 100644
        var = scope->AsClassScope()->DeclareClassVariable(
            ast_value_factory, nullptr, kNoSourcePosition);
        AstNodeFactory factory(ast_value_factory, zone);
-@@ -679,9 +680,6 @@
+@@ -679,9 +680,6 @@ void BaseConsumedPreparseData<Data>::RestoreDataForScope(
            factory.NewVariableDeclaration(kNoSourcePosition);
        scope->declarations()->Add(declaration);
        declaration->set_var(var);
@@ -55,7 +57,7 @@ index 1643c6b..f368a11 100644
      var->ForceContextAllocation();
 diff --git a/test/mjsunit/regress/regress-crbug-1245870.js b/test/mjsunit/regress/regress-crbug-1245870.js
 new file mode 100644
-index 0000000..2ef3f75
+index 0000000000000000000000000000000000000000..2ef3f753d500880717f10f26ed8cca4a47079196
 --- /dev/null
 +++ b/test/mjsunit/regress/regress-crbug-1245870.js
 @@ -0,0 +1,14 @@
