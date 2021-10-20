@@ -1,0 +1,143 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tom Sepez <tsepez@chromium.org>
+Date: Thu, 14 Oct 2021 18:29:32 +0000
+Subject: M94: Use more safe arithmetic in CFX_DIBBase
+
+Most of the calculations are "safe" because we know that the DIB
+has validated sizes before allocating a buffer, and that calculations
+in terms of bytes won't overflow and will be within the buffer. But
+calculations in terms of bits might create overflow in temporaries,
+so use safe arithmetic there instead.
+
+Re-arranging the order of operations thus converting to bytes first
+might be one option, but we want to handle the 1 bpp case.
+
+Test would require large images that might not be possible on
+all platforms.
+
+Bug: chromium:1253399
+Change-Id: I3c6c5b8b1f1bf3f429c7d377a8a84c5ab53cafd9
+Reviewed-on: https://pdfium-review.googlesource.com/c/pdfium/+/85510
+Reviewed-by: Lei Zhang <thestig@chromium.org>
+Commit-Queue: Tom Sepez <tsepez@chromium.org>
+(cherry picked from commit a8b293732a0160d1bc1d5b0ad5744922f0f820d5)
+Reviewed-on: https://pdfium-review.googlesource.com/c/pdfium/+/85950
+
+diff --git a/core/fxge/dib/cfx_bitmapcomposer.cpp b/core/fxge/dib/cfx_bitmapcomposer.cpp
+index 86066ba72dccc78d65dbaaba76ee4d47d18080a2..af7a2480989668d0108b91fe4e60f2d6a12d31dd 100644
+--- a/core/fxge/dib/cfx_bitmapcomposer.cpp
++++ b/core/fxge/dib/cfx_bitmapcomposer.cpp
+@@ -6,6 +6,7 @@
+ 
+ #include "core/fxge/dib/cfx_bitmapcomposer.h"
+ 
++#include "core/fxcrt/fx_safe_types.h"
+ #include "core/fxge/cfx_cliprgn.h"
+ #include "core/fxge/dib/cfx_dibitmap.h"
+ 
+@@ -109,8 +110,17 @@ void CFX_BitmapComposer::ComposeScanline(int line,
+                     m_pClipMask->GetPitch() +
+                 (m_DestLeft - m_pClipRgn->GetBox().left);
+   }
+-  uint8_t* dest_scan = m_pBitmap->GetWritableScanline(line + m_DestTop) +
+-                       m_DestLeft * m_pBitmap->GetBPP() / 8;
++  uint8_t* dest_scan = m_pBitmap->GetWritableScanline(line + m_DestTop);
++  if (dest_scan) {
++    FX_SAFE_UINT32 offset = m_DestLeft;
++    offset *= m_pBitmap->GetBPP();
++    offset /= 8;
++    if (!offset.IsValid())
++      return;
++
++    // Help some compilers perform pointer arithmetic against safe numerics.
++    dest_scan += static_cast<uint32_t>(offset.ValueOrDie());
++  }
+   uint8_t* dest_alpha_scan =
+       m_pBitmap->m_pAlphaMask
+           ? m_pBitmap->m_pAlphaMask->GetWritableScanline(line + m_DestTop) +
+diff --git a/core/fxge/dib/cfx_dibbase.cpp b/core/fxge/dib/cfx_dibbase.cpp
+index cff1d79f4a8e992c2b3cd110af471bb8c4bcafc3..8ea50919e224973142ceacee24a5bd03560d4f88 100644
+--- a/core/fxge/dib/cfx_dibbase.cpp
++++ b/core/fxge/dib/cfx_dibbase.cpp
+@@ -627,15 +627,25 @@ RetainPtr<CFX_DIBitmap> CFX_DIBBase::Clone(const FX_RECT* pClip) const {
+       }
+     }
+   } else {
+-    int copy_len = (pNewBitmap->GetWidth() * pNewBitmap->GetBPP() + 7) / 8;
+-    if (m_Pitch < static_cast<uint32_t>(copy_len))
+-      copy_len = m_Pitch;
++    FX_SAFE_UINT32 copy_len = pNewBitmap->GetWidth();
++    copy_len *= pNewBitmap->GetBPP();
++    copy_len += 7;
++    copy_len /= 8;
++    if (!copy_len.IsValid())
++      return nullptr;
++
++    copy_len = std::min<uint32_t>(m_Pitch, copy_len.ValueOrDie());
++
++    FX_SAFE_UINT32 offset = rect.left;
++    offset *= GetBppFromFormat(m_Format);
++    offset /= 8;
++    if (!offset.IsValid())
++      return nullptr;
+ 
+     for (int row = rect.top; row < rect.bottom; ++row) {
+-      const uint8_t* src_scan =
+-          GetScanline(row) + rect.left * GetBppFromFormat(m_Format) / 8;
++      const uint8_t* src_scan = GetScanline(row) + offset.ValueOrDie();
+       uint8_t* dest_scan = pNewBitmap->GetWritableScanline(row - rect.top);
+-      memcpy(dest_scan, src_scan, copy_len);
++      memcpy(dest_scan, src_scan, copy_len.ValueOrDie());
+     }
+   }
+   return pNewBitmap;
+diff --git a/core/fxge/dib/cfx_dibitmap.cpp b/core/fxge/dib/cfx_dibitmap.cpp
+index 1052b357de90e49800c405f7c67e0e6ac34f22b9..c84b622662dab067acd4972acf6a68ad4815e258 100644
+--- a/core/fxge/dib/cfx_dibitmap.cpp
++++ b/core/fxge/dib/cfx_dibitmap.cpp
+@@ -216,8 +216,14 @@ bool CFX_DIBitmap::TransferWithUnequalFormats(
+   if (GetBppFromFormat(m_Format) == 8)
+     dest_format = FXDIB_Format::k8bppMask;
+ 
++  FX_SAFE_UINT32 offset = dest_left;
++  offset *= GetBPP();
++  offset /= 8;
++  if (!offset.IsValid())
++    return false;
++
+   uint8_t* dest_buf =
+-      m_pBuffer.Get() + dest_top * m_Pitch + dest_left * GetBPP() / 8;
++      m_pBuffer.Get() + dest_top * m_Pitch + offset.ValueOrDie();
+   std::vector<uint32_t, FxAllocAllocator<uint32_t>> d_plt;
+   return ConvertBuffer(dest_format, dest_buf, m_Pitch, width, height,
+                        pSrcBitmap, src_left, src_top, &d_plt);
+@@ -497,7 +503,13 @@ uint32_t CFX_DIBitmap::GetPixel(int x, int y) const {
+   if (!m_pBuffer)
+     return 0;
+ 
+-  uint8_t* pos = m_pBuffer.Get() + y * m_Pitch + x * GetBPP() / 8;
++  FX_SAFE_UINT32 offset = x;
++  offset *= GetBPP();
++  offset /= 8;
++  if (!offset.IsValid())
++    return 0;
++
++  uint8_t* pos = m_pBuffer.Get() + y * m_Pitch + offset.ValueOrDie();
+   switch (GetFormat()) {
+     case FXDIB_Format::k1bppMask: {
+       if ((*pos) & (1 << (7 - x % 8))) {
+@@ -536,7 +548,13 @@ void CFX_DIBitmap::SetPixel(int x, int y, uint32_t color) {
+   if (x < 0 || x >= m_Width || y < 0 || y >= m_Height)
+     return;
+ 
+-  uint8_t* pos = m_pBuffer.Get() + y * m_Pitch + x * GetBPP() / 8;
++  FX_SAFE_UINT32 offset = x;
++  offset *= GetBPP();
++  offset /= 8;
++  if (!offset.IsValid())
++    return;
++
++  uint8_t* pos = m_pBuffer.Get() + y * m_Pitch + offset.ValueOrDie();
+   switch (GetFormat()) {
+     case FXDIB_Format::k1bppMask:
+       if (color >> 24) {
