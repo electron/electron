@@ -113,3 +113,4 @@ cherry-pick-b2c4e4dc21e5.patch
 m90-lts_prevents_non-browser_processes_from_requesting_memory.patch
 check_direction_of_rtcencodedframes.patch
 mas_gate_private_enterprise_APIs
+speculative_fix_for_eye_dropper_getcolor_crash.patch
