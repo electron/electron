@@ -1,0 +1,33 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: VerteDinde <khammond@slack-corp.com>
+Date: Tue, 19 Oct 2021 16:56:25 -0700
+Subject: fix: mas gate private enterprise APIs
+
+Beginning in Electron 15.2.0, Chromium moved several formerly public
+APIs into the AreDeviceAndUserJoinedToDomain method. Using these APIs
+in a MAS build will result in rejection from the Apple Store. This
+patch gates those APIs to non-MAS builds to comply with Apple
+Store requirements, and returns the default state for MAS builds.
+
+diff --git a/base/enterprise_util_mac.mm b/base/enterprise_util_mac.mm
+index 3ebcca94d7a9916b371eb7571e1ec4ba8ec3dcad..58b7de2b2a4c3223c64d275da888ae812fee26f9 100644
+--- a/base/enterprise_util_mac.mm
++++ b/base/enterprise_util_mac.mm
+@@ -154,6 +154,10 @@ MacDeviceManagementStateNew IsDeviceRegisteredWithManagementNew() {
+ 
+ DeviceUserDomainJoinState AreDeviceAndUserJoinedToDomain() {
+   DeviceUserDomainJoinState state{false, false};
++#if defined(MAS_BUILD)
++  return state;
++}
++#else
+ 
+   @autoreleasepool {
+     ODSession* session = [ODSession defaultSession];
+@@ -256,5 +260,6 @@ DeviceUserDomainJoinState AreDeviceAndUserJoinedToDomain() {
+ 
+   return state;
+ }
++#endif
+ 
+ }  // namespace base
