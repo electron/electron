@@ -1,7 +1,7 @@
-From 0894af410c4e02dca52e846fb76544f5d6d60285 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Min Qin <qinmin@chromium.org>
 Date: Tue, 31 Aug 2021 23:03:03 +0000
-Subject: [PATCH] Quarantine save package items that's downloaded from network
+Subject: Quarantine save package items that's downloaded from network
 
 Currently quarantine is not performed for save page downloads. This CL
 fixes the issue.
@@ -13,10 +13,9 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3126709
 Reviewed-by: Xing Liu <xingliu@chromium.org>
 Commit-Queue: Min Qin <qinmin@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#917013}
----
 
 diff --git a/chrome/browser/download/save_page_browsertest.cc b/chrome/browser/download/save_page_browsertest.cc
-index df2e3571..f0a2d2b 100644
+index df2e3571636144acfefd1b79f157fd176db46ea0..f0a2d2bd58314420cc356400acc46ab412d49aca 100644
 --- a/chrome/browser/download/save_page_browsertest.cc
 +++ b/chrome/browser/download/save_page_browsertest.cc
 @@ -49,6 +49,7 @@
@@ -27,7 +26,7 @@ index df2e3571..f0a2d2b 100644
  #include "content/public/browser/download_manager.h"
  #include "content/public/browser/notification_service.h"
  #include "content/public/browser/notification_types.h"
-@@ -431,6 +432,10 @@
+@@ -431,6 +432,10 @@ IN_PROC_BROWSER_TEST_F(SavePageBrowserTest, SaveFileURL) {
    EXPECT_TRUE(base::PathExists(full_file_name));
    EXPECT_FALSE(base::PathExists(dir));
    EXPECT_TRUE(base::ContentsEqual(GetTestDirFile("text.txt"), full_file_name));
@@ -38,7 +37,7 @@ index df2e3571..f0a2d2b 100644
  }
  
  IN_PROC_BROWSER_TEST_F(SavePageBrowserTest,
-@@ -964,6 +969,25 @@
+@@ -964,6 +969,25 @@ IN_PROC_BROWSER_TEST_F(SavePageBrowserTest, SaveUnauthorizedResource) {
    EXPECT_FALSE(base::PathExists(dir.AppendASCII("should-not-save.jpg")));
  }
  
@@ -65,10 +64,10 @@ index df2e3571..f0a2d2b 100644
  // See http://dev.chromium.org/developers/design-documents/site-isolation.
  class SavePageSitePerProcessBrowserTest : public SavePageBrowserTest {
 diff --git a/content/browser/download/download_manager_impl.h b/content/browser/download/download_manager_impl.h
-index b8f71b6..e3e6430 100644
+index b7e0163ab27e1b0e42d81776ae9242f72bd43e87..b29407e76d4e6f1f7fbbe62cea445d33c789fcc3 100644
 --- a/content/browser/download/download_manager_impl.h
 +++ b/content/browser/download/download_manager_impl.h
-@@ -170,6 +170,11 @@
+@@ -170,6 +170,11 @@ class CONTENT_EXPORT DownloadManagerImpl
        int frame_tree_node_id,
        bool from_download_cross_origin_redirect);
  
@@ -80,7 +79,7 @@ index b8f71b6..e3e6430 100644
   private:
    using DownloadSet = std::set<download::DownloadItem*>;
    using DownloadGuidMap =
-@@ -237,7 +242,6 @@
+@@ -237,7 +242,6 @@ class CONTENT_EXPORT DownloadManagerImpl
    bool ShouldOpenDownload(download::DownloadItemImpl* item,
                            ShouldOpenDownloadCallback callback) override;
    void CheckForFileRemoval(download::DownloadItemImpl* download_item) override;
@@ -88,7 +87,7 @@ index b8f71b6..e3e6430 100644
    void ResumeInterruptedDownload(
        std::unique_ptr<download::DownloadUrlParameters> params,
        const GURL& site_url) override;
-@@ -249,8 +253,6 @@
+@@ -249,8 +253,6 @@ class CONTENT_EXPORT DownloadManagerImpl
    void ReportBytesWasted(download::DownloadItemImpl* download) override;
    void BindWakeLockProvider(
        mojo::PendingReceiver<device::mojom::WakeLockProvider> receiver) override;
@@ -98,10 +97,10 @@ index b8f71b6..e3e6430 100644
    GetRenameHandlerForDownload(
        download::DownloadItemImpl* download_item) override;
 diff --git a/content/browser/download/save_file.cc b/content/browser/download/save_file.cc
-index 6e0cf6e..296c0cf 100644
+index 6e0cf6ed1df5db407e31be0e3a6db2e919d8e1bf..296c0cf79c9f5ee5e4ab9835394fb34ae7d92acc 100644
 --- a/content/browser/download/save_file.cc
 +++ b/content/browser/download/save_file.cc
-@@ -63,10 +63,15 @@
+@@ -63,10 +63,15 @@ void SaveFile::Finish() {
    file_.Finish();
  }
  
@@ -122,10 +121,10 @@ index 6e0cf6e..296c0cf 100644
  
  base::FilePath SaveFile::FullPath() const {
 diff --git a/content/browser/download/save_file.h b/content/browser/download/save_file.h
-index 688574b0..1893a00 100644
+index 688574b07f9374e75a25caaaa13bdb405aea7b0d..1893a0031f4c6642c6c806577da2246e55e49091 100644
 --- a/content/browser/download/save_file.h
 +++ b/content/browser/download/save_file.h
-@@ -34,7 +34,12 @@
+@@ -34,7 +34,12 @@ class SaveFile {
    void Detach();
    void Cancel();
    void Finish();
@@ -140,10 +139,10 @@ index 688574b0..1893a00 100644
    bool InProgress() const;
    int64_t BytesSoFar() const;
 diff --git a/content/browser/download/save_file_manager.cc b/content/browser/download/save_file_manager.cc
-index bb32282..98ce67d 100644
+index bb322825a449920001b3c09fce33d3ed7e4d82da..98ce67d548d0880ed187779a0e41e7995c83543b 100644
 --- a/content/browser/download/save_file_manager.cc
 +++ b/content/browser/download/save_file_manager.cc
-@@ -51,6 +51,7 @@
+@@ -51,6 +51,7 @@ static SaveFileManager* g_save_file_manager = nullptr;
  class SaveFileManager::SimpleURLLoaderHelper
      : public network::SimpleURLLoaderStreamConsumer {
   public:
@@ -151,7 +150,7 @@ index bb32282..98ce67d 100644
    static std::unique_ptr<SimpleURLLoaderHelper> CreateAndStartDownload(
        std::unique_ptr<network::ResourceRequest> resource_request,
        SaveItemId save_item_id,
-@@ -59,11 +60,12 @@
+@@ -59,11 +60,12 @@ class SaveFileManager::SimpleURLLoaderHelper
        int render_frame_routing_id,
        const net::NetworkTrafficAnnotationTag& annotation_tag,
        network::mojom::URLLoaderFactory* url_loader_factory,
@@ -166,7 +165,7 @@ index bb32282..98ce67d 100644
    }
  
    ~SimpleURLLoaderHelper() override = default;
-@@ -77,10 +79,12 @@
+@@ -77,10 +79,12 @@ class SaveFileManager::SimpleURLLoaderHelper
        int render_frame_routing_id,
        const net::NetworkTrafficAnnotationTag& annotation_tag,
        network::mojom::URLLoaderFactory* url_loader_factory,
@@ -181,7 +180,7 @@ index bb32282..98ce67d 100644
      GURL url = resource_request->url;
      url_loader_ = network::SimpleURLLoader::Create(std::move(resource_request),
                                                     annotation_tag);
-@@ -125,9 +129,7 @@
+@@ -125,9 +129,7 @@ class SaveFileManager::SimpleURLLoaderHelper
  
    void OnComplete(bool success) override {
      download::GetDownloadTaskRunner()->PostTask(
@@ -192,7 +191,7 @@ index bb32282..98ce67d 100644
    }
  
    void OnRetry(base::OnceClosure start_retry) override {
-@@ -139,6 +141,7 @@
+@@ -139,6 +141,7 @@ class SaveFileManager::SimpleURLLoaderHelper
    SaveItemId save_item_id_;
    SavePackageId save_package_id_;
    std::unique_ptr<network::SimpleURLLoader> url_loader_;
@@ -200,7 +199,7 @@ index bb32282..98ce67d 100644
  
    DISALLOW_COPY_AND_ASSIGN(SimpleURLLoaderHelper);
  };
-@@ -189,17 +192,20 @@
+@@ -189,17 +192,20 @@ SavePackage* SaveFileManager::LookupPackage(SaveItemId save_item_id) {
  }
  
  // Call from SavePackage for starting a saving job
@@ -232,7 +231,7 @@ index bb32282..98ce67d 100644
    DCHECK_CURRENTLY_ON(BrowserThread::UI);
  
    // Insert started saving job to tracking list.
-@@ -285,11 +291,18 @@
+@@ -285,11 +291,18 @@ void SaveFileManager::SaveURL(SaveItemId save_item_id,
        factory = storage_partition->GetURLLoaderFactoryForBrowserProcess().get();
      }
  
@@ -252,7 +251,7 @@ index bb32282..98ce67d 100644
    } else {
      // We manually start the save job.
      auto info = std::make_unique<SaveFileCreateInfo>(
-@@ -344,6 +357,36 @@
+@@ -344,6 +357,36 @@ void SaveFileManager::SendCancelRequest(SaveItemId save_item_id) {
        base::BindOnce(&SaveFileManager::CancelSave, this, save_item_id));
  }
  
@@ -290,7 +289,7 @@ index bb32282..98ce67d 100644
  
  // The IO thread created |info|, but the file thread (this method) uses it
 diff --git a/content/browser/download/save_file_manager.h b/content/browser/download/save_file_manager.h
-index 51eb63a9..0d4290b 100644
+index 51eb63a9b189be388e4dff48e04644956e968345..0d4290b273ba4f150bc9a49418e54b709a601581 100644
 --- a/content/browser/download/save_file_manager.h
 +++ b/content/browser/download/save_file_manager.h
 @@ -61,6 +61,8 @@
@@ -302,7 +301,7 @@ index 51eb63a9..0d4290b 100644
  #include "content/browser/download/save_types.h"
  #include "content/common/content_export.h"
  
-@@ -90,17 +92,20 @@
+@@ -90,17 +92,20 @@ class CONTENT_EXPORT SaveFileManager
  
    // Saves the specified URL |url|. |save_package| must not be deleted before
    // the call to RemoveSaveFile. Should be called on the UI thread,
@@ -334,7 +333,7 @@ index 51eb63a9..0d4290b 100644
  
    // Notifications sent from the IO thread and run on the file thread:
    void StartSave(std::unique_ptr<SaveFileCreateInfo> info);
-@@ -159,6 +164,21 @@
+@@ -159,6 +164,21 @@ class CONTENT_EXPORT SaveFileManager
    // Help function for sending notification of canceling specific request.
    void SendCancelRequest(SaveItemId save_item_id);
  
@@ -357,10 +356,10 @@ index 51eb63a9..0d4290b 100644
  
    // Lookup the SaveManager for this WebContents' saving browser context and
 diff --git a/content/browser/download/save_package.cc b/content/browser/download/save_package.cc
-index 369aae1..b23a020 100644
+index 7a5b64845a0e733467e3607cfa7feb75d1f3cb4c..0193ec702ffe5ba0fd3e87cbb65aa3b0e0bf3add 100644
 --- a/content/browser/download/save_package.cc
 +++ b/content/browser/download/save_package.cc
-@@ -856,6 +856,12 @@
+@@ -859,6 +859,12 @@ void SavePackage::SaveNextFile(bool process_all_remaining_items) {
      RenderFrameHostImpl* requester_frame =
          requester_frame_tree_node->current_frame_host();
  
@@ -373,7 +372,7 @@ index 369aae1..b23a020 100644
      file_manager_->SaveURL(
          save_item_ptr->id(), save_item_ptr->url(), save_item_ptr->referrer(),
          requester_frame->GetProcess()->GetID(),
-@@ -867,8 +873,8 @@
+@@ -870,8 +876,8 @@ void SavePackage::SaveNextFile(bool process_all_remaining_items) {
              .GetRenderViewHost()
              ->GetProcess()
              ->GetStoragePartition(),
