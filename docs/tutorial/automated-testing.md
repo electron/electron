@@ -24,19 +24,9 @@ Node.js package for testing with WebDriver. Its ecosystem also includes various 
 
 #### Install the testrunner
 
-First you need to download the WDIO testrunner CLI client:
+First you need to run the WebdriverIO starter toolkit in your project root directory, e.g.:
 
-```sh npm2yarn
-$ npm install --save-dev @wdio/cli
-```
-
-#### Set up your WDIO configuration
-
-Use the configuration wizard to set up your environment:
-
-```sh
-$ npx wdio config --yes
-```
+    $ npx wdio . --yes
 
 This installs all necessary packages for you and generates a `wdio.conf.js` configuration file.
 
