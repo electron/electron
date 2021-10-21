@@ -1,7 +1,7 @@
-From 8af66de55aad1b8230a6ec4f14fef8ba0f19a498 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Antonio Sartori <antoniosartori@chromium.org>
 Date: Tue, 24 Aug 2021 15:01:17 +0000
-Subject: [PATCH] Limit length of 'csp' attribute
+Subject: Limit length of 'csp' attribute
 
 Most servers limit the length of request headers anywhere. 4Kb seems
 like a reasonable limit, which some popular http servers have by
@@ -31,13 +31,12 @@ Commit-Queue: Antonio Sartori <antoniosartori@chromium.org>
 Reviewed-by: Arthur Sonzogni <arthursonzogni@chromium.org>
 Reviewed-by: Mike West <mkwst@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#914730}
----
 
 diff --git a/content/browser/content_security_policy_browsertest.cc b/content/browser/content_security_policy_browsertest.cc
-index 1d06319..f95fe16 100644
+index 1d0631955600449d142697ce68c474f1957eae75..f95fe16e3c3f8c8b6c603f7cd19dcdb915deacfa 100644
 --- a/content/browser/content_security_policy_browsertest.cc
 +++ b/content/browser/content_security_policy_browsertest.cc
-@@ -225,4 +225,21 @@
+@@ -225,4 +225,21 @@ IN_PROC_BROWSER_TEST_F(ContentSecurityPolicyBrowserTest, FileURLs) {
    }
  }
  
@@ -60,10 +59,10 @@ index 1d06319..f95fe16 100644
 +
  }  // namespace content
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 59ba7ab..63671a9 100644
+index a0c056f47b9582536f9c8ee93517c872bfadf2e3..72c08a7ac135149b66f6710ff01b4922df5aba24 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -822,9 +822,11 @@
+@@ -821,9 +821,11 @@ enum class VerifyDidCommitParamsDifference {
  };
  
  bool ValidateCSPAttribute(const std::string& value) {
@@ -77,10 +76,10 @@ index 59ba7ab..63671a9 100644
      return false;
    }
 diff --git a/third_party/blink/renderer/core/html/html_iframe_element.cc b/third_party/blink/renderer/core/html/html_iframe_element.cc
-index ef7aa89..6d6bddbf 100644
+index c60e3281ea96ef39e16034c88abf4c6c2a9bd2eb..f9434ae7a2c1066dd2c97f552ee572ca4d808f24 100644
 --- a/third_party/blink/renderer/core/html/html_iframe_element.cc
 +++ b/third_party/blink/renderer/core/html/html_iframe_element.cc
-@@ -208,16 +208,27 @@
+@@ -208,16 +208,27 @@ void HTMLIFrameElement::ParseAttribute(
        UpdateContainerPolicy();
      }
    } else if (name == html_names::kCspAttr) {
@@ -112,7 +111,7 @@ index ef7aa89..6d6bddbf 100644
        DidChangeAttributes();
        UseCounter::Count(GetDocument(), WebFeature::kIFrameCSPAttribute);
 diff --git a/third_party/blink/web_tests/external/wpt/content-security-policy/embedded-enforcement/required_csp-header.html b/third_party/blink/web_tests/external/wpt/content-security-policy/embedded-enforcement/required_csp-header.html
-index a9ad787..e0a31db 100644
+index a9ad787408786e594ccb554d2bd9186a9e8e7c1e..e0a31db8e28fb1a9d2884c7677597072d4badba2 100644
 --- a/third_party/blink/web_tests/external/wpt/content-security-policy/embedded-enforcement/required_csp-header.html
 +++ b/third_party/blink/web_tests/external/wpt/content-security-policy/embedded-enforcement/required_csp-header.html
 @@ -59,6 +59,9 @@
