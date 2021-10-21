@@ -1030,7 +1030,7 @@ void App::SetPath(gin_helper::ErrorThrower thrower,
   // Some of the paths in `app.getPath()` are based on `name` and should
   // update when `name` is changed before `app.ready` is fired. So if app
   // isn't ready yet, invalidate the PathService cache to ensure a refresh.
-  if (Browser::Get()->is_ready()) {
+  if (!Browser::Get()->is_ready()) {
     base::PathService::InvalidateCache();
   }
 }

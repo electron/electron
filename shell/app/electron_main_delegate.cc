@@ -140,11 +140,9 @@ bool ElectronPathProvider(int key, base::FilePath* result) {
       break;
 
     case DIR_BROWSER_DATA: {
-
-      if (!base::PathService::Get(DIR_APP_DATA, &cur))
+      // By default and for backward, equivalent to DIR_USER_DATA
+      if (!base::PathService::Get(chrome::DIR_USER_DATA, &cur))
         return false;
-      cur = cur.Append(base::FilePath::FromUTF8Unsafe(
-          GetPossiblyOverriddenApplicationName()));
       create_dir = true;
       break;
     }
