@@ -106,6 +106,6 @@ void AutofillDriverFactory::CloseAllPopups() {
   }
 }
 
-WEB_CONTENTS_USER_DATA_KEY_IMPL(AutofillDriverFactory)
+WEB_CONTENTS_USER_DATA_KEY_IMPL(AutofillDriverFactory);
 
 }  // namespace electron

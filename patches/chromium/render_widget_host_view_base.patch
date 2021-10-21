@@ -6,10 +6,10 @@ Subject: render_widget_host_view_base.patch
 ... something to do with OSR? and maybe <webview> as well? terrifying.
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.cc b/content/browser/renderer_host/render_widget_host_view_base.cc
-index 251157d2014be8aecb1a2554794257c43ae78dff..93adaa18da9a7c9d6a40c955c934810bde2394fc 100644
+index 9cddf7c7ba6c91b9800e04dbb2ff3f1553c64c5f..33ec9c904798ea316029bc86c8889b191e4eb6ed 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_base.cc
-@@ -661,6 +661,13 @@ bool RenderWidgetHostViewBase::ScreenRectIsUnstableFor(
+@@ -666,6 +666,13 @@ bool RenderWidgetHostViewBase::ScreenRectIsUnstableFor(
    return false;
  }
  
@@ -24,7 +24,7 @@ index 251157d2014be8aecb1a2554794257c43ae78dff..93adaa18da9a7c9d6a40c955c934810b
      const blink::WebMouseEvent& event,
      const ui::LatencyInfo& latency) {
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.h b/content/browser/renderer_host/render_widget_host_view_base.h
-index b3f79d5b38e10bf660f2a109ee1014ed24c54bbc..4cad83c43010f4d66fe9bc71d186b98b4fc0ffe9 100644
+index 3eb1f2f549305dacb437d856cdefcc80367ed9fa..d703e15a04160a1e8df231d395a2dfb54ee9c335 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.h
 +++ b/content/browser/renderer_host/render_widget_host_view_base.h
 @@ -25,8 +25,10 @@
@@ -50,7 +50,7 @@ index b3f79d5b38e10bf660f2a109ee1014ed24c54bbc..4cad83c43010f4d66fe9bc71d186b98b
  class WebCursor;
  class WebContentsAccessibility;
  class DelegatedFrameHost;
-@@ -143,6 +147,9 @@ class CONTENT_EXPORT RenderWidgetHostViewBase : public RenderWidgetHostView {
+@@ -145,6 +149,9 @@ class CONTENT_EXPORT RenderWidgetHostViewBase : public RenderWidgetHostView {
        const gfx::Rect& keyboard_rect) override {}
    bool IsHTMLFormPopup() const override;
  
@@ -60,7 +60,7 @@ index b3f79d5b38e10bf660f2a109ee1014ed24c54bbc..4cad83c43010f4d66fe9bc71d186b98b
    // This only needs to be overridden by RenderWidgetHostViewBase subclasses
    // that handle content embedded within other RenderWidgetHostViews.
    gfx::PointF TransformPointToRootCoordSpaceF(
-@@ -305,6 +312,11 @@ class CONTENT_EXPORT RenderWidgetHostViewBase : public RenderWidgetHostView {
+@@ -304,6 +311,11 @@ class CONTENT_EXPORT RenderWidgetHostViewBase : public RenderWidgetHostView {
    virtual void ProcessGestureEvent(const blink::WebGestureEvent& event,
                                     const ui::LatencyInfo& latency);
  

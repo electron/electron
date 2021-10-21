@@ -10,10 +10,10 @@ breakpad independently, as a "browser" process. This patches
 crash annotation.
 
 diff --git a/components/crash/core/app/breakpad_linux.cc b/components/crash/core/app/breakpad_linux.cc
-index 5eb19c8a47467d8df30316bfbd7f3c2f38aea7c0..094244b198745e6fbbfb8d72e7bc2e0ceb4db88c 100644
+index b1392d74ca4ff08f6e293a72d1d453baa5f91cbc..003702f4f0b1ddab26dee9a6154297fc0204b716 100644
 --- a/components/crash/core/app/breakpad_linux.cc
 +++ b/components/crash/core/app/breakpad_linux.cc
-@@ -717,8 +717,13 @@ bool CrashDone(const MinidumpDescriptor& minidump,
+@@ -718,8 +718,13 @@ bool CrashDone(const MinidumpDescriptor& minidump,
    log_path[log_path_len] = '\0';
    info.log_filename = log_path;
  #endif
@@ -29,7 +29,7 @@ index 5eb19c8a47467d8df30316bfbd7f3c2f38aea7c0..094244b198745e6fbbfb8d72e7bc2e0c
    info.distro = base::g_linux_distro;
    info.distro_length = my_strlen(base::g_linux_distro);
    info.upload = upload;
-@@ -2024,8 +2029,13 @@ void InitCrashReporter(const std::string& process_type) {
+@@ -2026,8 +2031,13 @@ void InitCrashReporter(const std::string& process_type) {
        process_type == kWebViewSingleProcessType ||
        process_type == kBrowserProcessType ||
  #endif

@@ -31,7 +31,6 @@
 #include "extensions/browser/notification_types.h"
 #include "extensions/browser/null_app_sorting.h"
 #include "extensions/browser/quota_service.h"
-#include "extensions/browser/runtime_data.h"
 #include "extensions/browser/service_worker_manager.h"
 #include "extensions/browser/user_script_manager.h"
 #include "extensions/common/constants.h"
@@ -96,8 +95,6 @@ void ElectronExtensionSystem::Shutdown() {
 void ElectronExtensionSystem::InitForRegularProfile(bool extensions_enabled) {
   service_worker_manager_ =
       std::make_unique<ServiceWorkerManager>(browser_context_);
-  runtime_data_ =
-      std::make_unique<RuntimeData>(ExtensionRegistry::Get(browser_context_));
   quota_service_ = std::make_unique<QuotaService>();
   user_script_manager_ = std::make_unique<UserScriptManager>(browser_context_);
   app_sorting_ = std::make_unique<NullAppSorting>();
@@ -161,10 +158,6 @@ ExtensionService* ElectronExtensionSystem::extension_service() {
   return nullptr;
 }
 
-RuntimeData* ElectronExtensionSystem::runtime_data() {
-  return runtime_data_.get();
-}
-
 ManagementPolicy* ElectronExtensionSystem::management_policy() {
   return management_policy_.get();
 }
@@ -182,6 +175,10 @@ StateStore* ElectronExtensionSystem::state_store() {
 }
 
 StateStore* ElectronExtensionSystem::rules_store() {
+  return nullptr;
+}
+
+StateStore* ElectronExtensionSystem::dynamic_user_scripts_store() {
   return nullptr;
 }
 

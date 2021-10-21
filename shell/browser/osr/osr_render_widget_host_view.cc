@@ -189,15 +189,11 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
   DCHECK(render_widget_host_);
   DCHECK(!render_widget_host_->GetView());
 
-  // Initialize a display struct as needed, to cache the scale factor.
-  if (display_list_.displays().empty()) {
-    display_list_ = display::DisplayList(
-        {display::Display(display::kDefaultDisplayId)},
-        display::kDefaultDisplayId, display::kDefaultDisplayId);
+  // Initialize a screen_infos_ struct as needed, to cache the scale factor.
+  if (screen_infos_.screen_infos.empty()) {
+    UpdateScreenInfo();
   }
-  display::Display current_display = display_list_.GetCurrentDisplay();
-  current_display.set_device_scale_factor(kDefaultScaleFactor);
-  display_list_.UpdateDisplay(current_display);
+  screen_infos_.mutable_current().device_scale_factor = kDefaultScaleFactor;
 
   delegated_frame_host_allocator_.GenerateId();
   delegated_frame_host_surface_id_ =
@@ -996,15 +992,11 @@ void OffScreenRenderWidgetHostView::ResizeRootLayer(bool force) {
   float sf = GetCurrentDeviceScaleFactor();
   const bool scaleFactorDidChange = scaleFactor != sf;
 
-  // Initialize a display struct as needed, to cache the scale factor.
-  if (display_list_.displays().empty()) {
-    display_list_ = display::DisplayList(
-        {display::Display(display::kDefaultDisplayId)},
-        display::kDefaultDisplayId, display::kDefaultDisplayId);
+  // Initialize a screen_infos_ struct as needed, to cache the scale factor.
+  if (screen_infos_.screen_infos.empty()) {
+    UpdateScreenInfo();
   }
-  display::Display current_display = display_list_.GetCurrentDisplay();
-  current_display.set_device_scale_factor(scaleFactor);
-  display_list_.UpdateDisplay(current_display);
+  screen_infos_.mutable_current().device_scale_factor = scaleFactor;
 
   gfx::Size size;
   if (!IsPopupWidget())
