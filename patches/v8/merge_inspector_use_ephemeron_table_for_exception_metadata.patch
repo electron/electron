@@ -1,0 +1,379 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jaroslav Sevcik <jarin@chromium.org>
+Date: Tue, 14 Sep 2021 21:08:03 +0200
+Subject: Merge: [inspector] Use ephemeron table for exception metadata
+
+EphemeronHashTable does not trigger interrupts when accessed
+(as opposed to calling the WeakMapGet builtin), so it avoids
+the use-after-free problem when reading exception metadata
+triggers session disconnect while holding a reference
+to the session.
+
+(cherry picked from commit 7994004493df2c9a24372587312ef6c458c7ed2b)
+
+Bug: chromium:1241860
+No-Try: true
+No-Presubmit: true
+No-Tree-Checks: true
+Change-Id: I29264b04b8daf682e7c33a97faedf50e323d57c4
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3218987
+Reviewed-by: Yang Guo <yangguo@chromium.org>
+Commit-Queue: Yang Guo <yangguo@chromium.org>
+Cr-Commit-Position: refs/branch-heads/9.5@{#38}
+Cr-Branched-From: 4a03d61accede9dd0e3e6dc0456ff5a0e3f792b4-refs/heads/9.5.172@{#1}
+Cr-Branched-From: 9a607043cb3161f8ceae1583807bece595388108-refs/heads/main@{#76741}
+
+diff --git a/src/api/api.h b/src/api/api.h
+index 7d2a0c3e9cfb9501b21aca7ffed7b171b54831d7..047d43053ecbdc5da8821e27270f5eb5aa714e54 100644
+--- a/src/api/api.h
++++ b/src/api/api.h
+@@ -33,7 +33,7 @@ namespace debug {
+ class AccessorPair;
+ class GeneratorObject;
+ class Script;
+-class WeakMap;
++class EphemeronTable;
+ }  // namespace debug
+ 
+ // Constants used in the implementation of the API.  The most natural thing
+@@ -126,7 +126,7 @@ class RegisteredExtension {
+   V(Proxy, JSProxy)                            \
+   V(debug::GeneratorObject, JSGeneratorObject) \
+   V(debug::Script, Script)                     \
+-  V(debug::WeakMap, JSWeakMap)                 \
++  V(debug::EphemeronTable, EphemeronHashTable) \
+   V(debug::AccessorPair, AccessorPair)         \
+   V(Promise, JSPromise)                        \
+   V(Primitive, Object)                         \
+diff --git a/src/debug/debug-interface.cc b/src/debug/debug-interface.cc
+index 7c12090b9946e406ecea5ac5883b9310716403a4..e4abd3dd2f171d6499ddcd6a77b9e4fe9c234f7f 100644
+--- a/src/debug/debug-interface.cc
++++ b/src/debug/debug-interface.cc
+@@ -1182,61 +1182,43 @@ TypeProfile::ScriptData TypeProfile::GetScriptData(size_t i) const {
+   return ScriptData(i, type_profile_);
+ }
+ 
+-v8::MaybeLocal<v8::Value> WeakMap::Get(v8::Local<v8::Context> context,
+-                                       v8::Local<v8::Value> key) {
+-  PREPARE_FOR_EXECUTION(context, WeakMap, Get, Value);
+-  auto self = Utils::OpenHandle(this);
+-  Local<Value> result;
+-  i::Handle<i::Object> argv[] = {Utils::OpenHandle(*key)};
+-  has_pending_exception =
+-      !ToLocal<Value>(i::Execution::CallBuiltin(isolate, isolate->weakmap_get(),
+-                                                self, arraysize(argv), argv),
+-                      &result);
+-  RETURN_ON_FAILED_EXECUTION(Value);
+-  RETURN_ESCAPED(result);
++MaybeLocal<v8::Value> EphemeronTable::Get(v8::Isolate* isolate,
++                                          v8::Local<v8::Value> key) {
++  i::Isolate* internal_isolate = reinterpret_cast<i::Isolate*>(isolate);
++  auto self = i::Handle<i::EphemeronHashTable>::cast(Utils::OpenHandle(this));
++  i::Handle<i::Object> internal_key = Utils::OpenHandle(*key);
++  DCHECK(internal_key->IsJSReceiver());
++
++  i::Handle<i::Object> value(self->Lookup(internal_key), internal_isolate);
++
++  if (value->IsTheHole()) return {};
++  return Utils::ToLocal(value);
+ }
+ 
+-v8::Maybe<bool> WeakMap::Delete(v8::Local<v8::Context> context,
+-                                v8::Local<v8::Value> key) {
+-  PREPARE_FOR_EXECUTION_WITH_CONTEXT(context, WeakMap, Delete, Nothing<bool>(),
+-                                     InternalEscapableScope, false);
+-  auto self = Utils::OpenHandle(this);
+-  Local<Value> result;
+-  i::Handle<i::Object> argv[] = {Utils::OpenHandle(*key)};
+-  has_pending_exception = !ToLocal<Value>(
+-      i::Execution::CallBuiltin(isolate, isolate->weakmap_delete(), self,
+-                                arraysize(argv), argv),
+-      &result);
+-  RETURN_ON_FAILED_EXECUTION_PRIMITIVE(bool);
+-  return Just(result->IsTrue());
+-}
+-
+-v8::MaybeLocal<WeakMap> WeakMap::Set(v8::Local<v8::Context> context,
+-                                     v8::Local<v8::Value> key,
+-                                     v8::Local<v8::Value> value) {
+-  PREPARE_FOR_EXECUTION(context, WeakMap, Set, WeakMap);
+-  auto self = Utils::OpenHandle(this);
+-  i::Handle<i::Object> result;
+-  i::Handle<i::Object> argv[] = {Utils::OpenHandle(*key),
+-                                 Utils::OpenHandle(*value)};
+-  has_pending_exception =
+-      !i::Execution::CallBuiltin(isolate, isolate->weakmap_set(), self,
+-                                 arraysize(argv), argv)
+-           .ToHandle(&result);
+-  RETURN_ON_FAILED_EXECUTION(WeakMap);
+-  RETURN_ESCAPED(Local<WeakMap>::Cast(Utils::ToLocal(result)));
+-}
+-
+-Local<WeakMap> WeakMap::New(v8::Isolate* isolate) {
++Local<EphemeronTable> EphemeronTable::Set(v8::Isolate* isolate,
++                                          v8::Local<v8::Value> key,
++                                          v8::Local<v8::Value> value) {
++  auto self = i::Handle<i::EphemeronHashTable>::cast(Utils::OpenHandle(this));
++  i::Handle<i::Object> internal_key = Utils::OpenHandle(*key);
++  i::Handle<i::Object> internal_value = Utils::OpenHandle(*value);
++  DCHECK(internal_key->IsJSReceiver());
++
++  i::Handle<i::EphemeronHashTable> result(
++      i::EphemeronHashTable::Put(self, internal_key, internal_value));
++
++  return ToApiHandle<EphemeronTable>(result);
++}
++
++Local<EphemeronTable> EphemeronTable::New(v8::Isolate* isolate) {
+   i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(isolate);
+-  LOG_API(i_isolate, WeakMap, New);
+   ENTER_V8_NO_SCRIPT_NO_EXCEPTION(i_isolate);
+-  i::Handle<i::JSWeakMap> obj = i_isolate->factory()->NewJSWeakMap();
+-  return ToApiHandle<WeakMap>(obj);
++  i::Handle<i::EphemeronHashTable> table =
++      i::EphemeronHashTable::New(i_isolate, 0);
++  return ToApiHandle<EphemeronTable>(table);
+ }
+ 
+-WeakMap* WeakMap::Cast(v8::Value* value) {
+-  return static_cast<WeakMap*>(value);
++EphemeronTable* EphemeronTable::Cast(v8::Value* value) {
++  return static_cast<EphemeronTable*>(value);
+ }
+ 
+ Local<Value> AccessorPair::getter() {
+diff --git a/src/debug/debug-interface.h b/src/debug/debug-interface.h
+index 833c26f691566d4d2c17998c85b9ee0cfb4a7bd6..3bc583e190a8e1e31786510a1150af0907945f14 100644
+--- a/src/debug/debug-interface.h
++++ b/src/debug/debug-interface.h
+@@ -568,19 +568,17 @@ class V8_NODISCARD DisableBreakScope {
+   std::unique_ptr<i::DisableBreak> scope_;
+ };
+ 
+-class WeakMap : public v8::Object {
++class EphemeronTable : public v8::Object {
+  public:
+-  WeakMap() = delete;
++  EphemeronTable() = delete;
+   V8_EXPORT_PRIVATE V8_WARN_UNUSED_RESULT v8::MaybeLocal<v8::Value> Get(
+-      v8::Local<v8::Context> context, v8::Local<v8::Value> key);
+-  V8_EXPORT_PRIVATE V8_WARN_UNUSED_RESULT v8::Maybe<bool> Delete(
+-      v8::Local<v8::Context> context, v8::Local<v8::Value> key);
+-  V8_EXPORT_PRIVATE V8_WARN_UNUSED_RESULT v8::MaybeLocal<WeakMap> Set(
+-      v8::Local<v8::Context> context, v8::Local<v8::Value> key,
++      v8::Isolate* isolate, v8::Local<v8::Value> key);
++  V8_EXPORT_PRIVATE V8_WARN_UNUSED_RESULT v8::Local<EphemeronTable> Set(
++      v8::Isolate* isolate, v8::Local<v8::Value> key,
+       v8::Local<v8::Value> value);
+ 
+-  V8_EXPORT_PRIVATE static Local<WeakMap> New(v8::Isolate* isolate);
+-  V8_INLINE static WeakMap* Cast(Value* obj);
++  V8_EXPORT_PRIVATE static Local<EphemeronTable> New(v8::Isolate* isolate);
++  V8_INLINE static EphemeronTable* Cast(Value* obj);
+ };
+ 
+ /**
+diff --git a/src/inspector/inspected-context.cc b/src/inspector/inspected-context.cc
+index a47df1ef123347a04da7e577bc1aa0958e77a1de..d9d38b2f32d8353900b1db399590b2b91fa0045f 100644
+--- a/src/inspector/inspected-context.cc
++++ b/src/inspector/inspected-context.cc
+@@ -126,12 +126,15 @@ void InspectedContext::discardInjectedScript(int sessionId) {
+ bool InspectedContext::addInternalObject(v8::Local<v8::Object> object,
+                                          V8InternalValueType type) {
+   if (m_internalObjects.IsEmpty()) {
+-    m_internalObjects.Reset(isolate(), v8::debug::WeakMap::New(isolate()));
++    m_internalObjects.Reset(isolate(),
++                            v8::debug::EphemeronTable::New(isolate()));
+   }
+-  return !m_internalObjects.Get(isolate())
+-              ->Set(m_context.Get(isolate()), object,
+-                    v8::Integer::New(isolate(), static_cast<int>(type)))
+-              .IsEmpty();
++  v8::Local<v8::debug::EphemeronTable> new_map =
++      m_internalObjects.Get(isolate())->Set(
++          isolate(), object,
++          v8::Integer::New(isolate(), static_cast<int>(type)));
++  m_internalObjects.Reset(isolate(), new_map);
++  return true;
+ }
+ 
+ V8InternalValueType InspectedContext::getInternalType(
+@@ -139,7 +142,7 @@ V8InternalValueType InspectedContext::getInternalType(
+   if (m_internalObjects.IsEmpty()) return V8InternalValueType::kNone;
+   v8::Local<v8::Value> typeValue;
+   if (!m_internalObjects.Get(isolate())
+-           ->Get(m_context.Get(isolate()), object)
++           ->Get(isolate(), object)
+            .ToLocal(&typeValue) ||
+       !typeValue->IsUint32()) {
+     return V8InternalValueType::kNone;
+diff --git a/src/inspector/inspected-context.h b/src/inspector/inspected-context.h
+index d3f0fe012b899c7c63140909080e395ade3c1536..f59f7d6da5970184e890dfa0569de008fca02e92 100644
+--- a/src/inspector/inspected-context.h
++++ b/src/inspector/inspected-context.h
+@@ -71,7 +71,7 @@ class InspectedContext {
+   std::unordered_set<int> m_reportedSessionIds;
+   std::unordered_map<int, std::unique_ptr<InjectedScript>> m_injectedScripts;
+   WeakCallbackData* m_weakCallbackData;
+-  v8::Global<v8::debug::WeakMap> m_internalObjects;
++  v8::Global<v8::debug::EphemeronTable> m_internalObjects;
+ };
+ 
+ }  // namespace v8_inspector
+diff --git a/src/inspector/v8-inspector-impl.cc b/src/inspector/v8-inspector-impl.cc
+index f0cfa9b2c7539d19ad51d5d5c0338661af5b8dfb..1f08ee4259bc3e2c84b648cbd1fae25b4b5dbb52 100644
+--- a/src/inspector/v8-inspector-impl.cc
++++ b/src/inspector/v8-inspector-impl.cc
+@@ -516,19 +516,17 @@ bool V8InspectorImpl::associateExceptionData(v8::Local<v8::Context>,
+   v8::Context::Scope contextScope(context);
+   v8::HandleScope handles(m_isolate);
+   if (m_exceptionMetaData.IsEmpty())
+-    m_exceptionMetaData.Reset(m_isolate, v8::debug::WeakMap::New(m_isolate));
++    m_exceptionMetaData.Reset(m_isolate,
++                              v8::debug::EphemeronTable::New(m_isolate));
+ 
+-  v8::Local<v8::debug::WeakMap> map = m_exceptionMetaData.Get(m_isolate);
+-  v8::MaybeLocal<v8::Value> entry = map->Get(context, exception);
++  v8::Local<v8::debug::EphemeronTable> map = m_exceptionMetaData.Get(m_isolate);
++  v8::MaybeLocal<v8::Value> entry = map->Get(m_isolate, exception);
+   v8::Local<v8::Object> object;
+   if (entry.IsEmpty() || !entry.ToLocalChecked()->IsObject()) {
+     object =
+         v8::Object::New(m_isolate, v8::Null(m_isolate), nullptr, nullptr, 0);
+-    v8::MaybeLocal<v8::debug::WeakMap> new_map =
+-        map->Set(context, exception, object);
+-    if (!new_map.IsEmpty()) {
+-      m_exceptionMetaData.Reset(m_isolate, new_map.ToLocalChecked());
+-    }
++    m_exceptionMetaData.Reset(m_isolate,
++                              map->Set(m_isolate, exception, object));
+   } else {
+     object = entry.ToLocalChecked().As<v8::Object>();
+   }
+@@ -548,8 +546,8 @@ v8::MaybeLocal<v8::Object> V8InspectorImpl::getAssociatedExceptionData(
+       !exceptionMetaDataContext().ToLocal(&context)) {
+     return v8::MaybeLocal<v8::Object>();
+   }
+-  v8::Local<v8::debug::WeakMap> map = m_exceptionMetaData.Get(m_isolate);
+-  auto entry = map->Get(context, exception);
++  v8::Local<v8::debug::EphemeronTable> map = m_exceptionMetaData.Get(m_isolate);
++  auto entry = map->Get(m_isolate, exception);
+   v8::Local<v8::Value> object;
+   if (!entry.ToLocal(&object) || !object->IsObject())
+     return v8::MaybeLocal<v8::Object>();
+diff --git a/src/inspector/v8-inspector-impl.h b/src/inspector/v8-inspector-impl.h
+index e1607f88c0e6591d748d0c82634e327d2bbebad7..e6e4cde61c5845cac95d058b361260637be38722 100644
+--- a/src/inspector/v8-inspector-impl.h
++++ b/src/inspector/v8-inspector-impl.h
+@@ -56,7 +56,7 @@ class V8StackTraceImpl;
+ 
+ class V8InspectorImpl : public V8Inspector {
+  public:
+-  V8InspectorImpl(v8::Isolate*, V8InspectorClient*);
++  V8_EXPORT_PRIVATE V8InspectorImpl(v8::Isolate*, V8InspectorClient*);
+   ~V8InspectorImpl() override;
+   V8InspectorImpl(const V8InspectorImpl&) = delete;
+   V8InspectorImpl& operator=(const V8InspectorImpl&) = delete;
+@@ -112,10 +112,9 @@ class V8InspectorImpl : public V8Inspector {
+ 
+   std::shared_ptr<Counters> enableCounters() override;
+ 
+-  bool associateExceptionData(v8::Local<v8::Context>,
+-                              v8::Local<v8::Value> exception,
+-                              v8::Local<v8::Name> key,
+-                              v8::Local<v8::Value> value) override;
++  V8_EXPORT_PRIVATE bool associateExceptionData(
++      v8::Local<v8::Context>, v8::Local<v8::Value> exception,
++      v8::Local<v8::Name> key, v8::Local<v8::Value> value) override;
+ 
+   unsigned nextExceptionId() { return ++m_lastExceptionId; }
+   void enableStackCapturingIfNeeded();
+@@ -136,7 +135,7 @@ class V8InspectorImpl : public V8Inspector {
+       int contextGroupId,
+       const std::function<void(V8InspectorSessionImpl*)>& callback);
+   int64_t generateUniqueId();
+-  v8::MaybeLocal<v8::Object> getAssociatedExceptionData(
++  V8_EXPORT_PRIVATE v8::MaybeLocal<v8::Object> getAssociatedExceptionData(
+       v8::Local<v8::Value> exception);
+ 
+   class EvaluateScope {
+@@ -164,7 +163,7 @@ class V8InspectorImpl : public V8Inspector {
+   std::unique_ptr<V8Debugger> m_debugger;
+   v8::Global<v8::Context> m_regexContext;
+   v8::Global<v8::Context> m_exceptionMetaDataContext;
+-  v8::Global<v8::debug::WeakMap> m_exceptionMetaData;
++  v8::Global<v8::debug::EphemeronTable> m_exceptionMetaData;
+   int m_capturingStackTracesCount;
+   unsigned m_lastExceptionId;
+   int m_lastContextId;
+diff --git a/test/cctest/test-debug.cc b/test/cctest/test-debug.cc
+index 2effdabc1dbd0e993971fe175b2483a9e555d0dd..30c6b2674901a0004b773ae0f0204d83b1964697 100644
+--- a/test/cctest/test-debug.cc
++++ b/test/cctest/test-debug.cc
+@@ -594,10 +594,11 @@ TEST(BreakPointApiIntrinsics) {
+     CHECK_EQ(2, break_point_hit_count);
+ 
+     break_point_hit_count = 0;
+-    v8::Local<v8::debug::WeakMap> weakmap =
+-        v8::debug::WeakMap::New(env->GetIsolate());
+-    CHECK(!weakmap->Set(env.local(), weakmap, v8_num(1)).IsEmpty());
+-    CHECK(!weakmap->Get(env.local(), weakmap).IsEmpty());
++    v8::Local<v8::debug::EphemeronTable> weakmap =
++        v8::debug::EphemeronTable::New(env->GetIsolate());
++    v8::Local<v8::Object> key = v8::Object::New(env->GetIsolate());
++    CHECK(!weakmap->Set(env->GetIsolate(), key, v8_num(1)).IsEmpty());
++    CHECK(!weakmap->Get(env->GetIsolate(), key).IsEmpty());
+     CHECK_EQ(0, break_point_hit_count);
+   }
+ 
+diff --git a/test/cctest/test-inspector.cc b/test/cctest/test-inspector.cc
+index e36ce19eca04831f8a80c459590506e497836716..7fb3bef3bb9e7ef88cd441ce4023b780fff5d982 100644
+--- a/test/cctest/test-inspector.cc
++++ b/test/cctest/test-inspector.cc
+@@ -8,6 +8,7 @@
+ #include "include/v8.h"
+ #include "src/inspector/protocol/Runtime.h"
+ #include "src/inspector/string-util.h"
++#include "src/inspector/v8-inspector-impl.h"
+ #include "test/cctest/cctest.h"
+ 
+ using v8_inspector::StringBuffer;
+@@ -168,3 +169,38 @@ TEST(BinaryBase64RoundTrip) {
+     CHECK_EQ(values[i], roundtrip_binary.data()[i]);
+   }
+ }
++
++TEST(NoInterruptOnGetAssociatedData) {
++  LocalContext env;
++  v8::Isolate* isolate = env->GetIsolate();
++  v8::HandleScope handle_scope(isolate);
++
++  v8_inspector::V8InspectorClient default_client;
++  std::unique_ptr<v8_inspector::V8InspectorImpl> inspector(
++      new v8_inspector::V8InspectorImpl(isolate, &default_client));
++
++  v8::Local<v8::Context> context = env->GetIsolate()->GetCurrentContext();
++  v8::Local<v8::Value> error = v8::Exception::Error(v8_str("custom error"));
++  v8::Local<v8::Name> key = v8_str("key");
++  v8::Local<v8::Value> value = v8_str("value");
++  inspector->associateExceptionData(context, error, key, value);
++
++  struct InterruptRecorder {
++    static void handler(v8::Isolate* isolate, void* data) {
++      reinterpret_cast<InterruptRecorder*>(data)->WasInvoked = true;
++    }
++
++    bool WasInvoked = false;
++  } recorder;
++
++  isolate->RequestInterrupt(&InterruptRecorder::handler, &recorder);
++
++  v8::Local<v8::Object> data =
++      inspector->getAssociatedExceptionData(error).ToLocalChecked();
++  CHECK(!recorder.WasInvoked);
++
++  CHECK_EQ(data->Get(context, key).ToLocalChecked(), value);
++
++  CompileRun("0");
++  CHECK(recorder.WasInvoked);
++}
