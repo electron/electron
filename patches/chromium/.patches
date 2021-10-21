@@ -169,3 +169,4 @@ check_direction_of_rtcencodedframes.patch
 cherry-pick-6a8a2098f9fa.patch
 cherry-pick-3a5bafa35def.patch
 speculative_fix_for_eye_dropper_getcolor_crash.patch
+cherry-pick-0894af410c4e.patch
