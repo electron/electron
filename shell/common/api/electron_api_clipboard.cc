@@ -15,6 +15,7 @@
 #include "third_party/skia/include/core/SkPixmap.h"
 #include "ui/base/clipboard/clipboard_format_type.h"
 #include "ui/base/clipboard/scoped_clipboard_writer.h"
+#include "ui/gfx/codec/png_codec.h"
 
 namespace electron {
 
@@ -198,12 +199,15 @@ void Clipboard::WriteBookmark(const std::u16string& title,
 gfx::Image Clipboard::ReadImage(gin_helper::Arguments* args) {
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
   absl::optional<gfx::Image> image;
-  clipboard->ReadImage(
+  clipboard->ReadPng(
       GetClipboardBuffer(args),
       /* data_dst = */ nullptr,
       base::BindOnce(
-          [](absl::optional<gfx::Image>* image, const SkBitmap& result) {
-            image->emplace(gfx::Image::CreateFrom1xBitmap(result));
+          [](absl::optional<gfx::Image>* image,
+             const std::vector<uint8_t>& result) {
+            SkBitmap bitmap;
+            gfx::PNGCodec::Decode(result.data(), result.size(), &bitmap);
+            image->emplace(gfx::Image::CreateFrom1xBitmap(bitmap));
           },
           &image));
   DCHECK(image.has_value());
