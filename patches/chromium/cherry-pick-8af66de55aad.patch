@@ -1,0 +1,126 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Antonio Sartori <antoniosartori@chromium.org>
+Date: Tue, 24 Aug 2021 15:01:17 +0000
+Subject: Limit length of 'csp' attribute
+
+Most servers limit the length of request headers anywhere. 4Kb seems
+like a reasonable limit, which some popular http servers have by
+default, and which we already enforce for Referer
+(https://crrev.com/c/1595872).
+
+I would have liked the constant 4096 to be shared between //content
+and blink. This would have required putting it somewhere like in
+//services/network or in //third_party/blink/common, creating a new
+file for it. I thought it would be easier to avoid that for this
+change.
+
+It would be safer to not load the iframe document, or to impose some
+very strict CSP like "default-src 'none'", instead than just ignoring
+the 'csp' attribute if that's too long. However, ignoring is what we
+already do if the attribute contains illegal characters or does not
+match the CSP grammary or is not subsumed by the parent iframe's csp
+attribute. For this change, I believe it's better to stay consistent
+with that, and later change the CSPEE code to block loading in all
+those cases.
+
+Bug: 1233067
+Change-Id: Ie9cd3db82287a76892cca76a0bf0d4a1613a3055
+Fixed: 1233067
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3057048
+Commit-Queue: Antonio Sartori <antoniosartori@chromium.org>
+Reviewed-by: Arthur Sonzogni <arthursonzogni@chromium.org>
+Reviewed-by: Mike West <mkwst@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#914730}
+
+diff --git a/content/browser/content_security_policy_browsertest.cc b/content/browser/content_security_policy_browsertest.cc
+index 1d0631955600449d142697ce68c474f1957eae75..f95fe16e3c3f8c8b6c603f7cd19dcdb915deacfa 100644
+--- a/content/browser/content_security_policy_browsertest.cc
++++ b/content/browser/content_security_policy_browsertest.cc
+@@ -225,4 +225,21 @@ IN_PROC_BROWSER_TEST_F(ContentSecurityPolicyBrowserTest, FileURLs) {
+   }
+ }
+ 
++// Test that a 'csp' attribute longer than 4096 bytes is ignored.
++IN_PROC_BROWSER_TEST_F(ContentSecurityPolicyBrowserTest, CSPAttributeTooLong) {
++  std::string long_csp_attribute = "script-src 'none' ";
++  long_csp_attribute.resize(4097, 'a');
++  std::string page = "data:text/html,<body><iframe csp=\"" +
++                     long_csp_attribute + "\"></iframe></body>";
++
++  GURL url(page);
++  WebContentsConsoleObserver console_observer(web_contents());
++  console_observer.SetPattern("'csp' attribute too long*");
++  EXPECT_TRUE(NavigateToURL(shell(), url));
++  console_observer.Wait();
++
++  EXPECT_EQ(current_frame_host()->child_count(), 1u);
++  EXPECT_FALSE(current_frame_host()->child_at(0)->csp_attribute());
++}
++
+ }  // namespace content
+diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
+index 39717e91a88f04d42b489b2217c67f65ee797b4c..db01f3ea0423d780763ba82e50725bb0a12e5018 100644
+--- a/content/browser/renderer_host/render_frame_host_impl.cc
++++ b/content/browser/renderer_host/render_frame_host_impl.cc
+@@ -837,9 +837,11 @@ enum class VerifyDidCommitParamsDifference {
+ };
+ 
+ bool ValidateCSPAttribute(const std::string& value) {
++  static const size_t kMaxLengthCSPAttribute = 4096;
+   if (!base::IsStringASCII(value))
+     return false;
+-  if (value.find('\n') != std::string::npos ||
++  if (value.length() > kMaxLengthCSPAttribute ||
++      value.find('\n') != std::string::npos ||
+       value.find('\r') != std::string::npos) {
+     return false;
+   }
+diff --git a/third_party/blink/renderer/core/html/html_iframe_element.cc b/third_party/blink/renderer/core/html/html_iframe_element.cc
+index 589580b9795f3908c4f5d978bd4366c98e52847a..40b8af83cdb2dc61b78628c223c0d95f7ec43d5b 100644
+--- a/third_party/blink/renderer/core/html/html_iframe_element.cc
++++ b/third_party/blink/renderer/core/html/html_iframe_element.cc
+@@ -207,16 +207,27 @@ void HTMLIFrameElement::ParseAttribute(
+       UpdateContainerPolicy();
+     }
+   } else if (name == html_names::kCspAttr) {
++    static const size_t kMaxLengthCSPAttribute = 4096;
+     if (value && (value.Contains('\n') || value.Contains('\r') ||
+                   !MatchesTheSerializedCSPGrammar(value.GetString()))) {
++      // TODO(antoniosartori): It would be safer to block loading iframes with
++      // invalid 'csp' attribute.
+       required_csp_ = g_null_atom;
+       GetDocument().AddConsoleMessage(MakeGarbageCollected<ConsoleMessage>(
+           mojom::blink::ConsoleMessageSource::kOther,
+           mojom::blink::ConsoleMessageLevel::kError,
+           "'csp' attribute is invalid: " + value));
+-      return;
+-    }
+-    if (required_csp_ != value) {
++    } else if (value && value.length() > kMaxLengthCSPAttribute) {
++      // TODO(antoniosartori): It would be safer to block loading iframes with
++      // invalid 'csp' attribute.
++      required_csp_ = g_null_atom;
++      GetDocument().AddConsoleMessage(MakeGarbageCollected<ConsoleMessage>(
++          mojom::blink::ConsoleMessageSource::kOther,
++          mojom::blink::ConsoleMessageLevel::kError,
++          String::Format("'csp' attribute too long. The max length for the "
++                         "'csp' attribute is %zu bytes.",
++                         kMaxLengthCSPAttribute)));
++    } else if (required_csp_ != value) {
+       required_csp_ = value;
+       CSPAttributeChanged();
+       UseCounter::Count(GetDocument(), WebFeature::kIFrameCSPAttribute);
+diff --git a/third_party/blink/web_tests/external/wpt/content-security-policy/embedded-enforcement/required_csp-header.html b/third_party/blink/web_tests/external/wpt/content-security-policy/embedded-enforcement/required_csp-header.html
+index a9ad787408786e594ccb554d2bd9186a9e8e7c1e..e0a31db8e28fb1a9d2884c7677597072d4badba2 100644
+--- a/third_party/blink/web_tests/external/wpt/content-security-policy/embedded-enforcement/required_csp-header.html
++++ b/third_party/blink/web_tests/external/wpt/content-security-policy/embedded-enforcement/required_csp-header.html
+@@ -59,6 +59,9 @@
+       { "name": "Wrong and dangerous value of `csp` should not trigger sending Sec-Required-CSP Header - report-to present",
+         "csp": "script-src 'unsafe-inline'; report-to resources/dummy-report.php",
+         "expected": null },
++      { "name": "Sec-Required-CSP is not sent if `csp` attribute is longer than 4096 bytes",
++        "csp": "style-src " + Array.from(Array(2044).keys()).map(i => 'a').join(' '),
++        "expected":  null },
+     ];
+ 
+     tests.forEach(test => {
