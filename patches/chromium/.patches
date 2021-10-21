@@ -107,3 +107,4 @@ fix_media_key_usage_with_globalshortcuts.patch
 cherry-pick-ec42dfd3545f.patch
 cherry-pick-39090918efac.patch
 mas_gate_private_enterprise_APIs
+cherry-pick-c69dddfe1cde.patch
