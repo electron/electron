@@ -140,6 +140,7 @@ void WebContentsPermissionHelper::RequestMediaAccessPermission(
     media_types->AppendString("video");
   }
   details.SetList("mediaTypes", std::move(media_types));
+  details.SetString("securityOrigin", request.security_origin.spec());
 
   // The permission type doesn't matter here, AUDIO_CAPTURE/VIDEO_CAPTURE
   // are presented as same type in content_converter.h.
@@ -188,6 +189,24 @@ bool WebContentsPermissionHelper::CheckSerialAccessPermission(
   details.SetString("securityOrigin", embedding_origin.GetURL().spec());
   return CheckPermission(
       static_cast<content::PermissionType>(PermissionType::SERIAL), &details);
+}
+
+bool WebContentsPermissionHelper::CheckSerialPortPermission(
+    const url::Origin& origin,
+    base::Value device,
+    content::RenderFrameHost* render_frame_host) const {
+  return CheckDevicePermission(
+      static_cast<content::PermissionType>(PermissionType::SERIAL), origin,
+      &device, render_frame_host);
+}
+
+void WebContentsPermissionHelper::GrantSerialPortPermission(
+    const url::Origin& origin,
+    base::Value device,
+    content::RenderFrameHost* render_frame_host) const {
+  return GrantDevicePermission(
+      static_cast<content::PermissionType>(PermissionType::SERIAL), origin,
+      &device, render_frame_host);
 }
 
 bool WebContentsPermissionHelper::CheckHIDAccessPermission(
