@@ -16,7 +16,7 @@ From [ChromeDriver - WebDriver for Chrome][chrome-driver]:
 
 There are a few ways that you can set up testing using WebDriver.
 
-### With WebDriver.IO
+### With WebdriverIO
 
 [WebdriverIO](https://webdriver.io/) (WDIO) is a test automation framework that provides a
 Node.js package for testing with WebDriver. Its ecosystem also includes various plugins
@@ -24,9 +24,11 @@ Node.js package for testing with WebDriver. Its ecosystem also includes various 
 
 #### Install the testrunner
 
-First you need to run the WebdriverIO starter toolkit in your project root directory, e.g.:
+First you need to run the WebdriverIO starter toolkit in your project root directory:
 
-    $ npx wdio . --yes
+```sh npm2yarn
+npx wdio . --yes
+```
 
 This installs all necessary packages for you and generates a `wdio.conf.js` configuration file.
 
