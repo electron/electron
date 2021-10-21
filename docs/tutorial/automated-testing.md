@@ -4,7 +4,7 @@ Test automation is an efficient way of validating that your application code wor
 While Electron doesn't actively maintain its own testing solution, this guide will go over a couple
 ways you can run end-to-end automated tests on your Electron app.
 
-## Using WebDriver with WebDriver.IO
+## Using the WebDriver interface
 
 From [ChromeDriver - WebDriver for Chrome][chrome-driver]:
 
@@ -14,11 +14,15 @@ From [ChromeDriver - WebDriver for Chrome][chrome-driver]:
 > implements WebDriver's wire protocol for Chromium. It is being developed by
 > members of the Chromium and WebDriver teams.
 
+There are a few ways that you can set up testing using WebDriver.
+
+### With WebDriver.IO
+
 [WebdriverIO](https://webdriver.io/) (WDIO) is a test automation framework that provides a
-Node package for testing with WebDriver. Its ecosystem also includes various plugins
+Node.js package for testing with WebDriver. Its ecosystem also includes various plugins
 (e.g. reporter and services) that can help you put together your test setup.
 
-### Install the WDIO testrunner
+#### Install the testrunner
 
 First you need to download the WDIO testrunner CLI client:
 
@@ -26,7 +30,7 @@ First you need to download the WDIO testrunner CLI client:
 $ npm install --save-dev @wdio/cli
 ```
 
-### Set up your WDIO configuration
+#### Set up your WDIO configuration
 
 Use the configuration wizard to set up your environment:
 
@@ -36,7 +40,7 @@ $ npx wdio config --yes
 
 This installs all necessary packages for you and generates a `wdio.conf.js` configuration file.
 
-### Connect WDIO to your Electron app
+#### Connect WDIO to your Electron app
 
 Update the capabilities in your configuration file to point to your Electron app binary:
 
@@ -54,7 +58,7 @@ export.config = {
 }
 ```
 
-### Run your tests
+#### Run your tests
 
 To run your tests:
 
@@ -63,6 +67,62 @@ $ npx wdio run wdio.conf.js
 ```
 
 [chrome-driver]: https://sites.google.com/chromium.org/driver/
+
+### With Selenium
+
+[Selenium](https://www.selenium.dev/) is a web automation framework that
+exposes bindings to WebDriver APIs in many languages. Their Node.js bindings
+are available under the `selenium-webdriver` package on NPM.
+
+#### Run a ChromeDriver server
+
+In order to use Selenium with Electron, you need to download the `electron-chromedriver`
+binary, and run it:
+
+```sh npm2yarn
+npm install --save-dev electron-chromedriver
+./node_modules/.bin/chromedriver
+Starting ChromeDriver (v2.10.291558) on port 9515
+Only local connections are allowed.
+```
+
+Remember the port number `9515`, which will be used later.
+
+#### Connect Selenium to ChromeDriver
+
+Next, install Selenium into your project:
+
+```sh npm2yarn
+npm install --save-dev selenium-webdriver
+```
+
+Usage of `selenium-webdriver` with Electron is the same as with
+normal websites, except that you have to manually specify how to connect
+ChromeDriver and where to find the binary of your Electron app:
+
+```js title='test.js'
+const webdriver = require('selenium-webdriver')
+const driver = new webdriver.Builder()
+  // The "9515" is the port opened by ChromeDriver.
+  .usingServer('http://localhost:9515')
+  .withCapabilities({
+    'goog:chromeOptions': {
+      // Here is the path to your Electron binary.
+      binary: '/Path-to-Your-App.app/Contents/MacOS/Electron'
+    }
+  })
+  .forBrowser('chrome') // note: use .forBrowser('electron') for selenium-webdriver <= 3.6.0
+  .build()
+driver.get('http://www.google.com')
+driver.findElement(webdriver.By.name('q')).sendKeys('webdriver')
+driver.findElement(webdriver.By.name('btnG')).click()
+driver.wait(() => {
+  return driver.getTitle().then((title) => {
+    return title === 'webdriver - Google Search'
+  })
+}, 1000)
+driver.quit()
+```
 
 ## Using a custom test driver
 
