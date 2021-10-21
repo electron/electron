@@ -1,7 +1,7 @@
-From c69dddfe1cdede662f2b1a2d5a3c1613029a3e98 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Hongchan Choi <hongchan@chromium.org>
 Date: Mon, 11 Oct 2021 23:53:51 +0000
-Subject: [PATCH] Use zero when the starting value of exponential ramp is zero
+Subject: Use zero when the starting value of exponential ramp is zero
 
 The calculation of an exponential curve is done by the specification:
 https://webaudio.github.io/web-audio-api/#dom-audioparam-exponentialramptovalueattime
@@ -23,10 +23,9 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3218139
 Reviewed-by: Hongchan Choi <hongchan@chromium.org>
 Cr-Commit-Position: refs/branch-heads/4638@{#766}
 Cr-Branched-From: 159257cab5585bc8421abf347984bb32fdfe9eb9-refs/heads/main@{#920003}
----
 
 diff --git a/third_party/blink/renderer/modules/webaudio/audio_param_timeline.cc b/third_party/blink/renderer/modules/webaudio/audio_param_timeline.cc
-index 55e3673..f3931e0 100644
+index cf863b343bce3d9c1707be784e01114b594c24f7..f6a0dc5e5cf097f684c0443137b720865601d19c 100644
 --- a/third_party/blink/renderer/modules/webaudio/audio_param_timeline.cc
 +++ b/third_party/blink/renderer/modules/webaudio/audio_param_timeline.cc
 @@ -37,6 +37,7 @@
@@ -37,7 +36,7 @@ index 55e3673..f3931e0 100644
  #include "third_party/fdlibm/ieee754.h"
  
  #if defined(ARCH_CPU_X86_FAMILY)
-@@ -133,7 +134,12 @@
+@@ -133,7 +134,12 @@ float AudioParamTimeline::ExponentialRampAtTime(double t,
                                                  double time1,
                                                  float value2,
                                                  double time2) {
@@ -51,7 +50,7 @@ index 55e3673..f3931e0 100644
  }
  
  // Compute the value of a set target event at time t with the given event
-@@ -1001,6 +1007,8 @@
+@@ -998,6 +1004,8 @@ float AudioParamTimeline::ValuesForFrameRangeImpl(
      std::tie(value2, time2, next_event_type) =
          HandleCancelValues(event, next_event, value2, time2);
  
@@ -60,7 +59,7 @@ index 55e3673..f3931e0 100644
      DCHECK_GE(time2, time1);
  
      // |fillToEndFrame| is the exclusive upper bound of the last frame to be
-@@ -1060,7 +1068,6 @@
+@@ -1057,7 +1065,6 @@ float AudioParamTimeline::ValuesForFrameRangeImpl(
            value = event->Value();
            write_index =
                FillWithDefault(values, value, fill_to_frame, write_index);
@@ -68,7 +67,7 @@ index 55e3673..f3931e0 100644
            break;
          }
  
-@@ -1403,6 +1410,7 @@
+@@ -1400,6 +1407,7 @@ AudioParamTimeline::HandleCancelValues(const ParamEvent* current_event,
                value2 = ExponentialRampAtTime(next_event->Time(), value1, time1,
                                               saved_event->Value(),
                                               saved_event->Time());
@@ -78,7 +77,7 @@ index 55e3673..f3931e0 100644
              case ParamEvent::kSetValueCurveEnd:
 diff --git a/third_party/blink/web_tests/webaudio/AudioParam/exponential-ramp-crash-1253746.html b/third_party/blink/web_tests/webaudio/AudioParam/exponential-ramp-crash-1253746.html
 new file mode 100644
-index 0000000..85397c5c
+index 0000000000000000000000000000000000000000..85397c5cc6757ae1464a0cd6733283b6b60abeee
 --- /dev/null
 +++ b/third_party/blink/web_tests/webaudio/AudioParam/exponential-ramp-crash-1253746.html
 @@ -0,0 +1,39 @@
