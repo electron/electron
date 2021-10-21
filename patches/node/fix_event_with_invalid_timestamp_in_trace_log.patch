@@ -1,0 +1,30 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cezary Kulakowski <cezary@openfin.co>
+Date: Fri, 8 Oct 2021 11:18:58 +0200
+Subject: fix: event with invalid timestamp in trace log
+
+When node is started within Electron's environment it doesn't
+initialize v8 and time of v8's start is never set. As a result
+we log v8's start time as 0 and it breaks timestamps in the
+trace log. With this change we log v8's start time only when
+it was initialized by node.
+
+diff --git a/src/env.cc b/src/env.cc
+index 7155ae67ac625b0d1503dbb8e5cd0a61a90dce24..28fbe05c6f9e41cb2a43fb3a99fd801a31fbdf23 100644
+--- a/src/env.cc
++++ b/src/env.cc
+@@ -377,9 +377,11 @@ Environment::Environment(IsolateData* isolate_data,
+       performance::NODE_PERFORMANCE_MILESTONE_ENVIRONMENT);
+   performance_state_->Mark(performance::NODE_PERFORMANCE_MILESTONE_NODE_START,
+                            per_process::node_start_time);
+-  performance_state_->Mark(
+-      performance::NODE_PERFORMANCE_MILESTONE_V8_START,
+-      performance::performance_v8_start);
++  if (per_process::v8_initialized) {
++    performance_state_->Mark(
++        performance::NODE_PERFORMANCE_MILESTONE_V8_START,
++        performance::performance_v8_start);
++  }
+ 
+   if (*TRACE_EVENT_API_GET_CATEGORY_GROUP_ENABLED(
+           TRACING_CATEGORY_NODE1(environment)) != 0) {
