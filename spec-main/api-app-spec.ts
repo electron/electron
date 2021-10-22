@@ -208,6 +208,7 @@ describe('app module', () => {
     interface SingleInstanceLockTestArgs {
       args: string[];
       expectedAdditionalData: unknown;
+      expectedAck: unknown;
     }
 
     it('prevents the second launch of app', async function () {
@@ -237,6 +238,8 @@ describe('app module', () => {
 
       const secondInstanceArgs = [process.execPath, appPath, ...testArgs.args, '--some-switch', 'some-arg'];
       const second = cp.spawn(secondInstanceArgs[0], secondInstanceArgs.slice(1));
+      const secondStdoutLines = second.stdout.pipe(split());
+      const dataAckPromise = emittedOnce(secondStdoutLines, 'data');
       const secondExited = emittedOnce(second, 'exit');
 
       const [code2] = await secondExited;
@@ -247,6 +250,8 @@ describe('app module', () => {
       const [args, additionalData] = dataFromSecondInstance[0].toString('ascii').split('||');
       const secondInstanceArgsReceived: string[] = JSON.parse(args.toString('ascii'));
       const secondInstanceDataReceived = JSON.parse(additionalData.toString('ascii'));
+      const ackData = await dataAckPromise;
+      const dataAckReceived = JSON.parse(ackData[0].toString('ascii'));
 
       // Ensure secondInstanceArgs is a subset of secondInstanceArgsReceived
       for (const arg of secondInstanceArgs) {
@@ -255,69 +260,113 @@ describe('app module', () => {
       }
       expect(secondInstanceDataReceived).to.be.deep.equal(testArgs.expectedAdditionalData,
         `received data ${JSON.stringify(secondInstanceDataReceived)} is not equal to expected data ${JSON.stringify(testArgs.expectedAdditionalData)}.`);
+      expect(dataAckReceived).to.be.deep.equal(testArgs.expectedAck,
+        `received data ${JSON.stringify(dataAckReceived)} is not equal to expected data ${JSON.stringify(testArgs.expectedAck)}.`);
     }
 
-    it('passes arguments to the second-instance event no additional data', async () => {
+    const expectedAdditionalData = {
+      level: 1,
+      testkey: 'testvalue1',
+      inner: {
+        level: 2,
+        testkey: 'testvalue2'
+      }
+    };
+
+    const expectedAck = {
+      level: 1,
+      testkey: 'acktestvalue1',
+      inner: {
+        level: 2,
+        testkey: 'acktestvalue2'
+      }
+    };
+
+    it('passes arguments to the second-instance event with no additional data', async () => {
       await testArgumentPassing({
         args: [],
-        expectedAdditionalData: null
+        expectedAdditionalData: null,
+        expectedAck: null
       });
     });
 
-    it('sends and receives JSON object data', async () => {
-      const expectedAdditionalData = {
-        level: 1,
-        testkey: 'testvalue1',
-        inner: {
-          level: 2,
-          testkey: 'testvalue2'
-        }
-      };
+    it('passes arguments to the second-instance event', async () => {
       await testArgumentPassing({
         args: ['--send-data'],
-        expectedAdditionalData
+        expectedAdditionalData,
+        expectedAck: null
+      });
+    });
+
+    it('gets back an ack after preventing default', async () => {
+      await testArgumentPassing({
+        args: ['--send-ack', '--prevent-default'],
+        expectedAdditionalData: null,
+        expectedAck
+      });
+    });
+
+    it('is able to send back empty ack after preventing default', async () => {
+      await testArgumentPassing({
+        args: ['--prevent-default'],
+        expectedAdditionalData: null,
+        expectedAck: null
+      });
+    });
+
+    it('sends and receives data', async () => {
+      await testArgumentPassing({
+        args: ['--send-ack', '--prevent-default', '--send-data'],
+        expectedAdditionalData,
+        expectedAck
       });
     });
 
     it('sends and receives numerical data', async () => {
       await testArgumentPassing({
-        args: ['--send-data', '--data-content=2'],
-        expectedAdditionalData: 2
+        args: ['--send-ack', '--ack-content=1', '--prevent-default', '--send-data', '--data-content=2'],
+        expectedAdditionalData: 2,
+        expectedAck: 1
       });
     });
 
     it('sends and receives string data', async () => {
       await testArgumentPassing({
-        args: ['--send-data', '--data-content="data"'],
-        expectedAdditionalData: 'data'
+        args: ['--send-ack', '--ack-content="ack"', '--prevent-default', '--send-data', '--data-content="data"'],
+        expectedAdditionalData: 'data',
+        expectedAck: 'ack'
       });
     });
 
     it('sends and receives boolean data', async () => {
       await testArgumentPassing({
-        args: ['--send-data', '--data-content=false'],
-        expectedAdditionalData: false
+        args: ['--send-ack', '--ack-content=true', '--prevent-default', '--send-data', '--data-content=false'],
+        expectedAdditionalData: false,
+        expectedAck: true
       });
     });
 
     it('sends and receives array data', async () => {
       await testArgumentPassing({
-        args: ['--send-data', '--data-content=[2, 3, 4]'],
-        expectedAdditionalData: [2, 3, 4]
+        args: ['--send-ack', '--ack-content=[1, 2, 3]', '--prevent-default', '--send-data', '--data-content=[2, 3, 4]'],
+        expectedAdditionalData: [2, 3, 4],
+        expectedAck: [1, 2, 3]
       });
     });
 
     it('sends and receives mixed array data', async () => {
       await testArgumentPassing({
-        args: ['--send-data', '--data-content=["2", true, 4]'],
-        expectedAdditionalData: ['2', true, 4]
+        args: ['--send-ack', '--ack-content=["1", true, 3]', '--prevent-default', '--send-data', '--data-content=["2", false, 4]'],
+        expectedAdditionalData: ['2', false, 4],
+        expectedAck: ['1', true, 3]
       });
     });
 
     it('sends and receives null data', async () => {
       await testArgumentPassing({
-        args: ['--send-data', '--data-content=null'],
-        expectedAdditionalData: null
+        args: ['--send-ack', '--ack-content=null', '--prevent-default', '--send-data', '--data-content=null'],
+        expectedAdditionalData: null,
+        expectedAck: null
       });
     });
 
@@ -325,7 +374,8 @@ describe('app module', () => {
       try {
         await testArgumentPassing({
           args: ['--send-ack', '--ack-content="undefined"', '--prevent-default', '--send-data', '--data-content="undefined"'],
-          expectedAdditionalData: undefined
+          expectedAdditionalData: undefined,
+          expectedAck: undefined
         });
         assert(false);
       } catch (e) {
