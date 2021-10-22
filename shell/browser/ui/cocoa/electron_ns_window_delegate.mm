@@ -12,7 +12,6 @@
 #include "shell/browser/native_window_mac.h"
 #include "shell/browser/ui/cocoa/electron_preview_item.h"
 #include "shell/browser/ui/cocoa/electron_touch_bar.h"
-#include "ui/gfx/geometry/resize_utils.h"
 #include "ui/gfx/mac/coordinate_conversion.h"
 #include "ui/views/cocoa/native_widget_mac_ns_window_host.h"
 #include "ui/views/widget/native_widget_mac.h"
@@ -147,11 +146,38 @@ using FullScreenTransitionState =
                extraHeightPlusFrame);
   }
 
-  if (!resizingHorizontally_) {
+  gfx::ResizeEdge resizeEdge = gfx::ResizeEdge::kBottom;
+
+  if (!resizeDirection_) {
+    NSString* resizeDirection = [self _getResizeDirectionBasedOnCursor];
+    if (!resizeDirection_) {
+      if ([resizeDirection isEqualToString:@"eastWest"]) {
+        resizeDirection_ = gfx::ResizeEdge::kRight;
+      } else if ([resizeDirection isEqualToString:@"northSouth"]) {
+        resizeDirection_ = gfx::ResizeEdge::kBottom;
+      } else if ([resizeDirection isEqualToString:@"northWestSouthEast"]) {
+        resizeDirection_ = gfx::ResizeEdge::kBottomRight;
+      } else if ([resizeDirection isEqualToString:@"northEastSouthWest"]) {
+        resizeDirection_ = gfx::ResizeEdge::kBottomLeft;
+      }
+    }
+  }
+
+  // If resize direction cannot be determined based on current cursor, fallback
+  // to determine it based on how the window size changed.
+  if (!resizingHorizontally_ && !resizeDirection_) {
     NSWindow* window = shell_->GetNativeWindow().GetNativeNSWindow();
     const auto widthDelta = frameSize.width - [window frame].size.width;
     const auto heightDelta = frameSize.height - [window frame].size.height;
     resizingHorizontally_ = std::abs(widthDelta) > std::abs(heightDelta);
+  }
+
+  if (resizeDirection_) {
+    resizeEdge = *resizeDirection_;
+  } else {
+    if (*resizingHorizontally_) {
+      resizeEdge = gfx::ResizeEdge::kRight;
+    }
   }
 
   {
@@ -159,10 +185,7 @@ using FullScreenTransitionState =
     NSRect new_bounds = NSMakeRect(sender.frame.origin.x, sender.frame.origin.y,
                                    newSize.width, newSize.height);
     shell_->NotifyWindowWillResize(gfx::ScreenRectFromNSRect(new_bounds),
-                                   *resizingHorizontally_
-                                       ? gfx::ResizeEdge::kRight
-                                       : gfx::ResizeEdge::kBottom,
-                                   &prevent_default);
+                                   resizeEdge, &prevent_default);
     if (prevent_default) {
       return sender.frame.size;
     }
@@ -223,6 +246,7 @@ using FullScreenTransitionState =
 
 - (void)windowDidEndLiveResize:(NSNotification*)notification {
   resizingHorizontally_.reset();
+  resizeDirection_.reset();
   shell_->NotifyWindowResized();
   if (is_zooming_) {
     if (shell_->IsMaximized())
@@ -340,6 +364,35 @@ using FullScreenTransitionState =
 - (id<QLPreviewItem>)previewPanel:(QLPreviewPanel*)panel
                previewItemAtIndex:(NSInteger)index {
   return shell_->preview_item();
+}
+
+- (NSString*)_getResizeDirectionBasedOnCursor {
+  NSDictionary* resizeSelectorNames = @{
+    @"eastWest" : @"_windowResizeEastWestCursor",
+    @"northSouth" : @"_windowResizeNorthSouthCursor",
+    @"northWestSouthEast" : @"_windowResizeNorthWestSouthEastCursor",
+    @"northEastSouthWest" : @"_windowResizeNorthEastSouthWestCursor"
+  };
+
+  NSCursor* currentCursor = [NSCursor currentSystemCursor];
+  if (currentCursor) {
+    NSData* currentCursorImage = [[currentCursor image] TIFFRepresentation];
+
+    for (NSString* resizeDirection in resizeSelectorNames) {
+      NSString* selectorName = resizeSelectorNames[resizeDirection];
+      SEL resizeSelector = NSSelectorFromString(selectorName);
+
+      if ([NSCursor respondsToSelector:resizeSelector]) {
+        NSCursor* resizeCursor = [NSCursor performSelector:resizeSelector];
+        NSData* resizeCursorImage = [[resizeCursor image] TIFFRepresentation];
+        if ([currentCursorImage isEqualToData:resizeCursorImage]) {
+          return resizeDirection;
+        }
+      }
+    }
+  }
+
+  return @"unknown";
 }
 
 @end

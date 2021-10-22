@@ -9,6 +9,7 @@
 
 #include "components/remote_cocoa/app_shim/views_nswindow_delegate.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
+#include "ui/gfx/geometry/resize_utils.h"
 
 namespace electron {
 class NativeWindowMac;
@@ -26,6 +27,8 @@ class NativeWindowMac;
   // Used to keep track of whether a resize is happening horizontally or
   // vertically, even if physically the user is resizing in both directions.
   absl::optional<bool> resizingHorizontally_;
+
+  absl::optional<gfx::ResizeEdge> resizeDirection_;
 }
 - (id)initWithShell:(electron::NativeWindowMac*)shell;
 @end
