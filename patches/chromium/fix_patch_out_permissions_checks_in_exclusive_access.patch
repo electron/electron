@@ -1,0 +1,34 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Mon, 25 Oct 2021 21:45:57 +0200
+Subject: fix: patch out permissions checks in exclusive_access
+
+This patch is necessary in order to properly enable
+navigator.keyboard.{(un)?lock}() functionality. We don't have a concept
+of PermissionManager nor of a Profile, so this would not affect usage of
+the API.
+
+We might consider potentially using our own permissions handler,
+but it's not strictly necessary for this API to work to spec.
+
+diff --git a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
+index e9c8a4a4bb7334682ceeec05b3a3e872de0192ab..ca99fcef04e3a7ab5ec265264fa9b4571b1c2881 100644
+--- a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
++++ b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
+@@ -388,6 +388,7 @@ void FullscreenController::EnterFullscreenModeInternal(
+   }
+ 
+   if (display_id != display::kInvalidDisplayId) {
++#if 0
+     // Check, but do not prompt, for permission to request a specific screen.
+     // Sites generally need permission to get the display id in the first place.
+     auto* manager = PermissionManagerFactory::GetForProfile(
+@@ -399,6 +400,8 @@ void FullscreenController::EnterFullscreenModeInternal(
+                 .content_setting != ContentSetting::CONTENT_SETTING_ALLOW) {
+       display_id = display::kInvalidDisplayId;
+     }
++#endif
++    display_id = display::kInvalidDisplayId;
+   }
+ 
+   if (option == BROWSER)

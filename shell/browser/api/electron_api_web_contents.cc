@@ -630,6 +630,7 @@ WebContents::WebContents(v8::Isolate* isolate,
       id_(GetAllWebContents().Add(this)),
       devtools_file_system_indexer_(
           base::MakeRefCounted<DevToolsFileSystemIndexer>()),
+      exclusive_access_manager_(std::make_unique<ExclusiveAccessManager>(this)),
       file_task_runner_(
           base::ThreadPool::CreateSequencedTaskRunner({base::MayBlock()}))
 #if BUILDFLAG(ENABLE_PRINTING)
@@ -668,6 +669,7 @@ WebContents::WebContents(v8::Isolate* isolate,
       id_(GetAllWebContents().Add(this)),
       devtools_file_system_indexer_(
           base::MakeRefCounted<DevToolsFileSystemIndexer>()),
+      exclusive_access_manager_(std::make_unique<ExclusiveAccessManager>(this)),
       file_task_runner_(
           base::ThreadPool::CreateSequencedTaskRunner({base::MayBlock()}))
 #if BUILDFLAG(ENABLE_PRINTING)
@@ -688,6 +690,7 @@ WebContents::WebContents(v8::Isolate* isolate,
     : id_(GetAllWebContents().Add(this)),
       devtools_file_system_indexer_(
           base::MakeRefCounted<DevToolsFileSystemIndexer>()),
+      exclusive_access_manager_(std::make_unique<ExclusiveAccessManager>(this)),
       file_task_runner_(
           base::ThreadPool::CreateSequencedTaskRunner({base::MayBlock()}))
 #if BUILDFLAG(ENABLE_PRINTING)
@@ -1252,6 +1255,40 @@ void WebContents::ContentsZoomChange(bool zoom_in) {
   Emit("zoom-changed", zoom_in ? "in" : "out");
 }
 
+Profile* WebContents::GetProfile() {
+  return nullptr;
+}
+
+bool WebContents::IsFullscreen() const {
+  return owner_window_->IsFullscreen();
+}
+
+void WebContents::EnterFullscreen(const GURL& url,
+                                  ExclusiveAccessBubbleType bubble_type,
+                                  const int64_t display_id) {}
+
+void WebContents::ExitFullscreen() {}
+
+void WebContents::UpdateExclusiveAccessExitBubbleContent(
+    const GURL& url,
+    ExclusiveAccessBubbleType bubble_type,
+    ExclusiveAccessBubbleHideCallback bubble_first_hide_callback,
+    bool force_update) {}
+
+void WebContents::OnExclusiveAccessUserInput() {}
+
+content::WebContents* WebContents::GetActiveWebContents() {
+  return web_contents();
+}
+
+bool WebContents::CanUserExitFullscreen() const {
+  return true;
+}
+
+bool WebContents::IsExclusiveAccessBubbleDisplayed() const {
+  return false;
+}
+
 void WebContents::EnterFullscreenModeForTab(
     content::RenderFrameHost* requesting_frame,
     const blink::mojom::FullscreenOptions& options) {
@@ -1262,6 +1299,8 @@ void WebContents::EnterFullscreenModeForTab(
       base::BindRepeating(&WebContents::OnEnterFullscreenModeForTab,
                           base::Unretained(this), requesting_frame, options);
   permission_helper->RequestFullscreenPermission(callback);
+  exclusive_access_manager_->fullscreen_controller()->EnterFullscreenModeForTab(
+      requesting_frame, options.display_id);
 }
 
 void WebContents::OnEnterFullscreenModeForTab(
@@ -1298,6 +1337,9 @@ void WebContents::ExitFullscreenModeForTab(content::WebContents* source) {
     // `chrome/browser/ui/exclusive_access/fullscreen_controller.cc`.
     source->GetRenderViewHost()->GetWidget()->SynchronizeVisualProperties();
   }
+
+  exclusive_access_manager_->fullscreen_controller()->ExitFullscreenModeForTab(
+      source);
 }
 
 void WebContents::RendererUnresponsive(
@@ -1344,6 +1386,18 @@ void WebContents::FindReply(content::WebContents* web_contents,
   result.Set("activeMatchOrdinal", active_match_ordinal);
   result.Set("finalUpdate", final_update);  // Deprecate after 2.0
   Emit("found-in-page", result.GetHandle());
+}
+
+void WebContents::RequestKeyboardLock(content::WebContents* web_contents,
+                                      bool esc_key_locked) {
+  exclusive_access_manager_->keyboard_lock_controller()->RequestKeyboardLock(
+      web_contents, esc_key_locked);
+}
+
+void WebContents::CancelKeyboardLockRequest(
+    content::WebContents* web_contents) {
+  exclusive_access_manager_->keyboard_lock_controller()
+      ->CancelKeyboardLockRequest(web_contents);
 }
 
 bool WebContents::CheckMediaAccessPermission(
