@@ -16,7 +16,7 @@ index 0e90487923c57c0570e73ef0f0e8c5acc2576932..fcdc88233b2277f3b37a2a2b0bdee7d7
      const GURL& opener_url,
 -    const std::string& frame_name,
 -    const GURL& target_url) {
-+    const mojom::CreateNewWindowParams& params) {
++    const content::mojom::CreateNewWindowParams& params) {
    NOTREACHED();
    return true;
  }
@@ -30,7 +30,7 @@ index 5b4d70991e19edcdfee731c56251932bf43e535f..fe1977c5e6ce0f5b30e8be529b9efa51
        const GURL& opener_url,
 -      const std::string& frame_name,
 -      const GURL& target_url) override;
-+      const mojom::CreateNewWindowParams& params) override;
++      const content::mojom::CreateNewWindowParams& params) override;
  };
  
  #endif  // CHROME_BROWSER_ANDROID_DOCUMENT_DOCUMENT_WEB_CONTENTS_DELEGATE_H_
@@ -44,7 +44,7 @@ index 363a0d6979aaa8fb1047f6e0ed8b4bf58f547c6f..0a1279bca644158a6a17662eba940432
      const GURL& opener_url,
 -    const std::string& frame_name,
 -    const GURL& target_url) {
-+    const mojom::CreateNewWindowParams& params) {
++    const content::mojom::CreateNewWindowParams& params) {
    // Disallow creating separate WebContentses.  The WebContents implementation
    // uses this to spawn new windows/tabs, which is also not allowed for
    // offscreen tabs.
@@ -58,7 +58,7 @@ index c80128b816cc77b95af215384fdc36b2150f95ea..3fe773e671d1c087eaf1303ca6088359
        const GURL& opener_url,
 -      const std::string& frame_name,
 -      const GURL& target_url) final;
-+      const mojom::CreateNewWindowParams& params) override;
++      const content::mojom::CreateNewWindowParams& params) override;
    void EnterFullscreenModeForTab(
        content::RenderFrameHost* requesting_frame,
        const blink::mojom::FullscreenOptions& options) final;
@@ -72,7 +72,7 @@ index e4f3632c84ebe4dcbbc3deb2f49e351c75ec93fd..58902fdaf316ad371ddb3e79e6ebc74c
      const GURL& opener_url,
 -    const std::string& frame_name,
 -    const GURL& target_url) {
-+    const mojom::CreateNewWindowParams& params) {
++    const content::mojom::CreateNewWindowParams& params) {
    if (params_.suppress_navigation) {
 -    NotifyDidSuppressNavigation(target_url,
 +    NotifyDidSuppressNavigation(params.target_url,
@@ -89,7 +89,7 @@ index 07014765f33bdddebcc5bc32a2713d6523faf394..f866f69f9c810d89f1a0e9e4952293f6
        const GURL& opener_url,
 -      const std::string& frame_name,
 -      const GURL& target_url) override;
-+      const mojom::CreateNewWindowParams& params) override;
++      const content::mojom::CreateNewWindowParams& params) override;
    content::WebContents* OpenURLFromTab(
        content::WebContents* source,
        const content::OpenURLParams& params) override;
@@ -103,7 +103,7 @@ index ba376cca99e6b8b367c6a4cfc9925b940728b9fc..f1b831507d628d35cc65f697ffc83256
        const GURL& opener_url,
 -      const std::string& frame_name,
 -      const GURL& target_url) override {
-+      const mojom::CreateNewWindowParams& params) override {
++      const content::mojom::CreateNewWindowParams& params) override {
      return true;
    }
  
@@ -117,7 +117,7 @@ index c764e3607d274b9ec3f645c2b5fc9c8c1e98ad47..1199199a14ad745a2dde2e2a8bfc0a0d
      const GURL& opener_url,
 -    const std::string& frame_name,
 -    const GURL& target_url) {
-+    const mojom::CreateNewWindowParams& params) {
++    const content::mojom::CreateNewWindowParams& params) {
    return window_container_type ==
               content::mojom::WindowContainerType::BACKGROUND &&
           ShouldCreateBackgroundContents(source_site_instance, opener_url,
@@ -136,7 +136,7 @@ index 69911da4fe7b9894f718fac8d59af1dcc9d18593..1a5668edcbfee23a12fc3e9b70a54673
        const GURL& opener_url,
 -      const std::string& frame_name,
 -      const GURL& target_url) override;
-+      const mojom::CreateNewWindowParams& params) override;
++      const content::mojom::CreateNewWindowParams& params) override;
    content::WebContents* CreateCustomWebContents(
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
@@ -150,7 +150,7 @@ index ff97ac6e97c688d677053a5f01546a4c2d91ff1d..1da6a9c32b883a17975e61d603639182
      const GURL& opener_url,
 -    const std::string& frame_name,
 -    const GURL& target_url) {
-+    const mojom::CreateNewWindowParams& params) {
++    const content::mojom::CreateNewWindowParams& params) {
    // Disallow creating separate WebContentses.  The WebContents implementation
    // uses this to spawn new windows/tabs, which is also not allowed for
    // local presentations.
@@ -164,7 +164,7 @@ index 45cd02ecf7b7acb107f95656b3fa07a5fca2ea95..b06ca2dbdd0c21554802ab3b99576b38
        const GURL& opener_url,
 -      const std::string& frame_name,
 -      const GURL& target_url) override;
-+      const mojom::CreateNewWindowParams& params) override;
++      const content::mojom::CreateNewWindowParams& params) override;
  
    // The profile used for the presentation.
    Profile* otr_profile_;
@@ -178,7 +178,7 @@ index 9364a722de5183c077a9c50b8c8a48ffa3a0fea6..ddde17de38bc5ca904046702a28a88d7
      const GURL& opener_url,
 -    const std::string& frame_name,
 -    const GURL& target_url) {
-+    const mojom::CreateNewWindowParams& params) {
++    const content::mojom::CreateNewWindowParams& params) {
    JNIEnv* env = AttachCurrentThread();
    ScopedJavaLocalRef<jobject> obj = GetJavaDelegate(env);
    if (obj.is_null())
@@ -199,7 +199,7 @@ index 4b832f4c3a051eefca57909958334631335e03e1..8aed42112d8fad7df813524cf700d808
        const GURL& opener_url,
 -      const std::string& frame_name,
 -      const GURL& target_url) override;
-+      const mojom::CreateNewWindowParams& params) override;
++      const content::mojom::CreateNewWindowParams& params) override;
    void CloseContents(content::WebContents* source) override;
    void SetContentsBounds(content::WebContents* source,
                           const gfx::Rect& bounds) override;
@@ -213,7 +213,7 @@ index 53fad64f87a952fd0d7398958288ecde259b57bf..0b8359b6179bf16e58978e5f3e51a911
      const GURL& opener_url,
 -    const std::string& frame_name,
 -    const GURL& target_url) {
-+    const mojom::CreateNewWindowParams& params) {
++    const content::mojom::CreateNewWindowParams& params) {
    // Background pages should not create other webcontents/tabs.
    return true;
  }
@@ -227,7 +227,7 @@ index 75eff96958b086ebfe7f99adf0d986213074c45b..83b2c95c1ae46394d0c483dfbe0cd81c
        const GURL& opener_url,
 -      const std::string& frame_name,
 -      const GURL& target_url) override;
-+      const mojom::CreateNewWindowParams& params) override;
++      const content::mojom::CreateNewWindowParams& params) override;
  
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
@@ -339,7 +339,7 @@ index 264846f62b075fd31be93d65b033ad65fb865b90..a00bae25768573878b6c372cf620c9c4
      const GURL& opener_url,
 -    const std::string& frame_name,
 -    const GURL& target_url) {
-+    const mojom::CreateNewWindowParams& params) {
++    const content::mojom::CreateNewWindowParams& params) {
    // Specify a generous upper bound for unacknowledged popup windows, so that we
    // can catch bad client behavior while not interfering with normal operation.
    constexpr size_t kMaxPendingWebContentsCount = 10;
@@ -353,7 +353,7 @@ index 90fe755aa7dddee8c1f129a4e125efba060ce055..301dd436259ea35377c6a0336789c524
        const GURL& opener_url,
 -      const std::string& frame_name,
 -      const GURL& target_url) override;
-+      const mojom::CreateNewWindowParams& params) override;
++      const content::mojom::CreateNewWindowParams& params) override;
    void WebContentsCreated(content::WebContents* source_contents,
                            int opener_render_process_id,
                            int opener_render_frame_id,
