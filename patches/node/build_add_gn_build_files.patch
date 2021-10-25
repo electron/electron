@@ -959,7 +959,7 @@ index 0000000000000000000000000000000000000000..2c9d2826c85bdd033f1df1d6188df636
 +}
 diff --git a/filenames.json b/filenames.json
 new file mode 100644
-index 0000000000000000000000000000000000000000..c0b0624028fddb4f7b409f42b357fdc404d810f3
+index 0000000000000000000000000000000000000000..e2aec71226f25645b188c2c6d8f89478a4b06ae5
 --- /dev/null
 +++ b/filenames.json
 @@ -0,0 +1,603 @@
@@ -1298,9 +1298,9 @@ index 0000000000000000000000000000000000000000..c0b0624028fddb4f7b409f42b357fdc4
 +    "lib/internal/modules/esm/translators.js",
 +    "lib/internal/modules/esm/resolve.js",
 +    "lib/internal/modules/esm/create_dynamic_module.js",
++    "lib/internal/modules/esm/load.js",
 +    "lib/internal/modules/esm/module_map.js",
 +    "lib/internal/modules/esm/get_format.js",
-+    "lib/internal/modules/esm/transform_source.js",
 +    "lib/internal/modules/esm/loader.js",
 +    "lib/internal/modules/cjs/helpers.js",
 +    "lib/internal/modules/cjs/loader.js",
