@@ -169,5 +169,6 @@ check_direction_of_rtcencodedframes.patch
 cherry-pick-6a8a2098f9fa.patch
 cherry-pick-3a5bafa35def.patch
 speculative_fix_for_eye_dropper_getcolor_crash.patch
+cherry-pick-0894af410c4e.patch
 move_networkstateobserver_from_document_to_window.patch
 use_zero_when_the_starting_value_of_exponential_ramp_is_zero.patch
