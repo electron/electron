@@ -535,9 +535,11 @@ Note that this is only emitted when the window is being resized manually. Resizi
 The possible values and behaviors of the `edge` option are platform dependent. Possible values are:
 
 * On Windows, possible values are `bottom`, `top`, `left`, `right`, `top-left`, `top-right`, `bottom-left`, `bottom-right`.
-* On macOS, possible values are `bottom` and `right`.
+* On macOS, possible values are `bottom`, `right`, `bottom-left` and `bottom-right`.
   * The value `bottom` is used to denote vertical resizing.
   * The value `right` is used to denote horizontal resizing.
+  * The value `bottom-left` is also used to denote diagonal resizing in the `top-right` case.
+  * The value `bottom-right` is also used to denote diagonal resizing in the `top-left` case.
 
 #### Event: 'resize'
 
