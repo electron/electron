@@ -49,6 +49,8 @@
 #include "third_party/blink/public/web/web_script_execution_callback.h"
 #include "third_party/blink/public/web/web_script_source.h"
 #include "third_party/blink/public/web/web_view.h"
+#include "third_party/blink/renderer/core/execution_context/execution_context.h"  // nogncheck
+#include "third_party/blink/renderer/core/frame/csp/content_security_policy.h"  // nogncheck
 #include "third_party/blink/renderer/platform/bindings/dom_wrapper_world.h"  // nogncheck
 #include "ui/base/ime/ime_text_span.h"
 #include "url/url_util.h"
@@ -369,6 +371,7 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
         .SetMethod("insertText", &WebFrameRenderer::InsertText)
         .SetMethod("insertCSS", &WebFrameRenderer::InsertCSS)
         .SetMethod("removeInsertedCSS", &WebFrameRenderer::RemoveInsertedCSS)
+        .SetMethod("_isEvalAllowed", &WebFrameRenderer::IsEvalAllowed)
         .SetMethod("executeJavaScript", &WebFrameRenderer::ExecuteJavaScript)
         .SetMethod("executeJavaScriptInIsolatedWorld",
                    &WebFrameRenderer::ExecuteJavaScriptInIsolatedWorld)
@@ -635,6 +638,16 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
       web_frame->ToWebLocalFrame()->GetDocument().RemoveInsertedStyleSheet(
           blink::WebString::FromUTF16(key));
     }
+  }
+
+  bool IsEvalAllowed(v8::Isolate* isolate) {
+    content::RenderFrame* render_frame;
+    if (!MaybeGetRenderFrame(isolate, "isEvalAllowed", &render_frame))
+      return true;
+
+    auto* context = blink::ExecutionContext::From(
+        render_frame->GetWebFrame()->MainWorldScriptContext());
+    return !context->GetContentSecurityPolicy()->ShouldCheckEval();
   }
 
   v8::Local<v8::Promise> ExecuteJavaScript(gin::Arguments* gin_args,
