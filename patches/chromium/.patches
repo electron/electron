@@ -160,3 +160,4 @@ speculative_fix_for_eye_dropper_getcolor_crash.patch
 mas_gate_private_enterprise_APIs
 cherry-pick-c69dddfe1cde.patch
 cherry-pick-8af66de55aad.patch
+cherry-pick-0894af410c4e.patch
