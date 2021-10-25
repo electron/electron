@@ -1,0 +1,222 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Adam Rice <ricea@chromium.org>
+Date: Thu, 30 Sep 2021 13:35:07 +0000
+Subject: Move NetworkStateObserver from document to window
+
+Previously NetworkStateObserver was a nested class of Document. Make it
+a nested class of LocalDOMWindow instead, since they have the same
+lifetime and it fires "online" and "offline" events at the window, not
+the document.
+
+BUG=1206928
+
+(cherry picked from commit af84d38b5cf5ee24f432ae8273bc2dad1e075f0e)
+
+Change-Id: I2a1080915cf56cfa47eae65594fe6edcc8c2130a
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3167550
+Reviewed-by: Kentaro Hara <haraken@chromium.org>
+Commit-Queue: Adam Rice <ricea@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#922429}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3196231
+Cr-Commit-Position: refs/branch-heads/4638@{#476}
+Cr-Branched-From: 159257cab5585bc8421abf347984bb32fdfe9eb9-refs/heads/main@{#920003}
+
+diff --git a/third_party/blink/renderer/core/dom/document.cc b/third_party/blink/renderer/core/dom/document.cc
+index 93b923688e9dc6a43f515c12d1678d38fc40f34c..852a146666b38cd752113ca29a62a35012f98106 100644
+--- a/third_party/blink/renderer/core/dom/document.cc
++++ b/third_party/blink/renderer/core/dom/document.cc
+@@ -319,7 +319,6 @@
+ #include "third_party/blink/renderer/platform/loader/fetch/resource_fetcher.h"
+ #include "third_party/blink/renderer/platform/network/content_security_policy_parsers.h"
+ #include "third_party/blink/renderer/platform/network/http_parsers.h"
+-#include "third_party/blink/renderer/platform/network/network_state_notifier.h"
+ #include "third_party/blink/renderer/platform/runtime_enabled_features.h"
+ #include "third_party/blink/renderer/platform/scheduler/public/event_loop.h"
+ #include "third_party/blink/renderer/platform/scheduler/public/frame_or_worker_scheduler.h"
+@@ -636,43 +635,6 @@ uint64_t Document::global_tree_version_ = 0;
+ 
+ static bool g_threaded_parsing_enabled_for_testing = true;
+ 
+-class Document::NetworkStateObserver final
+-    : public GarbageCollected<Document::NetworkStateObserver>,
+-      public NetworkStateNotifier::NetworkStateObserver,
+-      public ExecutionContextLifecycleObserver {
+- public:
+-  explicit NetworkStateObserver(ExecutionContext* context)
+-      : ExecutionContextLifecycleObserver(context) {
+-    online_observer_handle_ = GetNetworkStateNotifier().AddOnLineObserver(
+-        this, GetExecutionContext()->GetTaskRunner(TaskType::kNetworking));
+-  }
+-
+-  void OnLineStateChange(bool on_line) override {
+-    AtomicString event_name =
+-        on_line ? event_type_names::kOnline : event_type_names::kOffline;
+-    auto* window = To<LocalDOMWindow>(GetExecutionContext());
+-    window->DispatchEvent(*Event::Create(event_name));
+-    probe::NetworkStateChanged(window->GetFrame(), on_line);
+-  }
+-
+-  void ContextDestroyed() override {
+-    UnregisterAsObserver(GetExecutionContext());
+-  }
+-
+-  void UnregisterAsObserver(ExecutionContext* context) {
+-    DCHECK(context);
+-    online_observer_handle_ = nullptr;
+-  }
+-
+-  void Trace(Visitor* visitor) const override {
+-    ExecutionContextLifecycleObserver::Trace(visitor);
+-  }
+-
+- private:
+-  std::unique_ptr<NetworkStateNotifier::NetworkStateObserverHandle>
+-      online_observer_handle_;
+-};
+-
+ ExplicitlySetAttrElementsMap* Document::GetExplicitlySetAttrElementsMap(
+     Element* element) {
+   DCHECK(element);
+@@ -2996,12 +2958,6 @@ void Document::Initialize() {
+ 
+   if (View())
+     View()->DidAttachDocument();
+-
+-  // Observer(s) should not be initialized until the document is initialized /
+-  // attached to a frame. Otherwise
+-  // ExecutionContextLifecycleObserver::contextDestroyed wouldn't be fired.
+-  network_state_observer_ =
+-      MakeGarbageCollected<NetworkStateObserver>(GetExecutionContext());
+ }
+ 
+ void Document::Shutdown() {
+@@ -8181,7 +8137,6 @@ void Document::Trace(Visitor* visitor) const {
+   visitor->Trace(intersection_observer_controller_);
+   visitor->Trace(snap_coordinator_);
+   visitor->Trace(property_registry_);
+-  visitor->Trace(network_state_observer_);
+   visitor->Trace(policy_);
+   visitor->Trace(slot_assignment_engine_);
+   visitor->Trace(viewport_data_);
+diff --git a/third_party/blink/renderer/core/dom/document.h b/third_party/blink/renderer/core/dom/document.h
+index f1d7d46f4e166f9054979fb7e28c41c1831bcceb..f71f12b34a39f8a4d50b0b821ef318cf02b1173d 100644
+--- a/third_party/blink/renderer/core/dom/document.h
++++ b/third_party/blink/renderer/core/dom/document.h
+@@ -1689,7 +1689,6 @@ class CORE_EXPORT Document : public ContainerNode,
+                            BeforeMatchExpandedHiddenMatchableUkm);
+   FRIEND_TEST_ALL_PREFIXES(TextFinderSimTest,
+                            BeforeMatchExpandedHiddenMatchableUkmNoHandler);
+-  class NetworkStateObserver;
+ 
+   friend class AXContext;
+   void AddAXContext(AXContext*);
+@@ -2071,8 +2070,6 @@ class CORE_EXPORT Document : public ContainerNode,
+ 
+   TaskHandle sensitive_input_edited_task_;
+ 
+-  Member<NetworkStateObserver> network_state_observer_;
+-
+   std::unique_ptr<DocumentOutliveTimeReporter> document_outlive_time_reporter_;
+ 
+   // |ukm_recorder_| and |source_id_| will allow objects that are part of
+diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
+index 1cd316f90a037d8736e89bbfb28fb26523ccd97b..19ad80c9342f5aaeae10bb19fd5f71aedba7e169 100644
+--- a/third_party/blink/renderer/core/frame/local_dom_window.cc
++++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
+@@ -127,6 +127,7 @@
+ #include "third_party/blink/renderer/platform/bindings/script_state.h"
+ #include "third_party/blink/renderer/platform/heap/heap.h"
+ #include "third_party/blink/renderer/platform/loader/fetch/resource_fetcher.h"
++#include "third_party/blink/renderer/platform/network/network_state_notifier.h"
+ #include "third_party/blink/renderer/platform/scheduler/public/dummy_schedulers.h"
+ #include "third_party/blink/renderer/platform/scheduler/public/post_cross_thread_task.h"
+ #include "third_party/blink/renderer/platform/timer.h"
+@@ -162,6 +163,38 @@ bool ShouldRecordPostMessageIncomingFrameUkmEvent(
+ 
+ }  // namespace
+ 
++class LocalDOMWindow::NetworkStateObserver final
++    : public GarbageCollected<LocalDOMWindow::NetworkStateObserver>,
++      public NetworkStateNotifier::NetworkStateObserver,
++      public ExecutionContextLifecycleObserver {
++ public:
++  explicit NetworkStateObserver(ExecutionContext* context)
++      : ExecutionContextLifecycleObserver(context) {}
++
++  void Initialize() {
++    online_observer_handle_ = GetNetworkStateNotifier().AddOnLineObserver(
++        this, GetExecutionContext()->GetTaskRunner(TaskType::kNetworking));
++  }
++
++  void OnLineStateChange(bool on_line) override {
++    AtomicString event_name =
++        on_line ? event_type_names::kOnline : event_type_names::kOffline;
++    auto* window = To<LocalDOMWindow>(GetExecutionContext());
++    window->DispatchEvent(*Event::Create(event_name));
++    probe::NetworkStateChanged(window->GetFrame(), on_line);
++  }
++
++  void ContextDestroyed() override { online_observer_handle_ = nullptr; }
++
++  void Trace(Visitor* visitor) const override {
++    ExecutionContextLifecycleObserver::Trace(visitor);
++  }
++
++ private:
++  std::unique_ptr<NetworkStateNotifier::NetworkStateObserverHandle>
++      online_observer_handle_;
++};
++
+ LocalDOMWindow::LocalDOMWindow(LocalFrame& frame, WindowAgent* agent)
+     : DOMWindow(frame),
+       ExecutionContext(V8PerIsolateData::MainThreadIsolate(), agent),
+@@ -179,7 +212,9 @@ LocalDOMWindow::LocalDOMWindow(LocalFrame& frame, WindowAgent* agent)
+       isolated_world_csp_map_(
+           MakeGarbageCollected<
+               HeapHashMap<int, Member<ContentSecurityPolicy>>>()),
+-      token_(LocalFrameToken(frame.GetFrameToken())) {}
++      token_(LocalFrameToken(frame.GetFrameToken())),
++      network_state_observer_(
++          MakeGarbageCollected<NetworkStateObserver>(this)) {}
+ 
+ void LocalDOMWindow::BindContentSecurityPolicy() {
+   DCHECK(!GetContentSecurityPolicy()->IsBound());
+@@ -189,6 +224,7 @@ void LocalDOMWindow::BindContentSecurityPolicy() {
+ 
+ void LocalDOMWindow::Initialize() {
+   GetAgent()->AttachContext(this);
++  network_state_observer_->Initialize();
+ }
+ 
+ void LocalDOMWindow::ResetWindowAgent(WindowAgent* agent) {
+@@ -2120,6 +2156,7 @@ void LocalDOMWindow::Trace(Visitor* visitor) const {
+   visitor->Trace(spell_checker_);
+   visitor->Trace(text_suggestion_controller_);
+   visitor->Trace(isolated_world_csp_map_);
++  visitor->Trace(network_state_observer_);
+   DOMWindow::Trace(visitor);
+   ExecutionContext::Trace(visitor);
+   Supplementable<LocalDOMWindow>::Trace(visitor);
+diff --git a/third_party/blink/renderer/core/frame/local_dom_window.h b/third_party/blink/renderer/core/frame/local_dom_window.h
+index 290467577c86bd69c19c108e3bcd87b80d24e4a9..aa1d1f89ba061df6e8d856aef6c0b6803c126f87 100644
+--- a/third_party/blink/renderer/core/frame/local_dom_window.h
++++ b/third_party/blink/renderer/core/frame/local_dom_window.h
+@@ -448,6 +448,8 @@ class CORE_EXPORT LocalDOMWindow final : public DOMWindow,
+                            LocalDOMWindow* source) override;
+ 
+  private:
++  class NetworkStateObserver;
++
+   // Intentionally private to prevent redundant checks when the type is
+   // already LocalDOMWindow.
+   bool IsLocalDOMWindow() const override { return true; }
+@@ -545,6 +547,9 @@ class CORE_EXPORT LocalDOMWindow final : public DOMWindow,
+   // this UKM is logged.
+   // TODO(crbug.com/1112491): Remove when no longer needed.
+   Deque<ukm::SourceId> post_message_ukm_recorded_source_ids_;
++
++  // Fire "online" and "offline" events.
++  Member<NetworkStateObserver> network_state_observer_;
+ };
+ 
+ template <>
