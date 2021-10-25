@@ -107,7 +107,7 @@ index d75adab3141094e2897b2ed4ca9005bf82d70979..7ee78a7345e29a3ee8836a7a06af9a63
  int32_t PepperIsolatedFileSystemMessageFilter::OpenPluginPrivateFileSystem(
      ppapi::host::HostMessageContext* context) {
 diff --git a/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.h b/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.h
-index 56a23e8f41bb418d414f11af5797b30571d4cc2b..6f9f577f16de80dd2ab194b557bbd9ec89599280 100644
+index b94f5144538258555cda5d42fe7bd5e5af3ac902..2be302b4c7d85ed4382561202e4c03fb71166069 100644
 --- a/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.h
 +++ b/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.h
 @@ -20,7 +20,9 @@
@@ -120,7 +120,7 @@ index 56a23e8f41bb418d414f11af5797b30571d4cc2b..6f9f577f16de80dd2ab194b557bbd9ec
  
  namespace content {
  class BrowserPpapiHost;
-@@ -54,6 +56,7 @@ class PepperIsolatedFileSystemMessageFilter
+@@ -59,6 +61,7 @@ class PepperIsolatedFileSystemMessageFilter
  
    ~PepperIsolatedFileSystemMessageFilter() override;
  
@@ -128,7 +128,7 @@ index 56a23e8f41bb418d414f11af5797b30571d4cc2b..6f9f577f16de80dd2ab194b557bbd9ec
    Profile* GetProfile();
  
    // Returns filesystem id of isolated filesystem if valid, or empty string
-@@ -61,10 +64,13 @@ class PepperIsolatedFileSystemMessageFilter
+@@ -66,10 +69,13 @@ class PepperIsolatedFileSystemMessageFilter
    // allows access on that thread.
    storage::IsolatedContext::ScopedFSHandle CreateCrxFileSystem(
        Profile* profile);
@@ -142,7 +142,7 @@ index 56a23e8f41bb418d414f11af5797b30571d4cc2b..6f9f577f16de80dd2ab194b557bbd9ec
    int32_t OpenPluginPrivateFileSystem(ppapi::host::HostMessageContext* context);
  
    const int render_process_id_;
-@@ -75,8 +81,10 @@ class PepperIsolatedFileSystemMessageFilter
+@@ -80,8 +86,10 @@ class PepperIsolatedFileSystemMessageFilter
    // Not owned by this object.
    ppapi::host::PpapiHost* ppapi_host_;
  
@@ -150,9 +150,9 @@ index 56a23e8f41bb418d414f11af5797b30571d4cc2b..6f9f577f16de80dd2ab194b557bbd9ec
    // Set of origins that can use CrxFs private APIs from NaCl.
    std::set<std::string> allowed_crxfs_origins_;
 +#endif
- 
-   DISALLOW_COPY_AND_ASSIGN(PepperIsolatedFileSystemMessageFilter);
  };
+ 
+ #endif  // CHROME_BROWSER_RENDERER_HOST_PEPPER_PEPPER_ISOLATED_FILE_SYSTEM_MESSAGE_FILTER_H_
 diff --git a/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc b/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc
 index 60cfd89dfd18eced6f6d103267b80d547d2e9f26..95d36e99832f434d878a2a2fc3101a611926acb2 100644
 --- a/chrome/renderer/pepper/chrome_renderer_pepper_host_factory.cc

@@ -38,10 +38,10 @@ index f0a7d0c05fa3c68b22b1d36e2c0810fe70f5a8a0..8ecce17b5bb8b5106de913a2d0197fd3
    // Returns whether `Initialize` has already been invoked in the process.
    // Initialization is a one-way operation (i.e., this method cannot return
 diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
-index 8177563df293ae9b4bb8cc46cfe81402f2bf50e0..f2eb8677c095a6d24202a524991c3d8aea39c406 100644
+index 3d8d99cc5840cd1abc72694fc717587aadd1badd..94340cbb1a7a75bcc24dea06b1b5c5ceb4571913 100644
 --- a/gin/v8_initializer.cc
 +++ b/gin/v8_initializer.cc
-@@ -269,7 +269,8 @@ void SetV8FlagsIfOverridden(const base::Feature& feature,
+@@ -226,12 +226,14 @@ void SetV8FlagsIfOverridden(const base::Feature& feature,
  }  // namespace
  
  // static
@@ -51,16 +51,13 @@ index 8177563df293ae9b4bb8cc46cfe81402f2bf50e0..f2eb8677c095a6d24202a524991c3d8a
    static bool v8_is_initialized = false;
    if (v8_is_initialized)
      return;
-@@ -279,7 +280,8 @@ void V8Initializer::Initialize(IsolateHolder::ScriptMode mode) {
-     RunArrayBufferCageReservationExperiment();
-   }
  
 -  v8::V8::InitializePlatform(V8Platform::Get());
 +  if (create_v8_platform)
 +    v8::V8::InitializePlatform(V8Platform::Get());
  
-   if (!base::FeatureList::IsEnabled(features::kV8OptimizeJavascript)) {
-     // We avoid explicitly passing --opt if kV8OptimizeJavascript is enabled
+ #if defined(V8_VIRTUAL_MEMORY_CAGE)
+   static_assert(ARCH_CPU_64_BITS,
 diff --git a/gin/v8_initializer.h b/gin/v8_initializer.h
 index 955be10e118e1c54515dd0ee19edec7504419bdc..699f84c73b71a6d870ae93f2fce98174c924e2fa 100644
 --- a/gin/v8_initializer.h
