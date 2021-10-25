@@ -959,7 +959,7 @@ index 0000000000000000000000000000000000000000..2c9d2826c85bdd033f1df1d6188df636
 +}
 diff --git a/filenames.json b/filenames.json
 new file mode 100644
-index 0000000000000000000000000000000000000000..c0b0624028fddb4f7b409f42b357fdc404d810f3
+index 0000000000000000000000000000000000000000..e2aec71226f25645b188c2c6d8f89478a4b06ae5
 --- /dev/null
 +++ b/filenames.json
 @@ -0,0 +1,603 @@
@@ -1298,9 +1298,9 @@ index 0000000000000000000000000000000000000000..c0b0624028fddb4f7b409f42b357fdc4
 +    "lib/internal/modules/esm/translators.js",
 +    "lib/internal/modules/esm/resolve.js",
 +    "lib/internal/modules/esm/create_dynamic_module.js",
++    "lib/internal/modules/esm/load.js",
 +    "lib/internal/modules/esm/module_map.js",
 +    "lib/internal/modules/esm/get_format.js",
-+    "lib/internal/modules/esm/transform_source.js",
 +    "lib/internal/modules/esm/loader.js",
 +    "lib/internal/modules/cjs/helpers.js",
 +    "lib/internal/modules/cjs/loader.js",
@@ -1772,7 +1772,7 @@ index 0000000000000000000000000000000000000000..d1d6b51e8c0c5bc6a5d09e217eb30483
 +  args = rebase_path(inputs + outputs, root_build_dir)
 +}
 diff --git a/src/node_version.h b/src/node_version.h
-index 119a341d8dc5bc11c3f0db69d489ae60f4a33923..938ca353d332b3ca599b19cdc763c93a98eb8854 100644
+index 7d8e7e507b2481e1f49c8da7c75a58dc8f90640e..d8ed5d33c3cf786ba2df9d37083c1ef103e06489 100644
 --- a/src/node_version.h
 +++ b/src/node_version.h
 @@ -89,7 +89,10 @@

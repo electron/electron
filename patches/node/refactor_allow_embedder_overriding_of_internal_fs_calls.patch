@@ -22,7 +22,7 @@ index 58f7396990dddb7dd4cf3d23fcdcc1d48f52623e..ef06d0563fa7452348754418867a56c9
  const nativeModule = internalBinding('native_module');
  
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index dfaea25243826878afc0af96a77d0aef153fa76b..5d75a0e6cb9692a303be6599226f20783e7863b8 100644
+index 67eb7717f13379312721fc4da2e760bc08d8ed3a..05a62bb3c3852536001912cb0b69fe5578ace125 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
 @@ -86,7 +86,7 @@ const fs = require('fs');
