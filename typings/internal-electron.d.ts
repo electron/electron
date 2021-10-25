@@ -71,6 +71,7 @@ declare namespace Electron {
     _printToPDF(options: any): Promise<Buffer>;
     _print(options: any, callback?: (success: boolean, failureReason: string) => void): void;
     _getPrinters(): Electron.PrinterInfo[];
+    _getPrintersAsync(): Promise<Electron.PrinterInfo[]>;
     _init(): void;
     canGoToIndex(index: number): boolean;
     getActiveIndex(): number;
