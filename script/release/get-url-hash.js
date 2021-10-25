@@ -10,7 +10,7 @@ const lambda = new AWS.Lambda({
 
 module.exports = async function getUrlHash (targetUrl, algorithm = 'sha256', attempts = 3) {
   try {
-    await new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
       lambda.invoke({
         FunctionName: 'hasher',
         Payload: JSON.stringify({
