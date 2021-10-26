@@ -44,13 +44,7 @@ ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard 
     });
   });
 
-  describe('clipboard.readBookmark', () => {
-    before(function () {
-      if (process.platform === 'linux') {
-        this.skip();
-      }
-    });
-
+  ifdescribe(process.platform !== 'linux')('clipboard.readBookmark', () => {
     it('returns title and url', () => {
       clipboard.writeBookmark('a title', 'https://electronjs.org');
       expect(clipboard.readBookmark()).to.deep.equal({
@@ -63,6 +57,16 @@ ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard 
         title: '',
         url: ''
       });
+    });
+  });
+
+  ifdescribe(process.platform !== 'linux')('clipboard.read()', () => {
+    it('does not crash when reading various custom clipboard types', () => {
+      const type = process.platform === 'darwin' ? 'NSFilenamesPboardType' : 'FileNameW';
+
+      expect(() => {
+        const result = clipboard.read(type);
+      }).to.not.throw();
     });
   });
 
@@ -94,13 +98,7 @@ ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard 
     });
   });
 
-  describe('clipboard.read/writeFindText(text)', () => {
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip();
-      }
-    });
-
+  ifdescribe(process.platform === 'darwin')('clipboard.read/writeFindText(text)', () => {
     it('reads and write text to the find pasteboard', () => {
       clipboard.writeFindText('find this');
       expect(clipboard.readFindText()).to.equal('find this');
