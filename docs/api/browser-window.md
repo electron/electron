@@ -1697,7 +1697,7 @@ current window into a top-level window.
 
 #### `win.getParentWindow()`
 
-Returns `BrowserWindow` - The parent window.
+Returns `BrowserWindow | null` - The parent window or `null` if there is no parent.
 
 #### `win.getChildWindows()`
 
