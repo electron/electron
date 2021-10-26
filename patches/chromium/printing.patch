@@ -89,7 +89,7 @@ index 5914354ac77532eadb26bd09cffc8470fcf41c4b..18a92f5a9a35b7a86f47f6555b37d3c7
      NEW_DOC,
  
 diff --git a/chrome/browser/printing/print_job_worker.cc b/chrome/browser/printing/print_job_worker.cc
-index 288b9f89129de88ea078b2e6d3b2d255dd527a95..e9979d5c9707e94580d4a10b4c48c32ce07cfc70 100644
+index 4b508191cf196b6c528eb97fbdd7baef40922e14..ff18b85688b02d776327325e7d67a944ae24da85 100644
 --- a/chrome/browser/printing/print_job_worker.cc
 +++ b/chrome/browser/printing/print_job_worker.cc
 @@ -21,13 +21,13 @@
@@ -147,7 +147,7 @@ index 288b9f89129de88ea078b2e6d3b2d255dd527a95..e9979d5c9707e94580d4a10b4c48c32c
  }
  
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index 2011d52338081666b4761e0bf66d01245abd0213..647ac4cd9730c8983868ea165907b7c9a42767aa 100644
+index c3388853baa3c43e0e57ef0ada4977fd3ccd2087..6e05b831c9041a1c05bd437af4426b0110cc1a66 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -28,10 +28,10 @@
@@ -320,7 +320,7 @@ index 2011d52338081666b4761e0bf66d01245abd0213..647ac4cd9730c8983868ea165907b7c9
    base::ThreadTaskRunnerHandle::Get()->PostTask(
        FROM_HERE, base::BindOnce(&ShowWarningMessageBox,
                                  l10n_util::GetStringUTF16(
-@@ -820,6 +846,11 @@ void PrintViewManagerBase::OnNotifyPrintJobEvent(
+@@ -828,6 +854,11 @@ void PrintViewManagerBase::OnNotifyPrintJobEvent(
  #endif
        break;
      }
@@ -332,7 +332,7 @@ index 2011d52338081666b4761e0bf66d01245abd0213..647ac4cd9730c8983868ea165907b7c9
      case JobEventDetails::JOB_DONE:
        // Printing is done, we don't need it anymore.
        // print_job_->is_job_pending() may still be true, depending on the order
-@@ -889,7 +920,10 @@ bool PrintViewManagerBase::CreateNewPrintJob(
+@@ -897,7 +928,10 @@ bool PrintViewManagerBase::CreateNewPrintJob(
  
    // Disconnect the current |print_job_|.
    auto weak_this = weak_ptr_factory_.GetWeakPtr();
@@ -344,7 +344,7 @@ index 2011d52338081666b4761e0bf66d01245abd0213..647ac4cd9730c8983868ea165907b7c9
    if (!weak_this)
      return false;
  
-@@ -912,8 +946,6 @@ bool PrintViewManagerBase::CreateNewPrintJob(
+@@ -920,8 +954,6 @@ bool PrintViewManagerBase::CreateNewPrintJob(
                          /*source_id=*/"");
  #endif
  
@@ -353,7 +353,7 @@ index 2011d52338081666b4761e0bf66d01245abd0213..647ac4cd9730c8983868ea165907b7c9
    printing_succeeded_ = false;
    return true;
  }
-@@ -965,14 +997,22 @@ void PrintViewManagerBase::ReleasePrintJob() {
+@@ -973,14 +1005,22 @@ void PrintViewManagerBase::ReleasePrintJob() {
    content::RenderFrameHost* rfh = printing_rfh_;
    printing_rfh_ = nullptr;
  
@@ -378,7 +378,7 @@ index 2011d52338081666b4761e0bf66d01245abd0213..647ac4cd9730c8983868ea165907b7c9
    // Don't close the worker thread.
    print_job_ = nullptr;
  }
-@@ -1010,7 +1050,7 @@ bool PrintViewManagerBase::RunInnerMessageLoop() {
+@@ -1018,7 +1058,7 @@ bool PrintViewManagerBase::RunInnerMessageLoop() {
  }
  
  bool PrintViewManagerBase::OpportunisticallyCreatePrintJob(int cookie) {
@@ -388,7 +388,7 @@ index 2011d52338081666b4761e0bf66d01245abd0213..647ac4cd9730c8983868ea165907b7c9
  
    if (!cookie) {
 diff --git a/chrome/browser/printing/print_view_manager_base.h b/chrome/browser/printing/print_view_manager_base.h
-index c4bcf96d0ac0130a74a9b5400546dfdf335dbd68..eb946b1f599629f663b79d11039e853a5b013d29 100644
+index 0efcaba73efa28289ba6280811b61d20fc7fc9f7..2739775f8091ee1b350b20a966470c54b0067fd5 100644
 --- a/chrome/browser/printing/print_view_manager_base.h
 +++ b/chrome/browser/printing/print_view_manager_base.h
 @@ -40,6 +40,8 @@ class PrintJob;
@@ -412,7 +412,7 @@ index c4bcf96d0ac0130a74a9b5400546dfdf335dbd68..eb946b1f599629f663b79d11039e853a
  
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Prints the document in |print_data| with settings specified in
-@@ -257,9 +262,15 @@ class PrintViewManagerBase : public content::NotificationObserver,
+@@ -261,9 +266,15 @@ class PrintViewManagerBase : public content::NotificationObserver,
    // The current RFH that is printing with a system printing dialog.
    content::RenderFrameHost* printing_rfh_ = nullptr;
  
@@ -442,7 +442,7 @@ index 51ebcb4ae399018d3fd8566656596a7ef1f148af..5f2b807fc364131f4c3e6a1646ec522d
    // Tells the RenderFrame to switch the CSS to print media type, render every
    // requested page using the print preview document's frame/node, and then
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 2760a694a946eb2e4dba1ee228dc5fc13a2fc98e..29760a87ba5103792518562722dd69d8d168e464 100644
+index 4c251c009d52ccc0674651f1bb302380f5db4fe6..19ed9f78edf16d6a1720a3d8c9e4cce160cb8c32 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -38,6 +38,7 @@
@@ -473,7 +473,7 @@ index 2760a694a946eb2e4dba1ee228dc5fc13a2fc98e..29760a87ba5103792518562722dd69d8
    if (ipc_nesting_level_ > kAllowedIpcDepthForPrint)
      return;
 @@ -1268,7 +1270,7 @@ void PrintRenderFrameHelper::PrintRequestedPages() {
-   // that instead.
+   // plugin node and print that instead.
    auto plugin = delegate_->GetPdfElement(frame);
  
 -  Print(frame, plugin, PrintRequestType::kRegular);

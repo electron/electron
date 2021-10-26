@@ -17,10 +17,10 @@ only one or two specific checks fail. Then it's better to simply comment out the
 failing checks and allow the rest of the target to have them enabled.
 
 diff --git a/third_party/blink/renderer/core/mobile_metrics/mobile_friendliness_checker.cc b/third_party/blink/renderer/core/mobile_metrics/mobile_friendliness_checker.cc
-index c490dd7ca2dbe499fbf99509293900318c6b7739..2de3b90801b2daba2eac0263f010c834468b7fd6 100644
+index 2f9f7f57a408bd17c5901aad49003c239451534a..1c56a669cccbfbd82b81bd2c0918b884314daea1 100644
 --- a/third_party/blink/renderer/core/mobile_metrics/mobile_friendliness_checker.cc
 +++ b/third_party/blink/renderer/core/mobile_metrics/mobile_friendliness_checker.cc
-@@ -423,7 +423,7 @@ void MobileFriendlinessChecker::ComputeSmallTextRatio(
+@@ -425,7 +425,7 @@ void MobileFriendlinessChecker::ComputeSmallTextRatio(
                                 ->GetPageScaleConstraintsSet()
                                 .FinalConstraints()
                                 .initial_scale;

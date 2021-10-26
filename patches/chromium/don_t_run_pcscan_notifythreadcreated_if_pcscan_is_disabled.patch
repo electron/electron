@@ -19,7 +19,7 @@ index 479b7caf6a2142e5097fd5dd75282deb35a1c402..9c2ab518fabebf58d081e3656affc0ea
      using PCScan = internal::PCScan;
      const auto invocation_mode = flags & PartitionPurgeAggressiveReclaim
 diff --git a/base/threading/platform_thread_posix.cc b/base/threading/platform_thread_posix.cc
-index 4d717742610b6dc4419c632aa3f6b5494fa90c5e..8c5e20df3f7630610c88cf28420f3460531003e6 100644
+index 89e760aa1e4a638498b2c537a4857e5a42ac4e90..fdce6ca03b9302f248c428696b30492f012309ef 100644
 --- a/base/threading/platform_thread_posix.cc
 +++ b/base/threading/platform_thread_posix.cc
 @@ -40,6 +40,7 @@
@@ -49,7 +49,7 @@ index 4d717742610b6dc4419c632aa3f6b5494fa90c5e..8c5e20df3f7630610c88cf28420f3460
  #endif
  
 diff --git a/base/threading/platform_thread_win.cc b/base/threading/platform_thread_win.cc
-index 2959a82daffd1a59fb0bcda5b31023c039933faf..9b59e0bf9c74d423892909b44623a1a6cd96839e 100644
+index d6bd4ffcba213f886a6d2a85784895db89a98b6c..0723b3feca281546aafb8c6f03d94bc560bb781f 100644
 --- a/base/threading/platform_thread_win.cc
 +++ b/base/threading/platform_thread_win.cc
 @@ -28,6 +28,7 @@

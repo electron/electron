@@ -6,7 +6,7 @@ Subject: allow disabling blink scheduler throttling per RenderView
 This allows us to disable throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/render_view_host_impl.cc b/content/browser/renderer_host/render_view_host_impl.cc
-index 21cbb423d083a985b288c0b040cdd8ae7df56222..ca83e01e82bd55b2c7aaee2361493776b458ebac 100644
+index 484096c30c83b885ce0aa351a7c17e2f0f5de967..5492950d91eabed1132d933581e9a990dda46a4e 100644
 --- a/content/browser/renderer_host/render_view_host_impl.cc
 +++ b/content/browser/renderer_host/render_view_host_impl.cc
 @@ -630,6 +630,11 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
@@ -22,10 +22,10 @@ index 21cbb423d083a985b288c0b040cdd8ae7df56222..ca83e01e82bd55b2c7aaee2361493776
    return is_active();
  }
 diff --git a/content/browser/renderer_host/render_view_host_impl.h b/content/browser/renderer_host/render_view_host_impl.h
-index 9760b7657584b81558a7dbba03258baaee2471fd..53cf6282bfe5a1f1b98a001e1aa82eb45fcb2252 100644
+index cd85aaa7cc1980df9bb65ab6b6fafa1c5300317c..5c41cf0d96c9748b1fe463673d23999036ca280c 100644
 --- a/content/browser/renderer_host/render_view_host_impl.h
 +++ b/content/browser/renderer_host/render_view_host_impl.h
-@@ -135,6 +135,7 @@ class CONTENT_EXPORT RenderViewHostImpl
+@@ -132,6 +132,7 @@ class CONTENT_EXPORT RenderViewHostImpl
    bool IsRenderViewLive() override;
    void WriteIntoTrace(perfetto::TracedValue context) override;
  
@@ -34,10 +34,10 @@ index 9760b7657584b81558a7dbba03258baaee2471fd..53cf6282bfe5a1f1b98a001e1aa82eb4
    void SendRendererPreferencesToRenderer(
        const blink::RendererPreferences& preferences);
 diff --git a/content/public/browser/render_view_host.h b/content/public/browser/render_view_host.h
-index 8bb06dec16fbf205230a10e0e52daa787338bc23..9ebc42788391e838e78af75e2449dde4f1107f22 100644
+index 787077d71c04d571aa825bec0a549c5fad2b8574..4b05b80802ba97a46eed60e509b503fc8375016b 100644
 --- a/content/public/browser/render_view_host.h
 +++ b/content/public/browser/render_view_host.h
-@@ -84,6 +84,9 @@ class CONTENT_EXPORT RenderViewHost {
+@@ -74,6 +74,9 @@ class CONTENT_EXPORT RenderViewHost {
    // Write a representation of this object into a trace.
    virtual void WriteIntoTrace(perfetto::TracedValue context) = 0;
  
@@ -48,7 +48,7 @@ index 8bb06dec16fbf205230a10e0e52daa787338bc23..9ebc42788391e838e78af75e2449dde4
    // This interface should only be implemented inside content.
    friend class RenderViewHostImpl;
 diff --git a/content/renderer/render_view_impl.h b/content/renderer/render_view_impl.h
-index 604edaea033172123d1e7d9c5512bebf55738db5..93b06e71dae1b9c01463c8b26b74516bad7d5b6d 100644
+index 6ed3cd81d1540c800b69f4bc8c8ce45372ca6bdc..28573f6a74f41fbf73b4b6ab59c185cce7f88dca 100644
 --- a/content/renderer/render_view_impl.h
 +++ b/content/renderer/render_view_impl.h
 @@ -150,6 +150,8 @@ class CONTENT_EXPORT RenderViewImpl : public blink::WebViewClient,
@@ -85,10 +85,10 @@ index f54b993e9fb9fedcedef327290c2e5d706c699a7..73874e124e2810f07b72fc094f57c85c
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index 44474a8e56c5f1751e395f375cedb39656f6d5a8..baf07861d4be89485605f87d344fcffdd220a063 100644
+index 7e76aa3379a219d55671e929e4ed75619f9dcd69..e6fbc491748472b6d74496ac2e19875d1fc714aa 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
-@@ -3630,6 +3630,13 @@ PageScheduler* WebViewImpl::Scheduler() const {
+@@ -3629,6 +3629,13 @@ PageScheduler* WebViewImpl::Scheduler() const {
    return GetPage()->GetPageScheduler();
  }
  
@@ -102,7 +102,7 @@ index 44474a8e56c5f1751e395f375cedb39656f6d5a8..baf07861d4be89485605f87d344fcffd
  void WebViewImpl::SetVisibilityState(
      mojom::blink::PageVisibilityState visibility_state,
      bool is_initial_state) {
-@@ -3641,7 +3648,8 @@ void WebViewImpl::SetVisibilityState(
+@@ -3640,7 +3647,8 @@ void WebViewImpl::SetVisibilityState(
    }
    GetPage()->SetVisibilityState(visibility_state, is_initial_state);
    GetPage()->GetPageScheduler()->SetPageVisible(

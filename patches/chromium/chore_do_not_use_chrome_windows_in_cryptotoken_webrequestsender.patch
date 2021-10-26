@@ -10,10 +10,10 @@ In Electron that can be simplified to webContents.isFocused() which maps to "is 
 This can't be upstreamed but the patch is minimal.
 
 diff --git a/chrome/browser/resources/cryptotoken/webrequestsender.js b/chrome/browser/resources/cryptotoken/webrequestsender.js
-index 734abbbf3132d245c2c39bbe9b7780acbea196b0..adff416286eaa10a099be83aaf07e56ec323fe3d 100644
+index 67385e25a9233ce7a5077e69e9be1f457252ea5d..3e6864e6ea3374874598a0175746451126ddb165 100644
 --- a/chrome/browser/resources/cryptotoken/webrequestsender.js
 +++ b/chrome/browser/resources/cryptotoken/webrequestsender.js
-@@ -134,10 +134,11 @@ function tabInForeground(tabId) {
+@@ -141,10 +141,11 @@ function tabInForeground(tabId) {
        reject();
        return;
      }
@@ -29,7 +29,7 @@ index 734abbbf3132d245c2c39bbe9b7780acbea196b0..adff416286eaa10a099be83aaf07e56e
      chrome.tabs.get(tabId, function(tab) {
        if (chrome.runtime.lastError) {
          resolve(false);
-@@ -147,9 +148,13 @@ function tabInForeground(tabId) {
+@@ -154,9 +155,13 @@ function tabInForeground(tabId) {
          resolve(false);
          return;
        }

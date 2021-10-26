@@ -15,7 +15,7 @@ for us to register the isolate in between Isolate::Allocate and
 Isolate::Initialize.
 
 diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
-index 366e105c968b1be51eb0f26709486d086cf12eca..70ba5d0ecd8c4c10628db11818012e620895684b 100644
+index 1675067c3f04213132019008778ea5540c29d788..5ec73aa5177cb989d84d9507792c0e0d0f065e41 100644
 --- a/gin/isolate_holder.cc
 +++ b/gin/isolate_holder.cc
 @@ -55,7 +55,8 @@ IsolateHolder::IsolateHolder(
@@ -42,7 +42,7 @@ index 366e105c968b1be51eb0f26709486d086cf12eca..70ba5d0ecd8c4c10628db11818012e62
                                                     access_mode_, task_runner);
    if (isolate_creation_mode == IsolateCreationMode::kCreateSnapshot) {
 diff --git a/gin/public/isolate_holder.h b/gin/public/isolate_holder.h
-index 8ecce17b5bb8b5106de913a2d0197fd3affb1c08..554beedf1fd1e256466b144468b1338fc6ccd473 100644
+index 515873cabbd02e5504bc88a7e6230103f1993abb..9f172ee739a240df20a03f4d3472790f96719cd8 100644
 --- a/gin/public/isolate_holder.h
 +++ b/gin/public/isolate_holder.h
 @@ -79,7 +79,8 @@ class GIN_EXPORT IsolateHolder {

@@ -66,7 +66,7 @@ index e1fe936d73bb74a2708993ce72443f62ebb969f8..ba46243ca95466243afbc82fc689aa43
          /*document_url=*/GURL(),
          notification_service_remote_.BindNewPipeAndPassReceiver());
 diff --git a/content/browser/notifications/platform_notification_context_impl.cc b/content/browser/notifications/platform_notification_context_impl.cc
-index 883cfb82286da5237e3b7ec35632bf575be6c413..805c6476e09857af75d391276357b2c2e08ea8c0 100644
+index 8e23ab272000a1244959bf9164d6880660d4a843..ff89f2bdf07e91029841bab7ce7c7a92526c0132 100644
 --- a/content/browser/notifications/platform_notification_context_impl.cc
 +++ b/content/browser/notifications/platform_notification_context_impl.cc
 @@ -281,13 +281,14 @@ void PlatformNotificationContextImpl::Shutdown() {
@@ -107,10 +107,10 @@ index 78f9ab684d2eeef9a647d82ccb39c1b208e999d4..d55a4e51a0d263ec07ca115715cccc30
        const GURL& document_url,
        mojo::PendingReceiver<blink::mojom::NotificationService> receiver);
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 00a6377d2136771abf68d19bc5cb0a03b2a3d738..7e9d623030976aef80b37d2a224abc9b3013ede7 100644
+index c54d46e2a33e12b2db9de3e02d3104659aae56c5..01812997f10ab22291a957e6979b0d8559524463 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -2245,7 +2245,7 @@ void RenderProcessHostImpl::CreateNotificationService(
+@@ -2247,7 +2247,7 @@ void RenderProcessHostImpl::CreateNotificationService(
      document_url = rfh->GetLastCommittedURL();
  
    storage_partition_impl_->GetPlatformNotificationContext()->CreateService(

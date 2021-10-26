@@ -6,7 +6,7 @@ Subject: Allow setting secondary label via SimpleMenuModel
 Builds on https://chromium-review.googlesource.com/c/chromium/src/+/2208976
 
 diff --git a/ui/base/models/simple_menu_model.cc b/ui/base/models/simple_menu_model.cc
-index 1bfe8fb90673a0d0f9f9228a43eafc3b01b00c5f..1484fc4e477b97b6deb8e23b8a749264990cc1c6 100644
+index 746dffb1defec9d776f681d41325a65b02cbdd0f..05a7f20f10e3ff514aa3b3b5386980ddfcc586eb 100644
 --- a/ui/base/models/simple_menu_model.cc
 +++ b/ui/base/models/simple_menu_model.cc
 @@ -53,6 +53,11 @@ std::u16string SimpleMenuModel::Delegate::GetLabelForCommandId(
