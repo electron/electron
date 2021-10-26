@@ -1146,7 +1146,7 @@ bool App::Relaunch(gin::Arguments* js_args) {
 
   gin_helper::Dictionary options;
   if (js_args->GetNext(&options)) {
-    if (options.Get("execPath", &exec_path) | options.Get("args", &args))
+    if (options.Get("execPath", &exec_path) || options.Get("args", &args))
       override_argv = true;
   }
 
