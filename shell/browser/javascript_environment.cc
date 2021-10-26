@@ -15,12 +15,12 @@
 #include "base/task/thread_pool/initialization_util.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/trace_event/trace_event.h"
-#include "content/public/common/content_switches.h"
 #include "gin/array_buffer.h"
 #include "gin/v8_initializer.h"
 #include "shell/browser/microtasks_runner.h"
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/node_includes.h"
+#include "third_party/blink/public/common/switches.h"
 
 namespace {
 v8::Isolate* g_isolate;
@@ -82,7 +82,8 @@ class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
                       base::PartitionOptions::Quarantine::kAllowed,
                       base::PartitionOptions::Cookie::kAllowed,
                       base::PartitionOptions::BackupRefPtr::kDisabled,
-                      base::PartitionOptions::UseConfigurablePool::kNo});
+                      base::PartitionOptions::UseConfigurablePool::kNo,
+                      base::PartitionOptions::LazyCommit::kDisabled});
   }
 
   // Allocate() methods return null to signal allocation failure to V8, which
@@ -322,7 +323,8 @@ v8::Isolate* JavascriptEnvironment::Initialize(uv_loop_t* event_loop) {
   auto* cmd = base::CommandLine::ForCurrentProcess();
 
   // --js-flags.
-  std::string js_flags = cmd->GetSwitchValueASCII(switches::kJavaScriptFlags);
+  std::string js_flags =
+      cmd->GetSwitchValueASCII(blink::switches::kJavaScriptFlags);
   if (!js_flags.empty())
     v8::V8::SetFlagsFromString(js_flags.c_str(), js_flags.size());
 
@@ -336,9 +338,10 @@ v8::Isolate* JavascriptEnvironment::Initialize(uv_loop_t* event_loop) {
       tracing_controller, gin::V8Platform::PageAllocator());
 
   v8::V8::InitializePlatform(platform_);
-  gin::IsolateHolder::Initialize(
-      gin::IsolateHolder::kNonStrictMode, new ArrayBufferAllocator(),
-      nullptr /* external_reference_table */, false /* create_v8_platform */);
+  gin::IsolateHolder::Initialize(gin::IsolateHolder::kNonStrictMode,
+                                 new ArrayBufferAllocator(),
+                                 nullptr /* external_reference_table */,
+                                 js_flags, false /* create_v8_platform */);
 
   v8::Isolate* isolate = v8::Isolate::Allocate();
   platform_->RegisterIsolate(isolate, event_loop);
