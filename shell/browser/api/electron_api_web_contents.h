@@ -185,6 +185,7 @@ class WebContents : public gin::Wrappable<WebContents>,
   int GetHistoryLength() const;
   const std::string GetWebRTCIPHandlingPolicy() const;
   void SetWebRTCIPHandlingPolicy(const std::string& webrtc_ip_handling_policy);
+  std::string GetMediaSourceID(content::WebContents* request_web_contents);
   bool IsCrashed() const;
   void ForcefullyCrashRenderer();
   void SetUserAgent(const std::string& user_agent);
