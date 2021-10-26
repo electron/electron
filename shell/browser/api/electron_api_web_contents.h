@@ -585,7 +585,8 @@ class WebContents : public ExclusiveAccessContext,
                               content::RenderFrameHost* new_host) override;
   void FrameDeleted(int frame_tree_node_id) override;
   void RenderViewDeleted(content::RenderViewHost*) override;
-  void RenderProcessGone(base::TerminationStatus status) override;
+  void PrimaryMainFrameRenderProcessGone(
+      base::TerminationStatus status) override;
   void DOMContentLoaded(content::RenderFrameHost* render_frame_host) override;
   void DidFinishLoad(content::RenderFrameHost* render_frame_host,
                      const GURL& validated_url) override;

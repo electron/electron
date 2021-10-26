@@ -1564,7 +1564,8 @@ void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
   }
 }
 
-void WebContents::RenderProcessGone(base::TerminationStatus status) {
+void WebContents::PrimaryMainFrameRenderProcessGone(
+    base::TerminationStatus status) {
   auto weak_this = GetWeakPtr();
   Emit("crashed", status == base::TERMINATION_STATUS_PROCESS_WAS_KILLED);
 
