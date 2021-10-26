@@ -51,6 +51,17 @@ bool Clipboard::Has(const std::string& format_string,
 
 std::string Clipboard::Read(const std::string& format_string) {
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
+  ui::ClipboardFormatType format(
+      ui::ClipboardFormatType::CustomPlatformType(format_string));
+
+  std::string data;
+  clipboard->ReadData(format, /* data_dst = */ nullptr, &data);
+  return data;
+}
+
+v8::Local<v8::Value> Clipboard::ReadBuffer(const std::string& format_string,
+                                           gin_helper::Arguments* args) {
+  ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
   std::map<std::string, std::string> custom_format_names;
   custom_format_names =
       clipboard->ExtractCustomPlatformNames(ui::ClipboardBuffer::kCopyPaste,
@@ -68,12 +79,6 @@ std::string Clipboard::Read(const std::string& format_string) {
 
   std::string data;
   clipboard->ReadData(format, /* data_dst = */ nullptr, &data);
-  return data;
-}
-
-v8::Local<v8::Value> Clipboard::ReadBuffer(const std::string& format_string,
-                                           gin_helper::Arguments* args) {
-  std::string data = Read(format_string);
   return node::Buffer::Copy(args->isolate(), data.data(), data.length())
       .ToLocalChecked();
 }
