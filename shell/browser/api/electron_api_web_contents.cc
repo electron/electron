@@ -539,7 +539,7 @@ FileSystem CreateFileSystemStruct(content::WebContents* web_contents,
                                   const std::string& file_system_id,
                                   const std::string& file_system_path,
                                   const std::string& type) {
-  const GURL origin = web_contents->GetURL().GetOrigin();
+  const GURL origin = web_contents->GetURL().DeprecatedGetOriginAsURL();
   std::string file_system_name =
       storage::GetIsolatedFileSystemName(origin, file_system_id);
   std::string root_url = storage::GetIsolatedFileSystemRootURIString(
@@ -2277,8 +2277,8 @@ std::string WebContents::GetMediaSourceID(
       content::DesktopStreamsRegistry::GetInstance()->RegisterStream(
           request_frame_host->GetProcess()->GetID(),
           request_frame_host->GetRoutingID(),
-          url::Origin::Create(
-              request_frame_host->GetLastCommittedURL().GetOrigin()),
+          url::Origin::Create(request_frame_host->GetLastCommittedURL()
+                                  .DeprecatedGetOriginAsURL()),
           media_id, "", content::kRegistryStreamTypeTab);
 
   return id;

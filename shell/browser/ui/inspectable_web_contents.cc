@@ -1110,7 +1110,7 @@ void InspectableWebContents::DidFinishNavigation(
       !navigation_handle->HasCommitted())
     return;
   content::RenderFrameHost* frame = navigation_handle->GetRenderFrameHost();
-  auto origin = navigation_handle->GetURL().GetOrigin().spec();
+  auto origin = navigation_handle->GetURL().DeprecatedGetOriginAsURL().spec();
   auto it = extensions_api_.find(origin);
   if (it == extensions_api_.end())
     return;
