@@ -402,9 +402,8 @@ absl::optional<base::TimeDelta> GetCursorBlinkInterval() {
 #elif defined(OS_WIN)
   const auto system_msec = ::GetCaretBlinkTime();
   if (system_msec != 0) {
-    return (system_msec == INFINITE)
-               ? base::TimeDelta()
-               : base::TimeDelta::FromMilliseconds(system_msec);
+    return (system_msec == INFINITE) ? base::TimeDelta()
+                                     : base::Milliseconds(system_msec);
   }
 #endif
   return absl::nullopt;

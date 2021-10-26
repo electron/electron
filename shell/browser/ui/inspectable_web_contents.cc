@@ -175,9 +175,8 @@ GURL GetDevToolsURL(bool can_dock) {
   return GURL(url_string);
 }
 
-constexpr base::TimeDelta kInitialBackoffDelay =
-    base::TimeDelta::FromMilliseconds(250);
-constexpr base::TimeDelta kMaxBackoffDelay = base::TimeDelta::FromSeconds(10);
+constexpr base::TimeDelta kInitialBackoffDelay = base::Milliseconds(250);
+constexpr base::TimeDelta kMaxBackoffDelay = base::Seconds(10);
 
 }  // namespace
 

@@ -569,7 +569,7 @@ void Session::EnableNetworkEmulation(const gin_helper::Dictionary& options) {
   options.Get("uploadThroughput", &conditions->upload_throughput);
   double latency = 0.0;
   if (options.Get("latency", &latency) && latency) {
-    conditions->latency = base::TimeDelta::FromMillisecondsD(latency);
+    conditions->latency = base::Milliseconds(latency);
   }
 
   auto* network_context =

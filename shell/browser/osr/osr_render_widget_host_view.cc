@@ -974,8 +974,7 @@ void OffScreenRenderWidgetHostView::SetupFrameRate(bool force) {
 
   if (compositor_) {
     compositor_->SetDisplayVSyncParameters(
-        base::TimeTicks::Now(),
-        base::TimeDelta::FromMicroseconds(frame_rate_threshold_us_));
+        base::TimeTicks::Now(), base::Microseconds(frame_rate_threshold_us_));
   }
 }
 

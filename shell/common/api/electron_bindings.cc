@@ -131,7 +131,7 @@ void ElectronBindings::Crash() {
 // static
 void ElectronBindings::Hang() {
   for (;;)
-    base::PlatformThread::Sleep(base::TimeDelta::FromSeconds(1));
+    base::PlatformThread::Sleep(base::Seconds(1));
 }
 
 // static

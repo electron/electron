@@ -293,8 +293,7 @@ class TracingControllerImpl : public node::tracing::TracingController {
         arg_convertables);
     DCHECK_LE(num_args, 2);
     base::TimeTicks timestamp =
-        base::TimeTicks() +
-        base::TimeDelta::FromMicroseconds(timestampMicroseconds);
+        base::TimeTicks() + base::Microseconds(timestampMicroseconds);
     base::trace_event::TraceEventHandle handle =
         TRACE_EVENT_API_ADD_TRACE_EVENT_WITH_THREAD_ID_AND_TIMESTAMP(
             phase, category_enabled_flag, name, scope, id, bind_id,

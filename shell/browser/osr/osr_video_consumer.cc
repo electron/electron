@@ -40,8 +40,7 @@ void OffScreenVideoConsumer::SetActive(bool active) {
 }
 
 void OffScreenVideoConsumer::SetFrameRate(int frame_rate) {
-  video_capturer_->SetMinCapturePeriod(base::TimeDelta::FromSeconds(1) /
-                                       frame_rate);
+  video_capturer_->SetMinCapturePeriod(base::Seconds(1) / frame_rate);
 }
 
 void OffScreenVideoConsumer::SizeChanged() {
