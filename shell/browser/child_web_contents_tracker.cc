@@ -11,6 +11,6 @@ ChildWebContentsTracker::ChildWebContentsTracker(
 
 ChildWebContentsTracker::~ChildWebContentsTracker() = default;
 
-WEB_CONTENTS_USER_DATA_KEY_IMPL(ChildWebContentsTracker)
+WEB_CONTENTS_USER_DATA_KEY_IMPL(ChildWebContentsTracker);
 
 }  // namespace electron

@@ -7,9 +7,9 @@ body:
     label: Preflight Checklist
     description: Please ensure you've completed all of the following.
     options:
-      - label: I have read the [Contributing Guidelines](https://github.com/electron/electron/blob/master/CONTRIBUTING.md) for this project.
+      - label: I have read the [Contributing Guidelines](https://github.com/electron/electron/blob/main/CONTRIBUTING.md) for this project.
         required: true
-      - label: I agree to follow the [Code of Conduct](https://github.com/electron/electron/blob/master/CODE_OF_CONDUCT.md) that this project adheres to.
+      - label: I agree to follow the [Code of Conduct](https://github.com/electron/electron/blob/main/CODE_OF_CONDUCT.md) that this project adheres to.
         required: true
 - type: input
   attributes:

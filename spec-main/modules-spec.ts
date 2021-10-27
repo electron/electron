@@ -108,6 +108,15 @@ describe('modules support', () => {
   });
 
   describe('Module._nodeModulePaths', () => {
+    // Work around the hack in spec/global-paths.
+    beforeEach(() => {
+      Module.ignoreGlobalPathsHack = true;
+    });
+
+    afterEach(() => {
+      Module.ignoreGlobalPathsHack = false;
+    });
+
     describe('when the path is inside the resources path', () => {
       it('does not include paths outside of the resources path', () => {
         let modulePath = process.resourcesPath;

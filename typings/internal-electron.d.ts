@@ -58,6 +58,7 @@ declare namespace Electron {
     _loadURL(url: string, options: ElectronInternal.LoadURLOptions): void;
     getOwnerBrowserWindow(): Electron.BrowserWindow | null;
     getLastWebPreferences(): Electron.WebPreferences | null;
+    _getProcessMemoryInfo(): Electron.ProcessMemoryInfo;
     _getPreloadPaths(): string[];
     equal(other: WebContents): boolean;
     browserWindowOptions: BrowserWindowConstructorOptions;
@@ -70,6 +71,7 @@ declare namespace Electron {
     _printToPDF(options: any): Promise<Buffer>;
     _print(options: any, callback?: (success: boolean, failureReason: string) => void): void;
     _getPrinters(): Electron.PrinterInfo[];
+    _getPrintersAsync(): Promise<Electron.PrinterInfo[]>;
     _init(): void;
     canGoToIndex(index: number): boolean;
     getActiveIndex(): number;
@@ -86,6 +88,10 @@ declare namespace Electron {
     _send(internal: boolean, channel: string, args: any): void;
     _sendInternal(channel: string, ...args: any[]): void;
     _postMessage(channel: string, message: any, transfer?: any[]): void;
+  }
+
+  interface WebFrame {
+    _isEvalAllowed(): boolean;
   }
 
   interface WebPreferences {
@@ -123,7 +129,7 @@ declare namespace Electron {
     insertSeparator(index: number): void;
     insertSubMenu(index: number, commandId: number, label: string, submenu?: Menu): void;
     delegate?: any;
-    getAcceleratorTextAt(index: number): string;
+    _getAcceleratorTextAt(index: number): string;
   }
 
   interface MenuItem {

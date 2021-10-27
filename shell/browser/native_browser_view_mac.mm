@@ -59,7 +59,12 @@ const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
 }
 
 - (BOOL)mouseDownCanMoveWindow {
-  return NO;
+  return
+      [self.window respondsToSelector:@selector(performWindowDragWithEvent:)];
+}
+
+- (BOOL)acceptsFirstMouse:(NSEvent*)event {
+  return YES;
 }
 
 - (BOOL)shouldIgnoreMouseEvent {
@@ -81,16 +86,15 @@ const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
 - (void)mouseDown:(NSEvent*)event {
   [super mouseDown:event];
 
-  if ([self.window respondsToSelector:@selector(performWindowDragWithEvent)]) {
+  if ([self.window respondsToSelector:@selector(performWindowDragWithEvent:)]) {
     // According to Google, using performWindowDragWithEvent:
     // does not generate a NSWindowWillMoveNotification. Hence post one.
     [[NSNotificationCenter defaultCenter]
         postNotificationName:NSWindowWillMoveNotification
                       object:self];
 
-    if (@available(macOS 10.11, *)) {
-      [self.window performWindowDragWithEvent:event];
-    }
+    [self.window performWindowDragWithEvent:event];
+
     return;
   }
 
@@ -102,7 +106,7 @@ const NSAutoresizingMaskOptions kDefaultAutoResizingMask =
 }
 
 - (void)mouseDragged:(NSEvent*)event {
-  if ([self.window respondsToSelector:@selector(performWindowDragWithEvent)]) {
+  if ([self.window respondsToSelector:@selector(performWindowDragWithEvent:)]) {
     return;
   }
 

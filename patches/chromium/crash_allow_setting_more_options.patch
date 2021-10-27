@@ -9,7 +9,7 @@ rate-limiting, compression and global annotations.
 This should be upstreamed.
 
 diff --git a/components/crash/core/app/breakpad_linux.cc b/components/crash/core/app/breakpad_linux.cc
-index 00009dacdc2b084d7c647ab34c8c8be6decf1a5b..5eb19c8a47467d8df30316bfbd7f3c2f38aea7c0 100644
+index 93d05b949c26c3ff96f62504760dbb96c1054387..b1392d74ca4ff08f6e293a72d1d453baa5f91cbc 100644
 --- a/components/crash/core/app/breakpad_linux.cc
 +++ b/components/crash/core/app/breakpad_linux.cc
 @@ -112,6 +112,7 @@ void SetUploadURL(const std::string& url) {
@@ -75,10 +75,10 @@ index 39557cce474439238255ecd28030215085db0c81..5b3f980837911c710686ab91a2a81c31
    // Used by WebView to sample crashes without generating the unwanted dumps. If
    // the returned value is less than 100, crash dumping will be sampled to that
 diff --git a/components/crash/core/app/crashpad_linux.cc b/components/crash/core/app/crashpad_linux.cc
-index 1abde7faf44a4526d7c622e6ce2d6fafe957a4c8..68d745567c1a0e37fa4ebc9e7e705d2a24f3e1fe 100644
+index 99e5ee6eeadb9ff12b7b027ceba4c838a8fedc6d..838ccd82b5828c1c58b3089064b7baeb35982f7e 100644
 --- a/components/crash/core/app/crashpad_linux.cc
 +++ b/components/crash/core/app/crashpad_linux.cc
-@@ -165,6 +165,7 @@ base::FilePath PlatformCrashpadInitialization(
+@@ -178,6 +178,7 @@ base::FilePath PlatformCrashpadInitialization(
      // where crash_reporter provides it's own values for lsb-release.
      annotations["lsb-release"] = base::GetLinuxDistro();
  #endif
@@ -86,7 +86,7 @@ index 1abde7faf44a4526d7c622e6ce2d6fafe957a4c8..68d745567c1a0e37fa4ebc9e7e705d2a
  
      std::vector<std::string> arguments;
      if (crash_reporter_client->ShouldMonitorCrashHandlerExpensively()) {
-@@ -186,6 +187,13 @@ base::FilePath PlatformCrashpadInitialization(
+@@ -199,6 +200,13 @@ base::FilePath PlatformCrashpadInitialization(
      }
  #endif
  

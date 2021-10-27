@@ -15,6 +15,7 @@
 #include "third_party/skia/include/core/SkPixmap.h"
 #include "ui/base/clipboard/clipboard_format_type.h"
 #include "ui/base/clipboard/scoped_clipboard_writer.h"
+#include "ui/gfx/codec/png_codec.h"
 
 namespace electron {
 
@@ -50,6 +51,17 @@ bool Clipboard::Has(const std::string& format_string,
 
 std::string Clipboard::Read(const std::string& format_string) {
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
+  ui::ClipboardFormatType format(
+      ui::ClipboardFormatType::CustomPlatformType(format_string));
+
+  std::string data;
+  clipboard->ReadData(format, /* data_dst = */ nullptr, &data);
+  return data;
+}
+
+v8::Local<v8::Value> Clipboard::ReadBuffer(const std::string& format_string,
+                                           gin_helper::Arguments* args) {
+  ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
   std::map<std::string, std::string> custom_format_names;
   custom_format_names =
       clipboard->ExtractCustomPlatformNames(ui::ClipboardBuffer::kCopyPaste,
@@ -67,12 +79,6 @@ std::string Clipboard::Read(const std::string& format_string) {
 
   std::string data;
   clipboard->ReadData(format, /* data_dst = */ nullptr, &data);
-  return data;
-}
-
-v8::Local<v8::Value> Clipboard::ReadBuffer(const std::string& format_string,
-                                           gin_helper::Arguments* args) {
-  std::string data = Read(format_string);
   return node::Buffer::Copy(args->isolate(), data.data(), data.length())
       .ToLocalChecked();
 }
@@ -198,12 +204,15 @@ void Clipboard::WriteBookmark(const std::u16string& title,
 gfx::Image Clipboard::ReadImage(gin_helper::Arguments* args) {
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
   absl::optional<gfx::Image> image;
-  clipboard->ReadImage(
+  clipboard->ReadPng(
       GetClipboardBuffer(args),
       /* data_dst = */ nullptr,
       base::BindOnce(
-          [](absl::optional<gfx::Image>* image, const SkBitmap& result) {
-            image->emplace(gfx::Image::CreateFrom1xBitmap(result));
+          [](absl::optional<gfx::Image>* image,
+             const std::vector<uint8_t>& result) {
+            SkBitmap bitmap;
+            gfx::PNGCodec::Decode(result.data(), result.size(), &bitmap);
+            image->emplace(gfx::Image::CreateFrom1xBitmap(bitmap));
           },
           &image));
   DCHECK(image.has_value());

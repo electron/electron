@@ -10,12 +10,12 @@ this patch is required to provide ripemd160 support in the nodejs crypto
 module.
 
 diff --git a/crypto/digest_extra/digest_extra.c b/crypto/digest_extra/digest_extra.c
-index a93601c170dc407f7d6d628fb7e2d2f0788467f3..00911ee69bb99a34b938ea6a62cd10bc930ec95c 100644
+index 8cbb28e3afde3dbae3887b22e8b607fa7303e89f..32caba196eb9f0823f774dac9e91314035b3ff7f 100644
 --- a/crypto/digest_extra/digest_extra.c
 +++ b/crypto/digest_extra/digest_extra.c
-@@ -84,6 +84,7 @@ static const struct nid_to_digest nid_to_digest_mapping[] = {
-     {NID_sha384, EVP_sha384, SN_sha384, LN_sha384},
+@@ -85,6 +85,7 @@ static const struct nid_to_digest nid_to_digest_mapping[] = {
      {NID_sha512, EVP_sha512, SN_sha512, LN_sha512},
+     {NID_sha512_256, EVP_sha512_256, SN_sha512_256, LN_sha512_256},
      {NID_md5_sha1, EVP_md5_sha1, SN_md5_sha1, LN_md5_sha1},
 +    {NID_ripemd160, EVP_ripemd160, SN_ripemd160, LN_ripemd160},
      // As a remnant of signing |EVP_MD|s, OpenSSL returned the corresponding
@@ -62,21 +62,21 @@ index f006ebbc53eea78ce0337a076a05285f22da7a18..7b9309f39a2e5dc6e61bb89e5d32b176
 +
  #undef CHECK
 diff --git a/decrepit/evp/evp_do_all.c b/decrepit/evp/evp_do_all.c
-index d8023e08f70a060aed083212fefd1de3ecc142e4..5a41a7b7dc9afee65d9004c497da735073715bd3 100644
+index a3fb077b9b9e66d1bc524fd7987622e73aa4776a..852b76bea69988e0b3ac76a17b603128f239dde0 100644
 --- a/decrepit/evp/evp_do_all.c
 +++ b/decrepit/evp/evp_do_all.c
-@@ -78,6 +78,7 @@ void EVP_MD_do_all_sorted(void (*callback)(const EVP_MD *cipher,
-   callback(EVP_sha256(), "SHA256", NULL, arg);
+@@ -79,6 +79,7 @@ void EVP_MD_do_all_sorted(void (*callback)(const EVP_MD *cipher,
    callback(EVP_sha384(), "SHA384", NULL, arg);
    callback(EVP_sha512(), "SHA512", NULL, arg);
-+  callback(EVP_ripemd160(), "RIPEMD160", NULL, arg);
+   callback(EVP_sha512_256(), "SHA512-256", NULL, arg);
++  callback(EVP_ripemd160(), "ripemd160", NULL, arg);
  
    callback(EVP_md4(), "md4", NULL, arg);
    callback(EVP_md5(), "md5", NULL, arg);
-@@ -86,6 +87,7 @@ void EVP_MD_do_all_sorted(void (*callback)(const EVP_MD *cipher,
-   callback(EVP_sha256(), "sha256", NULL, arg);
+@@ -88,6 +89,7 @@ void EVP_MD_do_all_sorted(void (*callback)(const EVP_MD *cipher,
    callback(EVP_sha384(), "sha384", NULL, arg);
    callback(EVP_sha512(), "sha512", NULL, arg);
+   callback(EVP_sha512_256(), "sha512-256", NULL, arg);
 +  callback(EVP_ripemd160(), "ripemd160", NULL, arg);
  }
  

@@ -50,13 +50,12 @@ class DesktopCapturer : public gin::Wrappable<DesktopCapturer>,
   ~DesktopCapturer() override;
 
   // DesktopMediaListObserver:
-  void OnSourceAdded(DesktopMediaList* list, int index) override {}
-  void OnSourceRemoved(DesktopMediaList* list, int index) override {}
-  void OnSourceMoved(DesktopMediaList* list,
-                     int old_index,
-                     int new_index) override {}
-  void OnSourceNameChanged(DesktopMediaList* list, int index) override {}
-  void OnSourceThumbnailChanged(DesktopMediaList* list, int index) override {}
+  void OnSourceAdded(int index) override {}
+  void OnSourceRemoved(int index) override {}
+  void OnSourceMoved(int old_index, int new_index) override {}
+  void OnSourceNameChanged(int index) override {}
+  void OnSourceThumbnailChanged(int index) override {}
+  void OnSourcePreviewChanged(size_t index) override {}
 
  private:
   void UpdateSourcesList(DesktopMediaList* list);

@@ -59,6 +59,10 @@ v8Util.setHiddenValue(global, 'ipcNative', {
   }
 });
 
+process.getProcessMemoryInfo = () => {
+  return ipcRendererInternal.invoke<Electron.ProcessMemoryInfo>(IPC_MESSAGES.BROWSER_GET_PROCESS_MEMORY_INFO);
+};
+
 // Use electron module after everything is ready.
 const { webFrameInit } = require('@electron/internal/renderer/web-frame-init') as typeof webFrameInitModule;
 webFrameInit();

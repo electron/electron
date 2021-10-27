@@ -125,5 +125,7 @@
   </message>
   <message name="IDS_BADGE_UNREAD_NOTIFICATIONS" desc="The accessibility text which will be read by a screen reader when there are notifcatications">
     {UNREAD_NOTIFICATIONS, plural, =1 {1 Unread Notification} other {# Unread Notifications}}
-  </message>  
+  </message>
+  <message name="IDS_HID_CHOOSER_ITEM_WITHOUT_NAME" desc="User option displaying the device IDs for a Human Interface Device (HID) without a device name.">
+        Unknown Device (<ph name="DEVICE_ID">$1<ex>1234:abcd</ex></ph>) </message>
 </grit-part>

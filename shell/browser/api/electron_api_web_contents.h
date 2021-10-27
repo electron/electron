@@ -20,6 +20,7 @@
 #include "content/common/frame.mojom.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/keyboard_event_processing_result.h"
+#include "content/public/browser/permission_type.h"
 #include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_delegate.h"
@@ -90,6 +91,11 @@ class OffScreenWebContentsView;
 #endif
 
 namespace api {
+
+using DevicePermissionMap = std::map<
+    int,
+    std::map<content::PermissionType,
+             std::map<url::Origin, std::vector<std::unique_ptr<base::Value>>>>>;
 
 // Wrapper around the content::WebContents.
 class WebContents : public gin::Wrappable<WebContents>,
@@ -179,6 +185,7 @@ class WebContents : public gin::Wrappable<WebContents>,
   int GetHistoryLength() const;
   const std::string GetWebRTCIPHandlingPolicy() const;
   void SetWebRTCIPHandlingPolicy(const std::string& webrtc_ip_handling_policy);
+  std::string GetMediaSourceID(content::WebContents* request_web_contents);
   bool IsCrashed() const;
   void ForcefullyCrashRenderer();
   void SetUserAgent(const std::string& user_agent);
@@ -215,7 +222,8 @@ class WebContents : public gin::Wrappable<WebContents>,
                            printing::CompletionCallback print_callback,
                            std::u16string device_name,
                            bool silent,
-                           std::u16string default_printer);
+                           // <error, default_printer_name>
+                           std::pair<std::string, std::u16string> info);
   void Print(gin::Arguments* args);
   // Print current page as PDF.
   v8::Local<v8::Promise> PrintToPDF(base::DictionaryValue settings);
@@ -316,6 +324,7 @@ class WebContents : public gin::Wrappable<WebContents>,
 
   v8::Local<v8::Promise> TakeHeapSnapshot(v8::Isolate* isolate,
                                           const base::FilePath& file_path);
+  v8::Local<v8::Promise> GetProcessMemoryInfo(v8::Isolate* isolate);
 
   // Properties.
   int32_t ID() const { return id_; }
@@ -419,6 +428,21 @@ class WebContents : public gin::Wrappable<WebContents>,
       electron::mojom::ElectronBrowser::DoGetZoomLevelCallback callback);
   void SetImageAnimationPolicy(const std::string& new_policy);
 
+  // Grants |origin| access to |device|.
+  // To be used in place of ObjectPermissionContextBase::GrantObjectPermission.
+  void GrantDevicePermission(const url::Origin& origin,
+                             const base::Value* device,
+                             content::PermissionType permissionType,
+                             content::RenderFrameHost* render_frame_host);
+
+  // Returns the list of devices that |origin| has been granted permission to
+  // access. To be used in place of
+  // ObjectPermissionContextBase::GetGrantedObjects.
+  std::vector<base::Value> GetGrantedDevices(
+      const url::Origin& origin,
+      content::PermissionType permissionType,
+      content::RenderFrameHost* render_frame_host);
+
  private:
   // Does not manage lifetime of |web_contents|.
   WebContents(v8::Isolate* isolate, content::WebContents* web_contents);
@@ -429,6 +453,9 @@ class WebContents : public gin::Wrappable<WebContents>,
   // Creates a new content::WebContents.
   WebContents(v8::Isolate* isolate, const gin_helper::Dictionary& options);
   ~WebContents() override;
+
+  // Delete this if garbage collection has not started.
+  void DeleteThisIfAlive();
 
   // Creates a InspectableWebContents object and takes ownership of
   // |web_contents|.
@@ -761,6 +788,9 @@ class WebContents : public gin::Wrappable<WebContents>,
 
   // Stores the frame thats currently in fullscreen, nullptr if there is none.
   content::RenderFrameHost* fullscreen_frame_ = nullptr;
+
+  // In-memory cache that holds objects that have been granted permissions.
+  DevicePermissionMap granted_devices_;
 
   base::WeakPtrFactory<WebContents> weak_factory_{this};
 

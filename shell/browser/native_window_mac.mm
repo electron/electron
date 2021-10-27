@@ -324,6 +324,13 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   window_ = static_cast<ElectronNSWindow*>(
       widget()->GetNativeWindow().GetNativeNSWindow());
 
+  RegisterDeleteDelegateCallback(base::BindOnce(
+      [](NativeWindowMac* window) {
+        if (window->window_)
+          window->window_ = nil;
+      },
+      this));
+
   [window_ setEnableLargerThanScreen:enable_larger_than_screen()];
 
   window_delegate_.reset([[ElectronNSWindowDelegate alloc] initWithShell:this]);
@@ -609,16 +616,14 @@ void NativeWindowMac::Unmaximize() {
 }
 
 bool NativeWindowMac::IsMaximized() {
-  if (([window_ styleMask] & NSWindowStyleMaskResizable) != 0) {
+  if (([window_ styleMask] & NSWindowStyleMaskResizable) != 0)
     return [window_ isZoomed];
-  } else {
-    NSRect rectScreen = [[NSScreen mainScreen] visibleFrame];
-    NSRect rectWindow = [window_ frame];
-    return (rectScreen.origin.x == rectWindow.origin.x &&
-            rectScreen.origin.y == rectWindow.origin.y &&
-            rectScreen.size.width == rectWindow.size.width &&
-            rectScreen.size.height == rectWindow.size.height);
-  }
+
+  NSRect rectScreen = GetAspectRatio() > 0.0
+                          ? default_frame_for_zoom()
+                          : [[NSScreen mainScreen] visibleFrame];
+
+  return NSEqualRects([window_ frame], rectScreen);
 }
 
 void NativeWindowMac::Minimize() {
@@ -1410,24 +1415,21 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
     vibrancyType = NSVisualEffectMaterialTitlebar;
   }
 
-  if (@available(macOS 10.11, *)) {
-    if (type == "selection") {
-      vibrancyType = NSVisualEffectMaterialSelection;
-    } else if (type == "menu") {
-      vibrancyType = NSVisualEffectMaterialMenu;
-    } else if (type == "popover") {
-      vibrancyType = NSVisualEffectMaterialPopover;
-    } else if (type == "sidebar") {
-      vibrancyType = NSVisualEffectMaterialSidebar;
-    } else if (type == "medium-light") {
-      EmitWarning(env, "NSVisualEffectMaterialMediumLight" + dep_warn,
-                  "electron");
-      vibrancyType = NSVisualEffectMaterialMediumLight;
-    } else if (type == "ultra-dark") {
-      EmitWarning(env, "NSVisualEffectMaterialUltraDark" + dep_warn,
-                  "electron");
-      vibrancyType = NSVisualEffectMaterialUltraDark;
-    }
+  if (type == "selection") {
+    vibrancyType = NSVisualEffectMaterialSelection;
+  } else if (type == "menu") {
+    vibrancyType = NSVisualEffectMaterialMenu;
+  } else if (type == "popover") {
+    vibrancyType = NSVisualEffectMaterialPopover;
+  } else if (type == "sidebar") {
+    vibrancyType = NSVisualEffectMaterialSidebar;
+  } else if (type == "medium-light") {
+    EmitWarning(env, "NSVisualEffectMaterialMediumLight" + dep_warn,
+                "electron");
+    vibrancyType = NSVisualEffectMaterialMediumLight;
+  } else if (type == "ultra-dark") {
+    EmitWarning(env, "NSVisualEffectMaterialUltraDark" + dep_warn, "electron");
+    vibrancyType = NSVisualEffectMaterialUltraDark;
   }
 
   if (@available(macOS 10.14, *)) {

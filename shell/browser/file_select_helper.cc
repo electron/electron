@@ -533,9 +533,12 @@ void FileSelectHelper::RenderFrameHostChanged(
     return;
   // The |old_host| and its children are now pending deletion. Do not give them
   // file access past this point.
-  if (render_frame_host_ == old_host ||
-      render_frame_host_->IsDescendantOf(old_host)) {
-    render_frame_host_ = nullptr;
+  for (content::RenderFrameHost* host = render_frame_host_; host;
+       host = host->GetParentOrOuterDocument()) {
+    if (host == old_host) {
+      render_frame_host_ = nullptr;
+      return;
+    }
   }
 }
 

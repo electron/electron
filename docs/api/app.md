@@ -36,10 +36,10 @@ Returns:
 * `launchInfo` Record<string, any> | [NotificationResponse](structures/notification-response.md) _macOS_
 
 Emitted once, when Electron has finished initializing. On macOS, `launchInfo`
-holds the `userInfo` of the `NSUserNotification` or information from
-[`UNNotificationResponse`](structures/notification-response.md) that was used to open the
-application, if it was launched from Notification Center. You can also call
-`app.isReady()` to check if this event has already fired and `app.whenReady()`
+holds the `userInfo` of the [`NSUserNotification`](https://developer.apple.com/documentation/foundation/nsusernotification)
+or information from [`UNNotificationResponse`](https://developer.apple.com/documentation/usernotifications/unnotificationresponse)
+that was used to open the application, if it was launched from Notification Center.
+You can also call `app.isReady()` to check if this event has already fired and `app.whenReady()`
 to get a Promise that is fulfilled when Electron is initialized.
 
 ### Event: 'window-all-closed'
@@ -483,6 +483,7 @@ Returns:
 * `event` Event
 * `argv` String[] - An array of the second instance's command line arguments
 * `workingDirectory` String - The second instance's working directory
+* `additionalData` unknown - A JSON object of additional data passed from the second instance
 
 This event will be emitted inside the primary instance of your application
 when a second instance has been executed and calls `app.requestSingleInstanceLock()`.
@@ -499,16 +500,6 @@ gets emitted.
 
 **Note:** Extra command line arguments might be added by Chromium,
 such as `--original-process-start-time`.
-
-### Event: 'desktop-capturer-get-sources'
-
-Returns:
-
-* `event` Event
-* `webContents` [WebContents](web-contents.md)
-
-Emitted when `desktopCapturer.getSources()` is called in the renderer process of `webContents`.
-Calling `event.preventDefault()` will make it return empty sources.
 
 ## Methods
 
@@ -941,6 +932,8 @@ app.setJumpList([
 
 ### `app.requestSingleInstanceLock()`
 
+* `additionalData` unknown (optional) - A JSON object containing additional data to send to the first instance.
+
 Returns `Boolean`
 
 The return value of this method indicates whether or not this instance of your
@@ -966,12 +959,16 @@ starts:
 const { app } = require('electron')
 let myWindow = null
 
-const gotTheLock = app.requestSingleInstanceLock()
+const additionalData = { myKey: 'myValue' }
+const gotTheLock = app.requestSingleInstanceLock(additionalData)
 
 if (!gotTheLock) {
   app.quit()
 } else {
-  app.on('second-instance', (event, commandLine, workingDirectory) => {
+  app.on('second-instance', (event, commandLine, workingDirectory, additionalData) => {
+    // Print out data received from the second instance.
+    console.log(additionalData)
+
     // Someone tried to run a second instance, we should focus our window.
     if (myWindow) {
       if (myWindow.isMinimized()) myWindow.restore()
@@ -1072,7 +1069,7 @@ indicates success while any other value indicates failure according to Chromium 
     Linux.
   * `secureDnsMode` String (optional) - Can be "off", "automatic" or "secure".
     Configures the DNS-over-HTTP mode. When "off", no DoH lookups will be
-    performed. When "automatic", DoH lookups will be peformed first if DoH is
+    performed. When "automatic", DoH lookups will be performed first if DoH is
     available, and insecure DNS lookups will be performed as a fallback. When
     "secure", only DoH lookups will be performed. Defaults to "automatic".
   * `secureDnsServers` String[]&#32;(optional) - A list of DNS-over-HTTP

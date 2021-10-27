@@ -3,38 +3,47 @@
 > Access information about media sources that can be used to capture audio and
 > video from the desktop using the [`navigator.mediaDevices.getUserMedia`] API.
 
-Process: [Main](../glossary.md#main-process), [Renderer](../glossary.md#renderer-process)
+Process: [Main](../glossary.md#main-process)
 
 The following example shows how to capture video from a desktop window whose
 title is `Electron`:
 
 ```javascript
-// In the renderer process.
+// In the main process.
 const { desktopCapturer } = require('electron')
 
 desktopCapturer.getSources({ types: ['window', 'screen'] }).then(async sources => {
   for (const source of sources) {
     if (source.name === 'Electron') {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: false,
-          video: {
-            mandatory: {
-              chromeMediaSource: 'desktop',
-              chromeMediaSourceId: source.id,
-              minWidth: 1280,
-              maxWidth: 1280,
-              minHeight: 720,
-              maxHeight: 720
-            }
-          }
-        })
-        handleStream(stream)
-      } catch (e) {
-        handleError(e)
-      }
+      mainWindow.webContents.send('SET_SOURCE', source.id)
       return
     }
+  }
+})
+```
+
+```javascript
+// In the preload script.
+const { ipcRenderer } = require('electron')
+
+ipcRenderer.on('SET_SOURCE', async (event, sourceId) => {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: false,
+      video: {
+        mandatory: {
+          chromeMediaSource: 'desktop',
+          chromeMediaSourceId: sourceId,
+          minWidth: 1280,
+          maxWidth: 1280,
+          minHeight: 720,
+          maxHeight: 720
+        }
+      }
+    })
+    handleStream(stream)
+  } catch (e) {
+    handleError(e)
   }
 })
 

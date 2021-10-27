@@ -15,6 +15,7 @@
 #include "base/path_service.h"
 #include "base/task/post_task.h"
 #include "chrome/common/chrome_paths.h"
+#include "components/value_store/value_store_factory_impl.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
@@ -30,10 +31,8 @@
 #include "extensions/browser/notification_types.h"
 #include "extensions/browser/null_app_sorting.h"
 #include "extensions/browser/quota_service.h"
-#include "extensions/browser/runtime_data.h"
 #include "extensions/browser/service_worker_manager.h"
 #include "extensions/browser/user_script_manager.h"
-#include "extensions/browser/value_store/value_store_factory_impl.h"
 #include "extensions/common/constants.h"
 #include "extensions/common/file_util.h"
 #include "shell/browser/extensions/electron_extension_loader.h"
@@ -63,7 +62,7 @@ std::string GetCryptoTokenManifest() {
 ElectronExtensionSystem::ElectronExtensionSystem(
     BrowserContext* browser_context)
     : browser_context_(browser_context),
-      store_factory_(base::MakeRefCounted<ValueStoreFactoryImpl>(
+      store_factory_(base::MakeRefCounted<value_store::ValueStoreFactoryImpl>(
           browser_context->GetPath())) {}
 
 ElectronExtensionSystem::~ElectronExtensionSystem() = default;
@@ -96,8 +95,6 @@ void ElectronExtensionSystem::Shutdown() {
 void ElectronExtensionSystem::InitForRegularProfile(bool extensions_enabled) {
   service_worker_manager_ =
       std::make_unique<ServiceWorkerManager>(browser_context_);
-  runtime_data_ =
-      std::make_unique<RuntimeData>(ExtensionRegistry::Get(browser_context_));
   quota_service_ = std::make_unique<QuotaService>();
   user_script_manager_ = std::make_unique<UserScriptManager>(browser_context_);
   app_sorting_ = std::make_unique<NullAppSorting>();
@@ -161,10 +158,6 @@ ExtensionService* ElectronExtensionSystem::extension_service() {
   return nullptr;
 }
 
-RuntimeData* ElectronExtensionSystem::runtime_data() {
-  return runtime_data_.get();
-}
-
 ManagementPolicy* ElectronExtensionSystem::management_policy() {
   return management_policy_.get();
 }
@@ -185,7 +178,12 @@ StateStore* ElectronExtensionSystem::rules_store() {
   return nullptr;
 }
 
-scoped_refptr<ValueStoreFactory> ElectronExtensionSystem::store_factory() {
+StateStore* ElectronExtensionSystem::dynamic_user_scripts_store() {
+  return nullptr;
+}
+
+scoped_refptr<value_store::ValueStoreFactory>
+ElectronExtensionSystem::store_factory() {
   return store_factory_;
 }
 

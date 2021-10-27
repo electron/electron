@@ -18,6 +18,7 @@
 #include "base/memory/weak_ptr.h"
 #include "chrome/browser/devtools/devtools_contents_resizing_strategy.h"
 #include "chrome/browser/devtools/devtools_embedder_message_dispatcher.h"
+#include "chrome/browser/devtools/devtools_settings.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/devtools_frontend_host.h"
 #include "content/public/browser/web_contents_delegate.h"
@@ -27,6 +28,7 @@
 
 class PrefService;
 class PrefRegistrySimple;
+struct RegisterOptions;
 
 namespace electron {
 
@@ -133,6 +135,8 @@ class InspectableWebContents
   void SendJsonRequest(DispatchCallback callback,
                        const std::string& browser_id,
                        const std::string& url) override;
+  void RegisterPreference(const std::string& name,
+                          const RegisterOptions& options) override;
   void GetPreferences(DispatchCallback callback) override;
   void SetPreference(const std::string& name,
                      const std::string& value) override;
@@ -187,6 +191,9 @@ class InspectableWebContents
 
   void SendMessageAck(int request_id, const base::Value* arg1);
 
+  const char* GetDictionaryNameForSettingsName(const std::string& name) const;
+  const char* GetDictionaryNameForSyncedPrefs() const;
+
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   void AddDevToolsExtensionsToClient();
 #endif
@@ -224,6 +231,11 @@ class InspectableWebContents
 
   using ExtensionsAPIs = std::map<std::string, std::string>;
   ExtensionsAPIs extensions_api_;
+
+  // Contains the set of synced settings.
+  // The DevTools frontend *must* call `Register` for each setting prior to
+  // use, which guarantees that this set must not be persisted.
+  base::flat_set<std::string> synced_setting_names_;
 
   base::WeakPtrFactory<InspectableWebContents> weak_factory_{this};
 

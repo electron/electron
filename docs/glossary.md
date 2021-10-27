@@ -4,15 +4,39 @@ This page defines some terminology that is commonly used in Electron development
 
 ### ASAR
 
-ASAR stands for Atom Shell Archive Format. An [asar][asar] archive is a simple
+ASAR stands for Atom Shell Archive Format. An [asar] archive is a simple
 `tar`-like format that concatenates files into a single file. Electron can read
 arbitrary files from it without unpacking the whole file.
 
-The ASAR format was created primarily to improve performance on Windows... TODO
+The ASAR format was created primarily to improve performance on Windows when
+reading large quantities of small files (e.g. when loading your app's JavaScript
+dependency tree from `node_modules`).
+
+### code signing
+
+Code signing is a process where an app developer digitally signs their code to
+ensure that it hasn't been tampered with after packaging. Both Windows and
+macOS implement their own version of code signing. As a desktop app developer,
+it's important that you sign your code if you plan on distributing it to the
+general public.
+
+For more information, read the [Code Signing] tutorial.
+
+### context isolation
+
+Context isolation is a security measure in Electron that ensures that your
+preload script cannot leak privileged Electron or Node.js APIs to the web
+contents in your renderer process. With context isolation enabled, the
+only way to expose APIs from your preload script is through the
+`contextBridge` API.
+
+For more information, read the [Context Isolation] tutorial.
+
+See also: [preload script](#preload-script), [renderer process](#renderer-process)
 
 ### CRT
 
-The C Run-time Library (CRT) is the part of the C++ Standard Library that
+The C Runtime Library (CRT) is the part of the C++ Standard Library that
 incorporates the ISO C99 standard library. The Visual C++ libraries that
 implement the CRT support native code development, and both mixed native and
 managed code, and pure managed code for .NET development.
@@ -20,8 +44,7 @@ managed code, and pure managed code for .NET development.
 ### DMG
 
 An Apple Disk Image is a packaging format used by macOS. DMG files are
-commonly used for distributing application "installers". [electron-builder]
-supports `dmg` as a build target.
+commonly used for distributing application "installers".
 
 ### IME
 
@@ -31,19 +54,15 @@ keyboards to input Chinese, Japanese, Korean and Indic characters.
 
 ### IDL
 
-Interface description language. Write function signatures and data types in a format that can be used to generate interfaces in Java, C++, JavaScript, etc.
+Interface description language. Write function signatures and data types in a
+format that can be used to generate interfaces in Java, C++, JavaScript, etc.
 
 ### IPC
 
-IPC stands for Inter-Process Communication. Electron uses IPC to send
-serialized JSON messages between the [main] and [renderer] processes.
+IPC stands for inter-process communication. Electron uses IPC to send
+serialized JSON messages between the main and renderer processes.
 
-### libchromiumcontent
-
-A shared library that includes the [Chromium Content module] and all its
-dependencies (e.g., Blink, [V8], etc.). Also referred to as "libcc".
-
-- [github.com/electron/libchromiumcontent](https://github.com/electron/libchromiumcontent)
+see also: [main process](#main-process), [renderer process](#renderer-process)
 
 ### main process
 
@@ -68,9 +87,21 @@ MAS, see the [Mac App Store Submission Guide].
 
 ### Mojo
 
-An IPC system for communicating intra- or inter-process, and that's important because Chrome is keen on being able to split its work into separate processes or not, depending on memory pressures etc.
+An IPC system for communicating intra- or inter-process, and that's important
+because Chrome is keen on being able to split its work into separate processes
+or not, depending on memory pressures etc.
 
 See https://chromium.googlesource.com/chromium/src/+/master/mojo/README.md
+
+See also: [IPC](#ipc)
+
+### MSI
+
+On Windows, MSI packages are used by the Windows Installer
+(also known as Microsoft Installer) service to install and configure
+applications.
+
+More information can be found in [Microsoft's documentation][msi].
 
 ### native modules
 
@@ -85,21 +116,32 @@ likely to use a different V8 version from the Node binary installed in your
 system, you have to manually specify the location of Electron’s headers when
 building native modules.
 
-See also [Using Native Node Modules].
+For more information, read the [Native Node Modules] tutorial.
 
-### NSIS
+### notarization
 
-Nullsoft Scriptable Install System is a script-driven Installer
-authoring tool for Microsoft Windows. It is released under a combination of
-free software licenses, and is a widely-used alternative to commercial
-proprietary products like InstallShield. [electron-builder] supports NSIS
-as a build target.
+Notarization is a macOS-specific process where a developer can send a
+code-signed app to Apple servers to get verified for malicious
+components through an automated service.
+
+See also: [code signing](#code-signing)
 
 ### OSR
 
-OSR (Off-screen rendering) can be used for loading heavy page in
+OSR (offscreen rendering) can be used for loading heavy page in
 background and then displaying it after (it will be much faster).
 It allows you to render page without showing it on screen.
+
+For more information, read the [Offscreen Rendering][osr] tutorial.
+
+### preload script
+
+Preload scripts contain code that executes in a renderer process
+before its web contents begin loading. These scripts run within
+the renderer context, but are granted more privileges by having
+access to Node.js APIs.
+
+See also: [renderer process](#renderer-process), [context isolation](#context-isolation)
 
 ### process
 
@@ -120,12 +162,16 @@ The renderer process is a browser window in your app. Unlike the main process,
 there can be multiple of these and each is run in a separate process.
 They can also be hidden.
 
-In normal browsers, web pages usually run in a sandboxed environment and are not
-allowed access to native resources. Electron users, however, have the power to
-use Node.js APIs in web pages allowing lower level operating system
-interactions.
-
 See also: [process](#process), [main process](#main-process)
+
+### sandbox
+
+The sandbox is a security feature inherited from Chromium that restricts
+your renderer processes to a limited set of permissions.
+
+For more information, read the [Process Sandboxing] tutorial.
+
+See also: [process](#process)
 
 ### Squirrel
 
@@ -174,13 +220,15 @@ embedded content.
 
 [addons]: https://nodejs.org/api/addons.html
 [asar]: https://github.com/electron/asar
-[autoUpdater]: api/auto-updater.md
-[Chromium Content module]: https://www.chromium.org/developers/content-module
-[electron-builder]: https://github.com/electron-userland/electron-builder
-[libchromiumcontent]: #libchromiumcontent
-[Mac App Store Submission Guide]: tutorial/mac-app-store-submission-guide.md
+[autoupdater]: api/auto-updater.md
+[code signing]: tutorial/code-signing.md
+[context isolation]: tutorial/context-isolation.md
+[mac app store submission guide]: tutorial/mac-app-store-submission-guide.md
 [main]: #main-process
+[msi]: https://docs.microsoft.com/en-us/windows/win32/msi/windows-installer-portal
+[offscreen rendering]: tutorial/offscreen-rendering.md
+[process sandboxing]: tutorial/sandbox.md
 [renderer]: #renderer-process
 [userland]: #userland
-[Using Native Node Modules]: tutorial/using-native-node-modules.md
-[V8]: #v8
+[using native node modules]: tutorial/using-native-node-modules.md
+[v8]: #v8

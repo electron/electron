@@ -592,8 +592,7 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
         switches::kStandardSchemes,      switches::kEnableSandbox,
         switches::kSecureSchemes,        switches::kBypassCSPSchemes,
         switches::kCORSSchemes,          switches::kFetchSchemes,
-        switches::kServiceWorkerSchemes, switches::kEnableApiFilteringLogging,
-        switches::kStreamingSchemes};
+        switches::kServiceWorkerSchemes, switches::kStreamingSchemes};
     command_line->CopySwitchesFrom(*base::CommandLine::ForCurrentProcess(),
                                    kCommonSwitchNames,
                                    base::size(kCommonSwitchNames));
@@ -999,6 +998,7 @@ bool ElectronBrowserClient::HandleExternalProtocol(
     int frame_tree_node_id,
     content::NavigationUIData* navigation_data,
     bool is_main_frame,
+    network::mojom::WebSandboxFlags sandbox_flags,
     ui::PageTransition page_transition,
     bool has_user_gesture,
     const absl::optional<url::Origin>& initiating_origin,
@@ -1041,8 +1041,7 @@ NotificationPresenter* ElectronBrowserClient::GetNotificationPresenter() {
 }
 
 content::PlatformNotificationService*
-ElectronBrowserClient::GetPlatformNotificationService(
-    content::BrowserContext* browser_context) {
+ElectronBrowserClient::GetPlatformNotificationService() {
   if (!notification_service_) {
     notification_service_ = std::make_unique<PlatformNotificationService>(this);
   }
@@ -1703,6 +1702,12 @@ device::GeolocationManager* ElectronBrowserClient::GetGeolocationManager() {
 #else
   return nullptr;
 #endif
+}
+
+content::HidDelegate* ElectronBrowserClient::GetHidDelegate() {
+  if (!hid_delegate_)
+    hid_delegate_ = std::make_unique<ElectronHidDelegate>();
+  return hid_delegate_.get();
 }
 
 }  // namespace electron

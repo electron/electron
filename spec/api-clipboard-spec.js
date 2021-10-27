@@ -30,7 +30,7 @@ ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard 
   describe('clipboard.readHTML()', () => {
     it('returns markup correctly', () => {
       const text = '<string>Hi</string>';
-      const markup = process.platform === 'darwin' ? "<meta charset='utf-8'><string>Hi</string>" : process.platform === 'linux' ? '<meta http-equiv="content-type" ' + 'content="text/html; charset=utf-8"><string>Hi</string>' : '<string>Hi</string>';
+      const markup = process.platform === 'darwin' ? "<meta charset='utf-8'><string>Hi</string>" : '<string>Hi</string>';
       clipboard.writeHTML(text);
       expect(clipboard.readHTML()).to.equal(markup);
     });
@@ -44,13 +44,7 @@ ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard 
     });
   });
 
-  describe('clipboard.readBookmark', () => {
-    before(function () {
-      if (process.platform === 'linux') {
-        this.skip();
-      }
-    });
-
+  ifdescribe(process.platform !== 'linux')('clipboard.readBookmark', () => {
     it('returns title and url', () => {
       clipboard.writeBookmark('a title', 'https://electronjs.org');
 
@@ -68,13 +62,23 @@ ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard 
     });
   });
 
+  ifdescribe(process.platform !== 'linux')('clipboard.read()', () => {
+    it('does not crash when reading various custom clipboard types', () => {
+      const type = process.platform === 'darwin' ? 'NSFilenamesPboardType' : 'FileNameW';
+
+      expect(() => {
+        const result = clipboard.read(type);
+      }).to.not.throw();
+    });
+  });
+
   describe('clipboard.write()', () => {
     it('returns data correctly', () => {
       const text = 'test';
       const rtf = '{\\rtf1\\utf8 text}';
       const p = path.join(fixtures, 'assets', 'logo.png');
       const i = nativeImage.createFromPath(p);
-      const markup = process.platform === 'darwin' ? "<meta charset='utf-8'><b>Hi</b>" : process.platform === 'linux' ? '<meta http-equiv="content-type" ' + 'content="text/html; charset=utf-8"><b>Hi</b>' : '<b>Hi</b>';
+      const markup = process.platform === 'darwin' ? "<meta charset='utf-8'><b>Hi</b>" : '<b>Hi</b>';
       const bookmark = { title: 'a title', url: 'test' };
       clipboard.write({
         text: 'test',
@@ -100,13 +104,7 @@ ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard 
     });
   });
 
-  describe('clipboard.read/writeFindText(text)', () => {
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip();
-      }
-    });
-
+  ifdescribe(process.platform === 'darwin')('clipboard.read/writeFindText(text)', () => {
     it('reads and write text to the find pasteboard', () => {
       clipboard.writeFindText('find this');
       expect(clipboard.readFindText()).to.equal('find this');

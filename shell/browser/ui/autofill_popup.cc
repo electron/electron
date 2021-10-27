@@ -6,8 +6,10 @@
 #include <memory>
 #include <vector>
 
+#include "base/feature_list.h"
 #include "base/i18n/rtl.h"
 #include "chrome/browser/ui/views/autofill/autofill_popup_view_utils.h"
+#include "components/autofill/core/common/autofill_features.h"
 #include "electron/buildflags/buildflags.h"
 #include "mojo/public/cpp/bindings/associated_remote.h"
 #include "shell/browser/native_window_views.h"
@@ -114,8 +116,18 @@ void AutofillPopup::UpdatePopupBounds() {
 
   gfx::Size preferred_size =
       gfx::Size(GetDesiredPopupWidth(), GetDesiredPopupHeight());
-  popup_bounds_ = CalculatePopupBounds(preferred_size, window_bounds, bounds,
-                                       base::i18n::IsRTL());
+
+  if (base::FeatureList::IsEnabled(
+          autofill::features::kAutofillCenterAlignedSuggestions)) {
+    popup_bounds_ = CalculatePopupBounds(preferred_size, window_bounds, bounds,
+                                         base::i18n::IsRTL(), true);
+    CalculatePopupXAndWidthHorizontallyCentered(
+        preferred_size.width(), window_bounds, element_bounds_,
+        base::i18n::IsRTL(), &popup_bounds_);
+  } else {
+    popup_bounds_ = CalculatePopupBounds(preferred_size, window_bounds, bounds,
+                                         base::i18n::IsRTL(), false);
+  }
 }
 
 gfx::Rect AutofillPopup::popup_bounds_in_view() {
