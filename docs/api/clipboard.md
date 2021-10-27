@@ -197,7 +197,7 @@ Returns `Boolean` - Whether the clipboard supports the specified `format`.
 ```js
 const { clipboard } = require('electron')
 
-const hasFormat = clipboard.has('<p>selection</p>')
+const hasFormat = clipboard.has('public/utf8-plain-text')
 console.log(hasFormat)
 // 'true' or 'false'
 ```
