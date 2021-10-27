@@ -30,6 +30,8 @@
   gfx::Point margin_;
   // The default left-top margin.
   gfx::Point default_margin_;
+  // Current height of the title bar container.
+  float height_;
 
   // Track mouse moves above window buttons.
   BOOL show_on_hover_;
@@ -48,6 +50,10 @@
 
 // Set left-top margin of the window buttons..
 - (void)setMargin:(const absl::optional<gfx::Point>&)margin;
+
+// Set height of button container
+- (void)setHeight:(const float)height;
+- (BOOL)useCustomHeight;
 
 // Return the bounds of all 3 buttons, with margin on all sides.
 - (NSRect)getButtonsContainerBounds;

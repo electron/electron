@@ -36,6 +36,8 @@
 
   // Remember the default margin.
   margin_ = default_margin_ = [self getCurrentMargin];
+  // Custom height will be used if set larger than default
+  height_ = 0;
 
   return self;
 }
@@ -86,6 +88,17 @@
   [self redraw];
 }
 
+- (void)setHeight:(const float)height {
+  height_ = height;
+  [self redraw];
+}
+
+- (BOOL)useCustomHeight {
+  NSView* left = [self leftButton];
+  float button_height = NSHeight(left.frame);
+  return height_ > button_height;
+}
+
 - (NSRect)getButtonsContainerBounds {
   return NSInsetRect([self getButtonsBounds], -margin_.x(), -margin_.y());
 }
@@ -111,6 +124,10 @@
 
   NSRect cbounds = titleBarContainer.frame;
   cbounds.size.height = button_height + 2 * margin_.y();
+  // Custom height must be larger than the button height to use
+  if (useCustomHeight()) {
+    cbounds.size.height = height_;
+  }
   cbounds.origin.y = NSHeight(window_.frame) - NSHeight(cbounds);
   [titleBarContainer setFrame:cbounds];
 
@@ -176,7 +193,7 @@
 - (gfx::Point)getCurrentMargin {
   gfx::Point result;
   NSView* titleBarContainer = [self titleBarContainer];
-  if (!titleBarContainer)
+  if (!titleBarContainer || useCustomHeight())
     return result;
 
   NSView* left = [self leftButton];
