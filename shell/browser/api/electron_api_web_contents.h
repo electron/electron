@@ -17,7 +17,6 @@
 #include "chrome/browser/devtools/devtools_eye_dropper.h"
 #include "chrome/browser/devtools/devtools_file_system_indexer.h"
 #include "chrome/browser/ui/exclusive_access/exclusive_access_context.h"  // nogncheck
-#include "chrome/browser/ui/exclusive_access/exclusive_access_manager.h"
 #include "content/common/cursors/webcursor.h"
 #include "content/common/frame.mojom.h"
 #include "content/public/browser/devtools_agent_host.h"

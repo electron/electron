@@ -26,6 +26,7 @@
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/values.h"
 #include "chrome/browser/browser_process.h"
+#include "chrome/browser/ui/exclusive_access/exclusive_access_manager.h"
 #include "chrome/browser/ui/views/eye_dropper/eye_dropper.h"
 #include "chrome/common/pref_names.h"
 #include "components/prefs/pref_service.h"
@@ -1258,7 +1259,7 @@ Profile* WebContents::GetProfile() {
 }
 
 bool WebContents::IsFullscreen() const {
-  return owner_window_->IsFullscreen();
+  return owner_window_ && owner_window_->IsFullscreen();
 }
 
 void WebContents::EnterFullscreen(const GURL& url,
