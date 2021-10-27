@@ -8,7 +8,7 @@ this flag causes multiple build errors in third party dependencies.
 Ref: https://chromium-review.googlesource.com/c/chromium/src/+/3234737
 
 diff --git a/build/config/compiler/BUILD.gn b/build/config/compiler/BUILD.gn
-index 5cfba9544979e95ff204dc1e23d760a0081bd733..7f86c4dc80e05e7857e1ee0da5f8a10b0bc264ad 100644
+index 8c22ab5fcf8c5a2e53591b45bc640a8361f78c1f..29db1cc1c93c7474877367da68d9aad7bfc93122 100644
 --- a/build/config/compiler/BUILD.gn
 +++ b/build/config/compiler/BUILD.gn
 @@ -1530,6 +1530,15 @@ config("default_warnings") {
