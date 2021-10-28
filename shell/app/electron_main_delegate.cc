@@ -27,6 +27,7 @@
 #include "services/tracing/public/cpp/stack_sampling/tracing_sampler_profiler.h"
 #include "shell/app/command_line_args.h"
 #include "shell/app/electron_content_client.h"
+#include "shell/app/electron_content_utility_client.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/browser/electron_gpu_client.h"
 #include "shell/browser/feature_list.h"
@@ -38,7 +39,6 @@
 #include "shell/common/platform_util.h"
 #include "shell/renderer/electron_renderer_client.h"
 #include "shell/renderer/electron_sandboxed_renderer_client.h"
-#include "shell/utility/electron_content_utility_client.h"
 #include "ui/base/resource/resource_bundle.h"
 #include "ui/base/ui_base_switches.h"
 

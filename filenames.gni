@@ -237,6 +237,8 @@ filenames = {
     "shell/app/command_line_args.h",
     "shell/app/electron_content_client.cc",
     "shell/app/electron_content_client.h",
+    "shell/app/electron_content_utility_client.cc",
+    "shell/app/electron_content_utility_client.h",
     "shell/app/electron_crash_reporter_client.cc",
     "shell/app/electron_crash_reporter_client.h",
     "shell/app/electron_main_delegate.cc",
@@ -671,8 +673,6 @@ filenames = {
     "shell/renderer/renderer_client_base.h",
     "shell/renderer/web_worker_observer.cc",
     "shell/renderer/web_worker_observer.h",
-    "shell/utility/electron_content_utility_client.cc",
-    "shell/utility/electron_content_utility_client.h",
   ]
 
   lib_sources_nss = [
