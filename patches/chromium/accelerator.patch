@@ -10,7 +10,7 @@ This patch makes three changes to Accelerator::GetShortcutText to improve shortc
 3. Ctrl-Shift-= and Ctrl-Plus show up as such
 
 diff --git a/ui/base/accelerators/accelerator.cc b/ui/base/accelerators/accelerator.cc
-index 300c551c7f2cd77dbef9a38173aee334d76448b0..a0ab67bfdb2842b4a82376ed5a0005984454a208 100644
+index 74c066852a52da8fefc0d0d26be1969d84c55a7c..cdd44d1456fed0b2fecb96b8369b048a101270d5 100644
 --- a/ui/base/accelerators/accelerator.cc
 +++ b/ui/base/accelerators/accelerator.cc
 @@ -11,6 +11,7 @@
@@ -63,7 +63,7 @@ index 300c551c7f2cd77dbef9a38173aee334d76448b0..a0ab67bfdb2842b4a82376ed5a000598
  
    if (IsCmdDown()) {
 diff --git a/ui/base/accelerators/accelerator.h b/ui/base/accelerators/accelerator.h
-index 445c683a609e49d6ac511221ac6a9aa8cc2028fa..caaeadf5c708c856c2ef167eed13b88941307ba0 100644
+index 5cdb2f160beae4d7787eb84d5013280ee9464446..76bd4369faa5d43d8a99ea51ed012857d6bff293 100644
 --- a/ui/base/accelerators/accelerator.h
 +++ b/ui/base/accelerators/accelerator.h
 @@ -16,6 +16,7 @@
@@ -81,5 +81,5 @@ index 445c683a609e49d6ac511221ac6a9aa8cc2028fa..caaeadf5c708c856c2ef167eed13b889
 +  absl::optional<char16_t> shifted_char;
 +
   private:
+   friend class AcceleratorTestMac;
    std::u16string ApplyLongFormModifiers(const std::u16string& shortcut) const;
-   std::u16string ApplyShortFormModifiers(const std::u16string& shortcut) const;
