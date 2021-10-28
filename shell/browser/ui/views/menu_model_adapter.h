@@ -15,13 +15,15 @@ class MenuModelAdapter : public views::MenuModelAdapter {
   explicit MenuModelAdapter(ElectronMenuModel* menu_model);
   ~MenuModelAdapter() override;
 
+  // disable copy
+  MenuModelAdapter(const MenuModelAdapter&) = delete;
+  MenuModelAdapter& operator=(const MenuModelAdapter&) = delete;
+
  protected:
   bool GetAccelerator(int id, ui::Accelerator* accelerator) const override;
 
  private:
   ElectronMenuModel* menu_model_;
-
-  DISALLOW_COPY_AND_ASSIGN(MenuModelAdapter);
 };
 
 }  // namespace electron

@@ -35,6 +35,10 @@ class NodeStreamLoader : public network::mojom::URLLoader {
                    v8::Isolate* isolate,
                    v8::Local<v8::Object> emitter);
 
+  // disable copy
+  NodeStreamLoader(const NodeStreamLoader&) = delete;
+  NodeStreamLoader& operator=(const NodeStreamLoader&) = delete;
+
  private:
   ~NodeStreamLoader() override;
 
@@ -95,8 +99,6 @@ class NodeStreamLoader : public network::mojom::URLLoader {
   std::map<std::string, v8::Global<v8::Value>> handlers_;
 
   base::WeakPtrFactory<NodeStreamLoader> weak_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(NodeStreamLoader);
 };
 
 }  // namespace electron

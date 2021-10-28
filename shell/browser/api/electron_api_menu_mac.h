@@ -48,8 +48,6 @@ class MenuMac : public Menu {
   std::map<int32_t, scoped_nsobject<ElectronMenuController>> popup_controllers_;
 
   base::WeakPtrFactory<MenuMac> weak_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(MenuMac);
 };
 
 }  // namespace api

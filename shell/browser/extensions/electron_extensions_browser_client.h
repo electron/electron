@@ -10,7 +10,6 @@
 #include <vector>
 
 #include "base/compiler_specific.h"
-#include "base/macros.h"
 #include "build/build_config.h"
 #include "extensions/browser/extensions_browser_client.h"
 #include "extensions/browser/kiosk/kiosk_delegate.h"
@@ -38,6 +37,12 @@ class ElectronExtensionsBrowserClient
  public:
   ElectronExtensionsBrowserClient();
   ~ElectronExtensionsBrowserClient() override;
+
+  // disable copy
+  ElectronExtensionsBrowserClient(const ElectronExtensionsBrowserClient&) =
+      delete;
+  ElectronExtensionsBrowserClient& operator=(
+      const ElectronExtensionsBrowserClient&) = delete;
 
   // ExtensionsBrowserClient overrides:
   bool IsShuttingDown() override;
@@ -138,8 +143,6 @@ class ElectronExtensionsBrowserClient
 
   std::unique_ptr<extensions::ElectronComponentExtensionResourceManager>
       resource_manager_;
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronExtensionsBrowserClient);
 };
 
 }  // namespace electron

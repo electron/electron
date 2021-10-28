@@ -8,7 +8,6 @@
 #include <string>
 #include <vector>
 
-#include "base/macros.h"
 #include "base/sequenced_task_runner_helpers.h"
 #include "content/public/browser/browser_message_filter.h"
 #include "content/public/browser/browser_thread.h"
@@ -30,6 +29,12 @@ class ElectronExtensionMessageFilter : public content::BrowserMessageFilter {
  public:
   ElectronExtensionMessageFilter(int render_process_id,
                                  content::BrowserContext* browser_context);
+
+  // disable copy
+  ElectronExtensionMessageFilter(const ElectronExtensionMessageFilter&) =
+      delete;
+  ElectronExtensionMessageFilter& operator=(
+      const ElectronExtensionMessageFilter&) = delete;
 
   // content::BrowserMessageFilter methods:
   bool OnMessageReceived(const IPC::Message& message) override;
@@ -59,8 +64,6 @@ class ElectronExtensionMessageFilter : public content::BrowserMessageFilter {
   // may outlive |browser_context_|, so make sure to NULL check if in doubt;
   // async calls and the like.
   content::BrowserContext* browser_context_;
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronExtensionMessageFilter);
 };
 
 }  // namespace electron

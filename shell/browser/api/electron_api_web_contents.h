@@ -447,6 +447,10 @@ class WebContents : public ExclusiveAccessContext,
       content::PermissionType permissionType,
       content::RenderFrameHost* render_frame_host);
 
+  // disable copy
+  WebContents(const WebContents&) = delete;
+  WebContents& operator=(const WebContents&) = delete;
+
  private:
   // Does not manage lifetime of |web_contents|.
   WebContents(v8::Isolate* isolate, content::WebContents* web_contents);
@@ -820,8 +824,6 @@ class WebContents : public ExclusiveAccessContext,
   DevicePermissionMap granted_devices_;
 
   base::WeakPtrFactory<WebContents> weak_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(WebContents);
 };
 
 }  // namespace api

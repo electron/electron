@@ -19,6 +19,11 @@ class PlatformNotificationService
   explicit PlatformNotificationService(ElectronBrowserClient* browser_client);
   ~PlatformNotificationService() override;
 
+  // disable copy
+  PlatformNotificationService(const PlatformNotificationService&) = delete;
+  PlatformNotificationService& operator=(const PlatformNotificationService&) =
+      delete;
+
  protected:
   // content::PlatformNotificationService:
   void DisplayNotification(
@@ -46,8 +51,6 @@ class PlatformNotificationService
 
  private:
   ElectronBrowserClient* browser_client_;
-
-  DISALLOW_COPY_AND_ASSIGN(PlatformNotificationService);
 };
 
 }  // namespace electron

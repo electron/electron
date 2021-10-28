@@ -5,8 +5,6 @@
 #ifndef SHELL_BROWSER_UNRESPONSIVE_SUPPRESSOR_H_
 #define SHELL_BROWSER_UNRESPONSIVE_SUPPRESSOR_H_
 
-#include "base/macros.h"
-
 namespace electron {
 
 bool IsUnresponsiveEventSuppressed();
@@ -16,8 +14,9 @@ class UnresponsiveSuppressor {
   UnresponsiveSuppressor();
   ~UnresponsiveSuppressor();
 
- private:
-  DISALLOW_COPY_AND_ASSIGN(UnresponsiveSuppressor);
+  // disable copy
+  UnresponsiveSuppressor(const UnresponsiveSuppressor&) = delete;
+  UnresponsiveSuppressor& operator=(const UnresponsiveSuppressor&) = delete;
 };
 
 }  // namespace electron

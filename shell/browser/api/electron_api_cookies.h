@@ -41,6 +41,10 @@ class Cookies : public gin::Wrappable<Cookies>,
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
 
+  // disable copy
+  Cookies(const Cookies&) = delete;
+  Cookies& operator=(const Cookies&) = delete;
+
  protected:
   Cookies(v8::Isolate* isolate, ElectronBrowserContext* browser_context);
   ~Cookies() override;
@@ -62,8 +66,6 @@ class Cookies : public gin::Wrappable<Cookies>,
 
   // Weak reference; ElectronBrowserContext is guaranteed to outlive us.
   ElectronBrowserContext* browser_context_;
-
-  DISALLOW_COPY_AND_ASSIGN(Cookies);
 };
 
 }  // namespace api

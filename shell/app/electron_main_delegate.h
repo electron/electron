@@ -26,6 +26,10 @@ class ElectronMainDelegate : public content::ContentMainDelegate {
   ElectronMainDelegate();
   ~ElectronMainDelegate() override;
 
+  // disable copy
+  ElectronMainDelegate(const ElectronMainDelegate&) = delete;
+  ElectronMainDelegate& operator=(const ElectronMainDelegate&) = delete;
+
  protected:
   // content::ContentMainDelegate:
   bool BasicStartupComplete(int* exit_code) override;
@@ -58,8 +62,6 @@ class ElectronMainDelegate : public content::ContentMainDelegate {
   std::unique_ptr<content::ContentRendererClient> renderer_client_;
   std::unique_ptr<content::ContentUtilityClient> utility_client_;
   std::unique_ptr<tracing::TracingSamplerProfiler> tracing_sampler_profiler_;
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronMainDelegate);
 };
 
 }  // namespace electron

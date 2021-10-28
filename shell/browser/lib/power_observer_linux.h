@@ -8,7 +8,6 @@
 #include <string>
 
 #include "base/callback.h"
-#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "base/power_monitor/power_observer.h"
 #include "dbus/bus.h"
@@ -21,6 +20,10 @@ class PowerObserverLinux {
  public:
   explicit PowerObserverLinux(base::PowerSuspendObserver* suspend_observer);
   ~PowerObserverLinux();
+
+  // disable copy
+  PowerObserverLinux(const PowerObserverLinux&) = delete;
+  PowerObserverLinux& operator=(const PowerObserverLinux&) = delete;
 
   void SetShutdownHandler(base::RepeatingCallback<bool()> should_shutdown);
 
@@ -46,8 +49,6 @@ class PowerObserverLinux {
   base::ScopedFD sleep_lock_;
   base::ScopedFD shutdown_lock_;
   base::WeakPtrFactory<PowerObserverLinux> weak_ptr_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(PowerObserverLinux);
 };
 
 }  // namespace electron

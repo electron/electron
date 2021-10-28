@@ -8,7 +8,6 @@
 #include <type_traits>
 
 #include "base/files/file_path.h"
-#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "uv.h"  // NOLINT(build/include_directory)
 #include "v8/include/v8.h"
@@ -109,6 +108,10 @@ class NodeBindings {
 
   bool in_worker_loop() const { return uv_loop_ == &worker_loop_; }
 
+  // disable copy
+  NodeBindings(const NodeBindings&) = delete;
+  NodeBindings& operator=(const NodeBindings&) = delete;
+
  protected:
   explicit NodeBindings(BrowserEnvironment browser_env);
 
@@ -163,8 +166,6 @@ class NodeBindings {
 #endif
 
   base::WeakPtrFactory<NodeBindings> weak_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(NodeBindings);
 };
 
 }  // namespace electron

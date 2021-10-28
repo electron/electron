@@ -56,6 +56,10 @@ class Notification : public gin::Wrappable<Notification>,
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
 
+  // disable copy
+  Notification(const Notification&) = delete;
+  Notification& operator=(const Notification&) = delete;
+
  protected:
   explicit Notification(gin::Arguments* args);
   ~Notification() override;
@@ -111,8 +115,6 @@ class Notification : public gin::Wrappable<Notification>,
   electron::NotificationPresenter* presenter_;
 
   base::WeakPtr<electron::Notification> notification_;
-
-  DISALLOW_COPY_AND_ASSIGN(Notification);
 };
 
 }  // namespace api

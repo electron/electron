@@ -35,8 +35,6 @@ class LibnotifyNotification : public Notification {
                      char*);
 
   NotifyNotification* notification_ = nullptr;
-
-  DISALLOW_COPY_AND_ASSIGN(LibnotifyNotification);
 };
 
 }  // namespace electron

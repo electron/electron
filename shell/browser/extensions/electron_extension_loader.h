@@ -9,7 +9,6 @@
 #include <utility>
 
 #include "base/callback.h"
-#include "base/macros.h"
 #include "base/memory/ref_counted.h"
 #include "base/memory/weak_ptr.h"
 #include "extensions/browser/extension_registrar.h"
@@ -32,6 +31,10 @@ class ElectronExtensionLoader : public ExtensionRegistrar::Delegate {
  public:
   explicit ElectronExtensionLoader(content::BrowserContext* browser_context);
   ~ElectronExtensionLoader() override;
+
+  // disable copy
+  ElectronExtensionLoader(const ElectronExtensionLoader&) = delete;
+  ElectronExtensionLoader& operator=(const ElectronExtensionLoader&) = delete;
 
   // Loads an unpacked extension from a directory synchronously. Returns the
   // extension on success, or nullptr otherwise.
@@ -91,8 +94,6 @@ class ElectronExtensionLoader : public ExtensionRegistrar::Delegate {
   bool did_schedule_reload_ = false;
 
   base::WeakPtrFactory<ElectronExtensionLoader> weak_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronExtensionLoader);
 };
 
 }  // namespace extensions

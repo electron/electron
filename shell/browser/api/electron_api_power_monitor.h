@@ -33,6 +33,10 @@ class PowerMonitor : public gin::Wrappable<PowerMonitor>,
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
 
+  // disable copy
+  PowerMonitor(const PowerMonitor&) = delete;
+  PowerMonitor& operator=(const PowerMonitor&) = delete;
+
  private:
   explicit PowerMonitor(v8::Isolate* isolate);
   ~PowerMonitor() override;
@@ -80,8 +84,6 @@ class PowerMonitor : public gin::Wrappable<PowerMonitor>,
 #if defined(OS_LINUX)
   PowerObserverLinux power_observer_linux_{this};
 #endif
-
-  DISALLOW_COPY_AND_ASSIGN(PowerMonitor);
 };
 
 }  // namespace api

@@ -5,7 +5,6 @@
 #ifndef SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSION_WEB_CONTENTS_OBSERVER_H_
 #define SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSION_WEB_CONTENTS_OBSERVER_H_
 
-#include "base/macros.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "extensions/browser/extension_web_contents_observer.h"
 
@@ -19,6 +18,12 @@ class ElectronExtensionWebContentsObserver
  public:
   ~ElectronExtensionWebContentsObserver() override;
 
+  // disable copy
+  ElectronExtensionWebContentsObserver(
+      const ElectronExtensionWebContentsObserver&) = delete;
+  ElectronExtensionWebContentsObserver& operator=(
+      const ElectronExtensionWebContentsObserver&) = delete;
+
   // Creates and initializes an instance of this class for the given
   // |web_contents|, if it doesn't already exist.
   static void CreateForWebContents(content::WebContents* web_contents);
@@ -31,8 +36,6 @@ class ElectronExtensionWebContentsObserver
       content::WebContents* web_contents);
 
   WEB_CONTENTS_USER_DATA_KEY_DECL();
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronExtensionWebContentsObserver);
 };
 
 }  // namespace extensions

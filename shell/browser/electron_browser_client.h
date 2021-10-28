@@ -49,6 +49,10 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   ElectronBrowserClient();
   ~ElectronBrowserClient() override;
 
+  // disable copy
+  ElectronBrowserClient(const ElectronBrowserClient&) = delete;
+  ElectronBrowserClient& operator=(const ElectronBrowserClient&) = delete;
+
   using Delegate = content::ContentBrowserClient;
   void set_delegate(Delegate* delegate) { delegate_ = delegate; }
 
@@ -318,8 +322,6 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
 #if defined(OS_MAC)
   ElectronBrowserMainParts* browser_main_parts_ = nullptr;
 #endif
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronBrowserClient);
 };
 
 }  // namespace electron

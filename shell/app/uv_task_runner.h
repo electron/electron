@@ -22,6 +22,10 @@ class UvTaskRunner : public base::SingleThreadTaskRunner {
  public:
   explicit UvTaskRunner(uv_loop_t* loop);
 
+  // disable copy
+  UvTaskRunner(const UvTaskRunner&) = delete;
+  UvTaskRunner& operator=(const UvTaskRunner&) = delete;
+
   // base::SingleThreadTaskRunner:
   bool PostDelayedTask(const base::Location& from_here,
                        base::OnceClosure task,
@@ -39,8 +43,6 @@ class UvTaskRunner : public base::SingleThreadTaskRunner {
   uv_loop_t* loop_;
 
   std::map<uv_timer_t*, base::OnceClosure> tasks_;
-
-  DISALLOW_COPY_AND_ASSIGN(UvTaskRunner);
 };
 
 }  // namespace electron

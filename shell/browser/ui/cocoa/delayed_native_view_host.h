@@ -16,14 +16,16 @@ class DelayedNativeViewHost : public views::NativeViewHost {
   explicit DelayedNativeViewHost(gfx::NativeView native_view);
   ~DelayedNativeViewHost() override;
 
+  // disable copy
+  DelayedNativeViewHost(const DelayedNativeViewHost&) = delete;
+  DelayedNativeViewHost& operator=(const DelayedNativeViewHost&) = delete;
+
   // views::View:
   void ViewHierarchyChanged(
       const views::ViewHierarchyChangedDetails& details) override;
 
  private:
   gfx::NativeView native_view_;
-
-  DISALLOW_COPY_AND_ASSIGN(DelayedNativeViewHost);
 };
 
 }  // namespace electron

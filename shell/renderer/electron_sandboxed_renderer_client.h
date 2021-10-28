@@ -25,6 +25,12 @@ class ElectronSandboxedRendererClient : public RendererClientBase {
   ElectronSandboxedRendererClient();
   ~ElectronSandboxedRendererClient() override;
 
+  // disable copy
+  ElectronSandboxedRendererClient(const ElectronSandboxedRendererClient&) =
+      delete;
+  ElectronSandboxedRendererClient& operator=(
+      const ElectronSandboxedRendererClient&) = delete;
+
   void InitializeBindings(v8::Local<v8::Object> binding,
                           v8::Local<v8::Context> context,
                           content::RenderFrame* render_frame);
@@ -45,8 +51,6 @@ class ElectronSandboxedRendererClient : public RendererClientBase {
   // its script context. Doing so in a web page without scripts would trigger
   // assertion, so we have to keep a book of injected web frames.
   std::set<content::RenderFrame*> injected_frames_;
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronSandboxedRendererClient);
 };
 
 }  // namespace electron

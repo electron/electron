@@ -25,6 +25,12 @@ class ElectronDownloadManagerDelegate
   explicit ElectronDownloadManagerDelegate(content::DownloadManager* manager);
   ~ElectronDownloadManagerDelegate() override;
 
+  // disable copy
+  ElectronDownloadManagerDelegate(const ElectronDownloadManagerDelegate&) =
+      delete;
+  ElectronDownloadManagerDelegate& operator=(
+      const ElectronDownloadManagerDelegate&) = delete;
+
   // content::DownloadManagerDelegate:
   void Shutdown() override;
   bool DetermineDownloadTarget(
@@ -54,8 +60,6 @@ class ElectronDownloadManagerDelegate
 
   content::DownloadManager* download_manager_;
   base::WeakPtrFactory<ElectronDownloadManagerDelegate> weak_ptr_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronDownloadManagerDelegate);
 };
 
 }  // namespace electron

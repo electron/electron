@@ -25,6 +25,10 @@ class BluetoothChooser : public content::BluetoothChooser {
                             const EventHandler& handler);
   ~BluetoothChooser() override;
 
+  // disable copy
+  BluetoothChooser(const BluetoothChooser&) = delete;
+  BluetoothChooser& operator=(const BluetoothChooser&) = delete;
+
   // content::BluetoothChooser:
   void SetAdapterPresence(AdapterPresence presence) override;
   void ShowDiscoveryState(DiscoveryState state) override;
@@ -43,8 +47,6 @@ class BluetoothChooser : public content::BluetoothChooser {
   int num_retries_ = 0;
   bool refreshing_ = false;
   bool rescan_ = false;
-
-  DISALLOW_COPY_AND_ASSIGN(BluetoothChooser);
 };
 
 }  // namespace electron

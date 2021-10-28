@@ -16,6 +16,10 @@ class WebViewManager : public content::BrowserPluginGuestManager {
   WebViewManager();
   ~WebViewManager() override;
 
+  // disable copy
+  WebViewManager(const WebViewManager&) = delete;
+  WebViewManager& operator=(const WebViewManager&) = delete;
+
   void AddGuest(int guest_instance_id,
                 content::WebContents* embedder,
                 content::WebContents* web_contents);
@@ -34,8 +38,6 @@ class WebViewManager : public content::BrowserPluginGuestManager {
   };
   // guest_instance_id => (web_contents, embedder)
   std::map<int, WebContentsWithEmbedder> web_contents_embedder_map_;
-
-  DISALLOW_COPY_AND_ASSIGN(WebViewManager);
 };
 
 }  // namespace electron

@@ -128,6 +128,12 @@ class ElectronDelegatedFrameHostClient
   explicit ElectronDelegatedFrameHostClient(OffScreenRenderWidgetHostView* view)
       : view_(view) {}
 
+  // disable copy
+  ElectronDelegatedFrameHostClient(const ElectronDelegatedFrameHostClient&) =
+      delete;
+  ElectronDelegatedFrameHostClient& operator=(
+      const ElectronDelegatedFrameHostClient&) = delete;
+
   ui::Layer* DelegatedFrameHostGetLayer() const override {
     return view_->GetRootLayer();
   }
@@ -163,8 +169,6 @@ class ElectronDelegatedFrameHostClient
 
  private:
   OffScreenRenderWidgetHostView* const view_;
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronDelegatedFrameHostClient);
 };
 
 OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(

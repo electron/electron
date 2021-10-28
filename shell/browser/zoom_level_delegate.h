@@ -7,7 +7,6 @@
 
 #include <string>
 
-#include "base/macros.h"
 #include "components/prefs/pref_service.h"
 #include "content/public/browser/host_zoom_map.h"
 #include "content/public/browser/zoom_level_delegate.h"
@@ -35,6 +34,10 @@ class ZoomLevelDelegate : public content::ZoomLevelDelegate {
                     const base::FilePath& partition_path);
   ~ZoomLevelDelegate() override;
 
+  // disable copy
+  ZoomLevelDelegate(const ZoomLevelDelegate&) = delete;
+  ZoomLevelDelegate& operator=(const ZoomLevelDelegate&) = delete;
+
   void SetDefaultZoomLevelPref(double level);
   double GetDefaultZoomLevelPref() const;
 
@@ -54,8 +57,6 @@ class ZoomLevelDelegate : public content::ZoomLevelDelegate {
   content::HostZoomMap* host_zoom_map_ = nullptr;
   base::CallbackListSubscription zoom_subscription_;
   std::string partition_key_;
-
-  DISALLOW_COPY_AND_ASSIGN(ZoomLevelDelegate);
 };
 
 }  // namespace electron

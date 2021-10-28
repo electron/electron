@@ -48,6 +48,10 @@ class ProtocolRegistry;
 
 class ElectronBrowserContext : public content::BrowserContext {
  public:
+  // disable copy
+  ElectronBrowserContext(const ElectronBrowserContext&) = delete;
+  ElectronBrowserContext& operator=(const ElectronBrowserContext&) = delete;
+
   // partition_id => browser_context
   struct PartitionKey {
     std::string partition;
@@ -184,8 +188,6 @@ class ElectronBrowserContext : public content::BrowserContext {
   mojo::Remote<network::mojom::SSLConfigClient> ssl_config_client_;
 
   base::WeakPtrFactory<ElectronBrowserContext> weak_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronBrowserContext);
 };
 
 }  // namespace electron

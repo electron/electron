@@ -7,7 +7,6 @@
 
 #include <memory>
 
-#include "base/macros.h"
 #include "v8/include/v8.h"
 
 namespace gin_helper {
@@ -22,10 +21,12 @@ class MicrotasksScope {
                                v8::MicrotasksScope::kRunMicrotasks);
   ~MicrotasksScope();
 
+  // disable copy
+  MicrotasksScope(const MicrotasksScope&) = delete;
+  MicrotasksScope& operator=(const MicrotasksScope&) = delete;
+
  private:
   std::unique_ptr<v8::MicrotasksScope> v8_microtasks_scope_;
-
-  DISALLOW_COPY_AND_ASSIGN(MicrotasksScope);
 };
 
 }  // namespace gin_helper

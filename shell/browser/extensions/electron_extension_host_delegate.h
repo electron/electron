@@ -8,7 +8,6 @@
 #include <memory>
 #include <string>
 
-#include "base/macros.h"
 #include "extensions/browser/extension_host_delegate.h"
 
 namespace extensions {
@@ -18,6 +17,11 @@ class ElectronExtensionHostDelegate : public ExtensionHostDelegate {
  public:
   ElectronExtensionHostDelegate();
   ~ElectronExtensionHostDelegate() override;
+
+  // disable copy
+  ElectronExtensionHostDelegate(const ElectronExtensionHostDelegate&) = delete;
+  ElectronExtensionHostDelegate& operator=(
+      const ElectronExtensionHostDelegate&) = delete;
 
   // ExtensionHostDelegate implementation.
   void OnExtensionHostCreated(content::WebContents* web_contents) override;
@@ -41,9 +45,6 @@ class ElectronExtensionHostDelegate : public ExtensionHostDelegate {
       const viz::SurfaceId& surface_id,
       const gfx::Size& natural_size) override;
   void ExitPictureInPicture() override;
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(ElectronExtensionHostDelegate);
 };
 
 }  // namespace extensions

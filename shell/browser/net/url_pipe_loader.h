@@ -41,6 +41,10 @@ class URLPipeLoader : public network::mojom::URLLoader,
                 const net::NetworkTrafficAnnotationTag& annotation,
                 base::DictionaryValue upload_data);
 
+  // disable copy
+  URLPipeLoader(const URLPipeLoader&) = delete;
+  URLPipeLoader& operator=(const URLPipeLoader&) = delete;
+
  private:
   ~URLPipeLoader() override;
 
@@ -77,8 +81,6 @@ class URLPipeLoader : public network::mojom::URLLoader,
   std::unique_ptr<network::SimpleURLLoader> loader_;
 
   base::WeakPtrFactory<URLPipeLoader> weak_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(URLPipeLoader);
 };
 
 }  // namespace electron

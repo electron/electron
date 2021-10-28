@@ -26,6 +26,10 @@ class OffScreenVideoConsumer : public viz::mojom::FrameSinkVideoConsumer {
                          OnPaintCallback callback);
   ~OffScreenVideoConsumer() override;
 
+  // disable copy
+  OffScreenVideoConsumer(const OffScreenVideoConsumer&) = delete;
+  OffScreenVideoConsumer& operator=(const OffScreenVideoConsumer&) = delete;
+
   void SetActive(bool active);
   void SetFrameRate(int frame_rate);
   void SizeChanged();
@@ -49,8 +53,6 @@ class OffScreenVideoConsumer : public viz::mojom::FrameSinkVideoConsumer {
   std::unique_ptr<viz::ClientFrameSinkVideoCapturer> video_capturer_;
 
   base::WeakPtrFactory<OffScreenVideoConsumer> weak_ptr_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(OffScreenVideoConsumer);
 };
 
 }  // namespace electron

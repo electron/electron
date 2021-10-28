@@ -27,8 +27,6 @@ class NotificationPresenterMac : public NotificationPresenter {
 
   base::scoped_nsobject<NotificationCenterDelegate>
       notification_center_delegate_;
-
-  DISALLOW_COPY_AND_ASSIGN(NotificationPresenterMac);
 };
 
 }  // namespace electron

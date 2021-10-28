@@ -32,6 +32,10 @@ class InAppPurchase : public gin::Wrappable<InAppPurchase>,
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
 
+  // disable copy
+  InAppPurchase(const InAppPurchase&) = delete;
+  InAppPurchase& operator=(const InAppPurchase&) = delete;
+
  protected:
   InAppPurchase();
   ~InAppPurchase() override;
@@ -45,9 +49,6 @@ class InAppPurchase : public gin::Wrappable<InAppPurchase>,
   // TransactionObserver:
   void OnTransactionsUpdated(
       const std::vector<in_app_purchase::Transaction>& transactions) override;
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(InAppPurchase);
 };
 
 }  // namespace api

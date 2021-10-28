@@ -33,6 +33,10 @@ class LoginHandler : public content::LoginDelegate,
                LoginAuthRequiredCallback auth_required_callback);
   ~LoginHandler() override;
 
+  // disable copy
+  LoginHandler(const LoginHandler&) = delete;
+  LoginHandler& operator=(const LoginHandler&) = delete;
+
  private:
   void EmitEvent(net::AuthChallengeInfo auth_info,
                  bool is_main_frame,
@@ -44,8 +48,6 @@ class LoginHandler : public content::LoginDelegate,
   LoginAuthRequiredCallback auth_required_callback_;
 
   base::WeakPtrFactory<LoginHandler> weak_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(LoginHandler);
 };
 
 }  // namespace electron

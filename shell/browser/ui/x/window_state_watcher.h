@@ -17,6 +17,10 @@ class WindowStateWatcher : public x11::EventObserver {
   explicit WindowStateWatcher(NativeWindowViews* window);
   ~WindowStateWatcher() override;
 
+  // disable copy
+  WindowStateWatcher(const WindowStateWatcher&) = delete;
+  WindowStateWatcher& operator=(const WindowStateWatcher&) = delete;
+
  protected:
   // x11::EventObserver:
   void OnEvent(const x11::Event& x11_event) override;
@@ -31,8 +35,6 @@ class WindowStateWatcher : public x11::EventObserver {
   const x11::Atom net_wm_state_maximized_vert_atom_;
   const x11::Atom net_wm_state_maximized_horz_atom_;
   const x11::Atom net_wm_state_fullscreen_atom_;
-
-  DISALLOW_COPY_AND_ASSIGN(WindowStateWatcher);
 };
 
 }  // namespace electron

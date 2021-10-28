@@ -20,6 +20,12 @@ class ElectronDesktopWindowTreeHostWin
       views::DesktopNativeWidgetAura* desktop_native_widget_aura);
   ~ElectronDesktopWindowTreeHostWin() override;
 
+  // disable copy
+  ElectronDesktopWindowTreeHostWin(const ElectronDesktopWindowTreeHostWin&) =
+      delete;
+  ElectronDesktopWindowTreeHostWin& operator=(
+      const ElectronDesktopWindowTreeHostWin&) = delete;
+
  protected:
   bool PreHandleMSG(UINT message,
                     WPARAM w_param,
@@ -33,8 +39,6 @@ class ElectronDesktopWindowTreeHostWin
 
  private:
   NativeWindowViews* native_window_view_;  // weak ref
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronDesktopWindowTreeHostWin);
 };
 
 }  // namespace electron

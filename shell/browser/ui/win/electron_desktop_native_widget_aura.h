@@ -19,6 +19,12 @@ class ElectronDesktopNativeWidgetAura : public views::DesktopNativeWidgetAura {
   explicit ElectronDesktopNativeWidgetAura(
       NativeWindowViews* native_window_view);
 
+  // disable copy
+  ElectronDesktopNativeWidgetAura(const ElectronDesktopNativeWidgetAura&) =
+      delete;
+  ElectronDesktopNativeWidgetAura& operator=(
+      const ElectronDesktopNativeWidgetAura&) = delete;
+
   // views::DesktopNativeWidgetAura:
   void InitNativeWidget(views::Widget::InitParams params) override;
 
@@ -34,8 +40,6 @@ class ElectronDesktopNativeWidgetAura : public views::DesktopNativeWidgetAura {
 
   // Owned by DesktopNativeWidgetAura.
   views::DesktopWindowTreeHost* desktop_window_tree_host_;
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronDesktopNativeWidgetAura);
 };
 
 }  // namespace electron

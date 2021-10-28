@@ -14,15 +14,17 @@ class ElectronNavigationThrottle : public content::NavigationThrottle {
   explicit ElectronNavigationThrottle(content::NavigationHandle* handle);
   ~ElectronNavigationThrottle() override;
 
+  // disable copy
+  ElectronNavigationThrottle(const ElectronNavigationThrottle&) = delete;
+  ElectronNavigationThrottle& operator=(const ElectronNavigationThrottle&) =
+      delete;
+
   ElectronNavigationThrottle::ThrottleCheckResult WillStartRequest() override;
 
   ElectronNavigationThrottle::ThrottleCheckResult WillRedirectRequest()
       override;
 
   const char* GetNameForLogging() override;
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(ElectronNavigationThrottle);
 };
 
 }  // namespace electron

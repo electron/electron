@@ -18,6 +18,10 @@ class NativeFrameView : public views::NativeFrameView {
   static const char kViewClassName[];
   NativeFrameView(NativeWindow* window, views::Widget* widget);
 
+  // disable copy
+  NativeFrameView(const NativeFrameView&) = delete;
+  NativeFrameView& operator=(const NativeFrameView&) = delete;
+
  protected:
   // views::View:
   gfx::Size GetMinimumSize() const override;
@@ -26,8 +30,6 @@ class NativeFrameView : public views::NativeFrameView {
 
  private:
   NativeWindow* window_;  // weak ref.
-
-  DISALLOW_COPY_AND_ASSIGN(NativeFrameView);
 };
 
 }  // namespace electron

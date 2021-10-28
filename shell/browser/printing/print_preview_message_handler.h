@@ -31,6 +31,11 @@ class PrintPreviewMessageHandler
  public:
   ~PrintPreviewMessageHandler() override;
 
+  // disable copy
+  PrintPreviewMessageHandler(const PrintPreviewMessageHandler&) = delete;
+  PrintPreviewMessageHandler& operator=(const PrintPreviewMessageHandler&) =
+      delete;
+
   void PrintToPDF(base::DictionaryValue options,
                   gin_helper::Promise<v8::Local<v8::Value>> promise);
 
@@ -94,8 +99,6 @@ class PrintPreviewMessageHandler
   base::WeakPtrFactory<PrintPreviewMessageHandler> weak_ptr_factory_{this};
 
   WEB_CONTENTS_USER_DATA_KEY_DECL();
-
-  DISALLOW_COPY_AND_ASSIGN(PrintPreviewMessageHandler);
 };
 
 }  // namespace electron

@@ -16,6 +16,10 @@ class RootViewMac : public views::View {
   explicit RootViewMac(NativeWindow* window);
   ~RootViewMac() override;
 
+  // disable copy
+  RootViewMac(const RootViewMac&) = delete;
+  RootViewMac& operator=(const RootViewMac&) = delete;
+
   // views::View:
   void Layout() override;
   gfx::Size GetMinimumSize() const override;
@@ -24,8 +28,6 @@ class RootViewMac : public views::View {
  private:
   // Parent window, weak ref.
   NativeWindow* window_;
-
-  DISALLOW_COPY_AND_ASSIGN(RootViewMac);
 };
 
 }  // namespace electron

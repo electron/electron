@@ -35,6 +35,10 @@ class TaskbarHost {
   TaskbarHost();
   virtual ~TaskbarHost();
 
+  // disable copy
+  TaskbarHost(const TaskbarHost&) = delete;
+  TaskbarHost& operator=(const TaskbarHost&) = delete;
+
   // Add or update the buttons in thumbar.
   bool SetThumbarButtons(HWND window,
                          const std::vector<ThumbarButton>& buttons);
@@ -76,8 +80,6 @@ class TaskbarHost {
 
   // Whether we have already added the buttons to thumbar.
   bool thumbar_buttons_added_ = false;
-
-  DISALLOW_COPY_AND_ASSIGN(TaskbarHost);
 };
 
 }  // namespace electron

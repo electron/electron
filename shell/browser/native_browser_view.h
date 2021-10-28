@@ -7,7 +7,6 @@
 
 #include <vector>
 
-#include "base/macros.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "shell/common/api/api.mojom.h"
@@ -32,6 +31,10 @@ class InspectableWebContentsView;
 class NativeBrowserView : public content::WebContentsObserver {
  public:
   ~NativeBrowserView() override;
+
+  // disable copy
+  NativeBrowserView(const NativeBrowserView&) = delete;
+  NativeBrowserView& operator=(const NativeBrowserView&) = delete;
 
   static NativeBrowserView* Create(
       InspectableWebContents* inspectable_web_contents);
@@ -65,9 +68,6 @@ class NativeBrowserView : public content::WebContentsObserver {
 
   InspectableWebContents* inspectable_web_contents_;
   std::vector<mojom::DraggableRegionPtr> draggable_regions_;
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(NativeBrowserView);
 };
 
 }  // namespace electron

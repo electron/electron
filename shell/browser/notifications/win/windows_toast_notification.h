@@ -106,8 +106,6 @@ class WindowsToastNotification : public Notification {
   ComPtr<ToastEventHandler> event_handler_;
   ComPtr<ABI::Windows::UI::Notifications::IToastNotification>
       toast_notification_;
-
-  DISALLOW_COPY_AND_ASSIGN(WindowsToastNotification);
 };
 
 class ToastEventHandler : public RuntimeClass<RuntimeClassFlags<ClassicCom>,
@@ -117,6 +115,10 @@ class ToastEventHandler : public RuntimeClass<RuntimeClassFlags<ClassicCom>,
  public:
   explicit ToastEventHandler(Notification* notification);
   ~ToastEventHandler() override;
+
+  // disable copy
+  ToastEventHandler(const ToastEventHandler&) = delete;
+  ToastEventHandler& operator=(const ToastEventHandler&) = delete;
 
   IFACEMETHODIMP Invoke(
       ABI::Windows::UI::Notifications::IToastNotification* sender,
@@ -130,8 +132,6 @@ class ToastEventHandler : public RuntimeClass<RuntimeClassFlags<ClassicCom>,
 
  private:
   base::WeakPtr<Notification> notification_;  // weak ref.
-
-  DISALLOW_COPY_AND_ASSIGN(ToastEventHandler);
 };
 
 }  // namespace electron

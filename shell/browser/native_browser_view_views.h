@@ -52,8 +52,6 @@ class NativeBrowserViewViews : public NativeBrowserView {
   float auto_vertical_proportion_top_ = 0.;
 
   std::unique_ptr<SkRegion> draggable_region_;
-
-  DISALLOW_COPY_AND_ASSIGN(NativeBrowserViewViews);
 };
 
 }  // namespace electron

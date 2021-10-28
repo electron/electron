@@ -72,6 +72,10 @@ class Notification {
   NotificationPresenter* presenter() const { return presenter_; }
   const std::string& notification_id() const { return notification_id_; }
 
+  // disable copy
+  Notification(const Notification&) = delete;
+  Notification& operator=(const Notification&) = delete;
+
  protected:
   Notification(NotificationDelegate* delegate,
                NotificationPresenter* presenter);
@@ -82,8 +86,6 @@ class Notification {
   std::string notification_id_;
 
   base::WeakPtrFactory<Notification> weak_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(Notification);
 };
 
 }  // namespace electron

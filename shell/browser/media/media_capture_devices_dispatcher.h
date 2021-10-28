@@ -67,6 +67,11 @@ class MediaCaptureDevicesDispatcher : public content::MediaObserver {
                                  blink::mojom::MediaStreamType stream_type,
                                  bool is_secure) override;
 
+  // disable copy
+  MediaCaptureDevicesDispatcher(const MediaCaptureDevicesDispatcher&) = delete;
+  MediaCaptureDevicesDispatcher& operator=(
+      const MediaCaptureDevicesDispatcher&) = delete;
+
  private:
   friend struct base::DefaultSingletonTraits<MediaCaptureDevicesDispatcher>;
 
@@ -81,8 +86,6 @@ class MediaCaptureDevicesDispatcher : public content::MediaObserver {
 
   // Flag used by unittests to disable device enumeration.
   bool is_device_enumeration_disabled_ = false;
-
-  DISALLOW_COPY_AND_ASSIGN(MediaCaptureDevicesDispatcher);
 };
 
 }  // namespace electron

@@ -27,6 +27,10 @@ class RootView : public views::View {
   explicit RootView(NativeWindow* window);
   ~RootView() override;
 
+  // disable copy
+  RootView(const RootView&) = delete;
+  RootView& operator=(const RootView&) = delete;
+
   void SetMenu(ElectronMenuModel* menu_model);
   bool HasMenu() const;
   int GetMenuBarHeight() const;
@@ -61,8 +65,6 @@ class RootView : public views::View {
   accelerator_util::AcceleratorTable accelerator_table_;
 
   std::unique_ptr<views::ViewTracker> last_focused_view_tracker_;
-
-  DISALLOW_COPY_AND_ASSIGN(RootView);
 };
 
 }  // namespace electron

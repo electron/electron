@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "base/feature_list.h"
+#include "base/macros.h"
 #include "base/no_destructor.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/trace_event/trace_event.h"

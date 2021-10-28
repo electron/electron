@@ -5,7 +5,6 @@
 #ifndef SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSION_SYSTEM_FACTORY_H_
 #define SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSION_SYSTEM_FACTORY_H_
 
-#include "base/macros.h"
 #include "base/memory/singleton.h"
 #include "extensions/browser/extension_system_provider.h"
 
@@ -20,6 +19,12 @@ class ElectronExtensionSystemFactory : public ExtensionSystemProvider {
 
   static ElectronExtensionSystemFactory* GetInstance();
 
+  // disable copy
+  ElectronExtensionSystemFactory(const ElectronExtensionSystemFactory&) =
+      delete;
+  ElectronExtensionSystemFactory& operator=(
+      const ElectronExtensionSystemFactory&) = delete;
+
  private:
   friend struct base::DefaultSingletonTraits<ElectronExtensionSystemFactory>;
 
@@ -32,8 +37,6 @@ class ElectronExtensionSystemFactory : public ExtensionSystemProvider {
   content::BrowserContext* GetBrowserContextToUse(
       content::BrowserContext* context) const override;
   bool ServiceIsCreatedWithBrowserContext() const override;
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronExtensionSystemFactory);
 };
 
 }  // namespace extensions

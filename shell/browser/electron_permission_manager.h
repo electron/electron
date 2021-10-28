@@ -29,6 +29,11 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
   ElectronPermissionManager();
   ~ElectronPermissionManager() override;
 
+  // disable copy
+  ElectronPermissionManager(const ElectronPermissionManager&) = delete;
+  ElectronPermissionManager& operator=(const ElectronPermissionManager&) =
+      delete;
+
   using StatusCallback =
       base::OnceCallback<void(blink::mojom::PermissionStatus)>;
   using StatusesCallback = base::OnceCallback<void(
@@ -126,8 +131,6 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
   DeviceCheckHandler device_permission_handler_;
 
   PendingRequestsMap pending_requests_;
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronPermissionManager);
 };
 
 }  // namespace electron

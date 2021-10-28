@@ -8,7 +8,6 @@
 #include <string>
 #include <vector>
 
-#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "content/public/browser/global_routing_id.h"
 #include "content/public/browser/serial_chooser.h"
@@ -40,6 +39,10 @@ class SerialChooserController final : public SerialChooserContext::PortObserver,
       base::WeakPtr<ElectronSerialDelegate> serial_delegate);
   ~SerialChooserController() override;
 
+  // disable copy
+  SerialChooserController(const SerialChooserController&) = delete;
+  SerialChooserController& operator=(const SerialChooserController&) = delete;
+
   // SerialChooserContext::PortObserver:
   void OnPortAdded(const device::mojom::SerialPortInfo& port) override;
   void OnPortRemoved(const device::mojom::SerialPortInfo& port) override;
@@ -65,8 +68,6 @@ class SerialChooserController final : public SerialChooserContext::PortObserver,
   content::GlobalRenderFrameHostId render_frame_host_id_;
 
   base::WeakPtrFactory<SerialChooserController> weak_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(SerialChooserController);
 };
 
 }  // namespace electron

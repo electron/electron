@@ -41,6 +41,10 @@ class DevToolsWindowDelegate : public views::ClientView,
   }
   ~DevToolsWindowDelegate() override = default;
 
+  // disable copy
+  DevToolsWindowDelegate(const DevToolsWindowDelegate&) = delete;
+  DevToolsWindowDelegate& operator=(const DevToolsWindowDelegate&) = delete;
+
   // views::WidgetDelegate:
   views::View* GetInitiallyFocusedView() override { return view_; }
   std::u16string GetWindowTitle() const override { return shell_->GetTitle(); }
@@ -64,8 +68,6 @@ class DevToolsWindowDelegate : public views::ClientView,
   views::View* view_;
   views::Widget* widget_;
   ui::ImageModel icon_;
-
-  DISALLOW_COPY_AND_ASSIGN(DevToolsWindowDelegate);
 };
 
 }  // namespace

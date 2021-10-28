@@ -51,6 +51,11 @@ class WebContentsZoomController
   explicit WebContentsZoomController(content::WebContents* web_contents);
   ~WebContentsZoomController() override;
 
+  // disable copy
+  WebContentsZoomController(const WebContentsZoomController&) = delete;
+  WebContentsZoomController& operator=(const WebContentsZoomController&) =
+      delete;
+
   void AddObserver(Observer* observer);
   void RemoveObserver(Observer* observer);
 
@@ -112,8 +117,6 @@ class WebContentsZoomController
   content::HostZoomMap* host_zoom_map_;
 
   WEB_CONTENTS_USER_DATA_KEY_DECL();
-
-  DISALLOW_COPY_AND_ASSIGN(WebContentsZoomController);
 };
 
 }  // namespace electron

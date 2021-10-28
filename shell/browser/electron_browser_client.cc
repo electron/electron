@@ -1146,6 +1146,10 @@ class FileURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
     return pending_remote;
   }
 
+  // disable copy
+  FileURLLoaderFactory(const FileURLLoaderFactory&) = delete;
+  FileURLLoaderFactory& operator=(const FileURLLoaderFactory&) = delete;
+
  private:
   explicit FileURLLoaderFactory(
       int child_id,
@@ -1177,8 +1181,6 @@ class FileURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
   }
 
   int child_id_;
-
-  DISALLOW_COPY_AND_ASSIGN(FileURLLoaderFactory);
 };
 
 }  // namespace

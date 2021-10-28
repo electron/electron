@@ -8,7 +8,6 @@
 #include <string>
 
 #include "base/containers/flat_map.h"
-#include "base/macros.h"
 
 namespace content {
 class BrowserContext;
@@ -16,6 +15,10 @@ class BrowserContext;
 
 class PluginUtils {
  public:
+  // disable copy
+  PluginUtils(const PluginUtils&) = delete;
+  PluginUtils& operator=(const PluginUtils&) = delete;
+
   // If there's an extension that is allowed to handle |mime_type|, returns its
   // ID. Otherwise returns an empty string.
   static std::string GetExtensionIdForMimeType(
@@ -26,9 +29,6 @@ class PluginUtils {
   // keys and the corresponding extensions Ids as values.
   static base::flat_map<std::string, std::string> GetMimeTypeToExtensionIdMap(
       content::BrowserContext* browser_context);
-
- private:
-  DISALLOW_IMPLICIT_CONSTRUCTORS(PluginUtils);
 };
 
 #endif  // SHELL_BROWSER_PLUGINS_PLUGIN_UTILS_H_
