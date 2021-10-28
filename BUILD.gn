@@ -420,7 +420,6 @@ source_set("electron_lib") {
   ]
 
   include_dirs = [
-    "chromium_src",
     ".",
     "$target_gen_dir",
 
@@ -554,8 +553,9 @@ source_set("electron_lib") {
       "GLIB_DISABLE_DEPRECATION_WARNINGS",
     ]
 
-    sources += filenames.lib_sources_nss
     sources += [
+      "shell/browser/certificate_manager_model.cc",
+      "shell/browser/certificate_manager_model.h",
       "shell/browser/ui/gtk/app_indicator_icon.cc",
       "shell/browser/ui/gtk/app_indicator_icon.h",
       "shell/browser/ui/gtk/app_indicator_icon_menu.cc",

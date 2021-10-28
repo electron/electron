@@ -675,11 +675,6 @@ filenames = {
     "shell/utility/electron_content_utility_client.h",
   ]
 
-  lib_sources_nss = [
-    "chromium_src/chrome/browser/certificate_manager_model.cc",
-    "chromium_src/chrome/browser/certificate_manager_model.h",
-  ]
-
   lib_sources_extensions = [
     "shell/browser/extensions/api/i18n/i18n_api.cc",
     "shell/browser/extensions/api/i18n/i18n_api.h",
