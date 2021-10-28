@@ -244,7 +244,7 @@ void BrowserWindow::OnCloseButtonClicked(bool* prevent_default) {
     ScheduleUnresponsiveEvent(5000);
 
   // Already closed by renderer.
-  if (!web_contents())
+  if (!web_contents() || !api_web_contents_)
     return;
 
   // Required to make beforeunload handler work.
