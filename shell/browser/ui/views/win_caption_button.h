@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+// Modified from chrome/browser/ui/views/frame/windows_10_caption_button.h
+
 #ifndef SHELL_BROWSER_UI_VIEWS_WIN_CAPTION_BUTTON_H_
 #define SHELL_BROWSER_UI_VIEWS_WIN_CAPTION_BUTTON_H_
 

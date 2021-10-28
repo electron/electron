@@ -193,6 +193,7 @@ int WinFrameView::TitlebarMaximizedVisualHeight() const {
   return maximized_height;
 }
 
+// NOTE(@mlaurencin): Usage of IsWebUITabStrip simplified out from Chromium
 int WinFrameView::TitlebarHeight(int custom_height) const {
   if (frame()->IsFullscreen() && !IsMaximized())
     return 0;
@@ -206,6 +207,7 @@ int WinFrameView::TitlebarHeight(int custom_height) const {
   return height;
 }
 
+// NOTE(@mlaurencin): Usage of IsWebUITabStrip simplified out from Chromium
 int WinFrameView::WindowTopY() const {
   // The window top is SM_CYSIZEFRAME pixels when maximized (see the comment in
   // FrameTopBorderThickness()) and floor(system dsf) pixels when restored.
