@@ -1,0 +1,51 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Mon, 25 Oct 2021 21:45:57 +0200
+Subject: fix: patch out permissions checks in exclusive_access
+
+This patch is necessary in order to properly enable
+navigator.keyboard.{(un)?lock}() functionality. We don't have a concept
+of PermissionManager nor of a Profile, so this would not affect usage of
+the API.
+
+We might consider potentially using our own permissions handler,
+but it's not strictly necessary for this API to work to spec.
+
+Profile check has been upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/3247196
+
+diff --git a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
+index e9c8a4a4bb7334682ceeec05b3a3e872de0192ab..861307591f3721c398c454126cb5a9be9a5e9764 100644
+--- a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
++++ b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
+@@ -368,13 +368,9 @@ void FullscreenController::EnterFullscreenModeInternal(
+   // Do not enter fullscreen mode if disallowed by pref. This prevents the user
+   // from manually entering fullscreen mode and also disables kiosk mode on
+   // desktop platforms.
+-  if (!exclusive_access_manager()
+-           ->context()
+-           ->GetProfile()
+-           ->GetPrefs()
+-           ->GetBoolean(prefs::kFullscreenAllowed)) {
++  auto* profile = exclusive_access_manager()->context()->GetProfile();
++  if (!profile || !profile->GetPrefs()->GetBoolean(prefs::kFullscreenAllowed))
+     return;
+-  }
+ #endif
+ 
+   toggled_into_fullscreen_ = true;
+@@ -387,6 +383,7 @@ void FullscreenController::EnterFullscreenModeInternal(
+       url = extension_caused_fullscreen_;
+   }
+ 
++#if 0
+   if (display_id != display::kInvalidDisplayId) {
+     // Check, but do not prompt, for permission to request a specific screen.
+     // Sites generally need permission to get the display id in the first place.
+@@ -400,6 +397,7 @@ void FullscreenController::EnterFullscreenModeInternal(
+       display_id = display::kInvalidDisplayId;
+     }
+   }
++#endif
+ 
+   if (option == BROWSER)
+     base::RecordAction(base::UserMetricsAction("ToggleFullscreen"));
