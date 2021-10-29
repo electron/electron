@@ -10,7 +10,7 @@ This patch makes three changes to Accelerator::GetShortcutText to improve shortc
 3. Ctrl-Shift-= and Ctrl-Plus show up as such
 
 diff --git a/ui/base/accelerators/accelerator.cc b/ui/base/accelerators/accelerator.cc
-index 74c066852a52da8fefc0d0d26be1969d84c55a7c..cdd44d1456fed0b2fecb96b8369b048a101270d5 100644
+index be0df3662e3a1528fb88d5c723da49e5a29ac2b9..64a5eda05be16b3b6e1a0ceaa2b3a6884ca37268 100644
 --- a/ui/base/accelerators/accelerator.cc
 +++ b/ui/base/accelerators/accelerator.cc
 @@ -11,6 +11,7 @@

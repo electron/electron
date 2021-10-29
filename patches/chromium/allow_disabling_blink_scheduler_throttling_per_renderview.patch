@@ -22,10 +22,10 @@ index 9fda0d2e8f157b5709240736df1b6a0f58adf240..cc9760793213c2dbff5bac63c3abc24f
    return is_active();
  }
 diff --git a/content/browser/renderer_host/render_view_host_impl.h b/content/browser/renderer_host/render_view_host_impl.h
-index eb21df57846380f1e452ed88fdc54f22c69ea857..81fd354e0752eb4b40d3551b3b6b00144ac41639 100644
+index 4a2305b074ec4db28e4dbd67892fc1d208943bbc..cbef953088adefd14ba9e02bf70446616c5e3bbd 100644
 --- a/content/browser/renderer_host/render_view_host_impl.h
 +++ b/content/browser/renderer_host/render_view_host_impl.h
-@@ -133,6 +133,7 @@ class CONTENT_EXPORT RenderViewHostImpl
+@@ -136,6 +136,7 @@ class CONTENT_EXPORT RenderViewHostImpl
    bool IsRenderViewLive() override;
    void WriteIntoTrace(perfetto::TracedValue context) override;
  
@@ -48,10 +48,10 @@ index 787077d71c04d571aa825bec0a549c5fad2b8574..4b05b80802ba97a46eed60e509b503fc
    // This interface should only be implemented inside content.
    friend class RenderViewHostImpl;
 diff --git a/content/renderer/render_view_impl.h b/content/renderer/render_view_impl.h
-index 6ed3cd81d1540c800b69f4bc8c8ce45372ca6bdc..28573f6a74f41fbf73b4b6ab59c185cce7f88dca 100644
+index 19622df5db14153d2c9bf3c2fa65e7a4da6f81d5..29ba769fcb2f491735d79639bf5d0c2296919127 100644
 --- a/content/renderer/render_view_impl.h
 +++ b/content/renderer/render_view_impl.h
-@@ -150,6 +150,8 @@ class CONTENT_EXPORT RenderViewImpl : public blink::WebViewClient,
+@@ -153,6 +153,8 @@ class CONTENT_EXPORT RenderViewImpl : public blink::WebViewClient,
    static WindowOpenDisposition NavigationPolicyToDisposition(
        blink::WebNavigationPolicy policy);
  

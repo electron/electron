@@ -61,10 +61,10 @@ index 2cb46846d9c42f8e08c29c39ad8fdbde12bc2ed9..5eb8124be309ad2e55ca01ece23a942b
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // crrev/c/1236675. The ordering of unassociated layers relative to NSView
 diff --git a/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm b/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm
-index c3a9fbf0f9d2b80c1de42a22ad094a286f0b559b..02493d4b62c98a3aebd3e460c459218a4dc4ea8e 100644
+index 375e59d1105a26e2e730b9794ebc75e714e9e2dc..064c2d02a5a142d064778e319b2e79e9e59136bc 100644
 --- a/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm
 +++ b/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm
-@@ -70,8 +70,10 @@ id GetFocusedBrowserAccessibilityElement() override {
+@@ -75,8 +75,10 @@ id GetFocusedBrowserAccessibilityElement() override {
      return nil;
    }
    void SetAccessibilityWindow(NSWindow* window) override {
@@ -75,7 +75,7 @@ index c3a9fbf0f9d2b80c1de42a22ad094a286f0b559b..02493d4b62c98a3aebd3e460c459218a
    }
  
    void ForwardKeyboardEvent(const content::NativeWebKeyboardEvent& key_event,
-@@ -133,8 +135,10 @@ void SmartMagnify(const blink::WebGestureEvent& web_event) override {
+@@ -138,8 +140,10 @@ void SmartMagnify(const blink::WebGestureEvent& web_event) override {
  
    mojo::AssociatedRemote<mojom::RenderWidgetHostNSViewHost> host_;
    std::unique_ptr<RenderWidgetHostNSViewBridge> bridge_;
@@ -83,11 +83,11 @@ index c3a9fbf0f9d2b80c1de42a22ad094a286f0b559b..02493d4b62c98a3aebd3e460c459218a
    base::scoped_nsobject<NSAccessibilityRemoteUIElement>
        remote_accessibility_element_;
 +#endif
- 
-   DISALLOW_COPY_AND_ASSIGN(RenderWidgetHostNSViewBridgeOwner);
  };
+ }
+ 
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.h b/content/browser/renderer_host/render_widget_host_view_mac.h
-index 2b262cc807162d91cb09393d58ceb4e7d9c2be34..5e66be5ceb963e6f13742c66b0a9cd79f0d91446 100644
+index cc2e2552e5420a9dcb365633d6aa29088b0df8ce..fcb44c8f2d9e5b500ef4d99b5fbeb3aa31a1c24e 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.h
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.h
 @@ -49,7 +49,9 @@ class ScopedPasswordInputEnabler;
@@ -100,7 +100,7 @@ index 2b262cc807162d91cb09393d58ceb4e7d9c2be34..5e66be5ceb963e6f13742c66b0a9cd79
  @class RenderWidgetHostViewCocoa;
  
  namespace content {
-@@ -657,10 +659,12 @@ class CONTENT_EXPORT RenderWidgetHostViewMac
+@@ -660,10 +662,12 @@ class CONTENT_EXPORT RenderWidgetHostViewMac
    // EnsureSurfaceSynchronizedForWebTest().
    uint32_t latest_capture_sequence_number_ = 0u;
  
@@ -167,10 +167,10 @@ index 1b026833dd76fab4d105593eee8bd5d215088728..54b388232feddabe3a76c311ad2181d0
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index b3bdbcc3b49481d68bd90cfbafb4798b97e942ed..6dd00b8d5d1edb64abf3b16520004bbbe08c7ca3 100644
+index 97f9f3fc792187024dae594b1ec256cb558b077a..0c419a18d35fed9b1759e02e7953aac720eb1a50 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
-@@ -322,6 +322,13 @@ component("base") {
+@@ -323,6 +323,13 @@ component("base") {
      ]
    }
  

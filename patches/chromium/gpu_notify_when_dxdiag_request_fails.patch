@@ -28,10 +28,10 @@ index 7821945da13ece57529c1de14d1cbd7f645d19ab..9be940f4ee047279f5969a6c572d6acb
  
  void GpuDataManagerImpl::UpdateDawnInfo(
 diff --git a/content/browser/gpu/gpu_data_manager_impl.h b/content/browser/gpu/gpu_data_manager_impl.h
-index a8c0d59cb825a791c44c54e55ad7f295ad07a309..a1ef53aa46fb0cfc7bcac121244f77af64a7539f 100644
+index 8e7b87e170a7ca051b9e823d267bc1ff4fd455f9..b6414947177856095adb166b43fb2d332629650f 100644
 --- a/content/browser/gpu/gpu_data_manager_impl.h
 +++ b/content/browser/gpu/gpu_data_manager_impl.h
-@@ -122,6 +122,7 @@ class CONTENT_EXPORT GpuDataManagerImpl : public GpuDataManager,
+@@ -125,6 +125,7 @@ class CONTENT_EXPORT GpuDataManagerImpl : public GpuDataManager,
    // BrowserMainParts override instead.
    void PostCreateThreads();
    void TerminateInfoCollectionGpuProcess();

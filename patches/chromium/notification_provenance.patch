@@ -87,7 +87,7 @@ index 8e23ab272000a1244959bf9164d6880660d4a843..ff89f2bdf07e91029841bab7ce7c7a92
  
  void PlatformNotificationContextImpl::RemoveService(
 diff --git a/content/browser/notifications/platform_notification_context_impl.h b/content/browser/notifications/platform_notification_context_impl.h
-index 78f9ab684d2eeef9a647d82ccb39c1b208e999d4..d55a4e51a0d263ec07ca115715cccc30f89bd9e0 100644
+index 632a81a8775510b32cfe51e0aa47e1878d898cf8..61cdde7fa51967eafdd6634e547582b5badb46f3 100644
 --- a/content/browser/notifications/platform_notification_context_impl.h
 +++ b/content/browser/notifications/platform_notification_context_impl.h
 @@ -48,6 +48,7 @@ class BrowserContext;
@@ -98,7 +98,7 @@ index 78f9ab684d2eeef9a647d82ccb39c1b208e999d4..d55a4e51a0d263ec07ca115715cccc30
  
  // Implementation of the Web Notification storage context. The public methods
  // defined in this interface must only be called on the UI thread.
-@@ -72,6 +73,7 @@ class CONTENT_EXPORT PlatformNotificationContextImpl
+@@ -77,6 +78,7 @@ class CONTENT_EXPORT PlatformNotificationContextImpl
    // Creates a BlinkNotificationServiceImpl that is owned by this context.
    // |document_url| is empty when originating from a worker.
    void CreateService(

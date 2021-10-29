@@ -231,7 +231,7 @@ index 273cbdeb0cdb6d5d7aace0aaefa693b5d00e2872..05633ee789f96e50da09fc9de6f687bd
  // is concerned.
  @property(nonatomic, readonly) NSString* subrole;
 diff --git a/content/browser/accessibility/browser_accessibility_cocoa.mm b/content/browser/accessibility/browser_accessibility_cocoa.mm
-index 03c09586ab972c66d586b77fd794b4d6a3a4084c..29558bf9062b00f543cd959f7dbaf0af373a4ff8 100644
+index d763da7efc54819341d11ad95c525c6a91b1598c..58c770effd83afe472eee09ca11167e71ddf03f0 100644
 --- a/content/browser/accessibility/browser_accessibility_cocoa.mm
 +++ b/content/browser/accessibility/browser_accessibility_cocoa.mm
 @@ -214,6 +214,7 @@
@@ -625,7 +625,7 @@ index 77a020140dd635148fcd8d9b08d8d1f4ed852415..902e77ce90a60c835a9a324decf3d0dd
  
  void BluetoothAdapterMac::RemovePairingDelegateInternal(
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index 9c8628a08045c7793f088200b58b492b9f0581cf..1c5b6e85bce201fc13c34671b076176793ae053c 100644
+index 59f7e0c818d42a294d312dc37c2f608b9a360200..56a471cb58099fb875616cb53b01fd8c8b6f9de8 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
 @@ -175,6 +175,12 @@ source_set("audio") {
