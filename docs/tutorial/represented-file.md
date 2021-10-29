@@ -1,3 +1,10 @@
+---
+title: "Representing Files in a BrowserWindow (macOS)"
+description: "On macOS, you can set a represented file for any window in your application."
+slug: represented-file
+hide_title: false
+---
+
 # Representing Files in a BrowserWindow (macOS)
 
 ## Overview
@@ -20,7 +27,7 @@ To set the represented file of window, you can use the
 
 ## Example
 
-```javascript fiddle='docs/fiddles/features/represented-file'
+```fiddle docs/latest/fiddles/features/represented-file
 const { app, BrowserWindow } = require('electron')
 const os = require('os');
 

@@ -1,3 +1,10 @@
+---
+title: "Windows on ARM"
+description: "Improve the performance of your application for users running Windows on ARM."
+slug: windows-arm
+hide_title: false
+---
+
 # Windows on ARM
 
 If your app runs with Electron 6.0.8 or later, you can now build it for Windows 10 on Arm. This considerably improves performance, but requires recompilation of any native modules used in your app. It may also require small fixups to your build and packaging scripts.
@@ -8,7 +15,7 @@ If your app doesn't use any native modules, then it's really easy to create an A
 
 1. Make sure that your app's `node_modules` directory is empty.
 2. Using a _Command Prompt_, run `set npm_config_arch=arm64` before running `npm install`/`yarn install` as usual.
-3. [If you have Electron installed as a development dependency](quick-start.md#prerequisites), npm will download and unpack the arm64 version. You can then package and distribute your app as normal.
+3. [If you have Electron installed as a development dependency](./quick-start.md#prerequisites), npm will download and unpack the arm64 version. You can then package and distribute your app as normal.
 
 ## General considerations
 
@@ -57,7 +64,7 @@ vs_installer.exe ^
 
 Setting `npm_config_arch=arm64` in the environment creates the correct arm64 `.obj` files, but the standard _Developer Command Prompt for VS 2017_ will use the x64 linker. To fix this:
 
-1. Duplicate the _x64_x86 Cross Tools Command Prompt for VS 2017_ shortcut (e.g. by locating it in the start menu, right clicking, selecting _Open File Location_, copying and pasting) to somewhere convenient.
+1. Duplicate the _x64_x86 Cross Tools Command Prompt for VS 2017 shortcut (e.g. by locating it in the start menu, right clicking, selecting _Open File Location_, copying and pasting) to somewhere convenient.
 2. Right click the new shortcut and choose _Properties_.
 3. Change the _Target_ field to read `vcvarsamd64_arm64.bat` at the end instead of `vcvarsamd64_x86.bat`.
 
@@ -95,7 +102,7 @@ Debugging native modules can be done with Visual Studio 2017 (running on your de
 3. Connect to the target device by selecting _Debug > Attach to Process..._ and enter the device's IP address and the port number displayed by the Visual Studio Remote Debugger tool.
 4. Click _Refresh_ and select the [appropriate Electron process to attach](../development/debugging-on-windows.md).
 5. You may need to make sure that any symbols for native modules in your app are loaded correctly. To configure this, head to _Debug > Options..._ in Visual Studio 2017, and add the folders containing your `.pdb` symbols under _Debugging > Symbols_.
-6. Once attached, set any appropriate breakpoints and resume JavaScript execution using Chrome's [remote tools for Node](debugging-main-process.md).
+6. Once attached, set any appropriate breakpoints and resume JavaScript execution using Chrome's [remote tools for Node](./debugging-main-process.md).
 
 ## Getting additional help
 

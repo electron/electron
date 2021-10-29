@@ -1,3 +1,10 @@
+---
+title: "MessagePorts in Electron"
+description: "This guide provides some examples of how you might use MessagePorts in your app to communicate different processes."
+slug: message-ports
+hide_title: false
+---
+
 # MessagePorts in Electron
 
 [`MessagePort`][]s are a web feature that allow passing messages between

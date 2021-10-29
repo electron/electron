@@ -1,3 +1,10 @@
+---
+title: "Dock (macOS)"
+description: "Configure your Electron app's icon in the macOS Dock and create shortcuts for custom tasks."
+slug: macos-dock
+hide_title: false
+---
+
 # Dock (macOS)
 
 Electron has APIs to configure the app's icon in the macOS Dock. A macOS-only
@@ -22,7 +29,7 @@ Starting with a working application from the
  [Quick Start Guide](quick-start.md), update the `main.js` file with the
  following lines:
 
-```javascript fiddle='docs/fiddles/features/macos-dock-menu'
+```fiddle docs/latest/fiddles/features/macos-dock-menu
 const { app, BrowserWindow, Menu } = require('electron')
 
 const createWindow = () => {
@@ -74,5 +81,5 @@ You should see the custom menu you just defined:
 ![macOS dock menu](../images/macos-dock-menu.png)
 
 [dock-menu-image]: https://cloud.githubusercontent.com/assets/639601/5069962/6032658a-6e9c-11e4-9953-aa84006bdfff.png
-[recent-documents]: ./recent-documents.md
-[progress-bar]: ./progress-bar.md
+[recent-documents]: recent-documents.md
+[progress-bar]: progress-bar.md

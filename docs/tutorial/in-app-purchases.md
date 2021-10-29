@@ -1,3 +1,10 @@
+---
+title: "In-App Purchases (macOS)"
+description: "Enable In-App purchases when publishing via the Apple Store and iTunes Connect."
+slug: in-app-purchases
+hide_title: false
+---
+
 # In-App Purchases (macOS)
 
 ## Preparing

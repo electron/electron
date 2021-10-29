@@ -1,3 +1,10 @@
+---
+title: "Notifications"
+description: "Show notifications to your users in all supported platforms."
+slug: notifications
+hide_title: false
+---
+
 # Notifications
 
 ## Overview
@@ -28,7 +35,7 @@ Starting with a working application from the
 
 ...and add the `renderer.js` file:
 
-```javascript fiddle='docs/fiddles/features/notifications/renderer'
+```fiddle docs/latest/fiddles/features/notifications/renderer
 const NOTIFICATION_TITLE = 'Title'
 const NOTIFICATION_BODY = 'Notification from the Renderer process. Click to log to console.'
 const CLICK_MESSAGE = 'Notification clicked'
@@ -48,7 +55,7 @@ Additionally, if you click on the notification, the DOM will update to show "Not
 Starting with a working application from the
 [Quick Start Guide](quick-start.md), update the `main.js` file with the following lines:
 
-```javascript fiddle='docs/fiddles/features/notifications/main'
+```fiddle docs/latest/fiddles/features/notifications/main
 const { Notification } = require('electron')
 
 const NOTIFICATION_TITLE = 'Basic Notification'

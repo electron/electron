@@ -1,3 +1,10 @@
+---
+title: "Device Access"
+description: "Learn how to access the device hardware (Bluetooth, USB, Serial)"
+slug: devices
+hide_title: false
+---
+
 # Device Access
 
 Like Chromium based browsers, Electron provides access to device hardware
@@ -22,7 +29,7 @@ This example demonstrates an Electron application that automatically selects
 the first available bluetooth device when the `Test Bluetooth` button is
 clicked.
 
-```javascript fiddle='docs/fiddles/features/web-bluetooth'
+```fiddle docs/latest/fiddles/features/web-bluetooth
 
 ```
 
@@ -66,7 +73,7 @@ HID devices through [`ses.setDevicePermissionHandler(handler)`](../api/session.m
 and through [`select-hid-device` event on the Session](../api/session.md#event-select-hid-device)
 when the `Test WebHID` button is clicked.
 
-```javascript fiddle='docs/fiddles/features/web-hid'
+```fiddle docs/latest/fiddles/features/web-hid
 
 ```
 
@@ -103,6 +110,6 @@ as well as demonstrating selecting the first available Arduino Uno serial device
 [`select-serial-port` event on the Session](../api/session.md#event-select-serial-port)
 when the `Test Web Serial` button is clicked.
 
-```javascript fiddle='docs/fiddles/features/web-serial'
+```fiddle docs/latest/fiddles/features/web-serial
 
 ```

@@ -1,3 +1,10 @@
+---
+title: "Window Customization"
+description: "The BrowserWindow module exposes many APIs that can change the look and behavior of your browser windows."
+slug: window-customization
+hide_title: false
+---
+
 # Window Customization
 
 The `BrowserWindow` module is the foundation of your Electron application, and it exposes

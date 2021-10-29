@@ -1,3 +1,10 @@
+---
+title: "Web Embeds"
+description: "Discover the different ways to embed third-party web content in your application."
+slug: web-embeds
+hide_title: false
+---
+
 # Web Embeds
 
 ## Overview

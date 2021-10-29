@@ -2,7 +2,7 @@
 
 Follow the guidelines below for building **Electron itself** on Linux, for the purposes of creating custom Electron binaries. For bundling and distributing your app code with the prebuilt Electron binaries, see the [application distribution][application-distribution] guide.
 
-[application-distribution]: ../tutorial/application-distribution.md
+[application-distribution]: ../tutorial/distribution-overview.md
 
 ## Prerequisites
 

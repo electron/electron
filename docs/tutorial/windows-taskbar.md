@@ -1,3 +1,10 @@
+---
+title: "Taskbar Customization (Windows)"
+description: "Customize your app's Windows taskbar with Jumplist, thumbnails and toolbars, icon overlays, etc."
+slug: windows-taskbar
+hide_title: false
+---
+
 # Taskbar Customization (Windows)
 
 ## Overview
@@ -230,5 +237,5 @@ but you might use a timeout or some other event to disable it.
 [setusertaskstasks]: ../api/app.md#appsetusertaskstasks-windows
 [setoverlayicon]: ../api/browser-window.md#winsetoverlayiconoverlay-description-windows
 [flashframe]: ../api/browser-window.md#winflashframeflag
-[recent-documents]: ./recent-documents.md
-[progress-bar]: ./progress-bar.md
+[recent-documents]: recent-documents.md
+[progress-bar]: progress-bar.md

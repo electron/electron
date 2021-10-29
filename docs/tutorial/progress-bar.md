@@ -1,3 +1,10 @@
+---
+title: "Taskbar Progress Bar (Windows & macOS)"
+description: "Show progress information to your users directly from the taskbar of the OS."
+slug: progress-bar
+hide_title: false
+---
+
 # Taskbar Progress Bar (Windows & macOS)
 
 ## Overview
@@ -43,7 +50,7 @@ See the [API documentation for more options and modes][setprogressbar].
 In this example, we add a progress bar to the main window that increments over time
 using Node.js timers.
 
-```javascript fiddle='docs/fiddles/features/progress-bar'
+```fiddle docs/latest/fiddles/features/progress-bar
 const { app, BrowserWindow } = require('electron')
 
 let progressInterval

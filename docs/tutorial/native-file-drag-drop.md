@@ -1,3 +1,10 @@
+---
+title: "Native File Drag & Drop"
+description: "Use the OS' drag & drop feature to bring content into/from your application."
+slug: native-file-drag-drop
+hide_title: false
+---
+
 # Native File Drag & Drop
 
 ## Overview
@@ -56,7 +63,7 @@ document.getElementById('drag').ondragstart = (event) => {
 In the Main process (`main.js` file), expand the received event with a path to the file that is
 being dragged and an icon:
 
-```javascript fiddle='docs/fiddles/features/drag-and-drop'
+```fiddle docs/latest/fiddles/features/drag-and-drop
 const { ipcMain } = require('electron')
 
 ipcMain.on('ondragstart', (event, filePath) => {

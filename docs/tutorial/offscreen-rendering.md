@@ -1,3 +1,10 @@
+---
+title: "Offscreen Rendering"
+description: "Offscreen rendering lets you obtain the content of a BrowserWindow in a bitmap, so it can be rendered anywhere."
+slug: offscreen-rendering
+hide_title: false
+---
+
 # Offscreen Rendering
 
 ## Overview
@@ -17,7 +24,7 @@ the dirty area is passed to the `paint` event to be more efficient.
 losses with no benefits.
 * When nothing is happening on a webpage, no frames are generated.
 * An offscreen window is always created as a
-[Frameless Window](../tutorial/window-customization.md)..
+[Frameless Window](window-customization.md)..
 
 ### Rendering Modes
 
@@ -39,7 +46,7 @@ To enable this mode, GPU acceleration has to be disabled by calling the
 
 ## Example
 
-```javascript fiddle='docs/fiddles/features/offscreen-rendering'
+```fiddle docs/latest/fiddles/features/offscreen-rendering
 const { app, BrowserWindow } = require('electron')
 const fs = require('fs')
 

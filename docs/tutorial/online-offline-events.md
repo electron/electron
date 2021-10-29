@@ -1,3 +1,10 @@
+---
+title: "Online/Offline Event Detection"
+description: "Detect if your application has Internet access and behave accordingly."
+slug: online-offline-events
+hide_title: false
+---
+
 # Online/Offline Event Detection
 
 ## Overview

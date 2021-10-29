@@ -1,3 +1,10 @@
+---
+title: "Dark Mode"
+description: "Discover how to respect the user's OS preference for a light or dark mode."
+slug: dark-mode
+hide_title: false
+---
+
 # Dark Mode
 
 ## Overview
@@ -50,7 +57,7 @@ of this theming, due to the use of the macOS 10.14 SDK.
 This example demonstrates an Electron application that derives its theme colors from the
 `nativeTheme`. Additionally, it provides theme toggle and reset controls using IPC channels.
 
-```javascript fiddle='docs/fiddles/features/macos-dark-mode'
+```fiddle docs/latest/fiddles/features/macos-dark-mode
 
 ```
 

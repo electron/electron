@@ -1,10 +1,15 @@
+---
+title: "Process Model"
+description: "Electron inherits its multi-process architecture from Chromium, which makes the framework architecturally very similar to a modern web browser. In this guide, we'll expound on the conceptual knowledge of Electron that we applied in the minimal quick start app."
+slug: process-model
+hide_title: false
+---
+
 # Process Model
 
 Electron inherits its multi-process architecture from Chromium, which makes the framework
 architecturally very similar to a modern web browser. In this guide, we'll expound on
-the conceptual knowledge of Electron that we applied in the minimal [quick start app][].
-
-[quick start app]: ./quick-start.md
+the conceptual knowledge of Electron that we applied in the [tutorial][tutorial].
 
 ## Why not a single process?
 
@@ -27,8 +32,8 @@ visualizes this model:
 ![Chrome's multi-process architecture](../images/chrome-processes.png)
 
 Electron applications are structured very similarly. As an app developer, you control
-two types of processes: main and renderer. These are analogous to Chrome's own browser
-and renderer processes outlined above.
+two types of processes: [main](#the-main-process) and [renderer](#the-renderer-process).
+These are analogous to Chrome's own browser and renderer processes outlined above.
 
 [Chrome Comic]: https://www.google.com/googlebooks/chrome/
 
@@ -68,7 +73,7 @@ When a `BrowserWindow` instance is destroyed, its corresponding renderer process
 terminated as well.
 
 [browser-window]: ../api/browser-window.md
-[web-embed]: ./web-embeds.md
+[web-embed]: web-embeds.md
 [web-contents]: ../api/web-contents.md
 [event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter
 
@@ -90,7 +95,7 @@ app.on('window-all-closed', () => {
 ```
 
 [app]: ../api/app.md
-[quick-start-lifecycle]: ./quick-start.md#manage-your-windows-lifecycle
+[quick-start-lifecycle]: quick-start.md#manage-your-windows-lifecycle
 
 ### Native APIs
 
@@ -124,9 +129,11 @@ or other Node.js APIs. In order to directly include NPM modules in the renderer,
 you must use the same bundler toolchains (for example, `webpack` or `parcel`) that you
 use on the web.
 
-> Note: Renderer processes can be spawned with a full Node.js environment for ease of
-> development. Historically, this used to be the default, but this feature was disabled
-> for security reasons.
+:::warning
+Renderer processes can be spawned with a full Node.js environment for ease of
+development. Historically, this used to be the default, but this feature was disabled
+for security reasons.
+:::
 
 At this point, you might be wondering how your renderer process user interfaces
 can interact with Node.js and Electron's native desktop functionality if these
@@ -135,7 +142,7 @@ way to import Electron's content scripts.
 
 ## Preload scripts
 
-<!-- Note: This guide doesn't take sandboxing into account, which might fundamentally 
+<!-- Note: This guide doesn't take sandboxing into account, which might fundamentally
 change the statements here. -->
 Preload scripts contain code that executes in a renderer process before its web content
 begins loading. These scripts run within the renderer context, but are granted more
@@ -206,3 +213,4 @@ This feature is incredibly useful for two main purposes:
 [context-isolation]: ./context-isolation.md
 [context-bridge]: ../api/context-bridge.md
 [ipcRenderer]: ../api/ipc-renderer.md
+[tutorial]: ./tutorial-prerequisites.md

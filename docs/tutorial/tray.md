@@ -1,7 +1,6 @@
 ---
 title: Tray
-description: This guide will take you through the process of creating
-  a Tray icon with its own context menu to the system's notification area.
+description: Add a try icon to your application with its own context menu.
 slug: tray
 hide_title: true
 ---
@@ -79,5 +78,5 @@ After you start your electron app, you should see the Tray residing
 in either the top or bottom right of your screen, depending on your
 operating system.
 
-```fiddle docs/fiddles/native-ui/tray
+```fiddle docs/latest/fiddles/native-ui/tray
 ```

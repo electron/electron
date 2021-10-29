@@ -1,3 +1,10 @@
+---
+title: "Keyboard Shortcuts"
+description: "Configure local and global keyboard shortcuts for your Electron application"
+slug: keyboard-shortcuts
+hide_title: false
+---
+
 # Keyboard Shortcuts
 
 ## Overview
@@ -17,7 +24,7 @@ Starting with a working application from the
 [Quick Start Guide](quick-start.md), update the `main.js` file with the
 following lines:
 
-```javascript fiddle='docs/fiddles/features/keyboard-shortcuts/local'
+```fiddle docs/latest/fiddles/features/keyboard-shortcuts/local
 const { Menu, MenuItem } = require('electron')
 
 const menu = new Menu()
@@ -56,7 +63,7 @@ Starting with a working application from the
 [Quick Start Guide](quick-start.md), update the `main.js` file with the
 following lines:
 
-```javascript fiddle='docs/fiddles/features/keyboard-shortcuts/global'
+```fiddle docs/latest/fiddles/features/keyboard-shortcuts/global
 const { app, globalShortcut } = require('electron')
 
 app.whenReady().then(() => {
@@ -81,8 +88,8 @@ If you want to handle keyboard shortcuts within a [BrowserWindow], you can
 listen for the `keyup` and `keydown` [DOM events][dom-events] inside the
 renderer process using the [addEventListener() API][addEventListener-api].
 
-```javascript fiddle='docs/fiddles/features/keyboard-shortcuts/web-apis|focus=renderer.js'
-const handleKeyPress = (event) => {
+```fiddle docs/latest/fiddles/features/keyboard-shortcuts/web-apis|focus=renderer.js
+function handleKeyPress(event) {
   // You can put code here to handle the keypress.
   document.getElementById("last-keypress").innerText = event.key;
   console.log(`You pressed ${event.key}`);
@@ -105,7 +112,7 @@ Starting with a working application from the
 [Quick Start Guide](quick-start.md), update the `main.js` file with the
 following lines:
 
-```javascript fiddle='docs/fiddles/features/keyboard-shortcuts/interception-from-main'
+```fiddle docs/latest/fiddles/features/keyboard-shortcuts/interception-from-main
 const { app, BrowserWindow } = require('electron')
 
 app.whenReady().then(() => {

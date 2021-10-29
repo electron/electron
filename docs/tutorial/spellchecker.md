@@ -1,3 +1,10 @@
+---
+title: "SpellChecker"
+description: "Learn how to use the built-in spellchecker, set languages, etc."
+slug: spellchecker
+hide_title: false
+---
+
 # SpellChecker
 
 Electron has built-in support for Chromium's spellchecker since Electron 8.  On Windows and Linux this is powered by Hunspell dictionaries, and on macOS it makes use of the native spellchecker APIs.

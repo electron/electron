@@ -1,3 +1,10 @@
+---
+title: "Recent Documents (Windows & macOS)"
+description: "Provide access to a list of recent documents opened by the application via JumpList or dock menu."
+slug: recent-documents
+hide_title: false
+---
+
 # Recent Documents (Windows & macOS)
 
 ## Overview
@@ -17,7 +24,7 @@ __Application dock menu:__
 
 ### Managing recent documents
 
-```javascript fiddle='docs/fiddles/features/recent-documents'
+```fiddle docs/latest/fiddles/features/recent-documents
 const { app, BrowserWindow } = require('electron')
 const fs = require('fs')
 const path = require('path')
