@@ -29,10 +29,10 @@ index da7f97cf0ec1760302fd31c94df2ee6d835fee55..7391948ccdeafb60fe955289347ab71f
           upgrade_if_insecure == request.upgrade_if_insecure &&
           is_revalidating == request.is_revalidating &&
 diff --git a/services/network/public/cpp/resource_request.h b/services/network/public/cpp/resource_request.h
-index 490011956f54e35c585267fc6e4aaa6c7ca4cb31..ac24d6a2a49b63fd5e7ff5b2046925ea36bd281a 100644
+index f1432e136c6b85aea60007600bc57c9b5a0cdbf6..f50beef06a10c5fcfdeb6818f82d0c4f370fbc8f 100644
 --- a/services/network/public/cpp/resource_request.h
 +++ b/services/network/public/cpp/resource_request.h
-@@ -152,6 +152,7 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE) ResourceRequest {
+@@ -154,6 +154,7 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE) ResourceRequest {
    bool do_not_prompt_for_login = false;
    bool is_main_frame = false;
    int transition_type = 0;
@@ -41,7 +41,7 @@ index 490011956f54e35c585267fc6e4aaa6c7ca4cb31..ac24d6a2a49b63fd5e7ff5b2046925ea
    bool upgrade_if_insecure = false;
    bool is_revalidating = false;
 diff --git a/services/network/public/cpp/url_request_mojom_traits.cc b/services/network/public/cpp/url_request_mojom_traits.cc
-index a1c4a34739a8fc32e12d46e8869ba7f40cc5f609..7244e772a091998f83dd47f97ec09e0fa09351ea 100644
+index 25b59ed3be2f8106ff1342a263d60650cba87e5f..c73da6c340f5e87b945323c2f6579d121f066dfe 100644
 --- a/services/network/public/cpp/url_request_mojom_traits.cc
 +++ b/services/network/public/cpp/url_request_mojom_traits.cc
 @@ -210,6 +210,7 @@ bool StructTraits<
@@ -53,7 +53,7 @@ index a1c4a34739a8fc32e12d46e8869ba7f40cc5f609..7244e772a091998f83dd47f97ec09e0f
    out->upgrade_if_insecure = data.upgrade_if_insecure();
    out->is_revalidating = data.is_revalidating();
 diff --git a/services/network/public/cpp/url_request_mojom_traits.h b/services/network/public/cpp/url_request_mojom_traits.h
-index 2d9ba6918b993ee376b85e813ed68c073c24c0b2..ef19b223ce6b957923550188e3054506e7fe9a27 100644
+index 64b91e6d4a18c1af78bbde7fd3b5b42edcf72ecf..4929c2822ffdd91b0b43fc2a3dccf1b8dde04838 100644
 --- a/services/network/public/cpp/url_request_mojom_traits.h
 +++ b/services/network/public/cpp/url_request_mojom_traits.h
 @@ -271,6 +271,9 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE)
@@ -67,7 +67,7 @@ index 2d9ba6918b993ee376b85e813ed68c073c24c0b2..ef19b223ce6b957923550188e3054506
      return request.previews_state;
    }
 diff --git a/services/network/public/mojom/url_request.mojom b/services/network/public/mojom/url_request.mojom
-index 571ecc5eac8bb294a350c4ff8d1bde0635ddc263..0ec381a56585136dce0946556f551568df69b004 100644
+index 5b1708bf03bb801e9430bfcd05080933469ee7bb..f1f91d1ff247f1dac772e9081a20aaa630e7448f 100644
 --- a/services/network/public/mojom/url_request.mojom
 +++ b/services/network/public/mojom/url_request.mojom
 @@ -312,6 +312,9 @@ struct URLRequest {
@@ -103,7 +103,7 @@ index faa5ed32a9dad5580181b2b88fd19fa0bc33d4bc..47a9bf98dd0e39b7f4389010f62c485d
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 30e9ceb04fd579daefba8081e6127e0023a0e9a8..b48ebc6abd128dc0f7542394182db329909de4fe 100644
+index 2fec9ab680227f0528151dae4c064001861309c1..cb80c6eaf49a1984025697c7ee2b1a932caa8eda 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
 @@ -531,6 +531,7 @@ URLLoader::URLLoader(
@@ -114,7 +114,7 @@ index 30e9ceb04fd579daefba8081e6127e0023a0e9a8..b48ebc6abd128dc0f7542394182db329
        devtools_request_id_(request.devtools_request_id),
        request_mode_(request.mode),
        request_credentials_mode_(request.credentials_mode),
-@@ -673,7 +674,7 @@ URLLoader::URLLoader(
+@@ -685,7 +686,7 @@ URLLoader::URLLoader(
    url_request_->SetRequestHeadersCallback(base::BindRepeating(
        &URLLoader::SetRawRequestHeadersAndNotify, base::Unretained(this)));
  
@@ -123,7 +123,7 @@ index 30e9ceb04fd579daefba8081e6127e0023a0e9a8..b48ebc6abd128dc0f7542394182db329
      url_request_->SetResponseHeadersCallback(base::BindRepeating(
          &URLLoader::SetRawResponseHeaders, base::Unretained(this)));
    }
-@@ -1316,6 +1317,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
+@@ -1328,6 +1329,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
    response_ = network::mojom::URLResponseHead::New();
    PopulateResourceResponse(url_request_.get(), is_load_timing_enabled_,
                             options_, response_.get());
