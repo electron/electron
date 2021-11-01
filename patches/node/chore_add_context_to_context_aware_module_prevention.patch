@@ -8,7 +8,7 @@ modules from being used in the renderer process. This should be upstreamed as
 a customizable error message.
 
 diff --git a/src/node_binding.cc b/src/node_binding.cc
-index 8b8389ae53608afedc9cc0ad2a6c8461b7aa893e..e79ddab7d73c6297ef1dc74b2a0ce469bf49e37c 100644
+index 8b8389ae53608afedc9cc0ad2a6c8461b7aa893e..58aa43010c9d5282955a11c786b5029b0618d2f0 100644
 --- a/src/node_binding.cc
 +++ b/src/node_binding.cc
 @@ -4,6 +4,7 @@
@@ -27,7 +27,7 @@ index 8b8389ae53608afedc9cc0ad2a6c8461b7aa893e..e79ddab7d73c6297ef1dc74b2a0ce469
 +          char errmsg[1024];
 +          snprintf(errmsg,
 +                   sizeof(errmsg),
-+                   "Loading non-context-aware native module in renderer: '%s', but app.allowRendererProcessReuse is true. See https://github.com/electron/electron/issues/18397.",
++                   "Loading non-context-aware native module in renderer: '%s'. See https://github.com/electron/electron/issues/18397.",
 +                   *filename);
 +          env->ThrowError(errmsg);
            return false;
