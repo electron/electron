@@ -1,7 +1,7 @@
 const { expect } = require('chai');
 const path = require('path');
 const { Buffer } = require('buffer');
-const { ifdescribe } = require('./spec-helpers');
+const { ifdescribe, ifit } = require('./spec-helpers');
 
 const { clipboard, nativeImage } = require('electron');
 
@@ -62,13 +62,19 @@ ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard 
     });
   });
 
-  ifdescribe(process.platform !== 'linux')('clipboard.read()', () => {
-    it('does not crash when reading various custom clipboard types', () => {
+  describe('clipboard.read()', () => {
+    ifit(process.platform !== 'linux')('does not crash when reading various custom clipboard types', () => {
       const type = process.platform === 'darwin' ? 'NSFilenamesPboardType' : 'FileNameW';
 
       expect(() => {
         const result = clipboard.read(type);
       }).to.not.throw();
+    });
+    it('can read data written with writeBuffer', () => {
+      const testText = 'Testing read';
+      const buffer = Buffer.from(testText, 'utf8');
+      clipboard.writeBuffer('public/utf8-plain-text', buffer);
+      expect(clipboard.read('public/utf8-plain-text')).to.equal(testText);
     });
   });
 
