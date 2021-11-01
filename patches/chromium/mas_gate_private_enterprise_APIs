@@ -10,24 +10,21 @@ patch gates those APIs to non-MAS builds to comply with Apple
 Store requirements, and returns the default state for MAS builds.
 
 diff --git a/base/enterprise_util_mac.mm b/base/enterprise_util_mac.mm
-index bbb851e1cafb37ebaa67e4577598fab25c90fde6..6ab12e5505b5ba545e7e0cc8c93d3ba9a6d0bacc 100644
+index 3ebcca94d7a9916b371eb7571e1ec4ba8ec3dcad..58b7de2b2a4c3223c64d275da888ae812fee26f9 100644
 --- a/base/enterprise_util_mac.mm
 +++ b/base/enterprise_util_mac.mm
-@@ -168,6 +168,13 @@ MacDeviceManagementStateNew IsDeviceRegisteredWithManagementNew() {
+@@ -154,6 +154,10 @@ MacDeviceManagementStateNew IsDeviceRegisteredWithManagementNew() {
+ 
  DeviceUserDomainJoinState AreDeviceAndUserJoinedToDomain() {
-   static DeviceUserDomainJoinState state = [] {
-     DeviceUserDomainJoinState state{false, false};
+   DeviceUserDomainJoinState state{false, false};
 +#if defined(MAS_BUILD)
-+    return state;
-+  }();
-+
 +  return state;
 +}
 +#else
  
-     @autoreleasepool {
-       ODSession* session = [ODSession defaultSession];
-@@ -274,5 +281,6 @@ DeviceUserDomainJoinState AreDeviceAndUserJoinedToDomain() {
+   @autoreleasepool {
+     ODSession* session = [ODSession defaultSession];
+@@ -256,5 +260,6 @@ DeviceUserDomainJoinState AreDeviceAndUserJoinedToDomain() {
  
    return state;
  }
