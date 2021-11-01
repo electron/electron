@@ -1,0 +1,77 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marja=20H=C3=B6ltt=C3=A4?= <marja@chromium.org>
+Date: Fri, 3 Sep 2021 11:46:26 +0200
+Subject: Fix class variable redeclaration
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+ParserBase::ParseClassLiteral and BaseConsumedPreparseData::RestoreDataForScope
+both declare the class variable, but the logic is so complex
+that they sometimes ended up both declaring it.
+
+This is further complicated by some of the variable values (esp.
+inner_scope_calls_eval_) potentially changing in between, so we can't
+just redo the same logic any more.
+
+Forcefully make it work by making RestoreDataForScope declare the variable
+iff ParseClassLiteral didn't.
+
+Bug: chromium:1245870
+Change-Id: I777fd9d78145240448fc25709d2b118977d91056
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3140596
+Commit-Queue: Marja Hölttä <marja@chromium.org>
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#76654}
+
+diff --git a/src/parsing/preparse-data.cc b/src/parsing/preparse-data.cc
+index aa49b55227cdc8e4016a80a76111a8c1e06fd070..40e2a250921b95ef3eb80ce45593929113814a93 100644
+--- a/src/parsing/preparse-data.cc
++++ b/src/parsing/preparse-data.cc
+@@ -666,12 +666,13 @@ void BaseConsumedPreparseData<Data>::RestoreDataForScope(
+     scope->AsDeclarationScope()->RecordNeedsPrivateNameContextChainRecalc();
+   }
+   if (ShouldSaveClassVariableIndexField::decode(scope_data_flags)) {
+-    Variable* var;
+-    // An anonymous class whose class variable needs to be saved do not
++    Variable* var = scope->AsClassScope()->class_variable();
++    // An anonymous class whose class variable needs to be saved might not
+     // have the class variable created during reparse since we skip parsing
+     // the inner scopes that contain potential access to static private
+     // methods. So create it now.
+-    if (scope->AsClassScope()->is_anonymous_class()) {
++    if (var == nullptr) {
++      DCHECK(scope->AsClassScope()->is_anonymous_class());
+       var = scope->AsClassScope()->DeclareClassVariable(
+           ast_value_factory, nullptr, kNoSourcePosition);
+       AstNodeFactory factory(ast_value_factory, zone);
+@@ -679,9 +680,6 @@ void BaseConsumedPreparseData<Data>::RestoreDataForScope(
+           factory.NewVariableDeclaration(kNoSourcePosition);
+       scope->declarations()->Add(declaration);
+       declaration->set_var(var);
+-    } else {
+-      var = scope->AsClassScope()->class_variable();
+-      DCHECK_NOT_NULL(var);
+     }
+     var->set_is_used();
+     var->ForceContextAllocation();
+diff --git a/test/mjsunit/regress/regress-crbug-1245870.js b/test/mjsunit/regress/regress-crbug-1245870.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..2ef3f753d500880717f10f26ed8cca4a47079196
+--- /dev/null
++++ b/test/mjsunit/regress/regress-crbug-1245870.js
+@@ -0,0 +1,14 @@
++// Copyright 2021 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++class Outer {
++  test() {
++    return class {
++      static #a() { }
++      b = eval();
++    };
++  }
++}
++const obj = new Outer();
++obj.test();

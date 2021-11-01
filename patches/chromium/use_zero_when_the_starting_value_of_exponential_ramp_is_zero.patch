@@ -1,0 +1,122 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Hongchan Choi <hongchan@chromium.org>
+Date: Mon, 11 Oct 2021 23:53:51 +0000
+Subject: Use zero when the starting value of exponential ramp is zero
+
+The calculation of an exponential curve is done by the specification:
+https://webaudio.github.io/web-audio-api/#dom-audioparam-exponentialramptovalueattime
+
+However, it missed a case where V0 (value1) is zero where it causes
+a NaN.
+
+(cherry picked from commit 4e2dcd84dc33f29b032b52e053726ab49e4d0b4d)
+
+Bug: 1253746,1240610
+Test: third_party/blink/web_tests/webaudio/AudioParam/exponential-ramp-crash-1253746.html
+Change-Id: Ib4a95f9298b4300705eda6a2eea64169de7cb002
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3205982
+Reviewed-by: Ryan Sleevi <rsleevi@chromium.org>
+Reviewed-by: Chrome Cunningham <chcunningham@chromium.org>
+Commit-Queue: Hongchan Choi <hongchan@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#928673}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3218139
+Reviewed-by: Hongchan Choi <hongchan@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4638@{#766}
+Cr-Branched-From: 159257cab5585bc8421abf347984bb32fdfe9eb9-refs/heads/main@{#920003}
+
+diff --git a/third_party/blink/renderer/modules/webaudio/audio_param_timeline.cc b/third_party/blink/renderer/modules/webaudio/audio_param_timeline.cc
+index c6177422fc29300242390a3ea6fded1484d46ee2..c0cdc0f6635615dde6424852f0a3dec9413af62b 100644
+--- a/third_party/blink/renderer/modules/webaudio/audio_param_timeline.cc
++++ b/third_party/blink/renderer/modules/webaudio/audio_param_timeline.cc
+@@ -37,6 +37,7 @@
+ #include "third_party/blink/renderer/platform/bindings/exception_messages.h"
+ #include "third_party/blink/renderer/platform/bindings/exception_state.h"
+ #include "third_party/blink/renderer/platform/wtf/math_extras.h"
++#include "third_party/blink/renderer/platform/wtf/std_lib_extras.h"
+ 
+ #if defined(ARCH_CPU_X86_FAMILY)
+ #include <emmintrin.h>
+@@ -132,7 +133,12 @@ float AudioParamTimeline::ExponentialRampAtTime(double t,
+                                                 double time1,
+                                                 float value2,
+                                                 double time2) {
+-  return value1 * pow(value2 / value1, (t - time1) / (time2 - time1));
++  DCHECK(!std::isnan(value1) && std::isfinite(value1));
++  DCHECK(!std::isnan(value2) && std::isfinite(value2));
++
++  return (value1 == 0.0f || std::signbit(value1) != std::signbit(value2))
++      ? value1
++      : value1 * pow(value2 / value1, (t - time1) / (time2 - time1));
+ }
+ 
+ // Compute the value of a set target event at time t with the given event
+@@ -992,6 +998,8 @@ float AudioParamTimeline::ValuesForFrameRangeImpl(size_t start_frame,
+     std::tie(value2, time2, next_event_type) =
+         HandleCancelValues(event, next_event, value2, time2);
+ 
++    DCHECK(!std::isnan(value1));
++    DCHECK(!std::isnan(value2));
+     DCHECK_GE(time2, time1);
+ 
+     // |fillToEndFrame| is the exclusive upper bound of the last frame to be
+@@ -1051,7 +1059,6 @@ float AudioParamTimeline::ValuesForFrameRangeImpl(size_t start_frame,
+           value = event->Value();
+           write_index =
+               FillWithDefault(values, value, fill_to_frame, write_index);
+-
+           break;
+         }
+ 
+@@ -1393,6 +1400,7 @@ AudioParamTimeline::HandleCancelValues(const ParamEvent* current_event,
+               value2 = ExponentialRampAtTime(next_event->Time(), value1, time1,
+                                              saved_event->Value(),
+                                              saved_event->Time());
++              DCHECK(!std::isnan(value1));
+               break;
+             case ParamEvent::kSetValueCurve:
+             case ParamEvent::kSetValueCurveEnd:
+diff --git a/third_party/blink/web_tests/webaudio/AudioParam/exponential-ramp-crash-1253746.html b/third_party/blink/web_tests/webaudio/AudioParam/exponential-ramp-crash-1253746.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..85397c5cc6757ae1464a0cd6733283b6b60abeee
+--- /dev/null
++++ b/third_party/blink/web_tests/webaudio/AudioParam/exponential-ramp-crash-1253746.html
+@@ -0,0 +1,39 @@
++<!DOCTYPE html>
++<html>
++<head>
++  <title>
++    Test if a corner case crashes the exponential ramp.
++  </title>
++  <script src="../../resources/testharness.js"></script>
++  <script src="../../resources/testharnessreport.js"></script>
++</head>
++<body>
++  <script>
++    const t = async_test('exponential-ramp-crash');
++
++    const onload = () => {
++      const context = new OfflineAudioContext(2, 441000, 44100);
++      const source = new ConstantSourceNode(context);
++      const delay_node = context.createDelay(30);
++      delay_node.connect(context.destination);
++      // The time overlap between 4.1s and 4s caused a crash in M95:
++      // https://crbug.com/1253746
++      delay_node.delayTime.exponentialRampToValueAtTime(2, 4.1);
++      delay_node.delayTime.cancelAndHoldAtTime(4);
++      context.oncomplete = t.step_func_done(() => {
++        // The |delay_node.delayTime| value should be zero because it does not
++        // have the previous anchor value. Based on the specification, if the
++        // beginning of an expoential ramp is zero, the resulting value falls
++        // into zero. In this case, there was no value point before the
++        // exponential ramp, and having no value point is treated as a
++        // default value, which is zero for |delayTime|.
++        assert_equals(delay_node.delayTime.value, 0);
++        assert_equals(context.state, 'closed');
++      });
++      context.startRendering();
++    };
++
++    window.addEventListener('load', t.step_func(onload));
++  </script>
++</body>
++</html>

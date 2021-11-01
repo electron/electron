@@ -1,0 +1,63 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ionel Popescu <iopopesc@microsoft.com>
+Date: Wed, 15 Sep 2021 18:16:16 +0000
+Subject: Speculative fix for eye dropper getColor crash.
+
+There seems to be a situation where the captured frame coordinates
+are different than the ones accessible by moving the mouse.
+
+I am not able to locally reproduce this issue, so I am adding DCHECKs
+to validate that the coordinates are correct and I am also handling
+the invalid coordinates to prevent invalid memory access.
+
+(cherry picked from commit a656373ae7212e0d88474bdec4691a4152452748)
+
+Bug: 1246631
+Change-Id: I915d46a71aa73b5dcf08127d347fdd47c1ddf54c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3152423
+Reviewed-by: Mason Freed <masonf@chromium.org>
+Commit-Queue: Ionel Popescu <iopopesc@microsoft.com>
+Cr-Original-Commit-Position: refs/heads/main@{#920811}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3163070
+Auto-Submit: Ionel Popescu <iopopesc@microsoft.com>
+Commit-Queue: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/4638@{#75}
+Cr-Branched-From: 159257cab5585bc8421abf347984bb32fdfe9eb9-refs/heads/main@{#920003}
+
+diff --git a/chrome/browser/ui/views/eye_dropper/eye_dropper_view.cc b/chrome/browser/ui/views/eye_dropper/eye_dropper_view.cc
+index 1adde90978a49f482f586755aa2a549e47de2ede..d247bfc187f4b461ff335ea7e307b21571522dd8 100644
+--- a/chrome/browser/ui/views/eye_dropper/eye_dropper_view.cc
++++ b/chrome/browser/ui/views/eye_dropper/eye_dropper_view.cc
+@@ -63,6 +63,7 @@ class EyeDropperView::ScreenCapturer
+                        std::unique_ptr<webrtc::DesktopFrame> frame) override;
+ 
+   SkBitmap GetBitmap() const;
++  SkColor GetColor(int x, int y) const;
+ 
+  private:
+   std::unique_ptr<webrtc::DesktopCapturer> capturer_;
+@@ -93,6 +94,13 @@ SkBitmap EyeDropperView::ScreenCapturer::GetBitmap() const {
+   return frame_;
+ }
+ 
++SkColor EyeDropperView::ScreenCapturer::GetColor(int x, int y) const {
++  DCHECK(x < frame_.width());
++  DCHECK(y < frame_.height());
++  return x < frame_.width() && y < frame_.height() ? frame_.getColor(x, y)
++                                                   : SK_ColorBLACK;
++}
++
+ EyeDropperView::EyeDropperView(content::RenderFrameHost* frame,
+                                content::EyeDropperListener* listener)
+     : render_frame_host_(frame),
+@@ -169,7 +177,8 @@ void EyeDropperView::OnPaint(gfx::Canvas* view_canvas) {
+ 
+   // Store the pixel color under the cursor as it is the last color seen
+   // by the user before selection.
+-  selected_color_ = frame.getColor(center_position.x(), center_position.y());
++  selected_color_ =
++      screen_capturer_->GetColor(center_position.x(), center_position.y());
+ 
+   // Paint grid.
+   cc::PaintFlags flags;
