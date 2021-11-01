@@ -72,6 +72,7 @@ const LINTERS = [{
       spawnAndCheckExitCode('python', ['script/run-clang-format.py', ...filenames]);
     }
     const filter = [
+      '-readability/braces',
       '-readability/casting',
       '-whitespace/braces',
       '-whitespace/indent',

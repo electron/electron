@@ -106,6 +106,12 @@ class Promise : public PromiseBase {
     return resolved.GetHandle();
   }
 
+  // Convert to another type.
+  template <typename NT>
+  Promise<NT> As() {
+    return Promise<NT>(isolate(), GetInner());
+  }
+
   // Promise resolution is a microtask
   // We use the MicrotasksRunner to trigger the running of pending microtasks
   v8::Maybe<bool> Resolve(const RT& value) {
