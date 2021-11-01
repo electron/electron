@@ -1355,7 +1355,7 @@ void WebContents::RendererResponsive(
   Emit("responsive");
 }
 
-bool WebContents::HandleContextMenu(content::RenderFrameHost* render_frame_host,
+bool WebContents::HandleContextMenu(content::RenderFrameHost& render_frame_host,
                                     const content::ContextMenuParams& params) {
   Emit("context-menu", std::make_pair(params, render_frame_host));
 
