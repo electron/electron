@@ -26,3 +26,4 @@ fix_readbarrier_undefined_symbol_error_on_woa_arm64.patch
 fix_-wunreachable-code-return.patch
 fix_crash_creating_private_key_with_unsupported_algorithm.patch
 fix_event_with_invalid_timestamp_in_trace_log.patch
+test_fix_test-datetime-change-notify_after_daylight_change.patch
