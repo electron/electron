@@ -110,6 +110,11 @@ describe('BrowserWindow module', () => {
       await closed;
     });
 
+    it('should not crash if called after webContents is destroyed', () => {
+      w.webContents.destroy();
+      w.webContents.on('destroyed', () => w.close());
+    });
+
     it('should emit unload handler', async () => {
       await w.loadFile(path.join(fixtures, 'api', 'unload.html'));
       const closed = emittedOnce(w, 'closed');
