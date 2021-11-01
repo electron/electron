@@ -408,7 +408,7 @@ index 623659a3c78ce069cbcc83eeccfbc7265437ff01..f02cb6bced9f8382c84f560b5b40c924
    // Tells the RenderFrame to switch the CSS to print media type, render every
    // requested page using the print preview document's frame/node, and then
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 868f1706b1b8db28b995cc2dc9fcfefec62b6574..9224b935815f28086ce4df05e3f4c81b6dd92e7f 100644
+index 868f1706b1b8db28b995cc2dc9fcfefec62b6574..5f98a820f4452328ab38b2e918a2d9a6258cb658 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -38,6 +38,7 @@
@@ -539,18 +539,52 @@ index 868f1706b1b8db28b995cc2dc9fcfefec62b6574..9224b935815f28086ce4df05e3f4c81b
      // Check if |this| is still valid.
      if (!self)
        return;
-@@ -2169,7 +2210,9 @@ void PrintRenderFrameHelper::IPCProcessed() {
+@@ -2169,36 +2210,51 @@ void PrintRenderFrameHelper::IPCProcessed() {
    }
  }
  
 -bool PrintRenderFrameHelper::InitPrintSettings(bool fit_to_paper_size) {
+-  mojom::PrintPagesParams settings;
+-  settings.params = mojom::PrintParams::New();
+-  GetPrintManagerHost()->GetDefaultPrintSettings(&settings.params);
 +bool PrintRenderFrameHelper::InitPrintSettings(
 +    bool fit_to_paper_size,
 +    const base::DictionaryValue& new_settings) {
-   mojom::PrintPagesParams settings;
-   settings.params = mojom::PrintParams::New();
-   GetPrintManagerHost()->GetDefaultPrintSettings(&settings.params);
-@@ -2193,12 +2236,14 @@ bool PrintRenderFrameHelper::InitPrintSettings(bool fit_to_paper_size) {
++  mojom::PrintPagesParamsPtr settings;
++
++  if (new_settings.DictEmpty()) {
++    settings = mojom::PrintPagesParams::New();
++    settings->params = mojom::PrintParams::New();
++    GetPrintManagerHost()->GetDefaultPrintSettings(&settings->params);
++  } else {
++    bool canceled = false;
++    int cookie =
++      print_pages_params_ ? print_pages_params_->params->document_cookie : 0;
++    GetPrintManagerHost()->UpdatePrintSettings(cookie, new_settings.Clone(), &settings, &canceled);
++    if (canceled)
++      return false;
++  }
+ 
+   // Check if the printer returned any settings, if the settings is empty, we
+   // can safely assume there are no printer drivers configured. So we safely
+   // terminate.
+   bool result = true;
+-  if (!PrintMsg_Print_Params_IsValid(*settings.params))
++  if (!PrintMsg_Print_Params_IsValid(*settings->params))
+     result = false;
+ 
+   // Reset to default values.
+   ignore_css_margins_ = false;
+-  settings.pages.clear();
++  settings->pages.clear();
+ 
+-  settings.params->print_scaling_option =
++  settings->params->print_scaling_option =
+       fit_to_paper_size ? mojom::PrintScalingOption::kFitToPrintableArea
+                         : mojom::PrintScalingOption::kSourceSize;
+ 
+-  SetPrintPagesParams(settings);
++  SetPrintPagesParams(*settings);
    return result;
  }
  
@@ -569,7 +603,7 @@ index 868f1706b1b8db28b995cc2dc9fcfefec62b6574..9224b935815f28086ce4df05e3f4c81b
      notify_browser_of_print_failure_ = false;
      GetPrintManagerHost()->ShowInvalidPrinterSettingsError();
      return false;
-@@ -2569,18 +2614,7 @@ void PrintRenderFrameHelper::RequestPrintPreview(PrintPreviewRequestType type) {
+@@ -2569,18 +2625,7 @@ void PrintRenderFrameHelper::RequestPrintPreview(PrintPreviewRequestType type) {
  }
  
  bool PrintRenderFrameHelper::CheckForCancel() {
