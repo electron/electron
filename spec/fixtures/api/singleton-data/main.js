@@ -1,10 +1,13 @@
 const { app } = require('electron');
 
+// Send data from the second instance to the first instance.
+const sendAdditionalData = app.commandLine.hasSwitch('send-data');
+
 app.whenReady().then(() => {
   console.log('started'); // ping parent
 });
 
-const obj = {
+let obj = {
   level: 1,
   testkey: 'testvalue1',
   inner: {
@@ -12,7 +15,15 @@ const obj = {
     testkey: 'testvalue2'
   }
 };
-const gotTheLock = app.requestSingleInstanceLock(obj);
+if (app.commandLine.hasSwitch('data-content')) {
+  obj = JSON.parse(app.commandLine.getSwitchValue('data-content'));
+  if (obj === 'undefined') {
+    obj = undefined;
+  }
+}
+
+const gotTheLock = sendAdditionalData
+  ? app.requestSingleInstanceLock(obj) : app.requestSingleInstanceLock();
 
 app.on('second-instance', (event, args, workingDirectory, data) => {
   setImmediate(() => {
