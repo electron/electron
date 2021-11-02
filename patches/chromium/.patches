@@ -118,3 +118,4 @@ speculative_fix_for_eye_dropper_getcolor_crash.patch
 cherry-pick-0894af410c4e.patch
 move_networkstateobserver_from_document_to_window.patch
 cherry-pick-8af66de55aad.patch
+cherry-pick-91dd4f79ab5b.patch
