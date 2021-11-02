@@ -20,7 +20,7 @@ namespace electron {
 
 class AutofillDriver : public mojom::ElectronAutofillDriver {
  public:
-  AutofillDriver(content::RenderFrameHost* render_frame_host);
+  explicit AutofillDriver(content::RenderFrameHost* render_frame_host);
   AutofillDriver(const AutofillDriver&) = delete;
   AutofillDriver& operator=(const AutofillDriver&) = delete;
   ~AutofillDriver() override;
