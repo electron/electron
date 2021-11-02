@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 445cca845ea7c97b86d324e580eca877a0b32f8e..2d5f6a91b043bb8f9d6015d6d8b5fb5e33f3797a 100644
+index df3d2b96032decbd2bbde99880aac1fe2f1ddddd..0b16a38059c9393bd00dfadc566d899531af10e2 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -6600,6 +6600,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -6614,6 +6614,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,10 +21,10 @@ index 445cca845ea7c97b86d324e580eca877a0b32f8e..2d5f6a91b043bb8f9d6015d6d8b5fb5e
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 6576f328914c80a01fb4d4f9e1625d05ad953513..e55baaddda8033eb1aeb18f327d65b37bcc40e77 100644
+index cb7c71c2455c38ae0147eb48a294c64a7e1e76ca..65e6b489a32a647d3324c29ad2636db42325cfbf 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3791,6 +3791,14 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -3792,6 +3792,14 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    }
    auto* new_contents_impl = new_contents.get();
  
@@ -39,7 +39,7 @@ index 6576f328914c80a01fb4d4f9e1625d05ad953513..e55baaddda8033eb1aeb18f327d65b37
    new_contents_impl->GetController().SetSessionStorageNamespace(
        partition_id, session_storage_namespace);
  
-@@ -3833,12 +3841,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -3834,12 +3842,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
@@ -53,7 +53,7 @@ index 6576f328914c80a01fb4d4f9e1625d05ad953513..e55baaddda8033eb1aeb18f327d65b37
                               new_contents_impl, opener, params.target_url,
                               params.referrer.To<Referrer>(), params.disposition,
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index 268a2395423ebcd1eded3d8ead5f7775cd5895be..c0cad20dc8273576dea2a9f3fe0c67be101a2193 100644
+index afd57b6d28f8280d8b140370a36d9ca6ec17b774..da44b637ee5fdf371974f322aaf1a07ba8c018d7 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
 @@ -550,6 +550,10 @@ struct CreateNewWindowParams {

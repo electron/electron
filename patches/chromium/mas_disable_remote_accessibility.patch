@@ -114,10 +114,10 @@ index cc2e2552e5420a9dcb365633d6aa29088b0df8ce..fcb44c8f2d9e5b500ef4d99b5fbeb3aa
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 1b026833dd76fab4d105593eee8bd5d215088728..54b388232feddabe3a76c311ad2181d0981beeaf 100644
+index ffba487a4894ca111cb1cb63472162973ece0b1e..84d2fd160c79c2472f4d6e1c013afd8f90be4679 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
-@@ -249,8 +249,10 @@
+@@ -250,8 +250,10 @@
  void RenderWidgetHostViewMac::MigrateNSViewBridge(
      remote_cocoa::mojom::Application* remote_cocoa_application,
      uint64_t parent_ns_view_id) {
@@ -128,7 +128,7 @@ index 1b026833dd76fab4d105593eee8bd5d215088728..54b388232feddabe3a76c311ad2181d0
  
    // Disconnect from the previous bridge (this will have the effect of
    // destroying the associated bridge), and close the receiver (to allow it
-@@ -1455,8 +1457,10 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1457,8 +1459,10 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  
  gfx::NativeViewAccessible
  RenderWidgetHostViewMac::AccessibilityGetNativeViewAccessibleForWindow() {
@@ -139,7 +139,7 @@ index 1b026833dd76fab4d105593eee8bd5d215088728..54b388232feddabe3a76c311ad2181d0
    return [GetInProcessNSView() window];
  }
  
-@@ -1500,9 +1504,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1502,9 +1506,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  }
  
  void RenderWidgetHostViewMac::SetAccessibilityWindow(NSWindow* window) {
@@ -151,7 +151,7 @@ index 1b026833dd76fab4d105593eee8bd5d215088728..54b388232feddabe3a76c311ad2181d0
  }
  
  bool RenderWidgetHostViewMac::SyncIsWidgetForMainFrame(
-@@ -1995,12 +2001,14 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1997,12 +2003,14 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  
  void RenderWidgetHostViewMac::SetRemoteAccessibilityWindowToken(
      const std::vector<uint8_t>& window_token) {
