@@ -1,7 +1,7 @@
-From 91dd4f79ab5bac88b449746e245dd525c8200a48 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Ken Rockot <rockot@google.com>
 Date: Mon, 25 Oct 2021 18:22:50 +0000
-Subject: [PATCH] [mojo] Validate INTRODUCE source node
+Subject: Validate INTRODUCE source node
 
 INTRODUCE NodeChannel messages should only be acknowledged when coming
 from the broker process.
@@ -20,13 +20,12 @@ Reviewed-by: Oksana Zhuravlova <oksamyt@chromium.org>
 Commit-Queue: Oksana Zhuravlova <oksamyt@chromium.org>
 Cr-Commit-Position: refs/branch-heads/4638@{#964}
 Cr-Branched-From: 159257cab5585bc8421abf347984bb32fdfe9eb9-refs/heads/main@{#920003}
----
 
 diff --git a/mojo/core/node_controller.cc b/mojo/core/node_controller.cc
-index 9f2e79b..21edab3 100644
+index 475b5cb2d0a301badcd6fb90b5ad90c47e4b5cc4..b8251bf0780f2d9c0346d480839caeab36082721 100644
 --- a/mojo/core/node_controller.cc
 +++ b/mojo/core/node_controller.cc
-@@ -20,6 +20,7 @@
+@@ -21,6 +21,7 @@
  #include "mojo/core/broker.h"
  #include "mojo/core/broker_host.h"
  #include "mojo/core/configuration.h"
@@ -34,7 +33,7 @@ index 9f2e79b..21edab3 100644
  #include "mojo/core/request_context.h"
  #include "mojo/core/user_message_impl.h"
  #include "mojo/public/cpp/platform/named_platform_channel.h"
-@@ -1127,6 +1128,12 @@
+@@ -1129,6 +1130,12 @@ void NodeController::OnIntroduce(const ports::NodeName& from_node,
                                   const uint64_t remote_capabilities) {
    DCHECK(io_task_runner_->RunsTasksInCurrentSequence());
  
