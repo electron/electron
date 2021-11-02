@@ -21,12 +21,17 @@ namespace {
 
 std::unique_ptr<AutofillDriver> CreateDriver(
     content::RenderFrameHost* render_frame_host,
+#if 0  // TESTING(ckerr)
     mojom::ElectronAutofillDriverAssociatedRequest request) {
   return std::make_unique<AutofillDriver>(render_frame_host,
                                           std::move(request));
-}
-
+#else
+    mojom::ElectronAutofillDriverAssociatedRequest request) {
+  return std::make_unique<AutofillDriver>(render_frame_host);
+#endif
 }  // namespace
+
+}  // namespace electron
 
 AutofillDriverFactory::~AutofillDriverFactory() = default;
 
@@ -53,12 +58,14 @@ void AutofillDriverFactory::BindAutofillDriver(
 
 AutofillDriverFactory::AutofillDriverFactory(content::WebContents* web_contents)
     : content::WebContentsObserver(web_contents) {
+#if 0  // TESTING(ckerr)
   const std::vector<content::RenderFrameHost*> frames =
       web_contents->GetAllFrames();
   for (content::RenderFrameHost* frame : frames) {
     if (frame->IsRenderFrameLive())
       RenderFrameCreated(frame);
   }
+#endif
 }
 
 void AutofillDriverFactory::RenderFrameDeleted(
@@ -80,8 +87,39 @@ void AutofillDriverFactory::DidFinishNavigation(
 
 AutofillDriver* AutofillDriverFactory::DriverForFrame(
     content::RenderFrameHost* render_frame_host) {
+#if 0  // TESTING(ckerr)
   auto mapping = driver_map_.find(render_frame_host);
   return mapping == driver_map_.end() ? nullptr : mapping->second.get();
+#else
+  auto insertion_result = driver_map_.emplace(render_frame_host, nullptr);
+  std::unique_ptr<AutofillDriver>& driver = insertion_result.first->second;
+  bool insertion_happened = insertion_result.second;
+  if (insertion_happened) {
+    // The `render_frame_host` may already be deleted (or be in the process of
+    // being deleted). In this case, we must not create a new driver. Otherwise,
+    // a driver might hold a deallocated RFH.
+    //
+    // For example, `render_frame_host` is deleted in the following sequence:
+    // 1. `render_frame_host->~RenderFrameHostImpl()` starts and marks
+    //    `render_frame_host` as deleted.
+    // 2. `ContentAutofillDriverFactory::RenderFrameDeleted(render_frame_host)`
+    //    destroys the driver of `render_frame_host`.
+    // 3. `SomeOtherWebContentsObserver::RenderFrameDeleted(render_frame_host)`
+    //    calls `DriverForFrame(render_frame_host)`.
+    // 5. `render_frame_host->~RenderFrameHostImpl()` finishes.
+    if (render_frame_host->IsRenderFrameCreated()) {
+      driver = std::make_unique<AutofillDriver>(render_frame_host);
+      DCHECK_EQ(driver_map_.find(render_frame_host)->second.get(),
+                driver.get());
+    } else {
+      driver_map_.erase(insertion_result.first);
+      DCHECK_EQ(driver_map_.count(render_frame_host), 0u);
+      return nullptr;
+    }
+  }
+  DCHECK(driver.get());
+  return driver.get();
+#endif
 }
 
 void AutofillDriverFactory::AddDriverForFrame(
