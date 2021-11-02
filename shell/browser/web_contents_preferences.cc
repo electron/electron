@@ -159,7 +159,6 @@ void WebContentsPreferences::Clear() {
   safe_dialogs_ = false;
   safe_dialogs_message_ = absl::nullopt;
   ignore_menu_shortcuts_ = false;
-  transparent_ = false;
   background_color_ = absl::nullopt;
   image_animation_policy_ =
       blink::mojom::ImageAnimationPolicy::kImageAnimationPolicyAllowed;
@@ -226,9 +225,11 @@ void WebContentsPreferences::SetFromDictionary(
   web_preferences.Get("disablePopups", &disable_popups_);
   web_preferences.Get("disableDialogs", &disable_dialogs_);
   web_preferences.Get("safeDialogs", &safe_dialogs_);
+  // preferences don't save a transparency option,
+  // apply any existing transparency setting to background_color_
   bool transparent;
   if (web_preferences.Get(options::kTransparent, &transparent)) {
-    transparent_ = true;
+    background_color_ = SK_ColorTRANSPARENT;
   }
   std::string background_color;
   if (web_preferences.GetHidden(options::kBackgroundColor, &background_color))
