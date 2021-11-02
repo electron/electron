@@ -30,6 +30,12 @@ AutofillDriver::AutofillDriver(
 
 AutofillDriver::~AutofillDriver() = default;
 
+void AutofillDriver::BindPendingReceiver(
+    mojo::PendingAssociatedReceiver<mojom::ElectronAutofillDriver>
+        pending_receiver) {
+  receiver_.Bind(std::move(pending_receiver));
+}
+
 void AutofillDriver::ShowAutofillPopup(
     const gfx::RectF& bounds,
     const std::vector<std::u16string>& values,

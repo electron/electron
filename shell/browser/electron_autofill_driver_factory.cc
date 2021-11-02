@@ -17,25 +17,21 @@
 
 namespace electron {
 
+#if 0  // TESTING(ckerr)
 namespace {
 
 std::unique_ptr<AutofillDriver> CreateDriver(
     content::RenderFrameHost* render_frame_host,
-#if 0  // TESTING(ckerr)
     mojom::ElectronAutofillDriverAssociatedRequest request) {
   return std::make_unique<AutofillDriver>(render_frame_host,
                                           std::move(request));
-#else
-    mojom::ElectronAutofillDriverAssociatedRequest request) {
-  return std::make_unique<AutofillDriver>(render_frame_host);
-#endif
 }  // namespace
-
-}  // namespace electron
+#endif
 
 AutofillDriverFactory::~AutofillDriverFactory() = default;
 
 // static
+#if 0  // TESTING(ckerr)
 void AutofillDriverFactory::BindAutofillDriver(
     mojom::ElectronAutofillDriverAssociatedRequest request,
     content::RenderFrameHost* render_frame_host) {
@@ -55,6 +51,28 @@ void AutofillDriverFactory::BindAutofillDriver(
         render_frame_host,
         base::BindOnce(CreateDriver, render_frame_host, std::move(request)));
 }
+#else
+void AutofillDriverFactory::BindAutofillDriver(
+    mojo::PendingAssociatedReceiver<mojom::ElectronAutofillDriver>
+        pending_receiver,
+    content::RenderFrameHost* render_frame_host) {
+  DCHECK(render_frame_host);
+
+  content::WebContents* web_contents =
+      content::WebContents::FromRenderFrameHost(render_frame_host);
+  DCHECK(web_contents);
+
+  AutofillDriverFactory* factory = FromWebContents(web_contents);
+  if (!factory) {
+    // The message pipe will be closed and raise a connection error to peer
+    // side. The peer side can reconnect later when needed.
+    return;
+  }
+
+  if (auto* driver = factory->DriverForFrame(render_frame_host))
+    driver->BindPendingReceiver(std::move(pending_receiver));
+}
+#endif
 
 AutofillDriverFactory::AutofillDriverFactory(content::WebContents* web_contents)
     : content::WebContentsObserver(web_contents) {
