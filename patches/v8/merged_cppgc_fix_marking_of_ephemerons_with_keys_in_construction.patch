@@ -1,0 +1,143 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Michael Lippautz <mlippautz@chromium.org>
+Date: Wed, 20 Oct 2021 10:10:56 +0200
+Subject: Merged: cppgc: Fix marking of ephemerons with keys in construction
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Revision: 32a09a6bce6cc75806dee5ec748bb1d081048fd0
+
+BUG=chromium:1259587
+NOTRY=true
+NOPRESUBMIT=true
+NOTREECHECKS=true
+R=dinfuehr@chromium.org
+
+Change-Id: Ief330b4b71705c16bc61a3aca6d3aa1db172cdf3
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3234200
+Reviewed-by: Dominik Inführ <dinfuehr@chromium.org>
+Cr-Commit-Position: refs/branch-heads/9.4@{#46}
+Cr-Branched-From: 3b51863bc25492549a8bf96ff67ce481b1a3337b-refs/heads/9.4.146@{#1}
+Cr-Branched-From: 2890419fc8fb9bdb507fdd801d76fa7dd9f022b5-refs/heads/master@{#76233}
+
+diff --git a/src/heap/cppgc/marker.cc b/src/heap/cppgc/marker.cc
+index 549a9fe1da8f89c91935e23419eebe455c618524..40d1c22a7ef50e9f4ebc18001ad01c1ce8d0a0a7 100644
+--- a/src/heap/cppgc/marker.cc
++++ b/src/heap/cppgc/marker.cc
+@@ -243,6 +243,7 @@ void MarkerBase::EnterAtomicPause(MarkingConfig::StackState stack_state) {
+   }
+   config_.stack_state = stack_state;
+   config_.marking_type = MarkingConfig::MarkingType::kAtomic;
++  mutator_marking_state_.set_in_atomic_pause();
+ 
+   // Lock guards against changes to {Weak}CrossThreadPersistent handles, that
+   // may conflict with marking. E.g., a WeakCrossThreadPersistent may be
+diff --git a/src/heap/cppgc/marking-state.h b/src/heap/cppgc/marking-state.h
+index b014bd6134391e469dac2ceda98e52d301abb3f3..4c0d78a30bd3610df6d713d27e4e07a369faf1e7 100644
+--- a/src/heap/cppgc/marking-state.h
++++ b/src/heap/cppgc/marking-state.h
+@@ -9,6 +9,7 @@
+ 
+ #include "include/cppgc/trace-trait.h"
+ #include "include/cppgc/visitor.h"
++#include "src/base/logging.h"
+ #include "src/heap/cppgc/compaction-worklists.h"
+ #include "src/heap/cppgc/globals.h"
+ #include "src/heap/cppgc/heap-object-header.h"
+@@ -115,6 +116,8 @@ class MarkingStateBase {
+     movable_slots_worklist_.reset();
+   }
+ 
++  void set_in_atomic_pause() { in_atomic_pause_ = true; }
++
+  protected:
+   inline void MarkAndPush(HeapObjectHeader&, TraceDescriptor);
+ 
+@@ -150,6 +153,7 @@ class MarkingStateBase {
+       movable_slots_worklist_;
+ 
+   size_t marked_bytes_ = 0;
++  bool in_atomic_pause_ = false;
+ };
+ 
+ MarkingStateBase::MarkingStateBase(HeapBase& heap,
+@@ -284,10 +288,19 @@ void MarkingStateBase::ProcessWeakContainer(const void* object,
+ void MarkingStateBase::ProcessEphemeron(const void* key, const void* value,
+                                         TraceDescriptor value_desc,
+                                         Visitor& visitor) {
+-  // Filter out already marked keys. The write barrier for WeakMember
+-  // ensures that any newly set value after this point is kept alive and does
+-  // not require the callback.
+-  if (HeapObjectHeader::FromObject(key).IsMarked<AccessMode::kAtomic>()) {
++  // Keys are considered live even in incremental/concurrent marking settings
++  // because the write barrier for WeakMember ensures that any newly set value
++  // after this point is kept alive and does not require the callback.
++  const bool key_in_construction =
++      HeapObjectHeader::FromObject(key).IsInConstruction<AccessMode::kAtomic>();
++  const bool key_considered_as_live =
++      key_in_construction
++          ? in_atomic_pause_
++          : HeapObjectHeader::FromObject(key).IsMarked<AccessMode::kAtomic>();
++  DCHECK_IMPLIES(
++      key_in_construction && in_atomic_pause_,
++      HeapObjectHeader::FromObject(key).IsMarked<AccessMode::kAtomic>());
++  if (key_considered_as_live) {
+     if (value_desc.base_object_payload) {
+       MarkAndPush(value_desc.base_object_payload, value_desc);
+     } else {
+diff --git a/test/unittests/heap/cppgc/ephemeron-pair-unittest.cc b/test/unittests/heap/cppgc/ephemeron-pair-unittest.cc
+index c759308723d7f0635d329f5b571859700871fa35..1ff52904dd387c9772de810951619191dc79aea7 100644
+--- a/test/unittests/heap/cppgc/ephemeron-pair-unittest.cc
++++ b/test/unittests/heap/cppgc/ephemeron-pair-unittest.cc
+@@ -239,5 +239,50 @@ TEST_F(EphemeronPairTest, EphemeronPairWithEmptyMixinValue) {
+   FinishMarking();
+ }
+ 
++namespace {
++
++class KeyWithCallback final : public GarbageCollected<KeyWithCallback> {
++ public:
++  template <typename Callback>
++  explicit KeyWithCallback(Callback callback) {
++    callback(this);
++  }
++  void Trace(Visitor*) const {}
++};
++
++class EphemeronHolderForKeyWithCallback final
++    : public GarbageCollected<EphemeronHolderForKeyWithCallback> {
++ public:
++  EphemeronHolderForKeyWithCallback(KeyWithCallback* key, GCed* value)
++      : ephemeron_pair_(key, value) {}
++  void Trace(cppgc::Visitor* visitor) const { visitor->Trace(ephemeron_pair_); }
++
++ private:
++  const EphemeronPair<KeyWithCallback, GCed> ephemeron_pair_;
++};
++
++}  // namespace
++
++TEST_F(EphemeronPairTest, EphemeronPairWithKeyInConstruction) {
++  GCed* value = MakeGarbageCollected<GCed>(GetAllocationHandle());
++  Persistent<EphemeronHolderForKeyWithCallback> holder;
++  InitializeMarker(*Heap::From(GetHeap()), GetPlatformHandle().get());
++  FinishSteps();
++  MakeGarbageCollected<KeyWithCallback>(
++      GetAllocationHandle(), [this, &holder, value](KeyWithCallback* thiz) {
++        // The test doesn't use conservative stack scanning to retain key to
++        // avoid retaining value as a side effect.
++        EXPECT_TRUE(HeapObjectHeader::FromObject(thiz).TryMarkAtomic());
++        holder = MakeGarbageCollected<EphemeronHolderForKeyWithCallback>(
++            GetAllocationHandle(), thiz, value);
++        // Finishing marking at this point will leave an ephemeron pair
++        // reachable where the key is still in construction. The GC needs to
++        // mark the value for such pairs as live in the atomic pause as they key
++        // is considered live.
++        FinishMarking();
++      });
++  EXPECT_TRUE(HeapObjectHeader::FromObject(value).IsMarked());
++}
++
+ }  // namespace internal
+ }  // namespace cppgc
