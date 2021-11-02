@@ -168,6 +168,7 @@ m90-lts_fsa_fix_race_condition_in_manager.patch
 check_direction_of_rtcencodedframes.patch
 cherry-pick-6a8a2098f9fa.patch
 cherry-pick-3a5bafa35def.patch
+mas_gate_private_enterprise_APIs
 speculative_fix_for_eye_dropper_getcolor_crash.patch
 cherry-pick-0894af410c4e.patch
 move_networkstateobserver_from_document_to_window.patch
