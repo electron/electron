@@ -1,7 +1,11 @@
-From 014e1f857c335ce403447b4aca84f21243ad091b Mon Sep 17 00:00:00 2001
-From: Marja Hölttä <marja@chromium.org>
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marja=20H=C3=B6ltt=C3=A4?= <marja@chromium.org>
 Date: Mon, 25 Oct 2021 12:17:15 +0200
-Subject: [PATCH] Merged: [super ic] Fix receiver vs lookup start object confusion related to module exports
+Subject: Merged: [super ic] Fix receiver vs lookup start object confusion
+ related to module exports
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
 Revision: e4dba97006ca20337deafb85ac00524a94a62fe
 
@@ -18,13 +22,12 @@ Commit-Queue: Marja Hölttä <marja@chromium.org>
 Cr-Commit-Position: refs/branch-heads/9.4@{#48}
 Cr-Branched-From: 3b51863bc25492549a8bf96ff67ce481b1a3337b-refs/heads/9.4.146@{#1}
 Cr-Branched-From: 2890419fc8fb9bdb507fdd801d76fa7dd9f022b5-refs/heads/master@{#76233}
----
 
 diff --git a/src/ic/accessor-assembler.cc b/src/ic/accessor-assembler.cc
-index 64d64cd..f27e3b7 100644
+index 8335bc5e883d319a0e67122e44ec231ae8af2507..1b6b6223366ecef12a9b9209bf2809e38271e262 100644
 --- a/src/ic/accessor-assembler.cc
 +++ b/src/ic/accessor-assembler.cc
-@@ -846,8 +846,8 @@
+@@ -663,8 +663,8 @@ void AccessorAssembler::HandleLoadICSmiHandlerLoadNamedCase(
      Comment("module export");
      TNode<UintPtrT> index =
          DecodeWord<LoadHandler::ExportsIndexBits>(handler_word);
@@ -36,10 +39,10 @@ index 64d64cd..f27e3b7 100644
          LoadObjectField<ObjectHashTable>(module, Module::kExportsOffset);
      TNode<Cell> cell = CAST(LoadFixedArrayElement(exports, index));
 diff --git a/src/ic/ic.cc b/src/ic/ic.cc
-index a2b920a..68eee92 100644
+index d13d1bdab5f9ab4ab71500a77a2b6088667f95e7..36c82cbe95100c403b9eb2e7b7f6f210a5a0ae62 100644
 --- a/src/ic/ic.cc
 +++ b/src/ic/ic.cc
-@@ -989,7 +989,13 @@
+@@ -857,7 +857,13 @@ Handle<Object> LoadIC::ComputeHandler(LookupIterator* lookup) {
          // We found the accessor, so the entry must exist.
          DCHECK(entry.is_found());
          int index = ObjectHashTable::EntryToValueIndex(entry);
