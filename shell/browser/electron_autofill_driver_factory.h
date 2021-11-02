@@ -26,16 +26,10 @@ class AutofillDriverFactory
 
   ~AutofillDriverFactory() override;
 
-#if 0  // TESTING(ckerr)
-  static void BindAutofillDriver(
-      mojom::ElectronAutofillDriverAssociatedRequest request,
-      content::RenderFrameHost* render_frame_host);
-#else
   static void BindAutofillDriver(
       mojo::PendingAssociatedReceiver<mojom::ElectronAutofillDriver>
           pending_receiver,
       content::RenderFrameHost* render_frame_host);
-#endif
 
   // content::WebContentsObserver:
   void RenderFrameDeleted(content::RenderFrameHost* render_frame_host) override;

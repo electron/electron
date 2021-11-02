@@ -15,16 +15,8 @@
 
 namespace electron {
 
-AutofillDriver::AutofillDriver(
-#if 0  // TESTING(ckerr)
-    content::RenderFrameHost* render_frame_host,
-    mojo::PendingAssociatedReceiver<mojom::ElectronAutofillDriver> request)
-    : render_frame_host_(render_frame_host),
-      receiver_(this, std::move(request)) {
-#else
-    content::RenderFrameHost* render_frame_host)
+AutofillDriver::AutofillDriver(content::RenderFrameHost* render_frame_host)
     : render_frame_host_(render_frame_host) {
-#endif
   autofill_popup_ = std::make_unique<AutofillPopup>();
 }  // namespace electron
 

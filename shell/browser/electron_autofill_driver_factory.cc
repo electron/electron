@@ -17,41 +17,9 @@
 
 namespace electron {
 
-#if 0  // TESTING(ckerr)
-namespace {
-
-std::unique_ptr<AutofillDriver> CreateDriver(
-    content::RenderFrameHost* render_frame_host,
-    mojom::ElectronAutofillDriverAssociatedRequest request) {
-  return std::make_unique<AutofillDriver>(render_frame_host,
-                                          std::move(request));
-}  // namespace
-#endif
-
 AutofillDriverFactory::~AutofillDriverFactory() = default;
 
 // static
-#if 0  // TESTING(ckerr)
-void AutofillDriverFactory::BindAutofillDriver(
-    mojom::ElectronAutofillDriverAssociatedRequest request,
-    content::RenderFrameHost* render_frame_host) {
-  content::WebContents* web_contents =
-      content::WebContents::FromRenderFrameHost(render_frame_host);
-  if (!web_contents)
-    return;
-
-  AutofillDriverFactory* factory =
-      AutofillDriverFactory::FromWebContents(web_contents);
-  if (!factory)
-    return;
-
-  AutofillDriver* driver = factory->DriverForFrame(render_frame_host);
-  if (!driver)
-    factory->AddDriverForFrame(
-        render_frame_host,
-        base::BindOnce(CreateDriver, render_frame_host, std::move(request)));
-}
-#else
 void AutofillDriverFactory::BindAutofillDriver(
     mojo::PendingAssociatedReceiver<mojom::ElectronAutofillDriver>
         pending_receiver,
@@ -72,19 +40,9 @@ void AutofillDriverFactory::BindAutofillDriver(
   if (auto* driver = factory->DriverForFrame(render_frame_host))
     driver->BindPendingReceiver(std::move(pending_receiver));
 }
-#endif
 
 AutofillDriverFactory::AutofillDriverFactory(content::WebContents* web_contents)
-    : content::WebContentsObserver(web_contents) {
-#if 0  // TESTING(ckerr)
-  const std::vector<content::RenderFrameHost*> frames =
-      web_contents->GetAllFrames();
-  for (content::RenderFrameHost* frame : frames) {
-    if (frame->IsRenderFrameLive())
-      RenderFrameCreated(frame);
-  }
-#endif
-}
+    : content::WebContentsObserver(web_contents) {}
 
 void AutofillDriverFactory::RenderFrameDeleted(
     content::RenderFrameHost* render_frame_host) {
@@ -105,10 +63,6 @@ void AutofillDriverFactory::DidFinishNavigation(
 
 AutofillDriver* AutofillDriverFactory::DriverForFrame(
     content::RenderFrameHost* render_frame_host) {
-#if 0  // TESTING(ckerr)
-  auto mapping = driver_map_.find(render_frame_host);
-  return mapping == driver_map_.end() ? nullptr : mapping->second.get();
-#else
   auto insertion_result = driver_map_.emplace(render_frame_host, nullptr);
   std::unique_ptr<AutofillDriver>& driver = insertion_result.first->second;
   bool insertion_happened = insertion_result.second;
@@ -137,7 +91,6 @@ AutofillDriver* AutofillDriverFactory::DriverForFrame(
   }
   DCHECK(driver.get());
   return driver.get();
-#endif
 }
 
 void AutofillDriverFactory::AddDriverForFrame(
