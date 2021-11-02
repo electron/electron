@@ -1,0 +1,51 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Victor Vasiliev <vasilvv@chromium.org>
+Date: Tue, 26 Oct 2021 04:50:35 +0000
+Subject: Disable QuicTransport explicitly in the Network Service
+
+(cherry picked from commit b1997bdadcda9738a19773f82605f65832acedac)
+
+Bug: 1260940
+Change-Id: I6689fbce8115eda19e68414d7c03691704749b17
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3242207
+Auto-Submit: Victor Vasiliev <vasilvv@chromium.org>
+Commit-Queue: Yutaka Hirano <yhirano@chromium.org>
+Reviewed-by: Yutaka Hirano <yhirano@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4606@{#1411}
+Cr-Branched-From: 35b0d5a9dc8362adfd44e2614f0d5b7402ef63d0-refs/heads/master@{#911515}
+
+diff --git a/services/network/quic_transport.cc b/services/network/quic_transport.cc
+index df262796d9021ed478e1154e1f327ac51fe5885e..27fe2b4d2ab9f77b7d68afac57bde6b3b4d7f8e0 100644
+--- a/services/network/quic_transport.cc
++++ b/services/network/quic_transport.cc
+@@ -27,7 +27,7 @@ net::WebTransportParameters CreateParameters(
+     const std::vector<mojom::QuicTransportCertificateFingerprintPtr>&
+         fingerprints) {
+   net::WebTransportParameters params;
+-  params.enable_quic_transport = true;
++  params.enable_quic_transport = false;
+   params.enable_web_transport_http3 = true;
+ 
+   for (const auto& fingerprint : fingerprints) {
+diff --git a/services/network/quic_transport_unittest.cc b/services/network/quic_transport_unittest.cc
+index ecb4f81e4ad947275dcdb1bcdfba1d3295947322..10ff49baaabdc1fce54376fd01ebde8f10c6f9d3 100644
+--- a/services/network/quic_transport_unittest.cc
++++ b/services/network/quic_transport_unittest.cc
+@@ -359,7 +359,7 @@ struct PrintStringPiece {
+ 
+ INSTANTIATE_TEST_SUITE_P(QuicTransportTests,
+                          QuicTransportTest,
+-                         testing::Values("quic-transport", "https"),
++                         testing::Values("https"),
+                          PrintStringPiece());
+ 
+ TEST_P(QuicTransportTest, ConnectSuccessfully) {
+@@ -671,7 +671,7 @@ class QuicTransportWithCustomCertificateTest : public QuicTransportTest {
+ 
+ INSTANTIATE_TEST_SUITE_P(QuicTransportWithCustomCertificateTests,
+                          QuicTransportWithCustomCertificateTest,
+-                         testing::Values("quic-transport", "https"),
++                         testing::Values("https"),
+                          PrintStringPiece());
+ 
+ TEST_P(QuicTransportWithCustomCertificateTest, WithValidFingerprint) {

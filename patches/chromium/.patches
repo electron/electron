@@ -162,3 +162,4 @@ cherry-pick-c69dddfe1cde.patch
 cherry-pick-8af66de55aad.patch
 move_networkstateobserver_from_document_to_window.patch
 cherry-pick-0894af410c4e.patch
+disable_quictransport_explicitly_in_the_network_service.patch
