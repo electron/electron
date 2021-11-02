@@ -1,0 +1,34 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Toon Verwaest <verwaest@chromium.org>
+Date: Wed, 27 Oct 2021 11:02:06 +0200
+Subject: Merged: [runtime] Check if we have a pending exception before
+ returning it
+
+Revision: be55c16e50e714475034b00ed2682f0813794d15
+
+BUG=chromium:1263462
+NOTRY=true
+NOPRESUBMIT=true
+NOTREECHECKS=true
+R=cbruni@chromium.org
+
+Change-Id: Ib7de676fe614403674fcd2745c574f7e91ded23f
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3247033
+Reviewed-by: Camillo Bruni <cbruni@chromium.org>
+Cr-Commit-Position: refs/branch-heads/9.4@{#52}
+Cr-Branched-From: 3b51863bc25492549a8bf96ff67ce481b1a3337b-refs/heads/9.4.146@{#1}
+Cr-Branched-From: 2890419fc8fb9bdb507fdd801d76fa7dd9f022b5-refs/heads/master@{#76233}
+
+diff --git a/src/execution/isolate-inl.h b/src/execution/isolate-inl.h
+index aa477913b6dd13a0bd38e74b50766aa66139128d..83da2ecd9dd6f0efedffe9d5edfc83ec7ac86e53 100644
+--- a/src/execution/isolate-inl.h
++++ b/src/execution/isolate-inl.h
+@@ -33,7 +33,7 @@ NativeContext Isolate::raw_native_context() {
+ }
+ 
+ Object Isolate::pending_exception() {
+-  DCHECK(has_pending_exception());
++  CHECK(has_pending_exception());
+   DCHECK(!thread_local_top()->pending_exception_.IsException(this));
+   return thread_local_top()->pending_exception_;
+ }
