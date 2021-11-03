@@ -4028,9 +4028,11 @@ gin::Handle<WebContents> WebContents::CreateFromWebPreferences(
       absl::optional<SkColor> color =
           existing_preferences->GetBackgroundColor();
       web_contents->web_contents()->SetPageBaseBackgroundColor(color);
+      // Because web preferences don't recognize transparency,
+      // only set rwhv background color if a color exists
       auto* rwhv = web_contents->web_contents()->GetRenderWidgetHostView();
-      if (rwhv)
-        rwhv->SetBackgroundColor(color.value_or(SK_ColorWHITE));
+      if (rwhv && color.has_value())
+        rwhv->SetBackgroundColor(color.value());
     }
   } else {
     // Create one if not.

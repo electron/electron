@@ -225,6 +225,12 @@ void WebContentsPreferences::SetFromDictionary(
   web_preferences.Get("disablePopups", &disable_popups_);
   web_preferences.Get("disableDialogs", &disable_dialogs_);
   web_preferences.Get("safeDialogs", &safe_dialogs_);
+  // preferences don't save a transparency option,
+  // apply any existing transparency setting to background_color_
+  bool transparent;
+  if (web_preferences.Get(options::kTransparent, &transparent)) {
+    background_color_ = SK_ColorTRANSPARENT;
+  }
   std::string background_color;
   if (web_preferences.GetHidden(options::kBackgroundColor, &background_color))
     background_color_ = ParseHexColor(background_color);
