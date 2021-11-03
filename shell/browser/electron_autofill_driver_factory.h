@@ -27,7 +27,8 @@ class AutofillDriverFactory
   ~AutofillDriverFactory() override;
 
   static void BindAutofillDriver(
-      mojom::ElectronAutofillDriverAssociatedRequest request,
+      mojo::PendingAssociatedReceiver<mojom::ElectronAutofillDriver>
+          pending_receiver,
       content::RenderFrameHost* render_frame_host);
 
   // content::WebContentsObserver:

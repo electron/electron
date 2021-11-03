@@ -15,15 +15,18 @@
 
 namespace electron {
 
-AutofillDriver::AutofillDriver(
-    content::RenderFrameHost* render_frame_host,
-    mojo::PendingAssociatedReceiver<mojom::ElectronAutofillDriver> request)
-    : render_frame_host_(render_frame_host),
-      receiver_(this, std::move(request)) {
+AutofillDriver::AutofillDriver(content::RenderFrameHost* render_frame_host)
+    : render_frame_host_(render_frame_host) {
   autofill_popup_ = std::make_unique<AutofillPopup>();
-}
+}  // namespace electron
 
 AutofillDriver::~AutofillDriver() = default;
+
+void AutofillDriver::BindPendingReceiver(
+    mojo::PendingAssociatedReceiver<mojom::ElectronAutofillDriver>
+        pending_receiver) {
+  receiver_.Bind(std::move(pending_receiver));
+}
 
 void AutofillDriver::ShowAutofillPopup(
     const gfx::RectF& bounds,
