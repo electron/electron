@@ -480,16 +480,17 @@ void OffScreenRenderWidgetHostView::CopyFromSurface(
                                                       std::move(callback));
 }
 
-void OffScreenRenderWidgetHostView::GetScreenInfo(
-    display::ScreenInfo* screen_info) {
-  screen_info->depth = 24;
-  screen_info->depth_per_component = 8;
-  screen_info->orientation_angle = 0;
-  screen_info->device_scale_factor = GetDeviceScaleFactor();
-  screen_info->orientation_type =
+display::ScreenInfo OffScreenRenderWidgetHostView::GetScreenInfo() const {
+  display::ScreenInfo screen_info;
+  screen_info.depth = 24;
+  screen_info.depth_per_component = 8;
+  screen_info.orientation_angle = 0;
+  screen_info.device_scale_factor = GetDeviceScaleFactor();
+  screen_info.orientation_type =
       display::mojom::ScreenOrientation::kLandscapePrimary;
-  screen_info->rect = gfx::Rect(size_);
-  screen_info->available_rect = gfx::Rect(size_);
+  screen_info.rect = gfx::Rect(size_);
+  screen_info.available_rect = gfx::Rect(size_);
+  return screen_info;
 }
 
 void OffScreenRenderWidgetHostView::TransformPointToRootSurface(
