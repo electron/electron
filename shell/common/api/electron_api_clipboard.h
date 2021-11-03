@@ -23,6 +23,10 @@ namespace api {
 
 class Clipboard {
  public:
+  // disable copy
+  Clipboard(const Clipboard&) = delete;
+  Clipboard& operator=(const Clipboard&) = delete;
+
   static ui::ClipboardBuffer GetClipboardBuffer(gin_helper::Arguments* args);
   static std::vector<std::u16string> AvailableFormats(
       gin_helper::Arguments* args);
@@ -61,9 +65,6 @@ class Clipboard {
   static void WriteBuffer(const std::string& format_string,
                           const v8::Local<v8::Value> buffer,
                           gin_helper::Arguments* args);
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(Clipboard);
 };
 
 }  // namespace api

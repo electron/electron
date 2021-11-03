@@ -33,6 +33,10 @@ class PromiseBase {
   PromiseBase(v8::Isolate* isolate, v8::Local<v8::Promise::Resolver> handle);
   ~PromiseBase();
 
+  // disable copy
+  PromiseBase(const PromiseBase&) = delete;
+  PromiseBase& operator=(const PromiseBase&) = delete;
+
   // Support moving.
   PromiseBase(PromiseBase&&);
   PromiseBase& operator=(PromiseBase&&);
@@ -75,8 +79,6 @@ class PromiseBase {
   v8::Isolate* isolate_;
   v8::Global<v8::Context> context_;
   v8::Global<v8::Promise::Resolver> resolver_;
-
-  DISALLOW_COPY_AND_ASSIGN(PromiseBase);
 };
 
 // Template implementation that returns values.
@@ -104,6 +106,12 @@ class Promise : public PromiseBase {
     Promise<RT> resolved(isolate);
     resolved.Resolve(result);
     return resolved.GetHandle();
+  }
+
+  // Convert to another type.
+  template <typename NT>
+  Promise<NT> As() {
+    return Promise<NT>(isolate(), GetInner());
   }
 
   // Promise resolution is a microtask

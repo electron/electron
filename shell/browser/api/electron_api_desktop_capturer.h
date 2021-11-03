@@ -45,18 +45,21 @@ class DesktopCapturer : public gin::Wrappable<DesktopCapturer>,
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
 
+  // disable copy
+  DesktopCapturer(const DesktopCapturer&) = delete;
+  DesktopCapturer& operator=(const DesktopCapturer&) = delete;
+
  protected:
   explicit DesktopCapturer(v8::Isolate* isolate);
   ~DesktopCapturer() override;
 
   // DesktopMediaListObserver:
-  void OnSourceAdded(DesktopMediaList* list, int index) override {}
-  void OnSourceRemoved(DesktopMediaList* list, int index) override {}
-  void OnSourceMoved(DesktopMediaList* list,
-                     int old_index,
-                     int new_index) override {}
-  void OnSourceNameChanged(DesktopMediaList* list, int index) override {}
-  void OnSourceThumbnailChanged(DesktopMediaList* list, int index) override {}
+  void OnSourceAdded(int index) override {}
+  void OnSourceRemoved(int index) override {}
+  void OnSourceMoved(int old_index, int new_index) override {}
+  void OnSourceNameChanged(int index) override {}
+  void OnSourceThumbnailChanged(int index) override {}
+  void OnSourcePreviewChanged(size_t index) override {}
 
  private:
   void UpdateSourcesList(DesktopMediaList* list);
@@ -72,8 +75,6 @@ class DesktopCapturer : public gin::Wrappable<DesktopCapturer>,
 #endif  // defined(OS_WIN)
 
   base::WeakPtrFactory<DesktopCapturer> weak_ptr_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(DesktopCapturer);
 };
 
 }  // namespace api

@@ -21,6 +21,11 @@ class ElectronRenderFrameObserver : public content::RenderFrameObserver {
   ElectronRenderFrameObserver(content::RenderFrame* frame,
                               RendererClientBase* renderer_client);
 
+  // disable copy
+  ElectronRenderFrameObserver(const ElectronRenderFrameObserver&) = delete;
+  ElectronRenderFrameObserver& operator=(const ElectronRenderFrameObserver&) =
+      delete;
+
   // content::RenderFrameObserver:
   void DidClearWindowObject() override;
   void DidInstallConditionalFeatures(v8::Handle<v8::Context> context,
@@ -41,8 +46,6 @@ class ElectronRenderFrameObserver : public content::RenderFrameObserver {
 
   content::RenderFrame* render_frame_;
   RendererClientBase* renderer_client_;
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronRenderFrameObserver);
 };
 
 }  // namespace electron

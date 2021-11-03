@@ -38,6 +38,10 @@ class FrameSubscriber : public content::WebContentsObserver,
                   bool only_dirty);
   ~FrameSubscriber() override;
 
+  // disable copy
+  FrameSubscriber(const FrameSubscriber&) = delete;
+  FrameSubscriber& operator=(const FrameSubscriber&) = delete;
+
  private:
   void AttachToHost(content::RenderWidgetHost* host);
   void DetachFromHost();
@@ -69,8 +73,6 @@ class FrameSubscriber : public content::WebContentsObserver,
   std::unique_ptr<viz::ClientFrameSinkVideoCapturer> video_capturer_;
 
   base::WeakPtrFactory<FrameSubscriber> weak_ptr_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(FrameSubscriber);
 };
 
 }  // namespace api

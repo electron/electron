@@ -10,8 +10,6 @@
 
 #include <string>
 
-#include "base/macros.h"
-
 namespace electron {
 
 class ScopedHString {
@@ -22,6 +20,10 @@ class ScopedHString {
   // Create empty string.
   ScopedHString();
   ~ScopedHString();
+
+  // disable copy
+  ScopedHString(const ScopedHString&) = delete;
+  ScopedHString& operator=(const ScopedHString&) = delete;
 
   // Sets to |source|.
   void Reset();
@@ -36,8 +38,6 @@ class ScopedHString {
 
  private:
   HSTRING str_ = nullptr;
-
-  DISALLOW_COPY_AND_ASSIGN(ScopedHString);
 };
 
 }  // namespace electron

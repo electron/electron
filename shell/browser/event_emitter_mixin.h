@@ -20,6 +20,10 @@ v8::Local<v8::FunctionTemplate> GetEventEmitterTemplate(v8::Isolate* isolate);
 template <typename T>
 class EventEmitterMixin {
  public:
+  // disable copy
+  EventEmitterMixin(const EventEmitterMixin&) = delete;
+  EventEmitterMixin& operator=(const EventEmitterMixin&) = delete;
+
   // this.emit(name, new Event(), args...);
   // Returns true if event.preventDefault() was called during processing.
   template <typename... Args>
@@ -87,8 +91,6 @@ class EventEmitterMixin {
     }
     return false;
   }
-
-  DISALLOW_COPY_AND_ASSIGN(EventEmitterMixin);
 };
 
 }  // namespace gin_helper

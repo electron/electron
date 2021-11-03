@@ -36,6 +36,10 @@ class WebContentsPreferences
                          const gin_helper::Dictionary& web_preferences);
   ~WebContentsPreferences() override;
 
+  // disable copy
+  WebContentsPreferences(const WebContentsPreferences&) = delete;
+  WebContentsPreferences& operator=(const WebContentsPreferences&) = delete;
+
   void SetFromDictionary(const gin_helper::Dictionary& new_web_preferences);
 
   // Append command paramters according to preferences.
@@ -140,8 +144,6 @@ class WebContentsPreferences
   base::Value last_web_preferences_;
 
   WEB_CONTENTS_USER_DATA_KEY_DECL();
-
-  DISALLOW_COPY_AND_ASSIGN(WebContentsPreferences);
 };
 
 }  // namespace electron

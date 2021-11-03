@@ -63,8 +63,6 @@ class InspectableWebContentsViewViews : public InspectableWebContentsView,
   bool devtools_visible_ = false;
   views::WidgetDelegate* devtools_window_delegate_ = nullptr;
   std::u16string title_;
-
-  DISALLOW_COPY_AND_ASSIGN(InspectableWebContentsViewViews);
 };
 
 }  // namespace electron

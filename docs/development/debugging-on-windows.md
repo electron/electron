@@ -22,7 +22,7 @@ with breakpoints inside Electron's source code.
 
 * **Visual Studio with C++ Tools**: The free community editions of Visual
   Studio 2013 and Visual Studio 2015 both work. Once installed,
-  [configure Visual Studio to use Electron's Symbol server](setting-up-symbol-server.md).
+  [configure Visual Studio to use Electron's Symbol server](debugging-with-symbol-server.md).
   It will enable Visual Studio to gain a better understanding of what happens
   inside Electron, making it easier to present variables in a human-readable
   format.
@@ -90,3 +90,20 @@ out [this video tutorial][procmon-instructions] provided by Microsoft.
 
 [sys-internals]: https://technet.microsoft.com/en-us/sysinternals/processmonitor.aspx
 [procmon-instructions]: https://channel9.msdn.com/shows/defrag-tools/defrag-tools-4-process-monitor
+
+## Using WinDbg
+<!-- TODO(@codebytere): add images and more information here? -->
+
+It's possible to debug crashes and issues in the Renderer process with [WinDbg](https://docs.microsoft.com/en-us/windows-hardware/drivers/debugger/getting-started-with-windbg).
+
+To attach to a debug a process with WinDbg:
+
+1. Add `--renderer-startup-dialog` as a command line flag to Electron.
+2. Launch the app you are intending to debug.
+3. A dialog box will appear with a pid: “Renderer starting with pid: 1234”.
+4. Launch WinDbg and choose “File > Attach to process” in the application menu.
+5. Enter in pid from the dialog box in Step 3.
+6. See that the debugger will be in a paused state, and that there is a command line in the app to enter text into.
+7. Type “g” into the above command line to start the debuggee.
+8. Press the enter key to continue the program.
+9. Go back to the dialog box and press “ok”.

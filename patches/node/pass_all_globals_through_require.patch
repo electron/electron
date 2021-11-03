@@ -6,7 +6,7 @@ Subject: Pass all globals through "require"
 (cherry picked from commit 7d015419cb7a0ecfe6728431a4ed2056cd411d62)
 
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index 3f1dac356b81f437503422a8fb69df792db9c523..dfaea25243826878afc0af96a77d0aef153fa76b 100644
+index b8eff0440624a41d89a39c46303fa51d581bf4bf..67eb7717f13379312721fc4da2e760bc08d8ed3a 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
 @@ -127,6 +127,13 @@ const {

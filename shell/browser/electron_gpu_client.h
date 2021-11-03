@@ -13,11 +13,12 @@ class ElectronGpuClient : public content::ContentGpuClient {
  public:
   ElectronGpuClient();
 
+  // disable copy
+  ElectronGpuClient(const ElectronGpuClient&) = delete;
+  ElectronGpuClient& operator=(const ElectronGpuClient&) = delete;
+
   // content::ContentGpuClient:
   void PreCreateMessageLoop() override;
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(ElectronGpuClient);
 };
 
 }  // namespace electron

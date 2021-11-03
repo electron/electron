@@ -7,7 +7,6 @@
 
 #include <vector>
 
-#include "base/macros.h"
 #include "content/public/browser/speech_recognition_event_listener.h"
 #include "content/public/browser/speech_recognition_manager_delegate.h"
 
@@ -19,6 +18,12 @@ class ElectronSpeechRecognitionManagerDelegate
  public:
   ElectronSpeechRecognitionManagerDelegate();
   ~ElectronSpeechRecognitionManagerDelegate() override;
+
+  // disable copy
+  ElectronSpeechRecognitionManagerDelegate(
+      const ElectronSpeechRecognitionManagerDelegate&) = delete;
+  ElectronSpeechRecognitionManagerDelegate& operator=(
+      const ElectronSpeechRecognitionManagerDelegate&) = delete;
 
   // content::SpeechRecognitionEventListener:
   void OnRecognitionStart(int session_id) override;
@@ -45,9 +50,6 @@ class ElectronSpeechRecognitionManagerDelegate
       override;
   content::SpeechRecognitionEventListener* GetEventListener() override;
   bool FilterProfanities(int render_process_id) override;
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(ElectronSpeechRecognitionManagerDelegate);
 };
 
 }  // namespace electron

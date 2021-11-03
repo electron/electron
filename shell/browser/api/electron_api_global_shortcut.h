@@ -29,6 +29,10 @@ class GlobalShortcut : public extensions::GlobalShortcutListener::Observer,
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
 
+  // disable copy
+  GlobalShortcut(const GlobalShortcut&) = delete;
+  GlobalShortcut& operator=(const GlobalShortcut&) = delete;
+
  protected:
   explicit GlobalShortcut(v8::Isolate* isolate);
   ~GlobalShortcut() override;
@@ -50,8 +54,6 @@ class GlobalShortcut : public extensions::GlobalShortcutListener::Observer,
   void OnKeyPressed(const ui::Accelerator& accelerator) override;
 
   AcceleratorCallbackMap accelerator_callback_map_;
-
-  DISALLOW_COPY_AND_ASSIGN(GlobalShortcut);
 };
 
 }  // namespace api

@@ -702,6 +702,6 @@ NativeWindowRelay::NativeWindowRelay(base::WeakPtr<NativeWindow> window)
 
 NativeWindowRelay::~NativeWindowRelay() = default;
 
-WEB_CONTENTS_USER_DATA_KEY_IMPL(NativeWindowRelay)
+WEB_CONTENTS_USER_DATA_KEY_IMPL(NativeWindowRelay);
 
 }  // namespace electron

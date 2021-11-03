@@ -26,6 +26,10 @@ class MenuBar : public views::AccessiblePaneView,
   MenuBar(NativeWindow* window, RootView* root_view);
   ~MenuBar() override;
 
+  // disable copy
+  MenuBar(const MenuBar&) = delete;
+  MenuBar& operator=(const MenuBar&) = delete;
+
   // Replaces current menu with a new one.
   void SetMenu(ElectronMenuModel* menu_model);
 
@@ -65,6 +69,7 @@ class MenuBar : public views::AccessiblePaneView,
 
   // views::View:
   const char* GetClassName() const override;
+  void GetAccessibleNodeData(ui::AXNodeData* node_data) override;
 
   void ButtonPressed(int id, const ui::Event& event);
 
@@ -83,8 +88,6 @@ class MenuBar : public views::AccessiblePaneView,
   RootView* root_view_;
   ElectronMenuModel* menu_model_ = nullptr;
   bool accelerator_installed_ = false;
-
-  DISALLOW_COPY_AND_ASSIGN(MenuBar);
 };
 
 }  // namespace electron

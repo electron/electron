@@ -23,6 +23,10 @@ class AutofillPopup : public views::ViewObserver {
   AutofillPopup();
   ~AutofillPopup() override;
 
+  // disable copy
+  AutofillPopup(const AutofillPopup&) = delete;
+  AutofillPopup& operator=(const AutofillPopup&) = delete;
+
   void CreateView(content::RenderFrameHost* render_frame,
                   content::RenderFrameHost* embedder_frame,
                   bool offscreen,
@@ -82,8 +86,6 @@ class AutofillPopup : public views::ViewObserver {
 
   // The parent view that the popup view shows on. Weak ref.
   views::View* parent_ = nullptr;
-
-  DISALLOW_COPY_AND_ASSIGN(AutofillPopup);
 };
 
 }  // namespace electron

@@ -39,8 +39,6 @@ class CocoaNotification : public Notification {
   base::scoped_nsobject<NSUserNotification> notification_;
   std::map<std::string, unsigned> additional_action_indices_;
   unsigned action_index_;
-
-  DISALLOW_COPY_AND_ASSIGN(CocoaNotification);
 };
 
 }  // namespace electron

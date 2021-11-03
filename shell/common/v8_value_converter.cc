@@ -112,6 +112,10 @@ class V8ValueConverter::ScopedUniquenessGuard {
     }
   }
 
+  // disable copy
+  ScopedUniquenessGuard(const ScopedUniquenessGuard&) = delete;
+  ScopedUniquenessGuard& operator=(const ScopedUniquenessGuard&) = delete;
+
   bool is_valid() const { return is_valid_; }
 
  private:
@@ -119,8 +123,6 @@ class V8ValueConverter::ScopedUniquenessGuard {
   V8ValueConverter::FromV8ValueState* state_;
   v8::Local<v8::Object> value_;
   bool is_valid_;
-
-  DISALLOW_COPY_AND_ASSIGN(ScopedUniquenessGuard);
 };
 
 V8ValueConverter::V8ValueConverter() = default;

@@ -37,14 +37,16 @@ class DataPipeHolder : public gin::Wrappable<DataPipeHolder> {
   // The unique ID that can be used to receive the object.
   const std::string& id() const { return id_; }
 
+  // disable copy
+  DataPipeHolder(const DataPipeHolder&) = delete;
+  DataPipeHolder& operator=(const DataPipeHolder&) = delete;
+
  private:
   explicit DataPipeHolder(const network::DataElement& element);
   ~DataPipeHolder() override;
 
   std::string id_;
   mojo::Remote<network::mojom::DataPipeGetter> data_pipe_;
-
-  DISALLOW_COPY_AND_ASSIGN(DataPipeHolder);
 };
 
 }  // namespace api

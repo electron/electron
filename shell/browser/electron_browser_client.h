@@ -49,6 +49,10 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   ElectronBrowserClient();
   ~ElectronBrowserClient() override;
 
+  // disable copy
+  ElectronBrowserClient(const ElectronBrowserClient&) = delete;
+  ElectronBrowserClient& operator=(const ElectronBrowserClient&) = delete;
+
   using Delegate = content::ContentBrowserClient;
   void set_delegate(Delegate* delegate) { delegate_ = delegate; }
 
@@ -243,6 +247,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       int frame_tree_node_id,
       content::NavigationUIData* navigation_data,
       bool is_main_frame,
+      network::mojom::WebSandboxFlags sandbox_flags,
       ui::PageTransition page_transition,
       bool has_user_gesture,
       const absl::optional<url::Origin>& initiating_origin,
@@ -317,8 +322,6 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
 #if defined(OS_MAC)
   ElectronBrowserMainParts* browser_main_parts_ = nullptr;
 #endif
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronBrowserClient);
 };
 
 }  // namespace electron

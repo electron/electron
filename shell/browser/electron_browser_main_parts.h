@@ -76,6 +76,10 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
   explicit ElectronBrowserMainParts(const content::MainFunctionParams& params);
   ~ElectronBrowserMainParts() override;
 
+  // disable copy
+  ElectronBrowserMainParts(const ElectronBrowserMainParts&) = delete;
+  ElectronBrowserMainParts& operator=(const ElectronBrowserMainParts&) = delete;
+
   static ElectronBrowserMainParts* Get();
 
   // Sets the exit code, will fail if the message loop is not ready.
@@ -175,8 +179,6 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
 #endif
 
   static ElectronBrowserMainParts* self_;
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronBrowserMainParts);
 };
 
 }  // namespace electron

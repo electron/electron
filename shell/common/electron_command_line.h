@@ -6,7 +6,6 @@
 #define SHELL_COMMON_ELECTRON_COMMAND_LINE_H_
 
 #include "base/command_line.h"
-#include "base/macros.h"
 #include "build/build_config.h"
 
 namespace electron {
@@ -14,6 +13,10 @@ namespace electron {
 // Singleton to remember the original "argc" and "argv".
 class ElectronCommandLine {
  public:
+  // disable copy
+  ElectronCommandLine(const ElectronCommandLine&) = delete;
+  ElectronCommandLine& operator=(const ElectronCommandLine&) = delete;
+
   static const base::CommandLine::StringVector& argv() { return argv_; }
 
   static void Init(int argc, base::CommandLine::CharType** argv);
@@ -26,8 +29,6 @@ class ElectronCommandLine {
 
  private:
   static base::CommandLine::StringVector argv_;
-
-  DISALLOW_IMPLICIT_CONSTRUCTORS(ElectronCommandLine);
 };
 
 }  // namespace electron

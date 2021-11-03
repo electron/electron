@@ -136,6 +136,10 @@ class NativeWindowClientView : public views::ClientView {
       : views::ClientView(widget, root_view), window_(window) {}
   ~NativeWindowClientView() override = default;
 
+  // disable copy
+  NativeWindowClientView(const NativeWindowClientView&) = delete;
+  NativeWindowClientView& operator=(const NativeWindowClientView&) = delete;
+
   views::CloseRequestResult OnWindowCloseRequested() override {
     window_->NotifyWindowCloseButtonClicked();
     return views::CloseRequestResult::kCannotClose;
@@ -143,8 +147,6 @@ class NativeWindowClientView : public views::ClientView {
 
  private:
   NativeWindowViews* window_;
-
-  DISALLOW_COPY_AND_ASSIGN(NativeWindowClientView);
 };
 
 }  // namespace

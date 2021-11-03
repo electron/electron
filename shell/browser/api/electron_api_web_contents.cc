@@ -15,6 +15,7 @@
 #include "base/containers/id_map.h"
 #include "base/files/file_util.h"
 #include "base/json/json_reader.h"
+#include "base/macros.h"
 #include "base/no_destructor.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/current_thread.h"
@@ -26,6 +27,7 @@
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/values.h"
 #include "chrome/browser/browser_process.h"
+#include "chrome/browser/ui/exclusive_access/exclusive_access_manager.h"
 #include "chrome/browser/ui/views/eye_dropper/eye_dropper.h"
 #include "chrome/common/pref_names.h"
 #include "components/prefs/pref_service.h"
@@ -38,6 +40,8 @@
 #include "content/browser/renderer_host/render_widget_host_view_base.h"  // nogncheck
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/context_menu_params.h"
+#include "content/public/browser/desktop_media_id.h"
+#include "content/public/browser/desktop_streams_registry.h"
 #include "content/public/browser/download_request_utils.h"
 #include "content/public/browser/favicon_status.h"
 #include "content/public/browser/file_select_listener.h"
@@ -628,6 +632,7 @@ WebContents::WebContents(v8::Isolate* isolate,
       id_(GetAllWebContents().Add(this)),
       devtools_file_system_indexer_(
           base::MakeRefCounted<DevToolsFileSystemIndexer>()),
+      exclusive_access_manager_(std::make_unique<ExclusiveAccessManager>(this)),
       file_task_runner_(
           base::ThreadPool::CreateSequencedTaskRunner({base::MayBlock()}))
 #if BUILDFLAG(ENABLE_PRINTING)
@@ -666,6 +671,7 @@ WebContents::WebContents(v8::Isolate* isolate,
       id_(GetAllWebContents().Add(this)),
       devtools_file_system_indexer_(
           base::MakeRefCounted<DevToolsFileSystemIndexer>()),
+      exclusive_access_manager_(std::make_unique<ExclusiveAccessManager>(this)),
       file_task_runner_(
           base::ThreadPool::CreateSequencedTaskRunner({base::MayBlock()}))
 #if BUILDFLAG(ENABLE_PRINTING)
@@ -686,6 +692,7 @@ WebContents::WebContents(v8::Isolate* isolate,
     : id_(GetAllWebContents().Add(this)),
       devtools_file_system_indexer_(
           base::MakeRefCounted<DevToolsFileSystemIndexer>()),
+      exclusive_access_manager_(std::make_unique<ExclusiveAccessManager>(this)),
       file_task_runner_(
           base::ThreadPool::CreateSequencedTaskRunner({base::MayBlock()}))
 #if BUILDFLAG(ENABLE_PRINTING)
@@ -1250,6 +1257,40 @@ void WebContents::ContentsZoomChange(bool zoom_in) {
   Emit("zoom-changed", zoom_in ? "in" : "out");
 }
 
+Profile* WebContents::GetProfile() {
+  return nullptr;
+}
+
+bool WebContents::IsFullscreen() const {
+  return owner_window_ && owner_window_->IsFullscreen();
+}
+
+void WebContents::EnterFullscreen(const GURL& url,
+                                  ExclusiveAccessBubbleType bubble_type,
+                                  const int64_t display_id) {}
+
+void WebContents::ExitFullscreen() {}
+
+void WebContents::UpdateExclusiveAccessExitBubbleContent(
+    const GURL& url,
+    ExclusiveAccessBubbleType bubble_type,
+    ExclusiveAccessBubbleHideCallback bubble_first_hide_callback,
+    bool force_update) {}
+
+void WebContents::OnExclusiveAccessUserInput() {}
+
+content::WebContents* WebContents::GetActiveWebContents() {
+  return web_contents();
+}
+
+bool WebContents::CanUserExitFullscreen() const {
+  return true;
+}
+
+bool WebContents::IsExclusiveAccessBubbleDisplayed() const {
+  return false;
+}
+
 void WebContents::EnterFullscreenModeForTab(
     content::RenderFrameHost* requesting_frame,
     const blink::mojom::FullscreenOptions& options) {
@@ -1260,6 +1301,8 @@ void WebContents::EnterFullscreenModeForTab(
       base::BindRepeating(&WebContents::OnEnterFullscreenModeForTab,
                           base::Unretained(this), requesting_frame, options);
   permission_helper->RequestFullscreenPermission(callback);
+  exclusive_access_manager_->fullscreen_controller()->EnterFullscreenModeForTab(
+      requesting_frame, options.display_id);
 }
 
 void WebContents::OnEnterFullscreenModeForTab(
@@ -1296,6 +1339,9 @@ void WebContents::ExitFullscreenModeForTab(content::WebContents* source) {
     // `chrome/browser/ui/exclusive_access/fullscreen_controller.cc`.
     source->GetRenderViewHost()->GetWidget()->SynchronizeVisualProperties();
   }
+
+  exclusive_access_manager_->fullscreen_controller()->ExitFullscreenModeForTab(
+      source);
 }
 
 void WebContents::RendererUnresponsive(
@@ -1342,6 +1388,18 @@ void WebContents::FindReply(content::WebContents* web_contents,
   result.Set("activeMatchOrdinal", active_match_ordinal);
   result.Set("finalUpdate", final_update);  // Deprecate after 2.0
   Emit("found-in-page", result.GetHandle());
+}
+
+void WebContents::RequestKeyboardLock(content::WebContents* web_contents,
+                                      bool esc_key_locked) {
+  exclusive_access_manager_->keyboard_lock_controller()->RequestKeyboardLock(
+      web_contents, esc_key_locked);
+}
+
+void WebContents::CancelKeyboardLockRequest(
+    content::WebContents* web_contents) {
+  exclusive_access_manager_->keyboard_lock_controller()
+      ->CancelKeyboardLockRequest(web_contents);
 }
 
 bool WebContents::CheckMediaAccessPermission(
@@ -2196,6 +2254,33 @@ void WebContents::SetWebRTCIPHandlingPolicy(
       webrtc_ip_handling_policy;
 
   web_contents()->SyncRendererPrefs();
+}
+
+std::string WebContents::GetMediaSourceID(
+    content::WebContents* request_web_contents) {
+  auto* frame_host = web_contents()->GetMainFrame();
+  if (!frame_host)
+    return std::string();
+
+  content::DesktopMediaID media_id(
+      content::DesktopMediaID::TYPE_WEB_CONTENTS,
+      content::DesktopMediaID::kNullId,
+      content::WebContentsMediaCaptureId(frame_host->GetProcess()->GetID(),
+                                         frame_host->GetRoutingID()));
+
+  auto* request_frame_host = request_web_contents->GetMainFrame();
+  if (!request_frame_host)
+    return std::string();
+
+  std::string id =
+      content::DesktopStreamsRegistry::GetInstance()->RegisterStream(
+          request_frame_host->GetProcess()->GetID(),
+          request_frame_host->GetRoutingID(),
+          url::Origin::Create(
+              request_frame_host->GetLastCommittedURL().GetOrigin()),
+          media_id, "", content::kRegistryStreamTypeTab);
+
+  return id;
 }
 
 bool WebContents::IsCrashed() const {
@@ -3875,6 +3960,7 @@ v8::Local<v8::ObjectTemplate> WebContents::FillObjectTemplate(
       .SetMethod("isBeingCaptured", &WebContents::IsBeingCaptured)
       .SetMethod("setWebRTCIPHandlingPolicy",
                  &WebContents::SetWebRTCIPHandlingPolicy)
+      .SetMethod("getMediaSourceId", &WebContents::GetMediaSourceID)
       .SetMethod("getWebRTCIPHandlingPolicy",
                  &WebContents::GetWebRTCIPHandlingPolicy)
       .SetMethod("takeHeapSnapshot", &WebContents::TakeHeapSnapshot)

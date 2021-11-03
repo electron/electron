@@ -32,7 +32,7 @@ index 01d122aa78f15e0c94b1ee8ae54e08dace0aca0d..5ed9952afd4f4331c98ad41b7d799367
    ]
    if (is_linux && !is_chromeos) {
 diff --git a/buildtools/third_party/libc++abi/BUILD.gn b/buildtools/third_party/libc++abi/BUILD.gn
-index 8b1da01ce87ff6db8e67938d4c083312cfa3101f..1668eba70db1933a434709c0140fe125991249b3 100644
+index b70deeb9c8ff34f31cbe3b3c33802605af62f726..4879f27427b53065ad44f46423c1f4cd164358d0 100644
 --- a/buildtools/third_party/libc++abi/BUILD.gn
 +++ b/buildtools/third_party/libc++abi/BUILD.gn
 @@ -4,7 +4,7 @@

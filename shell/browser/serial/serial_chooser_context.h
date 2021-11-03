@@ -51,6 +51,10 @@ class SerialChooserContext : public KeyedService,
   SerialChooserContext();
   ~SerialChooserContext() override;
 
+  // disable copy
+  SerialChooserContext(const SerialChooserContext&) = delete;
+  SerialChooserContext& operator=(const SerialChooserContext&) = delete;
+
   // Serial-specific interface for granting and checking permissions.
   void GrantPortPermission(const url::Origin& origin,
                            const device::mojom::SerialPortInfo& port,
@@ -89,8 +93,6 @@ class SerialChooserContext : public KeyedService,
   base::ObserverList<PortObserver> port_observer_list_;
 
   base::WeakPtrFactory<SerialChooserContext> weak_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(SerialChooserContext);
 };
 
 }  // namespace electron

@@ -19,6 +19,12 @@ class ElectronQuotaPermissionContext : public content::QuotaPermissionContext {
 
   ElectronQuotaPermissionContext();
 
+  // disable copy
+  ElectronQuotaPermissionContext(const ElectronQuotaPermissionContext&) =
+      delete;
+  ElectronQuotaPermissionContext& operator=(
+      const ElectronQuotaPermissionContext&) = delete;
+
   // content::QuotaPermissionContext:
   void RequestQuotaPermission(const content::StorageQuotaParams& params,
                               int render_process_id,
@@ -26,8 +32,6 @@ class ElectronQuotaPermissionContext : public content::QuotaPermissionContext {
 
  private:
   ~ElectronQuotaPermissionContext() override;
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronQuotaPermissionContext);
 };
 
 }  // namespace electron

@@ -7,7 +7,6 @@
 
 #include <string>
 
-#include "base/macros.h"
 #include "extensions/common/extensions_api_provider.h"
 
 namespace electron {
@@ -16,6 +15,11 @@ class ElectronExtensionsAPIProvider : public extensions::ExtensionsAPIProvider {
  public:
   ElectronExtensionsAPIProvider();
   ~ElectronExtensionsAPIProvider() override;
+
+  // disable copy
+  ElectronExtensionsAPIProvider(const ElectronExtensionsAPIProvider&) = delete;
+  ElectronExtensionsAPIProvider& operator=(
+      const ElectronExtensionsAPIProvider&) = delete;
 
   // ExtensionsAPIProvider:
   void AddAPIFeatures(extensions::FeatureProvider* provider) override;
@@ -29,9 +33,6 @@ class ElectronExtensionsAPIProvider : public extensions::ExtensionsAPIProvider {
   void RegisterPermissions(
       extensions::PermissionsInfo* permissions_info) override;
   void RegisterManifestHandlers() override;
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(ElectronExtensionsAPIProvider);
 };
 
 }  // namespace electron

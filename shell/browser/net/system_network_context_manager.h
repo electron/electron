@@ -5,7 +5,6 @@
 #ifndef SHELL_BROWSER_NET_SYSTEM_NETWORK_CONTEXT_MANAGER_H_
 #define SHELL_BROWSER_NET_SYSTEM_NETWORK_CONTEXT_MANAGER_H_
 
-#include "base/macros.h"
 #include "base/memory/ref_counted.h"
 #include "chrome/browser/net/proxy_config_monitor.h"
 #include "mojo/public/cpp/bindings/remote.h"
@@ -34,6 +33,11 @@ network::mojom::HttpAuthDynamicParamsPtr CreateHttpAuthDynamicParams();
 class SystemNetworkContextManager {
  public:
   ~SystemNetworkContextManager();
+
+  // disable copy
+  SystemNetworkContextManager(const SystemNetworkContextManager&) = delete;
+  SystemNetworkContextManager& operator=(const SystemNetworkContextManager&) =
+      delete;
 
   // Creates the global instance of SystemNetworkContextManager. If an
   // instance already exists, this will cause a DCHECK failure.
@@ -92,8 +96,6 @@ class SystemNetworkContextManager {
   // consumers don't all need to create their own factory.
   scoped_refptr<URLLoaderFactoryForSystem> shared_url_loader_factory_;
   mojo::Remote<network::mojom::URLLoaderFactory> url_loader_factory_;
-
-  DISALLOW_COPY_AND_ASSIGN(SystemNetworkContextManager);
 };
 
 #endif  // SHELL_BROWSER_NET_SYSTEM_NETWORK_CONTEXT_MANAGER_H_

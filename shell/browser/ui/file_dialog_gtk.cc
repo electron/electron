@@ -213,6 +213,10 @@ class FileChooserDialog {
       parent_->SetEnabled(true);
   }
 
+  // disable copy
+  FileChooserDialog(const FileChooserDialog&) = delete;
+  FileChooserDialog& operator=(const FileChooserDialog&) = delete;
+
   void SetupOpenProperties(int properties) {
     const auto hasProp = [properties](OpenFileDialogProperty prop) {
       return gboolean((properties & prop) != 0);
@@ -311,8 +315,6 @@ class FileChooserDialog {
 
   // Callback for when we update the preview for the selection.
   CHROMEG_CALLBACK_0(FileChooserDialog, void, OnUpdatePreview, GtkFileChooser*);
-
-  DISALLOW_COPY_AND_ASSIGN(FileChooserDialog);
 };
 
 void FileChooserDialog::OnFileDialogResponse(GtkWidget* widget, int response) {

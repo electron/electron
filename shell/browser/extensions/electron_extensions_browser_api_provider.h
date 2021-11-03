@@ -5,7 +5,6 @@
 #ifndef SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSIONS_BROWSER_API_PROVIDER_H_
 #define SHELL_BROWSER_EXTENSIONS_ELECTRON_EXTENSIONS_BROWSER_API_PROVIDER_H_
 
-#include "base/macros.h"
 #include "extensions/browser/extensions_browser_api_provider.h"
 
 namespace extensions {
@@ -16,10 +15,13 @@ class ElectronExtensionsBrowserAPIProvider
   ElectronExtensionsBrowserAPIProvider();
   ~ElectronExtensionsBrowserAPIProvider() override;
 
-  void RegisterExtensionFunctions(ExtensionFunctionRegistry* registry) override;
+  // disable copy
+  ElectronExtensionsBrowserAPIProvider(
+      const ElectronExtensionsBrowserAPIProvider&) = delete;
+  ElectronExtensionsBrowserAPIProvider& operator=(
+      const ElectronExtensionsBrowserAPIProvider&) = delete;
 
- private:
-  DISALLOW_COPY_AND_ASSIGN(ElectronExtensionsBrowserAPIProvider);
+  void RegisterExtensionFunctions(ExtensionFunctionRegistry* registry) override;
 };
 
 }  // namespace extensions

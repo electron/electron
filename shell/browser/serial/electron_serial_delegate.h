@@ -22,6 +22,10 @@ class ElectronSerialDelegate : public content::SerialDelegate {
   ElectronSerialDelegate();
   ~ElectronSerialDelegate() override;
 
+  // disable copy
+  ElectronSerialDelegate(const ElectronSerialDelegate&) = delete;
+  ElectronSerialDelegate& operator=(const ElectronSerialDelegate&) = delete;
+
   std::unique_ptr<content::SerialChooser> RunChooser(
       content::RenderFrameHost* frame,
       std::vector<blink::mojom::SerialPortFilterPtr> filters,
@@ -51,8 +55,6 @@ class ElectronSerialDelegate : public content::SerialDelegate {
       controller_map_;
 
   base::WeakPtrFactory<ElectronSerialDelegate> weak_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronSerialDelegate);
 };
 
 }  // namespace electron

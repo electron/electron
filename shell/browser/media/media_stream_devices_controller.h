@@ -17,6 +17,11 @@ class MediaStreamDevicesController {
 
   virtual ~MediaStreamDevicesController();
 
+  // disable copy
+  MediaStreamDevicesController(const MediaStreamDevicesController&) = delete;
+  MediaStreamDevicesController& operator=(const MediaStreamDevicesController&) =
+      delete;
+
   // Accept or deny the request based on the default policy.
   bool TakeAction();
 
@@ -37,8 +42,6 @@ class MediaStreamDevicesController {
 
   bool microphone_requested_;
   bool webcam_requested_;
-
-  DISALLOW_COPY_AND_ASSIGN(MediaStreamDevicesController);
 };
 
 }  // namespace electron

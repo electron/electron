@@ -127,6 +127,10 @@ class GtkMessageBox : public NativeWindowObserver {
     }
   }
 
+  // disable copy
+  GtkMessageBox(const GtkMessageBox&) = delete;
+  GtkMessageBox& operator=(const GtkMessageBox&) = delete;
+
   GtkMessageType GetMessageType(MessageBoxType type) {
     switch (type) {
       case MessageBoxType::kInformation:
@@ -205,8 +209,6 @@ class GtkMessageBox : public NativeWindowObserver {
   NativeWindow* parent_;
   GtkWidget* dialog_;
   MessageBoxCallback callback_;
-
-  DISALLOW_COPY_AND_ASSIGN(GtkMessageBox);
 };
 
 void GtkMessageBox::OnResponseDialog(GtkWidget* widget, int response) {

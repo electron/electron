@@ -37,6 +37,10 @@ class BrowserWindow : public BaseWindow,
     return weak_factory_.GetWeakPtr();
   }
 
+  // disable copy
+  BrowserWindow(const BrowserWindow&) = delete;
+  BrowserWindow& operator=(const BrowserWindow&) = delete;
+
  protected:
   BrowserWindow(gin::Arguments* args, const gin_helper::Dictionary& options);
   ~BrowserWindow() override;
@@ -123,8 +127,6 @@ class BrowserWindow : public BaseWindow,
   base::WeakPtr<api::WebContents> api_web_contents_;
 
   base::WeakPtrFactory<BrowserWindow> weak_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(BrowserWindow);
 };
 
 }  // namespace api

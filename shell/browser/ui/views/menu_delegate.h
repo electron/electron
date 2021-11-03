@@ -25,6 +25,10 @@ class MenuDelegate : public views::MenuDelegate {
   explicit MenuDelegate(MenuBar* menu_bar);
   ~MenuDelegate() override;
 
+  // disable copy
+  MenuDelegate(const MenuDelegate&) = delete;
+  MenuDelegate& operator=(const MenuDelegate&) = delete;
+
   void RunMenu(ElectronMenuModel* model,
                views::Button* button,
                ui::MenuSourceType source_type);
@@ -72,8 +76,6 @@ class MenuDelegate : public views::MenuDelegate {
   bool hold_first_switch_ = false;
 
   base::ObserverList<Observer>::Unchecked observers_;
-
-  DISALLOW_COPY_AND_ASSIGN(MenuDelegate);
 };
 
 }  // namespace electron

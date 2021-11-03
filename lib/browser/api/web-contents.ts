@@ -391,6 +391,17 @@ WebContents.prototype.getPrinters = function () {
   }
 };
 
+WebContents.prototype.getPrintersAsync = async function () {
+  // TODO(nornagon): this API has nothing to do with WebContents and should be
+  // moved.
+  if (printing.getPrinterListAsync) {
+    return printing.getPrinterListAsync();
+  } else {
+    console.error('Error: Printing feature is disabled.');
+    return [];
+  }
+};
+
 WebContents.prototype.loadFile = function (filePath, options = {}) {
   if (typeof filePath !== 'string') {
     throw new Error('Must pass filePath as a string');

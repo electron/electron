@@ -44,7 +44,7 @@ index 6af35b457b4acc4bbbac36b2f8a2617495d9d1f4..3c377839a8882d8e842edd8ca4b9b64c
  
  }  // namespace
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index 2a4679b620db93d9eeb45873a97f5daba6e19456..04414494a859438972cb266aabdd47687bdafca5 100644
+index b17d46de296964120e5083c00a3ea9bdaded221f..af30adb8b6074864ca19e8235a248c5d77781468 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -557,10 +557,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
@@ -87,7 +87,7 @@ index c3a9fbf0f9d2b80c1de42a22ad094a286f0b559b..02493d4b62c98a3aebd3e460c459218a
    DISALLOW_COPY_AND_ASSIGN(RenderWidgetHostNSViewBridgeOwner);
  };
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.h b/content/browser/renderer_host/render_widget_host_view_mac.h
-index e7a1a348280c96a31fac75616d6e3034d1863a06..7631c62e2e799770f6abbb9af158235c00ce6185 100644
+index 2b262cc807162d91cb09393d58ceb4e7d9c2be34..5e66be5ceb963e6f13742c66b0a9cd79f0d91446 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.h
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.h
 @@ -49,7 +49,9 @@ class ScopedPasswordInputEnabler;
@@ -114,10 +114,10 @@ index e7a1a348280c96a31fac75616d6e3034d1863a06..7631c62e2e799770f6abbb9af158235c
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 922e51e7debac09e5444027c87603d40b972ffc7..5aac5fcfe781e282b748630c07341d1b465d99ac 100644
+index d1aae9cbefad2b31dcd98e0c95891943b027cc5f..ec191047cca6d8e7d00e445942461e9b47098ec1 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
-@@ -251,8 +251,10 @@
+@@ -249,8 +249,10 @@
  void RenderWidgetHostViewMac::MigrateNSViewBridge(
      remote_cocoa::mojom::Application* remote_cocoa_application,
      uint64_t parent_ns_view_id) {
@@ -128,7 +128,7 @@ index 922e51e7debac09e5444027c87603d40b972ffc7..5aac5fcfe781e282b748630c07341d1b
  
    // Disconnect from the previous bridge (this will have the effect of
    // destroying the associated bridge), and close the receiver (to allow it
-@@ -1469,8 +1471,10 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1455,8 +1457,10 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  
  gfx::NativeViewAccessible
  RenderWidgetHostViewMac::AccessibilityGetNativeViewAccessibleForWindow() {
@@ -139,7 +139,7 @@ index 922e51e7debac09e5444027c87603d40b972ffc7..5aac5fcfe781e282b748630c07341d1b
    return [GetInProcessNSView() window];
  }
  
-@@ -1514,9 +1518,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1500,9 +1504,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  }
  
  void RenderWidgetHostViewMac::SetAccessibilityWindow(NSWindow* window) {
@@ -151,7 +151,7 @@ index 922e51e7debac09e5444027c87603d40b972ffc7..5aac5fcfe781e282b748630c07341d1b
  }
  
  bool RenderWidgetHostViewMac::SyncIsWidgetForMainFrame(
-@@ -2009,12 +2015,14 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1995,12 +2001,14 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  
  void RenderWidgetHostViewMac::SetRemoteAccessibilityWindowToken(
      const std::vector<uint8_t>& window_token) {
@@ -167,7 +167,7 @@ index 922e51e7debac09e5444027c87603d40b972ffc7..5aac5fcfe781e282b748630c07341d1b
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index ae61e09deae53071c3a00d054cde3c57a8ac143a..7f91c46cd437f269b76fda383fd2d6ab990d310c 100644
+index 9cce2f63140db5370ef9400dd83cc3d8fe0e9323..909ffe62a19bf8752abb038223a0823dd613586c 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -322,6 +322,13 @@ component("base") {

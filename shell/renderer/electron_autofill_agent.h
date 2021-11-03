@@ -29,6 +29,10 @@ class AutofillAgent : public content::RenderFrameObserver,
                          blink::AssociatedInterfaceRegistry* registry);
   ~AutofillAgent() override;
 
+  // disable copy
+  AutofillAgent(const AutofillAgent&) = delete;
+  AutofillAgent& operator=(const AutofillAgent&) = delete;
+
   void BindReceiver(
       mojo::PendingAssociatedReceiver<mojom::ElectronAutofillAgent> receiver);
 
@@ -85,8 +89,6 @@ class AutofillAgent : public content::RenderFrameObserver,
   mojo::AssociatedReceiver<mojom::ElectronAutofillAgent> receiver_{this};
 
   base::WeakPtrFactory<AutofillAgent> weak_ptr_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(AutofillAgent);
 };
 
 }  // namespace electron

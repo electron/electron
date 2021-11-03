@@ -14,14 +14,15 @@ class ViewsDelegateMac : public views::ViewsDelegate {
   ViewsDelegateMac();
   ~ViewsDelegateMac() override;
 
+  // disable copy
+  ViewsDelegateMac(const ViewsDelegateMac&) = delete;
+  ViewsDelegateMac& operator=(const ViewsDelegateMac&) = delete;
+
   // ViewsDelegate:
   void OnBeforeWidgetInit(
       views::Widget::InitParams* params,
       views::internal::NativeWidgetDelegate* delegate) override;
   ui::ContextFactory* GetContextFactory() override;
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(ViewsDelegateMac);
 };
 
 }  // namespace electron

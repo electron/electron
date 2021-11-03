@@ -24,6 +24,7 @@
 #include <tchar.h>
 
 #include "base/environment.h"
+#include "base/macros.h"
 #include "base/process/launch.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/windows_version.h"

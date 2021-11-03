@@ -67,8 +67,6 @@ class Wrappable : public WrappableBase {
 
  private:
   static gin::WrapperInfo kWrapperInfo;
-
-  DISALLOW_COPY_AND_ASSIGN(Wrappable);
 };
 
 // static

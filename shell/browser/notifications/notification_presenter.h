@@ -28,6 +28,10 @@ class NotificationPresenter {
 
   std::set<Notification*> notifications() const { return notifications_; }
 
+  // disable copy
+  NotificationPresenter(const NotificationPresenter&) = delete;
+  NotificationPresenter& operator=(const NotificationPresenter&) = delete;
+
  protected:
   NotificationPresenter();
   virtual Notification* CreateNotificationObject(
@@ -39,8 +43,6 @@ class NotificationPresenter {
   void RemoveNotification(Notification* notification);
 
   std::set<Notification*> notifications_;
-
-  DISALLOW_COPY_AND_ASSIGN(NotificationPresenter);
 };
 
 }  // namespace electron

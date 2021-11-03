@@ -18,6 +18,11 @@ class ElectronMessagingDelegate : public MessagingDelegate {
   ElectronMessagingDelegate();
   ~ElectronMessagingDelegate() override;
 
+  // disable copy
+  ElectronMessagingDelegate(const ElectronMessagingDelegate&) = delete;
+  ElectronMessagingDelegate& operator=(const ElectronMessagingDelegate&) =
+      delete;
+
   // MessagingDelegate:
   PolicyPermission IsNativeMessagingHostAllowed(
       content::BrowserContext* browser_context,
@@ -48,9 +53,6 @@ class ElectronMessagingDelegate : public MessagingDelegate {
       content::WebContents* source_contents,
       const GURL& url,
       base::OnceCallback<void(bool)> callback) override;
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(ElectronMessagingDelegate);
 };
 
 }  // namespace extensions

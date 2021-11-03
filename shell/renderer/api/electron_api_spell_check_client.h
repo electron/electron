@@ -36,6 +36,10 @@ class SpellCheckClient : public blink::WebSpellCheckPanelHostClient,
                    v8::Local<v8::Object> provider);
   ~SpellCheckClient() override;
 
+  // disable copy
+  SpellCheckClient(const SpellCheckClient&) = delete;
+  SpellCheckClient& operator=(const SpellCheckClient&) = delete;
+
  private:
   class SpellcheckRequest;
   // blink::WebTextCheckClient:
@@ -103,8 +107,6 @@ class SpellCheckClient : public blink::WebSpellCheckPanelHostClient,
   v8::Global<v8::Context> context_;
   v8::Global<v8::Object> provider_;
   v8::Global<v8::Function> spell_check_;
-
-  DISALLOW_COPY_AND_ASSIGN(SpellCheckClient);
 };
 
 }  // namespace api

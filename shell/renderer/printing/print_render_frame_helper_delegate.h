@@ -5,7 +5,6 @@
 #ifndef SHELL_RENDERER_PRINTING_PRINT_RENDER_FRAME_HELPER_DELEGATE_H_
 #define SHELL_RENDERER_PRINTING_PRINT_RENDER_FRAME_HELPER_DELEGATE_H_
 
-#include "base/macros.h"
 #include "components/printing/renderer/print_render_frame_helper.h"
 
 namespace electron {
@@ -16,13 +15,17 @@ class PrintRenderFrameHelperDelegate
   PrintRenderFrameHelperDelegate();
   ~PrintRenderFrameHelperDelegate() override;
 
+  // disable copy
+  PrintRenderFrameHelperDelegate(const PrintRenderFrameHelperDelegate&) =
+      delete;
+  PrintRenderFrameHelperDelegate& operator=(
+      const PrintRenderFrameHelperDelegate&) = delete;
+
  private:
   // printing::PrintRenderFrameHelper::Delegate:
   blink::WebElement GetPdfElement(blink::WebLocalFrame* frame) override;
   bool IsPrintPreviewEnabled() override;
   bool OverridePrint(blink::WebLocalFrame* frame) override;
-
-  DISALLOW_COPY_AND_ASSIGN(PrintRenderFrameHelperDelegate);
 };
 
 }  // namespace electron

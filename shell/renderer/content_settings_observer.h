@@ -17,14 +17,16 @@ class ContentSettingsObserver : public content::RenderFrameObserver,
   explicit ContentSettingsObserver(content::RenderFrame* render_frame);
   ~ContentSettingsObserver() override;
 
+  // disable copy
+  ContentSettingsObserver(const ContentSettingsObserver&) = delete;
+  ContentSettingsObserver& operator=(const ContentSettingsObserver&) = delete;
+
   // blink::WebContentSettingsClient implementation.
   bool AllowStorageAccessSync(StorageType storage_type) override;
 
  private:
   // content::RenderFrameObserver implementation.
   void OnDestruct() override;
-
-  DISALLOW_COPY_AND_ASSIGN(ContentSettingsObserver);
 };
 
 }  // namespace electron

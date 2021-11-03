@@ -35,14 +35,19 @@ class ConvertableToTraceFormatWrapper final
       std::unique_ptr<v8::ConvertableToTraceFormat> inner)
       : inner_(std::move(inner)) {}
   ~ConvertableToTraceFormatWrapper() override = default;
+
+  // disable copy
+  ConvertableToTraceFormatWrapper(const ConvertableToTraceFormatWrapper&) =
+      delete;
+  ConvertableToTraceFormatWrapper& operator=(
+      const ConvertableToTraceFormatWrapper&) = delete;
+
   void AppendAsTraceFormat(std::string* out) const final {
     inner_->AppendAsTraceFormat(out);
   }
 
  private:
   std::unique_ptr<v8::ConvertableToTraceFormat> inner_;
-
-  DISALLOW_COPY_AND_ASSIGN(ConvertableToTraceFormatWrapper);
 };
 
 }  // namespace gin
@@ -183,6 +188,10 @@ class EnabledStateObserverImpl final
         this);
   }
 
+  // disable copy
+  EnabledStateObserverImpl(const EnabledStateObserverImpl&) = delete;
+  EnabledStateObserverImpl& operator=(const EnabledStateObserverImpl&) = delete;
+
   void OnTraceLogEnabled() final {
     base::AutoLock lock(mutex_);
     for (auto* o : observers_) {
@@ -218,8 +227,6 @@ class EnabledStateObserverImpl final
  private:
   base::Lock mutex_;
   std::unordered_set<v8::TracingController::TraceStateObserver*> observers_;
-
-  DISALLOW_COPY_AND_ASSIGN(EnabledStateObserverImpl);
 };
 
 base::LazyInstance<EnabledStateObserverImpl>::Leaky g_trace_state_dispatcher =
@@ -229,6 +236,10 @@ class TracingControllerImpl : public node::tracing::TracingController {
  public:
   TracingControllerImpl() = default;
   ~TracingControllerImpl() override = default;
+
+  // disable copy
+  TracingControllerImpl(const TracingControllerImpl&) = delete;
+  TracingControllerImpl& operator=(const TracingControllerImpl&) = delete;
 
   // TracingController implementation.
   const uint8_t* GetCategoryGroupEnabled(const char* name) override {
@@ -306,9 +317,6 @@ class TracingControllerImpl : public node::tracing::TracingController {
   void RemoveTraceStateObserver(TraceStateObserver* observer) override {
     g_trace_state_dispatcher.Get().RemoveObserver(observer);
   }
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(TracingControllerImpl);
 };
 
 v8::Isolate* JavascriptEnvironment::Initialize(uv_loop_t* event_loop) {

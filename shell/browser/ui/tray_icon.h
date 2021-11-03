@@ -28,6 +28,10 @@ class TrayIcon {
 
   virtual ~TrayIcon();
 
+  // disable copy
+  TrayIcon(const TrayIcon&) = delete;
+  TrayIcon& operator=(const TrayIcon&) = delete;
+
   // Sets the image associated with this status icon.
   virtual void SetImage(ImageType image) = 0;
 
@@ -129,8 +133,6 @@ class TrayIcon {
 
  private:
   base::ObserverList<TrayIconObserver> observers_;
-
-  DISALLOW_COPY_AND_ASSIGN(TrayIcon);
 };
 
 }  // namespace electron

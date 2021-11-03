@@ -31,6 +31,7 @@
 #include "chrome/common/chrome_version.h"
 #include "components/net_log/chrome_net_log.h"
 #include "components/network_hints/common/network_hints.mojom.h"
+#include "content/browser/keyboard_lock/keyboard_lock_service_impl.h"  // nogncheck
 #include "content/browser/site_instance_impl.h"  // nogncheck
 #include "content/public/browser/browser_main_runner.h"
 #include "content/public/browser/browser_ppapi_host.h"
@@ -998,6 +999,7 @@ bool ElectronBrowserClient::HandleExternalProtocol(
     int frame_tree_node_id,
     content::NavigationUIData* navigation_data,
     bool is_main_frame,
+    network::mojom::WebSandboxFlags sandbox_flags,
     ui::PageTransition page_transition,
     bool has_user_gesture,
     const absl::optional<url::Origin>& initiating_origin,
@@ -1144,6 +1146,10 @@ class FileURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
     return pending_remote;
   }
 
+  // disable copy
+  FileURLLoaderFactory(const FileURLLoaderFactory&) = delete;
+  FileURLLoaderFactory& operator=(const FileURLLoaderFactory&) = delete;
+
  private:
   explicit FileURLLoaderFactory(
       int child_id,
@@ -1175,8 +1181,6 @@ class FileURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
   }
 
   int child_id_;
-
-  DISALLOW_COPY_AND_ASSIGN(FileURLLoaderFactory);
 };
 
 }  // namespace
@@ -1449,7 +1453,8 @@ bool ElectronBrowserClient::BindAssociatedReceiverFromFrame(
     mojo::ScopedInterfaceEndpointHandle* handle) {
   if (interface_name == mojom::ElectronAutofillDriver::Name_) {
     AutofillDriverFactory::BindAutofillDriver(
-        mojom::ElectronAutofillDriverAssociatedRequest(std::move(*handle)),
+        mojo::PendingAssociatedReceiver<mojom::ElectronAutofillDriver>(
+            std::move(*handle)),
         render_frame_host);
     return true;
   }
@@ -1570,6 +1575,8 @@ void ElectronBrowserClient::RegisterBrowserInterfaceBindersForFrame(
       base::BindRepeating(&badging::BadgeManager::BindFrameReceiver));
   map->Add<electron::mojom::ElectronBrowser>(
       base::BindRepeating(&BindElectronBrowser));
+  map->Add<blink::mojom::KeyboardLockService>(base::BindRepeating(
+      &content::KeyboardLockServiceImpl::CreateMojoService));
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   map->Add<extensions::mime_handler::MimeHandlerService>(
       base::BindRepeating(&BindMimeHandlerService));

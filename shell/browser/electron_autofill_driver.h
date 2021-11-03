@@ -20,11 +20,14 @@ namespace electron {
 
 class AutofillDriver : public mojom::ElectronAutofillDriver {
  public:
-  AutofillDriver(
-      content::RenderFrameHost* render_frame_host,
-      mojo::PendingAssociatedReceiver<mojom::ElectronAutofillDriver> request);
-
+  explicit AutofillDriver(content::RenderFrameHost* render_frame_host);
+  AutofillDriver(const AutofillDriver&) = delete;
+  AutofillDriver& operator=(const AutofillDriver&) = delete;
   ~AutofillDriver() override;
+
+  void BindPendingReceiver(
+      mojo::PendingAssociatedReceiver<mojom::ElectronAutofillDriver>
+          pending_receiver);
 
   void ShowAutofillPopup(const gfx::RectF& bounds,
                          const std::vector<std::u16string>& values,
@@ -38,7 +41,7 @@ class AutofillDriver : public mojom::ElectronAutofillDriver {
   std::unique_ptr<AutofillPopup> autofill_popup_;
 #endif
 
-  mojo::AssociatedReceiver<mojom::ElectronAutofillDriver> receiver_;
+  mojo::AssociatedReceiver<mojom::ElectronAutofillDriver> receiver_{this};
 };
 
 }  // namespace electron

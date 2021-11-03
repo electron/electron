@@ -8,7 +8,6 @@
 #include <vector>
 
 #include "base/lazy_instance.h"
-#include "base/macros.h"
 #include "base/observer_list.h"
 
 namespace electron {
@@ -18,6 +17,10 @@ class WindowListObserver;
 
 class WindowList {
  public:
+  // disable copy
+  WindowList(const WindowList&) = delete;
+  WindowList& operator=(const WindowList&) = delete;
+
   typedef std::vector<NativeWindow*> WindowVector;
 
   static WindowVector GetWindows();
@@ -55,8 +58,6 @@ class WindowList {
       observers_;
 
   static WindowList* instance_;
-
-  DISALLOW_COPY_AND_ASSIGN(WindowList);
 };
 
 }  // namespace electron

@@ -57,6 +57,10 @@ class NativeWindow : public base::SupportsUserData,
  public:
   ~NativeWindow() override;
 
+  // disable copy
+  NativeWindow(const NativeWindow&) = delete;
+  NativeWindow& operator=(const NativeWindow&) = delete;
+
   // Create window with existing WebContents, the caller is responsible for
   // managing the window's live.
   static NativeWindow* Create(const gin_helper::Dictionary& options,
@@ -412,8 +416,6 @@ class NativeWindow : public base::SupportsUserData,
   gfx::Rect overlay_rect_;
 
   base::WeakPtrFactory<NativeWindow> weak_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(NativeWindow);
 };
 
 // This class provides a hook to get a NativeWindow from a WebContents.

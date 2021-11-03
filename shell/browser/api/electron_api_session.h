@@ -155,6 +155,10 @@ class Session : public gin::Wrappable<Session>,
                            extensions::UnloadedExtensionReason reason) override;
 #endif
 
+  // disable copy
+  Session(const Session&) = delete;
+  Session& operator=(const Session&) = delete;
+
  protected:
   Session(v8::Isolate* isolate, ElectronBrowserContext* browser_context);
   ~Session() override;
@@ -187,8 +191,6 @@ class Session : public gin::Wrappable<Session>,
   base::UnguessableToken network_emulation_token_;
 
   ElectronBrowserContext* browser_context_;
-
-  DISALLOW_COPY_AND_ASSIGN(Session);
 };
 
 }  // namespace api

@@ -9,7 +9,6 @@
 #include <string>
 
 #include "base/files/file_path.h"
-#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "base/nix/xdg_util.h"
 #include "ui/base/glib/glib_signal.h"
@@ -43,6 +42,10 @@ class AppIndicatorIcon : public views::StatusIconLinux {
                    const gfx::ImageSkia& image,
                    const std::u16string& tool_tip);
   ~AppIndicatorIcon() override;
+
+  // disable copy
+  AppIndicatorIcon(const AppIndicatorIcon&) = delete;
+  AppIndicatorIcon& operator=(const AppIndicatorIcon&) = delete;
 
   // Indicates whether libappindicator so could be opened.
   static bool CouldOpen();
@@ -105,8 +108,6 @@ class AppIndicatorIcon : public views::StatusIconLinux {
   int icon_change_count_ = 0;
 
   base::WeakPtrFactory<AppIndicatorIcon> weak_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(AppIndicatorIcon);
 };
 
 }  // namespace gtkui

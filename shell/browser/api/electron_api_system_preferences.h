@@ -121,6 +121,10 @@ class SystemPreferences
   bool IsHighContrastColorScheme();
   v8::Local<v8::Value> GetAnimationSettings(v8::Isolate* isolate);
 
+  // disable copy
+  SystemPreferences(const SystemPreferences&) = delete;
+  SystemPreferences& operator=(const SystemPreferences&) = delete;
+
  protected:
   SystemPreferences();
   ~SystemPreferences() override;
@@ -162,7 +166,6 @@ class SystemPreferences
 
   std::unique_ptr<gfx::ScopedSysColorChangeListener> color_change_listener_;
 #endif
-  DISALLOW_COPY_AND_ASSIGN(SystemPreferences);
 };
 
 }  // namespace api

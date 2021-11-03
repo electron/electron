@@ -21,6 +21,10 @@ class SubmenuButton : public views::MenuButton {
                 const SkColor& background_color);
   ~SubmenuButton() override;
 
+  // disable copy
+  SubmenuButton(const SubmenuButton&) = delete;
+  SubmenuButton& operator=(const SubmenuButton&) = delete;
+
   void SetAcceleratorVisibility(bool visible);
   void SetUnderlineColor(SkColor color);
 
@@ -50,8 +54,6 @@ class SubmenuButton : public views::MenuButton {
   int text_height_ = 0;
   SkColor underline_color_ = SK_ColorBLACK;
   SkColor background_color_;
-
-  DISALLOW_COPY_AND_ASSIGN(SubmenuButton);
 };
 
 }  // namespace electron

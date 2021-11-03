@@ -17,12 +17,15 @@ class ElectronFontAccessDelegate : public content::FontAccessDelegate {
   ElectronFontAccessDelegate();
   ~ElectronFontAccessDelegate() override;
 
+  // disable copy
+  ElectronFontAccessDelegate(const ElectronFontAccessDelegate&) = delete;
+  ElectronFontAccessDelegate& operator=(const ElectronFontAccessDelegate&) =
+      delete;
+
   std::unique_ptr<content::FontAccessChooser> RunChooser(
       content::RenderFrameHost* frame,
       const std::vector<std::string>& selection,
       content::FontAccessChooser::Callback callback) override;
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronFontAccessDelegate);
 };
 
 #endif  // SHELL_BROWSER_FONT_ELECTRON_FONT_ACCESS_DELEGATE_H_

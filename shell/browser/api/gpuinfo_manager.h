@@ -22,6 +22,11 @@ class GPUInfoManager : public content::GpuDataManagerObserver {
 
   GPUInfoManager();
   ~GPUInfoManager() override;
+
+  // disable copy
+  GPUInfoManager(const GPUInfoManager&) = delete;
+  GPUInfoManager& operator=(const GPUInfoManager&) = delete;
+
   bool NeedsCompleteGpuInfoCollection() const;
   void FetchCompleteInfo(gin_helper::Promise<base::DictionaryValue> promise);
   void FetchBasicInfo(gin_helper::Promise<base::DictionaryValue> promise);
@@ -40,8 +45,6 @@ class GPUInfoManager : public content::GpuDataManagerObserver {
   std::vector<gin_helper::Promise<base::DictionaryValue>>
       complete_info_promise_set_;
   content::GpuDataManagerImpl* gpu_data_manager_;
-
-  DISALLOW_COPY_AND_ASSIGN(GPUInfoManager);
 };
 
 }  // namespace electron

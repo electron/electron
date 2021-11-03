@@ -26,6 +26,10 @@ class ElectronApiServiceImpl : public mojom::ElectronRenderer,
                          RendererClientBase* renderer_client);
   ~ElectronApiServiceImpl() override;
 
+  // disable copy
+  ElectronApiServiceImpl(const ElectronApiServiceImpl&) = delete;
+  ElectronApiServiceImpl& operator=(const ElectronApiServiceImpl&) = delete;
+
   void BindTo(mojo::PendingReceiver<mojom::ElectronRenderer> receiver);
 
   void Message(bool internal,
@@ -62,8 +66,6 @@ class ElectronApiServiceImpl : public mojom::ElectronRenderer,
 
   RendererClientBase* renderer_client_;
   base::WeakPtrFactory<ElectronApiServiceImpl> weak_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronApiServiceImpl);
 };
 
 }  // namespace electron

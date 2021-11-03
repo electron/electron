@@ -7,7 +7,6 @@
 
 #include <memory>
 
-#include "base/macros.h"
 #include "extensions/renderer/extensions_renderer_client.h"
 
 namespace content {
@@ -26,6 +25,12 @@ class ElectronExtensionsRendererClient
   ElectronExtensionsRendererClient();
   ~ElectronExtensionsRendererClient() override;
 
+  // disable copy
+  ElectronExtensionsRendererClient(const ElectronExtensionsRendererClient&) =
+      delete;
+  ElectronExtensionsRendererClient& operator=(
+      const ElectronExtensionsRendererClient&) = delete;
+
   // ExtensionsRendererClient implementation.
   bool IsIncognitoProcess() const override;
   int GetLowestIsolatedWorldId() const override;
@@ -42,8 +47,6 @@ class ElectronExtensionsRendererClient
 
  private:
   std::unique_ptr<extensions::Dispatcher> dispatcher_;
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronExtensionsRendererClient);
 };
 
 }  // namespace electron

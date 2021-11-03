@@ -40,6 +40,10 @@ class Debugger : public gin::Wrappable<Debugger>,
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
 
+  // disable copy
+  Debugger(const Debugger&) = delete;
+  Debugger& operator=(const Debugger&) = delete;
+
  protected:
   Debugger(v8::Isolate* isolate, content::WebContents* web_contents);
   ~Debugger() override;
@@ -68,8 +72,6 @@ class Debugger : public gin::Wrappable<Debugger>,
 
   PendingRequestMap pending_requests_;
   int previous_request_id_ = 0;
-
-  DISALLOW_COPY_AND_ASSIGN(Debugger);
 };
 
 }  // namespace api

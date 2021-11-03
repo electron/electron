@@ -8,7 +8,6 @@
 #include <memory>
 
 #include "base/compiler_specific.h"
-#include "base/macros.h"
 #include "ppapi/host/host_factory.h"
 
 namespace content {
@@ -20,6 +19,12 @@ class ElectronRendererPepperHostFactory : public ppapi::host::HostFactory {
   explicit ElectronRendererPepperHostFactory(content::RendererPpapiHost* host);
   ~ElectronRendererPepperHostFactory() override;
 
+  // disable copy
+  ElectronRendererPepperHostFactory(const ElectronRendererPepperHostFactory&) =
+      delete;
+  ElectronRendererPepperHostFactory& operator=(
+      const ElectronRendererPepperHostFactory&) = delete;
+
   // HostFactory.
   std::unique_ptr<ppapi::host::ResourceHost> CreateResourceHost(
       ppapi::host::PpapiHost* host,
@@ -30,8 +35,6 @@ class ElectronRendererPepperHostFactory : public ppapi::host::HostFactory {
  private:
   // Not owned by this object.
   content::RendererPpapiHost* host_;
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronRendererPepperHostFactory);
 };
 
 #endif  // SHELL_RENDERER_ELECTRON_RENDERER_PEPPER_HOST_FACTORY_H_

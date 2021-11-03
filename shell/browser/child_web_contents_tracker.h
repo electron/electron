@@ -17,6 +17,10 @@ struct ChildWebContentsTracker
     : public content::WebContentsUserData<ChildWebContentsTracker> {
   ~ChildWebContentsTracker() override;
 
+  // disable copy
+  ChildWebContentsTracker(const ChildWebContentsTracker&) = delete;
+  ChildWebContentsTracker& operator=(const ChildWebContentsTracker&) = delete;
+
   GURL url;
   std::string frame_name;
   content::Referrer referrer;
@@ -28,8 +32,6 @@ struct ChildWebContentsTracker
   friend class content::WebContentsUserData<ChildWebContentsTracker>;
 
   WEB_CONTENTS_USER_DATA_KEY_DECL();
-
-  DISALLOW_COPY_AND_ASSIGN(ChildWebContentsTracker);
 };
 
 }  // namespace electron

@@ -59,6 +59,10 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
 
   content::RenderFrameHost* render_frame_host() const { return render_frame_; }
 
+  // disable copy
+  WebFrameMain(const WebFrameMain&) = delete;
+  WebFrameMain& operator=(const WebFrameMain&) = delete;
+
  protected:
   explicit WebFrameMain(content::RenderFrameHost* render_frame);
   ~WebFrameMain() override;
@@ -124,8 +128,6 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
   bool render_frame_disposed_ = false;
 
   base::WeakPtrFactory<WebFrameMain> weak_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(WebFrameMain);
 };
 
 }  // namespace api

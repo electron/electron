@@ -46,6 +46,10 @@ class Menu : public gin::Wrappable<Menu>,
 
   ElectronMenuModel* model() const { return model_.get(); }
 
+  // disable copy
+  Menu(const Menu&) = delete;
+  Menu& operator=(const Menu&) = delete;
+
  protected:
   explicit Menu(gin::Arguments* args);
   ~Menu() override;
@@ -117,8 +121,6 @@ class Menu : public gin::Wrappable<Menu>,
   bool IsEnabledAt(int index) const;
   bool IsVisibleAt(int index) const;
   bool WorksWhenHiddenAt(int index) const;
-
-  DISALLOW_COPY_AND_ASSIGN(Menu);
 };
 
 }  // namespace api

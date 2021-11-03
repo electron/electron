@@ -30,6 +30,10 @@ class View : public gin_helper::Wrappable<View> {
 
   views::View* view() const { return view_; }
 
+  // disable copy
+  View(const View&) = delete;
+  View& operator=(const View&) = delete;
+
  protected:
   explicit View(views::View* view);
   View();
@@ -43,8 +47,6 @@ class View : public gin_helper::Wrappable<View> {
 
   bool delete_view_ = true;
   views::View* view_ = nullptr;
-
-  DISALLOW_COPY_AND_ASSIGN(View);
 };
 
 }  // namespace api

@@ -71,6 +71,10 @@ class EventEmitter : public gin_helper::Wrappable<T> {
     return EmitWithEvent(name, event, std::forward<Args>(args)...);
   }
 
+  // disable copy
+  EventEmitter(const EventEmitter&) = delete;
+  EventEmitter& operator=(const EventEmitter&) = delete;
+
  protected:
   EventEmitter() {}
 
@@ -93,8 +97,6 @@ class EventEmitter : public gin_helper::Wrappable<T> {
     }
     return false;
   }
-
-  DISALLOW_COPY_AND_ASSIGN(EventEmitter);
 };
 
 }  // namespace gin_helper

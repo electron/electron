@@ -74,6 +74,10 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
   explicit ElectronMenuModel(Delegate* delegate);
   ~ElectronMenuModel() override;
 
+  // disable copy
+  ElectronMenuModel(const ElectronMenuModel&) = delete;
+  ElectronMenuModel& operator=(const ElectronMenuModel&) = delete;
+
   void AddObserver(Observer* obs) { observers_.AddObserver(obs); }
   void RemoveObserver(Observer* obs) { observers_.RemoveObserver(obs); }
 
@@ -120,8 +124,6 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
   base::ObserverList<Observer> observers_;
 
   base::WeakPtrFactory<ElectronMenuModel> weak_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronMenuModel);
 };
 
 }  // namespace electron

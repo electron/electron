@@ -38,8 +38,6 @@ class TrayIconGtk : public TrayIcon, public views::StatusIconLinux::Delegate {
   gfx::ImageSkia image_;
   std::u16string tool_tip_;
   ui::MenuModel* menu_model_;
-
-  DISALLOW_COPY_AND_ASSIGN(TrayIconGtk);
 };
 
 }  // namespace electron

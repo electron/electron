@@ -1369,11 +1369,19 @@ Decrease the capturer count by one. The page will be set to hidden or occluded s
 browser window is hidden or occluded and the capturer count reaches zero. If you want to
 decrease the hidden capturer count instead you should set `stayHidden` to true.
 
-#### `contents.getPrinters()`
+#### `contents.getPrinters()` _Deprecated_
 
 Get the system printer list.
 
 Returns [`PrinterInfo[]`](structures/printer-info.md)
+
+**Deprecated:** Should use the new [`contents.getPrintersAsync`](web-contents.md#contentsgetprintersasync) API.
+
+#### `contents.getPrintersAsync()`
+
+Get the system printer list.
+
+Returns `Promise<PrinterInfo[]>` - Resolves with a [`PrinterInfo[]`](structures/printer-info.md)
 
 #### `contents.print([options], [callback])`
 
@@ -1485,8 +1493,8 @@ win.loadURL('http://github.com')
 
 win.webContents.on('did-finish-load', () => {
   // Use default printing options
+  const pdfPath = path.join(os.homedir(), 'Desktop', 'temp.pdf')
   win.webContents.printToPDF({}).then(data => {
-    const pdfPath = path.join(os.homedir(), 'Desktop', 'temp.pdf')
     fs.writeFile(pdfPath, data, (error) => {
       if (error) throw error
       console.log(`Wrote PDF successfully to ${pdfPath}`)
@@ -1914,6 +1922,14 @@ Returns `String` - Returns the WebRTC IP Handling Policy.
 Setting the WebRTC IP handling policy allows you to control which IPs are
 exposed via WebRTC. See [BrowserLeaks](https://browserleaks.com/webrtc) for
 more details.
+
+#### `contents.getMediaSourceId(requestWebContents)`
+
+* `requestWebContents` WebContents - Web contents that the id will be registered to.
+
+Returns `String` - The identifier of a WebContents stream. This identifier can be used
+with `navigator.mediaDevices.getUserMedia` using a `chromeMediaSource` of `tab`.
+The identifier is restricted to the web contents that it is registered to and is only valid for 10 seconds.
 
 #### `contents.getOSProcessId()`
 

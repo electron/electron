@@ -49,6 +49,8 @@
 #include "third_party/blink/public/web/web_script_execution_callback.h"
 #include "third_party/blink/public/web/web_script_source.h"
 #include "third_party/blink/public/web/web_view.h"
+#include "third_party/blink/renderer/core/execution_context/execution_context.h"  // nogncheck
+#include "third_party/blink/renderer/core/frame/csp/content_security_policy.h"  // nogncheck
 #include "third_party/blink/renderer/platform/bindings/dom_wrapper_world.h"  // nogncheck
 #include "ui/base/ime/ime_text_span.h"
 #include "url/url_util.h"
@@ -144,6 +146,10 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
       : promise_(std::move(promise)), callback_(std::move(callback)) {}
 
   ~ScriptExecutionCallback() override = default;
+
+  // disable copy
+  ScriptExecutionCallback(const ScriptExecutionCallback&) = delete;
+  ScriptExecutionCallback& operator=(const ScriptExecutionCallback&) = delete;
 
   void CopyResultToCallingContextAndFinalize(
       v8::Isolate* isolate,
@@ -246,8 +252,6 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
  private:
   gin_helper::Promise<v8::Local<v8::Value>> promise_;
   CompletionCallback callback_;
-
-  DISALLOW_COPY_AND_ASSIGN(ScriptExecutionCallback);
 };
 
 class FrameSetSpellChecker : public content::RenderFrameVisitor {
@@ -258,6 +262,10 @@ class FrameSetSpellChecker : public content::RenderFrameVisitor {
     content::RenderFrame::ForEach(this);
     main_frame->GetWebFrame()->SetSpellCheckPanelHostClient(spell_check_client);
   }
+
+  // disable copy
+  FrameSetSpellChecker(const FrameSetSpellChecker&) = delete;
+  FrameSetSpellChecker& operator=(const FrameSetSpellChecker&) = delete;
 
   bool Visit(content::RenderFrame* render_frame) override {
     if (render_frame->GetMainRenderFrame() == main_frame_ ||
@@ -270,8 +278,6 @@ class FrameSetSpellChecker : public content::RenderFrameVisitor {
  private:
   SpellCheckClient* spell_check_client_;
   content::RenderFrame* main_frame_;
-
-  DISALLOW_COPY_AND_ASSIGN(FrameSetSpellChecker);
 };
 
 class SpellCheckerHolder final : public content::RenderFrameObserver {
@@ -369,6 +375,7 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
         .SetMethod("insertText", &WebFrameRenderer::InsertText)
         .SetMethod("insertCSS", &WebFrameRenderer::InsertCSS)
         .SetMethod("removeInsertedCSS", &WebFrameRenderer::RemoveInsertedCSS)
+        .SetMethod("_isEvalAllowed", &WebFrameRenderer::IsEvalAllowed)
         .SetMethod("executeJavaScript", &WebFrameRenderer::ExecuteJavaScript)
         .SetMethod("executeJavaScriptInIsolatedWorld",
                    &WebFrameRenderer::ExecuteJavaScriptInIsolatedWorld)
@@ -635,6 +642,16 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
       web_frame->ToWebLocalFrame()->GetDocument().RemoveInsertedStyleSheet(
           blink::WebString::FromUTF16(key));
     }
+  }
+
+  bool IsEvalAllowed(v8::Isolate* isolate) {
+    content::RenderFrame* render_frame;
+    if (!MaybeGetRenderFrame(isolate, "isEvalAllowed", &render_frame))
+      return true;
+
+    auto* context = blink::ExecutionContext::From(
+        render_frame->GetWebFrame()->MainWorldScriptContext());
+    return !context->GetContentSecurityPolicy()->ShouldCheckEval();
   }
 
   v8::Local<v8::Promise> ExecuteJavaScript(gin::Arguments* gin_args,

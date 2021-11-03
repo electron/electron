@@ -34,6 +34,10 @@ class Screen : public gin::Wrappable<Screen>,
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
 
+  // disable copy
+  Screen(const Screen&) = delete;
+  Screen& operator=(const Screen&) = delete;
+
  protected:
   Screen(v8::Isolate* isolate, display::Screen* screen);
   ~Screen() override;
@@ -52,8 +56,6 @@ class Screen : public gin::Wrappable<Screen>,
 
  private:
   display::Screen* screen_;
-
-  DISALLOW_COPY_AND_ASSIGN(Screen);
 };
 
 }  // namespace api
