@@ -51,6 +51,10 @@ class NativeImage : public gin::Wrappable<NativeImage> {
 #endif
   ~NativeImage() override;
 
+  // disable copy
+  NativeImage(const NativeImage&) = delete;
+  NativeImage& operator=(const NativeImage&) = delete;
+
   static gin::Handle<NativeImage> CreateEmpty(v8::Isolate* isolate);
   static gin::Handle<NativeImage> Create(v8::Isolate* isolate,
                                          const gfx::Image& image);
@@ -132,8 +136,6 @@ class NativeImage : public gin::Wrappable<NativeImage> {
   gfx::Image image_;
 
   v8::Isolate* isolate_;
-
-  DISALLOW_COPY_AND_ASSIGN(NativeImage);
 };
 
 }  // namespace api

@@ -29,8 +29,6 @@ class Win32Notification : public electron::Notification {
  private:
   DesktopNotificationController::Notification notification_ref_;
   std::string tag_;
-
-  DISALLOW_COPY_AND_ASSIGN(Win32Notification);
 };
 
 }  // namespace electron

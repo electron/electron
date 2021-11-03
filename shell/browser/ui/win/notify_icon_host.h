@@ -9,7 +9,6 @@
 
 #include <vector>
 
-#include "base/macros.h"
 #include "shell/common/gin_converters/guid_converter.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 
@@ -23,6 +22,10 @@ class NotifyIconHost {
  public:
   NotifyIconHost();
   ~NotifyIconHost();
+
+  // disable copy
+  NotifyIconHost(const NotifyIconHost&) = delete;
+  NotifyIconHost& operator=(const NotifyIconHost&) = delete;
 
   NotifyIcon* CreateNotifyIcon(absl::optional<UUID> guid);
   void Remove(NotifyIcon* notify_icon);
@@ -61,8 +64,6 @@ class NotifyIconHost {
   // The message ID of the "TaskbarCreated" message, sent to us when we need to
   // reset our status icons.
   UINT taskbar_created_message_ = 0;
-
-  DISALLOW_COPY_AND_ASSIGN(NotifyIconHost);
 };
 
 }  // namespace electron

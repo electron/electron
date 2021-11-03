@@ -13,7 +13,6 @@
 #include <string>
 
 #include "base/compiler_specific.h"
-#include "base/macros.h"
 #include "base/win/scoped_gdi_object.h"
 #include "shell/browser/ui/tray_icon.h"
 #include "shell/browser/ui/win/notify_icon_host.h"
@@ -104,8 +103,6 @@ class NotifyIcon : public TrayIcon {
   std::unique_ptr<views::MenuRunner> menu_runner_;
 
   base::WeakPtrFactory<NotifyIcon> weak_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(NotifyIcon);
 };
 
 }  // namespace electron

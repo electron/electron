@@ -5,7 +5,6 @@
 #ifndef SHELL_COMMON_API_OBJECT_LIFE_MONITOR_H_
 #define SHELL_COMMON_API_OBJECT_LIFE_MONITOR_H_
 
-#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "v8/include/v8.h"
 
@@ -16,6 +15,10 @@ class ObjectLifeMonitor {
   ObjectLifeMonitor(v8::Isolate* isolate, v8::Local<v8::Object> target);
   virtual ~ObjectLifeMonitor();
 
+  // disable copy
+  ObjectLifeMonitor(const ObjectLifeMonitor&) = delete;
+  ObjectLifeMonitor& operator=(const ObjectLifeMonitor&) = delete;
+
   virtual void RunDestructor() = 0;
 
  private:
@@ -25,8 +28,6 @@ class ObjectLifeMonitor {
   v8::Global<v8::Object> target_;
 
   base::WeakPtrFactory<ObjectLifeMonitor> weak_ptr_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(ObjectLifeMonitor);
 };
 
 }  // namespace electron

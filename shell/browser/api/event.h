@@ -29,6 +29,10 @@ class Event : public gin::Wrappable<Event> {
   // `invoke` calls.
   bool SendReply(v8::Isolate* isolate, v8::Local<v8::Value> result);
 
+  // disable copy
+  Event(const Event&) = delete;
+  Event& operator=(const Event&) = delete;
+
  protected:
   Event();
   ~Event() override;
@@ -41,8 +45,6 @@ class Event : public gin::Wrappable<Event> {
  private:
   // Replyer for the synchronous messages.
   InvokeCallback callback_;
-
-  DISALLOW_COPY_AND_ASSIGN(Event);
 };
 
 }  // namespace gin_helper

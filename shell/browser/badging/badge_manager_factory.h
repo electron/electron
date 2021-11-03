@@ -5,7 +5,6 @@
 #ifndef SHELL_BROWSER_BADGING_BADGE_MANAGER_FACTORY_H_
 #define SHELL_BROWSER_BADGING_BADGE_MANAGER_FACTORY_H_
 
-#include "base/macros.h"
 #include "components/keyed_service/content/browser_context_keyed_service_factory.h"
 
 namespace base {
@@ -26,6 +25,10 @@ class BadgeManagerFactory : public BrowserContextKeyedServiceFactory {
   // Returns the BadgeManagerFactory singleton.
   static BadgeManagerFactory* GetInstance();
 
+  // disable copy
+  BadgeManagerFactory(const BadgeManagerFactory&) = delete;
+  BadgeManagerFactory& operator=(const BadgeManagerFactory&) = delete;
+
  private:
   friend struct base::DefaultSingletonTraits<BadgeManagerFactory>;
 
@@ -35,8 +38,6 @@ class BadgeManagerFactory : public BrowserContextKeyedServiceFactory {
   // BrowserContextKeyedServiceFactory
   KeyedService* BuildServiceInstanceFor(
       content::BrowserContext* context) const override;
-
-  DISALLOW_COPY_AND_ASSIGN(BadgeManagerFactory);
 };
 
 }  // namespace badging

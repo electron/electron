@@ -17,8 +17,6 @@ class NodeBindingsWin : public NodeBindings {
 
  private:
   void PollEvents() override;
-
-  DISALLOW_COPY_AND_ASSIGN(NodeBindingsWin);
 };
 
 }  // namespace electron

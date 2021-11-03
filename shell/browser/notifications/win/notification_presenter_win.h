@@ -45,8 +45,6 @@ class NotificationPresenterWin : public NotificationPresenter {
       NotificationDelegate* delegate) override;
 
   base::ScopedTempDir temp_dir_;
-
-  DISALLOW_COPY_AND_ASSIGN(NotificationPresenterWin);
 };
 
 }  // namespace electron

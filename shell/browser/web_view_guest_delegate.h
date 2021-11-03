@@ -21,6 +21,10 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
                        api::WebContents* api_web_contents);
   ~WebViewGuestDelegate() override;
 
+  // disable copy
+  WebViewGuestDelegate(const WebViewGuestDelegate&) = delete;
+  WebViewGuestDelegate& operator=(const WebViewGuestDelegate&) = delete;
+
   // Attach to the iframe.
   void AttachToIframe(content::WebContents* embedder_web_contents,
                       int embedder_frame_id);
@@ -49,8 +53,6 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
   WebContentsZoomController* embedder_zoom_controller_ = nullptr;
 
   api::WebContents* api_web_contents_ = nullptr;
-
-  DISALLOW_COPY_AND_ASSIGN(WebViewGuestDelegate);
 };
 
 }  // namespace electron

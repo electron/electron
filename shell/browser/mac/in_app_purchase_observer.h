@@ -47,6 +47,10 @@ class TransactionObserver {
   TransactionObserver();
   virtual ~TransactionObserver();
 
+  // disable copy
+  TransactionObserver(const TransactionObserver&) = delete;
+  TransactionObserver& operator=(const TransactionObserver&) = delete;
+
   virtual void OnTransactionsUpdated(
       const std::vector<Transaction>& transactions) = 0;
 
@@ -54,8 +58,6 @@ class TransactionObserver {
   InAppTransactionObserver* observer_;
 
   base::WeakPtrFactory<TransactionObserver> weak_ptr_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(TransactionObserver);
 };
 
 }  // namespace in_app_purchase

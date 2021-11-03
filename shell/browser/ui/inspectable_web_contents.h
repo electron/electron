@@ -51,6 +51,10 @@ class InspectableWebContents
                          bool is_guest);
   ~InspectableWebContents() override;
 
+  // disable copy
+  InspectableWebContents(const InspectableWebContents&) = delete;
+  InspectableWebContents& operator=(const InspectableWebContents&) = delete;
+
   InspectableWebContentsView* GetView() const;
   content::WebContents* GetWebContents() const;
   content::WebContents* GetDevToolsWebContents() const;
@@ -238,8 +242,6 @@ class InspectableWebContents
   base::flat_set<std::string> synced_setting_names_;
 
   base::WeakPtrFactory<InspectableWebContents> weak_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(InspectableWebContents);
 };
 
 }  // namespace electron

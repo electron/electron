@@ -85,6 +85,10 @@ class AsarURLLoader : public network::mojom::URLLoader {
   void PauseReadingBodyFromNet() override {}
   void ResumeReadingBodyFromNet() override {}
 
+  // disable copy
+  AsarURLLoader(const AsarURLLoader&) = delete;
+  AsarURLLoader& operator=(const AsarURLLoader&) = delete;
+
  private:
   AsarURLLoader() = default;
   ~AsarURLLoader() override = default;
@@ -379,8 +383,6 @@ class AsarURLLoader : public network::mojom::URLLoader {
   // It is used to set some of the URLLoaderCompletionStatus data passed back
   // to the URLLoaderClients (eg SimpleURLLoader).
   size_t total_bytes_written_ = 0;
-
-  DISALLOW_COPY_AND_ASSIGN(AsarURLLoader);
 };
 
 }  // namespace

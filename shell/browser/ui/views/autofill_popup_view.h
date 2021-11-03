@@ -42,6 +42,10 @@ class AutofillPopupChildView : public views::View {
     SetFocusBehavior(FocusBehavior::ALWAYS);
   }
 
+  // disable copy
+  AutofillPopupChildView(const AutofillPopupChildView&) = delete;
+  AutofillPopupChildView& operator=(const AutofillPopupChildView&) = delete;
+
  private:
   ~AutofillPopupChildView() override {}
 
@@ -49,8 +53,6 @@ class AutofillPopupChildView : public views::View {
   void GetAccessibleNodeData(ui::AXNodeData* node_data) override;
 
   std::u16string suggestion_;
-
-  DISALLOW_COPY_AND_ASSIGN(AutofillPopupChildView);
 };
 
 class AutofillPopupView : public views::WidgetDelegateView,

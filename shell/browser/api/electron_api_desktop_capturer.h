@@ -45,6 +45,10 @@ class DesktopCapturer : public gin::Wrappable<DesktopCapturer>,
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
 
+  // disable copy
+  DesktopCapturer(const DesktopCapturer&) = delete;
+  DesktopCapturer& operator=(const DesktopCapturer&) = delete;
+
  protected:
   explicit DesktopCapturer(v8::Isolate* isolate);
   ~DesktopCapturer() override;
@@ -71,8 +75,6 @@ class DesktopCapturer : public gin::Wrappable<DesktopCapturer>,
 #endif  // defined(OS_WIN)
 
   base::WeakPtrFactory<DesktopCapturer> weak_ptr_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(DesktopCapturer);
 };
 
 }  // namespace api

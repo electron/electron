@@ -5,7 +5,6 @@
 #ifndef SHELL_BROWSER_PRINTING_PRINT_VIEW_MANAGER_ELECTRON_H_
 #define SHELL_BROWSER_PRINTING_PRINT_VIEW_MANAGER_ELECTRON_H_
 
-#include "base/macros.h"
 #include "build/build_config.h"
 #include "chrome/browser/printing/print_view_manager_base.h"
 #include "content/public/browser/web_contents_user_data.h"
@@ -17,6 +16,10 @@ class PrintViewManagerElectron
       public content::WebContentsUserData<PrintViewManagerElectron> {
  public:
   ~PrintViewManagerElectron() override;
+
+  // disable copy
+  PrintViewManagerElectron(const PrintViewManagerElectron&) = delete;
+  PrintViewManagerElectron& operator=(const PrintViewManagerElectron&) = delete;
 
   static void BindPrintManagerHost(
       mojo::PendingAssociatedReceiver<printing::mojom::PrintManagerHost>
@@ -37,8 +40,6 @@ class PrintViewManagerElectron
   explicit PrintViewManagerElectron(content::WebContents* web_contents);
 
   WEB_CONTENTS_USER_DATA_KEY_DECL();
-
-  DISALLOW_COPY_AND_ASSIGN(PrintViewManagerElectron);
 };
 
 }  // namespace electron

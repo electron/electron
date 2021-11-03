@@ -64,6 +64,10 @@ class ElectronURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
             target_factory_remote);
     ~RedirectedRequest() override;
 
+    // disable copy
+    RedirectedRequest(const RedirectedRequest&) = delete;
+    RedirectedRequest& operator=(const RedirectedRequest&) = delete;
+
     // network::mojom::URLLoader:
     void FollowRedirect(
         const std::vector<std::string>& removed_headers,
@@ -89,8 +93,6 @@ class ElectronURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
     net::MutableNetworkTrafficAnnotationTag traffic_annotation_;
 
     mojo::Remote<network::mojom::URLLoaderFactory> target_factory_remote_;
-
-    DISALLOW_COPY_AND_ASSIGN(RedirectedRequest);
   };
 
   static mojo::PendingRemote<network::mojom::URLLoaderFactory> Create(
@@ -117,6 +119,10 @@ class ElectronURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
       mojo::PendingRemote<network::mojom::URLLoaderFactory> target_factory,
       ProtocolType type,
       gin::Arguments* args);
+
+  // disable copy
+  ElectronURLLoaderFactory(const ElectronURLLoaderFactory&) = delete;
+  ElectronURLLoaderFactory& operator=(const ElectronURLLoaderFactory&) = delete;
 
  private:
   ElectronURLLoaderFactory(
@@ -167,8 +173,6 @@ class ElectronURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
 
   ProtocolType type_;
   ProtocolHandler handler_;
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronURLLoaderFactory);
 };
 
 }  // namespace electron

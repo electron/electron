@@ -7,7 +7,6 @@
 
 #include <string>
 
-#include "base/macros.h"
 #include "components/prefs/pref_member.h"
 
 class PrefRegistrySimple;
@@ -23,6 +22,10 @@ class MediaDeviceIDSalt {
   explicit MediaDeviceIDSalt(PrefService* pref_service);
   ~MediaDeviceIDSalt();
 
+  // disable copy
+  MediaDeviceIDSalt(const MediaDeviceIDSalt&) = delete;
+  MediaDeviceIDSalt& operator=(const MediaDeviceIDSalt&) = delete;
+
   std::string GetSalt();
 
   static void RegisterPrefs(PrefRegistrySimple* pref_registry);
@@ -30,8 +33,6 @@ class MediaDeviceIDSalt {
 
  private:
   StringPrefMember media_device_id_salt_;
-
-  DISALLOW_COPY_AND_ASSIGN(MediaDeviceIDSalt);
 };
 
 }  // namespace electron

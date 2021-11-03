@@ -7,7 +7,6 @@
 
 #include <memory>
 
-#include "base/macros.h"
 #include "v8/include/v8.h"
 
 namespace gin_helper {
@@ -18,6 +17,10 @@ class Locker {
   explicit Locker(v8::Isolate* isolate);
   ~Locker();
 
+  // disable copy
+  Locker(const Locker&) = delete;
+  Locker& operator=(const Locker&) = delete;
+
   // Returns whether current process is browser process, currently we detect it
   // by checking whether current has used V8 Lock, but it might be a bad idea.
   static inline bool IsBrowserProcess() { return v8::Locker::IsActive(); }
@@ -27,8 +30,6 @@ class Locker {
   void operator delete(void*, size_t);
 
   std::unique_ptr<v8::Locker> locker_;
-
-  DISALLOW_COPY_AND_ASSIGN(Locker);
 };
 
 }  // namespace gin_helper

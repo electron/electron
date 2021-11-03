@@ -7,7 +7,6 @@
 
 #include <memory>
 
-#include "base/macros.h"
 #include "v8/include/v8.h"
 
 namespace electron {
@@ -21,6 +20,10 @@ class WebWorkerObserver {
   // Returns the WebWorkerObserver for current worker thread.
   static WebWorkerObserver* GetCurrent();
 
+  // disable copy
+  WebWorkerObserver(const WebWorkerObserver&) = delete;
+  WebWorkerObserver& operator=(const WebWorkerObserver&) = delete;
+
   void WorkerScriptReadyForEvaluation(v8::Local<v8::Context> context);
   void ContextWillDestroy(v8::Local<v8::Context> context);
 
@@ -30,8 +33,6 @@ class WebWorkerObserver {
 
   std::unique_ptr<NodeBindings> node_bindings_;
   std::unique_ptr<ElectronBindings> electron_bindings_;
-
-  DISALLOW_COPY_AND_ASSIGN(WebWorkerObserver);
 };
 
 }  // namespace electron

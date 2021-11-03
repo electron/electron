@@ -14,7 +14,6 @@
 #include <string>
 
 #include "base/command_line.h"
-#include "base/macros.h"
 #include "chrome/browser/browser_process.h"
 #include "components/prefs/pref_service.h"
 #include "components/prefs/value_map_pref_store.h"
@@ -35,6 +34,10 @@ class BrowserProcessImpl : public BrowserProcess {
  public:
   BrowserProcessImpl();
   ~BrowserProcessImpl() override;
+
+  // disable copy
+  BrowserProcessImpl(const BrowserProcessImpl&) = delete;
+  BrowserProcessImpl& operator=(const BrowserProcessImpl&) = delete;
 
   static void ApplyProxyModeFromCommandLine(ValueMapPrefStore* pref_store);
 
@@ -109,8 +112,6 @@ class BrowserProcessImpl : public BrowserProcess {
 #endif
   std::unique_ptr<PrefService> local_state_;
   std::string locale_;
-
-  DISALLOW_COPY_AND_ASSIGN(BrowserProcessImpl);
 };
 
 #endif  // SHELL_BROWSER_BROWSER_PROCESS_IMPL_H_

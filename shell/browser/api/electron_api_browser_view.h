@@ -54,6 +54,10 @@ class BrowserView : public gin::Wrappable<BrowserView>,
 
   int32_t ID() const { return id_; }
 
+  // disable copy
+  BrowserView(const BrowserView&) = delete;
+  BrowserView& operator=(const BrowserView&) = delete;
+
  protected:
   BrowserView(gin::Arguments* args, const gin_helper::Dictionary& options);
   ~BrowserView() override;
@@ -78,8 +82,6 @@ class BrowserView : public gin::Wrappable<BrowserView>,
   std::unique_ptr<NativeBrowserView> view_;
 
   int32_t id_;
-
-  DISALLOW_COPY_AND_ASSIGN(BrowserView);
 };
 
 }  // namespace api

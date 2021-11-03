@@ -332,8 +332,6 @@ class NativeWindowViews : public NativeWindow,
   gfx::Size widget_size_;
   double opacity_ = 1.0;
   bool widget_destroyed_ = false;
-
-  DISALLOW_COPY_AND_ASSIGN(NativeWindowViews);
 };
 
 }  // namespace electron

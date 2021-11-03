@@ -44,8 +44,6 @@ class TrayIconCocoa : public TrayIcon {
   base::scoped_nsobject<ElectronMenuController> menu_;
 
   base::WeakPtrFactory<TrayIconCocoa> weak_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(TrayIconCocoa);
 };
 
 }  // namespace electron

@@ -33,6 +33,11 @@ class GlobalMenuBarRegistrarX11 {
   GlobalMenuBarRegistrarX11();
   ~GlobalMenuBarRegistrarX11();
 
+  // disable copy
+  GlobalMenuBarRegistrarX11(const GlobalMenuBarRegistrarX11&) = delete;
+  GlobalMenuBarRegistrarX11& operator=(const GlobalMenuBarRegistrarX11&) =
+      delete;
+
   // Sends the actual message.
   void RegisterXWindow(x11::Window window);
   void UnregisterXWindow(x11::Window window);
@@ -53,8 +58,6 @@ class GlobalMenuBarRegistrarX11 {
   // x11::Window which want to be registered, but haven't yet been because
   // we're waiting for the proxy to become available.
   std::set<x11::Window> live_windows_;
-
-  DISALLOW_COPY_AND_ASSIGN(GlobalMenuBarRegistrarX11);
 };
 
 #endif  // SHELL_BROWSER_UI_VIEWS_GLOBAL_MENU_BAR_REGISTRAR_X11_H_

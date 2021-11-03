@@ -10,7 +10,6 @@
 #include <vector>
 
 #include "base/files/file_path.h"
-#include "base/macros.h"
 
 namespace electron {
 
@@ -91,6 +90,10 @@ class JumpList {
   explicit JumpList(const std::wstring& app_id);
   ~JumpList();
 
+  // disable copy
+  JumpList(const JumpList&) = delete;
+  JumpList& operator=(const JumpList&) = delete;
+
   // Starts a new transaction, must be called before appending any categories,
   // aborting or committing. After the method returns |min_items| will indicate
   // the minimum number of items that will be displayed in the Jump List, and
@@ -113,8 +116,6 @@ class JumpList {
  private:
   std::wstring app_id_;
   CComPtr<ICustomDestinationList> destinations_;
-
-  DISALLOW_COPY_AND_ASSIGN(JumpList);
 };
 
 }  // namespace electron

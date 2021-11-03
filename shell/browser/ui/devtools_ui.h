@@ -16,8 +16,9 @@ class DevToolsUI : public content::WebUIController {
   explicit DevToolsUI(content::BrowserContext* browser_context,
                       content::WebUI* web_ui);
 
- private:
-  DISALLOW_COPY_AND_ASSIGN(DevToolsUI);
+  // disable copy
+  DevToolsUI(const DevToolsUI&) = delete;
+  DevToolsUI& operator=(const DevToolsUI&) = delete;
 };
 
 }  // namespace electron

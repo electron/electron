@@ -7,7 +7,6 @@
 
 #include <vector>
 
-#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "components/prefs/pref_value_store.h"
 
@@ -27,6 +26,10 @@ class PrefStoreDelegate : public PrefValueStore::Delegate {
   explicit PrefStoreDelegate(
       base::WeakPtr<ElectronBrowserContext> browser_context);
   ~PrefStoreDelegate() override;
+
+  // disable copy
+  PrefStoreDelegate(const PrefStoreDelegate&) = delete;
+  PrefStoreDelegate& operator=(const PrefStoreDelegate&) = delete;
 
   void Init(PrefStore* managed_prefs,
             PrefStore* supervised_user_prefs,
@@ -48,8 +51,6 @@ class PrefStoreDelegate : public PrefValueStore::Delegate {
 
  private:
   base::WeakPtr<ElectronBrowserContext> browser_context_;
-
-  DISALLOW_COPY_AND_ASSIGN(PrefStoreDelegate);
 };
 
 }  // namespace electron

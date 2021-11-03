@@ -69,6 +69,11 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
                                 gfx::Size initial_size);
   ~OffScreenRenderWidgetHostView() override;
 
+  // disable copy
+  OffScreenRenderWidgetHostView(const OffScreenRenderWidgetHostView&) = delete;
+  OffScreenRenderWidgetHostView& operator=(
+      const OffScreenRenderWidgetHostView&) = delete;
+
   // content::RenderWidgetHostView:
   void InitAsChild(gfx::NativeView) override;
   void SetSize(const gfx::Size&) override;
@@ -290,8 +295,6 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   std::unique_ptr<SkBitmap> backing_;
 
   base::WeakPtrFactory<OffScreenRenderWidgetHostView> weak_ptr_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(OffScreenRenderWidgetHostView);
 };
 
 }  // namespace electron

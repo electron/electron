@@ -18,8 +18,6 @@ class NotificationPresenterLinux : public NotificationPresenter {
  private:
   Notification* CreateNotificationObject(
       NotificationDelegate* delegate) override;
-
-  DISALLOW_COPY_AND_ASSIGN(NotificationPresenterLinux);
 };
 
 }  // namespace electron

@@ -7,7 +7,6 @@
 
 #include <memory>
 
-#include "base/macros.h"
 #include "base/memory/singleton.h"
 #include "content/public/browser/web_ui_controller_factory.h"
 
@@ -24,6 +23,12 @@ class ElectronWebUIControllerFactory : public content::WebUIControllerFactory {
   ElectronWebUIControllerFactory();
   ~ElectronWebUIControllerFactory() override;
 
+  // disable copy
+  ElectronWebUIControllerFactory(const ElectronWebUIControllerFactory&) =
+      delete;
+  ElectronWebUIControllerFactory& operator=(
+      const ElectronWebUIControllerFactory&) = delete;
+
   // content::WebUIControllerFactory:
   content::WebUI::TypeID GetWebUIType(content::BrowserContext* browser_context,
                                       const GURL& url) override;
@@ -35,8 +40,6 @@ class ElectronWebUIControllerFactory : public content::WebUIControllerFactory {
 
  private:
   friend struct base::DefaultSingletonTraits<ElectronWebUIControllerFactory>;
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronWebUIControllerFactory);
 };
 
 }  // namespace electron

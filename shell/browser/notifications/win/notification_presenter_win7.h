@@ -30,8 +30,6 @@ class NotificationPresenterWin7 : public NotificationPresenter,
 
   void OnNotificationClicked(const Notification& notification) override;
   void OnNotificationDismissed(const Notification& notification) override;
-
-  DISALLOW_COPY_AND_ASSIGN(NotificationPresenterWin7);
 };
 
 }  // namespace electron

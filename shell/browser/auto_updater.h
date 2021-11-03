@@ -8,7 +8,6 @@
 #include <map>
 #include <string>
 
-#include "base/macros.h"
 #include "build/build_config.h"
 
 namespace base {
@@ -53,6 +52,12 @@ class AutoUpdater {
  public:
   typedef std::map<std::string, std::string> HeaderMap;
 
+  AutoUpdater() = delete;
+
+  // disable copy
+  AutoUpdater(const AutoUpdater&) = delete;
+  AutoUpdater& operator=(const AutoUpdater&) = delete;
+
   // Gets/Sets the delegate.
   static Delegate* GetDelegate();
   static void SetDelegate(Delegate* delegate);
@@ -67,8 +72,6 @@ class AutoUpdater {
 
  private:
   static Delegate* delegate_;
-
-  DISALLOW_IMPLICIT_CONSTRUCTORS(AutoUpdater);
 };
 
 }  // namespace auto_updater

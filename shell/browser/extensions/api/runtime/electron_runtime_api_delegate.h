@@ -7,7 +7,6 @@
 
 #include <string>
 
-#include "base/macros.h"
 #include "extensions/browser/api/runtime/runtime_api_delegate.h"
 
 namespace content {
@@ -21,6 +20,11 @@ class ElectronRuntimeAPIDelegate : public RuntimeAPIDelegate {
   explicit ElectronRuntimeAPIDelegate(content::BrowserContext* browser_context);
   ~ElectronRuntimeAPIDelegate() override;
 
+  // disable copy
+  ElectronRuntimeAPIDelegate(const ElectronRuntimeAPIDelegate&) = delete;
+  ElectronRuntimeAPIDelegate& operator=(const ElectronRuntimeAPIDelegate&) =
+      delete;
+
   // RuntimeAPIDelegate implementation.
   void AddUpdateObserver(UpdateObserver* observer) override;
   void RemoveUpdateObserver(UpdateObserver* observer) override;
@@ -33,8 +37,6 @@ class ElectronRuntimeAPIDelegate : public RuntimeAPIDelegate {
 
  private:
   content::BrowserContext* browser_context_;
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronRuntimeAPIDelegate);
 };
 
 }  // namespace extensions

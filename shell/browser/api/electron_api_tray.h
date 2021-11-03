@@ -52,6 +52,10 @@ class Tray : public gin::Wrappable<Tray>,
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
 
+  // disable copy
+  Tray(const Tray&) = delete;
+  Tray& operator=(const Tray&) = delete;
+
  private:
   Tray(v8::Isolate* isolate,
        v8::Local<v8::Value> image,
@@ -105,8 +109,6 @@ class Tray : public gin::Wrappable<Tray>,
 
   v8::Global<v8::Value> menu_;
   std::unique_ptr<TrayIcon> tray_icon_;
-
-  DISALLOW_COPY_AND_ASSIGN(Tray);
 };
 
 }  // namespace api

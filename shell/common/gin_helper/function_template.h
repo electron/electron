@@ -52,6 +52,10 @@ class CallbackHolderBase {
  public:
   v8::Local<v8::External> GetHandle(v8::Isolate* isolate);
 
+  // disable copy
+  CallbackHolderBase(const CallbackHolderBase&) = delete;
+  CallbackHolderBase& operator=(const CallbackHolderBase&) = delete;
+
  protected:
   explicit CallbackHolderBase(v8::Isolate* isolate);
   virtual ~CallbackHolderBase();
@@ -63,8 +67,6 @@ class CallbackHolderBase {
       const v8::WeakCallbackInfo<CallbackHolderBase>& data);
 
   v8::Global<v8::External> v8_ref_;
-
-  DISALLOW_COPY_AND_ASSIGN(CallbackHolderBase);
 };
 
 template <typename Sig>
@@ -79,8 +81,6 @@ class CallbackHolder : public CallbackHolderBase {
 
  private:
   virtual ~CallbackHolder() = default;
-
-  DISALLOW_COPY_AND_ASSIGN(CallbackHolder);
 };
 
 template <typename T>

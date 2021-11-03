@@ -42,6 +42,10 @@ class Archive : public gin::Wrappable<Archive> {
 
   const char* GetTypeName() override { return "Archive"; }
 
+  // disable copy
+  Archive(const Archive&) = delete;
+  Archive& operator=(const Archive&) = delete;
+
  protected:
   Archive(v8::Isolate* isolate, std::unique_ptr<asar::Archive> archive)
       : archive_(std::move(archive)) {}
@@ -123,8 +127,6 @@ class Archive : public gin::Wrappable<Archive> {
 
  private:
   std::unique_ptr<asar::Archive> archive_;
-
-  DISALLOW_COPY_AND_ASSIGN(Archive);
 };
 
 // static

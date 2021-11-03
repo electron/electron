@@ -8,7 +8,6 @@
 #include <string>
 
 #include "base/compiler_specific.h"
-#include "base/macros.h"
 #include "extensions/common/extensions_client.h"
 #include "url/gurl.h"
 
@@ -29,6 +28,10 @@ class ElectronExtensionsClient : public extensions::ExtensionsClient {
 
   ElectronExtensionsClient();
   ~ElectronExtensionsClient() override;
+
+  // disable copy
+  ElectronExtensionsClient(const ElectronExtensionsClient&) = delete;
+  ElectronExtensionsClient& operator=(const ElectronExtensionsClient&) = delete;
 
   // ExtensionsClient overrides:
   void Initialize() override;
@@ -55,8 +58,6 @@ class ElectronExtensionsClient : public extensions::ExtensionsClient {
 
   const GURL webstore_base_url_;
   const GURL webstore_update_url_;
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronExtensionsClient);
 };
 
 }  // namespace electron

@@ -7,7 +7,6 @@
 
 #include <string>
 
-#include "base/macros.h"
 #include "third_party/blink/public/mojom/loader/transferrable_url_loader.mojom.h"
 
 namespace extensions {

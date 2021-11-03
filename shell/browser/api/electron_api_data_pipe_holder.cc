@@ -57,6 +57,10 @@ class DataPipeReader {
 
   ~DataPipeReader() = default;
 
+  // disable copy
+  DataPipeReader(const DataPipeReader&) = delete;
+  DataPipeReader& operator=(const DataPipeReader&) = delete;
+
  private:
   // Callback invoked by DataPipeGetter::Read.
   void ReadCallback(int32_t status, uint64_t size) {
@@ -137,8 +141,6 @@ class DataPipeReader {
   uint64_t remaining_size_ = 0;
 
   base::WeakPtrFactory<DataPipeReader> weak_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(DataPipeReader);
 };
 
 }  // namespace

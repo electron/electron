@@ -30,6 +30,10 @@ class AutoUpdater : public gin::Wrappable<AutoUpdater>,
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
 
+  // disable copy
+  AutoUpdater(const AutoUpdater&) = delete;
+  AutoUpdater& operator=(const AutoUpdater&) = delete;
+
  protected:
   AutoUpdater();
   ~AutoUpdater() override;
@@ -54,8 +58,6 @@ class AutoUpdater : public gin::Wrappable<AutoUpdater>,
   std::string GetFeedURL();
   void SetFeedURL(gin::Arguments* args);
   void QuitAndInstall();
-
-  DISALLOW_COPY_AND_ASSIGN(AutoUpdater);
 };
 
 }  // namespace api

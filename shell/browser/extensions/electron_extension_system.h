@@ -9,7 +9,6 @@
 #include <string>
 
 #include "base/compiler_specific.h"
-#include "base/macros.h"
 #include "base/memory/ref_counted.h"
 #include "base/memory/weak_ptr.h"
 #include "base/one_shot_event.h"
@@ -37,6 +36,10 @@ class ElectronExtensionSystem : public ExtensionSystem {
   using InstallUpdateCallback = ExtensionSystem::InstallUpdateCallback;
   explicit ElectronExtensionSystem(content::BrowserContext* browser_context);
   ~ElectronExtensionSystem() override;
+
+  // disable copy
+  ElectronExtensionSystem(const ElectronExtensionSystem&) = delete;
+  ElectronExtensionSystem& operator=(const ElectronExtensionSystem&) = delete;
 
   // Loads an unpacked extension from a directory. Returns the extension on
   // success, or nullptr otherwise.
@@ -115,8 +118,6 @@ class ElectronExtensionSystem : public ExtensionSystem {
   base::OneShotEvent ready_;
 
   base::WeakPtrFactory<ElectronExtensionSystem> weak_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronExtensionSystem);
 };
 
 }  // namespace extensions

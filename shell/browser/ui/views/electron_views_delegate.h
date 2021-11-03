@@ -19,6 +19,10 @@ class ViewsDelegate : public views::ViewsDelegate {
   ViewsDelegate();
   ~ViewsDelegate() override;
 
+  // disable copy
+  ViewsDelegate(const ViewsDelegate&) = delete;
+  ViewsDelegate& operator=(const ViewsDelegate&) = delete;
+
  protected:
   // views::ViewsDelegate:
   void SaveWindowPlacement(const views::Widget* window,
@@ -71,8 +75,6 @@ class ViewsDelegate : public views::ViewsDelegate {
 
   base::WeakPtrFactory<ViewsDelegate> weak_factory_{this};
 #endif
-
-  DISALLOW_COPY_AND_ASSIGN(ViewsDelegate);
 };
 
 }  // namespace electron

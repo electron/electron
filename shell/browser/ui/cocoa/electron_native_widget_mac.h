@@ -18,6 +18,10 @@ class ElectronNativeWidgetMac : public views::NativeWidgetMac {
                           views::internal::NativeWidgetDelegate* delegate);
   ~ElectronNativeWidgetMac() override;
 
+  // disable copy
+  ElectronNativeWidgetMac(const ElectronNativeWidgetMac&) = delete;
+  ElectronNativeWidgetMac& operator=(const ElectronNativeWidgetMac&) = delete;
+
  protected:
   // NativeWidgetMac:
   NativeWidgetMacNSWindow* CreateNSWindow(
@@ -26,8 +30,6 @@ class ElectronNativeWidgetMac : public views::NativeWidgetMac {
  private:
   NativeWindowMac* shell_;
   NSUInteger style_mask_;
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronNativeWidgetMac);
 };
 
 }  // namespace electron

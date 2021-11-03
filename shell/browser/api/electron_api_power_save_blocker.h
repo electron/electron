@@ -27,6 +27,10 @@ class PowerSaveBlocker : public gin::Wrappable<PowerSaveBlocker> {
 
   static gin::WrapperInfo kWrapperInfo;
 
+  // disable copy
+  PowerSaveBlocker(const PowerSaveBlocker&) = delete;
+  PowerSaveBlocker& operator=(const PowerSaveBlocker&) = delete;
+
  protected:
   explicit PowerSaveBlocker(v8::Isolate* isolate);
   ~PowerSaveBlocker() override;
@@ -50,8 +54,6 @@ class PowerSaveBlocker : public gin::Wrappable<PowerSaveBlocker> {
   WakeLockTypeMap wake_lock_types_;
 
   mojo::Remote<device::mojom::WakeLock> wake_lock_;
-
-  DISALLOW_COPY_AND_ASSIGN(PowerSaveBlocker);
 };
 
 }  // namespace api

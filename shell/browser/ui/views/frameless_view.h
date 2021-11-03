@@ -21,6 +21,10 @@ class FramelessView : public views::NonClientFrameView {
   FramelessView();
   ~FramelessView() override;
 
+  // disable copy
+  FramelessView(const FramelessView&) = delete;
+  FramelessView& operator=(const FramelessView&) = delete;
+
   virtual void Init(NativeWindowViews* window, views::Widget* frame);
 
   // Returns whether the |point| is on frameless window's resizing border.
@@ -49,9 +53,6 @@ class FramelessView : public views::NonClientFrameView {
   views::Widget* frame_ = nullptr;
 
   friend class NativeWindowsViews;
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(FramelessView);
 };
 
 }  // namespace electron

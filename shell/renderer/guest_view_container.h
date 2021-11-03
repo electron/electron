@@ -24,6 +24,10 @@ class GuestViewContainer {
   explicit GuestViewContainer(content::RenderFrame* render_frame);
   virtual ~GuestViewContainer();
 
+  // disable copy
+  GuestViewContainer(const GuestViewContainer&) = delete;
+  GuestViewContainer& operator=(const GuestViewContainer&) = delete;
+
   static GuestViewContainer* FromID(int element_instance_id);
 
   void RegisterElementResizeCallback(const ResizeCallback& callback);
@@ -36,8 +40,6 @@ class GuestViewContainer {
   ResizeCallback element_resize_callback_;
 
   base::WeakPtrFactory<GuestViewContainer> weak_ptr_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(GuestViewContainer);
 };
 
 }  // namespace electron

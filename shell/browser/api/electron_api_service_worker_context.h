@@ -43,6 +43,10 @@ class ServiceWorkerContext
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
 
+  // disable copy
+  ServiceWorkerContext(const ServiceWorkerContext&) = delete;
+  ServiceWorkerContext& operator=(const ServiceWorkerContext&) = delete;
+
  protected:
   explicit ServiceWorkerContext(v8::Isolate* isolate,
                                 ElectronBrowserContext* browser_context);
@@ -52,8 +56,6 @@ class ServiceWorkerContext
   content::ServiceWorkerContext* service_worker_context_;
 
   base::WeakPtrFactory<ServiceWorkerContext> weak_ptr_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(ServiceWorkerContext);
 };
 
 }  // namespace api

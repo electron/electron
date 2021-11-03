@@ -30,9 +30,6 @@ class ImageView : public View {
   views::ImageView* image_view() const {
     return static_cast<views::ImageView*>(view());
   }
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(ImageView);
 };
 
 }  // namespace api

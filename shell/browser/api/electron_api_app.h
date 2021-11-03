@@ -79,6 +79,10 @@ class App : public ElectronBrowserClient::Delegate,
 
   App();
 
+  // disable copy
+  App(const App&) = delete;
+  App& operator=(const App&) = delete;
+
  private:
   ~App() override;
 
@@ -261,8 +265,6 @@ class App : public ElectronBrowserClient::Delegate,
 
   bool disable_hw_acceleration_ = false;
   bool disable_domain_blocking_for_3DAPIs_ = false;
-
-  DISALLOW_COPY_AND_ASSIGN(App);
 };
 
 }  // namespace api

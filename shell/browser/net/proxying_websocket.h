@@ -63,6 +63,10 @@ class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
       uint64_t* request_id_generator);
   ~ProxyingWebSocket() override;
 
+  // disable copy
+  ProxyingWebSocket(const ProxyingWebSocket&) = delete;
+  ProxyingWebSocket& operator=(const ProxyingWebSocket&) = delete;
+
   void Start();
 
   // network::mojom::WebSocketHandshakeClient methods:
@@ -170,7 +174,6 @@ class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
   extensions::WebRequestInfo info_;
 
   base::WeakPtrFactory<ProxyingWebSocket> weak_factory_{this};
-  DISALLOW_COPY_AND_ASSIGN(ProxyingWebSocket);
 };
 
 }  // namespace electron

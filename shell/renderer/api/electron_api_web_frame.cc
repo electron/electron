@@ -147,6 +147,10 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
 
   ~ScriptExecutionCallback() override = default;
 
+  // disable copy
+  ScriptExecutionCallback(const ScriptExecutionCallback&) = delete;
+  ScriptExecutionCallback& operator=(const ScriptExecutionCallback&) = delete;
+
   void CopyResultToCallingContextAndFinalize(
       v8::Isolate* isolate,
       const v8::Local<v8::Object>& result) {
@@ -248,8 +252,6 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
  private:
   gin_helper::Promise<v8::Local<v8::Value>> promise_;
   CompletionCallback callback_;
-
-  DISALLOW_COPY_AND_ASSIGN(ScriptExecutionCallback);
 };
 
 class FrameSetSpellChecker : public content::RenderFrameVisitor {
@@ -260,6 +262,10 @@ class FrameSetSpellChecker : public content::RenderFrameVisitor {
     content::RenderFrame::ForEach(this);
     main_frame->GetWebFrame()->SetSpellCheckPanelHostClient(spell_check_client);
   }
+
+  // disable copy
+  FrameSetSpellChecker(const FrameSetSpellChecker&) = delete;
+  FrameSetSpellChecker& operator=(const FrameSetSpellChecker&) = delete;
 
   bool Visit(content::RenderFrame* render_frame) override {
     if (render_frame->GetMainRenderFrame() == main_frame_ ||
@@ -272,8 +278,6 @@ class FrameSetSpellChecker : public content::RenderFrameVisitor {
  private:
   SpellCheckClient* spell_check_client_;
   content::RenderFrame* main_frame_;
-
-  DISALLOW_COPY_AND_ASSIGN(FrameSetSpellChecker);
 };
 
 class SpellCheckerHolder final : public content::RenderFrameObserver {

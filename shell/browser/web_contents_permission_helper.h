@@ -19,6 +19,11 @@ class WebContentsPermissionHelper
  public:
   ~WebContentsPermissionHelper() override;
 
+  // disable copy
+  WebContentsPermissionHelper(const WebContentsPermissionHelper&) = delete;
+  WebContentsPermissionHelper& operator=(const WebContentsPermissionHelper&) =
+      delete;
+
   enum class PermissionType {
     POINTER_LOCK = static_cast<int>(content::PermissionType::NUM) + 1,
     FULLSCREEN,
@@ -85,8 +90,6 @@ class WebContentsPermissionHelper
   content::WebContents* web_contents_;
 
   WEB_CONTENTS_USER_DATA_KEY_DECL();
-
-  DISALLOW_COPY_AND_ASSIGN(WebContentsPermissionHelper);
 };
 
 }  // namespace electron

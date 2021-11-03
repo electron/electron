@@ -9,7 +9,6 @@
 #include <memory>
 
 #include "base/files/file_path.h"
-#include "base/macros.h"
 #include "base/memory/scoped_refptr.h"
 #include "base/process/process_metrics.h"
 #include "shell/common/gin_helper/promise.h"
@@ -35,6 +34,10 @@ class ElectronBindings {
  public:
   explicit ElectronBindings(uv_loop_t* loop);
   virtual ~ElectronBindings();
+
+  // disable copy
+  ElectronBindings(const ElectronBindings&) = delete;
+  ElectronBindings& operator=(const ElectronBindings&) = delete;
 
   // Add process._linkedBinding function, which behaves like process.binding
   // but load native code from Electron instead.
@@ -77,8 +80,6 @@ class ElectronBindings {
   UvHandle<uv_async_t> call_next_tick_async_;
   std::list<node::Environment*> pending_next_ticks_;
   std::unique_ptr<base::ProcessMetrics> metrics_;
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronBindings);
 };
 
 }  // namespace electron

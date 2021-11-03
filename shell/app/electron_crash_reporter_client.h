@@ -9,7 +9,6 @@
 #include <string>
 
 #include "base/compiler_specific.h"
-#include "base/macros.h"
 #include "base/no_destructor.h"
 #include "build/build_config.h"
 #include "components/crash/core/app/crash_reporter_client.h"
@@ -17,6 +16,11 @@
 class ElectronCrashReporterClient : public crash_reporter::CrashReporterClient {
  public:
   static void Create();
+
+  // disable copy
+  ElectronCrashReporterClient(const ElectronCrashReporterClient&) = delete;
+  ElectronCrashReporterClient& operator=(const ElectronCrashReporterClient&) =
+      delete;
 
   static ElectronCrashReporterClient* Get();
   void SetCollectStatsConsent(bool upload_allowed);
@@ -85,8 +89,6 @@ class ElectronCrashReporterClient : public crash_reporter::CrashReporterClient {
 
   ElectronCrashReporterClient();
   ~ElectronCrashReporterClient() override;
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronCrashReporterClient);
 };
 
 #endif  // SHELL_APP_ELECTRON_CRASH_REPORTER_CLIENT_H_

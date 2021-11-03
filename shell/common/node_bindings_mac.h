@@ -22,8 +22,6 @@ class NodeBindingsMac : public NodeBindings {
   static void OnWatcherQueueChanged(uv_loop_t* loop);
 
   void PollEvents() override;
-
-  DISALLOW_COPY_AND_ASSIGN(NodeBindingsMac);
 };
 
 }  // namespace electron

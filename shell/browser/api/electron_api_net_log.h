@@ -7,7 +7,6 @@
 
 #include "base/callback.h"
 #include "base/files/file_path.h"
-#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "base/values.h"
 #include "gin/handle.h"
@@ -45,6 +44,10 @@ class NetLog : public gin::Wrappable<NetLog> {
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
 
+  // disable copy
+  NetLog(const NetLog&) = delete;
+  NetLog& operator=(const NetLog&) = delete;
+
  protected:
   explicit NetLog(v8::Isolate* isolate,
                   ElectronBrowserContext* browser_context);
@@ -68,8 +71,6 @@ class NetLog : public gin::Wrappable<NetLog> {
   scoped_refptr<base::TaskRunner> file_task_runner_;
 
   base::WeakPtrFactory<NetLog> weak_ptr_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(NetLog);
 };
 
 }  // namespace api

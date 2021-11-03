@@ -81,8 +81,6 @@ class WinFrameView : public FramelessView {
   // May be null if the caption button container is destroyed before the frame
   // view. Always check for validity before using!
   WinCaptionButtonContainer* caption_button_container_;
-
-  DISALLOW_COPY_AND_ASSIGN(WinFrameView);
 };
 
 }  // namespace electron

@@ -27,6 +27,10 @@ class NativeTheme : public gin::Wrappable<NativeTheme>,
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
 
+  // disable copy
+  NativeTheme(const NativeTheme&) = delete;
+  NativeTheme& operator=(const NativeTheme&) = delete;
+
  protected:
   NativeTheme(v8::Isolate* isolate,
               ui::NativeTheme* ui_theme,
@@ -50,8 +54,6 @@ class NativeTheme : public gin::Wrappable<NativeTheme>,
  private:
   ui::NativeTheme* ui_theme_;
   ui::NativeTheme* web_theme_;
-
-  DISALLOW_COPY_AND_ASSIGN(NativeTheme);
 };
 
 }  // namespace api

@@ -27,6 +27,11 @@ class ElectronContentUtilityClient : public content::ContentUtilityClient {
   ElectronContentUtilityClient();
   ~ElectronContentUtilityClient() override;
 
+  // disable copy
+  ElectronContentUtilityClient(const ElectronContentUtilityClient&) = delete;
+  ElectronContentUtilityClient& operator=(const ElectronContentUtilityClient&) =
+      delete;
+
   void ExposeInterfacesToBrowser(mojo::BinderMap* binders) override;
   void RegisterMainThreadServices(mojo::ServiceFactory& services) override;
   void RegisterIOThreadServices(mojo::ServiceFactory& services) override;
@@ -38,8 +43,6 @@ class ElectronContentUtilityClient : public content::ContentUtilityClient {
 
   // True if the utility process runs with elevated privileges.
   bool utility_process_running_elevated_ = false;
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronContentUtilityClient);
 };
 
 }  // namespace electron

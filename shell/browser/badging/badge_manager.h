@@ -8,7 +8,6 @@
 #include <memory>
 #include <string>
 
-#include "base/macros.h"
 #include "components/keyed_service/core/keyed_service.h"
 #include "mojo/public/cpp/bindings/receiver_set.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
@@ -31,6 +30,10 @@ class BadgeManager : public KeyedService, public blink::mojom::BadgeService {
  public:
   BadgeManager();
   ~BadgeManager() override;
+
+  // disable copy
+  BadgeManager(const BadgeManager&) = delete;
+  BadgeManager& operator=(const BadgeManager&) = delete;
 
   static void BindFrameReceiver(
       content::RenderFrameHost* frame,
@@ -98,8 +101,6 @@ class BadgeManager : public KeyedService, public blink::mojom::BadgeService {
   // Delegate which handles actual setting and clearing of the badge.
   // Note: This is currently only set on Windows and MacOS.
   // std::unique_ptr<BadgeManagerDelegate> delegate_;
-
-  DISALLOW_COPY_AND_ASSIGN(BadgeManager);
 };
 
 }  // namespace badging
