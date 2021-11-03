@@ -1,0 +1,143 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Michael Lippautz <mlippautz@chromium.org>
+Date: Wed, 20 Oct 2021 10:10:56 +0200
+Subject: Merged: cppgc: Fix marking of ephemerons with keys in construction
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Revision: 32a09a6bce6cc75806dee5ec748bb1d081048fd0
+
+BUG=chromium:1259587
+NOTRY=true
+NOPRESUBMIT=true
+NOTREECHECKS=true
+R=dinfuehr@chromium.org
+
+Change-Id: Ief330b4b71705c16bc61a3aca6d3aa1db172cdf3
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3234200
+Reviewed-by: Dominik Inführ <dinfuehr@chromium.org>
+Cr-Commit-Position: refs/branch-heads/9.4@{#46}
+Cr-Branched-From: 3b51863bc25492549a8bf96ff67ce481b1a3337b-refs/heads/9.4.146@{#1}
+Cr-Branched-From: 2890419fc8fb9bdb507fdd801d76fa7dd9f022b5-refs/heads/master@{#76233}
+
+diff --git a/src/heap/cppgc/marker.cc b/src/heap/cppgc/marker.cc
+index f6c0e74f625fde2c31031cc1795fbd83c3bbea07..82f3442e54a72e2f43069e1993f7a3c3c6c165d8 100644
+--- a/src/heap/cppgc/marker.cc
++++ b/src/heap/cppgc/marker.cc
+@@ -237,6 +237,7 @@ void MarkerBase::EnterAtomicPause(MarkingConfig::StackState stack_state) {
+   }
+   config_.stack_state = stack_state;
+   config_.marking_type = MarkingConfig::MarkingType::kAtomic;
++  mutator_marking_state_.set_in_atomic_pause();
+ 
+   // Lock guards against changes to {Weak}CrossThreadPersistent handles, that
+   // may conflict with marking. E.g., a WeakCrossThreadPersistent may be
+diff --git a/src/heap/cppgc/marking-state.h b/src/heap/cppgc/marking-state.h
+index 65185c36e2babe145a27076cf1c76a12a7c880a1..39615474e4776281e48f8e6a504ba39165966d90 100644
+--- a/src/heap/cppgc/marking-state.h
++++ b/src/heap/cppgc/marking-state.h
+@@ -8,6 +8,7 @@
+ #include <algorithm>
+ 
+ #include "include/cppgc/trace-trait.h"
++#include "src/base/logging.h"
+ #include "src/heap/cppgc/compaction-worklists.h"
+ #include "src/heap/cppgc/globals.h"
+ #include "src/heap/cppgc/heap-object-header.h"
+@@ -109,6 +110,8 @@ class MarkingStateBase {
+     movable_slots_worklist_.reset();
+   }
+ 
++  void set_in_atomic_pause() { in_atomic_pause_ = true; }
++
+  protected:
+   inline void MarkAndPush(HeapObjectHeader&, TraceDescriptor);
+ 
+@@ -142,6 +145,7 @@ class MarkingStateBase {
+       movable_slots_worklist_;
+ 
+   size_t marked_bytes_ = 0;
++  bool in_atomic_pause_ = false;
+ };
+ 
+ MarkingStateBase::MarkingStateBase(HeapBase& heap,
+@@ -267,10 +271,19 @@ void MarkingStateBase::ProcessWeakContainer(const void* object,
+ 
+ void MarkingStateBase::ProcessEphemeron(const void* key,
+                                         TraceDescriptor value_desc) {
+-  // Filter out already marked keys. The write barrier for WeakMember
+-  // ensures that any newly set value after this point is kept alive and does
+-  // not require the callback.
+-  if (HeapObjectHeader::FromPayload(key).IsMarked<AccessMode::kAtomic>()) {
++  // Keys are considered live even in incremental/concurrent marking settings
++  // because the write barrier for WeakMember ensures that any newly set value
++  // after this point is kept alive and does not require the callback.
++  const bool key_in_construction =
++      HeapObjectHeader::FromPayload(key).IsInConstruction<AccessMode::kAtomic>();
++  const bool key_considered_as_live =
++      key_in_construction
++          ? in_atomic_pause_
++          : HeapObjectHeader::FromPayload(key).IsMarked<AccessMode::kAtomic>();
++  DCHECK_IMPLIES(
++      key_in_construction && in_atomic_pause_,
++      HeapObjectHeader::FromPayload(key).IsMarked<AccessMode::kAtomic>());
++  if (key_considered_as_live) {
+     MarkAndPush(value_desc.base_object_payload, value_desc);
+     return;
+   }
+diff --git a/test/unittests/heap/cppgc/ephemeron-pair-unittest.cc b/test/unittests/heap/cppgc/ephemeron-pair-unittest.cc
+index 1172eedb866c7a1a4723fd96ce9070219deec32e..3d2b2e7bc3e47921632f406aba1f6472cb747b6d 100644
+--- a/test/unittests/heap/cppgc/ephemeron-pair-unittest.cc
++++ b/test/unittests/heap/cppgc/ephemeron-pair-unittest.cc
+@@ -108,5 +108,50 @@ TEST_F(EhpemeronPairTest, ValueNotMarkedBeforeKey) {
+   EXPECT_TRUE(HeapObjectHeader::FromPayload(value).IsMarked());
+ }
+ 
++namespace {
++
++class KeyWithCallback final : public GarbageCollected<KeyWithCallback> {
++ public:
++  template <typename Callback>
++  explicit KeyWithCallback(Callback callback) {
++    callback(this);
++  }
++  void Trace(Visitor*) const {}
++};
++
++class EphemeronHolderForKeyWithCallback final
++    : public GarbageCollected<EphemeronHolderForKeyWithCallback> {
++ public:
++  EphemeronHolderForKeyWithCallback(KeyWithCallback* key, GCed* value)
++      : ephemeron_pair_(key, value) {}
++  void Trace(cppgc::Visitor* visitor) const { visitor->Trace(ephemeron_pair_); }
++
++ private:
++  const EphemeronPair<KeyWithCallback, GCed> ephemeron_pair_;
++};
++
++}  // namespace
++
++TEST_F(EphemeronPairTest, EphemeronPairWithKeyInConstruction) {
++  GCed* value = MakeGarbageCollected<GCed>(GetAllocationHandle());
++  Persistent<EphemeronHolderForKeyWithCallback> holder;
++  InitializeMarker(*Heap::From(GetHeap()), GetPlatformHandle().get());
++  FinishSteps();
++  MakeGarbageCollected<KeyWithCallback>(
++      GetAllocationHandle(), [this, &holder, value](KeyWithCallback* thiz) {
++        // The test doesn't use conservative stack scanning to retain key to
++        // avoid retaining value as a side effect.
++        EXPECT_TRUE(HeapObjectHeader::FromObject(thiz).TryMarkAtomic());
++        holder = MakeGarbageCollected<EphemeronHolderForKeyWithCallback>(
++            GetAllocationHandle(), thiz, value);
++        // Finishing marking at this point will leave an ephemeron pair
++        // reachable where the key is still in construction. The GC needs to
++        // mark the value for such pairs as live in the atomic pause as they key
++        // is considered live.
++        FinishMarking();
++      });
++  EXPECT_TRUE(HeapObjectHeader::FromObject(value).IsMarked());
++}
++
+ }  // namespace internal
+ }  // namespace cppgc
