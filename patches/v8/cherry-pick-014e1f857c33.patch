@@ -1,0 +1,59 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marja=20H=C3=B6ltt=C3=A4?= <marja@chromium.org>
+Date: Mon, 25 Oct 2021 12:17:15 +0200
+Subject: Merged: [super ic] Fix receiver vs lookup start object confusion
+ related to module exports
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Revision: e4dba97006ca20337deafb85ac00524a94a62fe
+
+BUG=chromium:1260577
+NOTRY=true
+NOPRESUBMIT=true
+NOTREECHECKS=true
+R=ishell@chromium.org
+
+Change-Id: Ia85235fecdb37a5da6a28f7a0092a754a8620552
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3240826
+Reviewed-by: Igor Sheludko <ishell@chromium.org>
+Commit-Queue: Marja Hölttä <marja@chromium.org>
+Cr-Commit-Position: refs/branch-heads/9.4@{#48}
+Cr-Branched-From: 3b51863bc25492549a8bf96ff67ce481b1a3337b-refs/heads/9.4.146@{#1}
+Cr-Branched-From: 2890419fc8fb9bdb507fdd801d76fa7dd9f022b5-refs/heads/master@{#76233}
+
+diff --git a/src/ic/accessor-assembler.cc b/src/ic/accessor-assembler.cc
+index 8335bc5e883d319a0e67122e44ec231ae8af2507..1b6b6223366ecef12a9b9209bf2809e38271e262 100644
+--- a/src/ic/accessor-assembler.cc
++++ b/src/ic/accessor-assembler.cc
+@@ -663,8 +663,8 @@ void AccessorAssembler::HandleLoadICSmiHandlerLoadNamedCase(
+     Comment("module export");
+     TNode<UintPtrT> index =
+         DecodeWord<LoadHandler::ExportsIndexBits>(handler_word);
+-    TNode<Module> module = LoadObjectField<Module>(
+-        CAST(p->receiver()), JSModuleNamespace::kModuleOffset);
++    TNode<Module> module =
++        LoadObjectField<Module>(CAST(holder), JSModuleNamespace::kModuleOffset);
+     TNode<ObjectHashTable> exports =
+         LoadObjectField<ObjectHashTable>(module, Module::kExportsOffset);
+     TNode<Cell> cell = CAST(LoadFixedArrayElement(exports, index));
+diff --git a/src/ic/ic.cc b/src/ic/ic.cc
+index d13d1bdab5f9ab4ab71500a77a2b6088667f95e7..36c82cbe95100c403b9eb2e7b7f6f210a5a0ae62 100644
+--- a/src/ic/ic.cc
++++ b/src/ic/ic.cc
+@@ -857,7 +857,13 @@ Handle<Object> LoadIC::ComputeHandler(LookupIterator* lookup) {
+         // We found the accessor, so the entry must exist.
+         DCHECK(entry.is_found());
+         int index = ObjectHashTable::EntryToValueIndex(entry);
+-        return LoadHandler::LoadModuleExport(isolate(), index);
++        Handle<Smi> smi_handler =
++            LoadHandler::LoadModuleExport(isolate(), index);
++        if (holder_is_lookup_start_object) {
++          return smi_handler;
++        }
++        return LoadHandler::LoadFromPrototype(isolate(), map, holder,
++                                              smi_handler);
+       }
+ 
+       Handle<Object> accessors = lookup->GetAccessors();
