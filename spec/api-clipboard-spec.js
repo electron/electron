@@ -130,23 +130,12 @@ ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard 
       }).to.throw(/buffer must be a node Buffer/);
     });
 
-    it('writes a Buffer using a raw format that is used by native apps', function () {
-      if (process.platform === 'win32') {
-        // setting CF_TEXT alone isn't sufficient for clipboard.readText()
-        this.skip();
-      }
-
+    ifit(process.platform !== 'win32')('writes a Buffer using a raw format that is used by native apps', function () {
       const message = 'Hello from Electron!';
-      let buffer = Buffer.from(message);
-      let rawFormat = 'TEXT';
-      switch (process.platform) {
-        case 'darwin':
-          rawFormat = 'public.utf8-plain-text';
-          break;
-        case 'win32':
-          rawFormat = 'CF_TEXT';
-          buffer = Buffer.from(message + '\x00');
-          break;
+      const buffer = Buffer.from(message);
+      let rawFormat = 'text/plain';
+      if (process.platform === 'darwin') {
+        rawFormat = 'public.utf8-plain-text';
       }
       clipboard.writeBuffer(rawFormat, buffer);
       expect(clipboard.readText()).to.equal(message);
