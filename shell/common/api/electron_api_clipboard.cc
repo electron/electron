@@ -50,7 +50,23 @@ bool Clipboard::Has(const std::string& format_string,
 
 std::string Clipboard::Read(const std::string& format_string) {
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
-
+  // Prefer raw platform format names
+  ui::ClipboardFormatType rawFormat(
+      ui::ClipboardFormatType::CustomPlatformType(format_string));
+  bool rawFormatAvailable = clipboard->IsFormatAvailable(
+      rawFormat, ui::ClipboardBuffer::kCopyPaste, /* data_dst = */ nullptr);
+#if defined(OS_LINUX)
+  if (!rawFormatAvailable) {
+    rawFormatAvailable = clipboard->IsFormatAvailable(
+        rawFormat, ui::ClipboardBuffer::kSelection, /* data_dst = */ nullptr);
+  }
+#endif
+  if (rawFormatAvailable) {
+    std::string data;
+    clipboard->ReadData(rawFormat, /* data_dst = */ nullptr, &data);
+    return data;
+  }
+  // Otherwise, resolve custom format names
   std::map<std::string, std::string> custom_format_names;
   custom_format_names =
       clipboard->ExtractCustomPlatformNames(ui::ClipboardBuffer::kCopyPaste,
@@ -96,8 +112,8 @@ void Clipboard::WriteBuffer(const std::string& format,
   base::span<const uint8_t> payload_span(
       reinterpret_cast<const uint8_t*>(node::Buffer::Data(buffer)),
       node::Buffer::Length(buffer));
-  writer.WriteData(base::UTF8ToUTF16(format),
-                   mojo_base::BigBuffer(payload_span));
+  writer.WriteUnsafeRawData(base::UTF8ToUTF16(format),
+                            mojo_base::BigBuffer(payload_span));
 }
 
 void Clipboard::Write(const gin_helper::Dictionary& data,
