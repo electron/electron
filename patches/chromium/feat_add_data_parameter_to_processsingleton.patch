@@ -61,7 +61,7 @@ index eec994c4252f17d9c9c41e66d5dae6509ed98a18..e538c9b76da4d4435e10cd3848438446
  #if defined(OS_WIN)
    bool EscapeVirtualization(const base::FilePath& user_data_dir);
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index a04d139f958a7aaef9b96e8c29317ccf7c97f009..29188668a69047b3ad3bebd1f0057565a330b509 100644
+index a04d139f958a7aaef9b96e8c29317ccf7c97f009..e77cebd31967d28f3cb0db78e736011510634c0e 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
 @@ -567,6 +567,7 @@ class ProcessSingleton::LinuxWatcher
@@ -101,7 +101,7 @@ index a04d139f958a7aaef9b96e8c29317ccf7c97f009..29188668a69047b3ad3bebd1f0057565
    const size_t kMinMessageLength = base::size(kStartToken) + 4;
    if (bytes_read_ < kMinMessageLength) {
      buf_[bytes_read_] = 0;
-@@ -705,10 +710,25 @@ void ProcessSingleton::LinuxWatcher::SocketReader::
+@@ -705,10 +710,28 @@ void ProcessSingleton::LinuxWatcher::SocketReader::
    tokens.erase(tokens.begin());
    tokens.erase(tokens.begin());
  
@@ -110,13 +110,16 @@ index a04d139f958a7aaef9b96e8c29317ccf7c97f009..29188668a69047b3ad3bebd1f0057565
 +  std::vector<std::string> command_line(tokens.begin() + 1, tokens.begin() + 1 + num_args);
 +
 +  std::vector<const uint8_t> additional_data;
-+  if (tokens.size() == 3 + num_args) {
++  if (tokens.size() >= 3 + num_args) {
 +    size_t additional_data_size;
 +    base::StringToSizeT(tokens[1 + num_args], &additional_data_size);
++    std::string remaining_args = base::JoinString(
++        base::make_span(tokens.begin() + 2 + num_args, tokens.end()),
++        std::string(1, kTokenDelimiter));
 +    const uint8_t* additional_data_bits =
-+        reinterpret_cast<const uint8_t*>(tokens[2 + num_args].c_str());
-+    additional_data = std::vector<const uint8_t>(additional_data_bits,
-+        additional_data_bits + additional_data_size);
++        reinterpret_cast<const uint8_t*>(remaining_args.c_str());
++    additional_data = std::vector<const uint8_t>(
++        additional_data_bits, additional_data_bits + additional_data_size);
 +  }
 +
    // Return to the UI thread to handle opening a new browser tab.
@@ -128,7 +131,7 @@ index a04d139f958a7aaef9b96e8c29317ccf7c97f009..29188668a69047b3ad3bebd1f0057565
    fd_watch_controller_.reset();
  
    // LinuxWatcher::HandleMessage() is in charge of destroying this SocketReader
-@@ -737,8 +757,10 @@ void ProcessSingleton::LinuxWatcher::SocketReader::FinishWithACK(
+@@ -737,8 +760,10 @@ void ProcessSingleton::LinuxWatcher::SocketReader::FinishWithACK(
  //
  ProcessSingleton::ProcessSingleton(
      const base::FilePath& user_data_dir,
@@ -139,7 +142,7 @@ index a04d139f958a7aaef9b96e8c29317ccf7c97f009..29188668a69047b3ad3bebd1f0057565
        current_pid_(base::GetCurrentProcId()),
        watcher_(new LinuxWatcher(this)) {
    socket_path_ = user_data_dir.Append(chrome::kSingletonSocketFilename);
-@@ -855,7 +877,8 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
+@@ -855,7 +880,8 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
               sizeof(socket_timeout));
  
    // Found another process, prepare our command line
@@ -149,7 +152,7 @@ index a04d139f958a7aaef9b96e8c29317ccf7c97f009..29188668a69047b3ad3bebd1f0057565
    std::string to_send(kStartToken);
    to_send.push_back(kTokenDelimiter);
  
-@@ -865,11 +888,21 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
+@@ -865,11 +891,21 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessWithTimeout(
    to_send.append(current_dir.value());
  
    const std::vector<std::string>& argv = cmd_line.argv();
