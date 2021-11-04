@@ -1600,25 +1600,17 @@ commands:
       - *step-electron-publish
       - move_and_store_all_artifacts
 
-# NEW JOBS
+# List of all jobs.
 jobs:
-  electron-checkout:
+  # Layer 0: Lint. Standalone.
+  lint:
     executor:
       name: linux-docker
       size: medium
-    steps:
-      - *step-checkout-electron
+    environment:
+      <<: *env-linux-medium
+    <<: *steps-lint
 
-  docs-only:
-    executor:
-      name: linux-docker
-      size: medium
-    steps:
-      - *step-checkout-electron
-      - run: "echo 'Running only a docs change'"
-  
-  # Port this over to "docs-only" after confirming
-  # it still works without checkout
   ts-compile-doc-change:
     executor:
       name: linux-docker
@@ -1628,15 +1620,748 @@ jobs:
       <<: *env-testing-build
     <<: *steps-electron-ts-compile-for-doc-change
 
+  # Layer 1: Checkout.
+  linux-checkout-for-workspace:
+    executor: linux-docker
+    environment:
+      <<: *env-linux-2xlarge
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
+    steps:
+      - electron-build:
+          persist: false
+          build: false
+          checkout: true
+          persist-checkout: true
+
+  linux-make-src-cache:
+    executor: linux-docker
+    environment:
+      <<: *env-linux-2xlarge
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
+    steps:
+      - electron-build:
+          persist: false
+          build: false
+          checkout: true
+          save-git-cache: true
+          checkout-to-create-src-cache: true
+
+  linux-checkout-for-native-tests:
+    executor: linux-docker
+    environment:
+      <<: *env-linux-2xlarge
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_pyyaml=True'
+    steps:
+      - electron-build:
+          persist: false
+          build: false
+          checkout: true
+          persist-checkout: true
+
+  linux-checkout-for-native-tests-with-no-patches:
+    executor: linux-docker
+    environment:
+      <<: *env-linux-2xlarge
+      GCLIENT_EXTRA_ARGS: '--custom-var=apply_patches=False --custom-var=checkout_pyyaml=True'
+    steps:
+      - electron-build:
+          persist: false
+          build: false
+          checkout: true
+          persist-checkout: true
+
+  mac-checkout:
+    executor: linux-docker
+    environment:
+      <<: *env-linux-2xlarge
+      <<: *env-testing-build
+      <<: *env-macos-build
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
+    steps:
+      - electron-build:
+          persist: false
+          build: false
+          checkout: true
+          persist-checkout: true
+          restore-src-cache: false
+
+  mac-checkout-for-workspace:
+    executor: linux-docker
+    environment:
+      <<: *env-linux-2xlarge
+      <<: *env-testing-build
+      <<: *env-macos-build
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
+    steps:
+      - electron-build:
+          persist: false
+          build: false
+          checkout: true
+          persist-checkout: true
+
+  mac-make-src-cache:
+    executor: linux-docker
+    environment:
+      <<: *env-linux-2xlarge
+      <<: *env-testing-build
+      <<: *env-macos-build
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
+    steps:
+      - electron-build:
+          persist: false
+          build: false
+          checkout: true
+          save-git-cache: true
+          checkout-to-create-src-cache: true
+
+  # Layer 2: Builds.
+  linux-x64-testing:
+    executor: linux-docker
+    environment:
+      <<: *env-global
+      <<: *env-testing-build
+      <<: *env-ninja-status
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
+    steps:
+      - electron-build:
+          persist: true
+          checkout: true
+          use-out-cache: false
+
+  linux-x64-testing-asan:
+    executor: linux-docker
+    environment:
+      <<: *env-global
+      <<: *env-testing-build
+      <<: *env-ninja-status
+      CHECK_DIST_MANIFEST: '0'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
+      GN_EXTRA_ARGS: 'is_asan = true'
+    steps:
+      - electron-build:
+          persist: true
+          checkout: true
+          use-out-cache: false
+          build-nonproprietary-ffmpeg: false
+
+  linux-x64-testing-no-run-as-node:
+    executor: linux-docker
+    environment:
+      <<: *env-linux-2xlarge
+      <<: *env-testing-build
+      <<: *env-ninja-status
+      <<: *env-disable-run-as-node
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
+    steps:
+      - electron-build:
+          persist: false
+          checkout: true
+          use-out-cache: false
+
+  linux-x64-testing-gn-check:
+    executor:
+      name: linux-docker
+      size: medium
+    environment:
+      <<: *env-linux-medium
+      <<: *env-testing-build
+    <<: *steps-electron-gn-check
+
+  linux-x64-release:
+    executor: linux-docker
+    environment:
+      <<: *env-linux-2xlarge-release
+      <<: *env-release-build
+      <<: *env-send-slack-notifications
+      <<: *env-ninja-status
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
+    steps:
+      - electron-build:
+          persist: true
+          checkout: true
+
+  linux-x64-publish:
+    executor: linux-docker
+    environment:
+      <<: *env-linux-2xlarge-release
+      <<: *env-release-build
+      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
+      <<: *env-ninja-status
+    steps:
+      - run: echo running
+      - when:
+          condition:
+            or:
+              - equal: ["all", << pipeline.parameters.linux-publish-arch-limit >>]
+              - equal: ["x64", << pipeline.parameters.linux-publish-arch-limit >>]
+          steps:
+            - electron-publish:
+                attach: false
+                checkout: true
+
+  linux-ia32-testing:
+    executor: linux-docker
+    environment:
+      <<: *env-global
+      <<: *env-ia32
+      <<: *env-testing-build
+      <<: *env-ninja-status
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
+    steps:
+      - electron-build:
+          persist: true
+          checkout: true
+          use-out-cache: false
+
+  linux-ia32-release:
+    executor: linux-docker
+    environment:
+      <<: *env-linux-2xlarge-release
+      <<: *env-ia32
+      <<: *env-release-build
+      <<: *env-send-slack-notifications
+      <<: *env-ninja-status
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
+    steps:
+      - electron-build:
+          persist: true
+          checkout: true
+
+  linux-ia32-publish:
+    executor: linux-docker
+    environment:
+      <<: *env-linux-2xlarge-release
+      <<: *env-ia32
+      <<: *env-release-build
+      <<: *env-32bit-release
+      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
+      <<: *env-ninja-status
+    steps:
+      - run: echo running
+      - when:
+          condition:
+            or:
+              - equal: ["all", << pipeline.parameters.linux-publish-arch-limit >>]
+              - equal: ["ia32", << pipeline.parameters.linux-publish-arch-limit >>]
+          steps:
+            - electron-publish:
+                attach: false
+                checkout: true
+
+  linux-arm-testing:
+    executor: linux-docker
+    environment:
+      <<: *env-global
+      <<: *env-arm
+      <<: *env-testing-build
+      <<: *env-ninja-status
+      TRIGGER_ARM_TEST: true
+      GENERATE_CROSS_ARCH_SNAPSHOT: true
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
+    steps:
+      - electron-build:
+          persist: true
+          checkout: true
+          use-out-cache: false
+
+  linux-arm-release:
+    executor: linux-docker
+    environment:
+      <<: *env-linux-2xlarge-release
+      <<: *env-arm
+      <<: *env-release-build
+      <<: *env-send-slack-notifications
+      <<: *env-ninja-status
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
+    steps:
+      - electron-build:
+          persist: false
+          checkout: true
+
+  linux-arm-publish:
+    executor: linux-docker
+    environment:
+      <<: *env-linux-2xlarge-release
+      <<: *env-arm
+      <<: *env-release-build
+      <<: *env-32bit-release
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True'
+      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
+      <<: *env-ninja-status
+    steps:
+      - run: echo running
+      - when:
+          condition:
+            or:
+              - equal: ["all", << pipeline.parameters.linux-publish-arch-limit >>]
+              - equal: ["arm", << pipeline.parameters.linux-publish-arch-limit >>]
+          steps:
+            - electron-publish:
+                attach: false
+                checkout: true
+
+  linux-arm64-testing:
+    executor: linux-docker
+    environment:
+      <<: *env-global
+      <<: *env-arm64
+      <<: *env-testing-build
+      <<: *env-ninja-status
+      TRIGGER_ARM_TEST: true
+      GENERATE_CROSS_ARCH_SNAPSHOT: true
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
+    steps:
+      - electron-build:
+          persist: true
+          checkout: true
+          use-out-cache: false
+
+  linux-arm64-testing-gn-check:
+    executor:
+      name: linux-docker
+      size: medium
+    environment:
+      <<: *env-linux-medium
+      <<: *env-arm64
+      <<: *env-testing-build
+    <<: *steps-electron-gn-check
+
+  linux-arm64-release:
+    executor: linux-docker
+    environment:
+      <<: *env-linux-2xlarge-release
+      <<: *env-arm64
+      <<: *env-release-build
+      <<: *env-send-slack-notifications
+      <<: *env-ninja-status
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
+    steps:
+      - electron-build:
+          persist: false
+          checkout: true
+
+  linux-arm64-publish:
+    executor: linux-docker
+    environment:
+      <<: *env-linux-2xlarge-release
+      <<: *env-arm64
+      <<: *env-release-build
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm64=True'
+      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
+      <<: *env-ninja-status
+    steps:
+      - run: echo running
+      - when:
+          condition:
+            or:
+              - equal: ["all", << pipeline.parameters.linux-publish-arch-limit >>]
+              - equal: ["arm64", << pipeline.parameters.linux-publish-arch-limit >>]
+          steps:
+            - electron-publish:
+                attach: false
+                checkout: true
+
+  osx-testing-x64:
+    executor: macos
+    environment:
+      <<: *env-mac-large
+      <<: *env-testing-build
+      <<: *env-ninja-status
+      <<: *env-macos-build
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
+    steps:
+      - electron-build:
+          persist: true
+          checkout: false
+          checkout-and-assume-cache: true
+          attach: true
+
+  osx-testing-x64-gn-check:
+    executor:
+      name: macos
+      size: medium
+    environment:
+      <<: *env-machine-mac
+      <<: *env-testing-build
+    <<: *steps-electron-gn-check
+
+  osx-publish-x64-skip-checkout:
+    executor: macos
+    environment:
+      <<: *env-mac-large-release
+      <<: *env-release-build
+      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
+      <<: *env-ninja-status
+    steps:
+      - run: echo running
+      - when:
+          condition:
+            or:
+              - equal: ["all", << pipeline.parameters.macos-publish-arch-limit >>]
+              - equal: ["osx-x64", << pipeline.parameters.macos-publish-arch-limit >>]
+          steps:
+            - electron-publish:
+                attach: true
+                checkout: false
+
+  osx-publish-arm64-skip-checkout:
+    executor: macos
+    environment:
+      <<: *env-mac-large-release
+      <<: *env-release-build
+      <<: *env-apple-silicon
+      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
+      <<: *env-ninja-status
+    steps:
+      - run: echo running
+      - when:
+          condition:
+            or:
+              - equal: ["all", << pipeline.parameters.macos-publish-arch-limit >>]
+              - equal: ["osx-arm64", << pipeline.parameters.macos-publish-arch-limit >>]
+          steps:
+            - electron-publish:
+                attach: true
+                checkout: false
+
+  osx-testing-arm64:
+    executor: macos
+    environment:
+      <<: *env-mac-large
+      <<: *env-testing-build
+      <<: *env-ninja-status
+      <<: *env-macos-build
+      <<: *env-apple-silicon
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
+      GENERATE_CROSS_ARCH_SNAPSHOT: true
+    steps:
+      - electron-build:
+          persist: true
+          checkout: false
+          checkout-and-assume-cache: true
+          attach: true
+
+  mas-testing-x64:
+    executor: macos
+    environment:
+      <<: *env-mac-large
+      <<: *env-mas
+      <<: *env-testing-build
+      <<: *env-ninja-status
+      <<: *env-macos-build
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
+    steps:
+      - electron-build:
+          persist: true
+          checkout: false
+          checkout-and-assume-cache: true
+          attach: true
+
+  mas-testing-x64-gn-check:
+    executor:
+      name: macos
+      size: medium
+    environment:
+      <<: *env-machine-mac
+      <<: *env-mas
+      <<: *env-testing-build
+    <<: *steps-electron-gn-check
+
+  mas-publish-x64-skip-checkout:
+    executor: macos
+    environment:
+      <<: *env-mac-large-release
+      <<: *env-mas
+      <<: *env-release-build
+      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
+    steps:
+      - run: echo running
+      - when:
+          condition:
+            or:
+              - equal: ["all", << pipeline.parameters.macos-publish-arch-limit >>]
+              - equal: ["mas-x64", << pipeline.parameters.macos-publish-arch-limit >>]
+          steps:
+            - electron-publish:
+                attach: true
+                checkout: false
+
+  mas-publish-arm64-skip-checkout:
+    executor: macos
+    environment:
+      <<: *env-mac-large-release
+      <<: *env-mas-apple-silicon
+      <<: *env-release-build
+      UPLOAD_TO_S3: << pipeline.parameters.upload-to-s3 >>
+      <<: *env-ninja-status
+    steps:
+      - run: echo running
+      - when:
+          condition:
+            or:
+              - equal: ["all", << pipeline.parameters.macos-publish-arch-limit >>]
+              - equal: ["mas-arm64", << pipeline.parameters.macos-publish-arch-limit >>]
+          steps:
+            - electron-publish:
+                attach: true
+                checkout: false
+
+  mas-testing-arm64:
+    executor: macos
+    environment:
+      <<: *env-mac-large
+      <<: *env-testing-build
+      <<: *env-ninja-status
+      <<: *env-macos-build
+      <<: *env-mas-apple-silicon
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
+      GENERATE_CROSS_ARCH_SNAPSHOT: true
+    steps:
+      - electron-build:
+          persist: true
+          checkout: false
+          checkout-and-assume-cache: true
+          attach: true
+
+  # Layer 3: Tests.
+  linux-x64-unittests:
+    executor: linux-docker
+    environment:
+      <<: *env-linux-2xlarge
+      <<: *env-unittests
+      <<: *env-headless-testing
+    <<: *steps-native-tests
+
+  linux-x64-disabled-unittests:
+    executor: linux-docker
+    environment:
+      <<: *env-linux-2xlarge
+      <<: *env-unittests
+      <<: *env-headless-testing
+      TESTS_ARGS: '--only-disabled-tests'
+    <<: *steps-native-tests
+
+  linux-x64-chromium-unittests:
+    executor: linux-docker
+    environment:
+      <<: *env-linux-2xlarge
+      <<: *env-unittests
+      <<: *env-headless-testing
+      TESTS_ARGS: '--include-disabled-tests'
+    <<: *steps-native-tests
+
+  linux-x64-browsertests:
+    executor: linux-docker
+    environment:
+      <<: *env-linux-2xlarge
+      <<: *env-browsertests
+      <<: *env-testing-build
+      <<: *env-headless-testing
+    <<: *steps-native-tests
+
+  linux-x64-testing-tests:
+    executor:
+      name: linux-docker
+      size: medium
+    environment:
+      <<: *env-linux-medium
+      <<: *env-headless-testing
+      <<: *env-stack-dumping
+    parallelism: 3
+    <<: *steps-tests
+
+  linux-x64-testing-asan-tests:
+    executor:
+      name: linux-docker
+      size: xlarge
+    environment:
+      <<: *env-linux-medium
+      <<: *env-headless-testing
+      <<: *env-stack-dumping
+      IS_ASAN: '1'
+      DISABLE_CRASH_REPORTER_TESTS: '1'
+    parallelism: 3
+    <<: *steps-tests
+
+  linux-x64-testing-nan:
+    executor:
+      name: linux-docker
+      size: medium
+    environment:
+      <<: *env-linux-medium
+      <<: *env-headless-testing
+      <<: *env-stack-dumping
+    <<: *steps-test-nan
+
+  linux-x64-testing-node:
+    executor: linux-docker
+    environment:
+      <<: *env-linux-medium
+      <<: *env-headless-testing
+      <<: *env-stack-dumping
+    <<: *steps-test-node
+
+  linux-x64-release-tests:
+    executor:
+      name: linux-docker
+      size: medium
+    environment:
+      <<: *env-linux-medium
+      <<: *env-headless-testing
+      <<: *env-send-slack-notifications
+    <<: *steps-tests
+
+  linux-x64-verify-ffmpeg:
+    executor:
+      name: linux-docker
+      size: medium
+    environment:
+      <<: *env-linux-medium
+      <<: *env-headless-testing
+      <<: *env-send-slack-notifications
+    <<: *steps-verify-ffmpeg
+
+  linux-ia32-testing-tests:
+    executor:
+      name: linux-docker
+      size: medium
+    environment:
+      <<: *env-linux-medium
+      <<: *env-ia32
+      <<: *env-headless-testing
+      <<: *env-stack-dumping
+    parallelism: 3
+    <<: *steps-tests
+
+  linux-ia32-testing-nan:
+    executor:
+      name: linux-docker
+      size: medium
+    environment:
+      <<: *env-linux-medium
+      <<: *env-ia32
+      <<: *env-headless-testing
+      <<: *env-stack-dumping
+    <<: *steps-test-nan
+
+  linux-ia32-testing-node:
+    executor: linux-docker
+    environment:
+      <<: *env-linux-medium
+      <<: *env-ia32
+      <<: *env-headless-testing
+      <<: *env-stack-dumping
+    <<: *steps-test-node
+
+  linux-ia32-release-tests:
+    executor:
+      name: linux-docker
+      size: medium
+    environment:
+      <<: *env-linux-medium
+      <<: *env-ia32
+      <<: *env-headless-testing
+      <<: *env-send-slack-notifications
+    <<: *steps-tests
+
+  linux-ia32-verify-ffmpeg:
+    executor:
+      name: linux-docker
+      size: medium
+    environment:
+      <<: *env-linux-medium
+      <<: *env-ia32
+      <<: *env-headless-testing
+      <<: *env-send-slack-notifications
+    <<: *steps-verify-ffmpeg
+
+  linux-arm-testing-tests:
+    executor: linux-arm
+    environment:
+      <<: *env-arm
+      <<: *env-global
+      <<: *env-headless-testing
+      <<: *env-stack-dumping
+    <<: *steps-tests
+
+  linux-arm64-testing-tests:
+    executor: linux-arm64
+    environment:
+      <<: *env-arm64
+      <<: *env-global
+      <<: *env-headless-testing
+      <<: *env-stack-dumping
+    <<: *steps-tests
+
+  osx-testing-x64-tests:
+    executor:
+      name: macos
+      size: medium
+    environment:
+      <<: *env-mac-large
+      <<: *env-stack-dumping
+    parallelism: 2
+    <<: *steps-tests
+
+  osx-testing-arm64-tests:  
+    executor: apple-silicon
+    environment:
+      <<: *env-mac-large
+      <<: *env-stack-dumping
+      <<: *env-apple-silicon
+    <<: *steps-tests
+
+  mas-testing-x64-tests:
+    executor:
+      name: macos
+      size: medium
+    environment:
+      <<: *env-mac-large
+      <<: *env-stack-dumping
+    parallelism: 2
+    <<: *steps-tests
+
+  mas-testing-arm64-tests:
+    executor: apple-silicon
+    environment:
+      <<: *env-mac-large
+      <<: *env-stack-dumping
+      <<: *env-apple-silicon
+    <<: *steps-tests
+
+  # Layer 4: Summary.
+  linux-release-summary:
+    executor:
+      name: linux-docker
+      size: medium
+    environment:
+      <<: *env-linux-medium
+      <<: *env-send-slack-notifications
+    steps:
+      - *step-maybe-notify-slack-success
+
+# NEW JOBS
+  # electron-checkout:
+  #   executor:
+  #     name: linux-docker
+  #     size: medium
+  #   steps:
+  #     - *step-checkout-electron
+
+  # docs-only:
+  #   executor:
+  #     name: linux-docker
+  #     size: medium
+  #   steps:
+  #     - *step-checkout-electron
+  #     - run: "echo 'Running only a docs change'"
+
   full-build:
     executor:
       name: linux-docker
       size: medium
     steps:
       - run: "echo 'Running a full Electron build.'"
-
-# TODO: Re-add all jobs
-# List of all jobs.
 
 # NEW WORKFLOWS
 workflows:
@@ -1651,7 +2376,8 @@ workflows:
           mapping: |
             .* run-setup false
             .* run-lint true
-            ^((?!docs/).)*$ run-full-build true
+            ^((?!docs/).)*$ run-build-mac true
+            ^((?!docs/).)*$ run-build-linux true
             docs/.* run-docs-only true
   docs-only:
     when: << pipeline.parameters.run-docs-only >>
@@ -1661,5 +2387,210 @@ workflows:
     when: << pipeline.parameters.run-full-build >>
     jobs:
       - full-build
-
+  lint:
+    when: << pipeline.parameters.run-lint >>
+    jobs:
+      - lint
 # TODO: Re-add all workflows
+  publish-linux:
+    when: << pipeline.parameters.run-linux-publish >>
+    jobs:
+    - linux-x64-publish:
+        context: release-env
+    - linux-ia32-publish:
+        context: release-env
+    - linux-arm-publish:
+        context: release-env
+    - linux-arm64-publish:
+        context: release-env
+  publish-macos:
+    when: << pipeline.parameters.run-macos-publish >>
+    jobs:
+    - mac-checkout
+    - osx-publish-x64-skip-checkout:
+        requires:
+          - mac-checkout
+        context: release-env
+    - mas-publish-x64-skip-checkout:
+        requires:
+          - mac-checkout
+        context: release-env
+    - osx-publish-arm64-skip-checkout:
+        requires:
+          - mac-checkout
+        context: release-env
+    - mas-publish-arm64-skip-checkout:
+        requires:
+          - mac-checkout
+        context: release-env
+  build-linux:
+    when: << pipeline.parameters.run-build-linux >>
+    jobs:
+      - linux-checkout-for-workspace
+      - linux-make-src-cache
+      - linux-x64-testing
+      - linux-x64-testing-asan
+      - linux-x64-testing-no-run-as-node
+      - linux-x64-testing-gn-check:
+          requires:
+            - linux-checkout-for-workspace
+      - linux-x64-testing-tests:
+          requires:
+            - linux-x64-testing
+      - linux-x64-testing-asan-tests:
+          requires:
+            - linux-x64-testing-asan
+      - linux-x64-testing-nan:
+          requires:
+            - linux-x64-testing
+      - linux-x64-testing-node:
+          requires:
+            - linux-x64-testing
+      - linux-ia32-testing
+      - linux-ia32-testing-tests:
+          requires:
+            - linux-ia32-testing
+      - linux-ia32-testing-nan:
+          requires:
+            - linux-ia32-testing
+      - linux-ia32-testing-node:
+          requires:
+            - linux-ia32-testing
+      - linux-arm-testing
+      - linux-arm-testing-tests:
+          filters:
+            branches:
+              # Do not run this on forked pull requests
+              ignore: /pull\/[0-9]+/        
+          requires:
+            - linux-arm-testing      
+      - linux-arm64-testing
+      - linux-arm64-testing-tests:
+          filters:
+            branches:
+              # Do not run this on forked pull requests
+              ignore: /pull\/[0-9]+/        
+          requires:
+            - linux-arm64-testing
+      - linux-arm64-testing-gn-check:
+          requires:
+            - linux-checkout-for-workspace
+      - ts-compile-doc-change
+  build-mac:
+    when: << pipeline.parameters.run-build-mac >>
+    jobs:
+      - mac-checkout-for-workspace
+      - mac-make-src-cache
+      - osx-testing-x64:
+          requires:
+            - mac-make-src-cache
+      - osx-testing-x64-gn-check:
+          requires:
+            - mac-checkout-for-workspace
+      - osx-testing-x64-tests:
+          requires:
+            - osx-testing-x64
+      - osx-testing-arm64:
+          requires:
+            - mac-make-src-cache
+      - osx-testing-arm64-tests:
+          filters:
+            branches:
+              # Do not run this on forked pull requests
+              ignore: /pull\/[0-9]+/
+          requires:
+            - osx-testing-arm64
+      - mas-testing-x64:
+          requires:
+            - mac-make-src-cache
+      - mas-testing-x64-gn-check:
+          requires:
+            - mac-checkout-for-workspace
+      - mas-testing-x64-tests:
+          requires:
+            - mas-testing-x64
+      - mas-testing-arm64:
+          requires:
+            - mac-make-src-cache
+      - mas-testing-arm64-tests:
+          filters:
+            branches:
+              # Do not run this on forked pull requests
+              ignore: /pull\/[0-9]+/
+          requires:
+            - mas-testing-arm64
+  # nightly-linux-release-test:
+  #   triggers:
+  #     - schedule:
+  #         cron: "0 0 * * *"
+  #         filters:
+  #           branches:
+  #             only:
+  #               - master
+  #   jobs:
+  #     - linux-checkout-for-workspace
+  #     - linux-make-src-cache
+  #     - linux-x64-release
+  #     - linux-x64-release-tests:
+  #         requires:
+  #           - linux-x64-release
+  #     - linux-x64-verify-ffmpeg:
+  #         requires:
+  #           - linux-x64-release
+  #     - linux-release-summary:
+  #         name: linux-x64-release-summary
+  #         requires:
+  #           - linux-x64-release
+  #           - linux-x64-release-tests
+  #           - linux-x64-verify-ffmpeg
+  #     - linux-ia32-release
+  #     - linux-ia32-release-tests:
+  #         requires:
+  #           - linux-ia32-release
+  #     - linux-ia32-verify-ffmpeg:
+  #         requires:
+  #           - linux-ia32-release
+  #     - linux-release-summary:
+  #         name: linux-ia32-release-summary
+  #         requires:
+  #           - linux-ia32-release
+  #           - linux-ia32-release-tests
+  #           - linux-ia32-verify-ffmpeg
+  #     - linux-arm-release
+  #     - linux-release-summary:
+  #         name: linux-arm-release-summary
+  #         requires:
+  #           - linux-arm-release
+  #     - linux-arm64-release
+  #     - linux-release-summary:
+  #         name: linux-arm64-release-summary
+  #         requires:
+  #           - linux-arm64-release
+  # Various slow and non-essential checks we run only nightly.
+  # Sanitizer jobs should be added here.
+#   linux-checks-nightly:
+#     triggers:
+#       - schedule:
+#           cron: "0 0 * * *"
+#           filters:
+#             branches:
+#               only:
+#                 - master
+#     jobs:
+#       - linux-checkout-for-native-tests
+#       # TODO(alexeykuzmin): Enable it back.
+#       # Tons of crashes right now, see
+#       # https://circleci.com/gh/electron/electron/67463
+# #      - linux-x64-browsertests:
+# #          requires:
+# #            - linux-checkout-for-native-tests
+#       - linux-x64-unittests:
+#           requires:
+#             - linux-checkout-for-native-tests
+#       - linux-x64-disabled-unittests:
+#           requires:
+#             - linux-checkout-for-native-tests
+#       - linux-checkout-for-native-tests-with-no-patches
+#       - linux-x64-chromium-unittests:
+#           requires:
+#             - linux-checkout-for-native-tests-with-no-patches
