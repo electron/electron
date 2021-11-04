@@ -552,6 +552,10 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
     enable_crash_reporter = breakpad::IsCrashReporterEnabled();
   }
 
+  // Zygote Process gets booted before any JS runs, accessing GetClientId
+  // will end up touching DIR_USER_DATA path provider and this will
+  // configure default value because app.name from browser_init has
+  // not run yet.
   if (enable_crash_reporter && process_type != ::switches::kZygoteProcess) {
     std::string switch_value =
         api::crash_reporter::GetClientId() + ",no_channel";
