@@ -1,0 +1,48 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ken Rockot <rockot@google.com>
+Date: Mon, 25 Oct 2021 18:22:50 +0000
+Subject: Validate INTRODUCE source node
+
+INTRODUCE NodeChannel messages should only be acknowledged when coming
+from the broker process.
+
+(cherry picked from commit 6e74f7b5cb2f48b17403f0431f3e4f3a2e716265)
+
+Fixed: 1252858
+Change-Id: I2dff6d5cab102ce744ad2ad66a9f24b4202cbea8
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3193798
+Reviewed-by: Alex Gough <ajgo@chromium.org>
+Commit-Queue: Ken Rockot <rockot@google.com>
+Cr-Original-Commit-Position: refs/heads/main@{#926430}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3229034
+Auto-Submit: Ken Rockot <rockot@google.com>
+Reviewed-by: Oksana Zhuravlova <oksamyt@chromium.org>
+Commit-Queue: Oksana Zhuravlova <oksamyt@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4638@{#964}
+Cr-Branched-From: 159257cab5585bc8421abf347984bb32fdfe9eb9-refs/heads/main@{#920003}
+
+diff --git a/mojo/core/node_controller.cc b/mojo/core/node_controller.cc
+index 351a34a40f0613ce167fd8158f5e3f494e95ce5e..44dd2a8fb1c546693b75675260fdc70db9b99ff7 100644
+--- a/mojo/core/node_controller.cc
++++ b/mojo/core/node_controller.cc
+@@ -21,6 +21,7 @@
+ #include "mojo/core/broker.h"
+ #include "mojo/core/broker_host.h"
+ #include "mojo/core/configuration.h"
++#include "mojo/core/ports/name.h"
+ #include "mojo/core/request_context.h"
+ #include "mojo/core/user_message_impl.h"
+ #include "mojo/public/cpp/platform/named_platform_channel.h"
+@@ -1109,6 +1110,12 @@ void NodeController::OnIntroduce(const ports::NodeName& from_node,
+                                  PlatformHandle channel_handle) {
+   DCHECK(io_task_runner_->RunsTasksInCurrentSequence());
+ 
++  if (broker_name_ == ports::kInvalidNodeName || from_node != broker_name_) {
++    DVLOG(1) << "Ignoring introduction from non-broker process.";
++    DropPeer(from_node, nullptr);
++    return;
++  }
++
+   if (!channel_handle.is_valid()) {
+     node_->LostConnectionToNode(name);
+ 
