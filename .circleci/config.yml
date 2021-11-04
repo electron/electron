@@ -1656,7 +1656,7 @@ workflows:
   docs-only:
     when: << pipeline.parameters.run-docs-only >>
     jobs:
-      - docs-only
+      - ts-compile-doc-change
   full-build:
     when: << pipeline.parameters.run-full-build >>
     jobs:
