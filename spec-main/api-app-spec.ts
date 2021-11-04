@@ -1,4 +1,4 @@
-import { expect } from 'chai';
+import { assert, expect } from 'chai';
 import * as cp from 'child_process';
 import * as https from 'https';
 import * as http from 'http';
@@ -207,6 +207,11 @@ describe('app module', () => {
   });
 
   describe('app.requestSingleInstanceLock', () => {
+    interface SingleInstanceLockTestArgs {
+      args: string[];
+      expectedAdditionalData: unknown;
+    }
+
     it('prevents the second launch of app', async function () {
       this.timeout(120000);
       const appPath = path.join(fixturesPath, 'api', 'singleton-data');
@@ -220,9 +225,9 @@ describe('app module', () => {
       expect(code1).to.equal(0);
     });
 
-    async function testArgumentPassing (fixtureName: string, expectedSecondInstanceData: unknown) {
-      const appPath = path.join(fixturesPath, 'api', fixtureName);
-      const first = cp.spawn(process.execPath, [appPath]);
+    async function testArgumentPassing (testArgs: SingleInstanceLockTestArgs) {
+      const appPath = path.join(fixturesPath, 'api', 'singleton-data');
+      const first = cp.spawn(process.execPath, [appPath, ...testArgs.args]);
       const firstExited = emittedOnce(first, 'exit');
 
       // Wait for the first app to boot.
@@ -230,16 +235,18 @@ describe('app module', () => {
       while ((await emittedOnce(firstStdoutLines, 'data')).toString() !== 'started') {
         // wait.
       }
-      const data2Promise = emittedOnce(firstStdoutLines, 'data');
+      const additionalDataPromise = emittedOnce(firstStdoutLines, 'data');
 
-      const secondInstanceArgs = [process.execPath, appPath, '--some-switch', 'some-arg'];
+      const secondInstanceArgs = [process.execPath, appPath, ...testArgs.args, '--some-switch', 'some-arg'];
       const second = cp.spawn(secondInstanceArgs[0], secondInstanceArgs.slice(1));
-      const [code2] = await emittedOnce(second, 'exit');
+      const secondExited = emittedOnce(second, 'exit');
+
+      const [code2] = await secondExited;
       expect(code2).to.equal(1);
       const [code1] = await firstExited;
       expect(code1).to.equal(0);
-      const received = await data2Promise;
-      const [args, additionalData] = received[0].toString('ascii').split('||');
+      const dataFromSecondInstance = await additionalDataPromise;
+      const [args, additionalData] = dataFromSecondInstance[0].toString('ascii').split('||');
       const secondInstanceArgsReceived: string[] = JSON.parse(args.toString('ascii'));
       const secondInstanceDataReceived = JSON.parse(additionalData.toString('ascii'));
 
@@ -248,12 +255,19 @@ describe('app module', () => {
         expect(secondInstanceArgsReceived).to.include(arg,
           `argument ${arg} is missing from received second args`);
       }
-      expect(secondInstanceDataReceived).to.be.deep.equal(expectedSecondInstanceData,
-        `received data ${JSON.stringify(secondInstanceDataReceived)} is not equal to expected data ${JSON.stringify(expectedSecondInstanceData)}.`);
+      expect(secondInstanceDataReceived).to.be.deep.equal(testArgs.expectedAdditionalData,
+        `received data ${JSON.stringify(secondInstanceDataReceived)} is not equal to expected data ${JSON.stringify(testArgs.expectedAdditionalData)}.`);
     }
 
-    it('passes arguments to the second-instance event', async () => {
-      const expectedSecondInstanceData = {
+    it('passes arguments to the second-instance event no additional data', async () => {
+      await testArgumentPassing({
+        args: [],
+        expectedAdditionalData: null
+      });
+    });
+
+    it('sends and receives JSON object data', async () => {
+      const expectedAdditionalData = {
         level: 1,
         testkey: 'testvalue1',
         inner: {
@@ -261,11 +275,64 @@ describe('app module', () => {
           testkey: 'testvalue2'
         }
       };
-      await testArgumentPassing('singleton-data', expectedSecondInstanceData);
+      await testArgumentPassing({
+        args: ['--send-data'],
+        expectedAdditionalData
+      });
     });
 
-    it('passes arguments to the second-instance event no additional data', async () => {
-      await testArgumentPassing('singleton', null);
+    it('sends and receives numerical data', async () => {
+      await testArgumentPassing({
+        args: ['--send-data', '--data-content=2'],
+        expectedAdditionalData: 2
+      });
+    });
+
+    it('sends and receives string data', async () => {
+      await testArgumentPassing({
+        args: ['--send-data', '--data-content="data"'],
+        expectedAdditionalData: 'data'
+      });
+    });
+
+    it('sends and receives boolean data', async () => {
+      await testArgumentPassing({
+        args: ['--send-data', '--data-content=false'],
+        expectedAdditionalData: false
+      });
+    });
+
+    it('sends and receives array data', async () => {
+      await testArgumentPassing({
+        args: ['--send-data', '--data-content=[2, 3, 4]'],
+        expectedAdditionalData: [2, 3, 4]
+      });
+    });
+
+    it('sends and receives mixed array data', async () => {
+      await testArgumentPassing({
+        args: ['--send-data', '--data-content=["2", true, 4]'],
+        expectedAdditionalData: ['2', true, 4]
+      });
+    });
+
+    it('sends and receives null data', async () => {
+      await testArgumentPassing({
+        args: ['--send-data', '--data-content=null'],
+        expectedAdditionalData: null
+      });
+    });
+
+    it('cannot send or receive undefined data', async () => {
+      try {
+        await testArgumentPassing({
+          args: ['--send-ack', '--ack-content="undefined"', '--prevent-default', '--send-data', '--data-content="undefined"'],
+          expectedAdditionalData: undefined
+        });
+        assert(false);
+      } catch (e) {
+        // This is expected.
+      }
     });
   });
 
