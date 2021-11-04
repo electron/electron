@@ -129,5 +129,16 @@ ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard 
         clipboard.writeBuffer('public/utf8-plain-text', 'hello');
       }).to.throw(/buffer must be a node Buffer/);
     });
+
+    ifit(process.platform !== 'win32')('writes a Buffer using a raw format that is used by native apps', function () {
+      const message = 'Hello from Electron!';
+      const buffer = Buffer.from(message);
+      let rawFormat = 'text/plain';
+      if (process.platform === 'darwin') {
+        rawFormat = 'public.utf8-plain-text';
+      }
+      clipboard.writeBuffer(rawFormat, buffer);
+      expect(clipboard.readText()).to.equal(message);
+    });
   });
 });
