@@ -552,7 +552,7 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
     enable_crash_reporter = breakpad::IsCrashReporterEnabled();
   }
 
-  if (enable_crash_reporter) {
+  if (enable_crash_reporter && process_type != ::switches::kZygoteProcess) {
     std::string switch_value =
         api::crash_reporter::GetClientId() + ",no_channel";
     command_line->AppendSwitchASCII(::switches::kEnableCrashReporter,
