@@ -953,6 +953,13 @@ void InspectableWebContents::ClearPreferences() {
   sync_disabled_update.Get()->Clear();
 }
 
+void InspectableWebContents::GetSyncInformation(DispatchCallback callback) {
+  // TODO(anyone): do we want devtool syncing in Electron?
+  base::Value result(base::Value::Type::DICTIONARY);
+  result.SetBoolKey("isSyncActive", false);
+  std::move(callback).Run(&result);
+}
+
 void InspectableWebContents::ConnectionReady() {}
 
 void InspectableWebContents::RegisterExtensionsAPI(const std::string& origin,
