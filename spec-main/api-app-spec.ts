@@ -238,9 +238,12 @@ describe('app module', () => {
 
       const secondInstanceArgs = [process.execPath, appPath, ...testArgs.args, '--some-switch', 'some-arg'];
       const second = cp.spawn(secondInstanceArgs[0], secondInstanceArgs.slice(1));
-      const secondStdoutLines = second.stdout.pipe(split());
-      const dataAckPromise = emittedOnce(secondStdoutLines, 'data');
       const secondExited = emittedOnce(second, 'exit');
+      const secondStdoutLines = second.stdout.pipe(split());
+      let ackData;
+      while ((ackData = await emittedOnce(secondStdoutLines, 'data'))[0].toString().length === 0) {
+        // This isn't valid data.
+      }
 
       const [code2] = await secondExited;
       expect(code2).to.equal(1);
@@ -250,7 +253,6 @@ describe('app module', () => {
       const [args, additionalData] = dataFromSecondInstance[0].toString('ascii').split('||');
       const secondInstanceArgsReceived: string[] = JSON.parse(args.toString('ascii'));
       const secondInstanceDataReceived = JSON.parse(additionalData.toString('ascii'));
-      const ackData = await dataAckPromise;
       const dataAckReceived = JSON.parse(ackData[0].toString('ascii'));
 
       // Ensure secondInstanceArgs is a subset of secondInstanceArgsReceived

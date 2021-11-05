@@ -1,8 +1,5 @@
 const { app } = require('electron');
 
-// Send data from the second instance to the first instance.
-const sendAdditionalData = app.commandLine.hasSwitch('send-data');
-
 app.whenReady().then(() => {
   console.log('started'); // ping parent
 });
@@ -60,7 +57,9 @@ app.on('second-instance', (event, args, workingDirectory, data, ackCallback) => 
   setImmediate(() => {
     console.log([JSON.stringify(args), JSON.stringify(data)].join('||'));
     sendAck ? ackCallback(ackObj) : ackCallback();
-    app.exit(0);
+    setImmediate(() => {
+      app.exit(0);
+    });
   });
 });
 
