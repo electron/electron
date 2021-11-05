@@ -16,6 +16,7 @@ class BrowserContext;
 class PluginUtils {
  public:
   // disable copy
+  PluginUtils() = delete;
   PluginUtils(const PluginUtils&) = delete;
   PluginUtils& operator=(const PluginUtils&) = delete;
 
