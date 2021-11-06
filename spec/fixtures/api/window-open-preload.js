@@ -6,7 +6,6 @@ setImmediate(function () {
     ipcRenderer.send('answer', {
       nativeWindowOpen: webFrame.getWebPreference('nativeWindowOpen'),
       nodeIntegration: webFrame.getWebPreference('nodeIntegration'),
-      sandbox: webFrame.getWebPreference('sandbox'),
       typeofProcess: typeof global.process,
       windowOpenerIsNull
     });
