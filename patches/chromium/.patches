@@ -106,6 +106,7 @@ feat_expose_raw_response_headers_from_urlloader.patch
 fix_media_key_usage_with_globalshortcuts.patch
 cherry-pick-ec42dfd3545f.patch
 cherry-pick-39090918efac.patch
+add_ui_scopedcliboardwriter_writeunsaferawdata.patch
 mas_gate_private_enterprise_APIs
 cherry-pick-8af66de55aad.patch
 cherry-pick-c69dddfe1cde.patch
