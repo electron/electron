@@ -9,7 +9,7 @@ extension capabilities.
 
 > **Note:** Electron does not support arbitrary Chrome extensions from the
 > store, and it is a **non-goal** of the Electron project to be perfectly
-> compatible with Chrome's implementation of Extensions.
+> compatible with Chrome's implementation of Extensions. Extensions using Manifest V2.
 
 ## Loading extensions
 
