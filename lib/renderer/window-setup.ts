@@ -3,6 +3,8 @@ import * as ipcRendererUtils from '@electron/internal/renderer/ipc-renderer-inte
 import { internalContextBridge } from '@electron/internal/renderer/api/context-bridge';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
+const { mainFrame: webFrame } = process._linkedBinding('electron_renderer_web_frame');
+
 const { contextIsolationEnabled } = internalContextBridge;
 
 // This file implements the following APIs over the ctx bridge:
@@ -242,8 +244,12 @@ class BrowserWindowProxy {
   }
 }
 
-export const windowSetup = (
-  isWebView: boolean, openerId: number, isHiddenPage: boolean, usesNativeWindowOpen: boolean) => {
+export const windowSetup = () => {
+  const isWebView = webFrame.getWebPreference('isWebView');
+  const openerId = webFrame.getWebPreference('openerId');
+  const isHiddenPage = webFrame.getWebPreference('hiddenPage');
+  const usesNativeWindowOpen = webFrame.getWebPreference('nativeWindowOpen');
+
   if (!process.sandboxed && !isWebView) {
     // Override default window.close.
     window.close = function () {

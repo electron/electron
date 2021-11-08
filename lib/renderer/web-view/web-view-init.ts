@@ -20,7 +20,10 @@ function handleFocusBlur () {
   });
 }
 
-export function webViewInit (webviewTag: boolean, isWebView: boolean) {
+export function webViewInit () {
+  const webviewTag = webFrame.getWebPreference('webviewTag');
+  const isWebView = webFrame.getWebPreference('isWebView');
+
   // Don't allow recursive `<webview>`.
   if (webviewTag && !isWebView) {
     const guestViewInternal = require('@electron/internal/renderer/web-view/guest-view-internal') as typeof guestViewInternalModule;

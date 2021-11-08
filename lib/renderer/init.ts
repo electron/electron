@@ -72,13 +72,8 @@ const { hasSwitch, getSwitchValue } = process._linkedBinding('electron_common_co
 const { mainFrame } = process._linkedBinding('electron_renderer_web_frame');
 
 const nodeIntegration = mainFrame.getWebPreference('nodeIntegration');
-const webviewTag = mainFrame.getWebPreference('webviewTag');
-const isHiddenPage = mainFrame.getWebPreference('hiddenPage');
-const usesNativeWindowOpen = mainFrame.getWebPreference('nativeWindowOpen');
 const preloadScript = mainFrame.getWebPreference('preload');
 const preloadScripts = mainFrame.getWebPreference('preloadScripts');
-const isWebView = mainFrame.getWebPreference('isWebView');
-const openerId = mainFrame.getWebPreference('openerId');
 const appPath = hasSwitch('app-path') ? getSwitchValue('app-path') : null;
 
 // The webContents preload script is loaded after the session preload scripts.
@@ -101,14 +96,14 @@ switch (window.location.protocol) {
   default: {
     // Override default web functions.
     const { windowSetup } = require('@electron/internal/renderer/window-setup') as typeof windowSetupModule;
-    windowSetup(isWebView, openerId, isHiddenPage, usesNativeWindowOpen);
+    windowSetup();
   }
 }
 
 // Load webview tag implementation.
 if (process.isMainFrame) {
   const { webViewInit } = require('@electron/internal/renderer/web-view/web-view-init') as typeof webViewInitModule;
-  webViewInit(webviewTag, isWebView);
+  webViewInit();
 }
 
 if (nodeIntegration) {

@@ -119,19 +119,12 @@ function preloadRequire (module: string) {
 
 // Process command line arguments.
 const { hasSwitch } = process._linkedBinding('electron_common_command_line');
-const { mainFrame } = process._linkedBinding('electron_renderer_web_frame');
 
 // Similar to nodes --expose-internals flag, this exposes _linkedBinding so
 // that tests can call it to get access to some test only bindings
 if (hasSwitch('unsafely-expose-electron-internals-for-testing')) {
   preloadProcess._linkedBinding = process._linkedBinding;
 }
-
-const webviewTag = mainFrame.getWebPreference('webviewTag');
-const isHiddenPage = mainFrame.getWebPreference('hiddenPage');
-const usesNativeWindowOpen = true;
-const isWebView = mainFrame.getWebPreference('isWebView');
-const openerId = mainFrame.getWebPreference('openerId');
 
 switch (window.location.protocol) {
   case 'devtools:': {
@@ -148,14 +141,14 @@ switch (window.location.protocol) {
   default: {
     // Override default web functions.
     const { windowSetup } = require('@electron/internal/renderer/window-setup') as typeof windowSetupModule;
-    windowSetup(isWebView, openerId, isHiddenPage, usesNativeWindowOpen);
+    windowSetup();
   }
 }
 
 // Load webview tag implementation.
 if (process.isMainFrame) {
   const { webViewInit } = require('@electron/internal/renderer/web-view/web-view-init') as typeof webViewInitModule;
-  webViewInit(webviewTag, isWebView);
+  webViewInit();
 }
 
 // Wrap the script into a function executed in global scope. It won't have
