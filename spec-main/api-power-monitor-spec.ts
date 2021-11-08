@@ -8,7 +8,7 @@
 // python-dbusmock.
 import { expect } from 'chai';
 import * as dbus from 'dbus-native';
-import { ifdescribe, delay } from './spec-helpers';
+import { ifdescribe } from './spec-helpers';
 import { promisify } from 'util';
 
 describe('powerMonitor', () => {
@@ -53,15 +53,7 @@ describe('powerMonitor', () => {
       // Add a dummy listener to engage the monitors
       dbusMockPowerMonitor.on('dummy-event', () => {});
       try {
-        let retriesRemaining = 3;
-        // There doesn't seem to be a way to get a notification when a call
-        // happens, so poll `getCalls` a few times to reduce flake.
-        let calls: any[] = [];
-        while (retriesRemaining-- > 0) {
-          calls = await getCalls();
-          if (calls.length > 0) break;
-          await delay(1000);
-        }
+        const calls = await getCalls();
         expect(calls).to.be.an('array').that.has.lengthOf(1);
         expect(calls[0].slice(1)).to.deep.equal([
           'Inhibit', [
