@@ -106,7 +106,6 @@ declare namespace NodeJS {
   }
 
   interface InternalWebPreferences {
-    contextIsolation: boolean;
     isWebView: boolean;
     hiddenPage: boolean;
     nativeWindowOpen: boolean;

@@ -127,7 +127,6 @@ if (hasSwitch('unsafely-expose-electron-internals-for-testing')) {
   preloadProcess._linkedBinding = process._linkedBinding;
 }
 
-const contextIsolation = mainFrame.getWebPreference('contextIsolation');
 const webviewTag = mainFrame.getWebPreference('webviewTag');
 const isHiddenPage = mainFrame.getWebPreference('hiddenPage');
 const usesNativeWindowOpen = true;
@@ -156,7 +155,7 @@ switch (window.location.protocol) {
 // Load webview tag implementation.
 if (process.isMainFrame) {
   const { webViewInit } = require('@electron/internal/renderer/web-view/web-view-init') as typeof webViewInitModule;
-  webViewInit(contextIsolation, webviewTag, isWebView);
+  webViewInit(webviewTag, isWebView);
 }
 
 // Wrap the script into a function executed in global scope. It won't have

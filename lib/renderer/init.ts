@@ -71,7 +71,6 @@ webFrameInit();
 const { hasSwitch, getSwitchValue } = process._linkedBinding('electron_common_command_line');
 const { mainFrame } = process._linkedBinding('electron_renderer_web_frame');
 
-const contextIsolation = mainFrame.getWebPreference('contextIsolation');
 const nodeIntegration = mainFrame.getWebPreference('nodeIntegration');
 const webviewTag = mainFrame.getWebPreference('webviewTag');
 const isHiddenPage = mainFrame.getWebPreference('hiddenPage');
@@ -109,7 +108,7 @@ switch (window.location.protocol) {
 // Load webview tag implementation.
 if (process.isMainFrame) {
   const { webViewInit } = require('@electron/internal/renderer/web-view/web-view-init') as typeof webViewInitModule;
-  webViewInit(contextIsolation, webviewTag, isWebView);
+  webViewInit(webviewTag, isWebView);
 }
 
 if (nodeIntegration) {
@@ -166,7 +165,7 @@ if (nodeIntegration) {
 } else {
   // Delete Node's symbols after the Environment has been loaded in a
   // non context-isolated environment
-  if (!contextIsolation) {
+  if (!process.contextIsolated) {
     process.once('loaded', function () {
       delete (global as any).process;
       delete (global as any).Buffer;
