@@ -21,9 +21,26 @@ namespace in_app_purchase {
 
 // --------------------------- Structures ---------------------------
 
+struct PaymentDiscount {
+  std::string identifier;
+  std::string keyIdentifier;
+  std::string signature;
+  int timestamp;
+
+  PaymentDiscount();
+  PaymentDiscount(const PaymentDiscount&);
+  ~PaymentDiscount();
+};
+
 struct Payment {
   std::string productIdentifier = "";
   int quantity = 1;
+  std::string applicationUsername;
+  PaymentDiscount paymentDiscount;
+
+  Payment();
+  Payment(const Payment&);
+  ~Payment();
 };
 
 struct Transaction {
