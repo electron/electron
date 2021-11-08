@@ -5,7 +5,7 @@ setup: true
 
 # Orbs
 orbs:
-  path-filtering: circleci/path-filtering@0.0.3
+  path-filtering: circleci/path-filtering@0.1.0
 
 # Envs
 env-global: &env-global
