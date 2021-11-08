@@ -4162,9 +4162,6 @@ describe('BrowserWindow module', () => {
         const leaveFullScreen = emittedOnce(w, 'leave-full-screen');
         w.setFullScreen(false);
         await leaveFullScreen;
-        const wait = emittedOnce(w, 'closed');
-        w.close();
-        await wait;
       });
 
       it('can be changed with setFullScreen method', async () => {
