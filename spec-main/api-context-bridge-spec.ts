@@ -64,7 +64,9 @@ describe('contextBridge', () => {
     describe(`with sandbox=${useSandbox}`, () => {
       const makeBindingWindow = async (bindingCreator: Function) => {
         const preloadContent = `const renderer_1 = require('electron');
-        ${useSandbox ? '' : `require('v8').setFlagsFromString('--expose_gc');
+        ${useSandbox
+? ''
+: `require('v8').setFlagsFromString('--expose_gc');
         const gc=require('vm').runInNewContext('gc');
         renderer_1.contextBridge.exposeInMainWorld('GCRunner', {
           run: () => gc()

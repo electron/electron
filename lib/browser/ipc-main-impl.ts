@@ -18,14 +18,14 @@ export class IpcMainImpl extends EventEmitter {
         e._throw(err);
       }
     });
-  }
+  };
 
   handleOnce: Electron.IpcMain['handleOnce'] = (method, fn) => {
     this.handle(method, (e, ...args) => {
       this.removeHandler(method);
       return fn(e, ...args);
     });
-  }
+  };
 
   removeHandler (method: string) {
     this._invokeHandlers.delete(method);

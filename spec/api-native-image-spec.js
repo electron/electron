@@ -54,7 +54,8 @@ describe('nativeImage module', () => {
    * @returns {?string} Full path.
    */
   const getImagePathFromFilename = (filename) => {
-    return (filename === null) ? null
+    return (filename === null)
+      ? null
       : path.join(__dirname, 'fixtures', 'assets', filename);
   };
 

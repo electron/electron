@@ -111,7 +111,7 @@ class LocationProxy {
       get search () { return that.search; },
       set search (newValue) { that.search = newValue; }
     };
-  }
+  };
 
   constructor (guestId: number) {
     // eslint will consider the constructor "useless"
@@ -161,10 +161,10 @@ interface SafelyBoundBrowserWindowProxy {
 }
 
 class BrowserWindowProxy {
-  public closed: boolean = false
+  public closed: boolean = false;
 
-  private _location: LocationProxy
-  private guestId: number
+  private _location: LocationProxy;
+  private guestId: number;
 
   // TypeScript doesn't allow getters/accessors with different types,
   // so for now, we'll have to make do with an "any" in the mix.
@@ -207,31 +207,31 @@ class BrowserWindowProxy {
         return that.closed;
       }
     };
-  }
+  };
 
   public close = () => {
     this._invokeWindowMethod('destroy');
-  }
+  };
 
   public focus = () => {
     this._invokeWindowMethod('focus');
-  }
+  };
 
   public blur = () => {
     this._invokeWindowMethod('blur');
-  }
+  };
 
   public print = () => {
     this._invokeWebContentsMethod('print');
-  }
+  };
 
   public postMessage = (message: any, targetOrigin: string) => {
     ipcRendererInternal.invoke(IPC_MESSAGES.GUEST_WINDOW_MANAGER_WINDOW_POSTMESSAGE, this.guestId, message, toString(targetOrigin), window.location.origin);
-  }
+  };
 
   public eval = (code: string) => {
     this._invokeWebContentsMethod('executeJavaScript', code);
-  }
+  };
 
   private _invokeWindowMethod (method: string, ...args: any[]) {
     return ipcRendererInternal.invoke(IPC_MESSAGES.GUEST_WINDOW_MANAGER_WINDOW_METHOD, this.guestId, method, ...args);

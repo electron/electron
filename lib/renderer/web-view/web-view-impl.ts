@@ -19,18 +19,18 @@ export interface WebViewImplHooks {
 
 // Represents the internal state of the WebView node.
 export class WebViewImpl {
-  public beforeFirstNavigation = true
-  public elementAttached = false
-  public guestInstanceId?: number
-  public hasFocus = false
+  public beforeFirstNavigation = true;
+  public elementAttached = false;
+  public guestInstanceId?: number;
+  public hasFocus = false;
   public internalInstanceId?: number;
   public resizeObserver?: ResizeObserver;
   public userAgentOverride?: string;
-  public viewInstanceId: number
+  public viewInstanceId: number;
 
   // on* Event handlers.
-  public on: Record<string, any> = {}
-  public internalElement: HTMLIFrameElement
+  public on: Record<string, any> = {};
+  public internalElement: HTMLIFrameElement;
 
   public attributes: Map<string, WebViewAttribute>;
 

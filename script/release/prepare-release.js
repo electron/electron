@@ -188,7 +188,7 @@ async function promptForVersion (version) {
 // function to determine if there have been commits to main since the last release
 async function changesToRelease () {
   // eslint-disable-next-line no-useless-escape
-  const lastCommitWasRelease = new RegExp('^Bump v[0-9]+\.[0-9]+\.[0-9]+(-beta\.[0-9]+)?(-alpha\.[0-9]+)?(-nightly\.[0-9]+)?$', 'g');
+  const lastCommitWasRelease = /^Bump v[0-9]+\.[0-9]+\.[0-9]+(-beta\.[0-9]+)?(-alpha\.[0-9]+)?(-nightly\.[0-9]+)?$/g;
   const lastCommit = await GitProcess.exec(['log', '-n', '1', '--pretty=format:\'%s\''], ELECTRON_DIR);
   return !lastCommitWasRelease.test(lastCommit.stdout);
 }

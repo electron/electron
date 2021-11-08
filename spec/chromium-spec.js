@@ -11,9 +11,6 @@ const { resolveGetters } = require('./expect-helpers');
 const { ifdescribe, delay } = require('./spec-helpers');
 const features = process._linkedBinding('electron_common_features');
 
-/* Most of the APIs here don't use standard callbacks */
-/* eslint-disable standard/no-callback-literal */
-
 describe('chromium feature', () => {
   const fixtures = path.resolve(__dirname, 'fixtures');
 

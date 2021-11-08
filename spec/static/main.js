@@ -182,7 +182,6 @@ const suspendListeners = (emitter, eventName, callback) => {
       emitter.on(eventName, listener);
     });
 
-    // eslint-disable-next-line standard/no-callback-literal
     callback(...args);
   });
 };

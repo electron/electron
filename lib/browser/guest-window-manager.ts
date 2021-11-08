@@ -150,10 +150,12 @@ function emitDeprecatedNewWindowEvent ({ event, embedder, guest, windowOpenArgs,
 }): boolean {
   const { url, frameName } = windowOpenArgs;
   const isWebViewWithPopupsDisabled = embedder.getType() === 'webview' && embedder.getLastWebPreferences()!.disablePopups;
-  const postBody = postData ? {
-    data: postData,
-    ...parseContentTypeFormat(postData)
-  } : null;
+  const postBody = postData
+    ? {
+        data: postData,
+        ...parseContentTypeFormat(postData)
+      }
+    : null;
 
   embedder.emit(
     'new-window',

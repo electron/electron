@@ -41,6 +41,7 @@ async function checkIfDocOnlyChange () {
         if (fileDirs[0] !== 'docs') {
           return true;
         }
+        return false;
       });
       if (nonDocChange || filesChanged.length === 0) {
         process.exit(1);

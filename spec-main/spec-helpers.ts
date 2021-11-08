@@ -62,11 +62,11 @@ class RemoteControlApp {
       req.write(js);
       req.end();
     });
-  }
+  };
 
   remotely = (script: Function, ...args: any[]): Promise<any> => {
     return this.remoteEval(`(${script})(...${JSON.stringify(args)})`);
-  }
+  };
 }
 
 export async function startRemoteControlApp (extraArgs: string[] = [], options?: childProcess.SpawnOptionsWithoutStdio) {

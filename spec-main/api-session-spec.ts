@@ -12,9 +12,6 @@ import { emittedOnce } from './events-helpers';
 import { defer, delay } from './spec-helpers';
 import { AddressInfo } from 'net';
 
-/* The whole session API doesn't use standard callbacks */
-/* eslint-disable standard/no-callback-literal */
-
 describe('session module', () => {
   const fixtures = path.resolve(__dirname, '..', 'spec', 'fixtures');
   const url = 'http://127.0.0.1';
