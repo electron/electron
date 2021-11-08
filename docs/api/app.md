@@ -501,9 +501,14 @@ second instance during the `app.requestSingleInstanceLock()` flow.
 This callback can be used for cases where the second instance
 needs to obtain additional information from the first instance
 before quitting.
-In order to call the callback, `event.preventDefault()` must be called
-Then, the `ackCallback` callback can be called.
+
+Currently, the limit on the message size is kMaxMessageLength,
+or around 32kB. To be safe, keep the amount of data passed to 31kB at most.
+
+In order to call the callback, `event.preventDefault()` must be called, first.
 If the callback is not called in either case, `null` will be sent back.
+If `event.preventDefault()` is not called, but `ackCallback` is called
+by the user in the event, then the behaviour is undefined.
 
 This event is guaranteed to be emitted after the `ready` event of `app`
 gets emitted.
@@ -978,6 +983,13 @@ starts:
 const { app } = require('electron')
 let myWindow = null
 
+app.on('first-instance-ack', (event, additionalData) => {
+  // Print out the ack received from the first instance.
+  // Note this event handler must come before the requestSingleInstanceLock call.
+  // Expected output: '{"myAckKey":"myAckValue"}'
+  console.log(JSON.stringify(additionalData))
+})
+
 const additionalData = { myKey: 'myValue' }
 const gotTheLock = app.requestSingleInstanceLock(additionalData)
 
@@ -985,14 +997,19 @@ if (!gotTheLock) {
   app.quit()
 } else {
   app.on('second-instance', (event, commandLine, workingDirectory, additionalData) => {
+    // We must call preventDefault if we're sending back data.
+    event.preventDefault()
     // Print out data received from the second instance.
-    console.log(additionalData)
+    // Expected output: '{"myKey":"myValue"}'
+    console.log(JSON.stringify(additionalData))
 
     // Someone tried to run a second instance, we should focus our window.
     if (myWindow) {
       if (myWindow.isMinimized()) myWindow.restore()
       myWindow.focus()
     }
+    const ackData = { myAckKey: 'myAckValue' }
+    ackCallback(ackData)
   })
 
   // Create myWindow, load the rest of the app, etc...
