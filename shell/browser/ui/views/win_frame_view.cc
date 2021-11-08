@@ -200,9 +200,8 @@ int WinFrameView::TitlebarHeight(int custom_height) const {
 
   int height = TitlebarMaximizedVisualHeight() +
                FrameTopBorderThickness(false) - WindowTopY();
-  if (custom_height > TitlebarMaximizedVisualHeight()) {
-    height = IsMaximized() ? custom_height : custom_height - WindowTopY();
-  }
+  if (custom_height > TitlebarMaximizedVisualHeight())
+    height = custom_height - WindowTopY();
 
   return height;
 }
@@ -236,22 +235,29 @@ void WinFrameView::LayoutCaptionButtons() {
   int custom_height = window()->titlebar_overlay_height();
   int height = TitlebarHeight(custom_height);
 
-  // TODO(mlaurencin): This -1 creates a 1 pixel gap between the right
-  // edge of the overlay and the edge of the window, allowing for this edge
-  // portion to return the correct hit test and be manually resized properly.
-  // Alternatives can be explored, but the differences in view structures
-  // between Electron and Chromium may result in this as the best option.
+  // TODO(mlaurencin): This -1 creates a 1 pixel margin between the right
+  // edge of the button container and the edge of the window, allowing for this
+  // edge portion to return the correct hit test and be manually resized
+  // properly. Alternatives can be explored, but the differences in view
+  // structures between Electron and Chromium may result in this as the best
+  // option.
   int variable_width =
       IsMaximized() ? preferred_size.width() : preferred_size.width() - 1;
   caption_button_container_->SetBounds(width() - preferred_size.width(),
                                        WindowTopY(), variable_width, height);
 
-  int variable_height = IsMaximized() ? height : height - 1;
-  caption_button_container_->SetButtonSize(gfx::Size(0, variable_height));
+  // Needed for heights larger than default
+  caption_button_container_->SetButtonSize(gfx::Size(0, height));
 }
 
 void WinFrameView::LayoutWindowControlsOverlay() {
-  int overlay_height = caption_button_container_->size().height();
+  int overlay_height = window()->titlebar_overlay_height();
+  if (overlay_height == 0) {
+    // Accounting for the 1 pixel margin at the top of the button container
+    overlay_height = IsMaximized()
+                         ? caption_button_container_->size().height()
+                         : caption_button_container_->size().height() + 1;
+  }
   int overlay_width = caption_button_container_->size().width();
   int bounding_rect_width = width() - overlay_width;
   auto bounding_rect =

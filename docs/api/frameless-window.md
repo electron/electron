@@ -63,7 +63,7 @@ const win = new BrowserWindow({ titleBarStyle: 'customButtonsOnHover', frame: fa
 win.show()
 ```
 
-## Windows Control Overlay
+## Window Controls Overlay
 
 When using a frameless window in conjuction with `win.setWindowButtonVisibility(true)` on macOS, using one of the `titleBarStyle`s as described above so
 that the traffic lights are visible, or using `titleBarStyle: hidden` on Windows, you can access the Window Controls Overlay [JavaScript APIs][overlay-javascript-apis] and
