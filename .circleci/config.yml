@@ -1,8 +1,9 @@
 version: 2.1
 
-# Required for dynamic configuration feature
+# Required for dynamic configuration
 setup: true
 
+# Orbs
 orbs:
   path-filtering: circleci/path-filtering@0.0.3
 
@@ -27,7 +28,7 @@ executors:
       - image: ghcr.io/electron/build:27db4a3e3512bfd2e47f58cea69922da0835f1d9
     resource_class: << parameters.size >>
 
-# List of steps
+# List of always run steps
 step-checkout-electron: &step-checkout-electron
   checkout:
     path: src/electron
@@ -93,10 +94,10 @@ jobs:
 
 # Initial setup workflow
 workflows:
-  setup-and-lint:
+  lint:
     jobs:
+      # Job inherited from path-filtering orb, do not change name
       - path-filtering/filter:
-          # Compare files on all branches, using the webhook payload from Github
           base-revision: << pipeline.git.branch >>
           # Params for mapping; `path-to-test parameter-to-set value-for-parameter` for each row
           mapping: |
