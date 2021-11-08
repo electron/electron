@@ -13,11 +13,11 @@ _This class is not exported from the `'electron'` module. It is only available a
     * `selectedIndex` Integer - The index of the item the user selected.
   * `highlight` Function (optional) - Called when the user taps any item.
     * `highlightedIndex` Integer - The index of the item the user touched.
-  * `selectedStyle` String (optional) - Selected item style. Can be `background`, `outline` or `none`. Defaults to `none`.
-  * `overlayStyle` String (optional) - Selected overlay item style. Can be `background`, `outline` or `none`. Defaults to `none`.
-  * `showArrowButtons` Boolean (optional) - Whether to show arrow buttons. Defaults to `false` and is only shown if `items` is non-empty.
-  * `mode` String (optional) - Can be `fixed` or `free`. The default is `free`.
-  * `continuous` Boolean (optional) - Defaults to `true`.
+  * `selectedStyle` string (optional) - Selected item style. Can be `background`, `outline` or `none`. Defaults to `none`.
+  * `overlayStyle` string (optional) - Selected overlay item style. Can be `background`, `outline` or `none`. Defaults to `none`.
+  * `showArrowButtons` boolean (optional) - Whether to show arrow buttons. Defaults to `false` and is only shown if `items` is non-empty.
+  * `mode` string (optional) - Can be `fixed` or `free`. The default is `free`.
+  * `continuous` boolean (optional) - Defaults to `true`.
 
 ### Instance Properties
 
@@ -30,7 +30,7 @@ updates the control in the touch bar. Updating deep properties inside this array
 
 #### `touchBarScrubber.selectedStyle`
 
-A `String` representing the style that selected items in the scrubber should have. Updating this value immediately
+A `string` representing the style that selected items in the scrubber should have. Updating this value immediately
 updates the control in the touch bar. Possible values:
 
 * `background` - Maps to `[NSScrubberSelectionStyle roundedBackgroundStyle]`.
@@ -39,7 +39,7 @@ updates the control in the touch bar. Possible values:
 
 #### `touchBarScrubber.overlayStyle`
 
-A `String` representing the style that selected items in the scrubber should have. This style is overlayed on top
+A `string` representing the style that selected items in the scrubber should have. This style is overlayed on top
 of the scrubber item instead of being placed behind it. Updating this value immediately updates the control in the
 touch bar. Possible values:
 
@@ -49,12 +49,12 @@ touch bar. Possible values:
 
 #### `touchBarScrubber.showArrowButtons`
 
-A `Boolean` representing whether to show the left / right selection arrows in this scrubber. Updating this value
+A `boolean` representing whether to show the left / right selection arrows in this scrubber. Updating this value
 immediately updates the control in the touch bar.
 
 #### `touchBarScrubber.mode`
 
-A `String` representing the mode of this scrubber. Updating this value immediately
+A `string` representing the mode of this scrubber. Updating this value immediately
 updates the control in the touch bar. Possible values:
 
 * `fixed` - Maps to `NSScrubberModeFixed`.
@@ -62,5 +62,5 @@ updates the control in the touch bar. Possible values:
 
 #### `touchBarScrubber.continuous`
 
-A `Boolean` representing whether this scrubber is continuous or not. Updating this value immediately
+A `boolean` representing whether this scrubber is continuous or not. Updating this value immediately
 updates the control in the touch bar.

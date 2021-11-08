@@ -76,7 +76,7 @@ Returns:
 
 * `event` Event
 * `display` [Display](structures/display.md)
-* `changedMetrics` String[]
+* `changedMetrics` string[]
 
 Emitted when one or more metrics change in a `display`. The `changedMetrics` is
 an array of strings that describe the changes. Possible changes are `bounds`,

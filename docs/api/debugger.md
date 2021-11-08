@@ -40,7 +40,7 @@ win.webContents.debugger.sendCommand('Network.enable')
 Returns:
 
 * `event` Event
-* `reason` String - Reason for detaching debugger.
+* `reason` string - Reason for detaching debugger.
 
 Emitted when the debugging session is terminated. This happens either when
 `webContents` is closed or devtools is invoked for the attached `webContents`.
@@ -50,10 +50,10 @@ Emitted when the debugging session is terminated. This happens either when
 Returns:
 
 * `event` Event
-* `method` String - Method name.
+* `method` string - Method name.
 * `params` any - Event parameters defined by the 'parameters'
    attribute in the remote debugging protocol.
-* `sessionId` String - Unique identifier of attached debugging session,
+* `sessionId` string - Unique identifier of attached debugging session,
    will match the value sent from `debugger.sendCommand`.
 
 Emitted whenever the debugging target issues an instrumentation event.
@@ -65,13 +65,13 @@ Emitted whenever the debugging target issues an instrumentation event.
 
 #### `debugger.attach([protocolVersion])`
 
-* `protocolVersion` String (optional) - Requested debugging protocol version.
+* `protocolVersion` string (optional) - Requested debugging protocol version.
 
 Attaches the debugger to the `webContents`.
 
 #### `debugger.isAttached()`
 
-Returns `Boolean` - Whether a debugger is attached to the `webContents`.
+Returns `boolean` - Whether a debugger is attached to the `webContents`.
 
 #### `debugger.detach()`
 
@@ -79,10 +79,10 @@ Detaches the debugger from the `webContents`.
 
 #### `debugger.sendCommand(method[, commandParams, sessionId])`
 
-* `method` String - Method name, should be one of the methods defined by the
+* `method` string - Method name, should be one of the methods defined by the
    [remote debugging protocol][rdp].
 * `commandParams` any (optional) - JSON object with request parameters.
-* `sessionId` String (optional) - send command to the target with associated
+* `sessionId` string (optional) - send command to the target with associated
    debugging session id. The initial value can be obtained by sending
    [Target.attachToTarget][attachToTarget] message.
 

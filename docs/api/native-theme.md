@@ -21,13 +21,13 @@ The `nativeTheme` module has the following properties:
 
 ### `nativeTheme.shouldUseDarkColors` _Readonly_
 
-A `Boolean` for if the OS / Chromium currently has a dark mode enabled or is
+A `boolean` for if the OS / Chromium currently has a dark mode enabled or is
 being instructed to show a dark-style UI.  If you want to modify this value you
 should use `themeSource` below.
 
 ### `nativeTheme.themeSource`
 
-A `String` property that can be `system`, `light` or `dark`.  It is used to override and supersede
+A `string` property that can be `system`, `light` or `dark`.  It is used to override and supersede
 the value that Chromium has chosen to use internally.
 
 Setting this property to `system` will remove the override and
@@ -60,10 +60,10 @@ Your application should then always use `shouldUseDarkColors` to determine what 
 
 ### `nativeTheme.shouldUseHighContrastColors` _macOS_ _Windows_ _Readonly_
 
-A `Boolean` for if the OS / Chromium currently has high-contrast mode enabled
+A `boolean` for if the OS / Chromium currently has high-contrast mode enabled
 or is being instructed to show a high-contrast UI.
 
 ### `nativeTheme.shouldUseInvertedColorScheme` _macOS_ _Windows_ _Readonly_
 
-A `Boolean` for if the OS / Chromium currently has an inverted color scheme
+A `boolean` for if the OS / Chromium currently has an inverted color scheme
 or is being instructed to use an inverted color scheme.

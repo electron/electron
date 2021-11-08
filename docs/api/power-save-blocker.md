@@ -21,7 +21,7 @@ The `powerSaveBlocker` module has the following methods:
 
 ### `powerSaveBlocker.start(type)`
 
-* `type` String - Power save blocker type.
+* `type` string - Power save blocker type.
   * `prevent-app-suspension` - Prevent the application from being suspended.
     Keeps system active but allows screen to be turned off. Example use cases:
     downloading a file or playing audio.
@@ -53,4 +53,4 @@ Stops the specified power save blocker.
 
 * `id` Integer - The power save blocker id returned by `powerSaveBlocker.start`.
 
-Returns `Boolean` - Whether the corresponding `powerSaveBlocker` has started.
+Returns `boolean` - Whether the corresponding `powerSaveBlocker` has started.

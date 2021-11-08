@@ -54,7 +54,7 @@ The `net` module has the following methods:
 
 ### `net.request(options)`
 
-* `options` (ClientRequestConstructorOptions | String) - The `ClientRequest` constructor options.
+* `options` (ClientRequestConstructorOptions | string) - The `ClientRequest` constructor options.
 
 Returns [`ClientRequest`](./client-request.md)
 
@@ -65,7 +65,7 @@ requests according to the specified protocol scheme in the `options` object.
 
 ### `net.isOnline()`
 
-Returns `Boolean` - Whether there is currently internet connection.
+Returns `boolean` - Whether there is currently internet connection.
 
 A return value of `false` is a pretty strong indicator that the user
 won't be able to connect to remote sites. However, a return value of
@@ -77,7 +77,7 @@ will be successful.
 
 ### `net.online` _Readonly_
 
-A `Boolean` property. Whether there is currently internet connection.
+A `boolean` property. Whether there is currently internet connection.
 
 A return value of `false` is a pretty strong indicator that the user
 won't be able to connect to remote sites. However, a return value of

@@ -17,7 +17,7 @@ The `ipcRenderer` module has the following method to listen for events and send 
 
 ### `ipcRenderer.on(channel, listener)`
 
-* `channel` String
+* `channel` string
 * `listener` Function
   * `event` IpcRendererEvent
   * `...args` any[]
@@ -27,7 +27,7 @@ Listens to `channel`, when a new message arrives `listener` would be called with
 
 ### `ipcRenderer.once(channel, listener)`
 
-* `channel` String
+* `channel` string
 * `listener` Function
   * `event` IpcRendererEvent
   * `...args` any[]
@@ -37,7 +37,7 @@ only the next time a message is sent to `channel`, after which it is removed.
 
 ### `ipcRenderer.removeListener(channel, listener)`
 
-* `channel` String
+* `channel` string
 * `listener` Function
   * `...args` any[]
 
@@ -46,13 +46,13 @@ Removes the specified `listener` from the listener array for the specified
 
 ### `ipcRenderer.removeAllListeners(channel)`
 
-* `channel` String
+* `channel` string
 
 Removes all listeners, or those of the specified `channel`.
 
 ### `ipcRenderer.send(channel, ...args)`
 
-* `channel` String
+* `channel` string
 * `...args` any[]
 
 Send an asynchronous message to the main process via `channel`, along with
@@ -78,7 +78,7 @@ If you want to receive a single response from the main process, like the result 
 
 ### `ipcRenderer.invoke(channel, ...args)`
 
-* `channel` String
+* `channel` string
 * `...args` any[]
 
 Returns `Promise<any>` - Resolves with the response from the main process.
@@ -121,7 +121,7 @@ If you do not need a response to the message, consider using [`ipcRenderer.send`
 
 ### `ipcRenderer.sendSync(channel, ...args)`
 
-* `channel` String
+* `channel` string
 * `...args` any[]
 
 Returns `any` - The value sent back by the [`ipcMain`](ipc-main.md) handler.
@@ -150,7 +150,7 @@ and replies by setting `event.returnValue`.
 
 ### `ipcRenderer.postMessage(channel, message, [transfer])`
 
-* `channel` String
+* `channel` string
 * `message` any
 * `transfer` MessagePort[] (optional)
 
@@ -180,15 +180,15 @@ documentation](https://developer.mozilla.org/en-US/docs/Web/API/MessageChannel).
 
 ### `ipcRenderer.sendTo(webContentsId, channel, ...args)`
 
-* `webContentsId` Number
-* `channel` String
+* `webContentsId` number
+* `channel` string
 * `...args` any[]
 
 Sends a message to a window with `webContentsId` via `channel`.
 
 ### `ipcRenderer.sendToHost(channel, ...args)`
 
-* `channel` String
+* `channel` string
 * `...args` any[]
 
 Like `ipcRenderer.send` but the event will be sent to the `<webview>` element in

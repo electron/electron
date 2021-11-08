@@ -43,15 +43,15 @@ The `contextBridge` module has the following methods:
 
 ### `contextBridge.exposeInMainWorld(apiKey, api)`
 
-* `apiKey` String - The key to inject the API onto `window` with.  The API will be accessible on `window[apiKey]`.
+* `apiKey` string - The key to inject the API onto `window` with.  The API will be accessible on `window[apiKey]`.
 * `api` any - Your API, more information on what this API can be and how it works is available below.
 
 ## Usage
 
 ### API
 
-The `api` provided to [`exposeInMainWorld`](#contextbridgeexposeinmainworldapikey-api) must be a `Function`, `String`, `Number`, `Array`, `Boolean`, or an object
-whose keys are strings and values are a `Function`, `String`, `Number`, `Array`, `Boolean`, or another nested object that meets the same conditions.
+The `api` provided to [`exposeInMainWorld`](#contextbridgeexposeinmainworldapikey-api) must be a `Function`, `string`, `number`, `Array`, `boolean`, or an object
+whose keys are strings and values are a `Function`, `string`, `number`, `Array`, `boolean`, or another nested object that meets the same conditions.
 
 `Function` values are proxied to the other context and all other values are **copied** and **frozen**. Any data / primitives sent in
 the API become immutable and updates on either side of the bridge do not result in an update on the other side.
@@ -97,9 +97,9 @@ has been included below for completeness:
 
 | Type | Complexity | Parameter Support | Return Value Support | Limitations |
 | ---- | ---------- | ----------------- | -------------------- | ----------- |
-| `String` | Simple | ✅ | ✅ | N/A |
-| `Number` | Simple | ✅ | ✅ | N/A |
-| `Boolean` | Simple | ✅ | ✅ | N/A |
+| `string` | Simple | ✅ | ✅ | N/A |
+| `number` | Simple | ✅ | ✅ | N/A |
+| `boolean` | Simple | ✅ | ✅ | N/A |
 | `Object` | Complex | ✅ | ✅ | Keys must be supported using only "Simple" types in this table.  Values must be supported in this table.  Prototype modifications are dropped.  Sending custom classes will copy values but not the prototype. |
 | `Array` | Complex | ✅ | ✅ | Same limitations as the `Object` type |
 | `Error` | Complex | ✅ | ✅ | Errors that are thrown are also copied, this can result in the message and stack trace of the error changing slightly due to being thrown in a different context |

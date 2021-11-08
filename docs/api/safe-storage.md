@@ -16,7 +16,7 @@ The `safeStorage` module has the following methods:
 
 ### `safeStorage.isEncryptionAvailable()`
 
-Returns `Boolean` - Whether encryption is available.
+Returns `boolean` - Whether encryption is available.
 
 On Linux, returns true if the secret key is
 available. On MacOS, returns true if Keychain is available.
@@ -24,7 +24,7 @@ On Windows, returns true with no other preconditions.
 
 ### `safeStorage.encryptString(plainText)`
 
-* `plainText` String
+* `plainText` string
 
 Returns `Buffer` -  An array of bytes representing the encrypted string.
 
@@ -34,7 +34,7 @@ This function will throw an error if encryption fails.
 
 * `encrypted` Buffer
 
-Returns `String` - the decrypted string. Decrypts the encrypted buffer
+Returns `string` - the decrypted string. Decrypts the encrypted buffer
 obtained  with `safeStorage.encryptString` back into a string.
 
 This function will throw an error if decryption fails.

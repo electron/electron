@@ -81,8 +81,8 @@ Emitted when the document is loaded.
 
 #### `frame.executeJavaScript(code[, userGesture])`
 
-* `code` String
-* `userGesture` Boolean (optional) - Default is `false`.
+* `code` string
+* `userGesture` boolean (optional) - Default is `false`.
 
 Returns `Promise<unknown>` - A promise that resolves with the result of the executed
 code or is rejected if execution throws or results in a rejected promise.
@@ -99,7 +99,7 @@ Returns `boolean` - Whether the reload was initiated successfully. Only results 
 
 #### `frame.send(channel, ...args)`
 
-* `channel` String
+* `channel` string
 * `...args` any[]
 
 Send an asynchronous message to the renderer process via `channel`, along with
@@ -113,7 +113,7 @@ The renderer process can handle the message by listening to `channel` with the
 
 #### `frame.postMessage(channel, message, [transfer])`
 
-* `channel` String
+* `channel` string
 * `message` any
 * `transfer` MessagePortMain[] (optional)
 
@@ -173,7 +173,7 @@ not used again.
 
 #### `frame.name` _Readonly_
 
-A `String` representing the frame name.
+A `string` representing the frame name.
 
 #### `frame.osProcessId` _Readonly_
 
