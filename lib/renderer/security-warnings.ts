@@ -281,7 +281,7 @@ const getWebPreferences = async function () {
   }
 };
 
-export function securityWarnings (nodeIntegration = false) {
+export function securityWarnings (nodeIntegration: boolean) {
   const loadHandler = async function () {
     if (shouldLogSecurityWarnings()) {
       const webPreferences = await getWebPreferences();
