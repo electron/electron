@@ -2351,7 +2351,6 @@ workflows:
       - linux-arm64-testing-gn-check:
           requires:
             - linux-checkout-for-workspace
-      - ts-compile-doc-change
 
   build-mac:
     when: << pipeline.parameters.run-build-mac >>
