@@ -14,6 +14,29 @@ namespace in_app_purchase {
 
 // --------------------------- Structures ---------------------------
 
+struct ProductSubscriptionPeriod {
+  int numberOfUnits;
+  int unit;
+
+  ProductSubscriptionPeriod(const ProductSubscriptionPeriod&);
+  ProductSubscriptionPeriod();
+  ~ProductSubscriptionPeriod();
+};
+
+struct ProductDiscount {
+  std::string identifier;
+  int type;
+  double price = 0.0;
+  std::string priceLocale;
+  int paymentMode;
+  int numberOfPeriods;
+  ProductSubscriptionPeriod subscriptionPeriod;
+
+  ProductDiscount(const ProductDiscount&);
+  ProductDiscount();
+  ~ProductDiscount();
+};
+
 struct Product {
   // Product Identifier
   std::string productIdentifier;
@@ -27,12 +50,16 @@ struct Product {
   // Pricing Information
   double price = 0.0;
   std::string formattedPrice;
-
-  // Currency Information
   std::string currencyCode;
+  ProductDiscount introductoryPrice;
+  std::vector<ProductDiscount> discounts;
+  std::string subscriptionGroupIdentifier;
+  ProductSubscriptionPeriod subscriptionPeriod;
 
   // Downloadable Content Information
   bool isDownloadable = false;
+  std::string downloadContentVersion;
+  std::vector<uint32_t> downloadContentLengths;
 
   Product(const Product&);
   Product();
