@@ -30,7 +30,7 @@
 #include "shell/common/gin_helper/promise.h"
 
 #if defined(USE_NSS_CERTS)
-#include "chrome/browser/certificate_manager_model.h"
+#include "shell/browser/certificate_manager_model.h"
 #endif
 
 namespace base {
