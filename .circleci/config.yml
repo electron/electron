@@ -7,6 +7,42 @@ setup: true
 orbs:
   path-filtering: circleci/path-filtering@0.1.0
 
+# All input parameters to pass to build config
+parameters:
+  run-docs-only:
+    type: boolean
+    default: false
+  
+  upload-to-s3:
+    type: string
+    default: '1'
+
+  run-build-linux:
+    type: boolean
+    default: false
+
+  run-build-mac:
+    type: boolean
+    default: false
+
+  run-linux-publish:
+    type: boolean
+    default: false
+
+  linux-publish-arch-limit:
+    type: enum
+    default: all
+    enum: ["all", "arm", "arm64", "x64", "ia32"]
+
+  run-macos-publish:
+    type: boolean
+    default: false
+
+  macos-publish-arch-limit:
+    type: enum
+    default: all
+    enum: ["all", "osx-x64", "osx-arm64", "mas-x64", "mas-arm64"]
+
 # Envs
 env-global: &env-global
   ELECTRON_OUT_DIR: Default
@@ -96,7 +132,7 @@ jobs:
 workflows:
   lint:
     jobs:
-      # Job inherited from path-filtering orb, do not change name
+      # Job inherited from path-filtering orb
       - path-filtering/filter:
           base-revision: << pipeline.git.branch >>
           # Params for mapping; `path-to-test parameter-to-set value-for-parameter` for each row
