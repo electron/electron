@@ -17,6 +17,8 @@ static_library("chrome") {
     "//chrome/browser/accessibility/accessibility_ui.h",
     "//chrome/browser/app_mode/app_mode_utils.cc",
     "//chrome/browser/app_mode/app_mode_utils.h",
+    "//chrome/browser/browser_features.cc",
+    "//chrome/browser/browser_features.h",
     "//chrome/browser/browser_process.cc",
     "//chrome/browser/browser_process.h",
     "//chrome/browser/devtools/devtools_contents_resizing_strategy.cc",
