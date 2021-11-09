@@ -112,9 +112,9 @@ using InAppTransactionCallback = base::RepeatingCallback<void(
         [paymentDiscount.keyIdentifier UTF8String];
   }
 
-  if (paymentDiscount.nonce != nil) {
-    paymentDiscountStruct.nonce = [paymentDiscount.nonce uuidString];
-  }
+  // if (paymentDiscount.nonce != nil) {
+  //   paymentDiscountStruct.nonce = [paymentDiscount.nonce uuidString];
+  // }
 
   if (paymentDiscount.signature != nil) {
     paymentDiscountStruct.signature = [paymentDiscount.signature UTF8String];

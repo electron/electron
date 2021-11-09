@@ -24,7 +24,7 @@ struct Converter<in_app_purchase::PaymentDiscount> {
     dict.SetHidden("simple", true);
     dict.Set("identifier", paymentDiscount.identifier);
     dict.Set("keyIdentifier", paymentDiscount.keyIdentifier);
-    dict.Set("nonce", paymentDiscount.nonce);
+    // dict.Set("nonce", paymentDiscount.nonce);
     dict.Set("signature", paymentDiscount.signature);
     dict.Set("timestamp", paymentDiscount.timestamp);
     return dict.GetHandle();
