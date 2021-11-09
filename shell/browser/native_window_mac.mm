@@ -1825,7 +1825,7 @@ gfx::Rect NativeWindowMac::GetWindowControlsOverlayRect() {
     NSRect buttons = [buttons_proxy_ getButtonsContainerBounds];
     gfx::Rect overlay;
     overlay.set_width(GetContentSize().width() - NSWidth(buttons));
-    if (buttons_proxy_ useCustomHeight) {
+    if ([buttons_proxy_ useCustomHeight]) {
       overlay.set_height(titlebar_overlay_height());
     } else {
       overlay.set_height(NSHeight(buttons));

@@ -125,7 +125,7 @@
   NSRect cbounds = titleBarContainer.frame;
   cbounds.size.height = button_height + 2 * margin_.y();
   // Custom height must be larger than the button height to use
-  if (useCustomHeight()) {
+  if ([self useCustomHeight]) {
     cbounds.size.height = height_;
   }
   cbounds.origin.y = NSHeight(window_.frame) - NSHeight(cbounds);
@@ -193,7 +193,7 @@
 - (gfx::Point)getCurrentMargin {
   gfx::Point result;
   NSView* titleBarContainer = [self titleBarContainer];
-  if (!titleBarContainer || useCustomHeight())
+  if (!titleBarContainer || [self useCustomHeight])
     return result;
 
   NSView* left = [self leftButton];
