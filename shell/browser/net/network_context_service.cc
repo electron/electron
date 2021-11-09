@@ -70,7 +70,11 @@ void NetworkContextService::ConfigureNetworkContextParams(
 
     network_context_params->file_paths =
         network::mojom::NetworkContextFilePaths::New();
-    network_context_params->file_paths->data_path = path;
+    network_context_params->file_paths->data_path =
+        path.Append(chrome::kNetworkDataDirname);
+    network_context_params->file_paths->unsandboxed_data_path = path;
+    network_context_params->file_paths->trigger_migration =
+        features::ShouldTriggerNetworkDataMigration();
 
     // Currently this just contains HttpServerProperties
     network_context_params->file_paths->http_server_properties_file_name =
@@ -79,6 +83,12 @@ void NetworkContextService::ConfigureNetworkContextParams(
     // Configure persistent cookie path.
     network_context_params->file_paths->cookie_database_name =
         base::FilePath(chrome::kCookieFilename);
+
+    network_context_params->file_paths->http_server_properties_file_name =
+        base::FilePath(chrome::kNetworkPersistentStateFilename);
+
+    network_context_params->file_paths->trust_token_database_name =
+        base::FilePath(chrome::kTrustTokenFilename);
 
     network_context_params->restore_old_session_cookies = false;
     network_context_params->persist_session_cookies = false;
