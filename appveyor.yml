@@ -75,9 +75,8 @@ build_script:
       node -e "require('./src/utils/goma.js').downloadAndPrepare({ gomaOneForAll: true })"
   - ps: $env:GN_GOMA_FILE = node -e "console.log(require('./src/utils/goma.js').gnFilePath)"
   - ps: $env:LOCAL_GOMA_DIR = node -e "console.log(require('./src/utils/goma.js').dir)"
-  - cd ..
-  - ps: .\src\electron\script\start-goma.ps1 -gomaDir $env:LOCAL_GOMA_DIR
-  - cd src
+  - ps: node -e "console.log(require('./src/utils/goma.js').ensure)"
+  - cd ..\src
   - set BUILD_CONFIG_PATH=//electron/build/args/%GN_CONFIG%.gn 
   - gn gen out/Default "--args=import(\"%BUILD_CONFIG_PATH%\") import(\"%GN_GOMA_FILE%\") %GN_EXTRA_ARGS% "
   - gn check out/Default //electron:electron_lib
