@@ -1,9 +1,9 @@
 import { webContents } from 'electron/main';
 import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
 import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-utils';
-import { parseWebViewWebPreferences } from '@electron/internal/common/parse-features-string';
+import { parseWebViewWebPreferences } from '@electron/internal/browser/parse-features-string';
 import { syncMethods, asyncMethods, properties } from '@electron/internal/common/web-view-methods';
-import { webViewEvents } from '@electron/internal/common/web-view-events';
+import { webViewEvents } from '@electron/internal/browser/web-view-events';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
 interface GuestInstance {

@@ -7,7 +7,7 @@
  */
 import { BrowserWindow } from 'electron/main';
 import type { BrowserWindowConstructorOptions, Referrer, WebContents, LoadURLOptions } from 'electron/main';
-import { parseFeatures } from '@electron/internal/common/parse-features-string';
+import { parseFeatures } from '@electron/internal/browser/parse-features-string';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
 type PostData = LoadURLOptions['postData']
