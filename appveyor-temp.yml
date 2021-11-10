@@ -1,0 +1,165 @@
+# The config expects the following environment variables to be set:
+#  - "GN_CONFIG" Build type. One of {'testing', 'release'}.
+#  - "GN_EXTRA_ARGS" Additional gn arguments for a build config,
+#      e.g. 'target_cpu="x86"' to build for a 32bit platform.
+#      https://gn.googlesource.com/gn/+/master/docs/reference.md#target_cpu
+#      Don't forget to set up "NPM_CONFIG_ARCH" and "TARGET_ARCH" accordningly
+#      if you pass a custom value for 'target_cpu'.
+#  - "ELECTRON_RELEASE" Set it to '1' upload binaries on success.
+#  - "NPM_CONFIG_ARCH" E.g. 'x86'. Is used to build native Node.js modules.
+#      Must match 'target_cpu' passed to "GN_EXTRA_ARGS" and "TARGET_ARCH" value.
+#  - "TARGET_ARCH" Choose from {'ia32', 'x64', 'arm', 'arm64', 'mips64el'}.
+#      Is used in some publishing scripts, but does NOT affect the Electron binary.
+#      Must match 'target_cpu' passed to "GN_EXTRA_ARGS" and "NPM_CONFIG_ARCH" value.
+#  - "UPLOAD_TO_S3" Set it to '1' upload a release to the S3 bucket.
+#      Otherwise the release will be uploaded to the Github Releases.
+#      (The value is only checked if "ELECTRON_RELEASE" is defined.)
+#
+# The publishing scripts expect access tokens to be defined as env vars,
+# but those are not covered here.
+#
+# AppVeyor docs on variables:
+# https://www.appveyor.com/docs/environment-variables/
+# https://www.appveyor.com/docs/build-configuration/#secure-variables
+# https://www.appveyor.com/docs/build-configuration/#custom-environment-variables
+
+# Uncomment these lines to enable RDP
+on_finish:
+  - ps: >-
+      if ($env:TARGET_ARCH -eq 'x64') {
+        echo "SETTING BAKE IMAGE"
+        $env:APPVEYOR_RDP_PASSWORD = "electron"
+        $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+      }
+version: 1.0.{build}
+build_cloud: electron-16-core2
+image: electron-test-bake-image
+environment:
+  GIT_CACHE_PATH: C:\Users\appveyor\libcc_cache
+  ELECTRON_OUT_DIR: Default
+  ELECTRON_ENABLE_STACK_DUMPING: 1
+  MOCHA_REPORTER: mocha-multi-reporters
+  MOCHA_MULTI_REPORTERS: mocha-appveyor-reporter, tap
+  GOMA_FALLBACK_ON_AUTH_FAILURE: true
+  DEPOT_TOOLS_WIN_TOOLCHAIN: 0
+  PYTHONIOENCODING: UTF-8
+build_script:
+  - echo "Building $env:GN_CONFIG build"
+  - git config --global core.longpaths true
+  - cd ..
+  # - ps: git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git  
+  - ps: $env:PATH="$pwd\depot_tools;$env:PATH"  
+  - ps: Move-Item $env:APPVEYOR_BUILD_FOLDER -Destination src\electron
+  - ps: $env:CHROMIUM_BUILDTOOLS_PATH="$pwd\src\buildtools"
+  - ps: >-
+      if ($env:GN_CONFIG -ne 'release') {
+        $env:NINJA_STATUS="[%r processes, %f/%t @ %o/s : %es] "
+      }
+  - >-
+      gclient config
+      --name "src\electron"
+      --unmanaged
+      %GCLIENT_EXTRA_ARGS%
+      "https://github.com/electron/electron"
+  - gclient sync --with_branch_heads --with_tags
+  - ps: >-
+      if (Test-Path 'env:RAW_GOMA_AUTH') {
+        $env:GOMA_OAUTH2_CONFIG_FILE = "$pwd\.goma_oauth2_config"
+        $env:RAW_GOMA_AUTH | Set-Content $env:GOMA_OAUTH2_CONFIG_FILE
+      }
+  - git clone https://github.com/electron/build-tools.git
+  - cd build-tools
+  - npm install
+  - mkdir third_party
+  - ps: >-
+      node -e "require('./src/utils/goma.js').downloadAndPrepare({ gomaOneForAll: true })"
+  - ps: $env:GN_GOMA_FILE = node -e "console.log(require('./src/utils/goma.js').gnFilePath)"
+  - ps: $env:LOCAL_GOMA_DIR = node -e "console.log(require('./src/utils/goma.js').dir)"
+  - ps: node -e "console.log(require('./src/utils/goma.js').ensure())"
+  - cd ..\src
+  - set BUILD_CONFIG_PATH=//electron/build/args/%GN_CONFIG%.gn 
+  - gn gen out/Default "--args=import(\"%BUILD_CONFIG_PATH%\") import(\"%GN_GOMA_FILE%\") %GN_EXTRA_ARGS% "
+  - gn check out/Default //electron:electron_lib
+  - gn check out/Default //electron:electron_app
+  - gn check out/Default //electron/shell/common/api:mojo
+  - if DEFINED GN_GOMA_FILE (ninja -j 300 -C out/Default electron:electron_app) else (ninja -C out/Default electron:electron_app)
+  - if "%GN_CONFIG%"=="testing" ( python C:\depot_tools\post_build_ninja_summary.py -C out\Default )
+  - gn gen out/ffmpeg "--args=import(\"//electron/build/args/ffmpeg.gn\") %GN_EXTRA_ARGS%"
+  - ninja -C out/ffmpeg electron:electron_ffmpeg_zip
+  - ninja -C out/Default electron:electron_dist_zip
+  - ninja -C out/Default shell_browser_ui_unittests
+  - gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
+  - ninja -C out/Default electron:electron_mksnapshot_zip
+  - cd out\Default
+  - 7z a mksnapshot.zip mksnapshot_args gen\v8\embedded.S
+  - cd ..\..
+  - ninja -C out/Default electron:hunspell_dictionaries_zip
+  - ninja -C out/Default electron:electron_chromedriver_zip
+  - ninja -C out/Default third_party/electron_node:headers
+  - python %LOCAL_GOMA_DIR%\goma_ctl.py stat
+  - python electron/build/profile_toolchain.py --output-json=out/Default/windows_toolchain_profile.json
+  - appveyor PushArtifact out/Default/windows_toolchain_profile.json
+  - appveyor PushArtifact out/Default/dist.zip
+  - appveyor PushArtifact out/Default/shell_browser_ui_unittests.exe
+  - appveyor PushArtifact out/Default/chromedriver.zip
+  - appveyor PushArtifact out/ffmpeg/ffmpeg.zip
+  - 7z a node_headers.zip out\Default\gen\node_headers
+  - appveyor PushArtifact node_headers.zip
+  - appveyor PushArtifact out/Default/mksnapshot.zip
+  - appveyor PushArtifact out/Default/hunspell_dictionaries.zip
+  - appveyor PushArtifact out/Default/electron.lib
+  - ps: >-
+      if ($env:GN_CONFIG -eq 'release') {
+        # Needed for msdia140.dll on 64-bit windows
+        $env:Path += ";$pwd\third_party\llvm-build\Release+Asserts\bin"
+        ninja -C out/Default electron:electron_symbols
+      }
+  - ps: >-
+      if ($env:GN_CONFIG -eq 'release') {
+        python electron\script\zip-symbols.py
+        appveyor-retry appveyor PushArtifact out/Default/symbols.zip
+      } else {
+        # It's useful to have pdb files when debugging testing builds that are
+        # built on CI.
+        7z a pdb.zip out\Default\*.pdb
+        appveyor-retry appveyor PushArtifact pdb.zip
+      }
+  - python electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.win.%TARGET_ARCH%.manifest
+test_script:
+  # Workaround for https://github.com/appveyor/ci/issues/2420
+  - set "PATH=%PATH%;C:\Program Files\Git\mingw64\libexec\git-core"
+  - ps: >-
+      if ((-Not (Test-Path Env:\TEST_WOA)) -And (-Not (Test-Path Env:\ELECTRON_RELEASE)) -And ($env:GN_CONFIG -in "testing", "release")) {
+        $env:RUN_TESTS="true"
+      }
+  - ps: >-
+      if ($env:RUN_TESTS -eq 'true') {
+        New-Item .\out\Default\gen\node_headers\Release -Type directory
+        Copy-Item -path .\out\Default\electron.lib -destination .\out\Default\gen\node_headers\Release\node.lib
+      } else {
+        Write-Host "Skipping tests for $env:GN_CONFIG build"
+      }
+  - cd electron
+  # CalculateNativeWinOcclusion is disabled due to https://bugs.chromium.org/p/chromium/issues/detail?id=1139022
+  - if "%RUN_TESTS%"=="true" ( echo Running test suite & node script/yarn test -- --trace-uncaught --enable-logging --disable-features=CalculateNativeWinOcclusion )
+  - cd ..
+  - if "%RUN_TESTS%"=="true" ( echo Verifying non proprietary ffmpeg & python electron\script\verify-ffmpeg.py --build-dir out\Default --source-root %cd% --ffmpeg-path out\ffmpeg )
+  - echo "About to verify mksnapshot"
+  - if "%RUN_TESTS%"=="true" ( echo Verifying mksnapshot & python electron\script\verify-mksnapshot.py --build-dir out\Default --source-root %cd% )
+  - echo "Done verifying mksnapshot"
+  - if "%RUN_TESTS%"=="true" ( echo Verifying chromedriver & python electron\script\verify-chromedriver.py --build-dir out\Default --source-root %cd% )
+  - echo "Done verifying chromedriver"
+deploy_script:
+  - cd electron
+  - ps: >-
+      if (Test-Path Env:\ELECTRON_RELEASE) {
+        if (Test-Path Env:\UPLOAD_TO_S3) {
+          Write-Output "Uploading Electron release distribution to s3"
+          & python script\release\uploaders\upload.py --verbose --upload_to_s3
+        } else {
+          Write-Output "Uploading Electron release distribution to github releases"
+          & python script\release\uploaders\upload.py --verbose
+        }
+      } elseif (Test-Path Env:\TEST_WOA) {
+        node script/release/ci-release-build.js --job=electron-woa-testing --ci=VSTS --armTest --appveyorJobId=$env:APPVEYOR_JOB_ID $env:APPVEYOR_REPO_BRANCH
+      }
