@@ -176,7 +176,11 @@ void WebContentsPreferences::Clear() {
 void WebContentsPreferences::SetFromDictionary(
     const gin_helper::Dictionary& web_preferences) {
   Clear();
+  Merge(web_preferences);
+}
 
+void WebContentsPreferences::Merge(
+    const gin_helper::Dictionary& web_preferences) {
   web_preferences.Get(options::kPlugins, &plugins_);
   web_preferences.Get(options::kExperimentalFeatures, &experimental_features_);
   web_preferences.Get(options::kNodeIntegration, &node_integration_);
