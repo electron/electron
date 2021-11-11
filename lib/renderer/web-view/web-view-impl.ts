@@ -193,7 +193,7 @@ export class WebViewImpl {
 
   attachGuestInstance (guestInstanceId: number) {
     if (guestInstanceId === -1) {
-      this.dispatchEvent('destroyed');
+      // Do nothing
       return;
     }
 

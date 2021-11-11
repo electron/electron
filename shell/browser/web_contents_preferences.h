@@ -40,6 +40,8 @@ class WebContentsPreferences
   WebContentsPreferences(const WebContentsPreferences&) = delete;
   WebContentsPreferences& operator=(const WebContentsPreferences&) = delete;
 
+  void Merge(const gin_helper::Dictionary& new_web_preferences);
+
   void SetFromDictionary(const gin_helper::Dictionary& new_web_preferences);
 
   // Append command paramters according to preferences.
