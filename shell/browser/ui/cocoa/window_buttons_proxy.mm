@@ -96,7 +96,7 @@
 - (BOOL)useCustomHeight {
   NSView* left = [self leftButton];
   float button_height = NSHeight(left.frame);
-  return height_ > button_height;
+  return height_ > button_height + 2 * margin_.y();
 }
 
 - (NSRect)getButtonsContainerBounds {
@@ -193,7 +193,7 @@
 - (gfx::Point)getCurrentMargin {
   gfx::Point result;
   NSView* titleBarContainer = [self titleBarContainer];
-  if (!titleBarContainer || [self useCustomHeight])
+  if (!titleBarContainer)
     return result;
 
   NSView* left = [self leftButton];
