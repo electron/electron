@@ -33,6 +33,8 @@ const char* GtkGettext(const char* str) {
   return g_dgettext(GettextPackage(), str);
 }
 
+}  // namespace
+
 const char* GetCancelLabel() {
   static const char* cancel = GtkGettext("_Cancel");
   return cancel;
@@ -103,4 +105,4 @@ GdkPixbuf* GdkPixbufFromSkBitmap(const SkBitmap& bitmap) {
   return pixbuf;
 }
 
-}  // namespace
+}  // namespace gtk_util
