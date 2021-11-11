@@ -17,10 +17,11 @@
 #include "third_party/skia/include/core/SkUnPreMultiply.h"
 #include "ui/gtk/gtk_compat.h"  // nogncheck
 
-namespace gtk_util {
-
 // The following utilities are pulled from
 // https://source.chromium.org/chromium/chromium/src/+/main:ui/gtk/select_file_dialog_impl_gtk.cc;l=43-74
+namespace gtk_util {
+
+namespace {
 
 const char* GettextPackage() {
   static base::NoDestructor<std::string> gettext_package(
@@ -102,4 +103,4 @@ GdkPixbuf* GdkPixbufFromSkBitmap(const SkBitmap& bitmap) {
   return pixbuf;
 }
 
-}  // namespace gtk_util
+}  // namespace
