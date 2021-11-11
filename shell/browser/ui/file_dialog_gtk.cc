@@ -380,11 +380,7 @@ bool CanPreview(const struct stat& st) {
   // https://github.com/electron/electron/issues/31630
   // Setting an arbitrary filesize max t at 100 MB here.
   constexpr off_t ArbitraryMax = 100000000ULL;
-  if (st.st_size >= ArbitraryMax) {
-    return false;
-  }
-
-  return true;
+  return st.st_size < ArbitraryMax;
 }
 
 void FileChooserDialog::OnUpdatePreview(GtkFileChooser* chooser) {
