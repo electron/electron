@@ -33,43 +33,31 @@ const char* GtkGettext(const char* str) {
 }
 
 const char* GetCancelLabel() {
-  if (!gtk::GtkCheckVersion(4))
-    return "gtk-cancel";  // In GTK3, this is GTK_STOCK_CANCEL.
   static const char* cancel = GtkGettext("_Cancel");
   return cancel;
 }
 
 const char* GetOpenLabel() {
-  if (!gtk::GtkCheckVersion(4))
-    return "gtk-open";  // In GTK3, this is GTK_STOCK_OPEN.
   static const char* open = GtkGettext("_Open");
   return open;
 }
 
 const char* GetSaveLabel() {
-  if (!gtk::GtkCheckVersion(4))
-    return "gtk-save";  // In GTK3, this is GTK_STOCK_SAVE.
   static const char* save = GtkGettext("_Save");
   return save;
 }
 
 const char* GetOkLabel() {
-  if (!gtk::GtkCheckVersion(4))
-    return "gtk-ok";  // In GTK3, this is GTK_STOCK_OK.
   static const char* ok = GtkGettext("_Ok");
   return ok;
 }
 
 const char* GetNoLabel() {
-  if (!gtk::GtkCheckVersion(4))
-    return "gtk-no";  // In GTK3, this is GTK_STOCK_NO.
   static const char* no = GtkGettext("_No");
   return no;
 }
 
 const char* GetYesLabel() {
-  if (!gtk::GtkCheckVersion(4))
-    return "gtk-yes";  // In GTK3, this is GTK_STOCK_YES.
   static const char* yes = GtkGettext("_Yes");
   return yes;
 }
