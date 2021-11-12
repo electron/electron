@@ -38,7 +38,7 @@ your code is unrelated to the version running on your system.
 Electron apps follow the same general structure as other Node.js projects.
 Start by creating a folder and initializing an npm package.
 
-```sh npm2yarn
+```bash npm2yarn
 mkdir my-electron-app && cd my-electron-app
 npm init
 ```
