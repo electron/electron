@@ -46,10 +46,10 @@ index bc009606d01469125052e68a9cdc82aaa697c764..ff18043cb07d748a49adea9874517fb2
    CHECK(BrowserThread::CurrentlyOn(BrowserThread::UI));
    if (IsShortcutHandlingSuspended())
 diff --git a/chrome/browser/extensions/global_shortcut_listener.h b/chrome/browser/extensions/global_shortcut_listener.h
-index 9aec54a3263d24491d24013a80b719dfc834ecd4..001a6cb2a5eb701351fa924109b43fab6f30748d 100644
+index 554930bc33d87ee88a9bcc5f0cf17cef09c27ef0..8df4f91d3db453afb9f73bcaeb82c919ca8d1841 100644
 --- a/chrome/browser/extensions/global_shortcut_listener.h
 +++ b/chrome/browser/extensions/global_shortcut_listener.h
-@@ -31,6 +31,8 @@ class GlobalShortcutListener {
+@@ -34,6 +34,8 @@ class GlobalShortcutListener {
  
    static GlobalShortcutListener* GetInstance();
  
