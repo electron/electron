@@ -21,6 +21,8 @@ const TROP_LOGIN = 'trop[bot]';
 
 const NO_NOTES = 'No notes';
 
+const ignoreNotes = new Set(['none', 'no notes', 'notes']);
+
 const docTypes = new Set(['doc', 'docs']);
 const featTypes = new Set(['feat', 'feature']);
 const fixTypes = new Set(['fix']);
@@ -124,6 +126,10 @@ const getNoteFromClerk = async (ghKey) => {
       // multiline notes with their own sub-lists don't get
       // parsed in the markdown as part of the top-level list
       // (example: https://github.com/electron/electron/pull/25216)
+
+      if (ignoreNotes.has(firstLine.toLowerCase())) {
+        return NO_NOTES;
+      }
       lines = lines.map(line => '  ' + line);
       return [firstLine, ...lines]
         .join('\n') // join the lines
