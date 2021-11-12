@@ -112,30 +112,12 @@ cache also in `~/.electron`.
 You can also override the local cache location by providing a `electron_config_cache`
 environment variable.
 
-The cache contains the version's official zip file as well as a checksum, stored as
-a text file. A typical cache might look like this:
+The cache contains the version's official zip file as well as a checksum, and is stored as
+`[checksum]/[filename]`. A typical cache might look like this:
 
 ```sh
-├── httpsgithub.comelectronelectronreleasesdownloadv1.7.9electron-v1.7.9-darwin-x64.zip
-│   └── electron-v1.7.9-darwin-x64.zip
-├── httpsgithub.comelectronelectronreleasesdownloadv1.7.9SHASUMS256.txt
-│   └── SHASUMS256.txt
-├── httpsgithub.comelectronelectronreleasesdownloadv1.8.1electron-v1.8.1-darwin-x64.zip
-│   └── electron-v1.8.1-darwin-x64.zip
-├── httpsgithub.comelectronelectronreleasesdownloadv1.8.1SHASUMS256.txt
-│   └── SHASUMS256.txt
-├── httpsgithub.comelectronelectronreleasesdownloadv1.8.2-beta.1electron-v1.8.2-beta.1-darwin-x64.zip
-│   └── electron-v1.8.2-beta.1-darwin-x64.zip
-├── httpsgithub.comelectronelectronreleasesdownloadv1.8.2-beta.1SHASUMS256.txt
-│   └── SHASUMS256.txt
-├── httpsgithub.comelectronelectronreleasesdownloadv1.8.2-beta.2electron-v1.8.2-beta.2-darwin-x64.zip
-│   └── electron-v1.8.2-beta.2-darwin-x64.zip
-├── httpsgithub.comelectronelectronreleasesdownloadv1.8.2-beta.2SHASUMS256.txt
-│   └── SHASUMS256.txt
-├── httpsgithub.comelectronelectronreleasesdownloadv1.8.2-beta.3electron-v1.8.2-beta.3-darwin-x64.zip
-│   └── electron-v1.8.2-beta.3-darwin-x64.zip
-└── httpsgithub.comelectronelectronreleasesdownloadv1.8.2-beta.3SHASUMS256.txt
-    └── SHASUMS256.txt
+├── a91b089b5dc5b1279966511344b805ec84869b6cd60af44f800b363bba25b915
+│   └── electron-v15.3.1-darwin-x64.zip
 ```
 
 ## Skip binary download
