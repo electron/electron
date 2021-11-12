@@ -46,10 +46,10 @@ index 5016aa8bcbcc0c8db3e8e42b04ccef3552adda8b..21e92b783a9c9af54fb81174dddbc4a5
      }
  
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index 5f351bbdd5d71af84c9acabe745be4f0d7b77f94..ca85a577d29c301cb0cf7ab7118557663edba119 100644
+index 3eb5f8189665090c95ba3f7c08c34b23062c7bf0..d2ed026101c464a03f7775034a8b2d3cfce8bb45 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
-@@ -5499,7 +5499,6 @@ test("unit_tests") {
+@@ -5501,7 +5501,6 @@ test("unit_tests") {
      assert(toolkit_views)
      sources += [ "../browser/ui/startup/credential_provider_signin_info_fetcher_win_unittest.cc" ]
      deps += [
@@ -57,7 +57,7 @@ index 5f351bbdd5d71af84c9acabe745be4f0d7b77f94..ca85a577d29c301cb0cf7ab711855766
        "//chrome/browser:chrome_process_finder",
        "//chrome/browser/safe_browsing/chrome_cleaner",
        "//chrome/browser/safe_browsing/chrome_cleaner:public",
-@@ -5512,6 +5511,12 @@ test("unit_tests") {
+@@ -5514,6 +5513,12 @@ test("unit_tests") {
        "//components/chrome_cleaner/public/proto",
        "//ui/events/devices:test_support",
      ]
@@ -70,7 +70,7 @@ index 5f351bbdd5d71af84c9acabe745be4f0d7b77f94..ca85a577d29c301cb0cf7ab711855766
    }
  
    # TODO(crbug.com/931218): Ninja cannot handle certain characters appearing
-@@ -6109,7 +6114,6 @@ test("unit_tests") {
+@@ -6111,7 +6116,6 @@ test("unit_tests") {
      }
  
      deps += [
@@ -78,7 +78,7 @@ index 5f351bbdd5d71af84c9acabe745be4f0d7b77f94..ca85a577d29c301cb0cf7ab711855766
        "//chrome/browser:cart_db_content_proto",
        "//chrome/browser:coupon_db_content_proto",
        "//chrome/browser/media/router:test_support",
-@@ -6149,6 +6153,9 @@ test("unit_tests") {
+@@ -6151,6 +6155,9 @@ test("unit_tests") {
        "//ui/native_theme:test_support",
        "//ui/webui/resources/js/browser_command:mojo_bindings",
      ]
