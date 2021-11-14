@@ -81,5 +81,5 @@ operating system.
 
 ```fiddle docs/fiddles/native-ui/tray
 ```
-> Note on running a Tray app in Fiddle: the Tray may appear initially but then vanish after a minute or so. To avoid confusion, be aware that this can also happen if your app is mis-coded, as explained in [this FAQ entry](https://www.electronjs.org/docs/latest/faq#my-apps-tray-disappeared-after-a-few-minutes). However, in Fiddle, the Tray may vanish even with correct code, owing to a current limitation with Fiddle. Therefore if you suspect your code has this issue, you should check it in your normal environment rather than Fiddle.
 
+> Note on running a Tray app in Fiddle: the Tray may appear initially but then vanish after a minute or so. To avoid confusion, be aware that this can also happen if your app is mis-coded, as explained in [this FAQ entry](https://www.electronjs.org/docs/latest/faq#my-apps-tray-disappeared-after-a-few-minutes). However, in Fiddle, the Tray may vanish even with correct code, owing to a current limitation with Fiddle. Therefore if you suspect your code has this issue, you should check it in your normal environment rather than Fiddle.
