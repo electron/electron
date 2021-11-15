@@ -15,17 +15,19 @@ for us to register the isolate in between Isolate::Allocate and
 Isolate::Initialize.
 
 diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
-index 2bed8f7ce21ab052c0c319775875b9cf008b2636..10d7c4d90369e20223612c57145b579874b633ed 100644
+index 2bed8f7ce21ab052c0c319775875b9cf008b2636..9aa4536d5c8fb38ac58e41c107b946cf9ba5d738 100644
 --- a/gin/isolate_holder.cc
 +++ b/gin/isolate_holder.cc
-@@ -56,6 +56,7 @@ IsolateHolder::IsolateHolder(
-     AllowAtomicsWaitMode atomics_wait_mode,
+@@ -57,7 +57,8 @@ IsolateHolder::IsolateHolder(
      IsolateType isolate_type,
      IsolateCreationMode isolate_creation_mode,
-+    v8::Isolate* isolate,
      v8::CreateHistogramCallback create_histogram_callback,
-     v8::AddHistogramSampleCallback add_histogram_sample_callback)
+-    v8::AddHistogramSampleCallback add_histogram_sample_callback)
++    v8::AddHistogramSampleCallback add_histogram_sample_callback,
++    v8::Isolate* isolate)
      : access_mode_(access_mode), isolate_type_(isolate_type) {
+   CHECK(Initialized())
+       << "You need to invoke gin::IsolateHolder::Initialize first";
 @@ -68,7 +69,11 @@ IsolateHolder::IsolateHolder(
    v8::ArrayBuffer::Allocator* allocator = g_array_buffer_allocator;
    DCHECK(allocator);
@@ -40,14 +42,16 @@ index 2bed8f7ce21ab052c0c319775875b9cf008b2636..10d7c4d90369e20223612c57145b5798
                                                     access_mode_, task_runner);
    if (isolate_creation_mode == IsolateCreationMode::kCreateSnapshot) {
 diff --git a/gin/public/isolate_holder.h b/gin/public/isolate_holder.h
-index cb587f852f230f84db1c50ffd6d41cad447e0949..602b000995f858041a5904f030d298bbd3f353d2 100644
+index cb587f852f230f84db1c50ffd6d41cad447e0949..619982a42c1255c3629da78fd35c82cdcf174b36 100644
 --- a/gin/public/isolate_holder.h
 +++ b/gin/public/isolate_holder.h
-@@ -80,6 +80,7 @@ class GIN_EXPORT IsolateHolder {
-       AllowAtomicsWaitMode atomics_wait_mode,
+@@ -81,7 +81,8 @@ class GIN_EXPORT IsolateHolder {
        IsolateType isolate_type,
        IsolateCreationMode isolate_creation_mode = IsolateCreationMode::kNormal,
-+      v8::Isolate* isolate = nullptr,
        v8::CreateHistogramCallback create_histogram_callback = nullptr,
-       v8::AddHistogramSampleCallback add_histogram_sample_callback = nullptr);
+-      v8::AddHistogramSampleCallback add_histogram_sample_callback = nullptr);
++      v8::AddHistogramSampleCallback add_histogram_sample_callback = nullptr,
++      v8::Isolate* isolate = nullptr);
    IsolateHolder(const IsolateHolder&) = delete;
+   IsolateHolder& operator=(const IsolateHolder&) = delete;
+   ~IsolateHolder();

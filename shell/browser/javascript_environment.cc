@@ -153,6 +153,8 @@ JavascriptEnvironment::JavascriptEnvironment(uv_loop_t* event_loop)
                       gin::IsolateHolder::kAllowAtomicsWait,
                       gin::IsolateHolder::IsolateType::kUtility,
                       gin::IsolateHolder::IsolateCreationMode::kNormal,
+                      nullptr,
+                      nullptr,
                       isolate_),
       locker_(isolate_) {
   isolate_->Enter();
