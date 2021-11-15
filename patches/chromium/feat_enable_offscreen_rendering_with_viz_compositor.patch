@@ -389,10 +389,10 @@ index 0000000000000000000000000000000000000000..4efea02f80f8b6818291321a7c63f0f4
 +}  // namespace viz
 diff --git a/components/viz/service/display_embedder/software_output_device_proxy.h b/components/viz/service/display_embedder/software_output_device_proxy.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..48fa86caaab3c15764f105eb7ad2aecf2b89bf36
+index 0000000000000000000000000000000000000000..fbc517e164d9bf33256c1ecbe86e31744375097e
 --- /dev/null
 +++ b/components/viz/service/display_embedder/software_output_device_proxy.h
-@@ -0,0 +1,90 @@
+@@ -0,0 +1,92 @@
 +// Copyright 2014 The Chromium Authors. All rights reserved.
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -422,6 +422,9 @@ index 0000000000000000000000000000000000000000..48fa86caaab3c15764f105eb7ad2aecf
 +  SoftwareOutputDeviceBase() = default;
 +  ~SoftwareOutputDeviceBase() override;
 +
++  SoftwareOutputDeviceBase(const SoftwareOutputDeviceBase&) = delete;
++  SoftwareOutputDeviceBase& operator=(const SoftwareOutputDeviceBase&) = delete;
++
 +  // SoftwareOutputDevice implementation.
 +  void Resize(const gfx::Size& viewport_pixel_size,
 +              float scale_factor) override;
@@ -441,8 +444,6 @@ index 0000000000000000000000000000000000000000..48fa86caaab3c15764f105eb7ad2aecf
 +  bool in_paint_ = false;
 +
 +  THREAD_CHECKER(thread_checker_);
-+
-+  DISALLOW_COPY_AND_ASSIGN(SoftwareOutputDeviceBase);
 +};
 +
 +// SoftwareOutputDevice implementation that draws indirectly. An implementation
@@ -454,6 +455,9 @@ index 0000000000000000000000000000000000000000..48fa86caaab3c15764f105eb7ad2aecf
 +  explicit SoftwareOutputDeviceProxy(
 +      mojom::LayeredWindowUpdaterPtr layered_window_updater);
 +  ~SoftwareOutputDeviceProxy() override;
++
++  SoftwareOutputDeviceProxy(const SoftwareOutputDeviceProxy&) = delete;
++  SoftwareOutputDeviceProxy& operator=(const SoftwareOutputDeviceProxy&) = delete;
 +
 +  // SoftwareOutputDevice implementation.
 +  void OnSwapBuffers(SoftwareOutputDevice::SwapBuffersCallback swap_ack_callback) override;
@@ -476,8 +480,6 @@ index 0000000000000000000000000000000000000000..48fa86caaab3c15764f105eb7ad2aecf
 +#if !defined(WIN32)
 +  base::WritableSharedMemoryMapping shm_mapping_;
 +#endif
-+
-+  DISALLOW_COPY_AND_ASSIGN(SoftwareOutputDeviceProxy);
 +};
 +
 +}  // namespace viz
