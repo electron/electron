@@ -151,11 +151,20 @@ describe('BrowserView module', () => {
       w.addBrowserView(view);
     });
 
-    it('does not crash if the BrowserView webContents are destroyed prior to window removal', () => {
+    it('does not crash if the BrowserView webContents are destroyed prior to window addition', () => {
       expect(() => {
         const view1 = new BrowserView();
         (view1.webContents as any).destroy();
         w.addBrowserView(view1);
+      }).to.not.throw();
+    });
+
+    it('does not crash if the webContents is destroyed after a URL is loaded', () => {
+      view = new BrowserView();
+      expect(async () => {
+        view.setBounds({ x: 0, y: 0, width: 400, height: 300 });
+        await view.webContents.loadURL('data:text/html,hello there');
+        view.webContents.destroy();
       }).to.not.throw();
     });
 

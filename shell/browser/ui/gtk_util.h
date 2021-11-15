@@ -11,9 +11,6 @@ class SkBitmap;
 
 namespace gtk_util {
 
-const char* GettextPackage();
-const char* GtkGettext(const char* str);
-
 const char* GetCancelLabel();
 const char* GetOpenLabel();
 const char* GetSaveLabel();
