@@ -51,6 +51,12 @@
 
 namespace {
 
+namespace {
+
+const char kNetworkServiceSandboxEnabled[] = "net.network_service_sandbox";
+
+}
+
 // The global instance of the SystemNetworkContextmanager.
 SystemNetworkContextManager* g_system_network_context_manager = nullptr;
 
@@ -226,9 +232,8 @@ void SystemNetworkContextManager::DeleteInstance() {
 bool SystemNetworkContextManager::IsNetworkSandboxEnabled() {
 #if defined(OS_WIN)
   auto* local_state = g_browser_process->local_state();
-  if (local_state &&
-      local_state->HasPrefPath(prefs::kNetworkServiceSandboxEnabled)) {
-    return local_state->GetBoolean(prefs::kNetworkServiceSandboxEnabled);
+  if (local_state && local_state->HasPrefPath(kNetworkServiceSandboxEnabled)) {
+    return local_state->GetBoolean(kNetworkServiceSandboxEnabled);
   }
 #endif  // defined(OS_WIN)
   // If no policy is specified, then delegate to global sandbox configuration.
