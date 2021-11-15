@@ -24,10 +24,10 @@ index c5c8119703c245132433f95fbd3764cfff41f8c3..9aa707d8b13b9c91a21ff5f38e680a7f
                         const base::Time& end,
                         base::OnceClosure callback) {
 diff --git a/components/upload_list/upload_list.h b/components/upload_list/upload_list.h
-index c9e4af694a130d8d225ad96a0eefcefc7d1762b4..15c6be9368aa41f1d8665e1f140ccb6a95d059f8 100644
+index 3180f3133ce6a0270e928a914f758a6329c921f8..e4af112aa09c54791d123cc042c01cb3b98f6dfe 100644
 --- a/components/upload_list/upload_list.h
 +++ b/components/upload_list/upload_list.h
-@@ -78,6 +78,8 @@ class UploadList : public base::RefCountedThreadSafe<UploadList> {
+@@ -77,6 +77,8 @@ class UploadList : public base::RefCountedThreadSafe<UploadList> {
    // overwrite the previously supplied one, and the first will not be called.
    void Load(base::OnceClosure callback);
  

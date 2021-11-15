@@ -110,10 +110,10 @@ index 308e7bff4ea829f5e68a93e77e0205f3f6a509c4..88a1e057ed8873f05e0d11160e7994bc
  }
 +#endif
 diff --git a/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.h b/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.h
-index 70f1d23694b9911078543277fab1f6d94f43b2cc..f5ae9c75a5157a62cdb0e9ed39ed13657049d24c 100644
+index 40fafdbed313800a3f420d9d5a3daf8bbbdb7d95..1367725e04455ba5f299b8341a28f222f51c4cd2 100644
 --- a/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.h
 +++ b/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.h
-@@ -20,7 +20,9 @@
+@@ -19,7 +19,9 @@
  #include "storage/browser/file_system/isolated_context.h"
  #include "url/gurl.h"
  
@@ -123,7 +123,7 @@ index 70f1d23694b9911078543277fab1f6d94f43b2cc..f5ae9c75a5157a62cdb0e9ed39ed1365
  
  namespace content {
  class BrowserPpapiHost;
-@@ -59,6 +61,7 @@ class PepperIsolatedFileSystemMessageFilter
+@@ -58,6 +60,7 @@ class PepperIsolatedFileSystemMessageFilter
  
    ~PepperIsolatedFileSystemMessageFilter() override;
  
@@ -131,7 +131,7 @@ index 70f1d23694b9911078543277fab1f6d94f43b2cc..f5ae9c75a5157a62cdb0e9ed39ed1365
    Profile* GetProfile();
  
    // Returns filesystem id of isolated filesystem if valid, or empty string
-@@ -66,18 +69,23 @@ class PepperIsolatedFileSystemMessageFilter
+@@ -65,18 +68,23 @@ class PepperIsolatedFileSystemMessageFilter
    // allows access on that thread.
    storage::IsolatedContext::ScopedFSHandle CreateCrxFileSystem(
        Profile* profile);
@@ -215,15 +215,14 @@ index 60cfd89dfd18eced6f6d103267b80d547d2e9f26..95d36e99832f434d878a2a2fc3101a61
    return nullptr;
  }
 diff --git a/chrome/renderer/pepper/pepper_helper.h b/chrome/renderer/pepper/pepper_helper.h
-index 0f67ff54227f1a49314592188d719feeb27ae2cf..14fce2e8f9dcbd5273784aaf561a45cb1df19d42 100644
+index 7572241033d2fa74604a45702aac22631680a01c..6416917aa000e93109da1dfacf9c47bf0bdbaa80 100644
 --- a/chrome/renderer/pepper/pepper_helper.h
 +++ b/chrome/renderer/pepper/pepper_helper.h
-@@ -6,12 +6,14 @@
+@@ -6,11 +6,13 @@
  #define CHROME_RENDERER_PEPPER_PEPPER_HELPER_H_
  
  #include "base/compiler_specific.h"
 +#include "base/component_export.h"
- #include "base/macros.h"
  #include "content/public/renderer/render_frame_observer.h"
  
  // This class listens for Pepper creation events from the RenderFrame and

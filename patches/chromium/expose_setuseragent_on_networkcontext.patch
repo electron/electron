@@ -10,10 +10,10 @@ patch may be merged upstream, at which point this patch should be
 removed.
 
 diff --git a/net/url_request/static_http_user_agent_settings.h b/net/url_request/static_http_user_agent_settings.h
-index ab97cbf061c89be9f11dde42b7371668658208a6..718209098ee4fb6cfc9aaa1ef4af691cf8d79366 100644
+index 14c71cc69388da46f62d9835e2a06fef0870da02..9481ea08401ae29ae9c1d960491b05b364257cc8 100644
 --- a/net/url_request/static_http_user_agent_settings.h
 +++ b/net/url_request/static_http_user_agent_settings.h
-@@ -31,13 +31,17 @@ class NET_EXPORT StaticHttpUserAgentSettings : public HttpUserAgentSettings {
+@@ -30,13 +30,17 @@ class NET_EXPORT StaticHttpUserAgentSettings : public HttpUserAgentSettings {
      accept_language_ = new_accept_language;
    }
  
@@ -33,10 +33,10 @@ index ab97cbf061c89be9f11dde42b7371668658208a6..718209098ee4fb6cfc9aaa1ef4af691c
  
  }  // namespace net
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 1405ef721543cfa1d73e2d79471aae001bc18e64..e147d7933bb2af93c8577962474af5a2b83766e1 100644
+index 6321d35d649a58c91df621a088c23879901ef6aa..701d2f7d5fbe61d77e3267a2262bfba2674e165c 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
-@@ -1300,6 +1300,13 @@ void NetworkContext::SetNetworkConditions(
+@@ -1302,6 +1302,13 @@ void NetworkContext::SetNetworkConditions(
                                        std::move(network_conditions));
  }
  
@@ -51,10 +51,10 @@ index 1405ef721543cfa1d73e2d79471aae001bc18e64..e147d7933bb2af93c8577962474af5a2
    // This may only be called on NetworkContexts created with the constructor
    // that calls MakeURLRequestContext().
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 3973c77b0ce68caee0abb19dff400469fc536c4b..2c94843a55cf4e82f45bea3bec0549ee578773e7 100644
+index 5535c101c809f23f3adc85b06d42ee34f135da4b..1ff3fc928baa794f4b1562e2c7a030919099c6ec 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
-@@ -274,6 +274,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -277,6 +277,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    void CloseIdleConnections(CloseIdleConnectionsCallback callback) override;
    void SetNetworkConditions(const base::UnguessableToken& throttling_profile_id,
                              mojom::NetworkConditionsPtr conditions) override;

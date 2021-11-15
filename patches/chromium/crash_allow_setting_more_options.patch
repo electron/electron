@@ -9,7 +9,7 @@ rate-limiting, compression and global annotations.
 This should be upstreamed.
 
 diff --git a/components/crash/core/app/breakpad_linux.cc b/components/crash/core/app/breakpad_linux.cc
-index 93d05b949c26c3ff96f62504760dbb96c1054387..b1392d74ca4ff08f6e293a72d1d453baa5f91cbc 100644
+index ec5b5b9b4da3b19e851c414695b2150b6588ecc7..f55fd1c92770de6b8bce1fc46a047c79228d451e 100644
 --- a/components/crash/core/app/breakpad_linux.cc
 +++ b/components/crash/core/app/breakpad_linux.cc
 @@ -112,6 +112,7 @@ void SetUploadURL(const std::string& url) {

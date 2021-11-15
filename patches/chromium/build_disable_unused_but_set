@@ -8,28 +8,28 @@ this flag causes multiple build errors in third party dependencies.
 Ref: https://chromium-review.googlesource.com/c/chromium/src/+/3234737
 
 diff --git a/build/config/compiler/BUILD.gn b/build/config/compiler/BUILD.gn
-index bc3de06d0255b090c47a35a0235bd1125326cb6a..e30b0ccf4b14a7cb03b498640b401941dba1bfa5 100644
+index 46ab685bf00f5604d24b7001805f7f196e4267fd..f82549aee58992bab3fd812ca5489c90e37e583e 100644
 --- a/build/config/compiler/BUILD.gn
 +++ b/build/config/compiler/BUILD.gn
-@@ -1536,6 +1536,15 @@ config("default_warnings") {
-           cflags += [ "-Wno-builtin-assume-aligned-alignment" ]
-         }
+@@ -1520,6 +1520,15 @@ config("default_warnings") {
+         cflags += [ "-Wno-builtin-assume-aligned-alignment" ]
+       }
  
-+        # NaCl does not support flags from ToT.
-+        if (!is_nacl) {
-+          cflags += [
-+            # TODO(https://crbug.com/1203071): Clean up and enable.
-+            "-Wno-unused-but-set-parameter",
-+            "-Wno-unused-but-set-variable",
-+          ]
-+        }
++      # NaCl does not support flags from ToT.
++      if (!is_nacl) {
++        cflags += [
++          # TODO(https://crbug.com/1203071): Clean up and enable.
++          "-Wno-unused-but-set-parameter",
++          "-Wno-unused-but-set-variable",
++        ]
++      }
 +
-         if (is_fuchsia) {
-           # TODO(https://bugs.chromium.org/p/fuchsia/issues/detail?id=77383)
-           cflags += [ "-Wno-deprecated-copy" ]
-@@ -1682,9 +1691,6 @@ config("no_chromium_code") {
+       if (is_fuchsia) {
+         # TODO(https://bugs.chromium.org/p/fuchsia/issues/detail?id=77383)
+         cflags += [ "-Wno-deprecated-copy" ]
+@@ -1665,9 +1674,6 @@ config("no_chromium_code") {
      ]
-     if (!is_nacl && (current_toolchain == host_toolchain || !use_xcode_clang)) {
+     if (!is_nacl) {
        cflags += [
 -        # Disabled for similar reasons as -Wunused-variable.
 -        "-Wno-unused-but-set-variable",

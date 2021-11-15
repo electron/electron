@@ -6,10 +6,10 @@ Subject: render_widget_host_view_base.patch
 ... something to do with OSR? and maybe <webview> as well? terrifying.
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.cc b/content/browser/renderer_host/render_widget_host_view_base.cc
-index f3168837b4e3a1951eafd37702a867a92233ba08..20075ea44008b200fb4f08d123df303badad84a5 100644
+index 8f29a8a014fff5aa146fc6d6de02d025184e40df..7427d82d6ad78251aaa7c3e2e0f499f7d19d688c 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_base.cc
-@@ -648,6 +648,13 @@ bool RenderWidgetHostViewBase::ScreenRectIsUnstableFor(
+@@ -649,6 +649,13 @@ bool RenderWidgetHostViewBase::ScreenRectIsUnstableFor(
    return false;
  }
  
@@ -24,10 +24,10 @@ index f3168837b4e3a1951eafd37702a867a92233ba08..20075ea44008b200fb4f08d123df303b
      const blink::WebMouseEvent& event,
      const ui::LatencyInfo& latency) {
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.h b/content/browser/renderer_host/render_widget_host_view_base.h
-index c7b6bc3caa83186815e14ab323a49efed2d4370f..bd938dc030a9d29de8609f1fed0f0963b6026689 100644
+index 95775111f6d5f01c0b27524a04c202ed08a65e2e..f4fe0970813bb2232e7594813cd4cc2e7d555372 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.h
 +++ b/content/browser/renderer_host/render_widget_host_view_base.h
-@@ -26,8 +26,10 @@
+@@ -25,8 +25,10 @@
  #include "content/browser/renderer_host/display_feature.h"
  #include "content/browser/renderer_host/event_with_latency_info.h"
  #include "content/browser/renderer_host/visible_time_request_trigger.h"
@@ -36,9 +36,9 @@ index c7b6bc3caa83186815e14ab323a49efed2d4370f..bd938dc030a9d29de8609f1fed0f0963
  #include "content/public/browser/render_frame_metadata_provider.h"
 +#include "content/public/browser/render_widget_host.h"
  #include "content/public/browser/render_widget_host_view.h"
- #include "content/public/browser/visibility.h"
+ #include "content/public/common/page_visibility_state.h"
  #include "content/public/common/widget_type.h"
-@@ -67,9 +69,11 @@ class CursorManager;
+@@ -66,9 +68,11 @@ class CursorManager;
  class MouseWheelPhaseHandler;
  class RenderWidgetHostImpl;
  class RenderWidgetHostViewBaseObserver;

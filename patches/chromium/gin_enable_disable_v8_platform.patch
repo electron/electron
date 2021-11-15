@@ -7,10 +7,10 @@ We don't use gin to create the V8 platform, because we need to inject Node
 things.
 
 diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
-index f1c379843e2d387e1067a29a8dadd7bbd784f24c..1675067c3f04213132019008778ea5540c29d788 100644
+index 6305d03e2315e8b9925071c018a81c102dda2a55..2bed8f7ce21ab052c0c319775875b9cf008b2636 100644
 --- a/gin/isolate_holder.cc
 +++ b/gin/isolate_holder.cc
-@@ -111,9 +111,10 @@ IsolateHolder::~IsolateHolder() {
+@@ -115,9 +115,10 @@ IsolateHolder::~IsolateHolder() {
  void IsolateHolder::Initialize(ScriptMode mode,
                                 v8::ArrayBuffer::Allocator* allocator,
                                 const intptr_t* reference_table,
@@ -24,10 +24,10 @@ index f1c379843e2d387e1067a29a8dadd7bbd784f24c..1675067c3f04213132019008778ea554
    g_reference_table = reference_table;
  }
 diff --git a/gin/public/isolate_holder.h b/gin/public/isolate_holder.h
-index 8dbcc35739f7401d4b2508733be30c3ac98b6fb0..515873cabbd02e5504bc88a7e6230103f1993abb 100644
+index cb1da2cafc275b62b2a8bf2260d97054777e6d30..cb587f852f230f84db1c50ffd6d41cad447e0949 100644
 --- a/gin/public/isolate_holder.h
 +++ b/gin/public/isolate_holder.h
-@@ -97,7 +97,8 @@ class GIN_EXPORT IsolateHolder {
+@@ -99,7 +99,8 @@ class GIN_EXPORT IsolateHolder {
    static void Initialize(ScriptMode mode,
                           v8::ArrayBuffer::Allocator* allocator,
                           const intptr_t* reference_table = nullptr,
@@ -38,10 +38,10 @@ index 8dbcc35739f7401d4b2508733be30c3ac98b6fb0..515873cabbd02e5504bc88a7e6230103
    // Returns whether `Initialize` has already been invoked in the process.
    // Initialization is a one-way operation (i.e., this method cannot return
 diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
-index 390b5e0f3ab002b92a7ce718716d667d6b8a8ffd..7de1158d833db028e4602bf032293e622d9b78ae 100644
+index aa866392fcc011f8e4408e3084697a9edee67a1d..51820fc5cd9bcbc835ae49f2a01f0165401790b6 100644
 --- a/gin/v8_initializer.cc
 +++ b/gin/v8_initializer.cc
-@@ -328,12 +328,14 @@ void SetFlags(IsolateHolder::ScriptMode mode,
+@@ -333,12 +333,14 @@ void SetFlags(IsolateHolder::ScriptMode mode,
  
  // static
  void V8Initializer::Initialize(IsolateHolder::ScriptMode mode,

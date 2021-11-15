@@ -22,10 +22,10 @@ index 621a961ba0d44394782d62c921904fed32ddf8a4..58e9d84c2260e7469c8e1c166edfef22
    return is_active();
  }
 diff --git a/content/browser/renderer_host/render_view_host_impl.h b/content/browser/renderer_host/render_view_host_impl.h
-index 83ade196230a6fb682ffd526f6d12a3b25982e14..47663e2116fa96104886de18488c95ef59e62787 100644
+index ea72307c8ac24f7a32b0345c7fd94527efd67942..f1b2ba8682ec189f0b924eaa9cfa17fb28124fc1 100644
 --- a/content/browser/renderer_host/render_view_host_impl.h
 +++ b/content/browser/renderer_host/render_view_host_impl.h
-@@ -136,6 +136,7 @@ class CONTENT_EXPORT RenderViewHostImpl
+@@ -135,6 +135,7 @@ class CONTENT_EXPORT RenderViewHostImpl
    bool IsRenderViewLive() override;
    void WriteIntoTrace(perfetto::TracedValue context) override;
  
@@ -48,10 +48,10 @@ index 787077d71c04d571aa825bec0a549c5fad2b8574..4b05b80802ba97a46eed60e509b503fc
    // This interface should only be implemented inside content.
    friend class RenderViewHostImpl;
 diff --git a/content/renderer/render_view_impl.h b/content/renderer/render_view_impl.h
-index 19622df5db14153d2c9bf3c2fa65e7a4da6f81d5..29ba769fcb2f491735d79639bf5d0c2296919127 100644
+index 975757f5e878004180f155583712ad48de781ef6..3dad0b314f0d4e7f93e8b727f2ef875ce9d4762e 100644
 --- a/content/renderer/render_view_impl.h
 +++ b/content/renderer/render_view_impl.h
-@@ -153,6 +153,8 @@ class CONTENT_EXPORT RenderViewImpl : public blink::WebViewClient,
+@@ -152,6 +152,8 @@ class CONTENT_EXPORT RenderViewImpl : public blink::WebViewClient,
    static WindowOpenDisposition NavigationPolicyToDisposition(
        blink::WebNavigationPolicy policy);
  
@@ -61,10 +61,10 @@ index 19622df5db14153d2c9bf3c2fa65e7a4da6f81d5..29ba769fcb2f491735d79639bf5d0c22
    // ADDING NEW FUNCTIONS? Please keep private functions alphabetized and put
    // it in the same order in the .cc file as it was in the header.
 diff --git a/third_party/blink/public/mojom/page/page.mojom b/third_party/blink/public/mojom/page/page.mojom
-index df834821bd082b92a9b4bd0858d900f554469afe..1e3b281eab8de5d3ab46a01d520737ecc477c3ff 100644
+index b7c6ba65551acd31c96be06c3d7595f28b6855b0..21ce5fe263f8a47281b21c45c7bda9eff1cb17b5 100644
 --- a/third_party/blink/public/mojom/page/page.mojom
 +++ b/third_party/blink/public/mojom/page/page.mojom
-@@ -91,4 +91,7 @@ interface PageBroadcast {
+@@ -97,4 +97,7 @@ interface PageBroadcast {
  
    // Sent to whole page, but should only be used by the main frame.
    SetPageBaseBackgroundColor(skia.mojom.SkColor? color);
@@ -73,10 +73,10 @@ index df834821bd082b92a9b4bd0858d900f554469afe..1e3b281eab8de5d3ab46a01d520737ec
 +  SetSchedulerThrottling(bool allowed);
  };
 diff --git a/third_party/blink/public/web/web_view.h b/third_party/blink/public/web/web_view.h
-index f54b993e9fb9fedcedef327290c2e5d706c699a7..73874e124e2810f07b72fc094f57c85c0fcf1dbb 100644
+index a0f9f0be545f7511a8d1e9536eda3c5b3a10a1d9..66ae09f0965bd4470284124f92e18b490973f737 100644
 --- a/third_party/blink/public/web/web_view.h
 +++ b/third_party/blink/public/web/web_view.h
-@@ -366,6 +366,7 @@ class WebView {
+@@ -368,6 +368,7 @@ class WebView {
    // Scheduling -----------------------------------------------------------
  
    virtual PageScheduler* Scheduler() const = 0;
@@ -85,10 +85,10 @@ index f54b993e9fb9fedcedef327290c2e5d706c699a7..73874e124e2810f07b72fc094f57c85c
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index a7a9b668b2f75db440dfe20fd83bfb2a8b5b63d7..4e6b519089328acc70be5b2b3abb0475bfdca5e3 100644
+index 72ec80d7ccd7581b82a461cebca2892519c440a1..dcc985cf532f098ff5aeb649a30db314030c5a02 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
-@@ -3634,6 +3634,13 @@ PageScheduler* WebViewImpl::Scheduler() const {
+@@ -3661,6 +3661,13 @@ PageScheduler* WebViewImpl::Scheduler() const {
    return GetPage()->GetPageScheduler();
  }
  
@@ -102,7 +102,7 @@ index a7a9b668b2f75db440dfe20fd83bfb2a8b5b63d7..4e6b519089328acc70be5b2b3abb0475
  void WebViewImpl::SetVisibilityState(
      mojom::blink::PageVisibilityState visibility_state,
      bool is_initial_state) {
-@@ -3645,7 +3652,8 @@ void WebViewImpl::SetVisibilityState(
+@@ -3672,7 +3679,8 @@ void WebViewImpl::SetVisibilityState(
    }
    GetPage()->SetVisibilityState(visibility_state, is_initial_state);
    GetPage()->GetPageScheduler()->SetPageVisible(
@@ -113,10 +113,10 @@ index a7a9b668b2f75db440dfe20fd83bfb2a8b5b63d7..4e6b519089328acc70be5b2b3abb0475
  
  mojom::blink::PageVisibilityState WebViewImpl::GetVisibilityState() {
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.h b/third_party/blink/renderer/core/exported/web_view_impl.h
-index ef2a8c41c4523d57c305e2efc477498b44a7fe25..5d8260633073d0d59e9830579fa0fada66ad735b 100644
+index 46bd70aa401cfae46321bae47f89a3ea6a75bac3..633f7a1d623e94c05dcc29e569c32a37aeb64b84 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.h
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.h
-@@ -417,6 +417,7 @@ class CORE_EXPORT WebViewImpl final : public WebView,
+@@ -418,6 +418,7 @@ class CORE_EXPORT WebViewImpl final : public WebView,
    LocalDOMWindow* PagePopupWindow() const;
  
    PageScheduler* Scheduler() const override;
@@ -124,7 +124,7 @@ index ef2a8c41c4523d57c305e2efc477498b44a7fe25..5d8260633073d0d59e9830579fa0fada
    void SetVisibilityState(mojom::blink::PageVisibilityState visibility_state,
                            bool is_initial_state) override;
    mojom::blink::PageVisibilityState GetVisibilityState() override;
-@@ -852,6 +853,8 @@ class CORE_EXPORT WebViewImpl final : public WebView,
+@@ -854,6 +855,8 @@ class CORE_EXPORT WebViewImpl final : public WebView,
    // If true, we send IPC messages when |preferred_size_| changes.
    bool send_preferred_size_changes_ = false;
  
