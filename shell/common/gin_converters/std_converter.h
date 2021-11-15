@@ -21,7 +21,7 @@ namespace gin {
 template <typename T>
 v8::Local<v8::Value> ConvertToV8(v8::Isolate* isolate, T&& input) {
   return Converter<typename std::remove_reference<T>::type>::ToV8(
-      isolate, std::move(input));
+      isolate, std::forward<T>(input));
 }
 
 #if !defined(OS_LINUX) && !defined(OS_FREEBSD)
