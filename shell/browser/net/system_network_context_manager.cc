@@ -217,6 +217,20 @@ void SystemNetworkContextManager::DeleteInstance() {
   delete g_system_network_context_manager;
 }
 
+// c.f.
+// https://source.chromium.org/chromium/chromium/src/+/main:chrome/browser/net/system_network_context_manager.cc;l=730-740;drc=15a616c8043551a7cb22c4f73a88e83afb94631c;bpv=1;bpt=1
+bool SystemNetworkContextManager::IsNetworkSandboxEnabled() {
+#if defined(OS_WIN)
+  auto* local_state = g_browser_process->local_state();
+  if (local_state &&
+      local_state->HasPrefPath(prefs::kNetworkServiceSandboxEnabled)) {
+    return local_state->GetBoolean(prefs::kNetworkServiceSandboxEnabled);
+  }
+#endif  // defined(OS_WIN)
+  // If no policy is specified, then delegate to global sandbox configuration.
+  return sandbox::policy::features::IsNetworkSandboxEnabled();
+}
+
 SystemNetworkContextManager::SystemNetworkContextManager(
     PrefService* pref_service)
     : proxy_config_monitor_(pref_service) {
