@@ -99,10 +99,18 @@ BrowserView::BrowserView(gin::Arguments* args,
       NativeBrowserView::Create(api_web_contents_->inspectable_web_contents()));
 }
 
+void BrowserView::SetOwnerWindow(NativeWindow* window) {
+  // Ensure WebContents and BrowserView owner windows are in sync.
+  if (web_contents())
+    web_contents()->SetOwnerWindow(window);
+
+  owner_window_ = window ? window->GetWeakPtr() : nullptr;
+}
+
 BrowserView::~BrowserView() {
-  if (api_web_contents_) {  // destroy() called without closing WebContents
-    api_web_contents_->RemoveObserver(this);
-    api_web_contents_->Destroy();
+  if (web_contents()) {  // destroy() called without closing WebContents
+    web_contents()->RemoveObserver(this);
+    web_contents()->Destroy();
   }
 }
 
