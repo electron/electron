@@ -20,6 +20,21 @@
 
 namespace electron {
 
+namespace {
+
+bool ShouldTriggerNetworkDataMigration() {
+#if defined(OS_WIN)
+  // On Windows, if sandbox enabled means data must be migrated.
+  if (SystemNetworkContextManager::IsNetworkSandboxEnabled())
+    return true;
+#endif  // defined(OS_WIN)
+  if (base::FeatureList::IsEnabled(features::kTriggerNetworkDataMigration))
+    return true;
+  return false;
+}
+
+}  // namespace
+
 NetworkContextService::NetworkContextService(content::BrowserContext* context)
     : browser_context_(static_cast<ElectronBrowserContext*>(context)),
       proxy_config_monitor_(browser_context_->prefs()) {}
@@ -75,7 +90,7 @@ void NetworkContextService::ConfigureNetworkContextParams(
         path.Append(chrome::kNetworkDataDirname);
     network_context_params->file_paths->unsandboxed_data_path = path;
     network_context_params->file_paths->trigger_migration =
-        features::ShouldTriggerNetworkDataMigration();
+        ShouldTriggerNetworkDataMigration();
 
     // Currently this just contains HttpServerProperties
     network_context_params->file_paths->http_server_properties_file_name =

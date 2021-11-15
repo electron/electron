@@ -49,6 +49,13 @@ class SystemNetworkContextManager {
   // Destroys the global SystemNetworkContextManager instance.
   static void DeleteInstance();
 
+  // c.f.
+  // https://source.chromium.org/chromium/chromium/src/+/main:chrome/browser/net/system_network_context_manager.cc;l=730-740;drc=15a616c8043551a7cb22c4f73a88e83afb94631c;bpv=1;bpt=1
+  // Returns whether the network sandbox is enabled. This depends on  policy but
+  // also feature status from sandbox. Called before there is an instance of
+  // SystemNetworkContextManager.
+  static bool IsNetworkSandboxEnabled();
+
   // Configures default set of parameters for configuring the network context.
   void ConfigureDefaultNetworkContextParams(
       network::mojom::NetworkContextParams* network_context_params);
