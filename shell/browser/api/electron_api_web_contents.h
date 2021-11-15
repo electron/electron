@@ -16,6 +16,7 @@
 #include "base/observer_list_types.h"
 #include "chrome/browser/devtools/devtools_eye_dropper.h"
 #include "chrome/browser/devtools/devtools_file_system_indexer.h"
+#include "chrome/browser/ui/exclusive_access/exclusive_access_context.h"  // nogncheck
 #include "content/common/cursors/webcursor.h"
 #include "content/common/frame.mojom.h"
 #include "content/public/browser/devtools_agent_host.h"
@@ -75,6 +76,8 @@ namespace gin {
 class Arguments;
 }
 
+class ExclusiveAccessManager;
+
 namespace electron {
 
 class ElectronBrowserContext;
@@ -99,7 +102,8 @@ using DevicePermissionMap = std::map<
              std::map<url::Origin, std::vector<std::unique_ptr<base::Value>>>>>;
 
 // Wrapper around the content::WebContents.
-class WebContents : public gin::Wrappable<WebContents>,
+class WebContents : public ExclusiveAccessContext,
+                    public gin::Wrappable<WebContents>,
                     public gin_helper::EventEmitterMixin<WebContents>,
                     public gin_helper::Constructible<WebContents>,
                     public gin_helper::Pinnable<WebContents>,
@@ -549,6 +553,9 @@ class WebContents : public gin::Wrappable<WebContents>,
                  const gfx::Rect& selection_rect,
                  int active_match_ordinal,
                  bool final_update) override;
+  void RequestKeyboardLock(content::WebContents* web_contents,
+                           bool esc_key_locked) override;
+  void CancelKeyboardLockRequest(content::WebContents* web_contents) override;
   bool CheckMediaAccessPermission(content::RenderFrameHost* render_frame_host,
                                   const GURL& security_origin,
                                   blink::mojom::MediaStreamType type) override;
@@ -651,6 +658,24 @@ class WebContents : public gin::Wrappable<WebContents>,
   void EnumerateDirectory(content::WebContents* web_contents,
                           scoped_refptr<content::FileSelectListener> listener,
                           const base::FilePath& path) override;
+
+  // ExclusiveAccessContext:
+  Profile* GetProfile() override;
+  bool IsFullscreen() const override;
+  void EnterFullscreen(const GURL& url,
+                       ExclusiveAccessBubbleType bubble_type,
+                       const int64_t display_id) override;
+  void ExitFullscreen() override;
+  void UpdateExclusiveAccessExitBubbleContent(
+      const GURL& url,
+      ExclusiveAccessBubbleType bubble_type,
+      ExclusiveAccessBubbleHideCallback bubble_first_hide_callback,
+      bool force_update) override;
+  void OnExclusiveAccessUserInput() override;
+  content::WebContents* GetActiveWebContents() override;
+  bool CanUserExitFullscreen() const override;
+  bool IsExclusiveAccessBubbleDisplayed() const override;
+
   bool IsFullscreenForTabOrPending(const content::WebContents* source) override;
   blink::SecurityStyle GetSecurityStyle(
       content::WebContents* web_contents,
@@ -766,6 +791,8 @@ class WebContents : public gin::Wrappable<WebContents>,
   std::unique_ptr<WebDialogHelper> web_dialog_helper_;
 
   scoped_refptr<DevToolsFileSystemIndexer> devtools_file_system_indexer_;
+
+  std::unique_ptr<ExclusiveAccessManager> exclusive_access_manager_;
 
   std::unique_ptr<DevToolsEyeDropper> eye_dropper_;
 
