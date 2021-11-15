@@ -1,6 +1,6 @@
 {
   "name": "electron",
-  "version": "15.3.1",
+  "version": "15.3.2",
   "repository": "https://github.com/electron/electron",
   "description": "Build cross platform desktop apps with JavaScript, HTML, and CSS",
   "devDependencies": {
