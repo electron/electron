@@ -759,14 +759,18 @@ describe('net module', () => {
           const cookieLocalVal = `${Date.now()}-local`;
           const localhostUrl = serverUrl.replace('127.0.0.1', 'localhost');
           expect(localhostUrl).to.not.equal(serverUrl);
+          // cookies with lax or strict same-site settings will not
+          // persist after redirects. no_restriction must be used
           await Promise.all([
             sess.cookies.set({
               url: serverUrl,
               name: 'wild_cookie',
+              sameSite: 'no_restriction',
               value: cookie127Val
             }), sess.cookies.set({
               url: localhostUrl,
               name: 'wild_cookie',
+              sameSite: 'no_restriction',
               value: cookieLocalVal
             })
           ]);
