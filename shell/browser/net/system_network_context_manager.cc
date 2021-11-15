@@ -51,11 +51,13 @@
 
 namespace {
 
+#if defined(OS_WIN)
 namespace {
 
 const char kNetworkServiceSandboxEnabled[] = "net.network_service_sandbox";
 
 }
+#endif  // defined(OS_WIN)
 
 // The global instance of the SystemNetworkContextmanager.
 SystemNetworkContextManager* g_system_network_context_manager = nullptr;
