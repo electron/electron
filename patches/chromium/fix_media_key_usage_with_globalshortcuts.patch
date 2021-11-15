@@ -59,10 +59,24 @@ index 554930bc33d87ee88a9bcc5f0cf17cef09c27ef0..8df4f91d3db453afb9f73bcaeb82c919
    // true if register successfully, or false if 1) the specificied |accelerator|
    // has been registered by another caller or other native applications, or
 diff --git a/content/browser/media/media_keys_listener_manager_impl.cc b/content/browser/media/media_keys_listener_manager_impl.cc
-index 5938f75742b793868638e693a9a8c8dc686dfc46..1263d679a5174beb960265989c370dd4a58ae7b4 100644
+index 5938f75742b793868638e693a9a8c8dc686dfc46..1137ea6c6b2b14f912b400e3cc43dc6fd0243407 100644
 --- a/content/browser/media/media_keys_listener_manager_impl.cc
 +++ b/content/browser/media/media_keys_listener_manager_impl.cc
-@@ -231,18 +231,24 @@ void MediaKeysListenerManagerImpl::StartListeningForMediaKeysIfNecessary() {
+@@ -55,7 +55,12 @@ bool MediaKeysListenerManagerImpl::StartWatchingMediaKey(
+                                CanActiveMediaSessionControllerReceiveEvents();
+ 
+   // Tell the underlying MediaKeysListener to listen for the key.
+-  if (should_start_watching && media_keys_listener_ &&
++  if (
++#if defined(OS_MAC)
++      !media_key_handling_enabled_ &&
++#endif  // defined(OS_MAC)
++      should_start_watching &&
++      media_keys_listener_ &&
+       !media_keys_listener_->StartWatchingMediaKey(key_code)) {
+     return false;
+   }
+@@ -231,18 +236,16 @@ void MediaKeysListenerManagerImpl::StartListeningForMediaKeysIfNecessary() {
        media::AudioManager::GetGlobalAppName());
  #endif
  
@@ -74,6 +88,10 @@ index 5938f75742b793868638e693a9a8c8dc686dfc46..1263d679a5174beb960265989c370dd4
 -  } else {
 -    // If we can't access system media controls, then directly listen for media
 -    // key keypresses instead.
+-    media_keys_listener_ = ui::MediaKeysListener::Create(
+-        this, ui::MediaKeysListener::Scope::kGlobal);
+-    DCHECK(media_keys_listener_);
+-  }
 +  // This is required for proper functioning of MediaMetadata.
 +  system_media_controls_->AddObserver(this);
 +  system_media_controls_notifier_ =
@@ -81,45 +99,9 @@ index 5938f75742b793868638e693a9a8c8dc686dfc46..1263d679a5174beb960265989c370dd4
 +          system_media_controls_.get());
 +
 +  // Directly listen for media key keypresses when using GlobalShortcuts.
-+#if defined(OS_MACOS)
-+  auto scope = media_key_handling_enabled_ ?
-+    ui::MediaKeysListener::Scope::kGlobal :
-+    ui::MediaKeysListener::Scope::kGlobalRequiresAccessibility;
-     media_keys_listener_ = ui::MediaKeysListener::Create(
--        this, ui::MediaKeysListener::Scope::kGlobal);
--    DCHECK(media_keys_listener_);
--  }
-+      this, scope);
-+#else
 +  media_keys_listener_ = ui::MediaKeysListener::Create(
 +    this, ui::MediaKeysListener::Scope::kGlobal);
-+#endif
 +  DCHECK(media_keys_listener_);
  
    EnsureAuxiliaryServices();
  }
-diff --git a/ui/base/accelerators/media_keys_listener.h b/ui/base/accelerators/media_keys_listener.h
-index c2b03328c0e508995bdc135031500783f500ceba..1b6b14dc2999c99445cef6ffc04d49a7c1728a54 100644
---- a/ui/base/accelerators/media_keys_listener.h
-+++ b/ui/base/accelerators/media_keys_listener.h
-@@ -20,6 +20,7 @@ class Accelerator;
- class COMPONENT_EXPORT(UI_BASE) MediaKeysListener {
-  public:
-   enum class Scope {
-+    kGlobalRequiresAccessibility, // Listener works whenever application in focus or not but requires accessibility permissions on macOS
-     kGlobal,   // Listener works whenever application in focus or not.
-     kFocused,  // Listener only works whan application has focus.
-   };
-diff --git a/ui/base/accelerators/media_keys_listener_win.cc b/ui/base/accelerators/media_keys_listener_win.cc
-index 6c63a88cbb13cfcc9a8ba652554839275ae1ee04..1643eafc094dce77e4ba8752cd02e1ae6c488b56 100644
---- a/ui/base/accelerators/media_keys_listener_win.cc
-+++ b/ui/base/accelerators/media_keys_listener_win.cc
-@@ -13,7 +13,7 @@ std::unique_ptr<MediaKeysListener> MediaKeysListener::Create(
-     MediaKeysListener::Scope scope) {
-   DCHECK(delegate);
- 
--  if (scope == Scope::kGlobal) {
-+  if (scope == Scope::kGlobal || scope == Scope::kGlobalRequiresAccessibility) {
-     // We should never have more than one global media keys listener.
-     if (!GlobalMediaKeysListenerWin::has_instance())
-       return std::make_unique<GlobalMediaKeysListenerWin>(delegate);
