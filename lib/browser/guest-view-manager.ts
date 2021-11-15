@@ -7,7 +7,7 @@ import { webViewEvents } from '@electron/internal/common/web-view-events';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
 interface GuestInstance {
-  elementInstanceId: number;
+  elementInstanceId?: number;
   visibilityState?: VisibilityState;
   embedder: Electron.WebContents;
   guest: Electron.WebContents;
@@ -45,7 +45,6 @@ function makeWebPreferences (embedder: Electron.WebContents, params: Record<stri
     webSecurity: !params.disablewebsecurity,
     enableBlinkFeatures: params.blinkfeatures,
     disableBlinkFeatures: params.disableblinkfeatures,
-    partition: params.partition,
     ...parsedWebPreferences
   };
 
@@ -77,24 +76,14 @@ function makeWebPreferences (embedder: Electron.WebContents, params: Record<stri
 
 // Create a new guest instance.
 const createGuest = function (embedder: Electron.WebContents, embedderFrameId: number, elementInstanceId: number, params: Record<string, any>) {
-  const webPreferences = makeWebPreferences(embedder, params);
-  const event = eventBinding.createWithSender(embedder);
-
-  embedder.emit('will-attach-webview', event, webPreferences, params);
-  if (event.defaultPrevented) {
-    return -1;
-  }
-
   // eslint-disable-next-line no-undef
   const guest = (webContents as typeof ElectronInternal.WebContents).create({
-    ...webPreferences,
     type: 'webview',
+    partition: params.partition,
     embedder
   });
-
   const guestInstanceId = guest.id;
   guestInstances.set(guestInstanceId, {
-    elementInstanceId,
     guest,
     embedder
   });
@@ -108,6 +97,9 @@ const createGuest = function (embedder: Electron.WebContents, embedderFrameId: n
 
   // Init guest web view after attached.
   guest.once('did-attach' as any, function (this: Electron.WebContents, event: Electron.Event) {
+    params = this.attachParams!;
+    delete this.attachParams;
+
     const previouslyAttached = this.viewInstanceId != null;
     this.viewInstanceId = params.instanceId;
 
@@ -177,25 +169,76 @@ const createGuest = function (embedder: Electron.WebContents, embedderFrameId: n
     }
   });
 
+  if (attachGuest(embedder, embedderFrameId, elementInstanceId, guestInstanceId, params)) {
+    return guestInstanceId;
+  }
+
+  return -1;
+};
+
+// Attach the guest to an element of embedder.
+const attachGuest = function (embedder: Electron.WebContents, embedderFrameId: number, elementInstanceId: number, guestInstanceId: number, params: Record<string, any>) {
   // Destroy the old guest when attaching.
   const key = `${embedder.id}-${elementInstanceId}`;
   const oldGuestInstanceId = embedderElementsMap.get(key);
   if (oldGuestInstanceId != null) {
+    // Reattachment to the same guest is just a no-op.
+    if (oldGuestInstanceId === guestInstanceId) {
+      return false;
+    }
+
     const oldGuestInstance = guestInstances.get(oldGuestInstanceId);
     if (oldGuestInstance) {
       oldGuestInstance.guest.detachFromOuterFrame();
     }
   }
 
+  const guestInstance = guestInstances.get(guestInstanceId);
+  // If this isn't a valid guest instance then do nothing.
+  if (!guestInstance) {
+    console.error(new Error(`Guest attach failed: Invalid guestInstanceId ${guestInstanceId}`));
+    return false;
+  }
+  const { guest } = guestInstance;
+  if (guest.hostWebContents !== embedder) {
+    console.error(new Error(`Guest attach failed: Access denied to guestInstanceId ${guestInstanceId}`));
+    return false;
+  }
+
+  // If this guest is already attached to an element then remove it
+  if (guestInstance.elementInstanceId) {
+    const oldKey = `${guestInstance.embedder.id}-${guestInstance.elementInstanceId}`;
+    embedderElementsMap.delete(oldKey);
+
+    // Remove guest from embedder if moving across web views
+    if (guest.viewInstanceId !== params.instanceId) {
+      webViewManager.removeGuest(guestInstance.embedder, guestInstanceId);
+      guestInstance.embedder._sendInternal(`${IPC_MESSAGES.GUEST_VIEW_INTERNAL_DESTROY_GUEST}-${guest.viewInstanceId}`);
+    }
+  }
+
+  const webPreferences = makeWebPreferences(embedder, params);
+
+  const event = eventBinding.createWithSender(embedder);
+  embedder.emit('will-attach-webview', event, webPreferences, params);
+  if (event.defaultPrevented) {
+    if (guest.viewInstanceId == null) guest.viewInstanceId = params.instanceId;
+    guest.destroy();
+    return false;
+  }
+
+  guest.attachParams = params;
   embedderElementsMap.set(key, guestInstanceId);
+
   guest.setEmbedder(embedder);
+  guestInstance.embedder = embedder;
+  guestInstance.elementInstanceId = elementInstanceId;
 
   watchEmbedder(embedder);
 
   webViewManager.addGuest(guestInstanceId, embedder, guest, webPreferences);
   guest.attachToIframe(embedder, embedderFrameId);
-
-  return guestInstanceId;
+  return true;
 };
 
 // Remove an guest-embedder relationship.
