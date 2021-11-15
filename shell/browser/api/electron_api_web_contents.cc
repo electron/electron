@@ -14,8 +14,8 @@
 
 #include "base/containers/id_map.h"
 #include "base/files/file_util.h"
+#include "base/ignore_result.h"
 #include "base/json/json_reader.h"
-#include "base/macros.h"
 #include "base/no_destructor.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/current_thread.h"

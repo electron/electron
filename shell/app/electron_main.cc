@@ -13,6 +13,7 @@
 
 #if defined(OS_POSIX)
 #include <sys/stat.h>
+#include "base/ignore_result.h"
 #endif
 
 #if defined(OS_WIN)
@@ -24,7 +25,6 @@
 #include <tchar.h>
 
 #include "base/environment.h"
-#include "base/macros.h"
 #include "base/process/launch.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/windows_version.h"
