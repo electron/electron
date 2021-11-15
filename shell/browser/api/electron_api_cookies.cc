@@ -192,7 +192,7 @@ std::string InclusionStatusToString(net::CookieInclusionStatus status) {
 std::string StringToCookieSameSite(const std::string* str_ptr,
                                    net::CookieSameSite* same_site) {
   if (!str_ptr) {
-    *same_site = net::CookieSameSite::NO_RESTRICTION;
+    *same_site = net::CookieSameSite::LAX_MODE;
     return "";
   }
   const std::string& str = *str_ptr;
