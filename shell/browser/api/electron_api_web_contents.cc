@@ -980,8 +980,7 @@ void WebContents::DeleteThisIfAlive() {
 void WebContents::Destroy() {
   // The content::WebContents should be destroyed asyncronously when possible
   // as user may choose to destroy WebContents during an event of it.
-  if (Browser::Get()->is_shutting_down() || IsGuest() ||
-      type_ == Type::kBrowserView) {
+  if (Browser::Get()->is_shutting_down() || IsGuest()) {
     DeleteThisIfAlive();
   } else {
     base::PostTask(FROM_HERE, {content::BrowserThread::UI},
