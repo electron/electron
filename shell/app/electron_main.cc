@@ -289,7 +289,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   params.instance = instance;
   params.sandbox_info = &sandbox_info;
   electron::ElectronCommandLine::Init(arguments.argc, arguments.argv);
-  return content::ContentMain(params);
+  return content::ContentMain(std::move(params));
 }
 
 #elif defined(OS_LINUX)  // defined(OS_WIN)
@@ -315,7 +315,7 @@ int main(int argc, char* argv[]) {
   // to Crashpad.
   base::CommandLine::ForCurrentProcess()->AppendSwitch(
       ::switches::kEnableCrashpad);
-  return content::ContentMain(params);
+  return content::ContentMain(std::move(params));
 }
 
 #else  // defined(OS_LINUX)

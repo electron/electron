@@ -918,8 +918,9 @@ ElectronBrowserClient::GetSystemNetworkContext() {
 
 std::unique_ptr<content::BrowserMainParts>
 ElectronBrowserClient::CreateBrowserMainParts(
-    const content::MainFunctionParams& params) {
-  auto browser_main_parts = std::make_unique<ElectronBrowserMainParts>(params);
+    content::MainFunctionParams parameters) {
+  auto browser_main_parts =
+      std::make_unique<ElectronBrowserMainParts>(std::move(params));
 
 #if defined(OS_MAC)
   browser_main_parts_ = browser_main_parts.get();
