@@ -447,15 +447,19 @@ step-install-npm-deps-on-mac: &step-install-npm-deps-on-mac
 
 # This step handles the differences between the linux "gclient sync"
 # and the expected state on macOS
-step-fix-sync-on-mac: &step-fix-sync-on-mac
+step-fix-sync: &step-fix-sync
   run:
-    name: Fix Sync on macOS
+    name: Fix Sync
     command: |
       if [ "`uname`" == "Darwin" ]; then
         # Fix Clang Install (wrong binary)
         rm -rf src/third_party/llvm-build
         python3 src/tools/clang/scripts/update.py
       fi
+
+      cd src/third_party/angle
+      git remote set-url origin https://chromium.googlesource.com/angle/angle.git
+      git fetch
 
 step-install-signing-cert-on-mac: &step-install-signing-cert-on-mac
   run:
@@ -1118,7 +1122,7 @@ steps-electron-ts-compile-for-doc-change: &steps-electron-ts-compile-for-doc-cha
     - *step-setup-goma-for-build
     - *step-get-more-space-on-mac
     - *step-install-npm-deps-on-mac
-    - *step-fix-sync-on-mac
+    - *step-fix-sync
     - *step-gn-gen-default
 
     #Compile ts/js to verify doc change didn't break anything
@@ -1473,7 +1477,7 @@ commands:
             - *step-setup-env-for-build
             - *step-setup-goma-for-build
             - *step-get-more-space-on-mac
-            - *step-fix-sync-on-mac
+            - *step-fix-sync
             - *step-delete-git-directories
 
             # Electron app
@@ -1577,7 +1581,7 @@ commands:
             - *step-gclient-sync
             - *step-delete-git-directories
             - *step-minimize-workspace-size-from-checkout
-      - *step-fix-sync-on-mac
+      - *step-fix-sync
       - *step-setup-env-for-build
       - *step-setup-goma-for-build
       - *step-gn-gen-default
