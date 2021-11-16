@@ -7,7 +7,7 @@ Pending upstream patch, this gives us fuller access to the window.open params
 so that we will be able to decide whether to cancel it or not.
 
 diff --git a/chrome/browser/android/document/document_web_contents_delegate.cc b/chrome/browser/android/document/document_web_contents_delegate.cc
-index 0e90487923c57c0570e73ef0f0e8c5acc2576932..fcdc88233b2277f3b37a2a2b0bdee7d71b721bf8 100644
+index 0e90487923c57c0570e73ef0f0e8c5acc2576932..20fece7e761c28d8d13f53de5b5b521a73f4f168 100644
 --- a/chrome/browser/android/document/document_web_contents_delegate.cc
 +++ b/chrome/browser/android/document/document_web_contents_delegate.cc
 @@ -46,8 +46,7 @@ bool DocumentWebContentsDelegate::IsWebContentsCreationOverridden(
@@ -16,12 +16,12 @@ index 0e90487923c57c0570e73ef0f0e8c5acc2576932..fcdc88233b2277f3b37a2a2b0bdee7d7
      const GURL& opener_url,
 -    const std::string& frame_name,
 -    const GURL& target_url) {
-+    const mojom::CreateNewWindowParams& params) {
++    const content::mojom::CreateNewWindowParams& params) {
    NOTREACHED();
    return true;
  }
 diff --git a/chrome/browser/android/document/document_web_contents_delegate.h b/chrome/browser/android/document/document_web_contents_delegate.h
-index 5b4d70991e19edcdfee731c56251932bf43e535f..fe1977c5e6ce0f5b30e8be529b9efa51785db57f 100644
+index 5b4d70991e19edcdfee731c56251932bf43e535f..4d996e3821410b2325ef85499f8c307c6e043b2a 100644
 --- a/chrome/browser/android/document/document_web_contents_delegate.h
 +++ b/chrome/browser/android/document/document_web_contents_delegate.h
 @@ -41,8 +41,7 @@ class DocumentWebContentsDelegate
@@ -30,12 +30,12 @@ index 5b4d70991e19edcdfee731c56251932bf43e535f..fe1977c5e6ce0f5b30e8be529b9efa51
        const GURL& opener_url,
 -      const std::string& frame_name,
 -      const GURL& target_url) override;
-+      const mojom::CreateNewWindowParams& params) override;
++      const content::mojom::CreateNewWindowParams& params) override;
  };
  
  #endif  // CHROME_BROWSER_ANDROID_DOCUMENT_DOCUMENT_WEB_CONTENTS_DELEGATE_H_
 diff --git a/chrome/browser/media/offscreen_tab.cc b/chrome/browser/media/offscreen_tab.cc
-index d6295d809381f4f4a86a9948762079232ba6c93c..ad429250984cf367e1194bda67bc56a886f650ae 100644
+index d6295d809381f4f4a86a9948762079232ba6c93c..c320f1d304a1e327f2454c4cd4302fc6003090e8 100644
 --- a/chrome/browser/media/offscreen_tab.cc
 +++ b/chrome/browser/media/offscreen_tab.cc
 @@ -283,8 +283,7 @@ bool OffscreenTab::IsWebContentsCreationOverridden(
@@ -44,12 +44,12 @@ index d6295d809381f4f4a86a9948762079232ba6c93c..ad429250984cf367e1194bda67bc56a8
      const GURL& opener_url,
 -    const std::string& frame_name,
 -    const GURL& target_url) {
-+    const mojom::CreateNewWindowParams& params) {
++    const content::mojom::CreateNewWindowParams& params) {
    // Disallow creating separate WebContentses.  The WebContents implementation
    // uses this to spawn new windows/tabs, which is also not allowed for
    // offscreen tabs.
 diff --git a/chrome/browser/media/offscreen_tab.h b/chrome/browser/media/offscreen_tab.h
-index 3fd38bcb861174f99369d0e53b9946c632baf21a..de1a4df623538cc2857f8bb85b05e17d411c45a0 100644
+index 3fd38bcb861174f99369d0e53b9946c632baf21a..e758275588b027ec877d4afb1072891f0c6995ec 100644
 --- a/chrome/browser/media/offscreen_tab.h
 +++ b/chrome/browser/media/offscreen_tab.h
 @@ -103,8 +103,7 @@ class OffscreenTab final : public ProfileObserver,
@@ -58,12 +58,12 @@ index 3fd38bcb861174f99369d0e53b9946c632baf21a..de1a4df623538cc2857f8bb85b05e17d
        const GURL& opener_url,
 -      const std::string& frame_name,
 -      const GURL& target_url) final;
-+      const mojom::CreateNewWindowParams& params) override;
++      const content::mojom::CreateNewWindowParams& params) override;
    void EnterFullscreenModeForTab(
        content::RenderFrameHost* requesting_frame,
        const blink::mojom::FullscreenOptions& options) final;
 diff --git a/chrome/browser/ui/ash/assistant/assistant_web_view_impl.cc b/chrome/browser/ui/ash/assistant/assistant_web_view_impl.cc
-index e4f3632c84ebe4dcbbc3deb2f49e351c75ec93fd..58902fdaf316ad371ddb3e79e6ebc74cbbafc138 100644
+index e4f3632c84ebe4dcbbc3deb2f49e351c75ec93fd..08227615c2370bf55edfc373a40d9b488d775ba7 100644
 --- a/chrome/browser/ui/ash/assistant/assistant_web_view_impl.cc
 +++ b/chrome/browser/ui/ash/assistant/assistant_web_view_impl.cc
 @@ -77,10 +77,9 @@ bool AssistantWebViewImpl::IsWebContentsCreationOverridden(
@@ -72,7 +72,7 @@ index e4f3632c84ebe4dcbbc3deb2f49e351c75ec93fd..58902fdaf316ad371ddb3e79e6ebc74c
      const GURL& opener_url,
 -    const std::string& frame_name,
 -    const GURL& target_url) {
-+    const mojom::CreateNewWindowParams& params) {
++    const content::mojom::CreateNewWindowParams& params) {
    if (params_.suppress_navigation) {
 -    NotifyDidSuppressNavigation(target_url,
 +    NotifyDidSuppressNavigation(params.target_url,
@@ -80,7 +80,7 @@ index e4f3632c84ebe4dcbbc3deb2f49e351c75ec93fd..58902fdaf316ad371ddb3e79e6ebc74c
                                  /*from_user_gesture=*/true);
      return true;
 diff --git a/chrome/browser/ui/ash/assistant/assistant_web_view_impl.h b/chrome/browser/ui/ash/assistant/assistant_web_view_impl.h
-index 07014765f33bdddebcc5bc32a2713d6523faf394..f866f69f9c810d89f1a0e9e4952293f66804602a 100644
+index 07014765f33bdddebcc5bc32a2713d6523faf394..b76a6e4f5d79ad53caba3044c1d9d6e6b9e066f8 100644
 --- a/chrome/browser/ui/ash/assistant/assistant_web_view_impl.h
 +++ b/chrome/browser/ui/ash/assistant/assistant_web_view_impl.h
 @@ -48,8 +48,7 @@ class AssistantWebViewImpl : public ash::AssistantWebView,
@@ -89,12 +89,12 @@ index 07014765f33bdddebcc5bc32a2713d6523faf394..f866f69f9c810d89f1a0e9e4952293f6
        const GURL& opener_url,
 -      const std::string& frame_name,
 -      const GURL& target_url) override;
-+      const mojom::CreateNewWindowParams& params) override;
++      const content::mojom::CreateNewWindowParams& params) override;
    content::WebContents* OpenURLFromTab(
        content::WebContents* source,
        const content::OpenURLParams& params) override;
 diff --git a/chrome/browser/ui/ash/keyboard/chrome_keyboard_web_contents.cc b/chrome/browser/ui/ash/keyboard/chrome_keyboard_web_contents.cc
-index ef84e04d628fb5cdbaf8fbbf84af3bf23e00c522..f1ee0bee5bfd08227a29498f8410d5d3582e02c3 100644
+index ef84e04d628fb5cdbaf8fbbf84af3bf23e00c522..b6fde0d5f289d352670e03e0ffc8c0d234c0a7d3 100644
 --- a/chrome/browser/ui/ash/keyboard/chrome_keyboard_web_contents.cc
 +++ b/chrome/browser/ui/ash/keyboard/chrome_keyboard_web_contents.cc
 @@ -66,8 +66,7 @@ class ChromeKeyboardContentsDelegate : public content::WebContentsDelegate,
@@ -103,12 +103,12 @@ index ef84e04d628fb5cdbaf8fbbf84af3bf23e00c522..f1ee0bee5bfd08227a29498f8410d5d3
        const GURL& opener_url,
 -      const std::string& frame_name,
 -      const GURL& target_url) override {
-+      const mojom::CreateNewWindowParams& params) override {
++      const content::mojom::CreateNewWindowParams& params) override {
      return true;
    }
  
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 7e29403699d56081424643bd143d0f255c8e8e73..ad9f02f84ce5954d3a2ca9b7c26eab7f2c90c162 100644
+index 7e29403699d56081424643bd143d0f255c8e8e73..57a47dcea9dc57581bf60a30ef4ae165daff55a4 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
 @@ -1787,12 +1787,11 @@ bool Browser::IsWebContentsCreationOverridden(
@@ -117,7 +117,7 @@ index 7e29403699d56081424643bd143d0f255c8e8e73..ad9f02f84ce5954d3a2ca9b7c26eab7f
      const GURL& opener_url,
 -    const std::string& frame_name,
 -    const GURL& target_url) {
-+    const mojom::CreateNewWindowParams& params) {
++    const content::mojom::CreateNewWindowParams& params) {
    return window_container_type ==
               content::mojom::WindowContainerType::BACKGROUND &&
           ShouldCreateBackgroundContents(source_site_instance, opener_url,
@@ -127,7 +127,7 @@ index 7e29403699d56081424643bd143d0f255c8e8e73..ad9f02f84ce5954d3a2ca9b7c26eab7f
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index 7649c59dde3f58b5ec153eb6146b159cfc190975..c1cc53b89d805f63fe4dcda12e02cd0a2687f926 100644
+index 7649c59dde3f58b5ec153eb6146b159cfc190975..ce3f5e56b4e02a0e566e1a01ca2003a3bc21a947 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
 @@ -807,8 +807,7 @@ class Browser : public TabStripModelObserver,
@@ -136,12 +136,12 @@ index 7649c59dde3f58b5ec153eb6146b159cfc190975..c1cc53b89d805f63fe4dcda12e02cd0a
        const GURL& opener_url,
 -      const std::string& frame_name,
 -      const GURL& target_url) override;
-+      const mojom::CreateNewWindowParams& params) override;
++      const content::mojom::CreateNewWindowParams& params) override;
    content::WebContents* CreateCustomWebContents(
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/chrome/browser/ui/media_router/presentation_receiver_window_controller.cc b/chrome/browser/ui/media_router/presentation_receiver_window_controller.cc
-index ff97ac6e97c688d677053a5f01546a4c2d91ff1d..1da6a9c32b883a17975e61d60363918251c78ffd 100644
+index ff97ac6e97c688d677053a5f01546a4c2d91ff1d..c095be21525d85e3d6c1f4a0c1dda5c8579e1ec3 100644
 --- a/chrome/browser/ui/media_router/presentation_receiver_window_controller.cc
 +++ b/chrome/browser/ui/media_router/presentation_receiver_window_controller.cc
 @@ -201,8 +201,7 @@ bool PresentationReceiverWindowController::IsWebContentsCreationOverridden(
@@ -150,12 +150,12 @@ index ff97ac6e97c688d677053a5f01546a4c2d91ff1d..1da6a9c32b883a17975e61d603639182
      const GURL& opener_url,
 -    const std::string& frame_name,
 -    const GURL& target_url) {
-+    const mojom::CreateNewWindowParams& params) {
++    const content::mojom::CreateNewWindowParams& params) {
    // Disallow creating separate WebContentses.  The WebContents implementation
    // uses this to spawn new windows/tabs, which is also not allowed for
    // local presentations.
 diff --git a/chrome/browser/ui/media_router/presentation_receiver_window_controller.h b/chrome/browser/ui/media_router/presentation_receiver_window_controller.h
-index 058ec72442d59989c4d6df4a7c791ecfeff0ef99..f7c8c2139382cb2e290c561624291afe647383cf 100644
+index 058ec72442d59989c4d6df4a7c791ecfeff0ef99..136b835e9a044aad4a1b3c0582a56f7cf56d2691 100644
 --- a/chrome/browser/ui/media_router/presentation_receiver_window_controller.h
 +++ b/chrome/browser/ui/media_router/presentation_receiver_window_controller.h
 @@ -99,8 +99,7 @@ class PresentationReceiverWindowController final
@@ -164,12 +164,12 @@ index 058ec72442d59989c4d6df4a7c791ecfeff0ef99..f7c8c2139382cb2e290c561624291afe
        const GURL& opener_url,
 -      const std::string& frame_name,
 -      const GURL& target_url) override;
-+      const mojom::CreateNewWindowParams& params) override;
++      const content::mojom::CreateNewWindowParams& params) override;
  
    // The profile used for the presentation.
    Profile* otr_profile_;
 diff --git a/components/embedder_support/android/delegate/web_contents_delegate_android.cc b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
-index 9364a722de5183c077a9c50b8c8a48ffa3a0fea6..ddde17de38bc5ca904046702a28a88d7c00f18c4 100644
+index 9364a722de5183c077a9c50b8c8a48ffa3a0fea6..58d9e6c24d70dbedeb41f0b29ed1cb03a1bdcde3 100644
 --- a/components/embedder_support/android/delegate/web_contents_delegate_android.cc
 +++ b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
 @@ -170,14 +170,13 @@ bool WebContentsDelegateAndroid::IsWebContentsCreationOverridden(
@@ -178,7 +178,7 @@ index 9364a722de5183c077a9c50b8c8a48ffa3a0fea6..ddde17de38bc5ca904046702a28a88d7
      const GURL& opener_url,
 -    const std::string& frame_name,
 -    const GURL& target_url) {
-+    const mojom::CreateNewWindowParams& params) {
++    const content::mojom::CreateNewWindowParams& params) {
    JNIEnv* env = AttachCurrentThread();
    ScopedJavaLocalRef<jobject> obj = GetJavaDelegate(env);
    if (obj.is_null())
@@ -190,7 +190,7 @@ index 9364a722de5183c077a9c50b8c8a48ffa3a0fea6..ddde17de38bc5ca904046702a28a88d7
                                                                    java_gurl);
  }
 diff --git a/components/embedder_support/android/delegate/web_contents_delegate_android.h b/components/embedder_support/android/delegate/web_contents_delegate_android.h
-index 4b832f4c3a051eefca57909958334631335e03e1..8aed42112d8fad7df813524cf700d8082ad75c47 100644
+index 4b832f4c3a051eefca57909958334631335e03e1..b665a3cac289409280e61f75eb7d7eb83517f603 100644
 --- a/components/embedder_support/android/delegate/web_contents_delegate_android.h
 +++ b/components/embedder_support/android/delegate/web_contents_delegate_android.h
 @@ -78,8 +78,7 @@ class WebContentsDelegateAndroid : public content::WebContentsDelegate {
@@ -199,12 +199,12 @@ index 4b832f4c3a051eefca57909958334631335e03e1..8aed42112d8fad7df813524cf700d808
        const GURL& opener_url,
 -      const std::string& frame_name,
 -      const GURL& target_url) override;
-+      const mojom::CreateNewWindowParams& params) override;
++      const content::mojom::CreateNewWindowParams& params) override;
    void CloseContents(content::WebContents* source) override;
    void SetContentsBounds(content::WebContents* source,
                           const gfx::Rect& bounds) override;
 diff --git a/components/offline_pages/content/background_loader/background_loader_contents.cc b/components/offline_pages/content/background_loader/background_loader_contents.cc
-index 53fad64f87a952fd0d7398958288ecde259b57bf..0b8359b6179bf16e58978e5f3e51a911ad3d0a3f 100644
+index 53fad64f87a952fd0d7398958288ecde259b57bf..26f64dabcbee575034e97ada29c7de48b315080f 100644
 --- a/components/offline_pages/content/background_loader/background_loader_contents.cc
 +++ b/components/offline_pages/content/background_loader/background_loader_contents.cc
 @@ -80,8 +80,7 @@ bool BackgroundLoaderContents::IsWebContentsCreationOverridden(
@@ -213,12 +213,12 @@ index 53fad64f87a952fd0d7398958288ecde259b57bf..0b8359b6179bf16e58978e5f3e51a911
      const GURL& opener_url,
 -    const std::string& frame_name,
 -    const GURL& target_url) {
-+    const mojom::CreateNewWindowParams& params) {
++    const content::mojom::CreateNewWindowParams& params) {
    // Background pages should not create other webcontents/tabs.
    return true;
  }
 diff --git a/components/offline_pages/content/background_loader/background_loader_contents.h b/components/offline_pages/content/background_loader/background_loader_contents.h
-index c5c5a7b63b5b3b62a9517cbef3ae23ce57a3c89c..4f1b7e88d6d2ae89a60311c8aeb1fceea87f2b02 100644
+index c5c5a7b63b5b3b62a9517cbef3ae23ce57a3c89c..1002ce845c0372b99293917e41dab0bee701b49f 100644
 --- a/components/offline_pages/content/background_loader/background_loader_contents.h
 +++ b/components/offline_pages/content/background_loader/background_loader_contents.h
 @@ -60,8 +60,7 @@ class BackgroundLoaderContents : public content::WebContentsDelegate {
@@ -227,7 +227,7 @@ index c5c5a7b63b5b3b62a9517cbef3ae23ce57a3c89c..4f1b7e88d6d2ae89a60311c8aeb1fcee
        const GURL& opener_url,
 -      const std::string& frame_name,
 -      const GURL& target_url) override;
-+      const mojom::CreateNewWindowParams& params) override;
++      const content::mojom::CreateNewWindowParams& params) override;
  
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
@@ -246,7 +246,7 @@ index a5aca663101e206156528adaf299d4d97a9ee59e..50bee6111f723932ad2164f42c71ad95
          static_cast<WebContentsImpl*>(delegate_->CreateCustomWebContents(
              opener, source_site_instance, is_new_browsing_instance,
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index 31c73efb73bb69076abd6b9c4f139072a9f7f603..3867f45d32c409ce6a738519ba539b51685c7d3e 100644
+index 31c73efb73bb69076abd6b9c4f139072a9f7f603..d1d6720377043af43f71b2ed8f35f71ee168e0ea 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
 @@ -136,8 +136,7 @@ bool WebContentsDelegate::IsWebContentsCreationOverridden(
@@ -255,12 +255,12 @@ index 31c73efb73bb69076abd6b9c4f139072a9f7f603..3867f45d32c409ce6a738519ba539b51
      const GURL& opener_url,
 -    const std::string& frame_name,
 -    const GURL& target_url) {
-+    const mojom::CreateNewWindowParams& params) {
++    const content::mojom::CreateNewWindowParams& params) {
    return false;
  }
  
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 5936fa4bce09895595ccb294504f5b89c967d8c0..7186e17271d727c2df1d58e9cb300d22dd4e52e5 100644
+index 5936fa4bce09895595ccb294504f5b89c967d8c0..09a39bb7a3bea1c7215273b2946bd3bea7cb30b3 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -314,8 +314,7 @@ class CONTENT_EXPORT WebContentsDelegate {
@@ -269,7 +269,7 @@ index 5936fa4bce09895595ccb294504f5b89c967d8c0..7186e17271d727c2df1d58e9cb300d22
        const GURL& opener_url,
 -      const std::string& frame_name,
 -      const GURL& target_url);
-+      const mojom::CreateNewWindowParams& params);
++      const content::mojom::CreateNewWindowParams& params);
  
    // Allow delegate to creates a custom WebContents when
    // WebContents::CreateNewWindow() is called. This function is only called
@@ -330,7 +330,7 @@ index bb90319f768ed2f3a3e530d64bf622de585ce163..d84de1d218267887f6b8624f913438eb
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/fuchsia/engine/browser/frame_impl.cc b/fuchsia/engine/browser/frame_impl.cc
-index 2863abb239a77b96e638c83f47ae7219cf0ccec8..5675ad386efa99383067eb404b385cf2ec46142e 100644
+index 2863abb239a77b96e638c83f47ae7219cf0ccec8..b7bbdd2077d193be711ef9ec787e66bdcb7de301 100644
 --- a/fuchsia/engine/browser/frame_impl.cc
 +++ b/fuchsia/engine/browser/frame_impl.cc
 @@ -388,8 +388,7 @@ bool FrameImpl::IsWebContentsCreationOverridden(
@@ -339,12 +339,12 @@ index 2863abb239a77b96e638c83f47ae7219cf0ccec8..5675ad386efa99383067eb404b385cf2
      const GURL& opener_url,
 -    const std::string& frame_name,
 -    const GURL& target_url) {
-+    const mojom::CreateNewWindowParams& params) {
++    const content::mojom::CreateNewWindowParams& params) {
    // Specify a generous upper bound for unacknowledged popup windows, so that we
    // can catch bad client behavior while not interfering with normal operation.
    constexpr size_t kMaxPendingWebContentsCount = 10;
 diff --git a/fuchsia/engine/browser/frame_impl.h b/fuchsia/engine/browser/frame_impl.h
-index e2736c5329d9516fdd417df4dff8039f991e800e..11081373e0d70e7ec366c6917c21db61c4e18cca 100644
+index e2736c5329d9516fdd417df4dff8039f991e800e..ac50e41768c8f05a757cd32339ca622b608feaf9 100644
 --- a/fuchsia/engine/browser/frame_impl.h
 +++ b/fuchsia/engine/browser/frame_impl.h
 @@ -245,8 +245,7 @@ class FrameImpl : public fuchsia::web::Frame,
@@ -353,12 +353,12 @@ index e2736c5329d9516fdd417df4dff8039f991e800e..11081373e0d70e7ec366c6917c21db61
        const GURL& opener_url,
 -      const std::string& frame_name,
 -      const GURL& target_url) override;
-+      const mojom::CreateNewWindowParams& params) override;
++      const content::mojom::CreateNewWindowParams& params) override;
    void WebContentsCreated(content::WebContents* source_contents,
                            int opener_render_process_id,
                            int opener_render_frame_id,
 diff --git a/headless/lib/browser/headless_web_contents_impl.cc b/headless/lib/browser/headless_web_contents_impl.cc
-index dd1f6129173a0e19023f4ec9b66c44486b080456..d10468c06f84b59387af0a8fd5bc1c06108865eb 100644
+index dd1f6129173a0e19023f4ec9b66c44486b080456..0b6d3cddd71a222db32e555630c0b00c2dfe215c 100644
 --- a/headless/lib/browser/headless_web_contents_impl.cc
 +++ b/headless/lib/browser/headless_web_contents_impl.cc
 @@ -192,8 +192,7 @@ class HeadlessWebContentsImpl::Delegate : public content::WebContentsDelegate {
@@ -367,7 +367,7 @@ index dd1f6129173a0e19023f4ec9b66c44486b080456..d10468c06f84b59387af0a8fd5bc1c06
        const GURL& opener_url,
 -      const std::string& frame_name,
 -      const GURL& target_url) override {
-+      const mojom::CreateNewWindowParams& params) override {
++      const content::mojom::CreateNewWindowParams& params) override {
      return headless_web_contents_->browser_context()
          ->options()
          ->block_new_web_contents();
