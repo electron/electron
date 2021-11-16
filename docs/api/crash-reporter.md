@@ -43,29 +43,29 @@ The `crashReporter` module has the following methods:
 ### `crashReporter.start(options)`
 
 * `options` Object
-  * `submitURL` String (optional) - URL that crash reports will be sent to as
+  * `submitURL` string (optional) - URL that crash reports will be sent to as
     POST. Required unless `uploadToServer` is `false`.
-  * `productName` String (optional) - Defaults to `app.name`.
-  * `companyName` String (optional) _Deprecated_ - Deprecated alias for
+  * `productName` string (optional) - Defaults to `app.name`.
+  * `companyName` string (optional) _Deprecated_ - Deprecated alias for
     `{ globalExtra: { _companyName: ... } }`.
-  * `uploadToServer` Boolean (optional) - Whether crash reports should be sent
+  * `uploadToServer` boolean (optional) - Whether crash reports should be sent
     to the server. If false, crash reports will be collected and stored in the
     crashes directory, but not uploaded. Default is `true`.
-  * `ignoreSystemCrashHandler` Boolean (optional) - If true, crashes generated
+  * `ignoreSystemCrashHandler` boolean (optional) - If true, crashes generated
     in the main process will not be forwarded to the system crash handler.
     Default is `false`.
-  * `rateLimit` Boolean (optional) _macOS_ _Windows_ - If true, limit the
+  * `rateLimit` boolean (optional) _macOS_ _Windows_ - If true, limit the
     number of crashes uploaded to 1/hour. Default is `false`.
-  * `compress` Boolean (optional) - If true, crash reports will be compressed
+  * `compress` boolean (optional) - If true, crash reports will be compressed
     and uploaded with `Content-Encoding: gzip`. Default is `true`.
-  * `extra` Record<String, String> (optional) - Extra string key/value
+  * `extra` Record<string, string> (optional) - Extra string key/value
     annotations that will be sent along with crash reports that are generated
     in the main process. Only string values are supported. Crashes generated in
     child processes will not contain these extra
     parameters to crash reports generated from child processes, call
     [`addExtraParameter`](#crashreporteraddextraparameterkey-value) from the
     child process.
-  * `globalExtra` Record<String, String> (optional) - Extra string key/value
+  * `globalExtra` Record<string, string> (optional) - Extra string key/value
     annotations that will be sent along with any crash reports generated in any
     process. These annotations cannot be changed once the crash reporter has
     been started. If a key is present in both the global extra parameters and
@@ -117,14 +117,14 @@ ID.
 
 ### `crashReporter.getUploadToServer()`
 
-Returns `Boolean` - Whether reports should be submitted to the server. Set through
+Returns `boolean` - Whether reports should be submitted to the server. Set through
 the `start` method or `setUploadToServer`.
 
 **Note:** This method is only available in the main process.
 
 ### `crashReporter.setUploadToServer(uploadToServer)`
 
-* `uploadToServer` Boolean - Whether reports should be submitted to the server.
+* `uploadToServer` boolean - Whether reports should be submitted to the server.
 
 This would normally be controlled by user preferences. This has no effect if
 called before `start` is called.
@@ -133,8 +133,8 @@ called before `start` is called.
 
 ### `crashReporter.addExtraParameter(key, value)`
 
-* `key` String - Parameter key, must be no longer than 39 bytes.
-* `value` String - Parameter value, must be no longer than 127 bytes.
+* `key` string - Parameter key, must be no longer than 39 bytes.
+* `value` string - Parameter value, must be no longer than 127 bytes.
 
 Set an extra parameter to be sent with the crash report. The values specified
 here will be sent in addition to any values set via the `extra` option when
@@ -154,14 +154,14 @@ values longer than the maximum length will be truncated.
 
 ### `crashReporter.removeExtraParameter(key)`
 
-* `key` String - Parameter key, must be no longer than 39 bytes.
+* `key` string - Parameter key, must be no longer than 39 bytes.
 
 Remove an extra parameter from the current set of parameters. Future crashes
 will not include this parameter.
 
 ### `crashReporter.getParameters()`
 
-Returns `Record<String, String>` - The current 'extra' parameters of the crash reporter.
+Returns `Record<string, string>` - The current 'extra' parameters of the crash reporter.
 
 ## In Node child processes
 
@@ -194,15 +194,15 @@ See [`crashReporter.removeExtraParameter(key)`](#crashreporterremoveextraparamet
 The crash reporter will send the following data to the `submitURL` as
 a `multipart/form-data` `POST`:
 
-* `ver` String - The version of Electron.
-* `platform` String - e.g. 'win32'.
-* `process_type` String - e.g. 'renderer'.
-* `guid` String - e.g. '5e1286fc-da97-479e-918b-6bfb0c3d1c72'.
-* `_version` String - The version in `package.json`.
-* `_productName` String - The product name in the `crashReporter` `options`
+* `ver` string - The version of Electron.
+* `platform` string - e.g. 'win32'.
+* `process_type` string - e.g. 'renderer'.
+* `guid` string - e.g. '5e1286fc-da97-479e-918b-6bfb0c3d1c72'.
+* `_version` string - The version in `package.json`.
+* `_productName` string - The product name in the `crashReporter` `options`
   object.
-* `prod` String - Name of the underlying product. In this case Electron.
-* `_companyName` String - The company name in the `crashReporter` `options`
+* `prod` string - Name of the underlying product. In this case Electron.
+* `_companyName` string - The company name in the `crashReporter` `options`
   object.
 * `upload_file_minidump` File - The crash report in the format of `minidump`.
 * All level one properties of the `extra` object in the `crashReporter`

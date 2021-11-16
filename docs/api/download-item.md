@@ -45,7 +45,7 @@ win.webContents.session.on('will-download', (event, item, webContents) => {
 Returns:
 
 * `event` Event
-* `state` String - Can be `progressing` or `interrupted`.
+* `state` string - Can be `progressing` or `interrupted`.
 
 Emitted when the download has been updated and is not done.
 
@@ -59,7 +59,7 @@ The `state` can be one of following:
 Returns:
 
 * `event` Event
-* `state` String - Can be `completed`, `cancelled` or `interrupted`.
+* `state` string - Can be `completed`, `cancelled` or `interrupted`.
 
 Emitted when the download is in a terminal state. This includes a completed
 download, a cancelled download (via `downloadItem.cancel()`), and interrupted
@@ -77,7 +77,7 @@ The `downloadItem` object has the following methods:
 
 #### `downloadItem.setSavePath(path)`
 
-* `path` String - Set the save file path of the download item.
+* `path` string - Set the save file path of the download item.
 
 The API is only available in session's `will-download` callback function.
 If `path` doesn't exist, Electron will try to make the directory recursively.
@@ -86,7 +86,7 @@ routine to determine the save path; this usually prompts a save dialog.
 
 #### `downloadItem.getSavePath()`
 
-Returns `String` - The save path of the download item. This will be either the path
+Returns `string` - The save path of the download item. This will be either the path
 set via `downloadItem.setSavePath(path)` or the path selected from the shown
 save dialog.
 
@@ -109,7 +109,7 @@ Pauses the download.
 
 #### `downloadItem.isPaused()`
 
-Returns `Boolean` - Whether the download is paused.
+Returns `boolean` - Whether the download is paused.
 
 #### `downloadItem.resume()`
 
@@ -119,7 +119,7 @@ Resumes the download that has been paused.
 
 #### `downloadItem.canResume()`
 
-Returns `Boolean` - Whether the download can resume.
+Returns `boolean` - Whether the download can resume.
 
 #### `downloadItem.cancel()`
 
@@ -127,19 +127,19 @@ Cancels the download operation.
 
 #### `downloadItem.getURL()`
 
-Returns `String` - The origin URL where the item is downloaded from.
+Returns `string` - The origin URL where the item is downloaded from.
 
 #### `downloadItem.getMimeType()`
 
-Returns `String` - The files mime type.
+Returns `string` - The files mime type.
 
 #### `downloadItem.hasUserGesture()`
 
-Returns `Boolean` - Whether the download has user gesture.
+Returns `boolean` - Whether the download has user gesture.
 
 #### `downloadItem.getFilename()`
 
-Returns `String` - The file name of the download item.
+Returns `string` - The file name of the download item.
 
 **Note:** The file name is not always the same as the actual one saved in local
 disk. If user changes the file name in a prompted download saving dialog, the
@@ -157,27 +157,27 @@ Returns `Integer` - The received bytes of the download item.
 
 #### `downloadItem.getContentDisposition()`
 
-Returns `String` - The Content-Disposition field from the response
+Returns `string` - The Content-Disposition field from the response
 header.
 
 #### `downloadItem.getState()`
 
-Returns `String` - The current state. Can be `progressing`, `completed`, `cancelled` or `interrupted`.
+Returns `string` - The current state. Can be `progressing`, `completed`, `cancelled` or `interrupted`.
 
 **Note:** The following methods are useful specifically to resume a
 `cancelled` item when session is restarted.
 
 #### `downloadItem.getURLChain()`
 
-Returns `String[]` - The complete URL chain of the item including any redirects.
+Returns `string[]` - The complete URL chain of the item including any redirects.
 
 #### `downloadItem.getLastModifiedTime()`
 
-Returns `String` - Last-Modified header value.
+Returns `string` - Last-Modified header value.
 
 #### `downloadItem.getETag()`
 
-Returns `String` - ETag header value.
+Returns `string` - ETag header value.
 
 #### `downloadItem.getStartTime()`
 
@@ -188,7 +188,7 @@ started.
 
 #### `downloadItem.savePath`
 
-A `String` property that determines the save file path of the download item.
+A `string` property that determines the save file path of the download item.
 
 The property is only available in session's `will-download` callback function.
 If user doesn't set the save path via the property, Electron will use the original

@@ -10,20 +10,20 @@ interface and is therefore an [EventEmitter][event-emitter].
 
 ### `new ClientRequest(options)`
 
-* `options` (Object | String) - If `options` is a String, it is interpreted as
+* `options` (Object | string) - If `options` is a string, it is interpreted as
 the request URL. If it is an object, it is expected to fully specify an HTTP request via the
 following properties:
-  * `method` String (optional) - The HTTP request method. Defaults to the GET
+  * `method` string (optional) - The HTTP request method. Defaults to the GET
     method.
-  * `url` String (optional) - The request URL. Must be provided in the absolute
+  * `url` string (optional) - The request URL. Must be provided in the absolute
     form with the protocol scheme specified as http or https.
   * `session` Session (optional) - The [`Session`](session.md) instance with
     which the request is associated.
-  * `partition` String (optional) - The name of the [`partition`](session.md)
+  * `partition` string (optional) - The name of the [`partition`](session.md)
     with which the request is associated. Defaults to the empty string. The
     `session` option supersedes `partition`. Thus if a `session` is explicitly
     specified, `partition` is ignored.
-  * `credentials` String (optional) - Can be `include` or `omit`. Whether to
+  * `credentials` string (optional) - Can be `include` or `omit`. Whether to
     send [credentials](https://fetch.spec.whatwg.org/#credentials) with this
     request. If set to `include`, credentials from the session associated with
     the request will be used. If set to `omit`, credentials will not be sent
@@ -33,22 +33,22 @@ following properties:
     option of the same name. If this option is not specified, authentication
     data from the session will be sent, and cookies will not be sent (unless
     `useSessionCookies` is set).
-  * `useSessionCookies` Boolean (optional) - Whether to send cookies with this
+  * `useSessionCookies` boolean (optional) - Whether to send cookies with this
     request from the provided session. If `credentials` is specified, this
     option has no effect. Default is `false`.
-  * `protocol` String (optional) - Can be `http:` or `https:`. The protocol
+  * `protocol` string (optional) - Can be `http:` or `https:`. The protocol
     scheme in the form 'scheme:'. Defaults to 'http:'.
-  * `host` String (optional) - The server host provided as a concatenation of
+  * `host` string (optional) - The server host provided as a concatenation of
     the hostname and the port number 'hostname:port'.
-  * `hostname` String (optional) - The server host name.
+  * `hostname` string (optional) - The server host name.
   * `port` Integer (optional) - The server's listening port number.
-  * `path` String (optional) - The path part of the request URL.
-  * `redirect` String (optional) - Can be `follow`, `error` or `manual`. The
+  * `path` string (optional) - The path part of the request URL.
+  * `redirect` string (optional) - Can be `follow`, `error` or `manual`. The
     redirect mode for this request. When mode is `error`, any redirection will
     be aborted. When mode is `manual` the redirection will be cancelled unless
     [`request.followRedirect`](#requestfollowredirect) is invoked synchronously
     during the [`redirect`](#event-redirect) event.  Defaults to `follow`.
-  * `origin` String (optional) - The origin URL of the request.
+  * `origin` string (optional) - The origin URL of the request.
 
 `options` properties such as `protocol`, `host`, `hostname`, `port` and `path`
 strictly follow the Node.js model as described in the
@@ -79,21 +79,21 @@ Returns:
 Returns:
 
 * `authInfo` Object
-  * `isProxy` Boolean
-  * `scheme` String
-  * `host` String
+  * `isProxy` boolean
+  * `scheme` string
+  * `host` string
   * `port` Integer
-  * `realm` String
+  * `realm` string
 * `callback` Function
-  * `username` String (optional)
-  * `password` String (optional)
+  * `username` string (optional)
+  * `password` string (optional)
 
 Emitted when an authenticating proxy is asking for user credentials.
 
 The `callback` function is expected to be called back with user credentials:
 
-* `username` String
-* `password` String
+* `username` string
+* `password` string
 
 ```JavaScript
 request.on('login', (authInfo, callback) => {
@@ -147,9 +147,9 @@ event indicates that no more events will be emitted on either the `request` or
 Returns:
 
 * `statusCode` Integer
-* `method` String
-* `redirectUrl` String
-* `responseHeaders` Record<String, String[]>
+* `method` string
+* `redirectUrl` string
+* `responseHeaders` Record<string, string[]>
 
 Emitted when the server returns a redirect response (e.g. 301 Moved
 Permanently). Calling [`request.followRedirect`](#requestfollowredirect) will
@@ -161,7 +161,7 @@ continue with the redirection.  If this event is handled,
 
 #### `request.chunkedEncoding`
 
-A `Boolean` specifying whether the request will use HTTP chunked transfer encoding
+A `boolean` specifying whether the request will use HTTP chunked transfer encoding
 or not. Defaults to false. The property is readable and writable, however it can
 be set only before the first write operation as the HTTP headers are not yet put
 on the wire. Trying to set the `chunkedEncoding` property after the first write
@@ -175,12 +175,12 @@ internally buffered inside Electron process memory.
 
 #### `request.setHeader(name, value)`
 
-* `name` String - An extra HTTP header name.
-* `value` String - An extra HTTP header value.
+* `name` string - An extra HTTP header name.
+* `value` string - An extra HTTP header value.
 
 Adds an extra HTTP header. The header name will be issued as-is without
 lowercasing. It can be called only before first write. Calling this method after
-the first write will throw an error. If the passed value is not a `String`, its
+the first write will throw an error. If the passed value is not a `string`, its
 `toString()` method will be called to obtain the final value.
 
 Certain headers are restricted from being set by apps. These headers are
@@ -199,22 +199,22 @@ Additionally, setting the `Connection` header to the value `upgrade` is also dis
 
 #### `request.getHeader(name)`
 
-* `name` String - Specify an extra header name.
+* `name` string - Specify an extra header name.
 
-Returns `String` - The value of a previously set extra header name.
+Returns `string` - The value of a previously set extra header name.
 
 #### `request.removeHeader(name)`
 
-* `name` String - Specify an extra header name.
+* `name` string - Specify an extra header name.
 
 Removes a previously set extra header name. This method can be called only
 before first write. Trying to call it after the first write will throw an error.
 
 #### `request.write(chunk[, encoding][, callback])`
 
-* `chunk` (String | Buffer) - A chunk of the request body's data. If it is a
+* `chunk` (string | Buffer) - A chunk of the request body's data. If it is a
 string, it is converted into a Buffer using the specified encoding.
-* `encoding` String (optional) - Used to convert string chunks into Buffer
+* `encoding` string (optional) - Used to convert string chunks into Buffer
 objects. Defaults to 'utf-8'.
 * `callback` Function (optional) - Called after the write operation ends.
 
@@ -230,8 +230,8 @@ it is not allowed to add or remove a custom header.
 
 #### `request.end([chunk][, encoding][, callback])`
 
-* `chunk` (String | Buffer) (optional)
-* `encoding` String (optional)
+* `chunk` (string | Buffer) (optional)
+* `encoding` string (optional)
 * `callback` Function (optional)
 
 Sends the last chunk of the request data. Subsequent write or end operations
@@ -253,9 +253,9 @@ event.
 
 Returns `Object`:
 
-* `active` Boolean - Whether the request is currently active. If this is false
+* `active` boolean - Whether the request is currently active. If this is false
 no other properties will be set
-* `started` Boolean - Whether the upload has started. If this is false both
+* `started` boolean - Whether the upload has started. If this is false both
 `current` and `total` will be set to 0.
 * `current` Integer - The number of bytes that have been uploaded so far
 * `total` Integer - The number of bytes that will be uploaded this request
