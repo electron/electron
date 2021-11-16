@@ -1,0 +1,28 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Tue, 16 Nov 2021 19:11:28 +0900
+Subject: fix: -Wunused-but-set-variable warning
+
+Should be upstreamed.
+
+Refs https://chromium-review.googlesource.com/c/chromium/src/+/3234737
+
+diff --git a/src/crypto/crypto_common.cc b/src/crypto/crypto_common.cc
+index 9cbe78c05b1c86c0d4a4b8b1f8771862dd3002e5..023ebc2e4cb343cb30fcab3cfc81b9cd6b200cd1 100644
+--- a/src/crypto/crypto_common.cc
++++ b/src/crypto/crypto_common.cc
+@@ -778,14 +778,12 @@ MaybeLocal<Array> GetClientHelloCiphers(
+     Environment* env,
+     const SSLPointer& ssl) {
+   EscapableHandleScope scope(env->isolate());
+-  const unsigned char* buf = nullptr;
+   size_t len = 0; // SSL_client_hello_get0_ciphers(ssl.get(), &buf);
+   size_t count = len / 2;
+   MaybeStackBuffer<Local<Value>, 16> ciphers(count);
+   int j = 0;
+   for (size_t n = 0; n < len; n += 2) {
+     const SSL_CIPHER* cipher = nullptr; // SSL_CIPHER_find(ssl.get(), buf);
+-    buf += 2;
+     Local<Object> obj = Object::New(env->isolate());
+     if (!Set(env->context(),
+              obj,

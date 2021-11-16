@@ -661,10 +661,10 @@ index 0000000000000000000000000000000000000000..fb000f8ee7647c375bc190d1729d67bb
 +}
 diff --git a/deps/nghttp2/BUILD.gn b/deps/nghttp2/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..b7a9daa0d099be8ce1b594cd5128e54ab88d1f25
+index 0000000000000000000000000000000000000000..8bfecba74d4d90e9fbf0e2cd301118e4adc6cba8
 --- /dev/null
 +++ b/deps/nghttp2/BUILD.gn
-@@ -0,0 +1,48 @@
+@@ -0,0 +1,49 @@
 +config("nghttp2_config") {
 +  defines = [ "NGHTTP2_STATICLIB" ]
 +  include_dirs = [ "lib/includes" ]
@@ -686,6 +686,7 @@ index 0000000000000000000000000000000000000000..b7a9daa0d099be8ce1b594cd5128e54a
 +    "-Wno-implicit-fallthrough",
 +    "-Wno-string-plus-int",
 +    "-Wno-unreachable-code-return",
++    "-Wno-unused-but-set-variable",
 +  ]
 +
 +  sources = [
