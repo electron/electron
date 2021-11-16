@@ -6,6 +6,8 @@ jobs:
     steps:
       - name: Check out Electron
         uses: actions/checkout@v2
+        with:
+          path: src/electron
       - name: Get and setup depot tools
         run: |
           git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
@@ -47,5 +49,179 @@ jobs:
                   exit 1
                 fi
               fi
-            fi   
-      - run: echo "🍏 This job's status is ${{ job.status }}."
+            fi
+      - name: Check amount of disk space available after sync
+        run: df -h  
+      - name: Setup Environment Variables
+        run: |
+          # To find `gn` executable.         
+          echo "CHROMIUM_BUILDTOOLS_PATH=$PWD/src/buildtools" >> $GITHUB_ENV
+
+      - name: Setup Goma
+        env:
+          RAW_GOMA_AUTH: ${{ secrets.RAW_GOMA_AUTH }}
+        run: |
+          echo " NUMBER_OF_NINJA_PROCESSES=300" >> $GITHUB_ENV
+          if [ "`uname`" == "Darwin" ]; then
+            echo "ulimit -n 10000" >> $GITHUB_ENV
+            echo "sudo launchctl limit maxfiles 65536 200000" >> $GITHUB_ENV
+          fi
+          if [ ! -z "$RAW_GOMA_AUTH" ]; then
+            echo $RAW_GOMA_AUTH > ~/.goma_oauth2_config
+          else
+            echo "GOMA AUTH NOT FOUND"            
+          fi
+          git clone https://github.com/electron/build-tools.git
+          cd build-tools
+          npm install
+          mkdir third_party
+          node -e "require('./src/utils/goma.js').downloadAndPrepare({ gomaOneForAll: true })"
+          export GOMA_FALLBACK_ON_AUTH_FAILURE=true
+          third_party/goma/goma_ctl.py ensure_start
+          echo 'GN_GOMA_FILE='`node -e "console.log(require('./src/utils/goma.js').gnFilePath)"` >> $GITHUB_ENV
+          echo 'LOCAL_GOMA_DIR='`node -e "console.log(require('./src/utils/goma.js').dir)"` >> $GITHUB_ENV
+          echo 'GOMA_FALLBACK_ON_AUTH_FAILURE=true' >> $GITHUB_ENV
+          cd ..
+      - name: Default GN gen
+        env:
+          GN_BUILDFLAG_ARGS: 'enable_precompiled_headers = false'
+          GN_CONFIG: //electron/build/args/testing.gn
+        run: |
+          cd src
+          gn gen out/Default --args="import(\"$GN_CONFIG\") import(\"$GN_GOMA_FILE\") $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
+      - name: Electron build
+        run: |
+          cd src
+          NINJA_SUMMARIZE_BUILD=1 autoninja -C out/Default electron -j $NUMBER_OF_NINJA_PROCESSES
+          cp out/Default/.ninja_log out/electron_ninja_log
+          node electron/script/check-symlinks.js
+
+      - name: Build dist.zip
+        run: |
+          cd src
+          if [ "$SKIP_DIST_ZIP" != "1" ]; then
+            ninja -C out/Default electron:electron_dist_zip
+            if [ "$CHECK_DIST_MANIFEST" == "1" ]; then
+              if [ "`uname`" == "Darwin" ]; then
+                target_os=mac
+                target_cpu=x64
+                if [ x"$MAS_BUILD" == x"true" ]; then
+                  target_os=mac_mas
+                fi
+                if [ "$TARGET_ARCH" == "arm64" ]; then
+                  target_cpu=arm64
+                fi
+              elif [ "`uname`" == "Linux" ]; then
+                target_os=linux
+                if [ x"$TARGET_ARCH" == x ]; then
+                  target_cpu=x64
+                elif [ "$TARGET_ARCH" == "ia32" ]; then
+                  target_cpu=x86
+                else
+                  target_cpu="$TARGET_ARCH"
+                fi
+              else
+                echo "Unknown system: `uname`"
+                exit 1
+              fi
+              electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.$target_os.$target_cpu.manifest
+            fi
+          fi
+      - name: Build native test targets
+        run: |
+          cd src
+          ninja -C out/Default shell_browser_ui_unittests -j $NUMBER_OF_NINJA_PROCESSES
+      - name: Build Node.js headers
+        run: |
+          cd src
+          ninja -C out/Default third_party/electron_node:headers
+      - name: Check goma stats after build
+        if: ${{ always() }}
+        run: |      
+          set +e
+          set +o pipefail
+          $LOCAL_GOMA_DIR/goma_ctl.py stat
+          $LOCAL_GOMA_DIR/diagnose_goma_log.py
+          true
+      - name: mksnapshot build
+        run: |
+          cd src
+          if [ "$USE_PREBUILT_V8_CONTEXT_SNAPSHOT" != "1" ]; then
+            ninja -C out/Default electron:electron_mksnapshot -j $NUMBER_OF_NINJA_PROCESSES
+            gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
+          fi
+          if [ "`uname`" != "Darwin" ]; then
+            if [ "$TARGET_ARCH" == "arm" ]; then
+              electron/script/strip-binaries.py --file $PWD/out/Default/clang_x86_v8_arm/mksnapshot
+              electron/script/strip-binaries.py --file $PWD/out/Default/clang_x86_v8_arm/v8_context_snapshot_generator
+            elif [ "$TARGET_ARCH" == "arm64" ]; then
+              electron/script/strip-binaries.py --file $PWD/out/Default/clang_x64_v8_arm64/mksnapshot
+              electron/script/strip-binaries.py --file $PWD/out/Default/clang_x64_v8_arm64/v8_context_snapshot_generator
+            else
+              electron/script/strip-binaries.py --file $PWD/out/Default/mksnapshot
+              electron/script/strip-binaries.py --file $PWD/out/Default/v8_context_snapshot_generator
+            fi
+          fi
+          if [ "$USE_PREBUILT_V8_CONTEXT_SNAPSHOT" != "1" ] && [ "$SKIP_DIST_ZIP" != "1" ]; then
+            ninja -C out/Default electron:electron_mksnapshot_zip -j $NUMBER_OF_NINJA_PROCESSES
+            (cd out/Default; zip mksnapshot.zip mksnapshot_args gen/v8/embedded.S)
+          fi
+      - name: Build chromedriver.zip
+        run: |
+          cd src
+          if [ "$TARGET_ARCH" == "arm" ] || [ "$TARGET_ARCH" == "arm64" ]; then
+            gn gen out/chromedriver --args="import(\"$GN_CONFIG\") import(\"$GN_GOMA_FILE\") is_component_ffmpeg=false proprietary_codecs=false $GN_EXTRA_ARGS $GN_BUILDFLAG_ARGS"
+            export CHROMEDRIVER_DIR="out/chromedriver"
+          else
+            export CHROMEDRIVER_DIR="out/Default"
+          fi
+          ninja -C $CHROMEDRIVER_DIR electron:electron_chromedriver -j $NUMBER_OF_NINJA_PROCESSES
+          if [ "`uname`" == "Linux" ]; then
+            electron/script/strip-binaries.py --target-cpu="$TARGET_ARCH" --file $PWD/$CHROMEDRIVER_DIR/chromedriver
+          fi
+          ninja -C $CHROMEDRIVER_DIR electron:electron_chromedriver_zip
+          if [ "$TARGET_ARCH" == "arm" ] || [ "$TARGET_ARCH" == "arm64" ]; then
+            cp out/chromedriver/chromedriver.zip out/Default
+          fi
+      - name: ffmpeg GN gen
+        run: |
+          cd src
+          gn gen out/ffmpeg --args="import(\"//electron/build/args/ffmpeg.gn\") import(\"$GN_GOMA_FILE\") $GN_EXTRA_ARGS"
+      - name: Non proprietary ffmpeg build
+        run: |
+          cd src
+          ninja -C out/ffmpeg electron:electron_ffmpeg_zip -j $NUMBER_OF_NINJA_PROCESSES
+
+      - name: hunspell build
+        run: |
+          cd src
+          if [ "$SKIP_DIST_ZIP" != "1" ]; then
+            ninja -C out/Default electron:hunspell_dictionaries_zip -j $NUMBER_OF_NINJA_PROCESSES
+          fi
+      - name: Persist Build artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: build-artifacts
+          path: |
+            src/out/Default/dist.zip
+            src/out/Default/mksnapshot.zip
+            src/out/Default/chromedriver.zip
+            src/out/Default/shell_browser_ui_unittests
+            src/out/Default/gen/node_headers
+            src/out/ffmpeg/ffmpeg.zip
+            src/electron
+            src/third_party/electron_node
+            src/third_party/nan
+            src/cross-arch-snapshots
+            src/third_party/llvm-build
+            src/build/linux
+            src/buildtools/third_party/libc++
+            src/buildtools/third_party/libc++abi
+            src/out/Default/obj/buildtools/third_party
+      - name: Zip symbols
+        run: |
+          cd src
+          export BUILD_PATH="$PWD/out/Default"
+          ninja -C out/Default electron:licenses
+          ninja -C out/Default electron:electron_version
+          DELETE_DSYMS_AFTER_ZIP=1 electron/script/zip-symbols.py -b $BUILD_PATH
