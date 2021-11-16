@@ -235,7 +235,7 @@ void WebContentsPreferences::Merge(
   }
   std::string background_color;
   if (web_preferences.GetHidden(options::kBackgroundColor, &background_color))
-    background_color_ = ParseHexColor(background_color);
+    background_color_ = ParseCSSColor(background_color);
   std::string safe_dialogs_message;
   if (web_preferences.Get("safeDialogsMessage", &safe_dialogs_message))
     safe_dialogs_message_ = safe_dialogs_message;

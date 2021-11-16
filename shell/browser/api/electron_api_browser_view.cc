@@ -154,11 +154,11 @@ gfx::Rect BrowserView::GetBounds() {
 }
 
 void BrowserView::SetBackgroundColor(const std::string& color_name) {
-  view_->SetBackgroundColor(ParseHexColor(color_name));
+  view_->SetBackgroundColor(ParseCSSColor(color_name));
 
   if (web_contents()) {
     auto* wc = web_contents()->web_contents();
-    wc->SetPageBaseBackgroundColor(ParseHexColor(color_name));
+    wc->SetPageBaseBackgroundColor(ParseCSSColor(color_name));
   }
 }
 
