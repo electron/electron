@@ -27,6 +27,7 @@
 #include "shell/browser/osr/osr_host_display_client.h"
 #include "shell/browser/osr/osr_video_consumer.h"
 #include "shell/browser/osr/osr_view_proxy.h"
+#include "third_party/blink/public/mojom/widget/record_content_to_visible_time_request.mojom-forward.h"
 #include "third_party/blink/public/platform/web_vector.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/base/ime/text_input_client.h"
@@ -125,7 +126,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   void TextInputStateChanged(const ui::mojom::TextInputState& params) override;
   void ImeCancelComposition(void) override;
   void RenderProcessGone() override;
-  void ShowWithVisibility(PageVisibilityState page_visibility) final;
+  void ShowWithVisibility(content::PageVisibilityState page_visibility) final;
   void Destroy(void) override;
   void UpdateTooltipUnderCursor(const std::u16string&) override;
   content::CursorManager* GetCursorManager() override;
@@ -139,6 +140,11 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   absl::optional<content::DisplayFeature> GetDisplayFeature() override;
   void SetDisplayFeatureForTesting(
       const content::DisplayFeature* display_feature) override;
+  void NotifyHostAndDelegateOnWasShown(
+      blink::mojom::RecordContentToVisibleTimeRequestPtr) final;
+  void RequestPresentationTimeFromHostOrDelegate(
+      blink::mojom::RecordContentToVisibleTimeRequestPtr) final;
+  void CancelPresentationTimeRequestForHostAndDelegate() final;
   viz::SurfaceId GetCurrentSurfaceId() const override;
   std::unique_ptr<content::SyntheticGestureTarget>
   CreateSyntheticGestureTarget() override;

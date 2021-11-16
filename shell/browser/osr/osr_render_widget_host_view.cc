@@ -298,7 +298,7 @@ bool OffScreenRenderWidgetHostView::IsSurfaceAvailableForCopy() {
 }
 
 void OffScreenRenderWidgetHostView::ShowWithVisibility(
-    PageVisibilityState /*page_visibility*/) {
+    content::PageVisibilityState /*page_visibility*/) {
   if (is_showing_)
     return;
 
@@ -1055,6 +1055,23 @@ void OffScreenRenderWidgetHostView::UpdateBackgroundColorFromRenderer(
   bool opaque = SkColorGetA(color) == SK_AlphaOPAQUE;
   GetRootLayer()->SetFillsBoundsOpaquely(opaque);
   GetRootLayer()->SetColor(color);
+}
+
+// TODO (jkleinsc) figure out if we need to do something with these
+// see https://chromium-review.googlesource.com/c/chromium/src/+/3256802
+void OffScreenRenderWidgetHostView::NotifyHostAndDelegateOnWasShown(
+    blink::mojom::RecordContentToVisibleTimeRequestPtr) {
+  NOTREACHED();
+}
+
+void OffScreenRenderWidgetHostView::RequestPresentationTimeFromHostOrDelegate(
+    blink::mojom::RecordContentToVisibleTimeRequestPtr) {
+  NOTREACHED();
+}
+
+void OffScreenRenderWidgetHostView::
+    CancelPresentationTimeRequestForHostAndDelegate() {
+  NOTREACHED();
 }
 
 }  // namespace electron
