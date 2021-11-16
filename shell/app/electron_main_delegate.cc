@@ -450,7 +450,7 @@ ElectronMainDelegate::RunProcess(
   if (process_type == kRelauncherProcess)
     return relauncher::RelauncherMain(main_function_params);
   else
-    return -1;
+    return std::move(main_function_params);
 }
 
 bool ElectronMainDelegate::ShouldCreateFeatureList() {
