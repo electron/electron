@@ -124,9 +124,7 @@ uint32_t GetStorageMask(const std::vector<std::string>& storage_types) {
   uint32_t storage_mask = 0;
   for (const auto& it : storage_types) {
     auto type = base::ToLowerASCII(it);
-    if (type == "appcache")
-      storage_mask |= StoragePartition::REMOVE_DATA_MASK_APPCACHE;
-    else if (type == "cookies")
+    if (type == "cookies")
       storage_mask |= StoragePartition::REMOVE_DATA_MASK_COOKIES;
     else if (type == "filesystem")
       storage_mask |= StoragePartition::REMOVE_DATA_MASK_FILE_SYSTEMS;
