@@ -282,9 +282,9 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
 
     ignore_result(source_promise->Then(
         source_context,
-        gin::ConvertToV8(destination_context->GetIsolate(), then_cb)
+        gin::ConvertToV8(destination_context->GetIsolate(), std::move(then_cb))
             .As<v8::Function>(),
-        gin::ConvertToV8(destination_context->GetIsolate(), catch_cb)
+        gin::ConvertToV8(destination_context->GetIsolate(), std::move(catch_cb))
             .As<v8::Function>()));
 
     object_cache->CacheProxiedObject(value, proxied_promise_handle);
