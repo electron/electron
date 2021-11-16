@@ -538,6 +538,7 @@ source_set("electron_lib") {
       "//build/config/linux/gtk",
       "//dbus",
       "//device/bluetooth",
+      "//ui/base/ime/linux",
       "//ui/events/devices/x11",
       "//ui/events/platform/x11",
       "//ui/gtk",
