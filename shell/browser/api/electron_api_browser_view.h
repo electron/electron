@@ -14,6 +14,7 @@
 #include "gin/wrappable.h"
 #include "shell/browser/extended_web_contents_observer.h"
 #include "shell/browser/native_browser_view.h"
+#include "shell/browser/native_window.h"
 #include "shell/common/api/api.mojom.h"
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/error_thrower.h"
@@ -54,6 +55,10 @@ class BrowserView : public gin::Wrappable<BrowserView>,
   WebContents* web_contents() const { return api_web_contents_; }
   NativeBrowserView* view() const { return view_.get(); }
 
+  NativeWindow* owner_window() const { return owner_window_.get(); }
+
+  void SetOwnerWindow(NativeWindow* window);
+
   int32_t ID() const { return id_; }
 
  protected:
@@ -78,6 +83,7 @@ class BrowserView : public gin::Wrappable<BrowserView>,
   class WebContents* api_web_contents_ = nullptr;
 
   std::unique_ptr<NativeBrowserView> view_;
+  base::WeakPtr<NativeWindow> owner_window_;
 
   int32_t id_;
 
