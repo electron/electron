@@ -85,7 +85,6 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   bool HasFocus(void) override;
   uint32_t GetCaptureSequenceNumber() const override;
   bool IsSurfaceAvailableForCopy(void) override;
-  void Show(void) override;
   void Hide(void) override;
   bool IsShowing(void) override;
   void EnsureSurfaceSynchronizedForWebTest() override;
@@ -126,6 +125,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   void TextInputStateChanged(const ui::mojom::TextInputState& params) override;
   void ImeCancelComposition(void) override;
   void RenderProcessGone() override;
+  void ShowWithVisibility(PageVisibilityState page_visibility) final;
   void Destroy(void) override;
   void UpdateTooltipUnderCursor(const std::u16string&) override;
   content::CursorManager* GetCursorManager() override;

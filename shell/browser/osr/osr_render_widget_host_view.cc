@@ -297,7 +297,8 @@ bool OffScreenRenderWidgetHostView::IsSurfaceAvailableForCopy() {
   return GetDelegatedFrameHost()->CanCopyFromCompositingSurface();
 }
 
-void OffScreenRenderWidgetHostView::Show() {
+void OffScreenRenderWidgetHostView::ShowWithVisibility(
+    PageVisibilityState /*page_visibility*/) {
   if (is_showing_)
     return;
 
