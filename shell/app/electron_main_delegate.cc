@@ -143,7 +143,7 @@ bool ElectronPathProvider(int key, base::FilePath* result) {
 #else
       // On Windows, there's no OS-level centralized location for caches, so
       // store the cache in the app data directory.
-      int parent_key = base::DIR_APP_DATA;
+      int parent_key = base::DIR_ROAMING_APP_DATA;
 #endif
       if (!base::PathService::Get(parent_key, &cur))
         return false;
