@@ -138,6 +138,7 @@ static_library("chrome") {
   deps = [
     "//chrome/browser:resource_prefetch_predictor_proto",
     "//components/optimization_guide/proto:optimization_guide_proto",
+    "//components/permissions/prediction_service:prediction_service_messages_proto",
   ]
 
   if (enable_basic_printing && is_win) {
