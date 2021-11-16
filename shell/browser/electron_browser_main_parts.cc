@@ -64,26 +64,15 @@
 #if defined(OS_LINUX)
 #include "base/environment.h"
 #include "base/threading/thread_task_runner_handle.h"
+#include "device/bluetooth/bluetooth_adapter_factory.h"
+#include "device/bluetooth/dbus/dbus_bluez_manager_wrapper_linux.h"
+#include "ui/base/cursor/cursor_factory.h"
+#include "ui/base/ime/linux/linux_input_method_context_factory.h"
+#include "ui/gfx/color_utils.h"
 #include "ui/gtk/gtk_ui_factory.h"
 #include "ui/gtk/gtk_util.h"
 #include "ui/views/linux_ui/linux_ui.h"
-
-#if defined(USE_OZONE)
 #include "ui/ozone/public/ozone_platform.h"
-#endif
-
-#if defined(USE_X11)
-#include "ui/base/x/x11_util.h"
-#include "ui/events/devices/x11/touch_factory_x11.h"
-#include "ui/gfx/color_utils.h"
-#include "ui/gfx/x/connection.h"
-#include "ui/gfx/x/xproto_util.h"
-#endif
-
-#if defined(USE_OZONE) || defined(USE_X11)
-#include "ui/base/ui_base_features.h"
-#endif
-
 #endif
 
 #if defined(OS_WIN)
@@ -98,11 +87,6 @@
 #include "shell/browser/ui/cocoa/views_delegate_mac.h"
 #else
 #include "shell/browser/ui/views/electron_views_delegate.h"
-#endif
-
-#if defined(OS_LINUX)
-#include "device/bluetooth/bluetooth_adapter_factory.h"
-#include "device/bluetooth/dbus/dbus_bluez_manager_wrapper_linux.h"
 #endif
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -226,6 +210,9 @@ int ElectronBrowserMainParts::PreEarlyInitialization() {
   field_trial_list_ = std::make_unique<base::FieldTrialList>(nullptr);
 #if defined(OS_POSIX)
   HandleSIGCHLD();
+#endif
+#if defined(OS_LINUX)
+  ui::OzonePlatform::PreEarlyInitialization();
 #endif
 
   return GetExitCode();
@@ -375,6 +362,7 @@ void ElectronBrowserMainParts::ToolkitInitialized() {
 #if defined(OS_LINUX)
   auto linux_ui = BuildGtkUi();
   linux_ui->Initialize();
+  DCHECK(ui::LinuxInputMethodContextFactory::instance());
 
   // Chromium does not respect GTK dark theme setting, but they may change
   // in future and this code might be no longer needed. Check the Chromium
@@ -386,6 +374,10 @@ void ElectronBrowserMainParts::ToolkitInitialized() {
   dark_theme_observer_ = std::make_unique<DarkThemeObserver>();
   linux_ui->GetNativeTheme(nullptr)->AddObserver(dark_theme_observer_.get());
   views::LinuxUI::SetInstance(std::move(linux_ui));
+
+  // Cursor theme changes are tracked by LinuxUI (via a CursorThemeManager
+  // implementation). Start observing them once it's initialized.
+  ui::CursorFactory::GetInstance()->ObserveThemeChanges();
 #endif
 
 #if defined(USE_AURA)
@@ -430,10 +422,6 @@ int ElectronBrowserMainParts::PreMainMessageLoopRun() {
   SpellcheckServiceFactory::GetInstance();
 #endif
 
-#if defined(USE_X11)
-  ui::TouchFactory::SetTouchDeviceListFromCommandLine();
-#endif
-
   content::WebUIControllerFactory::RegisterFactory(
       ElectronWebUIControllerFactory::GetInstance());
 
@@ -471,15 +459,11 @@ void ElectronBrowserMainParts::WillRunMainMessageLoop(
 }
 
 void ElectronBrowserMainParts::PostCreateMainMessageLoop() {
-#if defined(USE_OZONE)
-  if (features::IsUsingOzonePlatform()) {
-    auto shutdown_cb =
-        base::BindOnce(base::RunLoop::QuitCurrentWhenIdleClosureDeprecated());
-    ui::OzonePlatform::GetInstance()->PostCreateMainMessageLoop(
-        std::move(shutdown_cb));
-  }
-#endif
 #if defined(OS_LINUX)
+  auto shutdown_cb =
+      base::BindOnce(base::RunLoop::QuitCurrentWhenIdleClosureDeprecated());
+  ui::OzonePlatform::GetInstance()->PostCreateMainMessageLoop(
+      std::move(shutdown_cb));
   bluez::DBusBluezManagerWrapperLinux::Initialize();
 #endif
 #if defined(OS_POSIX)
@@ -519,6 +503,10 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
 
   fake_browser_process_->PostMainMessageLoopRun();
   content::DevToolsAgentHost::StopRemoteDebuggingPipeHandler();
+
+#if defined(OS_LINUX)
+  ui::OzonePlatform::GetInstance()->PostMainMessageLoopRun();
+#endif
 }
 
 #if !defined(OS_MAC)
