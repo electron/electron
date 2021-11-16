@@ -2178,7 +2178,7 @@ bool WebContents::IsLoading() const {
 }
 
 bool WebContents::IsLoadingMainFrame() const {
-  return web_contents()->IsLoadingToDifferentDocument();
+  return web_contents()->ShouldShowLoadingUI();
 }
 
 bool WebContents::IsWaitingForResponse() const {
