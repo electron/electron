@@ -546,6 +546,7 @@ source_set("electron_lib") {
     ]
     if (use_x11) {
       sources += filenames.lib_sources_linux_x11
+      public_deps += [ "//ui/base/x" ]
     }
     configs += [ ":gio_unix" ]
     defines += [
