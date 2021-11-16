@@ -454,7 +454,7 @@ step-fix-sync-on-mac: &step-fix-sync-on-mac
       if [ "`uname`" == "Darwin" ]; then
         # Fix Clang Install (wrong binary)
         rm -rf src/third_party/llvm-build
-        python src/tools/clang/scripts/update.py
+        python3 src/tools/clang/scripts/update.py
       fi
 
 step-install-signing-cert-on-mac: &step-install-signing-cert-on-mac
