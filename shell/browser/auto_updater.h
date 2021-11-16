@@ -50,10 +50,6 @@ class Delegate {
 
 class AutoUpdater {
  public:
-  AutoUpdater() = delete;
-  AutoUpdater(const AutoUpdater&) = delete;
-  AutoUpdater& operator=(const AutoUpdater&) = delete;
-
   typedef std::map<std::string, std::string> HeaderMap;
 
   AutoUpdater() = delete;
