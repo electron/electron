@@ -3458,13 +3458,6 @@ bool WebContents::IsFullscreenForTabOrPending(
   return html_fullscreen_;
 }
 
-blink::SecurityStyle WebContents::GetSecurityStyle(
-    content::WebContents* web_contents) {
-  auto state = security_state::GetVisibleSecurityState(web_contents);
-  auto security_level = security_state::GetSecurityLevel(*state, false);
-  return security_state::GetSecurityStyle(security_level);
-}
-
 bool WebContents::TakeFocus(content::WebContents* source, bool reverse) {
   if (source && source->GetOutermostWebContents() == source) {
     // If this is the outermost web contents and the user has tabbed or

@@ -678,8 +678,6 @@ class WebContents : public ExclusiveAccessContext,
   bool IsExclusiveAccessBubbleDisplayed() const override;
 
   bool IsFullscreenForTabOrPending(const content::WebContents* source) override;
-  blink::SecurityStyle GetSecurityStyle(
-      content::WebContents* web_contents) override;
   bool TakeFocus(content::WebContents* source, bool reverse) override;
   content::PictureInPictureResult EnterPictureInPicture(
       content::WebContents* web_contents,
