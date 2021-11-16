@@ -11,8 +11,9 @@
 
 namespace electron {
 
-// Parse hex color like "#FFF" or "#EFEFEF"
-SkColor ParseHexColor(const std::string& color_string);
+// Parses a CSS-style color string from hex (3- or 6-digit), rgb(), rgba(),
+// hsl() or hsla() formats.
+SkColor ParseCSSColor(const std::string& color_string);
 
 // Convert color to RGB hex value like "#ABCDEF"
 std::string ToRGBHex(SkColor color);

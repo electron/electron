@@ -66,6 +66,23 @@ win.loadURL('https://github.com')
 Note that even for apps that use `ready-to-show` event, it is still recommended
 to set `backgroundColor` to make the app feel more native.
 
+Some examples of valid `backgroundColor` values include:
+
+```js
+const win = new BrowserWindow()
+win.setBackgroundColor('hsl(230, 100%, 50%)')
+win.setBackgroundColor('rgb(255, 145, 145)')
+win.setBackgroundColor('#ff00a3')
+win.setBackgroundColor('blueviolet')
+```
+
+For more information about these color types:
+
+* [Color Names](https://www.w3schools.com/colors/colors_names.asp)
+* [Colors Hex](https://www.w3schools.com/colors/colors_hexadecimal.asp)
+* [Colors RGB](https://www.w3schools.com/colors/colors_rgb.asp)
+* [Colors HSL](https://www.w3schools.com/colors/colors_hsl.asp)
+
 ## Parent and child windows
 
 By using `parent` option, you can create child windows:
@@ -199,9 +216,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
   * `enableLargerThanScreen` boolean (optional) - Enable the window to be resized larger
     than screen. Only relevant for macOS, as other OSes allow
     larger-than-screen windows by default. Default is `false`.
-  * `backgroundColor` string (optional) - Window's background color as a hexadecimal value,
-    like `#66CD00` or `#FFF` or `#80FFFFFF` (alpha in #AARRGGBB format is supported if
-    `transparent` is set to `true`). Default is `#FFF` (white).
+  * `backgroundColor` string (optional) - Window's background color as a hexadecimal value (`#ff00a3` or `#80FFFFFF`), HSL color value (`hsl(230, 100%, 50%)`), CSS color string (`blueviolet`), or RGB color value (`rgb(255, 145, 145)`). Alpha in #AARRGGBB format is supported if `transparent` is set to `true`). Default is `#FFF` (white).
   * `hasShadow` boolean (optional) - Whether window should have a shadow. Default is `true`.
   * `opacity` number (optional) - Set the initial opacity of the window, between 0.0 (fully
     transparent) and 1.0 (fully opaque). This is only implemented on Windows and macOS.
@@ -992,9 +1007,7 @@ APIs like `win.setSize`.
 
 #### `win.setBackgroundColor(backgroundColor)`
 
-* `backgroundColor` string - Window's background color as a hexadecimal value,
-  like `#66CD00` or `#FFF` or `#80FFFFFF` (alpha is supported if `transparent`
-  is `true`). Default is `#FFF` (white).
+* `backgroundColor` string - Window's background color as a hexadecimal value (`#ff00a3` or `#80FFFFFF`), HSL color value (`hsl(230, 100%, 50%)`), CSS color string (`blueviolet`), or RGB color value (`rgb(255, 145, 145)`). Alpha in #AARRGGBB format is supported if `transparent` is set to `true`). Default is `#FFF` (white).
 
 Sets the background color of the window. See [Setting
 `backgroundColor`](#setting-the-backgroundcolor-property).
@@ -1041,8 +1054,8 @@ Returns [`Rectangle`](structures/rectangle.md) - The `bounds` of the window as `
 
 #### `win.getBackgroundColor()`
 
-Returns `string` - Gets the background color of the window. See [Setting
-`backgroundColor`](#setting-the-backgroundcolor-property).
+Returns `string` - Gets the background color of the window as a [Hexadecimal value](https://www.w3schools.com/colors/colors_hexadecimal.asp). See [Setting
+`backgroundColor`](#setting-the-backgroundcolor-property) for more information.
 
 #### `win.setContentBounds(bounds[, animate])`
 

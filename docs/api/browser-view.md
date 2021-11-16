@@ -70,5 +70,18 @@ The `bounds` of this BrowserView instance as `Object`.
 
 #### `view.setBackgroundColor(color)` _Experimental_
 
-* `color` string - Color in `#aarrggbb` or `#argb` form. The alpha channel is
-  optional.
+* `color` string - Color in hex, RBG, HSL, or named CSS color format. The alpha channel is
+  optional for the hex type.
+
+Examples of valid `color` values:
+
+* [Hexadecimal Value Colors](https://www.w3schools.com/colors/colors_names.asp)
+  * `#ff00a3`
+  * `#80FFFFFF`
+* [HSL Colors](https://www.w3schools.com/colors/colors_hsl.asp)
+  * `hsl(230, 100%, 50%)`
+* [CSS Color Names](https://www.w3schools.com/colors/colors_names.asp)
+  * `blueviolet`
+  * `red`
+* [RGB Colors](https://www.w3schools.com/colors/colors_rgb.asp)
+  * `rgb(255, 145, 145)`
