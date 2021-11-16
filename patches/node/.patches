@@ -28,3 +28,4 @@ test_fix_test-datetime-change-notify_after_daylight_change.patch
 test_add_fixture_trim_option.patch
 fix_crash_caused_by_gethostnamew_on_windows_7.patch
 fix_-wunused-but-set-variable_warning.patch
+fix_suppress_clang_-wdeprecated-declarations_in_libuv.patch
