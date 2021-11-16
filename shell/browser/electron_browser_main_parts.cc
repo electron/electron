@@ -71,8 +71,8 @@
 #include "ui/gfx/color_utils.h"
 #include "ui/gtk/gtk_ui_factory.h"
 #include "ui/gtk/gtk_util.h"
-#include "ui/views/linux_ui/linux_ui.h"
 #include "ui/ozone/public/ozone_platform.h"
+#include "ui/views/linux_ui/linux_ui.h"
 #endif
 
 #if defined(OS_WIN)

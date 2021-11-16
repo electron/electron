@@ -1057,7 +1057,7 @@ void OffScreenRenderWidgetHostView::UpdateBackgroundColorFromRenderer(
   GetRootLayer()->SetColor(color);
 }
 
-// TODO (jkleinsc) figure out if we need to do something with these
+// TODO(jkleinsc): figure out if we need to do something with these
 // see https://chromium-review.googlesource.com/c/chromium/src/+/3256802
 void OffScreenRenderWidgetHostView::NotifyHostAndDelegateOnWasShown(
     blink::mojom::RecordContentToVisibleTimeRequestPtr) {
