@@ -6,10 +6,10 @@ Subject: fix: suppress clang -Wdeprecated-declarations in libuv
 Should be upstreamed.
 
 diff --git a/deps/uv/src/win/util.c b/deps/uv/src/win/util.c
-index 5ffde08e1aed041c4da679156ed10f7e54bfc386..69aff95f68519acc8fc399c4358702b146f802ca 100644
+index 056dd1e28ea68f5c363fa36dac175743d6cd0ccb..c87719a57fd925b1fb58335c5632322b5533329d 100644
 --- a/deps/uv/src/win/util.c
 +++ b/deps/uv/src/win/util.c
-@@ -1949,10 +1949,17 @@ int uv_os_uname(uv_utsname_t* buffer) {
+@@ -1956,10 +1956,17 @@ int uv_os_uname(uv_utsname_t* buffer) {
      #ifdef _MSC_VER
      #pragma warning(suppress : 4996)
      #endif

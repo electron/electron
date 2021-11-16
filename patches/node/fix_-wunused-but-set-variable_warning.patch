@@ -7,6 +7,301 @@ Should be upstreamed.
 
 Refs https://chromium-review.googlesource.com/c/chromium/src/+/3234737
 
+diff --git a/deps/uv/src/unix/darwin.c b/deps/uv/src/unix/darwin.c
+index a7be0dd2f3ca1431f62c30ff69d5adbb663b6d9d..db4c20207e168363a47b1182d88a728193e50f67 100644
+--- a/deps/uv/src/unix/darwin.c
++++ b/deps/uv/src/unix/darwin.c
+@@ -211,7 +211,9 @@ static int uv__get_cpu_speed(uint64_t* speed) {
+   void* iokit_handle;
+   int err;
+ 
++#ifndef NDEBUG
+   kern_return_t kr;
++#endif
+   mach_port_t mach_port;
+   io_iterator_t it;
+   io_object_t service;
+@@ -252,13 +254,17 @@ static int uv__get_cpu_speed(uint64_t* speed) {
+ #undef V
+ 
+ #define S(s) pCFStringCreateWithCString(NULL, (s), kCFStringEncodingUTF8)
+-
+-  kr = pIOMasterPort(MACH_PORT_NULL, &mach_port);
+-  assert(kr == KERN_SUCCESS);
+   CFMutableDictionaryRef classes_to_match
+       = pIOServiceMatching("IOPlatformDevice");
++#ifndef NDEBUG
++  kr = pIOMasterPort(MACH_PORT_NULL, &mach_port);
++  assert(kr == KERN_SUCCESS);
+   kr = pIOServiceGetMatchingServices(mach_port, classes_to_match, &it);
+   assert(kr == KERN_SUCCESS);
++#else
++  pIOMasterPort(MACH_PORT_NULL, &mach_port);
++  pIOServiceGetMatchingServices(mach_port, classes_to_match, &it);
++#endif
+   service = pIOIteratorNext(it);
+ 
+   CFStringRef device_type_str = S("device_type");
+diff --git a/deps/uv/src/win/fs.c b/deps/uv/src/win/fs.c
+index 674070400be41993decbdefd227065a7915107a4..0cc8a78019e7ffb9a03cda207c8eee7c25617743 100644
+--- a/deps/uv/src/win/fs.c
++++ b/deps/uv/src/win/fs.c
+@@ -261,7 +261,9 @@ static int fs__wide_to_utf8(WCHAR* w_source_ptr,
+                                DWORD w_source_len,
+                                char** target_ptr,
+                                uint64_t* target_len_ptr) {
++#ifndef NDEBUG
+   int r;
++#endif
+   int target_len;
+   char* target;
+   target_len = WideCharToMultiByte(CP_UTF8,
+@@ -291,6 +293,7 @@ static int fs__wide_to_utf8(WCHAR* w_source_ptr,
+     return -1;
+   }
+ 
++#ifndef NDEBUG
+   r = WideCharToMultiByte(CP_UTF8,
+                           0,
+                           w_source_ptr,
+@@ -300,6 +303,16 @@ static int fs__wide_to_utf8(WCHAR* w_source_ptr,
+                           NULL,
+                           NULL);
+   assert(r == target_len);
++#else
++  WideCharToMultiByte(CP_UTF8,
++                      0,
++                      w_source_ptr,
++                      w_source_len,
++                      target,
++                      target_len,
++                      NULL,
++                      NULL);
++#endif
+   target[target_len] = '\0';
+   *target_ptr = target;
+   return 0;
+diff --git a/deps/uv/src/win/pipe.c b/deps/uv/src/win/pipe.c
+index 88ba99bbc0a49a1bb499ab3c7d6722b354d27585..6f50a579f1f0b51cf432d765aed14daa48676406 100644
+--- a/deps/uv/src/win/pipe.c
++++ b/deps/uv/src/win/pipe.c
+@@ -924,7 +924,9 @@ error:
+ 
+ 
+ void uv__pipe_interrupt_read(uv_pipe_t* handle) {
++#ifndef NDEBUG
+   BOOL r;
++#endif
+ 
+   if (!(handle->flags & UV_HANDLE_READ_PENDING))
+     return; /* No pending reads. */
+@@ -935,8 +937,12 @@ void uv__pipe_interrupt_read(uv_pipe_t* handle) {
+ 
+   if (!(handle->flags & UV_HANDLE_NON_OVERLAPPED_PIPE)) {
+     /* Cancel asynchronous read. */
++#ifndef NDEBUG
+     r = CancelIoEx(handle->handle, &handle->read_req.u.io.overlapped);
+     assert(r || GetLastError() == ERROR_NOT_FOUND);
++#else
++    CancelIoEx(handle->handle, &handle->read_req.u.io.overlapped);
++#endif
+ 
+   } else {
+     /* Cancel synchronous read (which is happening in the thread pool). */
+@@ -955,8 +961,12 @@ void uv__pipe_interrupt_read(uv_pipe_t* handle) {
+       /* Spin until the thread has acknowledged (by setting the thread to
+        * INVALID_HANDLE_VALUE) that it is past the point of blocking. */
+       while (thread != INVALID_HANDLE_VALUE) {
++#ifndef NDEBUG
+         r = CancelSynchronousIo(thread);
+         assert(r || GetLastError() == ERROR_NOT_FOUND);
++#else
++        CancelSynchronousIo(thread);
++#endif
+         SwitchToThread(); /* Yield thread. */
+         thread = *thread_ptr;
+       }
+@@ -2194,15 +2204,22 @@ void uv_process_pipe_shutdown_req(uv_loop_t* loop, uv_pipe_t* handle,
+ 
+ 
+ static void eof_timer_init(uv_pipe_t* pipe) {
++#ifndef NDEBUG
+   int r;
++#endif
+ 
+   assert(pipe->pipe.conn.eof_timer == NULL);
+   assert(pipe->flags & UV_HANDLE_CONNECTION);
+ 
+   pipe->pipe.conn.eof_timer = (uv_timer_t*) uv__malloc(sizeof *pipe->pipe.conn.eof_timer);
+ 
++#ifndef NDEBUG
+   r = uv_timer_init(pipe->loop, pipe->pipe.conn.eof_timer);
+   assert(r == 0); /* timers can't fail */
++#else
++  uv_timer_init(pipe->loop, pipe->pipe.conn.eof_timer);
++#endif
++
+   pipe->pipe.conn.eof_timer->data = pipe;
+   uv_unref((uv_handle_t*) pipe->pipe.conn.eof_timer);
+ }
+diff --git a/deps/uv/src/win/process.c b/deps/uv/src/win/process.c
+index 4038fbfd290d1acc91a27ad38e248a2deb06eb68..3a501bbf74475ab3d01ce82d15795e9773806c44 100644
+--- a/deps/uv/src/win/process.c
++++ b/deps/uv/src/win/process.c
+@@ -106,7 +106,7 @@ static void uv__init_global_job_handle(void) {
+ 
+ 
+ static int uv_utf8_to_utf16_alloc(const char* s, WCHAR** ws_ptr) {
+-  int ws_len, r;
++  int ws_len;
+   WCHAR* ws;
+ 
+   ws_len = MultiByteToWideChar(CP_UTF8,
+@@ -124,6 +124,8 @@ static int uv_utf8_to_utf16_alloc(const char* s, WCHAR** ws_ptr) {
+     return ERROR_OUTOFMEMORY;
+   }
+ 
++#ifndef NDEBUG
++  int r;
+   r = MultiByteToWideChar(CP_UTF8,
+                           0,
+                           s,
+@@ -131,6 +133,14 @@ static int uv_utf8_to_utf16_alloc(const char* s, WCHAR** ws_ptr) {
+                           ws,
+                           ws_len);
+   assert(r == ws_len);
++#else
++  MultiByteToWideChar(CP_UTF8,
++                      0,
++                      s,
++                      -1,
++                      ws,
++                      ws_len);
++#endif
+ 
+   *ws_ptr = ws;
+   return 0;
+@@ -619,7 +629,9 @@ int env_strncmp(const wchar_t* a, int na, const wchar_t* b) {
+   wchar_t* A;
+   wchar_t* B;
+   int nb;
++#ifndef NDEBUG
+   int r;
++#endif
+ 
+   if (na < 0) {
+     a_eq = wcschr(a, L'=');
+@@ -635,11 +647,19 @@ int env_strncmp(const wchar_t* a, int na, const wchar_t* b) {
+   A = alloca((na+1) * sizeof(wchar_t));
+   B = alloca((nb+1) * sizeof(wchar_t));
+ 
++#ifndef NDEBUG
+   r = LCMapStringW(LOCALE_INVARIANT, LCMAP_UPPERCASE, a, na, A, na);
+   assert(r==na);
++#else
++  LCMapStringW(LOCALE_INVARIANT, LCMAP_UPPERCASE, a, na, A, na);
++#endif
+   A[na] = L'\0';
++#ifndef NDEBUG
+   r = LCMapStringW(LOCALE_INVARIANT, LCMAP_UPPERCASE, b, nb, B, nb);
+   assert(r==nb);
++#else
++  LCMapStringW(LOCALE_INVARIANT, LCMAP_UPPERCASE, b, nb, B, nb);
++#endif
+   B[nb] = L'\0';
+ 
+   for (;;) {
+diff --git a/deps/uv/src/win/signal.c b/deps/uv/src/win/signal.c
+index 3d9f92cfb1701703832697dc8c7f1c00ce304b70..2d0299155731c75e464597f9be963e1885e0929e 100644
+--- a/deps/uv/src/win/signal.c
++++ b/deps/uv/src/win/signal.c
+@@ -158,7 +158,9 @@ int uv_signal_init(uv_loop_t* loop, uv_signal_t* handle) {
+ 
+ 
+ int uv_signal_stop(uv_signal_t* handle) {
++#ifndef NDEBUG
+   uv_signal_t* removed_handle;
++#endif
+ 
+   /* If the watcher wasn't started, this is a no-op. */
+   if (handle->signum == 0)
+@@ -166,8 +168,12 @@ int uv_signal_stop(uv_signal_t* handle) {
+ 
+   EnterCriticalSection(&uv__signal_lock);
+ 
++#ifndef NDEBUG
+   removed_handle = RB_REMOVE(uv_signal_tree_s, &uv__signal_tree, handle);
+   assert(removed_handle == handle);
++#else
++  RB_REMOVE(uv_signal_tree_s, &uv__signal_tree, handle);
++#endif
+ 
+   LeaveCriticalSection(&uv__signal_lock);
+ 
+diff --git a/deps/uv/src/win/thread.c b/deps/uv/src/win/thread.c
+index 89c53ada755b175f090faf9a00abd943140581c1..76db616047fa6d37e76dfe05c7f3d988cc45f39c 100644
+--- a/deps/uv/src/win/thread.c
++++ b/deps/uv/src/win/thread.c
+@@ -33,7 +33,9 @@
+ #include "internal.h"
+ 
+ static void uv__once_inner(uv_once_t* guard, void (*callback)(void)) {
++#ifndef NDEBUG
+   DWORD result;
++#endif
+   HANDLE existing_event, created_event;
+ 
+   created_event = CreateEvent(NULL, 1, 0, NULL);
+@@ -50,16 +52,24 @@ static void uv__once_inner(uv_once_t* guard, void (*callback)(void)) {
+     /* We won the race */
+     callback();
+ 
++#ifndef NDEBUG
+     result = SetEvent(created_event);
+     assert(result);
++#else
++    SetEvent(created_event);
++#endif
+     guard->ran = 1;
+ 
+   } else {
+     /* We lost the race. Destroy the event we created and wait for the existing
+      * one to become signaled. */
+     CloseHandle(created_event);
++#ifndef NDEBUG
+     result = WaitForSingleObject(existing_event, INFINITE);
+     assert(result == WAIT_OBJECT_0);
++#else
++    WaitForSingleObject(existing_event, INFINITE);
++#endif
+   }
+ }
+ 
+diff --git a/deps/uv/src/win/util.c b/deps/uv/src/win/util.c
+index 5ffde08e1aed041c4da679156ed10f7e54bfc386..056dd1e28ea68f5c363fa36dac175743d6cd0ccb 100644
+--- a/deps/uv/src/win/util.c
++++ b/deps/uv/src/win/util.c
+@@ -692,6 +692,7 @@ int uv_cpu_info(uv_cpu_info_t** cpu_infos_ptr, int* cpu_count_ptr) {
+     DWORD cpu_speed_size = sizeof(cpu_speed);
+     WCHAR cpu_brand[256];
+     DWORD cpu_brand_size = sizeof(cpu_brand);
++#ifndef NDEBUG
+     size_t len;
+ 
+     len = _snwprintf(key_name,
+@@ -700,6 +701,12 @@ int uv_cpu_info(uv_cpu_info_t** cpu_infos_ptr, int* cpu_count_ptr) {
+                      i);
+ 
+     assert(len > 0 && len < ARRAY_SIZE(key_name));
++#else
++    _snwprintf(key_name,
++               ARRAY_SIZE(key_name),
++               L"HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\%d",
++               i);
++#endif
+ 
+     err = RegOpenKeyExW(HKEY_LOCAL_MACHINE,
+                         key_name,
 diff --git a/src/crypto/crypto_common.cc b/src/crypto/crypto_common.cc
 index 9cbe78c05b1c86c0d4a4b8b1f8771862dd3002e5..023ebc2e4cb343cb30fcab3cfc81b9cd6b200cd1 100644
 --- a/src/crypto/crypto_common.cc
