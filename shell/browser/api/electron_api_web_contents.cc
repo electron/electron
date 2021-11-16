@@ -1400,8 +1400,9 @@ void WebContents::HandleNewRenderFrame(
                                        &color_name)) {
       web_contents()->SetPageBaseBackgroundColor(ParseHexColor(color_name));
     } else {
+      bool guest = IsGuest() || type_ == Type::kBrowserView;
       web_contents()->SetPageBaseBackgroundColor(
-          IsGuest() ? absl::make_optional(SK_ColorTRANSPARENT) : absl::nullopt);
+          guest ? absl::make_optional(SK_ColorTRANSPARENT) : absl::nullopt);
     }
 
     // When a page base background color is set, transparency needs to be

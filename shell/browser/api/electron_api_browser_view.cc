@@ -155,7 +155,11 @@ gfx::Rect BrowserView::GetBounds() {
 }
 
 void BrowserView::SetBackgroundColor(const std::string& color_name) {
-  view_->SetBackgroundColor(ParseHexColor(color_name));
+  if (!web_contents())
+    return;
+
+  auto* wc = web_contents()->web_contents();
+  wc->SetPageBaseBackgroundColor(ParseHexColor(color_name));
 }
 
 v8::Local<v8::Value> BrowserView::GetWebContents(v8::Isolate* isolate) {
