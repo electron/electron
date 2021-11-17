@@ -147,7 +147,7 @@ index 4b508191cf196b6c528eb97fbdd7baef40922e14..ff18b85688b02d776327325e7d67a944
  }
  
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index c3388853baa3c43e0e57ef0ada4977fd3ccd2087..6e05b831c9041a1c05bd437af4426b0110cc1a66 100644
+index c3388853baa3c43e0e57ef0ada4977fd3ccd2087..285cd8e2d61385ce25111be3830a3b532436982e 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -28,10 +28,10 @@
@@ -320,7 +320,18 @@ index c3388853baa3c43e0e57ef0ada4977fd3ccd2087..6e05b831c9041a1c05bd437af4426b01
    base::ThreadTaskRunnerHandle::Get()->PostTask(
        FROM_HERE, base::BindOnce(&ShowWarningMessageBox,
                                  l10n_util::GetStringUTF16(
-@@ -828,6 +854,11 @@ void PrintViewManagerBase::OnNotifyPrintJobEvent(
+@@ -752,8 +778,10 @@ void PrintViewManagerBase::RenderFrameHostStateChanged(
+     content::RenderFrameHost* render_frame_host,
+     content::RenderFrameHost::LifecycleState /*old_state*/,
+     content::RenderFrameHost::LifecycleState new_state) {
++#if 0 // Printing is always enabled.
+   if (new_state == content::RenderFrameHost::LifecycleState::kActive)
+     SendPrintingEnabled(printing_enabled_.GetValue(), render_frame_host);
++#endif
+ }
+ 
+ void PrintViewManagerBase::DidStartLoading() {
+@@ -828,6 +856,11 @@ void PrintViewManagerBase::OnNotifyPrintJobEvent(
  #endif
        break;
      }
@@ -332,7 +343,7 @@ index c3388853baa3c43e0e57ef0ada4977fd3ccd2087..6e05b831c9041a1c05bd437af4426b01
      case JobEventDetails::JOB_DONE:
        // Printing is done, we don't need it anymore.
        // print_job_->is_job_pending() may still be true, depending on the order
-@@ -897,7 +928,10 @@ bool PrintViewManagerBase::CreateNewPrintJob(
+@@ -897,7 +930,10 @@ bool PrintViewManagerBase::CreateNewPrintJob(
  
    // Disconnect the current |print_job_|.
    auto weak_this = weak_ptr_factory_.GetWeakPtr();
@@ -344,7 +355,7 @@ index c3388853baa3c43e0e57ef0ada4977fd3ccd2087..6e05b831c9041a1c05bd437af4426b01
    if (!weak_this)
      return false;
  
-@@ -920,8 +954,6 @@ bool PrintViewManagerBase::CreateNewPrintJob(
+@@ -920,8 +956,6 @@ bool PrintViewManagerBase::CreateNewPrintJob(
                          /*source_id=*/"");
  #endif
  
@@ -353,7 +364,7 @@ index c3388853baa3c43e0e57ef0ada4977fd3ccd2087..6e05b831c9041a1c05bd437af4426b01
    printing_succeeded_ = false;
    return true;
  }
-@@ -973,14 +1005,22 @@ void PrintViewManagerBase::ReleasePrintJob() {
+@@ -973,14 +1007,22 @@ void PrintViewManagerBase::ReleasePrintJob() {
    content::RenderFrameHost* rfh = printing_rfh_;
    printing_rfh_ = nullptr;
  
@@ -378,7 +389,7 @@ index c3388853baa3c43e0e57ef0ada4977fd3ccd2087..6e05b831c9041a1c05bd437af4426b01
    // Don't close the worker thread.
    print_job_ = nullptr;
  }
-@@ -1018,7 +1058,7 @@ bool PrintViewManagerBase::RunInnerMessageLoop() {
+@@ -1018,7 +1060,7 @@ bool PrintViewManagerBase::RunInnerMessageLoop() {
  }
  
  bool PrintViewManagerBase::OpportunisticallyCreatePrintJob(int cookie) {
