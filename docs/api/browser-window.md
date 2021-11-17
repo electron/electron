@@ -1009,8 +1009,7 @@ APIs like `win.setSize`.
 
 * `backgroundColor` string - Window's background color as a hexadecimal value (`#ff00a3` or `#80FFFFFF`), HSL color value (`hsl(230, 100%, 50%)`), CSS color string (`blueviolet`), or RGB color value (`rgb(255, 145, 145)`). Alpha in #AARRGGBB format is supported if `transparent` is set to `true`). Default is `#FFF` (white).
 
-Sets the background color of the window. See [Setting
-`backgroundColor`](#setting-the-backgroundcolor-property).
+Sets the background color of the window. See [Setting `backgroundColor`](#setting-the-backgroundcolor-property).
 
 #### `win.previewFile(path[, displayName])` _macOS_
 
@@ -1052,10 +1051,13 @@ console.log(win.getBounds())
 
 Returns [`Rectangle`](structures/rectangle.md) - The `bounds` of the window as `Object`.
 
-#### `win.getBackgroundColor()`
+#### `win.getBackgroundColor([format])`
 
-Returns `string` - Gets the background color of the window as a [Hexadecimal value](https://www.w3schools.com/colors/colors_hexadecimal.asp). See [Setting
-`backgroundColor`](#setting-the-backgroundcolor-property) for more information.
+* `format` string (optional) - One of either `hex`, `rgb`, or `hsl`.
+
+Returns `string` - Gets the background color of the window as a [Hexadecimal value](https://www.w3schools.com/colors/colors_hexadecimal.asp), an [HSL value](https://www.w3schools.com/colors/colors_hsl.asp) or an [RGB value](https://www.w3schools.com/colors/colors_rgb.asp). Default is `hex` if `format` is not passed.
+
+See [Setting `backgroundColor`](#setting-the-backgroundcolor-property) for more information.
 
 #### `win.setContentBounds(bounds[, animate])`
 
