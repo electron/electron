@@ -1,4 +1,4 @@
-name: GitHub Actions Demo
+name: GitHub Actions
 on: [push]
 jobs:
   osx-testing-x64:
@@ -12,8 +12,14 @@ jobs:
         run: |
           git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
           echo "$PWD/depot_tools" >> $GITHUB_PATH
-      - name: Check amount of disk space available
-        run: df -h
+      - name: Setup limits for Goma
+        run: |
+          ulimit -n 10000
+          sudo launchctl limit maxfiles 65536 200000
+      - name: Verify limits for Goma
+        run: |
+          ulimit -n
+          launchctl limit maxfiles
       - name: Gclient sync
         run: |
             gclient config \
@@ -61,10 +67,10 @@ jobs:
         env:
           RAW_GOMA_AUTH: ${{ secrets.RAW_GOMA_AUTH }}
         run: |
-          echo " NUMBER_OF_NINJA_PROCESSES=300" >> $GITHUB_ENV
+          echo "NUMBER_OF_NINJA_PROCESSES=300" >> $GITHUB_ENV
           if [ "`uname`" == "Darwin" ]; then
-            echo "ulimit -n 10000" >> $GITHUB_ENV
-            echo "sudo launchctl limit maxfiles 65536 200000" >> $GITHUB_ENV
+            ulimit -n 10000
+            sudo launchctl limit maxfiles 65536 200000
           fi
           if [ ! -z "$RAW_GOMA_AUTH" ]; then
             echo $RAW_GOMA_AUTH > ~/.goma_oauth2_config
