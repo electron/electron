@@ -6,12 +6,32 @@
 
 #include <vector>
 
+#include "base/logging.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 #include "content/public/common/color_parser.h"
+#include "ui/gfx/color_utils.h"
 
 namespace electron {
+
+std::string SkColorToColorString(SkColor color, const std::string& format) {
+  if (format == "hsl") {
+    color_utils::HSL hsl;
+    color_utils::SkColorToHSL(color, &hsl);
+    // Hue ranges between 0 - 360, and saturation/lightness both range from 0 -
+    // 100%, so multiply appropriately to convert to correct int values.
+    return base::StringPrintf("hsl(%ld, %ld%%, %ld%%)", lround(hsl.h * 360),
+                              lround(hsl.s * 100), lround(hsl.l * 100));
+  } else if (format == "rgb") {
+    return base::StringPrintf("rgb(%d, %d, %d)", SkColorGetR(color),
+                              SkColorGetG(color), SkColorGetB(color));
+  }
+
+  // Return #AARRGGBB hex by default.
+  return base::StringPrintf("#%02X%02X%02X", SkColorGetR(color),
+                            SkColorGetG(color), SkColorGetB(color));
+}
 
 SkColor ParseCSSColor(const std::string& color_string) {
   SkColor color;

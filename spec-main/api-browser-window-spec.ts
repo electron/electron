@@ -1081,12 +1081,17 @@ describe('BrowserWindow module', () => {
 
         w.setBackgroundColor('blueviolet');
         expect(w.getBackgroundColor()).to.equal('#8A2BE2');
+        expect(w.getBackgroundColor('rgb')).to.equal('rgb(138, 43, 226)');
+        expect(w.getBackgroundColor('hsl')).to.equal('hsl(271, 76%, 53%)');
 
         w.setBackgroundColor('rgb(255, 0, 185)');
-        expect(w.getBackgroundColor()).to.equal('#FF00B9');
+        expect(w.getBackgroundColor('hex')).to.equal('#FF00B9');
+        expect(w.getBackgroundColor('hsl')).to.equal('hsl(316, 100%, 50%)');
 
         w.setBackgroundColor('hsl(155, 100%, 50%)');
         expect(w.getBackgroundColor()).to.equal('#00FF95');
+        expect(w.getBackgroundColor('rgb')).to.equal('rgb(0, 255, 149)');
+        expect(w.getBackgroundColor('hsl')).to.equal('hsl(155, 100%, 50%)');
       });
     });
 
