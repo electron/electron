@@ -67,8 +67,6 @@ static_library("chrome") {
     "//chrome/browser/ui/exclusive_access/keyboard_lock_controller.h",
     "//chrome/browser/ui/exclusive_access/mouse_lock_controller.cc",
     "//chrome/browser/ui/exclusive_access/mouse_lock_controller.h",
-    "//chrome/browser/ui/views/autofill/autofill_popup_view_utils.cc",
-    "//chrome/browser/ui/views/autofill/autofill_popup_view_utils.h",
     "//chrome/browser/ui/views/eye_dropper/eye_dropper.cc",
     "//chrome/browser/ui/views/eye_dropper/eye_dropper.h",
     "//chrome/browser/ui/views/eye_dropper/eye_dropper_view.cc",
@@ -138,7 +136,6 @@ static_library("chrome") {
   deps = [
     "//chrome/browser:resource_prefetch_predictor_proto",
     "//components/optimization_guide/proto:optimization_guide_proto",
-    "//components/permissions/prediction_service:prediction_service_messages_proto",
   ]
 
   if (enable_basic_printing && is_win) {
