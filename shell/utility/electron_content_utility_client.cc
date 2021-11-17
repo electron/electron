@@ -11,7 +11,8 @@
 #include "base/threading/sequenced_task_runner_handle.h"
 #include "content/public/utility/utility_thread.h"
 #include "mojo/public/cpp/bindings/service_factory.h"
-#include "sandbox/policy/switches.h"
+#include "sandbox/policy/mojom/sandbox.mojom.h"
+#include "sandbox/policy/sandbox_type.h"
 #include "services/proxy_resolver/proxy_resolver_factory_impl.h"
 #include "services/proxy_resolver/public/mojom/proxy_resolver.mojom.h"
 #include "services/service_manager/public/cpp/service.h"
@@ -91,9 +92,10 @@ ElectronContentUtilityClient::~ElectronContentUtilityClient() = default;
 void ElectronContentUtilityClient::ExposeInterfacesToBrowser(
     mojo::BinderMap* binders) {
 #if defined(OS_WIN)
-  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
-  utility_process_running_elevated_ = command_line->HasSwitch(
-      sandbox::policy::switches::kNoSandboxAndElevatedPrivileges);
+  auto& cmd_line = *base::CommandLine::ForCurrentProcess();
+  auto sandbox_type = sandbox::policy::SandboxTypeFromCommandLine(cmd_line);
+  utility_process_running_elevated_ =
+      sandbox_type == sandbox::mojom::Sandbox::kNoSandboxAndElevatedPrivileges;
 #endif
 
   // If our process runs with elevated privileges, only add elevated Mojo
