@@ -70,10 +70,10 @@ until the maintainers feel the maintenance burden is too high to continue doing 
 
 ### Currently supported versions
 
+* 18.x.y
 * 17.x.y
 * 16.x.y
 * 15.x.y
-* 14.x.y
 
 ### End-of-life
 
