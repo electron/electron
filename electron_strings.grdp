@@ -33,6 +33,23 @@
     {SCREEN_INDEX, plural, =1{Screen #} other{Screen #}}
   </message>
 
+  <!-- File Select Helper-->
+  <message name="IDS_IMAGE_FILES" desc="The description of the image file extensions in the select file dialog.">
+    Image Files
+  </message>
+  <message name="IDS_AUDIO_FILES" desc="The description of the audio file extensions in the select file dialog.">
+    Audio Files
+  </message>
+  <message name="IDS_VIDEO_FILES" desc="The description of the video file extensions in the select file dialog.">
+    Video Files
+  </message>
+  <message name="IDS_CUSTOM_FILES" desc="The description of the custom file extensions in the select file dialog.">
+    Custom Files
+  </message>
+  <message name="IDS_DEFAULT_DOWNLOAD_FILENAME" desc="Default name for downloaded files when we have no idea what they could be.">
+    download
+  </message>
+
   <!-- Picture-in-Picture -->
   <if expr="is_macosx">
     <message name="IDS_PICTURE_IN_PICTURE_TITLE_TEXT" desc="Title of the Picture-in-Picture window. This appears in the system tray and window header.">
