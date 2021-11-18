@@ -2262,7 +2262,11 @@ jobs:
 # List all workflows
 workflows:
   docs-only:
-    when: << pipeline.parameters.run-docs-only >>
+    when:
+      and:
+        - equal: [false, << pipeline.parameters.run-macos-publish >>]
+        - equal: [false, << pipeline.parameters.run-linux-publish >>]
+        - equal: [true, << pipeline.parameters.run-docs-only >>]
     jobs:
       - ts-compile-doc-change
 
@@ -2300,7 +2304,11 @@ workflows:
         context: release-env
 
   build-linux:
-    when: << pipeline.parameters.run-build-linux >>
+    when:
+      and:
+        - equal: [false, << pipeline.parameters.run-macos-publish >>]
+        - equal: [false, << pipeline.parameters.run-linux-publish >>]
+        - equal: [true, << pipeline.parameters.run-build-linux >>]
     jobs:
       - linux-checkout-for-workspace
       - linux-make-src-cache
@@ -2353,7 +2361,11 @@ workflows:
             - linux-checkout-for-workspace
 
   build-mac:
-    when: << pipeline.parameters.run-build-mac >>
+    when:
+      and:
+        - equal: [false, << pipeline.parameters.run-macos-publish >>]
+        - equal: [false, << pipeline.parameters.run-linux-publish >>]
+        - equal: [true, << pipeline.parameters.run-build-mac >>]
     jobs:
       - mac-checkout-for-workspace
       - mac-make-src-cache
