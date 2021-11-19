@@ -35,3 +35,4 @@ cherry-pick-6de4e210688e.patch
 cherry-pick-014e1f857c33.patch
 cherry-pick-feef10137b16.patch
 merged_cppgc_fix_marking_of_ephemerons_with_keys_in_construction.patch
+cherry-pick-5d2b5e7c006c.patch
