@@ -283,6 +283,10 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       const absl::optional<url::Origin>& top_frame_origin) override;
   base::FilePath GetLoggingFileName(const base::CommandLine& cmd_line) override;
 
+  std::unique_ptr<content::AuthenticatorRequestClientDelegate>
+  GetWebAuthenticationRequestDelegate(
+      content::RenderFrameHost* render_frame_host) override;
+
   // content::RenderProcessHostObserver:
   void RenderProcessHostDestroyed(content::RenderProcessHost* host) override;
   void RenderProcessReady(content::RenderProcessHost* host) override;

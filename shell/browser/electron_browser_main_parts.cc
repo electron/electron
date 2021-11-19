@@ -17,6 +17,8 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/icon_manager.h"
+#include "chrome/browser/ui/views/chrome_layout_provider.h"
+#include "components/constrained_window/constrained_window_views.h"
 #include "components/os_crypt/os_crypt.h"
 #include "content/browser/browser_main_loop.h"  // nogncheck
 #include "content/public/browser/browser_thread.h"
@@ -42,6 +44,7 @@
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/media/media_capture_devices_dispatcher.h"
 #include "shell/browser/ui/devtools_manager_delegate.h"
+#include "shell/browser/ui/views/electron_constrained_window_views_client.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/application_info.h"
 #include "shell/common/electron_paths.h"
@@ -291,7 +294,12 @@ int ElectronBrowserMainParts::PreCreateThreads() {
 #endif
 
   if (!views::LayoutProvider::Get())
-    layout_provider_ = std::make_unique<views::LayoutProvider>();
+    // We need to use ChromeLayoutProvider as it's being used by the WebAuthn
+    // dialog, specifically by AuthenticatorRequestSheetView.
+    layout_provider_ = std::make_unique<ChromeLayoutProvider>();
+
+  constrained_window::SetConstrainedWindowViewsClient(
+      CreateElectronConstrainedWindowViewsClient());
 
   auto* command_line = base::CommandLine::ForCurrentProcess();
   std::string locale = command_line->GetSwitchValueASCII(::switches::kLang);

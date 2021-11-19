@@ -10,6 +10,7 @@
 #include "base/callback_forward.h"
 #include "base/files/file_path.h"
 #include "build/build_config.h"
+#include "ui/gfx/native_widget_types.h"
 
 class GURL;
 
@@ -41,6 +42,16 @@ void TrashItem(const base::FilePath& full_path,
                base::OnceCallback<void(bool, const std::string&)> callback);
 
 void Beep();
+
+// Returns a NativeView handle for parenting dialogs off |window|. This can be
+// used to position a dialog using a NativeWindow, when a NativeView (e.g.
+// browser tab) isn't available.
+gfx::NativeView GetViewForWindow(gfx::NativeWindow window);
+
+// Returns true if the view is visible. The exact definition of this is
+// platform-specific, but it is generally not "visible to the user", rather
+// whether the view has the visible attribute set.
+bool IsVisible(gfx::NativeView view);
 
 #if defined(OS_WIN)
 // SHGetFolderPath calls not covered by Chromium

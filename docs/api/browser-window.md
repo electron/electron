@@ -1810,6 +1810,13 @@ with `addBrowserView` or `setBrowserView`.
 **Note:** The BrowserView API is currently experimental and may change or be
 removed in future Electron releases.
 
+#### `win.setModalDialogOptions(options)`
+
+* `options` Object
+  * `marginTop` Number (optional) - Margin top of the dialog. Default is 0.
+
+Sets options for displayed modal dialogs like WebAuthn.
+
 [runtime-enabled-features]: https://cs.chromium.org/chromium/src/third_party/blink/renderer/platform/runtime_enabled_features.json5?l=70
 [page-visibility-api]: https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API
 [quick-look]: https://en.wikipedia.org/wiki/Quick_Look

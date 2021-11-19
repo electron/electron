@@ -11,18 +11,27 @@
 #include "base/memory/ptr_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
+#include "components/web_modal/web_contents_modal_dialog_host.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/color_util.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/persistent_dictionary.h"
 #include "shell/common/options_switches.h"
+#include "ui/gfx/geometry/point.h"
+#include "ui/gfx/geometry/rect.h"
+#include "ui/gfx/geometry/size.h"
 #include "ui/views/widget/widget.h"
+#include "ui/views/window/client_view.h"
 
 #if defined(OS_WIN)
 #include "ui/base/win/shell.h"
 #include "ui/display/win/screen_win.h"
 #endif
+
+using views::View;
+using web_modal::ModalDialogHostObserver;
+using web_modal::WebContentsModalDialogHost;
 
 namespace gin {
 
@@ -74,9 +83,71 @@ gfx::Size GetExpandedWindowSize(const NativeWindow* window, gfx::Size size) {
 
 }  // namespace
 
+class WebContentsModalDialogHostViews : public WebContentsModalDialogHost {
+ public:
+  explicit WebContentsModalDialogHostViews(NativeWindow* native_window)
+      : native_window_(native_window) {}
+
+  ~WebContentsModalDialogHostViews() override {
+    for (ModalDialogHostObserver& observer : observer_list_)
+      observer.OnHostDestroying();
+  }
+
+  void NotifyPositionRequiresUpdate() {
+    for (ModalDialogHostObserver& observer : observer_list_)
+      observer.OnPositionRequiresUpdate();
+  }
+
+  gfx::Point GetDialogPosition(const gfx::Size& size) override {
+    views::View* view = native_window_->content_view();
+    gfx::Rect content_area = view->ConvertRectToWidget(view->GetLocalBounds());
+    const int middle_x = content_area.x() + content_area.width() / 2;
+    const int top = margin_top_;
+    return gfx::Point(middle_x - size.width() / 2, top);
+  }
+
+  bool ShouldActivateDialog() const override {
+    // The browser Widget may be inactive if showing the dialog so instead check
+    // if the window is active before activating the dialog.
+    return native_window_->IsFocused();
+  }
+
+  gfx::Size GetMaximumDialogSize() override {
+    views::View* view = native_window_->content_view();
+    gfx::Rect content_area = view->ConvertRectToWidget(view->GetLocalBounds());
+    const int top = margin_top_;
+    return gfx::Size(content_area.width(), content_area.bottom() - top);
+  }
+
+  void SetMarginTop(int top) { margin_top_ = top; }
+
+ private:
+  gfx::NativeView GetHostView() const override {
+    return native_window_->GetNativeView();
+  }
+
+  // Add/remove observer.
+  void AddObserver(ModalDialogHostObserver* observer) override {
+    observer_list_.AddObserver(observer);
+  }
+  void RemoveObserver(ModalDialogHostObserver* observer) override {
+    observer_list_.RemoveObserver(observer);
+  }
+
+  NativeWindow* native_window_;
+
+  int margin_top_ = 0;
+
+  base::ObserverList<ModalDialogHostObserver>::Unchecked observer_list_;
+
+  DISALLOW_COPY_AND_ASSIGN(WebContentsModalDialogHostViews);
+};
+
 NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
                            NativeWindow* parent)
-    : widget_(std::make_unique<views::Widget>()), parent_(parent) {
+    : widget_(std::make_unique<views::Widget>()),
+      parent_(parent),
+      dialog_host_(std::make_unique<WebContentsModalDialogHostViews>(this)) {
   ++next_id_;
 
   options.Get(options::kFrame, &has_frame_);
@@ -681,6 +752,15 @@ void NativeWindow::SetAccessibleTitle(const std::string& title) {
 
 std::string NativeWindow::GetAccessibleTitle() {
   return base::UTF16ToUTF8(accessible_title_);
+}
+
+web_modal::WebContentsModalDialogHost*
+NativeWindow::GetWebContentsModalDialogHost() {
+  return dialog_host_.get();
+}
+
+void NativeWindow::SetModalDialogMarginTop(int top) {
+  dialog_host_->SetMarginTop(top);
 }
 
 // static

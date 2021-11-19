@@ -4,14 +4,32 @@
 
 import("//build/config/ozone.gni")
 import("//build/config/ui.gni")
+import("//chrome/browser/buildflags.gni")
 import("//components/spellcheck/spellcheck_build_features.gni")
 import("//electron/buildflags/buildflags.gni")
 import("//printing/buildflags/buildflags.gni")
 import("//third_party/widevine/cdm/widevine.gni")
 
+copy("shaded_resources_copy") {
+  deps = [ "//electron:resources" ]
+  sources = [ "$root_gen_dir/electron/grit/electron_resources.h" ]
+  outputs = [ "$target_gen_dir/chrome/grit/generated_resources.h" ]
+}
+
+config("shaded_resources_config") {
+  include_dirs = [ "$target_gen_dir" ]
+}
+
+group("shaded_resources") {
+  deps = [ ":shaded_resources_copy" ]
+  public_configs = [ ":shaded_resources_config" ]
+}
+
 # Builds some of the chrome sources that Electron depends on.
 static_library("chrome") {
   visibility = [ "//electron:electron_lib" ]
+  configs += [ "//electron/:electron_lib_config" ]
+
   sources = [
     "//chrome/browser/accessibility/accessibility_ui.cc",
     "//chrome/browser/accessibility/accessibility_ui.h",
@@ -30,6 +48,8 @@ static_library("chrome") {
     "//chrome/browser/devtools/devtools_file_system_indexer.cc",
     "//chrome/browser/devtools/devtools_file_system_indexer.h",
     "//chrome/browser/devtools/devtools_settings.h",
+    "//chrome/browser/extensions/api/web_authentication_proxy/web_authentication_proxy_service.cc",
+    "//chrome/browser/extensions/api/web_authentication_proxy/web_authentication_proxy_service.h",
     "//chrome/browser/extensions/global_shortcut_listener.cc",
     "//chrome/browser/extensions/global_shortcut_listener.h",
     "//chrome/browser/icon_loader.cc",
@@ -69,12 +89,74 @@ static_library("chrome") {
     "//chrome/browser/ui/exclusive_access/keyboard_lock_controller.h",
     "//chrome/browser/ui/exclusive_access/mouse_lock_controller.cc",
     "//chrome/browser/ui/exclusive_access/mouse_lock_controller.h",
+    "//chrome/browser/ui/views/accessibility/non_accessible_image_view.cc",
+    "//chrome/browser/ui/views/accessibility/non_accessible_image_view.h",
     "//chrome/browser/ui/views/autofill/autofill_popup_view_utils.cc",
     "//chrome/browser/ui/views/autofill/autofill_popup_view_utils.h",
+    "//chrome/browser/ui/views/chrome_layout_provider.cc",
+    "//chrome/browser/ui/views/chrome_layout_provider.h",
+    "//chrome/browser/ui/views/chrome_typography.cc",
+    "//chrome/browser/ui/views/chrome_typography.h",
+    "//chrome/browser/ui/views/chrome_typography_provider.cc",
+    "//chrome/browser/ui/views/chrome_typography_provider.h",
     "//chrome/browser/ui/views/eye_dropper/eye_dropper.cc",
     "//chrome/browser/ui/views/eye_dropper/eye_dropper.h",
     "//chrome/browser/ui/views/eye_dropper/eye_dropper_view.cc",
     "//chrome/browser/ui/views/eye_dropper/eye_dropper_view.h",
+    "//chrome/browser/ui/views/hover_button.cc",
+    "//chrome/browser/ui/views/hover_button.h",
+    "//chrome/browser/ui/views/hover_button_controller.cc",
+    "//chrome/browser/ui/views/hover_button_controller.h",
+    "//chrome/browser/ui/views/md_text_button_with_down_arrow.cc",
+    "//chrome/browser/ui/views/md_text_button_with_down_arrow.h",
+    "//chrome/browser/ui/views/webauthn/authenticator_bio_enrollment_sheet_view.cc",
+    "//chrome/browser/ui/views/webauthn/authenticator_bio_enrollment_sheet_view.h",
+    "//chrome/browser/ui/views/webauthn/authenticator_client_pin_entry_sheet_view.cc",
+    "//chrome/browser/ui/views/webauthn/authenticator_client_pin_entry_sheet_view.h",
+    "//chrome/browser/ui/views/webauthn/authenticator_client_pin_entry_view.cc",
+    "//chrome/browser/ui/views/webauthn/authenticator_client_pin_entry_view.h",
+    "//chrome/browser/ui/views/webauthn/authenticator_paask_sheet_view.cc",
+    "//chrome/browser/ui/views/webauthn/authenticator_paask_sheet_view.h",
+    "//chrome/browser/ui/views/webauthn/authenticator_qr_sheet_view.cc",
+    "//chrome/browser/ui/views/webauthn/authenticator_qr_sheet_view.h",
+    "//chrome/browser/ui/views/webauthn/authenticator_request_dialog_view.cc",
+    "//chrome/browser/ui/views/webauthn/authenticator_request_dialog_view.h",
+    "//chrome/browser/ui/views/webauthn/authenticator_request_sheet_view.cc",
+    "//chrome/browser/ui/views/webauthn/authenticator_request_sheet_view.h",
+    "//chrome/browser/ui/views/webauthn/authenticator_select_account_sheet_view.cc",
+    "//chrome/browser/ui/views/webauthn/authenticator_select_account_sheet_view.h",
+    "//chrome/browser/ui/views/webauthn/hover_list_view.cc",
+    "//chrome/browser/ui/views/webauthn/hover_list_view.h",
+    "//chrome/browser/ui/views/webauthn/ring_progress_bar.cc",
+    "//chrome/browser/ui/views/webauthn/ring_progress_bar.h",
+    "//chrome/browser/ui/views/webauthn/sheet_view_factory.cc",
+    "//chrome/browser/ui/views/webauthn/sheet_view_factory.h",
+    "//chrome/browser/ui/views/webauthn/webauthn_hover_button.cc",
+    "//chrome/browser/ui/views/webauthn/webauthn_hover_button.h",
+    "//chrome/browser/ui/webauthn/account_hover_list_model.cc",
+    "//chrome/browser/ui/webauthn/account_hover_list_model.h",
+    "//chrome/browser/ui/webauthn/authenticator_request_sheet_model.cc",
+    "//chrome/browser/ui/webauthn/authenticator_request_sheet_model.h",
+    "//chrome/browser/ui/webauthn/hover_list_model.h",
+    "//chrome/browser/ui/webauthn/other_mechanisms_menu_model.cc",
+    "//chrome/browser/ui/webauthn/other_mechanisms_menu_model.h",
+    "//chrome/browser/ui/webauthn/sheet_models.cc",
+    "//chrome/browser/ui/webauthn/sheet_models.h",
+    "//chrome/browser/ui/webauthn/transport_hover_list_model.cc",
+    "//chrome/browser/ui/webauthn/transport_hover_list_model.h",
+    "//chrome/browser/ui/webauthn/webauthn_ui_helpers.cc",
+    "//chrome/browser/ui/webauthn/webauthn_ui_helpers.h",
+    "//chrome/browser/webauthn/authenticator_reference.cc",
+    "//chrome/browser/webauthn/authenticator_reference.h",
+    "//chrome/browser/webauthn/authenticator_request_dialog_model.cc",
+    "//chrome/browser/webauthn/authenticator_request_dialog_model.h",
+    "//chrome/browser/webauthn/authenticator_request_scheduler.cc",
+    "//chrome/browser/webauthn/authenticator_request_scheduler.h",
+    "//chrome/browser/webauthn/authenticator_transport.h",
+    "//chrome/browser/webauthn/chrome_authenticator_request_delegate.cc",
+    "//chrome/browser/webauthn/chrome_authenticator_request_delegate.h",
+    "//chrome/browser/webauthn/observable_authenticator_list.cc",
+    "//chrome/browser/webauthn/observable_authenticator_list.h",
     "//extensions/browser/app_window/size_constraints.cc",
     "//extensions/browser/app_window/size_constraints.h",
   ]
@@ -138,8 +220,11 @@ static_library("chrome") {
   ]
 
   deps = [
+    ":shaded_resources",
+    "//chrome/browser:buildflags",
     "//chrome/browser:resource_prefetch_predictor_proto",
     "//components/optimization_guide/proto:optimization_guide_proto",
+    "//components/qr_code_generator",
   ]
 
   if (enable_basic_printing && is_win) {

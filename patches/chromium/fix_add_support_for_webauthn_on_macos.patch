@@ -1,0 +1,315 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Eric Rahm <ericrahm@gmail.com>
+Date: Mon, 22 Nov 2021 12:49:32 -0800
+Subject: fix: Add support for WebAuthn on macOS
+
+Adds support for WebAuthn by including existing Chromium support and modifying
+parts that rely on Chromium specific features.
+
+diff --git a/chrome/browser/ui/views/chrome_typography.cc b/chrome/browser/ui/views/chrome_typography.cc
+index 2383687aee31ceaa961e8b76898851d5fbf6567d..2175d1f6b8006b2d820f6819b56156234ed9a8e0 100644
+--- a/chrome/browser/ui/views/chrome_typography.cc
++++ b/chrome/browser/ui/views/chrome_typography.cc
+@@ -5,7 +5,6 @@
+ #include "chrome/browser/ui/views/chrome_typography.h"
+ 
+ #include "build/build_config.h"
+-#include "chrome/browser/ui/views/location_bar/location_bar_view.h"
+ #include "ui/base/default_style.h"
+ #include "ui/base/pointer/touch_ui_controller.h"
+ #include "ui/base/resource/resource_bundle.h"
+@@ -75,7 +74,8 @@ void ApplyCommonFontStyles(int context,
+     case CONTEXT_OMNIBOX_DEEMPHASIZED: {
+       const int omnibox_primary_delta =
+           GetFontSizeDeltaBoundedByAvailableHeight(
+-              LocationBarView::GetAvailableTextHeight(),
++              // LocationBarView::GetAvailableTextHeight(),
++              ui::TouchUiController::Get()->touch_ui() ? 15 : 14,
+               ui::TouchUiController::Get()->touch_ui() ? 15 : 14);
+       details.size_delta = omnibox_primary_delta;
+       if (context == CONTEXT_OMNIBOX_DEEMPHASIZED)
+@@ -90,7 +90,8 @@ void ApplyCommonFontStyles(int context,
+       // so don't bother starting at 14.
+       const int omnibox_decoration_delta =
+           GetFontSizeDeltaBoundedByAvailableHeight(
+-              LocationBarView::GetAvailableDecorationTextHeight(), 11);
++              // LocationBarView::GetAvailableDecorationTextHeight()
++              11, 11);
+       details.size_delta = omnibox_decoration_delta;
+       break;
+     }
+diff --git a/chrome/browser/ui/views/webauthn/authenticator_request_dialog_view.cc b/chrome/browser/ui/views/webauthn/authenticator_request_dialog_view.cc
+index f6aad068ffc43dab0eb528a3ba59398815a133ac..67e6faacc7a2c0478c264962e51da9b0bae7ece5 100644
+--- a/chrome/browser/ui/views/webauthn/authenticator_request_dialog_view.cc
++++ b/chrome/browser/ui/views/webauthn/authenticator_request_dialog_view.cc
+@@ -13,11 +13,11 @@
+ #include "chrome/browser/ui/views/webauthn/authenticator_request_sheet_view.h"
+ #include "chrome/browser/ui/views/webauthn/sheet_view_factory.h"
+ #include "chrome/browser/ui/webauthn/authenticator_request_sheet_model.h"
+-#include "chrome/grit/generated_resources.h"
+ #include "components/constrained_window/constrained_window_views.h"
+ #include "components/strings/grit/components_strings.h"
+ #include "components/web_modal/web_contents_modal_dialog_manager.h"
+ #include "components/web_modal/web_contents_modal_dialog_manager_delegate.h"
++#include "electron/grit/electron_resources.h"
+ #include "ui/base/l10n/l10n_util.h"
+ #include "ui/base/metadata/metadata_impl_macros.h"
+ #include "ui/gfx/color_utils.h"
+diff --git a/chrome/browser/ui/views/webauthn/authenticator_request_sheet_view.cc b/chrome/browser/ui/views/webauthn/authenticator_request_sheet_view.cc
+index 3913b4865be6126af401f656a5eb6e6e5272b933..6a6eb0b22c080ea6db05931c606d82f074059ed9 100644
+--- a/chrome/browser/ui/views/webauthn/authenticator_request_sheet_view.cc
++++ b/chrome/browser/ui/views/webauthn/authenticator_request_sheet_view.cc
+@@ -11,9 +11,9 @@
+ #include "chrome/browser/ui/views/chrome_typography.h"
+ #include "chrome/browser/ui/webauthn/authenticator_request_sheet_model.h"
+ #include "chrome/browser/webauthn/authenticator_request_dialog_model.h"
+-#include "chrome/grit/generated_resources.h"
+ #include "components/strings/grit/components_strings.h"
+ #include "components/vector_icons/vector_icons.h"
++#include "electron/grit/electron_resources.h"
+ #include "ui/base/l10n/l10n_util.h"
+ #include "ui/base/metadata/metadata_impl_macros.h"
+ #include "ui/gfx/color_utils.h"
+diff --git a/chrome/browser/ui/webauthn/sheet_models.cc b/chrome/browser/ui/webauthn/sheet_models.cc
+index 53f622e5d54d7a3ebf68a7e97e4ace8287f554ba..9ed2695f91fbb916864b2caa02095b473a0af332 100644
+--- a/chrome/browser/ui/webauthn/sheet_models.cc
++++ b/chrome/browser/ui/webauthn/sheet_models.cc
+@@ -19,12 +19,12 @@
+ #include "chrome/app/vector_icons/vector_icons.h"
+ #include "chrome/browser/ui/webauthn/other_mechanisms_menu_model.h"
+ #include "chrome/browser/ui/webauthn/webauthn_ui_helpers.h"
+-#include "chrome/grit/generated_resources.h"
+ #include "components/strings/grit/components_strings.h"
+ #include "components/url_formatter/elide_url.h"
+ #include "device/fido/authenticator_get_assertion_response.h"
+ #include "device/fido/features.h"
+ #include "device/fido/fido_types.h"
++#include "electron/grit/electron_resources.h"
+ #include "ui/base/l10n/l10n_util.h"
+ #include "ui/gfx/font_list.h"
+ #include "ui/gfx/text_utils.h"
+diff --git a/chrome/browser/webauthn/authenticator_request_dialog_model.cc b/chrome/browser/webauthn/authenticator_request_dialog_model.cc
+index 60c4c6abefd4ffcbb30374dd8d455c5dea3a75ae..2bb3aec2abc0488c814d443681806ca6d7ed17a1 100644
+--- a/chrome/browser/webauthn/authenticator_request_dialog_model.cc
++++ b/chrome/browser/webauthn/authenticator_request_dialog_model.cc
+@@ -15,12 +15,12 @@
+ #include "base/threading/sequenced_task_runner_handle.h"
+ #include "build/build_config.h"
+ #include "chrome/app/vector_icons/vector_icons.h"
+-#include "chrome/grit/generated_resources.h"
+ #include "components/vector_icons/vector_icons.h"
+ #include "device/fido/features.h"
+ #include "device/fido/fido_authenticator.h"
+ #include "device/fido/pin.h"
+ #include "device/fido/public_key_credential_user_entity.h"
++#include "electron/grit/electron_resources.h"
+ #include "ui/base/l10n/l10n_util.h"
+ #include "ui/gfx/text_elider.h"
+ 
+diff --git a/chrome/browser/webauthn/chrome_authenticator_request_delegate.cc b/chrome/browser/webauthn/chrome_authenticator_request_delegate.cc
+index 2becd355dbd04d80ce9effe0ae21778e7d181a42..4c1a10abb684dfc855ed554ae49d45ed6a4098aa 100644
+--- a/chrome/browser/webauthn/chrome_authenticator_request_delegate.cc
++++ b/chrome/browser/webauthn/chrome_authenticator_request_delegate.cc
+@@ -21,7 +21,6 @@
+ #include "build/chromeos_buildflags.h"
+ #include "chrome/browser/extensions/api/web_authentication_proxy/web_authentication_proxy_service.h"
+ #include "chrome/browser/net/system_network_context_manager.h"
+-#include "chrome/browser/profiles/profile.h"
+ #include "chrome/browser/sync/device_info_sync_service_factory.h"
+ #include "chrome/browser/ui/browser.h"
+ #include "chrome/browser/ui/browser_finder.h"
+@@ -32,7 +31,6 @@
+ #include "chrome/common/chrome_switches.h"
+ #include "chrome/common/chrome_version.h"
+ #include "chrome/common/pref_names.h"
+-#include "chrome/grit/generated_resources.h"
+ #include "components/device_event_log/device_event_log.h"
+ #include "components/pref_registry/pref_registry_syncable.h"
+ #include "components/prefs/pref_service.h"
+@@ -50,6 +48,8 @@
+ #include "device/fido/features.h"
+ #include "device/fido/fido_authenticator.h"
+ #include "device/fido/fido_discovery_factory.h"
++#include "electron/grit/electron_resources.h"
++#include "electron/shell/browser/electron_browser_context.h"
+ #include "ui/base/l10n/l10n_util.h"
+ 
+ #if defined(OS_MAC)
+@@ -66,6 +66,8 @@
+ #include "ui/aura/window.h"
+ #endif
+ 
++using electron::ElectronBrowserContext;
++
+ namespace {
+ 
+ ChromeAuthenticatorRequestDelegate::TestObserver* g_observer = nullptr;
+@@ -75,8 +77,8 @@ ChromeAuthenticatorRequestDelegate::TestObserver* g_observer = nullptr;
+ bool IsWebauthnRPIDListedInEnterprisePolicy(
+     content::BrowserContext* browser_context,
+     const std::string& relying_party_id) {
+-  const Profile* profile = Profile::FromBrowserContext(browser_context);
+-  const PrefService* prefs = profile->GetPrefs();
++  const auto* profile = static_cast<ElectronBrowserContext*>(browser_context);
++  const PrefService* prefs = profile->prefs();
+   const base::ListValue* permit_attestation =
+       prefs->GetList(prefs::kSecurityKeyPermitAttestation);
+   return std::any_of(permit_attestation->GetList().begin(),
+@@ -236,16 +238,16 @@ bool ChromeWebAuthenticationDelegate::IsFocused(
+ // static
+ ChromeWebAuthenticationDelegate::TouchIdAuthenticatorConfig
+ ChromeWebAuthenticationDelegate::TouchIdAuthenticatorConfigForProfile(
+-    Profile* profile) {
++    ElectronBrowserContext* profile) {
+   constexpr char kKeychainAccessGroup[] =
+       MAC_TEAM_IDENTIFIER_STRING "." MAC_BUNDLE_IDENTIFIER_STRING ".webauthn";
+ 
+   std::string metadata_secret =
+-      profile->GetPrefs()->GetString(kWebAuthnTouchIdMetadataSecretPrefName);
++      profile->prefs()->GetString(kWebAuthnTouchIdMetadataSecretPrefName);
+   if (metadata_secret.empty() ||
+       !base::Base64Decode(metadata_secret, &metadata_secret)) {
+     metadata_secret = device::fido::mac::GenerateCredentialMetadataSecret();
+-    profile->GetPrefs()->SetString(
++    profile->prefs()->SetString(
+         kWebAuthnTouchIdMetadataSecretPrefName,
+         base::Base64Encode(base::as_bytes(base::make_span(metadata_secret))));
+   }
+@@ -259,7 +261,7 @@ absl::optional<ChromeWebAuthenticationDelegate::TouchIdAuthenticatorConfig>
+ ChromeWebAuthenticationDelegate::GetTouchIdAuthenticatorConfig(
+     content::BrowserContext* browser_context) {
+   return TouchIdAuthenticatorConfigForProfile(
+-      Profile::FromBrowserContext(browser_context));
++      static_cast<ElectronBrowserContext*>(browser_context));
+ }
+ #endif  // defined(OS_MAC)
+ 
+@@ -294,6 +296,7 @@ absl::optional<bool> ChromeWebAuthenticationDelegate::
+   }
+ #endif
+ 
++#if 0
+   // Chrome disables platform authenticators is Guest sessions. They may be
+   // available (behind an additional interstitial) in Incognito mode.
+   Profile* profile =
+@@ -301,6 +304,7 @@ absl::optional<bool> ChromeWebAuthenticationDelegate::
+   if (profile->IsGuestSession()) {
+     return false;
+   }
++#endif
+ 
+   return absl::nullopt;
+ }
+@@ -624,10 +628,12 @@ void ChromeAuthenticatorRequestDelegate::OnTransportAvailabilityEnumerated(
+ 
+   content::WebContents* web_contents =
+       content::WebContents::FromRenderFrameHost(GetRenderFrameHost());
++#if 0
+   Browser* browser = chrome::FindBrowserWithWebContents(web_contents);
+   if (browser) {
+     browser->window()->UpdatePageActionIcon(PageActionIconType::kWebAuthn);
+   }
++#endif
+ 
+   ShowAuthenticatorRequestDialog(web_contents,
+                                  std::move(transient_dialog_model_holder_));
+@@ -791,6 +797,7 @@ static std::string NameForDisplay(base::StringPiece raw_name) {
+   return base::UTF16ToUTF8(nonbreaking_name);
+ }
+ 
++#if 0
+ // PairingFromSyncedDevice extracts the caBLEv2 information from Sync's
+ // DeviceInfo (if any) into a caBLEv2 pairing. It may return nullptr.
+ static std::unique_ptr<device::cablev2::Pairing> PairingFromSyncedDevice(
+@@ -859,14 +866,16 @@ static std::unique_ptr<device::cablev2::Pairing> PairingFromSyncedDevice(
+ 
+   return pairing;
+ }
++#endif
+ 
+ static std::vector<std::unique_ptr<device::cablev2::Pairing>>
+-GetCablePairingsFromSyncedDevices(Profile* profile) {
++GetCablePairingsFromSyncedDevices(ElectronBrowserContext* profile) {
+   if (g_observer) {
+     return g_observer->GetCablePairingsFromSyncedDevices();
+   }
+ 
+   std::vector<std::unique_ptr<device::cablev2::Pairing>> ret;
++#if 0
+   syncer::DeviceInfoSyncService* const sync_service =
+       DeviceInfoSyncServiceFactory::GetForProfile(profile);
+   if (!sync_service) {
+@@ -887,26 +896,29 @@ GetCablePairingsFromSyncedDevices(Profile* profile) {
+     }
+     ret.emplace_back(std::move(pairing));
+   }
++#endif
+ 
+   return ret;
+ }
+ 
+ std::vector<std::unique_ptr<device::cablev2::Pairing>>
+ ChromeAuthenticatorRequestDelegate::GetCablePairings() {
+-  Profile* profile = Profile::FromBrowserContext(GetBrowserContext());
++  auto* profile = static_cast<ElectronBrowserContext*>(GetBrowserContext());
++#if 0
+   if (profile->IsOffTheRecord()) {
+     // For Incognito windows we collect the devices from the parent profile.
+     // The |AuthenticatorRequestDialogModel| will notice that it's an OTR
+     // profile and display a confirmation interstitial for makeCredential calls.
+     profile = profile->GetOriginalProfile();
+   }
++#endif
+ 
+   std::vector<std::unique_ptr<device::cablev2::Pairing>> ret =
+       GetCablePairingsFromSyncedDevices(profile);
+   std::sort(ret.begin(), ret.end(),
+             device::cablev2::Pairing::CompareByMostRecentFirst);
+ 
+-  PrefService* const prefs = profile->GetPrefs();
++  PrefService* const prefs = profile->prefs();
+   const base::ListValue* pref_pairings =
+       prefs->GetList(kWebAuthnCablePairingsPrefName);
+ 
+@@ -972,7 +984,7 @@ void ChromeAuthenticatorRequestDelegate::HandleCablePairingEvent(
+     // A pairing was reported to be invalid. Delete it unless it came from Sync,
+     // in which case there's nothing to be done.
+     ListPrefUpdate update(
+-        Profile::FromBrowserContext(GetBrowserContext())->GetPrefs(),
++        static_cast<ElectronBrowserContext*>(GetBrowserContext())->prefs(),
+         kWebAuthnCablePairingsPrefName);
+     DeleteCablePairingByPublicKey(
+         update.Get(), Base64(phone_public_keys_[*failed_contact_index]));
+@@ -998,7 +1010,7 @@ void ChromeAuthenticatorRequestDelegate::HandleCablePairingEvent(
+   // that session. While an argument could be made that it's safe to persist
+   // such pairing for longer, this seems like the safe option initially.
+   ListPrefUpdate update(
+-      Profile::FromBrowserContext(GetBrowserContext())->GetPrefs(),
++      static_cast<ElectronBrowserContext*>(GetBrowserContext())->prefs(),
+       kWebAuthnCablePairingsPrefName);
+ 
+   // Otherwise the event is a new pairing.
+diff --git a/chrome/browser/webauthn/chrome_authenticator_request_delegate.h b/chrome/browser/webauthn/chrome_authenticator_request_delegate.h
+index 2372ca3628b86faf7b8b2cbf092aae4e4da34523..115275fb24725729c312f28162669829891a7978 100644
+--- a/chrome/browser/webauthn/chrome_authenticator_request_delegate.h
++++ b/chrome/browser/webauthn/chrome_authenticator_request_delegate.h
+@@ -22,7 +22,9 @@
+ #include "device/fido/fido_transport_protocol.h"
+ #include "third_party/abseil-cpp/absl/types/optional.h"
+ 
+-class Profile;
++namespace electron {
++class ElectronBrowserContext;
++}
+ 
+ namespace content {
+ class BrowserContext;
+@@ -47,7 +49,7 @@ class ChromeWebAuthenticationDelegate
+   // Returns a configuration struct for instantiating the macOS WebAuthn
+   // platform authenticator for the given Profile.
+   static TouchIdAuthenticatorConfig TouchIdAuthenticatorConfigForProfile(
+-      Profile* profile);
++      electron::ElectronBrowserContext* profile);
+ #endif  // defined(OS_MAC)
+ 
+   ~ChromeWebAuthenticationDelegate() override;

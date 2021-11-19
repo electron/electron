@@ -416,6 +416,8 @@ source_set("electron_lib") {
   public_deps = [
     "//base",
     "//base:i18n",
+    "//components/constrained_window",
+    "//components/web_modal",
     "//content/public/app",
   ]
 

@@ -112,3 +112,4 @@ mas_gate_private_enterprise_APIs
 load_v8_snapshot_in_browser_process.patch
 fix_patch_out_permissions_checks_in_exclusive_access.patch
 fix_aspect_ratio_with_max_size.patch
+fix_add_support_for_webauthn_on_macos.patch

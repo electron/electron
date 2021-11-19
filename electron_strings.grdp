@@ -145,4 +145,505 @@
   </message>
   <message name="IDS_HID_CHOOSER_ITEM_WITHOUT_NAME" desc="User option displaying the device IDs for a Human Interface Device (HID) without a device name.">
         Unknown Device (<ph name="DEVICE_ID">$1<ex>1234:abcd</ex></ph>) </message>
+
+  <!-- Webauthn dialog --> 
+  <message name="IDS_BACK_BUTTON_AUTHENTICATOR_REQUEST_DIALOG" desc="A back button for authenticator request dialog.">
+        Go back
+  </message>
+  <if expr="is_win or is_macosx or desktop_linux">
+    <message name="IDS_WEBAUTHN_GENERIC_TITLE" desc="Title of most dialogs shown while the user is authenticating on a web site using a security key.">
+      Use your security key with <ph name="APP_NAME">$1<ex>google.com</ex></ph>
+    </message>
+    <message name="IDS_WEBAUTHN_CONTINUE" desc="Label of a button to continue in the dialog shown when using a security key.">
+      Continue
+    </message>
+    <message name="IDS_WEBAUTHN_TRANSPORT_SELECTION_TITLE" desc="Title of the dialog instructing the user to choose how they want to connect their security key with their computer, e.g. USB or Bluetooth.">
+      Verify your identity with <ph name="APP_NAME">$1<ex>google.com</ex></ph>
+    </message>
+    <message name="IDS_WEBAUTHN_TRANSPORT_SELECTION_DESCRIPTION" desc="Description in the dialog instructing the user to choose how they want to connect their security key with their computer, e.g. USB or Bluetooth.">
+      Pick an option
+    </message>
+    <message name="IDS_WEBAUTHN_TRANSPORT_USB" desc="Menu item text. The user selects this to use a security key (an external physical device for user authentication) plugged in to the USB port of the computer.">
+      USB security key
+    </message>
+    <message name="IDS_WEBAUTHN_TRANSPORT_NFC" desc="Menu item text. The user selects this to use a security key (an external physical device for user authentication) connected to the computer over Near-Field Communication.">
+      NFC security key
+    </message>
+    <message name="IDS_WEBAUTHN_TRANSPORT_INTERNAL" desc="Menu item text. The user selects this to use a hardware-based authentication mechanism that is built in to the computer, such as a fingerprint reader.">
+      This device
+    </message>
+    <message name="IDS_WEBAUTHN_TRANSPORT_CABLE" desc="Menu item text. The user selects this to use their phone, once connected to their computer over Bluetooth Low Energy, to sign in to web site on their computer.">
+      Your phone
+    </message>
+    <message name="IDS_WEBAUTHN_TRANSPORT_AOA" desc="Menu item text. The user selects this to use their phone, once physically connected with a USB cable, to sign in to a web site on their computer. This appears next to the similar string 'Your phone' with TC ID 4865460888230929643.">
+      Your phone with a USB cable
+    </message>
+    <message name="IDS_WEBAUTHN_TRANSPORT_POPUP_DIFFERENT_AUTHENTICATOR_WIN" desc="Menu item text. The user selects this to use a security key (an external physical device for user authentication) connected to the computer, or a hardware-based authentication mechanism that is built in to the computer, such as a fingerprint reader.">
+      External security key or built-in sensor
+    </message>
+    <message name="IDS_WEBAUTHN_USB_ACTIVATE_DESCRIPTION" desc="Description in the dialog instructing the user to plug in and activate (e.g. press a button on) their USB security key (an external physical device for user authentication).">
+      Insert your security key and touch it
+    </message>
+    <message name="IDS_WEBAUTHN_ERROR_GENERIC_TITLE" desc="Title of most dialogs shown when an error occurs while the user trying to sign in to a web site using a hardware-based authentication mechanism.">
+      Something went wrong
+    </message>
+    <message name="IDS_WEBAUTHN_ERROR_WRONG_KEY_TITLE" desc="Title of the dialog informing the user that they are trying to register a security key (an external physical device for user authentication) that they have already registered with the given web site before or they are trying to sign in to a given web site with a key they have not previously registered on that site.">
+      Try a different security key
+    </message>
+    <message name="IDS_WEBAUTHN_ERROR_WRONG_KEY_REGISTER_DESCRIPTION" desc="Description in the dialog informing the user that they are trying to register a security key (an external physical device for user authentication) that they have already registered with the given web site before.">
+      You already registered this security key. You don't have to register it again.
+    </message>
+    <message name="IDS_WEBAUTHN_ERROR_WRONG_KEY_SIGN_DESCRIPTION" desc="Description in the dialog informing the user that they are trying to use the wrong security key (an external physical device for user authentication) to sign in to a given web site, that is, not the one they have previously registered on that site.">
+      You're using a security key that's not registered with this website
+    </message>
+    <message name="IDS_WEBAUTHN_ERROR_TIMEOUT_DESCRIPTION" desc="Description in the dialog shown when the user takes too long to sign in to a web site using a hardware-based authentication mechanism.">
+      The request timed out
+    </message>
+    <message name="IDS_WEBAUTHN_ERROR_INTERNAL_UNRECOGNIZED_TITLE" desc="Title of the dialog shown when the user's could not sign in to a web site using a hardware-based authentication mechanism built in to the computer (e.g. a fingerprint reader), because they never registered the device with this website before.">
+      Something went wrong
+    </message>
+    <message name="IDS_WEBAUTHN_ERROR_INTERNAL_UNRECOGNIZED_DESCRIPTION" desc="Description in the dialog shown when the user's could not sign in to a web site using a hardware-based authentication mechanism built in to the computer (e.g. a fingerprint reader), because they never registered the device with this website before.">
+      Your identity couldn't be verified
+    </message>
+    <message name="IDS_WEBAUTHN_ERROR_NO_TRANSPORTS_TITLE" desc="Title of the dialog shown when the user could not sign in to a web site, because their computer did not support any of the hardware-based authentication mechanisms desired by the web site.">
+      Your identity couldn't be verified
+    </message>
+    <message name="IDS_WEBAUTHN_ERROR_NO_TRANSPORTS_DESCRIPTION" desc="Description in the dialog shown when the user could not sign in to a web site, because their computer did not support any of the hardware-based authentication mechanisms desired by the web site.">
+      This device doesn't support the type of security key requested by this website
+    </message>
+    <message name="IDS_WEBAUTHN_BLUETOOTH_POWER_ON_AUTO_TITLE" desc="Title of the dialog informing the user that Chrome needs to turn on Bluetooth by itself so that security keys can be used over Bluetooth.">
+      Turn on Bluetooth?
+    </message>
+    <message name="IDS_WEBAUTHN_BLUETOOTH_POWER_ON_AUTO_DESCRIPTION" desc="Description in the dialog informing the user that Chrome needs to turn on Bluetooth by itself so that security keys (external physical devices for user authentication) can be used over Bluetooth.">
+      Bluetooth will be temporarily turned on to communicate with your security key
+    </message>
+    <message name="IDS_WEBAUTHN_BLUETOOTH_POWER_ON_AUTO_NEXT" desc="Button text to allow Chrome to turn on Bluetooth so that security keys can be used over Bluetooth.">
+      Turn on
+    </message>
+    <message name="IDS_WEBAUTHN_BLUETOOTH_POWER_ON_MANUAL_TITLE" desc="Title of the dialog requesting the user to manually turn on Bluetooth so that security keys can be used over Bluetooth.">
+      Bluetooth is disabled
+    </message>
+    <message name="IDS_WEBAUTHN_BLUETOOTH_POWER_ON_MANUAL_DESCRIPTION" desc="Description in the dialog requesting the user to manually turn on Bluetooth so that security keys (external physical devices for user authentication)can be used over Bluetooth.">
+      Check your device settings and turn it on to continue
+    </message>
+    <message name="IDS_WEBAUTHN_BLUETOOTH_POWER_ON_MANUAL_NEXT" desc="Button text. The user clicks this once they manually turned on Bluetooth, so that Chrome would retry connecting to security keys over Bluetooth.">
+      Try again
+    </message>
+    <message name="IDS_WEBAUTHN_TRANSPORT_POPUP_LABEL" desc="Menu item text. The user selects this to verify their identity on a web site (i.e. sign in) using a different hardware-based authentication mechanism from what they have selected previously.">
+      Choose another option
+    </message>
+    <message name="IDS_WEBAUTHN_TRANSPORT_POPUP_USB" desc="Menu item text. The user selects this to verify their identity on a web site (i.e. sign in) using a security key (an external physical device for user authentication) plugged in to the USB port of the computer.">
+      Verify via USB
+    </message>
+    <message name="IDS_WEBAUTHN_TRANSPORT_POPUP_PAIR_PHONE" desc="Menu item text. The user selects this to begin the process of pairing with a previously unknown smartphone.">
+      Pair with new phone
+    </message>
+    <message name="IDS_WEBAUTHN_TRANSPORT_POPUP_NFC" desc="Menu item text. The user selects this to verify their identity on a web site (i.e. sign in) using a security key (an external physical device for user authentication) connected to the computer over Near-Field Communication.">
+      Verify via NFC
+    </message>
+    <message name="IDS_WEBAUTHN_TRANSPORT_POPUP_INTERNAL" desc="Menu item text. The user selects this to verify their identity on a web site (i.e. sign in) using a hardware-based authentication mechanism that is built in to the computer, such as a fingerprint reader.">
+      Use this device
+    </message>
+    <message name="IDS_WEBAUTHN_TRANSPORT_POPUP_CABLE" desc="Menu item text. The user selects this to verify their identity on a web site (i.e. sign in) using their phone. They wirelessly connect their phone to their computer over Bluetooth Low Energy, and then use the phone to sign in to web sites on their computer.">
+      Verify via your phone
+    </message>
+    <message name="IDS_WEBAUTHN_TRANSPORT_POPUP_AOA" desc="Menu item text. The user selects this to verify their identity on a web site (i.e. sign in) using their phone. They physically connect the phone with a USB cable. This appears next to the similar string 'Verify via your phone' with TC ID 4577976468067558540.">
+      Verify via your phone with a USB cable
+    </message>
+    <message name="IDS_WEBAUTHN_CABLE_ACTIVATE_TITLE" desc="Title of the dialog shown when the user tries to sign-in using a phone as a security key.">
+      Check your phone
+    </message>
+    <message name="IDS_WEBAUTHN_CABLE_ACTIVATE_DESCRIPTION" desc="Contents of the dialog shown when the user tries to sign-in using a phone as a security key.">
+      A notification was sent to your phone to confirm it's you.
+    </message>
+
+    <message name="IDS_WEBAUTHN_CABLEV2_SERVERLINK_DESCRIPTION" desc="Contents of the dialog shown when the user tries to sign-in using a phone as a security key. The second placeholder will be replaced by the contents of the translated string IDS_WEBAUTHN_CABLEV2_SERVERLINK_TROUBLE. A placeholder is used for this because that link will be styled as a clickable link. The word 'Yes' will appear on the phone and is TC ID 6139894934866548097.">
+      <ph name="WEBSITE"><ex>accounts.google.com</ex>$1</ph> sent a notification to your phone. Tap Yes to confirm it's you. <ph name="LINK"><ex>Didn't get it?</ex>$2</ph>
+    </message>
+    <message name="IDS_WEBAUTHN_CABLEV2_SERVERLINK_TROUBLE" desc="This message is shown as a link inside of IDS_WEBAUTHN_CABLEV2_SERVERLINK_DESCRIPTION and replaces placeholder two. The 'it' referenced here is the notification mentioned in that message.">
+      Didn't get it?
+    </message>
+    <message name="IDS_WEBAUTHN_CABLEV2_AOA_TITLE" desc="Contents of the dialog shown when the user tries to sign-in using a phone as a security key. The 'cable' is a physical USB cable.">
+      Connect your phone with a cable
+    </message>
+    <message name="IDS_WEBAUTHN_CABLEV2_AOA_DESCRIPTION" desc="Contents of the dialog shown when the user tries to sign-in using a phone as a security key.">
+      Use a USB cable to connect your phone to your computer. If your phone is already connected, unplug it and plug it back in.
+    </message>
+    <message name="IDS_WEBAUTHN_CABLEV2_AOA_REQUEST_DESCRIPTION" desc="Potentially displayed in a permissions dialog on Android to describe the type of request that a computer, that is connected over USB, is making. In this context the request from the computer is to use the Android device as a security key. A 'security key' is typically a physical USB token used for authentication (e.g. a gNubby) but in this case the phone is acting as one. The translation of 'security key' should match the phrase used in TC IDs such as 1685482178220389035 and 7775033610159191691">
+      Security key request
+    </message>
+    <message name="IDS_WEBAUTHN_CABLEV2_2ND_FACTOR_DESCRIPTION" desc="The contents of a dialog shown when the user tries to sign-in using a phone as a security key, or tries to register their phone as a security key for a future sign-in. A security key is traditionally a small USB device that is touched to confirm a sign-in (e.g. a gNubby) and, in this context, the phone is replacing the need for a separate device. The placeholder for the notification title will be replaced with the string that will appear in the notification on the phone. These messages are 4300134428943426639 and 581442427601260656.">
+      <ph name="WEBSITE"><ex>accounts.google.com</ex>$1</ph> sent a notification to your phone. To confirm it's you, tap the “<ph name="NOTIFICATIONTITLE"><ex>Verify with this phone</ex>$2</ph>” notification and follow the steps.
+    </message>
+
+    <message name="IDS_WEBAUTHN_CABLE_ACTIVATE_DESCRIPTION_SHORT" desc="Second line of text in an item letting the user know that they can use their phone as a security key. The user needs to check their phone and respond to a notification that will ask them to press a button on the phone's screen to confirm that they're logging in.">
+      Unlock your phone and confirm it's you
+    </message>
+    <message name="IDS_WEBAUTHN_CABLE_V2_ACTIVATE_TITLE" desc="Title of the dialog shown when the user tries to sign-in using a phone as a security key.">
+      Use your Android phone as a security key
+    </message>
+    <message name="IDS_WEBAUTHN_CABLE_V2_ACTIVATE_DESCRIPTION_SHORT" desc="Second line of text in an item letting the user know how they can use Chrome on their Android phone as a security key. The substring 'Use phone as a security key' refers to the string IDS_PHONE_AS_SECURITY_KEY_TEXT in Chrome on Android.">
+      Open Chrome on your Android phone, and go to "Settings > Passwords > Use phone as a security key", and follow the instructions there.
+    </message>
+    <message name="IDS_WEBAUTHN_CABLE_QR_TITLE" desc="Title of a dialog that contains a QR-code for the user to scan with a mobile phone app. A QR code is a type of barcode that can be read using a smartphone's camera.">
+      Add new phone
+    </message>
+    <message name="IDS_WEBAUTHN_CABLE_QR_DESCRIPTION" desc="Description text in a dialog that contains a QR-code for the user to scan with Chrome on their Android phone. A QR code is a type of barcode that can be read using a smartphone's camera. The substring 'Use phone as a security key' refers to the string IDS_PHONE_AS_SECURITY_KEY_TEXT in Chrome on Android.">
+      To set up an Android phone to be used as a security key with this computer for the first time, open Chrome on your phone and go to "Settings > Passwords > Use phone as a security key". Then tap "Connect new device" and scan this QR code.
+    </message>
+
+    <!-- WebAuthn authenticator PIN entry/setup -->
+    <message name="IDS_WEBAUTHN_PIN_ENTRY_TITLE" desc="Title of the dialog shown when instructing the user to enter the PIN code to use a security key (an external physical device for user authentication) with their computer.">
+      PIN required
+    </message>
+    <message name="IDS_WEBAUTHN_PIN_ENTRY_DESCRIPTION" desc="Description in the dialog shown when instructing the user to enter the PIN code to use a security key (an external physical device for user authentication) with their computer.">
+      Enter the PIN for your security key
+    </message>
+    <message name="IDS_WEBAUTHN_PIN_ENTRY_PIN_LABEL" desc="Label text. Displayed next to a text box where the user enters the PIN code for their security key (an external physical device for user authentication).">
+      PIN
+    </message>
+    <message name="IDS_WEBAUTHN_PIN_ENTRY_NEXT" desc="Button text. The user clicks this button once they have entered the PIN code into a text box in order to continue.">
+      Next
+    </message>
+    <message name="IDS_WEBAUTHN_PIN_SETUP_DESCRIPTION" desc="Description in the dialog shown when instructing the user to set up a PIN code to use with their security key (an external physical device for user authentication) with their computer.">
+      Set up a new PIN for your security key
+    </message>
+    <message name="IDS_WEBAUTHN_PIN_SETUP_CONFIRMATION_LABEL" desc="Label text. Displayed next to a text box where the user re-enters the PIN code for their security key (an external physical device for user authentication).">
+      Confirm PIN
+    </message>
+    <message name="IDS_WEBAUTHN_PIN_ENTRY_ERROR_INVALID_CHARACTERS" desc="Error message. Displayed when the user attempts to set a PIN code for their security key (an external physical device for user authentication), and the PIN chosen by them contains invalid characters.">
+      PIN contains invalid characters
+    </message>
+    <message name="IDS_WEBAUTHN_PIN_ENTRY_ERROR_TOO_SHORT" desc="Error message. Displayed when the user attempts to set a PIN code for their security key (an external physical device for user authentication), and the PIN chosen by them is too short.">
+      {NUM_CHARACTERS, plural,
+        =1 {PIN must be at least one character}
+        other {PIN must be at least # characters}}
+    </message>
+    <message name="IDS_WEBAUTHN_PIN_ENTRY_ERROR_FAILED_RETRIES" desc="Error message. Displayed when the user enters the wrong PIN code for their security key (an external physical device for user authentication)">
+      {NUM_ATTEMPTS, plural,
+        =1 {Incorrect PIN. You have one attempt remaining.}
+        other {Incorrect PIN. You have # attempts remaining.}}
+    </message>
+    <message name="IDS_WEBAUTHN_PIN_ENTRY_ERROR_FAILED" desc="Error message. Displayed when the user attempts to enter the PIN code for their security key (an external physical device for user authentication), but the entered PIN is incorrect.">
+      Incorrect PIN
+    </message>
+    <message name="IDS_WEBAUTHN_PIN_SETUP_ERROR_FAILED" desc="Error message. Displayed when the user attempts to set up a PIN code for their security key (an external physical device for user authentication), and but the entered PIN contains invalid characters.">
+      PIN contains invalid characters
+    </message>
+    <message name="IDS_WEBAUTHN_PIN_TAP_AGAIN_DESCRIPTION" desc="Description of a dialog shown after the user first activated their security key (an external physical device for user authentication) and provided the PIN for it.">
+      Touch your security key again to complete the request.
+    </message>
+    <message name="IDS_WEBAUTHN_PIN_ENTRY_ERROR_MISMATCH" desc="Error message. Displayed when the user attempts to set a PIN code for their security key (an external physical device for user authentication), and the confirmation value does not match the first value they entered.">
+      The PINs you entered don't match
+    </message>
+    <message name="IDS_WEBAUTHN_CLIENT_PIN_SOFT_BLOCK_DESCRIPTION" desc="Description in the error dialog shown after their security key (an external physical device for user authentication) was blocked due to the user entering a wrong security key PIN too many times">
+      The security key is locked because the wrong PIN was entered too many times. To unlock it, remove and reinsert it.
+    </message>
+    <message name="IDS_WEBAUTHN_CLIENT_PIN_HARD_BLOCK_DESCRIPTION" desc="Description in the error dialog shown after their security key (an external physical device for user authentication) was blocked due to the user entering a wrong security key PIN too many times">
+      The security key is locked because the wrong PIN was entered too many times. You'll need to reset the security key.
+    </message>
+    <message name="IDS_WEBAUTHN_CLIENT_PIN_AUTHENTICATOR_REMOVED_DESCRIPTION" desc="Description in the error dialog shown after their security key (an external physical device for user authentication) was removed while the application was waiting for the security key PIN to be entered.">
+      Reinsert your security key and try again
+    </message>
+    <message name="IDS_WEBAUTHN_PIN_ENTRY_ERROR_SAME_AS_CURRENT" desc="Error message. Displayed when the user attempts to set a new PIN code for their security key (an external physical device for user authentication), and the new PIN is the same as the currently set PIN.">
+      Create a new PIN that's different from your current PIN
+    </message>
+
+    <!-- WebAuthn authenticator internal user verification -->
+    <message name="IDS_WEBAUTHN_INLINE_ENROLLMENT_CANCEL_LABEL" desc="The label on a button allowing users to skip fingerprint registration when setting up a fingerprint enabled authenticator.">
+      Skip
+    </message>
+    <message name="IDS_WEBAUTHN_UV_RETRY_TITLE" desc="The title on a dialog shown to the user when a previous attempt to verify their identity through fingerprints failed, and they are being asked to try again.">
+      Fingerprint not recognized
+    </message>
+    <message name="IDS_WEBAUTHN_UV_RETRY_DESCRIPTION" desc="The description on a dialog shown to the user when a previous attempt to verify their identity through fingerprints failed, and they are being asked to try again.">
+      Your fingerprint couldn't be recognized. Try again.
+    </message>
+    <message name="IDS_WEBAUTHN_UV_RETRY_ERROR_FAILED_RETRIES" desc="Error message displayed when the user's fingerprint is not recognized, and they are being asked to try again.">
+      {NUM_ATTEMPTS, plural,
+        =1 {You have one attempt remaining.}
+        other {You have # attempts remaining.}}
+    </message>
+    <message name="IDS_WEBAUTHN_UV_ERROR_LOCKED" desc="Error message. Displayed when the user's authenticator has been locked due to too many failed attempts to read their fingerprint, and they are required to enter a PIN to unlock it.">
+      Your security key is locked because your fingerprint couldn't be recognized. To unlock it, enter your PIN.
+    </message>
+    <message name="IDS_WEBAUTHN_FORCE_PIN_CHANGE" desc="An error message shown when a user attempts to use a security key (an authentication hardware device) that has a default PIN (short, often numeric codes that are often used with, for example, ATM cards) set. Before using the key, the user needs to change the PIN to a new code.">
+      To use your new security key, set a new PIN
+    </message>
+
+    <!-- WebAuthn account selection for resident keys -->
+    <message name="IDS_WEBAUTHN_SELECT_ACCOUNT" desc="The title on a dialog where the user is expected to select an account from a list. For example, the list may include several identities, e.g. joe@gmail.com, mary@gmail.com, and the user has to select one to login as.">
+      Select an account to sign in
+    </message>
+    <message name="IDS_WEBAUTHN_UNKNOWN_ACCOUNT" desc="Label shown to the user on the list of account names if the account stored does not have a name associated to it.">
+      Unknown account
+    </message>
+    <message name="IDS_WEBAUTHN_RESIDENT_KEY_PRIVACY" desc="A message included in dialogs when activating a security key (an external physical device for user authentication) may cause information about a site visit to be recorded on that security key. Since this is a privacy concern, a message is shown to the user.">
+      A record of your visit to this site will be kept on your security key.
+    </message>
+    <message name="IDS_WEBAUTHN_RESIDENT_KEY_PREFERRED_PRIVACY" desc="A message included in dialogs when activating a security key (an external physical device for user authentication) may cause information about a site visit to be recorded on that security key. Since this is a privacy concern, a message is shown to the user. Whether the information is actually kept depends on which type of security key the user presents in response to this prompt. The translation of this message should mirror TC ID 6581223593622729386 (but 'may' replaces 'will').">
+      A record of your visit to this site may be kept on your security key.
+    </message>
+    <message name="IDS_WEBAUTHN_ERROR_MISSING_CAPABILITY_TITLE" desc="Title of the dialog informing the user that the security key (an external physical device for user authentication) that they selected does not support some capability that the site requested.">
+      Your security key can't be used with this site
+    </message>
+    <message name="IDS_WEBAUTHN_ERROR_MISSING_CAPABILITY_DESC" desc="The description on a dialog informing the user that the security key (an external physical device for user authentication) that they selected does not support some capability that the site requested.">
+      <ph name="WEBSITE"><ex>accounts.google.com</ex>$1</ph> may require a newer or different kind of security key
+    </message>
+    <message name="IDS_WEBAUTHN_STORAGE_FULL_DESC" desc="The description on a dialog informing the user that the security key (an external physical device for user authentication) that they selected does not have enough storage capacity to create the requested account.">
+      Your security key does not have enough space for any more accounts.
+    </message>
+    <message name="IDS_WEBAUTHN_REQUEST_ATTESTATION_PERMISSION_TITLE" desc="Title of a dialog informing the user that the website wants to see information that identifies the user's Security Key, such as make and model number. The 'make' of a device is the brand name of the manufacturer, e.g. Yubikey is a make of Security Key. The 'model' of a device is the specific product, e.g. Yubikey Neo is a model of Security Key.">
+      Allow this site to see your security key?
+    </message>
+    <message name="IDS_WEBAUTHN_REQUEST_ATTESTATION_PERMISSION_DESC" desc="The description on a dialog informing the user that the website wants to see information that identifies the user's Security Key, such as make and model number. The 'make' of a device is the brand name of the manufacturer, e.g. Yubikey is a make of Security Key. The 'model' of a device is the specific product, e.g. Yubikey Neo is a model of Security Key.">
+      <ph name="WEBSITE"><ex>accounts.google.com</ex>$1</ph> wants to see the make and model of your security key
+    </message>
+    <message name="IDS_WEBAUTHN_REQUEST_ENTERPRISE_ATTESTATION_PERMISSION_TITLE" desc="Title of a dialog informing the user that the website wants to read the serial number of the user's security key. A security key is a physical device used for authentication.">
+      Allow this site to identify your security key?
+    </message>
+    <message name="IDS_WEBAUTHN_REQUEST_ENTERPRISE_ATTESTATION_PERMISSION_DESC" desc="The description on a dialog informing the user that the website wants to wants to read the serial number of the user's security key. A security key is a physical device used for authentication. The word 'issued' here means that the company linked to the website had the security key specially manufactured and, typically, the user is an employee of that company who received the security key as part of their employment.">
+      <ph name="WEBSITE"><ex>accounts.google.com</ex>$1</ph> issued your security key and wants to learn its ID number. The site will know exactly which security key you're using.
+    </message>
+    <message name="IDS_WEBAUTHN_ALLOW_ATTESTATION" desc="Label on button to allow a website to see information that identifies the user's Security Key, such as make and model number. The 'make' of a device is the brand name of the manufacturer, e.g. Yubikey is a make of Security Key. The 'model' of a device is the specific product, e.g. Yubikey Neo is a model of Security Key.">
+      Allow
+    </message>
+    <message name="IDS_WEBAUTHN_DENY_ATTESTATION" desc="Label on button to deny a website's request to see information that identifies the user's Security Key, such as make and model number. The 'make' of a device is the brand name of the manufacturer, e.g. Yubikey is a make of Security Key. The 'model' of a device is the specific product, e.g. Yubikey Neo is a model of Security Key. This was previously the word 'Block', but that is used in contexts where the decision is persistent so we wanted a different word for this because it is a one-time decision: the user will be asked again if the website requests again. Thus the translation would hopefully be distinct from the translation for 'Block' as used, for example, in IDS_COLLECTED_COOKIES_BLOCK_BUTTON.">
+      Skip
+    </message>
+    <message name="IDS_WEBAUTHN_RETRY" desc="Button text. The user clicks this to retry the authentication flow after an error happened, e.g. to try with a different Security Key.">
+      Try again
+    </message>
+    <message name="IDS_WEBAUTHN_PLATFORM_AUTHENTICATOR_OFF_THE_RECORD_INTERSTITIAL_TITLE" desc="Title of a dialog that asks for the user's permission to set up device-based sign-in (i.e. using their computer's biometric sensor or screen unlock/PIN) on a website while browsing in Incognito mode.">
+        Use your device to sign in to <ph name="APP_NAME">$1<ex>example.com</ex></ph>?
+    </message>
+    <message name="IDS_WEBAUTHN_PLATFORM_AUTHENTICATOR_OFF_THE_RECORD_INTERSTITIAL_DESCRIPTION" desc="Description of a dialog that asks for the user's permission to set up device-based sign-in (i.e. using their computer's biometric sensor or screen unlock/PIN) on a website while browsing in Incognito mode.">
+        Sign-in data will be stored on this device after you exit Incognito mode. You'll be able to sign in to this website with your device again later.
+    </message>
+    <message name="IDS_WEBAUTHN_PLATFORM_AUTHENTICATOR_OFF_THE_RECORD_INTERSTITIAL_DENY" desc="Button label on a dialog that asks for the user's permission to set up device-based sign-in (i.e. using their computer's biometric sensor or screen unlock/PIN) on a website while browsing in Incognito mode.">
+        No thanks
+    </message>
+  </if>
+
+   <!-- WebAuthn strings that are used on both Android and Desktop -->
+   <if expr="is_win or is_macosx or desktop_linux or chromeos or is_android or is_fuchsia">
+      <message name="IDS_CABLEV2_MAKE_CREDENTIAL_NOTIFICATION_TITLE" desc="The title of a notification shown on Android that informs the user that a website wishes to register their phone for signing into that website." formatter_data="android_java">
+        Verify with this phone
+      </message>
+
+      <message name="IDS_CABLEV2_GET_ASSERTION_NOTIFICATION_TITLE" desc="The title of a notification shown on Android that informs the user that a website wishes to use their phone to sign them in on another computer." formatter_data="android_java">
+        Verify your identity
+      </message>
+   </if>
+
+  <!-- Security Keys -->
+  <message name="IDS_SETTINGS_SECURITY_KEYS_TITLE" desc="Headline in the Settings UI for the subpage handling security keys. Security keys are external physcial devices for user authentication and the translation should match that used in, for example, IDS_WEBAUTHN_USB_ACTIVATE_DESCRIPTION.">
+    Manage security keys
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_DESC" desc="Description in the Settings UI for the subpage handling security keys. Security keys are external physcial devices for user authentication.">
+    Reset security keys and create PINs
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_SET_PIN" desc="A header that appears in the Settings subpage for security keys (which are external devices for user authentication). PINs are often four-digit codes, commonly used to authorise the use of ATM cards. A similar mechanism can be used with security keys and this is the heading for the section about settings them.">
+    Create a PIN
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_SET_PIN_BUTTON" desc="The label of a button that appears in the Settings subpage for security keys (which are external devices for user authentication). The button takes the user to a page where they can set or change their PIN. PINs are often four-digit codes, commonly used to authorise the use of ATM cards. A similar mechanism can be used with security keys.">
+    Set PIN
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_SET_PIN_DESC" desc="A description that appears in the Settings subpage for security keys (which are external devices for user authentication). PINs are often four-digit codes, commonly used to authorise the use of ATM cards. A similar mechanism can be used with security keys and this is the description for the section about settings them.">
+    Protect your security key with a PIN (Personal Identification Number)
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_SET_PIN_INITIAL_TITLE" desc="The title of a dialog for setting the PIN of a security key (which are external devices for user authentication). PINs are often four-digit codes, commonly used to authorise the use of ATM cards. A similar mechanism can be used with security keys and this is the heading for the section about settings them.">
+    Create a PIN
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_SET_PIN_CREATE_TITLE" desc="The title of a dialog for creating a PIN on a security key (which are external devices for user authentication). PINs are often four-digit codes, commonly used to authorise the use of ATM cards. A similar mechanism can be used with security keys and this is the heading for the section about settings them.">
+    Create a PIN
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_SET_PIN_CHANGE_TITLE" desc="The title of a dialog for changing the PIN of a security key (which are external devices for user authentication). PINs are often four-digit codes, commonly used to authorise the use of ATM cards. A similar mechanism can be used with security keys and this is the heading for the section about settings them.">
+    Change a PIN
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_RESET" desc="A header that appears in the Settings subpage for security keys (which are external devices for user authentication). This is the heading for the section about resetting them to factory settings.">
+    Reset your security key
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_RESET_DESC" desc="A header that appears in the Settings subpage for security keys (which are external devices for user authentication). This is the description for the section about resetting them to factory settings.">
+    This will delete all data on the security key, including its PIN
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_RESET_TITLE" desc="The title of a dialog for factory-resetting security keys (which are external devices for user authentication). Resetting in this context means erasing a security key and returning it to an initial, blank state.">
+    Reset your security key
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_RESET_CONFIRM_TITLE" desc="The title of a dialog for factory-resetting security keys (which are external devices for user authentication). Resetting in this context means erasing a security key and returning it to an initial, blank state.">
+    Touch to confirm reset
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_RESET_STEP1" desc="An instruction to a user to physically unplug a security key from their computer, reinsert it, and then touch the activation button that's on the device.">
+    To continue, remove your security key from your device, then reinsert and touch it
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_RESET_STEP2" desc="An instruction to a user to press the activation button on their security key a second time to confirm that they wish to reset (i.e. erase) their security key (which is an external device for user authentication).">
+    Touch your security key again to confirm reset. All information stored on the security key, including its PIN, will be deleted.
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_NO_RESET" desc="A failure message reporting to the user that it is not possible to reset the security key that they selected because the device does not support that operation.">
+    Can’t reset this security key
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_RESET_ERROR" desc="A failure message reporting to the user that the attempt to reset their security key (which is an external device for user authentication) failed. This is message is shown in uncommon cases when we don't have a more specific message to show the user and have fallen back to displaying a numerical error code reported by the device.">
+    Can’t reset this security key. Error <ph name="ERROR_CODE">$1<ex>22</ex></ph>.
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_RESET_SUCCESS" desc="A message to the user that they have successfully reset (i.e. erased) their security key (which is an external device for user authentication).">
+    Your security key has been reset
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_RESET_NOTALLOWED" desc="A message to the user that an attempt to reset (i.e. erase) their security key (an external device for user authentication) failed because the security key refused to be reset. This is usually caused because a reset is only allowed within the first few seconds after being plugged in, so the user has to perform the operation quickly.">
+    Can’t reset this security key. Try resetting the key immediately after inserting it.
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_NO_PIN" desc="A failure message shown to a user when they attempt to set a PIN on a security key that does not support PINs. PINs, in this context, are short, often numeric codes that are often used with, for example, ATM cards. Security keys are external devices used to authenticate people.">
+    This security key doesn’t support PINs
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_CURRENT_PIN_INTRO" desc="A message shown when a user is trying to change the PIN on a security key to prompt the user to enter the current PIN for the device. PINs, in this context, are short, often numeric codes that are often used with, for example, ATM cards. Security keys are external devices used to authenticate people.">
+    Enter your current PIN to change it. If you don’t know your PIN, you’ll need to reset the security key, then create a new PIN.
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_PIN_INCORRECT" desc="A message shown to the user when they enter an incorrect PIN for a security key. PINs, in this context, are short, often numeric codes that are often used with, for example, ATM cards. Security keys are external devices used to authenticate people.">
+    Incorrect PIN
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_PIN_INCORRECT_RETRIES_SIN" desc="A message shown to the user when they enter an incorrect PIN for a security key. PINs, in this context, are short, often numeric codes that are often used with, for example, ATM cards. Security keys are external devices used to authenticate people.">
+    Incorrect PIN. You have one attempt remaining.
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_PIN_INCORRECT_RETRIES_PL" desc="A message shown to the user when they enter an incorrect PIN for a security key. PINs, in this context, are short, often numeric codes that are often used with, for example, ATM cards. Security keys are external devices used to authenticate people.">
+    Incorrect PIN. You have <ph name="RETRIES">$1<ex>8</ex></ph> attempts remaining.
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_SAME_PIN_AS_CURRENT" desc="Error message. Displayed when the user attempts to set a new PIN for their security key, and the new PIN is the same as the currently set PIN. PINs, in this context, are short, often numeric codes that are often used with, for example, ATM cards. Security keys are external devices used to authenticate people.">
+    Create a new PIN that's different from your current PIN
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_NEW_PIN" desc="A message shown when a user is trying to set a PIN on a security key. PINs, in this context, are short, often numeric codes that are often used with, for example, ATM cards. Security keys are external devices used to authenticate people.">
+    {MIN_PIN_LENGTH, plural,
+     =1 {Enter your new PIN. A PIN must be at least one character long and can contain letters, numbers, and other characters.}
+     other {Enter your new PIN. A PIN must be at least # characters long and can contain letters, numbers, and other characters.}}
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_SET_PIN_CONFIRM" desc="The label of the button shown when a user is trying to set a PIN on a security key. PINs, in this context, are short, often numeric codes that are often used with, for example, ATM cards. Security keys are external devices used to authenticate people.">
+    Save
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_CURRENT_PIN" desc="A label shown above a text box where the user is expected to enter the current PIN for a security key. PINs, in this context, are short, often numeric codes that are often used with, for example, ATM cards. Security keys are external devices used to authenticate people.">
+    Current PIN
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_PIN" desc="A label shown above a text box where the user is expected to enter a new PIN for a security key. PINs, in this context, are short, often numeric codes that are often used with, for example, ATM cards. Security keys are external devices used to authenticate people.">
+    PIN
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_PIN_ERROR_TOO_SHORT_SMALL" desc="A validation error shown beneath a text box where the user is expected to enter a PIN for a security key. PINs, in this context, are short, often numeric codes that are often used with, for example, ATM cards. Security keys are external devices used to authenticate people. This message has limited horizontal space.">
+    Too short
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_PIN_ERROR_TOO_LONG" desc="A validation error shown beneath a text box where the user is expected to enter a PIN for a security key. PINs, in this context, are short, often numeric codes that are often used with, for example, ATM cards. Security keys are external devices used to authenticate people.">
+    PIN must be at most 63 characters
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_PIN_ERROR_INVALID" desc="A validation error shown beneath a text box where the user is expected to enter a PIN for a security key. PINs, in this context, are short, often numeric codes that are often used with, for example, ATM cards. Security keys are external devices used to authenticate people.">
+    PIN contains invalid characters
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_PIN_ERROR_MISMATCH" desc="A validation error shown beneath a text box where the user is expected to enter a PIN for a security key. PINs, in this context, are short, often numeric codes that are often used with, for example, ATM cards. Security keys are external devices used to authenticate people.">
+    The PINs you entered don’t match
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_CONFIRM_PIN" desc="A label shown above a text box where the user is expected to reenter a new PIN for a security key. The text box is a duplicate of an immediately preceeding text box where the user has already entered this value. The user is asked to enter the same value twice in order to ensure that they entered it correctly. PINs, in this context, are short, often numeric codes that are often used with, for example, ATM cards. Security keys are external devices used to authenticate people.">
+    Confirm PIN
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_PIN_SUCCESS" desc="A message shown when the user has successfully set a PIN on a security key. PINs, in this context, are short, often numeric codes that are often used with, for example, ATM cards. Security keys are external devices used to authenticate people.">
+    Your PIN was created
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_PIN_ERROR" desc="A message shown when setting a PIN on a security key failed with an unhandled error code. PINs, in this context, are short, often numeric codes that are often used with, for example, ATM cards. Security keys are external devices used to authenticate people.">
+    PIN operation failed with code <ph name="RETRIES">$1<ex>18</ex></ph>.
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_PIN_HARD_LOCK" desc="A message shown when the user attempts to change the PIN on a security key that has been locked due to too many incorrect PIN attempts. PINs, in this context, are short, often numeric codes that are often used with, for example, ATM cards. Security keys are external devices used to authenticate people.">
+    The security key is locked because the wrong PIN was entered too many times. You’ll need to reset the security key.
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_PIN_SOFT_LOCK" desc="A message shown when the user attempts to change the PIN on a security key that has been locked due to too many incorrect PIN attempts. PINs, in this context, are short, often numeric codes that are often used with, for example, ATM cards. Security keys are external devices used to authenticate people.">
+    The security key is locked because the wrong PIN was entered too many times. To unlock it, remove and reinsert it.
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_SHOW_PINS" desc="A tool-tip message that is shown to describe the action of an icon in the dialog where users set or enter PINs for security keys. This message indicates to the user that clicking the icon will cause the PINs to be displayed normally. Since PINs are private information they are shown by default like passwords: with the characters replaced by bullet points. (Security keys are external devices used to authenticate people and PINs are short, often numeric, codes that are commonly used with, for example, ATMs.)">
+    Show PINs
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_HIDE_PINS" desc="A tool-tip message that is shown to describe the action of an icon in the dialog where users set or enter PINs for security keys. This message indicates to the user that clicking the icon will cause the PINs to be displayed like passwords: with the characters replaced by bullet points. (Security keys are external devices used to authenticate people and PINs are short, often numeric, codes that are commonly used with, for example, ATMs.)">
+    Hide PINs
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_CREDENTIAL_MANAGEMENT_LABEL" desc="The label for a menu item that when clicked lets the user view and erase credentials on their security key (an authentication hardware device).">
+    Sign-in data
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_CREDENTIAL_MANAGEMENT_DESC" desc="The description for a menu item that when clicked lets the user view and erase credentials on their security key (an authentication hardware device).">
+    View and delete sign-in data stored on your security key
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_CREDENTIAL_MANAGEMENT_DIALOG_TITLE" desc="The title of a dialog that lets users view and erase credentials on their security key (an authentication hardware device).">
+    Security key sign-in data
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_CREDENTIAL_WEBSITE" desc="A column heading of a table that lists credentials stored on a security key (an authentication hardware device). This column contains the domain name (e.g. google.com) for each credential.">
+    Website
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_CREDENTIAL_USERNAME" desc="A column heading of a table that lists credentials stored on a security key (an authentication hardware device). This column contains the user name (e.g. exampleuser@google.com) for each credential.">
+    Username
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_CREDENTIAL_MANAGEMENT_NO_CREDENTIALS" desc="An error message shown when a user attempts to view the credentials on their security key (an authentication hardware device) but no such credentials exist.">
+    This security key does not have any sign-in data
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_NO_CREDENTIAL_MANAGEMENT" desc="An error message shown when a user attempts to view the credentials on their security key (an authentication hardware device) but the security key is not capable of storing credentials.">
+    This security key can't store any sign-in data
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_CREDENTIAL_MANAGEMENT_REMOVED" desc="An error message shown when a user attempts to view the credentials on their security key (an authentication hardware device), but the user removed the security key (by unplugging it from their USB port, for example).">
+    Your security key was removed.
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_CREDENTIAL_MANAGEMENT_NO_PIN" desc="An error message shown when a user attempts to view the credentials on their security key (an authentication hardware device), but the user has not set up a PIN (short, often numeric codes that are often used with, for example, ATM cards) for that security key.">
+    Your security key is not protected with a PIN. To manage sign-in data, first create a PIN.
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_CREDENTIAL_MANAGEMENT_ERROR" desc="An error message shown when a user attempts to view the credentials on their security key (an authentication hardware device), but an error with the device was encountered.">
+    Your security key couldn't be read
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_CREDENTIAL_MANAGEMENT_SUCCESS" desc="A confirmation message shown when a user deletes an individual credential on their security key (an authentication hardware device).">
+    Your sign-in data was deleted
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_CREDENTIAL_MANAGEMENT_FAILED" desc="An error message shown when a user attempts to delete an individual credential on their security key (an authentication hardware device).">
+    Your sign-in data couldn't be deleted
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_BIO_ENROLLMENT_SUBPAGE_LABEL" desc="The label for a menu item that when clicked lets the user view, add, rename, and delete fingerprints on their security key (an authentication hardware device).">
+    Fingerprints
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_BIO_ENROLLMENT_SUBPAGE_DESCRIPTION" desc="The description for a menu item that when clicked lets the user view, add, rename, and delete fingerprints on their security key (an authentication hardware device).">
+    Add and delete fingerprints saved on your security key
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_BIO_ENROLLMENT_DIALOG_TITLE" desc="The title of a dialog that lets users view, add, rename, and delete fingerprints on their security key (an authentication hardware device).">
+    Manage fingerprints
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_BIO_ENROLLMENT_ADD_TITLE" desc="The title of a dialog instructing a user to touch their security key (an authentication hardware device) to enroll a fingerprint on it.">
+    Add fingerprint
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_BIO_CHOOSE_NAME" desc="A label instructing the user to provide a descriptive name for a fingerprint enrolled to a security key.">
+    Enter a name for this fingerprint
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_BIO_NAME_LABEL" desc="A label for a text input field containing a descriptive name for a fingerprint enrolled to a security key.">
+    Name
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_BIO_ENROLLMENT_NO_ENROLLMENTS_LABEL" desc="A label informing the user that there are no fingerprints stored on their security key (authentication hardware device).">
+    Your security key has no fingerprints stored
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_BIO_ENROLLMENT_ENROLLMENTS_LABEL" desc="A label describing a list of fingerprints enrolled with a security key (authentication hardware device).">
+    Fingerprints on this security key
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_BIO_ENROLLMENT_ENROLLING_LABEL" desc="A label instructing the user to repeatedly touch the fingerprint sensor on their security key (authentication hardware device) to take samples for a new fingerprint.">
+    Keep touching your security key until your fingerprint is captured
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_BIO_ENROLLMENT_TRY_AGAIN_LABEL" desc="A label instructing the user to touch the fingerprint sensor on their security key (authentication hardware device) again after taking a fingerprint sample failed.">
+    Try touching your security key again
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_BIO_ENROLLMENT_FAILED_LABEL" desc="An error shown after enrolling a new fingerprint to a security key (authentication hardware device) was unsuccessful.">
+    Adding a fingerprint to this security key failed
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_BIO_ENROLLMENT_ENROLLING_COMPLETE_LABEL" desc="A label informing the user that adding a fingerprint to their security key succeeded.">
+    Your fingerprint was captured
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_NO_BIOMETRIC_ENROLLMENT" desc="An error message shown when a user attempts to use the fingerprint sensor on their security key (an authentication hardware device) but the security key is not capable of storing fingerprints, or does not have a fingerprint sensor.">
+    Your security key can't store fingerprints
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_BIO_ENROLLMENT_DELETE" desc="The label for a button that when clicked deletes a fingerprint from a security key (an authentication hardware device) with a built-in fingerprint reader.">
+    Delete this fingerprint
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_BIO_NO_PIN" desc="An error message shown when a user attempts to enroll a fingerprint on their security key (an authentication hardware device), but the user has not set up a PIN (short, often numeric codes that are often used with, for example, ATM cards) for that security key.">
+    Your security key is not protected with a PIN. To manage fingerprints, first create a PIN.
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_TOUCH_TO_CONTINUE" desc="A label instructing the user to physically touch the activation button on their security key (an authentication hardware device).">
+    To continue, insert and touch your security key
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_PIN_PROMPT" desc="A label instructing the user to enter the PIN (short, often numeric codes that are often used with, for example, ATM cards) for their security key (an authentication hardware device).">
+    Enter the PIN for your security key. If you don’t know the PIN, you’ll need to reset the security key.
+  </message>
+  <message name="IDS_SETTINGS_SECURITY_KEYS_FORCE_PIN_CHANGE" desc="An error message shown when a user attempts to use a security key (an authentication hardware device) that has a default PIN (short, often numeric codes that are often used with, for example, ATM cards) set. Before using the key, the user needs to change the PIN to a new code.">
+    To use your new security key, set a new PIN
+  </message>
 </grit-part>

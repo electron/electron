@@ -248,6 +248,8 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
 #endif
   int32_t GetID() const;
 
+  void SetModalDialogOptions(gin_helper::Dictionary options);
+
   // Helpers.
 
   // Remove BrowserView.
