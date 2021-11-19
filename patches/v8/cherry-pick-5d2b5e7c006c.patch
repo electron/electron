@@ -1,0 +1,40 @@
+From 5d2b5e7c006c8af13b2d467ce2a38877bad300dc Mon Sep 17 00:00:00 2001
+From: Nico Hartmann <nicohartmann@chromium.org>
+Date: Mon, 25 Oct 2021 10:58:59 +0200
+Subject: [PATCH] Merged: [TurboFan] Do not use NumberConstant as immediate in x86
+
+Bug: chromium:1254189
+(cherry picked from commit bdf31d5883607db4377b519d7308fb1e639a0448)
+
+Change-Id: I1d4426fee8392c7a680ad67af4bf2745d04b2e52
+No-Try: true
+No-Presubmit: true
+No-Tree-Checks: true
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3268905
+Commit-Queue: Nico Hartmann <nicohartmann@chromium.org>
+Reviewed-by: Maya Lekova <mslekova@chromium.org>
+Cr-Commit-Position: refs/branch-heads/9.6@{#22}
+Cr-Branched-From: 0b7bda016178bf438f09b3c93da572ae3663a1f7-refs/heads/9.6.180@{#1}
+Cr-Branched-From: 41a5a247d9430b953e38631e88d17790306f7a4c-refs/heads/main@{#77244}
+---
+
+diff --git a/src/compiler/backend/ia32/instruction-selector-ia32.cc b/src/compiler/backend/ia32/instruction-selector-ia32.cc
+index 7eaa807..8c2b585 100644
+--- a/src/compiler/backend/ia32/instruction-selector-ia32.cc
++++ b/src/compiler/backend/ia32/instruction-selector-ia32.cc
+@@ -99,11 +99,14 @@
+   bool CanBeImmediate(Node* node) {
+     switch (node->opcode()) {
+       case IrOpcode::kInt32Constant:
+-      case IrOpcode::kNumberConstant:
+       case IrOpcode::kExternalConstant:
+       case IrOpcode::kRelocatableInt32Constant:
+       case IrOpcode::kRelocatableInt64Constant:
+         return true;
++      case IrOpcode::kNumberConstant: {
++        const double value = OpParameter<double>(node->op());
++        return bit_cast<int64_t>(value) == 0;
++      }
+       case IrOpcode::kHeapConstant: {
+ // TODO(bmeurer): We must not dereference handles concurrently. If we
+ // really have to this here, then we need to find a way to put this
