@@ -1,0 +1,40 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Yutaka Hirano <yhirano@chromium.org>
+Date: Tue, 9 Nov 2021 09:03:17 +0000
+Subject: Allow null SkBitmap to be transferred across threads
+
+(cherry picked from commit dad0c0e5162bcc49b8f60354d3bca92224d8381b)
+
+Bug: 1241091
+Change-Id: Ie96932c14c8884d6d3eafa76dab5043e7aa31888
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3251815
+Reviewed-by: Florin Malita <fmalita@chromium.org>
+Commit-Queue: Yutaka Hirano <yhirano@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#936861}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3268018
+Auto-Submit: Yutaka Hirano <yhirano@chromium.org>
+Reviewed-by: Kentaro Hara <haraken@chromium.org>
+Commit-Queue: Kentaro Hara <haraken@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4664@{#893}
+Cr-Branched-From: 24dc4ee75e01a29d390d43c9c264372a169273a7-refs/heads/main@{#929512}
+
+diff --git a/third_party/blink/renderer/platform/graphics/skia/skia_utils.h b/third_party/blink/renderer/platform/graphics/skia/skia_utils.h
+index e4bde78252c90ecd19655e8c552a2a39299dff75..33d6a1f115c606c3f203b37642ad2875bcca1dd7 100644
+--- a/third_party/blink/renderer/platform/graphics/skia/skia_utils.h
++++ b/third_party/blink/renderer/platform/graphics/skia/skia_utils.h
+@@ -212,11 +212,13 @@ struct CrossThreadCopier<SkBitmap> {
+ 
+   using Type = SkBitmap;
+   static SkBitmap Copy(const SkBitmap& bitmap) {
+-    CHECK(bitmap.isImmutable()) << "Only immutable bitmaps can be transferred.";
++    CHECK(bitmap.isImmutable() || bitmap.isNull())
++        << "Only immutable bitmaps can be transferred.";
+     return bitmap;
+   }
+   static SkBitmap Copy(SkBitmap&& bitmap) {
+-    CHECK(bitmap.isImmutable()) << "Only immutable bitmaps can be transferred.";
++    CHECK(bitmap.isImmutable() || bitmap.isNull())
++        << "Only immutable bitmaps can be transferred.";
+     return std::move(bitmap);
+   }
+ };

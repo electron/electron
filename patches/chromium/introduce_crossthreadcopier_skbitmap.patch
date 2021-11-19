@@ -1,0 +1,62 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Yutaka Hirano <yhirano@chromium.org>
+Date: Tue, 9 Nov 2021 05:02:50 +0000
+Subject: Introduce CrossThreadCopier<SkBitmap>
+
+Allow immutable SkBitmap to be transferred across threads.
+
+(cherry picked from commit fd794ad56432870e462aab9d62e4f059169c1a5f)
+
+Bug: 1241091
+Change-Id: Ia771893245ef2fc1acb05cd4906d64bf2dd406fe
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3244824
+Reviewed-by: danakj <danakj@chromium.org>
+Reviewed-by: Florin Malita <fmalita@chromium.org>
+Commit-Queue: Yutaka Hirano <yhirano@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#936435}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3267808
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Reviewed-by: Kentaro Hara <haraken@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4664@{#887}
+Cr-Branched-From: 24dc4ee75e01a29d390d43c9c264372a169273a7-refs/heads/main@{#929512}
+
+diff --git a/third_party/blink/renderer/platform/graphics/skia/skia_utils.h b/third_party/blink/renderer/platform/graphics/skia/skia_utils.h
+index 0b3efb14964b44ef0929fe33d37cec154d7410b2..e4bde78252c90ecd19655e8c552a2a39299dff75 100644
+--- a/third_party/blink/renderer/platform/graphics/skia/skia_utils.h
++++ b/third_party/blink/renderer/platform/graphics/skia/skia_utils.h
+@@ -39,7 +39,9 @@
+ #include "third_party/blink/renderer/platform/graphics/image.h"
+ #include "third_party/blink/renderer/platform/platform_export.h"
+ #include "third_party/blink/renderer/platform/transforms/affine_transform.h"
++#include "third_party/blink/renderer/platform/wtf/cross_thread_copier.h"
+ #include "third_party/blink/renderer/platform/wtf/math_extras.h"
++#include "third_party/skia/include/core/SkBitmap.h"
+ #include "third_party/skia/include/core/SkCanvas.h"
+ #include "third_party/skia/include/core/SkColor.h"
+ #include "third_party/skia/include/core/SkData.h"
+@@ -200,4 +202,25 @@ PLATFORM_EXPORT sk_sp<SkData> TryAllocateSkData(size_t size);
+ 
+ }  // namespace blink
+ 
++namespace WTF {
++
++// We define CrossThreadCopier<SKBitMap> here because we cannot include skia
++// headers in platform/wtf.
++template <>
++struct CrossThreadCopier<SkBitmap> {
++  STATIC_ONLY(CrossThreadCopier);
++
++  using Type = SkBitmap;
++  static SkBitmap Copy(const SkBitmap& bitmap) {
++    CHECK(bitmap.isImmutable()) << "Only immutable bitmaps can be transferred.";
++    return bitmap;
++  }
++  static SkBitmap Copy(SkBitmap&& bitmap) {
++    CHECK(bitmap.isImmutable()) << "Only immutable bitmaps can be transferred.";
++    return std::move(bitmap);
++  }
++};
++
++}  // namespace WTF
++
+ #endif  // THIRD_PARTY_BLINK_RENDERER_PLATFORM_GRAPHICS_SKIA_SKIA_UTILS_H_
