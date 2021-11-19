@@ -1,7 +1,7 @@
-From 5d2b5e7c006c8af13b2d467ce2a38877bad300dc Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Nico Hartmann <nicohartmann@chromium.org>
 Date: Mon, 25 Oct 2021 10:58:59 +0200
-Subject: [PATCH] Merged: [TurboFan] Do not use NumberConstant as immediate in x86
+Subject: Merged: [TurboFan] Do not use NumberConstant as immediate in x86
 
 Bug: chromium:1254189
 (cherry picked from commit bdf31d5883607db4377b519d7308fb1e639a0448)
@@ -16,13 +16,12 @@ Reviewed-by: Maya Lekova <mslekova@chromium.org>
 Cr-Commit-Position: refs/branch-heads/9.6@{#22}
 Cr-Branched-From: 0b7bda016178bf438f09b3c93da572ae3663a1f7-refs/heads/9.6.180@{#1}
 Cr-Branched-From: 41a5a247d9430b953e38631e88d17790306f7a4c-refs/heads/main@{#77244}
----
 
 diff --git a/src/compiler/backend/ia32/instruction-selector-ia32.cc b/src/compiler/backend/ia32/instruction-selector-ia32.cc
-index 7eaa807..8c2b585 100644
+index 5d7c8fbec25a371e3946939b97ac64b955158999..71ef02842c82ec2eb3b5d4ec86f26a1a3eb7a582 100644
 --- a/src/compiler/backend/ia32/instruction-selector-ia32.cc
 +++ b/src/compiler/backend/ia32/instruction-selector-ia32.cc
-@@ -99,11 +99,14 @@
+@@ -99,11 +99,14 @@ class IA32OperandGenerator final : public OperandGenerator {
    bool CanBeImmediate(Node* node) {
      switch (node->opcode()) {
        case IrOpcode::kInt32Constant:
