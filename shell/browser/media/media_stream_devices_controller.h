@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#ifndef SHELL_BROWSER_MEDIA_MEDIA_STREAM_DEVICES_CONTROLLER_H_
-#define SHELL_BROWSER_MEDIA_MEDIA_STREAM_DEVICES_CONTROLLER_H_
+#ifndef ELECTRON_SHELL_BROWSER_MEDIA_MEDIA_STREAM_DEVICES_CONTROLLER_H_
+#define ELECTRON_SHELL_BROWSER_MEDIA_MEDIA_STREAM_DEVICES_CONTROLLER_H_
 
 #include "content/public/browser/web_contents_delegate.h"
 #include "third_party/blink/public/common/mediastream/media_stream_request.h"
@@ -46,4 +46,4 @@ class MediaStreamDevicesController {
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_MEDIA_MEDIA_STREAM_DEVICES_CONTROLLER_H_
+#endif  // ELECTRON_SHELL_BROWSER_MEDIA_MEDIA_STREAM_DEVICES_CONTROLLER_H_

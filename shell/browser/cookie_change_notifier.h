@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_COOKIE_CHANGE_NOTIFIER_H_
-#define SHELL_BROWSER_COOKIE_CHANGE_NOTIFIER_H_
+#ifndef ELECTRON_SHELL_BROWSER_COOKIE_CHANGE_NOTIFIER_H_
+#define ELECTRON_SHELL_BROWSER_COOKIE_CHANGE_NOTIFIER_H_
 
 #include "base/callback_list.h"
 #include "mojo/public/cpp/bindings/receiver.h"
@@ -45,4 +45,4 @@ class CookieChangeNotifier : public network::mojom::CookieChangeListener {
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_COOKIE_CHANGE_NOTIFIER_H_
+#endif  // ELECTRON_SHELL_BROWSER_COOKIE_CHANGE_NOTIFIER_H_

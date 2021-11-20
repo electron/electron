@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_NET_NODE_STREAM_LOADER_H_
-#define SHELL_BROWSER_NET_NODE_STREAM_LOADER_H_
+#ifndef ELECTRON_SHELL_BROWSER_NET_NODE_STREAM_LOADER_H_
+#define ELECTRON_SHELL_BROWSER_NET_NODE_STREAM_LOADER_H_
 
 #include <map>
 #include <memory>
@@ -103,4 +103,4 @@ class NodeStreamLoader : public network::mojom::URLLoader {
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_NET_NODE_STREAM_LOADER_H_
+#endif  // ELECTRON_SHELL_BROWSER_NET_NODE_STREAM_LOADER_H_

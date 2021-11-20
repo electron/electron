@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_CERTIFICATE_MANAGER_MODEL_H_
-#define SHELL_BROWSER_CERTIFICATE_MANAGER_MODEL_H_
+#ifndef ELECTRON_SHELL_BROWSER_CERTIFICATE_MANAGER_MODEL_H_
+#define ELECTRON_SHELL_BROWSER_CERTIFICATE_MANAGER_MODEL_H_
 
 #include <memory>
 #include <string>
@@ -113,4 +113,4 @@ class CertificateManagerModel {
   bool is_user_db_available_;
 };
 
-#endif  // SHELL_BROWSER_CERTIFICATE_MANAGER_MODEL_H_
+#endif  // ELECTRON_SHELL_BROWSER_CERTIFICATE_MANAGER_MODEL_H_

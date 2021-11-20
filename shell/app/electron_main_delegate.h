@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_APP_ELECTRON_MAIN_DELEGATE_H_
-#define SHELL_APP_ELECTRON_MAIN_DELEGATE_H_
+#ifndef ELECTRON_SHELL_APP_ELECTRON_MAIN_DELEGATE_H_
+#define ELECTRON_SHELL_APP_ELECTRON_MAIN_DELEGATE_H_
 
 #include <memory>
 #include <string>
@@ -66,4 +66,4 @@ class ElectronMainDelegate : public content::ContentMainDelegate {
 
 }  // namespace electron
 
-#endif  // SHELL_APP_ELECTRON_MAIN_DELEGATE_H_
+#endif  // ELECTRON_SHELL_APP_ELECTRON_MAIN_DELEGATE_H_

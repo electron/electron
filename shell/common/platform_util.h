@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_PLATFORM_UTIL_H_
-#define SHELL_COMMON_PLATFORM_UTIL_H_
+#ifndef ELECTRON_SHELL_COMMON_PLATFORM_UTIL_H_
+#define ELECTRON_SHELL_COMMON_PLATFORM_UTIL_H_
 
 #include <string>
 
@@ -60,4 +60,4 @@ bool GetDesktopName(std::string* setme);
 
 }  // namespace platform_util
 
-#endif  // SHELL_COMMON_PLATFORM_UTIL_H_
+#endif  // ELECTRON_SHELL_COMMON_PLATFORM_UTIL_H_

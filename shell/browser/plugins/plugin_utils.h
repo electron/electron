@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_PLUGINS_PLUGIN_UTILS_H_
-#define SHELL_BROWSER_PLUGINS_PLUGIN_UTILS_H_
+#ifndef ELECTRON_SHELL_BROWSER_PLUGINS_PLUGIN_UTILS_H_
+#define ELECTRON_SHELL_BROWSER_PLUGINS_PLUGIN_UTILS_H_
 
 #include <string>
 
@@ -31,4 +31,4 @@ class PluginUtils {
       content::BrowserContext* browser_context);
 };
 
-#endif  // SHELL_BROWSER_PLUGINS_PLUGIN_UTILS_H_
+#endif  // ELECTRON_SHELL_BROWSER_PLUGINS_PLUGIN_UTILS_H_

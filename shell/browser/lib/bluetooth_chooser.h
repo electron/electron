@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_LIB_BLUETOOTH_CHOOSER_H_
-#define SHELL_BROWSER_LIB_BLUETOOTH_CHOOSER_H_
+#ifndef ELECTRON_SHELL_BROWSER_LIB_BLUETOOTH_CHOOSER_H_
+#define ELECTRON_SHELL_BROWSER_LIB_BLUETOOTH_CHOOSER_H_
 
 #include <map>
 #include <string>
@@ -51,4 +51,4 @@ class BluetoothChooser : public content::BluetoothChooser {
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_LIB_BLUETOOTH_CHOOSER_H_
+#endif  // ELECTRON_SHELL_BROWSER_LIB_BLUETOOTH_CHOOSER_H_

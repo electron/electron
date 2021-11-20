@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_EXTENSIONS_ELECTRON_EXTENSIONS_CLIENT_H_
-#define SHELL_COMMON_EXTENSIONS_ELECTRON_EXTENSIONS_CLIENT_H_
+#ifndef ELECTRON_SHELL_COMMON_EXTENSIONS_ELECTRON_EXTENSIONS_CLIENT_H_
+#define ELECTRON_SHELL_COMMON_EXTENSIONS_ELECTRON_EXTENSIONS_CLIENT_H_
 
 #include <string>
 
@@ -62,4 +62,4 @@ class ElectronExtensionsClient : public extensions::ExtensionsClient {
 
 }  // namespace electron
 
-#endif  // SHELL_COMMON_EXTENSIONS_ELECTRON_EXTENSIONS_CLIENT_H_
+#endif  // ELECTRON_SHELL_COMMON_EXTENSIONS_ELECTRON_EXTENSIONS_CLIENT_H_

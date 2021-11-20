@@ -1,8 +1,8 @@
 // Copyright (c) 2016 GitHub, Inc.
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
-#ifndef SHELL_RENDERER_ELECTRON_SANDBOXED_RENDERER_CLIENT_H_
-#define SHELL_RENDERER_ELECTRON_SANDBOXED_RENDERER_CLIENT_H_
+#ifndef ELECTRON_SHELL_RENDERER_ELECTRON_SANDBOXED_RENDERER_CLIENT_H_
+#define ELECTRON_SHELL_RENDERER_ELECTRON_SANDBOXED_RENDERER_CLIENT_H_
 
 #include <memory>
 #include <set>
@@ -55,4 +55,4 @@ class ElectronSandboxedRendererClient : public RendererClientBase {
 
 }  // namespace electron
 
-#endif  // SHELL_RENDERER_ELECTRON_SANDBOXED_RENDERER_CLIENT_H_
+#endif  // ELECTRON_SHELL_RENDERER_ELECTRON_SANDBOXED_RENDERER_CLIENT_H_

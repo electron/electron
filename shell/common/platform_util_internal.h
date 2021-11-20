@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_PLATFORM_UTIL_INTERNAL_H_
-#define SHELL_COMMON_PLATFORM_UTIL_INTERNAL_H_
+#ifndef ELECTRON_SHELL_COMMON_PLATFORM_UTIL_INTERNAL_H_
+#define ELECTRON_SHELL_COMMON_PLATFORM_UTIL_INTERNAL_H_
 
 #include "shell/common/platform_util.h"
 
@@ -23,4 +23,4 @@ bool PlatformTrashItem(const base::FilePath& path, std::string* error);
 }  // namespace internal
 }  // namespace platform_util
 
-#endif  // SHELL_COMMON_PLATFORM_UTIL_INTERNAL_H_
+#endif  // ELECTRON_SHELL_COMMON_PLATFORM_UTIL_INTERNAL_H_

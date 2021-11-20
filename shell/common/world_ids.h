@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_WORLD_IDS_H_
-#define SHELL_COMMON_WORLD_IDS_H_
+#ifndef ELECTRON_SHELL_COMMON_WORLD_IDS_H_
+#define ELECTRON_SHELL_COMMON_WORLD_IDS_H_
 
 #include "third_party/blink/renderer/platform/bindings/dom_wrapper_world.h"  // nogncheck
 
@@ -27,4 +27,4 @@ enum WorldIDs : int32_t {
 
 }  // namespace electron
 
-#endif  // SHELL_COMMON_WORLD_IDS_H_
+#endif  // ELECTRON_SHELL_COMMON_WORLD_IDS_H_

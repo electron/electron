@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_RENDERER_GUEST_VIEW_CONTAINER_H_
-#define SHELL_RENDERER_GUEST_VIEW_CONTAINER_H_
+#ifndef ELECTRON_SHELL_RENDERER_GUEST_VIEW_CONTAINER_H_
+#define ELECTRON_SHELL_RENDERER_GUEST_VIEW_CONTAINER_H_
 
 #include "base/callback.h"
 
@@ -44,4 +44,4 @@ class GuestViewContainer {
 
 }  // namespace electron
 
-#endif  // SHELL_RENDERER_GUEST_VIEW_CONTAINER_H_
+#endif  // ELECTRON_SHELL_RENDERER_GUEST_VIEW_CONTAINER_H_

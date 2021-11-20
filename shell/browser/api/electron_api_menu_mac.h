@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_ELECTRON_API_MENU_MAC_H_
-#define SHELL_BROWSER_API_ELECTRON_API_MENU_MAC_H_
+#ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_MENU_MAC_H_
+#define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_MENU_MAC_H_
 
 #include "shell/browser/api/electron_api_menu.h"
 
@@ -54,4 +54,4 @@ class MenuMac : public Menu {
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_ELECTRON_API_MENU_MAC_H_
+#endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_MENU_MAC_H_

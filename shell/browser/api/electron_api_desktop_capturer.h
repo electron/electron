@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_ELECTRON_API_DESKTOP_CAPTURER_H_
-#define SHELL_BROWSER_API_ELECTRON_API_DESKTOP_CAPTURER_H_
+#ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_DESKTOP_CAPTURER_H_
+#define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_DESKTOP_CAPTURER_H_
 
 #include <memory>
 #include <string>
@@ -81,4 +81,4 @@ class DesktopCapturer : public gin::Wrappable<DesktopCapturer>,
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_ELECTRON_API_DESKTOP_CAPTURER_H_
+#endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_DESKTOP_CAPTURER_H_

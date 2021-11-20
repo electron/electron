@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_BADGING_BADGE_MANAGER_H_
-#define SHELL_BROWSER_BADGING_BADGE_MANAGER_H_
+#ifndef ELECTRON_SHELL_BROWSER_BADGING_BADGE_MANAGER_H_
+#define ELECTRON_SHELL_BROWSER_BADGING_BADGE_MANAGER_H_
 
 #include <memory>
 #include <string>
@@ -105,4 +105,4 @@ class BadgeManager : public KeyedService, public blink::mojom::BadgeService {
 
 }  // namespace badging
 
-#endif  // SHELL_BROWSER_BADGING_BADGE_MANAGER_H_
+#endif  // ELECTRON_SHELL_BROWSER_BADGING_BADGE_MANAGER_H_

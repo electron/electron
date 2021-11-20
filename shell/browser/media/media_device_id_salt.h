@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_MEDIA_MEDIA_DEVICE_ID_SALT_H_
-#define SHELL_BROWSER_MEDIA_MEDIA_DEVICE_ID_SALT_H_
+#ifndef ELECTRON_SHELL_BROWSER_MEDIA_MEDIA_DEVICE_ID_SALT_H_
+#define ELECTRON_SHELL_BROWSER_MEDIA_MEDIA_DEVICE_ID_SALT_H_
 
 #include <string>
 
@@ -37,4 +37,4 @@ class MediaDeviceIDSalt {
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_MEDIA_MEDIA_DEVICE_ID_SALT_H_
+#endif  // ELECTRON_SHELL_BROWSER_MEDIA_MEDIA_DEVICE_ID_SALT_H_

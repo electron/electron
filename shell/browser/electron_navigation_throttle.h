@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_ELECTRON_NAVIGATION_THROTTLE_H_
-#define SHELL_BROWSER_ELECTRON_NAVIGATION_THROTTLE_H_
+#ifndef ELECTRON_SHELL_BROWSER_ELECTRON_NAVIGATION_THROTTLE_H_
+#define ELECTRON_SHELL_BROWSER_ELECTRON_NAVIGATION_THROTTLE_H_
 
 #include "content/public/browser/navigation_throttle.h"
 
@@ -29,4 +29,4 @@ class ElectronNavigationThrottle : public content::NavigationThrottle {
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_ELECTRON_NAVIGATION_THROTTLE_H_
+#endif  // ELECTRON_SHELL_BROWSER_ELECTRON_NAVIGATION_THROTTLE_H_
