@@ -9,8 +9,9 @@ const klaw = require('klaw');
 const minimist = require('minimist');
 const path = require('path');
 
-const SOURCE_ROOT = path.normalize(path.dirname(__dirname));
-const DEPOT_TOOLS = path.resolve(SOURCE_ROOT, '..', 'third_party', 'depot_tools');
+const ELECTRON_ROOT = path.normalize(path.dirname(__dirname));
+const SOURCE_ROOT = path.resolve(ELECTRON_ROOT, '..');
+const DEPOT_TOOLS = path.resolve(SOURCE_ROOT, 'third_party', 'depot_tools');
 
 const IGNORELIST = new Set([
   ['shell', 'browser', 'resources', 'win', 'resource.h'],
@@ -19,7 +20,7 @@ const IGNORELIST = new Set([
   ['spec', 'ts-smoke', 'electron', 'main.ts'],
   ['spec', 'ts-smoke', 'electron', 'renderer.ts'],
   ['spec', 'ts-smoke', 'runner.js']
-].map(tokens => path.join(SOURCE_ROOT, ...tokens)));
+].map(tokens => path.join(ELECTRON_ROOT, ...tokens)));
 
 const IS_WINDOWS = process.platform === 'win32';
 
@@ -101,7 +102,7 @@ const LINTERS = [{
   run: (opts, filenames) => {
     const rcfile = path.join(DEPOT_TOOLS, 'pylintrc');
     const args = ['--rcfile=' + rcfile, ...filenames];
-    const env = Object.assign({ PYTHONPATH: path.join(SOURCE_ROOT, 'script') }, process.env);
+    const env = Object.assign({ PYTHONPATH: path.join(ELECTRON_ROOT, 'script') }, process.env);
     spawnAndCheckExitCode('pylint', args, { env });
   }
 }, {
@@ -142,7 +143,7 @@ const LINTERS = [{
   run: (opts, filenames) => {
     const allOk = filenames.map(filename => {
       const env = Object.assign({
-        CHROMIUM_BUILDTOOLS_PATH: path.resolve(SOURCE_ROOT, '..', 'buildtools'),
+        CHROMIUM_BUILDTOOLS_PATH: path.resolve(ELECTRON_ROOT, '..', 'buildtools'),
         DEPOT_TOOLS_WIN_TOOLCHAIN: '0'
       }, process.env);
       // Users may not have depot_tools in PATH.
@@ -277,7 +278,7 @@ async function findFiles (args, linter) {
 
   // build the includelist
   if (args.changed) {
-    includelist = await findChangedFiles(SOURCE_ROOT);
+    includelist = await findChangedFiles(ELECTRON_ROOT);
     if (!includelist.size) {
       return [];
     }
@@ -287,12 +288,12 @@ async function findFiles (args, linter) {
 
   // accumulate the raw list of files
   for (const root of linter.roots) {
-    const files = await findMatchingFiles(path.join(SOURCE_ROOT, root), linter.test);
+    const files = await findMatchingFiles(path.join(ELECTRON_ROOT, root), linter.test);
     filenames.push(...files);
   }
 
   for (const ignoreRoot of (linter.ignoreRoots) || []) {
-    const ignorePath = path.join(SOURCE_ROOT, ignoreRoot);
+    const ignorePath = path.join(ELECTRON_ROOT, ignoreRoot);
     if (!fs.existsSync(ignorePath)) continue;
 
     const ignoreFiles = new Set(await findMatchingFiles(ignorePath, linter.test));
@@ -310,7 +311,7 @@ async function findFiles (args, linter) {
   // it's important that filenames be relative otherwise clang-format will
   // produce patches with absolute paths in them, which `git apply` will refuse
   // to apply.
-  return filenames.map(x => path.relative(SOURCE_ROOT, x));
+  return filenames.map(x => path.relative(ELECTRON_ROOT, x));
 }
 
 async function main () {

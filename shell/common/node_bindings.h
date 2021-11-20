@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_NODE_BINDINGS_H_
-#define SHELL_COMMON_NODE_BINDINGS_H_
+#ifndef ELECTRON_SHELL_COMMON_NODE_BINDINGS_H_
+#define ELECTRON_SHELL_COMMON_NODE_BINDINGS_H_
 
 #include <type_traits>
 
@@ -170,4 +170,4 @@ class NodeBindings {
 
 }  // namespace electron
 
-#endif  // SHELL_COMMON_NODE_BINDINGS_H_
+#endif  // ELECTRON_SHELL_COMMON_NODE_BINDINGS_H_

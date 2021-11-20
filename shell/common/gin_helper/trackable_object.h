@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_GIN_HELPER_TRACKABLE_OBJECT_H_
-#define SHELL_COMMON_GIN_HELPER_TRACKABLE_OBJECT_H_
+#ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_TRACKABLE_OBJECT_H_
+#define ELECTRON_SHELL_COMMON_GIN_HELPER_TRACKABLE_OBJECT_H_
 
 #include <vector>
 
@@ -137,4 +137,4 @@ electron::KeyWeakMap<int32_t>* TrackableObject<T>::weak_map_ = nullptr;
 
 }  // namespace gin_helper
 
-#endif  // SHELL_COMMON_GIN_HELPER_TRACKABLE_OBJECT_H_
+#endif  // ELECTRON_SHELL_COMMON_GIN_HELPER_TRACKABLE_OBJECT_H_

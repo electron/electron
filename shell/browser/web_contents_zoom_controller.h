@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_WEB_CONTENTS_ZOOM_CONTROLLER_H_
-#define SHELL_BROWSER_WEB_CONTENTS_ZOOM_CONTROLLER_H_
+#ifndef ELECTRON_SHELL_BROWSER_WEB_CONTENTS_ZOOM_CONTROLLER_H_
+#define ELECTRON_SHELL_BROWSER_WEB_CONTENTS_ZOOM_CONTROLLER_H_
 
 #include "base/observer_list_types.h"
 #include "content/public/browser/host_zoom_map.h"
@@ -121,4 +121,4 @@ class WebContentsZoomController
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_WEB_CONTENTS_ZOOM_CONTROLLER_H_
+#endif  // ELECTRON_SHELL_BROWSER_WEB_CONTENTS_ZOOM_CONTROLLER_H_

@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_GIN_HELPER_OBJECT_TEMPLATE_BUILDER_H_
-#define SHELL_COMMON_GIN_HELPER_OBJECT_TEMPLATE_BUILDER_H_
+#ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_OBJECT_TEMPLATE_BUILDER_H_
+#define ELECTRON_SHELL_COMMON_GIN_HELPER_OBJECT_TEMPLATE_BUILDER_H_
 
 #include "shell/common/gin_helper/function_template.h"
 
@@ -74,4 +74,4 @@ class ObjectTemplateBuilder {
 
 }  // namespace gin_helper
 
-#endif  // SHELL_COMMON_GIN_HELPER_OBJECT_TEMPLATE_BUILDER_H_
+#endif  // ELECTRON_SHELL_COMMON_GIN_HELPER_OBJECT_TEMPLATE_BUILDER_H_

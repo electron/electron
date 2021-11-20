@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_UI_WIN_TASKBAR_HOST_H_
-#define SHELL_BROWSER_UI_WIN_TASKBAR_HOST_H_
+#ifndef ELECTRON_SHELL_BROWSER_UI_WIN_TASKBAR_HOST_H_
+#define ELECTRON_SHELL_BROWSER_UI_WIN_TASKBAR_HOST_H_
 
 #include <shobjidl.h>
 #include <wrl/client.h>
@@ -84,4 +84,4 @@ class TaskbarHost {
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_UI_WIN_TASKBAR_HOST_H_
+#endif  // ELECTRON_SHELL_BROWSER_UI_WIN_TASKBAR_HOST_H_

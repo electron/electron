@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_API_OBJECT_LIFE_MONITOR_H_
-#define SHELL_COMMON_API_OBJECT_LIFE_MONITOR_H_
+#ifndef ELECTRON_SHELL_COMMON_API_OBJECT_LIFE_MONITOR_H_
+#define ELECTRON_SHELL_COMMON_API_OBJECT_LIFE_MONITOR_H_
 
 #include "base/memory/weak_ptr.h"
 #include "v8/include/v8.h"
@@ -32,4 +32,4 @@ class ObjectLifeMonitor {
 
 }  // namespace electron
 
-#endif  // SHELL_COMMON_API_OBJECT_LIFE_MONITOR_H_
+#endif  // ELECTRON_SHELL_COMMON_API_OBJECT_LIFE_MONITOR_H_

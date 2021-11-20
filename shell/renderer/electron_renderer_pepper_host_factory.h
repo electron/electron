@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_RENDERER_ELECTRON_RENDERER_PEPPER_HOST_FACTORY_H_
-#define SHELL_RENDERER_ELECTRON_RENDERER_PEPPER_HOST_FACTORY_H_
+#ifndef ELECTRON_SHELL_RENDERER_ELECTRON_RENDERER_PEPPER_HOST_FACTORY_H_
+#define ELECTRON_SHELL_RENDERER_ELECTRON_RENDERER_PEPPER_HOST_FACTORY_H_
 
 #include <memory>
 
@@ -37,4 +37,4 @@ class ElectronRendererPepperHostFactory : public ppapi::host::HostFactory {
   content::RendererPpapiHost* host_;
 };
 
-#endif  // SHELL_RENDERER_ELECTRON_RENDERER_PEPPER_HOST_FACTORY_H_
+#endif  // ELECTRON_SHELL_RENDERER_ELECTRON_RENDERER_PEPPER_HOST_FACTORY_H_

@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_UI_VIEWS_AUTOFILL_POPUP_VIEW_H_
-#define SHELL_BROWSER_UI_VIEWS_AUTOFILL_POPUP_VIEW_H_
+#ifndef ELECTRON_SHELL_BROWSER_UI_VIEWS_AUTOFILL_POPUP_VIEW_H_
+#define ELECTRON_SHELL_BROWSER_UI_VIEWS_AUTOFILL_POPUP_VIEW_H_
 
 #include <memory>
 
@@ -154,4 +154,4 @@ class AutofillPopupView : public views::WidgetDelegateView,
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_UI_VIEWS_AUTOFILL_POPUP_VIEW_H_
+#endif  // ELECTRON_SHELL_BROWSER_UI_VIEWS_AUTOFILL_POPUP_VIEW_H_

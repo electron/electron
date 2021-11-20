@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_RENDERER_ELECTRON_API_SERVICE_IMPL_H_
-#define SHELL_RENDERER_ELECTRON_API_SERVICE_IMPL_H_
+#ifndef ELECTRON_SHELL_RENDERER_ELECTRON_API_SERVICE_IMPL_H_
+#define ELECTRON_SHELL_RENDERER_ELECTRON_API_SERVICE_IMPL_H_
 
 #include <string>
 
@@ -70,4 +70,4 @@ class ElectronApiServiceImpl : public mojom::ElectronRenderer,
 
 }  // namespace electron
 
-#endif  // SHELL_RENDERER_ELECTRON_API_SERVICE_IMPL_H_
+#endif  // ELECTRON_SHELL_RENDERER_ELECTRON_API_SERVICE_IMPL_H_

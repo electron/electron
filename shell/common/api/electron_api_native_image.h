@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_API_ELECTRON_API_NATIVE_IMAGE_H_
-#define SHELL_COMMON_API_ELECTRON_API_NATIVE_IMAGE_H_
+#ifndef ELECTRON_SHELL_COMMON_API_ELECTRON_API_NATIVE_IMAGE_H_
+#define ELECTRON_SHELL_COMMON_API_ELECTRON_API_NATIVE_IMAGE_H_
 
 #include <map>
 #include <string>
@@ -142,4 +142,4 @@ class NativeImage : public gin::Wrappable<NativeImage> {
 
 }  // namespace electron
 
-#endif  // SHELL_COMMON_API_ELECTRON_API_NATIVE_IMAGE_H_
+#endif  // ELECTRON_SHELL_COMMON_API_ELECTRON_API_NATIVE_IMAGE_H_

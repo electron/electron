@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_RENDERER_WEB_WORKER_OBSERVER_H_
-#define SHELL_RENDERER_WEB_WORKER_OBSERVER_H_
+#ifndef ELECTRON_SHELL_RENDERER_WEB_WORKER_OBSERVER_H_
+#define ELECTRON_SHELL_RENDERER_WEB_WORKER_OBSERVER_H_
 
 #include <memory>
 
@@ -37,4 +37,4 @@ class WebWorkerObserver {
 
 }  // namespace electron
 
-#endif  // SHELL_RENDERER_WEB_WORKER_OBSERVER_H_
+#endif  // ELECTRON_SHELL_RENDERER_WEB_WORKER_OBSERVER_H_

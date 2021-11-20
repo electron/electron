@@ -3,8 +3,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#ifndef SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_H_
-#define SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_H_
+#ifndef ELECTRON_SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_H_
+#define ELECTRON_SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_H_
 
 #include <list>
 #include <map>
@@ -246,4 +246,4 @@ class InspectableWebContents
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_H_
+#endif  // ELECTRON_SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_H_

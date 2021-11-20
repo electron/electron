@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_GIN_HELPER_EVENT_EMITTER_H_
-#define SHELL_COMMON_GIN_HELPER_EVENT_EMITTER_H_
+#ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_EVENT_EMITTER_H_
+#define ELECTRON_SHELL_COMMON_GIN_HELPER_EVENT_EMITTER_H_
 
 #include <utility>
 #include <vector>
@@ -101,4 +101,4 @@ class EventEmitter : public gin_helper::Wrappable<T> {
 
 }  // namespace gin_helper
 
-#endif  // SHELL_COMMON_GIN_HELPER_EVENT_EMITTER_H_
+#endif  // ELECTRON_SHELL_COMMON_GIN_HELPER_EVENT_EMITTER_H_
