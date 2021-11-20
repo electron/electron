@@ -2,6 +2,9 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#ifndef SHELL_BROWSER_MAC_ELECTRON_APPLICATION_H_
+#define SHELL_BROWSER_MAC_ELECTRON_APPLICATION_H_
+
 #include "base/callback.h"
 #include "base/mac/scoped_nsobject.h"
 #include "base/mac/scoped_sending_event.h"
@@ -45,3 +48,5 @@
                  withUserInfo:(NSDictionary*)userInfo;
 
 @end
+
+#endif  // SHELL_BROWSER_MAC_ELECTRON_APPLICATION_H_

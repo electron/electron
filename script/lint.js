@@ -14,10 +14,6 @@ const DEPOT_TOOLS = path.resolve(SOURCE_ROOT, '..', 'third_party', 'depot_tools'
 
 const IGNORELIST = new Set([
   ['shell', 'browser', 'resources', 'win', 'resource.h'],
-  ['shell', 'browser', 'notifications', 'mac', 'notification_center_delegate.h'],
-  ['shell', 'browser', 'ui', 'cocoa', 'event_dispatching_window.h'],
-  ['shell', 'browser', 'ui', 'cocoa', 'NSColor+Hex.h'],
-  ['shell', 'browser', 'ui', 'cocoa', 'NSString+ANSI.h'],
   ['shell', 'common', 'node_includes.h'],
   ['spec', 'static', 'jquery-2.0.3.min.js'],
   ['spec', 'ts-smoke', 'electron', 'main.ts'],
@@ -68,7 +64,7 @@ const LINTERS = [{
 }, {
   key: 'objc',
   roots: ['shell'],
-  test: filename => filename.endsWith('.mm'),
+  test: filename => filename.endsWith('.mm') || (filename.endsWith('.h') && isObjCHeader(filename)),
   run: (opts, filenames) => {
     if (opts.fix) {
       spawnAndCheckExitCode('python', ['script/run-clang-format.py', '--fix', ...filenames]);
@@ -81,7 +77,7 @@ const LINTERS = [{
       '-whitespace/indent',
       '-whitespace/parens'
     ];
-    cpplint(['--extensions=mm', `--filter=${filter.join(',')}`, ...filenames]);
+    cpplint(['--extensions=mm,h', `--filter=${filter.join(',')}`, ...filenames]);
   }
 }, {
   key: 'python',
