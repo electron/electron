@@ -1,0 +1,24 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Mon, 22 Nov 2021 16:47:28 +0100
+Subject: fix: use AllocationType::kOld in V8_SCRIPTORMODULE_LEGACY_LIFETIME
+
+See https://chromium-review.googlesource.com/c/v8/v8/+/3211575.
+Enabling V8_SCRIPTORMODULE_LEGACY_LIFETIME is necessary to fix ESM in
+Node.js, but Blink expects old allocations so we change this in the
+interim while Node.js works to remove their usage of WeakRefs to
+ScriptOrModule.
+
+diff --git a/src/heap/factory-base.cc b/src/heap/factory-base.cc
+index 89eb0defc2c1f1d2f6f59c3fb107d844e0c7f986..8a19a38c625daf1f48a5dffc109f73c41f465faa 100644
+--- a/src/heap/factory-base.cc
++++ b/src/heap/factory-base.cc
+@@ -284,7 +284,7 @@ Handle<Script> FactoryBase<Impl>::NewScriptWithId(
+ 
+ template <typename Impl>
+ Handle<ArrayList> FactoryBase<Impl>::NewArrayList(int size) {
+-  Handle<FixedArray> fixed_array = NewFixedArray(size + ArrayList::kFirstIndex);
++  Handle<FixedArray> fixed_array = NewFixedArray(size + ArrayList::kFirstIndex, AllocationType::kOld);
+   fixed_array->set_map_no_write_barrier(read_only_roots().array_list_map());
+   Handle<ArrayList> result = Handle<ArrayList>::cast(fixed_array);
+   result->SetLength(0);
