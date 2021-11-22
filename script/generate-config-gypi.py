@@ -17,10 +17,10 @@ def run_node_configure(target_cpu):
   # Enabled in Chromium's V8.
   if target_cpu == 'arm64' or target_cpu == 'x64':
     args += ['--experimental-enable-pointer-compression']
-  # Work around "No acceptable ASM compiler found" error on some Windows
-  # machines, it breaks nothing since Electron does not use OpenSSL.
-  if sys.platform == 'win32':
-    args += ['--openssl-no-asm']
+
+  # Work around "No acceptable ASM compiler found" error on some System,
+  # it breaks nothing since Electron does not use OpenSSL.
+  args += ['--openssl-no-asm']
   subprocess.check_call([sys.executable, configure] + args)
 
 def read_node_config_gypi():
