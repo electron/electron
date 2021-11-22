@@ -1,0 +1,291 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rayan Kanso <rayankans@google.com>
+Date: Tue, 9 Nov 2021 14:10:59 +0000
+Subject: Use WeakPtrs for the ThreadedIconLoader's background tasks.
+
+(cherry picked from commit f0375e38d259b3651fd9f305ca2e723ca9c02c64)
+
+Bug: 1241091
+Change-Id: I35b9cf705f1c5ffa2a719e47aec7b0f7d98ddc6b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3222803
+Reviewed-by: Michael Lippautz <mlippautz@chromium.org>
+Reviewed-by: Yutaka Hirano <yhirano@chromium.org>
+Reviewed-by: Kentaro Hara <haraken@chromium.org>
+Commit-Queue: Kentaro Hara <haraken@chromium.org>
+Auto-Submit: Rayan Kanso <rayankans@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#937427}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3269570
+Auto-Submit: Yutaka Hirano <yhirano@chromium.org>
+Commit-Queue: Yutaka Hirano <yhirano@chromium.org>
+Cr-Commit-Position: refs/branch-heads/4664@{#897}
+Cr-Branched-From: 24dc4ee75e01a29d390d43c9c264372a169273a7-refs/heads/main@{#929512}
+
+diff --git a/third_party/blink/renderer/core/loader/threaded_icon_loader.cc b/third_party/blink/renderer/core/loader/threaded_icon_loader.cc
+index aba93c594fc85d6f82ff5f2ebf339e46d03a7111..3c15a85a2788c7faca3f39273fe3e77e456a1bad 100644
+--- a/third_party/blink/renderer/core/loader/threaded_icon_loader.cc
++++ b/third_party/blink/renderer/core/loader/threaded_icon_loader.cc
+@@ -11,6 +11,7 @@
+ #include "skia/ext/image_operations.h"
+ #include "third_party/blink/public/mojom/fetch/fetch_api_request.mojom-blink.h"
+ #include "third_party/blink/renderer/core/execution_context/execution_context.h"
++#include "third_party/blink/renderer/platform/graphics/skia/skia_utils.h"
+ #include "third_party/blink/renderer/platform/image-decoders/image_decoder.h"
+ #include "third_party/blink/renderer/platform/image-decoders/image_frame.h"
+ #include "third_party/blink/renderer/platform/image-decoders/segment_reader.h"
+@@ -24,6 +25,80 @@
+ 
+ namespace blink {
+ 
++namespace {
++
++void DecodeAndResizeImage(
++    scoped_refptr<base::SingleThreadTaskRunner> task_runner,
++    scoped_refptr<SegmentReader> data,
++    gfx::Size resize_dimensions,
++    CrossThreadOnceFunction<void(SkBitmap, double)> done_callback) {
++  auto notify_complete = [&](SkBitmap icon, double resize_scale) {
++    // This is needed so it can be moved cross-thread.
++    icon.setImmutable();
++    PostCrossThreadTask(*task_runner, FROM_HERE,
++                        CrossThreadBindOnce(std::move(done_callback),
++                                            std::move(icon), resize_scale));
++  };
++
++  std::unique_ptr<ImageDecoder> decoder = ImageDecoder::Create(
++      std::move(data), /* data_complete= */ true,
++      ImageDecoder::kAlphaPremultiplied, ImageDecoder::kDefaultBitDepth,
++      ColorBehavior::TransformToSRGB());
++
++  if (!decoder) {
++    notify_complete(SkBitmap(), -1.0);
++    return;
++  }
++
++  ImageFrame* image_frame = decoder->DecodeFrameBufferAtIndex(0);
++
++  if (!image_frame) {
++    notify_complete(SkBitmap(), -1.0);
++    return;
++  }
++
++  SkBitmap decoded_icon = image_frame->Bitmap();
++  if (resize_dimensions.IsEmpty()) {
++    notify_complete(std::move(decoded_icon), 1.0);
++    return;
++  }
++
++  // If the icon is larger than |resize_dimensions| permits, we need to
++  // resize it as well. This can be done synchronously given that we're on a
++  // background thread already.
++  double scale = std::min(
++      static_cast<double>(resize_dimensions.width()) / decoded_icon.width(),
++      static_cast<double>(resize_dimensions.height()) / decoded_icon.height());
++
++  if (scale >= 1.0) {
++    notify_complete(std::move(decoded_icon), 1.0);
++    return;
++  }
++
++  int resized_width =
++      base::ClampToRange(static_cast<int>(scale * decoded_icon.width()), 1,
++                         resize_dimensions.width());
++  int resized_height =
++      base::ClampToRange(static_cast<int>(scale * decoded_icon.height()), 1,
++                         resize_dimensions.height());
++
++  // Use the RESIZE_GOOD quality allowing the implementation to pick an
++  // appropriate method for the resize. Can be increased to RESIZE_BETTER
++  // or RESIZE_BEST if the quality looks poor.
++  SkBitmap resized_icon = skia::ImageOperations::Resize(
++      decoded_icon, skia::ImageOperations::RESIZE_GOOD, resized_width,
++      resized_height);
++
++  if (resized_icon.isNull()) {
++    notify_complete(std::move(decoded_icon), 1.0);
++    return;
++  }
++
++  notify_complete(std::move(resized_icon), scale);
++}
++
++}  // namespace
++
+ void ThreadedIconLoader::Start(
+     ExecutionContext* execution_context,
+     const ResourceRequestHead& resource_request,
+@@ -83,87 +158,18 @@ void ThreadedIconLoader::DidFinishLoading(uint64_t resource_identifier) {
+   worker_pool::PostTask(
+       FROM_HERE,
+       CrossThreadBindOnce(
+-          &ThreadedIconLoader::DecodeAndResizeImageOnBackgroundThread,
+-          WrapCrossThreadPersistent(this), std::move(task_runner),
+-          SegmentReader::CreateFromSharedBuffer(std::move(data_))));
+-}
+-
+-void ThreadedIconLoader::DecodeAndResizeImageOnBackgroundThread(
+-    scoped_refptr<base::SingleThreadTaskRunner> task_runner,
+-    scoped_refptr<SegmentReader> data) {
+-  DCHECK(task_runner);
+-  DCHECK(data);
+-
+-  auto notify_complete = [&](double refactor_scale) {
+-    PostCrossThreadTask(
+-        *task_runner, FROM_HERE,
+-        CrossThreadBindOnce(&ThreadedIconLoader::OnBackgroundTaskComplete,
+-                            WrapCrossThreadPersistent(this), refactor_scale));
+-  };
+-
+-  std::unique_ptr<ImageDecoder> decoder = ImageDecoder::Create(
+-      std::move(data), /* data_complete= */ true,
+-      ImageDecoder::kAlphaPremultiplied, ImageDecoder::kDefaultBitDepth,
+-      ColorBehavior::TransformToSRGB());
+-
+-  if (!decoder) {
+-    notify_complete(-1.0);
+-    return;
+-  }
+-
+-  ImageFrame* image_frame = decoder->DecodeFrameBufferAtIndex(0);
+-
+-  if (!image_frame) {
+-    notify_complete(-1.0);
+-    return;
+-  }
+-
+-  decoded_icon_ = image_frame->Bitmap();
+-  if (!resize_dimensions_) {
+-    notify_complete(1.0);
+-    return;
+-  }
+-
+-  // If the icon is larger than |resize_dimensions_| permits, we need to resize
+-  // it as well. This can be done synchronously given that we're on a
+-  // background thread already.
+-  double scale = std::min(
+-      static_cast<double>(resize_dimensions_->width()) / decoded_icon_.width(),
+-      static_cast<double>(resize_dimensions_->height()) /
+-          decoded_icon_.height());
+-
+-  if (scale >= 1.0) {
+-    notify_complete(1.0);
+-    return;
+-  }
+-
+-  int resized_width =
+-      base::ClampToRange(static_cast<int>(scale * decoded_icon_.width()), 1,
+-                         resize_dimensions_->width());
+-  int resized_height =
+-      base::ClampToRange(static_cast<int>(scale * decoded_icon_.height()), 1,
+-                         resize_dimensions_->height());
+-
+-  // Use the RESIZE_GOOD quality allowing the implementation to pick an
+-  // appropriate method for the resize. Can be increased to RESIZE_BETTER
+-  // or RESIZE_BEST if the quality looks poor.
+-  SkBitmap resized_icon = skia::ImageOperations::Resize(
+-      decoded_icon_, skia::ImageOperations::RESIZE_GOOD, resized_width,
+-      resized_height);
+-
+-  if (resized_icon.isNull()) {
+-    notify_complete(1.0);
+-    return;
+-  }
+-
+-  decoded_icon_ = std::move(resized_icon);
+-  notify_complete(scale);
++          &DecodeAndResizeImage, std::move(task_runner),
++          SegmentReader::CreateFromSharedBuffer(std::move(data_)),
++          resize_dimensions_ ? *resize_dimensions_ : gfx::Size(),
++          CrossThreadBindOnce(&ThreadedIconLoader::OnBackgroundTaskComplete,
++                              WrapCrossThreadWeakPersistent(this))));
+ }
+ 
+-void ThreadedIconLoader::OnBackgroundTaskComplete(double resize_scale) {
++void ThreadedIconLoader::OnBackgroundTaskComplete(SkBitmap icon,
++                                                  double resize_scale) {
+   if (stopped_)
+     return;
+-  std::move(icon_callback_).Run(std::move(decoded_icon_), resize_scale);
++  std::move(icon_callback_).Run(std::move(icon), resize_scale);
+ }
+ 
+ void ThreadedIconLoader::DidFail(uint64_t, const ResourceError& error) {
+diff --git a/third_party/blink/renderer/core/loader/threaded_icon_loader.h b/third_party/blink/renderer/core/loader/threaded_icon_loader.h
+index c1a9bb22b21ef1623c0aefc83ceeafe8e1e0a791..63a293b280678b4f0cc480616474b8cb99469eb7 100644
+--- a/third_party/blink/renderer/core/loader/threaded_icon_loader.h
++++ b/third_party/blink/renderer/core/loader/threaded_icon_loader.h
+@@ -18,7 +18,6 @@
+ namespace blink {
+ 
+ class ResourceRequestHead;
+-class SegmentReader;
+ 
+ // Utility class for loading, decoding, and potentially rescaling an icon on a
+ // background thread. Note that icons are only downscaled and never upscaled.
+@@ -52,11 +51,7 @@ class CORE_EXPORT ThreadedIconLoader final
+   void Trace(Visitor* visitor) const override;
+ 
+  private:
+-  void DecodeAndResizeImageOnBackgroundThread(
+-      scoped_refptr<base::SingleThreadTaskRunner> task_runner,
+-      scoped_refptr<SegmentReader> data);
+-
+-  void OnBackgroundTaskComplete(double resize_scale);
++  void OnBackgroundTaskComplete(SkBitmap icon, double resize_scale);
+ 
+   Member<ThreadableLoader> threadable_loader_;
+ 
+@@ -64,9 +59,7 @@ class CORE_EXPORT ThreadedIconLoader final
+   // of the image data starts.
+   scoped_refptr<SharedBuffer> data_;
+ 
+-  // Accessed from main thread and background thread.
+   absl::optional<gfx::Size> resize_dimensions_;
+-  SkBitmap decoded_icon_;
+ 
+   IconCallback icon_callback_;
+ 
+diff --git a/third_party/blink/renderer/modules/content_index/content_index_icon_loader.cc b/third_party/blink/renderer/modules/content_index/content_index_icon_loader.cc
+index 79f4224fd96c46d7a6e1caabb44a509443b4bbff..3b5f52a9beb9c86d712332a4605f1b46c40f7682 100644
+--- a/third_party/blink/renderer/modules/content_index/content_index_icon_loader.cc
++++ b/third_party/blink/renderer/modules/content_index/content_index_icon_loader.cc
+@@ -26,6 +26,7 @@ constexpr base::TimeDelta kIconFetchTimeout = base::TimeDelta::FromSeconds(30);
+ void FetchIcon(ExecutionContext* execution_context,
+                const KURL& icon_url,
+                const gfx::Size& icon_size,
++               ThreadedIconLoader* threaded_icon_loader,
+                ThreadedIconLoader::IconCallback callback) {
+   ResourceRequest resource_request(icon_url);
+   resource_request.SetRequestContext(mojom::blink::RequestContextType::IMAGE);
+@@ -34,7 +35,6 @@ void FetchIcon(ExecutionContext* execution_context,
+   resource_request.SetPriority(ResourceLoadPriority::kMedium);
+   resource_request.SetTimeoutInterval(kIconFetchTimeout);
+ 
+-  auto* threaded_icon_loader = MakeGarbageCollected<ThreadedIconLoader>();
+   threaded_icon_loader->Start(execution_context, resource_request, icon_size,
+                               std::move(callback));
+ }
+@@ -100,16 +100,21 @@ void ContentIndexIconLoader::Start(
+     if (icon_url.IsEmpty())
+       icon_url = KURL(image_resources[0].src);
+ 
++    auto* threaded_icon_loader = MakeGarbageCollected<ThreadedIconLoader>();
+     // |icons_ptr| is safe to use since it is owned by |barrier_closure|.
+     FetchIcon(
+-        execution_context, icon_url, icon_size,
++        execution_context, icon_url, icon_size, threaded_icon_loader,
+         WTF::Bind(
+             [](base::OnceClosure done_closure, Vector<SkBitmap>* icons_ptr,
+-               SkBitmap icon, double resize_scale) {
++               ThreadedIconLoader* icon_loader, SkBitmap icon,
++               double resize_scale) {
+               icons_ptr->push_back(std::move(icon));
+               std::move(done_closure).Run();
+             },
+-            barrier_closure, WTF::Unretained(icons_ptr)));
++            barrier_closure, WTF::Unretained(icons_ptr),
++            // Pass |threaded_icon_loader| to the callback to make sure it
++            // doesn't get destroyed.
++            WrapPersistent(threaded_icon_loader)));
+   }
+ }
+ 
