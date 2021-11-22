@@ -120,6 +120,8 @@ move_networkstateobserver_from_document_to_window.patch
 cherry-pick-8af66de55aad.patch
 cherry-pick-91dd4f79ab5b.patch
 cherry-pick-45f9dcf5021d.patch
-load_v8_snapshot_in_browser_process.patch
-fix_patch_out_permissions_checks_in_exclusive_access.patch
+introduce_crossthreadcopier_skbitmap.patch
+allow_null_skbitmap_to_be_transferred_across_threads.patch
+use_weakptrs_for_the_threadediconloader_s_background_tasks.patch
+cherry-pick-a5f54612590d.patch
 fix_aspect_ratio_with_max_size.patch
