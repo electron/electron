@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_APP_ELECTRON_CRASH_REPORTER_CLIENT_H_
-#define SHELL_APP_ELECTRON_CRASH_REPORTER_CLIENT_H_
+#ifndef ELECTRON_SHELL_APP_ELECTRON_CRASH_REPORTER_CLIENT_H_
+#define ELECTRON_SHELL_APP_ELECTRON_CRASH_REPORTER_CLIENT_H_
 
 #include <map>
 #include <string>
@@ -91,4 +91,4 @@ class ElectronCrashReporterClient : public crash_reporter::CrashReporterClient {
   ~ElectronCrashReporterClient() override;
 };
 
-#endif  // SHELL_APP_ELECTRON_CRASH_REPORTER_CLIENT_H_
+#endif  // ELECTRON_SHELL_APP_ELECTRON_CRASH_REPORTER_CLIENT_H_

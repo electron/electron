@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_UI_WEBUI_ACCESSIBILITY_UI_H_
-#define SHELL_BROWSER_UI_WEBUI_ACCESSIBILITY_UI_H_
+#ifndef ELECTRON_SHELL_BROWSER_UI_WEBUI_ACCESSIBILITY_UI_H_
+#define ELECTRON_SHELL_BROWSER_UI_WEBUI_ACCESSIBILITY_UI_H_
 
 #include "chrome/browser/accessibility/accessibility_ui.h"
 #include "content/public/browser/web_ui_controller.h"
@@ -35,4 +35,4 @@ class ElectronAccessibilityUIMessageHandler
   void RequestNativeUITree(const base::ListValue* args);
 };
 
-#endif  // SHELL_BROWSER_UI_WEBUI_ACCESSIBILITY_UI_H_
+#endif  // ELECTRON_SHELL_BROWSER_UI_WEBUI_ACCESSIBILITY_UI_H_

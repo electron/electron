@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_UI_X_WINDOW_STATE_WATCHER_H_
-#define SHELL_BROWSER_UI_X_WINDOW_STATE_WATCHER_H_
+#ifndef ELECTRON_SHELL_BROWSER_UI_X_WINDOW_STATE_WATCHER_H_
+#define ELECTRON_SHELL_BROWSER_UI_X_WINDOW_STATE_WATCHER_H_
 
 #include "ui/events/platform/x11/x11_event_source.h"
 #include "ui/gfx/x/event.h"
@@ -39,4 +39,4 @@ class WindowStateWatcher : public x11::EventObserver {
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_UI_X_WINDOW_STATE_WATCHER_H_
+#endif  // ELECTRON_SHELL_BROWSER_UI_X_WINDOW_STATE_WATCHER_H_

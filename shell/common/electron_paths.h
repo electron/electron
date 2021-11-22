@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_ELECTRON_PATHS_H_
-#define SHELL_COMMON_ELECTRON_PATHS_H_
+#ifndef ELECTRON_SHELL_COMMON_ELECTRON_PATHS_H_
+#define ELECTRON_SHELL_COMMON_ELECTRON_PATHS_H_
 
 #include "base/base_paths.h"
 
@@ -46,4 +46,4 @@ static_assert(PATH_START < PATH_END, "invalid PATH boundaries");
 
 }  // namespace electron
 
-#endif  // SHELL_COMMON_ELECTRON_PATHS_H_
+#endif  // ELECTRON_SHELL_COMMON_ELECTRON_PATHS_H_

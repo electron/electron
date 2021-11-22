@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_ELECTRON_PERMISSION_MANAGER_H_
-#define SHELL_BROWSER_ELECTRON_PERMISSION_MANAGER_H_
+#ifndef ELECTRON_SHELL_BROWSER_ELECTRON_PERMISSION_MANAGER_H_
+#define ELECTRON_SHELL_BROWSER_ELECTRON_PERMISSION_MANAGER_H_
 
 #include <memory>
 #include <vector>
@@ -135,4 +135,4 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_ELECTRON_PERMISSION_MANAGER_H_
+#endif  // ELECTRON_SHELL_BROWSER_ELECTRON_PERMISSION_MANAGER_H_

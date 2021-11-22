@@ -7,8 +7,8 @@
 // will return NULL if the service is not available, so callers must check for
 // this condition.
 
-#ifndef SHELL_BROWSER_BROWSER_PROCESS_IMPL_H_
-#define SHELL_BROWSER_BROWSER_PROCESS_IMPL_H_
+#ifndef ELECTRON_SHELL_BROWSER_BROWSER_PROCESS_IMPL_H_
+#define ELECTRON_SHELL_BROWSER_BROWSER_PROCESS_IMPL_H_
 
 #include <memory>
 #include <string>
@@ -114,4 +114,4 @@ class BrowserProcessImpl : public BrowserProcess {
   std::string locale_;
 };
 
-#endif  // SHELL_BROWSER_BROWSER_PROCESS_IMPL_H_
+#endif  // ELECTRON_SHELL_BROWSER_BROWSER_PROCESS_IMPL_H_

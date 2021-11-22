@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_EXTENSIONS_ELECTRON_NAVIGATION_UI_DATA_H_
-#define SHELL_BROWSER_EXTENSIONS_ELECTRON_NAVIGATION_UI_DATA_H_
+#ifndef ELECTRON_SHELL_BROWSER_EXTENSIONS_ELECTRON_NAVIGATION_UI_DATA_H_
+#define ELECTRON_SHELL_BROWSER_EXTENSIONS_ELECTRON_NAVIGATION_UI_DATA_H_
 
 #include <memory>
 
@@ -47,4 +47,4 @@ class ElectronNavigationUIData : public content::NavigationUIData {
 
 }  // namespace extensions
 
-#endif  // SHELL_BROWSER_EXTENSIONS_ELECTRON_NAVIGATION_UI_DATA_H_
+#endif  // ELECTRON_SHELL_BROWSER_EXTENSIONS_ELECTRON_NAVIGATION_UI_DATA_H_

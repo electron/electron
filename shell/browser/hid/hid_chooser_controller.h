@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_HID_HID_CHOOSER_CONTROLLER_H_
-#define SHELL_BROWSER_HID_HID_CHOOSER_CONTROLLER_H_
+#ifndef ELECTRON_SHELL_BROWSER_HID_HID_CHOOSER_CONTROLLER_H_
+#define ELECTRON_SHELL_BROWSER_HID_HID_CHOOSER_CONTROLLER_H_
 
 #include <map>
 #include <string>
@@ -122,4 +122,4 @@ class HidChooserController
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_HID_HID_CHOOSER_CONTROLLER_H_
+#endif  // ELECTRON_SHELL_BROWSER_HID_HID_CHOOSER_CONTROLLER_H_

@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_GIN_CONVERTERS_BLINK_CONVERTER_H_
-#define SHELL_COMMON_GIN_CONVERTERS_BLINK_CONVERTER_H_
+#ifndef ELECTRON_SHELL_COMMON_GIN_CONVERTERS_BLINK_CONVERTER_H_
+#define ELECTRON_SHELL_COMMON_GIN_CONVERTERS_BLINK_CONVERTER_H_
 
 #include "gin/converter.h"
 #include "third_party/blink/public/common/context_menu_data/context_menu_data.h"
@@ -120,4 +120,4 @@ v8::Local<v8::Value> MediaFlagsToV8(v8::Isolate* isolate, int mediaFlags);
 
 }  // namespace gin
 
-#endif  // SHELL_COMMON_GIN_CONVERTERS_BLINK_CONVERTER_H_
+#endif  // ELECTRON_SHELL_COMMON_GIN_CONVERTERS_BLINK_CONVERTER_H_
