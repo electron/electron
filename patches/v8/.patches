@@ -12,3 +12,4 @@ regexp_allow_reentrant_irregexp_execution.patch
 regexp_remove_the_stack_parameter_from_regexp_matchers.patch
 cherry-pick-6de4e210688e.patch
 merge_inspector_use_ephemeron_table_for_exception_metadata.patch
+cherry-pick-5d2b5e7c006c.patch
