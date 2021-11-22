@@ -134,11 +134,12 @@ workflows:
     jobs:
       # Job inherited from path-filtering orb
       - path-filtering/filter:
-          base-revision: << pipeline.git.branch >>
+          base-revision: main
           # Params for mapping; `path-to-test parameter-to-set value-for-parameter` for each row
           mapping: |
             ^((?!docs/).)*$ run-build-mac true
             ^((?!docs/).)*$ run-build-linux true
             docs/.* run-docs-only true
+            ^((?!docs/).)*$ run-docs-only false
           config-path: .circleci/build_config.yml
       - lint
