@@ -90,6 +90,8 @@
 
 - (void)setHeight:(const float)height {
   height_ = height;
+  // recalculate for new margin y
+  margin_ = [self getCurrentMargin];
   [self redraw];
 }
 
@@ -199,7 +201,11 @@
   NSView* left = [self leftButton];
   NSView* right = [self rightButton];
 
-  result.set_y((NSHeight(titleBarContainer.frame) - NSHeight(left.frame)) / 2);
+  if (height_ != 0)
+    result.set_y((height_ - NSHeight(left.frame)) / 2);
+  else
+    result.set_y((NSHeight(titleBarContainer.frame) - NSHeight(left.frame)) /
+                 2);
 
   if (base::i18n::IsRTL())
     result.set_x(NSWidth(window_.frame) - NSMaxX(right.frame));
