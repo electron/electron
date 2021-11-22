@@ -1,0 +1,649 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Victor Costan <pwnall@chromium.org>
+Date: Wed, 10 Nov 2021 21:14:03 +0000
+Subject: M96: Storage Foundation: Avoid cross-thread access of
+ DOMArrayBufferView.
+
+blink::NativeIOFile::{read, write}() (in the Storage Foundation API
+implementation) pass DOMArrayBufferView instances to
+blink::NativeIOFile::Do{Read,Write}() via CrossThreadPersistent.
+blink::NativeIOFile::Do{Read,Write}() accesses these instances.
+
+CrossThreadPersistent can be used across threads to keep a garbage
+collected object alive. However, accessing the object on a different
+thread is not safe. cppgc::subtle::CrossThreadPersistent
+(blink::CrossThreadPersistent is an alias to that) has comments
+explaining that the garbage collected heap can go away while the
+CrossThreadPersistent instance exists.
+
+This CL bypasses the problem by having Do{Read,Write}() receive a
+ArrayBufferContents that has the DOMArrayBufferView's backing buffer.
+ArrayBufferContents is not garbage-collected, so it can be safely used
+across threads.
+
+This CL introduces a NativeIODataBuffer class that contains the logic
+and state for tearing a DOMArrayBufferView apart into its components
+(backing buffer, view type, view offset, view length) and putting it
+back together into a new DOMArrayBufferView, after it doesn't need to be
+accessed cross-thread anymore.
+
+(cherry picked from commit 5200793c2aea5979cc79f3350a4e3d6c0795d6f2)
+
+Bug: 1268274
+Change-Id: I51588f5bfe963de96ce426e0f480e8c5b4902688
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3269366
+Commit-Queue: Victor Costan <pwnall@chromium.org>
+Reviewed-by: enne <enne@chromium.org>
+Reviewed-by: Joshua Bell <jsbell@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#940070}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3272377
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/4664@{#941}
+Cr-Branched-From: 24dc4ee75e01a29d390d43c9c264372a169273a7-refs/heads/main@{#929512}
+
+diff --git a/third_party/blink/renderer/modules/native_io/native_io_file.cc b/third_party/blink/renderer/modules/native_io/native_io_file.cc
+index b25cf909f05be73f690fabee7942ee1fa83c1e04..4d5aa4efa13930aea4886bac0fd8ba892ce8b5a5 100644
+--- a/third_party/blink/renderer/modules/native_io/native_io_file.cc
++++ b/third_party/blink/renderer/modules/native_io/native_io_file.cc
+@@ -24,7 +24,9 @@
+ #include "third_party/blink/renderer/core/execution_context/execution_context.h"
+ #include "third_party/blink/renderer/core/execution_context/execution_context_lifecycle_observer.h"
+ #include "third_party/blink/renderer/core/execution_context/execution_context_lifecycle_state_observer.h"
++#include "third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.h"
+ #include "third_party/blink/renderer/core/typed_arrays/dom_array_buffer.h"
++#include "third_party/blink/renderer/core/typed_arrays/dom_array_buffer_view.h"
+ #include "third_party/blink/renderer/modules/native_io/native_io_error.h"
+ #include "third_party/blink/renderer/modules/native_io/native_io_file_utils.h"
+ #include "third_party/blink/renderer/platform/bindings/exception_code.h"
+@@ -256,39 +258,41 @@ ScriptPromise NativeIOFile::read(ScriptState* script_state,
+                                "The file was already closed"));
+     return ScriptPromise();
+   }
++
++  // TODO(pwnall): This assignment should move right before the
++  // worker_pool::PostTask() call.
++  //
++  // `io_pending_` should only be set to true when we know for sure we'll post a
++  // task that eventually results in getting `io_pending_` set back to false.
++  // Having `io_pending_` set to true in an early return case (rejecting with an
++  // exception) leaves the NativeIOFile "stuck" in a state where all future I/O
++  // method calls will reject.
+   io_pending_ = true;
+ 
+   int read_size = NativeIOOperationSize(*buffer);
+ 
+-  DOMArrayBufferView* result_buffer =
+-      TransferToNewArrayBufferView(script_state->GetIsolate(), buffer);
+-  if (!result_buffer) {
++  std::unique_ptr<NativeIODataBuffer> result_buffer_data =
++      NativeIODataBuffer::Create(script_state, buffer);
++  if (!result_buffer_data) {
+     exception_state.ThrowTypeError("Could not transfer buffer");
+     return ScriptPromise();
+   }
++  DCHECK(result_buffer_data->IsValid());
+   DCHECK(buffer->IsDetached());
+ 
+-  char* result_buffer_data = static_cast<char*>(result_buffer->BaseAddress());
+-
+   auto* resolver = MakeGarbageCollected<ScriptPromiseResolver>(script_state);
+   // The first CrossThreadUnretained() is safe here because the
+   // NativeIOFile::FileState instance is owned by this NativeIOFile, which is
+   // also passed to the task via WrapCrossThreadPersistent. Therefore, the
+   // FileState instance is guaranteed to remain alive during the task's
+   // execution.
+-  //
+-  // The second CrossThreadUnretained() is safe here because result_buffer_data
+-  // is backed by a DOMArrayBufferView that is also passed to the task via
+-  // WrapCrossThreadPersistent. Therefore, the buffer is guaranteed to remain
+-  // alive during the task's execution.
+   worker_pool::PostTask(
+       FROM_HERE, {base::MayBlock()},
+-      CrossThreadBindOnce(
+-          &DoRead, WrapCrossThreadPersistent(this),
+-          WrapCrossThreadPersistent(resolver),
+-          WrapCrossThreadPersistent(result_buffer),
+-          CrossThreadUnretained(file_state_.get()), resolver_task_runner_,
+-          CrossThreadUnretained(result_buffer_data), file_offset, read_size));
++      CrossThreadBindOnce(&DoRead, WrapCrossThreadPersistent(this),
++                          WrapCrossThreadPersistent(resolver),
++                          CrossThreadUnretained(file_state_.get()),
++                          resolver_task_runner_, std::move(result_buffer_data),
++                          file_offset, read_size));
+   return resolver->Promise();
+ }
+ 
+@@ -344,35 +348,28 @@ ScriptPromise NativeIOFile::write(ScriptState* script_state,
+ 
+   io_pending_ = true;
+ 
+-  DOMArrayBufferView* result_buffer =
+-      TransferToNewArrayBufferView(script_state->GetIsolate(), buffer);
+-  if (!result_buffer) {
++  std::unique_ptr<NativeIODataBuffer> result_buffer_data =
++      NativeIODataBuffer::Create(script_state, buffer);
++  if (!result_buffer_data) {
+     exception_state.ThrowTypeError("Could not transfer buffer");
+     return ScriptPromise();
+   }
++  DCHECK(result_buffer_data->IsValid());
+   DCHECK(buffer->IsDetached());
+ 
+-  char* result_buffer_data = static_cast<char*>(result_buffer->BaseAddress());
+-
+   auto* resolver = MakeGarbageCollected<ScriptPromiseResolver>(script_state);
+   // The first CrossThreadUnretained() is safe here because the
+   // NativeIOFile::FileState instance is owned by this NativeIOFile, which is
+   // also passed to the task via WrapCrossThreadPersistent. Therefore, the
+   // FileState instance is guaranteed to remain alive during the task's
+   // execution.
+-  //
+-  // The second CrossThreadUnretained() is safe here because result_buffer_data
+-  // is backed by a DOMArrayBufferView that is also passed to the task via
+-  // WrapCrossThreadPersistent. Therefore, the data is guaranteed to remain
+-  // alive during the task's execution.
+   worker_pool::PostTask(
+       FROM_HERE, {base::MayBlock()},
+-      CrossThreadBindOnce(
+-          &DoWrite, WrapCrossThreadPersistent(this),
+-          WrapCrossThreadPersistent(resolver),
+-          WrapCrossThreadPersistent(result_buffer),
+-          CrossThreadUnretained(file_state_.get()), resolver_task_runner_,
+-          CrossThreadUnretained(result_buffer_data), file_offset, write_size));
++      CrossThreadBindOnce(&DoWrite, WrapCrossThreadPersistent(this),
++                          WrapCrossThreadPersistent(resolver),
++                          CrossThreadUnretained(file_state_.get()),
++                          resolver_task_runner_, std::move(result_buffer_data),
++                          file_offset, write_size));
+   return resolver->Promise();
+ }
+ 
+@@ -676,22 +673,29 @@ void NativeIOFile::DidSetLengthIpc(
+ void NativeIOFile::DoRead(
+     CrossThreadPersistent<NativeIOFile> native_io_file,
+     CrossThreadPersistent<ScriptPromiseResolver> resolver,
+-    CrossThreadPersistent<DOMArrayBufferView> result_buffer,
+     NativeIOFile::FileState* file_state,
+     scoped_refptr<base::SequencedTaskRunner> resolver_task_runner,
+-    char* result_buffer_data,
++    std::unique_ptr<NativeIODataBuffer> result_buffer_data,
+     uint64_t file_offset,
+     int read_size) {
+   DCHECK(!IsMainThread()) << "File I/O should not happen on the main thread";
+ 
++  DCHECK(resolver_task_runner);
++  DCHECK(result_buffer_data);
++  DCHECK(result_buffer_data->IsValid());
++  DCHECK_GE(read_size, 0);
++#if DCHECK_IS_ON()
++  DCHECK_LE(static_cast<size_t>(read_size), result_buffer_data->DataLength());
++#endif  // DCHECK_IS_ON()
++
+   int read_bytes;
+   base::File::Error read_error;
+   {
+     WTF::MutexLocker mutex_locker(file_state->mutex);
+     DCHECK(file_state->file.IsValid())
+         << "file I/O operation queued after file closed";
+-    read_bytes =
+-        file_state->file.Read(file_offset, result_buffer_data, read_size);
++    read_bytes = file_state->file.Read(file_offset, result_buffer_data->Data(),
++                                       read_size);
+     read_error = (read_bytes < 0) ? file_state->file.GetLastFileError()
+                                   : base::File::FILE_OK;
+   }
+@@ -699,15 +703,18 @@ void NativeIOFile::DoRead(
+   PostCrossThreadTask(
+       *resolver_task_runner, FROM_HERE,
+       CrossThreadBindOnce(&NativeIOFile::DidRead, std::move(native_io_file),
+-                          std::move(resolver), std::move(result_buffer),
++                          std::move(resolver), std::move(result_buffer_data),
+                           read_bytes, read_error));
+ }
+ 
+ void NativeIOFile::DidRead(
+     CrossThreadPersistent<ScriptPromiseResolver> resolver,
+-    CrossThreadPersistent<DOMArrayBufferView> result_buffer,
++    std::unique_ptr<NativeIODataBuffer> result_buffer_data,
+     int read_bytes,
+     base::File::Error read_error) {
++  DCHECK(result_buffer_data);
++  DCHECK(result_buffer_data->IsValid());
++
+   ScriptState* script_state = resolver->GetScriptState();
+   if (!script_state->ContextIsValid())
+     return;
+@@ -727,7 +734,7 @@ void NativeIOFile::DidRead(
+   DCHECK_EQ(read_error, base::File::FILE_OK)
+       << "Error set but positive number of bytes read.";
+   NativeIOReadResult* read_result = MakeGarbageCollected<NativeIOReadResult>();
+-  read_result->setBuffer(NotShared<DOMArrayBufferView>(result_buffer));
++  read_result->setBuffer(result_buffer_data->Take());
+   read_result->setReadBytes(read_bytes);
+   resolver->Resolve(read_result);
+ }
+@@ -736,13 +743,19 @@ void NativeIOFile::DidRead(
+ void NativeIOFile::DoWrite(
+     CrossThreadPersistent<NativeIOFile> native_io_file,
+     CrossThreadPersistent<ScriptPromiseResolver> resolver,
+-    CrossThreadPersistent<DOMArrayBufferView> result_buffer,
+     NativeIOFile::FileState* file_state,
+     scoped_refptr<base::SequencedTaskRunner> resolver_task_runner,
+-    const char* result_buffer_data,
++    std::unique_ptr<NativeIODataBuffer> result_buffer_data,
+     uint64_t file_offset,
+     int write_size) {
+   DCHECK(!IsMainThread()) << "File I/O should not happen on the main thread";
++  DCHECK(resolver_task_runner);
++  DCHECK(result_buffer_data);
++  DCHECK(result_buffer_data->IsValid());
++  DCHECK_GE(write_size, 0);
++#if DCHECK_IS_ON()
++  DCHECK_LE(static_cast<size_t>(write_size), result_buffer_data->DataLength());
++#endif  // DCHECK_IS_ON()
+ 
+   int written_bytes;
+   int64_t actual_file_length_on_failure = 0;
+@@ -751,8 +764,8 @@ void NativeIOFile::DoWrite(
+     WTF::MutexLocker mutex_locker(file_state->mutex);
+     DCHECK(file_state->file.IsValid())
+         << "file I/O operation queued after file closed";
+-    written_bytes =
+-        file_state->file.Write(file_offset, result_buffer_data, write_size);
++    written_bytes = file_state->file.Write(
++        file_offset, result_buffer_data->Data(), write_size);
+     write_error = (written_bytes < 0) ? file_state->file.GetLastFileError()
+                                       : base::File::FILE_OK;
+     if (written_bytes < write_size || write_error != base::File::FILE_OK) {
+@@ -767,18 +780,21 @@ void NativeIOFile::DoWrite(
+   PostCrossThreadTask(
+       *resolver_task_runner, FROM_HERE,
+       CrossThreadBindOnce(&NativeIOFile::DidWrite, std::move(native_io_file),
+-                          std::move(resolver), std::move(result_buffer),
++                          std::move(resolver), std::move(result_buffer_data),
+                           written_bytes, write_error, write_size,
+                           actual_file_length_on_failure));
+ }
+ 
+ void NativeIOFile::DidWrite(
+     CrossThreadPersistent<ScriptPromiseResolver> resolver,
+-    CrossThreadPersistent<DOMArrayBufferView> result_buffer,
++    std::unique_ptr<NativeIODataBuffer> result_buffer_data,
+     int written_bytes,
+     base::File::Error write_error,
+     int write_size,
+     int64_t actual_file_length_on_failure) {
++  DCHECK(result_buffer_data);
++  DCHECK(result_buffer_data->IsValid());
++
+   ScriptState* script_state = resolver->GetScriptState();
+   if (!script_state->ContextIsValid())
+     return;
+@@ -821,7 +837,7 @@ void NativeIOFile::DidWrite(
+   DCHECK_EQ(write_error, base::File::FILE_OK);
+   NativeIOWriteResult* write_result =
+       MakeGarbageCollected<NativeIOWriteResult>();
+-  write_result->setBuffer(NotShared<DOMArrayBufferView>(result_buffer));
++  write_result->setBuffer(result_buffer_data->Take());
+   write_result->setWrittenBytes(written_bytes);
+   resolver->Resolve(write_result);
+ }
+diff --git a/third_party/blink/renderer/modules/native_io/native_io_file.h b/third_party/blink/renderer/modules/native_io/native_io_file.h
+index 2e41efeefbcf9805ec2b2ed70d018c717c5c75d1..8ae49ebc2d36d547d152d4e56192e30f8cacd641 100644
+--- a/third_party/blink/renderer/modules/native_io/native_io_file.h
++++ b/third_party/blink/renderer/modules/native_io/native_io_file.h
+@@ -16,6 +16,7 @@
+ #include "third_party/blink/renderer/core/typed_arrays/array_buffer_view_helpers.h"
+ #include "third_party/blink/renderer/core/typed_arrays/dom_array_buffer_view.h"
+ #include "third_party/blink/renderer/modules/native_io/native_io_capacity_tracker.h"
++#include "third_party/blink/renderer/modules/native_io/native_io_file_utils.h"
+ #include "third_party/blink/renderer/platform/bindings/script_wrappable.h"
+ #include "third_party/blink/renderer/platform/heap/handle.h"
+ #include "third_party/blink/renderer/platform/heap/persistent.h"
+@@ -127,15 +128,14 @@ class NativeIOFile final : public ScriptWrappable {
+   // Performs the file I/O part of read(), off the main thread.
+   static void DoRead(CrossThreadPersistent<NativeIOFile> native_io_file,
+                      CrossThreadPersistent<ScriptPromiseResolver> resolver,
+-                     CrossThreadPersistent<DOMArrayBufferView> result_buffer,
+                      NativeIOFile::FileState* file_state,
+                      scoped_refptr<base::SequencedTaskRunner> file_task_runner,
+-                     char* result_buffer_data,
++                     std::unique_ptr<NativeIODataBuffer> result_buffer_data,
+                      uint64_t file_offset,
+                      int read_size);
+   // Performs the post file I/O part of read(), on the main thread.
+   void DidRead(CrossThreadPersistent<ScriptPromiseResolver> resolver,
+-               CrossThreadPersistent<DOMArrayBufferView> result_buffer,
++               std::unique_ptr<NativeIODataBuffer> result_buffer_data,
+                int read_bytes,
+                base::File::Error read_error);
+ 
+@@ -143,10 +143,9 @@ class NativeIOFile final : public ScriptWrappable {
+   static void DoWrite(
+       CrossThreadPersistent<NativeIOFile> native_io_file,
+       CrossThreadPersistent<ScriptPromiseResolver> resolver,
+-      CrossThreadPersistent<DOMArrayBufferView> result_buffer,
+       NativeIOFile::FileState* file_state,
+       scoped_refptr<base::SequencedTaskRunner> resolver_task_runner,
+-      const char* result_buffer_data,
++      std::unique_ptr<NativeIODataBuffer> result_buffer_data,
+       uint64_t file_offset,
+       int write_size);
+   // Performs the post file I/O part of write(), on the main thread.
+@@ -154,7 +153,7 @@ class NativeIOFile final : public ScriptWrappable {
+   // `actual_file_length_on_failure` is negative if the I/O operation was
+   // unsuccessful and the correct length of the file could not be determined.
+   void DidWrite(CrossThreadPersistent<ScriptPromiseResolver> resolver,
+-                CrossThreadPersistent<DOMArrayBufferView> result_buffer,
++                std::unique_ptr<NativeIODataBuffer> result_buffer_data,
+                 int written_bytes,
+                 base::File::Error write_error,
+                 int write_size,
+diff --git a/third_party/blink/renderer/modules/native_io/native_io_file_utils.cc b/third_party/blink/renderer/modules/native_io/native_io_file_utils.cc
+index c50a0a94d111d9ea4eb1eac8a7da920936e0d1a3..3e98a12059374d41b22c8d5c706c31e81581aeae 100644
+--- a/third_party/blink/renderer/modules/native_io/native_io_file_utils.cc
++++ b/third_party/blink/renderer/modules/native_io/native_io_file_utils.cc
+@@ -3,9 +3,16 @@
+ // found in the LICENSE file.
+ 
+ #include "third_party/blink/renderer/modules/native_io/native_io_file_utils.h"
++
+ #include "base/numerics/safe_conversions.h"
++#include "base/sequence_checker.h"
++#include "base/types/pass_key.h"
++#include "third_party/blink/renderer/core/typed_arrays/dom_array_buffer.h"
++#include "third_party/blink/renderer/core/typed_arrays/dom_array_buffer_view.h"
+ #include "third_party/blink/renderer/core/typed_arrays/dom_data_view.h"
+ #include "third_party/blink/renderer/core/typed_arrays/dom_typed_array.h"
++#include "third_party/blink/renderer/platform/bindings/script_state.h"
++#include "v8/include/v8.h"
+ 
+ namespace blink {
+ 
+@@ -72,4 +79,140 @@ DOMArrayBufferView* TransferToNewArrayBufferView(
+   return target;
+ }
+ 
++// static
++std::unique_ptr<NativeIODataBuffer> NativeIODataBuffer::Create(
++    ScriptState* script_state,
++    NotShared<DOMArrayBufferView> source) {
++  DCHECK(script_state);
++  DCHECK(source);
++
++  DOMArrayBufferView::ViewType type = source->GetType();
++  size_t offset = source->byteOffset();
++  size_t byte_length = source->byteLength();
++  size_t length = byte_length / source->TypeSize();
++
++  // Explicitly fail if the source buffer is not detachable. On its own,
++  // Transfer() copies non-detachable input buffers.
++  DOMArrayBuffer* buffer = source->buffer();
++  v8::Isolate* isolate = script_state->GetIsolate();
++  if (!buffer->IsDetachable(isolate))
++    return nullptr;
++
++  ArrayBufferContents contents;
++  if (!buffer->Transfer(isolate, contents))
++    return nullptr;
++  DCHECK(source->IsDetached());
++
++  return std::make_unique<NativeIODataBuffer>(
++      std::move(contents), type, offset,
++#if DCHECK_IS_ON()
++      byte_length,
++#endif  // DCHECK_IS_ON()
++      length, base::PassKey<NativeIODataBuffer>());
++}
++
++NativeIODataBuffer::NativeIODataBuffer(ArrayBufferContents contents,
++                                       DOMArrayBufferView::ViewType type,
++                                       size_t offset,
++#if DCHECK_IS_ON()
++                                       size_t byte_length,
++#endif  // DCHECK_IS_ON()
++                                       size_t length,
++                                       base::PassKey<NativeIODataBuffer>)
++    : contents_(std::move(contents)),
++      type_(type),
++      offset_(offset),
++#if DCHECK_IS_ON()
++      byte_length_(byte_length),
++#endif  // DCHECK_IS_ON()
++      length_(length) {
++  DCHECK(IsValid());
++  DCHECK(!contents_.IsShared());
++
++  // DataLength() returns 0 when called on an invalid ArrayBufferContents
++  // (backing an empty array). This works as expected.
++  DCHECK_LE(offset, contents_.DataLength());
++#if DCHECK_IS_ON()
++  DCHECK_LE(length, byte_length);
++  DCHECK_LE(byte_length, contents_.DataLength() - offset);
++#endif  // DCHECK_IS_ON()
++}
++
++NativeIODataBuffer::~NativeIODataBuffer() {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++}
++
++bool NativeIODataBuffer::IsValid() const {
++  // The ArrayBufferContents is not shared when this instance is constructed. It
++  // should not become shared while the instance is valid, because no other code
++  // can gain access and make it shared.
++  //
++  // ArrayBufferContents::IsShared() returns false for invalid instances, which
++  // works out well for this check.
++  DCHECK(!contents_.IsShared());
++
++  // Transferring the data out of an empty ArrayBuffer yields an invalid
++  // ArrayBufferContents.
++  return length_ == 0 || contents_.IsValid();
++}
++
++NotShared<DOMArrayBufferView> NativeIODataBuffer::Take() {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++  DCHECK(IsValid());
++
++  DOMArrayBuffer* array_buffer = DOMArrayBuffer::Create(std::move(contents_));
++
++  DOMArrayBufferView* view = nullptr;
++  switch (type_) {
++    case DOMArrayBufferView::kTypeInt8:
++      view = DOMInt8Array::Create(array_buffer, offset_, length_);
++      break;
++
++    case DOMArrayBufferView::kTypeUint8:
++      view = DOMUint8Array::Create(array_buffer, offset_, length_);
++      break;
++
++    case DOMArrayBufferView::kTypeUint8Clamped:
++      view = DOMUint8ClampedArray::Create(array_buffer, offset_, length_);
++      break;
++
++    case DOMArrayBufferView::kTypeInt16:
++      view = DOMInt16Array::Create(array_buffer, offset_, length_);
++      break;
++
++    case DOMArrayBufferView::kTypeUint16:
++      view = DOMUint16Array::Create(array_buffer, offset_, length_);
++      break;
++
++    case DOMArrayBufferView::kTypeInt32:
++      view = DOMInt32Array::Create(array_buffer, offset_, length_);
++      break;
++
++    case DOMArrayBufferView::kTypeUint32:
++      view = DOMUint32Array::Create(array_buffer, offset_, length_);
++      break;
++
++    case DOMArrayBufferView::kTypeFloat32:
++      view = DOMFloat32Array::Create(array_buffer, offset_, length_);
++      break;
++
++    case DOMArrayBufferView::kTypeFloat64:
++      view = DOMFloat64Array::Create(array_buffer, offset_, length_);
++      break;
++
++    case DOMArrayBufferView::kTypeBigInt64:
++      view = DOMBigInt64Array::Create(array_buffer, offset_, length_);
++      break;
++
++    case DOMArrayBufferView::kTypeBigUint64:
++      view = DOMBigUint64Array::Create(array_buffer, offset_, length_);
++      break;
++
++    case DOMArrayBufferView::kTypeDataView:
++      view = DOMDataView::Create(array_buffer, offset_, length_);
++      break;
++  }
++  return NotShared<DOMArrayBufferView>(view);
++}
++
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/modules/native_io/native_io_file_utils.h b/third_party/blink/renderer/modules/native_io/native_io_file_utils.h
+index 355a67a8125ea11158dfe435a71c1c01b1ece361..a500d38bcdf8340e7c747cbde949db8f980ea272 100644
+--- a/third_party/blink/renderer/modules/native_io/native_io_file_utils.h
++++ b/third_party/blink/renderer/modules/native_io/native_io_file_utils.h
+@@ -5,11 +5,19 @@
+ #ifndef THIRD_PARTY_BLINK_RENDERER_MODULES_NATIVE_IO_NATIVE_IO_FILE_UTILS_H_
+ #define THIRD_PARTY_BLINK_RENDERER_MODULES_NATIVE_IO_NATIVE_IO_FILE_UTILS_H_
+ 
++#include <cstddef>
++#include <memory>
++
++#include "base/sequence_checker.h"
++#include "base/types/pass_key.h"
++#include "third_party/blink/renderer/core/typed_arrays/array_buffer/array_buffer_contents.h"
+ #include "third_party/blink/renderer/core/typed_arrays/array_buffer_view_helpers.h"
+ #include "third_party/blink/renderer/core/typed_arrays/dom_array_buffer_view.h"
+ 
+ namespace blink {
+ 
++class ScriptState;
++
+ // Extracts the read/write operation size from the buffer size.
+ int NativeIOOperationSize(const DOMArrayBufferView& buffer);
+ 
+@@ -20,6 +28,121 @@ DOMArrayBufferView* TransferToNewArrayBufferView(
+     v8::Isolate* isolate,
+     NotShared<DOMArrayBufferView> source);
+ 
++// Provides cross-thread access to the buffer backing a DOMArrayBufferView.
++//
++// This class is necessary because DOMArrayBufferView is garbage-collected,
++// which entails that each DOMArrayBufferView instance can only be safely
++// accessed on the thread where it was created. Note that CrossThreadPersistent
++// can be used to keep a DOMArrayBufferView alive across threads, but the
++// instance cannot be safely accessed on a different thread. See the comments on
++// cppgc::subtle::CrossThreadPersistent for details.
++//
++// An instance takes over a DOMArrayBufferView's backing buffer at construction.
++// The instance exposes the backing buffer via the Data() and DataLength()
++// methods. At some point, the backing buffer is turned back into a
++// DOMArrayBufferView via the Take() method. Once Take() is called, the instance
++// is invalid, and Data() / DataLength() must not be called anymore.
++//
++// An instance should be owned by a single sequence at a time. Changing the
++// owning sequence should be accomplished by PostTask-ing an owning pointer to
++// the instance.
++//
++// Each instance must be destroyed on the same sequence where it was created.
++// Take() must be called on the same sequence where the instance was created.
++class NativeIODataBuffer {
++ public:
++  // Detaches the buffer backing `source`.
++  //
++  // Returns nullptr if detaching failed.
++  static std::unique_ptr<NativeIODataBuffer> Create(
++      ScriptState* script_state,
++      NotShared<DOMArrayBufferView> source);
++
++  // Exposed for std::make_unique. Instances should be obtained from Create().
++  NativeIODataBuffer(ArrayBufferContents contents,
++                     DOMArrayBufferView::ViewType type,
++                     size_t offset,
++#if DCHECK_IS_ON()
++                     size_t byte_length,
++#endif  // DCHECK_IS_ON()
++                     size_t length,
++                     base::PassKey<NativeIODataBuffer>);
++
++  NativeIODataBuffer(const NativeIODataBuffer&) = delete;
++  NativeIODataBuffer& operator=(const NativeIODataBuffer&) = delete;
++
++  ~NativeIODataBuffer();
++
++  // Re-creates the DOMArrayBufferView.
++  //
++  // Must only be called while this instance is onwed by the same sequence where
++  // Create() was called. Must only be called if IsValid() is true.
++  // After the call, IsValid() will return false.
++  NotShared<DOMArrayBufferView> Take();
++
++  // Exposed for DCHECKs.
++  //
++  // Can be called while this instance is owned by any sequence.
++  bool IsValid() const;
++
++  // Returns a raw pointer to the DOMArrayBufferView's view.
++  //
++  // The return type was chosen so that the raw pointer can be conveniently
++  // passed to base::File methods.
++  //
++  // Can be called while this instance is owned by any sequence. Must only be
++  // called if IsValid() is true.
++  char* Data() {
++    DCHECK(IsValid());
++
++    // An invalid ArrayBufferContents (backing an empty array) returns nullptr
++    // when Data() is called. However, in that case, the offset must be zero.
++    DCHECK(contents_.Data() || contents_.DataLength() == 0);
++    DCHECK(contents_.Data() || offset_ == 0);
++
++    // According to the DCHECKs above, this branch isn't strictly needed. The
++    // return statement below the branch will never do pointer arithmetic on
++    // nullptr, because `offset_` is guaranteed to be zero when
++    // the ArrayBufferContents is not valid but this instance is.
++    char* data = static_cast<char*>(contents_.Data());
++    if (!data) {
++      DCHECK_EQ(offset_, 0u);
++      return data;
++    }
++
++    return data + offset_;
++  }
++
++#if DCHECK_IS_ON()
++  // Returns the size of the DOMArrayBufferView's view, in bytes.
++  //
++  // Exposed for DCHECKs around base::File calls.
++  //
++  // Can be called while this instance is owned by any sequence. Must only be
++  // called if IsValid() is true.
++  size_t DataLength() const {
++    DCHECK(IsValid());
++    return byte_length_;
++  }
++#endif  // DCHECK_IS_ON()
++
++ private:
++  SEQUENCE_CHECKER(sequence_checker_);
++
++  // May not be valid, as reported by ArrayBufferContents::IsValid().
++  //
++  // If valid, guaranteed not to be shared, as reported by
++  // ArrayBufferContents::IsShared().
++  ArrayBufferContents contents_;
++
++  DOMArrayBufferView::ViewType type_;
++  const size_t offset_;
++#if DCHECK_IS_ON()
++  const size_t byte_length_;
++#endif  // DCHECK_IS_ON()
++  const size_t length_;
++};
++
+ }  // namespace blink
+ 
+ #endif  // THIRD_PARTY_BLINK_RENDERER_MODULES_NATIVE_IO_NATIVE_IO_FILE_UTILS_H_
