@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_ELECTRON_API_VIEW_H_
-#define SHELL_BROWSER_API_ELECTRON_API_VIEW_H_
+#ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_VIEW_H_
+#define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_VIEW_H_
 
 #include <vector>
 
@@ -53,4 +53,4 @@ class View : public gin_helper::Wrappable<View> {
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_ELECTRON_API_VIEW_H_
+#endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_VIEW_H_

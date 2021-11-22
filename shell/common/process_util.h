@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_PROCESS_UTIL_H_
-#define SHELL_COMMON_PROCESS_UTIL_H_
+#ifndef ELECTRON_SHELL_COMMON_PROCESS_UTIL_H_
+#define ELECTRON_SHELL_COMMON_PROCESS_UTIL_H_
 
 #include <string>
 
@@ -19,4 +19,4 @@ void EmitWarning(node::Environment* env,
 
 }  // namespace electron
 
-#endif  // SHELL_COMMON_PROCESS_UTIL_H_
+#endif  // ELECTRON_SHELL_COMMON_PROCESS_UTIL_H_

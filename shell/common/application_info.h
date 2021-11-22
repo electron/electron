@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_APPLICATION_INFO_H_
-#define SHELL_COMMON_APPLICATION_INFO_H_
+#ifndef ELECTRON_SHELL_COMMON_APPLICATION_INFO_H_
+#define ELECTRON_SHELL_COMMON_APPLICATION_INFO_H_
 
 #if defined(OS_WIN)
 #include "shell/browser/win/scoped_hstring.h"
@@ -32,4 +32,4 @@ bool IsRunningInDesktopBridge();
 
 }  // namespace electron
 
-#endif  // SHELL_COMMON_APPLICATION_INFO_H_
+#endif  // ELECTRON_SHELL_COMMON_APPLICATION_INFO_H_

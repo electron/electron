@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_FILE_SELECT_HELPER_H_
-#define SHELL_BROWSER_FILE_SELECT_HELPER_H_
+#ifndef ELECTRON_SHELL_BROWSER_FILE_SELECT_HELPER_H_
+#define ELECTRON_SHELL_BROWSER_FILE_SELECT_HELPER_H_
 
 #include <map>
 #include <memory>
@@ -229,4 +229,4 @@ class FileSelectHelper : public base::RefCountedThreadSafe<
   std::vector<base::FilePath> temporary_files_;
 };
 
-#endif  // SHELL_BROWSER_FILE_SELECT_HELPER_H_
+#endif  // ELECTRON_SHELL_BROWSER_FILE_SELECT_HELPER_H_

@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_WEB_CONTENTS_PERMISSION_HELPER_H_
-#define SHELL_BROWSER_WEB_CONTENTS_PERMISSION_HELPER_H_
+#ifndef ELECTRON_SHELL_BROWSER_WEB_CONTENTS_PERMISSION_HELPER_H_
+#define ELECTRON_SHELL_BROWSER_WEB_CONTENTS_PERMISSION_HELPER_H_
 
 #include "base/values.h"
 #include "content/public/browser/media_stream_request.h"
@@ -94,4 +94,4 @@ class WebContentsPermissionHelper
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_WEB_CONTENTS_PERMISSION_HELPER_H_
+#endif  // ELECTRON_SHELL_BROWSER_WEB_CONTENTS_PERMISSION_HELPER_H_

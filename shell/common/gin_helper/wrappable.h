@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE.chromium file.
 
-#ifndef SHELL_COMMON_GIN_HELPER_WRAPPABLE_H_
-#define SHELL_COMMON_GIN_HELPER_WRAPPABLE_H_
+#ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_WRAPPABLE_H_
+#define ELECTRON_SHELL_COMMON_GIN_HELPER_WRAPPABLE_H_
 
 #include "base/bind.h"
 #include "gin/per_isolate_data.h"
@@ -98,4 +98,4 @@ struct Converter<
 
 }  // namespace gin
 
-#endif  // SHELL_COMMON_GIN_HELPER_WRAPPABLE_H_
+#endif  // ELECTRON_SHELL_COMMON_GIN_HELPER_WRAPPABLE_H_
