@@ -91,14 +91,16 @@
 - (void)setHeight:(const float)height {
   height_ = height;
   // recalculate for new margin y
-  margin_ = [self getCurrentMargin];
+  if ([self useCustomHeight]) {
+    margin_ = [self getCurrentMargin];
+  }
   [self redraw];
 }
 
 - (BOOL)useCustomHeight {
   NSView* left = [self leftButton];
   float button_height = NSHeight(left.frame);
-  return height_ > button_height + 2 * margin_.y();
+  return height_ > button_height + 2 * default_margin_.y();
 }
 
 - (NSRect)getButtonsContainerBounds {
