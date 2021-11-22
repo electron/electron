@@ -1,0 +1,94 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ben Kelly <wanderview@chromium.org>
+Date: Fri, 5 Nov 2021 19:47:08 +0000
+Subject: CacheStorage: Store partial opaque responses.
+
+(cherry picked from commit 802faa035409ac7cbb58ad1a385bb8507fe99077)
+
+Fixed: 1260649
+Change-Id: If83156096e6aecec55490330d03c56c0c26120bc
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3251749
+Reviewed-by: Marijn Kruisselbrink <mek@chromium.org>
+Commit-Queue: Ben Kelly <wanderview@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#937400}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3264366
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/4664@{#774}
+Cr-Branched-From: 24dc4ee75e01a29d390d43c9c264372a169273a7-refs/heads/main@{#929512}
+
+diff --git a/content/browser/cache_storage/legacy/legacy_cache_storage_cache.cc b/content/browser/cache_storage/legacy/legacy_cache_storage_cache.cc
+index c1463699290a24267e7760b89fa60cea14d0e2b5..2fd0027fda9cdb75656966c16141408e9a15e4f3 100644
+--- a/content/browser/cache_storage/legacy/legacy_cache_storage_cache.cc
++++ b/content/browser/cache_storage/legacy/legacy_cache_storage_cache.cc
+@@ -446,10 +446,10 @@ blink::mojom::FetchAPIResponsePtr CreateResponse(
+           ? metadata.response().request_include_credentials()
+           : true;
+ 
+-  // Note that |has_range_requested| can be safely set to false since it only
+-  // affects HTTP 206 (Partial) responses, which are blocked from cache storage.
+-  // See https://fetch.spec.whatwg.org/#main-fetch for usage of
+-  // |has_range_requested|.
++  // While we block most partial responses from being stored, we can have
++  // partial responses for bgfetch or opaque responses.
++  bool has_range_requested = headers.contains(net::HttpRequestHeaders::kRange);
++
+   return blink::mojom::FetchAPIResponse::New(
+       url_list, metadata.response().status_code(),
+       metadata.response().status_text(),
+@@ -467,7 +467,7 @@ blink::mojom::FetchAPIResponsePtr CreateResponse(
+       static_cast<net::HttpResponseInfo::ConnectionInfo>(
+           metadata.response().connection_info()),
+       alpn_negotiated_protocol, metadata.response().was_fetched_via_spdy(),
+-      /*has_range_requested=*/false, /*auth_challenge_info=*/absl::nullopt,
++      has_range_requested, /*auth_challenge_info=*/absl::nullopt,
+       request_include_credentials);
+ }
+ 
+@@ -1892,7 +1892,13 @@ void LegacyCacheStorageCache::PutDidCreateEntry(
+   }
+ 
+   proto::CacheResponse* response_metadata = metadata.mutable_response();
+-  DCHECK_NE(put_context->response->status_code, net::HTTP_PARTIAL_CONTENT);
++  if (owner_ != storage::mojom::CacheStorageOwner::kBackgroundFetch &&
++      put_context->response->response_type !=
++          network::mojom::FetchResponseType::kOpaque &&
++      put_context->response->response_type !=
++          network::mojom::FetchResponseType::kOpaqueRedirect) {
++    DCHECK_NE(put_context->response->status_code, net::HTTP_PARTIAL_CONTENT);
++  }
+   response_metadata->set_status_code(put_context->response->status_code);
+   response_metadata->set_status_text(put_context->response->status_text);
+   response_metadata->set_response_type(FetchResponseTypeToProtoResponseType(
+diff --git a/third_party/blink/renderer/modules/cache_storage/cache.cc b/third_party/blink/renderer/modules/cache_storage/cache.cc
+index e16030caf58ca90273a11863eebd58e131f71a09..8a940b10692131fd4f0f61c444eac80e18373f0a 100644
+--- a/third_party/blink/renderer/modules/cache_storage/cache.cc
++++ b/third_party/blink/renderer/modules/cache_storage/cache.cc
+@@ -102,7 +102,7 @@ void ValidateResponseForPut(const Response* response,
+     exception_state.ThrowTypeError("Vary header contains *");
+     return;
+   }
+-  if (response->GetResponse()->InternalStatus() == 206) {
++  if (response->GetResponse()->Status() == 206) {
+     exception_state.ThrowTypeError(
+         "Partial response (status code 206) is unsupported");
+     return;
+diff --git a/third_party/blink/web_tests/external/wpt/service-workers/cache-storage/script-tests/cache-put.js b/third_party/blink/web_tests/external/wpt/service-workers/cache-storage/script-tests/cache-put.js
+index b45910a3b8ba089e1724efa8b9e8a8d679c59320..f60c4b905ebcb61854b83177d59861ef92095624 100644
+--- a/third_party/blink/web_tests/external/wpt/service-workers/cache-storage/script-tests/cache-put.js
++++ b/third_party/blink/web_tests/external/wpt/service-workers/cache-storage/script-tests/cache-put.js
+@@ -144,7 +144,14 @@ cache_test(function(cache, test) {
+               'Test framework error: The status code should be 0 for an ' +
+               ' opaque-filtered response. This is actually HTTP 206.');
+           response = fetch_result.clone();
+-          return promise_rejects_js(test, TypeError, cache.put(request, fetch_result));
++          return cache.put(request, fetch_result);
++        })
++      .then(function() {
++          return cache.match(test_url);
++        })
++      .then(function(result) {
++          assert_not_equals(result, undefined,
++              'Cache.put should store an entry for the opaque response');
+         });
+   }, 'Cache.put with opaque-filtered HTTP 206 response');
+ 
