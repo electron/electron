@@ -52,7 +52,7 @@ index 98cc4e039ba2b5a467175b15650a7b8ef38e8249..f5aea6a5916b9aa56ee7b81a8de97dc4
    const Source& GetSource(int index) const override;
    DesktopMediaList::Type GetMediaListType() const override;
 diff --git a/chrome/browser/media/webrtc/native_desktop_media_list.cc b/chrome/browser/media/webrtc/native_desktop_media_list.cc
-index f777d8e6aa8a36d273a1a23f5e71390fad7e434f..face9fe6111dabfc4bf062b138e73f4b439c3024 100644
+index f777d8e6aa8a36d273a1a23f5e71390fad7e434f..68aa85a344168bcd74f4e9d1f7538934e980eba7 100644
 --- a/chrome/browser/media/webrtc/native_desktop_media_list.cc
 +++ b/chrome/browser/media/webrtc/native_desktop_media_list.cc
 @@ -16,7 +16,7 @@
@@ -64,14 +64,17 @@ index f777d8e6aa8a36d273a1a23f5e71390fad7e434f..face9fe6111dabfc4bf062b138e73f4b
  #include "content/public/browser/browser_task_traits.h"
  #include "content/public/browser/browser_thread.h"
  #include "content/public/common/content_features.h"
-@@ -94,6 +94,7 @@ gfx::ImageSkia ScaleDesktopFrame(std::unique_ptr<webrtc::DesktopFrame> frame,
+@@ -94,8 +94,9 @@ gfx::ImageSkia ScaleDesktopFrame(std::unique_ptr<webrtc::DesktopFrame> frame,
  }
  
  #if defined(OS_MAC)
 +// Refs https://github.com/electron/electron/pull/30507
  const base::Feature kWindowCaptureMacV2{"WindowCaptureMacV2",
-                                         base::FEATURE_ENABLED_BY_DEFAULT};
+-                                        base::FEATURE_ENABLED_BY_DEFAULT};
++                                        base::FEATURE_DISABLED_BY_DEFAULT};
  #endif
+ 
+ }  // namespace
 @@ -427,6 +428,8 @@ void NativeDesktopMediaList::RefreshForVizFrameSinkWindows(
          FROM_HERE, base::BindOnce(&Worker::RefreshThumbnails,
                                    base::Unretained(worker_.get()),
