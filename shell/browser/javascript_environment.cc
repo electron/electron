@@ -9,8 +9,10 @@
 #include <unordered_set>
 #include <utility>
 
+#include "base/allocator/partition_alloc_features.h"
 #include "base/allocator/partition_allocator/partition_alloc.h"
 #include "base/command_line.h"
+#include "base/feature_list.h"
 #include "base/task/current_thread.h"
 #include "base/task/thread_pool/initialization_util.h"
 #include "base/threading/thread_task_runner_handle.h"
@@ -74,6 +76,11 @@ class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
  public:
   enum InitializationPolicy { kZeroInitialize, kDontInitialize };
 
+  base::PartitionOptions::LazyCommit lazy_commit =
+      base::FeatureList::IsEnabled(base::features::kPartitionAllocLazyCommit)
+          ? base::PartitionOptions::LazyCommit::kEnabled
+          : base::PartitionOptions::LazyCommit::kDisabled;
+
   ArrayBufferAllocator() {
     // Ref.
     // https://source.chromium.org/chromium/chromium/src/+/master:third_party/blink/renderer/platform/wtf/allocator/partitions.cc;l=94;drc=062c315a858a87f834e16a144c2c8e9591af2beb
@@ -83,7 +90,7 @@ class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
                       base::PartitionOptions::Cookie::kAllowed,
                       base::PartitionOptions::BackupRefPtr::kDisabled,
                       base::PartitionOptions::UseConfigurablePool::kNo,
-                      base::PartitionOptions::LazyCommit::kDisabled});
+                      lazy_commit});
   }
 
   // Allocate() methods return null to signal allocation failure to V8, which
