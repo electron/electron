@@ -66,7 +66,7 @@ index 9c0e928067d86121ee3732440c80e84dcbbe0dd9..b5c84dc74cf71bc226787c9609dd2c99
      dynamic_code_can_be_disabled_ = true;
      return;
 diff --git a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.h b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.h
-index bf78e0ddcbb2edfa5bf78b6bd9336d59112e5de1..42a68828881b4b6092de0c2124cf47b5de9a1c23 100644
+index bf78e0ddcbb2edfa5bf78b6bd9336d59112e5de1..ac335d76b9d19a3c377926408d7b37157174d818 100644
 --- a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.h
 +++ b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.h
 @@ -17,6 +17,11 @@ class CONTENT_EXPORT RendererSandboxedProcessLauncherDelegate
@@ -93,13 +93,3 @@ index bf78e0ddcbb2edfa5bf78b6bd9336d59112e5de1..42a68828881b4b6092de0c2124cf47b5
  };
  
  #if defined(OS_WIN)
-@@ -45,6 +55,9 @@ class CONTENT_EXPORT RendererSandboxedProcessLauncherDelegateWin
-  private:
-   const bool renderer_code_integrity_enabled_;
-   bool dynamic_code_can_be_disabled_ = false;
-+#if BUILDFLAG(USE_ZYGOTE_HANDLE)
-+  bool use_zygote_ = true;
-+#endif
- };
- #endif  // defined(OS_WIN)
- 
