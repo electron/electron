@@ -120,3 +120,4 @@ use_weakptrs_for_the_threadediconloader_s_background_tasks.patch
 cherry-pick-1a8af2da50e4.patch
 cherry-pick-a5f54612590d.patch
 cachestorage_store_partial_opaque_responses.patch
+fix_aspect_ratio_with_max_size.patch
