@@ -135,6 +135,23 @@ Electron:**
 $ gn gen out/Release --args="import(\"//electron/build/args/release.gn\") $GN_EXTRA_ARGS"
 ```
 
+**For generating Debug(breakpoint debugging support) build config of Electron:**
+
+Write the following file to `electron/build/custom_args/debug.gn`
+
+```gn
+import("testing.gn")
+is_debug = true
+symbol_level = 2
+forbid_non_component_debug_builds = false
+```
+
+Then execute `gn gen`:
+
+```sh
+$ gn gen out/Debug --args="import(\"//electron/build/custom_args/debug.gn\") $GN_EXTRA_ARGS"
+```
+
 **To build, run `ninja` with the `electron` target:**
 Nota Bene: This will also take a while and probably heat up your lap.
 
@@ -148,6 +165,12 @@ For the release configuration:
 
 ```sh
 $ ninja -C out/Release electron
+```
+
+For the debug configuration:
+
+```sh
+$ ninja -C out/Debug electron
 ```
 
 This will build all of what was previously 'libchromiumcontent' (i.e. the
