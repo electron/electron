@@ -723,9 +723,7 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
     for (const auto& script : scripts) {
       std::u16string code;
       std::u16string url;
-      int start_line = 1;
       script.Get("url", &url);
-      script.Get("startLine", &start_line);
 
       if (!script.Get("code", &code)) {
         const char error_message[] = "Invalid 'code'";
@@ -741,7 +739,7 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
       }
 
       sources.emplace_back(blink::WebString::FromUTF16(code),
-                           blink::WebURL(GURL(url)), start_line);
+                           blink::WebURL(GURL(url)));
     }
 
     render_frame->GetWebFrame()->RequestExecuteScript(
