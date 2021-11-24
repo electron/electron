@@ -35,6 +35,28 @@ base::debug::StackTrace().Print();
 
 This will allow you to observe call chains and identify potential issue areas.
 
+## Breakpoint Debugging
+
+> Note that this will increase the size of the build significantly, taking up around 50G of disk space
+
+Write the following file to `electron/build/custom_args/debug.gn`
+
+```gn
+import("testing.gn")
+is_debug = true
+symbol_level = 2
+forbid_non_component_debug_builds = false
+```
+
+Then execute:
+
+```sh
+$ gn gen out/Debug --args="import(\"//electron/build/custom_args/debug.gn\") $GN_EXTRA_ARGS"
+$ ninja -C out/Debug electron
+```
+
+Now you can use `LLDB` for breakpoint debugging.
+
 ## Platform-Specific Debugging
 <!-- TODO(@codebytere): add debugging file for Linux-->
 
