@@ -30,18 +30,9 @@ index baf39affec92126a6f998636bf35d1f2563fa47f..18c61ff4b2145881fd396b6e397eb7c4
  
  #endif  // defined(OS_WIN)
  
-@@ -380,11 +382,18 @@ void PrintJob::StartPdfToEmfConversion(
-   // seems to work with the fix for this bug applied.
+@@ -375,8 +375,10 @@ void PrintJob::StartPdfToEmfConversion(
+ 
    const PrintSettings& settings = document()->settings();
-   bool print_text_with_gdi =
--      settings.print_text_with_gdi() && !settings.printer_language_is_xps() &&
-+#if defined(OS_WIN)
-+      settings.is_modifiable()
-+#else
-+      settings.print_text_with_gdi()
-+#endif
-+      && !settings.printer_language_is_xps() &&
-       base::FeatureList::IsEnabled(::features::kGdiTextPrinting);
  
 +#if 0
    PrefService* prefs = GetPrefsForWebContents(worker_->GetWebContents());
@@ -50,7 +41,7 @@ index baf39affec92126a6f998636bf35d1f2563fa47f..18c61ff4b2145881fd396b6e397eb7c4
 +  bool print_with_reduced_rasterization = PrintWithReducedRasterization(nullptr);
  
    using RenderMode = PdfRenderSettings::Mode;
-   RenderMode mode;
+   RenderMode mode = print_with_reduced_rasterization
 @@ -479,8 +488,10 @@ void PrintJob::StartPdfToPostScriptConversion(
    if (ps_level2) {
      mode = PdfRenderSettings::Mode::POSTSCRIPT_LEVEL2;
