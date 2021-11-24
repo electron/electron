@@ -680,7 +680,8 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
         has_user_gesture, blink::WebLocalFrame::kSynchronous,
         new ScriptExecutionCallback(std::move(promise),
                                     std::move(completion_callback)),
-        blink::BackForwardCacheAware::kAllow);
+        blink::BackForwardCacheAware::kAllow,
+        blink::WebLocalFrame::PromiseBehavior::kDontWait);
 
     return handle;
   }
@@ -745,7 +746,8 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
         scriptExecutionType,
         new ScriptExecutionCallback(std::move(promise),
                                     std::move(completion_callback)),
-        blink::BackForwardCacheAware::kPossiblyDisallow);
+        blink::BackForwardCacheAware::kPossiblyDisallow,
+        blink::WebLocalFrame::PromiseBehavior::kDontWait);
 
     return handle;
   }

@@ -15,7 +15,7 @@ Refs changes in:
 This patch reverts the changes to fix associated crashes in Electron.
 
 diff --git a/third_party/blink/renderer/core/frame/frame.cc b/third_party/blink/renderer/core/frame/frame.cc
-index 58622d645f657dbb08489a5202df3dfe6c7a85ce..af2ad009f9f14fad2d18b39198b100ee0dafa556 100644
+index 8beb23a24aadb513a4a3f3d7e55c32920e7ad2d2..7ea74db0ca971c091bcaa7bb85e06b3c22e73e9d 100644
 --- a/third_party/blink/renderer/core/frame/frame.cc
 +++ b/third_party/blink/renderer/core/frame/frame.cc
 @@ -122,14 +122,6 @@ bool Frame::Detach(FrameDetachType type) {
@@ -49,10 +49,10 @@ index 58622d645f657dbb08489a5202df3dfe6c7a85ce..af2ad009f9f14fad2d18b39198b100ee
    // its owning reference back to our owning LocalFrame.
    client_->Detached(type);
 diff --git a/third_party/blink/renderer/core/frame/local_frame.cc b/third_party/blink/renderer/core/frame/local_frame.cc
-index cc3b5af94302c43f1eca0bcb3b765befcea7d300..c6507f83c1d11f09967a6186e895bc86c6f01a61 100644
+index f793047b910ea2509832bd3ea9f305fc637890ce..6b110a7b4b2e4db596fe9cd6777a372760180fc2 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame.cc
-@@ -578,10 +578,6 @@ bool LocalFrame::DetachImpl(FrameDetachType type) {
+@@ -582,10 +582,6 @@ bool LocalFrame::DetachImpl(FrameDetachType type) {
    }
    DCHECK(!view_ || !view_->IsAttached());
  
@@ -63,7 +63,7 @@ index cc3b5af94302c43f1eca0bcb3b765befcea7d300..c6507f83c1d11f09967a6186e895bc86
    if (!Client())
      return false;
  
-@@ -628,6 +624,11 @@ bool LocalFrame::DetachImpl(FrameDetachType type) {
+@@ -635,6 +631,11 @@ bool LocalFrame::DetachImpl(FrameDetachType type) {
    DCHECK(!view_->IsAttached());
    Client()->WillBeDetached();
  

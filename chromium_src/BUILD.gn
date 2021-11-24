@@ -69,8 +69,6 @@ static_library("chrome") {
     "//chrome/browser/ui/exclusive_access/keyboard_lock_controller.h",
     "//chrome/browser/ui/exclusive_access/mouse_lock_controller.cc",
     "//chrome/browser/ui/exclusive_access/mouse_lock_controller.h",
-    "//chrome/browser/ui/views/autofill/autofill_popup_view_utils.cc",
-    "//chrome/browser/ui/views/autofill/autofill_popup_view_utils.h",
     "//chrome/browser/ui/views/eye_dropper/eye_dropper.cc",
     "//chrome/browser/ui/views/eye_dropper/eye_dropper.h",
     "//chrome/browser/ui/views/eye_dropper/eye_dropper_view.cc",

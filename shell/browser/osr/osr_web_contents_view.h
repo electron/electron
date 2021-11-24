@@ -62,6 +62,7 @@ class OffScreenWebContentsView : public content::WebContentsView,
   void RenderViewHostChanged(content::RenderViewHost* old_host,
                              content::RenderViewHost* new_host) override;
   void SetOverscrollControllerEnabled(bool enabled) override;
+  void OnCapturerCountChanged() override;
 
 #if defined(OS_MAC)
   bool CloseTabAfterEventTrackingIfNeeded() override;

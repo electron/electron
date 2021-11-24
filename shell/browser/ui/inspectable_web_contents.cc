@@ -175,9 +175,8 @@ GURL GetDevToolsURL(bool can_dock) {
   return GURL(url_string);
 }
 
-constexpr base::TimeDelta kInitialBackoffDelay =
-    base::TimeDelta::FromMilliseconds(250);
-constexpr base::TimeDelta kMaxBackoffDelay = base::TimeDelta::FromSeconds(10);
+constexpr base::TimeDelta kInitialBackoffDelay = base::Milliseconds(250);
+constexpr base::TimeDelta kMaxBackoffDelay = base::Seconds(10);
 
 }  // namespace
 
@@ -954,6 +953,13 @@ void InspectableWebContents::ClearPreferences() {
   sync_disabled_update.Get()->Clear();
 }
 
+void InspectableWebContents::GetSyncInformation(DispatchCallback callback) {
+  // TODO(anyone): do we want devtool syncing in Electron?
+  base::Value result(base::Value::Type::DICTIONARY);
+  result.SetBoolKey("isSyncActive", false);
+  std::move(callback).Run(&result);
+}
+
 void InspectableWebContents::ConnectionReady() {}
 
 void InspectableWebContents::RegisterExtensionsAPI(const std::string& origin,
@@ -1111,7 +1117,7 @@ void InspectableWebContents::DidFinishNavigation(
       !navigation_handle->HasCommitted())
     return;
   content::RenderFrameHost* frame = navigation_handle->GetRenderFrameHost();
-  auto origin = navigation_handle->GetURL().GetOrigin().spec();
+  auto origin = navigation_handle->GetURL().DeprecatedGetOriginAsURL().spec();
   auto it = extensions_api_.find(origin);
   if (it == extensions_api_.end())
     return;

@@ -17,7 +17,7 @@ Upstreams:
 - https://github.com/nodejs/node/pull/39136
 
 diff --git a/src/crypto/crypto_common.cc b/src/crypto/crypto_common.cc
-index cc03fddd464b09dd3647e3f5183dc3c49affc94f..9cbe78c05b1c86c0d4a4b8b1f8771862dd3002e5 100644
+index cc03fddd464b09dd3647e3f5183dc3c49affc94f..3aa6b40ab9b10cdd56002e9f020a6f6b1ae02222 100644
 --- a/src/crypto/crypto_common.cc
 +++ b/src/crypto/crypto_common.cc
 @@ -244,7 +244,7 @@ const char* GetClientHelloALPN(const SSLPointer& ssl) {
@@ -66,23 +66,25 @@ index cc03fddd464b09dd3647e3f5183dc3c49affc94f..9cbe78c05b1c86c0d4a4b8b1f8771862
  }
  
  const char* X509ErrorCode(long err) {  // NOLINT(runtime/int)
-@@ -771,13 +778,13 @@ MaybeLocal<Array> GetClientHelloCiphers(
+@@ -771,14 +778,14 @@ MaybeLocal<Array> GetClientHelloCiphers(
      Environment* env,
      const SSLPointer& ssl) {
    EscapableHandleScope scope(env->isolate());
 -  const unsigned char* buf;
 -  size_t len = SSL_client_hello_get0_ciphers(ssl.get(), &buf);
-+  const unsigned char* buf = nullptr;
++  // const unsigned char* buf = nullptr;
 +  size_t len = 0; // SSL_client_hello_get0_ciphers(ssl.get(), &buf);
    size_t count = len / 2;
    MaybeStackBuffer<Local<Value>, 16> ciphers(count);
    int j = 0;
    for (size_t n = 0; n < len; n += 2) {
 -    const SSL_CIPHER* cipher = SSL_CIPHER_find(ssl.get(), buf);
+-    buf += 2;
 +    const SSL_CIPHER* cipher = nullptr; // SSL_CIPHER_find(ssl.get(), buf);
-     buf += 2;
++    // buf += 2;
      Local<Object> obj = Object::New(env->isolate());
      if (!Set(env->context(),
+              obj,
 diff --git a/src/crypto/crypto_dh.cc b/src/crypto/crypto_dh.cc
 index 86475e3b1b1e017c7b81a858354632accf9618de..02fa7d27cecea61b4321b551c2f6e1609f519c89 100644
 --- a/src/crypto/crypto_dh.cc

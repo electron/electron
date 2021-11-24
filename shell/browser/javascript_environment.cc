@@ -9,18 +9,20 @@
 #include <unordered_set>
 #include <utility>
 
+#include "base/allocator/partition_alloc_features.h"
 #include "base/allocator/partition_allocator/partition_alloc.h"
 #include "base/command_line.h"
+#include "base/feature_list.h"
 #include "base/task/current_thread.h"
 #include "base/task/thread_pool/initialization_util.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/trace_event/trace_event.h"
-#include "content/public/common/content_switches.h"
 #include "gin/array_buffer.h"
 #include "gin/v8_initializer.h"
 #include "shell/browser/microtasks_runner.h"
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/node_includes.h"
+#include "third_party/blink/public/common/switches.h"
 
 namespace {
 v8::Isolate* g_isolate;
@@ -74,6 +76,11 @@ class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
  public:
   enum InitializationPolicy { kZeroInitialize, kDontInitialize };
 
+  base::PartitionOptions::LazyCommit lazy_commit =
+      base::FeatureList::IsEnabled(base::features::kPartitionAllocLazyCommit)
+          ? base::PartitionOptions::LazyCommit::kEnabled
+          : base::PartitionOptions::LazyCommit::kDisabled;
+
   ArrayBufferAllocator() {
     // Ref.
     // https://source.chromium.org/chromium/chromium/src/+/master:third_party/blink/renderer/platform/wtf/allocator/partitions.cc;l=94;drc=062c315a858a87f834e16a144c2c8e9591af2beb
@@ -82,7 +89,8 @@ class ArrayBufferAllocator : public v8::ArrayBuffer::Allocator {
                       base::PartitionOptions::Quarantine::kAllowed,
                       base::PartitionOptions::Cookie::kAllowed,
                       base::PartitionOptions::BackupRefPtr::kDisabled,
-                      base::PartitionOptions::UseConfigurablePool::kNo});
+                      base::PartitionOptions::UseConfigurablePool::kNo,
+                      lazy_commit});
   }
 
   // Allocate() methods return null to signal allocation failure to V8, which
@@ -152,6 +160,8 @@ JavascriptEnvironment::JavascriptEnvironment(uv_loop_t* event_loop)
                       gin::IsolateHolder::kAllowAtomicsWait,
                       gin::IsolateHolder::IsolateType::kUtility,
                       gin::IsolateHolder::IsolateCreationMode::kNormal,
+                      nullptr,
+                      nullptr,
                       isolate_),
       locker_(isolate_) {
   isolate_->Enter();
@@ -293,8 +303,7 @@ class TracingControllerImpl : public node::tracing::TracingController {
         arg_convertables);
     DCHECK_LE(num_args, 2);
     base::TimeTicks timestamp =
-        base::TimeTicks() +
-        base::TimeDelta::FromMicroseconds(timestampMicroseconds);
+        base::TimeTicks() + base::Microseconds(timestampMicroseconds);
     base::trace_event::TraceEventHandle handle =
         TRACE_EVENT_API_ADD_TRACE_EVENT_WITH_THREAD_ID_AND_TIMESTAMP(
             phase, category_enabled_flag, name, scope, id, bind_id,
@@ -323,7 +332,8 @@ v8::Isolate* JavascriptEnvironment::Initialize(uv_loop_t* event_loop) {
   auto* cmd = base::CommandLine::ForCurrentProcess();
 
   // --js-flags.
-  std::string js_flags = cmd->GetSwitchValueASCII(switches::kJavaScriptFlags);
+  std::string js_flags =
+      cmd->GetSwitchValueASCII(blink::switches::kJavaScriptFlags);
   if (!js_flags.empty())
     v8::V8::SetFlagsFromString(js_flags.c_str(), js_flags.size());
 
@@ -337,9 +347,10 @@ v8::Isolate* JavascriptEnvironment::Initialize(uv_loop_t* event_loop) {
       tracing_controller, gin::V8Platform::PageAllocator());
 
   v8::V8::InitializePlatform(platform_);
-  gin::IsolateHolder::Initialize(
-      gin::IsolateHolder::kNonStrictMode, new ArrayBufferAllocator(),
-      nullptr /* external_reference_table */, false /* create_v8_platform */);
+  gin::IsolateHolder::Initialize(gin::IsolateHolder::kNonStrictMode,
+                                 new ArrayBufferAllocator(),
+                                 nullptr /* external_reference_table */,
+                                 js_flags, false /* create_v8_platform */);
 
   v8::Isolate* isolate = v8::Isolate::Allocate();
   platform_->RegisterIsolate(isolate, event_loop);
