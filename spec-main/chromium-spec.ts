@@ -242,7 +242,8 @@ describe('web security', () => {
     await p;
   });
 
-  it('bypasses CORB when web security is disabled', async () => {
+  // TODO(codebytere): Re-enable after Chromium fixes upstream v8_scriptormodule_legacy_lifetime crash.
+  xit('bypasses CORB when web security is disabled', async () => {
     const w = new BrowserWindow({ show: false, webPreferences: { webSecurity: false, nodeIntegration: true, contextIsolation: false } });
     const p = emittedOnce(ipcMain, 'success');
     await w.loadURL(`data:text/html,

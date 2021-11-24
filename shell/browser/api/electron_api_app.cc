@@ -477,7 +477,7 @@ int GetPathConstant(const std::string& name) {
 #if defined(OS_POSIX)
     return base::DIR_CACHE;
 #else
-    return base::DIR_APP_DATA;
+    return base::DIR_ROAMING_APP_DATA;
 #endif
   else if (name == "userCache")
     return DIR_USER_CACHE;
@@ -1146,7 +1146,7 @@ bool App::Relaunch(gin::Arguments* js_args) {
 
   gin_helper::Dictionary options;
   if (js_args->GetNext(&options)) {
-    if (options.Get("execPath", &exec_path) | options.Get("args", &args))
+    if (options.Get("execPath", &exec_path) || options.Get("args", &args))
       override_argv = true;
   }
 

@@ -10,10 +10,10 @@ patch may be merged upstream, at which point this patch should be
 removed.
 
 diff --git a/net/url_request/static_http_user_agent_settings.h b/net/url_request/static_http_user_agent_settings.h
-index ab97cbf061c89be9f11dde42b7371668658208a6..718209098ee4fb6cfc9aaa1ef4af691cf8d79366 100644
+index 14c71cc69388da46f62d9835e2a06fef0870da02..9481ea08401ae29ae9c1d960491b05b364257cc8 100644
 --- a/net/url_request/static_http_user_agent_settings.h
 +++ b/net/url_request/static_http_user_agent_settings.h
-@@ -31,13 +31,17 @@ class NET_EXPORT StaticHttpUserAgentSettings : public HttpUserAgentSettings {
+@@ -30,13 +30,17 @@ class NET_EXPORT StaticHttpUserAgentSettings : public HttpUserAgentSettings {
      accept_language_ = new_accept_language;
    }
  
@@ -33,10 +33,10 @@ index ab97cbf061c89be9f11dde42b7371668658208a6..718209098ee4fb6cfc9aaa1ef4af691c
  
  }  // namespace net
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 39ff43884fbc2b6768d7ddb6e9d63031a973b8fa..5d985fc94f35a1258ecee212c56561d56a9a3ff6 100644
+index 6321d35d649a58c91df621a088c23879901ef6aa..701d2f7d5fbe61d77e3267a2262bfba2674e165c 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
-@@ -1295,6 +1295,13 @@ void NetworkContext::SetNetworkConditions(
+@@ -1302,6 +1302,13 @@ void NetworkContext::SetNetworkConditions(
                                        std::move(network_conditions));
  }
  
@@ -51,10 +51,10 @@ index 39ff43884fbc2b6768d7ddb6e9d63031a973b8fa..5d985fc94f35a1258ecee212c56561d5
    // This may only be called on NetworkContexts created with the constructor
    // that calls MakeURLRequestContext().
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 8362af824a8dd4f721eebdbff2d544f7f5093d16..28a9ce2bfc0d84bb15b5e40d9697fbdeaa57a96a 100644
+index 5535c101c809f23f3adc85b06d42ee34f135da4b..1ff3fc928baa794f4b1562e2c7a030919099c6ec 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
-@@ -274,6 +274,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -277,6 +277,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    void CloseIdleConnections(CloseIdleConnectionsCallback callback) override;
    void SetNetworkConditions(const base::UnguessableToken& throttling_profile_id,
                              mojom::NetworkConditionsPtr conditions) override;
@@ -63,10 +63,10 @@ index 8362af824a8dd4f721eebdbff2d544f7f5093d16..28a9ce2bfc0d84bb15b5e40d9697fbde
    void SetEnableReferrers(bool enable_referrers) override;
  #if BUILDFLAG(IS_CHROMEOS_ASH)
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 8f8b496324265b25046a88cbac7decec056f061e..d7c20f76f96d43df71b503ca7a2a14446e9bbe96 100644
+index 64f046dfc5e3eab241547b2dc4b118daef68d7d6..c7928f25882bcb09bedbac044cb6eca63f0c3763 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
-@@ -1030,6 +1030,9 @@ interface NetworkContext {
+@@ -1034,6 +1034,9 @@ interface NetworkContext {
    SetNetworkConditions(mojo_base.mojom.UnguessableToken throttling_profile_id,
                         NetworkConditions? conditions);
  
@@ -77,7 +77,7 @@ index 8f8b496324265b25046a88cbac7decec056f061e..d7c20f76f96d43df71b503ca7a2a1444
    SetAcceptLanguage(string new_accept_language);
  
 diff --git a/services/network/test/test_network_context.h b/services/network/test/test_network_context.h
-index e41a44deca2e33b8c3f2c9c2123326b832246529..5bdc6b5a75eae0f3fb049998a7c1671753d17285 100644
+index b766ae3aa91ffd6ce5ab7ae3835ff7fa58d02a0e..5719eec40aff5cd079110fc52c46d2791577fee8 100644
 --- a/services/network/test/test_network_context.h
 +++ b/services/network/test/test_network_context.h
 @@ -134,6 +134,7 @@ class TestNetworkContext : public mojom::NetworkContext {

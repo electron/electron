@@ -14,8 +14,8 @@
 
 #include "base/containers/id_map.h"
 #include "base/files/file_util.h"
+#include "base/ignore_result.h"
 #include "base/json/json_reader.h"
-#include "base/macros.h"
 #include "base/no_destructor.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/current_thread.h"
@@ -54,8 +54,6 @@
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/render_widget_host_view.h"
-#include "content/public/browser/security_style_explanation.h"
-#include "content/public/browser/security_style_explanations.h"
 #include "content/public/browser/service_worker_context.h"
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/storage_partition.h"
@@ -402,9 +400,8 @@ absl::optional<base::TimeDelta> GetCursorBlinkInterval() {
 #elif defined(OS_WIN)
   const auto system_msec = ::GetCaretBlinkTime();
   if (system_msec != 0) {
-    return (system_msec == INFINITE)
-               ? base::TimeDelta()
-               : base::TimeDelta::FromMilliseconds(system_msec);
+    return (system_msec == INFINITE) ? base::TimeDelta()
+                                     : base::Milliseconds(system_msec);
   }
 #endif
   return absl::nullopt;
@@ -540,7 +537,7 @@ FileSystem CreateFileSystemStruct(content::WebContents* web_contents,
                                   const std::string& file_system_id,
                                   const std::string& file_system_path,
                                   const std::string& type) {
-  const GURL origin = web_contents->GetURL().GetOrigin();
+  const GURL origin = web_contents->GetURL().DeprecatedGetOriginAsURL();
   std::string file_system_name =
       storage::GetIsolatedFileSystemName(origin, file_system_id);
   std::string root_url = storage::GetIsolatedFileSystemRootURIString(
@@ -1356,9 +1353,9 @@ void WebContents::RendererResponsive(
   Emit("responsive");
 }
 
-bool WebContents::HandleContextMenu(content::RenderFrameHost* render_frame_host,
+bool WebContents::HandleContextMenu(content::RenderFrameHost& render_frame_host,
                                     const content::ContextMenuParams& params) {
-  Emit("context-menu", std::make_pair(params, render_frame_host));
+  Emit("context-menu", std::make_pair(params, &render_frame_host));
 
   return true;
 }
@@ -1565,7 +1562,8 @@ void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
   }
 }
 
-void WebContents::RenderProcessGone(base::TerminationStatus status) {
+void WebContents::PrimaryMainFrameRenderProcessGone(
+    base::TerminationStatus status) {
   auto weak_this = GetWeakPtr();
   Emit("crashed", status == base::TERMINATION_STATUS_PROCESS_WAS_KILLED);
 
@@ -2180,7 +2178,7 @@ bool WebContents::IsLoading() const {
 }
 
 bool WebContents::IsLoadingMainFrame() const {
-  return web_contents()->IsLoadingToDifferentDocument();
+  return web_contents()->ShouldShowLoadingUI();
 }
 
 bool WebContents::IsWaitingForResponse() const {
@@ -2277,8 +2275,8 @@ std::string WebContents::GetMediaSourceID(
       content::DesktopStreamsRegistry::GetInstance()->RegisterStream(
           request_frame_host->GetProcess()->GetID(),
           request_frame_host->GetRoutingID(),
-          url::Origin::Create(
-              request_frame_host->GetLastCommittedURL().GetOrigin()),
+          url::Origin::Create(request_frame_host->GetLastCommittedURL()
+                                  .DeprecatedGetOriginAsURL()),
           media_id, "", content::kRegistryStreamTypeTab);
 
   return id;
@@ -3458,15 +3456,6 @@ void WebContents::EnumerateDirectory(
 bool WebContents::IsFullscreenForTabOrPending(
     const content::WebContents* source) {
   return html_fullscreen_;
-}
-
-blink::SecurityStyle WebContents::GetSecurityStyle(
-    content::WebContents* web_contents,
-    content::SecurityStyleExplanations* security_style_explanations) {
-  auto state = security_state::GetVisibleSecurityState(web_contents);
-  auto security_level = security_state::GetSecurityLevel(*state, false);
-  return security_state::GetSecurityStyle(security_level, *state,
-                                          security_style_explanations);
 }
 
 bool WebContents::TakeFocus(content::WebContents* source, bool reverse) {
