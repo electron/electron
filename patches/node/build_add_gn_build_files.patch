@@ -7,10 +7,10 @@ This adds GN build files for Node, so we don't have to build with GYP.
 
 diff --git a/BUILD.gn b/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..d0641c5cbc3c527ce7a73d12118fb42db325be01
+index 0000000000000000000000000000000000000000..bd5788caa61305fd9af8f9d7f8f1937a224fda83
 --- /dev/null
 +++ b/BUILD.gn
-@@ -0,0 +1,393 @@
+@@ -0,0 +1,394 @@
 +import("//electron/build/asar.gni")
 +import("//v8/gni/v8.gni")
 +
@@ -226,6 +226,7 @@ index 0000000000000000000000000000000000000000..d0641c5cbc3c527ce7a73d12118fb42d
 +    "-Wno-unused-label",
 +    "-Wno-unused-private-field",
 +    "-Wno-unused-variable",
++    "-Wno-shadow",
 +  ]
 +
 +  if (v8_enable_i18n_support) {
@@ -717,10 +718,10 @@ index 0000000000000000000000000000000000000000..8bfecba74d4d90e9fbf0e2cd301118e4
 +}
 diff --git a/deps/uv/BUILD.gn b/deps/uv/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..b8deb68cebcf5ac9b831201332edf8c509a7d4c8
+index 0000000000000000000000000000000000000000..d6bed57461820ce08391fc424a1f842bd282fa75
 --- /dev/null
 +++ b/deps/uv/BUILD.gn
-@@ -0,0 +1,195 @@
+@@ -0,0 +1,196 @@
 +config("libuv_config") {
 +  include_dirs = [ "include" ]
 +
@@ -770,6 +771,7 @@ index 0000000000000000000000000000000000000000..b8deb68cebcf5ac9b831201332edf8c5
 +    "-Wno-unreachable-code",
 +    "-Wno-unreachable-code-return",
 +    "-Wno-unused-but-set-variable",
++    "-Wno-shadow",
 +  ]
 +
 +  libs = []
