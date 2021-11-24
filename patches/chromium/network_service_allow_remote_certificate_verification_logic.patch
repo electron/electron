@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 0fa1d408f99f087f913c96c9d5fc262c42f2f067..6321d35d649a58c91df621a088c23879901ef6aa 100644
+index 4fd37751b4e4687f9b688e5d700211205ce29b39..51cc6a66473f31bd85790223a7684aeae830e03a 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -119,6 +119,11 @@
@@ -116,7 +116,7 @@ index 0fa1d408f99f087f913c96c9d5fc262c42f2f067..6321d35d649a58c91df621a088c23879
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -2106,6 +2191,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -2124,6 +2209,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
          std::move(cert_verifier));
      cert_verifier = base::WrapUnique(cert_verifier_with_trust_anchors_);
  #endif  // BUILDFLAG(IS_CHROMEOS_ASH)
@@ -127,7 +127,7 @@ index 0fa1d408f99f087f913c96c9d5fc262c42f2f067..6321d35d649a58c91df621a088c23879
  
    builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index e5497a2346da9d2d643885c846acb71bf11408be..5535c101c809f23f3adc85b06d42ee34f135da4b 100644
+index 0480d94237fa8bc3c5d634a64d7cbe883cf16fcd..e7d696b1003581756e9800a72c46f69b33f73984 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -102,6 +102,7 @@ class DomainReliabilityMonitor;
@@ -147,7 +147,7 @@ index e5497a2346da9d2d643885c846acb71bf11408be..5535c101c809f23f3adc85b06d42ee34
    void ResetURLLoaderFactories() override;
    void GetCookieManager(
        mojo::PendingReceiver<mojom::CookieManager> receiver) override;
-@@ -755,6 +758,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -757,6 +760,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    CertVerifierWithTrustAnchors* cert_verifier_with_trust_anchors_ = nullptr;
  #endif
  

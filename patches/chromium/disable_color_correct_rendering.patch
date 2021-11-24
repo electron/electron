@@ -20,10 +20,10 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index 053391edf447c902dbfc2c7115a232671cd3396e..d570e6cd1435787acd4ba0b56420142932955590 100644
+index c6c3dab188ac2ae618474afd88945dd3df6db9bb..6f62de1636770519b268848ac4109253d59d0a4c 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
-@@ -1816,6 +1816,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
+@@ -1819,6 +1819,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
  
  gfx::ColorSpace LayerTreeHostImpl::GetRasterColorSpace(
      gfx::ContentColorUsage content_color_usage) const {
@@ -229,7 +229,7 @@ index 405cdf39e2c9ca364d2b0a8908143cd2cbb74432..833ed728180f91d6bbe7faa57290dc14
 +
 +#undef PATCH_CS
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index 9d8fa4f02812d7cc05225262f82dfbf1feef6ed1..a7101f41a33f08b0a759e100150b6d9f3f940a22 100644
+index 8373813084b712c21c889a2180b823ae3b1391dc..bfb08a7d92d8cd3995ed62ddf3e26ad7d1423563 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
 @@ -225,6 +225,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
@@ -241,10 +241,10 @@ index 9d8fa4f02812d7cc05225262f82dfbf1feef6ed1..a7101f41a33f08b0a759e100150b6d9f
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 43a22eb1ce2f94202f35f8080c881748535cbcd1..fe5c60224a2863489f835a7bbed82eab3a5a18bb 100644
+index ba831086db1bdbc027bebd0a0cba16c9b47d8989..de38396ca3aa374fa21a14ddc525ca594c6130c4 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -183,6 +183,7 @@
+@@ -184,6 +184,7 @@
  #include "ui/accessibility/accessibility_switches.h"
  #include "ui/base/ui_base_switches.h"
  #include "ui/display/display_switches.h"
@@ -252,7 +252,7 @@ index 43a22eb1ce2f94202f35f8080c881748535cbcd1..fe5c60224a2863489f835a7bbed82eab
  #include "ui/gl/gl_switches.h"
  #include "url/gurl.h"
  #include "url/origin.h"
-@@ -3246,6 +3247,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3243,6 +3244,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {

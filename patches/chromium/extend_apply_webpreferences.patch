@@ -12,10 +12,10 @@ Ideally we could add an embedder observer pattern here but that can be
 done in future work.
 
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index dcc985cf532f098ff5aeb649a30db314030c5a02..388790dd6e6cdba4c1d1d508184e9b0b7ef672df 100644
+index 4570fd3a7270c9ed0e841745c53448f862da2de9..f9738d6f234b32313a9a1b5ba617ed91635c7327 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
-@@ -157,6 +157,7 @@
+@@ -159,6 +159,7 @@
  #include "third_party/blink/renderer/core/timing/dom_window_performance.h"
  #include "third_party/blink/renderer/core/timing/window_performance.h"
  #include "third_party/blink/renderer/platform/fonts/font_cache.h"
@@ -23,7 +23,7 @@ index dcc985cf532f098ff5aeb649a30db314030c5a02..388790dd6e6cdba4c1d1d508184e9b0b
  #include "third_party/blink/renderer/platform/graphics/image.h"
  #include "third_party/blink/renderer/platform/graphics/paint/cull_rect.h"
  #include "third_party/blink/renderer/platform/graphics/paint/paint_record_builder.h"
-@@ -1803,6 +1804,7 @@ void WebView::ApplyWebPreferences(const web_pref::WebPreferences& prefs,
+@@ -1804,6 +1805,7 @@ void WebView::ApplyWebPreferences(const web_pref::WebPreferences& prefs,
  #if defined(OS_MAC)
    web_view_impl->SetMaximumLegibleScale(
        prefs.default_maximum_page_scale_factor);

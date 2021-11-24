@@ -81,7 +81,7 @@ index 309422bcf85810db88a048bd0930c4072b41f234..759549f3046f4a897b597409b670bb1c
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 972d8fcc61b6a4ea972d8faf7dda8d9017f7cb71..7b00ef49451b0666567073f942bdb6fc2166aaf0 100644
+index 3b494843ac89db9be18e9deb75ec79a32296a73e..9942d66b163280f16a343b2e61aeaa3d97c47f45 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -137,6 +137,8 @@ viz_component("service") {
@@ -499,7 +499,7 @@ index 583e3e2525c753a0962d481fc67a3582df75d0e9..9416ec929bebcff7f07088e635376ef2
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index d23ae68f306d6d76beec9784133bd22e2d4dee7a..370460868e7b121a3bb033668927659a2ffe75c9 100644
+index 0bc86c81b0e95080a38d99ddcdc6e3c9cdd10d47..b37cf06a8535199996f79605cf7d983cbc5dff09 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 @@ -47,7 +47,8 @@ RootCompositorFrameSinkImpl::Create(
@@ -513,7 +513,7 @@ index d23ae68f306d6d76beec9784133bd22e2d4dee7a..370460868e7b121a3bb033668927659a
    // Creating output surface failed. The host can send a new request, possibly
    // with a different compositing mode.
 diff --git a/content/browser/compositor/viz_process_transport_factory.cc b/content/browser/compositor/viz_process_transport_factory.cc
-index bb929cb9ff381b1186f8df68e952d8f13a24a5d9..33f34eb372a4ab9c81d16dbf14485a63922f958e 100644
+index c89b4d4941f01b10e7dd652da40839fd07d2a53c..93088168b6c2a46f8f3baa3ad4ba9cbd5ff1ae01 100644
 --- a/content/browser/compositor/viz_process_transport_factory.cc
 +++ b/content/browser/compositor/viz_process_transport_factory.cc
 @@ -382,8 +382,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
@@ -617,7 +617,7 @@ index c966042cf947ef291241a5a2dddce29e48c7e6c3..4b0ae728e29738e1309ee6c1bdd9408d
    Layer* root_layer_ = nullptr;
  
 diff --git a/ui/gfx/ca_layer_params.h b/ui/gfx/ca_layer_params.h
-index 64af450ed36a982124c6fcce7056b4058140747a..dcee2ec9de0e759b868b0de2c7106b2cf084c41c 100644
+index 232751b32f6d6dee6c913c7020b53ae4b604a552..ba5767a80d13e848b7281f55307f6569a1524ce3 100644
 --- a/ui/gfx/ca_layer_params.h
 +++ b/ui/gfx/ca_layer_params.h
 @@ -6,6 +6,7 @@
@@ -628,7 +628,7 @@ index 64af450ed36a982124c6fcce7056b4058140747a..dcee2ec9de0e759b868b0de2c7106b2c
  #include "ui/gfx/geometry/size.h"
  #include "ui/gfx/gfx_export.h"
  
-@@ -41,6 +42,8 @@ struct GFX_EXPORT CALayerParams {
+@@ -51,6 +52,8 @@ struct GFX_EXPORT CALayerParams {
    gfx::ScopedRefCountedIOSurfaceMachPort io_surface_mach_port;
  #endif
  
