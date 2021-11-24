@@ -58,10 +58,10 @@ index 852b76bea69988e0b3ac76a17b603128f239dde0..d443f4dc2daea0b7aa86ae75d31d995f
    callback(EVP_aes_192_ctr(), "aes-192-ctr", NULL, arg);
    callback(EVP_aes_256_ctr(), "aes-256-ctr", NULL, arg);
 diff --git a/include/openssl/cipher.h b/include/openssl/cipher.h
-index 09d72ec2c343f23409d35eca804a02e3290c86f1..1bea1a88b265312d700729ad2828f0b5d9f2d84f 100644
+index 2458847e5640fe955a9971aa77c27251e5091db5..a0b3ac5f6b55921a542f27108beca93d6372c6fc 100644
 --- a/include/openssl/cipher.h
 +++ b/include/openssl/cipher.h
-@@ -436,6 +436,7 @@ OPENSSL_EXPORT const EVP_CIPHER *EVP_des_ede3_ecb(void);
+@@ -448,6 +448,7 @@ OPENSSL_EXPORT const EVP_CIPHER *EVP_des_ede3_ecb(void);
  
  // EVP_aes_128_cfb128 is only available in decrepit.
  OPENSSL_EXPORT const EVP_CIPHER *EVP_aes_128_cfb128(void);
