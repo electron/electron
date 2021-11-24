@@ -120,6 +120,7 @@ move_networkstateobserver_from_document_to_window.patch
 cherry-pick-8af66de55aad.patch
 cherry-pick-91dd4f79ab5b.patch
 cherry-pick-45f9dcf5021d.patch
+cherry-pick-1a8af2da50e4.patch
 cachestorage_store_partial_opaque_responses.patch
 introduce_crossthreadcopier_skbitmap.patch
 allow_null_skbitmap_to_be_transferred_across_threads.patch
