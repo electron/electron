@@ -2,18 +2,14 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_UI_TRAY_ICON_GTK_H_
-#define SHELL_BROWSER_UI_TRAY_ICON_GTK_H_
+#ifndef ELECTRON_SHELL_BROWSER_UI_TRAY_ICON_GTK_H_
+#define ELECTRON_SHELL_BROWSER_UI_TRAY_ICON_GTK_H_
 
 #include <memory>
 #include <string>
 
 #include "shell/browser/ui/tray_icon.h"
 #include "ui/views/linux_ui/status_icon_linux.h"
-
-namespace views {
-class StatusIconLinux;
-}
 
 namespace electron {
 
@@ -42,10 +38,8 @@ class TrayIconGtk : public TrayIcon, public views::StatusIconLinux::Delegate {
   gfx::ImageSkia image_;
   std::u16string tool_tip_;
   ui::MenuModel* menu_model_;
-
-  DISALLOW_COPY_AND_ASSIGN(TrayIconGtk);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_UI_TRAY_ICON_GTK_H_
+#endif  // ELECTRON_SHELL_BROWSER_UI_TRAY_ICON_GTK_H_

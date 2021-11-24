@@ -10,7 +10,8 @@ app.whenReady().then(async function () {
     url,
     name,
     value,
-    expirationDate: Date.now() + 60000
+    expirationDate: Date.now() + 60000,
+    sameSite: 'strict'
   });
 
   const get = () => persistentSession.cookies.get({
@@ -33,7 +34,7 @@ app.whenReady().then(async function () {
 
     process.stdout.write(`${one.length}${two.length}${three.length}`);
   } catch (e) {
-    process.stdout.write('ERROR');
+    process.stdout.write(`ERROR : ${e.message}`);
   } finally {
     process.stdout.end();
 

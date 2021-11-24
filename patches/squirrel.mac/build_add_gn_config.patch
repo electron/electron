@@ -23,10 +23,10 @@ index 89c499e451ecb48655cfd42b01ffa1da56998c2e..98f80aad43a87ed75ca1660ad6a178db
 +vendor
 diff --git a/BUILD.gn b/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..449c8ccd5ebf37aeb4f61754d9d5ea3c25b22d23
+index 0000000000000000000000000000000000000000..d43e6d6be5c8e2b3a5f715721e61589be493718d
 --- /dev/null
 +++ b/BUILD.gn
-@@ -0,0 +1,236 @@
+@@ -0,0 +1,239 @@
 +assert(is_mac)
 +
 +import("//build/config/mac/rules.gni")
@@ -118,7 +118,10 @@ index 0000000000000000000000000000000000000000..449c8ccd5ebf37aeb4f61754d9d5ea3c
 +    "CURRENT_PROJECT_VERSION=0.0.0",
 +    "PRODUCT_BUNDLE_IDENTIFIER=com.electron.reactive",
 +  ]
-+  defines = [ "BUILDING_RAC_FRAMEWORK=1" ]
++  defines = [
++    "BUILDING_RAC_FRAMEWORK=1",
++    "DTRACE_PROBES_DISABLED",
++  ]
 +
 +  configs -= [
 +    "//build/config/compiler:chromium_code",
@@ -449,7 +452,7 @@ index 85073b2f5d58d3e071fb6ef30598973b4d00eda8..c81c820d61da3c7d1cfd2c516147c954
  
  NSString * const SQRLUpdaterErrorDomain = @"SQRLUpdaterErrorDomain";
 diff --git a/Squirrel/SQRLZipArchiver.m b/Squirrel/SQRLZipArchiver.m
-index f84127f642516078249925953e97621909265deb..478509cdd528db4fcfa340c6f93fa58a446957e6 100644
+index cbc8fb61c66184c1d76e8b9f52a89292b4e9939c..d0f20f022a4ff392b596bcf0be96ab3e3c835285 100644
 --- a/Squirrel/SQRLZipArchiver.m
 +++ b/Squirrel/SQRLZipArchiver.m
 @@ -7,8 +7,8 @@
@@ -508,7 +511,7 @@ index 0000000000000000000000000000000000000000..bdfaf95f3eca65b3e0831db1b66f651d
 +}
 diff --git a/build/xcrun.py b/build/xcrun.py
 new file mode 100644
-index 0000000000000000000000000000000000000000..20d0cdb51cc933f56b7a7193c195457e82500870
+index 0000000000000000000000000000000000000000..18ac587f80441106405d00fafd9ee1f25b147772
 --- /dev/null
 +++ b/build/xcrun.py
 @@ -0,0 +1,14 @@
@@ -524,7 +527,7 @@ index 0000000000000000000000000000000000000000..20d0cdb51cc933f56b7a7193c195457e
 +try:
 +    subprocess.check_output(args, stderr=subprocess.STDOUT)
 +except subprocess.CalledProcessError as e:
-+    print("xcrun script '" + sys.argv[2] + "' failed with code '" + str(e.returncode) + "':\n" + e.output)
++    print("xcrun script '" + ' '.join(sys.argv[1:]) + "' failed with code '" + str(e.returncode) + "':\n" + e.output)
 +    sys.exit(e.returncode)
 diff --git a/filenames.gni b/filenames.gni
 new file mode 100644

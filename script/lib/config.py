@@ -6,6 +6,7 @@ import sys
 
 PLATFORM = {
   'cygwin': 'win32',
+  'msys': 'win32',
   'darwin': 'darwin',
   'linux': 'linux',
   'linux2': 'linux',

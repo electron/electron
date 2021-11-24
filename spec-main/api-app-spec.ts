@@ -1,4 +1,4 @@
-import { expect } from 'chai';
+import { assert, expect } from 'chai';
 import * as cp from 'child_process';
 import * as https from 'https';
 import * as http from 'http';
@@ -6,13 +6,11 @@ import * as net from 'net';
 import * as fs from 'fs';
 import * as path from 'path';
 import { promisify } from 'util';
-import { app, BrowserWindow, Menu, session } from 'electron/main';
+import { app, BrowserWindow, Menu, session, net as electronNet } from 'electron/main';
 import { emittedOnce } from './events-helpers';
 import { closeWindow, closeAllWindows } from './window-helpers';
 import { ifdescribe, ifit } from './spec-helpers';
 import split = require('split')
-
-const features = process._linkedBinding('electron_common_features');
 
 const fixturesPath = path.resolve(__dirname, '../spec/fixtures');
 
@@ -122,12 +120,9 @@ describe('app module', () => {
 
   describe('app.getLocaleCountryCode()', () => {
     it('should be empty or have length of two', () => {
-      let expectedLength = 2;
-      if (process.platform === 'linux' && process.env.CI) {
-        // Linux CI machines have no locale.
-        expectedLength = 0;
-      }
-      expect(app.getLocaleCountryCode()).to.be.a('string').and.have.lengthOf(expectedLength);
+      const localeCountryCode = app.getLocaleCountryCode();
+      expect(localeCountryCode).to.be.a('string');
+      expect(localeCountryCode.length).to.be.oneOf([0, 2]);
     });
   });
 
@@ -210,9 +205,14 @@ describe('app module', () => {
   });
 
   describe('app.requestSingleInstanceLock', () => {
+    interface SingleInstanceLockTestArgs {
+      args: string[];
+      expectedAdditionalData: unknown;
+    }
+
     it('prevents the second launch of app', async function () {
       this.timeout(120000);
-      const appPath = path.join(fixturesPath, 'api', 'singleton');
+      const appPath = path.join(fixturesPath, 'api', 'singleton-data');
       const first = cp.spawn(process.execPath, [appPath]);
       await emittedOnce(first.stdout, 'data');
       // Start second app when received output.
@@ -223,9 +223,9 @@ describe('app module', () => {
       expect(code1).to.equal(0);
     });
 
-    it('passes arguments to the second-instance event', async () => {
-      const appPath = path.join(fixturesPath, 'api', 'singleton');
-      const first = cp.spawn(process.execPath, [appPath]);
+    async function testArgumentPassing (testArgs: SingleInstanceLockTestArgs) {
+      const appPath = path.join(fixturesPath, 'api', 'singleton-data');
+      const first = cp.spawn(process.execPath, [appPath, ...testArgs.args]);
       const firstExited = emittedOnce(first, 'exit');
 
       // Wait for the first app to boot.
@@ -233,21 +233,104 @@ describe('app module', () => {
       while ((await emittedOnce(firstStdoutLines, 'data')).toString() !== 'started') {
         // wait.
       }
-      const data2Promise = emittedOnce(firstStdoutLines, 'data');
+      const additionalDataPromise = emittedOnce(firstStdoutLines, 'data');
 
-      const secondInstanceArgs = [process.execPath, appPath, '--some-switch', 'some-arg'];
+      const secondInstanceArgs = [process.execPath, appPath, ...testArgs.args, '--some-switch', 'some-arg'];
       const second = cp.spawn(secondInstanceArgs[0], secondInstanceArgs.slice(1));
-      const [code2] = await emittedOnce(second, 'exit');
+      const secondExited = emittedOnce(second, 'exit');
+
+      const [code2] = await secondExited;
       expect(code2).to.equal(1);
       const [code1] = await firstExited;
       expect(code1).to.equal(0);
-      const data2 = (await data2Promise)[0].toString('ascii');
-      const secondInstanceArgsReceived: string[] = JSON.parse(data2.toString('ascii'));
-      const expected = process.platform === 'win32'
-        ? [process.execPath, '--some-switch', '--allow-file-access-from-files', appPath, 'some-arg']
-        : secondInstanceArgs;
-      expect(secondInstanceArgsReceived).to.eql(expected,
-        `expected ${JSON.stringify(expected)} but got ${data2.toString('ascii')}`);
+      const dataFromSecondInstance = await additionalDataPromise;
+      const [args, additionalData] = dataFromSecondInstance[0].toString('ascii').split('||');
+      const secondInstanceArgsReceived: string[] = JSON.parse(args.toString('ascii'));
+      const secondInstanceDataReceived = JSON.parse(additionalData.toString('ascii'));
+
+      // Ensure secondInstanceArgs is a subset of secondInstanceArgsReceived
+      for (const arg of secondInstanceArgs) {
+        expect(secondInstanceArgsReceived).to.include(arg,
+          `argument ${arg} is missing from received second args`);
+      }
+      expect(secondInstanceDataReceived).to.be.deep.equal(testArgs.expectedAdditionalData,
+        `received data ${JSON.stringify(secondInstanceDataReceived)} is not equal to expected data ${JSON.stringify(testArgs.expectedAdditionalData)}.`);
+    }
+
+    it('passes arguments to the second-instance event no additional data', async () => {
+      await testArgumentPassing({
+        args: [],
+        expectedAdditionalData: null
+      });
+    });
+
+    it('sends and receives JSON object data', async () => {
+      const expectedAdditionalData = {
+        level: 1,
+        testkey: 'testvalue1',
+        inner: {
+          level: 2,
+          testkey: 'testvalue2'
+        }
+      };
+      await testArgumentPassing({
+        args: ['--send-data'],
+        expectedAdditionalData
+      });
+    });
+
+    it('sends and receives numerical data', async () => {
+      await testArgumentPassing({
+        args: ['--send-data', '--data-content=2'],
+        expectedAdditionalData: 2
+      });
+    });
+
+    it('sends and receives string data', async () => {
+      await testArgumentPassing({
+        args: ['--send-data', '--data-content="data"'],
+        expectedAdditionalData: 'data'
+      });
+    });
+
+    it('sends and receives boolean data', async () => {
+      await testArgumentPassing({
+        args: ['--send-data', '--data-content=false'],
+        expectedAdditionalData: false
+      });
+    });
+
+    it('sends and receives array data', async () => {
+      await testArgumentPassing({
+        args: ['--send-data', '--data-content=[2, 3, 4]'],
+        expectedAdditionalData: [2, 3, 4]
+      });
+    });
+
+    it('sends and receives mixed array data', async () => {
+      await testArgumentPassing({
+        args: ['--send-data', '--data-content=["2", true, 4]'],
+        expectedAdditionalData: ['2', true, 4]
+      });
+    });
+
+    it('sends and receives null data', async () => {
+      await testArgumentPassing({
+        args: ['--send-data', '--data-content=null'],
+        expectedAdditionalData: null
+      });
+    });
+
+    it('cannot send or receive undefined data', async () => {
+      try {
+        await testArgumentPassing({
+          args: ['--send-ack', '--ack-content="undefined"', '--prevent-default', '--send-data', '--data-content="undefined"'],
+          expectedAdditionalData: undefined
+        });
+        assert(false);
+      } catch (e) {
+        // This is expected.
+      }
     });
   });
 
@@ -321,6 +404,24 @@ describe('app module', () => {
       const w = new BrowserWindow({ show: false });
       w.loadURL(secureUrl);
       await emittedOnce(app, 'certificate-error');
+    });
+
+    describe('when denied', () => {
+      before(() => {
+        app.on('certificate-error', (event, webContents, url, error, certificate, callback) => {
+          callback(false);
+        });
+      });
+
+      after(() => {
+        app.removeAllListeners('certificate-error');
+      });
+
+      it('causes did-fail-load', async () => {
+        const w = new BrowserWindow({ show: false });
+        w.loadURL(secureUrl);
+        await emittedOnce(w.webContents, 'did-fail-load');
+      });
     });
   });
 
@@ -445,25 +546,6 @@ describe('app module', () => {
       const [, webContents, details] = await emitted;
       expect(webContents).to.equal(w.webContents);
       expect(details.reason).to.be.oneOf(['crashed', 'abnormal-exit']);
-    });
-
-    ifdescribe(features.isDesktopCapturerEnabled())('desktopCapturer module filtering', () => {
-      it('should emit desktop-capturer-get-sources event when desktopCapturer.getSources() is invoked', async () => {
-        w = new BrowserWindow({
-          show: false,
-          webPreferences: {
-            nodeIntegration: true,
-            contextIsolation: false
-          }
-        });
-        await w.loadURL('about:blank');
-
-        const promise = emittedOnce(app, 'desktop-capturer-get-sources');
-        w.webContents.executeJavaScript('require(\'electron\').desktopCapturer.getSources({ types: [\'screen\'] })');
-
-        const [, webContents] = await promise;
-        expect(webContents).to.equal(w.webContents);
-      });
     });
   });
 
@@ -909,6 +991,10 @@ describe('app module', () => {
         expect(app.getPath('recent')).to.equal('C:\\fake-path');
       });
     }
+
+    it('uses the app name in getPath(userData)', () => {
+      expect(app.getPath('userData')).to.include(app.name);
+    });
   });
 
   describe('setPath(name, path)', () => {
@@ -1276,8 +1362,15 @@ describe('app module', () => {
       });
       const [exitCode] = await emittedOnce(appProcess, 'exit');
       if (exitCode === 0) {
-        // return info data on successful exit
-        return JSON.parse(gpuInfoData);
+        try {
+          const [, json] = /HERE COMES THE JSON: (.+) AND THERE IT WAS/.exec(gpuInfoData)!;
+          // return info data on successful exit
+          return JSON.parse(json);
+        } catch (e) {
+          console.error('Failed to interpret the following as JSON:');
+          console.error(gpuInfoData);
+          throw e;
+        }
       } else {
         // return error if not clean exit
         return Promise.reject(new Error(errorData));
@@ -1597,12 +1690,79 @@ describe('app module', () => {
     });
   });
 
+  describe('commandLine.removeSwitch', () => {
+    it('no-ops a non-existent switch', async () => {
+      expect(app.commandLine.hasSwitch('foobar3')).to.equal(false);
+      app.commandLine.removeSwitch('foobar3');
+      expect(app.commandLine.hasSwitch('foobar3')).to.equal(false);
+    });
+
+    it('removes an existing switch', async () => {
+      app.commandLine.appendSwitch('foobar3', 'test');
+      expect(app.commandLine.hasSwitch('foobar3')).to.equal(true);
+      app.commandLine.removeSwitch('foobar3');
+      expect(app.commandLine.hasSwitch('foobar3')).to.equal(false);
+    });
+  });
+
   ifdescribe(process.platform === 'darwin')('app.setSecureKeyboardEntryEnabled', () => {
     it('changes Secure Keyboard Entry is enabled', () => {
       app.setSecureKeyboardEntryEnabled(true);
       expect(app.isSecureKeyboardEntryEnabled()).to.equal(true);
       app.setSecureKeyboardEntryEnabled(false);
       expect(app.isSecureKeyboardEntryEnabled()).to.equal(false);
+    });
+  });
+
+  describe('configureHostResolver', () => {
+    after(() => {
+      // Returns to the default configuration.
+      app.configureHostResolver({});
+    });
+
+    it('fails on bad arguments', () => {
+      expect(() => {
+        (app.configureHostResolver as any)();
+      }).to.throw();
+      expect(() => {
+        app.configureHostResolver({
+          secureDnsMode: 'notAValidValue' as any
+        });
+      }).to.throw();
+      expect(() => {
+        app.configureHostResolver({
+          secureDnsServers: [123 as any]
+        });
+      }).to.throw();
+    });
+
+    it('affects dns lookup behavior', async () => {
+      // 1. resolve a domain name to check that things are working
+      await expect(new Promise((resolve, reject) => {
+        electronNet.request({
+          method: 'HEAD',
+          url: 'https://www.electronjs.org'
+        }).on('response', resolve)
+          .on('error', reject)
+          .end();
+      })).to.eventually.be.fulfilled();
+      // 2. change the host resolver configuration to something that will
+      // always fail
+      app.configureHostResolver({
+        secureDnsMode: 'secure',
+        secureDnsServers: ['https://127.0.0.1:1234']
+      });
+      // 3. check that resolving domain names now fails
+      await expect(new Promise((resolve, reject) => {
+        electronNet.request({
+          method: 'HEAD',
+          // Needs to be a slightly different domain to above, otherwise the
+          // response will come from the cache.
+          url: 'https://electronjs.org'
+        }).on('response', resolve)
+          .on('error', reject)
+          .end();
+      })).to.eventually.be.rejectedWith(/ERR_NAME_NOT_RESOLVED/);
     });
   });
 });
@@ -1698,6 +1858,19 @@ describe('default behavior', () => {
       w.loadURL(serverUrl);
       const [, webContents] = await emittedOnce(app, 'login');
       expect(webContents).to.equal(w.webContents);
+    });
+  });
+
+  describe('running under ARM64 translation', () => {
+    it('does not throw an error', () => {
+      if (process.platform === 'darwin' || process.platform === 'win32') {
+        expect(app.runningUnderARM64Translation).not.to.be.undefined();
+        expect(() => {
+          return app.runningUnderARM64Translation;
+        }).not.to.throw();
+      } else {
+        expect(app.runningUnderARM64Translation).to.be.undefined();
+      }
     });
   });
 });

@@ -2,14 +2,17 @@ const temp = require('temp');
 const fs = require('fs');
 const path = require('path');
 const childProcess = require('child_process');
-const { getCurrentBranch, ELECTRON_DIR } = require('../lib/utils');
-const request = require('request');
+const got = require('got');
 const semver = require('semver');
+
+const { getCurrentBranch, ELECTRON_DIR } = require('../lib/utils');
 const rootPackageJson = require('../../package.json');
 
 const { Octokit } = require('@octokit/rest');
+const { getAssetContents } = require('./get-asset');
 const octokit = new Octokit({
-  userAgent: 'electron-npm-publisher'
+  userAgent: 'electron-npm-publisher',
+  auth: process.env.ELECTRON_GITHUB_TOKEN
 });
 
 if (!process.env.ELECTRON_NPM_OTP) {
@@ -85,34 +88,49 @@ new Promise((resolve, reject) => {
     }
     return release;
   })
-  .then((release) => {
+  .then(async (release) => {
     const tsdAsset = release.assets.find((asset) => asset.name === 'electron.d.ts');
     if (!tsdAsset) {
       throw new Error(`cannot find electron.d.ts from v${rootPackageJson.version} release assets`);
     }
-    return new Promise((resolve, reject) => {
-      request.get({
-        url: tsdAsset.url,
-        headers: {
-          accept: 'application/octet-stream',
-          'user-agent': 'electron-npm-publisher'
-        }
-      }, (err, response, body) => {
-        if (err || response.statusCode !== 200) {
-          reject(err || new Error('Cannot download electron.d.ts'));
-        } else {
-          fs.writeFileSync(path.join(tempDir, 'electron.d.ts'), body);
-          resolve(release);
-        }
-      });
-    });
+
+    const typingsContent = await getAssetContents(
+      rootPackageJson.version.indexOf('nightly') > 0 ? 'nightlies' : 'electron',
+      tsdAsset.id
+    );
+
+    fs.writeFileSync(path.join(tempDir, 'electron.d.ts'), typingsContent);
+
+    return release;
+  })
+  .then(async (release) => {
+    const checksumsAsset = release.assets.find((asset) => asset.name === 'SHASUMS256.txt');
+    if (!checksumsAsset) {
+      throw new Error(`cannot find SHASUMS256.txt from v${rootPackageJson.version} release assets`);
+    }
+
+    const checksumsContent = await getAssetContents(
+      rootPackageJson.version.indexOf('nightly') > 0 ? 'nightlies' : 'electron',
+      checksumsAsset.id
+    );
+
+    const checksumsObject = {};
+    for (const line of checksumsContent.trim().split('\n')) {
+      const [checksum, file] = line.split(' *');
+      checksumsObject[file] = checksum;
+    }
+
+    fs.writeFileSync(path.join(tempDir, 'checksums.json'), JSON.stringify(checksumsObject, null, 2));
+
+    return release;
   })
   .then(async (release) => {
     const currentBranch = await getCurrentBranch();
 
     if (release.tag_name.indexOf('nightly') > 0) {
-      if (currentBranch === 'master') {
-        // Nightlies get published to their own module, so master nightlies should be tagged as latest
+      // TODO(main-migration): Simplify once main branch is renamed.
+      if (currentBranch === 'master' || currentBranch === 'main') {
+        // Nightlies get published to their own module, so they should be tagged as latest
         npmTag = 'latest';
       } else {
         npmTag = `nightly-${currentBranch}`;
@@ -127,13 +145,16 @@ new Promise((resolve, reject) => {
         JSON.stringify(currentJson, null, 2)
       );
     } else {
-      if (currentBranch === 'master') {
-        // This should never happen, master releases should be nightly releases
+      if (currentBranch === 'master' || currentBranch === 'main') {
+        // This should never happen, main releases should be nightly releases
         // this is here just-in-case
-        npmTag = 'master';
+        throw new Error('Unreachable release phase, can\'t tag a non-nightly release on the main branch');
       } else if (!release.prerelease) {
         // Tag the release with a `2-0-x` style tag
         npmTag = currentBranch;
+      } else if (release.tag_name.indexOf('alpha') > 0) {
+        // Tag the release with an `alpha-3-0-x` style tag
+        npmTag = `alpha-${currentBranch}`;
       } else {
         // Tag the release with a `beta-3-0-x` style tag
         npmTag = `beta-${currentBranch}`;
@@ -145,10 +166,26 @@ new Promise((resolve, reject) => {
   // test that the package can install electron prebuilt from github release
     const tarballPath = path.join(tempDir, `${rootPackageJson.name}-${rootPackageJson.version}.tgz`);
     return new Promise((resolve, reject) => {
-      childProcess.execSync(`npm install ${tarballPath} --force --silent`, {
+      const result = childProcess.spawnSync('npm', ['install', tarballPath, '--force', '--silent'], {
         env: Object.assign({}, process.env, { electron_config_cache: tempDir }),
-        cwd: tempDir
+        cwd: tempDir,
+        stdio: 'inherit'
       });
+      if (result.status !== 0) {
+        return reject(new Error(`npm install failed with status ${result.status}`));
+      }
+      try {
+        const electronPath = require(path.resolve(tempDir, 'node_modules', rootPackageJson.name));
+        if (typeof electronPath !== 'string') {
+          return reject(new Error(`path to electron binary (${electronPath}) returned by the ${rootPackageJson.name} module is not a string`));
+        }
+        if (!fs.existsSync(electronPath)) {
+          return reject(new Error(`path to electron binary (${electronPath}) returned by the ${rootPackageJson.name} module does not exist on disk`));
+        }
+      } catch (e) {
+        console.error(e);
+        return reject(new Error(`loading the generated ${rootPackageJson.name} module failed with an error`));
+      }
       resolve(tarballPath);
     });
   })
@@ -174,9 +211,13 @@ new Promise((resolve, reject) => {
             semver.gt(localVersion, currentTags.beta)) {
         childProcess.execSync(`npm dist-tag add electron@${localVersion} beta --otp=${process.env.ELECTRON_NPM_OTP}`);
       }
+      if (parsedLocalVersion.prerelease[0] === 'alpha' &&
+            semver.gt(localVersion, currentTags.alpha)) {
+        childProcess.execSync(`npm dist-tag add electron@${localVersion} alpha --otp=${process.env.ELECTRON_NPM_OTP}`);
+      }
     }
   })
   .catch((err) => {
-    console.error(`Error: ${err}`);
+    console.error('Error:', err);
     process.exit(1);
   });

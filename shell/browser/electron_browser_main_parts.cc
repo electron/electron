@@ -5,18 +5,19 @@
 #include "shell/browser/electron_browser_main_parts.h"
 
 #include <memory>
-
+#include <string>
 #include <utility>
 
 #include "base/base_switches.h"
 #include "base/command_line.h"
 #include "base/feature_list.h"
-#include "base/optional.h"
+#include "base/metrics/field_trial.h"
 #include "base/path_service.h"
 #include "base/run_loop.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/icon_manager.h"
+#include "components/os_crypt/os_crypt.h"
 #include "content/browser/browser_main_loop.h"  // nogncheck
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/child_process_security_policy.h"
@@ -26,6 +27,7 @@
 #include "content/public/common/content_switches.h"
 #include "content/public/common/result_codes.h"
 #include "electron/buildflags/buildflags.h"
+#include "electron/fuses.h"
 #include "media/base/localized_strings.h"
 #include "services/network/public/cpp/features.h"
 #include "services/tracing/public/cpp/stack_sampling/tracing_sampler_profiler.h"
@@ -42,11 +44,12 @@
 #include "shell/browser/ui/devtools_manager_delegate.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/application_info.h"
-#include "shell/common/asar/asar_util.h"
 #include "shell/common/electron_paths.h"
 #include "shell/common/gin_helper/trackable_object.h"
+#include "shell/common/logging.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
+#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/base/idle/idle.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/ui_base_switches.h"
@@ -60,28 +63,16 @@
 
 #if defined(OS_LINUX)
 #include "base/environment.h"
-#include "base/nix/xdg_util.h"
 #include "base/threading/thread_task_runner_handle.h"
+#include "device/bluetooth/bluetooth_adapter_factory.h"
+#include "device/bluetooth/dbus/dbus_bluez_manager_wrapper_linux.h"
+#include "ui/base/cursor/cursor_factory.h"
+#include "ui/base/ime/linux/linux_input_method_context_factory.h"
+#include "ui/gfx/color_utils.h"
 #include "ui/gtk/gtk_ui_factory.h"
 #include "ui/gtk/gtk_util.h"
-#include "ui/views/linux_ui/linux_ui.h"
-
-#if defined(USE_OZONE)
 #include "ui/ozone/public/ozone_platform.h"
-#endif
-
-#if defined(USE_X11)
-#include "ui/base/x/x11_util.h"
-#include "ui/events/devices/x11/touch_factory_x11.h"
-#include "ui/gfx/color_utils.h"
-#include "ui/gfx/x/connection.h"
-#include "ui/gfx/x/xproto_util.h"
-#endif
-
-#if defined(USE_OZONE) || defined(USE_X11)
-#include "ui/base/ui_base_features.h"
-#endif
-
+#include "ui/views/linux_ui/linux_ui.h"
 #endif
 
 #if defined(OS_WIN)
@@ -92,14 +83,10 @@
 #endif
 
 #if defined(OS_MAC)
+#include "services/device/public/cpp/geolocation/geolocation_manager.h"
 #include "shell/browser/ui/cocoa/views_delegate_mac.h"
 #else
 #include "shell/browser/ui/views/electron_views_delegate.h"
-#endif
-
-#if defined(OS_LINUX)
-#include "device/bluetooth/bluetooth_adapter_factory.h"
-#include "device/bluetooth/dbus/dbus_bluez_manager_wrapper_linux.h"
 #endif
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -154,16 +141,6 @@ std::u16string MediaStringProvider(media::MessageId id) {
 }
 
 #if defined(OS_LINUX)
-void OverrideLinuxAppDataPath() {
-  base::FilePath path;
-  if (base::PathService::Get(DIR_APP_DATA, &path))
-    return;
-  std::unique_ptr<base::Environment> env(base::Environment::Create());
-  path = base::nix::GetXDGDirectory(env.get(), base::nix::kXdgConfigHomeEnvVar,
-                                    base::nix::kDotConfigDir);
-  base::PathService::Override(DIR_APP_DATA, path);
-}
-
 // GTK does not provide a way to check if current theme is dark, so we compare
 // the text and background luminosity to get a result.
 // This trick comes from FireFox.
@@ -198,18 +175,17 @@ ElectronBrowserMainParts* ElectronBrowserMainParts::self_ = nullptr;
 
 ElectronBrowserMainParts::ElectronBrowserMainParts(
     const content::MainFunctionParams& params)
-    : fake_browser_process_(new BrowserProcessImpl),
-      browser_(new Browser),
+    : fake_browser_process_(std::make_unique<BrowserProcessImpl>()),
+      browser_(std::make_unique<Browser>()),
       node_bindings_(
           NodeBindings::Create(NodeBindings::BrowserEnvironment::kBrowser)),
-      electron_bindings_(new ElectronBindings(node_bindings_->uv_loop())) {
+      electron_bindings_(
+          std::make_unique<ElectronBindings>(node_bindings_->uv_loop())) {
   DCHECK(!self_) << "Cannot have two ElectronBrowserMainParts";
   self_ = this;
 }
 
-ElectronBrowserMainParts::~ElectronBrowserMainParts() {
-  asar::ClearArchives();
-}
+ElectronBrowserMainParts::~ElectronBrowserMainParts() = default;
 
 // static
 ElectronBrowserMainParts* ElectronBrowserMainParts::Get() {
@@ -232,12 +208,11 @@ int ElectronBrowserMainParts::GetExitCode() const {
 
 int ElectronBrowserMainParts::PreEarlyInitialization() {
   field_trial_list_ = std::make_unique<base::FieldTrialList>(nullptr);
-#if defined(OS_LINUX)
-  OverrideLinuxAppDataPath();
-#endif
-
 #if defined(OS_POSIX)
   HandleSIGCHLD();
+#endif
+#if defined(OS_LINUX)
+  ui::OzonePlatform::PreEarlyInitialization();
 #endif
 
   return GetExitCode();
@@ -262,6 +237,9 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
 
   env->set_trace_sync_io(env->options()->trace_sync_io);
 
+  // We do not want to crash the main process on unhandled rejections.
+  env->options()->unhandled_rejections = "warn";
+
   // Add Electron extended APIs.
   electron_bindings_->BindTo(js_env_->isolate(), env->process_object());
 
@@ -280,6 +258,11 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
 
   // Initialize field trials.
   InitializeFieldTrials();
+
+  // Reinitialize logging now that the app has had a chance to set the app name
+  // and/or user data directory.
+  logging::InitElectronLogging(*base::CommandLine::ForCurrentProcess(),
+                               /* is_preinit = */ false);
 
   // Initialize after user script environment creation.
   fake_browser_process_->PostEarlyInitialization();
@@ -311,8 +294,8 @@ int ElectronBrowserMainParts::PreCreateThreads() {
   // which keys off of getenv("LC_ALL").
   // We must set this env first to make ui::ResourceBundle accept the custom
   // locale.
-  std::unique_ptr<base::Environment> env(base::Environment::Create());
-  base::Optional<std::string> lc_all;
+  auto env = base::Environment::Create();
+  absl::optional<std::string> lc_all;
   if (!locale.empty()) {
     std::string str;
     if (env->GetVar("LC_ALL", &str))
@@ -379,6 +362,7 @@ void ElectronBrowserMainParts::ToolkitInitialized() {
 #if defined(OS_LINUX)
   auto linux_ui = BuildGtkUi();
   linux_ui->Initialize();
+  DCHECK(ui::LinuxInputMethodContextFactory::instance());
 
   // Chromium does not respect GTK dark theme setting, but they may change
   // in future and this code might be no longer needed. Check the Chromium
@@ -387,9 +371,13 @@ void ElectronBrowserMainParts::ToolkitInitialized() {
   UpdateDarkThemeSetting();
   // Update the native theme when GTK theme changes. The GetNativeTheme
   // here returns a NativeThemeGtk, which monitors GTK settings.
-  dark_theme_observer_.reset(new DarkThemeObserver);
+  dark_theme_observer_ = std::make_unique<DarkThemeObserver>();
   linux_ui->GetNativeTheme(nullptr)->AddObserver(dark_theme_observer_.get());
   views::LinuxUI::SetInstance(std::move(linux_ui));
+
+  // Cursor theme changes are tracked by LinuxUI (via a CursorThemeManager
+  // implementation). Start observing them once it's initialized.
+  ui::CursorFactory::GetInstance()->ObserveThemeChanges();
 #endif
 
 #if defined(USE_AURA)
@@ -402,7 +390,7 @@ void ElectronBrowserMainParts::ToolkitInitialized() {
 #endif
 
 #if defined(OS_MAC)
-  views_delegate_.reset(new ViewsDelegateMac);
+  views_delegate_ = std::make_unique<ViewsDelegateMac>();
 #else
   views_delegate_ = std::make_unique<ViewsDelegate>();
 #endif
@@ -432,11 +420,6 @@ int ElectronBrowserMainParts::PreMainMessageLoopRun() {
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   SpellcheckServiceFactory::GetInstance();
-#endif
-
-#if defined(USE_X11)
-  if (!features::IsUsingOzonePlatform())
-    ui::TouchFactory::SetTouchDeviceListFromCommandLine();
 #endif
 
   content::WebUIControllerFactory::RegisterFactory(
@@ -475,16 +458,12 @@ void ElectronBrowserMainParts::WillRunMainMessageLoop(
   Browser::Get()->SetMainMessageLoopQuitClosure(run_loop->QuitClosure());
 }
 
-void ElectronBrowserMainParts::PostMainMessageLoopStart() {
-#if defined(USE_OZONE)
-  if (features::IsUsingOzonePlatform()) {
-    auto shutdown_cb =
-        base::BindOnce(base::RunLoop::QuitCurrentWhenIdleClosureDeprecated());
-    ui::OzonePlatform::GetInstance()->PostMainMessageLoopStart(
-        std::move(shutdown_cb));
-  }
-#endif
+void ElectronBrowserMainParts::PostCreateMainMessageLoop() {
 #if defined(OS_LINUX)
+  auto shutdown_cb =
+      base::BindOnce(base::RunLoop::QuitCurrentWhenIdleClosureDeprecated());
+  ui::OzonePlatform::GetInstance()->PostCreateMainMessageLoop(
+      std::move(shutdown_cb));
   bluez::DBusBluezManagerWrapperLinux::Initialize();
 #endif
 #if defined(OS_POSIX)
@@ -503,8 +482,7 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
   // Shutdown the DownloadManager before destroying Node to prevent
   // DownloadItem callbacks from crashing.
   for (auto& iter : ElectronBrowserContext::browser_context_map()) {
-    auto* download_manager =
-        content::BrowserContext::GetDownloadManager(iter.second.get());
+    auto* download_manager = iter.second.get()->GetDownloadManager();
     if (download_manager) {
       download_manager->Shutdown();
     }
@@ -525,20 +503,32 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
 
   fake_browser_process_->PostMainMessageLoopRun();
   content::DevToolsAgentHost::StopRemoteDebuggingPipeHandler();
+
+#if defined(OS_LINUX)
+  ui::OzonePlatform::GetInstance()->PostMainMessageLoopRun();
+#endif
 }
 
 #if !defined(OS_MAC)
-void ElectronBrowserMainParts::PreMainMessageLoopStart() {
-  PreMainMessageLoopStartCommon();
+void ElectronBrowserMainParts::PreCreateMainMessageLoop() {
+  PreCreateMainMessageLoopCommon();
 }
 #endif
 
-void ElectronBrowserMainParts::PreMainMessageLoopStartCommon() {
+void ElectronBrowserMainParts::PreCreateMainMessageLoopCommon() {
 #if defined(OS_MAC)
   InitializeMainNib();
   RegisterURLHandler();
 #endif
   media::SetLocalizedStringProvider(MediaStringProvider);
+
+#if defined(OS_WIN)
+  auto* local_state = g_browser_process->local_state();
+  DCHECK(local_state);
+
+  bool os_crypt_init = OSCrypt::Init(local_state);
+  DCHECK(os_crypt_init);
+#endif
 }
 
 device::mojom::GeolocationControl*
@@ -549,6 +539,12 @@ ElectronBrowserMainParts::GetGeolocationControl() {
   }
   return geolocation_control_.get();
 }
+
+#if defined(OS_MAC)
+device::GeolocationManager* ElectronBrowserMainParts::GetGeolocationManager() {
+  return geolocation_manager_.get();
+}
+#endif
 
 IconManager* ElectronBrowserMainParts::GetIconManager() {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);

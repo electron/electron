@@ -2,18 +2,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_BADGING_BADGE_MANAGER_H_
-#define SHELL_BROWSER_BADGING_BADGE_MANAGER_H_
+#ifndef ELECTRON_SHELL_BROWSER_BADGING_BADGE_MANAGER_H_
+#define ELECTRON_SHELL_BROWSER_BADGING_BADGE_MANAGER_H_
 
-#include <map>
 #include <memory>
 #include <string>
-#include <vector>
 
-#include "base/macros.h"
-#include "base/optional.h"
 #include "components/keyed_service/core/keyed_service.h"
 #include "mojo/public/cpp/bindings/receiver_set.h"
+#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "third_party/blink/public/mojom/badging/badging.mojom.h"
 #include "url/gurl.h"
 
@@ -34,6 +31,10 @@ class BadgeManager : public KeyedService, public blink::mojom::BadgeService {
   BadgeManager();
   ~BadgeManager() override;
 
+  // disable copy
+  BadgeManager(const BadgeManager&) = delete;
+  BadgeManager& operator=(const BadgeManager&) = delete;
+
   static void BindFrameReceiver(
       content::RenderFrameHost* frame,
       mojo::PendingReceiver<blink::mojom::BadgeService> receiver);
@@ -43,7 +44,7 @@ class BadgeManager : public KeyedService, public blink::mojom::BadgeService {
       mojo::PendingReceiver<blink::mojom::BadgeService> receiver);
 
   // Determines the text to put on the badge based on some badge_content.
-  static std::string GetBadgeString(base::Optional<int> badge_content);
+  static std::string GetBadgeString(absl::optional<int> badge_content);
 
  private:
   // The BindingContext of a mojo request. Allows mojo calls to be tied back
@@ -100,10 +101,8 @@ class BadgeManager : public KeyedService, public blink::mojom::BadgeService {
   // Delegate which handles actual setting and clearing of the badge.
   // Note: This is currently only set on Windows and MacOS.
   // std::unique_ptr<BadgeManagerDelegate> delegate_;
-
-  DISALLOW_COPY_AND_ASSIGN(BadgeManager);
 };
 
 }  // namespace badging
 
-#endif  // SHELL_BROWSER_BADGING_BADGE_MANAGER_H_
+#endif  // ELECTRON_SHELL_BROWSER_BADGING_BADGE_MANAGER_H_

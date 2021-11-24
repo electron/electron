@@ -2,16 +2,18 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_NET_URL_PIPE_LOADER_H_
-#define SHELL_BROWSER_NET_URL_PIPE_LOADER_H_
+#ifndef ELECTRON_SHELL_BROWSER_NET_URL_PIPE_LOADER_H_
+#define ELECTRON_SHELL_BROWSER_NET_URL_PIPE_LOADER_H_
 
 #include <memory>
 #include <string>
 #include <vector>
 
+#include "base/values.h"
 #include "mojo/public/cpp/bindings/receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "mojo/public/cpp/system/data_pipe_producer.h"
+#include "services/network/public/cpp/resource_request.h"
 #include "services/network/public/cpp/simple_url_loader.h"
 #include "services/network/public/cpp/simple_url_loader_stream_consumer.h"
 #include "services/network/public/mojom/url_loader.mojom.h"
@@ -39,6 +41,10 @@ class URLPipeLoader : public network::mojom::URLLoader,
                 const net::NetworkTrafficAnnotationTag& annotation,
                 base::DictionaryValue upload_data);
 
+  // disable copy
+  URLPipeLoader(const URLPipeLoader&) = delete;
+  URLPipeLoader& operator=(const URLPipeLoader&) = delete;
+
  private:
   ~URLPipeLoader() override;
 
@@ -62,7 +68,7 @@ class URLPipeLoader : public network::mojom::URLLoader,
       const std::vector<std::string>& removed_headers,
       const net::HttpRequestHeaders& modified_headers,
       const net::HttpRequestHeaders& modified_cors_exempt_headers,
-      const base::Optional<GURL>& new_url) override {}
+      const absl::optional<GURL>& new_url) override {}
   void SetPriority(net::RequestPriority priority,
                    int32_t intra_priority_value) override {}
   void PauseReadingBodyFromNet() override {}
@@ -75,10 +81,8 @@ class URLPipeLoader : public network::mojom::URLLoader,
   std::unique_ptr<network::SimpleURLLoader> loader_;
 
   base::WeakPtrFactory<URLPipeLoader> weak_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(URLPipeLoader);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_NET_URL_PIPE_LOADER_H_
+#endif  // ELECTRON_SHELL_BROWSER_NET_URL_PIPE_LOADER_H_

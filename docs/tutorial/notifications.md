@@ -1,4 +1,4 @@
-# Notifications (Windows, Linux, macOS)
+# Notifications
 
 ## Overview
 
@@ -18,7 +18,7 @@ To show notifications in the Main process, you need to use the
 
 ### Show notifications in the Renderer process
 
-Assuming you have a working Electron application from the
+Starting with a working application from the
 [Quick Start Guide](quick-start.md), add the following line to the
 `index.html` file before the closing `</body>` tag:
 
@@ -26,26 +26,22 @@ Assuming you have a working Electron application from the
 <script src="renderer.js"></script>
 ```
 
-and add the `renderer.js` file:
+...and add the `renderer.js` file:
 
 ```javascript fiddle='docs/fiddles/features/notifications/renderer'
-const myNotification = new Notification('Title', {
-  body: 'Notification from the Renderer process'
-})
+const NOTIFICATION_TITLE = 'Title'
+const NOTIFICATION_BODY = 'Notification from the Renderer process. Click to log to console.'
+const CLICK_MESSAGE = 'Notification clicked'
 
-myNotification.onclick = () => {
-  console.log('Notification clicked')
-}
+new Notification(NOTIFICATION_TITLE, { body: NOTIFICATION_BODY })
+  .onclick = () => console.log(CLICK_MESSAGE)
 ```
 
 After launching the Electron application, you should see the notification:
 
 ![Notification in the Renderer process](../images/notification-renderer.png)
 
-If you open the Console and then click the notification, you will see the
-message that was generated after triggering the `onclick` event:
-
-![Onclick message for the notification](../images/message-notification-renderer.png)
+Additionally, if you click on the notification, the DOM will update to show "Notification clicked!".
 
 ### Show notifications in the Main process
 
@@ -55,18 +51,17 @@ Starting with a working application from the
 ```javascript fiddle='docs/fiddles/features/notifications/main'
 const { Notification } = require('electron')
 
-function showNotification () {
-  const notification = {
-    title: 'Basic Notification',
-    body: 'Notification from the Main process'
-  }
-  new Notification(notification).show()
+const NOTIFICATION_TITLE = 'Basic Notification'
+const NOTIFICATION_BODY = 'Notification from the Main process'
+
+const showNotification = () => {
+  new Notification({ title: NOTIFICATION_TITLE, body: NOTIFICATION_BODY }).show()
 }
 
 app.whenReady().then(createWindow).then(showNotification)
 ```
 
-After launching the Electron application, you should see the notification:
+After launching the Electron application, you should see the system notification:
 
 ![Notification in the Main process](../images/notification-main.png)
 
@@ -134,14 +129,6 @@ Note that notifications are limited to 256 bytes in size and will be truncated
 if you exceed that limit.
 
 [apple-notification-guidelines]: https://developer.apple.com/macos/human-interface-guidelines/system-capabilities/notifications/
-
-#### Advanced Notifications
-
-Later versions of macOS allow for notifications with an input field, allowing the user
-to quickly reply to a notification. In order to send notifications with an input field,
-use the userland module [node-mac-notifier][node-mac-notifier].
-
-[node-mac-notifier]: https://github.com/CharlieHess/node-mac-notifier
 
 #### Do not disturb / Session State
 

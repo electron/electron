@@ -2,14 +2,15 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_GIN_CONVERTERS_FRAME_CONVERTER_H_
-#define SHELL_COMMON_GIN_CONVERTERS_FRAME_CONVERTER_H_
+#ifndef ELECTRON_SHELL_COMMON_GIN_CONVERTERS_FRAME_CONVERTER_H_
+#define ELECTRON_SHELL_COMMON_GIN_CONVERTERS_FRAME_CONVERTER_H_
 
 #include "gin/converter.h"
+#include "shell/common/gin_helper/accessor.h"
 
 namespace content {
 class RenderFrameHost;
-}  // namespace content
+}
 
 namespace gin {
 
@@ -19,6 +20,16 @@ struct Converter<content::RenderFrameHost*> {
                                    content::RenderFrameHost* val);
 };
 
+template <>
+struct Converter<gin_helper::AccessorValue<content::RenderFrameHost*>> {
+  static v8::Local<v8::Value> ToV8(
+      v8::Isolate* isolate,
+      gin_helper::AccessorValue<content::RenderFrameHost*> val);
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     gin_helper::AccessorValue<content::RenderFrameHost*>* out);
+};
+
 }  // namespace gin
 
-#endif  // SHELL_COMMON_GIN_CONVERTERS_FRAME_CONVERTER_H_
+#endif  // ELECTRON_SHELL_COMMON_GIN_CONVERTERS_FRAME_CONVERTER_H_

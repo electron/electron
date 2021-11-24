@@ -1,8 +1,12 @@
 /* eslint-disable no-var */
 declare var internalBinding: any;
-declare var nodeProcess: any;
-declare var isolatedWorld: any;
 declare var binding: { get: (name: string) => any; process: NodeJS.Process; createPreloadScript: (src: string) => Function };
+
+declare var isolatedApi: {
+  guestViewInternal: any;
+  allowGuestViewElementDefinition: NodeJS.InternalWebFrame['allowGuestViewElementDefinition'];
+  setIsWebView: (iframe: HTMLIFrameElement) => void;
+}
 
 declare const BUILDFLAG: (flag: boolean) => boolean;
 
@@ -30,7 +34,7 @@ declare namespace NodeJS {
     send(internal: boolean, channel: string, args: any[]): void;
     sendSync(internal: boolean, channel: string, args: any[]): any;
     sendToHost(channel: string, args: any[]): void;
-    sendTo(internal: boolean, webContentsId: number, channel: string, args: any[]): void;
+    sendTo(webContentsId: number, channel: string, args: any[]): void;
     invoke<T>(internal: boolean, channel: string, args: any[]): Promise<{ error: string, result: T }>;
     postMessage(channel: string, message: any, transferables: MessagePort[]): void;
   }
@@ -40,9 +44,6 @@ declare namespace NodeJS {
     setHiddenValue<T>(obj: any, key: string, value: T): void;
     deleteHiddenValue(obj: any, key: string): void;
     requestGarbageCollectionForTesting(): void;
-    weaklyTrackValue(value: any): void;
-    clearWeaklyTrackedValues(): void;
-    getWeaklyTrackedValues(): any[];
     runUntilIdle(): void;
     isSameOrigin(a: string, b: string): boolean;
     triggerFatalErrorForTesting(): void;
@@ -59,6 +60,10 @@ declare namespace NodeJS {
     size: number;
     unpacked: boolean;
     offset: number;
+    integrity?: {
+      algorithm: 'SHA256';
+      hash: string;
+    }
   };
 
   type AsarFileStat = {
@@ -70,13 +75,12 @@ declare namespace NodeJS {
   }
 
   interface AsarArchive {
-    readonly path: string;
     getFileInfo(path: string): AsarFileInfo | false;
     stat(path: string): AsarFileStat | false;
     readdir(path: string): string[] | false;
     realpath(path: string): string | false;
     copyFileOut(path: string): string | false;
-    getFd(): number | -1;
+    getFdAndValidateIntegrityLater(): number | -1;
   }
 
   interface AsarBinding {
@@ -102,8 +106,7 @@ declare namespace NodeJS {
   }
 
   interface InternalWebPreferences {
-    contextIsolation: boolean;
-    guestInstanceId: number;
+    isWebView: boolean;
     hiddenPage: boolean;
     nativeWindowOpen: boolean;
     nodeIntegration: boolean;
@@ -115,6 +118,8 @@ declare namespace NodeJS {
 
   interface InternalWebFrame extends Electron.WebFrame {
     getWebPreference<K extends keyof InternalWebPreferences>(name: K): InternalWebPreferences[K];
+    getWebFrameId(window: Window): number;
+    allowGuestViewElementDefinition(context: object, callback: Function): void;
   }
 
   interface WebFrameBinding {
@@ -226,6 +231,7 @@ declare namespace NodeJS {
     };
     _linkedBinding(name: 'electron_browser_power_monitor'): PowerMonitorBinding;
     _linkedBinding(name: 'electron_browser_power_save_blocker'): { powerSaveBlocker: Electron.PowerSaveBlocker };
+    _linkedBinding(name: 'electron_browser_safe_storage'): { safeStorage: Electron.SafeStorage };
     _linkedBinding(name: 'electron_browser_session'): typeof Electron.Session;
     _linkedBinding(name: 'electron_browser_system_preferences'): { systemPreferences: Electron.SystemPreferences };
     _linkedBinding(name: 'electron_browser_tray'): { Tray: Electron.Tray };

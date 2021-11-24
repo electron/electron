@@ -7,6 +7,8 @@
 #include "base/path_service.h"
 #include "shell/browser/api/electron_api_app.h"
 #include "shell/common/electron_paths.h"
+#include "shell/common/node_includes.h"
+#include "shell/common/process_util.h"
 
 #import <Cocoa/Cocoa.h>
 #import <sys/sysctl.h>
@@ -16,7 +18,7 @@ namespace electron {
 namespace api {
 
 void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
-                         base::Optional<base::FilePath> custom_path) {
+                         absl::optional<base::FilePath> custom_path) {
   if (custom_path.has_value()) {
     if (!custom_path->IsAbsolute()) {
       thrower.ThrowError("Path must be absolute");
@@ -60,6 +62,17 @@ void App::SetActivationPolicy(gin_helper::ErrorThrower thrower,
 }
 
 bool App::IsRunningUnderRosettaTranslation() const {
+  node::Environment* env =
+      node::Environment::GetCurrent(JavascriptEnvironment::GetIsolate());
+
+  EmitWarning(env,
+              "The app.runningUnderRosettaTranslation API is deprecated, use "
+              "app.runningUnderARM64Translation instead.",
+              "electron");
+  return IsRunningUnderARM64Translation();
+}
+
+bool App::IsRunningUnderARM64Translation() const {
   int proc_translated = 0;
   size_t size = sizeof(proc_translated);
   if (sysctlbyname("sysctl.proc_translated", &proc_translated, &size, NULL,

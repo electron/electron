@@ -2,7 +2,8 @@
 
 > Control your app in the macOS dock
 
-Process: [Main](../glossary.md#main-process)
+Process: [Main](../glossary.md#main-process)<br />
+_This class is not exported from the `'electron'` module. It is only available as a return value of other methods in the Electron API._
 
 The following example shows how to bounce your icon on the dock.
 
@@ -15,7 +16,7 @@ app.dock.bounce()
 
 #### `dock.bounce([type])` _macOS_
 
-* `type` String (optional) - Can be `critical` or `informational`. The default is
+* `type` string (optional) - Can be `critical` or `informational`. The default is
  `informational`
 
 Returns `Integer` - an ID representing the request.
@@ -37,19 +38,19 @@ Cancel the bounce of `id`.
 
 #### `dock.downloadFinished(filePath)` _macOS_
 
-* `filePath` String
+* `filePath` string
 
 Bounces the Downloads stack if the filePath is inside the Downloads folder.
 
 #### `dock.setBadge(text)` _macOS_
 
-* `text` String
+* `text` string
 
 Sets the string to be displayed in the dock’s badging area.
 
 #### `dock.getBadge()` _macOS_
 
-Returns `String` - The badge string of the dock.
+Returns `string` - The badge string of the dock.
 
 #### `dock.hide()` _macOS_
 
@@ -61,7 +62,7 @@ Returns `Promise<void>` - Resolves when the dock icon is shown.
 
 #### `dock.isVisible()` _macOS_
 
-Returns `Boolean` - Whether the dock icon is visible.
+Returns `boolean` - Whether the dock icon is visible.
 
 #### `dock.setMenu(menu)` _macOS_
 
@@ -75,6 +76,6 @@ Returns `Menu | null` - The application's [dock menu][dock-menu].
 
 #### `dock.setIcon(image)` _macOS_
 
-* `image` ([NativeImage](native-image.md) | String)
+* `image` ([NativeImage](native-image.md) | string)
 
 Sets the `image` associated with this dock icon.

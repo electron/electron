@@ -12,25 +12,37 @@ This patch adds a list of "streaming protocols" to the MultibufferDataSource in 
 other protocols to register their streaming behavior. MultibufferDataSource::AssumeFullyBuffered()
 then refers to the list so that it can correctly determine the data source's settings.
 
-diff --git a/media/blink/multibuffer_data_source.cc b/media/blink/multibuffer_data_source.cc
-index c157471b08e12edf2ff5385e78cd4cbe2e8129a9..5ef9dbd289f50359f611290d6a42b2f2aac77977 100644
---- a/media/blink/multibuffer_data_source.cc
-+++ b/media/blink/multibuffer_data_source.cc
-@@ -10,9 +10,11 @@
+diff --git a/third_party/blink/public/platform/media/multi_buffer_data_source.h b/third_party/blink/public/platform/media/multi_buffer_data_source.h
+index 274308e54f2b5c6311d68daa162c146113ba669e..e450fe31011620d87219ce28ef37fb5eba7cc348 100644
+--- a/third_party/blink/public/platform/media/multi_buffer_data_source.h
++++ b/third_party/blink/public/platform/media/multi_buffer_data_source.h
+@@ -34,6 +34,8 @@ namespace blink {
+ class BufferedDataSourceHost;
+ class MultiBufferReader;
+ 
++void BLINK_PLATFORM_EXPORT AddStreamingScheme(const char* new_scheme);
++
+ // A data source capable of loading URLs and buffering the data using an
+ // in-memory sliding window.
+ //
+diff --git a/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc b/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc
+index ba3e8d75ce49614e26dd77692166a11b614a5d9c..4c3170ecb94716ec2869c363381759cbf08f3ae6 100644
+--- a/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc
++++ b/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc
+@@ -10,8 +10,10 @@
  #include "base/callback_helpers.h"
+ #include "base/cxx17_backports.h"
  #include "base/location.h"
- #include "base/macros.h"
 +#include "base/no_destructor.h"
- #include "base/numerics/ranges.h"
  #include "base/numerics/safe_conversions.h"
- #include "base/single_thread_task_runner.h"
+ #include "base/task/single_thread_task_runner.h"
 +#include "base/strings/string_util.h"
  #include "media/base/media_log.h"
- #include "media/blink/buffered_data_source_host_impl.h"
- #include "media/blink/multibuffer_reader.h"
-@@ -60,10 +62,22 @@ const int kUpdateBufferSizeFrequency = 32;
+ #include "net/base/net_errors.h"
+ #include "third_party/blink/public/platform/media/buffered_data_source_host_impl.h"
+@@ -60,8 +62,20 @@ const int kUpdateBufferSizeFrequency = 32;
  // How long to we delay a seek after a read?
- constexpr base::TimeDelta kSeekDelay = base::TimeDelta::FromMilliseconds(20);
+ constexpr base::TimeDelta kSeekDelay = base::Milliseconds(20);
  
 +std::vector<std::string>* GetStreamingSchemes() {
 +  static base::NoDestructor<std::vector<std::string>> streaming_schemes({
@@ -42,18 +54,16 @@ index c157471b08e12edf2ff5385e78cd4cbe2e8129a9..5ef9dbd289f50359f611290d6a42b2f2
 +
  }  // namespace
  
- namespace media {
- 
 +void AddStreamingScheme(const char* new_scheme) {
 +  GetStreamingSchemes()->push_back(new_scheme);
 +}
 +
- class MultibufferDataSource::ReadOperation {
+ class MultiBufferDataSource::ReadOperation {
   public:
-   ReadOperation(int64_t position,
-@@ -153,7 +167,14 @@ bool MultibufferDataSource::media_has_played() const {
+   ReadOperation() = delete;
+@@ -153,7 +167,14 @@ bool MultiBufferDataSource::media_has_played() const {
  
- bool MultibufferDataSource::AssumeFullyBuffered() const {
+ bool MultiBufferDataSource::AssumeFullyBuffered() const {
    DCHECK(url_data_);
 -  return !url_data_->url().SchemeIsHTTPOrHTTPS();
 +
@@ -66,17 +76,4 @@ index c157471b08e12edf2ff5385e78cd4cbe2e8129a9..5ef9dbd289f50359f611290d6a42b2f2
 +  return true;
  }
  
- void MultibufferDataSource::SetReader(MultiBufferReader* reader) {
-diff --git a/media/blink/multibuffer_data_source.h b/media/blink/multibuffer_data_source.h
-index 2f35c43811e98679c739d1d672fd6dce517ea24f..b598d58c26a12f0e97ecfcb611baf46a86af4a62 100644
---- a/media/blink/multibuffer_data_source.h
-+++ b/media/blink/multibuffer_data_source.h
-@@ -32,6 +32,8 @@ class BufferedDataSourceHost;
- class MediaLog;
- class MultiBufferReader;
- 
-+void MEDIA_BLINK_EXPORT AddStreamingScheme(const char* new_scheme);
-+
- // A data source capable of loading URLs and buffering the data using an
- // in-memory sliding window.
- //
+ void MultiBufferDataSource::SetReader(MultiBufferReader* reader) {

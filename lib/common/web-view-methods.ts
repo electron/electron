@@ -59,12 +59,14 @@ export const properties = new Set([
 ]);
 
 export const asyncMethods = new Set([
+  'capturePage',
   'loadURL',
   'executeJavaScript',
   'insertCSS',
   'insertText',
   'removeInsertedCSS',
   'send',
+  'sendToFrame',
   'sendInputEvent',
   'setLayoutZoomLevelLimits',
   'setVisualZoomLevelLimits',

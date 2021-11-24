@@ -16,91 +16,12 @@
       <p>
         Open the
         <a href="https://electronjs.org/docs/api/tray">
-          full API documentation (opens in new window)
+          full API documentation
         </a>
         in your browser.
       </p>
     </div>
-
-    <div>
       <div>
-        <div>
-          <div>
-            <button id="put-in-tray">View Demo</button>
-            <span id="tray-countdown"></span>
-          </div>
-          <p>
-            The demo button sends a message to the main process using the
-            <code>ipc</code> module. In the main process the app is told to
-            place an icon, with a context menu, in the tray.
-          </p>
-
-          <p>
-            In this example the tray icon can be removed by clicking 'Remove' in
-            the context menu or selecting the demo button again.
-          </p>
-          <h5>Main Process</h5>
-          <pre>
-              <code>
-const path = require('path')
-const {ipcMain, app, Menu, Tray} = require('electron')
-
-let appIcon = null
-
-ipcMain.on('put-in-tray', (event) => {
-  const iconName = process.platform === 'win32' ? 'windows-icon.png' : 'iconTemplate.png'
-  const iconPath = path.join(__dirname, iconName)
-  appIcon = new Tray(iconPath)
-
-  const contextMenu = Menu.buildFromTemplate([{
-    label: 'Remove',
-    click: () => {
-      event.sender.send('tray-removed')
-    }
-  }])
-
-  appIcon.setToolTip('Electron Demo in the tray.')
-  appIcon.setContextMenu(contextMenu)
-})
-
-ipcMain.on('remove-tray', () => {
-  appIcon.destroy()
-})
-
-app.on('window-all-closed', () => {
-  if (appIcon) appIcon.destroy()
-})
-              </code>
-            </pre>
-          <h5>Renderer Process</h5>
-          <pre>
-              <code>
-const ipc = require('electron').ipcRenderer
-
-const trayBtn = document.getElementById('put-in-tray')
-let trayOn = false
-
-trayBtn.addEventListener('click', function (event) {
-  if (trayOn) {
-    trayOn = false
-    document.getElementById('tray-countdown').innerHTML = ''
-    ipc.send('remove-tray')
-  } else {
-    trayOn = true
-    const message = 'Click demo again to remove.'
-    document.getElementById('tray-countdown').innerHTML = message
-    ipc.send('put-in-tray')
-  }
-})
-// Tray removed from context menu on icon
-ipc.on('tray-removed', function () {
-  ipc.send('remove-tray')
-  trayOn = false
-  document.getElementById('tray-countdown').innerHTML = ''
-})                  
-              </code>
-            </pre>
-
           <div>
             <h2>ProTip</h2>
             <strong>Tray support in Linux.</strong>
@@ -109,7 +30,7 @@ ipc.on('tray-removed', function () {
               will need to install <code>libappindicator1</code> to make the
               tray icon work. See the
               <a href="https://electronjs.org/docs/api/tray">
-                full API documentation (opens in new window)
+                full API documentation
               </a>
               for more details about using Tray on Linux.
             </p>

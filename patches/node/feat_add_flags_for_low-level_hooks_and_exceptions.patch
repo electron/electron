@@ -24,10 +24,10 @@ Environment on the V8 context of blink, so no new V8 context is created.
 As a result, a renderer process may have multiple Node Environments in it.
 
 diff --git a/src/node.cc b/src/node.cc
-index 905afd8c235b7b1a7b45823db486384935a2a52b..102847cd32d03addeb40c9539eafc92ba49c8ec4 100644
+index e942c108a15a3c50d92c08b344f6691050c7859d..207a95d202b4e422a39f837241f1655f7111b1e3 100644
 --- a/src/node.cc
 +++ b/src/node.cc
-@@ -134,6 +134,8 @@ using v8::Undefined;
+@@ -139,6 +139,8 @@ using v8::Undefined;
  using v8::V8;
  using v8::Value;
  
@@ -36,7 +36,7 @@ index 905afd8c235b7b1a7b45823db486384935a2a52b..102847cd32d03addeb40c9539eafc92b
  namespace per_process {
  
  // node_revert.h
-@@ -837,7 +839,9 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
+@@ -853,7 +855,9 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
    binding::RegisterBuiltinModules();
  
    // Make inherited handles noninheritable.
@@ -47,28 +47,30 @@ index 905afd8c235b7b1a7b45823db486384935a2a52b..102847cd32d03addeb40c9539eafc92b
  
    // Cache the original command line to be
    // used in diagnostic reports.
-@@ -871,6 +875,8 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
+@@ -887,7 +891,8 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
      if (exit_code != 0) return exit_code;
    }
  #endif
+-
 +  if (g_upstream_node_mode) {
 +  // NOTE(jeremy): indentation is intentionally wrong here, to ease rebasing.
- 
    const int exit_code = ProcessGlobalArgs(argv,
                                            exec_argv,
-@@ -915,6 +921,7 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
+                                           errors,
+@@ -930,7 +935,7 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
+     return 9;
    }
    per_process::metadata.versions.InitializeIntlVersions();
- #endif
+-
 +  }  // g_upstream_node_mode
- 
-   NativeModuleEnv::InitializeCodeCache();
- 
+ # ifndef __POSIX__
+   std::string tz;
+   if (credentials::SafeGetenv("TZ", &tz) && !tz.empty()) {
 diff --git a/src/node.h b/src/node.h
-index 38e0ef50f9b283b1d7ca8f54412d99b8cd38e524..34a16feaed229a59181e1b2e48b0e111d5b0b2a6 100644
+index 1f9afa558d0c8b7950a0f5862017e09a08118ec1..45de72bd94cf669ac2badf89d23164cb7022a5b3 100644
 --- a/src/node.h
 +++ b/src/node.h
-@@ -220,6 +220,8 @@ namespace node {
+@@ -213,6 +213,8 @@ namespace node {
  
  class IsolateData;
  class Environment;

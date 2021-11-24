@@ -243,8 +243,8 @@ class BrowserWindowProxy {
 }
 
 export const windowSetup = (
-  guestInstanceId: number, openerId: number, isHiddenPage: boolean, usesNativeWindowOpen: boolean) => {
-  if (!process.sandboxed && !guestInstanceId) {
+  isWebView: boolean, openerId: number, isHiddenPage: boolean, usesNativeWindowOpen: boolean) => {
+  if (!process.sandboxed && !isWebView) {
     // Override default window.close.
     window.close = function () {
       ipcRendererInternal.send(IPC_MESSAGES.BROWSER_WINDOW_CLOSE);
@@ -318,7 +318,7 @@ export const windowSetup = (
     });
   }
 
-  if (guestInstanceId) {
+  if (isWebView) {
     // Webview `document.visibilityState` tracks window visibility (and ignores
     // the actual <webview> element visibility) for backwards compatibility.
     // See discussion in #9178.

@@ -9,8 +9,8 @@ namespace electron {
 ChildWebContentsTracker::ChildWebContentsTracker(
     content::WebContents* web_contents) {}
 
-ChildWebContentsTracker::~ChildWebContentsTracker() {}
+ChildWebContentsTracker::~ChildWebContentsTracker() = default;
 
-WEB_CONTENTS_USER_DATA_KEY_IMPL(ChildWebContentsTracker)
+WEB_CONTENTS_USER_DATA_KEY_IMPL(ChildWebContentsTracker);
 
 }  // namespace electron

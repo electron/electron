@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_GIN_HELPER_CALLBACK_H_
-#define SHELL_COMMON_GIN_HELPER_CALLBACK_H_
+#ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_CALLBACK_H_
+#define ELECTRON_SHELL_COMMON_GIN_HELPER_CALLBACK_H_
 
 #include <utility>
 #include <vector>
@@ -14,7 +14,7 @@
 #include "shell/common/gin_helper/function_template.h"
 #include "shell/common/gin_helper/locker.h"
 #include "shell/common/gin_helper/microtasks_scope.h"
-// Implements safe convertions between JS functions and base::RepeatingCallback.
+// Implements safe conversions between JS functions and base::RepeatingCallback.
 
 namespace gin_helper {
 
@@ -110,7 +110,7 @@ struct V8FunctionInvoker<ReturnType(ArgTypes...)> {
   }
 };
 
-// Helper to pass a C++ funtion to JavaScript.
+// Helper to pass a C++ function to JavaScript.
 using Translater = base::RepeatingCallback<void(gin::Arguments* args)>;
 v8::Local<v8::Value> CreateFunctionFromTranslater(v8::Isolate* isolate,
                                                   const Translater& translater,
@@ -149,4 +149,4 @@ v8::Local<v8::Value> CallbackToV8Leaked(
 
 }  // namespace gin_helper
 
-#endif  // SHELL_COMMON_GIN_HELPER_CALLBACK_H_
+#endif  // ELECTRON_SHELL_COMMON_GIN_HELPER_CALLBACK_H_

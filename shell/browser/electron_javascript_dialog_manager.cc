@@ -27,7 +27,7 @@ constexpr int kUserWantsNoMoreDialogs = -1;
 
 }  // namespace
 
-ElectronJavaScriptDialogManager::ElectronJavaScriptDialogManager() {}
+ElectronJavaScriptDialogManager::ElectronJavaScriptDialogManager() = default;
 ElectronJavaScriptDialogManager::~ElectronJavaScriptDialogManager() = default;
 
 void ElectronJavaScriptDialogManager::RunJavaScriptDialog(
@@ -46,7 +46,7 @@ void ElectronJavaScriptDialogManager::RunJavaScriptDialog(
   if (origin_url.SchemeIsFile()) {
     origin = origin_url.path();
   } else {
-    origin = origin_url.GetOrigin().spec();
+    origin = origin_url.DeprecatedGetOriginAsURL().spec();
   }
 
   if (origin_counts_[origin] == kUserWantsNoMoreDialogs) {
@@ -61,7 +61,7 @@ void ElectronJavaScriptDialogManager::RunJavaScriptDialog(
 
   auto* web_preferences = WebContentsPreferences::From(web_contents);
 
-  if (web_preferences && web_preferences->IsEnabled("disableDialogs")) {
+  if (web_preferences && web_preferences->ShouldDisableDialogs()) {
     return std::move(callback).Run(false, std::u16string());
   }
 
@@ -81,14 +81,14 @@ void ElectronJavaScriptDialogManager::RunJavaScriptDialog(
 
   std::string checkbox;
   if (origin_counts_[origin] > 1 && web_preferences &&
-      web_preferences->IsEnabled("safeDialogs") &&
-      !web_preferences->GetPreference("safeDialogsMessage", &checkbox)) {
+      web_preferences->ShouldUseSafeDialogs() &&
+      !web_preferences->GetSafeDialogsMessage(&checkbox)) {
     checkbox = "Prevent this app from creating additional dialogs";
   }
 
   // Don't set parent for offscreen window.
   NativeWindow* window = nullptr;
-  if (web_preferences && !web_preferences->IsEnabled(options::kOffscreen)) {
+  if (web_preferences && !web_preferences->IsOffscreen()) {
     auto* relay = NativeWindowRelay::FromWebContents(web_contents);
     if (relay)
       window = relay->GetNativeWindow();

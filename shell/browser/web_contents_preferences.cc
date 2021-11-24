@@ -17,83 +17,34 @@
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/common/content_switches.h"
-#include "electron/buildflags/buildflags.h"
 #include "net/base/filename_util.h"
 #include "sandbox/policy/switches.h"
+#include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/native_window.h"
-#include "shell/browser/web_view_manager.h"
+#include "shell/browser/session_preferences.h"
+#include "shell/common/color_util.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/process_util.h"
 #include "third_party/blink/public/common/web_preferences/web_preferences.h"
 #include "third_party/blink/public/mojom/v8_cache_options.mojom.h"
+#include "third_party/blink/public/mojom/webpreferences/web_preferences.mojom.h"
 
 #if defined(OS_WIN)
 #include "ui/gfx/switches.h"
 #endif
 
-namespace {
+namespace gin {
 
-bool GetAsString(const base::Value* val,
-                 base::StringPiece path,
-                 std::string* out) {
-  if (val) {
-    auto* found = val->FindKeyOfType(path, base::Value::Type::STRING);
-    if (found) {
-      *out = found->GetString();
-      return true;
-    }
-  }
-  return false;
-}
-
-bool GetAsString(const base::Value* val,
-                 base::StringPiece path,
-                 std::u16string* out) {
-  if (val) {
-    auto* found = val->FindKeyOfType(path, base::Value::Type::STRING);
-    if (found) {
-      *out = base::UTF8ToUTF16(found->GetString());
-      return true;
-    }
-  }
-  return false;
-}
-
-#if defined(OS_WIN)
-bool GetAsString(const base::Value* val,
-                 base::StringPiece path,
-                 std::wstring* out) {
-  if (val) {
-    auto* found = val->FindKeyOfType(path, base::Value::Type::STRING);
-    if (found) {
-      *out = base::UTF8ToWide(found->GetString());
-      return true;
-    }
-  }
-  return false;
-}
-#endif
-
-bool GetAsInteger(const base::Value* val, base::StringPiece path, int* out) {
-  if (val) {
-    auto* found = val->FindKey(path);
-    if (found && found->is_int()) {
-      *out = found->GetInt();
-      return true;
-    } else if (found && found->is_string()) {
-      return base::StringToInt(found->GetString(), out);
-    }
-  }
-  return false;
-}
-
-bool GetAsAutoplayPolicy(const base::Value* val,
-                         base::StringPiece path,
-                         blink::mojom::AutoplayPolicy* out) {
-  std::string policy_str;
-  if (GetAsString(val, path, &policy_str)) {
+template <>
+struct Converter<blink::mojom::AutoplayPolicy> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     blink::mojom::AutoplayPolicy* out) {
+    std::string policy_str;
+    if (!ConvertFromV8(isolate, val, &policy_str))
+      return false;
     if (policy_str == "no-user-gesture-required") {
       *out = blink::mojom::AutoplayPolicy::kNoUserGestureRequired;
       return true;
@@ -106,180 +57,286 @@ bool GetAsAutoplayPolicy(const base::Value* val,
     }
     return false;
   }
-  return false;
-}
+};
 
-}  // namespace
+template <>
+struct Converter<blink::mojom::V8CacheOptions> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     blink::mojom::V8CacheOptions* out) {
+    std::string v8_cache_options;
+    if (!ConvertFromV8(isolate, val, &v8_cache_options))
+      return false;
+    if (v8_cache_options == "none") {
+      *out = blink::mojom::V8CacheOptions::kNone;
+      return true;
+    } else if (v8_cache_options == "code") {
+      *out = blink::mojom::V8CacheOptions::kCode;
+      return true;
+    } else if (v8_cache_options == "bypassHeatCheck") {
+      *out = blink::mojom::V8CacheOptions::kCodeWithoutHeatCheck;
+      return true;
+    } else if (v8_cache_options == "bypassHeatCheckAndEagerCompile") {
+      *out = blink::mojom::V8CacheOptions::kFullCodeWithoutHeatCheck;
+      return true;
+    }
+    return false;
+  }
+};
+
+}  // namespace gin
 
 namespace electron {
 
-// static
-std::vector<WebContentsPreferences*> WebContentsPreferences::instances_;
+namespace {
+std::vector<WebContentsPreferences*>& Instances() {
+  static base::NoDestructor<std::vector<WebContentsPreferences*>> g_instances;
+  return *g_instances;
+}
+}  // namespace
 
 WebContentsPreferences::WebContentsPreferences(
     content::WebContents* web_contents,
     const gin_helper::Dictionary& web_preferences)
     : web_contents_(web_contents) {
-  v8::Isolate* isolate = web_preferences.isolate();
-  gin_helper::Dictionary copied(isolate, web_preferences.GetHandle()->Clone());
-  // Following fields should not be stored.
-  copied.Delete("embedder");
-  copied.Delete("session");
-  copied.Delete("type");
-
-  gin::ConvertFromV8(isolate, copied.GetHandle(), &preference_);
   web_contents->SetUserData(UserDataKey(), base::WrapUnique(this));
-
-  instances_.push_back(this);
-
-  // Set WebPreferences defaults onto the JS object
-  SetDefaultBoolIfUndefined(options::kPlugins, false);
-  SetDefaultBoolIfUndefined(options::kExperimentalFeatures, false);
-  SetDefaultBoolIfUndefined(options::kNodeIntegration, false);
-  SetDefaultBoolIfUndefined(options::kNodeIntegrationInSubFrames, false);
-  SetDefaultBoolIfUndefined(options::kNodeIntegrationInWorker, false);
-  SetDefaultBoolIfUndefined(options::kDisableHtmlFullscreenWindowResize, false);
-  SetDefaultBoolIfUndefined(options::kWebviewTag, false);
-  SetDefaultBoolIfUndefined(options::kSandbox, false);
-  SetDefaultBoolIfUndefined(options::kNativeWindowOpen, true);
-  SetDefaultBoolIfUndefined(options::kContextIsolation, true);
-  SetDefaultBoolIfUndefined(options::kJavaScript, true);
-  SetDefaultBoolIfUndefined(options::kImages, true);
-  SetDefaultBoolIfUndefined(options::kTextAreasAreResizable, true);
-  SetDefaultBoolIfUndefined(options::kWebGL, true);
-  SetDefaultBoolIfUndefined(options::kEnableWebSQL, true);
-  SetDefaultBoolIfUndefined(options::kEnablePreferredSizeMode, false);
-  bool webSecurity = true;
-  SetDefaultBoolIfUndefined(options::kWebSecurity, webSecurity);
-  // If webSecurity was explicitly set to false, let's inherit that into
-  // insecureContent
-  if (web_preferences.Get(options::kWebSecurity, &webSecurity) &&
-      !webSecurity) {
-    SetDefaultBoolIfUndefined(options::kAllowRunningInsecureContent, true);
-  } else {
-    SetDefaultBoolIfUndefined(options::kAllowRunningInsecureContent, false);
-  }
-#if defined(OS_MAC)
-  SetDefaultBoolIfUndefined(options::kScrollBounce, false);
-#endif
-  SetDefaultBoolIfUndefined(options::kOffscreen, false);
-#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-  SetDefaultBoolIfUndefined(options::kSpellcheck, true);
-#endif
+  Instances().push_back(this);
+  SetFromDictionary(web_preferences);
 
   // If this is a <webview> tag, and the embedder is offscreen-rendered, then
   // this WebContents is also offscreen-rendered.
-  int guest_instance_id = 0;
-  if (web_preferences.Get(options::kGuestInstanceID, &guest_instance_id)) {
-    auto* manager = WebViewManager::GetWebViewManager(web_contents);
-    if (manager) {
-      auto* embedder = manager->GetEmbedder(guest_instance_id);
-      if (embedder) {
-        auto* embedder_preferences = WebContentsPreferences::From(embedder);
-        if (embedder_preferences &&
-            embedder_preferences->IsEnabled(options::kOffscreen)) {
-          preference_.SetKey(options::kOffscreen, base::Value(true));
-        }
+  if (auto* api_web_contents = api::WebContents::From(web_contents_)) {
+    if (electron::api::WebContents* embedder = api_web_contents->embedder()) {
+      auto* embedder_preferences =
+          WebContentsPreferences::From(embedder->web_contents());
+      if (embedder_preferences && embedder_preferences->IsOffscreen()) {
+        offscreen_ = true;
       }
     }
   }
-
-  SetDefaults();
 }
 
 WebContentsPreferences::~WebContentsPreferences() {
-  instances_.erase(std::remove(instances_.begin(), instances_.end(), this),
-                   instances_.end());
-}
-
-void WebContentsPreferences::SetDefaults() {
-  if (IsEnabled(options::kSandbox)) {
-    SetBool(options::kNativeWindowOpen, true);
-  }
-
-  last_preference_ = preference_.Clone();
-}
-
-bool WebContentsPreferences::IsUndefined(base::StringPiece key) {
-  return !preference_.FindKeyOfType(key, base::Value::Type::BOOLEAN);
-}
-
-bool WebContentsPreferences::SetDefaultBoolIfUndefined(base::StringPiece key,
-                                                       bool val) {
-  auto* current_value =
-      preference_.FindKeyOfType(key, base::Value::Type::BOOLEAN);
-  if (current_value) {
-    return current_value->GetBool();
-  } else {
-    preference_.SetKey(key, base::Value(val));
-    return val;
-  }
-}
-
-void WebContentsPreferences::SetBool(base::StringPiece key, bool value) {
-  preference_.SetKey(key, base::Value(value));
-}
-
-bool WebContentsPreferences::IsEnabled(base::StringPiece name,
-                                       bool default_value) const {
-  auto* current_value =
-      preference_.FindKeyOfType(name, base::Value::Type::BOOLEAN);
-  if (current_value)
-    return current_value->GetBool();
-  return default_value;
-}
-
-void WebContentsPreferences::Merge(const base::DictionaryValue& extend) {
-  if (preference_.is_dict())
-    static_cast<base::DictionaryValue*>(&preference_)->MergeDictionary(&extend);
-
-  SetDefaults();
+  Instances().erase(std::remove(Instances().begin(), Instances().end(), this),
+                    Instances().end());
 }
 
 void WebContentsPreferences::Clear() {
-  if (preference_.is_dict())
-    static_cast<base::DictionaryValue*>(&preference_)->Clear();
+  plugins_ = false;
+  experimental_features_ = false;
+  node_integration_ = false;
+  node_integration_in_sub_frames_ = false;
+  node_integration_in_worker_ = false;
+  disable_html_fullscreen_window_resize_ = false;
+  webview_tag_ = false;
+  sandbox_ = absl::nullopt;
+  native_window_open_ = true;
+  context_isolation_ = true;
+  javascript_ = true;
+  images_ = true;
+  text_areas_are_resizable_ = true;
+  webgl_ = true;
+  enable_websql_ = true;
+  enable_preferred_size_mode_ = false;
+  web_security_ = true;
+  allow_running_insecure_content_ = false;
+  offscreen_ = false;
+  navigate_on_drag_drop_ = false;
+  autoplay_policy_ = blink::mojom::AutoplayPolicy::kNoUserGestureRequired;
+  default_font_family_.clear();
+  default_font_size_ = absl::nullopt;
+  default_monospace_font_size_ = absl::nullopt;
+  minimum_font_size_ = absl::nullopt;
+  default_encoding_ = absl::nullopt;
+  opener_id_ = 0;
+  is_webview_ = false;
+  custom_args_.clear();
+  custom_switches_.clear();
+  enable_blink_features_ = absl::nullopt;
+  disable_blink_features_ = absl::nullopt;
+  disable_popups_ = false;
+  disable_dialogs_ = false;
+  safe_dialogs_ = false;
+  safe_dialogs_message_ = absl::nullopt;
+  ignore_menu_shortcuts_ = false;
+  background_color_ = absl::nullopt;
+  image_animation_policy_ =
+      blink::mojom::ImageAnimationPolicy::kImageAnimationPolicyAllowed;
+  preload_path_ = absl::nullopt;
+  v8_cache_options_ = blink::mojom::V8CacheOptions::kDefault;
+
+#if defined(OS_MAC)
+  scroll_bounce_ = false;
+#endif
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+  spellcheck_ = true;
+#endif
 }
 
-bool WebContentsPreferences::GetPreference(base::StringPiece name,
-                                           std::string* value) const {
-  return GetAsString(&preference_, name, value);
+void WebContentsPreferences::SetFromDictionary(
+    const gin_helper::Dictionary& web_preferences) {
+  Clear();
+  Merge(web_preferences);
 }
 
-bool WebContentsPreferences::GetPreloadPath(base::FilePath* path) const {
-  DCHECK(path);
+void WebContentsPreferences::Merge(
+    const gin_helper::Dictionary& web_preferences) {
+  web_preferences.Get(options::kPlugins, &plugins_);
+  web_preferences.Get(options::kExperimentalFeatures, &experimental_features_);
+  web_preferences.Get(options::kNodeIntegration, &node_integration_);
+  web_preferences.Get(options::kNodeIntegrationInSubFrames,
+                      &node_integration_in_sub_frames_);
+  web_preferences.Get(options::kNodeIntegrationInWorker,
+                      &node_integration_in_worker_);
+  web_preferences.Get(options::kDisableHtmlFullscreenWindowResize,
+                      &disable_html_fullscreen_window_resize_);
+  web_preferences.Get(options::kWebviewTag, &webview_tag_);
+  bool sandbox;
+  if (web_preferences.Get(options::kSandbox, &sandbox))
+    sandbox_ = sandbox;
+  web_preferences.Get(options::kNativeWindowOpen, &native_window_open_);
+  web_preferences.Get(options::kContextIsolation, &context_isolation_);
+  web_preferences.Get(options::kJavaScript, &javascript_);
+  web_preferences.Get(options::kImages, &images_);
+  web_preferences.Get(options::kTextAreasAreResizable,
+                      &text_areas_are_resizable_);
+  web_preferences.Get(options::kWebGL, &webgl_);
+  web_preferences.Get(options::kEnableWebSQL, &enable_websql_);
+  web_preferences.Get(options::kEnablePreferredSizeMode,
+                      &enable_preferred_size_mode_);
+  web_preferences.Get(options::kWebSecurity, &web_security_);
+  if (!web_preferences.Get(options::kAllowRunningInsecureContent,
+                           &allow_running_insecure_content_) &&
+      !web_security_)
+    allow_running_insecure_content_ = true;
+  web_preferences.Get(options::kOffscreen, &offscreen_);
+  web_preferences.Get(options::kNavigateOnDragDrop, &navigate_on_drag_drop_);
+  web_preferences.Get("autoplayPolicy", &autoplay_policy_);
+  web_preferences.Get("defaultFontFamily", &default_font_family_);
+  int size;
+  if (web_preferences.Get("defaultFontSize", &size))
+    default_font_size_ = size;
+  if (web_preferences.Get("defaultMonospaceFontSize", &size))
+    default_monospace_font_size_ = size;
+  if (web_preferences.Get("minimumFontSize", &size))
+    minimum_font_size_ = size;
+  std::string encoding;
+  if (web_preferences.Get("defaultEncoding", &encoding))
+    default_encoding_ = encoding;
+  web_preferences.Get(options::kOpenerID, &opener_id_);
+  web_preferences.Get(options::kCustomArgs, &custom_args_);
+  web_preferences.Get("commandLineSwitches", &custom_switches_);
+  web_preferences.Get("disablePopups", &disable_popups_);
+  web_preferences.Get("disableDialogs", &disable_dialogs_);
+  web_preferences.Get("safeDialogs", &safe_dialogs_);
+  // preferences don't save a transparency option,
+  // apply any existing transparency setting to background_color_
+  bool transparent;
+  if (web_preferences.Get(options::kTransparent, &transparent)) {
+    background_color_ = SK_ColorTRANSPARENT;
+  }
+  std::string background_color;
+  if (web_preferences.GetHidden(options::kBackgroundColor, &background_color))
+    background_color_ = ParseHexColor(background_color);
+  std::string safe_dialogs_message;
+  if (web_preferences.Get("safeDialogsMessage", &safe_dialogs_message))
+    safe_dialogs_message_ = safe_dialogs_message;
+  web_preferences.Get("ignoreMenuShortcuts", &ignore_menu_shortcuts_);
+  std::string enable_blink_features;
+  if (web_preferences.Get(options::kEnableBlinkFeatures,
+                          &enable_blink_features))
+    enable_blink_features_ = enable_blink_features;
+  std::string disable_blink_features;
+  if (web_preferences.Get(options::kDisableBlinkFeatures,
+                          &disable_blink_features))
+    disable_blink_features_ = disable_blink_features;
+
   base::FilePath::StringType preload_path;
-  if (GetAsString(&preference_, options::kPreloadScript, &preload_path)) {
+  std::string preload_url_str;
+  if (web_preferences.Get(options::kPreloadScript, &preload_path)) {
     base::FilePath preload(preload_path);
     if (preload.IsAbsolute()) {
-      *path = std::move(preload);
-      return true;
+      preload_path_ = preload;
     } else {
       LOG(ERROR) << "preload script must have absolute path.";
     }
-  } else if (GetAsString(&preference_, options::kPreloadURL, &preload_path)) {
+  } else if (web_preferences.Get(options::kPreloadURL, &preload_url_str)) {
     // Translate to file path if there is "preload-url" option.
     base::FilePath preload;
-    GURL preload_url;
-#if defined(OS_WIN)
-    preload_url = GURL(base::WideToUTF8(preload_path));
-#else
-    preload_url = GURL(preload_path);
-#endif
+    GURL preload_url(preload_url_str);
     if (net::FileURLToFilePath(preload_url, &preload)) {
-      *path = std::move(preload);
-      return true;
+      preload_path_ = preload;
     } else {
       LOG(ERROR) << "preload url must be file:// protocol.";
     }
   }
+
+  std::string type;
+  if (web_preferences.Get(options::kType, &type)) {
+    is_webview_ = type == "webview";
+  }
+
+  web_preferences.Get("v8CacheOptions", &v8_cache_options_);
+
+#if defined(OS_MAC)
+  web_preferences.Get(options::kScrollBounce, &scroll_bounce_);
+#endif
+
+#if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
+  web_preferences.Get(options::kSpellcheck, &spellcheck_);
+#endif
+
+  SaveLastPreferences();
+}
+
+bool WebContentsPreferences::GetSafeDialogsMessage(std::string* message) const {
+  if (safe_dialogs_message_) {
+    *message = *safe_dialogs_message_;
+    return true;
+  }
   return false;
+}
+
+bool WebContentsPreferences::SetImageAnimationPolicy(std::string policy) {
+  if (policy == "animate") {
+    image_animation_policy_ =
+        blink::mojom::ImageAnimationPolicy::kImageAnimationPolicyAllowed;
+    return true;
+  } else if (policy == "animateOnce") {
+    image_animation_policy_ =
+        blink::mojom::ImageAnimationPolicy::kImageAnimationPolicyAnimateOnce;
+    return true;
+  } else if (policy == "noAnimation") {
+    image_animation_policy_ =
+        blink::mojom::ImageAnimationPolicy::kImageAnimationPolicyNoAnimation;
+    return true;
+  }
+  return false;
+}
+
+bool WebContentsPreferences::GetPreloadPath(base::FilePath* path) const {
+  DCHECK(path);
+  if (preload_path_) {
+    *path = *preload_path_;
+    return true;
+  }
+  return false;
+}
+
+bool WebContentsPreferences::IsSandboxed() const {
+  if (sandbox_)
+    return *sandbox_;
+  bool sandbox_disabled_by_default =
+      node_integration_ || node_integration_in_worker_ || preload_path_ ||
+      !SessionPreferences::GetValidPreloads(web_contents_->GetBrowserContext())
+           .empty();
+  return !sandbox_disabled_by_default;
 }
 
 // static
 content::WebContents* WebContentsPreferences::GetWebContentsFromProcessID(
     int process_id) {
-  for (WebContentsPreferences* preferences : instances_) {
+  for (WebContentsPreferences* preferences : Instances()) {
     content::WebContents* web_contents = preferences->web_contents_;
     if (web_contents->GetMainFrame()->GetProcess()->GetID() == process_id)
       return web_contents;
@@ -299,217 +356,173 @@ void WebContentsPreferences::AppendCommandLineSwitches(
     base::CommandLine* command_line,
     bool is_subframe) {
   // Experimental flags.
-  if (IsEnabled(options::kExperimentalFeatures))
+  if (experimental_features_)
     command_line->AppendSwitch(
         ::switches::kEnableExperimentalWebPlatformFeatures);
 
   // Sandbox can be enabled for renderer processes hosting cross-origin frames
   // unless nodeIntegrationInSubFrames is enabled
-  bool can_sandbox_frame =
-      is_subframe && !IsEnabled(options::kNodeIntegrationInSubFrames);
+  bool can_sandbox_frame = is_subframe && !node_integration_in_sub_frames_;
 
-  if (IsEnabled(options::kSandbox) || can_sandbox_frame) {
+  if (IsSandboxed() || can_sandbox_frame) {
     command_line->AppendSwitch(switches::kEnableSandbox);
   } else if (!command_line->HasSwitch(switches::kEnableSandbox)) {
     command_line->AppendSwitch(sandbox::policy::switches::kNoSandbox);
     command_line->AppendSwitch(::switches::kNoZygote);
   }
 
-  // Custom args for renderer process
-  auto* customArgs =
-      preference_.FindKeyOfType(options::kCustomArgs, base::Value::Type::LIST);
-  if (customArgs) {
-    for (const auto& customArg : customArgs->GetList()) {
-      if (customArg.is_string())
-        command_line->AppendArg(customArg.GetString());
-    }
-  }
-
 #if defined(OS_MAC)
   // Enable scroll bounce.
-  if (IsEnabled(options::kScrollBounce))
+  if (scroll_bounce_)
     command_line->AppendSwitch(switches::kScrollBounce);
 #endif
 
+  // Custom args for renderer process
+  for (const auto& arg : custom_args_)
+    if (!arg.empty())
+      command_line->AppendArg(arg);
+
   // Custom command line switches.
-  auto* args =
-      preference_.FindKeyOfType("commandLineSwitches", base::Value::Type::LIST);
-  if (args) {
-    for (const auto& arg : args->GetList()) {
-      if (arg.is_string()) {
-        const auto& arg_val = arg.GetString();
-        if (!arg_val.empty())
-          command_line->AppendSwitch(arg_val);
-      }
-    }
-  }
+  for (const auto& arg : custom_switches_)
+    if (!arg.empty())
+      command_line->AppendSwitch(arg);
 
-  std::string s;
-  // Enable blink features.
-  if (GetAsString(&preference_, options::kEnableBlinkFeatures, &s))
-    command_line->AppendSwitchASCII(::switches::kEnableBlinkFeatures, s);
+  if (enable_blink_features_)
+    command_line->AppendSwitchASCII(::switches::kEnableBlinkFeatures,
+                                    *enable_blink_features_);
+  if (disable_blink_features_)
+    command_line->AppendSwitchASCII(::switches::kDisableBlinkFeatures,
+                                    *disable_blink_features_);
 
-  // Disable blink features.
-  if (GetAsString(&preference_, options::kDisableBlinkFeatures, &s))
-    command_line->AppendSwitchASCII(::switches::kDisableBlinkFeatures, s);
-
-  if (IsEnabled(options::kNodeIntegrationInWorker))
+  if (node_integration_in_worker_)
     command_line->AppendSwitch(switches::kNodeIntegrationInWorker);
 
   // We are appending args to a webContents so let's save the current state
   // of our preferences object so that during the lifetime of the WebContents
   // we can fetch the options used to initally configure the WebContents
-  last_preference_ = preference_.Clone();
+  // last_preference_ = preference_.Clone();
+  SaveLastPreferences();
+}
+
+void WebContentsPreferences::SaveLastPreferences() {
+  last_web_preferences_ = base::Value(base::Value::Type::DICTIONARY);
+  last_web_preferences_.SetKey(options::kOpenerID, base::Value(opener_id_));
+  last_web_preferences_.SetKey(options::kNodeIntegration,
+                               base::Value(node_integration_));
+  last_web_preferences_.SetKey(options::kNodeIntegrationInSubFrames,
+                               base::Value(node_integration_in_sub_frames_));
+  last_web_preferences_.SetKey(options::kNativeWindowOpen,
+                               base::Value(native_window_open_));
+  last_web_preferences_.SetKey(options::kSandbox, base::Value(IsSandboxed()));
+  last_web_preferences_.SetKey(options::kContextIsolation,
+                               base::Value(context_isolation_));
+  last_web_preferences_.SetKey(options::kJavaScript, base::Value(javascript_));
+  last_web_preferences_.SetKey(options::kEnableWebSQL,
+                               base::Value(enable_websql_));
+  last_web_preferences_.SetKey(options::kWebviewTag, base::Value(webview_tag_));
+  last_web_preferences_.SetKey("disablePopups", base::Value(disable_popups_));
+  last_web_preferences_.SetKey(options::kWebSecurity,
+                               base::Value(web_security_));
+  last_web_preferences_.SetKey(options::kAllowRunningInsecureContent,
+                               base::Value(allow_running_insecure_content_));
+  last_web_preferences_.SetKey(options::kExperimentalFeatures,
+                               base::Value(experimental_features_));
+  last_web_preferences_.SetKey(
+      options::kEnableBlinkFeatures,
+      base::Value(enable_blink_features_.value_or("")));
 }
 
 void WebContentsPreferences::OverrideWebkitPrefs(
     blink::web_pref::WebPreferences* prefs) {
-  prefs->javascript_enabled =
-      IsEnabled(options::kJavaScript, true /* default_value */);
-  prefs->images_enabled = IsEnabled(options::kImages, true /* default_value */);
-  prefs->text_areas_are_resizable =
-      IsEnabled(options::kTextAreasAreResizable, true /* default_value */);
-  prefs->navigate_on_drag_drop =
-      IsEnabled(options::kNavigateOnDragDrop, false /* default_value */);
-  if (!GetAsAutoplayPolicy(&preference_, "autoplayPolicy",
-                           &prefs->autoplay_policy)) {
-    prefs->autoplay_policy =
-        blink::mojom::AutoplayPolicy::kNoUserGestureRequired;
-  }
+  prefs->javascript_enabled = javascript_;
+  prefs->images_enabled = images_;
+  prefs->animation_policy = image_animation_policy_;
+  prefs->text_areas_are_resizable = text_areas_are_resizable_;
+  prefs->navigate_on_drag_drop = navigate_on_drag_drop_;
+  prefs->autoplay_policy = autoplay_policy_;
 
   // Check if webgl should be enabled.
-  bool is_webgl_enabled = IsEnabled(options::kWebGL, true /* default_value */);
-  prefs->webgl1_enabled = is_webgl_enabled;
-  prefs->webgl2_enabled = is_webgl_enabled;
+  prefs->webgl1_enabled = webgl_;
+  prefs->webgl2_enabled = webgl_;
 
   // Check if web security should be enabled.
-  bool is_web_security_enabled =
-      IsEnabled(options::kWebSecurity, true /* default_value */);
-  prefs->web_security_enabled = is_web_security_enabled;
-  prefs->allow_running_insecure_content =
-      IsEnabled(options::kAllowRunningInsecureContent,
-                !is_web_security_enabled /* default_value */);
+  prefs->web_security_enabled = web_security_;
+  prefs->allow_running_insecure_content = allow_running_insecure_content_;
 
-  auto* fonts_dict = preference_.FindKeyOfType("defaultFontFamily",
-                                               base::Value::Type::DICTIONARY);
-  if (fonts_dict) {
-    std::u16string font;
-    if (GetAsString(fonts_dict, "standard", &font))
-      prefs->standard_font_family_map[blink::web_pref::kCommonScript] = font;
-    if (GetAsString(fonts_dict, "serif", &font))
-      prefs->serif_font_family_map[blink::web_pref::kCommonScript] = font;
-    if (GetAsString(fonts_dict, "sansSerif", &font))
-      prefs->sans_serif_font_family_map[blink::web_pref::kCommonScript] = font;
-    if (GetAsString(fonts_dict, "monospace", &font))
-      prefs->fixed_font_family_map[blink::web_pref::kCommonScript] = font;
-    if (GetAsString(fonts_dict, "cursive", &font))
-      prefs->cursive_font_family_map[blink::web_pref::kCommonScript] = font;
-    if (GetAsString(fonts_dict, "fantasy", &font))
-      prefs->fantasy_font_family_map[blink::web_pref::kCommonScript] = font;
-  }
+  if (auto font =
+          default_font_family_.find("standard") != default_font_family_.end())
+    prefs->standard_font_family_map[blink::web_pref::kCommonScript] = font;
+  if (auto font =
+          default_font_family_.find("serif") != default_font_family_.end())
+    prefs->serif_font_family_map[blink::web_pref::kCommonScript] = font;
+  if (auto font =
+          default_font_family_.find("sansSerif") != default_font_family_.end())
+    prefs->sans_serif_font_family_map[blink::web_pref::kCommonScript] = font;
+  if (auto font =
+          default_font_family_.find("monospace") != default_font_family_.end())
+    prefs->fixed_font_family_map[blink::web_pref::kCommonScript] = font;
+  if (auto font =
+          default_font_family_.find("cursive") != default_font_family_.end())
+    prefs->cursive_font_family_map[blink::web_pref::kCommonScript] = font;
+  if (auto font =
+          default_font_family_.find("fantasy") != default_font_family_.end())
+    prefs->fantasy_font_family_map[blink::web_pref::kCommonScript] = font;
 
-  int size;
-  if (GetAsInteger(&preference_, "defaultFontSize", &size))
-    prefs->default_font_size = size;
-  if (GetAsInteger(&preference_, "defaultMonospaceFontSize", &size))
-    prefs->default_fixed_font_size = size;
-  if (GetAsInteger(&preference_, "minimumFontSize", &size))
-    prefs->minimum_font_size = size;
-  std::string encoding;
-  if (GetAsString(&preference_, "defaultEncoding", &encoding))
-    prefs->default_encoding = encoding;
-
-  // --background-color.
-  std::string color;
-  if (GetAsString(&preference_, options::kBackgroundColor, &color)) {
-    prefs->background_color = color;
-  } else if (!IsEnabled(options::kOffscreen)) {
-    prefs->background_color = "#fff";
-  }
+  if (default_font_size_)
+    prefs->default_font_size = *default_font_size_;
+  if (default_monospace_font_size_)
+    prefs->default_fixed_font_size = *default_monospace_font_size_;
+  if (minimum_font_size_)
+    prefs->minimum_font_size = *minimum_font_size_;
+  if (default_encoding_)
+    prefs->default_encoding = *default_encoding_;
 
   // Pass the opener's window id.
-  int opener_id;
-  if (GetAsInteger(&preference_, options::kOpenerID, &opener_id))
-    prefs->opener_id = opener_id;
+  prefs->opener_id = opener_id_;
 
   // Run Electron APIs and preload script in isolated world
-  prefs->context_isolation = IsEnabled(options::kContextIsolation, true);
-
-  int guest_instance_id = 0;
-  if (GetAsInteger(&preference_, options::kGuestInstanceID, &guest_instance_id))
-    prefs->guest_instance_id = guest_instance_id;
+  prefs->context_isolation = context_isolation_;
+  prefs->is_webview = is_webview_;
 
   prefs->hidden_page = false;
-  if (guest_instance_id) {
-    // Webview `document.visibilityState` tracks window visibility so we need
-    // to let it know if the window happens to be hidden right now.
-    auto* manager = WebViewManager::GetWebViewManager(web_contents_);
-    if (manager) {
-      auto* embedder = manager->GetEmbedder(guest_instance_id);
-      if (embedder) {
-        auto* relay = NativeWindowRelay::FromWebContents(embedder);
-        if (relay) {
-          auto* window = relay->GetNativeWindow();
-          if (window) {
-            const bool visible = window->IsVisible() && !window->IsMinimized();
-            if (!visible) {
-              prefs->hidden_page = true;
-            }
+  // Webview `document.visibilityState` tracks window visibility so we need
+  // to let it know if the window happens to be hidden right now.
+  if (auto* api_web_contents = api::WebContents::From(web_contents_)) {
+    if (electron::api::WebContents* embedder = api_web_contents->embedder()) {
+      if (auto* relay =
+              NativeWindowRelay::FromWebContents(embedder->web_contents())) {
+        if (auto* window = relay->GetNativeWindow()) {
+          const bool visible = window->IsVisible() && !window->IsMinimized();
+          if (!visible) {
+            prefs->hidden_page = true;
           }
         }
       }
     }
   }
 
-  prefs->offscreen = IsEnabled(options::kOffscreen);
+  prefs->offscreen = offscreen_;
 
   // The preload script.
-  GetPreloadPath(&prefs->preload);
+  if (preload_path_)
+    prefs->preload = *preload_path_;
 
-  // Check if nativeWindowOpen is enabled.
-  prefs->native_window_open = IsEnabled(options::kNativeWindowOpen, true);
-
-  // Check if we have node integration specified.
-  prefs->node_integration = IsEnabled(options::kNodeIntegration);
-
-  // Whether to enable node integration in Worker.
-  prefs->node_integration_in_worker =
-      IsEnabled(options::kNodeIntegrationInWorker);
-
-  prefs->node_integration_in_sub_frames =
-      IsEnabled(options::kNodeIntegrationInSubFrames);
+  prefs->native_window_open = native_window_open_;
+  prefs->node_integration = node_integration_;
+  prefs->node_integration_in_worker = node_integration_in_worker_;
+  prefs->node_integration_in_sub_frames = node_integration_in_sub_frames_;
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-  prefs->enable_spellcheck = IsEnabled(options::kSpellcheck);
+  prefs->enable_spellcheck = spellcheck_;
 #endif
 
-  // Check if plugins are enabled.
-  prefs->enable_plugins = IsEnabled(options::kPlugins);
+  prefs->enable_plugins = plugins_;
+  prefs->webview_tag = webview_tag_;
+  prefs->enable_websql = enable_websql_;
 
-  // Check if webview tag creation is enabled, default to nodeIntegration value.
-  prefs->webview_tag = IsEnabled(options::kWebviewTag);
-
-  // Whether to allow the WebSQL api
-  prefs->enable_websql = IsEnabled(options::kEnableWebSQL);
-
-  std::string v8_cache_options;
-  if (GetAsString(&preference_, "v8CacheOptions", &v8_cache_options)) {
-    if (v8_cache_options == "none") {
-      prefs->v8_cache_options = blink::mojom::V8CacheOptions::kNone;
-    } else if (v8_cache_options == "code") {
-      prefs->v8_cache_options = blink::mojom::V8CacheOptions::kCode;
-    } else if (v8_cache_options == "bypassHeatCheck") {
-      prefs->v8_cache_options =
-          blink::mojom::V8CacheOptions::kCodeWithoutHeatCheck;
-    } else if (v8_cache_options == "bypassHeatCheckAndEagerCompile") {
-      prefs->v8_cache_options =
-          blink::mojom::V8CacheOptions::kFullCodeWithoutHeatCheck;
-    } else {
-      prefs->v8_cache_options = blink::mojom::V8CacheOptions::kDefault;
-    }
-  }
+  prefs->v8_cache_options = v8_cache_options_;
 }
 
-WEB_CONTENTS_USER_DATA_KEY_IMPL(WebContentsPreferences)
+WEB_CONTENTS_USER_DATA_KEY_IMPL(WebContentsPreferences);
 
 }  // namespace electron

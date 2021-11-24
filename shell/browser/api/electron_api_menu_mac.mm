@@ -16,13 +16,30 @@
 #include "content/public/browser/web_contents.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/unresponsive_suppressor.h"
+#include "shell/common/keyboard_util.h"
 #include "shell/common/node_includes.h"
-
-using content::BrowserThread;
 
 namespace {
 
 static scoped_nsobject<NSMenu> applicationMenu_;
+
+ui::Accelerator GetAcceleratorFromKeyEquivalentAndModifierMask(
+    NSString* key_equivalent,
+    NSUInteger modifier_mask) {
+  absl::optional<char16_t> shifted_char;
+  ui::KeyboardCode code = electron::KeyboardCodeFromStr(
+      base::SysNSStringToUTF8(key_equivalent), &shifted_char);
+  int modifiers = 0;
+  if (modifier_mask & NSEventModifierFlagShift)
+    modifiers |= ui::EF_SHIFT_DOWN;
+  if (modifier_mask & NSEventModifierFlagControl)
+    modifiers |= ui::EF_CONTROL_DOWN;
+  if (modifier_mask & NSEventModifierFlagOption)
+    modifiers |= ui::EF_ALT_DOWN;
+  if (modifier_mask & NSEventModifierFlagCommand)
+    modifiers |= ui::EF_COMMAND_DOWN;
+  return ui::Accelerator(code, modifiers);
+}
 
 }  // namespace
 
@@ -52,6 +69,32 @@ void MenuMac::PopupAt(BaseWindow* window,
                      native_window->GetWeakPtr(), window->weak_map_id(), x, y,
                      positioning_item, std::move(callback_with_ref));
   base::SequencedTaskRunnerHandle::Get()->PostTask(FROM_HERE, std::move(popup));
+}
+
+v8::Local<v8::Value> Menu::GetUserAcceleratorAt(int command_id) const {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  if (![NSMenuItem usesUserKeyEquivalents])
+    return v8::Null(isolate);
+
+  auto controller = base::scoped_nsobject<ElectronMenuController>(
+      [[ElectronMenuController alloc] initWithModel:model()
+                              useDefaultAccelerator:NO]);
+
+  int command_index = GetIndexOfCommandId(command_id);
+  if (command_index == -1)
+    return v8::Null(isolate);
+
+  base::scoped_nsobject<NSMenuItem> item =
+      [controller makeMenuItemForIndex:command_index fromModel:model()];
+  if ([[item userKeyEquivalent] length] == 0)
+    return v8::Null(isolate);
+
+  NSString* user_key_equivalent = [item keyEquivalent];
+  NSUInteger user_modifier_mask = [item keyEquivalentModifierMask];
+  ui::Accelerator accelerator = GetAcceleratorFromKeyEquivalentAndModifierMask(
+      user_key_equivalent, user_modifier_mask);
+
+  return gin::ConvertToV8(isolate, accelerator.GetShortcutText());
 }
 
 void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
@@ -125,6 +168,42 @@ void MenuMac::ClosePopupAt(int32_t window_id) {
                                     weak_factory_.GetWeakPtr(), window_id);
   base::SequencedTaskRunnerHandle::Get()->PostTask(FROM_HERE,
                                                    std::move(close_popup));
+}
+
+std::u16string MenuMac::GetAcceleratorTextAtForTesting(int index) const {
+  // A least effort to get the real shortcut text of NSMenuItem, the code does
+  // not need to be perfect since it is test only.
+  base::scoped_nsobject<ElectronMenuController> controller(
+      [[ElectronMenuController alloc] initWithModel:model()
+                              useDefaultAccelerator:NO]);
+  NSMenuItem* item = [[controller menu] itemAtIndex:index];
+  std::u16string text;
+  NSEventModifierFlags modifiers = [item keyEquivalentModifierMask];
+  if (modifiers & NSEventModifierFlagControl)
+    text += u"Ctrl";
+  if (modifiers & NSEventModifierFlagShift) {
+    if (!text.empty())
+      text += u"+";
+    text += u"Shift";
+  }
+  if (modifiers & NSEventModifierFlagOption) {
+    if (!text.empty())
+      text += u"+";
+    text += u"Alt";
+  }
+  if (modifiers & NSEventModifierFlagCommand) {
+    if (!text.empty())
+      text += u"+";
+    text += u"Command";
+  }
+  if (!text.empty())
+    text += u"+";
+  auto key = base::ToUpperASCII(base::SysNSStringToUTF16([item keyEquivalent]));
+  if (key == u"\t")
+    text += u"Tab";
+  else
+    text += key;
+  return text;
 }
 
 void MenuMac::ClosePopupOnUI(int32_t window_id) {

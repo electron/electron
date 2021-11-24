@@ -7,10 +7,10 @@ Subject: fix: expose tracing::Agent and use tracing::TracingController instead
 This API is used by Electron to create Node's tracing controller.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 2c4acbc4fa0eca3b7c6d03b997445633646446e7..53b07052e43a09f29f863ee1b2287bdebe7b7a7f 100644
+index 0fb750c5abbe00740f2095ec397c823e26666199..523d252e08974a10f9a53fb46d3345669cec3380 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -472,6 +472,10 @@ MultiIsolatePlatform* GetMultiIsolatePlatform(IsolateData* env) {
+@@ -459,6 +459,10 @@ MultiIsolatePlatform* GetMultiIsolatePlatform(IsolateData* env) {
    return env->platform();
  }
  
@@ -22,10 +22,10 @@ index 2c4acbc4fa0eca3b7c6d03b997445633646446e7..53b07052e43a09f29f863ee1b2287bde
      int thread_pool_size,
      node::tracing::TracingController* tracing_controller) {
 diff --git a/src/node.h b/src/node.h
-index 34a16feaed229a59181e1b2e48b0e111d5b0b2a6..a649f52403659fd18898e1e813f97e32f33784e7 100644
+index 45de72bd94cf669ac2badf89d23164cb7022a5b3..364f789fbcbec8e3234961294698d8e69b04a310 100644
 --- a/src/node.h
 +++ b/src/node.h
-@@ -125,6 +125,7 @@ namespace node {
+@@ -118,6 +118,7 @@ namespace node {
  
  namespace tracing {
  
@@ -33,12 +33,12 @@ index 34a16feaed229a59181e1b2e48b0e111d5b0b2a6..a649f52403659fd18898e1e813f97e32
  class TracingController;
  
  }
-@@ -522,6 +523,8 @@ NODE_DEPRECATED("Use GetMultiIsolatePlatform(env) instead",
+@@ -499,6 +500,8 @@ NODE_EXTERN v8::MaybeLocal<v8::Value> PrepareStackTraceCallback(
  NODE_EXTERN MultiIsolatePlatform* GetMultiIsolatePlatform(Environment* env);
  NODE_EXTERN MultiIsolatePlatform* GetMultiIsolatePlatform(IsolateData* env);
  
 +NODE_EXTERN node::tracing::Agent* CreateAgent();
 +
- // Legacy variants of MultiIsolatePlatform::Create().
- NODE_DEPRECATED("Use variant taking a v8::TracingController* pointer instead",
+ NODE_DEPRECATED("Use MultiIsolatePlatform::Create() instead",
      NODE_EXTERN MultiIsolatePlatform* CreatePlatform(
+         int thread_pool_size,

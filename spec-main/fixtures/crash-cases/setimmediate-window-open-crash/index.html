@@ -1,0 +1,21 @@
+<html>
+<body>
+<script>
+// `setImmediate` schedules a function to be run on the next UV tick, which
+//  ensures that `window.open` is run from `UvRunOnce()`.
+setImmediate(async () => {
+  if (!location.hash) {
+    const p = new Promise(resolve => {
+      window.addEventListener('message', resolve, { once: true });
+    });
+    window.open('#foo', '', 'nodeIntegration=no,show=no');
+    const e = await p;
+
+    window.close();
+  } else {
+    window.opener.postMessage('foo', '*');
+  }
+});
+</script>
+</body>
+</html>

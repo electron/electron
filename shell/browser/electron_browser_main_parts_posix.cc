@@ -13,13 +13,12 @@
 #include <sys/resource.h>
 #include <unistd.h>
 
+#include "base/debug/leak_annotations.h"
 #include "base/posix/eintr_wrapper.h"
 #include "base/task/post_task.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "shell/browser/browser.h"
-
-using content::BrowserThread;
 
 namespace electron {
 
@@ -60,19 +59,19 @@ void GracefulShutdownHandler(int signal) {
   } while (bytes_written < sizeof(signal));
 }
 
-// See comment in |PostMainMessageLoopStart()|, where sigaction is called.
+// See comment in |PostCreateMainMessageLoop()|, where sigaction is called.
 void SIGHUPHandler(int signal) {
   RAW_CHECK(signal == SIGHUP);
   GracefulShutdownHandler(signal);
 }
 
-// See comment in |PostMainMessageLoopStart()|, where sigaction is called.
+// See comment in |PostCreateMainMessageLoop()|, where sigaction is called.
 void SIGINTHandler(int signal) {
   RAW_CHECK(signal == SIGINT);
   GracefulShutdownHandler(signal);
 }
 
-// See comment in |PostMainMessageLoopStart()|, where sigaction is called.
+// See comment in |PostCreateMainMessageLoop()|, where sigaction is called.
 void SIGTERMHandler(int signal) {
   RAW_CHECK(signal == SIGTERM);
   GracefulShutdownHandler(signal);
@@ -85,6 +84,10 @@ class ShutdownDetector : public base::PlatformThread::Delegate {
       base::OnceCallback<void()> shutdown_callback,
       const scoped_refptr<base::SingleThreadTaskRunner>& task_runner);
 
+  // disable copy
+  ShutdownDetector(const ShutdownDetector&) = delete;
+  ShutdownDetector& operator=(const ShutdownDetector&) = delete;
+
   // base::PlatformThread::Delegate:
   void ThreadMain() override;
 
@@ -92,8 +95,6 @@ class ShutdownDetector : public base::PlatformThread::Delegate {
   const int shutdown_fd_;
   base::OnceCallback<void()> shutdown_callback_;
   const scoped_refptr<base::SingleThreadTaskRunner> task_runner_;
-
-  DISALLOW_COPY_AND_ASSIGN(ShutdownDetector);
 };
 
 ShutdownDetector::ShutdownDetector(

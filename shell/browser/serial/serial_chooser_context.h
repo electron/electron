@@ -2,13 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_SERIAL_SERIAL_CHOOSER_CONTEXT_H_
-#define SHELL_BROWSER_SERIAL_SERIAL_CHOOSER_CONTEXT_H_
+#ifndef ELECTRON_SHELL_BROWSER_SERIAL_SERIAL_CHOOSER_CONTEXT_H_
+#define ELECTRON_SHELL_BROWSER_SERIAL_SERIAL_CHOOSER_CONTEXT_H_
 
 #include <map>
-#include <memory>
 #include <set>
-#include <string>
 #include <utility>
 #include <vector>
 
@@ -20,6 +18,7 @@
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "services/device/public/mojom/serial.mojom-forward.h"
+#include "shell/browser/electron_browser_context.h"
 #include "third_party/blink/public/mojom/serial/serial.mojom.h"
 #include "url/gurl.h"
 #include "url/origin.h"
@@ -30,6 +29,20 @@ class Value;
 
 namespace electron {
 
+extern const char kHidVendorIdKey[];
+extern const char kHidProductIdKey[];
+
+#if defined(OS_WIN)
+extern const char kDeviceInstanceIdKey[];
+#else
+extern const char kVendorIdKey[];
+extern const char kProductIdKey[];
+extern const char kSerialNumberKey[];
+#if defined(OS_MAC)
+extern const char kUsbDriverKey[];
+#endif  // defined(OS_MAC)
+#endif  // defined(OS_WIN)
+
 class SerialChooserContext : public KeyedService,
                              public device::mojom::SerialPortManagerClient {
  public:
@@ -38,13 +51,17 @@ class SerialChooserContext : public KeyedService,
   SerialChooserContext();
   ~SerialChooserContext() override;
 
+  // disable copy
+  SerialChooserContext(const SerialChooserContext&) = delete;
+  SerialChooserContext& operator=(const SerialChooserContext&) = delete;
+
   // Serial-specific interface for granting and checking permissions.
-  void GrantPortPermission(const url::Origin& requesting_origin,
-                           const url::Origin& embedding_origin,
-                           const device::mojom::SerialPortInfo& port);
-  bool HasPortPermission(const url::Origin& requesting_origin,
-                         const url::Origin& embedding_origin,
-                         const device::mojom::SerialPortInfo& port);
+  void GrantPortPermission(const url::Origin& origin,
+                           const device::mojom::SerialPortInfo& port,
+                           content::RenderFrameHost* render_frame_host);
+  bool HasPortPermission(const url::Origin& origin,
+                         const device::mojom::SerialPortInfo& port,
+                         content::RenderFrameHost* render_frame_host);
   static bool CanStorePersistentEntry(
       const device::mojom::SerialPortInfo& port);
 
@@ -64,16 +81,9 @@ class SerialChooserContext : public KeyedService,
   void SetUpPortManagerConnection(
       mojo::PendingRemote<device::mojom::SerialPortManager> manager);
   void OnPortManagerConnectionError();
-  void OnGetPorts(const url::Origin& requesting_origin,
-                  const url::Origin& embedding_origin,
-                  blink::mojom::SerialService::GetPortsCallback callback,
-                  std::vector<device::mojom::SerialPortInfoPtr> ports);
 
-  // Tracks the set of ports to which an origin (potentially embedded in another
-  // origin) has access to. Key is (requesting_origin, embedding_origin).
-  std::map<std::pair<url::Origin, url::Origin>,
-           std::set<base::UnguessableToken>>
-      ephemeral_ports_;
+  // Tracks the set of ports to which an origin has access to.
+  std::map<url::Origin, std::set<base::UnguessableToken>> ephemeral_ports_;
 
   // Holds information about ports in |ephemeral_ports_|.
   std::map<base::UnguessableToken, base::Value> port_info_;
@@ -83,10 +93,8 @@ class SerialChooserContext : public KeyedService,
   base::ObserverList<PortObserver> port_observer_list_;
 
   base::WeakPtrFactory<SerialChooserContext> weak_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(SerialChooserContext);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_SERIAL_SERIAL_CHOOSER_CONTEXT_H_
+#endif  // ELECTRON_SHELL_BROWSER_SERIAL_SERIAL_CHOOSER_CONTEXT_H_

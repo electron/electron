@@ -10,9 +10,9 @@
 
 #include <shlobj.h>
 #include <wrl\wrappers\corewrappers.h>
-#include <vector>
 
 #include "base/environment.h"
+#include "base/strings/string_util_win.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/post_task.h"
 #include "content/public/browser/browser_task_traits.h"
@@ -132,18 +132,15 @@ HRESULT WindowsToastNotification::ShowInternal(
   // The custom xml takes priority over the preset template.
   if (!options.toast_xml.empty()) {
     REPORT_AND_RETURN_IF_FAILED(
-        XmlDocumentFromString(base::UTF16ToWide(options.toast_xml).c_str(),
-                              &toast_xml),
+        XmlDocumentFromString(base::as_wcstr(options.toast_xml), &toast_xml),
         "XML: Invalid XML");
   } else {
     auto* presenter_win = static_cast<NotificationPresenterWin*>(presenter());
     std::wstring icon_path =
         presenter_win->SaveIconToFilesystem(options.icon, options.icon_url);
     REPORT_AND_RETURN_IF_FAILED(
-        GetToastXml(toast_manager_.Get(), base::UTF16ToWide(options.title),
-                    base::UTF16ToWide(options.msg), icon_path,
-                    base::UTF16ToWide(options.timeout_type), options.silent,
-                    &toast_xml),
+        GetToastXml(toast_manager_.Get(), options.title, options.msg, icon_path,
+                    options.timeout_type, options.silent, &toast_xml),
         "XML: Failed to create XML document");
   }
 
@@ -175,10 +172,10 @@ HRESULT WindowsToastNotification::ShowInternal(
 HRESULT WindowsToastNotification::GetToastXml(
     ABI::Windows::UI::Notifications::IToastNotificationManagerStatics*
         toastManager,
-    const std::wstring& title,
-    const std::wstring& msg,
+    const std::u16string& title,
+    const std::u16string& msg,
     const std::wstring& icon_path,
-    const std::wstring& timeout_type,
+    const std::u16string& timeout_type,
     bool silent,
     IXmlDocument** toast_xml) {
   ABI::Windows::UI::Notifications::ToastTemplateType template_type;
@@ -192,9 +189,9 @@ HRESULT WindowsToastNotification::GetToastXml(
     REPORT_AND_RETURN_IF_FAILED(
         toast_manager_->GetTemplateContent(template_type, toast_xml),
         "XML: Fetching XML ToastImageAndText01 template failed");
-    std::wstring toastMsg = title.empty() ? msg : title;
+    std::u16string toastMsg = title.empty() ? msg : title;
     // we can't create an empty notification
-    toastMsg = toastMsg.empty() ? L"[no message]" : toastMsg;
+    toastMsg = toastMsg.empty() ? u"[no message]" : toastMsg;
     REPORT_AND_RETURN_IF_FAILED(
         SetXmlText(*toast_xml, toastMsg),
         "XML: Filling XML ToastImageAndText01 template failed");
@@ -214,7 +211,7 @@ HRESULT WindowsToastNotification::GetToastXml(
   }
 
   // Configure the toast's timeout settings
-  if (timeout_type == base::ASCIIToWide("never")) {
+  if (timeout_type == u"never") {
     REPORT_AND_RETURN_IF_FAILED(
         (SetXmlScenarioReminder(*toast_xml)),
         "XML: Setting \"scenario\" option on notification failed");
@@ -456,7 +453,7 @@ HRESULT WindowsToastNotification::SetXmlAudioSilent(IXmlDocument* doc) {
 }
 
 HRESULT WindowsToastNotification::SetXmlText(IXmlDocument* doc,
-                                             const std::wstring& text) {
+                                             const std::u16string& text) {
   ScopedHString tag;
   ComPtr<IXmlNodeList> node_list;
   RETURN_IF_FAILED(GetTextNodeList(&tag, doc, &node_list, 1));
@@ -468,8 +465,8 @@ HRESULT WindowsToastNotification::SetXmlText(IXmlDocument* doc,
 }
 
 HRESULT WindowsToastNotification::SetXmlText(IXmlDocument* doc,
-                                             const std::wstring& title,
-                                             const std::wstring& body) {
+                                             const std::u16string& title,
+                                             const std::u16string& body) {
   ScopedHString tag;
   ComPtr<IXmlNodeList> node_list;
   RETURN_IF_FAILED(GetTextNodeList(&tag, doc, &node_list, 2));
@@ -536,8 +533,8 @@ HRESULT WindowsToastNotification::GetTextNodeList(ScopedHString* tag,
 
 HRESULT WindowsToastNotification::AppendTextToXml(IXmlDocument* doc,
                                                   IXmlNode* node,
-                                                  const std::wstring& text) {
-  ScopedHString str(text);
+                                                  const std::u16string& text) {
+  ScopedHString str(base::as_wcstr(text));
   if (!str.success())
     return E_FAIL;
 
@@ -597,7 +594,7 @@ bool WindowsToastNotification::RemoveCallbacks(
 ToastEventHandler::ToastEventHandler(Notification* notification)
     : notification_(notification->GetWeakPtr()) {}
 
-ToastEventHandler::~ToastEventHandler() {}
+ToastEventHandler::~ToastEventHandler() = default;
 
 IFACEMETHODIMP ToastEventHandler::Invoke(
     ABI::Windows::UI::Notifications::IToastNotification* sender,

@@ -6,10 +6,10 @@ Subject: Pass all globals through "require"
 (cherry picked from commit 7d015419cb7a0ecfe6728431a4ed2056cd411d62)
 
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index 0b85bc8af1af275f05318bd315d9c6b9a5d3d6dd..5bebce776dc60052aa01422af29d7766033e7331 100644
+index b8eff0440624a41d89a39c46303fa51d581bf4bf..67eb7717f13379312721fc4da2e760bc08d8ed3a 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
-@@ -109,6 +109,13 @@ const {
+@@ -127,6 +127,13 @@ const {
    CHAR_COLON
  } = require('internal/constants');
  
@@ -23,18 +23,18 @@ index 0b85bc8af1af275f05318bd315d9c6b9a5d3d6dd..5bebce776dc60052aa01422af29d7766
  const {
    isProxy
  } = require('internal/util/types');
-@@ -1058,10 +1065,12 @@ Module.prototype._compile = function(content, filename) {
-   if (requireDepth === 0) statCache = new Map();
+@@ -1096,10 +1103,12 @@ Module.prototype._compile = function(content, filename) {
+   if (requireDepth === 0) statCache = new SafeMap();
    if (inspectorWrapper) {
      result = inspectorWrapper(compiledWrapper, thisValue, exports,
 -                              require, module, filename, dirname);
 +                              require, module, filename, dirname,
 +                              process, localGlobal, localBuffer);
    } else {
-     result = compiledWrapper.call(thisValue, exports, require, module,
--                                  filename, dirname);
-+                                  filename, dirname, process, localGlobal,
-+                                  localBuffer);
+     result = ReflectApply(compiledWrapper, thisValue,
+-                          [exports, require, module, filename, dirname]);
++                          [exports, require, module, filename,
++                           dirname, process, localGlobal, localBuffer]);
    }
    hasLoadedAnyUserCJSModule = true;
    if (requireDepth === 0) statCache = null;

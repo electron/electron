@@ -6,9 +6,9 @@
 
 namespace electron {
 
-ElectronKioskDelegate::ElectronKioskDelegate() {}
+ElectronKioskDelegate::ElectronKioskDelegate() = default;
 
-ElectronKioskDelegate::~ElectronKioskDelegate() {}
+ElectronKioskDelegate::~ElectronKioskDelegate() = default;
 
 bool ElectronKioskDelegate::IsAutoLaunchedKioskApp(
     const extensions::ExtensionId& id) const {

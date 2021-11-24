@@ -9,9 +9,9 @@
 
 namespace electron {
 
-ViewsDelegateMac::ViewsDelegateMac() {}
+ViewsDelegateMac::ViewsDelegateMac() = default;
 
-ViewsDelegateMac::~ViewsDelegateMac() {}
+ViewsDelegateMac::~ViewsDelegateMac() = default;
 
 void ViewsDelegateMac::OnBeforeWidgetInit(
     views::Widget::InitParams* params,

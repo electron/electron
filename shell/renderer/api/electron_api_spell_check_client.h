@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_RENDERER_API_ELECTRON_API_SPELL_CHECK_CLIENT_H_
-#define SHELL_RENDERER_API_ELECTRON_API_SPELL_CHECK_CLIENT_H_
+#ifndef ELECTRON_SHELL_RENDERER_API_ELECTRON_API_SPELL_CHECK_CLIENT_H_
+#define ELECTRON_SHELL_RENDERER_API_ELECTRON_API_SPELL_CHECK_CLIENT_H_
 
 #include <memory>
 #include <set>
@@ -35,6 +35,10 @@ class SpellCheckClient : public blink::WebSpellCheckPanelHostClient,
                    v8::Isolate* isolate,
                    v8::Local<v8::Object> provider);
   ~SpellCheckClient() override;
+
+  // disable copy
+  SpellCheckClient(const SpellCheckClient&) = delete;
+  SpellCheckClient& operator=(const SpellCheckClient&) = delete;
 
  private:
   class SpellcheckRequest;
@@ -76,7 +80,7 @@ class SpellCheckClient : public blink::WebSpellCheckPanelHostClient,
   // Output variable contraction_words will contain individual
   // words in the contraction.
   bool IsContraction(const SpellCheckScope& scope,
-                     const std::u16string& word,
+                     const std::u16string& contraction,
                      std::vector<std::u16string>* contraction_words);
 
   // Callback for the JS API which returns the list of misspelled words.
@@ -103,12 +107,10 @@ class SpellCheckClient : public blink::WebSpellCheckPanelHostClient,
   v8::Global<v8::Context> context_;
   v8::Global<v8::Object> provider_;
   v8::Global<v8::Function> spell_check_;
-
-  DISALLOW_COPY_AND_ASSIGN(SpellCheckClient);
 };
 
 }  // namespace api
 
 }  // namespace electron
 
-#endif  // SHELL_RENDERER_API_ELECTRON_API_SPELL_CHECK_CLIENT_H_
+#endif  // ELECTRON_SHELL_RENDERER_API_ELECTRON_API_SPELL_CHECK_CLIENT_H_

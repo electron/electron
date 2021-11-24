@@ -58,7 +58,7 @@
             certChain:(CFArrayRef)certChain
             secPolicy:(SecPolicyRef)secPolicy {
   if ((self = [super init])) {
-    promise_.reset(new gin_helper::Promise<void>(std::move(promise)));
+    promise_ = std::make_unique<gin_helper::Promise<void>>(std::move(promise));
     panel_ = panel;
     cert_ = cert;
     trust_ = trust;

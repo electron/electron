@@ -16,7 +16,7 @@ namespace gin_helper {
 
 gin::WrapperInfo Event::kWrapperInfo = {gin::kEmbedderNativeGin};
 
-Event::Event() {}
+Event::Event() = default;
 
 Event::~Event() {
   if (callback_) {

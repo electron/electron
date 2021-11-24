@@ -9,6 +9,7 @@
 #include <utility>
 
 #include "base/barrier_closure.h"
+#include "base/base_paths.h"
 #include "base/command_line.h"
 #include "base/files/file_path.h"
 #include "base/no_destructor.h"
@@ -103,8 +104,8 @@ ElectronBrowserContext::browser_context_map() {
 ElectronBrowserContext::ElectronBrowserContext(const std::string& partition,
                                                bool in_memory,
                                                base::DictionaryValue options)
-    : storage_policy_(new SpecialStoragePolicy),
-      protocol_registry_(new ProtocolRegistry),
+    : storage_policy_(base::MakeRefCounted<SpecialStoragePolicy>()),
+      protocol_registry_(base::WrapUnique(new ProtocolRegistry)),
       in_memory_(in_memory),
       ssl_config_(network::mojom::SSLConfig::New()) {
   user_agent_ = ElectronBrowserClient::Get()->GetUserAgent();
@@ -117,15 +118,7 @@ ElectronBrowserContext::ElectronBrowserContext(const std::string& partition,
   base::StringToInt(command_line->GetSwitchValueASCII(switches::kDiskCacheSize),
                     &max_cache_size_);
 
-  if (!base::PathService::Get(DIR_USER_DATA, &path_)) {
-    base::PathService::Get(DIR_APP_DATA, &path_);
-    path_ = path_.Append(base::FilePath::FromUTF8Unsafe(GetApplicationName()));
-    base::PathService::Override(DIR_USER_DATA, path_);
-    base::PathService::Override(chrome::DIR_USER_DATA, path_);
-    base::PathService::Override(
-        chrome::DIR_APP_DICTIONARIES,
-        path_.Append(base::FilePath::FromUTF8Unsafe("Dictionaries")));
-  }
+  CHECK(base::PathService::Get(chrome::DIR_USER_DATA, &path_));
 
   if (!in_memory && !partition.empty())
     path_ = path_.Append(FILE_PATH_LITERAL("Partitions"))
@@ -154,7 +147,7 @@ ElectronBrowserContext::ElectronBrowserContext(const std::string& partition,
 
 ElectronBrowserContext::~ElectronBrowserContext() {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
-  NotifyWillBeDestroyed(this);
+  NotifyWillBeDestroyed();
   // Notify any keyed services of browser context destruction.
   BrowserContextDependencyManager::GetInstance()->DestroyBrowserContextServices(
       this);
@@ -184,9 +177,9 @@ void ElectronBrowserContext::InitPrefs() {
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS) || \
     BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-  auto registry = WrapRefCounted(new user_prefs::PrefRegistrySyncable);
+  auto registry = base::MakeRefCounted<user_prefs::PrefRegistrySyncable>();
 #else
-  auto registry = WrapRefCounted(new PrefRegistrySimple);
+  auto registry = base::MakeRefCounted<PrefRegistrySimple>();
 #endif
 
   registry->RegisterFilePathPref(prefs::kSelectFileLastDirectory,
@@ -230,7 +223,7 @@ void ElectronBrowserContext::InitPrefs() {
         base::i18n::GetConfiguredLocale());
     if (!default_code.empty()) {
       base::ListValue language_codes;
-      language_codes.AppendString(default_code);
+      language_codes.Append(default_code);
       prefs()->Set(spellcheck::prefs::kSpellCheckDictionaries, language_codes);
     }
   }
@@ -281,7 +274,7 @@ ElectronBrowserContext::CreateZoomLevelDelegate(
 content::DownloadManagerDelegate*
 ElectronBrowserContext::GetDownloadManagerDelegate() {
   if (!download_manager_delegate_.get()) {
-    auto* download_manager = content::BrowserContext::GetDownloadManager(this);
+    auto* download_manager = this->GetDownloadManager();
     download_manager_delegate_ =
         std::make_unique<ElectronDownloadManagerDelegate>(download_manager);
   }
@@ -292,6 +285,11 @@ content::BrowserPluginGuestManager* ElectronBrowserContext::GetGuestManager() {
   if (!guest_manager_)
     guest_manager_ = std::make_unique<WebViewManager>();
   return guest_manager_.get();
+}
+
+content::PlatformNotificationService*
+ElectronBrowserContext::GetPlatformNotificationService() {
+  return ElectronBrowserClient::Get()->GetPlatformNotificationService();
 }
 
 content::PermissionControllerDelegate*
@@ -334,7 +332,7 @@ ElectronBrowserContext::GetURLLoaderFactory() {
       ->WillCreateURLLoaderFactory(
           this, nullptr, -1,
           content::ContentBrowserClient::URLLoaderFactoryType::kNavigation,
-          url::Origin(), base::nullopt, ukm::kInvalidSourceIdObj,
+          url::Origin(), absl::nullopt, ukm::kInvalidSourceIdObj,
           &factory_receiver, &header_client, nullptr, nullptr, nullptr);
 
   network::mojom::URLLoaderFactoryParamsPtr params =

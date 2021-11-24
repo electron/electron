@@ -6,6 +6,7 @@
 
 #include "base/logging.h"
 #include "base/memory/ptr_util.h"
+#include "content/public/browser/browser_context.h"
 
 namespace electron {
 

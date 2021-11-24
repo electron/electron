@@ -3,6 +3,8 @@
 
   "src/electron/patches/boringssl": "src/third_party/boringssl/src",
 
+  "src/electron/patches/webrtc": "src/third_party/webrtc",
+
   "src/electron/patches/v8":  "src/v8",
 
   "src/electron/patches/node": "src/third_party/electron_node",
@@ -11,7 +13,5 @@
 
   "src/electron/patches/Mantle": "src/third_party/squirrel.mac/vendor/Mantle",
 
-  "src/electron/patches/ReactiveObjC": "src/third_party/squirrel.mac/vendor/ReactiveObjC",
-
-  "src/electron/patches/nan": "src/third_party/nan"
+  "src/electron/patches/ReactiveObjC": "src/third_party/squirrel.mac/vendor/ReactiveObjC"
 }

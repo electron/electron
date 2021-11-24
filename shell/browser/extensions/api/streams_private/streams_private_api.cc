@@ -4,6 +4,7 @@
 
 #include "electron/shell/browser/extensions/api/streams_private/streams_private_api.h"
 
+#include <memory>
 #include <utility>
 
 #include "content/public/browser/browser_thread.h"
@@ -61,10 +62,9 @@ void StreamsPrivateAPI::SendExecuteMimeTypeHandlerEvent(
   auto* api_contents = electron::api::WebContents::From(web_contents);
   if (api_contents)
     tab_id = api_contents->ID();
-  std::unique_ptr<extensions::StreamContainer> stream_container(
-      new extensions::StreamContainer(
-          tab_id, embedded, handler_url, extension_id,
-          std::move(transferrable_loader), original_url));
+  auto stream_container = std::make_unique<extensions::StreamContainer>(
+      tab_id, embedded, handler_url, extension_id,
+      std::move(transferrable_loader), original_url);
   extensions::MimeHandlerStreamManager::Get(browser_context)
       ->AddStream(view_id, std::move(stream_container), frame_tree_node_id,
                   render_process_id, render_frame_id);

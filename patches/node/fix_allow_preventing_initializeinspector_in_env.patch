@@ -11,12 +11,12 @@ initialize it in the browser process. This adds a new
 EnvironmentFlags option which allows preventing that invocation.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 53b07052e43a09f29f863ee1b2287bdebe7b7a7f..c08fe4b32d4155badb572f15529f903c0ec63146 100644
+index 523d252e08974a10f9a53fb46d3345669cec3380..5bf19a0dda42849159d954181058897c45d280fd 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -358,12 +358,14 @@ Environment* CreateEnvironment(
-       thread_id);
- 
+@@ -344,12 +344,14 @@ Environment* CreateEnvironment(
+   Environment* env = new Environment(
+       isolate_data, context, args, exec_args, nullptr, flags, thread_id);
  #if HAVE_INSPECTOR
 -  if (inspector_parent_handle) {
 -    env->InitializeInspector(
@@ -36,11 +36,11 @@ index 53b07052e43a09f29f863ee1b2287bdebe7b7a7f..c08fe4b32d4155badb572f15529f903c
  #endif
  
 diff --git a/src/env-inl.h b/src/env-inl.h
-index c1853f81b68bd22d20fb99877f4c500a384e9545..578552c0d66f9fd09405d80376d5f97d812018ee 100644
+index 1e85bc07a4cc29f3b380da3c0e217a85309eb3a5..845e00208af4b12960ed8b3f3926323af7685185 100644
 --- a/src/env-inl.h
 +++ b/src/env-inl.h
-@@ -829,6 +829,10 @@ inline bool Environment::tracks_unmanaged_fds() const {
-   return flags_ & EnvironmentFlags::kTrackUnmanagedFds;
+@@ -892,6 +892,10 @@ inline bool Environment::no_global_search_paths() const {
+          !options_->global_search_paths;
  }
  
 +inline bool Environment::should_initialize_inspector() const {
@@ -51,31 +51,31 @@ index c1853f81b68bd22d20fb99877f4c500a384e9545..578552c0d66f9fd09405d80376d5f97d
    return emit_filehandle_warning_;
  }
 diff --git a/src/env.h b/src/env.h
-index f89365a1aa7ffacbb423e01a68f484992751f76f..5e5818eaed3cd4435f1e6b908e95c5953c8743f2 100644
+index 0c3715151488f425a723618252e1277b78fafe5f..e0deca497feb111622b257b952c9ed9161c7d001 100644
 --- a/src/env.h
 +++ b/src/env.h
-@@ -1020,6 +1020,7 @@ class Environment : public MemoryRetainer {
-   inline bool owns_process_state() const;
-   inline bool owns_inspector() const;
+@@ -1204,6 +1204,7 @@ class Environment : public MemoryRetainer {
    inline bool tracks_unmanaged_fds() const;
+   inline bool hide_console_windows() const;
+   inline bool no_global_search_paths() const;
 +  inline bool should_initialize_inspector() const;
    inline uint64_t thread_id() const;
    inline worker::Worker* worker_context() const;
    Environment* worker_parent_env() const;
 diff --git a/src/node.h b/src/node.h
-index a649f52403659fd18898e1e813f97e32f33784e7..b646fdda58ebcbf2dd92ee4fc9cb0d9c039174d1 100644
+index 364f789fbcbec8e3234961294698d8e69b04a310..85b5ac6a5a5cb5e4388a92a1d07c9afe17140a8c 100644
 --- a/src/node.h
 +++ b/src/node.h
-@@ -426,7 +426,11 @@ enum Flags : uint64_t {
-   kNoRegisterESMLoader = 1 << 3,
-   // Set this flag to make Node.js track "raw" file descriptors, i.e. managed
-   // by fs.open() and fs.close(), and close them during FreeEnvironment().
--  kTrackUnmanagedFds = 1 << 4
-+  kTrackUnmanagedFds = 1 << 4,
+@@ -420,7 +420,11 @@ enum Flags : uint64_t {
+   // $HOME/.node_modules and $NODE_PATH. This is used by standalone apps that
+   // do not expect to have their behaviors changed because of globally
+   // installed modules.
+-  kNoGlobalSearchPaths = 1 << 7
++  kNoGlobalSearchPaths = 1 << 7,
 +  // Controls whether or not the Environment should call InitializeInspector.
 +  // This control is needed by embedders who may not want to initialize the V8
 +  // inspector in situations where it already exists.
-+  kNoInitializeInspector = 1 << 5
++  kNoInitializeInspector = 1 << 8
  };
  }  // namespace EnvironmentFlags
  

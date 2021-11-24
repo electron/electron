@@ -4,9 +4,9 @@
 
 #include <utility>
 
-#include "shell/app/uv_task_runner.h"
-
+#include "base/location.h"
 #include "base/stl_util.h"
+#include "shell/app/uv_task_runner.h"
 
 namespace electron {
 

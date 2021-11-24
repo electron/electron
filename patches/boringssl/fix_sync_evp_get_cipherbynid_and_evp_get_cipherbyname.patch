@@ -1,0 +1,25 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Mon, 28 Jun 2021 10:41:09 +0200
+Subject: fix: sync EVP_get_cipherbynid and EVP_get_cipherbyname
+
+This commit syncs the results of EVP_get_cipherbynid and
+EVP_get_cipherbyname. Node.js logic assumes that calling EVP_get_cipherbynid
+on a NID returned from a call to `getCipherInfo` with the cipher name
+will return the same cipher information - this assumption holds in OpenSSL
+and should also hold in BoringSSL.
+
+This will be upstreamed.
+
+diff --git a/crypto/cipher_extra/cipher_extra.c b/crypto/cipher_extra/cipher_extra.c
+index d97f67fb03756169446edf6b41d3a33fe3ae8205..cfdb69e3c556fea11aa7c2d28d4b7da524df15c3 100644
+--- a/crypto/cipher_extra/cipher_extra.c
++++ b/crypto/cipher_extra/cipher_extra.c
+@@ -97,6 +97,7 @@ static const struct {
+     {NID_des_ede3_cbc, "des-ede3-cbc", EVP_des_ede3_cbc},
+     {NID_rc2_cbc, "rc2-cbc", EVP_rc2_cbc},
+     {NID_rc4, "rc4", EVP_rc4},
++    {NID_rc2_40_cbc, "rc2-40-cbc", EVP_rc2_40_cbc}
+ };
+ 
+ const EVP_CIPHER *EVP_get_cipherbynid(int nid) {

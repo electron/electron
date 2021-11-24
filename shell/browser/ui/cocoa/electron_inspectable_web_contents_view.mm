@@ -169,13 +169,12 @@
 
   // Switch to new state.
   devtools_docked_ = docked;
+  auto* inspectable_web_contents =
+      inspectableWebContentsView_->inspectable_web_contents();
+  auto* devToolsWebContents =
+      inspectable_web_contents->GetDevToolsWebContents();
+  auto devToolsView = devToolsWebContents->GetNativeView().GetNativeNSView();
   if (!docked) {
-    auto* inspectable_web_contents =
-        inspectableWebContentsView_->inspectable_web_contents();
-    auto* devToolsWebContents =
-        inspectable_web_contents->GetDevToolsWebContents();
-    auto devToolsView = devToolsWebContents->GetNativeView().GetNativeNSView();
-
     auto styleMask = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
                      NSMiniaturizableWindowMask | NSWindowStyleMaskResizable |
                      NSTexturedBackgroundWindowMask |
@@ -198,6 +197,9 @@
     devToolsView.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
 
     [contentView addSubview:devToolsView];
+    [devToolsView setMouseDownCanMoveWindow:NO];
+  } else {
+    [devToolsView setMouseDownCanMoveWindow:YES];
   }
   [self setDevToolsVisible:YES activate:activate];
 }

@@ -9,8 +9,13 @@
 #include <utility>
 
 #include "base/command_line.h"
+#include "base/files/file_path.h"
+#include "base/path_service.h"
+#include "chrome/common/chrome_paths.h"
 #include "chrome/common/chrome_switches.h"
+#include "components/os_crypt/os_crypt.h"
 #include "components/prefs/in_memory_pref_store.h"
+#include "components/prefs/json_pref_store.h"
 #include "components/prefs/overlay_user_pref_store.h"
 #include "components/prefs/pref_registry.h"
 #include "components/prefs/pref_registry_simple.h"
@@ -20,11 +25,13 @@
 #include "components/proxy_config/proxy_config_pref_names.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/common/content_switches.h"
+#include "electron/fuses.h"
 #include "extensions/common/constants.h"
 #include "net/proxy_resolution/proxy_config.h"
 #include "net/proxy_resolution/proxy_config_service.h"
 #include "net/proxy_resolution/proxy_config_with_annotation.h"
 #include "services/network/public/cpp/network_switches.h"
+#include "shell/common/electron_paths.h"
 
 #if BUILDFLAG(ENABLE_PRINTING)
 #include "chrome/browser/printing/print_job_manager.h"
@@ -82,16 +89,34 @@ BuildState* BrowserProcessImpl::GetBuildState() {
   return nullptr;
 }
 
+breadcrumbs::BreadcrumbPersistentStorageManager*
+BrowserProcessImpl::GetBreadcrumbPersistentStorageManager() {
+  NOTIMPLEMENTED();
+  return nullptr;
+}
+
 void BrowserProcessImpl::PostEarlyInitialization() {
-  // Mock user prefs, as we only need to track changes for a
-  // in memory pref store. There are no persistent preferences
   PrefServiceFactory prefs_factory;
   auto pref_registry = base::MakeRefCounted<PrefRegistrySimple>();
   PrefProxyConfigTrackerImpl::RegisterPrefs(pref_registry.get());
+#if defined(OS_WIN)
+  OSCrypt::RegisterLocalPrefs(pref_registry.get());
+#endif
+
   auto pref_store = base::MakeRefCounted<ValueMapPrefStore>();
   ApplyProxyModeFromCommandLine(pref_store.get());
   prefs_factory.set_command_line_prefs(std::move(pref_store));
-  prefs_factory.set_user_prefs(new OverlayUserPrefStore(new InMemoryPrefStore));
+
+  // Only use a persistent prefs store when cookie encryption is enabled as that
+  // is the only key that needs it
+  base::FilePath prefs_path;
+  CHECK(base::PathService::Get(chrome::DIR_USER_DATA, &prefs_path));
+  prefs_path = prefs_path.Append(FILE_PATH_LITERAL("Local State"));
+  base::ThreadRestrictions::ScopedAllowIO allow_io;
+  scoped_refptr<JsonPrefStore> user_pref_store =
+      base::MakeRefCounted<JsonPrefStore>(prefs_path);
+  user_pref_store->ReadPrefs();
+  prefs_factory.set_user_prefs(user_pref_store);
   local_state_ = prefs_factory.Create(std::move(pref_registry));
 }
 
@@ -266,6 +291,10 @@ BrowserProcessImpl::resource_coordinator_parts() {
 }
 
 resource_coordinator::TabManager* BrowserProcessImpl::GetTabManager() {
+  return nullptr;
+}
+
+SerialPolicyAllowedPorts* BrowserProcessImpl::serial_policy_allowed_ports() {
   return nullptr;
 }
 

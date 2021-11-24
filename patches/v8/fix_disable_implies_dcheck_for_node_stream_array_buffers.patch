@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: VerteDinde <khammond@slack-corp.com>
+Date: Thu, 29 Jul 2021 17:05:32 -0700
+Subject: fix: disable implies dcheck for node stream array buffers
+
+Added in this CL: https://chromium-review.googlesource.com/c/v8/v8/+/3035091
+
+This commit was added in preparation for ResizableArrayBuffers
+and GrowableSharedArrayBuffer. If a buffer is not resizable and
+has a larger max_byte_length than byte_length, we throw.
+
+However, the check also catches on Node stream buffers, which
+on readStream will slowly fill their byte length up to the
+maximum length. Streams do not yet have the resizable
+property.
+
+This patch can be removed when streams support rab/gsab, or
+when support is synchronized across both v8 and node.
+
+diff --git a/src/objects/js-array-buffer.cc b/src/objects/js-array-buffer.cc
+index 07b37dd7f5a76c13fe6f8a55fd4a93fa813d81a6..ad0e4610b7f9adc64d996800e5fdb0c6f1a58562 100644
+--- a/src/objects/js-array-buffer.cc
++++ b/src/objects/js-array-buffer.cc
+@@ -72,9 +72,9 @@ void JSArrayBuffer::Attach(std::shared_ptr<BackingStore> backing_store) {
+   DCHECK_NOT_NULL(backing_store);
+   DCHECK_EQ(is_shared(), backing_store->is_shared());
+   DCHECK_EQ(is_resizable(), backing_store->is_resizable());
+-  DCHECK_IMPLIES(
+-      !backing_store->is_wasm_memory() && !backing_store->is_resizable(),
+-      backing_store->byte_length() == backing_store->max_byte_length());
++  // DCHECK_IMPLIES(
++  //     !backing_store->is_wasm_memory() && !backing_store->is_resizable(),
++  //     backing_store->byte_length() == backing_store->max_byte_length());
+   DCHECK(!was_detached());
+   set_backing_store(backing_store->buffer_start());
+   if (is_shared() && is_resizable()) {

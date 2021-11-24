@@ -13,10 +13,10 @@ uses internally for things like menus and devtools.
 We can remove this patch once it has in some shape been upstreamed.
 
 diff --git a/ui/native_theme/native_theme.cc b/ui/native_theme/native_theme.cc
-index 94bc883b019f6311b513edaa5e35f3de015bfb0f..47a81a75e7ef926d3bbf37971b1e3254d3d3e08a 100644
+index ca0630b07722cf3d8b4d31103db7c03bc702ee6b..5f7c5166f3541718f1135b2af8dc6ef3b7bb69ca 100644
 --- a/ui/native_theme/native_theme.cc
 +++ b/ui/native_theme/native_theme.cc
-@@ -135,6 +135,8 @@ base::Optional<SkColor> NativeTheme::GetColorProviderColor(
+@@ -153,6 +153,8 @@ absl::optional<SkColor> NativeTheme::GetColorProviderColor(
  }
  
  bool NativeTheme::ShouldUseDarkColors() const {
@@ -26,7 +26,7 @@ index 94bc883b019f6311b513edaa5e35f3de015bfb0f..47a81a75e7ef926d3bbf37971b1e3254
  }
  
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
-index 177818c18f6f895586c9ecf5139a4658d5f556b2..d674de9cbdac9012e9e152cd36ad0c5ae250bbdb 100644
+index 61dcb2ace529fe0bb30a885b7ae9120dfc8e0c00..95fd72c8dbcd1f60d177fee8f5e7774a9d9d3ff7 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
 @@ -403,6 +403,22 @@ class NATIVE_THEME_EXPORT NativeTheme {
@@ -52,19 +52,19 @@ index 177818c18f6f895586c9ecf5139a4658d5f556b2..d674de9cbdac9012e9e152cd36ad0c5a
    // Returns a shared instance of the native theme that should be used for web
    // rendering. Do not use it in a normal application context (i.e. browser).
    // The returned object should not be deleted by the caller. This function is
-@@ -577,6 +593,7 @@ class NATIVE_THEME_EXPORT NativeTheme {
+@@ -588,6 +604,7 @@ class NATIVE_THEME_EXPORT NativeTheme {
    bool forced_colors_ = false;
    PreferredColorScheme preferred_color_scheme_ = PreferredColorScheme::kLight;
    PreferredContrast preferred_contrast_ = PreferredContrast::kNoPreference;
 +  ThemeSource theme_source_ = ThemeSource::kSystem;
  
    SEQUENCE_CHECKER(sequence_checker_);
- 
+ };
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index 13a1f3763d137667220325237c419257e9868a8d..78fd1055ea24b4589c2b66c40a7778f12999aad4 100644
+index 07852493fd23b8c1f057dc7ad830b6884db50a88..fee85c5c95bf7908cbd460619f71977cc73f3e6a 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
-@@ -749,6 +749,8 @@ bool NativeThemeWin::ShouldUseDarkColors() const {
+@@ -677,6 +677,8 @@ bool NativeThemeWin::ShouldUseDarkColors() const {
    // ...unless --force-dark-mode was specified in which case caveat emptor.
    if (InForcedColorsMode() && !IsForcedDarkMode())
      return false;

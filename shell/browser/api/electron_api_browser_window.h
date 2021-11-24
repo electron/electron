@@ -2,10 +2,9 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_ELECTRON_API_BROWSER_WINDOW_H_
-#define SHELL_BROWSER_API_ELECTRON_API_BROWSER_WINDOW_H_
+#ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_BROWSER_WINDOW_H_
+#define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_BROWSER_WINDOW_H_
 
-#include <memory>
 #include <string>
 #include <vector>
 
@@ -38,6 +37,10 @@ class BrowserWindow : public BaseWindow,
     return weak_factory_.GetWeakPtr();
   }
 
+  // disable copy
+  BrowserWindow(const BrowserWindow&) = delete;
+  BrowserWindow& operator=(const BrowserWindow&) = delete;
+
  protected:
   BrowserWindow(gin::Arguments* args, const gin_helper::Dictionary& options);
   ~BrowserWindow() override;
@@ -64,14 +67,13 @@ class BrowserWindow : public BaseWindow,
   void OnActivateContents() override;
   void OnPageTitleUpdated(const std::u16string& title,
                           bool explicit_set) override;
-#if defined(OS_MAC)
   void OnDevToolsResized() override;
-#endif
 
   // NativeWindowObserver:
   void RequestPreferredWidth(int* width) override;
   void OnCloseButtonClicked(bool* prevent_default) override;
   void OnWindowIsKeyChanged(bool is_key) override;
+  void UpdateWindowControlsOverlay(const gfx::Rect& bounding_rect) override;
 
   // BaseWindow:
   void OnWindowBlur() override;
@@ -119,20 +121,16 @@ class BrowserWindow : public BaseWindow,
   // it should be cancelled when we can prove that the window is responsive.
   base::CancelableRepeatingClosure window_unresponsive_closure_;
 
-#if defined(OS_MAC)
   std::vector<mojom::DraggableRegionPtr> draggable_regions_;
-#endif
 
   v8::Global<v8::Value> web_contents_;
   base::WeakPtr<api::WebContents> api_web_contents_;
 
   base::WeakPtrFactory<BrowserWindow> weak_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(BrowserWindow);
 };
 
 }  // namespace api
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_ELECTRON_API_BROWSER_WINDOW_H_
+#endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_BROWSER_WINDOW_H_

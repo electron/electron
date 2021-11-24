@@ -3,12 +3,12 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#ifndef SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_VIEW_DELEGATE_H_
-#define SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_VIEW_DELEGATE_H_
+#ifndef ELECTRON_SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_VIEW_DELEGATE_H_
+#define ELECTRON_SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_VIEW_DELEGATE_H_
 
 #include <string>
 
-#include "ui/gfx/image/image_skia.h"
+#include "ui/base/models/image_model.h"
 
 namespace electron {
 
@@ -22,7 +22,7 @@ class InspectableWebContentsViewDelegate {
   virtual void DevToolsResized() {}
 
   // Returns the icon of devtools window.
-  virtual gfx::ImageSkia GetDevToolsWindowIcon();
+  virtual ui::ImageModel GetDevToolsWindowIcon();
 
 #if defined(OS_LINUX)
   // Called when creating devtools window.
@@ -33,4 +33,4 @@ class InspectableWebContentsViewDelegate {
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_VIEW_DELEGATE_H_
+#endif  // ELECTRON_SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_VIEW_DELEGATE_H_

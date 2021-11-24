@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_GIN_CONVERTERS_NET_CONVERTER_H_
-#define SHELL_COMMON_GIN_CONVERTERS_NET_CONVERTER_H_
+#ifndef ELECTRON_SHELL_COMMON_GIN_CONVERTERS_NET_CONVERTER_H_
+#define ELECTRON_SHELL_COMMON_GIN_CONVERTERS_NET_CONVERTER_H_
 
 #include <string>
 #include <utility>
@@ -11,16 +11,11 @@
 
 #include "gin/converter.h"
 #include "services/network/public/mojom/fetch_api.mojom.h"
+#include "services/network/public/mojom/url_request.mojom.h"
 #include "shell/browser/net/cert_verifier_client.h"
-
-namespace base {
-class DictionaryValue;
-class ListValue;
-}  // namespace base
 
 namespace net {
 class AuthChallengeInfo;
-class URLRequest;
 class X509Certificate;
 class HttpResponseHeaders;
 struct CertPrincipal;
@@ -145,4 +140,4 @@ struct Converter<std::vector<std::pair<K, V>>> {
 
 }  // namespace gin
 
-#endif  // SHELL_COMMON_GIN_CONVERTERS_NET_CONVERTER_H_
+#endif  // ELECTRON_SHELL_COMMON_GIN_CONVERTERS_NET_CONVERTER_H_

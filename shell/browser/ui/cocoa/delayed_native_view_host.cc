@@ -9,7 +9,7 @@ namespace electron {
 DelayedNativeViewHost::DelayedNativeViewHost(gfx::NativeView native_view)
     : native_view_(native_view) {}
 
-DelayedNativeViewHost::~DelayedNativeViewHost() {}
+DelayedNativeViewHost::~DelayedNativeViewHost() = default;
 
 void DelayedNativeViewHost::ViewHierarchyChanged(
     const views::ViewHierarchyChangedDetails& details) {

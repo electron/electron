@@ -66,7 +66,7 @@ bool TrayIconGtk::HasClickAction() {
 }
 
 // static
-TrayIcon* TrayIcon::Create(base::Optional<UUID> guid) {
+TrayIcon* TrayIcon::Create(absl::optional<UUID> guid) {
   return new TrayIconGtk;
 }
 

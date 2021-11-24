@@ -1,0 +1,24 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Rose <nornagon@nornagon.net>
+Date: Tue, 27 Jul 2021 10:32:54 -0700
+Subject: add thread_local to x_error_trap.cc
+
+Per https://bugs.chromium.org/p/chromium/issues/detail?id=781618#c6.
+
+To fix this DCHECK firing: https://source.chromium.org/chromium/chromium/src/+/main:third_party/webrtc/modules/desktop_capture/linux/x_error_trap.cc;l=35;drc=25ab3228f3e473f2226f219531ec617d2daa175e
+
+diff --git a/modules/desktop_capture/linux/x_error_trap.cc b/modules/desktop_capture/linux/x_error_trap.cc
+index 13233d827470d9d42be0333c3080e3d107f86fd5..62efb5b5b5194fc8961a27fe2a1efcd77e385d08 100644
+--- a/modules/desktop_capture/linux/x_error_trap.cc
++++ b/modules/desktop_capture/linux/x_error_trap.cc
+@@ -19,8 +19,8 @@ namespace webrtc {
+ namespace {
+ 
+ // TODO(sergeyu): This code is not thread safe. Fix it. Bug 2202.
+-static bool g_xserver_error_trap_enabled = false;
+-static int g_last_xserver_error_code = 0;
++static thread_local bool g_xserver_error_trap_enabled = false;
++static thread_local int g_last_xserver_error_code = 0;
+ 
+ int XServerErrorHandler(Display* display, XErrorEvent* error_event) {
+   RTC_DCHECK(g_xserver_error_trap_enabled);

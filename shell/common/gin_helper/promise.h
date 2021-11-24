@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_GIN_HELPER_PROMISE_H_
-#define SHELL_COMMON_GIN_HELPER_PROMISE_H_
+#ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_PROMISE_H_
+#define ELECTRON_SHELL_COMMON_GIN_HELPER_PROMISE_H_
 
 #include <string>
 #include <tuple>
@@ -32,6 +32,10 @@ class PromiseBase {
   explicit PromiseBase(v8::Isolate* isolate);
   PromiseBase(v8::Isolate* isolate, v8::Local<v8::Promise::Resolver> handle);
   ~PromiseBase();
+
+  // disable copy
+  PromiseBase(const PromiseBase&) = delete;
+  PromiseBase& operator=(const PromiseBase&) = delete;
 
   // Support moving.
   PromiseBase(PromiseBase&&);
@@ -75,8 +79,6 @@ class PromiseBase {
   v8::Isolate* isolate_;
   v8::Global<v8::Context> context_;
   v8::Global<v8::Promise::Resolver> resolver_;
-
-  DISALLOW_COPY_AND_ASSIGN(PromiseBase);
 };
 
 // Template implementation that returns values.
@@ -106,6 +108,12 @@ class Promise : public PromiseBase {
     return resolved.GetHandle();
   }
 
+  // Convert to another type.
+  template <typename NT>
+  Promise<NT> As() {
+    return Promise<NT>(isolate(), GetInner());
+  }
+
   // Promise resolution is a microtask
   // We use the MicrotasksRunner to trigger the running of pending microtasks
   v8::Maybe<bool> Resolve(const RT& value) {
@@ -133,7 +141,7 @@ class Promise : public PromiseBase {
     v8::Context::Scope context_scope(GetContext());
 
     v8::Local<v8::Value> value = gin::ConvertToV8(isolate(), std::move(cb));
-    v8::Local<v8::Function> handler = v8::Local<v8::Function>::Cast(value);
+    v8::Local<v8::Function> handler = value.As<v8::Function>();
 
     return GetHandle()->Then(GetContext(), handler);
   }
@@ -173,4 +181,4 @@ struct Converter<gin_helper::Promise<T>> {
 
 }  // namespace gin
 
-#endif  // SHELL_COMMON_GIN_HELPER_PROMISE_H_
+#endif  // ELECTRON_SHELL_COMMON_GIN_HELPER_PROMISE_H_

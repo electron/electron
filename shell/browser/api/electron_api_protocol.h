@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_ELECTRON_API_PROTOCOL_H_
-#define SHELL_BROWSER_API_ELECTRON_API_PROTOCOL_H_
+#ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_PROTOCOL_H_
+#define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_PROTOCOL_H_
 
 #include <string>
 #include <vector>
@@ -21,6 +21,8 @@ class ProtocolRegistry;
 namespace api {
 
 std::vector<std::string> GetStandardSchemes();
+
+void AddServiceWorkerScheme(const std::string& scheme);
 
 void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
                                  v8::Local<v8::Value> val);
@@ -101,4 +103,4 @@ class Protocol : public gin::Wrappable<Protocol> {
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_ELECTRON_API_PROTOCOL_H_
+#endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_PROTOCOL_H_

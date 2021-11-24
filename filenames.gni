@@ -44,8 +44,8 @@ filenames = {
   ]
 
   lib_sources_linux_x11 = [
-    "chromium_src/chrome/browser/ui/views/frame/global_menu_bar_registrar_x11.cc",
-    "chromium_src/chrome/browser/ui/views/frame/global_menu_bar_registrar_x11.h",
+    "shell/browser/ui/views/global_menu_bar_registrar_x11.cc",
+    "shell/browser/ui/views/global_menu_bar_registrar_x11.h",
     "shell/browser/ui/views/global_menu_bar_x11.cc",
     "shell/browser/ui/views/global_menu_bar_x11.h",
     "shell/browser/ui/x/event_disabler.cc",
@@ -56,13 +56,9 @@ filenames = {
     "shell/browser/ui/x/x_window_utils.h",
   ]
 
-  lib_sources_posix = [
-    "chromium_src/chrome/browser/process_singleton_posix.cc",
-    "shell/browser/electron_browser_main_parts_posix.cc",
-  ]
+  lib_sources_posix = [ "shell/browser/electron_browser_main_parts_posix.cc" ]
 
   lib_sources_win = [
-    "chromium_src/chrome/browser/process_singleton_win.cc",
     "shell/browser/api/electron_api_power_monitor_win.cc",
     "shell/browser/api/electron_api_system_preferences_win.cc",
     "shell/browser/browser_win.cc",
@@ -90,6 +86,10 @@ filenames = {
     "shell/browser/ui/views/electron_views_delegate_win.cc",
     "shell/browser/ui/views/win_frame_view.cc",
     "shell/browser/ui/views/win_frame_view.h",
+    "shell/browser/ui/views/win_caption_button.cc",
+    "shell/browser/ui/views/win_caption_button.h",
+    "shell/browser/ui/views/win_caption_button_container.cc",
+    "shell/browser/ui/views/win_caption_button_container.h",
     "shell/browser/ui/win/dialog_thread.cc",
     "shell/browser/ui/win/dialog_thread.h",
     "shell/browser/ui/win/electron_desktop_native_widget_aura.cc",
@@ -180,8 +180,8 @@ filenames = {
     "shell/browser/ui/cocoa/root_view_mac.mm",
     "shell/browser/ui/cocoa/views_delegate_mac.h",
     "shell/browser/ui/cocoa/views_delegate_mac.mm",
-    "shell/browser/ui/cocoa/window_buttons_view.h",
-    "shell/browser/ui/cocoa/window_buttons_view.mm",
+    "shell/browser/ui/cocoa/window_buttons_proxy.h",
+    "shell/browser/ui/cocoa/window_buttons_proxy.mm",
     "shell/browser/ui/drag_util_mac.mm",
     "shell/browser/ui/file_dialog_mac.mm",
     "shell/browser/ui/inspectable_web_contents_view_mac.h",
@@ -191,6 +191,7 @@ filenames = {
     "shell/browser/ui/tray_icon_cocoa.mm",
     "shell/common/api/electron_api_clipboard_mac.mm",
     "shell/common/api/electron_api_native_image_mac.mm",
+    "shell/common/asar/archive_mac.mm",
     "shell/common/application_info_mac.mm",
     "shell/common/language_util_mac.mm",
     "shell/common/mac/main_application_bundle.h",
@@ -232,7 +233,6 @@ filenames = {
   ]
 
   lib_sources = [
-    "chromium_src/chrome/browser/process_singleton.h",
     "shell/app/command_line_args.cc",
     "shell/app/command_line_args.h",
     "shell/app/electron_content_client.cc",
@@ -288,6 +288,8 @@ filenames = {
     "shell/browser/api/electron_api_printing.cc",
     "shell/browser/api/electron_api_protocol.cc",
     "shell/browser/api/electron_api_protocol.h",
+    "shell/browser/api/electron_api_safe_storage.cc",
+    "shell/browser/api/electron_api_safe_storage.h",
     "shell/browser/api/electron_api_screen.cc",
     "shell/browser/api/electron_api_screen.h",
     "shell/browser/api/electron_api_service_worker_context.cc",
@@ -381,8 +383,18 @@ filenames = {
     "shell/browser/file_select_helper.cc",
     "shell/browser/file_select_helper.h",
     "shell/browser/file_select_helper_mac.mm",
+    "shell/browser/font/electron_font_access_delegate.cc",
+    "shell/browser/font/electron_font_access_delegate.h",
     "shell/browser/font_defaults.cc",
     "shell/browser/font_defaults.h",
+    "shell/browser/hid/electron_hid_delegate.cc",
+    "shell/browser/hid/electron_hid_delegate.h",
+    "shell/browser/hid/hid_chooser_context.cc",
+    "shell/browser/hid/hid_chooser_context.h",
+    "shell/browser/hid/hid_chooser_context_factory.cc",
+    "shell/browser/hid/hid_chooser_context_factory.h",
+    "shell/browser/hid/hid_chooser_controller.cc",
+    "shell/browser/hid/hid_chooser_controller.h",
     "shell/browser/javascript_environment.cc",
     "shell/browser/javascript_environment.h",
     "shell/browser/lib/bluetooth_chooser.cc",
@@ -402,6 +414,8 @@ filenames = {
     "shell/browser/native_window.cc",
     "shell/browser/native_window.h",
     "shell/browser/native_window_observer.h",
+    "shell/browser/net/asar/asar_file_validator.cc",
+    "shell/browser/net/asar/asar_file_validator.h",
     "shell/browser/net/asar/asar_url_loader.cc",
     "shell/browser/net/asar/asar_url_loader.h",
     "shell/browser/net/asar/asar_url_loader_factory.cc",
@@ -490,8 +504,6 @@ filenames = {
     "shell/browser/web_contents_preferences.h",
     "shell/browser/web_contents_zoom_controller.cc",
     "shell/browser/web_contents_zoom_controller.h",
-    "shell/browser/web_dialog_helper.cc",
-    "shell/browser/web_dialog_helper.h",
     "shell/browser/web_view_guest_delegate.cc",
     "shell/browser/web_view_guest_delegate.h",
     "shell/browser/web_view_manager.cc",
@@ -510,6 +522,7 @@ filenames = {
     "shell/common/api/electron_api_native_image.cc",
     "shell/common/api/electron_api_native_image.h",
     "shell/common/api/electron_api_shell.cc",
+    "shell/common/api/electron_api_testing.cc",
     "shell/common/api/electron_api_v8_util.cc",
     "shell/common/api/electron_bindings.cc",
     "shell/common/api/electron_bindings.h",
@@ -604,6 +617,8 @@ filenames = {
     "shell/common/keyboard_util.cc",
     "shell/common/keyboard_util.h",
     "shell/common/language_util.h",
+    "shell/common/logging.cc",
+    "shell/common/logging.h",
     "shell/common/mouse_util.cc",
     "shell/common/mouse_util.h",
     "shell/common/node_bindings.cc",
@@ -660,14 +675,11 @@ filenames = {
     "shell/utility/electron_content_utility_client.h",
   ]
 
-  lib_sources_nss = [
-    "chromium_src/chrome/browser/certificate_manager_model.cc",
-    "chromium_src/chrome/browser/certificate_manager_model.h",
-  ]
-
   lib_sources_extensions = [
     "shell/browser/extensions/api/i18n/i18n_api.cc",
     "shell/browser/extensions/api/i18n/i18n_api.h",
+    "shell/browser/extensions/api/cryptotoken_private/cryptotoken_private_api.cc",
+    "shell/browser/extensions/api/cryptotoken_private/cryptotoken_private_api.h",
     "shell/browser/extensions/api/management/electron_management_api_delegate.cc",
     "shell/browser/extensions/api/management/electron_management_api_delegate.h",
     "shell/browser/extensions/api/resources_private/resources_private_api.cc",

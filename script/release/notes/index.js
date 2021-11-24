@@ -8,6 +8,11 @@ const semver = require('semver');
 const { ELECTRON_DIR } = require('../../lib/utils');
 const notesGenerator = require('./notes.js');
 
+const { Octokit } = require('@octokit/rest');
+const octokit = new Octokit({
+  auth: process.env.ELECTRON_GITHUB_TOKEN
+});
+
 const semverify = version => version.replace(/^origin\//, '').replace(/[xy]/g, '0').replace(/-/g, '.');
 
 const runGit = async (args) => {
@@ -20,8 +25,9 @@ const runGit = async (args) => {
 };
 
 const tagIsSupported = tag => tag && !tag.includes('nightly') && !tag.includes('unsupported');
+const tagIsAlpha = tag => tag && tag.includes('alpha');
 const tagIsBeta = tag => tag && tag.includes('beta');
-const tagIsStable = tag => tagIsSupported(tag) && !tagIsBeta(tag);
+const tagIsStable = tag => tagIsSupported(tag) && !tagIsBeta(tag) && !tagIsAlpha(tag);
 
 const getTagsOf = async (point) => {
   try {
@@ -37,13 +43,17 @@ const getTagsOf = async (point) => {
 };
 
 const getTagsOnBranch = async (point) => {
-  const masterTags = await getTagsOf('master');
-  if (point === 'master') {
-    return masterTags;
+  const { data: { default_branch: defaultBranch } } = await octokit.repos.get({
+    owner: 'electron',
+    repo: 'electron'
+  });
+  const mainTags = await getTagsOf(defaultBranch);
+  if (point === defaultBranch) {
+    return mainTags;
   }
 
-  const masterTagsSet = new Set(masterTags);
-  return (await getTagsOf(point)).filter(tag => !masterTagsSet.has(tag));
+  const mainTagsSet = new Set(mainTags);
+  return (await getTagsOf(point)).filter(tag => !mainTagsSet.has(tag));
 };
 
 const getBranchOf = async (point) => {
@@ -66,7 +76,8 @@ const getAllBranches = async () => {
     return branches.split('\n')
       .map(branch => branch.trim())
       .filter(branch => !!branch)
-      .filter(branch => branch !== 'origin/HEAD -> origin/master')
+      // TODO(main-migration): Simplify once branch rename is complete.
+      .filter(branch => branch !== 'origin/HEAD -> origin/master' && branch !== 'origin/HEAD -> origin/main')
       .sort();
   } catch (err) {
     console.error('Failed to fetch all branches');

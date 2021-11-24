@@ -4,16 +4,21 @@
 
 #include "shell/renderer/electron_sandboxed_renderer_client.h"
 
+#include <vector>
+
 #include "base/base_paths.h"
 #include "base/command_line.h"
 #include "base/files/file_path.h"
+#include "base/ignore_result.h"
 #include "base/path_service.h"
 #include "base/process/process_handle.h"
+#include "base/process/process_metrics.h"
 #include "content/public/renderer/render_frame.h"
 #include "electron/buildflags/buildflags.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/application_info.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/microtasks_scope.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
@@ -85,9 +90,13 @@ v8::Local<v8::Value> GetBinding(v8::Isolate* isolate,
 }
 
 v8::Local<v8::Value> CreatePreloadScript(v8::Isolate* isolate,
-                                         v8::Local<v8::String> preloadSrc) {
-  return RendererClientBase::RunScript(isolate->GetCurrentContext(),
-                                       preloadSrc);
+                                         v8::Local<v8::String> source) {
+  auto context = isolate->GetCurrentContext();
+  auto maybe_script = v8::Script::Compile(context, source);
+  v8::Local<v8::Script> script;
+  if (!maybe_script.ToLocal(&script))
+    return v8::Local<v8::Value>();
+  return script->Run(context).ToLocalChecked();
 }
 
 double Uptime() {
@@ -114,7 +123,7 @@ void InvokeHiddenCallback(v8::Handle<v8::Context> context,
                           .ToLocalChecked();
   auto callback_value = binding->Get(context, callback_key).ToLocalChecked();
   DCHECK(callback_value->IsFunction());  // set by sandboxed_renderer/init.js
-  auto callback = v8::Handle<v8::Function>::Cast(callback_value);
+  auto callback = callback_value.As<v8::Function>();
   ignore_result(callback->Call(context, binding, 0, nullptr));
 }
 
@@ -156,11 +165,6 @@ void ElectronSandboxedRendererClient::RenderFrameCreated(
   RendererClientBase::RenderFrameCreated(render_frame);
 }
 
-void ElectronSandboxedRendererClient::RenderViewCreated(
-    content::RenderView* render_view) {
-  RendererClientBase::RenderViewCreated(render_view);
-}
-
 void ElectronSandboxedRendererClient::RunScriptsAtDocumentStart(
     content::RenderFrame* render_frame) {
   RendererClientBase::RunScriptsAtDocumentStart(render_frame);
@@ -168,6 +172,8 @@ void ElectronSandboxedRendererClient::RunScriptsAtDocumentStart(
     return;
 
   auto* isolate = blink::MainThreadIsolate();
+  gin_helper::MicrotasksScope microtasks_scope(
+      isolate, v8::MicrotasksScope::kDoNotRunMicrotasks);
   v8::HandleScope handle_scope(isolate);
 
   v8::Local<v8::Context> context =
@@ -184,6 +190,8 @@ void ElectronSandboxedRendererClient::RunScriptsAtDocumentEnd(
     return;
 
   auto* isolate = blink::MainThreadIsolate();
+  gin_helper::MicrotasksScope microtasks_scope(
+      isolate, v8::MicrotasksScope::kDoNotRunMicrotasks);
   v8::HandleScope handle_scope(isolate);
 
   v8::Local<v8::Context> context =
@@ -196,16 +204,16 @@ void ElectronSandboxedRendererClient::RunScriptsAtDocumentEnd(
 void ElectronSandboxedRendererClient::DidCreateScriptContext(
     v8::Handle<v8::Context> context,
     content::RenderFrame* render_frame) {
-  RendererClientBase::DidCreateScriptContext(context, render_frame);
-
   // Only allow preload for the main frame or
   // For devtools we still want to run the preload_bundle script
   // Or when nodeSupport is explicitly enabled in sub frames
   bool is_main_frame = render_frame->IsMainFrame();
   bool is_devtools =
       IsDevTools(render_frame) || IsDevToolsExtension(render_frame);
+
   bool allow_node_in_sub_frames =
       render_frame->GetBlinkPreferences().node_integration_in_sub_frames;
+
   bool should_load_preload =
       (is_main_frame || is_devtools || allow_node_in_sub_frames) &&
       !IsWebViewFrame(context, render_frame);
@@ -234,34 +242,6 @@ void ElectronSandboxedRendererClient::DidCreateScriptContext(
   InvokeHiddenCallback(context, kLifecycleKey, "onLoaded");
 }
 
-void ElectronSandboxedRendererClient::SetupMainWorldOverrides(
-    v8::Handle<v8::Context> context,
-    content::RenderFrame* render_frame) {
-  auto prefs = render_frame->GetBlinkPreferences();
-  // We only need to run the isolated bundle if webview is enabled
-  if (!prefs.webview_tag)
-    return;
-
-  // Setup window overrides in the main world context
-  // Wrap the bundle into a function that receives the isolatedWorld as
-  // an argument.
-  auto* isolate = context->GetIsolate();
-
-  gin_helper::Dictionary process = gin::Dictionary::CreateEmpty(isolate);
-  process.SetMethod("_linkedBinding", GetBinding);
-
-  std::vector<v8::Local<v8::String>> isolated_bundle_params = {
-      node::FIXED_ONE_BYTE_STRING(isolate, "nodeProcess"),
-      node::FIXED_ONE_BYTE_STRING(isolate, "isolatedWorld")};
-
-  std::vector<v8::Local<v8::Value>> isolated_bundle_args = {
-      process.GetHandle(),
-      GetContext(render_frame->GetWebFrame(), isolate)->Global()};
-
-  util::CompileAndCall(context, "electron/js2c/isolated_bundle",
-                       &isolated_bundle_params, &isolated_bundle_args, nullptr);
-}
-
 void ElectronSandboxedRendererClient::WillReleaseScriptContext(
     v8::Handle<v8::Context> context,
     content::RenderFrame* render_frame) {
@@ -269,16 +249,11 @@ void ElectronSandboxedRendererClient::WillReleaseScriptContext(
     return;
 
   auto* isolate = context->GetIsolate();
+  gin_helper::MicrotasksScope microtasks_scope(
+      isolate, v8::MicrotasksScope::kDoNotRunMicrotasks);
   v8::HandleScope handle_scope(isolate);
   v8::Context::Scope context_scope(context);
   InvokeHiddenCallback(context, kLifecycleKey, "onExit");
-}
-
-bool ElectronSandboxedRendererClient::ShouldFork(blink::WebLocalFrame* frame,
-                                                 const GURL& url,
-                                                 const std::string& http_method,
-                                                 bool is_server_redirect) {
-  return true;
 }
 
 }  // namespace electron

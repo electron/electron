@@ -21,9 +21,9 @@
 #include "shell/browser/ui/electron_menu_model.h"
 #include "shell/browser/window_list.h"
 #include "ui/base/accelerators/accelerator.h"
-#include "ui/base/accelerators/platform_accelerator_cocoa.h"
 #include "ui/base/l10n/l10n_util_mac.h"
 #include "ui/events/cocoa/cocoa_event_utils.h"
+#include "ui/events/keycodes/keyboard_code_conversion_mac.h"
 #include "ui/gfx/image/image.h"
 #include "ui/strings/grit/ui_strings.h"
 
@@ -315,11 +315,9 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
   return item.autorelease();
 }
 
-// Adds an item or a hierarchical menu to the item at the |index|,
-// associated with the entry in the model identified by |modelIndex|.
-- (void)addItemToMenu:(NSMenu*)menu
-              atIndex:(NSInteger)index
-            fromModel:(electron::ElectronMenuModel*)model {
+- (base::scoped_nsobject<NSMenuItem>)
+    makeMenuItemForIndex:(NSInteger)index
+               fromModel:(electron::ElectronMenuModel*)model {
   std::u16string label16 = model->GetLabelAt(index);
   NSString* label = l10n_util::FixUpWindowsStyleLabel(label16);
 
@@ -392,11 +390,31 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
     ui::Accelerator accelerator;
     if (model->GetAcceleratorAtWithParams(index, useDefaultAccelerator_,
                                           &accelerator)) {
-      NSString* key_equivalent;
-      NSUInteger modifier_mask;
-      GetKeyEquivalentAndModifierMaskFromAccelerator(
-          accelerator, &key_equivalent, &modifier_mask);
-      [item setKeyEquivalent:key_equivalent];
+      // Note that we are not using Chromium's
+      // GetKeyEquivalentAndModifierMaskFromAccelerator API,
+      // because it will convert Shift+Character to ShiftedCharacter, for
+      // example Shift+/ would be converted to ?, which is against macOS HIG.
+      // See also https://github.com/electron/electron/issues/21790.
+      NSUInteger modifier_mask = 0;
+      if (accelerator.IsCtrlDown())
+        modifier_mask |= NSEventModifierFlagControl;
+      if (accelerator.IsAltDown())
+        modifier_mask |= NSEventModifierFlagOption;
+      if (accelerator.IsCmdDown())
+        modifier_mask |= NSEventModifierFlagCommand;
+      unichar character;
+      if (accelerator.shifted_char) {
+        // When a shifted char is explicitly specified, for example Ctrl+Plus,
+        // use the shifted char directly.
+        character = static_cast<unichar>(*accelerator.shifted_char);
+      } else {
+        // Otherwise use the unshifted combinations, for example Ctrl+Shift+=.
+        if (accelerator.IsShiftDown())
+          modifier_mask |= NSEventModifierFlagShift;
+        ui::MacKeyCodeForWindowsKeyCode(accelerator.key_code(), modifier_mask,
+                                        nullptr, &character);
+      }
+      [item setKeyEquivalent:[NSString stringWithFormat:@"%C", character]];
       [item setKeyEquivalentModifierMask:modifier_mask];
     }
 
@@ -417,7 +435,17 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
       }
     }
   }
-  [menu insertItem:item atIndex:index];
+
+  return item;
+}
+
+// Adds an item or a hierarchical menu to the item at the |index|,
+// associated with the entry in the model identified by |modelIndex|.
+- (void)addItemToMenu:(NSMenu*)menu
+              atIndex:(NSInteger)index
+            fromModel:(electron::ElectronMenuModel*)model {
+  [menu insertItem:[self makeMenuItemForIndex:index fromModel:model]
+           atIndex:index];
 }
 
 // Called before the menu is to be displayed to update the state (enabled,

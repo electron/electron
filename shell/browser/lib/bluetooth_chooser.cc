@@ -60,6 +60,7 @@ void BluetoothChooser::SetAdapterPresence(AdapterPresence presence) {
       event_handler_.Run(content::BluetoothChooserEvent::CANCELLED, "");
       break;
     case AdapterPresence::POWERED_ON:
+      rescan_ = true;
       break;
   }
 }
@@ -92,7 +93,7 @@ void BluetoothChooser::ShowDiscoveryState(DiscoveryState state) {
     case DiscoveryState::DISCOVERING:
       // The first time this state fires is due to a rescan triggering so set a
       // flag to ignore devices
-      if (!refreshing_) {
+      if (rescan_ && !refreshing_) {
         refreshing_ = true;
       } else {
         // The second time this state fires we are now safe to pick a device

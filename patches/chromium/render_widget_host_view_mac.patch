@@ -10,7 +10,7 @@ kinds of utility windows. Similarly for `disableAutoHideCursor`.
 Additionally, disables usage of some private APIs in MAS builds.
 
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index c17242f7d07f74c1a91d0ef44665a3cfb29b4e40..2b30bd1094e494d1f6eef5a57dc23e9ac6525634 100644
+index 63b3ff0534dc8d83c2c1d2c6f07325092a7a4176..85c5853336505eb41bc16c281f79408818d026fc 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -153,6 +153,15 @@ void ExtractUnderlines(NSAttributedString* string,
@@ -29,7 +29,7 @@ index c17242f7d07f74c1a91d0ef44665a3cfb29b4e40..2b30bd1094e494d1f6eef5a57dc23e9a
  // These are not documented, so use only after checking -respondsToSelector:.
  @interface NSApplication (UndocumentedSpeechMethods)
  - (void)speakString:(NSString*)string;
-@@ -575,6 +584,9 @@ - (BOOL)acceptsMouseEventsWhenInactive {
+@@ -573,6 +582,9 @@ - (BOOL)acceptsMouseEventsWhenInactive {
  }
  
  - (BOOL)acceptsFirstMouse:(NSEvent*)theEvent {
@@ -39,7 +39,7 @@ index c17242f7d07f74c1a91d0ef44665a3cfb29b4e40..2b30bd1094e494d1f6eef5a57dc23e9a
    return [self acceptsMouseEventsWhenInactive];
  }
  
-@@ -650,6 +662,10 @@ - (BOOL)shouldIgnoreMouseEvent:(NSEvent*)theEvent {
+@@ -649,6 +661,10 @@ - (BOOL)shouldIgnoreMouseEvent:(NSEvent*)theEvent {
    // its parent view.
    BOOL hitSelf = NO;
    while (view) {
@@ -50,7 +50,7 @@ index c17242f7d07f74c1a91d0ef44665a3cfb29b4e40..2b30bd1094e494d1f6eef5a57dc23e9a
      if (view == self)
        hitSelf = YES;
      if ([view isKindOfClass:[self class]] && ![view isEqual:self] &&
-@@ -998,6 +1014,10 @@ - (void)keyEvent:(NSEvent*)theEvent wasKeyEquivalent:(BOOL)equiv {
+@@ -969,6 +985,10 @@ - (void)keyEvent:(NSEvent*)theEvent wasKeyEquivalent:(BOOL)equiv {
                                eventType == NSKeyDown &&
                                !(modifierFlags & NSCommandKeyMask);
  
@@ -61,7 +61,7 @@ index c17242f7d07f74c1a91d0ef44665a3cfb29b4e40..2b30bd1094e494d1f6eef5a57dc23e9a
    // We only handle key down events and just simply forward other events.
    if (eventType != NSKeyDown) {
      _hostHelper->ForwardKeyboardEvent(event, latency_info);
-@@ -1726,9 +1746,11 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -1707,9 +1727,11 @@ - (NSAccessibilityRole)accessibilityRole {
  // Since this implementation doesn't have to wait any IPC calls, this doesn't
  // make any key-typing jank. --hbono 7/23/09
  //
@@ -73,7 +73,7 @@ index c17242f7d07f74c1a91d0ef44665a3cfb29b4e40..2b30bd1094e494d1f6eef5a57dc23e9a
  
  - (NSArray*)validAttributesForMarkedText {
    // This code is just copied from WebKit except renaming variables.
-@@ -1737,7 +1759,10 @@ - (NSArray*)validAttributesForMarkedText {
+@@ -1718,7 +1740,10 @@ - (NSArray*)validAttributesForMarkedText {
          initWithObjects:NSUnderlineStyleAttributeName,
                          NSUnderlineColorAttributeName,
                          NSMarkedClauseSegmentAttributeName,

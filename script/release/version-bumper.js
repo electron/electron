@@ -1,17 +1,17 @@
 #!/usr/bin/env node
 
 const { GitProcess } = require('dugite');
-const fs = require('fs');
+const { promises: fs } = require('fs');
 const semver = require('semver');
 const path = require('path');
-const { promisify } = require('util');
 const minimist = require('minimist');
 
 const { ELECTRON_DIR } = require('../lib/utils');
 const versionUtils = require('./version-utils');
+const supported = path.resolve(ELECTRON_DIR, 'docs', 'tutorial', 'support.md');
 
-const writeFile = promisify(fs.writeFile);
-const readFile = promisify(fs.readFile);
+const writeFile = fs.writeFile;
+const readFile = fs.readFile;
 
 function parseCommandLine () {
   let help;
@@ -54,6 +54,10 @@ async function main () {
     return 0;
   }
 
+  if (shouldUpdateSupported(opts.bump, currentVersion, version)) {
+    await updateSupported(version, supported);
+  }
+
   // update all version-related files
   await Promise.all([
     updateVersion(version),
@@ -67,12 +71,19 @@ async function main () {
   console.log(`Bumped to version: ${version}`);
 }
 
-// get next version for release based on [nightly, beta, stable]
+// get next version for release based on [nightly, alpha, beta, stable]
 async function nextVersion (bumpType, version) {
-  if (versionUtils.isNightly(version) || versionUtils.isBeta(version)) {
+  if (
+    versionUtils.isNightly(version) ||
+    versionUtils.isAlpha(version) ||
+    versionUtils.isBeta(version)
+  ) {
     switch (bumpType) {
       case 'nightly':
         version = await versionUtils.nextNightly(version);
+        break;
+      case 'alpha':
+        version = await versionUtils.nextAlpha(version);
         break;
       case 'beta':
         version = await versionUtils.nextBeta(version);
@@ -88,6 +99,8 @@ async function nextVersion (bumpType, version) {
       case 'nightly':
         version = versionUtils.nextNightly(version);
         break;
+      case 'alpha':
+        throw new Error('Cannot bump to alpha from stable.');
       case 'beta':
         throw new Error('Cannot bump to beta from stable.');
       case 'minor':
@@ -103,6 +116,22 @@ async function nextVersion (bumpType, version) {
     throw new Error(`Invalid current version: ${version}`);
   }
   return version;
+}
+
+function shouldUpdateSupported (bump, current, version) {
+  return isMajorStable(bump, current) || isMajorNightly(version, current);
+}
+
+function isMajorStable (bump, currentVersion) {
+  if (versionUtils.isBeta(currentVersion) && (bump === 'stable')) return true;
+  return false;
+}
+
+function isMajorNightly (version, currentVersion) {
+  const parsed = semver.parse(version);
+  const current = semver.parse(currentVersion);
+  if (versionUtils.isNightly(currentVersion) && (parsed.major > current.major)) return true;
+  return false;
 }
 
 // update VERSION file with latest release info
@@ -142,6 +171,22 @@ async function updateWinRC (components) {
   await writeFile(filePath, arr.join('\n'));
 }
 
+// updates support.md file with new semver values (stable only)
+async function updateSupported (version, filePath) {
+  const v = parseInt(version);
+  const newVersions = [`* ${v}.x.y`, `* ${v - 1}.x.y`, `* ${v - 2}.x.y`, `* ${v - 3}.x.y`];
+  const contents = await readFile(filePath, 'utf8');
+  const previousVersions = contents.split('\n').filter((elem) => {
+    return (/[^\n]*\.x\.y[^\n]*/).test(elem);
+  }, []);
+
+  const newContents = previousVersions.reduce((contents, current, i) => {
+    return contents.replace(current, newVersions[i]);
+  }, contents);
+
+  await writeFile(filePath, newContents, 'utf8');
+}
+
 if (process.mainModule === module) {
   main().catch((error) => {
     console.error(error);
@@ -149,4 +194,4 @@ if (process.mainModule === module) {
   });
 }
 
-module.exports = { nextVersion };
+module.exports = { nextVersion, shouldUpdateSupported, updateSupported };

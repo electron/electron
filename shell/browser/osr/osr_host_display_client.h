@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_OSR_OSR_HOST_DISPLAY_CLIENT_H_
-#define SHELL_BROWSER_OSR_OSR_HOST_DISPLAY_CLIENT_H_
+#ifndef ELECTRON_SHELL_BROWSER_OSR_OSR_HOST_DISPLAY_CLIENT_H_
+#define ELECTRON_SHELL_BROWSER_OSR_OSR_HOST_DISPLAY_CLIENT_H_
 
 #include <memory>
 
@@ -27,6 +27,10 @@ class LayeredWindowUpdater : public viz::mojom::LayeredWindowUpdater {
       OnPaintCallback callback);
   ~LayeredWindowUpdater() override;
 
+  // disable copy
+  LayeredWindowUpdater(const LayeredWindowUpdater&) = delete;
+  LayeredWindowUpdater& operator=(const LayeredWindowUpdater&) = delete;
+
   void SetActive(bool active);
 
   // viz::mojom::LayeredWindowUpdater implementation.
@@ -43,8 +47,6 @@ class LayeredWindowUpdater : public viz::mojom::LayeredWindowUpdater {
 #if !defined(WIN32)
   base::WritableSharedMemoryMapping shm_mapping_;
 #endif
-
-  DISALLOW_COPY_AND_ASSIGN(LayeredWindowUpdater);
 };
 
 class OffScreenHostDisplayClient : public viz::HostDisplayClient {
@@ -52,6 +54,11 @@ class OffScreenHostDisplayClient : public viz::HostDisplayClient {
   explicit OffScreenHostDisplayClient(gfx::AcceleratedWidget widget,
                                       OnPaintCallback callback);
   ~OffScreenHostDisplayClient() override;
+
+  // disable copy
+  OffScreenHostDisplayClient(const OffScreenHostDisplayClient&) = delete;
+  OffScreenHostDisplayClient& operator=(const OffScreenHostDisplayClient&) =
+      delete;
 
   void SetActive(bool active);
 
@@ -72,10 +79,8 @@ class OffScreenHostDisplayClient : public viz::HostDisplayClient {
   std::unique_ptr<LayeredWindowUpdater> layered_window_updater_;
   OnPaintCallback callback_;
   bool active_ = false;
-
-  DISALLOW_COPY_AND_ASSIGN(OffScreenHostDisplayClient);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_OSR_OSR_HOST_DISPLAY_CLIENT_H_
+#endif  // ELECTRON_SHELL_BROWSER_OSR_OSR_HOST_DISPLAY_CLIENT_H_

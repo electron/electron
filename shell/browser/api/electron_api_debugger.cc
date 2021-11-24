@@ -165,7 +165,7 @@ v8::Local<v8::Promise> Debugger::SendCommand(gin::Arguments* args) {
   pending_requests_.emplace(request_id, std::move(promise));
   request.SetInteger("id", request_id);
   request.SetString("method", method);
-  if (!command_params.empty()) {
+  if (!command_params.DictEmpty()) {
     request.Set("params",
                 base::Value::ToUniquePtrValue(command_params.Clone()));
   }

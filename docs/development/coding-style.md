@@ -25,9 +25,8 @@ You can run `npm run lint` to show any style issues detected by `cpplint` and
 ## C++ and Python
 
 For C++ and Python, we follow Chromium's [Coding
-Style](https://www.chromium.org/developers/coding-style). You can use
-[clang-format](clang-format.md) to format the C++ code automatically. There is
-also a script `script/cpplint.py` to check whether all files conform.
+Style](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/styleguide/styleguide.md).
+There is also a script `script/cpplint.py` to check whether all files conform.
 
 The Python version we are using now is Python 2.7.
 

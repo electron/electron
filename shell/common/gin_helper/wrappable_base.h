@@ -2,14 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE.chromium file.
 
-#ifndef SHELL_COMMON_GIN_HELPER_WRAPPABLE_BASE_H_
-#define SHELL_COMMON_GIN_HELPER_WRAPPABLE_BASE_H_
+#ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_WRAPPABLE_BASE_H_
+#define ELECTRON_SHELL_COMMON_GIN_HELPER_WRAPPABLE_BASE_H_
 
 #include "v8/include/v8.h"
 
 namespace gin {
 class Arguments;
-}  // namespace gin
+}
 
 namespace gin_helper {
 
@@ -36,7 +36,7 @@ class WrappableBase {
   WrappableBase& operator=(const WrappableBase&) = delete;
   virtual ~WrappableBase();
 
-  // Retrieve the v8 wrapper object cooresponding to this object.
+  // Retrieve the v8 wrapper object corresponding to this object.
   v8::Local<v8::Object> GetWrapper() const;
   v8::MaybeLocal<v8::Object> GetWrapper(v8::Isolate* isolate) const;
 
@@ -67,4 +67,4 @@ class WrappableBase {
 
 }  // namespace gin_helper
 
-#endif  // SHELL_COMMON_GIN_HELPER_WRAPPABLE_BASE_H_
+#endif  // ELECTRON_SHELL_COMMON_GIN_HELPER_WRAPPABLE_BASE_H_

@@ -7,8 +7,8 @@
 
 namespace electron {
 
-gfx::ImageSkia InspectableWebContentsViewDelegate::GetDevToolsWindowIcon() {
-  return gfx::ImageSkia();
+ui::ImageModel InspectableWebContentsViewDelegate::GetDevToolsWindowIcon() {
+  return {};
 }
 
 }  // namespace electron

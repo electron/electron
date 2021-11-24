@@ -70,6 +70,10 @@ class BundledDataSource : public content::URLDataSource {
   BundledDataSource() = default;
   ~BundledDataSource() override = default;
 
+  // disable copy
+  BundledDataSource(const BundledDataSource&) = delete;
+  BundledDataSource& operator=(const BundledDataSource&) = delete;
+
   // content::URLDataSource implementation.
   std::string GetSource() override { return chrome::kChromeUIDevToolsHost; }
 
@@ -113,9 +117,6 @@ class BundledDataSource : public content::URLDataSource {
            "--debug-devtools.";
     std::move(callback).Run(bytes);
   }
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(BundledDataSource);
 };
 
 }  // namespace

@@ -10,7 +10,8 @@ ElectronExtensionWebContentsObserver::ElectronExtensionWebContentsObserver(
     content::WebContents* web_contents)
     : ExtensionWebContentsObserver(web_contents) {}
 
-ElectronExtensionWebContentsObserver::~ElectronExtensionWebContentsObserver() {}
+ElectronExtensionWebContentsObserver::~ElectronExtensionWebContentsObserver() =
+    default;
 
 void ElectronExtensionWebContentsObserver::CreateForWebContents(
     content::WebContents* web_contents) {
@@ -21,6 +22,6 @@ void ElectronExtensionWebContentsObserver::CreateForWebContents(
   FromWebContents(web_contents)->Initialize();
 }
 
-WEB_CONTENTS_USER_DATA_KEY_IMPL(ElectronExtensionWebContentsObserver)
+WEB_CONTENTS_USER_DATA_KEY_IMPL(ElectronExtensionWebContentsObserver);
 
 }  // namespace extensions

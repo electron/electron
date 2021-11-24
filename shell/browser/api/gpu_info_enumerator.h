@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_GPU_INFO_ENUMERATOR_H_
-#define SHELL_BROWSER_API_GPU_INFO_ENUMERATOR_H_
+#ifndef ELECTRON_SHELL_BROWSER_API_GPU_INFO_ENUMERATOR_H_
+#define ELECTRON_SHELL_BROWSER_API_GPU_INFO_ENUMERATOR_H_
 
 #include <memory>
 #include <stack>
@@ -17,15 +17,15 @@ namespace electron {
 // This class implements the enumerator for reading all the attributes in
 // GPUInfo into a dictionary.
 class GPUInfoEnumerator final : public gpu::GPUInfo::Enumerator {
-  const char* kGPUDeviceKey = "gpuDevice";
-  const char* kVideoDecodeAcceleratorSupportedProfileKey =
+  const char* const kGPUDeviceKey = "gpuDevice";
+  const char* const kVideoDecodeAcceleratorSupportedProfileKey =
       "videoDecodeAcceleratorSupportedProfile";
-  const char* kVideoEncodeAcceleratorSupportedProfileKey =
+  const char* const kVideoEncodeAcceleratorSupportedProfileKey =
       "videoEncodeAcceleratorSupportedProfile";
-  const char* kImageDecodeAcceleratorSupportedProfileKey =
+  const char* const kImageDecodeAcceleratorSupportedProfileKey =
       "imageDecodeAcceleratorSupportedProfile";
-  const char* kAuxAttributesKey = "auxAttributes";
-  const char* kOverlayInfo = "overlayInfo";
+  const char* const kAuxAttributesKey = "auxAttributes";
+  const char* const kOverlayInfo = "overlayInfo";
 
  public:
   GPUInfoEnumerator();
@@ -59,4 +59,4 @@ class GPUInfoEnumerator final : public gpu::GPUInfo::Enumerator {
 };
 
 }  // namespace electron
-#endif  // SHELL_BROWSER_API_GPU_INFO_ENUMERATOR_H_
+#endif  // ELECTRON_SHELL_BROWSER_API_GPU_INFO_ENUMERATOR_H_

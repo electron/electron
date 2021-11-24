@@ -557,31 +557,41 @@ describe('session module', () => {
 
     it('accepts the request when the callback is called with 0', async () => {
       const ses = session.fromPartition(`${Math.random()}`);
-      ses.setCertificateVerifyProc(({ verificationResult, errorCode }, callback) => {
-        expect(['net::ERR_CERT_AUTHORITY_INVALID', 'net::ERR_CERT_COMMON_NAME_INVALID'].includes(verificationResult)).to.be.true();
-        expect([-202, -200].includes(errorCode)).to.be.true();
+      let validate: () => void;
+      ses.setCertificateVerifyProc(({ hostname, verificationResult, errorCode }, callback) => {
+        if (hostname !== '127.0.0.1') return callback(-3);
+        validate = () => {
+          expect(verificationResult).to.be.oneOf(['net::ERR_CERT_AUTHORITY_INVALID', 'net::ERR_CERT_COMMON_NAME_INVALID']);
+          expect(errorCode).to.be.oneOf([-202, -200]);
+        };
         callback(0);
       });
 
       const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
       await w.loadURL(`https://127.0.0.1:${(server.address() as AddressInfo).port}`);
       expect(w.webContents.getTitle()).to.equal('hello');
+      expect(validate!).not.to.be.undefined();
+      validate!();
     });
 
     it('rejects the request when the callback is called with -2', async () => {
       const ses = session.fromPartition(`${Math.random()}`);
-      ses.setCertificateVerifyProc(({ hostname, certificate, verificationResult }, callback) => {
-        expect(hostname).to.equal('127.0.0.1');
-        expect(certificate.issuerName).to.equal('Intermediate CA');
-        expect(certificate.subjectName).to.equal('localhost');
-        expect(certificate.issuer.commonName).to.equal('Intermediate CA');
-        expect(certificate.subject.commonName).to.equal('localhost');
-        expect(certificate.issuerCert.issuer.commonName).to.equal('Root CA');
-        expect(certificate.issuerCert.subject.commonName).to.equal('Intermediate CA');
-        expect(certificate.issuerCert.issuerCert.issuer.commonName).to.equal('Root CA');
-        expect(certificate.issuerCert.issuerCert.subject.commonName).to.equal('Root CA');
-        expect(certificate.issuerCert.issuerCert.issuerCert).to.equal(undefined);
-        expect(['net::ERR_CERT_AUTHORITY_INVALID', 'net::ERR_CERT_COMMON_NAME_INVALID'].includes(verificationResult)).to.be.true();
+      let validate: () => void;
+      ses.setCertificateVerifyProc(({ hostname, certificate, verificationResult, isIssuedByKnownRoot }, callback) => {
+        if (hostname !== '127.0.0.1') return callback(-3);
+        validate = () => {
+          expect(certificate.issuerName).to.equal('Intermediate CA');
+          expect(certificate.subjectName).to.equal('localhost');
+          expect(certificate.issuer.commonName).to.equal('Intermediate CA');
+          expect(certificate.subject.commonName).to.equal('localhost');
+          expect(certificate.issuerCert.issuer.commonName).to.equal('Root CA');
+          expect(certificate.issuerCert.subject.commonName).to.equal('Intermediate CA');
+          expect(certificate.issuerCert.issuerCert.issuer.commonName).to.equal('Root CA');
+          expect(certificate.issuerCert.issuerCert.subject.commonName).to.equal('Root CA');
+          expect(certificate.issuerCert.issuerCert.issuerCert).to.equal(undefined);
+          expect(verificationResult).to.be.oneOf(['net::ERR_CERT_AUTHORITY_INVALID', 'net::ERR_CERT_COMMON_NAME_INVALID']);
+          expect(isIssuedByKnownRoot).to.be.false();
+        };
         callback(-2);
       });
 
@@ -589,12 +599,15 @@ describe('session module', () => {
       const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
       await expect(w.loadURL(url)).to.eventually.be.rejectedWith(/ERR_FAILED/);
       expect(w.webContents.getTitle()).to.equal(url);
+      expect(validate!).not.to.be.undefined();
+      validate!();
     });
 
     it('saves cached results', async () => {
       const ses = session.fromPartition(`${Math.random()}`);
       let numVerificationRequests = 0;
       ses.setCertificateVerifyProc((e, callback) => {
+        if (e.hostname !== '127.0.0.1') return callback(-3);
         numVerificationRequests++;
         callback(-2);
       });

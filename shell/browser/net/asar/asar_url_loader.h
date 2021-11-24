@@ -2,10 +2,11 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_NET_ASAR_ASAR_URL_LOADER_H_
-#define SHELL_BROWSER_NET_ASAR_ASAR_URL_LOADER_H_
+#ifndef ELECTRON_SHELL_BROWSER_NET_ASAR_ASAR_URL_LOADER_H_
+#define ELECTRON_SHELL_BROWSER_NET_ASAR_ASAR_URL_LOADER_H_
 
 #include "mojo/public/cpp/bindings/pending_remote.h"
+#include "services/network/public/cpp/resource_request.h"
 #include "services/network/public/mojom/url_loader.mojom.h"
 
 namespace asar {
@@ -18,4 +19,4 @@ void CreateAsarURLLoader(
 
 }  // namespace asar
 
-#endif  // SHELL_BROWSER_NET_ASAR_ASAR_URL_LOADER_H_
+#endif  // ELECTRON_SHELL_BROWSER_NET_ASAR_ASAR_URL_LOADER_H_

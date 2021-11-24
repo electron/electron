@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from collections import OrderedDict
 import json
 import os
 import sys
@@ -49,8 +50,8 @@ const volatile char kFuseWire[] = { /* sentinel */ {sentinel}, /* fuse_version *
 }
 """
 
-with open(os.path.join(dir_path, "fuses.json"), 'r') as f:
-  fuse_defaults = json.load(f)
+with open(os.path.join(dir_path, "fuses.json5"), 'r') as f:
+  fuse_defaults = json.loads(''.join(line for line in f.readlines() if not line.strip()[0] == "/"), object_pairs_hook=OrderedDict)
 
 fuse_version = fuse_defaults['_version']
 del fuse_defaults['_version']

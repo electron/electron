@@ -6,43 +6,62 @@
 
 #include <map>
 #include <string>
+#include <utility>
 
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/lazy_instance.h"
+#include "base/logging.h"
+#include "base/no_destructor.h"
 #include "base/stl_util.h"
+#include "base/strings/string_number_conversions.h"
+#include "base/strings/string_util.h"
+#include "base/synchronization/lock.h"
 #include "base/threading/thread_local.h"
 #include "base/threading/thread_restrictions.h"
+#include "crypto/secure_hash.h"
+#include "crypto/sha2.h"
 #include "shell/common/asar/archive.h"
 
 namespace asar {
 
 namespace {
 
-// The global instance of ArchiveMap, will be destroyed on exit.
 typedef std::map<base::FilePath, std::shared_ptr<Archive>> ArchiveMap;
-base::LazyInstance<base::ThreadLocalPointer<ArchiveMap>>::Leaky
-    g_archive_map_tls = LAZY_INSTANCE_INITIALIZER;
 
 const base::FilePath::CharType kAsarExtension[] = FILE_PATH_LITERAL(".asar");
 
-std::map<base::FilePath, bool> g_is_directory_cache;
-
 bool IsDirectoryCached(const base::FilePath& path) {
-  auto it = g_is_directory_cache.find(path);
-  if (it != g_is_directory_cache.end()) {
+  static base::NoDestructor<std::map<base::FilePath, bool>>
+      s_is_directory_cache;
+  static base::NoDestructor<base::Lock> lock;
+
+  base::AutoLock auto_lock(*lock);
+  auto& is_directory_cache = *s_is_directory_cache;
+
+  auto it = is_directory_cache.find(path);
+  if (it != is_directory_cache.end()) {
     return it->second;
   }
   base::ThreadRestrictions::ScopedAllowIO allow_io;
-  return g_is_directory_cache[path] = base::DirectoryExists(path);
+  return is_directory_cache[path] = base::DirectoryExists(path);
 }
 
 }  // namespace
 
+ArchiveMap& GetArchiveCache() {
+  static base::NoDestructor<ArchiveMap> s_archive_map;
+  return *s_archive_map;
+}
+
+base::Lock& GetArchiveCacheLock() {
+  static base::NoDestructor<base::Lock> lock;
+  return *lock;
+}
+
 std::shared_ptr<Archive> GetOrCreateAsarArchive(const base::FilePath& path) {
-  if (!g_archive_map_tls.Pointer()->Get())
-    g_archive_map_tls.Pointer()->Set(new ArchiveMap);
-  ArchiveMap& map = *g_archive_map_tls.Pointer()->Get();
+  base::AutoLock auto_lock(GetArchiveCacheLock());
+  ArchiveMap& map = GetArchiveCache();
 
   // if we have it, return it
   const auto lower = map.lower_bound(path);
@@ -61,8 +80,10 @@ std::shared_ptr<Archive> GetOrCreateAsarArchive(const base::FilePath& path) {
 }
 
 void ClearArchives() {
-  if (g_archive_map_tls.Pointer()->Get())
-    delete g_archive_map_tls.Pointer()->Get();
+  base::AutoLock auto_lock(GetArchiveCacheLock());
+  ArchiveMap& map = GetArchiveCache();
+
+  map.clear();
 }
 
 bool GetAsarArchivePath(const base::FilePath& full_path,
@@ -114,9 +135,38 @@ bool ReadFileToString(const base::FilePath& path, std::string* contents) {
     return false;
 
   contents->resize(info.size);
-  return static_cast<int>(info.size) ==
-         src.Read(info.offset, const_cast<char*>(contents->data()),
-                  contents->size());
+  if (static_cast<int>(info.size) !=
+      src.Read(info.offset, const_cast<char*>(contents->data()),
+               contents->size())) {
+    return false;
+  }
+
+  if (info.integrity.has_value()) {
+    ValidateIntegrityOrDie(contents->data(), contents->size(),
+                           info.integrity.value());
+  }
+
+  return true;
+}
+
+void ValidateIntegrityOrDie(const char* data,
+                            size_t size,
+                            const IntegrityPayload& integrity) {
+  if (integrity.algorithm == HashAlgorithm::SHA256) {
+    uint8_t hash[crypto::kSHA256Length];
+    auto hasher = crypto::SecureHash::Create(crypto::SecureHash::SHA256);
+    hasher->Update(data, size);
+    hasher->Finish(hash, sizeof(hash));
+    const std::string hex_hash =
+        base::ToLowerASCII(base::HexEncode(hash, sizeof(hash)));
+
+    if (integrity.hash != hex_hash) {
+      LOG(FATAL) << "Integrity check failed for asar archive ("
+                 << integrity.hash << " vs " << hex_hash << ")";
+    }
+  } else {
+    LOG(FATAL) << "Unsupported hashing algorithm in ValidateIntegrityOrDie";
+  }
 }
 
 }  // namespace asar

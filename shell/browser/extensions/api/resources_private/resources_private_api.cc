@@ -64,12 +64,6 @@ void AddStringsForPdf(base::DictionaryValue* dict) {
 
 void AddAdditionalDataForPdf(base::DictionaryValue* dict) {
 #if BUILDFLAG(ENABLE_PDF)
-  dict->SetKey("documentPropertiesEnabled",
-               base::Value(base::FeatureList::IsEnabled(
-                   chrome_pdf::features::kPdfViewerDocumentProperties)));
-  dict->SetKey("presentationModeEnabled",
-               base::Value(base::FeatureList::IsEnabled(
-                   chrome_pdf::features::kPdfViewerPresentationMode)));
   dict->SetKey("pdfAnnotationsEnabled", base::Value(false));
   dict->SetKey("printingEnabled", base::Value(true));
 #endif  // BUILDFLAG(ENABLE_PDF)
@@ -79,13 +73,15 @@ void AddAdditionalDataForPdf(base::DictionaryValue* dict) {
 
 namespace get_strings = api::resources_private::GetStrings;
 
-ResourcesPrivateGetStringsFunction::ResourcesPrivateGetStringsFunction() {}
+ResourcesPrivateGetStringsFunction::ResourcesPrivateGetStringsFunction() =
+    default;
 
-ResourcesPrivateGetStringsFunction::~ResourcesPrivateGetStringsFunction() {}
+ResourcesPrivateGetStringsFunction::~ResourcesPrivateGetStringsFunction() =
+    default;
 
 ExtensionFunction::ResponseAction ResourcesPrivateGetStringsFunction::Run() {
   std::unique_ptr<get_strings::Params> params(
-      get_strings::Params::Create(*args_));
+      get_strings::Params::Create(args()));
   auto dict = std::make_unique<base::DictionaryValue>();
 
   api::resources_private::Component component = params->component;

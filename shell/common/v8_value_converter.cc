@@ -112,6 +112,10 @@ class V8ValueConverter::ScopedUniquenessGuard {
     }
   }
 
+  // disable copy
+  ScopedUniquenessGuard(const ScopedUniquenessGuard&) = delete;
+  ScopedUniquenessGuard& operator=(const ScopedUniquenessGuard&) = delete;
+
   bool is_valid() const { return is_valid_; }
 
  private:
@@ -119,8 +123,6 @@ class V8ValueConverter::ScopedUniquenessGuard {
   V8ValueConverter::FromV8ValueState* state_;
   v8::Local<v8::Object> value_;
   bool is_valid_;
-
-  DISALLOW_COPY_AND_ASSIGN(ScopedUniquenessGuard);
 };
 
 V8ValueConverter::V8ValueConverter() = default;
@@ -202,10 +204,10 @@ v8::Local<v8::Value> V8ValueConverter::ToV8ValueImpl(
 v8::Local<v8::Value> V8ValueConverter::ToV8Array(
     v8::Isolate* isolate,
     const base::ListValue* val) const {
-  v8::Local<v8::Array> result(v8::Array::New(isolate, val->GetSize()));
+  v8::Local<v8::Array> result(v8::Array::New(isolate, val->GetList().size()));
   auto context = isolate->GetCurrentContext();
 
-  for (size_t i = 0; i < val->GetSize(); ++i) {
+  for (size_t i = 0; i < val->GetList().size(); ++i) {
     const base::Value* child = nullptr;
     val->Get(i, &child);
 
@@ -282,7 +284,7 @@ v8::Local<v8::Value> V8ValueConverter::ToArrayBuffer(
   }
 
   v8::Local<v8::Value> args[] = {array_buffer};
-  auto func = v8::Local<v8::Function>::Cast(from_value);
+  auto func = from_value.As<v8::Function>();
   auto result = func->Call(context, v8::Null(isolate), 1, args);
   if (!result.IsEmpty()) {
     return result.ToLocalChecked();
@@ -391,7 +393,7 @@ std::unique_ptr<base::Value> V8ValueConverter::FromV8Array(
       val->CreationContext() != isolate->GetCurrentContext())
     scope = std::make_unique<v8::Context::Scope>(val->CreationContext());
 
-  std::unique_ptr<base::ListValue> result(new base::ListValue());
+  auto result = std::make_unique<base::ListValue>();
 
   // Only fields with integer keys are carried over to the ListValue.
   for (uint32_t i = 0; i < val->Length(); ++i) {

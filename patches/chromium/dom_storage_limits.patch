@@ -32,7 +32,7 @@ index 3fd108c89c3b070a08790850db4dfd6cc8a3ce44..c393f51709efd8b28b07edfe452d2b84
  
  }  // namespace storage
 diff --git a/third_party/blink/public/mojom/dom_storage/storage_area.mojom b/third_party/blink/public/mojom/dom_storage/storage_area.mojom
-index c9f9124eb6f4900988ad63fa38a03b7b6c5d1abb..9cba4e5af9a624d358697d806f151ee3998f0b58 100644
+index adbb73ef9c5a5a59fd0bfe0137d0dc9219d376e9..7e1e10faba4263d8ec1afefdebb3202da1944d34 100644
 --- a/third_party/blink/public/mojom/dom_storage/storage_area.mojom
 +++ b/third_party/blink/public/mojom/dom_storage/storage_area.mojom
 @@ -50,7 +50,8 @@ struct KeyValue {

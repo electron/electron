@@ -25,7 +25,43 @@ async function main () {
     npm_config_arch: process.env.NPM_CONFIG_ARCH,
     npm_config_yes: 'true'
   });
-  const { status: buildStatus } = cp.spawnSync(NPX_CMD, ['node-gyp', 'rebuild', '--directory', 'test', '-j', 'max'], {
+
+  const clangDir = path.resolve(BASE, 'third_party', 'llvm-build', 'Release+Asserts', 'bin');
+  const cc = path.resolve(clangDir, 'clang');
+  const cxx = path.resolve(clangDir, 'clang++');
+  const ld = path.resolve(clangDir, 'lld');
+
+  // TODO(ckerr) this is cribbed from read obj/electron/electron_app.ninja.
+  // Maybe it would be better to have this script literally open up that
+  // file and pull cflags_cc from it instead of using bespoke code here?
+  // I think it's unlikely to work; but if it does, it would be more futureproof
+  const cxxflags = [
+    '-std=c++14',
+    '-nostdinc++',
+    `-isystem"${path.resolve(BASE, 'buildtools', 'third_party', 'libc++')}"`,
+    `-isystem"${path.resolve(BASE, 'buildtools', 'third_party', 'libc++', 'trunk', 'include')}"`,
+    `-isystem"${path.resolve(BASE, 'buildtools', 'third_party', 'libc++abi', 'trunk', 'include')}"`,
+    '-fPIC'
+  ].join(' ');
+
+  const ldflags = [
+    '-stdlib=libc++',
+    '-fuse-ld=lld',
+    `-L"${path.resolve(BASE, 'out', `${utils.getOutDir({ shouldLog: true })}`, 'obj', 'buildtools', 'third_party', 'libc++abi')}"`,
+    `-L"${path.resolve(BASE, 'out', `${utils.getOutDir({ shouldLog: true })}`, 'obj', 'buildtools', 'third_party', 'libc++')}"`,
+    '-lc++abi'
+  ].join(' ');
+
+  if (process.platform !== 'win32') {
+    env.CC = cc;
+    env.CFLAGS = cxxflags;
+    env.CXX = cxx;
+    env.LD = ld;
+    env.CXXFLAGS = cxxflags;
+    env.LDFLAGS = ldflags;
+  }
+
+  const { status: buildStatus } = cp.spawnSync(NPX_CMD, ['node-gyp', 'rebuild', '--verbose', '--directory', 'test', '-j', 'max'], {
     env,
     cwd: NAN_DIR,
     stdio: 'inherit'
@@ -48,8 +84,7 @@ async function main () {
   const onlyTests = args.only && args.only.split(',');
 
   const DISABLED_TESTS = [
-    'nannew-test.js',
-    'typedarrays-test.js' // TODO(nornagon): https://github.com/electron/electron/issues/28414
+    'nannew-test.js'
   ];
   const testsToRun = fs.readdirSync(path.resolve(NAN_DIR, 'test', 'js'))
     .filter(test => !DISABLED_TESTS.includes(test))

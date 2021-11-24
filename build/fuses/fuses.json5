@@ -1,0 +1,11 @@
+{
+  "_comment": "Modifying the fuse schema in any breaking way should result in the _version prop being incremented.  NEVER remove a fuse or change its meaning, instead mark it as removed with 'r'",
+  "_schema": "0 == off, 1 == on, r == removed fuse",
+  "_version": 1,
+  "run_as_node": "1",
+  "cookie_encryption": "0",
+  "node_options": "1",
+  "node_cli_inspect": "1",
+  "embedded_asar_integrity_validation": "0",
+  "only_load_app_from_asar": "0"
+}

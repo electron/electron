@@ -1,0 +1,24 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <samuel.r.attard@gmail.com>
+Date: Tue, 11 May 2021 20:41:00 -0700
+Subject: make include of stack_trace.h unconditional
+
+This conditional include throws goma for a loop for no real reason.
+While we work on either upstreaming this or fixing the underlying goma
+issue this makes our builds 33% faster during local testing (11m vs 18m).
+
+diff --git a/base/sequence_checker.h b/base/sequence_checker.h
+index 50a548a759c2dc6d79978741a0c803500d53a9f8..cd5049e8bf59c51b890bcc332f9a1c5f0ec339c9 100644
+--- a/base/sequence_checker.h
++++ b/base/sequence_checker.h
+@@ -10,9 +10,8 @@
+ #include "base/strings/string_piece.h"
+ #include "build/build_config.h"
+ 
+-#if DCHECK_IS_ON()
+ #include "base/debug/stack_trace.h"
+-#endif
++
+ 
+ // SequenceChecker is a helper class used to help verify that some methods of a
+ // class are called sequentially (for thread-safety). It supports thread safety

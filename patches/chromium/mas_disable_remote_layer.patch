@@ -1,9 +1,8 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Cheng Zhao <zcbenz@gmail.com>
 Date: Thu, 20 Sep 2018 17:48:49 -0700
-Subject: mas_disable_remote_layer.patch
-
-Disable remote layer APIs (CAContext and CALayerHost) for MAS build.
+Subject: mas: disable remote layer APIs (CAContext and CALayerHost) for MAS
+ build
 
 Accordin to ccameron:
 
@@ -17,7 +16,7 @@ cases where performance improves when disabling remote CoreAnimation (remote
 CoreAnimation is really only about battery usage).
 
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.h b/gpu/ipc/service/image_transport_surface_overlay_mac.h
-index d565d2ab23d7a42e6787b58103fd40a8675b8e28..4cb9681c1f810a0cbd7f7ef04c4a7c73ca10c2b0 100644
+index c384f18ec959303bd3671c570af87b604d20cf23..f420bd94951f5a2b03d20e5892a4039271ed2078 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.h
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.h
 @@ -20,7 +20,9 @@
@@ -30,7 +29,7 @@ index d565d2ab23d7a42e6787b58103fd40a8675b8e28..4cb9681c1f810a0cbd7f7ef04c4a7c73
  @class CALayer;
  
  namespace ui {
-@@ -116,7 +118,9 @@ class ImageTransportSurfaceOverlayMacBase : public BaseClass,
+@@ -113,7 +115,9 @@ class ImageTransportSurfaceOverlayMacBase : public BaseClass,
    base::WeakPtr<ImageTransportSurfaceDelegate> delegate_;
  
    bool use_remote_layer_api_;
@@ -41,7 +40,7 @@ index d565d2ab23d7a42e6787b58103fd40a8675b8e28..4cb9681c1f810a0cbd7f7ef04c4a7c73
  
    gfx::Size pixel_size_;
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.mm b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-index 26c5873ab995a7ff354532d1952c33b758131c90..6e1d1bbf146c0b1c344646207ffb09de2e6e9b0d 100644
+index 79a357037df22c78d31ace77ee8cf6291818ecee..3c7d5add7e4f4372708a1b2f7bf31f7b0a4aa0af 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 @@ -53,7 +53,7 @@

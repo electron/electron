@@ -1,0 +1,12 @@
+<body>
+  <div id="div">
+    WebView
+  </div>
+  <script type="text/javascript" charset="utf-8">
+    const {ipcRenderer} = require('electron')
+    ipcRenderer.send('webview-ready')
+    document.addEventListener('fullscreenchange', () => {
+      ipcRenderer.send('webview-fullscreenchange')
+    })
+  </script>
+</body>

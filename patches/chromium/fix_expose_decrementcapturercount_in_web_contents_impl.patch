@@ -1,6 +1,6 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
-From: Shelley Vohr <shelley.vohr@gmail.com>
-Date: Fri, 9 Apr 2021 19:30:01 +0200
+From: deepak1556 <hop2deep@gmail.com>
+Date: Fri, 3 Sep 2021 18:28:51 -0700
 Subject: fix: expose DecrementCapturerCount in web_contents_impl
 
 This was made private in https://chromium-review.googlesource.com/c/chromium/src/+/2807829 but
@@ -8,31 +8,30 @@ we invoke it in order to expose contents.decrementCapturerCount([stayHidden, sta
 to users. We should try to upstream this.
 
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index e66c762b5093e7154920b7df8638733bd146f535..46cc6cfd3c5b9ca14321bdf4c94a7126edec6eb5 100644
+index 350de81e2622a8bc1bce8d9ef958590e0dd8f866..71423089904b59c82ab510ccbf5a4553a990304e 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -1736,9 +1736,11 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
-   // shown in the address bar), as opposed to one in for example a Prerender.
-   bool IsPrimaryFrameTree(const FrameTree& frame_tree) const;
- 
-+ public:
-   // Called when the base::ScopedClosureRunner returned by
+@@ -1814,7 +1814,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
    // IncrementCapturerCount() is destructed.
--  void DecrementCapturerCount(bool stay_hidden, bool stay_awake);
-+  void DecrementCapturerCount(bool stay_hidden, bool stay_awake) override;
-+ private:
+   void DecrementCapturerCount(bool stay_hidden,
+                               bool stay_awake,
+-                              bool is_activity = true);
++                              bool is_activity = true) override;
  
    // Calculates the PageVisibilityState for |visibility|, taking the capturing
    // state into account.
 diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
-index 4a80cbc4c290a21a8b2a5e5c570f97258d97a95c..d1cc03ac29cb3a1cf0ea2ac52a1d850fe821de43 100644
+index f7db5d52cc773dff4913d67f10af3e0ec7d98bee..6a59e9ba14dcf2fb8626b3b447cd92e865730978 100644
 --- a/content/public/browser/web_contents.h
 +++ b/content/public/browser/web_contents.h
-@@ -563,6 +563,7 @@ class WebContents : public PageNavigator,
-       const gfx::Size& capture_size,
-       bool stay_hidden,
-       bool stay_awake) WARN_UNUSED_RESULT = 0;
-+  virtual void DecrementCapturerCount(bool stay_hidden, bool stay_awake) = 0;
+@@ -667,6 +667,10 @@ class WebContents : public PageNavigator,
+       bool stay_awake,
+       bool is_activity = true) WARN_UNUSED_RESULT = 0;
  
-   // Returns true if audio/screenshot/video is being captured by the embedder,
-   // as indicated by calls to IncrementCapturerCount().
++  virtual void DecrementCapturerCount(bool stay_hidden,
++                                      bool stay_awake,
++                                      bool is_activity = true) = 0;
++
+   // Getter for the capture handle, which allows a captured application to
+   // opt-in to exposing information to its capturer(s).
+   virtual const blink::mojom::CaptureHandleConfig& GetCaptureHandleConfig() = 0;

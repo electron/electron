@@ -19,11 +19,14 @@
 #include "base/run_loop.h"
 #include "base/strings/string_split.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/task/single_thread_task_runner.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/trace_event/trace_event.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/common/content_paths.h"
 #include "electron/buildflags/buildflags.h"
+#include "electron/fuses.h"
+#include "shell/browser/api/electron_api_app.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/electron_command_line.h"
 #include "shell/common/gin_converters/file_path_converter.h"
@@ -57,6 +60,7 @@
   V(electron_browser_power_save_blocker) \
   V(electron_browser_protocol)           \
   V(electron_browser_printing)           \
+  V(electron_browser_safe_storage)       \
   V(electron_browser_session)            \
   V(electron_browser_system_preferences) \
   V(electron_browser_base_window)        \
@@ -87,6 +91,8 @@
 
 #define ELECTRON_DESKTOP_CAPTURER_MODULE(V) V(electron_browser_desktop_capturer)
 
+#define ELECTRON_TESTING_MODULE(V) V(electron_common_testing)
+
 // This is used to load built-in modules. Instead of using
 // __attribute__((constructor)), we call the _register_<modname>
 // function for each built-in modules explicitly. This is only
@@ -99,6 +105,9 @@ ELECTRON_VIEWS_MODULES(V)
 #endif
 #if BUILDFLAG(ENABLE_DESKTOP_CAPTURER)
 ELECTRON_DESKTOP_CAPTURER_MODULE(V)
+#endif
+#if DCHECK_IS_ON()
+ELECTRON_TESTING_MODULE(V)
 #endif
 #undef V
 
@@ -129,19 +138,6 @@ void stop_and_close_uv_loop(uv_loop_t* loop) {
 }
 
 bool g_is_initialized = false;
-
-bool IsPackagedApp() {
-  base::FilePath exe_path;
-  base::PathService::Get(base::FILE_EXE, &exe_path);
-  base::FilePath::StringType base_name =
-      base::ToLowerASCII(exe_path.BaseName().value());
-
-#if defined(OS_WIN)
-  return base_name != FILE_PATH_LITERAL("electron.exe");
-#else
-  return base_name != FILE_PATH_LITERAL("electron");
-#endif
-}
 
 void V8FatalErrorCallback(const char* location, const char* message) {
   LOG(ERROR) << "Fatal error in V8: " << location << " " << message;
@@ -174,6 +170,8 @@ bool AllowWasmCodeGenerationCallback(v8::Local<v8::Context> context,
 void ErrorMessageListener(v8::Local<v8::Message> message,
                           v8::Local<v8::Value> data) {
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  gin_helper::MicrotasksScope microtasks_scope(
+      isolate, v8::MicrotasksScope::kDoNotRunMicrotasks);
   node::Environment* env = node::Environment::GetCurrent(isolate);
 
   if (env) {
@@ -192,16 +190,26 @@ void ErrorMessageListener(v8::Local<v8::Message> message,
   }
 }
 
+const std::unordered_set<base::StringPiece, base::StringPieceHash>
+GetAllowedDebugOptions() {
+  if (electron::fuses::IsNodeCliInspectEnabled()) {
+    // Only allow DebugOptions in non-ELECTRON_RUN_AS_NODE mode
+    return {
+        "--inspect",          "--inspect-brk",
+        "--inspect-port",     "--debug",
+        "--debug-brk",        "--debug-port",
+        "--inspect-brk-node", "--inspect-publish-uid",
+    };
+  }
+  // If node CLI inspect support is disabled, allow no debug options.
+  return {};
+}
+
 // Initialize Node.js cli options to pass to Node.js
 // See https://nodejs.org/api/cli.html#cli_options
 void SetNodeCliFlags() {
-  // Only allow DebugOptions in non-ELECTRON_RUN_AS_NODE mode
-  const std::unordered_set<base::StringPiece, base::StringPieceHash> allowed = {
-      "--inspect",          "--inspect-brk",
-      "--inspect-port",     "--debug",
-      "--debug-brk",        "--debug-port",
-      "--inspect-brk-node", "--inspect-publish-uid",
-  };
+  const std::unordered_set<base::StringPiece, base::StringPieceHash> allowed =
+      GetAllowedDebugOptions();
 
   const auto argv = base::CommandLine::ForCurrentProcess()->argv();
   std::vector<std::string> args;
@@ -235,7 +243,7 @@ void SetNodeCliFlags() {
   } else if (!errors.empty()) {
     LOG(ERROR) << err_str << base::JoinString(errors, " ");
   }
-}  // namespace
+}
 
 // Initialize NODE_OPTIONS to pass to Node.js
 // See https://nodejs.org/api/cli.html#cli_node_options_options
@@ -250,34 +258,39 @@ void SetNodeOptions(base::Environment* env) {
                                                      "--http-parser"};
 
   if (env->HasVar("NODE_OPTIONS")) {
-    std::string options;
-    env->GetVar("NODE_OPTIONS", &options);
-    std::vector<std::string> parts = base::SplitString(
-        options, " ", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
+    if (electron::fuses::IsNodeOptionsEnabled()) {
+      std::string options;
+      env->GetVar("NODE_OPTIONS", &options);
+      std::vector<std::string> parts = base::SplitString(
+          options, " ", base::TRIM_WHITESPACE, base::SPLIT_WANT_NONEMPTY);
 
-    bool is_packaged_app = IsPackagedApp();
+      bool is_packaged_app = electron::api::App::IsPackaged();
 
-    for (const auto& part : parts) {
-      // Strip off values passed to individual NODE_OPTIONs
-      std::string option = part.substr(0, part.find('='));
+      for (const auto& part : parts) {
+        // Strip off values passed to individual NODE_OPTIONs
+        std::string option = part.substr(0, part.find('='));
 
-      if (is_packaged_app &&
-          allowed_in_packaged.find(option) == allowed_in_packaged.end()) {
-        // Explicitly disallow majority of NODE_OPTIONS in packaged apps
-        LOG(ERROR) << "Most NODE_OPTIONs are not supported in packaged apps."
-                   << " See documentation for more details.";
-        options.erase(options.find(option), part.length());
-      } else if (disallowed.find(option) != disallowed.end()) {
-        // Remove NODE_OPTIONS specifically disallowed for use in Node.js
-        // through Electron owing to constraints like BoringSSL.
-        LOG(ERROR) << "The NODE_OPTION " << option
-                   << " is not supported in Electron";
-        options.erase(options.find(option), part.length());
+        if (is_packaged_app &&
+            allowed_in_packaged.find(option) == allowed_in_packaged.end()) {
+          // Explicitly disallow majority of NODE_OPTIONS in packaged apps
+          LOG(ERROR) << "Most NODE_OPTIONs are not supported in packaged apps."
+                     << " See documentation for more details.";
+          options.erase(options.find(option), part.length());
+        } else if (disallowed.find(option) != disallowed.end()) {
+          // Remove NODE_OPTIONS specifically disallowed for use in Node.js
+          // through Electron owing to constraints like BoringSSL.
+          LOG(ERROR) << "The NODE_OPTION " << option
+                     << " is not supported in Electron";
+          options.erase(options.find(option), part.length());
+        }
       }
-    }
 
-    // overwrite new NODE_OPTIONS without unsupported variables
-    env->SetVar("NODE_OPTIONS", options);
+      // overwrite new NODE_OPTIONS without unsupported variables
+      env->SetVar("NODE_OPTIONS", options);
+    } else {
+      LOG(ERROR) << "NODE_OPTIONS have been disabled in this app";
+      env->SetVar("NODE_OPTIONS", "");
+    }
   }
 }
 
@@ -339,6 +352,9 @@ void NodeBindings::RegisterBuiltinModules() {
 #if BUILDFLAG(ENABLE_DESKTOP_CAPTURER)
   ELECTRON_DESKTOP_CAPTURER_MODULE(V)
 #endif
+#if DCHECK_IS_ON()
+  ELECTRON_TESTING_MODULE(V)
+#endif
 #undef V
 }
 
@@ -363,8 +379,10 @@ void NodeBindings::Initialize() {
   // Parse and set Node.js cli flags.
   SetNodeCliFlags();
 
-  std::unique_ptr<base::Environment> env(base::Environment::Create());
+  auto env = base::Environment::Create();
   SetNodeOptions(env.get());
+  node::Environment::should_read_node_options_from_env_ =
+      fuses::IsNodeOptionsEnabled();
 
   std::vector<std::string> argv = {"electron"};
   std::vector<std::string> exec_argv;
@@ -372,13 +390,11 @@ void NodeBindings::Initialize() {
 
   int exit_code = node::InitializeNodeWithArgs(&argv, &exec_argv, &errors);
 
-  for (const std::string& error : errors) {
+  for (const std::string& error : errors)
     fprintf(stderr, "%s: %s\n", argv[0].c_str(), error.c_str());
-  }
 
-  if (exit_code != 0) {
+  if (exit_code != 0)
     exit(exit_code);
-  }
 
 #if defined(OS_WIN)
   // uv_init overrides error mode to suppress the default crash dialog, bring
@@ -417,12 +433,28 @@ node::Environment* NodeBindings::CreateEnvironment(
       break;
   }
 
-  gin_helper::Dictionary global(context->GetIsolate(), context->Global());
+  v8::Isolate* isolate = context->GetIsolate();
+  gin_helper::Dictionary global(isolate, context->Global());
   // Do not set DOM globals for renderer process.
   // We must set this before the node bootstrapper which is run inside
   // CreateEnvironment
   if (browser_env_ != BrowserEnvironment::kBrowser)
     global.Set("_noBrowserGlobals", true);
+
+  if (browser_env_ == BrowserEnvironment::kBrowser) {
+    const std::vector<std::string> search_paths = {"app.asar", "app",
+                                                   "default_app.asar"};
+    const std::vector<std::string> app_asar_search_paths = {"app.asar"};
+    context->Global()->SetPrivate(
+        context,
+        v8::Private::ForApi(
+            isolate,
+            gin::ConvertToV8(isolate, "appSearchPaths").As<v8::String>()),
+        gin::ConvertToV8(isolate,
+                         electron::fuses::IsOnlyLoadAppFromAsarEnabled()
+                             ? app_asar_search_paths
+                             : search_paths));
+  }
 
   std::vector<std::string> exec_args;
   base::FilePath resources_path = GetResourcesPath();
@@ -434,16 +466,20 @@ node::Environment* NodeBindings::CreateEnvironment(
       node::CreateIsolateData(context->GetIsolate(), uv_loop_, platform);
 
   node::Environment* env;
+  uint64_t flags = node::EnvironmentFlags::kDefaultFlags |
+                   node::EnvironmentFlags::kHideConsoleWindows |
+                   node::EnvironmentFlags::kNoGlobalSearchPaths;
+
   if (browser_env_ != BrowserEnvironment::kBrowser) {
     // Only one ESM loader can be registered per isolate -
     // in renderer processes this should be blink. We need to tell Node.js
     // not to register its handler (overriding blinks) in non-browser processes.
-    uint64_t flags = node::EnvironmentFlags::kDefaultFlags |
-                     node::EnvironmentFlags::kNoRegisterESMLoader |
-                     node::EnvironmentFlags::kNoInitializeInspector;
+    flags |= node::EnvironmentFlags::kNoRegisterESMLoader |
+             node::EnvironmentFlags::kNoInitializeInspector;
     v8::TryCatch try_catch(context->GetIsolate());
-    env = node::CreateEnvironment(isolate_data_, context, args, exec_args,
-                                  (node::EnvironmentFlags::Flags)flags);
+    env = node::CreateEnvironment(
+        isolate_data_, context, args, exec_args,
+        static_cast<node::EnvironmentFlags::Flags>(flags));
     DCHECK(env);
 
     // This will only be caught when something has gone terrible wrong as all
@@ -453,7 +489,9 @@ node::Environment* NodeBindings::CreateEnvironment(
                  << process_type;
     }
   } else {
-    env = node::CreateEnvironment(isolate_data_, context, args, exec_args);
+    env = node::CreateEnvironment(
+        isolate_data_, context, args, exec_args,
+        static_cast<node::EnvironmentFlags::Flags>(flags));
     DCHECK(env);
   }
 
@@ -485,9 +523,13 @@ node::Environment* NodeBindings::CreateEnvironment(
     // Node.js requires that microtask checkpoints be explicitly invoked.
     is.policy = v8::MicrotasksPolicy::kExplicit;
   } else {
-    // Match Blink's behavior by allowing microtasks invocation to be controlled
-    // by MicrotasksScope objects.
-    is.policy = v8::MicrotasksPolicy::kScoped;
+    // Blink expects the microtasks policy to be kScoped, but Node.js expects it
+    // to be kExplicit. In the renderer, there can be many contexts within the
+    // same isolate, so we don't want to change the existing policy here, which
+    // could be either kExplicit or kScoped depending on whether we're executing
+    // from within a Node.js or a Blink entrypoint. Instead, the policy is
+    // toggled to kExplicit when entering Node.js through UvRunOnce.
+    is.policy = context->GetIsolate()->GetMicrotasksPolicy();
 
     // We do not want to use Node.js' message listener as it interferes with
     // Blink's.
@@ -527,7 +569,7 @@ node::Environment* NodeBindings::CreateEnvironment(
 }
 
 void NodeBindings::LoadEnvironment(node::Environment* env) {
-  node::LoadEnvironment(env);
+  node::LoadEnvironment(env, node::StartExecutionCallback{});
   gin_helper::EmitEvent(env->isolate(), env->process_object(), "loaded");
 }
 

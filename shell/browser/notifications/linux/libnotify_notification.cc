@@ -6,7 +6,6 @@
 
 #include <set>
 #include <string>
-#include <vector>
 
 #include "base/files/file_enumerator.h"
 #include "base/logging.h"

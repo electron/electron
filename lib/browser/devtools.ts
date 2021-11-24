@@ -54,7 +54,7 @@ const isChromeDevTools = function (pageURL: string) {
 };
 
 const assertChromeDevTools = function (contents: Electron.WebContents, api: string) {
-  const pageURL = contents._getURL();
+  const pageURL = contents.getURL();
   if (!isChromeDevTools(pageURL)) {
     console.error(`Blocked ${pageURL} from calling ${api}`);
     throw new Error(`Blocked ${api}`);
@@ -67,7 +67,7 @@ ipcMainInternal.handle(IPC_MESSAGES.INSPECTOR_CONTEXT_MENU, function (event, ite
 
     const template = isEditMenu ? getEditMenuItems() : convertToMenuTemplate(items, resolve);
     const menu = Menu.buildFromTemplate(template);
-    const window = event.sender.getOwnerBrowserWindow();
+    const window = event.sender.getOwnerBrowserWindow()!;
 
     menu.popup({ window, callback: () => resolve() });
   });
@@ -94,7 +94,7 @@ ipcMainUtils.handleSync(IPC_MESSAGES.INSPECTOR_CONFIRM, async function (event, m
     buttons: ['OK', 'Cancel'],
     cancelId: 1
   };
-  const window = event.sender.getOwnerBrowserWindow();
+  const window = event.sender.getOwnerBrowserWindow()!;
   const { response } = await dialog.showMessageBox(window, options);
   return response === 0;
 });

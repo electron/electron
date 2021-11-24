@@ -31,6 +31,11 @@ const char kFullscreen[] = "fullscreen";
 const char kTrafficLightPosition[] = "trafficLightPosition";
 const char kRoundedCorners[] = "roundedCorners";
 
+// The color to use as the theme and symbol colors respectively for Window
+// Controls Overlay if enabled on Windows.
+const char kOverlayButtonColor[] = "color";
+const char kOverlaySymbolColor[] = "symbolColor";
+
 // Whether the window should show in taskbar.
 const char kSkipTaskbar[] = "skipTaskbar";
 
@@ -121,9 +126,6 @@ const char kNodeIntegration[] = "nodeIntegration";
 // Enable context isolation of Electron APIs and preload script
 const char kContextIsolation[] = "contextIsolation";
 
-// Instance ID of guest WebContents.
-const char kGuestInstanceID[] = "guestInstanceId";
-
 // Web runtime features.
 const char kExperimentalFeatures[] = "experimentalFeatures";
 
@@ -171,6 +173,9 @@ const char kJavaScript[] = "javascript";
 // Enables image support.
 const char kImages[] = "images";
 
+// Image animation policy.
+const char kImageAnimationPolicy[] = "imageAnimationPolicy";
+
 // Make TextArea elements resizable.
 const char kTextAreasAreResizable[] = "textAreasAreResizable";
 
@@ -190,6 +195,8 @@ const char kSpellcheck[] = "spellcheck";
 const char kEnableWebSQL[] = "enableWebSQL";
 
 const char kEnablePreferredSizeMode[] = "enablePreferredSizeMode";
+
+const char ktitleBarOverlay[] = "titleBarOverlay";
 
 }  // namespace options
 
@@ -233,8 +240,6 @@ const char kAppUserModelId[] = "app-user-model-id";
 
 // The application path
 const char kAppPath[] = "app-path";
-
-const char kEnableApiFilteringLogging[] = "enable-api-filtering-logging";
 
 // The command line switch versions of the options.
 const char kScrollBounce[] = "scroll-bounce";

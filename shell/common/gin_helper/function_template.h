@@ -2,19 +2,19 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE.chromium file.
 
-#ifndef SHELL_COMMON_GIN_HELPER_FUNCTION_TEMPLATE_H_
-#define SHELL_COMMON_GIN_HELPER_FUNCTION_TEMPLATE_H_
+#ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_FUNCTION_TEMPLATE_H_
+#define ELECTRON_SHELL_COMMON_GIN_HELPER_FUNCTION_TEMPLATE_H_
 
 #include <utility>
 
 #include "base/bind.h"
 #include "base/callback.h"
-#include "base/optional.h"
 #include "gin/arguments.h"
 #include "shell/common/gin_helper/arguments.h"
 #include "shell/common/gin_helper/destroyable.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/microtasks_scope.h"
+#include "third_party/abseil-cpp/absl/types/optional.h"
 
 // This file is forked from gin/function_template.h with 2 differences:
 // 1. Support for additional types of arguments.
@@ -52,6 +52,10 @@ class CallbackHolderBase {
  public:
   v8::Local<v8::External> GetHandle(v8::Isolate* isolate);
 
+  // disable copy
+  CallbackHolderBase(const CallbackHolderBase&) = delete;
+  CallbackHolderBase& operator=(const CallbackHolderBase&) = delete;
+
  protected:
   explicit CallbackHolderBase(v8::Isolate* isolate);
   virtual ~CallbackHolderBase();
@@ -63,8 +67,6 @@ class CallbackHolderBase {
       const v8::WeakCallbackInfo<CallbackHolderBase>& data);
 
   v8::Global<v8::External> v8_ref_;
-
-  DISALLOW_COPY_AND_ASSIGN(CallbackHolderBase);
 };
 
 template <typename Sig>
@@ -79,8 +81,6 @@ class CallbackHolder : public CallbackHolderBase {
 
  private:
   virtual ~CallbackHolder() = default;
-
-  DISALLOW_COPY_AND_ASSIGN(CallbackHolder);
 };
 
 template <typename T>
@@ -95,13 +95,13 @@ bool GetNextArgument(gin::Arguments* args,
   }
 }
 
-// Support base::Optional as output, which would be empty and do not throw error
-// when convertion to T fails.
+// Support absl::optional as output, which would be empty and do not throw error
+// when conversion to T fails.
 template <typename T>
 bool GetNextArgument(gin::Arguments* args,
                      int create_flags,
                      bool is_first,
-                     base::Optional<T>* result) {
+                     absl::optional<T>* result) {
   T converted;
   // Use gin::Arguments::GetNext which always advances |next| counter.
   if (args->GetNext(&converted))
@@ -329,4 +329,4 @@ struct CallbackTraits<
 
 }  // namespace gin_helper
 
-#endif  // SHELL_COMMON_GIN_HELPER_FUNCTION_TEMPLATE_H_
+#endif  // ELECTRON_SHELL_COMMON_GIN_HELPER_FUNCTION_TEMPLATE_H_

@@ -99,10 +99,11 @@ void DesktopCapturer::StartHandling(bool capture_window,
           DesktopMediaList::Type::kWindow,
           content::desktop_capture::CreateWindowCapturer());
       window_capturer_->SetThumbnailSize(thumbnail_size);
-      window_capturer_->AddObserver(this);
-      window_capturer_->Update(base::BindOnce(
-          &DesktopCapturer::UpdateSourcesList, weak_ptr_factory_.GetWeakPtr(),
-          window_capturer_.get()));
+      window_capturer_->Update(
+          base::BindOnce(&DesktopCapturer::UpdateSourcesList,
+                         weak_ptr_factory_.GetWeakPtr(),
+                         window_capturer_.get()),
+          /* refresh_thumbnails = */ true);
     }
 
     if (capture_screen) {
@@ -110,28 +111,24 @@ void DesktopCapturer::StartHandling(bool capture_window,
           DesktopMediaList::Type::kScreen,
           content::desktop_capture::CreateScreenCapturer());
       screen_capturer_->SetThumbnailSize(thumbnail_size);
-      screen_capturer_->AddObserver(this);
-      screen_capturer_->Update(base::BindOnce(
-          &DesktopCapturer::UpdateSourcesList, weak_ptr_factory_.GetWeakPtr(),
-          screen_capturer_.get()));
+      screen_capturer_->Update(
+          base::BindOnce(&DesktopCapturer::UpdateSourcesList,
+                         weak_ptr_factory_.GetWeakPtr(),
+                         screen_capturer_.get()),
+          /* refresh_thumbnails = */ true);
     }
   }
-}
-
-void DesktopCapturer::OnSourceUnchanged(DesktopMediaList* list) {
-  UpdateSourcesList(list);
 }
 
 void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
   if (capture_window_ &&
       list->GetMediaListType() == DesktopMediaList::Type::kWindow) {
     capture_window_ = false;
-    const auto& media_list_sources = list->GetSources();
     std::vector<DesktopCapturer::Source> window_sources;
-    window_sources.reserve(media_list_sources.size());
-    for (const auto& media_list_source : media_list_sources) {
+    window_sources.reserve(list->GetSourceCount());
+    for (int i = 0; i < list->GetSourceCount(); i++) {
       window_sources.emplace_back(DesktopCapturer::Source{
-          media_list_source, std::string(), fetch_window_icons_});
+          list->GetSource(i), std::string(), fetch_window_icons_});
     }
     std::move(window_sources.begin(), window_sources.end(),
               std::back_inserter(captured_sources_));
@@ -140,12 +137,11 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
   if (capture_screen_ &&
       list->GetMediaListType() == DesktopMediaList::Type::kScreen) {
     capture_screen_ = false;
-    const auto& media_list_sources = list->GetSources();
     std::vector<DesktopCapturer::Source> screen_sources;
-    screen_sources.reserve(media_list_sources.size());
-    for (const auto& media_list_source : media_list_sources) {
+    screen_sources.reserve(list->GetSourceCount());
+    for (int i = 0; i < list->GetSourceCount(); i++) {
       screen_sources.emplace_back(
-          DesktopCapturer::Source{media_list_source, std::string()});
+          DesktopCapturer::Source{list->GetSource(i), std::string()});
     }
 #if defined(OS_WIN)
     // Gather the same unique screen IDs used by the electron.screen API in

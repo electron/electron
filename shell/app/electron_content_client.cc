@@ -128,7 +128,7 @@ void ComputeBuiltInPlugins(std::vector<content::PepperPluginInfo>* plugins) {
   // here.
   content::WebPluginInfo info;
   info.type = content::WebPluginInfo::PLUGIN_TYPE_BROWSER_PLUGIN;
-  info.name = base::UTF8ToUTF16("Chromium PDF Viewer");
+  info.name = u"Chromium PDF Viewer";
   // This isn't a real file path; it's just used as a unique identifier.
   info.path = base::FilePath::FromUTF8Unsafe(extension_misc::kPdfExtensionId);
   info.background_color = content::WebPluginInfo::kDefaultBackgroundColor;
@@ -167,7 +167,7 @@ std::u16string ElectronContentClient::GetLocalizedString(int message_id) {
 
 base::StringPiece ElectronContentClient::GetDataResource(
     int resource_id,
-    ui::ScaleFactor scale_factor) {
+    ui::ResourceScaleFactor scale_factor) {
   return ui::ResourceBundle::GetSharedInstance().GetRawDataResourceForScale(
       resource_id, scale_factor);
 }

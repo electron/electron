@@ -19,10 +19,10 @@ https://chromium-review.googlesource.com/c/chromium/src/+/1901591, we should try
 re-submitting the patch.
 
 diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
-index 8dba74570f7f2c1e622bcbd899c972508b732c68..ca25728909e354990b7285545c2544918996874f 100644
+index 558fabf35abea86883bdcfe4a600ba72f24bd9dc..d19cd4006e88dc165a6e5fbbe8f1d96547d136f3 100644
 --- a/content/app/content_main_runner_impl.cc
 +++ b/content/app/content_main_runner_impl.cc
-@@ -737,7 +737,7 @@ int ContentMainRunnerImpl::Initialize(const ContentMainParams& params) {
+@@ -787,7 +787,7 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
    }
  #endif
  
@@ -32,7 +32,7 @@ index 8dba74570f7f2c1e622bcbd899c972508b732c68..ca25728909e354990b7285545c254491
  
  #if !defined(OS_ANDROID)
 diff --git a/content/common/url_schemes.cc b/content/common/url_schemes.cc
-index dc37f121130d83e200d73dd1ad566847548ac0fd..63080c1bc486a488841fc5d2081f4d5d4a00bde3 100644
+index 5fcc7c6c1e27f36f86e972cebbd1808d37ea5b88..bff53783935950facb6cf896d4e906c5f05fe9a8 100644
 --- a/content/common/url_schemes.cc
 +++ b/content/common/url_schemes.cc
 @@ -49,7 +49,7 @@ std::vector<std::string>& GetMutableServiceWorkerSchemes() {
@@ -44,7 +44,7 @@ index dc37f121130d83e200d73dd1ad566847548ac0fd..63080c1bc486a488841fc5d2081f4d5d
    // On Android and in tests, schemes may have been registered already.
    if (g_registered_url_schemes)
      return;
-@@ -106,7 +106,8 @@ void RegisterContentSchemes() {
+@@ -109,7 +109,8 @@ void RegisterContentSchemes() {
    // threadsafe so must be called when GURL isn't used on any other thread. This
    // is really easy to mess up, so we say that all calls to Add*Scheme in Chrome
    // must be inside this function.
@@ -68,7 +68,7 @@ index 3038f9d25798f36811b6398f8cc0e7d83ecc41b0..68189c36c47ef85b345b0ccc40c456f8
  // Re-initializes schemes for tests.
  CONTENT_EXPORT void ReRegisterContentSchemesForTests();
 diff --git a/content/public/app/content_main_delegate.cc b/content/public/app/content_main_delegate.cc
-index 17d256b852b6e7615cf4e52e4a2d7fa326a4df44..bd0512902df4484e8714cda9ab1352b1c672a1cd 100644
+index d076ab515732941a8403c7756272afddcb298f6b..4f3c2d8d4520e6f25d3d79e00d6af03bc842cc38 100644
 --- a/content/public/app/content_main_delegate.cc
 +++ b/content/public/app/content_main_delegate.cc
 @@ -42,6 +42,10 @@ bool ContentMainDelegate::ShouldHandleConsoleControlEvents() {
@@ -83,10 +83,10 @@ index 17d256b852b6e7615cf4e52e4a2d7fa326a4df44..bd0512902df4484e8714cda9ab1352b1
    return true;
  }
 diff --git a/content/public/app/content_main_delegate.h b/content/public/app/content_main_delegate.h
-index 4162083f789b6cf5e29e52e4bd498c377cab1a20..d6010bc0e4dba560d10c3ed4729d77b5a60eddcd 100644
+index f8f9a6d4316e0eb19585479aab20b441adb391ef..4b35355cf73c1a19587e1954839577df36e6e1d9 100644
 --- a/content/public/app/content_main_delegate.h
 +++ b/content/public/app/content_main_delegate.h
-@@ -65,6 +65,20 @@ class CONTENT_EXPORT ContentMainDelegate {
+@@ -73,6 +73,20 @@ class CONTENT_EXPORT ContentMainDelegate {
    // returning initialization error code. Default behavior is CHECK(false).
    virtual int TerminateForFatalInitializationError();
  
@@ -105,5 +105,5 @@ index 4162083f789b6cf5e29e52e4bd498c377cab1a20..d6010bc0e4dba560d10c3ed4729d77b5
 +  virtual bool ShouldLockSchemeRegistry();
 +
    // Allows the embedder to perform platform-specific initialization before
-   // creating the main message loop.
-   virtual void PreCreateMainMessageLoop() {}
+   // BrowserMain() is invoked (i.e. before BrowserMainRunner, BrowserMainLoop,
+   // BrowserMainParts, etc. are created).

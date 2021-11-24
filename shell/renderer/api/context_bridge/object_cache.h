@@ -2,9 +2,10 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_RENDERER_API_CONTEXT_BRIDGE_OBJECT_CACHE_H_
-#define SHELL_RENDERER_API_CONTEXT_BRIDGE_OBJECT_CACHE_H_
+#ifndef ELECTRON_SHELL_RENDERER_API_CONTEXT_BRIDGE_OBJECT_CACHE_H_
+#define ELECTRON_SHELL_RENDERER_API_CONTEXT_BRIDGE_OBJECT_CACHE_H_
 
+#include <forward_list>
 #include <unordered_map>
 #include <utility>
 
@@ -43,4 +44,4 @@ class ObjectCache final {
 
 }  // namespace electron
 
-#endif  // SHELL_RENDERER_API_CONTEXT_BRIDGE_OBJECT_CACHE_H_
+#endif  // ELECTRON_SHELL_RENDERER_API_CONTEXT_BRIDGE_OBJECT_CACHE_H_

@@ -2,19 +2,19 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_ELECTRON_JAVASCRIPT_DIALOG_MANAGER_H_
-#define SHELL_BROWSER_ELECTRON_JAVASCRIPT_DIALOG_MANAGER_H_
+#ifndef ELECTRON_SHELL_BROWSER_ELECTRON_JAVASCRIPT_DIALOG_MANAGER_H_
+#define ELECTRON_SHELL_BROWSER_ELECTRON_JAVASCRIPT_DIALOG_MANAGER_H_
 
 #include <map>
 #include <string>
 
 #include "content/public/browser/javascript_dialog_manager.h"
 
-namespace electron {
-
-namespace api {
+namespace content {
 class WebContents;
 }
+
+namespace electron {
 
 class ElectronJavaScriptDialogManager
     : public content::JavaScriptDialogManager {
@@ -48,4 +48,4 @@ class ElectronJavaScriptDialogManager
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_ELECTRON_JAVASCRIPT_DIALOG_MANAGER_H_
+#endif  // ELECTRON_SHELL_BROWSER_ELECTRON_JAVASCRIPT_DIALOG_MANAGER_H_

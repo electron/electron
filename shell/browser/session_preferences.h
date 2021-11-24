@@ -2,14 +2,17 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_SESSION_PREFERENCES_H_
-#define SHELL_BROWSER_SESSION_PREFERENCES_H_
+#ifndef ELECTRON_SHELL_BROWSER_SESSION_PREFERENCES_H_
+#define ELECTRON_SHELL_BROWSER_SESSION_PREFERENCES_H_
 
 #include <vector>
 
 #include "base/files/file_path.h"
 #include "base/supports_user_data.h"
-#include "content/public/browser/browser_context.h"
+
+namespace content {
+class BrowserContext;
+}
 
 namespace electron {
 
@@ -37,4 +40,4 @@ class SessionPreferences : public base::SupportsUserData::Data {
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_SESSION_PREFERENCES_H_
+#endif  // ELECTRON_SHELL_BROWSER_SESSION_PREFERENCES_H_

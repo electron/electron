@@ -2,14 +2,9 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_UI_WEBUI_ACCESSIBILITY_UI_H_
-#define SHELL_BROWSER_UI_WEBUI_ACCESSIBILITY_UI_H_
+#ifndef ELECTRON_SHELL_BROWSER_UI_WEBUI_ACCESSIBILITY_UI_H_
+#define ELECTRON_SHELL_BROWSER_UI_WEBUI_ACCESSIBILITY_UI_H_
 
-#include <memory>
-#include <string>
-#include <vector>
-
-#include "base/macros.h"
 #include "chrome/browser/accessibility/accessibility_ui.h"
 #include "content/public/browser/web_ui_controller.h"
 #include "content/public/browser/web_ui_data_source.h"
@@ -28,12 +23,16 @@ class ElectronAccessibilityUIMessageHandler
  public:
   ElectronAccessibilityUIMessageHandler();
 
+  // disable copy
+  ElectronAccessibilityUIMessageHandler(
+      const ElectronAccessibilityUIMessageHandler&) = delete;
+  ElectronAccessibilityUIMessageHandler& operator=(
+      const ElectronAccessibilityUIMessageHandler&) = delete;
+
   void RegisterMessages() final;
 
  private:
   void RequestNativeUITree(const base::ListValue* args);
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronAccessibilityUIMessageHandler);
 };
 
-#endif  // SHELL_BROWSER_UI_WEBUI_ACCESSIBILITY_UI_H_
+#endif  // ELECTRON_SHELL_BROWSER_UI_WEBUI_ACCESSIBILITY_UI_H_

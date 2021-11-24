@@ -2,11 +2,9 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_APP_ELECTRON_CONTENT_CLIENT_H_
-#define SHELL_APP_ELECTRON_CONTENT_CLIENT_H_
+#ifndef ELECTRON_SHELL_APP_ELECTRON_CONTENT_CLIENT_H_
+#define ELECTRON_SHELL_APP_ELECTRON_CONTENT_CLIENT_H_
 
-#include <set>
-#include <string>
 #include <vector>
 
 #include "base/files/file_path.h"
@@ -19,10 +17,15 @@ class ElectronContentClient : public content::ContentClient {
   ElectronContentClient();
   ~ElectronContentClient() override;
 
+  // disable copy
+  ElectronContentClient(const ElectronContentClient&) = delete;
+  ElectronContentClient& operator=(const ElectronContentClient&) = delete;
+
  protected:
   // content::ContentClient:
   std::u16string GetLocalizedString(int message_id) override;
-  base::StringPiece GetDataResource(int resource_id, ui::ScaleFactor) override;
+  base::StringPiece GetDataResource(int resource_id,
+                                    ui::ResourceScaleFactor) override;
   gfx::Image& GetNativeImageNamed(int resource_id) override;
   base::RefCountedMemory* GetDataResourceBytes(int resource_id) override;
   void AddAdditionalSchemes(Schemes* schemes) override;
@@ -31,11 +34,8 @@ class ElectronContentClient : public content::ContentClient {
   void AddContentDecryptionModules(
       std::vector<content::CdmInfo>* cdms,
       std::vector<media::CdmHostFilePath>* cdm_host_file_paths) override;
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(ElectronContentClient);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_APP_ELECTRON_CONTENT_CLIENT_H_
+#endif  // ELECTRON_SHELL_APP_ELECTRON_CONTENT_CLIENT_H_

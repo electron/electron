@@ -1,12 +1,12 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jeremy Apthorp <nornagon@nornagon.net>
 Date: Thu, 20 Sep 2018 17:49:31 -0700
-Subject: mas-audiodeviceduck.patch
+Subject: mas: avoid usage of AudioDeviceDuck
 
 Removes usage of the AudioDeviceDuck private API.
 
 diff --git a/media/audio/mac/audio_low_latency_input_mac.cc b/media/audio/mac/audio_low_latency_input_mac.cc
-index eb39b38c308ddd876e3fbc142d4fdfd5dc002cb5..137ccd81aa98f6d44969e7b7733e2cfb1fb615a9 100644
+index e28d37435da00153e34132f49ce8f6b240e70a65..77ce459d969022b7c5a4d1e57bb1f7e6fa7a9898 100644
 --- a/media/audio/mac/audio_low_latency_input_mac.cc
 +++ b/media/audio/mac/audio_low_latency_input_mac.cc
 @@ -34,19 +34,23 @@

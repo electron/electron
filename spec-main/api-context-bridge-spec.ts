@@ -584,15 +584,42 @@ describe('contextBridge', () => {
         expect(result).to.deep.equal(['BODY', 'HTMLBodyElement', 'function']);
       });
 
+      it('should handle Blobs', async () => {
+        await makeBindingWindow(() => {
+          contextBridge.exposeInMainWorld('example', {
+            getBlob: () => new Blob(['ab', 'cd'])
+          });
+        });
+        const result = await callWithBindings(async (root: any) => {
+          return [await root.example.getBlob().text()];
+        });
+        expect(result).to.deep.equal(['abcd']);
+      });
+
+      it('should handle Blobs going backwards over the bridge', async () => {
+        await makeBindingWindow(() => {
+          contextBridge.exposeInMainWorld('example', {
+            getBlobText: async (fn: Function) => {
+              const blob = fn();
+              return [await blob.text()];
+            }
+          });
+        });
+        const result = await callWithBindings((root: any) => {
+          return root.example.getBlobText(() => new Blob(['12', '45']));
+        });
+        expect(result).to.deep.equal(['1245']);
+      });
+
       // Can only run tests which use the GCRunner in non-sandboxed environments
       if (!useSandbox) {
         it('should release the global hold on methods sent across contexts', async () => {
           await makeBindingWindow(() => {
-            require('electron').ipcRenderer.on('get-gc-info', (e: Electron.IpcRendererEvent) => e.sender.send('gc-info', { trackedValues: process._linkedBinding('electron_common_v8_util').getWeaklyTrackedValues().length }));
-            const { weaklyTrackValue } = process._linkedBinding('electron_common_v8_util');
+            const trackedValues: WeakRef<object>[] = [];
+            require('electron').ipcRenderer.on('get-gc-info', e => e.sender.send('gc-info', { trackedValues: trackedValues.filter(value => value.deref()).length }));
             contextBridge.exposeInMainWorld('example', {
               getFunction: () => () => 123,
-              track: weaklyTrackValue
+              track: (value: object) => { trackedValues.push(new WeakRef(value)); }
             });
           });
           await callWithBindings(async (root: any) => {
@@ -616,11 +643,11 @@ describe('contextBridge', () => {
       if (useSandbox) {
         it('should not leak the global hold on methods sent across contexts when reloading a sandboxed renderer', async () => {
           await makeBindingWindow(() => {
-            require('electron').ipcRenderer.on('get-gc-info', e => e.sender.send('gc-info', { trackedValues: process._linkedBinding('electron_common_v8_util').getWeaklyTrackedValues().length }));
-            const { weaklyTrackValue } = process._linkedBinding('electron_common_v8_util');
+            const trackedValues: WeakRef<object>[] = [];
+            require('electron').ipcRenderer.on('get-gc-info', e => e.sender.send('gc-info', { trackedValues: trackedValues.filter(value => value.deref()).length }));
             contextBridge.exposeInMainWorld('example', {
               getFunction: () => () => 123,
-              track: weaklyTrackValue
+              track: (value: object) => { trackedValues.push(new WeakRef(value)); }
             });
             require('electron').ipcRenderer.send('window-ready-for-tasking');
           });
@@ -789,7 +816,8 @@ describe('contextBridge', () => {
             symbolKeyed: {
               [Symbol('foo')]: 123
             },
-            getBody: () => document.body
+            getBody: () => document.body,
+            getBlob: () => new Blob(['ab', 'cd'])
           });
         });
         const result = await callWithBindings(async (root: any) => {
@@ -862,7 +890,8 @@ describe('contextBridge', () => {
             [(await example.object.getPromise()).arr[3][0], String],
             [arg, Object],
             [arg.key, String],
-            [example.getBody(), HTMLBodyElement]
+            [example.getBody(), HTMLBodyElement],
+            [example.getBlob(), Blob]
           ];
           return {
             protoMatches: protoChecks.map(([a, Constructor]) => Object.getPrototypeOf(a) === Constructor.prototype)

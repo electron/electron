@@ -2,7 +2,8 @@
 
 > Intercept and modify the contents of a request at various stages of its lifetime.
 
-Process: [Main](../glossary.md#main-process)
+Process: [Main](../glossary.md#main-process)<br />
+_This class is not exported from the `'electron'` module. It is only available as a return value of other methods in the Electron API._
 
 Instances of the `WebRequest` class are accessed by using the `webRequest`
 property of a `Session`.
@@ -42,25 +43,23 @@ The following methods are available on instances of `WebRequest`:
 
 #### `webRequest.onBeforeRequest([filter, ]listener)`
 
-* `filter` Object (optional)
-  * `urls` String[] - Array of URL patterns that will be used to filter out the
-        requests that do not match the URL patterns.
+* `filter` [WebRequestFilter](structures/web-request-filter.md) (optional)
 * `listener` Function | null
   * `details` Object
     * `id` Integer
-    * `url` String
-    * `method` String
+    * `url` string
+    * `method` string
     * `webContentsId` Integer (optional)
     * `webContents` WebContents (optional)
     * `frame` WebFrameMain (optional)
-    * `resourceType` String
-    * `referrer` String
+    * `resourceType` string - Can be `mainFrame`, `subFrame`, `stylesheet`, `script`, `image`, `font`, `object`, `xhr`, `ping`, `cspReport`, `media`, `webSocket` or `other`.
+    * `referrer` string
     * `timestamp` Double
     * `uploadData` [UploadData[]](structures/upload-data.md)
   * `callback` Function
     * `response` Object
-      * `cancel` Boolean (optional)
-      * `redirectURL` String (optional) - The original request is prevented from
+      * `cancel` boolean (optional)
+      * `redirectURL` string (optional) - The original request is prevented from
         being sent or completed and is instead redirected to the given URL.
 
 The `listener` will be called with `listener(details, callback)` when a request
@@ -87,24 +86,22 @@ Some examples of valid `urls`:
 
 #### `webRequest.onBeforeSendHeaders([filter, ]listener)`
 
-* `filter` Object (optional)
-  * `urls` String[] - Array of URL patterns that will be used to filter out the
-        requests that do not match the URL patterns.
+* `filter` [WebRequestFilter](structures/web-request-filter.md) (optional)
 * `listener` Function | null
   * `details` Object
     * `id` Integer
-    * `url` String
-    * `method` String
+    * `url` string
+    * `method` string
     * `webContentsId` Integer (optional)
     * `webContents` WebContents (optional)
     * `frame` WebFrameMain (optional)
-    * `resourceType` String
-    * `referrer` String
+    * `resourceType` string - Can be `mainFrame`, `subFrame`, `stylesheet`, `script`, `image`, `font`, `object`, `xhr`, `ping`, `cspReport`, `media`, `webSocket` or `other`.
+    * `referrer` string
     * `timestamp` Double
     * `requestHeaders` Record<string, string>
   * `callback` Function
     * `beforeSendResponse` Object
-      * `cancel` Boolean (optional)
+      * `cancel` boolean (optional)
       * `requestHeaders` Record<string, string | string[]> (optional) - When provided, request will be made
   with these headers.
 
@@ -116,19 +113,17 @@ The `callback` has to be called with a `response` object.
 
 #### `webRequest.onSendHeaders([filter, ]listener)`
 
-* `filter` Object (optional)
-  * `urls` String[] - Array of URL patterns that will be used to filter out the
-        requests that do not match the URL patterns.
+* `filter` [WebRequestFilter](structures/web-request-filter.md) (optional)
 * `listener` Function | null
   * `details` Object
     * `id` Integer
-    * `url` String
-    * `method` String
+    * `url` string
+    * `method` string
     * `webContentsId` Integer (optional)
     * `webContents` WebContents (optional)
     * `frame` WebFrameMain (optional)
-    * `resourceType` String
-    * `referrer` String
+    * `resourceType` string - Can be `mainFrame`, `subFrame`, `stylesheet`, `script`, `image`, `font`, `object`, `xhr`, `ping`, `cspReport`, `media`, `webSocket` or `other`.
+    * `referrer` string
     * `timestamp` Double
     * `requestHeaders` Record<string, string>
 
@@ -138,30 +133,27 @@ response are visible by the time this listener is fired.
 
 #### `webRequest.onHeadersReceived([filter, ]listener)`
 
-* `filter` Object (optional)
-  * `urls` String[] - Array of URL patterns that will be used to filter out the
-        requests that do not match the URL patterns.
+* `filter` [WebRequestFilter](structures/web-request-filter.md) (optional)
 * `listener` Function | null
   * `details` Object
     * `id` Integer
-    * `url` String
-    * `method` String
+    * `url` string
+    * `method` string
     * `webContentsId` Integer (optional)
     * `webContents` WebContents (optional)
     * `frame` WebFrameMain (optional)
-    * `resourceType` String
-    * `referrer` String
+    * `resourceType` string - Can be `mainFrame`, `subFrame`, `stylesheet`, `script`, `image`, `font`, `object`, `xhr`, `ping`, `cspReport`, `media`, `webSocket` or `other`.
+    * `referrer` string
     * `timestamp` Double
-    * `statusLine` String
+    * `statusLine` string
     * `statusCode` Integer
-    * `requestHeaders` Record<string, string>
     * `responseHeaders` Record<string, string[]> (optional)
   * `callback` Function
     * `headersReceivedResponse` Object
-      * `cancel` Boolean (optional)
+      * `cancel` boolean (optional)
       * `responseHeaders` Record<string, string | string[]> (optional) - When provided, the server is assumed
         to have responded with these headers.
-      * `statusLine` String (optional) - Should be provided when overriding
+      * `statusLine` string (optional) - Should be provided when overriding
         `responseHeaders` to change header status otherwise original response
         header's status will be used.
 
@@ -172,25 +164,23 @@ The `callback` has to be called with a `response` object.
 
 #### `webRequest.onResponseStarted([filter, ]listener)`
 
-* `filter` Object (optional)
-  * `urls` String[] - Array of URL patterns that will be used to filter out the
-        requests that do not match the URL patterns.
+* `filter` [WebRequestFilter](structures/web-request-filter.md) (optional)
 * `listener` Function | null
   * `details` Object
     * `id` Integer
-    * `url` String
-    * `method` String
+    * `url` string
+    * `method` string
     * `webContentsId` Integer (optional)
     * `webContents` WebContents (optional)
     * `frame` WebFrameMain (optional)
-    * `resourceType` String
-    * `referrer` String
+    * `resourceType` string - Can be `mainFrame`, `subFrame`, `stylesheet`, `script`, `image`, `font`, `object`, `xhr`, `ping`, `cspReport`, `media`, `webSocket` or `other`.
+    * `referrer` string
     * `timestamp` Double
     * `responseHeaders` Record<string, string[]> (optional)
-    * `fromCache` Boolean - Indicates whether the response was fetched from disk
+    * `fromCache` boolean - Indicates whether the response was fetched from disk
       cache.
     * `statusCode` Integer
-    * `statusLine` String
+    * `statusLine` string
 
 The `listener` will be called with `listener(details)` when first byte of the
 response body is received. For HTTP requests, this means that the status line
@@ -198,26 +188,24 @@ and response headers are available.
 
 #### `webRequest.onBeforeRedirect([filter, ]listener)`
 
-* `filter` Object (optional)
-  * `urls` String[] - Array of URL patterns that will be used to filter out the
-        requests that do not match the URL patterns.
+* `filter` [WebRequestFilter](structures/web-request-filter.md) (optional)
 * `listener` Function | null
   * `details` Object
     * `id` Integer
-    * `url` String
-    * `method` String
+    * `url` string
+    * `method` string
     * `webContentsId` Integer (optional)
     * `webContents` WebContents (optional)
     * `frame` WebFrameMain (optional)
-    * `resourceType` String
-    * `referrer` String
+    * `resourceType` string - Can be `mainFrame`, `subFrame`, `stylesheet`, `script`, `image`, `font`, `object`, `xhr`, `ping`, `cspReport`, `media`, `webSocket` or `other`.
+    * `referrer` string
     * `timestamp` Double
-    * `redirectURL` String
+    * `redirectURL` string
     * `statusCode` Integer
-    * `statusLine` String
-    * `ip` String (optional) - The server IP address that the request was
+    * `statusLine` string
+    * `ip` string (optional) - The server IP address that the request was
       actually sent to.
-    * `fromCache` Boolean
+    * `fromCache` boolean
     * `responseHeaders` Record<string, string[]> (optional)
 
 The `listener` will be called with `listener(details)` when a server initiated
@@ -225,46 +213,42 @@ redirect is about to occur.
 
 #### `webRequest.onCompleted([filter, ]listener)`
 
-* `filter` Object (optional)
-  * `urls` String[] - Array of URL patterns that will be used to filter out the
-        requests that do not match the URL patterns.
+* `filter` [WebRequestFilter](structures/web-request-filter.md) (optional)
 * `listener` Function | null
   * `details` Object
     * `id` Integer
-    * `url` String
-    * `method` String
+    * `url` string
+    * `method` string
     * `webContentsId` Integer (optional)
     * `webContents` WebContents (optional)
     * `frame` WebFrameMain (optional)
-    * `resourceType` String
-    * `referrer` String
+    * `resourceType` string - Can be `mainFrame`, `subFrame`, `stylesheet`, `script`, `image`, `font`, `object`, `xhr`, `ping`, `cspReport`, `media`, `webSocket` or `other`.
+    * `referrer` string
     * `timestamp` Double
     * `responseHeaders` Record<string, string[]> (optional)
-    * `fromCache` Boolean
+    * `fromCache` boolean
     * `statusCode` Integer
-    * `statusLine` String
-    * `error` String
+    * `statusLine` string
+    * `error` string
 
 The `listener` will be called with `listener(details)` when a request is
 completed.
 
 #### `webRequest.onErrorOccurred([filter, ]listener)`
 
-* `filter` Object (optional)
-  * `urls` String[] - Array of URL patterns that will be used to filter out the
-        requests that do not match the URL patterns.
+* `filter` [WebRequestFilter](structures/web-request-filter.md) (optional)
 * `listener` Function | null
   * `details` Object
     * `id` Integer
-    * `url` String
-    * `method` String
+    * `url` string
+    * `method` string
     * `webContentsId` Integer (optional)
     * `webContents` WebContents (optional)
     * `frame` WebFrameMain (optional)
-    * `resourceType` String
-    * `referrer` String
+    * `resourceType` string - Can be `mainFrame`, `subFrame`, `stylesheet`, `script`, `image`, `font`, `object`, `xhr`, `ping`, `cspReport`, `media`, `webSocket` or `other`.
+    * `referrer` string
     * `timestamp` Double
-    * `fromCache` Boolean
-    * `error` String - The error description.
+    * `fromCache` boolean
+    * `error` string - The error description.
 
 The `listener` will be called with `listener(details)` when an error occurs.

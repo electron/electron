@@ -15,7 +15,7 @@ namespace gin_helper {
 
 namespace {
 
-const char* kTrackedObjectKey = "TrackedObjectKey";
+const char kTrackedObjectKey[] = "TrackedObjectKey";
 
 class IDUserData : public base::SupportsUserData::Data {
  public:
@@ -25,8 +25,6 @@ class IDUserData : public base::SupportsUserData::Data {
 
  private:
   int32_t id_;
-
-  DISALLOW_COPY_AND_ASSIGN(IDUserData);
 };
 
 }  // namespace

@@ -79,7 +79,8 @@ ElectronRendererPepperHostFactory::ElectronRendererPepperHostFactory(
     content::RendererPpapiHost* host)
     : host_(host) {}
 
-ElectronRendererPepperHostFactory::~ElectronRendererPepperHostFactory() {}
+ElectronRendererPepperHostFactory::~ElectronRendererPepperHostFactory() =
+    default;
 
 std::unique_ptr<ResourceHost>
 ElectronRendererPepperHostFactory::CreateResourceHost(

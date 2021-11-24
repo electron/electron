@@ -1,0 +1,26 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Thu, 15 Jul 2021 15:53:08 -0400
+Subject: chore: explicitly cast LONG_MAX to double
+
+Fixes a compilation error encountered in Electron as a result of
+Chromium enabling the -Wimplicit-const-int-float-conversion compilation
+flag in https://chromium-review.googlesource.com/c/chromium/src/+/3001416.
+
+Upstreamed at https://github.com/ReactiveCocoa/ReactiveObjC/pull/186.
+
+diff --git a/ReactiveObjC/RACQueueScheduler.m b/ReactiveObjC/RACQueueScheduler.m
+index d9dd189b8fab73f412b2d2fc831041a33368d491..bc6e8d1b5339197c173a1254c0586621dfe5b591 100644
+--- a/ReactiveObjC/RACQueueScheduler.m
++++ b/ReactiveObjC/RACQueueScheduler.m
+@@ -48,8 +48,8 @@ + (dispatch_time_t)wallTimeWithDate:(NSDate *)date {
+ 	double frac = modf(date.timeIntervalSince1970, &seconds);
+ 
+ 	struct timespec walltime = {
+-		.tv_sec = (time_t)fmin(fmax(seconds, LONG_MIN), LONG_MAX),
+-		.tv_nsec = (long)fmin(fmax(frac * NSEC_PER_SEC, LONG_MIN), LONG_MAX)
++		.tv_sec = (time_t)fmin(fmax(seconds, LONG_MIN), (double)LONG_MAX),
++		.tv_nsec = (long)fmin(fmax(frac * NSEC_PER_SEC, LONG_MIN), (double)LONG_MAX)
+ 	};
+ 
+ 	return dispatch_walltime(&walltime, 0);

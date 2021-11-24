@@ -88,13 +88,14 @@ without meaning any harm:
   <dict>
     <key>com.apple.security.cs.allow-jit</key>
     <true/>
-    <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
-    <true/>
     <key>com.apple.security.cs.debugger</key>
     <true/>
   </dict>
 </plist>
 ```
+
+Note that up until Electron 12, the `com.apple.security.cs.allow-unsigned-executable-memory` entitlement was required
+as well. However, it should not be used anymore if it can be avoided.
 
 To see all of this in action, check out Electron Fiddle's source code,
 [especially its `electron-forge` configuration
@@ -133,7 +134,7 @@ are likely using [`electron-packager`], which includes [`electron-osx-sign`] and
 
 If you're using Packager's API, you can pass [in configuration that both signs
 and notarizes your
-application](https://electron.github.io/electron-packager/master/interfaces/electronpackager.options.html).
+application](https://electron.github.io/electron-packager/main/interfaces/electronpackager.options.html).
 
 ```js
 const packager = require('electron-packager')
@@ -165,13 +166,14 @@ without meaning any harm:
   <dict>
     <key>com.apple.security.cs.allow-jit</key>
     <true/>
-    <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
-    <true/>
     <key>com.apple.security.cs.debugger</key>
     <true/>
   </dict>
 </plist>
 ```
+
+Up until Electron 12, the `com.apple.security.cs.allow-unsigned-executable-memory` entitlement was required
+as well. However, it should not be used anymore if it can be avoided.
 
 ## Mac App Store
 

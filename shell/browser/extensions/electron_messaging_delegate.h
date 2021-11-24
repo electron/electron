@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_EXTENSIONS_ELECTRON_MESSAGING_DELEGATE_H_
-#define SHELL_BROWSER_EXTENSIONS_ELECTRON_MESSAGING_DELEGATE_H_
+#ifndef ELECTRON_SHELL_BROWSER_EXTENSIONS_ELECTRON_MESSAGING_DELEGATE_H_
+#define ELECTRON_SHELL_BROWSER_EXTENSIONS_ELECTRON_MESSAGING_DELEGATE_H_
 
 #include <memory>
 #include <string>
@@ -17,6 +17,11 @@ class ElectronMessagingDelegate : public MessagingDelegate {
  public:
   ElectronMessagingDelegate();
   ~ElectronMessagingDelegate() override;
+
+  // disable copy
+  ElectronMessagingDelegate(const ElectronMessagingDelegate&) = delete;
+  ElectronMessagingDelegate& operator=(const ElectronMessagingDelegate&) =
+      delete;
 
   // MessagingDelegate:
   PolicyPermission IsNativeMessagingHostAllowed(
@@ -45,14 +50,11 @@ class ElectronMessagingDelegate : public MessagingDelegate {
   void QueryIncognitoConnectability(
       content::BrowserContext* context,
       const Extension* extension,
-      content::WebContents* web_contents,
+      content::WebContents* source_contents,
       const GURL& url,
       base::OnceCallback<void(bool)> callback) override;
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(ElectronMessagingDelegate);
 };
 
 }  // namespace extensions
 
-#endif  // SHELL_BROWSER_EXTENSIONS_ELECTRON_MESSAGING_DELEGATE_H_
+#endif  // ELECTRON_SHELL_BROWSER_EXTENSIONS_ELECTRON_MESSAGING_DELEGATE_H_

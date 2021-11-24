@@ -153,7 +153,7 @@ describe('chrome extensions', () => {
     const extension = await customSession.loadExtension(path.join(fixtures, 'extensions', 'red-bg'));
     const [, loadedExtension] = await loadedPromise;
     const [, readyExtension] = await emittedUntil(customSession, 'extension-ready', (event: Event, extension: Extension) => {
-      return extension.name !== 'Chromium PDF Viewer';
+      return extension.name !== 'Chromium PDF Viewer' && extension.name !== 'CryptoTokenExtension';
     });
 
     expect(loadedExtension).to.deep.equal(extension);
@@ -337,9 +337,13 @@ describe('chrome extensions', () => {
   });
 
   describe('chrome.tabs', () => {
-    it('executeScript', async () => {
-      const customSession = session.fromPartition(`persist:${uuid.v4()}`);
+    let customSession: Session;
+    before(async () => {
+      customSession = session.fromPartition(`persist:${uuid.v4()}`);
       await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-api'));
+    });
+
+    it('executeScript', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } });
       await w.loadURL(url);
 
@@ -353,8 +357,6 @@ describe('chrome extensions', () => {
     });
 
     it('connect', async () => {
-      const customSession = session.fromPartition(`persist:${uuid.v4()}`);
-      await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-api'));
       const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } });
       await w.loadURL(url);
 
@@ -368,9 +370,7 @@ describe('chrome extensions', () => {
       expect(response[1]).to.equal('howdy');
     });
 
-    it('sendMessage receives the response', async function () {
-      const customSession = session.fromPartition(`persist:${uuid.v4()}`);
-      await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-api'));
+    it('sendMessage receives the response', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } });
       await w.loadURL(url);
 
@@ -382,6 +382,28 @@ describe('chrome extensions', () => {
 
       expect(response.message).to.equal('Hello World!');
       expect(response.tabId).to.equal(w.webContents.id);
+    });
+
+    it('update', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } });
+      await w.loadURL(url);
+
+      const w2 = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
+      await w2.loadURL('about:blank');
+
+      const w2Navigated = emittedOnce(w2.webContents, 'did-navigate');
+
+      const message = { method: 'update', args: [w2.webContents.id, { url }] };
+      w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+
+      const [,, responseString] = await emittedOnce(w.webContents, 'console-message');
+      const response = JSON.parse(responseString);
+
+      await w2Navigated;
+
+      expect(new URL(w2.getURL()).toString()).to.equal(new URL(url).toString());
+
+      expect(response.id).to.equal(w2.webContents.id);
     });
   });
 
@@ -432,12 +454,11 @@ describe('chrome extensions', () => {
     it('has session in background page', async () => {
       const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
       const promise = emittedOnce(app, 'web-contents-created');
-      await customSession.loadExtension(path.join(fixtures, 'extensions', 'persistent-background-page'));
-      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
-      await w.loadURL('about:blank');
+      const { id } = await customSession.loadExtension(path.join(fixtures, 'extensions', 'persistent-background-page'));
       const [, bgPageContents] = await promise;
       expect(bgPageContents.getType()).to.equal('backgroundPage');
-      expect(bgPageContents.getURL()).to.match(/^chrome-extension:\/\/.+\/_generated_background_page.html$/);
+      await emittedOnce(bgPageContents, 'did-finish-load');
+      expect(bgPageContents.getURL()).to.equal(`chrome-extension://${id}/_generated_background_page.html`);
       expect(bgPageContents.session).to.not.equal(undefined);
     });
 
@@ -445,8 +466,6 @@ describe('chrome extensions', () => {
       const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
       const promise = emittedOnce(app, 'web-contents-created');
       await customSession.loadExtension(path.join(fixtures, 'extensions', 'persistent-background-page'));
-      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
-      await w.loadURL('about:blank');
       const [, bgPageContents] = await promise;
       expect(bgPageContents.getType()).to.equal('backgroundPage');
       bgPageContents.openDevTools();
@@ -471,7 +490,7 @@ describe('chrome extensions', () => {
           const showLastPanel = () => {
             // this is executed in the devtools context, where UI is a global
             const { UI } = (window as any);
-            const tabs = UI.inspectorView._tabbedPane._tabs;
+            const tabs = UI.inspectorView.tabbedPane.tabs;
             const lastPanelId = tabs[tabs.length - 1].id;
             UI.inspectorView.showPanel(lastPanelId);
           };

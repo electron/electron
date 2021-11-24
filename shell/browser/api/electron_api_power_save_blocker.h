@@ -2,11 +2,10 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_ELECTRON_API_POWER_SAVE_BLOCKER_H_
-#define SHELL_BROWSER_API_ELECTRON_API_POWER_SAVE_BLOCKER_H_
+#ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_POWER_SAVE_BLOCKER_H_
+#define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_POWER_SAVE_BLOCKER_H_
 
 #include <map>
-#include <memory>
 
 #include "gin/handle.h"
 #include "gin/object_template_builder.h"
@@ -27,6 +26,10 @@ class PowerSaveBlocker : public gin::Wrappable<PowerSaveBlocker> {
       v8::Isolate* isolate) override;
 
   static gin::WrapperInfo kWrapperInfo;
+
+  // disable copy
+  PowerSaveBlocker(const PowerSaveBlocker&) = delete;
+  PowerSaveBlocker& operator=(const PowerSaveBlocker&) = delete;
 
  protected:
   explicit PowerSaveBlocker(v8::Isolate* isolate);
@@ -51,12 +54,10 @@ class PowerSaveBlocker : public gin::Wrappable<PowerSaveBlocker> {
   WakeLockTypeMap wake_lock_types_;
 
   mojo::Remote<device::mojom::WakeLock> wake_lock_;
-
-  DISALLOW_COPY_AND_ASSIGN(PowerSaveBlocker);
 };
 
 }  // namespace api
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_ELECTRON_API_POWER_SAVE_BLOCKER_H_
+#endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_POWER_SAVE_BLOCKER_H_

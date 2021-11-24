@@ -26,21 +26,9 @@
 #include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
 
 namespace gin {
-
-template <>
-struct Converter<URLPattern> {
-  static bool FromV8(v8::Isolate* isolate,
-                     v8::Local<v8::Value> val,
-                     URLPattern* out) {
-    std::string pattern;
-    if (!ConvertFromV8(isolate, val, &pattern))
-      return false;
-    *out = URLPattern(URLPattern::SCHEME_ALL);
-    return out->Parse(pattern) == URLPattern::ParseResult::kSuccess;
-  }
-};
 
 template <>
 struct Converter<extensions::WebRequestResourceType> {
@@ -63,11 +51,26 @@ struct Converter<extensions::WebRequestResourceType> {
       case extensions::WebRequestResourceType::IMAGE:
         result = "image";
         break;
+      case extensions::WebRequestResourceType::FONT:
+        result = "font";
+        break;
       case extensions::WebRequestResourceType::OBJECT:
         result = "object";
         break;
       case extensions::WebRequestResourceType::XHR:
         result = "xhr";
+        break;
+      case extensions::WebRequestResourceType::PING:
+        result = "ping";
+        break;
+      case extensions::WebRequestResourceType::CSP_REPORT:
+        result = "cspReport";
+        break;
+      case extensions::WebRequestResourceType::MEDIA:
+        result = "media";
+        break;
+      case extensions::WebRequestResourceType::WEB_SOCKET:
+        result = "webSocket";
         break;
       default:
         result = "other";
@@ -84,7 +87,7 @@ namespace api {
 
 namespace {
 
-const char* kUserDataKey = "WebRequest";
+const char kUserDataKey[] = "WebRequest";
 
 // BrowserContext <=> WebRequest relationship.
 struct UserData : public base::SupportsUserData::Data {
@@ -129,9 +132,11 @@ v8::Local<v8::Value> HttpResponseHeadersToV8(
           !value.empty()) {
         net::HttpContentDisposition header(value, std::string());
         std::string decodedFilename =
-            header.is_attachment() ? " attachement" : " inline";
-        decodedFilename += "; filename=" + header.filename();
-        value = decodedFilename;
+            header.is_attachment() ? " attachment" : " inline";
+        // The filename must be encased in double quotes for serialization
+        // to happen correctly.
+        std::string filename = "\"" + header.filename() + "\"";
+        value = decodedFilename + "; filename=" + filename;
       }
       if (!values)
         values = response_headers.SetKey(key, base::ListValue());
@@ -142,7 +147,8 @@ v8::Local<v8::Value> HttpResponseHeadersToV8(
 }
 
 // Overloaded by multiple types to fill the |details| object.
-void ToDictionary(gin::Dictionary* details, extensions::WebRequestInfo* info) {
+void ToDictionary(gin_helper::Dictionary* details,
+                  extensions::WebRequestInfo* info) {
   details->Set("id", info->id);
   details->Set("url", info->url);
   details->Set("method", info->method);
@@ -161,7 +167,7 @@ void ToDictionary(gin::Dictionary* details, extensions::WebRequestInfo* info) {
   auto* render_frame_host =
       content::RenderFrameHost::FromID(info->render_process_id, info->frame_id);
   if (render_frame_host) {
-    details->Set("frame", render_frame_host);
+    details->SetGetter("frame", render_frame_host);
     auto* web_contents =
         content::WebContents::FromRenderFrameHost(render_frame_host);
     auto* api_web_contents = WebContents::From(web_contents);
@@ -172,34 +178,34 @@ void ToDictionary(gin::Dictionary* details, extensions::WebRequestInfo* info) {
   }
 }
 
-void ToDictionary(gin::Dictionary* details,
+void ToDictionary(gin_helper::Dictionary* details,
                   const network::ResourceRequest& request) {
   details->Set("referrer", request.referrer);
   if (request.request_body)
     details->Set("uploadData", *request.request_body);
 }
 
-void ToDictionary(gin::Dictionary* details,
+void ToDictionary(gin_helper::Dictionary* details,
                   const net::HttpRequestHeaders& headers) {
   details->Set("requestHeaders", headers);
 }
 
-void ToDictionary(gin::Dictionary* details, const GURL& location) {
+void ToDictionary(gin_helper::Dictionary* details, const GURL& location) {
   details->Set("redirectURL", location);
 }
 
-void ToDictionary(gin::Dictionary* details, int net_error) {
+void ToDictionary(gin_helper::Dictionary* details, int net_error) {
   details->Set("error", net::ErrorToString(net_error));
 }
 
 // Helper function to fill |details| with arbitrary |args|.
 template <typename Arg>
-void FillDetails(gin::Dictionary* details, Arg arg) {
+void FillDetails(gin_helper::Dictionary* details, Arg arg) {
   ToDictionary(details, arg);
 }
 
 template <typename Arg, typename... Args>
-void FillDetails(gin::Dictionary* details, Arg arg, Args... args) {
+void FillDetails(gin_helper::Dictionary* details, Arg arg, Args... args) {
   ToDictionary(details, arg);
   FillDetails(details, args...);
 }
@@ -214,8 +220,11 @@ void ReadFromResponse(v8::Isolate* isolate,
 void ReadFromResponse(v8::Isolate* isolate,
                       gin::Dictionary* response,
                       net::HttpRequestHeaders* headers) {
-  headers->Clear();
-  response->Get("requestHeaders", headers);
+  v8::Local<v8::Value> value;
+  if (response->Get("requestHeaders", &value) && value->IsObject()) {
+    headers->Clear();
+    gin::Converter<net::HttpRequestHeaders>::FromV8(isolate, value, headers);
+  }
 }
 
 void ReadFromResponse(v8::Isolate* isolate,
@@ -387,7 +396,7 @@ void WebRequest::SetListener(Event event,
   std::set<std::string> filter_patterns;
   gin::Dictionary dict(args->isolate());
   if (args->GetNext(&arg) && !arg->IsFunction()) {
-    // Note that gin treats Function as Dictionary when doing convertions, so we
+    // Note that gin treats Function as Dictionary when doing conversions, so we
     // have to explicitly check if the argument is Function before trying to
     // convert it to Dictionary.
     if (gin::ConvertFromV8(args->isolate(), arg, &dict)) {
@@ -441,7 +450,7 @@ void WebRequest::HandleSimpleEvent(SimpleEvent event,
 
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
-  gin::Dictionary details(isolate, v8::Object::New(isolate));
+  gin_helper::Dictionary details(isolate, v8::Object::New(isolate));
   FillDetails(&details, request_info, args...);
   info.listener.Run(gin::ConvertToV8(isolate, details));
 }
@@ -464,7 +473,7 @@ int WebRequest::HandleResponseEvent(ResponseEvent event,
 
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
-  gin::Dictionary details(isolate, v8::Object::New(isolate));
+  gin_helper::Dictionary details(isolate, v8::Object::New(isolate));
   FillDetails(&details, request_info, args...);
 
   ResponseCallback response =

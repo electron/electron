@@ -12,26 +12,27 @@ https://boringssl-review.googlesource.com/c/boringssl/+/33984 for a
 similar patch that was merged upstream.
 
 diff --git a/crypto/cipher_extra/cipher_extra.c b/crypto/cipher_extra/cipher_extra.c
-index b132265bc103658dba3de6e0c3dc50d3634da5b0..588a4773437c311877f275bf3679f9688cda3c46 100644
+index 62850ab6a216d401d023f81007fb59a33b4585f3..0c30b0329d32b94b22f342f95035e927797d0aaf 100644
 --- a/crypto/cipher_extra/cipher_extra.c
 +++ b/crypto/cipher_extra/cipher_extra.c
-@@ -101,10 +101,14 @@ const EVP_CIPHER *EVP_get_cipherbyname(const char *name) {
-     return EVP_des_ede3_cbc();
-   } else if (OPENSSL_strcasecmp(name, "aes-128-cbc") == 0) {
-     return EVP_aes_128_cbc();
-+  } else if (OPENSSL_strcasecmp(name, "aes-128-cfb") == 0) {
-+    return EVP_aes_128_cfb128();
-   } else if (OPENSSL_strcasecmp(name, "aes-192-cbc") == 0) {
-     return EVP_aes_192_cbc();
-   } else if (OPENSSL_strcasecmp(name, "aes-256-cbc") == 0) {
-     return EVP_aes_256_cbc();
-+  } else if (OPENSSL_strcasecmp(name, "aes-256-cfb") == 0) {
-+    return EVP_aes_256_cfb128();
-   } else if (OPENSSL_strcasecmp(name, "aes-128-ctr") == 0) {
-     return EVP_aes_128_ctr();
-   } else if (OPENSSL_strcasecmp(name, "aes-192-ctr") == 0) {
+@@ -73,6 +73,7 @@ static const struct {
+   const EVP_CIPHER *(*func)(void);
+ } kCiphers[] = {
+     {NID_aes_128_cbc, "aes-128-cbc", EVP_aes_128_cbc},
++    {NID_aes_128_cfb128, "aes-128-cfb", EVP_aes_128_cfb128},
+     {NID_aes_128_ctr, "aes-128-ctr", EVP_aes_128_ctr},
+     {NID_aes_128_ecb, "aes-128-ecb", EVP_aes_128_ecb},
+     {NID_aes_128_gcm, "aes-128-gcm", EVP_aes_128_gcm},
+@@ -83,6 +84,7 @@ static const struct {
+     {NID_aes_192_gcm, "aes-192-gcm", EVP_aes_192_gcm},
+     {NID_aes_192_ofb128, "aes-192-ofb", EVP_aes_192_ofb},
+     {NID_aes_256_cbc, "aes-256-cbc", EVP_aes_256_cbc},
++    {NID_aes_256_cfb128, "aes-256-cfb", EVP_aes_256_cfb128},
+     {NID_aes_256_ctr, "aes-256-ctr", EVP_aes_256_ctr},
+     {NID_aes_256_ecb, "aes-256-ecb", EVP_aes_256_ecb},
+     {NID_aes_256_gcm, "aes-256-gcm", EVP_aes_256_gcm},
 diff --git a/decrepit/evp/evp_do_all.c b/decrepit/evp/evp_do_all.c
-index 53cb9d2dc8f1962a70dc12b648d27c32be8aca4b..84af06fc56e4aa72d4d48801d7c037add0221747 100644
+index 852b76bea69988e0b3ac76a17b603128f239dde0..d443f4dc2daea0b7aa86ae75d31d995fae667ba9 100644
 --- a/decrepit/evp/evp_do_all.c
 +++ b/decrepit/evp/evp_do_all.c
 @@ -20,8 +20,10 @@ void EVP_CIPHER_do_all_sorted(void (*callback)(const EVP_CIPHER *cipher,
@@ -57,10 +58,10 @@ index 53cb9d2dc8f1962a70dc12b648d27c32be8aca4b..84af06fc56e4aa72d4d48801d7c037ad
    callback(EVP_aes_192_ctr(), "aes-192-ctr", NULL, arg);
    callback(EVP_aes_256_ctr(), "aes-256-ctr", NULL, arg);
 diff --git a/include/openssl/cipher.h b/include/openssl/cipher.h
-index badd496293fb9748adacff10478ea702d1155c5f..8565934bac9a810281b04946cb9f38d7623320f7 100644
+index 09d72ec2c343f23409d35eca804a02e3290c86f1..1bea1a88b265312d700729ad2828f0b5d9f2d84f 100644
 --- a/include/openssl/cipher.h
 +++ b/include/openssl/cipher.h
-@@ -430,6 +430,7 @@ OPENSSL_EXPORT const EVP_CIPHER *EVP_des_ede3_ecb(void);
+@@ -436,6 +436,7 @@ OPENSSL_EXPORT const EVP_CIPHER *EVP_des_ede3_ecb(void);
  
  // EVP_aes_128_cfb128 is only available in decrepit.
  OPENSSL_EXPORT const EVP_CIPHER *EVP_aes_128_cfb128(void);

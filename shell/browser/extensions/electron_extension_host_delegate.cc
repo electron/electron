@@ -17,9 +17,9 @@
 
 namespace extensions {
 
-ElectronExtensionHostDelegate::ElectronExtensionHostDelegate() {}
+ElectronExtensionHostDelegate::ElectronExtensionHostDelegate() = default;
 
-ElectronExtensionHostDelegate::~ElectronExtensionHostDelegate() {}
+ElectronExtensionHostDelegate::~ElectronExtensionHostDelegate() = default;
 
 void ElectronExtensionHostDelegate::OnExtensionHostCreated(
     content::WebContents* web_contents) {

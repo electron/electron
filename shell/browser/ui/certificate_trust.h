@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_UI_CERTIFICATE_TRUST_H_
-#define SHELL_BROWSER_UI_CERTIFICATE_TRUST_H_
+#ifndef ELECTRON_SHELL_BROWSER_UI_CERTIFICATE_TRUST_H_
+#define ELECTRON_SHELL_BROWSER_UI_CERTIFICATE_TRUST_H_
 
 #include <string>
 
@@ -14,7 +14,7 @@
 
 namespace electron {
 class NativeWindow;
-}  // namespace electron
+}
 
 namespace certificate_trust {
 
@@ -25,4 +25,4 @@ v8::Local<v8::Promise> ShowCertificateTrust(
 
 }  // namespace certificate_trust
 
-#endif  // SHELL_BROWSER_UI_CERTIFICATE_TRUST_H_
+#endif  // ELECTRON_SHELL_BROWSER_UI_CERTIFICATE_TRUST_H_

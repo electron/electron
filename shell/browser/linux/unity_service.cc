@@ -58,7 +58,7 @@ void EnsureLibUnityLoaded() {
     return;
   attempted_load = true;
 
-  std::unique_ptr<base::Environment> env(base::Environment::Create());
+  auto env = base::Environment::Create();
   base::nix::DesktopEnvironment desktop_env = GetDesktopEnvironment(env.get());
 
   // The "icon-tasks" KDE task manager also honors Unity Launcher API.

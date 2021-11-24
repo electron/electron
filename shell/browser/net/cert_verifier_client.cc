@@ -25,7 +25,7 @@ void CertVerifierClient::Verify(
     const scoped_refptr<net::X509Certificate>& certificate,
     const std::string& hostname,
     int flags,
-    const base::Optional<std::string>& ocsp_response,
+    const absl::optional<std::string>& ocsp_response,
     VerifyCallback callback) {
   VerifyRequestParams params;
   params.hostname = hostname;
@@ -33,12 +33,13 @@ void CertVerifierClient::Verify(
   params.error_code = default_error;
   params.certificate = certificate;
   params.validated_certificate = default_result.verified_cert;
+  params.is_issued_by_known_root = default_result.is_issued_by_known_root;
   cert_verify_proc_.Run(
       params,
-      base::AdaptCallbackForRepeating(base::BindOnce(
+      base::BindOnce(
           [](VerifyCallback callback, const net::CertVerifyResult& result,
              int err) { std::move(callback).Run(err, result); },
-          std::move(callback), default_result)));
+          std::move(callback), default_result));
 }
 
 }  // namespace electron

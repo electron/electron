@@ -17,7 +17,7 @@ namespace electron {
 NodeBindingsMac::NodeBindingsMac(BrowserEnvironment browser_env)
     : NodeBindings(browser_env) {}
 
-NodeBindingsMac::~NodeBindingsMac() {}
+NodeBindingsMac::~NodeBindingsMac() = default;
 
 void NodeBindingsMac::RunMessageLoop() {
   // Get notified when libuv's watcher queue changes.

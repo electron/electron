@@ -2,11 +2,10 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_ELECTRON_API_DEBUGGER_H_
-#define SHELL_BROWSER_API_ELECTRON_API_DEBUGGER_H_
+#ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_DEBUGGER_H_
+#define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_DEBUGGER_H_
 
 #include <map>
-#include <string>
 
 #include "base/callback.h"
 #include "base/values.h"
@@ -41,6 +40,10 @@ class Debugger : public gin::Wrappable<Debugger>,
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
 
+  // disable copy
+  Debugger(const Debugger&) = delete;
+  Debugger& operator=(const Debugger&) = delete;
+
  protected:
   Debugger(v8::Isolate* isolate, content::WebContents* web_contents);
   ~Debugger() override;
@@ -69,12 +72,10 @@ class Debugger : public gin::Wrappable<Debugger>,
 
   PendingRequestMap pending_requests_;
   int previous_request_id_ = 0;
-
-  DISALLOW_COPY_AND_ASSIGN(Debugger);
 };
 
 }  // namespace api
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_ELECTRON_API_DEBUGGER_H_
+#endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_DEBUGGER_H_

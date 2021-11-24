@@ -23,6 +23,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       port.postMessage('howdy');
       break;
     }
+
+    case 'update': {
+      const [tabId, props] = args;
+      chrome.tabs.update(tabId, props, sendResponse);
+    }
   }
   // Respond asynchronously
   return true;

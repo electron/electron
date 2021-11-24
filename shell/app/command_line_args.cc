@@ -4,12 +4,17 @@
 
 #include "shell/app/command_line_args.h"
 
+#include <locale>
+
+#include "sandbox/policy/switches.h"
+#include "shell/common/options_switches.h"
+
 namespace {
 
 bool IsUrlArg(const base::CommandLine::CharType* arg) {
   // the first character must be a letter for this to be a URL
   auto c = *arg;
-  if (('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z')) {
+  if (std::isalpha(c, std::locale::classic())) {
     for (auto* p = arg + 1; *p; ++p) {
       c = *p;
 
@@ -23,7 +28,7 @@ bool IsUrlArg(const base::CommandLine::CharType* arg) {
       }
 
       // white-space before a colon means it's not a URL
-      if (c == ' ' || (0x9 <= c && c <= 0xD))
+      if (std::isspace(c, std::locale::classic()))
         break;
     }
   }
@@ -48,6 +53,11 @@ bool CheckCommandLineArguments(int argc, base::CommandLine::CharType** argv) {
     }
   }
   return true;
+}
+
+bool IsSandboxEnabled(base::CommandLine* command_line) {
+  return command_line->HasSwitch(switches::kEnableSandbox) ||
+         !command_line->HasSwitch(sandbox::policy::switches::kNoSandbox);
 }
 
 }  // namespace electron

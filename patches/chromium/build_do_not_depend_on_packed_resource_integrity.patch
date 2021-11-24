@@ -1,0 +1,90 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sattard@slack-corp.com>
+Date: Thu, 27 May 2021 17:21:07 -0700
+Subject: build: do not depend on packed_resource_integrity
+
+This ensures we do not depend on a target that does not exist when
+building Electron, electron generates its own .pak files via
+electron_repack and therefore this integrity target which is generated
+by the chrome_paks target does not exist.  This can not be upstreamed,
+if we ever align our .pak file generation with Chrome we can remove this
+patch.
+
+diff --git a/chrome/BUILD.gn b/chrome/BUILD.gn
+index fd0b9634796e782c873b5fcb97c84ab52f19cf98..73450e005e068a74559caedb407422f4dfdf5010 100644
+--- a/chrome/BUILD.gn
++++ b/chrome/BUILD.gn
+@@ -171,11 +171,16 @@ if (!is_android && !is_mac) {
+         "common/crash_keys.h",
+       ]
+ 
++      if (!is_electron_build) {
++        deps += [
++          ":packed_resources_integrity",
++        ]
++      }
++
+       deps += [
+         ":chrome_dll",
+         ":chrome_exe_version",
+         ":copy_first_run",
+-        ":packed_resources_integrity",
+         ":visual_elements_resources",
+         "//base",
+         "//build:branding_buildflags",
+diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
+index ed472a9ef8116c028d0e54413ac0ef256ceaeddc..323a8110255583d351c34a3085f94c93d25b1f13 100644
+--- a/chrome/browser/BUILD.gn
++++ b/chrome/browser/BUILD.gn
+@@ -4500,7 +4500,7 @@ static_library("browser") {
+ 
+     # On Windows, the hashes are embedded in //chrome:chrome_initial rather
+     # than here in :chrome_dll.
+-    if (!is_win) {
++    if (!is_win && !is_electron_build) {
+       deps += [ "//chrome:packed_resources_integrity" ]
+     }
+ 
+diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
+index a1f91069b5ac79c28a5c518b1a0deac594ba9e4d..78c7e857b41aef954035e9f34137f6f50a8098b5 100644
+--- a/chrome/test/BUILD.gn
++++ b/chrome/test/BUILD.gn
+@@ -5572,7 +5572,6 @@ test("unit_tests") {
+     assert(toolkit_views)
+     sources += [ "../browser/ui/startup/credential_provider_signin_info_fetcher_win_unittest.cc" ]
+     deps += [
+-      "//chrome:packed_resources_integrity",
+       "//chrome/browser:chrome_process_finder",
+       "//chrome/browser/safe_browsing/chrome_cleaner",
+       "//chrome/browser/safe_browsing/chrome_cleaner:public",
+@@ -5585,6 +5584,12 @@ test("unit_tests") {
+       "//components/chrome_cleaner/public/proto",
+       "//ui/events/devices:test_support",
+     ]
++
++    if (!is_electron_build) {
++      deps += [
++        "//chrome:packed_resources_integrity",
++      ]
++    }
+   }
+ 
+   # TODO(crbug.com/931218): Ninja cannot handle certain characters appearing
+@@ -6172,7 +6177,6 @@ test("unit_tests") {
+     }
+ 
+     deps += [
+-      "//chrome:packed_resources_integrity_hash",
+       "//chrome/browser:cart_db_content_proto",
+       "//chrome/browser:coupon_db_content_proto",
+       "//chrome/browser/media/router:test_support",
+@@ -6213,6 +6217,9 @@ test("unit_tests") {
+       "//ui/native_theme:test_support",
+       "//ui/webui/resources/js/browser_command:mojo_bindings",
+     ]
++    if (!is_electron_build) {
++      deps += [ "//chrome:packed_resources_integrity_hash" ]
++    }
+     if (is_win) {
+       deps += [ "//components/chrome_cleaner/public/proto:test_only_proto" ]
+     }

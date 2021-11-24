@@ -1,15 +1,15 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jeremy Apthorp <nornagon@nornagon.net>
 Date: Thu, 20 Sep 2018 17:49:24 -0700
-Subject: mas-cgdisplayusesforcetogray.patch
+Subject: mas: avoid usage of CGDisplayUsesForceToGray
 
 Removes usage of the CGDisplayUsesForceToGray private API.
 
 diff --git a/ui/display/mac/screen_mac.mm b/ui/display/mac/screen_mac.mm
-index 00415aac8b80fc914af6af7209cc431c156e2b95..e37ca0b7cb3c7fdc4a9f47c18d0afc1ff1764dd9 100644
+index 7354a04f927af9a61eff83a8a5a9bc1054da80ec..f38ef7e9e1781f0c880ffcccabb984dcafdaada8 100644
 --- a/ui/display/mac/screen_mac.mm
 +++ b/ui/display/mac/screen_mac.mm
-@@ -133,7 +133,17 @@ Display BuildDisplayForScreen(NSScreen* screen) {
+@@ -149,7 +149,17 @@ DisplayMac BuildDisplayForScreen(NSScreen* screen) {
      display.set_color_depth(Display::kDefaultBitsPerPixel);
      display.set_depth_per_component(Display::kDefaultBitsPerComponent);
    }

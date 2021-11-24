@@ -31,7 +31,7 @@ BadgeManagerFactory::BadgeManagerFactory()
           "BadgeManager",
           BrowserContextDependencyManager::GetInstance()) {}
 
-BadgeManagerFactory::~BadgeManagerFactory() {}
+BadgeManagerFactory::~BadgeManagerFactory() = default;
 
 KeyedService* BadgeManagerFactory::BuildServiceInstanceFor(
     content::BrowserContext* context) const {

@@ -105,13 +105,18 @@ content::WebContents* WebViewGuestDelegate::CreateNewGuestWindow(
   guest_params.context = embedder_web_contents_->GetNativeView();
   std::unique_ptr<content::WebContents> guest_contents =
       content::WebContents::Create(guest_params);
-  content::RenderWidgetHost* render_widget_host =
-      guest_contents->GetRenderViewHost()->GetWidget();
-  auto* guest_contents_impl =
-      static_cast<content::WebContentsImpl*>(guest_contents.release());
-  guest_contents_impl->GetView()->CreateViewForWidget(render_widget_host);
-
-  return guest_contents_impl;
+  if (!create_params.opener_suppressed) {
+    auto* guest_contents_impl =
+        static_cast<content::WebContentsImpl*>(guest_contents.release());
+    auto* new_guest_view = guest_contents_impl->GetView();
+    content::RenderWidgetHostView* widget_view =
+        new_guest_view->CreateViewForWidget(
+            guest_contents_impl->GetRenderViewHost()->GetWidget());
+    if (!create_params.initially_hidden)
+      widget_view->Show();
+    return guest_contents_impl;
+  }
+  return guest_contents.release();
 }
 
 }  // namespace electron

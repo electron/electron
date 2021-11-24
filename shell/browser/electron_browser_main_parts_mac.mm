@@ -7,6 +7,7 @@
 #include "base/mac/bundle_locations.h"
 #include "base/mac/foundation_util.h"
 #include "base/path_service.h"
+#include "services/device/public/cpp/geolocation/geolocation_manager_impl_mac.h"
 #import "shell/browser/mac/electron_application.h"
 #include "shell/browser/mac/electron_application_delegate.h"
 #include "shell/common/electron_paths.h"
@@ -14,19 +15,21 @@
 
 namespace electron {
 
-void ElectronBrowserMainParts::PreMainMessageLoopStart() {
+void ElectronBrowserMainParts::PreCreateMainMessageLoop() {
   // Set our own application delegate.
   ElectronApplicationDelegate* delegate =
       [[ElectronApplicationDelegate alloc] init];
   [NSApp setDelegate:delegate];
 
-  PreMainMessageLoopStartCommon();
+  PreCreateMainMessageLoopCommon();
 
   // Prevent Cocoa from turning command-line arguments into
   // |-application:openFiles:|, since we already handle them directly.
   [[NSUserDefaults standardUserDefaults]
       setObject:@"NO"
          forKey:@"NSTreatUnknownArgumentsAsOpen"];
+
+  geolocation_manager_ = device::GeolocationManagerImpl::Create();
 }
 
 void ElectronBrowserMainParts::FreeAppDelegate() {

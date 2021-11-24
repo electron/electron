@@ -6,7 +6,6 @@
 
 #include <memory>
 #include <utility>
-#include <vector>
 
 #include "base/bind.h"
 #include "base/command_line.h"
@@ -15,6 +14,7 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
+#include "chrome/common/chrome_paths.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/devtools_frontend_host.h"
 #include "content/public/browser/devtools_socket_factory.h"
@@ -41,11 +41,15 @@ class TCPServerSocketFactory : public content::DevToolsSocketFactory {
   TCPServerSocketFactory(const std::string& address, int port)
       : address_(address), port_(port) {}
 
+  // disable copy
+  TCPServerSocketFactory(const TCPServerSocketFactory&) = delete;
+  TCPServerSocketFactory& operator=(const TCPServerSocketFactory&) = delete;
+
  private:
   // content::ServerSocketFactory.
   std::unique_ptr<net::ServerSocket> CreateForHttpServer() override {
-    std::unique_ptr<net::ServerSocket> socket(
-        new net::TCPServerSocket(nullptr, net::NetLogSource()));
+    auto socket =
+        std::make_unique<net::TCPServerSocket>(nullptr, net::NetLogSource());
     if (socket->ListenWithAddressAndPort(address_, port_, 10) != net::OK)
       return std::unique_ptr<net::ServerSocket>();
 
@@ -58,8 +62,6 @@ class TCPServerSocketFactory : public content::DevToolsSocketFactory {
 
   std::string address_;
   uint16_t port_;
-
-  DISALLOW_COPY_AND_ASSIGN(TCPServerSocketFactory);
 };
 
 std::unique_ptr<content::DevToolsSocketFactory> CreateSocketFactory() {
@@ -78,8 +80,7 @@ std::unique_ptr<content::DevToolsSocketFactory> CreateSocketFactory() {
       DLOG(WARNING) << "Invalid http debugger port number " << temp_port;
     }
   }
-  return std::unique_ptr<content::DevToolsSocketFactory>(
-      new TCPServerSocketFactory("127.0.0.1", port));
+  return std::make_unique<TCPServerSocketFactory>("127.0.0.1", port);
 }
 
 const char kBrowserCloseMethod[] = "Browser.close";
@@ -91,7 +92,7 @@ const char kBrowserCloseMethod[] = "Browser.close";
 // static
 void DevToolsManagerDelegate::StartHttpHandler() {
   base::FilePath user_dir;
-  base::PathService::Get(DIR_USER_DATA, &user_dir);
+  base::PathService::Get(chrome::DIR_USER_DATA, &user_dir);
   content::DevToolsAgentHost::StartRemoteDebuggingServer(
       CreateSocketFactory(), user_dir, base::FilePath());
 }

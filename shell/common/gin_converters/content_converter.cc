@@ -5,7 +5,6 @@
 #include "shell/common/gin_converters/content_converter.h"
 
 #include <string>
-#include <vector>
 
 #include "content/public/browser/context_menu_params.h"
 #include "content/public/browser/native_web_keyboard_event.h"
@@ -14,6 +13,7 @@
 #include "shell/browser/web_contents_permission_helper.h"
 #include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_converters/frame_converter.h"
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -74,11 +74,13 @@ v8::Local<v8::Value> Converter<blink::mojom::MenuItem::Type>::ToV8(
 }
 
 // static
-v8::Local<v8::Value> Converter<ContextMenuParamsWithWebContents>::ToV8(
+v8::Local<v8::Value> Converter<ContextMenuParamsWithRenderFrameHost>::ToV8(
     v8::Isolate* isolate,
-    const ContextMenuParamsWithWebContents& val) {
+    const ContextMenuParamsWithRenderFrameHost& val) {
   const auto& params = val.first;
+  content::RenderFrameHost* render_frame_host = val.second;
   gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  dict.SetGetter("frame", render_frame_host, v8::DontEnum);
   dict.Set("x", params.x);
   dict.Set("y", params.y);
   dict.Set("linkURL", params.link_url);
@@ -207,6 +209,8 @@ v8::Local<v8::Value> Converter<content::PermissionType>::ToV8(
       return StringToV8(isolate, "openExternal");
     case PermissionType::SERIAL:
       return StringToV8(isolate, "serial");
+    case PermissionType::HID:
+      return StringToV8(isolate, "hid");
     default:
       return StringToV8(isolate, "unknown");
   }
@@ -304,25 +308,7 @@ bool Converter<content::NativeWebKeyboardEvent>::FromV8(
 v8::Local<v8::Value> Converter<content::NativeWebKeyboardEvent>::ToV8(
     v8::Isolate* isolate,
     const content::NativeWebKeyboardEvent& in) {
-  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
-
-  if (in.GetType() == blink::WebInputEvent::Type::kRawKeyDown)
-    dict.Set("type", "keyDown");
-  else if (in.GetType() == blink::WebInputEvent::Type::kKeyUp)
-    dict.Set("type", "keyUp");
-  dict.Set("key", ui::KeycodeConverter::DomKeyToKeyString(in.dom_key));
-  dict.Set("code", ui::KeycodeConverter::DomCodeToCodeString(
-                       static_cast<ui::DomCode>(in.dom_code)));
-
-  using Modifiers = blink::WebInputEvent::Modifiers;
-  dict.Set("isAutoRepeat", (in.GetModifiers() & Modifiers::kIsAutoRepeat) != 0);
-  dict.Set("isComposing", (in.GetModifiers() & Modifiers::kIsComposing) != 0);
-  dict.Set("shift", (in.GetModifiers() & Modifiers::kShiftKey) != 0);
-  dict.Set("control", (in.GetModifiers() & Modifiers::kControlKey) != 0);
-  dict.Set("alt", (in.GetModifiers() & Modifiers::kAltKey) != 0);
-  dict.Set("meta", (in.GetModifiers() & Modifiers::kMetaKey) != 0);
-
-  return dict.GetHandle();
+  return ConvertToV8(isolate, static_cast<blink::WebKeyboardEvent>(in));
 }
 
 }  // namespace gin

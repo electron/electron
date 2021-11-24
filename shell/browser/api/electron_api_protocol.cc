@@ -4,8 +4,6 @@
 
 #include "shell/browser/api/electron_api_protocol.h"
 
-#include <memory>
-#include <utility>
 #include <vector>
 
 #include "base/command_line.h"
@@ -21,6 +19,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
+#include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/process_util.h"
 #include "url/url_util.h"
@@ -66,7 +65,6 @@ struct Converter<CustomScheme> {
     // options are optional. Default values specified in SchemeOptions are used
     if (dict.Get("privileges", &opt)) {
       opt.Get("standard", &(out->options.standard));
-      opt.Get("supportFetchAPI", &(out->options.supportFetchAPI));
       opt.Get("secure", &(out->options.secure));
       opt.Get("bypassCSP", &(out->options.bypassCSP));
       opt.Get("allowServiceWorkers", &(out->options.allowServiceWorkers));
@@ -87,6 +85,16 @@ gin::WrapperInfo Protocol::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 std::vector<std::string> GetStandardSchemes() {
   return g_standard_schemes;
+}
+
+void AddServiceWorkerScheme(const std::string& scheme) {
+  // There is no API to add service worker scheme, but there is an API to
+  // return const reference to the schemes vector.
+  // If in future the API is changed to return a copy instead of reference,
+  // the compilation will fail, and we should add a patch at that time.
+  auto& mutable_schemes =
+      const_cast<std::vector<std::string>&>(content::GetServiceWorkerSchemes());
+  mutable_schemes.push_back(scheme);
 }
 
 void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
@@ -125,13 +133,7 @@ void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
     }
     if (custom_scheme.options.allowServiceWorkers) {
       service_worker_schemes.push_back(custom_scheme.scheme);
-      // There is no API to add service worker scheme, but there is an API to
-      // return const reference to the schemes vector.
-      // If in future the API is changed to return a copy instead of reference,
-      // the compilation will fail, and we should add a patch at that time.
-      auto& mutable_schemes = const_cast<std::vector<std::string>&>(
-          content::GetServiceWorkerSchemes());
-      mutable_schemes.push_back(custom_scheme.scheme);
+      AddServiceWorkerScheme(custom_scheme.scheme);
     }
     if (custom_scheme.options.stream) {
       g_streaming_schemes.push_back(custom_scheme.scheme);
@@ -161,7 +163,7 @@ void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
 
 namespace {
 
-const char* kBuiltinSchemes[] = {
+const char* const kBuiltinSchemes[] = {
     "about", "file", "http", "https", "data", "filesystem",
 };
 

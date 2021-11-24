@@ -2,15 +2,14 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_BROWSER_H_
-#define SHELL_BROWSER_BROWSER_H_
+#ifndef ELECTRON_SHELL_BROWSER_BROWSER_H_
+#define ELECTRON_SHELL_BROWSER_BROWSER_H_
 
 #include <memory>
 #include <string>
 #include <vector>
 
 #include "base/compiler_specific.h"
-#include "base/macros.h"
 #include "base/observer_list.h"
 #include "base/task/cancelable_task_tracker.h"
 #include "base/values.h"
@@ -33,10 +32,6 @@ namespace base {
 class FilePath;
 }
 
-namespace gfx {
-class Image;
-}
-
 namespace gin_helper {
 class Arguments;
 }
@@ -50,6 +45,10 @@ class Browser : public WindowListObserver {
  public:
   Browser();
   ~Browser() override;
+
+  // disable copy
+  Browser(const Browser&) = delete;
+  Browser& operator=(const Browser&) = delete;
 
   static Browser* Get();
 
@@ -109,7 +108,7 @@ class Browser : public WindowListObserver {
 #endif
 
   // Set/Get the badge count.
-  bool SetBadgeCount(base::Optional<int> count);
+  bool SetBadgeCount(absl::optional<int> count);
   int GetBadgeCount();
 
 #if defined(OS_WIN)
@@ -191,7 +190,8 @@ class Browser : public WindowListObserver {
 
   // Resumes an activity via hand-off.
   bool ContinueUserActivity(const std::string& type,
-                            base::DictionaryValue user_info);
+                            base::DictionaryValue user_info,
+                            base::DictionaryValue details);
 
   // Indicates that an activity was continued on another device.
   void UserActivityWasContinued(const std::string& type,
@@ -309,7 +309,7 @@ class Browser : public WindowListObserver {
 #endif
 
   bool is_shutting_down() const { return is_shutdown_; }
-  bool is_quiting() const { return is_quiting_; }
+  bool is_quitting() const { return is_quitting_; }
   bool is_ready() const { return is_ready_; }
   v8::Local<v8::Value> WhenReady(v8::Isolate* isolate);
 
@@ -326,7 +326,7 @@ class Browser : public WindowListObserver {
   // Send the before-quit message and start closing windows.
   bool HandleBeforeQuit();
 
-  bool is_quiting_ = false;
+  bool is_quitting_ = false;
 
  private:
   // WindowListObserver implementations:
@@ -368,16 +368,14 @@ class Browser : public WindowListObserver {
 
 #if defined(OS_WIN)
   void UpdateBadgeContents(HWND hwnd,
-                           const base::Optional<std::string>& badge_content,
+                           const absl::optional<std::string>& badge_content,
                            const std::string& badge_alt_string);
 
   // In charge of running taskbar related APIs.
   TaskbarHost taskbar_host_;
 #endif
-
-  DISALLOW_COPY_AND_ASSIGN(Browser);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_BROWSER_H_
+#endif  // ELECTRON_SHELL_BROWSER_BROWSER_H_

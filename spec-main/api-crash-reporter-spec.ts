@@ -3,7 +3,7 @@ import * as childProcess from 'child_process';
 import * as http from 'http';
 import * as Busboy from 'busboy';
 import * as path from 'path';
-import { ifdescribe, ifit, defer, startRemoteControlApp, delay } from './spec-helpers';
+import { ifdescribe, ifit, defer, startRemoteControlApp, delay, repeatedly } from './spec-helpers';
 import { app } from 'electron/main';
 import { crashReporter } from 'electron/common';
 import { AddressInfo } from 'net';
@@ -279,7 +279,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
         setTimeout(() => process.crash());
       }, port);
       const crash = await waitForCrash();
-      expect(stitchLongCrashParam(crash, 'longParam')).to.have.lengthOf(160 * 127, 'crash should have truncated longParam');
+      expect(stitchLongCrashParam(crash, 'longParam')).to.have.lengthOf(160 * 127 + (process.platform === 'linux' ? 159 : 0), 'crash should have truncated longParam');
     });
 
     it('should omit extra keys with names longer than the maximum', async () => {
@@ -357,29 +357,6 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
     expect(getCrashes()).to.have.length(0);
   });
 
-  describe('start() option validation', () => {
-    it('requires that the submitURL option be specified', () => {
-      expect(() => {
-        crashReporter.start({} as any);
-      }).to.throw('submitURL must be specified when uploadToServer is true');
-    });
-
-    it('allows the submitURL option to be omitted when uploadToServer is false', () => {
-      expect(() => {
-        crashReporter.start({ uploadToServer: false } as any);
-      }).not.to.throw();
-    });
-
-    it('can be called twice', async () => {
-      const { remotely } = await startRemoteControlApp();
-      await expect(remotely(() => {
-        const { crashReporter } = require('electron');
-        crashReporter.start({ submitURL: 'http://127.0.0.1' });
-        crashReporter.start({ submitURL: 'http://127.0.0.1' });
-      })).to.be.fulfilled();
-    });
-  });
-
   describe('getUploadedReports', () => {
     it('returns an array of reports', async () => {
       const { remotely } = await startRemoteControlApp();
@@ -421,36 +398,12 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
       });
       await waitForCrash();
       // 3. get the crash from getLastCrashReport.
-      const firstReport = await remotely(() => require('electron').crashReporter.getLastCrashReport());
+      const firstReport = await repeatedly(
+        () => remotely(() => require('electron').crashReporter.getLastCrashReport())
+      );
       expect(firstReport).to.not.be.null();
       expect(firstReport.date).to.be.an.instanceOf(Date);
       expect((+new Date()) - (+firstReport.date)).to.be.lessThan(30000);
-    });
-  });
-
-  describe('getUploadToServer()', () => {
-    it('returns true when uploadToServer is set to true (by default)', async () => {
-      const { remotely } = await startRemoteControlApp();
-
-      await remotely(() => { require('electron').crashReporter.start({ submitURL: 'http://127.0.0.1' }); });
-      const uploadToServer = await remotely(() => require('electron').crashReporter.getUploadToServer());
-      expect(uploadToServer).to.be.true();
-    });
-
-    it('returns false when uploadToServer is set to false in init', async () => {
-      const { remotely } = await startRemoteControlApp();
-      await remotely(() => { require('electron').crashReporter.start({ submitURL: 'http://127.0.0.1', uploadToServer: false }); });
-      const uploadToServer = await remotely(() => require('electron').crashReporter.getUploadToServer());
-      expect(uploadToServer).to.be.false();
-    });
-
-    it('is updated by setUploadToServer', async () => {
-      const { remotely } = await startRemoteControlApp();
-      await remotely(() => { require('electron').crashReporter.start({ submitURL: 'http://127.0.0.1' }); });
-      await remotely(() => { require('electron').crashReporter.setUploadToServer(false); });
-      expect(await remotely(() => require('electron').crashReporter.getUploadToServer())).to.be.false();
-      await remotely(() => { require('electron').crashReporter.setUploadToServer(true); });
-      expect(await remotely(() => require('electron').crashReporter.getUploadToServer())).to.be.true();
     });
   });
 
@@ -496,13 +449,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
         await bw.webContents.executeJavaScript('require(\'electron\').crashReporter.addExtraParameter(\'hello\', \'world\')');
         return bw.webContents.executeJavaScript('require(\'electron\').crashReporter.getParameters()');
       });
-      if (process.platform === 'linux') {
-        // On Linux, 'getParameters' will also include the global parameters,
-        // because breakpad doesn't support global parameters.
-        expect(rendererParameters).to.have.property('hello', 'world');
-      } else {
-        expect(rendererParameters).to.deep.equal({ hello: 'world' });
-      }
+      expect(rendererParameters).to.deep.equal({ hello: 'world' });
     });
 
     it('can be called in a node child process', async () => {
@@ -514,6 +461,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
           stream.on('error', e => reject(e));
         });
       }
+      // TODO(nornagon): how to enable crashpad in a node child process...?
       const child = childProcess.fork(path.join(__dirname, 'fixtures', 'module', 'print-crash-parameters.js'), [], { silent: true });
       const output = await slurp(child.stdout!);
       expect(JSON.parse(output)).to.deep.equal({ hello: 'world' });
@@ -572,7 +520,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
             return app.getPath('crashDumps');
           });
           let reportsDir = crashesDir;
-          if (process.platform === 'darwin') {
+          if (process.platform === 'darwin' || process.platform === 'linux') {
             reportsDir = path.join(crashesDir, 'completed');
           } else if (process.platform === 'win32') {
             reportsDir = path.join(crashesDir, 'reports');
@@ -581,17 +529,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
           crash(crashingProcess, remotely);
           const newFiles = await newFileAppeared;
           expect(newFiles.length).to.be.greaterThan(0);
-          if (process.platform === 'linux') {
-            if (crashingProcess === 'main') {
-              expect(newFiles[0]).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{8}-[0-9a-f]{8}\.dmp$/);
-            } else {
-              const process = crashingProcess === 'sandboxed-renderer' ? 'renderer' : crashingProcess;
-              const regex = RegExp(`chromium-${process}-minidump-[0-9a-f]{16}.dmp`);
-              expect(newFiles[0]).to.match(regex);
-            }
-          } else {
-            expect(newFiles[0]).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.dmp$/);
-          }
+          expect(newFiles[0]).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.dmp$/);
         });
 
         it('respects an overridden crash dump directory', async () => {
@@ -606,7 +544,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
           expect(remoteCrashesDir).to.equal(crashesDir);
 
           let reportsDir = crashesDir;
-          if (process.platform === 'darwin') {
+          if (process.platform === 'darwin' || process.platform === 'linux') {
             reportsDir = path.join(crashesDir, 'completed');
           } else if (process.platform === 'win32') {
             reportsDir = path.join(crashesDir, 'reports');
@@ -615,20 +553,59 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
           crash(crashingProcess, remotely);
           const newFiles = await newFileAppeared;
           expect(newFiles.length).to.be.greaterThan(0);
-          if (process.platform === 'linux') {
-            if (crashingProcess === 'main') {
-              expect(newFiles[0]).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{8}-[0-9a-f]{8}\.dmp$/);
-            } else {
-              const process = crashingProcess !== 'sandboxed-renderer' ? crashingProcess : 'renderer';
-              const regex = RegExp(`chromium-${process}-minidump-[0-9a-f]{16}.dmp`);
-              expect(newFiles[0]).to.match(regex);
-            }
-          } else {
-            expect(newFiles[0]).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.dmp$/);
-          }
+          expect(newFiles[0]).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.dmp$/);
         });
       });
     }
+  });
+
+  describe('start() option validation', () => {
+    it('requires that the submitURL option be specified', () => {
+      expect(() => {
+        crashReporter.start({} as any);
+      }).to.throw('submitURL must be specified when uploadToServer is true');
+    });
+
+    it('allows the submitURL option to be omitted when uploadToServer is false', () => {
+      expect(() => {
+        crashReporter.start({ uploadToServer: false } as any);
+      }).not.to.throw();
+    });
+
+    it('can be called twice', async () => {
+      const { remotely } = await startRemoteControlApp();
+      await expect(remotely(() => {
+        const { crashReporter } = require('electron');
+        crashReporter.start({ submitURL: 'http://127.0.0.1' });
+        crashReporter.start({ submitURL: 'http://127.0.0.1' });
+      })).to.be.fulfilled();
+    });
+  });
+
+  describe('getUploadToServer()', () => {
+    it('returns true when uploadToServer is set to true (by default)', async () => {
+      const { remotely } = await startRemoteControlApp();
+
+      await remotely(() => { require('electron').crashReporter.start({ submitURL: 'http://127.0.0.1' }); });
+      const uploadToServer = await remotely(() => require('electron').crashReporter.getUploadToServer());
+      expect(uploadToServer).to.be.true();
+    });
+
+    it('returns false when uploadToServer is set to false in init', async () => {
+      const { remotely } = await startRemoteControlApp();
+      await remotely(() => { require('electron').crashReporter.start({ submitURL: 'http://127.0.0.1', uploadToServer: false }); });
+      const uploadToServer = await remotely(() => require('electron').crashReporter.getUploadToServer());
+      expect(uploadToServer).to.be.false();
+    });
+
+    it('is updated by setUploadToServer', async () => {
+      const { remotely } = await startRemoteControlApp();
+      await remotely(() => { require('electron').crashReporter.start({ submitURL: 'http://127.0.0.1' }); });
+      await remotely(() => { require('electron').crashReporter.setUploadToServer(false); });
+      expect(await remotely(() => require('electron').crashReporter.getUploadToServer())).to.be.false();
+      await remotely(() => { require('electron').crashReporter.setUploadToServer(true); });
+      expect(await remotely(() => require('electron').crashReporter.getUploadToServer())).to.be.true();
+    });
   });
 
   describe('when not started', () => {

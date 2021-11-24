@@ -2,16 +2,17 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_GIN_HELPER_DICTIONARY_H_
-#define SHELL_COMMON_GIN_HELPER_DICTIONARY_H_
+#ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_DICTIONARY_H_
+#define ELECTRON_SHELL_COMMON_GIN_HELPER_DICTIONARY_H_
 
 #include <type_traits>
 #include <utility>
 
-#include "base/optional.h"
 #include "gin/dictionary.h"
 #include "shell/common/gin_converters/std_converter.h"
+#include "shell/common/gin_helper/accessor.h"
 #include "shell/common/gin_helper/function_template.h"
+#include "third_party/abseil-cpp/absl/types/optional.h"
 
 namespace gin_helper {
 
@@ -61,9 +62,9 @@ class Dictionary : public gin::Dictionary {
     return !result.IsNothing() && result.FromJust();
   }
 
-  // Like normal Get but put result in an base::Optional.
+  // Like normal Get but put result in an absl::optional.
   template <typename T>
-  bool GetOptional(base::StringPiece key, base::Optional<T>* out) const {
+  bool GetOptional(base::StringPiece key, absl::optional<T>* out) const {
     T ret;
     if (Get(key, &ret)) {
       out->emplace(std::move(ret));
@@ -106,6 +107,38 @@ class Dictionary : public gin::Dictionary {
     return GetHandle()
         ->Set(context, gin::StringToV8(isolate(), key),
               templ->GetFunction(context).ToLocalChecked())
+        .ToChecked();
+  }
+
+  template <typename K, typename V>
+  bool SetGetter(const K& key,
+                 const V& val,
+                 v8::PropertyAttribute attribute = v8::None) {
+    AccessorValue<V> acc_value;
+    acc_value.Value = val;
+
+    v8::Local<v8::Value> v8_value_accessor;
+    if (!gin::TryConvertToV8(isolate(), acc_value, &v8_value_accessor))
+      return false;
+
+    auto context = isolate()->GetCurrentContext();
+
+    return GetHandle()
+        ->SetAccessor(
+            context, gin::StringToV8(isolate(), key),
+            [](v8::Local<v8::Name> property_name,
+               const v8::PropertyCallbackInfo<v8::Value>& info) {
+              AccessorValue<V> acc_value;
+              if (!gin::ConvertFromV8(info.GetIsolate(), info.Data(),
+                                      &acc_value))
+                return;
+
+              V val = acc_value.Value;
+              v8::Local<v8::Value> v8_value;
+              if (gin::TryConvertToV8(info.GetIsolate(), val, &v8_value))
+                info.GetReturnValue().Set(v8_value);
+            },
+            nullptr, v8_value_accessor, v8::DEFAULT, attribute)
         .ToChecked();
   }
 
@@ -181,4 +214,4 @@ struct Converter<gin_helper::Dictionary> {
 
 }  // namespace gin
 
-#endif  // SHELL_COMMON_GIN_HELPER_DICTIONARY_H_
+#endif  // ELECTRON_SHELL_COMMON_GIN_HELPER_DICTIONARY_H_

@@ -2,11 +2,14 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_RENDERER_GUEST_VIEW_CONTAINER_H_
-#define SHELL_RENDERER_GUEST_VIEW_CONTAINER_H_
+#ifndef ELECTRON_SHELL_RENDERER_GUEST_VIEW_CONTAINER_H_
+#define ELECTRON_SHELL_RENDERER_GUEST_VIEW_CONTAINER_H_
 
 #include "base/callback.h"
-#include "content/public/renderer/render_frame.h"
+
+namespace content {
+class RenderFrame;
+}
 
 namespace gfx {
 class Size;
@@ -21,6 +24,10 @@ class GuestViewContainer {
   explicit GuestViewContainer(content::RenderFrame* render_frame);
   virtual ~GuestViewContainer();
 
+  // disable copy
+  GuestViewContainer(const GuestViewContainer&) = delete;
+  GuestViewContainer& operator=(const GuestViewContainer&) = delete;
+
   static GuestViewContainer* FromID(int element_instance_id);
 
   void RegisterElementResizeCallback(const ResizeCallback& callback);
@@ -33,10 +40,8 @@ class GuestViewContainer {
   ResizeCallback element_resize_callback_;
 
   base::WeakPtrFactory<GuestViewContainer> weak_ptr_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(GuestViewContainer);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_RENDERER_GUEST_VIEW_CONTAINER_H_
+#endif  // ELECTRON_SHELL_RENDERER_GUEST_VIEW_CONTAINER_H_

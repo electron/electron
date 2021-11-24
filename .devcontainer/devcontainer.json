@@ -1,0 +1,43 @@
+{
+	"dockerComposeFile": "docker-compose.yml",
+	"service": "buildtools",
+	"onCreateCommand": ".devcontainer/on-create-command.sh",
+	"workspaceFolder": "/workspaces/gclient/src/electron",
+	"extensions": [
+		"joeleinbinder.mojom-language",
+		"rafaelmaiolla.diff",
+		"surajbarkale.ninja",
+		"ms-vscode.cpptools",
+		"mutantdino.resourcemonitor",
+		"dbaeumer.vscode-eslint",
+		"shakram02.bash-beautify",
+		"marshallofsound.gnls-electron"
+	],
+	"settings": {
+		"[gn]": {
+			"editor.formatOnSave": true
+		},
+		"editor.tabSize": 2,
+		"bashBeautify.tabSize": 2
+	},
+	"forwardPorts": [8088, 6080, 5901],
+	"portsAttributes": {
+		"8088": {
+			"label": "Goma Control Panel",
+			"onAutoForward": "silent"
+		},
+		"6080": {
+			"label": "VNC web client (noVNC)",
+			"onAutoForward": "silent"
+		},
+		"5901": {
+			"label": "VNC TCP port",
+			"onAutoForward": "silent"
+		}
+	},
+	"hostRequirements": {
+		"storage": "32gb",
+		"cpus": 8
+	},
+	"remoteUser": "builduser"
+}

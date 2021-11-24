@@ -11,7 +11,7 @@
 
 namespace extensions {
 
-ElectronNavigationUIData::ElectronNavigationUIData() {}
+ElectronNavigationUIData::ElectronNavigationUIData() = default;
 
 ElectronNavigationUIData::ElectronNavigationUIData(
     content::NavigationHandle* navigation_handle) {
@@ -20,7 +20,7 @@ ElectronNavigationUIData::ElectronNavigationUIData(
       extension_misc::kUnknownWindowId);
 }
 
-ElectronNavigationUIData::~ElectronNavigationUIData() {}
+ElectronNavigationUIData::~ElectronNavigationUIData() = default;
 
 std::unique_ptr<content::NavigationUIData> ElectronNavigationUIData::Clone() {
   std::unique_ptr<ElectronNavigationUIData> copy =

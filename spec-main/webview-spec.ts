@@ -3,6 +3,7 @@ import * as url from 'url';
 import { BrowserWindow, session, ipcMain, app, WebContents } from 'electron/main';
 import { closeAllWindows } from './window-helpers';
 import { emittedOnce, emittedUntil } from './events-helpers';
+import { ifit, delay } from './spec-helpers';
 import { expect } from 'chai';
 
 async function loadWebView (w: WebContents, attributes: Record<string, string>, openDevTools: boolean = false): Promise<void> {
@@ -181,6 +182,26 @@ describe('<webview> tag', function () {
     });
   });
 
+  describe('did-attach event', () => {
+    it('is emitted when a webview has been attached', async () => {
+      const w = new BrowserWindow({
+        webPreferences: {
+          webviewTag: true
+        }
+      });
+      await w.loadURL('about:blank');
+      const message = await w.webContents.executeJavaScript(`new Promise((resolve, reject) => {
+        const webview = new WebView()
+        webview.setAttribute('src', 'about:blank')
+        webview.addEventListener('did-attach', (e) => {
+          resolve('ok')
+        })
+        document.body.appendChild(webview)
+      })`);
+      expect(message).to.equal('ok');
+    });
+  });
+
   describe('did-change-theme-color event', () => {
     it('emits when theme color changes', async () => {
       const w = new BrowserWindow({
@@ -234,7 +255,7 @@ describe('<webview> tag', function () {
           if (!webContents.isDestroyed() && webContents.devToolsWebContents) {
             webContents.devToolsWebContents.executeJavaScript('(' + function () {
               const { UI } = (window as any);
-              const tabs = UI.inspectorView._tabbedPane._tabs;
+              const tabs = UI.inspectorView.tabbedPane.tabs;
               const lastPanelId: any = tabs[tabs.length - 1].id;
               UI.inspectorView.showPanel(lastPanelId);
             }.toString() + ')()');
@@ -376,6 +397,110 @@ describe('<webview> tag', function () {
       expect(webview.getZoomFactor()).to.equal(1.2);
       await w.loadURL(`${zoomScheme}://host1`);
     });
+
+    it('does not crash when changing zoom level after webview is destroyed', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          webviewTag: true,
+          nodeIntegration: true,
+          session: webviewSession,
+          contextIsolation: false
+        }
+      });
+      const attachPromise = emittedOnce(w.webContents, 'did-attach-webview');
+      await w.loadFile(path.join(fixtures, 'pages', 'webview-zoom-inherited.html'));
+      await attachPromise;
+      await w.webContents.executeJavaScript('view.remove()');
+      w.webContents.setZoomLevel(0.5);
+    });
+  });
+
+  describe('requestFullscreen from webview', () => {
+    const loadWebViewWindow = async () => {
+      const w = new BrowserWindow({
+        webPreferences: {
+          webviewTag: true,
+          nodeIntegration: true,
+          contextIsolation: false
+        }
+      });
+      const attachPromise = emittedOnce(w.webContents, 'did-attach-webview');
+      const readyPromise = emittedOnce(ipcMain, 'webview-ready');
+      w.loadFile(path.join(__dirname, 'fixtures', 'webview', 'fullscreen', 'main.html'));
+      const [, webview] = await attachPromise;
+      await readyPromise;
+      return [w, webview];
+    };
+
+    afterEach(closeAllWindows);
+
+    it('should make parent frame element fullscreen too', async () => {
+      const [w, webview] = await loadWebViewWindow();
+      expect(await w.webContents.executeJavaScript('isIframeFullscreen()')).to.be.false();
+
+      const parentFullscreen = emittedOnce(ipcMain, 'fullscreenchange');
+      await webview.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
+      await parentFullscreen;
+      expect(await w.webContents.executeJavaScript('isIframeFullscreen()')).to.be.true();
+    });
+
+    // FIXME(zcbenz): Fullscreen events do not work on Linux.
+    // This test is flaky on arm64 macOS.
+    ifit(process.platform !== 'linux' && process.arch !== 'arm64')('exiting fullscreen should unfullscreen window', async () => {
+      const [w, webview] = await loadWebViewWindow();
+      const enterFullScreen = emittedOnce(w, 'enter-full-screen');
+      await webview.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
+      await enterFullScreen;
+
+      const leaveFullScreen = emittedOnce(w, 'leave-full-screen');
+      await webview.executeJavaScript('document.exitFullscreen()', true);
+      await leaveFullScreen;
+      await delay(0);
+      expect(w.isFullScreen()).to.be.false();
+    });
+
+    // Sending ESC via sendInputEvent only works on Windows.
+    ifit(process.platform === 'win32')('pressing ESC should unfullscreen window', async () => {
+      const [w, webview] = await loadWebViewWindow();
+      const enterFullScreen = emittedOnce(w, 'enter-full-screen');
+      await webview.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
+      await enterFullScreen;
+
+      const leaveFullScreen = emittedOnce(w, 'leave-full-screen');
+      w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
+      await leaveFullScreen;
+      await delay(0);
+      expect(w.isFullScreen()).to.be.false();
+    });
+
+    it('pressing ESC should emit the leave-html-full-screen event', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          webviewTag: true,
+          nodeIntegration: true,
+          contextIsolation: false
+        }
+      });
+
+      const didAttachWebview = emittedOnce(w.webContents, 'did-attach-webview');
+      w.loadFile(path.join(fixtures, 'pages', 'webview-did-attach-event.html'));
+
+      const [, webContents] = await didAttachWebview;
+
+      const enterFSWindow = emittedOnce(w, 'enter-html-full-screen');
+      const enterFSWebview = emittedOnce(webContents, 'enter-html-full-screen');
+      await webContents.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
+      await enterFSWindow;
+      await enterFSWebview;
+
+      const leaveFSWindow = emittedOnce(w, 'leave-html-full-screen');
+      const leaveFSWebview = emittedOnce(webContents, 'leave-html-full-screen');
+      webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
+      await leaveFSWindow;
+      await leaveFSWebview;
+    });
   });
 
   describe('nativeWindowOpen option', () => {
@@ -487,6 +612,15 @@ describe('<webview> tag', function () {
       });
 
       await webContentsCreated;
+    });
+
+    it('does not crash when creating window with noopener', async () => {
+      loadWebView(w.webContents, {
+        allowpopups: 'on',
+        webpreferences: 'nativeWindowOpen=1',
+        src: `file://${path.join(fixtures, 'api', 'native-window-open-noopener.html')}`
+      });
+      await emittedOnce(app, 'browser-window-created');
     });
   });
 

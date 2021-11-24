@@ -22,6 +22,11 @@ enum OpenFileDialogProperties {
   dontAddToRecent = 1 << 8 // Windows
 }
 
+let nextId = 0;
+const getNextId = function () {
+  return ++nextId;
+};
+
 const normalizeAccessKey = (text: string) => {
   if (typeof text !== 'string') return text;
 
@@ -157,11 +162,13 @@ const messageBox = (sync: boolean, window: BrowserWindow | null, options?: Messa
   let {
     buttons = [],
     cancelId,
+    signal,
     checkboxLabel = '',
     checkboxChecked,
     defaultId = -1,
     detail = '',
     icon = null,
+    textWidth = 0,
     noLink = false,
     message = '',
     title = '',
@@ -196,10 +203,21 @@ const messageBox = (sync: boolean, window: BrowserWindow | null, options?: Messa
     }
   }
 
+  // AbortSignal processing.
+  let id: number | undefined;
+  if (signal) {
+    // Generate an ID used for closing the message box.
+    id = getNextId();
+    // Close the message box when signal is aborted.
+    if (signal.aborted) { return Promise.resolve({ cancelId, checkboxChecked }); }
+    signal.addEventListener('abort', () => dialogBinding._closeMessageBox(id));
+  }
+
   const settings = {
     window,
     messageBoxType,
     buttons,
+    id,
     defaultId,
     cancelId,
     noLink,
@@ -208,7 +226,8 @@ const messageBox = (sync: boolean, window: BrowserWindow | null, options?: Messa
     detail,
     checkboxLabel,
     checkboxChecked,
-    icon
+    icon,
+    textWidth
   };
 
   if (sync) {

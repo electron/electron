@@ -36,7 +36,7 @@ template("webpack_build") {
           rebase_path("$target_gen_dir/buildflags/buildflags.h"),
       "--env.mode=" + mode,
     ]
-    deps += [ "buildflags" ]
+    deps += [ "//electron/buildflags" ]
 
     outputs = [ invoker.out_file ]
   }

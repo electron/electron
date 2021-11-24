@@ -4,6 +4,7 @@
 
 #include "shell/browser/net/asar/asar_url_loader.h"
 
+#include <algorithm>
 #include <memory>
 #include <string>
 #include <utility>
@@ -13,6 +14,7 @@
 #include "base/task/post_task.h"
 #include "base/task/thread_pool.h"
 #include "content/public/browser/file_url_loader.h"
+#include "electron/fuses.h"
 #include "mojo/public/cpp/bindings/receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "mojo/public/cpp/system/data_pipe_producer.h"
@@ -23,6 +25,7 @@
 #include "net/http/http_byte_range.h"
 #include "net/http/http_util.h"
 #include "services/network/public/mojom/url_response_head.mojom.h"
+#include "shell/browser/net/asar/asar_file_validator.h"
 #include "shell/common/asar/archive.h"
 #include "shell/common/asar/asar_util.h"
 
@@ -76,14 +79,18 @@ class AsarURLLoader : public network::mojom::URLLoader {
       const std::vector<std::string>& removed_headers,
       const net::HttpRequestHeaders& modified_headers,
       const net::HttpRequestHeaders& modified_cors_exempt_headers,
-      const base::Optional<GURL>& new_url) override {}
+      const absl::optional<GURL>& new_url) override {}
   void SetPriority(net::RequestPriority priority,
                    int32_t intra_priority_value) override {}
   void PauseReadingBodyFromNet() override {}
   void ResumeReadingBodyFromNet() override {}
 
+  // disable copy
+  AsarURLLoader(const AsarURLLoader&) = delete;
+  AsarURLLoader& operator=(const AsarURLLoader&) = delete;
+
  private:
-  AsarURLLoader() {}
+  AsarURLLoader() = default;
   ~AsarURLLoader() override = default;
 
   void Start(const network::ResourceRequest& request,
@@ -127,6 +134,7 @@ class AsarURLLoader : public network::mojom::URLLoader {
       OnClientComplete(net::ERR_FILE_NOT_FOUND);
       return;
     }
+    bool is_verifying_file = info.integrity.has_value();
 
     // For unpacked path, read like normal file.
     base::FilePath real_path;
@@ -149,12 +157,26 @@ class AsarURLLoader : public network::mojom::URLLoader {
     base::File file(info.unpacked ? real_path : archive->path(),
                     base::File::FLAG_OPEN | base::File::FLAG_READ);
     auto file_data_source =
-        std::make_unique<mojo::FileDataSource>(std::move(file));
-    mojo::DataPipeProducer::DataSource* data_source = file_data_source.get();
+        std::make_unique<mojo::FileDataSource>(file.Duplicate());
+    std::unique_ptr<mojo::DataPipeProducer::DataSource> readable_data_source;
+    mojo::FileDataSource* file_data_source_raw = file_data_source.get();
+    AsarFileValidator* file_validator_raw = nullptr;
+    uint32_t block_size = 0;
+    if (info.integrity.has_value()) {
+      block_size = info.integrity.value().block_size;
+      auto asar_validator = std::make_unique<AsarFileValidator>(
+          std::move(info.integrity.value()), std::move(file));
+      file_validator_raw = asar_validator.get();
+      readable_data_source.reset(new mojo::FilteredDataSource(
+          std::move(file_data_source), std::move(asar_validator)));
+    } else {
+      readable_data_source = std::move(file_data_source);
+    }
 
-    std::vector<char> initial_read_buffer(net::kMaxBytesToSniff);
-    auto read_result =
-        data_source->Read(info.offset, base::span<char>(initial_read_buffer));
+    std::vector<char> initial_read_buffer(
+        std::min(static_cast<uint32_t>(net::kMaxBytesToSniff), info.size));
+    auto read_result = readable_data_source.get()->Read(
+        info.offset, base::span<char>(initial_read_buffer));
     if (read_result.result != MOJO_RESULT_OK) {
       OnClientComplete(ConvertMojoResultToNetError(read_result.result));
       return;
@@ -183,6 +205,7 @@ class AsarURLLoader : public network::mojom::URLLoader {
     }
 
     uint64_t first_byte_to_send = 0;
+    uint64_t total_bytes_dropped_from_head = initial_read_buffer.size();
     uint64_t total_bytes_to_send = info.size;
 
     if (byte_range.IsValid()) {
@@ -214,6 +237,24 @@ class AsarURLLoader : public network::mojom::URLLoader {
       // Discount the bytes we just sent from the total range.
       first_byte_to_send = read_result.bytes_read;
       total_bytes_to_send -= write_size;
+    } else if (is_verifying_file &&
+               first_byte_to_send >= static_cast<uint64_t>(block_size)) {
+      // If validation is active and the range of bytes the request wants starts
+      // beyond the first block we need to read the next 4MB-1KB to validate
+      // that block. Then we can skip ahead to the target block in the SetRange
+      // call below If we hit this case it is assumed that none of the data read
+      // will be needed by the producer
+      uint64_t bytes_to_drop = block_size - net::kMaxBytesToSniff;
+      total_bytes_dropped_from_head += bytes_to_drop;
+      std::vector<char> abandoned_buffer(bytes_to_drop);
+      auto abandon_read_result =
+          readable_data_source.get()->Read(info.offset + net::kMaxBytesToSniff,
+                                           base::span<char>(abandoned_buffer));
+      if (abandon_read_result.result != MOJO_RESULT_OK) {
+        OnClientComplete(
+            ConvertMojoResultToNetError(abandon_read_result.result));
+        return;
+      }
     }
 
     if (!net::GetMimeTypeFromFile(path, &head->mime_type)) {
@@ -234,8 +275,48 @@ class AsarURLLoader : public network::mojom::URLLoader {
 
     if (total_bytes_to_send == 0) {
       // There's definitely no more data, so we're already done.
+      // We provide the range data to the file validator so that
+      // it can validate the tiny amount of data we did send
+      if (file_validator_raw)
+        file_validator_raw->SetRange(info.offset + first_byte_to_send,
+                                     total_bytes_dropped_from_head,
+                                     info.offset + info.size);
       OnFileWritten(MOJO_RESULT_OK);
       return;
+    }
+
+    if (is_verifying_file) {
+      int start_block = first_byte_to_send / block_size;
+
+      // If we're starting from the first block, we might not be starting from
+      // where we sniffed. We might be a few KB into a file so we need to read
+      // the data in the middle so it gets hashed.
+      //
+      // If we're starting from a later block we might be starting half-way
+      // through the block regardless of what was sniffed.  We need to read the
+      // data from the start of our initial block up to the start of our actual
+      // read point so it gets hashed.
+      uint64_t bytes_to_drop =
+          start_block == 0 ? first_byte_to_send - net::kMaxBytesToSniff
+                           : first_byte_to_send - (start_block * block_size);
+      if (file_validator_raw)
+        file_validator_raw->SetCurrentBlock(start_block);
+
+      if (bytes_to_drop > 0) {
+        uint64_t dropped_bytes_offset =
+            info.offset + (start_block * block_size);
+        if (start_block == 0)
+          dropped_bytes_offset += net::kMaxBytesToSniff;
+        total_bytes_dropped_from_head += bytes_to_drop;
+        std::vector<char> abandoned_buffer(bytes_to_drop);
+        auto abandon_read_result = readable_data_source.get()->Read(
+            dropped_bytes_offset, base::span<char>(abandoned_buffer));
+        if (abandon_read_result.result != MOJO_RESULT_OK) {
+          OnClientComplete(
+              ConvertMojoResultToNetError(abandon_read_result.result));
+          return;
+        }
+      }
     }
 
     // In case of a range request, seek to the appropriate position before
@@ -243,14 +324,18 @@ class AsarURLLoader : public network::mojom::URLLoader {
     // (i.e., no range request) this Seek is effectively a no-op.
     //
     // Note that in Electron we also need to add file offset.
-    file_data_source->SetRange(
+    file_data_source_raw->SetRange(
         first_byte_to_send + info.offset,
         first_byte_to_send + info.offset + total_bytes_to_send);
+    if (file_validator_raw)
+      file_validator_raw->SetRange(info.offset + first_byte_to_send,
+                                   total_bytes_dropped_from_head,
+                                   info.offset + info.size);
 
     data_producer_ =
         std::make_unique<mojo::DataPipeProducer>(std::move(producer_handle));
     data_producer_->Write(
-        std::move(file_data_source),
+        std::move(readable_data_source),
         base::BindOnce(&AsarURLLoader::OnFileWritten, base::Unretained(this)));
   }
 
@@ -298,8 +383,6 @@ class AsarURLLoader : public network::mojom::URLLoader {
   // It is used to set some of the URLLoaderCompletionStatus data passed back
   // to the URLLoaderClients (eg SimpleURLLoader).
   size_t total_bytes_written_ = 0;
-
-  DISALLOW_COPY_AND_ASSIGN(AsarURLLoader);
 };
 
 }  // namespace

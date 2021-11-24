@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_NOTIFICATIONS_WIN_WIN32_DESKTOP_NOTIFICATIONS_DESKTOP_NOTIFICATION_CONTROLLER_H_
-#define SHELL_BROWSER_NOTIFICATIONS_WIN_WIN32_DESKTOP_NOTIFICATIONS_DESKTOP_NOTIFICATION_CONTROLLER_H_
+#ifndef ELECTRON_SHELL_BROWSER_NOTIFICATIONS_WIN_WIN32_DESKTOP_NOTIFICATIONS_DESKTOP_NOTIFICATION_CONTROLLER_H_
+#define ELECTRON_SHELL_BROWSER_NOTIFICATIONS_WIN_WIN32_DESKTOP_NOTIFICATIONS_DESKTOP_NOTIFICATION_CONTROLLER_H_
 
 #include <Windows.h>
 #include <deque>
@@ -21,8 +21,8 @@ class DesktopNotificationController {
   ~DesktopNotificationController();
 
   class Notification;
-  Notification AddNotification(std::wstring caption,
-                               std::wstring body_text,
+  Notification AddNotification(std::u16string caption,
+                               std::u16string body_text,
                                HBITMAP image);
   void CloseNotification(const Notification& notification);
 
@@ -87,7 +87,7 @@ class DesktopNotificationController::Notification {
   bool operator==(const Notification& other) const;
 
   void Close();
-  void Set(std::wstring caption, std::wstring body_text, HBITMAP image);
+  void Set(std::u16string caption, std::u16string body_text, HBITMAP image);
 
  private:
   std::shared_ptr<NotificationData> data_;
@@ -97,4 +97,4 @@ class DesktopNotificationController::Notification {
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_NOTIFICATIONS_WIN_WIN32_DESKTOP_NOTIFICATIONS_DESKTOP_NOTIFICATION_CONTROLLER_H_
+#endif  // ELECTRON_SHELL_BROWSER_NOTIFICATIONS_WIN_WIN32_DESKTOP_NOTIFICATIONS_DESKTOP_NOTIFICATION_CONTROLLER_H_

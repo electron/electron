@@ -74,9 +74,7 @@ void WrappableBase::FirstWeakCallback(
 // static
 void WrappableBase::SecondWeakCallback(
     const v8::WeakCallbackInfo<WrappableBase>& data) {
-  auto* wrappable = static_cast<WrappableBase*>(data.GetInternalField(0));
-  if (wrappable)
-    delete wrappable;
+  delete static_cast<WrappableBase*>(data.GetInternalField(0));
 }
 
 namespace internal {
@@ -84,7 +82,7 @@ namespace internal {
 void* FromV8Impl(v8::Isolate* isolate, v8::Local<v8::Value> val) {
   if (!val->IsObject())
     return nullptr;
-  v8::Local<v8::Object> obj = v8::Local<v8::Object>::Cast(val);
+  v8::Local<v8::Object> obj = val.As<v8::Object>();
   if (obj->InternalFieldCount() != 1)
     return nullptr;
   return obj->GetAlignedPointerFromInternalField(0);

@@ -4,9 +4,6 @@
 
 #include "shell/browser/ui/views/submenu_button.h"
 
-#include <memory>
-#include <utility>
-
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "ui/accessibility/ax_enums.mojom.h"
@@ -35,10 +32,11 @@ SubmenuButton::SubmenuButton(PressedCallback callback,
     gfx::Canvas::SizeStringInt(GetText(), gfx::FontList(), &text_width_,
                                &text_height_, 0, 0);
 
-  SetInkDropMode(InkDropMode::ON);
-  SetInkDropBaseColor(
+  views::InkDropHost* ink_drop = views::InkDrop::Get(this);
+  ink_drop->SetMode(views::InkDropHost::InkDropMode::ON);
+  ink_drop->SetBaseColor(
       color_utils::BlendTowardMaxContrast(background_color_, 0x81));
-  views::InkDrop::UseInkDropForFloodFillRipple(this, false, true);
+  views::InkDrop::UseInkDropForFloodFillRipple(ink_drop, false, true);
 }
 
 SubmenuButton::~SubmenuButton() = default;

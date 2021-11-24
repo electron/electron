@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_ELECTRON_API_BASE_WINDOW_H_
-#define SHELL_BROWSER_API_ELECTRON_API_BASE_WINDOW_H_
+#ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_BASE_WINDOW_H_
+#define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_BASE_WINDOW_H_
 
 #include <map>
 #include <memory>
@@ -62,6 +62,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void OnWindowMinimize() override;
   void OnWindowRestore() override;
   void OnWindowWillResize(const gfx::Rect& new_bounds,
+                          const gfx::ResizeEdge& edge,
                           bool* prevent_default) override;
   void OnWindowResize() override;
   void OnWindowResized() override;
@@ -193,6 +194,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   virtual void SetVibrancy(v8::Isolate* isolate, v8::Local<v8::Value> value);
 
 #if defined(OS_MAC)
+  std::string GetAlwaysOnTopLevel();
   void SetWindowButtonVisibility(bool visible);
   bool GetWindowButtonVisibility() const;
   void SetTrafficLightPosition(const gfx::Point& position);
@@ -285,4 +287,4 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_ELECTRON_API_BASE_WINDOW_H_
+#endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_BASE_WINDOW_H_

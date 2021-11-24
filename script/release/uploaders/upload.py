@@ -37,6 +37,8 @@ PDB_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION, 'pdb')
 DEBUG_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION, 'debug')
 TOOLCHAIN_PROFILE_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION,
                                       'toolchain-profile')
+CXX_OBJECTS_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION,
+                                      'libcxx_objects')
 
 
 def main():
@@ -94,6 +96,21 @@ def main():
     debug_zip = os.path.join(OUT_DIR, DEBUG_NAME)
     shutil.copy2(os.path.join(OUT_DIR, 'debug.zip'), debug_zip)
     upload_electron(release, debug_zip, args)
+
+    # Upload libcxx_objects.zip for linux only
+    libcxx_objects = get_zip_name('libcxx-objects', ELECTRON_VERSION)
+    libcxx_objects_zip = os.path.join(OUT_DIR, libcxx_objects)
+    shutil.copy2(os.path.join(OUT_DIR, 'libcxx_objects.zip'),
+        libcxx_objects_zip)
+    upload_electron(release, libcxx_objects_zip, args)
+
+    # Upload headers.zip and abi_headers.zip as non-platform specific
+    if get_target_arch() == "x64":
+      cxx_headers_zip = os.path.join(OUT_DIR, 'libcxx_headers.zip')
+      upload_electron(release, cxx_headers_zip, args)
+
+      abi_headers_zip = os.path.join(OUT_DIR, 'libcxxabi_headers.zip')
+      upload_electron(release, abi_headers_zip, args)
 
   # Upload free version of ffmpeg.
   ffmpeg = get_zip_name('ffmpeg', ELECTRON_VERSION)

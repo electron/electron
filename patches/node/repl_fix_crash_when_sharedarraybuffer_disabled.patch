@@ -1,0 +1,63 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Mon, 9 Aug 2021 18:42:15 +0200
+Subject: repl: fix crash when SharedArrayBuffer disabled
+
+It's possible for SharedArrayBuffers to be disabled with
+--no-harmony-sharedarraybuffer so we first need to check that this
+isn't the case before attempting to use them in the repl or a crash occurs.
+
+Upstreamed at https://github.com/nodejs/node/pull/39718.
+
+diff --git a/benchmark/worker/atomics-wait.js b/benchmark/worker/atomics-wait.js
+index a771b1813731edf4f0dd60f3505799e389f1d876..b9461677e2d7d1df192e752496e62cca837717b5 100644
+--- a/benchmark/worker/atomics-wait.js
++++ b/benchmark/worker/atomics-wait.js
+@@ -7,6 +7,10 @@ const bench = common.createBenchmark(main, {
+ });
+ 
+ function main({ n }) {
++  if (typeof SharedArrayBuffer === 'undefined') {
++    throw new Error('SharedArrayBuffers must be enabled to run this benchmark');
++  }
++
+   const i32arr = new Int32Array(new SharedArrayBuffer(4));
+   bench.start();
+   for (let i = 0; i < n; i++)
+diff --git a/lib/internal/main/worker_thread.js b/lib/internal/main/worker_thread.js
+index 71a07a63a3636ab211746004ebab24a0058b08fc..e3ce67987ee3185a93750ebad72beab304c71e3a 100644
+--- a/lib/internal/main/worker_thread.js
++++ b/lib/internal/main/worker_thread.js
+@@ -9,7 +9,7 @@ const {
+   ArrayPrototypeSplice,
+   ObjectDefineProperty,
+   PromisePrototypeCatch,
+-  globalThis: { Atomics },
++  globalThis: { Atomics, SharedArrayBuffer },
+ } = primordials;
+ 
+ const {
+@@ -142,6 +142,9 @@ port.on('message', (message) => {
+     const originalCwd = process.cwd;
+ 
+     process.cwd = function() {
++      // SharedArrayBuffers can be disabled with --no-harmony-sharedarraybuffer.
++      if (typeof SharedArrayBuffer === 'undefined') return originalCwd();
++
+       const currentCounter = Atomics.load(cwdCounter, 0);
+       if (currentCounter === lastCounter)
+         return cachedCwd;
+diff --git a/lib/internal/worker.js b/lib/internal/worker.js
+index 1d2cd8cefd2996c6a4f84ea08e6b4c53a22dc418..28b1a9a53b13036297a2ed3271c36cbe14c51a32 100644
+--- a/lib/internal/worker.js
++++ b/lib/internal/worker.js
+@@ -90,7 +90,8 @@ let cwdCounter;
+ 
+ const environmentData = new SafeMap();
+ 
+-if (isMainThread) {
++// SharedArrayBuffers can be disabled with --no-harmony-sharedarraybuffer.
++if (isMainThread && typeof SharedArrayBuffer !== 'undefined') {
+   cwdCounter = new Uint32Array(new SharedArrayBuffer(4));
+   const originalChdir = process.chdir;
+   process.chdir = function(path) {

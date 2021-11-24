@@ -1,9 +1,10 @@
-import { app, ipcMain, session, deprecate, webFrameMain } from 'electron/main';
+import { app, ipcMain, session, webFrameMain } from 'electron/main';
 import type { BrowserWindowConstructorOptions, LoadURLOptions } from 'electron/main';
 
 import * as url from 'url';
 import * as path from 'path';
 import { openGuestWindow, makeWebPreferences, parseContentTypeFormat } from '@electron/internal/browser/guest-window-manager';
+import { parseFeatures } from '@electron/internal/browser/parse-features-string';
 import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
 import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-utils';
 import { MessagePortMain } from '@electron/internal/browser/message-port-main';
@@ -390,6 +391,17 @@ WebContents.prototype.getPrinters = function () {
   }
 };
 
+WebContents.prototype.getPrintersAsync = async function () {
+  // TODO(nornagon): this API has nothing to do with WebContents and should be
+  // moved.
+  if (printing.getPrinterListAsync) {
+    return printing.getPrinterListAsync();
+  } else {
+    console.error('Error: Printing feature is disabled.');
+    return [];
+  }
+};
+
 WebContents.prototype.loadFile = function (filePath, options = {}) {
   if (typeof filePath !== 'string') {
     throw new Error('Must pass filePath as a string');
@@ -592,6 +604,9 @@ WebContents.prototype._init = function () {
       ipcMainInternal.emit(channel, event, ...args);
     } else {
       addReplyToEvent(event);
+      if (this.listenerCount('ipc-message-sync') === 0 && ipcMain.listenerCount(channel) === 0) {
+        console.warn(`WebContents #${this.id} called ipcRenderer.sendSync() with '${channel}' channel without listeners.`);
+      }
       this.emit('ipc-message-sync', event, channel, ...args);
       ipcMain.emit(channel, event, ...args);
     }
@@ -665,6 +680,16 @@ WebContents.prototype._init = function () {
         postBody
       };
       windowOpenOverriddenOptions = this._callWindowOpenHandler(event, details);
+      // if attempting to use this API with the deprecated new-window event,
+      // windowOpenOverriddenOptions will always return null. This ensures
+      // short-term backwards compatibility until new-window is removed.
+      const parsedFeatures = parseFeatures(rawFeatures);
+      const overriddenFeatures: BrowserWindowConstructorOptions = {
+        ...parsedFeatures.options,
+        webPreferences: parsedFeatures.webPreferences
+      };
+      windowOpenOverriddenOptions = windowOpenOverriddenOptions || overriddenFeatures;
+
       if (!event.defaultPrevented) {
         const secureOverrideWebPreferences = windowOpenOverriddenOptions ? {
           // Allow setting of backgroundColor as a webPreference even though
@@ -709,11 +734,6 @@ WebContents.prototype._init = function () {
         }
       });
     });
-
-    const prefs = this.getWebPreferences() || {};
-    if (prefs.webviewTag && prefs.contextIsolation) {
-      deprecate.log('Security Warning: A WebContents was just created with both webviewTag and contextIsolation enabled.  This combination is fundamentally less secure and effectively bypasses the protections of contextIsolation.  We strongly recommend you move away from webviews to OOPIF or BrowserView in order for your app to be more secure');
-    }
   }
 
   this.on('login', (event, ...args) => {
@@ -772,6 +792,10 @@ export function create (options = {}): Electron.WebContents {
 
 export function fromId (id: string) {
   return binding.fromId(id);
+}
+
+export function fromDevToolsTargetId (targetId: string) {
+  return binding.fromDevToolsTargetId(targetId);
 }
 
 export function getFocusedWebContents () {

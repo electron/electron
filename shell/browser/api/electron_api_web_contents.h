@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_ELECTRON_API_WEB_CONTENTS_H_
-#define SHELL_BROWSER_API_ELECTRON_API_WEB_CONTENTS_H_
+#ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_WEB_CONTENTS_H_
+#define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_WEB_CONTENTS_H_
 
 #include <map>
 #include <memory>
@@ -14,11 +14,14 @@
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "base/observer_list_types.h"
+#include "chrome/browser/devtools/devtools_eye_dropper.h"
 #include "chrome/browser/devtools/devtools_file_system_indexer.h"
+#include "chrome/browser/ui/exclusive_access/exclusive_access_context.h"  // nogncheck
 #include "content/common/cursors/webcursor.h"
 #include "content/common/frame.mojom.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/keyboard_event_processing_result.h"
+#include "content/public/browser/permission_type.h"
 #include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_delegate.h"
@@ -29,7 +32,6 @@
 #include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/receiver_set.h"
 #include "printing/buildflags/buildflags.h"
-#include "services/service_manager/public/cpp/binder_registry.h"
 #include "shell/browser/api/frame_subscriber.h"
 #include "shell/browser/api/save_page_handler.h"
 #include "shell/browser/event_emitter_mixin.h"
@@ -40,11 +42,13 @@
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/error_thrower.h"
+#include "shell/common/gin_helper/pinnable.h"
+#include "ui/base/models/image_model.h"
 #include "ui/gfx/image/image.h"
 
 #if BUILDFLAG(ENABLE_PRINTING)
-#include "chrome/browser/printing/print_view_manager_basic.h"
 #include "shell/browser/printing/print_preview_message_handler.h"
+#include "shell/browser/printing/print_view_manager_electron.h"
 #endif
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -71,6 +75,8 @@ namespace gin {
 class Arguments;
 }
 
+class ExclusiveAccessManager;
+
 namespace electron {
 
 class ElectronBrowserContext;
@@ -89,10 +95,17 @@ class OffScreenWebContentsView;
 
 namespace api {
 
+using DevicePermissionMap = std::map<
+    int,
+    std::map<content::PermissionType,
+             std::map<url::Origin, std::vector<std::unique_ptr<base::Value>>>>>;
+
 // Wrapper around the content::WebContents.
-class WebContents : public gin::Wrappable<WebContents>,
+class WebContents : public ExclusiveAccessContext,
+                    public gin::Wrappable<WebContents>,
                     public gin_helper::EventEmitterMixin<WebContents>,
                     public gin_helper::Constructible<WebContents>,
+                    public gin_helper::Pinnable<WebContents>,
                     public gin_helper::CleanedUpAtExit,
                     public content::WebContentsObserver,
                     public content::WebContentsDelegate,
@@ -176,6 +189,7 @@ class WebContents : public gin::Wrappable<WebContents>,
   int GetHistoryLength() const;
   const std::string GetWebRTCIPHandlingPolicy() const;
   void SetWebRTCIPHandlingPolicy(const std::string& webrtc_ip_handling_policy);
+  std::string GetMediaSourceID(content::WebContents* request_web_contents);
   bool IsCrashed() const;
   void ForcefullyCrashRenderer();
   void SetUserAgent(const std::string& user_agent);
@@ -212,7 +226,8 @@ class WebContents : public gin::Wrappable<WebContents>,
                            printing::CompletionCallback print_callback,
                            std::u16string device_name,
                            bool silent,
-                           std::u16string default_printer);
+                           // <error, default_printer_name>
+                           std::pair<std::string, std::u16string> info);
   void Print(gin::Arguments* args);
   // Print current page as PDF.
   v8::Local<v8::Promise> PrintToPDF(base::DictionaryValue settings);
@@ -308,15 +323,12 @@ class WebContents : public gin::Wrappable<WebContents>,
   // Returns the owner window.
   v8::Local<v8::Value> GetOwnerBrowserWindow(v8::Isolate* isolate) const;
 
-  // Grants the child process the capability to access URLs with the origin of
-  // the specified URL.
-  void GrantOriginAccess(const GURL& url);
-
   // Notifies the web page that there is user interaction.
   void NotifyUserActivation();
 
   v8::Local<v8::Promise> TakeHeapSnapshot(v8::Isolate* isolate,
                                           const base::FilePath& file_path);
+  v8::Local<v8::Promise> GetProcessMemoryInfo(v8::Isolate* isolate);
 
   // Properties.
   int32_t ID() const { return id_; }
@@ -324,7 +336,6 @@ class WebContents : public gin::Wrappable<WebContents>,
   content::WebContents* HostWebContents() const;
   v8::Local<v8::Value> DevToolsWebContents(v8::Isolate* isolate);
   v8::Local<v8::Value> Debugger(v8::Isolate* isolate);
-  bool WasInitiallyShown();
   content::RenderFrameHost* MainFrame();
 
   WebContentsZoomController* GetZoomController() { return zoom_controller_; }
@@ -409,8 +420,7 @@ class WebContents : public gin::Wrappable<WebContents>,
       blink::CloneableMessage arguments,
       electron::mojom::ElectronBrowser::MessageSyncCallback callback,
       content::RenderFrameHost* render_frame_host);
-  void MessageTo(bool internal,
-                 int32_t web_contents_id,
+  void MessageTo(int32_t web_contents_id,
                  const std::string& channel,
                  blink::CloneableMessage arguments);
   void MessageHost(const std::string& channel,
@@ -420,6 +430,26 @@ class WebContents : public gin::Wrappable<WebContents>,
   void SetTemporaryZoomLevel(double level);
   void DoGetZoomLevel(
       electron::mojom::ElectronBrowser::DoGetZoomLevelCallback callback);
+  void SetImageAnimationPolicy(const std::string& new_policy);
+
+  // Grants |origin| access to |device|.
+  // To be used in place of ObjectPermissionContextBase::GrantObjectPermission.
+  void GrantDevicePermission(const url::Origin& origin,
+                             const base::Value* device,
+                             content::PermissionType permissionType,
+                             content::RenderFrameHost* render_frame_host);
+
+  // Returns the list of devices that |origin| has been granted permission to
+  // access. To be used in place of
+  // ObjectPermissionContextBase::GetGrantedObjects.
+  std::vector<base::Value> GetGrantedDevices(
+      const url::Origin& origin,
+      content::PermissionType permissionType,
+      content::RenderFrameHost* render_frame_host);
+
+  // disable copy
+  WebContents(const WebContents&) = delete;
+  WebContents& operator=(const WebContents&) = delete;
 
  private:
   // Does not manage lifetime of |web_contents|.
@@ -432,9 +462,12 @@ class WebContents : public gin::Wrappable<WebContents>,
   WebContents(v8::Isolate* isolate, const gin_helper::Dictionary& options);
   ~WebContents() override;
 
+  // Delete this if garbage collection has not started.
+  void DeleteThisIfAlive();
+
   // Creates a InspectableWebContents object and takes ownership of
   // |web_contents|.
-  void InitWithWebContents(content::WebContents* web_contents,
+  void InitWithWebContents(std::unique_ptr<content::WebContents> web_contents,
                            ElectronBrowserContext* browser_context,
                            bool is_guest);
 
@@ -515,7 +548,7 @@ class WebContents : public gin::Wrappable<WebContents>,
   void RendererResponsive(
       content::WebContents* source,
       content::RenderWidgetHost* render_widget_host) override;
-  bool HandleContextMenu(content::RenderFrameHost* render_frame_host,
+  bool HandleContextMenu(content::RenderFrameHost& render_frame_host,
                          const content::ContextMenuParams& params) override;
   bool OnGoToEntryOffset(int offset) override;
   void FindReply(content::WebContents* web_contents,
@@ -524,6 +557,9 @@ class WebContents : public gin::Wrappable<WebContents>,
                  const gfx::Rect& selection_rect,
                  int active_match_ordinal,
                  bool final_update) override;
+  void RequestKeyboardLock(content::WebContents* web_contents,
+                           bool esc_key_locked) override;
+  void CancelKeyboardLockRequest(content::WebContents* web_contents) override;
   bool CheckMediaAccessPermission(content::RenderFrameHost* render_frame_host,
                                   const GURL& security_origin,
                                   blink::mojom::MediaStreamType type) override;
@@ -544,9 +580,13 @@ class WebContents : public gin::Wrappable<WebContents>,
   void BeforeUnloadFired(bool proceed,
                          const base::TimeTicks& proceed_time) override;
   void RenderFrameCreated(content::RenderFrameHost* render_frame_host) override;
-  void RenderViewDeleted(content::RenderViewHost*) override;
-  void RenderProcessGone(base::TerminationStatus status) override;
   void RenderFrameDeleted(content::RenderFrameHost* render_frame_host) override;
+  void RenderFrameHostChanged(content::RenderFrameHost* old_host,
+                              content::RenderFrameHost* new_host) override;
+  void FrameDeleted(int frame_tree_node_id) override;
+  void RenderViewDeleted(content::RenderViewHost*) override;
+  void PrimaryMainFrameRenderProcessGone(
+      base::TerminationStatus status) override;
   void DOMContentLoaded(content::RenderFrameHost* render_frame_host) override;
   void DidFinishLoad(content::RenderFrameHost* render_frame_host,
                      const GURL& validated_url) override;
@@ -559,9 +599,10 @@ class WebContents : public gin::Wrappable<WebContents>,
       content::NavigationHandle* navigation_handle) override;
   void DidRedirectNavigation(
       content::NavigationHandle* navigation_handle) override;
+  void ReadyToCommitNavigation(
+      content::NavigationHandle* navigation_handle) override;
   void DidFinishNavigation(
       content::NavigationHandle* navigation_handle) override;
-  bool OnMessageReceived(const IPC::Message& message) override;
   void WebContentsDestroyed() override;
   void NavigationEntryCommitted(
       const content::LoadCommittedDetails& load_details) override;
@@ -578,10 +619,6 @@ class WebContents : public gin::Wrappable<WebContents>,
       const content::MediaPlayerId& id,
       content::WebContentsObserver::MediaStoppedReason reason) override;
   void DidChangeThemeColor() override;
-  void OnInterfaceRequestFromFrame(
-      content::RenderFrameHost* render_frame_host,
-      const std::string& interface_name,
-      mojo::ScopedMessagePipeHandle* interface_pipe) override;
   void OnCursorChanged(const content::WebCursor& cursor) override;
   void DidAcquireFullscreen(content::RenderFrameHost* rfh) override;
 
@@ -613,11 +650,6 @@ class WebContents : public gin::Wrappable<WebContents>,
 
   // content::WebContentsDelegate:
   bool CanOverscrollContent() override;
-  content::ColorChooser* OpenColorChooser(
-      content::WebContents* web_contents,
-      SkColor color,
-      const std::vector<blink::mojom::ColorSuggestionPtr>& suggestions)
-      override;
   std::unique_ptr<content::EyeDropper> OpenEyeDropper(
       content::RenderFrameHost* frame,
       content::EyeDropperListener* listener) override;
@@ -627,10 +659,25 @@ class WebContents : public gin::Wrappable<WebContents>,
   void EnumerateDirectory(content::WebContents* web_contents,
                           scoped_refptr<content::FileSelectListener> listener,
                           const base::FilePath& path) override;
+
+  // ExclusiveAccessContext:
+  Profile* GetProfile() override;
+  bool IsFullscreen() const override;
+  void EnterFullscreen(const GURL& url,
+                       ExclusiveAccessBubbleType bubble_type,
+                       const int64_t display_id) override;
+  void ExitFullscreen() override;
+  void UpdateExclusiveAccessExitBubbleContent(
+      const GURL& url,
+      ExclusiveAccessBubbleType bubble_type,
+      ExclusiveAccessBubbleHideCallback bubble_first_hide_callback,
+      bool force_update) override;
+  void OnExclusiveAccessUserInput() override;
+  content::WebContents* GetActiveWebContents() override;
+  bool CanUserExitFullscreen() const override;
+  bool IsExclusiveAccessBubbleDisplayed() const override;
+
   bool IsFullscreenForTabOrPending(const content::WebContents* source) override;
-  blink::SecurityStyle GetSecurityStyle(
-      content::WebContents* web_contents,
-      content::SecurityStyleExplanations* explanations) override;
   bool TakeFocus(content::WebContents* source, bool reverse) override;
   content::PictureInPictureResult EnterPictureInPicture(
       content::WebContents* web_contents,
@@ -656,15 +703,18 @@ class WebContents : public gin::Wrappable<WebContents>,
   void DevToolsSearchInPath(int request_id,
                             const std::string& file_system_path,
                             const std::string& query) override;
+  void DevToolsSetEyeDropperActive(bool active) override;
 
   // InspectableWebContentsViewDelegate:
 #if defined(TOOLKIT_VIEWS) && !defined(OS_MAC)
-  gfx::ImageSkia GetDevToolsWindowIcon() override;
+  ui::ImageModel GetDevToolsWindowIcon() override;
 #endif
 #if defined(OS_LINUX)
   void GetDevToolsWindowWMClass(std::string* name,
                                 std::string* class_name) override;
 #endif
+
+  void ColorPickedInEyeDropper(int r, int g, int b, int a);
 
   // DevTools index event callbacks.
   void OnDevToolsIndexingWorkCalculated(int request_id,
@@ -681,6 +731,8 @@ class WebContents : public gin::Wrappable<WebContents>,
 
   // Set fullscreen mode triggered by html api.
   void SetHtmlApiFullscreen(bool enter_fullscreen);
+  // Update the html fullscreen flag in both browser and renderer.
+  void UpdateHtmlApiFullscreen(bool fullscreen);
 
   v8::Global<v8::Value> session_;
   v8::Global<v8::Value> devtools_web_contents_;
@@ -722,8 +774,6 @@ class WebContents : public gin::Wrappable<WebContents>,
 
   v8::Global<v8::Value> pending_child_web_preferences_;
 
-  bool initially_shown_ = true;
-
   // The window that this WebContents belongs to.
   base::WeakPtr<NativeWindow> owner_window_;
 
@@ -735,10 +785,11 @@ class WebContents : public gin::Wrappable<WebContents>,
   // Whether window is fullscreened by window api.
   bool native_fullscreen_ = false;
 
-  // UI related helper classes.
-  std::unique_ptr<WebDialogHelper> web_dialog_helper_;
-
   scoped_refptr<DevToolsFileSystemIndexer> devtools_file_system_indexer_;
+
+  std::unique_ptr<ExclusiveAccessManager> exclusive_access_manager_;
+
+  std::unique_ptr<DevToolsEyeDropper> eye_dropper_;
 
   ElectronBrowserContext* browser_context_;
 
@@ -767,15 +818,14 @@ class WebContents : public gin::Wrappable<WebContents>,
   // Stores the frame thats currently in fullscreen, nullptr if there is none.
   content::RenderFrameHost* fullscreen_frame_ = nullptr;
 
-  service_manager::BinderRegistryWithArgs<content::RenderFrameHost*> registry_;
+  // In-memory cache that holds objects that have been granted permissions.
+  DevicePermissionMap granted_devices_;
 
   base::WeakPtrFactory<WebContents> weak_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(WebContents);
 };
 
 }  // namespace api
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_ELECTRON_API_WEB_CONTENTS_H_
+#endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_WEB_CONTENTS_H_

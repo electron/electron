@@ -121,20 +121,17 @@
                                         weight:NSFontWeightRegular]
       };
       [attributed_title
-          setAttributes:attributes
+          addAttributes:attributes
                   range:NSMakeRange(0, [attributed_title length])];
     }
   } else if ([font_type isEqualToString:@"monospacedDigit"]) {
-    if (@available(macOS 10.11, *)) {
-      NSDictionary* attributes = @{
-        NSFontAttributeName :
-            [NSFont monospacedDigitSystemFontOfSize:existing_size
-                                             weight:NSFontWeightRegular]
-      };
-      [attributed_title
-          setAttributes:attributes
-                  range:NSMakeRange(0, [attributed_title length])];
-    }
+    NSDictionary* attributes = @{
+      NSFontAttributeName :
+          [NSFont monospacedDigitSystemFontOfSize:existing_size
+                                           weight:NSFontWeightRegular]
+    };
+    [attributed_title addAttributes:attributes
+                              range:NSMakeRange(0, [attributed_title length])];
   }
 
   // Set title
@@ -385,7 +382,7 @@ gfx::Rect TrayIconCocoa::GetBounds() {
 }
 
 // static
-TrayIcon* TrayIcon::Create(base::Optional<UUID> guid) {
+TrayIcon* TrayIcon::Create(absl::optional<UUID> guid) {
   return new TrayIconCocoa;
 }
 

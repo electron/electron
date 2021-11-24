@@ -2,14 +2,13 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_NOTIFICATIONS_MAC_COCOA_NOTIFICATION_H_
-#define SHELL_BROWSER_NOTIFICATIONS_MAC_COCOA_NOTIFICATION_H_
+#ifndef ELECTRON_SHELL_BROWSER_NOTIFICATIONS_MAC_COCOA_NOTIFICATION_H_
+#define ELECTRON_SHELL_BROWSER_NOTIFICATIONS_MAC_COCOA_NOTIFICATION_H_
 
 #import <Foundation/Foundation.h>
 
 #include <map>
 #include <string>
-#include <vector>
 
 #include "base/mac/scoped_nsobject.h"
 #include "shell/browser/notifications/notification.h"
@@ -40,10 +39,8 @@ class CocoaNotification : public Notification {
   base::scoped_nsobject<NSUserNotification> notification_;
   std::map<std::string, unsigned> additional_action_indices_;
   unsigned action_index_;
-
-  DISALLOW_COPY_AND_ASSIGN(CocoaNotification);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_NOTIFICATIONS_MAC_COCOA_NOTIFICATION_H_
+#endif  // ELECTRON_SHELL_BROWSER_NOTIFICATIONS_MAC_COCOA_NOTIFICATION_H_

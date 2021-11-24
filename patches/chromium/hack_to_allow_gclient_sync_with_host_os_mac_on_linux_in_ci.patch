@@ -1,0 +1,25 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Rose <jeremya@chromium.org>
+Date: Tue, 15 Jun 2021 15:16:12 -0700
+Subject: hack to allow gclient sync with host_os=mac on linux in CI
+
+This is a hack to work around the fact that we run `gclient sync` for
+our macOS CI on Linux.
+
+If removing this patch causes no sync failures, it's safe to delete :+1:
+
+Ref https://chromium-review.googlesource.com/c/chromium/src/+/2953903
+
+diff --git a/tools/clang/scripts/update.py b/tools/clang/scripts/update.py
+index 9a8bae564d9a71b649e0a7b4d75a72bf1e7d748d..918bc176bb4408b3410babef717575a09cb30c90 100755
+--- a/tools/clang/scripts/update.py
++++ b/tools/clang/scripts/update.py
+@@ -282,6 +282,8 @@ def main():
+       'win32': 'win',
+   }
+   default_host_os = _PLATFORM_HOST_OS_MAP.get(sys.platform, sys.platform)
++  if "host_os=mac" in os.environ.get('GCLIENT_EXTRA_ARGS', ''):
++    default_host_os = 'mac'
+   if default_host_os == 'mac' and platform.machine() == 'arm64':
+     default_host_os = 'mac-arm64'
+ 

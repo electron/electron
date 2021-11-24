@@ -26,6 +26,7 @@ function getLastBumpCommit (tag) {
 async function revertBumpCommit (tag) {
   const branch = await getCurrentBranch();
   const commitToRevert = getLastBumpCommit(tag).hash;
+  await GitProcess.exec(['pull', '--rebase']);
   await GitProcess.exec(['revert', commitToRevert], ELECTRON_DIR);
   const pushDetails = await GitProcess.exec(['push', 'origin', `HEAD:${branch}`, '--follow-tags'], ELECTRON_DIR);
   if (pushDetails.exitCode === 0) {

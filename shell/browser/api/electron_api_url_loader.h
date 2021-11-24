@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_ELECTRON_API_URL_LOADER_H_
-#define SHELL_BROWSER_API_ELECTRON_API_URL_LOADER_H_
+#ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_URL_LOADER_H_
+#define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_URL_LOADER_H_
 
 #include <memory>
 #include <string>
@@ -68,7 +68,7 @@ class SimpleURLLoaderWrapper
 
   // network::mojom::URLLoaderNetworkServiceObserver:
   void OnAuthRequired(
-      const base::Optional<base::UnguessableToken>& window_id,
+      const absl::optional<base::UnguessableToken>& window_id,
       uint32_t request_id,
       const GURL& url,
       bool first_auth_attempt,
@@ -82,7 +82,7 @@ class SimpleURLLoaderWrapper
                              bool fatal,
                              OnSSLCertificateErrorCallback response) override;
   void OnCertificateRequested(
-      const base::Optional<base::UnguessableToken>& window_id,
+      const absl::optional<base::UnguessableToken>& window_id,
       const scoped_refptr<net::SSLCertRequestInfo>& cert_info,
       mojo::PendingRemote<network::mojom::ClientCertificateResponder>
           client_cert_responder) override {}
@@ -97,7 +97,7 @@ class SimpleURLLoaderWrapper
                        int64_t sent_bytes) override {}
   void Clone(
       mojo::PendingReceiver<network::mojom::URLLoaderNetworkServiceObserver>
-          listener) override;
+          observer) override;
 
   // SimpleURLLoader callbacks
   void OnResponseStarted(const GURL& final_url,
@@ -125,4 +125,4 @@ class SimpleURLLoaderWrapper
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_ELECTRON_API_URL_LOADER_H_
+#endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_URL_LOADER_H_

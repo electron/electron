@@ -6,6 +6,8 @@
 
 #include <utility>
 
+#include "content/public/common/storage_quota_params.h"
+
 namespace electron {
 
 ElectronQuotaPermissionContext::ElectronQuotaPermissionContext() = default;

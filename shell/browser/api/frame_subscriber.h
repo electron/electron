@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_FRAME_SUBSCRIBER_H_
-#define SHELL_BROWSER_API_FRAME_SUBSCRIBER_H_
+#ifndef ELECTRON_SHELL_BROWSER_API_FRAME_SUBSCRIBER_H_
+#define ELECTRON_SHELL_BROWSER_API_FRAME_SUBSCRIBER_H_
 
 #include <memory>
 #include <string>
@@ -18,7 +18,8 @@
 
 namespace gfx {
 class Image;
-}
+class Rect;
+}  // namespace gfx
 
 namespace electron {
 
@@ -36,6 +37,10 @@ class FrameSubscriber : public content::WebContentsObserver,
                   const FrameCaptureCallback& callback,
                   bool only_dirty);
   ~FrameSubscriber() override;
+
+  // disable copy
+  FrameSubscriber(const FrameSubscriber&) = delete;
+  FrameSubscriber& operator=(const FrameSubscriber&) = delete;
 
  private:
   void AttachToHost(content::RenderWidgetHost* host);
@@ -68,12 +73,10 @@ class FrameSubscriber : public content::WebContentsObserver,
   std::unique_ptr<viz::ClientFrameSinkVideoCapturer> video_capturer_;
 
   base::WeakPtrFactory<FrameSubscriber> weak_ptr_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(FrameSubscriber);
 };
 
 }  // namespace api
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_FRAME_SUBSCRIBER_H_
+#endif  // ELECTRON_SHELL_BROWSER_API_FRAME_SUBSCRIBER_H_

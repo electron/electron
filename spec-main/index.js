@@ -1,15 +1,17 @@
-const Module = require('module');
 const path = require('path');
 const v8 = require('v8');
 
-Module.globalPaths.push(path.resolve(__dirname, '../spec/node_modules'));
+module.paths.push(path.resolve(__dirname, '../spec/node_modules'));
 
 // Extra module paths which can be used to load Mocha reporters
 if (process.env.ELECTRON_TEST_EXTRA_MODULE_PATHS) {
   for (const modulePath of process.env.ELECTRON_TEST_EXTRA_MODULE_PATHS.split(':')) {
-    Module.globalPaths.push(modulePath);
+    module.paths.push(modulePath);
   }
 }
+
+// Add search paths for loaded spec files
+require('../spec/global-paths')(module.paths);
 
 // We want to terminate on errors, not throw up a dialog
 process.on('uncaughtException', (err) => {
@@ -25,12 +27,12 @@ const { app, protocol } = require('electron');
 
 v8.setFlagsFromString('--expose_gc');
 app.commandLine.appendSwitch('js-flags', '--expose_gc');
-app.commandLine.appendSwitch('enable-features', 'ElectronSerialChooser');
 // Prevent the spec runner quiting when the first window closes
 app.on('window-all-closed', () => null);
 
 // Use fake device for Media Stream to replace actual camera and microphone.
 app.commandLine.appendSwitch('use-fake-device-for-media-stream');
+app.commandLine.appendSwitch('host-rules', 'MAP localhost2 127.0.0.1');
 
 global.standardScheme = 'app';
 global.zoomScheme = 'zoom';

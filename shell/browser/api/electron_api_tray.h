@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_ELECTRON_API_TRAY_H_
-#define SHELL_BROWSER_API_ELECTRON_API_TRAY_H_
+#ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_TRAY_H_
+#define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_TRAY_H_
 
 #include <memory>
 #include <string>
@@ -33,7 +33,6 @@ namespace electron {
 namespace api {
 
 class Menu;
-class NativeImage;
 
 class Tray : public gin::Wrappable<Tray>,
              public gin_helper::EventEmitterMixin<Tray>,
@@ -44,7 +43,7 @@ class Tray : public gin::Wrappable<Tray>,
   // gin_helper::Constructible
   static gin::Handle<Tray> New(gin_helper::ErrorThrower thrower,
                                v8::Local<v8::Value> image,
-                               base::Optional<UUID> guid,
+                               absl::optional<UUID> guid,
                                gin::Arguments* args);
   static v8::Local<v8::ObjectTemplate> FillObjectTemplate(
       v8::Isolate*,
@@ -53,10 +52,14 @@ class Tray : public gin::Wrappable<Tray>,
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
 
+  // disable copy
+  Tray(const Tray&) = delete;
+  Tray& operator=(const Tray&) = delete;
+
  private:
   Tray(v8::Isolate* isolate,
        v8::Local<v8::Value> image,
-       base::Optional<UUID> guid);
+       absl::optional<UUID> guid);
   ~Tray() override;
 
   // TrayIconObserver:
@@ -87,7 +90,7 @@ class Tray : public gin::Wrappable<Tray>,
   void SetPressedImage(v8::Isolate* isolate, v8::Local<v8::Value> image);
   void SetToolTip(const std::string& tool_tip);
   void SetTitle(const std::string& title,
-                const base::Optional<gin_helper::Dictionary>& options,
+                const absl::optional<gin_helper::Dictionary>& options,
                 gin::Arguments* args);
   std::string GetTitle();
   void SetIgnoreDoubleClickEvents(bool ignore);
@@ -106,12 +109,10 @@ class Tray : public gin::Wrappable<Tray>,
 
   v8::Global<v8::Value> menu_;
   std::unique_ptr<TrayIcon> tray_icon_;
-
-  DISALLOW_COPY_AND_ASSIGN(Tray);
 };
 
 }  // namespace api
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_ELECTRON_API_TRAY_H_
+#endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_TRAY_H_

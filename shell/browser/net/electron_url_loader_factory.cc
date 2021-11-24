@@ -16,6 +16,7 @@
 #include "mojo/public/cpp/system/data_pipe_producer.h"
 #include "mojo/public/cpp/system/string_data_source.h"
 #include "net/base/filename_util.h"
+#include "net/http/http_request_headers.h"
 #include "net/http/http_status_code.h"
 #include "net/url_request/redirect_util.h"
 #include "services/network/public/cpp/url_loader_completion_status.h"
@@ -97,15 +98,17 @@ network::mojom::URLResponseHeadPtr ToResponseHead(
   head->mime_type = "text/html";
   head->charset = "utf-8";
   if (dict.IsEmpty()) {
-    head->headers = new net::HttpResponseHeaders("HTTP/1.1 200 OK");
+    head->headers =
+        base::MakeRefCounted<net::HttpResponseHeaders>("HTTP/1.1 200 OK");
     return head;
   }
 
-  int status_code = 200;
+  int status_code = net::HTTP_OK;
   dict.Get("statusCode", &status_code);
-  head->headers = new net::HttpResponseHeaders(base::StringPrintf(
-      "HTTP/1.1 %d %s", status_code,
-      net::GetHttpReasonPhrase(static_cast<net::HttpStatusCode>(status_code))));
+  head->headers = base::MakeRefCounted<net::HttpResponseHeaders>(
+      base::StringPrintf("HTTP/1.1 %d %s", status_code,
+                         net::GetHttpReasonPhrase(
+                             static_cast<net::HttpStatusCode>(status_code))));
 
   dict.Get("charset", &head->charset);
   bool has_mime_type = dict.Get("mimeType", &head->mime_type);
@@ -113,7 +116,7 @@ network::mojom::URLResponseHeadPtr ToResponseHead(
 
   base::DictionaryValue headers;
   if (dict.Get("headers", &headers)) {
-    for (const auto& iter : headers.DictItems()) {
+    for (const auto iter : headers.DictItems()) {
       if (iter.second.is_string()) {
         // key, value
         head->headers->AddHeader(iter.first, iter.second.GetString());
@@ -167,6 +170,83 @@ void OnWrite(std::unique_ptr<WriteData> write_data, MojoResult result) {
 
 }  // namespace
 
+ElectronURLLoaderFactory::RedirectedRequest::RedirectedRequest(
+    const net::RedirectInfo& redirect_info,
+    mojo::PendingReceiver<network::mojom::URLLoader> loader_receiver,
+    int32_t request_id,
+    uint32_t options,
+    const network::ResourceRequest& request,
+    mojo::PendingRemote<network::mojom::URLLoaderClient> client,
+    const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
+    mojo::PendingRemote<network::mojom::URLLoaderFactory> target_factory_remote)
+    : redirect_info_(redirect_info),
+      request_id_(request_id),
+      options_(options),
+      request_(request),
+      client_(std::move(client)),
+      traffic_annotation_(traffic_annotation) {
+  loader_receiver_.Bind(std::move(loader_receiver));
+  loader_receiver_.set_disconnect_handler(
+      base::BindOnce(&ElectronURLLoaderFactory::RedirectedRequest::DeleteThis,
+                     base::Unretained(this)));
+  target_factory_remote_.Bind(std::move(target_factory_remote));
+  target_factory_remote_.set_disconnect_handler(base::BindOnce(
+      &ElectronURLLoaderFactory::RedirectedRequest::OnTargetFactoryError,
+      base::Unretained(this)));
+}
+
+ElectronURLLoaderFactory::RedirectedRequest::~RedirectedRequest() = default;
+
+void ElectronURLLoaderFactory::RedirectedRequest::FollowRedirect(
+    const std::vector<std::string>& removed_headers,
+    const net::HttpRequestHeaders& modified_headers,
+    const net::HttpRequestHeaders& modified_cors_exempt_headers,
+    const absl::optional<GURL>& new_url) {
+  // Update |request_| with info from the redirect, so that it's accurate
+  // The following references code in WorkerScriptLoader::FollowRedirect
+  bool should_clear_upload = false;
+  net::RedirectUtil::UpdateHttpRequest(
+      request_.url, request_.method, redirect_info_, removed_headers,
+      modified_headers, &request_.headers, &should_clear_upload);
+  request_.cors_exempt_headers.MergeFrom(modified_cors_exempt_headers);
+  for (const std::string& name : removed_headers)
+    request_.cors_exempt_headers.RemoveHeader(name);
+
+  if (should_clear_upload)
+    request_.request_body = nullptr;
+
+  request_.url = redirect_info_.new_url;
+  request_.method = redirect_info_.new_method;
+  request_.site_for_cookies = redirect_info_.new_site_for_cookies;
+  request_.referrer = GURL(redirect_info_.new_referrer);
+  request_.referrer_policy = redirect_info_.new_referrer_policy;
+
+  // Create a new loader to process the redirect and destroy this one
+  target_factory_remote_->CreateLoaderAndStart(
+      loader_receiver_.Unbind(), request_id_, options_, request_,
+      std::move(client_), traffic_annotation_);
+
+  DeleteThis();
+}
+
+void ElectronURLLoaderFactory::RedirectedRequest::OnTargetFactoryError() {
+  // Can't create a new loader at this point, so the request can't continue
+  mojo::Remote<network::mojom::URLLoaderClient> client_remote(
+      std::move(client_));
+  client_remote->OnComplete(
+      network::URLLoaderCompletionStatus(net::ERR_FAILED));
+  client_remote.reset();
+
+  DeleteThis();
+}
+
+void ElectronURLLoaderFactory::RedirectedRequest::DeleteThis() {
+  loader_receiver_.reset();
+  target_factory_remote_.reset();
+
+  delete this;
+}
+
 // static
 mojo::PendingRemote<network::mojom::URLLoaderFactory>
 ElectronURLLoaderFactory::Create(ProtocolType type,
@@ -174,7 +254,7 @@ ElectronURLLoaderFactory::Create(ProtocolType type,
   mojo::PendingRemote<network::mojom::URLLoaderFactory> pending_remote;
 
   // The ElectronURLLoaderFactory will delete itself when there are no more
-  // receivers - see the NonNetworkURLLoaderFactoryBase::OnDisconnect method.
+  // receivers - see the SelfDeletingURLLoaderFactory::OnDisconnect method.
   new ElectronURLLoaderFactory(type, handler,
                                pending_remote.InitWithNewPipeAndPassReceiver());
 
@@ -199,12 +279,18 @@ void ElectronURLLoaderFactory::CreateLoaderAndStart(
     mojo::PendingRemote<network::mojom::URLLoaderClient> client,
     const net::MutableNetworkTrafficAnnotationTag& traffic_annotation) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-  mojo::PendingRemote<network::mojom::URLLoaderFactory> proxy_factory;
+
+  // |StartLoading| is used for both intercepted and registered protocols,
+  // and on redirects it needs a factory to use to create a loader for the
+  // new request. So in this case, this factory is the target factory.
+  mojo::PendingRemote<network::mojom::URLLoaderFactory> target_factory;
+  this->Clone(target_factory.InitWithNewPipeAndPassReceiver());
+
   handler_.Run(
       request,
       base::BindOnce(&ElectronURLLoaderFactory::StartLoading, std::move(loader),
                      request_id, options, request, std::move(client),
-                     traffic_annotation, std::move(proxy_factory), type_));
+                     traffic_annotation, std::move(target_factory), type_));
 }
 
 // static
@@ -227,7 +313,7 @@ void ElectronURLLoaderFactory::StartLoading(
     const network::ResourceRequest& request,
     mojo::PendingRemote<network::mojom::URLLoaderClient> client,
     const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
-    mojo::PendingRemote<network::mojom::URLLoaderFactory> proxy_factory,
+    mojo::PendingRemote<network::mojom::URLLoaderFactory> target_factory,
     ProtocolType type,
     gin::Arguments* args) {
   // Send network error when there is no argument passed.
@@ -277,13 +363,6 @@ void ElectronURLLoaderFactory::StartLoading(
         request.url.Resolve(location),
         net::RedirectUtil::GetReferrerPolicyHeader(head->headers.get()), false);
 
-    network::ResourceRequest new_request = request;
-    new_request.method = redirect_info.new_method;
-    new_request.url = redirect_info.new_url;
-    new_request.site_for_cookies = redirect_info.new_site_for_cookies;
-    new_request.referrer = GURL(redirect_info.new_referrer);
-    new_request.referrer_policy = redirect_info.new_referrer_policy;
-
     DCHECK(client.is_valid());
 
     mojo::Remote<network::mojom::URLLoaderClient> client_remote(
@@ -291,33 +370,15 @@ void ElectronURLLoaderFactory::StartLoading(
 
     client_remote->OnReceiveRedirect(redirect_info, std::move(head));
 
-    // Unbound client, so it an be passed to sub-methods
-    client = client_remote.Unbind();
-    // When the redirection comes from an intercepted scheme (which has
-    // |proxy_factory| passed), we ask the proxy factory to create a loader
-    // for new URL, otherwise we call |StartLoadingHttp|, which creates
-    // loader with default factory.
-    //
-    // Note that when handling requests for intercepted scheme, creating loader
-    // with default factory (i.e. calling StartLoadingHttp) would bypass the
-    // ProxyingURLLoaderFactory, we have to explicitly use the proxy factory to
-    // create loader so it is possible to have handlers of intercepted scheme
-    // getting called recursively, which is a behavior expected in protocol
-    // module.
-    //
-    // I'm not sure whether this is an intended behavior in Chromium.
-    if (proxy_factory.is_valid()) {
-      mojo::Remote<network::mojom::URLLoaderFactory> proxy_factory_remote(
-          std::move(proxy_factory));
+    // Bind the URLLoader receiver and wait for a FollowRedirect request, or for
+    // the remote to disconnect, which will happen if the request is aborted.
+    // That may happen when the redirect is to a different scheme, which will
+    // cause the URL loader to be destroyed and a new one created using the
+    // factory for that scheme.
+    new RedirectedRequest(redirect_info, std::move(loader), request_id, options,
+                          request, client_remote.Unbind(), traffic_annotation,
+                          std::move(target_factory));
 
-      proxy_factory_remote->CreateLoaderAndStart(
-          std::move(loader), request_id, options, new_request,
-          std::move(client), traffic_annotation);
-    } else {
-      StartLoadingHttp(std::move(loader), new_request, std::move(client),
-                       traffic_annotation,
-                       gin::Dictionary::CreateEmpty(args->isolate()));
-    }
     return;
   }
 
@@ -357,7 +418,7 @@ void ElectronURLLoaderFactory::StartLoading(
       }
       StartLoading(std::move(loader), request_id, options, request,
                    std::move(client), traffic_annotation,
-                   std::move(proxy_factory), type, args);
+                   std::move(target_factory), type, args);
       break;
   }
 }
@@ -453,7 +514,8 @@ void ElectronURLLoaderFactory::StartLoadingHttp(
     request->method = original_request.method;
 
   base::DictionaryValue upload_data;
-  if (request->method != "GET" && request->method != "HEAD")
+  if (request->method != net::HttpRequestHeaders::kGetMethod &&
+      request->method != net::HttpRequestHeaders::kHeadMethod)
     dict.Get("uploadData", &upload_data);
 
   ElectronBrowserContext* browser_context =
@@ -544,7 +606,7 @@ void ElectronURLLoaderFactory::SendContents(
   head->headers->AddHeader("Access-Control-Allow-Origin", "*");
   client_remote->OnReceiveResponse(std::move(head));
 
-  // Code bellow follows the pattern of data_url_loader_factory.cc.
+  // Code below follows the pattern of data_url_loader_factory.cc.
   mojo::ScopedDataPipeProducerHandle producer;
   mojo::ScopedDataPipeConsumerHandle consumer;
   if (mojo::CreateDataPipe(nullptr, producer, consumer) != MOJO_RESULT_OK) {

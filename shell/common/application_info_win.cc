@@ -82,7 +82,8 @@ bool IsRunningInDesktopBridgeImpl() {
       initialize_get_package_family_name = false;
       HMODULE kernel32_base = GetModuleHandle(L"Kernel32.dll");
       if (!kernel32_base) {
-        NOTREACHED() << " " << __FUNCTION__ << "(): Can't open Kernel32.dll";
+        NOTREACHED() << std::string(" ") << std::string(__FUNCTION__)
+                     << std::string("(): Can't open Kernel32.dll");
         return false;
       }
 

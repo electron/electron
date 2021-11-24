@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_NODE_UTIL_H_
-#define SHELL_COMMON_NODE_UTIL_H_
+#ifndef ELECTRON_SHELL_COMMON_NODE_UTIL_H_
+#define ELECTRON_SHELL_COMMON_NODE_UTIL_H_
 
 #include <vector>
 
@@ -11,7 +11,7 @@
 
 namespace node {
 class Environment;
-}  // namespace node
+}
 
 namespace electron {
 
@@ -33,4 +33,4 @@ v8::MaybeLocal<v8::Value> CompileAndCall(
 
 }  // namespace electron
 
-#endif  // SHELL_COMMON_NODE_UTIL_H_
+#endif  // ELECTRON_SHELL_COMMON_NODE_UTIL_H_

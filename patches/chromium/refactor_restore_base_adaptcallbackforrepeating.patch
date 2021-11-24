@@ -1,0 +1,40 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Charles Kerr <charles@charleskerr.com>
+Date: Wed, 9 Jun 2021 14:28:08 -0500
+Subject: refactor: restore base::AdaptCallbackForRepeating
+
+Undo https://chromium-review.googlesource.com/c/chromium/src/+/2941842
+to reinstate base::AdaptCallbackForRepeating(). It was removed to fix
+https://bugs.chromium.org/p/chromium/issues/detail?id=730593 .
+
+We use AdaptCallbackForRepeating() in about a dozen places. This patch
+should be removed as soon as those have been updated. Patching because
+every instance is a FTBFS that prevents testing any one instance's fix.
+
+diff --git a/base/callback_helpers.h b/base/callback_helpers.h
+index da876907836f0dbbd02a90ad7e0556304a9532cf..c3401f4cdd276e0f1b094b29753f37b10e72222d 100644
+--- a/base/callback_helpers.h
++++ b/base/callback_helpers.h
+@@ -94,6 +94,22 @@ class OnceCallbackHolder final {
+ 
+ }  // namespace internal
+ 
++// Wraps the given OnceCallback into a RepeatingCallback that relays its
++// invocation to the original OnceCallback on the first invocation. The
++// following invocations are just ignored.
++//
++// Note that this deliberately subverts the Once/Repeating paradigm of Callbacks
++// but helps ease the migration from old-style Callbacks. Avoid if possible; use
++// if necessary for migration. TODO(tzik): Remove it. https://crbug.com/730593
++template <typename... Args>
++RepeatingCallback<void(Args...)> AdaptCallbackForRepeating(
++    OnceCallback<void(Args...)> callback) {
++  using Helper = internal::OnceCallbackHolder<Args...>;
++  return base::BindRepeating(
++      &Helper::Run, std::make_unique<Helper>(std::move(callback),
++                                             /*ignore_extra_runs=*/true));
++}
++
+ // Wraps the given OnceCallback and returns two OnceCallbacks with an identical
+ // signature. On first invokation of either returned callbacks, the original
+ // callback is invoked. Invoking the remaining callback results in a crash.

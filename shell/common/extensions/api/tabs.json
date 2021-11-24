@@ -352,6 +352,80 @@
             ]
           }
         ]
+      },
+      {
+        "name": "update",
+        "type": "function",
+        "description": "Modifies the properties of a tab. Properties that are not specified in <var>updateProperties</var> are not modified.",
+        "parameters": [
+          {
+            "type": "integer",
+            "name": "tabId",
+            "minimum": 0,
+            "optional": true,
+            "description": "Defaults to the selected tab of the <a href='windows#current-window'>current window</a>."
+          },
+          {
+            "type": "object",
+            "name": "updateProperties",
+            "properties": {
+              "url": {
+                "type": "string",
+                "optional": true,
+                "description": "A URL to navigate the tab to. JavaScript URLs are not supported; use $(ref:scripting.executeScript) instead."
+              },
+              "active": {
+                "type": "boolean",
+                "optional": true,
+                "description": "Whether the tab should be active. Does not affect whether the window is focused (see $(ref:windows.update))."
+              },
+              "highlighted": {
+                "type": "boolean",
+                "optional": true,
+                "description": "Adds or removes the tab from the current selection."
+              },
+              "selected": {
+                "deprecated": "Please use <em>highlighted</em>.",
+                "type": "boolean",
+                "optional": true,
+                "description": "Whether the tab should be selected."
+              },
+              "pinned": {
+                "type": "boolean",
+                "optional": true,
+                "description": "Whether the tab should be pinned."
+              },
+              "muted": {
+                "type": "boolean",
+                "optional": true,
+                "description": "Whether the tab should be muted."
+              },
+              "openerTabId": {
+                "type": "integer",
+                "minimum": 0,
+                "optional": true,
+                "description": "The ID of the tab that opened this tab. If specified, the opener tab must be in the same window as this tab."
+              },
+              "autoDiscardable": {
+                "type": "boolean",
+                "optional": true,
+                "description": "Whether the tab should be discarded automatically by the browser when resources are low."
+              }
+            }
+          }
+        ],
+        "returns_async": {
+          "name": "callback",
+          "optional": true,
+          "parameters": [
+            {
+              "name": "tab",
+              "$ref": "Tab",
+              "optional": true,
+              "description": "Details about the updated tab. The $(ref:tabs.Tab) object does not contain <code>url</code>, <code>pendingUrl</code>, <code>title</code>, and <code>favIconUrl</code> if the <code>\"tabs\"</code> permission has not been requested."
+            }
+          ]
+        }
       }
     ],
     "events": [

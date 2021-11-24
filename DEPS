@@ -10,17 +10,21 @@ gclient_gn_args = [
   'checkout_openxr',
   'checkout_google_benchmark',
   'mac_xcode_version',
+  'generate_location_tags',
 ]
 
 vars = {
   'chromium_version':
-    '92.0.4499.0',
+    '98.0.4706.0',
   'node_version':
-    'v14.16.1',
+    'v16.13.0',
   'nan_version':
-    'v2.14.2',
+    # The following commit hash of NAN is v2.14.2 with *only* changes to the
+    # test suite. This should be updated to a specific tag when one becomes
+    # available.
+    '65b32af46e9d7fab2e4ff657751205b3865f4920',
   'squirrel.mac_version':
-    'cdc0729c8bf8576bfef18629186e1e9ecf1b0d9f',
+    '0e5d146ba13101a1302d59ea6e6e0b3cace4ae38',
 
   'pyyaml_version': '3.12',
 
@@ -51,6 +55,8 @@ vars = {
   'use_rts': False,
 
   'mac_xcode_version': 'default',
+
+  'generate_location_tags': False,
 
   # To allow running hooks without parsing the DEPS tree
   'process_deps': True,

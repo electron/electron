@@ -9,6 +9,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/containers/span.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/values.h"
@@ -33,7 +34,7 @@ namespace {
 bool CertFromData(const std::string& data,
                   scoped_refptr<net::X509Certificate>* out) {
   auto cert_list = net::X509Certificate::CreateCertificateListFromBytes(
-      data.c_str(), data.length(),
+      base::as_bytes(base::make_span(data)),
       net::X509Certificate::FORMAT_SINGLE_CERTIFICATE);
   if (cert_list.empty())
     return false;
@@ -191,7 +192,7 @@ bool Converter<net::HttpResponseHeaders*>::FromV8(
   };
 
   auto context = isolate->GetCurrentContext();
-  auto headers = v8::Local<v8::Object>::Cast(val);
+  auto headers = val.As<v8::Object>();
   auto keys = headers->GetOwnPropertyNames(context).ToLocalChecked();
   for (uint32_t i = 0; i < keys->Length(); i++) {
     v8::Local<v8::Value> keyVal;
@@ -203,7 +204,7 @@ bool Converter<net::HttpResponseHeaders*>::FromV8(
 
     auto localVal = headers->Get(context, keyVal).ToLocalChecked();
     if (localVal->IsArray()) {
-      auto values = v8::Local<v8::Array>::Cast(localVal);
+      auto values = localVal.As<v8::Array>();
       for (uint32_t j = 0; j < values->Length(); j++) {
         if (!addHeaderFromValue(key,
                                 values->Get(context, j).ToLocalChecked())) {
@@ -315,28 +316,31 @@ bool Converter<scoped_refptr<network::ResourceRequestBody>>::FromV8(
   auto list = std::make_unique<base::ListValue>();
   if (!ConvertFromV8(isolate, val, list.get()))
     return false;
-  *out = new network::ResourceRequestBody();
-  for (size_t i = 0; i < list->GetSize(); ++i) {
+  *out = base::MakeRefCounted<network::ResourceRequestBody>();
+  for (size_t i = 0; i < list->GetList().size(); ++i) {
     base::DictionaryValue* dict = nullptr;
     std::string type;
     if (!list->GetDictionary(i, &dict))
       return false;
     dict->GetString("type", &type);
     if (type == "rawData") {
-      base::Value* bytes = nullptr;
-      dict->GetBinary("bytes", &bytes);
-      (*out)->AppendBytes(
-          reinterpret_cast<const char*>(bytes->GetBlob().data()),
-          base::checked_cast<int>(bytes->GetBlob().size()));
+      const base::Value::BlobStorage* bytes = dict->FindBlobKey("bytes");
+      (*out)->AppendBytes(reinterpret_cast<const char*>(bytes->data()),
+                          base::checked_cast<int>(bytes->size()));
     } else if (type == "file") {
-      std::string file;
+      const std::string* file = dict->FindStringKey("filePath");
+      if (file == nullptr) {
+        return false;
+      }
       int offset = 0, length = -1;
       double modification_time = 0.0;
-      dict->GetStringWithoutPathExpansion("filePath", &file);
+      absl::optional<double> maybe_modification_time =
+          dict->FindDoubleKey("modificationTime");
+      if (maybe_modification_time.has_value())
+        modification_time = maybe_modification_time.value();
       dict->GetInteger("offset", &offset);
       dict->GetInteger("file", &length);
-      dict->GetDouble("modificationTime", &modification_time);
-      (*out)->AppendFileRange(base::FilePath::FromUTF8Unsafe(file),
+      (*out)->AppendFileRange(base::FilePath::FromUTF8Unsafe(*file),
                               static_cast<uint64_t>(offset),
                               static_cast<uint64_t>(length),
                               base::Time::FromDoubleT(modification_time));
@@ -367,6 +371,7 @@ v8::Local<v8::Value> Converter<electron::VerifyRequestParams>::ToV8(
   dict.Set("hostname", val.hostname);
   dict.Set("certificate", val.certificate);
   dict.Set("validatedCertificate", val.validated_certificate);
+  dict.Set("isIssuedByKnownRoot", val.is_issued_by_known_root);
   dict.Set("verificationResult", val.default_result);
   dict.Set("errorCode", val.error_code);
   return ConvertToV8(isolate, dict);

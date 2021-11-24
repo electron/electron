@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_GIN_CONVERTERS_STD_CONVERTER_H_
-#define SHELL_COMMON_GIN_CONVERTERS_STD_CONVERTER_H_
+#ifndef ELECTRON_SHELL_COMMON_GIN_CONVERTERS_STD_CONVERTER_H_
+#define ELECTRON_SHELL_COMMON_GIN_CONVERTERS_STD_CONVERTER_H_
 
 #include <map>
 #include <set>
@@ -21,7 +21,7 @@ namespace gin {
 template <typename T>
 v8::Local<v8::Value> ConvertToV8(v8::Isolate* isolate, T&& input) {
   return Converter<typename std::remove_reference<T>::type>::ToV8(
-      isolate, std::move(input));
+      isolate, std::forward<T>(input));
 }
 
 #if !defined(OS_LINUX) && !defined(OS_FREEBSD)
@@ -86,7 +86,7 @@ struct Converter<v8::Local<v8::Array>> {
                      v8::Local<v8::Array>* out) {
     if (!val->IsArray())
       return false;
-    *out = v8::Local<v8::Array>::Cast(val);
+    *out = val.As<v8::Array>();
     return true;
   }
 };
@@ -102,7 +102,7 @@ struct Converter<v8::Local<v8::String>> {
                      v8::Local<v8::String>* out) {
     if (!val->IsString())
       return false;
-    *out = v8::Local<v8::String>::Cast(val);
+    *out = val.As<v8::String>();
     return true;
   }
 };
@@ -128,7 +128,7 @@ struct Converter<std::set<T>> {
 
     auto context = isolate->GetCurrentContext();
     std::set<T> result;
-    v8::Local<v8::Array> array(v8::Local<v8::Array>::Cast(val));
+    v8::Local<v8::Array> array = val.As<v8::Array>();
     uint32_t length = array->Length();
     for (uint32_t i = 0; i < length; ++i) {
       T item;
@@ -212,4 +212,4 @@ struct Converter<std::wstring> {
 
 }  // namespace gin
 
-#endif  // SHELL_COMMON_GIN_CONVERTERS_STD_CONVERTER_H_
+#endif  // ELECTRON_SHELL_COMMON_GIN_CONVERTERS_STD_CONVERTER_H_

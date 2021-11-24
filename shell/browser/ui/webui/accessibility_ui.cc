@@ -4,13 +4,15 @@
 
 #include "shell/browser/ui/webui/accessibility_ui.h"
 
+#include <memory>
+#include <string>
 #include <utility>
+#include <vector>
 
 #include "base/bind.h"
 #include "base/callback_helpers.h"
 #include "base/command_line.h"
 #include "base/json/json_writer.h"
-#include "base/optional.h"
 #include "base/strings/pattern.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
@@ -38,6 +40,7 @@
 #include "net/base/escape.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/window_list.h"
+#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/accessibility/platform/ax_platform_node.h"
 #include "ui/accessibility/platform/ax_platform_node_delegate.h"
 #include "ui/base/webui/web_ui_util.h"
@@ -88,8 +91,7 @@ std::unique_ptr<base::DictionaryValue> BuildTargetDescriptor(
     int routing_id,
     ui::AXMode accessibility_mode,
     base::ProcessHandle handle = base::kNullProcessHandle) {
-  std::unique_ptr<base::DictionaryValue> target_data(
-      new base::DictionaryValue());
+  auto target_data = std::make_unique<base::DictionaryValue>();
   target_data->SetInteger(kProcessIdField, process_id);
   target_data->SetInteger(kRoutingIdField, routing_id);
   target_data->SetString(kUrlField, url.spec());
@@ -132,8 +134,7 @@ std::unique_ptr<base::DictionaryValue> BuildTargetDescriptor(
 
 std::unique_ptr<base::DictionaryValue> BuildTargetDescriptor(
     electron::NativeWindow* window) {
-  std::unique_ptr<base::DictionaryValue> target_data(
-      new base::DictionaryValue());
+  auto target_data = std::make_unique<base::DictionaryValue>();
   target_data->SetInteger(kSessionIdField, window->window_id());
   target_data->SetString(kNameField, window->GetTitle());
   target_data->SetString(kTypeField, kBrowser);
@@ -256,7 +257,7 @@ void HandleAccessibilityRequestCallback(
   // Always dump the Accessibility tree.
   data.SetString(kInternal, kOn);
 
-  std::unique_ptr<base::ListValue> rvh_list(new base::ListValue());
+  auto rvh_list = std::make_unique<base::ListValue>();
   std::unique_ptr<content::RenderWidgetHostIterator> widgets(
       content::RenderWidgetHost::GetRenderWidgetHosts());
 
@@ -290,7 +291,7 @@ void HandleAccessibilityRequestCallback(
 
   data.Set(kPagesField, std::move(rvh_list));
 
-  std::unique_ptr<base::ListValue> window_list(new base::ListValue());
+  auto window_list = std::make_unique<base::ListValue>();
   for (auto* window : electron::WindowList::GetWindows()) {
     window_list->Append(BuildTargetDescriptor(window));
   }
@@ -380,7 +381,7 @@ void ElectronAccessibilityUIMessageHandler::RequestNativeUITree(
   }
 
   // No browser with the specified |id| was found.
-  std::unique_ptr<base::DictionaryValue> result(new base::DictionaryValue());
+  auto result = std::make_unique<base::DictionaryValue>();
   result->SetInteger(kSessionIdField, window_id);
   result->SetString(kTypeField, kBrowser);
   result->SetString(kErrorField, "Window no longer exists.");
@@ -390,25 +391,25 @@ void ElectronAccessibilityUIMessageHandler::RequestNativeUITree(
 void ElectronAccessibilityUIMessageHandler::RegisterMessages() {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
-  web_ui()->RegisterMessageCallback(
+  web_ui()->RegisterDeprecatedMessageCallback(
       "toggleAccessibility",
       base::BindRepeating(&AccessibilityUIMessageHandler::ToggleAccessibility,
                           base::Unretained(this)));
-  web_ui()->RegisterMessageCallback(
+  web_ui()->RegisterDeprecatedMessageCallback(
       "setGlobalFlag",
       base::BindRepeating(&AccessibilityUIMessageHandler::SetGlobalFlag,
                           base::Unretained(this)));
-  web_ui()->RegisterMessageCallback(
+  web_ui()->RegisterDeprecatedMessageCallback(
       "requestWebContentsTree",
       base::BindRepeating(
           &AccessibilityUIMessageHandler::RequestWebContentsTree,
           base::Unretained(this)));
-  web_ui()->RegisterMessageCallback(
+  web_ui()->RegisterDeprecatedMessageCallback(
       "requestNativeUITree",
       base::BindRepeating(
           &ElectronAccessibilityUIMessageHandler::RequestNativeUITree,
           base::Unretained(this)));
-  web_ui()->RegisterMessageCallback(
+  web_ui()->RegisterDeprecatedMessageCallback(
       "requestAccessibilityEvents",
       base::BindRepeating(
           &AccessibilityUIMessageHandler::RequestAccessibilityEvents,

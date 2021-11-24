@@ -4,15 +4,20 @@
 
 #include "shell/browser/api/electron_api_net_log.h"
 
+#include <string>
 #include <utility>
 
+#include "base/bind.h"
 #include "base/command_line.h"
+#include "base/files/file_path.h"
+#include "base/task/task_runner_util.h"
 #include "base/task/thread_pool.h"
 #include "chrome/browser/browser_process.h"
 #include "components/net_log/chrome_net_log.h"
 #include "content/public/browser/storage_partition.h"
 #include "electron/electron_version.h"
 #include "gin/object_template_builder.h"
+#include "net/log/net_log_capture_mode.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/net/system_network_context_manager.h"
 #include "shell/common/gin_converters/file_path_converter.h"
@@ -121,7 +126,7 @@ v8::Local<v8::Promise> NetLog::StartLogging(base::FilePath log_path,
   }
 
   pending_start_promise_ =
-      base::make_optional<gin_helper::Promise<void>>(args->isolate());
+      absl::make_optional<gin_helper::Promise<void>>(args->isolate());
   v8::Local<v8::Promise> handle = pending_start_promise_->GetHandle();
 
   auto command_line_string =
@@ -134,9 +139,10 @@ v8::Local<v8::Promise> NetLog::StartLogging(base::FilePath log_path,
   auto* network_context =
       browser_context_->GetDefaultStoragePartition()->GetNetworkContext();
 
-  network_context->CreateNetLogExporter(mojo::MakeRequest(&net_log_exporter_));
-  net_log_exporter_.set_connection_error_handler(base::BindOnce(
-      &NetLog::OnConnectionError, weak_ptr_factory_.GetWeakPtr()));
+  network_context->CreateNetLogExporter(
+      net_log_exporter_.BindNewPipeAndPassReceiver());
+  net_log_exporter_.set_disconnect_handler(
+      base::BindOnce(&NetLog::OnConnectionError, base::Unretained(this)));
 
   base::PostTaskAndReplyWithResult(
       file_task_runner_.get(), FROM_HERE,
@@ -200,7 +206,7 @@ v8::Local<v8::Promise> NetLog::StopLogging(gin::Arguments* args) {
     net_log_exporter_->Stop(
         base::Value(base::Value::Type::DICTIONARY),
         base::BindOnce(
-            [](network::mojom::NetLogExporterPtr,
+            [](mojo::Remote<network::mojom::NetLogExporter>,
                gin_helper::Promise<void> promise, int32_t error) {
               ResolvePromiseWithNetError(std::move(promise), error);
             },

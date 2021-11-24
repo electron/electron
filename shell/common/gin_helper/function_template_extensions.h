@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE.chromium file.
 
-#ifndef SHELL_COMMON_GIN_HELPER_FUNCTION_TEMPLATE_EXTENSIONS_H_
-#define SHELL_COMMON_GIN_HELPER_FUNCTION_TEMPLATE_EXTENSIONS_H_
+#ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_FUNCTION_TEMPLATE_EXTENSIONS_H_
+#define ELECTRON_SHELL_COMMON_GIN_HELPER_FUNCTION_TEMPLATE_EXTENSIONS_H_
 
 #include <utility>
 
@@ -16,12 +16,12 @@
 // in the gin_helper namespace.
 namespace gin {
 
-// Support base::Optional as an argument.
+// Support absl::optional as an argument.
 template <typename T>
 bool GetNextArgument(Arguments* args,
                      const InvokerOptions& invoker_options,
                      bool is_first,
-                     base::Optional<T>* result) {
+                     absl::optional<T>* result) {
   T converted;
   // Use gin::Arguments::GetNext which always advances |next| counter.
   if (args->GetNext(&converted))
@@ -57,4 +57,4 @@ v8::Local<v8::FunctionTemplate> CreateConstructorFunctionTemplate(
 
 }  // namespace gin
 
-#endif  // SHELL_COMMON_GIN_HELPER_FUNCTION_TEMPLATE_EXTENSIONS_H_
+#endif  // ELECTRON_SHELL_COMMON_GIN_HELPER_FUNCTION_TEMPLATE_EXTENSIONS_H_

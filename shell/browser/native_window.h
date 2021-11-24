@@ -2,28 +2,27 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_NATIVE_WINDOW_H_
-#define SHELL_BROWSER_NATIVE_WINDOW_H_
+#ifndef ELECTRON_SHELL_BROWSER_NATIVE_WINDOW_H_
+#define ELECTRON_SHELL_BROWSER_NATIVE_WINDOW_H_
 
 #include <list>
-#include <map>
 #include <memory>
 #include <string>
-#include <tuple>
 #include <vector>
 
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
-#include "base/optional.h"
 #include "base/supports_user_data.h"
-#include "base/values.h"
 #include "content/public/browser/desktop_media_id.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "extensions/browser/app_window/size_constraints.h"
 #include "shell/browser/native_window_observer.h"
+#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/views/widget/widget_delegate.h"
 
-class SkRegion;
+namespace base {
+class DictionaryValue;
+}
 
 namespace content {
 struct NativeWebKeyboardEvent;
@@ -33,7 +32,7 @@ namespace gfx {
 class Image;
 class Point;
 class Rect;
-class RectF;
+enum class ResizeEdge;
 class Size;
 }  // namespace gfx
 
@@ -57,6 +56,10 @@ class NativeWindow : public base::SupportsUserData,
                      public views::WidgetDelegate {
  public:
   ~NativeWindow() override;
+
+  // disable copy
+  NativeWindow(const NativeWindow&) = delete;
+  NativeWindow& operator=(const NativeWindow&) = delete;
 
   // Create window with existing WebContents, the caller is responsible for
   // managing the window's live.
@@ -99,7 +102,7 @@ class NativeWindow : public base::SupportsUserData,
   virtual bool IsNormal();
   virtual gfx::Rect GetNormalBounds() = 0;
   virtual void SetSizeConstraints(
-      const extensions::SizeConstraints& size_constraints);
+      const extensions::SizeConstraints& window_constraints);
   virtual extensions::SizeConstraints GetSizeConstraints() const;
   virtual void SetContentSizeConstraints(
       const extensions::SizeConstraints& size_constraints);
@@ -135,6 +138,11 @@ class NativeWindow : public base::SupportsUserData,
   virtual void Invalidate() = 0;
   virtual void SetTitle(const std::string& title) = 0;
   virtual std::string GetTitle() = 0;
+#if defined(OS_MAC)
+  virtual std::string GetAlwaysOnTopLevel() = 0;
+  virtual void SetActive(bool is_key) = 0;
+  virtual bool IsActive() const = 0;
+#endif
 
   // Ability to augment the window title for the screen readers.
   void SetAccessibleTitle(const std::string& title);
@@ -204,8 +212,8 @@ class NativeWindow : public base::SupportsUserData,
 #if defined(OS_MAC)
   virtual void SetWindowButtonVisibility(bool visible) = 0;
   virtual bool GetWindowButtonVisibility() const = 0;
-  virtual void SetTrafficLightPosition(base::Optional<gfx::Point> position) = 0;
-  virtual base::Optional<gfx::Point> GetTrafficLightPosition() const = 0;
+  virtual void SetTrafficLightPosition(absl::optional<gfx::Point> position) = 0;
+  virtual absl::optional<gfx::Point> GetTrafficLightPosition() const = 0;
   virtual void RedrawTrafficLights() = 0;
   virtual void UpdateFrame() = 0;
 #endif
@@ -251,6 +259,9 @@ class NativeWindow : public base::SupportsUserData,
     return weak_factory_.GetWeakPtr();
   }
 
+  virtual gfx::Rect GetWindowControlsOverlayRect();
+  virtual void SetWindowControlsOverlayRect(const gfx::Rect& overlay_rect);
+
   // Methods called by the WebContents.
   virtual void HandleKeyboardEvent(
       content::WebContents*,
@@ -273,6 +284,7 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyWindowRestore();
   void NotifyWindowMove();
   void NotifyWindowWillResize(const gfx::Rect& new_bounds,
+                              const gfx::ResizeEdge& edge,
                               bool* prevent_default);
   void NotifyWindowResize();
   void NotifyWindowResized();
@@ -294,6 +306,7 @@ class NativeWindow : public base::SupportsUserData,
                                      const base::DictionaryValue& details);
   void NotifyNewWindowForTab();
   void NotifyWindowSystemContextMenu(int x, int y, bool* prevent_default);
+  void NotifyLayoutWindowControlsOverlay();
 
 #if defined(OS_WIN)
   void NotifyWindowMessage(UINT message, WPARAM w_param, LPARAM l_param);
@@ -306,6 +319,14 @@ class NativeWindow : public base::SupportsUserData,
 
   views::Widget* widget() const { return widget_.get(); }
   views::View* content_view() const { return content_view_; }
+
+  enum class TitleBarStyle {
+    kNormal,
+    kHidden,
+    kHiddenInset,
+    kCustomButtonsOnHover,
+  };
+  TitleBarStyle title_bar_style() const { return title_bar_style_; }
 
   bool has_frame() const { return has_frame_; }
   void set_has_frame(bool has_frame) { has_frame_ = has_frame; }
@@ -337,6 +358,12 @@ class NativeWindow : public base::SupportsUserData,
     browser_views_.remove_if(
         [&browser_view](NativeBrowserView* n) { return (n == browser_view); });
   }
+
+  // The boolean parsing of the "titleBarOverlay" option
+  bool titlebar_overlay_ = false;
+
+  // The "titleBarStyle" option.
+  TitleBarStyle title_bar_style_ = TitleBarStyle::kNormal;
 
  private:
   std::unique_ptr<views::Widget> widget_;
@@ -386,9 +413,9 @@ class NativeWindow : public base::SupportsUserData,
   // Accessible title.
   std::u16string accessible_title_;
 
-  base::WeakPtrFactory<NativeWindow> weak_factory_{this};
+  gfx::Rect overlay_rect_;
 
-  DISALLOW_COPY_AND_ASSIGN(NativeWindow);
+  base::WeakPtrFactory<NativeWindow> weak_factory_{this};
 };
 
 // This class provides a hook to get a NativeWindow from a WebContents.
@@ -413,4 +440,4 @@ class NativeWindowRelay
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_NATIVE_WINDOW_H_
+#endif  // ELECTRON_SHELL_BROWSER_NATIVE_WINDOW_H_

@@ -1,0 +1,68 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <samuel.r.attard@gmail.com>
+Date: Wed, 21 Jul 2021 13:40:59 -0700
+Subject: add should_read_node_options_from_env option to disable NODE_OPTIONS
+ parsing at runtime
+
+We can remove the NODE_OPTIONS environment variable but it in theory could be injected / re-inserted at runtime and be used for workers.  In order to ensure the fuse is respected we need a hard runtime toggle for NODE_OPTION support.
+
+diff --git a/src/env.cc b/src/env.cc
+index 1cc7da1ce15f43905ce607adcc1a23ed9d92948a..16af6aec3791df1363682f1ed024c52208b9a8f6 100644
+--- a/src/env.cc
++++ b/src/env.cc
+@@ -329,6 +329,9 @@ std::string GetExecPath(const std::vector<std::string>& argv) {
+   return exec_path;
+ }
+ 
++/* static */
++bool Environment::should_read_node_options_from_env_ = true;
++
+ Environment::Environment(IsolateData* isolate_data,
+                          Isolate* isolate,
+                          const std::vector<std::string>& args,
+diff --git a/src/env.h b/src/env.h
+index e0deca497feb111622b257b952c9ed9161c7d001..ab8334bf0e3405fee4d21a4b541bd1164d92ca89 100644
+--- a/src/env.h
++++ b/src/env.h
+@@ -1145,6 +1145,8 @@ class Environment : public MemoryRetainer {
+   inline double trigger_async_id();
+   inline double get_default_trigger_async_id();
+ 
++  static bool should_read_node_options_from_env_;
++
+   // List of id's that have been destroyed and need the destroy() cb called.
+   inline std::vector<double>* destroy_async_id_list();
+ 
+diff --git a/src/node.cc b/src/node.cc
+index 207a95d202b4e422a39f837241f1655f7111b1e3..14b9002dbd918b59b05d8b12c5441080695ed9f0 100644
+--- a/src/node.cc
++++ b/src/node.cc
+@@ -875,7 +875,7 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
+ #if !defined(NODE_WITHOUT_NODE_OPTIONS)
+   std::string node_options;
+ 
+-  if (credentials::SafeGetenv("NODE_OPTIONS", &node_options)) {
++  if (Environment::should_read_node_options_from_env_ && credentials::SafeGetenv("NODE_OPTIONS", &node_options)) {
+     std::vector<std::string> env_argv =
+         ParseNodeOptionsEnvVar(node_options, errors);
+ 
+diff --git a/src/node_worker.cc b/src/node_worker.cc
+index 16b7be36f284311f38583fa1df28a2945560b524..62a7dae080fad7e18863968dee22dbe4b461ab82 100644
+--- a/src/node_worker.cc
++++ b/src/node_worker.cc
+@@ -467,6 +467,7 @@ void Worker::New(const FunctionCallbackInfo<Value>& args) {
+     });
+ 
+ #ifndef NODE_WITHOUT_NODE_OPTIONS
++    if (Environment::should_read_node_options_from_env_) {
+     MaybeLocal<String> maybe_node_opts =
+         env_vars->Get(isolate, OneByteString(isolate, "NODE_OPTIONS"));
+     Local<String> node_opts;
+@@ -497,6 +498,7 @@ void Worker::New(const FunctionCallbackInfo<Value>& args) {
+         return;
+       }
+     }
++    }
+ #endif
+   }
+ 

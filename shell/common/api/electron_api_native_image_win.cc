@@ -9,13 +9,13 @@
 #include <thumbcache.h>
 #include <wrl/client.h>
 
-#include <string>
-#include <vector>
-
+#include "base/win/scoped_com_initializer.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/skia_util.h"
+#include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/gfx/icon_util.h"
+#include "ui/gfx/image/image_skia.h"
 
 namespace electron {
 
@@ -26,6 +26,8 @@ v8::Local<v8::Promise> NativeImage::CreateThumbnailFromPath(
     v8::Isolate* isolate,
     const base::FilePath& path,
     const gfx::Size& size) {
+  base::win::ScopedCOMInitializer scoped_com_initializer;
+
   gin_helper::Promise<gfx::Image> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
   HRESULT hr;

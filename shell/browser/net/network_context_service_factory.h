@@ -2,15 +2,15 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_NET_NETWORK_CONTEXT_SERVICE_FACTORY_H_
-#define SHELL_BROWSER_NET_NETWORK_CONTEXT_SERVICE_FACTORY_H_
+#ifndef ELECTRON_SHELL_BROWSER_NET_NETWORK_CONTEXT_SERVICE_FACTORY_H_
+#define ELECTRON_SHELL_BROWSER_NET_NETWORK_CONTEXT_SERVICE_FACTORY_H_
 
 #include "base/memory/singleton.h"
 #include "components/keyed_service/content/browser_context_keyed_service_factory.h"
 
 class KeyedService;
 
-namespace contenet {
+namespace content {
 class BrowserContext;
 }
 
@@ -47,4 +47,4 @@ class NetworkContextServiceFactory : public BrowserContextKeyedServiceFactory {
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_NET_NETWORK_CONTEXT_SERVICE_FACTORY_H_
+#endif  // ELECTRON_SHELL_BROWSER_NET_NETWORK_CONTEXT_SERVICE_FACTORY_H_

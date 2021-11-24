@@ -12,6 +12,7 @@
 #include "shell/browser/native_window_mac.h"
 #include "shell/browser/ui/cocoa/electron_preview_item.h"
 #include "shell/browser/ui/cocoa/electron_touch_bar.h"
+#include "ui/gfx/geometry/resize_utils.h"
 #include "ui/gfx/mac/coordinate_conversion.h"
 #include "ui/views/cocoa/native_widget_mac_ns_window_host.h"
 #include "ui/views/widget/native_widget_mac.h"
@@ -62,8 +63,11 @@ using FullScreenTransitionState =
 // menu to determine the "standard size" of the window.
 - (NSRect)windowWillUseStandardFrame:(NSWindow*)window
                         defaultFrame:(NSRect)frame {
-  if (!shell_->zoom_to_page_width())
+  if (!shell_->zoom_to_page_width()) {
+    if (shell_->GetAspectRatio() > 0.0)
+      shell_->set_default_frame_for_zoom(frame);
     return frame;
+  }
 
   // If the shift key is down, maximize.
   if ([[NSApp currentEvent] modifierFlags] & NSShiftKeyMask)
@@ -87,6 +91,9 @@ using FullScreenTransitionState =
 
   // Set the width. Don't touch y or height.
   frame.size.width = zoomed_width;
+
+  if (shell_->GetAspectRatio() > 0.0)
+    shell_->set_default_frame_for_zoom(frame);
 
   return frame;
 }
@@ -140,11 +147,21 @@ using FullScreenTransitionState =
                extraHeightPlusFrame);
   }
 
+  if (!resizingHorizontally_) {
+    NSWindow* window = shell_->GetNativeWindow().GetNativeNSWindow();
+    const auto widthDelta = frameSize.width - [window frame].size.width;
+    const auto heightDelta = frameSize.height - [window frame].size.height;
+    resizingHorizontally_ = std::abs(widthDelta) > std::abs(heightDelta);
+  }
+
   {
     bool prevent_default = false;
     NSRect new_bounds = NSMakeRect(sender.frame.origin.x, sender.frame.origin.y,
                                    newSize.width, newSize.height);
     shell_->NotifyWindowWillResize(gfx::ScreenRectFromNSRect(new_bounds),
+                                   *resizingHorizontally_
+                                       ? gfx::ResizeEdge::kRight
+                                       : gfx::ResizeEdge::kBottom,
                                    &prevent_default);
     if (prevent_default) {
       return sender.frame.size;
@@ -157,6 +174,7 @@ using FullScreenTransitionState =
 - (void)windowDidResize:(NSNotification*)notification {
   [super windowDidResize:notification];
   shell_->NotifyWindowResize();
+  shell_->RedrawTrafficLights();
 }
 
 - (void)windowWillMove:(NSNotification*)notification {
@@ -204,6 +222,7 @@ using FullScreenTransitionState =
 }
 
 - (void)windowDidEndLiveResize:(NSNotification*)notification {
+  resizingHorizontally_.reset();
   shell_->NotifyWindowResized();
   if (is_zooming_) {
     if (shell_->IsMaximized())

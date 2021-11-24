@@ -4,9 +4,6 @@ function createWindow () {
   const win = new BrowserWindow({
     width: 800,
     height: 600,
-    webPreferences: {
-      nodeIntegration: true
-    }
   })
 
   win.loadFile('index.html')
@@ -27,7 +24,9 @@ const dockMenu = Menu.buildFromTemplate([
 ])
 
 app.whenReady().then(() => {
-  app.dock.setMenu(dockMenu)
+  if (process.platform === 'darwin') {
+    app.dock.setMenu(dockMenu)
+  }
 }).then(createWindow)
 
 app.on('window-all-closed', () => {

@@ -2,10 +2,9 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_ELECTRON_API_NOTIFICATION_H_
-#define SHELL_BROWSER_API_ELECTRON_API_NOTIFICATION_H_
+#ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_NOTIFICATION_H_
+#define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_NOTIFICATION_H_
 
-#include <memory>
 #include <string>
 #include <vector>
 
@@ -57,6 +56,10 @@ class Notification : public gin::Wrappable<Notification>,
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
 
+  // disable copy
+  Notification(const Notification&) = delete;
+  Notification& operator=(const Notification&) = delete;
+
  protected:
   explicit Notification(gin::Arguments* args);
   ~Notification() override;
@@ -86,7 +89,7 @@ class Notification : public gin::Wrappable<Notification>,
   void SetHasReply(bool new_has_reply);
   void SetUrgency(const std::u16string& new_urgency);
   void SetTimeoutType(const std::u16string& new_timeout_type);
-  void SetReplyPlaceholder(const std::u16string& new_reply_placeholder);
+  void SetReplyPlaceholder(const std::u16string& new_placeholder);
   void SetSound(const std::u16string& sound);
   void SetActions(const std::vector<electron::NotificationAction>& actions);
   void SetCloseButtonText(const std::u16string& text);
@@ -112,12 +115,10 @@ class Notification : public gin::Wrappable<Notification>,
   electron::NotificationPresenter* presenter_;
 
   base::WeakPtr<electron::Notification> notification_;
-
-  DISALLOW_COPY_AND_ASSIGN(Notification);
 };
 
 }  // namespace api
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_ELECTRON_API_NOTIFICATION_H_
+#endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_NOTIFICATION_H_

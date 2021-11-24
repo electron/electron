@@ -4,7 +4,9 @@
 
 #include "shell/common/heap_snapshot.h"
 
+#include "base/files/file.h"
 #include "v8/include/v8-profiler.h"
+#include "v8/include/v8.h"
 
 namespace {
 

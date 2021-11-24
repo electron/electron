@@ -5,8 +5,8 @@
 #include "shell/browser/bluetooth/electron_bluetooth_delegate.h"
 
 #include <memory>
+#include <utility>
 
-#include "base/scoped_observer.h"
 #include "base/strings/utf_string_conversions.h"
 #include "build/build_config.h"
 #include "content/public/browser/render_frame_host.h"
@@ -45,6 +45,14 @@ ElectronBluetoothDelegate::ShowBluetoothScanningPrompt(
     const content::BluetoothScanningPrompt::EventHandler& event_handler) {
   NOTIMPLEMENTED();
   return nullptr;
+}
+
+void ElectronBluetoothDelegate::ShowDeviceCredentialsPrompt(
+    content::RenderFrameHost* frame,
+    const std::u16string& device_identifier,
+    CredentialsCallback callback) {
+  // TODO(jkleinsc) implement this
+  std::move(callback).Run(DeviceCredentialsPromptResult::kCancelled, u"");
 }
 
 WebBluetoothDeviceId ElectronBluetoothDelegate::GetWebBluetoothDeviceId(

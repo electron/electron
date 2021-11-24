@@ -1564,7 +1564,7 @@ describe('asar package', function () {
         forked.on('message', function (stats) {
           try {
             expect(stats.isFile).to.be.true();
-            expect(stats.size).to.equal(778);
+            expect(stats.size).to.equal(3458);
             done();
           } catch (e) {
             done(e);
@@ -1588,7 +1588,7 @@ describe('asar package', function () {
           try {
             const stats = JSON.parse(output);
             expect(stats.isFile).to.be.true();
-            expect(stats.size).to.equal(778);
+            expect(stats.size).to.equal(3458);
             done();
           } catch (e) {
             done(e);
@@ -1686,6 +1686,7 @@ describe('asar package', function () {
 
     it('can recursively delete a directory with an asar file in it', () => {
       const deleteDir = path.join(asarDir, 'deleteme');
+      fs.mkdirSync(deleteDir);
 
       originalFs.rmdirSync(deleteDir, { recursive: true });
 

@@ -98,7 +98,7 @@ void ElectronMenuModel::SetSharingItem(SharingItem item) {
   sharing_item_.emplace(std::move(item));
 }
 
-const base::Optional<ElectronMenuModel::SharingItem>&
+const absl::optional<ElectronMenuModel::SharingItem>&
 ElectronMenuModel::GetSharingItem() const {
   return sharing_item_;
 }

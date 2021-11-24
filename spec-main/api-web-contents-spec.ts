@@ -47,6 +47,24 @@ describe('webContents module', () => {
     });
   });
 
+  describe('fromDevToolsTargetId()', () => {
+    it('returns WebContents for attached DevTools target', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL('about:blank');
+      try {
+        await w.webContents.debugger.attach('1.3');
+        const { targetInfo } = await w.webContents.debugger.sendCommand('Target.getTargetInfo');
+        expect(webContents.fromDevToolsTargetId(targetInfo.targetId)).to.equal(w.webContents);
+      } finally {
+        await w.webContents.debugger.detach();
+      }
+    });
+
+    it('returns undefined for an unknown id', () => {
+      expect(webContents.fromDevToolsTargetId('nope')).to.be.undefined();
+    });
+  });
+
   describe('will-prevent-unload event', function () {
     afterEach(closeAllWindows);
     it('does not emit if beforeunload returns undefined in a BrowserWindow', async () => {
@@ -419,7 +437,7 @@ describe('webContents module', () => {
     const testFn = (process.platform === 'win32' && process.arch === 'arm64' ? it.skip : it);
     testFn('returns the focused web contents', async () => {
       const w = new BrowserWindow({ show: true });
-      await w.loadURL('about:blank');
+      await w.loadFile(path.join(__dirname, 'fixtures', 'blank.html'));
       expect(webContents.getFocusedWebContents().id).to.equal(w.webContents.id);
 
       const devToolsOpened = emittedOnce(w.webContents, 'devtools-opened');
@@ -503,16 +521,6 @@ describe('webContents module', () => {
     });
   });
 
-  describe('getWebPreferences() API', () => {
-    afterEach(closeAllWindows);
-    it('should not crash when called for devTools webContents', async () => {
-      const w = new BrowserWindow({ show: false });
-      w.webContents.openDevTools();
-      await emittedOnce(w.webContents, 'devtools-opened');
-      expect(w.webContents.devToolsWebContents!.getWebPreferences()).to.be.null();
-    });
-  });
-
   describe('openDevTools() API', () => {
     afterEach(closeAllWindows);
     it('can show window with activation', async () => {
@@ -521,12 +529,13 @@ describe('webContents module', () => {
       w.show();
       await focused;
       expect(w.isFocused()).to.be.true();
+      const blurred = emittedOnce(w, 'blur');
       w.webContents.openDevTools({ mode: 'detach', activate: true });
       await Promise.all([
         emittedOnce(w.webContents, 'devtools-opened'),
         emittedOnce(w.webContents, 'devtools-focused')
       ]);
-      await delay();
+      await blurred;
       expect(w.isFocused()).to.be.false();
     });
 
@@ -826,6 +835,14 @@ describe('webContents module', () => {
 
       await w.loadURL('about:blank');
       expect(w.webContents.getOSProcessId()).to.be.above(0);
+    });
+  });
+
+  describe('getMediaSourceId()', () => {
+    afterEach(closeAllWindows);
+    it('returns a valid stream id', () => {
+      const w = new BrowserWindow({ show: false });
+      expect(w.webContents.getMediaSourceId(w.webContents)).to.be.a('string').that.is.not.empty();
     });
   });
 
@@ -1719,6 +1736,16 @@ describe('webContents module', () => {
     });
   });
 
+  ifdescribe(features.isPrintingEnabled())('getPrintersAsync()', () => {
+    afterEach(closeAllWindows);
+    it('can get printer list', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
+      await w.loadURL('about:blank');
+      const printers = await w.webContents.getPrintersAsync();
+      expect(printers).to.be.an('array');
+    });
+  });
+
   ifdescribe(features.isPrintingEnabled())('printToPDF()', () => {
     let w: BrowserWindow;
 
@@ -1777,7 +1804,8 @@ describe('webContents module', () => {
       }
     });
 
-    describe('using a large document', () => {
+    // TODO(codebytere): Re-enable after Chromium fixes upstream v8_scriptormodule_legacy_lifetime crash.
+    xdescribe('using a large document', () => {
       beforeEach(async () => {
         w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
         await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'print-to-pdf.html'));
@@ -2023,6 +2051,19 @@ describe('webContents module', () => {
     });
   });
 
+  describe('page-title-updated event', () => {
+    afterEach(closeAllWindows);
+    it('is emitted with a full title for pages with no navigation', async () => {
+      const bw = new BrowserWindow({ show: false, webPreferences: { nativeWindowOpen: true } });
+      await bw.loadURL('about:blank');
+      bw.webContents.executeJavaScript('child = window.open("", "", "show=no"); null');
+      const [, child] = await emittedOnce(app, 'web-contents-created');
+      bw.webContents.executeJavaScript('child.document.title = "new title"');
+      const [, title] = await emittedOnce(child, 'page-title-updated');
+      expect(title).to.equal('new title');
+    });
+  });
+
   describe('crashed event', () => {
     it('does not crash main process when destroying WebContents in it', (done) => {
       const contents = (webContents as any).create({ nodeIntegration: true });
@@ -2031,6 +2072,28 @@ describe('webContents module', () => {
         done();
       });
       contents.loadURL('about:blank').then(() => contents.forcefullyCrashRenderer());
+    });
+  });
+
+  describe('context-menu event', () => {
+    afterEach(closeAllWindows);
+    it('emits when right-clicked in page', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
+
+      const promise = emittedOnce(w.webContents, 'context-menu');
+
+      // Simulate right-click to create context-menu event.
+      const opts = { x: 0, y: 0, button: 'right' as any };
+      w.webContents.sendInputEvent({ ...opts, type: 'mouseDown' });
+      w.webContents.sendInputEvent({ ...opts, type: 'mouseUp' });
+
+      const [, params] = await promise;
+
+      expect(params.pageURL).to.equal(w.webContents.getURL());
+      expect(params.frame).to.be.an('object');
+      expect(params.x).to.be.a('number');
+      expect(params.y).to.be.a('number');
     });
   });
 

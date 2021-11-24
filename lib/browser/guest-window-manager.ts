@@ -7,7 +7,7 @@
  */
 import { BrowserWindow } from 'electron/main';
 import type { BrowserWindowConstructorOptions, Referrer, WebContents, LoadURLOptions } from 'electron/main';
-import { parseFeatures } from '@electron/internal/common/parse-features-string';
+import { parseFeatures } from '@electron/internal/browser/parse-features-string';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
 type PostData = LoadURLOptions['postData']
@@ -65,8 +65,13 @@ export function openGuestWindow ({ event, embedder, guest, referrer, disposition
   // https://html.spec.whatwg.org/multipage/window-object.html#apis-for-creating-and-navigating-browsing-contexts-by-name
   const existingWindow = getGuestWindowByFrameName(frameName);
   if (existingWindow) {
-    existingWindow.loadURL(url);
-    return existingWindow;
+    if (existingWindow.isDestroyed() || existingWindow.webContents.isDestroyed()) {
+      // FIXME(t57ser): The webContents is destroyed for some reason, unregister the frame name
+      unregisterFrameName(frameName);
+    } else {
+      existingWindow.loadURL(url);
+      return existingWindow;
+    }
   }
 
   const window = new BrowserWindow({
@@ -144,7 +149,7 @@ function emitDeprecatedNewWindowEvent ({ event, embedder, guest, windowOpenArgs,
   postData?: PostData,
 }): boolean {
   const { url, frameName } = windowOpenArgs;
-  const isWebViewWithPopupsDisabled = embedder.getType() === 'webview' && embedder.getLastWebPreferences().disablePopups;
+  const isWebViewWithPopupsDisabled = embedder.getType() === 'webview' && embedder.getLastWebPreferences()!.disablePopups;
   const postBody = postData ? {
     data: postData,
     ...parseContentTypeFormat(postData)
@@ -229,7 +234,7 @@ export function makeWebPreferences ({ embedder, secureOverrideWebPreferences = {
   // have unvetted prefs, use parsedWebPreferences.
   secureOverrideWebPreferences?: BrowserWindowConstructorOptions['webPreferences'],
 }) {
-  const parentWebPreferences = embedder.getLastWebPreferences();
+  const parentWebPreferences = embedder.getLastWebPreferences()!;
   const securityWebPreferencesFromParent = (Object.keys(securityWebPreferences).reduce((map, key) => {
     if (securityWebPreferences[key] === parentWebPreferences[key as keyof Electron.WebPreferences]) {
       (map as any)[key] = parentWebPreferences[key as keyof Electron.WebPreferences];

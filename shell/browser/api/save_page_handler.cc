@@ -4,7 +4,6 @@
 
 #include "shell/browser/api/save_page_handler.h"
 
-#include <string>
 #include <utility>
 
 #include "base/callback.h"
@@ -31,8 +30,8 @@ void SavePageHandler::OnDownloadCreated(content::DownloadManager* manager,
 
 bool SavePageHandler::Handle(const base::FilePath& full_path,
                              const content::SavePageType& save_type) {
-  auto* download_manager = content::BrowserContext::GetDownloadManager(
-      web_contents_->GetBrowserContext());
+  auto* download_manager =
+      web_contents_->GetBrowserContext()->GetDownloadManager();
   download_manager->AddObserver(this);
   // Chromium will create a 'foo_files' directory under the directory of saving
   // page 'foo.html' for holding other resource files of 'foo.html'.

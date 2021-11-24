@@ -1,0 +1,35 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Thu, 10 Jun 2021 15:15:35 +0200
+Subject: fix: account for debugger agent race condition
+
+In Electron the debugger agent hasn't necessarily been enabled by the
+time the inspect prompt displays, leading to "Debugger agent is not enabled"
+errors. This is remedied by adding a small timeout to the test.
+
+We'll either upstream this or figure out a better solution.
+
+diff --git a/test/parallel/test-debugger-address.js b/test/parallel/test-debugger-address.js
+index 95dd1c6e3f82835d5ccaf65544d654b71efaa392..ed8dccf91247068455dd593bb3e8c02bddc89ae5 100644
+--- a/test/parallel/test-debugger-address.js
++++ b/test/parallel/test-debugger-address.js
+@@ -59,6 +59,7 @@ function launchTarget(...args) {
+       cli = startCLI([`${host || '127.0.0.1'}:${port}`]);
+       return cli.waitForPrompt();
+     })
++    .then(() => new Promise(resolve => setTimeout(resolve, 1000)))
+     .then(() => cli.command('sb("alive.js", 3)'))
+     .then(() => cli.waitFor(/break/))
+     .then(() => cli.waitForPrompt())
+diff --git a/test/sequential/test-debugger-pid.js b/test/sequential/test-debugger-pid.js
+index 402c1f86dd4ed99b413eca5fce8a2db47797b11a..74ef0a1618ccf1f6671bbe2a03548eee6cd0b88c 100644
+--- a/test/sequential/test-debugger-pid.js
++++ b/test/sequential/test-debugger-pid.js
+@@ -41,6 +41,7 @@ function launchTarget(...args) {
+     .then(() => cli.command('sb("alive.js", 3)'))
+     .then(() => cli.waitFor(/break/))
+     .then(() => cli.waitForPrompt())
++    .then(() => new Promise(resolve => setTimeout(resolve, 1000)))
+     .then(() => {
+       assert.match(
+         cli.output,

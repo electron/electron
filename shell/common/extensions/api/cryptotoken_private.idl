@@ -1,0 +1,63 @@
+// Copyright 2014 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// <code>chrome.cryptotokenPrivate</code> API that provides hooks to Chrome to
+// be used by cryptotoken component extension.
+// <p>In the context of this API, an AppId is roughly an origin and is formally
+// defined in
+// <a href="https://fidoalliance.org/specs/fido-u2f-v1.2-ps-20170411/fido-appid-and-facets-v1.2-ps-20170411.html">
+// the FIDO spec</a></p>
+namespace cryptotokenPrivate {
+
+  callback BooleanCallback = void(boolean result);
+  callback VoidCallback = void();
+
+  dictionary CanAppIdGetAttestationOptions {
+    // The AppId (see definition, above) that was used in the registration
+    // request and which has been authenticated by |canOriginAssertAppId|.
+    DOMString appId;
+    // The origin of the caller.
+    DOMString origin;
+    // Identifies the tab in which the registration is occuring so that any
+    // permissions prompt is correctly located.
+    long tabId;
+  };
+
+  interface Functions {
+    // Checks whether the origin is allowed to assert the appId, according to
+    // the same origin policy defined at
+    // http://fidoalliance.org/specs/fido-u2f-v1.0-ps-20141009/
+    //     fido-appid-and-facets-ps-20141009.html
+    // |securityOrigin| is the origin as seen by the extension, and |appIdUrl|
+    // is the appId being asserted by the origin.
+    static void canOriginAssertAppId(DOMString securityOrigin,
+                                     DOMString appIdUrl,
+                                     BooleanCallback callback);
+
+    // Checks whether the given appId is specified in the
+    // SecurityKeyPermitAttestation policy. This causes a signal to be sent to
+    // the token that informs it that an individually-identifying attestation
+    // certificate may be used. Without that signal, the token is required to
+    // use its batch attestation certificate.
+    static void isAppIdHashInEnterpriseContext(ArrayBuffer appIdHash,
+                                               BooleanCallback callback);
+
+    // Checks whether the given appId may receive attestation data that
+    // identifies the token. If not, the attestation from the token must be
+    // substituted with a randomly generated certificate since webauthn and U2F
+    // require that some attestation be provided.
+    static void canAppIdGetAttestation(CanAppIdGetAttestationOptions options,
+                                       BooleanCallback callback);
+
+    // Increments the WebFeature::kU2FCryptotokenRegister UseCounter for the
+    // main frame associated with |tabId|.
+    static void recordRegisterRequest(long tabId, long frameId,
+                                      optional VoidCallback callback);
+
+    // Increments the WebFeature::kU2FCryptotokenSign UseCounter for the
+    // main frame associated with |tabId|.
+    static void recordSignRequest(long tabId, long frameId,
+                                  optional VoidCallback callback);
+  };
+};

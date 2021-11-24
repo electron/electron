@@ -8,13 +8,22 @@ needed in chromium but our autofill implementation uses them.  This patch can be
 our autofill implementation to work like Chromium's.
 
 diff --git a/ui/native_theme/common_theme.cc b/ui/native_theme/common_theme.cc
-index 4436af30ea86d7949ae5f387fbeab9e6369ac12e..575aafe2d19c150e288141fb85cec3f78103ba4a 100644
+index a8d95abb69da8d42aed26d3b215cc05d79ba676b..74fc4d9bb7f183765b05e94b7133599ccf714042 100644
 --- a/ui/native_theme/common_theme.cc
 +++ b/ui/native_theme/common_theme.cc
-@@ -72,6 +72,14 @@ base::Optional<SkColor> GetDarkSchemeColor(NativeTheme::ColorId color_id,
-     case NativeTheme::kColorId_BubbleBorderShadowBase:
-       return SK_ColorBLACK;
- 
+@@ -32,6 +32,7 @@ absl::optional<SkColor> GetHighContrastColor(
+     NativeTheme::ColorScheme color_scheme) {
+   switch (color_id) {
+     case NativeTheme::kColorId_MenuSeparatorColor:
++    case NativeTheme::kColorId_UnfocusedBorderColor:
+       return color_scheme == NativeTheme::ColorScheme::kDark ? SK_ColorWHITE
+                                                              : SK_ColorBLACK;
+     case NativeTheme::kColorId_FocusedBorderColor:
+@@ -53,6 +54,15 @@ absl::optional<SkColor> GetDarkSchemeColor(NativeTheme::ColorId color_id,
+       return gfx::kGoogleBlue400;
+     case NativeTheme::kColorId_MenuSeparatorColor:
+       return gfx::kGoogleGrey800;
++
 +    // Results Tables
 +    case NativeTheme::kColorId_ResultsTableNormalBackground:
 +      return SkColorSetRGB(0x28, 0x28, 0x28);
@@ -23,10 +32,19 @@ index 4436af30ea86d7949ae5f387fbeab9e6369ac12e..575aafe2d19c150e288141fb85cec3f7
 +    case NativeTheme::kColorId_ResultsTableDimmedText:
 +      return SkColorSetA(base_theme->GetSystemColor(NativeTheme::kColorId_ResultsTableNormalText), 0x80);
 +
-     // Button
      case NativeTheme::kColorId_ProminentButtonColor:
        return gfx::kGoogleBlue300;
-@@ -570,6 +578,18 @@ SkColor GetDefaultColor(NativeTheme::ColorId color_id,
+     case NativeTheme::kColorId_WindowBackground:
+@@ -67,6 +77,8 @@ SkColor GetDefaultColor(NativeTheme::ColorId color_id,
+                         NativeTheme::ColorScheme color_scheme) {
+   switch (color_id) {
+     // Border
++    case NativeTheme::kColorId_UnfocusedBorderColor:
++      return gfx::kGoogleGrey300;
+     case NativeTheme::kColorId_FocusedBorderColor:
+       return gfx::kGoogleBlue500;
+ 
+@@ -136,6 +148,18 @@ SkColor GetDefaultColor(NativeTheme::ColorId color_id,
      case NativeTheme::kColorId_WindowBackground:
        return SK_ColorWHITE;
  
@@ -46,26 +64,34 @@ index 4436af30ea86d7949ae5f387fbeab9e6369ac12e..575aafe2d19c150e288141fb85cec3f7
        // Keeping the kColorId_NumColors case instead of using the default case
        // allows ColorId additions to trigger compile error for an incomplete
 diff --git a/ui/native_theme/native_theme_color_id.h b/ui/native_theme/native_theme_color_id.h
-index 64e6d428d805a71f1e8779c4c169d232bed79d2d..93086c17e231dbd2226bdc805f26d59703862d3b 100644
+index a1b39a03776c287bc2b1f9a0a6ce11d0d9efde79..9132ff83b672b51c5f2f7ed95da877be7114c691 100644
 --- a/ui/native_theme/native_theme_color_id.h
 +++ b/ui/native_theme/native_theme_color_id.h
-@@ -151,6 +151,11 @@
-   OP(kColorId_TableHeaderText),                                                \
-   OP(kColorId_TableHeaderBackground),                                          \
-   OP(kColorId_TableHeaderSeparator),                                           \
+@@ -10,6 +10,7 @@
+ #define NATIVE_THEME_CROSS_PLATFORM_COLOR_IDS                                  \
+   OP(kColorId_DefaultIconColor),                                               \
+   OP(kColorId_FocusedBorderColor),                                             \
++  OP(kColorId_UnfocusedBorderColor),                                           \
+   OP(kColorId_FocusedMenuItemBackgroundColor),                                 \
+   OP(kColorId_MenuBackgroundColor),                                            \
+   OP(kColorId_MenuIconColor),                                                  \
+@@ -20,6 +21,11 @@
+   OP(kColorId_OverlayScrollbarThumbStroke),                                    \
+   OP(kColorId_ProminentButtonColor),                                           \
+   OP(kColorId_TextOnProminentButtonColor),                                     \
 +  /* Results Tables, such as the omnibox */                                    \
 +  OP(kColorId_ResultsTableNormalBackground),                                   \
 +  OP(kColorId_ResultsTableHoveredBackground),                                  \
 +  OP(kColorId_ResultsTableNormalText),                                         \
 +  OP(kColorId_ResultsTableDimmedText),                                         \
-   /* Colors for the material spinner (aka throbber). */                        \
    OP(kColorId_ThrobberSpinningColor),                                          \
    OP(kColorId_ThrobberWaitingColor),                                           \
+   OP(kColorId_WindowBackground)
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index 68b798fc755a3ec3130e43254b6ec306d30a19fa..13a1f3763d137667220325237c419257e9868a8d 100644
+index 99256ffaf918e9d12a7c21b89d66cd41a0d29ac2..07852493fd23b8c1f057dc7ad830b6884db50a88 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
-@@ -659,6 +659,18 @@ base::Optional<SkColor> NativeThemeWin::GetPlatformHighContrastColor(
+@@ -623,10 +623,23 @@ absl::optional<SkColor> NativeThemeWin::GetPlatformHighContrastColor(
      case kColorId_ThrobberWaitingColor:
        return system_colors_[SystemThemeColor::kGrayText];
  
@@ -81,6 +107,11 @@ index 68b798fc755a3ec3130e43254b6ec306d30a19fa..13a1f3763d137667220325237c419257
 +      return color_utils::AlphaBlend(system_colors_[SystemThemeColor::kWindowText],
 +                                     system_colors_[SystemThemeColor::kWindow], 0.5f);
 +
-     // Button Background
-     case kColorId_ButtonColor:
      case kColorId_MenuBackgroundColor:
+       return system_colors_[SystemThemeColor::kButtonFace];
+ 
+     case kColorId_MenuSeparatorColor:
++    case kColorId_UnfocusedBorderColor:
+     case kColorId_FocusedBorderColor:
+       return system_colors_[SystemThemeColor::kButtonText];
+ 

@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_NET_CERT_VERIFIER_CLIENT_H_
-#define SHELL_BROWSER_NET_CERT_VERIFIER_CLIENT_H_
+#ifndef ELECTRON_SHELL_BROWSER_NET_CERT_VERIFIER_CLIENT_H_
+#define ELECTRON_SHELL_BROWSER_NET_CERT_VERIFIER_CLIENT_H_
 
 #include <string>
 
@@ -18,6 +18,7 @@ struct VerifyRequestParams {
   int error_code;
   scoped_refptr<net::X509Certificate> certificate;
   scoped_refptr<net::X509Certificate> validated_certificate;
+  bool is_issued_by_known_root;
 
   VerifyRequestParams();
   VerifyRequestParams(const VerifyRequestParams&);
@@ -28,7 +29,7 @@ class CertVerifierClient : public network::mojom::CertVerifierClient {
  public:
   using CertVerifyProc =
       base::RepeatingCallback<void(const VerifyRequestParams& request,
-                                   base::RepeatingCallback<void(int)>)>;
+                                   base::OnceCallback<void(int)>)>;
 
   explicit CertVerifierClient(CertVerifyProc proc);
   ~CertVerifierClient() override;
@@ -39,7 +40,7 @@ class CertVerifierClient : public network::mojom::CertVerifierClient {
               const scoped_refptr<net::X509Certificate>& certificate,
               const std::string& hostname,
               int flags,
-              const base::Optional<std::string>& ocsp_response,
+              const absl::optional<std::string>& ocsp_response,
               VerifyCallback callback) override;
 
  private:
@@ -48,4 +49,4 @@ class CertVerifierClient : public network::mojom::CertVerifierClient {
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_NET_CERT_VERIFIER_CLIENT_H_
+#endif  // ELECTRON_SHELL_BROWSER_NET_CERT_VERIFIER_CLIENT_H_

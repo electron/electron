@@ -1,0 +1,228 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andy Locascio <andy@slack-corp.com>
+Date: Wed, 6 May 2020 16:37:54 -0700
+Subject: allow in-process windows to have different web prefs
+
+Allow earlier access to newly created WebContents so that we can change
+WebPreferences of in-process child windows, rather than relying on
+process-level command line switches, as before.
+
+diff --git a/third_party/blink/common/web_preferences/web_preferences.cc b/third_party/blink/common/web_preferences/web_preferences.cc
+index db2d0536ed7a8143a60cebf1c5d7fee1acf4d10d..6cea8d7ce6ff75ae80a4db03c25f913915624342 100644
+--- a/third_party/blink/common/web_preferences/web_preferences.cc
++++ b/third_party/blink/common/web_preferences/web_preferences.cc
+@@ -145,6 +145,22 @@ WebPreferences::WebPreferences()
+       fake_no_alloc_direct_call_for_testing_enabled(false),
+       v8_cache_options(blink::mojom::V8CacheOptions::kDefault),
+       record_whole_document(false),
++      // Begin Electron-specific WebPreferences.
++      opener_id(0),
++      context_isolation(false),
++      is_webview(false),
++      hidden_page(false),
++      offscreen(false),
++      preload(base::FilePath::StringType()),
++      native_window_open(false),
++      node_integration(false),
++      node_integration_in_worker(false),
++      node_integration_in_sub_frames(false),
++      enable_spellcheck(false),
++      enable_plugins(false),
++      enable_websql(false),
++      webview_tag(false),
++      // End Electron-specific WebPreferences.
+       cookie_enabled(true),
+       accelerated_video_decode_enabled(false),
+       animation_policy(
+diff --git a/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc b/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
+index e9f2e215ee1220c66549112982df04201c68fe1a..a8e08adfdeaf3acde4d190766b65ad3fbacfdf58 100644
+--- a/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
++++ b/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
+@@ -23,6 +23,10 @@ bool StructTraits<blink::mojom::WebPreferencesDataView,
+       !data.ReadCursiveFontFamilyMap(&out->cursive_font_family_map) ||
+       !data.ReadFantasyFontFamilyMap(&out->fantasy_font_family_map) ||
+       !data.ReadPictographFontFamilyMap(&out->pictograph_font_family_map) ||
++      // Begin Electron-specific WebPreferences.
++      !data.ReadPreloads(&out->preloads) ||
++      !data.ReadPreload(&out->preload) ||
++      // End Electron-specific WebPreferences.
+       !data.ReadLazyFrameLoadingDistanceThresholdsPx(
+           &out->lazy_frame_loading_distance_thresholds_px) ||
+       !data.ReadLazyImageLoadingDistanceThresholdsPx(
+@@ -158,6 +162,21 @@ bool StructTraits<blink::mojom::WebPreferencesDataView,
+       data.fake_no_alloc_direct_call_for_testing_enabled();
+   out->v8_cache_options = data.v8_cache_options();
+   out->record_whole_document = data.record_whole_document();
++  // Begin Electron-specific WebPreferences.
++  out->opener_id = data.opener_id();
++  out->context_isolation = data.context_isolation();
++  out->is_webview = data.is_webview();
++  out->hidden_page = data.hidden_page();
++  out->offscreen = data.offscreen();
++  out->native_window_open = data.native_window_open();
++  out->node_integration = data.node_integration();
++  out->node_integration_in_worker = data.node_integration_in_worker();
++  out->node_integration_in_sub_frames = data.node_integration_in_sub_frames();
++  out->enable_spellcheck = data.enable_spellcheck();
++  out->enable_plugins = data.enable_plugins();
++  out->enable_websql = data.enable_websql();
++  out->webview_tag = data.webview_tag();
++  // End Electron-specific WebPreferences.s
+   out->cookie_enabled = data.cookie_enabled();
+   out->accelerated_video_decode_enabled =
+       data.accelerated_video_decode_enabled();
+diff --git a/third_party/blink/public/common/web_preferences/web_preferences.h b/third_party/blink/public/common/web_preferences/web_preferences.h
+index 0d74719b2f8fb91f094772fab96a880cc8787c77..bc447e53a87852aac03fd2487b77aa1009472d36 100644
+--- a/third_party/blink/public/common/web_preferences/web_preferences.h
++++ b/third_party/blink/public/common/web_preferences/web_preferences.h
+@@ -10,6 +10,7 @@
+ #include <vector>
+ 
+ #include "build/build_config.h"
++#include "base/files/file_path.h"
+ #include "net/nqe/effective_connection_type.h"
+ #include "third_party/blink/public/common/common_export.h"
+ #include "third_party/blink/public/mojom/css/preferred_color_scheme.mojom-shared.h"
+@@ -163,6 +164,24 @@ struct BLINK_COMMON_EXPORT WebPreferences {
+   blink::mojom::V8CacheOptions v8_cache_options;
+   bool record_whole_document;
+ 
++  // Begin Electron-specific WebPreferences.
++  std::vector<base::FilePath> preloads;
++  int opener_id;
++  bool context_isolation;
++  bool is_webview;
++  bool hidden_page;
++  bool offscreen;
++  base::FilePath preload;
++  bool native_window_open;
++  bool node_integration;
++  bool node_integration_in_worker;
++  bool node_integration_in_sub_frames;
++  bool enable_spellcheck;
++  bool enable_plugins;
++  bool enable_websql;
++  bool webview_tag;
++  // End Electron-specific WebPreferences.
++
+   // This flags corresponds to a Page's Settings' setCookieEnabled state. It
+   // only controls whether or not the "document.cookie" field is properly
+   // connected to the backing store, for instance if you wanted to be able to
+diff --git a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
+index e0084598921ddcb0cf2aeb33875f05da0b5457e9..90bf73d7a1f2daf921f5a0ae9e4b3c292efaaaa0 100644
+--- a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
++++ b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
+@@ -6,6 +6,7 @@
+ #define THIRD_PARTY_BLINK_PUBLIC_COMMON_WEB_PREFERENCES_WEB_PREFERENCES_MOJOM_TRAITS_H_
+ 
+ #include "build/build_config.h"
++#include "mojo/public/cpp/base/file_path_mojom_traits.h"
+ #include "mojo/public/cpp/bindings/struct_traits.h"
+ #include "net/nqe/effective_connection_type.h"
+ #include "third_party/blink/public/common/common_export.h"
+@@ -456,6 +457,68 @@ struct BLINK_COMMON_EXPORT StructTraits<blink::mojom::WebPreferencesDataView,
+     return r.record_whole_document;
+   }
+ 
++  // Begin Electron-specific WebPreferences.
++  static const std::vector<base::FilePath>& preloads(const blink::web_pref::WebPreferences& r) {
++    return r.preloads;
++  }
++
++  static int opener_id(const blink::web_pref::WebPreferences& r) {
++    return r.opener_id;
++  }
++
++  static bool context_isolation(const blink::web_pref::WebPreferences& r) {
++    return r.context_isolation;
++  }
++
++  static int is_webview(const blink::web_pref::WebPreferences& r) {
++    return r.is_webview;
++  }
++
++  static bool hidden_page(const blink::web_pref::WebPreferences& r) {
++    return r.hidden_page;
++  }
++
++  static bool offscreen(const blink::web_pref::WebPreferences& r) {
++    return r.offscreen;
++  }
++
++  static const base::FilePath& preload(const blink::web_pref::WebPreferences& r) {
++    return r.preload;
++  }
++
++  static bool native_window_open(const blink::web_pref::WebPreferences& r) {
++    return r.native_window_open;
++  }
++
++  static bool node_integration(const blink::web_pref::WebPreferences& r) {
++    return r.node_integration;
++  }
++
++  static bool node_integration_in_worker(const blink::web_pref::WebPreferences& r) {
++    return r.node_integration_in_worker;
++  }
++
++  static bool node_integration_in_sub_frames(const blink::web_pref::WebPreferences& r) {
++    return r.node_integration_in_sub_frames;
++  }
++
++  static bool enable_spellcheck(const blink::web_pref::WebPreferences& r) {
++    return r.enable_spellcheck;
++  }
++
++  static bool enable_plugins(const blink::web_pref::WebPreferences& r) {
++    return r.enable_plugins;
++  }
++
++  static bool enable_websql(const blink::web_pref::WebPreferences& r) {
++    return r.enable_websql;
++  }
++
++  static bool webview_tag(const blink::web_pref::WebPreferences& r) {
++    return r.webview_tag;
++  }
++  // End Electron-specific WebPreferences.
++
+   static bool cookie_enabled(const blink::web_pref::WebPreferences& r) {
+     return r.cookie_enabled;
+   }
+diff --git a/third_party/blink/public/mojom/webpreferences/web_preferences.mojom b/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
+index af5ba07466b95ab61befdd3994d731ed8f7ef0a6..2623a82a333767f789da2e952adb2bc1997ca4fd 100644
+--- a/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
++++ b/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
+@@ -10,6 +10,7 @@ import "third_party/blink/public/mojom/v8_cache_options.mojom";
+ import "url/mojom/url.mojom";
+ import "url/mojom/origin.mojom";
+ import "mojo/public/mojom/base/string16.mojom";
++import "mojo/public/mojom/base/file_path.mojom";
+ 
+ enum PointerType {
+   kPointerNone                              = 1,             // 1 << 0
+@@ -215,6 +216,24 @@ struct WebPreferences {
+   V8CacheOptions v8_cache_options;
+   bool record_whole_document;
+ 
++  // Begin Electron-specific WebPreferences.
++  array<mojo_base.mojom.FilePath> preloads;
++  int32 opener_id;
++  bool context_isolation;
++  bool is_webview;
++  bool hidden_page;
++  bool offscreen;
++  mojo_base.mojom.FilePath preload;
++  bool native_window_open;
++  bool node_integration;
++  bool node_integration_in_worker;
++  bool node_integration_in_sub_frames;
++  bool enable_spellcheck;
++  bool enable_plugins;
++  bool enable_websql;
++  bool webview_tag;
++  // End Electron-specific WebPreferences.
++
+   // This flags corresponds to a Page's Settings' setCookieEnabled state. It
+   // only controls whether or not the "document.cookie" field is properly
+   // connected to the backing store, for instance if you wanted to be able to

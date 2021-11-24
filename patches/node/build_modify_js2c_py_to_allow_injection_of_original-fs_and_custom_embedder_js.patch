@@ -13,8 +13,29 @@ process and provide embedder modules (electrons
 renderer/browser/worker/sandboxed bootstrap scripts).  These are loaded
 through LoadEmbedderJavaScriptSource()
 
+diff --git a/lib/internal/fs/watchers.js b/lib/internal/fs/watchers.js
+index b45af42d12ff7df8a9e125e87f51af3456811c23..c84ff7feb07aebf656ada7e37d812d9d8a81300f 100644
+--- a/lib/internal/fs/watchers.js
++++ b/lib/internal/fs/watchers.js
+@@ -290,10 +290,12 @@ function emitCloseNT(self) {
+ 
+ // Legacy alias on the C++ wrapper object. This is not public API, so we may
+ // want to runtime-deprecate it at some point. There's no hurry, though.
+-ObjectDefineProperty(FSEvent.prototype, 'owner', {
+-  get() { return this[owner_symbol]; },
+-  set(v) { return this[owner_symbol] = v; }
+-});
++if (!'owner' in FSEvent.prototype) {
++  ObjectDefineProperty(FSEvent.prototype, 'owner', {
++    get() { return this[owner_symbol]; },
++    set(v) { return this[owner_symbol] = v; }
++  });
++}
+ 
+ async function* watch(filename, options = {}) {
+   const path = toNamespacedPath(getValidatedPath(filename));
 diff --git a/src/node_native_module.cc b/src/node_native_module.cc
-index 4c3633e06c60265c974bdd2a5a3d2e615e4aeb82..5e03a3a6e35e934faf71e765d7fc6e356f40e8d0 100644
+index c4fd96c75c1862289d9cabccfbc9bfc3a5ee523d..3c9e5498e6b9c62813ef93ca77558ead753ac797 100644
 --- a/src/node_native_module.cc
 +++ b/src/node_native_module.cc
 @@ -20,6 +20,7 @@ NativeModuleLoader NativeModuleLoader::instance_;
@@ -38,11 +59,11 @@ index 3be3f2364dd252bcdd668c699a0e7ae1e754e873..b2af1bce312ffca44e7005e11f92327e
  
    bool Exists(const char* id);
 diff --git a/tools/js2c.py b/tools/js2c.py
-index 93e9474297fd9032981786ae9d4e005f2d1a9a2e..bca4c44a31d1ffe7c9ae15b6f60cd55e325f707d 100755
+index 4d9317527d46ac8c6d8066bfba707233053b8615..83225036208b68087a6066adf1d1948b84c5c234 100755
 --- a/tools/js2c.py
 +++ b/tools/js2c.py
-@@ -38,6 +38,8 @@ import functools
- import codecs
+@@ -39,6 +39,8 @@ import codecs
+ import utils
  
  def ReadFile(filename):
 +  if filename.startswith("//v8"):
@@ -50,7 +71,7 @@ index 93e9474297fd9032981786ae9d4e005f2d1a9a2e..bca4c44a31d1ffe7c9ae15b6f60cd55e
    if is_verbose:
      print(filename)
    with codecs.open(filename, "r", "utf-8") as f:
-@@ -56,13 +58,15 @@ namespace native_module {{
+@@ -57,13 +59,15 @@ namespace native_module {{
  
  {0}
  
@@ -68,7 +89,7 @@ index 93e9474297fd9032981786ae9d4e005f2d1a9a2e..bca4c44a31d1ffe7c9ae15b6f60cd55e
  
  }}  // namespace native_module
  
-@@ -112,8 +116,8 @@ def GetDefinition(var, source, step=30):
+@@ -113,8 +117,8 @@ def GetDefinition(var, source, step=30):
    return definition, len(code_points)
  
  
@@ -79,18 +100,18 @@ index 93e9474297fd9032981786ae9d4e005f2d1a9a2e..bca4c44a31d1ffe7c9ae15b6f60cd55e
    name = NormalizeFileName(filename)
    slug = SLUGGER_RE.sub('_', name)
    var = slug + '_raw'
-@@ -123,7 +127,9 @@ def AddModule(filename, definitions, initializers):
+@@ -124,7 +128,9 @@ def AddModule(filename, definitions, initializers):
    initializers.append(initializer)
  
  def NormalizeFileName(filename):
--  split = filename.split(os.path.sep)
+-  split = filename.split('/')
 +  if filename.startswith('//v8'):
 +    filename = "deps/" + filename[2:]
 +  split = os.path.normpath(filename).split(os.path.sep)
    if split[0] == 'deps':
      split = ['internal'] + split
    else:  # `lib/**/*.js` so drop the 'lib' part
-@@ -141,7 +147,7 @@ def NormalizeFileName(filename):
+@@ -142,23 +148,36 @@ def NormalizeFileName(filename):
    return os.path.splitext(filename)[0]
  
  
@@ -99,22 +120,29 @@ index 93e9474297fd9032981786ae9d4e005f2d1a9a2e..bca4c44a31d1ffe7c9ae15b6f60cd55e
    # Build source code lines
    definitions = []
    initializers = []
-@@ -149,13 +155,26 @@ def JS2C(source_files, target):
-   for filename in source_files['.js']:
-     AddModule(filename, definitions, initializers)
  
+-  for filename in source_files['.js']:
+-    AddModule(filename, definitions, initializers)
+-  for filename in source_files['.mjs']:
+-    AddModule(filename, definitions, initializers)
+-
 -  config_def, config_size = handle_config_gypi(source_files['config.gypi'])
 -  definitions.append(config_def)
-+    # Electron: Expose fs module without asar support.
-+    if filename == 'lib/fs.js':
-+      # Node's 'fs' and 'internal/fs/<filename> have lazy-loaded circular
-+      # dependencies. So to expose the unmodified Node 'fs' functionality here,
-+      # we have to copy both 'fs' *and* 'internal/fs/<filename>' files and modify the
-+      # copies to depend on each other instead of on our asarified 'fs' code.
-+      AddModule('lib/original-fs.js', definitions, initializers, lambda _: ReadFile(filename).replace("require('internal/fs/", "require('internal/original-fs/"))
-+    elif filename.startswith('lib/internal/fs/'):
-+      original_fs_filename = filename.replace('internal/fs/', 'internal/original-fs/')
-+      AddModule(original_fs_filename, definitions, initializers, lambda _: ReadFile(filename).replace("require('fs')", "require('original-fs')"))
++  for extension in source_files.keys():
++    if extension == '.js' or extension == '.mjs':
++      for filename in source_files[extension]:
++        AddModule(filename, definitions, initializers)
++
++        # Electron: Expose fs module without asar support.
++        if filename == 'lib/fs.js':
++          # Node's 'fs' and 'internal/fs/<filename> have lazy-loaded circular
++          # dependencies. So to expose the unmodified Node 'fs' functionality here,
++          # we have to copy both 'fs' *and* 'internal/fs/<filename>' files and modify the
++          # copies to depend on each other instead of on our asarified 'fs' code.
++          AddModule('lib/original-fs.js', definitions, initializers, lambda _: ReadFile(filename).replace("require('internal/fs/", "require('internal/original-fs/"))
++        elif filename.startswith('lib/internal/fs/'):
++          original_fs_filename = filename.replace('internal/fs/', 'internal/original-fs/')
++          AddModule(original_fs_filename, definitions, initializers, lambda _: ReadFile(filename).replace("require('fs')", "require('original-fs')"))
 +
 +  config_size = 0
 +  if not only_js:
@@ -129,18 +157,20 @@ index 93e9474297fd9032981786ae9d4e005f2d1a9a2e..bca4c44a31d1ffe7c9ae15b6f60cd55e
    write_if_chaged(out, target)
  
  
-@@ -211,17 +230,21 @@ def main():
-   )
-   parser.add_argument('--target', help='output file')
+@@ -218,6 +237,7 @@ def main():
+       default=None,
+       help='input file directory')
    parser.add_argument('--verbose', action='store_true', help='output file')
 +  parser.add_argument('--only-js', action='store_true', help='do not require or parse any config.gypi files')
    parser.add_argument('sources', nargs='*', help='input files')
    options = parser.parse_args()
    global is_verbose
-   is_verbose = options.verbose
-   source_files = functools.reduce(SourceFileByExt, options.sources, {})
-   # Should have exactly 2 types: `.js`, and `.gypi`
--  assert len(source_files) == 2
+@@ -230,12 +250,15 @@ def main():
+ 
+   source_files = functools.reduce(SourceFileByExt, sources, {})
+ 
+-  # Should have exactly 3 types: `.js`, `.mjs` and `.gypi`
+-  assert len(source_files) == 3
 -  # Currently config.gypi is the only `.gypi` file allowed
 -  assert source_files['.gypi'] == ['config.gypi']
 -  source_files['config.gypi'] = source_files.pop('.gypi')[0]
@@ -148,7 +178,8 @@ index 93e9474297fd9032981786ae9d4e005f2d1a9a2e..bca4c44a31d1ffe7c9ae15b6f60cd55e
 +  if options.only_js:
 +    assert len(source_files) == 1
 +  else:
-+    assert len(source_files) == 2
++    # Should have exactly 3 types: `.js`, `.mjs` and `.gypi`
++    assert len(source_files) == 3
 +    # Currently config.gypi is the only `.gypi` file allowed
 +    assert source_files['.gypi'][0].endswith('config.gypi')
 +    source_files['config.gypi'] = source_files.pop('.gypi')[0]

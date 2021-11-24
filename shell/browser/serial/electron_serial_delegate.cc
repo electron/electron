@@ -14,12 +14,6 @@
 #include "shell/browser/serial/serial_chooser_controller.h"
 #include "shell/browser/web_contents_permission_helper.h"
 
-namespace features {
-
-const base::Feature kElectronSerialChooser{"ElectronSerialChooser",
-                                           base::FEATURE_DISABLED_BY_DEFAULT};
-}
-
 namespace electron {
 
 SerialChooserContext* GetChooserContext(content::RenderFrameHost* frame) {
@@ -36,16 +30,11 @@ std::unique_ptr<content::SerialChooser> ElectronSerialDelegate::RunChooser(
     content::RenderFrameHost* frame,
     std::vector<blink::mojom::SerialPortFilterPtr> filters,
     content::SerialChooser::Callback callback) {
-  if (base::FeatureList::IsEnabled(features::kElectronSerialChooser)) {
-    SerialChooserController* controller = ControllerForFrame(frame);
-    if (controller) {
-      DeleteControllerForFrame(frame);
-    }
-    AddControllerForFrame(frame, std::move(filters), std::move(callback));
-  } else {
-    // If feature is disabled, immediately return back with no port selected.
-    std::move(callback).Run(nullptr);
+  SerialChooserController* controller = ControllerForFrame(frame);
+  if (controller) {
+    DeleteControllerForFrame(frame);
   }
+  AddControllerForFrame(frame, std::move(filters), std::move(callback));
 
   // Return a nullptr because the return value isn't used for anything, eg
   // there is no mechanism to cancel navigator.serial.requestPort(). The return
@@ -71,8 +60,7 @@ bool ElectronSerialDelegate::HasPortPermission(
   auto* chooser_context =
       SerialChooserContextFactory::GetForBrowserContext(browser_context);
   return chooser_context->HasPortPermission(
-      frame->GetLastCommittedOrigin(),
-      web_contents->GetMainFrame()->GetLastCommittedOrigin(), port);
+      web_contents->GetMainFrame()->GetLastCommittedOrigin(), port, frame);
 }
 
 device::mojom::SerialPortManager* ElectronSerialDelegate::GetPortManager(

@@ -30,9 +30,9 @@ because it is invoked in the main process.
 
 ### `window.open(url[, frameName][, features])`
 
-* `url` String
-* `frameName` String (optional)
-* `features` String (optional)
+* `url` string
+* `frameName` string (optional)
+* `features` string (optional)
 
 Returns [`BrowserWindowProxy`](browser-window-proxy.md) | [`Window`](https://developer.mozilla.org/en-US/docs/Web/API/Window)
 
@@ -85,15 +85,18 @@ const mainWindow = new BrowserWindow()
 mainWindow.webContents.setWindowOpenHandler(({ url }) => {
   if (url === 'about:blank') {
     return {
-      frame: false,
-      fullscreenable: false,
-      backgroundColor: 'black',
-      webPreferences: {
-        preload: 'my-child-window-preload-script.js'
+      action: 'allow',
+      overrideBrowserWindowOptions: {
+        frame: false,
+        fullscreenable: false,
+        backgroundColor: 'black',
+        webPreferences: {
+          preload: 'my-child-window-preload-script.js'
+        }
       }
     }
   }
-  return false
+  return { action: 'deny' }
 })
 ```
 

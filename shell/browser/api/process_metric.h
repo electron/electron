@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_PROCESS_METRIC_H_
-#define SHELL_BROWSER_API_PROCESS_METRIC_H_
+#ifndef ELECTRON_SHELL_BROWSER_API_PROCESS_METRIC_H_
+#define ELECTRON_SHELL_BROWSER_API_PROCESS_METRIC_H_
 
 #include <memory>
 #include <string>
@@ -62,4 +62,4 @@ struct ProcessMetric {
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_PROCESS_METRIC_H_
+#endif  // ELECTRON_SHELL_BROWSER_API_PROCESS_METRIC_H_

@@ -52,7 +52,7 @@ void ElectronCrashReporterClient::Create() {
 
   // By setting the BREAKPAD_DUMP_LOCATION environment variable, an alternate
   // location to write crash dumps can be set.
-  std::unique_ptr<base::Environment> env(base::Environment::Create());
+  auto env = base::Environment::Create();
   std::string alternate_crash_dump_location;
   base::FilePath crash_dumps_dir_path;
   if (env->GetVar("BREAKPAD_DUMP_LOCATION", &alternate_crash_dump_location)) {
@@ -92,9 +92,9 @@ void ElectronCrashReporterClient::SetGlobalAnnotations(
   global_annotations_ = annotations;
 }
 
-ElectronCrashReporterClient::ElectronCrashReporterClient() {}
+ElectronCrashReporterClient::ElectronCrashReporterClient() = default;
 
-ElectronCrashReporterClient::~ElectronCrashReporterClient() {}
+ElectronCrashReporterClient::~ElectronCrashReporterClient() = default;
 
 #if defined(OS_LINUX)
 void ElectronCrashReporterClient::SetCrashReporterClientIdFromGUID(
@@ -153,6 +153,9 @@ bool ElectronCrashReporterClient::GetCrashDumpLocation(
     base::FilePath* crash_dir) {
   bool result = base::PathService::Get(electron::DIR_CRASH_DUMPS, crash_dir);
   {
+    // If the DIR_CRASH_DUMPS path is overridden with
+    // app.setPath('crashDumps', ...) then the directory might not have been
+    // created.
     base::ThreadRestrictions::ScopedAllowIO allow_io;
     if (result && !base::PathExists(*crash_dir)) {
       return base::CreateDirectory(*crash_dir);
@@ -161,13 +164,6 @@ bool ElectronCrashReporterClient::GetCrashDumpLocation(
   return result;
 }
 #endif
-
-#if defined(OS_MAC) || defined(OS_LINUX)
-bool ElectronCrashReporterClient::GetCrashMetricsLocation(
-    base::FilePath* metrics_dir) {
-  return base::PathService::Get(electron::DIR_USER_DATA, metrics_dir);
-}
-#endif  // OS_MAC || OS_LINUX
 
 bool ElectronCrashReporterClient::IsRunningUnattended() {
   return !collect_stats_consent_;

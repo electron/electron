@@ -8,18 +8,18 @@ modules from being used in the renderer process. This should be upstreamed as
 a customizable error message.
 
 diff --git a/src/node_binding.cc b/src/node_binding.cc
-index ca5a01f925a2ae69ba4295d82316e546f45c60cd..a0f6730de75b9b1dc58e2cec5ed64f9619162a2b 100644
+index e323f76261f2028ef58da74066f9112d8a5a8df2..bec34a61e0be78d863e476c75647e3496aa6a2c5 100644
 --- a/src/node_binding.cc
 +++ b/src/node_binding.cc
-@@ -3,6 +3,7 @@
- #include <atomic>
- #include "env-inl.h"
+@@ -4,6 +4,7 @@
+ #include "node_errors.h"
+ #include "node_external_reference.h"
  #include "node_native_module_env.h"
 +#include "node_process.h"
  #include "util.h"
  
- #if HAVE_OPENSSL
-@@ -463,7 +464,12 @@ void DLOpen(const FunctionCallbackInfo<Value>& args) {
+ #include <string>
+@@ -472,7 +473,12 @@ void DLOpen(const FunctionCallbackInfo<Value>& args) {
        if (mp->nm_context_register_func == nullptr) {
          if (env->force_context_aware()) {
            dlib->Close();
@@ -27,7 +27,7 @@ index ca5a01f925a2ae69ba4295d82316e546f45c60cd..a0f6730de75b9b1dc58e2cec5ed64f96
 +          char errmsg[1024];
 +          snprintf(errmsg,
 +                   sizeof(errmsg),
-+                   "Loading non-context-aware native module in renderer: '%s', but app.allowRendererProcessReuse is true. See https://github.com/electron/electron/issues/18397.",
++                   "Loading non-context-aware native module in renderer: '%s'. See https://github.com/electron/electron/issues/18397.",
 +                   *filename);
 +          env->ThrowError(errmsg);
            return false;

@@ -2,21 +2,19 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_ZOOM_LEVEL_DELEGATE_H_
-#define SHELL_BROWSER_ZOOM_LEVEL_DELEGATE_H_
+#ifndef ELECTRON_SHELL_BROWSER_ZOOM_LEVEL_DELEGATE_H_
+#define ELECTRON_SHELL_BROWSER_ZOOM_LEVEL_DELEGATE_H_
 
-#include <memory>
 #include <string>
 
-#include "base/files/file_path.h"
-#include "base/macros.h"
 #include "components/prefs/pref_service.h"
 #include "content/public/browser/host_zoom_map.h"
 #include "content/public/browser/zoom_level_delegate.h"
 
 namespace base {
 class DictionaryValue;
-}
+class FilePath;
+}  // namespace base
 
 class PrefRegistrySimple;
 
@@ -35,6 +33,10 @@ class ZoomLevelDelegate : public content::ZoomLevelDelegate {
   ZoomLevelDelegate(PrefService* pref_service,
                     const base::FilePath& partition_path);
   ~ZoomLevelDelegate() override;
+
+  // disable copy
+  ZoomLevelDelegate(const ZoomLevelDelegate&) = delete;
+  ZoomLevelDelegate& operator=(const ZoomLevelDelegate&) = delete;
 
   void SetDefaultZoomLevelPref(double level);
   double GetDefaultZoomLevelPref() const;
@@ -55,10 +57,8 @@ class ZoomLevelDelegate : public content::ZoomLevelDelegate {
   content::HostZoomMap* host_zoom_map_ = nullptr;
   base::CallbackListSubscription zoom_subscription_;
   std::string partition_key_;
-
-  DISALLOW_COPY_AND_ASSIGN(ZoomLevelDelegate);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_ZOOM_LEVEL_DELEGATE_H_
+#endif  // ELECTRON_SHELL_BROWSER_ZOOM_LEVEL_DELEGATE_H_

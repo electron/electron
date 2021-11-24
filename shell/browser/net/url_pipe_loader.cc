@@ -9,6 +9,7 @@
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "mojo/public/cpp/system/string_data_source.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
+#include "services/network/public/mojom/url_response_head.mojom.h"
 
 namespace electron {
 
@@ -85,7 +86,7 @@ void URLPipeLoader::OnDataReceived(base::StringPiece string_piece,
   producer_->Write(
       std::make_unique<mojo::StringDataSource>(
           string_piece, mojo::StringDataSource::AsyncWritingMode::
-                            STRING_STAYS_VALID_UNTIL_COMPLETION),
+                            STRING_MAY_BE_INVALIDATED_BEFORE_COMPLETION),
       base::BindOnce(&URLPipeLoader::OnWrite, weak_factory_.GetWeakPtr(),
                      std::move(resume)));
 }

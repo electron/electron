@@ -2,11 +2,10 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_ELECTRON_API_DOWNLOAD_ITEM_H_
-#define SHELL_BROWSER_API_ELECTRON_API_DOWNLOAD_ITEM_H_
+#ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_DOWNLOAD_ITEM_H_
+#define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_DOWNLOAD_ITEM_H_
 
 #include <string>
-#include <vector>
 
 #include "base/files/file_path.h"
 #include "base/memory/weak_ptr.h"
@@ -16,7 +15,8 @@
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/ui/file_dialog.h"
 #include "shell/common/gin_helper/pinnable.h"
-#include "url/gurl.h"
+
+class GURL;
 
 namespace electron {
 
@@ -30,7 +30,7 @@ class DownloadItem : public gin::Wrappable<DownloadItem>,
   static gin::Handle<DownloadItem> FromOrCreate(v8::Isolate* isolate,
                                                 download::DownloadItem* item);
 
-  static DownloadItem* FromDownloadItem(download::DownloadItem*);
+  static DownloadItem* FromDownloadItem(download::DownloadItem* item);
 
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
@@ -43,15 +43,19 @@ class DownloadItem : public gin::Wrappable<DownloadItem>,
   base::FilePath GetSavePath() const;
   file_dialog::DialogSettings GetSaveDialogOptions() const;
 
+  // disable copy
+  DownloadItem(const DownloadItem&) = delete;
+  DownloadItem& operator=(const DownloadItem&) = delete;
+
  private:
-  DownloadItem(v8::Isolate* isolate, download::DownloadItem* download_item);
+  DownloadItem(v8::Isolate* isolate, download::DownloadItem* item);
   ~DownloadItem() override;
 
   bool CheckAlive() const;
 
   // download::DownloadItem::Observer
-  void OnDownloadUpdated(download::DownloadItem* download) override;
-  void OnDownloadDestroyed(download::DownloadItem* download) override;
+  void OnDownloadUpdated(download::DownloadItem* item) override;
+  void OnDownloadDestroyed(download::DownloadItem* item) override;
 
   // JS API
   void Pause();
@@ -81,12 +85,10 @@ class DownloadItem : public gin::Wrappable<DownloadItem>,
   v8::Isolate* isolate_;
 
   base::WeakPtrFactory<DownloadItem> weak_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(DownloadItem);
 };
 
 }  // namespace api
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_ELECTRON_API_DOWNLOAD_ITEM_H_
+#endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_DOWNLOAD_ITEM_H_

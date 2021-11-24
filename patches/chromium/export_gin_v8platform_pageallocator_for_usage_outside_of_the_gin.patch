@@ -9,26 +9,26 @@ correctly tagged with MAP_JIT we need to use gins page allocator instead
 of the default V8 allocator.  This probably can't be usptreamed.
 
 diff --git a/gin/public/v8_platform.h b/gin/public/v8_platform.h
-index 967ef1dffddfb4d6e30c7b97eacc099c70f4ef31..9c870947e2747c9c73bbf9a058a689b8b422f470 100644
+index c9b535eb083c250f4f874d8e6bd0c29ea9f3a10f..f220b8669507a4aea616b0dfbabda509647b714c 100644
 --- a/gin/public/v8_platform.h
 +++ b/gin/public/v8_platform.h
-@@ -25,6 +25,7 @@ class GIN_EXPORT V8Platform : public v8::Platform {
- // Some configurations do not use page_allocator.
- #if BUILDFLAG(USE_PARTITION_ALLOC)
-   v8::PageAllocator* GetPageAllocator() override;
-+  static v8::PageAllocator* PageAllocator();
+@@ -30,6 +30,7 @@ class GIN_EXPORT V8Platform : public v8::Platform {
+   // enabling Arm's Branch Target Instructions for executable pages. This is
+   // verified in the tests for gin::PageAllocator.
+   PageAllocator* GetPageAllocator() override;
++  static PageAllocator* PageAllocator();
    void OnCriticalMemoryPressure() override;
+   v8::ZoneBackingAllocator* GetZoneBackingAllocator() override;
  #endif
-   std::shared_ptr<v8::TaskRunner> GetForegroundTaskRunner(
 diff --git a/gin/v8_platform.cc b/gin/v8_platform.cc
-index 60f38b2dd015bea3410e8c69e9cb4a1d092e299b..4f44735c4e841f82091bdab474790d3f1a1a76ad 100644
+index 94f3fbd7fd28fb7d41dbd4070cac4912fe30e6ca..287231bc5826373c6a1b9b9fb1d05b54def86a7f 100644
 --- a/gin/v8_platform.cc
 +++ b/gin/v8_platform.cc
-@@ -465,6 +465,10 @@ v8::PageAllocator* V8Platform::GetPageAllocator() {
+@@ -367,6 +367,10 @@ PageAllocator* V8Platform::GetPageAllocator() {
    return g_page_allocator.Pointer();
  }
  
-+v8::PageAllocator* V8Platform::PageAllocator() {
++PageAllocator* V8Platform::PageAllocator() {
 +  return g_page_allocator.Pointer();
 +}
 +

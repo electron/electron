@@ -148,8 +148,8 @@ bool AutofillPopupView::CanStartDragForView(views::View*,
 }
 
 void AutofillPopupView::OnSelectedRowChanged(
-    base::Optional<int> previous_row_selection,
-    base::Optional<int> current_row_selection) {
+    absl::optional<int> previous_row_selection,
+    absl::optional<int> current_row_selection) {
   SchedulePaint();
 
   if (current_row_selection) {
@@ -213,7 +213,7 @@ void AutofillPopupView::CreateChildViews() {
   if (!popup_)
     return;
 
-  RemoveAllChildViews(true);
+  RemoveAllChildViews();
 
   for (int i = 0; i < popup_->GetLineCount(); ++i) {
     auto* child_view = new AutofillPopupChildView(popup_->GetValueAt(i));
@@ -306,7 +306,7 @@ void AutofillPopupView::OnMouseMoved(const ui::MouseEvent& event) {
   // A synthesized mouse move will be sent when the popup is first shown.
   // Don't preview a suggestion if the mouse happens to be hovering there.
 #if defined(OS_WIN)
-  if (base::Time::Now() - show_time_ <= base::TimeDelta::FromMilliseconds(50))
+  if (base::Time::Now() - show_time_ <= base::Milliseconds(50))
     return;
 #else
   if (event.flags() & ui::EF_IS_SYNTHESIZED)
@@ -442,7 +442,7 @@ void AutofillPopupView::AcceptSelection(const gfx::Point& point) {
   AcceptSelectedLine();
 }
 
-void AutofillPopupView::SetSelectedLine(base::Optional<int> selected_line) {
+void AutofillPopupView::SetSelectedLine(absl::optional<int> selected_line) {
   if (!popup_)
     return;
   if (selected_line_ == selected_line)
@@ -485,7 +485,7 @@ void AutofillPopupView::SelectPreviousLine() {
 }
 
 void AutofillPopupView::ClearSelection() {
-  SetSelectedLine(base::nullopt);
+  SetSelectedLine(absl::nullopt);
 }
 
 void AutofillPopupView::RemoveObserver() {

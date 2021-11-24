@@ -7,11 +7,11 @@ Make chrome's install-sysroot scripts point to our custom sysroot builds,
 which include extra deps that Electron needs (e.g. libnotify)
 
 diff --git a/build/linux/sysroot_scripts/install-sysroot.py b/build/linux/sysroot_scripts/install-sysroot.py
-index f8b7906cc557fb196e19dd6684a29c174b56c789..351b3a658b6b6d1dbe2370e825058b8b6dcbf9df 100755
+index ada6208644cb22c9f51c571f9509e335c0836163..86b55223fc21adf0e01cb276ebc613f6ea24f8b2 100755
 --- a/build/linux/sysroot_scripts/install-sysroot.py
 +++ b/build/linux/sysroot_scripts/install-sysroot.py
-@@ -37,9 +37,11 @@ except ImportError:
-     from urllib2 import urlopen
+@@ -41,9 +41,11 @@ except ImportError:
+   from urllib2 import urlopen
  
  SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 +SRC_DIR = os.path.dirname(os.path.dirname(os.path.dirname(SCRIPT_DIR)))
@@ -24,7 +24,7 @@ index f8b7906cc557fb196e19dd6684a29c174b56c789..351b3a658b6b6d1dbe2370e825058b8b
  
  VALID_ARCHS = ('arm', 'arm64', 'i386', 'amd64', 'mips', 'mips64el')
  
-@@ -101,7 +103,7 @@ def GetSysrootDict(target_platform, target_arch):
+@@ -105,7 +107,7 @@ def GetSysrootDict(target_platform, target_arch):
    if target_arch not in VALID_ARCHS:
      raise Error('Unknown architecture: %s' % target_arch)
  

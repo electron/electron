@@ -1,10 +1,11 @@
 import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
-import type * as webViewImpl from '@electron/internal/renderer/web-view/web-view-impl';
-import type * as webViewElement from '@electron/internal/renderer/web-view/web-view-element';
+import type * as webViewElementModule from '@electron/internal/renderer/web-view/web-view-element';
+import type * as guestViewInternalModule from '@electron/internal/renderer/web-view/guest-view-internal';
 
 const v8Util = process._linkedBinding('electron_common_v8_util');
+const { mainFrame: webFrame } = process._linkedBinding('electron_renderer_web_frame');
 
 function handleFocusBlur () {
   // Note that while Chromium content APIs have observer for focus/blur, they
@@ -19,19 +20,23 @@ function handleFocusBlur () {
   });
 }
 
-export function webViewInit (contextIsolation: boolean, webviewTag: boolean, guestInstanceId: number) {
+export function webViewInit (webviewTag: boolean, isWebView: boolean) {
   // Don't allow recursive `<webview>`.
-  if (webviewTag && !guestInstanceId) {
-    const webViewImplModule = require('@electron/internal/renderer/web-view/web-view-impl') as typeof webViewImpl;
-    if (contextIsolation) {
-      v8Util.setHiddenValue(window, 'web-view-impl', webViewImplModule);
+  if (webviewTag && !isWebView) {
+    const guestViewInternal = require('@electron/internal/renderer/web-view/guest-view-internal') as typeof guestViewInternalModule;
+    if (process.contextIsolated) {
+      v8Util.setHiddenValue(window, 'guestViewInternal', guestViewInternal);
     } else {
-      const { setupWebView } = require('@electron/internal/renderer/web-view/web-view-element') as typeof webViewElement;
-      setupWebView(webViewImplModule);
+      const { setupWebView } = require('@electron/internal/renderer/web-view/web-view-element') as typeof webViewElementModule;
+      setupWebView({
+        guestViewInternal,
+        allowGuestViewElementDefinition: webFrame.allowGuestViewElementDefinition,
+        setIsWebView: iframe => v8Util.setHiddenValue(iframe, 'isWebView', true)
+      });
     }
   }
 
-  if (guestInstanceId) {
+  if (isWebView) {
     // Report focus/blur events of webview to browser.
     handleFocusBlur();
   }

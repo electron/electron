@@ -16,40 +16,24 @@ example, the checks might be disabled for a whole build target, but actually
 only one or two specific checks fail. Then it's better to simply comment out the
 failing checks and allow the rest of the target to have them enabled.
 
-diff --git a/content/browser/renderer_host/navigation_controller_impl.cc b/content/browser/renderer_host/navigation_controller_impl.cc
-index 814eebf4b641fe01a29875b9c06aea84b2ab7206..892039c0481c0c66cefbff6a37bf51fe1ae61c6b 100644
---- a/content/browser/renderer_host/navigation_controller_impl.cc
-+++ b/content/browser/renderer_host/navigation_controller_impl.cc
-@@ -1416,8 +1416,10 @@ NavigationType NavigationControllerImpl::ClassifyNavigation(
-     return NAVIGATION_TYPE_NEW_SUBFRAME;
-   }
- 
--  // We only clear the session history in tests when navigating to a new entry.
--  DCHECK(!params.history_list_was_cleared);
-+  // Electron does its own book keeping of navigation entries and we
-+  // expect content to not track any, by clearing history list for
-+  // all navigations.
-+  // DCHECK(!params.history_list_was_cleared);
- 
-   if (rfh->GetParent()) {
-     // All manual subframes would be did_create_new_entry and handled above, so
-@@ -1732,7 +1734,10 @@ void NavigationControllerImpl::RendererDidNavigateToNewEntry(
-     }
-   }
- 
--  DCHECK(!params.history_list_was_cleared || !replace_entry);
-+  // Electron does its own book keeping of navigation entries and we
-+  // expect content to not track any, by clearing history list for
-+  // all navigations.
-+  // DCHECK(!params.history_list_was_cleared || !replace_entry);
-   // The browser requested to clear the session history when it initiated the
-   // navigation. Now we know that the renderer has updated its state accordingly
-   // and it is safe to also clear the browser side history.
+diff --git a/third_party/blink/renderer/core/mobile_metrics/mobile_friendliness_checker.cc b/third_party/blink/renderer/core/mobile_metrics/mobile_friendliness_checker.cc
+index 0c38abb81e76ba17d60b92c362bd042d203ca212..34fb38913071dd24e94d317ab7d73f86a047818e 100644
+--- a/third_party/blink/renderer/core/mobile_metrics/mobile_friendliness_checker.cc
++++ b/third_party/blink/renderer/core/mobile_metrics/mobile_friendliness_checker.cc
+@@ -432,7 +432,7 @@ void MobileFriendlinessChecker::ComputeSmallTextRatio(
+                                ->GetPageScaleConstraintsSet()
+                                .FinalConstraints()
+                                .initial_scale;
+-    DCHECK_GT(initial_scale, 0);
++    // DCHECK_GT(initial_scale, 0);
+     double actual_font_size =
+         style.FontSize() * initial_scale / viewport_scalar_;
+     double area = text->PhysicalAreaSize();
 diff --git a/ui/base/clipboard/clipboard_win.cc b/ui/base/clipboard/clipboard_win.cc
-index d1f10922b82e4e0578d1c32978784216117e0696..8f0a750d1a5957b987c5ac506455587a09474461 100644
+index fe8d191217e24b08d36339dbf047beaeb6bd6538..870db0552544e3e89d9498c22ec3db81b46df741 100644
 --- a/ui/base/clipboard/clipboard_win.cc
 +++ b/ui/base/clipboard/clipboard_win.cc
-@@ -889,10 +889,10 @@ SkBitmap ClipboardWin::ReadImageInternal(ClipboardBuffer buffer) const {
+@@ -891,10 +891,10 @@ SkBitmap ClipboardWin::ReadBitmapInternal(ClipboardBuffer buffer) const {
  
  void ClipboardWin::WriteToClipboard(ClipboardFormatType format, HANDLE handle) {
    UINT cf_format = format.ToFormatEtc().cfFormat;

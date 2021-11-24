@@ -3,8 +3,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#ifndef SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_H_
-#define SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_H_
+#ifndef ELECTRON_SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_H_
+#define ELECTRON_SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_H_
 
 #include <list>
 #include <map>
@@ -18,6 +18,7 @@
 #include "base/memory/weak_ptr.h"
 #include "chrome/browser/devtools/devtools_contents_resizing_strategy.h"
 #include "chrome/browser/devtools/devtools_embedder_message_dispatcher.h"
+#include "chrome/browser/devtools/devtools_settings.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/devtools_frontend_host.h"
 #include "content/public/browser/web_contents_delegate.h"
@@ -27,6 +28,7 @@
 
 class PrefService;
 class PrefRegistrySimple;
+struct RegisterOptions;
 
 namespace electron {
 
@@ -44,10 +46,14 @@ class InspectableWebContents
   static const List& GetAll();
   static void RegisterPrefs(PrefRegistrySimple* pref_registry);
 
-  InspectableWebContents(content::WebContents* web_contents,
+  InspectableWebContents(std::unique_ptr<content::WebContents> web_contents,
                          PrefService* pref_service,
                          bool is_guest);
   ~InspectableWebContents() override;
+
+  // disable copy
+  InspectableWebContents(const InspectableWebContents&) = delete;
+  InspectableWebContents& operator=(const InspectableWebContents&) = delete;
 
   InspectableWebContentsView* GetView() const;
   content::WebContents* GetWebContents() const;
@@ -133,11 +139,14 @@ class InspectableWebContents
   void SendJsonRequest(DispatchCallback callback,
                        const std::string& browser_id,
                        const std::string& url) override;
+  void RegisterPreference(const std::string& name,
+                          const RegisterOptions& options) override;
   void GetPreferences(DispatchCallback callback) override;
   void SetPreference(const std::string& name,
                      const std::string& value) override;
   void RemovePreference(const std::string& name) override;
   void ClearPreferences() override;
+  void GetSyncInformation(DispatchCallback callback) override;
   void ConnectionReady() override;
   void RegisterExtensionsAPI(const std::string& origin,
                              const std::string& script) override;
@@ -175,19 +184,9 @@ class InspectableWebContents
       content::NavigationHandle* navigation_handle) override;
 
   // content::WebContentsDelegate:
-  bool DidAddMessageToConsole(content::WebContents* source,
-                              blink::mojom::ConsoleMessageLevel level,
-                              const std::u16string& message,
-                              int32_t line_no,
-                              const std::u16string& source_id) override;
   bool HandleKeyboardEvent(content::WebContents*,
                            const content::NativeWebKeyboardEvent&) override;
   void CloseContents(content::WebContents* source) override;
-  content::ColorChooser* OpenColorChooser(
-      content::WebContents* source,
-      SkColor color,
-      const std::vector<blink::mojom::ColorSuggestionPtr>& suggestions)
-      override;
   void RunFileChooser(content::RenderFrameHost* render_frame_host,
                       scoped_refptr<content::FileSelectListener> listener,
                       const blink::mojom::FileChooserParams& params) override;
@@ -196,6 +195,9 @@ class InspectableWebContents
                           const base::FilePath& path) override;
 
   void SendMessageAck(int request_id, const base::Value* arg1);
+
+  const char* GetDictionaryNameForSettingsName(const std::string& name) const;
+  const char* GetDictionaryNameForSyncedPrefs() const;
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   void AddDevToolsExtensionsToClient();
@@ -235,11 +237,14 @@ class InspectableWebContents
   using ExtensionsAPIs = std::map<std::string, std::string>;
   ExtensionsAPIs extensions_api_;
 
-  base::WeakPtrFactory<InspectableWebContents> weak_factory_{this};
+  // Contains the set of synced settings.
+  // The DevTools frontend *must* call `Register` for each setting prior to
+  // use, which guarantees that this set must not be persisted.
+  base::flat_set<std::string> synced_setting_names_;
 
-  DISALLOW_COPY_AND_ASSIGN(InspectableWebContents);
+  base::WeakPtrFactory<InspectableWebContents> weak_factory_{this};
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_H_
+#endif  // ELECTRON_SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_H_

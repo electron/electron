@@ -9,7 +9,6 @@
 
 #include "base/lazy_instance.h"
 #include "base/logging.h"
-#include "base/macros.h"
 #include "components/version_info/version_info.h"
 #include "content/public/common/user_agent.h"
 #include "extensions/common/core_extensions_api_provider.h"
@@ -30,8 +29,14 @@ namespace {
 class ElectronPermissionMessageProvider
     : public extensions::PermissionMessageProvider {
  public:
-  ElectronPermissionMessageProvider() {}
-  ~ElectronPermissionMessageProvider() override {}
+  ElectronPermissionMessageProvider() = default;
+  ~ElectronPermissionMessageProvider() override = default;
+
+  // disable copy
+  ElectronPermissionMessageProvider(const ElectronPermissionMessageProvider&) =
+      delete;
+  ElectronPermissionMessageProvider& operator=(
+      const ElectronPermissionMessageProvider&) = delete;
 
   // PermissionMessageProvider implementation.
   extensions::PermissionMessages GetPermissionMessages(
@@ -53,9 +58,6 @@ class ElectronPermissionMessageProvider
       extensions::Manifest::Type extension_type) const override {
     return extensions::PermissionIDSet();
   }
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(ElectronPermissionMessageProvider);
 };
 
 base::LazyInstance<ElectronPermissionMessageProvider>::DestructorAtExit
@@ -70,7 +72,7 @@ ElectronExtensionsClient::ElectronExtensionsClient()
   AddAPIProvider(std::make_unique<ElectronExtensionsAPIProvider>());
 }
 
-ElectronExtensionsClient::~ElectronExtensionsClient() {}
+ElectronExtensionsClient::~ElectronExtensionsClient() = default;
 
 void ElectronExtensionsClient::Initialize() {
   // TODO(jamescook): Do we need to whitelist any extensions?

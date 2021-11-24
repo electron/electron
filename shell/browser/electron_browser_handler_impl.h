@@ -2,13 +2,12 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_ELECTRON_BROWSER_HANDLER_IMPL_H_
-#define SHELL_BROWSER_ELECTRON_BROWSER_HANDLER_IMPL_H_
+#ifndef ELECTRON_SHELL_BROWSER_ELECTRON_BROWSER_HANDLER_IMPL_H_
+#define ELECTRON_SHELL_BROWSER_ELECTRON_BROWSER_HANDLER_IMPL_H_
 
 #include <string>
 #include <vector>
 
-#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "electron/shell/common/api/api.mojom.h"
@@ -16,7 +15,7 @@
 
 namespace content {
 class RenderFrameHost;
-}  // namespace content
+}
 
 namespace electron {
 class ElectronBrowserHandlerImpl : public mojom::ElectronBrowser,
@@ -28,6 +27,11 @@ class ElectronBrowserHandlerImpl : public mojom::ElectronBrowser,
 
   static void Create(content::RenderFrameHost* frame_host,
                      mojo::PendingReceiver<mojom::ElectronBrowser> receiver);
+
+  // disable copy
+  ElectronBrowserHandlerImpl(const ElectronBrowserHandlerImpl&) = delete;
+  ElectronBrowserHandlerImpl& operator=(const ElectronBrowserHandlerImpl&) =
+      delete;
 
   // mojom::ElectronBrowser:
   void Message(bool internal,
@@ -44,8 +48,7 @@ class ElectronBrowserHandlerImpl : public mojom::ElectronBrowser,
                    const std::string& channel,
                    blink::CloneableMessage arguments,
                    MessageSyncCallback callback) override;
-  void MessageTo(bool internal,
-                 int32_t web_contents_id,
+  void MessageTo(int32_t web_contents_id,
                  const std::string& channel,
                  blink::CloneableMessage arguments) override;
   void MessageHost(const std::string& channel,
@@ -75,8 +78,6 @@ class ElectronBrowserHandlerImpl : public mojom::ElectronBrowser,
   mojo::Receiver<mojom::ElectronBrowser> receiver_{this};
 
   base::WeakPtrFactory<ElectronBrowserHandlerImpl> weak_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronBrowserHandlerImpl);
 };
 }  // namespace electron
-#endif  // SHELL_BROWSER_ELECTRON_BROWSER_HANDLER_IMPL_H_
+#endif  // ELECTRON_SHELL_BROWSER_ELECTRON_BROWSER_HANDLER_IMPL_H_

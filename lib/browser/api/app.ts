@@ -1,5 +1,4 @@
 import * as fs from 'fs';
-import * as path from 'path';
 
 import { Menu } from 'electron/main';
 
@@ -40,7 +39,8 @@ Object.assign(app, {
     hasSwitch: (theSwitch: string) => commandLine.hasSwitch(String(theSwitch)),
     getSwitchValue: (theSwitch: string) => commandLine.getSwitchValue(String(theSwitch)),
     appendSwitch: (theSwitch: string, value?: string) => commandLine.appendSwitch(String(theSwitch), typeof value === 'undefined' ? value : String(value)),
-    appendArgument: (arg: string) => commandLine.appendArgument(String(arg))
+    appendArgument: (arg: string) => commandLine.appendArgument(String(arg)),
+    removeSwitch: (theSwitch: string) => commandLine.removeSwitch(String(theSwitch))
   } as Electron.CommandLine
 });
 
@@ -55,29 +55,8 @@ Object.defineProperty(app, 'applicationMenu', {
   }
 });
 
-(app as any).isPackaged = (() => {
-  const execFile = path.basename(process.execPath).toLowerCase();
-  if (process.platform === 'win32') {
-    return execFile !== 'electron.exe';
-  }
-  return execFile !== 'electron';
-})();
-
 // The native implementation is not provided on non-windows platforms
 app.setAppUserModelId = app.setAppUserModelId || (() => {});
-
-app._setDefaultAppPaths = (packagePath) => {
-  // Set the user path according to application's name.
-  app.setPath('userData', path.join(app.getPath('appData'), app.name!));
-  app.setPath('userCache', path.join(app.getPath('cache'), app.name!));
-  app.setAppPath(packagePath);
-
-  // Add support for --user-data-dir=
-  if (app.commandLine.hasSwitch('user-data-dir')) {
-    const userDataDir = app.commandLine.getSwitchValue('user-data-dir');
-    if (path.isAbsolute(userDataDir)) app.setPath('userData', userDataDir);
-  }
-};
 
 if (process.platform === 'darwin') {
   const setDockMenu = app.dock!.setMenu;

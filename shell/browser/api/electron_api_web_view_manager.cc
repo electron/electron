@@ -7,7 +7,6 @@
 #include "shell/browser/web_contents_zoom_controller.h"
 #include "shell/browser/web_view_manager.h"
 #include "shell/common/gin_converters/content_converter.h"
-#include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
@@ -19,13 +18,13 @@ namespace {
 void AddGuest(int guest_instance_id,
               content::WebContents* embedder,
               content::WebContents* guest_web_contents,
-              const base::DictionaryValue& options) {
+              const gin_helper::Dictionary& options) {
   auto* manager = electron::WebViewManager::GetWebViewManager(embedder);
   if (manager)
     manager->AddGuest(guest_instance_id, embedder, guest_web_contents);
 
   double zoom_factor;
-  if (options.GetDouble(electron::options::kZoomFactor, &zoom_factor)) {
+  if (options.Get(electron::options::kZoomFactor, &zoom_factor)) {
     electron::WebContentsZoomController::FromWebContents(guest_web_contents)
         ->SetDefaultZoomFactor(zoom_factor);
   }

@@ -2,8 +2,8 @@
 // Use of this source code is governed by MIT license that can be found in the
 // LICENSE file.
 
-#ifndef SHELL_COMMON_GIN_HELPER_PERSISTENT_DICTIONARY_H_
-#define SHELL_COMMON_GIN_HELPER_PERSISTENT_DICTIONARY_H_
+#ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_PERSISTENT_DICTIONARY_H_
+#define ELECTRON_SHELL_COMMON_GIN_HELPER_PERSISTENT_DICTIONARY_H_
 
 #include "shell/common/gin_helper/dictionary.h"
 
@@ -53,12 +53,11 @@ struct Converter<gin_helper::PersistentDictionary> {
                      gin_helper::PersistentDictionary* out) {
     if (!val->IsObject())
       return false;
-    *out = gin_helper::PersistentDictionary(isolate,
-                                            v8::Local<v8::Object>::Cast(val));
+    *out = gin_helper::PersistentDictionary(isolate, val.As<v8::Object>());
     return true;
   }
 };
 
 }  // namespace gin
 
-#endif  // SHELL_COMMON_GIN_HELPER_PERSISTENT_DICTIONARY_H_
+#endif  // ELECTRON_SHELL_COMMON_GIN_HELPER_PERSISTENT_DICTIONARY_H_

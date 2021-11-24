@@ -5,7 +5,6 @@
 #include "shell/browser/api/electron_api_session.h"
 
 #include <algorithm>
-#include <map>
 #include <memory>
 #include <set>
 #include <string>
@@ -125,9 +124,7 @@ uint32_t GetStorageMask(const std::vector<std::string>& storage_types) {
   uint32_t storage_mask = 0;
   for (const auto& it : storage_types) {
     auto type = base::ToLowerASCII(it);
-    if (type == "appcache")
-      storage_mask |= StoragePartition::REMOVE_DATA_MASK_APPCACHE;
-    else if (type == "cookies")
+    if (type == "cookies")
       storage_mask |= StoragePartition::REMOVE_DATA_MASK_COOKIES;
     else if (type == "filesystem")
       storage_mask |= StoragePartition::REMOVE_DATA_MASK_FILE_SYSTEMS;
@@ -265,12 +262,13 @@ void DownloadIdCallback(content::DownloadManager* download_manager,
                         uint32_t id) {
   download_manager->CreateDownloadItem(
       base::GenerateGUID(), id, path, path, url_chain, GURL(), GURL(), GURL(),
-      GURL(), base::nullopt, mime_type, mime_type, start_time, base::Time(),
+      GURL(), absl::nullopt, mime_type, mime_type, start_time, base::Time(),
       etag, last_modified, offset, length, std::string(),
       download::DownloadItem::INTERRUPTED,
       download::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
       download::DOWNLOAD_INTERRUPT_REASON_NETWORK_TIMEOUT, false, base::Time(),
-      false, std::vector<download::DownloadItem::ReceivedSlice>());
+      false, std::vector<download::DownloadItem::ReceivedSlice>(),
+      download::DownloadItemRerouteInfo());
 }
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
@@ -328,8 +326,7 @@ Session::Session(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
       network_emulation_token_(base::UnguessableToken::Create()),
       browser_context_(browser_context) {
   // Observe DownloadManager to get download notifications.
-  content::BrowserContext::GetDownloadManager(browser_context)
-      ->AddObserver(this);
+  browser_context->GetDownloadManager()->AddObserver(this);
 
   new SessionPreferences(browser_context);
 
@@ -352,8 +349,7 @@ Session::Session(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
 }
 
 Session::~Session() {
-  content::BrowserContext::GetDownloadManager(browser_context())
-      ->RemoveObserver(this);
+  browser_context()->GetDownloadManager()->RemoveObserver(this);
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   SpellcheckService* service =
@@ -571,7 +567,7 @@ void Session::EnableNetworkEmulation(const gin_helper::Dictionary& options) {
   options.Get("uploadThroughput", &conditions->upload_throughput);
   double latency = 0.0;
   if (options.Get("latency", &latency) && latency) {
-    conditions->latency = base::TimeDelta::FromMillisecondsD(latency);
+    conditions->latency = base::Milliseconds(latency);
   }
 
   auto* network_context =
@@ -644,6 +640,18 @@ void Session::SetPermissionCheckHandler(v8::Local<v8::Value> val,
   auto* permission_manager = static_cast<ElectronPermissionManager*>(
       browser_context()->GetPermissionControllerDelegate());
   permission_manager->SetPermissionCheckHandler(handler);
+}
+
+void Session::SetDevicePermissionHandler(v8::Local<v8::Value> val,
+                                         gin::Arguments* args) {
+  ElectronPermissionManager::DeviceCheckHandler handler;
+  if (!(val->IsNull() || gin::ConvertFromV8(args->isolate(), val, &handler))) {
+    args->ThrowTypeError("Must pass null or function");
+    return;
+  }
+  auto* permission_manager = static_cast<ElectronPermissionManager*>(
+      browser_context()->GetPermissionControllerDelegate());
+  permission_manager->SetDevicePermissionHandler(handler);
 }
 
 v8::Local<v8::Promise> Session::ClearHostResolverCache(gin::Arguments* args) {
@@ -726,8 +734,7 @@ v8::Local<v8::Promise> Session::GetBlobData(v8::Isolate* isolate,
 }
 
 void Session::DownloadURL(const GURL& url) {
-  auto* download_manager =
-      content::BrowserContext::GetDownloadManager(browser_context());
+  auto* download_manager = browser_context()->GetDownloadManager();
   auto download_params = std::make_unique<download::DownloadUrlParameters>(
       url, MISSING_TRAFFIC_ANNOTATION);
   download_manager->DownloadUrl(std::move(download_params));
@@ -757,8 +764,7 @@ void Session::CreateInterruptedDownload(const gin_helper::Dictionary& options) {
         isolate_, "Must pass an offset value less than length.")));
     return;
   }
-  auto* download_manager =
-      content::BrowserContext::GetDownloadManager(browser_context());
+  auto* download_manager = browser_context()->GetDownloadManager();
   download_manager->GetNextId(base::BindRepeating(
       &DownloadIdCallback, download_manager, path, url_chain, mime_type, offset,
       length, last_modified, etag, base::Time::FromDoubleT(start_time)));
@@ -851,7 +857,7 @@ v8::Local<v8::Value> Session::GetAllExtensions() {
   std::vector<const extensions::Extension*> extensions_vector;
   for (const auto& extension : *installed_extensions) {
     if (extension->location() !=
-        extensions::mojom::ManifestLocation::kExternalComponent)
+        extensions::mojom::ManifestLocation::kComponent)
       extensions_vector.emplace_back(extension.get());
   }
   return gin::ConvertToV8(isolate_, extensions_vector);
@@ -914,9 +920,10 @@ v8::Local<v8::Value> Session::NetLog(v8::Isolate* isolate) {
 static void StartPreconnectOnUI(ElectronBrowserContext* browser_context,
                                 const GURL& url,
                                 int num_sockets_to_preconnect) {
+  url::Origin origin = url::Origin::Create(url);
   std::vector<predictors::PreconnectRequest> requests = {
       {url::Origin::Create(url), num_sockets_to_preconnect,
-       net::NetworkIsolationKey()}};
+       net::NetworkIsolationKey(origin, origin)}};
   browser_context->GetPreconnectManager()->Start(url, requests);
 }
 
@@ -985,7 +992,7 @@ void Session::SetSpellCheckerLanguages(
                          "\" is not a valid language code");
       return;
     }
-    language_codes.AppendString(code);
+    language_codes.Append(code);
   }
   browser_context_->prefs()->Set(spellcheck::prefs::kSpellCheckDictionaries,
                                  language_codes);
@@ -1151,6 +1158,8 @@ gin::ObjectTemplateBuilder Session::GetObjectTemplateBuilder(
                  &Session::SetPermissionRequestHandler)
       .SetMethod("setPermissionCheckHandler",
                  &Session::SetPermissionCheckHandler)
+      .SetMethod("setDevicePermissionHandler",
+                 &Session::SetDevicePermissionHandler)
       .SetMethod("clearHostResolverCache", &Session::ClearHostResolverCache)
       .SetMethod("clearAuthCache", &Session::ClearAuthCache)
       .SetMethod("allowNTLMCredentialsForDomains",
@@ -1210,9 +1219,6 @@ const char* Session::GetTypeName() {
 
 namespace {
 
-using electron::api::Cookies;
-using electron::api::Protocol;
-using electron::api::ServiceWorkerContext;
 using electron::api::Session;
 
 v8::Local<v8::Value> FromPartition(const std::string& partition,

@@ -7,14 +7,13 @@
 // will return NULL if the service is not available, so callers must check for
 // this condition.
 
-#ifndef SHELL_BROWSER_BROWSER_PROCESS_IMPL_H_
-#define SHELL_BROWSER_BROWSER_PROCESS_IMPL_H_
+#ifndef ELECTRON_SHELL_BROWSER_BROWSER_PROCESS_IMPL_H_
+#define ELECTRON_SHELL_BROWSER_BROWSER_PROCESS_IMPL_H_
 
 #include <memory>
 #include <string>
 
 #include "base/command_line.h"
-#include "base/macros.h"
 #include "chrome/browser/browser_process.h"
 #include "components/prefs/pref_service.h"
 #include "components/prefs/value_map_pref_store.h"
@@ -26,7 +25,7 @@ namespace printing {
 class PrintJobManager;
 }
 
-// Empty definition for std::unique_ptr
+// Empty definition for std::unique_ptr, rather than a forward declaration
 class BackgroundModeManager {};
 
 // NOT THREAD SAFE, call only from the main thread.
@@ -36,9 +35,15 @@ class BrowserProcessImpl : public BrowserProcess {
   BrowserProcessImpl();
   ~BrowserProcessImpl() override;
 
+  // disable copy
+  BrowserProcessImpl(const BrowserProcessImpl&) = delete;
+  BrowserProcessImpl& operator=(const BrowserProcessImpl&) = delete;
+
   static void ApplyProxyModeFromCommandLine(ValueMapPrefStore* pref_store);
 
   BuildState* GetBuildState() override;
+  breadcrumbs::BreadcrumbPersistentStorageManager*
+  GetBreadcrumbPersistentStorageManager() override;
   void PostEarlyInitialization();
   void PreCreateThreads();
   void PostDestroyThreads() {}
@@ -88,6 +93,7 @@ class BrowserProcessImpl : public BrowserProcess {
   resource_coordinator::ResourceCoordinatorParts* resource_coordinator_parts()
       override;
   resource_coordinator::TabManager* GetTabManager() override;
+  SerialPolicyAllowedPorts* serial_policy_allowed_ports() override;
   void CreateDevToolsProtocolHandler() override {}
   void CreateDevToolsAutoOpener() override {}
   void set_background_mode_manager_for_test(
@@ -106,8 +112,6 @@ class BrowserProcessImpl : public BrowserProcess {
 #endif
   std::unique_ptr<PrefService> local_state_;
   std::string locale_;
-
-  DISALLOW_COPY_AND_ASSIGN(BrowserProcessImpl);
 };
 
-#endif  // SHELL_BROWSER_BROWSER_PROCESS_IMPL_H_
+#endif  // ELECTRON_SHELL_BROWSER_BROWSER_PROCESS_IMPL_H_

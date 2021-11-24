@@ -10,6 +10,7 @@
 #include "base/bind.h"
 #include "base/lazy_instance.h"
 #include "base/threading/thread_task_runner_handle.h"
+#include "content/public/renderer/render_frame.h"
 #include "ui/gfx/geometry/size.h"
 
 namespace electron {

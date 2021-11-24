@@ -2,7 +2,6 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include <string>
 #include <utility>
 #include <vector>
 
@@ -92,6 +91,7 @@ void Initialize(v8::Local<v8::Object> exports,
   gin_helper::Dictionary dict(isolate, exports);
   dict.SetMethod("showMessageBoxSync", &ShowMessageBoxSync);
   dict.SetMethod("showMessageBox", &ShowMessageBox);
+  dict.SetMethod("_closeMessageBox", &electron::CloseMessageBox);
   dict.SetMethod("showErrorBox", &electron::ShowErrorBox);
   dict.SetMethod("showOpenDialogSync", &ShowOpenDialogSync);
   dict.SetMethod("showOpenDialog", &ShowOpenDialog);

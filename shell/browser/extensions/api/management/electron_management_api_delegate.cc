@@ -10,7 +10,6 @@
 #include <utility>
 
 #include "base/bind.h"
-#include "base/macros.h"
 #include "base/strings/strcat.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
@@ -42,13 +41,17 @@ class ManagementSetEnabledFunctionInstallPromptDelegate
       base::OnceCallback<void(bool)> callback) {
     // TODO(sentialx): emit event
   }
-  ~ManagementSetEnabledFunctionInstallPromptDelegate() override {}
+  ~ManagementSetEnabledFunctionInstallPromptDelegate() override = default;
+
+  // disable copy
+  ManagementSetEnabledFunctionInstallPromptDelegate(
+      const ManagementSetEnabledFunctionInstallPromptDelegate&) = delete;
+  ManagementSetEnabledFunctionInstallPromptDelegate& operator=(
+      const ManagementSetEnabledFunctionInstallPromptDelegate&) = delete;
 
  private:
   base::WeakPtrFactory<ManagementSetEnabledFunctionInstallPromptDelegate>
       weak_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(ManagementSetEnabledFunctionInstallPromptDelegate);
 };
 
 class ManagementUninstallFunctionUninstallDialogDelegate
@@ -61,17 +64,20 @@ class ManagementUninstallFunctionUninstallDialogDelegate
     // TODO(sentialx): emit event
   }
 
-  ~ManagementUninstallFunctionUninstallDialogDelegate() override {}
+  ~ManagementUninstallFunctionUninstallDialogDelegate() override = default;
 
- private:
-  DISALLOW_COPY_AND_ASSIGN(ManagementUninstallFunctionUninstallDialogDelegate);
+  // disable copy
+  ManagementUninstallFunctionUninstallDialogDelegate(
+      const ManagementUninstallFunctionUninstallDialogDelegate&) = delete;
+  ManagementUninstallFunctionUninstallDialogDelegate& operator=(
+      const ManagementUninstallFunctionUninstallDialogDelegate&) = delete;
 };
 
 }  // namespace
 
-ElectronManagementAPIDelegate::ElectronManagementAPIDelegate() {}
+ElectronManagementAPIDelegate::ElectronManagementAPIDelegate() = default;
 
-ElectronManagementAPIDelegate::~ElectronManagementAPIDelegate() {}
+ElectronManagementAPIDelegate::~ElectronManagementAPIDelegate() = default;
 
 void ElectronManagementAPIDelegate::LaunchAppFunctionDelegate(
     const extensions::Extension* extension,
@@ -111,9 +117,8 @@ ElectronManagementAPIDelegate::SetEnabledFunctionDelegate(
     content::BrowserContext* browser_context,
     const extensions::Extension* extension,
     base::OnceCallback<void(bool)> callback) const {
-  return std::unique_ptr<ManagementSetEnabledFunctionInstallPromptDelegate>(
-      new ManagementSetEnabledFunctionInstallPromptDelegate(
-          web_contents, browser_context, extension, std::move(callback)));
+  return std::make_unique<ManagementSetEnabledFunctionInstallPromptDelegate>(
+      web_contents, browser_context, extension, std::move(callback));
 }
 
 std::unique_ptr<extensions::UninstallDialogDelegate>
@@ -121,9 +126,8 @@ ElectronManagementAPIDelegate::UninstallFunctionDelegate(
     extensions::ManagementUninstallFunctionBase* function,
     const extensions::Extension* target_extension,
     bool show_programmatic_uninstall_ui) const {
-  return std::unique_ptr<extensions::UninstallDialogDelegate>(
-      new ManagementUninstallFunctionUninstallDialogDelegate(
-          function, target_extension, show_programmatic_uninstall_ui));
+  return std::make_unique<ManagementUninstallFunctionUninstallDialogDelegate>(
+      function, target_extension, show_programmatic_uninstall_ui);
 }
 
 bool ElectronManagementAPIDelegate::CreateAppShortcutFunctionDelegate(

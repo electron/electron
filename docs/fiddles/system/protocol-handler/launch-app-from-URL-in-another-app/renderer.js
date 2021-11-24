@@ -1,14 +1,8 @@
-const { shell } = require('electron')
-const path = require('path')
+// This file is required by the index.html file and will
+// be executed in the renderer process for that window.
+// All APIs exposed by the context bridge are available here.
 
-const openInBrowserButton = document.getElementById('open-in-browser')
-const openAppLink = document.getElementById('open-app-link')
-// Hides openAppLink when loaded inside Electron
-openAppLink.style.display = 'none'
-
-openInBrowserButton.addEventListener('click', () => {
-  console.log('clicked')
-  const pageDirectory = __dirname.replace('app.asar', 'app.asar.unpacked')
-  const pagePath = path.join('file://', pageDirectory, 'index.html')
-  shell.openExternal(pagePath)
-})
+// Binds the buttons to the context bridge API.
+document.getElementById('open-in-browser').addEventListener('click', () => {
+  shell.open();
+});

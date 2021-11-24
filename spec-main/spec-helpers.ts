@@ -69,9 +69,9 @@ class RemoteControlApp {
   }
 }
 
-export async function startRemoteControlApp () {
+export async function startRemoteControlApp (extraArgs: string[] = [], options?: childProcess.SpawnOptionsWithoutStdio) {
   const appPath = path.join(__dirname, 'fixtures', 'apps', 'remote-control');
-  const appProcess = childProcess.spawn(process.execPath, [appPath]);
+  const appProcess = childProcess.spawn(process.execPath, [appPath, ...extraArgs], options);
   appProcess.stderr.on('data', d => {
     process.stderr.write(d);
   });
@@ -131,4 +131,17 @@ export function waitUntil (
       reject(new Error(`waitUntil timed out after ${timeout}ms`));
     }, timeout);
   });
+}
+
+export async function repeatedly<T> (
+  fn: () => Promise<T>,
+  opts?: { until?: (x: T) => boolean, timeLimit?: number }
+) {
+  const { until = (x: T) => !!x, timeLimit = 10000 } = opts ?? {};
+  const begin = +new Date();
+  while (true) {
+    const ret = await fn();
+    if (until(ret)) { return ret; }
+    if (+new Date() - begin > timeLimit) { throw new Error(`repeatedly timed out (limit=${timeLimit})`); }
+  }
 }

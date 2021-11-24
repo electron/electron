@@ -160,7 +160,7 @@ AppIndicatorIcon::AppIndicatorIcon(std::string id,
                                    const gfx::ImageSkia& image,
                                    const std::u16string& tool_tip)
     : id_(id) {
-  std::unique_ptr<base::Environment> env(base::Environment::Create());
+  auto env = base::Environment::Create();
   desktop_env_ = base::nix::GetDesktopEnvironment(env.get());
 
   EnsureLibAppIndicatorLoaded();

@@ -3,6 +3,7 @@ LICENSES.chromium.html
 chrome-sandbox
 chrome_100_percent.pak
 chrome_200_percent.pak
+chrome_crashpad_handler
 electron
 icudtl.dat
 libEGL.so

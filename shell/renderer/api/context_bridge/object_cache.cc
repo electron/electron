@@ -14,13 +14,13 @@ namespace api {
 
 namespace context_bridge {
 
-ObjectCache::ObjectCache() {}
+ObjectCache::ObjectCache() = default;
 ObjectCache::~ObjectCache() = default;
 
 void ObjectCache::CacheProxiedObject(v8::Local<v8::Value> from,
                                      v8::Local<v8::Value> proxy_value) {
   if (from->IsObject() && !from->IsNullOrUndefined()) {
-    auto obj = v8::Local<v8::Object>::Cast(from);
+    auto obj = from.As<v8::Object>();
     int hash = obj->GetIdentityHash();
 
     proxy_map_[hash].push_front(std::make_pair(from, proxy_value));
@@ -32,7 +32,7 @@ v8::MaybeLocal<v8::Value> ObjectCache::GetCachedProxiedObject(
   if (!from->IsObject() || from->IsNullOrUndefined())
     return v8::MaybeLocal<v8::Value>();
 
-  auto obj = v8::Local<v8::Object>::Cast(from);
+  auto obj = from.As<v8::Object>();
   int hash = obj->GetIdentityHash();
   auto iter = proxy_map_.find(hash);
   if (iter == proxy_map_.end())

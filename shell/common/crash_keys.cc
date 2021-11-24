@@ -14,9 +14,13 @@
 #include "base/strings/string_split.h"
 #include "components/crash/core/common/crash_key.h"
 #include "content/public/common/content_switches.h"
+#include "electron/buildflags/buildflags.h"
 #include "electron/fuses.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/common/electron_constants.h"
+#include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
+#include "shell/common/process_util.h"
 #include "third_party/crashpad/crashpad/client/annotation.h"
 
 namespace electron {
@@ -63,9 +67,17 @@ static_assert(kMaxCrashKeyNameLength <= crashpad::Annotation::kNameMaxLength,
 void SetCrashKey(const std::string& key, const std::string& value) {
   // Chrome DCHECK()s if we try to set an annotation with a name longer than
   // the max.
-  // TODO(nornagon): warn the developer (via console.warn) when this happens.
-  if (key.size() >= kMaxCrashKeyNameLength)
+  if (key.size() >= kMaxCrashKeyNameLength) {
+    node::Environment* env =
+        node::Environment::GetCurrent(JavascriptEnvironment::GetIsolate());
+    EmitWarning(env,
+                "The crash key name, \"" + key + "\", is longer than " +
+                    std::to_string(kMaxCrashKeyNameLength) +
+                    " bytes, ignoring it.",
+                "electron");
     return;
+  }
+
   auto& crash_key_names = GetExtraCrashKeyNames();
 
   auto iter = std::find(crash_key_names.begin(), crash_key_names.end(), key);

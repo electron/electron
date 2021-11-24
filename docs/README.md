@@ -18,20 +18,14 @@ an issue:
 
 ## Guides and Tutorials
 
-### Quickstart
+### Getting started
 
-* [Quick Start Guide](tutorial/quick-start.md)
-  * [Prerequisites](tutorial/quick-start.md#prerequisites)
-  * [Create a basic application](tutorial/quick-start.md#create-a-basic-application)
-  * [Run your application](tutorial/quick-start.md#run-your-application)
-  * [Package and distribute the application](tutorial/quick-start.md#package-and-distribute-the-application)
+* [Introduction](tutorial/introduction.md)
+* [Quick Start](tutorial/quick-start.md)
+* [Process Model](tutorial/process-model.md)
 
 ### Learning the basics
 
-* [Electron's Process Model](tutorial/quick-start.md#application-architecture)
-  * [Main and Renderer Processes](tutorial/quick-start.md#main-and-renderer-processes)
-  * [Electron API](tutorial/quick-start.md#electron-api)
-  * [Node.js API](tutorial/quick-start.md#nodejs-api)
 * Adding Features to Your App
   * [Notifications](tutorial/notifications.md)
   * [Recent Documents](tutorial/recent-documents.md)
@@ -65,10 +59,9 @@ an issue:
 * [Testing and Debugging](tutorial/application-debugging.md)
   * [Debugging the Main Process](tutorial/debugging-main-process.md)
   * [Debugging with Visual Studio Code](tutorial/debugging-vscode.md)
-  * [Using Selenium and WebDriver](tutorial/using-selenium-and-webdriver.md)
   * [Testing on Headless CI Systems (Travis, Jenkins)](tutorial/testing-on-headless-ci.md)
   * [DevTools Extension](tutorial/devtools-extension.md)
-  * [Automated Testing with a Custom Driver](tutorial/automated-testing-with-a-custom-driver.md)
+  * [Automated Testing](tutorial/automated-testing.md)
   * [REPL](tutorial/repl.md)
 * [Distribution](tutorial/application-distribution.md)
   * [Supported Platforms](tutorial/support.md#supported-platforms)

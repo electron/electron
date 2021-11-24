@@ -4,13 +4,18 @@ Date: Tue, 3 Nov 2020 16:17:38 -0800
 Subject: src: allow embedders to provide a custom PageAllocator to
  NodePlatform
 
-For certain embedder use cases there are more complex memory allocation requirements that the default V8 page allocator does not handle, for example using MAP_JIT when running under a hardened runtime environment on macOS.  This allows such embedders to provide their own allocator that does handle these cases.
+For certain embedder use cases there are more complex memory allocation requirements that
+the default V8 page allocator does not handle, for example using MAP_JIT when running under
+a hardened runtime environment on macOS.  This allows such embedders to provide their own
+allocator that does handle these cases.
+
+Upstreamed in https://github.com/nodejs/node/pull/38362.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index c08fe4b32d4155badb572f15529f903c0ec63146..a8cf0d763f78c2752e3aa22479dadd9fa53c222f 100644
+index 5bf19a0dda42849159d954181058897c45d280fd..03078ff3869fcd17101f1cdaf77f725dbbfa43e8 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -488,8 +488,9 @@ MultiIsolatePlatform* CreatePlatform(
+@@ -475,8 +475,9 @@ MultiIsolatePlatform* CreatePlatform(
  
  MultiIsolatePlatform* CreatePlatform(
      int thread_pool_size,
@@ -22,7 +27,7 @@ index c08fe4b32d4155badb572f15529f903c0ec63146..a8cf0d763f78c2752e3aa22479dadd9f
        .release();
  }
  
-@@ -499,8 +500,9 @@ void FreePlatform(MultiIsolatePlatform* platform) {
+@@ -486,8 +487,9 @@ void FreePlatform(MultiIsolatePlatform* platform) {
  
  std::unique_ptr<MultiIsolatePlatform> MultiIsolatePlatform::Create(
      int thread_pool_size,
@@ -35,10 +40,10 @@ index c08fe4b32d4155badb572f15529f903c0ec63146..a8cf0d763f78c2752e3aa22479dadd9f
  
  MaybeLocal<Object> GetPerContextExports(Local<Context> context) {
 diff --git a/src/node.h b/src/node.h
-index b646fdda58ebcbf2dd92ee4fc9cb0d9c039174d1..14893ad605b9f8c64b0b8fc28625e235655dcd63 100644
+index 85b5ac6a5a5cb5e4388a92a1d07c9afe17140a8c..4201c0d0460b032721ef42a26d79c38a9ee20c24 100644
 --- a/src/node.h
 +++ b/src/node.h
-@@ -333,7 +333,8 @@ class NODE_EXTERN MultiIsolatePlatform : public v8::Platform {
+@@ -313,7 +313,8 @@ class NODE_EXTERN MultiIsolatePlatform : public v8::Platform {
  
    static std::unique_ptr<MultiIsolatePlatform> Create(
        int thread_pool_size,
@@ -48,18 +53,18 @@ index b646fdda58ebcbf2dd92ee4fc9cb0d9c039174d1..14893ad605b9f8c64b0b8fc28625e235
  };
  
  enum IsolateSettingsFlags {
-@@ -536,7 +537,8 @@ NODE_DEPRECATED("Use variant taking a v8::TracingController* pointer instead",
-         node::tracing::TracingController* tracing_controller));
- NODE_EXTERN MultiIsolatePlatform* CreatePlatform(
-     int thread_pool_size,
--    v8::TracingController* tracing_controller);
-+    v8::TracingController* tracing_controller,
-+    v8::PageAllocator* = nullptr);
- NODE_EXTERN void FreePlatform(MultiIsolatePlatform* platform);
+@@ -509,7 +510,8 @@ NODE_EXTERN node::tracing::Agent* CreateAgent();
+ NODE_DEPRECATED("Use MultiIsolatePlatform::Create() instead",
+     NODE_EXTERN MultiIsolatePlatform* CreatePlatform(
+         int thread_pool_size,
+-        v8::TracingController* tracing_controller));
++        v8::TracingController* tracing_controller,
++        v8::PageAllocator* = nullptr));
+ NODE_DEPRECATED("Use MultiIsolatePlatform::Create() instead",
+     NODE_EXTERN void FreePlatform(MultiIsolatePlatform* platform));
  
- // Get/set the currently active tracing controller. Using CreatePlatform()
 diff --git a/src/node_platform.cc b/src/node_platform.cc
-index aac0682670fcffd235fcf450bc5e2b0d45985b47..96be2281b562c44b276483970c06862250ea8941 100644
+index eb918bdd559c404a0e311e0dd92cfee8940491bc..5be79694fef65c9290f1b46d2657581dea16f543 100644
 --- a/src/node_platform.cc
 +++ b/src/node_platform.cc
 @@ -324,12 +324,16 @@ void PerIsolatePlatformData::DecreaseHandleCount() {
@@ -80,7 +85,7 @@ index aac0682670fcffd235fcf450bc5e2b0d45985b47..96be2281b562c44b276483970c068622
    // TODO(addaleax): It's a bit icky that we use global state here, but we can't
    // really do anything about it unless V8 starts exposing a way to access the
    // current v8::Platform instance.
-@@ -544,6 +548,10 @@ Platform::StackTracePrinter NodePlatform::GetStackTracePrinter() {
+@@ -550,6 +554,10 @@ Platform::StackTracePrinter NodePlatform::GetStackTracePrinter() {
    };
  }
  
@@ -88,11 +93,11 @@ index aac0682670fcffd235fcf450bc5e2b0d45985b47..96be2281b562c44b276483970c068622
 +  return page_allocator_;
 +}
 +
- std::unique_ptr<v8::JobHandle> NodePlatform::PostJob(v8::TaskPriority priority, std::unique_ptr<v8::JobTask> job_task) {
-   return v8::platform::NewDefaultJobHandle(this, priority, std::move(job_task), 1 /* num_worker_threads */);
- }
+ template <class T>
+ TaskQueue<T>::TaskQueue()
+     : lock_(), tasks_available_(), tasks_drained_(),
 diff --git a/src/node_platform.h b/src/node_platform.h
-index a274be6bbea19a4488bca393712a9ac8b50fe16a..314cf2d1056d30a77ead400d100a4d4c6f844be6 100644
+index a7139ebdcc28d24087fb49697a0973331e0387a6..4a05f3bba58c8e875d0ab67f292589edbb3b812b 100644
 --- a/src/node_platform.h
 +++ b/src/node_platform.h
 @@ -138,7 +138,8 @@ class WorkerThreadsTaskRunner {
@@ -105,7 +110,7 @@ index a274be6bbea19a4488bca393712a9ac8b50fe16a..314cf2d1056d30a77ead400d100a4d4c
    ~NodePlatform() override;
  
    void DrainTasks(v8::Isolate* isolate) override;
-@@ -168,6 +169,7 @@ class NodePlatform : public MultiIsolatePlatform {
+@@ -170,6 +171,7 @@ class NodePlatform : public MultiIsolatePlatform {
        v8::Isolate* isolate) override;
  
    Platform::StackTracePrinter GetStackTracePrinter() override;
@@ -113,7 +118,7 @@ index a274be6bbea19a4488bca393712a9ac8b50fe16a..314cf2d1056d30a77ead400d100a4d4c
  
   private:
    IsolatePlatformDelegate* ForIsolate(v8::Isolate* isolate);
-@@ -179,6 +181,7 @@ class NodePlatform : public MultiIsolatePlatform {
+@@ -181,6 +183,7 @@ class NodePlatform : public MultiIsolatePlatform {
    std::unordered_map<v8::Isolate*, DelegatePair> per_isolate_;
  
    v8::TracingController* tracing_controller_;

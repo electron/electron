@@ -3,8 +3,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_UI_COCOA_ELECTRON_MENU_CONTROLLER_H_
-#define SHELL_BROWSER_UI_COCOA_ELECTRON_MENU_CONTROLLER_H_
+#ifndef ELECTRON_SHELL_BROWSER_UI_COCOA_ELECTRON_MENU_CONTROLLER_H_
+#define ELECTRON_SHELL_BROWSER_UI_COCOA_ELECTRON_MENU_CONTROLLER_H_
 
 #import <Cocoa/Cocoa.h>
 
@@ -52,6 +52,10 @@ class ElectronMenuModel;
 // default initializer was used, then this will create the menu on first call.
 - (NSMenu*)menu;
 
+- (base::scoped_nsobject<NSMenuItem>)
+    makeMenuItemForIndex:(NSInteger)index
+               fromModel:(electron::ElectronMenuModel*)model;
+
 // Whether the menu is currently open.
 - (BOOL)isMenuOpen;
 
@@ -62,4 +66,4 @@ class ElectronMenuModel;
 
 @end
 
-#endif  // SHELL_BROWSER_UI_COCOA_ELECTRON_MENU_CONTROLLER_H_
+#endif  // ELECTRON_SHELL_BROWSER_UI_COCOA_ELECTRON_MENU_CONTROLLER_H_

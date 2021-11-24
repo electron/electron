@@ -18,7 +18,7 @@ distributable Electron application, such as bundling your application,
 rebranding the executable, and setting the right icons.
 
 You can check the example of how to package your app with `electron-forge` in
-our [Quick Start Guide](quick-start.md#package-and-distribute-the-application).
+the [Quick Start guide](quick-start.md#package-and-distribute-your-application).
 
 ## Manual distribution
 
@@ -56,7 +56,7 @@ will then be your distribution to deliver to users.
 
 ### With an app source code archive
 
-Instead of from shipping your app by copying all of its source files, you can
+Instead of shipping your app by copying all of its source files, you can
 package your app into an [asar] archive to improve the performance of reading
 files on platforms like Windows, if you are not already using a bundler such
 as Parcel or Webpack.

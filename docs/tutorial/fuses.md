@@ -12,7 +12,7 @@ Fuses are the solution to this problem, at a high level they are "magic bits" in
 
 ### The easy way
 
-We've made a handy module `@electron/fuses` to make flipping these fuses easy.  Check out the README of that module for more details on usage and potential error cases.
+We've made a handy module, [`@electron/fuses`](https://npmjs.com/package/@electron/fuses), to make flipping these fuses easy.  Check out the README of that module for more details on usage and potential error cases.
 
 ```js
 require('@electron/fuses').flipFuses(
@@ -51,4 +51,4 @@ Somewhere in the Electron binary there will be a sequence of bytes that look lik
 
 To flip a fuse you find its position in the fuse wire and change it to "0" or "1" depending on the state you'd like.
 
-You can view the current schema [here](https://github.com/electron/electron/blob/master/build/fuses/fuses.json).
+You can view the current schema [here](https://github.com/electron/electron/blob/main/build/fuses/fuses.json5).

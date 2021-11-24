@@ -2,12 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_EXTENSIONS_ELECTRON_EXTENSIONS_API_PROVIDER_H_
-#define SHELL_COMMON_EXTENSIONS_ELECTRON_EXTENSIONS_API_PROVIDER_H_
+#ifndef ELECTRON_SHELL_COMMON_EXTENSIONS_ELECTRON_EXTENSIONS_API_PROVIDER_H_
+#define ELECTRON_SHELL_COMMON_EXTENSIONS_ELECTRON_EXTENSIONS_API_PROVIDER_H_
 
 #include <string>
 
-#include "base/macros.h"
 #include "extensions/common/extensions_api_provider.h"
 
 namespace electron {
@@ -16,6 +15,11 @@ class ElectronExtensionsAPIProvider : public extensions::ExtensionsAPIProvider {
  public:
   ElectronExtensionsAPIProvider();
   ~ElectronExtensionsAPIProvider() override;
+
+  // disable copy
+  ElectronExtensionsAPIProvider(const ElectronExtensionsAPIProvider&) = delete;
+  ElectronExtensionsAPIProvider& operator=(
+      const ElectronExtensionsAPIProvider&) = delete;
 
   // ExtensionsAPIProvider:
   void AddAPIFeatures(extensions::FeatureProvider* provider) override;
@@ -29,11 +33,8 @@ class ElectronExtensionsAPIProvider : public extensions::ExtensionsAPIProvider {
   void RegisterPermissions(
       extensions::PermissionsInfo* permissions_info) override;
   void RegisterManifestHandlers() override;
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(ElectronExtensionsAPIProvider);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_COMMON_EXTENSIONS_ELECTRON_EXTENSIONS_API_PROVIDER_H_
+#endif  // ELECTRON_SHELL_COMMON_EXTENSIONS_ELECTRON_EXTENSIONS_API_PROVIDER_H_

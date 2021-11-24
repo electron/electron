@@ -1,4 +1,4 @@
-# Web embeds
+# Web Embeds
 
 ## Overview
 

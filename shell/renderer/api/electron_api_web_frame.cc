@@ -49,6 +49,9 @@
 #include "third_party/blink/public/web/web_script_execution_callback.h"
 #include "third_party/blink/public/web/web_script_source.h"
 #include "third_party/blink/public/web/web_view.h"
+#include "third_party/blink/renderer/core/execution_context/execution_context.h"  // nogncheck
+#include "third_party/blink/renderer/core/frame/csp/content_security_policy.h"  // nogncheck
+#include "third_party/blink/renderer/platform/bindings/dom_wrapper_world.h"  // nogncheck
 #include "ui/base/ime/ime_text_span.h"
 #include "url/url_util.h"
 
@@ -98,13 +101,8 @@ struct Converter<blink::WebDocument::CSSOrigin> {
 
 namespace electron {
 
-namespace api {
-
-namespace {
-
-content::RenderFrame* GetRenderFrame(v8::Local<v8::Value> value) {
-  v8::Local<v8::Context> context =
-      v8::Local<v8::Object>::Cast(value)->CreationContext();
+content::RenderFrame* GetRenderFrame(v8::Local<v8::Object> value) {
+  v8::Local<v8::Context> context = value->CreationContext();
   if (context.IsEmpty())
     return nullptr;
   blink::WebLocalFrame* frame = blink::WebLocalFrame::FrameForContext(context);
@@ -112,6 +110,10 @@ content::RenderFrame* GetRenderFrame(v8::Local<v8::Value> value) {
     return nullptr;
   return content::RenderFrame::FromWebFrame(frame);
 }
+
+namespace api {
+
+namespace {
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 
@@ -131,18 +133,6 @@ bool SpellCheckWord(content::RenderFrame* render_frame,
 
 #endif
 
-class RenderFrameStatus final : public content::RenderFrameObserver {
- public:
-  explicit RenderFrameStatus(content::RenderFrame* render_frame)
-      : content::RenderFrameObserver(render_frame) {}
-  ~RenderFrameStatus() final = default;
-
-  bool is_ok() { return render_frame() != nullptr; }
-
-  // RenderFrameObserver implementation.
-  void OnDestruct() final {}
-};
-
 class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
  public:
   // for compatibility with the older version of this, error is after result
@@ -156,6 +146,10 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
       : promise_(std::move(promise)), callback_(std::move(callback)) {}
 
   ~ScriptExecutionCallback() override = default;
+
+  // disable copy
+  ScriptExecutionCallback(const ScriptExecutionCallback&) = delete;
+  ScriptExecutionCallback& operator=(const ScriptExecutionCallback&) = delete;
 
   void CopyResultToCallingContextAndFinalize(
       v8::Isolate* isolate,
@@ -224,7 +218,7 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
           promise_.Resolve(value);
         }
       } else {
-        const char* error_message =
+        const char error_message[] =
             "Script failed to execute, this normally means an error "
             "was thrown. Check the renderer console for the error.";
         if (!callback_.is_null()) {
@@ -239,7 +233,7 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
         promise_.RejectWithErrorMessage(error_message);
       }
     } else {
-      const char* error_message =
+      const char error_message[] =
           "WebFrame was removed before script could run. This normally means "
           "the underlying frame was destroyed";
       if (!callback_.is_null()) {
@@ -258,8 +252,6 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
  private:
   gin_helper::Promise<v8::Local<v8::Value>> promise_;
   CompletionCallback callback_;
-
-  DISALLOW_COPY_AND_ASSIGN(ScriptExecutionCallback);
 };
 
 class FrameSetSpellChecker : public content::RenderFrameVisitor {
@@ -271,9 +263,12 @@ class FrameSetSpellChecker : public content::RenderFrameVisitor {
     main_frame->GetWebFrame()->SetSpellCheckPanelHostClient(spell_check_client);
   }
 
+  // disable copy
+  FrameSetSpellChecker(const FrameSetSpellChecker&) = delete;
+  FrameSetSpellChecker& operator=(const FrameSetSpellChecker&) = delete;
+
   bool Visit(content::RenderFrame* render_frame) override {
-    auto* view = render_frame->GetRenderView();
-    if (view->GetMainRenderFrame() == main_frame_ ||
+    if (render_frame->GetMainRenderFrame() == main_frame_ ||
         (render_frame->IsMainFrame() && render_frame == main_frame_)) {
       render_frame->GetWebFrame()->SetTextCheckClient(spell_check_client_);
     }
@@ -283,8 +278,6 @@ class FrameSetSpellChecker : public content::RenderFrameVisitor {
  private:
   SpellCheckClient* spell_check_client_;
   content::RenderFrame* main_frame_;
-
-  DISALLOW_COPY_AND_ASSIGN(FrameSetSpellChecker);
 };
 
 class SpellCheckerHolder final : public content::RenderFrameObserver {
@@ -378,10 +371,11 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
         .SetMethod("setVisualZoomLevelLimits",
                    &WebFrameRenderer::SetVisualZoomLevelLimits)
         .SetMethod("allowGuestViewElementDefinition",
-                   &WebFrameRenderer::AllowGuestViewElementDefinition)
+                   &RendererClientBase::AllowGuestViewElementDefinition)
         .SetMethod("insertText", &WebFrameRenderer::InsertText)
         .SetMethod("insertCSS", &WebFrameRenderer::InsertCSS)
         .SetMethod("removeInsertedCSS", &WebFrameRenderer::RemoveInsertedCSS)
+        .SetMethod("_isEvalAllowed", &WebFrameRenderer::IsEvalAllowed)
         .SetMethod("executeJavaScript", &WebFrameRenderer::ExecuteJavaScript)
         .SetMethod("executeJavaScriptInIsolatedWorld",
                    &WebFrameRenderer::ExecuteJavaScriptInIsolatedWorld)
@@ -433,6 +427,17 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
     }
     *render_frame_ptr = frame;
     return true;
+  }
+
+  static v8::Local<v8::Value> CreateWebFrameRenderer(v8::Isolate* isolate,
+                                                     blink::WebFrame* frame) {
+    if (frame && frame->IsWebLocalFrame()) {
+      auto* render_frame =
+          content::RenderFrame::FromWebFrame(frame->ToWebLocalFrame());
+      return WebFrameRenderer::Create(isolate, render_frame).ToV8();
+    } else {
+      return v8::Null(isolate);
+    }
   }
 
   void SetName(v8::Isolate* isolate, const std::string& name) {
@@ -491,16 +496,11 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
 
     if (pref_name == options::kPreloadScripts) {
       return gin::ConvertToV8(isolate, prefs.preloads);
-    } else if (pref_name == options::kBackgroundColor) {
-      return gin::ConvertToV8(isolate, prefs.background_color);
     } else if (pref_name == options::kOpenerID) {
       // NOTE: openerId is internal-only.
       return gin::ConvertToV8(isolate, prefs.opener_id);
-    } else if (pref_name == options::kContextIsolation) {
-      return gin::ConvertToV8(isolate, prefs.context_isolation);
-    } else if (pref_name == options::kGuestInstanceID) {
-      // NOTE: guestInstanceId is internal-only.
-      return gin::ConvertToV8(isolate, prefs.guest_instance_id);
+    } else if (pref_name == "isWebView") {
+      return gin::ConvertToV8(isolate, prefs.is_webview);
     } else if (pref_name == options::kHiddenPage) {
       // NOTE: hiddenPage is internal-only.
       return gin::ConvertToV8(isolate, prefs.hidden_page);
@@ -542,31 +542,12 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
     web_frame->View()->SetDefaultPageScaleLimits(min_level, max_level);
   }
 
-  void AllowGuestViewElementDefinition(v8::Isolate* isolate,
-                                       v8::Local<v8::Object> context,
-                                       v8::Local<v8::Function> register_cb) {
-    v8::HandleScope handle_scope(isolate);
-    v8::Context::Scope context_scope(context->CreationContext());
-    blink::WebCustomElement::EmbedderNamesAllowedScope embedder_names_scope;
-
-    content::RenderFrame* render_frame;
-    if (!MaybeGetRenderFrame(isolate, "allowGuestViewElementDefinition",
-                             &render_frame))
-      return;
-
-    render_frame->GetWebFrame()->RequestExecuteV8Function(
-        context->CreationContext(), register_cb, v8::Null(isolate), 0, nullptr,
-        nullptr);
-  }
-
-  static int GetWebFrameId(v8::Local<v8::Value> content_window) {
+  static int GetWebFrameId(v8::Local<v8::Object> content_window) {
     // Get the WebLocalFrame before (possibly) executing any user-space JS while
     // getting the |params|. We track the status of the RenderFrame via an
     // observer in case it is deleted during user code execution.
     content::RenderFrame* render_frame = GetRenderFrame(content_window);
-    RenderFrameStatus render_frame_status(render_frame);
-
-    if (!render_frame_status.is_ok())
+    if (!render_frame)
       return -1;
 
     blink::WebLocalFrame* frame = render_frame->GetWebFrame();
@@ -661,6 +642,16 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
     }
   }
 
+  bool IsEvalAllowed(v8::Isolate* isolate) {
+    content::RenderFrame* render_frame;
+    if (!MaybeGetRenderFrame(isolate, "isEvalAllowed", &render_frame))
+      return true;
+
+    auto* context = blink::ExecutionContext::From(
+        render_frame->GetWebFrame()->MainWorldScriptContext());
+    return !context->GetContentSecurityPolicy()->ShouldCheckEval();
+  }
+
   v8::Local<v8::Promise> ExecuteJavaScript(gin::Arguments* gin_args,
                                            const std::u16string& code) {
     gin_helper::Arguments* args = static_cast<gin_helper::Arguments*>(gin_args);
@@ -676,17 +667,21 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
       return handle;
     }
 
+    const blink::WebScriptSource source{blink::WebString::FromUTF16(code)};
+
     bool has_user_gesture = false;
     args->GetNext(&has_user_gesture);
 
     ScriptExecutionCallback::CompletionCallback completion_callback;
     args->GetNext(&completion_callback);
 
-    render_frame->GetWebFrame()->RequestExecuteScriptAndReturnValue(
-        blink::WebScriptSource(blink::WebString::FromUTF16(code)),
-        has_user_gesture,
+    render_frame->GetWebFrame()->RequestExecuteScript(
+        blink::DOMWrapperWorld::kMainWorldId, base::make_span(&source, 1),
+        has_user_gesture, blink::WebLocalFrame::kSynchronous,
         new ScriptExecutionCallback(std::move(promise),
-                                    std::move(completion_callback)));
+                                    std::move(completion_callback)),
+        blink::BackForwardCacheAware::kAllow,
+        blink::WebLocalFrame::PromiseBehavior::kDontWait);
 
     return handle;
   }
@@ -720,6 +715,7 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
     args->GetNext(&completion_callback);
 
     std::vector<blink::WebScriptSource> sources;
+    sources.reserve(scripts.size());
 
     for (const auto& script : scripts) {
       std::u16string code;
@@ -729,7 +725,7 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
       script.Get("startLine", &start_line);
 
       if (!script.Get("code", &code)) {
-        const char* error_message = "Invalid 'code'";
+        const char error_message[] = "Invalid 'code'";
         if (!completion_callback.is_null()) {
           std::move(completion_callback)
               .Run(v8::Undefined(isolate),
@@ -741,17 +737,17 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
         return handle;
       }
 
-      sources.emplace_back(
-          blink::WebScriptSource(blink::WebString::FromUTF16(code),
-                                 blink::WebURL(GURL(url)), start_line));
+      sources.emplace_back(blink::WebString::FromUTF16(code),
+                           blink::WebURL(GURL(url)), start_line);
     }
 
-    render_frame->GetWebFrame()->RequestExecuteScriptInIsolatedWorld(
-        world_id, &sources.front(), sources.size(), has_user_gesture,
+    render_frame->GetWebFrame()->RequestExecuteScript(
+        world_id, base::make_span(sources), has_user_gesture,
         scriptExecutionType,
         new ScriptExecutionCallback(std::move(promise),
                                     std::move(completion_callback)),
-        blink::BackForwardCacheAware::kPossiblyDisallow);
+        blink::BackForwardCacheAware::kPossiblyDisallow,
+        blink::WebLocalFrame::PromiseBehavior::kDontWait);
 
     return handle;
   }
@@ -832,13 +828,7 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
       return v8::Null(isolate);
 
     blink::WebFrame* frame = render_frame->GetWebFrame()->Opener();
-    if (frame && frame->IsWebLocalFrame())
-      return WebFrameRenderer::Create(
-                 isolate,
-                 content::RenderFrame::FromWebFrame(frame->ToWebLocalFrame()))
-          .ToV8();
-    else
-      return v8::Null(isolate);
+    return CreateWebFrameRenderer(isolate, frame);
   }
 
   // Don't name it as GetParent, Windows has API with same name.
@@ -848,13 +838,7 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
       return v8::Null(isolate);
 
     blink::WebFrame* frame = render_frame->GetWebFrame()->Parent();
-    if (frame && frame->IsWebLocalFrame())
-      return WebFrameRenderer::Create(
-                 isolate,
-                 content::RenderFrame::FromWebFrame(frame->ToWebLocalFrame()))
-          .ToV8();
-    else
-      return v8::Null(isolate);
+    return CreateWebFrameRenderer(isolate, frame);
   }
 
   v8::Local<v8::Value> GetTop(v8::Isolate* isolate) {
@@ -863,13 +847,7 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
       return v8::Null(isolate);
 
     blink::WebFrame* frame = render_frame->GetWebFrame()->Top();
-    if (frame && frame->IsWebLocalFrame())
-      return WebFrameRenderer::Create(
-                 isolate,
-                 content::RenderFrame::FromWebFrame(frame->ToWebLocalFrame()))
-          .ToV8();
-    else
-      return v8::Null(isolate);
+    return CreateWebFrameRenderer(isolate, frame);
   }
 
   v8::Local<v8::Value> GetFirstChild(v8::Isolate* isolate) {
@@ -878,13 +856,7 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
       return v8::Null(isolate);
 
     blink::WebFrame* frame = render_frame->GetWebFrame()->FirstChild();
-    if (frame && frame->IsWebLocalFrame())
-      return WebFrameRenderer::Create(
-                 isolate,
-                 content::RenderFrame::FromWebFrame(frame->ToWebLocalFrame()))
-          .ToV8();
-    else
-      return v8::Null(isolate);
+    return CreateWebFrameRenderer(isolate, frame);
   }
 
   v8::Local<v8::Value> GetNextSibling(v8::Isolate* isolate) {
@@ -893,13 +865,7 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
       return v8::Null(isolate);
 
     blink::WebFrame* frame = render_frame->GetWebFrame()->NextSibling();
-    if (frame && frame->IsWebLocalFrame())
-      return WebFrameRenderer::Create(
-                 isolate,
-                 content::RenderFrame::FromWebFrame(frame->ToWebLocalFrame()))
-          .ToV8();
-    else
-      return v8::Null(isolate);
+    return CreateWebFrameRenderer(isolate, frame);
   }
 
   v8::Local<v8::Value> GetFrameForSelector(v8::Isolate* isolate,
@@ -915,30 +881,18 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
       return v8::Null(isolate);
 
     blink::WebFrame* frame = blink::WebFrame::FromFrameOwnerElement(element);
-    if (frame && frame->IsWebLocalFrame())
-      return WebFrameRenderer::Create(
-                 isolate,
-                 content::RenderFrame::FromWebFrame(frame->ToWebLocalFrame()))
-          .ToV8();
-    else
-      return v8::Null(isolate);
+    return CreateWebFrameRenderer(isolate, frame);
   }
 
   v8::Local<v8::Value> FindFrameByName(v8::Isolate* isolate,
                                        const std::string& name) {
     content::RenderFrame* render_frame;
-    if (!MaybeGetRenderFrame(isolate, "getFrameForSelector", &render_frame))
+    if (!MaybeGetRenderFrame(isolate, "findFrameByName", &render_frame))
       return v8::Null(isolate);
 
     blink::WebFrame* frame = render_frame->GetWebFrame()->FindFrameByName(
         blink::WebString::FromUTF8(name));
-    if (frame && frame->IsWebLocalFrame())
-      return WebFrameRenderer::Create(
-                 isolate,
-                 content::RenderFrame::FromWebFrame(frame->ToWebLocalFrame()))
-          .ToV8();
-    else
-      return v8::Null(isolate);
+    return CreateWebFrameRenderer(isolate, frame);
   }
 
   int GetRoutingId(v8::Isolate* isolate) {
@@ -969,8 +923,8 @@ void Initialize(v8::Local<v8::Object> exports,
 
   v8::Isolate* isolate = context->GetIsolate();
   gin_helper::Dictionary dict(isolate, exports);
-  dict.Set("mainFrame",
-           WebFrameRenderer::Create(isolate, GetRenderFrame(exports)));
+  dict.Set("mainFrame", WebFrameRenderer::Create(
+                            isolate, electron::GetRenderFrame(exports)));
 }
 
 }  // namespace

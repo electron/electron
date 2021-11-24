@@ -1,0 +1,48 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <samuel.r.attard@gmail.com>
+Date: Fri, 6 Aug 2021 03:36:57 -0700
+Subject: chore: do not use chrome.windows in cryptotoken webrequestsender
+
+Electron does not support chrome.windows which this method depends on.  It also does not need to, the method's goal is to determine if the webContents that triggered the cryptotoken request is still "active".  In Chrome this means active tab in the tab strip === this tab + the window owning that tab strip is focused.
+
+In Electron that can be simplified to webContents.isFocused() which maps to "is the webContents view focused and is the owning window the key window".  We map tab.active to that IsFocused() value and we can remove the chrome.windows logic here.
+
+This can't be upstreamed but the patch is minimal.
+
+diff --git a/chrome/browser/resources/cryptotoken/webrequestsender.js b/chrome/browser/resources/cryptotoken/webrequestsender.js
+index 67385e25a9233ce7a5077e69e9be1f457252ea5d..3e6864e6ea3374874598a0175746451126ddb165 100644
+--- a/chrome/browser/resources/cryptotoken/webrequestsender.js
++++ b/chrome/browser/resources/cryptotoken/webrequestsender.js
+@@ -141,10 +141,11 @@ function tabInForeground(tabId) {
+       reject();
+       return;
+     }
+-    if (!chrome.windows || !chrome.windows.get) {
+-      reject();
+-      return;
+-    }
++    // Electron does not support chrome.windows
++    // if (!chrome.windows || !chrome.windows.get) {
++    //   reject();
++    //   return;
++    // }
+     chrome.tabs.get(tabId, function(tab) {
+       if (chrome.runtime.lastError) {
+         resolve(false);
+@@ -154,9 +155,13 @@ function tabInForeground(tabId) {
+         resolve(false);
+         return;
+       }
+-      chrome.windows.get(tab.windowId, function(aWindow) {
+-        resolve(aWindow && aWindow.focused);
+-      });
++      // tab.active in Electron maps to the "focused" state of the view
++      // which is only true when both the webContents and the window are
++      // focused.
++      resolve(true);
++      // chrome.windows.get(tab.windowId, function(aWindow) {
++      //   resolve(aWindow && aWindow.focused);
++      // });
+     });
+   });
+ }

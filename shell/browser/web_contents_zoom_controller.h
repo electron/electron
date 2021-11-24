@@ -2,11 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_WEB_CONTENTS_ZOOM_CONTROLLER_H_
-#define SHELL_BROWSER_WEB_CONTENTS_ZOOM_CONTROLLER_H_
-
-#include <map>
-#include <string>
+#ifndef ELECTRON_SHELL_BROWSER_WEB_CONTENTS_ZOOM_CONTROLLER_H_
+#define ELECTRON_SHELL_BROWSER_WEB_CONTENTS_ZOOM_CONTROLLER_H_
 
 #include "base/observer_list_types.h"
 #include "content/public/browser/host_zoom_map.h"
@@ -53,6 +50,11 @@ class WebContentsZoomController
 
   explicit WebContentsZoomController(content::WebContents* web_contents);
   ~WebContentsZoomController() override;
+
+  // disable copy
+  WebContentsZoomController(const WebContentsZoomController&) = delete;
+  WebContentsZoomController& operator=(const WebContentsZoomController&) =
+      delete;
 
   void AddObserver(Observer* observer);
   void RemoveObserver(Observer* observer);
@@ -115,10 +117,8 @@ class WebContentsZoomController
   content::HostZoomMap* host_zoom_map_;
 
   WEB_CONTENTS_USER_DATA_KEY_DECL();
-
-  DISALLOW_COPY_AND_ASSIGN(WebContentsZoomController);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_WEB_CONTENTS_ZOOM_CONTROLLER_H_
+#endif  // ELECTRON_SHELL_BROWSER_WEB_CONTENTS_ZOOM_CONTROLLER_H_

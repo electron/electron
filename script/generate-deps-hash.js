@@ -3,7 +3,14 @@ const fs = require('fs');
 const path = require('path');
 
 // Fallback to blow away old cache keys
-const HASH_VERSION = 3;
+const FALLBACK_HASH_VERSION = 3;
+
+// Per platform hash versions to bust the cache on different platforms
+const HASH_VERSIONS = {
+  darwin: 3,
+  win32: 4,
+  linux: 3
+};
 
 // Base files to hash
 const filesToHash = [
@@ -28,7 +35,7 @@ addAllFiles(path.resolve(__dirname, '../patches'));
 
 // Create Hash
 const hasher = crypto.createHash('SHA256');
-hasher.update(`HASH_VERSION:${HASH_VERSION}`);
+hasher.update(`HASH_VERSION:${HASH_VERSIONS[process.platform] || FALLBACK_HASH_VERSION}`);
 for (const file of filesToHash) {
   hasher.update(fs.readFileSync(file));
 }

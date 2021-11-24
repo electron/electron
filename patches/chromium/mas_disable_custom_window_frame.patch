@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Cheng Zhao <zcbenz@gmail.com>
 Date: Thu, 20 Sep 2018 17:48:49 -0700
-Subject: mas_disable_custom_window_frame.patch
+Subject: mas: disable private window-frame APIs
 
 Disable private window frame APIs (NSNextStepFrame and NSThemeFrame) for MAS
 build.
@@ -95,7 +95,7 @@ index 5a23ea7558814eec59eda349bc7194afcb70d01e..c9147bbe5a225291552082434e5db342
  // The NSWindow used by BridgedNativeWidget. Provides hooks into AppKit that
  // can only be accomplished by overriding methods.
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index 7556af60173045c2a384656eb3f9c8972e2f85e0..868179c9cfc2a4c65944d02e789b1e42f5d355c3 100644
+index 83e08e8e56f8fdfe5c321c33b451b9bde8ee819a..f48d8ac4816e2d775c16758e086eb56ad456bd01 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 @@ -16,7 +16,9 @@
@@ -126,7 +126,7 @@ index 7556af60173045c2a384656eb3f9c8972e2f85e0..868179c9cfc2a4c65944d02e789b1e42
  @implementation NativeWidgetMacNSWindow {
   @private
    base::scoped_nsobject<CommandDispatcher> _commandDispatcher;
-@@ -181,6 +187,8 @@ - (BOOL)hasViewsMenuActive {
+@@ -186,6 +192,8 @@ - (BOOL)hasViewsMenuActive {
  
  // NSWindow overrides.
  
@@ -135,7 +135,7 @@ index 7556af60173045c2a384656eb3f9c8972e2f85e0..868179c9cfc2a4c65944d02e789b1e42
  + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    if (windowStyle & NSWindowStyleMaskTitled) {
      if (Class customFrame = [NativeWidgetMacNSWindowTitledFrame class])
-@@ -192,6 +200,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
+@@ -197,6 +205,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    return [super frameViewClassForStyleMask:windowStyle];
  }
  

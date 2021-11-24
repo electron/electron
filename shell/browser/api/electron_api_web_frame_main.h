@@ -2,10 +2,9 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_ELECTRON_API_WEB_FRAME_MAIN_H_
-#define SHELL_BROWSER_API_ELECTRON_API_WEB_FRAME_MAIN_H_
+#ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_WEB_FRAME_MAIN_H_
+#define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_WEB_FRAME_MAIN_H_
 
-#include <memory>
 #include <string>
 #include <vector>
 
@@ -13,6 +12,8 @@
 #include "base/process/process.h"
 #include "gin/handle.h"
 #include "gin/wrappable.h"
+#include "mojo/public/cpp/bindings/remote.h"
+#include "shell/browser/event_emitter_mixin.h"
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/pinnable.h"
 #include "third_party/blink/public/mojom/page/page_visibility_state.mojom-forward.h"
@@ -27,39 +28,27 @@ namespace gin {
 class Arguments;
 }
 
-namespace gin_helper {
-class Dictionary;
-}
-
 namespace electron {
 
 namespace api {
 
+class WebContents;
+
 // Bindings for accessing frames from the main process.
 class WebFrameMain : public gin::Wrappable<WebFrameMain>,
+                     public gin_helper::EventEmitterMixin<WebFrameMain>,
                      public gin_helper::Pinnable<WebFrameMain>,
                      public gin_helper::Constructible<WebFrameMain> {
  public:
   // Create a new WebFrameMain and return the V8 wrapper of it.
   static gin::Handle<WebFrameMain> New(v8::Isolate* isolate);
 
-  static gin::Handle<WebFrameMain> FromID(v8::Isolate* isolate,
-                                          int render_process_id,
-                                          int render_frame_id);
   static gin::Handle<WebFrameMain> From(
       v8::Isolate* isolate,
       content::RenderFrameHost* render_frame_host);
-
-  // Called to mark any RenderFrameHost as disposed by any WebFrameMain that
-  // may be holding a weak reference.
-  static void RenderFrameDeleted(content::RenderFrameHost* rfh);
-  static void RenderFrameCreated(content::RenderFrameHost* rfh);
-
-  // Mark RenderFrameHost as disposed and to no longer access it. This can
-  // occur upon frame navigation.
-  void MarkRenderFrameDisposed();
-
-  const mojo::Remote<mojom::ElectronRenderer>& GetRendererApi();
+  static WebFrameMain* FromFrameTreeNodeId(int frame_tree_node_id);
+  static WebFrameMain* FromRenderFrameHost(
+      content::RenderFrameHost* render_frame_host);
 
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
@@ -68,15 +57,35 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
       v8::Local<v8::ObjectTemplate>);
   const char* GetTypeName() override;
 
+  content::RenderFrameHost* render_frame_host() const { return render_frame_; }
+
+  // disable copy
+  WebFrameMain(const WebFrameMain&) = delete;
+  WebFrameMain& operator=(const WebFrameMain&) = delete;
+
  protected:
   explicit WebFrameMain(content::RenderFrameHost* render_frame);
   ~WebFrameMain() override;
 
  private:
+  friend class WebContents;
+
+  // Called when FrameTreeNode is deleted.
+  void Destroyed();
+
+  // Mark RenderFrameHost as disposed and to no longer access it. This can
+  // happen when the WebFrameMain v8 handle is GC'd or when a FrameTreeNode
+  // is removed.
+  void MarkRenderFrameDisposed();
+
+  // Swap out the internal RFH when cross-origin navigation occurs.
+  void UpdateRenderFrameHost(content::RenderFrameHost* rfh);
+
+  const mojo::Remote<mojom::ElectronRenderer>& GetRendererApi();
+
   // WebFrameMain can outlive its RenderFrameHost pointer so we need to check
   // whether its been disposed of prior to accessing it.
   bool CheckRenderFrame() const;
-  void Connect();
 
   v8::Local<v8::Promise> ExecuteJavaScript(gin::Arguments* args,
                                            const std::u16string& code);
@@ -88,7 +97,7 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
   void PostMessage(v8::Isolate* isolate,
                    const std::string& channel,
                    v8::Local<v8::Value> message_value,
-                   base::Optional<v8::Local<v8::Value>> transfer);
+                   absl::optional<v8::Local<v8::Value>> transfer);
 
   int FrameTreeNodeID() const;
   std::string Name() const;
@@ -104,9 +113,13 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
   std::vector<content::RenderFrameHost*> FramesInSubtree() const;
 
   void OnRendererConnectionError();
+  void Connect();
+  void DOMContentLoaded();
 
   mojo::Remote<mojom::ElectronRenderer> renderer_api_;
   mojo::PendingReceiver<mojom::ElectronRenderer> pending_receiver_;
+
+  int frame_tree_node_id_;
 
   content::RenderFrameHost* render_frame_ = nullptr;
 
@@ -115,12 +128,10 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
   bool render_frame_disposed_ = false;
 
   base::WeakPtrFactory<WebFrameMain> weak_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(WebFrameMain);
 };
 
 }  // namespace api
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_ELECTRON_API_WEB_FRAME_MAIN_H_
+#endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_WEB_FRAME_MAIN_H_

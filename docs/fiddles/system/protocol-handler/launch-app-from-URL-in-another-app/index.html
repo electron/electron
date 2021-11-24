@@ -1,92 +1,81 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="UTF-8">
-    <title>Hello World!</title>
-  </head>
+
+<head>
+  <meta charset="UTF-8">
+  <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'">
+  <meta http-equiv="X-Content-Security-Policy" content="default-src 'self'; script-src 'self'">
+  <title>app.setAsDefaultProtocol Demo</title>
+</head>
+
 <body>
-  <section>
-    <header>
-        <h1>
-          Protocol Handler
-        </h1>
-        <h3>The <code>app</code> module provides methods for handling protocols.</h3>
-        <p>These methods allow you to set and unset the protocols your app should be the default app for. Similar to when a browser asks to be your default for viewing web pages.</p>
+  <h1>App Default Protocol Demo</h1>
 
-        <p>Open the <a href="https://electronjs.org/docs/api/app">full app API documentation<span class="u-visible-to-screen-reader">(opens in new window)</span></a> in your browser.</p>
-    </header>
+  <p>The protocol API allows us to register a custom protocol and intercept existing protocol requests.</p>
+  <p>These methods allow you to set and unset the protocols your app should be the default app for. Similar to when a
+    browser asks to be your default for viewing web pages.</p>
 
-    <div >
-        <button id="open-in-browser" class="js-container-target demo-toggle-button">Launch current page in browser
-          <div class="demo-meta u-avoid-clicks">Supports: Win, macOS <span class="demo-meta-divider">|</span> Process: Main</div>
-        </button>
-        <section id='open-app-link'>
-          <a href="electron-api-demos://open">Now... launch the app from a web link</a>
-        </section>
-        <div >
-          <p>You can set your app as the default app to open for a specific protocol. For instance, in this demo we set this app as the default for <code>electron-api-demos://</code>. The demo button above will launch a page in your default browser with a link. Click that link and it will re-launch this app.</p>
-          <h5>Packaging</h5>
-          <p>This feature will only work on macOS when your app is packaged. It will not work when you're launching it in development from the command-line. When you package your app you'll need to make sure the macOS <code>plist</code> for the app is updated to include the new protocol handler. If you're using <code>electron-packager</code> then you can add the flag <code>--extend-info</code> with a path to the <code>plist</code> you've created. The one for this app is below.</p>
-          <h5>Renderer Process</h5>
-          <pre><code>
-            const {shell} = require('electron')
-            const path = require('path')
-            const protocolHandlerBtn = document.getElementById('protocol-handler')
-            protocolHandlerBtn.addEventListener('click', () => {
-                const pageDirectory = __dirname.replace('app.asar', 'app.asar.unpacked')
-                const pagePath = path.join('file://', pageDirectory, '../../sections/system/protocol-link.html')
-                shell.openExternal(pagePath)
-            })
-          </code></pre>
-          <h5>Main Process</h5>
-          <pre><code>
-            const {app, dialog} = require('electron')
-            const path = require('path')
+  <p>Open the <a href="https://www.electronjs.org/docs/api/protocol">full protocol API documentation</a> in your
+    browser.</p>
 
-            if (process.defaultApp) {
-                if (process.argv.length >= 2) {
-                    app.setAsDefaultProtocolClient('electron-api-demos', process.execPath, [path.resolve(process.argv[1])])
-                }
-            } else {
-                app.setAsDefaultProtocolClient('electron-api-demos')
-            }
+  -----
 
-            app.on('open-url', (event, url) => {
-                dialog.showErrorBox('Welcome Back', `You arrived from: ${url}`)
-            })
+  <h3>Demo</h3>
+  <p>
+    First: Launch current page in browser
+    <button id="open-in-browser" class="js-container-target demo-toggle-button">
+        Click to Launch Browser
+      </button>
+  </p>
 
-          </code></pre>
-          <h5>macOS plist</h5>
-          <pre><code>
-            <?xml version="1.0" encoding="UTF-8"?>
-                <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-                    <plist version="1.0">
-                        <dict>
-                            <key>CFBundleURLTypes</key>
-                            <array>
-                                <dict>
-                                    <key>CFBundleURLSchemes</key>
-                                    <array>
-                                        <string>electron-api-demos</string>
-                                    </array>
-                                    <key>CFBundleURLName</key>
-                                    <string>Electron API Demos Protocol</string>
-                                </dict>
-                            </array>
-                            <key>ElectronTeamID</key>
-                            <string>VEKTX9H2N7</string>
-                        </dict>
-                    </plist>
-                </code>
-            </pre>
-        </div>
-    </div>
-    <script type="text/javascript">
-        require('./renderer.js')
-    </script>
-</section>
+  <p>
+    Then: Launch the app from a web link!
+    <a href="electron-fiddle://open">Click here to launch the app</a>
+  </p>
+
+  ----
+
+  <p>You can set your app as the default app to open for a specific protocol. For instance, in this demo we set this app
+    as the default for <code>electron-fiddle://</code>. The demo button above will launch a page in your default
+    browser with a link. Click that link and it will re-launch this app.</p>
+
+
+  <h3>Packaging</h3>
+  <p>This feature will only work on macOS when your app is packaged. It will not work when you're launching it in
+    development from the command-line. When you package your app you'll need to make sure the macOS <code>plist</code>
+    for the app is updated to include the new protocol handler. If you're using <code>electron-packager</code> then you
+    can add the flag <code>--extend-info</code> with a path to the <code>plist</code> you've created. The one for this
+    app is below:</p>
+
+  <p>
+  <h5>macOS plist</h5>
+  <pre><code>
+    &lt;?xml version="1.0" encoding="UTF-8"?&gt;
+    &lt;!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"&gt;
+            &lt;plist version="1.0"&gt;
+                &lt;dict&gt;
+                    &lt;key&gt;CFBundleURLTypes&lt;/key&gt;
+                    &lt;array&gt;
+                        &lt;dict&gt;
+                            &lt;key&gt;CFBundleURLSchemes&lt;/key&gt;
+                            &lt;array&gt;
+                                &lt;string&gt;electron-api-demos&lt;/string&gt;
+                            &lt;/array&gt;
+                            &lt;key&gt;CFBundleURLName&lt;/key&gt;
+                            &lt;string&gt;Electron API Demos Protocol&lt;/string&gt;
+                        &lt;/dict&gt;
+                    &lt;/array&gt;
+                    &lt;key&gt;ElectronTeamID&lt;/key&gt;
+                    &lt;string&gt;VEKTX9H2N7&lt;/string&gt;
+                &lt;/dict&gt;
+            &lt;/plist&gt;
+        </code>
+    </pre>
+  <p>
+
+    <!-- You can also require other files to run in this process -->
+    <script src="./renderer.js"></script>
 </body>
-</html>
 
-  </body>
 </html>

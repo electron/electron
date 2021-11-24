@@ -8,7 +8,7 @@ app.whenReady().then(() => {
   w.webContents.once('did-finish-load', () => {
     app.getGPUInfo(infoType).then(
       (gpuInfo) => {
-        console.log(JSON.stringify(gpuInfo));
+        console.log('HERE COMES THE JSON: ' + JSON.stringify(gpuInfo) + ' AND THERE IT WAS');
         setImmediate(() => app.exit(0));
       },
       (error) => {

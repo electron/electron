@@ -2,10 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_EXTENSIONS_API_RESOURCES_PRIVATE_RESOURCES_PRIVATE_API_H_
-#define SHELL_BROWSER_EXTENSIONS_API_RESOURCES_PRIVATE_RESOURCES_PRIVATE_API_H_
+#ifndef ELECTRON_SHELL_BROWSER_EXTENSIONS_API_RESOURCES_PRIVATE_RESOURCES_PRIVATE_API_H_
+#define ELECTRON_SHELL_BROWSER_EXTENSIONS_API_RESOURCES_PRIVATE_RESOURCES_PRIVATE_API_H_
 
-#include "base/macros.h"
 #include "extensions/browser/extension_function.h"
 
 namespace extensions {
@@ -16,16 +15,19 @@ class ResourcesPrivateGetStringsFunction : public ExtensionFunction {
                              RESOURCESPRIVATE_GETSTRINGS)
   ResourcesPrivateGetStringsFunction();
 
+  // disable copy
+  ResourcesPrivateGetStringsFunction(
+      const ResourcesPrivateGetStringsFunction&) = delete;
+  ResourcesPrivateGetStringsFunction& operator=(
+      const ResourcesPrivateGetStringsFunction&) = delete;
+
  protected:
   ~ResourcesPrivateGetStringsFunction() override;
 
   // Override from ExtensionFunction:
   ExtensionFunction::ResponseAction Run() override;
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(ResourcesPrivateGetStringsFunction);
 };
 
 }  // namespace extensions
 
-#endif  // SHELL_BROWSER_EXTENSIONS_API_RESOURCES_PRIVATE_RESOURCES_PRIVATE_API_H_
+#endif  // ELECTRON_SHELL_BROWSER_EXTENSIONS_API_RESOURCES_PRIVATE_RESOURCES_PRIVATE_API_H_

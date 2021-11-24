@@ -1,1 +1,2 @@
 build_conditionally_import_ext_headers_from_framework_or_from.patch
+chore_explicitly_cast_long_max_to_double.patch

@@ -22,5 +22,8 @@
   "no-trailing-spaces": {
     "br_spaces": 0
   },
-  "single-h1": false
+  "single-h1": false,
+  "no-inline-html": {
+    "allowed_elements": ["br"]
+  }
 }

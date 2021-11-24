@@ -12,10 +12,10 @@ as they will loaded as empty strings.
 * IDS_UTILITY_PROCESS_PRINTING_SERVICE_NAME on Windows
 
 diff --git a/chrome/browser/pdf/pdf_extension_util.cc b/chrome/browser/pdf/pdf_extension_util.cc
-index 67a7140453728a685ad8fca283a1465ddc4a8a51..1b7bed03e5c3231fdd73aa369a598db5a883bfec 100644
+index f72431f5bc7ba82316cf318f7845e7523c366d92..5133f3cd28c0d630a039118eb91c6c37ee202f3e 100644
 --- a/chrome/browser/pdf/pdf_extension_util.cc
 +++ b/chrome/browser/pdf/pdf_extension_util.cc
-@@ -10,8 +10,7 @@
+@@ -11,8 +11,7 @@
  #include "build/chromeos_buildflags.h"
  #include "chrome/browser/browser_process.h"
  #include "chrome/common/chrome_content_client.h"
@@ -26,28 +26,28 @@ index 67a7140453728a685ad8fca283a1465ddc4a8a51..1b7bed03e5c3231fdd73aa369a598db5
  #include "components/zoom/page_zoom_constants.h"
  #include "pdf/pdf_features.h"
 diff --git a/chrome/browser/printing/printing_service.cc b/chrome/browser/printing/printing_service.cc
-index 2b73b110049b5e8d28b52656bbd2423e18ba07a0..8fd868b39d64c74aa189b8ca3e24c8537d91b1ba 100644
+index ec70ac13f96a0085747ecc3f275fb392d3dcca42..6b470dad30760ee709e702e94c19eaeb3099442a 100644
 --- a/chrome/browser/printing/printing_service.cc
 +++ b/chrome/browser/printing/printing_service.cc
-@@ -6,7 +6,7 @@
+@@ -5,7 +5,7 @@
+ #include "chrome/browser/printing/printing_service.h"
  
  #include "base/no_destructor.h"
- #include "chrome/browser/service_sandbox_type.h"
 -#include "chrome/grit/generated_resources.h"
 +#include "electron/grit/electron_resources.h"
+ #include "chrome/services/printing/public/mojom/printing_service.mojom.h"
  #include "content/public/browser/service_process_host.h"
  
- const mojo::Remote<printing::mojom::PrintingService>& GetPrintingService() {
 diff --git a/chrome/browser/win/icon_reader_service.cc b/chrome/browser/win/icon_reader_service.cc
-index 721e1a863cc6925908f8343002df056f2373bf0b..10b2a95162541a8ff4d010c7be864f3f41dae378 100644
+index d5497a7e26cdb66c7c074bc509e2bfec7d7875cd..62d2f555253eef903bd04ff1a0ad37d1470309e0 100644
 --- a/chrome/browser/win/icon_reader_service.cc
 +++ b/chrome/browser/win/icon_reader_service.cc
-@@ -5,7 +5,7 @@
+@@ -4,7 +4,7 @@
+ 
  #include "chrome/browser/win/icon_reader_service.h"
  
- #include "chrome/browser/service_sandbox_type.h"
 -#include "chrome/grit/generated_resources.h"
 +#include "electron/grit/electron_resources.h"
+ #include "chrome/services/util_win/public/mojom/util_read_icon.mojom.h"
  #include "content/public/browser/service_process_host.h"
  
- mojo::Remote<chrome::mojom::UtilReadIcon> LaunchIconReaderInstance() {

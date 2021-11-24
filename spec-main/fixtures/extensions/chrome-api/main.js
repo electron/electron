@@ -37,6 +37,11 @@ const testMap = {
       });
     });
     chrome.runtime.sendMessage({ method: 'connectTab', args: [name] });
+  },
+  update (tabId, props) {
+    chrome.runtime.sendMessage({ method: 'update', args: [tabId, props] }, response => {
+      console.log(JSON.stringify(response));
+    });
   }
 };
 

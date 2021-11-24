@@ -2,7 +2,8 @@
 
 > Handle responses to HTTP/HTTPS requests.
 
-Process: [Main](../glossary.md#main-process)
+Process: [Main](../glossary.md#main-process)<br />
+_This class is not exported from the `'electron'` module. It is only available as a return value of other methods in the Electron API._
 
 `IncomingMessage` implements the [Readable Stream](https://nodejs.org/api/stream.html#stream_readable_streams)
 interface and is therefore an [EventEmitter][event-emitter].
@@ -47,7 +48,7 @@ An `Integer` indicating the HTTP response status code.
 
 #### `response.statusMessage`
 
-A `String` representing the HTTP status message.
+A `string` representing the HTTP status message.
 
 #### `response.headers`
 
@@ -65,7 +66,7 @@ formatted as follows:
 
 #### `response.httpVersion`
 
-A `String` indicating the HTTP protocol version number. Typical values are '1.0'
+A `string` indicating the HTTP protocol version number. Typical values are '1.0'
 or '1.1'. Additionally `httpVersionMajor` and `httpVersionMinor` are two
 Integer-valued readable properties that return respectively the HTTP major and
 minor version numbers.

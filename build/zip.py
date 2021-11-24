@@ -31,12 +31,6 @@ PATHS_TO_SKIP = [
   # //chrome/browser/resources/ssl/ssl_error_assistant, but we don't need to
   # ship it.
   'pyproto',
-  # On Windows, this binary doesn't exist (the crashpad handler is built-in).
-  # On MacOS, the binary is called 'chrome_crashpad_handler' and is inside the
-  # app bundle.
-  # On Linux, we don't use crashpad, but this binary is still built for some
-  # reason. Exclude it from the zip.
-  './crashpad_handler',
   # Skip because these are outputs that we don't need.
   'resources/inspector',
   'gen/third_party/devtools-frontend/src',
@@ -72,7 +66,7 @@ def execute(argv):
     raise e
 
 def main(argv):
-  dist_zip, runtime_deps, target_cpu, _, flatten_val = argv
+  dist_zip, runtime_deps, target_cpu, _, flatten_val, flatten_relative_to = argv
   should_flatten = flatten_val == "true"
   dist_files = set()
   with open(runtime_deps) as f:
@@ -99,11 +93,18 @@ def main(argv):
             if basename == 'chrome_sandbox'
             else dep
           )
+          name_to_write = arcname
+          if should_flatten:
+            if flatten_relative_to:
+              if name_to_write.startswith(flatten_relative_to):
+                name_to_write = name_to_write[len(flatten_relative_to):]
+              else:
+                name_to_write = os.path.basename(arcname)
+            else:
+              name_to_write = os.path.basename(arcname)
           z.write(
             dep,
-            os.path.basename(arcname)
-            if should_flatten
-            else arcname,
+            name_to_write,
           )
 
 if __name__ == '__main__':

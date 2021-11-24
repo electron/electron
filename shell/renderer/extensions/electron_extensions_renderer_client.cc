@@ -21,7 +21,7 @@ ElectronExtensionsRendererClient::ElectronExtensionsRendererClient()
   dispatcher_->OnRenderThreadStarted(content::RenderThread::Get());
 }
 
-ElectronExtensionsRendererClient::~ElectronExtensionsRendererClient() {}
+ElectronExtensionsRendererClient::~ElectronExtensionsRendererClient() = default;
 
 bool ElectronExtensionsRendererClient::IsIncognitoProcess() const {
   // app_shell doesn't support off-the-record contexts.

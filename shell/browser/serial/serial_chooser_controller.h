@@ -2,14 +2,14 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_SERIAL_SERIAL_CHOOSER_CONTROLLER_H_
-#define SHELL_BROWSER_SERIAL_SERIAL_CHOOSER_CONTROLLER_H_
+#ifndef ELECTRON_SHELL_BROWSER_SERIAL_SERIAL_CHOOSER_CONTROLLER_H_
+#define ELECTRON_SHELL_BROWSER_SERIAL_SERIAL_CHOOSER_CONTROLLER_H_
 
 #include <string>
 #include <vector>
 
-#include "base/macros.h"
 #include "base/memory/weak_ptr.h"
+#include "content/public/browser/global_routing_id.h"
 #include "content/public/browser/serial_chooser.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_observer.h"
@@ -21,7 +21,7 @@
 
 namespace content {
 class RenderFrameHost;
-}  // namespace content
+}
 
 namespace electron {
 
@@ -39,6 +39,10 @@ class SerialChooserController final : public SerialChooserContext::PortObserver,
       base::WeakPtr<ElectronSerialDelegate> serial_delegate);
   ~SerialChooserController() override;
 
+  // disable copy
+  SerialChooserController(const SerialChooserController&) = delete;
+  SerialChooserController& operator=(const SerialChooserController&) = delete;
+
   // SerialChooserContext::PortObserver:
   void OnPortAdded(const device::mojom::SerialPortInfo& port) override;
   void OnPortRemoved(const device::mojom::SerialPortInfo& port) override;
@@ -53,8 +57,7 @@ class SerialChooserController final : public SerialChooserContext::PortObserver,
 
   std::vector<blink::mojom::SerialPortFilterPtr> filters_;
   content::SerialChooser::Callback callback_;
-  url::Origin requesting_origin_;
-  url::Origin embedding_origin_;
+  url::Origin origin_;
 
   base::WeakPtr<SerialChooserContext> chooser_context_;
 
@@ -62,11 +65,11 @@ class SerialChooserController final : public SerialChooserContext::PortObserver,
 
   base::WeakPtr<ElectronSerialDelegate> serial_delegate_;
 
-  base::WeakPtrFactory<SerialChooserController> weak_factory_{this};
+  content::GlobalRenderFrameHostId render_frame_host_id_;
 
-  DISALLOW_COPY_AND_ASSIGN(SerialChooserController);
+  base::WeakPtrFactory<SerialChooserController> weak_factory_{this};
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_SERIAL_SERIAL_CHOOSER_CONTROLLER_H_
+#endif  // ELECTRON_SHELL_BROWSER_SERIAL_SERIAL_CHOOSER_CONTROLLER_H_

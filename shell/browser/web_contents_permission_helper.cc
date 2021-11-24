@@ -94,6 +94,28 @@ bool WebContentsPermissionHelper::CheckPermission(
                                                         details);
 }
 
+bool WebContentsPermissionHelper::CheckDevicePermission(
+    content::PermissionType permission,
+    const url::Origin& origin,
+    const base::Value* device,
+    content::RenderFrameHost* render_frame_host) const {
+  auto* permission_manager = static_cast<ElectronPermissionManager*>(
+      web_contents_->GetBrowserContext()->GetPermissionControllerDelegate());
+  return permission_manager->CheckDevicePermission(permission, origin, device,
+                                                   render_frame_host);
+}
+
+void WebContentsPermissionHelper::GrantDevicePermission(
+    content::PermissionType permission,
+    const url::Origin& origin,
+    const base::Value* device,
+    content::RenderFrameHost* render_frame_host) const {
+  auto* permission_manager = static_cast<ElectronPermissionManager*>(
+      web_contents_->GetBrowserContext()->GetPermissionControllerDelegate());
+  permission_manager->GrantDevicePermission(permission, origin, device,
+                                            render_frame_host);
+}
+
 void WebContentsPermissionHelper::RequestFullscreenPermission(
     base::OnceCallback<void(bool)> callback) {
   RequestPermission(
@@ -104,20 +126,21 @@ void WebContentsPermissionHelper::RequestFullscreenPermission(
 void WebContentsPermissionHelper::RequestMediaAccessPermission(
     const content::MediaStreamRequest& request,
     content::MediaResponseCallback response_callback) {
-  auto callback = base::AdaptCallbackForRepeating(base::BindOnce(
-      &MediaAccessAllowed, request, std::move(response_callback)));
+  auto callback = base::BindOnce(&MediaAccessAllowed, request,
+                                 std::move(response_callback));
 
   base::DictionaryValue details;
-  std::unique_ptr<base::ListValue> media_types(new base::ListValue);
+  auto media_types = std::make_unique<base::ListValue>();
   if (request.audio_type ==
       blink::mojom::MediaStreamType::DEVICE_AUDIO_CAPTURE) {
-    media_types->AppendString("audio");
+    media_types->Append("audio");
   }
   if (request.video_type ==
       blink::mojom::MediaStreamType::DEVICE_VIDEO_CAPTURE) {
-    media_types->AppendString("video");
+    media_types->Append("video");
   }
   details.SetList("mediaTypes", std::move(media_types));
+  details.SetString("securityOrigin", request.security_origin.spec());
 
   // The permission type doesn't matter here, AUDIO_CAPTURE/VIDEO_CAPTURE
   // are presented as same type in content_converter.h.
@@ -168,6 +191,50 @@ bool WebContentsPermissionHelper::CheckSerialAccessPermission(
       static_cast<content::PermissionType>(PermissionType::SERIAL), &details);
 }
 
-WEB_CONTENTS_USER_DATA_KEY_IMPL(WebContentsPermissionHelper)
+bool WebContentsPermissionHelper::CheckSerialPortPermission(
+    const url::Origin& origin,
+    base::Value device,
+    content::RenderFrameHost* render_frame_host) const {
+  return CheckDevicePermission(
+      static_cast<content::PermissionType>(PermissionType::SERIAL), origin,
+      &device, render_frame_host);
+}
+
+void WebContentsPermissionHelper::GrantSerialPortPermission(
+    const url::Origin& origin,
+    base::Value device,
+    content::RenderFrameHost* render_frame_host) const {
+  return GrantDevicePermission(
+      static_cast<content::PermissionType>(PermissionType::SERIAL), origin,
+      &device, render_frame_host);
+}
+
+bool WebContentsPermissionHelper::CheckHIDAccessPermission(
+    const url::Origin& embedding_origin) const {
+  base::DictionaryValue details;
+  details.SetString("securityOrigin", embedding_origin.GetURL().spec());
+  return CheckPermission(
+      static_cast<content::PermissionType>(PermissionType::HID), &details);
+}
+
+bool WebContentsPermissionHelper::CheckHIDDevicePermission(
+    const url::Origin& origin,
+    base::Value device,
+    content::RenderFrameHost* render_frame_host) const {
+  return CheckDevicePermission(
+      static_cast<content::PermissionType>(PermissionType::HID), origin,
+      &device, render_frame_host);
+}
+
+void WebContentsPermissionHelper::GrantHIDDevicePermission(
+    const url::Origin& origin,
+    base::Value device,
+    content::RenderFrameHost* render_frame_host) const {
+  return GrantDevicePermission(
+      static_cast<content::PermissionType>(PermissionType::HID), origin,
+      &device, render_frame_host);
+}
+
+WEB_CONTENTS_USER_DATA_KEY_IMPL(WebContentsPermissionHelper);
 
 }  // namespace electron

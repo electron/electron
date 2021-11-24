@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_BROWSER_OBSERVER_H_
-#define SHELL_BROWSER_BROWSER_OBSERVER_H_
+#ifndef ELECTRON_SHELL_BROWSER_BROWSER_OBSERVER_H_
+#define ELECTRON_SHELL_BROWSER_BROWSER_OBSERVER_H_
 
 #include <string>
 
@@ -70,7 +70,8 @@ class BrowserObserver : public base::CheckedObserver {
   // The browser wants to resume a user activity via handoff. (macOS only)
   virtual void OnContinueUserActivity(bool* prevent_default,
                                       const std::string& type,
-                                      const base::DictionaryValue& user_info) {}
+                                      const base::DictionaryValue& user_info,
+                                      const base::DictionaryValue& details) {}
   // The browser wants to notify that an user activity was resumed. (macOS only)
   virtual void OnUserActivityWasContinued(
       const std::string& type,
@@ -93,4 +94,4 @@ class BrowserObserver : public base::CheckedObserver {
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_BROWSER_OBSERVER_H_
+#endif  // ELECTRON_SHELL_BROWSER_BROWSER_OBSERVER_H_

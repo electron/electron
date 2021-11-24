@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#ifndef SHELL_BROWSER_WIN_DARK_MODE_H_
-#define SHELL_BROWSER_WIN_DARK_MODE_H_
+#ifndef ELECTRON_SHELL_BROWSER_WIN_DARK_MODE_H_
+#define ELECTRON_SHELL_BROWSER_WIN_DARK_MODE_H_
 
 #ifdef WIN32_LEAN_AND_MEAN
 #include <Windows.h>
@@ -25,4 +25,4 @@ void SetDarkModeForWindow(HWND hWnd, ui::NativeTheme::ThemeSource theme_source);
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_WIN_DARK_MODE_H_
+#endif  // ELECTRON_SHELL_BROWSER_WIN_DARK_MODE_H_

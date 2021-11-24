@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Cheng Zhao <zcbenz@gmail.com>
 Date: Thu, 20 Sep 2018 17:48:49 -0700
-Subject: mas_blink_no_private_api.patch
+Subject: mas: avoid private APIs in blink
 
 Guard usages in chromium code of private Mac APIs by MAS_BUILD, so they can
 be excluded for people who want to submit their apps to the Mac App store.
