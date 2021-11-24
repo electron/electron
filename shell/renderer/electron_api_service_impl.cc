@@ -9,7 +9,7 @@
 #include <vector>
 
 #include "base/environment.h"
-#include "base/macros.h"
+#include "base/ignore_result.h"
 #include "base/threading/thread_restrictions.h"
 #include "base/trace_event/trace_event.h"
 #include "gin/data_object_builder.h"

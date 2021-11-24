@@ -17,10 +17,10 @@ headers, moving forward we should find a way in upstream to provide
 access to these headers for loader clients created on the browser process.
 
 diff --git a/services/network/public/cpp/resource_request.cc b/services/network/public/cpp/resource_request.cc
-index a24972bd0d082e47036082983d93e862b6c28ab0..74ed551279314b728e129b6c344ee1b5de58701a 100644
+index da7f97cf0ec1760302fd31c94df2ee6d835fee55..7391948ccdeafb60fe955289347ab71fda6d533e 100644
 --- a/services/network/public/cpp/resource_request.cc
 +++ b/services/network/public/cpp/resource_request.cc
-@@ -231,6 +231,7 @@ bool ResourceRequest::EqualsForTesting(const ResourceRequest& request) const {
+@@ -235,6 +235,7 @@ bool ResourceRequest::EqualsForTesting(const ResourceRequest& request) const {
           do_not_prompt_for_login == request.do_not_prompt_for_login &&
           is_main_frame == request.is_main_frame &&
           transition_type == request.transition_type &&
@@ -29,10 +29,10 @@ index a24972bd0d082e47036082983d93e862b6c28ab0..74ed551279314b728e129b6c344ee1b5
           upgrade_if_insecure == request.upgrade_if_insecure &&
           is_revalidating == request.is_revalidating &&
 diff --git a/services/network/public/cpp/resource_request.h b/services/network/public/cpp/resource_request.h
-index 2857fb52a542eab7fa52938cbc6a292328cc2003..3a21c9f473f5c042a880d633f4b83a8f1c92fd1f 100644
+index 7119f5b854dcda2409949f3a7486a89996792ff0..861a795b3bfb7c0db53362646e0a7142e9dc4d11 100644
 --- a/services/network/public/cpp/resource_request.h
 +++ b/services/network/public/cpp/resource_request.h
-@@ -161,6 +161,7 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE) ResourceRequest {
+@@ -158,6 +158,7 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE) ResourceRequest {
    bool do_not_prompt_for_login = false;
    bool is_main_frame = false;
    int transition_type = 0;
@@ -41,10 +41,10 @@ index 2857fb52a542eab7fa52938cbc6a292328cc2003..3a21c9f473f5c042a880d633f4b83a8f
    bool upgrade_if_insecure = false;
    bool is_revalidating = false;
 diff --git a/services/network/public/cpp/url_request_mojom_traits.cc b/services/network/public/cpp/url_request_mojom_traits.cc
-index 6bd39133e2d5b2bbad9ccbbded1e41eddce2a424..05d40087e89ec1edabb6017931f0d9e54a467b78 100644
+index 2c840cfe47af47fb8fd1b8c0b481645a7d9784fa..372665a9edb1b251bf33d3e6b3854d63bfb65d9d 100644
 --- a/services/network/public/cpp/url_request_mojom_traits.cc
 +++ b/services/network/public/cpp/url_request_mojom_traits.cc
-@@ -198,6 +198,7 @@ bool StructTraits<
+@@ -211,6 +211,7 @@ bool StructTraits<
    out->do_not_prompt_for_login = data.do_not_prompt_for_login();
    out->is_main_frame = data.is_main_frame();
    out->transition_type = data.transition_type();
@@ -53,10 +53,10 @@ index 6bd39133e2d5b2bbad9ccbbded1e41eddce2a424..05d40087e89ec1edabb6017931f0d9e5
    out->upgrade_if_insecure = data.upgrade_if_insecure();
    out->is_revalidating = data.is_revalidating();
 diff --git a/services/network/public/cpp/url_request_mojom_traits.h b/services/network/public/cpp/url_request_mojom_traits.h
-index 86e6558f3ebfb5d0f3dee3cee70fc45f0f33123f..54efb232bf7316ce3aabbb787676acb093910047 100644
+index d401695c161caa3254015e771e1e6f069b91546a..62b699ce892e9d9516f355ef0ba67d6ff129b69f 100644
 --- a/services/network/public/cpp/url_request_mojom_traits.h
 +++ b/services/network/public/cpp/url_request_mojom_traits.h
-@@ -267,6 +267,9 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE)
+@@ -275,6 +275,9 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE)
    static int32_t transition_type(const network::ResourceRequest& request) {
      return request.transition_type;
    }
@@ -67,10 +67,10 @@ index 86e6558f3ebfb5d0f3dee3cee70fc45f0f33123f..54efb232bf7316ce3aabbb787676acb0
      return request.previews_state;
    }
 diff --git a/services/network/public/mojom/url_request.mojom b/services/network/public/mojom/url_request.mojom
-index 6ad61365a1dac6c18609ed63e7ab992c8949e70c..039f27017521b94eb2768f949b7217a9102aa61c 100644
+index 58733d931a62a88b7ee71c6a55249d4fcb460793..9af358ad9082d8b704b20542616c236c6ffe3193 100644
 --- a/services/network/public/mojom/url_request.mojom
 +++ b/services/network/public/mojom/url_request.mojom
-@@ -313,6 +313,9 @@ struct URLRequest {
+@@ -321,6 +321,9 @@ struct URLRequest {
    // about this.
    int32 transition_type;
  
@@ -81,7 +81,7 @@ index 6ad61365a1dac6c18609ed63e7ab992c8949e70c..039f27017521b94eb2768f949b7217a9
    // browser decide.
    // Note: this is an enum of type PreviewsState.
 diff --git a/services/network/public/mojom/url_response_head.mojom b/services/network/public/mojom/url_response_head.mojom
-index cea1fb864ab46b4b0eabf1db11a0392d6cd575c1..df033f65d50b088778268827e506963afebe0a23 100644
+index faa5ed32a9dad5580181b2b88fd19fa0bc33d4bc..47a9bf98dd0e39b7f4389010f62c485d3cc3d76d 100644
 --- a/services/network/public/mojom/url_response_head.mojom
 +++ b/services/network/public/mojom/url_response_head.mojom
 @@ -7,6 +7,7 @@ module network.mojom;
@@ -103,10 +103,10 @@ index cea1fb864ab46b4b0eabf1db11a0392d6cd575c1..df033f65d50b088778268827e506963a
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 502003e72febe3fda800a8fd028fcfe29b876685..5b4193082d69cb9c0f904df9a9781b02bb3d2369 100644
+index 6198a0cb16f655367788a836eb35f29e849b634a..76df460e8939b3d15663b185cc1199523b607f1a 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
-@@ -497,6 +497,7 @@ URLLoader::URLLoader(
+@@ -530,6 +530,7 @@ URLLoader::URLLoader(
        peer_closed_handle_watcher_(FROM_HERE,
                                    mojo::SimpleWatcher::ArmingPolicy::MANUAL,
                                    base::SequencedTaskRunnerHandle::Get()),
@@ -114,7 +114,7 @@ index 502003e72febe3fda800a8fd028fcfe29b876685..5b4193082d69cb9c0f904df9a9781b02
        devtools_request_id_(request.devtools_request_id),
        request_mode_(request.mode),
        request_credentials_mode_(request.credentials_mode),
-@@ -640,7 +641,7 @@ URLLoader::URLLoader(
+@@ -688,7 +689,7 @@ URLLoader::URLLoader(
    url_request_->SetRequestHeadersCallback(base::BindRepeating(
        &URLLoader::SetRawRequestHeadersAndNotify, base::Unretained(this)));
  
@@ -123,7 +123,7 @@ index 502003e72febe3fda800a8fd028fcfe29b876685..5b4193082d69cb9c0f904df9a9781b02
      url_request_->SetResponseHeadersCallback(base::BindRepeating(
          &URLLoader::SetRawResponseHeaders, base::Unretained(this)));
    }
-@@ -1269,6 +1270,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
+@@ -1333,6 +1334,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
    response_ = network::mojom::URLResponseHead::New();
    PopulateResourceResponse(url_request_.get(), is_load_timing_enabled_,
                             options_, response_.get());
@@ -140,19 +140,19 @@ index 502003e72febe3fda800a8fd028fcfe29b876685..5b4193082d69cb9c0f904df9a9781b02
 +    }
 +    response_->raw_response_headers = std::move(header_array);
 +  }
+   DispatchOnRawResponse();
  
    // Parse and remove the Trust Tokens response headers, if any are expected,
-   // potentially failing the request if an error occurs.
 diff --git a/services/network/url_loader.h b/services/network/url_loader.h
-index d7f278d52db72d18fb779cf409ce8d70c9e32a17..d7e168a184df19d429db2cdc1db40651cb136d68 100644
+index db8d4b29702e913be164d2c6906e4fbd4e6b4bf8..fd06a437e3af855b54f47406a3457bf40b4dc17c 100644
 --- a/services/network/url_loader.h
 +++ b/services/network/url_loader.h
-@@ -472,6 +472,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
+@@ -500,6 +500,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
    std::unique_ptr<ResourceScheduler::ScheduledResourceRequest>
        resource_scheduler_request_handle_;
  
 +  // Whether client requested raw headers.
 +  bool report_raw_headers_ = false;
    bool enable_reporting_raw_headers_ = false;
-   net::HttpRawRequestHeaders raw_request_headers_;
+   bool seen_raw_request_headers_ = false;
    scoped_refptr<const net::HttpResponseHeaders> raw_response_headers_;

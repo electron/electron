@@ -186,7 +186,7 @@ int NodeMain(int argc, char* argv[]) {
       exit(result.exit_code);
 
     gin::V8Initializer::LoadV8Snapshot(
-        gin::V8Initializer::V8SnapshotFileType::kWithAdditionalContext);
+        gin::V8SnapshotFileType::kWithAdditionalContext);
 
     // V8 requires a task scheduler.
     base::ThreadPoolInstance::CreateAndStartWithDefaultParams("Electron");

@@ -918,8 +918,9 @@ ElectronBrowserClient::GetSystemNetworkContext() {
 
 std::unique_ptr<content::BrowserMainParts>
 ElectronBrowserClient::CreateBrowserMainParts(
-    const content::MainFunctionParams& params) {
-  auto browser_main_parts = std::make_unique<ElectronBrowserMainParts>(params);
+    content::MainFunctionParams params) {
+  auto browser_main_parts =
+      std::make_unique<ElectronBrowserMainParts>(std::move(params));
 
 #if defined(OS_MAC)
   browser_main_parts_ = browser_main_parts.get();
@@ -1437,10 +1438,9 @@ void ElectronBrowserClient::OverrideURLLoaderFactoryParams(
 }
 
 #if defined(OS_WIN)
-bool ElectronBrowserClient::PreSpawnChild(
-    sandbox::TargetPolicy* policy,
-    sandbox::policy::SandboxType sandbox_type,
-    ChildSpawnFlags flags) {
+bool ElectronBrowserClient::PreSpawnChild(sandbox::TargetPolicy* policy,
+                                          sandbox::mojom::Sandbox sandbox_type,
+                                          ChildSpawnFlags flags) {
   // Allow crashpad to communicate via named pipe.
   sandbox::ResultCode result = policy->AddRule(
       sandbox::TargetPolicy::SUBSYS_FILES,

@@ -93,7 +93,6 @@ webview_fullscreen.patch
 disable_unload_metrics.patch
 fix_add_check_for_sandbox_then_result.patch
 extend_apply_webpreferences.patch
-add_setter_for_browsermainloop_result_code.patch
 make_include_of_stack_trace_h_unconditional.patch
 build_libc_as_static_library.patch
 build_do_not_depend_on_packed_resource_integrity.patch

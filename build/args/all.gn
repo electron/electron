@@ -11,6 +11,9 @@ v8_embedder_string = "-electron.0"
 # TODO: this breaks mksnapshot
 v8_enable_snapshot_native_code_counters = false
 
+# TODO(codebytere): remove when Node.js handles https://chromium-review.googlesource.com/c/v8/v8/+/3211575
+v8_scriptormodule_legacy_lifetime = true
+
 enable_cdm_host_verification = false
 proprietary_codecs = true
 ffmpeg_branding = "Chrome"

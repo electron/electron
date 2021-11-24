@@ -37,7 +37,9 @@ enum {
 
   PATH_END,  // End of new paths. Those that follow redirect to base::DIR_*
 
-#if !defined(OS_LINUX)
+#if defined(OS_WIN)
+  DIR_APP_DATA = base::DIR_ROAMING_APP_DATA,
+#elif defined(OS_MAC)
   DIR_APP_DATA = base::DIR_APP_DATA,
 #endif
 };
