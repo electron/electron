@@ -39,7 +39,7 @@ This will allow you to observe call chains and identify potential issue areas.
 
 > Note that this will increase the size of the build significantly, taking up around 50G of disk space
 
-Write the following file to `electron/build/custom_args/debug.gn`
+Write the following file to `electron/.git/info/exclude/debug.gn`
 
 ```gn
 import("../args/testing.gn")
@@ -51,7 +51,7 @@ forbid_non_component_debug_builds = false
 Then execute:
 
 ```sh
-$ gn gen out/Debug --args="import(\"//electron/build/custom_args/debug.gn\") $GN_EXTRA_ARGS"
+$ gn gen out/Debug --args="import(\"//electron/.git/info/exclude/debug.gn\") $GN_EXTRA_ARGS"
 $ ninja -C out/Debug electron
 ```
 
