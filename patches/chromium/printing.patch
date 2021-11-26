@@ -687,26 +687,27 @@ index e03e9898514c1a8d3b68be4328265cd75895c1ef..ca1ab3068017d343ba615894d7e784a6
      std::unique_ptr<PrintSettings> settings =
          PrintSettingsFromJobSettings(job_settings);
 diff --git a/printing/printing_context.h b/printing/printing_context.h
-index 811afe4c029e2143ec642e294851cec71b908a18..4e9f8afdb08e017c625a8f2011a614def1a31a7d 100644
+index 0768e69313685e5c19d4fca1d13d798c5a3b1aeb..1056280ae2e08d489dd1ed8ac1a479be199f8bcd 100644
 --- a/printing/printing_context.h
 +++ b/printing/printing_context.h
 @@ -157,6 +157,9 @@ class COMPONENT_EXPORT(PRINTING) PrintingContext {
  
-   int job_id() const { return job_id_; }
+   std::unique_ptr<PrintSettings> TakeAndResetSettings();
  
 +  // Reinitializes the settings for object reuse.
 +  void ResetSettings();
 +
-  protected:
-   explicit PrintingContext(Delegate* delegate);
+   int job_id() const { return job_id_; }
  
-@@ -164,9 +167,6 @@ class COMPONENT_EXPORT(PRINTING) PrintingContext {
-   // implement this method to create an object of their implementation.
-   static std::unique_ptr<PrintingContext> CreateImpl(Delegate* delegate);
+  protected:
+@@ -167,9 +170,6 @@ class COMPONENT_EXPORT(PRINTING) PrintingContext {
+   static std::unique_ptr<PrintingContext> CreateImpl(Delegate* delegate,
+                                                      bool skip_system_calls);
  
 -  // Reinitializes the settings for object reuse.
 -  void ResetSettings();
 -
-   // Does bookkeeping when an error occurs.
-   virtual mojom::ResultCode OnError();
- 
+   // Determine if system calls should be skipped by this instance.
+   bool skip_system_calls() const {
+ #if BUILDFLAG(ENABLE_OOP_PRINTING)
+
