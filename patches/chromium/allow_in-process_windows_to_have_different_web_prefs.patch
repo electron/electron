@@ -33,13 +33,13 @@ index 045b29c01ae12dae7ee4048a74118385cce308c2..6904168088b27197493ea95170a75878
        accelerated_video_decode_enabled(false),
        animation_policy(
 diff --git a/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc b/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
-index f58fe2d92f58b0494a6d48e8e13ea3265f6be172..2096804e31534f38a49fe0ca7c2157cf9e256cff 100644
+index 98391c17bc6c3371919966e9caf09efbcc94cec6..56bc28ff5b75d6c61dfeaf548292340b48143a18 100644
 --- a/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
 +++ b/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
-@@ -23,6 +23,10 @@ bool StructTraits<blink::mojom::WebPreferencesDataView,
+@@ -22,6 +22,10 @@ bool StructTraits<blink::mojom::WebPreferencesDataView,
+       !data.ReadSansSerifFontFamilyMap(&out->sans_serif_font_family_map) ||
        !data.ReadCursiveFontFamilyMap(&out->cursive_font_family_map) ||
        !data.ReadFantasyFontFamilyMap(&out->fantasy_font_family_map) ||
-       !data.ReadPictographFontFamilyMap(&out->pictograph_font_family_map) ||
 +      // Begin Electron-specific WebPreferences.
 +      !data.ReadPreloads(&out->preloads) ||
 +      !data.ReadPreload(&out->preload) ||
