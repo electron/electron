@@ -9,7 +9,7 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 6fb4db2fe80121ebad9cb0aa39ad581c4d9490c9..aa475e672b9c1b6d6effb75c1d34dc1425135aa4 100644
+index c1aa4192f462ace402c042148334b02cb569346b..0b79983d2cce4cd4b6d7b1350260fe59fff2b40e 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
 @@ -6593,6 +6593,7 @@ void RenderFrameHostImpl::CreateNewWindow(
@@ -21,7 +21,7 @@ index 6fb4db2fe80121ebad9cb0aa39ad581c4d9490c9..aa475e672b9c1b6d6effb75c1d34dc14
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index cdee3595823cbdbbd6ab66bbc5e25acd474e6998..16d48f8c127fcb123cb1a0328db1844b98421756 100644
+index 707c59378c8e77615ae5090639752634b092e2a2..4fdad17bf67b743c3393043e8f3128fdc997c24d 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -3854,6 +3854,14 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -220,10 +220,10 @@ index 84d32491a56528a84b4395fba1d54cdbb38d522b..09998a83c449ef8cd9f360fbcdcf7edc
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index 6ccaa7ee24ec8968e7bae8a4eefe46a898924b44..e61bfe85ab5394585e6995a8fad3cd095d33364a 100644
+index 11313b1b3c3ccbdea98994c84b14be5dbb7e5945..b27ecf21745965a32266de8ede756db622c92710 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
-@@ -2045,6 +2045,7 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
+@@ -2056,6 +2056,7 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
  
    WebWindowFeatures window_features =
        GetWindowFeaturesFromString(features, incumbent_window);
