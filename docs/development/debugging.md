@@ -42,7 +42,7 @@ This will allow you to observe call chains and identify potential issue areas.
 Write the following file to `electron/.git/info/exclude/debug.gn`
 
 ```gn
-import("../args/testing.gn")
+import("//electron/build/args/testing.gn")
 is_debug = true
 symbol_level = 2
 forbid_non_component_debug_builds = false
