@@ -1,0 +1,246 @@
+From f0a63e1f361f2eb8590b35cb960816bc14a994b4 Mon Sep 17 00:00:00 2001
+From: Adam Rice <ricea@chromium.org>
+Date: Sat, 06 Nov 2021 18:52:26 +0000
+Subject: [PATCH] Return undefined from UnderlyingSinkBase "type" getter
+
+The "type" attribute of an object passed to the WritableStream
+constructor is supposed to return undefined. Add a getter to
+UnderlyingSinkBase to ensure it always does.
+
+Add tests to verify that "type" is not inherited from
+Object.prototype.type.
+
+Move some methods out-of-line into a new underlying_sink_base.cc file.
+
+Make WritableStreamDefaultController::From() more robust.
+
+BUG=1262791
+
+(cherry picked from commit 26564c88bc9e034cc512afd857cf303193647b9a)
+
+Change-Id: I97f43233eef0e473fb1a22a3ea8afafe92e16266
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3252171
+Reviewed-by: Yutaka Hirano <yhirano@chromium.org>
+Commit-Queue: Adam Rice <ricea@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#936834}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3266824
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/4664@{#806}
+Cr-Branched-From: 24dc4ee75e01a29d390d43c9c264372a169273a7-refs/heads/main@{#929512}
+---
+
+diff --git a/third_party/blink/renderer/core/streams/build.gni b/third_party/blink/renderer/core/streams/build.gni
+index 57a1063..744d47f 100644
+--- a/third_party/blink/renderer/core/streams/build.gni
++++ b/third_party/blink/renderer/core/streams/build.gni
+@@ -43,6 +43,7 @@
+   "transform_stream_default_controller.cc",
+   "transform_stream_default_controller.h",
+   "transform_stream_transformer.h",
++  "underlying_sink_base.cc",
+   "underlying_sink_base.h",
+   "underlying_source_base.cc",
+   "underlying_source_base.h",
+diff --git a/third_party/blink/renderer/core/streams/underlying_sink_base.cc b/third_party/blink/renderer/core/streams/underlying_sink_base.cc
+new file mode 100644
+index 0000000..a10d4f18
+--- /dev/null
++++ b/third_party/blink/renderer/core/streams/underlying_sink_base.cc
+@@ -0,0 +1,29 @@
++// Copyright 2021 The Chromium Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "third_party/blink/renderer/core/streams/underlying_sink_base.h"
++
++#include "third_party/blink/renderer/core/streams/writable_stream_default_controller.h"
++#include "v8/include/v8.h"
++
++namespace blink {
++
++ScriptPromise UnderlyingSinkBase::start(ScriptState* script_state,
++                                        ScriptValue controller,
++                                        ExceptionState& exception_state) {
++  controller_ = WritableStreamDefaultController::From(script_state, controller);
++  return start(script_state, controller_, exception_state);
++}
++
++ScriptValue UnderlyingSinkBase::type(ScriptState* script_state) const {
++  auto* isolate = script_state->GetIsolate();
++  return ScriptValue(isolate, v8::Undefined(isolate));
++}
++
++void UnderlyingSinkBase::Trace(Visitor* visitor) const {
++  visitor->Trace(controller_);
++  ScriptWrappable::Trace(visitor);
++}
++
++}  // namespace blink
+diff --git a/third_party/blink/renderer/core/streams/underlying_sink_base.h b/third_party/blink/renderer/core/streams/underlying_sink_base.h
+index 3b07d87..07ba729 100644
+--- a/third_party/blink/renderer/core/streams/underlying_sink_base.h
++++ b/third_party/blink/renderer/core/streams/underlying_sink_base.h
+@@ -6,16 +6,20 @@
+ #define THIRD_PARTY_BLINK_RENDERER_CORE_STREAMS_UNDERLYING_SINK_BASE_H_
+ 
+ #include "third_party/blink/renderer/bindings/core/v8/script_promise.h"
++#include "third_party/blink/renderer/bindings/core/v8/script_value.h"
+ #include "third_party/blink/renderer/core/core_export.h"
+-#include "third_party/blink/renderer/core/streams/writable_stream_default_controller.h"
+ #include "third_party/blink/renderer/platform/bindings/script_wrappable.h"
+ #include "third_party/blink/renderer/platform/heap/visitor.h"
+ 
++// Various files depend on us exporting this header.
++// TODO(ricea): Clean up the dependencies and remove this include.
++#include "third_party/blink/renderer/core/streams/writable_stream_default_controller.h"
++
+ namespace blink {
+ 
+ class ExceptionState;
+-class ScriptValue;
+ class ScriptState;
++class WritableStreamDefaultController;
+ 
+ class CORE_EXPORT UnderlyingSinkBase : public ScriptWrappable {
+   DEFINE_WRAPPERTYPEINFO();
+@@ -38,12 +42,8 @@
+                               ScriptValue reason,
+                               ExceptionState&) = 0;
+ 
+-  ScriptPromise start(ScriptState* script_state,
+-                      ScriptValue controller,
+-                      ExceptionState& exception_state) {
+-    controller_ = WritableStreamDefaultController::From(controller);
+-    return start(script_state, controller_, exception_state);
+-  }
++  ScriptPromise start(ScriptState*, ScriptValue controller, ExceptionState&);
++
+   ScriptPromise write(ScriptState* script_state,
+                       ScriptValue chunk,
+                       ScriptValue controller,
+@@ -52,10 +52,11 @@
+     return write(script_state, chunk, controller_, exception_state);
+   }
+ 
+-  void Trace(Visitor* visitor) const override {
+-    visitor->Trace(controller_);
+-    ScriptWrappable::Trace(visitor);
+-  }
++  // Returns a JavaScript "undefined" value. This is required by the
++  // WritableStream Create() method.
++  ScriptValue type(ScriptState*) const;
++
++  void Trace(Visitor*) const override;
+ 
+  protected:
+   WritableStreamDefaultController* Controller() const { return controller_; }
+diff --git a/third_party/blink/renderer/core/streams/underlying_sink_base.idl b/third_party/blink/renderer/core/streams/underlying_sink_base.idl
+index 8351141..470eb52 100644
+--- a/third_party/blink/renderer/core/streams/underlying_sink_base.idl
++++ b/third_party/blink/renderer/core/streams/underlying_sink_base.idl
+@@ -14,4 +14,7 @@
+     [CallWith=ScriptState, RaisesException] Promise<void> write(any chunk, any controller);
+     [CallWith=ScriptState, RaisesException] Promise<void> close();
+     [CallWith=ScriptState, RaisesException] Promise<void> abort(any reason);
++
++    // This only exists to prevent Object.prototype.type being accessed.
++    [CallWith=ScriptState] readonly attribute any type;
+ };
+diff --git a/third_party/blink/renderer/core/streams/writable_stream_default_controller.cc b/third_party/blink/renderer/core/streams/writable_stream_default_controller.cc
+index 0b22eedcd..bc959b6c 100644
+--- a/third_party/blink/renderer/core/streams/writable_stream_default_controller.cc
++++ b/third_party/blink/renderer/core/streams/writable_stream_default_controller.cc
+@@ -20,10 +20,14 @@
+ namespace blink {
+ 
+ WritableStreamDefaultController* WritableStreamDefaultController::From(
++    ScriptState* script_state,
+     ScriptValue controller) {
+-  DCHECK(controller.IsObject());
+-  return V8WritableStreamDefaultController::ToImpl(
+-      controller.V8Value().As<v8::Object>());
++  CHECK(controller.IsObject());
++  auto* controller_impl =
++      V8WritableStreamDefaultController::ToImplWithTypeCheck(
++          script_state->GetIsolate(), controller.V8Value().As<v8::Object>());
++  CHECK(controller_impl);
++  return controller_impl;
+ }
+ 
+ // Only used internally. Not reachable from JavaScript.
+diff --git a/third_party/blink/renderer/core/streams/writable_stream_default_controller.h b/third_party/blink/renderer/core/streams/writable_stream_default_controller.h
+index 3351dcd..8be6764 100644
+--- a/third_party/blink/renderer/core/streams/writable_stream_default_controller.h
++++ b/third_party/blink/renderer/core/streams/writable_stream_default_controller.h
+@@ -27,7 +27,7 @@
+   DEFINE_WRAPPERTYPEINFO();
+ 
+  public:
+-  static WritableStreamDefaultController* From(ScriptValue);
++  static WritableStreamDefaultController* From(ScriptState*, ScriptValue);
+ 
+   // The JavaScript-exposed constructor throws automatically as no constructor
+   // is specified in the IDL. This constructor is used internally during
+diff --git a/third_party/blink/web_tests/http/tests/streams/chromium/underlying-sink-base-type-getter.html b/third_party/blink/web_tests/http/tests/streams/chromium/underlying-sink-base-type-getter.html
+new file mode 100644
+index 0000000..fbbc26b
+--- /dev/null
++++ b/third_party/blink/web_tests/http/tests/streams/chromium/underlying-sink-base-type-getter.html
+@@ -0,0 +1,57 @@
++<!DOCTYPE html>
++<meta charset="utf-8">
++<script src="/resources/testharness.js"></script>
++<script src="/resources/testharnessreport.js"></script>
++<script>
++'use strict';
++
++test(t => {
++  Object.defineProperty(Object.prototype, 'type',
++                        {
++                          configurable: true,
++                          get() {
++                            throw Error();
++                          }
++                        });
++  t.add_cleanup(() => {
++    delete Object.prototype.type;
++  });
++  const generator = new MediaStreamTrackGenerator('video');
++  // The WritableStream is created lazily, so access it to trigger creation.
++  generator.writable.getWriter();
++}, 'a throwing getter on Object.prototype.type should not interfere with ' +
++     'native writable stream creation');
++
++test(t => {
++  Object.defineProperty(Object.prototype, 'type',
++                        {
++                          configurable: true,
++                          get() {
++                            this.start(0x414141);
++                          }
++                        });
++  t.add_cleanup(() => {
++    delete Object.prototype.type;
++  });
++  const generator = new MediaStreamTrackGenerator('video');
++  generator.writable.getWriter();
++}, 'a getter that calls start() with a number on Object.prototype.type ' +
++     'should not interfere with native writable stream creation');
++
++test(t => {
++  Object.defineProperty(Object.prototype, 'type',
++                        {
++                          configurable: true,
++                          get() {
++                            this.start({});
++                          }
++                        });
++  t.add_cleanup(() => {
++    delete Object.prototype.type;
++  });
++  const generator = new MediaStreamTrackGenerator('video');
++  generator.writable.getWriter();
++}, 'a getter that calls start() with an object on Object.prototype.type ' +
++     'should not interfere with native writable stream creation');
++
++</script>
