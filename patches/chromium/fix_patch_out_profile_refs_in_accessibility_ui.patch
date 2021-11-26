@@ -7,7 +7,7 @@ This tweaks Chrome's Accessibility support at chrome://accessibility
 to make it usable from Electron by removing Profile references.
 
 diff --git a/chrome/browser/accessibility/accessibility_ui.cc b/chrome/browser/accessibility/accessibility_ui.cc
-index 616c74eef1b98aeceda128630b64e270d53c10a4..d04fc255dd4dcfa2bac7b43f99f41eaddaee85fa 100644
+index 2d17ddf94871a028af1b3470568a50d2b1fd7294..e994a0cd005890a9f0a4a41a1a8a5ba135a2d885 100644
 --- a/chrome/browser/accessibility/accessibility_ui.cc
 +++ b/chrome/browser/accessibility/accessibility_ui.cc
 @@ -20,7 +20,10 @@
@@ -125,10 +125,10 @@ index 616c74eef1b98aeceda128630b64e270d53c10a4..d04fc255dd4dcfa2bac7b43f99f41ead
 +#endif
  }
 diff --git a/chrome/browser/accessibility/accessibility_ui.h b/chrome/browser/accessibility/accessibility_ui.h
-index 35a907a03cda75be919c6218efdb0295f1e73e57..bff530dcdf7f8f7271da72acbbd4fc5659c4dd5f 100644
+index 1d533f3c4f073476824d36a2184216468b754b08..32371203c65a88cbe09ac850bf1b5b91f3b44e37 100644
 --- a/chrome/browser/accessibility/accessibility_ui.h
 +++ b/chrome/browser/accessibility/accessibility_ui.h
-@@ -24,6 +24,8 @@ struct AXEventNotificationDetails;
+@@ -25,6 +25,8 @@ struct AXEventNotificationDetails;
  class WebContents;
  }  // namespace content
  
@@ -137,7 +137,7 @@ index 35a907a03cda75be919c6218efdb0295f1e73e57..bff530dcdf7f8f7271da72acbbd4fc56
  namespace user_prefs {
  class PrefRegistrySyncable;
  }  // namespace user_prefs
-@@ -65,6 +67,8 @@ class AccessibilityUIMessageHandler : public content::WebUIMessageHandler {
+@@ -66,6 +68,8 @@ class AccessibilityUIMessageHandler : public content::WebUIMessageHandler {
    static void RegisterProfilePrefs(user_prefs::PrefRegistrySyncable* registry);
  
   private:

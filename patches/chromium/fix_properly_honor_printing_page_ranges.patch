@@ -25,10 +25,10 @@ index 599a0513d0604f88b3a90cf8dd7d8a3d5e939449..28122176054eb7d859b26c314d0dd0e5
    // Returns true if duplex mode is set.
    bool SetDuplexModeInPrintSettings(mojom::DuplexMode mode);
 diff --git a/printing/printing_context_mac.mm b/printing/printing_context_mac.mm
-index 8e18cee96a223c4e26d81a9bd390f714d7c681f4..8eb9ae465f0734056fe3ffe0b7604bda4d48192e 100644
+index f473e3ed5878f4366c25911c151ec5efb10fe8fa..2c8d2e26ea7613113efcf8d0e6b15727a48c50f1 100644
 --- a/printing/printing_context_mac.mm
 +++ b/printing/printing_context_mac.mm
-@@ -190,7 +190,8 @@ PMPaper MatchPaper(CFArrayRef paper_list,
+@@ -197,7 +197,8 @@ PMPaper MatchPaper(CFArrayRef paper_list,
          !SetCollateInPrintSettings(settings_->collate()) ||
          !SetDuplexModeInPrintSettings(settings_->duplex_mode()) ||
          !SetOutputColor(static_cast<int>(settings_->color())) ||
@@ -38,7 +38,7 @@ index 8e18cee96a223c4e26d81a9bd390f714d7c681f4..8eb9ae465f0734056fe3ffe0b7604bda
        return OnError();
      }
    }
-@@ -343,6 +344,22 @@ PMPaper MatchPaper(CFArrayRef paper_list,
+@@ -350,6 +351,22 @@ PMPaper MatchPaper(CFArrayRef paper_list,
    return PMSetCopies(print_settings, copies, false) == noErr;
  }
  

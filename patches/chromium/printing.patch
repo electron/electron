@@ -80,7 +80,7 @@ index c1808c6351951d653255e722513b735bd67ab677..3f78445c2539d10d63da339f137ed5bc
      NEW_DOC,
  
 diff --git a/chrome/browser/printing/print_job_worker.cc b/chrome/browser/printing/print_job_worker.cc
-index 4b508191cf196b6c528eb97fbdd7baef40922e14..ff18b85688b02d776327325e7d67a944ae24da85 100644
+index 176c8078ccb2664e6d5fe9c412df4048e75e6109..2fa40af4da0824f56d48e855a6e3581b27b6a8f8 100644
 --- a/chrome/browser/printing/print_job_worker.cc
 +++ b/chrome/browser/printing/print_job_worker.cc
 @@ -21,13 +21,13 @@
@@ -98,7 +98,7 @@ index 4b508191cf196b6c528eb97fbdd7baef40922e14..ff18b85688b02d776327325e7d67a944
  #include "printing/backend/print_backend.h"
  #include "printing/buildflags/buildflags.h"
  #include "printing/mojom/print.mojom.h"
-@@ -301,16 +301,21 @@ void PrintJobWorker::UpdatePrintSettings(base::Value new_settings,
+@@ -257,16 +257,21 @@ void PrintJobWorker::UpdatePrintSettings(base::Value new_settings,
  #endif  // defined(OS_LINUX) && defined(USE_CUPS)
    }
  
@@ -123,7 +123,7 @@ index 4b508191cf196b6c528eb97fbdd7baef40922e14..ff18b85688b02d776327325e7d67a944
  }
  
  #if defined(OS_CHROMEOS)
-@@ -326,6 +331,13 @@ void PrintJobWorker::UpdatePrintSettingsFromPOD(
+@@ -282,6 +287,13 @@ void PrintJobWorker::UpdatePrintSettingsFromPOD(
  
  void PrintJobWorker::GetSettingsDone(SettingsCallback callback,
                                       mojom::ResultCode result) {
@@ -675,10 +675,10 @@ index 90236920457c931c86426049c6cbc30b592b597f..353178863eba37b9112e784ffa4b3519
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Set options for print preset from source PDF document.
 diff --git a/printing/printing_context.cc b/printing/printing_context.cc
-index e03e9898514c1a8d3b68be4328265cd75895c1ef..ca1ab3068017d343ba615894d7e784a686948336 100644
+index f8f0f4bdfbb8db883f883f62f9d6e4b987d7b113..c2505f5e0049dc7ee8783056538ca4c2d0968744 100644
 --- a/printing/printing_context.cc
 +++ b/printing/printing_context.cc
-@@ -113,7 +113,6 @@ mojom::ResultCode PrintingContext::UsePdfSettings() {
+@@ -120,7 +120,6 @@ mojom::ResultCode PrintingContext::UsePdfSettings() {
  
  mojom::ResultCode PrintingContext::UpdatePrintSettings(
      base::Value job_settings) {
@@ -710,4 +710,3 @@ index 0768e69313685e5c19d4fca1d13d798c5a3b1aeb..1056280ae2e08d489dd1ed8ac1a479be
    // Determine if system calls should be skipped by this instance.
    bool skip_system_calls() const {
  #if BUILDFLAG(ENABLE_OOP_PRINTING)
-
