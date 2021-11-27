@@ -1,7 +1,7 @@
-From 109fde1088bef0ad849f0c5dc74d905ff739a05e Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Michael Lippautz <mlippautz@chromium.org>
-Date: Tue, 02 Nov 2021 21:21:27 +0000
-Subject: [PATCH] MediaStreamSource: Retain observers till callbacks have been executed
+Date: Tue, 2 Nov 2021 21:21:27 +0000
+Subject: MediaStreamSource: Retain observers till callbacks have been executed
 
 (cherry picked from commit d1055cb23b15e42381bc815eeabb207ce18394d9)
 
@@ -18,10 +18,9 @@ Reviewed-by: Michael Lippautz <mlippautz@chromium.org>
 Commit-Queue: Guido Urdaneta <guidou@chromium.org>
 Cr-Commit-Position: refs/branch-heads/4638@{#1004}
 Cr-Branched-From: 159257cab5585bc8421abf347984bb32fdfe9eb9-refs/heads/main@{#920003}
----
 
 diff --git a/third_party/blink/renderer/platform/mediastream/media_stream_source.cc b/third_party/blink/renderer/platform/mediastream/media_stream_source.cc
-index b37a4b92..15ac4cce 100644
+index b37a4b9297b87092233c600953eb01af820b6df1..15ac4cce06d419646979a52a00628b152ec516de 100644
 --- a/third_party/blink/renderer/platform/mediastream/media_stream_source.cc
 +++ b/third_party/blink/renderer/platform/mediastream/media_stream_source.cc
 @@ -32,6 +32,7 @@
@@ -32,7 +31,7 @@ index b37a4b92..15ac4cce 100644
  #include "third_party/blink/renderer/platform/mediastream/media_stream_audio_source.h"
  #include "third_party/blink/renderer/platform/mediastream/webaudio_destination_consumer.h"
  
-@@ -171,11 +172,13 @@
+@@ -171,11 +172,13 @@ void MediaStreamSource::SetReadyState(ReadyState ready_state) {
      ready_state_ = ready_state;
  
      // Observers may dispatch events which create and add new Observers;
