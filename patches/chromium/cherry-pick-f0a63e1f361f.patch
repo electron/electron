@@ -1,7 +1,7 @@
-From f0a63e1f361f2eb8590b35cb960816bc14a994b4 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Adam Rice <ricea@chromium.org>
-Date: Sat, 06 Nov 2021 18:52:26 +0000
-Subject: [PATCH] Return undefined from UnderlyingSinkBase "type" getter
+Date: Sat, 6 Nov 2021 18:52:26 +0000
+Subject: Return undefined from UnderlyingSinkBase "type" getter
 
 The "type" attribute of an object passed to the WritableStream
 constructor is supposed to return undefined. Add a getter to
@@ -27,13 +27,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3266824
 Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
 Cr-Commit-Position: refs/branch-heads/4664@{#806}
 Cr-Branched-From: 24dc4ee75e01a29d390d43c9c264372a169273a7-refs/heads/main@{#929512}
----
 
 diff --git a/third_party/blink/renderer/core/streams/build.gni b/third_party/blink/renderer/core/streams/build.gni
-index 57a1063..744d47f 100644
+index 57a106353bd6720bc7da88f96dce66e4332aea2a..744d47f1a1e9352cc4df56ce89635b3d6f8b5425 100644
 --- a/third_party/blink/renderer/core/streams/build.gni
 +++ b/third_party/blink/renderer/core/streams/build.gni
-@@ -43,6 +43,7 @@
+@@ -43,6 +43,7 @@ blink_core_sources_streams = [
    "transform_stream_default_controller.cc",
    "transform_stream_default_controller.h",
    "transform_stream_transformer.h",
@@ -43,7 +42,7 @@ index 57a1063..744d47f 100644
    "underlying_source_base.h",
 diff --git a/third_party/blink/renderer/core/streams/underlying_sink_base.cc b/third_party/blink/renderer/core/streams/underlying_sink_base.cc
 new file mode 100644
-index 0000000..a10d4f18
+index 0000000000000000000000000000000000000000..a10d4f1865fc4e11c90f463b64ff666cce0fba69
 --- /dev/null
 +++ b/third_party/blink/renderer/core/streams/underlying_sink_base.cc
 @@ -0,0 +1,29 @@
@@ -77,7 +76,7 @@ index 0000000..a10d4f18
 +
 +}  // namespace blink
 diff --git a/third_party/blink/renderer/core/streams/underlying_sink_base.h b/third_party/blink/renderer/core/streams/underlying_sink_base.h
-index 3b07d87..07ba729 100644
+index 3b07d87f064a26e01c4ee827d78fca005049c90a..07ba729fc3a78cf2102e2d64e527048af8be9c71 100644
 --- a/third_party/blink/renderer/core/streams/underlying_sink_base.h
 +++ b/third_party/blink/renderer/core/streams/underlying_sink_base.h
 @@ -6,16 +6,20 @@
@@ -103,7 +102,7 @@ index 3b07d87..07ba729 100644
  
  class CORE_EXPORT UnderlyingSinkBase : public ScriptWrappable {
    DEFINE_WRAPPERTYPEINFO();
-@@ -38,12 +42,8 @@
+@@ -38,12 +42,8 @@ class CORE_EXPORT UnderlyingSinkBase : public ScriptWrappable {
                                ScriptValue reason,
                                ExceptionState&) = 0;
  
@@ -118,7 +117,7 @@ index 3b07d87..07ba729 100644
    ScriptPromise write(ScriptState* script_state,
                        ScriptValue chunk,
                        ScriptValue controller,
-@@ -52,10 +52,11 @@
+@@ -52,10 +52,11 @@ class CORE_EXPORT UnderlyingSinkBase : public ScriptWrappable {
      return write(script_state, chunk, controller_, exception_state);
    }
  
@@ -135,10 +134,10 @@ index 3b07d87..07ba729 100644
   protected:
    WritableStreamDefaultController* Controller() const { return controller_; }
 diff --git a/third_party/blink/renderer/core/streams/underlying_sink_base.idl b/third_party/blink/renderer/core/streams/underlying_sink_base.idl
-index 8351141..470eb52 100644
+index 8351141cbc07ed32566a0006f998aab61e8fd6b5..470eb527b11e3dce355d724eaa63ec981b7788e4 100644
 --- a/third_party/blink/renderer/core/streams/underlying_sink_base.idl
 +++ b/third_party/blink/renderer/core/streams/underlying_sink_base.idl
-@@ -14,4 +14,7 @@
+@@ -14,4 +14,7 @@ interface UnderlyingSinkBase {
      [CallWith=ScriptState, RaisesException] Promise<void> write(any chunk, any controller);
      [CallWith=ScriptState, RaisesException] Promise<void> close();
      [CallWith=ScriptState, RaisesException] Promise<void> abort(any reason);
@@ -147,7 +146,7 @@ index 8351141..470eb52 100644
 +    [CallWith=ScriptState] readonly attribute any type;
  };
 diff --git a/third_party/blink/renderer/core/streams/writable_stream_default_controller.cc b/third_party/blink/renderer/core/streams/writable_stream_default_controller.cc
-index 0b22eedcd..bc959b6c 100644
+index 0b22eedcddc87b0ac695389a76ed5e353dd5f92c..bc959b6c33dbba6a367b4d247d56b67698299635 100644
 --- a/third_party/blink/renderer/core/streams/writable_stream_default_controller.cc
 +++ b/third_party/blink/renderer/core/streams/writable_stream_default_controller.cc
 @@ -20,10 +20,14 @@
@@ -169,10 +168,10 @@ index 0b22eedcd..bc959b6c 100644
  
  // Only used internally. Not reachable from JavaScript.
 diff --git a/third_party/blink/renderer/core/streams/writable_stream_default_controller.h b/third_party/blink/renderer/core/streams/writable_stream_default_controller.h
-index 3351dcd..8be6764 100644
+index 3351dcd6941360fc9fecaa8c03080da813a5b6a2..8be676421763caa911b8d003c869856675e28713 100644
 --- a/third_party/blink/renderer/core/streams/writable_stream_default_controller.h
 +++ b/third_party/blink/renderer/core/streams/writable_stream_default_controller.h
-@@ -27,7 +27,7 @@
+@@ -27,7 +27,7 @@ class CORE_EXPORT WritableStreamDefaultController final
    DEFINE_WRAPPERTYPEINFO();
  
   public:
@@ -183,7 +182,7 @@ index 3351dcd..8be6764 100644
    // is specified in the IDL. This constructor is used internally during
 diff --git a/third_party/blink/web_tests/http/tests/streams/chromium/underlying-sink-base-type-getter.html b/third_party/blink/web_tests/http/tests/streams/chromium/underlying-sink-base-type-getter.html
 new file mode 100644
-index 0000000..fbbc26b
+index 0000000000000000000000000000000000000000..fbbc26b08ea4e310ed99b7a02e1a7952e8f60921
 --- /dev/null
 +++ b/third_party/blink/web_tests/http/tests/streams/chromium/underlying-sink-base-type-getter.html
 @@ -0,0 +1,57 @@
