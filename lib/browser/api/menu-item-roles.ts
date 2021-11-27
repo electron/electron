@@ -6,7 +6,7 @@ const isLinux = process.platform === 'linux';
 
 type RoleId = 'about' | 'close' | 'copy' | 'cut' | 'delete' | 'forcereload' | 'front' | 'help' | 'hide' | 'hideothers' | 'minimize' |
   'paste' | 'pasteandmatchstyle' | 'quit' | 'redo' | 'reload' | 'resetzoom' | 'selectall' | 'services' | 'recentdocuments' | 'clearrecentdocuments' |
-  'showsubstitutions' | 'smartquotes' | 'smartdashes' | 'textreplacement' | 'startspeaking' | 'stopspeaking' |
+  'showsubstitutions' | 'togglesmartquotes' | 'togglesmartdashes' | 'toggletextreplacement' | 'startspeaking' | 'stopspeaking' |
   'toggledevtools' | 'togglefullscreen' | 'undo' | 'unhide' | 'window' | 'zoom' | 'zoomin' | 'zoomout' | 'togglespellchecker' |
   'appmenu' | 'filemenu' | 'editmenu' | 'viewmenu' | 'windowmenu' | 'sharemenu'
 interface Role {
@@ -137,13 +137,13 @@ export const roleList: Record<RoleId, Role> = {
   showsubstitutions: {
     label: 'Show Substitutions'
   },
-  smartquotes: {
+  togglesmartquotes: {
     label: 'Smart Quotes'
   },
-  smartdashes: {
+  togglesmartdashes: {
     label: 'Smart Dashes'
   },
-  textreplacement: {
+  toggletextreplacement: {
     label: 'Text Replacement'
   },
   startspeaking: {
@@ -255,9 +255,9 @@ export const roleList: Record<RoleId, Role> = {
           submenu: [
             { role: 'showSubstitutions' },
             { type: 'separator' },
-            { role: 'smartQuotes' },
-            { role: 'smartDashes' },
-            { role: 'textReplacement' }
+            { role: 'toggleSmartQuotes' },
+            { role: 'toggleSmartDashes' },
+            { role: 'toggleTextReplacement' }
           ]
         },
         {

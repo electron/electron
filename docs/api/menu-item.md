@@ -101,9 +101,9 @@ The following additional roles are available on _macOS_:
 * `hideOthers` - Map to the `hideOtherApplications` action.
 * `unhide` - Map to the `unhideAllApplications` action.
 * `showSubstitutions` - Map to the `orderFrontSubstitutionsPanel` action.
-* `smartQuotes` - Map to the `toggleAutomaticQuoteSubstitution` action.
-* `smartDashes` - Map to the `toggleAutomaticDashSubstitution` action.
-* `textReplacement` - Map to the `toggleAutomaticTextReplacement` action.
+* `toggleSmartQuotes` - Map to the `toggleAutomaticQuoteSubstitution` action.
+* `toggleSmartDashes` - Map to the `toggleAutomaticDashSubstitution` action.
+* `toggleTextReplacement` - Map to the `toggleAutomaticTextReplacement` action.
 * `startSpeaking` - Map to the `startSpeaking` action.
 * `stopSpeaking` - Map to the `stopSpeaking` action.
 * `front` - Map to the `arrangeInFront` action.
