@@ -1,0 +1,115 @@
+From 1459675360c1494ade8504e8147ce4df383bfbad Mon Sep 17 00:00:00 2001
+From: Khushal <khushalsagar@chromium.org>
+Date: Wed, 06 Oct 2021 19:48:28 +0000
+Subject: [PATCH] viz: Ensure render passes referenced by shared elements are valid.
+
+The render pass ids used by shared elements must be present in the
+CompositorFrame. Validate this during deserialization and reject the
+message on failure.
+
+R=vmpstr@chromium.org, tsepez@chromium.org
+
+Bug: 1222498
+Change-Id: I6d38652c67da3cc52fd253803fcecec1f21ae003
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3173660
+Commit-Queue: Khushal <khushalsagar@chromium.org>
+Auto-Submit: Khushal <khushalsagar@chromium.org>
+Reviewed-by: Tom Sepez <tsepez@chromium.org>
+Reviewed-by: vmpstr <vmpstr@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#928819}
+---
+
+diff --git a/services/viz/public/cpp/compositing/compositor_frame_mojom_traits.cc b/services/viz/public/cpp/compositing/compositor_frame_mojom_traits.cc
+index 20b9ad3..258f3f6 100644
+--- a/services/viz/public/cpp/compositing/compositor_frame_mojom_traits.cc
++++ b/services/viz/public/cpp/compositing/compositor_frame_mojom_traits.cc
+@@ -8,6 +8,16 @@
+ 
+ namespace mojo {
+ 
++bool RenderPassExists(viz::CompositorRenderPassId pass_id,
++                      const viz::CompositorRenderPassList& render_passes) {
++  for (const auto& pass : render_passes) {
++    if (pass->id == pass_id)
++      return true;
++  }
++
++  return false;
++}
++
+ // static
+ bool StructTraits<viz::mojom::CompositorFrameDataView, viz::CompositorFrame>::
+     Read(viz::mojom::CompositorFrameDataView data, viz::CompositorFrame* out) {
+@@ -28,6 +38,20 @@
+   if (!data.ReadMetadata(&out->metadata))
+     return false;
+ 
++  // Ensure that all render passes referenced by shared elements are present in
++  // the CompositorFrame.
++  for (const auto& directive : out->metadata.transition_directives) {
++    for (const auto& shared_element : directive.shared_elements()) {
++      if (shared_element.render_pass_id.is_null())
++        continue;
++
++      if (!RenderPassExists(shared_element.render_pass_id,
++                            out->render_pass_list)) {
++        return false;
++      }
++    }
++  }
++
+   if (!data.ReadResources(&out->resource_list)) {
+     viz::SetDeserializationCrashKeyString(
+         "Failed read CompositorFrame::resource_list");
+diff --git a/services/viz/public/cpp/compositing/mojom_traits_unittest.cc b/services/viz/public/cpp/compositing/mojom_traits_unittest.cc
+index 2853fe9..55a8c69 100644
+--- a/services/viz/public/cpp/compositing/mojom_traits_unittest.cc
++++ b/services/viz/public/cpp/compositing/mojom_traits_unittest.cc
+@@ -21,6 +21,7 @@
+ #include "components/viz/common/surfaces/surface_info.h"
+ #include "components/viz/common/surfaces/surface_range.h"
+ #include "components/viz/test/begin_frame_args_test.h"
++#include "components/viz/test/compositor_frame_helpers.h"
+ #include "gpu/ipc/common/mailbox_holder_mojom_traits.h"
+ #include "gpu/ipc/common/mailbox_mojom_traits.h"
+ #include "gpu/ipc/common/sync_token_mojom_traits.h"
+@@ -588,6 +589,39 @@
+             out_solid_color_draw_quad->force_anti_aliasing_off);
+ }
+ 
++TEST_F(StructTraitsTest, CompositorFrameTransitionDirective) {
++  auto frame = CompositorFrameBuilder()
++                   .AddDefaultRenderPass()
++                   .AddDefaultRenderPass()
++                   .AddDefaultRenderPass()
++                   .Build();
++
++  CompositorFrameTransitionDirective::SharedElement element;
++  element.render_pass_id = frame.render_pass_list.front()->id;
++  frame.metadata.transition_directives.push_back(
++      CompositorFrameTransitionDirective(
++          1u, CompositorFrameTransitionDirective::Type::kSave,
++          CompositorFrameTransitionDirective::Effect::kNone,
++          CompositorFrameTransitionDirective::TransitionConfig(), {element}));
++
++  // This ensures de-serialization succeeds if all passes are present.
++  CompositorFrame output;
++  ASSERT_TRUE(mojo::test::SerializeAndDeserialize<mojom::CompositorFrame>(
++      frame, output));
++
++  element.render_pass_id = CompositorRenderPassId(
++      frame.render_pass_list.back()->id.GetUnsafeValue() + 1);
++  frame.metadata.transition_directives.push_back(
++      CompositorFrameTransitionDirective(
++          1u, CompositorFrameTransitionDirective::Type::kSave,
++          CompositorFrameTransitionDirective::Effect::kNone,
++          CompositorFrameTransitionDirective::TransitionConfig(), {element}));
++
++  // This ensures de-serialization fails if a pass is missing.
++  ASSERT_FALSE(mojo::test::SerializeAndDeserialize<mojom::CompositorFrame>(
++      frame, output));
++}
++
+ TEST_F(StructTraitsTest, SurfaceInfo) {
+   const SurfaceId surface_id(
+       FrameSinkId(1234, 4321),
