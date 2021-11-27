@@ -1,7 +1,7 @@
-From 1459675360c1494ade8504e8147ce4df383bfbad Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Khushal <khushalsagar@chromium.org>
-Date: Wed, 06 Oct 2021 19:48:28 +0000
-Subject: [PATCH] viz: Ensure render passes referenced by shared elements are valid.
+Date: Wed, 6 Oct 2021 19:48:28 +0000
+Subject: viz: Ensure render passes referenced by shared elements are valid.
 
 The render pass ids used by shared elements must be present in the
 CompositorFrame. Validate this during deserialization and reject the
@@ -17,10 +17,9 @@ Auto-Submit: Khushal <khushalsagar@chromium.org>
 Reviewed-by: Tom Sepez <tsepez@chromium.org>
 Reviewed-by: vmpstr <vmpstr@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#928819}
----
 
 diff --git a/services/viz/public/cpp/compositing/compositor_frame_mojom_traits.cc b/services/viz/public/cpp/compositing/compositor_frame_mojom_traits.cc
-index 20b9ad3..258f3f6 100644
+index 20b9ad3d90427e502a930b0907dc17151a4301c6..258f3f6ab00bc1dd4cf3c5574c22bfc8dd5c517b 100644
 --- a/services/viz/public/cpp/compositing/compositor_frame_mojom_traits.cc
 +++ b/services/viz/public/cpp/compositing/compositor_frame_mojom_traits.cc
 @@ -8,6 +8,16 @@
@@ -40,7 +39,7 @@ index 20b9ad3..258f3f6 100644
  // static
  bool StructTraits<viz::mojom::CompositorFrameDataView, viz::CompositorFrame>::
      Read(viz::mojom::CompositorFrameDataView data, viz::CompositorFrame* out) {
-@@ -28,6 +38,20 @@
+@@ -28,6 +38,20 @@ bool StructTraits<viz::mojom::CompositorFrameDataView, viz::CompositorFrame>::
    if (!data.ReadMetadata(&out->metadata))
      return false;
  
@@ -62,7 +61,7 @@ index 20b9ad3..258f3f6 100644
      viz::SetDeserializationCrashKeyString(
          "Failed read CompositorFrame::resource_list");
 diff --git a/services/viz/public/cpp/compositing/mojom_traits_unittest.cc b/services/viz/public/cpp/compositing/mojom_traits_unittest.cc
-index 2853fe9..55a8c69 100644
+index 49d200816aab97d58210f9055b1c399de7102b8c..1ee6c700cad33ff11df603d4530c1cab875a04b3 100644
 --- a/services/viz/public/cpp/compositing/mojom_traits_unittest.cc
 +++ b/services/viz/public/cpp/compositing/mojom_traits_unittest.cc
 @@ -21,6 +21,7 @@
@@ -73,7 +72,7 @@ index 2853fe9..55a8c69 100644
  #include "gpu/ipc/common/mailbox_holder_mojom_traits.h"
  #include "gpu/ipc/common/mailbox_mojom_traits.h"
  #include "gpu/ipc/common/sync_token_mojom_traits.h"
-@@ -588,6 +589,39 @@
+@@ -572,6 +573,39 @@ TEST_F(StructTraitsTest, CompositorFrame) {
              out_solid_color_draw_quad->force_anti_aliasing_off);
  }
  
