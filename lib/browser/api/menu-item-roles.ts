@@ -5,7 +5,8 @@ const isWindows = process.platform === 'win32';
 const isLinux = process.platform === 'linux';
 
 type RoleId = 'about' | 'close' | 'copy' | 'cut' | 'delete' | 'forcereload' | 'front' | 'help' | 'hide' | 'hideothers' | 'minimize' |
-  'paste' | 'pasteandmatchstyle' | 'quit' | 'redo' | 'reload' | 'resetzoom' | 'selectall' | 'services' | 'recentdocuments' | 'clearrecentdocuments' | 'startspeaking' | 'stopspeaking' |
+  'paste' | 'pasteandmatchstyle' | 'quit' | 'redo' | 'reload' | 'resetzoom' | 'selectall' | 'services' | 'recentdocuments' | 'clearrecentdocuments' |
+  'showsubstitutions' | 'smartquotes' | 'smartdashes' | 'textreplacement' | 'startspeaking' | 'stopspeaking' |
   'toggledevtools' | 'togglefullscreen' | 'undo' | 'unhide' | 'window' | 'zoom' | 'zoomin' | 'zoomout' | 'togglespellchecker' |
   'appmenu' | 'filemenu' | 'editmenu' | 'viewmenu' | 'windowmenu' | 'sharemenu'
 interface Role {
@@ -133,6 +134,18 @@ export const roleList: Record<RoleId, Role> = {
   clearrecentdocuments: {
     label: 'Clear Menu'
   },
+  showsubstitutions: {
+    label: 'Show Substitutions'
+  },
+  smartquotes: {
+    label: 'Smart Quotes'
+  },
+  smartdashes: {
+    label: 'Smart Dashes'
+  },
+  textreplacement: {
+    label: 'Text Replacement'
+  },
   startspeaking: {
     label: 'Start Speaking'
   },
@@ -237,6 +250,16 @@ export const roleList: Record<RoleId, Role> = {
         { role: 'delete' },
         { role: 'selectAll' },
         { type: 'separator' },
+        {
+          label: 'Substitutions',
+          submenu: [
+            { role: 'showSubstitutions' },
+            { type: 'separator' },
+            { role: 'smartQuotes' },
+            { role: 'smartDashes' },
+            { role: 'textReplacement' }
+          ]
+        },
         {
           label: 'Speech',
           submenu: [
