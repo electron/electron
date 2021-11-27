@@ -167,3 +167,4 @@ cherry-pick-91dd4f79ab5b.patch
 introduce_crossthreadcopier_skbitmap.patch
 allow_null_skbitmap_to_be_transferred_across_threads.patch
 use_weakptrs_for_the_threadediconloader_s_background_tasks.patch
+cherry-pick-27eb11a28555.patch
