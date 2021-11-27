@@ -33,10 +33,10 @@ index fd0b9634796e782c873b5fcb97c84ab52f19cf98..73450e005e068a74559caedb407422f4
          "//base",
          "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index 3f7ba30dfea6f827fd71c2c45d49056f8104b196..a5d67e1b7b4fb6d1d508ec727fc4408141aa3fdf 100644
+index b66aa9d26770a6291eb84be7060b59b73fc26421..a17e2efcf552e6963f92772a66c554d589bd5b8c 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -4523,7 +4523,7 @@ static_library("browser") {
+@@ -4521,7 +4521,7 @@ static_library("browser") {
  
      # On Windows, the hashes are embedded in //chrome:chrome_initial rather
      # than here in :chrome_dll.
@@ -46,10 +46,10 @@ index 3f7ba30dfea6f827fd71c2c45d49056f8104b196..a5d67e1b7b4fb6d1d508ec727fc44081
      }
  
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index 928e667520f1de6f5d5849f961f861a9d95c727f..ffb11bbf819e9e60a7ee79f8b20349b37b9b3274 100644
+index 81c72c714785801548b4e15266768a96cfc69e18..11d68fe7bc5af2ef2b75406225d4392438f76e73 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
-@@ -5532,7 +5532,6 @@ test("unit_tests") {
+@@ -5533,7 +5533,6 @@ test("unit_tests") {
  
      deps += [
        "//chrome:other_version",
@@ -57,7 +57,7 @@ index 928e667520f1de6f5d5849f961f861a9d95c727f..ffb11bbf819e9e60a7ee79f8b20349b3
        "//chrome//services/util_win:unit_tests",
        "//chrome/app:chrome_dll_resources",
        "//chrome/browser:chrome_process_finder",
-@@ -5555,6 +5554,10 @@ test("unit_tests") {
+@@ -5556,6 +5555,10 @@ test("unit_tests") {
        "//ui/resources",
      ]
  
@@ -68,7 +68,7 @@ index 928e667520f1de6f5d5849f961f861a9d95c727f..ffb11bbf819e9e60a7ee79f8b20349b3
      ldflags = [
        "/DELAYLOAD:api-ms-win-core-winrt-error-l1-1-0.dll",
        "/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll",
-@@ -6241,7 +6244,6 @@ test("unit_tests") {
+@@ -6242,7 +6245,6 @@ test("unit_tests") {
      }
  
      deps += [
@@ -76,7 +76,7 @@ index 928e667520f1de6f5d5849f961f861a9d95c727f..ffb11bbf819e9e60a7ee79f8b20349b3
        "//chrome/browser:cart_db_content_proto",
        "//chrome/browser:coupon_db_content_proto",
        "//chrome/browser/media/router:test_support",
-@@ -6282,6 +6284,11 @@ test("unit_tests") {
+@@ -6283,6 +6285,11 @@ test("unit_tests") {
        "//ui/native_theme:test_support",
        "//ui/webui/resources/js/browser_command:mojo_bindings",
      ]
