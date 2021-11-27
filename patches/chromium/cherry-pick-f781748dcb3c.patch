@@ -1,7 +1,11 @@
-From f781748dcb3c7d0420b884c1c24b9b4497bc7c97 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Ravjit <ravjit@chromium.org>
 Date: Thu, 16 Sep 2021 12:29:55 +0000
-Subject: [PATCH] Show the origin of the last redirecting server in external protocol handler dialogs
+Subject: Show the origin of the last redirecting server in external protocol
+ handler dialogs
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
 External protocol handlers always show the initiating url's origin. This can be misleading if there are server side redirects.
 Now we will show the origin of the last redirecting server (falling back to the request_initiator if there were no redirects / if the request goes straight to an external protocol).
@@ -15,10 +19,9 @@ Reviewed-by: Collin Baker <collinbaker@chromium.org>
 Reviewed-by: Takashi Toyoshima <toyoshim@chromium.org>
 Reviewed-by: Łukasz Anforowicz <lukasza@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#922096}
----
 
 diff --git a/chrome/browser/ui/views/external_protocol_dialog_browsertest.cc b/chrome/browser/ui/views/external_protocol_dialog_browsertest.cc
-index 7e953fe..5c7e331 100644
+index 7e953fe89ff8dadf4da9578c0fdc6c3aada11aca..5c7e331ea4fbbcf36ac6463b37884cc9c6ca7e41 100644
 --- a/chrome/browser/ui/views/external_protocol_dialog_browsertest.cc
 +++ b/chrome/browser/ui/views/external_protocol_dialog_browsertest.cc
 @@ -14,11 +14,15 @@
@@ -37,7 +40,7 @@ index 7e953fe..5c7e331 100644
  #include "ui/views/controls/button/checkbox.h"
  #include "url/gurl.h"
  
-@@ -41,6 +45,33 @@
+@@ -41,6 +45,33 @@ class ExternalProtocolDialogTestApi {
  
  }  // namespace test
  
@@ -71,7 +74,7 @@ index 7e953fe..5c7e331 100644
  class ExternalProtocolDialogBrowserTest
      : public DialogBrowserTest,
        public ExternalProtocolHandler::Delegate {
-@@ -71,11 +102,11 @@
+@@ -71,11 +102,11 @@ class ExternalProtocolDialogBrowserTest
    // ExternalProtocolHander::Delegate:
    scoped_refptr<shell_integration::DefaultProtocolClientWorker>
    CreateShellWorker(const std::string& protocol) override {
@@ -85,7 +88,7 @@ index 7e953fe..5c7e331 100644
    }
    void BlockRequest() override {}
    void RunExternalProtocolDialog(
-@@ -83,7 +114,10 @@
+@@ -83,7 +114,10 @@ class ExternalProtocolDialogBrowserTest
        content::WebContents* web_contents,
        ui::PageTransition page_transition,
        bool has_user_gesture,
@@ -97,7 +100,7 @@ index 7e953fe..5c7e331 100644
    void LaunchUrlWithoutSecurityCheck(
        const GURL& url,
        content::WebContents* web_contents) override {
-@@ -98,6 +132,12 @@
+@@ -98,6 +132,12 @@ class ExternalProtocolDialogBrowserTest
      blocked_state_ = state;
    }
  
@@ -110,7 +113,7 @@ index 7e953fe..5c7e331 100644
    base::HistogramTester histogram_tester_;
  
   protected:
-@@ -106,6 +146,7 @@
+@@ -106,6 +146,7 @@ class ExternalProtocolDialogBrowserTest
    url::Origin blocked_origin_;
    BlockState blocked_state_ = BlockState::UNKNOWN;
    bool url_did_launch_ = false;
@@ -118,7 +121,7 @@ index 7e953fe..5c7e331 100644
  
   private:
    DISALLOW_COPY_AND_ASSIGN(ExternalProtocolDialogBrowserTest);
-@@ -231,3 +272,21 @@
+@@ -231,3 +272,21 @@ IN_PROC_BROWSER_TEST_F(ExternalProtocolDialogBrowserTest, TestFocus) {
    const views::View* focused_view = focus_manager->GetFocusedView();
    EXPECT_TRUE(focused_view);
  }
@@ -141,10 +144,10 @@ index 7e953fe..5c7e331 100644
 +  EXPECT_EQ(launch_url_, "b.test");
 +}
 diff --git a/content/browser/loader/navigation_url_loader_impl.cc b/content/browser/loader/navigation_url_loader_impl.cc
-index 43a4a9f..c00757e8 100644
+index 42f62ccb3830bf718806f2361d9fb8a4abd53c6a..3d91eadbed7fc9cfd9a70805415eb660b15398d4 100644
 --- a/content/browser/loader/navigation_url_loader_impl.cc
 +++ b/content/browser/loader/navigation_url_loader_impl.cc
-@@ -638,6 +638,13 @@
+@@ -626,6 +626,13 @@ NavigationURLLoaderImpl::PrepareForNonInterceptedRequest(
      if (known_schemes_.find(resource_request_->url.scheme()) ==
          known_schemes_.end()) {
        mojo::PendingRemote<network::mojom::URLLoaderFactory> loader_factory;
@@ -158,7 +161,7 @@ index 43a4a9f..c00757e8 100644
        bool handled = GetContentClient()->browser()->HandleExternalProtocol(
            resource_request_->url, web_contents_getter_,
            ChildProcessHost::kInvalidUniqueID, frame_tree_node_id_,
-@@ -645,8 +652,8 @@
+@@ -633,8 +640,8 @@ NavigationURLLoaderImpl::PrepareForNonInterceptedRequest(
            resource_request_->resource_type ==
                static_cast<int>(blink::mojom::ResourceType::kMainFrame),
            static_cast<ui::PageTransition>(resource_request_->transition_type),
@@ -170,10 +173,10 @@ index 43a4a9f..c00757e8 100644
        if (loader_factory) {
          factory = base::MakeRefCounted<network::WrapperSharedURLLoaderFactory>(
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index e1d16b1..b6dae008 100644
+index 86b630ca2fa26150d71451a1ffe77552cdd589a9..c8981fea3bf8596797d68a3a164309444bb6e1ec 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -1769,10 +1769,12 @@
+@@ -1758,10 +1758,12 @@ class CONTENT_EXPORT ContentBrowserClient {
    // Otherwise child_id will be the process id and |navigation_ui_data| will be
    // nullptr.
    //
