@@ -80,7 +80,7 @@ index c1808c6351951d653255e722513b735bd67ab677..3f78445c2539d10d63da339f137ed5bc
      NEW_DOC,
  
 diff --git a/chrome/browser/printing/print_job_worker.cc b/chrome/browser/printing/print_job_worker.cc
-index f4b73ced300fbdda9cc9bcea0d5de192afee7aed..0e6028b8ea634e04a4bccc4619009c2c0d163b44 100644
+index f4b73ced300fbdda9cc9bcea0d5de192afee7aed..4c5c9b1dd7613187382ce6acbe80cc93a0d1181c 100644
 --- a/chrome/browser/printing/print_job_worker.cc
 +++ b/chrome/browser/printing/print_job_worker.cc
 @@ -21,13 +21,13 @@
@@ -130,7 +130,7 @@ index f4b73ced300fbdda9cc9bcea0d5de192afee7aed..0e6028b8ea634e04a4bccc4619009c2c
 +  if (result == mojom::ResultCode::kCanceled) {
 +    print_job_->PostTask(
 +      FROM_HERE,
-+      base::BindOnce(&NotificationCallback, base::RetainedRef(print_job_),
++      base::BindOnce(&NotificationCallback, base::RetainedRef(print_job_.get()),
 +                    JobEventDetails::USER_INIT_CANCELED, 0,
 +                    base::RetainedRef(document_)));
 +  }
