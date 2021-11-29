@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_NET_ASAR_ASAR_FILE_VALIDATOR_H_
-#define SHELL_BROWSER_NET_ASAR_ASAR_FILE_VALIDATOR_H_
+#ifndef ELECTRON_SHELL_BROWSER_NET_ASAR_ASAR_FILE_VALIDATOR_H_
+#define ELECTRON_SHELL_BROWSER_NET_ASAR_ASAR_FILE_VALIDATOR_H_
 
 #include <algorithm>
 #include <memory>
@@ -20,6 +20,10 @@ class AsarFileValidator : public mojo::FilteredDataSource::Filter {
  public:
   AsarFileValidator(IntegrityPayload integrity, base::File file);
   ~AsarFileValidator() override;
+
+  // disable copy
+  AsarFileValidator(const AsarFileValidator&) = delete;
+  AsarFileValidator& operator=(const AsarFileValidator&) = delete;
 
   void OnRead(base::span<char> buffer,
               mojo::FileDataSource::ReadResult* result) override;
@@ -52,10 +56,8 @@ class AsarFileValidator : public mojo::FilteredDataSource::Filter {
   uint64_t current_hash_byte_count_ = 0;
   uint64_t total_hash_byte_count_ = 0;
   std::unique_ptr<crypto::SecureHash> current_hash_;
-
-  DISALLOW_COPY_AND_ASSIGN(AsarFileValidator);
 };
 
 }  // namespace asar
 
-#endif  // SHELL_BROWSER_NET_ASAR_ASAR_FILE_VALIDATOR_H_
+#endif  // ELECTRON_SHELL_BROWSER_NET_ASAR_ASAR_FILE_VALIDATOR_H_

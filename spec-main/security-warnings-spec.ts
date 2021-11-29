@@ -9,6 +9,7 @@ import { BrowserWindow, WebPreferences } from 'electron/main';
 import { closeWindow } from './window-helpers';
 import { AddressInfo } from 'net';
 import { emittedUntil } from './events-helpers';
+import { delay } from './spec-helpers';
 
 const messageContainsSecurityWarning = (event: Event, level: number, message: string) => {
   return message.indexOf('Electron Security Warning') > -1;
@@ -22,7 +23,6 @@ describe('security warnings', () => {
   let server: http.Server;
   let w: BrowserWindow;
   let useCsp = true;
-  let useTrustedTypes = false;
   let serverUrl: string;
 
   before((done) => {
@@ -50,8 +50,7 @@ describe('security warnings', () => {
           }
 
           const cspHeaders = [
-            ...(useCsp ? ['script-src \'self\' \'unsafe-inline\''] : []),
-            ...(useTrustedTypes ? ['require-trusted-types-for \'script\'; trusted-types *'] : [])
+            ...(useCsp ? ['script-src \'self\' \'unsafe-inline\''] : [])
           ];
           response.writeHead(200, { 'Content-Security-Policy': cspHeaders });
           response.write(file, 'binary');
@@ -72,7 +71,6 @@ describe('security warnings', () => {
 
   afterEach(async () => {
     useCsp = true;
-    useTrustedTypes = false;
     await closeWindow(w);
     w = null as unknown as any;
   });
@@ -132,17 +130,20 @@ describe('security warnings', () => {
         expect(message).to.include('Insecure Content-Security-Policy');
       });
 
-      it('should warn about insecure Content-Security-Policy (Trusted Types)', async () => {
+      it('should not warn about secure Content-Security-Policy', async () => {
         w = new BrowserWindow({
           show: false,
           webPreferences
         });
 
-        useCsp = false;
-        useTrustedTypes = true;
+        useCsp = true;
         w.loadURL(`${serverUrl}/base-page-security.html`);
-        const [,, message] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning);
-        expect(message).to.include('Insecure Content-Security-Policy');
+        let didNotWarn = true;
+        w.webContents.on('console-message', () => {
+          didNotWarn = false;
+        });
+        await delay(500);
+        expect(didNotWarn).to.equal(true);
       });
 
       it('should warn about allowRunningInsecureContent', async () => {

@@ -22,6 +22,7 @@
 #include "shell/browser/electron_browser_client.h"
 #include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/hid/hid_chooser_context.h"
+#include "shell/browser/serial/serial_chooser_context.h"
 #include "shell/browser/web_contents_permission_helper.h"
 #include "shell/browser/web_contents_preferences.h"
 #include "shell/common/gin_converters/content_converter.h"
@@ -328,6 +329,31 @@ bool ElectronPermissionManager::CheckDevicePermission(
           if (serial_number && device_serial_number &&
               *device_serial_number == *serial_number)
             return true;
+        } else if (permission ==
+                   static_cast<content::PermissionType>(
+                       WebContentsPermissionHelper::PermissionType::SERIAL)) {
+#if defined(OS_WIN)
+          if (device->FindStringKey(kDeviceInstanceIdKey) ==
+              granted_device.FindStringKey(kDeviceInstanceIdKey))
+            return true;
+#else
+          if (device->FindIntKey(kVendorIdKey) !=
+                  granted_device.FindIntKey(kVendorIdKey) ||
+              device->FindIntKey(kProductIdKey) !=
+                  granted_device.FindIntKey(kProductIdKey) ||
+              *device->FindStringKey(kSerialNumberKey) !=
+                  *granted_device.FindStringKey(kSerialNumberKey)) {
+            continue;
+          }
+
+#if defined(OS_MAC)
+          if (*device->FindStringKey(kUsbDriverKey) !=
+              *granted_device.FindStringKey(kUsbDriverKey)) {
+            continue;
+          }
+#endif  // defined(OS_MAC)
+          return true;
+#endif  // defined(OS_WIN)
         }
       }
     }

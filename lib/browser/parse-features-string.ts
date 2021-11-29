@@ -2,7 +2,7 @@
  * Utilities to parse comma-separated key value pairs used in browser APIs.
  * For example: "x=100,y=200,width=500,height=500"
  */
-import { BrowserWindowConstructorOptions } from 'electron';
+import { BrowserWindowConstructorOptions } from 'electron/main';
 
 type RequiredBrowserWindowConstructorOptions = Required<BrowserWindowConstructorOptions>;
 type IntegerBrowserWindowOptionKeys = {

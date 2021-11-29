@@ -7,10 +7,10 @@ This adds GN build files for Node, so we don't have to build with GYP.
 
 diff --git a/BUILD.gn b/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..52fb22305bb67c75c9a1cf4bc39cd901420cf7a9
+index 0000000000000000000000000000000000000000..d0641c5cbc3c527ce7a73d12118fb42db325be01
 --- /dev/null
 +++ b/BUILD.gn
-@@ -0,0 +1,401 @@
+@@ -0,0 +1,393 @@
 +import("//electron/build/asar.gni")
 +import("//v8/gni/v8.gni")
 +
@@ -75,20 +75,12 @@ index 0000000000000000000000000000000000000000..52fb22305bb67c75c9a1cf4bc39cd901
 +  ]
 +}
 +
-+action("generate_config_gypi") {
-+  outputs = [
-+    "$target_gen_dir/config.gypi",
-+  ]
-+  script = "tools/generate_config_gypi.py"
-+  args = rebase_path(outputs, root_build_dir)
-+}
-+
 +chdir_action("node_js2c") {
 +  deps = [
-+    ":generate_config_gypi",
++    "//electron:generate_config_gypi",
 +    ":node_js2c_inputs",
 +  ]
-+  config_gypi = [ "$target_gen_dir/config.gypi" ]
++  config_gypi = [ "$root_gen_dir/config.gypi" ]
 +  inputs = library_files + config_gypi
 +  outputs = [
 +    "$target_gen_dir/node_javascript.cc",
@@ -360,10 +352,10 @@ index 0000000000000000000000000000000000000000..52fb22305bb67c75c9a1cf4bc39cd901
 +
 +copy("node_gypi_headers") {
 +  deps = [
-+    ":generate_config_gypi",
++    "//electron:generate_config_gypi",
 +  ]
 +  sources = [
-+    "$target_gen_dir/config.gypi",
++    "$root_gen_dir/config.gypi",
 +    "common.gypi",
 +  ]
 +  outputs = [
@@ -669,7 +661,7 @@ index 0000000000000000000000000000000000000000..fb000f8ee7647c375bc190d1729d67bb
 +}
 diff --git a/deps/nghttp2/BUILD.gn b/deps/nghttp2/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..e90a1416f5b0106e5886564061d48f32b730b1c2
+index 0000000000000000000000000000000000000000..8bfecba74d4d90e9fbf0e2cd301118e4adc6cba8
 --- /dev/null
 +++ b/deps/nghttp2/BUILD.gn
 @@ -0,0 +1,49 @@
@@ -694,6 +686,7 @@ index 0000000000000000000000000000000000000000..e90a1416f5b0106e5886564061d48f32
 +    "-Wno-implicit-fallthrough",
 +    "-Wno-string-plus-int",
 +    "-Wno-unreachable-code-return",
++    "-Wno-unused-but-set-variable",
 +  ]
 +
 +  sources = [
@@ -706,7 +699,6 @@ index 0000000000000000000000000000000000000000..e90a1416f5b0106e5886564061d48f32
 +    "lib/nghttp2_hd_huffman_data.c",
 +    "lib/nghttp2_helper.c",
 +    "lib/nghttp2_http.c",
-+    "lib/nghttp2_ksl.c",
 +    "lib/nghttp2_map.c",
 +    "lib/nghttp2_mem.c",
 +    "lib/nghttp2_npn.c",
@@ -724,10 +716,10 @@ index 0000000000000000000000000000000000000000..e90a1416f5b0106e5886564061d48f32
 +}
 diff --git a/deps/uv/BUILD.gn b/deps/uv/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..b7002dfebb68199511b63a650c734d3493ccce48
+index 0000000000000000000000000000000000000000..b8deb68cebcf5ac9b831201332edf8c509a7d4c8
 --- /dev/null
 +++ b/deps/uv/BUILD.gn
-@@ -0,0 +1,194 @@
+@@ -0,0 +1,195 @@
 +config("libuv_config") {
 +  include_dirs = [ "include" ]
 +
@@ -776,6 +768,7 @@ index 0000000000000000000000000000000000000000..b7002dfebb68199511b63a650c734d34
 +    "-Wno-unused-variable",
 +    "-Wno-unreachable-code",
 +    "-Wno-unreachable-code-return",
++    "-Wno-unused-but-set-variable",
 +  ]
 +
 +  libs = []
@@ -968,7 +961,7 @@ index 0000000000000000000000000000000000000000..2c9d2826c85bdd033f1df1d6188df636
 +}
 diff --git a/filenames.json b/filenames.json
 new file mode 100644
-index 0000000000000000000000000000000000000000..c0b0624028fddb4f7b409f42b357fdc404d810f3
+index 0000000000000000000000000000000000000000..e2aec71226f25645b188c2c6d8f89478a4b06ae5
 --- /dev/null
 +++ b/filenames.json
 @@ -0,0 +1,603 @@
@@ -1307,9 +1300,9 @@ index 0000000000000000000000000000000000000000..c0b0624028fddb4f7b409f42b357fdc4
 +    "lib/internal/modules/esm/translators.js",
 +    "lib/internal/modules/esm/resolve.js",
 +    "lib/internal/modules/esm/create_dynamic_module.js",
++    "lib/internal/modules/esm/load.js",
 +    "lib/internal/modules/esm/module_map.js",
 +    "lib/internal/modules/esm/get_format.js",
-+    "lib/internal/modules/esm/transform_source.js",
 +    "lib/internal/modules/esm/loader.js",
 +    "lib/internal/modules/cjs/helpers.js",
 +    "lib/internal/modules/cjs/loader.js",
@@ -1781,7 +1774,7 @@ index 0000000000000000000000000000000000000000..d1d6b51e8c0c5bc6a5d09e217eb30483
 +  args = rebase_path(inputs + outputs, root_build_dir)
 +}
 diff --git a/src/node_version.h b/src/node_version.h
-index a572d9b95853730a29a67349b46d47d6180586f3..888a95f93411a9168b75751e0af12c74fc5f0ba9 100644
+index 08e957472cfeca84af8cdc951af3c0de99c7b56c..330d77e868a50e1d0b71d773ab6b4b337ab20428 100644
 --- a/src/node_version.h
 +++ b/src/node_version.h
 @@ -89,7 +89,10 @@
@@ -1795,23 +1788,6 @@ index a572d9b95853730a29a67349b46d47d6180586f3..888a95f93411a9168b75751e0af12c74
  
  // The NAPI_VERSION provided by this version of the runtime. This is the version
  // which the Node binary being built supports.
-diff --git a/tools/generate_config_gypi.py b/tools/generate_config_gypi.py
-new file mode 100644
-index 0000000000000000000000000000000000000000..01f62d4ae6e3b9d539444e3dff069f0011353caa
---- /dev/null
-+++ b/tools/generate_config_gypi.py
-@@ -0,0 +1,11 @@
-+# TODO: assess which if any of the config variables are important to include in
-+# the js2c'd config.gypi.
-+import sys
-+
-+def main(args):
-+  out = args[0]
-+  with open(out, 'w') as f:
-+    f.write("{'variables':{}}\n")
-+
-+if __name__ == '__main__':
-+  main(sys.argv[1:])
 diff --git a/tools/generate_gn_filenames_json.py b/tools/generate_gn_filenames_json.py
 new file mode 100755
 index 0000000000000000000000000000000000000000..8f884a41f57630ac432eb85ebfc9b8bc82cddaca

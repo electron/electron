@@ -71,7 +71,7 @@
 
 #if BUILDFLAG(ENABLE_PRINTING)
 #include "components/printing/renderer/print_render_frame_helper.h"
-#include "printing/print_settings.h"  // nogncheck
+#include "printing/metafile_agent.h"  // nogncheck
 #include "shell/renderer/printing/print_render_frame_helper_delegate.h"
 #endif  // BUILDFLAG(ENABLE_PRINTING)
 

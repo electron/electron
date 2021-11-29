@@ -7,8 +7,8 @@
 // Copyright (c) 2012 The Chromium Authors,
 // which is governed by a BSD-style license
 
-#ifndef SHELL_BROWSER_UI_VIEWS_WIN_FRAME_VIEW_H_
-#define SHELL_BROWSER_UI_VIEWS_WIN_FRAME_VIEW_H_
+#ifndef ELECTRON_SHELL_BROWSER_UI_VIEWS_WIN_FRAME_VIEW_H_
+#define ELECTRON_SHELL_BROWSER_UI_VIEWS_WIN_FRAME_VIEW_H_
 
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/views/frameless_view.h"
@@ -81,10 +81,8 @@ class WinFrameView : public FramelessView {
   // May be null if the caption button container is destroyed before the frame
   // view. Always check for validity before using!
   WinCaptionButtonContainer* caption_button_container_;
-
-  DISALLOW_COPY_AND_ASSIGN(WinFrameView);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_UI_VIEWS_WIN_FRAME_VIEW_H_
+#endif  // ELECTRON_SHELL_BROWSER_UI_VIEWS_WIN_FRAME_VIEW_H_

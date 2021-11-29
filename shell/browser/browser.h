@@ -2,15 +2,14 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_BROWSER_H_
-#define SHELL_BROWSER_BROWSER_H_
+#ifndef ELECTRON_SHELL_BROWSER_BROWSER_H_
+#define ELECTRON_SHELL_BROWSER_BROWSER_H_
 
 #include <memory>
 #include <string>
 #include <vector>
 
 #include "base/compiler_specific.h"
-#include "base/macros.h"
 #include "base/observer_list.h"
 #include "base/task/cancelable_task_tracker.h"
 #include "base/values.h"
@@ -46,6 +45,10 @@ class Browser : public WindowListObserver {
  public:
   Browser();
   ~Browser() override;
+
+  // disable copy
+  Browser(const Browser&) = delete;
+  Browser& operator=(const Browser&) = delete;
 
   static Browser* Get();
 
@@ -371,10 +374,8 @@ class Browser : public WindowListObserver {
   // In charge of running taskbar related APIs.
   TaskbarHost taskbar_host_;
 #endif
-
-  DISALLOW_COPY_AND_ASSIGN(Browser);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_BROWSER_H_
+#endif  // ELECTRON_SHELL_BROWSER_BROWSER_H_

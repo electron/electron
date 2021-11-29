@@ -17,9 +17,9 @@
 #include "base/environment.h"
 #include "base/path_service.h"
 #include "base/run_loop.h"
-#include "base/single_thread_task_runner.h"
 #include "base/strings/string_split.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/task/single_thread_task_runner.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/trace_event/trace_event.h"
 #include "content/public/browser/browser_thread.h"
@@ -467,7 +467,8 @@ node::Environment* NodeBindings::CreateEnvironment(
 
   node::Environment* env;
   uint64_t flags = node::EnvironmentFlags::kDefaultFlags |
-                   node::EnvironmentFlags::kHideConsoleWindows;
+                   node::EnvironmentFlags::kHideConsoleWindows |
+                   node::EnvironmentFlags::kNoGlobalSearchPaths;
 
   if (browser_env_ != BrowserEnvironment::kBrowser) {
     // Only one ESM loader can be registered per isolate -

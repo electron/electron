@@ -112,6 +112,10 @@ class V8ValueConverter::ScopedUniquenessGuard {
     }
   }
 
+  // disable copy
+  ScopedUniquenessGuard(const ScopedUniquenessGuard&) = delete;
+  ScopedUniquenessGuard& operator=(const ScopedUniquenessGuard&) = delete;
+
   bool is_valid() const { return is_valid_; }
 
  private:
@@ -119,8 +123,6 @@ class V8ValueConverter::ScopedUniquenessGuard {
   V8ValueConverter::FromV8ValueState* state_;
   v8::Local<v8::Object> value_;
   bool is_valid_;
-
-  DISALLOW_COPY_AND_ASSIGN(ScopedUniquenessGuard);
 };
 
 V8ValueConverter::V8ValueConverter() = default;
@@ -202,10 +204,10 @@ v8::Local<v8::Value> V8ValueConverter::ToV8ValueImpl(
 v8::Local<v8::Value> V8ValueConverter::ToV8Array(
     v8::Isolate* isolate,
     const base::ListValue* val) const {
-  v8::Local<v8::Array> result(v8::Array::New(isolate, val->GetSize()));
+  v8::Local<v8::Array> result(v8::Array::New(isolate, val->GetList().size()));
   auto context = isolate->GetCurrentContext();
 
-  for (size_t i = 0; i < val->GetSize(); ++i) {
+  for (size_t i = 0; i < val->GetList().size(); ++i) {
     const base::Value* child = nullptr;
     val->Get(i, &child);
 

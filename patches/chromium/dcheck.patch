@@ -16,11 +16,24 @@ example, the checks might be disabled for a whole build target, but actually
 only one or two specific checks fail. Then it's better to simply comment out the
 failing checks and allow the rest of the target to have them enabled.
 
+diff --git a/third_party/blink/renderer/core/mobile_metrics/mobile_friendliness_checker.cc b/third_party/blink/renderer/core/mobile_metrics/mobile_friendliness_checker.cc
+index 0c38abb81e76ba17d60b92c362bd042d203ca212..34fb38913071dd24e94d317ab7d73f86a047818e 100644
+--- a/third_party/blink/renderer/core/mobile_metrics/mobile_friendliness_checker.cc
++++ b/third_party/blink/renderer/core/mobile_metrics/mobile_friendliness_checker.cc
+@@ -432,7 +432,7 @@ void MobileFriendlinessChecker::ComputeSmallTextRatio(
+                                ->GetPageScaleConstraintsSet()
+                                .FinalConstraints()
+                                .initial_scale;
+-    DCHECK_GT(initial_scale, 0);
++    // DCHECK_GT(initial_scale, 0);
+     double actual_font_size =
+         style.FontSize() * initial_scale / viewport_scalar_;
+     double area = text->PhysicalAreaSize();
 diff --git a/ui/base/clipboard/clipboard_win.cc b/ui/base/clipboard/clipboard_win.cc
-index 68c758df6954c0deb25d8d93da2d22f8cdf00771..03bdc80a1e1b5db4731a81f5a2851722e3c0d652 100644
+index fe8d191217e24b08d36339dbf047beaeb6bd6538..870db0552544e3e89d9498c22ec3db81b46df741 100644
 --- a/ui/base/clipboard/clipboard_win.cc
 +++ b/ui/base/clipboard/clipboard_win.cc
-@@ -923,10 +923,10 @@ SkBitmap ClipboardWin::ReadImageInternal(ClipboardBuffer buffer) const {
+@@ -891,10 +891,10 @@ SkBitmap ClipboardWin::ReadBitmapInternal(ClipboardBuffer buffer) const {
  
  void ClipboardWin::WriteToClipboard(ClipboardFormatType format, HANDLE handle) {
    UINT cf_format = format.ToFormatEtc().cfFormat;

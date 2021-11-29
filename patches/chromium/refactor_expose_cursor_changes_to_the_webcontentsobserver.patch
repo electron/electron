@@ -8,7 +8,7 @@ Chrome moved the SetCursor IPC message to mojo, which we use to tell OSR about `
 Refs: https://chromium-review.googlesource.com/c/chromium/src/+/2172779
 
 diff --git a/content/browser/renderer_host/render_widget_host_delegate.h b/content/browser/renderer_host/render_widget_host_delegate.h
-index 0abf9abd6a02dd13742148596d4729af8b8d967b..23560bbf3acf688045cc25f1e4289ef4c1f6552b 100644
+index 059ff2b47e7aa8b9707e71ae9a1793bfdd86d319..529637f8b6af6b8b45f9de61d27b5e9c379c9645 100644
 --- a/content/browser/renderer_host/render_widget_host_delegate.h
 +++ b/content/browser/renderer_host/render_widget_host_delegate.h
 @@ -14,6 +14,7 @@
@@ -19,7 +19,7 @@ index 0abf9abd6a02dd13742148596d4729af8b8d967b..23560bbf3acf688045cc25f1e4289ef4
  #include "content/public/common/drop_data.h"
  #include "services/metrics/public/cpp/ukm_recorder.h"
  #include "third_party/abseil-cpp/absl/types/optional.h"
-@@ -242,6 +243,9 @@ class CONTENT_EXPORT RenderWidgetHostDelegate {
+@@ -252,6 +253,9 @@ class CONTENT_EXPORT RenderWidgetHostDelegate {
    // Returns the associated RenderViewHostDelegateView*, if possible.
    virtual RenderViewHostDelegateView* GetDelegateView();
  
@@ -27,13 +27,13 @@ index 0abf9abd6a02dd13742148596d4729af8b8d967b..23560bbf3acf688045cc25f1e4289ef4
 +  virtual void OnCursorChanged(const WebCursor& cursor) {}
 +
    // Returns true if the provided RenderWidgetHostImpl matches the current
-   // RenderWidgetHost on the main frame, and false otherwise.
-   virtual bool IsWidgetForMainFrame(RenderWidgetHostImpl*);
+   // RenderWidgetHost on the primary main frame, and false otherwise.
+   virtual bool IsWidgetForPrimaryMainFrame(RenderWidgetHostImpl*);
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index b72e3f6ab2a43e8a7f707e9634fb3a4abb87e993..68536fc453f85089b6bc8d3c58b24212ed42cc93 100644
+index 9501ae821c3cd16e53e63e28d717856c9f66efd3..c3c7447dd66a339db699f87d7d18464d46aace70 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -2009,6 +2009,8 @@ void RenderWidgetHostImpl::FilterDropData(DropData* drop_data) {
+@@ -2082,6 +2082,8 @@ void RenderWidgetHostImpl::FilterDropData(DropData* drop_data) {
  void RenderWidgetHostImpl::SetCursor(const ui::Cursor& cursor) {
    if (view_)
      view_->UpdateCursor(WebCursor(cursor));
@@ -43,10 +43,10 @@ index b72e3f6ab2a43e8a7f707e9634fb3a4abb87e993..68536fc453f85089b6bc8d3c58b24212
  
  void RenderWidgetHostImpl::ShowContextMenuAtPoint(
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 0ba0990cf02624cc7cf1b304a0d9b63692cd464d..bc84aa5826d4ca8aef8f496acd3569152007b7a8 100644
+index 48565d6590787f8370fdfacadf15fd024f69c906..0577d16d66bdaef6f4044d1737e9cf4cde811520 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4307,6 +4307,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
+@@ -4395,6 +4395,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
    return text_input_manager_.get();
  }
  
@@ -55,26 +55,26 @@ index 0ba0990cf02624cc7cf1b304a0d9b63692cd464d..bc84aa5826d4ca8aef8f496acd356915
 +                             cursor);
 +}
 +
- bool WebContentsImpl::IsWidgetForMainFrame(
+ bool WebContentsImpl::IsWidgetForPrimaryMainFrame(
      RenderWidgetHostImpl* render_widget_host) {
    return render_widget_host == GetMainFrame()->GetRenderWidgetHost();
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 1d749125dba6a4051ff8a147ef7a990d7523707b..4fa272275ba3883d105ddfd8deeb4987071d1b06 100644
+index 1d39c8676142d0cae765960d5cb0398f493c2af7..350de81e2622a8bc1bce8d9ef958590e0dd8f866 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -949,6 +949,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
+@@ -959,6 +959,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
        blink::mojom::FrameVisibility visibility) override;
    void SendScreenRects() override;
    TextInputManager* GetTextInputManager() override;
 +  void OnCursorChanged(const WebCursor& cursor) override;
-   bool IsWidgetForMainFrame(RenderWidgetHostImpl* render_widget_host) override;
+   bool IsWidgetForPrimaryMainFrame(
+       RenderWidgetHostImpl* render_widget_host) override;
    bool IsShowingContextMenuOnPage() const override;
-   void DidChangeScreenOrientation() override;
 diff --git a/content/public/browser/web_contents_observer.h b/content/public/browser/web_contents_observer.h
-index d6f20a6c8d28359b09ee12cb72eb67f89000d141..5d5aec942b04c721361bf6e3649ba88e7fb28cee 100644
+index f2cc5890ef582fcca94de4f6d10bce318f1de416..83eb6fb18c46a7b1bbccd7db4a2dfb7f39810b71 100644
 --- a/content/public/browser/web_contents_observer.h
 +++ b/content/public/browser/web_contents_observer.h
-@@ -13,6 +13,7 @@
+@@ -12,6 +12,7 @@
  #include "base/threading/thread_restrictions.h"
  #include "components/viz/common/vertical_scroll_direction.h"
  #include "content/common/content_export.h"
@@ -82,13 +82,13 @@ index d6f20a6c8d28359b09ee12cb72eb67f89000d141..5d5aec942b04c721361bf6e3649ba88e
  #include "content/public/browser/allow_service_worker_result.h"
  #include "content/public/browser/reload_type.h"
  #include "content/public/browser/render_frame_host.h"
-@@ -462,6 +463,9 @@ class CONTENT_EXPORT WebContentsObserver {
-   // Invoked every time the WebContents changes visibility.
-   virtual void OnVisibilityChanged(Visibility visibility) {}
+@@ -489,6 +490,9 @@ class CONTENT_EXPORT WebContentsObserver {
+   // Invoked when the primary main frame changes size.
+   virtual void PrimaryMainFrameWasResized(bool width_changed) {}
  
 +  // Invoked every time the RenderWidget's cursor changes.
 +  virtual void OnCursorChanged(const WebCursor& cursor) {}
 +
-   // Invoked when the main frame changes size.
-   virtual void MainFrameWasResized(bool width_changed) {}
- 
+   // Invoked when the given frame changes its window.name property.
+   virtual void FrameNameChanged(RenderFrameHost* render_frame_host,
+                                 const std::string& name) {}

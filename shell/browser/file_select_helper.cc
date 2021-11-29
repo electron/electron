@@ -23,7 +23,6 @@
 #include "chrome/browser/platform_util.h"
 #include "chrome/browser/ui/browser_dialogs.h"
 #include "chrome/common/pref_names.h"
-#include "chrome/grit/generated_resources.h"
 #include "components/prefs/pref_service.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
@@ -33,6 +32,7 @@
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host_view.h"
 #include "content/public/browser/web_contents.h"
+#include "electron/grit/electron_resources.h"
 #include "net/base/filename_util.h"
 #include "net/base/mime_util.h"
 #include "shell/browser/api/electron_api_web_contents.h"
@@ -533,9 +533,12 @@ void FileSelectHelper::RenderFrameHostChanged(
     return;
   // The |old_host| and its children are now pending deletion. Do not give them
   // file access past this point.
-  if (render_frame_host_ == old_host ||
-      render_frame_host_->IsDescendantOf(old_host)) {
-    render_frame_host_ = nullptr;
+  for (content::RenderFrameHost* host = render_frame_host_; host;
+       host = host->GetParentOrOuterDocument()) {
+    if (host == old_host) {
+      render_frame_host_ = nullptr;
+      return;
+    }
   }
 }
 

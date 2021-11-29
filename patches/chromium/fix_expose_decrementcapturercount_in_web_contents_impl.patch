@@ -8,27 +8,29 @@ we invoke it in order to expose contents.decrementCapturerCount([stayHidden, sta
 to users. We should try to upstream this.
 
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 4fa272275ba3883d105ddfd8deeb4987071d1b06..7e7fb60540a113b8213a5a1b266b57f18d67b4a4 100644
+index 350de81e2622a8bc1bce8d9ef958590e0dd8f866..71423089904b59c82ab510ccbf5a4553a990304e 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -1773,7 +1773,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
- 
-   // Called when the base::ScopedClosureRunner returned by
+@@ -1814,7 +1814,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
    // IncrementCapturerCount() is destructed.
--  void DecrementCapturerCount(bool stay_hidden, bool stay_awake);
-+  void DecrementCapturerCount(bool stay_hidden, bool stay_awake) override;
+   void DecrementCapturerCount(bool stay_hidden,
+                               bool stay_awake,
+-                              bool is_activity = true);
++                              bool is_activity = true) override;
  
    // Calculates the PageVisibilityState for |visibility|, taking the capturing
    // state into account.
 diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
-index 383d0fd95d7e807b83f4cd972c107fa27fefaac6..ae7a7f187b24bb3ec97bea37881f85ede8689936 100644
+index f7db5d52cc773dff4913d67f10af3e0ec7d98bee..6a59e9ba14dcf2fb8626b3b447cd92e865730978 100644
 --- a/content/public/browser/web_contents.h
 +++ b/content/public/browser/web_contents.h
-@@ -633,6 +633,8 @@ class WebContents : public PageNavigator,
-       bool stay_hidden,
-       bool stay_awake) WARN_UNUSED_RESULT = 0;
+@@ -667,6 +667,10 @@ class WebContents : public PageNavigator,
+       bool stay_awake,
+       bool is_activity = true) WARN_UNUSED_RESULT = 0;
  
-+  virtual void DecrementCapturerCount(bool stay_hidden, bool stay_awake) = 0;
++  virtual void DecrementCapturerCount(bool stay_hidden,
++                                      bool stay_awake,
++                                      bool is_activity = true) = 0;
 +
    // Getter for the capture handle, which allows a captured application to
    // opt-in to exposing information to its capturer(s).

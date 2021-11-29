@@ -50,7 +50,9 @@ void ElectronBindings::BindProcess(v8::Isolate* isolate,
   process->SetMethod("getCreationTime", &GetCreationTime);
   process->SetMethod("getHeapStatistics", &GetHeapStatistics);
   process->SetMethod("getBlinkMemoryInfo", &GetBlinkMemoryInfo);
-  process->SetMethod("getProcessMemoryInfo", &GetProcessMemoryInfo);
+  if (gin_helper::Locker::IsBrowserProcess()) {
+    process->SetMethod("getProcessMemoryInfo", &GetProcessMemoryInfo);
+  }
   process->SetMethod("getSystemMemoryInfo", &GetSystemMemoryInfo);
   process->SetMethod("getSystemVersion",
                      &base::SysInfo::OperatingSystemVersion);
@@ -129,7 +131,7 @@ void ElectronBindings::Crash() {
 // static
 void ElectronBindings::Hang() {
   for (;;)
-    base::PlatformThread::Sleep(base::TimeDelta::FromSeconds(1));
+    base::PlatformThread::Sleep(base::Seconds(1));
 }
 
 // static
@@ -207,10 +209,11 @@ v8::Local<v8::Value> ElectronBindings::GetSystemMemoryInfo(
 // static
 v8::Local<v8::Promise> ElectronBindings::GetProcessMemoryInfo(
     v8::Isolate* isolate) {
+  CHECK(gin_helper::Locker::IsBrowserProcess());
   gin_helper::Promise<gin_helper::Dictionary> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  if (gin_helper::Locker::IsBrowserProcess() && !Browser::Get()->is_ready()) {
+  if (!Browser::Get()->is_ready()) {
     promise.RejectWithErrorMessage(
         "Memory Info is available only after app ready");
     return handle;
@@ -221,7 +224,8 @@ v8::Local<v8::Promise> ElectronBindings::GetProcessMemoryInfo(
       ->RequestGlobalDumpForPid(
           base::GetCurrentProcId(), std::vector<std::string>(),
           base::BindOnce(&ElectronBindings::DidReceiveMemoryDump,
-                         std::move(context), std::move(promise)));
+                         std::move(context), std::move(promise),
+                         base::GetCurrentProcId()));
   return handle;
 }
 
@@ -242,6 +246,7 @@ v8::Local<v8::Value> ElectronBindings::GetBlinkMemoryInfo(
 void ElectronBindings::DidReceiveMemoryDump(
     v8::Global<v8::Context> context,
     gin_helper::Promise<gin_helper::Dictionary> promise,
+    base::ProcessId target_pid,
     bool success,
     std::unique_ptr<memory_instrumentation::GlobalMemoryDump> global_dump) {
   v8::Isolate* isolate = promise.isolate();
@@ -259,7 +264,7 @@ void ElectronBindings::DidReceiveMemoryDump(
   bool resolved = false;
   for (const memory_instrumentation::GlobalMemoryDump::ProcessDump& dump :
        global_dump->process_dumps()) {
-    if (base::GetCurrentProcId() == dump.pid()) {
+    if (target_pid == dump.pid()) {
       gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
       const auto& osdump = dump.os_dump();
 #if defined(OS_LINUX) || defined(OS_WIN)

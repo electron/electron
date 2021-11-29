@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_FILE_SELECT_HELPER_H_
-#define SHELL_BROWSER_FILE_SELECT_HELPER_H_
+#ifndef ELECTRON_SHELL_BROWSER_FILE_SELECT_HELPER_H_
+#define ELECTRON_SHELL_BROWSER_FILE_SELECT_HELPER_H_
 
 #include <map>
 #include <memory>
@@ -11,7 +11,6 @@
 #include <vector>
 
 #include "base/compiler_specific.h"
-#include "base/macros.h"
 #include "base/scoped_observation.h"
 #include "build/build_config.h"
 #include "content/public/browser/browser_thread.h"
@@ -46,6 +45,10 @@ class FileSelectHelper : public base::RefCountedThreadSafe<
                          public content::RenderWidgetHostObserver,
                          private net::DirectoryLister::DirectoryListerDelegate {
  public:
+  // disable copy
+  FileSelectHelper(const FileSelectHelper&) = delete;
+  FileSelectHelper& operator=(const FileSelectHelper&) = delete;
+
   // Show the file chooser dialog.
   static void RunFileChooser(
       content::RenderFrameHost* render_frame_host,
@@ -224,8 +227,6 @@ class FileSelectHelper : public base::RefCountedThreadSafe<
   // Temporary files only used on OSX. This class is responsible for deleting
   // these files when they are no longer needed.
   std::vector<base::FilePath> temporary_files_;
-
-  DISALLOW_COPY_AND_ASSIGN(FileSelectHelper);
 };
 
-#endif  // SHELL_BROWSER_FILE_SELECT_HELPER_H_
+#endif  // ELECTRON_SHELL_BROWSER_FILE_SELECT_HELPER_H_

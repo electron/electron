@@ -15,6 +15,10 @@ static_library("chrome") {
   sources = [
     "//chrome/browser/accessibility/accessibility_ui.cc",
     "//chrome/browser/accessibility/accessibility_ui.h",
+    "//chrome/browser/app_mode/app_mode_utils.cc",
+    "//chrome/browser/app_mode/app_mode_utils.h",
+    "//chrome/browser/browser_features.cc",
+    "//chrome/browser/browser_features.h",
     "//chrome/browser/browser_process.cc",
     "//chrome/browser/browser_process.h",
     "//chrome/browser/devtools/devtools_contents_resizing_strategy.cc",
@@ -25,6 +29,7 @@ static_library("chrome") {
     "//chrome/browser/devtools/devtools_eye_dropper.h",
     "//chrome/browser/devtools/devtools_file_system_indexer.cc",
     "//chrome/browser/devtools/devtools_file_system_indexer.h",
+    "//chrome/browser/devtools/devtools_settings.h",
     "//chrome/browser/extensions/global_shortcut_listener.cc",
     "//chrome/browser/extensions/global_shortcut_listener.h",
     "//chrome/browser/icon_loader.cc",
@@ -50,8 +55,20 @@ static_library("chrome") {
     "//chrome/browser/process_singleton.h",
     "//chrome/browser/ui/browser_dialogs.cc",
     "//chrome/browser/ui/browser_dialogs.h",
-    "//chrome/browser/ui/views/autofill/autofill_popup_view_utils.cc",
-    "//chrome/browser/ui/views/autofill/autofill_popup_view_utils.h",
+    "//chrome/browser/ui/exclusive_access/exclusive_access_bubble_type.cc",
+    "//chrome/browser/ui/exclusive_access/exclusive_access_bubble_type.h",
+    "//chrome/browser/ui/exclusive_access/exclusive_access_controller_base.cc",
+    "//chrome/browser/ui/exclusive_access/exclusive_access_controller_base.h",
+    "//chrome/browser/ui/exclusive_access/exclusive_access_manager.cc",
+    "//chrome/browser/ui/exclusive_access/exclusive_access_manager.h",
+    "//chrome/browser/ui/exclusive_access/fullscreen_controller.cc",
+    "//chrome/browser/ui/exclusive_access/fullscreen_controller.h",
+    "//chrome/browser/ui/exclusive_access/fullscreen_within_tab_helper.cc",
+    "//chrome/browser/ui/exclusive_access/fullscreen_within_tab_helper.h",
+    "//chrome/browser/ui/exclusive_access/keyboard_lock_controller.cc",
+    "//chrome/browser/ui/exclusive_access/keyboard_lock_controller.h",
+    "//chrome/browser/ui/exclusive_access/mouse_lock_controller.cc",
+    "//chrome/browser/ui/exclusive_access/mouse_lock_controller.h",
     "//chrome/browser/ui/views/eye_dropper/eye_dropper.cc",
     "//chrome/browser/ui/views/eye_dropper/eye_dropper.h",
     "//chrome/browser/ui/views/eye_dropper/eye_dropper_view.cc",
@@ -96,7 +113,7 @@ static_library("chrome") {
   }
 
   if (is_linux) {
-    sources += [ "//chrome/browser/media/webrtc/window_icon_util_linux.cc" ]
+    sources += [ "//chrome/browser/media/webrtc/window_icon_util_ozone.cc" ]
   }
 
   if (use_aura) {
@@ -113,13 +130,13 @@ static_library("chrome") {
     "//components/keyed_service/content",
     "//components/paint_preview/buildflags",
     "//components/proxy_config",
+    "//components/services/language_detection/public/mojom",
     "//content/public/browser",
     "//services/strings",
   ]
 
   deps = [
     "//chrome/browser:resource_prefetch_predictor_proto",
-    "//chrome/services/speech:buildflags",
     "//components/optimization_guide/proto:optimization_guide_proto",
   ]
 
@@ -129,16 +146,6 @@ static_library("chrome") {
 
   if (is_linux) {
     sources += [ "//chrome/browser/icon_loader_auralinux.cc" ]
-    if (use_x11 || use_ozone) {
-      sources +=
-          [ "//chrome/browser/extensions/global_shortcut_listener_linux.cc" ]
-    }
-    if (use_x11) {
-      sources += [
-        "//chrome/browser/extensions/global_shortcut_listener_x11.cc",
-        "//chrome/browser/extensions/global_shortcut_listener_x11.h",
-      ]
-    }
     if (use_ozone) {
       deps += [ "//ui/ozone" ]
       sources += [
@@ -168,6 +175,7 @@ static_library("chrome") {
 
   if (enable_desktop_capturer) {
     sources += [
+      "//chrome/browser/media/webrtc/desktop_media_list.cc",
       "//chrome/browser/media/webrtc/desktop_media_list.h",
       "//chrome/browser/media/webrtc/desktop_media_list_base.cc",
       "//chrome/browser/media/webrtc/desktop_media_list_base.h",
@@ -205,6 +213,13 @@ static_library("chrome") {
       "//chrome/browser/printing/printing_service.h",
     ]
 
+    if (enable_oop_printing) {
+      sources += [
+        "//chrome/browser/printing/print_backend_service_manager.cc",
+        "//chrome/browser/printing/print_backend_service_manager.h",
+      ]
+    }
+
     public_deps += [
       "//chrome/services/printing:lib",
       "//components/printing/browser",
@@ -212,6 +227,7 @@ static_library("chrome") {
       "//components/services/print_compositor",
       "//components/services/print_compositor/public/cpp",
       "//components/services/print_compositor/public/mojom",
+      "//printing/backend",
     ]
 
     deps += [

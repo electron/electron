@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_GIN_HELPER_PROMISE_H_
-#define SHELL_COMMON_GIN_HELPER_PROMISE_H_
+#ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_PROMISE_H_
+#define ELECTRON_SHELL_COMMON_GIN_HELPER_PROMISE_H_
 
 #include <string>
 #include <tuple>
@@ -32,6 +32,10 @@ class PromiseBase {
   explicit PromiseBase(v8::Isolate* isolate);
   PromiseBase(v8::Isolate* isolate, v8::Local<v8::Promise::Resolver> handle);
   ~PromiseBase();
+
+  // disable copy
+  PromiseBase(const PromiseBase&) = delete;
+  PromiseBase& operator=(const PromiseBase&) = delete;
 
   // Support moving.
   PromiseBase(PromiseBase&&);
@@ -75,8 +79,6 @@ class PromiseBase {
   v8::Isolate* isolate_;
   v8::Global<v8::Context> context_;
   v8::Global<v8::Promise::Resolver> resolver_;
-
-  DISALLOW_COPY_AND_ASSIGN(PromiseBase);
 };
 
 // Template implementation that returns values.
@@ -104,6 +106,12 @@ class Promise : public PromiseBase {
     Promise<RT> resolved(isolate);
     resolved.Resolve(result);
     return resolved.GetHandle();
+  }
+
+  // Convert to another type.
+  template <typename NT>
+  Promise<NT> As() {
+    return Promise<NT>(isolate(), GetInner());
   }
 
   // Promise resolution is a microtask
@@ -173,4 +181,4 @@ struct Converter<gin_helper::Promise<T>> {
 
 }  // namespace gin
 
-#endif  // SHELL_COMMON_GIN_HELPER_PROMISE_H_
+#endif  // ELECTRON_SHELL_COMMON_GIN_HELPER_PROMISE_H_

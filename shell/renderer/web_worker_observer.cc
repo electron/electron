@@ -51,6 +51,10 @@ void WebWorkerObserver::WorkerScriptReadyForEvaluation(
   // Start the embed thread.
   node_bindings_->PrepareMessageLoop();
 
+  // Setup node tracing controller.
+  if (!node::tracing::TraceEventHelper::GetAgent())
+    node::tracing::TraceEventHelper::SetAgent(node::CreateAgent());
+
   // Setup node environment for each window.
   bool initialized = node::InitializeContext(worker_context);
   CHECK(initialized);

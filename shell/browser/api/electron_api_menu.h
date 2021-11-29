@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_ELECTRON_API_MENU_H_
-#define SHELL_BROWSER_API_ELECTRON_API_MENU_H_
+#ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_MENU_H_
+#define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_MENU_H_
 
 #include <memory>
 #include <string>
@@ -45,6 +45,10 @@ class Menu : public gin::Wrappable<Menu>,
 #endif
 
   ElectronMenuModel* model() const { return model_.get(); }
+
+  // disable copy
+  Menu(const Menu&) = delete;
+  Menu& operator=(const Menu&) = delete;
 
  protected:
   explicit Menu(gin::Arguments* args);
@@ -117,8 +121,6 @@ class Menu : public gin::Wrappable<Menu>,
   bool IsEnabledAt(int index) const;
   bool IsVisibleAt(int index) const;
   bool WorksWhenHiddenAt(int index) const;
-
-  DISALLOW_COPY_AND_ASSIGN(Menu);
 };
 
 }  // namespace api
@@ -148,4 +150,4 @@ struct Converter<electron::ElectronMenuModel*> {
 
 }  // namespace gin
 
-#endif  // SHELL_BROWSER_API_ELECTRON_API_MENU_H_
+#endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_MENU_H_

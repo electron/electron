@@ -2,7 +2,7 @@ is_electron_build = true
 root_extra_deps = [ "//electron" ]
 
 # Registry of NMVs --> https://github.com/nodejs/node/blob/master/doc/abi_version_registry.json
-node_module_version = 99
+node_module_version = 103
 
 v8_promise_internal_field_count = 1
 v8_typed_array_max_size_in_heap = 0
@@ -10,6 +10,9 @@ v8_embedder_string = "-electron.0"
 
 # TODO: this breaks mksnapshot
 v8_enable_snapshot_native_code_counters = false
+
+# TODO(codebytere): remove when Node.js handles https://chromium-review.googlesource.com/c/v8/v8/+/3211575
+v8_scriptormodule_legacy_lifetime = true
 
 enable_cdm_host_verification = false
 proprietary_codecs = true

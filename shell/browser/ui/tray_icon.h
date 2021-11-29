@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_UI_TRAY_ICON_H_
-#define SHELL_BROWSER_UI_TRAY_ICON_H_
+#ifndef ELECTRON_SHELL_BROWSER_UI_TRAY_ICON_H_
+#define ELECTRON_SHELL_BROWSER_UI_TRAY_ICON_H_
 
 #include <string>
 #include <vector>
@@ -27,6 +27,10 @@ class TrayIcon {
 #endif
 
   virtual ~TrayIcon();
+
+  // disable copy
+  TrayIcon(const TrayIcon&) = delete;
+  TrayIcon& operator=(const TrayIcon&) = delete;
 
   // Sets the image associated with this status icon.
   virtual void SetImage(ImageType image) = 0;
@@ -129,10 +133,8 @@ class TrayIcon {
 
  private:
   base::ObserverList<TrayIconObserver> observers_;
-
-  DISALLOW_COPY_AND_ASSIGN(TrayIcon);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_UI_TRAY_ICON_H_
+#endif  // ELECTRON_SHELL_BROWSER_UI_TRAY_ICON_H_

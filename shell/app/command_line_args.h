@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_APP_COMMAND_LINE_ARGS_H_
-#define SHELL_APP_COMMAND_LINE_ARGS_H_
+#ifndef ELECTRON_SHELL_APP_COMMAND_LINE_ARGS_H_
+#define ELECTRON_SHELL_APP_COMMAND_LINE_ARGS_H_
 
 #include "base/command_line.h"
 
@@ -14,4 +14,4 @@ bool IsSandboxEnabled(base::CommandLine* command_line);
 
 }  // namespace electron
 
-#endif  // SHELL_APP_COMMAND_LINE_ARGS_H_
+#endif  // ELECTRON_SHELL_APP_COMMAND_LINE_ARGS_H_

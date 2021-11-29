@@ -130,7 +130,7 @@ bool FillFileInfoWithNode(Archive::FileInfo* info,
           integrity->GetInteger("blockSize", &block_size) &&
           integrity->GetList("blocks", &blocks) && block_size > 0) {
         integrity_payload.block_size = static_cast<uint32_t>(block_size);
-        for (size_t i = 0; i < blocks->GetSize(); i++) {
+        for (size_t i = 0; i < blocks->GetList().size(); i++) {
           std::string block;
           if (!blocks->GetString(i, &block)) {
             LOG(FATAL)

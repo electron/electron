@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_UI_TRAY_ICON_COCOA_H_
-#define SHELL_BROWSER_UI_TRAY_ICON_COCOA_H_
+#ifndef ELECTRON_SHELL_BROWSER_UI_TRAY_ICON_COCOA_H_
+#define ELECTRON_SHELL_BROWSER_UI_TRAY_ICON_COCOA_H_
 
 #import <Cocoa/Cocoa.h>
 
@@ -44,10 +44,8 @@ class TrayIconCocoa : public TrayIcon {
   base::scoped_nsobject<ElectronMenuController> menu_;
 
   base::WeakPtrFactory<TrayIconCocoa> weak_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(TrayIconCocoa);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_UI_TRAY_ICON_COCOA_H_
+#endif  // ELECTRON_SHELL_BROWSER_UI_TRAY_ICON_COCOA_H_

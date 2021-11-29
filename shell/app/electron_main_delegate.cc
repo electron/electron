@@ -7,6 +7,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <utility>
 
 #include "base/base_switches.h"
 #include "base/command_line.h"
@@ -127,11 +128,7 @@ bool ElectronPathProvider(int key, base::FilePath* result) {
     case DIR_CRASH_DUMPS:
       if (!base::PathService::Get(chrome::DIR_USER_DATA, &cur))
         return false;
-#if defined(OS_MAC) || defined(OS_WIN)
       cur = cur.Append(FILE_PATH_LITERAL("Crashpad"));
-#else
-      cur = cur.Append(FILE_PATH_LITERAL("Crash Reports"));
-#endif
       create_dir = true;
       break;
     case chrome::DIR_APP_DICTIONARIES:
@@ -147,7 +144,7 @@ bool ElectronPathProvider(int key, base::FilePath* result) {
 #else
       // On Windows, there's no OS-level centralized location for caches, so
       // store the cache in the app data directory.
-      int parent_key = base::DIR_APP_DATA;
+      int parent_key = base::DIR_ROAMING_APP_DATA;
 #endif
       if (!base::PathService::Get(parent_key, &cur))
         return false;
@@ -447,13 +444,14 @@ ElectronMainDelegate::CreateContentUtilityClient() {
   return utility_client_.get();
 }
 
-int ElectronMainDelegate::RunProcess(
+absl::variant<int, content::MainFunctionParams>
+ElectronMainDelegate::RunProcess(
     const std::string& process_type,
-    const content::MainFunctionParams& main_function_params) {
+    content::MainFunctionParams main_function_params) {
   if (process_type == kRelauncherProcess)
     return relauncher::RelauncherMain(main_function_params);
   else
-    return -1;
+    return std::move(main_function_params);
 }
 
 bool ElectronMainDelegate::ShouldCreateFeatureList() {

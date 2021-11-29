@@ -13,10 +13,10 @@ on linux. If removing this patch doesn't cause a compile failure, it's
 fine to delete!
 
 diff --git a/components/crash/core/common/crash_key.h b/components/crash/core/common/crash_key.h
-index 9d193ea962e919d4509eef296c900e47059761f4..225b8ce822a42d31d59bc89aab473710384c3010 100644
+index 317352550f3bd4a154715046a4a16322f9e71054..906784e5eb8040677b45f6664af6fbed14780285 100644
 --- a/components/crash/core/common/crash_key.h
 +++ b/components/crash/core/common/crash_key.h
-@@ -212,6 +212,10 @@ class CrashKeyStringCombined : public internal::CrashKeyStringCombinedImpl {
+@@ -218,6 +218,10 @@ class CrashKeyStringCombined : public internal::CrashKeyStringCombinedImpl {
      crashpad_key_.Set(value);
    }
  

@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_APP_ELECTRON_LIBRARY_MAIN_H_
-#define SHELL_APP_ELECTRON_LIBRARY_MAIN_H_
+#ifndef ELECTRON_SHELL_APP_ELECTRON_LIBRARY_MAIN_H_
+#define ELECTRON_SHELL_APP_ELECTRON_LIBRARY_MAIN_H_
 
 #include "build/build_config.h"
 #include "electron/buildflags/buildflags.h"
@@ -20,4 +20,4 @@ __attribute__((visibility("default"))) int ElectronInitializeICUandStartNode(
 }
 #endif  // OS_MAC
 
-#endif  // SHELL_APP_ELECTRON_LIBRARY_MAIN_H_
+#endif  // ELECTRON_SHELL_APP_ELECTRON_LIBRARY_MAIN_H_

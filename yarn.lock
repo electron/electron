@@ -18,10 +18,10 @@
     esutils "^2.0.2"
     js-tokens "^4.0.0"
 
-"@electron/docs-parser@^0.12.2":
-  version "0.12.2"
-  resolved "https://registry.yarnpkg.com/@electron/docs-parser/-/docs-parser-0.12.2.tgz#42ac92404058411be4155b25320b96192da85ba5"
-  integrity sha512-81l/jlz21VvTOZ21NyY1gd63ZPT/Ny0vY/nu9iYb2FkaGThMvy2xKNHifPcOTDkT+94jK0D8f7eUMDh75FIqCw==
+"@electron/docs-parser@^0.12.3":
+  version "0.12.3"
+  resolved "https://registry.yarnpkg.com/@electron/docs-parser/-/docs-parser-0.12.3.tgz#a984c5ebc60348683b2acdbb0ebb73414b6763fd"
+  integrity sha512-e7OKn/NNAHMZ4Pw1702MHd2VE3Z5NKdXIIDxg9nWsDBUuSCuOKRCb4i0Ev8Eev0V0nKLaH+NMz6yzovpx0PrHg==
   dependencies:
     "@types/markdown-it" "^10.0.0"
     chai "^4.2.0"
@@ -1143,10 +1143,10 @@ atob@^2.1.1:
   resolved "https://registry.yarnpkg.com/atob/-/atob-2.1.2.tgz#6d9517eb9e030d2436666651e86bd9f6f13533c9"
   integrity sha512-Wm6ukoaOGJi/73p/cl2GvLjTI5JM1k/O14isD73YML8StrH/7/lRFgmg8nICZgD3bZZvjwCGxtMOD3wWNAu8cg==
 
-aws-sdk@^2.727.1:
-  version "2.727.1"
-  resolved "https://registry.yarnpkg.com/aws-sdk/-/aws-sdk-2.727.1.tgz#bde7a4b57b6c5b34370ad20963472ea7d24a9351"
-  integrity sha512-K+XdN11os6hvI9DgWEK9m/fPKHuDDVZalFWPouwqSk0phEdDCJ/K8InHUFL9DMvE4bxyWRuqI9dzNfdmxX0sxQ==
+aws-sdk@^2.814.0:
+  version "2.814.0"
+  resolved "https://registry.yarnpkg.com/aws-sdk/-/aws-sdk-2.814.0.tgz#7a1c36006e0b5826f14bd2511b1d229ef6814bb0"
+  integrity sha512-empd1m/J/MAkL6d9OeRpmg9thobULu0wk4v8W3JToaxGi2TD7PIdvE6yliZKyOVAdJINhBWEBhxR4OUIHhcGbQ==
   dependencies:
     buffer "4.9.2"
     events "1.1.1"
@@ -1342,19 +1342,10 @@ buffer-xor@^1.0.3:
   resolved "https://registry.yarnpkg.com/buffer-xor/-/buffer-xor-1.0.3.tgz#26e61ed1422fb70dd42e6e36729ed51d855fe8d9"
   integrity sha1-JuYe0UIvtw3ULm42cp7VHYVf6Nk=
 
-buffer@4.9.2:
+buffer@4.9.2, buffer@^4.3.0:
   version "4.9.2"
   resolved "https://registry.yarnpkg.com/buffer/-/buffer-4.9.2.tgz#230ead344002988644841ab0244af8c44bbe3ef8"
   integrity sha512-xq+q3SRMOxGivLhBNaUdC64hDTQwejJ+H0T/NB1XMtTVEwNTrfFF3gAxiyW0Bu/xWEGhjVKgUcMhCrUy2+uCWg==
-  dependencies:
-    base64-js "^1.0.2"
-    ieee754 "^1.1.4"
-    isarray "^1.0.0"
-
-buffer@^4.3.0:
-  version "4.9.1"
-  resolved "https://registry.yarnpkg.com/buffer/-/buffer-4.9.1.tgz#6d1bb601b07a4efced97094132093027c95bc298"
-  integrity sha1-bRu2AbB6TvztlwlBMgkwJ8lbwpg=
   dependencies:
     base64-js "^1.0.2"
     ieee754 "^1.1.4"

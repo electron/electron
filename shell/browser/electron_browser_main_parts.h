@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_ELECTRON_BROWSER_MAIN_PARTS_H_
-#define SHELL_BROWSER_ELECTRON_BROWSER_MAIN_PARTS_H_
+#ifndef ELECTRON_SHELL_BROWSER_ELECTRON_BROWSER_MAIN_PARTS_H_
+#define ELECTRON_SHELL_BROWSER_ELECTRON_BROWSER_MAIN_PARTS_H_
 
 #include <memory>
 #include <string>
@@ -75,6 +75,10 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
  public:
   explicit ElectronBrowserMainParts(const content::MainFunctionParams& params);
   ~ElectronBrowserMainParts() override;
+
+  // disable copy
+  ElectronBrowserMainParts(const ElectronBrowserMainParts&) = delete;
+  ElectronBrowserMainParts& operator=(const ElectronBrowserMainParts&) = delete;
 
   static ElectronBrowserMainParts* Get();
 
@@ -175,10 +179,8 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
 #endif
 
   static ElectronBrowserMainParts* self_;
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronBrowserMainParts);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_ELECTRON_BROWSER_MAIN_PARTS_H_
+#endif  // ELECTRON_SHELL_BROWSER_ELECTRON_BROWSER_MAIN_PARTS_H_

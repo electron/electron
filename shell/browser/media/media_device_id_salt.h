@@ -2,12 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_MEDIA_MEDIA_DEVICE_ID_SALT_H_
-#define SHELL_BROWSER_MEDIA_MEDIA_DEVICE_ID_SALT_H_
+#ifndef ELECTRON_SHELL_BROWSER_MEDIA_MEDIA_DEVICE_ID_SALT_H_
+#define ELECTRON_SHELL_BROWSER_MEDIA_MEDIA_DEVICE_ID_SALT_H_
 
 #include <string>
 
-#include "base/macros.h"
 #include "components/prefs/pref_member.h"
 
 class PrefRegistrySimple;
@@ -23,6 +22,10 @@ class MediaDeviceIDSalt {
   explicit MediaDeviceIDSalt(PrefService* pref_service);
   ~MediaDeviceIDSalt();
 
+  // disable copy
+  MediaDeviceIDSalt(const MediaDeviceIDSalt&) = delete;
+  MediaDeviceIDSalt& operator=(const MediaDeviceIDSalt&) = delete;
+
   std::string GetSalt();
 
   static void RegisterPrefs(PrefRegistrySimple* pref_registry);
@@ -30,10 +33,8 @@ class MediaDeviceIDSalt {
 
  private:
   StringPrefMember media_device_id_salt_;
-
-  DISALLOW_COPY_AND_ASSIGN(MediaDeviceIDSalt);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_MEDIA_MEDIA_DEVICE_ID_SALT_H_
+#endif  // ELECTRON_SHELL_BROWSER_MEDIA_MEDIA_DEVICE_ID_SALT_H_

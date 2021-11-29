@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#ifndef SHELL_BROWSER_MEDIA_MEDIA_CAPTURE_DEVICES_DISPATCHER_H_
-#define SHELL_BROWSER_MEDIA_MEDIA_CAPTURE_DEVICES_DISPATCHER_H_
+#ifndef ELECTRON_SHELL_BROWSER_MEDIA_MEDIA_CAPTURE_DEVICES_DISPATCHER_H_
+#define ELECTRON_SHELL_BROWSER_MEDIA_MEDIA_CAPTURE_DEVICES_DISPATCHER_H_
 
 #include <string>
 
@@ -67,6 +67,11 @@ class MediaCaptureDevicesDispatcher : public content::MediaObserver {
                                  blink::mojom::MediaStreamType stream_type,
                                  bool is_secure) override;
 
+  // disable copy
+  MediaCaptureDevicesDispatcher(const MediaCaptureDevicesDispatcher&) = delete;
+  MediaCaptureDevicesDispatcher& operator=(
+      const MediaCaptureDevicesDispatcher&) = delete;
+
  private:
   friend struct base::DefaultSingletonTraits<MediaCaptureDevicesDispatcher>;
 
@@ -81,10 +86,8 @@ class MediaCaptureDevicesDispatcher : public content::MediaObserver {
 
   // Flag used by unittests to disable device enumeration.
   bool is_device_enumeration_disabled_ = false;
-
-  DISALLOW_COPY_AND_ASSIGN(MediaCaptureDevicesDispatcher);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_MEDIA_MEDIA_CAPTURE_DEVICES_DISPATCHER_H_
+#endif  // ELECTRON_SHELL_BROWSER_MEDIA_MEDIA_CAPTURE_DEVICES_DISPATCHER_H_

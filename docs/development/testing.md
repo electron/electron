@@ -12,29 +12,18 @@ coding style, please see the [coding-style](coding-style.md) document.
 
 ## Linting
 
-To ensure that your JavaScript is in compliance with the Electron coding
-style, run `npm run lint-js`, which will run `standard` against both
-Electron itself as well as the unit tests. If you are using an editor
-with a plugin/addon system, you might want to use one of the many
-[StandardJS addons][standard-addons] to be informed of coding style
-violations before you ever commit them.
+To ensure that your changes are in compliance with the Electron coding
+style, run `npm run lint`, which will run a variety of linting checks
+against your changes depending on which areas of the code they touch.
 
-To run `standard` with parameters, run `npm run lint-js --` followed by
-arguments you want passed to `standard`.
-
-To ensure that your C++ is in compliance with the Electron coding style,
-run `npm run lint-cpp`, which runs a `cpplint` script. We recommend that
-you use `clang-format` and prepared [a short tutorial](clang-format.md).
-
-There is not a lot of Python in this repository, but it too is governed
-by coding style rules. `npm run lint-py` will check all Python, using
-`pylint` to do so.
+Many of these checks are included as precommit hooks, so it's likely
+you error would be caught at commit time.
 
 ## Unit Tests
 
 If you are not using [build-tools](https://github.com/electron/build-tools),
 ensure that that name you have configured for your
-local build of Electron is one of `Testing`, `Release`, `Default`, `Debug`, or
+local build of Electron is one of `Testing`, `Release`, `Default`, or
 you have set `process.env.ELECTRON_OUT_DIR`. Without these set, Electron will fail
 to perform some pre-testing steps.
 
@@ -43,12 +32,34 @@ app (surprise!) that can be found in the `spec` folder. Note that it has
 its own `package.json` and that its dependencies are therefore not defined
 in the top-level `package.json`.
 
+To run only tests in a specific process, run `npm run test --runners=PROCESS`
+where `PROCESS` is one of `main` or `remote`.
+
 To run only specific tests matching a pattern, run `npm run test --
 -g=PATTERN`, replacing the `PATTERN` with a regex that matches the tests
 you would like to run. As an example: If you want to run only IPC tests, you
 would run `npm run test -- -g ipc`.
 
-[standard-addons]: https://standardjs.com/#are-there-text-editor-plugins
+## Node.js Smoke Tests
+
+If you've made changes that might affect the way Node.js is embedded into Electron,
+we have a test runner that runs all of the tests from Node.js, using Electron's custom fork
+of Node.js.
+
+To run all of the Node.js tests:
+
+```bash
+$ node script/node-spec-runner.js
+```
+
+To run a single Node.js test:
+
+```bash
+$ node script/node-spec-runner.js parallel/test-crypto-keygen
+```
+
+where the argument passed to the runner is the path to the test in
+the Node.js source tree.
 
 ### Testing on Windows 10 devices
 

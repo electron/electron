@@ -21,7 +21,7 @@ index 1cc7da1ce15f43905ce607adcc1a23ed9d92948a..16af6aec3791df1363682f1ed024c522
                           Isolate* isolate,
                           const std::vector<std::string>& args,
 diff --git a/src/env.h b/src/env.h
-index d31512ae37fba212a20cf306be46f7dfadeabd6a..8286ea06cc5c4e836921b06b37cf19d4508f4832 100644
+index e0deca497feb111622b257b952c9ed9161c7d001..ab8334bf0e3405fee4d21a4b541bd1164d92ca89 100644
 --- a/src/env.h
 +++ b/src/env.h
 @@ -1145,6 +1145,8 @@ class Environment : public MemoryRetainer {
@@ -34,10 +34,10 @@ index d31512ae37fba212a20cf306be46f7dfadeabd6a..8286ea06cc5c4e836921b06b37cf19d4
    inline std::vector<double>* destroy_async_id_list();
  
 diff --git a/src/node.cc b/src/node.cc
-index 788e61645a281197cb3a1f3acbae427ddae1ab23..5afd3541d52d275d55067ddb1c11a585214eff41 100644
+index 207a95d202b4e422a39f837241f1655f7111b1e3..14b9002dbd918b59b05d8b12c5441080695ed9f0 100644
 --- a/src/node.cc
 +++ b/src/node.cc
-@@ -882,7 +882,7 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
+@@ -875,7 +875,7 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
  #if !defined(NODE_WITHOUT_NODE_OPTIONS)
    std::string node_options;
  

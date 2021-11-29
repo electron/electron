@@ -1,6 +1,6 @@
 # TraceConfig Object
 
-* `recording_mode` String (optional) - Can be `record-until-full`, `record-continuously`, `record-as-much-as-possible` or `trace-to-console`. Defaults to `record-until-full`.
+* `recording_mode` string (optional) - Can be `record-until-full`, `record-continuously`, `record-as-much-as-possible` or `trace-to-console`. Defaults to `record-until-full`.
 * `trace_buffer_size_in_kb` number (optional) - maximum size of the trace
   recording buffer in kilobytes. Defaults to 100MB.
 * `trace_buffer_size_in_events` number (optional) - maximum size of the trace
@@ -9,17 +9,17 @@
   according to a specific list of events that have been manually vetted to not
   include any PII. See [the implementation in
   Chromium][trace_event_args_whitelist.cc] for specifics.
-* `included_categories` String[] (optional) - a list of tracing categories to
+* `included_categories` string[] (optional) - a list of tracing categories to
   include. Can include glob-like patterns using `*` at the end of the category
   name. See [tracing categories][] for the list of categories.
-* `excluded_categories` String[] (optional) - a list of tracing categories to
+* `excluded_categories` string[] (optional) - a list of tracing categories to
   exclude. Can include glob-like patterns using `*` at the end of the category
   name. See [tracing categories][] for the list of categories.
 * `included_process_ids` number[] (optional) - a list of process IDs to
   include in the trace. If not specified, trace all processes.
-* `histogram_names` String[] (optional) - a list of [histogram][] names to report
+* `histogram_names` string[] (optional) - a list of [histogram][] names to report
   with the trace.
-* `memory_dump_config` Record<String, any> (optional) - if the
+* `memory_dump_config` Record<string, any> (optional) - if the
   `disabled-by-default-memory-infra` category is enabled, this contains
   optional additional configuration for data collection. See the [Chromium
   memory-infra docs][memory-infra docs] for more information.

@@ -2,14 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef CHROME_BROWSER_CERTIFICATE_MANAGER_MODEL_H_
-#define CHROME_BROWSER_CERTIFICATE_MANAGER_MODEL_H_
+#ifndef ELECTRON_SHELL_BROWSER_CERTIFICATE_MANAGER_MODEL_H_
+#define ELECTRON_SHELL_BROWSER_CERTIFICATE_MANAGER_MODEL_H_
 
 #include <memory>
 #include <string>
 
 #include "base/callback.h"
-#include "base/macros.h"
 #include "base/memory/ref_counted.h"
 #include "net/cert/nss_cert_database.h"
 
@@ -30,6 +29,10 @@ class CertificateManagerModel {
   // |browser_context|.
   static void Create(content::BrowserContext* browser_context,
                      CreationCallback callback);
+
+  // disable copy
+  CertificateManagerModel(const CertificateManagerModel&) = delete;
+  CertificateManagerModel& operator=(const CertificateManagerModel&) = delete;
 
   ~CertificateManagerModel();
 
@@ -108,8 +111,6 @@ class CertificateManagerModel {
   // Whether the certificate database has a public slot associated with the
   // profile. If not set, importing certificates is not allowed with this model.
   bool is_user_db_available_;
-
-  DISALLOW_COPY_AND_ASSIGN(CertificateManagerModel);
 };
 
-#endif  // CHROME_BROWSER_CERTIFICATE_MANAGER_MODEL_H_
+#endif  // ELECTRON_SHELL_BROWSER_CERTIFICATE_MANAGER_MODEL_H_

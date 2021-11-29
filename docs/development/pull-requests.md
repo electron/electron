@@ -79,7 +79,7 @@ $ git add my/changed/files
 $ git commit
 ```
 
-Note that multiple commits often get squashed when they are landed.
+Note that multiple commits get squashed when they are landed.
 
 #### Commit message guidelines
 
@@ -180,18 +180,10 @@ $ git push origin my-branch
 ### Step 9: Opening the Pull Request
 
 From within GitHub, opening a new pull request will present you with a template
-that should be filled out:
+that should be filled out. It can be found [here](../../.github/PULL_REQUEST_TEMPLATE.md).
 
-```markdown
-<!--
-Thank you for your pull request. Please provide a description above and review
-the requirements below.
-
-Bug fixes and new features should include tests and possibly benchmarks.
-
-Contributors guide: https://github.com/electron/electron/blob/main/CONTRIBUTING.md
--->
-```
+If you do not adequately complete this template, your PR may be delayed in being merged as maintainers
+seek more information or clarify ambiguities.
 
 ### Step 10: Discuss and update
 

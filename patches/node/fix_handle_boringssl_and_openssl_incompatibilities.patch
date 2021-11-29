@@ -17,10 +17,10 @@ Upstreams:
 - https://github.com/nodejs/node/pull/39136
 
 diff --git a/src/crypto/crypto_common.cc b/src/crypto/crypto_common.cc
-index f4b7bd3ad8548a0b69943ddea669e6f1991b7a49..221d652fa7de246e5f69fcf392e334087bac0199 100644
+index cc03fddd464b09dd3647e3f5183dc3c49affc94f..3aa6b40ab9b10cdd56002e9f020a6f6b1ae02222 100644
 --- a/src/crypto/crypto_common.cc
 +++ b/src/crypto/crypto_common.cc
-@@ -242,7 +242,7 @@ const char* GetClientHelloALPN(const SSLPointer& ssl) {
+@@ -244,7 +244,7 @@ const char* GetClientHelloALPN(const SSLPointer& ssl) {
    const unsigned char* buf;
    size_t len;
    size_t rem;
@@ -29,7 +29,7 @@ index f4b7bd3ad8548a0b69943ddea669e6f1991b7a49..221d652fa7de246e5f69fcf392e33408
    if (!SSL_client_hello_get0_ext(
            ssl.get(),
            TLSEXT_TYPE_application_layer_protocol_negotiation,
-@@ -255,13 +255,15 @@ const char* GetClientHelloALPN(const SSLPointer& ssl) {
+@@ -257,13 +257,15 @@ const char* GetClientHelloALPN(const SSLPointer& ssl) {
    len = (buf[0] << 8) | buf[1];
    if (len + 2 != rem) return nullptr;
    return reinterpret_cast<const char*>(buf + 3);
@@ -46,7 +46,7 @@ index f4b7bd3ad8548a0b69943ddea669e6f1991b7a49..221d652fa7de246e5f69fcf392e33408
    if (!SSL_client_hello_get0_ext(
            ssl.get(),
            TLSEXT_TYPE_server_name,
-@@ -283,6 +285,8 @@ const char* GetClientHelloServerName(const SSLPointer& ssl) {
+@@ -285,6 +287,8 @@ const char* GetClientHelloServerName(const SSLPointer& ssl) {
    if (len + 2 > rem)
      return nullptr;
    return reinterpret_cast<const char*>(buf + 5);
@@ -55,39 +55,41 @@ index f4b7bd3ad8548a0b69943ddea669e6f1991b7a49..221d652fa7de246e5f69fcf392e33408
  }
  
  const char* GetServerName(SSL* ssl) {
-@@ -290,7 +294,10 @@ const char* GetServerName(SSL* ssl) {
+@@ -292,7 +296,10 @@ const char* GetServerName(SSL* ssl) {
  }
  
  bool SetGroups(SecureContext* sc, const char* groups) {
 +#ifndef OPENSSL_IS_BORINGSSL
    return SSL_CTX_set1_groups_list(**sc, groups) == 1;
 +#endif
-+  return false;
++  return SSL_CTX_set1_curves_list(**sc, groups) == 1;
  }
  
  const char* X509ErrorCode(long err) {  // NOLINT(runtime/int)
-@@ -757,13 +764,13 @@ MaybeLocal<Array> GetClientHelloCiphers(
+@@ -771,14 +778,14 @@ MaybeLocal<Array> GetClientHelloCiphers(
      Environment* env,
      const SSLPointer& ssl) {
    EscapableHandleScope scope(env->isolate());
 -  const unsigned char* buf;
 -  size_t len = SSL_client_hello_get0_ciphers(ssl.get(), &buf);
-+  const unsigned char* buf = nullptr;
++  // const unsigned char* buf = nullptr;
 +  size_t len = 0; // SSL_client_hello_get0_ciphers(ssl.get(), &buf);
    size_t count = len / 2;
    MaybeStackBuffer<Local<Value>, 16> ciphers(count);
    int j = 0;
    for (size_t n = 0; n < len; n += 2) {
 -    const SSL_CIPHER* cipher = SSL_CIPHER_find(ssl.get(), buf);
+-    buf += 2;
 +    const SSL_CIPHER* cipher = nullptr; // SSL_CIPHER_find(ssl.get(), buf);
-     buf += 2;
++    // buf += 2;
      Local<Object> obj = Object::New(env->isolate());
      if (!Set(env->context(),
+              obj,
 diff --git a/src/crypto/crypto_dh.cc b/src/crypto/crypto_dh.cc
-index 1c48f98656fd211403354bb88331450e51ffb3e5..19029e058eb7ebbea283ad49be47c0c6246cf4e7 100644
+index 86475e3b1b1e017c7b81a858354632accf9618de..02fa7d27cecea61b4321b551c2f6e1609f519c89 100644
 --- a/src/crypto/crypto_dh.cc
 +++ b/src/crypto/crypto_dh.cc
-@@ -120,13 +120,11 @@ void DiffieHellman::MemoryInfo(MemoryTracker* tracker) const {
+@@ -122,13 +122,11 @@ void DiffieHellman::MemoryInfo(MemoryTracker* tracker) const {
  bool DiffieHellman::Init(const char* p, int p_len, int g) {
    dh_.reset(DH_new());
    if (p_len <= 0) {
@@ -103,7 +105,7 @@ index 1c48f98656fd211403354bb88331450e51ffb3e5..19029e058eb7ebbea283ad49be47c0c6
      return false;
    }
    BIGNUM* bn_p =
-@@ -144,21 +142,18 @@ bool DiffieHellman::Init(const char* p, int p_len, int g) {
+@@ -146,21 +144,18 @@ bool DiffieHellman::Init(const char* p, int p_len, int g) {
  bool DiffieHellman::Init(const char* p, int p_len, const char* g, int g_len) {
    dh_.reset(DH_new());
    if (p_len <= 0) {
@@ -128,7 +130,7 @@ index 1c48f98656fd211403354bb88331450e51ffb3e5..19029e058eb7ebbea283ad49be47c0c6
      return false;
    }
    BIGNUM* bn_p =
-@@ -478,16 +473,20 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
+@@ -480,16 +475,20 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
      if (!BN_set_word(bn_g.get(), params->params.generator) ||
          !DH_set0_pqg(dh.get(), prime, nullptr, bn_g.get()))
        return EVPKeyCtxPointer();
@@ -150,7 +152,7 @@ index 1c48f98656fd211403354bb88331450e51ffb3e5..19029e058eb7ebbea283ad49be47c0c6
      if (!param_ctx ||
          EVP_PKEY_paramgen_init(param_ctx.get()) <= 0 ||
          EVP_PKEY_CTX_set_dh_paramgen_prime_len(
-@@ -499,8 +498,10 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
+@@ -501,8 +500,10 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
          EVP_PKEY_paramgen(param_ctx.get(), &raw_params) <= 0) {
        return EVPKeyCtxPointer();
      }
@@ -222,18 +224,9 @@ index 7cb4513f9ad0eaadd055b169520ae1e5073b7e2d..50a6663966cdb147a702df21240fa449
      THROW_ERR_CRYPTO_OPERATION_FAILED(env, "could not generate prime");
      return Nothing<bool>();
 diff --git a/src/crypto/crypto_rsa.cc b/src/crypto/crypto_rsa.cc
-index d2307c33f5de8733b1343225a3fe6a700d1f51e4..fd31caa1355cd7be98992411b9cda2dbb500f211 100644
+index d2307c33f5de8733b1343225a3fe6a700d1f51e4..0870657be060a58aa3337c0b9e4b8cabe4a31128 100644
 --- a/src/crypto/crypto_rsa.cc
 +++ b/src/crypto/crypto_rsa.cc
-@@ -580,7 +580,7 @@ Maybe<bool> GetRsaKeyDetail(
-     // In that case, RSA_get0_pss_params does not return nullptr but all fields
-     // of the returned RSA_PSS_PARAMS will be set to nullptr.
- 
--    const RSA_PSS_PARAMS* params = RSA_get0_pss_params(rsa);
-+    const RSA_PSS_PARAMS* params = nullptr; // RSA_get0_pss_params(rsa);
-     if (params != nullptr) {
-       int hash_nid = NID_sha1;
-       int mgf_nid = NID_mgf1;
 @@ -621,10 +621,11 @@ Maybe<bool> GetRsaKeyDetail(
        }
  

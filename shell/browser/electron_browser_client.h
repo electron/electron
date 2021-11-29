@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_ELECTRON_BROWSER_CLIENT_H_
-#define SHELL_BROWSER_ELECTRON_BROWSER_CLIENT_H_
+#ifndef ELECTRON_SHELL_BROWSER_ELECTRON_BROWSER_CLIENT_H_
+#define ELECTRON_SHELL_BROWSER_ELECTRON_BROWSER_CLIENT_H_
 
 #include <map>
 #include <memory>
@@ -48,6 +48,10 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
 
   ElectronBrowserClient();
   ~ElectronBrowserClient() override;
+
+  // disable copy
+  ElectronBrowserClient(const ElectronBrowserClient&) = delete;
+  ElectronBrowserClient& operator=(const ElectronBrowserClient&) = delete;
 
   using Delegate = content::ContentBrowserClient;
   void set_delegate(Delegate* delegate) { delegate_ = delegate; }
@@ -100,6 +104,8 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   content::HidDelegate* GetHidDelegate() override;
 
   device::GeolocationManager* GetGeolocationManager() override;
+
+  content::PlatformNotificationService* GetPlatformNotificationService();
 
  protected:
   void RenderProcessWillLaunch(content::RenderProcessHost* host) override;
@@ -173,10 +179,8 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   content::MediaObserver* GetMediaObserver() override;
   std::unique_ptr<content::DevToolsManagerDelegate>
   CreateDevToolsManagerDelegate() override;
-  content::PlatformNotificationService* GetPlatformNotificationService(
-      content::BrowserContext* browser_context) override;
   std::unique_ptr<content::BrowserMainParts> CreateBrowserMainParts(
-      const content::MainFunctionParams&) override;
+      content::MainFunctionParams params) override;
   base::FilePath GetDefaultDownloadDirectory() override;
   scoped_refptr<network::SharedURLLoaderFactory>
   GetSystemSharedURLLoaderFactory() override;
@@ -228,7 +232,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       network::mojom::URLLoaderFactoryParams* factory_params) override;
 #if defined(OS_WIN)
   bool PreSpawnChild(sandbox::TargetPolicy* policy,
-                     sandbox::policy::SandboxType sandbox_type,
+                     sandbox::mojom::Sandbox sandbox_type,
                      ChildSpawnFlags flags) override;
 #endif
   bool BindAssociatedReceiverFromFrame(
@@ -243,6 +247,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       int frame_tree_node_id,
       content::NavigationUIData* navigation_data,
       bool is_main_frame,
+      network::mojom::WebSandboxFlags sandbox_flags,
       ui::PageTransition page_transition,
       bool has_user_gesture,
       const absl::optional<url::Origin>& initiating_origin,
@@ -317,10 +322,8 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
 #if defined(OS_MAC)
   ElectronBrowserMainParts* browser_main_parts_ = nullptr;
 #endif
-
-  DISALLOW_COPY_AND_ASSIGN(ElectronBrowserClient);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_ELECTRON_BROWSER_CLIENT_H_
+#endif  // ELECTRON_SHELL_BROWSER_ELECTRON_BROWSER_CLIENT_H_

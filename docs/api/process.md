@@ -49,66 +49,66 @@ beginning to load the web page or the main script.
 
 ### `process.defaultApp` _Readonly_
 
-A `Boolean`. When app is started by being passed as parameter to the default app, this
+A `boolean`. When app is started by being passed as parameter to the default app, this
 property is `true` in the main process, otherwise it is `undefined`.
 
 ### `process.isMainFrame` _Readonly_
 
-A `Boolean`, `true` when the current renderer context is the "main" renderer
+A `boolean`, `true` when the current renderer context is the "main" renderer
 frame. If you want the ID of the current frame you should use `webFrame.routingId`.
 
 ### `process.mas` _Readonly_
 
-A `Boolean`. For Mac App Store build, this property is `true`, for other builds it is
+A `boolean`. For Mac App Store build, this property is `true`, for other builds it is
 `undefined`.
 
 ### `process.noAsar`
 
-A `Boolean` that controls ASAR support inside your application. Setting this to `true`
+A `boolean` that controls ASAR support inside your application. Setting this to `true`
 will disable the support for `asar` archives in Node's built-in modules.
 
 ### `process.noDeprecation`
 
-A `Boolean` that controls whether or not deprecation warnings are printed to `stderr`.
+A `boolean` that controls whether or not deprecation warnings are printed to `stderr`.
 Setting this to `true` will silence deprecation warnings. This property is used
 instead of the `--no-deprecation` command line flag.
 
 ### `process.resourcesPath` _Readonly_
 
-A `String` representing the path to the resources directory.
+A `string` representing the path to the resources directory.
 
 ### `process.sandboxed` _Readonly_
 
-A `Boolean`. When the renderer process is sandboxed, this property is `true`,
+A `boolean`. When the renderer process is sandboxed, this property is `true`,
 otherwise it is `undefined`.
 
 ### `process.contextIsolated` _Readonly_
 
-A `Boolean` that indicates whether the current renderer context has `contextIsolation` enabled.
+A `boolean` that indicates whether the current renderer context has `contextIsolation` enabled.
 It is `undefined` in the main process.
 
 ### `process.throwDeprecation`
 
-A `Boolean` that controls whether or not deprecation warnings will be thrown as
+A `boolean` that controls whether or not deprecation warnings will be thrown as
 exceptions. Setting this to `true` will throw errors for deprecations. This
 property is used instead of the `--throw-deprecation` command line flag.
 
 ### `process.traceDeprecation`
 
-A `Boolean` that controls whether or not deprecations printed to `stderr` include
+A `boolean` that controls whether or not deprecations printed to `stderr` include
  their stack trace. Setting this to `true` will print stack traces for deprecations.
  This property is instead of the `--trace-deprecation` command line flag.
 
 ### `process.traceProcessWarnings`
 
-A `Boolean` that controls whether or not process warnings printed to `stderr` include
+A `boolean` that controls whether or not process warnings printed to `stderr` include
  their stack trace. Setting this to `true` will print stack traces for process warnings
  (including deprecations). This property is instead of the `--trace-warnings` command
  line flag.
 
 ### `process.type` _Readonly_
 
-A `String` representing the current process's type, can be:
+A `string` representing the current process's type, can be:
 
 * `browser` - The main process
 * `renderer` - A renderer process
@@ -116,20 +116,20 @@ A `String` representing the current process's type, can be:
 
 ### `process.versions.chrome` _Readonly_
 
-A `String` representing Chrome's version string.
+A `string` representing Chrome's version string.
 
 ### `process.versions.electron` _Readonly_
 
-A `String` representing Electron's version string.
+A `string` representing Electron's version string.
 
 ### `process.windowsStore` _Readonly_
 
-A `Boolean`. If the app is running as a Windows Store app (appx), this property is `true`,
+A `boolean`. If the app is running as a Windows Store app (appx), this property is `true`,
 for otherwise it is `undefined`.
 
 ### `process.contextId` _Readonly_
 
-A `String` (optional) representing a globally unique ID of the current JavaScript context.
+A `string` (optional) representing a globally unique ID of the current JavaScript context.
 Each frame has its own JavaScript context. When contextIsolation is enabled, the isolated
 world also has a separate JavaScript context.
 This property is only available in the renderer process.
@@ -144,7 +144,7 @@ Causes the main thread of the current process crash.
 
 ### `process.getCreationTime()`
 
-Returns `Number | null` - The number of milliseconds since epoch, or `null` if the information is unavailable
+Returns `number | null` - The number of milliseconds since epoch, or `null` if the information is unavailable
 
 Indicates the creation time of the application.
 The time is represented as number of milliseconds since epoch. It returns null if it is unable to get the process creation time.
@@ -169,7 +169,7 @@ Returns `Object`:
 * `heapSizeLimit` Integer
 * `mallocedMemory` Integer
 * `peakMallocedMemory` Integer
-* `doesZapGarbage` Boolean
+* `doesZapGarbage` boolean
 
 Returns an object with V8 heap statistics. Note that all statistics are reported in Kilobytes.
 
@@ -217,7 +217,7 @@ that all statistics are reported in Kilobytes.
 
 ### `process.getSystemVersion()`
 
-Returns `String` - The version of the host operating system.
+Returns `string` - The version of the host operating system.
 
 Example:
 
@@ -233,9 +233,9 @@ console.log(version)
 
 ### `process.takeHeapSnapshot(filePath)`
 
-* `filePath` String - Path to the output file.
+* `filePath` string - Path to the output file.
 
-Returns `Boolean` - Indicates whether the snapshot has been created successfully.
+Returns `boolean` - Indicates whether the snapshot has been created successfully.
 
 Takes a V8 heap snapshot and saves it to `filePath`.
 

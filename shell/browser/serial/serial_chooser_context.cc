@@ -13,22 +13,25 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
 #include "content/public/browser/device_service.h"
+#include "content/public/browser/web_contents.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
+#include "shell/browser/web_contents_permission_helper.h"
 
 namespace electron {
 
 constexpr char kPortNameKey[] = "name";
 constexpr char kTokenKey[] = "token";
+
 #if defined(OS_WIN)
-constexpr char kDeviceInstanceIdKey[] = "device_instance_id";
+const char kDeviceInstanceIdKey[] = "device_instance_id";
 #else
-constexpr char kVendorIdKey[] = "vendor_id";
-constexpr char kProductIdKey[] = "product_id";
-constexpr char kSerialNumberKey[] = "serial_number";
+const char kVendorIdKey[] = "vendor_id";
+const char kProductIdKey[] = "product_id";
+const char kSerialNumberKey[] = "serial_number";
 #if defined(OS_MAC)
-constexpr char kUsbDriverKey[] = "usb_driver";
+const char kUsbDriverKey[] = "usb_driver";
 #endif  // defined(OS_MAC)
-#endif  // defined(OS_WIN)
+#endif  // defined(OS_WIN
 
 std::string EncodeToken(const base::UnguessableToken& token) {
   const uint64_t data[2] = {token.GetHighForSerialization(),
@@ -83,21 +86,24 @@ base::Value PortInfoToValue(const device::mojom::SerialPortInfo& port) {
   return value;
 }
 
-SerialChooserContext::SerialChooserContext(
-    ElectronBrowserContext* browser_context)
-    : browser_context_(browser_context) {}
+SerialChooserContext::SerialChooserContext() = default;
 
 SerialChooserContext::~SerialChooserContext() = default;
 
 void SerialChooserContext::GrantPortPermission(
     const url::Origin& origin,
-    const device::mojom::SerialPortInfo& port) {
+    const device::mojom::SerialPortInfo& port,
+    content::RenderFrameHost* render_frame_host) {
   base::Value value = PortInfoToValue(port);
   port_info_.insert({port.token, value.Clone()});
 
   if (CanStorePersistentEntry(port)) {
-    browser_context_->GrantObjectPermission(origin, std::move(value),
-                                            kSerialGrantedDevicesPref);
+    auto* web_contents =
+        content::WebContents::FromRenderFrameHost(render_frame_host);
+    auto* permission_helper =
+        WebContentsPermissionHelper::FromWebContents(web_contents);
+    permission_helper->GrantSerialPortPermission(origin, std::move(value),
+                                                 render_frame_host);
     return;
   }
 
@@ -106,7 +112,8 @@ void SerialChooserContext::GrantPortPermission(
 
 bool SerialChooserContext::HasPortPermission(
     const url::Origin& origin,
-    const device::mojom::SerialPortInfo& port) {
+    const device::mojom::SerialPortInfo& port,
+    content::RenderFrameHost* render_frame_host) {
   auto it = ephemeral_ports_.find(origin);
   if (it != ephemeral_ports_.end()) {
     const std::set<base::UnguessableToken> ports = it->second;
@@ -118,39 +125,13 @@ bool SerialChooserContext::HasPortPermission(
     return false;
   }
 
-  std::vector<std::unique_ptr<base::Value>> object_list =
-      browser_context_->GetGrantedObjects(origin, kSerialGrantedDevicesPref);
-  for (const auto& device : object_list) {
-#if defined(OS_WIN)
-    const std::string& device_instance_id =
-        *device->FindStringKey(kDeviceInstanceIdKey);
-    if (port.device_instance_id == device_instance_id)
-      return true;
-#else
-    const int vendor_id = *device->FindIntKey(kVendorIdKey);
-    const int product_id = *device->FindIntKey(kProductIdKey);
-    const std::string& serial_number = *device->FindStringKey(kSerialNumberKey);
-
-    // Guaranteed by the CanStorePersistentEntry) check above.
-    DCHECK(port.has_vendor_id);
-    DCHECK(port.has_product_id);
-    DCHECK(port.serial_number && !port.serial_number->empty());
-    if (port.vendor_id != vendor_id || port.product_id != product_id ||
-        port.serial_number != serial_number) {
-      continue;
-    }
-
-#if defined(OS_MAC)
-    const std::string& usb_driver_name = *device->FindStringKey(kUsbDriverKey);
-    if (port.usb_driver_name != usb_driver_name) {
-      continue;
-    }
-#endif  // defined(OS_MAC)
-
-    return true;
-#endif  // defined(OS_WIN)
-  }
-  return false;
+  auto* web_contents =
+      content::WebContents::FromRenderFrameHost(render_frame_host);
+  auto* permission_helper =
+      WebContentsPermissionHelper::FromWebContents(web_contents);
+  base::Value value = PortInfoToValue(port);
+  return permission_helper->CheckSerialPortPermission(origin, std::move(value),
+                                                      render_frame_host);
 }
 
 // static

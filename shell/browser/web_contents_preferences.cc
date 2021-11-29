@@ -176,7 +176,11 @@ void WebContentsPreferences::Clear() {
 void WebContentsPreferences::SetFromDictionary(
     const gin_helper::Dictionary& web_preferences) {
   Clear();
+  Merge(web_preferences);
+}
 
+void WebContentsPreferences::Merge(
+    const gin_helper::Dictionary& web_preferences) {
   web_preferences.Get(options::kPlugins, &plugins_);
   web_preferences.Get(options::kExperimentalFeatures, &experimental_features_);
   web_preferences.Get(options::kNodeIntegration, &node_integration_);
@@ -225,6 +229,12 @@ void WebContentsPreferences::SetFromDictionary(
   web_preferences.Get("disablePopups", &disable_popups_);
   web_preferences.Get("disableDialogs", &disable_dialogs_);
   web_preferences.Get("safeDialogs", &safe_dialogs_);
+  // preferences don't save a transparency option,
+  // apply any existing transparency setting to background_color_
+  bool transparent;
+  if (web_preferences.Get(options::kTransparent, &transparent)) {
+    background_color_ = SK_ColorTRANSPARENT;
+  }
   std::string background_color;
   if (web_preferences.GetHidden(options::kBackgroundColor, &background_color))
     background_color_ = ParseHexColor(background_color);
@@ -513,6 +523,6 @@ void WebContentsPreferences::OverrideWebkitPrefs(
   prefs->v8_cache_options = v8_cache_options_;
 }
 
-WEB_CONTENTS_USER_DATA_KEY_IMPL(WebContentsPreferences)
+WEB_CONTENTS_USER_DATA_KEY_IMPL(WebContentsPreferences);
 
 }  // namespace electron

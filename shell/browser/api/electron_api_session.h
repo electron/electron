@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_API_ELECTRON_API_SESSION_H_
-#define SHELL_BROWSER_API_ELECTRON_API_SESSION_H_
+#ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_SESSION_H_
+#define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_SESSION_H_
 
 #include <string>
 #include <vector>
@@ -155,6 +155,10 @@ class Session : public gin::Wrappable<Session>,
                            extensions::UnloadedExtensionReason reason) override;
 #endif
 
+  // disable copy
+  Session(const Session&) = delete;
+  Session& operator=(const Session&) = delete;
+
  protected:
   Session(v8::Isolate* isolate, ElectronBrowserContext* browser_context);
   ~Session() override;
@@ -187,12 +191,10 @@ class Session : public gin::Wrappable<Session>,
   base::UnguessableToken network_emulation_token_;
 
   ElectronBrowserContext* browser_context_;
-
-  DISALLOW_COPY_AND_ASSIGN(Session);
 };
 
 }  // namespace api
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_API_ELECTRON_API_SESSION_H_
+#endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_SESSION_H_

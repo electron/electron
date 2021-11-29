@@ -3,38 +3,47 @@
 > Access information about media sources that can be used to capture audio and
 > video from the desktop using the [`navigator.mediaDevices.getUserMedia`] API.
 
-Process: [Main](../glossary.md#main-process), [Renderer](../glossary.md#renderer-process)
+Process: [Main](../glossary.md#main-process)
 
 The following example shows how to capture video from a desktop window whose
 title is `Electron`:
 
 ```javascript
-// In the renderer process.
+// In the main process.
 const { desktopCapturer } = require('electron')
 
 desktopCapturer.getSources({ types: ['window', 'screen'] }).then(async sources => {
   for (const source of sources) {
     if (source.name === 'Electron') {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: false,
-          video: {
-            mandatory: {
-              chromeMediaSource: 'desktop',
-              chromeMediaSourceId: source.id,
-              minWidth: 1280,
-              maxWidth: 1280,
-              minHeight: 720,
-              maxHeight: 720
-            }
-          }
-        })
-        handleStream(stream)
-      } catch (e) {
-        handleError(e)
-      }
+      mainWindow.webContents.send('SET_SOURCE', source.id)
       return
     }
+  }
+})
+```
+
+```javascript
+// In the preload script.
+const { ipcRenderer } = require('electron')
+
+ipcRenderer.on('SET_SOURCE', async (event, sourceId) => {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: false,
+      video: {
+        mandatory: {
+          chromeMediaSource: 'desktop',
+          chromeMediaSourceId: sourceId,
+          minWidth: 1280,
+          maxWidth: 1280,
+          minHeight: 720,
+          maxHeight: 720
+        }
+      }
+    })
+    handleStream(stream)
+  } catch (e) {
+    handleError(e)
   }
 })
 
@@ -79,13 +88,13 @@ The `desktopCapturer` module has the following methods:
 ### `desktopCapturer.getSources(options)`
 
 * `options` Object
-  * `types` String[] - An array of Strings that lists the types of desktop sources
+  * `types` string[] - An array of strings that lists the types of desktop sources
     to be captured, available types are `screen` and `window`.
   * `thumbnailSize` [Size](structures/size.md) (optional) - The size that the media source thumbnail
     should be scaled to. Default is `150` x `150`. Set width or height to 0 when you do not need
     the thumbnails. This will save the processing time required for capturing the content of each
     window and screen.
-  * `fetchWindowIcons` Boolean (optional) - Set to true to enable fetching window icons. The default
+  * `fetchWindowIcons` boolean (optional) - Set to true to enable fetching window icons. The default
     value is false. When false the appIcon property of the sources return null. Same if a source has
     the type screen.
 

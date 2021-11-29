@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_COMMON_GIN_HELPER_TRACKABLE_OBJECT_H_
-#define SHELL_COMMON_GIN_HELPER_TRACKABLE_OBJECT_H_
+#ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_TRACKABLE_OBJECT_H_
+#define ELECTRON_SHELL_COMMON_GIN_HELPER_TRACKABLE_OBJECT_H_
 
 #include <vector>
 
@@ -23,6 +23,10 @@ namespace gin_helper {
 class TrackableObjectBase : public CleanedUpAtExit {
  public:
   TrackableObjectBase();
+
+  // disable copy
+  TrackableObjectBase(const TrackableObjectBase&) = delete;
+  TrackableObjectBase& operator=(const TrackableObjectBase&) = delete;
 
   // The ID in weak map.
   int32_t weak_map_id() const { return weak_map_id_; }
@@ -45,8 +49,6 @@ class TrackableObjectBase : public CleanedUpAtExit {
   void Destroy();
 
   base::WeakPtrFactory<TrackableObjectBase> weak_factory_{this};
-
-  DISALLOW_COPY_AND_ASSIGN(TrackableObjectBase);
 };
 
 // All instances of TrackableObject will be kept in a weak map and can be got
@@ -125,8 +127,6 @@ class TrackableObject : public TrackableObjectBase, public EventEmitter<T> {
  private:
   static int32_t next_id_;
   static electron::KeyWeakMap<int32_t>* weak_map_;  // leaked on purpose
-
-  DISALLOW_COPY_AND_ASSIGN(TrackableObject);
 };
 
 template <typename T>
@@ -137,4 +137,4 @@ electron::KeyWeakMap<int32_t>* TrackableObject<T>::weak_map_ = nullptr;
 
 }  // namespace gin_helper
 
-#endif  // SHELL_COMMON_GIN_HELPER_TRACKABLE_OBJECT_H_
+#endif  // ELECTRON_SHELL_COMMON_GIN_HELPER_TRACKABLE_OBJECT_H_

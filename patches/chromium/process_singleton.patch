@@ -25,10 +25,10 @@ This patch adds a few changes to the Chromium code:
    before the browser thread is ready.
 
 diff --git a/chrome/browser/process_singleton.h b/chrome/browser/process_singleton.h
-index 0291db0f919aa7868d345f4f0712c42c6ad7ee17..9418bbacb11094628c4468d0a7b735a0f742e5f2 100644
+index fd88cc5122ad5e02a6694b2dec9fd0d16a300cc0..13b325ecad9ba48398173e89680287c63efd4fa6 100644
 --- a/chrome/browser/process_singleton.h
 +++ b/chrome/browser/process_singleton.h
-@@ -103,8 +103,15 @@ class ProcessSingleton {
+@@ -102,12 +102,19 @@ class ProcessSingleton {
        base::RepeatingCallback<bool(const base::CommandLine& command_line,
                                     const base::FilePath& current_directory)>;
  
@@ -40,11 +40,15 @@ index 0291db0f919aa7868d345f4f0712c42c6ad7ee17..9418bbacb11094628c4468d0a7b735a0
 +#else
    ProcessSingleton(const base::FilePath& user_data_dir,
                     const NotificationCallback& notification_callback);
+ 
+   ProcessSingleton(const ProcessSingleton&) = delete;
+   ProcessSingleton& operator=(const ProcessSingleton&) = delete;
+ 
 +#endif
    ~ProcessSingleton();
  
    // Notify another process, if available. Otherwise sets ourselves as the
-@@ -115,6 +122,8 @@ class ProcessSingleton {
+@@ -118,6 +125,8 @@ class ProcessSingleton {
    // TODO(brettw): Make the implementation of this method non-platform-specific
    // by making Linux re-use the Windows implementation.
    NotifyResult NotifyOtherProcessOrCreate();
@@ -53,7 +57,7 @@ index 0291db0f919aa7868d345f4f0712c42c6ad7ee17..9418bbacb11094628c4468d0a7b735a0
  
    // Sets ourself up as the singleton instance.  Returns true on success.  If
    // false is returned, we are not the singleton instance and the caller must
-@@ -170,6 +179,8 @@ class ProcessSingleton {
+@@ -173,6 +182,8 @@ class ProcessSingleton {
  #if defined(OS_WIN)
    bool EscapeVirtualization(const base::FilePath& user_data_dir);
  
@@ -62,7 +66,7 @@ index 0291db0f919aa7868d345f4f0712c42c6ad7ee17..9418bbacb11094628c4468d0a7b735a0
    HWND remote_window_;  // The HWND_MESSAGE of another browser.
    base::win::MessageWindow window_;  // The message-only window.
    bool is_virtualized_;  // Stuck inside Microsoft Softricity VM environment.
-@@ -219,6 +230,8 @@ class ProcessSingleton {
+@@ -222,6 +233,8 @@ class ProcessSingleton {
    // because it posts messages between threads.
    class LinuxWatcher;
    scoped_refptr<LinuxWatcher> watcher_;
@@ -72,18 +76,26 @@ index 0291db0f919aa7868d345f4f0712c42c6ad7ee17..9418bbacb11094628c4468d0a7b735a0
  
  #if defined(OS_MAC)
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index dc9c1b76a1c7c8b3fa83fc83788eef36d2cfa4a5..31b387ca3cae53c94d8a7baefaeb17f3dbffe5e0 100644
+index 16a85061560ad7fbd45d516adac956179cf5283f..0d74cd93a21b937f65f3d417b4734ae5b87acdf2 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
-@@ -80,6 +80,7 @@
- #include "base/strings/stringprintf.h"
- #include "base/strings/sys_string_conversions.h"
+@@ -65,6 +65,7 @@
+ #include "base/files/file_descriptor_watcher_posix.h"
+ #include "base/files/file_path.h"
+ #include "base/files/file_util.h"
++#include "base/ignore_result.h"
+ #include "base/location.h"
+ #include "base/logging.h"
+ #include "base/memory/ref_counted.h"
+@@ -82,6 +83,7 @@
  #include "base/strings/utf_string_conversions.h"
+ #include "base/task/sequenced_task_runner_helpers.h"
+ #include "base/task/single_thread_task_runner.h"
 +#include "base/task/post_task.h"
  #include "base/threading/platform_thread.h"
  #include "base/threading/thread_task_runner_handle.h"
  #include "base/time/time.h"
-@@ -95,9 +96,11 @@
+@@ -97,9 +99,11 @@
  #include "net/base/network_interfaces.h"
  #include "ui/base/l10n/l10n_util.h"
  
@@ -95,7 +107,7 @@ index dc9c1b76a1c7c8b3fa83fc83788eef36d2cfa4a5..31b387ca3cae53c94d8a7baefaeb17f3
  
  #if defined(TOOLKIT_VIEWS) && \
      (defined(OS_LINUX) || BUILDFLAG(IS_CHROMEOS_LACROS))
-@@ -289,6 +292,9 @@ bool SymlinkPath(const base::FilePath& target, const base::FilePath& path) {
+@@ -348,6 +352,9 @@ bool SymlinkPath(const base::FilePath& target, const base::FilePath& path) {
  bool DisplayProfileInUseError(const base::FilePath& lock_path,
                                const std::string& hostname,
                                int pid) {
@@ -105,7 +117,7 @@ index dc9c1b76a1c7c8b3fa83fc83788eef36d2cfa4a5..31b387ca3cae53c94d8a7baefaeb17f3
    std::u16string error = l10n_util::GetStringFUTF16(
        IDS_PROFILE_IN_USE_POSIX, base::NumberToString16(pid),
        base::ASCIIToUTF16(hostname));
-@@ -308,6 +314,7 @@ bool DisplayProfileInUseError(const base::FilePath& lock_path,
+@@ -367,6 +374,7 @@ bool DisplayProfileInUseError(const base::FilePath& lock_path,
  
    NOTREACHED();
    return false;
@@ -113,7 +125,7 @@ index dc9c1b76a1c7c8b3fa83fc83788eef36d2cfa4a5..31b387ca3cae53c94d8a7baefaeb17f3
  }
  
  bool IsChromeProcess(pid_t pid) {
-@@ -348,6 +355,21 @@ bool CheckCookie(const base::FilePath& path, const base::FilePath& cookie) {
+@@ -407,6 +415,21 @@ bool CheckCookie(const base::FilePath& path, const base::FilePath& cookie) {
    return (cookie == ReadLink(path));
  }
  
@@ -135,7 +147,7 @@ index dc9c1b76a1c7c8b3fa83fc83788eef36d2cfa4a5..31b387ca3cae53c94d8a7baefaeb17f3
  bool ConnectSocket(ScopedSocket* socket,
                     const base::FilePath& socket_path,
                     const base::FilePath& cookie_path) {
-@@ -727,6 +749,10 @@ ProcessSingleton::ProcessSingleton(
+@@ -788,6 +811,10 @@ ProcessSingleton::ProcessSingleton(
  
  ProcessSingleton::~ProcessSingleton() {
    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
@@ -146,8 +158,8 @@ index dc9c1b76a1c7c8b3fa83fc83788eef36d2cfa4a5..31b387ca3cae53c94d8a7baefaeb17f3
  }
  
  ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
-@@ -895,6 +921,20 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessOrCreate() {
-       base::TimeDelta::FromSeconds(kTimeoutInSeconds));
+@@ -956,6 +983,20 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessOrCreate() {
+       base::Seconds(kTimeoutInSeconds));
  }
  
 +void ProcessSingleton::StartListeningOnSocket() {
@@ -167,7 +179,7 @@ index dc9c1b76a1c7c8b3fa83fc83788eef36d2cfa4a5..31b387ca3cae53c94d8a7baefaeb17f3
  ProcessSingleton::NotifyResult
  ProcessSingleton::NotifyOtherProcessWithTimeoutOrCreate(
      const base::CommandLine& command_line,
-@@ -997,12 +1037,26 @@ bool ProcessSingleton::Create() {
+@@ -1055,14 +1096,32 @@ bool ProcessSingleton::Create() {
  #endif
    }
  
@@ -176,15 +188,15 @@ index dc9c1b76a1c7c8b3fa83fc83788eef36d2cfa4a5..31b387ca3cae53c94d8a7baefaeb17f3
 -  // do not support Unix domain sockets.
 -  if (!socket_dir_.CreateUniqueTempDir()) {
 -    LOG(ERROR) << "Failed to create socket directory.";
--    return false;
++  base::FilePath tmp_dir;
++  if (!base::GetTempDir(&tmp_dir)) {
++    LOG(ERROR) << "Failed to get temporary directory.";
+     return false;
+   }
+ 
 +  if (IsAppSandboxed()) {
 +    // For sandboxed applications, the tmp dir could be too long to fit
 +    // addr->sun_path, so we need to make it as short as possible.
-+    base::FilePath tmp_dir;
-+    if (!base::GetTempDir(&tmp_dir)) {
-+      LOG(ERROR) << "Failed to get temporary directory.";
-+      return false;
-+    }
 +    if (!socket_dir_.Set(tmp_dir.Append("S"))) {
 +      LOG(ERROR) << "Failed to set socket directory.";
 +      return false;
@@ -193,14 +205,19 @@ index dc9c1b76a1c7c8b3fa83fc83788eef36d2cfa4a5..31b387ca3cae53c94d8a7baefaeb17f3
 +    // Create the socket file somewhere in /tmp which is usually mounted as a
 +    // normal filesystem. Some network filesystems (notably AFS) are screwy and
 +    // do not support Unix domain sockets.
-+    if (!socket_dir_.CreateUniqueTempDir()) {
++    // Prefer CreateUniqueTempDirUnderPath rather than CreateUniqueTempDir as
++    // the latter will calculate unique paths based on bundle ids which can
++    // increase the socket path length than what is allowed.
++    if (!socket_dir_.CreateUniqueTempDirUnderPath(tmp_dir)) {
 +      LOG(ERROR) << "Failed to create socket directory.";
 +      return false;
 +    }
-   }
- 
++  }
++
    // Check that the directory was created with the correct permissions.
-@@ -1044,10 +1098,13 @@ bool ProcessSingleton::Create() {
+   int dir_mode = 0;
+   CHECK(base::GetPosixFilePermissions(socket_dir_.GetPath(), &dir_mode) &&
+@@ -1105,10 +1164,13 @@ bool ProcessSingleton::Create() {
    if (listen(sock, 5) < 0)
      NOTREACHED() << "listen failed: " << base::safe_strerror(errno);
  
@@ -219,7 +236,7 @@ index dc9c1b76a1c7c8b3fa83fc83788eef36d2cfa4a5..31b387ca3cae53c94d8a7baefaeb17f3
    return true;
  }
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index f1732f042c3bfd9d5d95a4208664f9252b2aab73..875269776e45c96ac43a3430768f1406c9608dd3 100644
+index 1df74f5299b1b3bdd180034a6895796dc4b2ec60..679350dd08ca0211653ea669405e3f4f86c2fc0f 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
 @@ -27,7 +27,9 @@
@@ -232,7 +249,7 @@ index f1732f042c3bfd9d5d95a4208664f9252b2aab73..875269776e45c96ac43a3430768f1406
  #include "chrome/browser/win/chrome_process_finder.h"
  #include "chrome/common/chrome_constants.h"
  #include "chrome/common/chrome_paths.h"
-@@ -175,10 +177,15 @@ bool ProcessLaunchNotification(
+@@ -179,10 +181,15 @@ bool ProcessLaunchNotification(
  }
  
  bool DisplayShouldKillMessageBox() {
@@ -248,7 +265,7 @@ index f1732f042c3bfd9d5d95a4208664f9252b2aab73..875269776e45c96ac43a3430768f1406
  }
  
  void SendRemoteProcessInteractionResultHistogram(
-@@ -260,9 +267,13 @@ bool ProcessSingleton::EscapeVirtualization(
+@@ -264,9 +271,13 @@ bool ProcessSingleton::EscapeVirtualization(
  }
  
  ProcessSingleton::ProcessSingleton(
@@ -262,7 +279,7 @@ index f1732f042c3bfd9d5d95a4208664f9252b2aab73..875269776e45c96ac43a3430768f1406
        is_virtualized_(false),
        lock_file_(INVALID_HANDLE_VALUE),
        user_data_dir_(user_data_dir),
-@@ -366,11 +377,14 @@ ProcessSingleton::NotifyOtherProcessOrCreate() {
+@@ -371,11 +382,14 @@ ProcessSingleton::NotifyOtherProcessOrCreate() {
    return PROFILE_IN_USE;
  }
  
@@ -278,7 +295,7 @@ index f1732f042c3bfd9d5d95a4208664f9252b2aab73..875269776e45c96ac43a3430768f1406
  
    remote_window_ = chrome::FindRunningChromeWindow(user_data_dir_);
    if (!remote_window_ && !EscapeVirtualization(user_data_dir_)) {
-@@ -379,7 +393,7 @@ bool ProcessSingleton::Create() {
+@@ -384,7 +398,7 @@ bool ProcessSingleton::Create() {
      // access. As documented, it's clearer to NOT request ownership on creation
      // since it isn't guaranteed we will get it. It is better to create it
      // without ownership and explicitly get the ownership afterward.
@@ -287,7 +304,7 @@ index f1732f042c3bfd9d5d95a4208664f9252b2aab73..875269776e45c96ac43a3430768f1406
      if (!only_me.IsValid()) {
        DPLOG(FATAL) << "CreateMutex failed";
        return false;
-@@ -418,6 +432,17 @@ bool ProcessSingleton::Create() {
+@@ -423,6 +437,17 @@ bool ProcessSingleton::Create() {
              window_.CreateNamed(base::BindRepeating(&ProcessLaunchNotification,
                                                      notification_callback_),
                                  user_data_dir_.value());

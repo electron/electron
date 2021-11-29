@@ -84,13 +84,22 @@ There are several additional APIs for working with the Web Serial API:
   and [`serial-port-removed`](../api/session.md#event-serial-port-removed) events
   on the Session can be used to handle devices being plugged in or unplugged during the
   `navigator.serial.requestPort` process.
+* [`ses.setDevicePermissionHandler(handler)`](../api/session.md#sessetdevicepermissionhandlerhandler)
+  can be used to provide default permissioning to devices without first calling
+  for permission to devices via `navigator.serial.requestPort`.  Additionally,
+  the default behavior of Electron is to store granted device permision through
+  the lifetime of the corresponding WebContents.  If longer term storage is
+  needed, a developer can store granted device permissions (eg when handling
+  the `select-serial-port` event) and then read from that storage with
+  `setDevicePermissionHandler`.
 * [`ses.setPermissionCheckHandler(handler)`](../api/session.md#sessetpermissioncheckhandlerhandler)
   can be used to disable serial access for specific origins.
 
 ### Example
 
 This example demonstrates an Electron application that automatically selects
-the first available Arduino Uno serial device (if connected) through
+serial devices through [`ses.setDevicePermissionHandler(handler)`](../api/session.md#sessetdevicepermissionhandlerhandler)
+as well as demonstrating selecting the first available Arduino Uno serial device (if connected) through
 [`select-serial-port` event on the Session](../api/session.md#event-select-serial-port)
 when the `Test Web Serial` button is clicked.
 

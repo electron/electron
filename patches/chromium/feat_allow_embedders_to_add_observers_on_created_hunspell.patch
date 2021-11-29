@@ -7,10 +7,10 @@ Subject: feat: allow embedders to add observers on created hunspell
 This patch is used by Electron to implement spellchecker events.
 
 diff --git a/chrome/browser/spellchecker/spellcheck_service.cc b/chrome/browser/spellchecker/spellcheck_service.cc
-index 23980dfd5e35ac9160b82bd0d29bd98762897d1f..aece7fe0a4d45a40afbc0339073ffffb2c0d4f5e 100644
+index 7e6846c8bbb2d773c0b0ec97da928871d828bcbf..7a5f0d5034270dcfb287d9c46b2cd0431098d37e 100644
 --- a/chrome/browser/spellchecker/spellcheck_service.cc
 +++ b/chrome/browser/spellchecker/spellcheck_service.cc
-@@ -466,6 +466,9 @@ void SpellcheckService::LoadDictionaries() {
+@@ -467,6 +467,9 @@ void SpellcheckService::LoadDictionaries() {
          std::make_unique<SpellcheckHunspellDictionary>(
              dictionary, platform_spellcheck_language, context_, this));
      hunspell_dictionaries_.back()->AddObserver(this);
@@ -20,7 +20,7 @@ index 23980dfd5e35ac9160b82bd0d29bd98762897d1f..aece7fe0a4d45a40afbc0339073ffffb
      hunspell_dictionaries_.back()->Load();
    }
  
-@@ -518,6 +521,20 @@ bool SpellcheckService::IsSpellcheckEnabled() const {
+@@ -519,6 +522,20 @@ bool SpellcheckService::IsSpellcheckEnabled() const {
           (!hunspell_dictionaries_.empty() || enable_if_uninitialized);
  }
  
@@ -42,10 +42,10 @@ index 23980dfd5e35ac9160b82bd0d29bd98762897d1f..aece7fe0a4d45a40afbc0339073ffffb
                                  const content::NotificationSource& source,
                                  const content::NotificationDetails& details) {
 diff --git a/chrome/browser/spellchecker/spellcheck_service.h b/chrome/browser/spellchecker/spellcheck_service.h
-index a810ed516cce5f491ea75ae2d0bbda65e066ad3e..fcfd3f5801a967fdd7b3e99094a35eddb1a31789 100644
+index 0bf7fbf3ea96248110a6b1a2ed693d4db98ce4f3..b712d7bc2364cec6796db522bd5e32230aa4d366 100644
 --- a/chrome/browser/spellchecker/spellcheck_service.h
 +++ b/chrome/browser/spellchecker/spellcheck_service.h
-@@ -134,6 +134,8 @@ class SpellcheckService : public KeyedService,
+@@ -137,6 +137,8 @@ class SpellcheckService : public KeyedService,
    // dictionaries available.
    bool IsSpellcheckEnabled() const;
  
@@ -54,7 +54,7 @@ index a810ed516cce5f491ea75ae2d0bbda65e066ad3e..fcfd3f5801a967fdd7b3e99094a35edd
    // NotificationProfile implementation.
    void Observe(int type,
                 const content::NotificationSource& source,
-@@ -301,6 +303,8 @@ class SpellcheckService : public KeyedService,
+@@ -304,6 +306,8 @@ class SpellcheckService : public KeyedService,
    // A pointer to the BrowserContext which this service refers to.
    content::BrowserContext* context_;
  

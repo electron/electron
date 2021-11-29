@@ -24,7 +24,7 @@ Environment on the V8 context of blink, so no new V8 context is created.
 As a result, a renderer process may have multiple Node Environments in it.
 
 diff --git a/src/node.cc b/src/node.cc
-index acf4f0fac03c0ba655d55bc832a37a816ac26a33..788e61645a281197cb3a1f3acbae427ddae1ab23 100644
+index e942c108a15a3c50d92c08b344f6691050c7859d..207a95d202b4e422a39f837241f1655f7111b1e3 100644
 --- a/src/node.cc
 +++ b/src/node.cc
 @@ -139,6 +139,8 @@ using v8::Undefined;
@@ -36,7 +36,7 @@ index acf4f0fac03c0ba655d55bc832a37a816ac26a33..788e61645a281197cb3a1f3acbae427d
  namespace per_process {
  
  // node_revert.h
-@@ -860,7 +862,9 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
+@@ -853,7 +855,9 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
    binding::RegisterBuiltinModules();
  
    // Make inherited handles noninheritable.
@@ -47,7 +47,7 @@ index acf4f0fac03c0ba655d55bc832a37a816ac26a33..788e61645a281197cb3a1f3acbae427d
  
    // Cache the original command line to be
    // used in diagnostic reports.
-@@ -894,7 +898,8 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
+@@ -887,7 +891,8 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
      if (exit_code != 0) return exit_code;
    }
  #endif
@@ -57,7 +57,7 @@ index acf4f0fac03c0ba655d55bc832a37a816ac26a33..788e61645a281197cb3a1f3acbae427d
    const int exit_code = ProcessGlobalArgs(argv,
                                            exec_argv,
                                            errors,
-@@ -937,7 +942,7 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
+@@ -930,7 +935,7 @@ int InitializeNodeWithArgs(std::vector<std::string>* argv,
      return 9;
    }
    per_process::metadata.versions.InitializeIntlVersions();

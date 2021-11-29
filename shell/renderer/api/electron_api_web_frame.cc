@@ -49,6 +49,9 @@
 #include "third_party/blink/public/web/web_script_execution_callback.h"
 #include "third_party/blink/public/web/web_script_source.h"
 #include "third_party/blink/public/web/web_view.h"
+#include "third_party/blink/renderer/core/execution_context/execution_context.h"  // nogncheck
+#include "third_party/blink/renderer/core/frame/csp/content_security_policy.h"  // nogncheck
+#include "third_party/blink/renderer/platform/bindings/dom_wrapper_world.h"  // nogncheck
 #include "ui/base/ime/ime_text_span.h"
 #include "url/url_util.h"
 
@@ -143,6 +146,10 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
       : promise_(std::move(promise)), callback_(std::move(callback)) {}
 
   ~ScriptExecutionCallback() override = default;
+
+  // disable copy
+  ScriptExecutionCallback(const ScriptExecutionCallback&) = delete;
+  ScriptExecutionCallback& operator=(const ScriptExecutionCallback&) = delete;
 
   void CopyResultToCallingContextAndFinalize(
       v8::Isolate* isolate,
@@ -245,8 +252,6 @@ class ScriptExecutionCallback : public blink::WebScriptExecutionCallback {
  private:
   gin_helper::Promise<v8::Local<v8::Value>> promise_;
   CompletionCallback callback_;
-
-  DISALLOW_COPY_AND_ASSIGN(ScriptExecutionCallback);
 };
 
 class FrameSetSpellChecker : public content::RenderFrameVisitor {
@@ -257,6 +262,10 @@ class FrameSetSpellChecker : public content::RenderFrameVisitor {
     content::RenderFrame::ForEach(this);
     main_frame->GetWebFrame()->SetSpellCheckPanelHostClient(spell_check_client);
   }
+
+  // disable copy
+  FrameSetSpellChecker(const FrameSetSpellChecker&) = delete;
+  FrameSetSpellChecker& operator=(const FrameSetSpellChecker&) = delete;
 
   bool Visit(content::RenderFrame* render_frame) override {
     if (render_frame->GetMainRenderFrame() == main_frame_ ||
@@ -269,8 +278,6 @@ class FrameSetSpellChecker : public content::RenderFrameVisitor {
  private:
   SpellCheckClient* spell_check_client_;
   content::RenderFrame* main_frame_;
-
-  DISALLOW_COPY_AND_ASSIGN(FrameSetSpellChecker);
 };
 
 class SpellCheckerHolder final : public content::RenderFrameObserver {
@@ -368,6 +375,7 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
         .SetMethod("insertText", &WebFrameRenderer::InsertText)
         .SetMethod("insertCSS", &WebFrameRenderer::InsertCSS)
         .SetMethod("removeInsertedCSS", &WebFrameRenderer::RemoveInsertedCSS)
+        .SetMethod("_isEvalAllowed", &WebFrameRenderer::IsEvalAllowed)
         .SetMethod("executeJavaScript", &WebFrameRenderer::ExecuteJavaScript)
         .SetMethod("executeJavaScriptInIsolatedWorld",
                    &WebFrameRenderer::ExecuteJavaScriptInIsolatedWorld)
@@ -491,8 +499,6 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
     } else if (pref_name == options::kOpenerID) {
       // NOTE: openerId is internal-only.
       return gin::ConvertToV8(isolate, prefs.opener_id);
-    } else if (pref_name == options::kContextIsolation) {
-      return gin::ConvertToV8(isolate, prefs.context_isolation);
     } else if (pref_name == "isWebView") {
       return gin::ConvertToV8(isolate, prefs.is_webview);
     } else if (pref_name == options::kHiddenPage) {
@@ -636,6 +642,16 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
     }
   }
 
+  bool IsEvalAllowed(v8::Isolate* isolate) {
+    content::RenderFrame* render_frame;
+    if (!MaybeGetRenderFrame(isolate, "isEvalAllowed", &render_frame))
+      return true;
+
+    auto* context = blink::ExecutionContext::From(
+        render_frame->GetWebFrame()->MainWorldScriptContext());
+    return !context->GetContentSecurityPolicy()->ShouldCheckEval();
+  }
+
   v8::Local<v8::Promise> ExecuteJavaScript(gin::Arguments* gin_args,
                                            const std::u16string& code) {
     gin_helper::Arguments* args = static_cast<gin_helper::Arguments*>(gin_args);
@@ -651,17 +667,21 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
       return handle;
     }
 
+    const blink::WebScriptSource source{blink::WebString::FromUTF16(code)};
+
     bool has_user_gesture = false;
     args->GetNext(&has_user_gesture);
 
     ScriptExecutionCallback::CompletionCallback completion_callback;
     args->GetNext(&completion_callback);
 
-    render_frame->GetWebFrame()->RequestExecuteScriptAndReturnValue(
-        blink::WebScriptSource(blink::WebString::FromUTF16(code)),
-        has_user_gesture,
+    render_frame->GetWebFrame()->RequestExecuteScript(
+        blink::DOMWrapperWorld::kMainWorldId, base::make_span(&source, 1),
+        has_user_gesture, blink::WebLocalFrame::kSynchronous,
         new ScriptExecutionCallback(std::move(promise),
-                                    std::move(completion_callback)));
+                                    std::move(completion_callback)),
+        blink::BackForwardCacheAware::kAllow,
+        blink::WebLocalFrame::PromiseBehavior::kDontWait);
 
     return handle;
   }
@@ -695,6 +715,7 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
     args->GetNext(&completion_callback);
 
     std::vector<blink::WebScriptSource> sources;
+    sources.reserve(scripts.size());
 
     for (const auto& script : scripts) {
       std::u16string code;
@@ -716,17 +737,17 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
         return handle;
       }
 
-      sources.emplace_back(
-          blink::WebScriptSource(blink::WebString::FromUTF16(code),
-                                 blink::WebURL(GURL(url)), start_line));
+      sources.emplace_back(blink::WebString::FromUTF16(code),
+                           blink::WebURL(GURL(url)), start_line);
     }
 
-    render_frame->GetWebFrame()->RequestExecuteScriptInIsolatedWorld(
-        world_id, &sources.front(), sources.size(), has_user_gesture,
+    render_frame->GetWebFrame()->RequestExecuteScript(
+        world_id, base::make_span(sources), has_user_gesture,
         scriptExecutionType,
         new ScriptExecutionCallback(std::move(promise),
                                     std::move(completion_callback)),
-        blink::BackForwardCacheAware::kPossiblyDisallow);
+        blink::BackForwardCacheAware::kPossiblyDisallow,
+        blink::WebLocalFrame::PromiseBehavior::kDontWait);
 
     return handle;
   }

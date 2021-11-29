@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_WEB_CONTENTS_PREFERENCES_H_
-#define SHELL_BROWSER_WEB_CONTENTS_PREFERENCES_H_
+#ifndef ELECTRON_SHELL_BROWSER_WEB_CONTENTS_PREFERENCES_H_
+#define ELECTRON_SHELL_BROWSER_WEB_CONTENTS_PREFERENCES_H_
 
 #include <map>
 #include <string>
@@ -35,6 +35,12 @@ class WebContentsPreferences
   WebContentsPreferences(content::WebContents* web_contents,
                          const gin_helper::Dictionary& web_preferences);
   ~WebContentsPreferences() override;
+
+  // disable copy
+  WebContentsPreferences(const WebContentsPreferences&) = delete;
+  WebContentsPreferences& operator=(const WebContentsPreferences&) = delete;
+
+  void Merge(const gin_helper::Dictionary& new_web_preferences);
 
   void SetFromDictionary(const gin_helper::Dictionary& new_web_preferences);
 
@@ -140,10 +146,8 @@ class WebContentsPreferences
   base::Value last_web_preferences_;
 
   WEB_CONTENTS_USER_DATA_KEY_DECL();
-
-  DISALLOW_COPY_AND_ASSIGN(WebContentsPreferences);
 };
 
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_WEB_CONTENTS_PREFERENCES_H_
+#endif  // ELECTRON_SHELL_BROWSER_WEB_CONTENTS_PREFERENCES_H_

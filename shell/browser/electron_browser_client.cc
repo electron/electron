@@ -31,6 +31,7 @@
 #include "chrome/common/chrome_version.h"
 #include "components/net_log/chrome_net_log.h"
 #include "components/network_hints/common/network_hints.mojom.h"
+#include "content/browser/keyboard_lock/keyboard_lock_service_impl.h"  // nogncheck
 #include "content/browser/site_instance_impl.h"  // nogncheck
 #include "content/public/browser/browser_main_runner.h"
 #include "content/public/browser/browser_ppapi_host.h"
@@ -558,7 +559,11 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
     enable_crash_reporter = breakpad::IsCrashReporterEnabled();
   }
 
-  if (enable_crash_reporter) {
+  // Zygote Process gets booted before any JS runs, accessing GetClientId
+  // will end up touching DIR_USER_DATA path provider and this will
+  // configure default value because app.name from browser_init has
+  // not run yet.
+  if (enable_crash_reporter && process_type != ::switches::kZygoteProcess) {
     std::string switch_value =
         api::crash_reporter::GetClientId() + ",no_channel";
     command_line->AppendSwitchASCII(::switches::kEnableCrashReporter,
@@ -592,8 +597,7 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
         switches::kStandardSchemes,      switches::kEnableSandbox,
         switches::kSecureSchemes,        switches::kBypassCSPSchemes,
         switches::kCORSSchemes,          switches::kFetchSchemes,
-        switches::kServiceWorkerSchemes, switches::kEnableApiFilteringLogging,
-        switches::kStreamingSchemes};
+        switches::kServiceWorkerSchemes, switches::kStreamingSchemes};
     command_line->CopySwitchesFrom(*base::CommandLine::ForCurrentProcess(),
                                    kCommonSwitchNames,
                                    base::size(kCommonSwitchNames));
@@ -914,8 +918,9 @@ ElectronBrowserClient::GetSystemNetworkContext() {
 
 std::unique_ptr<content::BrowserMainParts>
 ElectronBrowserClient::CreateBrowserMainParts(
-    const content::MainFunctionParams& params) {
-  auto browser_main_parts = std::make_unique<ElectronBrowserMainParts>(params);
+    content::MainFunctionParams params) {
+  auto browser_main_parts =
+      std::make_unique<ElectronBrowserMainParts>(std::move(params));
 
 #if defined(OS_MAC)
   browser_main_parts_ = browser_main_parts.get();
@@ -999,6 +1004,7 @@ bool ElectronBrowserClient::HandleExternalProtocol(
     int frame_tree_node_id,
     content::NavigationUIData* navigation_data,
     bool is_main_frame,
+    network::mojom::WebSandboxFlags sandbox_flags,
     ui::PageTransition page_transition,
     bool has_user_gesture,
     const absl::optional<url::Origin>& initiating_origin,
@@ -1041,8 +1047,7 @@ NotificationPresenter* ElectronBrowserClient::GetNotificationPresenter() {
 }
 
 content::PlatformNotificationService*
-ElectronBrowserClient::GetPlatformNotificationService(
-    content::BrowserContext* browser_context) {
+ElectronBrowserClient::GetPlatformNotificationService() {
   if (!notification_service_) {
     notification_service_ = std::make_unique<PlatformNotificationService>(this);
   }
@@ -1146,6 +1151,10 @@ class FileURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
     return pending_remote;
   }
 
+  // disable copy
+  FileURLLoaderFactory(const FileURLLoaderFactory&) = delete;
+  FileURLLoaderFactory& operator=(const FileURLLoaderFactory&) = delete;
+
  private:
   explicit FileURLLoaderFactory(
       int child_id,
@@ -1177,8 +1186,6 @@ class FileURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
   }
 
   int child_id_;
-
-  DISALLOW_COPY_AND_ASSIGN(FileURLLoaderFactory);
 };
 
 }  // namespace
@@ -1431,10 +1438,9 @@ void ElectronBrowserClient::OverrideURLLoaderFactoryParams(
 }
 
 #if defined(OS_WIN)
-bool ElectronBrowserClient::PreSpawnChild(
-    sandbox::TargetPolicy* policy,
-    sandbox::policy::SandboxType sandbox_type,
-    ChildSpawnFlags flags) {
+bool ElectronBrowserClient::PreSpawnChild(sandbox::TargetPolicy* policy,
+                                          sandbox::mojom::Sandbox sandbox_type,
+                                          ChildSpawnFlags flags) {
   // Allow crashpad to communicate via named pipe.
   sandbox::ResultCode result = policy->AddRule(
       sandbox::TargetPolicy::SUBSYS_FILES,
@@ -1451,7 +1457,8 @@ bool ElectronBrowserClient::BindAssociatedReceiverFromFrame(
     mojo::ScopedInterfaceEndpointHandle* handle) {
   if (interface_name == mojom::ElectronAutofillDriver::Name_) {
     AutofillDriverFactory::BindAutofillDriver(
-        mojom::ElectronAutofillDriverAssociatedRequest(std::move(*handle)),
+        mojo::PendingAssociatedReceiver<mojom::ElectronAutofillDriver>(
+            std::move(*handle)),
         render_frame_host);
     return true;
   }
@@ -1572,6 +1579,8 @@ void ElectronBrowserClient::RegisterBrowserInterfaceBindersForFrame(
       base::BindRepeating(&badging::BadgeManager::BindFrameReceiver));
   map->Add<electron::mojom::ElectronBrowser>(
       base::BindRepeating(&BindElectronBrowser));
+  map->Add<blink::mojom::KeyboardLockService>(base::BindRepeating(
+      &content::KeyboardLockServiceImpl::CreateMojoService));
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   map->Add<extensions::mime_handler::MimeHandlerService>(
       base::BindRepeating(&BindMimeHandlerService));

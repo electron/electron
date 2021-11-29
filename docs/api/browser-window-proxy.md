@@ -22,7 +22,7 @@ Forcefully closes the child window without calling its unload event.
 
 #### `win.eval(code)`
 
-* `code` String
+* `code` string
 
 Evaluates the code in the child window.
 
@@ -37,7 +37,7 @@ Invokes the print dialog on the child window.
 #### `win.postMessage(message, targetOrigin)`
 
 * `message` any
-* `targetOrigin` String
+* `targetOrigin` string
 
 Sends a message to the child window with the specified origin or `*` for no
 origin preference.
@@ -51,4 +51,4 @@ The `BrowserWindowProxy` object has the following instance properties:
 
 #### `win.closed`
 
-A `Boolean` that is set to true after the child window gets closed.
+A `boolean` that is set to true after the child window gets closed.

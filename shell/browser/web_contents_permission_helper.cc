@@ -133,13 +133,14 @@ void WebContentsPermissionHelper::RequestMediaAccessPermission(
   auto media_types = std::make_unique<base::ListValue>();
   if (request.audio_type ==
       blink::mojom::MediaStreamType::DEVICE_AUDIO_CAPTURE) {
-    media_types->AppendString("audio");
+    media_types->Append("audio");
   }
   if (request.video_type ==
       blink::mojom::MediaStreamType::DEVICE_VIDEO_CAPTURE) {
-    media_types->AppendString("video");
+    media_types->Append("video");
   }
   details.SetList("mediaTypes", std::move(media_types));
+  details.SetString("securityOrigin", request.security_origin.spec());
 
   // The permission type doesn't matter here, AUDIO_CAPTURE/VIDEO_CAPTURE
   // are presented as same type in content_converter.h.
@@ -190,6 +191,24 @@ bool WebContentsPermissionHelper::CheckSerialAccessPermission(
       static_cast<content::PermissionType>(PermissionType::SERIAL), &details);
 }
 
+bool WebContentsPermissionHelper::CheckSerialPortPermission(
+    const url::Origin& origin,
+    base::Value device,
+    content::RenderFrameHost* render_frame_host) const {
+  return CheckDevicePermission(
+      static_cast<content::PermissionType>(PermissionType::SERIAL), origin,
+      &device, render_frame_host);
+}
+
+void WebContentsPermissionHelper::GrantSerialPortPermission(
+    const url::Origin& origin,
+    base::Value device,
+    content::RenderFrameHost* render_frame_host) const {
+  return GrantDevicePermission(
+      static_cast<content::PermissionType>(PermissionType::SERIAL), origin,
+      &device, render_frame_host);
+}
+
 bool WebContentsPermissionHelper::CheckHIDAccessPermission(
     const url::Origin& embedding_origin) const {
   base::DictionaryValue details;
@@ -216,6 +235,6 @@ void WebContentsPermissionHelper::GrantHIDDevicePermission(
       &device, render_frame_host);
 }
 
-WEB_CONTENTS_USER_DATA_KEY_IMPL(WebContentsPermissionHelper)
+WEB_CONTENTS_USER_DATA_KEY_IMPL(WebContentsPermissionHelper);
 
 }  // namespace electron

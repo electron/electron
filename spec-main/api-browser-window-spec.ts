@@ -110,6 +110,11 @@ describe('BrowserWindow module', () => {
       await closed;
     });
 
+    it('should not crash if called after webContents is destroyed', () => {
+      w.webContents.destroy();
+      w.webContents.on('destroyed', () => w.close());
+    });
+
     it('should emit unload handler', async () => {
       await w.loadFile(path.join(fixtures, 'api', 'unload.html'));
       const closed = emittedOnce(w, 'closed');
@@ -946,6 +951,17 @@ describe('BrowserWindow module', () => {
         w.setSize(size[0], size[1]);
         await resize;
         expectBoundsEqual(w.getSize(), size);
+      });
+
+      it('doesn\'t change bounds when maximum size is set', () => {
+        w.setMenu(null);
+        w.setMaximumSize(400, 400);
+        // Without https://github.com/electron/electron/pull/29101
+        // following call would shrink the window to 384x361.
+        // There would be also DCHECK in resize_utils.cc on
+        // debug build.
+        w.setAspectRatio(1.0);
+        expectBoundsEqual(w.getSize(), [400, 400]);
       });
     });
 
@@ -3535,7 +3551,7 @@ describe('BrowserWindow module', () => {
         const w = new BrowserWindow({ show: false });
         const c = new BrowserWindow({ show: false, parent: w });
         expect(c.isVisible()).to.be.false('child is visible');
-        expect(c.getParentWindow().isVisible()).to.be.false('parent is visible');
+        expect(c.getParentWindow()!.isVisible()).to.be.false('parent is visible');
       });
     });
 
@@ -4207,8 +4223,6 @@ describe('BrowserWindow module', () => {
         const leaveFullScreen = emittedOnce(w, 'leave-full-screen');
         w.setFullScreen(false);
         await leaveFullScreen;
-
-        w.close();
       });
 
       it('can be changed with setFullScreen method', async () => {
@@ -4605,9 +4619,9 @@ describe('BrowserWindow module', () => {
       w1.loadURL('about:blank');
       const w2 = new BrowserWindow({ x: 300, y: 300, width: 300, height: 200 });
       w2.loadURL('about:blank');
+      const w1Focused = emittedOnce(w1, 'focus');
       w1.webContents.focus();
-      // Give focus some time to switch to w1
-      await delay();
+      await w1Focused;
       expect(w1.webContents.isFocused()).to.be.true('focuses window');
     });
   });

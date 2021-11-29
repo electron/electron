@@ -838,6 +838,14 @@ describe('webContents module', () => {
     });
   });
 
+  describe('getMediaSourceId()', () => {
+    afterEach(closeAllWindows);
+    it('returns a valid stream id', () => {
+      const w = new BrowserWindow({ show: false });
+      expect(w.webContents.getMediaSourceId(w.webContents)).to.be.a('string').that.is.not.empty();
+    });
+  });
+
   describe('userAgent APIs', () => {
     it('can set the user agent (functions)', () => {
       const w = new BrowserWindow({ show: false });
@@ -1728,6 +1736,16 @@ describe('webContents module', () => {
     });
   });
 
+  ifdescribe(features.isPrintingEnabled())('getPrintersAsync()', () => {
+    afterEach(closeAllWindows);
+    it('can get printer list', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
+      await w.loadURL('about:blank');
+      const printers = await w.webContents.getPrintersAsync();
+      expect(printers).to.be.an('array');
+    });
+  });
+
   ifdescribe(features.isPrintingEnabled())('printToPDF()', () => {
     let w: BrowserWindow;
 
@@ -1786,7 +1804,8 @@ describe('webContents module', () => {
       }
     });
 
-    describe('using a large document', () => {
+    // TODO(codebytere): Re-enable after Chromium fixes upstream v8_scriptormodule_legacy_lifetime crash.
+    xdescribe('using a large document', () => {
       beforeEach(async () => {
         w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
         await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'print-to-pdf.html'));

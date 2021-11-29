@@ -4,8 +4,8 @@
 
 // Modified from chrome/browser/ui/views/frame/windows_10_caption_button.h
 
-#ifndef SHELL_BROWSER_UI_VIEWS_WIN_CAPTION_BUTTON_H_
-#define SHELL_BROWSER_UI_VIEWS_WIN_CAPTION_BUTTON_H_
+#ifndef ELECTRON_SHELL_BROWSER_UI_VIEWS_WIN_CAPTION_BUTTON_H_
+#define ELECTRON_SHELL_BROWSER_UI_VIEWS_WIN_CAPTION_BUTTON_H_
 
 #include "chrome/browser/ui/frame/window_frame_util.h"
 #include "chrome/browser/ui/view_ids.h"
@@ -60,4 +60,4 @@ class WinCaptionButton : public views::Button {
 };
 }  // namespace electron
 
-#endif  // SHELL_BROWSER_UI_VIEWS_WIN_CAPTION_BUTTON_H_
+#endif  // ELECTRON_SHELL_BROWSER_UI_VIEWS_WIN_CAPTION_BUTTON_H_

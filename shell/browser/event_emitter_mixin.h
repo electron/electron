@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef SHELL_BROWSER_EVENT_EMITTER_MIXIN_H_
-#define SHELL_BROWSER_EVENT_EMITTER_MIXIN_H_
+#ifndef ELECTRON_SHELL_BROWSER_EVENT_EMITTER_MIXIN_H_
+#define ELECTRON_SHELL_BROWSER_EVENT_EMITTER_MIXIN_H_
 
 #include <utility>
 
@@ -20,6 +20,10 @@ v8::Local<v8::FunctionTemplate> GetEventEmitterTemplate(v8::Isolate* isolate);
 template <typename T>
 class EventEmitterMixin {
  public:
+  // disable copy
+  EventEmitterMixin(const EventEmitterMixin&) = delete;
+  EventEmitterMixin& operator=(const EventEmitterMixin&) = delete;
+
   // this.emit(name, new Event(), args...);
   // Returns true if event.preventDefault() was called during processing.
   template <typename... Args>
@@ -30,7 +34,7 @@ class EventEmitterMixin {
     v8::Local<v8::Object> wrapper;
     if (!static_cast<T*>(this)->GetWrapper(isolate).ToLocal(&wrapper))
       return false;
-    v8::Local<v8::Object> event = internal::CreateEvent(isolate, wrapper);
+    v8::Local<v8::Object> event = internal::CreateCustomEvent(isolate, wrapper);
     return EmitWithEvent(isolate, wrapper, name, event,
                          std::forward<Args>(args)...);
   }
@@ -87,10 +91,8 @@ class EventEmitterMixin {
     }
     return false;
   }
-
-  DISALLOW_COPY_AND_ASSIGN(EventEmitterMixin);
 };
 
 }  // namespace gin_helper
 
-#endif  // SHELL_BROWSER_EVENT_EMITTER_MIXIN_H_
+#endif  // ELECTRON_SHELL_BROWSER_EVENT_EMITTER_MIXIN_H_
