@@ -100,5 +100,5 @@ duplicates are not merged.
 //   '127.0.0.1:8000',
 //   'ACCEPT',
 //   '*/*' ]
-console.log(request.rawHeaders);
+console.log(request.rawHeaders)
 ```
