@@ -22,10 +22,10 @@ index 621a961ba0d44394782d62c921904fed32ddf8a4..58e9d84c2260e7469c8e1c166edfef22
    return is_active();
  }
 diff --git a/content/browser/renderer_host/render_view_host_impl.h b/content/browser/renderer_host/render_view_host_impl.h
-index 91731a3aaf01eb22b84bd9cace43fcb7fcd30656..05ce3dd169f755c6128cb83bff77ce85345fcff5 100644
+index 7f80bfbf34889b22b0d09fb0a59f00cb852292fc..deafd249255416f951be20fadae2cacac5046d1c 100644
 --- a/content/browser/renderer_host/render_view_host_impl.h
 +++ b/content/browser/renderer_host/render_view_host_impl.h
-@@ -136,6 +136,7 @@ class CONTENT_EXPORT RenderViewHostImpl
+@@ -137,6 +137,7 @@ class CONTENT_EXPORT RenderViewHostImpl
    bool IsRenderViewLive() override;
    void WriteIntoTrace(perfetto::TracedValue context) override;
  

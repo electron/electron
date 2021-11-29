@@ -67,10 +67,10 @@ index 583ae4a36a5dae700a8e11767839e4d9a5c6e9b4..2510362a4df21fd57c56ec1f336589cc
  }
  #endif
 diff --git a/chrome/browser/net/proxy_config_monitor.h b/chrome/browser/net/proxy_config_monitor.h
-index cc48c2dcb98d49ea3737092e21fdf8a4aa52cb5b..3b82c21a956bebb6bedcbc47a1922eebb9b84f1a 100644
+index 89784b4d6eab9938c475abb6b58c3e08e8801371..72ee9a34e63ca9870c1c2f68f4cb1da63870ad3d 100644
 --- a/chrome/browser/net/proxy_config_monitor.h
 +++ b/chrome/browser/net/proxy_config_monitor.h
-@@ -39,11 +39,12 @@ class ProxyConfigMonitor : public net::ProxyConfigService::Observer,
+@@ -40,11 +40,12 @@ class ProxyConfigMonitor : public net::ProxyConfigService::Observer,
  
  {
   public:
@@ -84,12 +84,12 @@ index cc48c2dcb98d49ea3737092e21fdf8a4aa52cb5b..3b82c21a956bebb6bedcbc47a1922eeb
    // Creates a ProxyConfigMonitor that gets proxy settings from the
    // |local_state|, for use with NetworkContexts not
    // associated with a profile. Must be destroyed before |local_state|.
-@@ -93,7 +94,7 @@ class ProxyConfigMonitor : public net::ProxyConfigService::Observer,
+@@ -94,7 +95,7 @@ class ProxyConfigMonitor : public net::ProxyConfigService::Observer,
  
  #if BUILDFLAG(ENABLE_EXTENSIONS)
    mojo::ReceiverSet<network::mojom::ProxyErrorClient> error_receiver_set_;
--  Profile* profile_ = nullptr;
-+  // Profile* profile_ = nullptr;
+-  raw_ptr<Profile> profile_ = nullptr;
++  // raw_ptr<Profile> profile_ = nullptr;
  #endif
  };
  

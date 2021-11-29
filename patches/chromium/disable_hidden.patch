@@ -20,10 +20,10 @@ index 367c17952131a789a834eb62000c7ebcc2b3249c..b0820c4411952ee0adf3dd4cbc6abb26
        blink::mojom::PointerLockResult::kWrongDocument);
  
 diff --git a/content/browser/renderer_host/render_widget_host_impl.h b/content/browser/renderer_host/render_widget_host_impl.h
-index 3d20ce7068fc5d2c0c91657384e747c16d25e82e..d0361bec7b58497ea6a1bb8144646c67e4cc2677 100644
+index da4223e064f945fb7c19742ab01249c5a18238fc..4a88b0197b96c3b4fde090ae63dccb5831fbe10a 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.h
 +++ b/content/browser/renderer_host/render_widget_host_impl.h
-@@ -874,6 +874,9 @@ class CONTENT_EXPORT RenderWidgetHostImpl
+@@ -875,6 +875,9 @@ class CONTENT_EXPORT RenderWidgetHostImpl
    void OnLocalSurfaceIdChanged(
        const cc::RenderFrameMetadata& metadata) override;
  
@@ -34,10 +34,10 @@ index 3d20ce7068fc5d2c0c91657384e747c16d25e82e..d0361bec7b58497ea6a1bb8144646c67
    // |routing_id| must not be MSG_ROUTING_NONE.
    // If this object outlives |delegate|, DetachDelegate() must be called when
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index a2c22345475c424bd23af4e8e1e8c087a780fc68..b3f02329ae0398978f8a87299181cb07a4799af4 100644
+index f580ccc390f4ae03caa4a0ca426cdf2fe2e0b3f6..3f0ce9daf781c53b6fae1dae386d14b7730c7867 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
-@@ -626,7 +626,7 @@ void RenderWidgetHostViewAura::HideImpl() {
+@@ -627,7 +627,7 @@ void RenderWidgetHostViewAura::HideImpl() {
    DCHECK(visibility_ == Visibility::HIDDEN ||
           visibility_ == Visibility::OCCLUDED);
  
