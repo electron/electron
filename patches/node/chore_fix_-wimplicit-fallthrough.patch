@@ -6,7 +6,7 @@ Subject: chore: fix -Wimplicit-fallthrough
 Upstreamed at https://github.com/nghttp2/nghttp2/pull/1626.
 
 diff --git a/deps/nghttp2/BUILD.gn b/deps/nghttp2/BUILD.gn
-index b7a9daa0d099be8ce1b594cd5128e54ab88d1f25..3872f5fd74f9ae569bf5043b33ff4b52e58f7341 100644
+index 8bfecba74d4d90e9fbf0e2cd301118e4adc6cba8..63e1149f0c4a39cb944114e5824d6074343301e8 100644
 --- a/deps/nghttp2/BUILD.gn
 +++ b/deps/nghttp2/BUILD.gn
 @@ -16,7 +16,6 @@ static_library("nghttp2") {
@@ -16,7 +16,7 @@ index b7a9daa0d099be8ce1b594cd5128e54ab88d1f25..3872f5fd74f9ae569bf5043b33ff4b52
 -    "-Wno-implicit-fallthrough",
      "-Wno-string-plus-int",
      "-Wno-unreachable-code-return",
-   ]
+     "-Wno-unused-but-set-variable",
 diff --git a/deps/nghttp2/lib/nghttp2_hd.c b/deps/nghttp2/lib/nghttp2_hd.c
 index 5e8693152599215261e47b152d565bbd9a0083e7..6d54e91dea6d77ad8925ad0452fd2a0a36f35f73 100644
 --- a/deps/nghttp2/lib/nghttp2_hd.c

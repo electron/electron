@@ -40,7 +40,7 @@ index c384f18ec959303bd3671c570af87b604d20cf23..f420bd94951f5a2b03d20e5892a40392
  
    gfx::Size pixel_size_;
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.mm b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-index 55340e6c038485e3a75126e85fd166c6569b39e6..8afeb88576adcd06d7bb0a52250fbff98f0b513a 100644
+index 79a357037df22c78d31ace77ee8cf6291818ecee..3c7d5add7e4f4372708a1b2f7bf31f7b0a4aa0af 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 @@ -53,7 +53,7 @@

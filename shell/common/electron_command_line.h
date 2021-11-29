@@ -14,6 +14,7 @@ namespace electron {
 class ElectronCommandLine {
  public:
   // disable copy
+  ElectronCommandLine() = delete;
   ElectronCommandLine(const ElectronCommandLine&) = delete;
   ElectronCommandLine& operator=(const ElectronCommandLine&) = delete;
 

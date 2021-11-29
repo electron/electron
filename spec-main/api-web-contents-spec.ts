@@ -1804,7 +1804,8 @@ describe('webContents module', () => {
       }
     });
 
-    describe('using a large document', () => {
+    // TODO(codebytere): Re-enable after Chromium fixes upstream v8_scriptormodule_legacy_lifetime crash.
+    xdescribe('using a large document', () => {
       beforeEach(async () => {
         w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
         await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'print-to-pdf.html'));

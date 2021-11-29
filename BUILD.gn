@@ -538,14 +538,19 @@ source_set("electron_lib") {
       "//build/config/linux/gtk",
       "//dbus",
       "//device/bluetooth",
+      "//ui/base/ime/linux",
       "//ui/events/devices/x11",
       "//ui/events/platform/x11",
       "//ui/gtk",
       "//ui/views/controls/webview",
       "//ui/wm",
     ]
-    if (use_x11) {
+    if (ozone_platform_x11) {
       sources += filenames.lib_sources_linux_x11
+      public_deps += [
+        "//ui/base/x",
+        "//ui/platform_window/x11",
+      ]
     }
     configs += [ ":gio_unix" ]
     defines += [

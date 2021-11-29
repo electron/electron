@@ -2,4 +2,3 @@ expose_ripemd160.patch
 expose_aes-cfb.patch
 expose_des-ede3.patch
 fix_sync_evp_get_cipherbynid_and_evp_get_cipherbyname.patch
-enable_x509_v_flag_trusted_first_flag.patch

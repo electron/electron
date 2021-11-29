@@ -10,7 +10,7 @@ for answers to questions,
 or to join in discussion with other developers who use Electron,
 you can interact with the community in these locations:
 
-* [`Electron's Discord`](https://discord.com/invite/electron) has channels for:
+* [Electron's Discord server](https://discord.com/invite/APGC3k5yaH) has channels for:
   * Getting help
   * Ecosystem apps like [Electron Forge](https://github.com/electron-userland/electron-forge) and [Electron Fiddle](https://github.com/electron/fiddle)
   * Sharing ideas with other Electron app developers
