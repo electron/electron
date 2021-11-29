@@ -90,7 +90,7 @@
 
 - (void)setHeight:(const float)height {
   height_ = height;
-  // recalculate for new margin y
+  // Recalculate for new margin y
   if ([self useCustomHeight]) {
     margin_ = [self getCurrentMargin];
   }
