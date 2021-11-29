@@ -8,10 +8,10 @@ This allows dragging and dropping between <webview>s.
 Originally landed in https://github.com/electron/libchromiumcontent/pull/267
 
 diff --git a/content/browser/web_contents/web_contents_view_aura.cc b/content/browser/web_contents/web_contents_view_aura.cc
-index fb0dd1adf40ef57a03fa1072daa20c1b75d4bf28..8632795bcfd41aed613fa8a88c940a2d501e7ecf 100644
+index b0aee6aea4df23fb073aa730fa17c98bedfe79d6..dd2082a739f6ff7af78cbdef9dc180bfd6619adf 100644
 --- a/content/browser/web_contents/web_contents_view_aura.cc
 +++ b/content/browser/web_contents/web_contents_view_aura.cc
-@@ -879,10 +879,7 @@ bool WebContentsViewAura::IsValidDragTarget(
+@@ -880,10 +880,7 @@ bool WebContentsViewAura::IsValidDragTarget(
    // TODO(https://crbug.com/1266953): There are some known gaps caused by
    // comparing `RenderViewHost` IDs, as `RenderViewHost` ID is not really a
    // strong signal for page identity.

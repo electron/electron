@@ -44,10 +44,10 @@ index 51c061d3bd117c926b74a10deab37d3a694e808b..1f0b787b13567be74553ced382d4b48a
        "https://redirector.gvt1.com/edgedl/chrome/dict/";
  
 diff --git a/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h b/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h
-index 0670254d4962c99aef03e45300e98f4cd28c9449..32e204f5ffbb71a28ff59158096e1114191ddc6a 100644
+index a8a1fb3c22b812cc3ff76a4c50853cb60c74c541..27c07b11ca2f56600fe8534170066bb77dd36037 100644
 --- a/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h
 +++ b/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h
-@@ -92,6 +92,8 @@ class SpellcheckHunspellDictionary
+@@ -93,6 +93,8 @@ class SpellcheckHunspellDictionary
    // Tests use this method to set a custom URL for downloading dictionaries.
    static void SetDownloadURLForTesting(const GURL url);
  

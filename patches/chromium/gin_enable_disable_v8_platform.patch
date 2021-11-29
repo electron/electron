@@ -24,10 +24,10 @@ index 6305d03e2315e8b9925071c018a81c102dda2a55..2bed8f7ce21ab052c0c319775875b9cf
    g_reference_table = reference_table;
  }
 diff --git a/gin/public/isolate_holder.h b/gin/public/isolate_holder.h
-index cb1da2cafc275b62b2a8bf2260d97054777e6d30..cb587f852f230f84db1c50ffd6d41cad447e0949 100644
+index 78133f9b34327c311c69620af621eba3d7f2cbf9..a965545de342811e468594fab4d792fc5c4daf32 100644
 --- a/gin/public/isolate_holder.h
 +++ b/gin/public/isolate_holder.h
-@@ -99,7 +99,8 @@ class GIN_EXPORT IsolateHolder {
+@@ -100,7 +100,8 @@ class GIN_EXPORT IsolateHolder {
    static void Initialize(ScriptMode mode,
                           v8::ArrayBuffer::Allocator* allocator,
                           const intptr_t* reference_table = nullptr,

@@ -57,10 +57,10 @@ index 5ea2a9790c04e409e507946ac6c65097640330b3..1933d9a63300fe68f9c4f6f9d903026e
  
  void GpuDataManagerImplPrivate::UpdateDawnInfo(
 diff --git a/content/browser/gpu/gpu_data_manager_impl_private.h b/content/browser/gpu/gpu_data_manager_impl_private.h
-index 14749a1cc41bf28fe3743a88e4e0ae27be987df1..22a8a5bf2f6bd5d3d1145152504781b945d71fc9 100644
+index 040add1dff511203e3608c5663b18f0d11e3154d..1e0af34c04584ee87a45582130387fbf90535bd8 100644
 --- a/content/browser/gpu/gpu_data_manager_impl_private.h
 +++ b/content/browser/gpu/gpu_data_manager_impl_private.h
-@@ -89,6 +89,7 @@ class CONTENT_EXPORT GpuDataManagerImplPrivate {
+@@ -90,6 +90,7 @@ class CONTENT_EXPORT GpuDataManagerImplPrivate {
    bool VulkanRequested() const;
    void PostCreateThreads();
    void TerminateInfoCollectionGpuProcess();

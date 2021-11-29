@@ -80,7 +80,7 @@ index c1808c6351951d653255e722513b735bd67ab677..3f78445c2539d10d63da339f137ed5bc
      NEW_DOC,
  
 diff --git a/chrome/browser/printing/print_job_worker.cc b/chrome/browser/printing/print_job_worker.cc
-index 176c8078ccb2664e6d5fe9c412df4048e75e6109..2fa40af4da0824f56d48e855a6e3581b27b6a8f8 100644
+index f4b73ced300fbdda9cc9bcea0d5de192afee7aed..0e6028b8ea634e04a4bccc4619009c2c0d163b44 100644
 --- a/chrome/browser/printing/print_job_worker.cc
 +++ b/chrome/browser/printing/print_job_worker.cc
 @@ -21,13 +21,13 @@
@@ -390,10 +390,10 @@ index c3388853baa3c43e0e57ef0ada4977fd3ccd2087..285cd8e2d61385ce25111be3830a3b53
  
    if (!cookie) {
 diff --git a/chrome/browser/printing/print_view_manager_base.h b/chrome/browser/printing/print_view_manager_base.h
-index 850a38f5291fc5707d0882515f41cd37714a447c..9e86f48aca10de0187a6bf70a304d2d41475eb98 100644
+index 738e15d75c0ee356557d61506b73854bd25c97d3..2a8fbd1036cc1bf420644986831cfffd8eaadb31 100644
 --- a/chrome/browser/printing/print_view_manager_base.h
 +++ b/chrome/browser/printing/print_view_manager_base.h
-@@ -39,6 +39,8 @@ class PrintJob;
+@@ -40,6 +40,8 @@ class PrintJob;
  class PrintQueriesQueue;
  class PrinterQuery;
  
@@ -402,7 +402,7 @@ index 850a38f5291fc5707d0882515f41cd37714a447c..9e86f48aca10de0187a6bf70a304d2d4
  // Base class for managing the print commands for a WebContents.
  class PrintViewManagerBase : public content::NotificationObserver,
                               public PrintManager {
-@@ -61,7 +63,10 @@ class PrintViewManagerBase : public content::NotificationObserver,
+@@ -62,7 +64,10 @@ class PrintViewManagerBase : public content::NotificationObserver,
    // Prints the current document immediately. Since the rendering is
    // asynchronous, the actual printing will not be completed on the return of
    // this function. Returns false if printing is impossible at the moment.
@@ -414,9 +414,9 @@ index 850a38f5291fc5707d0882515f41cd37714a447c..9e86f48aca10de0187a6bf70a304d2d4
  
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Prints the document in |print_data| with settings specified in
-@@ -260,9 +265,15 @@ class PrintViewManagerBase : public content::NotificationObserver,
+@@ -261,9 +266,15 @@ class PrintViewManagerBase : public content::NotificationObserver,
    // The current RFH that is printing with a system printing dialog.
-   content::RenderFrameHost* printing_rfh_ = nullptr;
+   raw_ptr<content::RenderFrameHost> printing_rfh_ = nullptr;
  
 +  // Respond with success of the print job.
 +  CompletionCallback callback_;
@@ -687,10 +687,10 @@ index f8f0f4bdfbb8db883f883f62f9d6e4b987d7b113..c2505f5e0049dc7ee8783056538ca4c2
      std::unique_ptr<PrintSettings> settings =
          PrintSettingsFromJobSettings(job_settings);
 diff --git a/printing/printing_context.h b/printing/printing_context.h
-index 0768e69313685e5c19d4fca1d13d798c5a3b1aeb..1056280ae2e08d489dd1ed8ac1a479be199f8bcd 100644
+index a547e1d401816df4739fc71861e1cd04320e50db..d738616e9cbcda0810f2d45688dbe3dd86d1da9e 100644
 --- a/printing/printing_context.h
 +++ b/printing/printing_context.h
-@@ -157,6 +157,9 @@ class COMPONENT_EXPORT(PRINTING) PrintingContext {
+@@ -158,6 +158,9 @@ class COMPONENT_EXPORT(PRINTING) PrintingContext {
  
    std::unique_ptr<PrintSettings> TakeAndResetSettings();
  
@@ -700,7 +700,7 @@ index 0768e69313685e5c19d4fca1d13d798c5a3b1aeb..1056280ae2e08d489dd1ed8ac1a479be
    int job_id() const { return job_id_; }
  
   protected:
-@@ -167,9 +170,6 @@ class COMPONENT_EXPORT(PRINTING) PrintingContext {
+@@ -168,9 +171,6 @@ class COMPONENT_EXPORT(PRINTING) PrintingContext {
    static std::unique_ptr<PrintingContext> CreateImpl(Delegate* delegate,
                                                       bool skip_system_calls);
  
