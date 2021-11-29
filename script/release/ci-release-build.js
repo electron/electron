@@ -59,11 +59,7 @@ async function circleCIcall (targetBranch, workflowName, options) {
   console.log(`Triggering CircleCI to run build job: ${workflowName} on branch: ${targetBranch} with release flag.`);
   const buildRequest = {
     branch: targetBranch,
-    parameters: {
-      'run-lint': false,
-      'run-build-linux': false,
-      'run-build-mac': false
-    }
+    parameters: {}
   };
   if (options.ghRelease) {
     buildRequest.parameters['upload-to-s3'] = '0';
