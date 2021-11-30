@@ -5,6 +5,7 @@ Subject: desktop_media_list.patch
 
 * Use our grit resources instead of the chrome ones.
 * Disabled WindowCaptureMacV2 feature for https://github.com/electron/electron/pull/30507
+* Ensure "OnRefreshComplete()" even if there are no items in the list
 
 diff --git a/chrome/browser/media/webrtc/desktop_media_list.h b/chrome/browser/media/webrtc/desktop_media_list.h
 index 57cfc646f8ea545271c22d79ec158a04b148bc9c..db4d608d3bed841ddf7225d0918e82112c8d08b5 100644
@@ -52,7 +53,7 @@ index 98cc4e039ba2b5a467175b15650a7b8ef38e8249..f5aea6a5916b9aa56ee7b81a8de97dc4
    const Source& GetSource(int index) const override;
    DesktopMediaList::Type GetMediaListType() const override;
 diff --git a/chrome/browser/media/webrtc/native_desktop_media_list.cc b/chrome/browser/media/webrtc/native_desktop_media_list.cc
-index f777d8e6aa8a36d273a1a23f5e71390fad7e434f..68aa85a344168bcd74f4e9d1f7538934e980eba7 100644
+index f777d8e6aa8a36d273a1a23f5e71390fad7e434f..c59706f0e244afa9408a5bfeaf5a51ad10c1f885 100644
 --- a/chrome/browser/media/webrtc/native_desktop_media_list.cc
 +++ b/chrome/browser/media/webrtc/native_desktop_media_list.cc
 @@ -16,7 +16,7 @@
@@ -75,12 +76,15 @@ index f777d8e6aa8a36d273a1a23f5e71390fad7e434f..68aa85a344168bcd74f4e9d1f7538934
  #endif
  
  }  // namespace
-@@ -427,6 +428,8 @@ void NativeDesktopMediaList::RefreshForVizFrameSinkWindows(
+@@ -427,6 +428,11 @@ void NativeDesktopMediaList::RefreshForVizFrameSinkWindows(
          FROM_HERE, base::BindOnce(&Worker::RefreshThumbnails,
                                    base::Unretained(worker_.get()),
                                    std::move(native_ids), thumbnail_size_));
 +  } else {
-+    OnRefreshComplete();
++#if defined(USE_AURA)
++    pending_native_thumbnail_capture_ = true;
++#endif
++    UpdateNativeThumbnailsFinished();
    }
  }
  
