@@ -59,7 +59,7 @@ index 9aec54a3263d24491d24013a80b719dfc834ecd4..001a6cb2a5eb701351fa924109b43fab
    // true if register successfully, or false if 1) the specificied |accelerator|
    // has been registered by another caller or other native applications, or
 diff --git a/content/browser/media/media_keys_listener_manager_impl.cc b/content/browser/media/media_keys_listener_manager_impl.cc
-index 5938f75742b793868638e693a9a8c8dc686dfc46..fdf8dd6a0f4a63badf3aa55181835adc22e4d988 100644
+index 5938f75742b793868638e693a9a8c8dc686dfc46..7f30f3fdd2c63612232e31c331b26b17ad729efb 100644
 --- a/content/browser/media/media_keys_listener_manager_impl.cc
 +++ b/content/browser/media/media_keys_listener_manager_impl.cc
 @@ -55,7 +55,12 @@ bool MediaKeysListenerManagerImpl::StartWatchingMediaKey(
@@ -76,12 +76,11 @@ index 5938f75742b793868638e693a9a8c8dc686dfc46..fdf8dd6a0f4a63badf3aa55181835adc
        !media_keys_listener_->StartWatchingMediaKey(key_code)) {
      return false;
    }
-@@ -231,19 +236,19 @@ void MediaKeysListenerManagerImpl::StartListeningForMediaKeysIfNecessary() {
-       media::AudioManager::GetGlobalAppName());
+@@ -232,18 +237,18 @@ void MediaKeysListenerManagerImpl::StartListeningForMediaKeysIfNecessary() {
  #endif
  
-+  // This is required for proper functioning of MediaMetadata.
    if (system_media_controls_) {
++    // This is required for proper functioning of MediaMetadata.
      system_media_controls_->AddObserver(this);
      system_media_controls_notifier_ =
          std::make_unique<SystemMediaControlsNotifier>(
@@ -93,7 +92,7 @@ index 5938f75742b793868638e693a9a8c8dc686dfc46..fdf8dd6a0f4a63badf3aa55181835adc
 -        this, ui::MediaKeysListener::Scope::kGlobal);
 -    DCHECK(media_keys_listener_);
    }
- 
+
 +  // Directly listen for media key keypresses when using GlobalShortcuts.
 +  media_keys_listener_ = ui::MediaKeysListener::Create(
 +    this, ui::MediaKeysListener::Scope::kGlobal);
