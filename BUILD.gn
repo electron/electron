@@ -183,6 +183,12 @@ action("electron_js2c") {
          rebase_path(sources, root_build_dir)
 }
 
+action("generate_config_gypi") {
+  outputs = [ "$root_gen_dir/config.gypi" ]
+  script = "script/generate-config-gypi.py"
+  args = rebase_path(outputs) + [ target_cpu ]
+}
+
 target_gen_default_app_js = "$target_gen_dir/js/default_app"
 
 typescript_build("default_app_js") {
