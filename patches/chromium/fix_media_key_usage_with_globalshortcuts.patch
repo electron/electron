@@ -92,7 +92,7 @@ index 5938f75742b793868638e693a9a8c8dc686dfc46..7f30f3fdd2c63612232e31c331b26b17
 -        this, ui::MediaKeysListener::Scope::kGlobal);
 -    DCHECK(media_keys_listener_);
    }
-
+ 
 +  // Directly listen for media key keypresses when using GlobalShortcuts.
 +  media_keys_listener_ = ui::MediaKeysListener::Create(
 +    this, ui::MediaKeysListener::Scope::kGlobal);
