@@ -46,10 +46,10 @@ index 393ff52e2ba4835aced71337745de8cadbb32dba..38ed439c10522dedae714ea3b7683150
      NSArray* node_array,
      const LineIndexer* line_indexer) const {
 diff --git a/content/browser/accessibility/accessibility_tree_formatter_utils_mac.h b/content/browser/accessibility/accessibility_tree_formatter_utils_mac.h
-index 7a46c2744b04247971bd1ec31ef1a076fee7e8e1..2a4def971a8739bf9aa74cf61501b2386d95b378 100644
+index da26a17da7939c2ba8207d42983d2abb232ad524..55f480c444578c21fd1f5e581af4721b20165f45 100644
 --- a/content/browser/accessibility/accessibility_tree_formatter_utils_mac.h
 +++ b/content/browser/accessibility/accessibility_tree_formatter_utils_mac.h
-@@ -152,12 +152,14 @@ class CONTENT_EXPORT AttributeInvoker final {
+@@ -106,12 +106,14 @@ class CONTENT_EXPORT AttributeInvoker final {
        const ui::AXPropertyNode&,
        bool log_failure = true) const;
  
@@ -65,10 +65,10 @@ index 7a46c2744b04247971bd1ec31ef1a076fee7e8e1..2a4def971a8739bf9aa74cf61501b238
    gfx::NativeViewAccessible LineIndexToNode(
        const std::u16string line_index) const;
 diff --git a/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm b/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm
-index 5c895027b212462a0404d01fe4842116d19633c6..fe41aa78abd3e31892ccdee9fcb0b5351943fa84 100644
+index ceb01f79939ed3d914e039acd2ab480cd83ea7e6..1f403a84f0843575a604efce669b418b3d95aacb 100644
 --- a/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm
 +++ b/content/browser/accessibility/accessibility_tree_formatter_utils_mac.mm
-@@ -180,9 +180,11 @@
+@@ -176,9 +176,11 @@
    if (IsBrowserAccessibilityCocoa(target) || IsAXUIElement(target))
      return InvokeForAXElement(target, property_node);
  
@@ -80,23 +80,23 @@ index 5c895027b212462a0404d01fe4842116d19633c6..fe41aa78abd3e31892ccdee9fcb0b535
  
    if ([target isKindOfClass:[NSArray class]])
      return InvokeForArray(target, property_node);
-@@ -380,6 +382,7 @@
+@@ -376,6 +378,7 @@
        property_name == "AXTextMarkerRangeForUIElement") {  // UIElement
-     return OptionalNSObject::NotNilOrError(PropertyNodeToUIElement(arg_node));
+     return OptionalNSObject::NotNullOrError(PropertyNodeToUIElement(arg_node));
    }
 +#ifndef MAS_BUILD
    if (property_name == "AXIndexForTextMarker" ||
        property_name == "AXNextWordEndTextMarkerForTextMarker" ||
        property_name ==
-@@ -391,6 +394,7 @@
-     return OptionalNSObject::NotNilOrError(
+@@ -387,6 +390,7 @@
+     return OptionalNSObject::NotNullOrError(
          PropertyNodeToTextMarkerRange(arg_node));
    }
 +#endif
  
    return OptionalNSObject::NotApplicable();
  }
-@@ -403,6 +407,7 @@
+@@ -399,6 +403,7 @@
      return value;
  
    // NSRange
@@ -104,7 +104,7 @@ index 5c895027b212462a0404d01fe4842116d19633c6..fe41aa78abd3e31892ccdee9fcb0b535
    value = PropertyNodeToRange(property_node, false);
    if (value)
      return value;
-@@ -419,6 +424,10 @@
+@@ -415,6 +420,10 @@
  
    // TextMarkerRange
    return PropertyNodeToTextMarkerRange(property_node, false);
@@ -115,7 +115,7 @@ index 5c895027b212462a0404d01fe4842116d19633c6..fe41aa78abd3e31892ccdee9fcb0b535
  }
  
  // NSNumber. Format: integer.
-@@ -529,6 +538,7 @@
+@@ -525,6 +534,7 @@
    return uielement;
  }
  
@@ -123,7 +123,7 @@ index 5c895027b212462a0404d01fe4842116d19633c6..fe41aa78abd3e31892ccdee9fcb0b535
  id AttributeInvoker::DictNodeToTextMarker(const AXPropertyNode& dictnode,
                                            bool log_failure) const {
    if (!dictnode.IsDict()) {
-@@ -618,6 +628,7 @@
+@@ -614,6 +624,7 @@
  
    return content::AXTextMarkerRangeFrom(anchor_textmarker, focus_textmarker);
  }
