@@ -43,7 +43,7 @@ index b0820c4411952ee0adf3dd4cbc6abb26c0368373..cd2770dee3fac7f6b09c3fafbf87a553
  
  void RenderWidgetHostImpl::ShowContextMenuAtPoint(
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index d8626b10c6d8cb81a789cebdae5467e091a4f269..76dc5213823195d1cddffe6f94804e9ac0af00aa 100644
+index 05ba41787788d5c7263a41ca01d1e33fd8b1c051..d0b78947146212dc39c92856c273463cd1a3ce28 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4398,6 +4398,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
@@ -71,7 +71,7 @@ index ea8b1d5c0d1f9be4e0c5d7599398e2216303571f..4d7fd0195e9141adca575d0f1ab50333
        RenderWidgetHostImpl* render_widget_host) override;
    bool IsShowingContextMenuOnPage() const override;
 diff --git a/content/public/browser/web_contents_observer.h b/content/public/browser/web_contents_observer.h
-index b5bec237b2ddd143e5d8b2a081bf23fd8b28773b..6fb2e9aa4f7e1ab4e0136fe2ca2c533f8088fa34 100644
+index 4748c4bc0b2090fb99497352b3633d7d37bcfe8a..df6df4e49942b3544163bf3821a6761597dce7e1 100644
 --- a/content/public/browser/web_contents_observer.h
 +++ b/content/public/browser/web_contents_observer.h
 @@ -13,6 +13,7 @@
