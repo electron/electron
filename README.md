@@ -80,7 +80,7 @@ const child = proc.spawn(electron)
 
 ### Mirrors
 
-- [China](https://npm.taobao.org/mirrors/electron)
+- [China](https://npmmirror.com/mirrors/electron)
 
 ## Documentation Translations
 
