@@ -44,6 +44,7 @@ class ElectronRenderFrameObserver : public content::RenderFrameObserver {
   void OnTakeHeapSnapshot(IPC::PlatformFileForTransit file_handle,
                           const std::string& channel);
 
+  bool has_delayed_node_initialization_ = false;
   content::RenderFrame* render_frame_;
   RendererClientBase* renderer_client_;
 };
