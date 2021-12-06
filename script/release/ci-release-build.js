@@ -59,11 +59,7 @@ async function circleCIcall (targetBranch, workflowName, options) {
   console.log(`Triggering CircleCI to run build job: ${workflowName} on branch: ${targetBranch} with release flag.`);
   const buildRequest = {
     branch: targetBranch,
-    parameters: {
-      'run-lint': false,
-      'run-build-linux': false,
-      'run-build-mac': false
-    }
+    parameters: {}
   };
   if (options.ghRelease) {
     buildRequest.parameters['upload-to-s3'] = '0';
@@ -114,8 +110,9 @@ async function getCircleCIWorkflowId (pipelineId) {
     switch (pipelineInfo.state) {
       case 'created': {
         const workflows = await circleCIRequest(`${pipelineInfoUrl}/workflow`, 'GET');
-        if (workflows.items.length === 1) {
-          workflowId = workflows.items[0].id;
+        // The logic below expects two workflow.items: publish [0] & setup [1]
+        if (workflows.items.length === 2) {
+          workflowId = workflows.items.find(item => item.name.includes('publish')).id;
           break;
         }
         console.log('Unxpected number of workflows, response was:', pipelineInfo);
