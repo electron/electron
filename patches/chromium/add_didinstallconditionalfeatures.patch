@@ -10,10 +10,10 @@ DidCreateScriptContext is called, not all JS APIs are available in the
 context, which can cause some preload scripts to trip.
 
 diff --git a/content/public/renderer/render_frame_observer.h b/content/public/renderer/render_frame_observer.h
-index 316b6730c255e5fafb7fb86ee4f780a28368d771..9601b3b9c5d5da9c9051aa234d2eaa932ef983ee 100644
+index f6d262f1bf7aa77c2a63f4a4c3351be0fe2ab3fd..52db2e1948fd7752b88d5a692748053491594c2d 100644
 --- a/content/public/renderer/render_frame_observer.h
 +++ b/content/public/renderer/render_frame_observer.h
-@@ -130,6 +130,8 @@ class CONTENT_EXPORT RenderFrameObserver : public IPC::Listener,
+@@ -129,6 +129,8 @@ class CONTENT_EXPORT RenderFrameObserver : public IPC::Listener,
    virtual void DidHandleOnloadEvents() {}
    virtual void DidCreateScriptContext(v8::Local<v8::Context> context,
                                        int32_t world_id) {}
@@ -23,10 +23,10 @@ index 316b6730c255e5fafb7fb86ee4f780a28368d771..9601b3b9c5d5da9c9051aa234d2eaa93
                                          int32_t world_id) {}
    virtual void DidClearWindowObject() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index a78389df7d259770007bdae8615072e81cc8513e..e6e4268e0b8ce5abef58cb740c9cef577eeece29 100644
+index 584ae29be139c9be347e4fa9f920a2cc84baf00a..c7a5f0916cf8ba6db6fa85537c140024a92ff24d 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -4516,6 +4516,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
+@@ -4515,6 +4515,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
      observer.DidCreateScriptContext(context, world_id);
  }
  
@@ -40,10 +40,10 @@ index a78389df7d259770007bdae8615072e81cc8513e..e6e4268e0b8ce5abef58cb740c9cef57
                                                 int world_id) {
    for (auto& observer : observers_)
 diff --git a/content/renderer/render_frame_impl.h b/content/renderer/render_frame_impl.h
-index 038b9c08d696b0a76a86219e1935b2005c0e1c59..0465f914b5fc3df4098dea4f4964e24f68871750 100644
+index 1b582c1736db20dab712ee7875f37c2140bd7d45..efab4f51e56e6e179fb832b1cf47d7f4a348e6c7 100644
 --- a/content/renderer/render_frame_impl.h
 +++ b/content/renderer/render_frame_impl.h
-@@ -601,6 +601,8 @@ class CONTENT_EXPORT RenderFrameImpl
+@@ -602,6 +602,8 @@ class CONTENT_EXPORT RenderFrameImpl
        blink::WebLocalFrameClient::LazyLoadBehavior lazy_load_behavior) override;
    void DidCreateScriptContext(v8::Local<v8::Context> context,
                                int world_id) override;

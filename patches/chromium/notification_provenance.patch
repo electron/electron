@@ -87,10 +87,10 @@ index 8e23ab272000a1244959bf9164d6880660d4a843..ff89f2bdf07e91029841bab7ce7c7a92
  
  void PlatformNotificationContextImpl::RemoveService(
 diff --git a/content/browser/notifications/platform_notification_context_impl.h b/content/browser/notifications/platform_notification_context_impl.h
-index 43feafaf5147c9cd9be42ca5f3f4c5de834e7b79..58af038d005659be525595361c2786a06a9686ba 100644
+index 951075749b24814606f494c5a89ee2adf527f512..7036323ff8ee38ae92790dfd2e216df61181bc55 100644
 --- a/content/browser/notifications/platform_notification_context_impl.h
 +++ b/content/browser/notifications/platform_notification_context_impl.h
-@@ -48,6 +48,7 @@ class BrowserContext;
+@@ -47,6 +47,7 @@ class BrowserContext;
  struct NotificationDatabaseData;
  class PlatformNotificationServiceProxy;
  class ServiceWorkerContextWrapper;
@@ -98,7 +98,7 @@ index 43feafaf5147c9cd9be42ca5f3f4c5de834e7b79..58af038d005659be525595361c2786a0
  
  // Implementation of the Web Notification storage context. The public methods
  // defined in this interface must only be called on the UI thread.
-@@ -77,6 +78,7 @@ class CONTENT_EXPORT PlatformNotificationContextImpl
+@@ -76,6 +77,7 @@ class CONTENT_EXPORT PlatformNotificationContextImpl
    // Creates a BlinkNotificationServiceImpl that is owned by this context.
    // |document_url| is empty when originating from a worker.
    void CreateService(
@@ -107,10 +107,10 @@ index 43feafaf5147c9cd9be42ca5f3f4c5de834e7b79..58af038d005659be525595361c2786a0
        const GURL& document_url,
        mojo::PendingReceiver<blink::mojom::NotificationService> receiver);
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index b489af329ce31a27b7501a783703e780ca1f9bfe..aca584cdd0464cde699939113c7b28cc5f83e195 100644
+index aaed3288b7749407eea0a4ba79a618a691a51d3d..842ea10f0a92e633f92aba8491e288de5dbbf5fa 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -2111,7 +2111,7 @@ void RenderProcessHostImpl::CreateNotificationService(
+@@ -2109,7 +2109,7 @@ void RenderProcessHostImpl::CreateNotificationService(
      document_url = rfh->GetLastCommittedURL();
  
    storage_partition_impl_->GetPlatformNotificationContext()->CreateService(

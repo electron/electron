@@ -28,10 +28,10 @@ index 7821945da13ece57529c1de14d1cbd7f645d19ab..9be940f4ee047279f5969a6c572d6acb
  
  void GpuDataManagerImpl::UpdateDawnInfo(
 diff --git a/content/browser/gpu/gpu_data_manager_impl.h b/content/browser/gpu/gpu_data_manager_impl.h
-index 8e80ced989ee736a241ac012c4a28c390b1f270b..cefd5f7d80ef5cf3beae8fd95cdde0abd05c1d00 100644
+index bb9a976842b869bf31c46c45686f6f5238841eb2..489619f6d3d4accadb811db287a9ff498f35d8bb 100644
 --- a/content/browser/gpu/gpu_data_manager_impl.h
 +++ b/content/browser/gpu/gpu_data_manager_impl.h
-@@ -125,6 +125,7 @@ class CONTENT_EXPORT GpuDataManagerImpl : public GpuDataManager,
+@@ -124,6 +124,7 @@ class CONTENT_EXPORT GpuDataManagerImpl : public GpuDataManager,
    // BrowserMainParts override instead.
    void PostCreateThreads();
    void TerminateInfoCollectionGpuProcess();
@@ -40,10 +40,10 @@ index 8e80ced989ee736a241ac012c4a28c390b1f270b..cefd5f7d80ef5cf3beae8fd95cdde0ab
    void UpdateDawnInfo(const std::vector<std::string>& dawn_info_list);
  
 diff --git a/content/browser/gpu/gpu_data_manager_impl_private.cc b/content/browser/gpu/gpu_data_manager_impl_private.cc
-index 5ea2a9790c04e409e507946ac6c65097640330b3..1933d9a63300fe68f9c4f6f9d903026ee5b1bbc4 100644
+index cddf8dfa73ba64b89e37b3ca375d5872d23b995f..06fbfe2b0a9a74a785ba54d495f7813286e81b6b 100644
 --- a/content/browser/gpu/gpu_data_manager_impl_private.cc
 +++ b/content/browser/gpu/gpu_data_manager_impl_private.cc
-@@ -1171,6 +1171,12 @@ void GpuDataManagerImplPrivate::TerminateInfoCollectionGpuProcess() {
+@@ -1212,6 +1212,12 @@ void GpuDataManagerImplPrivate::TerminateInfoCollectionGpuProcess() {
    if (host)
      host->ForceShutdown();
  }
