@@ -47,10 +47,10 @@ index 746dffb1defec9d776f681d41325a65b02cbdd0f..05a7f20f10e3ff514aa3b3b5386980dd
    return items_[ValidateItemIndex(index)].minor_text;
  }
 diff --git a/ui/base/models/simple_menu_model.h b/ui/base/models/simple_menu_model.h
-index 2a830f43427fa7fe76eb21aa89db0d5ea2428e49..8bd751a6d79258d32525056896d838caafecdaba 100644
+index bd2ebaf9f84946c708eba13c18869afadd2fdbb0..880d6f12ad188c5f8abf037b3b8d27fcf1fc2cb6 100644
 --- a/ui/base/models/simple_menu_model.h
 +++ b/ui/base/models/simple_menu_model.h
-@@ -50,6 +50,7 @@ class COMPONENT_EXPORT(UI_BASE) SimpleMenuModel : public MenuModel {
+@@ -49,6 +49,7 @@ class COMPONENT_EXPORT(UI_BASE) SimpleMenuModel : public MenuModel {
      // Some command ids have labels and icons that change over time.
      virtual bool IsItemForCommandIdDynamic(int command_id) const;
      virtual std::u16string GetLabelForCommandId(int command_id) const;
@@ -58,7 +58,7 @@ index 2a830f43427fa7fe76eb21aa89db0d5ea2428e49..8bd751a6d79258d32525056896d838ca
      // Gets the icon for the item with the specified id.
      virtual ImageModel GetIconForCommandId(int command_id) const;
  
-@@ -161,6 +162,9 @@ class COMPONENT_EXPORT(UI_BASE) SimpleMenuModel : public MenuModel {
+@@ -160,6 +161,9 @@ class COMPONENT_EXPORT(UI_BASE) SimpleMenuModel : public MenuModel {
    // Sets the label for the item at |index|.
    void SetLabel(int index, const std::u16string& label);
  
@@ -68,7 +68,7 @@ index 2a830f43427fa7fe76eb21aa89db0d5ea2428e49..8bd751a6d79258d32525056896d838ca
    // Sets the minor text for the item at |index|.
    void SetMinorText(int index, const std::u16string& minor_text);
  
-@@ -200,6 +204,7 @@ class COMPONENT_EXPORT(UI_BASE) SimpleMenuModel : public MenuModel {
+@@ -199,6 +203,7 @@ class COMPONENT_EXPORT(UI_BASE) SimpleMenuModel : public MenuModel {
    ui::MenuSeparatorType GetSeparatorTypeAt(int index) const override;
    int GetCommandIdAt(int index) const override;
    std::u16string GetLabelAt(int index) const override;
@@ -76,7 +76,7 @@ index 2a830f43427fa7fe76eb21aa89db0d5ea2428e49..8bd751a6d79258d32525056896d838ca
    std::u16string GetMinorTextAt(int index) const override;
    ImageModel GetMinorIconAt(int index) const override;
    bool IsItemDynamicAt(int index) const override;
-@@ -239,6 +244,7 @@ class COMPONENT_EXPORT(UI_BASE) SimpleMenuModel : public MenuModel {
+@@ -238,6 +243,7 @@ class COMPONENT_EXPORT(UI_BASE) SimpleMenuModel : public MenuModel {
      int command_id = 0;
      ItemType type = TYPE_COMMAND;
      std::u16string label;

@@ -81,7 +81,7 @@ index 309422bcf85810db88a048bd0930c4072b41f234..759549f3046f4a897b597409b670bb1c
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 3b494843ac89db9be18e9deb75ec79a32296a73e..9942d66b163280f16a343b2e61aeaa3d97c47f45 100644
+index d2df9254b6d4ec4bdbc57866a84a73ef05be7381..84a823f814cba724fea15b5d90c91379ae290b36 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -137,6 +137,8 @@ viz_component("service") {
@@ -499,10 +499,10 @@ index 583e3e2525c753a0962d481fc67a3582df75d0e9..9416ec929bebcff7f07088e635376ef2
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index 44fe636a26e8087db7aeb30e9a25813fc2ec4d79..8786854c73716ff4b9e2d94085d8164f5bd7ae58 100644
+index 19e7518c9ee870043aa50a175fa73f25b035a0e7..ef6677b087e015bbaae8bdb542f7c06b78211c56 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-@@ -46,7 +46,8 @@ RootCompositorFrameSinkImpl::Create(
+@@ -47,7 +47,8 @@ RootCompositorFrameSinkImpl::Create(
        params->gpu_compositing, params->widget, params->renderer_settings);
    auto output_surface = output_surface_provider->CreateOutputSurface(
        params->widget, params->gpu_compositing, display_client.get(),
@@ -569,7 +569,7 @@ index 6b7fbb6cf13dc8ee6ade0878a9a2c1efc5d4d3f1..e2af75168cb914a7b3b4a6c9b6a28549
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index a8e71b0cbb0315be29dc7ccf1b40c045c974eb49..5716ed1d930e30f97a70daa5ced24186d4363320 100644
+index 7e3a624f99fea87cd53ce6f399e5768058d3c305..384ec6d9b8a8c0e121fc2e875ce65ddb639c241b 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -81,6 +81,7 @@ class DisplayPrivate;
