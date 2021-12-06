@@ -410,9 +410,8 @@ void FileChooserDialog::OnUpdatePreview(GtkFileChooser* chooser) {
 }  // namespace
 
 void ShowFileDialog(const FileChooserDialog& dialog) {
-  if (*supports_gtk_file_chooser_native) {
-    dl_gtk_native_dialog_show(static_cast<void*>(dialog.dialog()));
-  } else {
+  // gtk_native_dialog_run() will call gtk_native_dialog_show() for us.
+  if (!*supports_gtk_file_chooser_native) {
     gtk_widget_show_all(GTK_WIDGET(dialog.dialog()));
   }
 }
