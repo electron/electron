@@ -67,7 +67,6 @@ class BrowserProcessImpl : public BrowserProcess {
   NotificationPlatformBridge* notification_platform_bridge() override;
   SystemNetworkContextManager* system_network_context_manager() override;
   network::NetworkQualityTracker* network_quality_tracker() override;
-  WatchDogThread* watchdog_thread() override;
   policy::ChromeBrowserPolicyConnector* browser_policy_connector() override;
   policy::PolicyService* policy_service() override;
   IconManager* icon_manager() override;
