@@ -138,7 +138,6 @@ bool ElectronPathProvider(int key, base::FilePath* result) {
       cur = cur.Append(base::FilePath::FromUTF8Unsafe("Dictionaries"));
       create_dir = true;
       break;
-
     case DIR_BROWSER_DATA: {
       // By default and for backward, equivalent to DIR_USER_DATA
       if (!base::PathService::Get(chrome::DIR_USER_DATA, &cur))
@@ -146,20 +145,13 @@ bool ElectronPathProvider(int key, base::FilePath* result) {
       create_dir = true;
       break;
     }
-     int parent_key = base::DIR_ROAMING_APP_DATA;
-    case DIR_CACHE:
-      if (!base::PathService::Get(DIR_APP_DATA, &cur))
-        return false;
-      create_dir = true;
-      break;
-#endif
     case DIR_USER_CACHE: {
 #if defined(OS_POSIX)
       int parent_key = base::DIR_CACHE;
 #else
       // On Windows, there's no OS-level centralized location for caches, so
       // store the cache in the app data directory.
-      int parent_key = base::DIR_APP_DATA;
+      int parent_key = base::DIR_ROAMING_APP_DATA;
 #endif
       if (!base::PathService::Get(parent_key, &cur))
         return false;
