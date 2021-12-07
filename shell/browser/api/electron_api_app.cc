@@ -1123,7 +1123,7 @@ void App::OnSecondInstance(
   v8::HandleScope handle_scope(isolate);
   v8::Local<v8::Value> data_value =
       DeserializeV8Value(isolate, std::move(additional_data));
-  auto cb = base::BindOnce(&AckCallbackWrapper, ack_callback);
+  auto cb = base::BindRepeating(&AckCallbackWrapper, ack_callback);
   bool prevent_default =
       Emit("second-instance", cmd.argv(), cwd, data_value, cb);
   if (!prevent_default) {
