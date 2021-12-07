@@ -1,0 +1,21 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Apthorp <nornagon@nornagon.net>
+Date: Tue, 16 Apr 2019 11:25:08 -0700
+Subject: unsandboxed_ppapi_processes_skip_zygote.patch
+
+Unsandboxed ppapi processes should skip zygote.
+
+diff --git a/content/browser/ppapi_plugin_sandboxed_process_launcher_delegate.cc b/content/browser/ppapi_plugin_sandboxed_process_launcher_delegate.cc
+index d2beb262190356da4ec54d7c60253b0ae36d4a82..0dfaf38a5d6438efb3973f7f0ca1d2f6973f44ed 100644
+--- a/content/browser/ppapi_plugin_sandboxed_process_launcher_delegate.cc
++++ b/content/browser/ppapi_plugin_sandboxed_process_launcher_delegate.cc
+@@ -70,6 +70,9 @@ bool PpapiPluginSandboxedProcessLauncherDelegate::PreSpawnTarget(
+ ZygoteHandle PpapiPluginSandboxedProcessLauncherDelegate::GetZygote() {
+   const base::CommandLine& browser_command_line =
+       *base::CommandLine::ForCurrentProcess();
++  if (browser_command_line.HasSwitch(sandbox::policy::switches::kNoSandbox)) {
++    return nullptr;
++  }
+   base::CommandLine::StringType plugin_launcher =
+       browser_command_line.GetSwitchValueNative(switches::kPpapiPluginLauncher);
+   if (!plugin_launcher.empty())
