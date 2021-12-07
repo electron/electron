@@ -42,6 +42,7 @@ dump_syms.patch
 command-ismediakey.patch
 printing.patch
 support_mixed_sandbox_with_zygote.patch
+unsandboxed_ppapi_processes_skip_zygote.patch
 build_add_electron_tracing_category.patch
 worker_context_will_destroy.patch
 frame_host_manager.patch
@@ -86,6 +87,7 @@ chore_expose_v8_initialization_isolate_callbacks.patch
 export_gin_v8platform_pageallocator_for_usage_outside_of_the_gin.patch
 fix_export_zlib_symbols.patch
 don_t_use_potentially_null_getwebframe_-_view_when_get_blink.patch
+web_contents.patch
 webview_fullscreen.patch
 disable_unload_metrics.patch
 fix_add_check_for_sandbox_then_result.patch
