@@ -199,6 +199,8 @@ static_library("chrome") {
 
   if (enable_basic_printing) {
     sources += [
+      "//chrome/browser/bad_message.cc",
+      "//chrome/browser/bad_message.h",
       "//chrome/browser/printing/print_job.cc",
       "//chrome/browser/printing/print_job.h",
       "//chrome/browser/printing/print_job_manager.cc",
