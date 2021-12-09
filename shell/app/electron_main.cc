@@ -281,7 +281,7 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   if (!electron::CheckCommandLineArguments(arguments.argc, arguments.argv))
     return -1;
 
-  sandbox::SandboxInterfaceInfo sandbox_info = {0};
+  sandbox::SandboxInterfaceInfo sandbox_info = {nullptr};
   content::InitializeSandboxInfo(&sandbox_info);
   electron::ElectronMainDelegate delegate;
 
