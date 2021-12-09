@@ -944,13 +944,13 @@ void InspectableWebContents::ClearPreferences() {
   pref_service_->SetBoolean(kDevToolsSyncPreferences,
                             kSyncDevToolsPreferencesDefault);
   DictionaryPrefUpdate unsynced_update(pref_service_, kDevToolsPreferences);
-  unsynced_update.Get()->Clear();
+  unsynced_update.Get()->DictClear();
   DictionaryPrefUpdate sync_enabled_update(
       pref_service_, kDevToolsSyncedPreferencesSyncEnabled);
-  sync_enabled_update.Get()->Clear();
+  sync_enabled_update.Get()->DictClear();
   DictionaryPrefUpdate sync_disabled_update(
       pref_service_, kDevToolsSyncedPreferencesSyncDisabled);
-  sync_disabled_update.Get()->Clear();
+  sync_disabled_update.Get()->DictClear();
 }
 
 void InspectableWebContents::GetSyncInformation(DispatchCallback callback) {
