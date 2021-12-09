@@ -430,8 +430,14 @@ HRESULT WindowsToastNotification::GetToastXml(
   }
 
   if (require_interaction) {
+    // Reimplement for SAP-17772 SAP-19442
+    const bool use_reminder =
+        !actions_list.empty() &&
+        actions_list[0].type != NotificationAction::sTYPE_TEXT;
     REPORT_AND_RETURN_IF_FAILED(
-        SetXmlScenarioType(*toast_xml, L"reminder"),
+        SetXmlScenarioType(
+            *toast_xml,
+            std::wstring(use_reminder ? L"reminder" : L"incomingcall")),
         "XML: Setting \"reminder\" senarion type failed");
   }
 
