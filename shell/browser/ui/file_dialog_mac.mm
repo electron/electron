@@ -17,6 +17,7 @@
 #include "base/mac/scoped_cftyperef.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/task/post_task.h"
+#include "base/threading/thread_restrictions.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "shell/browser/native_window.h"
