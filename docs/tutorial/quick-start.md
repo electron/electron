@@ -476,7 +476,7 @@ Forge's scaffolding:
 
     We have ATTEMPTED to convert your app to be in a format that electron-forge understands.
 
-    Thanks for using "electron-forge"!!!
+    Thanks for using "electron-forge"\!\!\!
     ```
 
 1. Create a distributable using Forge's `make` command:
