@@ -1519,6 +1519,20 @@ describe('app module', () => {
     });
   });
 
+  const showHideDescribe = process.platform === 'darwin' ? describe : describe.skip;
+  showHideDescribe('app hide and show API', () => {
+    describe('app.isHidden', () => {
+      it('returns true when the app is hidden', () => {
+        app.hide();
+        expect(app.isHidden()).to.be.true();
+      });
+      it('returns false when the app is shown', () => {
+        app.show();
+        expect(app.isHidden()).to.be.false();
+      });
+    });
+  });
+
   const dockDescribe = process.platform === 'darwin' ? describe : describe.skip;
   dockDescribe('dock APIs', () => {
     after(async () => {
