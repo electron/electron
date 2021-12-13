@@ -7,7 +7,7 @@ Subject: add should_read_node_options_from_env option to disable NODE_OPTIONS
 We can remove the NODE_OPTIONS environment variable but it in theory could be injected / re-inserted at runtime and be used for workers.  In order to ensure the fuse is respected we need a hard runtime toggle for NODE_OPTION support.
 
 diff --git a/src/env.cc b/src/env.cc
-index 1cc7da1ce15f43905ce607adcc1a23ed9d92948a..16af6aec3791df1363682f1ed024c52208b9a8f6 100644
+index 2cb2dccdf32ba4ad58972bb1d2b185996104b5ee..0abd61d6ddd1fb55afde40b38cf7c9400a8c3d41 100644
 --- a/src/env.cc
 +++ b/src/env.cc
 @@ -329,6 +329,9 @@ std::string GetExecPath(const std::vector<std::string>& argv) {

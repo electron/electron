@@ -86,10 +86,10 @@ index cc03fddd464b09dd3647e3f5183dc3c49affc94f..3aa6b40ab9b10cdd56002e9f020a6f6b
      if (!Set(env->context(),
               obj,
 diff --git a/src/crypto/crypto_dh.cc b/src/crypto/crypto_dh.cc
-index 86475e3b1b1e017c7b81a858354632accf9618de..02fa7d27cecea61b4321b551c2f6e1609f519c89 100644
+index 7e99759654e8b9272c48e0e6c0637f4327dc1615..612ed87ce396e285719a9efc8c346adb6d29b366 100644
 --- a/src/crypto/crypto_dh.cc
 +++ b/src/crypto/crypto_dh.cc
-@@ -122,13 +122,11 @@ void DiffieHellman::MemoryInfo(MemoryTracker* tracker) const {
+@@ -144,13 +144,11 @@ void DiffieHellman::MemoryInfo(MemoryTracker* tracker) const {
  bool DiffieHellman::Init(const char* p, int p_len, int g) {
    dh_.reset(DH_new());
    if (p_len <= 0) {
@@ -105,7 +105,7 @@ index 86475e3b1b1e017c7b81a858354632accf9618de..02fa7d27cecea61b4321b551c2f6e160
      return false;
    }
    BIGNUM* bn_p =
-@@ -146,21 +144,18 @@ bool DiffieHellman::Init(const char* p, int p_len, int g) {
+@@ -168,21 +166,18 @@ bool DiffieHellman::Init(const char* p, int p_len, int g) {
  bool DiffieHellman::Init(const char* p, int p_len, const char* g, int g_len) {
    dh_.reset(DH_new());
    if (p_len <= 0) {
@@ -130,7 +130,7 @@ index 86475e3b1b1e017c7b81a858354632accf9618de..02fa7d27cecea61b4321b551c2f6e160
      return false;
    }
    BIGNUM* bn_p =
-@@ -480,16 +475,20 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
+@@ -502,16 +497,20 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
      if (!BN_set_word(bn_g.get(), params->params.generator) ||
          !DH_set0_pqg(dh.get(), prime, nullptr, bn_g.get()))
        return EVPKeyCtxPointer();
@@ -152,7 +152,7 @@ index 86475e3b1b1e017c7b81a858354632accf9618de..02fa7d27cecea61b4321b551c2f6e160
      if (!param_ctx ||
          EVP_PKEY_paramgen_init(param_ctx.get()) <= 0 ||
          EVP_PKEY_CTX_set_dh_paramgen_prime_len(
-@@ -501,8 +500,10 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
+@@ -523,8 +522,10 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
          EVP_PKEY_paramgen(param_ctx.get(), &raw_params) <= 0) {
        return EVPKeyCtxPointer();
      }
@@ -165,7 +165,7 @@ index 86475e3b1b1e017c7b81a858354632accf9618de..02fa7d27cecea61b4321b551c2f6e160
  
    EVPKeyCtxPointer ctx(EVP_PKEY_CTX_new(key_params.get(), nullptr));
 diff --git a/src/crypto/crypto_dsa.cc b/src/crypto/crypto_dsa.cc
-index 271db427fa8539feb30c1712574976fb1f623e91..b2b6af1f9e6db54bdff0be7a567255f47da7b918 100644
+index c7894baf00ee9ce4684f4c752f1c7c9b98163741..655895dbff8b88daa53c7b40a5feca42a461b689 100644
 --- a/src/crypto/crypto_dsa.cc
 +++ b/src/crypto/crypto_dsa.cc
 @@ -29,7 +29,7 @@ namespace crypto {
@@ -211,7 +211,7 @@ index 0aa96ada47abe4b66fb616c665101278bbe0afb6..1e9a4863c5faea5f6b275483ca16f3a6
  
  void HKDFConfig::MemoryInfo(MemoryTracker* tracker) const {
 diff --git a/src/crypto/crypto_random.cc b/src/crypto/crypto_random.cc
-index 7cb4513f9ad0eaadd055b169520ae1e5073b7e2d..50a6663966cdb147a702df21240fa449850c3549 100644
+index fc88deb460314c2620d842ec30141bcd13109d60..c097ccfcffb1158317ba09e7c4beb725ccbab74f 100644
 --- a/src/crypto/crypto_random.cc
 +++ b/src/crypto/crypto_random.cc
 @@ -150,7 +150,7 @@ Maybe<bool> RandomPrimeTraits::AdditionalConfig(
@@ -224,7 +224,7 @@ index 7cb4513f9ad0eaadd055b169520ae1e5073b7e2d..50a6663966cdb147a702df21240fa449
      THROW_ERR_CRYPTO_OPERATION_FAILED(env, "could not generate prime");
      return Nothing<bool>();
 diff --git a/src/crypto/crypto_rsa.cc b/src/crypto/crypto_rsa.cc
-index d2307c33f5de8733b1343225a3fe6a700d1f51e4..0870657be060a58aa3337c0b9e4b8cabe4a31128 100644
+index ae4550e9fde8120c35409e495d5b763a95546509..188a7efe76df2a1aa2eb2746f4d748361bba4fb4 100644
 --- a/src/crypto/crypto_rsa.cc
 +++ b/src/crypto/crypto_rsa.cc
 @@ -621,10 +621,11 @@ Maybe<bool> GetRsaKeyDetail(
@@ -244,10 +244,10 @@ index d2307c33f5de8733b1343225a3fe6a700d1f51e4..0870657be060a58aa3337c0b9e4b8cab
  
        if (target
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index 7e0c8ba3eb60db88af8ba75e41e593dab86d2714..5c528c810256872c76dc7ba5a673d28652c405e1 100644
+index fec0a493c985f1fb716dd6222e438b430947f2a1..1a7d26ad134b094d02023c99934b8ac7a4bb18d7 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
-@@ -491,24 +491,14 @@ Maybe<bool> Decorate(Environment* env, Local<Object> obj,
+@@ -503,24 +503,14 @@ Maybe<bool> Decorate(Environment* env, Local<Object> obj,
      V(BIO)                                                                    \
      V(PKCS7)                                                                  \
      V(X509V3)                                                                 \
@@ -272,7 +272,7 @@ index 7e0c8ba3eb60db88af8ba75e41e593dab86d2714..5c528c810256872c76dc7ba5a673d286
      V(USER)                                                                   \
  
  #define V(name) case ERR_LIB_##name: lib = #name "_"; break;
-@@ -668,7 +658,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -680,7 +670,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
    CHECK(args[0]->IsUint32());
    Environment* env = Environment::GetCurrent(args);
    uint32_t len = args[0].As<Uint32>()->Value();
@@ -281,7 +281,7 @@ index 7e0c8ba3eb60db88af8ba75e41e593dab86d2714..5c528c810256872c76dc7ba5a673d286
    if (data == nullptr) {
      // There's no memory available for the allocation.
      // Return nothing.
-@@ -680,7 +670,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -692,7 +682,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
            data,
            len,
            [](void* data, size_t len, void* deleter_data) {
@@ -290,7 +290,7 @@ index 7e0c8ba3eb60db88af8ba75e41e593dab86d2714..5c528c810256872c76dc7ba5a673d286
            },
            data);
    Local<ArrayBuffer> buffer = ArrayBuffer::New(env->isolate(), store);
-@@ -688,10 +678,12 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -700,10 +690,12 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
  }
  
  void SecureHeapUsed(const FunctionCallbackInfo<Value>& args) {
@@ -304,10 +304,10 @@ index 7e0c8ba3eb60db88af8ba75e41e593dab86d2714..5c528c810256872c76dc7ba5a673d286
  }  // namespace
  
 diff --git a/src/crypto/crypto_util.h b/src/crypto/crypto_util.h
-index ac95612a0b1a856d7fe07efde59786e811f1b98d..aa62753d7c929027f5265fa4330b0429c726f7ef 100644
+index 463a19f516d23fdb56eb83025f4a3f2b3f4a426b..86e66e29ee644f86cb8ac20f37061fc03dc3099b 100644
 --- a/src/crypto/crypto_util.h
 +++ b/src/crypto/crypto_util.h
-@@ -15,7 +15,9 @@
+@@ -16,7 +16,9 @@
  #include <openssl/err.h>
  #include <openssl/evp.h>
  #include <openssl/ec.h>
