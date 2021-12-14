@@ -681,6 +681,14 @@ WebContents.prototype._init = function () {
     }
   });
 
+  this.on('select-bluetooth-device', (event, devices, callback) => {
+    if (this.listenerCount('select-bluetooth-device') === 0) {
+      // Cancel it if there are no handlers
+      event.preventDefault();
+      callback('');
+    }
+  });
+
   const event = process._linkedBinding('electron_browser_event').createEmpty();
   app.emit('web-contents-created', event, this);
 
