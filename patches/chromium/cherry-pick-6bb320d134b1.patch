@@ -1,7 +1,7 @@
-From 6bb320d134b18f992966d853d5b4a272d9bfd745 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Victor Costan <pwnall@chromium.org>
 Date: Thu, 11 Nov 2021 00:22:30 +0000
-Subject: [PATCH] M96: Storage Foundation: Share FileState ownership with I/O threads.
+Subject: M96: Storage Foundation: Share FileState ownership with I/O threads.
 
 blink::NativeIOFile methods implementing the Storage Foundation
 JavaScript API pass raw pointers to NativeIOFile::FileState instances to
@@ -35,10 +35,9 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3272672
 Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
 Cr-Commit-Position: refs/branch-heads/4664@{#945}
 Cr-Branched-From: 24dc4ee75e01a29d390d43c9c264372a169273a7-refs/heads/main@{#929512}
----
 
 diff --git a/third_party/blink/renderer/modules/native_io/native_io_file.cc b/third_party/blink/renderer/modules/native_io/native_io_file.cc
-index 4d5aa4e..615c1d3 100644
+index 4d5aa4efa13930aea4886bac0fd8ba892ce8b5a5..615c1d3a20cba732a3d981bf6b2df181e56d2727 100644
 --- a/third_party/blink/renderer/modules/native_io/native_io_file.cc
 +++ b/third_party/blink/renderer/modules/native_io/native_io_file.cc
 @@ -9,6 +9,7 @@
@@ -234,7 +233,7 @@ index 4d5aa4e..615c1d3 100644
  };
  
  NativeIOFile::NativeIOFile(
-@@ -81,7 +218,7 @@
+@@ -81,7 +218,7 @@ NativeIOFile::NativeIOFile(
      NativeIOCapacityTracker* capacity_tracker,
      ExecutionContext* execution_context)
      : file_length_(backing_file_length),
@@ -243,7 +242,7 @@ index 4d5aa4e..615c1d3 100644
        // TODO(pwnall): Get a dedicated queue when the specification matures.
        resolver_task_runner_(
            execution_context->GetTaskRunner(TaskType::kMiscPlatformAPI)),
-@@ -94,7 +231,7 @@
+@@ -94,7 +231,7 @@ NativeIOFile::NativeIOFile(
  }
  
  NativeIOFile::~NativeIOFile() {
@@ -252,7 +251,7 @@ index 4d5aa4e..615c1d3 100644
    // synchronously on the main thread.
    CloseBackingFile();
  }
-@@ -114,6 +251,9 @@
+@@ -114,6 +251,9 @@ ScriptPromise NativeIOFile::close(ScriptState* script_state) {
    queued_close_resolver_ = resolver;
  
    if (!io_pending_) {
@@ -262,7 +261,7 @@ index 4d5aa4e..615c1d3 100644
      // Pretend that a close() promise was queued behind an I/O operation, and
      // the operation just finished. This is less logic than handling the
      // non-queued case separately.
-@@ -138,18 +278,15 @@
+@@ -138,18 +278,15 @@ ScriptPromise NativeIOFile::getLength(ScriptState* script_state,
                                 "The file was already closed"));
      return ScriptPromise();
    }
@@ -285,7 +284,7 @@ index 4d5aa4e..615c1d3 100644
                            resolver_task_runner_));
    return resolver->Promise();
  }
-@@ -175,6 +312,9 @@
+@@ -175,6 +312,9 @@ ScriptPromise NativeIOFile::setLength(ScriptState* script_state,
                                 "The file was already closed"));
      return ScriptPromise();
    }
@@ -295,7 +294,7 @@ index 4d5aa4e..615c1d3 100644
    int64_t expected_length = base::as_signed(new_length);
  
    DCHECK_GE(expected_length, 0);
-@@ -201,8 +341,8 @@
+@@ -201,8 +341,8 @@ ScriptPromise NativeIOFile::setLength(ScriptState* script_state,
      }
      file_length_ = expected_length;
    }
@@ -305,7 +304,7 @@ index 4d5aa4e..615c1d3 100644
    auto* resolver = MakeGarbageCollected<ScriptPromiseResolver>(script_state);
  
  #if defined(OS_MAC)
-@@ -217,26 +357,19 @@
+@@ -217,26 +357,19 @@ ScriptPromise NativeIOFile::setLength(ScriptState* script_state,
      // To preserve this invariant, we pass this file's handle to the browser
      // process during the SetLength() mojo call, and the browser passes it back
      // when the call completes.
@@ -338,7 +337,7 @@ index 4d5aa4e..615c1d3 100644
                            resolver_task_runner_, expected_length));
    return resolver->Promise();
  }
-@@ -258,6 +391,8 @@
+@@ -258,6 +391,8 @@ ScriptPromise NativeIOFile::read(ScriptState* script_state,
                                 "The file was already closed"));
      return ScriptPromise();
    }
@@ -347,7 +346,7 @@ index 4d5aa4e..615c1d3 100644
  
    // TODO(pwnall): This assignment should move right before the
    // worker_pool::PostTask() call.
-@@ -281,16 +416,10 @@
+@@ -281,16 +416,10 @@ ScriptPromise NativeIOFile::read(ScriptState* script_state,
    DCHECK(buffer->IsDetached());
  
    auto* resolver = MakeGarbageCollected<ScriptPromiseResolver>(script_state);
@@ -365,7 +364,7 @@ index 4d5aa4e..615c1d3 100644
                            resolver_task_runner_, std::move(result_buffer_data),
                            file_offset, read_size));
    return resolver->Promise();
-@@ -313,6 +442,8 @@
+@@ -313,6 +442,8 @@ ScriptPromise NativeIOFile::write(ScriptState* script_state,
                                 "The file was already closed"));
      return ScriptPromise();
    }
@@ -374,7 +373,7 @@ index 4d5aa4e..615c1d3 100644
  
    int write_size = NativeIOOperationSize(*buffer);
    int64_t write_end_offset;
-@@ -346,6 +477,14 @@
+@@ -346,6 +477,14 @@ ScriptPromise NativeIOFile::write(ScriptState* script_state,
      file_length_ = write_end_offset;
    }
  
@@ -389,7 +388,7 @@ index 4d5aa4e..615c1d3 100644
    io_pending_ = true;
  
    std::unique_ptr<NativeIODataBuffer> result_buffer_data =
-@@ -358,16 +497,10 @@
+@@ -358,16 +497,10 @@ ScriptPromise NativeIOFile::write(ScriptState* script_state,
    DCHECK(buffer->IsDetached());
  
    auto* resolver = MakeGarbageCollected<ScriptPromiseResolver>(script_state);
@@ -407,7 +406,7 @@ index 4d5aa4e..615c1d3 100644
                            resolver_task_runner_, std::move(result_buffer_data),
                            file_offset, write_size));
    return resolver->Promise();
-@@ -391,18 +524,15 @@
+@@ -391,18 +524,15 @@ ScriptPromise NativeIOFile::flush(ScriptState* script_state,
                                 "The file was already closed"));
      return ScriptPromise();
    }
@@ -430,7 +429,7 @@ index 4d5aa4e..615c1d3 100644
                            resolver_task_runner_));
    return resolver->Promise();
  }
-@@ -430,28 +560,29 @@
+@@ -430,28 +560,29 @@ void NativeIOFile::DispatchQueuedClose() {
    ScriptPromiseResolver* resolver = queued_close_resolver_;
    queued_close_resolver_ = nullptr;
  
@@ -469,7 +468,7 @@ index 4d5aa4e..615c1d3 100644
  
    PostCrossThreadTask(
        *resolver_task_runner, FROM_HERE,
-@@ -482,19 +613,17 @@
+@@ -482,19 +613,17 @@ void NativeIOFile::DidClose(
  void NativeIOFile::DoGetLength(
      CrossThreadPersistent<NativeIOFile> native_io_file,
      CrossThreadPersistent<ScriptPromiseResolver> resolver,
@@ -497,7 +496,7 @@ index 4d5aa4e..615c1d3 100644
  
    PostCrossThreadTask(
        *resolver_task_runner, FROM_HERE,
-@@ -541,22 +670,20 @@
+@@ -541,22 +670,20 @@ void NativeIOFile::DidGetLength(
  void NativeIOFile::DoSetLength(
      CrossThreadPersistent<NativeIOFile> native_io_file,
      CrossThreadPersistent<ScriptPromiseResolver> resolver,
@@ -529,7 +528,7 @@ index 4d5aa4e..615c1d3 100644
  
    PostCrossThreadTask(
        *resolver_task_runner, FROM_HERE,
-@@ -619,10 +746,7 @@
+@@ -619,10 +746,7 @@ void NativeIOFile::DidSetLengthIpc(
      int64_t actual_length,
      mojom::blink::NativeIOErrorPtr set_length_error) {
    DCHECK(backing_file.IsValid()) << "browser returned closed file";
@@ -541,7 +540,7 @@ index 4d5aa4e..615c1d3 100644
    ScriptState* script_state = resolver->GetScriptState();
  
    DCHECK(io_pending_) << "I/O operation performed without io_pending_ set";
-@@ -673,13 +797,15 @@
+@@ -673,13 +797,15 @@ void NativeIOFile::DidSetLengthIpc(
  void NativeIOFile::DoRead(
      CrossThreadPersistent<NativeIOFile> native_io_file,
      CrossThreadPersistent<ScriptPromiseResolver> resolver,
@@ -559,7 +558,7 @@ index 4d5aa4e..615c1d3 100644
    DCHECK(resolver_task_runner);
    DCHECK(result_buffer_data);
    DCHECK(result_buffer_data->IsValid());
-@@ -690,15 +816,8 @@
+@@ -690,15 +816,8 @@ void NativeIOFile::DoRead(
  
    int read_bytes;
    base::File::Error read_error;
@@ -577,7 +576,7 @@ index 4d5aa4e..615c1d3 100644
  
    PostCrossThreadTask(
        *resolver_task_runner, FROM_HERE,
-@@ -743,12 +862,15 @@
+@@ -743,12 +862,15 @@ void NativeIOFile::DidRead(
  void NativeIOFile::DoWrite(
      CrossThreadPersistent<NativeIOFile> native_io_file,
      CrossThreadPersistent<ScriptPromiseResolver> resolver,
@@ -594,7 +593,7 @@ index 4d5aa4e..615c1d3 100644
    DCHECK(resolver_task_runner);
    DCHECK(result_buffer_data);
    DCHECK(result_buffer_data->IsValid());
-@@ -760,22 +882,8 @@
+@@ -760,22 +882,8 @@ void NativeIOFile::DoWrite(
    int written_bytes;
    int64_t actual_file_length_on_failure = 0;
    base::File::Error write_error;
@@ -619,7 +618,7 @@ index 4d5aa4e..615c1d3 100644
  
    PostCrossThreadTask(
        *resolver_task_runner, FROM_HERE,
-@@ -846,18 +954,14 @@
+@@ -846,18 +954,14 @@ void NativeIOFile::DidWrite(
  void NativeIOFile::DoFlush(
      CrossThreadPersistent<NativeIOFile> native_io_file,
      CrossThreadPersistent<ScriptPromiseResolver> resolver,
@@ -644,7 +643,7 @@ index 4d5aa4e..615c1d3 100644
  
    PostCrossThreadTask(
        *resolver_task_runner, FROM_HERE,
-@@ -887,20 +991,23 @@
+@@ -887,20 +991,23 @@ void NativeIOFile::DidFlush(
  
  void NativeIOFile::CloseBackingFile() {
    closed_ = true;
@@ -677,10 +676,10 @@ index 4d5aa4e..615c1d3 100644
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/modules/native_io/native_io_file.h b/third_party/blink/renderer/modules/native_io/native_io_file.h
-index 8ae49eb..95d2da4 100644
+index 8ae49ebc2d36d547d152d4e56192e30f8cacd641..95d2da4ac3e1859a0abc21ea15d269758eed1681 100644
 --- a/third_party/blink/renderer/modules/native_io/native_io_file.h
 +++ b/third_party/blink/renderer/modules/native_io/native_io_file.h
-@@ -67,12 +67,7 @@
+@@ -67,12 +67,7 @@ class NativeIOFile final : public ScriptWrappable {
    void Trace(Visitor* visitor) const override;
  
   private:
@@ -694,7 +693,7 @@ index 8ae49eb..95d2da4 100644
  
    // Called when the mojo backend disconnects.
    void OnBackendDisconnect();
-@@ -84,7 +79,7 @@
+@@ -84,7 +79,7 @@ class NativeIOFile final : public ScriptWrappable {
    static void DoClose(
        CrossThreadPersistent<NativeIOFile> native_io_file,
        CrossThreadPersistent<ScriptPromiseResolver> resolver,
@@ -703,7 +702,7 @@ index 8ae49eb..95d2da4 100644
        scoped_refptr<base::SequencedTaskRunner> file_task_runner);
    // Performs the post file I/O part of close(), on the main thread.
    void DidClose(CrossThreadPersistent<ScriptPromiseResolver> resolver);
-@@ -93,7 +88,7 @@
+@@ -93,7 +88,7 @@ class NativeIOFile final : public ScriptWrappable {
    static void DoGetLength(
        CrossThreadPersistent<NativeIOFile> native_io_file,
        CrossThreadPersistent<ScriptPromiseResolver> resolver,
@@ -712,7 +711,7 @@ index 8ae49eb..95d2da4 100644
        scoped_refptr<base::SequencedTaskRunner> file_task_runner);
    // Performs the post file I/O part of getLength(), on the main thread.
    void DidGetLength(CrossThreadPersistent<ScriptPromiseResolver> resolver,
-@@ -104,7 +99,7 @@
+@@ -104,7 +99,7 @@ class NativeIOFile final : public ScriptWrappable {
    static void DoSetLength(
        CrossThreadPersistent<NativeIOFile> native_io_file,
        CrossThreadPersistent<ScriptPromiseResolver> resolver,
@@ -721,7 +720,7 @@ index 8ae49eb..95d2da4 100644
        scoped_refptr<base::SequencedTaskRunner> file_task_runner,
        int64_t expected_length);
    // Performs the post file I/O part of setLength(), on the main thread.
-@@ -128,7 +123,7 @@
+@@ -128,7 +123,7 @@ class NativeIOFile final : public ScriptWrappable {
    // Performs the file I/O part of read(), off the main thread.
    static void DoRead(CrossThreadPersistent<NativeIOFile> native_io_file,
                       CrossThreadPersistent<ScriptPromiseResolver> resolver,
@@ -730,7 +729,7 @@ index 8ae49eb..95d2da4 100644
                       scoped_refptr<base::SequencedTaskRunner> file_task_runner,
                       std::unique_ptr<NativeIODataBuffer> result_buffer_data,
                       uint64_t file_offset,
-@@ -143,7 +138,7 @@
+@@ -143,7 +138,7 @@ class NativeIOFile final : public ScriptWrappable {
    static void DoWrite(
        CrossThreadPersistent<NativeIOFile> native_io_file,
        CrossThreadPersistent<ScriptPromiseResolver> resolver,
@@ -739,7 +738,7 @@ index 8ae49eb..95d2da4 100644
        scoped_refptr<base::SequencedTaskRunner> resolver_task_runner,
        std::unique_ptr<NativeIODataBuffer> result_buffer_data,
        uint64_t file_offset,
-@@ -163,7 +158,7 @@
+@@ -163,7 +158,7 @@ class NativeIOFile final : public ScriptWrappable {
    static void DoFlush(
        CrossThreadPersistent<NativeIOFile> native_io_file,
        CrossThreadPersistent<ScriptPromiseResolver> resolver,
@@ -748,7 +747,7 @@ index 8ae49eb..95d2da4 100644
        scoped_refptr<base::SequencedTaskRunner> file_task_runner);
    // Performs the post file-I/O part of flush(), on the main thread.
    void DidFlush(CrossThreadPersistent<ScriptPromiseResolver> resolver,
-@@ -210,8 +205,13 @@
+@@ -210,8 +205,13 @@ class NativeIOFile final : public ScriptWrappable {
    // TODO(rstz): Consider moving this variable into `file_state_`
    int64_t file_length_ = 0;
  
