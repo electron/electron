@@ -56,4 +56,4 @@ problem. If not, feel free to fill out our bug report template and submit a new 
 [comic]: https://www.google.com/googlebooks/chrome/
 [fiddle]: https://electronjs.org/fiddle
 [issue-tracker]: https://github.com/electron/electron/issues
-[discord]: https://discord.gg/electron
+[discord]: https://discord.gg/electronjs
