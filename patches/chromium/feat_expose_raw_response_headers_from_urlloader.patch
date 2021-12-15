@@ -81,7 +81,7 @@ index 27477d595fd22dc49329631a0b52ebdaafe1edb1..a4fd22381738648040cd72dce747285f
    // browser decide.
    // Note: this is an enum of type PreviewsState.
 diff --git a/services/network/public/mojom/url_response_head.mojom b/services/network/public/mojom/url_response_head.mojom
-index 76a0a192fda9578fd243063ebad5831762539cf6..47234af6519479ea77d503bacda1a84bf2303acf 100644
+index 4a26ea8928e333a9231dad10b03947b3febf9d47..97bc79ff624767c56f215d77a1bcabed378330aa 100644
 --- a/services/network/public/mojom/url_response_head.mojom
 +++ b/services/network/public/mojom/url_response_head.mojom
 @@ -7,6 +7,7 @@ module network.mojom;

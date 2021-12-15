@@ -14,7 +14,7 @@ tradeoff is that switching from MAS_BUILD to !MAS_BUILD or vice-versa will
 rebuild the entire tree.
 
 diff --git a/build/config/BUILDCONFIG.gn b/build/config/BUILDCONFIG.gn
-index 034999175e30316e488404aa5392f38792d8bdde..6318596aadee7e0640692381e9e15372b9f07c1d 100644
+index fcc7e12834733fa0927c35708de9665db4c59eba..faac97db5a2c86f1fcc89c3c045ef74b7b2b878a 100644
 --- a/build/config/BUILDCONFIG.gn
 +++ b/build/config/BUILDCONFIG.gn
 @@ -123,6 +123,9 @@ if (current_os == "") {
