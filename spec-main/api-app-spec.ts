@@ -212,15 +212,19 @@ describe('app module', () => {
     }
 
     it('prevents the second launch of app', async function () {
-      this.timeout(120000);
-      const appPath = path.join(fixturesPath, 'api', 'singleton-data');
+      this.timeout(60000);
+      const appPath = path.join(fixturesPath, 'api', 'singleton');
       const first = cp.spawn(process.execPath, [appPath]);
+      const firstExited = emittedOnce(first, 'exit');
       await emittedOnce(first.stdout, 'data');
+
       // Start second app when received output.
       const second = cp.spawn(process.execPath, [appPath]);
-      const [code2] = await emittedOnce(second, 'exit');
+      const secondExited = emittedOnce(second, 'exit');
+
+      const [code2] = await secondExited;
       expect(code2).to.equal(1);
-      const [code1] = await emittedOnce(first, 'exit');
+      const [code1] = await firstExited;
       expect(code1).to.equal(0);
     });
 
