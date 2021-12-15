@@ -1,7 +1,7 @@
-From bdffa0ea51488f8ffde80095934454e5a6476a1f Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Shahbaz Youssefi <syoussefi@chromium.org>
-Date: Thu, 02 Dec 2021 14:30:42 -0500
-Subject: [PATCH] M96: Fix changing attached renderbuffer from MSRTT to non-MSRTT
+Date: Thu, 2 Dec 2021 14:30:42 -0500
+Subject: M96: Fix changing attached renderbuffer from MSRTT to non-MSRTT
 
 FramebufferAttachment::mRenderToTextureSamples was never updated if the
 renderbuffer storage was changed after attaching to framebuffer.
@@ -10,13 +10,12 @@ Bug: chromium:1272068
 Change-Id: Icddbb5650354ea16d06c49532d6a8d0ae962ab5f
 Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3320923
 Reviewed-by: Jamie Madill <jmadill@chromium.org>
----
 
 diff --git a/src/libANGLE/FramebufferAttachment.cpp b/src/libANGLE/FramebufferAttachment.cpp
-index 00714d0..720d300 100644
+index 00714d0a0303050893abcd9564e760b22d9b2de5..720d3000d42e6c8c23214e66eee4aa6982216a60 100644
 --- a/src/libANGLE/FramebufferAttachment.cpp
 +++ b/src/libANGLE/FramebufferAttachment.cpp
-@@ -129,7 +129,7 @@
+@@ -129,7 +129,7 @@ void FramebufferAttachment::attach(const Context *context,
      mNumViews               = numViews;
      mBaseViewIndex          = baseViewIndex;
      mIsMultiview            = isMultiview;
@@ -25,7 +24,7 @@ index 00714d0..720d300 100644
      resource->onAttach(context, framebufferSerial);
  
      if (mResource != nullptr)
-@@ -222,6 +222,29 @@
+@@ -222,6 +222,29 @@ GLint FramebufferAttachment::getBaseViewIndex() const
      return mBaseViewIndex;
  }
  
@@ -56,10 +55,10 @@ index 00714d0..720d300 100644
  {
      return rx::GetAs<Texture>(mResource);
 diff --git a/src/libANGLE/FramebufferAttachment.h b/src/libANGLE/FramebufferAttachment.h
-index 7ebf5f5..a5d5bf0 100644
+index 013a1e02874e4df3680e9b4a56f74aaf94d188a9..6235b42cf2fdfcb0e9fa33242b458934f1afa5b0 100644
 --- a/src/libANGLE/FramebufferAttachment.h
 +++ b/src/libANGLE/FramebufferAttachment.h
-@@ -117,11 +117,8 @@
+@@ -117,11 +117,8 @@ class FramebufferAttachment final
      bool isMultiview() const;
      GLint getBaseViewIndex() const;
  
@@ -73,7 +72,7 @@ index 7ebf5f5..a5d5bf0 100644
  
      // The size of the underlying resource the attachment points to. The 'depth' value will
      // correspond to a 3D texture depth or the layer count of a 2D array texture. For Surfaces and
-@@ -195,6 +192,14 @@
+@@ -195,6 +192,14 @@ class FramebufferAttachment final
      GLsizei mNumViews;
      bool mIsMultiview;
      GLint mBaseViewIndex;
@@ -88,7 +87,7 @@ index 7ebf5f5..a5d5bf0 100644
      GLsizei mRenderToTextureSamples;
  };
  
-@@ -254,8 +259,7 @@
+@@ -253,8 +258,7 @@ inline Format FramebufferAttachment::getFormat() const
  
  inline GLsizei FramebufferAttachment::getSamples() const
  {
@@ -99,10 +98,10 @@ index 7ebf5f5..a5d5bf0 100644
  
  inline GLsizei FramebufferAttachment::getResourceSamples() const
 diff --git a/src/tests/gl_tests/FramebufferTest.cpp b/src/tests/gl_tests/FramebufferTest.cpp
-index 1c33046..d95f7b5 100644
+index ff01848daff091d92e4fdce08bc6842a3bdd3ee9..cd733be3ae5c179860d882e305ec84d093a283ed 100644
 --- a/src/tests/gl_tests/FramebufferTest.cpp
 +++ b/src/tests/gl_tests/FramebufferTest.cpp
-@@ -3939,6 +3939,65 @@
+@@ -3366,6 +3366,65 @@ void main() {
  
      // This shouldn't crash.
      glDrawArrays(GL_POINTS, 0, 1);
