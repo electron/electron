@@ -1,7 +1,7 @@
-From da11d71a02276cccc64f6ead66a85ad55aeff45c Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Ken Rockot <rockot@google.com>
 Date: Fri, 10 Dec 2021 01:03:53 +0000
-Subject: [PATCH] mojo/ipc: Drop messages targeting invalid task runner
+Subject: mojo/ipc: Drop messages targeting invalid task runner
 
 If the endpoint's task runner does not match the current task runner (or
 an equivalent main-thread task runner for the ChannelProxy) when a
@@ -21,13 +21,12 @@ Auto-Submit: Ken Rockot <rockot@google.com>
 Commit-Queue: Daniel Cheng <dcheng@chromium.org>
 Cr-Commit-Position: refs/branch-heads/4664@{#1269}
 Cr-Branched-From: 24dc4ee75e01a29d390d43c9c264372a169273a7-refs/heads/main@{#929512}
----
 
 diff --git a/ipc/ipc_mojo_bootstrap.cc b/ipc/ipc_mojo_bootstrap.cc
-index 0a62612..08aabfe 100644
+index 18b4dc9be5bf54e6f5443d53739bc06ba3f98767..07e522337090494e278395ac4e7ead73c472ef72 100644
 --- a/ipc/ipc_mojo_bootstrap.cc
 +++ b/ipc/ipc_mojo_bootstrap.cc
-@@ -969,11 +969,14 @@
+@@ -966,11 +966,14 @@ class ChannelAssociatedGroupController
      if (!client)
        return;
  
@@ -44,7 +43,7 @@ index 0a62612..08aabfe 100644
  
      // Sync messages should never make their way to this method.
      DCHECK(!message.has_flag(mojo::Message::kFlagIsSync));
-@@ -1003,11 +1006,14 @@
+@@ -1000,11 +1003,14 @@ class ChannelAssociatedGroupController
      if (!client)
        return;
  
