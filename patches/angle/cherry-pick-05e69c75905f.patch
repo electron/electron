@@ -1,7 +1,7 @@
-From 05e69c75905f4b9109f279ae89d2fbf574fdc442 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Lingfeng Yang <lfy@google.com>
-Date: Wed, 01 Dec 2021 18:16:14 -0800
-Subject: [PATCH] M96: Vulkan: remove staged updates on storage set
+Date: Wed, 1 Dec 2021 18:16:14 -0800
+Subject: M96: Vulkan: remove staged updates on storage set
 
 Previously we would allow staged updates to bigger versions of a texture
 to go through even if the texture was redefined via glTexStorage*.
@@ -15,13 +15,12 @@ Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
 Commit-Queue: Lingfeng Yang <lfy@google.com>
 (cherry picked from commit 929c8ed4e8c3912cf027d843e7a2af47b21e5612)
 Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3328001
----
 
 diff --git a/src/libANGLE/renderer/vulkan/TextureVk.cpp b/src/libANGLE/renderer/vulkan/TextureVk.cpp
-index 7387a14..6050600 100644
+index e0be9676912e49d70473ffdcd4d7b1549210be25..b43f41dbae29356f1ffe4f961ed83e0f0e9cdcd2 100644
 --- a/src/libANGLE/renderer/vulkan/TextureVk.cpp
 +++ b/src/libANGLE/renderer/vulkan/TextureVk.cpp
-@@ -1272,6 +1272,10 @@
+@@ -1236,6 +1236,10 @@ angle::Result TextureVk::setStorageMultisample(const gl::Context *context,
      {
          releaseAndDeleteImageAndViews(contextVk);
      }
@@ -33,10 +32,10 @@ index 7387a14..6050600 100644
      const vk::Format &format = renderer->getFormat(internalformat);
      ANGLE_TRY(ensureImageAllocated(contextVk, format));
 diff --git a/src/tests/gl_tests/TextureTest.cpp b/src/tests/gl_tests/TextureTest.cpp
-index 79baa98..633d865 100644
+index e79bc700d4991752289ff3d7c76f2ccbb3ba932a..a3dec629c9ea96b276ff8bf344d4a4628ff20b3b 100644
 --- a/src/tests/gl_tests/TextureTest.cpp
 +++ b/src/tests/gl_tests/TextureTest.cpp
-@@ -9886,6 +9886,73 @@
+@@ -9703,6 +9703,73 @@ void main()
      glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
  }
  
@@ -110,7 +109,7 @@ index 79baa98..633d865 100644
  // Use this to select which configurations (e.g. which renderer, which GLES major version) these
  // tests should be run against.
  #define ES2_EMULATE_COPY_TEX_IMAGE()                          \
-@@ -9999,4 +10066,6 @@
+@@ -9816,4 +9883,6 @@ ANGLE_INSTANTIATE_TEST_ES31_AND(TextureBufferTestES31, WithDirectSPIRVGeneration
  GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(CopyImageTestES31);
  ANGLE_INSTANTIATE_TEST_ES31_AND(CopyImageTestES31, WithDirectSPIRVGeneration(ES31_VULKAN()));
  
