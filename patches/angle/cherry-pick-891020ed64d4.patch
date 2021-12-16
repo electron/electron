@@ -1,7 +1,7 @@
-From 891020ed64d418a738b867e5c7e7cb1d0e40c892 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jonah Ryan-Davis <jonahr@google.com>
 Date: Mon, 22 Nov 2021 14:30:52 -0500
-Subject: [PATCH] [M96] Ignore the pixel unpack state for compressed textures.
+Subject: Ignore the pixel unpack state for compressed textures.
 
 From OpenGL ES 3 spec: All pixel storage modes are ignored when decoding
 a compressed texture image
@@ -18,13 +18,12 @@ Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
 Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/3309097
 Reviewed-by: Jonah Ryan-Davis <jonahr@google.com>
 Reviewed-by: Jamie Madill <jmadill@chromium.org>
----
 
 diff --git a/src/libANGLE/Context.cpp b/src/libANGLE/Context.cpp
-index b3b7f73..94afefd 100644
+index 4c0fbae275812e14d1732be9bc0ae0fd630cbe81..7deca1499ef55aa051ee1839dc7fcbf2e50687e8 100644
 --- a/src/libANGLE/Context.cpp
 +++ b/src/libANGLE/Context.cpp
-@@ -5017,7 +5017,9 @@
+@@ -4873,7 +4873,9 @@ void Context::compressedTexImage2D(TextureTarget target,
  
      Extents size(width, height, 1);
      Texture *texture = getTextureByTarget(target);
@@ -35,7 +34,7 @@ index b3b7f73..94afefd 100644
                                                    internalformat, size, imageSize,
                                                    static_cast<const uint8_t *>(data)));
  }
-@@ -5049,7 +5051,9 @@
+@@ -4905,7 +4907,9 @@ void Context::compressedTexImage3D(TextureTarget target,
  
      Extents size(width, height, depth);
      Texture *texture = getTextureByTarget(target);
@@ -46,7 +45,7 @@ index b3b7f73..94afefd 100644
                                                    internalformat, size, imageSize,
                                                    static_cast<const uint8_t *>(data)));
  }
-@@ -5083,8 +5087,10 @@
+@@ -4939,8 +4943,10 @@ void Context::compressedTexSubImage2D(TextureTarget target,
  
      Box area(xoffset, yoffset, 0, width, height, 1);
      Texture *texture = getTextureByTarget(target);
@@ -59,7 +58,7 @@ index b3b7f73..94afefd 100644
                                                       static_cast<const uint8_t *>(data)));
  }
  
-@@ -5125,8 +5131,10 @@
+@@ -4981,8 +4987,10 @@ void Context::compressedTexSubImage3D(TextureTarget target,
  
      Box area(xoffset, yoffset, zoffset, width, height, depth);
      Texture *texture = getTextureByTarget(target);
@@ -73,10 +72,10 @@ index b3b7f73..94afefd 100644
  }
  
 diff --git a/src/tests/gl_tests/TextureTest.cpp b/src/tests/gl_tests/TextureTest.cpp
-index 4d7ba26..79baa98 100644
+index d238f823c4dd3cd3180a87b97857231b0c8b788e..f6dad3a3df52994284f570ed38f24b8efe37e513 100644
 --- a/src/tests/gl_tests/TextureTest.cpp
 +++ b/src/tests/gl_tests/TextureTest.cpp
-@@ -5201,6 +5201,43 @@
+@@ -4580,6 +4580,43 @@ TEST_P(Texture2DTestES3, TextureCompletenessChangesWithMaxLevel)
      EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::black);
  }
  
@@ -120,7 +119,7 @@ index 4d7ba26..79baa98 100644
  // Test that 3D texture completeness is updated if texture max level changes.
  // GLES 3.0.4 section 3.8.13 Texture completeness
  TEST_P(Texture3DTestES3, Texture3DCompletenessChangesWithMaxLevel)
-@@ -5888,6 +5925,41 @@
+@@ -5259,6 +5296,41 @@ TEST_P(Texture2DTestES3, TextureCOMPRESSEDSRGB8ETC2ImplicitAlpha1)
      EXPECT_PIXEL_ALPHA_EQ(0, 0, 255);
  }
  
