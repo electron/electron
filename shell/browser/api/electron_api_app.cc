@@ -33,6 +33,7 @@
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/common/content_switches.h"
 #include "media/audio/audio_manager.h"
+#include "net/dns/public/dns_over_https_server_config.h"
 #include "net/dns/public/util.h"
 #include "net/ssl/client_cert_identity.h"
 #include "net/ssl/ssl_cert_request_info.h"
@@ -1596,31 +1597,15 @@ void ConfigureHostResolver(v8::Isolate* isolate,
   }
   std::string server_method;
   std::vector<net::DnsOverHttpsServerConfig> dns_over_https_servers;
-  absl::optional<std::vector<network::mojom::DnsOverHttpsServerPtr>>
-      servers_mojo;
   if (!default_doh_templates.empty() &&
       secure_dns_mode != net::SecureDnsMode::kOff) {
     for (base::StringPiece server_template :
          SplitStringPiece(default_doh_templates, " ", base::TRIM_WHITESPACE,
                           base::SPLIT_WANT_NONEMPTY)) {
-      if (!net::dns_util::IsValidDohTemplate(server_template, &server_method)) {
-        continue;
+      if (auto server_config = net::DnsOverHttpsServerConfig::FromString(
+              std::string(server_template))) {
+        dns_over_https_servers.push_back(server_config.value());
       }
-
-      bool use_post = server_method == "POST";
-      dns_over_https_servers.emplace_back(std::string(server_template),
-                                          use_post);
-
-      if (!servers_mojo.has_value()) {
-        servers_mojo = absl::make_optional<
-            std::vector<network::mojom::DnsOverHttpsServerPtr>>();
-      }
-
-      network::mojom::DnsOverHttpsServerPtr server_mojo =
-          network::mojom::DnsOverHttpsServer::New();
-      server_mojo->server_template = std::string(server_template);
-      server_mojo->use_post = use_post;
-      servers_mojo->emplace_back(std::move(server_mojo));
     }
   }
 
@@ -1647,25 +1632,16 @@ void ConfigureHostResolver(v8::Isolate* isolate,
       thrower.ThrowTypeError("secureDnsServers must be an array of strings");
       return;
     }
-    servers_mojo = absl::nullopt;
+    dns_over_https_servers.clear();
     for (const std::string& server_template : secure_dns_server_strings) {
-      std::string server_method;
-      if (!net::dns_util::IsValidDohTemplate(server_template, &server_method)) {
+      if (auto server_config =
+              net::DnsOverHttpsServerConfig::FromString(server_template)) {
+        dns_over_https_servers.push_back(server_config.value());
+      } else {
         thrower.ThrowTypeError(std::string("not a valid DoH template: ") +
                                server_template);
         return;
       }
-      bool use_post = server_method == "POST";
-      if (!servers_mojo.has_value()) {
-        servers_mojo = absl::make_optional<
-            std::vector<network::mojom::DnsOverHttpsServerPtr>>();
-      }
-
-      network::mojom::DnsOverHttpsServerPtr server_mojo =
-          network::mojom::DnsOverHttpsServer::New();
-      server_mojo->server_template = std::string(server_template);
-      server_mojo->use_post = use_post;
-      servers_mojo->emplace_back(std::move(server_mojo));
     }
   }
 
@@ -1679,8 +1655,8 @@ void ConfigureHostResolver(v8::Isolate* isolate,
   // Configure the stub resolver. This must be done after the system
   // NetworkContext is created, but before anything has the chance to use it.
   content::GetNetworkService()->ConfigureStubHostResolver(
-      enable_built_in_resolver, secure_dns_mode, std::move(servers_mojo),
-      additional_dns_query_types_enabled);
+      enable_built_in_resolver, secure_dns_mode,
+      std::move(dns_over_https_servers), additional_dns_query_types_enabled);
 }
 
 // static
