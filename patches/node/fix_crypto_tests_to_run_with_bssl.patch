@@ -391,7 +391,7 @@ index dd073274aef765e8f1e403aa2c8baf9694b521cb..fc6339e040debe61ecc61a3eb5b26823
  }
  
 diff --git a/test/parallel/test-crypto-dh.js b/test/parallel/test-crypto-dh.js
-index cae9301517c37c7e90292d71fe5a6086cf55e0be..b9bc86e4d8b897cec583dea16f64f680252d2efa 100644
+index 18721fcf289e5545408e309db050a2ff0f4b0140..e5235e0a5fbd68416b4a9480818901b411ed91bd 100644
 --- a/test/parallel/test-crypto-dh.js
 +++ b/test/parallel/test-crypto-dh.js
 @@ -49,7 +49,7 @@ for (const bits of [-1, 0, 1]) {
@@ -421,7 +421,7 @@ index cae9301517c37c7e90292d71fe5a6086cf55e0be..b9bc86e4d8b897cec583dea16f64f680
    };
    assert.throws(() => crypto.createDiffieHellman('abcdef', g), ex);
    assert.throws(() => crypto.createDiffieHellman('abcdef', 'hex', g), ex);
-@@ -155,18 +155,17 @@ assert.strictEqual(secret1, secret4);
+@@ -133,18 +133,17 @@ assert.strictEqual(secret1, secret4);
  let wrongBlockLength;
  if (common.hasOpenSSL3) {
    wrongBlockLength = {

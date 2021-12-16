@@ -406,19 +406,16 @@ index 0000000000000000000000000000000000000000..d0641c5cbc3c527ce7a73d12118fb42d
 +}
 diff --git a/deps/cares/BUILD.gn b/deps/cares/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..8e0aa4b7a858ab432dca9da9ead9fcf44f6009f4
+index 0000000000000000000000000000000000000000..71a37834f4e693c190eb7e7d04e3f5ce67c487ad
 --- /dev/null
 +++ b/deps/cares/BUILD.gn
-@@ -0,0 +1,133 @@
+@@ -0,0 +1,134 @@
 +config("cares_config") {
 +  include_dirs = [ "include", "src/lib" ]
 +}
 +static_library("cares") {
 +  defines = [ "CARES_STATICLIB" ]
-+  include_dirs = [
-+    "include",
-+    "src/lib",
-+  ]
++  include_dirs = [ "include" ]
 +  public_configs = [ ":cares_config" ]
 +
 +  libs = []
@@ -431,8 +428,11 @@ index 0000000000000000000000000000000000000000..8e0aa4b7a858ab432dca9da9ead9fcf4
 +  sources = [
 +    "include/ares.h",
 +    "include/ares_dns.h",
++    "include/ares_nameser.h",
 +    "include/ares_rules.h",
 +    "include/ares_version.h",
++    "src/lib/ares__addrinfo2hostent.c",
++    "src/lib/ares__addrinfo_localhost.c",
 +    "src/lib/ares_android.c",
 +    "src/lib/ares_cancel.c",
 +    "src/lib/ares__close_sockets.c",
@@ -475,6 +475,7 @@ index 0000000000000000000000000000000000000000..8e0aa4b7a858ab432dca9da9ead9fcf4
 +    "src/lib/ares_parse_soa_reply.c",
 +    "src/lib/ares_parse_srv_reply.c",
 +    "src/lib/ares_parse_txt_reply.c",
++    "src/lib/ares_parse_uri_reply.c",
 +    "src/lib/ares_platform.h",
 +    "src/lib/ares_private.h",
 +    "src/lib/ares_process.c",
@@ -1774,7 +1775,7 @@ index 0000000000000000000000000000000000000000..d1d6b51e8c0c5bc6a5d09e217eb30483
 +  args = rebase_path(inputs + outputs, root_build_dir)
 +}
 diff --git a/src/node_version.h b/src/node_version.h
-index 08e957472cfeca84af8cdc951af3c0de99c7b56c..330d77e868a50e1d0b71d773ab6b4b337ab20428 100644
+index e46385fd509a4852e3e2ded064fd2b84d95921a4..fa098c7bf3aaa08c060ea014b7a96b719fea6abf 100644
 --- a/src/node_version.h
 +++ b/src/node_version.h
 @@ -89,7 +89,10 @@
