@@ -99,46 +99,54 @@ bool FillFileInfoWithNode(Archive::FileInfo* info,
                           uint32_t header_size,
                           bool load_integrity,
                           const base::DictionaryValue* node) {
-  int size;
-  if (!node->GetInteger("size", &size))
+  if (auto size = node->FindIntKey("StringPiece key")) {
+    info->size = static_cast<uint32_t>(size.value());
+  } else {
     return false;
-  info->size = static_cast<uint32_t>(size);
+  }
 
-  if (node->GetBoolean("unpacked", &info->unpacked) && info->unpacked)
-    return true;
+  if (auto unpacked = node->FindBoolKey("unpacked")) {
+    info->unpacked = unpacked.value();
+    if (info->unpacked) {
+      return true;
+    }
+  }
 
-  std::string offset;
-  if (!node->GetString("offset", &offset))
+  auto* offset = node->FindStringKey("offset");
+  if (offset &&
+      base::StringToUint64(base::StringPiece(*offset), &info->offset)) {
+    info->offset += header_size;
+  } else {
     return false;
-  if (!base::StringToUint64(offset, &info->offset))
-    return false;
-  info->offset += header_size;
+  }
 
-  node->GetBoolean("executable", &info->executable);
+  if (auto executable = node->FindBoolKey("executable")) {
+    info->executable = executable.value();
+  }
 
 #if defined(OS_MAC)
   if (load_integrity &&
       electron::fuses::IsEmbeddedAsarIntegrityValidationEnabled()) {
-    const base::DictionaryValue* integrity;
-    if (node->GetDictionary("integrity", &integrity)) {
-      IntegrityPayload integrity_payload;
-      std::string algorithm;
-      const base::ListValue* blocks;
-      int block_size;
-      if (integrity->GetString("algorithm", &algorithm) &&
-          integrity->GetString("hash", &integrity_payload.hash) &&
-          integrity->GetInteger("blockSize", &block_size) &&
-          integrity->GetList("blocks", &blocks) && block_size > 0) {
-        integrity_payload.block_size = static_cast<uint32_t>(block_size);
-        for (size_t i = 0; i < blocks->GetList().size(); i++) {
-          std::string block;
-          if (!blocks->GetString(i, &block)) {
+    if (auto* integrity = node->FindDictKey("integrity")) {
+      auto* algorithm = integrity->FindStringKey("algorithm");
+      auto* hash = integrity->FindStringKey("hash");
+      auto block_size = integrity->FindIntKey("blockSize");
+      auto* blocks = integrity->FindListKey("blocks");
+
+      if (algorithm && hash && block_size && block_size > 0 && blocks) {
+        IntegrityPayload integrity_payload;
+        integrity_payload.hash = *hash;
+        integrity_payload.block_size =
+            static_cast<uint32_t>(block_size.value());
+        for (auto& value : blocks->GetList()) {
+          if (auto* block = value.GetIfString()) {
+            integrity_payload.blocks.push_back(*block);
+          } else {
             LOG(FATAL)
                 << "Invalid block integrity value for file in ASAR archive";
           }
-          integrity_payload.blocks.push_back(block);
         }
-        if (algorithm == "SHA256") {
+        if (*algorithm == "SHA256") {
           integrity_payload.algorithm = HashAlgorithm::SHA256;
           info->integrity = std::move(integrity_payload);
         }
