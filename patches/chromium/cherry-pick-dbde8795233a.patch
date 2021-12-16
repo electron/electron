@@ -1,7 +1,8 @@
-From dbde8795233ac77de05b9309210bcf6a137f8959 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Patrick Meenan <pmeenan@chromium.org>
-Date: Fri, 03 Dec 2021 18:15:17 +0000
-Subject: [PATCH] Prevent opaque range request responses from entering the preload cache
+Date: Fri, 3 Dec 2021 18:15:17 +0000
+Subject: Prevent opaque range request responses from entering the preload
+ cache
 
 ResourceLoader cancels range request responses that were not initiated
 with range request headers causing them to error out and be cleared from
@@ -26,13 +27,12 @@ Auto-Submit: Patrick Meenan <pmeenan@chromium.org>
 Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
 Cr-Commit-Position: refs/branch-heads/4664@{#1222}
 Cr-Branched-From: 24dc4ee75e01a29d390d43c9c264372a169273a7-refs/heads/main@{#929512}
----
 
 diff --git a/third_party/blink/renderer/platform/loader/fetch/resource_fetcher.cc b/third_party/blink/renderer/platform/loader/fetch/resource_fetcher.cc
-index ef9cff4..2fd384e 100644
+index c7ae11a459051edab1fcaf1cc5feb5d9f19ff52d..29d34ddc211350a834ca94466cce1dcfea0db1ff 100644
 --- a/third_party/blink/renderer/platform/loader/fetch/resource_fetcher.cc
 +++ b/third_party/blink/renderer/platform/loader/fetch/resource_fetcher.cc
-@@ -1884,6 +1884,19 @@
+@@ -1866,6 +1866,19 @@ void ResourceFetcher::HandleLoaderFinish(Resource* resource,
    }
  
    resource->VirtualTimePauser().UnpauseVirtualTime();
@@ -54,7 +54,7 @@ index ef9cff4..2fd384e 100644
  
 diff --git a/third_party/blink/web_tests/external/wpt/fetch/range/resources/partial-text.py b/third_party/blink/web_tests/external/wpt/fetch/range/resources/partial-text.py
 new file mode 100644
-index 0000000..a005855
+index 0000000000000000000000000000000000000000..a0058551d52d45b3c16882014be740d75e51ddd1
 --- /dev/null
 +++ b/third_party/blink/web_tests/external/wpt/fetch/range/resources/partial-text.py
 @@ -0,0 +1,47 @@
@@ -106,10 +106,10 @@ index 0000000..a005855
 +
 +    response.content = to_send
 diff --git a/third_party/blink/web_tests/external/wpt/fetch/range/resources/range-sw.js b/third_party/blink/web_tests/external/wpt/fetch/range/resources/range-sw.js
-index 3680c0c4..b47823f 100644
+index 3680c0c471d3d5f36c4aba4cc58dcd52c38a08df..b47823f03b4ef3749e622fbf7dd3b515a216b5be 100644
 --- a/third_party/blink/web_tests/external/wpt/fetch/range/resources/range-sw.js
 +++ b/third_party/blink/web_tests/external/wpt/fetch/range/resources/range-sw.js
-@@ -12,7 +12,7 @@
+@@ -12,7 +12,7 @@ async function broadcast(msg) {
    }
  }
  
@@ -118,7 +118,7 @@ index 3680c0c4..b47823f 100644
    /** @type Request */
    const request = event.request;
    const url = new URL(request.url);
-@@ -34,6 +34,11 @@
+@@ -34,6 +34,11 @@ addEventListener('fetch', event => {
      case 'broadcast-accept-encoding':
        broadcastAcceptEncoding(event);
        return;
@@ -130,7 +130,7 @@ index 3680c0c4..b47823f 100644
    }
  });
  
-@@ -157,3 +162,57 @@
+@@ -157,3 +162,57 @@ function broadcastAcceptEncoding(event) {
    // Just send back any response, it isn't important for the test.
    event.respondWith(new Response(''));
  }
@@ -189,10 +189,10 @@ index 3680c0c4..b47823f 100644
 +  }
 +}
 diff --git a/third_party/blink/web_tests/external/wpt/fetch/range/resources/utils.js b/third_party/blink/web_tests/external/wpt/fetch/range/resources/utils.js
-index 16ed737..ad2853b 100644
+index 16ed737f63e8eee26a306c70acb0589e424db35d..ad2853b33dc7474293df1423dd8af459571736b9 100644
 --- a/third_party/blink/web_tests/external/wpt/fetch/range/resources/utils.js
 +++ b/third_party/blink/web_tests/external/wpt/fetch/range/resources/utils.js
-@@ -8,6 +8,18 @@
+@@ -8,6 +8,18 @@ function loadScript(url, { doc = document }={}) {
    })
  }
  
@@ -212,10 +212,10 @@ index 16ed737..ad2853b 100644
   *
   * @param {Document} document
 diff --git a/third_party/blink/web_tests/external/wpt/fetch/range/sw.https.window-expected.txt b/third_party/blink/web_tests/external/wpt/fetch/range/sw.https.window-expected.txt
-index 134b0a7..a9577f01 100644
+index 134b0a7abd817599921d4fb430e8247a2cb40f82..a9577f01727678cd7a76bcc65e132fd6fcb230ac 100644
 --- a/third_party/blink/web_tests/external/wpt/fetch/range/sw.https.window-expected.txt
 +++ b/third_party/blink/web_tests/external/wpt/fetch/range/sw.https.window-expected.txt
-@@ -4,6 +4,7 @@
+@@ -4,6 +4,7 @@ PASS Defer range header passthrough tests to service worker
  PASS Ranged response not allowed following no-cors ranged request
  PASS Non-opaque ranged response executed
  FAIL Accept-Encoding should not appear in a service worker assert_equals: Accept-Encoding should not be set for media expected (object) null but got (string) "identity;q=1, *;q=0"
@@ -224,10 +224,10 @@ index 134b0a7..a9577f01 100644
  PASS Range headers correctly removed
  PASS Headers correctly filtered
 diff --git a/third_party/blink/web_tests/external/wpt/fetch/range/sw.https.window.js b/third_party/blink/web_tests/external/wpt/fetch/range/sw.https.window.js
-index 76f80e9..42e4ac6 100644
+index 76f80e9416c615417ad2a9fbaa565641ff5b8a12..42e4ac6d75afdcbb2ad1e9d3e4069d9cbfd10dbd 100644
 --- a/third_party/blink/web_tests/external/wpt/fetch/range/sw.https.window.js
 +++ b/third_party/blink/web_tests/external/wpt/fetch/range/sw.https.window.js
-@@ -149,3 +149,78 @@
+@@ -149,3 +149,78 @@ promise_test(async t => {
  
    assert_equals((await audioBroadcast).acceptEncoding, null, "Accept-Encoding should not be set for media");
  }, `Accept-Encoding should not appear in a service worker`);
