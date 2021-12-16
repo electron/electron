@@ -42,7 +42,8 @@ void AutofillDriverFactory::BindAutofillDriver(
 }
 
 AutofillDriverFactory::AutofillDriverFactory(content::WebContents* web_contents)
-    : content::WebContentsObserver(web_contents) {}
+    : content::WebContentsObserver(web_contents),
+      content::WebContentsUserData<AutofillDriverFactory>(*web_contents) {}
 
 void AutofillDriverFactory::RenderFrameDeleted(
     content::RenderFrameHost* render_frame_host) {

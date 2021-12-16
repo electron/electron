@@ -7,12 +7,14 @@
 #include <utility>
 
 #include "build/build_config.h"
+#include "content/public/browser/web_contents_user_data.h"
 
 namespace electron {
 
 PrintViewManagerElectron::PrintViewManagerElectron(
     content::WebContents* web_contents)
-    : PrintViewManagerBase(web_contents) {}
+    : PrintViewManagerBase(web_contents),
+      content::WebContentsUserData<PrintViewManagerElectron>(*web_contents) {}
 
 PrintViewManagerElectron::~PrintViewManagerElectron() = default;
 

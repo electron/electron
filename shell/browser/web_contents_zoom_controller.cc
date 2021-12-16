@@ -13,6 +13,7 @@
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/web_contents.h"
+#include "content/public/browser/web_contents_user_data.h"
 #include "content/public/common/page_type.h"
 #include "net/base/url_util.h"
 #include "third_party/blink/public/common/page/page_zoom.h"
@@ -21,7 +22,8 @@ namespace electron {
 
 WebContentsZoomController::WebContentsZoomController(
     content::WebContents* web_contents)
-    : content::WebContentsObserver(web_contents) {
+    : content::WebContentsObserver(web_contents),
+      content::WebContentsUserData<WebContentsZoomController>(*web_contents) {
   default_zoom_factor_ = kPageZoomEpsilon;
   host_zoom_map_ = content::HostZoomMap::GetForWebContents(web_contents);
 }
