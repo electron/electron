@@ -76,10 +76,10 @@ index 0d7c1db6489d95a40c66808c3f838b0740e46ff6..eec994c4252f17d9c9c41e66d5dae650
  
  #if defined(OS_MAC)
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index 4547eb8563e1af57aad991d9d1e2cf02c778380a..a04d139f958a7aaef9b96e8c29317ccf7c97f009 100644
+index f9f5a2a2240b8249f81e9fe95209ef651a09e88e..3dffe87e6a561826e7f90bce9727d830ce1c99be 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
-@@ -80,6 +80,7 @@
+@@ -82,6 +82,7 @@
  #include "base/strings/stringprintf.h"
  #include "base/strings/sys_string_conversions.h"
  #include "base/strings/utf_string_conversions.h"
@@ -87,7 +87,7 @@ index 4547eb8563e1af57aad991d9d1e2cf02c778380a..a04d139f958a7aaef9b96e8c29317ccf
  #include "base/threading/platform_thread.h"
  #include "base/threading/thread_task_runner_handle.h"
  #include "base/time/time.h"
-@@ -95,9 +96,11 @@
+@@ -97,9 +98,11 @@
  #include "net/base/network_interfaces.h"
  #include "ui/base/l10n/l10n_util.h"
  
@@ -99,7 +99,7 @@ index 4547eb8563e1af57aad991d9d1e2cf02c778380a..a04d139f958a7aaef9b96e8c29317ccf
  
  #if defined(TOOLKIT_VIEWS) && \
      (defined(OS_LINUX) || BUILDFLAG(IS_CHROMEOS_LACROS))
-@@ -289,6 +292,9 @@ bool SymlinkPath(const base::FilePath& target, const base::FilePath& path) {
+@@ -348,6 +351,9 @@ bool SymlinkPath(const base::FilePath& target, const base::FilePath& path) {
  bool DisplayProfileInUseError(const base::FilePath& lock_path,
                                const std::string& hostname,
                                int pid) {
@@ -109,7 +109,7 @@ index 4547eb8563e1af57aad991d9d1e2cf02c778380a..a04d139f958a7aaef9b96e8c29317ccf
    std::u16string error = l10n_util::GetStringFUTF16(
        IDS_PROFILE_IN_USE_POSIX, base::NumberToString16(pid),
        base::ASCIIToUTF16(hostname));
-@@ -308,6 +314,7 @@ bool DisplayProfileInUseError(const base::FilePath& lock_path,
+@@ -367,6 +373,7 @@ bool DisplayProfileInUseError(const base::FilePath& lock_path,
  
    NOTREACHED();
    return false;
@@ -117,7 +117,7 @@ index 4547eb8563e1af57aad991d9d1e2cf02c778380a..a04d139f958a7aaef9b96e8c29317ccf
  }
  
  bool IsChromeProcess(pid_t pid) {
-@@ -348,6 +355,21 @@ bool CheckCookie(const base::FilePath& path, const base::FilePath& cookie) {
+@@ -407,6 +414,21 @@ bool CheckCookie(const base::FilePath& path, const base::FilePath& cookie) {
    return (cookie == ReadLink(path));
  }
  
@@ -139,7 +139,7 @@ index 4547eb8563e1af57aad991d9d1e2cf02c778380a..a04d139f958a7aaef9b96e8c29317ccf
  bool ConnectSocket(ScopedSocket* socket,
                     const base::FilePath& socket_path,
                     const base::FilePath& cookie_path) {
-@@ -729,6 +751,10 @@ ProcessSingleton::ProcessSingleton(
+@@ -788,6 +810,10 @@ ProcessSingleton::ProcessSingleton(
  
  ProcessSingleton::~ProcessSingleton() {
    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
@@ -150,7 +150,7 @@ index 4547eb8563e1af57aad991d9d1e2cf02c778380a..a04d139f958a7aaef9b96e8c29317ccf
  }
  
  ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
-@@ -897,6 +923,20 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessOrCreate() {
+@@ -956,6 +982,20 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcessOrCreate() {
        base::Seconds(kTimeoutInSeconds));
  }
  
@@ -171,7 +171,7 @@ index 4547eb8563e1af57aad991d9d1e2cf02c778380a..a04d139f958a7aaef9b96e8c29317ccf
  ProcessSingleton::NotifyResult
  ProcessSingleton::NotifyOtherProcessWithTimeoutOrCreate(
      const base::CommandLine& command_line,
-@@ -999,14 +1039,32 @@ bool ProcessSingleton::Create() {
+@@ -1055,14 +1095,32 @@ bool ProcessSingleton::Create() {
  #endif
    }
  
@@ -209,7 +209,7 @@ index 4547eb8563e1af57aad991d9d1e2cf02c778380a..a04d139f958a7aaef9b96e8c29317ccf
    // Check that the directory was created with the correct permissions.
    int dir_mode = 0;
    CHECK(base::GetPosixFilePermissions(socket_dir_.GetPath(), &dir_mode) &&
-@@ -1046,10 +1104,13 @@ bool ProcessSingleton::Create() {
+@@ -1105,10 +1163,13 @@ bool ProcessSingleton::Create() {
    if (listen(sock, 5) < 0)
      NOTREACHED() << "listen failed: " << base::safe_strerror(errno);
  
