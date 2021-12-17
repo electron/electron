@@ -59,7 +59,7 @@ index 554930bc33d87ee88a9bcc5f0cf17cef09c27ef0..8df4f91d3db453afb9f73bcaeb82c919
    // true if register successfully, or false if 1) the specificied |accelerator|
    // has been registered by another caller or other native applications, or
 diff --git a/content/browser/media/media_keys_listener_manager_impl.cc b/content/browser/media/media_keys_listener_manager_impl.cc
-index 5938f75742b793868638e693a9a8c8dc686dfc46..1137ea6c6b2b14f912b400e3cc43dc6fd0243407 100644
+index 5938f75742b793868638e693a9a8c8dc686dfc46..7f30f3fdd2c63612232e31c331b26b17ad729efb 100644
 --- a/content/browser/media/media_keys_listener_manager_impl.cc
 +++ b/content/browser/media/media_keys_listener_manager_impl.cc
 @@ -55,7 +55,12 @@ bool MediaKeysListenerManagerImpl::StartWatchingMediaKey(
@@ -76,32 +76,28 @@ index 5938f75742b793868638e693a9a8c8dc686dfc46..1137ea6c6b2b14f912b400e3cc43dc6f
        !media_keys_listener_->StartWatchingMediaKey(key_code)) {
      return false;
    }
-@@ -231,18 +236,16 @@ void MediaKeysListenerManagerImpl::StartListeningForMediaKeysIfNecessary() {
-       media::AudioManager::GetGlobalAppName());
+@@ -232,18 +237,18 @@ void MediaKeysListenerManagerImpl::StartListeningForMediaKeysIfNecessary() {
  #endif
  
--  if (system_media_controls_) {
--    system_media_controls_->AddObserver(this);
--    system_media_controls_notifier_ =
--        std::make_unique<SystemMediaControlsNotifier>(
--            system_media_controls_.get());
+   if (system_media_controls_) {
++    // This is required for proper functioning of MediaMetadata.
+     system_media_controls_->AddObserver(this);
+     system_media_controls_notifier_ =
+         std::make_unique<SystemMediaControlsNotifier>(
+             system_media_controls_.get());
 -  } else {
 -    // If we can't access system media controls, then directly listen for media
 -    // key keypresses instead.
 -    media_keys_listener_ = ui::MediaKeysListener::Create(
 -        this, ui::MediaKeysListener::Scope::kGlobal);
 -    DCHECK(media_keys_listener_);
--  }
-+  // This is required for proper functioning of MediaMetadata.
-+  system_media_controls_->AddObserver(this);
-+  system_media_controls_notifier_ =
-+      std::make_unique<SystemMediaControlsNotifier>(
-+          system_media_controls_.get());
-+
+   }
+ 
 +  // Directly listen for media key keypresses when using GlobalShortcuts.
 +  media_keys_listener_ = ui::MediaKeysListener::Create(
 +    this, ui::MediaKeysListener::Scope::kGlobal);
 +  DCHECK(media_keys_listener_);
- 
++
    EnsureAuxiliaryServices();
  }
+ 
