@@ -99,7 +99,7 @@ bool FillFileInfoWithNode(Archive::FileInfo* info,
                           uint32_t header_size,
                           bool load_integrity,
                           const base::DictionaryValue* node) {
-  if (auto size = node->FindIntKey("StringPiece key")) {
+  if (auto size = node->FindIntKey("size")) {
     info->size = static_cast<uint32_t>(size.value());
   } else {
     return false;
