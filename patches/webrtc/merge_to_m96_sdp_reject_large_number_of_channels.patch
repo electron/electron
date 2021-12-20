@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Philipp Hancke <phancke@nvidia.com>
 Date: Thu, 25 Nov 2021 08:57:54 +0100
-Subject: [merge to M96] sdp: reject large number of channels
+Subject: sdp: reject large number of channels
 
 the maximum used in practice is multiopus with
 6 or 8 channels. 24 is the maximum number of channels
