@@ -1044,11 +1044,14 @@ std::string App::GetLocaleCountryCode() {
   CFLocaleRef locale = CFLocaleCopyCurrent();
   CFStringRef value = CFStringRef(
       static_cast<CFTypeRef>(CFLocaleGetValue(locale, kCFLocaleCountryCode)));
-  const CFIndex kCStringSize = 128;
-  char temporaryCString[kCStringSize] = {0};
-  CFStringGetCString(value, temporaryCString, kCStringSize,
-                     kCFStringEncodingUTF8);
-  region = temporaryCString;
+  if (value != nil) {
+    char temporaryCString[3];
+    const CFIndex kCStringSize = sizeof(temporaryCString);
+    if (CFStringGetCString(value, temporaryCString, kCStringSize,
+                           kCFStringEncodingUTF8)) {
+      region = temporaryCString;
+    }
+  }
 #else
   const char* locale_ptr = setlocale(LC_TIME, nullptr);
   if (!locale_ptr)
