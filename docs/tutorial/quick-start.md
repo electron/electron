@@ -106,12 +106,12 @@ During execution, Electron will look for this script in the [`main`][package-jso
 field of the app's `package.json` config, which you should have configured during the
 [app scaffolding](#scaffold-the-project) step.
 
-To initialize the `main` script, create an empty file named `main.js` in the root folder
+To initialize the `main` script, create an empty file named `index.js` in the root folder
 of your project.
 
 > Note: If you run the `start` script again at this point, your app will no longer throw
 > any errors! However, it won't do anything yet because we haven't added any code into
-> `main.js`.
+> `index.js`.
 
 [package-json-main]: https://docs.npmjs.com/cli/v7/configuring-npm/package-json#main
 
