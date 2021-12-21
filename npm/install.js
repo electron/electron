@@ -22,7 +22,8 @@ if (isInstalled()) {
 const platform = process.env.npm_config_platform || process.platform;
 let arch = process.env.npm_config_arch || process.arch;
 
-if (platform === 'darwin' && process.platform === 'darwin' && arch === 'x64') {
+if (platform === 'darwin' && process.platform === 'darwin' && arch === 'x64' &&
+    process.env.npm_config_arch === undefined) {
   // When downloading for macOS ON macOS and we think we need x64 we should
   // check if we're running under rosetta and download the arm64 version if appropriate
   try {
