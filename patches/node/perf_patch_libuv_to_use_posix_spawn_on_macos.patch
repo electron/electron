@@ -26,12 +26,12 @@ index 8f94c53b249978c8ce41dc2447facbbcf585120a..a3619ca78d46bc620491fcaeeb898e4b
  #include <assert.h>
  #include <errno.h>
 +#include <string.h>
-
+ 
  #include <sys/types.h>
  #include <sys/wait.h>
 @@ -34,8 +35,20 @@
  #include <poll.h>
-
+ 
  #if defined(__APPLE__) && !TARGET_OS_IPHONE
 +# include <spawn.h>
 +# include <paths.h>
@@ -50,29 +50,21 @@ index 8f94c53b249978c8ce41dc2447facbbcf585120a..a3619ca78d46bc620491fcaeeb898e4b
  #else
  extern char **environ;
  #endif
-@@ -44,7 +57,6 @@ extern char **environ;
- # include <grp.h>
- #endif
-
--
- static void uv__chld(uv_signal_t* handle, int signum) {
-   uv_process_t* process;
-   uv_loop_t* loop;
-@@ -302,9 +314,8 @@ static void uv__process_child_init(const uv_process_options_t* options,
-     _exit(127);
-   }
-
+@@ -300,9 +313,8 @@ static void uv__process_child_init(const uv_process_options_t* options,
+   if ((options->flags & UV_PROCESS_SETUID) && setuid(options->uid))
+     uv__write_errno(error_fd);
+ 
 -  if (options->env != NULL) {
 +  if (options->env != NULL)
      environ = options->env;
 -  }
-
+ 
    /* Reset signal disposition.  Use a hard-coded limit because NSIG
     * is not fixed on Linux: it's either 32, 34 or 64, depending on
-@@ -343,6 +354,476 @@ static void uv__process_child_init(const uv_process_options_t* options,
+@@ -342,6 +354,476 @@ static void uv__process_child_init(const uv_process_options_t* options,
  #endif
-
-
+ 
+ 
 +#if defined(__APPLE__)
 +typedef struct uv__posix_spawn_fncs_tag {
 +  struct {
@@ -546,12 +538,12 @@ index 8f94c53b249978c8ce41dc2447facbbcf585120a..a3619ca78d46bc620491fcaeeb898e4b
  int uv_spawn(uv_loop_t* loop,
               uv_process_t* process,
               const uv_process_options_t* options) {
-@@ -424,21 +905,16 @@ int uv_spawn(uv_loop_t* loop,
-
+@@ -423,21 +905,16 @@ int uv_spawn(uv_loop_t* loop,
+ 
    /* Acquire write lock to prevent opening new fds in worker threads */
    uv_rwlock_wrlock(&loop->cloexec_lock);
 -  pid = fork();
-
+ 
 -  if (pid == -1) {
 -    err = UV__ERR(errno);
 +  /* Spawn the child */
@@ -562,7 +554,7 @@ index 8f94c53b249978c8ce41dc2447facbbcf585120a..a3619ca78d46bc620491fcaeeb898e4b
      uv__close(signal_pipe[1]);
      goto error;
    }
-
+ 
 -  if (pid == 0) {
 -    uv__process_child_init(options, stdio_count, pipes, signal_pipe[1]);
 -    abort();
