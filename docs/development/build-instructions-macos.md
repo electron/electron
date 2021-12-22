@@ -37,7 +37,7 @@ You can use `pip` to install it:
 
 ```sh
 $ pip install pyobjc
-```
+```EmreKspcoin
 
 ## macOS SDK
 
