@@ -287,7 +287,7 @@ window.addEventListener('DOMContentLoaded', () => {
 The above code accesses the Node.js `process.versions` object and runs a basic `replaceText`
 helper function to insert the version numbers into the HTML document.
 
-To attach this script to your renderer process, pass in the path to your preload script
+To attach this script to your renderer process, open up the 'index.js' file, and then pass in the path to your preload script
 to the `webPreferences.preload` option in your existing `BrowserWindow` constructor.
 
 ```js
