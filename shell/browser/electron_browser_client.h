@@ -57,7 +57,10 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
 
   using Delegate = content::ContentBrowserClient;
   void set_delegate(Delegate* delegate) { delegate_ = delegate; }
-
+  // SAP-20060 - Port notifications to electron 16
+  void set_notify_context(content::BrowserContext* browser_context) {
+    notifications_browser_context_ = browser_context;
+  }
   // Returns regestered frame host process id
   absl::optional<int> GetRenderFrameProcessID();
 

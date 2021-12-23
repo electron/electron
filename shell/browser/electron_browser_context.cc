@@ -304,6 +304,8 @@ content::BrowserPluginGuestManager* ElectronBrowserContext::GetGuestManager() {
 
 content::PlatformNotificationService*
 ElectronBrowserContext::GetPlatformNotificationService() {
+  // SAP-20060 - Port notifications to electron 16
+  ElectronBrowserClient::Get()->set_notify_context(this);
   return ElectronBrowserClient::Get()->GetPlatformNotificationService();
 }
 
