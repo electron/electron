@@ -22,7 +22,7 @@ you error would be caught at commit time.
 ## Unit Tests
 
 If you are not using [build-tools](https://github.com/electron/build-tools),
-ensure that that name you have configured for your
+ensure that the name you have configured for your
 local build of Electron is one of `Testing`, `Release`, `Default`, or
 you have set `process.env.ELECTRON_OUT_DIR`. Without these set, Electron will fail
 to perform some pre-testing steps.
